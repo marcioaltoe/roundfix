@@ -21,23 +21,36 @@ after one, while read-only checking keeps working throughout.
 
 1. MUST record today's execution behavior at the authored-command boundary
    before changing it, so the change is measured against the present contract.
-2. MUST execute an authored command only when its carrying artifact is tracked
-   in this repository and byte-identical to its committed bytes at the resolved
-   revision.
-3. MUST refuse with `SC-SOURCE-UNTRUSTED` when the Spec Root resolves outside
-   the repository's Git tree, when the carrying artifact is untracked or
-   modified against its committed bytes, or when the command text differs from
-   the committed bytes, and MUST name which of those conditions fired.
-4. MUST accept an execution approval only when the approval record itself
+2. MUST compare an authored projection of the carrying artifact, not its whole
+   file bytes. The projection covers the authored contract — the Verification
+   command text and the requirements that bound it — and excludes the fields the
+   Daemon owns, its `status` frontmatter and its appended `## Result`. The
+   Daemon sets a Task to `in_progress` before the Agent turn and therefore
+   before Verification, so a whole-file comparison differs from the committed
+   bytes on every normal Task and would refuse the entire implementation loop.
+   The TechSpec already draws this line: Daemon-owned status and Result updates
+   are execution records, not permission.
+3. MUST execute an authored command only when its carrying artifact is tracked
+   in this repository and its authored projection matches the projection of its
+   committed bytes at the resolved revision.
+4. MUST record today's outcome at each authored-command entry point as a
+   characterization before changing it, so an unintended change of execution
+   behavior fails against the recorded present contract rather than against a
+   test written afterwards to agree with the new code.
+5. MUST refuse with `SC-SOURCE-UNTRUSTED` when the Spec Root resolves outside
+   the repository's Git tree, when the carrying artifact is untracked, or when
+   its authored projection differs from the committed projection, and MUST name
+   which of those conditions fired.
+6. MUST accept an execution approval only when the approval record itself
    reaches the trusted bar it is granting: it comes from a committed ancestor
    of the delivery target, not from the same untracked or modified source it
    authorizes. An approval a source can append to itself, pointing at a
    revision that source just created, is self-approval and grants nothing.
-5. MUST bind an accepted approval to the repository, the approved revision, the
+7. MUST bind an accepted approval to the repository, the approved revision, the
    carrying artifact, and a digest of the exact approved command text, and MUST
    fall back to refusal once any of those changes, without withdrawing the
    historical approval record.
-6. MUST apply the same decision at every path that executes an authored
+8. MUST apply the same decision at every path that executes an authored
    command, emitting one shared code rather than private diagnostics. The
    pre-dispatch probe is not that boundary on its own: post-Agent verification
    and Settle each call the verifier directly rather than through the prober, so
@@ -45,19 +58,19 @@ after one, while read-only checking keeps working throughout.
    commands open. Cover the probe, the post-Agent verification call, and the
    Settle call, and test each through its own path rather than through a shared
    helper.
-7. MUST keep `roundfix spec check` without command execution usable against any
+9. MUST keep `roundfix spec check` without command execution usable against any
    source, trusted or not.
-8. MUST report an unreadable Git object or an unavailable revision as an
+10. MUST report an unreadable Git object or an unavailable revision as an
    unresolved source and refuse to execute, never as trusted and never as a
    manufactured verdict.
-9. MUST document both `SC-TOOLING-UNAPPROVED` and `SC-SOURCE-UNTRUSTED` as
-   glossary entries, so the coined tokens have a durable owner.
-10. MUST NOT grant network access, credential access, a different sandbox, or any
+11. MUST document both `SC-TOOLING-UNAPPROVED` and `SC-SOURCE-UNTRUSTED` as
+    glossary entries, so the coined tokens have a durable owner.
+12. MUST NOT grant network access, credential access, a different sandbox, or any
     execution privilege beyond running the already-approved commands.
 
 ## Subtasks
 
-- [ ] Record the present execution behavior at the authored-command boundary.
+- [ ] Record the present execution behavior at each authored-command entry point.
 - [ ] Compare the carrying artifact and command text against committed bytes.
 - [ ] Refuse with the shared code, naming which condition fired.
 - [ ] Accept a revision-bound execution approval and expire it on edit.
@@ -69,6 +82,12 @@ after one, while read-only checking keeps working throughout.
 - [ ] A Spec tracked here and unmodified executes its authored commands, and the
       same Spec with one command's text edited in the working tree refuses with
       `SC-SOURCE-UNTRUSTED` naming the modified-artifact condition.
+- [ ] A Task the Daemon has set to `in_progress`, and one carrying an appended
+      `## Result`, still execute: the projection ignores both, so the normal
+      implementation loop is not refused by its own trust rule.
+- [ ] A characterization case records today's outcome at the probe, the
+      post-Agent verification call and Settle, and fails if any of those
+      outcomes changes for a source the Spec did not intend to affect.
 - [ ] A Spec Root resolving outside the repository's Git tree refuses, naming
       the out-of-tree condition.
 - [ ] A Spec carrying an execution approval already committed in the delivery
@@ -98,6 +117,9 @@ after one, while read-only checking keeps working throughout.
 
 - `grep -q 'SC-SOURCE-UNTRUSTED' internal/speccheck/verification.go && grep -q 'func TestVerificationRefusesUntrustedSource' internal/speccheck/verification_test.go && go test -count=1 ./internal/speccheck -run '^TestVerificationRefusesUntrustedSource$'` — an out-of-tree root, an untracked artifact, a modified artifact and altered command text each refuse with the shared code naming the condition.
 - `grep -q 'func TestVerificationExecutesOnCommittedProvenance' internal/speccheck/verification_test.go && go test -count=1 ./internal/speccheck -run '^TestVerificationExecutesOnCommittedProvenance$'` — a tracked, unmodified Spec executes, and a revision-bound execution approval expires when the approved commands change.
+- `grep -q 'func TestAuthoredProjectionIgnoresDaemonOwnedFields' internal/speccheck/verification_test.go && go test -count=1 ./internal/speccheck -run '^TestAuthoredProjectionIgnoresDaemonOwnedFields$'` — a Task set to `in_progress` and one carrying an appended Result still execute, so the trust rule does not refuse the normal loop.
+- `grep -q 'func TestExecutionEntryPointCharacterization' internal/speccheck/verification_test.go && go test -count=1 ./internal/speccheck -run '^TestExecutionEntryPointCharacterization$'` — today's outcome at each entry point is recorded and asserted as the present contract.
+- `grep -q 'func TestProbeRefusesUntrustedCommandSource' internal/daemon/verification_probe_test.go && go test -count=1 ./internal/daemon -run '^TestProbeRefusesUntrustedCommandSource$'` — the pre-dispatch probe refuses through its own path.
 - `grep -q 'func TestSettleRefusesUntrustedCommandSource' internal/cli/settle_test.go && go test -count=1 ./internal/cli -run '^TestSettleRefusesUntrustedCommandSource$'` — Settle refuses through its own direct verifier call, not through the prober.
 - `grep -q 'func TestPostAgentVerificationRefusesUntrustedCommandSource' internal/daemon/engine_test.go && go test -count=1 ./internal/daemon -run '^TestPostAgentVerificationRefusesUntrustedCommandSource$'` — the post-Agent verification call refuses through its own path.
 - `grep -q 'SC-SOURCE-UNTRUSTED' CONTEXT.md && grep -q 'SC-TOOLING-UNAPPROVED' CONTEXT.md` — both coined codes carry a glossary owner.

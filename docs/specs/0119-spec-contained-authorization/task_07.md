@@ -31,30 +31,37 @@ regeneration come from the approved grant in [_authorization.md](_authorization.
 
 1. MUST name `<spec-root>/<slug>/_authorization.md` as the home for tooling
    authorization records, stating the record's required shape: approval state,
-   maintainer decision date, permitted actions, exact bounded repository paths,
-   consuming Spec, and any sanctioned regeneration.
-2. MUST state that a proposed, absent, contradictory, or withdrawn record grants
+   maintainer decision date, permitted actions, the closed list of permitted
+   operations, exact bounded repository paths, consuming Spec, and any
+   sanctioned regeneration. An absent operations list grants no operation, so
+   the field is part of the shape rather than an optional extra.
+2. MUST define the fields an execution approval carries — the repository, the
+   approved source revision, the carrying artifact, and a digest of the approved
+   command text — and state that an approval expires when any of them changes.
+   Without a named representation an approval cannot be scoped or expired.
+3. MUST state that a proposed, absent, contradictory, or withdrawn record grants
    nothing, and that an executor cannot widen the grant it depends on.
-3. MUST state the committed-provenance contract for executing authored
-   Verification, including that read-only checking stays available for any
+4. MUST state the committed-provenance contract for executing authored
+   Verification, including that the comparison is over the authored projection
+   and excludes Daemon-owned status and Result fields, including that read-only checking stays available for any
    source and that an untrusted source needs an execution approval naming the
    approved revision.
-4. MUST state that a new or widened grant lands in target ancestry before the
+5. MUST state that a new or widened grant lands in target ancestry before the
    consuming squash delivery.
-5. MUST preserve the existing legacy record location as still readable, so
+6. MUST preserve the existing legacy record location as still readable, so
    historical grants keep resolving, and MUST NOT declare their old paths
    present as worktree files.
-6. MUST extend existing clause identities where an obligation already exists
+7. MUST extend existing clause identities where an obligation already exists
    rather than replacing them, and MUST NOT weaken any current clause.
-7. MUST regenerate the managed guides and manifest from the modules through the
+8. MUST regenerate the managed guides and manifest from the modules through the
    public Baseline update, then regenerate the sanctioned derived pins, and
    MUST NOT hand-edit a derived pin value.
-8. MUST leave the rendered guides converged, so a second managed refresh
+9. MUST leave the rendered guides converged, so a second managed refresh
    produces no further change.
 
 ## Subtasks
 
-- [ ] Add the record-home and record-shape clauses to the owning modules.
+- [ ] Add the record-home and record-shape clauses, including operations and the execution-approval fields, to the owning modules.
 - [ ] Add the non-granting-state and no-self-widening clauses.
 - [ ] Add the committed-provenance execution clause.
 - [ ] Add the ancestry-before-squash clause and preserve the legacy location.
@@ -66,8 +73,11 @@ regeneration come from the approved grant in [_authorization.md](_authorization.
       clauses, where the same search returns nothing before this Task.
 - [ ] A rendered clause states that a proposed or absent record grants nothing
       and that an executor cannot widen its own grant.
-- [ ] A rendered clause states the committed-provenance execution contract and
+- [ ] A rendered clause states the committed-provenance execution contract over
+      the authored projection, names the execution-approval fields, and states
       that read-only checking remains available for any source.
+- [ ] A rendered clause names the closed operations vocabulary and states that
+      an absent list grants no operation.
 - [ ] A rendered clause states that a new or widened grant lands in ancestry
       before the consuming squash delivery.
 - [ ] The legacy record location is still described as readable for historical
@@ -83,7 +93,7 @@ regeneration come from the approved grant in [_authorization.md](_authorization.
 ## Verification
 
 - `grep -q '_authorization.md' docs/agents/docs-layout.md && grep -q '_authorization.md' docs/agents/spec-routing.md` — the rendered guides name the record home, which they do not today.
-- `grep -q 'committed provenance' docs/agents/agent-instructions.md && grep -q '_authorization.md' internal/baseline/assets/modules/core.json` — the execution contract is canonical and sourced from a module rather than hand-written into a rendered guide.
+- `grep -q 'committed provenance' docs/agents/agent-instructions.md && grep -q 'operations' docs/agents/spec-routing.md && grep -q '_authorization.md' internal/baseline/assets/modules/core.json` — the execution contract and the operations vocabulary are canonical and sourced from a module rather than hand-written into a rendered guide.
 - `grep -rq '_authorization.md' internal/baseline/assets/modules || exit 1; raw="$(mktemp)"; before="$(mktemp)"; after="$(mktemp)"; go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text > /dev/null || exit 1; find docs/agents internal/baseline -type f -exec shasum {} + > "$raw" || exit 1; sort "$raw" > "$before" || exit 1; go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text > /dev/null || exit 1; find docs/agents internal/baseline -type f -exec shasum {} + > "$raw" || exit 1; sort "$raw" > "$after" || exit 1; diff "$before" "$after"` — the clause is sourced from a module and the managed refresh converges: a second run reproduces the first byte for byte. The comparison is against a snapshot taken after the first refresh, because the Daemon runs Verification while the authorized edits are still uncommitted.
 - `grep -rq '_authorization.md' internal/baseline/assets/modules || exit 1; raw="$(mktemp)"; before="$(mktemp)"; after="$(mktemp)"; make baseline-digests || exit 1; find internal/baseline -type f -exec shasum {} + > "$raw" || exit 1; sort "$raw" > "$before" || exit 1; make baseline-digests || exit 1; find internal/baseline -type f -exec shasum {} + > "$raw" || exit 1; sort "$raw" > "$after" || exit 1; diff "$before" "$after"` — the module edit landed and the sanctioned derived pins reproduce byte for byte on a second regeneration.
 

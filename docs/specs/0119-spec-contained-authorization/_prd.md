@@ -14,7 +14,7 @@ does not have a clearly stated source-trust boundary. A maintainer should be
 able to inspect one Spec and distinguish approved actions from proposed work.
 
 This Spec is **approved for implementation**. On 2026-09-09 the maintainer
-approved the twenty-one bounded governed paths recorded in
+approved the bounded governed paths recorded in
 [_authorization.md](_authorization.md) and chose committed provenance as the
 trust contract for executing authored Verification. The requested outcome, the
 through-merge delivery boundary, the record schema, the protected paths, and
@@ -117,14 +117,25 @@ Supervisor proceeds without asking for that same approval again.
   delivery may reach merge only with the configured review policy outcome and
   checks approved.
 - Approved on 2026-09-09: one `_authorization.md` per Spec carrying typed
-  `status`, `granted`, `action`, `consuming` and `paths` frontmatter with a
-  preserved decision trail, over the twenty-one bounded governed paths listed
-  in Project Constraints. Spec 0130 already delivered a grant in this shape, so
-  the decision makes existing practice canonical rather than inventing a form.
+  `status`, `granted`, `action`, `consuming`, `paths` and `operations`
+  frontmatter with a preserved decision trail. Spec 0130 already delivered a
+  grant in this shape, so the placement decision makes existing practice
+  canonical rather than inventing a form; `operations` is the one addition,
+  because Core Feature 5 needs approval to implement, commit, push, open a pull
+  request, merge and release to stay distinguishable, and a free-text `action`
+  cannot carry that. An absent operations list grants no operation.
+- Amended on 2026-09-09: the approved scope began as twenty-one bounded governed
+  paths and the same-day amendment raised it to twenty-three, adding
+  `internal/suiteguardcontract/regeneration.go` and its test so the second grant
+  parser cannot disagree with the typed reader about the same record. Project
+  Constraints lists the effective twenty-three.
 - Approved on 2026-09-09: authored Verification executes on committed
   provenance. Commands run when the Spec artifacts carrying them are tracked in
-  this repository and byte-identical to their committed bytes at the resolved
-  revision. A Spec Root outside the Git tree, an untracked or modified artifact,
+  this repository and their authored projection matches that of their committed
+  bytes at the resolved revision. The projection is the authored contract and
+  excludes the fields the Daemon owns, because the Daemon sets a Task to
+  `in_progress` before Verification runs, so a whole-file comparison would
+  refuse every normal Task. A Spec Root outside the Git tree, an untracked or modified artifact,
   or command text differing from the committed bytes requires an execution
   approval in that Spec's `_authorization.md` naming the approved revision.
   Read-only `spec check` stays available for every source.
