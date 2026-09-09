@@ -1077,7 +1077,13 @@ func (engine *Engine) verifyTaskPreWork(ctx context.Context, plan TaskPlan, task
 	}
 	defer release()
 
-	verdicts, probeErr := ProbeCommands(ctx, engine.deps.Verifier, plan.WorkDir, task.Verification, func(index int) string {
+	verdicts, probeErr := ProbeAuthoredCommands(ctx, engine.deps.Verifier, speccheck.AuthoredCommandSourceRequest{
+		RepoRoot:  plan.WorkDir,
+		SpecsRoot: plan.SpecsRoot,
+		SpecSlug:  plan.Spec.Slug,
+		Artifact:  task.File,
+		Commands:  task.Verification,
+	}, plan.WorkDir, func(index int) string {
 		return verificationProbeOutputPath(plan.ArtifactDir, plan.RunID, ordinal, index+1)
 	})
 	if probeErr != nil {
@@ -1327,6 +1333,13 @@ func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.T
 		Capacity:                plan.VerificationConcurrency,
 		TemporaryRetryAvailable: !*retryUsed,
 		Commands:                task.Verification,
+		AuthoredSource: &speccheck.AuthoredCommandSourceRequest{
+			RepoRoot:  plan.WorkDir,
+			SpecsRoot: plan.SpecsRoot,
+			SpecSlug:  plan.Spec.Slug,
+			Artifact:  task.File,
+			Commands:  task.Verification,
+		},
 		ClassifyFailure: func(ctx context.Context, command string, diagnosticPath string) (verificationFailureMetadata, error) {
 			return engine.classifyRepeatedFailure(ctx, plan.RunID, task.ID, command, diagnosticPath)
 		},
@@ -1438,7 +1451,6 @@ func (engine *Engine) runTaskVerificationRequest(ctx context.Context, plan TaskP
 	if err != nil {
 		return verificationAttemptOutcome{}, err
 	}
-
 	verification, err := engine.runVerificationAttempt(ctx, request)
 	release()
 	if err != nil {

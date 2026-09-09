@@ -162,7 +162,10 @@ func newTaskCycleFixture(t *testing.T, seeds []taskSpecSeed) *taskCycleFixture {
 	homeDir := t.TempDir()
 	gitRoot := t.TempDir()
 	artifactDir := filepath.Join(t.TempDir(), "artifacts")
+	gittest.InitRepo(t, gitRoot, "--initial-branch=main")
 	writeSpecDirForTest(t, gitRoot, taskCycleSlug, seeds)
+	gittest.Run(t, gitRoot, "add", "-A")
+	gittest.Run(t, gitRoot, "commit", "-m", "seed committed Task source")
 
 	runStore, err := store.Open(ctx, homeDir)
 	if err != nil {
@@ -228,6 +231,7 @@ func (fixture *taskCycleFixture) qaPlan() TaskPlan {
 	fixture.t.Helper()
 	seeds, gateID := taskSeedsWithQAGate(fixture.seeds)
 	writeSpecDirAtRootForTestWithQA(fixture.t, fixture.specsRoot, taskCycleSlug, seeds, qaDeclarationForTest{taskID: gateID})
+	commitTaskFixtureSource(fixture.t, fixture.gitRoot, "seed QA Task source")
 	fixture.seeds = seeds
 	fixture.reloadGraph()
 	return fixture.plan()
@@ -239,6 +243,7 @@ func (fixture *taskCycleFixture) declinedQAPlan() TaskPlan {
 		declined: true,
 		reason:   "this fixture has no behavioral surface",
 	})
+	commitTaskFixtureSource(fixture.t, fixture.gitRoot, "seed declined QA declaration")
 	fixture.reloadGraph()
 	return fixture.plan()
 }
@@ -254,8 +259,13 @@ func (fixture *taskCycleFixture) reloadGraph() {
 
 func (fixture *taskCycleFixture) useExternalSpecRoot(t *testing.T, seeds []taskSpecSeed) string {
 	t.Helper()
-	specsRoot := filepath.Join(t.TempDir(), "external-specs")
+	externalRepo := t.TempDir()
+	gittest.InitRepo(t, externalRepo, "--initial-branch=main")
+	specsRoot := filepath.Join(externalRepo, "external-specs")
 	writeSpecDirAtRootForTest(t, specsRoot, taskCycleSlug, seeds)
+	gittest.Run(t, externalRepo, "add", "-A")
+	gittest.Run(t, externalRepo, "commit", "-m", "seed external Task source")
+	writeTaskFixtureExecutionApprovals(t, fixture, externalRepo, specsRoot, seeds)
 	graph, err := spec.Load(specsRoot, taskCycleSlug)
 	if err != nil {
 		t.Fatalf("load external spec: %v", err)
@@ -264,6 +274,41 @@ func (fixture *taskCycleFixture) useExternalSpecRoot(t *testing.T, seeds []taskS
 	fixture.graph = graph
 	fixture.seeds = append([]taskSpecSeed(nil), seeds...)
 	return specsRoot
+}
+
+func commitTaskFixtureSource(t *testing.T, repoRoot string, message string) {
+	t.Helper()
+	gittest.Run(t, repoRoot, "add", "-A")
+	if strings.TrimSpace(gittest.Run(t, repoRoot, "status", "--porcelain=v1")) == "" {
+		return
+	}
+	gittest.Run(t, repoRoot, "commit", "-m", message)
+}
+
+func writeTaskFixtureExecutionApprovals(t *testing.T, fixture *taskCycleFixture, externalRepo, specsRoot string, seeds []taskSpecSeed) {
+	t.Helper()
+	localPath := filepath.ToSlash(filepath.Join("docs", "specs", fixture.graph.Tasks[0].File))
+	var record strings.Builder
+	fmt.Fprintf(&record, "---\nstatus: approved\ngranted: 2026-09-09\naction: approve external fixture commands\nconsuming: %s\npaths:\n  - %s\noperations:\n  - implement\nexecution_approvals:\n", taskCycleSlug, localPath)
+	for _, seed := range seeds {
+		commands := seed.verification
+		if len(commands) == 0 {
+			if seed.taskType == string(spec.TaskTypeQA) {
+				commands = spec.DerivedQAVerification(taskCycleSlug)
+			} else {
+				commands = []string{"true"}
+			}
+		}
+		artifact := filepath.ToSlash(filepath.Join("external-specs", taskCycleSlug, seed.id+".md"))
+		revision := strings.TrimSpace(gittest.Run(t, externalRepo, "log", "-1", "--format=%H", "HEAD", "--", artifact))
+		for _, command := range commands {
+			fmt.Fprintf(&record, "  - repository: %q\n    revision: %s\n    artifact: %s\n    command_digest: %s\n", externalRepo, revision, artifact, speccheck.AuthoredCommandDigest(command))
+		}
+	}
+	record.WriteString("---\n\n# Approved external Task source\n")
+	authorizationPath := filepath.Join(fixture.gitRoot, "docs", "specs", taskCycleSlug, "_authorization.md")
+	mustWriteForTest(t, authorizationPath, record.String())
+	commitTaskFixtureSource(t, fixture.gitRoot, "approve external Task source")
 }
 
 func (fixture *taskCycleFixture) engine(t *testing.T, runner agent.Runner, verifier Verifier, committer Committer, worktree WorktreeSnapshotter) *Engine {
@@ -783,11 +828,6 @@ func TestRefusedReportDoesNotBlockItsSuccessor(t *testing.T) {
 			fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 			engine := fixture.engine(t, &taskFakeRunner{}, &taskFakeVerifier{}, &engineFakeCommitter{}, fixture.worktree)
 			plan := fixture.qaPlan()
-			gittest.InitRepo(t, fixture.gitRoot, "-b", "main")
-			gittest.AppendConfig(t, fixture.gitRoot, "[user]\n\tname = Roundfix Test\n\temail = test@example.com\n[commit]\n\tgpgsign = false\n")
-			runGitForTest(t, fixture.gitRoot, "add", "-A")
-			runGitForTest(t, fixture.gitRoot, "commit", "-q", "-m", "initial")
-
 			reportPath, err := engine.writeMechanicalQAReport(context.Background(), plan, test.result)
 			if err != nil {
 				t.Fatalf("writeMechanicalQAReport() error = %v", err)
@@ -1132,11 +1172,6 @@ func TestWriteMechanicalQAReportWritesThePreconditionRefusal(t *testing.T) {
 		fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 		engine := fixture.engine(t, &taskFakeRunner{}, &taskFakeVerifier{}, &engineFakeCommitter{}, fixture.worktree)
 		plan := fixture.qaPlan()
-		gittest.InitRepo(t, fixture.gitRoot, "-b", "main")
-		gittest.AppendConfig(t, fixture.gitRoot, "[user]\n\tname = Roundfix Test\n\temail = test@example.com\n[commit]\n\tgpgsign = false\n")
-		runGitForTest(t, fixture.gitRoot, "add", "-A")
-		runGitForTest(t, fixture.gitRoot, "commit", "-q", "-m", "initial")
-
 		reportPath, err := engine.writeMechanicalQAReport(context.Background(), plan, result)
 		if err != nil {
 			t.Fatalf("writeMechanicalQAReport() error = %v", err)
@@ -2747,6 +2782,11 @@ func copyTreeForSchedulerTest(source string, destination string) error {
 		}
 		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 			return err
+		}
+		if _, err := os.Stat(target); err == nil {
+			if err := os.Chmod(target, 0o644); err != nil {
+				return err
+			}
 		}
 		return os.WriteFile(target, content, info.Mode().Perm())
 	})
@@ -6049,10 +6089,6 @@ func TestTaskCycleRealRepoCommitsPerTaskExcludingPreexistingDirt(t *testing.T) {
 		{id: "task_02", title: "Add the backend behavior", needs: []string{"task_01"}, verification: []string{"test -f internal/feature.go"}},
 	})
 	repoDir := fixture.gitRoot
-	gittest.InitRepo(t, repoDir, "-b", "main")
-	gittest.AppendConfig(t, repoDir, "[user]\n\tname = Roundfix Test\n\temail = test@example.com\n[commit]\n\tgpgsign = false\n")
-	runGitForTest(t, repoDir, "add", "-A")
-	runGitForTest(t, repoDir, "commit", "-q", "-m", "initial")
 	// Pre-existing user work that must never enter a Task commit.
 	mustWriteForTest(t, filepath.Join(repoDir, "user-wip.txt"), "wip\n")
 
@@ -7174,8 +7210,6 @@ func TestHookRefusalRecovery(t *testing.T) {
 			t.Parallel()
 			fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Add the measured work"}})
 			initHookRepoForTest(t, fixture.gitRoot)
-			runGitForTest(t, fixture.gitRoot, "add", "-A")
-			runGitForTest(t, fixture.gitRoot, "commit", "-q", "-m", "seed the spec")
 			writeCommitHookForTest(t, fixture.gitRoot, "pre-commit", testCase.hook())
 			// The Task's work, as the Agent turn left it in the surface.
 			workPath := filepath.Join(fixture.gitRoot, testCase.path)

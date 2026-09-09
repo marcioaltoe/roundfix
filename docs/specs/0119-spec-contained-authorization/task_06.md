@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0119-spec-contained-authorization
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -140,3 +140,88 @@ after one, while read-only checking keeps working throughout.
 - `_prd.md` → User Stories 2; Core Features 6; Goals 3; Decisions: Declared intentional breaks 3.
 - `_techspec.md` → Vocabulary Contract; Implementation Design: Audit and compatibility; API Contracts; Build Order 4.
 - ADR-0014, ADR-0096.
+
+## Result
+
+Implemented one shared authored-command source decision before the probe,
+post-Agent Verification, and Settle shell boundaries. A Task executes from
+committed provenance when its Spec Root is inside the delivery repository, its
+artifact is tracked at the resolved revision, its requested commands match the
+carrying file, and its authored projection matches the committed projection.
+The projection excludes only `status` frontmatter, an appended `## Result`, and
+the line-break separator before that Result.
+
+An untrusted source can execute only through `execution_approvals` in the
+committed consuming `_authorization.md`. Each approval binds a Git repository
+identity, the carrying artifact's last committed revision, its
+repository-relative path, and `sha256:` of the exact command text. The reader
+loads the record from delivery-target ancestry, so an uncommitted approval or
+an approval carried by an external source cannot authorize itself. The check
+performs Git and filesystem reads only; it changes no sandbox, environment,
+network, credential, or command-runner privilege.
+
+Acceptance evidence:
+
+1. `TestVerificationExecutesOnCommittedProvenance/tracked_unmodified_artifact_is_authorized`
+   accepts a committed Task. `TestVerificationRefusesUntrustedSource/altered_command_text`
+   and `/requested_command_differs_from_carrying_artifact` return
+   `SC-SOURCE-UNTRUSTED` with `modified-artifact` before execution.
+2. `TestAuthoredProjectionIgnoresDaemonOwnedFields` changes `status` to
+   `in_progress`, then appends `## Result`; both projections remain authorized.
+3. Before implementation, the existing probe, Task-cycle, `--run-verification`,
+   and Settle characterization selections passed unchanged. After the change,
+   `TestExecutionEntryPointCharacterization` preserves the committed-source
+   outcome for the probe, post-Agent Verification, and Settle identities.
+4. `TestVerificationRefusesUntrustedSource/Spec_Root_outside_repository_Git_tree`
+   returns the shared code with `out-of-tree-spec-root`.
+5. `TestVerificationExecutesOnCommittedProvenance` accepts both a modified
+   in-tree artifact and an out-of-tree artifact when the committed delivery
+   record carries their exact approval. Existing external Implement fixtures
+   now carry the same committed approval and pass through the public flow.
+6. `TestVerificationRefusesUntrustedSource/modified_source_cannot_append_its_own_approval`
+   and `/out-of-tree_source_cannot_carry_its_own_approval` prove that source-local
+   self-approval grants nothing even when it names an existing revision.
+7. `TestVerificationExecutesOnCommittedProvenance/approval_expires_with_every_bound_identity_field`
+   varies repository, revision, artifact, and command digest independently.
+   Every case refuses and re-reads the historical authorization record
+   byte-identically.
+8. `TestSpecCheckRunVerification/keeps_read-only_checking_available_for_an_edited_source`
+   returns the normal report without `--run-verification`, creates no marker,
+   then returns the shared refusal when execution is requested.
+9. `TestProbeRefusesUntrustedCommandSource`,
+   `TestPostAgentVerificationRefusesUntrustedCommandSource`, and
+   `TestSettleRefusesUntrustedCommandSource` exercise their own entry points.
+   Each reports `SC-SOURCE-UNTRUSTED` plus `modified-artifact`, and each asserts
+   that the verifier or shell was not reached.
+10. `TestVerificationRefusesUntrustedSource/unreadable_Git_object`,
+    `/unavailable_revision`, and `/unavailable_approved_source_revision` report
+    `unresolved-source` and execute nothing.
+11. Fresh source inspection finds `SC-SOURCE-UNTRUSTED` in
+    `internal/speccheck/verification.go` and both declared Grant Refusal Codes
+    in `CONTEXT.md`'s `Grant Refusal Code` entry. The whole-Spec-Root command is
+    reserved for Daemon Verification and was not run in this Agent turn.
+
+Focused checks:
+
+- Pre-change, `rtk env GOCACHE=/tmp/roundfix-task06-go-build go test ./internal/daemon -run '^(TestProbeCommands|TestTaskCycleExecutesAgentVerifySettleCommitContract)$' -count=1`
+  passed, recording that the probe and post-Agent path executed their current
+  committed source. The matching CLI selection for
+  `TestSpecCheckRunVerification` and
+  `TestSettleVerificationRunsSurfaceCommandsVerbatim` also passed. Initial
+  attempts using the default Go cache were sandbox-blocked before compilation
+  and are not behavior evidence.
+- After the final source edit, the cross-entry-point selection
+  `rtk env GOCACHE=/tmp/roundfix-task06-go-build go test ./internal/speccheck ./internal/daemon ./internal/cli -run '^(TestVerificationRefusesUntrustedSource|TestVerificationExecutesOnCommittedProvenance|TestAuthoredProjectionIgnoresDaemonOwnedFields|TestExecutionEntryPointCharacterization|TestProbeRefusesUntrustedCommandSource|TestPostAgentVerificationRefusesUntrustedCommandSource|TestSettleRefusesUntrustedCommandSource|TestSettleVerificationRunsSurfaceCommandsVerbatim|TestSpecCheckRunVerification|TestRunImplementUsesConfiguredExternalSpecRootEndToEnd)$' -count=1`
+  passed in all three packages.
+- A broader affected-package run reported `internal/speccheck` and
+  `internal/daemon` passing. Its CLI process hit one intermittent concurrent
+  Git-worktree fixture error while reading another Task Worktree's `commondir`;
+  the isolated failing test passed unchanged, and a fresh full
+  `rtk env GOCACHE=/tmp/roundfix-task06-go-build go test ./internal/cli -count=1`
+  rerun passed in 80.258 seconds. No Task-06 code change was made for that
+  non-reproducible lifecycle observation.
+- `rtk env GOCACHE=/tmp/roundfix-task06-go-build go vet ./internal/speccheck ./internal/daemon ./internal/cli`
+  passed.
+
+The Task's declared `## Verification` commands were not run; Daemon
+Verification remains pending.

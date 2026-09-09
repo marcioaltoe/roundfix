@@ -150,6 +150,7 @@ type: backend
 		t.Fatalf("reload graph: %v", err)
 	}
 	fixture.graph = graph
+	commitTaskFixtureSource(t, fixture.gitRoot, "commit context fixture Task source")
 	prior := &fakePriorChangedResolver{byWork: map[string][]string{
 		fixture.gitRoot: []string{"internal/prior.go", "internal/source.go"},
 	}}
@@ -247,7 +248,6 @@ rows_blocked_declared: 0
 | - | --- | --- |
 | R01 | fail | Previous QA result. |
 `)
-	gittest.InitRepo(t, fixture.gitRoot, "-b", "main")
 	gittest.Run(t, fixture.gitRoot, "add", ".")
 	gittest.Run(t, fixture.gitRoot, "commit", "-m", "initial fixture")
 

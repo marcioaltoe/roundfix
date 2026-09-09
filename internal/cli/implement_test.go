@@ -533,9 +533,66 @@ func configureImplementClaudeReasoning(t *testing.T, repoDir string) {
 
 func configureExternalSpecsRoot(t *testing.T, repoDir string, specsRoot string) {
 	t.Helper()
+	writeExternalExecutionApprovalsForTest(t, repoDir, specsRoot)
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), fmt.Sprintf("specs:\n  root: %q\n", specsRoot))
 	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+	gitImplement(t, repoDir, "add", "docs/specs")
 	gitImplement(t, repoDir, "commit", "-m", "configure external Spec Root")
+}
+
+func writeExternalExecutionApprovalsForTest(t *testing.T, repoDir string, specsRoot string) {
+	t.Helper()
+	sourceRepo := externalSpecRepositoryForTest(t, specsRoot)
+	entries, err := os.ReadDir(specsRoot)
+	if err != nil {
+		t.Fatalf("read external Spec Root: %v", err)
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		graph, err := spec.Load(specsRoot, entry.Name())
+		if err != nil {
+			continue
+		}
+		var record strings.Builder
+		fmt.Fprintf(&record, "---\nstatus: approved\ngranted: 2026-09-09\naction: approve external test Spec commands\nconsuming: %s\npaths:\n  - docs/agents/domain.md\noperations:\n  - implement\nexecution_approvals:\n", graph.Spec.Slug)
+		for _, task := range graph.Tasks {
+			artifactPath := filepath.Join(specsRoot, task.File)
+			artifact, relErr := filepath.Rel(sourceRepo, artifactPath)
+			if relErr != nil {
+				t.Fatalf("make external Task repository-relative: %v", relErr)
+			}
+			artifact = filepath.ToSlash(artifact)
+			revision := strings.TrimSpace(gitImplementOutput(t, sourceRepo, "log", "-1", "--format=%H", "HEAD", "--", artifact))
+			for _, command := range task.Verification {
+				fmt.Fprintf(&record, "  - repository: %q\n    revision: %s\n    artifact: %s\n    command_digest: %s\n", sourceRepo, revision, artifact, speccheck.AuthoredCommandDigest(command))
+			}
+		}
+		record.WriteString("---\n\n# Approved external test Spec source\n")
+		authorizationPath := filepath.Join(repoDir, "docs", "specs", graph.Spec.Slug, "_authorization.md")
+		mustMkdir(t, filepath.Dir(authorizationPath))
+		mustWrite(t, authorizationPath, record.String())
+	}
+}
+
+func externalSpecRepositoryForTest(t *testing.T, specsRoot string) string {
+	t.Helper()
+	for candidate := filepath.Clean(specsRoot); ; candidate = filepath.Dir(candidate) {
+		if _, err := os.Stat(filepath.Join(candidate, ".git")); err == nil {
+			return candidate
+		} else if !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("inspect external repository at %s: %v", candidate, err)
+		}
+		parent := filepath.Dir(candidate)
+		if parent == candidate {
+			break
+		}
+	}
+	gittest.InitRepo(t, specsRoot, "--initial-branch=main")
+	gitImplement(t, specsRoot, "add", "-A")
+	gitImplement(t, specsRoot, "commit", "-m", "seed external Spec source")
+	return specsRoot
 }
 
 func newExternalSpecsRoot(t *testing.T, slug string, seeds []implementSeed) (string, string) {

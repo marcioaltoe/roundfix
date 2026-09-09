@@ -483,7 +483,11 @@ func (committer *hookRefusingCommitter) attempts() int {
 // whether the test's hook runs.
 func initHookRepoForTest(t *testing.T, repoDir string) {
 	t.Helper()
-	gittest.InitRepo(t, repoDir, "-b", "main")
+	if _, err := os.Stat(filepath.Join(repoDir, ".git")); errors.Is(err, os.ErrNotExist) {
+		gittest.InitRepo(t, repoDir, "-b", "main")
+	} else if err != nil {
+		t.Fatalf("inspect fixture repository: %v", err)
+	}
 	hooksDir := filepath.Join(repoDir, ".git", "hooks")
 	if err := os.MkdirAll(hooksDir, 0o755); err != nil {
 		t.Fatalf("create hooks directory: %v", err)

@@ -4,10 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
+
+	"roundfix/internal/gittest"
+	"roundfix/internal/speccheck"
 )
 
 // Suite: shared Verification prober
@@ -114,6 +118,64 @@ func TestProbeCommands(t *testing.T) {
 			t.Fatalf("empty command list called verifier %d times and outputFor %d times", len(verifier.requests), outputCalls)
 		}
 	})
+}
+
+func TestProbeRefusesUntrustedCommandSource(t *testing.T) {
+	t.Parallel()
+	fixture := newDaemonVerificationSourceFixture(t, "test -f expected.txt")
+	writeDaemonVerificationTask(t, fixture.taskPath, "touch should-not-run")
+	verifier := &probeScriptVerifier{}
+
+	_, err := ProbeAuthoredCommands(
+		context.Background(),
+		verifier,
+		speccheck.AuthoredCommandSourceRequest{
+			RepoRoot:  fixture.repoRoot,
+			SpecsRoot: fixture.specsRoot,
+			SpecSlug:  "probe-source",
+			Artifact:  filepath.Join("probe-source", "task_01.md"),
+			Commands:  []string{"touch should-not-run"},
+		},
+		fixture.repoRoot,
+		func(int) string { return filepath.Join(t.TempDir(), "probe.log") },
+	)
+
+	if err == nil || !strings.Contains(err.Error(), speccheck.CodeSourceUntrusted) || !strings.Contains(err.Error(), string(speccheck.SourceConditionModifiedArtifact)) {
+		t.Fatalf("ProbeAuthoredCommands() error = %v, want shared modified-source refusal", err)
+	}
+	if len(verifier.requests) != 0 {
+		t.Fatalf("untrusted probe reached verifier %d times", len(verifier.requests))
+	}
+}
+
+type daemonVerificationSourceFixture struct {
+	repoRoot  string
+	specsRoot string
+	taskPath  string
+}
+
+func newDaemonVerificationSourceFixture(t *testing.T, command string) daemonVerificationSourceFixture {
+	t.Helper()
+	repoRoot := t.TempDir()
+	specsRoot := filepath.Join(repoRoot, "docs", "specs")
+	taskPath := filepath.Join(specsRoot, "probe-source", "task_01.md")
+	writeDaemonVerificationTask(t, taskPath, command)
+	gittest.InitRepo(t, repoRoot, "--initial-branch=main")
+	gittest.Run(t, repoRoot, "add", "-A")
+	gittest.Run(t, repoRoot, "commit", "-m", "seed authored command source")
+	return daemonVerificationSourceFixture{repoRoot: repoRoot, specsRoot: specsRoot, taskPath: taskPath}
+}
+
+func writeDaemonVerificationTask(t *testing.T, path string, command string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("create daemon Verification fixture: %v", err)
+	}
+	content := "---\ntask: task_01\nspec: probe-source\nstatus: pending\ntype: backend\n---\n\n" +
+		"# Task 01: Probe source\n\n## Requirements\n\n1. MUST remain committed.\n\n## Verification\n\n- `" + command + "`\n"
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write daemon Verification fixture: %v", err)
+	}
 }
 
 type probeExitError int

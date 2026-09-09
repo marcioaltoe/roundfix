@@ -18,6 +18,8 @@ import (
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
+	"roundfix/internal/spec"
+	"roundfix/internal/speccheck"
 	"roundfix/internal/store"
 )
 
@@ -31,6 +33,52 @@ type engineFixture struct {
 	sink        *captureEventSink
 	progress    *bytes.Buffer
 	worktree    *engineFakeWorktree
+}
+
+func TestPostAgentVerificationRefusesUntrustedCommandSource(t *testing.T) {
+	t.Parallel()
+	fixture := newDaemonVerificationSourceFixture(t, "test -f expected.txt")
+	writeDaemonVerificationTask(t, fixture.taskPath, "touch should-not-run")
+	verifier := &probeScriptVerifier{}
+	engine := &Engine{deps: Dependencies{Verifier: verifier}}
+	plan := TaskPlan{
+		RunID:            "post-agent-source",
+		WorkDir:          fixture.repoRoot,
+		SpecsRoot:        fixture.specsRoot,
+		Spec:             spec.Spec{Slug: "probe-source"},
+		verificationGate: newVerificationGate(1),
+	}
+	task := spec.Task{
+		ID:           "task_01",
+		File:         filepath.Join("probe-source", "task_01.md"),
+		Verification: []string{"touch should-not-run"},
+	}
+	request := verificationAttemptRequest{
+		RunID:       plan.RunID,
+		WorkDir:     fixture.repoRoot,
+		BatchNumber: 1,
+		WorkItem:    task.ID,
+		Attempt:     1,
+		Mode:        verificationShared,
+		Commands:    task.Verification,
+		AuthoredSource: &speccheck.AuthoredCommandSourceRequest{
+			RepoRoot:  fixture.repoRoot,
+			SpecsRoot: fixture.specsRoot,
+			SpecSlug:  "probe-source",
+			Artifact:  task.File,
+			Commands:  task.Verification,
+		},
+		Publish: func(context.Context, string, map[string]any) error { return nil },
+	}
+
+	_, err := engine.runTaskVerificationRequest(context.Background(), plan, task, request)
+
+	if err == nil || !strings.Contains(err.Error(), speccheck.CodeSourceUntrusted) || !strings.Contains(err.Error(), string(speccheck.SourceConditionModifiedArtifact)) {
+		t.Fatalf("runTaskVerificationRequest() error = %v, want shared modified-source refusal", err)
+	}
+	if len(verifier.requests) != 0 {
+		t.Fatalf("untrusted post-Agent Verification reached verifier %d times", len(verifier.requests))
+	}
 }
 
 // engineFakeWorktree returns scripted snapshots in call order, then keeps

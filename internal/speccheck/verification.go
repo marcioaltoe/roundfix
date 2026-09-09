@@ -17,6 +17,9 @@ const (
 	// CodeVerifyVacuousCommand identifies one Verification command that already
 	// passes against the unchanged tree, whatever its siblings prove.
 	CodeVerifyVacuousCommand = "SC-VERIFY-VACUOUS-COMMAND"
+	// CodeSourceUntrusted identifies an authored command whose carrying source
+	// has neither committed provenance nor an exact committed execution approval.
+	CodeSourceUntrusted = "SC-SOURCE-UNTRUSTED"
 )
 
 var (
