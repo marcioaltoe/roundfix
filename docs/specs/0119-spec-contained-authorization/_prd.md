@@ -153,10 +153,17 @@ observable change that is not named here is a regression, not a decision.
    typed grant. A Spec citing such a record while it stays `proposed` or
    `granted: null` starts failing `roundfix spec check` where the date-keyed
    predicate let it pass silently.
-2. The Governed Path set gains the owned shipped authoring templates. Changing
-   `skills/write-prd/references/prd-template.md` or
-   `skills/write-techspec/references/techspec-template.md` without a grant
-   starts failing the changed-path audit where it previously passed.
+2. The Governed Path set gains every path an operative record has bounded but
+   the narrow predicate missed. That is the owned shipped authoring templates —
+   `skills/write-prd/references/prd-template.md` and
+   `skills/write-techspec/references/techspec-template.md` — and also the paths
+   bounded by records the widened discovery now reaches, including the archived
+   Spec 0130 grant's `internal/speccheck/mechanical_test.go` and this Spec's own
+   `internal/suiteguardcontract/regeneration.go` and its test. Changing any of
+   them without a grant starts failing the changed-path audit where it
+   previously passed. The set grows to whatever the discovered records bound,
+   which is what ADR-0130 means by keeping history honest; enumerating only a
+   sample here would make a correct implementation look like a regression.
 3. `--run-verification`, Implement dispatch and Settle refuse authored commands
    from an untracked or modified Spec artifact, or from a Spec Root outside the
    repository's Git tree, **when no valid execution approval covers that

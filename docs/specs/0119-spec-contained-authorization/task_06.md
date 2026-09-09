@@ -42,10 +42,13 @@ after one, while read-only checking keeps working throughout.
    its authored projection differs from the committed projection, and MUST name
    which of those conditions fired.
 6. MUST accept an execution approval only when the approval record itself
-   reaches the trusted bar it is granting: it comes from a committed ancestor
-   of the delivery target, not from the same untracked or modified source it
-   authorizes. An approval a source can append to itself, pointing at a
-   revision that source just created, is self-approval and grants nothing.
+   reaches the trusted bar it is granting: it lives in this repository, in the
+   consuming Spec's authorization record, and is already committed in the
+   delivery target's ancestry. It is never read from the untrusted source it
+   authorizes, which is what makes an out-of-tree or modified source
+   approvable at all: the approval names that source, the source does not
+   supply it. An approval a source appends to itself, pointing at a revision
+   that source just created, is self-approval and grants nothing.
 7. MUST bind an accepted approval to the repository, the approved revision, the
    carrying artifact, and a digest of the exact approved command text, and MUST
    fall back to refusal once any of those changes, without withdrawing the
@@ -90,9 +93,13 @@ after one, while read-only checking keeps working throughout.
       outcomes changes for a source the Spec did not intend to affect.
 - [ ] A Spec Root resolving outside the repository's Git tree refuses, naming
       the out-of-tree condition.
-- [ ] A Spec carrying an execution approval already committed in the delivery
-      target executes; an approval appended to the same untracked or modified
-      source it authorizes refuses as self-approval.
+- [ ] An out-of-tree Spec Root and a modified in-tree artifact each execute
+      when this repository's committed authorization record approves that exact
+      source, proving the exception path works rather than only that the happy
+      path does.
+- [ ] An approval appended to the same untracked or modified source it
+      authorizes refuses as self-approval, even when it names a revision that
+      exists.
 - [ ] The approval stops authorizing once the repository, revision, artifact or
       approved command digest changes, and the historical approval record is
       unchanged.

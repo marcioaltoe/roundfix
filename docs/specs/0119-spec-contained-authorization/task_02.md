@@ -21,12 +21,15 @@ same input path.
 1. MUST parse an authorization record by its declared role into approval state,
    grant date, action, consuming Spec, exact bounded paths, permitted
    operations, and any sanctioned regeneration the record declares.
-2. MUST read permitted operations as a closed machine-readable vocabulary
-   covering at least implement, commit, push, pull_request, merge and release,
-   so approval to implement is distinguishable from approval to release. An
-   operation absent from a record's list is refused, and an unknown operation
-   token is a refusal rather than a silently ignored entry. A record carrying no
-   operations list grants no operation.
+2. MUST read permitted operations as a closed machine-readable vocabulary whose
+   members are exactly `implement`, `commit`, `push`, `pull_request`, `merge`
+   and `release`, so approval to implement is distinguishable from approval to
+   release. Every other token, including `tag` and `deploy`, is rejected rather
+   than accepted as an unrecognized member: the grant refuses those operations
+   by their absence from the list, so a vocabulary that silently admits new
+   members turns a refusal into an approval. An operation absent from a
+   record's list is refused, and a record carrying no operations list grants no
+   operation.
 3. MUST treat a proposal as inspectable and non-granting. An unknown state, an
    absent or unparseable grant date, an empty path list, a consuming field that
    does not name the asking Spec, and a contradictory record are refusals with
@@ -59,8 +62,10 @@ same input path.
       grant date resolves to a refusal naming which field withheld it.
 - [ ] A record permitting implement, commit, push, pull_request and merge
       answers permitted for each of those and refused for release; a record with
-      no operations list refuses every operation; an unknown operation token
-      refuses rather than being ignored.
+      no operations list refuses every operation.
+- [ ] The vocabulary admits exactly the six named members: a record listing
+      `tag` or `deploy` is rejected, and the rejection names the offending
+      token rather than dropping it.
 - [ ] A record naming a different consuming Spec refuses even when the asking
       Spec's slug appears in its prose.
 - [ ] Each of an absolute path, an upward-traversing path, a glob, a symlinked

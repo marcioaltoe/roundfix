@@ -233,7 +233,7 @@ The main risk is circular source identity or retroactive permission. Keep execut
 ## Decisions
 
 - The maintainer selected complete source triage and the implementation portfolio; source ownership is now recorded. That intent is distinct from a concrete governed-file grant.
-- Approved on 2026-09-09: the twenty-one bounded governed paths in Project Constraints, and the Spec-contained `_authorization.md` record as canonical placement.
+- Approved on 2026-09-09: the Spec-contained `_authorization.md` record as canonical placement, over the bounded governed paths in Project Constraints. The initial approval covered twenty-one paths; the same-day amendment raised the effective set to the twenty-three listed there, adding `internal/suiteguardcontract/regeneration.go` and its test. Project Constraints is the operative list.
 - Approved on 2026-09-09: committed provenance as the execution trust contract, with per-source approval bound to the approved revision rather than a reviewed queue.
 - The two new refusal codes are coined by this Spec and carry declared emitting owners in the Vocabulary Contract above.
 - Delivery through squash merge requires the configured pre-PR review policy outcome and passing required checks for the current candidate. Explicit none records intentional review omission; enabled-provider failure cannot select none. Releases, tags and paid consumption are not implied.
