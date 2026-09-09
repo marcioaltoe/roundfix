@@ -66,8 +66,10 @@ after one, while read-only checking keeps working throughout.
 10. MUST report an unreadable Git object or an unavailable revision as an
    unresolved source and refuse to execute, never as trusted and never as a
    manufactured verdict.
-11. MUST document both `SC-TOOLING-UNAPPROVED` and `SC-SOURCE-UNTRUSTED` as
-    glossary entries, so the coined tokens have a durable owner.
+11. MUST emit the `SC-SOURCE-UNTRUSTED` token exactly as the glossary's Grant
+    Refusal Code entry defines it, so the Vocabulary Contract runs clean once
+    the token exists. The glossary entry is already in place; this Task must
+    match it rather than restate it.
 12. MUST NOT grant network access, credential access, a different sandbox, or any
     execution privilege beyond running the already-approved commands.
 
@@ -109,8 +111,9 @@ after one, while read-only checking keeps working throughout.
       verification call, and from Settle, each exercised through its own path.
 - [ ] An unreadable Git object reports an unresolved source and executes
       nothing.
-- [ ] Both coined codes appear in the glossary with the meaning the readers
-      emit, so the Vocabulary Contract check runs instead of skipping.
+- [ ] The emitted `SC-SOURCE-UNTRUSTED` token matches the glossary's Grant
+      Refusal Code entry, and the whole-Spec-Root check reports no vocabulary
+      finding.
 
 ## Context
 
@@ -129,7 +132,7 @@ after one, while read-only checking keeps working throughout.
 - `grep -q 'func TestProbeRefusesUntrustedCommandSource' internal/daemon/verification_probe_test.go && go test -count=1 ./internal/daemon -run '^TestProbeRefusesUntrustedCommandSource$'` — the pre-dispatch probe refuses through its own path.
 - `grep -q 'func TestSettleRefusesUntrustedCommandSource' internal/cli/settle_test.go && go test -count=1 ./internal/cli -run '^TestSettleRefusesUntrustedCommandSource$'` — Settle refuses through its own direct verifier call, not through the prober.
 - `grep -q 'func TestPostAgentVerificationRefusesUntrustedCommandSource' internal/daemon/engine_test.go && go test -count=1 ./internal/daemon -run '^TestPostAgentVerificationRefusesUntrustedCommandSource$'` — the post-Agent verification call refuses through its own path.
-- `grep -q 'SC-SOURCE-UNTRUSTED' CONTEXT.md && grep -q 'SC-TOOLING-UNAPPROVED' CONTEXT.md` — both coined codes carry a glossary owner.
+- `grep -q 'SC-SOURCE-UNTRUSTED' internal/speccheck/verification.go || exit 1; go run -buildvcs=false ./cmd/roundfix spec check` — the token exists and every active Spec still checks clean, so the Vocabulary Contract runs rather than skips and the emitted token matches its glossary entry.
 - `grep -q 'SC-SOURCE-UNTRUSTED' internal/speccheck/verification.go && go build -buildvcs=false ./...` — the shared code exists and the tree compiles with it wired in.
 
 ## References

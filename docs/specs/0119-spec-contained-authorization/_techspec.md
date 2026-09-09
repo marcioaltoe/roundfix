@@ -35,6 +35,15 @@ declaration is what makes `SC-VOCABULARY-UNDOCUMENTED` run instead of skip once
 the codes exist, so a token cannot reach the built CLI undefined the way
 `runtime_deferred` did in Spec 0089.
 
+Both codes are documented in the glossary's `Grant Refusal Code` entry before
+the Tasks that emit them run. That ordering is deliberate: the Tasks that coin
+these tokens are authorized tooling Tasks bounded to their governed files, and
+`CONTEXT.md` is not among them, so a coining Task cannot carry its own glossary
+entry without breaking its boundary. Documenting the Spec's vocabulary up front
+keeps the whole-Spec-Root check green between the Task that emits a token and
+any later Task, instead of leaving a window where the repository's own pull
+request gate fails.
+
 To make that binding rather than vacuous, the two codes have declared owners.
 `SC-TOOLING-UNAPPROVED` is emitted by the constraint reader in
 `internal/speccheck/constraints.go`. `SC-SOURCE-UNTRUSTED` is emitted by the

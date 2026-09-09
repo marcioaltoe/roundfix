@@ -31,9 +31,12 @@ graph:
     - id: task_09
       file: task_09.md
       needs: [task_02, task_04]
+    - id: task_11
+      file: task_11.md
+      needs: [task_09]
     - id: task_10
       file: task_10.md
-      needs: [task_08, task_09]
+      needs: [task_08, task_11]
 ---
 
 # Tasks — Spec-contained authority and trusted Verification
@@ -49,6 +52,7 @@ graph:
 | task_07 | Make the Spec-contained record canonical in the Baseline | docs | medium | task_03, task_06 |
 | task_08 | Teach the authoring skills the record's placement | docs | medium | task_07 |
 | task_09 | Consolidate the second grant reader in the suite guard | backend | medium | task_02, task_04 |
-| task_10 | Run the final QA gate | qa | high | task_08, task_09 |
+| task_11 | Restore legacy declarations and break the reader's import cycle | backend | medium | task_09 |
+| task_10 | Run the final QA gate | qa | high | task_08, task_11 |
 
-Waves: 1 → task_01 · 2 → task_02, task_04 · 3 → task_03, task_09 · 4 → task_05 · 5 → task_06 · 6 → task_07 · 7 → task_08 · 8 → task_10.
+Waves: 1 → task_01 · 2 → task_02, task_04 · 3 → task_03, task_09 · 4 → task_05, task_11 · 5 → task_06 · 6 → task_07 · 7 → task_08 · 8 → task_10.
