@@ -53,15 +53,12 @@ func TestOutputsForCommand(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		content, err := os.ReadFile(filepath.Join(
-			repository,
-			"docs",
-			"workflow",
-			"authorizations",
-			"2026-08-06-proof-cost.md",
-		))
+		const historicalGrant = "81a6afb48f4a3683d0e5fad52f3919cf1bdfbbf4:" +
+			"docs/workflow/authorizations/2026-08-06-proof-cost.md"
+		command := exec.Command("git", "-C", repository, "show", historicalGrant)
+		content, err := command.Output()
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("read historical proof-cost grant %s: %v", historicalGrant, err)
 		}
 		var want []string
 		for _, declaration := range suiteguardcontract.ParseSanctionedRegenerations(content) {
@@ -105,6 +102,172 @@ func TestOutputsForCommand(t *testing.T) {
 	})
 }
 
+func TestCleanupRegenerationOwnershipParity(t *testing.T) {
+	t.Run("repository ownership matches the suite guard reader", func(t *testing.T) {
+		repository := filepath.Clean(filepath.Join("..", ".."))
+		want, err := OutputsFor(repository, sanctionedBaselineDigestCommand)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(want) == 0 {
+			t.Fatal("Baseline ownership resolved no sanctioned outputs")
+		}
+		got, err := suiteguardcontract.OutputsForCommand(repository, sanctionedBaselineDigestCommand)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("suite guard outputs = %v, want Baseline outputs %v", got, want)
+		}
+	})
+
+	t.Run("regular fixture preserves dedicated frozen sidecar and exception semantics", func(t *testing.T) {
+		repository := newCleanupOwnershipRepository(t)
+		tests := []struct {
+			name    string
+			command string
+			want    []string
+		}{
+			{
+				name:    "sanctioned",
+				command: sanctionedBaselineDigestCommand,
+				want:    []string{"internal/baseline/derived/root.txt"},
+			},
+			{
+				name:    "dedicated",
+				command: "make dedicated-fixture",
+				want: []string{
+					"internal/baseline/derived/dedicated/output.txt",
+					"internal/baseline/derived/nested/exception.txt",
+					"internal/baseline/derived/sidecar.txt",
+				},
+			},
+			{
+				name:    "unknown",
+				command: "make unknown-fixture",
+				want:    []string{},
+			},
+		}
+		for _, test := range tests {
+			t.Run(test.name, func(t *testing.T) {
+				baselineOutputs, err := OutputsFor(repository, test.command)
+				if err != nil {
+					t.Fatal(err)
+				}
+				guardOutputs, err := suiteguardcontract.OutputsForCommand(repository, test.command)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !reflect.DeepEqual(baselineOutputs, test.want) {
+					t.Fatalf("Baseline outputs = %v, want %v", baselineOutputs, test.want)
+				}
+				if !reflect.DeepEqual(guardOutputs, test.want) {
+					t.Fatalf("suite guard outputs = %v, want %v", guardOutputs, test.want)
+				}
+			})
+		}
+	})
+
+	t.Run("dedicated fixture declares a Spec grant without a workflow tree", func(t *testing.T) {
+		repository := t.TempDir()
+		writeCleanupOwnershipFile(t, repository, "Makefile", "DERIVED_DIGEST_PATHS := internal/baseline/derived\n")
+		writeCleanupOwnershipFile(t, repository, "internal/baseline/derived/output.txt", "output\n")
+		const command = "make dedicated-fixture"
+		writeDedicatedCommandFixture(
+			t,
+			filepath.Join(repository, "internal", "baseline"),
+			"derived/_ownership.yml",
+			command,
+		)
+		if _, err := os.Lstat(filepath.Join(repository, "docs", "workflow")); !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("dedicated fixture must omit docs/workflow, stat error = %v", err)
+		}
+
+		want := []suiteguardcontract.SanctionedRegeneration{{
+			Command: command,
+			Outputs: []string{"internal/baseline/derived/output.txt"},
+		}}
+		got, err := suiteguardcontract.ReadSanctionedRegenerations(repository)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("dedicated fixture declarations = %#v, want %#v", got, want)
+		}
+	})
+
+	t.Run("invalid and conflicting declarations fail closed in both readers", func(t *testing.T) {
+		tests := []struct {
+			name      string
+			makefile  string
+			files     map[string]string
+			wantError string
+		}{
+			{
+				name:      "unsafe scan path",
+				makefile:  "DERIVED_DIGEST_PATHS := internal/baseline/../outside\n",
+				wantError: "outside internal/baseline",
+			},
+			{
+				name: "invalid owner",
+				files: map[string]string{
+					"internal/baseline/derived/_ownership.yml": "owner: inferred\nreason: invalid fixture\n",
+					"internal/baseline/derived/output.txt":     "output\n",
+				},
+				wantError: "not sanctioned, dedicated, or frozen",
+			},
+			{
+				name: "conflicting directory records",
+				files: map[string]string{
+					"internal/baseline/derived/_ownership.yml":  "owner: sanctioned\nreason: first fixture\n",
+					"internal/baseline/derived/_ownership.yaml": "owner: sanctioned\nreason: second fixture\n",
+					"internal/baseline/derived/output.txt":      "output\n",
+				},
+				wantError: "more than one ownership record",
+			},
+			{
+				name: "incomplete ownership",
+				files: map[string]string{
+					"internal/baseline/derived/nested/_ownership.yml": "owner: sanctioned\nreason: nested fixture\n",
+					"internal/baseline/derived/nested/output.txt":     "output\n",
+				},
+				wantError: "zero ownership records",
+			},
+			{
+				name: "sidecar conflicts with exception",
+				files: map[string]string{
+					"internal/baseline/derived/_ownership.yml":           "owner: sanctioned\nreason: root fixture\nexceptions:\n  - path: output.txt\n    owner: dedicated\n    command: make dedicated-fixture\n",
+					"internal/baseline/derived/output.txt":               "output\n",
+					"internal/baseline/derived/output.txt_ownership.yml": "owner: dedicated\ncommand: make dedicated-fixture\nreason: sidecar fixture\n",
+				},
+				wantError: "more than one ownership record",
+			},
+		}
+		for _, test := range tests {
+			t.Run(test.name, func(t *testing.T) {
+				repository := t.TempDir()
+				makefile := test.makefile
+				if makefile == "" {
+					makefile = "DERIVED_DIGEST_PATHS := internal/baseline/derived\n"
+				}
+				writeCleanupOwnershipFile(t, repository, "Makefile", makefile)
+				for relative, content := range test.files {
+					writeCleanupOwnershipFile(t, repository, relative, content)
+				}
+
+				_, baselineErr := OutputsFor(repository, sanctionedBaselineDigestCommand)
+				if baselineErr == nil || !strings.Contains(baselineErr.Error(), test.wantError) {
+					t.Fatalf("Baseline error = %v, want %q", baselineErr, test.wantError)
+				}
+				_, guardErr := suiteguardcontract.OutputsForCommand(repository, sanctionedBaselineDigestCommand)
+				if guardErr == nil || !strings.Contains(guardErr.Error(), test.wantError) {
+					t.Fatalf("suite guard error = %v, want %q", guardErr, test.wantError)
+				}
+			})
+		}
+	})
+}
+
 func newOutputsForCommandRepository(t *testing.T) string {
 	t.Helper()
 
@@ -128,6 +291,47 @@ func newOutputsForCommandRepository(t *testing.T) string {
 		}
 	}
 	return repository
+}
+
+func newCleanupOwnershipRepository(t *testing.T) string {
+	t.Helper()
+	repository := t.TempDir()
+	files := map[string]string{
+		"Makefile": "DERIVED_DIGEST_PATHS := internal/baseline/derived\n",
+		"internal/baseline/derived/_ownership.yml": "owner: sanctioned\n" +
+			"reason: root fixture\n" +
+			"exceptions:\n" +
+			"  - path: nested/exception.txt\n" +
+			"    owner: dedicated\n" +
+			"    command: make dedicated-fixture\n",
+		"internal/baseline/derived/root.txt": "root\n",
+		"internal/baseline/derived/dedicated/_ownership.yml": "owner: dedicated\n" +
+			"command: make dedicated-fixture\nreason: dedicated fixture\n",
+		"internal/baseline/derived/dedicated/output.txt":  "dedicated\n",
+		"internal/baseline/derived/frozen/_ownership.yml": "owner: frozen\nreason: frozen fixture\n",
+		"internal/baseline/derived/frozen/output.txt":     "frozen\n",
+		"internal/baseline/derived/nested/_ownership.yml": "owner: frozen\nreason: nested fixture\n",
+		"internal/baseline/derived/nested/exception.txt":  "exception\n",
+		"internal/baseline/derived/nested/frozen.txt":     "nested frozen\n",
+		"internal/baseline/derived/sidecar.txt":           "sidecar\n",
+		"internal/baseline/derived/sidecar.txt_ownership.yml": "owner: dedicated\n" +
+			"command: make dedicated-fixture\nreason: sidecar fixture\n",
+	}
+	for relative, content := range files {
+		writeCleanupOwnershipFile(t, repository, relative, content)
+	}
+	return repository
+}
+
+func writeCleanupOwnershipFile(t *testing.T, repository, relative, content string) {
+	t.Helper()
+	filePath := filepath.Join(repository, filepath.FromSlash(relative))
+	if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
+		t.Fatalf("create fixture directory for %q: %v", relative, err)
+	}
+	if err := os.WriteFile(filePath, []byte(content), 0o644); err != nil {
+		t.Fatalf("write fixture %q: %v", relative, err)
+	}
 }
 
 func TestDerivedOwnershipIsExhaustive(t *testing.T) {
@@ -636,6 +840,8 @@ type derivedArtifactProbe struct {
 	perturb func([]byte) ([]byte, error)
 }
 
+const regenerationFixtureCommandEnv = "ROUNDFIX_REGENERATION_FIXTURE_COMMAND"
+
 func snapshotDerivedTree(t *testing.T, roots []string) map[string]derivedArtifactSnapshot {
 	t.Helper()
 	return snapshotDerivedTreeAt(t, ".", roots)
@@ -694,13 +900,17 @@ func newDerivedRegenerationFixture(t *testing.T) string {
 
 	sourceRoot := filepath.Clean(filepath.Join("..", ".."))
 	fixtureRoot := t.TempDir()
-	for _, directory := range []string{".agents", "docs/workflow/authorizations", "internal", "skills"} {
+	for _, directory := range []string{".agents", "docs/specs", "internal", "skills"} {
 		if err := os.CopyFS(
 			filepath.Join(fixtureRoot, directory),
 			os.DirFS(filepath.Join(sourceRoot, directory)),
 		); err != nil {
 			t.Fatalf("copy regeneration fixture directory %s: %v", directory, err)
 		}
+	}
+	adaptRegenerationFixtureDeclaration(t, fixtureRoot)
+	if _, err := os.Lstat(filepath.Join(fixtureRoot, "docs", "workflow")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("cleanup regeneration fixture must omit docs/workflow, stat error = %v", err)
 	}
 	for _, fileName := range []string{"Makefile", "go.mod", "go.sum", "skills-lock.json"} {
 		sourcePath := filepath.Join(sourceRoot, fileName)
@@ -717,6 +927,37 @@ func newDerivedRegenerationFixture(t *testing.T) string {
 		}
 	}
 	return fixtureRoot
+}
+
+func adaptRegenerationFixtureDeclaration(t *testing.T, fixtureRoot string) {
+	t.Helper()
+
+	filePath := filepath.Join(fixtureRoot, "internal", "baseline", "assets_sync_test.go")
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Fatalf("read regeneration fixture declaration: %v", err)
+	}
+	old := []byte("func declareBaselineDigestRegeneration() {\n" +
+		"\tsuiteguard.DeclareSanctionedRegeneration(baselineDigestRegenerationCommand)\n" +
+		"}")
+	if count := bytes.Count(content, old); count != 1 {
+		t.Fatalf("regeneration fixture declaration matches = %d, want 1", count)
+	}
+	replacement := []byte("func declareBaselineDigestRegeneration() {\n" +
+		"\tcommand := os.Getenv(\"" + regenerationFixtureCommandEnv + "\")\n" +
+		"\tif command == \"\" {\n" +
+		"\t\tcommand = baselineDigestRegenerationCommand\n" +
+		"\t}\n" +
+		"\tsuiteguard.DeclareSanctionedRegeneration(command)\n" +
+		"}")
+	info, err := os.Stat(filePath)
+	if err != nil {
+		t.Fatalf("stat regeneration fixture declaration: %v", err)
+	}
+	content = bytes.Replace(content, old, replacement, 1)
+	if err := os.WriteFile(filePath, content, info.Mode().Perm()); err != nil {
+		t.Fatalf("adapt regeneration fixture declaration: %v", err)
+	}
 }
 
 func derivedArtifactsByRecord(
@@ -1012,6 +1253,20 @@ func exerciseDeclaredRegenerationStep(
 		return err
 	}
 	if err := runDeclaredRegenerationStep(ctx, repository, cacheRoot, command); err != nil {
+		for _, probe := range untouched {
+			violationPath := path.Join("internal/baseline", probe.path)
+			for _, change := range []string{"created", "modified", "removed"} {
+				if strings.Contains(err.Error(), "suiteguard: "+change+": "+violationPath) {
+					return fmt.Errorf(
+						"declared command %q rewrote %s artifact %q: %w",
+						command,
+						probe.owner,
+						probe.path,
+						err,
+					)
+				}
+			}
+		}
 		return err
 	}
 	after, err := readDerivedTreeSnapshot(baselineRoot, roots)
@@ -1111,7 +1366,12 @@ func runDeclaredRegenerationStepOutput(
 ) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, "sh", "-c", command)
 	cmd.Dir = repository
-	cmd.Env = append(os.Environ(), "GOCACHE="+cacheRoot, "GOFLAGS=-buildvcs=false")
+	cmd.Env = append(
+		os.Environ(),
+		"GOCACHE="+cacheRoot,
+		"GOFLAGS=-buildvcs=false",
+		regenerationFixtureCommandEnv+"="+command,
+	)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return output, fmt.Errorf("run declared command %q: %w\n%s", command, err, output)
@@ -1217,45 +1477,32 @@ func writeDedicatedCommandFixture(
 	); err != nil {
 		t.Fatalf("write declared-step fixture %q: %v", recordPath, err)
 	}
-	writeDedicatedAuthorizationFixture(t, baselineRoot, filepath.Dir(recordPath), command)
+	writeDedicatedAuthorizationFixture(t, baselineRoot, recordPath, command)
 }
 
-func writeDedicatedAuthorizationFixture(t *testing.T, baselineRoot, artifactDirectory, command string) {
+func writeDedicatedAuthorizationFixture(t *testing.T, baselineRoot, recordPath, command string) {
 	t.Helper()
 
-	var outputs []string
-	root := filepath.Join(baselineRoot, filepath.FromSlash(artifactDirectory))
-	err := filepath.WalkDir(root, func(filePath string, entry fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if entry.IsDir() || entry.Name() == "_ownership.yml" {
-			return nil
-		}
-		relative, err := filepath.Rel(baselineRoot, filePath)
-		if err != nil {
-			return err
-		}
-		outputs = append(outputs, filepath.ToSlash(filepath.Join("internal", "baseline", relative)))
-		return nil
-	})
-	if err != nil {
-		t.Fatalf("enumerate dedicated authorization fixture outputs: %v", err)
-	}
-	sort.Strings(outputs)
-
 	var authorization strings.Builder
-	authorization.WriteString("# Dedicated regeneration fixture\n\n## Sanctioned regeneration\n\n```yaml\ncommand: >-\n  ")
+	authorization.WriteString("---\nstatus: approved\ngranted: 2026-09-09\n")
+	authorization.WriteString("action: exercise dedicated regeneration fixture\n")
+	authorization.WriteString("consuming: dedicated-regeneration-fixture\npaths:\n  - internal/baseline/")
+	authorization.WriteString(recordPath)
+	authorization.WriteString("\n---\n\n# Dedicated regeneration fixture\n\n")
+	authorization.WriteString("## Sanctioned regeneration\n\n```yaml\ncommand: >-\n  ")
 	authorization.WriteString(strings.ReplaceAll(command, "\n", "\n  "))
-	authorization.WriteString("\noutputs:\n")
-	for _, output := range outputs {
-		authorization.WriteString("  - ")
-		authorization.WriteString(output)
-		authorization.WriteByte('\n')
-	}
-	authorization.WriteString("```\n")
+	authorization.WriteString("\n```\n")
 	repository := filepath.Dir(filepath.Dir(baselineRoot))
-	filePath := filepath.Join(repository, "docs", "workflow", "authorizations", "dedicated-fixture.md")
+	filePath := filepath.Join(
+		repository,
+		"docs",
+		"specs",
+		"dedicated-regeneration-fixture",
+		"_authorization.md",
+	)
+	if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
+		t.Fatalf("create dedicated Spec authorization fixture: %v", err)
+	}
 	if err := os.WriteFile(filePath, []byte(authorization.String()), 0o644); err != nil {
 		t.Fatalf("write dedicated authorization fixture: %v", err)
 	}
