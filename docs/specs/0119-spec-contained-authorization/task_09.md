@@ -2,84 +2,79 @@
 task: task_09
 spec: 0119-spec-contained-authorization
 status: pending
-type: qa
-complexity: high
+type: backend
+complexity: medium
 ---
 
-# Task 09: Run the final QA gate
+# Task 09: Consolidate the second grant reader in the suite guard
 
 ## Overview
 
-Execute the `qa-gate` skill against the assembled Spec with evidence independent
-of the implementation Tasks' own tests. Derive the matrix from the PRD, walk the
-declared user journeys through the real command surface, and write the canonical
-dated report under `qa/`, preserving materialized rows, counters and outcomes
-rather than replacing them.
+The suite guard owns a separate grant parser that decides which regeneration
+commands are sanctioned. It scans only the legacy directory and active Spec
+roots, so it cannot see an archived Spec's grant and cannot preserve a
+multi-Spec consuming list. Route it through the typed reader so one record
+cannot mean two things. The slice is verifiable on its own: an archived
+approved grant's sanctioned regeneration becomes discoverable where it is
+invisible today.
+
+This is an authorized tooling Task. It may change only
+`internal/suiteguardcontract/regeneration.go`,
+`internal/suiteguardcontract/regeneration_test.go`, and this Task file. Stop
+before any other mutation. The bounded set comes from the 2026-09-09 amendment
+in [_authorization.md](_authorization.md).
 
 ## Requirements
 
-1. MUST verify every PRD Goal, User Story and Core Feature against the real
-   command surface and real Git boundaries, not against the implementation
-   Tasks' own fixtures.
-2. MUST verify each of the three declared intentional breaks actually occurs and
-   that nothing outside that list changed observably, using the characterization
-   corpus as the regression reference.
-3. MUST verify the outside-evidence row: the preserved historical authorization
-   records resolve, with their provenance recorded, and MUST record the row as
-   blocked with its reason if the revision cannot be reached.
-4. MUST audit the actual changed files against the approved grant's bounded
-   paths and confirm the grant's ancestry precedes the consuming work.
-5. MUST confirm the Vocabulary Contract runs rather than skips, and check
-   whether the Spec introduced, changed or retired a glossary term.
-6. MUST exercise the gate against a binary rebuilt from the assembled tree, so
-   the gate reports defects the running artifact actually contains.
-7. MUST classify every finding by user impact and record blocked or skipped rows
-   with their reason and equivalent evidence, never as an inferred pass.
-8. MUST NOT change implementation code, tests, or any sibling Task; this Task
-   owns only itself and the Spec-local QA artifacts.
+1. MUST resolve grants through the typed authorization reader rather than a
+   second private parser, so one record yields one verdict everywhere.
+2. MUST discover operative records in archived Specs as well as in active Specs
+   and the preserved legacy location, and MUST preserve a historical
+   multi-Spec consuming list instead of requiring a single consuming Spec.
+3. MUST keep rejecting a proposed, null-dated, malformed or unrelated record as
+   a source of sanctioned regeneration, with the same outcome it reaches today.
+4. MUST keep the currently resolved set of sanctioned regeneration commands and
+   their outputs unchanged for every record that resolves today, so the widened
+   discovery only adds records and never drops one.
+5. MUST NOT introduce a second exemption list or a parallel ownership rule;
+   command-only declarations keep resolving through the repository-owned
+   derived-output declarations.
 
 ## Subtasks
 
-- [ ] Rebuild the binary the gate exercises from the assembled tree.
-- [ ] Materialize and execute the QA matrix, including the refusal journeys.
-- [ ] Verify the three declared breaks and the absence of undeclared ones.
-- [ ] Audit changed-file scope and grant ancestry against the approved record.
-- [ ] Run the glossary and Vocabulary Contract checks.
-- [ ] Write the dated report with honest counters and the terminal verdict.
+- [ ] Route the suite guard's grant resolution through the typed reader.
+- [ ] Add archived Spec discovery and multi-Spec consuming lists.
+- [ ] Prove proposed and malformed records still grant nothing.
+- [ ] Prove the resolved command set only grows.
 
 ## Acceptance Criteria
 
-- [ ] Every PRD Goal, User Story and Core Feature has an observed result with
-      recorded evidence; no row passes by inference.
-- [ ] Each declared intentional break is observed, and the characterization
-      corpus shows no undeclared behavior change.
-- [ ] The outside-evidence row records the preserved historical records'
-      provenance, or is recorded blocked with the reason the revision could not
-      be reached.
-- [ ] The changed-file audit shows no path outside the approved bounded set, and
-      the grant's ancestry precedes the consuming work.
-- [ ] The Vocabulary Contract check runs and the glossary currency check is
-      recorded.
-- [ ] The report records the terminal verdict and exact counters, including any
-      blocked or skipped rows with their reasons.
+- [ ] An approved grant in an archived Spec contributes its sanctioned
+      regeneration, where it contributes nothing today.
+- [ ] A historical record naming several consuming Specs resolves with its
+      actual list rather than being rejected for lacking a single consuming
+      value.
+- [ ] A proposed, null-dated, malformed or unrelated record contributes no
+      sanctioned regeneration.
+- [ ] Every command and output resolved before this Task is still resolved
+      after it, proven by comparing the resolved set against the recorded
+      present set rather than by inspection.
+- [ ] The typed reader is the only grant parser the suite guard uses.
 
 ## Context
 
-- instruction: `.agents/skills/qa-gate/SKILL.md`
-- instruction: `docs/agents/domain.md`
-- instruction: `docs/agents/specific-repository.md`
+- interface: `internal/suiteguardcontract/regeneration.go`
 
 ## Verification
 
-The following command is rendered unchanged from Roundfix's derived QA contract.
-It checks the report marker only; the required matrix, source-scope audit and
-independent evidence above remain the QA Agent's responsibility.
-
-- `newest="$(find 'docs/specs/0119-spec-contained-authorization/qa' -type f -name "qa-report-*.md" -print 2>/dev/null | awk "{ report=\$0; name=\$0; parts=split(name, path, \"/\"); name=path[parts]; name=substr(name, 11, length(name)-13); date=substr(name, 1, 10); suffix=substr(name, 11); shape=(length(date) == 10 && substr(date, 5, 1) == \"-\" && substr(date, 8, 1) == \"-\"); for (i=1; i <= 10 && shape; i++) { if (i != 5 && i != 8 && index(\"0123456789\", substr(date, i, 1)) == 0) shape=0 } year=substr(date, 1, 4)+0; month=substr(date, 6, 2)+0; day=substr(date, 9, 2)+0; leap=(year%400 == 0 || (year%4 == 0 && year%100 != 0)); days=(month == 2 ? 28+leap : ((month == 4 || month == 6 || month == 9 || month == 11) ? 30 : 31)); dated=(shape && month >= 1 && month <= 12 && day >= 1 && day <= days); if (!dated) date=\"\"; if (suffix == \"\") { sequenced=1; sequence=-1 } else { sequenced=(length(suffix) > 1 && substr(suffix, 1, 1) == \"-\"); for (i=2; i <= length(suffix) && sequenced; i++) { if (index(\"0123456789\", substr(suffix, i, 1)) == 0) sequenced=0 } sequence=(sequenced ? substr(suffix, 2)+0 : 0) } if (dated && sequenced) printf \"%s\\t%s\\t%s\\t%s\\t%s\\n\", dated, date, sequenced, sequence, report }" | sort -k1,1n -k2,2 -k3,3n -k4,4n -k5,5 | tail -1 | cut -f5-)"; test -n "$newest" || exit 1; awk "BEGIN { whitespace=\" \t\r\n\f\v\" } NR == 1 && \$0 == \"---\" { frontmatter=1; next } frontmatter && \$0 == \"---\" { closed=1; exit } frontmatter && index(\$0, \"verdict:\") == 1 { verdict=substr(\$0, 9); while (length(verdict) > 0 && index(whitespace, substr(verdict, 1, 1)) > 0) verdict=substr(verdict, 2); while (length(verdict) > 0 && index(whitespace, substr(verdict, length(verdict), 1)) > 0) verdict=substr(verdict, 1, length(verdict)-1); verdicts++ } END { exit(closed && verdicts == 1 && verdict == \"pass\" ? 0 : 1) }" "$newest"`
+- `grep -q 'func TestSanctionedRegenerationReadsArchivedSpecGrants' internal/suiteguardcontract/regeneration_test.go && go test -count=1 ./internal/suiteguardcontract -run '^TestSanctionedRegenerationReadsArchivedSpecGrants$'` — an archived approved grant contributes its regeneration and a multi-Spec consuming list resolves.
+- `grep -q 'func TestSanctionedRegenerationRejectsNonOperativeRecords' internal/suiteguardcontract/regeneration_test.go && go test -count=1 ./internal/suiteguardcontract -run '^TestSanctionedRegenerationRejectsNonOperativeRecords$'` — proposed, null-dated, malformed and unrelated records contribute nothing.
+- `grep -q 'func TestSanctionedRegenerationSetOnlyGrows' internal/suiteguardcontract/regeneration_test.go && go test -count=1 ./internal/suiteguardcontract -run '^TestSanctionedRegenerationSetOnlyGrows$'` — every command and output resolved before this Task still resolves.
+- `matches="$(grep -n 'yaml.Unmarshal' internal/suiteguardcontract/regeneration.go | grep -i 'grant' || true)"; test -z "$matches" || { printf '%s\n' "$matches"; exit 1; }` — the private grant parser is gone rather than left beside the typed reader.
 
 ## References
 
-- `_prd.md` → Goals 1-4, User Stories 1-3, Core Features 1-6, Success Metrics, Decisions: Declared intentional breaks.
-- `_techspec.md` → Vocabulary Contract, Coverage Map, Testing Approach, Build Order 6.
-- `_authorization.md` → approved bounded paths and sanctioned regeneration.
-- `docs/agents/autonomous-work.md` — Daemon verification and terminal QA ownership.
+- `_prd.md` → Core Features 3; Goals 1, 4.
+- `_techspec.md` → Implementation Design: Audit and compatibility; Build Order 1, 3.
+- `_authorization.md` → the 2026-09-09 amendment adding these two paths.
+- ADR-0149.

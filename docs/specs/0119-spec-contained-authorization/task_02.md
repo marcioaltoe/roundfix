@@ -19,28 +19,34 @@ same input path.
 ## Requirements
 
 1. MUST parse an authorization record by its declared role into approval state,
-   grant date, action, consuming Spec, exact bounded paths, and any sanctioned
-   regeneration the record declares.
-2. MUST treat a proposal as inspectable and non-granting. An unknown state, an
+   grant date, action, consuming Spec, exact bounded paths, permitted
+   operations, and any sanctioned regeneration the record declares.
+2. MUST read permitted operations as a closed machine-readable vocabulary
+   covering at least implement, commit, push, pull_request, merge and release,
+   so approval to implement is distinguishable from approval to release. An
+   operation absent from a record's list is refused, and an unknown operation
+   token is a refusal rather than a silently ignored entry. A record carrying no
+   operations list grants no operation.
+3. MUST treat a proposal as inspectable and non-granting. An unknown state, an
    absent or unparseable grant date, an empty path list, a consuming field that
    does not name the asking Spec, and a contradictory record are refusals with
    distinguishable reasons, never a grant.
-3. MUST refuse a path that escapes the repository, is absolute, carries a glob,
+4. MUST refuse a path that escapes the repository, is absolute, carries a glob,
    traverses upward, resolves through a symlink, or repeats another entry.
-4. MUST NOT treat a Spec name appearing anywhere in prose as a consuming
+5. MUST NOT treat a Spec name appearing anywhere in prose as a consuming
    relation; only the declared consuming field creates one.
-5. MUST resolve the existing explicit legacy record formats through a bounded
+6. MUST resolve the existing explicit legacy record formats through a bounded
    adapter, preserving a multi-Spec historical grant's actual consuming list and
    scope, without rewriting any historical record.
-6. MUST report an unreadable record or an unavailable revision as unresolved
+7. MUST report an unreadable record or an unavailable revision as unresolved
    rather than as either granted or refused, so failure is closed on evidence
    and never on doubt.
-7. MUST NOT change the behavior of any existing caller in this Task; the reader
+8. MUST NOT change the behavior of any existing caller in this Task; the reader
    is introduced and proven, and its consumers are wired in later Tasks.
 
 ## Subtasks
 
-- [ ] Define the parsed grant shape and its refusal reasons.
+- [ ] Define the parsed grant shape, its operation vocabulary, and its refusal reasons.
 - [ ] Parse the typed record and classify approval state.
 - [ ] Validate bounded paths against escape, glob, symlink, and duplication.
 - [ ] Adapt the explicit legacy formats, preserving multi-Spec consuming lists.
@@ -51,6 +57,10 @@ same input path.
 - [ ] An approved record for the asking Spec resolves to a grant carrying its
       exact bounded paths; the same record with `status` proposed or a null
       grant date resolves to a refusal naming which field withheld it.
+- [ ] A record permitting implement, commit, push, pull_request and merge
+      answers permitted for each of those and refused for release; a record with
+      no operations list refuses every operation; an unknown operation token
+      refuses rather than being ignored.
 - [ ] A record naming a different consuming Spec refuses even when the asking
       Spec's slug appears in its prose.
 - [ ] Each of an absolute path, an upward-traversing path, a glob, a symlinked
@@ -74,6 +84,7 @@ same input path.
 ## Verification
 
 - `grep -q 'func TestAuthorizationReaderClassifiesGrantState' internal/spec/authorization_test.go && go test -count=1 ./internal/spec -run '^TestAuthorizationReaderClassifiesGrantState$'` — approved, proposed, null-dated, wrong-consuming and contradictory records resolve to distinguishable answers.
+- `grep -q 'func TestAuthorizationReaderTypesPermittedOperations' internal/spec/authorization_test.go && go test -count=1 ./internal/spec -run '^TestAuthorizationReaderTypesPermittedOperations$'` — implement through merge answer permitted, release answers refused, an absent list refuses everything, and an unknown token refuses.
 - `grep -q 'func TestAuthorizationReaderRefusesEscapingPaths' internal/spec/authorization_test.go && go test -count=1 ./internal/spec -run '^TestAuthorizationReaderRefusesEscapingPaths$'` — absolute, traversing, globbed, symlinked and duplicate paths each refuse.
 - `grep -q 'func TestAuthorizationReaderResolvesPreservedHistoricalRecords' internal/spec/authorization_test.go && go test -count=1 ./internal/spec -run '^TestAuthorizationReaderResolvesPreservedHistoricalRecords$'` — the preserved historical corpus is read and classified, with an unavailable revision reported explicitly rather than skipped.
 - `test -f internal/spec/authorization.go && go build -buildvcs=false ./...` — the reader exists and the tree compiles with it.
@@ -81,5 +92,6 @@ same input path.
 ## References
 
 - `_prd.md` → User Stories 1; Core Features 1, 3, 5; Goals 1, 2, 4.
+- `_authorization.md` → the typed `operations` list this reader must honor.
 - `_techspec.md` → Implementation Design: Operative record and source identity; Data Models; Build Order 1.
 - ADR-0057, ADR-0130, ADR-0149.

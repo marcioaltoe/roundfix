@@ -1,7 +1,7 @@
 ---
 schema: spec-tasks/v1
 spec: 0119-spec-contained-authorization
-qa: task_09
+qa: task_10
 graph:
   nodes:
     - id: task_01
@@ -30,7 +30,10 @@ graph:
       needs: [task_07]
     - id: task_09
       file: task_09.md
-      needs: [task_08]
+      needs: [task_02, task_04]
+    - id: task_10
+      file: task_10.md
+      needs: [task_08, task_09]
 ---
 
 # Tasks — Spec-contained authority and trusted Verification
@@ -45,6 +48,7 @@ graph:
 | task_06 | Execute authored commands only on committed provenance | backend | high | task_02, task_05 |
 | task_07 | Make the Spec-contained record canonical in the Baseline | docs | medium | task_03, task_06 |
 | task_08 | Teach the authoring skills the record's placement | docs | medium | task_07 |
-| task_09 | Run the final QA gate | qa | high | task_08 |
+| task_09 | Consolidate the second grant reader in the suite guard | backend | medium | task_02, task_04 |
+| task_10 | Run the final QA gate | qa | high | task_08, task_09 |
 
-Waves: 1 → task_01 · 2 → task_02, task_04 · 3 → task_03 · 4 → task_05 · 5 → task_06 · 6 → task_07 · 7 → task_08 · 8 → task_09.
+Waves: 1 → task_01 · 2 → task_02, task_04 · 3 → task_03, task_09 · 4 → task_05 · 5 → task_06 · 6 → task_07 · 7 → task_08 · 8 → task_10.
