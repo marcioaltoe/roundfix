@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "context-workflow",
-  "version": 17,
+  "version": 18,
   "kind": "workflow",
   "title": "CONTEXT-driven workflow",
   "dependsOn": [
@@ -222,7 +222,7 @@
   "supportingGuides": [
     {
       "id": "guide.docs-layout",
-      "version": 11,
+      "version": 12,
       "path": "docs/agents/docs-layout.md",
       "template": "template.guide.docs-layout",
       "rules": [
@@ -274,7 +274,7 @@
     },
     {
       "id": "rule.context.docs-layout",
-      "version": 12,
+      "version": 13,
       "coverage": [
         "coverage.context-workflow"
       ],
@@ -297,7 +297,7 @@
         {
           "id": "clause.context.docs-one-job-per-directory",
           "enforcement": "mandatory",
-          "guidance": "Give each documentation directory one job: `docs/_inbox/` for raw notes, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts, `docs/backlog/` for dated, typed intent not yet committed to a Spec, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/references/` for external pointers and durable project reference documents, and `docs/user-guide/` for human documentation. Preserve repository-authored extensions outside setup markers. Each of these directories holds live work only: retired content moves under the single history root `docs/history/`, family by family (`docs/history/backlog/`, `docs/history/findings/`, `docs/history/handoffs/`). Handoffs archive only on the user's explicit confirmation, and when confirmed, every handoff archives together — the active `docs/handoffs/` directory is the capture door, never a shelf. Findings, Backlog Entries and Rollups with a terminal lifecycle status must leave their active directory for the matching history family; preserve valid provenance and update dependent references as part of that transition. Spec-owned adopted references retain their Spec ownership and archive with the Spec; this rule clears active family directories without dismantling self-contained Specs."
+          "guidance": "Give each documentation directory one job: `docs/_inbox/` for raw notes, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts, `docs/backlog/` for dated, typed intent not yet committed to a Spec, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/references/` for external pointers and durable project reference documents, and `docs/user-guide/` for human documentation. Preserve repository-authored extensions outside setup markers. Each of these directories holds live work only: retired content moves under the single history root `docs/history/`, family by family (`docs/history/backlog/`, `docs/history/findings/`, `docs/history/handoffs/`). Handoffs archive only on the user's explicit confirmation, and when confirmed, every handoff archives together — the active `docs/handoffs/` directory is the capture door, never a shelf. Findings, Backlog Entries and Rollups with a terminal lifecycle status must leave their active directory for the matching history family; preserve valid provenance and update dependent references as part of that transition. Spec-owned adopted references retain their Spec ownership and archive with the Spec; this rule clears active family directories without dismantling self-contained Specs. Spec-contained authorization records live at `<spec-root>/<slug>/_authorization.md`. The preserved legacy location `docs/workflow/authorizations/` remains readable for historical grants; its old paths are historical references and are not required to exist as worktree files."
         },
         {
           "id": "clause.context.docs-upstream-flow",

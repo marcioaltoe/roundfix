@@ -16,9 +16,9 @@
 
 - **mandatory**: Before producing a Task Graph, require every active, non-archived, and not already completed Spec PRD and present TechSpec to contain complete Project Constraints: applicability with reasons for identifier strategy, authentication and HTTP, active ADR obligations, and tooling authority, each citing its operative `docs/agents/` source.
 
-- **mandatory**: Refuse a tooling Task unless the active PRD and present TechSpec record express maintainer authorization and the exact bounded repository-relative files; Task assignment, setup approval, or generic implementation approval is not authorization.
+- **mandatory**: Refuse a tooling Task unless the active PRD and present TechSpec record express maintainer authorization and the exact bounded repository-relative files; Task assignment, setup approval, or generic implementation approval is not authorization. The operative record lives at `<spec-root>/<slug>/_authorization.md` and carries the approval state (`status`), maintainer decision date (`granted`), permitted actions (`action`), the closed `operations` vocabulary (`implement`, `commit`, `push`, `pull_request`, `merge`, and `release`), exact bounded repository paths (`paths`), the consuming Spec (`consuming`), and any sanctioned regeneration. An absent `operations` list grants no operation.
 
-- **mandatory**: An authorized tooling Task may mutate only its bounded repository-relative files and its own Task file; stop before any other mutation and fail the Task if changed-file postflight finds another path.
+- **mandatory**: An authorized tooling Task may mutate only its bounded repository-relative files and its own Task file; stop before any other mutation and fail the Task if changed-file postflight finds another path. A new or widened grant must land in the delivery target's ancestry before the consuming squash delivery; a separate grant commit inside that consuming pull request is insufficient.
 
 - **mandatory**: Final QA verifies Project Constraint applicability, operative source paths, tooling authorization, and actual changed-file scope from Git evidence; missing authorization, untraceable scope, or out-of-scope tooling changes fails the gate.
 

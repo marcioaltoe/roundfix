@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0119-spec-contained-authorization
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -102,3 +102,80 @@ regeneration come from the approved grant in [_authorization.md](_authorization.
 - `_prd.md` → User Stories 1; Core Features 1, 3, 5; Goals 1.
 - `_techspec.md` → System Architecture: Authoring guidance; Build Order 5.
 - ADR-0130, ADR-0149.
+
+## Result
+
+Implemented the canonical Spec-contained authorization guidance in the owning
+Baseline modules and carried the corresponding clauses into the three managed
+guide regions. The existing clause identities remain in place: tooling
+authorization now names the Spec-relative record, its required fields, the
+closed operation vocabulary, non-granting states, and the no-self-widening
+rule; the existing Verification guidance now carries the committed-provenance
+contract; the existing documentation and bounded-execution clauses carry the
+legacy-location and ancestry prerequisites.
+
+Focused checks:
+
+- Pre-change inspection found no `_authorization.md` clause in the rendered
+  `docs/agents` guides and no committed-provenance clause in the Baseline
+  modules.
+- `rtk jq -e . internal/baseline/assets/modules/core.json`, the equivalent
+  checks for `spec-workflow.json` and `context-workflow.json`, and
+  `rtk git diff --check` passed.
+- The focused source/guide search found the record home, committed-provenance
+  fields, non-granting states, closed operations list, ancestry rule, and
+  legacy readability statement in both their module sources and managed guide
+  regions.
+- `rtk proxy test ! -e docs/workflow/authorizations && rtk proxy test ! -e docs/workflow/authorizations/2026-09-09-spec-contained-authorization.md`
+  passed; the legacy location is described without being present as a worktree
+  file.
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-go-build rtk go test ./internal/spec -run '^TestAuthorizationReaderTypesPermittedOperations$' -count=1`
+  passed with 3 tests, confirming the documented six-operation vocabulary
+  matches the reader contract.
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-go-build make verify-incremental`
+  stopped at the pre-existing formatter gate for
+  `internal/cli/baseline_skills_restore_test.go` and
+  `internal/cli/baseline_assets_sync_test.go`; neither file is in this Task's
+  allowlist.
+- The first Daemon refresh diagnostic identified that the initial shape added a
+  new clause without a source-baseline row and changed the protected tooling
+  clause. The repair removed that new identity, restored the protected clause
+  byte-for-byte, and folded the obligations into existing clause identities.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task07-go-build go test ./internal/baseline -run '^TestEmbeddedCatalog$' -count=1`
+  passed after the repair; the embedded catalog now validates without the
+  missing-row or protected-clause diagnostics.
+
+Acceptance-criterion evidence:
+
+1. The rendered `docs/agents/docs-layout.md` and `docs/agents/spec-routing.md`
+   regions now name `<spec-root>/<slug>/_authorization.md`; the pre-change
+   search had no such rendered clause.
+2. `docs/agents/agent-instructions.md` states that a proposed, absent,
+   contradictory, or withdrawn record grants nothing and that an executor
+   cannot widen the grant it depends on.
+3. The committed-provenance clause names the authored projection, excludes
+   Daemon-owned `status` and `## Result`, names `repository`, `revision`,
+   `artifact`, and `command_digest`, expires approval when any changes, and
+   preserves read-only checking for every source.
+4. The Spec routing clause names the closed `implement`, `commit`, `push`,
+   `pull_request`, `merge`, and `release` vocabulary and states that an absent
+   operations list grants no operation.
+5. The bounded-execution clause states that a new or widened grant must land in
+   the delivery target's ancestry before the consuming squash delivery.
+6. The docs-layout clause preserves `docs/workflow/authorizations/` as a
+   readable historical location and explicitly says its old paths are not
+   required as worktree files; the focused absence check passed.
+7. The final diff extends existing clause identities and retains their prior
+   enforcement and guidance while appending the new obligations; the
+   protected tooling clause is unchanged, no new clause identity was added,
+   and no existing clause was replaced or weakened.
+8. Public Baseline update and sanctioned digest regeneration were not run in
+   this Agent turn because they are declared Verification commands owned by
+   the Daemon. Their pending derived-state repair is recorded by the focused
+   catalog diagnostic above.
+9. The second-refresh convergence check remains Daemon-owned and pending;
+   the generated guides and derived pins must be rechecked after regeneration.
+
+The Task's declared `## Verification` commands were not run; Daemon
+Verification remains pending. No commit, push, pull request, Task status, or
+other Task file was changed.
