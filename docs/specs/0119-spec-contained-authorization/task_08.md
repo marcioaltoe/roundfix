@@ -22,9 +22,13 @@ This is an authorized tooling Task. It may change only
 `.agents/skills/write-prd/references/prd-template.md`,
 `.agents/skills/write-techspec/SKILL.md`,
 `.agents/skills/write-techspec/references/techspec-template.md`,
-`.agents/skills/write-tasks/SKILL.md`, their five shipped counterparts under
-`skills/`, the derived pins that `make baseline-digests` rewrites as sanctioned
-regeneration, and this Task file. Stop before any other mutation. The bounded
+`.agents/skills/write-tasks/SKILL.md`, and their five shipped counterparts
+`skills/write-prd/SKILL.md`, `skills/write-prd/references/prd-template.md`,
+`skills/write-techspec/SKILL.md`,
+`skills/write-techspec/references/techspec-template.md` and
+`skills/write-tasks/SKILL.md`, plus the derived pins that
+`make baseline-digests` rewrites as sanctioned regeneration, and this Task
+file. Stop before any other mutation. The bounded
 set and the sanctioned regeneration come from the approved grant in
 [_authorization.md](_authorization.md).
 
@@ -66,8 +70,8 @@ set and the sanctioned regeneration come from the approved grant in
 - [ ] The ancestry-before-squash rule appears in the authoring instructions.
 - [ ] Each of the five shipped counterparts is byte-identical to its canonical
       source, proven by the repository's drift check rather than by inspection.
-- [ ] No skill outside the five named canonical files and their shipped
-      counterparts changed.
+- [ ] No path under `skills/` or `.agents/skills/` outside the ten named files
+      is added, modified, renamed or left untracked.
 - [ ] The derived pins match a fresh regeneration.
 
 ## Context
@@ -80,8 +84,8 @@ set and the sanctioned regeneration come from the approved grant in
 - `grep -q '_authorization.md' .agents/skills/write-prd/references/prd-template.md && grep -q '_authorization.md' .agents/skills/write-techspec/references/techspec-template.md` — both templates require the Spec-contained record, which they do not today.
 - `grep -q '_authorization.md' .agents/skills/write-tasks/SKILL.md` — the decomposition preflight names the record it must find.
 - `grep -q '_authorization.md' skills/write-prd/references/prd-template.md || exit 1; make skills-sync-check` — the shipped bundle carries the change and matches its canonical source, so it was regenerated rather than hand-edited.
-- `changed="$(git diff --name-only -- skills .agents/skills | grep -v -e '^\.agents/skills/write-\(prd\|techspec\|tasks\)/' -e '^skills/write-\(prd\|techspec\|tasks\)/')" || exit 1; test -z "$changed" || { printf '%s\n' "$changed"; exit 1; }` — no skill outside the bounded set changed.
-- `grep -q '_authorization.md' skills/write-tasks/SKILL.md || exit 1; make baseline-digests || exit 1; git diff --quiet -- internal/baseline || { git --no-pager diff -- internal/baseline; exit 1; }` — the shipped skill edit landed and the sanctioned derived pins match a fresh regeneration.
+- `grep -q '_authorization.md' .agents/skills/write-techspec/references/techspec-template.md || exit 1; allowed="$(mktemp)"; changed="$(mktemp)"; paths="$(mktemp)"; unexpected="$(mktemp)"; printf '%s\n' .agents/skills/write-prd/SKILL.md .agents/skills/write-prd/references/prd-template.md .agents/skills/write-techspec/SKILL.md .agents/skills/write-techspec/references/techspec-template.md .agents/skills/write-tasks/SKILL.md skills/write-prd/SKILL.md skills/write-prd/references/prd-template.md skills/write-techspec/SKILL.md skills/write-techspec/references/techspec-template.md skills/write-tasks/SKILL.md | sort > "$allowed" || exit 1; git -c core.quotepath=false status --porcelain --untracked-files=all -- skills .agents/skills > "$changed" || exit 1; cut -c4- "$changed" | sort > "$paths" || exit 1; grep -F -x -v -f "$allowed" "$paths" > "$unexpected"; test ! -s "$unexpected" || { cat "$unexpected"; exit 1; }` — exactly the ten named files may differ. The audit reads staged, unstaged and untracked paths, and an empty out-of-scope list is the passing case rather than a failure.
+- `grep -q '_authorization.md' skills/write-tasks/SKILL.md || exit 1; raw="$(mktemp)"; before="$(mktemp)"; after="$(mktemp)"; make baseline-digests || exit 1; find internal/baseline -type f -exec shasum {} + > "$raw" || exit 1; sort "$raw" > "$before" || exit 1; make baseline-digests || exit 1; find internal/baseline -type f -exec shasum {} + > "$raw" || exit 1; sort "$raw" > "$after" || exit 1; diff "$before" "$after"` — the shipped skill edit landed and the sanctioned derived pins reproduce byte for byte on a second regeneration.
 
 ## References
 

@@ -74,7 +74,7 @@ before any other mutation. The bounded set comes from the approved grant in
 
 - `grep -q 'func TestConstraintReaderCharacterizesGrantCitation' internal/speccheck/constraints_characterization_test.go && go test -count=1 ./internal/speccheck -run '^TestConstraintReaderCharacterizesGrantCitation$'` — the citation-form and date-keyed-skip characterization executes; its absence cannot pass.
 - `grep -q 'func TestGovernedSetCharacterizesOwnedShippedTemplates' internal/speccheck/governed_repocontract_test.go && go test -count=1 -tags repocontract ./internal/speccheck -run '^TestGovernedSetCharacterizesOwnedShippedTemplates$'` — today's governed answer for each owned shipped template is recorded and asserted.
-- `grep -q 'func TestConstraintReaderCharacterizesGrantCitation' internal/speccheck/constraints_characterization_test.go && go test -count=1 ./internal/speccheck` — the package suite runs with the new characterization present, so every assertion that existed before still passes beside it.
+- `grep -q 'func TestConstraintReaderCharacterizesGrantCitation' internal/speccheck/constraints_characterization_test.go || exit 1; go test -count=1 ./internal/speccheck -run '^TestCheckReplay' || exit 1; go test -count=1 -tags repocontract ./internal/speccheck -run '^(TestCleanupHistoricalGrantEvidence|TestEveryBoundedPathIsGoverned)$'` — every assertion that existed in both files before this Task still runs and passes; the tagged run is required because the governed contract is excluded from an untagged package run.
 
 ## References
 
