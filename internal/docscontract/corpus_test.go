@@ -325,30 +325,20 @@ func TestCheckLoopOrderDivergent(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		path      string
-		current   string
-		divergent string
+		name string
+		path string
 	}{
 		{
-			name:      "shipped clause",
-			path:      loopOrderShippedClausePath,
-			current:   "archive, open the Pull Request, watch until Clean, and merge",
-			divergent: "merge, open the Pull Request, watch until Clean, and archive",
+			name: "shipped clause",
+			path: loopOrderShippedClausePath,
 		},
 		{
 			name: "repository guide",
 			path: loopOrderRepositoryGuidePath,
-			// The guide is the rendered catalog clause after greenfield adoption,
-			// so it carries the shipped wording without the paraphrase's wrap.
-			current:   "archive, open the Pull Request, watch until Clean, and merge",
-			divergent: "merge, open the Pull Request, watch until Clean, and archive",
 		},
 		{
-			name:      "Baseline module asset",
-			path:      loopOrderBaselineModulePath,
-			current:   "archive, open the Pull Request, watch until Clean, and merge",
-			divergent: "merge, open the Pull Request, watch until Clean, and archive",
+			name: "Baseline module asset",
+			path: loopOrderBaselineModulePath,
 		},
 	}
 
@@ -358,15 +348,32 @@ func TestCheckLoopOrderDivergent(t *testing.T) {
 			t.Parallel()
 
 			repoRoot := writeLoopOrderFixture(t)
+			current := readFixtureLoopOrder(t, repoRoot)
+			steps := strings.Split(current, ", ")
+			if len(steps) < 2 {
+				t.Fatalf("shipped loop order has fewer than two steps: %q", current)
+			}
+			steps[0], steps[len(steps)-1] = strings.TrimPrefix(steps[len(steps)-1], "and "), "and "+steps[0]
+			divergent := strings.Join(steps, ", ")
+			if divergent == current {
+				t.Fatal("loop order mutation did not change the declared order")
+			}
+			before, err := speccheck.Check(filepath.Join(repoRoot, "docs", "specs"), repoRoot, loopOrderCarrierSlug)
+			if err != nil {
+				t.Fatalf("Check(unmodified loop-order): %v", err)
+			}
+			if findings := findingsWithCode(before, speccheck.CodeLoopOrderDivergent); len(findings) != 0 {
+				t.Fatalf("unmodified loop order sources already disagree: %#v", findings)
+			}
 			path := filepath.Join(repoRoot, filepath.FromSlash(tt.path))
 			content, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatalf("read %s fixture: %v", tt.name, err)
 			}
-			if !strings.Contains(string(content), tt.current) {
-				t.Fatalf("%s fixture does not contain current order %q", tt.name, tt.current)
+			if count := strings.Count(string(content), current); count != 1 {
+				t.Fatalf("%s fixture contains current order %q %d times, want 1", tt.name, current, count)
 			}
-			content = []byte(strings.Replace(string(content), tt.current, tt.divergent, 1))
+			content = []byte(strings.Replace(string(content), current, divergent, 1))
 			if err := os.WriteFile(path, content, 0o644); err != nil {
 				t.Fatalf("write divergent %s fixture: %v", tt.name, err)
 			}
@@ -384,8 +391,8 @@ func TestCheckLoopOrderDivergent(t *testing.T) {
 					t.Errorf("summary = %q, want source %q", finding.Summary, sourceLabel)
 				}
 			}
-			if !strings.Contains(finding.Summary, strings.ReplaceAll(tt.divergent, "\n", " ")) {
-				t.Errorf("summary = %q, want divergent order %q", finding.Summary, tt.divergent)
+			if !strings.Contains(finding.Summary, divergent) {
+				t.Errorf("summary = %q, want divergent order %q", finding.Summary, divergent)
 			}
 			for _, sourcePath := range []string{
 				loopOrderShippedClausePath,
@@ -398,6 +405,25 @@ func TestCheckLoopOrderDivergent(t *testing.T) {
 			}
 		})
 	}
+}
+
+func readFixtureLoopOrder(t *testing.T, repoRoot string) string {
+	t.Helper()
+	content, err := os.ReadFile(filepath.Join(repoRoot, filepath.FromSlash(loopOrderShippedClausePath)))
+	if err != nil {
+		t.Fatalf("read shipped loop order: %v", err)
+	}
+	const marker = "Follow one order per Spec:"
+	if count := strings.Count(string(content), marker); count != 1 {
+		t.Fatalf("shipped loop order marker occurs %d times, want 1", count)
+	}
+	_, remainder, _ := strings.Cut(string(content), marker)
+	order, _, found := strings.Cut(remainder, ".")
+	order = strings.TrimSpace(order)
+	if !found || order == "" {
+		t.Fatal("shipped loop order has no complete, non-empty declaration")
+	}
+	return order
 }
 
 func writeLoopOrderCarrier(t *testing.T, root string) string {
