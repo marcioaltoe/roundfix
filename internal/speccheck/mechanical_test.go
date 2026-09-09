@@ -563,8 +563,7 @@ func TestAuditJudgesTheGrant(t *testing.T) {
 
 	t.Run("historical authorized asset and ordinary Go split now share one audit", func(t *testing.T) {
 		if missing := firstMissingMechanicalCommit(repository, archiveHelpCommit, archiveCarrierCommit, verificationTaskCommit); missing != "" {
-			t.Logf("outside evidence blocked: historical commit %s cannot be resolved", missing)
-			return
+			t.Skipf("outside evidence unavailable: historical Task commit %s cannot be resolved", missing)
 		}
 
 		result := runMechanical(t, speccheck.MechanicalRequest{
@@ -601,8 +600,7 @@ func TestAuditJudgesTheGrant(t *testing.T) {
 
 	t.Run("historical regeneration resolves outputs absent from the grant", func(t *testing.T) {
 		if missing := firstMissingMechanicalCommit(repository, regeneratedCommit); missing != "" {
-			t.Logf("outside evidence blocked: historical commit %s cannot be resolved", missing)
-			return
+			t.Skipf("outside evidence unavailable: historical Task commit %s cannot be resolved", missing)
 		}
 
 		repoRoot := cloneMechanicalHistory(t, repository)
