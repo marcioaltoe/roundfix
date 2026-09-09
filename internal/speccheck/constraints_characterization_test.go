@@ -50,9 +50,10 @@ func TestConstraintReaderCharacterizesGrantCitation(t *testing.T) {
 				wantRecordPath: "docs/specs/0114-tooling-row/_authorization.md",
 			},
 			{
-				name:       "Spec-relative Markdown link resolves none",
-				citation:   "[_authorization.md](_authorization.md)",
-				recordPath: "docs/specs/0114-tooling-row/_authorization.md",
+				name:           "Spec-relative Markdown link resolves",
+				citation:       "[_authorization.md](_authorization.md)",
+				recordPath:     "docs/specs/0114-tooling-row/_authorization.md",
+				wantRecordPath: "docs/specs/0114-tooling-row/_authorization.md",
 			},
 		}
 
@@ -62,7 +63,8 @@ func TestConstraintReaderCharacterizesGrantCitation(t *testing.T) {
 				t.Parallel()
 
 				row := "Tooling authority: applicable — express maintainer authorization recorded in " + tt.citation + "; bounded files: `Makefile`."
-				repoRoot, specsRoot, slug := writeToolingRowFixture(t, row, tt.recordPath, "Authorization for Spec 0999-other permits changes to Makefile.\n")
+				record := typedConstraintAuthorization("approved", "2026-09-09", "0999-other")
+				repoRoot, specsRoot, slug := writeToolingRowFixture(t, row, tt.recordPath, record)
 				result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StagePRD)
 				if err != nil {
 					t.Fatalf("CheckStage(StagePRD): %v", err)
@@ -89,7 +91,7 @@ func TestConstraintReaderCharacterizesGrantCitation(t *testing.T) {
 		}
 	})
 
-	t.Run("typed validation is keyed to the record filename date", func(t *testing.T) {
+	t.Run("typed validation is keyed to the record role", func(t *testing.T) {
 		t.Parallel()
 
 		tests := []struct {
@@ -103,8 +105,9 @@ func TestConstraintReaderCharacterizesGrantCitation(t *testing.T) {
 				wantUntyped: true,
 			},
 			{
-				name:       "undated record skips validation",
-				recordPath: "docs/specs/0114-tooling-row/_authorization.md",
+				name:        "undated Spec record is validated",
+				recordPath:  "docs/specs/0114-tooling-row/_authorization.md",
+				wantUntyped: true,
 			},
 		}
 
@@ -127,12 +130,215 @@ func TestConstraintReaderCharacterizesGrantCitation(t *testing.T) {
 				if tt.wantUntyped && (len(findings) != 1 || !hasExactLocation(findings[0], tt.recordPath, 1)) {
 					t.Fatalf("%s findings = %#v, want one finding at %q", speccheck.CodeToolingUntyped, findings, tt.recordPath)
 				}
-				if !tt.wantUntyped && len(result.Findings) != 0 {
-					t.Fatalf("StagePRD findings = %#v, want undated record validation skipped", result.Findings)
-				}
 			})
 		}
 	})
+}
+
+func TestConstraintsResolveSpecContainedRecord(t *testing.T) {
+	t.Parallel()
+
+	const recordPath = "docs/specs/0114-tooling-row/_authorization.md"
+	row := "Tooling authority: applicable — express maintainer authorization recorded in [_authorization.md](_authorization.md); bounded files: `docs/agents/agent-instructions.md`."
+	record := typedConstraintAuthorization("approved", "2026-09-09", "0999-other")
+	repoRoot, specsRoot, slug := writeToolingRowFixture(t, row, recordPath, record)
+
+	result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StagePRD)
+	if err != nil {
+		t.Fatalf("CheckStage(StagePRD): %v", err)
+	}
+	findings := findingsWithCode(result, speccheck.CodeToolingUnauthorized)
+	if len(findings) != 1 {
+		t.Fatalf("%s findings = %#v, want exactly one", speccheck.CodeToolingUnauthorized, findings)
+	}
+	for _, location := range []speccheck.Location{
+		{Path: "docs/specs/0114-tooling-row/_prd.md", Line: 8},
+		{Path: recordPath, Line: 1},
+	} {
+		if !hasExactLocation(findings[0], location.Path, location.Line) {
+			t.Errorf("authorization locations = %#v, want %#v", findings[0].Where, location)
+		}
+	}
+}
+
+func TestConstraintsRefuseNonOperativeGrant(t *testing.T) {
+	t.Parallel()
+
+	const recordPath = "docs/specs/0114-tooling-row/_authorization.md"
+	tests := []struct {
+		name      string
+		status    string
+		granted   string
+		consuming string
+		wantCode  string
+		wantField string
+	}{
+		{
+			name:      "proposed record withholds status",
+			status:    "proposed",
+			granted:   "null",
+			consuming: "0114-tooling-row",
+			wantCode:  speccheck.CodeToolingUnapproved,
+			wantField: "status",
+		},
+		{
+			name:      "approved record without grant date withholds granted",
+			status:    "approved",
+			granted:   "null",
+			consuming: "0114-tooling-row",
+			wantCode:  speccheck.CodeToolingUnapproved,
+			wantField: "granted",
+		},
+		{
+			name:      "withdrawn record withholds status",
+			status:    "withdrawn",
+			granted:   "null",
+			consuming: "0114-tooling-row",
+			wantCode:  speccheck.CodeToolingUnapproved,
+			wantField: "status",
+		},
+		{
+			name:      "different consumer keeps unauthorized refusal",
+			status:    "approved",
+			granted:   "2026-09-09",
+			consuming: "0999-other",
+			wantCode:  speccheck.CodeToolingUnauthorized,
+		},
+		{
+			name:      "approved record for asking Spec passes",
+			status:    "approved",
+			granted:   "2026-09-09",
+			consuming: "0114-tooling-row",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			row := "Tooling authority: applicable — express maintainer authorization recorded in `" + recordPath + "`; bounded files: `docs/agents/agent-instructions.md`."
+			record := typedConstraintAuthorization(tt.status, tt.granted, tt.consuming)
+			repoRoot, specsRoot, slug := writeToolingRowFixture(t, row, recordPath, record)
+			result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StagePRD)
+			if err != nil {
+				t.Fatalf("CheckStage(StagePRD): %v", err)
+			}
+
+			if tt.wantCode == "" {
+				if len(result.Findings) != 0 {
+					t.Fatalf("StagePRD findings = %#v, want none", result.Findings)
+				}
+				return
+			}
+			findings := findingsWithCode(result, tt.wantCode)
+			if len(findings) != 1 || len(result.Findings) != 1 {
+				t.Fatalf("StagePRD findings = %#v, want exactly one %s", result.Findings, tt.wantCode)
+			}
+			if !hasExactLocation(findings[0], "docs/specs/0114-tooling-row/_prd.md", 8) ||
+				!hasExactLocation(findings[0], recordPath, 1) {
+				t.Errorf("%s locations = %#v, want citing row and record", tt.wantCode, findings[0].Where)
+			}
+			if tt.wantField != "" && !strings.Contains(findings[0].Summary, "field "+tt.wantField) {
+				t.Errorf("%s summary = %q, want withholding field %q", tt.wantCode, findings[0].Summary, tt.wantField)
+			}
+		})
+	}
+}
+
+func TestConstraintsAcceptHonestProposalDeclaration(t *testing.T) {
+	t.Parallel()
+
+	t.Run("honest proposed mutation", func(t *testing.T) {
+		t.Parallel()
+
+		const recordPath = "docs/specs/0114-tooling-row/_authorization.md"
+		row := "Tooling authority: applicable — exact governed mutations remain proposed in [_authorization.md](_authorization.md); status proposed and a null grant authorize no mutation. Bounded proposed files: `docs/agents/agent-instructions.md`."
+		record := typedConstraintAuthorization("proposed", "null", "0114-tooling-row")
+		repoRoot, specsRoot, slug := writeToolingRowFixture(t, row, recordPath, record)
+		result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StagePRD)
+		if err != nil {
+			t.Fatalf("CheckStage(StagePRD): %v", err)
+		}
+		if len(result.Findings) != 0 {
+			t.Fatalf("StagePRD findings = %#v, want honest proposal to pass", result.Findings)
+		}
+	})
+
+	t.Run("approved narrow record wins over proposed record", func(t *testing.T) {
+		t.Parallel()
+
+		const (
+			narrowPath   = "docs/specs/0114-tooling-row/references/narrow-authorization.md"
+			proposalPath = "docs/specs/0114-tooling-row/_authorization.md"
+		)
+		row := "Tooling authority: applicable — express maintainer authorization is recorded in [the narrow grant](references/narrow-authorization.md); bounded files: `docs/agents/agent-instructions.md`. The broader [_authorization.md](_authorization.md) remains proposed."
+		repoRoot, specsRoot, slug := writeToolingRowFixture(t, row, narrowPath, typedConstraintAuthorization("approved", "2026-09-09", "0114-tooling-row"))
+		writeToolingRowFile(t, repoRoot, proposalPath, typedConstraintAuthorization("proposed", "null", "0114-tooling-row"))
+		result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StagePRD)
+		if err != nil {
+			t.Fatalf("CheckStage(StagePRD): %v", err)
+		}
+		if len(result.Findings) != 0 {
+			t.Fatalf("StagePRD findings = %#v, want approved narrow grant selected", result.Findings)
+		}
+	})
+
+	t.Run("ambiguous express authorization refuses", func(t *testing.T) {
+		t.Parallel()
+
+		const (
+			firstPath  = "docs/specs/0114-tooling-row/references/first-authorization.md"
+			secondPath = "docs/specs/0114-tooling-row/references/second-authorization.md"
+		)
+		row := "Tooling authority: applicable — express maintainer authorization is recorded in [the first grant](references/first-authorization.md) and [the second grant](references/second-authorization.md); bounded files: `docs/agents/agent-instructions.md`."
+		record := typedConstraintAuthorization("approved", "2026-09-09", "0114-tooling-row")
+		repoRoot, specsRoot, slug := writeToolingRowFixture(t, row, firstPath, record)
+		writeToolingRowFile(t, repoRoot, secondPath, record)
+		result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StagePRD)
+		if err != nil {
+			t.Fatalf("CheckStage(StagePRD): %v", err)
+		}
+		findings := findingsWithCode(result, speccheck.CodeToolingUnapproved)
+		if len(findings) != 1 || len(result.Findings) != 1 {
+			t.Fatalf("StagePRD findings = %#v, want one ambiguous-record refusal", result.Findings)
+		}
+		for _, recordPath := range []string{firstPath, secondPath} {
+			if !hasExactLocation(findings[0], recordPath, 1) {
+				t.Errorf("ambiguous record locations = %#v, want %q", findings[0].Where, recordPath)
+			}
+		}
+		if !strings.Contains(findings[0].Summary, "exactly one") {
+			t.Errorf("ambiguous record summary = %q, want exact-one refusal", findings[0].Summary)
+		}
+	})
+
+	t.Run("dated legacy grant remains accepted", func(t *testing.T) {
+		t.Parallel()
+
+		const recordPath = "docs/workflow/authorizations/2026-08-09-characterization.md"
+		row := "Tooling authority: applicable — express maintainer authorization recorded in `" + recordPath + "`; bounded files: `docs/agents/agent-instructions.md`."
+		record := "# Authorization — bounded tooling change\n\n## Consuming Spec\n\n- 0114-tooling-row\n\n## Authorized Paths\n\n- `docs/agents/agent-instructions.md`\n"
+		repoRoot, specsRoot, slug := writeToolingRowFixture(t, row, recordPath, record)
+		result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StagePRD)
+		if err != nil {
+			t.Fatalf("CheckStage(StagePRD): %v", err)
+		}
+		if len(result.Findings) != 0 {
+			t.Fatalf("StagePRD findings = %#v, want dated legacy grant to pass", result.Findings)
+		}
+	})
+}
+
+func typedConstraintAuthorization(status, granted, consuming string) string {
+	return "---\n" +
+		"status: " + status + "\n" +
+		"granted: " + granted + "\n" +
+		"action: implement the bounded tooling change\n" +
+		"consuming: " + consuming + "\n" +
+		"paths:\n" +
+		"  - docs/agents/agent-instructions.md\n" +
+		"---\n"
 }
 
 func TestCheckReplay0060Task03RefusesWorkIndependentVerification(t *testing.T) {

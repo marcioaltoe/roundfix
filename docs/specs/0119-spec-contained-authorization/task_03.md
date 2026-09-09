@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0119-spec-contained-authorization
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -104,3 +104,33 @@ Stop before any other mutation. The bounded set comes from the approved grant in
 - `_prd.md` → User Stories 2; Core Features 4; Goals 2; Decisions: Declared intentional breaks 1.
 - `_techspec.md` → Vocabulary Contract; Implementation Design: Audit and compatibility; Build Order 2.
 - ADR-0096, ADR-0117.
+
+## Result
+
+Implemented role-based authoring validation for Tooling authority rows. The
+checker now resolves Markdown authorization links relative to the citing Spec,
+selects the record identified as the operative grant when a row also mentions a
+proposal, and passes every selected record to `spec.ReadAuthorization` with an
+explicit Spec or legacy role. A grant claim that resolves to a non-operative
+record emits `SC-TOOLING-UNAPPROVED` with the withholding field and locations
+for the citing row and record. Proposal-only declarations remain non-refusing.
+
+Focused checks:
+
+- `rtk go test ./internal/speccheck -run '^(TestConstraintsResolveSpecContainedRecord|TestConstraintsRefuseNonOperativeGrant|TestConstraintsAcceptHonestProposalDeclaration)$' -count=1` initially reached the tests after shared Go-cache access and reported the expected pre-fix signal: 5 passed and 7 failed, covering unresolved Spec-relative citations, absent non-operative refusals, and absent ambiguity refusal. After the implementation it reported `12 passed in 1 packages`.
+- `rtk go test ./internal/speccheck -run '^(TestConstraintReaderCharacterizesGrantCitation|TestToolingRowStatesApplicability|TestCheckConstraintAndTooling|TestCheckToolingUnauthorizedLocatesSpecAndRecord|TestCheckToolingUntypedReportsOnlyTheProseRecord|TestCheckCleanFixture)$' -count=1` reported `22 passed in 1 packages`.
+- `rtk git diff --check` exited 0 with no diagnostics.
+- The first sandboxed focused-test attempt could not read the shared Go build cache. The unchanged command was rerun with cache access; the environmental denial is not test evidence.
+
+Acceptance-criterion evidence:
+
+1. `TestConstraintsResolveSpecContainedRecord` observes a Spec-relative `_authorization.md` link resolving to `docs/specs/0114-tooling-row/_authorization.md`, with the citing row and resolved record in the finding locations.
+2. `TestConstraintsRefuseNonOperativeGrant` covers `status: proposed`, `status: withdrawn`, and `granted: null`. Each non-operative grant claim emits `SC-TOOLING-UNAPPROVED`, names `status` or `granted` in the summary, and locates both artifacts.
+3. `TestConstraintsAcceptHonestProposalDeclaration/honest_proposed_mutation` reports no finding for a typed proposal and recognizes `Bounded proposed files` as an honest declared boundary.
+4. `TestConstraintsAcceptHonestProposalDeclaration/approved_narrow_record_wins_over_proposed_record` selects the approved narrow record from two citations. Its `ambiguous_express_authorization_refuses` companion emits `SC-TOOLING-UNAPPROVED` and locates both unmatched candidates instead of choosing one.
+5. The Daemon-owned whole-Spec-Root `roundfix spec check` command was not run in this turn, as required by the execution invariants. The focused tests cover the proposal-only and approved-plus-proposal row forms present in active Specs; terminal repository-wide evidence remains with Daemon Verification.
+6. `TestConstraintsRefuseNonOperativeGrant/approved_record_for_asking_Spec_passes` reports no finding for an approved typed record consumed by the citing Spec.
+7. `TestConstraintsRefuseNonOperativeGrant/different_consumer_keeps_unauthorized_refusal` continues to emit `SC-TOOLING-UNAUTHORIZED`; the focused legacy regression set also preserves the existing unauthorized, untyped, and unbounded conditions.
+8. `TestConstraintReaderCharacterizesGrantCitation` changes the two recorded observations named by this Task: the Spec-relative link now resolves, and the undated Spec record now undergoes typed validation. The focused characterization and legacy regression set passed without changing another recorded expectation.
+
+Compatibility evidence: `TestConstraintsAcceptHonestProposalDeclaration/dated_legacy_grant_remains_accepted` keeps a dated legacy record for the citing Spec passing with bounded paths. The date-based validation cutoff and filename-date detector were removed; the typed reader now receives the role for every selected record. Declared Verification and the whole-Spec-Root check remain unexecuted for the Daemon.

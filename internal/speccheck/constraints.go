@@ -1,13 +1,17 @@
 package speccheck
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
+
+	"roundfix/internal/spec"
 )
 
 const (
@@ -24,6 +28,9 @@ const (
 	// CodeToolingUntyped identifies an authorization record that states its grant
 	// only in prose, so no checker can enumerate what it permits.
 	CodeToolingUntyped = "SC-TOOLING-UNTYPED"
+	// CodeToolingUnapproved identifies a claimed authorization whose cited
+	// record is not an operative grant.
+	CodeToolingUnapproved = "SC-TOOLING-UNAPPROVED"
 )
 
 const (
@@ -47,9 +54,11 @@ var (
 		CodeToolingUnauthorized,
 		CodeToolingUnbounded,
 		CodeToolingUntyped,
+		CodeToolingUnapproved,
 	}
-	sourcePathPattern = regexp.MustCompile("(?is)\\bSource:\\s*`([^`]+)`")
-	backtickPattern   = regexp.MustCompile("`([^`]+)`")
+	sourcePathPattern   = regexp.MustCompile("(?is)\\bSource:\\s*`([^`]+)`")
+	backtickPattern     = regexp.MustCompile("`([^`]+)`")
+	markdownLinkPattern = regexp.MustCompile(`\[[^\]]*\]\(([^\s)]+)\)`)
 )
 
 type applicability string
@@ -64,9 +73,23 @@ type constraintRow struct {
 	Applicability     applicability
 	Reason            string
 	SourcePath        string
+	Raw               string
 	AuthorizationPath string
 	BoundedFiles      bool
 	Line              int
+}
+
+type authorizationReferenceKind uint8
+
+const (
+	authorizationReferenceUnspecified authorizationReferenceKind = iota
+	authorizationReferenceOperative
+	authorizationReferenceProposed
+)
+
+type authorizationReference struct {
+	Path string
+	Kind authorizationReferenceKind
 }
 
 type constraintArtifact struct {
@@ -219,7 +242,7 @@ func parseConstraintRow(raw string, line int) (constraintRow, bool) {
 	}
 	label = strings.TrimSpace(label)
 	declaration = strings.TrimSpace(declaration)
-	row := constraintRow{Label: label, Line: line}
+	row := constraintRow{Label: label, Raw: raw, Line: line}
 	lowerDeclaration := strings.ToLower(declaration)
 	switch {
 	case strings.HasPrefix(lowerDeclaration, string(notApplicable)):
@@ -243,23 +266,112 @@ func parseConstraintRow(raw string, line int) (constraintRow, bool) {
 	return row, true
 }
 
+// authorizationRecordPath retains the constraint parser's singular legacy
+// projection for the mechanical audit. Authoring validation resolves its own
+// role-labelled set through authorizationReferences below.
 func authorizationRecordPath(raw, sourcePath string) string {
 	for _, match := range backtickPattern.FindAllStringSubmatch(raw, -1) {
-		path := filepath.ToSlash(filepath.Clean(strings.TrimSpace(match[1])))
-		if path == sourcePath {
+		recordPath := filepath.ToSlash(filepath.Clean(strings.TrimSpace(match[1])))
+		if recordPath == sourcePath {
 			continue
 		}
-		if strings.Contains(strings.ToLower(path), "authoriz") && strings.HasSuffix(strings.ToLower(path), ".md") {
-			return path
+		if strings.Contains(strings.ToLower(recordPath), "authoriz") && strings.HasSuffix(strings.ToLower(recordPath), ".md") {
+			return recordPath
 		}
 	}
 	return ""
 }
 
+func authorizationReferences(raw, sourcePath, artifactPath string) []authorizationReference {
+	type rawReference struct {
+		target   string
+		start    int
+		markdown bool
+	}
+
+	var rawReferences []rawReference
+	for _, match := range backtickPattern.FindAllStringSubmatchIndex(raw, -1) {
+		rawReferences = append(rawReferences, rawReference{
+			target: raw[match[2]:match[3]],
+			start:  match[0],
+		})
+	}
+	for _, match := range markdownLinkPattern.FindAllStringSubmatchIndex(raw, -1) {
+		rawReferences = append(rawReferences, rawReference{
+			target:   raw[match[2]:match[3]],
+			start:    match[0],
+			markdown: true,
+		})
+	}
+	sort.Slice(rawReferences, func(first, second int) bool {
+		return rawReferences[first].start < rawReferences[second].start
+	})
+
+	seen := make(map[string]bool)
+	var references []authorizationReference
+	for _, rawReference := range rawReferences {
+		referencePath, ok := authorizationReferencePath(rawReference.target, artifactPath, rawReference.markdown)
+		if !ok || referencePath == sourcePath || seen[referencePath] {
+			continue
+		}
+		lowerPath := strings.ToLower(referencePath)
+		if !strings.Contains(lowerPath, "authoriz") || !strings.HasSuffix(lowerPath, ".md") {
+			continue
+		}
+		seen[referencePath] = true
+		references = append(references, authorizationReference{
+			Path: referencePath,
+			Kind: authorizationReferenceKindAt(raw, rawReference.start),
+		})
+	}
+	return references
+}
+
+func authorizationReferencePath(target, artifactPath string, markdown bool) (string, bool) {
+	target = strings.Trim(strings.TrimSpace(target), "<>")
+	if target == "" || strings.Contains(target, `\`) || strings.ContainsAny(target, "?#") || path.IsAbs(target) {
+		return "", false
+	}
+	clean := path.Clean(target)
+	if clean == "." || clean == ".." || strings.HasPrefix(clean, "../") {
+		return "", false
+	}
+	if markdown {
+		clean = path.Clean(path.Join(path.Dir(artifactPath), clean))
+		if clean == "." || clean == ".." || strings.HasPrefix(clean, "../") {
+			return "", false
+		}
+	}
+	return clean, true
+}
+
+func authorizationReferenceKindAt(raw string, start int) authorizationReferenceKind {
+	clauseStart := 0
+	for _, separator := range []string{";", ". ", "\n"} {
+		if index := strings.LastIndex(raw[:start], separator); index >= clauseStart {
+			clauseStart = index + len(separator)
+		}
+	}
+	context := strings.ToLower(raw[clauseStart:start])
+	if strings.Contains(context, "proposed") {
+		return authorizationReferenceProposed
+	}
+	if claimsOperativeAuthorization(context) {
+		return authorizationReferenceOperative
+	}
+	return authorizationReferenceUnspecified
+}
+
 func recordsBoundedFiles(raw string) bool {
 	lower := strings.ToLower(raw)
-	if index := strings.Index(lower, "bounded files:"); index >= 0 {
-		value := raw[index+len("bounded files:"):]
+	boundedPrefix := "bounded files:"
+	index := strings.Index(lower, boundedPrefix)
+	if proposedIndex := strings.Index(lower, "bounded proposed files:"); proposedIndex >= 0 && (index < 0 || proposedIndex < index) {
+		boundedPrefix = "bounded proposed files:"
+		index = proposedIndex
+	}
+	if index >= 0 {
+		value := raw[index+len(boundedPrefix):]
 		if sourceIndex := strings.Index(strings.ToLower(value), "source:"); sourceIndex >= 0 {
 			value = value[:sourceIndex]
 		}
@@ -328,39 +440,46 @@ func detectConstraintRows(result *Result, repoRoot, slug string, artifacts []con
 func detectToolingRow(result *Result, repoRoot, slug string, artifact constraintArtifact, row constraintRow) {
 	rowLocation := Location{Path: artifact.displayPath, Line: row.Line}
 	recordLocation := sourceLocation(row)
-	if row.AuthorizationPath != "" {
-		recordLocation = Location{Path: row.AuthorizationPath, Line: 1}
-		recordPath, ok := resolveRepositoryPath(repoRoot, row.AuthorizationPath)
+	references := authorizationReferences(row.Raw, row.SourcePath, artifact.displayPath)
+	reference, selected, ambiguous := selectAuthorizationReference(row, references)
+	if ambiguous {
+		locations := []Location{rowLocation}
+		for _, reference := range references {
+			locations = append(locations, Location{Path: reference.Path, Line: 1})
+		}
+		result.Findings = append(result.Findings, Finding{
+			Code:     CodeToolingUnapproved,
+			Severity: SeverityError,
+			Summary:  artifact.displayPath + " claims express maintainer authorization, but the claim does not identify exactly one authorization record",
+			Where:    locations,
+			Fix:      "Cite exactly one operative authorization record for the claim in " + artifact.displayPath + ", and describe every proposal separately.",
+		})
+	}
+	if selected {
+		recordLocation = Location{Path: reference.Path, Line: 1}
+		recordPath, ok := resolveRepositoryPath(repoRoot, reference.Path)
 		if !ok {
-			addSkip(result, CodeToolingUnauthorized, row.AuthorizationPath)
+			addSkip(result, CodeToolingUnauthorized, reference.Path)
 		} else {
 			content, err := os.ReadFile(recordPath)
 			switch {
 			case errors.Is(err, os.ErrNotExist):
-				addSkip(result, CodeToolingUnauthorized, row.AuthorizationPath)
+				addSkip(result, CodeToolingUnauthorized, reference.Path)
 			case err != nil:
 				result.Findings = append(result.Findings, Finding{
 					Code:     CodeToolingUnauthorized,
 					Severity: SeverityError,
-					Summary:  artifact.displayPath + " cites unreadable " + row.AuthorizationPath + " for Spec " + slug,
+					Summary:  artifact.displayPath + " cites unreadable " + reference.Path + " for Spec " + slug,
 					Where:    []Location{rowLocation, recordLocation},
-					Fix:      "Make " + row.AuthorizationPath + " readable and name Spec " + slug + " in its authorization scope.",
-				})
-			case !authorizationNamesSpec(content, slug):
-				result.Findings = append(result.Findings, Finding{
-					Code:     CodeToolingUnauthorized,
-					Severity: SeverityError,
-					Summary:  artifact.displayPath + " cites " + row.AuthorizationPath + ", but that record does not name Spec " + slug,
-					Where:    []Location{rowLocation, recordLocation},
-					Fix:      "Add Spec " + slug + " to " + row.AuthorizationPath + " or cite the authorization record that already names it.",
+					Fix:      "Make " + reference.Path + " readable and name Spec " + slug + " in its authorization scope.",
 				})
 			default:
-				detectUntypedAuthorization(result, row.AuthorizationPath, content)
+				detectAuthorizationResolution(result, repoRoot, slug, artifact, row, reference, content)
 			}
 		}
 	}
 
-	if declaresProtectedToolingMutation(row) && !row.BoundedFiles {
+	if declaresProtectedToolingMutation(row, len(references) != 0) && !row.BoundedFiles {
 		result.Findings = append(result.Findings, Finding{
 			Code:     CodeToolingUnbounded,
 			Severity: SeverityError,
@@ -371,8 +490,40 @@ func detectToolingRow(result *Result, repoRoot, slug string, artifact constraint
 	}
 }
 
-func declaresProtectedToolingMutation(row constraintRow) bool {
-	if row.AuthorizationPath != "" {
+func selectAuthorizationReference(row constraintRow, references []authorizationReference) (authorizationReference, bool, bool) {
+	if !claimsOperativeAuthorization(row.Reason) {
+		if len(references) == 1 {
+			return references[0], true, false
+		}
+		return authorizationReference{}, false, false
+	}
+
+	var operative []authorizationReference
+	for _, reference := range references {
+		if reference.Kind == authorizationReferenceOperative {
+			operative = append(operative, reference)
+		}
+	}
+	if len(operative) == 1 {
+		return operative[0], true, false
+	}
+	if len(operative) == 0 && len(references) == 1 && references[0].Kind != authorizationReferenceProposed {
+		return references[0], true, false
+	}
+	return authorizationReference{}, false, true
+}
+
+func claimsOperativeAuthorization(value string) bool {
+	lower := strings.ToLower(strings.Join(strings.Fields(value), " "))
+	return strings.Contains(lower, "express maintainer authorization") ||
+		strings.Contains(lower, "protected tooling mutation authorized") ||
+		strings.Contains(lower, "authorization is recorded") ||
+		strings.Contains(lower, "authorization recorded") ||
+		strings.Contains(lower, "authorized at")
+}
+
+func declaresProtectedToolingMutation(row constraintRow, citesAuthorization bool) bool {
+	if citesAuthorization {
 		return true
 	}
 	reason := strings.ToLower(strings.Join(strings.Fields(row.Reason), " "))
@@ -383,97 +534,119 @@ func declaresProtectedToolingMutation(row constraintRow) bool {
 		strings.Contains(reason, "express maintainer authorization")
 }
 
-// typedAuthorizationCutoff is the first day an authorization record must state
-// its grant in machine-readable frontmatter. Records granted before it are
-// historical evidence and stay byte-identical.
-const typedAuthorizationCutoff = "2026-08-10"
-
-var authorizationRecordDatePattern = regexp.MustCompile(`(\d{4}-\d{2}-\d{2})`)
-
-// authorizationGrantFields are the fields a typed authorization record must
-// carry so a checker can enumerate the grant instead of reading prose for it.
-var authorizationGrantFields = []string{"granted", "action", "paths", "consuming"}
-
-// detectUntypedAuthorization reports an authorization record that a checker
-// cannot enumerate. A record granted on or after the cutoff must open with
-// frontmatter naming every grant field, and `paths` must list at least one
-// bounded repository path.
-func detectUntypedAuthorization(result *Result, recordPath string, content []byte) {
-	match := authorizationRecordDatePattern.FindStringSubmatch(path.Base(recordPath))
-	if len(match) != 2 || match[1] < typedAuthorizationCutoff {
+func detectAuthorizationResolution(
+	result *Result,
+	repoRoot, slug string,
+	artifact constraintArtifact,
+	row constraintRow,
+	reference authorizationReference,
+	content []byte,
+) {
+	role := authorizationRole(reference.Path)
+	resolution := spec.ReadAuthorization(context.Background(), spec.AuthorizationReadRequest{
+		RepoRoot:   repoRoot,
+		RecordPath: reference.Path,
+		Role:       role,
+		AskingSpec: slug,
+	})
+	if resolution.Outcome == spec.AuthorizationGranted {
 		return
 	}
-	location := Location{Path: recordPath, Line: 1}
-	fields, ok := authorizationFrontmatterFields(content)
-	if !ok {
-		result.Findings = append(result.Findings, Finding{
-			Code:     CodeToolingUntyped,
-			Severity: SeverityError,
-			Summary:  recordPath + " states its grant only in prose, so no checker can enumerate it",
-			Where:    []Location{location},
-			Fix:      "Open " + recordPath + " with frontmatter carrying " + strings.Join(authorizationGrantFields, ", ") + ".",
-		})
-		return
-	}
-	var missing []string
-	for _, field := range authorizationGrantFields {
-		if strings.TrimSpace(fields[field]) == "" {
-			missing = append(missing, field)
+
+	rowLocation := Location{Path: artifact.displayPath, Line: row.Line}
+	recordLocation := Location{Path: reference.Path, Line: 1}
+	if role == spec.AuthorizationRoleLegacy &&
+		resolution.Outcome == spec.AuthorizationRefused &&
+		resolution.Reason.Code == spec.AuthorizationReasonGranted &&
+		resolution.Record.GrantedAt.IsZero() {
+		if authorizationNamesSpec(content, slug) {
+			return
 		}
+		appendToolingUnauthorized(result, artifact.displayPath, slug, reference.Path, rowLocation, recordLocation)
+		return
 	}
-	if len(missing) != 0 {
+	if resolution.Outcome == spec.AuthorizationUnresolved {
 		result.Findings = append(result.Findings, Finding{
-			Code:     CodeToolingUntyped,
+			Code:     CodeToolingUnauthorized,
 			Severity: SeverityError,
-			Summary:  recordPath + " omits typed grant fields: " + strings.Join(missing, ", "),
-			Where:    []Location{location},
-			Fix:      "Record " + strings.Join(missing, ", ") + " in the frontmatter of " + recordPath + ".",
+			Summary:  artifact.displayPath + " cites unresolved " + reference.Path + " for Spec " + slug + ": " + resolution.Reason.Detail,
+			Where:    []Location{rowLocation, recordLocation},
+			Fix:      "Make " + reference.Path + " readable from the repository and keep its authorization scope repository-relative.",
 		})
+		return
+	}
+
+	switch resolution.Reason.Code {
+	case spec.AuthorizationReasonConsuming:
+		if len(resolution.Record.Consuming) != 0 {
+			appendToolingUnauthorized(result, artifact.displayPath, slug, reference.Path, rowLocation, recordLocation)
+			return
+		}
+		appendToolingUntyped(result, reference.Path, resolution.Reason)
+	case spec.AuthorizationReasonMalformedRecord, spec.AuthorizationReasonAction:
+		appendToolingUntyped(result, reference.Path, resolution.Reason)
+	case spec.AuthorizationReasonStatus:
+		if resolution.Record.Status == "" {
+			appendToolingUntyped(result, reference.Path, resolution.Reason)
+			return
+		}
+		appendToolingUnapproved(result, artifact.displayPath, reference.Path, rowLocation, recordLocation, resolution.Reason, claimsOperativeAuthorization(row.Reason))
+	case spec.AuthorizationReasonPaths:
+		if len(resolution.Record.Paths) == 0 {
+			appendToolingUntyped(result, reference.Path, resolution.Reason)
+			return
+		}
+		appendToolingUnapproved(result, artifact.displayPath, reference.Path, rowLocation, recordLocation, resolution.Reason, claimsOperativeAuthorization(row.Reason))
+	default:
+		appendToolingUnapproved(result, artifact.displayPath, reference.Path, rowLocation, recordLocation, resolution.Reason, claimsOperativeAuthorization(row.Reason))
 	}
 }
 
-// authorizationFrontmatterFields reads a leading YAML frontmatter block as
-// top-level key to raw value. A `paths` list collapses into its joined items so
-// an empty list reads as an absent value.
-func authorizationFrontmatterFields(content []byte) (map[string]string, bool) {
-	text := strings.ReplaceAll(string(content), "\r\n", "\n")
-	if !strings.HasPrefix(text, "---\n") {
-		return nil, false
+func authorizationRole(recordPath string) spec.AuthorizationRole {
+	const legacyDirectory = "docs/workflow/authorizations"
+	if recordPath == legacyDirectory || strings.HasPrefix(recordPath, legacyDirectory+"/") {
+		return spec.AuthorizationRoleLegacy
 	}
-	body, _, found := strings.Cut(text[len("---\n"):], "\n---")
-	if !found {
-		return nil, false
+	return spec.AuthorizationRoleSpec
+}
+
+func appendToolingUnauthorized(result *Result, artifactPath, slug, recordPath string, rowLocation, recordLocation Location) {
+	result.Findings = append(result.Findings, Finding{
+		Code:     CodeToolingUnauthorized,
+		Severity: SeverityError,
+		Summary:  artifactPath + " cites " + recordPath + ", but that record does not name Spec " + slug,
+		Where:    []Location{rowLocation, recordLocation},
+		Fix:      "Add Spec " + slug + " to " + recordPath + " or cite the authorization record that already names it.",
+	})
+}
+
+func appendToolingUntyped(result *Result, recordPath string, reason spec.AuthorizationReason) {
+	result.Findings = append(result.Findings, Finding{
+		Code:     CodeToolingUntyped,
+		Severity: SeverityError,
+		Summary:  recordPath + " does not carry an enumerable typed grant: " + reason.Detail,
+		Where:    []Location{{Path: recordPath, Line: 1}},
+		Fix:      "Open " + recordPath + " with typed authorization frontmatter carrying status, granted, action, consuming, and paths.",
+	})
+}
+
+func appendToolingUnapproved(
+	result *Result,
+	artifactPath, recordPath string,
+	rowLocation, recordLocation Location,
+	reason spec.AuthorizationReason,
+	claimsGrant bool,
+) {
+	if !claimsGrant {
+		return
 	}
-	fields := make(map[string]string)
-	currentKey := ""
-	for _, line := range strings.Split(body, "\n") {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
-			continue
-		}
-		if strings.HasPrefix(trimmed, "- ") {
-			if currentKey == "" {
-				continue
-			}
-			item := strings.TrimSpace(strings.TrimPrefix(trimmed, "- "))
-			if item == "" {
-				continue
-			}
-			if fields[currentKey] == "" {
-				fields[currentKey] = item
-			} else {
-				fields[currentKey] += " " + item
-			}
-			continue
-		}
-		key, value, ok := strings.Cut(trimmed, ":")
-		if !ok {
-			continue
-		}
-		currentKey = strings.TrimSpace(key)
-		fields[currentKey] = strings.TrimSpace(value)
-	}
-	return fields, true
+	result.Findings = append(result.Findings, Finding{
+		Code:     CodeToolingUnapproved,
+		Severity: SeverityError,
+		Summary:  artifactPath + " claims express maintainer authorization from " + recordPath + ", but field " + reason.Field + " withholds the grant: " + reason.Detail,
+		Where:    []Location{rowLocation, recordLocation},
+		Fix:      "Make field " + reason.Field + " operative in " + recordPath + " before claiming authorization, or declare the mutation proposed.",
+	})
 }
 
 func authorizationNamesSpec(content []byte, slug string) bool {
