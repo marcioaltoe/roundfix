@@ -170,7 +170,12 @@ configuration, scripts, ignore files, plugin declarations, or version pins,
 stop until the maintainer gives express maintainer authorization. Record that
 approval and the exact bounded files in the Tooling authority row. A generic
 implementation request, setup completion, silence, or authorization without
-bounded files does not authorize the mutation.
+bounded files does not authorize the mutation. The operative record belongs at
+`<spec-root>/<slug>/_authorization.md`; a `proposed` record or a record without
+a grant date authorizes nothing, so do not advance protected tooling work to
+decomposition until an operative grant exists. A new or widened grant must
+land in the target ancestry before the consuming squash delivery; keep the
+grant or amendment outside the change it authorizes.
 
 ### 7. Report
 

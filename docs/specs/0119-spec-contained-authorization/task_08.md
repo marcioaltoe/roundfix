@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0119-spec-contained-authorization
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -92,3 +92,54 @@ set and the sanctioned regeneration come from the approved grant in
 - `_prd.md` → User Stories 1; Core Features 1, 3; Goals 1, 2.
 - `_techspec.md` → System Architecture: Authoring guidance; Build Order 5.
 - ADR-0149.
+
+## Result
+
+The canonical PRD and TechSpec authoring guidance now names the
+Spec-contained authorization record and refuses protected-tooling work based
+on a proposed or undated record. The Task authoring preflight applies the same
+operative-grant requirement before decomposition and requires a new or widened
+grant to land in target ancestry before the consuming squash delivery. Both
+templates require the Tooling authority row to cite
+`<spec-root>/<slug>/_authorization.md` and copy every exact repository-relative
+path from its `paths` list.
+
+Focused checks:
+
+- Before the edit, `rtk rg -n -l '_authorization.md'` over the five canonical
+  authoring files returned no matches.
+- `rtk git diff --check` passed after the canonical edit.
+- `rtk make skills-sync` passed and regenerated the shipped counterparts from
+  `.agents/skills/`.
+- `rtk cmp` passed for each of the five canonical/shipped pairs: the PRD skill,
+  PRD template, TechSpec skill, TechSpec template, and Task skill.
+- The post-sync `rtk git status --short --untracked-files=all` and
+  `rtk git diff --name-only` output contains only the ten named skill/template
+  paths and this Task file. No path outside the authorized set is changed or
+  untracked.
+
+Acceptance-criterion evidence:
+
+1. Both canonical templates now require the Tooling authority row to cite the
+   Spec-contained record and copy its exact bounded paths. The shipped copies
+   contain the same wording after `make skills-sync`.
+2. The PRD, TechSpec, and Task authoring instructions state that a proposed or
+   undated record authorizes nothing; the Task preflight refuses decomposition
+   until an operative grant exists.
+3. The PRD, TechSpec, and Task authoring instructions state that a new or
+   widened grant must land in target ancestry before the consuming squash
+   delivery.
+4. The five affected canonical/shipped pairs are byte-identical by `rtk cmp`.
+   The repository `make skills-sync-check` drift gate remains pending for the
+   Daemon because it is declared in this Task's Verification section.
+5. The changed-path audit after synchronization found no path under
+   `skills/` or `.agents/skills/` outside the ten named files; the Task file is
+   the only additional changed path.
+6. No derived pin changed during the skill synchronization. The fresh
+   `make baseline-digests` regeneration and its second-run comparison remain
+   pending for the Daemon because that command is declared in this Task's
+   Verification section.
+
+The Task's declared `## Verification` commands were not run; Daemon
+Verification remains pending. No commit, push, pull request, or Task status
+change was made.
