@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0119-spec-contained-authorization
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -100,3 +100,63 @@ same input path.
 - `_authorization.md` → the typed `operations` list this reader must honor.
 - `_techspec.md` → Implementation Design: Operative record and source identity; Data Models; Build Order 1.
 - ADR-0057, ADR-0130, ADR-0149.
+
+## Result
+
+Implemented the role-based authorization reader in `internal/spec`. One request
+now reads either working-tree bytes or a named Git revision and returns a typed
+`granted`, `refused`, or `unresolved` outcome. Refusals carry a stable reason
+code plus the withholding field and offending value; unresolved results retain
+source identity without converting missing evidence into a refusal.
+
+The parsed record carries status, grant date, action, declared consumers, exact
+paths, the closed operation list, sanctioned regeneration declarations, record
+path, and resolved source revision. The legacy adapter is bounded to
+`docs/workflow/authorizations/`, reads both typed legacy frontmatter and the
+explicit prose-era headings, preserves comma-separated multi-Spec consumers,
+and expands the corpus's declared "same Source Baseline" manifest shorthand.
+No existing caller was changed.
+
+Acceptance evidence:
+
+1. `TestAuthorizationReaderClassifiesGrantState` exercises an approved record,
+   proposed and unknown states, null and unparseable grant dates, an empty path
+   list, a wrong consumer whose prose mentions the asking Spec, a contradictory
+   proposed-plus-dated record, and malformed frontmatter. The approved result
+   retains its exact path and sanctioned regeneration; every negative result
+   names the withholding field.
+2. `TestAuthorizationReaderTypesPermittedOperations` proves an approved record
+   explicitly permits `implement`, `commit`, `push`, `pull_request`, and
+   `merge`, refuses absent `release`, and that a record without `operations`
+   permits none of the vocabulary.
+3. The same operation test compares `AllAuthorizationOperations()` with the
+   exact six-token vocabulary and proves records carrying `tag` or `deploy`
+   refuse with the offending token in the reason.
+4. The classification test proves a Spec slug appearing only in prose cannot
+   replace the typed `consuming` field.
+5. `TestAuthorizationReaderRefusesEscapingPaths` uses real filesystem state to
+   prove absolute, upward-traversing, globbed, symlinked, and duplicate paths
+   each refuse with the offending path in the reason.
+6. `TestAuthorizationReaderResolvesPreservedHistoricalRecords` reads all 42
+   records from Git revision
+   `6b8ea48725cbca13974eee0b400b3482202874f6`; none is unresolved and none grants
+   to Spec 0119. It separately proves the typed eight-Spec legacy record grants
+   to an actual consumer with all 25 paths in order, and that a prose-era record
+   grants from its explicit consuming section with its three exact paths.
+7. The historical test proves a missing working-tree record reports
+   `unreadable_record` and a missing commit reports `unavailable_revision`, both
+   with outcome `unresolved` rather than `granted` or `refused`.
+
+Focused checks:
+
+- Pre-change: `rtk rg -n "ReadAuthorization|type Authorization" internal/spec`
+  exited 1 with no reader symbols.
+- Pre-change: `rtk proxy env GOCACHE=/private/tmp/roundfix-task02-gocache go test -count=1 ./internal/spec -run '^TestAuthorizationReaderClassifiesGrantState/approved_record_grants_exact_scope$'`
+  failed to compile because the authorization types and reader were undefined.
+- After implementation: `rtk proxy env GOCACHE=/private/tmp/roundfix-task02-gocache go test -count=1 ./internal/spec -run '^TestAuthorizationReader(ClassifiesGrantState|TypesPermittedOperations|RefusesEscapingPaths|ResolvesPreservedHistoricalRecords)(/.*)?$'`
+  passed.
+- After implementation: `rtk proxy env GOCACHE=/private/tmp/roundfix-task02-gocache go vet ./internal/spec`
+  passed.
+
+The Task's declared `## Verification` commands were not run; Daemon
+Verification remains pending.
