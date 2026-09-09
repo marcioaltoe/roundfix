@@ -357,15 +357,17 @@ superseded_by: null # null or ADR-NNNN
 ```
 <!-- baseline-adr-lifecycle-template:end -->
 
-Findings use `pending`, `partial`, `deferred`, and `done`. Set `done` when the
-implementation Spec is created and linked, not when implementation or release
-finishes. Preserve the original investigation and append later evidence,
+Findings use `pending`, `partial`, `deferred`, and `done`, with `deprecated`,
+`superseded`, `closed`, and `cancelled` as additional terminal dispositions.
+Set `done` when the implementation Spec is created and
+linked. This records routing completion; implementation and release have their
+own evidence. Preserve the original investigation and append later evidence,
 routing, and status context as dated addenda.
 
 <!-- baseline-findings-template:start -->
 ```markdown
 ---
-status: pending # pending | partial | deferred | done
+status: pending # pending | partial | deferred | done | deprecated | superseded | closed | cancelled
 created_at: YYYY-MM-DD
 updated_at: YYYY-MM-DD
 ---
@@ -397,6 +399,14 @@ when the linked Spec covers only the selected implementation scope and record
 why the rest is unnecessary. Use `deferred` only with a recorded reason not to
 implement. Update `updated_at` for every lifecycle change or addendum and keep
 `created_at` unchanged.
+
+Move terminal Findings and Rollups (`done`, `deferred`, `deprecated`, `superseded`,
+`closed`, or `cancelled`) to `docs/history/findings/` in the same operation that
+records their disposition. Terminal Backlog Entries move to
+`docs/history/backlog/`. Preserve the reason and any valid absorption pointer,
+and update dependent references. A reference already adopted by a Spec stays in
+that Spec's `references/` and archives with it. Unknown statuses require a
+declaration correction; they do not imply a terminal disposition.
 
 ### Profile alignment and adaptation
 

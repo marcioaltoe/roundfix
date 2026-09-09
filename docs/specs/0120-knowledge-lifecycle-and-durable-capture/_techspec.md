@@ -6,6 +6,14 @@ created: 2026-09-08
 
 # Knowledge lifecycle, publication evidence and review retirement — Technical candidate
 
+## Cleanup repair authorization — 2026-09-09
+
+The maintainer approved the five compatibility repairs needed to deliver the
+documentation cleanup. Their executable scope and approval now belong to
+Spec 0130, `0130-documentation-cleanup-compatibility`; its `_authorization.md`
+supersedes the former cleanup proposal in this folder. This does not approve or
+complete the remaining lifecycle and source-adoption work in Spec 0120.
+
 ## Executive Summary
 
 Extend existing lifecycle readers and canonical capture rules instead of adding another Inbox or scheduler. The trade-off is retaining explicit unknown lifecycle outcomes until durable evidence exists. A Review Artifact relocation is a path migration and must not decide whether its review is active.
