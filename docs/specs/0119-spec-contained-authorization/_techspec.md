@@ -10,12 +10,37 @@ created: 2026-09-08
 
 Extend the existing Spec and consistency-checking packages with one role-based authorization reader. The trade-off is explicit source/scope evidence at execution boundaries instead of inferring permission from a filename, a passing checker or matching prose. Preserve historical grants and their bounded paths; do not build a new permission service.
 
-This document makes the proposed work concrete for review. Authoring remains
-open: the exact governed grant and the decisions named below are pending.
-It is not an implementation-ready TechSpec, an executable Task Graph or
-approval to mutate protected files. The remaining decisions are recorded in
-[_prd.md](_prd.md) and [_authorization.md](_authorization.md); the dependencies
-below define this Spec's place in the implementation order.
+The governed grant was approved on 2026-09-09 and the two decisions this
+document waited on are settled in [_prd.md](_prd.md) and
+[_authorization.md](_authorization.md), so this is the implementation contract
+the Task Graph decomposes. It records no implementation result; evidence
+belongs to the Tasks and the terminal QA gate. The dependencies below define
+this Spec's place in the implementation order.
+
+## Vocabulary Contract
+
+- emits: `internal/speccheck/constraints.go`
+  pattern: `SC-TOOLING-UNAPPROVED`
+  documented-in: `CONTEXT.md`
+- emits: `internal/speccheck/verification.go`
+  pattern: `SC-SOURCE-UNTRUSTED`
+  documented-in: `CONTEXT.md`
+
+`SC-TOOLING-UNAPPROVED` is the refusal for a cited record that resolves but is
+not an operative grant, and `SC-SOURCE-UNTRUSTED` the refusal for an authored
+command whose source fails committed provenance and carries no execution
+approval. Both are coined here, so both need a glossary owner in `CONTEXT.md`
+before they ship. Neither pattern matches today, which is the point: the
+declaration is what makes `SC-VOCABULARY-UNDOCUMENTED` run instead of skip once
+the codes exist, so a token cannot reach the built CLI undefined the way
+`runtime_deferred` did in Spec 0089.
+
+To make that binding rather than vacuous, the two codes have declared owners.
+`SC-TOOLING-UNAPPROVED` is emitted by the constraint reader in
+`internal/speccheck/constraints.go`. `SC-SOURCE-UNTRUSTED` is emitted by the
+shared verification reader in `internal/speccheck/verification.go`, so
+`spec check`, Implement dispatch and Settle all refuse with one code instead of
+three private diagnostics.
 
 ## Project Constraints
 
@@ -31,7 +56,7 @@ below define this Spec's place in the implementation order.
   ADR-0038 is not applicable to the implementation scope: the one Verification repair allowance remains unchanged and is not widened by a grant.
   ADR-0056 is not applicable to the implementation scope: Task Capacity, Verification Capacity, and the temporary-failure retry remain unchanged.
   ADR-0127 is not applicable to the implementation scope: reporting process residue as a readiness fact remains unchanged.
-- Tooling authority: applicable — exact governed mutations remain proposed in [_authorization.md](_authorization.md); status proposed and a null grant authorize no mutation. Bounded proposed files: `internal/baseline/assets/modules/core.json`, `internal/baseline/assets/modules/spec-workflow.json`, `internal/baseline/assets/modules/context-workflow.json`, `internal/speccheck/constraints.go`, `internal/speccheck/constraints_characterization_test.go`, `.agents/skills/write-prd/SKILL.md`, `.agents/skills/write-prd/references/prd-template.md`, `.agents/skills/write-techspec/SKILL.md`, `.agents/skills/write-techspec/references/techspec-template.md`, `.agents/skills/write-tasks/SKILL.md`, `skills/write-prd/SKILL.md`, `skills/write-prd/references/prd-template.md`, `skills/write-techspec/SKILL.md`, `skills/write-techspec/references/techspec-template.md`, `skills/write-tasks/SKILL.md`, `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/docs-layout.md`, `docs/agents/setup-context.json`, `internal/speccheck/governed.go`, `internal/speccheck/governed_repocontract_test.go`. Sanctioned regeneration follows source approval. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
+- Tooling authority: applicable — express maintainer authorization: "Aprovar os 21 caminhos", 2026-09-09, recorded in `docs/specs/0119-spec-contained-authorization/_authorization.md`; bounded files: `internal/baseline/assets/modules/core.json`, `internal/baseline/assets/modules/spec-workflow.json`, `internal/baseline/assets/modules/context-workflow.json`, `internal/speccheck/constraints.go`, `internal/speccheck/constraints_characterization_test.go`, `.agents/skills/write-prd/SKILL.md`, `.agents/skills/write-prd/references/prd-template.md`, `.agents/skills/write-techspec/SKILL.md`, `.agents/skills/write-techspec/references/techspec-template.md`, `.agents/skills/write-tasks/SKILL.md`, `skills/write-prd/SKILL.md`, `skills/write-prd/references/prd-template.md`, `skills/write-techspec/SKILL.md`, `skills/write-techspec/references/techspec-template.md`, `skills/write-tasks/SKILL.md`, `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/docs-layout.md`, `docs/agents/setup-context.json`, `internal/speccheck/governed.go`, `internal/speccheck/governed_repocontract_test.go`, `internal/suiteguardcontract/regeneration.go`, `internal/suiteguardcontract/regeneration_test.go`. Permitted operations are typed in the record as implement, commit, push, pull_request and merge; release, tag and deploy are absent and absence refuses. Sanctioned regeneration follows the approved source edits: `make skills-sync` rewrites the shipped bundle already enumerated above, and `make baseline-digests` rewrites the derived pins. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## System Architecture
 
@@ -45,7 +70,8 @@ below define this Spec's place in the implementation order.
 
 The map extends current package owners. Paths that name a package are
 implementation seams, not permission for arbitrary edits below that directory.
-The exact governed files remain in the authorization proposal; ordinary source
+The exact governed files are the approved bounded set in the authorization
+record; ordinary source
 changes must stay within this Spec's behavior. Revalidate shared files after
 prerequisite Specs land rather than replacing their newer contracts.
 
@@ -85,8 +111,23 @@ owned shipped templates currently missed by the narrow path predicate.
 Apply source approval at all authored-command entry points: non-vacuous probing,
 Implement dispatch and Settle. A read-only `spec check` remains usable on
 untrusted documentation. Source approval does not grant network access,
-credentials, release actions or a different sandbox. These fields are a design
-candidate; their exact protected readers/templates await the operative grant.
+credentials, release actions or a different sandbox.
+
+The approved trust contract is committed provenance. An authored command may
+execute when the Spec artifact carrying it is tracked in this repository and
+byte-identical to its committed bytes at the resolved revision. Three
+conditions break that and require an execution approval recorded in the
+consuming Spec's `_authorization.md` naming the approved revision: a Spec Root
+resolving outside the repository's Git tree, an artifact that is untracked or
+modified against its committed bytes, and command text that differs from the
+committed bytes even when the file is tracked. The comparison is made against
+the committed object, not against a timestamp or a working-tree heuristic, so
+the refusal fires on a proven byte difference. An unreadable Git object or an
+unavailable revision is reported as an unresolved source rather than silently
+treated as trusted or as untrusted; fail-closed here means refusing to execute,
+never inventing a verdict. Approval is bound to the named revision, so a later
+edit to the approved commands falls back to refusal without withdrawing the
+historical approval.
 
 ### Interfaces
 
@@ -149,10 +190,15 @@ inspection or a focused fixture. Required observations:
 3. An archived Spec-contained grant and unchanged legacy grant resolve; discovered paths never narrow the historical governed set.
 4. A supplied third-party Verification marker cannot execute before source approval; unchanged approved local commands can run in a disposable checkout.
 
-These are planned checks, not executed evidence. Exact commands, independent
-groups where supported, required runtime access and failure expectations must
-be authored after approval. Preserve the repository's declared Go/toolchain and
-CI constraints; live paid calls require the separately recorded limit.
+5. Today's constraint, governed-path and execution behavior captured as a
+   characterization corpus before the change, so the regression gate is the
+   recorded present behavior rather than a test written afterwards to match the
+   new code. Every path that legitimately passes today must still pass.
+
+These are the observations the Tasks must settle; the Tasks own the exact
+commands and failure expectations, and none of them is executed evidence here.
+Preserve the repository's declared Go/toolchain and CI constraints. No paid
+call is authorized by this Spec.
 
 ## Build Order
 
@@ -163,10 +209,10 @@ CI constraints; live paid calls require the separately recorded limit.
 5. Canonical authoring guidance and sanctioned generated outputs (depends on: 2, 4).
 6. Public refusal/approval journeys and terminal QA (depends on: 3, 4, 5).
 
-This sequence is a proposed build order, not `_tasks.md`. Prerequisite merges,
-exact governed authority and remaining decisions must be revalidated before it
-becomes a Task Graph. Implementation and Verification remain runtime/Daemon
-owned; the Supervisor authors and coordinates.
+This sequence is the decomposition input for `_tasks.md`, not the Task Graph
+itself. Step 1 carries the characterization corpus that later steps are held
+to. Implementation and Verification remain runtime/Daemon owned; the Supervisor
+authors and coordinates.
 
 ### Squash delivery and prior authority
 
@@ -187,9 +233,12 @@ The main risk is circular source identity or retroactive permission. Keep execut
 ## Decisions
 
 - The maintainer selected complete source triage and the implementation portfolio; source ownership is now recorded. That intent is distinct from a concrete governed-file grant.
+- Approved on 2026-09-09: the Spec-contained `_authorization.md` record as canonical placement, over the bounded governed paths in Project Constraints. The initial approval covered twenty-one paths; the same-day amendment raised the effective set to the twenty-three listed there, adding `internal/suiteguardcontract/regeneration.go` and its test. Project Constraints is the operative list.
+- Approved on 2026-09-09: committed provenance as the execution trust contract, with per-source approval bound to the approved revision rather than a reviewed queue.
+- The two new refusal codes are coined by this Spec and carry declared emitting owners in the Vocabulary Contract above.
 - Delivery through squash merge requires the configured pre-PR review policy outcome and passing required checks for the current candidate. Explicit none records intentional review omission; enabled-provider failure cannot select none. Releases, tags and paid consumption are not implied.
 - Preserve configured reviewer selection; this Spec introduces no separate reviewer override.
-- The proposed mechanisms and unresolved trade-offs above remain candidates. Existing accepted ADRs named in Project Constraints remain operative until any explicit revision is accepted.
+- The intentional breaks this Spec accepts are declared in the PRD's Decisions; an observable change outside that list is a regression, not a decision. Existing accepted ADRs named in Project Constraints remain operative until any explicit revision is accepted.
 
 ## Cross-Spec dependencies
 
