@@ -9,8 +9,9 @@ created: 2026-09-08
 ## Cleanup repair authorization — 2026-09-09
 
 The maintainer approved the five compatibility repairs needed to deliver the
-documentation cleanup. Their executable scope and approval now belong to
-Spec 0130, `0130-documentation-cleanup-compatibility`; its `_authorization.md`
+documentation cleanup. That bounded repair completed implementation and QA and
+was archived as [Spec 0130](../../history/specs/0130-documentation-cleanup-compatibility/_prd.md).
+Its [authorization](../../history/specs/0130-documentation-cleanup-compatibility/_authorization.md)
 supersedes the former cleanup proposal in this folder. This does not approve or
 complete the remaining lifecycle and source-adoption work in Spec 0120.
 

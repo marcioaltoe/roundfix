@@ -21,4 +21,3 @@ All commands ran from the audited Run Worktree at `c6a5ea15`.
   subtests; the real historical corpus, unmatched-path refusal, governed-path
   refusal, hand-edited-derived refusal, wrong-Spec refusal and folded
   authorization refusal all executed.
-

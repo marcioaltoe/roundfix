@@ -1,9 +1,12 @@
 ---
 spec: 0130-documentation-cleanup-compatibility
-status: active
+status: archived
 created: 2026-09-09
 surfaces: [infra, docs]
+archived: "2026-09-09"
+source_slug: 0130-documentation-cleanup-compatibility
 ---
+
 
 # Verification survives the documentation cleanup
 

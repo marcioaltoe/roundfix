@@ -20,4 +20,3 @@ The independent rereads `test ! -e docs/workflow` and
 `rtk git diff --exit-code` both exited 0. The first proves regeneration did not
 restore the removed directory; the second proves it made no unstaged change over
 the staged cleanup deletion.
-
