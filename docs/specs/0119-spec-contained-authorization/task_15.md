@@ -72,7 +72,6 @@ execute exactly as they did before this Spec touched them.
 
 ## Context
 
-- interface: `internal/speccheck/verification_source.go`
 - interface: `internal/daemon/engine.go`
 - interface: `internal/daemon/verification_probe.go`
 - interface: `internal/cli/settle.go`
