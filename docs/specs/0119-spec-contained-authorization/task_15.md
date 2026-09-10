@@ -81,7 +81,7 @@ execute exactly as they did before this Spec touched them.
 - `matches="$(grep -rln 'AuthorizeAuthoredCommands\|ProbeAuthoredCommands\|SC-SOURCE-UNTRUSTED' internal/ --include='*.go' || true)"; test -z "$matches" || { printf '%s\n' "$matches"; exit 1; }` — no production or test file references the withdrawn boundary; it fails today.
 - `test ! -f internal/speccheck/verification_source.go` — the implementation file is removed rather than left orphaned.
 - `grep -q 'SC-SOURCE-UNTRUSTED' CONTEXT.md && exit 1; grep -q 'SC-TOOLING-UNAPPROVED' CONTEXT.md` — the glossary defines the code that remains and no longer defines the one the CLI cannot emit.
-- `go test -count=1 ./internal/authorization ./internal/spec ./internal/speccheck ./internal/suiteguardcontract` — every record-half package still passes.
+- `test ! -f internal/speccheck/verification_source.go || exit 1; go test -count=1 ./internal/authorization ./internal/spec ./internal/speccheck ./internal/suiteguardcontract` — every record-half package still passes once the boundary is gone. The guard reads the removal, so this preservation check cannot pass before the work.
 - `make verify` — the complete concurrent gate passes, which is the regression this Task withdraws.
 
 ## References
