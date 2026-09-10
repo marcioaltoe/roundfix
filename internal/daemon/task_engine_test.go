@@ -210,12 +210,16 @@ func newTaskCycleFixture(t *testing.T, seeds []taskSpecSeed) *taskCycleFixture {
 }
 
 func (fixture *taskCycleFixture) plan() TaskPlan {
+	fixture.t.Helper()
+	head := strings.TrimSpace(gittest.Run(fixture.t, fixture.gitRoot, "rev-parse", "HEAD"))
 	return TaskPlan{
 		RunID:                   fixture.run.ID,
 		Session:                 agent.SessionRefForRun(fixture.run.ID, fixture.gitRoot),
 		WorkDir:                 fixture.gitRoot,
 		RunWorktree:             runworktree.Ref{RunID: fixture.run.ID, Path: fixture.gitRoot, Branch: runworktree.BranchName(fixture.run.ID), UserRoot: fixture.gitRoot},
 		TargetBranch:            fixture.run.LocalBranch,
+		HeadSHA:                 head,
+		Authorization:           spec.ReadSpecAuthorization(context.Background(), fixture.gitRoot, taskCycleSlug, head),
 		Spec:                    fixture.graph.Spec,
 		SpecsRoot:               fixture.specsRoot,
 		Tasks:                   fixture.graph.Tasks,
@@ -289,7 +293,7 @@ func writeTaskFixtureExecutionApprovals(t *testing.T, fixture *taskCycleFixture,
 	t.Helper()
 	localPath := filepath.ToSlash(filepath.Join("docs", "specs", fixture.graph.Tasks[0].File))
 	var record strings.Builder
-	fmt.Fprintf(&record, "---\nstatus: approved\ngranted: 2026-09-09\naction: approve external fixture commands\nconsuming: %s\npaths:\n  - %s\noperations:\n  - implement\nexecution_approvals:\n", taskCycleSlug, localPath)
+	fmt.Fprintf(&record, "---\nstatus: approved\ngranted: 2026-09-09\naction: approve external fixture commands\nconsuming: %s\npaths:\n  - %s\noperations:\n  - implement\n  - commit\n  - push\nexecution_approvals:\n", taskCycleSlug, localPath)
 	for _, seed := range seeds {
 		commands := seed.verification
 		if len(commands) == 0 {
@@ -382,6 +386,11 @@ status: active
 - Active ADR obligations: not applicable — this fixture cites no ADR. Source: `+"`docs/agents/domain.md`"+`.
 - Tooling authority: not applicable — this fixture changes no tooling. Source: `+"`docs/agents/agent-instructions.md`"+`.
 `)
+	mustWriteForTest(t, filepath.Join(specDir, "_authorization.md"), taskFixtureAuthorization(slug,
+		spec.AuthorizationOperationImplement,
+		spec.AuthorizationOperationCommit,
+		spec.AuthorizationOperationPush,
+	))
 
 	var manifest strings.Builder
 	manifest.WriteString("---\nschema: spec-tasks/v1\n")
@@ -429,6 +438,22 @@ status: active
 		}
 		mustWriteForTest(t, filepath.Join(specDir, seed.id+".md"), body.String())
 	}
+}
+
+func taskFixtureAuthorization(slug string, operations ...spec.AuthorizationOperation) string {
+	var record strings.Builder
+	fmt.Fprintf(&record, "---\nstatus: approved\ngranted: 2026-09-09\naction: run the fixture Spec\nconsuming: %s\npaths:\n  - docs/agents/domain.md\noperations:\n", slug)
+	for _, operation := range operations {
+		fmt.Fprintf(&record, "  - %s\n", operation)
+	}
+	record.WriteString("---\n\n# Approved fixture authority\n")
+	return record.String()
+}
+
+func setTaskFixtureAuthorizationOperations(t *testing.T, fixture *taskCycleFixture, operations ...spec.AuthorizationOperation) {
+	t.Helper()
+	mustWriteForTest(t, filepath.Join(fixture.gitRoot, "docs", "specs", taskCycleSlug, "_authorization.md"), taskFixtureAuthorization(taskCycleSlug, operations...))
+	commitTaskFixtureSource(t, fixture.gitRoot, "change fixture operation authority")
 }
 
 func taskSeedsWithQAGate(seeds []taskSpecSeed) ([]taskSpecSeed, string) {
@@ -3037,6 +3062,139 @@ func TestTaskCycleValidatesPlan(t *testing.T) {
 	if len(*fixture.calls) != 0 {
 		t.Fatalf("expected no daemon actions for invalid plan, got %v", *fixture.calls)
 	}
+}
+
+func TestDispatchRefusesMissingImplementAuthority(t *testing.T) {
+	t.Parallel()
+
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}, {id: "task_02"}})
+	setTaskFixtureAuthorizationOperations(t, fixture)
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{calls: fixture.calls}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	taskWorktrees := newFakeTaskWorktrees()
+	engine := fixture.engineWithTaskWorktrees(t, runner, verifier, committer, fixture.worktree, taskWorktrees)
+	plan := fixture.plan()
+	plan.Concurrency = 2
+	stateBefore := runStateForTest(fixture.store, fixture.run.ID)
+	headBefore := strings.TrimSpace(gittest.Run(t, fixture.gitRoot, "rev-parse", "HEAD"))
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err == nil {
+		t.Fatal("expected missing implement authority to refuse dispatch")
+	}
+	for _, want := range []string{"implement", "docs/specs/" + taskCycleSlug + "/_authorization.md"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("dispatch refusal = %q, want %q", err, want)
+		}
+	}
+	if result.Completed != 0 || result.Failed != 0 || result.Skipped != 0 || result.QAVerdict != "" || result.QAReportPath != "" || len(result.Outcomes) != 0 {
+		t.Fatalf("dispatch refusal returned Task result %+v", result)
+	}
+	if len(*fixture.calls) != 0 || len(verifier.commands) != 0 || len(committer.messages) != 0 || len(fixture.pusher.remotes) != 0 {
+		t.Fatalf("dispatch refusal left Agent, shell, commit, or push calls: calls=%v verify=%v commits=%v pushes=%v", *fixture.calls, verifier.commands, committer.messages, fixture.pusher.remotes)
+	}
+	if len(runner.requests) != 0 {
+		t.Fatalf("dispatch refusal opened Agent work: %+v", runner.requests)
+	}
+	if created := taskWorktrees.createdTasks(); len(created) != 0 {
+		t.Fatalf("dispatch refusal created Task Worktrees: %v", created)
+	}
+	attempts, attemptsErr := fixture.store.AgentSelectionAttempts(context.Background(), fixture.run.ID)
+	if attemptsErr != nil {
+		t.Fatalf("read Agent Session attempts: %v", attemptsErr)
+	}
+	if len(attempts) != 0 {
+		t.Fatalf("dispatch refusal recorded Agent Sessions: %+v", attempts)
+	}
+	if events := fixture.sink.snapshot(); len(events) != 0 {
+		t.Fatalf("dispatch refusal published Run Events: %+v", events)
+	}
+	if fixture.progress.Len() != 0 {
+		t.Fatalf("dispatch refusal wrote progress: %q", fixture.progress.String())
+	}
+	if got := runStateForTest(fixture.store, fixture.run.ID); got != stateBefore {
+		t.Fatalf("dispatch refusal changed Run state from %q to %q", stateBefore, got)
+	}
+	if got := strings.TrimSpace(gittest.Run(t, fixture.gitRoot, "rev-parse", "HEAD")); got != headBefore {
+		t.Fatalf("dispatch refusal changed HEAD from %s to %s", headBefore, got)
+	}
+	for _, taskID := range []string{"task_01", "task_02"} {
+		if got := taskStatusOnDisk(t, fixture.gitRoot, taskID); got != string(spec.StatusPending) {
+			t.Fatalf("dispatch refusal changed %s status to %q", taskID, got)
+		}
+	}
+}
+
+func TestCommitAndPushAuthorityAreSeparate(t *testing.T) {
+	t.Parallel()
+
+	t.Run("implement without commit settles unresolved", func(t *testing.T) {
+		fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+		setTaskFixtureAuthorizationOperations(t, fixture, spec.AuthorizationOperationImplement)
+		committer := &engineFakeCommitter{calls: fixture.calls}
+		engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+		headBefore := strings.TrimSpace(gittest.Run(t, fixture.gitRoot, "rev-parse", "HEAD"))
+
+		result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+		if err != nil {
+			t.Fatalf("missing commit authority should settle the Task unresolved: %v", err)
+		}
+		if result.Completed != 0 || result.Failed != 1 || len(result.Outcomes) != 1 {
+			t.Fatalf("missing commit authority result = %+v, want one unresolved Task", result)
+		}
+		for _, want := range []string{"commit", "docs/specs/" + taskCycleSlug + "/_authorization.md"} {
+			if !strings.Contains(result.Outcomes[0].Reason, want) {
+				t.Errorf("missing commit authority reason = %q, want %q", result.Outcomes[0].Reason, want)
+			}
+		}
+		if len(committer.messages) != 0 {
+			t.Fatalf("missing commit authority wrote commits: %v", committer.messages)
+		}
+		if got := strings.TrimSpace(gittest.Run(t, fixture.gitRoot, "rev-parse", "HEAD")); got != headBefore {
+			t.Fatalf("missing commit authority changed HEAD from %s to %s", headBefore, got)
+		}
+	})
+
+	t.Run("commit without push commits and refuses push", func(t *testing.T) {
+		fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+		setTaskFixtureAuthorizationOperations(t, fixture,
+			spec.AuthorizationOperationImplement,
+			spec.AuthorizationOperationCommit,
+		)
+		committer := &engineFakeCommitter{calls: fixture.calls}
+		engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+		plan := fixture.plan()
+
+		result, err := engine.TaskCycle(context.Background(), plan)
+		if err != nil {
+			t.Fatalf("commit-authorized Task cycle: %v", err)
+		}
+		if result.Completed != 1 || len(committer.messages) != 1 {
+			t.Fatalf("commit-authorized Task result = %+v, commits = %v", result, committer.messages)
+		}
+
+		err = engine.FinalPush(context.Background(), FinalPushRequest{
+			RunID:         fixture.run.ID,
+			WorkDir:       fixture.gitRoot,
+			Remote:        "origin",
+			Branch:        "feature",
+			Authorization: &plan.Authorization,
+		})
+		if err == nil {
+			t.Fatal("expected missing push authority to refuse push")
+		}
+		for _, want := range []string{"push", "docs/specs/" + taskCycleSlug + "/_authorization.md"} {
+			if !strings.Contains(err.Error(), want) {
+				t.Errorf("push refusal = %q, want %q", err, want)
+			}
+		}
+		if len(fixture.pusher.remotes) != 0 {
+			t.Fatalf("missing push authority reached Pusher: %v", fixture.pusher.remotes)
+		}
+	})
 }
 
 func TestTaskCyclePublishesCapacities(t *testing.T) {

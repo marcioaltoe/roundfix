@@ -556,7 +556,7 @@ func writeExternalExecutionApprovalsForTest(t *testing.T, repoDir string, specsR
 			continue
 		}
 		var record strings.Builder
-		fmt.Fprintf(&record, "---\nstatus: approved\ngranted: 2026-09-09\naction: approve external test Spec commands\nconsuming: %s\npaths:\n  - docs/agents/domain.md\noperations:\n  - implement\nexecution_approvals:\n", graph.Spec.Slug)
+		fmt.Fprintf(&record, "---\nstatus: approved\ngranted: 2026-09-09\naction: approve external test Spec commands\nconsuming: %s\npaths:\n  - docs/agents/domain.md\noperations:\n  - implement\n  - commit\n  - push\nexecution_approvals:\n", graph.Spec.Slug)
 		for _, task := range graph.Tasks {
 			artifactPath := filepath.Join(specsRoot, task.File)
 			artifact, relErr := filepath.Rel(sourceRepo, artifactPath)
@@ -658,6 +658,7 @@ func writeImplementSpecAtRoot(t *testing.T, specsRoot string, slug string, seeds
 	// runs. These rows keep the fixture authoring-clean, which is what every
 	// implement Run below is actually measuring.
 	mustWrite(t, filepath.Join(specDir, "_prd.md"), "---\nstatus: active\n---\n\n# PRD\n\n"+implementFixtureConstraints)
+	mustWrite(t, filepath.Join(specDir, "_authorization.md"), implementFixtureAuthorization(slug, "implement", "commit", "push"))
 
 	var qaTaskID string
 	for _, seed := range seeds {
@@ -684,6 +685,24 @@ func writeImplementSpecAtRoot(t *testing.T, specsRoot string, slug string, seeds
 	for _, seed := range seeds {
 		mustWrite(t, implementTaskPathInRoot(specsRoot, slug, seed.id), implementTaskContent(slug, seed))
 	}
+}
+
+func implementFixtureAuthorization(slug string, operations ...string) string {
+	var record strings.Builder
+	fmt.Fprintf(&record, "---\nstatus: approved\ngranted: 2026-09-09\naction: run the fixture Spec\nconsuming: %s\npaths:\n  - docs/agents/domain.md\noperations:\n", slug)
+	for _, operation := range operations {
+		fmt.Fprintf(&record, "  - %s\n", operation)
+	}
+	record.WriteString("---\n\n# Approved fixture authority\n")
+	return record.String()
+}
+
+func setImplementFixtureAuthorizationOperations(t *testing.T, repoDir string, operations ...string) {
+	t.Helper()
+	path := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "_authorization.md")
+	mustWrite(t, path, implementFixtureAuthorization(implementTestSlug, operations...))
+	gitImplement(t, repoDir, "add", filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "_authorization.md")))
+	gitImplement(t, repoDir, "commit", "-m", "change fixture operation authority")
 }
 
 func TestImplementTaskContentChoosesVerificationByTaskType(t *testing.T) {
@@ -1910,6 +1929,48 @@ func TestRunImplementRejectsInvalidVerificationCapacityBeforeRunCreation(t *test
 			}
 			assertNoRunDatabase(t, homeDir)
 		})
+	}
+}
+
+func TestRunImplementRefusesMissingImplementAuthorityBeforeRun(t *testing.T) {
+	t.Parallel()
+
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	setImplementFixtureAuthorizationOperations(t, repoDir, "commit", "push")
+	runner := &implementFakeRunner{gitRoot: repoDir}
+	withImplementCollaborators(t, runner)
+	statusBefore := gitImplementOutput(t, repoDir, "status", "--porcelain=v1")
+	headBefore := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("missing implement authority exit = %d, want %d; stderr=%q", code, exitPreflight, stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("missing implement authority wrote stdout %q", stdout.String())
+	}
+	for _, want := range []string{"implement", "docs/specs/" + implementTestSlug + "/_authorization.md"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Errorf("missing implement authority stderr = %q, want %q", stderr.String(), want)
+		}
+	}
+	if runner.calls != 0 || len(runner.probeRequests) != 0 {
+		t.Fatalf("missing implement authority reached Agent profile or work: probes=%v calls=%d", runner.probeRequests, runner.calls)
+	}
+	assertNoRunDatabase(t, homeDir)
+	if _, err := os.Stat(filepath.Join(homeDir, ".roundfix", "worktrees")); err == nil {
+		t.Fatalf("missing implement authority created a Run Worktree root")
+	} else if !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("stat Run Worktree root: %v", err)
+	}
+	if got := gitImplementOutput(t, repoDir, "status", "--porcelain=v1"); got != statusBefore {
+		t.Fatalf("missing implement authority changed git status from %q to %q", statusBefore, got)
+	}
+	if got := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD")); got != headBefore {
+		t.Fatalf("missing implement authority changed HEAD from %s to %s", headBefore, got)
 	}
 }
 

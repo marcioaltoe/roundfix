@@ -225,6 +225,7 @@ type TaskPlan struct {
 	RunWorktree             runworktree.Ref
 	TargetBranch            string
 	HeadSHA                 string
+	Authorization           spec.AuthorizationResolution
 	SpecsRoot               string
 	ArtifactDir             string
 	AgentLogs               bool
@@ -329,6 +330,9 @@ type runEventJournal interface {
 func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleResult, error) {
 	if err := validateTaskPlan(plan); err != nil {
 		return TaskCycleResult{}, err
+	}
+	if err := spec.RequireOperation(plan.Authorization, spec.AuthorizationOperationImplement); err != nil {
+		return TaskCycleResult{}, fmt.Errorf("task cycle: refuse Implement dispatch: %w", err)
 	}
 	taskPlan, qaTask, err := taskPlanWithoutQAGate(plan)
 	if err != nil {
@@ -952,6 +956,11 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 					failure = taskVerificationFailureReason(final)
 				}
 			}
+		}
+	}
+	if failure == "" {
+		if authorizationErr := spec.RequireOperation(plan.Authorization, spec.AuthorizationOperationCommit); authorizationErr != nil {
+			failure = fmt.Sprintf("Task commit refused: %v", authorizationErr)
 		}
 	}
 	settled := spec.StatusCompleted
@@ -1640,6 +1649,9 @@ func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.T
 			return fmt.Errorf("publish stop event for run %q before Task %s commit: %w", plan.RunID, task.ID, errors.Join(err, publishErr))
 		}
 		return fmt.Errorf("stop run %q before Task %s commit: %w", plan.RunID, task.ID, err)
+	}
+	if err := spec.RequireOperation(plan.Authorization, spec.AuthorizationOperationCommit); err != nil {
+		return fmt.Errorf("refuse Task %s commit: %w", task.ID, err)
 	}
 	after, err := engine.deps.Worktree.Snapshot(ctx, plan.WorkDir)
 	if err != nil {
@@ -2499,6 +2511,9 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 			return fmt.Errorf("publish stop event for run %q before the QA Report commit: %w", plan.RunID, errors.Join(err, publishErr))
 		}
 		return fmt.Errorf("stop run %q before the QA Report commit: %w", plan.RunID, err)
+	}
+	if err := spec.RequireOperation(plan.Authorization, spec.AuthorizationOperationCommit); err != nil {
+		return fmt.Errorf("refuse QA Task %s commit: %w", qaTask.ID, err)
 	}
 	after, err := engine.deps.Worktree.Snapshot(ctx, plan.WorkDir)
 	if err != nil {

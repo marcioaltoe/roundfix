@@ -1174,6 +1174,54 @@ func TestSettleRefusesUntrustedCommandSource(t *testing.T) {
 	}
 }
 
+func TestSettleRefusesMissingCommitAuthority(t *testing.T) {
+	t.Parallel()
+
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{
+			id:           "task_01",
+			title:        "Recover bounded work",
+			status:       string(spec.StatusFailed),
+			verification: []string{"touch should-not-run"},
+		},
+	})
+	setImplementFixtureAuthorizationOperations(t, repoDir, "implement", "push")
+	mustWrite(t, filepath.Join(repoDir, "done.txt"), "preserved work\n")
+	taskPath := implementTaskPath(repoDir, "task_01")
+	taskBefore := mustRead(t, taskPath)
+	statusBefore := gitSettleOutput(t, repoDir, "status", "--porcelain=v1")
+	headBefore := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "HEAD"))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected exit code 2, got %d (stderr %q)", code, stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout, got %q", stdout.String())
+	}
+	for _, want := range []string{"commit", "docs/specs/" + implementTestSlug + "/_authorization.md"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Errorf("settle refusal = %q, want %q", stderr.String(), want)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(repoDir, "should-not-run")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("missing commit authority executed Verification, stat error %v", err)
+	}
+	if got := mustRead(t, taskPath); got != taskBefore {
+		t.Fatalf("missing commit authority changed task file")
+	}
+	if got := gitSettleOutput(t, repoDir, "status", "--porcelain=v1"); got != statusBefore {
+		t.Fatalf("missing commit authority changed status from %q to %q", statusBefore, got)
+	}
+	if got := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "HEAD")); got != headBefore {
+		t.Fatalf("missing commit authority changed HEAD from %s to %s", headBefore, got)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
 func TestSettleVerificationFailureKeepsHookRefusedWorkInTaskWorktree(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
@@ -1318,7 +1366,7 @@ func commitSettleExecutionApproval(t *testing.T, repoDir string, commands []stri
 	artifact := filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "task_01.md"))
 	revision := strings.TrimSpace(gitImplementOutput(t, repoDir, "log", "-1", "--format=%H", "HEAD", "--", artifact))
 	var record strings.Builder
-	fmt.Fprintf(&record, "---\nstatus: approved\ngranted: 2026-09-09\naction: approve exact Settle commands\nconsuming: %s\npaths:\n  - %s\noperations:\n  - implement\nexecution_approvals:\n", implementTestSlug, artifact)
+	fmt.Fprintf(&record, "---\nstatus: approved\ngranted: 2026-09-09\naction: approve exact Settle commands\nconsuming: %s\npaths:\n  - %s\noperations:\n  - implement\n  - commit\nexecution_approvals:\n", implementTestSlug, artifact)
 	for _, command := range commands {
 		fmt.Fprintf(&record, "  - repository: %q\n    revision: %s\n    artifact: %s\n    command_digest: %s\n", repoDir, revision, artifact, speccheck.AuthoredCommandDigest(command))
 	}

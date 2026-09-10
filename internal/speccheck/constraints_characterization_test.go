@@ -7,6 +7,7 @@ package speccheck_test
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -330,6 +331,70 @@ func TestConstraintsAcceptHonestProposalDeclaration(t *testing.T) {
 	})
 }
 
+func TestStrictCheckRefusesMissingImplementAuthority(t *testing.T) {
+	t.Parallel()
+
+	const recordPath = "docs/specs/0114-tooling-row/_authorization.md"
+	row := "Tooling authority: applicable — express maintainer authorization recorded in [_authorization.md](_authorization.md); bounded files: `docs/agents/agent-instructions.md`."
+	repoRoot, specsRoot, slug := writeToolingRowFixture(t, row, recordPath, typedConstraintAuthorization("approved", "2026-09-09", "0114-tooling-row"))
+	prdPath := filepath.Join(repoRoot, "docs", "specs", slug, "_prd.md")
+	prd, err := os.ReadFile(prdPath)
+	if err != nil {
+		t.Fatalf("read fixture PRD: %v", err)
+	}
+	writeToolingRowFile(t, repoRoot, "docs/specs/0114-tooling-row/_prd.md", "---\nstatus: active\n---\n\n"+string(prd))
+	writeToolingRowFile(t, repoRoot, "docs/specs/0114-tooling-row/_tasks.md", `---
+schema: spec-tasks/v1
+spec: 0114-tooling-row
+graph:
+  nodes:
+    - id: task_01
+      file: task_01.md
+      needs: []
+---
+
+# Task Graph
+`)
+	writeToolingRowFile(t, repoRoot, "docs/specs/0114-tooling-row/task_01.md", `---
+task: task_01
+spec: 0114-tooling-row
+status: pending
+type: backend
+---
+
+# Exercise the grant
+
+## Verification
+
+`+"- `true` — expected: passes.\n")
+
+	withoutImplement, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StageTasks)
+	if err != nil {
+		t.Fatalf("CheckStage(StageTasks) without implement: %v", err)
+	}
+	speccheck.PromoteGaps(&withoutImplement)
+	findings := findingsWithCode(withoutImplement, speccheck.CodeToolingUnapproved)
+	if len(findings) != 1 {
+		t.Fatalf("%s findings = %#v, want one missing-implement refusal", speccheck.CodeToolingUnapproved, findings)
+	}
+	for _, want := range []string{"implement", recordPath} {
+		if !strings.Contains(findings[0].Summary, want) {
+			t.Errorf("missing-implement summary = %q, want %q", findings[0].Summary, want)
+		}
+	}
+
+	writeToolingRowFile(t, repoRoot, recordPath, typedConstraintAuthorizationWithOperations(
+		"approved", "2026-09-09", "0114-tooling-row", "implement",
+	))
+	withImplement, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StageTasks)
+	if err != nil {
+		t.Fatalf("CheckStage(StageTasks) with implement: %v", err)
+	}
+	if findings := findingsWithCode(withImplement, speccheck.CodeToolingUnapproved); len(findings) != 0 {
+		t.Fatalf("%s findings = %#v, want implement authority accepted", speccheck.CodeToolingUnapproved, findings)
+	}
+}
+
 func typedConstraintAuthorization(status, granted, consuming string) string {
 	return "---\n" +
 		"status: " + status + "\n" +
@@ -339,6 +404,16 @@ func typedConstraintAuthorization(status, granted, consuming string) string {
 		"paths:\n" +
 		"  - docs/agents/agent-instructions.md\n" +
 		"---\n"
+}
+
+func typedConstraintAuthorizationWithOperations(status, granted, consuming string, operations ...string) string {
+	var record strings.Builder
+	fmt.Fprintf(&record, "---\nstatus: %s\ngranted: %s\naction: implement the bounded tooling change\nconsuming: %s\npaths:\n  - docs/agents/agent-instructions.md\noperations:\n", status, granted, consuming)
+	for _, operation := range operations {
+		fmt.Fprintf(&record, "  - %s\n", operation)
+	}
+	record.WriteString("---\n")
+	return record.String()
 }
 
 func TestCheckReplay0060Task03RefusesWorkIndependentVerification(t *testing.T) {

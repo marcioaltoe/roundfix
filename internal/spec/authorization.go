@@ -2,6 +2,7 @@ package spec
 
 import (
 	"context"
+	"path"
 
 	"roundfix/internal/authorization"
 )
@@ -72,4 +73,25 @@ func AllAuthorizationOperations() []AuthorizationOperation {
 
 func ReadAuthorization(ctx context.Context, request AuthorizationReadRequest) AuthorizationResolution {
 	return authorization.ReadAuthorization(ctx, request)
+}
+
+// AuthorizationRecordPath returns the canonical active record for a Spec.
+func AuthorizationRecordPath(specSlug string) string {
+	return path.Join("docs/specs", specSlug, "_authorization.md")
+}
+
+// ReadSpecAuthorization resolves the canonical active record for specSlug.
+func ReadSpecAuthorization(ctx context.Context, repoRoot string, specSlug string, revision string) AuthorizationResolution {
+	return ReadAuthorization(ctx, AuthorizationReadRequest{
+		RepoRoot:   repoRoot,
+		RecordPath: AuthorizationRecordPath(specSlug),
+		Revision:   revision,
+		Role:       AuthorizationRoleSpec,
+		AskingSpec: specSlug,
+	})
+}
+
+// RequireOperation asks an already-resolved grant for one operation.
+func RequireOperation(resolution AuthorizationResolution, operation AuthorizationOperation) error {
+	return authorization.RequireOperation(resolution, operation)
 }

@@ -160,8 +160,9 @@ func Check(specsRoot, repoRoot, slug string) (Result, error) {
 		return result, err
 	}
 
+	executableTaskGraph := regularRepositoryFile(repoRoot, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_tasks.md")))
 	for artifactIndex := range artifacts {
-		detectConstraintRows(&result, repoRoot, slug, artifacts, artifactIndex)
+		detectConstraintRows(&result, repoRoot, slug, artifacts, artifactIndex, executableTaskGraph && artifactIndex == 0)
 	}
 	if err := detectCitationCoverageAndReferences(&result, specsRoot, repoRoot, slug, specDir, present); err != nil {
 		return result, err
@@ -383,7 +384,7 @@ func recordsBoundedFiles(raw string) bool {
 		strings.Contains(lower, "bounded repository-relative")
 }
 
-func detectConstraintRows(result *Result, repoRoot, slug string, artifacts []constraintArtifact, artifactIndex int) {
+func detectConstraintRows(result *Result, repoRoot, slug string, artifacts []constraintArtifact, artifactIndex int, requireImplement bool) {
 	artifact := artifacts[artifactIndex]
 	for _, label := range requiredConstraints {
 		row, present := artifact.rows[strings.ToLower(label)]
@@ -432,12 +433,12 @@ func detectConstraintRows(result *Result, repoRoot, slug string, artifacts []con
 		}
 
 		if label == constraintTooling && row.Applicability == applicable {
-			detectToolingRow(result, repoRoot, slug, artifact, row)
+			detectToolingRow(result, repoRoot, slug, artifact, row, requireImplement)
 		}
 	}
 }
 
-func detectToolingRow(result *Result, repoRoot, slug string, artifact constraintArtifact, row constraintRow) {
+func detectToolingRow(result *Result, repoRoot, slug string, artifact constraintArtifact, row constraintRow, requireImplement bool) {
 	rowLocation := Location{Path: artifact.displayPath, Line: row.Line}
 	recordLocation := sourceLocation(row)
 	references := authorizationReferences(row.Raw, row.SourcePath, artifact.displayPath)
@@ -474,7 +475,7 @@ func detectToolingRow(result *Result, repoRoot, slug string, artifact constraint
 					Fix:      "Make " + reference.Path + " readable and name Spec " + slug + " in its authorization scope.",
 				})
 			default:
-				detectAuthorizationResolution(result, repoRoot, slug, artifact, row, reference, content)
+				detectAuthorizationResolution(result, repoRoot, slug, artifact, row, reference, content, requireImplement)
 			}
 		}
 	}
@@ -541,6 +542,7 @@ func detectAuthorizationResolution(
 	row constraintRow,
 	reference authorizationReference,
 	content []byte,
+	requireImplement bool,
 ) {
 	role := authorizationRole(reference.Path)
 	resolution := spec.ReadAuthorization(context.Background(), spec.AuthorizationReadRequest{
@@ -550,6 +552,17 @@ func detectAuthorizationResolution(
 		AskingSpec: slug,
 	})
 	if resolution.Outcome == spec.AuthorizationGranted {
+		if requireImplement && !resolution.Permits(spec.AuthorizationOperationImplement) {
+			rowLocation := Location{Path: artifact.displayPath, Line: row.Line}
+			recordLocation := Location{Path: reference.Path, Line: 1}
+			result.Findings = append(result.Findings, Finding{
+				Code:     CodeToolingUnapproved,
+				Severity: SeverityError,
+				Summary:  fmt.Sprintf("%s carries an executable Task Graph, but authorization record %s does not permit operation %q", artifact.displayPath, reference.Path, spec.AuthorizationOperationImplement),
+				Where:    []Location{rowLocation, recordLocation},
+				Fix:      fmt.Sprintf("Add operation %q to %s before treating the Spec as dispatchable.", spec.AuthorizationOperationImplement, reference.Path),
+			})
+		}
 		return
 	}
 

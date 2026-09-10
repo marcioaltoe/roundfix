@@ -172,6 +172,20 @@ func (resolution AuthorizationResolution) Permits(operation AuthorizationOperati
 	return false
 }
 
+// RequireOperation refuses an operation unless an operative grant explicitly
+// permits it. Every refusal names both the requested operation and the record
+// whose authority was inspected.
+func RequireOperation(resolution AuthorizationResolution, operation AuthorizationOperation) error {
+	if resolution.Permits(operation) {
+		return nil
+	}
+	detail := strings.TrimSpace(resolution.Reason.Detail)
+	if detail == "" {
+		return fmt.Errorf("authorization operation %q is not permitted by record %q", operation, resolution.Record.Source.Path)
+	}
+	return fmt.Errorf("authorization operation %q is not permitted by record %q: %s", operation, resolution.Record.Source.Path, detail)
+}
+
 // AuthorizationReadRequest names one working-tree or committed record. An
 // empty Revision reads the working tree. An empty AskingSpec validates the
 // record's intrinsic grant without narrowing it to one consumer.

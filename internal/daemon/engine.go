@@ -18,6 +18,7 @@ import (
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
+	"roundfix/internal/spec"
 	"roundfix/internal/speccheck"
 	"roundfix/internal/store"
 	runworktree "roundfix/internal/worktree"
@@ -561,10 +562,11 @@ type CycleResult struct {
 // Push gating policy (no Unresolved Review Issues, auto-push enabled) stays
 // with the caller.
 type FinalPushRequest struct {
-	RunID   string
-	WorkDir string
-	Remote  string
-	Branch  string
+	RunID         string
+	WorkDir       string
+	Remote        string
+	Branch        string
+	Authorization *spec.AuthorizationResolution
 }
 
 func NewEngine(deps Dependencies) (*Engine, error) {
@@ -688,6 +690,11 @@ func (engine *Engine) ResolveCycle(ctx context.Context, plan CyclePlan) (CycleRe
 func (engine *Engine) FinalPush(ctx context.Context, req FinalPushRequest) error {
 	if err := ctx.Err(); err != nil {
 		return err
+	}
+	if req.Authorization != nil {
+		if err := spec.RequireOperation(*req.Authorization, spec.AuthorizationOperationPush); err != nil {
+			return fmt.Errorf("refuse Spec Run push: %w", err)
+		}
 	}
 	if err := engine.guardWriteBoundary(ctx, "Final Push"); err != nil {
 		return err

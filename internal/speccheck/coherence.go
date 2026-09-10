@@ -157,7 +157,7 @@ func checkAuthoringStage(specsRoot, repoRoot, slug string, stage Stage) (Result,
 	}
 
 	for artifactIndex := range artifacts {
-		detectConstraintRows(&result, repoRoot, slug, artifacts, artifactIndex)
+		detectConstraintRows(&result, repoRoot, slug, artifacts, artifactIndex, false)
 	}
 	if stage == StageTechSpec {
 		if err := detectTechSpecCoverage(&result, repoRoot, prdPath, techSpecPath, techSpecPresent); err != nil {

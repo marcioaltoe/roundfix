@@ -1,7 +1,7 @@
 ---
 task: task_13
 spec: 0119-spec-contained-authorization
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -88,3 +88,67 @@ before performing it.
 - `_prd.md` → Core Features 5; Goals 2; User Stories 1.
 - `_techspec.md` → Implementation Design: Where operation authority is enforced; Coverage Map Core Feature 5.
 - `qa/qa-report-2026-09-09.md` → F-002.
+
+## Result
+
+Implemented operation-specific authority checks against the ancestor grant.
+Implement preflight resolves the committed Spec record before profile proof or
+Run creation and carries that immutable resolution into the Daemon. Strict
+authoring, Task dispatch, Task and QA commits, Spec Run push, and Settle now ask
+for only the operation at their own boundary. Every refusal names the required
+operation and the record read. Settle repeats the check at its commit seam, and
+commit refusal becomes an unresolved Task outcome without calling the
+Committer. No check was added for `pull_request`, `merge`, or `release`.
+
+Focused red evidence before the production change:
+
+- `rtk go test ./internal/speccheck ./internal/cli` reached 1,491 passing tests
+  and the two intended regressions: strict checking emitted no
+  `SC-TOOLING-UNAPPROVED` finding, and public Settle exited 0 without `commit`
+  authority.
+- `rtk go test ./internal/daemon` reached 294 passing tests and the intended
+  dispatch, commit, and push regressions: dispatch entered work, the Task
+  completed without `commit`, and Final Push reached the Pusher without
+  `push`.
+
+Focused post-change checks:
+
+- `rtk go test ./internal/authorization ./internal/speccheck ./internal/daemon ./internal/cli`
+  passed 1,793 tests across all four changed package boundaries.
+- `rtk go test ./internal/spec` passed 425 tests for the shared canonical
+  record resolver and its existing authorization aliases.
+- `rtk git diff --check` exited 0.
+- `rtk rg -n 'RequireOperation\(|Permits\(' internal --glob '!**/*_test.go'`
+  found production asks for `implement`, `commit`, and `push` at the strict,
+  CLI, Daemon Task, QA commit, Settle, and Final Push seams.
+- `rtk rg -n 'AuthorizationOperation(PullRequest|Merge|Release)' internal/cli internal/daemon internal/speccheck --glob '!**/*_test.go'`
+  exited 1 with no matches, which is the expected negative search result.
+
+Acceptance evidence:
+
+1. `TestStrictCheckRefusesMissingImplementAuthority` exercises a real Task
+   Graph: the approved record without `operations` yields one strict
+   `SC-TOOLING-UNAPPROVED` finding naming `implement` and the record, while the
+   same Spec with `implement` yields none.
+2. `TestDispatchRefusesMissingImplementAuthority` proves the Daemon leaves no
+   Agent request, Agent Session attempt, Verification call, Task Worktree,
+   commit, push, Run Event, Run-state change, Task-status change, or HEAD
+   change. `TestRunImplementRefusesMissingImplementAuthorityBeforeRun` proves
+   the public preflight also leaves no profile probe, Run Database, Run
+   Worktree, Agent work, Git status change, commit, or push.
+3. `TestCommitAndPushAuthorityAreSeparate` proves `implement` without `commit`
+   settles the Task unresolved with no Committer call, while `implement` plus
+   `commit` creates the Task commit and independently refuses Final Push when
+   `push` is absent.
+4. `TestSettleRefusesMissingCommitAuthority` proves the public command exits at
+   preflight before Verification, Task status mutation, staging, commit, Run
+   creation, or HEAD change when `commit` is absent.
+5. `TestCurrentRecordPermitsItsDeclaredOperations` reads
+   `docs/specs/0119-spec-contained-authorization/_authorization.md` from this
+   repository and proves its operative record permits `implement`, `commit`,
+   and `push`.
+6. The production negative search above finds no `pull_request`, `merge`, or
+   `release` operation check in CLI, Daemon, or Spec-check paths.
+
+The Task's declared `## Verification` commands were not run; Daemon
+Verification remains the settlement owner.
