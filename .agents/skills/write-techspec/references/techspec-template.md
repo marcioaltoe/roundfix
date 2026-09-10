@@ -28,6 +28,7 @@ created: YYYY-MM-DD
 
 <!-- With no protected tooling mutation, record: `applicable — no protected tooling mutation proposed or authorized`.
      When protected tooling mutation is proposed, do not finish without
+     `express maintainer authorization: <approval>; bounded files: <exact repository paths>`.
      citing the Spec-contained authorization record at
      `<spec-root>/<slug>/_authorization.md` and copying every exact
      repository-relative path from its `paths` list into this row. A proposed

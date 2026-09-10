@@ -1,7 +1,7 @@
 ---
 task: task_12
 spec: 0119-spec-contained-authorization
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -82,3 +82,35 @@ mutation. The bounded set comes from the approved grant in
 - `_prd.md` → Core Features 3; Goals 1; Decisions: Regression locks.
 - `_techspec.md` → System Architecture: Authoring guidance; Build Order 5.
 - `qa/qa-report-2026-09-09.md` → F-001, F-004.
+
+## Result
+
+Implemented the assigned slice within the authorized paths. The canonical PRD
+and TechSpec templates now preserve the exact phrases
+`express maintainer authorization` and `bounded files` alongside the
+Spec-contained
+`_authorization.md` placement and exact-path instructions. `rtk make skills-sync`
+regenerated both shipped templates from the canonical copies.
+
+The sanctioned `rtk make baseline-digests` command passed and reported
+`ok:true, changed:false`. The public managed refresh first updated only
+`docs/agents/setup-context.json` from catalog digest
+`sha256:5b12ccc2e19bce999069a94b0f268c1674e44c25a6d3f4c9352c5a147bc08f63`
+to the regenerated `sha256:136f8ff3957a1ea5431d633b90b6c5d9cf0a4efeb97ce593135dc6313ddffe49`.
+Its immediate repeat returned `state: verified`, `approved Baseline Plan is
+already applied`, `fileChanges: []`, and `idempotence: verified`.
+
+Focused implementation evidence:
+
+- `rtk cmp .agents/skills/write-prd/references/prd-template.md skills/write-prd/references/prd-template.md` — passed.
+- `rtk cmp .agents/skills/write-techspec/references/techspec-template.md skills/write-techspec/references/techspec-template.md` — passed.
+- `rtk go test -count=1 ./skills -run '^TestNoPythonBaselineRuntime$'` — passed after one unchanged retry with authorized Go cache access following the sandbox cache permission error.
+- `rtk go test -count=1 ./internal/baseline -run '^TestCatalogCompatibility$'` — passed after the same unchanged cache retry.
+- `rtk git diff --check` — passed; the post-regeneration changed paths are the four authorized templates, `docs/agents/setup-context.json`, and this Task file only.
+
+Acceptance-criterion evidence:
+
+- The four preserved guidance phrases are present in both canonical and shipped templates, and each still contains the Spec-contained `_authorization.md` placement guidance.
+- Both shipped templates are byte-identical to their canonical sources, proven by the focused `cmp` checks above.
+- The repeated public managed refresh reported the repository already current with zero file changes and verified idempotence.
+- The declared contract-test commands and complete repository Verification were not run in this Daemon-assigned turn; they remain Daemon-owned Verification.
