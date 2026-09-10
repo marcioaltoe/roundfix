@@ -37,9 +37,10 @@ execute exactly as they did before this Spec touched them.
 5. MUST remove the `SC-SOURCE-UNTRUSTED` token and scope its glossary entry to
    the code that remains, so the glossary does not define a token the CLI
    cannot emit.
-6. MUST leave the complete repository Verification passing, including the
-   Daemon Task-cycle cases that miss their deadlines today, run as the full
-   concurrent suite rather than in isolation.
+6. MUST leave the Daemon package passing as one concurrent run, including the
+   four Task-cycle cases that miss their deadlines today. Do not satisfy this
+   by running them in isolation, and do not raise a time budget or weaken a
+   deadline: the cost must go, not the signal.
 7. MUST NOT change any Task status, and MUST NOT edit a sibling Task file.
    Task 06 completed; its delivery is withdrawn by this scope decision, and the
    PRD records that.
@@ -65,8 +66,9 @@ execute exactly as they did before this Spec touched them.
       boundaries, the constraint refusal, the governed set, the audit's resolved
       reference, and the suite guard's single parser.
 - [ ] `CONTEXT.md` defines only the refusal code the CLI still emits.
-- [ ] The complete Verification passes as one concurrent run, including the four
-      Daemon Task-cycle cases named in the QA report's F-005.
+- [ ] The Daemon package passes as one concurrent run, including the four
+      Task-cycle cases named in the QA report's F-005, with no time budget
+      raised and no deadline weakened.
 
 ## Context
 
@@ -82,7 +84,7 @@ execute exactly as they did before this Spec touched them.
 - `test ! -f internal/speccheck/verification_source.go` — the implementation file is removed rather than left orphaned.
 - `grep -q 'SC-SOURCE-UNTRUSTED' CONTEXT.md && exit 1; grep -q 'SC-TOOLING-UNAPPROVED' CONTEXT.md` — the glossary defines the code that remains and no longer defines the one the CLI cannot emit.
 - `test ! -f internal/speccheck/verification_source.go || exit 1; go test -count=1 ./internal/authorization ./internal/spec ./internal/speccheck ./internal/suiteguardcontract` — every record-half package still passes once the boundary is gone. The guard reads the removal, so this preservation check cannot pass before the work.
-- `make verify` — the complete concurrent gate passes, which is the regression this Task withdraws.
+- `test ! -f internal/speccheck/verification_source.go || exit 1; go test -count=1 ./internal/daemon` — the package that carried the regression passes as one concurrent run, including the four Task-cycle cases that miss their deadlines today. The guard reads the removal, and the check names the package rather than the whole repository: a whole-repository gate in a Task's Verification makes the Task undispatchable on a red tree, which is the tree this Task exists to repair.
 
 ## References
 
