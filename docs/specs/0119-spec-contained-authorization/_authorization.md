@@ -27,6 +27,7 @@ paths:
   - internal/speccheck/governed_repocontract_test.go
   - internal/suiteguardcontract/regeneration.go
   - internal/suiteguardcontract/regeneration_test.go
+  - internal/speccheck/mechanical_test.go
 operations:
   - implement
   - commit
@@ -127,6 +128,24 @@ consumption are absent, and absence is refusal rather than silence.
 This amendment lands in its own commit before the work that consumes it, and it
 widens nothing beyond the two named paths and the typed restatement of limits
 this record already carried in prose.
+
+## Amendment — 2026-09-10 — the ancestor audit's own test
+
+`internal/speccheck/mechanical_test.go` joins the bounded set. The ancestor
+grant audit lives in `internal/speccheck/mechanical.go`, which is ordinary
+source, but its test file became governed when this Spec widened the Governed
+Path set to every path an operative record has bounded — the archived Spec 0130
+grant bounds exactly that file. The Spec's own widening made its own audit
+Task's change out of bounds, and the terminal QA gate caught it as F-003.
+
+This extension is limited to the purpose already granted: proving the ancestor
+audit that this record's own action names. It adds no new action, no operation,
+and no path beyond the one file.
+
+It lands in `main` on its own, before the implementation candidate that consumes
+it. A commit on the consuming branch would be flattened by the squash into the
+same target commit as the change it authorizes, which is the self-approval this
+Spec exists to refuse. The rule applied to itself.
 
 ## Sanctioned regeneration
 
