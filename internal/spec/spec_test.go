@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -771,6 +772,152 @@ func TestLoadRejectsInvalidQAGateShape(t *testing.T) {
 			}
 			if !strings.Contains(err.Error(), tt.wantTask) {
 				t.Fatalf("error %q does not name %q", err, tt.wantTask)
+			}
+		})
+	}
+}
+
+func TestGateStalenessCharacterizesEachVerdict(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name             string
+		gateStatus       Status
+		dependencyStatus Status
+		wantStale        bool
+	}{
+		{
+			name:             "completed gate rejects an incomplete dependency",
+			gateStatus:       StatusCompleted,
+			dependencyStatus: StatusPending,
+			wantStale:        true,
+		},
+		{
+			name:             "failed gate loads above an incomplete dependency",
+			gateStatus:       StatusFailed,
+			dependencyStatus: StatusPending,
+		},
+		{
+			name:             "completed gate loads when its dependency is completed",
+			gateStatus:       StatusCompleted,
+			dependencyStatus: StatusCompleted,
+		},
+		{
+			name:             "failed gate loads when its dependency is completed",
+			gateStatus:       StatusFailed,
+			dependencyStatus: StatusCompleted,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gitRoot := t.TempDir()
+			specsRoot := defaultSpecsRoot(gitRoot)
+			writeSpecDir(t, specsRoot, "demo", map[string]string{
+				"_prd.md": prdFixture("active"),
+				"_tasks.md": manifestFixtureWithQA("spec-tasks/v1", "qa: task_02\n", `    - id: task_01
+      file: task_01.md
+      needs: []
+    - id: task_02
+      file: task_02.md
+      needs: [task_01]
+`, ""),
+				"task_01.md": taskFixture("task_01", "Build", string(tt.dependencyStatus), "backend", defaultVerificationSection),
+				"task_02.md": taskFixture("task_02", "QA", string(tt.gateStatus), "qa", defaultVerificationSection),
+			})
+
+			graph, err := Load(specsRoot, "demo")
+			if tt.wantStale {
+				if err == nil {
+					t.Fatal("Load succeeded, want StaleGateError")
+				}
+				var stale StaleGateError
+				if !errors.As(err, &stale) {
+					t.Fatalf("error = %T %v, want StaleGateError", err, err)
+				}
+				if stale.QATaskID != "task_02" || !slices.Equal(stale.TaskIDs, []string{"task_01"}) {
+					t.Fatalf("StaleGateError = %+v, want task_02 invalidated by task_01", stale)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Load: %v", err)
+			}
+			if graph.QATaskID != "task_02" {
+				t.Fatalf("QATaskID = %q, want task_02", graph.QATaskID)
+			}
+		})
+	}
+}
+
+func TestFailedGateLoadsAboveIncompleteDependencies(t *testing.T) {
+	t.Parallel()
+	t.Run("loads without writing Spec files", func(t *testing.T) {
+		gitRoot := t.TempDir()
+		specsRoot := defaultSpecsRoot(gitRoot)
+		specDir := filepath.Join(specsRoot, "demo")
+		writeSpecDir(t, specsRoot, "demo", map[string]string{
+			"_prd.md": prdFixture("active"),
+			"_tasks.md": manifestFixtureWithQA("spec-tasks/v1", "qa: task_02\n", `    - id: task_01
+      file: task_01.md
+      needs: []
+    - id: task_02
+      file: task_02.md
+      needs: [task_01]
+`, ""),
+			"task_01.md": taskFixture("task_01", "Correct", "pending", "backend", defaultVerificationSection),
+			"task_02.md": taskFixture("task_02", "QA", "failed", "qa", defaultVerificationSection),
+		})
+		before := snapshotDirectory(t, specDir)
+
+		graph, err := Load(specsRoot, "demo")
+		if err != nil {
+			t.Fatalf("Load: %v", err)
+		}
+		if graph.QATaskID != "task_02" {
+			t.Fatalf("QATaskID = %q, want task_02", graph.QATaskID)
+		}
+		after := snapshotDirectory(t, specDir)
+		if !maps.EqualFunc(before, after, bytes.Equal) {
+			t.Fatalf("Load changed Spec directory bytes:\nbefore: %v\nafter:  %v", before, after)
+		}
+	})
+}
+
+func TestQAGateLeafCoverageAppliesToBothVerdicts(t *testing.T) {
+	t.Parallel()
+	for _, gateStatus := range []Status{StatusCompleted, StatusFailed} {
+		gateStatus := gateStatus
+		t.Run(string(gateStatus), func(t *testing.T) {
+			t.Parallel()
+			gitRoot := t.TempDir()
+			specsRoot := defaultSpecsRoot(gitRoot)
+			writeSpecDir(t, specsRoot, "demo", map[string]string{
+				"_prd.md": prdFixture("active"),
+				"_tasks.md": manifestFixtureWithQA("spec-tasks/v1", "qa: task_03\n", `    - id: task_01
+      file: task_01.md
+      needs: []
+    - id: task_02
+      file: task_02.md
+      needs: []
+    - id: task_03
+      file: task_03.md
+      needs: [task_01]
+`, ""),
+				"task_01.md": taskFixture("task_01", "Build A", "completed", "backend", defaultVerificationSection),
+				"task_02.md": taskFixture("task_02", "Build B", "pending", "backend", defaultVerificationSection),
+				"task_03.md": taskFixture("task_03", "QA", string(gateStatus), "qa", defaultVerificationSection),
+			})
+
+			_, err := Load(specsRoot, "demo")
+			if err == nil {
+				t.Fatal("Load succeeded, want QA gate leaf-coverage error")
+			}
+			var gateErr QAGateError
+			if !errors.As(err, &gateErr) {
+				t.Fatalf("error = %T %v, want QAGateError", err, err)
+			}
+			if !strings.Contains(gateErr.Reason, "does not depend on every leaf") || !strings.Contains(gateErr.Reason, "task_02") {
+				t.Fatalf("QAGateError reason = %q, want uncovered task_02", gateErr.Reason)
 			}
 		})
 	}
@@ -1557,6 +1704,118 @@ func TestQAGateLegacyArchivedManifestsLoadUnchanged(t *testing.T) {
 	if manifestCount == 0 {
 		t.Fatal("no archived Task Graph manifests found")
 	}
+}
+
+func TestRepositorySpecCorpusStillLoads(t *testing.T) {
+	t.Parallel()
+	_, testFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller could not locate the repository")
+	}
+	repositoryRoot := filepath.Join(filepath.Dir(testFile), "..", "..")
+
+	t.Run("active Specs", func(t *testing.T) {
+		specsRoot := filepath.Join(repositoryRoot, "docs", "specs")
+		active, err := ListActive(specsRoot)
+		if err != nil {
+			t.Fatalf("ListActive: %v", err)
+		}
+		if len(active) == 0 {
+			t.Fatal("no active Specs found")
+		}
+		loaded := 0
+		for _, candidate := range active {
+			if _, err := os.Stat(filepath.Join(candidate.Dir, "_tasks.md")); errors.Is(err, os.ErrNotExist) {
+				continue
+			} else if err != nil {
+				t.Fatalf("stat active Spec %q manifest: %v", candidate.Slug, err)
+			}
+			if _, err := Load(specsRoot, candidate.Slug); err != nil {
+				t.Fatalf("Load active Spec %q: %v", candidate.Slug, err)
+			}
+			loaded++
+		}
+		if loaded == 0 {
+			t.Fatal("no active Task Graphs found")
+		}
+	})
+
+	t.Run("archived Specs", func(t *testing.T) {
+		archivedRoot := archiveTestRepositoryPath(repositoryRoot, ArchiveKindSpec)
+		entries, err := os.ReadDir(archivedRoot)
+		if err != nil {
+			t.Fatalf("read archived Spec root: %v", err)
+		}
+		tempSpecsRoot := defaultSpecsRoot(t.TempDir())
+		loaded := 0
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+			manifestPath := filepath.Join(archivedRoot, entry.Name(), "_tasks.md")
+			manifest, err := os.ReadFile(manifestPath)
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			if err != nil {
+				t.Fatalf("read archived manifest %q: %v", entry.Name(), err)
+			}
+			nodes, _, _, _, err := loadManifestNodes(manifestPath)
+			if err != nil {
+				t.Fatalf("parse archived manifest %q: %v", entry.Name(), err)
+			}
+			files := map[string]string{
+				"_prd.md":   prdFixture("active"),
+				"_tasks.md": string(manifest),
+			}
+			for _, node := range nodes {
+				content, err := os.ReadFile(filepath.Join(archivedRoot, entry.Name(), node.File))
+				if err != nil {
+					t.Fatalf("read archived Task %q from Spec %q: %v", node.ID, entry.Name(), err)
+				}
+				files[node.File] = string(content)
+			}
+			writeSpecDir(t, tempSpecsRoot, entry.Name(), files)
+			if _, err := Load(tempSpecsRoot, entry.Name()); err != nil {
+				t.Fatalf("Load archived Spec %q: %v", entry.Name(), err)
+			}
+			loaded++
+		}
+		if loaded == 0 {
+			t.Fatal("no archived Specs found")
+		}
+	})
+}
+
+func snapshotDirectory(t *testing.T, root string) map[string][]byte {
+	t.Helper()
+	snapshot := make(map[string][]byte)
+	if err := filepath.WalkDir(root, func(path string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		relative, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		if relative == "." {
+			return nil
+		}
+		key := filepath.ToSlash(relative)
+		if entry.IsDir() {
+			snapshot[key+"/"] = nil
+			return nil
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		snapshot[key] = content
+		return nil
+	}); err != nil {
+		t.Fatalf("snapshot directory %q: %v", root, err)
+	}
+	return snapshot
 }
 
 func TestListActiveFiltersInactiveArchivedAndNonSpecDirectories(t *testing.T) {

@@ -1,0 +1,7 @@
+notify:
+  enabled: false
+worktree:
+  concurrency: 1
+  bootstrap: ""
+implement:
+  auto_push: false
