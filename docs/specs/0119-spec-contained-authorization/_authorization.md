@@ -27,6 +27,8 @@ paths:
   - internal/speccheck/governed_repocontract_test.go
   - internal/suiteguardcontract/regeneration.go
   - internal/suiteguardcontract/regeneration_test.go
+  - internal/speccheck/mechanical_test.go
+  - internal/speccheck/coherence.go
 operations:
   - implement
   - commit
@@ -127,6 +129,45 @@ consumption are absent, and absence is refusal rather than silence.
 This amendment lands in its own commit before the work that consumes it, and it
 widens nothing beyond the two named paths and the typed restatement of limits
 this record already carried in prose.
+
+## Amendment — 2026-09-10 — the ancestor audit's own test
+
+`internal/speccheck/mechanical_test.go` joins the bounded set. The ancestor
+grant audit lives in `internal/speccheck/mechanical.go`, which is ordinary
+source, but its test file became governed when this Spec widened the Governed
+Path set to every path an operative record has bounded — the archived Spec 0130
+grant bounds exactly that file. The Spec's own widening made its own audit
+Task's change out of bounds, and the terminal QA gate caught it as F-003.
+
+This extension is limited to the purpose already granted: proving the ancestor
+audit that this record's own action names. It adds no new action, no operation,
+and no path beyond the one file.
+
+`internal/speccheck/coherence.go` joins for the same reason at one remove. The
+authorized edit to `internal/speccheck/constraints.go` changed the signature of
+the constraint-row detector, and that file holds the call site the change made
+stale. It is a consequent fix in the baseline's exact sense: necessary only
+because the authorized change made something else stale, and one line long. The
+grant covers the call site rather than leaving the authorized change unbuildable.
+
+It lands in `main` on its own, before the implementation candidate that consumes
+it. A commit on the consuming branch would be flattened by the squash into the
+same target commit as the change it authorizes, which is the self-approval this
+Spec exists to refuse. The rule applied to itself.
+
+## Approval evidence — 2026-09-10
+
+On 2026-09-10 the maintainer answered the explicit request for these two exact
+paths with "Aprovar os dois caminhos", approving the amendment above and raising
+the effective bounded set to twenty-five.
+
+The decision was requested rather than inferred from the standing
+purpose-bounded extension authority, because Core Feature 2 of this Spec
+requires an amendment to carry a newly recorded maintainer decision before
+dependent work resumes. Shipping the Spec that defines what an authorization
+record must contain, with an amendment its own Core Feature 2 would reject,
+would refute the contract being delivered. A standing delegation is authority to
+ask narrowly, not a substitute for the recorded decision.
 
 ## Sanctioned regeneration
 
