@@ -69,14 +69,14 @@ const (
 )
 
 type constraintRow struct {
-	Label             string
-	Applicability     applicability
-	Reason            string
-	SourcePath        string
-	Raw               string
-	AuthorizationPath string
-	BoundedFiles      bool
-	Line              int
+	Label         string
+	Applicability applicability
+	Reason        string
+	SourcePath    string
+	Raw           string
+	Authorization authorizationReferenceSelection
+	BoundedFiles  bool
+	Line          int
 }
 
 type authorizationReferenceKind uint8
@@ -90,6 +90,13 @@ const (
 type authorizationReference struct {
 	Path string
 	Kind authorizationReferenceKind
+}
+
+type authorizationReferenceSelection struct {
+	Candidates []authorizationReference
+	Reference  authorizationReference
+	Selected   bool
+	Ambiguous  bool
 }
 
 type constraintArtifact struct {
@@ -178,9 +185,21 @@ func readConstraintArtifact(repoRoot, path string) (constraintArtifact, bool, er
 	if err != nil {
 		return constraintArtifact{}, false, fmt.Errorf("read Spec artifact %q: %w", path, err)
 	}
+	displayPath := artifactDisplayPath(repoRoot, path)
 	rows, sectionLine := parseProjectConstraints(content)
+	if row, ok := rows[strings.ToLower(constraintTooling)]; ok {
+		candidates := authorizationReferences(row.Raw, row.SourcePath, displayPath)
+		reference, selected, ambiguous := selectAuthorizationReference(row, candidates)
+		row.Authorization = authorizationReferenceSelection{
+			Candidates: candidates,
+			Reference:  reference,
+			Selected:   selected,
+			Ambiguous:  ambiguous,
+		}
+		rows[strings.ToLower(constraintTooling)] = row
+	}
 	return constraintArtifact{
-		displayPath: artifactDisplayPath(repoRoot, path),
+		displayPath: displayPath,
 		sectionLine: sectionLine,
 		rows:        rows,
 	}, true, nil
@@ -262,25 +281,8 @@ func parseConstraintRow(raw string, line int) (constraintRow, bool) {
 		reason = reason[:sourceIndex]
 	}
 	row.Reason = strings.Trim(strings.TrimSpace(reason), "—–-:.; ")
-	row.AuthorizationPath = authorizationRecordPath(raw, row.SourcePath)
 	row.BoundedFiles = recordsBoundedFiles(raw)
 	return row, true
-}
-
-// authorizationRecordPath retains the constraint parser's singular legacy
-// projection for the mechanical audit. Authoring validation resolves its own
-// role-labelled set through authorizationReferences below.
-func authorizationRecordPath(raw, sourcePath string) string {
-	for _, match := range backtickPattern.FindAllStringSubmatch(raw, -1) {
-		recordPath := filepath.ToSlash(filepath.Clean(strings.TrimSpace(match[1])))
-		if recordPath == sourcePath {
-			continue
-		}
-		if strings.Contains(strings.ToLower(recordPath), "authoriz") && strings.HasSuffix(strings.ToLower(recordPath), ".md") {
-			return recordPath
-		}
-	}
-	return ""
 }
 
 func authorizationReferences(raw, sourcePath, artifactPath string) []authorizationReference {
@@ -441,11 +443,10 @@ func detectConstraintRows(result *Result, repoRoot, slug string, artifacts []con
 func detectToolingRow(result *Result, repoRoot, slug string, artifact constraintArtifact, row constraintRow, requireImplement bool) {
 	rowLocation := Location{Path: artifact.displayPath, Line: row.Line}
 	recordLocation := sourceLocation(row)
-	references := authorizationReferences(row.Raw, row.SourcePath, artifact.displayPath)
-	reference, selected, ambiguous := selectAuthorizationReference(row, references)
-	if ambiguous {
+	selection := row.Authorization
+	if selection.Ambiguous {
 		locations := []Location{rowLocation}
-		for _, reference := range references {
+		for _, reference := range selection.Candidates {
 			locations = append(locations, Location{Path: reference.Path, Line: 1})
 		}
 		result.Findings = append(result.Findings, Finding{
@@ -456,7 +457,8 @@ func detectToolingRow(result *Result, repoRoot, slug string, artifact constraint
 			Fix:      "Cite exactly one operative authorization record for the claim in " + artifact.displayPath + ", and describe every proposal separately.",
 		})
 	}
-	if selected {
+	if selection.Selected {
+		reference := selection.Reference
 		recordLocation = Location{Path: reference.Path, Line: 1}
 		recordPath, ok := resolveRepositoryPath(repoRoot, reference.Path)
 		if !ok {
@@ -480,7 +482,7 @@ func detectToolingRow(result *Result, repoRoot, slug string, artifact constraint
 		}
 	}
 
-	if declaresProtectedToolingMutation(row, len(references) != 0) && !row.BoundedFiles {
+	if declaresProtectedToolingMutation(row, len(selection.Candidates) != 0) && !row.BoundedFiles {
 		result.Findings = append(result.Findings, Finding{
 			Code:     CodeToolingUnbounded,
 			Severity: SeverityError,

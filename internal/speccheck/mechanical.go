@@ -195,9 +195,11 @@ type ConsequentFixDeclaration struct {
 }
 
 // MechanicalAuthorization reads the Tooling authority declaration from one
-// PRD and returns the cited authorization plus its exact bounded paths. An
-// absent declaration or artifact is represented by empty values so the
-// mechanical detector can record the corresponding presence-aware skip.
+// PRD and returns the authorization reference selected by the constraint
+// reader plus its exact bounded paths. An absent declaration or artifact is
+// represented by empty values so the mechanical detector can record the
+// corresponding presence-aware skip. A claim that cannot identify exactly one
+// authorization record is refused before it can become that skip.
 func MechanicalAuthorization(repoRoot, prdPath string) (string, []string, error) {
 	artifact, present, err := readConstraintArtifact(repoRoot, prdPath)
 	if err != nil {
@@ -207,10 +209,16 @@ func MechanicalAuthorization(repoRoot, prdPath string) (string, []string, error)
 		return "", nil, nil
 	}
 	row, present := artifact.rows[strings.ToLower(constraintTooling)]
-	if !present || strings.TrimSpace(row.AuthorizationPath) == "" {
+	if !present {
 		return "", nil, nil
 	}
-	authorizationPath := row.AuthorizationPath
+	if row.Authorization.Ambiguous {
+		return "", nil, fmt.Errorf("resolve mechanical authorization from %s: Tooling authority claim does not identify exactly one authorization record", artifact.displayPath)
+	}
+	if !row.Authorization.Selected {
+		return "", nil, nil
+	}
+	authorizationPath := row.Authorization.Reference.Path
 	resolved, ok := resolveRepositoryPath(repoRoot, authorizationPath)
 	if !ok {
 		return authorizationPath, nil, nil

@@ -470,6 +470,168 @@ func TestMechanicalAuthPaths(t *testing.T) {
 	})
 }
 
+func TestAuditReadsTheResolvedReference(t *testing.T) {
+	t.Parallel()
+
+	const (
+		slug              = "resolved-reference"
+		authorizationPath = "docs/specs/resolved-reference/_authorization.md"
+		prdPath           = "docs/specs/resolved-reference/_prd.md"
+	)
+	repoRoot := newMechanicalGitRepo(t)
+	writeMechanicalFile(t, repoRoot, authorizationPath, mechanicalTypedAuthorization(slug, "Makefile"))
+	writeMechanicalFile(t, repoRoot, prdPath,
+		"# PRD\n\n## Project Constraints\n\n"+
+			"- Tooling authority: applicable — express maintainer authorization recorded in [_authorization.md](_authorization.md); bounded files: `Makefile`. Source: `docs/agents/agent-instructions.md`.\n")
+	target := commitMechanicalFiles(t, repoRoot, "record Spec-relative authorization", authorizationPath, prdPath)
+	writeMechanicalFile(t, repoRoot, "Makefile", "verify:\n\t@true\n")
+	consumer := commitMechanicalFiles(t, repoRoot, "consume resolved authorization", "Makefile")
+
+	resolvedPath, _, err := speccheck.MechanicalAuthorization(repoRoot, filepath.Join(repoRoot, filepath.FromSlash(prdPath)))
+	if err != nil {
+		t.Fatalf("MechanicalAuthorization() error = %v", err)
+	}
+	if resolvedPath != authorizationPath {
+		t.Fatalf("MechanicalAuthorization() path = %q, want %q", resolvedPath, authorizationPath)
+	}
+	result := runMechanical(t, speccheck.MechanicalRequest{
+		RepoRoot:               repoRoot,
+		AuthorizationPath:      resolvedPath,
+		ConsumingSpec:          slug,
+		DeliveryTargetRevision: target,
+		TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_01", SHA: consumer}},
+	})
+
+	assertNoMechanicalCode(t, result, speccheck.CodeMechanicalAuthPaths)
+	if len(result.AuthorizationReads) != 1 || result.AuthorizationReads[0].TaskID != "task_01" {
+		t.Fatalf("AuthorizationReads = %#v, want the resolved reference to audit one Task commit", result.AuthorizationReads)
+	}
+}
+
+func TestAuditRefusesOutOfGrantUnderBothCitationForms(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		citation string
+	}{
+		{name: "backticked repository path", citation: "`docs/specs/out-of-grant/_authorization.md`"},
+		{name: "Spec-relative Markdown path", citation: "[_authorization.md](_authorization.md)"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			const (
+				slug              = "out-of-grant"
+				authorizationPath = "docs/specs/out-of-grant/_authorization.md"
+				prdPath           = "docs/specs/out-of-grant/_prd.md"
+			)
+			repoRoot := newMechanicalGitRepo(t)
+			writeMechanicalFile(t, repoRoot, authorizationPath, mechanicalTypedAuthorization(slug, "Makefile"))
+			writeMechanicalFile(t, repoRoot, prdPath,
+				"# PRD\n\n## Project Constraints\n\n"+
+					"- Tooling authority: applicable — express maintainer authorization recorded in "+tt.citation+"; bounded files: `Makefile`. Source: `docs/agents/agent-instructions.md`.\n")
+			target := commitMechanicalFiles(t, repoRoot, "record narrow authorization", authorizationPath, prdPath)
+			writeMechanicalFile(t, repoRoot, ".golangci.yml", "linters: {}\n")
+			consumer := commitMechanicalFiles(t, repoRoot, "change path outside grant", ".golangci.yml")
+
+			resolvedPath, _, err := speccheck.MechanicalAuthorization(repoRoot, filepath.Join(repoRoot, filepath.FromSlash(prdPath)))
+			if err != nil {
+				t.Fatalf("MechanicalAuthorization() error = %v", err)
+			}
+			result := runMechanical(t, speccheck.MechanicalRequest{
+				RepoRoot:               repoRoot,
+				AuthorizationPath:      resolvedPath,
+				ConsumingSpec:          slug,
+				DeliveryTargetRevision: target,
+				TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_01", SHA: consumer}},
+			})
+
+			assertMechanicalPathEscapedGrant(t, result, ".golangci.yml", authorizationPath)
+		})
+	}
+}
+
+func TestUnresolvedReferenceIsNotASkip(t *testing.T) {
+	t.Parallel()
+
+	t.Run("express grant is selected beside a proposal", func(t *testing.T) {
+		t.Parallel()
+
+		const (
+			slug              = "multi-record"
+			authorizationPath = "docs/specs/multi-record/_authorization.md"
+			proposalPath      = "docs/specs/multi-record/proposed-authorization.md"
+			prdPath           = "docs/specs/multi-record/_prd.md"
+		)
+		repoRoot := newMechanicalGitRepo(t)
+		writeMechanicalFile(t, repoRoot, authorizationPath, mechanicalTypedAuthorization(slug, "Makefile"))
+		writeMechanicalFile(t, repoRoot, proposalPath,
+			"---\nstatus: proposed\ngranted: null\naction: widen tooling scope\nconsuming: "+slug+"\npaths:\n  - .golangci.yml\n---\n")
+		writeMechanicalFile(t, repoRoot, prdPath,
+			"# PRD\n\n## Project Constraints\n\n"+
+				"- Tooling authority: applicable — express maintainer authorization recorded in [_authorization.md](_authorization.md); proposed widening recorded in [proposed-authorization.md](proposed-authorization.md); bounded files: `Makefile`. Source: `docs/agents/agent-instructions.md`.\n")
+		target := commitMechanicalFiles(t, repoRoot, "record approved and proposed authorizations", authorizationPath, proposalPath, prdPath)
+		writeMechanicalFile(t, repoRoot, ".golangci.yml", "linters: {}\n")
+		consumer := commitMechanicalFiles(t, repoRoot, "change path proposed but not granted", ".golangci.yml")
+
+		resolvedPath, _, err := speccheck.MechanicalAuthorization(repoRoot, filepath.Join(repoRoot, filepath.FromSlash(prdPath)))
+		if err != nil {
+			t.Fatalf("MechanicalAuthorization() error = %v", err)
+		}
+		if resolvedPath != authorizationPath {
+			t.Fatalf("MechanicalAuthorization() path = %q, want express grant %q", resolvedPath, authorizationPath)
+		}
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:               repoRoot,
+			AuthorizationPath:      resolvedPath,
+			ConsumingSpec:          slug,
+			DeliveryTargetRevision: target,
+			TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_01", SHA: consumer}},
+		})
+		assertMechanicalPathEscapedGrant(t, result, ".golangci.yml", authorizationPath)
+	})
+
+	t.Run("operative claim without one matching record refuses", func(t *testing.T) {
+		t.Parallel()
+
+		const prdPath = "docs/specs/unmatched-reference/_prd.md"
+		repoRoot := newMechanicalGitRepo(t)
+		writeMechanicalFile(t, repoRoot, prdPath,
+			"# PRD\n\n## Project Constraints\n\n"+
+				"- Tooling authority: applicable — proposed records are [one](one-authorization.md) and [two](two-authorization.md). Express maintainer authorization covers `Makefile`. Source: `docs/agents/agent-instructions.md`.\n")
+
+		resolvedPath, _, err := speccheck.MechanicalAuthorization(repoRoot, filepath.Join(repoRoot, filepath.FromSlash(prdPath)))
+		if err == nil {
+			t.Fatalf("MechanicalAuthorization() = %q, nil; want an unresolved operative claim to refuse before the audit can record a skip", resolvedPath)
+		}
+		if !strings.Contains(err.Error(), "exactly one authorization record") {
+			t.Fatalf("MechanicalAuthorization() error = %q, want exact-reference refusal", err)
+		}
+	})
+
+	t.Run("genuine no-authorization declaration keeps presence-aware skip", func(t *testing.T) {
+		t.Parallel()
+
+		const prdPath = "docs/specs/no-authorization/_prd.md"
+		repoRoot := newMechanicalGitRepo(t)
+		writeMechanicalFile(t, repoRoot, prdPath,
+			"# PRD\n\n## Project Constraints\n\n"+
+				"- Tooling authority: not applicable — no protected tooling mutation. Source: `docs/agents/agent-instructions.md`.\n")
+
+		resolvedPath, _, err := speccheck.MechanicalAuthorization(repoRoot, filepath.Join(repoRoot, filepath.FromSlash(prdPath)))
+		if err != nil {
+			t.Fatalf("MechanicalAuthorization() error = %v", err)
+		}
+		if resolvedPath != "" {
+			t.Fatalf("MechanicalAuthorization() path = %q, want no authorization", resolvedPath)
+		}
+		result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, AuthorizationPath: resolvedPath})
+		assertMechanicalSkip(t, result, speccheck.DetectorMechanicalAuthPaths, "tooling authorization")
+	})
+}
+
 func TestMechanicalAuthPathsAcceptsDeclaredRegenerationOutput(t *testing.T) {
 	t.Parallel()
 

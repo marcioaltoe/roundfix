@@ -1,7 +1,7 @@
 ---
 task: task_14
 spec: 0119-spec-contained-authorization
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -74,3 +74,56 @@ at all. This slice makes both consumers read one resolved reference.
 - `_prd.md` → User Stories 3; Core Features 2; Goals 2, 4.
 - `_techspec.md` → Implementation Design: One resolved reference, read by every consumer.
 - `qa/qa-report-2026-09-09.md` → the audit skip behind F-003.
+
+## Result
+
+The constraint artifact reader now resolves the Tooling authority row's
+role-labelled authorization references once and stores the selection on the
+row. Authoring validation and `MechanicalAuthorization` consume that same
+selection, so the Daemon receives the Spec-relative Markdown path that the
+reader accepted instead of a second backtick-only projection. An operative
+claim that does not identify exactly one record returns an error before the
+mechanical stage can turn the missing path into a skip; a row that genuinely
+declares no authorization still returns the empty presence-aware input.
+
+Focused red evidence before the production change:
+
+- `rtk go test -count=1 ./internal/speccheck -run 'Test(AuditReadsTheResolvedReference|AuditRefusesOutOfGrantUnderBothCitationForms|UnresolvedReferenceIsNotASkip)'`
+  reached the expected regressions: the Markdown path and the approved record
+  beside a proposal both resolved to empty, the unmatched operative claim
+  returned no error, and the Markdown out-of-grant case produced no finding.
+
+Focused post-change checks:
+
+- The same focused command passed 8 tests after the shared selection change.
+- `rtk go test ./internal/speccheck` passed 375 tests, including the existing
+  out-of-grant, grant-edited-in-the-consuming-commit, ancestor-grant,
+  regeneration, and presence-aware skip coverage.
+- `rtk gofmt -d internal/speccheck/constraints.go internal/speccheck/mechanical.go internal/speccheck/mechanical_test.go`
+  produced no diff.
+- `rtk make verify-incremental` stopped at `fmt-check` because the unchanged
+  `internal/cli/baseline_skills_restore_test.go` and
+  `internal/cli/baseline_assets_sync_test.go` need formatting. Neither path is
+  changed in this Task worktree, so this Task did not alter them.
+
+Acceptance evidence:
+
+1. `TestAuditReadsTheResolvedReference` resolves
+   `[_authorization.md](_authorization.md)`, completes one authorization read
+   for `task_01`, and rejects a zero-read result.
+2. `TestAuditRefusesOutOfGrantUnderBothCitationForms` proves the backticked and
+   Spec-relative Markdown forms each report `.golangci.yml` outside the exact
+   `Makefile` grant.
+3. `TestUnresolvedReferenceIsNotASkip/express_grant_is_selected_beside_a_proposal`
+   proves the audit selects the express narrow grant instead of the proposed
+   widening. Its `operative_claim_without_one_matching_record_refuses` case
+   proves an unmatchable claim returns an exact-reference error.
+4. `TestUnresolvedReferenceIsNotASkip/genuine_no-authorization_declaration_keeps_presence-aware_skip`
+   proves an honest no-authorization row still records the existing
+   `authorization bounded paths` skip for missing `tooling authorization`.
+5. The explicit `AuthorizationReads` count in
+   `TestAuditReadsTheResolvedReference` makes a resolved reference with zero
+   audited Task commits fail instead of accepting a silent skip.
+
+The Task's declared `## Verification` commands were not run; Daemon
+Verification remains the settlement owner.
