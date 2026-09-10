@@ -776,6 +776,80 @@ func TestLoadRejectsInvalidQAGateShape(t *testing.T) {
 	}
 }
 
+func TestGateStalenessCharacterizesEachVerdict(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name             string
+		gateStatus       Status
+		dependencyStatus Status
+		wantStale        bool
+	}{
+		{
+			name:             "completed gate rejects an incomplete dependency",
+			gateStatus:       StatusCompleted,
+			dependencyStatus: StatusPending,
+			wantStale:        true,
+		},
+		// Task 02 changes this case to load successfully.
+		{
+			name:             "failed gate currently rejects an incomplete dependency",
+			gateStatus:       StatusFailed,
+			dependencyStatus: StatusPending,
+			wantStale:        true,
+		},
+		{
+			name:             "completed gate loads when its dependency is completed",
+			gateStatus:       StatusCompleted,
+			dependencyStatus: StatusCompleted,
+		},
+		{
+			name:             "failed gate loads when its dependency is completed",
+			gateStatus:       StatusFailed,
+			dependencyStatus: StatusCompleted,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gitRoot := t.TempDir()
+			specsRoot := defaultSpecsRoot(gitRoot)
+			writeSpecDir(t, specsRoot, "demo", map[string]string{
+				"_prd.md": prdFixture("active"),
+				"_tasks.md": manifestFixtureWithQA("spec-tasks/v1", "qa: task_02\n", `    - id: task_01
+      file: task_01.md
+      needs: []
+    - id: task_02
+      file: task_02.md
+      needs: [task_01]
+`, ""),
+				"task_01.md": taskFixture("task_01", "Build", string(tt.dependencyStatus), "backend", defaultVerificationSection),
+				"task_02.md": taskFixture("task_02", "QA", string(tt.gateStatus), "qa", defaultVerificationSection),
+			})
+
+			graph, err := Load(specsRoot, "demo")
+			if tt.wantStale {
+				if err == nil {
+					t.Fatal("Load succeeded, want StaleGateError")
+				}
+				var stale StaleGateError
+				if !errors.As(err, &stale) {
+					t.Fatalf("error = %T %v, want StaleGateError", err, err)
+				}
+				if stale.QATaskID != "task_02" || !slices.Equal(stale.TaskIDs, []string{"task_01"}) {
+					t.Fatalf("StaleGateError = %+v, want task_02 invalidated by task_01", stale)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Load: %v", err)
+			}
+			if graph.QATaskID != "task_02" {
+				t.Fatalf("QATaskID = %q, want task_02", graph.QATaskID)
+			}
+		})
+	}
+}
+
 func TestLoadInvalidatesSettledQAGateAfterTaskAppend(t *testing.T) {
 	t.Parallel()
 	gitRoot := t.TempDir()

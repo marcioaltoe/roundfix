@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0131-a-failed-gate-accepts-its-repair
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -53,3 +53,38 @@ the answer the next Task changes.
 
 - `_prd.md` → Success Metrics; Decisions: Regression locks.
 - `_techspec.md` → Testing Approach observations 1-3; Build Order 1.
+
+## Result
+
+Added one table-driven loader characterization over real temporary Spec files.
+It varies the QA gate verdict and its sole dependency's status without changing
+loader source or any pre-existing assertion.
+
+Acceptance evidence:
+
+- AC1: `completed gate rejects an incomplete dependency` requires
+  `errors.As` to expose `StaleGateError` and requires its fields to name QA Task
+  `task_02` and incomplete dependency `task_01`.
+- AC2: `failed gate currently rejects an incomplete dependency` records the
+  same typed error and dependency fields. A source comment marks this as the
+  case Task 02 changes to a successful load.
+- AC3: the `completed` and `failed` gate cases with completed `task_01` both
+  require `Load` to return without error and expose `task_02` as the QA Task.
+- AC4: no existing line in `internal/spec/spec_test.go` was changed. Focused
+  check `rtk go test -count=1 ./internal/spec` passed with 396 tests, exercising
+  the complete package suite alongside the new cases. The first sandboxed run
+  could not access the Go build cache; the unchanged rerun with cache access
+  produced the recorded result.
+- Incremental check `rtk make verify-incremental` stopped at `fmt-check`
+  because unchanged files `internal/cli/baseline_skills_restore_test.go` and
+  `internal/cli/baseline_assets_sync_test.go` need formatting. They are outside
+  this Task's slice and were not changed.
+
+Follow-up: the second declared Verification command selects
+`TestLoadRejectsAppendedTaskUnderSettledGate`, while the pre-existing regression
+is named `TestLoadInvalidatesSettledQAGateAfterTaskAppend`. This Task leaves the
+authored Verification and existing test name unchanged.
+
+Limits: the commands under `## Verification` were not run because the Daemon
+owns them. No Task status, Task Graph, sibling Task, loader behavior, commit,
+push, or pull request was changed by this implementation turn.
