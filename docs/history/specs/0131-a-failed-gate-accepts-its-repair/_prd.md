@@ -1,9 +1,12 @@
 ---
 spec: 0131-a-failed-gate-accepts-its-repair
-status: active
+status: archived
 created: 2026-09-10
 surfaces: [backend]
+archived: "2026-09-10"
+source_slug: 0131-a-failed-gate-accepts-its-repair
 ---
+
 
 # A failed gate accepts its repair
 
