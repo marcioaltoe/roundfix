@@ -138,6 +138,48 @@ never inventing a verdict. Approval is bound to the named revision, so a later
 edit to the approved commands falls back to refusal without withdrawing the
 historical approval.
 
+### One resolved reference, read by every consumer
+
+The constraint reader and the changed-path audit must resolve a Tooling
+authority row's authorization reference the same way. They did not: the reader
+gained the Spec-relative Markdown form while the audit kept a backtick-only
+extractor, so a Spec citing its record in the form this Spec makes canonical
+yielded no reference to the audit, which then found no Task commits and recorded
+a skip. The central control of this Spec failed open for exactly the citation
+form its own templates teach.
+
+Resolve the reference once, in the constraint reader, and let the audit consume
+that resolved value rather than re-deriving it. A row citing several records
+resolves to the one the row names as its express authorization. A row whose
+claim cannot be matched to exactly one record refuses rather than silently
+resolving to none, because a skip and a refusal are opposite outcomes and the
+absent reference is what turned a control into a no-op.
+
+### Where operation authority is enforced
+
+The typed `operations` list is only a permission carrier; something must ask it.
+This design named the carrier and not the askers, and the first
+implementation consequently parsed the list and never consulted it, which the
+terminal QA gate caught as an unenforced authority. Each action boundary that
+performs a governed action resolves the operation it needs from the ancestor
+grant before performing it:
+
+| boundary | operation asked | refusal point |
+| --- | --- | --- |
+| Strict authoring check | `implement` | Before a Spec with an executable Task Graph is reported ready, so a grant that authorizes no operation cannot look dispatchable. |
+| Implement dispatch preflight | `implement` | Before the first Agent Session opens, so no Agent work, shell execution, or Task Worktree exists when authority is missing. |
+| Daemon Task commit | `commit` | Before the commit the Daemon owns, so a grant permitting implementation but not committing settles the Task unresolved rather than writing history. |
+| Run push | `push` | Before any remote mutation, and independently of `commit`. |
+| Settle | `commit` | Same contract as the Daemon path, reached through the public command. |
+
+`pull_request`, `merge` and `release` have no CLI boundary in this Spec: the
+Supervisor performs them, so they are enforced as recorded policy and by the
+changed-path audit, not by a command that refuses. An absent list permits
+nothing, so every boundary above refuses on it; the refusal names the operation
+it required and the record it read, and it fires before the action rather than
+after. A missing operation is a refusal to act, never a warning beside a
+completed action.
+
 ### Interfaces
 
 The component responsibilities above define the boundary inputs and outcomes.
@@ -158,7 +200,7 @@ Spec Check and Implement preflight consume the same approval/source decision. A 
 
 - PRD Goal 1 → Authorization reader, Commit authority audit, Authoring guidance.
 - PRD Goal 2 → Authorization reader, Authoring authority checks, Commit authority audit.
-- PRD Goal 3 → Command-source approval.
+- PRD Goal 3 → Command-source approval, with adversarial source identity promoted per the PRD's Promoted work and known limitations.
 - PRD Goal 4 → Authorization reader, Commit authority audit.
 - User Story 1 → Authorization reader, Commit authority audit, Authoring guidance.
 - User Story 2 → Authoring authority checks, Command-source approval.
@@ -167,7 +209,7 @@ Spec Check and Implement preflight consume the same approval/source decision. A 
 - Core Feature 2 → Commit authority audit.
 - Core Feature 3 → Authoring guidance.
 - Core Feature 4 → Authorization reader and Authoring authority checks.
-- Core Feature 5 → Authorization reader and Command-source approval.
+- Core Feature 5 → Authorization reader, Command-source approval, and the operation-authority boundaries above.
 - Core Feature 6 → Command-source approval.
 
 The Testing Approach below describes the observations that must settle these

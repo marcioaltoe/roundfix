@@ -34,9 +34,18 @@ graph:
     - id: task_11
       file: task_11.md
       needs: [task_09]
+    - id: task_12
+      file: task_12.md
+      needs: [task_08]
+    - id: task_13
+      file: task_13.md
+      needs: [task_06, task_11]
+    - id: task_14
+      file: task_14.md
+      needs: [task_05, task_13]
     - id: task_10
       file: task_10.md
-      needs: [task_08, task_11]
+      needs: [task_11, task_12, task_14]
 ---
 
 # Tasks — Spec-contained authority and trusted Verification
@@ -53,6 +62,9 @@ graph:
 | task_08 | Teach the authoring skills the record's placement | docs | medium | task_07 |
 | task_09 | Consolidate the second grant reader in the suite guard | backend | medium | task_02, task_04 |
 | task_11 | Restore legacy declarations and break the reader's import cycle | backend | medium | task_09 |
-| task_10 | Run the final QA gate | qa | high | task_08, task_11 |
+| task_12 | Restore the preserved template guidance and settle the catalog digest | docs | medium | task_08 |
+| task_13 | Ask the grant which operations it permits | backend | high | task_06, task_11 |
+| task_14 | Let the audit read the reference the checker resolved | backend | high | task_05, task_13 |
+| task_10 | Run the final QA gate | qa | high | task_11, task_12, task_14 |
 
-Waves: 1 → task_01 · 2 → task_02, task_04 · 3 → task_03, task_09 · 4 → task_05, task_11 · 5 → task_06 · 6 → task_07 · 7 → task_08 · 8 → task_10.
+Waves: 1 → task_01 · 2 → task_02, task_04 · 3 → task_03, task_09 · 4 → task_05, task_11 · 5 → task_06 · 6 → task_07, task_13 · 7 → task_08 · 8 → task_12 · 9 → task_14 · 10 → task_10.

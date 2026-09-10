@@ -83,7 +83,9 @@ against that grant.
    were approved and what effects they may have. Read-only checking remains
    available without command execution. A changed or untrusted source needs
    the appropriate decision before shell execution; no new sandbox or
-   credential policy is implied.
+   credential policy is implied. This Spec delivers the boundary and its honest
+   cases; hardening it against adversarial source identity is promoted, with the
+   exact known bypasses named in Decisions.
 
 ## User Experience
 
@@ -186,6 +188,36 @@ persistence contracts.
   legitimately passes today must still pass. A refusal fires only on a positive
   observation — an absent or malformed grant, a proven byte difference against
   the committed source — never on an unreadable or merely unrecognized input.
+
+### Promoted work and known limitations
+
+Confirmed on 2026-09-10, after the terminal QA gate and the pre-Pull-Request
+review together found seven defects: this Spec closes on the authorization
+record and its audit, and the adversarial hardening of the execution boundary
+is promoted to its own Spec. The reason is decomposition, not appetite. The two
+remaining defects are adversarial-input defects that need their own threat
+enumeration, and patching them at the end of an already long Spec is how the
+earlier defects got in.
+
+Promoted, with the exact conditions recorded so the successor Spec starts from
+facts rather than from a summary:
+
+1. A carrying artifact that is a symlink to a regular tracked file is accepted
+   as committed provenance. The path is canonicalized before the artifact
+   identity is computed, so the Git mode check that rejects a symlink runs
+   against the resolved target instead of the declared path, and the declared
+   path can execute a different tracked Task's commands.
+2. An execution approval that records a symbolic revision, such as a branch
+   name, is resolved at execution time. If the external source advances that
+   branch with an edit that preserves the approved command text, both the
+   approval's revision and the artifact's last-touch commit move together and
+   the approval still succeeds, although the approved source revision changed.
+
+What ships is still an improvement on the state it replaces, where authored
+commands executed with no source check at all: an untracked or modified
+artifact and an out-of-tree Spec Root all refuse, and read-only checking stays
+available for any source. What ships is not an airtight boundary, and this
+record exists so nobody reads it as one.
 
 ## Open Questions
 
