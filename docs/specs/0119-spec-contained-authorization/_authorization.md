@@ -155,6 +155,20 @@ it. A commit on the consuming branch would be flattened by the squash into the
 same target commit as the change it authorizes, which is the self-approval this
 Spec exists to refuse. The rule applied to itself.
 
+## Approval evidence — 2026-09-10
+
+On 2026-09-10 the maintainer answered the explicit request for these two exact
+paths with "Aprovar os dois caminhos", approving the amendment above and raising
+the effective bounded set to twenty-five.
+
+The decision was requested rather than inferred from the standing
+purpose-bounded extension authority, because Core Feature 2 of this Spec
+requires an amendment to carry a newly recorded maintainer decision before
+dependent work resumes. Shipping the Spec that defines what an authorization
+record must contain, with an amendment its own Core Feature 2 would reject,
+would refute the contract being delivered. A standing delegation is authority to
+ask narrowly, not a substitute for the recorded decision.
+
 ## Sanctioned regeneration
 
 The repository-owned command resolves its generated outputs. This declaration
