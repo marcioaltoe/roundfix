@@ -28,6 +28,7 @@ paths:
   - internal/suiteguardcontract/regeneration.go
   - internal/suiteguardcontract/regeneration_test.go
   - internal/speccheck/mechanical_test.go
+  - internal/speccheck/coherence.go
 operations:
   - implement
   - commit
@@ -141,6 +142,13 @@ Task's change out of bounds, and the terminal QA gate caught it as F-003.
 This extension is limited to the purpose already granted: proving the ancestor
 audit that this record's own action names. It adds no new action, no operation,
 and no path beyond the one file.
+
+`internal/speccheck/coherence.go` joins for the same reason at one remove. The
+authorized edit to `internal/speccheck/constraints.go` changed the signature of
+the constraint-row detector, and that file holds the call site the change made
+stale. It is a consequent fix in the baseline's exact sense: necessary only
+because the authorized change made something else stale, and one line long. The
+grant covers the call site rather than leaving the authorized change unbuildable.
 
 It lands in `main` on its own, before the implementation candidate that consumes
 it. A commit on the consuming branch would be flattened by the squash into the
