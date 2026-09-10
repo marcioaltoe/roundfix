@@ -43,9 +43,12 @@ graph:
     - id: task_14
       file: task_14.md
       needs: [task_05, task_13]
+    - id: task_15
+      file: task_15.md
+      needs: [task_14]
     - id: task_10
       file: task_10.md
-      needs: [task_11, task_12, task_14]
+      needs: [task_11, task_12, task_15]
 ---
 
 # Tasks — Spec-contained authority and trusted Verification
@@ -65,6 +68,7 @@ graph:
 | task_12 | Restore the preserved template guidance and settle the catalog digest | docs | medium | task_08 |
 | task_13 | Ask the grant which operations it permits | backend | high | task_06, task_11 |
 | task_14 | Let the audit read the reference the checker resolved | backend | high | task_05, task_13 |
-| task_10 | Run the final QA gate | qa | high | task_11, task_12, task_14 |
+| task_15 | Withdraw the execution boundary from this Spec | backend | medium | task_14 |
+| task_10 | Run the final QA gate | qa | high | task_11, task_12, task_15 |
 
-Waves: 1 → task_01 · 2 → task_02, task_04 · 3 → task_03, task_09 · 4 → task_05, task_11 · 5 → task_06 · 6 → task_07, task_13 · 7 → task_08 · 8 → task_12 · 9 → task_14 · 10 → task_10.
+Waves: 1 → task_01 · 2 → task_02, task_04 · 3 → task_03, task_09 · 4 → task_05, task_11 · 5 → task_06 · 6 → task_07, task_13 · 7 → task_08 · 8 → task_12 · 9 → task_14 · 10 → task_15 · 11 → task_10.

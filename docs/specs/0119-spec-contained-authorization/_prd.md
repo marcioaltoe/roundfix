@@ -44,8 +44,10 @@ against that grant.
 - A reader and the execution machinery reach the same answer about which
   actions are approved. A proposed, absent, contradictory, or withdrawn
   authorization grants nothing.
-- Running authored commands uses the approved source and execution scope;
-  importing a third-party Spec does not silently authorize its shell commands.
+- The record states which operations its grant permits, and each action
+  boundary that performs one asks before acting. Deciding whether an authored
+  command may execute at all is the promoted execution Spec's goal, not this
+  one's.
 - Existing granted work remains readable and valid during migration.
 
 ## User Stories
@@ -79,13 +81,10 @@ against that grant.
    requires the configured review policy outcome and passing required checks
    for the candidate commit. Explicit none records intentional review omission;
    it does not grant a release or bypass.
-6. Execution of authored Verification states which Spec source and commands
-   were approved and what effects they may have. Read-only checking remains
-   available without command execution. A changed or untrusted source needs
-   the appropriate decision before shell execution; no new sandbox or
-   credential policy is implied. This Spec delivers the boundary and its honest
-   cases; hardening it against adversarial source identity is promoted, with the
-   exact known bypasses named in Decisions.
+6. Read-only checking remains available without command execution, and the
+   record states which operations its grant permits. The trust boundary that
+   decides whether an authored command may execute at all is promoted in full
+   to its own Spec; this Spec ships no execution gate. See Promoted work.
 
 ## User Experience
 
@@ -172,12 +171,8 @@ observable change that is not named here is a regression, not a decision.
    previously passed. The set grows to whatever the discovered records bound,
    which is what ADR-0130 means by keeping history honest; enumerating only a
    sample here would make a correct implementation look like a regression.
-3. `--run-verification`, Implement dispatch and Settle refuse authored commands
-   from an untracked or modified Spec artifact, or from a Spec Root outside the
-   repository's Git tree, **when no valid execution approval covers that
-   source**, where they previously executed them unconditionally. A source
-   carrying a valid approval still executes, so the break is the removal of
-   unconditional trust, not the removal of the approval path.
+3. None. This Spec no longer changes when an authored command may execute; that
+   break belongs to the promoted execution Spec.
 
 Preserved without change: every legacy dated record under
 `docs/workflow/authorizations/` that the suite guard still reads, every already
@@ -197,13 +192,16 @@ persistence contracts.
 
 ### Promoted work and known limitations
 
-Confirmed on 2026-09-10, after the terminal QA gate and the pre-Pull-Request
-review together found seven defects: this Spec closes on the authorization
-record and its audit, and the adversarial hardening of the execution boundary
-is promoted to its own Spec. The reason is decomposition, not appetite. The two
-remaining defects are adversarial-input defects that need their own threat
-enumeration, and patching them at the end of an already long Spec is how the
-earlier defects got in.
+Confirmed on 2026-09-10: this Spec closes on the authorization record and its
+audit, and the execution trust boundary is promoted **in full** to its own
+Spec. The decision was taken twice. First the adversarial hardening was
+promoted while the boundary shipped; then the terminal QA gate found that the
+boundary also carries a performance regression, and the whole boundary was
+promoted rather than repaired here.
+
+The reason is decomposition, not appetite. Three defects in one subsystem, each
+invisible to the round before it, is the signal that the subsystem needs its own
+Spec where its threat model and its execution cost are designed together.
 
 Promoted, with the exact conditions recorded so the successor Spec starts from
 facts rather than from a summary:
@@ -219,11 +217,20 @@ facts rather than from a summary:
    approval's revision and the artifact's last-touch commit move together and
    the approval still succeeds, although the approved source revision changed.
 
-What ships is still an improvement on the state it replaces, where authored
-commands executed with no source check at all: an untracked or modified
-artifact and an out-of-tree Spec Root all refuse, and read-only checking stays
-available for any source. What ships is not an airtight boundary, and this
-record exists so nobody reads it as one.
+3. The boundary spawns a `git` subprocess per authored command inside the Task
+   cycle, at the pre-dispatch probe and again at post-Agent verification. The
+   suite is spawn-bound and its wall-clock budget is already an open concern, so
+   the Daemon's Task-cycle scheduling deadlines miss under the full concurrent
+   gate. The QA gate controlled for the host: the unchanged target passed the
+   same gate on the same machine and toolchain while the candidate failed twice.
+   The successor Spec must resolve the source decision once per Task rather than
+   per command, and read committed bytes without spawning a process per read.
+
+Nothing of the execution boundary ships here. Authored commands execute exactly
+as they did before this Spec, which is the behavior the successor Spec will
+change deliberately, with its cost measured as part of its own acceptance. The
+record half — the typed grant, its operations, the canonical placement, the
+Governed Path set and the changed-path audit — is what this Spec delivers.
 
 ## Open Questions
 

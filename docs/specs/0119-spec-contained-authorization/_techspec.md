@@ -22,18 +22,13 @@ this Spec's place in the implementation order.
 - emits: `internal/speccheck/constraints.go`
   pattern: `SC-TOOLING-UNAPPROVED`
   documented-in: `CONTEXT.md`
-- emits: `internal/speccheck/verification.go`
-  pattern: `SC-SOURCE-UNTRUSTED`
-  documented-in: `CONTEXT.md`
-
 `SC-TOOLING-UNAPPROVED` is the refusal for a cited record that resolves but is
-not an operative grant, and `SC-SOURCE-UNTRUSTED` the refusal for an authored
-command whose source fails committed provenance and carries no execution
-approval. Both are coined here, so both need a glossary owner in `CONTEXT.md`
-before they ship. Neither pattern matches today, which is the point: the
-declaration is what makes `SC-VOCABULARY-UNDOCUMENTED` run instead of skip once
-the codes exist, so a token cannot reach the built CLI undefined the way
-`runtime_deferred` did in Spec 0089.
+not an operative grant. It is coined here, so it needs a glossary owner in
+`CONTEXT.md` before it ships. The pattern does not match today, which is the
+point: the declaration is what makes `SC-VOCABULARY-UNDOCUMENTED` run instead of
+skip once the code exists, so a token cannot reach the built CLI undefined the
+way `runtime_deferred` did in Spec 0089. The execution boundary's refusal code
+travels with the promoted Spec that emits it.
 
 Both codes are documented in the glossary's `Grant Refusal Code` entry before
 the Tasks that emit them run. That ordering is deliberate: the Tasks that coin
@@ -44,12 +39,9 @@ keeps the whole-Spec-Root check green between the Task that emits a token and
 any later Task, instead of leaving a window where the repository's own pull
 request gate fails.
 
-To make that binding rather than vacuous, the two codes have declared owners.
+To make that binding rather than vacuous, the code has a declared owner:
 `SC-TOOLING-UNAPPROVED` is emitted by the constraint reader in
-`internal/speccheck/constraints.go`. `SC-SOURCE-UNTRUSTED` is emitted by the
-shared verification reader in `internal/speccheck/verification.go`, so
-`spec check`, Implement dispatch and Settle all refuse with one code instead of
-three private diagnostics.
+`internal/speccheck/constraints.go`.
 
 ## Project Constraints
 
@@ -200,7 +192,7 @@ Spec Check and Implement preflight consume the same approval/source decision. A 
 
 - PRD Goal 1 → Authorization reader, Commit authority audit, Authoring guidance.
 - PRD Goal 2 → Authorization reader, Authoring authority checks, Commit authority audit.
-- PRD Goal 3 → Command-source approval, with adversarial source identity promoted per the PRD's Promoted work and known limitations.
+- PRD Goal 3 → promoted in full to the successor execution Spec; see the PRD's Promoted work and known limitations. No component here delivers it.
 - PRD Goal 4 → Authorization reader, Commit authority audit.
 - User Story 1 → Authorization reader, Commit authority audit, Authoring guidance.
 - User Story 2 → Authoring authority checks, Command-source approval.
@@ -210,7 +202,7 @@ Spec Check and Implement preflight consume the same approval/source decision. A 
 - Core Feature 3 → Authoring guidance.
 - Core Feature 4 → Authorization reader and Authoring authority checks.
 - Core Feature 5 → Authorization reader, Command-source approval, and the operation-authority boundaries above.
-- Core Feature 6 → Command-source approval.
+- Core Feature 6 → read-only checking, which the existing checker already provides; the execution gate is promoted.
 
 The Testing Approach below describes the observations that must settle these
 contracts. Task IDs and actual evidence are deliberately not invented during
