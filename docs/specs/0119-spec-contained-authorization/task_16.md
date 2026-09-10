@@ -68,7 +68,7 @@ defect.
 
 - `grep -q 'func TestSanctionedRegenerationReadsOnlyCandidateRecords' internal/suiteguardcontract/regeneration_test.go && go test -count=1 ./internal/suiteguardcontract -run '^TestSanctionedRegenerationReadsOnlyCandidateRecords$'` — the walk's read count tracks records rather than every markdown file.
 - `grep -q 'func TestSanctionedRegenerationResolvesOncePerProcess' internal/suiteguardcontract/regeneration_test.go && go test -count=1 ./internal/suiteguardcontract -run '^TestSanctionedRegenerationResolvesOncePerProcess$'` — a second resolution reuses the first walk.
-- `go test -count=1 ./internal/suiteguardcontract` — every preserved discovery outcome still holds.
+- `grep -q 'func TestSanctionedRegenerationReadsOnlyCandidateRecords' internal/suiteguardcontract/regeneration_test.go || exit 1; go test -count=1 ./internal/suiteguardcontract` — every preserved discovery outcome still holds once the cheap walk is in place. The guard reads the new case, so this preservation check cannot pass before the work.
 - `grep -q 'func TestSanctionedRegenerationResolvesOncePerProcess' internal/suiteguardcontract/regeneration_test.go || exit 1; go test -count=1 ./internal/daemon` — the Daemon package passes as one concurrent run once the cost is gone.
 - `matches="$(git diff --unified=0 main -- internal/daemon internal/suiteguard | grep -E '^\+' | grep -Ei 'budget|deadline|timeout|parallel|t\.Skip' || true)"; test -z "$matches" || { printf '%s\n' "$matches"; exit 1; }` — no budget, deadline, parallelism or skip was introduced to make the gate pass.
 
