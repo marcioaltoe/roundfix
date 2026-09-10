@@ -35,7 +35,7 @@ against that grant.
   ADR-0038 is not applicable to the implementation scope: the one Verification repair allowance remains unchanged and is not widened by a grant.
   ADR-0056 is not applicable to the implementation scope: Task Capacity, Verification Capacity, and the temporary-failure retry remain unchanged.
   ADR-0127 is not applicable to the implementation scope: reporting process residue as a readiness fact remains unchanged.
-- Tooling authority: applicable — express maintainer authorization: "Aprovar os 21 caminhos", 2026-09-09, recorded in `docs/specs/0119-spec-contained-authorization/_authorization.md`; bounded files: `internal/baseline/assets/modules/core.json`, `internal/baseline/assets/modules/spec-workflow.json`, `internal/baseline/assets/modules/context-workflow.json`, `internal/speccheck/constraints.go`, `internal/speccheck/constraints_characterization_test.go`, `.agents/skills/write-prd/SKILL.md`, `.agents/skills/write-prd/references/prd-template.md`, `.agents/skills/write-techspec/SKILL.md`, `.agents/skills/write-techspec/references/techspec-template.md`, `.agents/skills/write-tasks/SKILL.md`, `skills/write-prd/SKILL.md`, `skills/write-prd/references/prd-template.md`, `skills/write-techspec/SKILL.md`, `skills/write-techspec/references/techspec-template.md`, `skills/write-tasks/SKILL.md`, `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/docs-layout.md`, `docs/agents/setup-context.json`, `internal/speccheck/governed.go`, `internal/speccheck/governed_repocontract_test.go`, `internal/suiteguardcontract/regeneration.go`, `internal/suiteguardcontract/regeneration_test.go`. Permitted operations are typed in the record as implement, commit, push, pull_request and merge; release, tag and deploy are absent and absence refuses. Sanctioned regeneration follows the approved source edits: `make skills-sync` rewrites the shipped bundle already enumerated above, and `make baseline-digests` rewrites the derived pins. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
+- Tooling authority: applicable — express maintainer authorization: "Aprovar os 21 caminhos", 2026-09-09, recorded in `docs/specs/0119-spec-contained-authorization/_authorization.md`; bounded files: `internal/baseline/assets/modules/core.json`, `internal/baseline/assets/modules/spec-workflow.json`, `internal/baseline/assets/modules/context-workflow.json`, `internal/speccheck/constraints.go`, `internal/speccheck/constraints_characterization_test.go`, `.agents/skills/write-prd/SKILL.md`, `.agents/skills/write-prd/references/prd-template.md`, `.agents/skills/write-techspec/SKILL.md`, `.agents/skills/write-techspec/references/techspec-template.md`, `.agents/skills/write-tasks/SKILL.md`, `skills/write-prd/SKILL.md`, `skills/write-prd/references/prd-template.md`, `skills/write-techspec/SKILL.md`, `skills/write-techspec/references/techspec-template.md`, `skills/write-tasks/SKILL.md`, `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/docs-layout.md`, `docs/agents/setup-context.json`, `internal/speccheck/governed.go`, `internal/speccheck/governed_repocontract_test.go`, `internal/suiteguardcontract/regeneration.go`, `internal/suiteguardcontract/regeneration_test.go`, `internal/speccheck/mechanical_test.go`, `internal/speccheck/coherence.go`. Permitted operations are typed in the record as implement, commit, push, pull_request and merge; release, tag and deploy are absent and absence refuses. Sanctioned regeneration follows the approved source edits: `make skills-sync` rewrites the shipped bundle already enumerated above, and `make baseline-digests` rewrites the derived pins. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## Goals
 
@@ -129,8 +129,14 @@ Supervisor proceeds without asking for that same approval again.
 - Amended on 2026-09-09: the approved scope began as twenty-one bounded governed
   paths and the same-day amendment raised it to twenty-three, adding
   `internal/suiteguardcontract/regeneration.go` and its test so the second grant
-  parser cannot disagree with the typed reader about the same record. Project
-  Constraints lists the effective twenty-three.
+  parser cannot disagree with the typed reader about the same record.
+- Amended on 2026-09-10: two further paths raise the effective set to
+  twenty-five. `internal/speccheck/mechanical_test.go` is the ancestor audit's
+  own test, which became governed when this Spec widened the Governed Path set
+  to every path an operative record has bounded. `internal/speccheck/coherence.go`
+  holds the one call site that the authorized signature change in
+  `internal/speccheck/constraints.go` made stale, so it is a consequent fix
+  rather than new scope. Project Constraints lists the effective twenty-five.
 - Approved on 2026-09-09: authored Verification executes on committed
   provenance. Commands run when the Spec artifacts carrying them are tracked in
   this repository and their authored projection matches that of their committed
