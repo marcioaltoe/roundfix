@@ -1,6 +1,6 @@
 ---
-status: proposed
-granted: null
+status: approved
+granted: 2026-09-10
 action: repair authorization record parsing, Spec Root resolution, and archive-stable test discovery
 consuming: 0132-a-grant-read-exactly-where-it-lives
 paths:
@@ -53,8 +53,16 @@ regardless of this Spec; none is added to or removed from that set here.
 
 ## Approval evidence
 
-Pending. Record the maintainer's concrete decision and approved bounded scope
-here before changing `status` or `granted`; do not fill either from inference.
-Spec 0119's Core Feature 2 requires a newly recorded maintainer decision for a
-grant, and a standing delegation is authority to ask narrowly rather than a
-substitute for that record.
+On 2026-09-10 the maintainer answered the explicit request for these four exact
+paths with "Aprovar os quatro caminhos", approving the bounded scope above.
+
+The decision was requested rather than taken under the standing purpose-bounded
+extension authority, because Spec 0119's Core Feature 2 requires a newly
+recorded maintainer decision for a grant. A standing delegation is authority to
+ask narrowly, not a substitute for the record.
+
+The request named what each path is needed for: the citation resolver that
+refuses a valid record in an external Spec Root, the characterization that holds
+the resolution answers this Spec moves, the governed contract that pins Spec
+0119's record to its active path and breaks on archive, and the discovery filter
+that ignores the existing record named with `authorized`.
