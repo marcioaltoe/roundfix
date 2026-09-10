@@ -1,12 +1,9 @@
 ---
 spec: 0119-spec-contained-authorization
-status: archived
+status: active
 created: 2026-09-08
 surfaces: [backend, cli, docs]
-archived: "2026-09-10"
-source_slug: 0119-spec-contained-authorization
 ---
-
 
 # A Spec carries its authority
 
