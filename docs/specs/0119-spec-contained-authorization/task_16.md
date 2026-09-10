@@ -1,7 +1,7 @@
 ---
 task: task_16
 spec: 0119-spec-contained-authorization
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -77,3 +77,58 @@ defect.
 - `_prd.md` → Decisions: Regression locks; Promoted work and known limitations.
 - `_techspec.md` → Implementation Design: Audit and compatibility.
 - `qa/qa-report-2026-09-10-02.md` → F-005.
+
+## Result
+
+Implemented the bounded suite-guard cost repair. Spec-root walks now visit only
+Markdown files whose filename identifies an authorization record, while the
+dedicated legacy authorization root still visits every Markdown record. The
+resolver caches the first result per normalized repository root with
+`sync.Once` and returns defensive slice copies to callers.
+
+Focused-check evidence:
+
+- Before the implementation, `rtk go test -count=1
+  ./internal/suiteguardcontract -run
+  'TestSanctionedRegeneration(Read|Resolve)'` failed to build because
+  `walkAuthorizationRecords` was absent. The first sandboxed attempt was
+  blocked by Go build-cache `operation not permitted`; the unchanged approved
+  retry exposed the code failure.
+- `rtk go test -race -count=1 -shuffle=on
+  ./internal/suiteguardcontract` passed all 16 package tests after the last Go
+  edit.
+- `rtk go test -count=1 -shuffle=on ./internal/suiteguard` passed all 6
+  integration tests.
+- `/usr/bin/time -p /usr/local/go/bin/go test -count=1 -parallel 16
+  ./internal/daemon -run
+  'TestTaskCycle(SchedulesIndependentWaveWithConcurrencyCap|VerificationCapacityTwoOverlapsReadyAttemptsWithoutPermitLoss|IntegratedVerificationCapacityOneBoundsConcurrentTaskWorktrees|RepairReacquiresVerificationCapacityAfterFeedback)$'`
+  passed the four cases named by the latest QA rerun together in 1.47 seconds
+  wall clock. The complete Daemon package command remains for Daemon-owned
+  Verification.
+- `rtk git diff --check` passed. `rtk git diff --name-only -- internal/daemon
+  internal/suiteguard/suiteguard.go internal/suiteguard/suiteguard_test.go`
+  returned no paths.
+
+Acceptance evidence:
+
+1. `TestSanctionedRegenerationReadsOnlyCandidateRecords` reads two candidate
+   files before and after adding `task_01.md` and asserts that the read count
+   stays two. A repository-path count found 17 candidate filenames among 1,856
+   Markdown files under the unchanged active and archived Spec roots.
+2. `TestSanctionedRegenerationResolvesOncePerProcess` rewrites the record after
+   the first resolution and observes the original result on the second call.
+   The race-enabled package run passed.
+3. The package run passed the active reference-record, archived multi-Spec,
+   frontmatter-free legacy, proposed, null-dated, malformed, wrong-consumer and
+   unrelated-record cases.
+4. The four deadline-sensitive cases named by the latest QA rerun passed in one
+   focused `-parallel 16` run. The full concurrent Daemon package acceptance
+   remains for the declared Verification command.
+5. The implementation diff changes only this Task file and
+   `internal/suiteguardcontract/regeneration.go` with its test. It changes no
+   Daemon time budget, deadline, parallelism setting, or skip.
+
+Context consultation: `/Users/marcio/dev/secondbrain/wiki/index.md` was read;
+the required focused qmd query returned no relevant file, so the current Spec,
+accepted ADRs, QA finding and repository code supplied the implementation
+boundary.

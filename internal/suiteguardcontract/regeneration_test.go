@@ -10,6 +10,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"roundfix/internal/authorization"
 )
 
 func TestCleanupRegenerationDiscovery(t *testing.T) {
@@ -22,7 +24,7 @@ func TestCleanupRegenerationDiscovery(t *testing.T) {
 		writeCleanupRegenerationFile(
 			t,
 			repository,
-			"docs/specs/current-grant/references/approved.md",
+			"docs/specs/current-grant/references/approved-authorization.md",
 			cleanupSpecGrant("approved", "2026-09-09", "regenerate the fixture", "current-grant", "internal/baseline/derived/_ownership.yml", "make baseline-digests"),
 		)
 		invalid := map[string]string{
@@ -155,6 +157,86 @@ func TestCleanupRegenerationDiscovery(t *testing.T) {
 			t.Fatalf("invalid-root declarations = %#v, want no partial authority", got)
 		}
 	})
+}
+
+func TestSanctionedRegenerationReadsOnlyCandidateRecords(t *testing.T) {
+	repository := t.TempDir()
+	authorizationRoot := filepath.Join(repository, filepath.FromSlash(specAuthorizationRoot))
+	writeCleanupRegenerationFile(t, repository, "docs/specs/current/_authorization.md", "canonical record\n")
+	writeCleanupRegenerationFile(
+		t,
+		repository,
+		"docs/specs/current/references/2026-09-08-historical-authorization.md",
+		"preserved record\n",
+	)
+
+	countCandidateReads := func() int {
+		t.Helper()
+		reads := 0
+		err := walkAuthorizationRecords(
+			authorizationRoot,
+			authorization.AuthorizationRoleSpec,
+			func(relative string) error {
+				if _, err := os.ReadFile(filepath.Join(authorizationRoot, relative)); err != nil {
+					return err
+				}
+				reads++
+				return nil
+			},
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return reads
+	}
+
+	before := countCandidateReads()
+	writeCleanupRegenerationFile(t, repository, "docs/specs/current/task_01.md", "non-record\n")
+	after := countCandidateReads()
+
+	if before != 2 {
+		t.Fatalf("candidate reads before unrelated Markdown = %d, want 2", before)
+	}
+	if after != before {
+		t.Fatalf("candidate reads after unrelated Markdown = %d, want unchanged %d", after, before)
+	}
+}
+
+func TestSanctionedRegenerationResolvesOncePerProcess(t *testing.T) {
+	repository := t.TempDir()
+	recordPath := "docs/specs/current/_authorization.md"
+	writeCleanupRegenerationFile(
+		t,
+		repository,
+		recordPath,
+		cleanupSpecGrantWithOutput("current", "first-command", "generated/first.txt"),
+	)
+
+	want := []SanctionedRegeneration{{
+		Command: "first-command",
+		Outputs: []string{"generated/first.txt"},
+	}}
+	got, err := ReadSanctionedRegenerations(repository)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("first resolution = %#v, want %#v", got, want)
+	}
+
+	writeCleanupRegenerationFile(
+		t,
+		repository,
+		recordPath,
+		cleanupSpecGrantWithOutput("current", "second-command", "generated/second.txt"),
+	)
+	again, err := ReadSanctionedRegenerations(repository)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(again, want) {
+		t.Fatalf("second resolution = %#v, want cached %#v", again, want)
+	}
 }
 
 func TestSanctionedRegenerationResolvesLegacyRecordsWithoutFrontmatter(t *testing.T) {

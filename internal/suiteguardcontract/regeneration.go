@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 
 	"gopkg.in/yaml.v3"
 
@@ -40,10 +41,37 @@ type SanctionedRegeneration struct {
 	Outputs []string
 }
 
+type sanctionedRegenerationCacheEntry struct {
+	once         sync.Once
+	declarations []SanctionedRegeneration
+	err          error
+}
+
+var sanctionedRegenerationCache sync.Map
+
 // ReadSanctionedRegenerations reads every operative authorization record under
 // root and resolves command-only declarations through the repository-owned
 // derived-output declarations.
 func ReadSanctionedRegenerations(root string) ([]SanctionedRegeneration, error) {
+	root, err := filepath.Abs(root)
+	if err != nil {
+		return nil, fmt.Errorf("resolve sanctioned regeneration root: %w", err)
+	}
+	entryValue, _ := sanctionedRegenerationCache.LoadOrStore(
+		root,
+		&sanctionedRegenerationCacheEntry{},
+	)
+	entry := entryValue.(*sanctionedRegenerationCacheEntry)
+	entry.once.Do(func() {
+		entry.declarations, entry.err = readSanctionedRegenerations(root)
+	})
+	if entry.err != nil {
+		return nil, entry.err
+	}
+	return cloneSanctionedRegenerations(entry.declarations), nil
+}
+
+func readSanctionedRegenerations(root string) ([]SanctionedRegeneration, error) {
 	var declarations []SanctionedRegeneration
 	for _, source := range []struct {
 		root string
@@ -85,14 +113,29 @@ func ReadSanctionedRegenerations(root string) ([]SanctionedRegeneration, error) 
 	return declarations, nil
 }
 
+func cloneSanctionedRegenerations(declarations []SanctionedRegeneration) []SanctionedRegeneration {
+	if declarations == nil {
+		return nil
+	}
+	cloned := make([]SanctionedRegeneration, len(declarations))
+	for index, declaration := range declarations {
+		cloned[index] = SanctionedRegeneration{
+			Command: declaration.Command,
+			Outputs: append([]string(nil), declaration.Outputs...),
+		}
+	}
+	return cloned
+}
+
 func readAuthorizationRegenerations(
 	repoRoot string,
 	authorizationRoot string,
 	role authorization.AuthorizationRole,
 ) ([]SanctionedRegeneration, error) {
 	var declarations []SanctionedRegeneration
-	err := walkAuthorizationMarkdown(
+	err := walkAuthorizationRecords(
 		filepath.Join(repoRoot, filepath.FromSlash(authorizationRoot)),
+		role,
 		func(relative string) error {
 			recordPath := path.Join(authorizationRoot, filepath.ToSlash(relative))
 			askingSpec := ""
@@ -160,8 +203,9 @@ func appendAuthorizationRegenerations(
 	return declarations
 }
 
-func walkAuthorizationMarkdown(
+func walkAuthorizationRecords(
 	root string,
+	role authorization.AuthorizationRole,
 	visit func(relative string) error,
 ) error {
 	info, err := os.Lstat(root)
@@ -182,7 +226,10 @@ func walkAuthorizationMarkdown(
 		if walkErr != nil {
 			return fmt.Errorf("inspect authorization record %q: %w", filePath, walkErr)
 		}
-		if entry.IsDir() || entry.Type()&fs.ModeSymlink != 0 || filepath.Ext(entry.Name()) != ".md" {
+		if entry.IsDir() ||
+			entry.Type()&fs.ModeSymlink != 0 ||
+			filepath.Ext(entry.Name()) != ".md" ||
+			!authorizationRecordCandidate(entry.Name(), role) {
 			return nil
 		}
 		info, err := entry.Info()
@@ -202,6 +249,14 @@ func walkAuthorizationMarkdown(
 		return fmt.Errorf("walk authorization records %q: %w", root, err)
 	}
 	return nil
+}
+
+func authorizationRecordCandidate(name string, role authorization.AuthorizationRole) bool {
+	if role == authorization.AuthorizationRoleLegacy {
+		return true
+	}
+	return role == authorization.AuthorizationRoleSpec &&
+		strings.Contains(strings.ToLower(name), "authorization")
 }
 
 // ParseSanctionedRegenerations reads the "Sanctioned regeneration" YAML
