@@ -19,7 +19,6 @@ import (
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
-	"roundfix/internal/speccheck"
 	"roundfix/internal/store"
 	runworktree "roundfix/internal/worktree"
 )
@@ -182,7 +181,6 @@ type verificationAttemptRequest struct {
 	// moment this request classifies a temporary command failure.
 	TemporaryRetryAvailable bool
 	Commands                []string
-	AuthoredSource          *speccheck.AuthoredCommandSourceRequest
 	FailureClassification   runevent.VerificationClassification
 	FailureReason           runevent.VerificationReason
 	ClassifyFailure         func(context.Context, string, string) (verificationFailureMetadata, error)
@@ -355,11 +353,6 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 	}
 	if req.Publish == nil {
 		return verificationAttemptOutcome{}, fmt.Errorf("run verification attempt %d: event publisher is required", req.Attempt)
-	}
-	if req.AuthoredSource != nil {
-		if err := speccheck.AuthorizeAuthoredCommands(ctx, *req.AuthoredSource); err != nil {
-			return verificationAttemptOutcome{}, err
-		}
 	}
 	for _, command := range req.Commands {
 		if err := req.Publish(ctx, req.summary(runevent.VerificationPhaseStarted, command), req.payload(runevent.VerificationPhaseStarted, command)); err != nil {

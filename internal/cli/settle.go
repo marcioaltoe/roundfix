@@ -16,7 +16,6 @@ import (
 	"roundfix/internal/daemon"
 	"roundfix/internal/preflight"
 	"roundfix/internal/spec"
-	"roundfix/internal/speccheck"
 	"roundfix/internal/store"
 	runworktree "roundfix/internal/worktree"
 )
@@ -164,16 +163,6 @@ func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 // failure and stops the settle like any other failed command; the Supervisor
 // re-runs settle once the cause is gone.
 func runVerificationInSettleSurface(ctx context.Context, plan settlePlan, verifier daemon.Verifier, stdout io.Writer, stderr io.Writer) bool {
-	if err := speccheck.AuthorizeAuthoredCommands(ctx, speccheck.AuthoredCommandSourceRequest{
-		RepoRoot:  plan.workDir,
-		SpecsRoot: plan.specsRoot,
-		SpecSlug:  plan.graph.Spec.Slug,
-		Artifact:  plan.task.File,
-		Commands:  plan.task.Verification,
-	}); err != nil {
-		fmt.Fprintln(stderr, err)
-		return false
-	}
 	outputPath := daemon.VerificationOutputPath(plan.artifactDir, settleVerificationRunID(plan), 1, 1)
 	for _, verificationCommand := range plan.task.Verification {
 		_, err := verifier.Verify(ctx, daemon.VerifyRequest{

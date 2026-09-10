@@ -427,13 +427,7 @@ func probeSpecVerifications(
 			return nil, fmt.Errorf("load Verification commands for Spec %q: %w", slug, err)
 		}
 		for taskIndex, task := range graph.Tasks {
-			verdicts, err := daemon.ProbeAuthoredCommands(ctx, verifier, speccheck.AuthoredCommandSourceRequest{
-				RepoRoot:  repoRoot,
-				SpecsRoot: specsRoot,
-				SpecSlug:  slug,
-				Artifact:  task.File,
-				Commands:  task.Verification,
-			}, checkoutDir, func(commandIndex int) string {
+			verdicts, err := daemon.ProbeCommands(ctx, verifier, checkoutDir, task.Verification, func(commandIndex int) string {
 				return filepath.Join(
 					diagnosticDir,
 					fmt.Sprintf("spec-%03d-task-%03d-command-%03d.log", specIndex+1, taskIndex+1, commandIndex+1),

@@ -150,7 +150,6 @@ type: backend
 		t.Fatalf("reload graph: %v", err)
 	}
 	fixture.graph = graph
-	commitTaskFixtureSource(t, fixture.gitRoot, "commit context fixture Task source")
 	prior := &fakePriorChangedResolver{byWork: map[string][]string{
 		fixture.gitRoot: []string{"internal/prior.go", "internal/source.go"},
 	}}

@@ -15,7 +15,6 @@ import (
 	"roundfix/internal/daemon"
 	"roundfix/internal/gittest"
 	"roundfix/internal/spec"
-	"roundfix/internal/speccheck"
 	"roundfix/internal/store"
 	runworktree "roundfix/internal/worktree"
 )
@@ -452,7 +451,6 @@ func TestSettleAcceptsCompletedTaskFromKeptTaskWorktreeAfterHookRefusal(t *testi
 		},
 	})
 	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
-	commitSettleExecutionApproval(t, repoDir, []string{"test -f done.txt"})
 	run, _, taskRef := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "task_01", store.StateUnresolved)
 	// The shape a refused commit leaves behind: the Daemon settled the Task
 	// completed after its Verification passed, git add ran, and the hook
@@ -518,7 +516,6 @@ func TestSettleCommitsDeletedAndRenamedWorkFromTaskWorktree(t *testing.T) {
 	gitImplement(t, repoDir, "add", "-A")
 	gitImplement(t, repoDir, "commit", "-m", "seed the files the Task rewrites")
 	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
-	commitSettleExecutionApproval(t, repoDir, []string{"test -f renamed.txt"})
 	run, _, taskRef := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "task_01", store.StateUnresolved)
 	if err := os.Remove(filepath.Join(taskRef.Path, "removed.txt")); err != nil {
 		t.Fatalf("delete task work: %v", err)
@@ -1144,33 +1141,31 @@ func TestSettleVerificationRunsSurfaceCommandsVerbatim(t *testing.T) {
 	assertNoRunDatabase(t, homeDir)
 }
 
-func TestSettleRefusesUntrustedCommandSource(t *testing.T) {
+func TestSettleExecutesCommandFromModifiedSource(t *testing.T) {
 	t.Parallel()
 	_, repoDir := newImplementWorkspace(t, []implementSeed{
-		{id: "task_01", title: "Refuse edited command", status: string(spec.StatusCompleted)},
+		{id: "task_01", title: "Run edited command", status: string(spec.StatusCompleted)},
 	})
 	taskPath := implementTaskPath(repoDir, "task_01")
 	mustWrite(t, taskPath, implementTaskContent(implementTestSlug, implementSeed{
 		id:           "task_01",
-		title:        "Refuse edited command",
+		title:        "Run edited command",
 		status:       string(spec.StatusCompleted),
-		verification: []string{"touch should-not-run"},
+		verification: []string{"touch modified-source-ran"},
 	}))
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
 	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
 
-	if code != exitRunFailed {
-		t.Fatalf("settle exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
+	if code != exitOK {
+		t.Fatalf("settle exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
 	}
-	for _, token := range []string{speccheck.CodeSourceUntrusted, string(speccheck.SourceConditionModifiedArtifact)} {
-		if !strings.Contains(stderr.String(), token) {
-			t.Fatalf("settle stderr = %q, want %q", stderr.String(), token)
-		}
+	if !strings.Contains(stdout.String(), "verify touch modified-source-ran — ok\n") {
+		t.Fatalf("settle stdout = %q, want the edited command verdict", stdout.String())
 	}
-	if _, err := os.Stat(filepath.Join(repoDir, "should-not-run")); !errors.Is(err, os.ErrNotExist) {
-		t.Fatalf("untrusted Settle command executed: %v", err)
+	if _, err := os.Stat(filepath.Join(repoDir, "modified-source-ran")); err != nil {
+		t.Fatalf("edited Settle command did not execute: %v", err)
 	}
 }
 
@@ -1234,7 +1229,6 @@ func TestSettleVerificationFailureKeepsHookRefusedWorkInTaskWorktree(t *testing.
 		},
 	})
 	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
-	commitSettleExecutionApproval(t, repoDir, []string{"test -f done.txt", "test -f missing.txt", "touch should-not-run"})
 	run, _, taskRef := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "task_01", store.StateUnresolved)
 	// The shape a refused commit leaves behind, with a Verification that no
 	// longer passes in the surface holding the staged work.
@@ -1359,22 +1353,6 @@ func TestSettleVerificationUnknownVerdictStopsWithoutCommitting(t *testing.T) {
 // start the command or retain its diagnostics.
 type settleUnknownVerdictVerifier struct {
 	cause error
-}
-
-func commitSettleExecutionApproval(t *testing.T, repoDir string, commands []string) {
-	t.Helper()
-	artifact := filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "task_01.md"))
-	revision := strings.TrimSpace(gitImplementOutput(t, repoDir, "log", "-1", "--format=%H", "HEAD", "--", artifact))
-	var record strings.Builder
-	fmt.Fprintf(&record, "---\nstatus: approved\ngranted: 2026-09-09\naction: approve exact Settle commands\nconsuming: %s\npaths:\n  - %s\noperations:\n  - implement\n  - commit\nexecution_approvals:\n", implementTestSlug, artifact)
-	for _, command := range commands {
-		fmt.Fprintf(&record, "  - repository: %q\n    revision: %s\n    artifact: %s\n    command_digest: %s\n", repoDir, revision, artifact, speccheck.AuthoredCommandDigest(command))
-	}
-	record.WriteString("---\n\n# Approved Settle command source\n")
-	authorizationPath := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "_authorization.md")
-	mustWrite(t, authorizationPath, record.String())
-	gitImplement(t, repoDir, "add", filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "_authorization.md")))
-	gitImplement(t, repoDir, "commit", "-m", "approve exact Settle commands")
 }
 
 func (verifier settleUnknownVerdictVerifier) Verify(_ context.Context, req daemon.VerifyRequest) (daemon.VerifyResult, error) {

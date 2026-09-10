@@ -1,7 +1,7 @@
 ---
 task: task_15
 spec: 0119-spec-contained-authorization
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -91,3 +91,56 @@ execute exactly as they did before this Spec touched them.
 - `_prd.md` → Core Features 6; Goals 3; Promoted work and known limitations; Decisions: Declared intentional breaks 3.
 - `_techspec.md` → Vocabulary Contract; Coverage Map.
 - `qa/qa-report-2026-09-10-02.md` → F-005.
+
+## Result
+
+Implementation:
+
+- Removed the authored-command source decision, its diagnostic token, and its
+  pre-dispatch, post-Agent, Settle, and read-only-check probing callers. The
+  original `ProbeCommands` and direct Verifier paths execute authored commands
+  again without a source gate or dead compatibility parameter.
+- Removed the source-boundary tests and execution-approval fixture data. The
+  public Spec Check and Settle tests now exercise commands from modified Task
+  artifacts and observe that the commands run.
+- Kept the authorization record reader, operation checks, constraint refusal,
+  Governed Path set, resolved-reference audit, and suite-guard reader in place.
+- Scoped `Grant Refusal Code` in `CONTEXT.md` to
+  `SC-TOOLING-UNAPPROVED`, the refusal the CLI still emits.
+
+Focused checks:
+
+- `rtk go test -count=1 ./internal/cli -run '^(TestSpecCheckRunVerification|TestSettleExecutesCommandFromModifiedSource|TestSettleRefusesMissingCommitAuthority|TestRunImplementUsesConfiguredExternalSpecRootEndToEnd|TestRunImplementInteractiveInputListsConfiguredExternalSpecRoot|TestRunImplementRefusesMissingImplementAuthorityBeforeRun)$'` — passed, 12 tests.
+- `rtk go test -count=1 ./internal/daemon -run '^(TestProbeCommands|TestTaskCyclePromptContainsBundleWithoutReferencedBodies|TestDispatchRefusesMissingImplementAuthority|TestCommitAndPushAuthorityAreSeparate|TestTaskCycleSchedulesIndependentWaveWithConcurrencyCap|TestTaskCycleVerificationCapacityTwoOverlapsReadyAttemptsWithoutPermitLoss|TestTaskCycleIntegratedVerificationCapacityOneBoundsConcurrentTaskWorktrees|TestTaskCycleRepairReacquiresVerificationCapacityAfterFeedback)$'` — passed, 12 tests. The four F-005 cases ran together in this package invocation.
+- `rtk go test -count=1 ./internal/authorization ./internal/spec ./internal/speccheck ./internal/suiteguardcontract -run '^(TestCurrentRecordPermitsItsDeclaredOperations|TestAuthorizationReaderClassifiesGrantState|TestAuthorizationReaderTypesPermittedOperations|TestAuthorizationReaderRefusesEscapingPaths|TestAuthorizationReaderResolvesPreservedHistoricalRecords|TestConstraintReaderCharacterizesGrantCitation|TestConstraintsResolveSpecContainedRecord|TestConstraintsRefuseNonOperativeGrant|TestConstraintsAcceptHonestProposalDeclaration|TestGovernedPath|TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows|TestEveryBoundedPathIsGoverned|TestAuditReadsTheResolvedReference|TestCleanupRegenerationDiscovery|TestSanctionedRegenerationResolvesLegacyRecordsWithoutFrontmatter|TestSanctionedRegenerationReadsArchivedSpecGrants|TestSanctionedRegenerationRejectsNonOperativeRecords|TestSanctionedRegenerationSetOnlyGrows)$'` — passed, 71 tests across four packages.
+- `rtk go test -count=1 ./internal/cli -run '^(TestSettleAcceptsCompletedTaskFromKeptTaskWorktreeAfterHookRefusal|TestSettleCommitsDeletedAndRenamedWorkFromTaskWorktree|TestSettleVerificationFailureKeepsHookRefusedWorkInTaskWorktree)$'` — passed, 3 tests.
+- `rtk go test -count=1 ./internal/daemon -run '^(TestRefusedReportDoesNotBlockItsSuccessor|TestWriteMechanicalQAReportWritesThePreconditionRefusal|TestTaskCycleRealRepoCommitsPerTaskExcludingPreexistingDirt|TestHookRefusalRecovery|TestTaskCycleSettlesCompletedWithoutCommitWhenOnlyExternalTaskFileChanged|TestTaskCycleQAReportExternalProceedsWithoutStaging)$'` — passed, 17 tests.
+
+Acceptance evidence:
+
+1. A post-edit source search found no
+   `AuthorizeAuthoredCommands`, `ProbeAuthoredCommands`,
+   `AuthoredCommandSourceRequest`, source-condition type, or
+   `SC-SOURCE-UNTRUSTED` reference under `internal/`; Git records
+   `internal/speccheck/verification_source.go` as deleted.
+2. The removed source reader owned the extra Git subprocess boundary. The only
+   Git subprocesses found in the inspected Task engine are the preserved
+   changed-path audit's commit log and diff-tree reads, outside authored-command
+   execution; the pre-work probe and post-Agent Verification call the Verifier
+   directly.
+3. `TestSpecCheckRunVerification/executes_an_opted-in_command_from_an_edited_source`
+   and `TestSettleExecutesCommandFromModifiedSource` passed and independently
+   observed their modified Task commands' filesystem effects.
+4. The 71-test authorization preservation selection passed. A source search
+   still locates `parseAuthorizationRecord`,
+   `splitAuthorizationFrontmatter`, and `authorizationFrontmatterMapping` only
+   in `internal/authorization/authorization.go`.
+5. A glossary search finds `SC-TOOLING-UNAPPROVED` in `CONTEXT.md` and no
+   withdrawn source-refusal token there.
+6. The four F-005 Task-cycle cases passed together with their original
+   deadlines, and a changed-line search found no timeout or deadline edit. The
+   complete concurrent `./internal/daemon` command remains part of the Task's
+   declared Verification and was not run in this Daemon-assigned Agent turn.
+
+The Daemon-owned Verification commands were not run; the Daemon retains the
+full-package verdict and Task settlement.

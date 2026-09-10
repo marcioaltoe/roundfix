@@ -143,10 +143,12 @@ func TestSpecCheckRunVerification(t *testing.T) {
 		}
 	})
 
-	t.Run("keeps read-only checking available for an edited source", func(t *testing.T) {
+	t.Run("executes an opted-in command from an edited source", func(t *testing.T) {
 		_, repoDir := newSpecCheckVerificationWorkspace(t, []string{"test -f task-output.txt"})
+		marker := filepath.Join(t.TempDir(), "modified-source-ran")
 		taskPath := filepath.Join(repoDir, "docs", "specs", "clean", "task_01.md")
-		edited := strings.Replace(mustRead(t, taskPath), "test -f task-output.txt", "touch should-not-run", 1)
+		command := fmt.Sprintf("touch %q; false", marker)
+		edited := strings.Replace(mustRead(t, taskPath), "test -f task-output.txt", command, 1)
 		mustWrite(t, taskPath, edited)
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
@@ -162,22 +164,23 @@ func TestSpecCheckRunVerification(t *testing.T) {
 		if stderr.String() != "" {
 			t.Fatalf("read-only check stderr = %q, want none", stderr.String())
 		}
-		if _, err := os.Stat(filepath.Join(repoDir, "should-not-run")); !errors.Is(err, os.ErrNotExist) {
+		if _, err := os.Stat(marker); !errors.Is(err, os.ErrNotExist) {
 			t.Fatalf("read-only check executed edited command: %v", err)
 		}
 
 		stdout.Reset()
 		code = runCLIContext(t, context.Background(), []string{"spec", "check", "clean", "--run-verification"}, &stdout, &stderr)
-		if code != exitRunFailed {
-			t.Fatalf("executing check exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
+		if code != exitOK {
+			t.Fatalf("executing check exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
 		}
-		for _, token := range []string{speccheck.CodeSourceUntrusted, string(speccheck.SourceConditionModifiedArtifact)} {
-			if !strings.Contains(stderr.String(), token) {
-				t.Fatalf("executing check stderr = %q, want %q", stderr.String(), token)
-			}
+		if !strings.HasPrefix(stdout.String(), "Spec clean\nNo findings. Authored Verification commands executed: 1.\n") || !strings.Contains(stdout.String(), ": honest — ") {
+			t.Fatalf("executing check report = %q, want one honest executed command", stdout.String())
 		}
-		if _, err := os.Stat(filepath.Join(repoDir, "should-not-run")); !errors.Is(err, os.ErrNotExist) {
-			t.Fatalf("executing check ran edited command: %v", err)
+		if stderr.String() != "" {
+			t.Fatalf("executing check stderr = %q, want none", stderr.String())
+		}
+		if _, err := os.Stat(marker); err != nil {
+			t.Fatalf("executing check did not run edited command: %v", err)
 		}
 	})
 

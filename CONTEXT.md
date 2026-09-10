@@ -239,7 +239,7 @@ The stable token a pre-QA mechanical check emits when it can refuse from written
 _Avoid_: lint code, error code, check name
 
 **Grant Refusal Code**:
-The stable token the Spec checker emits when an authorization boundary refuses. Two exist: `SC-TOOLING-UNAPPROVED` (a Spec claims tooling authorization its cited record does not sustain, because the record is proposed, undated, withdrawn, or consumed by another Spec) and `SC-SOURCE-UNTRUSTED` (an authored Verification command whose carrying source fails committed provenance and carries no valid execution approval). A record that honestly declares its mutations proposed, claiming no operative grant, is accurate rather than defective and refuses nothing. Like a Mechanical Refusal Code, the token is the durable name a reader and a later detector both use; the sentence beside it may be reworded, the token may not.
+The stable token the Spec checker emits when an authorization boundary refuses. `SC-TOOLING-UNAPPROVED` means a Spec claims tooling authorization its cited record does not sustain because the record is proposed, undated, withdrawn, or consumed by another Spec. A record that honestly declares its mutations proposed, claiming no operative grant, is accurate rather than defective and refuses nothing. Like a Mechanical Refusal Code, the token is the durable name a reader and a later detector both use; the sentence beside it may be reworded, the token may not.
 _Avoid_: authorization error, permission code, trust error
 
 

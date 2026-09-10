@@ -235,7 +235,6 @@ func (fixture *taskCycleFixture) qaPlan() TaskPlan {
 	fixture.t.Helper()
 	seeds, gateID := taskSeedsWithQAGate(fixture.seeds)
 	writeSpecDirAtRootForTestWithQA(fixture.t, fixture.specsRoot, taskCycleSlug, seeds, qaDeclarationForTest{taskID: gateID})
-	commitTaskFixtureSource(fixture.t, fixture.gitRoot, "seed QA Task source")
 	fixture.seeds = seeds
 	fixture.reloadGraph()
 	return fixture.plan()
@@ -247,7 +246,6 @@ func (fixture *taskCycleFixture) declinedQAPlan() TaskPlan {
 		declined: true,
 		reason:   "this fixture has no behavioral surface",
 	})
-	commitTaskFixtureSource(fixture.t, fixture.gitRoot, "seed declined QA declaration")
 	fixture.reloadGraph()
 	return fixture.plan()
 }
@@ -263,13 +261,8 @@ func (fixture *taskCycleFixture) reloadGraph() {
 
 func (fixture *taskCycleFixture) useExternalSpecRoot(t *testing.T, seeds []taskSpecSeed) string {
 	t.Helper()
-	externalRepo := t.TempDir()
-	gittest.InitRepo(t, externalRepo, "--initial-branch=main")
-	specsRoot := filepath.Join(externalRepo, "external-specs")
+	specsRoot := filepath.Join(t.TempDir(), "external-specs")
 	writeSpecDirAtRootForTest(t, specsRoot, taskCycleSlug, seeds)
-	gittest.Run(t, externalRepo, "add", "-A")
-	gittest.Run(t, externalRepo, "commit", "-m", "seed external Task source")
-	writeTaskFixtureExecutionApprovals(t, fixture, externalRepo, specsRoot, seeds)
 	graph, err := spec.Load(specsRoot, taskCycleSlug)
 	if err != nil {
 		t.Fatalf("load external spec: %v", err)
@@ -287,32 +280,6 @@ func commitTaskFixtureSource(t *testing.T, repoRoot string, message string) {
 		return
 	}
 	gittest.Run(t, repoRoot, "commit", "-m", message)
-}
-
-func writeTaskFixtureExecutionApprovals(t *testing.T, fixture *taskCycleFixture, externalRepo, specsRoot string, seeds []taskSpecSeed) {
-	t.Helper()
-	localPath := filepath.ToSlash(filepath.Join("docs", "specs", fixture.graph.Tasks[0].File))
-	var record strings.Builder
-	fmt.Fprintf(&record, "---\nstatus: approved\ngranted: 2026-09-09\naction: approve external fixture commands\nconsuming: %s\npaths:\n  - %s\noperations:\n  - implement\n  - commit\n  - push\nexecution_approvals:\n", taskCycleSlug, localPath)
-	for _, seed := range seeds {
-		commands := seed.verification
-		if len(commands) == 0 {
-			if seed.taskType == string(spec.TaskTypeQA) {
-				commands = spec.DerivedQAVerification(taskCycleSlug)
-			} else {
-				commands = []string{"true"}
-			}
-		}
-		artifact := filepath.ToSlash(filepath.Join("external-specs", taskCycleSlug, seed.id+".md"))
-		revision := strings.TrimSpace(gittest.Run(t, externalRepo, "log", "-1", "--format=%H", "HEAD", "--", artifact))
-		for _, command := range commands {
-			fmt.Fprintf(&record, "  - repository: %q\n    revision: %s\n    artifact: %s\n    command_digest: %s\n", externalRepo, revision, artifact, speccheck.AuthoredCommandDigest(command))
-		}
-	}
-	record.WriteString("---\n\n# Approved external Task source\n")
-	authorizationPath := filepath.Join(fixture.gitRoot, "docs", "specs", taskCycleSlug, "_authorization.md")
-	mustWriteForTest(t, authorizationPath, record.String())
-	commitTaskFixtureSource(t, fixture.gitRoot, "approve external Task source")
 }
 
 func (fixture *taskCycleFixture) engine(t *testing.T, runner agent.Runner, verifier Verifier, committer Committer, worktree WorktreeSnapshotter) *Engine {

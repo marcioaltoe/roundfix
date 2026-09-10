@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
-	"roundfix/internal/speccheck"
 )
 
 // CommandVerdict records what one authored command does against a tree where
@@ -86,21 +84,6 @@ func ProbeCommands(
 		return nil, &commandProbeError{command: command, err: verifyErr}
 	}
 	return verdicts, nil
-}
-
-// ProbeAuthoredCommands applies the shared source decision before the prober
-// can pass any authored text to its Verifier.
-func ProbeAuthoredCommands(
-	ctx context.Context,
-	verifier Verifier,
-	source speccheck.AuthoredCommandSourceRequest,
-	workDir string,
-	outputFor func(index int) string,
-) ([]CommandVerdict, error) {
-	if err := speccheck.AuthorizeAuthoredCommands(ctx, source); err != nil {
-		return nil, err
-	}
-	return ProbeCommands(ctx, verifier, workDir, source.Commands, outputFor)
 }
 
 func verificationCommandCouldNotExecute(err error) (int, bool) {
