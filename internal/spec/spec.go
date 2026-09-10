@@ -721,7 +721,7 @@ func validateQAGate(manifestPath string, nodes []manifestNode, tasks []Task, qa 
 		}
 	}
 
-	if gate.Status != StatusCompleted && gate.Status != StatusFailed {
+	if gate.Status != StatusCompleted {
 		return nil
 	}
 	var staleDependencies []string
