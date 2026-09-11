@@ -34,7 +34,9 @@ Stop before any other mutation. The bounded set comes from
    that traverses upward past it or resolves through a symlink out of it.
 4. MUST keep the default root's resolution identical, including which record a
    row citing several references resolves to.
-5. MUST update only the characterization rows this Task intentionally moves.
+5. MUST expose the resolved reference so the mechanical consumer can read it in
+   Task 08, without changing that consumer here.
+6. MUST update only the characterization rows this Task intentionally moves.
 
 ## Subtasks
 
@@ -51,13 +53,14 @@ Stop before any other mutation. The bounded set comes from
       through a symlink out of it, are still rejected.
 - [ ] The default root resolves the same record it resolves today, including for
       a row citing an approved grant beside a proposed record.
-- [ ] The mechanical audit receives the resolved reference for the external case
-      and produces a real audit rather than a skip.
+Task 08 owns the mechanical consumer. This Task resolves the reference; making
+the audit consume it requires `internal/speccheck/mechanical.go`, which this
+Task's bounded scope forbids, so demanding it here would ask for a state the
+same Task file refuses.
 
 ## Context
 
 - interface: `internal/speccheck/constraints.go`
-- interface: `internal/speccheck/mechanical.go`
 
 ## Verification
 

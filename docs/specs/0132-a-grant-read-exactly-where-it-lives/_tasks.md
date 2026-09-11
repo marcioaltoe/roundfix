@@ -19,9 +19,12 @@ graph:
     - id: task_05
       file: task_05.md
       needs: [task_01]
+    - id: task_08
+      file: task_08.md
+      needs: [task_04]
     - id: task_06
       file: task_06.md
-      needs: [task_02, task_03, task_04, task_05]
+      needs: [task_02, task_03, task_05, task_08]
     - id: task_07
       file: task_07.md
       needs: [task_06]
@@ -36,7 +39,8 @@ graph:
 | task_03 | Derive the record path from the resolved Spec Root | backend | high | task_01 |
 | task_04 | Resolve a citation against the artifact that carries it | backend | high | task_01, task_03 |
 | task_05 | Recognize the record naming already in use | backend | low | task_01 |
-| task_06 | Read a record wherever the archive left it | test | medium | task_02, task_03, task_04, task_05 |
+| task_08 | Let the mechanical audit consume the resolved reference | backend | medium | task_04 |
+| task_06 | Read a record wherever the archive left it | test | medium | task_02, task_03, task_05, task_08 |
 | task_07 | Run the final QA gate | qa | high | task_06 |
 
-Waves: 1 → task_01 · 2 → task_02, task_03, task_05 · 3 → task_04 · 4 → task_06 · 5 → task_07.
+Waves: 1 → task_01 · 2 → task_02, task_03, task_05 · 3 → task_04 · 4 → task_08 · 5 → task_06 · 6 → task_07.
