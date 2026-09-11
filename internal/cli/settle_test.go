@@ -102,8 +102,7 @@ func TestRunSettleNoCommitPrintsNoCommitPathsOrSharedWarning(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Internal fixture should stay untouched"},
 	})
-	externalRoot := filepath.Join(t.TempDir(), "external-specs")
-	writeImplementSpecAtRoot(t, externalRoot, implementTestSlug, []implementSeed{
+	_, externalRoot := newExternalSpecsRoot(t, implementTestSlug, []implementSeed{
 		{id: "task_01", title: "Recover external task", status: string(spec.StatusFailed), verification: []string{"true"}},
 		{id: "task_02", title: "Other failed work", status: string(spec.StatusFailed)},
 	})
@@ -134,8 +133,7 @@ func TestRunSettleUsesConfiguredExternalSpecRoot(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Internal fixture should stay untouched"},
 	})
-	externalRoot := filepath.Join(t.TempDir(), "external-specs")
-	writeImplementSpecAtRoot(t, externalRoot, implementTestSlug, []implementSeed{
+	_, externalRoot := newExternalSpecsRoot(t, implementTestSlug, []implementSeed{
 		{
 			id:           "task_01",
 			title:        "Recover external task",

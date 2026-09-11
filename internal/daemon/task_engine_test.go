@@ -219,7 +219,7 @@ func (fixture *taskCycleFixture) plan() TaskPlan {
 		RunWorktree:             runworktree.Ref{RunID: fixture.run.ID, Path: fixture.gitRoot, Branch: runworktree.BranchName(fixture.run.ID), UserRoot: fixture.gitRoot},
 		TargetBranch:            fixture.run.LocalBranch,
 		HeadSHA:                 head,
-		Authorization:           spec.ReadSpecAuthorization(context.Background(), fixture.gitRoot, taskCycleSlug, head),
+		Authorization:           spec.ReadSpecAuthorization(context.Background(), fixture.gitRoot, fixture.specsRoot, taskCycleSlug, head),
 		Spec:                    fixture.graph.Spec,
 		SpecsRoot:               fixture.specsRoot,
 		Tasks:                   fixture.graph.Tasks,

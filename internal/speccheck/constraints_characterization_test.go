@@ -15,6 +15,7 @@ import (
 	"strings"
 	"testing"
 
+	"roundfix/internal/gittest"
 	"roundfix/internal/spec"
 	"roundfix/internal/speccheck"
 )
@@ -169,6 +170,8 @@ func TestExternalSpecRootResolutionCharacterization(t *testing.T) {
 	const slug = "external-tooling-row"
 	projectRoot := t.TempDir()
 	specRepositoryRoot := t.TempDir()
+	gittest.InitRepo(t, projectRoot, "--initial-branch=main")
+	gittest.InitRepo(t, specRepositoryRoot, "--initial-branch=main")
 	specsRoot := filepath.Join(specRepositoryRoot, "specs")
 
 	writeToolingRowFile(t, projectRoot, "docs/agents/agent-instructions.md", "# Agent instructions\n")
@@ -184,15 +187,18 @@ func TestExternalSpecRootResolutionCharacterization(t *testing.T) {
 		"specs/"+slug+"/_authorization.md",
 		typedConstraintAuthorization("approved", "2026-09-09", slug),
 	)
+	gittest.Run(t, projectRoot, "add", "-A")
+	gittest.Run(t, projectRoot, "commit", "--allow-empty", "-m", "seed project")
+	gittest.Run(t, specRepositoryRoot, "add", "-A")
+	gittest.Run(t, specRepositoryRoot, "commit", "-m", "seed external Spec")
 
-	// Task 03 changes this answer by deriving the record location from the resolved Spec Root.
-	operationResolution := spec.ReadSpecAuthorization(context.Background(), projectRoot, slug, "")
-	if operationResolution.Outcome != spec.AuthorizationUnresolved {
-		t.Fatalf("external-root operation resolution = %q, want unresolved: %#v", operationResolution.Outcome, operationResolution.Reason)
+	// Task 03 derives this answer from the resolved Spec Root and its committed revision.
+	operationResolution := spec.ReadSpecAuthorization(context.Background(), projectRoot, specsRoot, slug, "")
+	if operationResolution.Outcome != spec.AuthorizationGranted {
+		t.Fatalf("external-root operation resolution = %q, want granted: %#v", operationResolution.Outcome, operationResolution.Reason)
 	}
-	if operationResolution.Record.Source.Path != spec.AuthorizationRecordPath(slug) ||
-		operationResolution.Reason.Code != spec.AuthorizationReasonUnreadableRecord {
-		t.Fatalf("external-root operation resolution = %#v, want unreadable default-root record", operationResolution)
+	if operationResolution.Record.Source.Path != "specs/"+slug+"/_authorization.md" {
+		t.Fatalf("external-root operation resolution = %#v, want root-derived record", operationResolution)
 	}
 
 	// Task 04 changes this answer by resolving the relative citation beside its carrying artifact.

@@ -533,14 +533,14 @@ func configureImplementClaudeReasoning(t *testing.T, repoDir string) {
 
 func configureExternalSpecsRoot(t *testing.T, repoDir string, specsRoot string) {
 	t.Helper()
-	writeExternalAuthorizationForTest(t, repoDir, specsRoot)
+	removeProjectAuthorizationDuplicatesForTest(t, repoDir, specsRoot)
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), fmt.Sprintf("specs:\n  root: %q\n", specsRoot))
 	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
 	gitImplement(t, repoDir, "add", "docs/specs")
 	gitImplement(t, repoDir, "commit", "-m", "configure external Spec Root")
 }
 
-func writeExternalAuthorizationForTest(t *testing.T, repoDir string, specsRoot string) {
+func removeProjectAuthorizationDuplicatesForTest(t *testing.T, repoDir string, specsRoot string) {
 	t.Helper()
 	entries, err := os.ReadDir(specsRoot)
 	if err != nil {
@@ -555,8 +555,9 @@ func writeExternalAuthorizationForTest(t *testing.T, repoDir string, specsRoot s
 			continue
 		}
 		authorizationPath := filepath.Join(repoDir, "docs", "specs", graph.Spec.Slug, "_authorization.md")
-		mustMkdir(t, filepath.Dir(authorizationPath))
-		mustWrite(t, authorizationPath, implementFixtureAuthorization(graph.Spec.Slug, "implement", "commit", "push"))
+		if err := os.Remove(authorizationPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("remove duplicate project authorization record: %v", err)
+		}
 	}
 }
 

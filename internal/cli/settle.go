@@ -320,7 +320,7 @@ func readSettleAuthorization(ctx context.Context, plan settlePlan) spec.Authoriz
 	if plan.hasRun && strings.TrimSpace(plan.run.HeadSHA) != "" {
 		revision = plan.run.HeadSHA
 	}
-	return spec.ReadSpecAuthorization(ctx, plan.userRoot, plan.graph.Spec.Slug, revision)
+	return spec.ReadSpecAuthorization(ctx, plan.userRoot, plan.specsRoot, plan.graph.Spec.Slug, revision)
 }
 
 func requireSettleCommitAuthority(plan settlePlan) error {

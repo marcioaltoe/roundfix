@@ -189,7 +189,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		fmt.Fprintf(stdout, "All %d Task(s) already completed; no Run was created.\n", counts.total())
 		return exitOK
 	}
-	authorization := spec.ReadSpecAuthorization(ctx, gitState.Root, graph.Spec.Slug, gitState.HEAD)
+	authorization := spec.ReadSpecAuthorization(ctx, gitState.Root, checkoutSpecsRoot, graph.Spec.Slug, gitState.HEAD)
 	if err := spec.RequireOperation(authorization, spec.AuthorizationOperationImplement); err != nil {
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight

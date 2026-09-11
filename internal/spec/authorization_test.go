@@ -12,6 +12,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"roundfix/internal/gittest"
 )
 
 const authorizationHistoryRevision = "6b8ea48725cbca13974eee0b400b3482202874f6"
@@ -359,6 +361,94 @@ func TestAuthorizationReaderResolvesPreservedHistoricalRecords(t *testing.T) {
 	}
 }
 
+func TestOperationAuthorityResolvesExternalSpecRoot(t *testing.T) {
+	const specSlug = "asking-spec"
+	projectRoot := newAuthorizationGitRepository(t)
+	projectRevision := commitAuthorizationFixture(t, projectRoot, "seed project")
+	externalRepoRoot := newAuthorizationGitRepository(t)
+	externalSpecsRoot := filepath.Join(externalRepoRoot, "specs")
+	externalRecordPath := filepath.ToSlash(filepath.Join("specs", specSlug, "_authorization.md"))
+	writeAuthorizationRecordAtPath(t, externalRepoRoot, externalRecordPath, authorizationDocument(
+		"approved",
+		"2026-09-09",
+		specSlug,
+		"\noperations:\n  - implement\n",
+		"",
+	))
+	externalRevision := commitAuthorizationFixture(t, externalRepoRoot, "seed external Spec")
+	writeAuthorizationRecordAtPath(t, externalRepoRoot, externalRecordPath, authorizationDocument(
+		"proposed",
+		"null",
+		specSlug,
+		"\noperations:\n  - implement\n",
+		"",
+	))
+
+	resolved := ReadSpecAuthorization(context.Background(), projectRoot, externalSpecsRoot, specSlug, projectRevision)
+
+	if resolved.Outcome != AuthorizationGranted || !resolved.Permits(AuthorizationOperationImplement) {
+		t.Fatalf("external-root operation authority = %#v, want granted implement authority", resolved)
+	}
+	if resolved.Record.Source.Path != externalRecordPath {
+		t.Fatalf("external-root record path = %q, want root-derived %q", resolved.Record.Source.Path, externalRecordPath)
+	}
+	if resolved.Record.Source.Revision != externalRevision {
+		t.Fatalf("external-root record revision = %q, want external HEAD %q", resolved.Record.Source.Revision, externalRevision)
+	}
+	if _, err := os.Stat(filepath.Join(projectRoot, filepath.FromSlash(AuthorizationRecordPath(specSlug)))); !os.IsNotExist(err) {
+		t.Fatalf("project repository contains duplicate authorization record, stat error = %v", err)
+	}
+}
+
+func TestOperationAuthorityDefaultRootUnchanged(t *testing.T) {
+	const specSlug = "asking-spec"
+	projectRoot := newAuthorizationGitRepository(t)
+	writeAuthorizationRecordAt(t, projectRoot, authorizationDocument(
+		"approved",
+		"2026-09-09",
+		specSlug,
+		"\noperations:\n  - implement\n",
+		"",
+	))
+	projectRevision := commitAuthorizationFixture(t, projectRoot, "seed default Spec Root")
+
+	resolved := ReadSpecAuthorization(
+		context.Background(),
+		projectRoot,
+		filepath.Join(projectRoot, "docs", "specs"),
+		specSlug,
+		projectRevision,
+	)
+
+	if resolved.Outcome != AuthorizationGranted || !resolved.Permits(AuthorizationOperationImplement) {
+		t.Fatalf("default-root operation authority = %#v, want granted implement authority", resolved)
+	}
+	if resolved.Record.Source.Path != AuthorizationRecordPath(specSlug) {
+		t.Fatalf("default-root record path = %q, want unchanged %q", resolved.Record.Source.Path, AuthorizationRecordPath(specSlug))
+	}
+	if resolved.Record.Source.Revision != projectRevision {
+		t.Fatalf("default-root record revision = %q, want unchanged %q", resolved.Record.Source.Revision, projectRevision)
+	}
+}
+
+func TestOperationAuthorityReportsUnresolvableSpecRoot(t *testing.T) {
+	projectRoot := newAuthorizationGitRepository(t)
+	projectRevision := commitAuthorizationFixture(t, projectRoot, "seed project")
+	unresolvableRoot := filepath.Join(t.TempDir(), "not-a-git-repository")
+	if err := os.MkdirAll(unresolvableRoot, 0o755); err != nil {
+		t.Fatalf("create unresolvable Spec Root: %v", err)
+	}
+
+	resolved := ReadSpecAuthorization(context.Background(), projectRoot, unresolvableRoot, "asking-spec", projectRevision)
+
+	if resolved.Outcome != AuthorizationUnresolved {
+		t.Fatalf("unresolvable-root operation authority outcome = %q, want unresolved: %#v", resolved.Outcome, resolved)
+	}
+	if resolved.Reason.Code != AuthorizationReasonUnreadableRecord || resolved.Reason.Field != "spec_root" {
+		t.Fatalf("unresolvable-root operation authority reason = %#v, want unreadable spec_root", resolved.Reason)
+	}
+}
+
 func authorizationDocument(status, granted, consuming, extraFrontmatter, body string) string {
 	return "---\n" +
 		"status: " + status + "\n" +
@@ -397,6 +487,11 @@ func writeAuthorizationRecord(t *testing.T, content string) (string, string) {
 func writeAuthorizationRecordAt(t *testing.T, repoRoot, content string) string {
 	t.Helper()
 	const recordPath = "docs/specs/asking-spec/_authorization.md"
+	return writeAuthorizationRecordAtPath(t, repoRoot, recordPath, content)
+}
+
+func writeAuthorizationRecordAtPath(t *testing.T, repoRoot, recordPath, content string) string {
+	t.Helper()
 	absPath := filepath.Join(repoRoot, filepath.FromSlash(recordPath))
 	if err := os.MkdirAll(filepath.Dir(absPath), 0o755); err != nil {
 		t.Fatalf("create authorization directory: %v", err)
@@ -419,4 +514,18 @@ func authorizationHistoryPaths(t *testing.T, repoRoot, revision string) []string
 		t.Fatalf("list historical authorization records at %s: %v: %s", revision, err, output)
 	}
 	return strings.Fields(string(output))
+}
+
+func newAuthorizationGitRepository(t *testing.T) string {
+	t.Helper()
+	repoRoot := t.TempDir()
+	gittest.InitRepo(t, repoRoot, "--initial-branch=main")
+	return repoRoot
+}
+
+func commitAuthorizationFixture(t *testing.T, repoRoot, message string) string {
+	t.Helper()
+	gittest.Run(t, repoRoot, "add", "-A")
+	gittest.Run(t, repoRoot, "commit", "--allow-empty", "-m", message)
+	return strings.TrimSpace(gittest.Run(t, repoRoot, "rev-parse", "HEAD"))
 }
