@@ -164,7 +164,7 @@ func TestConstraintsResolveSpecContainedRecord(t *testing.T) {
 	}
 }
 
-func TestExternalSpecRootResolutionCharacterization(t *testing.T) {
+func TestCitationResolvesInExternalSpecRoot(t *testing.T) {
 	t.Parallel()
 
 	const slug = "external-tooling-row"
@@ -201,18 +201,80 @@ func TestExternalSpecRootResolutionCharacterization(t *testing.T) {
 		t.Fatalf("external-root operation resolution = %#v, want root-derived record", operationResolution)
 	}
 
-	// Task 04 changes this answer by resolving the relative citation beside its carrying artifact.
 	result, err := speccheck.CheckStage(specsRoot, projectRoot, slug, speccheck.StagePRD)
 	if err != nil {
 		t.Fatalf("CheckStage(StagePRD): %v", err)
 	}
-	findings := findingsWithCode(result, speccheck.CodeToolingUnapproved)
-	if len(findings) != 1 || len(result.Findings) != 1 {
-		t.Fatalf("external-root citation findings = %#v, want one exact-record refusal", result.Findings)
+	if len(result.Findings) != 0 {
+		t.Fatalf("external-root citation findings = %#v, want the grant beside its PRD to resolve", result.Findings)
 	}
-	if !strings.Contains(findings[0].Summary, "does not identify exactly one authorization record") {
-		t.Fatalf("external-root citation summary = %q, want exact-record refusal", findings[0].Summary)
+	for _, skipped := range result.Skipped {
+		if skipped.Code == speccheck.CodeToolingUnauthorized {
+			t.Fatalf("external-root citation skips = %#v, want the authorization check to read the resolved record", result.Skipped)
+		}
 	}
+}
+
+func TestCitationRejectsEscapeFromSpecRoot(t *testing.T) {
+	t.Parallel()
+
+	const slug = "external-tooling-row"
+	assertRejected := func(t *testing.T, citation string, arrangeRecord func(t *testing.T, specRepositoryRoot string)) {
+		t.Helper()
+
+		projectRoot := t.TempDir()
+		specRepositoryRoot := t.TempDir()
+		gittest.InitRepo(t, projectRoot, "--initial-branch=main")
+		gittest.InitRepo(t, specRepositoryRoot, "--initial-branch=main")
+		specsRoot := filepath.Join(specRepositoryRoot, "specs")
+
+		writeToolingRowFile(t, projectRoot, "docs/agents/agent-instructions.md", "# Agent instructions\n")
+		row := "Tooling authority: applicable — express maintainer authorization recorded in [the grant](" + citation + "); bounded files: `docs/agents/agent-instructions.md`."
+		writeToolingRowFile(t, specRepositoryRoot, "specs/"+slug+"/_prd.md", "# External tooling row\n\n## Project Constraints\n\n"+
+			"- Identifier strategy: not applicable — no identifier change. Source: `docs/agents/agent-instructions.md`.\n"+
+			"- Authentication and HTTP: not applicable — no network boundary. Source: `docs/agents/agent-instructions.md`.\n"+
+			"- Active ADR obligations: not applicable — no ADR applies. Source: `docs/agents/agent-instructions.md`.\n"+
+			"- "+row+" Source: `docs/agents/agent-instructions.md`.\n")
+		arrangeRecord(t, specRepositoryRoot)
+
+		gittest.Run(t, projectRoot, "add", "-A")
+		gittest.Run(t, projectRoot, "commit", "--allow-empty", "-m", "seed project")
+		gittest.Run(t, specRepositoryRoot, "add", "-A")
+		gittest.Run(t, specRepositoryRoot, "commit", "-m", "seed external Spec")
+
+		result, err := speccheck.CheckStage(specsRoot, projectRoot, slug, speccheck.StagePRD)
+		if err != nil {
+			t.Fatalf("CheckStage(StagePRD): %v", err)
+		}
+		findings := findingsWithCode(result, speccheck.CodeToolingUnapproved)
+		if len(findings) != 1 || len(result.Findings) != 1 {
+			t.Fatalf("escaping citation findings = %#v, want one exact-record refusal", result.Findings)
+		}
+		if !strings.Contains(findings[0].Summary, "does not identify exactly one authorization record") {
+			t.Fatalf("escaping citation summary = %q, want exact-record refusal", findings[0].Summary)
+		}
+	}
+
+	t.Run("upward traversal", func(t *testing.T) {
+		t.Parallel()
+
+		assertRejected(t, "../../outside-authorization.md", func(t *testing.T, specRepositoryRoot string) {
+			writeToolingRowFile(t, specRepositoryRoot, "outside-authorization.md", typedConstraintAuthorization("approved", "2026-09-09", slug))
+		})
+	})
+
+	t.Run("symlink outside root", func(t *testing.T) {
+		t.Parallel()
+
+		outsideRoot := t.TempDir()
+		writeToolingRowFile(t, outsideRoot, "outside-authorization.md", typedConstraintAuthorization("approved", "2026-09-09", slug))
+		assertRejected(t, "linked-authorization.md", func(t *testing.T, specRepositoryRoot string) {
+			linkPath := filepath.Join(specRepositoryRoot, "specs", slug, "linked-authorization.md")
+			if err := os.Symlink(filepath.Join(outsideRoot, "outside-authorization.md"), linkPath); err != nil {
+				t.Fatalf("create escaping authorization symlink: %v", err)
+			}
+		})
+	})
 }
 
 func TestConstraintsRefuseNonOperativeGrant(t *testing.T) {

@@ -88,8 +88,11 @@ const (
 )
 
 type authorizationReference struct {
-	Path string
-	Kind authorizationReferenceKind
+	Path         string
+	ResolvedPath string
+	ReadRoot     string
+	ReadPath     string
+	Kind         authorizationReferenceKind
 }
 
 type authorizationReferenceSelection struct {
@@ -188,7 +191,7 @@ func readConstraintArtifact(repoRoot, path string) (constraintArtifact, bool, er
 	displayPath := artifactDisplayPath(repoRoot, path)
 	rows, sectionLine := parseProjectConstraints(content)
 	if row, ok := rows[strings.ToLower(constraintTooling)]; ok {
-		candidates := authorizationReferences(row.Raw, row.SourcePath, displayPath)
+		candidates := authorizationReferences(row.Raw, row.SourcePath, repoRoot, path)
 		reference, selected, ambiguous := selectAuthorizationReference(row, candidates)
 		row.Authorization = authorizationReferenceSelection{
 			Candidates: candidates,
@@ -285,7 +288,7 @@ func parseConstraintRow(raw string, line int) (constraintRow, bool) {
 	return row, true
 }
 
-func authorizationReferences(raw, sourcePath, artifactPath string) []authorizationReference {
+func authorizationReferences(raw, sourcePath, repoRoot, artifactPath string) []authorizationReference {
 	type rawReference struct {
 		target   string
 		start    int
@@ -313,39 +316,118 @@ func authorizationReferences(raw, sourcePath, artifactPath string) []authorizati
 	seen := make(map[string]bool)
 	var references []authorizationReference
 	for _, rawReference := range rawReferences {
-		referencePath, ok := authorizationReferencePath(rawReference.target, artifactPath, rawReference.markdown)
-		if !ok || referencePath == sourcePath || seen[referencePath] {
+		reference, ok := authorizationReferencePath(rawReference.target, repoRoot, artifactPath, rawReference.markdown)
+		if !ok || reference.Path == sourcePath || seen[reference.Path] {
 			continue
 		}
-		lowerPath := strings.ToLower(referencePath)
+		lowerPath := strings.ToLower(reference.Path)
 		if !strings.Contains(lowerPath, "authoriz") || !strings.HasSuffix(lowerPath, ".md") {
 			continue
 		}
-		seen[referencePath] = true
-		references = append(references, authorizationReference{
-			Path: referencePath,
-			Kind: authorizationReferenceKindAt(raw, rawReference.start),
-		})
+		seen[reference.Path] = true
+		reference.Kind = authorizationReferenceKindAt(raw, rawReference.start)
+		references = append(references, reference)
 	}
 	return references
 }
 
-func authorizationReferencePath(target, artifactPath string, markdown bool) (string, bool) {
+func authorizationReferencePath(target, repoRoot, artifactPath string, markdown bool) (authorizationReference, bool) {
 	target = strings.Trim(strings.TrimSpace(target), "<>")
 	if target == "" || strings.Contains(target, `\`) || strings.ContainsAny(target, "?#") || path.IsAbs(target) {
-		return "", false
+		return authorizationReference{}, false
 	}
 	clean := path.Clean(target)
-	if clean == "." || clean == ".." || strings.HasPrefix(clean, "../") {
+	if clean == "." {
+		return authorizationReference{}, false
+	}
+	if !markdown {
+		if clean == ".." || strings.HasPrefix(clean, "../") {
+			return authorizationReference{}, false
+		}
+		root, err := filepath.Abs(filepath.Clean(repoRoot))
+		if err != nil {
+			return authorizationReference{}, false
+		}
+		return authorizationReference{
+			Path:         clean,
+			ResolvedPath: filepath.Join(root, filepath.FromSlash(clean)),
+			ReadRoot:     root,
+			ReadPath:     clean,
+		}, true
+	}
+
+	artifactPath = filepath.Clean(artifactPath)
+	specsRoot := filepath.Dir(filepath.Dir(artifactPath))
+	resolvedPath := filepath.Clean(filepath.Join(filepath.Dir(artifactPath), filepath.FromSlash(clean)))
+	if !constraintPathWithinRoot(resolvedPath, specsRoot) {
+		return authorizationReference{}, false
+	}
+
+	root := specsRoot
+	if _, ok := constraintRelativePath(repoRoot, resolvedPath); ok {
+		root = repoRoot
+	}
+	displayPath := artifactDisplayPath(repoRoot, resolvedPath)
+	root, err := filepath.Abs(filepath.Clean(root))
+	if err != nil {
+		return authorizationReference{}, false
+	}
+	resolvedPath, err = filepath.Abs(resolvedPath)
+	if err != nil {
+		return authorizationReference{}, false
+	}
+	relativePath, ok := constraintRelativePath(root, resolvedPath)
+	if !ok {
+		return authorizationReference{}, false
+	}
+	return authorizationReference{
+		Path:         displayPath,
+		ResolvedPath: resolvedPath,
+		ReadRoot:     root,
+		ReadPath:     relativePath,
+	}, true
+}
+
+func constraintPathWithinRoot(candidate, root string) bool {
+	candidate, err := filepath.Abs(candidate)
+	if err != nil {
+		return false
+	}
+	root, err = filepath.Abs(root)
+	if err != nil {
+		return false
+	}
+	_, ok := constraintRelativePath(canonicalConstraintPath(root), canonicalConstraintPath(candidate))
+	return ok
+}
+
+func constraintRelativePath(root, candidate string) (string, bool) {
+	relative, err := filepath.Rel(filepath.Clean(root), filepath.Clean(candidate))
+	if err != nil || relative == "." || relative == ".." || filepath.IsAbs(relative) || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
 		return "", false
 	}
-	if markdown {
-		clean = path.Clean(path.Join(path.Dir(artifactPath), clean))
-		if clean == "." || clean == ".." || strings.HasPrefix(clean, "../") {
-			return "", false
+	return filepath.ToSlash(relative), true
+}
+
+func canonicalConstraintPath(value string) string {
+	original := filepath.Clean(value)
+	candidate := original
+	var tail []string
+	for {
+		resolved, err := filepath.EvalSymlinks(candidate)
+		if err == nil {
+			for index := len(tail) - 1; index >= 0; index-- {
+				resolved = filepath.Join(resolved, tail[index])
+			}
+			return filepath.Clean(resolved)
 		}
+		parent := filepath.Dir(candidate)
+		if parent == candidate {
+			return original
+		}
+		tail = append(tail, filepath.Base(candidate))
+		candidate = parent
 	}
-	return clean, true
 }
 
 func authorizationReferenceKindAt(raw string, start int) authorizationReferenceKind {
@@ -460,25 +542,20 @@ func detectToolingRow(result *Result, repoRoot, slug string, artifact constraint
 	if selection.Selected {
 		reference := selection.Reference
 		recordLocation = Location{Path: reference.Path, Line: 1}
-		recordPath, ok := resolveRepositoryPath(repoRoot, reference.Path)
-		if !ok {
+		content, err := os.ReadFile(reference.ResolvedPath)
+		switch {
+		case errors.Is(err, os.ErrNotExist):
 			addSkip(result, CodeToolingUnauthorized, reference.Path)
-		} else {
-			content, err := os.ReadFile(recordPath)
-			switch {
-			case errors.Is(err, os.ErrNotExist):
-				addSkip(result, CodeToolingUnauthorized, reference.Path)
-			case err != nil:
-				result.Findings = append(result.Findings, Finding{
-					Code:     CodeToolingUnauthorized,
-					Severity: SeverityError,
-					Summary:  artifact.displayPath + " cites unreadable " + reference.Path + " for Spec " + slug,
-					Where:    []Location{rowLocation, recordLocation},
-					Fix:      "Make " + reference.Path + " readable and name Spec " + slug + " in its authorization scope.",
-				})
-			default:
-				detectAuthorizationResolution(result, repoRoot, slug, artifact, row, reference, content, requireImplement)
-			}
+		case err != nil:
+			result.Findings = append(result.Findings, Finding{
+				Code:     CodeToolingUnauthorized,
+				Severity: SeverityError,
+				Summary:  artifact.displayPath + " cites unreadable " + reference.Path + " for Spec " + slug,
+				Where:    []Location{rowLocation, recordLocation},
+				Fix:      "Make " + reference.Path + " readable and name Spec " + slug + " in its authorization scope.",
+			})
+		default:
+			detectAuthorizationResolution(result, slug, artifact, row, reference, content, requireImplement)
 		}
 	}
 
@@ -539,7 +616,7 @@ func declaresProtectedToolingMutation(row constraintRow, citesAuthorization bool
 
 func detectAuthorizationResolution(
 	result *Result,
-	repoRoot, slug string,
+	slug string,
 	artifact constraintArtifact,
 	row constraintRow,
 	reference authorizationReference,
@@ -548,8 +625,8 @@ func detectAuthorizationResolution(
 ) {
 	role := authorizationRole(reference.Path)
 	resolution := spec.ReadAuthorization(context.Background(), spec.AuthorizationReadRequest{
-		RepoRoot:   repoRoot,
-		RecordPath: reference.Path,
+		RepoRoot:   reference.ReadRoot,
+		RecordPath: reference.ReadPath,
 		Role:       role,
 		AskingSpec: slug,
 	})
