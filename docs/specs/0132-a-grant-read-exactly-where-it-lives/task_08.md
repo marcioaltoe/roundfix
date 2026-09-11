@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0132-a-grant-read-exactly-where-it-lives
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -71,3 +71,81 @@ belongs to Spec 0119's grant and not to this one.
 
 - `_prd.md` → Goals 2; Core Features 3; User Stories 2.
 - `_techspec.md` → Implementation Design: Two roots, named separately; The boundary both roots travel in; Testing Approach observation 2.
+
+## Result
+
+Implementation evidence:
+
+- The mechanical authorization resolver now preserves the constraint reader's
+  selected citation as one request value containing the display path, Spec
+  repository root and revision, repository-relative record path, project
+  repository root, and delivery target. The path-only reader remains available
+  to callers that do not have a committed delivery target.
+- The changed-path audit reads committed authorization bytes from the Spec
+  repository. It resolves the Task commit, delivery target, authorizing
+  ancestor, changed paths, bounded paths, and sanctioned regeneration outputs
+  against the project repository.
+- Authorization-path self-approval checks run only when the Spec and project
+  roots share Git history. A record in a separate repository cannot collide
+  with an identically named project path.
+- The Daemon's QA request carries the resolved reference whenever a Run has a
+  delivery target. Target-less fixture requests retain their existing
+  path-only, presence-aware behavior.
+
+Focused-check evidence:
+
+- Before the production edit,
+  `rtk proxy env GOCACHE=/private/tmp/roundfix-task08-gocache /Users/marcio/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.7.darwin-arm64/bin/go test -count=1 ./internal/speccheck -run 'TestMechanicalAudit(ConsumesResolvedReference|JudgesTheProjectRoot)'`
+  exited 1 because the resolved-reference API and mechanical request field did
+  not exist.
+- After the final production edit,
+  `rtk proxy env GOCACHE=/private/tmp/roundfix-task08-gocache /Users/marcio/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.7.darwin-arm64/bin/go test -count=1 ./internal/speccheck -run 'Test(MechanicalAuditConsumesResolvedReference|MechanicalAuditJudgesTheProjectRoot|AuditRefusesOutOfGrantUnderBothCitationForms|UnresolvedReferenceIsNotASkip|AuditRefusesSelfApprovalAndRetroactiveGrants|AuditDiscoversRecordsInEveryLocation|MechanicalAuthPathsAgainstGitFixtures)'`
+  exited 0. This exercised the two new external-root cases and the preserved
+  out-of-grant, same-commit grant edit, unresolved-input, and record-discovery
+  outcomes.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task08-gocache /Users/marcio/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.7.darwin-arm64/bin/go test -count=1 ./internal/daemon -run 'TestQAMechanicalRequest(SelectsTheAuthorizedTaskCommit|CarriesTheGatePrecondition|CarriesAssignedRepairs)'`
+  exited 0 after the final Daemon edit, covering request assembly and the
+  target-less compatibility path.
+- The focused default-root compatibility run for
+  `TestAuditReadsTheResolvedReference`,
+  `TestMechanicalAuthorizationReadsThePRDBoundedDeclaration`, and
+  `TestCitationResolvesInExternalSpecRoot` exited 0.
+- The compile-only check for `./internal/speccheck` and `./internal/daemon`
+  exited 0, and `rtk git diff --check` exited 0.
+- `rtk make fmt-check build GO=/Users/marcio/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.7.darwin-arm64/bin/go GOFMT=/Users/marcio/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.7.darwin-arm64/bin/gofmt`
+  exited 0 after the final code edit.
+- The required `rtk make verify-incremental` first reached a sandbox refusal on
+  its read-only `api.github.com` request. The unchanged authorized retry
+  reached the repository test stage and exited 2: three pre-existing
+  `internal/daemon` fixtures provide non-Git external Spec Roots to the Task 03
+  operation resolver, and five concurrent TaskCycle cases timed out around the
+  failing package run. `internal/speccheck` passed in that run. Those fixture
+  files belong to another Task slice.
+- The Task's declared `## Verification` commands were not run; Daemon
+  Verification owns them after this handoff.
+- The changed-file postflight lists only the mechanical consumer, its Daemon
+  request assembler, the authorized characterization suite, and this Task
+  file. The Task status change remains the Daemon's pre-existing edit.
+
+Acceptance-criterion evidence:
+
+- External changed-path audit:
+  `TestMechanicalAuditConsumesResolvedReference/external_record_audits_the_Task_commit`
+  passed with one granted authorization read and no authorization skip.
+- Project-root judgment: `TestMechanicalAuditJudgesTheProjectRoot` passed where
+  the project Task commit does not exist in the Spec repository. The audit read
+  the external grant and reported the project-only `.golangci.yml` change as
+  outside its `Makefile` bound.
+- Preserved outcomes: the project-root case proves the out-of-grant refusal;
+  `TestMechanicalAuditConsumesResolvedReference/genuine_no-authorization_declaration_keeps_its_skip`
+  proves the presence-aware skip; the focused legacy cases preserve refusal
+  when the consuming commit edits its own grant.
+- Unresolved reference:
+  `TestMechanicalAuditConsumesResolvedReference/unresolved_external_record_refuses`
+  passed with an `unresolved` authorization read and `QA-AUTH-PATHS` finding,
+  and with no authorization skip.
+
+Follow-up:
+
+- The non-Git external Spec Root fixtures reported by the incremental profile
+  remain for their owning Task 03 contract; this Task does not change them.

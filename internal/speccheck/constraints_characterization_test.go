@@ -277,6 +277,153 @@ func TestCitationRejectsEscapeFromSpecRoot(t *testing.T) {
 	})
 }
 
+func TestMechanicalAuditConsumesResolvedReference(t *testing.T) {
+	t.Parallel()
+
+	t.Run("external record audits the Task commit", func(t *testing.T) {
+		t.Parallel()
+
+		const slug = "external-mechanical-audit"
+		projectRoot := newMechanicalGitRepo(t)
+		target := strings.TrimSpace(gittest.Run(t, projectRoot, "rev-parse", "HEAD"))
+		writeMechanicalFile(t, projectRoot, "Makefile", "verify:\n\t@true\n")
+		consumer := commitMechanicalFiles(t, projectRoot, "consume external grant", "Makefile")
+
+		specRepositoryRoot := newMechanicalGitRepo(t)
+		prdPath := filepath.Join(specRepositoryRoot, "specs", slug, "_prd.md")
+		writeMechanicalFile(t, specRepositoryRoot, "specs/"+slug+"/_prd.md",
+			"# PRD\n\n## Project Constraints\n\n"+
+				"- Tooling authority: applicable — express maintainer authorization recorded in [_authorization.md](_authorization.md); bounded files: `Makefile`.\n")
+		writeMechanicalFile(t, specRepositoryRoot, "specs/"+slug+"/_authorization.md", mechanicalTypedAuthorization(slug, "Makefile"))
+		commitMechanicalFiles(t, specRepositoryRoot, "record external authorization", "specs/"+slug+"/_prd.md", "specs/"+slug+"/_authorization.md")
+
+		reference, bounded, err := speccheck.ResolveMechanicalAuthorization(context.Background(), projectRoot, prdPath, target)
+		if err != nil {
+			t.Fatalf("ResolveMechanicalAuthorization() error = %v", err)
+		}
+		if len(bounded) != 1 || bounded[0] != "Makefile" {
+			t.Fatalf("resolved bounded paths = %v, want [Makefile]", bounded)
+		}
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:               projectRoot,
+			AuthorizationReference: reference,
+			ConsumingSpec:          slug,
+			TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_01", SHA: consumer}},
+		})
+
+		assertNoMechanicalCode(t, result, speccheck.CodeMechanicalAuthPaths)
+		if len(result.AuthorizationReads) != 1 || result.AuthorizationReads[0].Outcome != spec.AuthorizationGranted {
+			t.Fatalf("AuthorizationReads = %#v, want one granted external-record audit", result.AuthorizationReads)
+		}
+		for _, skipped := range result.Skips {
+			if skipped.Detector == speccheck.DetectorMechanicalAuthPaths {
+				t.Fatalf("authorization skips = %#v, want a real changed-path audit", result.Skips)
+			}
+		}
+	})
+
+	t.Run("unresolved external record refuses", func(t *testing.T) {
+		t.Parallel()
+
+		const slug = "missing-external-authorization"
+		projectRoot := newMechanicalGitRepo(t)
+		target := strings.TrimSpace(gittest.Run(t, projectRoot, "rev-parse", "HEAD"))
+		writeMechanicalFile(t, projectRoot, "Makefile", "verify:\n\t@true\n")
+		consumer := commitMechanicalFiles(t, projectRoot, "attempt unresolved grant", "Makefile")
+
+		specRepositoryRoot := newMechanicalGitRepo(t)
+		prdPath := filepath.Join(specRepositoryRoot, "specs", slug, "_prd.md")
+		writeMechanicalFile(t, specRepositoryRoot, "specs/"+slug+"/_prd.md",
+			"# PRD\n\n## Project Constraints\n\n"+
+				"- Tooling authority: applicable — express maintainer authorization recorded in [_authorization.md](_authorization.md); bounded files: `Makefile`.\n")
+		commitMechanicalFiles(t, specRepositoryRoot, "record unresolved citation", "specs/"+slug+"/_prd.md")
+
+		reference, _, err := speccheck.ResolveMechanicalAuthorization(context.Background(), projectRoot, prdPath, target)
+		if err != nil {
+			t.Fatalf("ResolveMechanicalAuthorization() error = %v", err)
+		}
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:               projectRoot,
+			AuthorizationReference: reference,
+			ConsumingSpec:          slug,
+			TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_01", SHA: consumer}},
+		})
+
+		if len(result.AuthorizationReads) != 1 || result.AuthorizationReads[0].Outcome != spec.AuthorizationUnresolved {
+			t.Fatalf("AuthorizationReads = %#v, want one unresolved external-record audit", result.AuthorizationReads)
+		}
+		assertMechanicalAuthorizationRefused(t, result, reference.Location.SpecRelativePath)
+		for _, skipped := range result.Skips {
+			if skipped.Detector == speccheck.DetectorMechanicalAuthPaths {
+				t.Fatalf("authorization skips = %#v, want unresolved evidence to refuse", result.Skips)
+			}
+		}
+	})
+
+	t.Run("genuine no-authorization declaration keeps its skip", func(t *testing.T) {
+		t.Parallel()
+
+		const slug = "external-no-authorization"
+		projectRoot := newMechanicalGitRepo(t)
+		target := strings.TrimSpace(gittest.Run(t, projectRoot, "rev-parse", "HEAD"))
+		specRepositoryRoot := newMechanicalGitRepo(t)
+		prdPath := filepath.Join(specRepositoryRoot, "specs", slug, "_prd.md")
+		writeMechanicalFile(t, specRepositoryRoot, "specs/"+slug+"/_prd.md",
+			"# PRD\n\n## Project Constraints\n\n"+
+				"- Tooling authority: not applicable — no governed path changes.\n")
+		commitMechanicalFiles(t, specRepositoryRoot, "record no authorization", "specs/"+slug+"/_prd.md")
+
+		reference, _, err := speccheck.ResolveMechanicalAuthorization(context.Background(), projectRoot, prdPath, target)
+		if err != nil {
+			t.Fatalf("ResolveMechanicalAuthorization() error = %v", err)
+		}
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:               projectRoot,
+			AuthorizationReference: reference,
+		})
+
+		assertMechanicalSkip(t, result, speccheck.DetectorMechanicalAuthPaths, "tooling authorization")
+	})
+}
+
+func TestMechanicalAuditJudgesTheProjectRoot(t *testing.T) {
+	t.Parallel()
+
+	const slug = "two-root-mechanical-audit"
+	projectRoot := newMechanicalGitRepo(t)
+	target := strings.TrimSpace(gittest.Run(t, projectRoot, "rev-parse", "HEAD"))
+	writeMechanicalFile(t, projectRoot, ".golangci.yml", "linters: {}\n")
+	consumer := commitMechanicalFiles(t, projectRoot, "change project path outside grant", ".golangci.yml")
+
+	specRepositoryRoot := newMechanicalGitRepo(t)
+	prdPath := filepath.Join(specRepositoryRoot, "specs", slug, "_prd.md")
+	writeMechanicalFile(t, specRepositoryRoot, "Makefile", "spec-repository-only:\n\t@true\n")
+	writeMechanicalFile(t, specRepositoryRoot, "specs/"+slug+"/_prd.md",
+		"# PRD\n\n## Project Constraints\n\n"+
+			"- Tooling authority: applicable — express maintainer authorization recorded in [_authorization.md](_authorization.md); bounded files: `Makefile`.\n")
+	writeMechanicalFile(t, specRepositoryRoot, "specs/"+slug+"/_authorization.md", mechanicalTypedAuthorization(slug, "Makefile"))
+	commitMechanicalFiles(t, specRepositoryRoot, "record different Spec tree", "Makefile", "specs/"+slug+"/_prd.md", "specs/"+slug+"/_authorization.md")
+	if missing := firstMissingMechanicalCommit(specRepositoryRoot, consumer); missing != consumer {
+		t.Fatalf("Spec repository unexpectedly resolves project Task commit %s", consumer)
+	}
+
+	reference, _, err := speccheck.ResolveMechanicalAuthorization(context.Background(), projectRoot, prdPath, target)
+	if err != nil {
+		t.Fatalf("ResolveMechanicalAuthorization() error = %v", err)
+	}
+	result := runMechanical(t, speccheck.MechanicalRequest{
+		RepoRoot:               projectRoot,
+		AuthorizationReference: reference,
+		ConsumingSpec:          slug,
+		TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_01", SHA: consumer}},
+	})
+
+	if len(result.AuthorizationReads) != 1 || result.AuthorizationReads[0].Outcome != spec.AuthorizationGranted {
+		t.Fatalf("AuthorizationReads = %#v, want the record read from the Spec repository", result.AuthorizationReads)
+	}
+	assertMechanicalPathEscapedGrant(t, result, ".golangci.yml", reference.Location.SpecRelativePath)
+}
+
 func TestConstraintsRefuseNonOperativeGrant(t *testing.T) {
 	t.Parallel()
 

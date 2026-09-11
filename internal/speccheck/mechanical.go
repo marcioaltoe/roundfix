@@ -44,6 +44,7 @@ const (
 type MechanicalRequest struct {
 	RepoRoot               string
 	AuthorizationPath      string
+	AuthorizationReference MechanicalAuthorizationReference
 	ConsumingSpec          string
 	DeliveryTargetRevision string
 	TaskCommits            []MechanicalTaskCommit
@@ -52,6 +53,14 @@ type MechanicalRequest struct {
 	TaskRepairPaths        []string
 	AssignedRepairs        []AssignedRepair
 	Precondition           GatePreconditionResult
+}
+
+// MechanicalAuthorizationReference is the exact authorization citation the
+// constraint reader selected, together with the separate repositories used to
+// read that record and audit the project delivery.
+type MechanicalAuthorizationReference struct {
+	Path     string
+	Location spec.AuthorizationLocation
 }
 
 // AssignedRepair is one exact replacement the gate's Task requires. Path must
@@ -201,34 +210,55 @@ type ConsequentFixDeclaration struct {
 // corresponding presence-aware skip. A claim that cannot identify exactly one
 // authorization record is refused before it can become that skip.
 func MechanicalAuthorization(repoRoot, prdPath string) (string, []string, error) {
+	reference, paths, err := mechanicalAuthorizationReference(repoRoot, prdPath)
+	return reference.Path, paths, err
+}
+
+// ResolveMechanicalAuthorization carries the constraint reader's selected
+// citation into the mechanical request. The record location belongs to the
+// Spec repository; the delivery target belongs to the project repository.
+func ResolveMechanicalAuthorization(
+	ctx context.Context,
+	projectRepoRoot string,
+	prdPath string,
+	deliveryTarget string,
+) (MechanicalAuthorizationReference, []string, error) {
+	reference, paths, err := mechanicalAuthorizationReference(projectRepoRoot, prdPath)
+	if err != nil || reference.Path == "" {
+		return MechanicalAuthorizationReference{Path: reference.Path}, paths, err
+	}
+	location, err := resolveMechanicalAuthorizationLocation(ctx, projectRepoRoot, deliveryTarget, reference)
+	if err != nil {
+		return MechanicalAuthorizationReference{Path: reference.Path}, paths, err
+	}
+	return MechanicalAuthorizationReference{Path: reference.Path, Location: location}, paths, nil
+}
+
+func mechanicalAuthorizationReference(repoRoot, prdPath string) (authorizationReference, []string, error) {
 	artifact, present, err := readConstraintArtifact(repoRoot, prdPath)
 	if err != nil {
-		return "", nil, err
+		return authorizationReference{}, nil, err
 	}
 	if !present {
-		return "", nil, nil
+		return authorizationReference{}, nil, nil
 	}
 	row, present := artifact.rows[strings.ToLower(constraintTooling)]
 	if !present {
-		return "", nil, nil
+		return authorizationReference{}, nil, nil
 	}
 	if row.Authorization.Ambiguous {
-		return "", nil, fmt.Errorf("resolve mechanical authorization from %s: Tooling authority claim does not identify exactly one authorization record", artifact.displayPath)
+		return authorizationReference{}, nil, fmt.Errorf("resolve mechanical authorization from %s: Tooling authority claim does not identify exactly one authorization record", artifact.displayPath)
 	}
 	if !row.Authorization.Selected {
-		return "", nil, nil
+		return authorizationReference{}, nil, nil
 	}
-	authorizationPath := row.Authorization.Reference.Path
-	resolved, ok := resolveRepositoryPath(repoRoot, authorizationPath)
-	if !ok {
-		return authorizationPath, nil, nil
-	}
-	content, err := os.ReadFile(resolved)
+	reference := row.Authorization.Reference
+	content, err := os.ReadFile(reference.ResolvedPath)
 	if errors.Is(err, os.ErrNotExist) {
-		return authorizationPath, nil, nil
+		return reference, nil, nil
 	}
 	if err != nil {
-		return "", nil, fmt.Errorf("read mechanical authorization %q: %w", resolved, err)
+		return authorizationReference{}, nil, fmt.Errorf("read mechanical authorization %q: %w", reference.ResolvedPath, err)
 	}
 	declared := parseMechanicalAuthorizationPaths(content)
 	paths := make([]string, 0, len(declared))
@@ -236,7 +266,52 @@ func MechanicalAuthorization(repoRoot, prdPath string) (string, []string, error)
 		paths = append(paths, path)
 	}
 	sort.Strings(paths)
-	return authorizationPath, paths, nil
+	return reference, paths, nil
+}
+
+func resolveMechanicalAuthorizationLocation(
+	ctx context.Context,
+	projectRepoRoot string,
+	deliveryTarget string,
+	reference authorizationReference,
+) (spec.AuthorizationLocation, error) {
+	specRepoRoot, err := mechanicalRepositoryRoot(ctx, reference.ReadRoot)
+	if err != nil {
+		return spec.AuthorizationLocation{}, fmt.Errorf("resolve mechanical authorization Spec repository: %w", err)
+	}
+	projectRepoRoot, err = mechanicalRepositoryRoot(ctx, projectRepoRoot)
+	if err != nil {
+		return spec.AuthorizationLocation{}, fmt.Errorf("resolve mechanical authorization project repository: %w", err)
+	}
+	sameRepository, err := mechanicalRepositoriesShareHistory(ctx, specRepoRoot, projectRepoRoot)
+	if err != nil {
+		return spec.AuthorizationLocation{}, fmt.Errorf("compare mechanical authorization repositories: %w", err)
+	}
+	revision := "HEAD"
+	if sameRepository && strings.TrimSpace(deliveryTarget) != "" {
+		revision = strings.TrimSpace(deliveryTarget)
+	}
+	resolvedRevision, available, err := mechanicalResolveCommit(ctx, specRepoRoot, revision)
+	if err != nil {
+		return spec.AuthorizationLocation{}, err
+	}
+	if !available {
+		return spec.AuthorizationLocation{}, fmt.Errorf("resolve mechanical authorization Spec revision %q: revision is unavailable", revision)
+	}
+	relativePath, ok := constraintRelativePath(
+		canonicalConstraintPath(specRepoRoot),
+		canonicalConstraintPath(reference.ResolvedPath),
+	)
+	if !ok {
+		return spec.AuthorizationLocation{}, fmt.Errorf("resolve mechanical authorization record path %q: path is outside the Spec repository", reference.ResolvedPath)
+	}
+	return spec.AuthorizationLocation{
+		SpecRepoRoot:     specRepoRoot,
+		SpecRevision:     resolvedRevision,
+		SpecRelativePath: relativePath,
+		ProjectRepoRoot:  projectRepoRoot,
+		DeliveryTarget:   strings.TrimSpace(deliveryTarget),
+	}, nil
 }
 
 type mechanicalReportRow struct {
@@ -651,11 +726,45 @@ func addRepairFailure(result *MechanicalResult, failure RepairFailure) {
 
 func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, repoRoot string, request MechanicalRequest) error {
 	missing := request.AuthorizationPath
+	authorizationPath := cleanMechanicalPath(request.AuthorizationPath)
+	authorizationRepoRoot := repoRoot
+	authorizationRevision := ""
+	projectRepoRoot := repoRoot
+	deliveryTarget := request.DeliveryTargetRevision
+	sameRepository := true
+	resolvedReference := mechanicalAuthorizationReferencePresent(request.AuthorizationReference)
+	if resolvedReference {
+		reference := request.AuthorizationReference
+		if strings.TrimSpace(reference.Path) != "" {
+			missing = reference.Path
+		}
+		authorizationPath = cleanMechanicalPath(reference.Location.SpecRelativePath)
+		authorizationRepoRoot = filepath.Clean(reference.Location.SpecRepoRoot)
+		authorizationRevision = strings.TrimSpace(reference.Location.SpecRevision)
+		projectRepoRoot = filepath.Clean(reference.Location.ProjectRepoRoot)
+		deliveryTarget = strings.TrimSpace(reference.Location.DeliveryTarget)
+		if authorizationPath == "" || strings.TrimSpace(reference.Location.SpecRepoRoot) == "" ||
+			strings.TrimSpace(reference.Location.ProjectRepoRoot) == "" || authorizationRevision == "" {
+			addMechanicalFinding(result, MechanicalFinding{
+				Code: CodeMechanicalAuthPaths, File: missing, Line: 1,
+				Detail: "resolved authorization reference does not name a complete Spec and project repository location",
+				Fix:    "Carry the constraint reader's resolved authorization reference into the mechanical request.",
+			})
+			return nil
+		}
+		var err error
+		sameRepository, err = mechanicalRepositoriesShareHistory(ctx, authorizationRepoRoot, projectRepoRoot)
+		if err != nil {
+			return err
+		}
+	}
 	if strings.TrimSpace(missing) == "" {
 		missing = "tooling authorization"
 	}
-	authorizationPath := cleanMechanicalPath(request.AuthorizationPath)
-	if authorizationPath == "" {
+	if !resolvedReference {
+		authorizationRevision = strings.TrimSpace(deliveryTarget)
+	}
+	if !resolvedReference && authorizationPath == "" {
 		addMechanicalSkip(result, DetectorMechanicalAuthPaths, missing)
 		return nil
 	}
@@ -664,7 +773,7 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 		return nil
 	}
 
-	targetRevision, targetAvailable, err := mechanicalResolveCommit(ctx, repoRoot, request.DeliveryTargetRevision)
+	targetRevision, targetAvailable, err := mechanicalResolveCommit(ctx, projectRepoRoot, deliveryTarget)
 	if err != nil {
 		return err
 	}
@@ -674,7 +783,7 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 			addMechanicalSkip(result, DetectorMechanicalAuthPaths, "Task commit for "+taskCommit.TaskID)
 			continue
 		}
-		exists, err := mechanicalCommitExists(ctx, repoRoot, taskCommit.SHA)
+		exists, err := mechanicalCommitExists(ctx, projectRepoRoot, taskCommit.SHA)
 		if err != nil {
 			return err
 		}
@@ -682,7 +791,7 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 			read := unresolvedMechanicalAuthorizationRead(
 				taskCommit.TaskID,
 				authorizationPath,
-				request.DeliveryTargetRevision,
+				authorizationRevision,
 				spec.AuthorizationReasonUnavailableRevision,
 				"task_commit",
 				taskCommit.SHA,
@@ -692,22 +801,22 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 			addMechanicalAuthorizationReadFinding(result, taskCommit, read)
 			continue
 		}
-		changed, err := mechanicalChangedPaths(ctx, repoRoot, taskCommit.SHA)
+		changed, err := mechanicalChangedPaths(ctx, projectRepoRoot, taskCommit.SHA)
 		if err != nil {
 			return err
 		}
 		if !targetAvailable {
 			detail := "delivery target revision is required"
-			if strings.TrimSpace(request.DeliveryTargetRevision) != "" {
-				detail = fmt.Sprintf("delivery target revision %q is unavailable", request.DeliveryTargetRevision)
+			if strings.TrimSpace(deliveryTarget) != "" {
+				detail = fmt.Sprintf("delivery target revision %q is unavailable", deliveryTarget)
 			}
 			read := unresolvedMechanicalAuthorizationRead(
 				taskCommit.TaskID,
 				authorizationPath,
-				request.DeliveryTargetRevision,
+				authorizationRevision,
 				spec.AuthorizationReasonUnavailableRevision,
 				"delivery_target_revision",
-				request.DeliveryTargetRevision,
+				deliveryTarget,
 				detail,
 			)
 			result.AuthorizationReads = append(result.AuthorizationReads, read)
@@ -715,7 +824,7 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 			continue
 		}
 
-		authorizingRevision, available, err := mechanicalAuthorizingRevision(ctx, repoRoot, targetRevision, taskCommit.SHA)
+		authorizingRevision, available, err := mechanicalAuthorizingRevision(ctx, projectRepoRoot, targetRevision, taskCommit.SHA)
 		if err != nil {
 			return err
 		}
@@ -734,10 +843,19 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 			continue
 		}
 
-		read, authorization := readMechanicalAuthorization(ctx, repoRoot, authorizationPath, request.ConsumingSpec, authorizingRevision, taskCommit.TaskID)
+		readRevision := authorizingRevision
+		if !sameRepository {
+			readRevision = authorizationRevision
+		}
+		read, authorization := readMechanicalAuthorization(ctx, authorizationRepoRoot, authorizationPath, request.ConsumingSpec, readRevision, taskCommit.TaskID)
 		result.AuthorizationReads = append(result.AuthorizationReads, read)
-		readPath := cleanMechanicalPath(read.Source.Path)
-		changedAuthorizationPath := mechanicalChangedAuthorizationPath(changed, authorizationPath, readPath)
+		projectAuthorizationPath := authorizationPath
+		projectReadPath := cleanMechanicalPath(read.Source.Path)
+		if !sameRepository {
+			projectAuthorizationPath = ""
+			projectReadPath = ""
+		}
+		changedAuthorizationPath := mechanicalChangedAuthorizationPath(changed, projectAuthorizationPath, projectReadPath)
 		if changedAuthorizationPath != "" {
 			addMechanicalSelfApprovalFinding(result, taskCommit, read.Source.Path, changedAuthorizationPath)
 		}
@@ -761,7 +879,7 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 			})
 			continue
 		}
-		regenerated, err := mechanicalRegenerationOutputs(repoRoot, authorization.Record.Regenerations)
+		regenerated, err := mechanicalRegenerationOutputs(projectRepoRoot, authorization.Record.Regenerations)
 		if err != nil {
 			return fmt.Errorf("resolve sanctioned regeneration outputs from %q: %w", read.Source.Path, err)
 		}
@@ -770,7 +888,7 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 			if changedPath == taskFile {
 				continue
 			}
-			if changedPath == authorizationPath || changedPath == readPath {
+			if changedPath == projectAuthorizationPath || changedPath == projectReadPath {
 				continue
 			}
 			if !GovernedPath(changedPath) || bounded[changedPath] || regenerated[changedPath] {
@@ -788,6 +906,15 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 		}
 	}
 	return nil
+}
+
+func mechanicalAuthorizationReferencePresent(reference MechanicalAuthorizationReference) bool {
+	location := reference.Location
+	return strings.TrimSpace(location.SpecRepoRoot) != "" ||
+		strings.TrimSpace(location.SpecRevision) != "" ||
+		strings.TrimSpace(location.SpecRelativePath) != "" ||
+		strings.TrimSpace(location.ProjectRepoRoot) != "" ||
+		strings.TrimSpace(location.DeliveryTarget) != ""
 }
 
 func mechanicalChangedAuthorizationPath(changed []string, requestedPath, readPath string) string {
@@ -834,6 +961,53 @@ func mechanicalAuthorizingRevision(ctx context.Context, repoRoot, deliveryTarget
 		return "", false, fmt.Errorf("resolve authorizing ancestor for %q: Git returned invalid revision %q", consumingCommit, ancestor)
 	}
 	return ancestor, true, nil
+}
+
+func mechanicalRepositoryRoot(ctx context.Context, workDir string) (string, error) {
+	command := exec.CommandContext(ctx, "git", "-C", workDir, "-c", "core.fsmonitor=false", "rev-parse", "--show-toplevel")
+	command.Env = mechanicalGitEnvironment()
+	output, err := command.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("resolve Git repository root from %q: %w: %s", workDir, err, strings.TrimSpace(string(output)))
+	}
+	root := strings.TrimSpace(string(output))
+	if root == "" || strings.Contains(root, "\n") {
+		return "", fmt.Errorf("resolve Git repository root from %q: Git returned invalid root %q", workDir, root)
+	}
+	return filepath.Clean(root), nil
+}
+
+func mechanicalRepositoriesShareHistory(ctx context.Context, first, second string) (bool, error) {
+	firstCommonDir, err := mechanicalRepositoryCommonDir(ctx, first)
+	if err != nil {
+		return false, err
+	}
+	secondCommonDir, err := mechanicalRepositoryCommonDir(ctx, second)
+	if err != nil {
+		return false, err
+	}
+	return firstCommonDir == secondCommonDir, nil
+}
+
+func mechanicalRepositoryCommonDir(ctx context.Context, repoRoot string) (string, error) {
+	command := exec.CommandContext(ctx, "git", "-C", repoRoot, "-c", "core.fsmonitor=false", "rev-parse", "--path-format=absolute", "--git-common-dir")
+	command.Env = mechanicalGitEnvironment()
+	output, err := command.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("resolve Git common directory from %q: %w: %s", repoRoot, err, strings.TrimSpace(string(output)))
+	}
+	commonDir := strings.TrimSpace(string(output))
+	if commonDir == "" || strings.Contains(commonDir, "\n") {
+		return "", fmt.Errorf("resolve Git common directory from %q: Git returned invalid path %q", repoRoot, commonDir)
+	}
+	if resolved, err := filepath.EvalSymlinks(commonDir); err == nil {
+		return filepath.Clean(resolved), nil
+	}
+	absolute, err := filepath.Abs(commonDir)
+	if err != nil {
+		return "", fmt.Errorf("resolve Git common directory %q: %w", commonDir, err)
+	}
+	return filepath.Clean(absolute), nil
 }
 
 func mechanicalResolveCommit(ctx context.Context, repoRoot, revision string) (string, bool, error) {

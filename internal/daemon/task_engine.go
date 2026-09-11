@@ -2099,9 +2099,21 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 
 func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qaTask spec.Task, previousReportPath string) (speccheck.MechanicalRequest, error) {
 	prdPath := filepath.Join(plan.Spec.Dir, "_prd.md")
-	authorizationPath, _, err := speccheck.MechanicalAuthorization(plan.WorkDir, prdPath)
-	if err != nil {
-		return speccheck.MechanicalRequest{}, err
+	var authorizationPath string
+	var authorizationReference speccheck.MechanicalAuthorizationReference
+	if strings.TrimSpace(plan.HeadSHA) == "" {
+		var err error
+		authorizationPath, _, err = speccheck.MechanicalAuthorization(plan.WorkDir, prdPath)
+		if err != nil {
+			return speccheck.MechanicalRequest{}, err
+		}
+	} else {
+		resolved, _, err := speccheck.ResolveMechanicalAuthorization(ctx, plan.WorkDir, prdPath, plan.HeadSHA)
+		if err != nil {
+			return speccheck.MechanicalRequest{}, err
+		}
+		authorizationReference = resolved
+		authorizationPath = resolved.Path
 	}
 	taskCommits, err := mechanicalTaskCommits(ctx, plan, authorizationPath)
 	if err != nil {
@@ -2126,6 +2138,7 @@ func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qa
 	return speccheck.MechanicalRequest{
 		RepoRoot:               plan.WorkDir,
 		AuthorizationPath:      authorizationPath,
+		AuthorizationReference: authorizationReference,
 		ConsumingSpec:          plan.Spec.Slug,
 		DeliveryTargetRevision: plan.HeadSHA,
 		TaskCommits:            taskCommits,
