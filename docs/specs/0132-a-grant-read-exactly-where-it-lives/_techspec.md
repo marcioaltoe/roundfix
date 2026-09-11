@@ -19,14 +19,14 @@ a grant permits changes.
 - Identifier strategy: applicable — preserve Spec slugs, Task IDs, refusal codes and record field names; no new identifier is introduced. Source: `docs/agents/domain.md`.
 - Authentication and HTTP: not applicable — no credential, network or HTTP surface is touched; the record is read from the local filesystem and Git objects as it is today. Source: `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0130 keeps the Governed Path set monotonic, so no path leaves it; ADR-0057 keeps the Daemon the exclusive writer of Task status; ADR-0117 places each check at the stage that can establish it, and record shape is established at parse time; ADR-0096 requires mechanical facts before the QA Agent turn and is preserved unchanged. Source: `docs/agents/spec-routing.md`, `docs/agents/domain.md`.
-- Tooling authority: applicable — exact governed mutations remain proposed in [_authorization.md](_authorization.md); status proposed and a null grant authorize no mutation. Bounded proposed files: `internal/speccheck/constraints.go`, `internal/speccheck/constraints_characterization_test.go`, `internal/speccheck/governed_repocontract_test.go`, `internal/suiteguardcontract/regeneration.go`. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
+- Tooling authority: applicable — express maintainer authorization: "Aprovar os quatro caminhos", 2026-09-10, recorded in `docs/specs/0132-a-grant-read-exactly-where-it-lives/_authorization.md`; bounded files: `internal/speccheck/constraints.go`, `internal/speccheck/constraints_characterization_test.go`, `internal/speccheck/governed_repocontract_test.go`, `internal/suiteguardcontract/regeneration.go`, `internal/suiteguardcontract/regeneration_test.go`. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## System Architecture
 
 | Component | File | Responsibility |
 | --- | --- | --- |
 | Record parser | `internal/authorization/authorization.go` | Split frontmatter on complete marker lines and classify a malformed record as a refusal. |
-| Operation resolver | `internal/spec/authorization.go` | Derive the consuming record's path and revision from the resolved Spec Root. |
+| Operation resolver | `internal/spec/authorization.go` | Derive the consuming record's path and revision from the Spec repository root, separately from the project root the audit judges. |
 | Citation resolver | `internal/speccheck/constraints.go` | Resolve a Spec-relative reference against the artifact that carries it. |
 | Discovery filter | `internal/suiteguardcontract/regeneration.go` | Recognize the record naming already in use. |
 | Archive-stable expectations | `internal/authorization/authorization_test.go`, `internal/spec/spec_test.go`, `internal/speccheck/governed_repocontract_test.go` | Read a record wherever it lives and assert over the whole corpus. |
@@ -46,6 +46,32 @@ naming that line, never a grant.
 This is the one place in the Spec where a near-miss on format previously became
 authority, which is why it is stated as an exactness rule rather than a stricter
 pattern: the reader must reject what it cannot fully account for.
+
+### Two roots, named separately
+
+An external Spec Root creates two repository identities that the current
+readers collapse into one `RepoRoot`, and collapsing them is why neither
+direction works: reading the record needs the Spec repository, while judging
+the change needs the project repository.
+
+| identity | what it answers | used by |
+| --- | --- | --- |
+| Spec repository root and revision | where `_authorization.md` lives and which committed bytes it has | the record reader and the citation resolver |
+| Project repository root and delivery target | which paths a commit changed, whether each is governed, and whether the grant precedes the consuming commit | the changed-path audit and the ancestor check |
+
+Both must be explicit inputs. Using the Spec root to validate bounded paths
+judges the wrong tree; using the project root to read the record leaves an
+external record unresolved. A reader that takes one root can only be wrong in
+one of the two ways.
+
+The cross-repository provenance rule follows from that split: the record's
+committed bytes are read at the Spec repository's revision, and the bounded
+paths it declares are repository-relative to the **project** repository, because
+that is the tree whose changes the audit judges. A record in an external Spec
+repository therefore grants over project paths, and its own revision proves only
+that the grant existed, never what changed. When the Spec Root resolves inside
+the project repository, both identities are the same value and every current
+answer is unchanged.
 
 ### Paths derived from the resolved root
 

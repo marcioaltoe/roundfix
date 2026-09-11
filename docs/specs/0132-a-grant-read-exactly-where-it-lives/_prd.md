@@ -26,7 +26,7 @@ Spec reaches the target.
 - Identifier strategy: applicable — preserve Spec slugs, Task IDs, refusal codes and record field names; no new identifier is introduced. Source: `docs/agents/domain.md`.
 - Authentication and HTTP: not applicable — no credential, network or HTTP surface is touched; the record is read from the local filesystem and Git objects as it is today. Source: `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0130 keeps the Governed Path set monotonic, so no path leaves it; ADR-0057 keeps the Daemon the exclusive writer of Task status; ADR-0117 places each check at the stage that can establish it, and record shape is established at parse time; ADR-0096 requires mechanical facts before the QA Agent turn and is preserved unchanged. Source: `docs/agents/spec-routing.md`, `docs/agents/domain.md`.
-- Tooling authority: applicable — exact governed mutations remain proposed in [_authorization.md](_authorization.md); status proposed and a null grant authorize no mutation. Bounded proposed files: `internal/speccheck/constraints.go`, `internal/speccheck/constraints_characterization_test.go`, `internal/speccheck/governed_repocontract_test.go`, `internal/suiteguardcontract/regeneration.go`. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
+- Tooling authority: applicable — express maintainer authorization: "Aprovar os quatro caminhos", 2026-09-10, recorded in `docs/specs/0132-a-grant-read-exactly-where-it-lives/_authorization.md`; bounded files: `internal/speccheck/constraints.go`, `internal/speccheck/constraints_characterization_test.go`, `internal/speccheck/governed_repocontract_test.go`, `internal/suiteguardcontract/regeneration.go`, `internal/suiteguardcontract/regeneration_test.go`. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## Goals
 
@@ -51,9 +51,10 @@ Spec reaches the target.
 1. Frontmatter is delimited by complete marker lines. A purported closing line
    carrying anything besides the marker is malformed, and a malformed record
    resolves to a refusal naming the offending line rather than to a grant.
-2. The consuming record's path and revision derive from the resolved Spec Root
-   for every reader that needs them, so an external or non-default root is read
-   where it actually lives.
+2. The consuming record's path and revision derive from the Spec repository,
+   and the bounded paths it declares are judged against the project repository.
+   The two are named separately, so an external root is read where it lives
+   while the audit still judges the tree whose changes it governs.
 3. A Spec-relative citation resolves against the artifact that carries it, so a
    record beside its PRD resolves whether that PRD sits inside the code
    repository or outside it.

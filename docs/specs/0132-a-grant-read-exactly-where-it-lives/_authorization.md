@@ -8,6 +8,7 @@ paths:
   - internal/speccheck/constraints_characterization_test.go
   - internal/speccheck/governed_repocontract_test.go
   - internal/suiteguardcontract/regeneration.go
+  - internal/suiteguardcontract/regeneration_test.go
 operations:
   - implement
   - commit
@@ -16,10 +17,11 @@ operations:
   - merge
 ---
 
-# Proposed authority for Spec 0132
+# Approved authority for Spec 0132
 
-This is a reviewable proposal, **not a grant**. Approval of the exact governed
-mutations above is pending.
+The maintainer approved the exact governed mutations above on 2026-09-10. The
+frontmatter is the operative statement; this prose explains it and never widens
+it.
 
 ## Why these four paths
 
@@ -41,6 +43,24 @@ Four governed paths are unavoidable:
 
 Every path is already in the Governed Path set, so ADR-0130 keeps them governed
 regardless of this Spec; none is added to or removed from that set here.
+
+## Amendment — 2026-09-11 — the discovery filter's own test
+
+`internal/suiteguardcontract/regeneration_test.go` joins the bounded set. The
+maintainer answered the explicit request with "Aprovar o teste também",
+raising the effective set to five paths.
+
+The pre-Pull-Request review found the omission. The file is bounded by Spec
+0119's grant, and Spec 0119's own widening of the Governed Path set covers every
+path a discovered record bounds, so it is governed on the implementation branch.
+The discovery regression this Spec requires — proving the record named
+`2026-09-08-authorized-qa-archive-override.md` is found — belongs beside the
+code in that file, and without the path the Task would fail the changed-file
+audit.
+
+The alternative was a second test file in the same package, split by
+authorization rather than by cohesion. The maintainer chose the boundary over
+the split.
 
 ## Limits
 
