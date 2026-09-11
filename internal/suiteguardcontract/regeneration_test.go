@@ -202,22 +202,29 @@ func TestSanctionedRegenerationReadsOnlyCandidateRecords(t *testing.T) {
 	}
 }
 
-func TestDiscoveryNamingCharacterization(t *testing.T) {
+func TestDiscoveryRecognizesAuthorizedNaming(t *testing.T) {
 	repository := t.TempDir()
 	writeCleanupRegenerationFile(
 		t,
 		repository,
-		"docs/specs/authorized-name/references/2026-09-08-authorized-qa-archive-override.md",
-		cleanupSpecGrantWithOutput("authorized-name", "authorized-command", "generated/authorized.txt"),
+		"docs/specs/0122-verified-content-and-terminal-settlement/references/2026-09-08-authorized-qa-archive-override.md",
+		cleanupSpecGrantWithOutput(
+			"0122-verified-content-and-terminal-settlement",
+			"make baseline-digests",
+			"generated/authorized.txt",
+		),
 	)
 
-	// Task 05 changes this answer by recognizing the authorized naming already in use.
+	want := []SanctionedRegeneration{{
+		Command: "make baseline-digests",
+		Outputs: []string{"generated/authorized.txt"},
+	}}
 	got, err := ReadSanctionedRegenerations(repository)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got != nil {
-		t.Fatalf("authorized-name declarations = %#v, want ignored", got)
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("authorized-name declarations = %#v, want %#v", got, want)
 	}
 }
 

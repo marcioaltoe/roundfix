@@ -256,7 +256,7 @@ func authorizationRecordCandidate(name string, role authorization.AuthorizationR
 		return true
 	}
 	return role == authorization.AuthorizationRoleSpec &&
-		strings.Contains(strings.ToLower(name), "authorization")
+		strings.Contains(strings.ToLower(name), "authoriz")
 }
 
 // ParseSanctionedRegenerations reads the "Sanctioned regeneration" YAML
