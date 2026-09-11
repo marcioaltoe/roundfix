@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0132-a-grant-read-exactly-where-it-lives
-status: failed
+status: completed
 type: qa
 complexity: high
 ---
