@@ -6,6 +6,7 @@ package speccheck_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -159,6 +160,52 @@ func TestConstraintsResolveSpecContainedRecord(t *testing.T) {
 		if !hasExactLocation(findings[0], location.Path, location.Line) {
 			t.Errorf("authorization locations = %#v, want %#v", findings[0].Where, location)
 		}
+	}
+}
+
+func TestExternalSpecRootResolutionCharacterization(t *testing.T) {
+	t.Parallel()
+
+	const slug = "external-tooling-row"
+	projectRoot := t.TempDir()
+	specRepositoryRoot := t.TempDir()
+	specsRoot := filepath.Join(specRepositoryRoot, "specs")
+
+	writeToolingRowFile(t, projectRoot, "docs/agents/agent-instructions.md", "# Agent instructions\n")
+	row := "Tooling authority: applicable — express maintainer authorization recorded in [_authorization.md](_authorization.md); bounded files: `docs/agents/agent-instructions.md`."
+	writeToolingRowFile(t, specRepositoryRoot, "specs/"+slug+"/_prd.md", "# External tooling row\n\n## Project Constraints\n\n"+
+		"- Identifier strategy: not applicable — no identifier change. Source: `docs/agents/agent-instructions.md`.\n"+
+		"- Authentication and HTTP: not applicable — no network boundary. Source: `docs/agents/agent-instructions.md`.\n"+
+		"- Active ADR obligations: not applicable — no ADR applies. Source: `docs/agents/agent-instructions.md`.\n"+
+		"- "+row+" Source: `docs/agents/agent-instructions.md`.\n")
+	writeToolingRowFile(
+		t,
+		specRepositoryRoot,
+		"specs/"+slug+"/_authorization.md",
+		typedConstraintAuthorization("approved", "2026-09-09", slug),
+	)
+
+	// Task 03 changes this answer by deriving the record location from the resolved Spec Root.
+	operationResolution := spec.ReadSpecAuthorization(context.Background(), projectRoot, slug, "")
+	if operationResolution.Outcome != spec.AuthorizationUnresolved {
+		t.Fatalf("external-root operation resolution = %q, want unresolved: %#v", operationResolution.Outcome, operationResolution.Reason)
+	}
+	if operationResolution.Record.Source.Path != spec.AuthorizationRecordPath(slug) ||
+		operationResolution.Reason.Code != spec.AuthorizationReasonUnreadableRecord {
+		t.Fatalf("external-root operation resolution = %#v, want unreadable default-root record", operationResolution)
+	}
+
+	// Task 04 changes this answer by resolving the relative citation beside its carrying artifact.
+	result, err := speccheck.CheckStage(specsRoot, projectRoot, slug, speccheck.StagePRD)
+	if err != nil {
+		t.Fatalf("CheckStage(StagePRD): %v", err)
+	}
+	findings := findingsWithCode(result, speccheck.CodeToolingUnapproved)
+	if len(findings) != 1 || len(result.Findings) != 1 {
+		t.Fatalf("external-root citation findings = %#v, want one exact-record refusal", result.Findings)
+	}
+	if !strings.Contains(findings[0].Summary, "does not identify exactly one authorization record") {
+		t.Fatalf("external-root citation summary = %q, want exact-record refusal", findings[0].Summary)
 	}
 }
 

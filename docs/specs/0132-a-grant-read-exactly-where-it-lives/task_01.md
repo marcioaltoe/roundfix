@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0132-a-grant-read-exactly-where-it-lives
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -71,3 +71,42 @@ comes from [_authorization.md](_authorization.md).
 
 - `_prd.md` → Decisions: Regression locks; Success Metrics.
 - `_techspec.md` → Testing Approach observation 5; Build Order 1.
+
+## Result
+
+Implementation evidence:
+
+- `TestAuthorizationParseCharacterization` records that `---evil` closes the
+  frontmatter and grants today, with a comment naming Task 02 as the intended
+  change. Its unmarked well-formed case records the same exact approved record,
+  bounded path, and sole permitted operation under the default root.
+- `TestExternalSpecRootResolutionCharacterization` places the Spec Root in a
+  separate temporary directory. It records the operation resolver's current
+  `unresolved` answer at the hard-coded default record path and the citation
+  resolver's current exact-one-record refusal, with comments naming Tasks 03
+  and 04 as the intended changes.
+- `TestDiscoveryNamingCharacterization` records that the existing
+  `2026-09-08-authorized-qa-archive-override.md` naming is ignored today, with
+  a comment naming Task 05 as the intended change.
+- No reader or discovery implementation changed; the diff adds assertions
+  only.
+
+Focused-check evidence:
+
+- Pre-change
+  `rtk rg -n 'func Test(AuthorizationParseCharacterization|ExternalSpecRootResolutionCharacterization|DiscoveryNamingCharacterization)' internal/authorization/authorization_test.go internal/speccheck/constraints_characterization_test.go internal/suiteguardcontract/regeneration_test.go`
+  exited 1 with no matches, proving the named characterization cases were
+  absent.
+- `rtk go test -count=1 ./internal/authorization ./internal/speccheck ./internal/suiteguardcontract -run 'Characterization'`
+  initially reached no test binary because the sandbox denied the standard Go
+  build cache. The unchanged retry with cache access passed 10 tests across all
+  three packages.
+- `rtk go test -count=1 ./internal/authorization ./internal/speccheck ./internal/suiteguardcontract`
+  passed 371 tests across all three packages, including every pre-existing
+  assertion in the touched test files.
+- `rtk gofmt -d` over the three test files and `rtk git diff --check` both
+  exited 0 with no output.
+- The changed-file postflight lists only this Task file and the three authorized
+  characterization test files.
+- The Task's declared `## Verification` commands were not run; Daemon
+  Verification owns them after this handoff.

@@ -202,6 +202,25 @@ func TestSanctionedRegenerationReadsOnlyCandidateRecords(t *testing.T) {
 	}
 }
 
+func TestDiscoveryNamingCharacterization(t *testing.T) {
+	repository := t.TempDir()
+	writeCleanupRegenerationFile(
+		t,
+		repository,
+		"docs/specs/authorized-name/references/2026-09-08-authorized-qa-archive-override.md",
+		cleanupSpecGrantWithOutput("authorized-name", "authorized-command", "generated/authorized.txt"),
+	)
+
+	// Task 05 changes this answer by recognizing the authorized naming already in use.
+	got, err := ReadSanctionedRegenerations(repository)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != nil {
+		t.Fatalf("authorized-name declarations = %#v, want ignored", got)
+	}
+}
+
 func TestSanctionedRegenerationResolvesOncePerProcess(t *testing.T) {
 	repository := t.TempDir()
 	recordPath := "docs/specs/current/_authorization.md"
