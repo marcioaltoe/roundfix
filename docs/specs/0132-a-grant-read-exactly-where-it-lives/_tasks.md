@@ -25,9 +25,12 @@ graph:
     - id: task_06
       file: task_06.md
       needs: [task_02, task_03, task_05, task_08]
+    - id: task_09
+      file: task_09.md
+      needs: [task_06]
     - id: task_07
       file: task_07.md
-      needs: [task_06]
+      needs: [task_09]
 ---
 
 # Tasks — A grant read exactly where it lives
@@ -41,6 +44,7 @@ graph:
 | task_05 | Recognize the record naming already in use | backend | low | task_01 |
 | task_08 | Let the mechanical audit consume the resolved reference | backend | medium | task_04 |
 | task_06 | Read a record wherever the archive left it | test | medium | task_02, task_03, task_05, task_08 |
-| task_07 | Run the final QA gate | qa | high | task_06 |
+| task_09 | Give the Daemon's external Spec Root fixtures real Git provenance | test | low | task_06 |
+| task_07 | Run the final QA gate | qa | high | task_09 |
 
-Waves: 1 → task_01 · 2 → task_02, task_03, task_05 · 3 → task_04 · 4 → task_08 · 5 → task_06 · 6 → task_07.
+Waves: 1 → task_01 · 2 → task_02, task_03, task_05 · 3 → task_04 · 4 → task_08 · 5 → task_06 · 6 → task_09 · 7 → task_07.
