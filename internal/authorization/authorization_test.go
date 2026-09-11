@@ -1,11 +1,12 @@
 // Suite: repository authorization record
-// Invariant: the operative Spec 0119 grant permits its declared delivery actions
+// Invariant: an operative Spec grant keeps its contents and permissions across active and archived roots
 // Boundary IN: authorization reader and the tracked Spec-contained record
 // Boundary OUT: daemon and CLI action dispatch
 package authorization
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -223,12 +224,16 @@ func TestCurrentRecordPermitsItsDeclaredOperations(t *testing.T) {
 		t.Fatal("locate authorization test source")
 	}
 	repoRoot := filepath.Clean(filepath.Join(filepath.Dir(sourceFile), "..", ".."))
-	const recordPath = "docs/specs/0119-spec-contained-authorization/_authorization.md"
+	const slug = "0119-spec-contained-authorization"
+	recordPath, err := discoverSpecAuthorizationRecord(repoRoot, slug)
+	if err != nil {
+		t.Fatal(err)
+	}
 	resolution := ReadAuthorization(context.Background(), AuthorizationReadRequest{
 		RepoRoot:   repoRoot,
 		RecordPath: recordPath,
 		Role:       AuthorizationRoleSpec,
-		AskingSpec: "0119-spec-contained-authorization",
+		AskingSpec: slug,
 	})
 	if resolution.Outcome != AuthorizationGranted {
 		t.Fatalf("current authorization outcome = %q, want granted: %#v", resolution.Outcome, resolution.Reason)
@@ -240,6 +245,107 @@ func TestCurrentRecordPermitsItsDeclaredOperations(t *testing.T) {
 	} {
 		if !resolution.Permits(operation) {
 			t.Errorf("current authorization record %s does not permit %q", recordPath, operation)
+		}
+	}
+}
+
+func TestRecordDiscoveredInEitherRoot(t *testing.T) {
+	t.Run("moves with the Spec from active to archive", func(t *testing.T) {
+		const (
+			slug   = "record-discovery"
+			action = "discover record in either root"
+		)
+		repoRoot, activeRecordPath := writeAuthorizationRecordForTest(
+			t,
+			slug,
+			action,
+			"---",
+			"---",
+			"\n",
+		)
+
+		recordPath, err := discoverSpecAuthorizationRecord(repoRoot, slug)
+		if err != nil {
+			t.Fatalf("discover active authorization record: %v", err)
+		}
+		if recordPath != activeRecordPath {
+			t.Fatalf("active authorization record path = %q, want %q", recordPath, activeRecordPath)
+		}
+		assertDiscoveredAuthorizationRecord(t, repoRoot, recordPath, slug, action)
+
+		archivedSpecDir := filepath.Join(repoRoot, "docs", "history", "specs", slug)
+		if err := os.MkdirAll(filepath.Dir(archivedSpecDir), 0o755); err != nil {
+			t.Fatalf("create archived Spec root: %v", err)
+		}
+		activeSpecDir := filepath.Dir(filepath.Join(repoRoot, filepath.FromSlash(activeRecordPath)))
+		if err := os.Rename(activeSpecDir, archivedSpecDir); err != nil {
+			t.Fatalf("archive fixture Spec: %v", err)
+		}
+
+		recordPath, err = discoverSpecAuthorizationRecord(repoRoot, slug)
+		if err != nil {
+			t.Fatalf("discover archived authorization record: %v", err)
+		}
+		wantArchivedPath := filepath.ToSlash(filepath.Join("docs", "history", "specs", slug, "_authorization.md"))
+		if recordPath != wantArchivedPath {
+			t.Fatalf("archived authorization record path = %q, want %q", recordPath, wantArchivedPath)
+		}
+		assertDiscoveredAuthorizationRecord(t, repoRoot, recordPath, slug, action)
+	})
+
+	t.Run("missing from both roots", func(t *testing.T) {
+		_, err := discoverSpecAuthorizationRecord(t.TempDir(), "absent-record")
+		if err == nil {
+			t.Fatal("missing authorization record was discovered")
+		}
+		if !strings.Contains(err.Error(), `Spec "absent-record"`) || !strings.Contains(err.Error(), "active or archived") {
+			t.Fatalf("missing authorization record error = %q, want Spec slug and both searched roots", err)
+		}
+	})
+}
+
+func discoverSpecAuthorizationRecord(repoRoot, slug string) (string, error) {
+	for _, root := range []string{
+		filepath.Join("docs", "specs"),
+		filepath.Join("docs", "history", "specs"),
+	} {
+		recordPath := filepath.Join(root, slug, "_authorization.md")
+		info, err := os.Stat(filepath.Join(repoRoot, recordPath))
+		if err == nil {
+			if !info.Mode().IsRegular() {
+				return "", fmt.Errorf("authorization record %q is not a regular file", filepath.ToSlash(recordPath))
+			}
+			return filepath.ToSlash(recordPath), nil
+		}
+		if !os.IsNotExist(err) {
+			return "", fmt.Errorf("inspect authorization record %q: %w", filepath.ToSlash(recordPath), err)
+		}
+	}
+	return "", fmt.Errorf("authorization record for Spec %q was not found under the active or archived Spec root", slug)
+}
+
+func assertDiscoveredAuthorizationRecord(t *testing.T, repoRoot, recordPath, slug, action string) {
+	t.Helper()
+
+	resolution := ReadAuthorization(context.Background(), AuthorizationReadRequest{
+		RepoRoot:   repoRoot,
+		RecordPath: recordPath,
+		Role:       AuthorizationRoleSpec,
+		AskingSpec: slug,
+	})
+	if resolution.Outcome != AuthorizationGranted {
+		t.Fatalf("authorization outcome = %q, want granted: %#v", resolution.Outcome, resolution.Reason)
+	}
+	if resolution.Record.Status != AuthorizationStatusApproved ||
+		resolution.Record.Action != action ||
+		!reflect.DeepEqual(resolution.Record.Consuming, []string{slug}) ||
+		!reflect.DeepEqual(resolution.Record.Paths, []string{"Makefile"}) ||
+		!reflect.DeepEqual(resolution.Record.Operations, []AuthorizationOperation{AuthorizationOperationImplement}) {
+		t.Fatalf("authorization record = %#v, want exact fixture grant", resolution.Record)
+	}
+	for _, operation := range AllAuthorizationOperations() {
+		if got, want := resolution.Permits(operation), operation == AuthorizationOperationImplement; got != want {
+			t.Errorf("Permits(%q) = %t, want %t", operation, got, want)
 		}
 	}
 }

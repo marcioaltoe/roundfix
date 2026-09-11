@@ -265,16 +265,18 @@ func TestEveryBoundedPathIsGoverned(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(auditedRecords) == 0 {
-			t.Skipf("no operative authorization records under %s, %s, or %s", legacyAuthorizationRecordsDir, activeSpecAuthorizationRoot, archivedSpecAuthorizationRoot)
-		}
-		for _, required := range []string{
-			"docs/specs/0119-spec-contained-authorization/_authorization.md",
-			"docs/history/specs/0130-documentation-cleanup-compatibility/_authorization.md",
+		for _, requiredSlug := range []string{
+			"0119-spec-contained-authorization",
+			"0130-documentation-cleanup-compatibility",
 		} {
-			index := sort.SearchStrings(auditedRecords, required)
-			if index == len(auditedRecords) || auditedRecords[index] != required {
-				t.Fatalf("audited authorization records = %q, want %q included", auditedRecords, required)
+			if _, found := governedSpecAuthorizationRecord(auditedRecords, requiredSlug); !found {
+				t.Fatalf(
+					"audited authorization records = %q, want Spec %q included under %s or %s",
+					auditedRecords,
+					requiredSlug,
+					activeSpecAuthorizationRoot,
+					archivedSpecAuthorizationRoot,
+				)
 			}
 		}
 		if len(findings) != 0 {
@@ -327,6 +329,17 @@ paths:
 		}
 		t.Skip("no operative authorization records")
 	})
+}
+
+func governedSpecAuthorizationRecord(records []string, slug string) (string, bool) {
+	for _, root := range []string{activeSpecAuthorizationRoot, archivedSpecAuthorizationRoot} {
+		candidate := filepath.ToSlash(filepath.Join(root, slug, "_authorization.md"))
+		index := sort.SearchStrings(records, candidate)
+		if index < len(records) && records[index] == candidate {
+			return candidate, true
+		}
+	}
+	return "", false
 }
 
 type governedAuthorizationRecord struct {

@@ -1714,77 +1714,127 @@ func TestRepositorySpecCorpusStillLoads(t *testing.T) {
 	}
 	repositoryRoot := filepath.Join(filepath.Dir(testFile), "..", "..")
 
-	t.Run("active Specs", func(t *testing.T) {
-		specsRoot := filepath.Join(repositoryRoot, "docs", "specs")
-		active, err := ListActive(specsRoot)
+	t.Run("repository corpus", func(t *testing.T) {
+		loaded, err := loadSpecCorpus(
+			filepath.Join(repositoryRoot, "docs", "specs"),
+			archiveTestRepositoryPath(repositoryRoot, ArchiveKindSpec),
+			t.TempDir(),
+		)
 		if err != nil {
-			t.Fatalf("ListActive: %v", err)
-		}
-		if len(active) == 0 {
-			t.Fatal("no active Specs found")
-		}
-		loaded := 0
-		for _, candidate := range active {
-			if _, err := os.Stat(filepath.Join(candidate.Dir, "_tasks.md")); errors.Is(err, os.ErrNotExist) {
-				continue
-			} else if err != nil {
-				t.Fatalf("stat active Spec %q manifest: %v", candidate.Slug, err)
-			}
-			if _, err := Load(specsRoot, candidate.Slug); err != nil {
-				t.Fatalf("Load active Spec %q: %v", candidate.Slug, err)
-			}
-			loaded++
+			t.Fatal(err)
 		}
 		if loaded == 0 {
-			t.Fatal("no active Task Graphs found")
+			t.Fatal("no Task Graphs found in the active or archived Spec corpus")
 		}
 	})
 
-	t.Run("archived Specs", func(t *testing.T) {
-		archivedRoot := archiveTestRepositoryPath(repositoryRoot, ArchiveKindSpec)
-		entries, err := os.ReadDir(archivedRoot)
+	t.Run("archived-only corpus", func(t *testing.T) {
+		fixtureRoot := t.TempDir()
+		activeRoot := defaultSpecsRoot(fixtureRoot)
+		if err := os.MkdirAll(activeRoot, 0o755); err != nil {
+			t.Fatalf("create empty active Spec root: %v", err)
+		}
+		archivedRoot := filepath.Join(fixtureRoot, "docs", "history", "specs")
+		writeSpecDir(t, archivedRoot, "demo", diamondSpecFiles())
+
+		loaded, err := loadSpecCorpus(activeRoot, archivedRoot, filepath.Join(fixtureRoot, "load"))
 		if err != nil {
-			t.Fatalf("read archived Spec root: %v", err)
+			t.Fatal(err)
 		}
-		tempSpecsRoot := defaultSpecsRoot(t.TempDir())
-		loaded := 0
-		for _, entry := range entries {
-			if !entry.IsDir() {
-				continue
-			}
-			manifestPath := filepath.Join(archivedRoot, entry.Name(), "_tasks.md")
-			manifest, err := os.ReadFile(manifestPath)
-			if errors.Is(err, os.ErrNotExist) {
-				continue
-			}
-			if err != nil {
-				t.Fatalf("read archived manifest %q: %v", entry.Name(), err)
-			}
-			nodes, _, _, _, err := loadManifestNodes(manifestPath)
-			if err != nil {
-				t.Fatalf("parse archived manifest %q: %v", entry.Name(), err)
-			}
-			files := map[string]string{
-				"_prd.md":   prdFixture("active"),
-				"_tasks.md": string(manifest),
-			}
-			for _, node := range nodes {
-				content, err := os.ReadFile(filepath.Join(archivedRoot, entry.Name(), node.File))
-				if err != nil {
-					t.Fatalf("read archived Task %q from Spec %q: %v", node.ID, entry.Name(), err)
-				}
-				files[node.File] = string(content)
-			}
-			writeSpecDir(t, tempSpecsRoot, entry.Name(), files)
-			if _, err := Load(tempSpecsRoot, entry.Name()); err != nil {
-				t.Fatalf("Load archived Spec %q: %v", entry.Name(), err)
-			}
-			loaded++
-		}
-		if loaded == 0 {
-			t.Fatal("no archived Specs found")
+		if loaded != 1 {
+			t.Fatalf("loaded Task Graphs = %d, want 1 archived Task Graph with no active Specs", loaded)
 		}
 	})
+
+	t.Run("unreadable corpus", func(t *testing.T) {
+		fixtureRoot := t.TempDir()
+		activeRoot := defaultSpecsRoot(fixtureRoot)
+		if err := os.MkdirAll(activeRoot, 0o755); err != nil {
+			t.Fatalf("create empty active Spec root: %v", err)
+		}
+		archivedRoot := filepath.Join(fixtureRoot, "docs", "history", "specs")
+		writeFile(t, archivedRoot, "not a directory")
+
+		_, err := loadSpecCorpus(activeRoot, archivedRoot, filepath.Join(fixtureRoot, "load"))
+		if err == nil {
+			t.Fatal("unreadable archived Spec corpus loaded without an error")
+		}
+		if !strings.Contains(err.Error(), "read archived Spec root") {
+			t.Fatalf("unreadable corpus error = %q, want archived root read failure", err)
+		}
+	})
+}
+
+func loadSpecCorpus(activeRoot, archivedRoot, loadRoot string) (int, error) {
+	active, err := ListActive(activeRoot)
+	if err != nil {
+		return 0, fmt.Errorf("list active Spec corpus: %w", err)
+	}
+
+	loaded := 0
+	for _, candidate := range active {
+		if _, err := os.Stat(filepath.Join(candidate.Dir, "_tasks.md")); errors.Is(err, os.ErrNotExist) {
+			continue
+		} else if err != nil {
+			return 0, fmt.Errorf("stat active Spec %q manifest: %w", candidate.Slug, err)
+		}
+		if _, err := Load(activeRoot, candidate.Slug); err != nil {
+			return 0, fmt.Errorf("load active Spec %q: %w", candidate.Slug, err)
+		}
+		loaded++
+	}
+
+	entries, err := os.ReadDir(archivedRoot)
+	if err != nil {
+		return 0, fmt.Errorf("read archived Spec root: %w", err)
+	}
+	loadSpecsRoot := defaultSpecsRoot(loadRoot)
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		manifestPath := filepath.Join(archivedRoot, entry.Name(), "_tasks.md")
+		manifest, err := os.ReadFile(manifestPath)
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return 0, fmt.Errorf("read archived manifest %q: %w", entry.Name(), err)
+		}
+		nodes, _, _, _, err := loadManifestNodes(manifestPath)
+		if err != nil {
+			return 0, fmt.Errorf("parse archived manifest %q: %w", entry.Name(), err)
+		}
+
+		specDir := filepath.Join(loadSpecsRoot, entry.Name())
+		if err := writeCorpusFile(filepath.Join(specDir, "_prd.md"), []byte(prdFixture("active"))); err != nil {
+			return 0, fmt.Errorf("materialize archived Spec %q PRD: %w", entry.Name(), err)
+		}
+		if err := writeCorpusFile(filepath.Join(specDir, "_tasks.md"), manifest); err != nil {
+			return 0, fmt.Errorf("materialize archived Spec %q manifest: %w", entry.Name(), err)
+		}
+		for _, node := range nodes {
+			content, err := os.ReadFile(filepath.Join(archivedRoot, entry.Name(), node.File))
+			if err != nil {
+				return 0, fmt.Errorf("read archived Task %q from Spec %q: %w", node.ID, entry.Name(), err)
+			}
+			if err := writeCorpusFile(filepath.Join(specDir, node.File), content); err != nil {
+				return 0, fmt.Errorf("materialize archived Task %q from Spec %q: %w", node.ID, entry.Name(), err)
+			}
+		}
+		if _, err := Load(loadSpecsRoot, entry.Name()); err != nil {
+			return 0, fmt.Errorf("load archived Spec %q: %w", entry.Name(), err)
+		}
+		loaded++
+	}
+	return loaded, nil
+}
+
+func writeCorpusFile(path string, content []byte) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(path, content, 0o644)
 }
 
 func snapshotDirectory(t *testing.T, root string) map[string][]byte {
