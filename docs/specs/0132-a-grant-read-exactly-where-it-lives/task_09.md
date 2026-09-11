@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0132-a-grant-read-exactly-where-it-lives
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -78,3 +78,37 @@ no tooling grant.
 - `_prd.md` → Goals 2; Core Features 2.
 - `_techspec.md` → Implementation Design: Two roots, named separately.
 - `qa/qa-report-2026-09-11.md` → F-001.
+
+## Result
+
+Implemented the fixture-side provenance repair. `useExternalSpecRoot` now
+initializes its Spec Root with `gittest.InitRepo`, seeds the Spec, and commits
+those bytes through `gittest.Run` before loading it. The symlink-crossing
+journey initializes and commits its target Spec Root the same way. The existing
+settlement, staging, event, warning, and commit-content assertions are
+unchanged, and no authorization reader or production path changed.
+
+Focused evidence by acceptance criterion:
+
+1. Before the edit,
+   `GOCACHE=/private/tmp/roundfix-task09-go-cache rtk proxy go test ./internal/daemon -run TestTaskCycleSettlesCompletedWithoutCommitWhenOnlyExternalTaskFileChanged -count=1 -v`
+   exited 1 at Implement dispatch with `fatal: not a git repository`. The source
+   diff now shows `gittest.InitRepo`, `git add -A`, and a fixture commit before
+   `spec.Load` in `useExternalSpecRoot`.
+2. `GOCACHE=/private/tmp/roundfix-task09-go-cache rtk go test ./internal/daemon -run 'TestTask(CycleSettlesCompletedWithoutCommitWhenOnlyExternalTaskFileChanged|CycleQAReportExternalProceedsWithoutStaging|CommitDropsSymlinkCrossingTaskFileAndCommitsRepositoryPaths)' -count=1 -v`
+   passed all three selected journeys, including both external settlement and
+   staging cases.
+3. The same focused three-journey command passed
+   `TestTaskCommitDropsSymlinkCrossingTaskFileAndCommitsRepositoryPaths`; its
+   existing repository-path commit-content and dropped symlink-path assertions
+   are byte-unchanged.
+4. The preflight `rtk git status --short` showed only this Task file's
+   Daemon-owned status edit. Final `rtk git diff --name-only` inspection listed
+   exactly this Task file and `internal/daemon/task_engine_test.go`; the Go diff
+   contains six fixture-setup additions and no assertion or production change.
+5. `GOCACHE=/private/tmp/roundfix-task09-go-cache rtk go test ./internal/spec -run TestOperationAuthorityReportsUnresolvableSpecRoot -count=1 -v`
+   passed the existing negative control: a genuine non-Git Spec Root remains
+   unresolved with the `unreadable_record` reason on `spec_root`, so it grants
+   no operation.
+
+The Daemon-owned commands under `## Verification` were not run.

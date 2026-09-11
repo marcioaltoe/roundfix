@@ -262,7 +262,10 @@ func (fixture *taskCycleFixture) reloadGraph() {
 func (fixture *taskCycleFixture) useExternalSpecRoot(t *testing.T, seeds []taskSpecSeed) string {
 	t.Helper()
 	specsRoot := filepath.Join(t.TempDir(), "external-specs")
+	gittest.InitRepo(t, specsRoot, "--initial-branch=main")
 	writeSpecDirAtRootForTest(t, specsRoot, taskCycleSlug, seeds)
+	gittest.Run(t, specsRoot, "add", "-A")
+	gittest.Run(t, specsRoot, "commit", "-m", "seed external Spec Root")
 	graph, err := spec.Load(specsRoot, taskCycleSlug)
 	if err != nil {
 		t.Fatalf("load external spec: %v", err)
@@ -6355,7 +6358,10 @@ func TestTaskCommitDropsSymlinkCrossingTaskFileAndCommitsRepositoryPaths(t *test
 	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
 	externalRoot := filepath.Join(t.TempDir(), "knowledge-specs")
+	gittest.InitRepo(t, externalRoot, "--initial-branch=main")
 	writeSpecDirAtRootForTest(t, externalRoot, taskCycleSlug, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
+	gittest.Run(t, externalRoot, "add", "-A")
+	gittest.Run(t, externalRoot, "commit", "-m", "seed symlinked Spec Root")
 	linkPath := filepath.Join(fixture.gitRoot, "docs", "specs")
 	if err := os.RemoveAll(linkPath); err != nil {
 		t.Fatalf("remove default Spec Root fixture: %v", err)
