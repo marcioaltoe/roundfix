@@ -332,20 +332,45 @@ func parseAuthorizationRecord(
 
 func splitAuthorizationFrontmatter(content []byte) ([]byte, []byte, error) {
 	text := string(content)
-	const opening = "---\n"
-	if !strings.HasPrefix(text, opening) {
+	const marker = "---"
+	openingEnd := strings.IndexByte(text, '\n')
+	openingLine := text
+	if openingEnd >= 0 {
+		openingLine = text[:openingEnd]
+	}
+	if openingEnd < 0 || openingLine != marker {
+		if strings.HasPrefix(openingLine, marker) && openingLine != marker {
+			return nil, nil, fmt.Errorf("malformed YAML frontmatter delimiter line %q", openingLine)
+		}
 		return nil, nil, errors.New("missing YAML frontmatter opening marker")
 	}
-	rest := text[len(opening):]
-	end := strings.Index(rest, "\n---")
-	if end < 0 {
-		return nil, nil, errors.New("missing YAML frontmatter closing marker")
+	rest := text[openingEnd+1:]
+	for lineStart := 0; lineStart <= len(rest); {
+		lineEnd := strings.IndexByte(rest[lineStart:], '\n')
+		hasLineEnding := lineEnd >= 0
+		if hasLineEnding {
+			lineEnd += lineStart
+		} else {
+			lineEnd = len(rest)
+		}
+		line := rest[lineStart:lineEnd]
+		if line == marker {
+			frontmatter := strings.TrimSuffix(rest[:lineStart], "\n")
+			bodyStart := lineEnd
+			if hasLineEnding {
+				bodyStart++
+			}
+			return []byte(frontmatter), []byte(rest[bodyStart:]), nil
+		}
+		if strings.HasPrefix(line, marker) {
+			return nil, nil, fmt.Errorf("malformed YAML frontmatter delimiter line %q", line)
+		}
+		if !hasLineEnding {
+			break
+		}
+		lineStart = lineEnd + 1
 	}
-	bodyStart := end + len("\n---")
-	if strings.HasPrefix(rest[bodyStart:], "\n") {
-		bodyStart++
-	}
-	return []byte(rest[:end]), []byte(rest[bodyStart:]), nil
+	return nil, nil, errors.New("missing YAML frontmatter closing marker")
 }
 
 type authorizationFrontmatterPresence struct {
