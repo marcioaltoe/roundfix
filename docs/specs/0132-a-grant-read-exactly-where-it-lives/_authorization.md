@@ -64,7 +64,8 @@ the split.
 
 ## Limits
 
-- No action, operation or path beyond the four above.
+- No action, operation or path beyond the five above: the four approved on
+  2026-09-10 and the test file approved on 2026-09-11.
 - No change to what any grant permits, to the operation vocabulary, or to the
   Governed Path set.
 - No paid API use, release, tag, deployment, or branch-policy exception.

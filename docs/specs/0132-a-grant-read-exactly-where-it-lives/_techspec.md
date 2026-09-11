@@ -19,7 +19,7 @@ a grant permits changes.
 - Identifier strategy: applicable — preserve Spec slugs, Task IDs, refusal codes and record field names; no new identifier is introduced. Source: `docs/agents/domain.md`.
 - Authentication and HTTP: not applicable — no credential, network or HTTP surface is touched; the record is read from the local filesystem and Git objects as it is today. Source: `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0130 keeps the Governed Path set monotonic, so no path leaves it; ADR-0057 keeps the Daemon the exclusive writer of Task status; ADR-0117 places each check at the stage that can establish it, and record shape is established at parse time; ADR-0096 requires mechanical facts before the QA Agent turn and is preserved unchanged. Source: `docs/agents/spec-routing.md`, `docs/agents/domain.md`.
-- Tooling authority: applicable — express maintainer authorization: "Aprovar os quatro caminhos", 2026-09-10, recorded in `docs/specs/0132-a-grant-read-exactly-where-it-lives/_authorization.md`; bounded files: `internal/speccheck/constraints.go`, `internal/speccheck/constraints_characterization_test.go`, `internal/speccheck/governed_repocontract_test.go`, `internal/suiteguardcontract/regeneration.go`, `internal/suiteguardcontract/regeneration_test.go`. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
+- Tooling authority: applicable — express maintainer authorization: "Aprovar os quatro caminhos", 2026-09-10, extended by "Aprovar o teste também", 2026-09-11, both recorded in `docs/specs/0132-a-grant-read-exactly-where-it-lives/_authorization.md`; bounded files: `internal/speccheck/constraints.go`, `internal/speccheck/constraints_characterization_test.go`, `internal/speccheck/governed_repocontract_test.go`, `internal/suiteguardcontract/regeneration.go`, `internal/suiteguardcontract/regeneration_test.go`. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## System Architecture
 
@@ -73,6 +73,33 @@ that the grant existed, never what changed. When the Spec Root resolves inside
 the project repository, both identities are the same value and every current
 answer is unchanged.
 
+### The boundary both roots travel in
+
+Prose about two roots is not enough: the existing reader takes a single
+`RepoRoot`, so an implementation can match every sentence above and still
+validate against the wrong tree. The roots travel in one explicit request value,
+and every reader and audit takes that value rather than a bare path.
+
+```
+AuthorizationLocation
+  SpecRepoRoot     absolute path to the repository that holds the Spec Root
+  SpecRevision     the revision whose committed bytes the record is read at
+  SpecRelativePath the record's path within the Spec Root
+  ProjectRepoRoot  absolute path to the repository whose changes are judged
+  DeliveryTarget   the revision the grant must precede
+```
+
+`SpecRepoRoot` and `ProjectRepoRoot` hold the same value when the Spec Root
+resolves inside the project repository, which is today's default and must stay
+byte-identical in its answers. The record reader consumes the first three
+fields and never the last two; the changed-path audit and the ancestor check
+consume the last two and never the first three. A reader that needs a field
+from the other half is reaching across the boundary this type exists to draw.
+
+`speccheck.MechanicalAuthorization` and the mechanical request carry the same
+value, so the consumer that judges bounded paths cannot silently inherit the
+Spec repository's root.
+
 ### Paths derived from the resolved root
 
 Two readers assemble the record path from the constant `docs/specs`. When
@@ -119,9 +146,14 @@ resolution. Required observations:
 
 1. A closing line carrying extra characters refuses and names that line; a
    well-formed record still grants exactly what it granted.
-2. A Spec Root outside the code repository resolves its record through the
-   operation resolver and through the citation resolver; the default root is
-   unchanged.
+2. A Spec Root in a **genuinely separate repository** — its own Git root and
+   its own revision — resolves its record, and the bounded paths it declares are
+   judged against the project repository rather than against the Spec one. The
+   observation composes the full flow rather than two helpers: public Spec
+   Check, Implement dispatch and Settle each run against that layout, and the
+   mechanical authorization consumer is exercised so a one-root implementation
+   validating the wrong tree fails rather than passes. The default root, where
+   both identities are the same value, answers exactly as it does today.
 3. The existing record named `2026-09-08-authorized-qa-archive-override.md` is
    discovered, and discovery still ignores files that cannot carry a record.
 4. Every test that reads a Spec's record passes against both the active and the
