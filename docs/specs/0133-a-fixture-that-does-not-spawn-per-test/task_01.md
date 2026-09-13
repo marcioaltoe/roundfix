@@ -2,77 +2,86 @@
 task: task_01
 spec: 0133-a-fixture-that-does-not-spawn-per-test
 status: pending
-type: test
-complexity: medium
+type: backend
+complexity: high
 ---
 
-# Task 01: Stop paying Git setup per Task-cycle test
+# Task 01: State the two authorities apart
 
 ## Overview
 
-Giving the Task-cycle fixtures real Git provenance put repository setup in the
-base fixture that every Task-cycle test builds. Measured on 2026-09-13: the
-Daemon package runs 3.2s at the delivery target and 6.8s here, and the base
-fixture went from zero Git invocations to three plus a revision read and an
-authorization resolution — roughly five process spawns per test across about
-forty tests. This suite is spawn-bound, so that setup is the whole delta. The
-provenance stays; paying for it once per test is the defect.
+The canonical clause says an absent authorization record "grants nothing", and
+the operation gate obeyed it by requiring the `implement` operation from every
+Spec. Since a record must name at least one path to be valid, a Spec touching no
+Governed Path can neither write a record nor be implemented. This slice narrows
+the clause to governed mutation and moves the gate to match. It is verifiable
+alone: a Spec with no protected mutation dispatches, and a governed change
+without a record still refuses.
 
-`internal/daemon/task_engine_test.go` is not a Governed Path, so this Task needs
-no tooling grant.
+This Task's governed scope is exactly the three paths the approved grant bounds:
+`internal/baseline/assets/modules/core.json`, `docs/agents/agent-instructions.md`
+and `docs/agents/setup-context.json`, plus the derived pins that
+`make baseline-digests` rewrites as sanctioned regeneration. It also changes
+ordinary source in `internal/authorization`, `internal/cli` and
+`internal/daemon`, which is not governed and stays within this Spec's declared
+behavior. Stop before any other mutation.
 
 ## Requirements
 
-1. MUST stop performing Git repository setup inside the per-test base fixture.
-   Create the committed seed once for the package and let each test reuse it, or
-   obtain the same provenance without spawning a process per test.
-2. MUST keep every journey's provenance real: the authorization reader must
-   still read committed bytes, and no test may pass because the reader was
-   weakened, stubbed, or given a non-Git shortcut.
-3. MUST keep the three external and symlinked Spec Root journeys passing, since
-   they exercise a different root shape and were the reason provenance was added.
-4. MUST bring the Daemon package's wall clock back into the delivery target's
-   range, measured as one concurrent package run rather than in isolation.
-5. MUST NOT raise a time budget, lengthen a deadline, reduce parallelism, or
-   skip a case. The cost goes, not the signal.
-6. MUST NOT change production code. The defect is in test setup; production
-   already resolves the authorization once per Implement and once per Settle.
+1. MUST narrow the canonical clause so an absent, proposed, contradictory or
+   withdrawn record withholds governed mutation and does not by itself refuse
+   implementation, commit or push.
+2. MUST regenerate the rendered guides and the manifest from the module through
+   the public Baseline update, then regenerate the sanctioned derived pins, and
+   MUST NOT hand-edit a derived value.
+3. MUST move the operation gate to ask for an operation where a governed
+   mutation is at stake rather than at every dispatch, so a Spec that declares
+   no protected tooling mutation dispatches with no record present.
+4. MUST keep every governed-path refusal exactly as it is: a change to a
+   Governed Path still requires an operative record naming that exact path, an
+   absent record still refuses it, and the changed-path audit is untouched.
+5. MUST keep a record that exists required to name at least one path. The
+   repair is that a Spec with nothing to bound needs no record, not that it
+   writes an empty one.
+6. MUST keep the `operations` vocabulary and every refusal message identity
+   unchanged, so a caller matching on them keeps working.
 
 ## Subtasks
 
-- [ ] Create the committed seed once for the package instead of per test.
-- [ ] Point the base fixture at that shared seed.
-- [ ] Confirm the external and symlinked journeys still read real provenance.
-- [ ] Measure the package against the delivery target.
+- [ ] Narrow the clause in the canonical module.
+- [ ] Regenerate the rendered guides and the sanctioned pins.
+- [ ] Move the gate to the governed-mutation boundary.
+- [ ] Prove every governed-path refusal is unchanged.
 
 ## Acceptance Criteria
 
-- [ ] The per-test base fixture performs no Git repository initialization; a
-      search of its body finds no such call, where it finds three today.
-- [ ] A named test asserts the shared seed is created once and reused, so a
-      later change reintroducing per-test setup fails here.
-- [ ] The three external and symlinked Spec Root journeys pass, and the
-      authorization reader still refuses a Spec Root with no Git provenance.
-- [ ] The Daemon package passes as one concurrent run and its wall clock is
-      within the delivery target's range rather than roughly double it.
-- [ ] No production file changed, and no time budget, deadline, parallelism
-      setting or skip was introduced.
+- [ ] A Spec declaring no protected tooling mutation, with no record present,
+      dispatches through the public Implement command; it refuses today with
+      `operation "implement" is not permitted`.
+- [ ] A change to a Governed Path with no operative record still refuses, and
+      the refusal names the same condition it names today.
+- [ ] A record that exists with an empty `paths` list is still invalid.
+- [ ] The rendered guides state the division between governed mutation and the
+      work itself, and a second managed refresh reports no further change.
+- [ ] The `operations` vocabulary and every refusal message identity are
+      unchanged.
 
 ## Context
 
-- interface: `internal/daemon/task_engine_test.go`
-- interface: `internal/gittest/gittest.go`
+- interface: `internal/cli/implement.go`
+- interface: `internal/authorization/authorization.go`
+- instruction: `docs/agents/agent-instructions.md`
 
 ## Verification
 
-- `body="$(sed -n '/^func newTaskCycleFixture/,/^}$/p' internal/daemon/task_engine_test.go)"; test -n "$body" || exit 1; printf '%s' "$body" | grep -q 'InitRepo' && exit 1; exit 0` — the per-test base fixture no longer initializes a repository; it does today, so this fails before the work.
-- `grep -q 'func TestTaskCycleFixtureSeedIsCreatedOnce' internal/daemon/task_engine_test.go && go test -count=1 ./internal/daemon -run '^TestTaskCycleFixtureSeedIsCreatedOnce$'` — the shared seed is asserted to be created once and reused.
-- `grep -q 'func TestTaskCycleFixtureSeedIsCreatedOnce' internal/daemon/task_engine_test.go || exit 1; go test -count=1 ./internal/daemon -run '^(TestTaskCycleSettlesCompletedWithoutCommitWhenOnlyExternalTaskFileChanged|TestTaskCycleQAReportExternalProceedsWithoutStaging|TestTaskCommitDropsSymlinkCrossingTaskFileAndCommitsRepositoryPaths)$'` — the three provenance journeys still pass once the shared seed is in place. The guard reads the new test, so this preservation check cannot pass before the work.
-- `grep -q 'func TestTaskCycleFixtureSeedIsCreatedOnce' internal/daemon/task_engine_test.go || exit 1; go test -count=1 ./internal/daemon` — the package passes as one concurrent run with the shared seed in place.
-- `grep -q 'func TestTaskCycleFixtureSeedIsCreatedOnce' internal/daemon/task_engine_test.go || exit 1; widened="$(grep -n 'time.After(' internal/daemon/task_engine_test.go | grep -v '2 \* time.Second' || true)"; test -z "$widened" || { printf '%s\n' "$widened"; exit 1; }; changed="$(git diff --name-only HEAD -- internal/ | grep -v '^internal/daemon/task_engine_test.go' || true)"; test -z "$changed" || { printf '%s\n' "$changed"; exit 1; }` — every deadline still reads two seconds and no file outside the fixture moved. The guard reads the new test so this cannot pass before the work.
+- `grep -q 'grants no governed mutation' internal/baseline/assets/modules/core.json && grep -q 'grants no governed mutation' docs/agents/agent-instructions.md` — the clause states the division and the rendered guide carries it; neither says this today.
+- `grep -q 'func TestImplementDispatchesWithoutRecordWhenNoGovernedMutation' internal/cli/implement_test.go && go test -count=1 ./internal/cli -run '^TestImplementDispatchesWithoutRecordWhenNoGovernedMutation$'` — a Spec with no protected mutation dispatches with no record; this fails today.
+- `grep -q 'func TestGovernedChangeStillRefusesWithoutRecord' internal/cli/implement_test.go && go test -count=1 ./internal/cli -run '^TestGovernedChangeStillRefusesWithoutRecord$'` — a governed change with no record still refuses, so narrowing cost no authority.
+- `grep -q 'grants no governed mutation' internal/baseline/assets/modules/core.json || exit 1; go test -count=1 ./internal/authorization ./internal/spec ./internal/speccheck` — every reader and audit still passes with the narrowed rule.
+- `grep -q 'grants no governed mutation' internal/baseline/assets/modules/core.json || exit 1; raw="$(mktemp)"; before="$(mktemp)"; after="$(mktemp)"; go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text > /dev/null || exit 1; find docs/agents internal/baseline -type f -exec shasum {} + > "$raw" || exit 1; sort "$raw" > "$before" || exit 1; go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text > /dev/null || exit 1; find docs/agents internal/baseline -type f -exec shasum {} + > "$raw" || exit 1; sort "$raw" > "$after" || exit 1; diff "$before" "$after"` — the managed refresh converges: a second run reproduces the first byte for byte.
 
 ## References
 
-- `_prd.md` → Decisions: Regression locks.
-- `_techspec.md` → Risks & Considerations.
-- Spec 0132 qa/qa-report-2026-09-11-01.md → the passing gate this Task must not regress.
+- `_prd.md` → Goals 1, 3; User Stories 1-2; Core Features 1-3; Decisions: Declared intentional breaks 1.
+- `_techspec.md` → Implementation Design: Two authorities, stated apart; Build Order 1.
+- `_authorization.md` → approved bounded paths and sanctioned regeneration.

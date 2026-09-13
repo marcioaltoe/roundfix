@@ -5,10 +5,23 @@ created: 2026-09-13
 surfaces: [backend]
 ---
 
-# A fixture that does not spawn per test
+# The regressions this branch must not ship
 
-Giving the Daemon's Task-cycle fixtures real Git provenance fixed a correctness
-defect and introduced a cost one. The base fixture that every Task-cycle test
+Specs 0119 and 0132 each repaired a real defect and each introduced a new one.
+Neither may reach the delivery target, so both are repaired here, on the same
+branch, before any of the three Specs merges.
+
+**The blocking one.** The operation enforcement Spec 0119 delivered requires the
+`implement` operation from every Spec, and a record with an empty `paths` list
+is invalid. Together: a Spec that touches no Governed Path can neither write a
+valid record nor be implemented. Spec 0131 ran Clean in exactly that condition
+before the enforcement landed, and would be undispatchable today. The canonical
+clause says an absent record "grants nothing", and the implementation obeyed it
+literally — conflating authority over protected tooling with authority to do the
+work at all.
+
+**The cost one.** Giving the Daemon's Task-cycle fixtures real Git provenance
+fixed a correctness defect and introduced a cost one. The base fixture that every Task-cycle test
 builds now initializes a repository, stages it, commits it, reads a revision and
 resolves an authorization — roughly five process spawns per test, across about
 forty tests. This suite is spawn-bound, so that setup is the entire slowdown.
@@ -23,33 +36,48 @@ per Implement and once per Settle — so the cost is test setup alone.
 - Identifier strategy: applicable — preserve existing test, fixture and helper identities; no new identifier is introduced. Source: `docs/agents/domain.md`.
 - Authentication and HTTP: not applicable — no credential, network or HTTP surface is touched. Source: `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0056 has Spec Runs separate Task Capacity and Verification Capacity, and neither is widened here; ADR-0148 keeps every authored Verification command able to fail against the unchanged tree. Source: `docs/agents/spec-routing.md`, `docs/agents/domain.md`.
-- Tooling authority: applicable — no protected tooling mutation proposed or authorized. The change is a test fixture in `internal/daemon`, which is not a Governed Path. Source: `docs/agents/agent-instructions.md`.
+- Tooling authority: applicable — express maintainer authorization: "Aprovar os três caminhos", 2026-09-13, recorded in `docs/specs/0133-a-fixture-that-does-not-spawn-per-test/_authorization.md`; bounded files: `internal/baseline/assets/modules/core.json`, `docs/agents/agent-instructions.md`, `docs/agents/setup-context.json`. Sanctioned regeneration: `make baseline-digests` follows the approved module edit. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## Goals
 
+- A Spec that touches no Governed Path can be implemented without a maintainer
+  record, while every change to a Governed Path still requires one.
 - The Daemon package's wall clock returns to the delivery target's range while
   every journey keeps reading real Git provenance.
-- The provenance a test needs is created once for the package, not once per
-  test.
+- The canonical rule and the implementation say the same thing about what an
+  absent record withholds.
 
 ## User Stories
 
-1. As the maintainer, I want the complete Verification to finish within its
+1. As the Supervisor, I want to implement a Spec that touches no protected
+   tooling without waiting for a maintainer record, so that ordinary work does
+   not need an approval it has no reason to need.
+2. As the maintainer, I want a change to a Governed Path to keep refusing
+   without an operative record, so narrowing the rule costs no authority.
+3. As the maintainer, I want the complete Verification to finish within its
    budget, so that a correctness repair does not arrive as a wall-clock
    regression.
-2. As the Supervisor, I want a later change that reintroduces per-test process
+4. As the Supervisor, I want a later change that reintroduces per-test process
    setup to fail a named test, so the cost cannot creep back silently.
 
 ## Core Features
 
-1. The per-test base fixture performs no Git repository initialization. The
+1. An absent, proposed, contradictory or withdrawn record withholds governed
+   mutation and does not by itself refuse implementation, commit or push. The
+   canonical clause states that division, and the implementation matches it.
+2. Every change to a Governed Path still requires an operative record naming
+   that exact path. Narrowing which actions an absent record blocks removes no
+   authority from the tooling boundary.
+3. A Spec that declares no protected tooling mutation dispatches with no record
+   present, as Spec 0131 did before the enforcement landed.
+4. The per-test base fixture performs no Git repository initialization. The
    committed seed exists once for the package and every test reuses it.
-2. Every journey still reads committed bytes through the real authorization
+5. Every journey still reads committed bytes through the real authorization
    reader. No test passes because the reader was weakened, stubbed or given a
    non-Git shortcut.
-3. The external and symlinked Spec Root journeys keep passing, since they
+6. The external and symlinked Spec Root journeys keep passing, since they
    exercise a different root shape and are why provenance was added.
-4. A named test asserts the seed is created once and reused, so reintroducing
+7. A named test asserts the seed is created once and reused, so reintroducing
    per-test setup fails at that test rather than in a wall-clock budget.
 
 ## User Experience
@@ -83,7 +111,10 @@ every existing assertion still holds.
 
 ### Declared intentional breaks
 
-1. The per-test base fixture stops creating its own repository and reads a
+1. An absent record stops refusing implementation, commit and push. A caller
+   that relied on the absent record refusing everything sees those three
+   proceed; every governed-path refusal is unchanged.
+2. The per-test base fixture stops creating its own repository and reads a
    shared one instead. A test that depended on having a private repository per
    invocation changes with it.
 

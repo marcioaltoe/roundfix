@@ -18,16 +18,40 @@ in a spawn-bound suite. Provenance stays real; only its lifetime changes.
 - Identifier strategy: applicable — preserve existing test, fixture and helper identities; no new identifier is introduced. Source: `docs/agents/domain.md`.
 - Authentication and HTTP: not applicable — no credential, network or HTTP surface is touched. Source: `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0056 has Spec Runs separate Task Capacity and Verification Capacity, and neither is widened here; ADR-0148 keeps every authored Verification command able to fail against the unchanged tree. Source: `docs/agents/spec-routing.md`, `docs/agents/domain.md`.
-- Tooling authority: applicable — no protected tooling mutation proposed or authorized. The change is a test fixture in `internal/daemon`, which is not a Governed Path. Source: `docs/agents/agent-instructions.md`.
+- Tooling authority: applicable — express maintainer authorization: "Aprovar os três caminhos", 2026-09-13, recorded in `docs/specs/0133-a-fixture-that-does-not-spawn-per-test/_authorization.md`; bounded files: `internal/baseline/assets/modules/core.json`, `docs/agents/agent-instructions.md`, `docs/agents/setup-context.json`. Sanctioned regeneration: `make baseline-digests` follows the approved module edit. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## System Architecture
 
 | Component | File | Responsibility |
 | --- | --- | --- |
+| Absent-record rule | `internal/baseline/assets/modules/core.json` and its rendered guides | State that an absent record withholds governed mutation, not the work itself. |
+| Operation gate | `internal/authorization/authorization.go`, `internal/cli/implement.go`, `internal/cli/settle.go`, `internal/daemon` | Ask for an operation only where a governed mutation is at stake, and keep every governed-path refusal. |
 | Task-cycle fixture | `internal/daemon/task_engine_test.go` | Build a Task-cycle world per test, reading a committed seed created once for the package. |
 | Shared Git helper | `internal/gittest/gittest.go` | Create and populate the seed; read only, unchanged by this Spec. |
 
 ## Implementation Design
+
+### Two authorities, stated apart
+
+The canonical clause says an absent record "grants nothing", and the gate obeyed
+it by refusing the `implement` operation from every Spec. That reads one
+sentence as answering two questions: may this change a protected path, and may
+this work happen at all. Tooling authority has always answered the first. The
+clause now answers only that, and the gate asks for an operation where a
+governed mutation is at stake rather than at every dispatch.
+
+Nothing about the governed boundary moves. A change to a Governed Path still
+needs an operative record naming that exact path, an absent record still refuses
+it, and the changed-path audit is untouched. What changes is that a Spec with no
+protected mutation stops needing a maintainer signature to run — which is the
+condition Spec 0131 delivered under, before the enforcement existed.
+
+The empty-`paths` rule stays as it is. A record that exists must still name at
+least one path, because a record's purpose is to bound something; the repair is
+that a Spec with nothing to bound needs no record, not that it writes an empty
+one.
+
+### One seed per package
 
 The seed's content is identical for every Task-cycle test: an initialized
 repository with the Task source committed. Nothing in the journeys mutates that
@@ -48,20 +72,31 @@ cost is bounded and stays where it is.
 
 ## Coverage Map
 
-- PRD Goal 1 → Task-cycle fixture.
+- PRD Goal 1 → Absent-record rule, Operation gate.
 - PRD Goal 2 → Task-cycle fixture.
-- User Story 1 → Task-cycle fixture.
-- User Story 2 → Task-cycle fixture, through the named reuse test.
-- Core Feature 1 → Task-cycle fixture.
-- Core Feature 2 → Task-cycle fixture, by leaving the reader untouched.
-- Core Feature 3 → Task-cycle fixture.
-- Core Feature 4 → Task-cycle fixture, through the named reuse test.
+- PRD Goal 3 → Absent-record rule.
+- User Story 1 → Operation gate.
+- User Story 2 → Operation gate.
+- User Story 3 → Task-cycle fixture.
+- User Story 4 → Task-cycle fixture, through the named reuse test.
+- Core Feature 1 → Absent-record rule, Operation gate.
+- Core Feature 2 → Operation gate.
+- Core Feature 3 → Operation gate.
+- Core Feature 4 → Task-cycle fixture.
+- Core Feature 5 → Task-cycle fixture, by leaving the reader untouched.
+- Core Feature 6 → Task-cycle fixture.
+- Core Feature 7 → Task-cycle fixture, through the named reuse test.
 
 ## Testing Approach
 
 Focused tests in the Daemon package. Required observations:
 
-1. The per-test base fixture body contains no repository initialization.
+1. A Spec that declares no protected tooling mutation and carries no record
+   dispatches, while a change to a Governed Path without an operative record
+   still refuses. Both observed through the public commands.
+2. The canonical clause and the rendered guides state the division, and the
+   managed refresh converges.
+3. The per-test base fixture body contains no repository initialization.
 2. A named test asserts the seed is created once and reused across fixtures.
 3. The three external and symlinked Spec Root journeys pass unchanged.
 4. Every journey's settlement, staging and commit assertion still passes.
@@ -75,8 +110,9 @@ with that reason.
 
 ## Build Order
 
-1. Create the seed once for the package and read it from the fixture (depends on: none).
-2. Terminal QA (depends on: 1).
+1. Narrow the absent-record rule in the canonical module and its rendered guides, and ask for an operation only where a governed mutation is at stake (depends on: none).
+2. Create the seed once for the package and read it from the fixture (depends on: 1).
+3. Terminal QA (depends on: 1, 2).
 
 ## Risks & Considerations
 
