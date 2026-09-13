@@ -54,7 +54,15 @@ no tooling grant.
 - [ ] The three external and symlinked Spec Root journeys pass, and the
       authorization reader still refuses a Spec Root with no Git provenance.
 - [ ] The Daemon package passes as one concurrent run and its wall clock is
-      within the delivery target's range rather than roughly double it.
+      measurably lower than the immediate pre-repair control, with both numbers
+      recorded.
+
+Amended 2026-09-13. This criterion originally required parity with the delivery
+target. Measurement falsified that: the target runs 3.63s, this candidate 6.48s,
+and the pre-repair control 7.70s, so the repair recovers about 1.2s of a 2.8s
+gap. The work this Task settled is unchanged and its Result stands; the promise
+it was measured against is corrected, and the residual is promoted to the
+test-performance campaign by the PRD's Decisions.
 - [ ] No production file changed, and no time budget, deadline, parallelism
       setting or skip was introduced.
 

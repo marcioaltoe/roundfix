@@ -100,13 +100,17 @@ Focused tests in the Daemon package. Required observations:
 2. A named test asserts the seed is created once and reused across fixtures.
 3. The three external and symlinked Spec Root journeys pass unchanged.
 4. Every journey's settlement, staging and commit assertion still passes.
-5. The package's wall clock in one concurrent run is within the delivery
-   target's range.
+5. The package's wall clock in one concurrent run is measurably lower than the
+   immediate pre-repair control, with both numbers recorded.
 
 Observation 5 rests on evidence this Spec did not author: the delivery target's
 own package time, measured from a checkout of `main` this Spec did not build,
-3.2s on 2026-09-13. If that checkout cannot be obtained, the row records blocked
-with that reason.
+3.63s on 2026-09-13 against a 6.48s candidate and a 7.70s pre-repair control.
+If that checkout cannot be obtained, the row records blocked with that reason.
+The observation deliberately asks for a recorded reduction rather than parity
+with the target: measurement on 2026-09-13 showed the fixture repair recovers
+the smaller part of the gap, and the PRD promotes the residual to the
+test-performance campaign.
 
 ## Build Order
 

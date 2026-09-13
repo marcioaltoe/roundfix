@@ -42,8 +42,10 @@ per Implement and once per Settle — so the cost is test setup alone.
 
 - A Spec that touches no Governed Path can be implemented without a maintainer
   record, while every change to a Governed Path still requires one.
-- The Daemon package's wall clock returns to the delivery target's range while
-  every journey keeps reading real Git provenance.
+- The per-test process setup this branch introduced is removed, and a named
+  test keeps it from returning, while every journey keeps reading real Git
+  provenance. Closing the remaining wall-clock gap to the delivery target is
+  not this Spec's goal; see Decisions.
 - The canonical rule and the implementation say the same thing about what an
   absent record withholds.
 
@@ -96,13 +98,29 @@ every existing assertion still holds.
 
 ## Success Metrics
 
-- The Daemon package's wall clock in one concurrent run is within the delivery
-  target's range rather than roughly double it.
+- The Daemon package's wall clock in one concurrent run is measurably lower
+  than before the fixture repair, and the reduction is recorded with both
+  measurements rather than asserted.
 - A search of the per-test base fixture body finds no repository
   initialization, where it finds three Git calls today.
 
 ## Decisions
 
+- Amended on 2026-09-13, after measurement falsified the original Goal. The
+  Goal claimed the Daemon package's wall clock returns to the delivery target's
+  range. Measured on the same host with warmed caches: the delivery target runs
+  3.63s and the candidate 6.48s, and the immediate pre-repair control ran 7.70s.
+  The fixture repair is therefore real and partial — it recovered about 1.2s of
+  a 2.8s gap — and the remaining majority has a cause this Spec has not
+  identified. Two earlier diagnoses of that gap were wrong: archive traversal,
+  which the suite guard short-circuits when no violation exists, and fixture
+  spawning alone, which accounts for the smaller part.
+- The residual wall-clock gap is promoted to the repository's test-performance
+  campaign, which owns suite wall clock, with both measurements and the partial
+  decomposition above as its input. The maintainer took that decision on
+  2026-09-13 rather than accept a third unmeasured diagnosis inside a branch
+  already carrying four Specs. The impact the terminal QA gate assigned to the
+  residual is friction, not blocked completion.
 - Delivered as its own Spec rather than inside Spec 0132, because 0132's QA gate
   settled with a passing verdict and work added under a passing gate would make
   that pass certify what the gate never saw. The loader refuses that, correctly.
