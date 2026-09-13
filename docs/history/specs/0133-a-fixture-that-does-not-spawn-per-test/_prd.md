@@ -1,9 +1,12 @@
 ---
 spec: 0133-a-fixture-that-does-not-spawn-per-test
-status: active
+status: archived
 created: 2026-09-13
 surfaces: [backend]
+archived: "2026-09-13"
+source_slug: 0133-a-fixture-that-does-not-spawn-per-test
 ---
+
 
 # The regressions this branch must not ship
 

@@ -1,9 +1,12 @@
 ---
 spec: 0132-a-grant-read-exactly-where-it-lives
-status: active
+status: archived
 created: 2026-09-10
 surfaces: [backend, cli]
+archived: "2026-09-13"
+source_slug: 0132-a-grant-read-exactly-where-it-lives
 ---
+
 
 # A grant read exactly where it lives
 
