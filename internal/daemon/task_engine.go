@@ -1651,17 +1651,27 @@ func (engine *Engine) prepareTaskCommit(ctx context.Context, plan TaskPlan, task
 		stageable:        stageable,
 		dropped:          dropped,
 		noOpShape:        taskNoOpCommitShape(plan, stageable),
-		governedMutation: hasGovernedSnapshotMutation(before, after),
+		governedMutation: HasGovernedSnapshotMutation(before, after),
 	}, nil
 }
 
-func hasGovernedSnapshotMutation(before, after []string) bool {
-	seen := make(map[string]bool, len(before))
+// HasGovernedSnapshotMutation reports whether a Governed Path appears in only
+// one of two snapshots. Comparing the sets in both directions classifies a
+// removed or renamed source without interpreting Git's rename records.
+func HasGovernedSnapshotMutation(before, after []string) bool {
+	beforeSet := make(map[string]struct{}, len(before))
 	for _, path := range before {
-		seen[path] = true
+		beforeSet[path] = struct{}{}
 	}
+	afterSet := make(map[string]struct{}, len(after))
 	for _, path := range after {
-		if !seen[path] && speccheck.GovernedPath(path) {
+		afterSet[path] = struct{}{}
+		if _, present := beforeSet[path]; !present && speccheck.GovernedPath(path) {
+			return true
+		}
+	}
+	for _, path := range before {
+		if _, present := afterSet[path]; !present && speccheck.GovernedPath(path) {
 			return true
 		}
 	}
@@ -2554,7 +2564,7 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 		changed = ensureCommitPath(changed, artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, qaTask.File)))
 	}
 	stageable, dropped := FilterStageablePaths(plan.WorkDir, changed)
-	governedMutation := hasGovernedSnapshotMutation(before, after)
+	governedMutation := HasGovernedSnapshotMutation(before, after)
 	if err := spec.RequireGovernedOperation(plan.Authorization, spec.AuthorizationOperationImplement, governedMutation); err != nil {
 		return fmt.Errorf("refuse QA Task %s governed mutation: %w", qaTask.ID, err)
 	}

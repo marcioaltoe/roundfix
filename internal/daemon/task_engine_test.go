@@ -3187,6 +3187,97 @@ func TestGovernedMutationRefusesMissingImplementAuthority(t *testing.T) {
 	}
 }
 
+func TestGovernedRemovalRequiresOperation(t *testing.T) {
+	t.Parallel()
+
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+	setTaskFixtureAuthorizationOperations(t, fixture, spec.AuthorizationOperationImplement)
+	fixture.worktree.snapshots = [][]string{{"Makefile"}, nil}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(
+		t,
+		&taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot},
+		&taskFakeVerifier{calls: fixture.calls},
+		committer,
+		fixture.worktree,
+	)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("governed removal refusal: %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 1 || len(result.Outcomes) != 1 {
+		t.Fatalf("governed removal result = %+v, want one failed Task", result)
+	}
+	for _, want := range []string{"commit", "docs/specs/" + taskCycleSlug + "/_authorization.md"} {
+		if !strings.Contains(result.Outcomes[0].Reason, want) {
+			t.Errorf("governed removal refusal = %q, want %q", result.Outcomes[0].Reason, want)
+		}
+	}
+	if len(committer.messages) != 0 {
+		t.Fatalf("governed removal wrote commits: %v", committer.messages)
+	}
+}
+
+func TestGovernedRenameClassifiesFromSource(t *testing.T) {
+	t.Parallel()
+
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+	setTaskFixtureAuthorizationOperations(t, fixture, spec.AuthorizationOperationImplement)
+	fixture.worktree.snapshots = [][]string{{"Makefile"}, {"internal/ordinary.go"}}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(
+		t,
+		&taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot},
+		&taskFakeVerifier{calls: fixture.calls},
+		committer,
+		fixture.worktree,
+	)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("governed rename refusal: %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 1 || len(result.Outcomes) != 1 {
+		t.Fatalf("governed rename result = %+v, want one failed Task", result)
+	}
+	for _, want := range []string{"commit", "docs/specs/" + taskCycleSlug + "/_authorization.md"} {
+		if !strings.Contains(result.Outcomes[0].Reason, want) {
+			t.Errorf("governed rename refusal = %q, want %q", result.Outcomes[0].Reason, want)
+		}
+	}
+	if len(committer.messages) != 0 {
+		t.Fatalf("governed rename wrote commits: %v", committer.messages)
+	}
+}
+
+func TestOrdinaryRemovalDoesNotRequireOperation(t *testing.T) {
+	t.Parallel()
+
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+	removeTaskFixtureAuthorization(t, fixture)
+	fixture.worktree.snapshots = [][]string{{"internal/ordinary.go"}, nil}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(
+		t,
+		&taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot},
+		&taskFakeVerifier{calls: fixture.calls},
+		committer,
+		fixture.worktree,
+	)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("ordinary removal without authorization: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 || len(committer.messages) != 1 {
+		t.Fatalf("ordinary removal result = %+v, commits = %v", result, committer.messages)
+	}
+}
+
 func TestCommitAndPushAuthorityAreSeparate(t *testing.T) {
 	t.Parallel()
 
@@ -6496,13 +6587,13 @@ func TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths(t *testing.T) {
 func TestGovernedMutationDetectionUsesTheUnfilteredSnapshot(t *testing.T) {
 	t.Parallel()
 
-	if !hasGovernedSnapshotMutation(nil, []string{".roundfixrc.yml"}) {
+	if !HasGovernedSnapshotMutation(nil, []string{".roundfixrc.yml"}) {
 		t.Fatal("expected excluded Project Config to remain a governed mutation")
 	}
-	if hasGovernedSnapshotMutation(nil, []string{"internal/ordinary.go"}) {
+	if HasGovernedSnapshotMutation(nil, []string{"internal/ordinary.go"}) {
 		t.Fatal("ordinary source was classified as a governed mutation")
 	}
-	if hasGovernedSnapshotMutation([]string{"Makefile"}, []string{"Makefile"}) {
+	if HasGovernedSnapshotMutation([]string{"Makefile"}, []string{"Makefile"}) {
 		t.Fatal("pre-existing governed work was classified as this Task's mutation")
 	}
 }
@@ -6522,22 +6613,22 @@ func TestGovernedMutationClassificationCharacterization(t *testing.T) {
 			want:  true,
 		},
 		{
-			name:   "removal is not yet a governed mutation",
+			name:   "removal is a governed mutation",
 			before: []string{".roundfixrc.yml"},
-			want:   false, // Task 02 changes this answer to true.
+			want:   true,
 		},
 		{
-			name:   "rename to an ungoverned path is not yet a governed mutation",
+			name:   "rename to an ungoverned path is a governed mutation",
 			before: []string{".roundfixrc.yml"},
 			after:  []string{"internal/ordinary.go"},
-			want:   false, // Task 02 changes this answer to true.
+			want:   true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := hasGovernedSnapshotMutation(tt.before, tt.after); got != tt.want {
-				t.Fatalf("hasGovernedSnapshotMutation(%v, %v) = %t, want %t", tt.before, tt.after, got, tt.want)
+			if got := HasGovernedSnapshotMutation(tt.before, tt.after); got != tt.want {
+				t.Fatalf("HasGovernedSnapshotMutation(%v, %v) = %t, want %t", tt.before, tt.after, got, tt.want)
 			}
 		})
 	}

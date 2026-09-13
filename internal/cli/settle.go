@@ -16,7 +16,6 @@ import (
 	"roundfix/internal/daemon"
 	"roundfix/internal/preflight"
 	"roundfix/internal/spec"
-	"roundfix/internal/speccheck"
 	"roundfix/internal/store"
 	runworktree "roundfix/internal/worktree"
 )
@@ -329,13 +328,7 @@ func readSettleAuthorization(ctx context.Context, plan settlePlan) spec.Authoriz
 }
 
 func requireSettleCommitAuthority(plan settlePlan, changed []string) error {
-	governedMutation := false
-	for _, path := range changed {
-		if speccheck.GovernedPath(path) {
-			governedMutation = true
-			break
-		}
-	}
+	governedMutation := daemon.HasGovernedSnapshotMutation(nil, changed)
 	if err := spec.RequireGovernedOperation(plan.authorization, spec.AuthorizationOperationCommit, governedMutation); err != nil {
 		return fmt.Errorf("refuse Settle commit: %w", err)
 	}

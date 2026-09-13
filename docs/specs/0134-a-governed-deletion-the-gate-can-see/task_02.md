@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0134-a-governed-deletion-the-gate-can-see
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -69,3 +69,49 @@ refuses, and every refusal that works today keeps its token.
 
 - `_prd.md` → Goals 1; Core Features 1-2, 4; Declared intentional breaks 1.
 - `_techspec.md` → Implementation Design: Symmetric classification; Build Order 2.
+
+## Result
+
+- Implemented one exported snapshot classifier that compares both path sets.
+  The Daemon's implementation and QA commit paths call it with their before and
+  after snapshots, and Settle calls it with the current changed-path snapshot.
+  The classifier does not inspect porcelain rename records.
+- Added Task-cycle regressions for a governed removal and a rename from a
+  governed source with `implement` authority but no `commit` authority, plus an
+  ordinary-source removal companion. Added a public Settle regression that
+  deletes a tracked `Makefile` and observes the preflight refusal before
+  Verification or mutation.
+- Pre-change signal: `rtk go test -count=1 ./internal/daemon ./internal/cli -run '^(TestGovernedRemovalRequiresOperation|TestGovernedRenameClassifiesFromSource|TestOrdinaryRemovalDoesNotRequireOperation|TestSettleClassifiesGovernedRemoval)$'`
+  was initially blocked by `operation not permitted` in the host Go build
+  cache. One unchanged retry with cache access ran the tests: the ordinary and
+  Settle cases passed, while the governed removal and rename each failed
+  because the Task settled with `Completed:1 Failed:0`.
+- Focused check after the implementation: the same four-test command exited 0
+  with 4 tests passing across `internal/daemon` and `internal/cli`.
+- Acceptance criterion 1: `TestGovernedRemovalRequiresOperation` now observes
+  one failed Task, the existing `commit` operation refusal text and the
+  `_authorization.md` path, with no commit written.
+- Acceptance criterion 2: `TestGovernedRenameClassifiesFromSource` supplies
+  `Makefile` only in the before snapshot and `internal/ordinary.go` only in the
+  after snapshot; it observes the same `commit` refusal with no commit written.
+- Acceptance criterion 3: `TestSettleClassifiesGovernedRemoval` exercises the
+  public command against a removed tracked `Makefile`. It observes exit 2 and
+  the existing `commit` refusal while stdout, Task content, HEAD and the dirty
+  deletion remain unchanged, and its Verification command does not execute.
+- Acceptance criterion 4: `TestOrdinaryRemovalDoesNotRequireOperation`
+  supplies `internal/ordinary.go` only in the before snapshot with no
+  authorization record; it observes one settled Task and one Task commit.
+- Acceptance criterion 5: `rtk go test -count=1 ./internal/daemon ./internal/cli ./internal/speccheck -run '^(TestGovernedMutationClassificationCharacterization|TestGovernedMutationDetectionUsesTheUnfilteredSnapshot|TestGovernedMutationRefusesMissingImplementAuthority|TestGovernedRemovalRequiresOperation|TestGovernedRenameClassifiesFromSource|TestOrdinaryRemovalDoesNotRequireOperation|TestSettleClassifiesGovernedRemoval|TestSettleRefusesMissingCommitAuthority|TestSettleCommitsOrdinaryWorkWithoutRecord|TestGovernedChangeStillRefusesWithoutRecord|TestAuditRefusesOutOfGrantUnderBothCitationForms|TestAuditRefusesSelfApprovalAndRetroactiveGrants)$'`
+  exited 0 with 21 tests and subtests passing across three packages. This keeps
+  the `QA-AUTH-PATHS` refusals for an out-of-grant path and a same-commit grant
+  edit, and the `authorization operation "implement" is not permitted`
+  refusal for a Spec without an authorization record.
+- The characterization's addition row remains unchanged. Only the removal and
+  governed-source rename rows moved from `false` to `true` and dropped their
+  Task 02 transition notes.
+- The Daemon-owned `## Verification` commands were not run in this Agent turn.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260913T221055Z_c70caa90b7bbad59`
+- Source commit: `c589e900dcc020edb62634db2aa5029aebde4e35`

@@ -1215,6 +1215,59 @@ func TestSettleRefusesMissingCommitAuthority(t *testing.T) {
 	assertNoRunDatabase(t, homeDir)
 }
 
+func TestSettleClassifiesGovernedRemoval(t *testing.T) {
+	t.Parallel()
+
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{
+			id:           "task_01",
+			title:        "Recover a governed removal",
+			status:       string(spec.StatusFailed),
+			verification: []string{"touch should-not-run"},
+		},
+	})
+	setImplementFixtureAuthorizationOperations(t, repoDir, "implement")
+	mustWrite(t, filepath.Join(repoDir, "Makefile"), "verify:\n\t@true\n")
+	gitImplement(t, repoDir, "add", "Makefile")
+	gitImplement(t, repoDir, "commit", "-m", "seed governed path")
+	if err := os.Remove(filepath.Join(repoDir, "Makefile")); err != nil {
+		t.Fatalf("remove governed path: %v", err)
+	}
+	taskPath := implementTaskPath(repoDir, "task_01")
+	taskBefore := mustRead(t, taskPath)
+	statusBefore := gitSettleOutput(t, repoDir, "status", "--porcelain=v1")
+	headBefore := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "HEAD"))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("governed removal settle exit = %d, want %d; stdout=%q stderr=%q", code, exitPreflight, stdout.String(), stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("governed removal settle stdout = %q, want empty", stdout.String())
+	}
+	for _, want := range []string{"commit", "docs/specs/" + implementTestSlug + "/_authorization.md"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Errorf("governed removal settle refusal = %q, want %q", stderr.String(), want)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(repoDir, "should-not-run")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("governed removal settle executed Verification, stat error %v", err)
+	}
+	if got := mustRead(t, taskPath); got != taskBefore {
+		t.Fatal("governed removal settle changed task file")
+	}
+	if got := gitSettleOutput(t, repoDir, "status", "--porcelain=v1"); got != statusBefore {
+		t.Fatalf("governed removal settle changed status from %q to %q", statusBefore, got)
+	}
+	if got := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "HEAD")); got != headBefore {
+		t.Fatalf("governed removal settle changed HEAD from %s to %s", headBefore, got)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
 func TestSettleCommitsOrdinaryWorkWithoutRecord(t *testing.T) {
 	t.Parallel()
 
