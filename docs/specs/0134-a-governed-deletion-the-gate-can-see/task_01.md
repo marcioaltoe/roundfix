@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0134-a-governed-deletion-the-gate-can-see
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -56,3 +56,35 @@ next Task moves.
 
 - `_prd.md` → Regression locks.
 - `_techspec.md` → Testing Approach observation 1; Build Order 1.
+
+## Result
+
+- Added `TestGovernedMutationClassificationCharacterization` at the existing
+  Daemon classifier seam. Its table records addition as `true`, removal as
+  `false`, and rename from a governed path to an ordinary path as `false`.
+  The removal and rename rows state that Task 02 changes their answers to
+  `true`; production classifier behavior is unchanged.
+- Pre-change signal: `rtk rg -n '^func TestGovernedMutationClassificationCharacterization' internal/daemon/task_engine_test.go`
+  exited 1 because the characterization did not yet exist.
+- Focused check: `rtk go test -count=1 ./internal/daemon -run '^(TestGovernedMutationClassificationCharacterization|TestGovernedMutationDetectionUsesTheUnfilteredSnapshot|TestTaskCycleFixtureSeedIsCreatedOnce)$'`
+  was initially blocked before test execution by `operation not permitted` in
+  the host Go build cache. One unchanged retry with cache access passed all 6
+  selected tests and subtests.
+- Acceptance criterion 1: the passing `addition is a governed mutation`
+  subtest asserts the current `true` answer.
+- Acceptance criterion 2: the passing
+  `removal is not yet a governed mutation` subtest asserts the current `false`
+  answer and marks Task 02 as the owner of the change to `true`.
+- Acceptance criterion 3: the passing
+  `rename to an ungoverned path is not yet a governed mutation` subtest asserts
+  the current `false` answer and marks Task 02 as the owner of the change to
+  `true`.
+- Acceptance criterion 4: the edit appends the characterization without
+  changing an existing assertion. `rtk go test -count=1 ./internal/daemon`
+  passed all 303 package tests after the edit.
+- The Daemon-owned `## Verification` commands were not run in this Agent turn.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260913T221055Z_c70caa90b7bbad59`
+- Source commit: `e57f096376ce6ad04b1fc873136154df53cdf577`

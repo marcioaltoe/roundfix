@@ -6507,6 +6507,42 @@ func TestGovernedMutationDetectionUsesTheUnfilteredSnapshot(t *testing.T) {
 	}
 }
 
+func TestGovernedMutationClassificationCharacterization(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		before []string
+		after  []string
+		want   bool
+	}{
+		{
+			name:  "addition is a governed mutation",
+			after: []string{".roundfixrc.yml"},
+			want:  true,
+		},
+		{
+			name:   "removal is not yet a governed mutation",
+			before: []string{".roundfixrc.yml"},
+			want:   false, // Task 02 changes this answer to true.
+		},
+		{
+			name:   "rename to an ungoverned path is not yet a governed mutation",
+			before: []string{".roundfixrc.yml"},
+			after:  []string{"internal/ordinary.go"},
+			want:   false, // Task 02 changes this answer to true.
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := hasGovernedSnapshotMutation(tt.before, tt.after); got != tt.want {
+				t.Fatalf("hasGovernedSnapshotMutation(%v, %v) = %t, want %t", tt.before, tt.after, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestTaskCommitDropsSymlinkCrossingTaskFileAndCommitsRepositoryPaths(t *testing.T) {
 	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
