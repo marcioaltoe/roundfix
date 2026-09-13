@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0133-a-fixture-that-does-not-spawn-per-test
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -76,3 +76,49 @@ no tooling grant.
 - `_prd.md` → User Stories 3-4; Core Features 4-7; Decisions: Regression locks.
 - `_techspec.md` → Risks & Considerations.
 - Spec 0132 qa/qa-report-2026-09-11-01.md → the passing gate this Task must not regress.
+
+## Result
+
+### Implementation
+
+- The package now initializes and commits one Task-cycle repository seed behind
+  `sync.Once`, snapshots its regular files into an immutable in-memory file
+  system, and copies that history into each fixture without a Git process.
+- `newTaskCycleFixture` overlays each journey's Task source on its private copy.
+  Tests can still write and commit independently, while the real authorization
+  reader resolves the authorization record from the copied commit.
+- `TestTaskCycleFixtureSeedIsCreatedOnce` creates two fixtures with different
+  Task graphs and asserts one seed creation, shared seed identity, distinct Git
+  roots, isolated writes, isolated graphs, and committed authorization
+  provenance.
+
+### Focused checks
+
+- Red signal: `rtk go test ./internal/daemon -run 'TaskCycleFixtureSeedIsCreatedOnce' -count=1`
+  reached the expected build failure on the missing seed seam after one
+  unchanged retry with Go cache access.
+- `rtk go test ./internal/daemon -run 'TaskCycleFixtureSeedIsCreatedOnce' -count=1`
+  passed after the implementation (1 test).
+- `rtk go test ./internal/daemon ./internal/spec -run 'TaskCycleFixtureSeedIsCreatedOnce|External|Symlink|OperationAuthorityReportsUnresolvableSpecRoot|Test(Task|Governed|Commit|Verification)' -count=1`
+  passed after the last code edit (144 tests in 2 packages). This selection
+  includes the three named external/symlink journeys and the existing refusal
+  for a Spec Root without Git provenance.
+- `rtk git diff --check` passed.
+
+### Acceptance evidence
+
+1. Source inspection after the edit shows `newTaskCycleFixture` calls only the
+   shared seed accessor and filesystem copy before writing its journey data; it
+   contains no `InitRepo`, `git add`, or `git commit` call.
+2. The named regression test observes two fixture constructions and requires
+   `taskCycleFixtureSeedCreations == 1` plus identical seed pointers.
+3. The 144-test focused run exercised the external Task settlement, external QA
+   Report, symlink-crossing commit, and unresolvable Spec Root cases through
+   their real Git boundaries.
+4. The focused Task-cycle run completed in 4.80 seconds including 144 selected
+   tests across two packages. The full concurrent Daemon-package timing remains
+   for Daemon-owned authored Verification.
+5. The changed-path inspection under `internal/` names only
+   `internal/daemon/task_engine_test.go`; the diff adds no deadline, time budget,
+   parallelism change, or skip. The only other changed path is this assigned
+   Task file, whose pre-existing status edit remains Daemon-owned.

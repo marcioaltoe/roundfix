@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"testing/fstest"
 	"time"
 
 	"roundfix/internal/agent"
@@ -125,9 +126,77 @@ type taskSpecSeed struct {
 	verification []string
 }
 
+type taskCycleRepositorySeed struct {
+	files fstest.MapFS
+}
+
+var (
+	taskCycleFixtureSeedOnce      sync.Once
+	taskCycleFixtureSeedValue     *taskCycleRepositorySeed
+	taskCycleFixtureSeedCreations int
+)
+
+func taskCycleFixtureSeedForTest(t *testing.T) *taskCycleRepositorySeed {
+	t.Helper()
+	taskCycleFixtureSeedOnce.Do(func() {
+		gitRoot := t.TempDir()
+		gittest.InitRepo(t, gitRoot, "--initial-branch=main")
+		writeSpecDirForTest(t, gitRoot, taskCycleSlug, nil)
+		gittest.Run(t, gitRoot, "add", "-A")
+		gittest.Run(t, gitRoot, "commit", "-m", "seed committed Task source")
+
+		files := fstest.MapFS{}
+		if err := filepath.WalkDir(gitRoot, func(path string, entry os.DirEntry, walkErr error) error {
+			if walkErr != nil {
+				return walkErr
+			}
+			if entry.IsDir() {
+				return nil
+			}
+			info, err := entry.Info()
+			if err != nil {
+				return err
+			}
+			if !info.Mode().IsRegular() {
+				return fmt.Errorf("fixture seed path %q has unsupported mode %s", path, info.Mode())
+			}
+			content, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			relative, err := filepath.Rel(gitRoot, path)
+			if err != nil {
+				return err
+			}
+			files[filepath.ToSlash(relative)] = &fstest.MapFile{
+				Data:    content,
+				Mode:    info.Mode(),
+				ModTime: info.ModTime(),
+			}
+			return nil
+		}); err != nil {
+			t.Fatalf("snapshot Task-cycle fixture seed: %v", err)
+		}
+		taskCycleFixtureSeedValue = &taskCycleRepositorySeed{files: files}
+		taskCycleFixtureSeedCreations++
+	})
+	if taskCycleFixtureSeedValue == nil {
+		t.Fatal("Task-cycle fixture seed was not created")
+	}
+	return taskCycleFixtureSeedValue
+}
+
+func (seed *taskCycleRepositorySeed) copyTo(t *testing.T, destination string) {
+	t.Helper()
+	if err := os.CopyFS(destination, seed.files); err != nil {
+		t.Fatalf("copy Task-cycle fixture seed: %v", err)
+	}
+}
+
 type taskCycleFixture struct {
 	t           *testing.T
 	seeds       []taskSpecSeed
+	fixtureSeed *taskCycleRepositorySeed
 	store       *store.Store
 	run         store.Run
 	gitRoot     string
@@ -156,16 +225,50 @@ func (runner *taskFakeGHRunner) RunGH(_ context.Context, workDir string, args ..
 	return runner.output, runner.err
 }
 
+func TestTaskCycleFixtureSeedIsCreatedOnce(t *testing.T) {
+	t.Parallel()
+	first := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+	second := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_02"}})
+
+	if first.fixtureSeed != second.fixtureSeed {
+		t.Fatal("Task-cycle fixtures did not reuse the package seed")
+	}
+	if taskCycleFixtureSeedCreations != 1 {
+		t.Fatalf("Task-cycle fixture seed creations = %d, want 1", taskCycleFixtureSeedCreations)
+	}
+	if first.gitRoot == second.gitRoot {
+		t.Fatalf("Task-cycle fixtures share writable repository %q", first.gitRoot)
+	}
+	if len(first.graph.Tasks) != 1 || len(second.graph.Tasks) != 1 {
+		t.Fatalf("Task-cycle fixture graph sizes leaked across copies: first=%d second=%d", len(first.graph.Tasks), len(second.graph.Tasks))
+	}
+	if first.graph.Tasks[0].ID != "task_01" || second.graph.Tasks[0].ID != "task_02" {
+		t.Fatalf("Task-cycle fixture graphs leaked across copies: first=%s second=%s", first.graph.Tasks[0].ID, second.graph.Tasks[0].ID)
+	}
+
+	marker := filepath.Join(first.gitRoot, "first-fixture-only")
+	mustWriteForTest(t, marker, "private\n")
+	if _, err := os.Stat(filepath.Join(second.gitRoot, "first-fixture-only")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("Task-cycle fixture copy observed another fixture's write: %v", err)
+	}
+
+	for _, fixture := range []*taskCycleFixture{first, second} {
+		plan := fixture.plan()
+		if plan.Authorization.Outcome != spec.AuthorizationGranted || plan.Authorization.Record.Source.Revision != plan.HeadSHA {
+			t.Fatalf("Task-cycle fixture authorization did not resolve committed provenance: %#v", plan.Authorization)
+		}
+	}
+}
+
 func newTaskCycleFixture(t *testing.T, seeds []taskSpecSeed) *taskCycleFixture {
 	t.Helper()
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	gitRoot := t.TempDir()
 	artifactDir := filepath.Join(t.TempDir(), "artifacts")
-	gittest.InitRepo(t, gitRoot, "--initial-branch=main")
+	fixtureSeed := taskCycleFixtureSeedForTest(t)
+	fixtureSeed.copyTo(t, gitRoot)
 	writeSpecDirForTest(t, gitRoot, taskCycleSlug, seeds)
-	gittest.Run(t, gitRoot, "add", "-A")
-	gittest.Run(t, gitRoot, "commit", "-m", "seed committed Task source")
 
 	runStore, err := store.Open(ctx, homeDir)
 	if err != nil {
@@ -193,6 +296,7 @@ func newTaskCycleFixture(t *testing.T, seeds []taskSpecSeed) *taskCycleFixture {
 	return &taskCycleFixture{
 		t:           t,
 		seeds:       append([]taskSpecSeed(nil), seeds...),
+		fixtureSeed: fixtureSeed,
 		store:       runStore,
 		run:         run,
 		gitRoot:     gitRoot,
