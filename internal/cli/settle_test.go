@@ -1179,7 +1179,7 @@ func TestSettleRefusesMissingCommitAuthority(t *testing.T) {
 		},
 	})
 	setImplementFixtureAuthorizationOperations(t, repoDir, "implement", "push")
-	mustWrite(t, filepath.Join(repoDir, "done.txt"), "preserved work\n")
+	mustWrite(t, filepath.Join(repoDir, "Makefile"), "verify:\n\t@true\n")
 	taskPath := implementTaskPath(repoDir, "task_01")
 	taskBefore := mustRead(t, taskPath)
 	statusBefore := gitSettleOutput(t, repoDir, "status", "--porcelain=v1")
@@ -1213,6 +1213,36 @@ func TestSettleRefusesMissingCommitAuthority(t *testing.T) {
 		t.Fatalf("missing commit authority changed HEAD from %s to %s", headBefore, got)
 	}
 	assertNoRunDatabase(t, homeDir)
+}
+
+func TestSettleCommitsOrdinaryWorkWithoutRecord(t *testing.T) {
+	t.Parallel()
+
+	_, repoDir := newImplementWorkspace(t, []implementSeed{
+		{
+			id:           "task_01",
+			title:        "Recover ordinary work",
+			status:       string(spec.StatusFailed),
+			verification: []string{"test -f done.txt"},
+		},
+	})
+	removeImplementFixtureAuthorization(t, repoDir)
+	mustWrite(t, filepath.Join(repoDir, "done.txt"), "preserved work\n")
+	headBefore := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "HEAD"))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("ordinary settle without authorization exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+	}
+	if got := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "HEAD")); got == headBefore {
+		t.Fatalf("ordinary settle without authorization left HEAD at %s", got)
+	}
+	if !strings.Contains(stdout.String(), "commit done.txt") {
+		t.Fatalf("ordinary settle stdout = %q, want committed path", stdout.String())
+	}
 }
 
 func TestSettleVerificationFailureKeepsHookRefusedWorkInTaskWorktree(t *testing.T) {

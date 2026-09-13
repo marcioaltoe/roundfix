@@ -16,6 +16,7 @@ import (
 	"roundfix/internal/daemon"
 	"roundfix/internal/preflight"
 	"roundfix/internal/spec"
+	"roundfix/internal/speccheck"
 	"roundfix/internal/store"
 	runworktree "roundfix/internal/worktree"
 )
@@ -309,7 +310,11 @@ func preflightSettle(ctx context.Context, req settleRequest, stderr io.Writer, e
 		return settlePlan{}, err
 	}
 	plan.authorization = readSettleAuthorization(ctx, plan)
-	if err := requireSettleCommitAuthority(plan); err != nil {
+	changed, err := (daemon.GitWorktreeSnapshotter{}).Snapshot(ctx, plan.workDir)
+	if err != nil {
+		return settlePlan{}, err
+	}
+	if err := requireSettleCommitAuthority(plan, changed); err != nil {
 		return settlePlan{}, validationError{message: err.Error()}
 	}
 	return plan, nil
@@ -323,8 +328,15 @@ func readSettleAuthorization(ctx context.Context, plan settlePlan) spec.Authoriz
 	return spec.ReadSpecAuthorization(ctx, plan.userRoot, plan.specsRoot, plan.graph.Spec.Slug, revision)
 }
 
-func requireSettleCommitAuthority(plan settlePlan) error {
-	if err := spec.RequireOperation(plan.authorization, spec.AuthorizationOperationCommit); err != nil {
+func requireSettleCommitAuthority(plan settlePlan, changed []string) error {
+	governedMutation := false
+	for _, path := range changed {
+		if speccheck.GovernedPath(path) {
+			governedMutation = true
+			break
+		}
+	}
+	if err := spec.RequireGovernedOperation(plan.authorization, spec.AuthorizationOperationCommit, governedMutation); err != nil {
 		return fmt.Errorf("refuse Settle commit: %w", err)
 	}
 	return nil
@@ -587,7 +599,11 @@ type settleStagedPath struct {
 // status flip is written before staging so it rides in the same commit as the
 // code changes (ADR 0013), the way the Daemon's own Task commit carries it.
 func settleTaskAndCommit(ctx context.Context, plan settlePlan, collaborators engineCollaborators) (settleCommitResult, error) {
-	if err := requireSettleCommitAuthority(plan); err != nil {
+	changed, err := (daemon.GitWorktreeSnapshotter{}).Snapshot(ctx, plan.workDir)
+	if err != nil {
+		return settleCommitResult{}, err
+	}
+	if err := requireSettleCommitAuthority(plan, changed); err != nil {
 		return settleCommitResult{}, err
 	}
 	taskPath := filepath.Join(plan.specsRoot, plan.task.File)

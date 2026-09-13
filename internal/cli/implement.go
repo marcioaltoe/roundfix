@@ -190,10 +190,6 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitOK
 	}
 	authorization := spec.ReadSpecAuthorization(ctx, gitState.Root, checkoutSpecsRoot, graph.Spec.Slug, gitState.HEAD)
-	if err := spec.RequireOperation(authorization, spec.AuthorizationOperationImplement); err != nil {
-		printPreflightFailure("implement", err, stderr)
-		return exitPreflight
-	}
 	defaultBranch := preflight.DetectDefaultBranch(ctx, gitState.Root, gitState.Branch, nil)
 	if defaultBranch.IsDefault(gitState.Branch) {
 		printPreflightFailure("implement", validationError{message: fmt.Sprintf(
@@ -869,11 +865,12 @@ func maybeRunImplementAutoPush(ctx context.Context, gitState preflight.GitState,
 		return implementPushResult{}, err
 	}
 	if err := engine.FinalPush(ctx, daemon.FinalPushRequest{
-		RunID:         runID,
-		WorkDir:       gitState.Root,
-		Remote:        remote,
-		Branch:        branch,
-		Authorization: &authorization,
+		RunID:            runID,
+		WorkDir:          gitState.Root,
+		Remote:           remote,
+		Branch:           branch,
+		Authorization:    &authorization,
+		GovernedMutation: authorization.Outcome == spec.AuthorizationGranted,
 	}); err != nil {
 		summary := fmt.Sprintf("Spec Run push failed: git push %s HEAD:%s: %v", remote, branch, err)
 		publishPushDecision(ctx, ui.sink, runID, "failed", summary, 0)

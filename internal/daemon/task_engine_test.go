@@ -426,6 +426,15 @@ func setTaskFixtureAuthorizationOperations(t *testing.T, fixture *taskCycleFixtu
 	commitTaskFixtureSource(t, fixture.gitRoot, "change fixture operation authority")
 }
 
+func removeTaskFixtureAuthorization(t *testing.T, fixture *taskCycleFixture) {
+	t.Helper()
+	path := filepath.Join(fixture.gitRoot, "docs", "specs", taskCycleSlug, "_authorization.md")
+	if err := os.Remove(path); err != nil {
+		t.Fatalf("remove fixture authorization: %v", err)
+	}
+	commitTaskFixtureSource(t, fixture.gitRoot, "remove fixture authorization")
+}
+
 func taskSeedsWithQAGate(seeds []taskSpecSeed) ([]taskSpecSeed, string) {
 	for _, seed := range seeds {
 		if seed.taskType == string(spec.TaskTypeQA) {
@@ -3034,66 +3043,43 @@ func TestTaskCycleValidatesPlan(t *testing.T) {
 	}
 }
 
-func TestDispatchRefusesMissingImplementAuthority(t *testing.T) {
+func TestGovernedMutationRefusesMissingImplementAuthority(t *testing.T) {
 	t.Parallel()
 
-	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}, {id: "task_02"}})
-	setTaskFixtureAuthorizationOperations(t, fixture)
-	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+	removeTaskFixtureAuthorization(t, fixture)
+	runner := &taskFakeRunner{
+		calls:       fixture.calls,
+		gitRoot:     fixture.gitRoot,
+		writeByTask: map[string]string{"task_01": "Makefile"},
+	}
 	verifier := &taskFakeVerifier{calls: fixture.calls}
 	committer := &engineFakeCommitter{calls: fixture.calls}
-	taskWorktrees := newFakeTaskWorktrees()
-	engine := fixture.engineWithTaskWorktrees(t, runner, verifier, committer, fixture.worktree, taskWorktrees)
+	engine := fixture.engine(t, runner, verifier, committer, GitWorktreeSnapshotter{})
 	plan := fixture.plan()
-	plan.Concurrency = 2
-	stateBefore := runStateForTest(fixture.store, fixture.run.ID)
 	headBefore := strings.TrimSpace(gittest.Run(t, fixture.gitRoot, "rev-parse", "HEAD"))
 
 	result, err := engine.TaskCycle(context.Background(), plan)
 
-	if err == nil {
-		t.Fatal("expected missing implement authority to refuse dispatch")
+	if err != nil {
+		t.Fatalf("governed mutation refusal: %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 1 || len(result.Outcomes) != 1 {
+		t.Fatalf("governed mutation result = %+v, want one failed Task", result)
 	}
 	for _, want := range []string{"implement", "docs/specs/" + taskCycleSlug + "/_authorization.md"} {
-		if !strings.Contains(err.Error(), want) {
-			t.Fatalf("dispatch refusal = %q, want %q", err, want)
+		if !strings.Contains(result.Outcomes[0].Reason, want) {
+			t.Fatalf("governed mutation refusal = %q, want %q", result.Outcomes[0].Reason, want)
 		}
 	}
-	if result.Completed != 0 || result.Failed != 0 || result.Skipped != 0 || result.QAVerdict != "" || result.QAReportPath != "" || len(result.Outcomes) != 0 {
-		t.Fatalf("dispatch refusal returned Task result %+v", result)
-	}
-	if len(*fixture.calls) != 0 || len(verifier.commands) != 0 || len(committer.messages) != 0 || len(fixture.pusher.remotes) != 0 {
-		t.Fatalf("dispatch refusal left Agent, shell, commit, or push calls: calls=%v verify=%v commits=%v pushes=%v", *fixture.calls, verifier.commands, committer.messages, fixture.pusher.remotes)
-	}
-	if len(runner.requests) != 0 {
-		t.Fatalf("dispatch refusal opened Agent work: %+v", runner.requests)
-	}
-	if created := taskWorktrees.createdTasks(); len(created) != 0 {
-		t.Fatalf("dispatch refusal created Task Worktrees: %v", created)
-	}
-	attempts, attemptsErr := fixture.store.AgentSelectionAttempts(context.Background(), fixture.run.ID)
-	if attemptsErr != nil {
-		t.Fatalf("read Agent Session attempts: %v", attemptsErr)
-	}
-	if len(attempts) != 0 {
-		t.Fatalf("dispatch refusal recorded Agent Sessions: %+v", attempts)
-	}
-	if events := fixture.sink.snapshot(); len(events) != 0 {
-		t.Fatalf("dispatch refusal published Run Events: %+v", events)
-	}
-	if fixture.progress.Len() != 0 {
-		t.Fatalf("dispatch refusal wrote progress: %q", fixture.progress.String())
-	}
-	if got := runStateForTest(fixture.store, fixture.run.ID); got != stateBefore {
-		t.Fatalf("dispatch refusal changed Run state from %q to %q", stateBefore, got)
+	if len(runner.requests) != 1 || len(committer.messages) != 0 {
+		t.Fatalf("governed mutation calls: Agent=%d commits=%v", len(runner.requests), committer.messages)
 	}
 	if got := strings.TrimSpace(gittest.Run(t, fixture.gitRoot, "rev-parse", "HEAD")); got != headBefore {
-		t.Fatalf("dispatch refusal changed HEAD from %s to %s", headBefore, got)
+		t.Fatalf("governed mutation refusal changed HEAD from %s to %s", headBefore, got)
 	}
-	for _, taskID := range []string{"task_01", "task_02"} {
-		if got := taskStatusOnDisk(t, fixture.gitRoot, taskID); got != string(spec.StatusPending) {
-			t.Fatalf("dispatch refusal changed %s status to %q", taskID, got)
-		}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusFailed) {
+		t.Fatalf("governed mutation refusal task status = %q, want %q", got, spec.StatusFailed)
 	}
 }
 
@@ -3103,8 +3089,13 @@ func TestCommitAndPushAuthorityAreSeparate(t *testing.T) {
 	t.Run("implement without commit settles unresolved", func(t *testing.T) {
 		fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 		setTaskFixtureAuthorizationOperations(t, fixture, spec.AuthorizationOperationImplement)
+		runner := &taskFakeRunner{
+			calls:       fixture.calls,
+			gitRoot:     fixture.gitRoot,
+			writeByTask: map[string]string{"task_01": "Makefile"},
+		}
 		committer := &engineFakeCommitter{calls: fixture.calls}
-		engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+		engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, GitWorktreeSnapshotter{})
 		headBefore := strings.TrimSpace(gittest.Run(t, fixture.gitRoot, "rev-parse", "HEAD"))
 
 		result, err := engine.TaskCycle(context.Background(), fixture.plan())
@@ -3134,8 +3125,13 @@ func TestCommitAndPushAuthorityAreSeparate(t *testing.T) {
 			spec.AuthorizationOperationImplement,
 			spec.AuthorizationOperationCommit,
 		)
+		runner := &taskFakeRunner{
+			calls:       fixture.calls,
+			gitRoot:     fixture.gitRoot,
+			writeByTask: map[string]string{"task_01": "Makefile"},
+		}
 		committer := &engineFakeCommitter{calls: fixture.calls}
-		engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+		engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, GitWorktreeSnapshotter{})
 		plan := fixture.plan()
 
 		result, err := engine.TaskCycle(context.Background(), plan)
@@ -3147,11 +3143,12 @@ func TestCommitAndPushAuthorityAreSeparate(t *testing.T) {
 		}
 
 		err = engine.FinalPush(context.Background(), FinalPushRequest{
-			RunID:         fixture.run.ID,
-			WorkDir:       fixture.gitRoot,
-			Remote:        "origin",
-			Branch:        "feature",
-			Authorization: &plan.Authorization,
+			RunID:            fixture.run.ID,
+			WorkDir:          fixture.gitRoot,
+			Remote:           "origin",
+			Branch:           "feature",
+			Authorization:    &plan.Authorization,
+			GovernedMutation: true,
 		})
 		if err == nil {
 			t.Fatal("expected missing push authority to refuse push")
@@ -3163,6 +3160,40 @@ func TestCommitAndPushAuthorityAreSeparate(t *testing.T) {
 		}
 		if len(fixture.pusher.remotes) != 0 {
 			t.Fatalf("missing push authority reached Pusher: %v", fixture.pusher.remotes)
+		}
+	})
+
+	t.Run("ordinary work without a record commits and pushes", func(t *testing.T) {
+		fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+		removeTaskFixtureAuthorization(t, fixture)
+		runner := &taskFakeRunner{
+			calls:       fixture.calls,
+			gitRoot:     fixture.gitRoot,
+			writeByTask: map[string]string{"task_01": "internal/ordinary.go"},
+		}
+		committer := &engineFakeCommitter{calls: fixture.calls}
+		engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, GitWorktreeSnapshotter{})
+		plan := fixture.plan()
+
+		result, err := engine.TaskCycle(context.Background(), plan)
+		if err != nil {
+			t.Fatalf("ordinary Task cycle without authorization: %v", err)
+		}
+		if result.Completed != 1 || len(committer.messages) != 1 {
+			t.Fatalf("ordinary Task result = %+v, commits = %v", result, committer.messages)
+		}
+		if err := engine.FinalPush(context.Background(), FinalPushRequest{
+			RunID:            fixture.run.ID,
+			WorkDir:          fixture.gitRoot,
+			Remote:           "origin",
+			Branch:           "feature",
+			Authorization:    &plan.Authorization,
+			GovernedMutation: false,
+		}); err != nil {
+			t.Fatalf("ordinary push without authorization: %v", err)
+		}
+		if len(fixture.pusher.remotes) != 1 {
+			t.Fatalf("ordinary push calls = %v, want one", fixture.pusher.remotes)
 		}
 	})
 }
@@ -6323,7 +6354,11 @@ func TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths(t *testing.T) {
 	committer := &engineFakeCommitter{calls: fixture.calls}
 	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
 
-	err := engine.commitTask(context.Background(), fixture.plan(), fixture.graph.Tasks[0], 1, nil)
+	plan := fixture.plan()
+	preparation, err := engine.prepareTaskCommit(context.Background(), plan, fixture.graph.Tasks[0], nil)
+	if err == nil {
+		err = engine.commitTask(context.Background(), plan, fixture.graph.Tasks[0], 1, preparation)
+	}
 
 	if err != nil {
 		t.Fatalf("commitTask: %v", err)
@@ -6354,6 +6389,20 @@ func TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths(t *testing.T) {
 	}
 }
 
+func TestGovernedMutationDetectionUsesTheUnfilteredSnapshot(t *testing.T) {
+	t.Parallel()
+
+	if !hasGovernedSnapshotMutation(nil, []string{".roundfixrc.yml"}) {
+		t.Fatal("expected excluded Project Config to remain a governed mutation")
+	}
+	if hasGovernedSnapshotMutation(nil, []string{"internal/ordinary.go"}) {
+		t.Fatal("ordinary source was classified as a governed mutation")
+	}
+	if hasGovernedSnapshotMutation([]string{"Makefile"}, []string{"Makefile"}) {
+		t.Fatal("pre-existing governed work was classified as this Task's mutation")
+	}
+}
+
 func TestTaskCommitDropsSymlinkCrossingTaskFileAndCommitsRepositoryPaths(t *testing.T) {
 	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
@@ -6375,7 +6424,10 @@ func TestTaskCommitDropsSymlinkCrossingTaskFileAndCommitsRepositoryPaths(t *test
 	plan := fixture.plan()
 	plan.SpecsRoot = linkPath
 
-	err := engine.commitTask(context.Background(), plan, fixture.graph.Tasks[0], 1, nil)
+	preparation, err := engine.prepareTaskCommit(context.Background(), plan, fixture.graph.Tasks[0], nil)
+	if err == nil {
+		err = engine.commitTask(context.Background(), plan, fixture.graph.Tasks[0], 1, preparation)
+	}
 
 	if err != nil {
 		t.Fatalf("commitTask: %v", err)

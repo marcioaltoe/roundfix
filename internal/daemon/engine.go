@@ -555,11 +555,12 @@ type CycleResult struct {
 // Push gating policy (no Unresolved Review Issues, auto-push enabled) stays
 // with the caller.
 type FinalPushRequest struct {
-	RunID         string
-	WorkDir       string
-	Remote        string
-	Branch        string
-	Authorization *spec.AuthorizationResolution
+	RunID            string
+	WorkDir          string
+	Remote           string
+	Branch           string
+	Authorization    *spec.AuthorizationResolution
+	GovernedMutation bool
 }
 
 func NewEngine(deps Dependencies) (*Engine, error) {
@@ -685,7 +686,7 @@ func (engine *Engine) FinalPush(ctx context.Context, req FinalPushRequest) error
 		return err
 	}
 	if req.Authorization != nil {
-		if err := spec.RequireOperation(*req.Authorization, spec.AuthorizationOperationPush); err != nil {
+		if err := spec.RequireGovernedOperation(*req.Authorization, spec.AuthorizationOperationPush, req.GovernedMutation); err != nil {
 			return fmt.Errorf("refuse Spec Run push: %w", err)
 		}
 	}

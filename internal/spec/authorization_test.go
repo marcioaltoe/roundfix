@@ -234,6 +234,20 @@ operations:
 	}
 }
 
+func TestAuthorizationReaderRefusesEmptyPaths(t *testing.T) {
+	t.Parallel()
+
+	repoRoot, recordPath := writeAuthorizationRecord(t, authorizationDocumentWithPaths(nil))
+	resolved := ReadAuthorization(context.Background(), AuthorizationReadRequest{
+		RepoRoot: repoRoot, RecordPath: recordPath, Role: AuthorizationRoleSpec, AskingSpec: "asking-spec",
+	})
+	if resolved.Outcome != AuthorizationRefused ||
+		resolved.Reason.Code != AuthorizationReasonPaths ||
+		resolved.Reason.Field != "paths" {
+		t.Fatalf("empty paths resolution = %#v, want a paths refusal", resolved)
+	}
+}
+
 func TestAuthorizationReaderRefusesEscapingPaths(t *testing.T) {
 	symlinkRoot := t.TempDir()
 	outside := t.TempDir()

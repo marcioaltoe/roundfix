@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0133-a-fixture-that-does-not-spawn-per-test
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -85,3 +85,68 @@ behavior. Stop before any other mutation.
 - `_prd.md` → Goals 1, 3; User Stories 1-2; Core Features 1-3; Decisions: Declared intentional breaks 1.
 - `_techspec.md` → Implementation Design: Two authorities, stated apart; Build Order 1.
 - `_authorization.md` → approved bounded paths and sanctioned regeneration.
+
+## Result
+
+The canonical clause now says that a non-operative record grants no governed
+mutation and does not by itself refuse implementation, commit or push. The
+public Baseline update rendered that clause into the agent guide and refreshed
+the Setup Manifest. `make baseline-digests` produced the sanctioned pin updates;
+a repeat reported `changed: false`.
+
+The public Implement preflight no longer asks every Spec for `implement`.
+Before settlement, the Daemon now derives the Task's actual changed paths from
+the unfiltered worktree snapshots. It asks the unchanged operation gate for
+`implement` and `commit` only when that delta contains a Governed Path. Settle
+uses the same boundary for recovered commits, and Spec Run push authority is
+asked only when the resolved Spec authorization is operative. The existing
+changed-path audit in `internal/speccheck` was not changed.
+
+Focused checks and observations:
+
+- Before the production edit, the combined public-command regression run
+  reached both new tests and failed with exit 1: the ordinary Spec stopped in
+  Preflight on `authorization operation "implement" is not permitted`, and the
+  governed test recorded zero Agent calls. This reproduced the dispatch defect.
+- `rtk proxy env GOCACHE=/tmp/roundfix-go-build-0133-task-01 go test
+  ./internal/cli -run
+  'Test(ImplementDispatchesWithoutRecordWhenNoGovernedMutation|GovernedChangeStillRefusesWithoutRecord|SettleRefusesMissingCommitAuthority|SettleCommitsOrdinaryWorkWithoutRecord)'`
+  passed after the implementation.
+- `rtk proxy env GOCACHE=/tmp/roundfix-go-build-0133-task-01 go test
+  ./internal/authorization ./internal/spec ./internal/daemon` passed. The first
+  unchanged attempt reached a sandboxed GPG signing error in a real-repository
+  fixture; the permitted unchanged retry with access to the existing signing
+  environment exited 0.
+- `rtk proxy env GOCACHE=/tmp/roundfix-go-build-0133-task-01 go test
+  ./internal/cli ./internal/daemon` passed (`internal/cli` 71.763s,
+  `internal/daemon` 11.240s).
+- The final targeted regression run covered the authorization refusal identity,
+  empty-path validation, public Implement paths, Settle paths, Daemon
+  implement/commit/push separation and unfiltered Governed Path detection
+  across `internal/authorization`, `internal/spec`, `internal/cli` and
+  `internal/daemon`; all four packages exited 0.
+- The managed-refresh preview after regeneration returned `state: current` and
+  `fileChanges: []`. A second `rtk make baseline-digests` exited 0 and reported
+  that the derived artifacts already matched their canonical sources.
+
+Acceptance evidence:
+
+1. `TestImplementDispatchesWithoutRecordWhenNoGovernedMutation` removes the
+   record from committed provenance, invokes the public Implement command and
+   observes one Agent call plus a Clean command exit.
+2. `TestGovernedChangeStillRefusesWithoutRecord` changes `Makefile` through the
+   same public command, observes the Agent run, no commit, and the unchanged
+   `authorization operation "implement" is not permitted` condition naming the
+   canonical record path. `TestGovernedMutationRefusesMissingImplementAuthority`
+   locks the same boundary in the Daemon. A source diff confirms the mechanical
+   exact-path audit is untouched.
+3. `TestAuthorizationReaderRefusesEmptyPaths` observes a typed `paths` refusal
+   for an otherwise approved record whose `paths` list is empty.
+4. The canonical module and both rendered agent guides contain `grants no
+   governed mutation`; the public managed refresh converged to no file changes.
+5. `TestRequireGovernedOperationKeepsRefusalIdentity` compares the governed
+   refusal byte-for-byte with the existing `RequireOperation` error. The closed
+   operation constants and their existing vocabulary test were unchanged and
+   passed in the focused package checks.
+
+The commands under `## Verification` remain unrun for Daemon execution.

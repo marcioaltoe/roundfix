@@ -331,9 +331,6 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 	if err := validateTaskPlan(plan); err != nil {
 		return TaskCycleResult{}, err
 	}
-	if err := spec.RequireOperation(plan.Authorization, spec.AuthorizationOperationImplement); err != nil {
-		return TaskCycleResult{}, fmt.Errorf("task cycle: refuse Implement dispatch: %w", err)
-	}
 	taskPlan, qaTask, err := taskPlanWithoutQAGate(plan)
 	if err != nil {
 		return TaskCycleResult{}, err
@@ -958,8 +955,15 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 			}
 		}
 	}
+	var commit taskCommitPreparation
 	if failure == "" {
-		if authorizationErr := spec.RequireOperation(plan.Authorization, spec.AuthorizationOperationCommit); authorizationErr != nil {
+		commit, err = engine.prepareTaskCommit(ctx, plan, task, before)
+		if err != nil {
+			return "", "", err
+		}
+		if authorizationErr := spec.RequireGovernedOperation(plan.Authorization, spec.AuthorizationOperationImplement, commit.governedMutation); authorizationErr != nil {
+			failure = fmt.Sprintf("Task governed mutation refused: %v", authorizationErr)
+		} else if authorizationErr := spec.RequireGovernedOperation(plan.Authorization, spec.AuthorizationOperationCommit, commit.governedMutation); authorizationErr != nil {
 			failure = fmt.Sprintf("Task commit refused: %v", authorizationErr)
 		}
 	}
@@ -976,7 +980,7 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 		fmt.Fprintf(engine.deps.Progress, "Task %s failed: %s\n", task.ID, failure)
 		return settled, failure, nil
 	}
-	if err := engine.commitTask(ctx, plan, task, ordinal, before); err != nil {
+	if err := engine.commitTask(ctx, plan, task, ordinal, commit); err != nil {
 		return "", "", err
 	}
 	fmt.Fprintf(engine.deps.Progress, "Task %s completed.\n", task.ID)
@@ -1627,39 +1631,65 @@ func (engine *Engine) settleTask(ctx context.Context, plan TaskPlan, task spec.T
 	return nil
 }
 
-// commitTask creates the Task commit from the snapshot diff plus the task
-// file itself, so the settled status and Result section always ride in the
-// same commit as the code changes (ADR 0013).
-func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, before []string) error {
+type taskCommitPreparation struct {
+	stageable        []string
+	dropped          []DroppedStagePath
+	noOpShape        string
+	governedMutation bool
+}
+
+// prepareTaskCommit resolves the exact mutation before settlement so a
+// Governed Path can require authority without withholding ordinary work.
+func (engine *Engine) prepareTaskCommit(ctx context.Context, plan TaskPlan, task spec.Task, before []string) (taskCommitPreparation, error) {
+	after, err := engine.deps.Worktree.Snapshot(ctx, plan.WorkDir)
+	if err != nil {
+		return taskCommitPreparation{}, err
+	}
+	changed := ensureCommitPath(diffSnapshots(before, after), artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, task.File)))
+	stageable, dropped := FilterStageablePaths(plan.WorkDir, changed)
+	return taskCommitPreparation{
+		stageable:        stageable,
+		dropped:          dropped,
+		noOpShape:        taskNoOpCommitShape(plan, stageable),
+		governedMutation: hasGovernedSnapshotMutation(before, after),
+	}, nil
+}
+
+func hasGovernedSnapshotMutation(before, after []string) bool {
+	seen := make(map[string]bool, len(before))
+	for _, path := range before {
+		seen[path] = true
+	}
+	for _, path := range after {
+		if !seen[path] && speccheck.GovernedPath(path) {
+			return true
+		}
+	}
+	return false
+}
+
+// commitTask creates the prepared Task commit, including the task file so the
+// settled status and Result section ride with the code changes (ADR 0013).
+func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, preparation taskCommitPreparation) error {
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
 			return fmt.Errorf("publish stop event for run %q before Task %s commit: %w", plan.RunID, task.ID, errors.Join(err, publishErr))
 		}
 		return fmt.Errorf("stop run %q before Task %s commit: %w", plan.RunID, task.ID, err)
 	}
-	if err := spec.RequireOperation(plan.Authorization, spec.AuthorizationOperationCommit); err != nil {
-		return fmt.Errorf("refuse Task %s commit: %w", task.ID, err)
-	}
-	after, err := engine.deps.Worktree.Snapshot(ctx, plan.WorkDir)
-	if err != nil {
-		return err
-	}
-	changed := ensureCommitPath(diffSnapshots(before, after), artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, task.File)))
-	stageable, dropped := FilterStageablePaths(plan.WorkDir, changed)
-	for _, drop := range dropped {
+	for _, drop := range preparation.dropped {
 		if err := engine.publishDroppedStagePath(ctx, plan.RunID, ordinal, task.ID, "task file", drop); err != nil {
 			return err
 		}
 	}
-	noOpShape := taskNoOpCommitShape(plan, stageable)
-	if len(stageable) == 0 {
-		return engine.publishNoOpTaskCommitWarning(ctx, plan, task.ID, ordinal, noOpShape)
+	if len(preparation.stageable) == 0 {
+		return engine.publishNoOpTaskCommitWarning(ctx, plan, task.ID, ordinal, preparation.noOpShape)
 	}
 	message := TaskCommitMessage(plan.Spec.Slug, task)
 	if err := engine.deps.Committer.Commit(ctx, CommitRequest{
 		WorkDir: plan.WorkDir,
 		Message: message,
-		Paths:   stageable,
+		Paths:   preparation.stageable,
 	}); err != nil {
 		var refusal *HookRefusalError
 		if errors.As(err, &refusal) {
@@ -1671,12 +1701,12 @@ func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.T
 	fmt.Fprintf(engine.deps.Progress, "Task commit created: %s\n", subject)
 	if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonCommit,
 		fmt.Sprintf("Task commit created: %s", subject),
-		map[string]any{"decision": "created", "task": task.ID, "paths": len(stageable)},
+		map[string]any{"decision": "created", "task": task.ID, "paths": len(preparation.stageable)},
 	); err != nil {
 		return fmt.Errorf("publish commit event for run %q Task %s: %w", plan.RunID, task.ID, err)
 	}
-	if noOpShape != "" {
-		return engine.publishNoOpTaskCommitWarning(ctx, plan, task.ID, ordinal, noOpShape)
+	if preparation.noOpShape != "" {
+		return engine.publishNoOpTaskCommitWarning(ctx, plan, task.ID, ordinal, preparation.noOpShape)
 	}
 	return nil
 }
@@ -2512,9 +2542,6 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 		}
 		return fmt.Errorf("stop run %q before the QA Report commit: %w", plan.RunID, err)
 	}
-	if err := spec.RequireOperation(plan.Authorization, spec.AuthorizationOperationCommit); err != nil {
-		return fmt.Errorf("refuse QA Task %s commit: %w", qaTask.ID, err)
-	}
 	after, err := engine.deps.Worktree.Snapshot(ctx, plan.WorkDir)
 	if err != nil {
 		return err
@@ -2527,6 +2554,13 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 		changed = ensureCommitPath(changed, artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, qaTask.File)))
 	}
 	stageable, dropped := FilterStageablePaths(plan.WorkDir, changed)
+	governedMutation := hasGovernedSnapshotMutation(before, after)
+	if err := spec.RequireGovernedOperation(plan.Authorization, spec.AuthorizationOperationImplement, governedMutation); err != nil {
+		return fmt.Errorf("refuse QA Task %s governed mutation: %w", qaTask.ID, err)
+	}
+	if err := spec.RequireGovernedOperation(plan.Authorization, spec.AuthorizationOperationCommit, governedMutation); err != nil {
+		return fmt.Errorf("refuse QA Task %s commit: %w", qaTask.ID, err)
+	}
 	for _, drop := range dropped {
 		if err := engine.publishDroppedStagePath(ctx, plan.RunID, ordinal, "", "QA Report", drop); err != nil {
 			return err

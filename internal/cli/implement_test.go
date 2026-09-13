@@ -671,6 +671,16 @@ func setImplementFixtureAuthorizationOperations(t *testing.T, repoDir string, op
 	gitImplement(t, repoDir, "commit", "-m", "change fixture operation authority")
 }
 
+func removeImplementFixtureAuthorization(t *testing.T, repoDir string) {
+	t.Helper()
+	path := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "_authorization.md")
+	if err := os.Remove(path); err != nil {
+		t.Fatalf("remove fixture authorization: %v", err)
+	}
+	gitImplement(t, repoDir, "add", filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "_authorization.md")))
+	gitImplement(t, repoDir, "commit", "-m", "remove fixture authorization")
+}
+
 func TestImplementTaskContentChoosesVerificationByTaskType(t *testing.T) {
 	const authoredQACommand = "test -f authored-qa-report"
 
@@ -1898,45 +1908,63 @@ func TestRunImplementRejectsInvalidVerificationCapacityBeforeRunCreation(t *test
 	}
 }
 
-func TestRunImplementRefusesMissingImplementAuthorityBeforeRun(t *testing.T) {
+func TestImplementDispatchesWithoutRecordWhenNoGovernedMutation(t *testing.T) {
 	t.Parallel()
 
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
-	setImplementFixtureAuthorizationOperations(t, repoDir, "commit", "push")
-	runner := &implementFakeRunner{gitRoot: repoDir}
+	removeImplementFixtureAuthorization(t, repoDir)
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
 	withImplementCollaborators(t, runner)
-	statusBefore := gitImplementOutput(t, repoDir, "status", "--porcelain=v1")
-	headBefore := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
 	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
-	if code != exitPreflight {
-		t.Fatalf("missing implement authority exit = %d, want %d; stderr=%q", code, exitPreflight, stderr.String())
+	if code != exitOK {
+		t.Fatalf("implement without authorization exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
 	}
-	if stdout.Len() != 0 {
-		t.Fatalf("missing implement authority wrote stdout %q", stdout.String())
+	if runner.calls != 1 {
+		t.Fatalf("implement without authorization Agent calls = %d, want 1", runner.calls)
 	}
-	for _, want := range []string{"implement", "docs/specs/" + implementTestSlug + "/_authorization.md"} {
+	assertRunCount(t, store.DatabasePath(homeDir), 1)
+}
+
+func TestGovernedChangeStillRefusesWithoutRecord(t *testing.T) {
+	t.Parallel()
+
+	_, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	removeImplementFixtureAuthorization(t, repoDir)
+	runner := &implementFakeRunner{
+		gitRoot: repoDir,
+		onTask: func(req agent.ExecuteRequest, _ string) error {
+			return os.WriteFile(filepath.Join(req.GitRoot, "Makefile"), []byte("verify:\n\t@true\n"), 0o644)
+		},
+	}
+	committer, _, _, _ := withImplementCollaborators(t, runner)
+	overrideCollaborators(t, func(collaborators *engineCollaborators) {
+		collaborators.worktree = daemon.GitWorktreeSnapshotter{}
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code == exitOK {
+		t.Fatalf("governed change without authorization exit = %d; stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	if runner.calls != 1 {
+		t.Fatalf("governed change Agent calls = %d, want 1", runner.calls)
+	}
+	if committer.calls != 0 {
+		t.Fatalf("governed change without authorization created %d commits", committer.calls)
+	}
+	for _, want := range []string{"authorization operation \"implement\" is not permitted", "docs/specs/" + implementTestSlug + "/_authorization.md"} {
 		if !strings.Contains(stderr.String(), want) {
-			t.Errorf("missing implement authority stderr = %q, want %q", stderr.String(), want)
+			t.Errorf("governed change refusal = %q, want %q", stderr.String(), want)
 		}
-	}
-	if runner.calls != 0 || len(runner.probeRequests) != 0 {
-		t.Fatalf("missing implement authority reached Agent profile or work: probes=%v calls=%d", runner.probeRequests, runner.calls)
-	}
-	assertNoRunDatabase(t, homeDir)
-	if _, err := os.Stat(filepath.Join(homeDir, ".roundfix", "worktrees")); err == nil {
-		t.Fatalf("missing implement authority created a Run Worktree root")
-	} else if !errors.Is(err, os.ErrNotExist) {
-		t.Fatalf("stat Run Worktree root: %v", err)
-	}
-	if got := gitImplementOutput(t, repoDir, "status", "--porcelain=v1"); got != statusBefore {
-		t.Fatalf("missing implement authority changed git status from %q to %q", statusBefore, got)
-	}
-	if got := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD")); got != headBefore {
-		t.Fatalf("missing implement authority changed HEAD from %s to %s", headBefore, got)
 	}
 }
 

@@ -186,6 +186,16 @@ func RequireOperation(resolution AuthorizationResolution, operation Authorizatio
 	return fmt.Errorf("authorization operation %q is not permitted by record %q: %s", operation, resolution.Record.Source.Path, detail)
 }
 
+// RequireGovernedOperation asks for operation only when a Governed Path
+// mutation is at stake. The refusal delegates to RequireOperation so its
+// stable diagnostic remains unchanged.
+func RequireGovernedOperation(resolution AuthorizationResolution, operation AuthorizationOperation, governedMutation bool) error {
+	if !governedMutation {
+		return nil
+	}
+	return RequireOperation(resolution, operation)
+}
+
 // AuthorizationReadRequest names one working-tree or committed record. An
 // empty Revision reads the working tree. An empty AskingSpec validates the
 // record's intrinsic grant without narrowing it to one consumer.

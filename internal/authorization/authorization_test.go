@@ -135,6 +135,24 @@ func TestMissingAuthorizationEvidenceRemainsUnresolved(t *testing.T) {
 	})
 }
 
+func TestRequireGovernedOperationKeepsRefusalIdentity(t *testing.T) {
+	t.Parallel()
+
+	resolution := AuthorizationResolution{
+		Outcome: AuthorizationUnresolved,
+		Record:  AuthorizationRecord{Source: AuthorizationSource{Path: "docs/specs/missing/_authorization.md"}},
+		Reason:  AuthorizationReason{Detail: "record is absent from the revision"},
+	}
+	if err := RequireGovernedOperation(resolution, AuthorizationOperationImplement, false); err != nil {
+		t.Fatalf("ordinary mutation requires authorization: %v", err)
+	}
+	want := RequireOperation(resolution, AuthorizationOperationImplement).Error()
+	got := RequireGovernedOperation(resolution, AuthorizationOperationImplement, true)
+	if got == nil || got.Error() != want {
+		t.Fatalf("governed refusal = %v, want exact existing refusal %q", got, want)
+	}
+}
+
 func TestMalformedDelimiterRefuses(t *testing.T) {
 	t.Parallel()
 

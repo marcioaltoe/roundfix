@@ -240,3 +240,9 @@ func unresolvedSpecAuthorization(specsRoot string, specSlug string, field string
 func RequireOperation(resolution AuthorizationResolution, operation AuthorizationOperation) error {
 	return authorization.RequireOperation(resolution, operation)
 }
+
+// RequireGovernedOperation asks an already-resolved grant for one operation
+// only when a Governed Path mutation is at stake.
+func RequireGovernedOperation(resolution AuthorizationResolution, operation AuthorizationOperation, governedMutation bool) error {
+	return authorization.RequireGovernedOperation(resolution, operation, governedMutation)
+}
