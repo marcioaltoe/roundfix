@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0133-a-fixture-that-does-not-spawn-per-test
-status: pending
+status: failed
 type: qa
 complexity: medium
 ---
