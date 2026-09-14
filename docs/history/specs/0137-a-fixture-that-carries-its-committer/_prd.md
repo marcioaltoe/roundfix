@@ -1,9 +1,12 @@
 ---
 spec: 0137-a-fixture-that-carries-its-committer
-status: active
+status: archived
 created: 2026-09-14
 surfaces: [backend]
+archived: "2026-09-14"
+source_slug: 0137-a-fixture-that-carries-its-committer
 ---
+
 
 # A fixture that carries its committer
 
