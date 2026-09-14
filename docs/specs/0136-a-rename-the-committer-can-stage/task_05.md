@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0136-a-rename-the-committer-can-stage
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -64,3 +64,34 @@ also more correct with both sides present.
 - `_prd.md` → Goal 2; Core Feature 4; Regression locks.
 - `_techspec.md` → Implementation Design: A rename survives the diff too;
   Testing Approach observation 7; Build Order 4.
+
+## Result
+
+- Acceptance criterion 1: `PriorChangedFiles` now asks Git for
+  `--no-renames`, preserving the source deletion and destination addition as
+  separate changed paths. The real-Git regression initially returned only
+  `renamed.txt`; after the source change it returned `Makefile` and
+  `renamed.txt`.
+- Acceptance criterion 2: `TestFinalPushRefusesAGovernedRename` drives a real
+  committed `Makefile` rename through the production prior-changed resolver.
+  Before the source change the Implement flow exited successfully and made one
+  push; afterward it returned the existing push-authority refusal and made no
+  push call.
+- Acceptance criteria 3 and 4:
+  `TestFinalPushAuthorityFollowsTheChangedPaths` passed both its ordinary-Run
+  push case and direct governed-edit refusal case alongside the rename
+  regression. The tests assert the existing refusal text; no refusal token was
+  changed.
+- Focused check:
+  `rtk proxy go test -v -count=1 ./internal/worktree ./internal/cli -run 'Test(PriorChangedFilesReportsBothSidesOfARename|FinalPushRefusesAGovernedRename|FinalPushAuthorityFollowsTheChangedPaths)'`
+  passed after the implementation change.
+- Environment note: the first unchanged focused run inside the sandbox could
+  not open entries in the system Go build cache (`operation not permitted`).
+  The authorized unchanged retry reached the expected regression assertions;
+  later focused and broader runs used the same authorized cache access.
+- Broader affected-package check:
+  `rtk go test -count=1 ./internal/worktree ./internal/cli ./internal/speccheck`
+  passed 1,603 tests across all three packages, including the changed-path
+  audit's package.
+- `rtk git diff --check` passed. The Daemon-owned `## Verification` commands
+  were not run in this Agent turn.

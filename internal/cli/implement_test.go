@@ -1033,6 +1033,17 @@ func (resolver staticPriorChangedResolver) PriorChangedFiles(context.Context, st
 	return append([]string(nil), resolver.paths...), nil
 }
 
+type userCheckoutPriorChangedResolver struct {
+	root string
+}
+
+func (resolver userCheckoutPriorChangedResolver) PriorChangedFiles(ctx context.Context, workDir string, initialHead string) ([]string, error) {
+	if filepath.Clean(workDir) != filepath.Clean(resolver.root) {
+		return nil, nil
+	}
+	return (daemon.GitPriorChangedResolver{}).PriorChangedFiles(ctx, workDir, initialHead)
+}
+
 func withPriorChangedResolver(t *testing.T, resolver daemon.PriorChangedResolver) {
 	overrideCollaborators(t, func(collaborators *engineCollaborators) {
 		collaborators.priorChanges = resolver
@@ -3459,6 +3470,54 @@ func TestFinalPushAuthorityFollowsTheChangedPaths(t *testing.T) {
 			assertNoActiveRunInGitRoot(t, homeDir, repoDir)
 		})
 	}
+}
+
+// Invariant: a governed rename remains governed when the final push reads the
+// integrated Run's real Git history.
+// Owning layer: Implement CLI integration through the prior-changed reader.
+// Existing canonical suite: TestFinalPushAuthorityFollowsTheChangedPaths.
+func TestFinalPushRefusesAGovernedRename(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	configureImplementAutoPush(t, repoDir, true)
+	configureImplementUpstream(t, repoDir, "origin", "ma/widget-flow")
+	setImplementFixtureAuthorizationOperations(t, repoDir, "implement", "commit")
+	mustWrite(t, filepath.Join(repoDir, "Makefile"), "verify:\n\tgo test ./...\n")
+	gitImplement(t, repoDir, "add", "Makefile")
+	gitImplement(t, repoDir, "commit", "-m", "add governed source")
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	_, _, pusher, _ := withImplementCollaborators(t, runner)
+	withPriorChangedResolver(t, userCheckoutPriorChangedResolver{root: repoDir})
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.integrateRunWorktree = func(_ context.Context, ref runworktree.Ref, _ string, _ string) (runworktree.IntegrationResult, error) {
+			if err := copyDir(filepath.Join(ref.Path, "docs"), filepath.Join(ref.UserRoot, "docs")); err != nil {
+				return runworktree.IntegrationResult{}, err
+			}
+			gitImplement(t, ref.UserRoot, "mv", "Makefile", "renamed.txt")
+			gitImplement(t, ref.UserRoot, "add", "-A")
+			gitImplement(t, ref.UserRoot, "commit", "-m", "integrate governed rename")
+			return runworktree.IntegrationResult{Mode: runworktree.ModeFastForwardMerge}, nil
+		}
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("governed rename exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
+	}
+	if pusher.calls != 0 {
+		t.Fatalf("governed rename push calls = %d, want 0", pusher.calls)
+	}
+	refusal := "authorization operation \"push\" is not permitted by record \"docs/specs/" + implementTestSlug + "/_authorization.md\""
+	if !strings.Contains(stderr.String(), refusal) {
+		t.Fatalf("governed rename stderr = %q, want refusal %q", stderr.String(), refusal)
+	}
+	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
 }
 
 func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {

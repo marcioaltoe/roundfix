@@ -731,6 +731,30 @@ func TestPruneTerminalReapsOnlyEmptyTerminalRunAndTaskBranches(t *testing.T) {
 	assertRunBranchExists(t, repoDir, nonTerminalTask.Branch)
 }
 
+// Invariant: prior Run changes retain both repository paths touched by a rename.
+// Owning layer: worktree Git integration.
+// Existing canonical suite: internal/worktree/worktree_test.go.
+func TestPriorChangedFilesReportsBothSidesOfARename(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	repoDir := initWorktreeRepo(t)
+	mustWriteWorktreeTest(t, filepath.Join(repoDir, "Makefile"), "verify:\n\tgo test ./...\n")
+	gitWorktreeTest(t, repoDir, "add", "Makefile")
+	gitWorktreeTest(t, repoDir, "commit", "-m", "add governed source")
+	initialHead := strings.TrimSpace(gitWorktreeTest(t, repoDir, "rev-parse", "HEAD"))
+	gitWorktreeTest(t, repoDir, "mv", "Makefile", "renamed.txt")
+	gitWorktreeTest(t, repoDir, "commit", "-m", "rename governed source")
+
+	got, err := PriorChangedFiles(ctx, repoDir, initialHead)
+	if err != nil {
+		t.Fatalf("resolve prior changed files: %v", err)
+	}
+	want := []string{"Makefile", "renamed.txt"}
+	if !slices.Equal(got, want) {
+		t.Fatalf("PriorChangedFiles() = %q, want both rename paths %q", got, want)
+	}
+}
+
 func TestListPendingRunWorkReportsAheadRunBranches(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
