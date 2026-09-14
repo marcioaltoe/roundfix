@@ -3253,6 +3253,50 @@ func TestGovernedRenameClassifiesFromSource(t *testing.T) {
 	}
 }
 
+func TestGovernedRenameRefusesFromRealSnapshot(t *testing.T) {
+	t.Parallel()
+
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+	mustWriteForTest(t, filepath.Join(fixture.gitRoot, "Makefile"), "verify:\n\t@true\n")
+	commitTaskFixtureSource(t, fixture.gitRoot, "add governed path")
+	removeTaskFixtureAuthorization(t, fixture)
+	var renameErr error
+	runner := &taskFakeRunner{
+		calls:   fixture.calls,
+		gitRoot: fixture.gitRoot,
+		afterTask: func(taskID string) {
+			if taskID == "task_01" {
+				renameErr = os.Rename(
+					filepath.Join(fixture.gitRoot, "Makefile"),
+					filepath.Join(fixture.gitRoot, "notes.txt"),
+				)
+			}
+		},
+	}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, GitWorktreeSnapshotter{})
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if renameErr != nil {
+		t.Fatalf("rename governed path: %v", renameErr)
+	}
+	if err != nil {
+		t.Fatalf("governed rename refusal from real snapshot: %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 1 || len(result.Outcomes) != 1 {
+		t.Fatalf("governed rename result = %+v, want one failed Task", result)
+	}
+	for _, want := range []string{"implement", "docs/specs/" + taskCycleSlug + "/_authorization.md"} {
+		if !strings.Contains(result.Outcomes[0].Reason, want) {
+			t.Errorf("governed rename refusal = %q, want %q", result.Outcomes[0].Reason, want)
+		}
+	}
+	if len(committer.messages) != 0 {
+		t.Fatalf("governed rename wrote commits: %v", committer.messages)
+	}
+}
+
 func TestOrdinaryRemovalDoesNotRequireOperation(t *testing.T) {
 	t.Parallel()
 

@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -410,6 +411,28 @@ func readFileForTest(t *testing.T, path string) string {
 		t.Fatalf("read %s: %v", path, err)
 	}
 	return string(content)
+}
+
+func TestSnapshotCarriesRenameSource(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	repoDir := t.TempDir()
+	gittest.InitRepo(t, repoDir, "--initial-branch=main")
+	gittest.AppendConfig(t, repoDir, "[user]\n\tname = Roundfix Test\n\temail = test@example.com\n[commit]\n\tgpgsign = false\n")
+	mustWriteForTest(t, filepath.Join(repoDir, "Makefile"), "verify:\n\t@true\n")
+	runGitForTest(t, repoDir, "add", "Makefile")
+	runGitForTest(t, repoDir, "commit", "-m", "initial")
+	runGitForTest(t, repoDir, "mv", "Makefile", "notes.txt")
+
+	paths, err := (GitWorktreeSnapshotter{}).Snapshot(ctx, repoDir)
+	if err != nil {
+		t.Fatalf("snapshot real rename: %v", err)
+	}
+	slices.Sort(paths)
+	want := []string{"Makefile", "notes.txt"}
+	if !slices.Equal(paths, want) {
+		t.Fatalf("rename snapshot = %v, want %v", paths, want)
+	}
 }
 
 func TestSnapshotDiffCommitStagesOnlyAgentChangesInRealRepo(t *testing.T) {

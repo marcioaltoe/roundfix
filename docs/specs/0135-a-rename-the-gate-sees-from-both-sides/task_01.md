@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0135-a-rename-the-gate-sees-from-both-sides
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -67,3 +67,42 @@ it against porcelain output produced by a real rename.
 - `_prd.md` → Goal 1; Core Features 1-2, 4; Declared intentional breaks 1.
 - `_techspec.md` → Implementation Design: A rename names both of its paths;
   Testing Approach observations 1-3; Build Order 1.
+
+## Result
+
+The changed-path reader now appends a rename or copy record's source after its
+destination. The governed-mutation classifier remains unchanged.
+
+- `TestSnapshotCarriesRenameSource` creates a temporary Git repository,
+  commits `Makefile`, performs `git mv Makefile notes.txt`, and reads both paths
+  through `GitWorktreeSnapshotter`.
+- `TestGovernedRenameRefusesFromRealSnapshot` renames a committed `Makefile`
+  inside the Task-cycle repository and uses `GitWorktreeSnapshotter` to prove
+  the existing missing-`implement` refusal prevents a commit.
+- Before the reader change,
+  `rtk sh -c 'GOCACHE=/tmp/roundfix-go-build-0135-task-01 go test -count=1 ./internal/daemon -run "^(TestSnapshotCarriesRenameSource|TestGovernedRenameRefusesFromRealSnapshot)$"'`
+  failed because the real rename snapshot was `[notes.txt]`.
+- After the reader change,
+  `rtk sh -c 'GOCACHE=/tmp/roundfix-go-build-0135-task-01 go test -count=1 ./internal/daemon -run "^(TestSnapshotCarriesRenameSource|TestGovernedRenameRefusesFromRealSnapshot|TestSnapshotDiffCommitStagesOnlyAgentChangesInRealRepo|TestOrdinaryRemovalDoesNotRequireOperation|TestGovernedMutationDetectionUsesTheUnfilteredSnapshot)$"'`
+  passed.
+- `rtk sh -c 'GOCACHE=/tmp/roundfix-go-build-0135-task-01 go test -count=1 ./internal/daemon'`
+  passed on the one unchanged retry after the sandbox denied GPG lock access
+  during the first attempt.
+- `rtk gofmt -d internal/daemon/daemon.go internal/daemon/daemon_test.go internal/daemon/task_engine_test.go`
+  produced no output, and `rtk git diff --check` passed.
+- `rtk sh -c 'GOCACHE=/tmp/roundfix-go-build-0135-task-01 make verify-incremental'`
+  stopped in `fmt-check` because the unchanged files
+  `internal/cli/baseline_skills_restore_test.go` and
+  `internal/cli/baseline_assets_sync_test.go` need formatting. This Task did
+  not change those out-of-scope files.
+
+Acceptance evidence:
+
+- The real-repository snapshot test observes exactly `Makefile` and
+  `notes.txt`, covering both sides of the rename.
+- The real-snapshot Task-cycle test observes one refused Task, the existing
+  `implement` refusal reason, and no commit.
+- The unchanged ordinary-removal regression passed in the focused command.
+- The unchanged real-repository staging regression passed in the focused
+  command, and the unchanged unfiltered-snapshot regression confirms the
+  existing classifier boundary still receives the reader's full result.
