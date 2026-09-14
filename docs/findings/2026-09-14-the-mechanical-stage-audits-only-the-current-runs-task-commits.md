@@ -41,5 +41,9 @@ the commits the stage never received, and routes the gap here.
     authority decision, so Spec 0138 does not make it.
   - Candidate owners are Spec 0125 (repository identity and Run Branch policy)
     and Spec 0129 (gate recovery).
-  - Until then, the qa-gate skill keeps the gate auditing, by command, the Task
-    commits the stage did not receive.
+  - Until then, the qa-gate skill keeps the gate auditing Task commits by command.
+    The gate cannot skip commits the stage audited, because the stage's
+    authorization audit table lists Task, Outcome, Record, Revision and Detail
+    but no commit identity (`internal/speccheck/report.go`). The Codex review
+    of Spec 0138 raised this, and the repeated audit belongs to the same
+    follow-up.
