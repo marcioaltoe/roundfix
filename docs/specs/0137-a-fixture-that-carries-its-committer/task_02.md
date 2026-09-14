@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0137-a-fixture-that-carries-its-committer
-status: pending
+status: completed
 type: qa
 complexity: low
 ---
