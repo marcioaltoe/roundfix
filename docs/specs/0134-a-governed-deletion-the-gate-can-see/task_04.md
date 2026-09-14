@@ -24,24 +24,35 @@ audit against the grant, so this gate does not repeat either.
    inference from a sibling Task's own report.
 2. MUST verify both PRD Goals through a call the described reader actually
    makes, not through the classifier in isolation.
-3. MUST run the repository suite and the formatting and lint gates and record
-   them clean, using the repository's pinned Go toolchain rather than whichever
-   Go the ambient PATH resolves.
-4. MUST verify the outside-evidence row: that a command-only regeneration
+3. MUST run the repository's own verification gate and record it clean, using
+   the repository's pinned Go toolchain rather than whichever Go the ambient
+   PATH resolves. That gate is `make verify`: the formatting check, the Go
+   suite, the skills checks and the build. The repository declares no linter
+   configuration beyond it.
+4. MUST run `go vet` over the packages this Spec changes and record them clean.
+   Repository-wide analyzer coverage is out of this Spec's scope: Spec 0123
+   owns removing the runner mutex copying, which its own PRD measures at 31
+   diagnostics, and records that Spec 0124 owns the later
+   Verification-configuration change that makes analyzer coverage continuous.
+   A diagnostic identical on the delivery target is not this Spec's regression;
+   record it as observed, naming the owning Spec, rather than as a failure of
+   this Spec.
+5. MUST verify the outside-evidence row: that a command-only regeneration
    declaration resolves the outputs the repository's own Baseline ownership
    declarations derive for it, recording where that list came from, or record
    the row blocked with the reason it could not be obtained.
-5. MUST verify both declared intentional breaks occur, and that no refusal
+6. MUST verify both declared intentional breaks occur, and that no refusal
    token changed spelling or condition.
-6. MUST exercise the gate against a binary rebuilt from the assembled tree.
-7. MUST NOT change implementation code, tests or any sibling Task.
+7. MUST exercise the gate against a binary rebuilt from the assembled tree.
+8. MUST NOT change implementation code, tests or any sibling Task.
 
 ## Subtasks
 
 - [ ] Rebuild the binary the gate exercises.
 - [ ] Execute the Acceptance Criteria matrix for Tasks 01-03.
 - [ ] Verify both Goals through the reader's own call path.
-- [ ] Run the suite, the formatting check and the linter on the pinned toolchain.
+- [ ] Run `make verify` on the pinned toolchain.
+- [ ] Run `go vet` over this Spec's packages and classify any diagnostic.
 - [ ] Record the outside-evidence row with its provenance.
 - [ ] Write the dated report with honest counters and the terminal verdict.
 
@@ -51,8 +62,11 @@ audit against the grant, so this gate does not repeat either.
       with recorded evidence.
 - [ ] Both PRD Goals have an observed result obtained through the reader's own
       call path.
-- [ ] The suite, the formatting check and the linter are recorded clean, with
-      the resolved toolchain version stated.
+- [ ] `make verify` is recorded clean, with the resolved toolchain version
+      stated.
+- [ ] `go vet` over the packages this Spec changes is recorded clean, and any
+      diagnostic identical on the delivery target is recorded as pre-existing
+      with its owning Spec named.
 - [ ] The outside-evidence row records the ownership list's provenance, or is
       recorded blocked with its reason.
 - [ ] Both declared breaks are observed and every existing refusal token is
@@ -76,3 +90,5 @@ responsibility.
 
 - `_prd.md` → Goals 1-2, Core Features 1-4, Declared intentional breaks 1-2.
 - `_techspec.md` → Coverage Map, Testing Approach, Build Order 4.
+- `docs/specs/0123-runtime-readiness-and-model-capabilities/_prd.md` → Goal 5,
+  owner of the runner mutex copying and of the analyzer-coverage handoff.
