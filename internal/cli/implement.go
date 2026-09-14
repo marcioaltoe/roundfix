@@ -21,6 +21,7 @@ import (
 	"roundfix/internal/daemon"
 	"roundfix/internal/preflight"
 	"roundfix/internal/spec"
+	"roundfix/internal/speccheck"
 	"roundfix/internal/store"
 	roundtui "roundfix/internal/tui"
 	runworktree "roundfix/internal/worktree"
@@ -850,6 +851,17 @@ func maybeRunImplementAutoPush(ctx context.Context, gitState preflight.GitState,
 		publishPushDecision(ctx, ui.sink, runID, "skipped", summary, 0)
 		return implementPushResult{}, nil
 	}
+	changedPaths, err := collaborators.priorChanges.PriorChangedFiles(ctx, gitState.Root, gitState.HEAD)
+	if err != nil {
+		return implementPushResult{}, fmt.Errorf("resolve Spec Run changed paths: %w", err)
+	}
+	governedMutation := false
+	for _, path := range changedPaths {
+		if speccheck.GovernedPath(path) {
+			governedMutation = true
+			break
+		}
+	}
 	engine, err := daemon.NewEngine(daemon.Dependencies{
 		Runner:    collaborators.runner,
 		Verifier:  collaborators.verifier,
@@ -870,7 +882,7 @@ func maybeRunImplementAutoPush(ctx context.Context, gitState preflight.GitState,
 		Remote:           remote,
 		Branch:           branch,
 		Authorization:    &authorization,
-		GovernedMutation: authorization.Outcome == spec.AuthorizationGranted,
+		GovernedMutation: governedMutation,
 	}); err != nil {
 		summary := fmt.Sprintf("Spec Run push failed: git push %s HEAD:%s: %v", remote, branch, err)
 		publishPushDecision(ctx, ui.sink, runID, "failed", summary, 0)

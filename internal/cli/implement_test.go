@@ -1025,6 +1025,14 @@ func (emptyPriorChangedResolver) PriorChangedFiles(context.Context, string, stri
 	return nil, nil
 }
 
+type staticPriorChangedResolver struct {
+	paths []string
+}
+
+func (resolver staticPriorChangedResolver) PriorChangedFiles(context.Context, string, string) ([]string, error) {
+	return append([]string(nil), resolver.paths...), nil
+}
+
 func withPriorChangedResolver(t *testing.T, resolver daemon.PriorChangedResolver) {
 	overrideCollaborators(t, func(collaborators *engineCollaborators) {
 		collaborators.priorChanges = resolver
@@ -3392,6 +3400,64 @@ func TestRenderImplementTaskLinesNormalizesMultilineReasons(t *testing.T) {
 	}
 	if counts.failed != 1 || counts.completed != 0 || counts.skipped != 0 || counts.pending != 0 {
 		t.Fatalf("expected one failed count, got %+v", counts)
+	}
+}
+
+func TestFinalPushAuthorityFollowsTheChangedPaths(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name        string
+		changed     []string
+		wantCode    int
+		wantPushes  int
+		wantRefusal bool
+	}{
+		{
+			name:       "ordinary Run pushes without push authority",
+			changed:    []string{"internal/cli/implement.go"},
+			wantCode:   exitOK,
+			wantPushes: 1,
+		},
+		{
+			name:        "governed Run is refused without push authority",
+			changed:     []string{"Makefile"},
+			wantCode:    exitRunFailed,
+			wantRefusal: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+			configureImplementAutoPush(t, repoDir, true)
+			configureImplementUpstream(t, repoDir, "origin", "ma/widget-flow")
+			setImplementFixtureAuthorizationOperations(t, repoDir, "implement", "commit")
+			runner := &implementFakeRunner{
+				gitRoot:      repoDir,
+				statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+			}
+			_, _, pusher, _ := withImplementCollaborators(t, runner)
+			withPriorChangedResolver(t, staticPriorChangedResolver{paths: tt.changed})
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+			if code != tt.wantCode {
+				t.Fatalf("changed paths %v exit = %d, want %d; stdout=%q stderr=%q", tt.changed, code, tt.wantCode, stdout.String(), stderr.String())
+			}
+			if pusher.calls != tt.wantPushes {
+				t.Fatalf("changed paths %v push calls = %d, want %d", tt.changed, pusher.calls, tt.wantPushes)
+			}
+			refusal := "authorization operation \"push\" is not permitted by record \"docs/specs/" + implementTestSlug + "/_authorization.md\""
+			if got := strings.Contains(stderr.String(), refusal); got != tt.wantRefusal {
+				t.Fatalf("changed paths %v refusal present = %t, want %t; stderr=%q", tt.changed, got, tt.wantRefusal, stderr.String())
+			}
+			if tt.wantPushes == 1 && !strings.Contains(stdout.String(), "pushed origin/ma/widget-flow\n") {
+				t.Fatalf("ordinary Run stdout = %q, want pushed target", stdout.String())
+			}
+			assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+		})
 	}
 }
 
