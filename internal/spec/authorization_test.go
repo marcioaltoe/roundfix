@@ -445,6 +445,42 @@ func TestOperationAuthorityDefaultRootUnchanged(t *testing.T) {
 	}
 }
 
+func TestSpecAuthorizationNamesUnavailableRevision(t *testing.T) {
+	const (
+		specSlug            = "asking-spec"
+		unavailableRevision = "refs/heads/unavailable"
+	)
+	projectRoot := newAuthorizationGitRepository(t)
+	writeAuthorizationRecordAt(t, projectRoot, authorizationDocument(
+		"approved",
+		"2026-09-09",
+		specSlug,
+		"\noperations:\n  - implement\n",
+		"",
+	))
+	commitAuthorizationFixture(t, projectRoot, "seed default Spec Root")
+
+	resolved := ReadSpecAuthorization(
+		context.Background(),
+		projectRoot,
+		filepath.Join(projectRoot, "docs", "specs"),
+		specSlug,
+		unavailableRevision,
+	)
+
+	if resolved.Outcome != AuthorizationUnresolved {
+		t.Fatalf("unavailable-revision authorization outcome = %q, want unresolved: %#v", resolved.Outcome, resolved)
+	}
+	if resolved.Reason.Code != AuthorizationReasonUnavailableRevision ||
+		resolved.Reason.Field != "revision" ||
+		resolved.Reason.Value != unavailableRevision {
+		t.Fatalf("unavailable-revision authorization reason = %#v, want unavailable revision %q", resolved.Reason, unavailableRevision)
+	}
+	if resolved.Permits(AuthorizationOperationImplement) {
+		t.Fatal("unavailable-revision authorization permits implement")
+	}
+}
+
 func TestOperationAuthorityReportsUnresolvableSpecRoot(t *testing.T) {
 	projectRoot := newAuthorizationGitRepository(t)
 	projectRevision := commitAuthorizationFixture(t, projectRoot, "seed project")

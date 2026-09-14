@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0135-a-rename-the-gate-sees-from-both-sides
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -58,3 +58,51 @@ the location.
 - `_prd.md` → Goal 2; Core Features 3-4; Declared intentional breaks 2.
 - `_techspec.md` → Implementation Design: An unresolvable revision says so;
   Testing Approach observation 4; Build Order 2.
+
+## Result
+
+Implemented:
+
+- The composed Spec authorization resolver now carries a typed reason out of
+  location resolution. A failed delivery revision reports the existing
+  `unavailable_revision` code with field `revision` and the normalized revision
+  value; other location failures retain the existing unreadable-record default.
+- Added a real-Git regression through `ReadSpecAuthorization` that asserts the
+  revision diagnostic, the unresolved outcome, and refusal of `implement`.
+- The direct `ReadAuthorization` implementation under `internal/authorization`
+  remains unchanged.
+
+Focused-check evidence:
+
+- Before the production edit,
+  `rtk proxy go test ./internal/spec -run 'NamesUnavailableRevision'` exited 1:
+  the new regression observed `unreadable_record`, field `spec_root`, and the
+  Spec Root value for `refs/heads/unavailable`.
+- After the production edit,
+  `rtk go test ./internal/spec -run 'NamesUnavailableRevision'` exited 0 with
+  one passing test.
+- `rtk go test ./internal/spec -run 'Test(SpecAuthorizationNamesUnavailableRevision|OperationAuthorityReportsUnresolvableSpecRoot|OperationAuthorityResolvesExternalSpecRoot)$'`
+  exited 0 with three passing tests, covering the changed branch and both
+  preserved branches together.
+- `rtk go test ./internal/spec` exited 0 with 434 passing tests.
+- `rtk gofmt -d internal/spec/authorization.go internal/spec/authorization_test.go`
+  exited 0 with no output.
+- `rtk make verify-incremental` exited 2 at `fmt-check` before tests because
+  unchanged `internal/cli/baseline_skills_restore_test.go` and
+  `internal/cli/baseline_assets_sync_test.go` need formatting. Separate
+  `rtk git diff --exit-code` checks for both paths exited 0, so this Task did
+  not alter them.
+
+Acceptance-criterion evidence:
+
+1. `TestSpecAuthorizationNamesUnavailableRevision` changed from red to green
+   and requires `unavailable_revision`, field `revision`, and value
+   `refs/heads/unavailable`.
+2. `TestOperationAuthorityReportsUnresolvableSpecRoot` passes in the combined
+   focused run and still requires an unresolved `unreadable_record` on field
+   `spec_root`.
+3. The new revision regression requires `AuthorizationUnresolved` and rejects
+   `Permits(implement)`; the preserved Spec Root regression also requires
+   `AuthorizationUnresolved`.
+
+The Daemon-owned commands under `## Verification` were not run.
