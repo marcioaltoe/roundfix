@@ -1,9 +1,12 @@
 ---
 spec: 0136-a-rename-the-committer-can-stage
-status: active
+status: archived
 created: 2026-09-14
 surfaces: [backend, cli]
+archived: "2026-09-14"
+source_slug: 0136-a-rename-the-committer-can-stage
 ---
+
 
 # A rename the committer can stage
 

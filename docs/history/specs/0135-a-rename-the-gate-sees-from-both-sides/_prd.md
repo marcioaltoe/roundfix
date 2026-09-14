@@ -1,9 +1,12 @@
 ---
 spec: 0135-a-rename-the-gate-sees-from-both-sides
-status: active
+status: archived
 created: 2026-09-14
 surfaces: [backend]
+archived: "2026-09-14"
+source_slug: 0135-a-rename-the-gate-sees-from-both-sides
 ---
+
 
 # A rename the gate sees from both sides
 

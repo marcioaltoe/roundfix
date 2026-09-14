@@ -1,9 +1,12 @@
 ---
 spec: 0134-a-governed-deletion-the-gate-can-see
-status: active
+status: archived
 created: 2026-09-13
 surfaces: [backend]
+archived: "2026-09-14"
+source_slug: 0134-a-governed-deletion-the-gate-can-see
 ---
+
 
 # A governed deletion the gate can see
 
