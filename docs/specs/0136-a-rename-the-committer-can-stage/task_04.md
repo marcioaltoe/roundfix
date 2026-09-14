@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0136-a-rename-the-committer-can-stage
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

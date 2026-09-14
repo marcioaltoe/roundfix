@@ -1,0 +1,10 @@
+The first governed-push attempt used the committed evidence harness directly.
+Its fake adapter had no executable bit, so Roundfix preflight exited 2 before
+Run creation and explicitly reported no side effects. The attempt is preserved
+under results/governed_push/.
+
+The rerun copied the same harness to
+/private/tmp/roundfix-0136-harness-aa3f4fef, restored executable bits only on
+fake-bin/acpx, fake-bin/codex-acp, and fake-bin/git in that temporary copy, and
+left every script, fixture, configuration, and authorization byte unchanged.
+All functional observations are preserved under observed/.

@@ -1,0 +1,18 @@
+git version 2.55.0
+mode=staged
+git_add_source_exit=128
+stderr:
+fatal: pathspec 'before.txt' did not match any files
+status:
+R  before.txt -> after.txt
+
+mode=unstaged
+git_add_source_exit=0
+stderr:
+status:
+D  before.txt
+?? after.txt
+
+The measurement used two fresh repositories under /private/tmp. Each seeded
+and committed before.txt, then ran Git's own `git add -f -- before.txt` after
+either `git mv before.txt after.txt` or plain `mv before.txt after.txt`.
