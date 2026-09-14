@@ -445,6 +445,66 @@ func TestOperationAuthorityDefaultRootUnchanged(t *testing.T) {
 	}
 }
 
+func TestUnresolvedRecordNamesAPathUnderTheSpecRoot(t *testing.T) {
+	const (
+		specSlug            = "asking-spec"
+		unavailableRevision = "refs/heads/unavailable"
+	)
+	projectRoot := newAuthorizationGitRepository(t)
+	writeAuthorizationRecordAt(t, projectRoot, authorizationDocument(
+		"approved",
+		"2026-09-09",
+		specSlug,
+		"\noperations:\n  - implement\n",
+		"",
+	))
+	projectRevision := commitAuthorizationFixture(t, projectRoot, "seed project")
+	defaultSpecsRoot := filepath.Join(projectRoot, "docs", "specs")
+	unresolvableRoot := filepath.Join(t.TempDir(), "not-a-git-repository")
+	if err := os.MkdirAll(unresolvableRoot, 0o755); err != nil {
+		t.Fatalf("create unresolvable Spec Root: %v", err)
+	}
+
+	tests := []struct {
+		name           string
+		specsRoot      string
+		deliveryTarget string
+		wantPath       string
+	}{
+		{
+			name:           "resolver-derived path survives revision failure",
+			specsRoot:      defaultSpecsRoot,
+			deliveryTarget: unavailableRevision,
+			wantPath:       AuthorizationRecordPath(specSlug),
+		},
+		{
+			name:           "configured root supplies path when resolution fails first",
+			specsRoot:      unresolvableRoot,
+			deliveryTarget: projectRevision,
+			wantPath:       filepath.Join(unresolvableRoot, specSlug, "_authorization.md"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resolved := ReadSpecAuthorization(
+				context.Background(),
+				projectRoot,
+				tt.specsRoot,
+				specSlug,
+				tt.deliveryTarget,
+			)
+
+			if resolved.Outcome != AuthorizationUnresolved {
+				t.Fatalf("authorization outcome = %q, want unresolved: %#v", resolved.Outcome, resolved)
+			}
+			if resolved.Record.Source.Path != tt.wantPath {
+				t.Fatalf("unresolved record path = %q, want %q", resolved.Record.Source.Path, tt.wantPath)
+			}
+		})
+	}
+}
+
 func TestSpecAuthorizationNamesUnavailableRevision(t *testing.T) {
 	const (
 		specSlug            = "asking-spec"

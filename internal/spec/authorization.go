@@ -101,7 +101,7 @@ func AuthorizationRecordPath(specSlug string) string {
 func ReadSpecAuthorization(ctx context.Context, projectRepoRoot string, specsRoot string, specSlug string, deliveryTarget string) AuthorizationResolution {
 	location, reason, err := resolveAuthorizationLocation(ctx, projectRepoRoot, specsRoot, specSlug, deliveryTarget)
 	if err != nil {
-		return unresolvedSpecAuthorization(specsRoot, specSlug, reason, err)
+		return unresolvedSpecAuthorization(specsRoot, specSlug, location, reason, err)
 	}
 	return ReadAuthorization(ctx, AuthorizationReadRequest{
 		RepoRoot:   location.SpecRepoRoot,
@@ -117,9 +117,15 @@ func resolveAuthorizationLocation(ctx context.Context, projectRepoRoot string, s
 	if err != nil {
 		return AuthorizationLocation{}, AuthorizationReason{Field: "spec_root"}, fmt.Errorf("resolve Spec Root %q: %w", specsRoot, err)
 	}
+	location := AuthorizationLocation{
+		SpecRepoRoot:     specRepoRoot,
+		SpecRelativePath: path.Join(specPrefix, specSlug, "_authorization.md"),
+		ProjectRepoRoot:  projectRepoRoot,
+		DeliveryTarget:   deliveryTarget,
+	}
 	_, _, projectCommonDir, err := authorizationRepositoryLocation(ctx, projectRepoRoot)
 	if err != nil {
-		return AuthorizationLocation{}, AuthorizationReason{Field: "project_repo_root"}, fmt.Errorf("resolve project repository root %q: %w", projectRepoRoot, err)
+		return location, AuthorizationReason{Field: "project_repo_root"}, fmt.Errorf("resolve project repository root %q: %w", projectRepoRoot, err)
 	}
 
 	revision := "HEAD"
@@ -135,20 +141,15 @@ func resolveAuthorizationLocation(ctx context.Context, projectRepoRoot string, s
 		revision+"^{commit}",
 	)
 	if err != nil {
-		return AuthorizationLocation{}, AuthorizationReason{
+		return location, AuthorizationReason{
 			Code:  AuthorizationReasonUnavailableRevision,
 			Field: "revision",
 			Value: revision,
 		}, fmt.Errorf("resolve Spec Root revision %q: %w", revision, err)
 	}
 
-	return AuthorizationLocation{
-		SpecRepoRoot:     specRepoRoot,
-		SpecRevision:     resolvedRevision,
-		SpecRelativePath: path.Join(specPrefix, specSlug, "_authorization.md"),
-		ProjectRepoRoot:  projectRepoRoot,
-		DeliveryTarget:   deliveryTarget,
-	}, AuthorizationReason{}, nil
+	location.SpecRevision = resolvedRevision
+	return location, AuthorizationReason{}, nil
 }
 
 func authorizationRepositoryLocation(ctx context.Context, workDir string) (string, string, string, error) {
@@ -224,17 +225,21 @@ func sameAuthorizationRepository(first string, second string) bool {
 	return canonicalAuthorizationPath(first) == canonicalAuthorizationPath(second)
 }
 
-func unresolvedSpecAuthorization(specsRoot string, specSlug string, reason AuthorizationReason, err error) AuthorizationResolution {
+func unresolvedSpecAuthorization(specsRoot string, specSlug string, location AuthorizationLocation, reason AuthorizationReason, err error) AuthorizationResolution {
 	if reason.Code == "" {
 		reason.Code = AuthorizationReasonUnreadableRecord
 		reason.Value = specsRoot
 	}
 	reason.Detail = err.Error()
+	recordPath := location.SpecRelativePath
+	if recordPath == "" {
+		recordPath = filepath.Join(specsRoot, specSlug, "_authorization.md")
+	}
 	return AuthorizationResolution{
 		Outcome: AuthorizationUnresolved,
 		Record: AuthorizationRecord{
 			Role:   AuthorizationRoleSpec,
-			Source: AuthorizationSource{Path: path.Join(specSlug, "_authorization.md")},
+			Source: AuthorizationSource{Path: recordPath},
 		},
 		Reason: reason,
 	}
