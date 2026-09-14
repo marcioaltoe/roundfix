@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0135-a-rename-the-gate-sees-from-both-sides
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
