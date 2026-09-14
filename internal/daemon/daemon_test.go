@@ -435,6 +435,82 @@ func TestSnapshotCarriesRenameSource(t *testing.T) {
 	}
 }
 
+func TestTaskCommitStagesAStagedRename(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	repoDir := newTaskCommitRenameRepoForTest(t)
+	runGitForTest(t, repoDir, "mv", "before.txt", "after.txt")
+
+	changed, err := (GitWorktreeSnapshotter{}).Snapshot(ctx, repoDir)
+	if err != nil {
+		t.Fatalf("snapshot staged rename: %v", err)
+	}
+	stageable, dropped := FilterStageablePaths(ctx, repoDir, changed)
+	if err := (GitCommitter{}).Commit(ctx, CommitRequest{
+		WorkDir: repoDir,
+		Message: "test: commit staged rename",
+		Paths:   stageable,
+	}); err != nil {
+		t.Fatalf("commit staged rename: %v", err)
+	}
+
+	if len(dropped) != 1 || dropped[0].Path != "before.txt" || dropped[0].Reason != "absent from worktree and index" {
+		t.Fatalf("staged rename drops = %+v, want absent source path", dropped)
+	}
+	assertTaskCommitRecordedRenameForTest(t, repoDir)
+}
+
+func TestTaskCommitStagesAnUnstagedRename(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	repoDir := newTaskCommitRenameRepoForTest(t)
+	if err := os.Rename(filepath.Join(repoDir, "before.txt"), filepath.Join(repoDir, "after.txt")); err != nil {
+		t.Fatalf("rename tracked file without staging: %v", err)
+	}
+
+	changed, err := (GitWorktreeSnapshotter{}).Snapshot(ctx, repoDir)
+	if err != nil {
+		t.Fatalf("snapshot unstaged rename: %v", err)
+	}
+	stageable, dropped := FilterStageablePaths(ctx, repoDir, changed)
+	if len(dropped) != 0 {
+		t.Fatalf("unstaged rename drops = %+v, want both paths stageable", dropped)
+	}
+	if err := (GitCommitter{}).Commit(ctx, CommitRequest{
+		WorkDir: repoDir,
+		Message: "test: commit unstaged rename",
+		Paths:   stageable,
+	}); err != nil {
+		t.Fatalf("commit unstaged rename: %v", err)
+	}
+
+	assertTaskCommitRecordedRenameForTest(t, repoDir)
+}
+
+func newTaskCommitRenameRepoForTest(t *testing.T) string {
+	t.Helper()
+	repoDir := t.TempDir()
+	gittest.InitRepo(t, repoDir, "--initial-branch=main")
+	gittest.AppendConfig(t, repoDir, "[user]\n\tname = Roundfix Test\n\temail = test@example.com\n[commit]\n\tgpgsign = false\n")
+	mustWriteForTest(t, filepath.Join(repoDir, "before.txt"), "tracked\n")
+	runGitForTest(t, repoDir, "add", "before.txt")
+	runGitForTest(t, repoDir, "commit", "-m", "initial")
+	return repoDir
+}
+
+func assertTaskCommitRecordedRenameForTest(t *testing.T, repoDir string) {
+	t.Helper()
+	changed := runGitForTest(t, repoDir, "diff-tree", "--no-commit-id", "--name-status", "--no-renames", "-r", "HEAD")
+	for _, want := range []string{"D\tbefore.txt", "A\tafter.txt"} {
+		if !strings.Contains(changed, want) {
+			t.Errorf("committed rename = %q, want %q", changed, want)
+		}
+	}
+	if status := runGitForTest(t, repoDir, "status", "--porcelain=v1"); status != "" {
+		t.Fatalf("committed rename left dirty repository: %q", status)
+	}
+}
+
 func TestSnapshotDiffCommitStagesOnlyAgentChangesInRealRepo(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

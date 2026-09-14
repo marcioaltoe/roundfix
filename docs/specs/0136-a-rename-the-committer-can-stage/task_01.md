@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0136-a-rename-the-committer-can-stage
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -73,3 +73,72 @@ untouched: it reads the snapshot pair, not the staged list.
   Regression locks.
 - `_techspec.md` → Implementation Design: Stage only what Git can match;
   Testing Approach observations 1-4; Build Order 1.
+
+## Result
+
+### Implementation
+
+- The stageable-path filter now receives the caller's context and consults
+  `git ls-files --error-unmatch` only after `Lstat` proves a path is absent
+  from the worktree. Git exit code `1` records the path as dropped with reason
+  `absent from worktree and index`; any other probe failure leaves absence
+  unproven for the existing commit boundary to report.
+- A path deleted only from the worktree remains stageable because it still
+  matches the index. The changed-path reader and governed-mutation classifier
+  were not changed.
+- Real disposable-repository tests cover staged and unstaged renames. Existing
+  fake-snapshot tests now materialize the paths they claim the Agent created;
+  their assertions remain unchanged.
+
+### Focused checks
+
+- Before the production change,
+  `GOCACHE=/private/tmp/roundfix-task-0136-go-cache rtk go test ./internal/daemon -run 'Test(TaskCommitStagesA(Staged|nUnstaged)Rename|FilterStageablePathsDropsPathAbsentFromWorktreeAndIndex)$'`
+  exited `1`: the unstaged rename passed, the filter kept `before.txt`, and the
+  staged rename failed at `git add -f -- after.txt before.txt`.
+- After the production change, the same focused command exited `0` with three
+  tests reported passed.
+- `GIT_CONFIG_COUNT=0 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null GOCACHE=/private/tmp/roundfix-task-0136-go-cache rtk go test ./internal/daemon -run 'Test(TaskCommitStagesAStagedRename|TaskCommitStagesAnUnstagedRename|FilterStageablePathsDropsPathAbsentFromWorktreeAndIndex|GovernedRenameRefusesFromRealSnapshot|GovernedMutationDetectionUsesTheUnfilteredSnapshot|SnapshotDiffCommitStagesOnlyAgentChangesInRealRepo|FilterStageablePathsDropsRegularFileWithAnyExecutePermission)$'`
+  exited `0` with ten tests and subtests reported passed.
+- `GIT_CONFIG_COUNT=0 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null GOCACHE=/private/tmp/roundfix-task-0136-go-cache rtk go test ./internal/daemon`
+  exited `0` with 311 tests reported passed.
+- Two unchanged attempts with the default Go cache did not reach the tests:
+  the sandbox returned `EPERM` under `~/Library/Caches/go-build`. The writable
+  temporary cache above was used for the behavioral checks.
+- `GOCACHE=/private/tmp/roundfix-task-0136-go-cache rtk make verify-incremental`
+  exited `2` at `fmt-check` before tests because
+  `internal/cli/baseline_skills_restore_test.go` and
+  `internal/cli/baseline_assets_sync_test.go` need formatting. Neither file is
+  part of this Task's diff.
+
+### Acceptance evidence
+
+- `TestTaskCommitStagesAStagedRename` creates a repository under `t.TempDir`,
+  performs `git mv`, commits through the filtered snapshot paths, independently
+  reads the committed addition and deletion, and confirms the repository is
+  clean.
+- `TestTaskCommitStagesAnUnstagedRename` performs `os.Rename`, confirms neither
+  path is dropped, commits both paths, independently reads the source deletion
+  and destination addition with rename detection disabled, and confirms the
+  repository is clean.
+- `TestFilterStageablePathsDropsPathAbsentFromWorktreeAndIndex` records the
+  staged rename source with the new reason, then resets the repository, deletes
+  the tracked source only from the worktree, and confirms that deletion remains
+  stageable.
+- The combined regression check exercised
+  `TestGovernedRenameRefusesFromRealSnapshot` and
+  `TestGovernedMutationDetectionUsesTheUnfilteredSnapshot`, preserving refusal
+  and classification from the unfiltered snapshots.
+- The same check exercised the unchanged assertions in
+  `TestFilterStageablePathsDropsRegularFileWithAnyExecutePermission` and
+  `TestSnapshotDiffCommitStagesOnlyAgentChangesInRealRepo`.
+
+### Follow-up
+
+- The two pre-existing CLI test files reported by `fmt-check` need a separate,
+  authorized formatting repair outside this Task.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260914T134813Z_e15c7ee834fbe8bf`
+- Source commit: `ae49dc594d8863a4bf3f22b6cbba5040e84e9514`

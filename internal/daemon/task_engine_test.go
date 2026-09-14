@@ -4626,6 +4626,10 @@ func TestTaskCycleExecutesAgentVerifySettleCommitContract(t *testing.T) {
 		gitRoot:   fixture.gitRoot,
 		store:     fixture.store,
 		writeLogs: true,
+		writeByTask: map[string]string{
+			"task_01": "src/one.go",
+			"task_02": "src/two.go",
+		},
 		statusByTask: map[string]spec.Status{
 			"task_01": spec.StatusCompleted,
 			"task_02": spec.StatusCompleted,
@@ -5461,6 +5465,7 @@ func TestTaskCycleCommitsAfterTransportAnomalyAndPassingVerification(t *testing.
 	runner := &taskFakeRunner{
 		calls:         fixture.calls,
 		gitRoot:       fixture.gitRoot,
+		writeByTask:   map[string]string{"task_01": "internal/agent/fix.go"},
 		anomalyByTask: map[string]string{"task_01": anomaly},
 	}
 	verifier := &taskFakeVerifier{calls: fixture.calls}
@@ -6233,7 +6238,12 @@ func TestTaskCycleCommitStagesSnapshotDiffPlusTaskFile(t *testing.T) {
 		{"user-wip.txt", taskFile},
 		{"user-wip.txt", taskFile, "src/x.go"},
 	}
-	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot, statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted}}
+	runner := &taskFakeRunner{
+		calls:        fixture.calls,
+		gitRoot:      fixture.gitRoot,
+		writeByTask:  map[string]string{"task_01": "src/x.go"},
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
 	committer := &engineFakeCommitter{calls: fixture.calls}
 	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
 
@@ -6557,7 +6567,7 @@ func TestFilterStageablePathsDropsRegularFileWithAnyExecutePermission(t *testing
 				t.Fatalf("set executable fixture mode: %v", err)
 			}
 
-			kept, dropped := FilterStageablePaths(workDir, []string{"artifact"})
+			kept, dropped := FilterStageablePaths(context.Background(), workDir, []string{"artifact"})
 
 			if len(kept) != 0 {
 				t.Fatalf("expected executable file omitted, got kept paths %v", kept)
@@ -6572,6 +6582,30 @@ func TestFilterStageablePathsDropsRegularFileWithAnyExecutePermission(t *testing
 				t.Fatalf("expected reported mode %s, got %q", want, dropped[0].Mode)
 			}
 		})
+	}
+}
+
+func TestFilterStageablePathsDropsPathAbsentFromWorktreeAndIndex(t *testing.T) {
+	t.Parallel()
+	repoDir := newTaskCommitRenameRepoForTest(t)
+	runGitForTest(t, repoDir, "mv", "before.txt", "after.txt")
+
+	kept, dropped := FilterStageablePaths(context.Background(), repoDir, []string{"before.txt"})
+
+	if len(kept) != 0 {
+		t.Fatalf("kept paths = %v, want staged rename source omitted", kept)
+	}
+	if len(dropped) != 1 || dropped[0].Path != "before.txt" || dropped[0].Reason != "absent from worktree and index" {
+		t.Fatalf("dropped paths = %+v, want staged rename source with absent reason", dropped)
+	}
+
+	runGitForTest(t, repoDir, "reset", "--hard", "HEAD")
+	if err := os.Remove(filepath.Join(repoDir, "before.txt")); err != nil {
+		t.Fatalf("delete tracked path: %v", err)
+	}
+	kept, dropped = FilterStageablePaths(context.Background(), repoDir, []string{"before.txt"})
+	if !slices.Equal(kept, []string{"before.txt"}) || len(dropped) != 0 {
+		t.Fatalf("deleted tracked path: kept=%v dropped=%+v, want deletion stageable", kept, dropped)
 	}
 }
 
@@ -6693,6 +6727,11 @@ func TestTaskCommitDropsSymlinkCrossingTaskFileAndCommitsRepositoryPaths(t *test
 	if err := os.Symlink(externalRoot, linkPath); err != nil {
 		t.Skipf("symlink unavailable: %v", err)
 	}
+	agentPath := filepath.Join(fixture.gitRoot, "src", "agent-change.go")
+	if err := os.MkdirAll(filepath.Dir(agentPath), 0o755); err != nil {
+		t.Fatalf("create Agent path directory: %v", err)
+	}
+	mustWriteForTest(t, agentPath, "package src\n")
 	fixture.worktree.snapshots = [][]string{{"src/agent-change.go"}}
 	committer := &engineFakeCommitter{calls: fixture.calls}
 	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)

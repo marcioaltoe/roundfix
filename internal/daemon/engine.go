@@ -1080,7 +1080,7 @@ func (engine *Engine) commitBatch(ctx context.Context, plan CyclePlan, batch rou
 		)
 		return false, true, err
 	}
-	stageable, dropped := FilterStageablePaths(plan.GitRoot, changed)
+	stageable, dropped := FilterStageablePaths(ctx, plan.GitRoot, changed)
 	for _, drop := range dropped {
 		if err := engine.publishDroppedStagePath(ctx, plan.RunID, batch.Number, "", "Batch path", drop); err != nil {
 			return false, false, err

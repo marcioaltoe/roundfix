@@ -1646,7 +1646,7 @@ func (engine *Engine) prepareTaskCommit(ctx context.Context, plan TaskPlan, task
 		return taskCommitPreparation{}, err
 	}
 	changed := ensureCommitPath(diffSnapshots(before, after), artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, task.File)))
-	stageable, dropped := FilterStageablePaths(plan.WorkDir, changed)
+	stageable, dropped := FilterStageablePaths(ctx, plan.WorkDir, changed)
 	return taskCommitPreparation{
 		stageable:        stageable,
 		dropped:          dropped,
@@ -1827,18 +1827,22 @@ func (engine *Engine) publishNoOpTaskCommitWarning(ctx context.Context, plan Tas
 }
 
 // DroppedStagePath records a path omitted from a commit request because Git
-// cannot safely stage it from the worktree.
+// cannot safely match it from the worktree and index.
 type DroppedStagePath struct {
 	Path   string
 	Reason string
 	Mode   string
 }
 
-const executableStagePathReason = "executable file"
+const (
+	executableStagePathReason = "executable file"
+	absentStagePathReason     = "absent from worktree and index"
+)
 
-// FilterStageablePaths keeps only repository-relative, non-executable paths
-// that do not cross symlinks and reports every omitted path with the reason.
-func FilterStageablePaths(workDir string, paths []string) ([]string, []DroppedStagePath) {
+// FilterStageablePaths keeps only repository-relative paths Git can match
+// without crossing symlinks or staging executable files. It reports every
+// omitted path with the reason.
+func FilterStageablePaths(ctx context.Context, workDir string, paths []string) ([]string, []DroppedStagePath) {
 	kept := make([]string, 0, len(paths))
 	seen := make(map[string]bool, len(paths))
 	var dropped []DroppedStagePath
@@ -1854,6 +1858,10 @@ func FilterStageablePaths(workDir string, paths []string) ([]string, []DroppedSt
 		}
 		if mode, executable := executableRegularFileMode(workDir, stagePath); executable {
 			dropped = append(dropped, DroppedStagePath{Path: stagePath, Reason: executableStagePathReason, Mode: mode})
+			continue
+		}
+		if pathAbsentFromWorktreeAndIndex(ctx, workDir, stagePath) {
+			dropped = append(dropped, DroppedStagePath{Path: stagePath, Reason: absentStagePathReason})
 			continue
 		}
 		if !seen[stagePath] {
@@ -1906,6 +1914,23 @@ func executableRegularFileMode(workDir string, relative string) (string, bool) {
 	return fmt.Sprintf("%#o", info.Mode().Perm()), true
 }
 
+func pathAbsentFromWorktreeAndIndex(ctx context.Context, workDir string, relative string) bool {
+	_, err := os.Lstat(filepath.Join(workDir, relative))
+	if err == nil {
+		return false
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		return false
+	}
+	result, err := runGitCommand(ctx, workDir, "ls-files", "--error-unmatch", "--", relative)
+	if err == nil {
+		return false
+	}
+	// Exit 1 is ls-files' positive no-match answer. Any other failure leaves
+	// absence unproven, so the commit boundary remains responsible for it.
+	return result.ExitCode == 1
+}
+
 func (engine *Engine) publishDroppedStagePath(ctx context.Context, runID string, ordinal int, taskID string, artifactLabel string, drop DroppedStagePath) error {
 	payload := map[string]any{
 		"decision": "dropped",
@@ -1917,6 +1942,9 @@ func (engine *Engine) publishDroppedStagePath(ctx context.Context, runID string,
 		payload["mode"] = drop.Mode
 		fmt.Fprintf(engine.deps.Progress, "roundfix: refused executable file %s (mode %s); build artifacts and deliberately executable repository files are not valid Work Item output\n", drop.Path, drop.Mode)
 		summary = fmt.Sprintf("Executable file %s refused with mode %s; build artifacts and deliberately executable repository files are not valid Work Item output.", drop.Path, drop.Mode)
+	} else if drop.Reason == absentStagePathReason {
+		fmt.Fprintf(engine.deps.Progress, "roundfix: path %s is absent from the worktree and index; omitted from the commit\n", drop.Path)
+		summary = fmt.Sprintf("Path %s omitted from the commit: %s.", drop.Path, drop.Reason)
 	} else {
 		fmt.Fprintf(engine.deps.Progress, "roundfix: %s %s kept outside the repository; omitted from the commit\n", artifactLabel, drop.Path)
 		summary = fmt.Sprintf("%s %s kept outside the repository: %s.", artifactLabel, drop.Path, drop.Reason)
@@ -2563,7 +2591,7 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 	if strings.TrimSpace(qaTask.File) != "" {
 		changed = ensureCommitPath(changed, artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, qaTask.File)))
 	}
-	stageable, dropped := FilterStageablePaths(plan.WorkDir, changed)
+	stageable, dropped := FilterStageablePaths(ctx, plan.WorkDir, changed)
 	governedMutation := HasGovernedSnapshotMutation(before, after)
 	if err := spec.RequireGovernedOperation(plan.Authorization, spec.AuthorizationOperationImplement, governedMutation); err != nil {
 		return fmt.Errorf("refuse QA Task %s governed mutation: %w", qaTask.ID, err)
