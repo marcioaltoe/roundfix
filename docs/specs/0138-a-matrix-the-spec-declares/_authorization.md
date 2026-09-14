@@ -43,14 +43,26 @@ Edit the canonical qa-gate skill so that:
 - no row is an aggregate of other rows or re-checks a Mechanical Refusal Code;
 - once the matrix exists, a finding blocks only the rows that depend on it;
 - row inputs are fixed when the row is planned;
-- a timing failure of the repository Verification is code-caused unless the
-  unchanged delivery target reproduces it;
+- a timeout or intermittent failure of the repository Verification is recorded
+  as a failure, never an environment block;
+- a declared row that names a non-waivable source covers it, and PRD
+  Unreachable Acceptance declarations keep their rows;
 - an analyzer the `qa` Task names runs over changed packages, and diagnostics
   identical on the delivery target are attributed to their owner.
 
 After the canonical edit, regenerate the distributed mirror with
-`make skills-sync`. If any derived pin changes as a result, rewrite it only
-with `make baseline-digests`.
+`make skills-sync`. The mirror is already a bounded path. If any derived pin
+changes as a result, rewrite it only with `make baseline-digests`.
+
+## Sanctioned regeneration
+
+The repository-owned command resolves its own generated outputs. This
+declaration records the digest regeneration approved above and adds no source
+paths.
+
+```yaml
+command: make baseline-digests
+```
 
 ## Limits
 
