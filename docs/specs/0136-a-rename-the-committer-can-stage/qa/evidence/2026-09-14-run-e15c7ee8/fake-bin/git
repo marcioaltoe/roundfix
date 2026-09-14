@@ -1,0 +1,24 @@
+#!/bin/sh
+set -eu
+
+if [ "${ROUNDFIX_QA_GIT_FAILURE:-}" = "unavailable_revision" ] &&
+   [ "${1:-}" = "-C" ] && [ "${3:-}" = "-c" ] &&
+   [ "${4:-}" = "core.fsmonitor=false" ] && [ "${5:-}" = "rev-parse" ] &&
+   [ "${6:-}" = "--verify" ]; then
+  printf '%s\n' 'fatal: QA fixture made the requested authorization revision unavailable' >&2
+  exit 128
+fi
+
+case "${2:-}" in
+  */docs/specs)
+    if [ "${ROUNDFIX_QA_GIT_FAILURE:-}" = "unresolvable_spec_root" ] &&
+       [ "${1:-}" = "-C" ] && [ "${3:-}" = "-c" ] &&
+       [ "${4:-}" = "core.fsmonitor=false" ] && [ "${5:-}" = "rev-parse" ] &&
+       [ "${6:-}" = "--show-toplevel" ]; then
+      printf '%s\n' 'fatal: QA fixture made the configured Spec Root unresolvable' >&2
+      exit 128
+    fi
+    ;;
+esac
+
+exec /opt/homebrew/bin/git "$@"

@@ -15,7 +15,10 @@ graph:
       needs: []
     - id: task_04
       file: task_04.md
-      needs: [task_01, task_02, task_03]
+      needs: [task_01, task_02, task_03, task_05]
+    - id: task_05
+      file: task_05.md
+      needs: [task_01, task_02]
 ---
 
 # Tasks — A rename the committer can stage
@@ -25,6 +28,11 @@ graph:
 | task_01 | Stage only paths Git can match | backend | medium | — |
 | task_02 | Derive the final push's authority from the changed paths | backend | low | — |
 | task_03 | Carry a resolvable record path into the unresolved result | backend | low | — |
-| task_04 | Run the final QA gate | qa | medium | task_01, task_02, task_03 |
+| task_04 | Run the final QA gate | qa | medium | task_01, task_02, task_03, task_05 |
+| task_05 | Report both sides of a rename in the prior-changed reader | backend | low | task_01, task_02 |
 
-Waves: 1 → task_01, task_02, task_03 · 2 → task_04.
+Waves: 1 → task_01, task_02, task_03 · 2 → task_05 · 3 → task_04.
+
+Task 05 is the first corrective Task, repairing QA finding F-001: Git's rename
+detection collapsed a rename in the prior-changed reader, so the final push
+classified no governed path. One corrective Task remains within the ceiling.
