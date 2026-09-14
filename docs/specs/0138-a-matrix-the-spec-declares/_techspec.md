@@ -17,7 +17,9 @@ acceptance criterion. Both texts change to say three things:
   `MUST verify` or `MUST run` is one row. A Task without such a Requirement gets
   a bounded default.
 - **Obligations stay.** The outside-evidence row, the Pull Request row, the
-  repository Verification and the frontend sweep cannot be waived.
+  repository Verification, each PRD Unreachable Acceptance declaration and the
+  frontend sweep cannot be waived. A declared row that names one of them covers
+  it, so each is planned once.
 - **Blocking is scoped.** Once the matrix exists, a finding blocks only the rows
   that depend on it.
 
@@ -89,8 +91,12 @@ stage.
   matrix.
 - Other Requirements constrain how the gate runs.
 
-Add the bounded default for an undeclared matrix (Core Feature 3) and the
-obligations no declaration waives (Core Feature 2). Behavior probes for
+Add the bounded default for an undeclared matrix (Core Feature 3) and the row
+sources no declaration waives (Core Feature 2): the outside-evidence row, the
+Pull Request row, the repository Verification, each Unreachable Acceptance
+declaration, and the frontend sweep when declared. A declared row that names a
+non-waivable source covers it, so the source is planned once. The existing
+Unreachable Acceptance paragraph in section 1 stays. Behavior probes for
 high-risk journeys stay in the default path only. Add the rule that every row
 has its own observable, with no aggregate row and no row that re-checks a
 Mechanical Refusal Code (Core Feature 4).
@@ -102,9 +108,11 @@ carried-row notation stay.
 
 **Section 3, static gate.**
 
-- A timeout or intermittent failure of the repository Verification is
-  code-caused unless the unchanged delivery target reproduces it under the same
-  command (Core Feature 7).
+- A timeout or intermittent failure of the repository Verification is recorded
+  as a failure, never an environment block. Contention, a non-reproducible run
+  and the same failure on the unchanged delivery target are not proved
+  environmental causes (Core Feature 7). This tightens, never loosens, the
+  existing environment-caused rule for that one command.
 - An analyzer the `qa` Task names beyond the repository Verification runs over
   the changed packages. A diagnostic identical on the delivery target is recorded
   as observed with its owning Spec named. A repository Verification failure stays
@@ -123,6 +131,7 @@ skill must carry them verbatim in both copies:
 Each numbered `qa` Task Requirement that starts with `MUST verify` or `MUST run` is exactly one row
 declaring a matrix does not make the run partial
 Once the matrix exists, a finding blocks only the rows that depend on it
+A declared row that names a non-waivable source covers it
 fixed when the row is planned as `pending`
 is not a proved environmental cause
 identical on the delivery target
@@ -145,9 +154,10 @@ QA contract:
   starts with MUST verify or MUST run is exactly one matrix row, and such
   Requirements are the complete matrix; otherwise derive rows from the PRD user
   stories and Goals, each non-QA Task's Acceptance Criteria and the declared
-  intentional breaks. Always keep the outside-evidence row, the Pull Request
-  row, the repository Verification and, when the PRD declares frontend, the
-  frontend sweep.
+  intentional breaks. Add the outside-evidence row, the Pull Request row, the
+  repository Verification, each PRD Unreachable Acceptance declaration and,
+  when the PRD declares frontend, the frontend sweep, unless a declared row
+  already covers it.
 - Once the matrix exists, a finding blocks only the rows that depend on it;
   every other row still runs.
 - <report naming bullet, unchanged>
@@ -200,7 +210,8 @@ None. No command, flag, exit code or output changes.
    output. A new test asserts that the contract carries:
    - the declaration rule;
    - the bounded default;
-   - the non-waivable obligations, including the frontend sweep;
+   - the non-waivable sources, including Unreachable Acceptance declarations
+     and the frontend sweep, and that a declared row covers them;
    - scoped blocking.
 
    It also asserts that the contract no longer tells the gate to validate every

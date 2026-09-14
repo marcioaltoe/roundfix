@@ -74,18 +74,23 @@ still found real defects. This Spec makes that practice the gate contract:
    - A numbered `qa` Task Requirement that starts with `MUST verify` or
      `MUST run` is exactly one matrix row.
    - A `qa` Task with at least one such Requirement has declared its matrix.
-     Those Requirements are the complete matrix, and the gate adds no rows of
-     its own.
+     Those Requirements are the complete matrix. The gate adds a row only for a
+     source in Core Feature 2 that no declared row already covers.
    - Every other Requirement, such as `MUST exercise` or `MUST NOT`, constrains
      how the gate runs and is not a row.
    - A gate run on a declared matrix is a full gate and can reach `pass`.
      `partial` stays reserved for a `qa` Task that explicitly marks its run
      partial, and for a planned row the gate did not run.
-2. **Some obligations no declaration waives.** A declared matrix still carries:
+2. **Some row sources no declaration waives.** Every matrix carries:
    - the outside-evidence row;
    - the Pull Request row, on its default equivalent-evidence path;
    - the repository Verification;
+   - a row for each declaration under the PRD's Unreachable Acceptance
+     section, read as the author's claim to test;
    - the frontend sweep, when the PRD declares the `frontend` surface.
+
+   A declared row that names one of these sources covers it, so each source is
+   planned exactly once.
 3. **An undeclared matrix keeps a bounded default.** When the `qa` Task declares
    no matrix, the gate derives rows from:
    - the PRD user stories and Goals;
@@ -115,9 +120,11 @@ still found real defects. This Spec makes that practice the gate contract:
    written as `pending`, bounded to what the row reads. A row whose inputs grow
    after it ran cannot be carried forward.
 7. **Timing failures are not dismissed.** A timeout or intermittent failure of
-   the repository Verification is code-caused unless the unchanged delivery
-   target reproduces it under the same command. "Contention" or
-   "non-reproducible" is not a proved environmental cause.
+   the repository Verification is recorded as a failure, never as an
+   environment block. None of these is a proved environmental cause:
+   "contention", "non-reproducible", or the same failure on the unchanged
+   delivery target. Only a cause that stops the command from running at all is
+   environmental.
 8. **A named analyzer reads what the Spec changed.** An analyzer the `qa` Task
    names beyond the repository Verification runs over the packages the Spec
    changed.
@@ -177,8 +184,8 @@ same row set as the round before, with carried rows marked as such.
 - Every verdict rule reaches the same verdict for the same row outcomes; no rule
   becomes more permissive.
 - A repository Verification failure is still a `fail`.
-- The outside-evidence row and the Pull Request row appear in every matrix,
-  declared or default.
+- The outside-evidence row, the Pull Request row and every PRD Unreachable
+  Acceptance declaration have a row in every matrix, declared or default.
 - The gate still audits Task commits against the grant by command, with the
   clauses the skill's contract tests pin.
 
