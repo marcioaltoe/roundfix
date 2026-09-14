@@ -1225,6 +1225,7 @@ func mechanicalRegenerationOutputs(repoRoot string, declarations []spec.Authoriz
 			for output := range seen {
 				outputs[output] = true
 			}
+			continue
 		}
 		resolved, err := baseline.OutputsFor(repoRoot, declaration.Command)
 		if err != nil {

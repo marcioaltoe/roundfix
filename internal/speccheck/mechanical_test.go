@@ -16,9 +16,11 @@ import (
 	"strings"
 	"testing"
 
+	"roundfix/internal/baseline"
 	"roundfix/internal/gittest"
 	"roundfix/internal/spec"
 	"roundfix/internal/speccheck"
+	"roundfix/internal/suiteguardcontract"
 )
 
 func TestGateAcceptsItsOwnDeclaredTerm(t *testing.T) {
@@ -654,6 +656,142 @@ func TestMechanicalAuthPathsAcceptsDeclaredRegenerationOutput(t *testing.T) {
 	})
 
 	assertNoMechanicalCode(t, result, speccheck.CodeMechanicalAuthPaths)
+}
+
+func TestEnumeratedOutputsAreAuthoritative(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		changedPath string
+		wantRefusal bool
+	}{
+		{
+			name:        "enumerated output remains allowed",
+			changedPath: mechanicalEnumeratedOutput,
+		},
+		{
+			name:        "owner-derived output outside enumeration refuses",
+			changedPath: mechanicalOwnerDerivedOutput,
+			wantRefusal: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			repoRoot := newMechanicalGitRepo(t)
+			const authorizationPath = "docs/workflow/authorizations/mechanical.md"
+			target := commitMechanicalRegenerationFixture(
+				t,
+				repoRoot,
+				authorizationPath,
+				"command: "+mechanicalRegenerationCommand+"\noutputs:\n  - "+mechanicalEnumeratedOutput+"\n",
+			)
+			writeMechanicalFile(t, repoRoot, tt.changedPath, "regenerated\n")
+			consumer := commitMechanicalFiles(t, repoRoot, "regenerate one output", tt.changedPath)
+
+			result := runMechanical(t, speccheck.MechanicalRequest{
+				RepoRoot:               repoRoot,
+				AuthorizationPath:      authorizationPath,
+				DeliveryTargetRevision: target,
+				TaskCommits: []speccheck.MechanicalTaskCommit{{
+					TaskID: "task_03",
+					SHA:    consumer,
+				}},
+			})
+
+			if tt.wantRefusal {
+				assertMechanicalPathEscapedGrant(t, result, tt.changedPath, authorizationPath)
+				return
+			}
+			assertNoMechanicalCode(t, result, speccheck.CodeMechanicalAuthPaths)
+		})
+	}
+}
+
+func TestCommandOnlyDeclarationStillResolvesOwnership(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := newMechanicalGitRepo(t)
+	const authorizationPath = "docs/workflow/authorizations/mechanical.md"
+	target := commitMechanicalRegenerationFixture(
+		t,
+		repoRoot,
+		authorizationPath,
+		"command: "+mechanicalRegenerationCommand+"\n",
+	)
+
+	want, err := baseline.OutputsFor(repoRoot, mechanicalRegenerationCommand)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if expected := []string{mechanicalEnumeratedOutput, mechanicalOwnerDerivedOutput}; !reflect.DeepEqual(want, expected) {
+		t.Fatalf("repository ownership outputs = %v, want fixture outputs %v", want, expected)
+	}
+
+	got := auditMechanicalRegenerationOutputs(
+		t,
+		repoRoot,
+		authorizationPath,
+		target,
+		[]string{mechanicalEnumeratedOutput, mechanicalOwnerDerivedOutput, mechanicalFrozenOutput},
+	)
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("command-only audit outputs = %v, want repository ownership outputs %v", got, want)
+	}
+}
+
+func TestAuditAndSuiteGuardAgreeOnAllowedOutputs(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		declaration string
+	}{
+		{
+			name: "enumerated list",
+			declaration: "command: " + mechanicalRegenerationCommand + "\noutputs:\n  - " +
+				mechanicalEnumeratedOutput + "\n",
+		},
+		{
+			name:        "command-only declaration",
+			declaration: "command: " + mechanicalRegenerationCommand + "\n",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			repoRoot := newMechanicalGitRepo(t)
+			const authorizationPath = "docs/workflow/authorizations/mechanical.md"
+			target := commitMechanicalRegenerationFixture(
+				t,
+				repoRoot,
+				authorizationPath,
+				tt.declaration,
+			)
+
+			declarations, err := suiteguardcontract.ReadSanctionedRegenerations(repoRoot)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(declarations) != 1 || declarations[0].Command != mechanicalRegenerationCommand {
+				t.Fatalf("suite guard declarations = %#v, want one %q declaration", declarations, mechanicalRegenerationCommand)
+			}
+
+			auditOutputs := auditMechanicalRegenerationOutputs(
+				t,
+				repoRoot,
+				authorizationPath,
+				target,
+				[]string{mechanicalEnumeratedOutput, mechanicalOwnerDerivedOutput, mechanicalFrozenOutput},
+			)
+			if !reflect.DeepEqual(auditOutputs, declarations[0].Outputs) {
+				t.Fatalf("audit outputs = %v, suite guard outputs = %v", auditOutputs, declarations[0].Outputs)
+			}
+		})
+	}
 }
 
 func TestMechanicalAuthPathsStillRefusesAnUndeclaredPath(t *testing.T) {
@@ -2307,6 +2445,81 @@ func writeMechanicalResolverFixture(t *testing.T, repoRoot string) {
 	writeMechanicalFile(t, repoRoot, "Makefile", "DERIVED_DIGEST_PATHS := internal/baseline/derived\n")
 	writeMechanicalFile(t, repoRoot, "internal/baseline/derived/_ownership.yml", "owner: frozen\nreason: fixture\n")
 	writeMechanicalFile(t, repoRoot, "internal/baseline/derived/frozen.txt", "frozen\n")
+}
+
+const (
+	mechanicalRegenerationCommand = "make baseline-digests"
+	mechanicalRegenerationRoot    = "internal/baseline/assets/regeneration-fixture"
+	mechanicalEnumeratedOutput    = mechanicalRegenerationRoot + "/a-enumerated.txt"
+	mechanicalOwnerDerivedOutput  = mechanicalRegenerationRoot + "/b-owner-derived.txt"
+	mechanicalFrozenOutput        = mechanicalRegenerationRoot + "/c-frozen.txt"
+)
+
+func commitMechanicalRegenerationFixture(
+	t *testing.T,
+	repoRoot string,
+	authorizationPath string,
+	declaration string,
+) string {
+	t.Helper()
+
+	const ownershipPath = mechanicalRegenerationRoot + "/_ownership.yml"
+	writeMechanicalFile(t, repoRoot, "Makefile", "DERIVED_DIGEST_PATHS := "+mechanicalRegenerationRoot+"\n")
+	writeMechanicalFile(t, repoRoot, ownershipPath,
+		"owner: sanctioned\nreason: fixture\nexceptions:\n"+
+			"  - path: c-frozen.txt\n    owner: frozen\n    reason: fixture\n")
+	writeMechanicalFile(t, repoRoot, mechanicalEnumeratedOutput, "enumerated\n")
+	writeMechanicalFile(t, repoRoot, mechanicalOwnerDerivedOutput, "owner derived\n")
+	writeMechanicalFile(t, repoRoot, mechanicalFrozenOutput, "frozen\n")
+	writeMechanicalFile(t, repoRoot, authorizationPath, mechanicalRegenerationAuthorization(declaration))
+	return commitMechanicalFiles(
+		t,
+		repoRoot,
+		"record regeneration fixture",
+		"Makefile",
+		ownershipPath,
+		mechanicalEnumeratedOutput,
+		mechanicalOwnerDerivedOutput,
+		mechanicalFrozenOutput,
+		authorizationPath,
+	)
+}
+
+func auditMechanicalRegenerationOutputs(
+	t *testing.T,
+	repoRoot string,
+	authorizationPath string,
+	target string,
+	candidates []string,
+) []string {
+	t.Helper()
+
+	allowed := make([]string, 0, len(candidates))
+	for index, candidate := range candidates {
+		writeMechanicalFile(t, repoRoot, candidate, fmt.Sprintf("regenerated %d\n", index+1))
+		consumer := commitMechanicalFiles(t, repoRoot, "regenerate candidate output", candidate)
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:               repoRoot,
+			AuthorizationPath:      authorizationPath,
+			DeliveryTargetRevision: target,
+			TaskCommits: []speccheck.MechanicalTaskCommit{{
+				TaskID: "task_03",
+				SHA:    consumer,
+			}},
+		})
+		findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalAuthPaths)
+		switch len(findings) {
+		case 0:
+			allowed = append(allowed, candidate)
+		case 1:
+			if !strings.Contains(findings[0].Detail, candidate) || findings[0].File != authorizationPath {
+				t.Fatalf("%s finding = %#v, want refusal for %s from %s", speccheck.CodeMechanicalAuthPaths, findings[0], candidate, authorizationPath)
+			}
+		default:
+			t.Fatalf("%s findings = %#v, want at most one for %s", speccheck.CodeMechanicalAuthPaths, findings, candidate)
+		}
+	}
+	return allowed
 }
 
 func commitMechanicalFiles(t *testing.T, repoRoot, message string, paths ...string) string {

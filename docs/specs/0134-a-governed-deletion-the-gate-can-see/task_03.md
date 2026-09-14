@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0134-a-governed-deletion-the-gate-can-see
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -66,3 +66,47 @@ command-only record still resolves ownership.
 - `_prd.md` → Goals 2; Core Features 3-4; Declared intentional breaks 2.
 - `_techspec.md` → Implementation Design: An enumerated list is the whole list; Build Order 3.
 - ADR-0149.
+
+## Result
+
+`mechanicalRegenerationOutputs` now stops after admitting a present, valid
+`outputs` list. It resolves `baseline.OutputsFor` only when the parsed list is
+absent, matching the suite guard's existing branch without changing refusal
+tokens or ownership resolution.
+
+Focused evidence:
+
+- Before the production change,
+  `rtk env GOCACHE=/tmp/roundfix-go-build-0134-task-03 go test -count=1 ./internal/speccheck -run '^(TestEnumeratedOutputsAreAuthoritative|TestCommandOnlyDeclarationStillResolvesOwnership|TestAuditAndSuiteGuardAgreeOnAllowedOutputs)$'`
+  failed because the owner-derived sibling produced no `QA-AUTH-PATHS` finding
+  and the audit returned two allowed outputs while the suite guard returned the
+  one enumerated output. The first attempt with the default Go cache stopped at
+  the sandboxed cache `EPERM`; the unchanged `/tmp` retry reached the regression.
+- After the production change, that same focused command passed.
+- A broader focused `internal/speccheck` run covering the three new tests plus
+  `TestMechanicalAuthPathsAcceptsDeclaredRegenerationOutput`,
+  `TestMechanicalAuthPathsStillRefusesAnUndeclaredPath`, and
+  `TestMechanicalAuthPathsRefusesInvalidRegenerationDeclaration` passed.
+- Focused `internal/suiteguardcontract` discovery tests for command-only,
+  enumerated, and legacy declarations passed. `rtk git diff --check` also
+  passed.
+
+Acceptance evidence:
+
+- `TestEnumeratedOutputsAreAuthoritative/owner-derived_output_outside_enumeration_refuses`
+  observes `QA-AUTH-PATHS` for an owner-derived output excluded by the record.
+- `TestEnumeratedOutputsAreAuthoritative/enumerated_output_remains_allowed`
+  changes the one enumerated output without that refusal.
+- `TestCommandOnlyDeclarationStillResolvesOwnership` reads the fixture's
+  repository-owned set through `baseline.OutputsFor`, observes the same set
+  through the audit, and observes refusal for the frozen non-owned candidate.
+- `TestAuditAndSuiteGuardAgreeOnAllowedOutputs` compares the audit's observable
+  allowed set with `suiteguardcontract.ReadSanctionedRegenerations` for both an
+  enumerated record and a command-only record.
+
+The commands under `## Verification` remain for the Daemon.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260914T095106Z_ff595a311e605882`
+- Source commit: `6ebb40e4f7eedb53c6c153a02461be1302578f67`
