@@ -1,0 +1,3 @@
+A	after.txt
+D	before.txt
+M	docs/specs/0001-rename-fixture/task_01.md

@@ -1,0 +1,34 @@
+audited_head: 896c4ad2699592653afa68bb422a2cc3f777509c
+delivery_target_before_spec: 03a1be21
+
+task_commit: bd11ca9864cdfc3b19f1b39742b3236975041345
+changed_paths:
+  - docs/specs/0136-a-rename-the-committer-can-stage/task_01.md
+  - internal/daemon/daemon_test.go
+  - internal/daemon/engine.go
+  - internal/daemon/task_engine.go
+  - internal/daemon/task_engine_test.go
+
+task_commit: 7ce0a090607b90df38f9b7f95a86fc38c662b91c
+changed_paths:
+  - docs/specs/0136-a-rename-the-committer-can-stage/task_02.md
+  - internal/cli/implement.go
+  - internal/cli/implement_test.go
+
+task_commit: 8651d45bd286634f92ad8b3b08e863dea79f6990
+changed_paths:
+  - docs/specs/0136-a-rename-the-committer-can-stage/task_03.md
+  - internal/spec/authorization.go
+  - internal/spec/authorization_test.go
+
+corrective_task_commit: 896c4ad2699592653afa68bb422a2cc3f777509c
+changed_paths:
+  - docs/specs/0136-a-rename-the-committer-can-stage/task_05.md
+  - internal/cli/implement_test.go
+  - internal/worktree/worktree.go
+  - internal/worktree/worktree_test.go
+
+The path lists were resolved with `git diff-tree --no-commit-id --name-only -r`
+for every Task commit. No Task changed repository-tooling configuration, a
+script, an ignore file, a plugin declaration, or a version pin. The Governed
+Path predicate and operation vocabulary remain outside the Task commits.

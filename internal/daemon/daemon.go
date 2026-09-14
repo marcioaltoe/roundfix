@@ -270,6 +270,9 @@ func parsePorcelainPaths(output string) []string {
 		paths = append(paths, entry[3:])
 		if strings.ContainsAny(status, "RC") {
 			index++
+			if index < len(fields) && fields[index] != "" {
+				paths = append(paths, fields[index])
+			}
 		}
 	}
 	return paths

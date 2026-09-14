@@ -1,0 +1,22 @@
+governed rename repository: /private/tmp/roundfix-qa-0136-governed_push.C1Yb4R/repo
+
+command: git diff --name-only HEAD^..HEAD --
+exit: 0
+output:
+docs/specs/0001-rename-fixture/task_01.md
+notes.txt
+
+command: git diff --name-only --no-renames HEAD^..HEAD --
+exit: 0
+output:
+Makefile
+docs/specs/0001-rename-fixture/task_01.md
+notes.txt
+
+governed edit repository: /private/tmp/roundfix-qa-0136-governed_modify_push.Lhi1hx/repo
+
+command: git diff --name-only HEAD^..HEAD --
+exit: 0
+output:
+Makefile
+docs/specs/0001-rename-fixture/task_01.md

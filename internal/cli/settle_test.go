@@ -102,8 +102,7 @@ func TestRunSettleNoCommitPrintsNoCommitPathsOrSharedWarning(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Internal fixture should stay untouched"},
 	})
-	externalRoot := filepath.Join(t.TempDir(), "external-specs")
-	writeImplementSpecAtRoot(t, externalRoot, implementTestSlug, []implementSeed{
+	_, externalRoot := newExternalSpecsRoot(t, implementTestSlug, []implementSeed{
 		{id: "task_01", title: "Recover external task", status: string(spec.StatusFailed), verification: []string{"true"}},
 		{id: "task_02", title: "Other failed work", status: string(spec.StatusFailed)},
 	})
@@ -134,8 +133,7 @@ func TestRunSettleUsesConfiguredExternalSpecRoot(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Internal fixture should stay untouched"},
 	})
-	externalRoot := filepath.Join(t.TempDir(), "external-specs")
-	writeImplementSpecAtRoot(t, externalRoot, implementTestSlug, []implementSeed{
+	_, externalRoot := newExternalSpecsRoot(t, implementTestSlug, []implementSeed{
 		{
 			id:           "task_01",
 			title:        "Recover external task",
@@ -1139,6 +1137,165 @@ func TestSettleVerificationRunsSurfaceCommandsVerbatim(t *testing.T) {
 		t.Fatalf("expected settle to open no Agent session, got %d", runner.calls)
 	}
 	assertNoRunDatabase(t, homeDir)
+}
+
+func TestSettleExecutesCommandFromModifiedSource(t *testing.T) {
+	t.Parallel()
+	_, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Run edited command", status: string(spec.StatusCompleted)},
+	})
+	taskPath := implementTaskPath(repoDir, "task_01")
+	mustWrite(t, taskPath, implementTaskContent(implementTestSlug, implementSeed{
+		id:           "task_01",
+		title:        "Run edited command",
+		status:       string(spec.StatusCompleted),
+		verification: []string{"touch modified-source-ran"},
+	}))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("settle exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "verify touch modified-source-ran — ok\n") {
+		t.Fatalf("settle stdout = %q, want the edited command verdict", stdout.String())
+	}
+	if _, err := os.Stat(filepath.Join(repoDir, "modified-source-ran")); err != nil {
+		t.Fatalf("edited Settle command did not execute: %v", err)
+	}
+}
+
+func TestSettleRefusesMissingCommitAuthority(t *testing.T) {
+	t.Parallel()
+
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{
+			id:           "task_01",
+			title:        "Recover bounded work",
+			status:       string(spec.StatusFailed),
+			verification: []string{"touch should-not-run"},
+		},
+	})
+	setImplementFixtureAuthorizationOperations(t, repoDir, "implement", "push")
+	mustWrite(t, filepath.Join(repoDir, "Makefile"), "verify:\n\t@true\n")
+	taskPath := implementTaskPath(repoDir, "task_01")
+	taskBefore := mustRead(t, taskPath)
+	statusBefore := gitSettleOutput(t, repoDir, "status", "--porcelain=v1")
+	headBefore := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "HEAD"))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected exit code 2, got %d (stderr %q)", code, stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout, got %q", stdout.String())
+	}
+	for _, want := range []string{"commit", "docs/specs/" + implementTestSlug + "/_authorization.md"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Errorf("settle refusal = %q, want %q", stderr.String(), want)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(repoDir, "should-not-run")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("missing commit authority executed Verification, stat error %v", err)
+	}
+	if got := mustRead(t, taskPath); got != taskBefore {
+		t.Fatalf("missing commit authority changed task file")
+	}
+	if got := gitSettleOutput(t, repoDir, "status", "--porcelain=v1"); got != statusBefore {
+		t.Fatalf("missing commit authority changed status from %q to %q", statusBefore, got)
+	}
+	if got := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "HEAD")); got != headBefore {
+		t.Fatalf("missing commit authority changed HEAD from %s to %s", headBefore, got)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
+func TestSettleClassifiesGovernedRemoval(t *testing.T) {
+	t.Parallel()
+
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{
+			id:           "task_01",
+			title:        "Recover a governed removal",
+			status:       string(spec.StatusFailed),
+			verification: []string{"touch should-not-run"},
+		},
+	})
+	setImplementFixtureAuthorizationOperations(t, repoDir, "implement")
+	mustWrite(t, filepath.Join(repoDir, "Makefile"), "verify:\n\t@true\n")
+	gitImplement(t, repoDir, "add", "Makefile")
+	gitImplement(t, repoDir, "commit", "-m", "seed governed path")
+	if err := os.Remove(filepath.Join(repoDir, "Makefile")); err != nil {
+		t.Fatalf("remove governed path: %v", err)
+	}
+	taskPath := implementTaskPath(repoDir, "task_01")
+	taskBefore := mustRead(t, taskPath)
+	statusBefore := gitSettleOutput(t, repoDir, "status", "--porcelain=v1")
+	headBefore := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "HEAD"))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("governed removal settle exit = %d, want %d; stdout=%q stderr=%q", code, exitPreflight, stdout.String(), stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("governed removal settle stdout = %q, want empty", stdout.String())
+	}
+	for _, want := range []string{"commit", "docs/specs/" + implementTestSlug + "/_authorization.md"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Errorf("governed removal settle refusal = %q, want %q", stderr.String(), want)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(repoDir, "should-not-run")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("governed removal settle executed Verification, stat error %v", err)
+	}
+	if got := mustRead(t, taskPath); got != taskBefore {
+		t.Fatal("governed removal settle changed task file")
+	}
+	if got := gitSettleOutput(t, repoDir, "status", "--porcelain=v1"); got != statusBefore {
+		t.Fatalf("governed removal settle changed status from %q to %q", statusBefore, got)
+	}
+	if got := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "HEAD")); got != headBefore {
+		t.Fatalf("governed removal settle changed HEAD from %s to %s", headBefore, got)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
+func TestSettleCommitsOrdinaryWorkWithoutRecord(t *testing.T) {
+	t.Parallel()
+
+	_, repoDir := newImplementWorkspace(t, []implementSeed{
+		{
+			id:           "task_01",
+			title:        "Recover ordinary work",
+			status:       string(spec.StatusFailed),
+			verification: []string{"test -f done.txt"},
+		},
+	})
+	removeImplementFixtureAuthorization(t, repoDir)
+	mustWrite(t, filepath.Join(repoDir, "done.txt"), "preserved work\n")
+	headBefore := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "HEAD"))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("ordinary settle without authorization exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+	}
+	if got := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "HEAD")); got == headBefore {
+		t.Fatalf("ordinary settle without authorization left HEAD at %s", got)
+	}
+	if !strings.Contains(stdout.String(), "commit done.txt") {
+		t.Fatalf("ordinary settle stdout = %q, want committed path", stdout.String())
+	}
 }
 
 func TestSettleVerificationFailureKeepsHookRefusedWorkInTaskWorktree(t *testing.T) {

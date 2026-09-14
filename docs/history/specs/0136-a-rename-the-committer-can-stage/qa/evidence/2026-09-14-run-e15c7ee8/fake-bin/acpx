@@ -1,0 +1,124 @@
+#!/bin/sh
+set -eu
+
+state_path() {
+  session=$1
+  safe_session=$(printf '%s' "$session" | tr '/ :' '___')
+  printf '/private/tmp/roundfix-qa-0136-acpx-%s.model' "$safe_session"
+}
+
+if [ "${1:-}" = "--version" ]; then
+  printf '%s\n' '0.12.0'
+  exit 0
+fi
+
+case " $* " in
+  *" sessions ensure "*)
+    model=""
+    session=""
+    previous=""
+    for argument in "$@"; do
+      if [ "$previous" = "--model" ]; then
+        model=$argument
+      elif [ "$previous" = "--name" ]; then
+        session=$argument
+      fi
+      previous=$argument
+    done
+    printf '%s' "$model" > "$(state_path "$session")"
+    exit 0
+    ;;
+  *" sessions show "*)
+    session=""
+    previous=""
+    for argument in "$@"; do
+      if [ "$previous" = "-s" ] || [ "$previous" = "--name" ]; then
+        session=$argument
+      fi
+      previous=$argument
+    done
+    model=""
+    if [ -f "$(state_path "$session")" ]; then
+      model=$(sed -n '1p' "$(state_path "$session")")
+    fi
+    if [ -z "$model" ]; then
+      model="gpt-5.6-sol"
+    fi
+    printf '{"schema":"acpx.session.v1","acpx":{"current_model_id":"%s","config_options":[{"id":"model","category":"model","type":"select","currentValue":"%s","options":[{"value":"gpt-5.6-sol"},{"value":"gpt-5.5"}]},{"id":"reasoning_effort","type":"select","currentValue":"medium","options":[{"value":"low"},{"value":"medium"},{"value":"high"},{"value":"xhigh"},{"value":"max"},{"value":"maximum"},{"value":"ultra"}]}]}}\n' "$model" "$model"
+    exit 0
+    ;;
+  *" set model "*|*" set reasoning_effort "*|*" set effort "*)
+    config_id=""
+    config_value=""
+    session=""
+    previous=""
+    for argument in "$@"; do
+      if [ "$previous" = "set" ]; then
+        config_id=$argument
+      elif [ -n "$config_id" ] && [ -z "$config_value" ]; then
+        config_value=$argument
+      elif [ "$previous" = "-s" ]; then
+        session=$argument
+      fi
+      previous=$argument
+    done
+    model=$config_value
+    current_reasoning="medium"
+    if [ "$config_id" = "model" ]; then
+      printf '%s' "$model" > "$(state_path "$session")"
+    else
+      if [ -f "$(state_path "$session")" ]; then
+        model=$(sed -n '1p' "$(state_path "$session")")
+      fi
+      current_reasoning=$config_value
+    fi
+    printf '{"action":"config_set","configId":"%s","value":"%s","configOptions":[{"id":"model","category":"model","type":"select","currentValue":"%s","options":[{"value":"gpt-5.6-sol"},{"value":"gpt-5.5"}]},{"id":"reasoning_effort","type":"select","currentValue":"%s","options":[{"value":"low"},{"value":"medium"},{"value":"high"},{"value":"xhigh"},{"value":"max"},{"value":"maximum"},{"value":"ultra"}]}]}\n' "$config_id" "$config_value" "$model" "$current_reasoning"
+    exit 0
+    ;;
+  *" sessions close "*|*" sessions cancel "*)
+    exit 0
+    ;;
+  *" prompt "*)
+    prompt=$(sed -n '1,$p')
+    task_id=$(printf '%s\n' "$prompt" | sed -n 's/^Task: //p' | sed -n '1p')
+    if [ "$task_id" = "task_01" ]; then
+      case "${ROUNDFIX_QA_MODE:-}" in
+        staged_rename)
+          if [ -e before.txt ]; then
+            git mv before.txt after.txt
+          fi
+          ;;
+        unstaged_rename)
+          if [ -e before.txt ]; then
+            mv before.txt after.txt
+          fi
+          ;;
+        delete)
+          if [ -e before.txt ]; then
+            rm before.txt
+          fi
+          ;;
+        governed_rename|unavailable_revision|unresolvable_spec_root)
+          if [ -e Makefile ]; then
+            git mv Makefile notes.txt
+          fi
+          ;;
+        ordinary_push)
+          printf '%s\n' 'changed' > ordinary.txt
+          ;;
+        governed_push)
+          if [ -e Makefile ]; then
+            git mv Makefile notes.txt
+          fi
+          ;;
+        governed_modify_push)
+          printf 'verify:\n\t@true\nqa:\n\t@true\n' > Makefile
+          ;;
+      esac
+    fi
+    printf '%s\n' '{"jsonrpc":"2.0","id":1,"result":{"stopReason":"end_turn"}}'
+    exit 0
+    ;;
+esac
+
+exit 0

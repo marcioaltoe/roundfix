@@ -193,6 +193,7 @@ func TestRunDispositionCharacterizationStoppedRunLeavesTasksPending(t *testing.T
 		WorkDir:                 ref.Path,
 		RunWorktree:             ref,
 		TargetBranch:            "ma/spec-work",
+		Authorization:           spec.ReadSpecAuthorization(context.Background(), fixture.gitRoot, specsRoot, taskCycleSlug, "HEAD"),
 		Spec:                    graph.Spec,
 		SpecsRoot:               specsRoot,
 		Tasks:                   graph.Tasks,

@@ -1,0 +1,3 @@
+task_01 failed — Exercise the Daemon commit path
+  reason: Task governed mutation refused: authorization operation "implement" is not permitted by record "/private/tmp/roundfix-qa-0136-unresolvable_spec_root.bQeaDl/repo/docs/specs/0001-rename-fixture/_authorization.md": resolve Spec Root "/private/tmp/roundfix-qa-0136-unresolvable_spec_root.bQeaDl/repo/docs/specs": git rev-parse --show-toplevel: fatal: QA fixture made the configured Spec Root unresolvable: exit status 128
+Unresolved: 0 completed, 1 failed, 0 skipped, 0 pending.

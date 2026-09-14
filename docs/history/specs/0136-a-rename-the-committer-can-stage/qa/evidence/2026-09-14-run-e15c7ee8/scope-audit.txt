@@ -1,0 +1,23 @@
+delivery_target: 03a1be21
+task_commits:
+  - ae49dc59 stage only paths Git can match
+  - f9feb1b3 derive final push authority from changed paths
+  - 54ab556d carry a resolvable record path
+
+changed_paths:
+  - docs/specs/0136-a-rename-the-committer-can-stage/task_01.md
+  - docs/specs/0136-a-rename-the-committer-can-stage/task_02.md
+  - docs/specs/0136-a-rename-the-committer-can-stage/task_03.md
+  - internal/cli/implement.go
+  - internal/cli/implement_test.go
+  - internal/daemon/daemon_test.go
+  - internal/daemon/engine.go
+  - internal/daemon/task_engine.go
+  - internal/daemon/task_engine_test.go
+  - internal/spec/authorization.go
+  - internal/spec/authorization_test.go
+
+No changed path is repository-tooling configuration, a script, an ignore file,
+a plugin declaration, or a version pin. The changed-path reader in
+internal/worktree, the Governed Path set in internal/speccheck/governed.go, and
+the operation vocabulary in internal/authorization are outside the diff.

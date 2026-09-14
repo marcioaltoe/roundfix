@@ -238,6 +238,11 @@ _Avoid_: Commit failure, pre-commit error, verification failure
 The stable token a pre-QA mechanical check emits when it can refuse from written declarations and repository facts alone, before any Agent Session opens. Four exist: `QA-AUTH-PATHS` (a tooling change outside its authorization's bounded paths), `QA-CONSEQUENT-ORDER` (a consequent fix folded into or ordered before the change that caused it), `QA-REPORT-SHAPE` (a QA Report missing a required structural element), and `QA-EVIDENCE-PATH` (an evidence path a report names but the repository does not carry). The code is the durable name a reader and a later detector both use; the human sentence beside it may be reworded, the token may not.
 _Avoid_: lint code, error code, check name
 
+**Grant Refusal Code**:
+The stable token the Spec checker emits when an authorization boundary refuses. `SC-TOOLING-UNAPPROVED` means a Spec claims tooling authorization its cited record does not sustain because the record is proposed, undated, withdrawn, or consumed by another Spec. A record that honestly declares its mutations proposed, claiming no operative grant, is accurate rather than defective and refuses nothing. Like a Mechanical Refusal Code, the token is the durable name a reader and a later detector both use; the sentence beside it may be reworded, the token may not.
+_Avoid_: authorization error, permission code, trust error
+
+
 **Agent Session**:
 The acpx-backed session owned by one Work Item or action. Each Implement Task owns a Task Type-selected Agent Session, requested QA owns a separate `qa` Agent Session, and review work uses a review-selected Agent Session; effective selection and fallback attempts are persisted for that owner.
 _Avoid_: ACP session, chat, conversation, thread

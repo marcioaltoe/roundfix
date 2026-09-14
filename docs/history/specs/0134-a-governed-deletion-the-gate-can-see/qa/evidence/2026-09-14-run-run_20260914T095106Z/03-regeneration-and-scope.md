@@ -1,0 +1,11 @@
+# Regeneration and scope evidence
+
+The fresh Go 1.26.7 focused run exited 0 for `TestEnumeratedOutputsAreAuthoritative`, `TestCommandOnlyDeclarationStillResolvesOwnership`, `TestAuditAndSuiteGuardAgreeOnAllowedOutputs`, `TestMechanicalAuthPathsAcceptsDeclaredRegenerationOutput`, `TestMechanicalAuthPathsStillRefusesAnUndeclaredPath`, `TestMechanicalAuthPathsRefusesInvalidRegenerationDeclaration`, `TestCleanupRegenerationDiscovery`, `TestOutputsForCommand`, and `TestCleanupRegenerationOwnershipParity`.
+
+The enumerated-list test passed both branches: the listed output remained allowed, and the owner-derived sibling outside that list produced `QA-AUTH-PATHS`. The command-only test resolved the repository-owned set. The reader-parity tests observed the same allowed set from the mechanical audit and `suiteguardcontract.ReadSanctionedRegenerations` for enumerated and command-only records.
+
+The outside source is the repository's Baseline ownership tree under `internal/baseline/assets/**/_ownership.yml` and `internal/baseline/testdata/**/_ownership.yml`, authored before this Spec. `TestOutputsForCommand/make_baseline-digests_matches_the_2026-08-06_enumeration` independently compared the current `baseline.OutputsFor` result with the list stored at commit `81a6afb48f4a3683d0e5fad52f3919cf1bdfbbf4`, path `docs/workflow/authorizations/2026-08-06-proof-cost.md`, and passed. This source is outside Spec 0134's artifacts.
+
+`git diff --name-only e9746a45..HEAD` listed only Task 01-03 files plus `internal/cli/settle.go`, `internal/cli/settle_test.go`, `internal/daemon/task_engine.go`, `internal/daemon/task_engine_test.go`, `internal/speccheck/mechanical.go`, and `internal/speccheck/mechanical_test.go`. `git diff --exit-code e9746a45..HEAD -- internal/spec/authorization.go internal/speccheck/governed.go` exited 0, so the operation vocabulary and Governed Path set did not move. The authorization commit `f2d3f0ce` is an ancestor of the consuming Task commits and the authorized `internal/speccheck/mechanical_test.go` change stayed within the record's exact bounded paths.
+
+No external or symlinked Spec Root code, operation-vocabulary owner, Governed Path owner, formatter, linter, test-runner, build script, plugin declaration, version pin, or residual Daemon timing behavior changed in the three Task commits.

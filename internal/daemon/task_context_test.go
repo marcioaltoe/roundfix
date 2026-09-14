@@ -247,7 +247,6 @@ rows_blocked_declared: 0
 | - | --- | --- |
 | R01 | fail | Previous QA result. |
 `)
-	gittest.InitRepo(t, fixture.gitRoot, "-b", "main")
 	gittest.Run(t, fixture.gitRoot, "add", ".")
 	gittest.Run(t, fixture.gitRoot, "commit", "-m", "initial fixture")
 

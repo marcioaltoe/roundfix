@@ -18,6 +18,7 @@ import (
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
+	"roundfix/internal/spec"
 	"roundfix/internal/store"
 	runworktree "roundfix/internal/worktree"
 )
@@ -554,10 +555,12 @@ type CycleResult struct {
 // Push gating policy (no Unresolved Review Issues, auto-push enabled) stays
 // with the caller.
 type FinalPushRequest struct {
-	RunID   string
-	WorkDir string
-	Remote  string
-	Branch  string
+	RunID            string
+	WorkDir          string
+	Remote           string
+	Branch           string
+	Authorization    *spec.AuthorizationResolution
+	GovernedMutation bool
 }
 
 func NewEngine(deps Dependencies) (*Engine, error) {
@@ -681,6 +684,11 @@ func (engine *Engine) ResolveCycle(ctx context.Context, plan CyclePlan) (CycleRe
 func (engine *Engine) FinalPush(ctx context.Context, req FinalPushRequest) error {
 	if err := ctx.Err(); err != nil {
 		return err
+	}
+	if req.Authorization != nil {
+		if err := spec.RequireGovernedOperation(*req.Authorization, spec.AuthorizationOperationPush, req.GovernedMutation); err != nil {
+			return fmt.Errorf("refuse Spec Run push: %w", err)
+		}
 	}
 	if err := engine.guardWriteBoundary(ctx, "Final Push"); err != nil {
 		return err
@@ -1072,7 +1080,7 @@ func (engine *Engine) commitBatch(ctx context.Context, plan CyclePlan, batch rou
 		)
 		return false, true, err
 	}
-	stageable, dropped := FilterStageablePaths(plan.GitRoot, changed)
+	stageable, dropped := FilterStageablePaths(ctx, plan.GitRoot, changed)
 	for _, drop := range dropped {
 		if err := engine.publishDroppedStagePath(ctx, plan.RunID, batch.Number, "", "Batch path", drop); err != nil {
 			return false, false, err

@@ -1,0 +1,44 @@
+Run Worktree: /private/tmp/roundfix-qa-0136-unavailable_revision.PkXx0K/home/.roundfix/worktrees/repo-e47c3774/run_20260914T145517Z_3064284e200349f5
+Roundfix implement
+
+Target:
+  Spec: 0001-rename-fixture
+  Branch: feat/qa-unavailable_revision
+  Agent: Codex
+  Agent Model: gpt-5.6-sol
+  Default Reasoning Effort: high
+  Selections:
+    per-scope history: unavailable
+  HEAD: 5d86098802d57f2e97f73c763269305b741c6c89
+
+Run:
+  ID: run_20260914T145517Z_3064284e200349f5
+  State: ResolvingWithAgent
+  Task Capacity: 2
+  Verification Capacity: 1
+  Run Worktree: /private/tmp/roundfix-qa-0136-unavailable_revision.PkXx0K/home/.roundfix/worktrees/repo-e47c3774/run_20260914T145517Z_3064284e200349f5
+  Git: clean, 0 unpushed commit(s), upstream no upstream
+  Auto-commit: on
+  Auto-push: off
+  Last push: disabled
+
++-----------------------------------------+--------------------------------------------------------+
+| Tasks                                   | Agent Console                                          |
++-----------------------------------------+--------------------------------------------------------+
+| task_01 pending — Exercise the Dae... | Agent and verification output will stream below.       |
++-----------------------------------------+--------------------------------------------------------+
+Keys: Ctrl-C stop
+
+roundfix: implement selected Spec 0001-rename-fixture with 1 Task(s); 1 to execute this Run.
+Implement Run: run_20260914T145517Z_3064284e200349f5
+User checkout: /private/tmp/roundfix-qa-0136-unavailable_revision.PkXx0K/repo on branch feat/qa-unavailable_revision
+Run Worktree: /private/tmp/roundfix-qa-0136-unavailable_revision.PkXx0K/home/.roundfix/worktrees/repo-e47c3774/run_20260914T145517Z_3064284e200349f5 on branch roundfix/run-run_20260914T145517Z_3064284e200349f5
+Agent: Codex
+Agent Model: gpt-5.6-sol
+Default Reasoning Effort: high
+Task: task_01 (Batch 001) Exercise the Daemon commit path
+SESSION AGENT_WORK_STARTED
+Verification passed (attempt 1).
+Task task_01 failed: Task governed mutation refused: authorization operation "implement" is not permitted by record "docs/specs/0001-rename-fixture/_authorization.md": resolve Spec Root revision "5d86098802d57f2e97f73c763269305b741c6c89": git rev-parse --verify --end-of-options 5d86098802d57f2e97f73c763269305b741c6c89^{commit}: fatal: QA fixture made the requested authorization revision unavailable: exit status 128
+Implement Run run_20260914T145517Z_3064284e200349f5 reached Unresolved.
+Run Worktree kept: /private/tmp/roundfix-qa-0136-unavailable_revision.PkXx0K/home/.roundfix/worktrees/repo-e47c3774/run_20260914T145517Z_3064284e200349f5

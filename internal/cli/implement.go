@@ -21,6 +21,7 @@ import (
 	"roundfix/internal/daemon"
 	"roundfix/internal/preflight"
 	"roundfix/internal/spec"
+	"roundfix/internal/speccheck"
 	"roundfix/internal/store"
 	roundtui "roundfix/internal/tui"
 	runworktree "roundfix/internal/worktree"
@@ -189,6 +190,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		fmt.Fprintf(stdout, "All %d Task(s) already completed; no Run was created.\n", counts.total())
 		return exitOK
 	}
+	authorization := spec.ReadSpecAuthorization(ctx, gitState.Root, checkoutSpecsRoot, graph.Spec.Slug, gitState.HEAD)
 	defaultBranch := preflight.DetectDefaultBranch(ctx, gitState.Root, gitState.Branch, nil)
 	if defaultBranch.IsDefault(gitState.Branch) {
 		printPreflightFailure("implement", validationError{message: fmt.Sprintf(
@@ -384,7 +386,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	cycleResult, err := executeImplementCycle(ctx, gitState, run.LocalBranch, runRef, session, executionSpecsRoot, executionGraph, req.artifactDir, loadedConfig.Config.Logs.Agent, implementCapacities{
 		task:         loadedConfig.Config.Worktree.Concurrency,
 		verification: loadedConfig.Config.Verification.Concurrency,
-	}, loadedConfig.Config.Defaults.Verification, loadedConfig.Config.Worktree.Copy, worktreeBootstrapSpec(loadedConfig.Config), newBootstrapOutputWriter(ctx, run.ID, runStore, ui.progress), runtime, agentSelections, operationalRuntimeFactory(req), collaborators, runStore, ui)
+	}, loadedConfig.Config.Defaults.Verification, loadedConfig.Config.Worktree.Copy, worktreeBootstrapSpec(loadedConfig.Config), newBootstrapOutputWriter(ctx, run.ID, runStore, ui.progress), authorization, runtime, agentSelections, operationalRuntimeFactory(req), collaborators, runStore, ui)
 	if err != nil {
 		if isStopRequest(ctx, err) {
 			closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
@@ -440,7 +442,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 	pushResult := implementPushResult{}
 	if outcome == store.StateClean {
-		pushResult, err = maybeRunImplementAutoPush(ctx, gitState, loadedConfig.Config, collaborators, runStore, ui, run.ID, stderr)
+		pushResult, err = maybeRunImplementAutoPush(ctx, gitState, loadedConfig.Config, collaborators, runStore, ui, run.ID, authorization, stderr)
 		if err != nil {
 			closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 			markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
@@ -775,7 +777,7 @@ type implementCapacities struct {
 	verification int
 }
 
-func executeImplementCycle(ctx context.Context, gitState preflight.GitState, targetBranch string, runRef runworktree.Ref, session agent.SessionRef, specsRoot string, graph *spec.Graph, artifactDir string, agentLogs bool, capacities implementCapacities, repositoryVerification string, copyList []string, bootstrap runworktree.BootstrapSpec, bootstrapOutput io.Writer, runtime agent.RuntimeSpec, agentSelections daemon.AgentSelectionProfiles, runtimeFactory daemon.AgentRuntimeFactory, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
+func executeImplementCycle(ctx context.Context, gitState preflight.GitState, targetBranch string, runRef runworktree.Ref, session agent.SessionRef, specsRoot string, graph *spec.Graph, artifactDir string, agentLogs bool, capacities implementCapacities, repositoryVerification string, copyList []string, bootstrap runworktree.BootstrapSpec, bootstrapOutput io.Writer, authorization spec.AuthorizationResolution, runtime agent.RuntimeSpec, agentSelections daemon.AgentSelectionProfiles, runtimeFactory daemon.AgentRuntimeFactory, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
 	runID := runRef.RunID
 	fmt.Fprintf(ui.progress, "%s: implement selected Spec %s with %d Task(s); %d to execute this Run.\n", app.Name, graph.Spec.Slug, len(graph.Tasks), countNonCompletedTasks(graph.Tasks))
 	fmt.Fprintf(ui.progress, "Implement Run: %s\n", runID)
@@ -813,6 +815,7 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, tar
 		RunWorktree:             runRef,
 		TargetBranch:            targetBranch,
 		HeadSHA:                 gitState.HEAD,
+		Authorization:           authorization,
 		SpecsRoot:               specsRoot,
 		ArtifactDir:             artifactDir,
 		AgentLogs:               agentLogs,
@@ -836,7 +839,7 @@ type implementPushResult struct {
 	branch string
 }
 
-func maybeRunImplementAutoPush(ctx context.Context, gitState preflight.GitState, config roundconfig.Config, collaborators engineCollaborators, runStore *store.Store, ui *runUI, runID string, stderr io.Writer) (implementPushResult, error) {
+func maybeRunImplementAutoPush(ctx context.Context, gitState preflight.GitState, config roundconfig.Config, collaborators engineCollaborators, runStore *store.Store, ui *runUI, runID string, authorization spec.AuthorizationResolution, stderr io.Writer) (implementPushResult, error) {
 	if !config.Implement.AutoPush {
 		return implementPushResult{}, nil
 	}
@@ -847,6 +850,17 @@ func maybeRunImplementAutoPush(ctx context.Context, gitState preflight.GitState,
 		fmt.Fprintln(stderr, summary)
 		publishPushDecision(ctx, ui.sink, runID, "skipped", summary, 0)
 		return implementPushResult{}, nil
+	}
+	changedPaths, err := collaborators.priorChanges.PriorChangedFiles(ctx, gitState.Root, gitState.HEAD)
+	if err != nil {
+		return implementPushResult{}, fmt.Errorf("resolve Spec Run changed paths: %w", err)
+	}
+	governedMutation := false
+	for _, path := range changedPaths {
+		if speccheck.GovernedPath(path) {
+			governedMutation = true
+			break
+		}
 	}
 	engine, err := daemon.NewEngine(daemon.Dependencies{
 		Runner:    collaborators.runner,
@@ -863,10 +877,12 @@ func maybeRunImplementAutoPush(ctx context.Context, gitState preflight.GitState,
 		return implementPushResult{}, err
 	}
 	if err := engine.FinalPush(ctx, daemon.FinalPushRequest{
-		RunID:   runID,
-		WorkDir: gitState.Root,
-		Remote:  remote,
-		Branch:  branch,
+		RunID:            runID,
+		WorkDir:          gitState.Root,
+		Remote:           remote,
+		Branch:           branch,
+		Authorization:    &authorization,
+		GovernedMutation: governedMutation,
 	}); err != nil {
 		summary := fmt.Sprintf("Spec Run push failed: git push %s HEAD:%s: %v", remote, branch, err)
 		publishPushDecision(ctx, ui.sink, runID, "failed", summary, 0)

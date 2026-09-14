@@ -4,6 +4,7 @@ package suiteguardcontract
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -13,9 +14,11 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
+	"sync"
 
 	"gopkg.in/yaml.v3"
+
+	"roundfix/internal/authorization"
 )
 
 const sanctionedRegenerationHeading = "Sanctioned regeneration"
@@ -23,6 +26,7 @@ const sanctionedRegenerationHeading = "Sanctioned regeneration"
 const (
 	legacyAuthorizationRoot = "docs/workflow/authorizations"
 	specAuthorizationRoot   = "docs/specs"
+	archivedSpecRoot        = "docs/history/specs"
 	baselineRoot            = "internal/baseline"
 	baselineDigestCommand   = "make baseline-digests"
 	ownershipYML            = "_ownership.yml"
@@ -37,30 +41,51 @@ type SanctionedRegeneration struct {
 	Outputs []string
 }
 
+type sanctionedRegenerationCacheEntry struct {
+	once         sync.Once
+	declarations []SanctionedRegeneration
+	err          error
+}
+
+var sanctionedRegenerationCache sync.Map
+
 // ReadSanctionedRegenerations reads every operative authorization record under
 // root and resolves command-only declarations through the repository-owned
 // derived-output declarations.
 func ReadSanctionedRegenerations(root string) ([]SanctionedRegeneration, error) {
-	var declarations []SanctionedRegeneration
-	if err := walkAuthorizationMarkdown(
-		filepath.Join(root, filepath.FromSlash(legacyAuthorizationRoot)),
-		func(_ string, content []byte) {
-			declarations = append(declarations, ParseSanctionedRegenerations(content)...)
-		},
-	); err != nil {
-		return nil, err
+	root, err := filepath.Abs(root)
+	if err != nil {
+		return nil, fmt.Errorf("resolve sanctioned regeneration root: %w", err)
 	}
-	if err := walkAuthorizationMarkdown(
-		filepath.Join(root, filepath.FromSlash(specAuthorizationRoot)),
-		func(relative string, content []byte) {
-			parts := strings.Split(filepath.ToSlash(relative), "/")
-			if len(parts) < 2 || !approvedSpecGrant(content, parts[0]) {
-				return
-			}
-			declarations = append(declarations, ParseSanctionedRegenerations(content)...)
-		},
-	); err != nil {
-		return nil, err
+	entryValue, _ := sanctionedRegenerationCache.LoadOrStore(
+		root,
+		&sanctionedRegenerationCacheEntry{},
+	)
+	entry := entryValue.(*sanctionedRegenerationCacheEntry)
+	entry.once.Do(func() {
+		entry.declarations, entry.err = readSanctionedRegenerations(root)
+	})
+	if entry.err != nil {
+		return nil, entry.err
+	}
+	return cloneSanctionedRegenerations(entry.declarations), nil
+}
+
+func readSanctionedRegenerations(root string) ([]SanctionedRegeneration, error) {
+	var declarations []SanctionedRegeneration
+	for _, source := range []struct {
+		root string
+		role authorization.AuthorizationRole
+	}{
+		{root: legacyAuthorizationRoot, role: authorization.AuthorizationRoleLegacy},
+		{root: specAuthorizationRoot, role: authorization.AuthorizationRoleSpec},
+		{root: archivedSpecRoot, role: authorization.AuthorizationRoleSpec},
+	} {
+		discovered, err := readAuthorizationRegenerations(root, source.root, source.role)
+		if err != nil {
+			return nil, err
+		}
+		declarations = append(declarations, discovered...)
 	}
 
 	for index := range declarations {
@@ -88,9 +113,100 @@ func ReadSanctionedRegenerations(root string) ([]SanctionedRegeneration, error) 
 	return declarations, nil
 }
 
-func walkAuthorizationMarkdown(
+func cloneSanctionedRegenerations(declarations []SanctionedRegeneration) []SanctionedRegeneration {
+	if declarations == nil {
+		return nil
+	}
+	cloned := make([]SanctionedRegeneration, len(declarations))
+	for index, declaration := range declarations {
+		cloned[index] = SanctionedRegeneration{
+			Command: declaration.Command,
+			Outputs: append([]string(nil), declaration.Outputs...),
+		}
+	}
+	return cloned
+}
+
+func readAuthorizationRegenerations(
+	repoRoot string,
+	authorizationRoot string,
+	role authorization.AuthorizationRole,
+) ([]SanctionedRegeneration, error) {
+	var declarations []SanctionedRegeneration
+	err := walkAuthorizationRecords(
+		filepath.Join(repoRoot, filepath.FromSlash(authorizationRoot)),
+		role,
+		func(relative string) error {
+			recordPath := path.Join(authorizationRoot, filepath.ToSlash(relative))
+			askingSpec := ""
+			if role == authorization.AuthorizationRoleSpec {
+				parts := strings.Split(filepath.ToSlash(relative), "/")
+				if len(parts) < 2 {
+					return nil
+				}
+				askingSpec = parts[0]
+			}
+
+			resolution := authorization.ReadAuthorization(context.Background(), authorization.AuthorizationReadRequest{
+				RepoRoot:   repoRoot,
+				RecordPath: recordPath,
+				Role:       role,
+				AskingSpec: askingSpec,
+			})
+			if resolution.Outcome == authorization.AuthorizationUnresolved {
+				return fmt.Errorf(
+					"resolve authorization record %q: %s",
+					recordPath,
+					resolution.Reason.Detail,
+				)
+			}
+			if role == authorization.AuthorizationRoleLegacy {
+				// Legacy declarations predate typed grant fields. Their parsed
+				// regeneration does not depend on the record granting another action.
+				declarations = appendAuthorizationRegenerations(declarations, resolution.Record.Regenerations)
+				return nil
+			}
+
+			switch resolution.Outcome {
+			case authorization.AuthorizationGranted:
+				declarations = appendAuthorizationRegenerations(declarations, resolution.Record.Regenerations)
+			case authorization.AuthorizationRefused:
+				return nil
+			default:
+				return fmt.Errorf(
+					"resolve authorization record %q: unknown outcome %q",
+					recordPath,
+					resolution.Outcome,
+				)
+			}
+			return nil
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return declarations, nil
+}
+
+func appendAuthorizationRegenerations(
+	declarations []SanctionedRegeneration,
+	regenerations []authorization.AuthorizationRegeneration,
+) []SanctionedRegeneration {
+	for _, regeneration := range regenerations {
+		outputs := append([]string(nil), regeneration.Outputs...)
+		sort.Strings(outputs)
+		declarations = append(declarations, SanctionedRegeneration{
+			Command: regeneration.Command,
+			Outputs: outputs,
+		})
+	}
+	return declarations
+}
+
+func walkAuthorizationRecords(
 	root string,
-	visit func(relative string, content []byte),
+	role authorization.AuthorizationRole,
+	visit func(relative string) error,
 ) error {
 	info, err := os.Lstat(root)
 	if errors.Is(err, os.ErrNotExist) {
@@ -110,7 +226,10 @@ func walkAuthorizationMarkdown(
 		if walkErr != nil {
 			return fmt.Errorf("inspect authorization record %q: %w", filePath, walkErr)
 		}
-		if entry.IsDir() || entry.Type()&fs.ModeSymlink != 0 || filepath.Ext(entry.Name()) != ".md" {
+		if entry.IsDir() ||
+			entry.Type()&fs.ModeSymlink != 0 ||
+			filepath.Ext(entry.Name()) != ".md" ||
+			!authorizationRecordCandidate(entry.Name(), role) {
 			return nil
 		}
 		info, err := entry.Info()
@@ -120,16 +239,11 @@ func walkAuthorizationMarkdown(
 		if !info.Mode().IsRegular() {
 			return nil
 		}
-		content, err := os.ReadFile(filePath)
-		if err != nil {
-			return fmt.Errorf("read authorization record %q: %w", filePath, err)
-		}
 		relative, err := filepath.Rel(root, filePath)
 		if err != nil {
 			return fmt.Errorf("make authorization record %q relative to %q: %w", filePath, root, err)
 		}
-		visit(relative, content)
-		return nil
+		return visit(relative)
 	})
 	if err != nil {
 		return fmt.Errorf("walk authorization records %q: %w", root, err)
@@ -137,56 +251,12 @@ func walkAuthorizationMarkdown(
 	return nil
 }
 
-func approvedSpecGrant(content []byte, specSlug string) bool {
-	text := strings.ReplaceAll(string(content), "\r\n", "\n")
-	lines := strings.Split(text, "\n")
-	if len(lines) < 3 || lines[0] != "---" {
-		return false
+func authorizationRecordCandidate(name string, role authorization.AuthorizationRole) bool {
+	if role == authorization.AuthorizationRoleLegacy {
+		return true
 	}
-	closing := 0
-	for index := 1; index < len(lines); index++ {
-		if lines[index] == "---" {
-			closing = index
-			break
-		}
-	}
-	if closing == 0 {
-		return false
-	}
-
-	var grant struct {
-		Status    string   `yaml:"status"`
-		Granted   string   `yaml:"granted"`
-		Action    string   `yaml:"action"`
-		Consuming string   `yaml:"consuming"`
-		Paths     []string `yaml:"paths"`
-	}
-	if err := yaml.Unmarshal([]byte(strings.Join(lines[1:closing], "\n")), &grant); err != nil {
-		return false
-	}
-	if strings.TrimSpace(grant.Status) != "approved" ||
-		strings.TrimSpace(grant.Action) == "" ||
-		strings.TrimSpace(grant.Consuming) != specSlug {
-		return false
-	}
-	if _, err := time.Parse("2006-01-02", strings.TrimSpace(grant.Granted)); err != nil {
-		return false
-	}
-	if len(grant.Paths) == 0 {
-		return false
-	}
-	seen := make(map[string]struct{}, len(grant.Paths))
-	for _, declared := range grant.Paths {
-		clean := cleanRepositoryPath(declared)
-		if clean == "" || clean != declared || strings.ContainsAny(clean, "*?") {
-			return false
-		}
-		if _, duplicate := seen[clean]; duplicate {
-			return false
-		}
-		seen[clean] = struct{}{}
-	}
-	return true
+	return role == authorization.AuthorizationRoleSpec &&
+		strings.Contains(strings.ToLower(name), "authoriz")
 }
 
 // ParseSanctionedRegenerations reads the "Sanctioned regeneration" YAML

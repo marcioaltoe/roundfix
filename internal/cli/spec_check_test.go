@@ -143,6 +143,47 @@ func TestSpecCheckRunVerification(t *testing.T) {
 		}
 	})
 
+	t.Run("executes an opted-in command from an edited source", func(t *testing.T) {
+		_, repoDir := newSpecCheckVerificationWorkspace(t, []string{"test -f task-output.txt"})
+		marker := filepath.Join(t.TempDir(), "modified-source-ran")
+		taskPath := filepath.Join(repoDir, "docs", "specs", "clean", "task_01.md")
+		command := fmt.Sprintf("touch %q; false", marker)
+		edited := strings.Replace(mustRead(t, taskPath), "test -f task-output.txt", command, 1)
+		mustWrite(t, taskPath, edited)
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := runCLIContext(t, context.Background(), []string{"spec", "check", "clean"}, &stdout, &stderr)
+
+		if code != exitOK {
+			t.Fatalf("read-only check exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+		}
+		if !strings.HasPrefix(stdout.String(), "Spec clean\nNo findings. Authored Verification commands were not executed.\n") {
+			t.Fatalf("read-only check report = %q, want normal unexecuted report", stdout.String())
+		}
+		if stderr.String() != "" {
+			t.Fatalf("read-only check stderr = %q, want none", stderr.String())
+		}
+		if _, err := os.Stat(marker); !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("read-only check executed edited command: %v", err)
+		}
+
+		stdout.Reset()
+		code = runCLIContext(t, context.Background(), []string{"spec", "check", "clean", "--run-verification"}, &stdout, &stderr)
+		if code != exitOK {
+			t.Fatalf("executing check exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+		}
+		if !strings.HasPrefix(stdout.String(), "Spec clean\nNo findings. Authored Verification commands executed: 1.\n") || !strings.Contains(stdout.String(), ": honest — ") {
+			t.Fatalf("executing check report = %q, want one honest executed command", stdout.String())
+		}
+		if stderr.String() != "" {
+			t.Fatalf("executing check stderr = %q, want none", stderr.String())
+		}
+		if _, err := os.Stat(marker); err != nil {
+			t.Fatalf("executing check did not run edited command: %v", err)
+		}
+	})
+
 	t.Run("reports a command that cannot run as unknown", func(t *testing.T) {
 		const command = "roundfix-verification-binary-that-does-not-exist"
 		_, _ = newSpecCheckVerificationWorkspace(t, []string{command})

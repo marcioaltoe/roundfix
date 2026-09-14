@@ -1,0 +1,30 @@
+audited_head: 896c4ad2699592653afa68bb422a2cc3f777509c
+public_flow_binary: roundfix 0.12.0 (896c4ad2-dirty, built 2026-09-14 11:54:26 -0300)
+verification_binary: roundfix 0.12.0 (896c4ad2-dirty, built 2026-09-14 11:58:38 -0300)
+toolchain: go version go1.26.7 darwin/arm64
+
+command: ./bin/roundfix spec check 0136-a-rename-the-committer-can-stage --strict
+exit: 0
+result: No findings. Authored Verification commands were not executed.
+skipped: SC-FINDING-LIFECYCLE, SC-ROLLUP-MEMBER, SC-BACKLOG-UNMOVED, vocabulary documentation detector, SC-REF-UNRESOLVED
+
+command: make verify GO=<go1.26.7>/go GOFMT=<go1.26.7>/gofmt
+first_attempt: sandbox stopped the process when a test accessed api.github.com; no command exit status was available
+unchanged_authorized_retry_exit: 0
+result: all Go packages passed; focused Skills suite passed; Roundfix skill check passed; bin/roundfix rebuilt
+selected_package_times: internal/cli 68.908s; internal/daemon 8.783s; skills 0.208s
+
+command: GOCACHE=/private/tmp/roundfix-qa-0136-go-cache go1.26.7 vet ./internal/daemon ./internal/cli ./internal/spec ./internal/worktree
+exit: 0
+output: empty
+
+command: GOCACHE=/private/tmp/roundfix-qa-0136-go-cache go1.26.7 test -count=1 ./internal/worktree ./internal/cli ./internal/speccheck -run 'Test(PriorChangedFilesReportsBothSidesOfARename|FinalPushRefusesAGovernedRename|FinalPushAuthorityFollowsTheChangedPaths|EnumeratedOutputsAreAuthoritative)$'
+first_attempt: sandbox blocked the existing api.github.com boundary
+unchanged_authorized_retry_exit: 0
+output: internal/worktree 0.549s; internal/cli 1.489s; internal/speccheck 1.050s
+
+command: GOCACHE=/private/tmp/roundfix-qa-0136-go-cache go1.26.7 test -count=1 ./internal/daemon ./internal/spec -run 'Test(TaskCommitStagesAStagedRename|TaskCommitStagesAnUnstagedRename|FilterStageablePathsDropsPathAbsentFromWorktreeAndIndex|GovernedRenameRefusesFromRealSnapshot|GovernedMutationDetectionUsesTheUnfilteredSnapshot|SnapshotDiffCommitStagesOnlyAgentChangesInRealRepo|FilterStageablePathsDropsRegularFileWithAnyExecutePermission|UnresolvedRecordNamesAPathUnderTheSpecRoot|SpecAuthorizationNamesUnavailableRevision|OperationAuthorityReportsUnresolvableSpecRoot|AuthorizationReaderTypesPermittedOperations|GovernedPath)$'
+exit: 0
+output: internal/daemon 1.466s; internal/spec 1.209s
+
+environment_note: direct go vet and focused test attempts first hit EPERM in the ambient Go cache; each was rerun once with the writable private temporary cache.

@@ -533,9 +533,32 @@ func configureImplementClaudeReasoning(t *testing.T, repoDir string) {
 
 func configureExternalSpecsRoot(t *testing.T, repoDir string, specsRoot string) {
 	t.Helper()
+	removeProjectAuthorizationDuplicatesForTest(t, repoDir, specsRoot)
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), fmt.Sprintf("specs:\n  root: %q\n", specsRoot))
 	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+	gitImplement(t, repoDir, "add", "docs/specs")
 	gitImplement(t, repoDir, "commit", "-m", "configure external Spec Root")
+}
+
+func removeProjectAuthorizationDuplicatesForTest(t *testing.T, repoDir string, specsRoot string) {
+	t.Helper()
+	entries, err := os.ReadDir(specsRoot)
+	if err != nil {
+		t.Fatalf("read external Spec Root: %v", err)
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		graph, err := spec.Load(specsRoot, entry.Name())
+		if err != nil {
+			continue
+		}
+		authorizationPath := filepath.Join(repoDir, "docs", "specs", graph.Spec.Slug, "_authorization.md")
+		if err := os.Remove(authorizationPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("remove duplicate project authorization record: %v", err)
+		}
+	}
 }
 
 func newExternalSpecsRoot(t *testing.T, slug string, seeds []implementSeed) (string, string) {
@@ -601,6 +624,7 @@ func writeImplementSpecAtRoot(t *testing.T, specsRoot string, slug string, seeds
 	// runs. These rows keep the fixture authoring-clean, which is what every
 	// implement Run below is actually measuring.
 	mustWrite(t, filepath.Join(specDir, "_prd.md"), "---\nstatus: active\n---\n\n# PRD\n\n"+implementFixtureConstraints)
+	mustWrite(t, filepath.Join(specDir, "_authorization.md"), implementFixtureAuthorization(slug, "implement", "commit", "push"))
 
 	var qaTaskID string
 	for _, seed := range seeds {
@@ -627,6 +651,34 @@ func writeImplementSpecAtRoot(t *testing.T, specsRoot string, slug string, seeds
 	for _, seed := range seeds {
 		mustWrite(t, implementTaskPathInRoot(specsRoot, slug, seed.id), implementTaskContent(slug, seed))
 	}
+}
+
+func implementFixtureAuthorization(slug string, operations ...string) string {
+	var record strings.Builder
+	fmt.Fprintf(&record, "---\nstatus: approved\ngranted: 2026-09-09\naction: run the fixture Spec\nconsuming: %s\npaths:\n  - docs/agents/domain.md\noperations:\n", slug)
+	for _, operation := range operations {
+		fmt.Fprintf(&record, "  - %s\n", operation)
+	}
+	record.WriteString("---\n\n# Approved fixture authority\n")
+	return record.String()
+}
+
+func setImplementFixtureAuthorizationOperations(t *testing.T, repoDir string, operations ...string) {
+	t.Helper()
+	path := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "_authorization.md")
+	mustWrite(t, path, implementFixtureAuthorization(implementTestSlug, operations...))
+	gitImplement(t, repoDir, "add", filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "_authorization.md")))
+	gitImplement(t, repoDir, "commit", "-m", "change fixture operation authority")
+}
+
+func removeImplementFixtureAuthorization(t *testing.T, repoDir string) {
+	t.Helper()
+	path := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "_authorization.md")
+	if err := os.Remove(path); err != nil {
+		t.Fatalf("remove fixture authorization: %v", err)
+	}
+	gitImplement(t, repoDir, "add", filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "_authorization.md")))
+	gitImplement(t, repoDir, "commit", "-m", "remove fixture authorization")
 }
 
 func TestImplementTaskContentChoosesVerificationByTaskType(t *testing.T) {
@@ -971,6 +1023,25 @@ type emptyPriorChangedResolver struct{}
 
 func (emptyPriorChangedResolver) PriorChangedFiles(context.Context, string, string) ([]string, error) {
 	return nil, nil
+}
+
+type staticPriorChangedResolver struct {
+	paths []string
+}
+
+func (resolver staticPriorChangedResolver) PriorChangedFiles(context.Context, string, string) ([]string, error) {
+	return append([]string(nil), resolver.paths...), nil
+}
+
+type userCheckoutPriorChangedResolver struct {
+	root string
+}
+
+func (resolver userCheckoutPriorChangedResolver) PriorChangedFiles(ctx context.Context, workDir string, initialHead string) ([]string, error) {
+	if filepath.Clean(workDir) != filepath.Clean(resolver.root) {
+		return nil, nil
+	}
+	return (daemon.GitPriorChangedResolver{}).PriorChangedFiles(ctx, workDir, initialHead)
 }
 
 func withPriorChangedResolver(t *testing.T, resolver daemon.PriorChangedResolver) {
@@ -1853,6 +1924,66 @@ func TestRunImplementRejectsInvalidVerificationCapacityBeforeRunCreation(t *test
 			}
 			assertNoRunDatabase(t, homeDir)
 		})
+	}
+}
+
+func TestImplementDispatchesWithoutRecordWhenNoGovernedMutation(t *testing.T) {
+	t.Parallel()
+
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	removeImplementFixtureAuthorization(t, repoDir)
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	withImplementCollaborators(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("implement without authorization exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+	}
+	if runner.calls != 1 {
+		t.Fatalf("implement without authorization Agent calls = %d, want 1", runner.calls)
+	}
+	assertRunCount(t, store.DatabasePath(homeDir), 1)
+}
+
+func TestGovernedChangeStillRefusesWithoutRecord(t *testing.T) {
+	t.Parallel()
+
+	_, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	removeImplementFixtureAuthorization(t, repoDir)
+	runner := &implementFakeRunner{
+		gitRoot: repoDir,
+		onTask: func(req agent.ExecuteRequest, _ string) error {
+			return os.WriteFile(filepath.Join(req.GitRoot, "Makefile"), []byte("verify:\n\t@true\n"), 0o644)
+		},
+	}
+	committer, _, _, _ := withImplementCollaborators(t, runner)
+	overrideCollaborators(t, func(collaborators *engineCollaborators) {
+		collaborators.worktree = daemon.GitWorktreeSnapshotter{}
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code == exitOK {
+		t.Fatalf("governed change without authorization exit = %d; stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	if runner.calls != 1 {
+		t.Fatalf("governed change Agent calls = %d, want 1", runner.calls)
+	}
+	if committer.calls != 0 {
+		t.Fatalf("governed change without authorization created %d commits", committer.calls)
+	}
+	for _, want := range []string{"authorization operation \"implement\" is not permitted", "docs/specs/" + implementTestSlug + "/_authorization.md"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Errorf("governed change refusal = %q, want %q", stderr.String(), want)
+		}
 	}
 }
 
@@ -3281,6 +3412,112 @@ func TestRenderImplementTaskLinesNormalizesMultilineReasons(t *testing.T) {
 	if counts.failed != 1 || counts.completed != 0 || counts.skipped != 0 || counts.pending != 0 {
 		t.Fatalf("expected one failed count, got %+v", counts)
 	}
+}
+
+func TestFinalPushAuthorityFollowsTheChangedPaths(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name        string
+		changed     []string
+		wantCode    int
+		wantPushes  int
+		wantRefusal bool
+	}{
+		{
+			name:       "ordinary Run pushes without push authority",
+			changed:    []string{"internal/cli/implement.go"},
+			wantCode:   exitOK,
+			wantPushes: 1,
+		},
+		{
+			name:        "governed Run is refused without push authority",
+			changed:     []string{"Makefile"},
+			wantCode:    exitRunFailed,
+			wantRefusal: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+			configureImplementAutoPush(t, repoDir, true)
+			configureImplementUpstream(t, repoDir, "origin", "ma/widget-flow")
+			setImplementFixtureAuthorizationOperations(t, repoDir, "implement", "commit")
+			runner := &implementFakeRunner{
+				gitRoot:      repoDir,
+				statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+			}
+			_, _, pusher, _ := withImplementCollaborators(t, runner)
+			withPriorChangedResolver(t, staticPriorChangedResolver{paths: tt.changed})
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+			if code != tt.wantCode {
+				t.Fatalf("changed paths %v exit = %d, want %d; stdout=%q stderr=%q", tt.changed, code, tt.wantCode, stdout.String(), stderr.String())
+			}
+			if pusher.calls != tt.wantPushes {
+				t.Fatalf("changed paths %v push calls = %d, want %d", tt.changed, pusher.calls, tt.wantPushes)
+			}
+			refusal := "authorization operation \"push\" is not permitted by record \"docs/specs/" + implementTestSlug + "/_authorization.md\""
+			if got := strings.Contains(stderr.String(), refusal); got != tt.wantRefusal {
+				t.Fatalf("changed paths %v refusal present = %t, want %t; stderr=%q", tt.changed, got, tt.wantRefusal, stderr.String())
+			}
+			if tt.wantPushes == 1 && !strings.Contains(stdout.String(), "pushed origin/ma/widget-flow\n") {
+				t.Fatalf("ordinary Run stdout = %q, want pushed target", stdout.String())
+			}
+			assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+		})
+	}
+}
+
+// Invariant: a governed rename remains governed when the final push reads the
+// integrated Run's real Git history.
+// Owning layer: Implement CLI integration through the prior-changed reader.
+// Existing canonical suite: TestFinalPushAuthorityFollowsTheChangedPaths.
+func TestFinalPushRefusesAGovernedRename(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	configureImplementAutoPush(t, repoDir, true)
+	configureImplementUpstream(t, repoDir, "origin", "ma/widget-flow")
+	setImplementFixtureAuthorizationOperations(t, repoDir, "implement", "commit")
+	mustWrite(t, filepath.Join(repoDir, "Makefile"), "verify:\n\tgo test ./...\n")
+	gitImplement(t, repoDir, "add", "Makefile")
+	gitImplement(t, repoDir, "commit", "-m", "add governed source")
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	_, _, pusher, _ := withImplementCollaborators(t, runner)
+	withPriorChangedResolver(t, userCheckoutPriorChangedResolver{root: repoDir})
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.integrateRunWorktree = func(_ context.Context, ref runworktree.Ref, _ string, _ string) (runworktree.IntegrationResult, error) {
+			if err := copyDir(filepath.Join(ref.Path, "docs"), filepath.Join(ref.UserRoot, "docs")); err != nil {
+				return runworktree.IntegrationResult{}, err
+			}
+			gitImplement(t, ref.UserRoot, "mv", "Makefile", "renamed.txt")
+			gitImplement(t, ref.UserRoot, "add", "-A")
+			gitImplement(t, ref.UserRoot, "commit", "-m", "integrate governed rename")
+			return runworktree.IntegrationResult{Mode: runworktree.ModeFastForwardMerge}, nil
+		}
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("governed rename exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
+	}
+	if pusher.calls != 0 {
+		t.Fatalf("governed rename push calls = %d, want 0", pusher.calls)
+	}
+	refusal := "authorization operation \"push\" is not permitted by record \"docs/specs/" + implementTestSlug + "/_authorization.md\""
+	if !strings.Contains(stderr.String(), refusal) {
+		t.Fatalf("governed rename stderr = %q, want refusal %q", stderr.String(), refusal)
+	}
+	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
 }
 
 func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {

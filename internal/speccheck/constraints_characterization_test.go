@@ -6,13 +6,16 @@ package speccheck_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"roundfix/internal/gittest"
 	"roundfix/internal/spec"
 	"roundfix/internal/speccheck"
 )
@@ -24,6 +27,656 @@ const (
 	replay0056F002   = "replay-0056-f-002"
 	replay0060Task03 = "replay-0060-task-03"
 )
+
+func TestConstraintReaderCharacterizesGrantCitation(t *testing.T) {
+	t.Parallel()
+
+	t.Run("citation forms", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name           string
+			citation       string
+			recordPath     string
+			wantRecordPath string
+		}{
+			{
+				name:           "backticked legacy repository path resolves",
+				citation:       "`docs/workflow/authorizations/2026-08-11-characterization.md`",
+				recordPath:     "docs/workflow/authorizations/2026-08-11-characterization.md",
+				wantRecordPath: "docs/workflow/authorizations/2026-08-11-characterization.md",
+			},
+			{
+				name:           "backticked Spec-contained repository path resolves",
+				citation:       "`docs/specs/0114-tooling-row/_authorization.md`",
+				recordPath:     "docs/specs/0114-tooling-row/_authorization.md",
+				wantRecordPath: "docs/specs/0114-tooling-row/_authorization.md",
+			},
+			{
+				name:           "Spec-relative Markdown link resolves",
+				citation:       "[_authorization.md](_authorization.md)",
+				recordPath:     "docs/specs/0114-tooling-row/_authorization.md",
+				wantRecordPath: "docs/specs/0114-tooling-row/_authorization.md",
+			},
+		}
+
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				row := "Tooling authority: applicable — express maintainer authorization recorded in " + tt.citation + "; bounded files: `Makefile`."
+				record := typedConstraintAuthorization("approved", "2026-09-09", "0999-other")
+				repoRoot, specsRoot, slug := writeToolingRowFixture(t, row, tt.recordPath, record)
+				result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StagePRD)
+				if err != nil {
+					t.Fatalf("CheckStage(StagePRD): %v", err)
+				}
+
+				findings := findingsWithCode(result, speccheck.CodeToolingUnauthorized)
+				if tt.wantRecordPath == "" {
+					if len(findings) != 0 || hasSkip(result, speccheck.CodeToolingUnauthorized, tt.recordPath) {
+						t.Fatalf("authorization observation = findings %#v, skips %#v, want no resolved record path", findings, result.Skipped)
+					}
+					if len(result.Findings) != 0 {
+						t.Fatalf("StagePRD findings = %#v, want the unread grant to pass", result.Findings)
+					}
+					return
+				}
+
+				if len(findings) != 1 {
+					t.Fatalf("%s findings = %#v, want exactly one resolved record", speccheck.CodeToolingUnauthorized, findings)
+				}
+				if !hasExactLocation(findings[0], tt.wantRecordPath, 1) {
+					t.Fatalf("authorization locations = %#v, want resolved record %q", findings[0].Where, tt.wantRecordPath)
+				}
+			})
+		}
+	})
+
+	t.Run("typed validation is keyed to the record role", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name        string
+			recordPath  string
+			wantUntyped bool
+		}{
+			{
+				name:        "dated record is validated",
+				recordPath:  "docs/workflow/authorizations/2026-08-11-characterization.md",
+				wantUntyped: true,
+			},
+			{
+				name:        "undated Spec record is validated",
+				recordPath:  "docs/specs/0114-tooling-row/_authorization.md",
+				wantUntyped: true,
+			},
+		}
+
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				row := "Tooling authority: applicable — express maintainer authorization recorded in `" + tt.recordPath + "`; bounded files: `Makefile`."
+				repoRoot, specsRoot, slug := writeToolingRowFixture(t, row, tt.recordPath, "Authorization for Spec 0114-tooling-row permits changes to Makefile.\n")
+				result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StagePRD)
+				if err != nil {
+					t.Fatalf("CheckStage(StagePRD): %v", err)
+				}
+
+				findings := findingsWithCode(result, speccheck.CodeToolingUntyped)
+				if gotUntyped := len(findings) != 0; gotUntyped != tt.wantUntyped {
+					t.Fatalf("%s findings = %#v, want present = %t", speccheck.CodeToolingUntyped, findings, tt.wantUntyped)
+				}
+				if tt.wantUntyped && (len(findings) != 1 || !hasExactLocation(findings[0], tt.recordPath, 1)) {
+					t.Fatalf("%s findings = %#v, want one finding at %q", speccheck.CodeToolingUntyped, findings, tt.recordPath)
+				}
+			})
+		}
+	})
+}
+
+func TestConstraintsResolveSpecContainedRecord(t *testing.T) {
+	t.Parallel()
+
+	const recordPath = "docs/specs/0114-tooling-row/_authorization.md"
+	row := "Tooling authority: applicable — express maintainer authorization recorded in [_authorization.md](_authorization.md); bounded files: `docs/agents/agent-instructions.md`."
+	record := typedConstraintAuthorization("approved", "2026-09-09", "0999-other")
+	repoRoot, specsRoot, slug := writeToolingRowFixture(t, row, recordPath, record)
+
+	result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StagePRD)
+	if err != nil {
+		t.Fatalf("CheckStage(StagePRD): %v", err)
+	}
+	findings := findingsWithCode(result, speccheck.CodeToolingUnauthorized)
+	if len(findings) != 1 {
+		t.Fatalf("%s findings = %#v, want exactly one", speccheck.CodeToolingUnauthorized, findings)
+	}
+	for _, location := range []speccheck.Location{
+		{Path: "docs/specs/0114-tooling-row/_prd.md", Line: 8},
+		{Path: recordPath, Line: 1},
+	} {
+		if !hasExactLocation(findings[0], location.Path, location.Line) {
+			t.Errorf("authorization locations = %#v, want %#v", findings[0].Where, location)
+		}
+	}
+}
+
+func TestCitationResolvesInExternalSpecRoot(t *testing.T) {
+	t.Parallel()
+
+	const slug = "external-tooling-row"
+	projectRoot := t.TempDir()
+	specRepositoryRoot := t.TempDir()
+	gittest.InitRepo(t, projectRoot, "--initial-branch=main")
+	gittest.InitRepo(t, specRepositoryRoot, "--initial-branch=main")
+	specsRoot := filepath.Join(specRepositoryRoot, "specs")
+
+	writeToolingRowFile(t, projectRoot, "docs/agents/agent-instructions.md", "# Agent instructions\n")
+	row := "Tooling authority: applicable — express maintainer authorization recorded in [_authorization.md](_authorization.md); bounded files: `docs/agents/agent-instructions.md`."
+	writeToolingRowFile(t, specRepositoryRoot, "specs/"+slug+"/_prd.md", "# External tooling row\n\n## Project Constraints\n\n"+
+		"- Identifier strategy: not applicable — no identifier change. Source: `docs/agents/agent-instructions.md`.\n"+
+		"- Authentication and HTTP: not applicable — no network boundary. Source: `docs/agents/agent-instructions.md`.\n"+
+		"- Active ADR obligations: not applicable — no ADR applies. Source: `docs/agents/agent-instructions.md`.\n"+
+		"- "+row+" Source: `docs/agents/agent-instructions.md`.\n")
+	writeToolingRowFile(
+		t,
+		specRepositoryRoot,
+		"specs/"+slug+"/_authorization.md",
+		typedConstraintAuthorization("approved", "2026-09-09", slug),
+	)
+	gittest.Run(t, projectRoot, "add", "-A")
+	gittest.Run(t, projectRoot, "commit", "--allow-empty", "-m", "seed project")
+	gittest.Run(t, specRepositoryRoot, "add", "-A")
+	gittest.Run(t, specRepositoryRoot, "commit", "-m", "seed external Spec")
+
+	// Task 03 derives this answer from the resolved Spec Root and its committed revision.
+	operationResolution := spec.ReadSpecAuthorization(context.Background(), projectRoot, specsRoot, slug, "")
+	if operationResolution.Outcome != spec.AuthorizationGranted {
+		t.Fatalf("external-root operation resolution = %q, want granted: %#v", operationResolution.Outcome, operationResolution.Reason)
+	}
+	if operationResolution.Record.Source.Path != "specs/"+slug+"/_authorization.md" {
+		t.Fatalf("external-root operation resolution = %#v, want root-derived record", operationResolution)
+	}
+
+	result, err := speccheck.CheckStage(specsRoot, projectRoot, slug, speccheck.StagePRD)
+	if err != nil {
+		t.Fatalf("CheckStage(StagePRD): %v", err)
+	}
+	if len(result.Findings) != 0 {
+		t.Fatalf("external-root citation findings = %#v, want the grant beside its PRD to resolve", result.Findings)
+	}
+	for _, skipped := range result.Skipped {
+		if skipped.Code == speccheck.CodeToolingUnauthorized {
+			t.Fatalf("external-root citation skips = %#v, want the authorization check to read the resolved record", result.Skipped)
+		}
+	}
+}
+
+func TestCitationRejectsEscapeFromSpecRoot(t *testing.T) {
+	t.Parallel()
+
+	const slug = "external-tooling-row"
+	assertRejected := func(t *testing.T, citation string, arrangeRecord func(t *testing.T, specRepositoryRoot string)) {
+		t.Helper()
+
+		projectRoot := t.TempDir()
+		specRepositoryRoot := t.TempDir()
+		gittest.InitRepo(t, projectRoot, "--initial-branch=main")
+		gittest.InitRepo(t, specRepositoryRoot, "--initial-branch=main")
+		specsRoot := filepath.Join(specRepositoryRoot, "specs")
+
+		writeToolingRowFile(t, projectRoot, "docs/agents/agent-instructions.md", "# Agent instructions\n")
+		row := "Tooling authority: applicable — express maintainer authorization recorded in [the grant](" + citation + "); bounded files: `docs/agents/agent-instructions.md`."
+		writeToolingRowFile(t, specRepositoryRoot, "specs/"+slug+"/_prd.md", "# External tooling row\n\n## Project Constraints\n\n"+
+			"- Identifier strategy: not applicable — no identifier change. Source: `docs/agents/agent-instructions.md`.\n"+
+			"- Authentication and HTTP: not applicable — no network boundary. Source: `docs/agents/agent-instructions.md`.\n"+
+			"- Active ADR obligations: not applicable — no ADR applies. Source: `docs/agents/agent-instructions.md`.\n"+
+			"- "+row+" Source: `docs/agents/agent-instructions.md`.\n")
+		arrangeRecord(t, specRepositoryRoot)
+
+		gittest.Run(t, projectRoot, "add", "-A")
+		gittest.Run(t, projectRoot, "commit", "--allow-empty", "-m", "seed project")
+		gittest.Run(t, specRepositoryRoot, "add", "-A")
+		gittest.Run(t, specRepositoryRoot, "commit", "-m", "seed external Spec")
+
+		result, err := speccheck.CheckStage(specsRoot, projectRoot, slug, speccheck.StagePRD)
+		if err != nil {
+			t.Fatalf("CheckStage(StagePRD): %v", err)
+		}
+		findings := findingsWithCode(result, speccheck.CodeToolingUnapproved)
+		if len(findings) != 1 || len(result.Findings) != 1 {
+			t.Fatalf("escaping citation findings = %#v, want one exact-record refusal", result.Findings)
+		}
+		if !strings.Contains(findings[0].Summary, "does not identify exactly one authorization record") {
+			t.Fatalf("escaping citation summary = %q, want exact-record refusal", findings[0].Summary)
+		}
+	}
+
+	t.Run("upward traversal", func(t *testing.T) {
+		t.Parallel()
+
+		assertRejected(t, "../../outside-authorization.md", func(t *testing.T, specRepositoryRoot string) {
+			writeToolingRowFile(t, specRepositoryRoot, "outside-authorization.md", typedConstraintAuthorization("approved", "2026-09-09", slug))
+		})
+	})
+
+	t.Run("symlink outside root", func(t *testing.T) {
+		t.Parallel()
+
+		outsideRoot := t.TempDir()
+		writeToolingRowFile(t, outsideRoot, "outside-authorization.md", typedConstraintAuthorization("approved", "2026-09-09", slug))
+		assertRejected(t, "linked-authorization.md", func(t *testing.T, specRepositoryRoot string) {
+			linkPath := filepath.Join(specRepositoryRoot, "specs", slug, "linked-authorization.md")
+			if err := os.Symlink(filepath.Join(outsideRoot, "outside-authorization.md"), linkPath); err != nil {
+				t.Fatalf("create escaping authorization symlink: %v", err)
+			}
+		})
+	})
+}
+
+func TestMechanicalAuditConsumesResolvedReference(t *testing.T) {
+	t.Parallel()
+
+	t.Run("external record audits the Task commit", func(t *testing.T) {
+		t.Parallel()
+
+		const slug = "external-mechanical-audit"
+		projectRoot := newMechanicalGitRepo(t)
+		target := strings.TrimSpace(gittest.Run(t, projectRoot, "rev-parse", "HEAD"))
+		writeMechanicalFile(t, projectRoot, "Makefile", "verify:\n\t@true\n")
+		consumer := commitMechanicalFiles(t, projectRoot, "consume external grant", "Makefile")
+
+		specRepositoryRoot := newMechanicalGitRepo(t)
+		prdPath := filepath.Join(specRepositoryRoot, "specs", slug, "_prd.md")
+		writeMechanicalFile(t, specRepositoryRoot, "specs/"+slug+"/_prd.md",
+			"# PRD\n\n## Project Constraints\n\n"+
+				"- Tooling authority: applicable — express maintainer authorization recorded in [_authorization.md](_authorization.md); bounded files: `Makefile`.\n")
+		writeMechanicalFile(t, specRepositoryRoot, "specs/"+slug+"/_authorization.md", mechanicalTypedAuthorization(slug, "Makefile"))
+		commitMechanicalFiles(t, specRepositoryRoot, "record external authorization", "specs/"+slug+"/_prd.md", "specs/"+slug+"/_authorization.md")
+
+		reference, bounded, err := speccheck.ResolveMechanicalAuthorization(context.Background(), projectRoot, prdPath, target)
+		if err != nil {
+			t.Fatalf("ResolveMechanicalAuthorization() error = %v", err)
+		}
+		if len(bounded) != 1 || bounded[0] != "Makefile" {
+			t.Fatalf("resolved bounded paths = %v, want [Makefile]", bounded)
+		}
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:               projectRoot,
+			AuthorizationReference: reference,
+			ConsumingSpec:          slug,
+			TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_01", SHA: consumer}},
+		})
+
+		assertNoMechanicalCode(t, result, speccheck.CodeMechanicalAuthPaths)
+		if len(result.AuthorizationReads) != 1 || result.AuthorizationReads[0].Outcome != spec.AuthorizationGranted {
+			t.Fatalf("AuthorizationReads = %#v, want one granted external-record audit", result.AuthorizationReads)
+		}
+		for _, skipped := range result.Skips {
+			if skipped.Detector == speccheck.DetectorMechanicalAuthPaths {
+				t.Fatalf("authorization skips = %#v, want a real changed-path audit", result.Skips)
+			}
+		}
+	})
+
+	t.Run("unresolved external record refuses", func(t *testing.T) {
+		t.Parallel()
+
+		const slug = "missing-external-authorization"
+		projectRoot := newMechanicalGitRepo(t)
+		target := strings.TrimSpace(gittest.Run(t, projectRoot, "rev-parse", "HEAD"))
+		writeMechanicalFile(t, projectRoot, "Makefile", "verify:\n\t@true\n")
+		consumer := commitMechanicalFiles(t, projectRoot, "attempt unresolved grant", "Makefile")
+
+		specRepositoryRoot := newMechanicalGitRepo(t)
+		prdPath := filepath.Join(specRepositoryRoot, "specs", slug, "_prd.md")
+		writeMechanicalFile(t, specRepositoryRoot, "specs/"+slug+"/_prd.md",
+			"# PRD\n\n## Project Constraints\n\n"+
+				"- Tooling authority: applicable — express maintainer authorization recorded in [_authorization.md](_authorization.md); bounded files: `Makefile`.\n")
+		commitMechanicalFiles(t, specRepositoryRoot, "record unresolved citation", "specs/"+slug+"/_prd.md")
+
+		reference, _, err := speccheck.ResolveMechanicalAuthorization(context.Background(), projectRoot, prdPath, target)
+		if err != nil {
+			t.Fatalf("ResolveMechanicalAuthorization() error = %v", err)
+		}
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:               projectRoot,
+			AuthorizationReference: reference,
+			ConsumingSpec:          slug,
+			TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_01", SHA: consumer}},
+		})
+
+		if len(result.AuthorizationReads) != 1 || result.AuthorizationReads[0].Outcome != spec.AuthorizationUnresolved {
+			t.Fatalf("AuthorizationReads = %#v, want one unresolved external-record audit", result.AuthorizationReads)
+		}
+		assertMechanicalAuthorizationRefused(t, result, reference.Location.SpecRelativePath)
+		for _, skipped := range result.Skips {
+			if skipped.Detector == speccheck.DetectorMechanicalAuthPaths {
+				t.Fatalf("authorization skips = %#v, want unresolved evidence to refuse", result.Skips)
+			}
+		}
+	})
+
+	t.Run("genuine no-authorization declaration keeps its skip", func(t *testing.T) {
+		t.Parallel()
+
+		const slug = "external-no-authorization"
+		projectRoot := newMechanicalGitRepo(t)
+		target := strings.TrimSpace(gittest.Run(t, projectRoot, "rev-parse", "HEAD"))
+		specRepositoryRoot := newMechanicalGitRepo(t)
+		prdPath := filepath.Join(specRepositoryRoot, "specs", slug, "_prd.md")
+		writeMechanicalFile(t, specRepositoryRoot, "specs/"+slug+"/_prd.md",
+			"# PRD\n\n## Project Constraints\n\n"+
+				"- Tooling authority: not applicable — no governed path changes.\n")
+		commitMechanicalFiles(t, specRepositoryRoot, "record no authorization", "specs/"+slug+"/_prd.md")
+
+		reference, _, err := speccheck.ResolveMechanicalAuthorization(context.Background(), projectRoot, prdPath, target)
+		if err != nil {
+			t.Fatalf("ResolveMechanicalAuthorization() error = %v", err)
+		}
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:               projectRoot,
+			AuthorizationReference: reference,
+		})
+
+		assertMechanicalSkip(t, result, speccheck.DetectorMechanicalAuthPaths, "tooling authorization")
+	})
+}
+
+func TestMechanicalAuditJudgesTheProjectRoot(t *testing.T) {
+	t.Parallel()
+
+	const slug = "two-root-mechanical-audit"
+	projectRoot := newMechanicalGitRepo(t)
+	target := strings.TrimSpace(gittest.Run(t, projectRoot, "rev-parse", "HEAD"))
+	writeMechanicalFile(t, projectRoot, ".golangci.yml", "linters: {}\n")
+	consumer := commitMechanicalFiles(t, projectRoot, "change project path outside grant", ".golangci.yml")
+
+	specRepositoryRoot := newMechanicalGitRepo(t)
+	prdPath := filepath.Join(specRepositoryRoot, "specs", slug, "_prd.md")
+	writeMechanicalFile(t, specRepositoryRoot, "Makefile", "spec-repository-only:\n\t@true\n")
+	writeMechanicalFile(t, specRepositoryRoot, "specs/"+slug+"/_prd.md",
+		"# PRD\n\n## Project Constraints\n\n"+
+			"- Tooling authority: applicable — express maintainer authorization recorded in [_authorization.md](_authorization.md); bounded files: `Makefile`.\n")
+	writeMechanicalFile(t, specRepositoryRoot, "specs/"+slug+"/_authorization.md", mechanicalTypedAuthorization(slug, "Makefile"))
+	commitMechanicalFiles(t, specRepositoryRoot, "record different Spec tree", "Makefile", "specs/"+slug+"/_prd.md", "specs/"+slug+"/_authorization.md")
+	if missing := firstMissingMechanicalCommit(specRepositoryRoot, consumer); missing != consumer {
+		t.Fatalf("Spec repository unexpectedly resolves project Task commit %s", consumer)
+	}
+
+	reference, _, err := speccheck.ResolveMechanicalAuthorization(context.Background(), projectRoot, prdPath, target)
+	if err != nil {
+		t.Fatalf("ResolveMechanicalAuthorization() error = %v", err)
+	}
+	result := runMechanical(t, speccheck.MechanicalRequest{
+		RepoRoot:               projectRoot,
+		AuthorizationReference: reference,
+		ConsumingSpec:          slug,
+		TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_01", SHA: consumer}},
+	})
+
+	if len(result.AuthorizationReads) != 1 || result.AuthorizationReads[0].Outcome != spec.AuthorizationGranted {
+		t.Fatalf("AuthorizationReads = %#v, want the record read from the Spec repository", result.AuthorizationReads)
+	}
+	assertMechanicalPathEscapedGrant(t, result, ".golangci.yml", reference.Location.SpecRelativePath)
+}
+
+func TestConstraintsRefuseNonOperativeGrant(t *testing.T) {
+	t.Parallel()
+
+	const recordPath = "docs/specs/0114-tooling-row/_authorization.md"
+	tests := []struct {
+		name      string
+		status    string
+		granted   string
+		consuming string
+		wantCode  string
+		wantField string
+	}{
+		{
+			name:      "proposed record withholds status",
+			status:    "proposed",
+			granted:   "null",
+			consuming: "0114-tooling-row",
+			wantCode:  speccheck.CodeToolingUnapproved,
+			wantField: "status",
+		},
+		{
+			name:      "approved record without grant date withholds granted",
+			status:    "approved",
+			granted:   "null",
+			consuming: "0114-tooling-row",
+			wantCode:  speccheck.CodeToolingUnapproved,
+			wantField: "granted",
+		},
+		{
+			name:      "withdrawn record withholds status",
+			status:    "withdrawn",
+			granted:   "null",
+			consuming: "0114-tooling-row",
+			wantCode:  speccheck.CodeToolingUnapproved,
+			wantField: "status",
+		},
+		{
+			name:      "different consumer keeps unauthorized refusal",
+			status:    "approved",
+			granted:   "2026-09-09",
+			consuming: "0999-other",
+			wantCode:  speccheck.CodeToolingUnauthorized,
+		},
+		{
+			name:      "approved record for asking Spec passes",
+			status:    "approved",
+			granted:   "2026-09-09",
+			consuming: "0114-tooling-row",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			row := "Tooling authority: applicable — express maintainer authorization recorded in `" + recordPath + "`; bounded files: `docs/agents/agent-instructions.md`."
+			record := typedConstraintAuthorization(tt.status, tt.granted, tt.consuming)
+			repoRoot, specsRoot, slug := writeToolingRowFixture(t, row, recordPath, record)
+			result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StagePRD)
+			if err != nil {
+				t.Fatalf("CheckStage(StagePRD): %v", err)
+			}
+
+			if tt.wantCode == "" {
+				if len(result.Findings) != 0 {
+					t.Fatalf("StagePRD findings = %#v, want none", result.Findings)
+				}
+				return
+			}
+			findings := findingsWithCode(result, tt.wantCode)
+			if len(findings) != 1 || len(result.Findings) != 1 {
+				t.Fatalf("StagePRD findings = %#v, want exactly one %s", result.Findings, tt.wantCode)
+			}
+			if !hasExactLocation(findings[0], "docs/specs/0114-tooling-row/_prd.md", 8) ||
+				!hasExactLocation(findings[0], recordPath, 1) {
+				t.Errorf("%s locations = %#v, want citing row and record", tt.wantCode, findings[0].Where)
+			}
+			if tt.wantField != "" && !strings.Contains(findings[0].Summary, "field "+tt.wantField) {
+				t.Errorf("%s summary = %q, want withholding field %q", tt.wantCode, findings[0].Summary, tt.wantField)
+			}
+		})
+	}
+}
+
+func TestConstraintsAcceptHonestProposalDeclaration(t *testing.T) {
+	t.Parallel()
+
+	t.Run("honest proposed mutation", func(t *testing.T) {
+		t.Parallel()
+
+		const recordPath = "docs/specs/0114-tooling-row/_authorization.md"
+		row := "Tooling authority: applicable — exact governed mutations remain proposed in [_authorization.md](_authorization.md); status proposed and a null grant authorize no mutation. Bounded proposed files: `docs/agents/agent-instructions.md`."
+		record := typedConstraintAuthorization("proposed", "null", "0114-tooling-row")
+		repoRoot, specsRoot, slug := writeToolingRowFixture(t, row, recordPath, record)
+		result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StagePRD)
+		if err != nil {
+			t.Fatalf("CheckStage(StagePRD): %v", err)
+		}
+		if len(result.Findings) != 0 {
+			t.Fatalf("StagePRD findings = %#v, want honest proposal to pass", result.Findings)
+		}
+	})
+
+	t.Run("approved narrow record wins over proposed record", func(t *testing.T) {
+		t.Parallel()
+
+		const (
+			narrowPath   = "docs/specs/0114-tooling-row/references/narrow-authorization.md"
+			proposalPath = "docs/specs/0114-tooling-row/_authorization.md"
+		)
+		row := "Tooling authority: applicable — express maintainer authorization is recorded in [the narrow grant](references/narrow-authorization.md); bounded files: `docs/agents/agent-instructions.md`. The broader [_authorization.md](_authorization.md) remains proposed."
+		repoRoot, specsRoot, slug := writeToolingRowFixture(t, row, narrowPath, typedConstraintAuthorization("approved", "2026-09-09", "0114-tooling-row"))
+		writeToolingRowFile(t, repoRoot, proposalPath, typedConstraintAuthorization("proposed", "null", "0114-tooling-row"))
+		result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StagePRD)
+		if err != nil {
+			t.Fatalf("CheckStage(StagePRD): %v", err)
+		}
+		if len(result.Findings) != 0 {
+			t.Fatalf("StagePRD findings = %#v, want approved narrow grant selected", result.Findings)
+		}
+	})
+
+	t.Run("ambiguous express authorization refuses", func(t *testing.T) {
+		t.Parallel()
+
+		const (
+			firstPath  = "docs/specs/0114-tooling-row/references/first-authorization.md"
+			secondPath = "docs/specs/0114-tooling-row/references/second-authorization.md"
+		)
+		row := "Tooling authority: applicable — express maintainer authorization is recorded in [the first grant](references/first-authorization.md) and [the second grant](references/second-authorization.md); bounded files: `docs/agents/agent-instructions.md`."
+		record := typedConstraintAuthorization("approved", "2026-09-09", "0114-tooling-row")
+		repoRoot, specsRoot, slug := writeToolingRowFixture(t, row, firstPath, record)
+		writeToolingRowFile(t, repoRoot, secondPath, record)
+		result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StagePRD)
+		if err != nil {
+			t.Fatalf("CheckStage(StagePRD): %v", err)
+		}
+		findings := findingsWithCode(result, speccheck.CodeToolingUnapproved)
+		if len(findings) != 1 || len(result.Findings) != 1 {
+			t.Fatalf("StagePRD findings = %#v, want one ambiguous-record refusal", result.Findings)
+		}
+		for _, recordPath := range []string{firstPath, secondPath} {
+			if !hasExactLocation(findings[0], recordPath, 1) {
+				t.Errorf("ambiguous record locations = %#v, want %q", findings[0].Where, recordPath)
+			}
+		}
+		if !strings.Contains(findings[0].Summary, "exactly one") {
+			t.Errorf("ambiguous record summary = %q, want exact-one refusal", findings[0].Summary)
+		}
+	})
+
+	t.Run("dated legacy grant remains accepted", func(t *testing.T) {
+		t.Parallel()
+
+		const recordPath = "docs/workflow/authorizations/2026-08-09-characterization.md"
+		row := "Tooling authority: applicable — express maintainer authorization recorded in `" + recordPath + "`; bounded files: `docs/agents/agent-instructions.md`."
+		record := "# Authorization — bounded tooling change\n\n## Consuming Spec\n\n- 0114-tooling-row\n\n## Authorized Paths\n\n- `docs/agents/agent-instructions.md`\n"
+		repoRoot, specsRoot, slug := writeToolingRowFixture(t, row, recordPath, record)
+		result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StagePRD)
+		if err != nil {
+			t.Fatalf("CheckStage(StagePRD): %v", err)
+		}
+		if len(result.Findings) != 0 {
+			t.Fatalf("StagePRD findings = %#v, want dated legacy grant to pass", result.Findings)
+		}
+	})
+}
+
+func TestStrictCheckRefusesMissingImplementAuthority(t *testing.T) {
+	t.Parallel()
+
+	const recordPath = "docs/specs/0114-tooling-row/_authorization.md"
+	row := "Tooling authority: applicable — express maintainer authorization recorded in [_authorization.md](_authorization.md); bounded files: `docs/agents/agent-instructions.md`."
+	repoRoot, specsRoot, slug := writeToolingRowFixture(t, row, recordPath, typedConstraintAuthorization("approved", "2026-09-09", "0114-tooling-row"))
+	prdPath := filepath.Join(repoRoot, "docs", "specs", slug, "_prd.md")
+	prd, err := os.ReadFile(prdPath)
+	if err != nil {
+		t.Fatalf("read fixture PRD: %v", err)
+	}
+	writeToolingRowFile(t, repoRoot, "docs/specs/0114-tooling-row/_prd.md", "---\nstatus: active\n---\n\n"+string(prd))
+	writeToolingRowFile(t, repoRoot, "docs/specs/0114-tooling-row/_tasks.md", `---
+schema: spec-tasks/v1
+spec: 0114-tooling-row
+graph:
+  nodes:
+    - id: task_01
+      file: task_01.md
+      needs: []
+---
+
+# Task Graph
+`)
+	writeToolingRowFile(t, repoRoot, "docs/specs/0114-tooling-row/task_01.md", `---
+task: task_01
+spec: 0114-tooling-row
+status: pending
+type: backend
+---
+
+# Exercise the grant
+
+## Verification
+
+`+"- `true` — expected: passes.\n")
+
+	withoutImplement, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StageTasks)
+	if err != nil {
+		t.Fatalf("CheckStage(StageTasks) without implement: %v", err)
+	}
+	speccheck.PromoteGaps(&withoutImplement)
+	findings := findingsWithCode(withoutImplement, speccheck.CodeToolingUnapproved)
+	if len(findings) != 1 {
+		t.Fatalf("%s findings = %#v, want one missing-implement refusal", speccheck.CodeToolingUnapproved, findings)
+	}
+	for _, want := range []string{"implement", recordPath} {
+		if !strings.Contains(findings[0].Summary, want) {
+			t.Errorf("missing-implement summary = %q, want %q", findings[0].Summary, want)
+		}
+	}
+
+	writeToolingRowFile(t, repoRoot, recordPath, typedConstraintAuthorizationWithOperations(
+		"approved", "2026-09-09", "0114-tooling-row", "implement",
+	))
+	withImplement, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StageTasks)
+	if err != nil {
+		t.Fatalf("CheckStage(StageTasks) with implement: %v", err)
+	}
+	if findings := findingsWithCode(withImplement, speccheck.CodeToolingUnapproved); len(findings) != 0 {
+		t.Fatalf("%s findings = %#v, want implement authority accepted", speccheck.CodeToolingUnapproved, findings)
+	}
+}
+
+func typedConstraintAuthorization(status, granted, consuming string) string {
+	return "---\n" +
+		"status: " + status + "\n" +
+		"granted: " + granted + "\n" +
+		"action: implement the bounded tooling change\n" +
+		"consuming: " + consuming + "\n" +
+		"paths:\n" +
+		"  - docs/agents/agent-instructions.md\n" +
+		"---\n"
+}
+
+func typedConstraintAuthorizationWithOperations(status, granted, consuming string, operations ...string) string {
+	var record strings.Builder
+	fmt.Fprintf(&record, "---\nstatus: %s\ngranted: %s\naction: implement the bounded tooling change\nconsuming: %s\npaths:\n  - docs/agents/agent-instructions.md\noperations:\n", status, granted, consuming)
+	for _, operation := range operations {
+		fmt.Fprintf(&record, "  - %s\n", operation)
+	}
+	record.WriteString("---\n")
+	return record.String()
+}
 
 func TestCheckReplay0060Task03RefusesWorkIndependentVerification(t *testing.T) {
 	t.Parallel()

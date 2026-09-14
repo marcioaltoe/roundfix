@@ -1,0 +1,10 @@
+Preflight failed
+
+Reason:
+  profile proof failed for runtime "codex", model "gpt-5.6-sol", reasoning_effort "high"; affected categories: backend preferred source=invocation; classification: selection_rejected; adapter error: /Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260914T143926Z_aa3f4fef8aee802b/docs/specs/0136-a-rename-the-committer-can-stage/qa/evidence/2026-09-14-run-e15c7ee8/fake-bin/codex-acp is required but was not found on PATH; install it with: npm install -g @agentclientprotocol/codex-acp@1.1.5; next: run `npm install -g @agentclientprotocol/codex-acp@1.1.5`, then rerun `roundfix profiles validate`; if the tuple remains unavailable, update the profile with `roundfix profiles configure --scope user|project`; fallback: Fallback Chains activate only after Run creation (ADR-0050); Preflight proves every configured tuple and substitutes none
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix implement --help' for usage.

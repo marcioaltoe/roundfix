@@ -48,19 +48,20 @@ type settleRequest struct {
 }
 
 type settlePlan struct {
-	userRoot     string
-	workDir      string
-	targetBranch string
-	homeDir      string
-	artifactDir  string
-	specsRoot    string
-	graph        *spec.Graph
-	task         spec.Task
-	run          store.Run
-	runRef       runworktree.Ref
-	taskRef      runworktree.TaskRef
-	hasRun       bool
-	taskSurface  bool
+	userRoot      string
+	workDir       string
+	targetBranch  string
+	homeDir       string
+	artifactDir   string
+	specsRoot     string
+	graph         *spec.Graph
+	task          spec.Task
+	run           store.Run
+	runRef        runworktree.Ref
+	taskRef       runworktree.TaskRef
+	authorization spec.AuthorizationResolution
+	hasRun        bool
+	taskSurface   bool
 }
 
 type settleSurfaceCandidate struct {
@@ -307,7 +308,31 @@ func preflightSettle(ctx context.Context, req settleRequest, stderr io.Writer, e
 	if err := ensureNoSettleActiveRun(ctx, loadedConfig.HomeDir, gitState.Root, req.specSlug, stderr); err != nil {
 		return settlePlan{}, err
 	}
+	plan.authorization = readSettleAuthorization(ctx, plan)
+	changed, err := (daemon.GitWorktreeSnapshotter{}).Snapshot(ctx, plan.workDir)
+	if err != nil {
+		return settlePlan{}, err
+	}
+	if err := requireSettleCommitAuthority(plan, changed); err != nil {
+		return settlePlan{}, validationError{message: err.Error()}
+	}
 	return plan, nil
+}
+
+func readSettleAuthorization(ctx context.Context, plan settlePlan) spec.AuthorizationResolution {
+	revision := "HEAD"
+	if plan.hasRun && strings.TrimSpace(plan.run.HeadSHA) != "" {
+		revision = plan.run.HeadSHA
+	}
+	return spec.ReadSpecAuthorization(ctx, plan.userRoot, plan.specsRoot, plan.graph.Spec.Slug, revision)
+}
+
+func requireSettleCommitAuthority(plan settlePlan, changed []string) error {
+	governedMutation := daemon.HasGovernedSnapshotMutation(nil, changed)
+	if err := spec.RequireGovernedOperation(plan.authorization, spec.AuthorizationOperationCommit, governedMutation); err != nil {
+		return fmt.Errorf("refuse Settle commit: %w", err)
+	}
+	return nil
 }
 
 func candidatesWithCurrent(candidates []settleSurfaceCandidate, gitRoot string, branch string) []settleSurfaceCandidate {
@@ -567,6 +592,13 @@ type settleStagedPath struct {
 // status flip is written before staging so it rides in the same commit as the
 // code changes (ADR 0013), the way the Daemon's own Task commit carries it.
 func settleTaskAndCommit(ctx context.Context, plan settlePlan, collaborators engineCollaborators) (settleCommitResult, error) {
+	changed, err := (daemon.GitWorktreeSnapshotter{}).Snapshot(ctx, plan.workDir)
+	if err != nil {
+		return settleCommitResult{}, err
+	}
+	if err := requireSettleCommitAuthority(plan, changed); err != nil {
+		return settleCommitResult{}, err
+	}
 	taskPath := filepath.Join(plan.specsRoot, plan.task.File)
 	if err := spec.SetStatus(taskPath, spec.StatusCompleted); err != nil {
 		return settleCommitResult{}, fmt.Errorf("settle Task %s completed: %w", plan.task.ID, err)

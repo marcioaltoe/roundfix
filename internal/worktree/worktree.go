@@ -1534,7 +1534,7 @@ func PriorChangedFiles(ctx context.Context, workDir string, initialHead string) 
 		return nil, errors.New("resolve prior changed files: initial HEAD is required")
 	}
 	runner := execGitRunner{}
-	output, err := runner.Run(ctx, workDir, "diff", "--name-only", initialHead+"..HEAD", "--")
+	output, err := runner.Run(ctx, workDir, "diff", "--no-renames", "--name-only", initialHead+"..HEAD", "--")
 	if err != nil {
 		return nil, fmt.Errorf("resolve prior changed files: %w", err)
 	}

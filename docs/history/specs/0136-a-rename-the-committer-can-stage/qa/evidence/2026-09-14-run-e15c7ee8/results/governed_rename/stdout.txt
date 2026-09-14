@@ -1,0 +1,3 @@
+task_01 failed — Exercise the Daemon commit path
+  reason: Task governed mutation refused: authorization operation "implement" is not permitted by record "docs/specs/0001-rename-fixture/_authorization.md"
+Unresolved: 0 completed, 1 failed, 0 skipped, 0 pending.

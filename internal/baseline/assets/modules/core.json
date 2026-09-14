@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "core",
-  "version": 8,
+  "version": 9,
   "kind": "core",
   "title": "Universal agent baseline",
   "dependsOn": [],
@@ -292,7 +292,7 @@
   "supportingGuides": [
     {
       "id": "guide.agent-instructions",
-      "version": 8,
+      "version": 9,
       "path": "docs/agents/agent-instructions.md",
       "template": "template.guide.agent-instructions",
       "rules": [
@@ -388,7 +388,7 @@
     },
     {
       "id": "rule.core.verification-selected",
-      "version": 4,
+      "version": 5,
       "coverage": [
         "coverage.verification"
       ],
@@ -401,7 +401,7 @@
         {
           "id": "clause.core.verification-two-tiers",
           "enforcement": "mandatory",
-          "guidance": "Use the incremental verification command declared by the active Baseline Profile for fast local checks; it answers whether the current change remains valid while reusing safe local state. CI must run the complete verification command declared by that Profile from a fresh run; it answers whether the complete tree satisfies the repository contract. If the Profile declares no incremental command, this clause is unmet rather than satisfied by omission."
+          "guidance": "Use the incremental verification command declared by the active Baseline Profile for fast local checks; it answers whether the current change remains valid while reusing safe local state. CI must run the complete verification command declared by that Profile from a fresh run; it answers whether the complete tree satisfies the repository contract. If the Profile declares no incremental command, this clause is unmet rather than satisfied by omission. Execute authored Verification only on committed provenance: the Spec artifacts that carry its commands must be tracked in the repository and byte-identical to their committed bytes at the resolved revision, comparing the authored projection while excluding Daemon-owned `status` and `## Result` fields. An untrusted source requires an `execution_approvals` entry in that Spec's `<spec-root>/<slug>/_authorization.md` carrying `repository`, `revision` (the approved source revision), `artifact` (the carrying artifact), and `command_digest` (the digest of the approved command text); the approval expires when any of those fields changes. Read-only checking remains available for any source."
         }
       ]
     },
@@ -436,7 +436,7 @@
     },
     {
       "id": "rule.core.tooling-authority",
-      "version": 1,
+      "version": 2,
       "coverage": [
         "coverage.tooling-authority"
       ],
@@ -449,7 +449,7 @@
         {
           "id": "clause.core.tooling-commit-choreography",
           "enforcement": "mandatory",
-          "guidance": "Land an authorized tooling change as its own commit, separate from the record that authorizes it. The express authorization record with its exact bounded paths, and any prerequisite fix repairing something already red before the change, are each their own commit landing before the authorized commit, in either relative order. A consequent fix, which only becomes necessary because the authorized change made something else stale, is its own commit landing after it; it cannot precede the cause that created it. Either kind folded into the authorized commit fails the tooling-authority gate. Prefer no consequent fix at all: a change's declared scope should include the tests its own edit invalidates."
+          "guidance": "Land an authorized tooling change as its own commit, separate from the record that authorizes it. The express authorization record with its exact bounded paths, and any prerequisite fix repairing something already red before the change, are each their own commit landing before the authorized commit, in either relative order. A consequent fix, which only becomes necessary because the authorized change made something else stale, is its own commit landing after it; it cannot precede the cause that created it. Either kind folded into the authorized commit fails the tooling-authority gate. Prefer no consequent fix at all: a change's declared scope should include the tests its own edit invalidates. Read an express grant from the consuming Spec's `<spec-root>/<slug>/_authorization.md`; a proposed, absent, contradictory, or withdrawn record grants no governed mutation and does not by itself refuse implementation, commit, or push, and an executor cannot widen the grant it depends on."
         }
       ]
     },

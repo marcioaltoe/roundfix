@@ -225,6 +225,7 @@ type TaskPlan struct {
 	RunWorktree             runworktree.Ref
 	TargetBranch            string
 	HeadSHA                 string
+	Authorization           spec.AuthorizationResolution
 	SpecsRoot               string
 	ArtifactDir             string
 	AgentLogs               bool
@@ -954,6 +955,18 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 			}
 		}
 	}
+	var commit taskCommitPreparation
+	if failure == "" {
+		commit, err = engine.prepareTaskCommit(ctx, plan, task, before)
+		if err != nil {
+			return "", "", err
+		}
+		if authorizationErr := spec.RequireGovernedOperation(plan.Authorization, spec.AuthorizationOperationImplement, commit.governedMutation); authorizationErr != nil {
+			failure = fmt.Sprintf("Task governed mutation refused: %v", authorizationErr)
+		} else if authorizationErr := spec.RequireGovernedOperation(plan.Authorization, spec.AuthorizationOperationCommit, commit.governedMutation); authorizationErr != nil {
+			failure = fmt.Sprintf("Task commit refused: %v", authorizationErr)
+		}
+	}
 	settled := spec.StatusCompleted
 	if failure != "" {
 		settled = spec.StatusFailed
@@ -967,7 +980,7 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 		fmt.Fprintf(engine.deps.Progress, "Task %s failed: %s\n", task.ID, failure)
 		return settled, failure, nil
 	}
-	if err := engine.commitTask(ctx, plan, task, ordinal, before); err != nil {
+	if err := engine.commitTask(ctx, plan, task, ordinal, commit); err != nil {
 		return "", "", err
 	}
 	fmt.Fprintf(engine.deps.Progress, "Task %s completed.\n", task.ID)
@@ -1438,7 +1451,6 @@ func (engine *Engine) runTaskVerificationRequest(ctx context.Context, plan TaskP
 	if err != nil {
 		return verificationAttemptOutcome{}, err
 	}
-
 	verification, err := engine.runVerificationAttempt(ctx, request)
 	release()
 	if err != nil {
@@ -1619,36 +1631,75 @@ func (engine *Engine) settleTask(ctx context.Context, plan TaskPlan, task spec.T
 	return nil
 }
 
-// commitTask creates the Task commit from the snapshot diff plus the task
-// file itself, so the settled status and Result section always ride in the
-// same commit as the code changes (ADR 0013).
-func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, before []string) error {
+type taskCommitPreparation struct {
+	stageable        []string
+	dropped          []DroppedStagePath
+	noOpShape        string
+	governedMutation bool
+}
+
+// prepareTaskCommit resolves the exact mutation before settlement so a
+// Governed Path can require authority without withholding ordinary work.
+func (engine *Engine) prepareTaskCommit(ctx context.Context, plan TaskPlan, task spec.Task, before []string) (taskCommitPreparation, error) {
+	after, err := engine.deps.Worktree.Snapshot(ctx, plan.WorkDir)
+	if err != nil {
+		return taskCommitPreparation{}, err
+	}
+	changed := ensureCommitPath(diffSnapshots(before, after), artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, task.File)))
+	stageable, dropped := FilterStageablePaths(ctx, plan.WorkDir, changed)
+	return taskCommitPreparation{
+		stageable:        stageable,
+		dropped:          dropped,
+		noOpShape:        taskNoOpCommitShape(plan, stageable),
+		governedMutation: HasGovernedSnapshotMutation(before, after),
+	}, nil
+}
+
+// HasGovernedSnapshotMutation reports whether a Governed Path appears in only
+// one of two snapshots. Comparing the sets in both directions classifies a
+// removed or renamed source without interpreting Git's rename records.
+func HasGovernedSnapshotMutation(before, after []string) bool {
+	beforeSet := make(map[string]struct{}, len(before))
+	for _, path := range before {
+		beforeSet[path] = struct{}{}
+	}
+	afterSet := make(map[string]struct{}, len(after))
+	for _, path := range after {
+		afterSet[path] = struct{}{}
+		if _, present := beforeSet[path]; !present && speccheck.GovernedPath(path) {
+			return true
+		}
+	}
+	for _, path := range before {
+		if _, present := afterSet[path]; !present && speccheck.GovernedPath(path) {
+			return true
+		}
+	}
+	return false
+}
+
+// commitTask creates the prepared Task commit, including the task file so the
+// settled status and Result section ride with the code changes (ADR 0013).
+func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, preparation taskCommitPreparation) error {
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
 			return fmt.Errorf("publish stop event for run %q before Task %s commit: %w", plan.RunID, task.ID, errors.Join(err, publishErr))
 		}
 		return fmt.Errorf("stop run %q before Task %s commit: %w", plan.RunID, task.ID, err)
 	}
-	after, err := engine.deps.Worktree.Snapshot(ctx, plan.WorkDir)
-	if err != nil {
-		return err
-	}
-	changed := ensureCommitPath(diffSnapshots(before, after), artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, task.File)))
-	stageable, dropped := FilterStageablePaths(plan.WorkDir, changed)
-	for _, drop := range dropped {
+	for _, drop := range preparation.dropped {
 		if err := engine.publishDroppedStagePath(ctx, plan.RunID, ordinal, task.ID, "task file", drop); err != nil {
 			return err
 		}
 	}
-	noOpShape := taskNoOpCommitShape(plan, stageable)
-	if len(stageable) == 0 {
-		return engine.publishNoOpTaskCommitWarning(ctx, plan, task.ID, ordinal, noOpShape)
+	if len(preparation.stageable) == 0 {
+		return engine.publishNoOpTaskCommitWarning(ctx, plan, task.ID, ordinal, preparation.noOpShape)
 	}
 	message := TaskCommitMessage(plan.Spec.Slug, task)
 	if err := engine.deps.Committer.Commit(ctx, CommitRequest{
 		WorkDir: plan.WorkDir,
 		Message: message,
-		Paths:   stageable,
+		Paths:   preparation.stageable,
 	}); err != nil {
 		var refusal *HookRefusalError
 		if errors.As(err, &refusal) {
@@ -1660,12 +1711,12 @@ func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.T
 	fmt.Fprintf(engine.deps.Progress, "Task commit created: %s\n", subject)
 	if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonCommit,
 		fmt.Sprintf("Task commit created: %s", subject),
-		map[string]any{"decision": "created", "task": task.ID, "paths": len(stageable)},
+		map[string]any{"decision": "created", "task": task.ID, "paths": len(preparation.stageable)},
 	); err != nil {
 		return fmt.Errorf("publish commit event for run %q Task %s: %w", plan.RunID, task.ID, err)
 	}
-	if noOpShape != "" {
-		return engine.publishNoOpTaskCommitWarning(ctx, plan, task.ID, ordinal, noOpShape)
+	if preparation.noOpShape != "" {
+		return engine.publishNoOpTaskCommitWarning(ctx, plan, task.ID, ordinal, preparation.noOpShape)
 	}
 	return nil
 }
@@ -1776,18 +1827,22 @@ func (engine *Engine) publishNoOpTaskCommitWarning(ctx context.Context, plan Tas
 }
 
 // DroppedStagePath records a path omitted from a commit request because Git
-// cannot safely stage it from the worktree.
+// cannot safely match it from the worktree and index.
 type DroppedStagePath struct {
 	Path   string
 	Reason string
 	Mode   string
 }
 
-const executableStagePathReason = "executable file"
+const (
+	executableStagePathReason = "executable file"
+	absentStagePathReason     = "absent from worktree and index"
+)
 
-// FilterStageablePaths keeps only repository-relative, non-executable paths
-// that do not cross symlinks and reports every omitted path with the reason.
-func FilterStageablePaths(workDir string, paths []string) ([]string, []DroppedStagePath) {
+// FilterStageablePaths keeps only repository-relative paths Git can match
+// without crossing symlinks or staging executable files. It reports every
+// omitted path with the reason.
+func FilterStageablePaths(ctx context.Context, workDir string, paths []string) ([]string, []DroppedStagePath) {
 	kept := make([]string, 0, len(paths))
 	seen := make(map[string]bool, len(paths))
 	var dropped []DroppedStagePath
@@ -1803,6 +1858,10 @@ func FilterStageablePaths(workDir string, paths []string) ([]string, []DroppedSt
 		}
 		if mode, executable := executableRegularFileMode(workDir, stagePath); executable {
 			dropped = append(dropped, DroppedStagePath{Path: stagePath, Reason: executableStagePathReason, Mode: mode})
+			continue
+		}
+		if pathAbsentFromWorktreeAndIndex(ctx, workDir, stagePath) {
+			dropped = append(dropped, DroppedStagePath{Path: stagePath, Reason: absentStagePathReason})
 			continue
 		}
 		if !seen[stagePath] {
@@ -1855,6 +1914,23 @@ func executableRegularFileMode(workDir string, relative string) (string, bool) {
 	return fmt.Sprintf("%#o", info.Mode().Perm()), true
 }
 
+func pathAbsentFromWorktreeAndIndex(ctx context.Context, workDir string, relative string) bool {
+	_, err := os.Lstat(filepath.Join(workDir, relative))
+	if err == nil {
+		return false
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		return false
+	}
+	result, err := runGitCommand(ctx, workDir, "ls-files", "--error-unmatch", "--", relative)
+	if err == nil {
+		return false
+	}
+	// Exit 1 is ls-files' positive no-match answer. Any other failure leaves
+	// absence unproven, so the commit boundary remains responsible for it.
+	return result.ExitCode == 1
+}
+
 func (engine *Engine) publishDroppedStagePath(ctx context.Context, runID string, ordinal int, taskID string, artifactLabel string, drop DroppedStagePath) error {
 	payload := map[string]any{
 		"decision": "dropped",
@@ -1866,6 +1942,9 @@ func (engine *Engine) publishDroppedStagePath(ctx context.Context, runID string,
 		payload["mode"] = drop.Mode
 		fmt.Fprintf(engine.deps.Progress, "roundfix: refused executable file %s (mode %s); build artifacts and deliberately executable repository files are not valid Work Item output\n", drop.Path, drop.Mode)
 		summary = fmt.Sprintf("Executable file %s refused with mode %s; build artifacts and deliberately executable repository files are not valid Work Item output.", drop.Path, drop.Mode)
+	} else if drop.Reason == absentStagePathReason {
+		fmt.Fprintf(engine.deps.Progress, "roundfix: path %s is absent from the worktree and index; omitted from the commit\n", drop.Path)
+		summary = fmt.Sprintf("Path %s omitted from the commit: %s.", drop.Path, drop.Reason)
 	} else {
 		fmt.Fprintf(engine.deps.Progress, "roundfix: %s %s kept outside the repository; omitted from the commit\n", artifactLabel, drop.Path)
 		summary = fmt.Sprintf("%s %s kept outside the repository: %s.", artifactLabel, drop.Path, drop.Reason)
@@ -2088,11 +2167,23 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 
 func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qaTask spec.Task, previousReportPath string) (speccheck.MechanicalRequest, error) {
 	prdPath := filepath.Join(plan.Spec.Dir, "_prd.md")
-	authorizationPath, boundedPaths, err := speccheck.MechanicalAuthorization(plan.WorkDir, prdPath)
-	if err != nil {
-		return speccheck.MechanicalRequest{}, err
+	var authorizationPath string
+	var authorizationReference speccheck.MechanicalAuthorizationReference
+	if strings.TrimSpace(plan.HeadSHA) == "" {
+		var err error
+		authorizationPath, _, err = speccheck.MechanicalAuthorization(plan.WorkDir, prdPath)
+		if err != nil {
+			return speccheck.MechanicalRequest{}, err
+		}
+	} else {
+		resolved, _, err := speccheck.ResolveMechanicalAuthorization(ctx, plan.WorkDir, prdPath, plan.HeadSHA)
+		if err != nil {
+			return speccheck.MechanicalRequest{}, err
+		}
+		authorizationReference = resolved
+		authorizationPath = resolved.Path
 	}
-	taskCommits, err := mechanicalTaskCommits(ctx, plan, boundedPaths)
+	taskCommits, err := mechanicalTaskCommits(ctx, plan, authorizationPath)
 	if err != nil {
 		return speccheck.MechanicalRequest{}, err
 	}
@@ -2113,9 +2204,12 @@ func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qa
 		}
 	}
 	return speccheck.MechanicalRequest{
-		RepoRoot:          plan.WorkDir,
-		AuthorizationPath: authorizationPath,
-		TaskCommits:       taskCommits,
+		RepoRoot:               plan.WorkDir,
+		AuthorizationPath:      authorizationPath,
+		AuthorizationReference: authorizationReference,
+		ConsumingSpec:          plan.Spec.Slug,
+		DeliveryTargetRevision: plan.HeadSHA,
+		TaskCommits:            taskCommits,
 		// Consequent-fix declarations are optional authored inputs. Until a
 		// declaration exists, the detector records its presence-aware skip.
 		ConsequentFixes: nil,
@@ -2146,8 +2240,8 @@ func qaGatePrecondition(plan TaskPlan) (speccheck.GatePreconditionResult, error)
 	return speccheck.GatePrecondition(checked), nil
 }
 
-func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, boundedPaths []string) ([]speccheck.MechanicalTaskCommit, error) {
-	if strings.TrimSpace(plan.HeadSHA) == "" || len(boundedPaths) == 0 {
+func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, authorizationPath string) ([]speccheck.MechanicalTaskCommit, error) {
+	if strings.TrimSpace(plan.HeadSHA) == "" || strings.TrimSpace(authorizationPath) == "" {
 		return nil, nil
 	}
 	revisionRange := strings.TrimSpace(plan.HeadSHA) + "..HEAD"
@@ -2181,10 +2275,6 @@ func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, boundedPaths []st
 		}
 		commitsByTask[taskID] = sha
 	}
-	bounded := make(map[string]bool, len(boundedPaths))
-	for _, path := range boundedPaths {
-		bounded[filepath.ToSlash(filepath.Clean(filepath.FromSlash(path)))] = true
-	}
 	result := make([]speccheck.MechanicalTaskCommit, 0, len(commitsByTask))
 	for _, task := range plan.Tasks {
 		sha := commitsByTask[task.ID]
@@ -2195,14 +2285,14 @@ func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, boundedPaths []st
 		if err != nil {
 			return nil, err
 		}
-		intersectsAuthorization := false
+		intersectsGoverned := false
 		for _, path := range changed {
-			if bounded[path] {
-				intersectsAuthorization = true
+			if speccheck.GovernedPath(path) {
+				intersectsGoverned = true
 				break
 			}
 		}
-		if !intersectsAuthorization {
+		if !intersectsGoverned {
 			continue
 		}
 		result = append(result, speccheck.MechanicalTaskCommit{
@@ -2501,7 +2591,14 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 	if strings.TrimSpace(qaTask.File) != "" {
 		changed = ensureCommitPath(changed, artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, qaTask.File)))
 	}
-	stageable, dropped := FilterStageablePaths(plan.WorkDir, changed)
+	stageable, dropped := FilterStageablePaths(ctx, plan.WorkDir, changed)
+	governedMutation := HasGovernedSnapshotMutation(before, after)
+	if err := spec.RequireGovernedOperation(plan.Authorization, spec.AuthorizationOperationImplement, governedMutation); err != nil {
+		return fmt.Errorf("refuse QA Task %s governed mutation: %w", qaTask.ID, err)
+	}
+	if err := spec.RequireGovernedOperation(plan.Authorization, spec.AuthorizationOperationCommit, governedMutation); err != nil {
+		return fmt.Errorf("refuse QA Task %s commit: %w", qaTask.ID, err)
+	}
 	for _, drop := range dropped {
 		if err := engine.publishDroppedStagePath(ctx, plan.RunID, ordinal, "", "QA Report", drop); err != nil {
 			return err
