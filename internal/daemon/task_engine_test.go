@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"slices"
@@ -141,6 +142,7 @@ func taskCycleFixtureSeedForTest(t *testing.T) *taskCycleRepositorySeed {
 	taskCycleFixtureSeedOnce.Do(func() {
 		gitRoot := t.TempDir()
 		gittest.InitRepo(t, gitRoot, "--initial-branch=main")
+		gittest.PersistIdentity(t, gitRoot)
 		writeSpecDirForTest(t, gitRoot, taskCycleSlug, nil)
 		gittest.Run(t, gitRoot, "add", "-A")
 		gittest.Run(t, gitRoot, "commit", "-m", "seed committed Task source")
@@ -257,6 +259,26 @@ func TestTaskCycleFixtureSeedIsCreatedOnce(t *testing.T) {
 		if plan.Authorization.Outcome != spec.AuthorizationGranted || plan.Authorization.Record.Source.Revision != plan.HeadSHA {
 			t.Fatalf("Task-cycle fixture authorization did not resolve committed provenance: %#v", plan.Authorization)
 		}
+	}
+}
+
+func TestTaskCycleFixtureSeedCarriesACommitterIdentity(t *testing.T) {
+	t.Parallel()
+	repoDir := t.TempDir()
+	taskCycleFixtureSeedForTest(t).copyTo(t, repoDir)
+
+	for _, key := range []string{"user.name", "user.email"} {
+		t.Run(key, func(t *testing.T) {
+			command := exec.Command("git", "-C", repoDir, "config", "--get", key)
+			command.Env = isolatedGitEnvForTest()
+			output, err := command.CombinedOutput()
+			if err != nil {
+				t.Fatalf("read %s from copied fixture seed: %v\n%s", key, err, output)
+			}
+			if strings.TrimSpace(string(output)) == "" {
+				t.Fatalf("copied fixture seed resolved an empty %s", key)
+			}
+		})
 	}
 }
 

@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0137-a-fixture-that-carries-its-committer
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -65,3 +65,36 @@ slice restores that in the seed.
 - `_prd.md` → Goal 1; Core Features 1-3; Regression locks.
 - `_techspec.md` → Implementation Design: Write the identity where a copy can
   inherit it; Testing Approach observations 1-3; Build Order 1.
+
+## Result
+
+- Implementation: the once-only Task-cycle fixture seed now persists the
+  existing deterministic test identity before snapshotting the repository.
+  Copies therefore inherit the identity through their own `.git/config`.
+- Pre-change signal: `rtk proxy env
+  GOCACHE=/private/tmp/roundfix-go-build-0137-task-01 rtk go test -count=1
+  ./internal/daemon -run
+  '^(TestTaskCycleFixtureSeedCarriesACommitterIdentity|TestTaskCycleFixtureSeedIsCreatedOnce)$'`
+  reported the seed-created-once test passing and both copied-repository
+  identity reads failing with exit status 1.
+- Focused check: `rtk proxy env
+  GOCACHE=/private/tmp/roundfix-go-build-0137-task-01 rtk go test -count=1
+  ./internal/daemon -run
+  '^(TestTaskCycleFixtureSeedCarriesACommitterIdentity|TestTaskCycleFixtureSeedIsCreatedOnce|TestTaskCycleRealRepoCommitsPerTaskExcludingPreexistingDirt)$'`
+  exited 0 and reported five passing tests.
+- Acceptance criterion 1 evidence: the new fixture-seed test copies the shared
+  seed, invokes plain Git without the test helper's command-line identity, and
+  uses the isolated Git environment that excludes inherited global and system
+  configuration. Both `user.name` and `user.email` resolved as non-empty.
+- Acceptance criterion 2 evidence: the focused run exercised the existing real
+  repository journey without changing it; its assertions still cover two Task
+  commits and keep `user-wip.txt` uncommitted.
+- Acceptance criterion 3 evidence: the focused run exercised the existing
+  pointer, creation-count, copy-isolation, graph-isolation, and provenance
+  assertions in `TestTaskCycleFixtureSeedIsCreatedOnce`; the identity write
+  remains inside the existing `sync.Once` body.
+- Repository incremental check: `rtk make verify` exited 2 at `fmt-check`
+  because the unchanged files `internal/cli/baseline_skills_restore_test.go`
+  and `internal/cli/baseline_assets_sync_test.go` need formatting. They are
+  outside this Task's slice and were not edited.
+- Daemon Verification was not run in this Agent turn.
