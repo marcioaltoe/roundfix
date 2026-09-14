@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0134-a-governed-deletion-the-gate-can-see
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
