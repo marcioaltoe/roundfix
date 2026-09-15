@@ -37,16 +37,18 @@ bounded, so it needs no grant.
 
 Edit the canonical qa-gate skill so that:
 
-- each numbered `qa` Task Requirement that starts with `MUST verify` or
-  `MUST run` is exactly one row, and such Requirements are the complete matrix;
+- `qa` Task Requirements that start with `MUST verify` or `MUST run` declare the
+  coverage sources; every row names the sources it covers, every source appears
+  in some row, and no row covers anything else;
 - an undeclared matrix derives rows from a bounded default;
 - no row is an aggregate of other rows or re-checks a Mechanical Refusal Code;
 - once the matrix exists, a finding blocks only the rows that depend on it;
 - row inputs are fixed when the row is planned;
 - a timeout or intermittent failure of the repository Verification is recorded
   as a failure, never an environment block;
-- a declared row that names a non-waivable source covers it, and PRD
-  Unreachable Acceptance declarations keep their rows;
+- the outside-evidence row, the Pull Request row, the repository Verification,
+  each PRD Unreachable Acceptance declaration and the frontend sweep stay
+  coverage sources that no declaration waives;
 - an analyzer the `qa` Task names runs over changed packages, and diagnostics
   identical on the delivery target are attributed to their owner.
 
