@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0138-a-matrix-the-spec-declares
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -149,3 +149,48 @@ the skill's existing contract tests still pass.
 - `_techspec.md` → Implementation Design: Where each Core Feature lands in the
   skill, Anchor clauses; Integration Points; Build Order 1.
 - ADR-0155.
+
+## Result
+
+Implemented the canonical qa-gate matrix rewrite for declared coverage,
+non-waivable sources, bounded defaults, provenance completeness, planning-time
+row inputs, scoped finding blocking, Verification timing failures, and
+changed-package analyzer scope. Regenerated the distributed mirror through
+`make skills-sync`; the QA prompt contract remains outside this slice for its
+separate Task.
+The provenance guidance uses the `qa` Task's own identifiers, including
+"Requirement 3", "Task 01 criterion 2" and "repository Verification".
+
+Focused checks and evidence:
+
+- `rtk make skills-sync` — succeeded.
+- With `GOCACHE` set to the worktree-local `.gocache`, each focused contract
+  test passed: `TestAuthorialSkillSync`, `TestProjectConstraintQAGate`,
+  `TestToolingAuthorizationJourney`, and `TestLegacySpecConstraintExemption`.
+- `rtk git diff --check` — passed.
+- `rtk cmp -s .agents/skills/qa-gate/SKILL.md skills/qa-gate/SKILL.md` — passed;
+  the canonical and distributed skills are byte-identical.
+- An exact-anchor scan found all eight required clauses in both skill copies;
+  scans found neither removed sentence. The canonical frontmatter still has
+  `version: 0.0.2`.
+- `rtk git diff --name-only` showed only the two bounded skill paths and this
+  Task file.
+
+Acceptance evidence:
+
+1. Sections 1, 2, Row input declaration, and 3 carry the TechSpec's declaration,
+   source, provenance, blocking, timing, and analyzer rules.
+2. All eight anchor clauses are present in both copies, and both removed
+   sentences are absent.
+3. Parity and the `version: 0.0.2` declaration are evidenced above.
+4. The four individual workflow contract tests passed with their pinned
+   clauses unchanged, including the QA-gate constraint and tooling journey.
+5. The changed-path postflight showed no path outside the approved files.
+
+The Task's declared `## Verification` commands were not run in this
+Daemon-assigned turn; the Daemon owns that Verification and Task settlement.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260915T105843Z_41c059d11301702f`
+- Source commit: `55062f4434744bf073c27fcbb78d5dad9c9f07f9`
