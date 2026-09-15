@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0138-a-matrix-the-spec-declares
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -73,3 +73,51 @@ blocking. It also adds a prompt test that pins the result.
 - `_techspec.md` → Implementation Design: QA contract shape; Testing Approach 1;
   Build Order 2.
 - ADR-0155.
+
+## Result
+
+### Implementation
+
+- The QA contract now states the declaration rule, bounded default,
+  non-waivable sources, provenance coverage rule and finding-dependent
+  blocking. The report-naming, verdict and never-commit bullets are unchanged.
+- `TestBuildQAPromptStatesTheDeclaredMatrix` builds the prompt, checks every
+  required phrase and rejects the obsolete broad-validation instruction.
+
+### Acceptance evidence
+
+1. After the test was added and before the contract changed,
+   `rtk go test ./internal/agent -run 'TestBuildQAPromptStatesTheDeclaredMatrix' -v`
+   exited 1 because the declaration-rule phrase was absent. After the contract
+   changed, the same focused command exited 0 with one test passed. The test
+   checks each required phrase independently and has an explicit assertion that
+   fails if the obsolete phrase returns.
+2. `rtk rg -n -F 'validate every user story and acceptance criterion' internal/agent/spec_prompt.go`
+   exited 1 with no matches. Inspection of the `qaGateContract` raw string
+   showed all five required phrases and no internal backtick.
+3. `rtk go test ./internal/agent` exited 0 with 345 tests passed. The focused
+   diff adds only the new test to the existing QA prompt suite; it does not edit
+   any existing QA prompt test.
+
+### Focused checks
+
+- `rtk gofmt -d internal/agent/spec_prompt.go internal/agent/spec_prompt_test.go`
+  exited 0 with no output.
+- `rtk git diff --check` exited 0.
+- `rtk make verify-incremental` exited 2. Its `internal/agent` tests passed, but
+  eight `internal/daemon` tests timed out under the full parallel run and the
+  `internal/speccheck` historical-grant case reported three `QA-AUTH-PATHS`
+  findings for historical `task_16` paths.
+- An isolated rerun of the eight named `internal/daemon` failures exited 0 with
+  all eight tests passed. An isolated rerun of
+  `TestAuditJudgesTheGrant/historical_authorized_asset_and_ordinary_Go_split_now_share_one_audit`
+  still exited 1 with the same historical `task_16` findings. No daemon or
+  speccheck files were changed because those diagnostics are outside this
+  Task's slice.
+
+The Daemon-owned commands under `## Verification` were not run.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260915T105843Z_41c059d11301702f`
+- Source commit: `62360444250881498aa70c9e6b4e2197636ba2ba`
