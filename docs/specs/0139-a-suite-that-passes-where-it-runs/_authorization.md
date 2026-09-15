@@ -59,6 +59,8 @@ need no grant: `internal/agent/acpx_runner_test.go`,
 
 - No action, operation or path beyond those above.
 - No other existing assertion in the file is weakened or deleted.
-- No production code, Baseline module, linter, Verification configuration or
-  `.roundfixrc.yml` edit; no paid API use, release, tag or deployment.
+- No other governed path is changed. The ordinary source this Spec changes
+  (named above) needs no grant and is outside this record's limits.
+- No Baseline module, linter, Verification configuration or `.roundfixrc.yml`
+  edit; no paid API use, release, tag or deployment.
 - Verification remains Daemon-owned; Task status remains Daemon-written.
