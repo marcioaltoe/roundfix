@@ -48,6 +48,8 @@ Agent chose to leave the sandbox.
   ADR-0057 applies: the Daemon exclusively owns Implement Task status, and the QA gate's repository Verification settles the QA Task only through the existing refusal report.
   ADR-0091 applies: the QA gate is a Task node of its own type, and the repository Verification runs inside that node's step rather than as a separate command.
   ADR-0104 applies: a Spec accepts on evidence it did not author, so the outside-evidence row replays the repository's own gate against Spec 0138's recorded failure.
+  ADR-0111 applies: an unobserved Verification is unknown, not a verdict, so an outcome the runner could not observe becomes a refusal whose Run Event carries the unknown classification rather than a pass or an ordinary failure.
+  ADR-0135 applies: an absent diagnostic is a reported state, not an empty message, so a refusal whose outcome left no log says so instead of carrying an empty link.
   ADR-0020 is not applicable to this change: a parsed prompt result outranks the acpx exit code, and this Spec changes no Agent result handling; the ACPX repair touches only test fixtures.
   ADR-0093 is not applicable to this change: Spec consistency is checked by citation, never by inference, and this Spec changes no Spec Consistency Check rule.
   ADR-0097 is not applicable to this change: a QA row carries forward only on declared, unmoved evidence, and this Spec changes no carry-forward rule.
@@ -75,7 +77,7 @@ Agent chose to leave the sandbox.
    that the static gate is a machine fact and not an Agent's judgement.
 3. As a maintainer, I want tests to wait for the Daemon's result up to the test
    run's own deadline, so that load cannot fail a correct result and a real hang
-   still fails with the test binary's timeout report.
+   still fails with every goroutine's stack.
 4. As a maintainer, I want the historical authorization audit proven by a fixture
    the test controls, so that its result does not depend on which Git objects a
    clone happens to hold.
@@ -89,8 +91,8 @@ Agent chose to leave the sandbox.
 2. **Task-cycle waits end at the test deadline.** Every wait in the Task-cycle test
    helpers derives its bound from the running test's deadline, falling back to a
    generous bound when none is set. No wait keeps a guessed fixed wall-clock
-   duration. A genuine hang fails at the deadline with the test binary's timeout
-   report.
+   duration. A genuine hang still fails at the deadline, and the failure names
+   what it waited for and carries every goroutine's stack.
 3. **The historical audit is proven by a controlled fixture.**
    - The stale historical expectation is replaced by a repository the test builds.
    - In that repository, a grant widened after its consuming commit is refused for
@@ -121,9 +123,15 @@ Agent chose to leave the sandbox.
      gives its result and evidence, and tells the Agent not to run it again.
    - Without a configured command the Daemon runs nothing, and the prompt says the
      gate runs the repository Verification itself.
-7. **The log follows the QA Report.** The retained log lives beside the QA Report
-   under the Spec's QA evidence. Under an external Spec Root it stays uncommitted,
-   exactly as the report does.
+7. **The log follows the QA Report and is checked.** The Daemon copies the
+   retained log from the Run's Verification artifacts into the Spec's QA evidence,
+   beside the QA Report. Under an external Spec Root it stays uncommitted, exactly
+   as the report does. The mechanical stage's evidence-path detection also resolves
+   the link in the report's Repository Verification section, so a missing or
+   mislinked log is reported like any other unresolved evidence.
+8. **An unobserved outcome keeps its classification.** The Run Event for an
+   outcome the runner could not observe carries the existing `verification_unknown`
+   classification, as a Task's Verification does. No new classification is added.
 
 ## Non-Goals / Out of Scope
 
@@ -158,6 +166,7 @@ Agent chose to leave the sandbox.
 - A repository Verification failure still ends the gate with verdict `fail`.
 - A Task's successful Verification output is still removed. Only the QA gate step
   asks the runner to retain it.
+- Evidence already linked from Results rows is still resolved exactly as before.
 - A mechanical stage that withholds the Agent still withholds it, and runs no
   repository Verification.
 
@@ -251,6 +260,14 @@ before it was accepted:
 - the unobserved outcome;
 - the external Spec Root;
 - the unnamed evidence source.
+
+A second review round found five more, also confirmed before being accepted:
+
+- the grant limit that read as forbidding the Daemon change;
+- the log path derived from the Run's artifacts;
+- the unvalidated section link;
+- the unclassified unobserved outcome;
+- the wait that failed before any goroutine report.
 
 ## Open Questions
 
