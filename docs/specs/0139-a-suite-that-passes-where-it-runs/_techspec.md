@@ -17,10 +17,12 @@ the same thing on this machine as in CI:
 - **The historical audit subtest** gives way to a fixture the test builds, and
   its skip guard requires reachability.
 - **The QA gate step** runs the configured repository Verification before the
-  Agent turn and outside the sandbox, and retains its log:
-  - a pass is recorded in the seeded report and stated in the prompt;
+  Agent turn and outside the sandbox:
+  - a pass is stated in the gate prompt, and the Agent records the static gate
+    row from it;
   - a failure or an unobserved outcome is recorded as a Precondition Refusal
-    that withholds the Agent, as ADR-0096 requires for a blocking machine fact.
+    that withholds the Agent, as ADR-0096 requires for a blocking machine fact;
+  - log retention, the report's shape and the event publisher are untouched.
 
 The design accepts three trade-offs:
 
@@ -55,7 +57,7 @@ The design accepts three trade-offs:
   ADR-0057 applies: the Daemon exclusively owns Implement Task status, and the QA gate's repository Verification settles the QA Task only through the existing refusal report.
   ADR-0091 applies: the QA gate is a Task node of its own type, and the repository Verification runs inside that node's step rather than as a separate command.
   ADR-0104 applies: a Spec accepts on evidence it did not author, so the outside-evidence row replays the repository's own gate against Spec 0138's recorded failure.
-  ADR-0111 applies: an unobserved Verification is unknown, not a verdict, so an outcome the runner could not observe becomes a refusal whose Run Event carries the unknown classification rather than a pass or an ordinary failure.
+  ADR-0111 applies: an unobserved Verification is unknown, not a verdict, so an outcome the runner could not observe becomes a refusal rather than a pass or a verdict; making that distinction legible in the Run Event Stream is a pre-existing gap this Spec records instead of closing.
   ADR-0135 applies: an absent diagnostic is a reported state, not an empty message, so a refusal whose outcome left no log says so instead of carrying an empty link.
   ADR-0020 is not applicable to this change: a parsed prompt result outranks the acpx exit code, and this Spec changes no Agent result handling; the ACPX repair touches only test fixtures.
   ADR-0093 is not applicable to this change: Spec consistency is checked by citation, never by inference, and this Spec changes no Spec Consistency Check rule.
@@ -126,14 +128,16 @@ Agent and a repository Verification command is configured.
    keeps today's retention: kept on failure, removed on success.
 2. **Pass.** Write the seeded report exactly as today and add the prompt statement
    below after the seeded-report instruction, then continue to the Agent turn.
-3. **Command failure.** Before the report is written, set the mechanical result's
-   Precondition Refusal and mark it blocking. The check name is the command, and
+3. **Command failure.** Before the report is written, set all three fields of the
+   mechanical result the refusal report is selected from: the Precondition Refusal
+   details, the `PreconditionRefused` marker that chooses the refusal report, and
+   `Blocking`. The check name is the command, and
    the reason is `exited <status>; diagnostics: <path>`. The existing refusal
    contract writes `verdict: fail` and `rows_blocked_precondition: 1`, the Agent
    is withheld, and the QA Task settles from that report like any withheld gate.
 4. **Unobserved outcome.** When the runner reports that the command could not
-   start or its diagnostics could not be prepared, record the same refusal with
-   the reason `outcome unobserved: <cause>; diagnostics: <path>`. When no
+   start or its diagnostics could not be prepared, set the same three fields and
+   record the refusal with the reason `outcome unobserved: <cause>; diagnostics: <path>`. When no
    diagnostics were retained, the reason says so rather than leaving the field
    empty.
 5. **Stop.** When the Run's context is cancelled, return through the existing stop
@@ -183,10 +187,10 @@ events, carrying the QA Work Item.
 ## Coverage Map
 
 - Goal 1 → ACPX fixtures, Task-cycle waits, historical audit fixture and guard.
-- Goal 2 → QA gate repository Verification, Verification command runner.
+- Goal 2 → QA gate repository Verification.
 - Goal 3 → Task-cycle waits.
-- Goal 4 → Precondition Refusal report reuse, runner retention default,
-  regression locks across all components.
+- Goal 4 → Precondition Refusal report reuse and the regression locks across all
+  components.
 - User Story 1 → ACPX fixtures, Task-cycle waits, historical audit fixture and
   guard.
 - User Story 2 → QA gate repository Verification.
@@ -273,8 +277,9 @@ so step 4 follows step 2.
 - **Refusal reuse.** A failed or unobserved repository Verification reuses the
   existing Precondition Refusal instead of adding a Mechanical Refusal Code. No
   vocabulary is added, and settlement stays mechanical.
-- **Opt-in retention.** Retention on success is an opt-in request field, so Task
-  Verification keeps removing successful logs.
+- **Retention untouched.** The runner keeps today's behavior: a failed command's
+  diagnostics are retained, a successful one's are removed. No request field is
+  added.
 - **No retry.** The gate step takes no temporary-failure retry, because a
   repository Verification before QA is a single observation.
 - **No evidence contract here.** Three review rounds kept finding new gaps in

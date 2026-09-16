@@ -48,7 +48,7 @@ Agent chose to leave the sandbox.
   ADR-0057 applies: the Daemon exclusively owns Implement Task status, and the QA gate's repository Verification settles the QA Task only through the existing refusal report.
   ADR-0091 applies: the QA gate is a Task node of its own type, and the repository Verification runs inside that node's step rather than as a separate command.
   ADR-0104 applies: a Spec accepts on evidence it did not author, so the outside-evidence row replays the repository's own gate against Spec 0138's recorded failure.
-  ADR-0111 applies: an unobserved Verification is unknown, not a verdict, so an outcome the runner could not observe becomes a refusal whose Run Event carries the unknown classification rather than a pass or an ordinary failure.
+  ADR-0111 applies: an unobserved Verification is unknown, not a verdict, so an outcome the runner could not observe becomes a refusal rather than a pass or a verdict; making that distinction legible in the Run Event Stream is a pre-existing gap this Spec records instead of closing.
   ADR-0135 applies: an absent diagnostic is a reported state, not an empty message, so a refusal whose outcome left no log says so instead of carrying an empty link.
   ADR-0020 is not applicable to this change: a parsed prompt result outranks the acpx exit code, and this Spec changes no Agent result handling; the ACPX repair touches only test fixtures.
   ADR-0093 is not applicable to this change: Spec consistency is checked by citation, never by inference, and this Spec changes no Spec Consistency Check rule.
@@ -152,7 +152,7 @@ Agent chose to leave the sandbox.
   stream projects it as an ordinary failure. A finding records that gap.
 - Machine-validated evidence for the repository Verification: no log is copied
   into Spec evidence, no report section is added, and evidence-path detection is
-  unchanged. Three review rounds showed that contract needs a Spec of its own.
+  unchanged. Repeated review rounds showed that contract needs a Spec of its own.
 - The seeded report's initial verdict for gates that reach the Agent.
 - Deciding which revision authorizes a Task commit from an earlier Run. The
   2026-09-14 finding on the mechanical stage's commit range records that decision.
