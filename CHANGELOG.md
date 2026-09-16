@@ -2,6 +2,75 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.13.0] - 2026-09-16
+
+A Spec now carries the authority it was granted, and its QA gate covers exactly
+what the Spec declared. Both were prose before: the grant lived wherever the
+author put it, and the gate audited whatever it could imagine from the PRD.
+
+### Added
+
+- **A Spec carries its authority.** `_authorization.md` lives inside the Spec
+  directory and states, per path, what is approved and what is only proposed.
+  The reader resolves it from the configured Spec Root instead of assembling a
+  constant path, so a Spec Root outside the code repository is readable, and a
+  malformed frontmatter delimiter no longer yields a grant where it should
+  refuse. Executing authored Verification now has a stated source-trust
+  boundary.
+- **The QA gate covers what the Spec declares.** Each numbered `qa` Task
+  Requirement that begins with `MUST verify` or `MUST run` is a coverage source.
+  Every matrix row names in its provenance which source it covers, every source
+  appears in some row, and no row covers anything else. Five sources no
+  declaration can waive: outside evidence, the Pull Request, the repository
+  Verification, unreachable Acceptance, and the frontend sweep. A finding blocks
+  only the rows that depend on it. ADR-0155 records the decision.
+- **The Daemon runs the repository Verification.** It runs in the QA gate step,
+  before the Agent turn and outside the Agent's sandbox, where process-table
+  reads and network access are denied. A pass is stated as fact in the gate
+  prompt. A failure, or an outcome that could not be observed, becomes a
+  Precondition Refusal that withholds the Agent with verdict `fail` and names
+  the command, its exit status or cause, and its diagnostics path.
+- **A researched decision, or a recorded limitation.** The distributed baseline
+  requires consulting the local Secondbrain *and* external sources before a
+  product, design or architecture decision and before authoring an Idea, PRD or
+  TechSpec. An unavailable source must be recorded as an attempted consultation
+  with its limitation rather than silently omitted, and an external research
+  tool may not be used to discover local repository behavior.
+
+### Changed
+
+- **Work branches express purpose.** The branch prefix pattern uses `<type>/`
+  replaced by the work's purpose, never the literal token, and a legacy personal
+  prefix is revised through Baseline instead of overriding the rule. Run and
+  Task branches keep their separate Roundfix-owned namespace.
+- **A question asked through the tool the session actually has.** Structured
+  user interaction names the tool exposed and permitted in the current runtime
+  instead of assuming one exists.
+
+### Fixed
+
+- **A failed gate accepts its repair.** Authoring a corrective Task under a QA
+  gate that had already settled made the Task Graph refuse to load, so the
+  Supervisor could neither check the Spec nor dispatch the repair. The gate that
+  found the defect was the reason the defect could not be fixed.
+- **A governed deletion the gate can see.** Governed-mutation classification
+  compared only paths that appeared after the Agent turn, so removing a Governed
+  Path was invisible and a rename read as a deletion plus an unrelated addition.
+  Classification now compares both directions, the changed-path reader carries a
+  rename's source path, and the commit stage no longer fails with `pathspec did
+  not match any files` when staging a `git mv`.
+- **A suite that passes where it runs.** The repository Verification passed in
+  CI and failed on a maintainer's macOS machine at the same tree, which blocked
+  every Spec's QA gate there. The ACPX fixtures link the test binary with
+  symlinks instead of churning hard links, the Task-cycle waits follow the
+  test's own deadline instead of a fixed two seconds, the historical audit
+  subtest uses a controlled fixture and skips unless unreachable objects
+  survive, and the Daemon fixture carries the committer identity its seed copy
+  no longer inherited.
+- **Verification survives the documentation cleanup.** Fixtures and the
+  regeneration reader still consumed workflow document paths that the cleanup
+  removed.
+
 ## [0.12.0] - 2026-09-02
 
 Raising Task Worktree concurrency made three latent failures visible at once, and
