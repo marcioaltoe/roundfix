@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0139-a-suite-that-passes-where-it-runs
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
