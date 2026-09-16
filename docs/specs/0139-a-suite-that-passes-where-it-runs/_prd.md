@@ -73,8 +73,9 @@ Agent chose to leave the sandbox.
    result CI reports for the same tree, so that a QA gate fails only on defects in
    the work.
 2. As a Supervisor reading a QA Report, I want the repository Verification to have
-   run outside the Agent's sandbox, with its command, verdict and log recorded, so
-   that the static gate is a machine fact and not an Agent's judgement.
+   run outside the Agent's sandbox, with its command, verdict and diagnostics
+   named where the gate records them, so that the static gate is a machine fact
+   and not an Agent's judgement.
 3. As a maintainer, I want tests to wait for the Daemon's result up to the test
    run's own deadline, so that load cannot fail a correct result and a real hang
    still fails with every goroutine's stack.
@@ -116,7 +117,9 @@ Agent chose to leave the sandbox.
      were retained, it says so rather than leaving the field empty.
    - The report's verdict is `fail` and the Agent Session is withheld, as ADR-0096
      requires for a blocking machine fact.
-   - No retry and no Verification Feedback apply.
+   - No retry and no Verification Feedback apply, exit status 75 included.
+   - A runner error that is neither a command verdict nor an unobserved outcome
+     stays an infrastructure failure and ends the Run as it does today.
    - A stopping Run stops as it does today.
 6. **A passing result reaches the Agent as a fact.**
    - The gate prompt tells the Agent that the repository Verification already ran,
@@ -126,9 +129,11 @@ Agent chose to leave the sandbox.
      gate row from that statement.
    - Without a configured command the Daemon runs nothing, and the prompt says the
      gate runs the repository Verification itself.
-7. **An unobserved outcome keeps its classification.** The Run Event for an
-   outcome the runner could not observe carries the existing `verification_unknown`
-   classification, as a Task's Verification does. No new classification is added.
+7. **An unobserved outcome is a refusal, not a verdict.** An outcome the runner
+   could not observe never becomes a pass or an ordinary verdict; it becomes the
+   refusal in Core Feature 5. Its Run Event is whatever the existing Verification
+   publisher emits. This Spec adds no classification, changes no publisher and
+   claims no projected event shape.
 
 ## Non-Goals / Out of Scope
 
@@ -142,6 +147,9 @@ Agent chose to leave the sandbox.
 - Raising a timeout, adding a retry or skip, or removing `t.Parallel` as a repair.
 - New Mechanical Refusal Codes, Verification classifications or report frontmatter
   keys.
+- The Verification event publisher and the Run Event Stream projection. An
+  unobserved Verification is already published without its classification, so the
+  stream projects it as an ordinary failure. A finding records that gap.
 - Machine-validated evidence for the repository Verification: no log is copied
   into Spec evidence, no report section is added, and evidence-path detection is
   unchanged. Three review rounds showed that contract needs a Spec of its own.

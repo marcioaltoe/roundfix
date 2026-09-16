@@ -121,8 +121,9 @@ Agent and a repository Verification command is configured.
 1. **Run the command.** Move the Run to the Verifying state and run the configured
    command once, with shared Verification Capacity, attempt 1 and the QA Task as
    the Work Item. It takes no Verification Feedback and no temporary-failure
-   retry, exit status 75 included. Its log keeps today's retention: kept on
-   failure, removed on success.
+   retry, exit status 75 included; that exit becomes an ordinary refusal here, and
+   its event carries whatever metadata the existing machinery assigns. Its log
+   keeps today's retention: kept on failure, removed on success.
 2. **Pass.** Write the seeded report exactly as today and add the prompt statement
    below after the seeded-report instruction, then continue to the Agent turn.
 3. **Command failure.** Before the report is written, set the mechanical result's
@@ -148,14 +149,19 @@ Repository Verification: already run by the Daemon outside the Agent sandbox.
 Record this as the static gate result. Do not run the repository Verification again.
 ```
 
-**Events.** The step publishes the ordinary Verification events for its attempt,
-with one payload per outcome rather than one static classification:
+**Events.** The step publishes the ordinary Verification events for its attempt
+through the existing publisher. It adds no classification and changes no payload
+shape. Today that publisher emits an unobserved outcome without its
+classification, so the Run Event Stream projects it as an ordinary failure; a
+finding records that gap, and this Spec does not close it. What the gate's record
+does carry is the refusal itself, which names the command, the outcome and the
+diagnostics state.
 
-- a command failure publishes an unclassified failure, as an ordinary Task
-  command failure does;
-- an unobserved outcome publishes `verification_unknown` with the command, the
-  reason and the diagnostics path, as the Task path's unobserved Verification
-  does.
+**Runner errors.** `VerificationCommandError` and `VerificationUnknownError` are
+the two outcomes this step turns into a refusal. Any other runner error, such as
+a diagnostics file that cannot be closed or renamed, stays an infrastructure
+failure on the existing path and ends the Run, exactly as it does for a Task
+Verification today.
 
 **What this step does not do.** It copies no log into Spec evidence, adds no
 report section and changes no evidence-path detection. A pass is recorded by the
@@ -195,8 +201,6 @@ events, carrying the QA Work Item.
 - **Configured command.** The Implement Command already passes the configured
   repository Verification command to the Daemon for Task preconditions, and the
   QA gate step reads that same value.
-- **Evidence paths.** On the next gate run, the mechanical stage's evidence-path
-  resolution finds the log link inside the Spec directory.
 - **Spec 0138.** Its skill text still tells the Agent to run `make verify`. For a
   gate that reaches the Agent, the prompt statement takes precedence. A refused
   gate never reaches the Agent.
@@ -253,6 +257,10 @@ so step 4 follows step 2.
 - **Unvalidated diagnostics.** The refusal names a diagnostics path under the Run
   artifacts, which no checker resolves. A later Spec owns machine-validated
   evidence for this command.
+- **Unclassified unobserved events.** The Run Event Stream cannot tell an
+  unobserved QA Verification from an ordinary failure, because the publisher omits
+  the classification the projection requires. The refusal still records the
+  outcome; the stream gap is left to its own Spec.
 - **macOS-only reproduction.** The ACPX kill and the load timeouts reproduce
   here, not in CI. The structural checks make Verification fail on any platform
   until the work exists.
@@ -273,9 +281,9 @@ so step 4 follows step 2.
   copying the log, linking it and validating that link across Spec Roots. This
   Spec therefore records the Verification in the prompt and in the refusal, and
   leaves machine-validated evidence to a later Spec.
-- **One payload per outcome.** The step publishes its own event payloads, so a
-  command failure stays unclassified while an unobserved outcome keeps
-  `verification_unknown`.
+- **No event-shape promise.** The step reuses the existing publisher untouched.
+  Making an unobserved Verification legible in the Run Event Stream is a
+  pre-existing gap, recorded as a finding rather than folded in here.
 - **Prompt over skill.** A passing result is stated in the gate prompt. That
   keeps the qa-gate skill out of this Spec and avoids a conflict with Spec 0138's
   pending rewrite.
