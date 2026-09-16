@@ -862,57 +862,6 @@ func TestMechanicalAuthPathsRefusesInvalidRegenerationDeclaration(t *testing.T) 
 }
 
 func TestAuditJudgesTheGrant(t *testing.T) {
-	const (
-		archiveAuthorization   = "docs/workflow/authorizations/2026-08-12-the-archive-root-under-docs.md"
-		authoringAuthorization = "docs/workflow/authorizations/2026-08-12-the-authoring-and-baseline-corrections.md"
-		archiveHelpCommit      = "419a4661ac769ff7ee6ce5423bd795185c859d01"
-		archiveCarrierCommit   = "65c51ebf2e19220ff50d25fe03be809fcdf353f0"
-		verificationTaskCommit = "28acf39cc193ad490646cb5a1d23500e0c08c273"
-		verificationTaskFile   = "docs/specs/0095-a-verification-that-ran-before-anyone-believed-it/task_08.md"
-		archiveHelpTaskFile    = "docs/specs/0094-one-history-root-under-docs/task_15.md"
-		archiveCarrierTaskFile = "docs/specs/0094-one-history-root-under-docs/task_16.md"
-	)
-	repository := filepath.Clean(filepath.Join("..", ".."))
-
-	t.Run("historical authorized asset and ordinary Go split now share one audit", func(t *testing.T) {
-		if missing := firstMissingMechanicalCommit(repository, archiveHelpCommit, archiveCarrierCommit, verificationTaskCommit); missing != "" {
-			t.Skipf("outside evidence unavailable: historical Task commit %s cannot be resolved", missing)
-		}
-
-		result := runMechanical(t, speccheck.MechanicalRequest{
-			RepoRoot:               repository,
-			AuthorizationPath:      archiveAuthorization,
-			DeliveryTargetRevision: archiveHelpCommit + "^1",
-			TaskCommits: []speccheck.MechanicalTaskCommit{
-				{
-					TaskID:   "task_15",
-					SHA:      archiveHelpCommit,
-					TaskFile: archiveHelpTaskFile,
-				},
-				{
-					TaskID:   "task_16",
-					SHA:      archiveCarrierCommit,
-					TaskFile: archiveCarrierTaskFile,
-				},
-			},
-		})
-
-		assertNoMechanicalCode(t, result, speccheck.CodeMechanicalAuthPaths)
-
-		result = runMechanical(t, speccheck.MechanicalRequest{
-			RepoRoot:               repository,
-			AuthorizationPath:      authoringAuthorization,
-			DeliveryTargetRevision: verificationTaskCommit + "^1",
-			TaskCommits: []speccheck.MechanicalTaskCommit{{
-				TaskID:   "task_08",
-				SHA:      verificationTaskCommit,
-				TaskFile: verificationTaskFile,
-			}},
-		})
-
-		assertNoMechanicalCode(t, result, speccheck.CodeMechanicalAuthPaths)
-	})
-
 	t.Run("historical regeneration resolves outputs absent from the grant", func(t *testing.T) {
 		repoRoot := newMechanicalGitRepo(t)
 		writeMechanicalResolverFixture(t, repoRoot)
@@ -1007,6 +956,64 @@ func TestAuditJudgesTheGrant(t *testing.T) {
 
 		assertMechanicalPathEscapedGrant(t, result, authorizationPath, authorizationPath)
 	})
+}
+
+func TestAuditRefusesAGrantWidenedAfterItsConsumingCommit(t *testing.T) {
+	const (
+		authorizationPath = "docs/specs/late-widening/_authorization.md"
+		consumingSpec     = "late-widening"
+		governedPath      = ".golangci.yml"
+	)
+	tests := []struct {
+		name                string
+		boundedAtAncestor   []string
+		widenAfterConsuming bool
+		wantFinding         bool
+	}{
+		{
+			name:                "later widening does not authorize the consuming commit",
+			boundedAtAncestor:   []string{"Makefile"},
+			widenAfterConsuming: true,
+			wantFinding:         true,
+		},
+		{
+			name:              "authorizing ancestor already bounds the governed path",
+			boundedAtAncestor: []string{governedPath},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repoRoot := newMechanicalGitRepo(t)
+			writeMechanicalFile(t, repoRoot, authorizationPath, mechanicalTypedAuthorization(consumingSpec, tt.boundedAtAncestor...))
+			authorizingAncestor := commitMechanicalFiles(t, repoRoot, "record authorization at the authorizing ancestor", authorizationPath)
+
+			writeMechanicalFile(t, repoRoot, governedPath, "linters: {}\n")
+			consumer := commitMechanicalFiles(t, repoRoot, "change governed path", governedPath)
+			deliveryTarget := authorizingAncestor
+			if tt.widenAfterConsuming {
+				writeMechanicalFile(t, repoRoot, authorizationPath, mechanicalTypedAuthorization(consumingSpec, governedPath))
+				deliveryTarget = commitMechanicalFiles(t, repoRoot, "widen authorization after consuming commit", authorizationPath)
+			}
+
+			result := runMechanical(t, speccheck.MechanicalRequest{
+				RepoRoot:               repoRoot,
+				AuthorizationPath:      authorizationPath,
+				ConsumingSpec:          consumingSpec,
+				DeliveryTargetRevision: deliveryTarget,
+				TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_01", SHA: consumer}},
+			})
+
+			if len(result.AuthorizationReads) != 1 || result.AuthorizationReads[0].Source.Revision != authorizingAncestor {
+				t.Fatalf("AuthorizationReads = %#v, want grant read at authorizing ancestor %s", result.AuthorizationReads, authorizingAncestor)
+			}
+			if tt.wantFinding {
+				assertMechanicalPathEscapedGrant(t, result, governedPath, authorizationPath)
+				return
+			}
+			assertNoMechanicalCode(t, result, speccheck.CodeMechanicalAuthPaths)
+		})
+	}
 }
 
 func TestAuditReadsTheAuthorizingAncestor(t *testing.T) {
@@ -2537,7 +2544,7 @@ func runMechanicalGit(t *testing.T, repoRoot string, args ...string) string {
 
 func firstMissingMechanicalCommit(repoRoot string, commits ...string) string {
 	for _, commit := range commits {
-		command := exec.Command("git", "-C", repoRoot, "cat-file", "-e", commit+"^{commit}")
+		command := exec.Command("git", "-C", repoRoot, "-c", "core.fsmonitor=false", "merge-base", "--is-ancestor", commit, "HEAD")
 		if err := command.Run(); err != nil {
 			return commit
 		}

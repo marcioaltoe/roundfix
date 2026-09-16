@@ -2011,6 +2011,103 @@ func lowerFirstRune(value string) string {
 	return string(lowered) + value[size:]
 }
 
+const qaRepositoryVerificationUnconfiguredPrompt = "Repository Verification: run it in this gate; no command is configured for the Daemon.\n"
+
+func (engine *Engine) runQARepositoryVerification(ctx context.Context, plan TaskPlan, qaTask spec.Task, ordinal int, mechanicalResult *speccheck.MechanicalResult) (string, error) {
+	if mechanicalResult.Blocking {
+		return "", nil
+	}
+	command := strings.TrimSpace(plan.RepositoryVerification)
+	if command == "" {
+		return qaRepositoryVerificationUnconfiguredPrompt, nil
+	}
+	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateVerifying); err != nil {
+		return "", fmt.Errorf("update run %q to state %q before QA Task %s repository Verification: %w", plan.RunID, store.StateVerifying, qaTask.ID, err)
+	}
+	request := verificationAttemptRequest{
+		RunID:                   plan.RunID,
+		WorkDir:                 plan.WorkDir,
+		ArtifactDir:             plan.ArtifactDir,
+		BatchNumber:             ordinal,
+		WorkItem:                qaTask.ID,
+		Attempt:                 1,
+		Mode:                    verificationShared,
+		Capacity:                plan.VerificationConcurrency,
+		TemporaryRetryAvailable: false,
+		Commands:                []string{command},
+		Publish: func(ctx context.Context, summary string, payload map[string]any) error {
+			if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, qaTask.ID, runevent.KindDaemonVerification, summary, payload); err != nil {
+				return fmt.Errorf("publish repository Verification event for run %q QA Task %s: %w", plan.RunID, qaTask.ID, err)
+			}
+			return nil
+		},
+	}
+	outcome, err := engine.runTaskVerificationRequest(ctx, plan, qaTask, request)
+	if err != nil {
+		return "", err
+	}
+	if outcome.CommandFailure != nil {
+		status := strings.TrimPrefix(verificationExitStatus(outcome.CommandFailure), "exit status ")
+		mechanicalResult.PreconditionRefusal = spec.PreconditionRefusal{
+			CheckName: command,
+			Reason: fmt.Sprintf(
+				"exited %s; diagnostics: %s",
+				status,
+				qaRepositoryVerificationDiagnostics(outcome.CommandFailure.OutputPath),
+			),
+		}
+		mechanicalResult.PreconditionRefused = true
+		mechanicalResult.Blocking = true
+		return "", nil
+	}
+	if outcome.UnknownCause != nil {
+		cause := "cause unavailable"
+		if outcome.UnknownCause.Err != nil {
+			if observed := terminalReasonLine(outcome.UnknownCause.Err.Error()); observed != "" {
+				cause = observed
+			}
+		}
+		mechanicalResult.PreconditionRefusal = spec.PreconditionRefusal{
+			CheckName: command,
+			Reason: fmt.Sprintf(
+				"outcome unobserved: %s; diagnostics: %s",
+				cause,
+				qaRepositoryVerificationRetainedDiagnostics(outcome.UnknownCause.DiagnosticPath),
+			),
+		}
+		mechanicalResult.PreconditionRefused = true
+		mechanicalResult.Blocking = true
+		return "", nil
+	}
+	return fmt.Sprintf(
+		"Repository Verification: already run by the Daemon outside the Agent sandbox.\n"+
+			"- command: %s\n"+
+			"- verdict: pass (exit 0)\n"+
+			"- diagnostics: removed on success\n"+
+			"Record this as the static gate result. Do not run the repository Verification again.\n",
+		command,
+	), nil
+}
+
+func qaRepositoryVerificationDiagnostics(path string) string {
+	if path = strings.TrimSpace(path); path != "" {
+		return path
+	}
+	return "not retained"
+}
+
+func qaRepositoryVerificationRetainedDiagnostics(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return "not retained"
+	}
+	info, err := os.Stat(path)
+	if err != nil || !info.Mode().IsRegular() {
+		return "not retained"
+	}
+	return path
+}
+
 // runQAGate runs the qa-gate step as the Run's last Batch: before-snapshot,
 // mechanical stage and report materialization, conditional Agent audit,
 // verdict settlement from the newest QA Report frontmatter, daemon.qa Run
@@ -2055,6 +2152,15 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 			return "", "", fmt.Errorf("run QA mechanical stage for run %q: %w", plan.RunID, errors.Join(err, publishErr))
 		}
 		return "", "", fmt.Errorf("run QA mechanical stage for run %q: %w", plan.RunID, err)
+	}
+	repositoryVerificationPrompt, verificationErr := engine.runQARepositoryVerification(ctx, plan, qaTask, ordinal, &mechanicalResult)
+	if verificationErr != nil {
+		if isStop(ctx, verificationErr) && ctx.Err() != nil {
+			if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
+				return "", "", fmt.Errorf("publish stop event for run %q during QA repository Verification: %w", plan.RunID, errors.Join(verificationErr, publishErr))
+			}
+		}
+		return "", "", fmt.Errorf("run repository Verification for run %q QA Task %s: %w", plan.RunID, qaTask.ID, verificationErr)
 	}
 	reportPath, err = engine.writeMechanicalQAReport(ctx, plan, mechanicalResult)
 	if err != nil {
@@ -2109,6 +2215,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 			return "", "", fmt.Errorf("build QA prompt for run %q: %w", plan.RunID, promptErr)
 		}
 		prompt += fmt.Sprintf("\nSeeded QA Report: %s\nComplete this report in place, preserving its materialized mechanical rows and skips; do not create another QA Report.\n", reportPath)
+		prompt += "\n" + repositoryVerificationPrompt
 		logPath := agentLogPath(plan.AgentLogs, plan.ArtifactDir, plan.RunID, ordinal)
 		fmt.Fprintf(engine.deps.Progress, "QA step (Batch %03d) for Spec %s\n", ordinal, plan.Spec.Slug)
 		if logPath != "" {

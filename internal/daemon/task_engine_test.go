@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"slices"
 	"sort"
 	"strconv"
@@ -31,7 +32,59 @@ import (
 	runworktree "roundfix/internal/worktree"
 )
 
-const taskCycleSlug = "0001-sample-feature"
+const (
+	taskCycleSlug          = "0001-sample-feature"
+	testWaitDeadlineMargin = time.Second
+	testWaitFallback       = 30 * time.Second
+)
+
+func testWaitBound(t testing.TB) time.Duration {
+	t.Helper()
+	deadliner, ok := t.(interface {
+		Deadline() (time.Time, bool)
+	})
+	if !ok {
+		return testWaitFallback
+	}
+	deadline, ok := deadliner.Deadline()
+	if !ok {
+		return testWaitFallback
+	}
+	return time.Until(deadline) - testWaitDeadlineMargin
+}
+
+func failTestWait(t testing.TB, waitingFor string) {
+	t.Helper()
+	stack := make([]byte, 64<<10)
+	for {
+		n := runtime.Stack(stack, true)
+		if n < len(stack) {
+			t.Fatalf("timed out waiting for %s\n%s", waitingFor, stack[:n])
+			return
+		}
+		stack = make([]byte, len(stack)*2)
+	}
+}
+
+type testWaitProbe struct {
+	testing.TB
+	deadline     time.Time
+	hasDeadline  bool
+	fatalMessage string
+}
+
+func (probe *testWaitProbe) Deadline() (time.Time, bool) {
+	return probe.deadline, probe.hasDeadline
+}
+
+func (probe *testWaitProbe) Fatalf(format string, args ...any) {
+	probe.fatalMessage = fmt.Sprintf(format, args...)
+}
+
+func holdTestWaitStack(started chan<- struct{}, release <-chan struct{}) {
+	close(started)
+	<-release
+}
 
 func taskCycleNowForTest() time.Time {
 	return time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
@@ -42,6 +95,43 @@ func qaAuditorFrontmatterForTest() string {
 	auditorStaleness := auditor.StalenessLine("", app.AncestryUnknown)
 	return "auditing_binary: " + strconv.Quote(auditor.String()) + "\n" +
 		"auditor_staleness: " + strconv.Quote(auditorStaleness) + "\n"
+}
+
+func TestWaitBoundFollowsTheTestDeadline(t *testing.T) {
+	t.Parallel()
+	deadline := time.Now().Add(5 * time.Second)
+	withDeadline := &testWaitProbe{TB: t, deadline: deadline, hasDeadline: true}
+	upperBound := time.Until(deadline) - testWaitDeadlineMargin
+
+	got := testWaitBound(withDeadline)
+
+	lowerBound := time.Until(deadline) - testWaitDeadlineMargin
+	if got < lowerBound || got > upperBound {
+		t.Fatalf("testWaitBound() = %s, want between %s and %s", got, lowerBound, upperBound)
+	}
+	withoutDeadline := &testWaitProbe{TB: t}
+	if got := testWaitBound(withoutDeadline); got != testWaitFallback {
+		t.Fatalf("testWaitBound() without deadline = %s, want %s", got, testWaitFallback)
+	}
+
+	started := make(chan struct{})
+	release := make(chan struct{})
+	go holdTestWaitStack(started, release)
+	<-started
+	t.Cleanup(func() { close(release) })
+	expired := &testWaitProbe{
+		TB:          t,
+		deadline:    time.Now().Add(-testWaitDeadlineMargin),
+		hasDeadline: true,
+	}
+	<-time.After(testWaitBound(expired))
+	failTestWait(expired, "deadline diagnostic")
+	if !strings.HasPrefix(expired.fatalMessage, "timed out waiting for deadline diagnostic\n") {
+		t.Fatalf("wait failure = %q, want named deadline diagnostic", expired.fatalMessage)
+	}
+	if !strings.Contains(expired.fatalMessage, "holdTestWaitStack") {
+		t.Fatalf("wait failure omitted another goroutine's stack:\n%s", expired.fatalMessage)
+	}
 }
 
 func TestTaskCommitMessageDerivesSubjectAndTrailers(t *testing.T) {
@@ -911,6 +1001,31 @@ func (stage *fakeQAMechanicalStage) Run(_ context.Context, request speccheck.Mec
 	return stage.result, stage.err
 }
 
+type qaGateRecordingVerifier struct {
+	delegate Verifier
+	verify   func(context.Context, VerifyRequest) (VerifyResult, error)
+	onVerify func(VerifyRequest)
+	calls    *[]string
+	requests []VerifyRequest
+}
+
+func (verifier *qaGateRecordingVerifier) Verify(ctx context.Context, request VerifyRequest) (VerifyResult, error) {
+	if verifier.calls != nil {
+		*verifier.calls = append(*verifier.calls, "verify")
+	}
+	verifier.requests = append(verifier.requests, request)
+	if verifier.onVerify != nil {
+		verifier.onVerify(request)
+	}
+	if verifier.verify != nil {
+		return verifier.verify(ctx, request)
+	}
+	if verifier.delegate != nil {
+		return verifier.delegate.Verify(ctx, request)
+	}
+	return VerifyResult{OutputPath: request.OutputPath}, nil
+}
+
 func TestRefusedReportDoesNotBlockItsSuccessor(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -1121,6 +1236,407 @@ func TestMechanicalStageSeedsReportBeforeAgentSession(t *testing.T) {
 		t.Fatalf("mechanical stage emitted Verification-attempt events: %+v", events)
 	}
 	assertMechanicalStageEvent(t, fixture.sink, false, 0, 1)
+}
+
+func TestQAGateRunsRepositoryVerificationBeforeAgentSession(t *testing.T) {
+	t.Parallel()
+	const command = "printf 'repository verification passed\\n'"
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	runner := &taskFakeRunner{
+		calls: fixture.calls, gitRoot: fixture.gitRoot, store: fixture.store,
+		qaReport: qaReportForTest(spec.VerdictPass),
+	}
+	verifier := &qaGateRecordingVerifier{
+		delegate: ExecVerifier{},
+		calls:    fixture.calls,
+		onVerify: func(VerifyRequest) {
+			if len(runner.requests) != 0 {
+				t.Fatalf("repository Verification started after the Agent Session: %+v", runner.requests)
+			}
+			if _, err := os.Stat(filepath.Join(fixture.specsRoot, taskCycleSlug, "qa")); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("repository Verification started after the QA Report was written: %v", err)
+			}
+			if state := runStateForTest(fixture.store, fixture.run.ID); state != store.StateVerifying {
+				t.Fatalf("repository Verification observed Run state %q, want %q", state, store.StateVerifying)
+			}
+		},
+	}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, verifier, committer, fixture.worktree)
+	engine.deps.MechanicalStage = &fakeQAMechanicalStage{onRun: func() {
+		*fixture.calls = append(*fixture.calls, "mechanical")
+	}}
+	plan := fixture.qaPlan()
+	plan.RepositoryVerification = "  " + command + "  "
+	qaTaskID := fixture.graph.QATaskID
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if result.QAVerdict != spec.VerdictPass {
+		t.Fatalf("QA verdict = %q, want %q", result.QAVerdict, spec.VerdictPass)
+	}
+	if len(verifier.requests) != 1 {
+		t.Fatalf("repository Verification ran %d times, want once", len(verifier.requests))
+	}
+	request := verifier.requests[0]
+	if request.Command != command || request.WorkDir != fixture.gitRoot {
+		t.Fatalf("repository Verification request = %+v, want command %q in %q", request, command, fixture.gitRoot)
+	}
+	wantDiagnostics := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, 1)
+	if request.OutputPath != wantDiagnostics {
+		t.Fatalf("repository Verification diagnostics = %q, want %q", request.OutputPath, wantDiagnostics)
+	}
+	if _, err := os.Stat(wantDiagnostics); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("successful repository Verification retained diagnostics %q: %v", wantDiagnostics, err)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "mechanical>verify>agent>commit" {
+		t.Fatalf("QA gate call order = %q, want mechanical stage, verification, Agent, and commit", got)
+	}
+	if len(runner.qaPrompts) != 1 {
+		t.Fatalf("QA Agent received %d prompts, want one", len(runner.qaPrompts))
+	}
+	statement := "Repository Verification: already run by the Daemon outside the Agent sandbox.\n" +
+		"- command: " + command + "\n" +
+		"- verdict: pass (exit 0)\n" +
+		"- diagnostics: removed on success\n" +
+		"Record this as the static gate result. Do not run the repository Verification again.\n"
+	prompt := runner.qaPrompts[0]
+	seeded := strings.Index(prompt, "Seeded QA Report: "+runner.qaReportPath)
+	recorded := strings.Index(prompt, statement)
+	if seeded < 0 || recorded < seeded {
+		t.Fatalf("QA prompt did not place the repository Verification statement after the seeded-report instruction:\n%s", prompt)
+	}
+	for _, state := range runner.seenStates {
+		if state != store.StateResolvingWithAgent {
+			t.Fatalf("QA Agent observed Run state %q, want %q", state, store.StateResolvingWithAgent)
+		}
+	}
+	verificationEvents := taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification)
+	if len(verificationEvents) != 4 {
+		t.Fatalf("repository Verification published %d events, want waiting, started, command-passed, and verdict: %+v", len(verificationEvents), verificationEvents)
+	}
+	for _, event := range verificationEvents {
+		payload := eventPayloadMap(t, event)
+		if event.ReviewIssue != qaTaskID || event.Batch != 1 || payload["work_item"] != qaTaskID || payload["attempt"] != float64(1) {
+			t.Fatalf("repository Verification event does not carry QA Work Item attempt 1: %+v payload=%v", event, payload)
+		}
+	}
+	waiting := eventPayloadMap(t, verificationEvents[0])
+	if waiting["phase"] != string(runevent.VerificationPhaseWaiting) || waiting["mode"] != verificationShared.String() || waiting["capacity"] != float64(1) {
+		t.Fatalf("repository Verification waiting payload = %v, want shared capacity 1", waiting)
+	}
+}
+
+func TestQAGateRefusesOnFailedRepositoryVerification(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		exitStatus int
+	}{
+		{name: "ordinary command failure", exitStatus: 42},
+		{name: "temporary exit has no retry", exitStatus: TemporaryVerificationExitCode},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			command := fmt.Sprintf("printf 'repository verification failed with %d\\n'; exit %d", test.exitStatus, test.exitStatus)
+			fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+			runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot, qaReport: qaReportForTest(spec.VerdictPass)}
+			verifier := &qaGateRecordingVerifier{delegate: ExecVerifier{}, calls: fixture.calls}
+			committer := &engineFakeCommitter{calls: fixture.calls}
+			engine := fixture.engine(t, runner, verifier, committer, fixture.worktree)
+			plan := fixture.qaPlan()
+			plan.RepositoryVerification = command
+			qaTaskID := fixture.graph.QATaskID
+
+			result, err := engine.TaskCycle(context.Background(), plan)
+
+			if err != nil {
+				t.Fatalf("TaskCycle returned error: %v", err)
+			}
+			if result.QAVerdict != spec.VerdictFail {
+				t.Fatalf("QA verdict = %q, want %q", result.QAVerdict, spec.VerdictFail)
+			}
+			if len(verifier.requests) != 1 {
+				t.Fatalf("repository Verification ran %d times, want one attempt without retry", len(verifier.requests))
+			}
+			if len(runner.requests) != 0 || len(runner.qaPrompts) != 0 {
+				t.Fatalf("failed repository Verification started the QA Agent: requests=%d prompts=%d", len(runner.requests), len(runner.qaPrompts))
+			}
+			if got := strings.Join(*fixture.calls, ">"); got != "verify>commit" {
+				t.Fatalf("failed QA gate call order = %q, want verification then refusal-report commit", got)
+			}
+			diagnostics := verifier.requests[0].OutputPath
+			content, readErr := os.ReadFile(diagnostics)
+			if readErr != nil {
+				t.Fatalf("failed repository Verification did not retain diagnostics %q: %v", diagnostics, readErr)
+			}
+			if !strings.Contains(string(content), fmt.Sprintf("failed with %d", test.exitStatus)) {
+				t.Fatalf("retained diagnostics %q = %q, want command output", diagnostics, content)
+			}
+			report, readErr := spec.ReadQAReport(plan.Spec.Dir)
+			if readErr != nil {
+				t.Fatalf("read refusal QA Report: %v", readErr)
+			}
+			wantReason := fmt.Sprintf("exited %d; diagnostics: %s", test.exitStatus, diagnostics)
+			if report.Verdict != spec.VerdictFail || report.RowsBlockedPrecondition != 1 {
+				t.Fatalf("refusal QA Report = %+v, want fail with one precondition row", report)
+			}
+			if report.Precondition.CheckName != command || report.Precondition.Reason != wantReason {
+				t.Fatalf("refusal = %#v, want check %q reason %q", report.Precondition, command, wantReason)
+			}
+			if got := taskStatusOnDisk(t, fixture.gitRoot, qaTaskID); got != string(spec.StatusFailed) {
+				t.Fatalf("QA Task status = %q, want %q", got, spec.StatusFailed)
+			}
+			verificationEvents := taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification)
+			if len(verificationEvents) != 4 {
+				t.Fatalf("failed repository Verification published %d events, want waiting, started, failed, and verdict: %+v", len(verificationEvents), verificationEvents)
+			}
+			verdictPayload := eventPayloadMap(t, verificationEvents[len(verificationEvents)-1])
+			if verdictPayload["verdict"] != string(runevent.VerificationVerdictFailed) {
+				t.Fatalf("failed repository Verification verdict payload = %v", verdictPayload)
+			}
+			if test.exitStatus == TemporaryVerificationExitCode && verdictPayload["retry_available"] != false {
+				t.Fatalf("exit 75 verdict payload = %v, want retry_available false", verdictPayload)
+			}
+		})
+	}
+}
+
+func TestQAGateRefusesOnUnobservedRepositoryVerification(t *testing.T) {
+	t.Parallel()
+	const command = "make verify"
+	cause := errors.New("runner lost the child outcome")
+	tests := []struct {
+		name                  string
+		retainDiagnostics     bool
+		reportDiagnosticsPath bool
+		wantDiagnostics       string
+	}{
+		{name: "diagnostics path retained", retainDiagnostics: true, reportDiagnosticsPath: true},
+		{name: "reported diagnostics path was not retained", reportDiagnosticsPath: true, wantDiagnostics: "not retained"},
+		{name: "diagnostics path absent", wantDiagnostics: "not retained"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+			runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot, qaReport: qaReportForTest(spec.VerdictPass)}
+			verifier := &qaGateRecordingVerifier{
+				calls: fixture.calls,
+				verify: func(_ context.Context, request VerifyRequest) (VerifyResult, error) {
+					if !test.retainDiagnostics && !test.reportDiagnosticsPath {
+						return VerifyResult{}, &VerificationUnknownError{Command: request.Command, Err: cause}
+					}
+					if test.retainDiagnostics {
+						if err := os.MkdirAll(filepath.Dir(request.OutputPath), 0o755); err != nil {
+							return VerifyResult{}, err
+						}
+						if err := os.WriteFile(request.OutputPath, []byte("partial diagnostics\n"), 0o644); err != nil {
+							return VerifyResult{}, err
+						}
+					}
+					return VerifyResult{OutputPath: request.OutputPath}, &VerificationUnknownError{
+						Command: request.Command, DiagnosticPath: request.OutputPath, Err: cause,
+					}
+				},
+			}
+			engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+			plan := fixture.qaPlan()
+			plan.RepositoryVerification = command
+
+			result, err := engine.TaskCycle(context.Background(), plan)
+
+			if err != nil {
+				t.Fatalf("TaskCycle returned error: %v", err)
+			}
+			if result.QAVerdict != spec.VerdictFail {
+				t.Fatalf("QA verdict = %q, want %q", result.QAVerdict, spec.VerdictFail)
+			}
+			if len(verifier.requests) != 1 {
+				t.Fatalf("unobserved repository Verification ran %d times, want once", len(verifier.requests))
+			}
+			if len(runner.requests) != 0 {
+				t.Fatalf("unobserved repository Verification started the QA Agent: %+v", runner.requests)
+			}
+			diagnostics := test.wantDiagnostics
+			if test.retainDiagnostics {
+				diagnostics = verifier.requests[0].OutputPath
+			}
+			report, readErr := spec.ReadQAReport(plan.Spec.Dir)
+			if readErr != nil {
+				t.Fatalf("read refusal QA Report: %v", readErr)
+			}
+			wantReason := "outcome unobserved: " + cause.Error() + "; diagnostics: " + diagnostics
+			if report.Precondition.CheckName != command || report.Precondition.Reason != wantReason {
+				t.Fatalf("refusal = %#v, want check %q reason %q", report.Precondition, command, wantReason)
+			}
+			verificationEvents := taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification)
+			if len(verificationEvents) != 4 {
+				t.Fatalf("unobserved repository Verification published %d events, want waiting, started, failed, and verdict: %+v", len(verificationEvents), verificationEvents)
+			}
+			for _, event := range verificationEvents[2:] {
+				if payload := eventPayloadMap(t, event); payload["classification"] != nil || payload["reason"] != nil {
+					t.Fatalf("unobserved repository Verification changed publisher classification payload: %v", payload)
+				}
+			}
+		})
+	}
+}
+
+func TestQAGateSkipsRepositoryVerificationWhenMechanicalStageWithholds(t *testing.T) {
+	t.Parallel()
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot, qaReport: qaReportForTest(spec.VerdictPass)}
+	verifier := &qaGateRecordingVerifier{calls: fixture.calls}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	const refusalReason = "the mechanical fixture refused before repository Verification"
+	engine.deps.MechanicalStage = &fakeQAMechanicalStage{result: speccheck.MechanicalResult{
+		Blocking:            true,
+		PreconditionRefused: true,
+		PreconditionRefusal: spec.PreconditionRefusal{CheckName: speccheck.GatePreconditionCheck, Reason: refusalReason},
+	}}
+	plan := fixture.qaPlan()
+	plan.RepositoryVerification = "make verify"
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if result.QAVerdict != spec.VerdictFail {
+		t.Fatalf("QA verdict = %q, want %q", result.QAVerdict, spec.VerdictFail)
+	}
+	if len(verifier.requests) != 0 {
+		t.Fatalf("blocking mechanical stage ran repository Verification: %+v", verifier.requests)
+	}
+	if len(runner.requests) != 0 {
+		t.Fatalf("blocking mechanical stage started the QA Agent: %+v", runner.requests)
+	}
+	report, readErr := spec.ReadQAReport(plan.Spec.Dir)
+	if readErr != nil {
+		t.Fatalf("read mechanical refusal QA Report: %v", readErr)
+	}
+	if report.Precondition.CheckName != speccheck.GatePreconditionCheck || report.Precondition.Reason != refusalReason {
+		t.Fatalf("mechanical refusal changed after repository Verification skip: %#v", report.Precondition)
+	}
+	if events := taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification); len(events) != 0 {
+		t.Fatalf("blocking mechanical stage published repository Verification events: %+v", events)
+	}
+}
+
+func TestQAGateWithoutConfiguredRepositoryVerificationLeavesItToTheGate(t *testing.T) {
+	t.Parallel()
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot, qaReport: qaReportForTest(spec.VerdictPass)}
+	verifier := &qaGateRecordingVerifier{calls: fixture.calls}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.qaPlan()
+	plan.RepositoryVerification = " \t "
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if result.QAVerdict != spec.VerdictPass {
+		t.Fatalf("QA verdict = %q, want %q", result.QAVerdict, spec.VerdictPass)
+	}
+	if len(verifier.requests) != 0 {
+		t.Fatalf("unconfigured repository Verification ran: %+v", verifier.requests)
+	}
+	if len(runner.qaPrompts) != 1 {
+		t.Fatalf("QA Agent received %d prompts, want one", len(runner.qaPrompts))
+	}
+	const statement = "Repository Verification: run it in this gate; no command is configured for the Daemon."
+	if !strings.Contains(runner.qaPrompts[0], statement) {
+		t.Fatalf("QA prompt does not leave repository Verification to the gate:\n%s", runner.qaPrompts[0])
+	}
+	if events := taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification); len(events) != 0 {
+		t.Fatalf("unconfigured repository Verification published events: %+v", events)
+	}
+}
+
+func TestQAGateRepositoryVerificationInfrastructureErrorEndsRun(t *testing.T) {
+	t.Parallel()
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot, qaReport: qaReportForTest(spec.VerdictPass)}
+	infrastructureErr := errors.New("retain verification diagnostics")
+	verifier := &qaGateRecordingVerifier{
+		calls: fixture.calls,
+		verify: func(_ context.Context, request VerifyRequest) (VerifyResult, error) {
+			return VerifyResult{OutputPath: request.OutputPath}, infrastructureErr
+		},
+	}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.qaPlan()
+	plan.RepositoryVerification = "make verify"
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if !errors.Is(err, infrastructureErr) {
+		t.Fatalf("TaskCycle error = %v, want infrastructure error", err)
+	}
+	if result.QAVerdict != "" || result.QAReportPath != "" {
+		t.Fatalf("infrastructure error settled a QA verdict: %+v", result)
+	}
+	if len(runner.requests) != 0 {
+		t.Fatalf("infrastructure error started the QA Agent: %+v", runner.requests)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, fixture.graph.QATaskID); got != string(spec.StatusPending) {
+		t.Fatalf("infrastructure error settled QA Task %q, want pending", got)
+	}
+	if _, statErr := os.Stat(filepath.Join(plan.Spec.Dir, "qa")); !errors.Is(statErr, os.ErrNotExist) {
+		t.Fatalf("infrastructure error wrote a QA Report directory: %v", statErr)
+	}
+}
+
+func TestQAGateRepositoryVerificationCancellationUsesStopPath(t *testing.T) {
+	t.Parallel()
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot, qaReport: qaReportForTest(spec.VerdictPass)}
+	ctx, cancel := context.WithCancel(context.Background())
+	verifier := &qaGateRecordingVerifier{
+		calls: fixture.calls,
+		verify: func(_ context.Context, request VerifyRequest) (VerifyResult, error) {
+			cancel()
+			return VerifyResult{}, &VerificationUnknownError{Command: request.Command, Err: context.Canceled}
+		},
+	}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.qaPlan()
+	plan.RepositoryVerification = "make verify"
+
+	result, err := engine.TaskCycle(ctx, plan)
+
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("TaskCycle error = %v, want context cancellation", err)
+	}
+	if result.QAVerdict != "" || result.QAReportPath != "" {
+		t.Fatalf("cancelled repository Verification settled a QA verdict: %+v", result)
+	}
+	if len(runner.requests) != 0 {
+		t.Fatalf("cancelled repository Verification started the QA Agent: %+v", runner.requests)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, fixture.graph.QATaskID); got != string(spec.StatusPending) {
+		t.Fatalf("cancelled repository Verification settled QA Task %q, want pending", got)
+	}
+	if _, statErr := os.Stat(filepath.Join(plan.Spec.Dir, "qa")); !errors.Is(statErr, os.ErrNotExist) {
+		t.Fatalf("cancelled repository Verification wrote a QA Report directory: %v", statErr)
+	}
+	statusEvents := taskEventsOfKind(fixture.sink, runevent.KindDaemonStatus)
+	stopEvents := 0
+	for _, event := range statusEvents {
+		if strings.Contains(event.Summary, "Stop Request") {
+			stopEvents++
+		}
+	}
+	if stopEvents != 1 {
+		t.Fatalf("cancelled repository Verification did not use the stop path: %+v", statusEvents)
+	}
 }
 
 func TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit(t *testing.T) {
@@ -2404,8 +2920,9 @@ func waitSchedulerStarts(t *testing.T, runner *taskSchedulerRunner, count int) [
 		select {
 		case taskID := <-runner.started:
 			started = append(started, taskID)
-		case <-time.After(2 * time.Second):
-			t.Fatalf("timed out waiting for %d Task start(s), got %v", count, started)
+		case <-time.After(testWaitBound(t)):
+			failTestWait(t, fmt.Sprintf("%d Task start(s), got %v", count, started))
+			return started
 		}
 	}
 	return started
@@ -2555,8 +3072,8 @@ func (verifier *taskCapacityVerifier) waitStart(t *testing.T) taskVerificationSt
 	select {
 	case started := <-verifier.started:
 		return started
-	case <-time.After(2 * time.Second):
-		t.Fatal("timed out waiting for Verification start")
+	case <-time.After(testWaitBound(t)):
+		failTestWait(t, "Verification start")
 		return taskVerificationStart{}
 	}
 }
@@ -2744,8 +3261,8 @@ func waitIntegratedTask(t *testing.T, worktrees *fakeTaskWorktrees) string {
 	select {
 	case taskID := <-worktrees.integratedSignal:
 		return taskID
-	case <-time.After(2 * time.Second):
-		t.Fatal("timed out waiting for Task integration")
+	case <-time.After(testWaitBound(t)):
+		failTestWait(t, "Task integration")
 		return ""
 	}
 }
@@ -2761,8 +3278,8 @@ func waitTaskCycleResult(t *testing.T, resultCh <-chan struct {
 	select {
 	case outcome := <-resultCh:
 		return outcome
-	case <-time.After(2 * time.Second):
-		t.Fatal("timed out waiting for TaskCycle result")
+	case <-time.After(testWaitBound(t)):
+		failTestWait(t, "TaskCycle result")
 		return struct {
 			result TaskCycleResult
 			err    error
@@ -2983,8 +3500,8 @@ func waitGateAcquireResult(t *testing.T, results <-chan gateAcquireResult) gateA
 	select {
 	case result := <-results:
 		return result
-	case <-time.After(2 * time.Second):
-		t.Fatal("timed out waiting for Verification gate acquisition")
+	case <-time.After(testWaitBound(t)):
+		failTestWait(t, "Verification gate acquisition")
 		return gateAcquireResult{}
 	}
 }
@@ -2993,8 +3510,8 @@ func waitObservedGateEntry(t *testing.T, entered <-chan struct{}) {
 	t.Helper()
 	select {
 	case <-entered:
-	case <-time.After(2 * time.Second):
-		t.Fatal("timed out waiting for Verification gate entry")
+	case <-time.After(testWaitBound(t)):
+		failTestWait(t, "Verification gate entry")
 	}
 }
 
@@ -4238,8 +4755,9 @@ func waitPublishedStopEvent(t *testing.T, published <-chan runevent.RunEvent) {
 			if event.Kind == runevent.KindDaemonStatus && strings.Contains(event.Summary, "Stop Request") {
 				return
 			}
-		case <-time.After(2 * time.Second):
-			t.Fatal("timed out waiting for the Stop Request to reach the Run Event Stream")
+		case <-time.After(testWaitBound(t)):
+			failTestWait(t, "the Stop Request to reach the Run Event Stream")
+			return
 		}
 	}
 }
@@ -4256,8 +4774,9 @@ func waitPublishedVerificationPhase(t *testing.T, published <-chan runevent.RunE
 			if payload["attempt"] == float64(attempt) && payload["phase"] == string(phase) {
 				return
 			}
-		case <-time.After(2 * time.Second):
-			t.Fatalf("timed out waiting for Task %s Verification attempt %d phase %s", taskID, attempt, phase)
+		case <-time.After(testWaitBound(t)):
+			failTestWait(t, fmt.Sprintf("Task %s Verification attempt %d phase %s", taskID, attempt, phase))
+			return
 		}
 	}
 }

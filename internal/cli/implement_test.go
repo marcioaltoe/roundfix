@@ -6136,7 +6136,7 @@ func TestAgentSelectionProfilesMacro(t *testing.T) {
 		})
 		sentinels := seedMacroRuntimeOwnedFiles(t, homeDir)
 		configPath := filepath.Join(repoDir, ".roundfixrc.yml")
-		mustWrite(t, configPath, "worktree:\n  concurrency: 1\n")
+		mustWrite(t, configPath, "defaults:\n  verification: true\nworktree:\n  concurrency: 1\n")
 		fragmentPath := filepath.Join(t.TempDir(), "profiles.yml")
 		mustWrite(t, fragmentPath, macroProfilesYAML())
 

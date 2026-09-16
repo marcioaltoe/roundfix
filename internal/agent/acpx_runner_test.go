@@ -50,6 +50,8 @@ const (
 	fakeAdapterDirEnv  = "ROUNDFIX_FAKE_ADAPTER_DIR"
 )
 
+var packageAdapterLinks map[string]string
+
 func TestMain(m *testing.M) {
 	if code, ok := runFakeAdapterProcess(); ok {
 		os.Exit(code)
@@ -57,7 +59,13 @@ func TestMain(m *testing.M) {
 	if os.Getenv(fakeACPXEnv) == "1" {
 		os.Exit(runFakeACPXProcess())
 	}
-	os.Exit(suiteguard.Main(m, filepath.Join("..", "..")))
+	removePackageAdapterLinks := provisionPackageAdapterLinks()
+	code := suiteguard.Main(m, filepath.Join("..", ".."))
+	if err := removePackageAdapterLinks(); err != nil {
+		fmt.Fprintf(os.Stderr, "remove package adapter links: %v\n", err)
+		code = 1
+	}
+	os.Exit(code)
 }
 
 func TestFixtureBinarySurvivesConcurrentExec(t *testing.T) {
@@ -3735,17 +3743,49 @@ func installFakeNamedVersionAdapter(t *testing.T, name string, output string) st
 	return path
 }
 
+func provisionPackageAdapterLinks() func() error {
+	root, links := mustPreparePackageAdapterLinkTargets()
+	for packageName, target := range links {
+		if err := os.Link(os.Args[0], target); err != nil {
+			_ = os.RemoveAll(root)
+			panic(fmt.Errorf("link compiled test binary for package %s: %w", packageName, err))
+		}
+	}
+	packageAdapterLinks = links
+	return func() error {
+		packageAdapterLinks = nil
+		return os.RemoveAll(root)
+	}
+}
+
+func mustPreparePackageAdapterLinkTargets() (string, map[string]string) {
+	root, err := os.MkdirTemp("", "roundfix-agent-package-adapters-")
+	if err != nil {
+		panic(fmt.Errorf("create package adapter root: %w", err))
+	}
+	links := make(map[string]string, 3)
+	for _, packageName := range []string{
+		ClaudeAdapterPackage,
+		"@example/claude-code-acp",
+		"@example/claude-agent-acp",
+	} {
+		packageDir := filepath.Join(root, "node_modules", filepath.FromSlash(packageName), "bin")
+		if err := os.MkdirAll(packageDir, 0o755); err != nil {
+			_ = os.RemoveAll(root)
+			panic(fmt.Errorf("create package adapter directory for %s: %w", packageName, err))
+		}
+		links[packageName] = filepath.Join(packageDir, "adapter")
+	}
+	return root, links
+}
+
 func installSymlinkedPackageAdapter(t *testing.T, packageName string, executableName string, output string) string {
 	t.Helper()
+	target, ok := packageAdapterLinks[packageName]
+	if !ok {
+		t.Fatalf("package adapter link for %s was not provisioned", packageName)
+	}
 	root := t.TempDir()
-	packageDir := filepath.Join(root, "node_modules", filepath.FromSlash(packageName), "bin")
-	if err := os.MkdirAll(packageDir, 0o755); err != nil {
-		t.Fatalf("create fake package adapter directory: %v", err)
-	}
-	target := filepath.Join(packageDir, "adapter")
-	if err := os.Link(os.Args[0], target); err != nil {
-		t.Fatalf("link compiled fake package adapter: %v", err)
-	}
 	binDir := filepath.Join(root, "bin")
 	if err := os.MkdirAll(binDir, 0o755); err != nil {
 		t.Fatalf("create fake adapter bin directory: %v", err)
@@ -3769,8 +3809,8 @@ type fakeAdapterFixture struct {
 }
 
 func provisionFakeAdapter(path string, fixture fakeAdapterFixture) error {
-	if err := os.Link(os.Args[0], path); err != nil {
-		return fmt.Errorf("link compiled test binary: %w", err)
+	if err := os.Symlink(os.Args[0], path); err != nil {
+		return fmt.Errorf("symlink compiled test binary: %w", err)
 	}
 	if err := writeFakeAdapterFixture(path, fixture); err != nil {
 		return err
