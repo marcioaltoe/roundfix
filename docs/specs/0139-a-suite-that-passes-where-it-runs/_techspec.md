@@ -220,8 +220,8 @@ events, carrying the QA Work Item.
    - a pass runs once before the Agent session and is stated in the prompt;
    - a command failure becomes a refusal that withholds the Agent with verdict
      `fail` and publishes an unclassified failure;
-   - an unobserved outcome becomes a refusal whose Run Event carries
-     `verification_unknown` with its command, reason and diagnostics;
+   - an unobserved outcome becomes a refusal naming its cause and diagnostics
+     state, with the event the existing publisher already emits;
    - a mechanical withholding runs no Verification;
    - a missing command runs nothing and says so in the prompt.
 5. **Outside evidence.** The terminal QA Task replays Spec 0138's recorded
