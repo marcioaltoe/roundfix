@@ -322,6 +322,30 @@ func TestBuildQAPromptStatesQAGateContract(t *testing.T) {
 	}
 }
 
+func TestBuildQAPromptStatesTheDeclaredMatrix(t *testing.T) {
+	t.Parallel()
+
+	prompt, err := BuildQAPrompt(sampleQAPromptRequest())
+	if err != nil {
+		t.Fatalf("BuildQAPrompt returned error: %v", err)
+	}
+
+	for _, expected := range []string{
+		"Each numbered qa Task Requirement that starts with MUST verify or MUST run is a declared verification Requirement, and the declared Requirements with the non-waivable sources are the coverage sources",
+		"otherwise the coverage sources are the PRD user stories and Goals, each non-QA Task's Acceptance Criteria and the declared intentional breaks",
+		"The non-waivable sources are the outside-evidence row, the Pull Request row, the repository Verification, each PRD Unreachable Acceptance declaration and, when the PRD declares frontend, the frontend sweep",
+		"Every row names in its provenance the sources it covers; every source appears in at least one row, and no row covers anything else",
+		"Once the matrix exists, a finding blocks only the rows that depend on it",
+	} {
+		if !strings.Contains(prompt, expected) {
+			t.Fatalf("expected QA prompt to contain %q, got:\n%s", expected, prompt)
+		}
+	}
+	if strings.Contains(prompt, "validate every user story and acceptance criterion") {
+		t.Fatalf("expected the obsolete QA matrix instruction to be absent, got:\n%s", prompt)
+	}
+}
+
 // The gate reasons about the user's branch from a checkout that can never
 // be on it, so the prompt has to name both branches and separate them.
 func TestBuildQAPromptStatesCheckoutFactsSeparatingRunBranchFromTarget(t *testing.T) {

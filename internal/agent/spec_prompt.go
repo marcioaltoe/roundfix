@@ -49,7 +49,10 @@ const taskExecutionInvariants = `Execution invariants:
 // so the templating pass (work-plan item 5) replaces the contract in a
 // single place.
 const qaGateContract = `QA contract:
-- Run the qa-gate process for this Spec: validate every user story and acceptance criterion from the PRD and the task files against the real application.
+- Run the qa-gate process for this Spec. Each numbered qa Task Requirement that starts with MUST verify or MUST run is a declared verification Requirement, and the declared Requirements with the non-waivable sources are the coverage sources; otherwise the coverage sources are the PRD user stories and Goals, each non-QA Task's Acceptance Criteria and the declared intentional breaks.
+- The non-waivable sources are the outside-evidence row, the Pull Request row, the repository Verification, each PRD Unreachable Acceptance declaration and, when the PRD declares frontend, the frontend sweep.
+- Every row names in its provenance the sources it covers; every source appears in at least one row, and no row covers anything else.
+- Once the matrix exists, a finding blocks only the rows that depend on it; every other row still runs.
 - Write the QA Report to the Spec's qa/ directory as qa-report-YYYY-MM-DD.md for the day's first report and qa-report-YYYY-MM-DD-NN.md with a numeric -NN suffix for same-day reruns.
 - The QA Report frontmatter must carry the verdict: pass, fail, or partial, plus rows_blocked_environment, rows_blocked_finding, and rows_blocked_declared. Use verdict: pass when every runnable criterion passes, every environment-blocked row records its cause and equivalent observed or supervised evidence, and no row is declared-blocked, finding-blocked, or skipped. A nonzero rows_blocked_environment does not by itself prevent pass; a nonzero rows_blocked_finding or rows_blocked_declared does.
 - Never commit, push, or open a pull request.

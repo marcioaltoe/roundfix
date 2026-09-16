@@ -1,9 +1,12 @@
 ---
 spec: 0138-a-matrix-the-spec-declares
-status: active
+status: archived
 created: 2026-09-14
 surfaces: [backend, docs]
+archived: "2026-09-16"
+source_slug: 0138-a-matrix-the-spec-declares
 ---
+
 
 # A matrix the Spec declares
 

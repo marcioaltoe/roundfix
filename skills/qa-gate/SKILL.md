@@ -140,15 +140,19 @@ named checker rule decides them.
   claimed derived pin without reproducible evidence from the sanctioned
   regeneration command; and every path outside the exact bounded list plus the
   assigned Task file. Do not stop at the first problem and defer the rest to
-  another QA rerun. Any problem blocks flow QA after the complete command audit
-  has been reported.
+  another QA rerun. Once the matrix exists, a finding blocks only the rows that depend on it.
 - QA writes only its report and evidence. It never changes Task status or Task
   Graph dependencies.
 - Require every dependency of the authored `qa` Task to be `completed`. If any
   dependency remains incomplete, stop and list it. The Daemon owns the current
   gate Task's status and settles it from the final verdict. Run a partial gate
   only when the authored QA Task explicitly limits its scope; mark its scope
-  and final verdict `partial`.
+  and final verdict `partial`. The mechanical stage's withholding of the Agent
+  Session before a matrix exists is unchanged: a blocking machine fact still
+  stops the gate before it builds a matrix. A declared matrix is a full gate and
+  can reach `pass`; declaring a matrix does not make the run partial. `partial`
+  stays reserved for a `qa` Task that explicitly limits its scope or for a
+  planned row the gate did not run.
 - Identify the PRD's declared surfaces, user stories, core features, acceptance criteria, user-experience states, and Non-Goals.
 - Read every entry under the PRD's `## Unreachable Acceptance` section before
   the run. Treat each declaration as an author's claim to test, not as proof
@@ -162,7 +166,7 @@ named checker rule decides them.
   failure behavior, and scope creep.
 - On a rerun, start with previously failed or blocked rows, then run the remaining matrix against the current build.
 
-The scope is complete when every promise and explicit exclusion in the spec maps to a planned row or a documented reason for exclusion.
+The scope is complete when coverage is complete and closed.
 
 ## 2. Build the QA matrix and open the report
 
@@ -211,26 +215,61 @@ enumerated control left unanswered is exactly that.
   Worktree branch: that per-Run branch is never pushed and has no Pull Request
   of its own.
 
-Add a row for:
+### Coverage sources
 
-- every user story, exercised end to end by a named actor;
-- every acceptance criterion not safely credited from task evidence;
-- the Spec's outside-evidence acceptance row, when no row above already carries it;
-- every Non-Goal that needs a scope-creep check;
-- each mandatory surface sweep below.
+Each numbered `qa` Task Requirement that starts with `MUST verify` or `MUST run` is a declared verification Requirement. Every other Requirement constrains how the gate runs.
 
-For each row record the actor, entry point, surface, steps, expected observable,
-independent confirmation, persistence check, evidence path, and status `pending`.
-Order rows by user impact and blast radius. Select 2-5 relevant behavior probes
-for each high-risk journey: double submit, refresh or back navigation
-mid-action, deep-link/reopen, invalid or out-of-order input, session expiry,
+When a `qa` Task has at least one declared verification Requirement, those
+Requirements declare the matrix's coverage sources. A declared Requirement that verifies every Acceptance Criterion of named Tasks makes each of those criteria its own source.
+
+Every matrix, declared or default, covers these non-waivable sources:
+
+- the outside-evidence row;
+- the Pull Request row, on its equivalent-evidence path;
+- the repository Verification;
+- each declaration under the PRD's `## Unreachable Acceptance` section;
+- the frontend sweep, when `frontend` is declared.
+
+A `qa` Task without a declared verification Requirement gets the bounded default.
+Its coverage sources are:
+
+- the PRD user stories and Goals;
+- each non-QA Task's Acceptance Criteria;
+- each declared intentional break;
+- the non-waivable sources listed above.
+
+A Non-Goal becomes a source only when it names an observable the Spec could
+ship. Its row reads only the paths the Spec changed and the surfaces the
+Non-Goal names.
+
+### Coverage and provenance
+
+Coverage is complete, closed and named:
+
+- Every row names, in its provenance, each coverage source it covers.
+- Every coverage source appears in at least one row's provenance.
+- no row's provenance names a source outside the coverage sources.
+- Rows may group several sources that one observation settles.
+- No row's result is computed from other rows.
+- No row re-checks a Mechanical Refusal Code.
+
+For each row record the sources it covers in its provenance, the actor, entry
+point, surface, steps, expected observable, independent confirmation,
+persistence check, evidence path, and status `pending`. Order rows by user
+impact and blast radius. Behavior probes for high-risk journeys stay in the
+bounded default only. For each high-risk journey in that default, select 2-5
+relevant probes: double submit, refresh or back navigation mid-action,
+deep-link/reopen, invalid or out-of-order input, session expiry,
 offline/reconnect, concurrent tabs, or locale/accessibility changes. Choose
 probes that fit the feature; unrelated probes create noise.
+Use the `qa` Task's own identifiers in provenance, such as "Requirement 3",
+"Task 01 criterion 2" and "repository Verification".
 
 ### Row input declaration
 
-A row opts into future evidence-scoped carry-forward by adding a non-empty,
-typed `inputs:` declaration to its detailed evidence block. Place the block
+The row's inputs are fixed when the row is planned as `pending`, bounded to what
+the row reads. A row opts into future evidence-scoped carry-forward by adding a
+non-empty, typed `inputs:` declaration to its detailed evidence block. Place the block
 under a `### <row-id>` heading whose row identifier matches the row's `#` cell
 in the Results table, and use one fenced `yaml` block per row; a block under
 any other heading is ignored and the row is never carried. Each entry has a
@@ -263,6 +302,9 @@ whose ancestry is proven, and whose evidence is byte-identical at the later
 head is materialized as `carried (established by: <report>; head: <sha>)` and
 is not re-observed.
 
+A row whose inputs grow after it ran is not carriable. Do not add inputs after
+execution to make carry-forward eligible.
+
 One row is the Spec's outside-evidence row: the acceptance row that rests on
 evidence originating outside the Spec's own artifacts — a repository the Spec
 did not build, a measurement it did not design, or published literature. Record
@@ -277,15 +319,29 @@ declared unmoved evidence under ADR-0097. Task authoring never stalls on it —
 decomposition records the blocked row and proceeds — so the obligation lands
 here, at the gate, where the Spec is asked to account for it. See ADR-0104.
 
-The plan is complete when every story and criterion has coverage, every chosen probe has a reason, and the report contains the full pending matrix.
+The plan is complete when every coverage source appears in at least one row's
+provenance, no row's provenance names a source outside the coverage sources,
+every chosen default probe has a reason, and the report contains the full
+pending matrix.
 
 ## 3. Run static gates first
 
 Run the repository's full verification pipeline, `make verify`, and record the exact command and result. Do not substitute build, lint, typecheck, or test equivalents. If `make verify` cannot run at all, record the verification gate as blocked. A formatting, test, or build check that runs and fails is a `fail`, not a block — classify it with the code-caused and environment-caused distinction below before recording anything.
 
+A timeout or intermittent failure of the repository Verification is recorded as
+a failure, never an environment block. A claimed contention, a
+non-reproducible run, or the same failure on the unchanged delivery target is not a proved environmental cause. Only a cause that stops the command from
+running at all is environmental.
+
+When a `qa` Task names an analyzer beyond the repository Verification, run it
+over the changed packages. A diagnostic identical on the delivery target is
+recorded as observed, naming the Spec that owns it, and does not fail the Spec.
+A repository Verification failure stays blocking whether or not it is
+pre-existing.
+
 When a command fails, diagnose its source before continuing:
 
-- **Code-caused:** record a finding and trace the failed check to the matrix
+- **Code-caused:** Once the matrix exists, a finding blocks only the rows that depend on it. Record a finding and trace the failed check to the matrix
   rows whose entry point, observable, or evidence depends on what failed.
   Block only those implicated rows as `blocked (finding: <id> — waits on
   <named failing check>)`; continue every unimplicated row whose result
@@ -293,7 +349,10 @@ When a command fails, diagnose its source before continuing:
   genuinely depends on it, such as a build failure that leaves no runnable
   artifact; record that dependency on each row instead of asserting it once
   for the matrix.
-- **Environment-caused:** prove the constraint with the error or an unchanged-base reproduction, record affected rows as `blocked (environment: <cause>)`, continue checks that remain valid, and apply the typed blocked-cause verdict rule in section 6.
+- **Environment-caused:** for checks other than the repository Verification,
+  prove the constraint with the error or an unchanged-base reproduction, record
+  affected rows as `blocked (environment: <cause>)`, continue checks that remain
+  valid, and apply the typed blocked-cause verdict rule in section 6.
 
 The static gate is complete when it passes or every failure is classified,
 every implicated row names the check it waits on, every environment-caused
