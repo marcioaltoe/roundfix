@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0139-a-suite-that-passes-where-it-runs
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -74,3 +74,34 @@ still fails, with the test binary's timeout report.
 - `_prd.md` → Goals 1 and 3; User Story 3; Core Feature 2; Regression locks.
 - `_techspec.md` → Implementation Design: Task-cycle waits; Testing Approach 2;
   Build Order 2.
+
+## Result
+
+### Implementation
+
+- Added `testWaitBound(testing.TB)`, which uses the available test deadline with
+  one second reserved for diagnostics and falls back to 30 seconds when no
+  deadline is available.
+- Routed all eight Task-cycle waiting branches through that bound. The immediate
+  negative assertions in `assertNoSchedulerStart` and `assertNoStart` remain
+  non-blocking `select` checks.
+- Added a shared timeout failure path that names the awaited event and grows its
+  `runtime.Stack` buffer until the all-goroutine dump fits. The regression test
+  holds a separate goroutine and confirms that goroutine appears in the failure
+  diagnostic.
+- The code change is confined to Daemon test code; no production code changed.
+
+### Focused-check evidence
+
+- Acceptance criterion 1: `rtk rg -n 'time\.After\(2 \* time\.Second\)' internal/daemon/task_engine_test.go`
+  returned no matches (exit 1), while `rtk rg -n 'case <-time\.After\(testWaitBound\(t\)\)' internal/daemon/task_engine_test.go`
+  returned the eight waiting branches.
+- Acceptance criterion 2: the first focused run failed to compile on the missing
+  deadline and diagnostic helpers. After implementation,
+  `env GOCACHE=/private/tmp/roundfix-task02-gocache rtk go test -count=1 -timeout=30s -run '^TestWaitBoundFollowsTheTestDeadline$' ./internal/daemon`
+  passed one test. The test checks the deadline-derived range,
+  the fixed no-deadline fallback, the awaited-event name, and a separate
+  goroutine's stack.
+- Acceptance criterion 3: `env GOCACHE=/private/tmp/roundfix-task02-gocache rtk go test -count=1 -timeout=10m -parallel=16 -run '^TestTaskCycle' ./internal/daemon`
+  passed 99 tests. The declared three-count run under
+  concurrent baseline load remains for Daemon Verification.

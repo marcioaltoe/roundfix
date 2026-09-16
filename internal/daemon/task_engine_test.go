@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"slices"
 	"sort"
 	"strconv"
@@ -31,7 +32,59 @@ import (
 	runworktree "roundfix/internal/worktree"
 )
 
-const taskCycleSlug = "0001-sample-feature"
+const (
+	taskCycleSlug          = "0001-sample-feature"
+	testWaitDeadlineMargin = time.Second
+	testWaitFallback       = 30 * time.Second
+)
+
+func testWaitBound(t testing.TB) time.Duration {
+	t.Helper()
+	deadliner, ok := t.(interface {
+		Deadline() (time.Time, bool)
+	})
+	if !ok {
+		return testWaitFallback
+	}
+	deadline, ok := deadliner.Deadline()
+	if !ok {
+		return testWaitFallback
+	}
+	return time.Until(deadline) - testWaitDeadlineMargin
+}
+
+func failTestWait(t testing.TB, waitingFor string) {
+	t.Helper()
+	stack := make([]byte, 64<<10)
+	for {
+		n := runtime.Stack(stack, true)
+		if n < len(stack) {
+			t.Fatalf("timed out waiting for %s\n%s", waitingFor, stack[:n])
+			return
+		}
+		stack = make([]byte, len(stack)*2)
+	}
+}
+
+type testWaitProbe struct {
+	testing.TB
+	deadline     time.Time
+	hasDeadline  bool
+	fatalMessage string
+}
+
+func (probe *testWaitProbe) Deadline() (time.Time, bool) {
+	return probe.deadline, probe.hasDeadline
+}
+
+func (probe *testWaitProbe) Fatalf(format string, args ...any) {
+	probe.fatalMessage = fmt.Sprintf(format, args...)
+}
+
+func holdTestWaitStack(started chan<- struct{}, release <-chan struct{}) {
+	close(started)
+	<-release
+}
 
 func taskCycleNowForTest() time.Time {
 	return time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
@@ -42,6 +95,43 @@ func qaAuditorFrontmatterForTest() string {
 	auditorStaleness := auditor.StalenessLine("", app.AncestryUnknown)
 	return "auditing_binary: " + strconv.Quote(auditor.String()) + "\n" +
 		"auditor_staleness: " + strconv.Quote(auditorStaleness) + "\n"
+}
+
+func TestWaitBoundFollowsTheTestDeadline(t *testing.T) {
+	t.Parallel()
+	deadline := time.Now().Add(5 * time.Second)
+	withDeadline := &testWaitProbe{TB: t, deadline: deadline, hasDeadline: true}
+	upperBound := time.Until(deadline) - testWaitDeadlineMargin
+
+	got := testWaitBound(withDeadline)
+
+	lowerBound := time.Until(deadline) - testWaitDeadlineMargin
+	if got < lowerBound || got > upperBound {
+		t.Fatalf("testWaitBound() = %s, want between %s and %s", got, lowerBound, upperBound)
+	}
+	withoutDeadline := &testWaitProbe{TB: t}
+	if got := testWaitBound(withoutDeadline); got != testWaitFallback {
+		t.Fatalf("testWaitBound() without deadline = %s, want %s", got, testWaitFallback)
+	}
+
+	started := make(chan struct{})
+	release := make(chan struct{})
+	go holdTestWaitStack(started, release)
+	<-started
+	t.Cleanup(func() { close(release) })
+	expired := &testWaitProbe{
+		TB:          t,
+		deadline:    time.Now().Add(-testWaitDeadlineMargin),
+		hasDeadline: true,
+	}
+	<-time.After(testWaitBound(expired))
+	failTestWait(expired, "deadline diagnostic")
+	if !strings.HasPrefix(expired.fatalMessage, "timed out waiting for deadline diagnostic\n") {
+		t.Fatalf("wait failure = %q, want named deadline diagnostic", expired.fatalMessage)
+	}
+	if !strings.Contains(expired.fatalMessage, "holdTestWaitStack") {
+		t.Fatalf("wait failure omitted another goroutine's stack:\n%s", expired.fatalMessage)
+	}
 }
 
 func TestTaskCommitMessageDerivesSubjectAndTrailers(t *testing.T) {
@@ -2404,8 +2494,9 @@ func waitSchedulerStarts(t *testing.T, runner *taskSchedulerRunner, count int) [
 		select {
 		case taskID := <-runner.started:
 			started = append(started, taskID)
-		case <-time.After(2 * time.Second):
-			t.Fatalf("timed out waiting for %d Task start(s), got %v", count, started)
+		case <-time.After(testWaitBound(t)):
+			failTestWait(t, fmt.Sprintf("%d Task start(s), got %v", count, started))
+			return started
 		}
 	}
 	return started
@@ -2555,8 +2646,8 @@ func (verifier *taskCapacityVerifier) waitStart(t *testing.T) taskVerificationSt
 	select {
 	case started := <-verifier.started:
 		return started
-	case <-time.After(2 * time.Second):
-		t.Fatal("timed out waiting for Verification start")
+	case <-time.After(testWaitBound(t)):
+		failTestWait(t, "Verification start")
 		return taskVerificationStart{}
 	}
 }
@@ -2744,8 +2835,8 @@ func waitIntegratedTask(t *testing.T, worktrees *fakeTaskWorktrees) string {
 	select {
 	case taskID := <-worktrees.integratedSignal:
 		return taskID
-	case <-time.After(2 * time.Second):
-		t.Fatal("timed out waiting for Task integration")
+	case <-time.After(testWaitBound(t)):
+		failTestWait(t, "Task integration")
 		return ""
 	}
 }
@@ -2761,8 +2852,8 @@ func waitTaskCycleResult(t *testing.T, resultCh <-chan struct {
 	select {
 	case outcome := <-resultCh:
 		return outcome
-	case <-time.After(2 * time.Second):
-		t.Fatal("timed out waiting for TaskCycle result")
+	case <-time.After(testWaitBound(t)):
+		failTestWait(t, "TaskCycle result")
 		return struct {
 			result TaskCycleResult
 			err    error
@@ -2983,8 +3074,8 @@ func waitGateAcquireResult(t *testing.T, results <-chan gateAcquireResult) gateA
 	select {
 	case result := <-results:
 		return result
-	case <-time.After(2 * time.Second):
-		t.Fatal("timed out waiting for Verification gate acquisition")
+	case <-time.After(testWaitBound(t)):
+		failTestWait(t, "Verification gate acquisition")
 		return gateAcquireResult{}
 	}
 }
@@ -2993,8 +3084,8 @@ func waitObservedGateEntry(t *testing.T, entered <-chan struct{}) {
 	t.Helper()
 	select {
 	case <-entered:
-	case <-time.After(2 * time.Second):
-		t.Fatal("timed out waiting for Verification gate entry")
+	case <-time.After(testWaitBound(t)):
+		failTestWait(t, "Verification gate entry")
 	}
 }
 
@@ -4238,8 +4329,9 @@ func waitPublishedStopEvent(t *testing.T, published <-chan runevent.RunEvent) {
 			if event.Kind == runevent.KindDaemonStatus && strings.Contains(event.Summary, "Stop Request") {
 				return
 			}
-		case <-time.After(2 * time.Second):
-			t.Fatal("timed out waiting for the Stop Request to reach the Run Event Stream")
+		case <-time.After(testWaitBound(t)):
+			failTestWait(t, "the Stop Request to reach the Run Event Stream")
+			return
 		}
 	}
 }
@@ -4256,8 +4348,9 @@ func waitPublishedVerificationPhase(t *testing.T, published <-chan runevent.RunE
 			if payload["attempt"] == float64(attempt) && payload["phase"] == string(phase) {
 				return
 			}
-		case <-time.After(2 * time.Second):
-			t.Fatalf("timed out waiting for Task %s Verification attempt %d phase %s", taskID, attempt, phase)
+		case <-time.After(testWaitBound(t)):
+			failTestWait(t, fmt.Sprintf("Task %s Verification attempt %d phase %s", taskID, attempt, phase))
+			return
 		}
 	}
 }
