@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0139-a-suite-that-passes-where-it-runs
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -121,3 +121,60 @@ Nothing is copied into Spec evidence and no report section is added.
 - `_techspec.md` → Implementation Design: QA gate repository Verification; Data
   Models; Testing Approach 4; Build Order 4.
 - ADR-0096; ADR-0111; ADR-0135; ADR-0014; ADR-0056.
+
+## Result
+
+Implementation:
+
+- The QA gate now runs a configured repository Verification after the
+  mechanical stage and before report materialization. It uses the existing
+  shared Verification Capacity, attempt 1, and the QA Task as the Work Item.
+- A pass adds the prescribed command, verdict, and diagnostics statement after
+  the seeded-report instruction. A command failure or unobserved outcome sets
+  the existing blocking Precondition Refusal before the report is written, so
+  the existing refusal report settles the QA Task without starting an Agent
+  session.
+- Cancellation and other runner errors continue through the existing stop and
+  infrastructure-failure paths. An already-blocking mechanical result and an
+  unconfigured command both skip the runner; the latter leaves repository
+  Verification to the gate in its prompt.
+- The existing Verification attempt publisher and log-retention behavior are
+  reused unchanged. The agent-selection macro fixture now configures a passing
+  repository command because its minimal temporary repository has no Makefile.
+
+Focused-check evidence:
+
+- Acceptance criterion 1:
+  `TestQAGateRunsRepositoryVerificationBeforeAgentSession` exercises the real
+  `ExecVerifier` and asserts one run in Verifying state, ordering before report
+  and Agent work, shared capacity, QA Work Item, attempt 1, prompt placement,
+  and removal of successful diagnostics.
+- Acceptance criteria 2 and 4:
+  `TestQAGateRefusesOnFailedRepositoryVerification` covers exits 42 and 75. It
+  asserts one attempt, retained diagnostics, the exact refusal reason, a
+  `fail` report, no Agent session, and `retry_available: false` for exit 75.
+- Acceptance criterion 3:
+  `TestQAGateRefusesOnUnobservedRepositoryVerification` covers retained,
+  reported-but-absent, and absent diagnostics. Each refusal names the cause and
+  reports `not retained` when no regular diagnostic file exists.
+- Acceptance criterion 5:
+  `TestQAGateSkipsRepositoryVerificationWhenMechanicalStageWithholds` and
+  `TestQAGateWithoutConfiguredRepositoryVerificationLeavesItToTheGate` assert
+  no verifier call or Verification event in either skip case and check the
+  resulting report or prompt.
+- Acceptance criterion 6: `rtk env
+  GOCACHE=/private/tmp/roundfix-task04-go-cache go test -count=1
+  ./internal/daemon` passed. The agent-selection macro subtest also passed after
+  its fixture was made explicit:
+  `rtk env GOCACHE=/private/tmp/roundfix-task04-go-cache go test -count=1
+  ./internal/cli -run
+  '^TestAgentSelectionProfilesMacro$/^mixed_profiles_configure_validate_fallback_persist_and_stream$'`.
+- `rtk env GOCACHE=/private/tmp/roundfix-task04-go-cache make
+  verify-incremental` passed every package except the two documented force-stop
+  integration tests. Both failures were environmental: sandboxed process-table
+  reads returned `operation not permitted`. The earlier agent-selection macro
+  regression was no longer present.
+- `rtk git diff --check` exited 0.
+
+The Daemon-owned commands under `## Verification` were not run in this Agent
+turn.
