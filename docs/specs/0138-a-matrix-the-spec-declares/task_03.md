@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0138-a-matrix-the-spec-declares
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
