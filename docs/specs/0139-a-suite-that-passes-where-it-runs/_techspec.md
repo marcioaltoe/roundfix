@@ -48,7 +48,7 @@ The design accepts three trade-offs:
   ADR-0096 applies: the QA gate proves machine facts before it spends an agent turn, the repository verification gate is one of the facts it names, and a failed or unobserved result is a blocking fact that withholds the Agent Session.
   ADR-0117 applies: a defect is checked by the stage that can produce it, and the Daemon outside the Agent sandbox is the stage that can produce the repository Verification result.
   ADR-0130 applies: the audit judges governed paths, and history keeps the set honest, so only the one governed test file this Spec repairs needs its grant.
-  ADR-0035 applies: Spec Root is configurable and external Spec artifacts stay uncommitted, so the retained Verification log follows the QA Report's placement and commit rule.
+  ADR-0035 is not applicable to this change: Spec Root is configurable and external Spec artifacts stay uncommitted, and this Spec writes no Spec artifact beyond the QA Report the Daemon already writes.
   ADR-0036 is not applicable to this change: review artifacts are committed in a separate docs commit, and this Spec changes no review Run or its artifact commit.
   ADR-0029 is not applicable to this change: review artifacts live with the Spec, and this Spec changes no review artifact location.
   ADR-0142 is not applicable to this change: head-bound Review Source Evidence decides the watch outcome, and this Spec changes no watch Run or Review Source evidence.
@@ -70,8 +70,6 @@ The design accepts three trade-offs:
 | ACPX adapter test fixtures | Stand in for acpx and runtime adapters by re-executing the test binary | Symlink per test; one-time links for the package-directory adapter |
 | Task-cycle test helpers | Wait for scheduler starts and TaskCycle results | Bound every wait by the test deadline |
 | Historical audit subtest and skip guard | Prove how the audit judges a grant against history | Controlled fixture; reachability guard |
-| Verification command runner | Runs one command, retains a failed log, removes a successful one | An opt-in request field retains a successful log |
-| Mechanical evidence-path detection | Resolves evidence links in a report's Results rows | Also resolves the Repository Verification section's log link |
 | QA gate step | Seeds the report, withholds or starts the QA Agent | Runs the configured repository Verification before writing the report; refuses or records |
 | Precondition Refusal report | Records a gate that stopped before its matrix | Reused unchanged, with the Verification command as the named check |
 
@@ -95,10 +93,11 @@ The design accepts three trade-offs:
   deadline minus a small margin, or a generous fallback when the test has no
   deadline. Every wait for a scheduler start or a TaskCycle result uses it
   instead of a fixed two-second timer.
-- **Hangs still fail.** A wait that reaches its bound fails the test. The
-  failure names what the test waited for and includes every goroutine's stack,
-  because the helper fails before the test binary's own timeout would report
-  them.
+- **Every waiting helper.** Scheduler starts, TaskCycle results, Verification
+  starts, integrated Tasks and published events all route through it.
+- **Hangs still fail.** A wait that reaches its bound fails the test. The failure
+  names what the test waited for and includes every goroutine's stack, because the
+  helper fails before the test binary's own timeout would report them.
 
 ### Historical audit fixture and guard
 
@@ -119,35 +118,23 @@ This step runs after the mechanical stage computes its result and before the QA
 Report is written. It applies only when that result does not already withhold the
 Agent and a repository Verification command is configured.
 
-1. **Run the command.** Move the Run to the Verifying state. Run the configured
-   command once through the Task precondition's attempt request:
-   - shared Verification Capacity and attempt 1;
-   - the QA Task as Work Item;
-   - no Verification Feedback;
-   - a new request field that asks the runner to retain the log on success.
-
-   The log lands at the attempt's usual Verification artifact path. The Daemon then
-   copies it to the Spec's `qa/evidence/<YYYY-MM-DD>-run-<run id>/repository-verification.log`,
-   dated by the report date.
-2. **Pass.** Write the seeded report as today, and append a `## Repository
-   Verification` section with the command, `pass`, exit status 0 and a relative
-   link to the copied log. Add the prompt statement below after the seeded-report
-   instruction, and continue to the Agent turn.
+1. **Run the command.** Move the Run to the Verifying state and run the configured
+   command once, with shared Verification Capacity, attempt 1 and the QA Task as
+   the Work Item. It takes no Verification Feedback and no temporary-failure
+   retry, exit status 75 included. Its log keeps today's retention: kept on
+   failure, removed on success.
+2. **Pass.** Write the seeded report exactly as today and add the prompt statement
+   below after the seeded-report instruction, then continue to the Agent turn.
 3. **Command failure.** Before the report is written, set the mechanical result's
-   Precondition Refusal and mark it blocking.
-   - The check name is the command.
-   - The reason is `exited <status>; log: <relative link>`.
-   - Exit status 75 is included; the gate step takes no temporary-failure retry.
-
-   The existing refusal contract writes `verdict: fail` and
-   `rows_blocked_precondition: 1`. The Agent is withheld, and the QA Task settles
-   from that report like any withheld gate.
-4. **Unobserved outcome.** The runner may report that the command could not start
-   or its diagnostics could not be prepared. Record the same refusal with reason
-   `outcome unobserved: <cause>`, plus the log link when a log exists. Its Run Event
-   carries the existing `verification_unknown` classification, as the Task path's
-   unobserved Verification does. The event's command, reason and diagnostic fields
-   are kept. A command failure stays unclassified, as an ordinary Task failure is.
+   Precondition Refusal and mark it blocking. The check name is the command, and
+   the reason is `exited <status>; diagnostics: <path>`. The existing refusal
+   contract writes `verdict: fail` and `rows_blocked_precondition: 1`, the Agent
+   is withheld, and the QA Task settles from that report like any withheld gate.
+4. **Unobserved outcome.** When the runner reports that the command could not
+   start or its diagnostics could not be prepared, record the same refusal with
+   the reason `outcome unobserved: <cause>; diagnostics: <path>`. When no
+   diagnostics were retained, the reason says so rather than leaving the field
+   empty.
 5. **Stop.** When the Run's context is cancelled, return through the existing stop
    path without recording a refusal.
 6. **No command configured.** Run nothing, and state in the prompt that the gate
@@ -157,28 +144,30 @@ Agent and a repository Verification command is configured.
 Repository Verification: already run by the Daemon outside the Agent sandbox.
 - command: <command>
 - verdict: pass (exit 0)
-- evidence: <evidence path>
+- diagnostics: <path or "removed on success">
 Record this as the static gate result. Do not run the repository Verification again.
 ```
 
-**Evidence placement.** The copied log sits beside the report under the Spec
-directory. Under the default root, the QA Report commit carries it with the
-report. Under an external root, it stays uncommitted, as the report does.
+**Events.** The step publishes the ordinary Verification events for its attempt,
+with one payload per outcome rather than one static classification:
 
-**Evidence validation.** The mechanical stage's evidence-path detection
-currently resolves only the links in Results rows. It also resolves the link in a
-`## Repository Verification` section. An unresolved link there is reported with
-the existing evidence-path refusal code, naming that section.
+- a command failure publishes an unclassified failure, as an ordinary Task
+  command failure does;
+- an unobserved outcome publishes `verification_unknown` with the command, the
+  reason and the diagnostics path, as the Task path's unobserved Verification
+  does.
+
+**What this step does not do.** It copies no log into Spec evidence, adds no
+report section and changes no evidence-path detection. A pass is recorded by the
+Agent from the prompt statement; a failure is recorded by the refusal the Daemon
+writes. Machine-validated evidence for this command is left to a later Spec.
 
 ### Data Models
 
-- **Runner request.** It gains one optional field that retains a successful log.
-  Every existing caller leaves it unset.
-- **QA Report.** A passing gate gains one Markdown section. A refused gate uses
-  the existing Precondition Refusal frontmatter and row.
+- **No schema change.** The QA Report keeps its frontmatter keys, row statuses and
+  typed counts. A refused gate uses the existing Precondition Refusal contract.
 - **No new vocabulary.** No frontmatter key, row status, refusal code or
-  Verification classification is added. The evidence-path detection reads one more
-  report section.
+  Verification classification is added.
 
 ### API Contracts
 
@@ -198,8 +187,8 @@ events, carrying the QA Work Item.
 - User Story 3 → Task-cycle waits.
 - User Story 4 → historical audit fixture and guard.
 - Core Features 1-3 → the three test components.
-- Core Features 4-8 → QA gate repository Verification, Verification command
-  runner, mechanical evidence-path detection, Precondition Refusal report.
+- Core Features 4-7 → QA gate repository Verification, Precondition Refusal
+  report.
 
 ## Integration Points
 
@@ -223,21 +212,15 @@ events, carrying the QA Work Item.
    passes.
 3. **Audit.** The fixture test and the remaining audit tests pass. Structural
    checks prove the unreachable commits are gone and the guard uses ancestry.
-4. **Runner and evidence.**
-   - A new test proves the retention field keeps a successful log.
-   - The existing removal test proves the default still removes it.
-   - A mechanical-stage test proves a missing log linked from the Repository
-     Verification section is reported with the existing evidence-path code.
-   - A present log produces no finding.
-5. **QA gate step.** Five tests cover the five outcomes:
-   - a pass is recorded and stated before the Agent session;
+4. **QA gate step.** Five tests cover the five outcomes:
+   - a pass runs once before the Agent session and is stated in the prompt;
    - a command failure becomes a refusal that withholds the Agent with verdict
-     `fail`;
+     `fail` and publishes an unclassified failure;
    - an unobserved outcome becomes a refusal whose Run Event carries
-     `verification_unknown`;
+     `verification_unknown` with its command, reason and diagnostics;
    - a mechanical withholding runs no Verification;
    - a missing command runs nothing and says so in the prompt.
-6. **Outside evidence.** The terminal QA Task replays Spec 0138's recorded
+5. **Outside evidence.** The terminal QA Task replays Spec 0138's recorded
    failure and the base revision, measures the assembled tree, and runs the audit
    fixture in a fresh clone.
 
@@ -267,9 +250,9 @@ so step 4 follows step 2.
 - **Unobserved flow rows.** A red repository Verification now stops the gate
   before flow rows run. This is ADR-0096's blocking-fact rule. The refusal names
   the log, so the next round starts from the failing command.
-- **Log size.** A full `make verify` log can reach hundreds of kilobytes. QA
-  evidence has carried logs of that size before, and the step writes one file
-  per gate run.
+- **Unvalidated diagnostics.** The refusal names a diagnostics path under the Run
+  artifacts, which no checker resolves. A later Spec owns machine-validated
+  evidence for this command.
 - **macOS-only reproduction.** The ACPX kill and the load timeouts reproduce
   here, not in CI. The structural checks make Verification fail on any platform
   until the work exists.
@@ -286,9 +269,13 @@ so step 4 follows step 2.
   Verification keeps removing successful logs.
 - **No retry.** The gate step takes no temporary-failure retry, because a
   repository Verification before QA is a single observation.
-- **Copy the log, keep the path contract.** The Daemon copies the retained log
-  into the Spec's QA evidence. The runner's output path contract stays unchanged
-  for every other caller.
+- **No evidence contract here.** Three review rounds kept finding new gaps in
+  copying the log, linking it and validating that link across Spec Roots. This
+  Spec therefore records the Verification in the prompt and in the refusal, and
+  leaves machine-validated evidence to a later Spec.
+- **One payload per outcome.** The step publishes its own event payloads, so a
+  command failure stays unclassified while an unobserved outcome keeps
+  `verification_unknown`.
 - **Prompt over skill.** A passing result is stated in the gate prompt. That
   keeps the qa-gate skill out of this Spec and avoids a conflict with Spec 0138's
   pending rewrite.

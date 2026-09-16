@@ -41,7 +41,7 @@ Agent chose to leave the sandbox.
   ADR-0096 applies: the QA gate proves machine facts before it spends an agent turn, the repository verification gate is one of the facts it names, and a failed or unobserved result is a blocking fact that withholds the Agent Session.
   ADR-0117 applies: a defect is checked by the stage that can produce it, and the Daemon outside the Agent sandbox is the stage that can produce the repository Verification result.
   ADR-0130 applies: the audit judges governed paths, and history keeps the set honest, so only the one governed test file this Spec repairs needs its grant.
-  ADR-0035 applies: Spec Root is configurable and external Spec artifacts stay uncommitted, so the retained Verification log follows the QA Report's placement and commit rule.
+  ADR-0035 is not applicable to this change: Spec Root is configurable and external Spec artifacts stay uncommitted, and this Spec writes no Spec artifact beyond the QA Report the Daemon already writes.
   ADR-0036 is not applicable to this change: review artifacts are committed in a separate docs commit, and this Spec changes no review Run or its artifact commit.
   ADR-0029 is not applicable to this change: review artifacts live with the Spec, and this Spec changes no review artifact location.
   ADR-0142 is not applicable to this change: head-bound Review Source Evidence decides the watch outcome, and this Spec changes no watch Run or Review Source evidence.
@@ -88,9 +88,11 @@ Agent chose to leave the sandbox.
    then deletes a hard link to the running test binary while other tests exec it.
    A link that must resolve to a real path under a package directory is created
    once, before the package's tests run, and removed after them.
-2. **Task-cycle waits end at the test deadline.** Every wait in the Task-cycle test
-   helpers derives its bound from the running test's deadline, falling back to a
-   generous bound when none is set. No wait keeps a guessed fixed wall-clock
+2. **Task-cycle waits end at the test deadline.** Every wait in the Daemon's
+   Task-cycle tests derives its bound from the running test's deadline, falling
+   back to a generous bound when none is set. That covers every waiting helper:
+   scheduler starts, TaskCycle results, Verification starts, integrated Tasks and
+   published events. No wait keeps a guessed fixed wall-clock
    duration. A genuine hang still fails at the deadline, and the failure names
    what it waited for and carries every goroutine's stack.
 3. **The historical audit is proven by a controlled fixture.**
@@ -104,32 +106,27 @@ Agent chose to leave the sandbox.
    - The guard's other caller keeps its meaning.
 4. **The QA gate step runs the repository Verification in the Daemon.** When a
    command is configured and the mechanical stage has not withheld the Agent, the
-   Daemon runs it once:
-   - before the Agent turn and outside the Agent's sandbox;
-   - through the existing Verification machinery and Verification Capacity;
-   - with its log retained whether it passes or fails.
+   Daemon runs it once, before the Agent turn and outside the Agent's sandbox,
+   through the existing Verification machinery and Verification Capacity. Its log
+   keeps today's retention: kept on failure, removed on success.
 5. **A failed or unobserved result stops the gate before the Agent.**
    - A non-zero exit, or an outcome the runner could not observe, is recorded as a
      Precondition Refusal. The refusal names the command, its exit status or the
-     unobserved cause, and the retained log.
+     unobserved cause, and the attempt's diagnostics path. When no diagnostics
+     were retained, it says so rather than leaving the field empty.
    - The report's verdict is `fail` and the Agent Session is withheld, as ADR-0096
      requires for a blocking machine fact.
    - No retry and no Verification Feedback apply.
    - A stopping Run stops as it does today.
 6. **A passing result reaches the Agent as a fact.**
-   - The seeded QA Report records the command, verdict, exit status and a link to
-     the retained log.
    - The gate prompt tells the Agent that the repository Verification already ran,
-     gives its result and evidence, and tells the Agent not to run it again.
+     gives its command, verdict, exit status and diagnostics path, and tells the
+     Agent not to run it again.
+   - The seeded QA Report keeps its current shape; the Agent records the static
+     gate row from that statement.
    - Without a configured command the Daemon runs nothing, and the prompt says the
      gate runs the repository Verification itself.
-7. **The log follows the QA Report and is checked.** The Daemon copies the
-   retained log from the Run's Verification artifacts into the Spec's QA evidence,
-   beside the QA Report. Under an external Spec Root it stays uncommitted, exactly
-   as the report does. The mechanical stage's evidence-path detection also resolves
-   the link in the report's Repository Verification section, so a missing or
-   mislinked log is reported like any other unresolved evidence.
-8. **An unobserved outcome keeps its classification.** The Run Event for an
+7. **An unobserved outcome keeps its classification.** The Run Event for an
    outcome the runner could not observe carries the existing `verification_unknown`
    classification, as a Task's Verification does. No new classification is added.
 
@@ -145,6 +142,9 @@ Agent chose to leave the sandbox.
 - Raising a timeout, adding a retry or skip, or removing `t.Parallel` as a repair.
 - New Mechanical Refusal Codes, Verification classifications or report frontmatter
   keys.
+- Machine-validated evidence for the repository Verification: no log is copied
+  into Spec evidence, no report section is added, and evidence-path detection is
+  unchanged. Three review rounds showed that contract needs a Spec of its own.
 - The seeded report's initial verdict for gates that reach the Agent.
 - Deciding which revision authorizes a Task commit from an earlier Run. The
   2026-09-14 finding on the mechanical stage's commit range records that decision.
@@ -164,9 +164,8 @@ Agent chose to leave the sandbox.
 - Every existing assertion of the ACPX, Task-cycle, verifier and audit tests keeps
   passing. Only the stale historical expectation is replaced.
 - A repository Verification failure still ends the gate with verdict `fail`.
-- A Task's successful Verification output is still removed. Only the QA gate step
-  asks the runner to retain it.
-- Evidence already linked from Results rows is still resolved exactly as before.
+- Verification logs keep today's retention: kept on failure, removed on success.
+- The QA Report's shape, and the evidence resolved from its rows, are unchanged.
 - A mechanical stage that withholds the Agent still withholds it, and runs no
   repository Verification.
 
