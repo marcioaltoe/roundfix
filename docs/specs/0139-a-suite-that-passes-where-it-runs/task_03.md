@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0139-a-suite-that-passes-where-it-runs
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -71,3 +71,44 @@ makes the guard require reachability.
   breaks.
 - `_techspec.md` → Implementation Design: Historical audit fixture and guard;
   Testing Approach 3; Build Order 3.
+
+## Result
+
+Implemented the controlled authorization history in
+`internal/speccheck/mechanical_test.go`. The new test records a Task commit that
+changes `.golangci.yml` and proves both outcomes: a later grant widening yields
+one `QA-AUTH-PATHS` finding for that path, while a grant already bounded at the
+authorizing ancestor yields none. The stale repository-history subtest and its
+three unreachable commit constants are gone. `firstMissingMechanicalCommit`
+now treats a commit as present only when `git merge-base --is-ancestor` proves
+it is reachable from the audited repository's `HEAD`.
+
+Pre-change signal: the focused historical subtest exited 1 with three
+`QA-AUTH-PATHS` findings from the stale expectation, while ancestry checks
+returned exit 1 for each of its three pinned commits.
+
+Focused evidence for the acceptance criteria:
+
+- Removed historical names: `rtk proxy rg -n
+  'archiveCarrierCommit|archiveHelpCommit|verificationTaskCommit'
+  internal/speccheck/mechanical_test.go` found no matches (expected exit 1).
+- Controlled refused and authorized cases: `rtk env
+  GOCACHE=/private/tmp/roundfix-task03-go-cache go test
+  ./internal/speccheck -run
+  '^TestAuditRefusesAGrantWidenedAfterItsConsumingCommit$' -v` exited 0; both
+  named subtests passed.
+- Reachability guard: `rtk proxy rg -n
+  'merge-base.*--is-ancestor' internal/speccheck/mechanical_test.go` matched the
+  `firstMissingMechanicalCommit` command.
+- Remaining grant audit cases: `rtk env
+  GOCACHE=/private/tmp/roundfix-task03-go-cache go test
+  ./internal/speccheck -run '^TestAuditJudgesTheGrant$' -v` exited 0; all five
+  remaining subtests passed.
+- Project-root audit: `rtk env
+  GOCACHE=/private/tmp/roundfix-task03-go-cache go test
+  ./internal/speccheck -run '^TestMechanicalAuditJudgesTheProjectRoot$' -v`
+  exited 0.
+- Diff hygiene: `rtk git diff --check` exited 0.
+
+The Daemon-owned commands under `## Verification` were not run in this Agent
+turn.
