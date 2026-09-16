@@ -1,9 +1,12 @@
 ---
 spec: 0139-a-suite-that-passes-where-it-runs
-status: active
+status: archived
 created: 2026-09-15
 surfaces: [backend]
+archived: "2026-09-16"
+source_slug: 0139-a-suite-that-passes-where-it-runs
 ---
+
 
 # A suite that passes where it runs
 
