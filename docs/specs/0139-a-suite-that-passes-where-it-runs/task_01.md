@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0139-a-suite-that-passes-where-it-runs
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -68,3 +68,33 @@ links once, before the package's tests run.
 - `_prd.md` → Goal 1; User Story 1; Core Feature 1; Regression locks.
 - `_techspec.md` → Implementation Design: ACPX fixtures; Testing Approach 1;
   Build Order 1.
+
+## Result
+
+Implementation:
+
+- `provisionFakeAdapter` now symlinks each per-test command path to the compiled
+  test binary. The existing command-path sidecar remains beside that symlink.
+- `TestMain` now calls `provisionPackageAdapterLinks` before the package suite,
+  reuses its package-directory targets from parallel tests, and removes their
+  temporary root after the suite returns. `installSymlinkedPackageAdapter`
+  creates only the per-test command symlink and sidecar.
+
+Focused-check evidence:
+
+- Acceptance criterion 1: `rtk rg -n 'os\.(Link|Symlink)\(os\.Args\[0\]' internal/agent/acpx_runner_test.go`
+  found the per-test `os.Symlink` call in
+  `provisionFakeAdapter`. The focused Go run below exercised its sidecar output
+  through `TestFixtureBinarySurvivesConcurrentExec`.
+- Acceptance criterion 2: the same source inspection found one `os.Link` call,
+  inside `provisionPackageAdapterLinks`. `rtk rg -n 'provisionPackageAdapterLinks|removePackageAdapterLinks|packageAdapterLinks' internal/agent/acpx_runner_test.go`
+  confirmed setup and cleanup are wired
+  through `TestMain` and the package adapter installer reads the shared targets.
+- Acceptance criterion 3: `rtk go test -run '^(TestFixtureBinarySurvivesConcurrentExec|TestCheckAdapterProvesOfficialClaudePackageAndVersion|TestCheckAdapterClassifiesUnreadyClaudeAdapters)$' -count=3 -parallel 16 ./internal/agent`
+  passed 36 tests. The first sandboxed
+  invocation could not read the Go build cache; the identical focused command
+  passed after cache access was granted. The declared five-count whole-package
+  stress command remains for Daemon Verification.
+- `rtk git diff --check` exited 0.
+- The Task's declared `## Verification` commands were not run; the Daemon owns
+  those checks and settlement.
