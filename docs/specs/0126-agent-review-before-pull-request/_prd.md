@@ -35,6 +35,7 @@ mutations must be settled before Task dispatch.
   ADR-0151 retains the Codex default and explicit project-selection precedence for agent review.
   ADR-0153 applies: the Pre-PR Review Policy permits codex, claude, coderabbit or explicit none; enabled-review failures do not become configured omissions.
   ADR-0093 applies: mechanical citation accounting does not establish semantic review correctness.
+  ADR-0156 applies to declared promises: a Success Metric or API Contract this Spec declares names the Task that settles it; independent review does not replace that declaration.
   ADR-0097 applies to carried QA evidence consumed by delivery: retain declared unchanged evidence rather than inheriting a pass after its inputs move.
   ADR-0104 applies: acceptance uses independent evidence with its actual origin; missing external evidence remains visible under the declared policy.
   ADR-0154 applies to archive disposition: an explicitly user-authorized QA Archive Override preserves actual QA/Task evidence and does not satisfy independent delivery gates.
