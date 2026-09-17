@@ -16,9 +16,12 @@ graph:
     - id: task_05
       file: task_05.md
       needs: [task_03]
+    - id: task_06
+      file: task_06.md
+      needs: [task_05]
     - id: task_04
       file: task_04.md
-      needs: [task_05]
+      needs: [task_06]
 ---
 
 # Tasks — A commit that carries the work and nothing else
@@ -29,6 +32,7 @@ graph:
 | task_02 | Make a lost output fail the Task                     | backend | medium     | task_01 |
 | task_03 | Keep the Verification's writes out of the QA commit  | backend | medium     | task_02 |
 | task_05 | Restore the permission-variant coverage the rule kept true | test | low | task_03 |
-| task_04 | Run the final QA gate                                | qa      | high       | task_05 |
+| task_06 | Close the two gaps the review found                  | backend | medium     | task_05 |
+| task_04 | Run the final QA gate                                | qa      | high       | task_06 |
 
-Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_05 · 5 → task_04
+Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_05 · 5 → task_06 · 6 → task_04
