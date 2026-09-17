@@ -29,6 +29,7 @@ below define this Spec's place in the implementation order.
   ADR-0127 applies: process residue remains a readiness observation, not a synthetic Run or authority to settle work.
   ADR-0056 applies: authoring/recovery preserves distinct Task and Verification capacities; neither grants whole-queue concurrency.
   ADR-0093 applies: consistency uses explicit citations and does not infer behavior from their presence.
+  ADR-0156 applies to declared promises: the traced-promise rule it records is the first slice carved from this Spec, and the remaining slices keep the rest.
   ADR-0097 applies: carry forward QA only from declared, unchanged evidence; stale input requires supported revalidation.
   ADR-0104 applies: acceptance uses independent evidence with its actual origin; missing external evidence remains visible under the declared policy.
   ADR-0154 applies to archive disposition: an explicitly user-authorized QA Archive Override preserves actual QA/Task evidence and does not satisfy independent delivery gates.

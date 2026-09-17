@@ -60,8 +60,11 @@ states:
 - **Declared units** — one or more numbered items, read exactly as the existing
   parser reads user stories and Core Features: a leading integer, its number and
   its line.
-- **Explicit none** — the first non-empty line begins with `None.` and carries at
-  least one further sentence on that line, which is the reason.
+- **Explicit none** — the section's only content is a first non-empty line that
+  begins with `None.` and carries at least one further sentence on that line,
+  which is the reason. A section that mixes `None.` with numbered items is not an
+  explicit none: its numbered items are the declaration, and each carries the
+  obligations below.
 - **No declaration** — the section is absent, empty, or carries only unnumbered
   prose, bullets or a table.
 
@@ -101,7 +104,9 @@ message shape:
 - `SC-COVERAGE-UNMAPPED` (TechSpec stage) additionally requires each declared
   Success Metric in the Coverage Map. A declared API Contract is not required
   there: it already lives in the TechSpec, and mapping a section to itself
-  proves nothing.
+  proves nothing. A Spec with no TechSpec keeps the detector's existing
+  behavior, which is to skip for a missing artifact; its metrics are still
+  required in Task References, and no contract rule applies to it.
 - `SC-COVERAGE-UNTASKED` (Task Graph stage) additionally requires each declared
   Success Metric and each declared API Contract to be named in some Task's
   References.
@@ -132,10 +137,11 @@ No entity, schema or stored record changes, and the checker stays read-only over
 Spec artifacts.
 
 The corpus golden keeps its current shape: one aggregate map from finding code
-to count over the whole active corpus. That map's key set is also the list of
-codes the sweep will accept — an emitted code absent from it fails the sweep as
-uncharacterized, before any count is compared. Adding a code therefore means
-adding its key, not only updating a number.
+to count over the whole active corpus. The codes the sweep accepts come from a
+separate list compiled into the corpus contract, not from the golden's keys: an
+emitted code absent from that list fails the sweep as uncharacterized before any
+count is compared. Adding a code therefore means adding it in both places — the
+accepted-code list and the golden map.
 
 ### API Contracts
 
@@ -179,7 +185,7 @@ command's exit status unchanged unless `--strict` is passed.
 ## Integration Points
 
 - **Documentation gate.** `make verify-docs` runs the checker over the active
-  corpus without `--strict`, so the twenty new `gap` findings do not fail it. The
+  corpus without `--strict`, so a new `gap` does not fail it. The
   corpus golden, one aggregate map from finding code to count over the whole
   active corpus, must be updated deliberately in the same delivery, with the two
   new codes added as keys.
@@ -231,9 +237,9 @@ command's exit status unchanged unless `--strict` is passed.
    unit tests above (depends on: none).
 2. Coverage extension: the two new kinds in the Coverage Map requirement and in
    Task References, with unit tests (depends on: 1).
-3. Glossary owners for the two coined codes, and the corpus golden updated to
-   the counts steps 1 and 2 produce, with the prediction recorded (depends on:
-   1, 2).
+3. Glossary owners for the two coined codes, the two codes added to the corpus
+   contract's accepted-code list, and the golden map updated to the counts steps
+   1 and 2 produce, with the prediction recorded (depends on: 1, 2).
 4. Authoring rules in the three skills and their templates, canonical then
    mirror: the declaration form in `write-prd` and `write-techspec`, and the
    mapping and References obligation in `write-tasks` (depends on: 1, 2, 3).
@@ -247,6 +253,11 @@ against a rule that is still moving is a Task written against a draft.
 - **Turning a rule on over an existing corpus.** Mitigated by the severity
   split and by updating the golden in the same delivery. If the predicted counts
   are wrong, step 3 fails loudly rather than silently accepting a new number.
+- **A gap blocks decomposition.** The Task authoring skill treats a `[gap]` as
+  blocking, so each of the ten Specs in authoring must declare its promises
+  before it can be decomposed. The maintainer chose that cost over converting
+  twenty artifacts the coming slices will replace; this Spec converts none of
+  them and leaves the twenty gaps as its measured evidence.
 - **`None.` as an escape hatch.** A Spec can declare `None.` with a thin reason
   and satisfy the rule. Mechanically requiring honesty is not possible here;
   independent review, which Spec 0126 makes configurable, is where a thin reason

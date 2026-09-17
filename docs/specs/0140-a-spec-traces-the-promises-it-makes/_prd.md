@@ -2,7 +2,7 @@
 spec: 0140-a-spec-traces-the-promises-it-makes
 status: active
 created: 2026-09-17
-surfaces: [backend, docs]
+surfaces: [backend, cli, docs]
 ---
 
 # A Spec traces the promises it makes
@@ -73,7 +73,9 @@ settle it, checked where it is written, by citation.
    - A section that is absent, empty, or written as unnumbered prose is not a
      declaration.
 2. **A declared promise is traced like any other unit.**
-   - Each numbered Success Metric appears in the TechSpec Coverage Map.
+   - Each numbered Success Metric appears in the TechSpec Coverage Map, when the
+     Spec has a TechSpec. A Spec authored without one still names its metrics in
+     a Task.
    - Each numbered Success Metric and each numbered API Contract is named in
      some Task's References.
    - A promise nothing names is reported against the artifact that should have
@@ -115,8 +117,9 @@ changes: it stays read-only, emits no verdict, and edits no artifact.
   0138 owns the matrix.
 - Changing Baseline modules or any guide delivered inside setup-context
   markers.
-- Retrofitting Specs already archived. They stay byte-identical, and the replay
-  only measures them.
+- Retrofitting or sweeping Specs already archived. They stay byte-identical and
+  are never checked; the counts this PRD reports over twenty Specs were measured
+  by hand for the problem statement, not by the rule.
 - Requiring a metric where none applies, or inventing a numeric target to
   satisfy the rule.
 
@@ -128,6 +131,12 @@ changes: it stays read-only, emits no verdict, and edits no artifact.
   a declaration, even when it reads as complete.
 - A declared promise that no Task names now produces a finding at the Task Graph
   stage, where nothing was reported before.
+- The ten Specs in authoring gain twenty `gap` findings the day the rule ships.
+  The documentation gate stays green, because it does not run strict, but the
+  Task authoring skill treats a gap as blocking, so decomposing one of those
+  Specs requires declaring its promises first. On 2026-09-17 the maintainer
+  chose to let each Spec declare when its slice is authored, rather than convert
+  twenty artifacts that the slices will replace.
 
 ## Regression locks
 
