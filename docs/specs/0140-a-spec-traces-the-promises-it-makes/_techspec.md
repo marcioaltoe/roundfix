@@ -172,17 +172,20 @@ command's exit status unchanged unless `--strict` is passed.
 - Success Metric 1 → Corpus expectation (Testing Approach 3 and 4).
 - Success Metric 2 → Authoring rules; Declaration reader.
 - Success Metric 3 → Testing Approach 2.
-- API Contracts 1-3 → Codes and their stages; Vocabulary Contract.
+- API Contracts 1-3 → Codes and their stages; Vocabulary Contract. The rule
+  does not require a contract in the Coverage Map; this line records where the
+  three land, for the reader.
 
 ## Integration Points
 
 - **Documentation gate.** `make verify-docs` runs the checker over the active
   corpus without `--strict`, so the twenty new `gap` findings do not fail it. The
-  corpus golden, which records per-Spec counts, must be updated deliberately in
-  the same delivery.
+  corpus golden, one aggregate map from finding code to count over the whole
+  active corpus, must be updated deliberately in the same delivery, with the two
+  new codes added as keys.
 - **Skill distribution.** The canonical skills regenerate their mirrors through
   the repository's skill-sync target; the mirror parity test and the owned-skill
-  version check keep the copies identical. Neither skill's version moves, so no
+  version check keep the copies identical. No skill's version moves, so no
   setup minimum moves.
 - **Spec 0129.** This Spec is the first slice carved from it. The slices that
   remain — inherited ADR obligations, property-shaped acceptance, amendment,

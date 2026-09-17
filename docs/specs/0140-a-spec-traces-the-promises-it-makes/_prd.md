@@ -32,7 +32,7 @@ settle it, checked where it is written, by citation.
   ADR-0093 applies: Spec consistency is checked by citation and never by inference, so a promise is covered only where an artifact names it.
   ADR-0117 applies: a defect is checked by the stage that can produce it, so the declaration is reported at the stage that writes it and the coverage at the stage that can settle it.
   ADR-0155 applies: the `qa` Task declares the gate's matrix, which is why an untraced promise is now uncovered rather than absorbed by a gate-derived matrix.
-  ADR-0104 applies: acceptance rests on evidence the Spec did not author, which here is the corpus of Specs delivered before it.
+  ADR-0104 applies: acceptance rests on evidence the Spec did not author, which here is the ten Specs that sit in authoring, written before this one and under a different intent.
   ADR-0156 applies: a declared promise names a consuming Task, or the Spec declares explicitly that none applies and why.
 - Tooling authority: applicable — the authoring rules live in Roundfix-owned Skills, so this Spec carries an operative grant. Express maintainer authorization: "Aprovar como proposto" on 2026-09-17, widened the same day to the Task authoring skill after pre-PR review, recorded in [_authorization.md](_authorization.md); bounded files: `.agents/skills/write-prd/SKILL.md`, `.agents/skills/write-prd/references/prd-template.md`, `.agents/skills/write-techspec/SKILL.md`, `.agents/skills/write-techspec/references/techspec-template.md`, `.agents/skills/write-tasks/SKILL.md`, `.agents/skills/write-tasks/references/task-template.md`, `skills/write-prd/SKILL.md`, `skills/write-prd/references/prd-template.md`, `skills/write-techspec/SKILL.md`, `skills/write-techspec/references/techspec-template.md`, `skills/write-tasks/SKILL.md`, `skills/write-tasks/references/task-template.md`. The Spec Consistency Check itself is ordinary source that no authorization has bounded, so it needs no grant. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
@@ -42,10 +42,11 @@ settle it, checked where it is written, by citation.
   will settle it, and the check reports the promise that no Task names.
 - A Spec with nothing to measure or no public interface says so explicitly, with
   a reason, instead of dropping the section.
-- Every new finding names both the promise and the artifact that omits it; none
-  is produced by resemblance.
-- Replaying the Specs delivered before this one shows exactly which promises
-  they left untraced, and raises nothing against the ones they traced.
+- Every `error` names both the declared promise and the artifact that omits it;
+  an absence the check cannot settle is reported as a `gap`, and no finding is
+  produced by resemblance.
+- Replaying the ten Specs that sit in authoring today shows exactly which
+  promises they left undeclared, and raises no `error` against them.
 
 ## User Stories
 
@@ -134,7 +135,7 @@ changes: it stays read-only, emits no verdict, and edits no artifact.
   their severity and the artifacts they compare.
 - The Spec Consistency Check stays read-only: it writes no artifact, emits no QA
   verdict and creates no Run.
-- No finding is produced without both compared sides being located.
+- No `error` is produced without both compared sides being located; an absence the check cannot settle stays a `gap`.
 - A Spec whose promises are all traced produces no new finding.
 
 ## Acceptance evidence
@@ -186,24 +187,21 @@ that reason; it never requires human interaction.
 
 ## Research basis
 
-**Secondbrain.** Consulted before authoring. The session read `wiki/index.md`
-and ran
-`qmd query "traceability between requirements, acceptance criteria and tests; coverage of success metrics" --all --files --min-score 0.3`
-and
-`qmd query "spec-driven development: every requirement must have an owner task and evidence; definition of done" --all --files --min-score 0.35`.
-The results were dominated by mirrors of this repository's own Specs, which are
-references rather than independent knowledge. The one non-mirror source,
-`raw/web/2026-08-10-branas-ia-formacao-ia-spec-driven-na-pratica.md`, describes
-spec-driven practice end to end but does not address promise-level traceability,
-so it neither supported nor challenged this design. No Secondbrain source
-changed the decision.
+**Secondbrain.** Consulted before authoring, index first, then two queries: one
+on traceability between requirements, acceptance criteria and tests, and one on
+spec-driven development giving every requirement an owner and evidence. The
+results were dominated by mirrors of this repository's own Specs, which are
+references rather than independent knowledge. The single non-mirror source is a
+2026-08-10 course transcript on spec-driven development in practice, held in the
+knowledge workspace's raw web collection; it describes the practice end to end
+but does not address promise-level traceability, so it neither supported nor
+challenged this design. No Secondbrain source changed the decision.
 
-The repository's pending Inbox Entries were read before authoring. None is a
-source for this Spec:
-`inbox/roundfix/2026-09-08-adocao-indexada-aceita-origem-duplicada.md` is the
-nearest, an authoring-stage check that accepts a duplicate adopted source, and
-it is a different rule about a different section. The remaining entries route to
-Run reconciliation, QA report numbering and worktree cleanup.
+The repository's pending Inbox Entries were read before authoring, and none is a
+source for this Spec. The nearest, captured on 2026-09-08, reports an
+authoring-stage check that accepts a duplicate adopted source: a different rule
+about a different section. The remaining entries route to Run reconciliation, QA
+report numbering and worktree cleanup.
 
 **Exa MCP.** Consultation was attempted, and no Exa MCP tool was available in
 this session. No external source was read for this Spec, so no external
