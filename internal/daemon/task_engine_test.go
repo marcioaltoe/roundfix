@@ -7356,6 +7356,45 @@ func TestFilterStageablePathsRefusesUntrackedExecutableWithMode(t *testing.T) {
 	}
 }
 
+func TestFilterStageablePathsDropsRegularFileWithAnyExecutePermission(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name string
+		mode os.FileMode
+	}{
+		{name: "owner execute", mode: 0o744},
+		{name: "group execute", mode: 0o654},
+		{name: "other execute", mode: 0o645},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repoDir := newTaskCommitRenameRepoForTest(t)
+			path := filepath.Join(repoDir, "artifact")
+			if err := os.WriteFile(path, []byte("artifact\n"), tt.mode); err != nil {
+				t.Fatalf("write executable fixture: %v", err)
+			}
+			if err := os.Chmod(path, tt.mode); err != nil {
+				t.Fatalf("set executable fixture mode: %v", err)
+			}
+
+			kept, dropped := FilterStageablePaths(context.Background(), repoDir, []string{"artifact"})
+
+			if len(kept) != 0 {
+				t.Fatalf("expected executable file omitted, got kept paths %v", kept)
+			}
+			if len(dropped) != 1 {
+				t.Fatalf("expected one executable-file drop, got %+v", dropped)
+			}
+			if dropped[0].Path != "artifact" || dropped[0].Reason != "executable file" || !dropped[0].Lost {
+				t.Fatalf("expected executable-file drop for artifact, got %+v", dropped[0])
+			}
+			if want := fmt.Sprintf("%#o", tt.mode.Perm()); dropped[0].Mode != want {
+				t.Fatalf("expected reported mode %s, got %q", want, dropped[0].Mode)
+			}
+		})
+	}
+}
+
 func TestFilterStageablePathsRefusesExecutableWhenIndexQueryFails(t *testing.T) {
 	t.Parallel()
 	workDir := t.TempDir()
