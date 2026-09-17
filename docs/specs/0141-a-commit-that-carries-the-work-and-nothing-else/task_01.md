@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0141-a-commit-that-carries-the-work-and-nothing-else
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -56,3 +56,51 @@ does. An untracked executable is refused exactly as today.
 `_prd.md` → Core Feature 1; User Story 1; Goal 1; Success Metric 1;
 `_techspec.md` → Implementation Design: A tracked path is stageable;
 API Contract 2; Build Order 1; ADR-0157.
+
+## Result
+
+Implementation:
+
+- Added `pathTrackedInIndex` beside the existing absence query. It asks Git's
+  index with `ls-files --error-unmatch` and returns false for every query
+  error, so an unknown answer never permits staging.
+- `FilterStageablePaths` now keeps an index-tracked path after the external and
+  symbolic-link checks and before inspecting its file mode. The executable,
+  absent, symbolic-link and external refusal values remain unchanged.
+- Extended the existing filter unit seam with tracked executable, tracked
+  regular, untracked executable, failed index query, and ordered legacy-refusal
+  cases.
+
+Focused checks:
+
+- `rtk env GOCACHE=/tmp/roundfix-task-0141-go-build go test -count=1 -run 'TestFilterStageablePaths' ./internal/daemon` failed before the production change because
+  `TestFilterStageablePathsKeepsTrackedExecutable` received the existing
+  `executable file` drop with mode `0755`.
+- The same focused command passed after the production change.
+- `rtk env GOCACHE=/tmp/roundfix-task-0141-go-build go test -count=1 -v -run 'TestFilterStageablePaths' ./internal/daemon` passed all filter cases and named each case in its output.
+- `rtk env GOCACHE=/tmp/roundfix-task-0141-go-build go test -count=1 ./internal/daemon` passed the complete daemon package.
+- `rtk git diff --check` passed.
+- The Task's authored `## Verification` commands were not run; the Daemon owns
+  those checks.
+
+Acceptance evidence:
+
+- A tracked executable is kept: `TestFilterStageablePathsKeepsTrackedExecutable` passed against a real disposable Git index.
+- An untracked executable retains its reason and mode:
+  `TestFilterStageablePathsRefusesUntrackedExecutableWithMode` passed for owner,
+  group and other execute bits, asserting reason `executable file` and the
+  exact permission mode.
+- A tracked regular file remains kept:
+  `TestFilterStageablePathsKeepsTrackedRegularFile` passed.
+- An index query failure refuses the executable:
+  `TestFilterStageablePathsRefusesExecutableWhenIndexQueryFails` passed in a
+  non-repository work directory, asserting the existing reason and mode.
+- The remaining refusals retain their order and text:
+  `TestFilterStageablePathsPreservesOtherRefusals` passed with `external to
+  repository`, `crosses a symbolic link`, and `absent from worktree and index`
+  in input order and with unchanged payload fields.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260917T192120Z_0e305cd0796d7680`
+- Source commit: `c63a2a06767031ffb9d5211f58cb21f9c118014a`

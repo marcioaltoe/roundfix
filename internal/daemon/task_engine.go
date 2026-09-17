@@ -1840,8 +1840,8 @@ const (
 )
 
 // FilterStageablePaths keeps only repository-relative paths Git can match
-// without crossing symlinks or staging executable files. It reports every
-// omitted path with the reason.
+// without crossing symlinks or staging untracked executable files. It reports
+// every omitted path with the reason.
 func FilterStageablePaths(ctx context.Context, workDir string, paths []string) ([]string, []DroppedStagePath) {
 	kept := make([]string, 0, len(paths))
 	seen := make(map[string]bool, len(paths))
@@ -1854,6 +1854,13 @@ func FilterStageablePaths(ctx context.Context, workDir string, paths []string) (
 		}
 		if pathCrossesSymlink(workDir, stagePath) {
 			dropped = append(dropped, DroppedStagePath{Path: stagePath, Reason: "crosses a symbolic link"})
+			continue
+		}
+		if pathTrackedInIndex(ctx, workDir, stagePath) {
+			if !seen[stagePath] {
+				kept = append(kept, stagePath)
+				seen[stagePath] = true
+			}
 			continue
 		}
 		if mode, executable := executableRegularFileMode(workDir, stagePath); executable {
@@ -1912,6 +1919,11 @@ func executableRegularFileMode(workDir string, relative string) (string, bool) {
 		return "", false
 	}
 	return fmt.Sprintf("%#o", info.Mode().Perm()), true
+}
+
+func pathTrackedInIndex(ctx context.Context, workDir string, relative string) bool {
+	_, err := runGitCommand(ctx, workDir, "ls-files", "--error-unmatch", "--", relative)
+	return err == nil
 }
 
 func pathAbsentFromWorktreeAndIndex(ctx context.Context, workDir string, relative string) bool {

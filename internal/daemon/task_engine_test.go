@@ -7093,7 +7093,35 @@ func TestTaskCycleRealRepoCommitsPerTaskExcludingPreexistingDirt(t *testing.T) {
 	}
 }
 
-func TestFilterStageablePathsDropsRegularFileWithAnyExecutePermission(t *testing.T) {
+func TestFilterStageablePathsKeepsTrackedExecutable(t *testing.T) {
+	t.Parallel()
+	repoDir := newTaskCommitRenameRepoForTest(t)
+	mustWriteForTest(t, filepath.Join(repoDir, "tracked-executable"), "#!/bin/sh\n")
+	if err := os.Chmod(filepath.Join(repoDir, "tracked-executable"), 0o755); err != nil {
+		t.Fatalf("mark tracked fixture executable: %v", err)
+	}
+	runGitForTest(t, repoDir, "add", "tracked-executable")
+	runGitForTest(t, repoDir, "commit", "-m", "track executable")
+
+	kept, dropped := FilterStageablePaths(context.Background(), repoDir, []string{"tracked-executable"})
+
+	if !slices.Equal(kept, []string{"tracked-executable"}) || len(dropped) != 0 {
+		t.Fatalf("tracked executable: kept=%v dropped=%+v, want path stageable", kept, dropped)
+	}
+}
+
+func TestFilterStageablePathsKeepsTrackedRegularFile(t *testing.T) {
+	t.Parallel()
+	repoDir := newTaskCommitRenameRepoForTest(t)
+
+	kept, dropped := FilterStageablePaths(context.Background(), repoDir, []string{"before.txt"})
+
+	if !slices.Equal(kept, []string{"before.txt"}) || len(dropped) != 0 {
+		t.Fatalf("tracked regular file: kept=%v dropped=%+v, want path stageable", kept, dropped)
+	}
+}
+
+func TestFilterStageablePathsRefusesUntrackedExecutableWithMode(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name string
@@ -7105,8 +7133,8 @@ func TestFilterStageablePathsDropsRegularFileWithAnyExecutePermission(t *testing
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			workDir := t.TempDir()
-			path := filepath.Join(workDir, "artifact")
+			repoDir := newTaskCommitRenameRepoForTest(t)
+			path := filepath.Join(repoDir, "artifact")
 			if err := os.WriteFile(path, []byte("artifact\n"), tt.mode); err != nil {
 				t.Fatalf("write executable fixture: %v", err)
 			}
@@ -7114,7 +7142,7 @@ func TestFilterStageablePathsDropsRegularFileWithAnyExecutePermission(t *testing
 				t.Fatalf("set executable fixture mode: %v", err)
 			}
 
-			kept, dropped := FilterStageablePaths(context.Background(), workDir, []string{"artifact"})
+			kept, dropped := FilterStageablePaths(context.Background(), repoDir, []string{"artifact"})
 
 			if len(kept) != 0 {
 				t.Fatalf("expected executable file omitted, got kept paths %v", kept)
@@ -7129,6 +7157,50 @@ func TestFilterStageablePathsDropsRegularFileWithAnyExecutePermission(t *testing
 				t.Fatalf("expected reported mode %s, got %q", want, dropped[0].Mode)
 			}
 		})
+	}
+}
+
+func TestFilterStageablePathsRefusesExecutableWhenIndexQueryFails(t *testing.T) {
+	t.Parallel()
+	workDir := t.TempDir()
+	path := filepath.Join(workDir, "artifact")
+	if err := os.WriteFile(path, []byte("artifact\n"), 0o755); err != nil {
+		t.Fatalf("write executable fixture: %v", err)
+	}
+	if err := os.Chmod(path, 0o755); err != nil {
+		t.Fatalf("set executable fixture mode: %v", err)
+	}
+
+	kept, dropped := FilterStageablePaths(context.Background(), workDir, []string{"artifact"})
+
+	if len(kept) != 0 {
+		t.Fatalf("kept paths = %v, want executable refused when index query fails", kept)
+	}
+	if len(dropped) != 1 || dropped[0].Path != "artifact" || dropped[0].Reason != "executable file" || dropped[0].Mode != "0755" {
+		t.Fatalf("dropped paths = %+v, want executable-file refusal with mode 0755", dropped)
+	}
+}
+
+func TestFilterStageablePathsPreservesOtherRefusals(t *testing.T) {
+	t.Parallel()
+	repoDir := newTaskCommitRenameRepoForTest(t)
+	if err := os.Symlink("before.txt", filepath.Join(repoDir, "linked.txt")); err != nil {
+		t.Fatalf("create symbolic link fixture: %v", err)
+	}
+	external := filepath.Join(t.TempDir(), "external.txt")
+
+	kept, dropped := FilterStageablePaths(context.Background(), repoDir, []string{external, "linked.txt", "missing.txt"})
+
+	if len(kept) != 0 {
+		t.Fatalf("kept paths = %v, want all refused", kept)
+	}
+	want := []DroppedStagePath{
+		{Path: external, Reason: "external to repository"},
+		{Path: "linked.txt", Reason: "crosses a symbolic link"},
+		{Path: "missing.txt", Reason: "absent from worktree and index"},
+	}
+	if !slices.Equal(dropped, want) {
+		t.Fatalf("dropped paths = %+v, want %+v", dropped, want)
 	}
 }
 
