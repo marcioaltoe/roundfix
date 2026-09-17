@@ -15,7 +15,9 @@ paths:
   - skills/write-techspec/SKILL.md
   - skills/write-techspec/references/techspec-template.md
   - skills/write-tasks/SKILL.md
-  - skills/write-tasks/references/task-template.md
+  - internal/speccheck/coherence.go
+  - internal/speccheck/constraints_characterization_test.go
+  - internal/docscontract/testdata/corpus-golden.json
 operations:
   - implement
   - commit
@@ -52,8 +54,18 @@ enforces would have no guidance where Tasks are actually written. The maintainer
 widened the grant to those two files, and their mirrors, on 2026-09-17 after
 pre-PR review raised the gap.
 
-The Spec Consistency Check that reports the findings is ordinary source that no
-authorization has bounded, so it needs no grant.
+Three more paths are governed because an authorization has already bounded them,
+which ADR-0130 keeps governed for good: the checker's stage table, the
+constraint characterization whose expectation the new unit kind moves, and the
+corpus golden the new codes are counted in. The first QA gate of this Spec
+refused on exactly those, and the maintainer widened the grant to them on
+2026-09-17. The rest of the checker is ordinary source that no authorization has
+bounded, so it needs no grant.
+
+The Task template's distributed mirror is not a governed path — the mirror
+pattern covers `SKILL.md` and agent files only — so it was removed from this
+record. Bounding an ungoverned path fails the repository's own bounded-path
+contract, and narrowing grants no authority.
 
 ## Approved bounded mutation
 
@@ -69,7 +81,11 @@ Edit the canonical skills and their templates so that:
 - each skill's report step refuses to recommend the next pipeline step while its
   own stage reports a promise finding;
 - the Task authoring skill maps every declared promise, requires each in some
-  Task's References, and its Task template's References example names one.
+  Task's References, and its Task template's References example names one;
+- the stage table places each coined code at the stage that can establish it;
+- the constraint characterization keeps its subject while the new unit kind
+  moves its expectation;
+- the corpus golden counts the two coined codes.
 
 After the canonical edit, regenerate the distributed mirror with
 `make skills-sync`. The mirror paths are already bounded above. If any derived
