@@ -1,9 +1,12 @@
 ---
 spec: 0142-an-absent-ref-is-named-absent
-status: active
+status: archived
 created: 2026-09-17
 surfaces: [backend, cli]
+archived: "2026-09-17"
+source_slug: 0142-an-absent-ref-is-named-absent
 ---
+
 
 # An absent ref is named absent
 
