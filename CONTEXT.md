@@ -497,6 +497,14 @@ _Avoid_: QA gate, Spec validator, inference engine
 Each Spec Consistency Check finding is an `error` when the check locates both sides of a contradiction, or a `gap` when it surfaces a candidate it cannot settle. The `SC-*` diagnostic codes are stable and never renumbered once shipped.
 _Avoid_: QA verdict, priority, confidence
 
+**Metric Declaration Gap (`SC-METRIC-UNDECLARED`)**:
+The Spec Consistency Check gap raised when a Spec's `_prd.md` does not declare numbered Success Metrics or an explicit `None.` with a reason.
+_Avoid_: Missing metric, untraced metric
+
+**Contract Declaration Gap (`SC-CONTRACT-UNDECLARED`)**:
+The Spec Consistency Check gap raised when a Spec's `_techspec.md` does not declare numbered API Contracts or an explicit `None.` with a reason.
+_Avoid_: Missing contract, untraced contract
+
 **Archive Command**:
 The support command that retires a Spec under the archive eligibility contract, stamps its disposition, and moves the whole Spec to the resolved archive root. Normal QA eligibility and a user-authorized QA Archive Override are distinct dispositions. Neither retirement nor an override fabricates Task completion or a passing QA verdict.
 _Avoid_: Move command, retire run, cleanup command

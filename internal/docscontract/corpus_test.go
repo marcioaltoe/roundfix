@@ -298,6 +298,8 @@ var corpusFindingCodes = []string{
 	speccheck.CodeToolingUnbounded,
 	speccheck.CodeADRUnlisted,
 	speccheck.CodeADRRelated,
+	speccheck.CodeMetricUndeclared,
+	speccheck.CodeContractUndeclared,
 	speccheck.CodeCoverageUnmapped,
 	speccheck.CodeCoverageUntasked,
 	speccheck.CodeLoopOrderDivergent,

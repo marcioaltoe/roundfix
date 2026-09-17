@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0140-a-spec-traces-the-promises-it-makes
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -66,3 +66,62 @@ updates the corpus contract and its golden to what the sweep actually reports.
 `_prd.md` → Goal 4; Acceptance evidence; Success Metric 1;
 `_techspec.md` → Data Models; Testing Approach 3-4; Vocabulary Contract;
 Build Order 3; ADR-0104.
+
+## Result
+
+Characterized the two promise-declaration codes and the active Spec corpus.
+The glossary now defines each code and the artifact it reads, the corpus sweep
+accepts both codes, and the golden records only the two observed counts added
+by this Spec. The prediction and the later observation are recorded together
+in `qa/evidence/task-03-corpus-sweep.md`.
+
+Focused-check evidence:
+
+- Before implementation, repository searches found neither code in
+  `CONTEXT.md`, `corpusFindingCodes`, or the corpus golden.
+- After the prediction was recorded, `rtk go run ./cmd/roundfix spec check
+  --format json` exited 0 and returned 11 Spec documents. The ten pre-existing
+  Specs 0120 through 0129 each emitted one `SC-METRIC-UNDECLARED` gap and one
+  `SC-CONTRACT-UNDECLARED` gap; Spec 0140 emitted neither. The sweep reported
+  20 gaps, zero errors, and no other finding code.
+- `rtk go test -count=1 -tags docscontract -run
+  '^(TestCheckCorpusBudget|TestCheckActiveCorpusHasNoErrors)$'
+  ./internal/docscontract` passed both focused tests. This exercised the real
+  corpus through the accepted-code list without invoking the Daemon-owned
+  golden Verification command.
+- `rtk jq empty internal/docscontract/testdata/corpus-golden.json` exited 0.
+
+Acceptance evidence:
+
+- `CONTEXT.md` defines `SC-METRIC-UNDECLARED` as the PRD declaration gap that
+  reads `_prd.md`, and `SC-CONTRACT-UNDECLARED` as the TechSpec declaration gap
+  that reads `_techspec.md`. The public-boundary sweep emitted no
+  `SC-VOCABULARY-UNDOCUMENTED` finding.
+- `corpusFindingCodes` includes `CodeMetricUndeclared` and
+  `CodeContractUndeclared`; the focused corpus-budget sweep accepted and
+  counted both codes.
+- The golden adds only `SC-METRIC-UNDECLARED: 10` and
+  `SC-CONTRACT-UNDECLARED: 10`; the evidence table places the predicted and
+  observed values side by side with a zero difference and zero new errors.
+- The changed-path review names no file under Specs 0120 through 0129. The
+  sweep was read-only over those authoring Specs.
+
+The first public-boundary attempt could not access the default Go build cache
+inside the sandbox and did not reach the sweep. The permitted rerun reached the
+boundary and produced the observation above. The Daemon-owned Verification
+commands were not run in this turn.
+
+Follow-up: `rtk make verify-incremental` reached the repository test suite but
+exited 2. Synthetic QA fixtures in `internal/cli` and `internal/taskengine`
+received one new promise-declaration finding, so tests that expected a clean QA
+Run instead observed `QA verdict: fail`; examples include
+`TestRunImplementUsesConfiguredExternalSpecRootEndToEnd` and
+`TestTaskCycleQAPromptStaysUsableWithoutRecordedTargetBranch`. Those fixture
+declarations belong to the detector/fixture implementation slice, not this
+Task's glossary and active-corpus characterization, so this diff does not alter
+them.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260917T164016Z_ac67737203a1aa3d`
+- Source commit: `94df5f4eb9f589ac3d43c6f4aa5ba1cdbb690b82`
