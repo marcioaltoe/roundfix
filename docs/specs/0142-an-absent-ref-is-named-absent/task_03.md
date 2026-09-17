@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0142-an-absent-ref-is-named-absent
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
