@@ -33,6 +33,11 @@ external Spec Root or keep the silence this Spec exists to end.
   ADR-0036 applies: review artifacts are committed in their own docs commit, which this Spec neither creates nor changes.
   ADR-0029 applies: review artifacts live with the Spec, and this Spec moves no artifact between locations.
   ADR-0142 applies: head-bound Review Source Evidence decides the watch outcome, and this Spec changes no watch, review or evidence binding.
+  ADR-0080 applies: a QA row that no environment can run is recorded as environment-blocked and never as a product failure.
+  ADR-0091 applies: the QA gate is a Task node of its own type, which is the terminal Task this Spec authors.
+  ADR-0093 applies: Spec consistency is checked by citation and never by inference, and this Spec changes no consistency rule.
+  ADR-0097 applies: a QA row carries forward only on declared unmoved evidence, and this Spec moves no row's evidence.
+  ADR-0104 applies: a Spec accepts on evidence it did not author, which here is this repository's three tracked executable files.
   ADR-0156 applies: this Spec declares its Success Metrics and API Contracts as numbered units and names each in a Task.
   ADR-0157 applies: tracked source is work output whatever its mode, and a drop stops the Task from settling completed.
 - Tooling authority: applicable — no protected tooling mutation proposed or authorized. The repair is ordinary source in `internal/daemon`, which is not a Governed Path, and its test files are ordinary too. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
