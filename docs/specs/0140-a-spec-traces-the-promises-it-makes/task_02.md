@@ -37,7 +37,9 @@ declared it rather than at the PRD.
 
 - [ ] Feed the two new unit kinds into the Coverage Map and References detectors.
 - [ ] Carry each unit's declaring artifact through to its finding location.
-- [ ] Extend the reference vocabulary to both new phrases.
+- [ ] Extend the reference vocabulary to both new phrases, naming the two
+      patterns `metricRefPattern` and `contractRefPattern` beside the existing
+      story and feature patterns.
 - [ ] Cover mapped, unmapped, named and unnamed promises with tests, including a
       Spec with no TechSpec.
 
@@ -59,8 +61,8 @@ declared it rather than at the PRD.
 
 ## Verification
 
-- `grep -q "coverageMetric" internal/speccheck/citations.go` — expected: exit 0; the metric kind reaches the coverage path.
-- `grep -q "coverageContract" internal/speccheck/citations.go` — expected: exit 0; the contract kind reaches the coverage path.
+- `grep -q "metricRefPattern" internal/speccheck/citations.go` — expected: exit 0; a Task reference to a Success Metric resolves through its own pattern. Task 01 introduces the unit kinds but no reference pattern, so this fails before this Task.
+- `grep -q "contractRefPattern" internal/speccheck/citations.go` — expected: exit 0; a Task reference to an API Contract resolves through its own pattern.
 - `grep -rq "func TestPromiseCoverageReachesItsTask" internal/speccheck` — expected: exit 0; coverage of both kinds is covered by a named test.
 - `out="$(go test -count=1 -run "^TestPromiseCoverageReachesItsTask$" ./internal/speccheck 2>&1)" || { printf "%s\n" "$out"; exit 1; }; missing="$(printf "%s\n" "$out" | grep "no tests to run")"; test -z "$missing"` — expected: exit 0; before this Task the run reports no tests to run, so the command fails.
 
