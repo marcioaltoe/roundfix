@@ -1,9 +1,12 @@
 ---
 spec: 0141-a-commit-that-carries-the-work-and-nothing-else
-status: active
+status: archived
 created: 2026-09-17
 surfaces: [backend, cli, docs]
+archived: "2026-09-17"
+source_slug: 0141-a-commit-that-carries-the-work-and-nothing-else
 ---
+
 
 # A commit that carries the work and nothing else
 
