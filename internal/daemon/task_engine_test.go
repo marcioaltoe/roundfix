@@ -748,6 +748,7 @@ type taskFakeRunner struct {
 	rawStatusByTask  map[string]string
 	anomalyByTask    map[string]string
 	afterTask        func(string)
+	afterQA          func()
 	qaReport         string
 	qaReportPath     string
 	qaSeed           string
@@ -807,6 +808,9 @@ func (runner *taskFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest,
 			if err := os.WriteFile(reportPath, []byte(runner.qaReport), 0o644); err != nil {
 				return agent.ExecuteResult{}, err
 			}
+		}
+		if runner.afterQA != nil {
+			runner.afterQA()
 		}
 		return agent.ExecuteResult{LogPath: req.LogPath}, nil
 	}
@@ -1331,6 +1335,91 @@ func TestQAGateRunsRepositoryVerificationBeforeAgentSession(t *testing.T) {
 	waiting := eventPayloadMap(t, verificationEvents[0])
 	if waiting["phase"] != string(runevent.VerificationPhaseWaiting) || waiting["mode"] != verificationShared.String() || waiting["capacity"] != float64(1) {
 		t.Fatalf("repository Verification waiting payload = %v, want shared capacity 1", waiting)
+	}
+}
+
+func TestQAReportCommitExcludesVerificationWrites(t *testing.T) {
+	t.Parallel()
+	const verificationPath = "tracked-verification.txt"
+	reportPath := qaReportRelPathForTest()
+	evidencePath := filepath.Join("docs", "specs", taskCycleSlug, "qa", "evidence", "observed.txt")
+	agentPath := "src/qa-agent-fix.go"
+	tests := []struct {
+		name               string
+		verificationWrites bool
+	}{
+		{name: "tracked file", verificationWrites: true},
+		{name: "no writes", verificationWrites: false},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+			mustWriteForTest(t, filepath.Join(fixture.gitRoot, verificationPath), "before verification\n")
+			gittest.Run(t, fixture.gitRoot, "add", verificationPath)
+			gittest.Run(t, fixture.gitRoot, "commit", "-m", "seed tracked verification output")
+
+			verificationAfter := []string(nil)
+			qaAfter := []string{reportPath, evidencePath, agentPath}
+			if test.verificationWrites {
+				verificationAfter = []string{verificationPath}
+				qaAfter = append(qaAfter, verificationPath)
+			}
+			fixture.worktree.snapshots = [][]string{nil, nil, verificationAfter, qaAfter}
+			runner := &taskFakeRunner{
+				calls:    fixture.calls,
+				gitRoot:  fixture.gitRoot,
+				qaReport: qaReportForTest(spec.VerdictPass),
+				afterQA: func() {
+					if err := os.MkdirAll(filepath.Join(fixture.gitRoot, filepath.Dir(evidencePath)), 0o755); err != nil {
+						t.Fatalf("create QA evidence directory: %v", err)
+					}
+					if err := os.MkdirAll(filepath.Join(fixture.gitRoot, filepath.Dir(agentPath)), 0o755); err != nil {
+						t.Fatalf("create QA Agent write directory: %v", err)
+					}
+					mustWriteForTest(t, filepath.Join(fixture.gitRoot, evidencePath), "evidence\n")
+					mustWriteForTest(t, filepath.Join(fixture.gitRoot, agentPath), "package agentfix\n")
+				},
+			}
+			verifier := &qaGateRecordingVerifier{
+				delegate: &taskFakeVerifier{calls: fixture.calls},
+				calls:    fixture.calls,
+				onVerify: func(VerifyRequest) {
+					if test.verificationWrites {
+						mustWriteForTest(t, filepath.Join(fixture.gitRoot, verificationPath), "written by verification\n")
+					}
+				},
+			}
+			committer := &engineFakeCommitter{calls: fixture.calls}
+			engine := fixture.engine(t, runner, verifier, committer, fixture.worktree)
+			plan := fixture.qaPlan()
+			plan.RepositoryVerification = "repository verification"
+
+			result, err := engine.TaskCycle(context.Background(), plan)
+
+			if err != nil {
+				t.Fatalf("TaskCycle returned error: %v", err)
+			}
+			if result.QAVerdict != spec.VerdictPass {
+				t.Fatalf("QA verdict = %q, want %q", result.QAVerdict, spec.VerdictPass)
+			}
+			if len(committer.paths) != 1 {
+				t.Fatalf("QA commits = %d, want one", len(committer.paths))
+			}
+			wantPaths := []string{
+				agentPath,
+				evidencePath,
+				reportPath,
+				taskFileRel(taskCycleSlug, fixture.graph.QATaskID),
+			}
+			sort.Strings(wantPaths)
+			if got := committer.paths[0]; !slices.Equal(got, wantPaths) {
+				t.Fatalf("QA Report commit paths = %v, want %v", got, wantPaths)
+			}
+			if runner.qaSeed == "" {
+				t.Fatal("QA Agent did not receive the mechanically seeded report")
+			}
+		})
 	}
 }
 
@@ -7558,7 +7647,7 @@ func TestQACommitDropsExecutableFileAndCommitsRemainingPaths(t *testing.T) {
 	committer := &engineFakeCommitter{calls: fixture.calls}
 	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
 
-	err := engine.commitQAReport(context.Background(), fixture.plan(), 2, nil, spec.VerdictPass, reportPath, spec.Task{})
+	err := engine.commitQAReport(context.Background(), fixture.plan(), 2, nil, nil, spec.VerdictPass, reportPath, spec.Task{})
 
 	if err != nil {
 		t.Fatalf("commitQAReport: %v", err)

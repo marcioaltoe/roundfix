@@ -2058,16 +2058,16 @@ func lowerFirstRune(value string) string {
 
 const qaRepositoryVerificationUnconfiguredPrompt = "Repository Verification: run it in this gate; no command is configured for the Daemon.\n"
 
-func (engine *Engine) runQARepositoryVerification(ctx context.Context, plan TaskPlan, qaTask spec.Task, ordinal int, mechanicalResult *speccheck.MechanicalResult) (string, error) {
+func (engine *Engine) runQARepositoryVerification(ctx context.Context, plan TaskPlan, qaTask spec.Task, ordinal int, mechanicalResult *speccheck.MechanicalResult) (string, []string, error) {
 	if mechanicalResult.Blocking {
-		return "", nil
+		return "", nil, nil
 	}
 	command := strings.TrimSpace(plan.RepositoryVerification)
 	if command == "" {
-		return qaRepositoryVerificationUnconfiguredPrompt, nil
+		return qaRepositoryVerificationUnconfiguredPrompt, nil, nil
 	}
 	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateVerifying); err != nil {
-		return "", fmt.Errorf("update run %q to state %q before QA Task %s repository Verification: %w", plan.RunID, store.StateVerifying, qaTask.ID, err)
+		return "", nil, fmt.Errorf("update run %q to state %q before QA Task %s repository Verification: %w", plan.RunID, store.StateVerifying, qaTask.ID, err)
 	}
 	request := verificationAttemptRequest{
 		RunID:                   plan.RunID,
@@ -2087,10 +2087,19 @@ func (engine *Engine) runQARepositoryVerification(ctx context.Context, plan Task
 			return nil
 		},
 	}
-	outcome, err := engine.runTaskVerificationRequest(ctx, plan, qaTask, request)
+	verificationWindowBefore, err := engine.deps.Worktree.Snapshot(ctx, plan.WorkDir)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
+	outcome, verificationErr := engine.runTaskVerificationRequest(ctx, plan, qaTask, request)
+	verificationWindowAfter, snapshotErr := engine.deps.Worktree.Snapshot(ctx, plan.WorkDir)
+	if verificationErr != nil {
+		return "", nil, verificationErr
+	}
+	if snapshotErr != nil {
+		return "", nil, snapshotErr
+	}
+	verificationWindowPaths := diffSnapshots(verificationWindowBefore, verificationWindowAfter)
 	if outcome.CommandFailure != nil {
 		status := strings.TrimPrefix(verificationExitStatus(outcome.CommandFailure), "exit status ")
 		mechanicalResult.PreconditionRefusal = spec.PreconditionRefusal{
@@ -2103,7 +2112,7 @@ func (engine *Engine) runQARepositoryVerification(ctx context.Context, plan Task
 		}
 		mechanicalResult.PreconditionRefused = true
 		mechanicalResult.Blocking = true
-		return "", nil
+		return "", verificationWindowPaths, nil
 	}
 	if outcome.UnknownCause != nil {
 		cause := "cause unavailable"
@@ -2122,7 +2131,7 @@ func (engine *Engine) runQARepositoryVerification(ctx context.Context, plan Task
 		}
 		mechanicalResult.PreconditionRefused = true
 		mechanicalResult.Blocking = true
-		return "", nil
+		return "", verificationWindowPaths, nil
 	}
 	return fmt.Sprintf(
 		"Repository Verification: already run by the Daemon outside the Agent sandbox.\n"+
@@ -2131,7 +2140,7 @@ func (engine *Engine) runQARepositoryVerification(ctx context.Context, plan Task
 			"- diagnostics: removed on success\n"+
 			"Record this as the static gate result. Do not run the repository Verification again.\n",
 		command,
-	), nil
+	), verificationWindowPaths, nil
 }
 
 func qaRepositoryVerificationDiagnostics(path string) string {
@@ -2198,7 +2207,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		}
 		return "", "", fmt.Errorf("run QA mechanical stage for run %q: %w", plan.RunID, err)
 	}
-	repositoryVerificationPrompt, verificationErr := engine.runQARepositoryVerification(ctx, plan, qaTask, ordinal, &mechanicalResult)
+	repositoryVerificationPrompt, verificationWindowPaths, verificationErr := engine.runQARepositoryVerification(ctx, plan, qaTask, ordinal, &mechanicalResult)
 	if verificationErr != nil {
 		if isStop(ctx, verificationErr) && ctx.Err() != nil {
 			if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
@@ -2311,7 +2320,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	if err := engine.settleTask(ctx, plan, qaTask, ordinal, qaStatus, qaReason); err != nil {
 		return "", "", err
 	}
-	if err := engine.commitQAReport(ctx, plan, ordinal, before, verdict, reportPath, qaTask); err != nil {
+	if err := engine.commitQAReport(ctx, plan, ordinal, before, verificationWindowPaths, verdict, reportPath, qaTask); err != nil {
 		return "", "", err
 	}
 	return verdict, reportPath, nil
@@ -2725,7 +2734,7 @@ func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string) {
 // diff with the report and qa Task file ensured, so the report, its evidence,
 // and gate settlement always ride in their own commit, separate from every
 // implementation Task commit (ADR 0015, ADR 0091).
-func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal int, before []string, verdict string, reportPath string, qaTask spec.Task) error {
+func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal int, before []string, verificationWindowPaths []string, verdict string, reportPath string, qaTask spec.Task) error {
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
 			return fmt.Errorf("publish stop event for run %q before the QA Report commit: %w", plan.RunID, errors.Join(err, publishErr))
@@ -2737,6 +2746,19 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 		return err
 	}
 	changed := diffSnapshots(before, after)
+	if len(verificationWindowPaths) > 0 {
+		excluded := make(map[string]struct{}, len(verificationWindowPaths))
+		for _, path := range verificationWindowPaths {
+			excluded[path] = struct{}{}
+		}
+		kept := changed[:0]
+		for _, path := range changed {
+			if _, found := excluded[path]; !found {
+				kept = append(kept, path)
+			}
+		}
+		changed = kept
+	}
 	if strings.TrimSpace(reportPath) != "" {
 		changed = ensureCommitPath(changed, reportPath)
 	}
