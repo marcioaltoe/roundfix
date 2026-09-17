@@ -47,6 +47,19 @@ Agent Selection Profiles choose the runtime, model, and reasoning effort.
 Complete one-Run overrides can use `codex`, `claude`, or `opencode`. The Review
 Source is `coderabbit`.
 
+The independent reviewer for work before a Pull Request is selected with
+`pre_pr_review.provider`. Its supported values are `codex`, `claude`,
+`coderabbit`, and `none`. Project Config takes precedence over User Config,
+which takes precedence over the built-in default of `codex`; an absent key
+inherits from the next applicable scope and never means `none`. Declaring this
+policy only reports which reviewer is selected: it invokes no provider, and
+this release does not enforce the policy when publishing a Pull Request.
+
+This is separate from `review_source`: `pre_pr_review.provider` governs the
+independent review of a candidate before a Pull Request exists, while
+`review_source` governs reading review feedback from a Pull Request that
+already exists.
+
 ## Agent Selection Profiles
 
 Roundfix routes Agent work through Agent Selection Profiles. Each profile is an
