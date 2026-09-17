@@ -235,6 +235,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				"acpx: ok (" + agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion + ")\n" +
 				doctorReadyAdapterLine +
 				"profiles: ok (3 distinct tuples; 10 category references)\n" +
+				"pre-pr-review: ok (provider=codex; source=default)\n" +
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
 				"residue: ok (no process residue found)\n" +
 				"codex: ok (/home/roundfix/.local/bin/codex accepted)\n",
@@ -251,6 +252,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				"acpx: ok (" + agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion + ")\n" +
 				doctorReadyAdapterLine +
 				"profiles: ok (3 distinct tuples; 10 category references)\n" +
+				"pre-pr-review: ok (provider=codex; source=default)\n" +
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
 				"residue: ok (no process residue found)\n" +
 				"codex: failed (/tmp/codex is quarantined; next: " + codex.ReinstallNextAction + ")\n",
@@ -267,6 +269,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				"acpx: ok (" + agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion + ")\n" +
 				doctorReadyAdapterLine +
 				"profiles: ok (3 distinct tuples; 10 category references)\n" +
+				"pre-pr-review: ok (provider=codex; source=default)\n" +
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
 				"residue: ok (no process residue found)\n" +
 				"codex: skipped (not-applicable on linux)\n",
@@ -308,6 +311,91 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 			assertDoctorPathMissing(t, filepath.Join(homeDir, ".acpx"))
 			assertDoctorPathMissing(t, filepath.Join(homeDir, ".roundfix"))
 			assertDoctorPathMissing(t, filepath.Join(repoDir, ".roundfixrc.yml"))
+		})
+	}
+}
+
+func TestDoctorReportsPrePRReviewPolicy(t *testing.T) {
+	tests := []struct {
+		name       string
+		provider   string
+		source     string
+		wantStatus CheckStatus
+		wantDetail string
+	}{
+		{
+			name:       "project choice",
+			provider:   "coderabbit",
+			source:     "project",
+			wantStatus: CheckStatusOK,
+			wantDetail: "provider=coderabbit; source=project",
+		},
+		{
+			name:       "user choice",
+			provider:   "claude",
+			source:     "user",
+			wantStatus: CheckStatusOK,
+			wantDetail: "provider=claude; source=user",
+		},
+		{
+			name:       "built-in default",
+			provider:   "codex",
+			source:     "default",
+			wantStatus: CheckStatusOK,
+			wantDetail: "provider=codex; source=default",
+		},
+		{
+			name:       "disabled by project configuration",
+			provider:   "none",
+			source:     "project",
+			wantStatus: CheckStatusSkipped,
+			wantDetail: "review disabled by configuration; provider=none; source=project",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := roundconfig.Builtin()
+			config.PrePRReview = roundconfig.PrePRReview{
+				Provider: tt.provider,
+				Source:   tt.source,
+			}
+			checker := newDoctorFakeHealthChecker(
+				CheckResult{Name: HealthCheckNode, Status: CheckStatusOK},
+				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK},
+				CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK},
+			)
+			withDoctorFakeLoadedAndReadiness(t, checker, roundconfig.Loaded{
+				Config:  config,
+				GitRoot: "/repo/project",
+			}, func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult {
+				return profileProofResult{}
+			})
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLI(t, []string{"doctor"}, &stdout, &stderr)
+
+			if code != exitOK {
+				t.Fatalf("Doctor exit code = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+			}
+			wantLine := fmt.Sprintf("%s: %s (%s)\n", HealthCheckPrePRReview, tt.wantStatus, tt.wantDetail)
+			if !strings.Contains(stdout.String(), wantLine) {
+				t.Fatalf("Doctor output missing %q: %q", wantLine, stdout.String())
+			}
+			if checker.nodeCalls != 1 || checker.acpxCalls != 1 || checker.adapterCalls != 2 || checker.codexCalls != 1 || len(checker.agentRequests) != 0 {
+				t.Fatalf(
+					"Doctor provider-facing calls changed: node=%d acpx=%d adapter=%d codex=%d agent=%d",
+					checker.nodeCalls,
+					checker.acpxCalls,
+					checker.adapterCalls,
+					checker.codexCalls,
+					len(checker.agentRequests),
+				)
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("Doctor stderr = %q, want empty", stderr.String())
+			}
 		})
 	}
 }
@@ -644,10 +732,10 @@ func TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes(t *testing.T) {
 				t.Fatalf("exit code = %d, want %d; stdout=%q stderr=%q", code, test.wantCode, stdout.String(), stderr.String())
 			}
 			lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
-			if len(lines) != 7 || lines[2] != test.wantLine {
+			if len(lines) != 8 || lines[2] != test.wantLine {
 				t.Fatalf("unexpected Doctor output lines:\n%q\nwant adapter line %q at index 2", lines, test.wantLine)
 			}
-			wantLineNames := []string{"node", "acpx", "adapter", "profiles", "skills", "residue", "codex"}
+			wantLineNames := []string{"node", "acpx", "adapter", "profiles", HealthCheckPrePRReview, "skills", "residue", "codex"}
 			for index, name := range wantLineNames {
 				if !strings.HasPrefix(lines[index], name+": ") {
 					t.Fatalf("Doctor line %d = %q, want %q check", index, lines[index], name)
@@ -1086,8 +1174,8 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 				t.Fatalf("exit code = %d, want %d; stderr=%q", code, test.wantCode, stderr.String())
 			}
 			lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
-			if len(lines) != 7 || lines[4] != test.wantLine {
-				t.Fatalf("unexpected Doctor output lines:\n%q\nwant skills line %q at index 4", lines, test.wantLine)
+			if len(lines) != 8 || lines[5] != test.wantLine {
+				t.Fatalf("unexpected Doctor output lines:\n%q\nwant skills line %q at index 5", lines, test.wantLine)
 			}
 			if skillCalls != 1 || checker.nodeCalls != 1 || checker.acpxCalls != 1 || checker.adapterCalls != 2 || checker.codexCalls != 1 {
 				t.Fatalf("independent check calls skills=%d node=%d acpx=%d adapter=%d codex=%d",
@@ -1323,6 +1411,7 @@ func TestRunDoctorMissingRepositoryRoot(t *testing.T) {
 		"acpx: ok\n" +
 		doctorReadyAdapterLine +
 		"profiles: ok (0 distinct tuples; 0 category references)\n" +
+		"pre-pr-review: ok (provider=codex; source=default)\n" +
 		"skills: failed (Repository Skill Set readiness requires a Git repository; next: run roundfix doctor from a Git repository)\n" +
 		"residue: ok (no process residue found)\n" +
 		"codex: ok\n"
@@ -1415,6 +1504,7 @@ func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
 		"acpx: ok\n" +
 		doctorReadyAdapterLine +
 		"profiles: ok (0 distinct tuples; 0 category references)\n" +
+		"pre-pr-review: ok (provider=codex; source=default)\n" +
 		fmt.Sprintf(
 			"skills: ok (%d required: %d Roundfix-owned, %d external)\n",
 			len(skills.Names())+len(external),
