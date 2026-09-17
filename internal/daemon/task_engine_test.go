@@ -571,6 +571,10 @@ status: active
 - Authentication and HTTP: not applicable — this fixture opens no transport. Source: `+"`docs/agents/agent-instructions.md`"+`.
 - Active ADR obligations: not applicable — this fixture cites no ADR. Source: `+"`docs/agents/domain.md`"+`.
 - Tooling authority: not applicable — this fixture changes no tooling. Source: `+"`docs/agents/agent-instructions.md`"+`.
+
+## Success Metrics
+
+None. This fixture measures Task-cycle and QA-gate orchestration rather than a shipped product outcome.
 `)
 	mustWriteForTest(t, filepath.Join(specDir, "_authorization.md"), taskFixtureAuthorization(slug,
 		spec.AuthorizationOperationImplement,
@@ -1667,7 +1671,9 @@ func TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit(t *testing.T) {
 			"- Identifier strategy: not applicable — the fixture creates no identifier. Source: `docs/agents/domain.md`.\n"+
 			"- Authentication and HTTP: not applicable — the fixture opens no transport. Source: `docs/agents/agent-instructions.md`.\n"+
 			"- Active ADR obligations: not applicable — the fixture cites no ADR. Source: `docs/agents/domain.md`.\n"+
-			"- Tooling authority: applicable — recorded at `"+authorizationPath+"`; bounded files: `Makefile`. Source: `docs/agents/agent-instructions.md`.\n")
+			"- Tooling authority: applicable — recorded at `"+authorizationPath+"`; bounded files: `Makefile`. Source: `docs/agents/agent-instructions.md`.\n\n"+
+			"## Success Metrics\n\n"+
+			"None. This fixture measures QA mechanical commit selection rather than a shipped product outcome.\n")
 		mustWriteForTest(t, filepath.Join(specDir, "task_01.md"), "ordinary task\n")
 		mustWriteForTest(t, filepath.Join(specDir, "task_02.md"), "tooling task\n")
 		mustWriteForTest(t, filepath.Join(repoRoot, "Makefile"), "verify:\n\t@true\n")

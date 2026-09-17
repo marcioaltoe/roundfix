@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0140-a-spec-traces-the-promises-it-makes
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -59,3 +59,40 @@ the second and final corrective Task the contract allows.
 `_prd.md` → Core Feature 1; Declared intentional breaks;
 `_techspec.md` → Implementation Design: Declaring a promise; Data Models;
 Risks & Considerations: A gap blocks decomposition; ADR-0130; ADR-0156.
+
+## Result
+
+Implementation:
+
+- Both synthetic PRD constructors in `internal/daemon/task_engine_test.go` now
+  declare `## Success Metrics` with the accepted explicit-none form. Each reason
+  names the fixture behavior it measures: Task-cycle and QA-gate orchestration,
+  or QA mechanical commit selection.
+- `internal/spec/archive_layout_characterization_test.go` now pins the exact
+  Spec 0140 corpus-golden update text and the two new counts:
+  `SC-METRIC-UNDECLARED: 10` and `SC-CONTRACT-UNDECLARED: 10`. The exact
+  deep-equality assertion remains in place.
+
+Focused-check evidence:
+
+- Daemon fixture precondition and commit-selection checks: passed with
+  `GOCACHE=/tmp/roundfix-task07-gocache`.
+- Archive-layout characterization checks: passed with the same Task-local Go
+  build cache.
+- `go test -count=1 ./internal/daemon ./internal/spec`: passed with the same
+  Task-local Go build cache (`internal/daemon` in 8.099s and `internal/spec` in
+  16.491s).
+- `gofmt -d internal/daemon/task_engine_test.go internal/spec/archive_layout_characterization_test.go`:
+  exited 0 with no diff.
+
+Acceptance evidence:
+
+- Daemon QA-gate and Task-cycle flows: the complete `internal/daemon` package
+  passed after both synthetic PRD constructors gained explicit declarations.
+- Archive characterization: the complete `internal/spec` package passed, and
+  the characterization still reads the named corpus golden and compares its
+  complete decoded value with `reflect.DeepEqual`.
+- Repository Verification: pending the Daemon-owned commands in
+  `## Verification`; none were run during this Agent turn.
+- Production scope: implementation edits are confined to the two named test
+  files; this Result record is the only Agent-authored Spec artifact change.
