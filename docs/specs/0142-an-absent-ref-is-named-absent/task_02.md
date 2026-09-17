@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0142-an-absent-ref-is-named-absent
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -29,19 +29,19 @@ keeps every present-target outcome exactly as it is.
 
 ## Subtasks
 
-- [ ] Branch the classifier on the resolver's absent answer.
-- [ ] Preserve each candidate with the reason that names the branch.
-- [ ] Cover an absent-target set, an ambiguous-target set and a present-target
+- [x] Branch the classifier on the resolver's absent answer.
+- [x] Preserve each candidate with the reason that names the branch.
+- [x] Cover an absent-target set, an ambiguous-target set and a present-target
       set at the classifier's fixture seam.
 
 ## Acceptance Criteria
 
-- [ ] A set whose recorded target branch was deleted preserves every candidate
+- [x] A set whose recorded target branch was deleted preserves every candidate
       with the absent-branch reason.
-- [ ] A set whose recorded target branch is ambiguous still fails.
-- [ ] A set whose target branch exists reaches the same outcome as before this
+- [x] A set whose recorded target branch is ambiguous still fails.
+- [x] A set whose target branch exists reaches the same outcome as before this
       Task, in the same run as the absent one.
-- [ ] Nothing new is released.
+- [x] Nothing new is released.
 
 ## Context
 
@@ -58,3 +58,49 @@ keeps every present-target outcome exactly as it is.
 Regression locks; Acceptance evidence;
 `_techspec.md` → Implementation Design: An absent target branch preserves its
 set; API Contracts 1 and 3; Build Order 2; ADR-0057.
+
+## Result
+
+The Run Branch set classifier now consumes only the resolver's typed absent
+answer. It enumerates the recorded set's existing Run Branches, preserves each
+one with `reconciliationReasonTargetBranchAbsent`, and returns no current or
+releasable branch. Other resolver errors, including the typed ambiguous answer,
+still fail the set through the existing error path. A resolved target continues
+through the existing QA Report and supersession logic unchanged.
+
+`TestClassifyRunBranchSetPreservesAbsentTarget` covers the three required
+states at the real Git fixture seam in one test. The present-target fixture
+retains its current branch, current report, releasable branch, proof, and empty
+preserved summary. The ambiguous fixture still returns `errBranchAmbiguous`.
+The deleted-target fixture preserves both candidates with the exact absent
+reason and asserts that no current or releasable branch is reported.
+
+Focused evidence:
+
+- Before the production change,
+  `GOCACHE=/private/tmp/roundfix-task02-go-cache rtk go test -count=1 -run '^TestClassifyRunBranchSet' ./internal/worktree`
+  failed to compile because `reconciliationReasonTargetBranchAbsent` did not
+  exist.
+- After the production change, the same classifier-focused command passed all
+  six matching tests.
+- `GOCACHE=/private/tmp/roundfix-task02-go-cache rtk go test -count=1 ./internal/worktree`
+  passed all 109 package tests.
+- `rtk git diff --check` reported no whitespace errors.
+- `GOCACHE=/private/tmp/roundfix-task02-go-cache rtk make verify-incremental`
+  reached and passed `internal/worktree`. The overall gate exited 2 because two
+  unrelated `internal/cli` force-stop integration tests could not read the
+  process table in the sandbox (`operation not permitted`).
+
+Acceptance evidence:
+
+- Deleted target: both recorded existing candidates are present only in
+  `Preserved`, each with `target branch "main" is absent`.
+- Ambiguous target: the classifier returns an error matching
+  `errBranchAmbiguous`.
+- Present target: the same test observes the prior current branch, QA Report,
+  releasable branch, release proof, and summary counts.
+- Release safety: the absent-target result has no current branch, releasable
+  branch, releasable proof, or release path.
+
+The Task's declared `## Verification` commands were not run; the Daemon owns
+that verification and settlement.

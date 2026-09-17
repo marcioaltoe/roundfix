@@ -402,15 +402,45 @@ func classifyRunBranchSet(
 		return result, errors.New("classify Run Branch set: Spec slug is missing or invalid")
 	}
 	targetHead, err := resolveUnambiguousLocalBranch(ctx, runner, root, targetBranch)
-	if err != nil {
+	targetAbsent := errors.Is(err, errBranchAbsent)
+	if err != nil && !targetAbsent {
 		return result, fmt.Errorf("classify Run Branch set: resolve target branch %q: %w", targetBranch, err)
 	}
-	if targetHead == "" {
+	if !targetAbsent && targetHead == "" {
 		return result, fmt.Errorf("classify Run Branch set: resolve target branch %q: empty Git object ID", targetBranch)
 	}
 	branches, err := listRunBranches(ctx, runner, root)
 	if err != nil {
 		return result, fmt.Errorf("classify Run Branch set: %w", err)
+	}
+	if targetAbsent {
+		seen := make(map[string]struct{})
+		reason := reconciliationReasonTargetBranchAbsent(targetBranch)
+		for _, run := range runs {
+			if run.Kind != store.KindImplement ||
+				strings.TrimSpace(run.LocalBranch) != targetBranch ||
+				strings.TrimSpace(run.SpecSlug) != specSlug ||
+				!samePath(run.GitRoot, root) {
+				continue
+			}
+			branch := BranchName(run.ID)
+			if !branches[branch] {
+				continue
+			}
+			if _, duplicate := seen[branch]; duplicate {
+				continue
+			}
+			seen[branch] = struct{}{}
+			preserve(branch, reason)
+		}
+		sort.Strings(result.Preserved)
+		result.evidence = &branchSetClassificationEvidence{
+			gitRoot:      root,
+			targetBranch: targetBranch,
+			specSlug:     specSlug,
+			runs:         cloneRuns(runs),
+		}
+		return result, nil
 	}
 
 	targetReport, err := newestQAReportAtHead(ctx, runner, root, targetHead, specSlug)
@@ -1139,6 +1169,10 @@ func supersededReconciliationReason(report string) string {
 		return char
 	}, report)
 	return boundedReconciliationReason(reason)
+}
+
+func reconciliationReasonTargetBranchAbsent(branch string) string {
+	return boundedReconciliationReason(fmt.Sprintf("target branch %q is absent", branch))
 }
 
 func boundedReconciliationReason(reason string) string {
