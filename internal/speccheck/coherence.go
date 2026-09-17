@@ -56,7 +56,9 @@ var stagedDetectors = []stagedDetector{
 	{code: CodeToolingUnbounded, stage: StagePRD},
 	{code: CodeToolingUntyped, stage: StagePRD},
 	{code: CodeCitationUnsupported, stage: StagePRD},
+	{code: CodeMetricUndeclared, stage: StagePRD},
 	{code: CodeCoverageUnmapped, stage: StageTechSpec},
+	{code: CodeContractUndeclared, stage: StageTechSpec},
 	{code: CodeVocabularyUndocumented, stage: StageTechSpec},
 	{code: CodeADRUnlisted, stage: StageTasks},
 	{code: CodeADRRelated, stage: StageTasks},
@@ -126,9 +128,24 @@ func checkAuthoringStage(specsRoot, repoRoot, slug string, stage Stage) (Result,
 		if stage == StageTechSpec {
 			addSkip(&result, CodeCoverageUnmapped, artifactDisplayPath(repoRoot, prdPath))
 		}
+		addSkip(&result, CodeMetricUndeclared, artifactDisplayPath(repoRoot, prdPath))
+		if stage == StageTechSpec {
+			addSkip(&result, CodeContractUndeclared, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_techspec.md")))
+		}
 		addStageSkips(&result, stage)
 		return result, nil
 	}
+	prdContent, err := os.ReadFile(prdPath)
+	if err != nil {
+		return result, fmt.Errorf("read Spec artifact %q: %w", prdPath, err)
+	}
+	detectPromiseDeclaration(
+		&result,
+		parsePromiseSection(prdContent, "Success Metrics", coverageMetric),
+		artifactDisplayPath(repoRoot, prdPath),
+		"Success Metrics",
+		CodeMetricUndeclared,
+	)
 
 	artifacts := []constraintArtifact{prd}
 	techSpecPath := filepath.Join(specDir, "_techspec.md")
@@ -143,10 +160,22 @@ func checkAuthoringStage(specsRoot, repoRoot, slug string, stage Stage) (Result,
 		if found {
 			artifacts = append(artifacts, techSpec)
 			citationArtifactPaths = append(citationArtifactPaths, techSpecPath)
+			techSpecContent, err := os.ReadFile(techSpecPath)
+			if err != nil {
+				return result, fmt.Errorf("read Spec artifact %q: %w", techSpecPath, err)
+			}
+			detectPromiseDeclaration(
+				&result,
+				parsePromiseSection(techSpecContent, "API Contracts", coverageContract),
+				artifactDisplayPath(repoRoot, techSpecPath),
+				"API Contracts",
+				CodeContractUndeclared,
+			)
 		} else {
 			for _, code := range detectorCodes {
 				addSkip(&result, code, artifactDisplayPath(repoRoot, techSpecPath))
 			}
+			addSkip(&result, CodeContractUndeclared, artifactDisplayPath(repoRoot, techSpecPath))
 		}
 		if err := detectVocabularyContract(&result, repoRoot, techSpecPath, found); err != nil {
 			return result, err
@@ -198,8 +227,13 @@ func detectTechSpecCoverage(result *Result, repoRoot, prdPath, techSpecPath stri
 	}
 	detectCoverageMap(
 		result,
-		parsePRDCoverageUnits(prdContent),
-		artifactDisplayPath(repoRoot, prdPath),
+		coverageUnitsDeclaredIn(
+			append(
+				parsePRDCoverageUnits(prdContent),
+				parsePromiseSection(prdContent, "Success Metrics", coverageMetric).units...,
+			),
+			artifactDisplayPath(repoRoot, prdPath),
+		),
 		techSpecContent,
 		artifactDisplayPath(repoRoot, techSpecPath),
 	)

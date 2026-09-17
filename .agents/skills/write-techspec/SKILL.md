@@ -71,6 +71,10 @@ Write `_techspec.md` from the template in [references/techspec-template.md](refe
 - **Every PRD goal and user story maps to a named technical component.** An unmapped story is a design hole; find it now, not during task execution.
 - **Build Order** — numbered steps where every step after the first states which previous steps it depends on. `write-tasks` derives the task graph edges from this.
 
+Write API Contracts as numbered API Contract items, or as the single entry
+`None.` followed by the reason none applies. Each numbered contract must be
+addressable by its name and number in downstream Task References.
+
 `Project Constraints` is body content, never frontmatter. When the design
 proposes creating, editing, renaming, moving, or deleting protected tooling
 configuration, scripts, ignore files, plugin declarations, or version pins,

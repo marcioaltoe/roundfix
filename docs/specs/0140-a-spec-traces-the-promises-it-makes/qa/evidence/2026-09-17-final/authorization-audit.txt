@@ -1,0 +1,40 @@
+Operative authorization:
+  docs/specs/0140-a-spec-traces-the-promises-it-makes/_authorization.md
+  final widening commit 8def851fa8fd027c633a5b8e7150c31f31648a7d
+
+Chronology:
+  git merge-base --is-ancestor 8def851f <task-commit>
+returned exit 0 for:
+  task_01 74329f7efca0d77c8d71ced7ecc751968055a59b
+  task_02 192c09b0212ae989412488d8275703797e991d4c
+  task_03 636cf86bfe827e1207761dbfe41c48ce5a2f6b5c
+  task_04 b450576394262628420c3555968bbf62dce44718
+  task_06 cc7d8120e239b3fb2b4d8591e213f4f559dec3e6
+  task_07 d948c47676729bd55736964feaa41cef76a94675
+
+Changed paths were resolved with:
+  git diff-tree --no-commit-id --name-only -r <task-commit>
+
+Governed path comparison:
+  task_01 changed authorized coherence.go and
+    constraints_characterization_test.go.
+  task_02 changed authorized coherence.go.
+  task_03 changed authorized corpus-golden.json.
+  task_04 changed the authorized canonical and governed mirror skill paths.
+    Its distributed Task template mirror is explicitly described by the
+    authorization as ungoverned; it remained byte-identical to its canonical
+    template after sanctioned skills-sync regeneration.
+  task_06 changed no governed path.
+  task_07 changed authorized archive_layout_characterization_test.go.
+  Each commit also changed its assigned Task record; all other changed paths
+  are ordinary source, tests, fixtures, glossary, or evidence outside the
+  governed set.
+
+Authorization shape:
+  The grant originated at 9e1214a2, was widened at 96c972db, and reached its
+  final bounded shape at 8def851f before every consuming Task commit.
+  Authorization was not folded into a consuming Task commit.
+  No prerequisite-fix declaration exists.
+  No consequent-fix declaration exists; the mechanical audit preserved that
+  detector as skipped.
+  No derived pin changed.

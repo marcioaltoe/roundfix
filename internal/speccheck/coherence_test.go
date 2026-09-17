@@ -27,6 +27,7 @@ func TestStageScopeRunsOnlyDetectorsTheStageCanDecide(t *testing.T) {
 		t.Fatalf("StagePRD findings = %#v, want PRD constraint detector findings", prdResult.Findings)
 	}
 	for _, code := range []string{
+		speccheck.CodeContractUndeclared,
 		speccheck.CodeCoverageUnmapped,
 		speccheck.CodeCoverageUntasked,
 		speccheck.CodeVerifyWorkIndependent,
@@ -124,6 +125,7 @@ func TestStageScopeNamesTheDetectorsItSkipped(t *testing.T) {
 	for _, code := range []string{
 		speccheck.CodeCoverageUnmapped,
 		speccheck.CodeVocabularyUndocumented,
+		speccheck.CodeContractUndeclared,
 		speccheck.CodeADRUnlisted,
 		speccheck.CodeADRRelated,
 		speccheck.CodeCoverageUntasked,
@@ -138,6 +140,132 @@ func TestStageScopeNamesTheDetectorsItSkipped(t *testing.T) {
 		if !hasSkip(result, code, "stage prd") {
 			t.Errorf("StagePRD Skipped = %#v, want named %s detector", result.Skipped, code)
 		}
+	}
+}
+
+func TestPromiseSectionDeclaration(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name            string
+		prdSection      string
+		techSpecSection string
+		stage           speccheck.Stage
+		wantCode        string
+		wantArtifact    string
+		wantSection     string
+	}{
+		{
+			name:         "missing Success Metrics section",
+			stage:        speccheck.StagePRD,
+			wantCode:     speccheck.CodeMetricUndeclared,
+			wantArtifact: "_prd.md",
+			wantSection:  "Success Metrics",
+		},
+		{
+			name:         "empty Success Metrics section",
+			prdSection:   "## Success Metrics\n\n## Next section\n",
+			stage:        speccheck.StagePRD,
+			wantCode:     speccheck.CodeMetricUndeclared,
+			wantArtifact: "_prd.md",
+			wantSection:  "Success Metrics",
+		},
+		{
+			name:         "bulleted Success Metrics section",
+			prdSection:   "## Success Metrics\n\n- The fixture records an unaddressable outcome.\n",
+			stage:        speccheck.StagePRD,
+			wantCode:     speccheck.CodeMetricUndeclared,
+			wantArtifact: "_prd.md",
+			wantSection:  "Success Metrics",
+		},
+		{
+			name:            "prose API Contracts section",
+			prdSection:      "## Success Metrics\n\nNone. This fixture has no measurable outcome.\n",
+			techSpecSection: "## API Contracts\n\nThe fixture changes no public interface.\n",
+			stage:           speccheck.StageTechSpec,
+			wantCode:        speccheck.CodeContractUndeclared,
+			wantArtifact:    "_techspec.md",
+			wantSection:     "API Contracts",
+		},
+		{
+			name:            "tabular API Contracts section",
+			prdSection:      "## Success Metrics\n\nNone. This fixture has no measurable outcome.\n",
+			techSpecSection: "## API Contracts\n\n| Contract | Detail |\n| --- | --- |\n| CLI | Stable |\n",
+			stage:           speccheck.StageTechSpec,
+			wantCode:        speccheck.CodeContractUndeclared,
+			wantArtifact:    "_techspec.md",
+			wantSection:     "API Contracts",
+		},
+		{
+			name:            "reasoned none at level three",
+			prdSection:      "## Outcomes\n\n### Success Metrics\n\nNone. This fixture has no measurable outcome.\n",
+			techSpecSection: "## Interfaces\n\n### API Contracts\n\nNone. This fixture has no public interface.\n",
+			stage:           speccheck.StageTechSpec,
+		},
+		{
+			name:            "numbered declarations",
+			prdSection:      "## Success Metrics\n\n1. The fixture records one outcome.\n",
+			techSpecSection: "## API Contracts\n\n1. The fixture exposes one contract.\n",
+			stage:           speccheck.StageTechSpec,
+		},
+		{
+			name:            "none mixed with numbered declarations",
+			prdSection:      "## Success Metrics\n\nNone. This line does not erase numbered metrics.\n1. The fixture records one outcome.\n",
+			techSpecSection: "## API Contracts\n\nNone. This line does not erase numbered contracts.\n1. The fixture exposes one contract.\n",
+			stage:           speccheck.StageTechSpec,
+		},
+		{
+			name:            "none without a reason",
+			prdSection:      "## Success Metrics\n\nNone.\n",
+			techSpecSection: "## API Contracts\n\nNone. This fixture has no public interface.\n",
+			stage:           speccheck.StageTechSpec,
+			wantCode:        speccheck.CodeMetricUndeclared,
+			wantArtifact:    "_prd.md",
+			wantSection:     "Success Metrics",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			const slug = "promise-declaration"
+			repoRoot := t.TempDir()
+			specsRoot := filepath.Join(repoRoot, "docs", "specs")
+			writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/_prd.md", "# Promise declaration fixture\n\n"+tt.prdSection)
+			if tt.stage == speccheck.StageTechSpec {
+				writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/_techspec.md", "# Promise declaration fixture\n\n"+tt.techSpecSection)
+			}
+
+			result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, tt.stage)
+			if err != nil {
+				t.Fatalf("CheckStage(%s): %v", tt.stage, err)
+			}
+			promiseFindings := append(
+				findingsWithCode(result, speccheck.CodeMetricUndeclared),
+				findingsWithCode(result, speccheck.CodeContractUndeclared)...,
+			)
+			if tt.wantCode == "" {
+				if len(promiseFindings) != 0 {
+					t.Fatalf("promise declaration findings = %#v, want none", promiseFindings)
+				}
+				return
+			}
+			if len(promiseFindings) != 1 || promiseFindings[0].Code != tt.wantCode {
+				t.Fatalf("promise declaration findings = %#v, want exactly one %s", promiseFindings, tt.wantCode)
+			}
+			finding := promiseFindings[0]
+			if finding.Severity != speccheck.SeverityGap {
+				t.Errorf("severity = %q, want %q", finding.Severity, speccheck.SeverityGap)
+			}
+			if !strings.Contains(finding.Summary, tt.wantArtifact) || !strings.Contains(finding.Summary, tt.wantSection) {
+				t.Errorf("summary = %q, want artifact %q and section %q", finding.Summary, tt.wantArtifact, tt.wantSection)
+			}
+			if !hasLocation(finding, "docs/specs/"+slug+"/"+tt.wantArtifact) {
+				t.Errorf("locations = %#v, want declaring artifact %q", finding.Where, tt.wantArtifact)
+			}
+		})
 	}
 }
 

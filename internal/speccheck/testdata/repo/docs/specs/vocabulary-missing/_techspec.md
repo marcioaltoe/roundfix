@@ -7,6 +7,10 @@
 - Active ADR obligations: not applicable — this fixture cites no ADR. Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — this fixture changes no tooling. Source: `docs/agents/agent-instructions.md`.
 
+## API Contracts
+
+None. This fixture declares no public interface.
+
 ## Vocabulary Contract
 
 - emits: `docs/specs/vocabulary-missing/emitter.go`

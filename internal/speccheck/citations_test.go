@@ -594,6 +594,142 @@ func TestCheckCoverageUntasked(t *testing.T) {
 	}
 }
 
+func TestPromiseCoverageReachesItsTask(t *testing.T) {
+	t.Parallel()
+
+	t.Run("unmapped metric keeps the coverage error", func(t *testing.T) {
+		t.Parallel()
+
+		result := checkPromiseCoverageFixture(t, "1. First metric.\n2. Second metric.", true,
+			"- Success Metric 1 → measurement.\n", "- `_prd.md` → Success Metrics 1-2.\n")
+		findings := findingsWithCode(result, speccheck.CodeCoverageUnmapped)
+		if len(findings) != 1 || !strings.Contains(findings[0].Summary, "Success Metric 2") {
+			t.Fatalf("%s findings = %#v, want only Success Metric 2", speccheck.CodeCoverageUnmapped, findings)
+		}
+		if findings[0].Severity != speccheck.SeverityError {
+			t.Fatalf("severity = %q, want %q", findings[0].Severity, speccheck.SeverityError)
+		}
+	})
+
+	t.Run("unnamed promises retain their declaring artifacts", func(t *testing.T) {
+		t.Parallel()
+
+		result := checkPromiseCoverageFixture(t, "1. Measured outcome.", true,
+			"- Success Metric 1 → measurement.\n", "")
+		findings := findingsWithCode(result, speccheck.CodeCoverageUntasked)
+		if len(findings) != 2 {
+			t.Fatalf("%s findings = %#v, want metric and contract", speccheck.CodeCoverageUntasked, findings)
+		}
+		for _, finding := range findings {
+			if finding.Severity != speccheck.SeverityError {
+				t.Errorf("severity = %q, want %q", finding.Severity, speccheck.SeverityError)
+			}
+			switch {
+			case strings.Contains(finding.Summary, "Success Metric 1"):
+				if !hasLocation(finding, "docs/specs/promise-coverage/_prd.md") {
+					t.Errorf("metric locations = %#v, want PRD declaration", finding.Where)
+				}
+			case strings.Contains(finding.Summary, "API Contract 1"):
+				if !strings.Contains(finding.Summary, "docs/specs/promise-coverage/_techspec.md") {
+					t.Errorf("contract summary = %q, want TechSpec declaration", finding.Summary)
+				}
+				if !hasLocation(finding, "docs/specs/promise-coverage/_techspec.md") {
+					t.Errorf("contract locations = %#v, want TechSpec declaration", finding.Where)
+				}
+			default:
+				t.Errorf("unexpected untasked promise: %#v", finding)
+			}
+		}
+	})
+
+	t.Run("written metric range and contract reference resolve", func(t *testing.T) {
+		t.Parallel()
+
+		result := checkPromiseCoverageFixture(t, "1. First metric.\n2. Second metric.", true,
+			"- Success Metrics 1-2 → measurements.\n", "- `_prd.md` → Success Metrics 1-2; `_techspec.md` → API Contract 1.\n")
+		for _, code := range []string{speccheck.CodeCoverageUnmapped, speccheck.CodeCoverageUntasked} {
+			if findings := findingsWithCode(result, code); len(findings) != 0 {
+				t.Errorf("%s findings = %#v, want none", code, findings)
+			}
+		}
+	})
+
+	t.Run("metric without TechSpec skips mapping but still needs a Task", func(t *testing.T) {
+		t.Parallel()
+
+		result := checkPromiseCoverageFixture(t, "1. Measured outcome.", false, "", "")
+		if findings := findingsWithCode(result, speccheck.CodeCoverageUnmapped); len(findings) != 0 {
+			t.Fatalf("%s findings = %#v, want missing TechSpec skipped", speccheck.CodeCoverageUnmapped, findings)
+		}
+		findings := findingsWithCode(result, speccheck.CodeCoverageUntasked)
+		if len(findings) != 1 || !strings.Contains(findings[0].Summary, "Success Metric 1") {
+			t.Fatalf("%s findings = %#v, want untasked Success Metric 1", speccheck.CodeCoverageUntasked, findings)
+		}
+	})
+}
+
+func checkPromiseCoverageFixture(t *testing.T, metrics string, withTechSpec bool, coverageMap, taskReferences string) speccheck.Result {
+	t.Helper()
+
+	repoRoot := t.TempDir()
+	for _, source := range []string{
+		"docs/agents/agent-instructions.md",
+		"docs/agents/cli.md",
+		"docs/agents/domain.md",
+	} {
+		writeCitationFixtureFile(t, repoRoot, source, "# Fixture source\n")
+	}
+	const constraints = `## Project Constraints
+
+- Identifier strategy: not applicable — fixture only. Source: ` + "`docs/agents/domain.md`" + `.
+- Authentication and HTTP: not applicable — local files only. Source: ` + "`docs/agents/cli.md`" + `.
+- Active ADR obligations: not applicable — no ADR applies. Source: ` + "`docs/agents/domain.md`" + `.
+- Tooling authority: not applicable — ordinary source only. Source: ` + "`docs/agents/agent-instructions.md`" + `.
+`
+	prd := "---\nspec: promise-coverage\nstatus: active\n---\n\n# Promise coverage\n\n" + constraints + "\n## Success Metrics\n\n" + metrics + "\n"
+	writeCitationFixtureFile(t, repoRoot, "docs/specs/promise-coverage/_prd.md", prd)
+	if withTechSpec {
+		techSpec := "# Promise coverage TechSpec\n\n" + constraints + "\n## API Contracts\n\n1. Stable contract.\n\n## Coverage Map\n\n" + coverageMap
+		writeCitationFixtureFile(t, repoRoot, "docs/specs/promise-coverage/_techspec.md", techSpec)
+	}
+	writeCitationFixtureFile(t, repoRoot, "docs/specs/promise-coverage/_tasks.md", `---
+schema: spec-tasks/v1
+spec: promise-coverage
+graph:
+  nodes:
+    - id: task_01
+      file: task_01.md
+      needs: []
+---
+
+# Promise coverage Task Graph
+`)
+	task := `---
+task: task_01
+spec: promise-coverage
+status: pending
+type: backend
+complexity: low
+---
+
+# Task 01: Trace promises
+
+## Verification
+
+- ` + "`true`" + `
+
+## References
+
+` + taskReferences
+	writeCitationFixtureFile(t, repoRoot, "docs/specs/promise-coverage/task_01.md", task)
+
+	result, err := speccheck.Check(filepath.Join(repoRoot, "docs", "specs"), repoRoot, "promise-coverage")
+	if err != nil {
+		t.Fatalf("Check(promise-coverage) error = %v", err)
+	}
+	return result
+}
+
 func TestCheckReferenceUnresolved(t *testing.T) {
 	t.Parallel()
 
@@ -698,7 +834,9 @@ func TestCheckCitationCoverageErrorLocations(t *testing.T) {
 
 			result := checkFixture(t, slug)
 			for _, finding := range result.Findings {
-				if finding.Code == speccheck.CodeADRRelated {
+				if finding.Code == speccheck.CodeADRRelated ||
+					finding.Code == speccheck.CodeMetricUndeclared ||
+					finding.Code == speccheck.CodeContractUndeclared {
 					continue
 				}
 				if finding.Severity != speccheck.SeverityError {

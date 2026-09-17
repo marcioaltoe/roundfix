@@ -1,0 +1,22 @@
+Build: d948c47676729bd55736964feaa41cef76a94675
+Binary: /private/tmp/roundfix-qa0140, built from the audited source with
+GOCACHE=/private/tmp/roundfix-qa0140-gocache.
+
+Command:
+  roundfix spec check 0120-knowledge-lifecycle-and-durable-capture --format json
+Exit: 0
+Observed:
+  SC-METRIC-UNDECLARED severity=gap
+  stage artifact=docs/specs/0120-knowledge-lifecycle-and-durable-capture/_prd.md
+  SC-CONTRACT-UNDECLARED severity=gap
+  stage artifact=docs/specs/0120-knowledge-lifecycle-and-durable-capture/_techspec.md
+
+Fresh-process confirmation:
+  roundfix spec check 0140-a-spec-traces-the-promises-it-makes --strict --format json
+Exit: 0
+Observed:
+  findings=[]
+
+The first command exercises an artifact with an absent Success Metrics
+declaration and prose API Contracts. The second exercises numbered declarations
+whose metrics are mapped and whose metrics and contracts have consuming Tasks.

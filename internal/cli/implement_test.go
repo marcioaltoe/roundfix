@@ -615,6 +615,9 @@ const implementFixtureConstraints = "## Project Constraints\n\n" +
 	"- Active ADR obligations: not applicable — this fixture cites no ADR. Source: `docs/agents/domain.md`.\n" +
 	"- Tooling authority: not applicable — this fixture changes no tooling. Source: `docs/agents/agent-instructions.md`.\n"
 
+const implementFixtureSuccessMetrics = "\n## Success Metrics\n\n" +
+	"None. This operational fixture measures command-flow behavior rather than a post-shipping product outcome.\n"
+
 func writeImplementSpecAtRoot(t *testing.T, specsRoot string, slug string, seeds []implementSeed) {
 	t.Helper()
 	specDir := filepath.Join(specsRoot, slug)
@@ -623,7 +626,7 @@ func writeImplementSpecAtRoot(t *testing.T, specsRoot string, slug string, seeds
 	// that skips its Project Constraints refuses at the gate before any Agent
 	// runs. These rows keep the fixture authoring-clean, which is what every
 	// implement Run below is actually measuring.
-	mustWrite(t, filepath.Join(specDir, "_prd.md"), "---\nstatus: active\n---\n\n# PRD\n\n"+implementFixtureConstraints)
+	mustWrite(t, filepath.Join(specDir, "_prd.md"), "---\nstatus: active\n---\n\n# PRD\n\n"+implementFixtureConstraints+implementFixtureSuccessMetrics)
 	mustWrite(t, filepath.Join(specDir, "_authorization.md"), implementFixtureAuthorization(slug, "implement", "commit", "push"))
 
 	var qaTaskID string

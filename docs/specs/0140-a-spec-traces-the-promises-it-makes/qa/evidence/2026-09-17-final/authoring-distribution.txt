@@ -1,0 +1,18 @@
+Exact canonical/mirror comparisons, all exit 0 with no diff:
+  .agents/skills/write-prd/SKILL.md
+  .agents/skills/write-prd/references/prd-template.md
+  .agents/skills/write-techspec/SKILL.md
+  .agents/skills/write-techspec/references/techspec-template.md
+  .agents/skills/write-tasks/SKILL.md
+  .agents/skills/write-tasks/references/task-template.md
+
+Search evidence:
+  PRD skill/template name numbered Success Metrics and the single reasoned
+  None. alternative.
+  TechSpec skill/template name numbered API Contracts and the single reasoned
+  None. alternative.
+  Both Task templates name Success Metric 2 and API Contract 1.
+
+Version evidence:
+  All six SKILL.md copies retain version 0.0.2 in metadata and the top-level
+  version field.
