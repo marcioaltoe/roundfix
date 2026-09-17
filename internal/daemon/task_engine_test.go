@@ -1423,6 +1423,46 @@ func TestQAReportCommitExcludesVerificationWrites(t *testing.T) {
 	}
 }
 
+func TestQAReportCommitKeepsAgentEvidenceInANewDirectory(t *testing.T) {
+	t.Parallel()
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	const (
+		verificationPath = "qa-output/verification.txt"
+		agentPath        = "qa-output/agent.txt"
+	)
+	runner := &taskFakeRunner{
+		calls:    fixture.calls,
+		gitRoot:  fixture.gitRoot,
+		qaReport: qaReportForTest(spec.VerdictPass),
+		afterQA: func() {
+			mustWriteForTest(t, filepath.Join(fixture.gitRoot, agentPath), "agent evidence\n")
+		},
+	}
+	engine := fixture.engine(t, runner, ExecVerifier{}, GitCommitter{}, GitWorktreeSnapshotter{})
+	plan := fixture.qaPlan()
+	plan.RepositoryVerification = "mkdir -p qa-output && printf 'verification output\\n' > " + verificationPath
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if result.QAVerdict != spec.VerdictPass {
+		t.Fatalf("QA verdict = %q, want %q", result.QAVerdict, spec.VerdictPass)
+	}
+	committed := commitFilesForTest(t, fixture.gitRoot, "HEAD")
+	if !slices.Contains(committed, agentPath) {
+		t.Fatalf("QA Report commit files = %v, want Agent evidence %q", committed, agentPath)
+	}
+	if slices.Contains(committed, verificationPath) {
+		t.Fatalf("QA Report commit files = %v, Verification output %q must stay uncommitted", committed, verificationPath)
+	}
+	status := runGitForTest(t, fixture.gitRoot, "status", "--porcelain=v1", "--untracked-files=all")
+	if !strings.Contains(status, "?? "+verificationPath) {
+		t.Fatalf("worktree status = %q, want Verification output left uncommitted", status)
+	}
+}
+
 func TestQAGateRefusesOnFailedRepositoryVerification(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -7314,6 +7354,33 @@ func TestFilterStageablePathsKeepsTrackedRegularFile(t *testing.T) {
 
 	if !slices.Equal(kept, []string{"before.txt"}) || len(dropped) != 0 {
 		t.Fatalf("tracked regular file: kept=%v dropped=%+v, want path stageable", kept, dropped)
+	}
+}
+
+func TestFilterStageablePathsRefusesExecutableReplacingATrackedDirectory(t *testing.T) {
+	t.Parallel()
+	repoDir := newTaskCommitRenameRepoForTest(t)
+	const replacedPath = "tracked-directory"
+	if err := os.MkdirAll(filepath.Join(repoDir, replacedPath), 0o755); err != nil {
+		t.Fatalf("create tracked directory: %v", err)
+	}
+	mustWriteForTest(t, filepath.Join(repoDir, replacedPath, "tracked.txt"), "tracked descendant\n")
+	runGitForTest(t, repoDir, "add", replacedPath)
+	runGitForTest(t, repoDir, "commit", "-m", "track directory contents")
+	if err := os.RemoveAll(filepath.Join(repoDir, replacedPath)); err != nil {
+		t.Fatalf("remove tracked directory: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(repoDir, replacedPath), []byte("replacement\n"), 0o755); err != nil {
+		t.Fatalf("write executable replacement: %v", err)
+	}
+
+	kept, dropped := FilterStageablePaths(context.Background(), repoDir, []string{replacedPath})
+
+	if len(kept) != 0 {
+		t.Fatalf("kept paths = %v, want executable replacement refused", kept)
+	}
+	if len(dropped) != 1 || dropped[0].Path != replacedPath || dropped[0].Reason != executableStagePathReason || dropped[0].Mode != "0755" || !dropped[0].Lost {
+		t.Fatalf("dropped paths = %+v, want executable-file refusal with mode 0755", dropped)
 	}
 }
 

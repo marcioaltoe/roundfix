@@ -1955,8 +1955,8 @@ func executableRegularFileMode(workDir string, relative string) (string, bool) {
 }
 
 func pathTrackedInIndex(ctx context.Context, workDir string, relative string) bool {
-	_, err := runGitCommand(ctx, workDir, "ls-files", "--error-unmatch", "--", relative)
-	return err == nil
+	tracked, answered := indexTracksExactPath(ctx, workDir, relative)
+	return answered && tracked
 }
 
 func pathAbsentFromWorktreeAndIndex(ctx context.Context, workDir string, relative string) bool {
@@ -1967,13 +1967,24 @@ func pathAbsentFromWorktreeAndIndex(ctx context.Context, workDir string, relativ
 	if !errors.Is(err, os.ErrNotExist) {
 		return false
 	}
-	result, err := runGitCommand(ctx, workDir, "ls-files", "--error-unmatch", "--", relative)
-	if err == nil {
-		return false
+	tracked, answered := indexTracksExactPath(ctx, workDir, relative)
+	// A failed query leaves absence unproven, so the commit boundary remains
+	// responsible for the path.
+	return answered && !tracked
+}
+
+func indexTracksExactPath(ctx context.Context, workDir string, relative string) (tracked bool, answered bool) {
+	result, err := runGitCommand(ctx, workDir, "ls-files", "-z", "--", relative)
+	if err != nil {
+		return false, false
 	}
-	// Exit 1 is ls-files' positive no-match answer. Any other failure leaves
-	// absence unproven, so the commit boundary remains responsible for it.
-	return result.ExitCode == 1
+	want := filepath.ToSlash(filepath.Clean(relative))
+	for _, path := range strings.Split(result.Stdout, "\x00") {
+		if path == want {
+			return true, true
+		}
+	}
+	return false, true
 }
 
 func (engine *Engine) publishDroppedStagePath(ctx context.Context, runID string, ordinal int, taskID string, artifactLabel string, drop DroppedStagePath) error {
@@ -2058,6 +2069,17 @@ func lowerFirstRune(value string) string {
 
 const qaRepositoryVerificationUnconfiguredPrompt = "Repository Verification: run it in this gate; no command is configured for the Daemon.\n"
 
+type qaFileSnapshotter interface {
+	snapshotFiles(context.Context, string) ([]string, error)
+}
+
+func (engine *Engine) snapshotQAPaths(ctx context.Context, workDir string) ([]string, error) {
+	if snapshotter, ok := engine.deps.Worktree.(qaFileSnapshotter); ok {
+		return snapshotter.snapshotFiles(ctx, workDir)
+	}
+	return engine.deps.Worktree.Snapshot(ctx, workDir)
+}
+
 func (engine *Engine) runQARepositoryVerification(ctx context.Context, plan TaskPlan, qaTask spec.Task, ordinal int, mechanicalResult *speccheck.MechanicalResult) (string, []string, error) {
 	if mechanicalResult.Blocking {
 		return "", nil, nil
@@ -2087,12 +2109,12 @@ func (engine *Engine) runQARepositoryVerification(ctx context.Context, plan Task
 			return nil
 		},
 	}
-	verificationWindowBefore, err := engine.deps.Worktree.Snapshot(ctx, plan.WorkDir)
+	verificationWindowBefore, err := engine.snapshotQAPaths(ctx, plan.WorkDir)
 	if err != nil {
 		return "", nil, err
 	}
 	outcome, verificationErr := engine.runTaskVerificationRequest(ctx, plan, qaTask, request)
-	verificationWindowAfter, snapshotErr := engine.deps.Worktree.Snapshot(ctx, plan.WorkDir)
+	verificationWindowAfter, snapshotErr := engine.snapshotQAPaths(ctx, plan.WorkDir)
 	if verificationErr != nil {
 		return "", nil, verificationErr
 	}
@@ -2179,7 +2201,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	}
 	// The before-snapshot keeps everything already dirty out of the QA
 	// Report commit: only the QA step's own report and evidence ride in it.
-	before, err := engine.deps.Worktree.Snapshot(ctx, plan.WorkDir)
+	before, err := engine.snapshotQAPaths(ctx, plan.WorkDir)
 	if err != nil {
 		return "", "", err
 	}
@@ -2741,7 +2763,7 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 		}
 		return fmt.Errorf("stop run %q before the QA Report commit: %w", plan.RunID, err)
 	}
-	after, err := engine.deps.Worktree.Snapshot(ctx, plan.WorkDir)
+	after, err := engine.snapshotQAPaths(ctx, plan.WorkDir)
 	if err != nil {
 		return err
 	}
