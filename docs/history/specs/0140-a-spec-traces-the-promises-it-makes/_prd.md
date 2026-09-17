@@ -1,9 +1,12 @@
 ---
 spec: 0140-a-spec-traces-the-promises-it-makes
-status: active
+status: archived
 created: 2026-09-17
 surfaces: [backend, cli, docs]
+archived: "2026-09-17"
+source_slug: 0140-a-spec-traces-the-promises-it-makes
 ---
+
 
 # A Spec traces the promises it makes
 
