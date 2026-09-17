@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0140-a-spec-traces-the-promises-it-makes
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -90,3 +90,43 @@ change only the bounded files below plus its own Task file.
 Project Constraints: Tooling authority;
 `_techspec.md` → System Architecture: Authoring rules; Testing Approach 5;
 Build Order 4; `_authorization.md`; ADR-0156.
+
+## Result
+
+Implemented the authoring guidance for traceable promises. PRD Success Metrics
+and TechSpec API Contracts now prescribe numbered declarations or a single
+`None.` entry with a reason; the Task skill requires mapping every declared
+promise and naming each in Task References; and the Task template example names
+`Success Metric 2` and `API Contract 1`. The distributed `skills/` copies were
+regenerated from the canonical `.agents/skills/` copies with `make skills-sync`.
+
+Focused checks run:
+
+- `make skills-sync` — passed.
+- Explicit `cmp -s` checks for all six canonical/mirror pairs — passed; all
+  pairs are byte-identical.
+- `git diff --check` — passed.
+- Search checks for `numbered Success Metric`, `numbered API Contract`,
+  `Success Metric 2`, and `API Contract 1` across canonical and mirror files —
+  passed.
+- `git diff --name-only` — changed paths are the twelve authorized skill and
+  template paths plus this assigned Task file; no other path was changed.
+
+Acceptance evidence:
+
+- Canonical and mirror skills/templates carry the new clauses and are
+  byte-identical, as shown by the six `cmp -s` checks.
+- The Task template References example names `Success Metric 2` and `API
+  Contract 1`.
+- All three skill frontmatter versions remain `0.0.2`; no version or setup
+  minimum changed.
+- The changed-path audit contains only the authorized bounded paths and this
+  assigned Task file.
+
+Follow-up: the Daemon should run the declared Verification section and own
+terminal Task status.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260917T164016Z_ac67737203a1aa3d`
+- Source commit: `188234ca350324f12f156d5a56bac6398a194da2`

@@ -117,7 +117,7 @@ complexity: medium # low | medium | high
 ## References
 
 <!-- PRD/TechSpec sections and ADRs this task implements, by name:
-     `_prd.md` → User Stories 3-4; `_techspec.md` → Build Order 2, Interfaces: ImportScheduler; ADR-0012. -->
+     `_prd.md` → User Stories 3-4, Success Metric 2; `_techspec.md` → Build Order 2, API Contract 1, Interfaces: ImportScheduler; ADR-0012. -->
 ```
 
 ## Result section (appended by `implement-task`, not by `write-tasks`)

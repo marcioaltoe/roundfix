@@ -51,7 +51,11 @@ created: YYYY-MM-DD
 
 ### API Contracts
 
-<!-- New/changed endpoints or commands: input, output, failure modes. Omit for features with none. -->
+<!-- New/changed endpoints or commands: input, output, failure modes. Use
+     numbered API Contract items, or the single entry `None.` followed by the
+     reason none applies. -->
+
+1. API Contract: ...
 
 ## Coverage Map
 

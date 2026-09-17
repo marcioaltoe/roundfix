@@ -62,7 +62,10 @@ surfaces: [backend] # every surface touched: frontend | backend | cli | data | i
 
 ## Success Metrics
 
-<!-- How we know the feature worked after shipping. Measurable where possible. -->
+<!-- How we know the feature worked after shipping. Use numbered Success Metric
+     items, or the single entry `None.` followed by the reason none applies. -->
+
+1. Success Metric: ...
 
 ## Decisions
 
