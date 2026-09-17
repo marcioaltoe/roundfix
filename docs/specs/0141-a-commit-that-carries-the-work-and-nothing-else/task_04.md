@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0141-a-commit-that-carries-the-work-and-nothing-else
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
