@@ -34,7 +34,7 @@ settle it, checked where it is written, by citation.
   ADR-0155 applies: the `qa` Task declares the gate's matrix, which is why an untraced promise is now uncovered rather than absorbed by a gate-derived matrix.
   ADR-0104 applies: acceptance rests on evidence the Spec did not author, which here is the corpus of Specs delivered before it.
   ADR-0156 applies: a declared promise names a consuming Task, or the Spec declares explicitly that none applies and why.
-- Tooling authority: applicable — the authoring rules live in Roundfix-owned Skills, so this Spec carries an operative grant. Express maintainer authorization: "Aprovar como proposto", 2026-09-17, recorded in [_authorization.md](_authorization.md); bounded files: `.agents/skills/write-prd/SKILL.md`, `.agents/skills/write-prd/references/prd-template.md`, `.agents/skills/write-techspec/SKILL.md`, `.agents/skills/write-techspec/references/techspec-template.md`, `skills/write-prd/SKILL.md`, `skills/write-prd/references/prd-template.md`, `skills/write-techspec/SKILL.md`, `skills/write-techspec/references/techspec-template.md`. The Spec Consistency Check itself is ordinary source that no authorization has bounded, so it needs no grant. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
+- Tooling authority: applicable — the authoring rules live in Roundfix-owned Skills, so this Spec carries an operative grant. Express maintainer authorization: "Aprovar como proposto" on 2026-09-17, widened the same day to the Task authoring skill after pre-PR review, recorded in [_authorization.md](_authorization.md); bounded files: `.agents/skills/write-prd/SKILL.md`, `.agents/skills/write-prd/references/prd-template.md`, `.agents/skills/write-techspec/SKILL.md`, `.agents/skills/write-techspec/references/techspec-template.md`, `.agents/skills/write-tasks/SKILL.md`, `.agents/skills/write-tasks/references/task-template.md`, `skills/write-prd/SKILL.md`, `skills/write-prd/references/prd-template.md`, `skills/write-techspec/SKILL.md`, `skills/write-techspec/references/techspec-template.md`, `skills/write-tasks/SKILL.md`, `skills/write-tasks/references/task-template.md`. The Spec Consistency Check itself is ordinary source that no authorization has bounded, so it needs no grant. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## Goals
 
@@ -139,25 +139,30 @@ changes: it stays read-only, emits no verdict, and edits no artifact.
 
 ## Acceptance evidence
 
-At least one acceptance row rests on evidence this Spec did not author: the
-twenty Specs delivered or authored before it. The replay must show three things.
+At least one acceptance row rests on evidence this Spec did not author: the ten
+Specs that sit in authoring today, written before this one and under a different
+intent. Archived Specs are never swept, so they are measured in the problem
+statement and are not an acceptance input. The replay states its prediction
+before it runs, and must show three things.
 
-1. **The counted gaps are the reported gaps.** Twelve PRDs with no Success
-   Metrics section, eight declaring metrics of which three are named by no Task,
-   and twelve TechSpecs declaring API Contracts each report exactly the finding
-   the rule predicts, and no other.
-2. **A traced promise stays silent.** The Specs whose metrics are already named
-   by a Task raise no finding, so the rule does not convert existing practice
-   into noise.
-3. **No archived artifact changes.** The replay reads the corpus and modifies
-   nothing in it.
+1. **The predicted gaps are the reported gaps.** Seven of those Specs carry no
+   Success Metrics section, three carry one written as bullets or a table, and
+   all ten carry an API Contracts section written as prose. The sweep reports
+   exactly ten metric findings and ten contract findings, and no other new
+   finding.
+2. **No new error appears.** None of the ten declares a numbered promise today,
+   so the coverage obligation produces no `error` against them. A rule that
+   turned the queue red on arrival would be the wrong rule.
+3. **No archived or active artifact changes.** The replay reads the corpus and
+   modifies nothing in it.
 
 Where an archived Spec cannot be replayed, the row is recorded as blocked with
 that reason; it never requires human interaction.
 
 ## Success Metrics
 
-1. The replay described above holds for every count it names.
+1. The replay described above holds for every count it names, including the
+   prediction recorded before it ran.
 2. The next two Specs authored after this one declare both sections and reach a
    clean check with no promise finding, without either Spec adding an invented
    metric.

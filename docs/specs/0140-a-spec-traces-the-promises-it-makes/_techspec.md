@@ -32,7 +32,7 @@ red on delivery. A promise that is declared and then named by nobody is an
   ADR-0155 applies: the gate covers what the `qa` Task declares, which is why an untraced promise is now uncovered downstream.
   ADR-0104 applies: acceptance replays the ten Specs in authoring, which this Spec did not author.
   ADR-0156 applies: a declared promise names a consuming Task, and an explicit `None.` with a reason is a declaration.
-- Tooling authority: applicable — the authoring rules live in Roundfix-owned Skills, so this Spec carries an operative grant. Express maintainer authorization: "Aprovar como proposto", 2026-09-17, recorded in [_authorization.md](_authorization.md); bounded files: `.agents/skills/write-prd/SKILL.md`, `.agents/skills/write-prd/references/prd-template.md`, `.agents/skills/write-techspec/SKILL.md`, `.agents/skills/write-techspec/references/techspec-template.md`, `skills/write-prd/SKILL.md`, `skills/write-prd/references/prd-template.md`, `skills/write-techspec/SKILL.md`, `skills/write-techspec/references/techspec-template.md`. The checker is ordinary source that no authorization has bounded. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
+- Tooling authority: applicable — the authoring rules live in Roundfix-owned Skills, so this Spec carries an operative grant. Express maintainer authorization: "Aprovar como proposto" on 2026-09-17, widened the same day to the Task authoring skill after pre-PR review, recorded in [_authorization.md](_authorization.md); bounded files: `.agents/skills/write-prd/SKILL.md`, `.agents/skills/write-prd/references/prd-template.md`, `.agents/skills/write-techspec/SKILL.md`, `.agents/skills/write-techspec/references/techspec-template.md`, `.agents/skills/write-tasks/SKILL.md`, `.agents/skills/write-tasks/references/task-template.md`, `skills/write-prd/SKILL.md`, `skills/write-prd/references/prd-template.md`, `skills/write-techspec/SKILL.md`, `skills/write-techspec/references/techspec-template.md`, `skills/write-tasks/SKILL.md`, `skills/write-tasks/references/task-template.md`. The checker is ordinary source that no authorization has bounded. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## System Architecture
 
@@ -42,8 +42,8 @@ red on delivery. A promise that is declared and then named by nobody is an
 | Declaration reader | `internal/speccheck` citation stage | Read each promise section and classify it as declared units, an explicit none, or no declaration. |
 | Reference vocabulary | `internal/speccheck` citation stage | Recognize the two new kinds where Task References and the Coverage Map already name units. |
 | Stage table | `internal/speccheck` coherence stage table | Place each new code at the stage that can establish it. |
-| Authoring rules | `write-prd` and `write-techspec` Skills and their templates | State the declaration form, its `None.` variant, and the report gate. |
-| Corpus expectation | `internal/docscontract` corpus golden | Record the active-corpus counts the new detectors produce. |
+| Authoring rules | `write-prd`, `write-techspec` and `write-tasks` Skills and their templates | State the declaration form, its `None.` variant, the report gate, and the References obligation where Tasks are written. |
+| Corpus expectation | `internal/docscontract` corpus golden | Characterize the codes the sweep may see and record the counts the new detectors produce. |
 
 No new package, file or directory is proposed. Every seam above exists and is
 already exercised by tests.
@@ -79,6 +79,12 @@ bullets or a table, and all ten carry an API Contracts section written as prose.
 - **A declared unit nobody names** is an `error`. The declaration and the
   artifact that should have named it are both located, which is the existing
   `error` condition.
+
+A finding carries the location of the artifact that declared the unit. Coverage
+units are parsed from the PRD today and their findings are rendered against the
+PRD, so the API Contract kind, which is declared in the TechSpec, must carry its
+own declaring artifact through to the finding. A contract reported at a PRD line
+would send the author to the wrong file.
 
 ### Codes and their stages
 
@@ -122,9 +128,14 @@ resolve without a new grammar.
 
 ### Data Models
 
-No entity, schema or stored record changes. The checker stays read-only over
-Spec artifacts, and the corpus golden keeps its current shape: per-Spec finding
-counts for the active corpus.
+No entity, schema or stored record changes, and the checker stays read-only over
+Spec artifacts.
+
+The corpus golden keeps its current shape: one aggregate map from finding code
+to count over the whole active corpus. That map's key set is also the list of
+codes the sweep will accept — an emitted code absent from it fails the sweep as
+uncharacterized, before any count is compared. Adding a code therefore means
+adding its key, not only updating a number.
 
 ### API Contracts
 
@@ -150,8 +161,10 @@ command's exit status unchanged unless `--strict` is passed.
 - User Story 2 → Reference vocabulary, Coverage unit set.
 - User Story 3 → Declaration reader (explicit none).
 - User Story 4 → Codes and their stages; API Contracts 1-3.
-- Core Feature 1 → Declaration reader; Authoring rules.
-- Core Feature 2 → Coverage unit set; Reference vocabulary.
+- Core Feature 1 → Declaration reader; Authoring rules (`write-prd`,
+  `write-techspec`).
+- Core Feature 2 → Coverage unit set; Reference vocabulary; Authoring rules
+  (`write-tasks`).
 - Core Feature 3 → Severity split.
 - Core Feature 4 → Stage table.
 - Core Feature 5 → Coverage unit set (existing kinds untouched); Testing
@@ -199,9 +212,11 @@ command's exit status unchanged unless `--strict` is passed.
    one, ten TechSpecs with prose API Contracts — and the sweep either matches it
    or the difference is reported. Where a Spec cannot be swept, the row records
    that reason and does not block.
-5. **Skill text.** Task Verification asserts, in the canonical copy and the
-   mirror, that each new clause is present and that the mirror parity test
-   passes.
+5. **Skill text.** Task Verification asserts, in each canonical copy and its
+   mirror, that the new clauses are present — the declaration form in the PRD
+   and TechSpec skills, the mapping and References obligation in the Task skill,
+   and the References example in the Task template — and that the mirror parity
+   test passes.
 6. **Self-application.** This Spec declares numbered Success Metrics and
    numbered API Contracts, maps the metrics in its own Coverage Map, and names
    all of them in its own Task References. Its own check must be clean under the
@@ -216,8 +231,9 @@ command's exit status unchanged unless `--strict` is passed.
 3. Glossary owners for the two coined codes, and the corpus golden updated to
    the counts steps 1 and 2 produce, with the prediction recorded (depends on:
    1, 2).
-4. Authoring rules in both skills and both templates, canonical then mirror
-   (depends on: 1, 2, 3).
+4. Authoring rules in the three skills and their templates, canonical then
+   mirror: the declaration form in `write-prd` and `write-techspec`, and the
+   mapping and References obligation in `write-tasks` (depends on: 1, 2, 3).
 5. Terminal QA (depends on: 1, 2, 3, 4).
 
 Step 4 follows the behavior steps deliberately: a documentation Task written

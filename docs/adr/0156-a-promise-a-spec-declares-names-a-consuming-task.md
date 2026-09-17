@@ -22,8 +22,10 @@ design and uncovered at the gate.
 
 A Success Metric and an API Contract are therefore declared as numbered items,
 or as an explicit `None.` with the reason none applies. Each numbered item is a
-coverage unit with the obligations user stories and Core Features already carry:
-it appears in the TechSpec Coverage Map, and some Task names it in References.
+coverage unit that some Task names in its References, the obligation user
+stories and Core Features already carry. A Success Metric also appears in the
+TechSpec Coverage Map; an API Contract does not, because it is already a
+TechSpec section and mapping a section to itself proves nothing.
 The check locates both sides and cites them, never inferring coverage from
 resemblance, and each side is reported by the authoring stage that can
 establish it.

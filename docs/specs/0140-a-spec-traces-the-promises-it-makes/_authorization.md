@@ -1,17 +1,21 @@
 ---
 status: approved
 granted: 2026-09-17
-action: extend the PRD and TechSpec authoring skills so a Spec declares its Success Metrics and API Contracts as traceable units
+action: extend the PRD, TechSpec and Task authoring skills so a Spec declares its Success Metrics and API Contracts as traceable units and names them where Tasks are written
 consuming: 0140-a-spec-traces-the-promises-it-makes
 paths:
   - .agents/skills/write-prd/SKILL.md
   - .agents/skills/write-prd/references/prd-template.md
   - .agents/skills/write-techspec/SKILL.md
   - .agents/skills/write-techspec/references/techspec-template.md
+  - .agents/skills/write-tasks/SKILL.md
+  - .agents/skills/write-tasks/references/task-template.md
   - skills/write-prd/SKILL.md
   - skills/write-prd/references/prd-template.md
   - skills/write-techspec/SKILL.md
   - skills/write-techspec/references/techspec-template.md
+  - skills/write-tasks/SKILL.md
+  - skills/write-tasks/references/task-template.md
 operations:
   - implement
   - commit
@@ -41,10 +45,15 @@ Each skill's template is bounded beside its skill because the template is the
 artifact an author copies; a rule stated only in the skill body would be
 contradicted by the template that ships with it.
 
+The Task authoring skill is bounded for the same reason. Its derivation step
+tells the author to map every PRD user story and Core Feature, and its Task
+checklist requires only user stories in References, so a rule the checker
+enforces would have no guidance where Tasks are actually written. The maintainer
+widened the grant to those two files, and their mirrors, on 2026-09-17 after
+pre-PR review raised the gap.
+
 The Spec Consistency Check that reports the findings is ordinary source that no
-authorization has bounded, so it needs no grant. The Task authoring skill needs
-no change either: its References contract already names TechSpec sections and
-ADRs, so a declared promise is nameable there today.
+authorization has bounded, so it needs no grant.
 
 ## Approved bounded mutation
 
@@ -58,7 +67,9 @@ Edit the canonical skills and their templates so that:
 - each numbered Success Metric and API Contract is named in some Task's
   References;
 - each skill's report step refuses to recommend the next pipeline step while its
-  own stage reports a promise finding.
+  own stage reports a promise finding;
+- the Task authoring skill maps every declared promise, requires each in some
+  Task's References, and its Task template's References example names one.
 
 After the canonical edit, regenerate the distributed mirror with
 `make skills-sync`. The mirror paths are already bounded above. If any derived
@@ -82,7 +93,9 @@ command: make baseline-digests
 - No action, operation or path beyond those above.
 - No edit to the qa-gate skill, the QA gate matrix, the QA Report or any verdict
   rule.
-- No edit to the Task authoring skill, its template, or the Task Type contract.
+- No edit to the Task Type contract, the QA decision rules, or any Verification
+  rule in the Task authoring skill; the only change there is the promise
+  coverage the rule adds.
 - No new or renumbered consistency code that changes an existing code's meaning,
   and no change to the severity of an existing finding.
 - No Baseline module, guide inside setup-context markers, linter, analyzer or
