@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0140-a-spec-traces-the-promises-it-makes
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -71,3 +71,48 @@ declared it rather than at the PRD.
 `_prd.md` → Core Feature 2; User Stories 2, 4; Success Metric 3;
 `_techspec.md` → Implementation Design: Codes and their stages, Interfaces;
 API Contract 3; Coverage Map; Build Order 2; ADR-0093; ADR-0156.
+
+## Result
+
+Implemented the promise coverage extension in the shared citation detectors.
+Success Metrics now join User Stories and Core Features in Coverage Map
+checking, Success Metrics and API Contracts join Task References checking, and
+each coverage unit carries the artifact that declared it. The reference reader
+recognizes `Success Metric(s)` and `API Contract(s)` followed by the existing
+number-sequence grammar. API Contracts are explicitly excluded from Coverage
+Map enforcement, and the authoring-stage Coverage Map check applies the same
+Success Metric rule.
+
+Focused-check evidence:
+
+- Before the implementation, `GOCACHE=/private/tmp/roundfix-go-cache rtk go
+  test -count=1 ./internal/speccheck` reported 379 passing and four failing
+  tests. The failures were the new promise coverage cases for the missing
+  metric mapping, unnamed promises, and the no-TechSpec metric path.
+- After the implementation, `GOCACHE=/private/tmp/roundfix-go-cache rtk go
+  test -count=1 ./internal/speccheck` exited 0 with 383 passing tests.
+- `rtk git diff --check` exited 0.
+
+Acceptance evidence:
+
+- `TestPromiseCoverageReachesItsTask/unmapped_metric_keeps_the_coverage_error`
+  declares two metrics, maps one, and asserts one `SC-COVERAGE-UNMAPPED` error
+  naming Success Metric 2.
+- `TestPromiseCoverageReachesItsTask/unnamed_promises_retain_their_declaring_artifacts`
+  asserts two `SC-COVERAGE-UNTASKED` errors at the existing severity, with the
+  metric located in the PRD and the contract summary and location naming the
+  TechSpec.
+- `TestPromiseCoverageReachesItsTask/written_metric_range_and_contract_reference_resolve`
+  uses `Success Metrics 1-2` and `API Contract 1` and asserts that neither
+  coverage code is reported. Its Coverage Map omits the API Contract, which
+  also proves that contracts are not required there.
+- `TestPromiseCoverageReachesItsTask/metric_without_TechSpec_skips_mapping_but_still_needs_a_Task`
+  asserts no Coverage Map finding and one untasked Success Metric finding when
+  the TechSpec is absent.
+
+The Daemon-owned Verification commands were not run in this turn.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260917T164016Z_ac67737203a1aa3d`
+- Source commit: `474609e696eaa641f67a700f8b45b876fb3f8a8e`

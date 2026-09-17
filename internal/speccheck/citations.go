@@ -26,7 +26,7 @@ const (
 	CodeCitationUnsupported = "SC-CITATION-UNSUPPORTED"
 	// CodeCoverageUnmapped identifies a PRD unit absent from the TechSpec Coverage Map.
 	CodeCoverageUnmapped = "SC-COVERAGE-UNMAPPED"
-	// CodeCoverageUntasked identifies a PRD unit absent from every Task References section.
+	// CodeCoverageUntasked identifies a declared unit absent from every Task References section.
 	CodeCoverageUntasked = "SC-COVERAGE-UNTASKED"
 	// CodeMetricUndeclared identifies a PRD whose Success Metrics section makes no declaration.
 	CodeMetricUndeclared = "SC-METRIC-UNDECLARED"
@@ -75,6 +75,8 @@ var (
 	inactiveStatusPattern = regexp.MustCompile(`(?im)^\s*(?:\*\*)?status(?:\*\*)?:\s*(?:proposed|rejected|deprecated|superseded)\b`)
 	featureRefPattern     = regexp.MustCompile(`(?i)\bCore Features?\s+`)
 	storyRefPattern       = regexp.MustCompile(`(?i)\b(?:User )?(?:Story|Stories)\s+`)
+	metricRefPattern      = regexp.MustCompile(`(?i)\bSuccess Metrics?\s+`)
+	contractRefPattern    = regexp.MustCompile(`(?i)\bAPI Contracts?\s+`)
 	numberedItemPattern   = regexp.MustCompile(`^\s*([0-9]+)\.\s+`)
 )
 
@@ -849,9 +851,10 @@ type promiseDeclaration struct {
 }
 
 type coverageUnit struct {
-	Kind   coverageKind
-	Number int
-	Line   int
+	Kind       coverageKind
+	Number     int
+	Line       int
+	DeclaredIn string
 }
 
 type referenceSet map[coverageKind]map[int]bool
@@ -870,9 +873,10 @@ func detectCitationCoverageAndReferences(
 		return fmt.Errorf("read Spec artifact %q: %w", prdPath, err)
 	}
 	prdDisplayPath := artifactDisplayPath(repoRoot, prdPath)
+	metricDeclaration := parsePromiseSection(prdContent, "Success Metrics", coverageMetric)
 	detectPromiseDeclaration(
 		result,
-		parsePromiseSection(prdContent, "Success Metrics", coverageMetric),
+		metricDeclaration,
 		prdDisplayPath,
 		"Success Metrics",
 		CodeMetricUndeclared,
@@ -883,7 +887,8 @@ func detectCitationCoverageAndReferences(
 	}
 	claims := CitationClaims(prdDisplayPath, prdContent)
 
-	units := parsePRDCoverageUnits(prdContent)
+	units := coverageUnitsDeclaredIn(parsePRDCoverageUnits(prdContent), prdDisplayPath)
+	units = append(units, coverageUnitsDeclaredIn(metricDeclaration.units, prdDisplayPath)...)
 	if techSpecPresent {
 		techSpecPath := filepath.Join(specDir, "_techspec.md")
 		techSpecContent, err := os.ReadFile(techSpecPath)
@@ -891,15 +896,17 @@ func detectCitationCoverageAndReferences(
 			return fmt.Errorf("read Spec artifact %q: %w", techSpecPath, err)
 		}
 		techSpecDisplayPath := artifactDisplayPath(repoRoot, techSpecPath)
+		contractDeclaration := parsePromiseSection(techSpecContent, "API Contracts", coverageContract)
 		detectPromiseDeclaration(
 			result,
-			parsePromiseSection(techSpecContent, "API Contracts", coverageContract),
+			contractDeclaration,
 			techSpecDisplayPath,
 			"API Contracts",
 			CodeContractUndeclared,
 		)
 		claims = append(claims, CitationClaims(techSpecDisplayPath, techSpecContent)...)
-		detectCoverageMap(result, units, prdDisplayPath, techSpecContent, techSpecDisplayPath)
+		units = append(units, coverageUnitsDeclaredIn(contractDeclaration.units, techSpecDisplayPath)...)
+		detectCoverageMap(result, units, techSpecContent, techSpecDisplayPath)
 	} else {
 		addSkip(result, CodeCoverageUnmapped, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_techspec.md")))
 		addSkip(result, CodeContractUndeclared, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_techspec.md")))
@@ -916,7 +923,7 @@ func detectCitationCoverageAndReferences(
 		if err := detectWaveCollisions(result, repoRoot, graph); err != nil {
 			return err
 		}
-		if err := detectTaskCoverageAndContextReferences(result, repoRoot, specsRoot, graph, units, prdDisplayPath); err != nil {
+		if err := detectTaskCoverageAndContextReferences(result, repoRoot, specsRoot, graph, units); err != nil {
 			return err
 		}
 	} else {
@@ -1223,6 +1230,15 @@ func parsePRDCoverageUnits(content []byte) []coverageUnit {
 	return units
 }
 
+func coverageUnitsDeclaredIn(units []coverageUnit, artifact string) []coverageUnit {
+	declared := make([]coverageUnit, len(units))
+	copy(declared, units)
+	for index := range declared {
+		declared[index].DeclaredIn = artifact
+	}
+	return declared
+}
+
 func parseNumberedSection(content []byte, heading string, kind coverageKind) []coverageUnit {
 	lines := strings.Split(string(content), "\n")
 	inSection := false
@@ -1322,12 +1338,15 @@ func detectPromiseDeclaration(result *Result, declaration promiseDeclaration, ar
 	})
 }
 
-func detectCoverageMap(result *Result, units []coverageUnit, prdDisplayPath string, content []byte, techSpecDisplayPath string) {
+func detectCoverageMap(result *Result, units []coverageUnit, content []byte, techSpecDisplayPath string) {
 	references, sectionLine, present := parseCoverageMapReferences(content)
 	if !present {
 		sectionLine = 1
 	}
 	for _, unit := range units {
+		if unit.Kind == coverageContract {
+			continue
+		}
 		if references[unit.Kind][unit.Number] {
 			continue
 		}
@@ -1335,9 +1354,9 @@ func detectCoverageMap(result *Result, units []coverageUnit, prdDisplayPath stri
 		result.Findings = append(result.Findings, Finding{
 			Code:     CodeCoverageUnmapped,
 			Severity: SeverityError,
-			Summary:  prdDisplayPath + " declares " + name + ", but " + techSpecDisplayPath + " has no Coverage Map entry for it",
+			Summary:  unit.DeclaredIn + " declares " + name + ", but " + techSpecDisplayPath + " has no Coverage Map entry for it",
 			Where: []Location{
-				{Path: prdDisplayPath, Line: unit.Line},
+				{Path: unit.DeclaredIn, Line: unit.Line},
 				{Path: techSpecDisplayPath, Line: sectionLine},
 			},
 			Fix: "Add " + name + " to the Coverage Map in " + techSpecDisplayPath + ".",
@@ -1391,7 +1410,6 @@ func detectTaskCoverageAndContextReferences(
 	specsRoot string,
 	graph *spec.Graph,
 	units []coverageUnit,
-	prdDisplayPath string,
 ) error {
 	references := newReferenceSet()
 	for _, task := range graph.Tasks {
@@ -1488,9 +1506,9 @@ func detectTaskCoverageAndContextReferences(
 		result.Findings = append(result.Findings, Finding{
 			Code:     CodeCoverageUntasked,
 			Severity: SeverityError,
-			Summary:  prdDisplayPath + " declares " + name + ", but no Task in " + manifestDisplayPath + " references it",
+			Summary:  unit.DeclaredIn + " declares " + name + ", but no Task in " + manifestDisplayPath + " references it",
 			Where: []Location{
-				{Path: prdDisplayPath, Line: unit.Line},
+				{Path: unit.DeclaredIn, Line: unit.Line},
 				{Path: manifestDisplayPath, Line: 1},
 			},
 			Fix: "Reference " + name + " from the Task that implements or verifies it.",
@@ -1716,6 +1734,12 @@ func addDeclaredReferences(references referenceSet, line string) {
 	}
 	for _, number := range referenceNumbers(line, storyRefPattern) {
 		references[coverageStory][number] = true
+	}
+	for _, number := range referenceNumbers(line, metricRefPattern) {
+		references[coverageMetric][number] = true
+	}
+	for _, number := range referenceNumbers(line, contractRefPattern) {
+		references[coverageContract][number] = true
 	}
 }
 

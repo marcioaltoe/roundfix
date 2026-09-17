@@ -227,8 +227,13 @@ func detectTechSpecCoverage(result *Result, repoRoot, prdPath, techSpecPath stri
 	}
 	detectCoverageMap(
 		result,
-		parsePRDCoverageUnits(prdContent),
-		artifactDisplayPath(repoRoot, prdPath),
+		coverageUnitsDeclaredIn(
+			append(
+				parsePRDCoverageUnits(prdContent),
+				parsePromiseSection(prdContent, "Success Metrics", coverageMetric).units...,
+			),
+			artifactDisplayPath(repoRoot, prdPath),
+		),
 		techSpecContent,
 		artifactDisplayPath(repoRoot, techSpecPath),
 	)
