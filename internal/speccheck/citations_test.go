@@ -698,7 +698,9 @@ func TestCheckCitationCoverageErrorLocations(t *testing.T) {
 
 			result := checkFixture(t, slug)
 			for _, finding := range result.Findings {
-				if finding.Code == speccheck.CodeADRRelated {
+				if finding.Code == speccheck.CodeADRRelated ||
+					finding.Code == speccheck.CodeMetricUndeclared ||
+					finding.Code == speccheck.CodeContractUndeclared {
 					continue
 				}
 				if finding.Severity != speccheck.SeverityError {

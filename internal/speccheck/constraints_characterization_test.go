@@ -180,7 +180,8 @@ func TestCitationResolvesInExternalSpecRoot(t *testing.T) {
 		"- Identifier strategy: not applicable — no identifier change. Source: `docs/agents/agent-instructions.md`.\n"+
 		"- Authentication and HTTP: not applicable — no network boundary. Source: `docs/agents/agent-instructions.md`.\n"+
 		"- Active ADR obligations: not applicable — no ADR applies. Source: `docs/agents/agent-instructions.md`.\n"+
-		"- "+row+" Source: `docs/agents/agent-instructions.md`.\n")
+		"- "+row+" Source: `docs/agents/agent-instructions.md`.\n\n"+
+		"## Success Metrics\n\nNone. This constraint fixture declares no measurable outcome.\n")
 	writeToolingRowFile(
 		t,
 		specRepositoryRoot,
@@ -234,7 +235,8 @@ func TestCitationRejectsEscapeFromSpecRoot(t *testing.T) {
 			"- Identifier strategy: not applicable — no identifier change. Source: `docs/agents/agent-instructions.md`.\n"+
 			"- Authentication and HTTP: not applicable — no network boundary. Source: `docs/agents/agent-instructions.md`.\n"+
 			"- Active ADR obligations: not applicable — no ADR applies. Source: `docs/agents/agent-instructions.md`.\n"+
-			"- "+row+" Source: `docs/agents/agent-instructions.md`.\n")
+			"- "+row+" Source: `docs/agents/agent-instructions.md`.\n\n"+
+			"## Success Metrics\n\nNone. This constraint fixture declares no measurable outcome.\n")
 		arrangeRecord(t, specRepositoryRoot)
 
 		gittest.Run(t, projectRoot, "add", "-A")

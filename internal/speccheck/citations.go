@@ -28,6 +28,10 @@ const (
 	CodeCoverageUnmapped = "SC-COVERAGE-UNMAPPED"
 	// CodeCoverageUntasked identifies a PRD unit absent from every Task References section.
 	CodeCoverageUntasked = "SC-COVERAGE-UNTASKED"
+	// CodeMetricUndeclared identifies a PRD whose Success Metrics section makes no declaration.
+	CodeMetricUndeclared = "SC-METRIC-UNDECLARED"
+	// CodeContractUndeclared identifies a TechSpec whose API Contracts section makes no declaration.
+	CodeContractUndeclared = "SC-CONTRACT-UNDECLARED"
 	// CodeReferenceUnresolved identifies a declared repository path that does not resolve.
 	CodeReferenceUnresolved = "SC-REF-UNRESOLVED"
 	// CodeLoopOrderDivergent identifies disagreeing declared Spec loop orders.
@@ -47,6 +51,8 @@ var (
 		CodeCitationUnsupported,
 		CodeCoverageUnmapped,
 		CodeCoverageUntasked,
+		CodeMetricUndeclared,
+		CodeContractUndeclared,
 		CodeReferenceUnresolved,
 		CodeVerifyWorkIndependent,
 		CodeVerifyInvertedExit,
@@ -822,9 +828,25 @@ var citationStopWords = map[string]bool{
 type coverageKind string
 
 const (
-	coverageFeature coverageKind = "Core Feature"
-	coverageStory   coverageKind = "User Story"
+	coverageFeature  coverageKind = "Core Feature"
+	coverageStory    coverageKind = "User Story"
+	coverageMetric   coverageKind = "Success Metric"
+	coverageContract coverageKind = "API Contract"
 )
+
+type promiseDeclarationState uint8
+
+const (
+	promiseNoDeclaration promiseDeclarationState = iota
+	promiseDeclaredUnits
+	promiseExplicitNone
+)
+
+type promiseDeclaration struct {
+	state promiseDeclarationState
+	units []coverageUnit
+	line  int
+}
 
 type coverageUnit struct {
 	Kind   coverageKind
@@ -848,6 +870,13 @@ func detectCitationCoverageAndReferences(
 		return fmt.Errorf("read Spec artifact %q: %w", prdPath, err)
 	}
 	prdDisplayPath := artifactDisplayPath(repoRoot, prdPath)
+	detectPromiseDeclaration(
+		result,
+		parsePromiseSection(prdContent, "Success Metrics", coverageMetric),
+		prdDisplayPath,
+		"Success Metrics",
+		CodeMetricUndeclared,
+	)
 
 	if err := detectADRConsistency(result, repoRoot, specDir, prdContent, prdDisplayPath); err != nil {
 		return err
@@ -861,10 +890,19 @@ func detectCitationCoverageAndReferences(
 		if err != nil {
 			return fmt.Errorf("read Spec artifact %q: %w", techSpecPath, err)
 		}
-		claims = append(claims, CitationClaims(artifactDisplayPath(repoRoot, techSpecPath), techSpecContent)...)
-		detectCoverageMap(result, units, prdDisplayPath, techSpecContent, artifactDisplayPath(repoRoot, techSpecPath))
+		techSpecDisplayPath := artifactDisplayPath(repoRoot, techSpecPath)
+		detectPromiseDeclaration(
+			result,
+			parsePromiseSection(techSpecContent, "API Contracts", coverageContract),
+			techSpecDisplayPath,
+			"API Contracts",
+			CodeContractUndeclared,
+		)
+		claims = append(claims, CitationClaims(techSpecDisplayPath, techSpecContent)...)
+		detectCoverageMap(result, units, prdDisplayPath, techSpecContent, techSpecDisplayPath)
 	} else {
 		addSkip(result, CodeCoverageUnmapped, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_techspec.md")))
+		addSkip(result, CodeContractUndeclared, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_techspec.md")))
 	}
 	if err := detectUnsupportedCitations(result, repoRoot, claims); err != nil {
 		return fmt.Errorf("detect unsupported citations: %w", err)
@@ -1211,6 +1249,77 @@ func parseNumberedSection(content []byte, heading string, kind coverageKind) []c
 		}
 	}
 	return units
+}
+
+func parsePromiseSection(content []byte, heading string, kind coverageKind) promiseDeclaration {
+	lines := strings.Split(string(content), "\n")
+	sectionLevel := 0
+	sectionLine := 1
+	var sectionContent []string
+	for index, line := range lines {
+		level, title := markdownHeading(line)
+		isHeading := level > 0
+		if sectionLevel == 0 {
+			if isHeading && (level == 2 || level == 3) && title == heading {
+				sectionLevel = level
+				sectionLine = index + 1
+			}
+			continue
+		}
+		if isHeading && level <= sectionLevel {
+			break
+		}
+		sectionContent = append(sectionContent, line)
+	}
+	if sectionLevel == 0 {
+		return promiseDeclaration{state: promiseNoDeclaration, line: 1}
+	}
+
+	units := make([]coverageUnit, 0)
+	firstNonEmpty := ""
+	nonEmptyLines := 0
+	for offset, line := range sectionContent {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		nonEmptyLines++
+		if firstNonEmpty == "" {
+			firstNonEmpty = trimmed
+		}
+		match := numberedItemPattern.FindStringSubmatch(line)
+		if len(match) != 2 {
+			continue
+		}
+		number, err := strconv.Atoi(match[1])
+		if err == nil {
+			units = append(units, coverageUnit{
+				Kind:   kind,
+				Number: number,
+				Line:   sectionLine + offset + 1,
+			})
+		}
+	}
+	if len(units) > 0 {
+		return promiseDeclaration{state: promiseDeclaredUnits, units: units, line: sectionLine}
+	}
+	if nonEmptyLines == 1 && strings.HasPrefix(firstNonEmpty, "None.") && strings.TrimSpace(strings.TrimPrefix(firstNonEmpty, "None.")) != "" {
+		return promiseDeclaration{state: promiseExplicitNone, line: sectionLine}
+	}
+	return promiseDeclaration{state: promiseNoDeclaration, line: sectionLine}
+}
+
+func detectPromiseDeclaration(result *Result, declaration promiseDeclaration, artifact, section, code string) {
+	if declaration.state != promiseNoDeclaration {
+		return
+	}
+	result.Findings = append(result.Findings, Finding{
+		Code:     code,
+		Severity: SeverityGap,
+		Summary:  artifact + " has no declaration in its " + section + " section",
+		Where:    []Location{{Path: artifact, Line: declaration.line}},
+		Fix:      "Declare numbered " + section + " in " + artifact + ", or write None. followed by the reason none apply.",
+	})
 }
 
 func detectCoverageMap(result *Result, units []coverageUnit, prdDisplayPath string, content []byte, techSpecDisplayPath string) {
@@ -1594,8 +1703,10 @@ func sectionLineContaining(content []byte, heading, needle string) int {
 
 func newReferenceSet() referenceSet {
 	return referenceSet{
-		coverageFeature: {},
-		coverageStory:   {},
+		coverageFeature:  {},
+		coverageStory:    {},
+		coverageMetric:   {},
+		coverageContract: {},
 	}
 }
 
