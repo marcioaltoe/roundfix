@@ -246,10 +246,21 @@ type WorktreeSnapshotter interface {
 type GitWorktreeSnapshotter struct{}
 
 func (GitWorktreeSnapshotter) Snapshot(ctx context.Context, workDir string) ([]string, error) {
+	return snapshotGitWorktree(ctx, workDir)
+}
+
+// snapshotFiles keeps untracked paths at file granularity for callers that
+// must distinguish writes made inside the same new directory.
+func (GitWorktreeSnapshotter) snapshotFiles(ctx context.Context, workDir string) ([]string, error) {
+	return snapshotGitWorktree(ctx, workDir, "--untracked-files=all")
+}
+
+func snapshotGitWorktree(ctx context.Context, workDir string, args ...string) ([]string, error) {
 	if strings.TrimSpace(workDir) == "" {
 		return nil, fmt.Errorf("snapshot worktree: git root is required")
 	}
-	output, err := runGitOutput(ctx, workDir, "status", "--porcelain=v1", "-z")
+	statusArgs := append([]string{"status", "--porcelain=v1", "-z"}, args...)
+	output, err := runGitOutput(ctx, workDir, statusArgs...)
 	if err != nil {
 		return nil, err
 	}

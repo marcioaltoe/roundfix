@@ -961,7 +961,21 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 		if err != nil {
 			return "", "", err
 		}
-		if authorizationErr := spec.RequireGovernedOperation(plan.Authorization, spec.AuthorizationOperationImplement, commit.governedMutation); authorizationErr != nil {
+		if err := engine.publishDroppedStagePaths(ctx, plan.RunID, ordinal, task.ID, "task file", commit.dropped); err != nil {
+			return "", "", err
+		}
+		lostStagePaths := make([]DroppedStagePath, 0, len(commit.dropped))
+		for _, drop := range commit.dropped {
+			if drop.Lost {
+				lostStagePaths = append(lostStagePaths, drop)
+			}
+		}
+		// Refusals are published before settlement so a lost output can fail
+		// the Task without losing the existing console line or Run Event.
+		commit.dropped = nil
+		if len(lostStagePaths) > 0 {
+			failure = lostStagePathsFailureReason(lostStagePaths)
+		} else if authorizationErr := spec.RequireGovernedOperation(plan.Authorization, spec.AuthorizationOperationImplement, commit.governedMutation); authorizationErr != nil {
 			failure = fmt.Sprintf("Task governed mutation refused: %v", authorizationErr)
 		} else if authorizationErr := spec.RequireGovernedOperation(plan.Authorization, spec.AuthorizationOperationCommit, commit.governedMutation); authorizationErr != nil {
 			failure = fmt.Sprintf("Task commit refused: %v", authorizationErr)
@@ -1832,6 +1846,7 @@ type DroppedStagePath struct {
 	Path   string
 	Reason string
 	Mode   string
+	Lost   bool
 }
 
 const (
@@ -1840,8 +1855,8 @@ const (
 )
 
 // FilterStageablePaths keeps only repository-relative paths Git can match
-// without crossing symlinks or staging executable files. It reports every
-// omitted path with the reason.
+// without crossing symlinks or staging untracked executable files. It reports
+// every omitted path with the reason.
 func FilterStageablePaths(ctx context.Context, workDir string, paths []string) ([]string, []DroppedStagePath) {
 	kept := make([]string, 0, len(paths))
 	seen := make(map[string]bool, len(paths))
@@ -1853,11 +1868,18 @@ func FilterStageablePaths(ctx context.Context, workDir string, paths []string) (
 			continue
 		}
 		if pathCrossesSymlink(workDir, stagePath) {
-			dropped = append(dropped, DroppedStagePath{Path: stagePath, Reason: "crosses a symbolic link"})
+			dropped = append(dropped, DroppedStagePath{Path: stagePath, Reason: "crosses a symbolic link", Lost: true})
+			continue
+		}
+		if pathTrackedInIndex(ctx, workDir, stagePath) {
+			if !seen[stagePath] {
+				kept = append(kept, stagePath)
+				seen[stagePath] = true
+			}
 			continue
 		}
 		if mode, executable := executableRegularFileMode(workDir, stagePath); executable {
-			dropped = append(dropped, DroppedStagePath{Path: stagePath, Reason: executableStagePathReason, Mode: mode})
+			dropped = append(dropped, DroppedStagePath{Path: stagePath, Reason: executableStagePathReason, Mode: mode, Lost: true})
 			continue
 		}
 		if pathAbsentFromWorktreeAndIndex(ctx, workDir, stagePath) {
@@ -1871,6 +1893,24 @@ func FilterStageablePaths(ctx context.Context, workDir string, paths []string) (
 	}
 	sort.Strings(kept)
 	return kept, dropped
+}
+
+func lostStagePathsFailureReason(paths []DroppedStagePath) string {
+	details := make([]string, 0, len(paths))
+	for _, path := range paths {
+		details = append(details, fmt.Sprintf("%s (%s)", path.Path, path.Reason))
+	}
+	sort.Strings(details)
+	return "Task commit lost output: " + strings.Join(details, ", ")
+}
+
+func (engine *Engine) publishDroppedStagePaths(ctx context.Context, runID string, ordinal int, taskID string, artifactLabel string, paths []DroppedStagePath) error {
+	for _, drop := range paths {
+		if err := engine.publishDroppedStagePath(ctx, runID, ordinal, taskID, artifactLabel, drop); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func stagePathInWorktree(workDir string, path string) (string, bool) {
@@ -1914,6 +1954,11 @@ func executableRegularFileMode(workDir string, relative string) (string, bool) {
 	return fmt.Sprintf("%#o", info.Mode().Perm()), true
 }
 
+func pathTrackedInIndex(ctx context.Context, workDir string, relative string) bool {
+	tracked, answered := indexTracksExactPath(ctx, workDir, relative)
+	return answered && tracked
+}
+
 func pathAbsentFromWorktreeAndIndex(ctx context.Context, workDir string, relative string) bool {
 	_, err := os.Lstat(filepath.Join(workDir, relative))
 	if err == nil {
@@ -1922,13 +1967,24 @@ func pathAbsentFromWorktreeAndIndex(ctx context.Context, workDir string, relativ
 	if !errors.Is(err, os.ErrNotExist) {
 		return false
 	}
-	result, err := runGitCommand(ctx, workDir, "ls-files", "--error-unmatch", "--", relative)
-	if err == nil {
-		return false
+	tracked, answered := indexTracksExactPath(ctx, workDir, relative)
+	// A failed query leaves absence unproven, so the commit boundary remains
+	// responsible for the path.
+	return answered && !tracked
+}
+
+func indexTracksExactPath(ctx context.Context, workDir string, relative string) (tracked bool, answered bool) {
+	result, err := runGitCommand(ctx, workDir, "ls-files", "-z", "--", relative)
+	if err != nil {
+		return false, false
 	}
-	// Exit 1 is ls-files' positive no-match answer. Any other failure leaves
-	// absence unproven, so the commit boundary remains responsible for it.
-	return result.ExitCode == 1
+	want := filepath.ToSlash(filepath.Clean(relative))
+	for _, path := range strings.Split(result.Stdout, "\x00") {
+		if path == want {
+			return true, true
+		}
+	}
+	return false, true
 }
 
 func (engine *Engine) publishDroppedStagePath(ctx context.Context, runID string, ordinal int, taskID string, artifactLabel string, drop DroppedStagePath) error {
@@ -2013,16 +2069,27 @@ func lowerFirstRune(value string) string {
 
 const qaRepositoryVerificationUnconfiguredPrompt = "Repository Verification: run it in this gate; no command is configured for the Daemon.\n"
 
-func (engine *Engine) runQARepositoryVerification(ctx context.Context, plan TaskPlan, qaTask spec.Task, ordinal int, mechanicalResult *speccheck.MechanicalResult) (string, error) {
+type qaFileSnapshotter interface {
+	snapshotFiles(context.Context, string) ([]string, error)
+}
+
+func (engine *Engine) snapshotQAPaths(ctx context.Context, workDir string) ([]string, error) {
+	if snapshotter, ok := engine.deps.Worktree.(qaFileSnapshotter); ok {
+		return snapshotter.snapshotFiles(ctx, workDir)
+	}
+	return engine.deps.Worktree.Snapshot(ctx, workDir)
+}
+
+func (engine *Engine) runQARepositoryVerification(ctx context.Context, plan TaskPlan, qaTask spec.Task, ordinal int, mechanicalResult *speccheck.MechanicalResult) (string, []string, error) {
 	if mechanicalResult.Blocking {
-		return "", nil
+		return "", nil, nil
 	}
 	command := strings.TrimSpace(plan.RepositoryVerification)
 	if command == "" {
-		return qaRepositoryVerificationUnconfiguredPrompt, nil
+		return qaRepositoryVerificationUnconfiguredPrompt, nil, nil
 	}
 	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateVerifying); err != nil {
-		return "", fmt.Errorf("update run %q to state %q before QA Task %s repository Verification: %w", plan.RunID, store.StateVerifying, qaTask.ID, err)
+		return "", nil, fmt.Errorf("update run %q to state %q before QA Task %s repository Verification: %w", plan.RunID, store.StateVerifying, qaTask.ID, err)
 	}
 	request := verificationAttemptRequest{
 		RunID:                   plan.RunID,
@@ -2042,10 +2109,19 @@ func (engine *Engine) runQARepositoryVerification(ctx context.Context, plan Task
 			return nil
 		},
 	}
-	outcome, err := engine.runTaskVerificationRequest(ctx, plan, qaTask, request)
+	verificationWindowBefore, err := engine.snapshotQAPaths(ctx, plan.WorkDir)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
+	outcome, verificationErr := engine.runTaskVerificationRequest(ctx, plan, qaTask, request)
+	verificationWindowAfter, snapshotErr := engine.snapshotQAPaths(ctx, plan.WorkDir)
+	if verificationErr != nil {
+		return "", nil, verificationErr
+	}
+	if snapshotErr != nil {
+		return "", nil, snapshotErr
+	}
+	verificationWindowPaths := diffSnapshots(verificationWindowBefore, verificationWindowAfter)
 	if outcome.CommandFailure != nil {
 		status := strings.TrimPrefix(verificationExitStatus(outcome.CommandFailure), "exit status ")
 		mechanicalResult.PreconditionRefusal = spec.PreconditionRefusal{
@@ -2058,7 +2134,7 @@ func (engine *Engine) runQARepositoryVerification(ctx context.Context, plan Task
 		}
 		mechanicalResult.PreconditionRefused = true
 		mechanicalResult.Blocking = true
-		return "", nil
+		return "", verificationWindowPaths, nil
 	}
 	if outcome.UnknownCause != nil {
 		cause := "cause unavailable"
@@ -2077,7 +2153,7 @@ func (engine *Engine) runQARepositoryVerification(ctx context.Context, plan Task
 		}
 		mechanicalResult.PreconditionRefused = true
 		mechanicalResult.Blocking = true
-		return "", nil
+		return "", verificationWindowPaths, nil
 	}
 	return fmt.Sprintf(
 		"Repository Verification: already run by the Daemon outside the Agent sandbox.\n"+
@@ -2086,7 +2162,7 @@ func (engine *Engine) runQARepositoryVerification(ctx context.Context, plan Task
 			"- diagnostics: removed on success\n"+
 			"Record this as the static gate result. Do not run the repository Verification again.\n",
 		command,
-	), nil
+	), verificationWindowPaths, nil
 }
 
 func qaRepositoryVerificationDiagnostics(path string) string {
@@ -2125,7 +2201,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	}
 	// The before-snapshot keeps everything already dirty out of the QA
 	// Report commit: only the QA step's own report and evidence ride in it.
-	before, err := engine.deps.Worktree.Snapshot(ctx, plan.WorkDir)
+	before, err := engine.snapshotQAPaths(ctx, plan.WorkDir)
 	if err != nil {
 		return "", "", err
 	}
@@ -2153,7 +2229,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		}
 		return "", "", fmt.Errorf("run QA mechanical stage for run %q: %w", plan.RunID, err)
 	}
-	repositoryVerificationPrompt, verificationErr := engine.runQARepositoryVerification(ctx, plan, qaTask, ordinal, &mechanicalResult)
+	repositoryVerificationPrompt, verificationWindowPaths, verificationErr := engine.runQARepositoryVerification(ctx, plan, qaTask, ordinal, &mechanicalResult)
 	if verificationErr != nil {
 		if isStop(ctx, verificationErr) && ctx.Err() != nil {
 			if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
@@ -2266,7 +2342,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	if err := engine.settleTask(ctx, plan, qaTask, ordinal, qaStatus, qaReason); err != nil {
 		return "", "", err
 	}
-	if err := engine.commitQAReport(ctx, plan, ordinal, before, verdict, reportPath, qaTask); err != nil {
+	if err := engine.commitQAReport(ctx, plan, ordinal, before, verificationWindowPaths, verdict, reportPath, qaTask); err != nil {
 		return "", "", err
 	}
 	return verdict, reportPath, nil
@@ -2680,18 +2756,31 @@ func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string) {
 // diff with the report and qa Task file ensured, so the report, its evidence,
 // and gate settlement always ride in their own commit, separate from every
 // implementation Task commit (ADR 0015, ADR 0091).
-func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal int, before []string, verdict string, reportPath string, qaTask spec.Task) error {
+func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal int, before []string, verificationWindowPaths []string, verdict string, reportPath string, qaTask spec.Task) error {
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
 			return fmt.Errorf("publish stop event for run %q before the QA Report commit: %w", plan.RunID, errors.Join(err, publishErr))
 		}
 		return fmt.Errorf("stop run %q before the QA Report commit: %w", plan.RunID, err)
 	}
-	after, err := engine.deps.Worktree.Snapshot(ctx, plan.WorkDir)
+	after, err := engine.snapshotQAPaths(ctx, plan.WorkDir)
 	if err != nil {
 		return err
 	}
 	changed := diffSnapshots(before, after)
+	if len(verificationWindowPaths) > 0 {
+		excluded := make(map[string]struct{}, len(verificationWindowPaths))
+		for _, path := range verificationWindowPaths {
+			excluded[path] = struct{}{}
+		}
+		kept := changed[:0]
+		for _, path := range changed {
+			if _, found := excluded[path]; !found {
+				kept = append(kept, path)
+			}
+		}
+		changed = kept
+	}
 	if strings.TrimSpace(reportPath) != "" {
 		changed = ensureCommitPath(changed, reportPath)
 	}
