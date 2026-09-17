@@ -21,6 +21,7 @@ const (
 	projectConfigName               = ".roundfixrc.yml"
 	defaultReviewSource             = "coderabbit"
 	defaultReviewRequestCommand     = "@coderabbitai review"
+	defaultPrePRReviewProvider      = "codex"
 	defaultAgent                    = "codex"
 	defaultCodexModel               = "gpt-5.5"
 	defaultCodexReasoningEffort     = "xhigh"
@@ -50,6 +51,7 @@ type Config struct {
 	Runtimes     Runtimes
 	Profiles     Profiles
 	ReviewSource ReviewSource
+	PrePRReview  PrePRReview
 	Watch        Watch
 	Implement    Implement
 	Notify       Notify
@@ -100,6 +102,11 @@ type ReviewSource struct {
 	IncludeNitpicks bool
 	RequestReview   bool
 	RequestCommand  string
+}
+
+type PrePRReview struct {
+	Provider string
+	Source   string
 }
 
 type Watch struct {
@@ -215,6 +222,7 @@ type configOverlay struct {
 	Runtimes     *runtimesOverlay     `yaml:"runtimes"`
 	Profiles     *profilesOverlay     `yaml:"profiles"`
 	ReviewSource *reviewSourceOverlay `yaml:"review_source"`
+	PrePRReview  *prePRReviewOverlay  `yaml:"pre_pr_review"`
 	Watch        *watchOverlay        `yaml:"watch"`
 	Implement    *implementOverlay    `yaml:"implement"`
 	Notify       *notifyOverlay       `yaml:"notify"`
@@ -251,6 +259,10 @@ type reviewSourceOverlay struct {
 	IncludeNitpicks *bool               `yaml:"include_nitpicks"`
 	RequestReview   *requestReviewValue `yaml:"request_review"`
 	RequestCommand  *string             `yaml:"request_command"`
+}
+
+type prePRReviewOverlay struct {
+	Provider *string `yaml:"provider"`
 }
 
 type requestReviewValue struct {
@@ -580,6 +592,10 @@ func Builtin() Config {
 			RequestReview:   false,
 			RequestCommand:  defaultReviewRequestCommand,
 		},
+		PrePRReview: PrePRReview{
+			Provider: defaultPrePRReviewProvider,
+			Source:   "default",
+		},
 		Watch: Watch{
 			UntilClean:       true,
 			MaxRounds:        6,
@@ -888,6 +904,9 @@ func Validate(config Config) error {
 	}
 	if config.ReviewSource.Name != defaultReviewSource {
 		return fmt.Errorf("review_source.name %q is invalid; supported value: coderabbit", config.ReviewSource.Name)
+	}
+	if !isSupportedPrePRReviewProvider(config.PrePRReview.Provider) {
+		return invalidPrePRReviewProviderError(config.PrePRReview.Provider)
 	}
 	if strings.TrimSpace(config.ReviewSource.RequestCommand) == "" {
 		return errors.New("review_source.request_command must not be empty")
@@ -1282,7 +1301,10 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 		}
 		return fmt.Errorf("parse config %q: %w", label, err)
 	}
-	applyOverlay(config, overlay)
+	if overlay.PrePRReview != nil && overlay.PrePRReview.Provider != nil && !isSupportedPrePRReviewProvider(*overlay.PrePRReview.Provider) {
+		return fmt.Errorf("parse config %q: %w", label, invalidPrePRReviewProviderError(*overlay.PrePRReview.Provider))
+	}
+	applyOverlay(config, overlay, source)
 	if overlay.Profiles != nil {
 		applyProfilesOverlay(config, overlay.Profiles, source)
 	} else if hasLegacyRuntimeDefaults {
@@ -1372,7 +1394,7 @@ func encodeYAMLNode(node *yaml.Node) ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
-func applyOverlay(config *Config, overlay configOverlay) {
+func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
 	if overlay.Defaults != nil {
 		if overlay.Defaults.Agent != nil {
 			config.Defaults.Agent = *overlay.Defaults.Agent
@@ -1414,6 +1436,10 @@ func applyOverlay(config *Config, overlay configOverlay) {
 		if overlay.ReviewSource.RequestCommand != nil {
 			config.ReviewSource.RequestCommand = *overlay.ReviewSource.RequestCommand
 		}
+	}
+	if overlay.PrePRReview != nil && overlay.PrePRReview.Provider != nil {
+		config.PrePRReview.Provider = *overlay.PrePRReview.Provider
+		config.PrePRReview.Source = string(source)
 	}
 	if overlay.Watch != nil {
 		if overlay.Watch.UntilClean != nil {
@@ -1616,4 +1642,17 @@ func isSupportedAgent(agent string) bool {
 	default:
 		return false
 	}
+}
+
+func isSupportedPrePRReviewProvider(provider string) bool {
+	switch provider {
+	case "codex", "claude", "coderabbit", "none":
+		return true
+	default:
+		return false
+	}
+}
+
+func invalidPrePRReviewProviderError(provider string) error {
+	return fmt.Errorf("pre_pr_review.provider %q is invalid; supported values: codex, claude, coderabbit, none", provider)
 }

@@ -122,6 +122,117 @@ specs:
 	}
 }
 
+func TestPrePRReviewPolicyResolution(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name          string
+		userConfig    string
+		projectConfig string
+		wantProvider  string
+		wantSource    string
+		wantError     string
+	}{
+		{
+			name:         "both layers silent use default",
+			wantProvider: "codex",
+			wantSource:   "default",
+		},
+		{
+			name: "user selection overrides default",
+			userConfig: `
+pre_pr_review:
+  provider: claude
+`,
+			wantProvider: "claude",
+			wantSource:   "user",
+		},
+		{
+			name: "project selection overrides user",
+			userConfig: `
+pre_pr_review:
+  provider: claude
+`,
+			projectConfig: `
+pre_pr_review:
+  provider: coderabbit
+`,
+			wantProvider: "coderabbit",
+			wantSource:   "project",
+		},
+		{
+			name: "explicit none is supported",
+			projectConfig: `
+pre_pr_review:
+  provider: none
+`,
+			wantProvider: "none",
+			wantSource:   "project",
+		},
+		{
+			name: "explicit codex is supported",
+			projectConfig: `
+pre_pr_review:
+  provider: codex
+`,
+			wantProvider: "codex",
+			wantSource:   "project",
+		},
+		{
+			name: "unsupported provider is refused",
+			projectConfig: `
+pre_pr_review:
+  provider: gemini
+`,
+			wantError: `pre_pr_review.provider "gemini" is invalid; supported values: codex, claude, coderabbit, none`,
+		},
+		{
+			name: "unsupported inherited layer is refused before override",
+			userConfig: `
+pre_pr_review:
+  provider: gemini
+`,
+			projectConfig: `
+pre_pr_review:
+  provider: codex
+`,
+			wantError: `pre_pr_review.provider "gemini" is invalid; supported values: codex, claude, coderabbit, none`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			homeDir := t.TempDir()
+			workDir := t.TempDir()
+			mustMkdir(t, filepath.Join(workDir, ".git"))
+			if tt.userConfig != "" {
+				mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+				mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.userConfig)
+			}
+			if tt.projectConfig != "" {
+				mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), tt.projectConfig)
+			}
+
+			loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+			if tt.wantError != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantError) {
+					t.Fatalf("Load() error = %v, want error containing %q", err, tt.wantError)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Load() error = %v", err)
+			}
+			if got := loaded.Config.PrePRReview.Provider; got != tt.wantProvider {
+				t.Fatalf("PrePRReview.Provider = %q, want %q", got, tt.wantProvider)
+			}
+			if got := loaded.Config.PrePRReview.Source; got != tt.wantSource {
+				t.Fatalf("PrePRReview.Source = %q, want %q", got, tt.wantSource)
+			}
+		})
+	}
+}
+
 func TestBuiltinRuntimeDefaults(t *testing.T) {
 	t.Parallel()
 	config := Builtin()

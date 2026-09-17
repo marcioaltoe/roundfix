@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0143-a-repository-says-who-reviews-before-the-pull-request
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -61,3 +61,51 @@ and resolvable.
 Success Metrics 1-3;
 `_techspec.md` → Implementation Design: The key and its values, Resolution and
 its source, Refusal at load; API Contract 1; Build Order 1; ADR-0002.
+
+## Result
+
+### Implementation
+
+- Added the resolved `PrePRReview` configuration section with provider and
+  answering source fields.
+- Added the nil-preserving `pre_pr_review.provider` overlay, built-in
+  `codex`/`default` resolution, and User Config then Project Config source
+  tracking.
+- Added load-time and direct configuration validation with the key, offending
+  value, and all four supported values in the error.
+- Added `TestPrePRReviewPolicyResolution` at the configuration load seam for
+  all providers, every source layer, both-silent inheritance, precedence, and
+  invalid values in either loaded layer.
+
+### Focused checks
+
+- Pre-change `rtk rg -n 'type PrePRReview|PrePRReview'
+  internal/config/config.go internal/config/config_test.go`: exited 1 with no
+  matches, establishing the missing configuration contract.
+- After adding the test and before implementation,
+  `GOCACHE=/private/tmp/roundfix-task-01-go-cache rtk go test -count=1
+  ./internal/config`: failed to build because `Config.PrePRReview` did not
+  exist.
+- After implementation and the final code edit,
+  `GOCACHE=/private/tmp/roundfix-task-01-go-cache rtk go test -count=1
+  ./internal/config`: passed all 203 configuration tests.
+
+### Acceptance evidence
+
+1. `TestPrePRReviewPolicyResolution` loads and resolves `codex`, `claude`,
+   `coderabbit`, and `none`; the focused package check passed.
+2. The same test observes Project Config over User Config over the built-in
+   value and asserts `project`, `user`, and `default` as the answering sources;
+   the focused package check passed.
+3. Its both-silent case observes `codex` from `default`; the focused package
+   check passed.
+4. Its invalid cases observe the named error for an unsupported value in
+   Project Config and in User Config before a valid project override; the
+   focused package check passed.
+5. The focused package check passed all 203 tests. Existing test assertions
+   were left unchanged; this slice only added the named policy test.
+
+### Daemon-owned checks
+
+- The commands under `## Verification` were not run in this Agent turn. The
+  Daemon owns those commands and the terminal Task status.
