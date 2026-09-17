@@ -2073,6 +2073,58 @@ func TestInspectTerminalRunUnknownMissingRunBranch(t *testing.T) {
 	}
 }
 
+func TestResolveLocalBranchTellsAbsentFromAmbiguous(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	repoDir := initWorktreeRepo(t)
+	mustWriteWorktreeTest(t, filepath.Join(repoDir, "tracked.txt"), "base\n")
+	gitWorktreeTest(t, repoDir, "add", "tracked.txt")
+	gitWorktreeTest(t, repoDir, "commit", "-m", "initial")
+	wantHead := strings.TrimSpace(gitWorktreeTest(t, repoDir, "rev-parse", "main"))
+
+	t.Run("absent", func(t *testing.T) {
+		const branch = "missing-branch"
+		_, err := resolveUnambiguousLocalBranch(ctx, execGitRunner{}, repoDir, branch)
+		if !errors.Is(err, errBranchAbsent) {
+			t.Fatalf("resolve absent local branch error = %v, want errBranchAbsent", err)
+		}
+		if errors.Is(err, errBranchAmbiguous) {
+			t.Fatalf("resolve absent local branch error = %v, do not want errBranchAmbiguous", err)
+		}
+		if !strings.Contains(err.Error(), branch) {
+			t.Fatalf("resolve absent local branch error = %q, want branch name %q", err, branch)
+		}
+	})
+
+	t.Run("ambiguous", func(t *testing.T) {
+		const branch = "ambiguous-branch"
+		gitWorktreeTest(t, repoDir, "branch", branch, "main")
+		gitWorktreeTest(t, repoDir, "tag", branch, "main")
+
+		_, err := resolveUnambiguousLocalBranch(ctx, execGitRunner{}, repoDir, branch)
+		if !errors.Is(err, errBranchAmbiguous) {
+			t.Fatalf("resolve ambiguous local branch error = %v, want errBranchAmbiguous", err)
+		}
+		if errors.Is(err, errBranchAbsent) {
+			t.Fatalf("resolve ambiguous local branch error = %v, do not want errBranchAbsent", err)
+		}
+		want := fmt.Sprintf("resolve local branch %q: short ref is ambiguous", branch)
+		if err.Error() != want {
+			t.Fatalf("resolve ambiguous local branch error = %q, want %q", err, want)
+		}
+	})
+
+	t.Run("resolvable", func(t *testing.T) {
+		head, err := resolveUnambiguousLocalBranch(ctx, execGitRunner{}, repoDir, "main")
+		if err != nil {
+			t.Fatalf("resolve local branch: %v", err)
+		}
+		if head != wantHead {
+			t.Fatalf("resolve local branch head = %q, want %q", head, wantHead)
+		}
+	})
+}
+
 func TestInspectTerminalRunReleased(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

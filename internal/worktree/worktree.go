@@ -185,6 +185,11 @@ const (
 
 const qaReportOnlyLogFormat = "%x00%x00%B%x00%x00"
 
+var (
+	errBranchAbsent    = errors.New("branch is absent")
+	errBranchAmbiguous = errors.New("short ref is ambiguous")
+)
+
 type RunWorktreeReconciliation struct {
 	RunID             string
 	Outcome           string
@@ -2141,12 +2146,20 @@ func localBranchExists(ctx context.Context, runner gitRunner, gitRoot, branch st
 }
 
 func resolveUnambiguousLocalBranch(ctx context.Context, runner gitRunner, gitRoot, branch string) (string, error) {
+	present, err := localBranchExists(ctx, runner, gitRoot, branch)
+	if err != nil {
+		return "", fmt.Errorf("resolve local branch %q: inspect existence: %w", branch, err)
+	}
+	if !present {
+		return "", fmt.Errorf("resolve local branch %q: %w", branch, errBranchAbsent)
+	}
+
 	ambiguous, err := localBranchIsAmbiguous(ctx, runner, gitRoot, branch)
 	if err != nil {
 		return "", err
 	}
 	if ambiguous {
-		return "", fmt.Errorf("resolve local branch %q: short ref is ambiguous", branch)
+		return "", fmt.Errorf("resolve local branch %q: %w", branch, errBranchAmbiguous)
 	}
 	output, err := runner.Run(ctx, gitRoot, "rev-parse", "--verify", "--end-of-options", "refs/heads/"+branch+"^{commit}")
 	if err != nil {
@@ -2186,7 +2199,7 @@ func localBranchIsAmbiguous(ctx context.Context, runner gitRunner, gitRoot, bran
 			count++
 		}
 	}
-	return count != 1, nil
+	return count > 1, nil
 }
 
 func isGitExitCode(err error, code int) bool {

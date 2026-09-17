@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0142-an-absent-ref-is-named-absent
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -28,18 +28,18 @@ existence check already defined beside the resolver.
 
 ## Subtasks
 
-- [ ] Replace the single count refusal with an absent answer and an ambiguous
+- [x] Replace the single count refusal with an absent answer and an ambiguous
       answer.
-- [ ] Use the existing existence check for absence.
-- [ ] Cover absent, ambiguous and resolvable names at the resolver's fixture
+- [x] Use the existing existence check for absence.
+- [x] Cover absent, ambiguous and resolvable names at the resolver's fixture
       seam.
 
 ## Acceptance Criteria
 
-- [ ] A fixture repository with no such ref answers absent and names the branch.
-- [ ] A fixture with a tag and a branch of the same short name answers ambiguous.
-- [ ] A plain branch resolves to its head, as today.
-- [ ] A caller can distinguish the two refusals without reading their text.
+- [x] A fixture repository with no such ref answers absent and names the branch.
+- [x] A fixture with a tag and a branch of the same short name answers ambiguous.
+- [x] A plain branch resolves to its head, as today.
+- [x] A caller can distinguish the two refusals without reading their text.
 
 ## Context
 
@@ -55,3 +55,39 @@ existence check already defined beside the resolver.
 `_prd.md` → Core Feature 1; User Story 1; Goal 1; Success Metrics 1-2;
 `_techspec.md` → Implementation Design: Absent and ambiguous are separate
 answers; API Contract 2; Build Order 1; ADR-0127.
+
+## Result
+
+Implemented distinct sentinel errors for absent and ambiguous local branches.
+The resolver now uses `localBranchExists` before ambiguity detection, wraps
+`errBranchAbsent` when the local branch does not exist, and preserves the
+existing ambiguity sentence while wrapping a separate `errBranchAmbiguous`.
+Candidate counting now identifies ambiguity only when more than one matching
+ref exists.
+
+Added `TestResolveLocalBranchTellsAbsentFromAmbiguous` at the real Git fixture
+seam. Its absent case matches `errBranchAbsent`, rejects
+`errBranchAmbiguous`, and checks that the error names `missing-branch`. Its
+ambiguous case creates both a local branch and tag, matches only
+`errBranchAmbiguous`, and checks the existing sentence exactly. Its resolvable
+case compares the returned head with `main`'s commit.
+
+Focused evidence:
+
+- Before the implementation,
+  `rtk env GOCACHE=/private/tmp/roundfix-go-cache go test ./internal/worktree -run TestResolveLocalBranchTellsAbsentFromAmbiguous -count=1`
+  failed to compile because `errBranchAbsent` and `errBranchAmbiguous` did not
+  exist.
+- After the implementation, the same focused command passed:
+  `ok roundfix/internal/worktree 0.689s`.
+- A focused regression run covering the new resolver test plus the existing
+  ambiguous and missing Run Branch reconciliation tests passed:
+  `ok roundfix/internal/worktree 0.544s`.
+- `rtk env GOCACHE=/private/tmp/roundfix-go-cache make verify-incremental`
+  reached and passed `internal/worktree` in 20.212s. The overall incremental
+  check did not finish successfully because two unrelated `internal/cli`
+  process ownership integration tests could not read the process table in the
+  sandbox (`operation not permitted`).
+
+The Task's declared `## Verification` commands were not run; the Daemon owns
+that verification and settlement.
