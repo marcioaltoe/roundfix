@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0143-a-repository-says-who-reviews-before-the-pull-request
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
