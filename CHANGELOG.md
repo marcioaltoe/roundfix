@@ -2,6 +2,22 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.13.1] - 2026-09-17
+
+The 0.13.0 tag was created but never published. Its release run stopped at the
+verification gate, before the Publication Preflight, so no npm package and no
+GitHub Release exist for that version. This release carries the same content
+with the gate repaired; install 0.13.1 wherever 0.13.0 is named.
+
+### Fixed
+
+- **The release gate reads the history its tests need.** The release job checked
+  out shallowly and ran the same suite as CI, where two contracts resolve
+  retained `main` ancestors by SHA. Neither object exists in a shallow clone, so
+  the gate failed with `fatal: not a tree object` at a tree whose suite is
+  green. The release checkout now fetches complete history, as `ci-verify`
+  already did for the same reason.
+
 ## [0.13.0] - 2026-09-16
 
 A Spec now carries the authority it was granted, and its QA gate covers exactly
