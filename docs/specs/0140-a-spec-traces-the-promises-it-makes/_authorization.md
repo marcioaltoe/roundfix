@@ -18,6 +18,7 @@ paths:
   - internal/speccheck/coherence.go
   - internal/speccheck/constraints_characterization_test.go
   - internal/docscontract/testdata/corpus-golden.json
+  - internal/spec/archive_layout_characterization_test.go
 operations:
   - implement
   - commit
@@ -54,7 +55,7 @@ enforces would have no guidance where Tasks are actually written. The maintainer
 widened the grant to those two files, and their mirrors, on 2026-09-17 after
 pre-PR review raised the gap.
 
-Three more paths are governed because an authorization has already bounded them,
+Four more paths are governed because an authorization has already bounded them,
 which ADR-0130 keeps governed for good: the checker's stage table, the
 constraint characterization whose expectation the new unit kind moves, and the
 corpus golden the new codes are counted in. The first QA gate of this Spec
@@ -85,7 +86,8 @@ Edit the canonical skills and their templates so that:
 - the stage table places each coined code at the stage that can establish it;
 - the constraint characterization keeps its subject while the new unit kind
   moves its expectation;
-- the corpus golden counts the two coined codes.
+- the corpus golden counts the two coined codes;
+- the archive characterization is re-recorded against that golden.
 
 After the canonical edit, regenerate the distributed mirror with
 `make skills-sync`. The mirror paths are already bounded above. If any derived
