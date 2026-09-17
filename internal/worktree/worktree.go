@@ -185,6 +185,11 @@ const (
 
 const qaReportOnlyLogFormat = "%x00%x00%B%x00%x00"
 
+var (
+	errBranchAbsent    = errors.New("branch is absent")
+	errBranchAmbiguous = errors.New("short ref is ambiguous")
+)
+
 type RunWorktreeReconciliation struct {
 	RunID             string
 	Outcome           string
@@ -397,15 +402,45 @@ func classifyRunBranchSet(
 		return result, errors.New("classify Run Branch set: Spec slug is missing or invalid")
 	}
 	targetHead, err := resolveUnambiguousLocalBranch(ctx, runner, root, targetBranch)
-	if err != nil {
+	targetAbsent := errors.Is(err, errBranchAbsent)
+	if err != nil && !targetAbsent {
 		return result, fmt.Errorf("classify Run Branch set: resolve target branch %q: %w", targetBranch, err)
 	}
-	if targetHead == "" {
+	if !targetAbsent && targetHead == "" {
 		return result, fmt.Errorf("classify Run Branch set: resolve target branch %q: empty Git object ID", targetBranch)
 	}
 	branches, err := listRunBranches(ctx, runner, root)
 	if err != nil {
 		return result, fmt.Errorf("classify Run Branch set: %w", err)
+	}
+	if targetAbsent {
+		seen := make(map[string]struct{})
+		reason := reconciliationReasonTargetBranchAbsent(targetBranch)
+		for _, run := range runs {
+			if run.Kind != store.KindImplement ||
+				strings.TrimSpace(run.LocalBranch) != targetBranch ||
+				strings.TrimSpace(run.SpecSlug) != specSlug ||
+				!samePath(run.GitRoot, root) {
+				continue
+			}
+			branch := BranchName(run.ID)
+			if !branches[branch] {
+				continue
+			}
+			if _, duplicate := seen[branch]; duplicate {
+				continue
+			}
+			seen[branch] = struct{}{}
+			preserve(branch, reason)
+		}
+		sort.Strings(result.Preserved)
+		result.evidence = &branchSetClassificationEvidence{
+			gitRoot:      root,
+			targetBranch: targetBranch,
+			specSlug:     specSlug,
+			runs:         cloneRuns(runs),
+		}
+		return result, nil
 	}
 
 	targetReport, err := newestQAReportAtHead(ctx, runner, root, targetHead, specSlug)
@@ -1134,6 +1169,10 @@ func supersededReconciliationReason(report string) string {
 		return char
 	}, report)
 	return boundedReconciliationReason(reason)
+}
+
+func reconciliationReasonTargetBranchAbsent(branch string) string {
+	return boundedReconciliationReason(fmt.Sprintf("target branch %q is absent", branch))
 }
 
 func boundedReconciliationReason(reason string) string {
@@ -2141,12 +2180,20 @@ func localBranchExists(ctx context.Context, runner gitRunner, gitRoot, branch st
 }
 
 func resolveUnambiguousLocalBranch(ctx context.Context, runner gitRunner, gitRoot, branch string) (string, error) {
+	present, err := localBranchExists(ctx, runner, gitRoot, branch)
+	if err != nil {
+		return "", fmt.Errorf("resolve local branch %q: inspect existence: %w", branch, err)
+	}
+	if !present {
+		return "", fmt.Errorf("resolve local branch %q: %w", branch, errBranchAbsent)
+	}
+
 	ambiguous, err := localBranchIsAmbiguous(ctx, runner, gitRoot, branch)
 	if err != nil {
 		return "", err
 	}
 	if ambiguous {
-		return "", fmt.Errorf("resolve local branch %q: short ref is ambiguous", branch)
+		return "", fmt.Errorf("resolve local branch %q: %w", branch, errBranchAmbiguous)
 	}
 	output, err := runner.Run(ctx, gitRoot, "rev-parse", "--verify", "--end-of-options", "refs/heads/"+branch+"^{commit}")
 	if err != nil {
@@ -2186,7 +2233,7 @@ func localBranchIsAmbiguous(ctx context.Context, runner gitRunner, gitRoot, bran
 			count++
 		}
 	}
-	return count != 1, nil
+	return count > 1, nil
 }
 
 func isGitExitCode(err error, code int) bool {

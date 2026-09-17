@@ -1624,6 +1624,79 @@ func TestClassifyRunBranchSetFourFailedCycles(t *testing.T) {
 	}
 }
 
+func TestClassifyRunBranchSetPreservesAbsentTarget(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	present := newRunBranchSetFixture(t, slug,
+		"qa-report-2026-07-28.md",
+		"qa-report-2026-07-29.md",
+	)
+
+	presentResult, err := ClassifyRunBranchSet(
+		context.Background(),
+		present.repoDir,
+		present.targetBranch,
+		slug,
+		present.runs,
+	)
+	if err != nil {
+		t.Fatalf("classify present-target Run Branch set: %v", err)
+	}
+	wantPresentReport := qaReportTestPath(slug, "qa-report-2026-07-29.md", false)
+	if presentResult.Current != present.refs[1].Branch || presentResult.CurrentReport != wantPresentReport {
+		t.Fatalf("present-target current evidence = %#v, want branch %q report %q", presentResult, present.refs[1].Branch, wantPresentReport)
+	}
+	if !slices.Equal(presentResult.Releasable, []string{present.refs[0].Branch}) ||
+		presentResult.ReleasableProofs[present.refs[0].Branch] != wantPresentReport ||
+		len(presentResult.Preserved) != 0 || len(presentResult.PreservedReasons) != 0 {
+		t.Fatalf("present-target classification = %#v, want unchanged release outcome", presentResult)
+	}
+
+	gitWorktreeTest(t, present.repoDir, "tag", present.targetBranch, present.refs[0].Branch)
+	_, err = ClassifyRunBranchSet(
+		context.Background(),
+		present.repoDir,
+		present.targetBranch,
+		slug,
+		present.runs,
+	)
+	if !errors.Is(err, errBranchAmbiguous) {
+		t.Fatalf("classify ambiguous-target Run Branch set error = %v, want errBranchAmbiguous", err)
+	}
+
+	absent := newRunBranchSetFixture(t, slug,
+		"qa-report-2026-07-28.md",
+		"qa-report-2026-07-29.md",
+	)
+	gitWorktreeTest(t, absent.repoDir, "checkout", "--detach")
+	gitWorktreeTest(t, absent.repoDir, "branch", "-D", absent.targetBranch)
+
+	absentResult, err := ClassifyRunBranchSet(
+		context.Background(),
+		absent.repoDir,
+		absent.targetBranch,
+		slug,
+		absent.runs,
+	)
+	if err != nil {
+		t.Fatalf("classify absent-target Run Branch set: %v", err)
+	}
+	wantAbsentReason := reconciliationReasonTargetBranchAbsent(absent.targetBranch)
+	wantPreserved := []string{absent.refs[0].Branch, absent.refs[1].Branch}
+	if !slices.Equal(absentResult.Preserved, wantPreserved) {
+		t.Fatalf("absent-target preserved Run Branches = %v, want %v", absentResult.Preserved, wantPreserved)
+	}
+	for _, branch := range wantPreserved {
+		if absentResult.PreservedReasons[branch] != wantAbsentReason {
+			t.Fatalf("absent-target reason for %q = %q, want %q", branch, absentResult.PreservedReasons[branch], wantAbsentReason)
+		}
+	}
+	if absentResult.Current != "" || absentResult.CurrentReport != "" ||
+		len(absentResult.Releasable) != 0 || len(absentResult.ReleasableProofs) != 0 {
+		t.Fatalf("absent-target classification released work: %#v", absentResult)
+	}
+}
+
 func TestClassifyRunBranchSetUsesOnlyOneTarget(t *testing.T) {
 	t.Parallel()
 	const slug = "0066-run-teardown-reclaims-what-it-created"
@@ -2071,6 +2144,58 @@ func TestInspectTerminalRunUnknownMissingRunBranch(t *testing.T) {
 	if result.RunHead != "" {
 		t.Fatalf("expected missing Run Branch head to stay empty, got %q", result.RunHead)
 	}
+}
+
+func TestResolveLocalBranchTellsAbsentFromAmbiguous(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	repoDir := initWorktreeRepo(t)
+	mustWriteWorktreeTest(t, filepath.Join(repoDir, "tracked.txt"), "base\n")
+	gitWorktreeTest(t, repoDir, "add", "tracked.txt")
+	gitWorktreeTest(t, repoDir, "commit", "-m", "initial")
+	wantHead := strings.TrimSpace(gitWorktreeTest(t, repoDir, "rev-parse", "main"))
+
+	t.Run("absent", func(t *testing.T) {
+		const branch = "missing-branch"
+		_, err := resolveUnambiguousLocalBranch(ctx, execGitRunner{}, repoDir, branch)
+		if !errors.Is(err, errBranchAbsent) {
+			t.Fatalf("resolve absent local branch error = %v, want errBranchAbsent", err)
+		}
+		if errors.Is(err, errBranchAmbiguous) {
+			t.Fatalf("resolve absent local branch error = %v, do not want errBranchAmbiguous", err)
+		}
+		if !strings.Contains(err.Error(), branch) {
+			t.Fatalf("resolve absent local branch error = %q, want branch name %q", err, branch)
+		}
+	})
+
+	t.Run("ambiguous", func(t *testing.T) {
+		const branch = "ambiguous-branch"
+		gitWorktreeTest(t, repoDir, "branch", branch, "main")
+		gitWorktreeTest(t, repoDir, "tag", branch, "main")
+
+		_, err := resolveUnambiguousLocalBranch(ctx, execGitRunner{}, repoDir, branch)
+		if !errors.Is(err, errBranchAmbiguous) {
+			t.Fatalf("resolve ambiguous local branch error = %v, want errBranchAmbiguous", err)
+		}
+		if errors.Is(err, errBranchAbsent) {
+			t.Fatalf("resolve ambiguous local branch error = %v, do not want errBranchAbsent", err)
+		}
+		want := fmt.Sprintf("resolve local branch %q: short ref is ambiguous", branch)
+		if err.Error() != want {
+			t.Fatalf("resolve ambiguous local branch error = %q, want %q", err, want)
+		}
+	})
+
+	t.Run("resolvable", func(t *testing.T) {
+		head, err := resolveUnambiguousLocalBranch(ctx, execGitRunner{}, repoDir, "main")
+		if err != nil {
+			t.Fatalf("resolve local branch: %v", err)
+		}
+		if head != wantHead {
+			t.Fatalf("resolve local branch head = %q, want %q", head, wantHead)
+		}
+	})
 }
 
 func TestInspectTerminalRunReleased(t *testing.T) {
