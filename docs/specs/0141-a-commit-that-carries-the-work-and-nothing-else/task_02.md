@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0141-a-commit-that-carries-the-work-and-nothing-else
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -59,3 +59,47 @@ and stops the Task from settling completed when the commit lost one.
 Success Metric 2; Declared intentional breaks;
 `_techspec.md` → Implementation Design: A refusal has two classes; Interfaces;
 API Contract 1; Build Order 2; ADR-0035; ADR-0057; ADR-0157.
+
+## Result
+
+Implementation:
+
+- `DroppedStagePath.Lost` now classifies an untracked executable and a path
+  crossing a symbolic link as lost output. External and absent paths remain
+  refused by design.
+- The Task commit boundary publishes every refusal before settlement, collects
+  the lost set as `lostStagePaths`, and settles the Task failed with every lost
+  path and reason. Refused-by-design and clean Tasks keep their prior
+  settlement behavior.
+- `TestTaskCycleLostOutputRefusesCompletion` covers the lost-output,
+  external-refusal, and clean Task-cycle outcomes, including the existing
+  console line and Run Event.
+
+Focused evidence by acceptance criterion:
+
+- Lost output refuses completion and names its cause:
+  `go test -count=1 -run 'TestTaskCycleLostOutputRefusesCompletion/lost_output_fails_with_path_and_reason' ./internal/daemon`
+  passed (2 tests reported by the test runner).
+- An external-only refusal settles completed:
+  `go test -count=1 -run 'TestTaskCycleLostOutputRefusesCompletion/(external_refusal_remains_completed|clean_Task_settles_as_before)|TestFilterStageablePaths(PreservesOtherRefusals|RefusesUntrackedExecutableWithMode)' ./internal/daemon`
+  passed (8 tests reported by the test runner).
+- A clean Task settles as before: the same focused command passed the
+  `clean_Task_settles_as_before` subtest and observed one Task commit with no
+  refusal event.
+- Every refusal retains its console line and event: the lost-output and
+  external-refusal subtests assert both surfaces; the filter cases assert the
+  lost/refused-by-design classification.
+
+Additional focused checks:
+
+- `go test -count=1 ./internal/daemon` passed (335 tests reported by the test
+  runner).
+- `git diff --check` passed.
+
+The Daemon-owned commands under `## Verification` were not run in this Agent
+turn.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260917T192120Z_0e305cd0796d7680`
+- Source commit: `e423da61a2a11efb7eacd7575c5437a8a51bdaea`

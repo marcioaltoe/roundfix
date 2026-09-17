@@ -7093,6 +7093,113 @@ func TestTaskCycleRealRepoCommitsPerTaskExcludingPreexistingDirt(t *testing.T) {
 	}
 }
 
+func TestTaskCycleLostOutputRefusesCompletion(t *testing.T) {
+	t.Run("lost output fails with path and reason", func(t *testing.T) {
+		fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
+		const executablePath = "bin/generated-helper"
+		fixture.worktree.snapshots = [][]string{nil, {executablePath}}
+		runner := &taskFakeRunner{
+			calls:        fixture.calls,
+			gitRoot:      fixture.gitRoot,
+			writeByTask:  map[string]string{"task_01": executablePath},
+			statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+			afterTask: func(string) {
+				if err := os.Chmod(filepath.Join(fixture.gitRoot, executablePath), 0o755); err != nil {
+					t.Fatalf("mark generated helper executable: %v", err)
+				}
+			},
+		}
+		committer := &engineFakeCommitter{calls: fixture.calls}
+		engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+
+		result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+		if err != nil {
+			t.Fatalf("task cycle: %v", err)
+		}
+		if result.Completed != 0 || result.Failed != 1 || result.Skipped != 0 {
+			t.Fatalf("lost-output Task result = %+v, want one failed Task", result)
+		}
+		if len(result.Outcomes) != 1 || !strings.Contains(result.Outcomes[0].Reason, executablePath+" (executable file)") {
+			t.Fatalf("lost-output outcome = %+v, want path and refusal reason", result.Outcomes)
+		}
+		if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusFailed) {
+			t.Fatalf("lost-output Task status = %q, want failed", got)
+		}
+		if len(committer.messages) != 0 {
+			t.Fatalf("lost-output Task created commits: %v", committer.messages)
+		}
+		dropped := droppedStageEvents(t, fixture.sink)
+		if len(dropped) != 1 || eventPayloadString(t, dropped[0], "path") != executablePath || eventPayloadString(t, dropped[0], "reason") != executableStagePathReason {
+			t.Fatalf("lost-output refusal events = %+v, want executable path and reason", dropped)
+		}
+		if !strings.Contains(fixture.progress.String(), "roundfix: refused executable file "+executablePath+" (mode 0755)") {
+			t.Fatalf("lost-output progress omitted existing refusal line: %q", fixture.progress.String())
+		}
+	})
+
+	t.Run("external refusal remains completed", func(t *testing.T) {
+		fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "External artifact only"}})
+		externalRoot := fixture.useExternalSpecRoot(t, []taskSpecSeed{{id: "task_01", title: "External artifact only"}})
+		fixture.worktree.snapshots = [][]string{nil, nil}
+		runner := &taskFakeRunner{
+			calls:        fixture.calls,
+			gitRoot:      fixture.gitRoot,
+			statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		}
+		committer := &engineFakeCommitter{calls: fixture.calls}
+		engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+
+		result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+		if err != nil {
+			t.Fatalf("task cycle: %v", err)
+		}
+		if result.Completed != 1 || result.Failed != 0 || result.Skipped != 0 {
+			t.Fatalf("external-only Task result = %+v, want one completed Task", result)
+		}
+		if got := taskStatusInSpecRootOnDisk(t, externalRoot, "task_01"); got != string(spec.StatusCompleted) {
+			t.Fatalf("external-only Task status = %q, want completed", got)
+		}
+		dropped := droppedStageEvents(t, fixture.sink)
+		if len(dropped) != 1 || eventPayloadString(t, dropped[0], "reason") != "external to repository" {
+			t.Fatalf("external refusal events = %+v, want existing reason", dropped)
+		}
+		if !strings.Contains(fixture.progress.String(), "kept outside the repository; omitted from the commit") {
+			t.Fatalf("external refusal progress omitted existing line: %q", fixture.progress.String())
+		}
+	})
+
+	t.Run("clean Task settles as before", func(t *testing.T) {
+		fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
+		const sourcePath = "src/feature.go"
+		fixture.worktree.snapshots = [][]string{nil, {sourcePath}}
+		runner := &taskFakeRunner{
+			calls:        fixture.calls,
+			gitRoot:      fixture.gitRoot,
+			writeByTask:  map[string]string{"task_01": sourcePath},
+			statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		}
+		committer := &engineFakeCommitter{calls: fixture.calls}
+		engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+
+		result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+		if err != nil {
+			t.Fatalf("task cycle: %v", err)
+		}
+		if result.Completed != 1 || result.Failed != 0 || result.Skipped != 0 {
+			t.Fatalf("clean Task result = %+v, want one completed Task", result)
+		}
+		if len(committer.messages) != 1 {
+			t.Fatalf("clean Task commits = %v, want one", committer.messages)
+		}
+		if dropped := droppedStageEvents(t, fixture.sink); len(dropped) != 0 {
+			t.Fatalf("clean Task published refusal events: %+v", dropped)
+		}
+	})
+}
+
 func TestFilterStageablePathsKeepsTrackedExecutable(t *testing.T) {
 	t.Parallel()
 	repoDir := newTaskCommitRenameRepoForTest(t)
@@ -7150,7 +7257,7 @@ func TestFilterStageablePathsRefusesUntrackedExecutableWithMode(t *testing.T) {
 			if len(dropped) != 1 {
 				t.Fatalf("expected one executable-file drop, got %+v", dropped)
 			}
-			if dropped[0].Path != "artifact" || dropped[0].Reason != "executable file" {
+			if dropped[0].Path != "artifact" || dropped[0].Reason != "executable file" || !dropped[0].Lost {
 				t.Fatalf("expected executable-file drop for artifact, got %+v", dropped[0])
 			}
 			if want := fmt.Sprintf("%#o", tt.mode.Perm()); dropped[0].Mode != want {
@@ -7196,7 +7303,7 @@ func TestFilterStageablePathsPreservesOtherRefusals(t *testing.T) {
 	}
 	want := []DroppedStagePath{
 		{Path: external, Reason: "external to repository"},
-		{Path: "linked.txt", Reason: "crosses a symbolic link"},
+		{Path: "linked.txt", Reason: "crosses a symbolic link", Lost: true},
 		{Path: "missing.txt", Reason: "absent from worktree and index"},
 	}
 	if !slices.Equal(dropped, want) {

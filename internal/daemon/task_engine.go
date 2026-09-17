@@ -961,7 +961,21 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 		if err != nil {
 			return "", "", err
 		}
-		if authorizationErr := spec.RequireGovernedOperation(plan.Authorization, spec.AuthorizationOperationImplement, commit.governedMutation); authorizationErr != nil {
+		if err := engine.publishDroppedStagePaths(ctx, plan.RunID, ordinal, task.ID, "task file", commit.dropped); err != nil {
+			return "", "", err
+		}
+		lostStagePaths := make([]DroppedStagePath, 0, len(commit.dropped))
+		for _, drop := range commit.dropped {
+			if drop.Lost {
+				lostStagePaths = append(lostStagePaths, drop)
+			}
+		}
+		// Refusals are published before settlement so a lost output can fail
+		// the Task without losing the existing console line or Run Event.
+		commit.dropped = nil
+		if len(lostStagePaths) > 0 {
+			failure = lostStagePathsFailureReason(lostStagePaths)
+		} else if authorizationErr := spec.RequireGovernedOperation(plan.Authorization, spec.AuthorizationOperationImplement, commit.governedMutation); authorizationErr != nil {
 			failure = fmt.Sprintf("Task governed mutation refused: %v", authorizationErr)
 		} else if authorizationErr := spec.RequireGovernedOperation(plan.Authorization, spec.AuthorizationOperationCommit, commit.governedMutation); authorizationErr != nil {
 			failure = fmt.Sprintf("Task commit refused: %v", authorizationErr)
@@ -1832,6 +1846,7 @@ type DroppedStagePath struct {
 	Path   string
 	Reason string
 	Mode   string
+	Lost   bool
 }
 
 const (
@@ -1853,7 +1868,7 @@ func FilterStageablePaths(ctx context.Context, workDir string, paths []string) (
 			continue
 		}
 		if pathCrossesSymlink(workDir, stagePath) {
-			dropped = append(dropped, DroppedStagePath{Path: stagePath, Reason: "crosses a symbolic link"})
+			dropped = append(dropped, DroppedStagePath{Path: stagePath, Reason: "crosses a symbolic link", Lost: true})
 			continue
 		}
 		if pathTrackedInIndex(ctx, workDir, stagePath) {
@@ -1864,7 +1879,7 @@ func FilterStageablePaths(ctx context.Context, workDir string, paths []string) (
 			continue
 		}
 		if mode, executable := executableRegularFileMode(workDir, stagePath); executable {
-			dropped = append(dropped, DroppedStagePath{Path: stagePath, Reason: executableStagePathReason, Mode: mode})
+			dropped = append(dropped, DroppedStagePath{Path: stagePath, Reason: executableStagePathReason, Mode: mode, Lost: true})
 			continue
 		}
 		if pathAbsentFromWorktreeAndIndex(ctx, workDir, stagePath) {
@@ -1878,6 +1893,24 @@ func FilterStageablePaths(ctx context.Context, workDir string, paths []string) (
 	}
 	sort.Strings(kept)
 	return kept, dropped
+}
+
+func lostStagePathsFailureReason(paths []DroppedStagePath) string {
+	details := make([]string, 0, len(paths))
+	for _, path := range paths {
+		details = append(details, fmt.Sprintf("%s (%s)", path.Path, path.Reason))
+	}
+	sort.Strings(details)
+	return "Task commit lost output: " + strings.Join(details, ", ")
+}
+
+func (engine *Engine) publishDroppedStagePaths(ctx context.Context, runID string, ordinal int, taskID string, artifactLabel string, paths []DroppedStagePath) error {
+	for _, drop := range paths {
+		if err := engine.publishDroppedStagePath(ctx, runID, ordinal, taskID, artifactLabel, drop); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func stagePathInWorktree(workDir string, path string) (string, bool) {
