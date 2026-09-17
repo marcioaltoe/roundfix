@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0140-a-spec-traces-the-promises-it-makes
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

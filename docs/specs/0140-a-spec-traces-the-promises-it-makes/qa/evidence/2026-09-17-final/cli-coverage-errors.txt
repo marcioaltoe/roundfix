@@ -1,0 +1,25 @@
+Build: d948c47676729bd55736964feaa41cef76a94675
+Fixture: /private/tmp/roundfix-qa0140-fixture, a scratch Git repository copied
+from Spec 0140 with only its Success Metric Coverage Map entries and promise
+references removed. Repository source and the delivery worktree were unchanged.
+
+Command:
+  /private/tmp/roundfix-qa0140 spec check 0140-a-spec-traces-the-promises-it-makes --format json
+Exit: 1, expected because the scratch Spec contains errors.
+Relevant observed findings:
+  SC-COVERAGE-UNMAPPED severity=error for Success Metrics 1, 2, and 3.
+  SC-COVERAGE-UNTASKED severity=error for Success Metrics 1, 2, and 3.
+  SC-COVERAGE-UNTASKED severity=error for API Contracts 1, 2, and 3.
+  The metric locations name _prd.md; the contract locations name _techspec.md;
+  every untasked finding also names _tasks.md.
+
+The scratch repository omits unrelated source paths referenced by the copied
+Spec, so its JSON also contains SC-REF-UNRESOLVED and
+SC-VOCABULARY-UNDOCUMENTED findings. They are fixture parity noise and are not
+used as evidence for this row.
+
+Independent focused confirmation:
+  GOCACHE=/private/tmp/roundfix-qa0140-gocache go test -count=1
+    -run '^TestPromiseCoverageReachesItsTask$' ./internal/speccheck
+Exit: 0
+Observed: 5 tests passed in 1 package.

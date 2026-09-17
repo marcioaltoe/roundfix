@@ -1,0 +1,16 @@
+Build: d948c47676729bd55736964feaa41cef76a94675
+
+Precondition:
+  roundfix spec check 0140-a-spec-traces-the-promises-it-makes --strict
+Exit: 0
+Observed: No findings. Authored Verification commands were not executed.
+
+Public JSON confirmation:
+  GOCACHE=/private/tmp/roundfix-qa0140-gocache go run ./cmd/roundfix
+    spec check 0140-a-spec-traces-the-promises-it-makes --strict --format json
+Exit: 0
+Observed: findings=[].
+
+The checker read numbered Success Metrics and API Contracts, the metric entries
+in the Coverage Map, and the promise references in the Task files. It reported
+no declaration, unmapped, or untasked finding.

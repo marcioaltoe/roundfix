@@ -1,0 +1,35 @@
+Prediction source:
+  docs/specs/0140-a-spec-traces-the-promises-it-makes/qa/evidence/task-03-corpus-sweep.md
+Recorded before the original sweep:
+  SC-METRIC-UNDECLARED=10 gaps
+  SC-CONTRACT-UNDECLARED=10 gaps
+  new errors=0
+
+Fresh public replay:
+  GOCACHE=/private/tmp/roundfix-qa0140-gocache go run ./cmd/roundfix
+    spec check --format json
+Exit: 0
+Observed:
+  11 Spec documents.
+  Specs 0120 through 0129 each emitted one SC-METRIC-UNDECLARED gap and one
+  SC-CONTRACT-UNDECLARED gap.
+  Spec 0140 emitted no finding.
+  Aggregate: metric gaps=10, contract gaps=10, errors=0, other findings=0.
+
+Independent confirmation:
+  GOCACHE=/private/tmp/roundfix-qa0140-gocache go test -count=1
+    -tags docscontract
+    -run '^(TestCheckCorpusBudget|TestCheckActiveCorpusHasNoErrors)$'
+    ./internal/docscontract
+Exit: 0
+Observed: 2 tests passed in 1 package.
+
+Golden:
+  internal/docscontract/testdata/corpus-golden.json records exactly 10 for each
+  coined gap code and 0 for both existing coverage error codes.
+
+Read-only check:
+  git status --short -- 'docs/specs/012*'
+Exit: 0
+Observed: no changed path. The fsmonitor daemon emitted a non-fatal IPC warning;
+Git still completed the status query successfully.
