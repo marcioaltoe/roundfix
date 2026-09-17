@@ -30,6 +30,7 @@ below define this Spec's place in the implementation order.
   ADR-0080 is applicable: preserve typed blocked causes and equivalent observed evidence; aligning the declared-only archive case cannot credit failed or unobserved acceptance.
   ADR-0091 is applicable: keep QA as the terminal Task node depending on every leaf, with explicit gate inclusion or decline and the existing graph invalidation rules.
   ADR-0093 is applicable: consistency checks report written declarations and citation gaps; this Spec's settlement policy still requires explicit design and behavioral proof rather than inference from a checker pass.
+  ADR-0156 applies to declared promises: a Success Metric or API Contract this Spec declares names the Task that settles it, and an explicit `None.` carries its reason.
   ADR-0096 is applicable: retain the Daemon-owned mechanical stage and its machine-fact evidence; no settlement change may make QA verdicts more permissive through that stage.
   ADR-0097 is applicable: carry a QA row only from a prior pass with declared, unchanged repository evidence; blocked or partial acceptance cannot become passed evidence by carry-forward.
   ADR-0104 is applicable: use the pre-existing Pantheon omission and declared-partial observations as outside acceptance evidence, preserving provenance and explicit blocked status when evidence cannot be obtained.

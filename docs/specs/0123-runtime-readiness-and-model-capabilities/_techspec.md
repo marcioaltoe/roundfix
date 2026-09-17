@@ -25,6 +25,7 @@ below define this Spec's place in the implementation order.
   ADR-0049 applies: each present Agent Selection Profile replaces the lower-precedence profile atomically and preserves its explicit fallback chain.
   ADR-0140 applies: prove the exact advertised runtime/model/effort tuple through the installed adapter. Any narrower change to fallback validation timing remains a proposed revision, not an accepted exception.
   ADR-0093 applies to authored capability claims: the consistency checker follows explicit citations and must not infer approval or model support from missing evidence.
+  ADR-0156 applies to declared promises: a Success Metric or API Contract this Spec declares names the Task that settles it, and an explicit `None.` carries its reason.
 - Tooling authority: applicable — exact governed mutations remain proposed in [_authorization.md](_authorization.md); status proposed and a null grant authorize no mutation. Bounded proposed files: `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`. Sanctioned regeneration follows source approval. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## System Architecture
