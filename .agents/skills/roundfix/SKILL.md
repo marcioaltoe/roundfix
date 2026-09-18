@@ -250,6 +250,12 @@ publication, asset uploads, or GitHub Release creation. The command creates no
 Run, reads no Roundfix configuration, contacts no external service, and
 mutates no repository or release state.
 
+Stable tags may be written as `MAJOR.MINOR.PATCH` or
+`vMAJOR.MINOR.PATCH`; the planner accepts both spellings. If the highest
+reachable version exists under both spellings, preflight refuses as ambiguous,
+naming both refs and the `--from` selector that resolves the ambiguity. When a
+version is proposed, it keeps the spelling of the tag it was selected from.
+
 A generic release request authorizes only a conclusive patch plan: state
 `ready` with a patch proposed version. State `approval_required` for a minor,
 major, or version-zero breaking proposal requires explicit human approval of

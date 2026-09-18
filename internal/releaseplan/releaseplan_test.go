@@ -46,15 +46,18 @@ func TestParseStableVersion(t *testing.T) {
 		want error
 	}{
 		{name: "empty", tag: "", want: ErrMalformedStableVersion},
-		{name: "missing v prefix", tag: "1.2.3", want: ErrMalformedStableVersion},
 		{name: "missing patch", tag: "v1.2", want: ErrMalformedStableVersion},
+		{name: "bare missing patch", tag: "1.2", want: ErrMalformedStableVersion},
 		{name: "extra component", tag: "v1.2.3.4", want: ErrMalformedStableVersion},
 		{name: "major leading zero", tag: "v01.2.3", want: ErrMalformedStableVersion},
+		{name: "bare major leading zero", tag: "01.2.3", want: ErrMalformedStableVersion},
 		{name: "minor leading zero", tag: "v1.02.3", want: ErrMalformedStableVersion},
 		{name: "patch leading zero", tag: "v1.2.03", want: ErrMalformedStableVersion},
 		{name: "build metadata", tag: "v1.2.3+build", want: ErrMalformedStableVersion},
 		{name: "pre-release", tag: "v1.2.3-rc.1", want: ErrPrereleaseVersion},
+		{name: "bare pre-release", tag: "1.2.3-rc.1", want: ErrPrereleaseVersion},
 		{name: "version zero pre-release", tag: "v0.4.0-alpha", want: ErrPrereleaseVersion},
+		{name: "prefix near miss", tag: "version-1.2.3", want: ErrMalformedStableVersion},
 	}
 
 	for _, tt := range invalid {
@@ -78,6 +81,117 @@ func TestParseStableVersion(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestStableVersionAcceptsBothSpellings(t *testing.T) {
+	tests := []struct {
+		name         string
+		tag          string
+		wantPrefixed bool
+	}{
+		{name: "bare", tag: "1.2.3", wantPrefixed: false},
+		{name: "prefixed", tag: "v1.2.3", wantPrefixed: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseStableVersion(tt.tag)
+			if err != nil {
+				t.Fatalf("ParseStableVersion(%q): %v", tt.tag, err)
+			}
+			if got.Major() != 1 || got.Minor() != 2 || got.Patch() != 3 {
+				t.Fatalf("ParseStableVersion(%q) = %d.%d.%d, want 1.2.3", tt.tag, got.Major(), got.Minor(), got.Patch())
+			}
+			if got.Prefixed != tt.wantPrefixed {
+				t.Fatalf("ParseStableVersion(%q).Prefixed = %t, want %t", tt.tag, got.Prefixed, tt.wantPrefixed)
+			}
+		})
+	}
+}
+
+func TestStableVersionPreservesRejectionMessages(t *testing.T) {
+	tests := []struct {
+		name    string
+		tag     string
+		wantErr string
+	}{
+		{name: "bare pre-release", tag: "1.2.3-rc.1", wantErr: `release base "1.2.3-rc.1": pre-release tags are not supported; use a stable vMAJOR.MINOR.PATCH tag`},
+		{name: "prefixed build metadata", tag: "v1.2.3+build", wantErr: `release base "v1.2.3+build": expected a stable vMAJOR.MINOR.PATCH tag; use a tag like v1.2.3`},
+		{name: "bare missing patch", tag: "1.2", wantErr: `release base "1.2": expected a stable vMAJOR.MINOR.PATCH tag; use a tag like v1.2.3`},
+		{name: "bare leading zero", tag: "01.2.3", wantErr: `release base "01.2.3": expected a stable vMAJOR.MINOR.PATCH tag; use a tag like v1.2.3`},
+		{name: "prefix near miss", tag: "version-1.2.3", wantErr: `release base "version-1.2.3": expected a stable vMAJOR.MINOR.PATCH tag; use a tag like v1.2.3`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := ParseStableVersion(tt.tag)
+			if err == nil {
+				t.Fatalf("ParseStableVersion(%q) succeeded, want error", tt.tag)
+			}
+			if err.Error() != tt.wantErr {
+				t.Fatalf("ParseStableVersion(%q) error = %q, want %q", tt.tag, err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestSelectionSpansSpellings(t *testing.T) {
+	t.Run("higher bare version outranks lower prefixed version", func(t *testing.T) {
+		refs := []VersionRef{
+			mustVersionRef(t, "v1.2.3", "1111111"),
+			mustVersionRef(t, "1.3.0", "2222222"),
+		}
+
+		got, err := SelectHighestVersion(refs)
+		if err != nil {
+			t.Fatalf("SelectHighestVersion: %v", err)
+		}
+		if got.Tag != "1.3.0" {
+			t.Fatalf("SelectHighestVersion Tag = %q, want %q", got.Tag, "1.3.0")
+		}
+	})
+
+	t.Run("equal highest version reports every ref spelling", func(t *testing.T) {
+		refs := []VersionRef{
+			mustVersionRef(t, "v2.0.0", "1111111"),
+			mustVersionRef(t, "2.0.0", "2222222"),
+			mustVersionRef(t, "v1.9.0", "3333333"),
+		}
+
+		_, err := SelectHighestVersion(refs)
+		if !errors.Is(err, ErrAmbiguousHighestVersion) {
+			t.Fatalf("SelectHighestVersion error = %v, want errors.Is(..., ErrAmbiguousHighestVersion)", err)
+		}
+		var ambiguity AmbiguousHighestVersionError
+		if !errors.As(err, &ambiguity) {
+			t.Fatalf("SelectHighestVersion error = %T, want AmbiguousHighestVersionError", err)
+		}
+		if len(ambiguity.Refs) != 2 {
+			t.Fatalf("AmbiguousHighestVersionError.Refs = %+v, want two refs", ambiguity.Refs)
+		}
+		if ambiguity.Refs[0].Tag != "2.0.0" || ambiguity.Refs[1].Tag != "v2.0.0" {
+			t.Fatalf("AmbiguousHighestVersionError refs = %q, %q, want %q, %q", ambiguity.Refs[0].Tag, ambiguity.Refs[1].Tag, "2.0.0", "v2.0.0")
+		}
+		if ambiguity.Refs[0].CommitSHA != "2222222" || ambiguity.Refs[1].CommitSHA != "1111111" {
+			t.Fatalf("AmbiguousHighestVersionError commits = %q, %q, want both original refs", ambiguity.Refs[0].CommitSHA, ambiguity.Refs[1].CommitSHA)
+		}
+	})
+
+	t.Run("single spelling keeps existing highest selection", func(t *testing.T) {
+		refs := []VersionRef{
+			mustVersionRef(t, "v1.2.3", "1111111"),
+			mustVersionRef(t, "v1.10.0", "2222222"),
+			mustVersionRef(t, "v1.9.9", "3333333"),
+		}
+
+		got, err := SelectHighestVersion(refs)
+		if err != nil {
+			t.Fatalf("SelectHighestVersion: %v", err)
+		}
+		if got.Tag != "v1.10.0" {
+			t.Fatalf("SelectHighestVersion Tag = %q, want %q", got.Tag, "v1.10.0")
+		}
+	})
 }
 
 func TestCalculateProposal(t *testing.T) {
@@ -498,10 +612,21 @@ func TestBuildResetPlanDigestChangesWithEveryBoundInput(t *testing.T) {
 			},
 		},
 		{
-			name: "tag target",
+			name: "tag spelling",
+			mutate: func(_ *ResetRequest, source *resetInventoryFixture) {
+				source.tags[0].Name = "0.1.0"
+			},
+		},
+		{
+			name: "tag ref",
+			mutate: func(_ *ResetRequest, source *resetInventoryFixture) {
+				source.tags[0].Ref = "refs/tags/0.1.0"
+			},
+		},
+		{
+			name: "tag target commit",
 			mutate: func(_ *ResetRequest, source *resetInventoryFixture) {
 				source.tags[0].TargetCommit = "3333333333333333333333333333333333333333"
-				source.tags[0].ImmutableID = "local:refs/tags/v0.1.0@3333333333333333333333333333333333333333"
 			},
 		},
 		{
@@ -562,7 +687,7 @@ func TestBuildResetPlanFailsClosedForInvalidOrIncompleteInventory(t *testing.T) 
 	}{
 		{
 			name:    "malformed target version",
-			request: ResetRequest{TargetVersion: "0.0.1", Target: validRequest.Target},
+			request: ResetRequest{TargetVersion: "release-0.0.1", Target: validRequest.Target},
 			source:  resetInventoryFixture{tags: []TagRef{validTag}, releases: []ReleaseRef{validRelease}},
 			want:    ErrMalformedStableVersion,
 		},
@@ -643,4 +768,13 @@ func mustParseVersion(t *testing.T, tag string) Version {
 		t.Fatalf("ParseStableVersion(%q): %v", tag, err)
 	}
 	return version
+}
+
+func mustVersionRef(t *testing.T, tag string, commitSHA string) VersionRef {
+	t.Helper()
+	return VersionRef{
+		Tag:       tag,
+		Version:   mustParseVersion(t, tag),
+		CommitSHA: commitSHA,
+	}
 }

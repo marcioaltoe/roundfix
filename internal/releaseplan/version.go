@@ -1,19 +1,22 @@
 package releaseplan
 
 import (
+	"sort"
 	"strconv"
 	"strings"
 )
 
 // Version is a stable semantic version without pre-release or build metadata.
 type Version struct {
-	major int
-	minor int
-	patch int
+	major    int
+	minor    int
+	patch    int
+	Prefixed bool // the tag carried a leading "v"
 }
 
-// ParseStableVersion parses only the supported vMAJOR.MINOR.PATCH release tag
-// form. It rejects pre-release and malformed values without normalization.
+// ParseStableVersion parses the supported MAJOR.MINOR.PATCH and
+// vMAJOR.MINOR.PATCH release tag forms. It rejects pre-release and malformed
+// values without normalization.
 func ParseStableVersion(tag string) (Version, error) {
 	if parts, ok := stableVersionParts(tag); ok {
 		major, err := strconv.Atoi(parts[0])
@@ -28,7 +31,12 @@ func ParseStableVersion(tag string) (Version, error) {
 		if err != nil {
 			return Version{}, malformedStableVersion(tag)
 		}
-		return Version{major: major, minor: minor, patch: patch}, nil
+		return Version{
+			major:    major,
+			minor:    minor,
+			patch:    patch,
+			Prefixed: strings.HasPrefix(tag, "v"),
+		}, nil
 	}
 	if isPrereleaseVersion(tag) {
 		return Version{}, StableVersionError{
@@ -41,6 +49,50 @@ func ParseStableVersion(tag string) (Version, error) {
 	return Version{}, malformedStableVersion(tag)
 }
 
+// SelectHighestVersion returns the ref with the highest semantic version.
+// It refuses when more than one ref reaches that version.
+func SelectHighestVersion(refs []VersionRef) (VersionRef, error) {
+	if len(refs) == 0 {
+		return VersionRef{}, ErrNoStableReleaseTag
+	}
+
+	highest := []VersionRef{refs[0]}
+	for _, ref := range refs[1:] {
+		switch compareStableVersion(ref.Version, highest[0].Version) {
+		case 1:
+			highest = []VersionRef{ref}
+		case 0:
+			highest = append(highest, ref)
+		}
+	}
+	if len(highest) > 1 {
+		sort.Slice(highest, func(left, right int) bool {
+			if highest[left].Tag != highest[right].Tag {
+				return highest[left].Tag < highest[right].Tag
+			}
+			return highest[left].CommitSHA < highest[right].CommitSHA
+		})
+		return VersionRef{}, AmbiguousHighestVersionError{Refs: highest}
+	}
+	return highest[0], nil
+}
+
+func compareStableVersion(left Version, right Version) int {
+	for _, pair := range [][2]int{
+		{left.major, right.major},
+		{left.minor, right.minor},
+		{left.patch, right.patch},
+	} {
+		if pair[0] > pair[1] {
+			return 1
+		}
+		if pair[0] < pair[1] {
+			return -1
+		}
+	}
+	return 0
+}
+
 func malformedStableVersion(tag string) StableVersionError {
 	return StableVersionError{
 		Input:      tag,
@@ -51,10 +103,8 @@ func malformedStableVersion(tag string) StableVersionError {
 }
 
 func stableVersionParts(tag string) ([]string, bool) {
-	if !strings.HasPrefix(tag, "v") {
-		return nil, false
-	}
-	parts := strings.Split(strings.TrimPrefix(tag, "v"), ".")
+	core := strings.TrimPrefix(tag, "v")
+	parts := strings.Split(core, ".")
 	if len(parts) != 3 {
 		return nil, false
 	}
@@ -91,7 +141,11 @@ func isCanonicalNumericIdentifier(value string) bool {
 }
 
 func (version Version) String() string {
-	return "v" + strconv.Itoa(version.major) + "." + strconv.Itoa(version.minor) + "." + strconv.Itoa(version.patch)
+	prefix := ""
+	if version.Prefixed {
+		prefix = "v"
+	}
+	return prefix + strconv.Itoa(version.major) + "." + strconv.Itoa(version.minor) + "." + strconv.Itoa(version.patch)
 }
 
 func (version Version) Major() int {
@@ -107,13 +161,13 @@ func (version Version) Patch() int {
 }
 
 func (version Version) IncrementPatch() Version {
-	return Version{major: version.major, minor: version.minor, patch: version.patch + 1}
+	return Version{major: version.major, minor: version.minor, patch: version.patch + 1, Prefixed: version.Prefixed}
 }
 
 func (version Version) IncrementMinor() Version {
-	return Version{major: version.major, minor: version.minor + 1}
+	return Version{major: version.major, minor: version.minor + 1, Prefixed: version.Prefixed}
 }
 
 func (version Version) IncrementMajor() Version {
-	return Version{major: version.major + 1}
+	return Version{major: version.major + 1, Prefixed: version.Prefixed}
 }
