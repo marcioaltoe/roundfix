@@ -1,9 +1,12 @@
 ---
 spec: 0147-a-planner-that-reads-both-tag-spellings
-status: active
+status: archived
 created: 2026-09-18
 surfaces: [backend, cli, docs]
+archived: "2026-09-18"
+source_slug: 0147-a-planner-that-reads-both-tag-spellings
 ---
+
 
 # A planner that reads both tag spellings
 
