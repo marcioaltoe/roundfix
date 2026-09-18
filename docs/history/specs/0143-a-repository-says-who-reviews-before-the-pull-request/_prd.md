@@ -1,9 +1,12 @@
 ---
 spec: 0143-a-repository-says-who-reviews-before-the-pull-request
-status: active
+status: archived
 created: 2026-09-17
 surfaces: [backend, cli, docs]
+archived: "2026-09-18"
+source_slug: 0143-a-repository-says-who-reviews-before-the-pull-request
 ---
+
 
 # A repository says who reviews before the Pull Request
 
