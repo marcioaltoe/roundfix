@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0147-a-planner-that-reads-both-tag-spellings
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
