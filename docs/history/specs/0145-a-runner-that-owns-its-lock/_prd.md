@@ -1,9 +1,12 @@
 ---
 spec: 0145-a-runner-that-owns-its-lock
-status: active
+status: archived
 created: 2026-09-18
 surfaces: [backend]
+archived: "2026-09-18"
+source_slug: 0145-a-runner-that-owns-its-lock
 ---
+
 
 # A runner that owns its lock
 
