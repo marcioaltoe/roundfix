@@ -237,7 +237,11 @@ type TaskPlan struct {
 	Concurrency             int
 	VerificationConcurrency int
 	RepositoryVerification  string
+	RunStartedAt            time.Time
+	BudgetEnabled           bool
+	MaxRunDuration          time.Duration
 	verificationGate        verificationGate
+	runBudgetDeadline       time.Time
 	CopyList                []string
 	Bootstrap               runworktree.BootstrapSpec
 	BootstrapOutput         io.Writer
@@ -331,6 +335,11 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 	if err := validateTaskPlan(plan); err != nil {
 		return TaskCycleResult{}, err
 	}
+	runBudgetDeadline := time.Time{}
+	if plan.BudgetEnabled && plan.MaxRunDuration > 0 {
+		runBudgetDeadline = plan.RunStartedAt.Add(plan.MaxRunDuration)
+	}
+	plan.runBudgetDeadline = runBudgetDeadline
 	taskPlan, qaTask, err := taskPlanWithoutQAGate(plan)
 	if err != nil {
 		return TaskCycleResult{}, err
@@ -372,7 +381,7 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 	// A blocked gate never enters the scheduler, so it stays pending and
 	// resumable instead of being reported skipped.
 	if qaTask != nil && qaTask.Status != spec.StatusCompleted && taskNeedsCompleted(*qaTask, statuses) {
-		if err := engine.stopIfRequested(ctx, plan.RunID, ordinal+1); err != nil {
+		if err := engine.stopTaskCycleIfRequested(ctx, plan, ordinal+1); err != nil {
 			return result, fmt.Errorf("stop run %q before the QA step: %w", plan.RunID, err)
 		}
 		ordinal++
@@ -494,7 +503,7 @@ func (engine *Engine) runTaskScheduler(ctx context.Context, plan TaskPlan, statu
 				if !ok {
 					break
 				}
-				if err := taskStartBoundary(ctx, engine, plan.RunID, ordinal, task.ID); err != nil {
+				if err := taskStartBoundary(ctx, engine, plan, ordinal, task.ID); err != nil {
 					stopErr = err
 					break
 				}
@@ -567,7 +576,7 @@ func (engine *Engine) runTaskScheduler(ctx context.Context, plan TaskPlan, statu
 			Reason: reason,
 		})
 		if stopErr == nil {
-			if err := engine.stopIfRequested(ctx, plan.RunID, workerResult.ordinal); err != nil {
+			if err := engine.stopTaskCycleIfRequested(ctx, plan, workerResult.ordinal); err != nil {
 				stopErr = fmt.Errorf("stop run %q after Task %s settlement: %w", plan.RunID, workerResult.task.ID, err)
 			}
 		}
@@ -764,17 +773,34 @@ func taskDependsOn(taskID string, needID string, tasks []spec.Task) bool {
 	return visit(taskID)
 }
 
-func taskStartBoundary(ctx context.Context, engine *Engine, runID string, ordinal int, taskID string) error {
+func taskStartBoundary(ctx context.Context, engine *Engine, plan TaskPlan, ordinal int, taskID string) error {
 	if err := ctx.Err(); err != nil {
-		if publishErr := engine.publishStop(ctx, runID, ordinal); publishErr != nil {
-			return fmt.Errorf("publish stop event for run %q before Task %s: %w", runID, taskID, errors.Join(err, publishErr))
+		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
+			return fmt.Errorf("publish stop event for run %q before Task %s: %w", plan.RunID, taskID, errors.Join(err, publishErr))
 		}
-		return fmt.Errorf("stop run %q before Task %s: %w", runID, taskID, err)
+		return fmt.Errorf("stop run %q before Task %s: %w", plan.RunID, taskID, err)
 	}
-	if err := engine.stopIfRequested(ctx, runID, ordinal); err != nil {
-		return fmt.Errorf("stop run %q before Task %s: %w", runID, taskID, err)
+	if err := engine.stopTaskCycleIfRequested(ctx, plan, ordinal); err != nil {
+		return fmt.Errorf("stop run %q before Task %s: %w", plan.RunID, taskID, err)
 	}
 	return nil
+}
+
+func (engine *Engine) stopTaskCycleIfRequested(ctx context.Context, plan TaskPlan, ordinal int) error {
+	if err := engine.stopIfRequested(ctx, plan.RunID, ordinal); err != nil {
+		return err
+	}
+	if !plan.runBudgetDeadline.IsZero() && !engine.deps.Now().Before(plan.runBudgetDeadline) {
+		return context.DeadlineExceeded
+	}
+	return nil
+}
+
+func taskAgentContext(ctx context.Context, deadline time.Time) (context.Context, context.CancelFunc) {
+	if deadline.IsZero() {
+		return context.WithCancel(ctx)
+	}
+	return context.WithDeadline(ctx, deadline)
 }
 
 func nextReadyTask(tasks []spec.Task, statuses map[string]taskRunStatus) (spec.Task, bool) {
@@ -1288,7 +1314,8 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 		fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
 	}
 
-	runResult, runErr := engine.runAgentSession(ctx, owner, agent.ExecuteRequest{
+	agentCtx, cancelAgent := taskAgentContext(ctx, plan.runBudgetDeadline)
+	runResult, runErr := engine.runAgentSession(agentCtx, owner, agent.ExecuteRequest{
 		Runtime:     plan.Runtime,
 		Session:     plan.Session,
 		RunID:       plan.RunID,
@@ -1298,6 +1325,7 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 		Prompt:      prompt,
 		GitRoot:     plan.WorkDir,
 	})
+	cancelAgent()
 	reloadFailure, reloadErr := reloadAndNormalizeTaskAfterAgent(plan, task, "the Agent")
 	if reloadErr != nil {
 		return "", fmt.Errorf("normalize Task %s status after the Agent: %w", task.ID, reloadErr)
@@ -1312,6 +1340,9 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 	}
 	if reloadFailure != "" {
 		return reloadFailure, nil
+	}
+	if !plan.runBudgetDeadline.IsZero() && !engine.deps.Now().Before(plan.runBudgetDeadline) {
+		return "", fmt.Errorf("stop run %q after Agent Task %s: %w", plan.RunID, task.ID, context.DeadlineExceeded)
 	}
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
@@ -1490,9 +1521,11 @@ func (engine *Engine) acquireVerificationCapacity(ctx context.Context, plan Task
 	if release, acquired := plan.verificationGate.TryAcquire(request.Mode); acquired {
 		return release, nil
 	}
-	waitCtx, finishWait := engine.watchStopRequest(ctx, plan.RunID)
+	waitCtx, cancelWait := taskAgentContext(ctx, plan.runBudgetDeadline)
+	waitCtx, finishWait := engine.watchStopRequest(waitCtx, plan.RunID)
 	release, err := plan.verificationGate.Acquire(waitCtx, request.Mode)
 	stopped := finishWait()
+	cancelWait()
 	if err != nil {
 		if stopped {
 			return nil, engine.stopQueuedVerification(ctx, plan, task, request)
@@ -1510,7 +1543,7 @@ func (engine *Engine) acquireVerificationCapacity(ctx context.Context, plan Task
 	}
 	// Dequeue boundary: capacity can be granted in the same instant the
 	// Stop Request lands, so re-read the flag before any child starts.
-	if stopErr := engine.stopIfRequested(ctx, plan.RunID, request.BatchNumber); stopErr != nil {
+	if stopErr := engine.stopTaskCycleIfRequested(ctx, plan, request.BatchNumber); stopErr != nil {
 		release()
 		return nil, fmt.Errorf("stop run %q before Task %s Verification attempt %d retry %d: %w", plan.RunID, task.ID, request.Attempt, request.Retry, stopErr)
 	}
@@ -1534,7 +1567,7 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 		}
 		return "", fmt.Errorf("stop run %q before Task %s Verification Feedback: %w", plan.RunID, task.ID, err)
 	}
-	if err := engine.stopIfRequested(ctx, plan.RunID, ordinal); err != nil {
+	if err := engine.stopTaskCycleIfRequested(ctx, plan, ordinal); err != nil {
 		return "", fmt.Errorf("stop run %q before Task %s Verification Feedback: %w", plan.RunID, task.ID, err)
 	}
 	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateResolvingWithAgent); err != nil {
@@ -1566,7 +1599,8 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 	if logPath != "" {
 		fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
 	}
-	runResult, runErr := engine.runAgentSession(ctx, owner, agent.ExecuteRequest{
+	agentCtx, cancelAgent := taskAgentContext(ctx, plan.runBudgetDeadline)
+	runResult, runErr := engine.runAgentSession(agentCtx, owner, agent.ExecuteRequest{
 		Runtime:     plan.Runtime,
 		Session:     plan.Session,
 		RunID:       plan.RunID,
@@ -1576,6 +1610,7 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 		Prompt:      prompt,
 		GitRoot:     plan.WorkDir,
 	})
+	cancelAgent()
 	reloadFailure, reloadErr := reloadAndNormalizeTaskAfterAgent(plan, task, "Verification Feedback")
 	if reloadErr != nil {
 		return "", fmt.Errorf("normalize Task %s status after Verification Feedback: %w", task.ID, reloadErr)
@@ -1588,6 +1623,9 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 	}
 	if reloadFailure != "" {
 		return reloadFailure, nil
+	}
+	if !plan.runBudgetDeadline.IsZero() && !engine.deps.Now().Before(plan.runBudgetDeadline) {
+		return "", fmt.Errorf("stop run %q after Task %s Verification Feedback: %w", plan.RunID, task.ID, context.DeadlineExceeded)
 	}
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
@@ -2261,7 +2299,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		return "", "", fmt.Errorf("publish QA mechanical event for run %q: %w", plan.RunID, err)
 	}
 	fmt.Fprintln(engine.deps.Progress, mechanicalSummary)
-	if err := engine.stopIfRequested(ctx, plan.RunID, ordinal); err != nil {
+	if err := engine.stopTaskCycleIfRequested(ctx, plan, ordinal); err != nil {
 		return "", "", fmt.Errorf("stop run %q after the QA mechanical stage: %w", plan.RunID, err)
 	}
 
@@ -2306,7 +2344,8 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 				err = fmt.Errorf("close Agent Session for run %q QA step: %w", plan.RunID, closeErr)
 			}
 		}()
-		if _, runErr := engine.runAgentSession(ctx, owner, agent.ExecuteRequest{
+		agentCtx, cancelAgent := taskAgentContext(ctx, plan.runBudgetDeadline)
+		_, runErr := engine.runAgentSession(agentCtx, owner, agent.ExecuteRequest{
 			Runtime:     plan.Runtime,
 			Session:     plan.Session,
 			RunID:       plan.RunID,
@@ -2315,8 +2354,13 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 			ArtifactDir: plan.ArtifactDir,
 			Prompt:      prompt,
 			GitRoot:     plan.WorkDir,
-		}); runErr != nil {
+		})
+		cancelAgent()
+		if runErr != nil {
 			return "", "", fmt.Errorf("run Agent for run %q QA step: %w", plan.RunID, runErr)
+		}
+		if !plan.runBudgetDeadline.IsZero() && !engine.deps.Now().Before(plan.runBudgetDeadline) {
+			return "", "", fmt.Errorf("stop run %q after the QA step Agent: %w", plan.RunID, context.DeadlineExceeded)
 		}
 		if err := ctx.Err(); err != nil {
 			if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {

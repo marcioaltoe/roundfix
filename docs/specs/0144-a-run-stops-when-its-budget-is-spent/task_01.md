@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0144-a-run-stops-when-its-budget-is-spent
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -59,3 +59,34 @@ Stop Request, and ends the Run through the cancellation that path already uses.
 `_prd.md` → Core Features 1-2 and 5; User Stories 1 and 4; Goals 1 and 4;
 `_techspec.md` → Implementation Design: Deriving and honouring the deadline,
 Cancelling what the Daemon owns; Build Order 1; ADR-0127; ADR-0158.
+
+## Result
+
+The Task cycle now derives `runBudgetDeadline` once from the Run record's
+creation time and the configured positive maximum. It carries that deadline
+through the existing Stop Request boundaries, applies it to Agent Session
+contexts, and leaves in-flight Verification commands uninterrupted.
+
+Acceptance evidence:
+
+- An expiring enabled budget cancels the active Agent Session context and starts
+  no later Task. The focused `termination_proved` subtest passed.
+- A disabled budget with an already-old Run start remains unbounded.
+  `TestTaskCycleDisabledBudgetDerivesNoDeadline` passed.
+- A Run that finishes within an enabled one-hour maximum keeps the existing
+  completed path. `TestTaskCycleFinishesBeforeBudgetDeadline` passed.
+- The cancellation fixture observes one active-session cancellation. Its
+  `termination_unprovable` subtest also passed while preserving the runner's
+  `termination could not be proved` error in the returned error chain.
+
+Focused checks:
+
+- `GOCACHE=/private/tmp/roundfix-go-cache rtk go test -run '^$' ./internal/daemon ./internal/cli` — passed; both packages compiled.
+- `GOCACHE=/private/tmp/roundfix-go-cache rtk go test -count=1 -run '^(TestTaskCycleDisabledBudgetDerivesNoDeadline|TestTaskCycleFinishesBeforeBudgetDeadline)$' ./internal/daemon` — passed, 2 tests.
+- `GOCACHE=/private/tmp/roundfix-go-cache rtk go test -count=1 -run '^TestTaskCycleEndsRunAtBudgetDeadline/termination_proved$' ./internal/daemon` — passed.
+- `GOCACHE=/private/tmp/roundfix-go-cache rtk go test -count=1 -run '^TestTaskCycleEndsRunAtBudgetDeadline/termination_unprovable$' ./internal/daemon` — passed.
+- `GOCACHE=/private/tmp/roundfix-go-cache rtk go test -count=1 -run '^(TestTaskCycleStopRequestAfterTaskSettlementHaltsBeforeNextTask|TestTaskCycleStopDuringAgentPreservesDaemonStatusAndHalts|TestTaskCycleStopRequestBeforeQAStepSkipsQA)$' ./internal/daemon` — passed, 3 tests.
+- `rtk git diff --check` — passed.
+
+The Daemon-owned commands under `## Verification` were not run in this Agent
+turn.
