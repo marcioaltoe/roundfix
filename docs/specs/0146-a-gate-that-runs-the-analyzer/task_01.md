@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0146-a-gate-that-runs-the-analyzer
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -59,3 +59,55 @@ exists before the next Task makes it pass.
 `_prd.md` → Core Features 2-3; User Story 2; Goals 2-3; Success Metrics 1 and 3;
 `_techspec.md` → Implementation Design: The negative control; API Contracts 1
 and 3; Build Order 1; Testing Approach 1-2 and 4.
+
+## Result
+
+Implemented the repository-contract control under the existing `repocontract`
+build tag. The control runs `go vet` against the isolated
+`internal/baseline/analyzer/testdata/printfdiagnostic` fixture, requires a
+non-zero analyzer exit naming the `fmt.Printf format %d` diagnostic, then reads
+the `Makefile` and requires the `vet` dependency in both `verify` tiers.
+
+Focused evidence:
+
+- `GOCACHE=/tmp/roundfix-0146-go-cache go vet ./internal/baseline/analyzer/testdata/printfdiagnostic`
+  exited 1 and named the single deliberate `fmt.Printf format %d` diagnostic.
+- `GOCACHE=/tmp/roundfix-0146-go-cache go test -tags repocontract -run '^TestRepositoryGateRunsTheAnalyzer$' ./internal/baseline`
+  reached the control and exited 1 only because `verify` and
+  `verify-incremental` do not yet depend on `vet`, preserving the intended red
+  state for Task 02.
+- `GOCACHE=/tmp/roundfix-0146-go-cache go list ./...` exited 0 and did not list
+  the fixture package, showing module-wide package matching excludes it.
+- `GOCACHE=/tmp/roundfix-0146-go-cache go test -run '^TestRepositoryGateRunsTheAnalyzer$' ./internal/baseline`
+  exited 0 with no tests to run, showing the ordinary test sweep excludes the
+  repository contract.
+- `git diff --check` exited 0. The changed implementation paths are the contract
+  test, its fixture, and this Task result; no dependency, analyzer configuration,
+  or suppression file was added.
+
+Acceptance evidence:
+
+- The control fails on the current composition and names both missing tier
+  dependencies.
+- The analyzer exits non-zero over the fixture and names its known diagnostic.
+- Module-wide package discovery excludes the fixture beneath `testdata`.
+- The implementation uses only the standard library and Go toolchain and adds
+  no dependency or configuration.
+
+Verification Feedback repair, attempt 1:
+
+- Inspected the Daemon diagnostic artifact and the redirected analyzer output.
+  The fixture-discovery precondition produced no path, and the redirected file
+  was empty, proving the analyzer did not run in the failed command.
+- Root cause: both new implementation files were present only as untracked
+  worktree files, while the authored check discovers the fixture through
+  `git ls-files`.
+- Staged the contract test and diagnostic fixture as the Task's intended new
+  source files. A focused `git ls-files 'internal/**/testdata/**'` inspection
+  now returns
+  `internal/baseline/analyzer/testdata/printfdiagnostic/diagnostic.go`.
+- Repeated the focused fixture analyzer check with the task-local Go cache; it
+  still exits non-zero and names only the deliberate `fmt.Printf format %d`
+  diagnostic. Repeated package discovery still excludes the fixture.
+- The failed declared Verification command was not rerun; the Daemon owns its
+  single configured rerun.
