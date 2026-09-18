@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0147-a-planner-that-reads-both-tag-spellings
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -55,3 +55,38 @@ spelling it read so nothing downstream has to guess.
 Regression locks;
 `_techspec.md` → Implementation Design: Both spellings, one version; Interfaces;
 API Contract 1; Build Order 1.
+
+## Result
+
+### Implementation
+
+- `ParseStableVersion` accepts the stable numeric core with or without one
+  leading `v` and records the accepted spelling in `Version.Prefixed`.
+- The parser still validates exactly three canonical numeric identifiers. Its
+  prerelease and malformed-input paths retain their existing error reasons and
+  next actions.
+- Parser coverage now exercises both accepted spellings, bare and prefixed
+  rejection shapes, exact rejection messages, and the `version-1.2.3` near
+  miss. The pre-existing assertion code remains unchanged; the obsolete table
+  row that required a prefix was replaced by the new contract cases.
+
+### Focused-check evidence
+
+- Before implementation,
+  `GOCACHE=/tmp/roundfix-spec-0147-go-cache go test -count=1 -run 'TestStableVersionAcceptsBothSpellings/bare' ./internal/releaseplan`
+  failed to compile because `Version.Prefixed` did not exist.
+- After implementation,
+  `GOCACHE=/tmp/roundfix-spec-0147-go-cache go test -count=1 -run '^(TestParseStableVersion|TestStableVersionAcceptsBothSpellings|TestStableVersionPreservesRejectionMessages)$' ./internal/releaseplan`
+  exited 0 (`ok roundfix/internal/releaseplan`).
+
+### Acceptance evidence
+
+- `TestStableVersionAcceptsBothSpellings` parses `1.2.3` and `v1.2.3` as the
+  same numeric version and observes `Prefixed == false` and `true`,
+  respectively.
+- `TestParseStableVersion` rejects `1.2.3-rc.1`, `v1.2.3+build`, `1.2`,
+  `01.2.3`, and `version-1.2.3`; `TestStableVersionPreservesRejectionMessages`
+  locks their existing error text.
+- The focused run includes the existing `TestParseStableVersion` assertions and
+  exits 0. The Daemon owns the declared Verification commands and terminal
+  status.

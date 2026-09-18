@@ -46,15 +46,18 @@ func TestParseStableVersion(t *testing.T) {
 		want error
 	}{
 		{name: "empty", tag: "", want: ErrMalformedStableVersion},
-		{name: "missing v prefix", tag: "1.2.3", want: ErrMalformedStableVersion},
 		{name: "missing patch", tag: "v1.2", want: ErrMalformedStableVersion},
+		{name: "bare missing patch", tag: "1.2", want: ErrMalformedStableVersion},
 		{name: "extra component", tag: "v1.2.3.4", want: ErrMalformedStableVersion},
 		{name: "major leading zero", tag: "v01.2.3", want: ErrMalformedStableVersion},
+		{name: "bare major leading zero", tag: "01.2.3", want: ErrMalformedStableVersion},
 		{name: "minor leading zero", tag: "v1.02.3", want: ErrMalformedStableVersion},
 		{name: "patch leading zero", tag: "v1.2.03", want: ErrMalformedStableVersion},
 		{name: "build metadata", tag: "v1.2.3+build", want: ErrMalformedStableVersion},
 		{name: "pre-release", tag: "v1.2.3-rc.1", want: ErrPrereleaseVersion},
+		{name: "bare pre-release", tag: "1.2.3-rc.1", want: ErrPrereleaseVersion},
 		{name: "version zero pre-release", tag: "v0.4.0-alpha", want: ErrPrereleaseVersion},
+		{name: "prefix near miss", tag: "version-1.2.3", want: ErrMalformedStableVersion},
 	}
 
 	for _, tt := range invalid {
@@ -75,6 +78,58 @@ func TestParseStableVersion(t *testing.T) {
 			}
 			if versionErr.NextAction == "" {
 				t.Fatalf("StableVersionError.NextAction is empty")
+			}
+		})
+	}
+}
+
+func TestStableVersionAcceptsBothSpellings(t *testing.T) {
+	tests := []struct {
+		name         string
+		tag          string
+		wantPrefixed bool
+	}{
+		{name: "bare", tag: "1.2.3", wantPrefixed: false},
+		{name: "prefixed", tag: "v1.2.3", wantPrefixed: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseStableVersion(tt.tag)
+			if err != nil {
+				t.Fatalf("ParseStableVersion(%q): %v", tt.tag, err)
+			}
+			if got.Major() != 1 || got.Minor() != 2 || got.Patch() != 3 {
+				t.Fatalf("ParseStableVersion(%q) = %d.%d.%d, want 1.2.3", tt.tag, got.Major(), got.Minor(), got.Patch())
+			}
+			if got.Prefixed != tt.wantPrefixed {
+				t.Fatalf("ParseStableVersion(%q).Prefixed = %t, want %t", tt.tag, got.Prefixed, tt.wantPrefixed)
+			}
+		})
+	}
+}
+
+func TestStableVersionPreservesRejectionMessages(t *testing.T) {
+	tests := []struct {
+		name    string
+		tag     string
+		wantErr string
+	}{
+		{name: "bare pre-release", tag: "1.2.3-rc.1", wantErr: `release base "1.2.3-rc.1": pre-release tags are not supported; use a stable vMAJOR.MINOR.PATCH tag`},
+		{name: "prefixed build metadata", tag: "v1.2.3+build", wantErr: `release base "v1.2.3+build": expected a stable vMAJOR.MINOR.PATCH tag; use a tag like v1.2.3`},
+		{name: "bare missing patch", tag: "1.2", wantErr: `release base "1.2": expected a stable vMAJOR.MINOR.PATCH tag; use a tag like v1.2.3`},
+		{name: "bare leading zero", tag: "01.2.3", wantErr: `release base "01.2.3": expected a stable vMAJOR.MINOR.PATCH tag; use a tag like v1.2.3`},
+		{name: "prefix near miss", tag: "version-1.2.3", wantErr: `release base "version-1.2.3": expected a stable vMAJOR.MINOR.PATCH tag; use a tag like v1.2.3`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := ParseStableVersion(tt.tag)
+			if err == nil {
+				t.Fatalf("ParseStableVersion(%q) succeeded, want error", tt.tag)
+			}
+			if err.Error() != tt.wantErr {
+				t.Fatalf("ParseStableVersion(%q) error = %q, want %q", tt.tag, err, tt.wantErr)
 			}
 		})
 	}

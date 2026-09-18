@@ -7,13 +7,15 @@ import (
 
 // Version is a stable semantic version without pre-release or build metadata.
 type Version struct {
-	major int
-	minor int
-	patch int
+	major    int
+	minor    int
+	patch    int
+	Prefixed bool // the tag carried a leading "v"
 }
 
-// ParseStableVersion parses only the supported vMAJOR.MINOR.PATCH release tag
-// form. It rejects pre-release and malformed values without normalization.
+// ParseStableVersion parses the supported MAJOR.MINOR.PATCH and
+// vMAJOR.MINOR.PATCH release tag forms. It rejects pre-release and malformed
+// values without normalization.
 func ParseStableVersion(tag string) (Version, error) {
 	if parts, ok := stableVersionParts(tag); ok {
 		major, err := strconv.Atoi(parts[0])
@@ -28,7 +30,12 @@ func ParseStableVersion(tag string) (Version, error) {
 		if err != nil {
 			return Version{}, malformedStableVersion(tag)
 		}
-		return Version{major: major, minor: minor, patch: patch}, nil
+		return Version{
+			major:    major,
+			minor:    minor,
+			patch:    patch,
+			Prefixed: strings.HasPrefix(tag, "v"),
+		}, nil
 	}
 	if isPrereleaseVersion(tag) {
 		return Version{}, StableVersionError{
@@ -51,10 +58,8 @@ func malformedStableVersion(tag string) StableVersionError {
 }
 
 func stableVersionParts(tag string) ([]string, bool) {
-	if !strings.HasPrefix(tag, "v") {
-		return nil, false
-	}
-	parts := strings.Split(strings.TrimPrefix(tag, "v"), ".")
+	core := strings.TrimPrefix(tag, "v")
+	parts := strings.Split(core, ".")
 	if len(parts) != 3 {
 		return nil, false
 	}
