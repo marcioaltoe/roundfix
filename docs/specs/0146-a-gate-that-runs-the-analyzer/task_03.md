@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0146-a-gate-that-runs-the-analyzer
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
