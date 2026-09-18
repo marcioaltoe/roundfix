@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0145-a-runner-that-owns-its-lock
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
