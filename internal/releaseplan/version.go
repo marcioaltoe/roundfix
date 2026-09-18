@@ -1,6 +1,7 @@
 package releaseplan
 
 import (
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -46,6 +47,50 @@ func ParseStableVersion(tag string) (Version, error) {
 		}
 	}
 	return Version{}, malformedStableVersion(tag)
+}
+
+// SelectHighestVersion returns the ref with the highest semantic version.
+// It refuses when more than one ref reaches that version.
+func SelectHighestVersion(refs []VersionRef) (VersionRef, error) {
+	if len(refs) == 0 {
+		return VersionRef{}, ErrNoStableReleaseTag
+	}
+
+	highest := []VersionRef{refs[0]}
+	for _, ref := range refs[1:] {
+		switch compareStableVersion(ref.Version, highest[0].Version) {
+		case 1:
+			highest = []VersionRef{ref}
+		case 0:
+			highest = append(highest, ref)
+		}
+	}
+	if len(highest) > 1 {
+		sort.Slice(highest, func(left, right int) bool {
+			if highest[left].Tag != highest[right].Tag {
+				return highest[left].Tag < highest[right].Tag
+			}
+			return highest[left].CommitSHA < highest[right].CommitSHA
+		})
+		return VersionRef{}, AmbiguousHighestVersionError{Refs: highest}
+	}
+	return highest[0], nil
+}
+
+func compareStableVersion(left Version, right Version) int {
+	for _, pair := range [][2]int{
+		{left.major, right.major},
+		{left.minor, right.minor},
+		{left.patch, right.patch},
+	} {
+		if pair[0] > pair[1] {
+			return 1
+		}
+		if pair[0] < pair[1] {
+			return -1
+		}
+	}
+	return 0
 }
 
 func malformedStableVersion(tag string) StableVersionError {

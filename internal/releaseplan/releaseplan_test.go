@@ -135,6 +135,65 @@ func TestStableVersionPreservesRejectionMessages(t *testing.T) {
 	}
 }
 
+func TestSelectionSpansSpellings(t *testing.T) {
+	t.Run("higher bare version outranks lower prefixed version", func(t *testing.T) {
+		refs := []VersionRef{
+			mustVersionRef(t, "v1.2.3", "1111111"),
+			mustVersionRef(t, "1.3.0", "2222222"),
+		}
+
+		got, err := SelectHighestVersion(refs)
+		if err != nil {
+			t.Fatalf("SelectHighestVersion: %v", err)
+		}
+		if got.Tag != "1.3.0" {
+			t.Fatalf("SelectHighestVersion Tag = %q, want %q", got.Tag, "1.3.0")
+		}
+	})
+
+	t.Run("equal highest version reports every ref spelling", func(t *testing.T) {
+		refs := []VersionRef{
+			mustVersionRef(t, "v2.0.0", "1111111"),
+			mustVersionRef(t, "2.0.0", "2222222"),
+			mustVersionRef(t, "v1.9.0", "3333333"),
+		}
+
+		_, err := SelectHighestVersion(refs)
+		if !errors.Is(err, ErrAmbiguousHighestVersion) {
+			t.Fatalf("SelectHighestVersion error = %v, want errors.Is(..., ErrAmbiguousHighestVersion)", err)
+		}
+		var ambiguity AmbiguousHighestVersionError
+		if !errors.As(err, &ambiguity) {
+			t.Fatalf("SelectHighestVersion error = %T, want AmbiguousHighestVersionError", err)
+		}
+		if len(ambiguity.Refs) != 2 {
+			t.Fatalf("AmbiguousHighestVersionError.Refs = %+v, want two refs", ambiguity.Refs)
+		}
+		if ambiguity.Refs[0].Tag != "2.0.0" || ambiguity.Refs[1].Tag != "v2.0.0" {
+			t.Fatalf("AmbiguousHighestVersionError refs = %q, %q, want %q, %q", ambiguity.Refs[0].Tag, ambiguity.Refs[1].Tag, "2.0.0", "v2.0.0")
+		}
+		if ambiguity.Refs[0].CommitSHA != "2222222" || ambiguity.Refs[1].CommitSHA != "1111111" {
+			t.Fatalf("AmbiguousHighestVersionError commits = %q, %q, want both original refs", ambiguity.Refs[0].CommitSHA, ambiguity.Refs[1].CommitSHA)
+		}
+	})
+
+	t.Run("single spelling keeps existing highest selection", func(t *testing.T) {
+		refs := []VersionRef{
+			mustVersionRef(t, "v1.2.3", "1111111"),
+			mustVersionRef(t, "v1.10.0", "2222222"),
+			mustVersionRef(t, "v1.9.9", "3333333"),
+		}
+
+		got, err := SelectHighestVersion(refs)
+		if err != nil {
+			t.Fatalf("SelectHighestVersion: %v", err)
+		}
+		if got.Tag != "v1.10.0" {
+			t.Fatalf("SelectHighestVersion Tag = %q, want %q", got.Tag, "v1.10.0")
+		}
+	})
+}
+
 func TestCalculateProposal(t *testing.T) {
 	tests := []struct {
 		name                 string
@@ -698,4 +757,13 @@ func mustParseVersion(t *testing.T, tag string) Version {
 		t.Fatalf("ParseStableVersion(%q): %v", tag, err)
 	}
 	return version
+}
+
+func mustVersionRef(t *testing.T, tag string, commitSHA string) VersionRef {
+	t.Helper()
+	return VersionRef{
+		Tag:       tag,
+		Version:   mustParseVersion(t, tag),
+		CommitSHA: commitSHA,
+	}
 }

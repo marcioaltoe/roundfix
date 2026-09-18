@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0147-a-planner-that-reads-both-tag-spellings
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -55,3 +55,23 @@ one ref instead of quietly returning one.
 `_prd.md` → Core Features 2 and 5; User Story 3; Goal 3;
 `_techspec.md` → Implementation Design: Selecting across spellings;
 Build Order 2.
+
+## Result
+
+Implemented semantic highest-version selection over parsed `VersionRef`
+entries. Selection returns the original highest ref, keeps every input entry
+distinct, and returns `AmbiguousHighestVersionError` with all equal-highest refs
+when more than one spelling reaches the same version. The error unwraps to the
+named `ErrAmbiguousHighestVersion` condition.
+
+Focused evidence:
+
+- Red signal: `rtk env GOCACHE=/tmp/roundfix-task02-go-cache go test -count=1 -run 'TestSelectionSpansSpellings/higher_bare_version' ./internal/releaseplan` exited 1 before implementation because `SelectHighestVersion`, `ErrAmbiguousHighestVersion`, and `AmbiguousHighestVersionError` did not exist.
+- Mixed-spelling selection: `rtk env GOCACHE=/tmp/roundfix-task02-go-cache go test -count=1 -run 'TestSelectionSpansSpellings/' ./internal/releaseplan` exited 0; the `v1.2.3` and `1.3.0` case selected the original `1.3.0` ref.
+- Ambiguity and inventory identity: the same focused command exited 0; the `v2.0.0` and `2.0.0` case matched `ErrAmbiguousHighestVersion` and retained both tags and their original commit SHAs in the typed error.
+- Single-spelling regression: the same focused command exited 0; the prefixed-only `v1.2.3`, `v1.10.0`, and `v1.9.9` case selected `v1.10.0`.
+- Parser compatibility: `rtk env GOCACHE=/tmp/roundfix-task02-go-cache go test -count=1 -run 'TestParseStableVersion|TestStableVersionAcceptsBothSpellings' ./internal/releaseplan` exited 0.
+- Package-level focused check: `rtk env GOCACHE=/tmp/roundfix-task02-go-cache go test -count=1 ./internal/releaseplan` exited 1 in the pre-existing `malformed_target_version` reset-inventory case. That prior-task test still treats bare `0.0.1` as malformed even though Task 01 intentionally made the bare spelling valid; it is outside Task 02's selection slice.
+
+Follow-up: update the stale reset-inventory malformed-target fixture in its
+own owning slice so the package-level check reflects the accepted bare spelling.

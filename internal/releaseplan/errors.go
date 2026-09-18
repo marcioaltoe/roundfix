@@ -11,6 +11,7 @@ var (
 	ErrPrereleaseVersion          = errors.New("pre-release version")
 	ErrDirtyWorktree              = errors.New("dirty worktree")
 	ErrNoStableReleaseTag         = errors.New("no stable release tag")
+	ErrAmbiguousHighestVersion    = errors.New("ambiguous highest stable version")
 	ErrUnresolvedRevision         = errors.New("unresolved revision")
 	ErrNonCommitRevision          = errors.New("non-commit revision")
 	ErrInvalidReleaseRange        = errors.New("invalid release range")
@@ -20,6 +21,24 @@ var (
 	ErrIncompleteResetInventory   = errors.New("incomplete release reset inventory")
 	ErrDuplicateInventoryIdentity = errors.New("duplicate release reset inventory identity")
 )
+
+// AmbiguousHighestVersionError reports every ref that reaches the same
+// highest stable version.
+type AmbiguousHighestVersionError struct {
+	Refs []VersionRef
+}
+
+func (err AmbiguousHighestVersionError) Error() string {
+	refs := make([]string, 0, len(err.Refs))
+	for _, ref := range err.Refs {
+		refs = append(refs, fmt.Sprintf("%q", ref.Tag))
+	}
+	return fmt.Sprintf("highest stable version is reachable under more than one ref: %s", strings.Join(refs, ", "))
+}
+
+func (err AmbiguousHighestVersionError) Unwrap() error {
+	return ErrAmbiguousHighestVersion
+}
 
 // StableVersionError reports why a release base could not be parsed as the
 // supported vMAJOR.MINOR.PATCH stable tag form.
