@@ -29,7 +29,7 @@ GO_FILES := $(shell find . -name '*.go' -not -path './.git/*')
 
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap verify verify-incremental spec-check spec-budget fmt fmt-check test test-race baseline-digests build install run version clean deps skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
+.PHONY: help bootstrap verify verify-incremental spec-check spec-budget fmt fmt-check vet test test-race baseline-digests build install run version clean deps skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n"} \
@@ -53,9 +53,9 @@ deps: ## Download, tidy, and verify Go modules
 # function there; the local default stays the plain cached test target.
 VERIFY_TEST_TARGET ?= test
 
-verify: fmt-check $(VERIFY_TEST_TARGET) skills-sync-check skills-check build ## Run the required local verification gate
+verify: fmt-check vet $(VERIFY_TEST_TARGET) skills-sync-check skills-check build ## Run the required local verification gate
 
-verify-incremental: fmt-check test skills-sync-check skills-check build ## Run fast local verification with reusable caches
+verify-incremental: fmt-check vet test skills-sync-check skills-check build ## Run fast local verification with reusable caches
 
 verify-docs: build docs-test repo-test spec-budget spec-check ## Validate repository markdown and derived artifacts; required before opening a pull request
 
@@ -86,6 +86,9 @@ fmt-check: ## Check Go formatting without changing files
 		$(GOFMT) -l $(GO_FILES); \
 		exit 1; \
 	}
+
+vet: ## Run Go analyzer
+	$(GO) vet $(PKGS)
 
 # -parallel decides how many tests may overlap inside one package. Go defaults
 # it to GOMAXPROCS, which is right for CPU-bound tests and wrong for these:
