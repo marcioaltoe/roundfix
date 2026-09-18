@@ -43,6 +43,11 @@ func spawnedFixtureWaitDuration(output string) (time.Duration, bool) {
 	return 0, false
 }
 
+// spawnedFixtureDeathBudget bounds how long the wait may take once the fixture
+// has died. It is a tenth of the wait's own budget, so the assertion measures
+// fast failure rather than machine speed.
+const spawnedFixtureDeathBudget = agentWaitBudget / 10
+
 func TestSpawnedFixtureDeathFailsFast(t *testing.T) {
 	const fixtureName = "immediate-exit acpx fixture"
 	if os.Getenv(spawnedFixtureDeathTestEnv) == "fixture" {
@@ -85,8 +90,12 @@ func TestSpawnedFixtureDeathFailsFast(t *testing.T) {
 	if !ok {
 		t.Fatalf("dead fixture wait did not report its measured duration:\n%s", output)
 	}
-	if elapsed >= time.Second {
-		t.Fatalf("dead fixture wait took %s, want under one second:\n%s", elapsed, output)
+	// The claim is that the wait notices the fixture's death instead of sitting
+	// out its budget, so the bound is a fraction of that budget rather than a
+	// fixed second: a loaded machine can spend more than a second and still
+	// prove the point, and an absolute bound turns load into a failure.
+	if elapsed >= spawnedFixtureDeathBudget {
+		t.Fatalf("dead fixture wait took %s, want under %s (a tenth of the %s wait budget):\n%s", elapsed, spawnedFixtureDeathBudget, agentWaitBudget, output)
 	}
 	if text := string(output); !strings.Contains(text, fixtureName) || !strings.Contains(text, "exit status 23") {
 		t.Fatalf("dead fixture failure must name %q and exit status 23:\n%s", fixtureName, output)
