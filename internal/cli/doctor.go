@@ -80,13 +80,14 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 
 	// Keep independent checks eager and ordered.
-	results := make([]CheckResult, 0, 8)
+	results := make([]CheckResult, 0, 9)
 	results = append(results, checker.Node(ctx))
 	results = append(results, checker.ACPX(ctx))
 	runtimes, runtimeErr := doctorAdapterRuntimes(loaded.Config)
 	results = append(results, doctorAdapterCheck(ctx, checker, runtimes, runtimeErr))
 	profileReadiness := dependencies.profileReadiness(ctx, loaded.Config, roundconfig.ConfiguredWorkCategories(loaded.Config), profileWorkDir)
 	results = append(results, doctorProfileReadinessResult(profileReadiness))
+	results = append(results, doctorPrePRReviewResult(loaded.Config.PrePRReview))
 	if repositoryRoot == "" {
 		results = append(results, doctorMissingRepositoryRootResult())
 	} else {
@@ -116,6 +117,21 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitRunFailed
 	}
 	return exitOK
+}
+
+func doctorPrePRReviewResult(policy roundconfig.PrePRReview) CheckResult {
+	provider := strings.TrimSpace(policy.Provider)
+	source := strings.TrimSpace(policy.Source)
+	result := CheckResult{
+		Name:   HealthCheckPrePRReview,
+		Status: CheckStatusOK,
+		Detail: fmt.Sprintf("provider=%s; source=%s", provider, source),
+	}
+	if provider == "none" {
+		result.Status = CheckStatusSkipped
+		result.Detail = fmt.Sprintf("review disabled by configuration; provider=none; source=%s", source)
+	}
+	return result
 }
 
 // RunStore is the read-only Run Database surface needed by Residue.

@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0143-a-repository-says-who-reviews-before-the-pull-request
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -56,3 +56,51 @@ a project decision from an inherited one without running a reviewer.
 `_prd.md` → Core Features 3 and 5; User Story 4; Goals 2 and 4;
 `_techspec.md` → Implementation Design: The report; API Contracts 2-3;
 Build Order 2.
+
+## Result
+
+### Implementation
+
+- Added `HealthCheckPrePRReview` and one Doctor result that reports the
+  resolved provider and its `project`, `user`, or `default` source.
+- Reports `none` with skipped status and the detail `review disabled by
+  configuration`, while retaining its resolved source.
+- Reads only the already loaded `PrePRReview` value. The check has no provider,
+  installer, authentication, session, probe, or request dependency.
+- Added `TestDoctorReportsPrePRReviewPolicy` at the command seam for Project
+  Config, User Config, the built-in default, and explicit `none`. Existing
+  output-order assertions now include the new line while preserving every
+  prior check's relative order and detail.
+
+### Focused checks
+
+- Pre-change local inspection found neither `HealthCheckPrePRReview` nor
+  `TestDoctorReportsPrePRReviewPolicy`, establishing the missing report.
+- `GOCACHE=/tmp/roundfix-task02-gocache rtk go test -count=1 -run
+  '^(TestDoctorReportsPrePRReviewPolicy|TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes|TestRunDoctorRepositorySkillReadiness|TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts|TestRunDoctorMissingRepositoryRoot|TestRunDoctorRealRepositoryCheckDoesNotMutateState)$'
+  ./internal/cli`: passed 23 tests.
+- `rtk git diff --check`: passed.
+- `GOCACHE=/tmp/roundfix-task02-gocache rtk go test -count=1
+  ./internal/cli`: reached 1,137 passing tests and two unrelated Unix Force
+  Stop integration failures. An isolated rerun showed the sandbox denied
+  process-table access with `operation not permitted`; the failure does not
+  enter the Doctor or configuration paths changed by this Task.
+
+### Acceptance evidence
+
+1. `TestDoctorReportsPrePRReviewPolicy` observes `coderabbit` from `project`,
+   `claude` from `user`, and `codex` from `default`; the focused check passed.
+2. The explicit `none` case observes skipped status with `review disabled by
+   configuration`, `provider=none`, and `source=project`; the focused check
+   passed.
+3. The existing exact-output and ordered-name cases retain the prior Node,
+   ACPX, adapter, profiles, skills, residue, and Codex details and relative
+   order around the new check; the focused check passed.
+4. The result builder accepts only `PrePRReview`. The command-seam test also
+   verifies the existing health-checker call counts remain unchanged and no
+   Agent probe occurs; the focused check passed.
+
+### Daemon-owned checks
+
+- The commands under `## Verification` were not run in this Agent turn. The
+  Daemon owns those commands and the terminal Task status.

@@ -238,6 +238,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 
 | Key | Built-in default | Effect |
 | --- | --- | --- |
+| `pre_pr_review.provider` | `codex` | Selects the independent reviewer for a candidate before a Pull Request exists. Supported values are `codex`, `claude`, `coderabbit`, and `none`. Project Config takes precedence over User Config, which takes precedence over this built-in default; an absent key inherits and never means `none`. Declaring a provider invokes nothing, and this release reports the policy without enforcing it at publication. |
 | `review_source.name` | `coderabbit` | Selects the Review Source. CodeRabbit is the only supported value. |
 | `review_source.include_nitpicks` | `false` | Excludes CodeRabbit findings whose severity is `nitpick`. Set `true` to include them. |
 | `watch.until_clean` | `true` | Continues the watch cycle until its clean-outcome contract or another bound ends the Run. |

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0143-a-repository-says-who-reviews-before-the-pull-request
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -61,3 +61,27 @@ acts apart.
 `_prd.md` → Core Feature 1; Non-Goals; Project Constraints: Tooling authority;
 `_techspec.md` → System Architecture: Public guidance; Risks & Considerations;
 Build Order 3; `_authorization.md`.
+
+## Result
+
+### Implementation
+
+- Added the `pre_pr_review.provider` policy description to the public usage
+  guide, including its four supported values (`codex`, `claude`, `coderabbit`,
+  and `none`), Project Config → User Config → built-in `codex` precedence,
+  inheritance semantics, and the current read-only reach.
+- Placed the policy beside the `review_source` explanation and stated that the
+  former governs review before a Pull Request exists while the latter reads
+  feedback from an existing Pull Request.
+- Added the same policy row beside `review_source` in the configuration key
+  reference. No repository configuration, Baseline asset, or setup-context
+  guide was changed.
+
+### Focused checks
+
+- `git diff -- docs/user-guide/usage.md docs/user-guide/configuration.md` —
+  inspected the documentation-only diff and confirmed the two guide changes
+  contain the required policy language.
+- `rg -n "pre_pr_review\.provider|absent key|invokes no provider|does not enforce|review_source" docs/user-guide/usage.md docs/user-guide/configuration.md` —
+  matched the key, inheritance, invocation, enforcement, and act-contrast
+  statements in both public guides.
