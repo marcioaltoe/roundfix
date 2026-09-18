@@ -166,6 +166,12 @@ const (
 	ReconciliationReleased     ReconciliationState = "released"
 )
 
+// CarryForwardAcceptedOutcomes returns the terminal Run outcomes eligible for
+// Task Carry-Forward. Carry-forward must still prove every Task in the set.
+func CarryForwardAcceptedOutcomes() []string {
+	return []string{store.StateStopped, store.StateUnresolved, store.StateBudgetExceeded}
+}
+
 const (
 	reconciliationReasonMaxBytes             = 160
 	reconciliationReasonSafe                 = "Run Branch is integrated and Run Worktree is clean"

@@ -48,6 +48,16 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
+func TestCarryForwardAcceptsBudgetExceededRun(t *testing.T) {
+	t.Parallel()
+
+	got := CarryForwardAcceptedOutcomes()
+	want := []string{store.StateStopped, store.StateUnresolved, store.StateBudgetExceeded}
+	if !slices.Equal(got, want) {
+		t.Fatalf("carry-forward accepted outcomes = %v, want %v", got, want)
+	}
+}
+
 func TestCreateUsesNamedRunBranchUnderRoundfixHomeAndCopiesFiles(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

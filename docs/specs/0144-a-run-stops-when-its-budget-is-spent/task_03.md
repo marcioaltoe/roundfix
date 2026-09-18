@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0144-a-run-stops-when-its-budget-is-spent
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -26,17 +26,17 @@ about what carry-forward proves.
 
 ## Subtasks
 
-- [ ] Add the outcome to the accepted set.
-- [ ] Cover an accepted budget-expired Run, a refused outcome and an unprovable
+- [x] Add the outcome to the accepted set.
+- [x] Cover an accepted budget-expired Run, a refused outcome and an unprovable
       set.
 
 ## Acceptance Criteria
 
-- [ ] A `BudgetExceeded` Run with proved Tasks is accepted.
-- [ ] A `BudgetExceeded` Run whose Tasks cannot be proved is refused, as any
+- [x] A `BudgetExceeded` Run with proved Tasks is accepted.
+- [x] A `BudgetExceeded` Run whose Tasks cannot be proved is refused, as any
       other would be.
-- [ ] An outcome outside the set is still refused.
-- [ ] Every other reconciliation outcome is unchanged.
+- [x] An outcome outside the set is still refused.
+- [x] Every other reconciliation outcome is unchanged.
 
 ## Context
 
@@ -53,3 +53,49 @@ about what carry-forward proves.
 Regression locks;
 `_techspec.md` → Implementation Design: Accepting the outcome for carry-forward;
 API Contract 2; Build Order 3; ADR-0158.
+
+## Result
+
+Implementation:
+
+- `internal/worktree` now owns the accepted Task Carry-Forward outcome list:
+  `Stopped`, `Unresolved`, and `BudgetExceeded`.
+- Both the explicit Reconcile Command guard and the Spec-scoped carry-forward
+  query read that list. The existing Task proofs, all-or-nothing refusal, and
+  apply path are unchanged.
+- Reconciliation coverage exercises a proved `BudgetExceeded` Run, moved-input
+  and mixed-set refusal for that outcome, and refusal of `Clean` while naming
+  all three accepted outcomes.
+
+Focused checks:
+
+- The pre-change focused regression check refused the `BudgetExceeded` fixture
+  with exit 2, and the new worktree policy test could not compile because
+  `CarryForwardAcceptedOutcomes` did not exist.
+- `GOCACHE=/tmp/roundfix-task03-go-cache rtk go test -count=1 -run
+  'TestCarryForward(Accepts|Refuses|Without)' ./internal/cli` passed 16 tests.
+- `GOCACHE=/tmp/roundfix-task03-go-cache rtk go test -count=1 -run
+  'TestCarryForwardAcceptsBudgetExceededRun|TestApplyTerminalRunOutcomeRemainsUnchanged'
+  ./internal/worktree` passed 6 tests.
+- The sandboxed `GOCACHE=/tmp/roundfix-task03-go-cache rtk make
+  verify-incremental` reached the complete Go suite and failed only because two
+  existing force-stop integration tests could not read the process table.
+  `rtk env GOCACHE=/tmp/roundfix-task03-go-cache make verify-incremental`
+  then passed outside that process sandbox, including all Go packages, skill
+  checks, and the build.
+
+Acceptance evidence:
+
+- `TestCarryForwardAcceptsBudgetExceededRun` drives the public Reconcile Command
+  with a proved Task, observes exit 0 and an empty stderr, and proves that the
+  checkout fast-forwards with the implementation, completed status, Run ID,
+  and settlement commit.
+- `TestCarryForwardRefusesATaskWhoseInputsMoved/BudgetExceeded` and
+  `TestCarryForwardRefusesRatherThanCarryingASubset/BudgetExceeded` observe exit
+  2, unchanged checkout and Task files, and no carried implementation when one
+  Task proof fails.
+- `TestCarryForwardRefusesAnUnacceptedRunOutcomeByName` still refuses `Clean`
+  and names `Stopped`, `Unresolved`, and `BudgetExceeded` as the accepted set.
+- No reconciliation classification, reason, or summary code changed.
+  `TestApplyTerminalRunOutcomeRemainsUnchanged` passed, and the incremental gate
+  passed after the final implementation edit.

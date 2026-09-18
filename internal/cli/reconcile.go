@@ -169,18 +169,19 @@ func runReconcileCommand(ctx context.Context, args []string, stdout, stderr io.W
 
 	report := inspectReconcileRuns(ctx, repository, opts, runs)
 	carryForwardRefusal := ""
+	carryForwardAcceptedOutcomes := runworktree.CarryForwardAcceptedOutcomes()
 	if opts.carryForward && len(runs.selected) != 1 {
 		carryForwardRefusal = fmt.Sprintf(
 			"Run %q could not be selected; carry-forward accepts one Run with outcome %s",
 			opts.runID,
-			strings.Join(carryForwardAcceptedStates, " or "),
+			strings.Join(carryForwardAcceptedOutcomes, " or "),
 		)
-	} else if opts.carryForward && !slices.Contains(carryForwardAcceptedStates, runs.selected[0].State) {
+	} else if opts.carryForward && !slices.Contains(carryForwardAcceptedOutcomes, runs.selected[0].State) {
 		carryForwardRefusal = fmt.Sprintf(
 			"Run %q has outcome %s; carry-forward accepts outcomes %s",
 			opts.runID,
 			runs.selected[0].State,
-			strings.Join(carryForwardAcceptedStates, " and "),
+			strings.Join(carryForwardAcceptedOutcomes, " and "),
 		)
 	}
 	resolvedSpecsRoot, resolveSpecsErr := roundconfig.ResolveSpecsRoot(loaded, repository)
