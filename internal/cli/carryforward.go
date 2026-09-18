@@ -14,11 +14,10 @@ import (
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
+	runworktree "roundfix/internal/worktree"
 )
 
 const carryForwardReadyAction = "would carry forward with --carry-forward"
-
-var carryForwardAcceptedStates = []string{store.StateStopped, store.StateUnresolved}
 
 // specCarryForward is what one prior Run would hand back to the checkout.
 type specCarryForward struct {
@@ -59,11 +58,12 @@ func inspectSpecCarryForwards(
 	if err != nil {
 		return nil, fmt.Errorf("list prior Runs for Spec %q carry-forward: %w", specSlug, err)
 	}
+	acceptedOutcomes := runworktree.CarryForwardAcceptedOutcomes()
 	selected := make([]store.Run, 0, len(runs))
 	for _, run := range runs {
 		if run.Kind != store.KindImplement ||
 			strings.TrimSpace(run.SpecSlug) != strings.TrimSpace(specSlug) ||
-			!slices.Contains(carryForwardAcceptedStates, run.State) {
+			!slices.Contains(acceptedOutcomes, run.State) {
 			continue
 		}
 		present, err := carryForwardRunWorktreePresent(run)
@@ -122,9 +122,10 @@ func inspectCarryForwards(
 		return nil, fmt.Errorf("carry-forward Specs Root %q is outside repository %q", resolvedSpecsRoot.Path, repository)
 	}
 	repoSpecsRoot = filepath.ToSlash(repoSpecsRoot)
+	acceptedOutcomes := runworktree.CarryForwardAcceptedOutcomes()
 	carried := make([]spec.CarryForward, 0)
 	for _, run := range runs.selected {
-		if !slices.Contains(carryForwardAcceptedStates, run.State) {
+		if !slices.Contains(acceptedOutcomes, run.State) {
 			continue
 		}
 		if strings.TrimSpace(run.WorkDir) == "" {

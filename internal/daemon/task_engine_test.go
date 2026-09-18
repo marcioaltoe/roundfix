@@ -742,6 +742,7 @@ type taskFakeRunner struct {
 	statusByTaskCall map[string][]spec.Status
 	errByTask        map[string]error
 	errByTaskCall    map[string][]error
+	blockByTask      map[string]bool
 	taskCalls        map[string]int
 	writeByTask      map[string]string
 	resultByTask     map[string]string
@@ -782,6 +783,10 @@ func (runner *taskFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest,
 	}
 	taskCall := runner.taskCalls[taskID]
 	runner.taskCalls[taskID] = taskCall + 1
+	if runner.blockByTask[taskID] {
+		<-ctx.Done()
+		return agent.ExecuteResult{LogPath: req.LogPath}, agent.StopError{Err: ctx.Err()}
+	}
 	if taskID == "" && strings.Contains(req.Prompt, "Spec QA gate") {
 		runner.qaPrompts = append(runner.qaPrompts, req.Prompt)
 		reportPath, reportDisplayPath, err := seededQAReportPathFromPromptForTest(req.Prompt, runner.gitRoot)
@@ -897,6 +902,37 @@ func (runner *taskFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest,
 
 func (runner *taskFakeRunner) EndSession(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
 	return nil
+}
+
+type budgetDeadlineRunner struct {
+	mu            sync.Mutex
+	runs          []string
+	cancellations int
+	cancelErr     error
+}
+
+func (*budgetDeadlineRunner) Probe(context.Context, agent.ProbeRequest) error { return nil }
+
+func (runner *budgetDeadlineRunner) Run(ctx context.Context, req agent.ExecuteRequest, _ runevent.Sink) (agent.ExecuteResult, error) {
+	taskID := taskIDFromPrompt(req.Prompt)
+	runner.mu.Lock()
+	runner.runs = append(runner.runs, taskID)
+	runner.mu.Unlock()
+	<-ctx.Done()
+	runner.mu.Lock()
+	runner.cancellations++
+	runner.mu.Unlock()
+	return agent.ExecuteResult{LogPath: req.LogPath}, agent.StopError{Err: errors.Join(ctx.Err(), runner.cancelErr)}
+}
+
+func (runner *budgetDeadlineRunner) EndSession(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+	return nil
+}
+
+func (runner *budgetDeadlineRunner) snapshot() ([]string, int) {
+	runner.mu.Lock()
+	defer runner.mu.Unlock()
+	return append([]string(nil), runner.runs...), runner.cancellations
 }
 
 func taskIDFromPrompt(prompt string) string {
@@ -6956,6 +6992,179 @@ func TestTaskCycleStopBeforeTaskPublishesStopAndDoesNothing(t *testing.T) {
 	kinds := fixture.sink.kinds()
 	if len(kinds) == 0 || kinds[len(kinds)-1] != runevent.KindDaemonStatus {
 		t.Fatalf("expected daemon stop event published to the sink, got %v", kinds)
+	}
+}
+
+func TestTaskCycleEndsRunAtBudgetDeadline(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		cancelErr error
+	}{
+		{name: "termination proved"},
+		{name: "termination unprovable", cancelErr: errors.New("termination could not be proved")},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}, {id: "task_02"}})
+			runner := &budgetDeadlineRunner{cancelErr: test.cancelErr}
+			engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+			engine.deps.Now = time.Now
+			plan := fixture.plan()
+			plan.RunStartedAt = time.Now()
+			plan.BudgetEnabled = true
+			plan.MaxRunDuration = 100 * time.Millisecond
+
+			result, err := engine.TaskCycle(context.Background(), plan)
+
+			if !errors.Is(err, context.DeadlineExceeded) {
+				t.Fatalf("expected Run Budget deadline, got result=%+v err=%v", result, err)
+			}
+			if test.cancelErr != nil && !errors.Is(err, test.cancelErr) {
+				t.Fatalf("expected unprovable termination to be reported, got %v", err)
+			}
+			runs, cancellations := runner.snapshot()
+			if got := strings.Join(runs, ","); got != "task_01" {
+				t.Fatalf("Agent Tasks started = %q, want only task_01", got)
+			}
+			if cancellations != 1 {
+				t.Fatalf("Agent Session cancellations = %d, want 1", cancellations)
+			}
+			if got := taskStatusOnDisk(t, fixture.gitRoot, "task_02"); got != string(spec.StatusPending) {
+				t.Fatalf("task_02 status = %q, want pending", got)
+			}
+		})
+	}
+}
+
+func TestBudgetExceededRunRecordsItsReason(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01"},
+		{id: "task_02", needs: []string{"task_01"}},
+	})
+	fixture.worktree.snapshots = [][]string{nil, {"src/core.go"}}
+	runner := &taskFakeRunner{
+		calls:        fixture.calls,
+		gitRoot:      fixture.gitRoot,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		blockByTask:  map[string]bool{"task_02": true},
+	}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+	engine.deps.Now = time.Now
+	const maximum = 500 * time.Millisecond
+	plan := fixture.plan()
+	plan.RunStartedAt = time.Now()
+	plan.BudgetEnabled = true
+	plan.MaxRunDuration = maximum
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("Task cycle error = %v, want Run Budget deadline", err)
+	}
+	if result.TerminalOutcome != store.StateBudgetExceeded {
+		t.Fatalf("terminal outcome = %q, want %q", result.TerminalOutcome, store.StateBudgetExceeded)
+	}
+	if !strings.Contains(result.TerminalReason, "configured maximum "+maximum.String()) ||
+		!strings.Contains(result.TerminalReason, "elapsed ") {
+		t.Fatalf("BudgetExceeded reason = %q, want configured maximum and elapsed time", result.TerminalReason)
+	}
+	if len([]rune(result.TerminalReason)) > publicOutcomeReasonMaxRunes {
+		t.Fatalf("BudgetExceeded reason has %d runes, maximum is %d", len([]rune(result.TerminalReason)), publicOutcomeReasonMaxRunes)
+	}
+	if result.Completed != 1 || len(committer.messages) != 1 {
+		t.Fatalf("completed before budget = %d with %d commits, want 1 each", result.Completed, len(committer.messages))
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusCompleted) {
+		t.Fatalf("task_01 status = %q, want completed", got)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_02"); got != string(spec.StatusInProgress) {
+		t.Fatalf("task_02 status = %q, want in_progress", got)
+	}
+}
+
+func TestTaskCycleDisabledBudgetDerivesNoDeadline(t *testing.T) {
+	t.Parallel()
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+	fixture.worktree.snapshots = [][]string{nil, {"src/core.go"}}
+	runner := &taskFakeRunner{
+		calls:        fixture.calls,
+		gitRoot:      fixture.gitRoot,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	plan.RunStartedAt = time.Now().Add(-time.Hour)
+	plan.BudgetEnabled = false
+	plan.MaxRunDuration = time.Second
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("disabled budget changed Task cycle: %v", err)
+	}
+	if result.Completed != 1 {
+		t.Fatalf("completed Tasks = %d, want 1", result.Completed)
+	}
+}
+
+func TestTaskCycleFinishesBeforeBudgetDeadline(t *testing.T) {
+	t.Parallel()
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+	fixture.worktree.snapshots = [][]string{nil, {"src/core.go"}}
+	runner := &taskFakeRunner{
+		calls:        fixture.calls,
+		gitRoot:      fixture.gitRoot,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	engine.deps.Now = time.Now
+	plan := fixture.plan()
+	plan.RunStartedAt = time.Now()
+	plan.BudgetEnabled = true
+	plan.MaxRunDuration = time.Hour
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("Task cycle finishing within budget: %v", err)
+	}
+	if result.Completed != 1 {
+		t.Fatalf("completed Tasks = %d, want 1", result.Completed)
+	}
+}
+
+// Invariant: an expired Run Budget is a terminal outcome even when the Task
+// scheduler has no error to return.
+// Owning layer: daemon Task-cycle integration.
+// Existing canonical suite: TestTaskCycleEndsRunAtBudgetDeadline.
+func TestTaskCycleSettlesBudgetOutcomeWithoutError(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	startedAt := time.Now()
+	deadline := startedAt.Add(time.Hour)
+	nowCalls := 0
+	engine.deps.Now = func() time.Time {
+		nowCalls++
+		if nowCalls == 1 {
+			return startedAt
+		}
+		return deadline.Add(time.Second)
+	}
+	plan := fixture.plan()
+	plan.RunStartedAt = startedAt
+	plan.BudgetEnabled = true
+	plan.MaxRunDuration = time.Hour
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("TaskCycle() error = %v, want Run Budget deadline", err)
+	}
+	if result.TerminalOutcome != store.StateBudgetExceeded {
+		t.Fatalf("terminal outcome = %q, want %q", result.TerminalOutcome, store.StateBudgetExceeded)
+	}
+	if result.Completed != 0 || result.Failed != 0 || result.Skipped != 0 {
+		t.Fatalf("already-settled graph changed while deriving budget outcome: %+v", result)
 	}
 }
 

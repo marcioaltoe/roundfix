@@ -816,6 +816,7 @@ type implementFakeRunner struct {
 	gitRoot       string
 	statusByTask  map[string]spec.Status
 	errByTask     map[string]error
+	blockByTask   map[string]bool
 	probeErr      error
 	probeRequests []agent.ProbeRequest
 	fallback      agent.FallbackSelection
@@ -851,6 +852,7 @@ func (runner *implementFakeRunner) Run(ctx context.Context, req agent.ExecuteReq
 	agentOutput := runner.agentOutput
 	writeLogs := runner.writeLogs
 	errByTask := runner.errByTask
+	blockByTask := runner.blockByTask
 	onTask := runner.onTask
 	statusByTask := runner.statusByTask
 	qaReport := runner.qaReport
@@ -901,6 +903,10 @@ func (runner *implementFakeRunner) Run(ctx context.Context, req agent.ExecuteReq
 	runner.mu.Lock()
 	runner.taskIDs = append(runner.taskIDs, taskID)
 	runner.mu.Unlock()
+	if blockByTask[taskID] {
+		<-ctx.Done()
+		return agent.ExecuteResult{LogPath: req.LogPath}, agent.StopError{Err: ctx.Err()}
+	}
 	if err := errByTask[taskID]; err != nil {
 		return agent.ExecuteResult{}, err
 	}
@@ -1169,6 +1175,18 @@ func implementRunIDFromStderr(t *testing.T, stderr string) string {
 	for _, line := range strings.Split(stderr, "\n") {
 		if strings.HasPrefix(line, "Implement Run: ") {
 			return strings.TrimSpace(strings.TrimPrefix(line, "Implement Run: "))
+		}
+	}
+	t.Fatalf("no Implement Run id in stderr: %q", stderr)
+	return ""
+}
+
+func implementRunIDFromAnyStderrLine(t *testing.T, stderr string) string {
+	t.Helper()
+	for _, line := range strings.Split(stderr, "\n") {
+		fields := strings.Fields(line)
+		if len(fields) >= 3 && fields[0] == "Implement" && fields[1] == "Run" && strings.HasPrefix(fields[2], "run_") {
+			return strings.TrimSuffix(fields[2], ":")
 		}
 	}
 	t.Fatalf("no Implement Run id in stderr: %q", stderr)
@@ -5713,6 +5731,220 @@ func TestRunImplementStopRequestEndsStoppedWithInterruptMapping(t *testing.T) {
 		t.Fatalf("expected Stopped, got %q", run.State)
 	}
 	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+// Invariant: an Implement Run ended by its configured Run Budget records the
+// distinct BudgetExceeded cause, preserves already completed Tasks, and keeps
+// the non-integrated Run Worktree and Run Branch recoverable.
+// Owning layer: public Implement Command integration.
+// Existing canonical suite: TestRunImplementStopRequestEndsStoppedWithInterruptMapping.
+func TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Complete before the Run Budget"},
+		{id: "task_02", title: "Reach the Run Budget", needs: []string{"task_01"}},
+	})
+	const maximum = 500 * time.Millisecond
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "budget:\n  max_run_duration: "+maximum.String()+"\n")
+	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+	gitImplement(t, repoDir, "commit", "-m", "configure bounded implement run")
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		blockByTask:  map[string]bool{"task_02": true},
+	}
+	committer, verifier, _, _ := withImplementCollaborators(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("BudgetExceeded exit = %d, want %d; stderr=%q stdout=%q", code, exitRunFailed, stderr.String(), stdout.String())
+	}
+	runID := implementRunIDFromStderr(t, stderr.String())
+	run := implementRunFromStore(t, homeDir, runID)
+	if run.State != store.StateBudgetExceeded {
+		t.Fatalf("Run state = %q, want %q", run.State, store.StateBudgetExceeded)
+	}
+	var outcome runevent.OutcomePayload
+	foundOutcome := false
+	for _, entry := range runEventsForRun(t, homeDir, runID) {
+		if entry.Event.Kind != runevent.KindDaemonOutcome {
+			continue
+		}
+		if err := json.Unmarshal(entry.Event.Payload, &outcome); err != nil {
+			t.Fatalf("decode Run outcome: %v", err)
+		}
+		foundOutcome = true
+	}
+	if !foundOutcome {
+		t.Fatal("expected journaled BudgetExceeded outcome")
+	}
+	if !strings.Contains(outcome.Reason, "configured maximum "+maximum.String()) ||
+		!strings.Contains(outcome.Reason, "elapsed ") {
+		t.Fatalf("BudgetExceeded reason = %q, want configured maximum and elapsed time", outcome.Reason)
+	}
+	if !strings.Contains(stdout.String(), "task_01 completed — Complete before the Run Budget\n") ||
+		!strings.Contains(stdout.String(), "task_02 pending — Reach the Run Budget\n") {
+		t.Fatalf("BudgetExceeded Task report lost settled status: %q", stdout.String())
+	}
+	if committer.calls != 1 || verifier.calls != 1 {
+		t.Fatalf("work before budget = commits %d verifications %d, want 1 each", committer.calls, verifier.calls)
+	}
+	if content := mustRead(t, filepath.Join(run.WorkDir, "docs", "specs", implementTestSlug, "task_01.md")); !strings.Contains(content, "status: completed") {
+		t.Fatalf("completed Task status was not preserved in Run Worktree:\n%s", content)
+	}
+	if content := mustRead(t, filepath.Join(run.WorkDir, "docs", "specs", implementTestSlug, "task_02.md")); !strings.Contains(content, "status: in_progress") {
+		t.Fatalf("interrupted Task did not retain current settlement:\n%s", content)
+	}
+	assertRunWorktreeExists(t, run.WorkDir)
+	if got := strings.TrimSpace(gitImplementOutput(t, run.WorkDir, "branch", "--list", runworktree.BranchName(runID))); got == "" {
+		t.Fatalf("expected preserved Run Branch %q", runworktree.BranchName(runID))
+	}
+	if !strings.Contains(stderr.String(), "Run Worktree kept: "+run.WorkDir) {
+		t.Fatalf("BudgetExceeded diagnostics did not name preserved Run Worktree: %q", stderr.String())
+	}
+	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+// Invariant: the configured Run Budget bounds setup and post-cycle
+// integration, while a Run that finishes before the deadline stays Clean.
+// Owning layer: public Implement Command integration.
+// Existing canonical suite: TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch.
+func TestImplementRunBudgetBoundsSetupAndIntegration(t *testing.T) {
+	t.Run("bootstrap", func(t *testing.T) {
+		homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Never reaches Agent work"}})
+		const maximum = 250 * time.Millisecond
+		mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "budget:\n  max_run_duration: "+maximum.String()+"\n")
+		gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+		gitImplement(t, repoDir, "commit", "-m", "configure bounded setup")
+		runner := &implementFakeRunner{gitRoot: repoDir}
+		withImplementCollaborators(t, runner)
+		bootstrapStopped := false
+		updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+			dependencies.createRunWorktree = func(ctx context.Context, opts runworktree.CreateOptions) (runworktree.Ref, error) {
+				ref := runworktree.Ref{
+					RunID:    opts.RunID,
+					Path:     filepath.Join(t.TempDir(), opts.RunID),
+					Branch:   runworktree.BranchName(opts.RunID),
+					UserRoot: opts.UserRoot,
+				}
+				<-ctx.Done()
+				bootstrapStopped = true
+				return ref, ctx.Err()
+			}
+		})
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+		if code != exitRunFailed {
+			t.Fatalf("bootstrap-bound exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+		}
+		if !bootstrapStopped {
+			t.Fatal("Run Budget did not cancel Worktree bootstrap")
+		}
+		run := implementRunFromStore(t, homeDir, implementRunIDFromAnyStderrLine(t, stderr.String()))
+		if run.State != store.StateBudgetExceeded {
+			t.Fatalf("bootstrap-bound Run state = %q, want %q", run.State, store.StateBudgetExceeded)
+		}
+	})
+
+	t.Run("integration", func(t *testing.T) {
+		homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Complete before integration"}})
+		const maximum = 350 * time.Millisecond
+		mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "budget:\n  max_run_duration: "+maximum.String()+"\n")
+		gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+		gitImplement(t, repoDir, "commit", "-m", "configure bounded integration")
+		runner := &implementFakeRunner{gitRoot: repoDir, statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted}}
+		withImplementCollaborators(t, runner)
+		integrationStopped := false
+		updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+			dependencies.integrateRunWorktree = func(ctx context.Context, _ runworktree.Ref, _ string, _ string) (runworktree.IntegrationResult, error) {
+				<-ctx.Done()
+				integrationStopped = true
+				return runworktree.IntegrationResult{}, ctx.Err()
+			}
+		})
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+		if code != exitRunFailed {
+			t.Fatalf("integration-bound exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+		}
+		if !integrationStopped {
+			t.Fatal("Run Budget did not cancel integration")
+		}
+		run := implementRunFromStore(t, homeDir, implementRunIDFromStderr(t, stderr.String()))
+		if run.State != store.StateBudgetExceeded {
+			t.Fatalf("integration-bound Run state = %q, want %q", run.State, store.StateBudgetExceeded)
+		}
+		assertRunWorktreeExists(t, run.WorkDir)
+	})
+
+	t.Run("push", func(t *testing.T) {
+		homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Complete before push"}})
+		configureImplementAutoPush(t, repoDir, true)
+		configureImplementUpstream(t, repoDir, "origin", "ma/widget-flow")
+		const maximum = 350 * time.Millisecond
+		mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "budget:\n  max_run_duration: "+maximum.String()+"\nimplement:\n  auto_push: true\n")
+		gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+		gitImplement(t, repoDir, "commit", "-m", "configure bounded push")
+		runner := &implementFakeRunner{gitRoot: repoDir, statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted}}
+		withImplementCollaborators(t, runner)
+		pusher := &budgetBlockingPusher{}
+		withPusher(t, pusher)
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+		if code != exitRunFailed {
+			t.Fatalf("push-bound exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+		}
+		if !pusher.stopped {
+			t.Fatal("Run Budget did not cancel push")
+		}
+		run := implementRunFromStore(t, homeDir, implementRunIDFromStderr(t, stderr.String()))
+		if run.State != store.StateBudgetExceeded {
+			t.Fatalf("push-bound Run state = %q, want %q", run.State, store.StateBudgetExceeded)
+		}
+		assertRunWorktreeExists(t, run.WorkDir)
+	})
+
+	t.Run("inside budget", func(t *testing.T) {
+		homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Finish within budget"}})
+		mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "budget:\n  max_run_duration: 10s\n")
+		gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+		gitImplement(t, repoDir, "commit", "-m", "configure ample budget")
+		runner := &implementFakeRunner{gitRoot: repoDir, statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted}}
+		withImplementCollaborators(t, runner)
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+		if code != exitOK {
+			t.Fatalf("inside-budget exit = %d, want %d; stderr=%q stdout=%q", code, exitOK, stderr.String(), stdout.String())
+		}
+		run := implementRunFromStore(t, homeDir, implementRunIDFromStderr(t, stderr.String()))
+		if run.State != store.StateClean {
+			t.Fatalf("inside-budget Run state = %q, want %q", run.State, store.StateClean)
+		}
+	})
+}
+
+type budgetBlockingPusher struct {
+	stopped bool
+}
+
+func (pusher *budgetBlockingPusher) Push(ctx context.Context, _ daemon.PushRequest) error {
+	<-ctx.Done()
+	pusher.stopped = true
+	return ctx.Err()
 }
 
 func TestRunImplementDatabaseStopRequestAfterTaskCommitEndsStoppedAndReleasesLock(t *testing.T) {

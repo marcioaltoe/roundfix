@@ -29,45 +29,55 @@ func TestCarryForwardAcceptsAnUnresolvedRun(t *testing.T) {
 		state := state
 		t.Run(state, func(t *testing.T) {
 			t.Parallel()
-			fixture := newCarryForwardFixture(t, state, []implementSeed{{id: "task_01", title: "Build the core"}})
-			beforeHead := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD"))
-			var stdout bytes.Buffer
-			var stderr bytes.Buffer
-
-			code := runCLIContext(
-				t,
-				context.Background(),
-				[]string{"reconcile", fixture.run.ID, "--carry-forward", "--format=json"},
-				&stdout,
-				&stderr,
-			)
-
-			if code != exitOK {
-				t.Fatalf("carry-forward exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
-			}
-			if stderr.Len() != 0 {
-				t.Fatalf("carry-forward stderr = %q, want empty", stderr.String())
-			}
-			afterHead := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD"))
-			if afterHead == beforeHead {
-				t.Fatalf("carry-forward HEAD = %s, want a fast-forward", afterHead)
-			}
-			task := mustRead(t, implementTaskPath(fixture.repoDir, "task_01"))
-			for _, want := range []string{"status: completed", fixture.run.ID, fixture.commits["task_01"]} {
-				if !strings.Contains(task, want) {
-					t.Fatalf("carried task does not contain %q:\n%s", want, task)
-				}
-			}
-			if got := mustRead(t, filepath.Join(fixture.repoDir, "src", "task_01.txt")); got != "task_01 settled\n" {
-				t.Fatalf("carried implementation = %q", got)
-			}
+			assertCarryForwardAcceptsRun(t, state)
 		})
+	}
+}
+
+func TestCarryForwardAcceptsBudgetExceededRun(t *testing.T) {
+	t.Parallel()
+	assertCarryForwardAcceptsRun(t, store.StateBudgetExceeded)
+}
+
+func assertCarryForwardAcceptsRun(t *testing.T, state string) {
+	t.Helper()
+	fixture := newCarryForwardFixture(t, state, []implementSeed{{id: "task_01", title: "Build the core"}})
+	beforeHead := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD"))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(
+		t,
+		context.Background(),
+		[]string{"reconcile", fixture.run.ID, "--carry-forward", "--format=json"},
+		&stdout,
+		&stderr,
+	)
+
+	if code != exitOK {
+		t.Fatalf("carry-forward exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("carry-forward stderr = %q, want empty", stderr.String())
+	}
+	afterHead := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD"))
+	if afterHead == beforeHead {
+		t.Fatalf("carry-forward HEAD = %s, want a fast-forward", afterHead)
+	}
+	task := mustRead(t, implementTaskPath(fixture.repoDir, "task_01"))
+	for _, want := range []string{"status: completed", fixture.run.ID, fixture.commits["task_01"]} {
+		if !strings.Contains(task, want) {
+			t.Fatalf("carried task does not contain %q:\n%s", want, task)
+		}
+	}
+	if got := mustRead(t, filepath.Join(fixture.repoDir, "src", "task_01.txt")); got != "task_01 settled\n" {
+		t.Fatalf("carried implementation = %q", got)
 	}
 }
 
 func TestCarryForwardRefusesATaskWhoseInputsMoved(t *testing.T) {
 	t.Parallel()
-	for _, state := range []string{store.StateStopped, store.StateUnresolved} {
+	for _, state := range []string{store.StateStopped, store.StateUnresolved, store.StateBudgetExceeded} {
 		state := state
 		t.Run(state, func(t *testing.T) {
 			t.Parallel()
@@ -110,7 +120,7 @@ func TestCarryForwardRefusesATaskWhoseInputsMoved(t *testing.T) {
 
 func TestCarryForwardRefusesRatherThanCarryingASubset(t *testing.T) {
 	t.Parallel()
-	for _, state := range []string{store.StateStopped, store.StateUnresolved} {
+	for _, state := range []string{store.StateStopped, store.StateUnresolved, store.StateBudgetExceeded} {
 		state := state
 		t.Run(state, func(t *testing.T) {
 			t.Parallel()
@@ -211,7 +221,7 @@ func TestCarryForwardRefusesAnUnacceptedRunOutcomeByName(t *testing.T) {
 	if code != exitPreflight {
 		t.Fatalf("unaccepted-outcome exit = %d, want %d stderr=%q stdout=%q", code, exitPreflight, stderr.String(), stdout.String())
 	}
-	for _, want := range []string{store.StateClean, store.StateStopped, store.StateUnresolved} {
+	for _, want := range []string{store.StateClean, store.StateStopped, store.StateUnresolved, store.StateBudgetExceeded} {
 		if !strings.Contains(stderr.String(), want) {
 			t.Fatalf("unaccepted-outcome stderr does not name %q: %q", want, stderr.String())
 		}
