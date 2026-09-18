@@ -10,9 +10,12 @@ graph:
     - id: task_02
       file: task_02.md
       needs: [task_01]
+    - id: task_04
+      file: task_04.md
+      needs: [task_02]
     - id: task_03
       file: task_03.md
-      needs: [task_02]
+      needs: [task_04]
 ---
 
 # Tasks — A gate that runs the analyzer
@@ -21,6 +24,7 @@ graph:
 | ------- | -------------------------------------------- | ------- | ---------- | ------- |
 | task_01 | Prove the analyzer can fail                   | test    | medium     | —       |
 | task_02 | Compose the analyzer into the gate            | chore   | low        | task_01 |
-| task_03 | Run the final QA gate                         | qa      | high       | task_02 |
+| task_04 | Let a gate run the control                    | chore   | low        | task_02 |
+| task_03 | Run the final QA gate                         | qa      | high       | task_04 |
 
-Waves: 1 → task_01 · 2 → task_02 · 3 → task_03
+Waves: 1 → task_01 · 2 → task_02 · 3 → task_04 · 4 → task_03
