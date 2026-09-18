@@ -2,6 +2,25 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.14.1] - 2026-09-18
+
+The 0.14.0 tag was created but never published: its release run stopped at the
+verification gate, before the Publication Preflight, so no npm package and no
+GitHub Release exist for that version. This release carries the same content
+with two tests repaired; install 0.14.1 wherever 0.14.0 is named.
+
+### Fixed
+
+- **Run Budget tests that do not race the machine they run on.** Both cases
+  shipped with the budget-bounded Run gave the Run a budget of a few hundred
+  milliseconds and expected work to have started before it expired. Worktree
+  setup does real Git work first, and the budget now bounds that setup too, so a
+  loaded machine spent the whole budget before any Task or integration began.
+  The daemon case now proves an already-spent budget at the first checkpoint and
+  keeps a generous margin for the running-Task case; the command case captures
+  the deadline integration receives instead of waiting for it to arrive. No
+  product behavior changed.
+
 ## [0.14.0] - 2026-09-18
 
 Five slices carved out of the authoring queue's portfolio Specs, each one a rule
