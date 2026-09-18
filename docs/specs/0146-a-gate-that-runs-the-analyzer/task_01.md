@@ -52,7 +52,7 @@ exists before the next Task makes it pass.
 
 - `grep -rq "func TestRepositoryGateRunsTheAnalyzer" internal/` — expected: exit 0; the control exists. Before this Task it does not.
 - `fixture="$(git ls-files "internal/**/testdata/**" | grep "analyzer")"; test -n "$fixture" && { go vet ./... > /tmp/0146-module-vet.txt 2>&1; test ! -s /tmp/0146-module-vet.txt; }` — expected: exit 0; the fixture exists and its deliberate diagnostic stays out of module-wide matching. Before this Task the fixture does not exist, so the command fails.
-- `out="$(go test -count=1 -tags repocontract -run "^TestRepositoryGateRunsTheAnalyzer$" ./... 2>&1)"; printf "%s\n" "$out" | grep -q "no tests to run" && { printf "%s\n" "$out"; exit 1; }; printf "%s\n" "$out" | grep -q "FAIL"` — expected: exit 0; the control runs and fails against a gate that does not yet compose the analyzer, which is why it is written first.
+- `go test -count=1 -tags repocontract -run "^TestRepositoryGateRunsTheAnalyzer$" ./... > /tmp/0146-control.txt 2>&1; grep -q "FAIL: TestRepositoryGateRunsTheAnalyzer" /tmp/0146-control.txt` — expected: exit 0; the control runs and fails against a gate that does not yet compose the analyzer, which is why it is written first. Before this Task the test does not exist, so no such line appears and the command fails.
 
 ## References
 
