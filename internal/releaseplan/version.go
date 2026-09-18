@@ -141,7 +141,11 @@ func isCanonicalNumericIdentifier(value string) bool {
 }
 
 func (version Version) String() string {
-	return "v" + strconv.Itoa(version.major) + "." + strconv.Itoa(version.minor) + "." + strconv.Itoa(version.patch)
+	prefix := ""
+	if version.Prefixed {
+		prefix = "v"
+	}
+	return prefix + strconv.Itoa(version.major) + "." + strconv.Itoa(version.minor) + "." + strconv.Itoa(version.patch)
 }
 
 func (version Version) Major() int {
@@ -157,13 +161,13 @@ func (version Version) Patch() int {
 }
 
 func (version Version) IncrementPatch() Version {
-	return Version{major: version.major, minor: version.minor, patch: version.patch + 1}
+	return Version{major: version.major, minor: version.minor, patch: version.patch + 1, Prefixed: version.Prefixed}
 }
 
 func (version Version) IncrementMinor() Version {
-	return Version{major: version.major, minor: version.minor + 1}
+	return Version{major: version.major, minor: version.minor + 1, Prefixed: version.Prefixed}
 }
 
 func (version Version) IncrementMajor() Version {
-	return Version{major: version.major + 1}
+	return Version{major: version.major + 1, Prefixed: version.Prefixed}
 }

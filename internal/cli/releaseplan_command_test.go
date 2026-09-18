@@ -133,6 +133,58 @@ func TestReleasePlanCommandMatchesPRDOutcomes(t *testing.T) {
 	}
 }
 
+func TestReleasePlanRefusesAmbiguousHighestVersion(t *testing.T) {
+	t.Parallel()
+	repoDir := newReleasePlanCommandRepo(t, "v2.0.0",
+		releasePlanCommandCommit{subject: "fix: correct release output", paths: []string{"internal/cli/release.go"}},
+	)
+	gitReleasePlan(t, repoDir, "tag", "2.0.0", "v2.0.0")
+
+	code, stdout, stderr := runReleasePlanCommandInRepo(t, repoDir, "--format", "json")
+
+	if code != exitPreflight {
+		t.Fatalf("exit = %d, want %d stdout=%q stderr=%q", code, exitPreflight, stdout, stderr)
+	}
+	if stdout != "" {
+		t.Fatalf("ambiguous highest version emitted a plan: %q", stdout)
+	}
+	for _, want := range []string{"2.0.0", "v2.0.0", "--from"} {
+		if !strings.Contains(stderr, want) {
+			t.Fatalf("ambiguity diagnostic missing %q: %q", want, stderr)
+		}
+	}
+	for _, unexpected := range []string{"Proposed version", "Approval question", "Approve"} {
+		if strings.Contains(stderr, unexpected) {
+			t.Fatalf("ambiguity diagnostic included %q: %q", unexpected, stderr)
+		}
+	}
+	assertReleasePlanOneDiagnostic(t, stderr, "highest stable version")
+}
+
+func TestReleasePlanReadsBareTags(t *testing.T) {
+	t.Parallel()
+	repoDir := newReleasePlanCommandRepo(t, "1.4.2",
+		releasePlanCommandCommit{subject: "feat: expose release plan", paths: []string{"internal/cli/release.go"}},
+	)
+
+	code, stdout, stderr := runReleasePlanCommandInRepo(t, repoDir, "--format", "json")
+
+	if code != exitUnverified {
+		t.Fatalf("exit = %d, want %d stdout=%q stderr=%q", code, exitUnverified, stdout, stderr)
+	}
+	assertReleasePlanNoStderr(t, stderr)
+	plan := decodeReleasePlanJSON(t, stdout)
+	if plan.Base.Tag != "1.4.2" || plan.Base.Version != "1.4.2" {
+		t.Fatalf("base = %+v, want bare 1.4.2", plan.Base)
+	}
+	if plan.ProposedVersion != "1.5.0" {
+		t.Fatalf("proposedVersion = %q, want bare 1.5.0", plan.ProposedVersion)
+	}
+	if plan.Approval.ProposedVersion != "1.5.0" || plan.Approval.Question != "Approve the minor increment to 1.5.0?" {
+		t.Fatalf("approval = %+v, want bare 1.5.0 proposal and question", plan.Approval)
+	}
+}
+
 func TestReleasePlanCommandMixedOrderSelectsHighestImpact(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -436,6 +488,7 @@ func TestReleasePlanResetTextAndJSONInventoryMatchThroughRunBoundary(t *testing.
 		output: `[
 			[
 				{"id":30,"node_id":"RE_node_30","name":"Third release","tag_name":"v0.3.0","target_commitish":"main"},
+				{"id":25,"node_id":"RE_node_25","name":"Bare second release","tag_name":"0.2.0","target_commitish":"main"},
 				{"id":10,"node_id":"RE_node_10","name":"First release","tag_name":"v0.1.0","target_commitish":"main"}
 			],
 			[
@@ -447,14 +500,14 @@ func TestReleasePlanResetTextAndJSONInventoryMatchThroughRunBoundary(t *testing.
 	t.Cleanup(restore)
 
 	var textStdout, textStderr bytes.Buffer
-	textExit := runCLIContext(t, context.Background(), []string{"release", "plan", "--reset-to", "v0.0.1"}, &textStdout, &textStderr)
+	textExit := runCLIContext(t, context.Background(), []string{"release", "plan", "--reset-to", "0.0.1"}, &textStdout, &textStderr)
 	if textExit != exitUnverified {
 		t.Fatalf("text exit = %d, want 3 stdout=%q stderr=%q", textExit, textStdout.String(), textStderr.String())
 	}
 	assertReleasePlanNoStderr(t, textStderr.String())
 
 	var jsonStdout, jsonStderr bytes.Buffer
-	jsonExit := runCLIContext(t, context.Background(), []string{"release", "plan", "--reset-to", "v0.0.1", "--format", "json"}, &jsonStdout, &jsonStderr)
+	jsonExit := runCLIContext(t, context.Background(), []string{"release", "plan", "--reset-to", "0.0.1", "--format", "json"}, &jsonStdout, &jsonStderr)
 	if jsonExit != exitUnverified {
 		t.Fatalf("JSON exit = %d, want 3 stdout=%q stderr=%q", jsonExit, jsonStdout.String(), jsonStderr.String())
 	}
@@ -464,20 +517,27 @@ func TestReleasePlanResetTextAndJSONInventoryMatchThroughRunBoundary(t *testing.
 	if plan.State != releaseplan.StateApprovalRequired || !plan.Approval.Required {
 		t.Fatalf("decision = state:%q approval:%+v, want approval_required and required", plan.State, plan.Approval)
 	}
-	if plan.TargetVersion != "v0.0.1" || plan.Target.Name != "HEAD" || plan.Target.CommitSHA != resetPlanTargetCommit {
-		t.Fatalf("target = version:%q ref:%+v, want v0.0.1 HEAD at %s", plan.TargetVersion, plan.Target, resetPlanTargetCommit)
+	if plan.TargetVersion != "0.0.1" || plan.Target.Name != "HEAD" || plan.Target.CommitSHA != resetPlanTargetCommit {
+		t.Fatalf("target = version:%q ref:%+v, want bare 0.0.1 HEAD at %s", plan.TargetVersion, plan.Target, resetPlanTargetCommit)
+	}
+	if plan.Approval.ProposedVersion != "0.0.1" || !strings.Contains(plan.Approval.Question, "reset to 0.0.1") {
+		t.Fatalf("approval = %+v, want bare reset target spelling", plan.Approval)
 	}
 	if plan.PlanDigest == "" || !strings.Contains(textStdout.String(), "Plan digest: "+plan.PlanDigest) {
 		t.Fatalf("text and JSON digests differ: text=%q JSON=%q", textStdout.String(), plan.PlanDigest)
 	}
-	if len(plan.Tags) != 5 {
-		t.Fatalf("tags = %+v, want every two local and three remote stable tags exactly once", plan.Tags)
+	if len(plan.Tags) != 6 {
+		t.Fatalf("tags = %+v, want every prefixed and bare local or remote stable tag exactly once", plan.Tags)
 	}
-	if len(plan.Releases) != 3 {
+	if len(plan.Releases) != 4 {
 		t.Fatalf("releases = %+v, want every release from both pages exactly once", plan.Releases)
 	}
-	if got := []int64{plan.Releases[0].ID, plan.Releases[1].ID, plan.Releases[2].ID}; !reflect.DeepEqual(got, []int64{10, 20, 30}) {
-		t.Fatalf("release IDs = %v, want deterministic tag order 10, 20, 30", got)
+	if got := []int64{plan.Releases[0].ID, plan.Releases[1].ID, plan.Releases[2].ID, plan.Releases[3].ID}; !reflect.DeepEqual(got, []int64{25, 10, 20, 30}) {
+		t.Fatalf("release IDs = %v, want deterministic exact-tag order 25, 10, 20, 30", got)
+	}
+	if plan.Releases[0].TargetCommit != "4444444444444444444444444444444444444444" ||
+		plan.Releases[2].TargetCommit != "2222222222222222222222222222222222222222" {
+		t.Fatalf("exact-spelling release targets = bare:%q prefixed:%q, want distinct commits", plan.Releases[0].TargetCommit, plan.Releases[2].TargetCommit)
 	}
 	for _, tag := range plan.Tags {
 		for _, value := range []string{tag.ImmutableID, tag.TargetCommit} {
@@ -604,7 +664,7 @@ func TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory(t *te
 		{name: "to", args: []string{"--reset-to", "v0.0.1", "--to", "main"}, want: "--reset-to cannot be combined with --to"},
 		{name: "impact", args: []string{"--reset-to", "v0.0.1", "--impact", "major"}, want: "--reset-to cannot be combined with --impact"},
 		{name: "reason", args: []string{"--reset-to", "v0.0.1", "--reason", "reset"}, want: "--reset-to cannot be combined with --reason"},
-		{name: "malformed target", args: []string{"--reset-to", "0.0.1"}, want: "expected a stable vMAJOR.MINOR.PATCH tag"},
+		{name: "malformed target", args: []string{"--reset-to", "release-0.0.1"}, want: "expected a stable vMAJOR.MINOR.PATCH tag"},
 	}
 
 	for _, tt := range tests {
@@ -744,7 +804,9 @@ func (runner *resetPlanRecordingGitRunner) RunGit(_ context.Context, _ string, a
 	case "rev-parse\x00--verify\x00HEAD^{commit}":
 		return resetPlanTargetCommit, nil
 	case "for-each-ref\x00--format=%(refname)\x00refs/tags":
-		return "refs/tags/v0.2.0\nrefs/tags/v0.1.0\nrefs/tags/v0.3.0-rc.1", nil
+		return "refs/tags/v0.2.0\nrefs/tags/0.2.0\nrefs/tags/v0.1.0\nrefs/tags/v0.3.0-rc.1", nil
+	case "rev-parse\x00--verify\x00refs/tags/0.2.0^{commit}":
+		return "4444444444444444444444444444444444444444", nil
 	case "rev-parse\x00--verify\x00refs/tags/v0.1.0^{commit}":
 		return "1111111111111111111111111111111111111111", nil
 	case "rev-parse\x00--verify\x00refs/tags/v0.2.0^{commit}":

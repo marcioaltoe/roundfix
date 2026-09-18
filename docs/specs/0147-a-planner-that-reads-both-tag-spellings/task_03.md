@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0147-a-planner-that-reads-both-tag-spellings
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -57,3 +57,44 @@ uses, and renders every proposal in the spelling the selection resolved to.
 Success Metrics 2-3; Regression locks;
 `_techspec.md` → Implementation Design: Refusing the ambiguity, Keeping the
 spelling; API Contracts 2-3; Build Order 3.
+
+## Result
+
+Implementation:
+
+- Default range discovery now inventories every reachable tag, parses both
+  stable spellings, and delegates highest-version choice to the shared
+  selector. An ambiguous highest version remains a typed preflight error and
+  adds the existing `--from` selector as its next action.
+- Version increments preserve the parsed prefix bit, so range proposals,
+  approval data and approval questions use the selected base tag's spelling.
+- Reset planning accepts and renders a bare target. Its command coverage now
+  inventories bare and prefixed aliases separately, matches Releases by exact
+  tag name, and observes distinct target commits. Digest coverage proves that
+  changing a tag's spelling, ref or target commit changes the plan digest.
+
+Focused checks and acceptance evidence:
+
+- Ambiguous refusal: `GOCACHE=/tmp/roundfix-task03-go-cache rtk go test
+  ./internal/cli -run '^TestReleasePlan'` passed 59 tests, including
+  `TestReleasePlanRefusesAmbiguousHighestVersion`; it asserts the preflight exit
+  code, both refs, `--from`, empty stdout and no proposal or approval text.
+- Bare plan and unchanged prefixed plan: the same 59-test check includes
+  `TestReleasePlanReadsBareTags`, which observes base `1.4.2`, proposal `1.5.0`
+  and its bare approval question, plus the existing prefixed range and outcome
+  cases unchanged.
+- Reset spelling and exact inventory matching: the same check includes
+  `TestReleasePlanResetTextAndJSONInventoryMatchThroughRunBoundary`; it observes
+  the bare reset target and approval, retains both `0.2.0` and `v0.2.0`, and
+  resolves their Releases to their distinct exact-tag commits.
+- Digest entries: `GOCACHE=/tmp/roundfix-task03-go-cache rtk go test
+  ./internal/releaseplan` passed 127 tests, including independent digest
+  mutations for tag spelling, ref and target commit.
+- `rtk git diff --check` passed.
+
+Broader check note:
+
+- `GOCACHE=/tmp/roundfix-task03-go-cache rtk go test ./internal/cli` exercised
+  1,150 tests; 1,148 passed and two unrelated force-stop integration tests in
+  `orphan_unix_test.go` failed. This Task does not change that surface. The
+  Daemon-owned Verification commands were not run in this turn.

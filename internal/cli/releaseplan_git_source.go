@@ -494,7 +494,7 @@ func (source releasePlanGitSource) resolveTagCommit(ctx context.Context, root st
 }
 
 func (source releasePlanGitSource) latestStableTag(ctx context.Context, root string, targetSHA string) (string, error) {
-	rawTags, err := source.git(ctx, root, "tag", "--merged", targetSHA, "--list", "v*")
+	rawTags, err := source.git(ctx, root, "tag", "--merged", targetSHA, "--list")
 	if err != nil {
 		return "", releaseplan.GitSourceError{
 			Operation:  "find latest stable release tag",
@@ -502,26 +502,30 @@ func (source releasePlanGitSource) latestStableTag(ctx context.Context, root str
 			Err:        err,
 		}
 	}
-	var selectedTag string
-	var selectedVersion releaseplan.Version
+	var refs []releaseplan.VersionRef
 	for _, tag := range splitNonEmptyLines(rawTags) {
 		version, err := releaseplan.ParseStableVersion(tag)
 		if err != nil {
 			continue
 		}
-		if selectedTag == "" || compareVersion(version, selectedVersion) > 0 {
-			selectedTag = tag
-			selectedVersion = version
-		}
+		refs = append(refs, releaseplan.VersionRef{Tag: tag, Version: version})
 	}
-	if selectedTag == "" {
+	if len(refs) == 0 {
 		return "", releaseplan.GitSourceError{
 			Operation:  "find latest stable release tag",
 			NextAction: "create or pass a stable vMAJOR.MINOR.PATCH base tag",
 			Err:        releaseplan.ErrNoStableReleaseTag,
 		}
 	}
-	return selectedTag, nil
+	selected, err := releaseplan.SelectHighestVersion(refs)
+	if err != nil {
+		return "", releaseplan.GitSourceError{
+			Operation:  "find latest stable release tag",
+			NextAction: "pass --from with one exact tag name to select the intended release base",
+			Err:        err,
+		}
+	}
+	return selected.Tag, nil
 }
 
 func (source releasePlanGitSource) validateRange(ctx context.Context, root string, baseSHA string, targetSHA string) error {
@@ -622,22 +626,6 @@ func splitNonEmptyLines(text string) []string {
 		}
 	}
 	return lines
-}
-
-func compareVersion(left releaseplan.Version, right releaseplan.Version) int {
-	for _, pair := range [][2]int{
-		{left.Major(), right.Major()},
-		{left.Minor(), right.Minor()},
-		{left.Patch(), right.Patch()},
-	} {
-		if pair[0] > pair[1] {
-			return 1
-		}
-		if pair[0] < pair[1] {
-			return -1
-		}
-	}
-	return 0
 }
 
 var _ releaseplan.GitSource = releasePlanGitSource{}

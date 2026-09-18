@@ -612,10 +612,21 @@ func TestBuildResetPlanDigestChangesWithEveryBoundInput(t *testing.T) {
 			},
 		},
 		{
-			name: "tag target",
+			name: "tag spelling",
+			mutate: func(_ *ResetRequest, source *resetInventoryFixture) {
+				source.tags[0].Name = "0.1.0"
+			},
+		},
+		{
+			name: "tag ref",
+			mutate: func(_ *ResetRequest, source *resetInventoryFixture) {
+				source.tags[0].Ref = "refs/tags/0.1.0"
+			},
+		},
+		{
+			name: "tag target commit",
 			mutate: func(_ *ResetRequest, source *resetInventoryFixture) {
 				source.tags[0].TargetCommit = "3333333333333333333333333333333333333333"
-				source.tags[0].ImmutableID = "local:refs/tags/v0.1.0@3333333333333333333333333333333333333333"
 			},
 		},
 		{
@@ -676,7 +687,7 @@ func TestBuildResetPlanFailsClosedForInvalidOrIncompleteInventory(t *testing.T) 
 	}{
 		{
 			name:    "malformed target version",
-			request: ResetRequest{TargetVersion: "0.0.1", Target: validRequest.Target},
+			request: ResetRequest{TargetVersion: "release-0.0.1", Target: validRequest.Target},
 			source:  resetInventoryFixture{tags: []TagRef{validTag}, releases: []ReleaseRef{validRelease}},
 			want:    ErrMalformedStableVersion,
 		},
