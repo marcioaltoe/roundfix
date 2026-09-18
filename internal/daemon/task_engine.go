@@ -344,6 +344,11 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 		runBudgetDeadline = plan.RunStartedAt.Add(plan.MaxRunDuration)
 	}
 	plan.runBudgetDeadline = runBudgetDeadline
+	if result, err := engine.taskCycleResultWithBudgetOutcome(plan, TaskCycleResult{}, nil); err != nil {
+		return result, err
+	}
+	cycleCtx, cancelCycle := taskAgentContext(ctx, runBudgetDeadline)
+	defer cancelCycle()
 	taskPlan, qaTask, err := taskPlanWithoutQAGate(plan)
 	if err != nil {
 		return TaskCycleResult{}, err
@@ -363,7 +368,7 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 	verificationCapacity := plan.VerificationConcurrency
 	plan.verificationGate = newVerificationGate(verificationCapacity)
 	taskPlan.verificationGate = plan.verificationGate
-	if err := engine.publishDaemonEvent(ctx, plan.RunID, 0, runevent.KindDaemonStatus,
+	if err := engine.publishDaemonEvent(cycleCtx, plan.RunID, 0, runevent.KindDaemonStatus,
 		fmt.Sprintf("Task cycle started with Task Capacity %d and Verification Capacity %d.", taskCapacity, verificationCapacity),
 		map[string]any{
 			"spec":                  plan.Spec.Slug,
@@ -376,7 +381,7 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 		return TaskCycleResult{}, err
 	}
 	statuses := initialTaskRunStatuses(taskPlan.Tasks)
-	result, ordinal, err := engine.runTaskScheduler(ctx, taskPlan, statuses)
+	result, ordinal, err := engine.runTaskScheduler(cycleCtx, taskPlan, statuses)
 	if err != nil {
 		return engine.taskCycleResultWithBudgetOutcome(plan, result, err)
 	}
@@ -385,11 +390,11 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 	// A blocked gate never enters the scheduler, so it stays pending and
 	// resumable instead of being reported skipped.
 	if qaTask != nil && qaTask.Status != spec.StatusCompleted && taskNeedsCompleted(*qaTask, statuses) {
-		if err := engine.stopTaskCycleIfRequested(ctx, plan, ordinal+1); err != nil {
+		if err := engine.stopTaskCycleIfRequested(cycleCtx, plan, ordinal+1); err != nil {
 			return engine.taskCycleResultWithBudgetOutcome(plan, result, fmt.Errorf("stop run %q before the QA step: %w", plan.RunID, err))
 		}
 		ordinal++
-		verdict, reportPath, err := engine.runQAGate(ctx, plan, *qaTask, ordinal)
+		verdict, reportPath, err := engine.runQAGate(cycleCtx, plan, *qaTask, ordinal)
 		if err != nil {
 			return engine.taskCycleResultWithBudgetOutcome(plan, result, err)
 		}
@@ -400,17 +405,20 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 			return result, fmt.Errorf("write withheld QA task progress: %w", err)
 		}
 	}
-	if err := engine.publishDaemonEvent(ctx, plan.RunID, 0, runevent.KindDaemonOutcome,
+	if bounded, budgetErr := engine.taskCycleResultWithBudgetOutcome(plan, result, nil); budgetErr != nil {
+		return bounded, budgetErr
+	}
+	if err := engine.publishDaemonEvent(cycleCtx, plan.RunID, 0, runevent.KindDaemonOutcome,
 		fmt.Sprintf("Task cycle finished: %d completed, %d failed, %d skipped.", result.Completed, result.Failed, result.Skipped),
 		map[string]any{"completed": result.Completed, "failed": result.Failed, "skipped": result.Skipped},
 	); err != nil {
-		return result, err
+		return engine.taskCycleResultWithBudgetOutcome(plan, result, err)
 	}
 	return result, nil
 }
 
 func (engine *Engine) taskCycleResultWithBudgetOutcome(plan TaskPlan, result TaskCycleResult, err error) (TaskCycleResult, error) {
-	if plan.runBudgetDeadline.IsZero() || !errors.Is(err, context.DeadlineExceeded) {
+	if plan.runBudgetDeadline.IsZero() {
 		return result, err
 	}
 	now := engine.deps.Now()
@@ -419,6 +427,9 @@ func (engine *Engine) taskCycleResultWithBudgetOutcome(plan TaskPlan, result Tas
 	}
 	result.TerminalOutcome = store.StateBudgetExceeded
 	result.TerminalReason = budgetExceededReason(plan.MaxRunDuration, now.Sub(plan.RunStartedAt))
+	if err == nil {
+		err = context.DeadlineExceeded
+	}
 	return result, err
 }
 

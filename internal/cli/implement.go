@@ -19,6 +19,7 @@ import (
 	"roundfix/internal/app"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/daemon"
+	roundnotify "roundfix/internal/notify"
 	"roundfix/internal/preflight"
 	"roundfix/internal/spec"
 	"roundfix/internal/speccheck"
@@ -106,6 +107,70 @@ func formatRunWindowDuration(duration time.Duration) string {
 	default:
 		return duration.String()
 	}
+}
+
+func implementRunContext(ctx context.Context, startedAt time.Time, budget roundconfig.Budget) (context.Context, context.CancelFunc) {
+	if !budget.Enabled || budget.MaxRunDuration <= 0 {
+		return context.WithCancel(ctx)
+	}
+	return context.WithDeadline(ctx, startedAt.Add(budget.MaxRunDuration))
+}
+
+func implementRunBudgetExpired(startedAt time.Time, budget roundconfig.Budget) bool {
+	return budget.Enabled && budget.MaxRunDuration > 0 && !time.Now().Before(startedAt.Add(budget.MaxRunDuration))
+}
+
+func implementBudgetExceededReason(startedAt time.Time, budget roundconfig.Budget) string {
+	elapsed := time.Since(startedAt)
+	if elapsed < 0 {
+		elapsed = 0
+	}
+	return fmt.Sprintf("Run Budget exceeded: configured maximum %s; elapsed %s.", budget.MaxRunDuration, elapsed)
+}
+
+func completeImplementBudgetExceeded(ctx context.Context, runStore *store.Store, notifier roundnotify.Notifier, run store.Run, budget roundconfig.Budget, stderr io.Writer) (store.CompleteRunResult, error) {
+	completed, err := runStore.CompleteRun(context.WithoutCancel(ctx), run.ID, store.StateBudgetExceeded)
+	if err != nil {
+		return store.CompleteRunResult{}, err
+	}
+	publishTerminalCompletionWithContext(context.WithoutCancel(ctx), runStore, notifier, stderr, completed, terminalCompletionContext{
+		Reason: implementBudgetExceededReason(run.CreatedAt, budget),
+	})
+	return completed, nil
+}
+
+func finishImplementBudgetExceededAfterCycle(
+	ctx context.Context,
+	runStore *store.Store,
+	notifier roundnotify.Notifier,
+	stderr io.Writer,
+	stdout io.Writer,
+	ui *runUI,
+	runner agent.Runner,
+	runtime agent.RuntimeSpec,
+	session agent.SessionRef,
+	run store.Run,
+	runRef runworktree.Ref,
+	specsRoot string,
+	graph *spec.Graph,
+	cycleResult daemon.TaskCycleResult,
+	budget roundconfig.Budget,
+) int {
+	closeAgentSession(ctx, runner, runtime, session, run.ID, runStore)
+	completed, err := completeImplementBudgetExceeded(ctx, runStore, notifier, run, budget, stderr)
+	if err != nil {
+		ui.Close(ctx)
+		printImplementRunFailure(err, stderr)
+		return exitRunFailed
+	}
+	ui.Wait()
+	ui.Close(ctx)
+	fmt.Fprintf(stderr, "Implement Run %s reached %s.\n", completed.ID, completed.State)
+	printKeptRunWorktree(stderr, runRef.Path)
+	report, counts := renderImplementTaskLinesWithOutcomes(specsRoot, graph, false, cycleResult.Outcomes)
+	fmt.Fprint(stdout, report)
+	printImplementOutcomeLine(stdout, completed.State, counts)
+	return exitRunFailed
 }
 
 // runImplementCommand executes the Implement Command: Preflight Validation,
@@ -316,6 +381,8 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitPreflight
 	}
 	printRunOwnerIdentityWarning(stderr, run)
+	runCtx, cancelRun := implementRunContext(ctx, run.CreatedAt, loadedConfig.Config.Budget)
+	defer cancelRun()
 	if runWindowCrossingReport != "" {
 		fmt.Fprintln(stderr, runWindowCrossingReport)
 	}
@@ -328,7 +395,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		fmt.Fprintf(stderr, "%s: note: working tree %s has %d uncommitted change(s); implement will run in a Run Worktree, and overlapping local changes end the Run Integration Pending.\n", app.Name, gitState.Root, len(gitState.Dirty))
 	}
 	reportNonDefaultSpecsRoot(stderr, gitState.Root, resolvedSpecsRoot)
-	runRef, err := commandDependenciesForContext(ctx).createRunWorktree(ctx, runworktree.CreateOptions{
+	runRef, err := commandDependenciesForContext(ctx).createRunWorktree(runCtx, runworktree.CreateOptions{
 		UserRoot:        gitState.Root,
 		Location:        loadedConfig.Config.Worktree.Location,
 		RunID:           run.ID,
@@ -338,6 +405,27 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		BootstrapOutput: newBootstrapOutputWriter(ctx, run.ID, runStore, stderr),
 	})
 	if err != nil {
+		if implementRunBudgetExpired(run.CreatedAt, loadedConfig.Config.Budget) {
+			if strings.TrimSpace(runRef.Path) != "" {
+				var setErr error
+				run, setErr = runStore.SetRunWorkDir(ctx, run.ID, runRef.Path)
+				if setErr != nil {
+					markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
+					printImplementRunFailureWithWorktree(setErr, runRef.Path, stderr)
+					return exitRunFailed
+				}
+			}
+			completed, completeErr := completeImplementBudgetExceeded(ctx, runStore, outcomeNotifier, run, loadedConfig.Config.Budget, stderr)
+			if completeErr != nil {
+				printImplementRunFailure(completeErr, stderr)
+				return exitRunFailed
+			}
+			fmt.Fprintf(stderr, "Implement Run %s reached %s.\n", completed.ID, completed.State)
+			printKeptRunWorktree(stderr, runRef.Path)
+			counts := printImplementTaskLines(stdout, graphSpecsRoot, graph, false)
+			printImplementOutcomeLine(stdout, completed.State, counts)
+			return exitRunFailed
+		}
 		markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 		printImplementRunFailure(err, stderr)
 		return exitRunFailed
@@ -346,6 +434,18 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	if err != nil {
 		markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 		printImplementRunFailureWithWorktree(err, runRef.Path, stderr)
+		return exitRunFailed
+	}
+	if implementRunBudgetExpired(run.CreatedAt, loadedConfig.Config.Budget) {
+		completed, completeErr := completeImplementBudgetExceeded(ctx, runStore, outcomeNotifier, run, loadedConfig.Config.Budget, stderr)
+		if completeErr != nil {
+			printImplementRunFailureWithWorktree(completeErr, runRef.Path, stderr)
+			return exitRunFailed
+		}
+		fmt.Fprintf(stderr, "Implement Run %s reached %s.\n", completed.ID, completed.State)
+		printKeptRunWorktree(stderr, runRef.Path)
+		counts := printImplementTaskLines(stdout, graphSpecsRoot, graph, false)
+		printImplementOutcomeLine(stdout, completed.State, counts)
 		return exitRunFailed
 	}
 	executionSpecsRoot := specsRootForWorkDir(resolvedSpecsRoot, gitState.Root, runRef.Path)
@@ -383,31 +483,34 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 
 	// The Spec's target branch comes off the Run record, not from git in the
 	// Run Worktree: the Run Worktree is checked out on the Run Branch.
-	cycleResult, err := executeImplementCycle(ctx, gitState, run.LocalBranch, runRef, session, executionSpecsRoot, executionGraph, req.artifactDir, loadedConfig.Config.Logs.Agent, implementCapacities{
+	cycleResult, err := executeImplementCycle(runCtx, gitState, run.LocalBranch, runRef, session, executionSpecsRoot, executionGraph, req.artifactDir, loadedConfig.Config.Logs.Agent, implementCapacities{
 		task:         loadedConfig.Config.Worktree.Concurrency,
 		verification: loadedConfig.Config.Verification.Concurrency,
 	}, run.CreatedAt, loadedConfig.Config.Budget, loadedConfig.Config.Defaults.Verification, loadedConfig.Config.Worktree.Copy, worktreeBootstrapSpec(loadedConfig.Config), newBootstrapOutputWriter(ctx, run.ID, runStore, ui.progress), authorization, runtime, agentSelections, operationalRuntimeFactory(req), collaborators, runStore, ui)
-	if err != nil {
-		if cycleResult.TerminalOutcome == store.StateBudgetExceeded {
-			closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
-			completed, completeErr := runStore.CompleteRun(context.WithoutCancel(ctx), run.ID, store.StateBudgetExceeded)
-			if completeErr != nil {
-				ui.Close(ctx)
-				printImplementRunFailure(completeErr, stderr)
-				return exitRunFailed
-			}
-			publishTerminalCompletionWithContext(context.WithoutCancel(ctx), runStore, outcomeNotifier, stderr, completed, terminalCompletionContext{
-				Reason: cycleResult.TerminalReason,
-			})
-			ui.Wait()
+	if cycleResult.TerminalOutcome == store.StateBudgetExceeded || implementRunBudgetExpired(run.CreatedAt, loadedConfig.Config.Budget) {
+		if cycleResult.TerminalReason == "" {
+			cycleResult.TerminalReason = implementBudgetExceededReason(run.CreatedAt, loadedConfig.Config.Budget)
+		}
+		closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
+		completed, completeErr := runStore.CompleteRun(context.WithoutCancel(ctx), run.ID, store.StateBudgetExceeded)
+		if completeErr != nil {
 			ui.Close(ctx)
-			fmt.Fprintf(stderr, "Implement Run %s reached %s.\n", completed.ID, completed.State)
-			printKeptRunWorktree(stderr, runRef.Path)
-			report, counts := renderImplementTaskLinesWithOutcomes(executionSpecsRoot, executionGraph, false, cycleResult.Outcomes)
-			fmt.Fprint(stdout, report)
-			printImplementOutcomeLine(stdout, completed.State, counts)
+			printImplementRunFailure(completeErr, stderr)
 			return exitRunFailed
 		}
+		publishTerminalCompletionWithContext(context.WithoutCancel(ctx), runStore, outcomeNotifier, stderr, completed, terminalCompletionContext{
+			Reason: cycleResult.TerminalReason,
+		})
+		ui.Wait()
+		ui.Close(ctx)
+		fmt.Fprintf(stderr, "Implement Run %s reached %s.\n", completed.ID, completed.State)
+		printKeptRunWorktree(stderr, runRef.Path)
+		report, counts := renderImplementTaskLinesWithOutcomes(executionSpecsRoot, executionGraph, false, cycleResult.Outcomes)
+		fmt.Fprint(stdout, report)
+		printImplementOutcomeLine(stdout, completed.State, counts)
+		return exitRunFailed
+	}
+	if err != nil {
 		if isStopRequest(ctx, err) {
 			closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 			code := completeStoppedRunRecord(runStore, run.ID, outcomeNotifier, stderr)
@@ -444,8 +547,11 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	report, counts := renderImplementTaskLinesWithOutcomes(executionSpecsRoot, executionGraph, true, cycleResult.Outcomes)
 	integrationCommand := ""
 	if outcome == store.StateClean {
-		integration, err := integrateCleanImplementRun(ctx, runRef, gitState.Branch)
+		integration, err := integrateCleanImplementRun(runCtx, runRef, gitState.Branch)
 		if err != nil {
+			if implementRunBudgetExpired(run.CreatedAt, loadedConfig.Config.Budget) {
+				return finishImplementBudgetExceededAfterCycle(ctx, runStore, outcomeNotifier, stderr, stdout, ui, collaborators.runner, runtime, sessionForClose, run, runRef, executionSpecsRoot, executionGraph, cycleResult, loadedConfig.Config.Budget)
+			}
 			closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 			markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 			ui.Wait()
@@ -456,14 +562,18 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		if integration.Mode == runworktree.ModePending {
 			outcome = store.StateIntegrationPending
 			integrationCommand = implementIntegrationCommand(runRef)
-		} else if err := commandDependenciesForContext(ctx).cleanupCleanRunWorktree(ctx, runRef); err != nil {
-			warnCleanRunWorktreeCleanupFailed(ctx, runStore, run.ID, runRef.Path, err, stderr)
 		}
+	}
+	if implementRunBudgetExpired(run.CreatedAt, loadedConfig.Config.Budget) {
+		return finishImplementBudgetExceededAfterCycle(ctx, runStore, outcomeNotifier, stderr, stdout, ui, collaborators.runner, runtime, sessionForClose, run, runRef, executionSpecsRoot, executionGraph, cycleResult, loadedConfig.Config.Budget)
 	}
 	pushResult := implementPushResult{}
 	if outcome == store.StateClean {
-		pushResult, err = maybeRunImplementAutoPush(ctx, gitState, loadedConfig.Config, collaborators, runStore, ui, run.ID, authorization, stderr)
+		pushResult, err = maybeRunImplementAutoPush(runCtx, gitState, loadedConfig.Config, collaborators, runStore, ui, run.ID, authorization, stderr)
 		if err != nil {
+			if implementRunBudgetExpired(run.CreatedAt, loadedConfig.Config.Budget) {
+				return finishImplementBudgetExceededAfterCycle(ctx, runStore, outcomeNotifier, stderr, stdout, ui, collaborators.runner, runtime, sessionForClose, run, runRef, executionSpecsRoot, executionGraph, cycleResult, loadedConfig.Config.Budget)
+			}
 			closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 			markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 			ui.Wait()
@@ -471,6 +581,20 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 			printImplementRunPushFailure(err, stderr)
 			return exitRunFailed
 		}
+	}
+	if implementRunBudgetExpired(run.CreatedAt, loadedConfig.Config.Budget) {
+		return finishImplementBudgetExceededAfterCycle(ctx, runStore, outcomeNotifier, stderr, stdout, ui, collaborators.runner, runtime, sessionForClose, run, runRef, executionSpecsRoot, executionGraph, cycleResult, loadedConfig.Config.Budget)
+	}
+	if outcome == store.StateClean {
+		if err := commandDependenciesForContext(ctx).cleanupCleanRunWorktree(runCtx, runRef); err != nil {
+			if implementRunBudgetExpired(run.CreatedAt, loadedConfig.Config.Budget) {
+				return finishImplementBudgetExceededAfterCycle(ctx, runStore, outcomeNotifier, stderr, stdout, ui, collaborators.runner, runtime, sessionForClose, run, runRef, executionSpecsRoot, executionGraph, cycleResult, loadedConfig.Config.Budget)
+			}
+			warnCleanRunWorktreeCleanupFailed(ctx, runStore, run.ID, runRef.Path, err, stderr)
+		}
+	}
+	if implementRunBudgetExpired(run.CreatedAt, loadedConfig.Config.Budget) {
+		return finishImplementBudgetExceededAfterCycle(ctx, runStore, outcomeNotifier, stderr, stdout, ui, collaborators.runner, runtime, sessionForClose, run, runRef, executionSpecsRoot, executionGraph, cycleResult, loadedConfig.Config.Budget)
 	}
 	completed, err := runStore.CompleteRun(ctx, run.ID, outcome)
 	if err != nil {

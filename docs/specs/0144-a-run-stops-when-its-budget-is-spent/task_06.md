@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0144-a-run-stops-when-its-budget-is-spent
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -38,20 +38,20 @@ contract allows.
 
 ## Subtasks
 
-- [ ] Carry the deadline into Worktree setup and bootstrap.
-- [ ] Convert an expired budget into the outcome on the success path too.
-- [ ] Carry the deadline into integration and push.
-- [ ] Make every skill passage name the three outcomes, and regenerate the mirror.
+- [x] Carry the deadline into Worktree setup and bootstrap.
+- [x] Convert an expired budget into the outcome on the success path too.
+- [x] Carry the deadline into integration and push.
+- [x] Make every skill passage name the three outcomes, and regenerate the mirror.
 
 ## Acceptance Criteria
 
-- [ ] A fixture whose bootstrap outlives the budget ends with the Run and settles
+- [x] A fixture whose bootstrap outlives the budget ends with the Run and settles
       `BudgetExceeded`.
-- [ ] A fixture whose cycle returns without error after the deadline settles
+- [x] A fixture whose cycle returns without error after the deadline settles
       `BudgetExceeded`.
-- [ ] A fixture whose integration would run past the deadline is bounded.
-- [ ] A fixture that finishes inside its budget is unaffected.
-- [ ] No passage in either skill copy names only two accepted outcomes, and the
+- [x] A fixture whose integration would run past the deadline is bounded.
+- [x] A fixture that finishes inside its budget is unaffected.
+- [x] No passage in either skill copy names only two accepted outcomes, and the
       copies are identical.
 
 ## Context
@@ -65,8 +65,8 @@ contract allows.
 
 - `out="$(go test -count=1 -run "^TestImplementRunBudgetBoundsSetupAndIntegration$" ./internal/cli 2>&1)" || { printf "%s\n" "$out"; exit 1; }; missing="$(printf "%s\n" "$out" | grep "no tests to run")"; test -z "$missing"` — expected: exit 0; before this Task the run reports no tests to run, so the command fails.
 - `out="$(go test -count=1 -run "^TestTaskCycleSettlesBudgetOutcomeWithoutError$" ./internal/daemon 2>&1)" || { printf "%s\n" "$out"; exit 1; }; missing="$(printf "%s\n" "$out" | grep "no tests to run")"; test -z "$missing"` — expected: exit 0; before this Task the run reports no tests to run, so the command fails.
-- `remaining="$(grep -n "Stopped\` or \`Unresolved" .agents/skills/roundfix/SKILL.md)"; test -z "$remaining"` — expected: exit 0; no passage names only two accepted outcomes. Before this Task at least one does, so the command fails.
-- `mirror="$(grep -n "Stopped\` or \`Unresolved" skills/roundfix/SKILL.md)"; test -z "$mirror" && diff -q .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` — expected: exit 0; the mirror carries the corrected passages and stays identical to its canonical copy. Before this Task it still names only two outcomes, so the command fails.
+- `tick="$(printf '\140')"; remaining="$(grep -n "Stopped${tick} or ${tick}Unresolved" .agents/skills/roundfix/SKILL.md)"; test -z "$remaining"` — expected: exit 0; no passage names only two accepted outcomes. Before this Task at least one does, so the command fails.
+- `tick="$(printf '\140')"; mirror="$(grep -n "Stopped${tick} or ${tick}Unresolved" skills/roundfix/SKILL.md)"; test -z "$mirror" && diff -q .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` — expected: exit 0; the mirror carries the corrected passages and stays identical to its canonical copy. Before this Task it still names only two outcomes, so the command fails.
 
 ## References
 
@@ -74,3 +74,64 @@ contract allows.
 `_techspec.md` → Implementation Design: Deriving and honouring the deadline,
 Settling the outcome, Accepting the outcome for carry-forward; API Contracts 1-2;
 `_authorization.md`.
+
+## Result
+
+Implementation-ready behavior:
+
+- The Implement Command derives one deadline from the persisted Run start and
+  passes its context through Run Worktree creation, bootstrap, the Task cycle,
+  integration, cleanup and optional push. Terminal settlement uses the parent
+  context after the deadline cancels bounded work.
+- The Task cycle applies that deadline to Task Worktree creation and bootstrap,
+  and converts an elapsed deadline into `BudgetExceeded` even when the
+  scheduler and QA return without error.
+- Clean Run Worktree cleanup now follows the optional push, so a push cancelled
+  by the Run Budget retains the Run Worktree and Run Branch for recovery.
+- Every carry-forward passage names `BudgetExceeded`, `Stopped`, and
+  `Unresolved`; `make skills-sync` regenerated the distributed mirror.
+
+Focused evidence by acceptance criterion:
+
+- Bootstrap bound: `GOCACHE=/private/tmp/roundfix-task06-go-cache rtk go test
+  -count=1 -run Budget ./internal/cli ./internal/daemon` passed, including
+  `TestImplementRunBudgetBoundsSetupAndIntegration/bootstrap`; the fixture
+  observed context cancellation and stored `BudgetExceeded`.
+- Success-path settlement: the same focused command passed
+  `TestTaskCycleSettlesBudgetOutcomeWithoutError`, whose already-settled graph
+  returns no scheduler error before the final budget check.
+- Integration and push bounds: the same focused command passed the
+  `integration` and `push` subtests; both blocking fakes observed cancellation,
+  and both Runs stored `BudgetExceeded` with their Run Worktrees retained.
+- Within-budget control: the same focused command passed the `inside budget`
+  subtest and the existing `TestTaskCycleFinishesBeforeBudgetDeadline`; both
+  retained their prior Clean/success behavior.
+- Skill consistency: `make skills-sync` completed; SHA-256 for both skill copies
+  is `07e6c98bef1e6b1b71a6ad0148264583c4454f4226da439d091045973660fc27`.
+  Inspection of the reconcile contract, preflight candidates and exit-code
+  table showed all three outcomes. `make baseline-digests` reported no derived
+  changes.
+
+Additional focused checks:
+
+- `GOCACHE=/private/tmp/roundfix-task06-go-cache rtk go test -count=1 -run
+  'Test(TaskCycleCreatesTaskWorktreesWithBootstrapBeforeAgentWork|TaskCycleTaskWorktreeBootstrapFailureIsolatesIndependentTasks|RunImplementAutoPushOutcomeMatrix|RunImplementAutoPushFailureEndsFailedAndJournalsPush|RunImplementCleanup)'
+  ./internal/cli ./internal/daemon` passed 9 tests.
+- `rtk git diff --check` passed.
+
+The Daemon-owned commands in `## Verification` were not run during this Agent
+turn.
+
+Verification Feedback repair:
+
+- Attempt 1 reached the third command but the Task parser truncated its inline
+  Markdown code span at the escaped backtick, so the shell received an
+  unterminated quoted command and exited `2` before `grep` ran.
+- Both skill checks now create the literal backtick with `printf '\140'` and
+  interpolate it into the exact search phrase. This keeps backticks out of the
+  Markdown code-span body while preserving the intended byte-level check.
+- `GOCACHE=/private/tmp/roundfix-task06-go-cache rtk go run ./cmd/roundfix spec
+  check 0144-a-run-stops-when-its-budget-is-spent --format json` exited `0`,
+  reported no findings, and reported `verification.executed: false`.
+- Post-repair `rtk git diff --check` and the byte comparison of the canonical
+  and mirrored skills both exited `0`.

@@ -7133,6 +7133,41 @@ func TestTaskCycleFinishesBeforeBudgetDeadline(t *testing.T) {
 	}
 }
 
+// Invariant: an expired Run Budget is a terminal outcome even when the Task
+// scheduler has no error to return.
+// Owning layer: daemon Task-cycle integration.
+// Existing canonical suite: TestTaskCycleEndsRunAtBudgetDeadline.
+func TestTaskCycleSettlesBudgetOutcomeWithoutError(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	startedAt := time.Now()
+	deadline := startedAt.Add(time.Hour)
+	nowCalls := 0
+	engine.deps.Now = func() time.Time {
+		nowCalls++
+		if nowCalls == 1 {
+			return startedAt
+		}
+		return deadline.Add(time.Second)
+	}
+	plan := fixture.plan()
+	plan.RunStartedAt = startedAt
+	plan.BudgetEnabled = true
+	plan.MaxRunDuration = time.Hour
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("TaskCycle() error = %v, want Run Budget deadline", err)
+	}
+	if result.TerminalOutcome != store.StateBudgetExceeded {
+		t.Fatalf("terminal outcome = %q, want %q", result.TerminalOutcome, store.StateBudgetExceeded)
+	}
+	if result.Completed != 0 || result.Failed != 0 || result.Skipped != 0 {
+		t.Fatalf("already-settled graph changed while deriving budget outcome: %+v", result)
+	}
+}
+
 func TestTaskCycleStopRequestAfterTaskSettlementHaltsBeforeNextTask(t *testing.T) {
 	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{

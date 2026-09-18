@@ -1551,9 +1551,10 @@ elapsed time. The bounded Run preserves its Run Worktree and Run Branch for
 inspection and recovery.
 
 Before creating a Run, `implement` inspects prior terminal Runs for the same
-Spec in the current repository. When a `Stopped` or `Unresolved` Run with a
-present Run Worktree has a complete candidate set that would carry, Preflight
-Validation refuses before creating a Run or Agent Session. The complete set
+Spec in the current repository. When a `BudgetExceeded`, `Stopped`, or
+`Unresolved` Run with a present Run Worktree has a complete candidate set that
+would carry, Preflight Validation refuses before creating a Run or Agent
+Session. The complete set
 must pass Task Carry-Forward's existing proofs, including a passing
 Verification verdict, exactly one settlement commit, and unmoved declared
 inputs for each candidate. Input proofs use the checkout plus the accumulating
@@ -1633,9 +1634,9 @@ the largest carriable Task set, breaking ties with the newest Run.
    Verification Capacity: M
    ```
 
-4. Exit codes: `0` Clean, Stopped, or the all-completed no-op, `1` Unresolved,
-   Failed, or Integration Pending, `2` Preflight Validation failure, `130` for
-   in-terminal Ctrl-C interrupt mapping.
+4. Exit codes: `0` Clean, Stopped, or the all-completed no-op, `1`
+   BudgetExceeded, Unresolved, Failed, or Integration Pending, `2` Preflight
+   Validation failure, `130` for in-terminal Ctrl-C interrupt mapping.
 
 5. Preflight Validation exits `2` with one actionable message when the Spec
    or its Task Graph is invalid (each failure names the offending Task or
