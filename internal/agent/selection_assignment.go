@@ -93,7 +93,7 @@ type SessionSelectionRequest struct {
 // ProveExactSelection opens one disposable Agent Session, proves the exact
 // requested tuple from advertised effective state, and closes the Session
 // before returning.
-func (runner ACPXRunner) ProveExactSelection(ctx context.Context, request ProbeRequest) (SelectionProof, error) {
+func (runner *ACPXRunner) ProveExactSelection(ctx context.Context, request ProbeRequest) (SelectionProof, error) {
 	if ctx == nil {
 		return SelectionProof{}, errors.New("selection proof context is required")
 	}
@@ -157,7 +157,7 @@ func (runner ACPXRunner) ProveExactSelection(ctx context.Context, request ProbeR
 	return proof, nil
 }
 
-func (runner ACPXRunner) readRuntimeCatalogueWithEvidence(ctx context.Context, runtime RuntimeSpec, session SessionRef, adapter AdapterEvidence, codexEnv []string) (RuntimeCatalogue, error) {
+func (runner *ACPXRunner) readRuntimeCatalogueWithEvidence(ctx context.Context, runtime RuntimeSpec, session SessionRef, adapter AdapterEvidence, codexEnv []string) (RuntimeCatalogue, error) {
 	capabilities, err := runner.startSessionSelectionWithEnsure(
 		ctx,
 		runtime,
@@ -206,7 +206,7 @@ func (catalogue RuntimeCatalogue) recordAdvertisement(capabilities SelectionCapa
 	return catalogue
 }
 
-func (runner ACPXRunner) startSessionSelection(ctx context.Context, runtime RuntimeSpec, session SessionRef, adapter AdapterEvidence, codexEnv []string, disposable bool) (SelectionCapabilities, error) {
+func (runner *ACPXRunner) startSessionSelection(ctx context.Context, runtime RuntimeSpec, session SessionRef, adapter AdapterEvidence, codexEnv []string, disposable bool) (SelectionCapabilities, error) {
 	operation := "ensure live Agent Session"
 	if disposable {
 		operation = "ensure disposable Agent Session"
@@ -224,7 +224,7 @@ func (runner ACPXRunner) startSessionSelection(ctx context.Context, runtime Runt
 
 type sessionEnsureArgsBuilder func(RuntimeSpec, string, string) ([]string, error)
 
-func (runner ACPXRunner) startSessionSelectionWithEnsure(
+func (runner *ACPXRunner) startSessionSelectionWithEnsure(
 	ctx context.Context,
 	runtime RuntimeSpec,
 	session SessionRef,
@@ -416,7 +416,7 @@ func PlanSelectionAssignment(runtime RuntimeSpec, capabilities SelectionCapabili
 
 // ApplySessionSelection applies and proves one assignment on an existing
 // Agent Session. Each successful update replaces the prior capability state.
-func (runner ACPXRunner) ApplySessionSelection(ctx context.Context, request SessionSelectionRequest) (SelectionProof, error) {
+func (runner *ACPXRunner) ApplySessionSelection(ctx context.Context, request SessionSelectionRequest) (SelectionProof, error) {
 	if ctx == nil {
 		return SelectionProof{}, errors.New("selection application context is required")
 	}
@@ -427,7 +427,7 @@ func (runner ACPXRunner) ApplySessionSelection(ctx context.Context, request Sess
 	return runner.applySessionSelection(ctx, request, codexEnv)
 }
 
-func (runner ACPXRunner) applySessionSelection(ctx context.Context, request SessionSelectionRequest, codexEnv []string) (SelectionProof, error) {
+func (runner *ACPXRunner) applySessionSelection(ctx context.Context, request SessionSelectionRequest, codexEnv []string) (SelectionProof, error) {
 	requestedModel := strings.TrimSpace(request.Runtime.Model)
 	if request.Catalogue.Observed && !request.Catalogue.AdvertisesModel(requestedModel) {
 		return SelectionProof{}, &ModelNotAdvertisedError{
@@ -478,7 +478,7 @@ func (runner ACPXRunner) applySessionSelection(ctx context.Context, request Sess
 	}, nil
 }
 
-func (runner ACPXRunner) applySelectionOption(ctx context.Context, request SessionSelectionRequest, assignment SelectionAssignment, key string, value string, codexEnv []string) (SelectionCapabilities, error) {
+func (runner *ACPXRunner) applySelectionOption(ctx context.Context, request SessionSelectionRequest, assignment SelectionAssignment, key string, value string, codexEnv []string) (SelectionCapabilities, error) {
 	state, err := runner.acquireSelectionCapabilities(ctx, CapabilityAcquisitionRequest{
 		Runtime:  request.Runtime,
 		Session:  request.Session,

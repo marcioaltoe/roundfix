@@ -52,7 +52,7 @@ func TestACPXRunnerCommandEnvDefaultsToProcessEnvironment(t *testing.T) {
 	// Sequential: verifies the zero-value runner reads the process environment.
 	t.Setenv("ROUNDFIX_TEST_PROCESS_ENV", "process-value")
 
-	environment := (ACPXRunner{}).commandEnv(nil)
+	environment := (&ACPXRunner{}).commandEnv(nil)
 	if got := environmentValue(environment, "ROUNDFIX_TEST_PROCESS_ENV"); got != "process-value" {
 		t.Fatalf("process environment value = %q, want process-value", got)
 	}

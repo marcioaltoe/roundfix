@@ -169,7 +169,7 @@ func (timer realCancellationTimer) Stop() bool {
 	return timer.timer.Stop()
 }
 
-func (runner ACPXRunner) cancellationClock() cancellationClock {
+func (runner *ACPXRunner) cancellationClock() cancellationClock {
 	if runner.cancelClock != nil {
 		return runner.cancelClock
 	}
@@ -545,7 +545,7 @@ type acpxStreamResult struct {
 	err                error
 }
 
-func (runner ACPXRunner) Probe(ctx context.Context, req ProbeRequest) error {
+func (runner *ACPXRunner) Probe(ctx context.Context, req ProbeRequest) error {
 	if err := runner.probeACPX(ctx); err != nil {
 		return err
 	}
@@ -920,7 +920,7 @@ func parseAdapterVersion(version string) ([3]int, bool) {
 	return parsed, true
 }
 
-func (runner ACPXRunner) probeACPX(ctx context.Context) error {
+func (runner *ACPXRunner) probeACPX(ctx context.Context) error {
 	command := runner.command()
 	if _, err := exec.LookPath(command); err != nil {
 		return ACPXProbeError{Command: command, MinimumVersion: MinimumACPXVersion, Missing: true, Err: err}
@@ -956,7 +956,7 @@ func disposablePreflightSessionName() (string, error) {
 	return fmt.Sprintf("%s%x", acpxPreflightSessionPrefix, entropy[:]), nil
 }
 
-func (runner ACPXRunner) applyDisposableSelection(ctx context.Context, runtime RuntimeSpec, sessionName string, workDir string, codexEnv []string) error {
+func (runner *ACPXRunner) applyDisposableSelection(ctx context.Context, runtime RuntimeSpec, sessionName string, workDir string, codexEnv []string) error {
 	args, err := acpxEnsureArgs(runtime, sessionName, workDir)
 	if err != nil {
 		return err
@@ -1102,9 +1102,9 @@ func advertisedModelsFromACPXStderr(stderr string) []string {
 	return models
 }
 
-func (runner ACPXRunner) closeDisposableSession(ctx context.Context, runtime RuntimeSpec, sessionName string, workDir string) error {
+func (runner *ACPXRunner) closeDisposableSession(ctx context.Context, runtime RuntimeSpec, sessionName string, workDir string) error {
 	defer func() {
-		(&runner).clearSessionState(sessionName)
+		runner.clearSessionState(sessionName)
 	}()
 	if err := runner.CloseSession(ctx, runtime, SessionRef{Name: sessionName, WorkDir: workDir}); err != nil {
 		cleanupErr := &AgentSessionCleanupError{Session: sessionName, Err: err}
@@ -1189,7 +1189,7 @@ func (runner *ACPXRunner) CloseSession(ctx context.Context, runtime RuntimeSpec,
 	return nil
 }
 
-func (runner ACPXRunner) ListRoundfixSessions(ctx context.Context, runtime RuntimeSpec, workDir string) ([]RoundfixSession, error) {
+func (runner *ACPXRunner) ListRoundfixSessions(ctx context.Context, runtime RuntimeSpec, workDir string) ([]RoundfixSession, error) {
 	args, err := acpxListSessionsArgs(runtime, workDir)
 	if err != nil {
 		return nil, fmt.Errorf("build acpx sessions list command: %w", err)
@@ -1516,7 +1516,7 @@ func validateRuntimeSelection(runtime RuntimeSpec) error {
 	return nil
 }
 
-func (runner ACPXRunner) command() string {
+func (runner *ACPXRunner) command() string {
 	if strings.TrimSpace(runner.Command) != "" {
 		return strings.TrimSpace(runner.Command)
 	}
@@ -1628,21 +1628,21 @@ func displayACPXVersion(version string) string {
 	return version
 }
 
-func (runner ACPXRunner) runACPXCommand(ctx context.Context, args []string) error {
+func (runner *ACPXRunner) runACPXCommand(ctx context.Context, args []string) error {
 	_, err := runner.runACPXCommandOutput(ctx, args)
 	return err
 }
 
-func (runner ACPXRunner) runACPXCommandOutput(ctx context.Context, args []string) (string, error) {
+func (runner *ACPXRunner) runACPXCommandOutput(ctx context.Context, args []string) (string, error) {
 	return runner.runACPXCommandOutputWithEnv(ctx, args, nil)
 }
 
-func (runner ACPXRunner) runACPXCommandWithEnv(ctx context.Context, args []string, env []string) error {
+func (runner *ACPXRunner) runACPXCommandWithEnv(ctx context.Context, args []string, env []string) error {
 	_, err := runner.runACPXCommandOutputWithEnv(ctx, args, env)
 	return err
 }
 
-func (runner ACPXRunner) runACPXCommandOutputWithEnv(ctx context.Context, args []string, env []string) (string, error) {
+func (runner *ACPXRunner) runACPXCommandOutputWithEnv(ctx context.Context, args []string, env []string) (string, error) {
 	cmd := exec.CommandContext(ctx, runner.command(), args...)
 	cmd.Env = runner.commandEnv(env)
 	var stdout bytes.Buffer
@@ -1914,7 +1914,7 @@ func acpxTransportAnomaly(exitCode int, stderr string) string {
 	return message
 }
 
-func (runner ACPXRunner) mapExitCode(ctx context.Context, req ExecuteRequest, sink runevent.Sink, exitCode int, stderr string, output string) error {
+func (runner *ACPXRunner) mapExitCode(ctx context.Context, req ExecuteRequest, sink runevent.Sink, exitCode int, stderr string, output string) error {
 	switch exitCode {
 	case 0:
 		return nil
@@ -1943,7 +1943,7 @@ func (runner ACPXRunner) mapExitCode(ctx context.Context, req ExecuteRequest, si
 	}
 }
 
-func (runner ACPXRunner) cancelPrompt(ctx context.Context, req ACPXPromptRequest, waitCh <-chan error, codexEnv []string) bool {
+func (runner *ACPXRunner) cancelPrompt(ctx context.Context, req ACPXPromptRequest, waitCh <-chan error, codexEnv []string) bool {
 	grace := stopGrace(req.StopGrace)
 	cancelCtx, cancel := context.WithTimeout(ctx, grace)
 	defer cancel()
@@ -1991,7 +1991,7 @@ func waitForACPXStream(streamCh <-chan acpxStreamResult, grace time.Duration) ac
 	}
 }
 
-func (runner ACPXRunner) publishStatus(ctx context.Context, req ExecuteRequest, sink runevent.Sink, status string) error {
+func (runner *ACPXRunner) publishStatus(ctx context.Context, req ExecuteRequest, sink runevent.Sink, status string) error {
 	if sink == nil {
 		sink = runevent.Discard
 	}
@@ -2003,7 +2003,7 @@ func (runner ACPXRunner) publishStatus(ctx context.Context, req ExecuteRequest, 
 	return nil
 }
 
-func (runner ACPXRunner) publishSelectionReceipt(ctx context.Context, req ExecuteRequest, sink runevent.Sink, assignment SelectionAssignment, observedEffort string) error {
+func (runner *ACPXRunner) publishSelectionReceipt(ctx context.Context, req ExecuteRequest, sink runevent.Sink, assignment SelectionAssignment, observedEffort string) error {
 	if sink == nil {
 		sink = runevent.Discard
 	}
@@ -2043,7 +2043,7 @@ func (runner ACPXRunner) publishSelectionReceipt(ctx context.Context, req Execut
 	return nil
 }
 
-func (runner ACPXRunner) warningf(format string, args ...any) {
+func (runner *ACPXRunner) warningf(format string, args ...any) {
 	if runner.warnf != nil {
 		runner.warnf(format, args...)
 		return

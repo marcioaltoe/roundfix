@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0145-a-runner-that-owns-its-lock
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -58,3 +58,38 @@ receivers to pointers and leaves behavior alone.
 Declared intentional breaks; Regression locks;
 `_techspec.md` → Implementation Design: One receiver kind, What must not move;
 API Contracts 1-3; Build Order 1; ADR-0020.
+
+## Result
+
+### Implementation
+
+- Converted all 31 `ACPXRunner` value-receiver methods found across
+  `internal/agent` to pointer receivers. The Task's count of sixteen covers
+  `acpx_runner.go`; the package-wide analyzer criterion also requires the
+  fifteen value receivers in the runner's supporting files to move.
+- Removed the now-redundant address-of on the pointer receiver inside
+  disposable-session cleanup.
+- Added address-of only to the eight non-addressable runner literals the
+  compiler named in test helpers. No assertion changed.
+
+### Focused-check evidence
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task01-gocache go test ./internal/agent -run '^$'`
+  passed, proving the package and its tests compile with the pointer-only
+  method set.
+- `rtk env GOCACHE=/private/tmp/roundfix-task01-gocache go vet -copylocks ./internal/agent`
+  exited 0 with an empty report.
+- `rtk env GOCACHE=/private/tmp/roundfix-task01-gocache go test ./internal/agent -run '^(TestACPXProbeValidatesSelectionWithDisposableSession|TestApplySessionSelection|TestACPXRunEnsuresSessionOncePerRunnerAndSessionName|TestACPXRunWarmSessionIsIdempotent|TestWorkStartedBoundaryPublishesOnFirstAgentOutput|TestACPXRunCodexInspectsOncePerSessionResolution|TestACPXRunCancelsPromptCooperatively|TestACPXPromptExitClassificationMatrix)$'`
+  passed the existing probe, selection assignment, ensure-once,
+  warm-idempotency, work-start, codex resolution, cooperative cancellation,
+  and parsed-result exit classification tests.
+- `rtk git diff --check` passed. Diff inspection found no exported identifier
+  rename, addition or removal.
+  The production diff changes receiver kinds and removes one redundant
+  address-of only.
+- `rtk git diff --name-only` contains ordinary `internal/agent` source and test
+  files plus this assigned Task file; it adds no tooling configuration or
+  repository gate.
+
+The Daemon-owned commands under `## Verification` were not run in this Agent
+turn.

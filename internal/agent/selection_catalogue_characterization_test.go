@@ -62,7 +62,7 @@ func TestRuntimeCatalogueReadsAdvertisedModelsWithoutAnOverride(t *testing.T) {
 func TestRuntimeCatalogueRecordsAContaminatedAdvertisement(t *testing.T) {
 	t.Parallel()
 
-	proof, err := (ACPXRunner{}).applySessionSelection(context.Background(), SessionSelectionRequest{
+	proof, err := (&ACPXRunner{}).applySessionSelection(context.Background(), SessionSelectionRequest{
 		Runtime: RuntimeSpec{
 			ID:       "codex",
 			Protocol: ProtocolACP,
@@ -101,7 +101,7 @@ func TestSelectionCatalogueCharacterizationClaudeRefusesAnUnofferedModel(t *test
 	if err != nil {
 		t.Fatalf("parse contaminated claude capabilities: %v", err)
 	}
-	_, err = (ACPXRunner{}).applySessionSelection(context.Background(), SessionSelectionRequest{
+	_, err = (&ACPXRunner{}).applySessionSelection(context.Background(), SessionSelectionRequest{
 		Runtime: RuntimeSpec{
 			ID:              "claude",
 			Protocol:        ProtocolACP,

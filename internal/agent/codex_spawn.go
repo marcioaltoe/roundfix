@@ -143,11 +143,11 @@ func acpxCommandEnv(base []string, overrides []string) []string {
 	return append(filtered, overrides...)
 }
 
-func (runner ACPXRunner) commandEnv(overrides []string) []string {
+func (runner *ACPXRunner) commandEnv(overrides []string) []string {
 	return acpxCommandEnv(runner.baseEnv(), overrides)
 }
 
-func (runner ACPXRunner) baseEnv() []string {
+func (runner *ACPXRunner) baseEnv() []string {
 	if runner.Environment == nil {
 		return os.Environ()
 	}

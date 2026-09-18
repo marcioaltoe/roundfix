@@ -23,7 +23,7 @@ func TestRuntimeCatalogueBindsCanonicalVariant(t *testing.T) {
 func TestProofRefusesAModelTheCatalogueDoesNotAdvertise(t *testing.T) {
 	t.Parallel()
 
-	_, err := (ACPXRunner{}).applySessionSelection(context.Background(), SessionSelectionRequest{
+	_, err := (&ACPXRunner{}).applySessionSelection(context.Background(), SessionSelectionRequest{
 		Runtime: RuntimeSpec{ID: "claude", Model: unofferedClaudeModel, ReasoningEffort: "high"},
 		Capabilities: SelectionCapabilities{
 			CurrentModel: unofferedClaudeModel,
@@ -49,7 +49,7 @@ func TestProofRefusalNamesTheAdvertisedSet(t *testing.T) {
 	t.Parallel()
 
 	catalogue := RuntimeCatalogue{Models: honestClaudeModels(), Observed: true}
-	_, err := (ACPXRunner{}).applySessionSelection(context.Background(), SessionSelectionRequest{
+	_, err := (&ACPXRunner{}).applySessionSelection(context.Background(), SessionSelectionRequest{
 		Runtime: RuntimeSpec{ID: "claude", Model: unofferedClaudeModel, ReasoningEffort: "high"},
 		Capabilities: SelectionCapabilities{
 			CurrentModel: unofferedClaudeModel,
