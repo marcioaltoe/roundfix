@@ -47,6 +47,11 @@ references plus one deterministic next action. Doctor has no separate legacy
 `agent:` or `model:` authority. Failed checks include `next: <action>` when
 Roundfix knows the remediation.
 
+The `pre-pr-review:` line reports the resolved pre-Pull-Request review provider
+and the configuration layer that supplied it. An explicit `none` reports that
+review is disabled by configuration. This check reads policy only: it invokes
+no provider and mutates nothing.
+
 Profile readiness covers every Agent Work Category the effective configuration
 defines — the five required categories plus each optional category
 (`data`, `infra`, `docs`, `test`, `chore`) a profile actually declares. A

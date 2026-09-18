@@ -262,7 +262,26 @@ type reviewSourceOverlay struct {
 }
 
 type prePRReviewOverlay struct {
-	Provider *string `yaml:"provider"`
+	Provider *prePRReviewProviderValue `yaml:"provider"`
+}
+
+type prePRReviewProviderValue struct {
+	value string
+}
+
+func (value *prePRReviewProviderValue) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind != yaml.ScalarNode || node.Tag == "!!null" || !isSupportedPrePRReviewProvider(node.Value) {
+		raw := node.Value
+		if node.Kind != yaml.ScalarNode {
+			encoded, err := yaml.Marshal(node)
+			if err == nil {
+				raw = strings.TrimSpace(string(encoded))
+			}
+		}
+		return invalidPrePRReviewProviderError(raw)
+	}
+	value.value = node.Value
+	return nil
 }
 
 type requestReviewValue struct {
@@ -1282,6 +1301,9 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 	if value, found := yamlValueAtPath(&document, []string{"review_source", "request_review"}); found && value.Tag == "!!null" {
 		return fmt.Errorf("parse config %q: review_source.request_review must be boolean: cannot unmarshal null value", label)
 	}
+	if value, found := yamlValueAtPath(&document, []string{"pre_pr_review", "provider"}); found && value.Tag == "!!null" {
+		return fmt.Errorf("parse config %q: %w", label, invalidPrePRReviewProviderError(value.Value))
+	}
 	hasProfiles := configHasProfilesSection(&document)
 	hasLegacyRuntimeDefaults := configHasLegacyRuntimeDefaults(&document)
 	if hasProfiles && hasLegacyRuntimeDefaults {
@@ -1300,9 +1322,6 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 			return nil
 		}
 		return fmt.Errorf("parse config %q: %w", label, err)
-	}
-	if overlay.PrePRReview != nil && overlay.PrePRReview.Provider != nil && !isSupportedPrePRReviewProvider(*overlay.PrePRReview.Provider) {
-		return fmt.Errorf("parse config %q: %w", label, invalidPrePRReviewProviderError(*overlay.PrePRReview.Provider))
 	}
 	applyOverlay(config, overlay, source)
 	if overlay.Profiles != nil {
@@ -1438,7 +1457,7 @@ func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
 		}
 	}
 	if overlay.PrePRReview != nil && overlay.PrePRReview.Provider != nil {
-		config.PrePRReview.Provider = *overlay.PrePRReview.Provider
+		config.PrePRReview.Provider = overlay.PrePRReview.Provider.value
 		config.PrePRReview.Source = string(source)
 	}
 	if overlay.Watch != nil {

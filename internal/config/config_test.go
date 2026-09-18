@@ -233,6 +233,76 @@ pre_pr_review:
 	}
 }
 
+func TestPrePRReviewProviderRefusesNullValue(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name      string
+		config    string
+		wantValue string
+	}{
+		{
+			name: "empty value",
+			config: `
+pre_pr_review:
+  provider:
+`,
+			wantValue: "",
+		},
+		{
+			name: "explicit null",
+			config: `
+pre_pr_review:
+  provider: null
+`,
+			wantValue: "null",
+		},
+		{
+			name: "empty string",
+			config: `
+pre_pr_review:
+  provider: ""
+`,
+			wantValue: "",
+		},
+		{
+			name: "sequence",
+			config: `
+pre_pr_review:
+  provider: [codex]
+`,
+			wantValue: "[codex]",
+		},
+		{
+			name: "mapping",
+			config: `
+pre_pr_review:
+  provider:
+    name: codex
+`,
+			wantValue: "name: codex",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			homeDir := t.TempDir()
+			workDir := t.TempDir()
+			mustMkdir(t, filepath.Join(workDir, ".git"))
+			mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), tt.config)
+
+			_, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+			wantError := fmt.Sprintf(
+				`pre_pr_review.provider %q is invalid; supported values: codex, claude, coderabbit, none`,
+				tt.wantValue,
+			)
+			if err == nil || !strings.Contains(err.Error(), wantError) {
+				t.Fatalf("Load() error = %v, want error containing %q", err, wantError)
+			}
+		})
+	}
+}
+
 func TestBuiltinRuntimeDefaults(t *testing.T) {
 	t.Parallel()
 	config := Builtin()

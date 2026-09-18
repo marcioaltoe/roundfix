@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0143-a-repository-says-who-reviews-before-the-pull-request
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -67,3 +67,54 @@ and it is the first of the two corrective Tasks the contract allows.
 Project Constraints: Tooling authority;
 `_techspec.md` → Implementation Design: Refusal at load, The report;
 API Contracts 1-2; `_authorization.md`.
+
+## Result
+
+### Implementation
+
+- Added the required `prePRReviewProviderValue` decoder. It accepts only scalar
+  supported providers, preserves key absence through its pointer, and renders
+  non-scalar YAML in the existing named invalid-provider error.
+- Added an explicit parsed-node refusal for null because `yaml.v3` otherwise
+  skips a value unmarshaler for null nodes. This distinguishes a written empty
+  or null provider from an absent `pre_pr_review` section.
+- Added configuration tests for a valueless provider, explicit null, an empty
+  string, sequence and mapping values. Existing focused cases continue to
+  cover every supported provider and inheritance from an absent layer.
+- Documented the Doctor `pre-pr-review:` check in the canonical Roundfix skill:
+  it reports the resolved provider and source layer, calls explicit `none`
+  disabled by configuration, invokes no provider and mutates nothing. Regenerated
+  the distributed skill mirror from the canonical copy.
+
+### Focused checks
+
+- Initial `GOCACHE=/private/tmp/roundfix-task05-go-cache go test -count=1
+  ./internal/config` exposed that `yaml.v3` bypassed the value unmarshaler for
+  null nodes; the empty-value and explicit-null cases failed while non-scalar
+  cases were already refused. The parsed-node refusal fixes that root cause.
+- `GOCACHE=/private/tmp/roundfix-task05-go-cache go test -count=1 -v -run
+  '^TestPrePRReview(PolicyResolution|ProviderRefusesNullValue)$'
+  ./internal/config`: passed all 12 subtests. Evidence includes valueless,
+  explicit-null, empty-string, sequence and mapping refusals; all four supported
+  providers; default inheritance; and User Config inheritance when Project
+  Config has no section.
+- `make skills-sync`: exited 0 and regenerated `skills/roundfix/SKILL.md`.
+- `make baseline-digests`: exited 0 and reported that derived artifacts already
+  matched their canonical sources, with no additional changed path.
+- `cmp -s .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md`: exited 0;
+  the canonical and distributed skill copies are byte-identical.
+- `git diff --check`: exited 0.
+
+### Acceptance evidence
+
+1. `TestPrePRReviewProviderRefusesNullValue/empty_value` and `/explicit_null`
+   observe load refusal with `pre_pr_review.provider`, the written value and all
+   four supported values in the error.
+2. The same test's `/sequence` and `/mapping` cases observe the same named error
+   and include the rendered offending value.
+3. `TestPrePRReviewPolicyResolution/user_selection_overrides_default` proves an
+   absent Project Config section inherits User Config; `/both_layers_silent_use_default`
+   proves complete silence resolves the built-in default.
+4. The skill text states the resolved provider, source layer, disabled meaning
+   of `none`, and absence of provider calls; `cmp -s` proves the mirror is
+   identical.
