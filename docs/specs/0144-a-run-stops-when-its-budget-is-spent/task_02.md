@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0144-a-run-stops-when-its-budget-is-spent
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -55,3 +55,59 @@ on.
 Regression locks;
 `_techspec.md` → Implementation Design: Settling the outcome; API Contracts 1
 and 3; Build Order 2; ADR-0057; ADR-0158.
+
+## Result
+
+The Task cycle now marks its own elapsed Run deadline with the existing
+`BudgetExceeded` outcome and a `budgetExceededReason` that names the configured
+maximum and elapsed duration. The Implement command settles that outcome before
+the generic Stop Request mapping, journals the specific reason, and preserves
+the non-integrated Run Worktree and Run Branch.
+
+Acceptance evidence:
+
+- The daemon-owned `TestBudgetExceededRunRecordsItsReason` observed a bounded
+  Task cycle report `BudgetExceeded` with a reason containing both `configured
+  maximum 500ms` and `elapsed`, within the existing public reason bound.
+- That daemon fixture completed and committed `task_01` before the bound, then
+  confirmed its `completed` status remained while interrupted `task_02`
+  retained the existing `in_progress` settlement.
+- `TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch` confirmed the
+  Run Worktree directory and deterministic Run Branch still existed, stderr
+  named the kept Run Worktree, and the command report rendered the interrupted
+  Task pending rather than completed or failed.
+- The focused regression set also passed the existing Stopped, Unresolved,
+  disabled-budget, finishes-before-deadline, and cancellation cases.
+
+Focused checks:
+
+- Before the implementation, `GOCACHE=/tmp/roundfix-go-cache rtk go test
+  -count=1 -run
+  '^(TestBudgetExceededRunRecordsItsReason|TestRunImplementStopRequestEndsStoppedWithInterruptMapping)$'
+  ./internal/cli` failed because the bounded Run settled `Stopped` with exit 0.
+- `GOCACHE=/tmp/roundfix-go-cache rtk go test -count=1 -run
+  '^(TestBudgetExceededRunRecordsItsReason|TestRunImplementStopRequestEndsStoppedWithInterruptMapping|TestImplementTaskStatusFailureEndsUnresolvedAndKeepsWorktree|TestTaskCycleEndsRunAtBudgetDeadline|TestTaskCycleDisabledBudgetDerivesNoDeadline|TestTaskCycleFinishesBeforeBudgetDeadline)$'
+  ./internal/cli ./internal/daemon` — passed, 8 tests.
+- `GOCACHE=/tmp/roundfix-go-cache rtk go test -count=1 ./internal/cli
+  ./internal/daemon` — 1,486 tests passed and 3 failed. The first version of
+  the new fixture used a parallel 100 ms bound and failed because its first Task
+  could miss that bound under suite load; the fixture now runs non-parallel with
+  500 ms and passes the focused regression. The other failures were the
+  unrelated process-integration tests
+  `TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner` and
+  `TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion`.
+- `rtk git diff --check` — passed.
+
+Verification Feedback repair:
+
+- Attempt 1's diagnostic artifact was present and empty. Inspection found the
+  exact named regression under `internal/cli`, while the authored Verification
+  intentionally searches `internal/daemon`.
+- The exact test now lives beside `TaskCycle`; the CLI-level preservation test
+  has its own surface-specific name.
+- `GOCACHE=/tmp/roundfix-go-cache rtk go test -count=1 -run
+  '^(TestBudgetExceededRunRecordsItsReason|TestTaskCycleEndsRunAtBudgetDeadline|TestTaskCycleDisabledBudgetDerivesNoDeadline|TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch|TestRunImplementStopRequestEndsStoppedWithInterruptMapping)$'
+  ./internal/daemon ./internal/cli` — passed, 7 tests.
+
+The Daemon-owned commands under `## Verification` were not run in this Agent
+turn.

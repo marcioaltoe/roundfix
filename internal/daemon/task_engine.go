@@ -294,12 +294,16 @@ type TaskOutcome struct {
 // QAVerdict stays empty when the QA step did not run; when it ran it is
 // the report verdict (pass, fail, partial) or a Daemon settlement
 // (missing, unreadable). QAReportPath is the newest QA Report relative to
-// the working tree, empty when no report exists.
+// the working tree, empty when no report exists. TerminalOutcome and
+// TerminalReason identify a Run-budget end for the command that owns Run
+// settlement; they stay empty for every other Task-cycle result.
 type TaskCycleResult struct {
 	Completed, Failed, Skipped int
 	QAVerdict                  string
 	QAReportPath               string
 	Outcomes                   []TaskOutcome
+	TerminalOutcome            string
+	TerminalReason             string
 }
 
 // QA verdict settlements the Daemon adds beyond the report-authored
@@ -374,7 +378,7 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 	statuses := initialTaskRunStatuses(taskPlan.Tasks)
 	result, ordinal, err := engine.runTaskScheduler(ctx, taskPlan, statuses)
 	if err != nil {
-		return result, err
+		return engine.taskCycleResultWithBudgetOutcome(plan, result, err)
 	}
 	// QA step (ADR 0015, ADR 0091): a declared qa Task routes through the
 	// existing gate only after its graph dependencies have all completed.
@@ -382,12 +386,12 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 	// resumable instead of being reported skipped.
 	if qaTask != nil && qaTask.Status != spec.StatusCompleted && taskNeedsCompleted(*qaTask, statuses) {
 		if err := engine.stopTaskCycleIfRequested(ctx, plan, ordinal+1); err != nil {
-			return result, fmt.Errorf("stop run %q before the QA step: %w", plan.RunID, err)
+			return engine.taskCycleResultWithBudgetOutcome(plan, result, fmt.Errorf("stop run %q before the QA step: %w", plan.RunID, err))
 		}
 		ordinal++
 		verdict, reportPath, err := engine.runQAGate(ctx, plan, *qaTask, ordinal)
 		if err != nil {
-			return result, err
+			return engine.taskCycleResultWithBudgetOutcome(plan, result, err)
 		}
 		result.QAVerdict = verdict
 		result.QAReportPath = reportPath
@@ -403,6 +407,26 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 		return result, err
 	}
 	return result, nil
+}
+
+func (engine *Engine) taskCycleResultWithBudgetOutcome(plan TaskPlan, result TaskCycleResult, err error) (TaskCycleResult, error) {
+	if plan.runBudgetDeadline.IsZero() || !errors.Is(err, context.DeadlineExceeded) {
+		return result, err
+	}
+	now := engine.deps.Now()
+	if now.Before(plan.runBudgetDeadline) {
+		return result, err
+	}
+	result.TerminalOutcome = store.StateBudgetExceeded
+	result.TerminalReason = budgetExceededReason(plan.MaxRunDuration, now.Sub(plan.RunStartedAt))
+	return result, err
+}
+
+func budgetExceededReason(maximum time.Duration, elapsed time.Duration) string {
+	return publicOutcomeReason(
+		fmt.Sprintf("Run Budget exceeded: configured maximum %s; elapsed %s.", maximum, elapsed),
+		"The Run Budget was exhausted.",
+	)
 }
 
 func refuseTaskPlanWaveCollisions(plan TaskPlan) error {

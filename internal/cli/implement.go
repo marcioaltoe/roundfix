@@ -388,6 +388,26 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		verification: loadedConfig.Config.Verification.Concurrency,
 	}, run.CreatedAt, loadedConfig.Config.Budget, loadedConfig.Config.Defaults.Verification, loadedConfig.Config.Worktree.Copy, worktreeBootstrapSpec(loadedConfig.Config), newBootstrapOutputWriter(ctx, run.ID, runStore, ui.progress), authorization, runtime, agentSelections, operationalRuntimeFactory(req), collaborators, runStore, ui)
 	if err != nil {
+		if cycleResult.TerminalOutcome == store.StateBudgetExceeded {
+			closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
+			completed, completeErr := runStore.CompleteRun(context.WithoutCancel(ctx), run.ID, store.StateBudgetExceeded)
+			if completeErr != nil {
+				ui.Close(ctx)
+				printImplementRunFailure(completeErr, stderr)
+				return exitRunFailed
+			}
+			publishTerminalCompletionWithContext(context.WithoutCancel(ctx), runStore, outcomeNotifier, stderr, completed, terminalCompletionContext{
+				Reason: cycleResult.TerminalReason,
+			})
+			ui.Wait()
+			ui.Close(ctx)
+			fmt.Fprintf(stderr, "Implement Run %s reached %s.\n", completed.ID, completed.State)
+			printKeptRunWorktree(stderr, runRef.Path)
+			report, counts := renderImplementTaskLinesWithOutcomes(executionSpecsRoot, executionGraph, false, cycleResult.Outcomes)
+			fmt.Fprint(stdout, report)
+			printImplementOutcomeLine(stdout, completed.State, counts)
+			return exitRunFailed
+		}
 		if isStopRequest(ctx, err) {
 			closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 			code := completeStoppedRunRecord(runStore, run.ID, outcomeNotifier, stderr)
