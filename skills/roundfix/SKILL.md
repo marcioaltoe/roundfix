@@ -801,9 +801,10 @@ candidates, after rechecking the applicable metadata, ownership, cleanliness,
 heads, ancestry, and superseding-report evidence. `--discard-superseded`
 records a Branch Disposition before removing a Run Branch proven superseded.
 `--carry-forward` hands settled Tasks from one terminal spec Run back to the
-checkout; it accepts only Runs whose outcome is `Stopped` or `Unresolved` and
-refuses every other terminal outcome. Carry-forward keeps its existing proof
-requirements and refuses the whole Task set when any member cannot be proved.
+checkout; it accepts Runs whose outcome is `BudgetExceeded`, `Stopped`, or
+`Unresolved` and refuses every other terminal outcome. Carry-forward keeps its
+existing proof requirements and refuses the whole Task set when any member
+cannot be proved.
 There is no force bypass.
 
 Process termination succeeds only when Roundfix proves every reported process
@@ -1542,6 +1543,12 @@ The default is `2`; `1` keeps sequential behavior. Each Task's Verification
 commands gate one commit. By default the Run never pushes; a repository can
 opt in with `implement.auto_push: true`, which pushes only after a Clean
 outcome and never opens pull requests (ADR-0138).
+
+When the Run Budget is enabled, an Implement Run is bounded by the configured
+maximum Run duration. When that maximum expires, the Run settles
+`BudgetExceeded` with a reason naming both the configured maximum and the
+elapsed time. The bounded Run preserves its Run Worktree and Run Branch for
+inspection and recovery.
 
 Before creating a Run, `implement` inspects prior terminal Runs for the same
 Spec in the current repository. When a `Stopped` or `Unresolved` Run with a

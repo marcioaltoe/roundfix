@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0144-a-run-stops-when-its-budget-is-spent
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -29,9 +29,9 @@ files plus its own Task file.
 
 ## Subtasks
 
-- [ ] Write the bound and its outcome into the skill.
-- [ ] Correct the carry-forward sentence.
-- [ ] Regenerate the mirror and confirm both copies match.
+- [x] Write the bound and its outcome into the skill.
+- [x] Correct the carry-forward sentence.
+- [x] Regenerate the mirror and confirm both copies match.
 
 ## Acceptance Criteria
 
@@ -56,3 +56,17 @@ files plus its own Task file.
 Project Constraints: Tooling authority;
 `_techspec.md` → System Architecture: Shipped skill; Build Order 4;
 `_authorization.md`.
+
+## Result
+
+- Updated the canonical Roundfix skill to document that an Implement Run with an enabled Run Budget is bounded by the configured maximum Run duration, settles `BudgetExceeded` with a reason naming the maximum and elapsed time, and preserves its Run Worktree and Run Branch.
+- Updated Task Carry-Forward documentation to accept `BudgetExceeded` alongside `Stopped` and `Unresolved` under the existing proof requirements.
+- Regenerated the distributed `skills/` mirror with `make skills-sync`; the canonical and mirror skill contents are identical in the resulting diff.
+- Focused check: `git diff --check` passed. The changed-path listing contains only the two bounded skill files and this Task file (plus the pre-existing Task status edit).
+
+Acceptance evidence:
+
+- [x] The skill describes the bound, the outcome and the preserved worktree.
+- [x] The carry-forward sentence names all three accepted outcomes.
+- [x] The mirror was regenerated from the canonical copy and is identical.
+- [x] No path outside the bounded list changed.
