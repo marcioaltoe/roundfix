@@ -55,6 +55,26 @@ any change to an accepted ADR must receive an operative decision before executio
 The existing through-merge authority requires the configured review policy outcome and required
 checks and grants no release or waiver.
 
+## Disposition
+
+Every Core Feature of this Spec was delivered by Spec 0147, which was authored
+as its whole content rather than as a slice of it: both tag spellings parse,
+selection spans them, an ambiguous highest version refuses in preflight, the
+proposal keeps the selected spelling, the inventory keeps refs apart, and the
+public states and exit codes are unchanged.
+
+This folder stays where it is because no supported operation retires a Spec
+whose content a later Spec delivered. The archive command requires completed
+Tasks and a passing gate, which a Spec that was never decomposed cannot have.
+Recording the supersession as an amendment is the contract Spec 0129 still owns;
+until it exists, this note is the record.
+
+This Spec deliberately does not declare its Success Metrics or API Contracts
+under the promise rule Spec 0140 shipped. Declaring them would change the
+repository's corpus expectations, which is a governed artifact, for a Spec that
+will never be decomposed. The two gaps it reports are the honest state of a
+portfolio whose content shipped elsewhere.
+
 ## Research basis
 
 Local source inspection and the archived fleet observations establish the
