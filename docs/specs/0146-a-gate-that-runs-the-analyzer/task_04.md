@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0146-a-gate-that-runs-the-analyzer
-status: pending
+status: completed
 type: chore
 complexity: low
 ---
@@ -57,3 +57,30 @@ the contract allows.
 Project Constraints: Tooling authority;
 `_techspec.md` → Implementation Design: The negative control; Testing Approach 1;
 `_authorization.md`.
+
+## Result
+
+Implementation evidence:
+
+- Added `TestRepositoryGateRunsTheAnalyzer` to `REPO_CONTRACT_TESTS` in
+  `Makefile`, preserving the three existing contract names and their order.
+- The existing `repocontract` tag and the ordinary `test` target were not
+  changed, so the analyzer control remains excluded from the untagged sweep.
+
+Focused checks:
+
+- `make -n repo-test` passed and expanded the repository-contract command with
+  all four contract names, including `TestRepositoryGateRunsTheAnalyzer`.
+- `git -c core.fsmonitor=false diff --check` passed.
+- Changed-path inspection reported only `Makefile` and this Task file.
+
+Acceptance evidence available for Daemon Verification:
+
+- Pull-request gate selection: the dry-run includes the analyzer control.
+- Existing contracts: the dry-run retains all three pre-existing names
+  unchanged.
+- Ordinary sweep exclusion: the implementation preserves the separate
+  `repocontract`-tagged selection; the authored sweep command remains for
+  Daemon Verification.
+- Bounded paths: only the authorized `Makefile` and this Task file are
+  changed.
