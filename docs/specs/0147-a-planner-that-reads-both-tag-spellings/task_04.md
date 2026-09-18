@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0147-a-planner-that-reads-both-tag-spellings
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -55,3 +55,10 @@ bounded files plus its own Task file.
 `_prd.md` → Core Features 1 and 3; Project Constraints: Tooling authority;
 `_techspec.md` → System Architecture: Shipped skill; Build Order 4;
 `_authorization.md`.
+
+## Result
+
+- Updated the canonical Release Plan section in `.agents/skills/roundfix/SKILL.md` to document `MAJOR.MINOR.PATCH` and `vMAJOR.MINOR.PATCH`, the ambiguous-highest-version preflight refusal naming `--from`, and spelling preservation for proposed versions.
+- Ran `make skills-sync` successfully; the distributed `skills/roundfix/SKILL.md` mirror now contains the same guidance.
+- Focused checks: `sha256sum .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` produced the same digest for both files (`81b583042df8e061c0b2b1160bf99abecfea6427976f94811636aa2887e149b0`); targeted searches found both spellings and `ambiguous` in both copies.
+- Changed only the two bounded skill files and this Task file; the skill version remains `0.0.2`.
