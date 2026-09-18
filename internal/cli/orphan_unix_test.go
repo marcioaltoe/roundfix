@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -109,7 +110,10 @@ func TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion(t *t
 	}
 	select {
 	case err := <-ownerWait:
-		if err != nil {
+		// Force stop signals the owner with SIGKILL, so a killed exit is the
+		// contract being met. Requiring a clean exit passed only when the owner
+		// happened to exit on its own before the signal arrived.
+		if err != nil && !ownerKilledBySignal(err, syscall.SIGKILL) {
 			t.Fatalf("owner process exit: %v", err)
 		}
 	case <-time.After(2 * time.Second):
@@ -119,6 +123,21 @@ func TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion(t *t
 		t.Fatalf("owner process %d remained alive after force stop", pid)
 	}
 	assertRunState(t, homeDir, active.ID, store.StateStopped)
+}
+
+// ownerKilledBySignal reports whether err is the exit of a process terminated
+// by the named signal. Force stop terminates the owner with SIGKILL, so its own
+// signal is the expected way for that process to go.
+func ownerKilledBySignal(err error, signal syscall.Signal) bool {
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) {
+		return false
+	}
+	status, ok := exitErr.Sys().(syscall.WaitStatus)
+	if !ok {
+		return false
+	}
+	return status.Signaled() && status.Signal() == signal
 }
 
 // TestRunForceStopOwnerPIDReuseFailsClosed exercises the real identity
@@ -227,7 +246,10 @@ func TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner(t *testing.T) 
 	}
 	select {
 	case err := <-ownerWait:
-		if err != nil {
+		// Force stop signals the owner with SIGKILL, so a killed exit is the
+		// contract being met. Requiring a clean exit passed only when the owner
+		// happened to exit on its own before the signal arrived.
+		if err != nil && !ownerKilledBySignal(err, syscall.SIGKILL) {
 			t.Fatalf("owner process exit: %v", err)
 		}
 	case <-time.After(2 * time.Second):
