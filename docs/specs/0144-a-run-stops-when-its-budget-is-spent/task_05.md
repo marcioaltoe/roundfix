@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0144-a-run-stops-when-its-budget-is-spent
-status: completed
+status: pending
 type: qa
 complexity: high
 ---

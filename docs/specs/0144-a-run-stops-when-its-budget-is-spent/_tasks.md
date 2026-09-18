@@ -16,9 +16,12 @@ graph:
     - id: task_04
       file: task_04.md
       needs: [task_03]
+    - id: task_06
+      file: task_06.md
+      needs: [task_04]
     - id: task_05
       file: task_05.md
-      needs: [task_04]
+      needs: [task_06]
 ---
 
 # Tasks — A Run stops when its budget is spent
@@ -29,6 +32,7 @@ graph:
 | task_02 | Settle the bounded Run as BudgetExceeded        | backend | medium     | task_01 |
 | task_03 | Accept the outcome for carry-forward            | backend | medium     | task_02 |
 | task_04 | Tell the skill what a spent budget does         | docs    | low        | task_03 |
-| task_05 | Run the final QA gate                           | qa      | high       | task_04 |
+| task_06 | Bound the whole Run, and say so consistently     | backend | medium     | task_04 |
+| task_05 | Run the final QA gate                           | qa      | high       | task_06 |
 
-Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05
+Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_06 · 6 → task_05
