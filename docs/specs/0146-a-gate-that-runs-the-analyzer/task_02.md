@@ -1,0 +1,59 @@
+---
+task: task_02
+spec: 0146-a-gate-that-runs-the-analyzer
+status: pending
+type: chore
+complexity: low
+---
+
+# Task 02: Compose the analyzer into the gate
+
+## Overview
+
+With the control in place, the gate gains the step it asserts. This Task is an
+authorized tooling mutation and may change only the bounded files plus its own
+Task file.
+
+## Requirements
+
+1. MUST add a target named `vet` that runs the Go toolchain's analyzer over the
+   module, and MUST include it in the full repository Verification and in its
+   incremental sibling.
+2. MUST let the analyzer's own exit status decide the step, with no filter or
+   pipeline able to decide it instead.
+3. MUST leave every existing gate step with its name, command and order.
+4. MUST leave the CI workflow unchanged, because it invokes the gate; the path
+   is bounded so the decision can be recorded, not so a second composition is
+   created.
+5. MUST NOT add a dependency, an analyzer configuration file, or any suppression
+   mechanism.
+
+## Subtasks
+
+- [ ] Add the analyzer target.
+- [ ] Include it in both gate tiers.
+- [ ] Confirm the control now passes and the module-wide run stays silent.
+
+## Acceptance Criteria
+
+- [ ] The control passes, having failed before this Task.
+- [ ] The repository Verification runs the analyzer and passes on this module.
+- [ ] Every other gate step is unchanged, and the workflow file is untouched.
+- [ ] No dependency or configuration file is added.
+
+## Context
+
+- interface: `Makefile`
+
+## Verification
+
+- `out="$(go test -count=1 -tags repocontract -run "^TestRepositoryGateRunsTheAnalyzer$" ./... 2>&1)" || { printf "%s\n" "$out"; exit 1; }; printf "%s\n" "$out" | grep -q "no tests to run" && { printf "%s\n" "$out"; exit 1; }; exit 0` — expected: exit 0; the control passes now that the gate composes the analyzer. Before this Task it fails.
+- `grep -q "^vet:" Makefile && changed="$(git diff --name-only HEAD -- .github/workflows)" && test -z "$changed"` — expected: exit 0; the gate defines the analyzer target and the bounded workflow stays unchanged. Before this Task the target does not exist, so the command fails.
+- `grep -qE "^verify:.*[ \t]vet( |$)" Makefile && grep -qE "^verify-incremental:.*[ \t]vet( |$)" Makefile && make verify` — expected: exit 0; both tiers compose the analyzer and the gate passes on this module. Before this Task neither tier names it, so the command fails.
+
+## References
+
+`_prd.md` → Core Features 1 and 4; User Stories 1 and 3; Goal 1;
+Success Metric 2; Project Constraints: Tooling authority;
+`_techspec.md` → Implementation Design: The step, What stays; API Contracts 1-2;
+Build Order 2; `_authorization.md`; ADR-0014.
