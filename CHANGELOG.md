@@ -2,6 +2,53 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.14.0] - 2026-09-18
+
+Five slices carved out of the authoring queue's portfolio Specs, each one a rule
+the repository already believed and nothing enforced.
+
+### Added
+
+- **A Spec traces the promises it makes.** Success Metrics and API Contracts are
+  declared as numbered items, or as an explicit `None.` with the reason none
+  applies, and each declared unit reaches a consuming Task the way user stories
+  already did. Two coined diagnostics report an undeclared section — `gap`,
+  because the check locates an absence it cannot settle — while a declared
+  promise nobody names stays an `error`, because both sides are located.
+  ADR-0156.
+- **A repository says who reviews before the Pull Request.**
+  `pre_pr_review.provider` accepts `codex`, `claude`, `coderabbit` or `none`,
+  resolved Project Config over User Config over the built-in `codex`. An absent
+  section inherits; it never means `none`. An unsupported value, or one written
+  empty, fails the load naming the supported set. `roundfix doctor` reports the
+  resolved provider and the layer that supplied it, and invokes nothing.
+- **A Run stops when its budget is spent.** With the budget enabled, an Implement
+  Run is bounded by `budget.max_run_duration`, which until now only the Round
+  watch loop enforced. The bounded Run ends through the cancellation the Stop
+  Command already proves, settles `BudgetExceeded` with a reason naming the
+  maximum and the elapsed time, and keeps its Worktree and Branch. Task
+  Carry-Forward accepts that outcome beside `Stopped` and `Unresolved`, under
+  the proof requirements it already applied. ADR-0158.
+
+### Fixed
+
+- **A commit that carries the work and nothing else.** The stageable filter
+  refused every executable regular file, so a Task that edited a tracked Git hook
+  lost the change at the commit boundary; a path Git tracks is now work output
+  whatever its mode, and an untracked executable stays refused. A refusal gained
+  two classes: a path that is absent or lives outside the repository is refused
+  by design and stays advisory, while a path that exists and was not staged is a
+  lost output, and the Task no longer settles completed on it. The QA Report
+  commit now measures the repository Verification's own window and excludes what
+  the verifier wrote. ADR-0157.
+- **An absent ref is named absent.** Reconciliation counted candidate refs and
+  refused when the count was not one, so a branch that no longer exists was
+  reported as an ambiguous short ref — and one absent target branch refused every
+  candidate in its set. Absence and ambiguity are now different answers, and a
+  set whose target branch is gone preserves each candidate with a reason naming
+  it. On the machine that produced the observation, reconciliation went from
+  classifying nothing to classifying every candidate.
+
 ## [0.13.1] - 2026-09-17
 
 The 0.13.0 tag was created but never published. Its release run stopped at the
