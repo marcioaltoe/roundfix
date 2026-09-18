@@ -1,9 +1,12 @@
 ---
 spec: 0146-a-gate-that-runs-the-analyzer
-status: active
+status: archived
 created: 2026-09-18
 surfaces: [backend, infra]
+archived: "2026-09-18"
+source_slug: 0146-a-gate-that-runs-the-analyzer
 ---
+
 
 # A gate that runs the analyzer
 
