@@ -179,7 +179,7 @@ func TestACPXProbeRejectsMalformedVersion(t *testing.T) {
 func TestACPXProbeMissingBinaryNamesInstallCommand(t *testing.T) {
 	t.Parallel()
 
-	err := (ACPXRunner{Command: filepath.Join(t.TempDir(), "missing-acpx")}).Probe(context.Background(), ProbeRequest{
+	err := (&ACPXRunner{Command: filepath.Join(t.TempDir(), "missing-acpx")}).Probe(context.Background(), ProbeRequest{
 		Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP},
 	})
 
@@ -2964,7 +2964,7 @@ func TestACPXRunnerCancellationClockDefaultsToRealTimer(t *testing.T) {
 	if got := stopGrace(0); got != 10*time.Second {
 		t.Fatalf("expected default stop grace to remain 10s, got %s", got)
 	}
-	timer := (ACPXRunner{}).cancellationClock().NewTimer(time.Hour)
+	timer := (&ACPXRunner{}).cancellationClock().NewTimer(time.Hour)
 	defer timer.Stop()
 	select {
 	case firedAt := <-timer.C():
@@ -4213,7 +4213,7 @@ func runFakeACPXProbe(t *testing.T, runtime RuntimeSpec, version string) ([][]st
 		fakeACPXStdout+"="+version+"\n",
 	)
 
-	err := (ACPXRunner{Command: os.Args[0], Environment: environment}).Probe(context.Background(), ProbeRequest{Runtime: runtime})
+	err := (&ACPXRunner{Command: os.Args[0], Environment: environment}).Probe(context.Background(), ProbeRequest{Runtime: runtime})
 	return readJSONInvocations(t, invocationsPath), err
 }
 

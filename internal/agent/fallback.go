@@ -23,7 +23,7 @@ type FallbackSelection struct {
 
 // ProbeFallback proves the first non-failed candidate with a disposable Agent
 // Session. Candidate and effort order are caller-owned and preserved.
-func (runner ACPXRunner) ProbeFallback(ctx context.Context, runtime RuntimeSpec, candidates FallbackCandidateSet) (FallbackSelection, bool, error) {
+func (runner *ACPXRunner) ProbeFallback(ctx context.Context, runtime RuntimeSpec, candidates FallbackCandidateSet) (FallbackSelection, bool, error) {
 	workDir, err := os.Getwd()
 	if err != nil {
 		return FallbackSelection{}, false, fmt.Errorf("resolve fallback probe working directory: %w", err)
@@ -48,7 +48,7 @@ func (runner ACPXRunner) ProbeFallback(ctx context.Context, runtime RuntimeSpec,
 	return FallbackSelection{}, false, nil
 }
 
-func (runner ACPXRunner) probeFallbackCandidate(ctx context.Context, runtime RuntimeSpec, model string, efforts []string, workDir string) (FallbackSelection, bool, error) {
+func (runner *ACPXRunner) probeFallbackCandidate(ctx context.Context, runtime RuntimeSpec, model string, efforts []string, workDir string) (FallbackSelection, bool, error) {
 	candidate := runtime
 	candidate.Model = model
 	candidate.ReasoningEffort = ""
@@ -110,7 +110,7 @@ func (runner ACPXRunner) probeFallbackCandidate(ctx context.Context, runtime Run
 	return selection, true, nil
 }
 
-func (runner ACPXRunner) applyDisposableEffort(ctx context.Context, runtime RuntimeSpec, sessionName string, workDir string, codexEnv []string) error {
+func (runner *ACPXRunner) applyDisposableEffort(ctx context.Context, runtime RuntimeSpec, sessionName string, workDir string, codexEnv []string) error {
 	key, err := acpxReasoningEffortConfigKey(runtime)
 	if err != nil {
 		return err

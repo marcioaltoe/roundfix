@@ -345,11 +345,11 @@ func ParseSessionCapabilitySnapshot(payload []byte, adapter AdapterEvidence, ret
 // AcquireSelectionCapabilities uses only ACPX's public strict-JSON command
 // boundary. It does not open ACPX Session files, Codex caches, or other
 // runtime-private persistence.
-func (runner ACPXRunner) AcquireSelectionCapabilities(ctx context.Context, request CapabilityAcquisitionRequest) (SelectionCapabilities, error) {
+func (runner *ACPXRunner) AcquireSelectionCapabilities(ctx context.Context, request CapabilityAcquisitionRequest) (SelectionCapabilities, error) {
 	return runner.acquireSelectionCapabilities(ctx, request, nil)
 }
 
-func (runner ACPXRunner) acquireSelectionCapabilities(ctx context.Context, request CapabilityAcquisitionRequest, env []string) (SelectionCapabilities, error) {
+func (runner *ACPXRunner) acquireSelectionCapabilities(ctx context.Context, request CapabilityAcquisitionRequest, env []string) (SelectionCapabilities, error) {
 	if ctx == nil {
 		return SelectionCapabilities{}, errors.New("capability acquisition context is required")
 	}
@@ -384,7 +384,7 @@ func (runner ACPXRunner) acquireSelectionCapabilities(ctx context.Context, reque
 	return capabilities, nil
 }
 
-func (runner ACPXRunner) observeSelectionCapabilities(ctx context.Context, runtime RuntimeSpec, session SessionRef, adapter AdapterEvidence, env []string) (SelectionCapabilities, error) {
+func (runner *ACPXRunner) observeSelectionCapabilities(ctx context.Context, runtime RuntimeSpec, session SessionRef, adapter AdapterEvidence, env []string) (SelectionCapabilities, error) {
 	if ctx == nil {
 		return SelectionCapabilities{}, errors.New("capability observation context is required")
 	}
