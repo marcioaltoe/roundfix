@@ -28,7 +28,7 @@ slice that can also record what a review produced.
   ADR-0155 applies: the `qa` Task declares the gate's matrix, so this Spec's terminal gate covers what its Requirements name.
   ADR-0156 applies: this Spec declares its Success Metrics and API Contracts as numbered units and names each in a Task.
   ADR-0104 applies: acceptance rests on evidence this Spec did not author, which here is the agent guide that states the obligation and the configuration this repository already ships.
-- Tooling authority: applicable — no protected tooling mutation proposed or authorized. The work is ordinary source in `internal/config` and `internal/cli` plus the user guide; this Spec does not edit `.roundfixrc.yml`, any Baseline asset, or any guide delivered inside setup-context markers, all of which are Governed Paths. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
+- Tooling authority: applicable — the Doctor check is public CLI behavior, and the repository's hard rule ships the Roundfix skill update with it. Express maintainer authorization: granted 2026-09-18, recorded in [_authorization.md](_authorization.md); bounded files: `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`. Sanctioned regeneration: `make skills-sync` regenerates the mirror, and `make baseline-digests` rewrites any derived pin the approved edit moves. The configuration schema, the check itself and the user guide are ordinary source that no authorization has bounded, and this Spec edits no `.roundfixrc.yml`, Baseline asset, or guide inside setup-context markers. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## System Architecture
 
