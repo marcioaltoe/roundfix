@@ -6995,6 +6995,37 @@ func TestTaskCycleStopBeforeTaskPublishesStopAndDoesNothing(t *testing.T) {
 	}
 }
 
+func TestTaskCycleRefusesToStartWorkPastItsBudget(t *testing.T) {
+	// The deadline is already spent when the cycle begins, so no wall-clock
+	// margin decides the outcome: the first checkpoint ends the Run.
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}, {id: "task_02"}})
+	runner := &budgetDeadlineRunner{}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	engine.deps.Now = time.Now
+	plan := fixture.plan()
+	plan.RunStartedAt = time.Now().Add(-time.Hour)
+	plan.BudgetEnabled = true
+	plan.MaxRunDuration = time.Minute
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected Run Budget deadline, got result=%+v err=%v", result, err)
+	}
+	runs, cancellations := runner.snapshot()
+	if len(runs) != 0 {
+		t.Fatalf("Agent Tasks started = %q, want none", strings.Join(runs, ","))
+	}
+	if cancellations != 0 {
+		t.Fatalf("Agent Session cancellations = %d, want 0", cancellations)
+	}
+	for _, task := range []string{"task_01", "task_02"} {
+		if got := taskStatusOnDisk(t, fixture.gitRoot, task); got != string(spec.StatusPending) {
+			t.Fatalf("%s status = %q, want pending", task, got)
+		}
+	}
+}
+
 func TestTaskCycleEndsRunAtBudgetDeadline(t *testing.T) {
 	for _, test := range []struct {
 		name      string
@@ -7011,7 +7042,12 @@ func TestTaskCycleEndsRunAtBudgetDeadline(t *testing.T) {
 			plan := fixture.plan()
 			plan.RunStartedAt = time.Now()
 			plan.BudgetEnabled = true
-			plan.MaxRunDuration = 100 * time.Millisecond
+			// Worktree setup does real Git work before the first Task starts, and
+			// the budget now bounds that setup too. A hundred milliseconds was
+			// spent by a loaded CI machine before any Task began, which made this
+			// case report no Agent Task at all; three seconds leaves the setup
+			// thirty times the margin it actually needed there.
+			plan.MaxRunDuration = 3 * time.Second
 
 			result, err := engine.TaskCycle(context.Background(), plan)
 
