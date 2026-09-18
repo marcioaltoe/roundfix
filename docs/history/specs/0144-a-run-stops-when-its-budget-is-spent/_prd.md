@@ -1,9 +1,12 @@
 ---
 spec: 0144-a-run-stops-when-its-budget-is-spent
-status: active
+status: archived
 created: 2026-09-18
 surfaces: [backend, cli, docs]
+archived: "2026-09-18"
+source_slug: 0144-a-run-stops-when-its-budget-is-spent
 ---
+
 
 # A Run stops when its budget is spent
 
