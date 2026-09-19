@@ -46,7 +46,7 @@ stale and recording dependencies that are no longer incomplete.
 ## Verification
 
 - `out="$(go test -count=1 -run "^TestReopenRefusesWhenTheGateChangedBeforeTheWrite" ./internal/cli 2>&1)" || { printf "%s\n" "$out"; exit 1; }; missing="$(printf "%s\n" "$out" | grep "no tests to run")"; test -z "$missing"` — expected: exit 0; before this Task the run reports no tests to run, so the command fails.
-- `out="$(go test -count=1 -run "^TestReopen" ./internal/cli 2>&1)" || { printf "%s\n" "$out"; exit 1; }; printf "%s\n" "$out" | grep -q "TestReopenRefusesWhenTheGateChangedBeforeTheWrite"` — expected: exit 0; the whole reopen suite passes and includes the new case. Before this Task the case does not exist, so the command fails.
+- `out="$(go test -count=1 -v -run "^TestReopen" ./internal/cli 2>&1)" || { printf "%s\n" "$out"; exit 1; }; printf "%s\n" "$out" | grep -q -- "--- PASS: TestReopenRefusesWhenTheGateChangedBeforeTheWrite"` — expected: exit 0; the whole reopen suite passes and the new case is among the cases that passed. `-v` is required: without it the run prints only a package summary and no test name, so the grep could never match.
 
 ## References
 
