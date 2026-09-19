@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0150-a-reopen-that-cannot-be-raced
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
