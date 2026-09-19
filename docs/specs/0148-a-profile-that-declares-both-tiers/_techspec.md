@@ -24,7 +24,7 @@ fill the silence the clause exists to expose.
   ADR-0155 applies: the `qa` Task declares the gate's matrix, so this Spec's terminal gate covers what its Requirements name.
   ADR-0156 applies: this Spec declares its Success Metrics and API Contracts as numbered units and names each in a Task.
   ADR-0104 applies: acceptance rests on evidence this Spec did not author, which here is the shipped clause that asks for the missing value and the Profile that lacks it.
-- Tooling authority: applicable — the Profile, the guide template and the generated repository guides are Baseline-owned and governed. Express maintainer authorization: granted 2026-09-19, recorded in [_authorization.md](_authorization.md); bounded files: `internal/baseline/assets/profiles/standard-typescript-monorepo.json`, `internal/baseline/assets/templates/guides/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/agent-instructions.md`, `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`. The last two ride on the standing authorization of 2026-09-18. Sanctioned regeneration: `make baseline-digests` and `make skills-sync`. The generated guides change only through regeneration. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
+- Tooling authority: applicable — the Profile, the guide template and the generated repository guides are Baseline-owned and governed. Express maintainer authorization: granted 2026-09-19, recorded in [_authorization.md](_authorization.md); bounded files: `internal/baseline/assets/profiles/standard-typescript-monorepo.json`, `internal/baseline/assets/templates/guides/agent-instructions.md`, `internal/baseline/assets/templates/index.json`, `docs/agents/spec-routing.md`, `docs/agents/agent-instructions.md`, `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`. The last two ride on the standing authorization of 2026-09-18. Sanctioned regeneration: `make baseline-digests` and `make skills-sync`. The generated guides change only through regeneration. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## System Architecture
 
@@ -33,6 +33,7 @@ fill the silence the clause exists to expose.
 | Profile decisions | `internal/baseline/assets/profiles` | Carry the incremental verification decision beside the complete gate. |
 | Profile reader | `internal/baseline` | Expose both decisions, each with its own source, without deriving either. |
 | Guide template | `internal/baseline/assets/templates/guides` | Publish both commands where it publishes the gate today. |
+| Template index | `internal/baseline/assets/templates/index.json` | Declare the new token for that template, so it may be rendered at all. |
 | Generated guides | `docs/agents` | Agree with their sources, by regeneration only. |
 
 No new package, profile or configuration file is proposed.
@@ -56,6 +57,11 @@ Where the guide template renders the complete gate, it renders the incremental
 command too. A Profile that declares none renders the sentence the clauses
 already use for an unmet two-tier contract, so silence keeps meaning what it
 means today.
+
+A template may render only the tokens the template index declares for it. The
+new token is declared there beside the gate's, and that template's version rises
+as the index requires — without it, the rendering cannot exist, which is where
+this Spec's first Run correctly stopped.
 
 ### Regeneration, not editing
 
