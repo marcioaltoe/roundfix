@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0150-a-reopen-that-cannot-be-raced
-status: completed
+status: pending
 type: qa
 complexity: high
 ---
@@ -66,3 +66,9 @@ ADR-0104; ADR-0156.
 - Date: `2026-09-19`
 - QA Report: `qa/qa-report-2026-09-19.md`
 - Dependencies not completed: `task_05`
+
+## Invalidation
+
+- Date: `2026-09-19`
+- QA Report: `qa/qa-report-2026-09-19-01.md`
+- Dependencies not completed: `task_06`

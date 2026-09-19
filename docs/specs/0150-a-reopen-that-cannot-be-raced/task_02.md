@@ -50,7 +50,7 @@ while making the write atomic, so it is repaired here.
 
 ## Verification
 
-- `out="$(go test -count=1 -run "^TestReopenGateWritesThroughASymlinkedTaskPath" ./internal/spec 2>&1)" || { printf "%s\n" "$out"; exit 1; }; missing="$(printf "%s\n" "$out" | grep "no tests to run")"; test -z "$missing"` — expected: exit 0; before this Task the run reports no tests to run, so the command fails.
+- `out="$(go test -count=1 -v -run "^TestReopenGateWritesToTheValidatedTarget" ./internal/spec 2>&1)" || { printf "%s\n" "$out"; exit 1; }; printf "%s\n" "$out" | grep -q -- "--- PASS: TestReopenGateWritesToTheValidatedTarget"` — expected: exit 0; the symlinked-path case is covered by this test. Task 05 renamed it from `TestReopenGateWritesThroughASymlinkedTaskPath` when it made the replacement write to the validated target, so this command names the case that exists.
 
 ## References
 
