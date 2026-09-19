@@ -96,6 +96,24 @@ The [source ownership index](references/_index.md) records the pre-adoption
 path, type, primary owner and current owned copy. Secondary consumers link
 that copy; lifecycle completion means routing, not verified implementation.
 
+## Delivered slices
+
+Core Feature 6 is partly delivered. Spec 0148 gave the Profile its second
+verification decision, exposed both tiers through the reader with independent
+sources, proved that an undeclared tier reports absence rather than an empty
+value or the other tier's command, and regenerated the derived catalog and plan
+artifacts the declaration moves.
+
+What Core Feature 6 still owns here is the publication half: rendering the
+incremental command into the guide template and this repository's generated
+guides, and the reviewed migration for existing single-gate Setup Manifests.
+Spec 0148 measured what that costs before returning it — the guide template, the
+index that declares which tokens a template may render, this repository's own
+decision record and the formatter's golden copy, four governed paths beyond the
+Profile. Author that slice with its blast radius measured first, by running the
+sanctioned command and classifying each path it touches through the governance
+probe, rather than by reading code and estimating.
+
 ## Technical candidate
 
 The [_techspec.md](_techspec.md) records the reviewable implementation map,

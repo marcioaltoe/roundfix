@@ -1,9 +1,12 @@
 ---
 spec: 0148-a-profile-that-declares-both-tiers
-status: active
+status: archived
 created: 2026-09-19
 surfaces: [backend, docs]
+archived: "2026-09-19"
+source_slug: 0148-a-profile-that-declares-both-tiers
 ---
+
 
 # A profile that declares both tiers
 
