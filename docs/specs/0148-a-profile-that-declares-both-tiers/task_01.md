@@ -84,7 +84,7 @@ Build Order 1; `_authorization.md`.
 - `rtk env GOCACHE=/private/tmp/roundfix-0148-task01-gocache make verify-incremental`
   passed formatting and `go vet`, then exited 2 in the test phase. The Profile
   edit invalidates derived catalog and plan-characterization digests assigned
-  to Task 03; two `internal/cli` process-table tests also received `operation
+  to Task 02; two `internal/cli` process-table tests also received `operation
   not permitted` from the sandbox. This slice did not regenerate derived pins
   or alter those tests.
 - The Daemon-owned commands under `## Verification` were not run.
@@ -108,7 +108,7 @@ Build Order 1; `_authorization.md`.
 
 ### Follow-up
 
-- Task 03 owns the sanctioned catalog and plan-characterization digest
+- Task 02 owns the sanctioned catalog and plan-characterization digest
   regeneration triggered by the authorized Profile asset change.
 
 ## Carry-forward provenance

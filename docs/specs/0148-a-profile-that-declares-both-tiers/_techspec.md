@@ -8,9 +8,10 @@ created: 2026-09-19
 
 ## Executive Summary
 
-The Profile gains one verification decision, the guide template renders it, and
-the repository's generated guides are regenerated so they agree with the sources
-that own them. Nothing derives one tier from the other.
+The Profile gains one verification decision, the reader exposes it beside the
+complete gate, and the derived catalog and plan artifacts the declaration moves
+are regenerated through the sanctioned command. Nothing derives one tier from
+the other, and nothing is published to the generated guides here.
 
 The trade-off this design accepts is that a repository which has a fast command
 but never declares it keeps publishing nothing for it. Inferring the value would
@@ -18,13 +19,13 @@ fill the silence the clause exists to expose.
 
 ## Project Constraints
 
-- Identifier strategy: applicable — a decision's identifier is how the guide template and the planner name it, so the new decision takes an identifier in the existing scheme and renames none. Source: `docs/agents/domain.md`.
+- Identifier strategy: applicable — a decision's identifier is how the reader and the planner name it, so the new decision takes an identifier in the existing scheme and renames none. Source: `docs/agents/domain.md`.
 - Authentication and HTTP: not applicable — the change is a declared decision and its rendering; no credential, transport or HTTP policy is touched. Source: `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — the Baseline's derived artifacts and their regeneration are governed by accepted decisions this Spec must preserve. Source: `docs/agents/domain.md` and `docs/agents/spec-routing.md`.
   ADR-0155 applies: the `qa` Task declares the gate's matrix, so this Spec's terminal gate covers what its Requirements name.
   ADR-0156 applies: this Spec declares its Success Metrics and API Contracts as numbered units and names each in a Task.
   ADR-0104 applies: acceptance rests on evidence this Spec did not author, which here is the shipped clause that asks for the missing value and the Profile that lacks it.
-- Tooling authority: applicable — the Profile, the guide template and the generated repository guides are Baseline-owned and governed. Express maintainer authorization: granted 2026-09-19, recorded in [_authorization.md](_authorization.md); bounded files: `internal/baseline/assets/profiles/standard-typescript-monorepo.json`. The record was narrowed on 2026-09-19 when the maintainer split the Spec; narrowing removes authority and needs no further approval. The last two ride on the standing authorization of 2026-09-18. Sanctioned regeneration: `make baseline-digests` and `make skills-sync`. The generated guides change only through regeneration. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
+- Tooling authority: applicable — the Profile is Baseline-owned and governed. Express maintainer authorization: granted 2026-09-19, recorded in [_authorization.md](_authorization.md); bounded files: `internal/baseline/assets/profiles/standard-typescript-monorepo.json`. The record was narrowed on 2026-09-19 when the maintainer split the Spec; narrowing removes authority and needs no further approval. Sanctioned regeneration: `make baseline-digests`. Its derived output is ordinary source and changes only through that command. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## System Architecture
 
@@ -107,10 +108,9 @@ that cover Baseline assets move with it, through the sanctioned command.
 
 - **Baseline digests.** Any derived pin the asset change moves is rewritten by
   the sanctioned command, never by hand.
-- **The repository's own guides.** Regenerated so their content matches the
-  modules and templates that own them.
-- **Spec 0121.** The HTTP decision, the Greenfield refusal, skill regeneration
-  ownership and skill-lock reconciliation stay there.
+- **Spec 0121.** Publishing the decision into the generated guides returns there,
+  alongside the HTTP decision, the Greenfield refusal, skill regeneration
+  ownership and skill-lock reconciliation.
 
 ## Testing Approach
 
@@ -140,9 +140,10 @@ that cover Baseline assets move with it, through the sanctioned command.
 
 ## Risks & Considerations
 
-- **A derived-artifact diff.** Regeneration moves generated guides and possibly
-  digests. That is the sanctioned path, and the regeneration contract test is
-  what proves the output matches its source.
+- **A derived-artifact diff.** Regeneration moves the catalog digest, the
+  normalized catalog and the plan-characterization goldens. That is the
+  sanctioned path, and the characterization tests are what prove the output
+  matches its source.
 - **A tempting inference.** Deriving the fast tier from the complete one would
   make the change smaller and the contract weaker; the clause exists precisely to
   expose repositories that have not decided.
