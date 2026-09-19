@@ -183,6 +183,7 @@
     {"id": "verification.lint", "kind": "lint", "tool": "Oxlint", "command": "bun run lint"},
     {"id": "verification.test", "kind": "test", "tool": "Vitest", "command": "bun run test"},
     {"id": "verification.build", "kind": "build", "tool": "Turborepo", "command": "bun run build"},
-    {"id": "verification.workspace", "kind": "workspace", "tool": "Bun", "command": "bun run verify"}
+    {"id": "verification.workspace", "kind": "workspace", "tool": "Bun", "command": "bun run verify"},
+    {"id": "verification.incremental", "kind": "incremental", "tool": "Make", "command": "make verify-incremental"}
   ]
 }

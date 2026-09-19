@@ -1,18 +1,10 @@
 ---
 status: approved
 granted: 2026-09-19
-action: let the Baseline Profile declare the incremental verification tier beside the complete gate, and render both where the decision is published
+action: let the Baseline Profile declare the incremental verification tier beside the complete gate
 consuming: 0148-a-profile-that-declares-both-tiers
 paths:
   - internal/baseline/assets/profiles/standard-typescript-monorepo.json
-  - internal/baseline/assets/templates/guides/agent-instructions.md
-  - internal/baseline/assets/templates/index.json
-  - docs/agents/spec-routing.md
-  - docs/agents/setup-context.json
-  - internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md
-  - docs/agents/agent-instructions.md
-  - .agents/skills/roundfix/SKILL.md
-  - skills/roundfix/SKILL.md
 operations:
   - implement
   - commit
@@ -31,42 +23,27 @@ skill and its mirror ride on the standing authorization of 2026-09-18.
 
 ## Why a governed path is unavoidable
 
-The Profile that carries the decision, and the template that publishes it, are
-Baseline assets: code-generator configuration, and therefore governed. The
-repository guides that state the clauses are generated from Baseline modules
-inside setup-context markers, so they are bounded here to be **regenerated**,
-never hand-edited.
+The Profile that carries the decision is a Baseline asset: code-generator
+configuration, and therefore governed.
 
-The template index is bounded beside the template it indexes: it declares which
-tokens each template may render, and a token that is not declared there cannot
-be rendered. The first Run of this Spec stopped on exactly that boundary — the
-Agent refused to edit the template while the index stayed outside the grant —
-and the maintainer widened the record on 2026-09-19.
+Nothing else this Spec changes is governed. The Profile reader and its tests are
+ordinary source, and the derived catalog digests and plan characterizations the
+sanctioned regeneration rewrites are ordinary source too.
 
-The sanctioned regeneration writes more than the guides: it rewrites this
-repository's own decision record and the formatter's golden copy of the
-generated guide. Both are governed, both are output of the same command, and the
-QA gate refused a Task commit that touched the first while it stayed outside the
-grant. The maintainer widened the record to the command's full governed output
-on the same day. The remaining paths that command writes — catalog digests,
-normalized catalogs and plan characterizations — are ordinary source.
+## What this record no longer covers
 
-The Profile reader, the planning output and their tests are ordinary source that
-no authorization has bounded.
+The maintainer originally authorized the guide template, the template index,
+this repository's decision record, the formatter golden and the generated
+guides, so the Spec could also publish the decision to the guides. Delivery
+showed that publication is a larger change than the slice could carry: five
+Runs, three widenings, and a reader whose projections emptied under the full
+package run.
 
-## Approved bounded mutation
-
-- Give the Profile an incremental verification decision beside its complete
-  gate, distinguishable from it and from a catalog default.
-- Render both decisions where the guide template publishes the gate today, and
-  declare the new token in the index that governs which tokens that template may
-  render, raising that template's version as the index requires.
-- Regenerate the repository guides from their Baseline sources, so the generated
-  copies agree with the modules that own them.
-
-The generated guides change only through regeneration. A hand edit inside a
-setup-context marker is out of scope and would be overwritten by the next
-Baseline update.
+On 2026-09-19 the maintainer chose to split the Spec, and this record is
+narrowed to the one path the remaining scope needs. Narrowing removes authority
+and needs no further approval; publishing the decision to the generated guides
+returns to Spec 0121, with its blast radius measured by running the sanctioned
+command before it is authored again.
 
 ## Sanctioned regeneration
 
