@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0150-a-reopen-that-cannot-be-raced
-status: completed
+status: pending
 type: qa
 complexity: high
 ---
@@ -60,3 +60,9 @@ responsibility.
 `_prd.md` → Goals 1-2; Core Features 1-3; Success Metrics 1-3; Acceptance
 evidence; `_techspec.md` → Testing Approach 1-5; API Contracts 1-3; ADR-0155;
 ADR-0104; ADR-0156.
+
+## Invalidation
+
+- Date: `2026-09-19`
+- QA Report: `qa/qa-report-2026-09-19.md`
+- Dependencies not completed: `task_05`
