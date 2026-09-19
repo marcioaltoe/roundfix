@@ -8,6 +8,8 @@ paths:
   - internal/baseline/assets/templates/guides/agent-instructions.md
   - internal/baseline/assets/templates/index.json
   - docs/agents/spec-routing.md
+  - docs/agents/setup-context.json
+  - internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md
   - docs/agents/agent-instructions.md
   - .agents/skills/roundfix/SKILL.md
   - skills/roundfix/SKILL.md
@@ -40,6 +42,14 @@ tokens each template may render, and a token that is not declared there cannot
 be rendered. The first Run of this Spec stopped on exactly that boundary — the
 Agent refused to edit the template while the index stayed outside the grant —
 and the maintainer widened the record on 2026-09-19.
+
+The sanctioned regeneration writes more than the guides: it rewrites this
+repository's own decision record and the formatter's golden copy of the
+generated guide. Both are governed, both are output of the same command, and the
+QA gate refused a Task commit that touched the first while it stayed outside the
+grant. The maintainer widened the record to the command's full governed output
+on the same day. The remaining paths that command writes — catalog digests,
+normalized catalogs and plan characterizations — are ordinary source.
 
 The Profile reader, the planning output and their tests are ordinary source that
 no authorization has bounded.
