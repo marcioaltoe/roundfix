@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0149-a-supported-way-to-reopen-a-settled-gate
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -53,3 +53,23 @@ CLI behavior.
 ## References
 
 - [_authorization.md](_authorization.md) — Approved bounded mutation
+
+## Result
+
+- Canonical skill: added the `Reopen Command` contract, including the
+  supported command for stale settled QA gates, the prohibition on manual Task
+  file edits, refusals for unsettled or non-stale gates, retained QA Report and
+  Result evidence, options, and exit codes. Version metadata was unchanged.
+- User guide: documented `roundfix reopen --spec <slug>` beside `implement`,
+  `settle`, and `archive`, including its option, refusals, and exit codes.
+- Acceptance evidence:
+  - Both skill files name `roundfix reopen --spec <slug>` and document
+    refusals for unsettled or non-stale gates; `diff -r .agents/skills/roundfix
+    skills/roundfix` passed, and targeted `rg` found the required terms in both
+    files.
+  - The user guide documents `--spec`, exit codes `0`, `1`, and `2`, and the
+    refusal conditions; targeted `rg` found the command and option text in
+    `docs/user-guide/commands.md`.
+  - `make skills-sync` regenerated the mirror, and `make skills-sync-check`
+    passed with the focused `./skills` contract tests.
+  - `git -c core.fsmonitor=false diff --check` passed.
