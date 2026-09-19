@@ -44,7 +44,7 @@ runs the sanctioned regeneration and commits its output.
 
 ## Verification
 
-- `derived="$(git diff --name-only HEAD~1 HEAD -- internal/baseline/testdata)"; test -n "$derived" || exit 1; guides="$(git diff --name-only HEAD~1 HEAD -- docs/agents internal/baseline/assets/templates internal/baseline/assets/formatter-fixtures)"; test -z "$guides"` — expected: exit 0; this Task's own commit moved the derived artifacts and published nothing to the guides, their templates or the formatter goldens. Before this Task no derived artifact has moved, so the command fails.
+- `derived="$(git diff --name-only -- internal/baseline/testdata)"; test -n "$derived" || exit 1; guides="$(git diff --name-only -- docs/agents internal/baseline/assets/templates internal/baseline/assets/formatter-fixtures)"; test -z "$guides"` — expected: exit 0; the regeneration moved the derived artifacts in the working tree and published nothing to the guides, their templates or the formatter goldens. Verification reads the working tree before the Daemon commits, so a commit-relative range cannot observe this Task at all; before the regeneration the tree is clean and the command fails.
 - `go test -count=1 -run "^TestCatalogCompatibility$|^TestBaselinePlanCharacterization$" ./internal/baseline` — expected: exit 0; the derived artifacts agree with the Profile that moved them. Before this Task they disagree, because Task 01 added a decision without regenerating them.
 
 ## References
