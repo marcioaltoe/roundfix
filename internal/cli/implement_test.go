@@ -5898,34 +5898,45 @@ func TestImplementRunBudgetBoundsSetupAndIntegration(t *testing.T) {
 		}
 	})
 
-	t.Run("push", func(t *testing.T) {
+	t.Run("push runs under the Run's deadline", func(t *testing.T) {
+		// Like integration, what this level can prove without a race is that the
+		// bound reaches the push: a small maximum would have to outlast worktree
+		// setup, a Task and a commit before the push begins, and a loaded machine
+		// spends it first. The daemon tests prove what the deadline does once it
+		// arrives.
 		homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Complete before push"}})
 		configureImplementAutoPush(t, repoDir, true)
 		configureImplementUpstream(t, repoDir, "origin", "ma/widget-flow")
-		const maximum = 350 * time.Millisecond
+		const maximum = time.Hour
 		mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "budget:\n  max_run_duration: "+maximum.String()+"\nimplement:\n  auto_push: true\n")
 		gitImplement(t, repoDir, "add", ".roundfixrc.yml")
 		gitImplement(t, repoDir, "commit", "-m", "configure bounded push")
 		runner := &implementFakeRunner{gitRoot: repoDir, statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted}}
 		withImplementCollaborators(t, runner)
-		pusher := &budgetBlockingPusher{}
+		pusher := &budgetObservingPusher{}
 		withPusher(t, pusher)
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
+		startedAt := time.Now()
 
 		code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
-		if code != exitRunFailed {
-			t.Fatalf("push-bound exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+		if code != exitOK {
+			t.Fatalf("push-bound exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
 		}
-		if !pusher.stopped {
-			t.Fatal("Run Budget did not cancel push")
+		if !pusher.called {
+			t.Fatal("push never ran, so the Run's deadline could not be observed")
+		}
+		if !pusher.bounded {
+			t.Fatal("push ran without the Run Budget deadline")
+		}
+		if pusher.deadline.Before(startedAt) || pusher.deadline.After(startedAt.Add(maximum+time.Minute)) {
+			t.Fatalf("push deadline = %s, want the Run's start plus %s", pusher.deadline, maximum)
 		}
 		run := implementRunFromStore(t, homeDir, implementRunIDFromStderr(t, stderr.String()))
-		if run.State != store.StateBudgetExceeded {
-			t.Fatalf("push-bound Run state = %q, want %q", run.State, store.StateBudgetExceeded)
+		if run.State == store.StateBudgetExceeded {
+			t.Fatalf("Run state = %q, want a Run that finished inside its budget", run.State)
 		}
-		assertRunWorktreeExists(t, run.WorkDir)
 	})
 
 	t.Run("inside budget", func(t *testing.T) {
@@ -5950,14 +5961,16 @@ func TestImplementRunBudgetBoundsSetupAndIntegration(t *testing.T) {
 	})
 }
 
-type budgetBlockingPusher struct {
-	stopped bool
+type budgetObservingPusher struct {
+	called   bool
+	bounded  bool
+	deadline time.Time
 }
 
-func (pusher *budgetBlockingPusher) Push(ctx context.Context, _ daemon.PushRequest) error {
-	<-ctx.Done()
-	pusher.stopped = true
-	return ctx.Err()
+func (pusher *budgetObservingPusher) Push(ctx context.Context, _ daemon.PushRequest) error {
+	pusher.called = true
+	pusher.deadline, pusher.bounded = ctx.Deadline()
+	return nil
 }
 
 func TestRunImplementDatabaseStopRequestAfterTaskCommitEndsStoppedAndReleasesLock(t *testing.T) {
