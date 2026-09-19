@@ -17,7 +17,9 @@ and keeps saying the contract is unmet when no incremental command is declared.
 ## Requirements
 
 1. MUST render the declared incremental command in the guide template, beside
-   the complete gate it renders today.
+   the complete gate it renders today, and MUST declare its token in the
+   template index so the template may render it, raising that template's version
+   as the index requires.
 2. MUST render, for a Profile that declares no incremental command, the unmet
    two-tier statement the clauses already use, rather than an empty value.
 3. MUST leave every other rendered value and its wording unchanged.
@@ -39,10 +41,11 @@ and keeps saying the contract is unmet when no incremental command is declared.
 ## Context
 
 - interface: `internal/baseline/assets/templates/guides/agent-instructions.md`
+- interface: `internal/baseline/assets/templates/index.json`
 
 ## Verification
 
-- `grep -q "verification.incremental" internal/baseline/assets/templates/guides/agent-instructions.md` — expected: exit 0; the template publishes the tier. Before this Task it does not.
+- `grep -q "verification.incremental" internal/baseline/assets/templates/guides/agent-instructions.md && grep -q "verification.incremental" internal/baseline/assets/templates/index.json` — expected: exit 0; the template publishes the tier and the index declares its token. Before this Task neither does.
 - `out="$(go test -count=1 -run "^TestGeneratedGuidancePublishesBothTiers$" ./internal/baseline 2>&1)" || { printf "%s\n" "$out"; exit 1; }; missing="$(printf "%s\n" "$out" | grep "no tests to run")"; test -z "$missing"` — expected: exit 0; before this Task the run reports no tests to run, so the command fails.
 
 ## References

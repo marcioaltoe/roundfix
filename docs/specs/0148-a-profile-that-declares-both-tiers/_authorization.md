@@ -6,6 +6,7 @@ consuming: 0148-a-profile-that-declares-both-tiers
 paths:
   - internal/baseline/assets/profiles/standard-typescript-monorepo.json
   - internal/baseline/assets/templates/guides/agent-instructions.md
+  - internal/baseline/assets/templates/index.json
   - docs/agents/spec-routing.md
   - docs/agents/agent-instructions.md
   - .agents/skills/roundfix/SKILL.md
@@ -34,6 +35,12 @@ repository guides that state the clauses are generated from Baseline modules
 inside setup-context markers, so they are bounded here to be **regenerated**,
 never hand-edited.
 
+The template index is bounded beside the template it indexes: it declares which
+tokens each template may render, and a token that is not declared there cannot
+be rendered. The first Run of this Spec stopped on exactly that boundary — the
+Agent refused to edit the template while the index stayed outside the grant —
+and the maintainer widened the record on 2026-09-19.
+
 The Profile reader, the planning output and their tests are ordinary source that
 no authorization has bounded.
 
@@ -41,7 +48,9 @@ no authorization has bounded.
 
 - Give the Profile an incremental verification decision beside its complete
   gate, distinguishable from it and from a catalog default.
-- Render both decisions where the guide template publishes the gate today.
+- Render both decisions where the guide template publishes the gate today, and
+  declare the new token in the index that governs which tokens that template may
+  render, raising that template's version as the index requires.
 - Regenerate the repository guides from their Baseline sources, so the generated
   copies agree with the modules that own them.
 
