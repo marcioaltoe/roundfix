@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"roundfix/internal/spec"
+	"roundfix/internal/store"
 )
 
 // Suite: reopen command seam
@@ -152,6 +153,160 @@ func TestReopenRefusesUnknownFlag(t *testing.T) {
 
 	if code != exitPreflight || !strings.Contains(stderr.String(), "flag provided but not defined") {
 		t.Fatalf("reopen exit = %d stderr=%q, want unknown-flag refusal", code, stderr.String())
+	}
+}
+
+func TestReopenRefusesWhileARunIsActive(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", status: string(spec.StatusPending)},
+		implementQAGateSeed(string(spec.StatusCompleted), "task_01"),
+	})
+	taskPath := implementTaskPath(repoDir, "task_qa")
+	before := mustRead(t, taskPath)
+
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database: %v", err)
+	}
+	active, err := runStore.CreateRun(context.Background(), store.CreateRunRequest{
+		Kind:        store.KindImplement,
+		GitRoot:     repoDir,
+		LocalBranch: "roundfix/run-active-reopen-test",
+		SpecSlug:    implementTestSlug,
+		OwnerPID:    os.Getpid(),
+	})
+	if err != nil {
+		t.Fatalf("create active Run: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close Run Database: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := runCLIContext(t, context.Background(), []string{"reopen", "--spec", implementTestSlug}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("reopen exit = %d, want %d; stderr=%q", code, exitPreflight, stderr.String())
+	}
+	if stdout.String() != "" {
+		t.Fatalf("reopen stdout = %q, want empty", stdout.String())
+	}
+	for _, want := range []string{"Active Run " + active.ID, "Spec target", "roundfix stop " + active.ID} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("reopen stderr = %q, want %q", stderr.String(), want)
+		}
+	}
+	if got := mustRead(t, taskPath); got != before {
+		t.Fatalf("QA Task changed while an Active Run owned the Spec:\n%s", got)
+	}
+}
+
+func TestReopenRejectsPathLikeSpecValues(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name string
+		slug string
+	}{
+		{name: "parent traversal", slug: "../other"},
+		{name: "nested path", slug: "a/b"},
+		{name: "absolute path", slug: filepath.Join(t.TempDir(), "other")},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLIContext(t, context.Background(), []string{"reopen", "--spec", test.slug}, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("reopen exit = %d, want %d; stderr=%q", code, exitPreflight, stderr.String())
+			}
+			if stdout.String() != "" {
+				t.Fatalf("reopen stdout = %q, want empty", stdout.String())
+			}
+			if !strings.Contains(stderr.String(), "invalid Spec slug") {
+				t.Fatalf("reopen stderr = %q, want invalid Spec slug", stderr.String())
+			}
+		})
+	}
+}
+
+func TestReopenRefusesQATaskResolvedOutsideSpecRoot(t *testing.T) {
+	t.Parallel()
+	_, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	const slug = "escaped-spec"
+	externalRoot := t.TempDir()
+	writeImplementSpecAtRoot(t, externalRoot, slug, []implementSeed{
+		{id: "task_01", status: string(spec.StatusPending)},
+		implementQAGateSeed(string(spec.StatusCompleted), "task_01"),
+	})
+	externalSpecDir := filepath.Join(externalRoot, slug)
+	reportPath := filepath.Join(externalSpecDir, "qa", "qa-report-2026-09-18.md")
+	mustMkdir(t, filepath.Dir(reportPath))
+	mustWrite(t, reportPath, "---\nverdict: pass\n---\n")
+	if err := os.Symlink(externalSpecDir, filepath.Join(repoDir, "docs", "specs", slug)); err != nil {
+		t.Fatalf("link escaped Spec fixture: %v", err)
+	}
+	taskPath := filepath.Join(externalSpecDir, "task_qa.md")
+	before := mustRead(t, taskPath)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := runCLIContext(t, context.Background(), []string{"reopen", "--spec", slug}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("reopen exit = %d, want %d; stderr=%q", code, exitPreflight, stderr.String())
+	}
+	if stdout.String() != "" {
+		t.Fatalf("reopen stdout = %q, want empty", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "outside configured Spec Root") {
+		t.Fatalf("reopen stderr = %q, want root-confinement refusal", stderr.String())
+	}
+	if got := mustRead(t, taskPath); got != before {
+		t.Fatalf("outside QA Task changed after confinement refusal:\n%s", got)
+	}
+}
+
+func TestReopenLeavesTheTaskUnchangedWhenTheRecordCannotBeWritten(t *testing.T) {
+	t.Parallel()
+	_, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", status: string(spec.StatusPending)},
+		implementQAGateSeed(string(spec.StatusCompleted), "task_01"),
+	})
+	taskPath := implementTaskPath(repoDir, "task_qa")
+	reportPath := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "qa", "qa-report-2026-09-18.md")
+	mustMkdir(t, filepath.Dir(reportPath))
+	mustWrite(t, reportPath, "---\nverdict: pass\n---\n")
+	before := mustRead(t, taskPath)
+	taskDir := filepath.Dir(taskPath)
+	if err := os.Chmod(taskDir, 0o555); err != nil {
+		t.Fatalf("make QA Task directory read-only: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chmod(taskDir, 0o755); err != nil {
+			t.Errorf("restore QA Task directory permissions: %v", err)
+		}
+	})
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := runCLIContext(t, context.Background(), []string{"reopen", "--spec", implementTestSlug}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("reopen exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+	}
+	if stdout.String() != "" {
+		t.Fatalf("reopen stdout = %q, want empty", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "reopen failed") {
+		t.Fatalf("reopen stderr = %q, want write failure", stderr.String())
+	}
+	if got := mustRead(t, taskPath); got != before {
+		t.Fatalf("QA Task changed after invalidation record write failed:\n%s", got)
 	}
 }
 

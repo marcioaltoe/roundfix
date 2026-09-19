@@ -55,11 +55,7 @@ func runReopenCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		printPreflightFailure("reopen", err, stderr)
 		return exitPreflight
 	}
-	if err := spec.SetStatus(plan.qaTaskPath, spec.StatusPending); err != nil {
-		fmt.Fprintf(stderr, "%s: reopen failed: %v\n", app.Name, err)
-		return exitRunFailed
-	}
-	if err := spec.AppendGateInvalidation(plan.qaTaskPath, plan.reportLabel, plan.taskIDs, time.Now().UTC()); err != nil {
+	if err := spec.ReopenGate(plan.qaTaskPath, plan.reportLabel, plan.taskIDs, time.Now().UTC()); err != nil {
 		fmt.Fprintf(stderr, "%s: reopen failed: %v\n", app.Name, err)
 		return exitRunFailed
 	}
@@ -82,6 +78,9 @@ func parseReopenCommand(args []string) (string, error) {
 	if slug == "" {
 		return "", validationError{message: "missing required --spec; pass --spec <slug>"}
 	}
+	if slug == "." || slug == ".." || filepath.IsAbs(slug) || filepath.Base(slug) != slug || strings.ContainsAny(slug, `/\`) {
+		return "", validationError{message: fmt.Sprintf("invalid Spec slug %q; --spec must be one Spec directory name", slug)}
+	}
 	return slug, nil
 }
 
@@ -98,6 +97,9 @@ func preflightReopen(ctx context.Context, slug string, stderr io.Writer, environ
 	}
 	resolvedSpecsRoot, err := roundconfig.ResolveSpecsRoot(loaded, loaded.GitRoot)
 	if err != nil {
+		return reopenPlan{}, err
+	}
+	if err := ensureNoSettleActiveRun(ctx, loaded.HomeDir, loaded.GitRoot, slug, stderr); err != nil {
 		return reopenPlan{}, err
 	}
 	graph, loadErr := spec.LoadForRecovery(resolvedSpecsRoot.Path, slug)
@@ -120,12 +122,31 @@ func preflightReopen(ctx context.Context, slug string, stderr io.Writer, environ
 	if err != nil {
 		return reopenPlan{}, fmt.Errorf("format invalidated QA Report path: %w", err)
 	}
+	qaTaskPath := filepath.Join(resolvedSpecsRoot.Path, qaTask.File)
+	if err := ensureReopenTaskInsideSpecsRoot(resolvedSpecsRoot.Path, qaTaskPath); err != nil {
+		return reopenPlan{}, err
+	}
 	return reopenPlan{
-		qaTaskPath:  filepath.Join(resolvedSpecsRoot.Path, qaTask.File),
+		qaTaskPath:  qaTaskPath,
 		qaTaskID:    qaTask.ID,
 		reportLabel: filepath.ToSlash(reportLabel),
 		taskIDs:     append([]string(nil), stale.TaskIDs...),
 	}, nil
+}
+
+func ensureReopenTaskInsideSpecsRoot(specsRoot string, taskPath string) error {
+	resolvedRoot, err := filepath.EvalSymlinks(specsRoot)
+	if err != nil {
+		return fmt.Errorf("resolve configured Spec Root %q: %w", specsRoot, err)
+	}
+	resolvedTask, err := filepath.EvalSymlinks(taskPath)
+	if err != nil {
+		return fmt.Errorf("resolve QA Task path %q: %w", taskPath, err)
+	}
+	if _, inside := repositoryRelativePath(resolvedRoot, resolvedTask); !inside {
+		return validationError{message: fmt.Sprintf("resolved QA Task path %q is outside configured Spec Root %q", resolvedTask, resolvedRoot)}
+	}
+	return nil
 }
 
 func reopenHealthyGateRefusal(graph *spec.Graph) (reopenPlan, error) {
