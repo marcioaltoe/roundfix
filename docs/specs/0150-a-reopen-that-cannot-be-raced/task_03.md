@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0150-a-reopen-that-cannot-be-raced
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -47,3 +47,20 @@ that changes CLI behavior.
 ## References
 
 - [_authorization.md](_authorization.md) — Approved bounded mutation
+
+## Result
+
+Implemented the bounded skill documentation slice. The canonical Roundfix
+skill now states that reopen rechecks the gate's staleness immediately before
+writing and refuses with exit 2 when the gate changed since preflight. Ran
+`make skills-sync` to regenerate the distributed mirror; no skill version or
+unrelated behavior text was changed.
+
+Focused checks:
+
+- `rg -n -F "gate changed since preflight" .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` — found the required anchor in both files.
+- `diff -u .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` — canonical and mirror are identical.
+- `git diff --check` — passed.
+
+The declared repository skill verification command remains for Daemon-owned
+verification and was not run in this handoff.
