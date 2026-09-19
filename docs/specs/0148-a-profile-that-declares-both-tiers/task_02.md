@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0148-a-profile-that-declares-both-tiers
-status: pending
+status: completed
 type: chore
 complexity: low
 ---
@@ -27,8 +27,8 @@ runs the sanctioned regeneration and commits its output.
 
 ## Subtasks
 
-- [ ] Run the sanctioned regeneration.
-- [ ] Confirm only the derived catalog and plan artifacts moved.
+- [x] Run the sanctioned regeneration.
+- [x] Confirm only the derived catalog and plan artifacts moved.
 - [ ] Confirm the gate passes.
 
 ## Acceptance Criteria
@@ -52,3 +52,21 @@ runs the sanctioned regeneration and commits its output.
 `_prd.md` → Core Feature 4; Declared intentional breaks; Regression locks;
 `_techspec.md` → Implementation Design: The derived artifacts; Build Order 2;
 `_authorization.md`.
+
+## Result
+
+- Ran the sanctioned `make baseline-digests` command successfully. It regenerated
+  `internal/baseline/testdata/catalog.digest`,
+  `internal/baseline/testdata/catalog.normalized.json`, and the four plan
+  characterization goldens under
+  `internal/baseline/testdata/plan-characterization/`.
+- The generator's embedded focused checks passed, including the baseline package
+  characterization/regeneration checks and strict catalog validation; it ended
+  with `{"type":"baseline-digests","ok":true,"changed":true}`.
+- The post-regeneration worktree contains only this task file and the six
+  derived artifacts above. No generated guide, guide template, template index,
+  decision record, or formatter golden changed.
+- Acceptance evidence: the derived catalog and plan artifacts were produced by
+  the sanctioned command; the publication paths remained untouched. The
+  repository `make verify` gate was not run in this Daemon-assigned turn and
+  remains for Daemon Verification.
