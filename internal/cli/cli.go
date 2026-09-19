@@ -51,6 +51,7 @@ Usage:
   roundfix window <set|show|clear>
   roundfix settle --spec <slug> --task <task_id>
   roundfix reopen --spec <slug>
+  roundfix supersede --spec <slug> --by <slug> --reason <text>
   roundfix reconcile [run-id] [--apply | --discard-superseded | --carry-forward] [--format <text|json>]
   roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
   roundfix release plan --reset-to <version> [--format <text|json>]
@@ -92,6 +93,7 @@ Commands:
   window     Set, show, or clear this repository's Run Window
   settle     Verify and commit one failed, or completed but uncommitted, Task
   reopen     Return a stale completed QA gate to pending
+  supersede  Record that another Spec delivered a Spec's content
   reconcile  Inspect or release proven terminal spec Run worktrees
   release    Plan the next release version without mutating repository or release state
   spec       Check Spec artifact consistency; audit Spec delivery
@@ -515,6 +517,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runSettleCommand(ctx, args[1:], stdout, stderr, environment)
 	case "reopen":
 		return runReopenCommand(ctx, args[1:], stdout, stderr, environment)
+	case "supersede":
+		return runSupersedeCommand(ctx, args[1:], stdout, stderr, environment)
 	case "reconcile":
 		return runReconcileCommand(ctx, args[1:], stdout, stderr, environment)
 	case "release":

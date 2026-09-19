@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0151-a-supersession-the-archive-can-see
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -56,3 +56,20 @@ can read. This Task adds the record and the command that writes it.
 ## References
 
 - [_techspec.md](_techspec.md) — The command
+
+## Result
+
+Implemented a typed supersession amendment with a validating reader and an
+exclusive writer for `_supersession.md`. Added the `supersede` command with
+required `--spec`, `--by`, and `--reason` flags, active-or-archived superseding
+Spec validation, the four required exit-2 refusals, unknown-flag refusal, and
+public help registration. The command does not enter the Run lifecycle.
+
+Focused evidence:
+
+- Acceptance criterion 1: `rtk env GOCACHE=/private/tmp/roundfix-task01-go-cache go test ./internal/cli -run '^TestSupersede$/accepted_path_writes_only_the_amendment$'` passed. The test reads the written amendment through `spec.ReadSupersession`, checks its superseding slug, date, reason, and explanation, and compares every pre-existing file byte-for-byte after removing only the new amendment from the snapshot. It also proves HEAD is unchanged and no Run Database exists.
+- Acceptance criterion 2: `rtk env GOCACHE=/private/tmp/roundfix-task01-go-cache go test ./internal/cli -run '^TestSupersede$/refusals_leave_the_Spec_root_byte-identical$'` passed for an unknown superseded Spec, an unknown superseding Spec, self-supersession, and an existing supersession. Each case checks exit 2, the condition-specific diagnostic, an empty stdout, byte-identical Spec-root contents, and no Run Database. `rtk env GOCACHE=/private/tmp/roundfix-task01-go-cache go test ./internal/cli -run '^TestSupersede$/unknown_flag_refuses_without_writing$'` also passed.
+- Acceptance criterion 3: the binary built by the incremental gate returned exit 0 from both `rtk ./bin/roundfix --help` and `rtk ./bin/roundfix supersede --help`; the top-level output includes `roundfix supersede --spec <slug> --by <slug> --reason <text>` and the command list entry.
+- Repository incremental check: `rtk env GOCACHE=/private/tmp/roundfix-task01-go-cache make verify-incremental` passed outside the filesystem sandbox, including vet, all Go packages, skill checks, and build. The first sandboxed attempt reached the test sweep but two unrelated force-stop integration tests could not read the macOS process table (`operation not permitted`); the permitted rerun passed those tests.
+
+The Daemon-owned Verification commands were not run in this Agent turn.
