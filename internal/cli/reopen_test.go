@@ -68,6 +68,72 @@ func TestReopenStaleGatePreservesEvidence(t *testing.T) {
 	assertNoRunDatabase(t, homeDir)
 }
 
+func TestReopenStaleGatePreservesSymlinkedTaskPath(t *testing.T) {
+	t.Parallel()
+	_, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", status: string(spec.StatusPending)},
+		implementQAGateSeed(string(spec.StatusCompleted), "task_01"),
+	})
+	taskPath := implementTaskPath(repoDir, "task_qa")
+	targetPath := filepath.Join(repoDir, "docs", "specs", "targets", "task_qa.md")
+	mustMkdir(t, filepath.Dir(targetPath))
+	if err := os.Rename(taskPath, targetPath); err != nil {
+		t.Fatalf("move QA Task to symlink target: %v", err)
+	}
+	if err := os.Symlink(targetPath, taskPath); err != nil {
+		t.Fatalf("link QA Task path to target: %v", err)
+	}
+	reportPath := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "qa", "qa-report-2026-09-18.md")
+	mustMkdir(t, filepath.Dir(reportPath))
+	mustWrite(t, reportPath, "---\nverdict: pass\n---\n")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := runCLIContext(t, context.Background(), []string{"reopen", "--spec", implementTestSlug}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("reopen exit = %d, want %d; stderr=%q stdout=%q", code, exitOK, stderr.String(), stdout.String())
+	}
+	if got := mustRead(t, targetPath); !strings.Contains(got, "status: pending") {
+		t.Fatalf("symlink target status was not rewritten to pending:\n%s", got)
+	}
+	info, err := os.Lstat(taskPath)
+	if err != nil {
+		t.Fatalf("lstat QA Task path: %v", err)
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		t.Fatalf("QA Task path mode = %v, want symlink", info.Mode())
+	}
+}
+
+func TestDeriveReopenPlanCarriesTheValidatedTaskTarget(t *testing.T) {
+	t.Parallel()
+	_, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", status: string(spec.StatusPending)},
+		implementQAGateSeed(string(spec.StatusCompleted), "task_01"),
+	})
+	taskPath := implementTaskPath(repoDir, "task_qa")
+	targetPath := filepath.Join(repoDir, "docs", "specs", "targets", "task_qa.md")
+	mustMkdir(t, filepath.Dir(targetPath))
+	if err := os.Rename(taskPath, targetPath); err != nil {
+		t.Fatalf("move QA Task to symlink target: %v", err)
+	}
+	if err := os.Symlink(targetPath, taskPath); err != nil {
+		t.Fatalf("link QA Task path to target: %v", err)
+	}
+	reportPath := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "qa", "qa-report-2026-09-18.md")
+	mustMkdir(t, filepath.Dir(reportPath))
+	mustWrite(t, reportPath, "---\nverdict: pass\n---\n")
+
+	plan, err := deriveReopenPlan(filepath.Join(repoDir, "docs", "specs"), implementTestSlug)
+	if err != nil {
+		t.Fatalf("derive reopen plan: %v", err)
+	}
+	if plan.qaTaskPath != targetPath {
+		t.Fatalf("QA Task path = %q, want validated target %q", plan.qaTaskPath, targetPath)
+	}
+}
+
 func TestReopenRefusesWhenTheGateChangedBeforeTheWrite(t *testing.T) {
 	t.Parallel()
 	_, repoDir := newImplementWorkspace(t, []implementSeed{

@@ -148,12 +148,13 @@ func deriveReopenPlan(specsRoot string, slug string) (reopenPlan, error) {
 	}
 	qaTaskPath := filepath.Join(specsRoot, qaTask.File)
 	specDir := filepath.Join(specsRoot, slug)
-	if err := ensureReopenTaskInsideSpecsRoot(specsRoot, specDir, qaTaskPath); err != nil {
+	validatedTaskPath, err := ensureReopenTaskInsideSpecsRoot(specsRoot, specDir, qaTaskPath)
+	if err != nil {
 		return reopenPlan{}, err
 	}
 	return reopenPlan{
 		specsRoot:   specsRoot,
-		qaTaskPath:  qaTaskPath,
+		qaTaskPath:  validatedTaskPath,
 		qaTaskID:    qaTask.ID,
 		reportLabel: filepath.ToSlash(reportLabel),
 		taskIDs:     append([]string(nil), stale.TaskIDs...),
@@ -213,22 +214,22 @@ func ensureNoReopenActiveRun(ctx context.Context, homeDir string, gitRoot string
 	return nil
 }
 
-func ensureReopenTaskInsideSpecsRoot(specsRoot string, specDir string, taskPath string) error {
+func ensureReopenTaskInsideSpecsRoot(specsRoot string, specDir string, taskPath string) (string, error) {
 	if _, inside := repositoryRelativePath(specDir, taskPath); !inside {
-		return validationError{message: fmt.Sprintf("QA Task path %q is outside Spec directory %q", taskPath, specDir)}
+		return "", validationError{message: fmt.Sprintf("QA Task path %q is outside Spec directory %q", taskPath, specDir)}
 	}
 	resolvedRoot, err := filepath.EvalSymlinks(specsRoot)
 	if err != nil {
-		return fmt.Errorf("resolve configured Spec Root %q: %w", specsRoot, err)
+		return "", fmt.Errorf("resolve configured Spec Root %q: %w", specsRoot, err)
 	}
 	resolvedTask, err := filepath.EvalSymlinks(taskPath)
 	if err != nil {
-		return fmt.Errorf("resolve QA Task path %q: %w", taskPath, err)
+		return "", fmt.Errorf("resolve QA Task path %q: %w", taskPath, err)
 	}
 	if _, inside := repositoryRelativePath(resolvedRoot, resolvedTask); !inside {
-		return validationError{message: fmt.Sprintf("resolved QA Task path %q is outside configured Spec Root %q", resolvedTask, resolvedRoot)}
+		return "", validationError{message: fmt.Sprintf("resolved QA Task path %q is outside configured Spec Root %q", resolvedTask, resolvedRoot)}
 	}
-	return nil
+	return resolvedTask, nil
 }
 
 func reopenHealthyGateRefusal(graph *spec.Graph) (reopenPlan, error) {
