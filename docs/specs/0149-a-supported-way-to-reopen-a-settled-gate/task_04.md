@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0149-a-supported-way-to-reopen-a-settled-gate
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
