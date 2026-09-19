@@ -2105,12 +2105,32 @@ integration pending — git merge --ff-only roundfix/run-<id>
 
 Review the Run Worktree before running it.
 
+## Supersede Command
+
+Use `roundfix supersede --spec <slug> --by <slug> --reason <text>` when another
+Spec delivered the content of a Spec that was never decomposed. This records a
+supersession amendment in the superseded Spec. Do not edit that Spec's status or
+write a note instead: the amendment is the lifecycle record that archive reads.
+
+The `--spec` value names the superseded Spec, `--by` names the active or
+archived Spec that delivered its content, and `--reason` records the
+explanation. The command writes only `_supersession.md`; it creates no Run,
+writes no Run Event Journal entry, and never commits or pushes.
+
+The command refuses an unknown superseded Spec, an unknown superseding Spec, a
+self-supersession, or a Spec that already carries a supersession. Exit `0`
+means the amendment was recorded, exit `1` means the write failed, and exit
+`2` means Preflight Validation failed.
+
 ## Archive Command
 
-Use `roundfix archive <slug>` only after a Spec's Tasks are completed and the
-newest QA Report is archive-eligible: either `verdict: pass`, or a `partial`
-verdict whose only unmet rows are declared unreachable and fully covered by the
-Spec's `## Unreachable Acceptance` declarations. The command is
+Use `roundfix archive <slug>` after a Spec's Tasks are completed and the newest
+QA Report is archive-eligible: either `verdict: pass`, or a `partial` verdict
+whose only unmet rows are declared unreachable and fully covered by the Spec's
+`## Unreachable Acceptance` declarations. For a Spec without a Task Graph, a
+recorded supersession is accepted in place of those completed Tasks and the
+passing gate. Every other archive precondition still applies, and a Spec with
+a Task Graph keeps its existing evidence rules. The command is
 non-interactive, creates no Run, and never pushes. Before touching the
 filesystem, it verifies every Task in the Spec's Task Graph has
 `status: completed` and that the newest QA Report meets that eligibility

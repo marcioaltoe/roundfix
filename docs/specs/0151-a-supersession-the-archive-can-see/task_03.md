@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0151-a-supersession-the-archive-can-see
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -54,3 +54,24 @@ that changes it.
 ## References
 
 - [_authorization.md](_authorization.md) — Approved bounded mutation
+
+## Result
+
+Implemented the documentation slice:
+
+- The canonical Roundfix skill now documents `roundfix supersede`, including
+  the amendment-vs-status/note rule, options, exit codes, refusal cases, and
+  archive's recorded-supersession proof with all other preconditions retained.
+- The distributed `skills/roundfix/SKILL.md` mirror was regenerated with
+  `make skills-sync`.
+- The user guide documents the command beside the Spec lifecycle commands,
+  including its options, exit codes, refusal cases, and archive interaction.
+
+Focused checks after the edits:
+
+- `make skills-sync` — passed.
+- `cmp -s .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` — passed;
+  canonical and distributed skill files match.
+- `git diff --check` — passed.
+
+The declared Verification command was not run; the Daemon owns that gate.
