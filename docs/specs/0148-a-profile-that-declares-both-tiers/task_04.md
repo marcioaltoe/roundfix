@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0148-a-profile-that-declares-both-tiers
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
