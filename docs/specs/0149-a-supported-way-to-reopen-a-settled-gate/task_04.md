@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0149-a-supported-way-to-reopen-a-settled-gate
-status: completed
+status: pending
 type: qa
 complexity: high
 ---
@@ -72,3 +72,9 @@ Acceptance evidence; Declared intentional breaks; Regression locks;
 - Date: `2026-09-19`
 - QA Report: `qa/qa-report-2026-09-19.md`
 - Dependencies not completed: `task_05`
+
+## Invalidation
+
+- Date: `2026-09-19`
+- QA Report: `qa/qa-report-2026-09-19-01.md`
+- Dependencies not completed: `task_06`
