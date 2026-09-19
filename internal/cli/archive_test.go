@@ -1,5 +1,10 @@
 package cli
 
+// Suite: archive command
+// Invariant: archive accepts only a valid completion proof and preserves the Spec's files when moving it to history.
+// Boundary IN: public CLI behavior, archive eligibility, filesystem movement, streams, and exit codes.
+// Boundary OUT: supersession creation and validation, which are owned by supersede_test.go and internal/spec/supersession_test.go.
+
 import (
 	"bytes"
 	"context"
@@ -7,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -22,6 +28,135 @@ func archiveTestPath(kind spec.ArchiveKind, elements ...string) string {
 
 func archiveTestRepositoryPath(repoRoot string, kind spec.ArchiveKind, elements ...string) string {
 	return filepath.Join(repoRoot, filepath.FromSlash(archiveTestPath(kind, elements...)))
+}
+
+func TestArchiveAcceptsARecordedSupersession(t *testing.T) {
+	const supersession = "---\nsuperseded_by: 0002-delivered-widget\ndate: 2026-09-19\nreason: delivered elsewhere\n---\n\nSpec 0002 delivered this Spec's content.\n"
+
+	t.Run("no Task Graph with supersession archives byte-identically", func(t *testing.T) {
+		homeDir, repoDir := newImplementWorkspace(t, nil)
+		specDir := filepath.Join(repoDir, "docs", "specs", implementTestSlug)
+		if err := os.Remove(filepath.Join(specDir, "_tasks.md")); err != nil {
+			t.Fatalf("remove Task Graph: %v", err)
+		}
+		mustWrite(t, filepath.Join(specDir, spec.SupersessionFilename), supersession)
+		before := snapshotDirectoryFiles(t, specDir)
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
+
+		if code != exitOK {
+			t.Fatalf("archive exit = %d, want %d; stderr=%q stdout=%q", code, exitOK, stderr.String(), stdout.String())
+		}
+		if stderr.String() != "" {
+			t.Fatalf("archive stderr = %q, want empty", stderr.String())
+		}
+		archivedDir := archiveTestRepositoryPath(repoDir, spec.ArchiveKindSpec, implementTestSlug)
+		assertPathMissing(t, specDir)
+		after := snapshotDirectoryFiles(t, archivedDir)
+		if !reflect.DeepEqual(after, before) {
+			t.Fatalf("archive changed superseded Spec files\nbefore: %#v\nafter:  %#v", before, after)
+		}
+		assertNoRunDatabase(t, homeDir)
+	})
+
+	t.Run("no Task Graph without supersession keeps the missing manifest refusal", func(t *testing.T) {
+		homeDir, repoDir := newImplementWorkspace(t, nil)
+		specDir := filepath.Join(repoDir, "docs", "specs", implementTestSlug)
+		if err := os.Remove(filepath.Join(specDir, "_tasks.md")); err != nil {
+			t.Fatalf("remove Task Graph: %v", err)
+		}
+		before := snapshotDirectoryFiles(t, specDir)
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
+
+		if code != exitPreflight {
+			t.Fatalf("archive exit = %d, want %d; stderr=%q", code, exitPreflight, stderr.String())
+		}
+		if stdout.String() != "" {
+			t.Fatalf("archive stdout = %q, want empty", stdout.String())
+		}
+		if !strings.Contains(stderr.String(), "file does not exist; run the write-tasks workflow to create the Task Graph") {
+			t.Fatalf("archive stderr = %q, want missing-Task-Graph reason", stderr.String())
+		}
+		if after := snapshotDirectoryFiles(t, specDir); !reflect.DeepEqual(after, before) {
+			t.Fatalf("refused archive changed active Spec\nbefore: %#v\nafter:  %#v", before, after)
+		}
+		assertNoRunDatabase(t, homeDir)
+	})
+
+	t.Run("supersession keeps the destination collision precondition", func(t *testing.T) {
+		homeDir, repoDir := newImplementWorkspace(t, nil)
+		specDir := filepath.Join(repoDir, "docs", "specs", implementTestSlug)
+		if err := os.Remove(filepath.Join(specDir, "_tasks.md")); err != nil {
+			t.Fatalf("remove Task Graph: %v", err)
+		}
+		mustWrite(t, filepath.Join(specDir, spec.SupersessionFilename), supersession)
+		before := snapshotDirectoryFiles(t, specDir)
+		archivedDir := archiveTestRepositoryPath(repoDir, spec.ArchiveKindSpec, implementTestSlug)
+		mustMkdir(t, archivedDir)
+		mustWrite(t, filepath.Join(archivedDir, "existing.md"), "preserve destination\n")
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
+
+		if code != exitPreflight {
+			t.Fatalf("archive exit = %d, want %d; stderr=%q", code, exitPreflight, stderr.String())
+		}
+		if stdout.String() != "" {
+			t.Fatalf("archive stdout = %q, want empty", stdout.String())
+		}
+		if !strings.Contains(stderr.String(), "archived Spec destination") || !strings.Contains(stderr.String(), "already exists") {
+			t.Fatalf("archive stderr = %q, want destination collision refusal", stderr.String())
+		}
+		if after := snapshotDirectoryFiles(t, specDir); !reflect.DeepEqual(after, before) {
+			t.Fatalf("destination refusal changed active Spec\nbefore: %#v\nafter:  %#v", before, after)
+		}
+		if got := mustRead(t, filepath.Join(archivedDir, "existing.md")); got != "preserve destination\n" {
+			t.Fatalf("destination marker = %q, want preserved content", got)
+		}
+		assertNoRunDatabase(t, homeDir)
+	})
+
+	for _, withSupersession := range []bool{false, true} {
+		name := "without supersession"
+		if withSupersession {
+			name = "with supersession"
+		}
+		t.Run("Task Graph keeps its incomplete-Task refusal "+name, func(t *testing.T) {
+			homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+				{id: "task_01", title: "Build the widget core", status: string(spec.StatusPending)},
+			})
+			writeArchiveQAReport(t, repoDir, spec.VerdictPass)
+			specDir := filepath.Join(repoDir, "docs", "specs", implementTestSlug)
+			if withSupersession {
+				mustWrite(t, filepath.Join(specDir, spec.SupersessionFilename), supersession)
+			}
+			before := snapshotDirectoryFiles(t, specDir)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("archive exit = %d, want %d; stderr=%q", code, exitPreflight, stderr.String())
+			}
+			if stdout.String() != "" {
+				t.Fatalf("archive stdout = %q, want empty", stdout.String())
+			}
+			if !strings.Contains(stderr.String(), `Task "task_01" is "pending"; archive requires every Task to be "completed"`) {
+				t.Fatalf("archive stderr = %q, want incomplete-Task refusal", stderr.String())
+			}
+			if after := snapshotDirectoryFiles(t, specDir); !reflect.DeepEqual(after, before) {
+				t.Fatalf("refused archive changed active Spec\nbefore: %#v\nafter:  %#v", before, after)
+			}
+			assertNoRunDatabase(t, homeDir)
+		})
+	}
 }
 
 func TestRunArchiveMovesCompletedSpecAndStampsMetadata(t *testing.T) {
@@ -371,7 +506,12 @@ func TestRunArchiveHelp(t *testing.T) {
 	for _, want := range []string{
 		"Usage:",
 		"roundfix archive <slug>",
-		"covered only by declared Unreachable Acceptance",
+		"covered only by declared",
+		"Unreachable Acceptance",
+		"recorded",
+		"supersession",
+		"a superseded Spec",
+		"moves unchanged",
 		"archive creates no Run and",
 		"never pushes",
 	} {

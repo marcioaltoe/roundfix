@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0151-a-supersession-the-archive-can-see
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -53,3 +53,43 @@ without loosening the first.
 ## References
 
 - [_techspec.md](_techspec.md) — What archive changes
+
+## Result
+
+Implemented archive's second proof only for an active Spec whose Task Graph is
+missing. Archive now validates that Spec's `_supersession.md`, retains the
+existing missing-Task-Graph refusal when no record exists, and never consults a
+supersession when a Task Graph loads. The supersession path applies the existing
+destination checks and moves the directory without stamping or rewriting its
+PRD. Archive help now describes both proof paths and the byte-preserving move.
+
+Focused checks:
+
+- Before the production change,
+  `rtk env GOCACHE=/private/tmp/roundfix-task02-go-cache go test -count=1 -run '^TestArchiveAcceptsARecordedSupersession$' ./internal/cli`
+  failed because the recorded-supersession fixture still returned the existing
+  missing-Task-Graph refusal.
+- After the final edit,
+  `rtk env GOCACHE=/private/tmp/roundfix-task02-go-cache go test -count=1 -run '^(TestArchiveAcceptsARecordedSupersession|TestRunArchiveMovesCompletedSpecAndStampsMetadata|TestRunArchiveRefusesIncompleteTask|TestRunArchiveRefusesMissingOrNonPassingQA|TestRunArchiveHelp)$' ./internal/cli`
+  exited 0.
+- `rtk env GOCACHE=/private/tmp/roundfix-task02-go-cache go test -count=1 ./internal/spec`
+  exited 0.
+- `rtk git diff --check` exited 0.
+
+Acceptance evidence:
+
+- `TestArchiveAcceptsARecordedSupersession/no_Task_Graph_with_supersession_archives_byte-identically`
+  exercised a valid record with no Task Graph and observed archive exit 0.
+- `TestArchiveAcceptsARecordedSupersession/no_Task_Graph_without_supersession_keeps_the_missing_manifest_refusal`
+  observed exit 2 with the unchanged `file does not exist; run the write-tasks
+  workflow to create the Task Graph` reason and no filesystem mutation.
+- The two `Task_Graph_keeps_its_incomplete-Task_refusal` cases observed the
+  same incomplete-Task refusal with and without `_supersession.md`; the focused
+  regression set also exercised the existing completed-Task and QA paths.
+- The accepted supersession case snapshots every file before the command and
+  compares the archived directory byte-for-byte afterward. The destination
+  collision case separately proves the supersession path keeps that precondition
+  and leaves both source and destination content unchanged on refusal.
+
+The Task's declared `## Verification` command was not run; the Daemon owns that
+check and settlement.

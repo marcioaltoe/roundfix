@@ -15,13 +15,14 @@ import (
 var archiveUsage = `Usage:
   roundfix archive <slug>
 
-Archives a completed Spec after verifying every Task is completed and the
-newest QA Report has verdict: pass or a partial verdict whose blocked rows are
-covered only by declared Unreachable Acceptance. Stamps archive metadata and
-moves the Spec from the configured Spec Root to its resolved archive root: the
-repository's default docs/history/specs/<slug>/ when the Spec Root is the built-in
-docs/specs, otherwise <spec-root>/_archived/<slug>/ beside the configured Spec
-Root. archive creates no Run and never pushes.
+Archives a Spec after verifying either every Task is completed and the newest
+QA Report has verdict: pass (or a partial verdict covered only by declared
+Unreachable Acceptance), or a recorded supersession exists for a Spec without
+a Task Graph. Stamps archive metadata on the Task Graph path; a superseded Spec
+moves unchanged. The destination is the repository's default
+docs/history/specs/<slug>/ when the Spec Root is the built-in docs/specs,
+otherwise <spec-root>/_archived/<slug>/ beside the configured Spec Root.
+archive creates no Run and never pushes.
 
 Exit codes:
   0  archived
