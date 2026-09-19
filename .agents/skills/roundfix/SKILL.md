@@ -1997,6 +1997,9 @@ not stale — that is, when it is not completed or every dependency is still
 completed. It creates no Run, writes no Run Event Journal entry, and never
 commits or pushes.
 
+Immediately before it writes, reopen rechecks the gate's staleness and refuses
+with exit 2 when the gate changed since preflight.
+
 Flags:
 
 - `--spec` — Spec slug under the configured Spec Root.

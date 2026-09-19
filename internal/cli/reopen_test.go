@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -20,6 +21,111 @@ import (
 // Invariant: reopen mutates only a completed terminal QA gate whose dependency closure is stale.
 // Boundary IN: public CLI dispatch, configured Spec Root, task status and invalidation record.
 // Boundary OUT: Daemon execution and publication, which reopen must never start.
+func TestReopenThroughTheBuiltBinary(t *testing.T) {
+	t.Parallel()
+	projectRoot, err := filepath.Abs(filepath.Join("..", ".."))
+	if err != nil {
+		t.Fatalf("resolve project root: %v", err)
+	}
+	binary := filepath.Join(t.TempDir(), "roundfix")
+	build := exec.Command("go", "build", "-buildvcs=false", "-o", binary, "./cmd/roundfix")
+	build.Dir = projectRoot
+	build.Env = isolatedGitEnvForTest()
+	if output, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("build roundfix CLI: %v\n%s", err, output)
+	}
+
+	run := func(t *testing.T, binary string, homeDir string, repoDir string) (string, string, int) {
+		t.Helper()
+		command := exec.Command(binary, "reopen", "--spec", implementTestSlug)
+		command.Dir = repoDir
+		command.Env = withEnvValue(isolatedGitEnvForTest(), "HOME", homeDir)
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+		command.Stdout = &stdout
+		command.Stderr = &stderr
+		err := command.Run()
+		return stdout.String(), stderr.String(), exitCodeFromWait(err)
+	}
+
+	t.Run("reopens a stale gate without changing its QA Report", func(t *testing.T) {
+		homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+			{id: "task_01", status: string(spec.StatusPending)},
+			implementQAGateSeed(string(spec.StatusCompleted), "task_01"),
+		})
+		reportPath := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "qa", "qa-report-2026-09-18.md")
+		before := []byte("---\nverdict: pass\n---\n\n# QA Report\n\nPrior evidence.\n")
+		mustMkdir(t, filepath.Dir(reportPath))
+		if err := os.WriteFile(reportPath, before, 0o644); err != nil {
+			t.Fatalf("write prior QA Report: %v", err)
+		}
+
+		stdout, stderr, code := run(t, binary, homeDir, repoDir)
+
+		if code != exitOK || stderr != "" || !strings.Contains(stdout, "reopened task_qa pending") {
+			t.Fatalf("built reopen exit=%d stdout=%q stderr=%q, want stale gate reopened", code, stdout, stderr)
+		}
+		if got := mustRead(t, implementTaskPath(repoDir, "task_qa")); !strings.Contains(got, "status: pending") {
+			t.Fatalf("built reopen did not reset QA Task to pending:\n%s", got)
+		}
+		after, err := os.ReadFile(reportPath)
+		if err != nil {
+			t.Fatalf("read prior QA Report after reopen: %v", err)
+		}
+		if !bytes.Equal(after, before) {
+			t.Fatalf("built reopen changed QA Report bytes:\nbefore=%q\nafter=%q", before, after)
+		}
+	})
+
+	t.Run("refuses a healthy gate", func(t *testing.T) {
+		homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+			{id: "task_01", status: string(spec.StatusCompleted)},
+			implementQAGateSeed(string(spec.StatusCompleted), "task_01"),
+		})
+
+		stdout, stderr, code := run(t, binary, homeDir, repoDir)
+
+		if code != exitPreflight || stdout != "" || !strings.Contains(stderr, "not stale") || !strings.Contains(stderr, "every dependency is completed") {
+			t.Fatalf("built reopen exit=%d stdout=%q stderr=%q, want healthy-gate refusal", code, stdout, stderr)
+		}
+	})
+
+	t.Run("writes through a symlinked Task path", func(t *testing.T) {
+		homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+			{id: "task_01", status: string(spec.StatusPending)},
+			implementQAGateSeed(string(spec.StatusCompleted), "task_01"),
+		})
+		taskPath := implementTaskPath(repoDir, "task_qa")
+		targetPath := filepath.Join(repoDir, "docs", "specs", "targets", "task_qa.md")
+		mustMkdir(t, filepath.Dir(targetPath))
+		if err := os.Rename(taskPath, targetPath); err != nil {
+			t.Fatalf("move QA Task to symlink target: %v", err)
+		}
+		if err := os.Symlink(targetPath, taskPath); err != nil {
+			t.Fatalf("link QA Task path to target: %v", err)
+		}
+		reportPath := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "qa", "qa-report-2026-09-18.md")
+		mustMkdir(t, filepath.Dir(reportPath))
+		mustWrite(t, reportPath, "---\nverdict: pass\n---\n")
+
+		stdout, stderr, code := run(t, binary, homeDir, repoDir)
+
+		if code != exitOK || stderr != "" || !strings.Contains(stdout, "reopened task_qa pending") {
+			t.Fatalf("built reopen exit=%d stdout=%q stderr=%q, want symlinked Task reopened", code, stdout, stderr)
+		}
+		if got := mustRead(t, targetPath); !strings.Contains(got, "status: pending") {
+			t.Fatalf("built reopen did not rewrite symlink target:\n%s", got)
+		}
+		info, err := os.Lstat(taskPath)
+		if err != nil {
+			t.Fatalf("lstat QA Task path: %v", err)
+		}
+		if info.Mode()&os.ModeSymlink == 0 {
+			t.Fatalf("QA Task path mode = %v, want symlink", info.Mode())
+		}
+	})
+}
+
 func TestReopenStaleGatePreservesEvidence(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
@@ -66,6 +172,157 @@ func TestReopenStaleGatePreservesEvidence(t *testing.T) {
 		t.Fatalf("spec.Load after reopen: %v", err)
 	}
 	assertNoRunDatabase(t, homeDir)
+}
+
+func TestReopenStaleGatePreservesSymlinkedTaskPath(t *testing.T) {
+	t.Parallel()
+	_, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", status: string(spec.StatusPending)},
+		implementQAGateSeed(string(spec.StatusCompleted), "task_01"),
+	})
+	taskPath := implementTaskPath(repoDir, "task_qa")
+	targetPath := filepath.Join(repoDir, "docs", "specs", "targets", "task_qa.md")
+	mustMkdir(t, filepath.Dir(targetPath))
+	if err := os.Rename(taskPath, targetPath); err != nil {
+		t.Fatalf("move QA Task to symlink target: %v", err)
+	}
+	if err := os.Symlink(targetPath, taskPath); err != nil {
+		t.Fatalf("link QA Task path to target: %v", err)
+	}
+	reportPath := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "qa", "qa-report-2026-09-18.md")
+	mustMkdir(t, filepath.Dir(reportPath))
+	mustWrite(t, reportPath, "---\nverdict: pass\n---\n")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := runCLIContext(t, context.Background(), []string{"reopen", "--spec", implementTestSlug}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("reopen exit = %d, want %d; stderr=%q stdout=%q", code, exitOK, stderr.String(), stdout.String())
+	}
+	if got := mustRead(t, targetPath); !strings.Contains(got, "status: pending") {
+		t.Fatalf("symlink target status was not rewritten to pending:\n%s", got)
+	}
+	info, err := os.Lstat(taskPath)
+	if err != nil {
+		t.Fatalf("lstat QA Task path: %v", err)
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		t.Fatalf("QA Task path mode = %v, want symlink", info.Mode())
+	}
+}
+
+func TestDeriveReopenPlanCarriesTheValidatedTaskTarget(t *testing.T) {
+	t.Parallel()
+	_, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", status: string(spec.StatusPending)},
+		implementQAGateSeed(string(spec.StatusCompleted), "task_01"),
+	})
+	taskPath := implementTaskPath(repoDir, "task_qa")
+	targetPath := filepath.Join(repoDir, "docs", "specs", "targets", "task_qa.md")
+	mustMkdir(t, filepath.Dir(targetPath))
+	if err := os.Rename(taskPath, targetPath); err != nil {
+		t.Fatalf("move QA Task to symlink target: %v", err)
+	}
+	if err := os.Symlink(targetPath, taskPath); err != nil {
+		t.Fatalf("link QA Task path to target: %v", err)
+	}
+	reportPath := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "qa", "qa-report-2026-09-18.md")
+	mustMkdir(t, filepath.Dir(reportPath))
+	mustWrite(t, reportPath, "---\nverdict: pass\n---\n")
+
+	plan, err := deriveReopenPlan(filepath.Join(repoDir, "docs", "specs"), implementTestSlug)
+	if err != nil {
+		t.Fatalf("derive reopen plan: %v", err)
+	}
+	if plan.qaTaskPath != targetPath {
+		t.Fatalf("QA Task path = %q, want validated target %q", plan.qaTaskPath, targetPath)
+	}
+}
+
+func TestReopenRefusesWhenTheGateChangedBeforeTheWrite(t *testing.T) {
+	t.Parallel()
+	_, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", status: string(spec.StatusPending)},
+		implementQAGateSeed(string(spec.StatusCompleted), "task_01"),
+	})
+	taskPath := implementTaskPath(repoDir, "task_qa")
+	before := mustRead(t, taskPath)
+	reportPath := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "qa", "qa-report-2026-09-18.md")
+	mustMkdir(t, filepath.Dir(reportPath))
+	mustWrite(t, reportPath, "---\nverdict: pass\n---\n")
+	environment := commandEnvironmentForTest(t)
+
+	var preflightStderr bytes.Buffer
+	plan, err := preflightReopen(context.Background(), implementTestSlug, &preflightStderr, environment)
+	if err != nil {
+		t.Fatalf("preflight reopen: %v; stderr=%q", err, preflightStderr.String())
+	}
+	if err := spec.SetStatus(implementTaskPath(repoDir, "task_01"), spec.StatusCompleted); err != nil {
+		t.Fatalf("complete stale dependency: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := reopenFromPlan(context.Background(), implementTestSlug, plan, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("reopen exit = %d, want %d; stderr=%q", code, exitPreflight, stderr.String())
+	}
+	if stdout.String() != "" {
+		t.Fatalf("refusal stdout = %q, want empty", stdout.String())
+	}
+	for _, want := range []string{"gate changed after preflight", "task_qa", "not stale", "every dependency is completed"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("refusal stderr = %q, want %q", stderr.String(), want)
+		}
+	}
+	if got := mustRead(t, taskPath); got != before {
+		t.Fatalf("QA Task changed after stale gate settled:\n%s", got)
+	}
+}
+
+func TestReopenRefusesWhenTheStaleDependencySetChangedBeforeTheWrite(t *testing.T) {
+	t.Parallel()
+	_, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", status: string(spec.StatusPending)},
+		{id: "task_02", status: string(spec.StatusPending)},
+		implementQAGateSeed(string(spec.StatusCompleted), "task_01", "task_02"),
+	})
+	taskPath := implementTaskPath(repoDir, "task_qa")
+	before := mustRead(t, taskPath)
+	reportPath := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "qa", "qa-report-2026-09-18.md")
+	mustMkdir(t, filepath.Dir(reportPath))
+	mustWrite(t, reportPath, "---\nverdict: pass\n---\n")
+	environment := commandEnvironmentForTest(t)
+
+	var preflightStderr bytes.Buffer
+	plan, err := preflightReopen(context.Background(), implementTestSlug, &preflightStderr, environment)
+	if err != nil {
+		t.Fatalf("preflight reopen: %v; stderr=%q", err, preflightStderr.String())
+	}
+	if err := spec.SetStatus(implementTaskPath(repoDir, "task_01"), spec.StatusCompleted); err != nil {
+		t.Fatalf("complete one stale dependency: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := reopenFromPlan(context.Background(), implementTestSlug, plan, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("reopen exit = %d, want %d; stderr=%q", code, exitPreflight, stderr.String())
+	}
+	if stdout.String() != "" {
+		t.Fatalf("refusal stdout = %q, want empty", stdout.String())
+	}
+	for _, want := range []string{"gate changed after preflight", "stale dependencies", "task_01", "task_02"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("refusal stderr = %q, want %q", stderr.String(), want)
+		}
+	}
+	if got := mustRead(t, taskPath); got != before {
+		t.Fatalf("QA Task changed after stale dependency set changed:\n%s", got)
+	}
 }
 
 func TestReopenRefusesPendingQATaskWithoutMutation(t *testing.T) {

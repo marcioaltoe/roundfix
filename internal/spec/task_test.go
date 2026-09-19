@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestSetStatusRewritesOnlyTheStatusValue(t *testing.T) {
@@ -142,6 +143,78 @@ spec: demo
 				t.Errorf("file changed after failed SetStatus")
 			}
 		})
+	}
+}
+
+func TestReopenGateWritesToTheValidatedTarget(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	validatedTarget := filepath.Join(root, "targets", "validated", "task_qa.md")
+	writeFile(t, validatedTarget, md(`---
+task: task_qa
+spec: demo
+status: completed
+type: qa
+complexity: low
+---
+
+# Task QA: Verify the feature
+
+## Verification
+
+- 'go test ./...' — expected: pass.
+`))
+	unvalidatedTarget := filepath.Join(root, "targets", "unvalidated", "task_qa.md")
+	const unvalidatedContent = "unvalidated target must stay unchanged\n"
+	writeFile(t, unvalidatedTarget, unvalidatedContent)
+	taskPath := filepath.Join(root, "demo", "task_qa.md")
+	if err := os.MkdirAll(filepath.Dir(taskPath), 0o755); err != nil {
+		t.Fatalf("create Task directory: %v", err)
+	}
+	if err := os.Symlink(validatedTarget, taskPath); err != nil {
+		t.Fatalf("link Task path to target: %v", err)
+	}
+	resolvedTarget, err := filepath.EvalSymlinks(taskPath)
+	if err != nil {
+		t.Fatalf("resolve validated Task target: %v", err)
+	}
+	if err := os.Remove(taskPath); err != nil {
+		t.Fatalf("remove original Task symlink: %v", err)
+	}
+	if err := os.Symlink(unvalidatedTarget, taskPath); err != nil {
+		t.Fatalf("redirect Task symlink after validation: %v", err)
+	}
+
+	if err := ReopenGate(resolvedTarget, "qa/qa-report-2026-09-19.md", []string{"task_01"}, time.Date(2026, 9, 19, 0, 0, 0, 0, time.UTC)); err != nil {
+		t.Fatalf("ReopenGate: %v", err)
+	}
+
+	targetBytes, err := os.ReadFile(validatedTarget)
+	if err != nil {
+		t.Fatalf("read validated target Task: %v", err)
+	}
+	target := string(targetBytes)
+	if !strings.Contains(target, "status: pending") {
+		t.Fatalf("validated target status was not rewritten to pending:\n%s", target)
+	}
+	if !strings.Contains(target, "- QA Report: `qa/qa-report-2026-09-19.md`") {
+		t.Fatalf("target does not record the invalidated QA Report:\n%s", target)
+	}
+	if !strings.Contains(target, "- Dependencies not completed: `task_01`") {
+		t.Fatalf("target does not record the stale dependency:\n%s", target)
+	}
+	if got, err := os.ReadFile(unvalidatedTarget); err != nil {
+		t.Fatalf("read unvalidated target Task: %v", err)
+	} else if string(got) != unvalidatedContent {
+		t.Fatalf("unvalidated target changed:\n%s", got)
+	}
+	info, err := os.Lstat(taskPath)
+	if err != nil {
+		t.Fatalf("lstat Task path: %v", err)
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		t.Fatalf("Task path mode = %v, want symlink", info.Mode())
 	}
 }
 
