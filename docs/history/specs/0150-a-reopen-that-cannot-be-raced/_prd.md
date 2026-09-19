@@ -1,9 +1,12 @@
 ---
 spec: 0150-a-reopen-that-cannot-be-raced
-status: active
+status: archived
 created: 2026-09-19
 surfaces: [backend, cli, docs]
+archived: "2026-09-19"
+source_slug: 0150-a-reopen-that-cannot-be-raced
 ---
+
 
 # A reopen that cannot be raced
 
