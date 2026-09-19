@@ -228,7 +228,11 @@ func appendGateInvalidation(content []byte, reportPath string, taskIDs []string,
 }
 
 func replaceTaskFile(path string, content []byte, mode os.FileMode) (returnErr error) {
-	temporary, err := os.CreateTemp(filepath.Dir(path), ".roundfix-task-*.tmp")
+	resolvedPath, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return fmt.Errorf("resolve Task file path %q: %w", path, err)
+	}
+	temporary, err := os.CreateTemp(filepath.Dir(resolvedPath), ".roundfix-task-*.tmp")
 	if err != nil {
 		return err
 	}
@@ -253,7 +257,7 @@ func replaceTaskFile(path string, content []byte, mode os.FileMode) (returnErr e
 	if err := temporary.Close(); err != nil {
 		return fmt.Errorf("close temporary Task file: %w", err)
 	}
-	if err := os.Rename(temporaryPath, path); err != nil {
+	if err := os.Rename(temporaryPath, resolvedPath); err != nil {
 		return err
 	}
 	replaced = true

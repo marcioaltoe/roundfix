@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestSetStatusRewritesOnlyTheStatusValue(t *testing.T) {
@@ -142,6 +143,60 @@ spec: demo
 				t.Errorf("file changed after failed SetStatus")
 			}
 		})
+	}
+}
+
+func TestReopenGateWritesThroughASymlinkedTaskPath(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	targetPath := filepath.Join(root, "targets", "task_qa.md")
+	writeFile(t, targetPath, md(`---
+task: task_qa
+spec: demo
+status: completed
+type: qa
+complexity: low
+---
+
+# Task QA: Verify the feature
+
+## Verification
+
+- 'go test ./...' — expected: pass.
+`))
+	taskPath := filepath.Join(root, "demo", "task_qa.md")
+	if err := os.MkdirAll(filepath.Dir(taskPath), 0o755); err != nil {
+		t.Fatalf("create Task directory: %v", err)
+	}
+	if err := os.Symlink(targetPath, taskPath); err != nil {
+		t.Fatalf("link Task path to target: %v", err)
+	}
+
+	if err := ReopenGate(taskPath, "qa/qa-report-2026-09-19.md", []string{"task_01"}, time.Date(2026, 9, 19, 0, 0, 0, 0, time.UTC)); err != nil {
+		t.Fatalf("ReopenGate: %v", err)
+	}
+
+	targetBytes, err := os.ReadFile(targetPath)
+	if err != nil {
+		t.Fatalf("read target Task: %v", err)
+	}
+	target := string(targetBytes)
+	if !strings.Contains(target, "status: pending") {
+		t.Fatalf("target status was not rewritten to pending:\n%s", target)
+	}
+	if !strings.Contains(target, "- QA Report: `qa/qa-report-2026-09-19.md`") {
+		t.Fatalf("target does not record the invalidated QA Report:\n%s", target)
+	}
+	if !strings.Contains(target, "- Dependencies not completed: `task_01`") {
+		t.Fatalf("target does not record the stale dependency:\n%s", target)
+	}
+	info, err := os.Lstat(taskPath)
+	if err != nil {
+		t.Fatalf("lstat Task path: %v", err)
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		t.Fatalf("Task path mode = %v, want symlink", info.Mode())
 	}
 }
 

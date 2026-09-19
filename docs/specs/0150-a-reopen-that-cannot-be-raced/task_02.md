@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0150-a-reopen-that-cannot-be-raced
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -32,16 +32,16 @@ while making the write atomic, so it is repaired here.
 
 ## Subtasks
 
-- [ ] Resolve the final path in the replacement helper.
-- [ ] Add a test that reopens through a symlinked Task path.
-- [ ] Confirm the confinement checks still refuse an escaping path.
+- [x] Resolve the final path in the replacement helper.
+- [x] Add a test that reopens through a symlinked Task path.
+- [x] Confirm the confinement checks still refuse an escaping path.
 
 ## Acceptance Criteria
 
-- [ ] A fixture whose Task path is a symlink to a file inside the Spec Root has
+- [x] A fixture whose Task path is a symlink to a file inside the Spec Root has
       the target rewritten to `pending` with the invalidation recorded.
-- [ ] That path is still a symlink afterwards.
-- [ ] The escaping-path refusals Spec 0149 shipped still refuse.
+- [x] That path is still a symlink afterwards.
+- [x] The escaping-path refusals Spec 0149 shipped still refuse.
 
 ## Context
 
@@ -55,3 +55,37 @@ while making the write atomic, so it is repaired here.
 ## References
 
 - [_techspec.md](_techspec.md) — The symlinked path
+
+## Result
+
+### Implementation
+
+- `replaceTaskFile` resolves the final Task file path before creating the
+  temporary file and uses that resolved path as the rename destination. The
+  temporary file therefore remains beside the replacement target, preserving
+  the atomic same-directory rename while leaving a symlinked Task path intact.
+- `TestReopenGateWritesThroughASymlinkedTaskPath` exercises `ReopenGate` through
+  a symlink and inspects the real target plus the link's filesystem mode.
+- The existing lexical Spec-directory and resolved Spec-Root confinement checks
+  were not changed.
+
+### Focused checks
+
+- Before the implementation change,
+  `rtk env GOCACHE=/tmp/roundfix-task02-go-cache go test -count=1 -v ./internal/spec -run 'TestReopenGateWritesThroughASymlinkedTaskPath$'`
+  failed because the target remained `status: completed`.
+- After the implementation change,
+  `rtk env GOCACHE=/tmp/roundfix-task02-go-cache go test -count=1 -v ./internal/spec ./internal/cli -run '^(TestReopenGateWritesThroughASymlinkedTaskPath|TestReopenRefusesQATaskResolvedOutsideSpecRoot|TestReopenRejectsAManifestPathOutsideTheSpecDirectory)$'`
+  passed in both packages.
+- The Task's declared Verification command was not run; the Daemon owns that
+  check and Task settlement.
+
+### Acceptance evidence
+
+- The symlink regression test observed `status: pending`, the invalidated QA
+  Report, and stale dependency `task_01` in the real target.
+- The same test used `os.Lstat` to confirm the manifest-addressed Task path
+  remained a symlink after `ReopenGate` returned.
+- `TestReopenRefusesQATaskResolvedOutsideSpecRoot` and
+  `TestReopenRejectsAManifestPathOutsideTheSpecDirectory` both passed, covering
+  the resolved Spec-Root and lexical Spec-directory refusals respectively.
