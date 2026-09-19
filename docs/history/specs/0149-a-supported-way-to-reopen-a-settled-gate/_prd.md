@@ -1,9 +1,12 @@
 ---
 spec: 0149-a-supported-way-to-reopen-a-settled-gate
-status: active
+status: archived
 created: 2026-09-19
 surfaces: [backend, cli, docs]
+archived: "2026-09-19"
+source_slug: 0149-a-supported-way-to-reopen-a-settled-gate
 ---
+
 
 # A supported way to reopen a settled gate
 
