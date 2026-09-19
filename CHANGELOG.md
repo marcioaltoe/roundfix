@@ -2,6 +2,58 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.15.0] - 2026-09-19
+
+### A Profile can declare both verification tiers
+
+A Profile could name only one verification command, yet two shipped clauses ask
+an Agent to run a fast, incremental check after its own slice and leave the
+complete gate to CI. The value those clauses named did not exist.
+
+`standard-typescript-monorepo` now declares `verification.incremental` alongside
+`verification.gate`, and the reader exposes both independently, each with its own
+source. Neither is derived from the other: changing one leaves the other exactly
+as it was, and a repository's explicit choice stays distinguishable from a
+catalog default. A Profile that declares no incremental tier reports it missing,
+never as an empty string and never as the gate's value.
+
+Publishing the decision into the generated guides is not part of this release;
+an Agent still reads only the complete gate there.
+
+### A settled QA gate can be reopened
+
+A terminal QA Task that settles `completed` records a verdict about the Task
+Graph as it stood. When a Task below it stopped being completed, the loader
+correctly reported the verdict invalidated — and nothing resolved it. Every
+command that loads the graph refused, and the only escape was to edit the QA
+Task's status by hand, which left no record that a verdict had been invalidated.
+
+`roundfix reopen --spec <slug>` is that missing operation. It proves staleness
+through the loader's own predicate rather than re-deriving it, so it can only
+undo a state the tooling itself calls invalid. It refuses a gate that is not
+settled, refuses a gate that is not stale, refuses a Spec value that is not a
+single directory name, and refuses while a Run is active through a read-only
+check of the Run Database.
+
+What it preserves matters as much as what it changes. The QA Report is never
+opened for writing, the QA Task keeps its prior Result, and the invalidation is
+recorded beside it with the date, the report path and the dependency ids that
+made the verdict stale.
+
+### A gate that runs the analyzer
+
+`go vet` joined the Verification composition, with a negative control that
+demonstrates the gate can refuse a diagnostic regression rather than merely
+asserting that it runs.
+
+### A planner that reads both tag spellings
+
+The Release Plan Command accepts a stable tag written with or without the `v`
+prefix and selects the highest reachable version across both. When that version
+exists under both spellings it refuses in preflight and names the selector that
+resolves it, rather than letting ref creation order decide. A proposal keeps the
+spelling of the tag it was selected from.
+
 ## [0.14.1] - 2026-09-18
 
 The 0.14.0 tag was created but never published: its release run stopped at the
