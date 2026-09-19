@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0149-a-supported-way-to-reopen-a-settled-gate
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -29,15 +29,15 @@ This Task adds the recovery seam. It changes no existing caller's behavior.
 
 ## Subtasks
 
-- [ ] Add the seam and its unit tests.
-- [ ] Assert that `Load` still refuses on a stale gate.
+- [x] Add the seam and its unit tests.
+- [x] Assert that `Load` still refuses on a stale gate.
 
 ## Acceptance Criteria
 
-- [ ] A fixture Spec with a completed QA Task above a pending dependency yields
+- [x] A fixture Spec with a completed QA Task above a pending dependency yields
       the QA Task's path and the stale dependency ids through the new seam.
-- [ ] The same fixture still makes `Load` return `StaleGateError`.
-- [ ] A healthy fixture yields no stale-gate answer.
+- [x] The same fixture still makes `Load` return `StaleGateError`.
+- [x] A healthy fixture yields no stale-gate answer.
 
 ## Context
 
@@ -53,3 +53,32 @@ This Task adds the recovery seam. It changes no existing caller's behavior.
 ## References
 
 - [_techspec.md](_techspec.md) — The condition
+
+## Result
+
+### Implementation
+
+- Added `LoadForRecovery`, which returns the loader's parsed graph alongside
+  its existing wrapped `StaleGateError`. Other validation failures still return
+  a nil graph.
+- Kept `Load` as the existing refusing surface: it delegates to the recovery
+  seam and discards the graph whenever any error is returned.
+
+### Focused checks
+
+- `rtk go test -count=1 -run 'Test(LoadForRecovery|LoadStillRefusesAStaleGate|GateStalenessCharacterizesEachVerdict)$' ./internal/spec`
+  passed: 10 tests in 1 package.
+- `rtk go test -count=1 ./internal/spec` passed: 457 tests in 1 package.
+- The first sandboxed focused-test attempt could not write the normal Go build
+  cache; the same command passed after the cache was made available.
+- The Daemon-owned commands under `## Verification` were not run.
+
+### Acceptance evidence
+
+1. `TestLoadForRecovery/returns_the_graph_with_the_loader's_stale_gate_error`
+   reads the QA Task path `demo/task_02.md` from the returned graph and the
+   stale dependency id `task_01` from `StaleGateError`.
+2. `TestLoadStillRefusesAStaleGate` proves `Load` returns a nil graph, preserves
+   the typed `StaleGateError`, and preserves the exact wrapped error message.
+3. `TestLoadForRecovery/returns_no_stale_gate_error_for_a_healthy_graph` proves
+   a completed dependency yields a graph with no error.

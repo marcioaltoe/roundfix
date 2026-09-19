@@ -428,6 +428,17 @@ func ListActiveDetailed(specsRoot string) ([]Spec, []SkippedSpec, error) {
 // Spec Root, returning the Tasks in deterministic topological order. Every
 // validation failure is a typed error naming the offending Task or check.
 func Load(specsRoot string, slug string) (*Graph, error) {
+	graph, err := LoadForRecovery(specsRoot, slug)
+	if err != nil {
+		return nil, err
+	}
+	return graph, nil
+}
+
+// LoadForRecovery behaves like Load, except a stale QA gate returns the parsed
+// Graph alongside StaleGateError so recovery callers can locate the QA Task.
+// Every other validation failure returns a nil Graph.
+func LoadForRecovery(specsRoot string, slug string) (*Graph, error) {
 	root := filepath.Clean(specsRoot)
 	dir := filepath.Join(root, slug)
 	if err := requireActive(slug, dir); err != nil {
@@ -472,16 +483,22 @@ func Load(specsRoot string, slug string) (*Graph, error) {
 		}
 		tasks = append(tasks, task)
 	}
-	if err := validateQAGate(manifestPath, nodes, tasks, qa); err != nil {
-		return nil, fmt.Errorf("validate qa gate: %w", err)
-	}
-	return &Graph{
+	graph := &Graph{
 		Spec:       Spec{Slug: slug, Dir: dir},
 		Tasks:      tasks,
 		QATaskID:   qa.TaskID,
 		QADeclined: qa.Declined,
 		QAReason:   qa.Reason,
-	}, nil
+	}
+	if err := validateQAGate(manifestPath, nodes, tasks, qa); err != nil {
+		wrapped := fmt.Errorf("validate qa gate: %w", err)
+		var stale StaleGateError
+		if errors.As(err, &stale) {
+			return graph, wrapped
+		}
+		return nil, wrapped
+	}
+	return graph, nil
 }
 
 func specDisplayDir(specsRoot string, slug string) string {
