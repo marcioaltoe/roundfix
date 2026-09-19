@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0149-a-supported-way-to-reopen-a-settled-gate
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -71,3 +71,37 @@ A further round of findings is a split or a reauthor, not a third correction.
 ## References
 
 - [_techspec.md](_techspec.md) — Risks & Considerations
+
+## Result
+
+Implementation:
+
+- `reopen` now checks the existing Run Database through a read-only Store and
+  refuses any Active Run for the Spec target or git root without orphan
+  reclamation, Agent Session force-stop, journal append, or Run mutation.
+- The QA Task path must be lexically inside the selected Spec directory before
+  the existing symlink-resolved Spec Root confinement check runs.
+- Regression coverage exercises a dead-owner Active Run through the real Run
+  Database and a lexical manifest escape that resolves through a symlink back
+  inside the Spec Root.
+
+Focused-check evidence:
+
+- Acceptance criterion 1: `rtk env GOCACHE=/tmp/roundfix-task06-go-cache go
+  test ./internal/cli -run
+  'Test(ReopenRefusesAnActiveRunWithoutReclaimingIt|ReopenRejectsAManifestPathOutsideTheSpecDirectory)$'`
+  passed. The Active Run test compares the complete Run record and Run Event
+  Journal before and after refusal.
+- Acceptance criterion 2: the same focused command passed. The manifest-path
+  test requires the `outside Spec directory` refusal and compares the escaped
+  QA Task bytes before and after the command.
+- Acceptance criterion 3: `rtk env GOCACHE=/tmp/roundfix-task06-go-cache go
+  test ./internal/cli -run '^TestReopen'` passed, covering the existing reopen
+  command suite unchanged alongside the two regressions.
+- Repository incremental check: `rtk env
+  GOCACHE=/tmp/roundfix-task06-go-cache make verify-incremental` passed with
+  process-table access. The first sandboxed attempt reached the suite but two
+  existing force-stop integration tests could not enumerate the process table;
+  the access-enabled rerun passed those tests and the full incremental gate.
+
+Daemon Verification commands were not run; the Daemon retains that gate.

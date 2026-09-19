@@ -271,6 +271,47 @@ func TestReopenRefusesQATaskResolvedOutsideSpecRoot(t *testing.T) {
 	}
 }
 
+func TestReopenRejectsAManifestPathOutsideTheSpecDirectory(t *testing.T) {
+	t.Parallel()
+	_, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", status: string(spec.StatusPending)},
+		implementQAGateSeed(string(spec.StatusCompleted), "task_01"),
+	})
+	specsRoot := filepath.Join(repoDir, "docs", "specs")
+	specDir := filepath.Join(specsRoot, implementTestSlug)
+	insideDir := filepath.Join(specDir, "inside")
+	mustMkdir(t, insideDir)
+	taskPath := filepath.Join(insideDir, "task_qa.md")
+	mustWrite(t, taskPath, mustRead(t, implementTaskPath(repoDir, "task_qa")))
+	if err := os.Symlink(insideDir, filepath.Join(specsRoot, "outside")); err != nil {
+		t.Fatalf("link lexical escape fixture: %v", err)
+	}
+	manifestPath := filepath.Join(specDir, "_tasks.md")
+	manifest := strings.Replace(mustRead(t, manifestPath), "file: task_qa.md", "file: ../outside/task_qa.md", 1)
+	mustWrite(t, manifestPath, manifest)
+	reportPath := filepath.Join(specDir, "qa", "qa-report-2026-09-18.md")
+	mustMkdir(t, filepath.Dir(reportPath))
+	mustWrite(t, reportPath, "---\nverdict: pass\n---\n")
+	before := mustRead(t, taskPath)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := runCLIContext(t, context.Background(), []string{"reopen", "--spec", implementTestSlug}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("reopen exit = %d, want %d; stderr=%q", code, exitPreflight, stderr.String())
+	}
+	if stdout.String() != "" {
+		t.Fatalf("reopen stdout = %q, want empty", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "outside Spec directory") {
+		t.Fatalf("reopen stderr = %q, want lexical Spec-directory confinement refusal", stderr.String())
+	}
+	if got := mustRead(t, taskPath); got != before {
+		t.Fatalf("escaped QA Task changed after confinement refusal:\n%s", got)
+	}
+}
+
 func TestReopenLeavesTheTaskUnchangedWhenTheRecordCannotBeWritten(t *testing.T) {
 	t.Parallel()
 	_, repoDir := newImplementWorkspace(t, []implementSeed{

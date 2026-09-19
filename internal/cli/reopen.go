@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"roundfix/internal/app"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/spec"
+	"roundfix/internal/store"
 )
 
 const reopenUsage = `Usage:
@@ -99,7 +101,7 @@ func preflightReopen(ctx context.Context, slug string, stderr io.Writer, environ
 	if err != nil {
 		return reopenPlan{}, err
 	}
-	if err := ensureNoSettleActiveRun(ctx, loaded.HomeDir, loaded.GitRoot, slug, stderr); err != nil {
+	if err := ensureNoReopenActiveRun(ctx, loaded.HomeDir, loaded.GitRoot, slug); err != nil {
 		return reopenPlan{}, err
 	}
 	graph, loadErr := spec.LoadForRecovery(resolvedSpecsRoot.Path, slug)
@@ -123,7 +125,8 @@ func preflightReopen(ctx context.Context, slug string, stderr io.Writer, environ
 		return reopenPlan{}, fmt.Errorf("format invalidated QA Report path: %w", err)
 	}
 	qaTaskPath := filepath.Join(resolvedSpecsRoot.Path, qaTask.File)
-	if err := ensureReopenTaskInsideSpecsRoot(resolvedSpecsRoot.Path, qaTaskPath); err != nil {
+	specDir := filepath.Join(resolvedSpecsRoot.Path, slug)
+	if err := ensureReopenTaskInsideSpecsRoot(resolvedSpecsRoot.Path, specDir, qaTaskPath); err != nil {
 		return reopenPlan{}, err
 	}
 	return reopenPlan{
@@ -134,7 +137,36 @@ func preflightReopen(ctx context.Context, slug string, stderr io.Writer, environ
 	}, nil
 }
 
-func ensureReopenTaskInsideSpecsRoot(specsRoot string, taskPath string) error {
+func ensureNoReopenActiveRun(ctx context.Context, homeDir string, gitRoot string, specSlug string) error {
+	if _, err := os.Stat(store.DatabasePath(homeDir)); errors.Is(err, os.ErrNotExist) {
+		return nil
+	} else if err != nil {
+		return validationError{message: fmt.Sprintf("inspect Run Database before reopen: %v", err)}
+	}
+	runStore, err := store.OpenReader(ctx, homeDir)
+	if err != nil {
+		return validationError{message: fmt.Sprintf("open Run Database before reopen: %v", err)}
+	}
+	defer func() {
+		_ = runStore.Close()
+	}()
+	if active, found, err := runStore.ActiveSpecRun(ctx, gitRoot, specSlug); err != nil {
+		return validationError{message: fmt.Sprintf("check Active Run for Spec target: %v", err)}
+	} else if found {
+		return validationError{message: fmt.Sprintf("Active Run %s already holds Spec target %q in working tree %q; stop it with: roundfix stop %s", active.ID, specSlug, gitRoot, active.ID)}
+	}
+	if active, found, err := runStore.ActiveRunInGitRoot(ctx, gitRoot); err != nil {
+		return validationError{message: fmt.Sprintf("check Active Run for working tree: %v", err)}
+	} else if found {
+		return validationError{message: fmt.Sprintf("Active Run %s already holds working tree %q; stop it with: roundfix stop %s", active.ID, gitRoot, active.ID)}
+	}
+	return nil
+}
+
+func ensureReopenTaskInsideSpecsRoot(specsRoot string, specDir string, taskPath string) error {
+	if _, inside := repositoryRelativePath(specDir, taskPath); !inside {
+		return validationError{message: fmt.Sprintf("QA Task path %q is outside Spec directory %q", taskPath, specDir)}
+	}
 	resolvedRoot, err := filepath.EvalSymlinks(specsRoot)
 	if err != nil {
 		return fmt.Errorf("resolve configured Spec Root %q: %w", specsRoot, err)
