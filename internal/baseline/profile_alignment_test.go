@@ -638,6 +638,158 @@ func TestExecutableVerificationCommandRequiresLocalDeclaration(t *testing.T) {
 	}
 }
 
+func TestProfileDeclaresBothVerificationTiers(t *testing.T) {
+	t.Parallel()
+
+	const (
+		profileID             = "standard-typescript-monorepo"
+		completeCommand       = "make verify"
+		alternateComplete     = "make verify-alt"
+		incrementalCommand    = "make verify-incremental"
+		alternateIncremental  = "make verify-incremental-alt"
+		incrementalDecisionID = "verification.incremental"
+	)
+
+	wantExisting := []document{
+		{"id": "verification.format", "kind": "format", "tool": "Oxfmt", "command": "bun run format"},
+		{"id": "verification.lint", "kind": "lint", "tool": "Oxlint", "command": "bun run lint"},
+		{"id": "verification.test", "kind": "test", "tool": "Vitest", "command": "bun run test"},
+		{"id": "verification.build", "kind": "build", "tool": "Turborepo", "command": "bun run build"},
+		{"id": "verification.workspace", "kind": "workspace", "tool": "Bun", "command": "bun run verify"},
+	}
+
+	newRepository := func(t *testing.T) string {
+		t.Helper()
+		repository := newAlignedTypeScriptRepository(t)
+		writeProfileAlignmentFile(t, repository, "Makefile", strings.Join([]string{
+			"verify:",
+			"\t@true",
+			"verify-alt:",
+			"\t@true",
+			"verify-incremental:",
+			"\t@true",
+			"verify-incremental-alt:",
+			"\t@true",
+		}, "\n")+"\n")
+		return repository
+	}
+	resolve := func(t *testing.T, repository, gate string, catalog *Catalog) ProfileAlignment {
+		t.Helper()
+		alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+			ProfileID: profileID,
+			Decisions: standardTypeScriptDecisions(gate),
+		}, catalog)
+		if err != nil {
+			t.Fatalf("resolve verification tiers: %v", err)
+		}
+		return alignment
+	}
+	cloneCatalog := func(t *testing.T, source *Catalog) *Catalog {
+		t.Helper()
+		cloned := *source
+		cloned.profiles = make(map[string]document, len(source.profiles))
+		for id, profile := range source.profiles {
+			cloned.profiles[id] = profile
+		}
+		profile, ok := source.profiles[profileID]
+		if !ok {
+			t.Fatalf("catalog has no profile %q", profileID)
+		}
+		cloned.profiles[profileID] = document(cloneJSONMap(profile))
+		return &cloned
+	}
+	setIncrementalCommand := func(t *testing.T, catalog *Catalog, command string) {
+		t.Helper()
+		for _, verification := range objectsOrEmpty(catalog.profiles[profileID]["verification"]) {
+			id, _ := stringValue(verification, "id")
+			if id == incrementalDecisionID {
+				verification["command"] = command
+				return
+			}
+		}
+		t.Fatalf("profile %q has no %q decision", profileID, incrementalDecisionID)
+	}
+	removeIncrementalDecision := func(catalog *Catalog) {
+		verification := objectsOrEmpty(catalog.profiles[profileID]["verification"])
+		filtered := make([]any, 0, len(verification)-1)
+		for _, entry := range verification {
+			id, _ := stringValue(entry, "id")
+			if id != incrementalDecisionID {
+				filtered = append(filtered, map[string]any(entry))
+			}
+		}
+		catalog.profiles[profileID]["verification"] = filtered
+	}
+
+	catalog := loadProfileAlignmentCatalog(t)
+	declarations := objectsOrEmpty(catalog.profiles[profileID]["verification"])
+	if len(declarations) != len(wantExisting)+1 {
+		t.Fatalf("verification declarations = %v, want five existing decisions and %q", declarations, incrementalDecisionID)
+	}
+	for index, want := range wantExisting {
+		if !reflect.DeepEqual(declarations[index], want) {
+			t.Fatalf("verification declaration %d = %v, want unchanged %v", index, declarations[index], want)
+		}
+	}
+	wantIncremental := document{
+		"id": incrementalDecisionID, "kind": "incremental", "tool": "Make", "command": incrementalCommand,
+	}
+	if !reflect.DeepEqual(declarations[len(wantExisting)], wantIncremental) {
+		t.Fatalf("incremental verification declaration = %v, want %v", declarations[len(wantExisting)], wantIncremental)
+	}
+
+	repository := newRepository(t)
+	baseline := resolve(t, repository, completeCommand, catalog)
+	complete, ok := findVerificationProjection(baseline.Verification, "verification.gate")
+	if !ok || complete.Command != completeCommand ||
+		complete.Classification != VerificationRepositoryCommand ||
+		complete.DeclarationPath != "Makefile" ||
+		!strings.HasPrefix(complete.DeclarationDigest, "sha256:") {
+		t.Fatalf("complete verification projection = %+v, found=%v", complete, ok)
+	}
+	incremental, ok := findVerificationProjection(baseline.Verification, incrementalDecisionID)
+	if !ok || incremental.Command != incrementalCommand || incremental.Role != "incremental" ||
+		incremental.Tool != "Make" || incremental.Classification != VerificationProfileExpectation ||
+		!incremental.RepositoryExecutable || incremental.DeclarationPath != "Makefile" ||
+		!strings.HasPrefix(incremental.DeclarationDigest, "sha256:") {
+		t.Fatalf("incremental verification projection = %+v, found=%v", incremental, ok)
+	}
+
+	changedComplete := resolve(t, repository, alternateComplete, catalog)
+	unchangedIncremental, ok := findVerificationProjection(changedComplete.Verification, incrementalDecisionID)
+	if !ok || !reflect.DeepEqual(unchangedIncremental, incremental) {
+		t.Fatalf("incremental projection changed with complete tier: got %+v, want %+v", unchangedIncremental, incremental)
+	}
+
+	changedIncrementalCatalog := cloneCatalog(t, catalog)
+	setIncrementalCommand(t, changedIncrementalCatalog, alternateIncremental)
+	changedIncremental := resolve(t, repository, completeCommand, changedIncrementalCatalog)
+	unchangedComplete, ok := findVerificationProjection(changedIncremental.Verification, "verification.gate")
+	if !ok || !reflect.DeepEqual(unchangedComplete, complete) {
+		t.Fatalf("complete projection changed with incremental tier: got %+v, want %+v", unchangedComplete, complete)
+	}
+	alternate, ok := findVerificationProjection(changedIncremental.Verification, incrementalDecisionID)
+	if !ok || alternate.Command != alternateIncremental {
+		t.Fatalf("changed incremental projection = %+v, found=%v", alternate, ok)
+	}
+
+	absentCatalog := cloneCatalog(t, catalog)
+	removeIncrementalDecision(absentCatalog)
+	absent := resolve(t, repository, completeCommand, absentCatalog)
+	if projection, exists := findVerificationProjection(absent.Verification, incrementalDecisionID); exists {
+		t.Fatalf("absent incremental decision produced projection %+v", projection)
+	}
+	wantAbsent := make([]VerificationProjection, 0, len(baseline.Verification)-1)
+	for _, projection := range baseline.Verification {
+		if projection.ID != incrementalDecisionID {
+			wantAbsent = append(wantAbsent, projection)
+		}
+	}
+	if !reflect.DeepEqual(absent.Verification, wantAbsent) {
+		t.Fatalf("verification projections with incremental tier absent = %+v, want %+v", absent.Verification, wantAbsent)
+	}
+}
+
 func TestPortableVerificationRoleMapping(t *testing.T) {
 	t.Parallel()
 
