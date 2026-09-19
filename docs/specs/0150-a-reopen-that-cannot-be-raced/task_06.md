@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0150-a-reopen-that-cannot-be-raced
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -65,3 +65,37 @@ runs it, and `buildRoundfixBinaryForMacro` exists for the same reason.
 ## References
 
 - [_techspec.md](_techspec.md) — Testing Approach
+
+## Result
+
+Implemented `TestReopenThroughTheBuiltBinary` in the existing reopen command
+suite. The test builds `./cmd/roundfix` from the checkout, launches that binary
+in isolated repositories, and covers the stale-gate success, healthy-gate
+refusal, and symlinked-Task journeys without replacing the lower-level tests.
+
+Focused checks:
+
+- `rtk env GOCACHE=/tmp/roundfix-task06-go-cache go test -count=1 ./internal/cli -run 'TestReopenThroughTheBuiltBinary/reopens_a_stale_gate_without_changing_its_QA_Report$'`
+  exited 0. This subtest built the command, reopened the stale gate, reset the
+  QA Task to `pending`, and compared the QA Report bytes before and after.
+- `rtk env GOCACHE=/tmp/roundfix-task06-go-cache go test -count=1 ./internal/cli -run 'TestReopenThroughTheBuiltBinary/refuses_a_healthy_gate$'`
+  exited 0. This subtest observed exit 2, empty stdout, and the public
+  `not stale` diagnostic from the built binary.
+- `rtk env GOCACHE=/tmp/roundfix-task06-go-cache go test -count=1 ./internal/cli -run 'TestReopenThroughTheBuiltBinary/writes_through_a_symlinked_Task_path$'`
+  exited 0. This subtest observed the target rewritten to `pending` and the
+  Task path remaining a symlink.
+- The first focused invocation without the temporary `GOCACHE` did not reach
+  compilation because the sandbox denied writes to the host Go build cache;
+  rerunning with the isolated cache above exercised the test successfully.
+
+Acceptance evidence:
+
+- The test's setup invokes `go build -buildvcs=false -o <temp> ./cmd/roundfix`,
+  and every journey launches that produced executable via `os/exec`.
+- The stale-gate journey checks the successful public output, the Task's
+  `pending` status, and byte equality for the prior QA Report.
+- The healthy-gate journey checks the public refusal exit and diagnostics.
+- The symlink journey reads the rewritten target and verifies the Task path
+  with `os.Lstat` and `os.ModeSymlink`.
+
+The Daemon-owned Verification commands were not run in this Agent turn.
