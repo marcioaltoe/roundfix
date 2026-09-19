@@ -849,6 +849,117 @@ func TestGateStalenessCharacterizesEachVerdict(t *testing.T) {
 	}
 }
 
+func TestLoadForRecovery(t *testing.T) {
+	t.Parallel()
+	t.Run("returns the graph with the loader's stale gate error", func(t *testing.T) {
+		t.Parallel()
+		gitRoot := t.TempDir()
+		specsRoot := defaultSpecsRoot(gitRoot)
+		writeRecoveryGateSpec(t, specsRoot, StatusPending)
+
+		graph, err := LoadForRecovery(specsRoot, "demo")
+		if graph == nil {
+			t.Fatal("LoadForRecovery graph = nil, want parsed graph")
+		}
+		var stale StaleGateError
+		if !errors.As(err, &stale) {
+			t.Fatalf("error = %T %v, want StaleGateError", err, err)
+		}
+		if !slices.Equal(stale.TaskIDs, []string{"task_01"}) {
+			t.Fatalf("StaleGateError.TaskIDs = %v, want [task_01]", stale.TaskIDs)
+		}
+		qaTask, ok := taskByID(graph.Tasks, stale.QATaskID)
+		if !ok {
+			t.Fatalf("graph has no QA Task %q", stale.QATaskID)
+		}
+		if qaTask.File != filepath.Join("demo", "task_02.md") {
+			t.Fatalf("QA Task file = %q, want demo/task_02.md", qaTask.File)
+		}
+	})
+
+	t.Run("returns no stale gate error for a healthy graph", func(t *testing.T) {
+		t.Parallel()
+		gitRoot := t.TempDir()
+		specsRoot := defaultSpecsRoot(gitRoot)
+		writeRecoveryGateSpec(t, specsRoot, StatusCompleted)
+
+		graph, err := LoadForRecovery(specsRoot, "demo")
+		if err != nil {
+			t.Fatalf("LoadForRecovery: %v", err)
+		}
+		if graph == nil || graph.QATaskID != "task_02" {
+			t.Fatalf("LoadForRecovery graph = %+v, want healthy graph with QA Task task_02", graph)
+		}
+	})
+
+	t.Run("returns no graph for other validation errors", func(t *testing.T) {
+		t.Parallel()
+		gitRoot := t.TempDir()
+		specsRoot := defaultSpecsRoot(gitRoot)
+		writeSpecDir(t, specsRoot, "demo", map[string]string{
+			"_prd.md": prdFixture("active"),
+			"_tasks.md": manifestFixture("spec-tasks/v1", `    - id: task_01
+      file: task_01.md
+      needs: []
+`),
+		})
+
+		graph, err := LoadForRecovery(specsRoot, "demo")
+		if graph != nil {
+			t.Fatalf("LoadForRecovery graph = %+v, want nil", graph)
+		}
+		var missing MissingTaskFileError
+		if !errors.As(err, &missing) {
+			t.Fatalf("error = %T %v, want MissingTaskFileError", err, err)
+		}
+	})
+}
+
+func TestLoadStillRefusesAStaleGate(t *testing.T) {
+	t.Parallel()
+	gitRoot := t.TempDir()
+	specsRoot := defaultSpecsRoot(gitRoot)
+	writeRecoveryGateSpec(t, specsRoot, StatusPending)
+
+	graph, err := Load(specsRoot, "demo")
+	if graph != nil {
+		t.Fatalf("Load graph = %+v, want nil", graph)
+	}
+	var stale StaleGateError
+	if !errors.As(err, &stale) {
+		t.Fatalf("error = %T %v, want StaleGateError", err, err)
+	}
+	const want = `validate qa gate: QA gate result is invalidated for Task "task_02" because these dependencies are not completed: task_01`
+	if err.Error() != want {
+		t.Fatalf("error = %q, want %q", err, want)
+	}
+}
+
+func writeRecoveryGateSpec(t *testing.T, specsRoot string, dependencyStatus Status) {
+	t.Helper()
+	writeSpecDir(t, specsRoot, "demo", map[string]string{
+		"_prd.md": prdFixture("active"),
+		"_tasks.md": manifestFixtureWithQA("spec-tasks/v1", "qa: task_02\n", `    - id: task_01
+      file: task_01.md
+      needs: []
+    - id: task_02
+      file: task_02.md
+      needs: [task_01]
+`, ""),
+		"task_01.md": taskFixture("task_01", "Build", string(dependencyStatus), "backend", defaultVerificationSection),
+		"task_02.md": taskFixture("task_02", "QA", "completed", "qa", defaultVerificationSection),
+	})
+}
+
+func taskByID(tasks []Task, id string) (Task, bool) {
+	for _, task := range tasks {
+		if task.ID == id {
+			return task, true
+		}
+	}
+	return Task{}, false
+}
+
 func TestFailedGateLoadsAboveIncompleteDependencies(t *testing.T) {
 	t.Parallel()
 	t.Run("loads without writing Spec files", func(t *testing.T) {

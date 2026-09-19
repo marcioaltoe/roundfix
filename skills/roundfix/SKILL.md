@@ -1984,6 +1984,27 @@ Task, re-running a gate — is inside the loop's authority.
 - `Clean` is a status, not evidence. Read the diff after a Run reports Clean,
   and confirm a review actually happened before treating its silence as proof.
 
+## Reopen Command
+
+Use `roundfix reopen --spec <slug>` to clear a settled QA gate when one or
+more of its dependencies are no longer completed. This is the supported way
+to reopen the gate; never edit the QA Task file by hand. The command retains
+the prior QA Report and the Task's prior Result, and records which stale
+dependencies invalidated that report.
+
+Reopen refuses before mutation when the terminal QA gate is not settled or is
+not stale — that is, when it is not completed or every dependency is still
+completed. It creates no Run, writes no Run Event Journal entry, and never
+commits or pushes.
+
+Flags:
+
+- `--spec` — Spec slug under the configured Spec Root.
+
+Exit codes: `0` means a stale settled QA gate was reopened, `1` means the
+reopen write failed, and `2` means Preflight Validation failed, including an
+unsettled or non-stale QA gate.
+
 ## Settle Command
 
 Use `roundfix settle --spec <slug> --task <task_id>` only as a local recovery

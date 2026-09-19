@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -161,6 +162,101 @@ func SetStatus(taskPath string, status Status) error {
 	if err := os.WriteFile(taskPath, updated, info.Mode().Perm()); err != nil {
 		return fmt.Errorf("write task file %q: %w", taskPath, err)
 	}
+	return nil
+}
+
+// ReopenGate changes a completed QA Task to pending and records the evidence
+// invalidation in one atomic file replacement. A failure before the rename
+// leaves the original Task bytes untouched.
+func ReopenGate(taskPath string, reportPath string, taskIDs []string, date time.Time) error {
+	info, err := os.Stat(taskPath)
+	if err != nil {
+		return fmt.Errorf("stat QA Task file %q: %w", taskPath, err)
+	}
+	content, err := os.ReadFile(taskPath)
+	if err != nil {
+		return fmt.Errorf("read QA Task file %q: %w", taskPath, err)
+	}
+	updated, err := rewriteStatus(content, StatusPending)
+	if err != nil {
+		return fmt.Errorf("rewrite status in QA Task file %q: %w", taskPath, err)
+	}
+	updated = appendGateInvalidation(updated, reportPath, taskIDs, date)
+	if err := replaceTaskFile(taskPath, updated, info.Mode().Perm()); err != nil {
+		return fmt.Errorf("replace QA Task file %q atomically: %w", taskPath, err)
+	}
+	return nil
+}
+
+// AppendGateInvalidation records why a completed QA gate was reopened while
+// preserving the Task's existing body, including its prior Result section.
+func AppendGateInvalidation(taskPath string, reportPath string, taskIDs []string, date time.Time) error {
+	info, err := os.Stat(taskPath)
+	if err != nil {
+		return fmt.Errorf("stat QA Task file %q: %w", taskPath, err)
+	}
+	content, err := os.ReadFile(taskPath)
+	if err != nil {
+		return fmt.Errorf("read QA Task file %q: %w", taskPath, err)
+	}
+
+	updated := appendGateInvalidation(content, reportPath, taskIDs, date)
+	if err := os.WriteFile(taskPath, updated, info.Mode().Perm()); err != nil {
+		return fmt.Errorf("append invalidation to QA Task file %q: %w", taskPath, err)
+	}
+	return nil
+}
+
+func appendGateInvalidation(content []byte, reportPath string, taskIDs []string, date time.Time) []byte {
+	var record strings.Builder
+	if !bytes.HasSuffix(content, []byte{'\n'}) {
+		record.WriteByte('\n')
+	}
+	record.WriteString("\n## Invalidation\n\n")
+	fmt.Fprintf(&record, "- Date: `%s`\n", date.Format("2006-01-02"))
+	fmt.Fprintf(&record, "- QA Report: `%s`\n", filepath.ToSlash(reportPath))
+	record.WriteString("- Dependencies not completed: ")
+	for index, taskID := range taskIDs {
+		if index > 0 {
+			record.WriteString(", ")
+		}
+		fmt.Fprintf(&record, "`%s`", taskID)
+	}
+	record.WriteByte('\n')
+
+	return append(append([]byte(nil), content...), record.String()...)
+}
+
+func replaceTaskFile(path string, content []byte, mode os.FileMode) (returnErr error) {
+	temporary, err := os.CreateTemp(filepath.Dir(path), ".roundfix-task-*.tmp")
+	if err != nil {
+		return err
+	}
+	temporaryPath := temporary.Name()
+	replaced := false
+	defer func() {
+		if replaced {
+			return
+		}
+		if cleanupErr := os.Remove(temporaryPath); cleanupErr != nil && !errors.Is(cleanupErr, os.ErrNotExist) {
+			returnErr = errors.Join(returnErr, fmt.Errorf("remove temporary Task file %q: %w", temporaryPath, cleanupErr))
+		}
+	}()
+	if err := temporary.Chmod(mode); err != nil {
+		_ = temporary.Close()
+		return fmt.Errorf("set temporary Task file permissions: %w", err)
+	}
+	if _, err := temporary.Write(content); err != nil {
+		_ = temporary.Close()
+		return fmt.Errorf("write temporary Task file: %w", err)
+	}
+	if err := temporary.Close(); err != nil {
+		return fmt.Errorf("close temporary Task file: %w", err)
+	}
+	if err := os.Rename(temporaryPath, path); err != nil {
+		return err
+	}
+	replaced = true
 	return nil
 }
 

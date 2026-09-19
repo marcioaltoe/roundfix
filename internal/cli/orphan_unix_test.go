@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strconv"
 	"strings"
@@ -364,6 +365,73 @@ func TestRunSettleReclaimsDeadOwnerActiveRun(t *testing.T) {
 		t.Fatalf("expected settle success, got %q", stdout.String())
 	}
 	assertReclaimedRunInCLI(t, homeDir, blocking.ID, pid)
+}
+
+func TestReopenRefusesAnActiveRunWithoutReclaimingIt(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", status: string(spec.StatusPending)},
+		implementQAGateSeed(string(spec.StatusCompleted), "task_01"),
+	})
+	pid := reapedCLIProcessPID(t)
+	active := seedImplementActiveRun(t, homeDir, repoDir, implementTestSlug, pid)
+
+	reader, err := store.OpenReader(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database reader before reopen: %v", err)
+	}
+	before, found, err := reader.Run(context.Background(), active.ID)
+	if err != nil || !found {
+		t.Fatalf("read Active Run before reopen: found=%v err=%v", found, err)
+	}
+	beforeEvents, err := reader.RunEventsAfter(context.Background(), active.ID, 0, 100)
+	if err != nil {
+		t.Fatalf("read Run Event Journal before reopen: %v", err)
+	}
+	if err := reader.Close(); err != nil {
+		t.Fatalf("close Run Database reader before reopen: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := runCLIContext(t, context.Background(), []string{"reopen", "--spec", implementTestSlug}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("reopen exit = %d, want %d; stderr=%q stdout=%q", code, exitPreflight, stderr.String(), stdout.String())
+	}
+	if stdout.String() != "" {
+		t.Fatalf("reopen stdout = %q, want empty", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "Active Run "+active.ID) {
+		t.Fatalf("reopen stderr = %q, want Active Run refusal", stderr.String())
+	}
+	if strings.Contains(stderr.String(), "reclaimed orphaned Active Run") {
+		t.Fatalf("reopen stderr = %q, want no reclamation", stderr.String())
+	}
+
+	reader, err = store.OpenReader(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database reader after reopen: %v", err)
+	}
+	defer func() {
+		if err := reader.Close(); err != nil {
+			t.Fatalf("close Run Database reader after reopen: %v", err)
+		}
+	}()
+	after, found, err := reader.Run(context.Background(), active.ID)
+	if err != nil || !found {
+		t.Fatalf("read Active Run after reopen: found=%v err=%v", found, err)
+	}
+	afterEvents, err := reader.RunEventsAfter(context.Background(), active.ID, 0, 100)
+	if err != nil {
+		t.Fatalf("read Run Event Journal after reopen: %v", err)
+	}
+	if !reflect.DeepEqual(after, before) {
+		t.Fatalf("Active Run changed after reopen refusal:\nbefore=%#v\nafter=%#v", before, after)
+	}
+	if !reflect.DeepEqual(afterEvents, beforeEvents) {
+		t.Fatalf("Run Event Journal changed after reopen refusal:\nbefore=%#v\nafter=%#v", beforeEvents, afterEvents)
+	}
 }
 
 func TestReviewFetchReclaimsDeadOwnerActiveRun(t *testing.T) {
