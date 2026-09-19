@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0149-a-supported-way-to-reopen-a-settled-gate
-status: completed
+status: pending
 type: qa
 complexity: high
 ---
@@ -66,3 +66,9 @@ responsibility.
 `_prd.md` → Goals 1-4; User Stories 1-4; Core Features 1-4; Success Metrics 1-3;
 Acceptance evidence; Declared intentional breaks; Regression locks;
 `_techspec.md` → Testing Approach 1-6 as narrowed; API Contracts 1-3; ADR-0155; ADR-0104.
+
+## Invalidation
+
+- Date: `2026-09-19`
+- QA Report: `qa/qa-report-2026-09-19.md`
+- Dependencies not completed: `task_05`
