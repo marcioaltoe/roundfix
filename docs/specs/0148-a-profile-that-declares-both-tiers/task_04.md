@@ -18,14 +18,15 @@ the form ADR-0155 defines, and settles the Spec on evidence.
 1. MUST run the repository Verification and record its result as a gate fact.
 2. MUST verify that the Profile declares the incremental tier beside the
    complete gate, and that neither is derived from the other.
-3. MUST verify that a Profile declaring no incremental command reports absence
-   and publishes the unmet two-tier statement.
-4. MUST verify that the generated guides publish both tiers and that every other
-   rendered value is unchanged.
-5. MUST verify that the generated guides changed only through the sanctioned
-   regeneration, and that no clause text changed.
+3. MUST verify that a Profile declaring no incremental command reports absence,
+   never an empty value and never the other tier's value.
+4. MUST verify that the derived catalog and plan artifacts agree with the Profile
+   that moved them, and that they changed only through the sanctioned command.
+5. MUST verify that the generated guides, the guide template, the template index,
+   this repository's decision record and the formatter golden are untouched.
 6. MUST verify, against the two shipped clauses that require the declared
-   incremental command, that the value they name now exists.
+   incremental command, that the value they name now exists in the Profile, and
+   record that publishing it to the guides is not part of this Spec.
 7. MUST verify that this Spec's own artifacts satisfy the promise rule and that
    every Task commit stayed inside the approved authority record.
 8. MUST NOT accept a row whose only evidence is that a file was read.
@@ -62,4 +63,4 @@ responsibility.
 
 `_prd.md` → Goals 1-4; User Stories 1-4; Core Features 1-4; Success Metrics 1-3;
 Acceptance evidence; Declared intentional breaks; Regression locks;
-`_techspec.md` → Testing Approach 1-6; API Contracts 1-3; ADR-0155; ADR-0104.
+`_techspec.md` → Testing Approach 1-6 as narrowed; API Contracts 1-3; ADR-0155; ADR-0104.
