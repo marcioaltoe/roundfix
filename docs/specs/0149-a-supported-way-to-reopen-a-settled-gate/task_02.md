@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0149-a-supported-way-to-reopen-a-settled-gate
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -62,3 +62,35 @@ recovery path but a supported way to discard a verdict.
 ## References
 
 - [_techspec.md](_techspec.md) — The command
+
+## Result
+
+Implemented the public `reopen --spec <slug>` command. Its preflight delegates
+stale-gate detection to `spec.LoadForRecovery`, refuses a missing terminal QA
+Task, a QA Task that is not completed, a healthy completed gate, and unknown
+flags before writing. A stale gate is reset through `spec.SetStatus`; the QA
+Task then receives a dated invalidation record naming the newest QA Report and
+the incomplete dependency ids. The command does not enter the Run, journal,
+commit, or push paths.
+
+Focused checks and acceptance evidence:
+
+- Red signal: `GOCACHE=/private/tmp/roundfix-0149-task02-gocache go test
+  ./internal/cli -run '^TestReopenStaleGatePreservesEvidence$'` reached the CLI
+  seam and failed with `unknown command "reopen"` before implementation.
+- `GOCACHE=/private/tmp/roundfix-0149-task02-gocache go test ./internal/cli
+  -run '^TestReopen'` exited 0. `TestReopenStaleGatePreservesEvidence` proves a
+  stale completed gate exits 0, becomes `pending`, and loads through `spec.Load`
+  afterwards. It also proves the QA Report bytes and prior `## Result` text are
+  retained while the invalidation record names the report and dependency.
+- The same focused run proves a pending QA Task refuses with its status named;
+  a healthy completed gate refuses because every dependency is completed; a
+  Spec without a terminal QA Task refuses by that condition; and an unknown
+  flag refuses. The pending and healthy refusal tests compare directory-wide
+  byte digests before and after and prove no mutation; all command cases assert
+  that no Run Database was created.
+- `GOCACHE=/private/tmp/roundfix-0149-task02-gocache go test ./internal/spec`
+  exited 0 after adding the Spec-owned invalidation writer.
+
+The Daemon-owned commands under `## Verification` were not run in this Agent
+turn.

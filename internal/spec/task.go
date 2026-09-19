@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -160,6 +161,41 @@ func SetStatus(taskPath string, status Status) error {
 	}
 	if err := os.WriteFile(taskPath, updated, info.Mode().Perm()); err != nil {
 		return fmt.Errorf("write task file %q: %w", taskPath, err)
+	}
+	return nil
+}
+
+// AppendGateInvalidation records why a completed QA gate was reopened while
+// preserving the Task's existing body, including its prior Result section.
+func AppendGateInvalidation(taskPath string, reportPath string, taskIDs []string, date time.Time) error {
+	info, err := os.Stat(taskPath)
+	if err != nil {
+		return fmt.Errorf("stat QA Task file %q: %w", taskPath, err)
+	}
+	content, err := os.ReadFile(taskPath)
+	if err != nil {
+		return fmt.Errorf("read QA Task file %q: %w", taskPath, err)
+	}
+
+	var record strings.Builder
+	if !bytes.HasSuffix(content, []byte{'\n'}) {
+		record.WriteByte('\n')
+	}
+	record.WriteString("\n## Invalidation\n\n")
+	fmt.Fprintf(&record, "- Date: `%s`\n", date.Format("2006-01-02"))
+	fmt.Fprintf(&record, "- QA Report: `%s`\n", filepath.ToSlash(reportPath))
+	record.WriteString("- Dependencies not completed: ")
+	for index, taskID := range taskIDs {
+		if index > 0 {
+			record.WriteString(", ")
+		}
+		fmt.Fprintf(&record, "`%s`", taskID)
+	}
+	record.WriteByte('\n')
+
+	updated := append(append([]byte(nil), content...), record.String()...)
+	if err := os.WriteFile(taskPath, updated, info.Mode().Perm()); err != nil {
+		return fmt.Errorf("append invalidation to QA Task file %q: %w", taskPath, err)
 	}
 	return nil
 }
