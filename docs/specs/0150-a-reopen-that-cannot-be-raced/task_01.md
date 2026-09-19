@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0150-a-reopen-that-cannot-be-raced
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -27,16 +27,16 @@ stale and recording dependencies that are no longer incomplete.
 
 ## Subtasks
 
-- [ ] Re-derive and compare the plan before the write.
-- [ ] Add the refusal and its message.
-- [ ] Add tests for the changed-gate and unchanged-gate paths.
+- [x] Re-derive and compare the plan before the write.
+- [x] Add the refusal and its message.
+- [x] Add tests for the changed-gate and unchanged-gate paths.
 
 ## Acceptance Criteria
 
-- [ ] A fixture whose stale dependency is completed between the preflight read
+- [x] A fixture whose stale dependency is completed between the preflight read
       and the write is refused, and the QA Task file is byte-identical.
-- [ ] A fixture whose gate is unchanged reopens exactly as before.
-- [ ] The reopen tests Spec 0149 shipped pass unchanged.
+- [x] A fixture whose gate is unchanged reopens exactly as before.
+- [x] The reopen tests Spec 0149 shipped pass unchanged.
 
 ## Context
 
@@ -51,3 +51,51 @@ stale and recording dependencies that are no longer incomplete.
 ## References
 
 - [_techspec.md](_techspec.md) — The recheck
+
+## Result
+
+### Implementation
+
+- `preflightReopen` and the write-time recheck now use the same
+  `deriveReopenPlan` recovery load. The recheck runs before `spec.ReopenGate`
+  and compares the terminal QA Task id and stale dependency set.
+- A gate that is no longer stale, a changed QA Task, or a changed stale
+  dependency set refuses with exit 2. The diagnostic says the gate changed
+  after preflight and includes the underlying change; no Task bytes are
+  written.
+- The unchanged plan uses the re-derived paths and stale dependency ids for the
+  existing atomic reopen operation.
+
+### Focused checks
+
+- Pre-change signal:
+  `rtk env GOCACHE=/tmp/roundfix-go-cache go test ./internal/cli -count=1 -run 'TestReopenRefusesWhenThe(Gate|StaleDependencySet)ChangedBeforeTheWrite'`
+  failed to build because `reopenFromPlan` did not exist.
+- After implementation:
+  `rtk env GOCACHE=/tmp/roundfix-go-cache go test ./internal/cli -count=1 -run 'TestReopen(StaleGatePreservesEvidence|RefusesWhenThe(Gate|StaleDependencySet)ChangedBeforeTheWrite)$'`
+  exited 0.
+- Reopen regression sweep:
+  `rtk env GOCACHE=/tmp/roundfix-go-cache go test ./internal/cli -count=1 -run Reopen`
+  exited 0.
+- Broader package check:
+  `rtk env GOCACHE=/tmp/roundfix-go-cache go test ./internal/cli -count=1`
+  reached two unrelated force-stop integration failures because the sandbox
+  denied process-table access (`operation not permitted`).
+- `rtk git diff --check` exited 0.
+- The Task's declared `## Verification` commands were not run; the Daemon owns
+  them in this execution mode.
+
+### Acceptance evidence
+
+- `TestReopenRefusesWhenTheGateChangedBeforeTheWrite` completes the stale
+  dependency after the first preflight, observes exit 2 with the named
+  no-longer-stale reason, and compares the QA Task bytes before and after.
+- `TestReopenRefusesWhenTheStaleDependencySetChangedBeforeTheWrite` keeps the
+  gate stale while changing its dependency set, observes the named exit-2
+  refusal, and compares the QA Task bytes before and after.
+- `TestReopenStaleGatePreservesEvidence` exercises the unchanged plan and the
+  reopen regression sweep covers the Spec 0149 reopen tests.
+
+### Follow-ups
+
+None for this Task slice.

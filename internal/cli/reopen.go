@@ -36,6 +36,7 @@ Exit codes:
 `
 
 type reopenPlan struct {
+	specsRoot   string
 	qaTaskPath  string
 	qaTaskID    string
 	reportLabel string
@@ -57,11 +58,28 @@ func runReopenCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		printPreflightFailure("reopen", err, stderr)
 		return exitPreflight
 	}
-	if err := spec.ReopenGate(plan.qaTaskPath, plan.reportLabel, plan.taskIDs, time.Now().UTC()); err != nil {
+	return reopenFromPlan(ctx, slug, plan, stdout, stderr)
+}
+
+func reopenFromPlan(ctx context.Context, slug string, plan reopenPlan, stdout, stderr io.Writer) int {
+	if err := ctx.Err(); err != nil {
+		printPreflightFailure("reopen", err, stderr)
+		return exitPreflight
+	}
+	rechecked, err := deriveReopenPlan(plan.specsRoot, slug)
+	if err != nil {
+		printPreflightFailure("reopen", fmt.Errorf("gate changed after preflight: %w", err), stderr)
+		return exitPreflight
+	}
+	if err := compareReopenPlans(plan, rechecked); err != nil {
+		printPreflightFailure("reopen", err, stderr)
+		return exitPreflight
+	}
+	if err := spec.ReopenGate(rechecked.qaTaskPath, rechecked.reportLabel, rechecked.taskIDs, time.Now().UTC()); err != nil {
 		fmt.Fprintf(stderr, "%s: reopen failed: %v\n", app.Name, err)
 		return exitRunFailed
 	}
-	fmt.Fprintf(stdout, "reopened %s pending — invalidated %s\n", plan.qaTaskID, plan.reportLabel)
+	fmt.Fprintf(stdout, "reopened %s pending — invalidated %s\n", rechecked.qaTaskID, rechecked.reportLabel)
 	return exitOK
 }
 
@@ -104,7 +122,11 @@ func preflightReopen(ctx context.Context, slug string, stderr io.Writer, environ
 	if err := ensureNoReopenActiveRun(ctx, loaded.HomeDir, loaded.GitRoot, slug); err != nil {
 		return reopenPlan{}, err
 	}
-	graph, loadErr := spec.LoadForRecovery(resolvedSpecsRoot.Path, slug)
+	return deriveReopenPlan(resolvedSpecsRoot.Path, slug)
+}
+
+func deriveReopenPlan(specsRoot string, slug string) (reopenPlan, error) {
+	graph, loadErr := spec.LoadForRecovery(specsRoot, slug)
 	if loadErr == nil {
 		return reopenHealthyGateRefusal(graph)
 	}
@@ -124,17 +146,45 @@ func preflightReopen(ctx context.Context, slug string, stderr io.Writer, environ
 	if err != nil {
 		return reopenPlan{}, fmt.Errorf("format invalidated QA Report path: %w", err)
 	}
-	qaTaskPath := filepath.Join(resolvedSpecsRoot.Path, qaTask.File)
-	specDir := filepath.Join(resolvedSpecsRoot.Path, slug)
-	if err := ensureReopenTaskInsideSpecsRoot(resolvedSpecsRoot.Path, specDir, qaTaskPath); err != nil {
+	qaTaskPath := filepath.Join(specsRoot, qaTask.File)
+	specDir := filepath.Join(specsRoot, slug)
+	if err := ensureReopenTaskInsideSpecsRoot(specsRoot, specDir, qaTaskPath); err != nil {
 		return reopenPlan{}, err
 	}
 	return reopenPlan{
+		specsRoot:   specsRoot,
 		qaTaskPath:  qaTaskPath,
 		qaTaskID:    qaTask.ID,
 		reportLabel: filepath.ToSlash(reportLabel),
 		taskIDs:     append([]string(nil), stale.TaskIDs...),
 	}, nil
+}
+
+func compareReopenPlans(before reopenPlan, after reopenPlan) error {
+	if before.qaTaskID != after.qaTaskID {
+		return validationError{message: fmt.Sprintf("gate changed after preflight: terminal QA Task changed from %q to %q", before.qaTaskID, after.qaTaskID)}
+	}
+	if !sameTaskIDSet(before.taskIDs, after.taskIDs) {
+		return validationError{message: fmt.Sprintf("gate changed after preflight: stale dependencies for terminal QA Task %q changed from %q to %q", before.qaTaskID, before.taskIDs, after.taskIDs)}
+	}
+	return nil
+}
+
+func sameTaskIDSet(left []string, right []string) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	counts := make(map[string]int, len(left))
+	for _, taskID := range left {
+		counts[taskID]++
+	}
+	for _, taskID := range right {
+		if counts[taskID] == 0 {
+			return false
+		}
+		counts[taskID]--
+	}
+	return true
 }
 
 func ensureNoReopenActiveRun(ctx context.Context, homeDir string, gitRoot string, specSlug string) error {

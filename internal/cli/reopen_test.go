@@ -68,6 +68,91 @@ func TestReopenStaleGatePreservesEvidence(t *testing.T) {
 	assertNoRunDatabase(t, homeDir)
 }
 
+func TestReopenRefusesWhenTheGateChangedBeforeTheWrite(t *testing.T) {
+	t.Parallel()
+	_, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", status: string(spec.StatusPending)},
+		implementQAGateSeed(string(spec.StatusCompleted), "task_01"),
+	})
+	taskPath := implementTaskPath(repoDir, "task_qa")
+	before := mustRead(t, taskPath)
+	reportPath := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "qa", "qa-report-2026-09-18.md")
+	mustMkdir(t, filepath.Dir(reportPath))
+	mustWrite(t, reportPath, "---\nverdict: pass\n---\n")
+	environment := commandEnvironmentForTest(t)
+
+	var preflightStderr bytes.Buffer
+	plan, err := preflightReopen(context.Background(), implementTestSlug, &preflightStderr, environment)
+	if err != nil {
+		t.Fatalf("preflight reopen: %v; stderr=%q", err, preflightStderr.String())
+	}
+	if err := spec.SetStatus(implementTaskPath(repoDir, "task_01"), spec.StatusCompleted); err != nil {
+		t.Fatalf("complete stale dependency: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := reopenFromPlan(context.Background(), implementTestSlug, plan, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("reopen exit = %d, want %d; stderr=%q", code, exitPreflight, stderr.String())
+	}
+	if stdout.String() != "" {
+		t.Fatalf("refusal stdout = %q, want empty", stdout.String())
+	}
+	for _, want := range []string{"gate changed after preflight", "task_qa", "not stale", "every dependency is completed"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("refusal stderr = %q, want %q", stderr.String(), want)
+		}
+	}
+	if got := mustRead(t, taskPath); got != before {
+		t.Fatalf("QA Task changed after stale gate settled:\n%s", got)
+	}
+}
+
+func TestReopenRefusesWhenTheStaleDependencySetChangedBeforeTheWrite(t *testing.T) {
+	t.Parallel()
+	_, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", status: string(spec.StatusPending)},
+		{id: "task_02", status: string(spec.StatusPending)},
+		implementQAGateSeed(string(spec.StatusCompleted), "task_01", "task_02"),
+	})
+	taskPath := implementTaskPath(repoDir, "task_qa")
+	before := mustRead(t, taskPath)
+	reportPath := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "qa", "qa-report-2026-09-18.md")
+	mustMkdir(t, filepath.Dir(reportPath))
+	mustWrite(t, reportPath, "---\nverdict: pass\n---\n")
+	environment := commandEnvironmentForTest(t)
+
+	var preflightStderr bytes.Buffer
+	plan, err := preflightReopen(context.Background(), implementTestSlug, &preflightStderr, environment)
+	if err != nil {
+		t.Fatalf("preflight reopen: %v; stderr=%q", err, preflightStderr.String())
+	}
+	if err := spec.SetStatus(implementTaskPath(repoDir, "task_01"), spec.StatusCompleted); err != nil {
+		t.Fatalf("complete one stale dependency: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := reopenFromPlan(context.Background(), implementTestSlug, plan, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("reopen exit = %d, want %d; stderr=%q", code, exitPreflight, stderr.String())
+	}
+	if stdout.String() != "" {
+		t.Fatalf("refusal stdout = %q, want empty", stdout.String())
+	}
+	for _, want := range []string{"gate changed after preflight", "stale dependencies", "task_01", "task_02"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("refusal stderr = %q, want %q", stderr.String(), want)
+		}
+	}
+	if got := mustRead(t, taskPath); got != before {
+		t.Fatalf("QA Task changed after stale dependency set changed:\n%s", got)
+	}
+}
+
 func TestReopenRefusesPendingQATaskWithoutMutation(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
