@@ -104,6 +104,34 @@ evidence preserved.
   superseding one. The folder moves to history intact.
 - Any change to archive's evidence rules for a Spec that has a Task Graph.
 
+## What this Spec does not yet guarantee
+
+Independent review found two limits after the corrective ceiling was spent.
+Both were reproduced; both are carried to a follow-up Spec rather than taken as
+a third correction.
+
+**Archive trusts a well-formed record.** Core Feature 3's refusals belong to the
+`supersede` command. Archive checks that `_supersession.md` parses, not that the
+Spec it names exists. A hand-written record saying `superseded_by: missing`
+therefore archives:
+
+```
+$ roundfix archive 9999-hole
+archived 9999-hole -> docs/history/specs/9999-hole
+```
+
+So the guarantee holds for records the command wrote, and not for records
+written by hand. Closing it means moving the deliverer validation out of
+`internal/cli` and into the package archive can call, which is a layering change
+rather than a one-line check.
+
+**A reason of `help` is read as a help request.** `--reason help` prints usage
+and writes nothing, because the shared `commandWantsHelp` scan runs before flag
+parsing and matches a bare `help` anywhere in the arguments. This is the same
+repository-wide behavior every other command has — `roundfix archive help`
+prints usage too — so it is fixed for the whole surface or not at all. `--reason`
+is the first flag where a plausible value collides with it.
+
 ## Success Metrics
 
 1. A fixture Spec with no Task Graph, superseded by an existing Spec, archives
