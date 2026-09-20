@@ -542,6 +542,24 @@ func requireActive(slug string, dir string) error {
 	return nil
 }
 
+// ReadPRDStatus returns the lifecycle status declared by a Spec's _prd.md
+// frontmatter. A missing status is malformed rather than an unnamed state.
+func ReadPRDStatus(dir string) (string, error) {
+	prdPath := filepath.Join(dir, "_prd.md")
+	content, err := os.ReadFile(prdPath)
+	if err != nil {
+		return "", err
+	}
+	status, err := prdStatus(content)
+	if err != nil {
+		return "", err
+	}
+	if status == "" {
+		return "", errors.New("frontmatter has no status")
+	}
+	return status, nil
+}
+
 func prdStatus(content []byte) (string, error) {
 	frontmatterBytes, _, err := splitFrontmatter(content)
 	if err != nil {

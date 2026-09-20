@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0151-a-supersession-the-archive-can-see
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -65,3 +65,48 @@ has no mention of it. The contract has to outlive this Spec's folder.
 ## References
 
 - [_techspec.md](_techspec.md) — The command
+
+## Result
+
+Implemented the deliverer-validation and glossary slice:
+
+- Supersede now reads the deliverer's `_prd.md` frontmatter and accepts only
+  `active` in the configured Spec Root or `archived` in the resolved archive.
+  Draft, archived-in-place, absent, missing-status, and malformed deliverers
+  produce condition-specific Preflight Validation refusals before any write.
+- The command-level regression cases snapshot the Spec Root and prove every
+  refusal leaves it byte-identical. Separate accepted-path coverage preserves
+  both active and archived deliverers.
+- `CONTEXT.md` now defines Supersession as the durable record naming the Spec
+  that delivered another Spec's content, and names the Archive Command's use of
+  that record as completion proof when the superseded Spec has no Task Graph.
+
+Focused evidence after the edits:
+
+- Before the production change,
+  `rtk go test ./internal/cli -run TestSupersedeRejectsANonActiveDeliverer -count=1`
+  failed on draft, archived-in-place, malformed, and missing-status deliverers
+  because each incorrectly exited 0.
+- `rtk go test ./internal/cli -run 'TestSupersede(RejectsANonActiveDeliverer|AcceptsAnActiveDeliverer|$)' -count=1`
+  passed all 16 selected tests. This covers every rejected condition, verifies
+  no-write behavior, preserves active acceptance, and reruns the existing
+  archived acceptance and Tasks 01-03 supersede behavior.
+- `rtk make verify-incremental` passed, including formatting, `go vet`, the full
+  Go suite, skill checks, and the binary build.
+- `rtk rg -n '^\\*\\*Supersession\\*\\*|Archive Command accepts' CONTEXT.md`
+  found the glossary entry and its archive relationship at lines 89-90.
+
+Acceptance evidence:
+
+1. Non-active status refusal: the `draft` and `archived in active root`
+   subtests passed with status-specific diagnostics and unchanged filesystem
+   snapshots.
+2. Malformed refusal: the `malformed frontmatter` and `missing status` subtests
+   passed with condition-specific diagnostics and unchanged snapshots.
+3. Accepted deliverers: `TestSupersedeAcceptsAnActiveDeliverer` and the existing
+   archived accepted path both passed in the focused 16-test run.
+4. Durable vocabulary: the `Supersession` glossary entry defines the record and
+   states that Archive accepts it as completion proof for a Spec with no Task
+   Graph.
+
+The declared Verification commands were not run; the Daemon owns that gate.

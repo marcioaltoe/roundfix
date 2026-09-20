@@ -179,6 +179,118 @@ func TestSupersede(t *testing.T) {
 	})
 }
 
+func TestSupersedeRejectsANonActiveDeliverer(t *testing.T) {
+	const (
+		supersededSlug  = implementTestSlug
+		supersedingSlug = "0002-delivered-widget"
+		reason          = "Spec 0002 delivered the widget behavior and its acceptance evidence."
+	)
+	tests := []struct {
+		name        string
+		prd         string
+		wantError   string
+		omitPRD     bool
+		omitSpecDir bool
+	}{
+		{
+			name:      "draft",
+			prd:       "---\nstatus: draft\n---\n\n# Draft deliverer\n",
+			wantError: `frontmatter status is "draft"; expected "active"`,
+		},
+		{
+			name:      "archived in active root",
+			prd:       "---\nstatus: archived\n---\n\n# Misplaced archived deliverer\n",
+			wantError: `frontmatter status is "archived"; expected "active"`,
+		},
+		{
+			name:      "malformed frontmatter",
+			prd:       "---\nstatus: [active\n---\n\n# Malformed deliverer\n",
+			wantError: "malformed _prd.md",
+		},
+		{
+			name:      "missing status",
+			prd:       "---\nspec: 0002-delivered-widget\n---\n\n# Statusless deliverer\n",
+			wantError: "frontmatter has no status",
+		},
+		{
+			name:        "absent",
+			wantError:   `superseding Spec "0002-delivered-widget" is neither active nor archived`,
+			omitSpecDir: true,
+		},
+		{
+			name:      "missing PRD",
+			wantError: `superseding Spec "0002-delivered-widget" is neither active nor archived`,
+			omitPRD:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := newImplementWorkspace(t, nil)
+			root := filepath.Join(repoDir, "docs", "specs")
+			if !tt.omitSpecDir {
+				delivererDir := filepath.Join(root, supersedingSlug)
+				mustMkdir(t, delivererDir)
+				if !tt.omitPRD {
+					mustWrite(t, filepath.Join(delivererDir, "_prd.md"), tt.prd)
+				}
+			}
+			before := snapshotDirectoryFiles(t, root)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLIContext(t, context.Background(), []string{
+				"supersede",
+				"--spec", supersededSlug,
+				"--by", supersedingSlug,
+				"--reason", reason,
+			}, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("supersede exit = %d, want %d; stderr=%q", code, exitPreflight, stderr.String())
+			}
+			if stdout.String() != "" {
+				t.Fatalf("refusal stdout = %q, want empty", stdout.String())
+			}
+			if !strings.Contains(stderr.String(), tt.wantError) {
+				t.Fatalf("refusal stderr = %q, want condition %q", stderr.String(), tt.wantError)
+			}
+			if after := snapshotDirectoryFiles(t, root); !reflect.DeepEqual(after, before) {
+				t.Fatalf("refusal changed Spec root\nbefore: %#v\nafter:  %#v", before, after)
+			}
+			assertNoRunDatabase(t, homeDir)
+		})
+	}
+}
+
+func TestSupersedeAcceptsAnActiveDeliverer(t *testing.T) {
+	const (
+		supersededSlug  = implementTestSlug
+		supersedingSlug = "0002-delivered-widget"
+	)
+	homeDir, repoDir := newImplementWorkspace(t, nil)
+	delivererDir := filepath.Join(repoDir, "docs", "specs", supersedingSlug)
+	mustMkdir(t, delivererDir)
+	mustWrite(t, filepath.Join(delivererDir, "_prd.md"), "---\nstatus: active\n---\n\n# Delivered widget\n")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{
+		"supersede",
+		"--spec", supersededSlug,
+		"--by", supersedingSlug,
+		"--reason", "Spec 0002 delivered the widget behavior.",
+	}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("supersede exit = %d, want %d; stderr=%q stdout=%q", code, exitOK, stderr.String(), stdout.String())
+	}
+	if stderr.String() != "" {
+		t.Fatalf("supersede stderr = %q, want empty", stderr.String())
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
 func snapshotDirectoryFiles(t *testing.T, root string) map[string][]byte {
 	t.Helper()
 	snapshot := make(map[string][]byte)
