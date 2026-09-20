@@ -86,6 +86,10 @@ _Avoid_: Check presence, generic approval, inferred clean state
 One Spec's planning artifact set produced by the spec workflow: PRD, Task Graph, Task files, QA evidence, and adopted sources under `references/` with provenance recorded in `references/_index.md`.
 _Avoid_: Feature folder, epic, project
 
+**Supersession**:
+A durable lifecycle record that names the Spec which delivered another Spec's content. The Archive Command accepts it as proof of completion for the superseded Spec when that Spec has no Task Graph.
+_Avoid_: Replacement, duplicate, hand-written disposition
+
 **Spec Root**:
 The configured directory holding Spec folders, `docs/specs` by default; it may resolve outside the repository working tree, such as a knowledge workspace repository.
 _Avoid_: Specs directory, docs folder, knowledge base

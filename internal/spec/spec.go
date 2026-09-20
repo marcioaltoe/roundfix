@@ -25,9 +25,10 @@ const (
 )
 
 const (
-	manifestSchema  = "spec-tasks/v1"
-	prdStatusActive = "active"
-	archivedDirName = "_archived"
+	manifestSchema        = "spec-tasks/v1"
+	missingManifestReason = "file does not exist; run the write-tasks workflow to create the Task Graph"
+	prdStatusActive       = "active"
+	archivedDirName       = "_archived"
 )
 
 // Status is the lifecycle state a task file carries in its frontmatter.
@@ -541,6 +542,24 @@ func requireActive(slug string, dir string) error {
 	return nil
 }
 
+// ReadPRDStatus returns the lifecycle status declared by a Spec's _prd.md
+// frontmatter. A missing status is malformed rather than an unnamed state.
+func ReadPRDStatus(dir string) (string, error) {
+	prdPath := filepath.Join(dir, "_prd.md")
+	content, err := os.ReadFile(prdPath)
+	if err != nil {
+		return "", err
+	}
+	status, err := prdStatus(content)
+	if err != nil {
+		return "", err
+	}
+	if status == "" {
+		return "", errors.New("frontmatter has no status")
+	}
+	return status, nil
+}
+
 func prdStatus(content []byte) (string, error) {
 	frontmatterBytes, _, err := splitFrontmatter(content)
 	if err != nil {
@@ -558,7 +577,7 @@ func prdStatus(content []byte) (string, error) {
 func loadManifestNodes(manifestPath string) ([]manifestNode, map[string]TaskType, bool, qaDeclaration, error) {
 	content, err := os.ReadFile(manifestPath)
 	if errors.Is(err, os.ErrNotExist) {
-		return nil, nil, false, qaDeclaration{}, ManifestError{Path: manifestPath, Reason: "file does not exist; run the write-tasks workflow to create the Task Graph"}
+		return nil, nil, false, qaDeclaration{}, ManifestError{Path: manifestPath, Reason: missingManifestReason}
 	}
 	if err != nil {
 		return nil, nil, false, qaDeclaration{}, fmt.Errorf("read Task Graph manifest %q: %w", manifestPath, err)

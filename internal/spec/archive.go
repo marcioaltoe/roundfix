@@ -56,30 +56,44 @@ type ArchiveResult struct {
 	ArchivedOn  string
 }
 
-// Archive verifies completion and QA evidence, stamps archive metadata in the
-// PRD frontmatter, and moves the Spec under the resolved archived Spec root. A
-// partial QA Report is eligible only when its blocked rows are declared
-// unreachable.
+// Archive verifies either completion and QA evidence for a Spec with a Task
+// Graph or a supersession record for a Spec without one, then moves the Spec
+// under the resolved archived Spec root. A partial QA Report is eligible only
+// when its blocked rows are declared unreachable. Superseded Specs move
+// byte-identically because their amendment already records their disposition.
 func Archive(req ArchiveRequest) (ArchiveResult, error) {
+	sourceDir := filepath.Join(filepath.Clean(req.SpecsRoot), req.Slug)
+	stampMetadata := true
+	var unproven []string
+
 	graph, err := Load(req.SpecsRoot, req.Slug)
 	if err != nil {
-		return ArchiveResult{}, err
-	}
-	for _, task := range graph.Tasks {
-		if task.Status != StatusCompleted {
-			return ArchiveResult{}, fmt.Errorf("Task %q is %q; archive requires every Task to be %q", task.ID, task.Status, StatusCompleted)
+		var manifestErr ManifestError
+		if !errors.As(err, &manifestErr) || manifestErr.Reason != missingManifestReason || manifestErr.Err != nil {
+			return ArchiveResult{}, err
 		}
-	}
-	report, err := ReadQAReport(graph.Spec.Dir)
-	if err != nil {
-		if errors.Is(err, ErrNoQAReport) {
-			return ArchiveResult{}, fmt.Errorf("no passing QA verdict: %w", err)
+		if _, supersessionErr := ReadSupersession(sourceDir); supersessionErr != nil {
+			if errors.Is(supersessionErr, ErrNoSupersession) {
+				return ArchiveResult{}, err
+			}
+			return ArchiveResult{}, fmt.Errorf("invalid supersession proof: %w", supersessionErr)
 		}
-		return ArchiveResult{}, fmt.Errorf("no passing QA verdict: %w", err)
-	}
-	unproven, err := archiveUnprovenActions(graph.Spec.Dir, report)
-	if err != nil {
-		return ArchiveResult{}, fmt.Errorf("no passing QA verdict: %w", err)
+		stampMetadata = false
+	} else {
+		sourceDir = graph.Spec.Dir
+		for _, task := range graph.Tasks {
+			if task.Status != StatusCompleted {
+				return ArchiveResult{}, fmt.Errorf("Task %q is %q; archive requires every Task to be %q", task.ID, task.Status, StatusCompleted)
+			}
+		}
+		report, reportErr := ReadQAReport(graph.Spec.Dir)
+		if reportErr != nil {
+			return ArchiveResult{}, fmt.Errorf("no passing QA verdict: %w", reportErr)
+		}
+		unproven, reportErr = archiveUnprovenActions(graph.Spec.Dir, report)
+		if reportErr != nil {
+			return ArchiveResult{}, fmt.Errorf("no passing QA verdict: %w", reportErr)
+		}
 	}
 
 	archiveRoot := ArchiveSpecRoot(req.SpecsRoot, req.BuiltInRoot)
@@ -91,18 +105,20 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 	}
 
 	archivedOn := archiveDate(req.ArchivedAt)
-	prdPath := filepath.Join(graph.Spec.Dir, "_prd.md")
-	if err := stampArchiveMetadata(prdPath, req.Slug, archivedOn, unproven); err != nil {
-		return ArchiveResult{}, err
+	if stampMetadata {
+		prdPath := filepath.Join(sourceDir, "_prd.md")
+		if err := stampArchiveMetadata(prdPath, req.Slug, archivedOn, unproven); err != nil {
+			return ArchiveResult{}, err
+		}
 	}
 	if err := os.MkdirAll(archiveRoot, 0o755); err != nil {
 		return ArchiveResult{}, fmt.Errorf("create archived Spec root %q: %w", archiveRoot, err)
 	}
-	if err := os.Rename(graph.Spec.Dir, archivedDir); err != nil {
-		return ArchiveResult{}, fmt.Errorf("move Spec %q to %q: %w", graph.Spec.Dir, archivedDir, err)
+	if err := os.Rename(sourceDir, archivedDir); err != nil {
+		return ArchiveResult{}, fmt.Errorf("move Spec %q to %q: %w", sourceDir, archivedDir, err)
 	}
 	return ArchiveResult{
-		SourceDir:   graph.Spec.Dir,
+		SourceDir:   sourceDir,
 		ArchivedDir: archivedDir,
 		ArchivedOn:  archivedOn,
 	}, nil
