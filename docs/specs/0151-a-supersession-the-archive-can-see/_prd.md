@@ -45,7 +45,16 @@ evidence preserved.
   gate's matrix, ADR-0104 makes a Spec accept on evidence it did not author, and
   ADR-0156 makes each declared promise name a consuming Task. ADR-0130 keeps a
   path governed once an authorization has bounded it, which is why
-  `internal/spec/archive.go` needed an express grant. All four hold.
+  `internal/spec/archive.go` needed an express grant. ADR-0080 keeps an
+  environment-blocked QA row distinct from a failure, which this Spec's gate
+  evidence relies on, and ADR-0091 makes that gate a Task node of its own type,
+  which is what this Spec's supersession path deliberately does not replace, and
+  ADR-0093 checks Spec consistency by citation rather than inference, which is
+  why this row names each decision explicitly. ADR-0096 makes the gate prove
+  machine facts before spending an agent turn, ADR-0097 carries a QA row forward
+  only on declared, unmoved evidence, and ADR-0117 checks a defect at the stage
+  that can produce it. All bind this Spec's terminal QA Task unchanged: the
+  supersession path is a second proof for archive, not a way around the gate.
   Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — a new command changes the public CLI surface,
   which the shipped skill documents. Express maintainer authorization: granted

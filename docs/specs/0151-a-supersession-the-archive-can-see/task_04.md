@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0151-a-supersession-the-archive-can-see
-status: completed
+status: pending
 type: qa
 complexity: high
 ---
@@ -63,3 +63,9 @@ responsibility.
 `_prd.md` → Goals 1-3; Core Features 1-4; Success Metrics 1-3; Acceptance
 evidence; `_techspec.md` → Testing Approach 1-6; API Contracts 1-3; ADR-0155;
 ADR-0104; ADR-0156.
+
+## Invalidation
+
+- Date: `2026-09-20`
+- QA Report: `qa/qa-report-2026-09-19.md`
+- Dependencies not completed: `task_05`
