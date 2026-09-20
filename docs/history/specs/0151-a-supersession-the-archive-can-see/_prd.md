@@ -1,9 +1,12 @@
 ---
 spec: 0151-a-supersession-the-archive-can-see
-status: active
+status: archived
 created: 2026-09-19
 surfaces: [backend, cli, docs]
+archived: "2026-09-20"
+source_slug: 0151-a-supersession-the-archive-can-see
 ---
+
 
 # A supersession the archive can see
 
