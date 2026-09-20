@@ -16,9 +16,12 @@ graph:
     - id: task_05
       file: task_05.md
       needs: [task_01, task_03]
+    - id: task_06
+      file: task_06.md
+      needs: [task_05]
     - id: task_04
       file: task_04.md
-      needs: [task_01, task_02, task_03, task_05]
+      needs: [task_01, task_02, task_03, task_05, task_06]
 ---
 
 # Task Graph
@@ -29,4 +32,5 @@ graph:
 | task_02 | backend | Archive's second accepted proof |
 | task_03 | docs | Describe both in the shipped skill and the guide |
 | task_05 | backend | A deliverer check that checks what it claims |
+| task_06 | backend | An archive state the deliverer check can recognise |
 | task_04 | qa | Run the final QA gate |

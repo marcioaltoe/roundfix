@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0151-a-supersession-the-archive-can-see
-status: completed
+status: pending
 type: qa
 complexity: high
 ---
@@ -69,3 +69,9 @@ ADR-0104; ADR-0156.
 - Date: `2026-09-20`
 - QA Report: `qa/qa-report-2026-09-19.md`
 - Dependencies not completed: `task_05`
+
+## Invalidation
+
+- Date: `2026-09-20`
+- QA Report: `qa/qa-report-2026-09-20.md`
+- Dependencies not completed: `task_06`
