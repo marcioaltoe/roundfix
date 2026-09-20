@@ -6,6 +6,7 @@ consuming: 0151-a-supersession-the-archive-can-see
 paths:
   - .agents/skills/roundfix/SKILL.md
   - skills/roundfix/SKILL.md
+  - internal/spec/archive.go
 operations:
   - implement
   - commit
@@ -28,11 +29,27 @@ The Spec adds a command and changes what archive accepts as evidence. Both are
 public CLI behavior, and this repository's hard rule requires a pull request
 that changes CLI behavior to ship the skill update with it.
 
+## The archive decision path
+
+On 2026-09-19 the maintainer granted `internal/spec/archive.go` for this Spec,
+bounded to giving `Archive` a second accepted proof.
+
+The first authorization record claimed the whole of `internal/spec` was
+unbounded. That was wrong at file granularity: the governance probe was run on
+`spec.go`, `errors.go` and `task.go` — the files the work was predicted to touch
+— and not on `archive.go`, which a prior authorization had bounded and which
+therefore stays governed under ADR-0130. The QA gate caught it as QA-AUTH-PATHS.
+
+The path cannot be avoided. `Archive` is where the evidence decision is made;
+moving the decision to `internal/cli/archive.go` would duplicate it in the CLI
+while the library function kept refusing.
+
 ## What is not governed
 
-Every other path this Spec touches was classified through the governance probe
-rather than estimated: `internal/cli`, `internal/spec`, their tests and
-`docs/user-guide` are ordinary source that no authorization has bounded.
+Measured through the governance probe, not estimated: `internal/cli/archive.go`,
+`internal/spec/spec.go`, `internal/spec/task.go`, their tests and
+`docs/user-guide/commands.md` are ordinary source that no authorization has
+bounded.
 
 ## Approved bounded mutation
 

@@ -43,16 +43,21 @@ evidence preserved.
   Source: `docs/agents/cli.md`.
 - Active ADR obligations: applicable — ADR-0155 makes the `qa` Task declare the
   gate's matrix, ADR-0104 makes a Spec accept on evidence it did not author, and
-  ADR-0156 makes each declared promise name a consuming Task. All three hold.
+  ADR-0156 makes each declared promise name a consuming Task. ADR-0130 keeps a
+  path governed once an authorization has bounded it, which is why
+  `internal/spec/archive.go` needed an express grant. All four hold.
   Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — a new command changes the public CLI surface,
   which the shipped skill documents. Express maintainer authorization: granted
   2026-09-18 as a standing grant, consumed here and recorded in
   [_authorization.md](_authorization.md); bounded files:
-  `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`. Sanctioned
-  regeneration: `make skills-sync`. `internal/cli`, `internal/spec` and
-  `docs/user-guide` are ordinary source that no authorization has bounded,
-  measured through the governance probe. Source:
+  `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`, and
+  `internal/spec/archive.go`, granted 2026-09-19 after the QA gate found the
+  first record had missed it. Sanctioned regeneration: `make skills-sync`.
+  `internal/cli/archive.go`, `internal/spec/spec.go`, `internal/spec/task.go`
+  and `docs/user-guide/commands.md` are ordinary source that no authorization
+  has bounded, each measured through the governance probe rather than assumed
+  from its directory. Source:
   `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`,
   `docs/agents/specific-repository.md`.
 

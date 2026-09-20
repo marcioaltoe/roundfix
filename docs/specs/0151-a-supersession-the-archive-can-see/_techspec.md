@@ -26,8 +26,8 @@ precondition it enforces stays in force.
   precondition are public CLI behavior. Express maintainer authorization:
   granted 2026-09-18 as a standing grant, consumed in
   [_authorization.md](_authorization.md); bounded files:
-  `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`. Sanctioned
-  regeneration: `make skills-sync`. Source: `docs/agents/agent-instructions.md`,
+  `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`, and
+  `internal/spec/archive.go`. Sanctioned regeneration: `make skills-sync`. Source: `docs/agents/agent-instructions.md`,
   `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## Where the record lives
