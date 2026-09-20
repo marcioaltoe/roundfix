@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0151-a-supersession-the-archive-can-see
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
