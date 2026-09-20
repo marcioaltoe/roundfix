@@ -291,6 +291,98 @@ func TestSupersedeAcceptsAnActiveDeliverer(t *testing.T) {
 	assertNoRunDatabase(t, homeDir)
 }
 
+func TestSupersedeAcceptsASupersessionArchivedDeliverer(t *testing.T) {
+	const (
+		supersededSlug = implementTestSlug
+		delivererSlug  = "0002-delivered-widget"
+		originalSlug   = "0003-original-deliverer"
+	)
+	homeDir, repoDir := newImplementWorkspace(t, nil)
+	activeRoot := filepath.Join(repoDir, "docs", "specs")
+	delivererDir := filepath.Join(activeRoot, delivererSlug)
+	mustMkdir(t, delivererDir)
+	mustWrite(t, filepath.Join(delivererDir, "_prd.md"), "---\nstatus: active\n---\n\n# Delivered widget\n")
+	originalDir := filepath.Join(activeRoot, originalSlug)
+	mustMkdir(t, originalDir)
+	mustWrite(t, filepath.Join(originalDir, "_prd.md"), "---\nstatus: active\n---\n\n# Original deliverer\n")
+
+	var supersedeStdout bytes.Buffer
+	var supersedeStderr bytes.Buffer
+	code := runCLIContext(t, context.Background(), []string{
+		"supersede",
+		"--spec", delivererSlug,
+		"--by", originalSlug,
+		"--reason", "Spec 0003 delivered the original content.",
+	}, &supersedeStdout, &supersedeStderr)
+	if code != exitOK {
+		t.Fatalf("initial supersede exit = %d, want %d; stderr=%q stdout=%q", code, exitOK, supersedeStderr.String(), supersedeStdout.String())
+	}
+
+	var archiveStdout bytes.Buffer
+	var archiveStderr bytes.Buffer
+	code = runCLIContext(t, context.Background(), []string{"archive", delivererSlug}, &archiveStdout, &archiveStderr)
+	if code != exitOK {
+		t.Fatalf("archive exit = %d, want %d; stderr=%q stdout=%q", code, exitOK, archiveStderr.String(), archiveStdout.String())
+	}
+	archivedDelivererDir := archiveTestRepositoryPath(repoDir, spec.ArchiveKindSpec, delivererSlug)
+	archivedPRDPath := filepath.Join(archivedDelivererDir, "_prd.md")
+	prdBefore := mustRead(t, archivedPRDPath)
+
+	var finalStdout bytes.Buffer
+	var finalStderr bytes.Buffer
+	code = runCLIContext(t, context.Background(), []string{
+		"supersede",
+		"--spec", supersededSlug,
+		"--by", delivererSlug,
+		"--reason", "Spec 0002 delivered the widget behavior.",
+	}, &finalStdout, &finalStderr)
+	if code != exitOK {
+		t.Fatalf("supersede with archived deliverer exit = %d, want %d; stderr=%q stdout=%q", code, exitOK, finalStderr.String(), finalStdout.String())
+	}
+	if finalStderr.String() != "" {
+		t.Fatalf("supersede stderr = %q, want empty", finalStderr.String())
+	}
+	if prdAfter := mustRead(t, archivedPRDPath); prdAfter != prdBefore {
+		t.Fatalf("using the supersession-archived deliverer changed its preserved PRD\nbefore: %q\nafter:  %q", prdBefore, prdAfter)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
+func TestSupersedeRejectsAnUnmarkedArchivedDeliverer(t *testing.T) {
+	const (
+		supersededSlug = implementTestSlug
+		delivererSlug  = "0002-delivered-widget"
+	)
+	homeDir, repoDir := newImplementWorkspace(t, nil)
+	archivedDelivererDir := archiveTestRepositoryPath(repoDir, spec.ArchiveKindSpec, delivererSlug)
+	mustMkdir(t, archivedDelivererDir)
+	mustWrite(t, filepath.Join(archivedDelivererDir, "_prd.md"), "---\nstatus: active\n---\n\n# Unmarked archived deliverer\n")
+	before := snapshotDirectoryFiles(t, archivedDelivererDir)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{
+		"supersede",
+		"--spec", supersededSlug,
+		"--by", delivererSlug,
+		"--reason", "Spec 0002 delivered the widget behavior.",
+	}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("supersede exit = %d, want %d; stderr=%q stdout=%q", code, exitPreflight, stderr.String(), stdout.String())
+	}
+	if stdout.String() != "" {
+		t.Fatalf("refusal stdout = %q, want empty", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), `frontmatter status is "active"; expected "archived"`) {
+		t.Fatalf("refusal stderr = %q, want missing archive marker condition", stderr.String())
+	}
+	if after := snapshotDirectoryFiles(t, archivedDelivererDir); !reflect.DeepEqual(after, before) {
+		t.Fatalf("refusal changed archived deliverer\nbefore: %#v\nafter:  %#v", before, after)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
 func snapshotDirectoryFiles(t *testing.T, root string) map[string][]byte {
 	t.Helper()
 	snapshot := make(map[string][]byte)

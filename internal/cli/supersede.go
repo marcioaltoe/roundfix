@@ -171,10 +171,15 @@ func knownDelivererSpec(root roundconfig.SpecsRoot, slug string) (bool, error) {
 	if err != nil {
 		return false, validationError{message: fmt.Sprintf("superseding Spec %q has malformed _prd.md in the archive: %v", slug, err)}
 	}
-	if status != "archived" {
-		return false, validationError{message: fmt.Sprintf("superseding Spec %q is not archived: archived _prd.md frontmatter status is %q; expected %q", slug, status, "archived")}
+	if status == "archived" {
+		return true, nil
 	}
-	return true, nil
+	if _, err := spec.ReadSupersession(archivedDir); err == nil {
+		return true, nil
+	} else if !errors.Is(err, spec.ErrNoSupersession) {
+		return false, validationError{message: fmt.Sprintf("superseding Spec %q has malformed supersession record in the archive: %v", slug, err)}
+	}
+	return false, validationError{message: fmt.Sprintf("superseding Spec %q is not archived: archived _prd.md frontmatter status is %q; expected %q", slug, status, "archived")}
 }
 
 func knownSpecDirectory(directory string) (bool, error) {

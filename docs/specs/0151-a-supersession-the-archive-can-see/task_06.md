@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0151-a-supersession-the-archive-can-see
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -69,3 +69,36 @@ reading the wrong thing for that case.
 ## References
 
 - [_techspec.md](_techspec.md) — The command
+
+## Result
+
+Implemented the archive-side deliverer recognition without changing archive
+metadata or preserved PRDs. A conventionally archived Spec is still accepted
+from its `status: archived` PRD; when an archived PRD declares another status,
+the check now accepts only a valid `_supersession.md`. A missing or malformed
+supersession remains a Preflight Validation refusal.
+
+Focused evidence:
+
+- Before the production edit,
+  `rtk env GOCACHE=/private/tmp/roundfix-task06-go-cache go test -count=1 ./internal/cli -run 'TestSupersedeAcceptsA'`
+  reproduced the defect: the real supersede → archive → supersede flow exited 2
+  because the archived deliverer's preserved PRD still declared `active`.
+- `rtk env GOCACHE=/private/tmp/roundfix-task06-go-cache go test -count=1 -v ./internal/cli -run 'TestSupersede(AcceptsA|RejectsA|$)'`
+  passed after the edit. `TestSupersedeAcceptsASupersessionArchivedDeliverer`
+  proves the supersession-archive path is accepted and compares the archived
+  PRD before and after use byte-for-byte.
+- The same focused run passed the existing conventionally archived accepted
+  path in `TestSupersede/accepted_path_writes_only_the_amendment`, all Tasks 01
+  and 05 refusals, and the new
+  `TestSupersedeRejectsAnUnmarkedArchivedDeliverer`, which proves an archived
+  Spec with `status: active` and no supersession is refused without mutation.
+- `rtk env GOCACHE=/private/tmp/roundfix-task06-go-cache make verify-incremental`
+  passed with the required process-table permission, including vet, all Go
+  packages, skill checks, and the binary build. The initial sandboxed run
+  reached the Go test sweep but two unrelated force-stop integration tests
+  could not read the macOS process table (`operation not permitted`).
+- `rtk git diff --check` passed.
+
+The Task's declared Verification command was not run; the Daemon owns that
+gate and Task status.
