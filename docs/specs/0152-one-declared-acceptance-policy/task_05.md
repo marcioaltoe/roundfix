@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0152-one-declared-acceptance-policy
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
