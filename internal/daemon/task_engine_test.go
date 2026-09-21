@@ -8074,6 +8074,46 @@ func TestTaskCycleQAReportExternalProceedsWithoutStaging(t *testing.T) {
 	}
 }
 
+func TestTaskCycleSettlesAQualifyingPartial(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	runner := &taskFakeRunner{
+		calls:    fixture.calls,
+		gitRoot:  fixture.gitRoot,
+		qaReport: "---\nverdict: partial\nrows_blocked_declared: 1\n---\n\n# QA Report\n",
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.qaPlan()
+	prdPath := filepath.Join(plan.Spec.Dir, "_prd.md")
+	mustWriteForTest(t, prdPath, readFileForTest(t, prdPath)+`
+## Unreachable Acceptance
+
+- criterion: the unavailable journey
+  reason: the gate cannot create a pull request
+  satisfied-by: task_01
+`)
+	gitPath, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatalf("resolve git for isolated PATH: %v", err)
+	}
+	isolatedPath := t.TempDir()
+	if err := os.Symlink(gitPath, filepath.Join(isolatedPath, "git")); err != nil {
+		t.Fatalf("create isolated git link: %v", err)
+	}
+	t.Setenv("PATH", isolatedPath)
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if result.QAVerdict != spec.VerdictPartial || !result.QAAccepted {
+		t.Fatalf("QA settlement = verdict %q accepted %t, want qualifying partial", result.QAVerdict, result.QAAccepted)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, fixture.graph.QATaskID); got != string(spec.StatusCompleted) {
+		t.Fatalf("QA Task status = %q, want %q", got, spec.StatusCompleted)
+	}
+}
+
 func TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport(t *testing.T) {
 	t.Parallel()
 	reportRel := qaReportRelPathForTest()
@@ -8082,12 +8122,13 @@ func TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport(t *testing.T) {
 		report      string
 		wantVerdict string
 		wantStatus  spec.Status
+		wantReason  string
 	}{
-		{name: "pass", report: qaReportForTest(spec.VerdictPass), wantVerdict: spec.VerdictPass, wantStatus: spec.StatusCompleted},
-		{name: "partial", report: qaReportForTest(spec.VerdictPartial), wantVerdict: spec.VerdictPartial, wantStatus: spec.StatusFailed},
-		{name: "fail", report: qaReportForTest(spec.VerdictFail), wantVerdict: spec.VerdictFail, wantStatus: spec.StatusFailed},
-		{name: "missing report", report: "", wantVerdict: "missing", wantStatus: spec.StatusFailed},
-		{name: "unreadable verdict", report: "---\nsummary: no verdict field\n---\n\n# QA Report\n", wantVerdict: "unreadable", wantStatus: spec.StatusFailed},
+		{name: "pass with environment-blocked row", report: "---\nverdict: pass\nrows_blocked_environment: 1\n---\n\n# QA Report\n", wantVerdict: spec.VerdictPass, wantStatus: spec.StatusCompleted},
+		{name: "non-qualifying partial", report: qaReportForTest(spec.VerdictPartial), wantVerdict: spec.VerdictPartial, wantStatus: spec.StatusFailed, wantReason: "QA verdict partial"},
+		{name: "fail", report: qaReportForTest(spec.VerdictFail), wantVerdict: spec.VerdictFail, wantStatus: spec.StatusFailed, wantReason: "QA verdict fail"},
+		{name: "missing report", report: "", wantVerdict: "missing", wantStatus: spec.StatusFailed, wantReason: "QA verdict missing"},
+		{name: "unreadable verdict", report: "---\nsummary: no verdict field\n---\n\n# QA Report\n", wantVerdict: "unreadable", wantStatus: spec.StatusFailed, wantReason: "QA verdict unreadable"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -8121,8 +8162,23 @@ func TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport(t *testing.T) {
 			if result.QAVerdict != tt.wantVerdict {
 				t.Fatalf("expected QA verdict %q, got %q", tt.wantVerdict, result.QAVerdict)
 			}
+			if result.QAAccepted != (tt.wantStatus == spec.StatusCompleted) {
+				t.Fatalf("QA accepted = %t, want %t", result.QAAccepted, tt.wantStatus == spec.StatusCompleted)
+			}
 			if got := taskStatusOnDisk(t, fixture.gitRoot, fixture.graph.QATaskID); got != string(tt.wantStatus) {
 				t.Fatalf("expected QA Task %s settled %s, got %s", fixture.graph.QATaskID, tt.wantStatus, got)
+			}
+			var settlement map[string]any
+			for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonTask) {
+				payload := eventPayloadMap(t, event)
+				if event.ReviewIssue == fixture.graph.QATaskID && payload["phase"] == "settled" {
+					settlement = payload
+					break
+				}
+			}
+			gotReason, _ := settlement["reason"].(string)
+			if settlement == nil || gotReason != tt.wantReason {
+				t.Fatalf("QA settlement payload = %v, want reason %q", settlement, tt.wantReason)
 			}
 			wantReportPath := reportRel
 			if tt.report == "" {

@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0152-one-declared-acceptance-policy
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -78,3 +78,59 @@ inherit a stranger's binary.
 ## References
 
 - [_techspec.md](_techspec.md) — The one decision
+
+## Result
+
+Implementation:
+
+- The Daemon now reads the newest QA Report and applies
+  `spec.QAReportEligibility` in process before settling the terminal `qa` Task.
+  The raw report verdict remains available for reporting and commit messages,
+  while `TaskCycleResult.QAAccepted` carries the shared eligibility decision to
+  Implement Run settlement.
+- Implement Run disposition now uses that accepted/not-accepted result, so a
+  qualifying `partial` can end `Clean` without changing what the report says.
+- Archive eligibility and the rendered QA Verification command were not
+  changed.
+
+Focused-check evidence:
+
+- Red signal: `rtk env GOCACHE=/private/tmp/roundfix-task06-go-cache go test
+  -run '^TestTaskCycle(QAVerdictMatrixSettlesRunAndCommitsReport|SettlesAQualifyingPartial)$'
+  ./internal/daemon` failed before implementation because `TaskCycleResult`
+  had no accepted eligibility result.
+- The same focused daemon command passed after implementation. It covers the
+  qualifying partial and the pass, fail, missing, unreadable, and
+  non-qualifying-partial settlement matrix.
+- `rtk env GOCACHE=/private/tmp/roundfix-task06-go-cache go test -run
+  '^TestRunImplementQAVerdictMatrix$' ./internal/cli` passed. The matrix proves
+  a qualifying partial ends `Clean` and a non-qualifying partial remains
+  `Unresolved`.
+- `rtk env GOCACHE=/private/tmp/roundfix-task06-go-cache go test
+  ./internal/daemon ./internal/cli` passed the daemon package. The CLI package
+  reached two unrelated force-stop integration failures because sandboxed
+  process-table enumeration returned `operation not permitted`; its focused QA
+  disposition matrix had already passed.
+- `rtk git diff --check` passed.
+
+Acceptance evidence:
+
+- `TestTaskCycleSettlesAQualifyingPartial` gives the Spec one unreachable
+  declaration and a newest `partial` report with one declared-blocked row. The
+  TaskCycle records the report as accepted and settles the `qa` Task
+  `completed`.
+- The same regression replaces `PATH` with an isolated directory containing
+  `git` but no `roundfix`; settlement still succeeds through the in-process
+  decision.
+- `TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport` keeps a `pass` with
+  one environment-blocked row `completed`. It keeps `fail`, missing,
+  unreadable, and a partial with no declared-blocked row `failed`, and pins the
+  existing reasons `QA verdict fail`, `QA verdict missing`, `QA verdict
+  unreadable`, and `QA verdict partial`.
+- `TestRunImplementQAVerdictMatrix` proves the accepted qualifying partial does
+  not end the Run `Unresolved`; the negative cases still do.
+
+Not run:
+
+- The Task's declared `## Verification` commands — reserved for the Daemon by
+  the assigned execution contract.

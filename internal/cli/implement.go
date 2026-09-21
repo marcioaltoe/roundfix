@@ -539,9 +539,9 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	if cycleResult.Failed > 0 || cycleResult.Skipped > 0 {
 		outcome = store.StateUnresolved
 	}
-	// Only a pass verdict lets a QA Run end Clean: partial, fail, missing,
-	// and unreadable all settle Unresolved (ADR 0015).
-	if cycleResult.QAVerdict != "" && cycleResult.QAVerdict != spec.VerdictPass {
+	// The same eligibility decision that settles the terminal QA Task decides
+	// whether its Run can end Clean (ADR 0015).
+	if cycleResult.QAVerdict != "" && !cycleResult.QAAccepted {
 		outcome = store.StateUnresolved
 	}
 	report, counts := renderImplementTaskLinesWithOutcomes(executionSpecsRoot, executionGraph, true, cycleResult.Outcomes)

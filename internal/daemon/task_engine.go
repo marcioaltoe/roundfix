@@ -293,13 +293,15 @@ type TaskOutcome struct {
 // Tasks left pending because a needed Task did not end completed.
 // QAVerdict stays empty when the QA step did not run; when it ran it is
 // the report verdict (pass, fail, partial) or a Daemon settlement
-// (missing, unreadable). QAReportPath is the newest QA Report relative to
-// the working tree, empty when no report exists. TerminalOutcome and
+// (missing, unreadable). QAAccepted records the shared eligibility decision
+// used to settle the QA Task. QAReportPath is the newest QA Report relative
+// to the working tree, empty when no report exists. TerminalOutcome and
 // TerminalReason identify a Run-budget end for the command that owns Run
 // settlement; they stay empty for every other Task-cycle result.
 type TaskCycleResult struct {
 	Completed, Failed, Skipped int
 	QAVerdict                  string
+	QAAccepted                 bool
 	QAReportPath               string
 	Outcomes                   []TaskOutcome
 	TerminalOutcome            string
@@ -309,8 +311,8 @@ type TaskCycleResult struct {
 // QA verdict settlements the Daemon adds beyond the report-authored
 // pass/fail/partial values: a QA step that finds no report settles
 // "missing" and one whose report verdict cannot be read settles
-// "unreadable". Every value except spec.VerdictPass ends the Run
-// Unresolved (ADR 0015).
+// "unreadable". The shared QA eligibility decision determines whether the
+// verdict settles the gate (ADR 0015).
 const (
 	qaVerdictMissing    = "missing"
 	qaVerdictUnreadable = "unreadable"
@@ -394,11 +396,12 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 			return engine.taskCycleResultWithBudgetOutcome(plan, result, fmt.Errorf("stop run %q before the QA step: %w", plan.RunID, err))
 		}
 		ordinal++
-		verdict, reportPath, err := engine.runQAGate(cycleCtx, plan, *qaTask, ordinal)
+		verdict, reportPath, accepted, err := engine.runQAGate(cycleCtx, plan, *qaTask, ordinal)
 		if err != nil {
 			return engine.taskCycleResultWithBudgetOutcome(plan, result, err)
 		}
 		result.QAVerdict = verdict
+		result.QAAccepted = accepted
 		result.QAReportPath = reportPath
 	} else if qaTask != nil && qaTask.Status != spec.StatusCompleted {
 		if _, err := fmt.Fprintf(engine.deps.Progress, "QA Task %s withheld; unmet dependencies: %s\n", qaTask.ID, strings.Join(uncompletedTaskNeeds(*qaTask, statuses), ", ")); err != nil {
@@ -2265,26 +2268,26 @@ func qaRepositoryVerificationRetainedDiagnostics(path string) string {
 // Task settles from the verdict before the report commit, so its task file
 // rides with the report. The returned error is reserved for Stop Requests and
 // infrastructure failures.
-func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.Task, ordinal int) (verdict string, reportPath string, err error) {
+func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.Task, ordinal int) (verdict string, reportPath string, accepted bool, err error) {
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
-			return "", "", fmt.Errorf("publish stop event for run %q before the QA step: %w", plan.RunID, errors.Join(err, publishErr))
+			return "", "", false, fmt.Errorf("publish stop event for run %q before the QA step: %w", plan.RunID, errors.Join(err, publishErr))
 		}
-		return "", "", fmt.Errorf("stop run %q before the QA step: %w", plan.RunID, err)
+		return "", "", false, fmt.Errorf("stop run %q before the QA step: %w", plan.RunID, err)
 	}
 	// The before-snapshot keeps everything already dirty out of the QA
 	// Report commit: only the QA step's own report and evidence ride in it.
 	before, err := engine.snapshotQAPaths(ctx, plan.WorkDir)
 	if err != nil {
-		return "", "", err
+		return "", "", false, err
 	}
 	promptContext, err := engine.buildQAPromptContext(ctx, plan, qaTask)
 	if err != nil {
-		return "", "", fmt.Errorf("build QA prompt context for run %q: %w", plan.RunID, err)
+		return "", "", false, fmt.Errorf("build QA prompt context for run %q: %w", plan.RunID, err)
 	}
 	mechanicalRequest, err := engine.qaMechanicalRequest(ctx, plan, qaTask, promptContext.PreviousReportPath)
 	if err != nil {
-		return "", "", fmt.Errorf("build mechanical-stage request for run %q: %w", plan.RunID, err)
+		return "", "", false, fmt.Errorf("build mechanical-stage request for run %q: %w", plan.RunID, err)
 	}
 	mechanicalStarted := time.Now()
 	mechanicalResult, err := engine.deps.MechanicalStage.Run(ctx, mechanicalRequest)
@@ -2298,22 +2301,22 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		if publishErr := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
 			fmt.Sprintf("QA mechanical stage errored for Spec %s.", plan.Spec.Slug), payload,
 		); publishErr != nil {
-			return "", "", fmt.Errorf("run QA mechanical stage for run %q: %w", plan.RunID, errors.Join(err, publishErr))
+			return "", "", false, fmt.Errorf("run QA mechanical stage for run %q: %w", plan.RunID, errors.Join(err, publishErr))
 		}
-		return "", "", fmt.Errorf("run QA mechanical stage for run %q: %w", plan.RunID, err)
+		return "", "", false, fmt.Errorf("run QA mechanical stage for run %q: %w", plan.RunID, err)
 	}
 	repositoryVerificationPrompt, verificationWindowPaths, verificationErr := engine.runQARepositoryVerification(ctx, plan, qaTask, ordinal, &mechanicalResult)
 	if verificationErr != nil {
 		if isStop(ctx, verificationErr) && ctx.Err() != nil {
 			if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
-				return "", "", fmt.Errorf("publish stop event for run %q during QA repository Verification: %w", plan.RunID, errors.Join(verificationErr, publishErr))
+				return "", "", false, fmt.Errorf("publish stop event for run %q during QA repository Verification: %w", plan.RunID, errors.Join(verificationErr, publishErr))
 			}
 		}
-		return "", "", fmt.Errorf("run repository Verification for run %q QA Task %s: %w", plan.RunID, qaTask.ID, verificationErr)
+		return "", "", false, fmt.Errorf("run repository Verification for run %q QA Task %s: %w", plan.RunID, qaTask.ID, verificationErr)
 	}
 	reportPath, err = engine.writeMechanicalQAReport(ctx, plan, mechanicalResult)
 	if err != nil {
-		return "", "", fmt.Errorf("materialize QA mechanical result for run %q: %w", plan.RunID, err)
+		return "", "", false, fmt.Errorf("materialize QA mechanical result for run %q: %w", plan.RunID, err)
 	}
 	mechanicalSummary := fmt.Sprintf("QA mechanical stage seeded %s for Spec %s.", reportPath, plan.Spec.Slug)
 	if mechanicalResult.Blocking {
@@ -2331,16 +2334,16 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 			"report":       reportPath,
 		},
 	); err != nil {
-		return "", "", fmt.Errorf("publish QA mechanical event for run %q: %w", plan.RunID, err)
+		return "", "", false, fmt.Errorf("publish QA mechanical event for run %q: %w", plan.RunID, err)
 	}
 	fmt.Fprintln(engine.deps.Progress, mechanicalSummary)
 	if err := engine.stopTaskCycleIfRequested(ctx, plan, ordinal); err != nil {
-		return "", "", fmt.Errorf("stop run %q after the QA mechanical stage: %w", plan.RunID, err)
+		return "", "", false, fmt.Errorf("stop run %q after the QA mechanical stage: %w", plan.RunID, err)
 	}
 
 	if !mechanicalResult.Blocking {
 		if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateResolvingWithAgent); err != nil {
-			return "", "", fmt.Errorf("update run %q to state %q before the QA step: %w", plan.RunID, store.StateResolvingWithAgent, err)
+			return "", "", false, fmt.Errorf("update run %q to state %q before the QA step: %w", plan.RunID, store.StateResolvingWithAgent, err)
 		}
 		// The Run Worktree checkout, its Run Branch, and the Spec's target
 		// branch ride along as facts: the gate reasons about the user's branch,
@@ -2361,7 +2364,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 			PullRequestResolved: pullRequestResolved,
 		})
 		if promptErr != nil {
-			return "", "", fmt.Errorf("build QA prompt for run %q: %w", plan.RunID, promptErr)
+			return "", "", false, fmt.Errorf("build QA prompt for run %q: %w", plan.RunID, promptErr)
 		}
 		prompt += fmt.Sprintf("\nSeeded QA Report: %s\nComplete this report in place, preserving its materialized mechanical rows and skips; do not create another QA Report.\n", reportPath)
 		prompt += "\n" + repositoryVerificationPrompt
@@ -2372,7 +2375,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		}
 		owner, ownerErr := engine.qaAgentSessionOwner(plan, ordinal)
 		if ownerErr != nil {
-			return "", "", ownerErr
+			return "", "", false, ownerErr
 		}
 		defer func() {
 			if closeErr := owner.Close(context.WithoutCancel(ctx)); closeErr != nil && err == nil {
@@ -2392,39 +2395,39 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		})
 		cancelAgent()
 		if runErr != nil {
-			return "", "", fmt.Errorf("run Agent for run %q QA step: %w", plan.RunID, runErr)
+			return "", "", false, fmt.Errorf("run Agent for run %q QA step: %w", plan.RunID, runErr)
 		}
 		if !plan.runBudgetDeadline.IsZero() && !engine.deps.Now().Before(plan.runBudgetDeadline) {
-			return "", "", fmt.Errorf("stop run %q after the QA step Agent: %w", plan.RunID, context.DeadlineExceeded)
+			return "", "", false, fmt.Errorf("stop run %q after the QA step Agent: %w", plan.RunID, context.DeadlineExceeded)
 		}
 		if err := ctx.Err(); err != nil {
 			if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
-				return "", "", fmt.Errorf("publish stop event for run %q after the QA step Agent: %w", plan.RunID, errors.Join(err, publishErr))
+				return "", "", false, fmt.Errorf("publish stop event for run %q after the QA step Agent: %w", plan.RunID, errors.Join(err, publishErr))
 			}
-			return "", "", fmt.Errorf("stop run %q after the QA step Agent: %w", plan.RunID, err)
+			return "", "", false, fmt.Errorf("stop run %q after the QA step Agent: %w", plan.RunID, err)
 		}
 	}
-	verdict, reportPath = engine.settleQAVerdict(plan)
+	verdict, reportPath, accepted = engine.settleQAVerdict(plan)
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
 		fmt.Sprintf("QA verdict %s for Spec %s.", verdict, plan.Spec.Slug),
 		map[string]any{"phase": "verdict", "verdict": verdict, "report": reportPath},
 	); err != nil {
-		return "", "", fmt.Errorf("publish QA event for run %q: %w", plan.RunID, err)
+		return "", "", false, fmt.Errorf("publish QA event for run %q: %w", plan.RunID, err)
 	}
 	fmt.Fprintf(engine.deps.Progress, "QA verdict: %s\n", verdict)
 	qaStatus := spec.StatusFailed
 	qaReason := fmt.Sprintf("QA verdict %s", verdict)
-	if verdict == spec.VerdictPass {
+	if accepted {
 		qaStatus = spec.StatusCompleted
 		qaReason = ""
 	}
 	if err := engine.settleTask(ctx, plan, qaTask, ordinal, qaStatus, qaReason); err != nil {
-		return "", "", err
+		return "", "", false, err
 	}
 	if err := engine.commitQAReport(ctx, plan, ordinal, before, verificationWindowPaths, verdict, reportPath, qaTask); err != nil {
-		return "", "", err
+		return "", "", false, err
 	}
-	return verdict, reportPath, nil
+	return verdict, reportPath, accepted, nil
 }
 
 func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qaTask spec.Task, previousReportPath string) (speccheck.MechanicalRequest, error) {
@@ -2808,15 +2811,17 @@ func pullRequestRepository(rawURL string) string {
 // unreadable when the report exists but its verdict cannot be read
 // (ADR 0015). The report path comes back relative to the working tree,
 // empty when no report exists.
-func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string) {
+func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string, bool) {
 	verdict := ""
-	switch value, err := spec.QAVerdict(plan.Spec.Dir); {
+	accepted := false
+	switch report, err := spec.ReadQAReport(plan.Spec.Dir); {
 	case err == nil:
-		verdict = value
+		verdict = report.Verdict
+		accepted = spec.QAReportEligibility(plan.Spec.Dir, report) == nil
 	case errors.Is(err, spec.ErrNoQAReport):
-		// QAVerdict already searched the report directory. Preserve that
+		// ReadQAReport already searched the report directory. Preserve that
 		// proven absence instead of repeating the same filesystem scan below.
-		return qaVerdictMissing, ""
+		return qaVerdictMissing, "", false
 	default:
 		fmt.Fprintf(engine.deps.Progress, "QA Report verdict unreadable: %v\n", err)
 		verdict = qaVerdictUnreadable
@@ -2828,7 +2833,7 @@ func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string) {
 			reportPath = relative
 		}
 	}
-	return verdict, reportPath
+	return verdict, reportPath, accepted
 }
 
 // commitQAReport creates the QA Report commit from the QA step's snapshot
