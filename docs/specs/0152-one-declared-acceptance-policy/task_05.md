@@ -17,7 +17,9 @@ the form ADR-0155 defines, and settles the Spec on evidence.
 
 1. MUST run the repository Verification and record its result as a gate fact.
 2. MUST verify that one exported decision answers QA Report eligibility, and
-   that both archive and the derived Verification reach it.
+   that every path acting on it reaches it: archive, the Daemon's gate
+   settlement, and `settle`. The rendered Verification must be confirmed *not*
+   to decide, proving readability only.
 3. MUST verify that a newest report whose verdict is `partial` with
    declared-unreachable blocked rows settles the terminal `qa` Task.
 4. MUST verify that `fail`, a missing report, an unparseable report and each

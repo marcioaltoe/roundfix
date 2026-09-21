@@ -95,9 +95,11 @@ settlement, the derived QA command, and archive.
 ## Core Features
 
 1. **One eligibility function.** A single exported decision takes the newest QA
-   Report and answers whether it is acceptable, and why not when it is not. All
-   three deciders reach it: archive, the derived Verification, and the Daemon's
-   own gate settlement.
+   Report and answers whether it is acceptable, and why not when it is not.
+   Every path that *acts* on eligibility reaches it: archive, the Daemon's gate
+   settlement, and `settle`. The rendered Verification is not one of them — it
+   proves readability and leaves the judgement to whoever settles, because a
+   rendered command cannot reach the decision without an ambient binary.
 2. **The derived command stops deciding.** It carries no copy of the rule — not
    in awk, and not by invoking an installed binary, which the repository's
    hermeticity rule forbids as ambient machine state. It proves what it can

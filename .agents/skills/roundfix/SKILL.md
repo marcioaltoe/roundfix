@@ -1871,8 +1871,9 @@ payload, command-runner, and event-stream evidence.
    `verdict: pass` with no disallowed blocked rows, or `partial` with only
    declared-unreachable unmet rows fully covered by the Spec's declarations —
    archive it with `roundfix archive <slug>`, then start the loop again on the
-   next Spec. An archive-eligible `partial` Report can still leave the Run
-   Unresolved; that outcome does not prevent Archive. The declared-only case
+   next Spec. An archive-eligible `partial` Report now settles the
+   terminal `qa` Task completed, because settlement applies the same
+   declared-acceptance policy archive applies. The declared-only case
    records the declarations' satisfying actions under `unproven`.
 
 Failure recovery stays clean when you keep two invariants: never edit
@@ -1936,8 +1937,9 @@ Per Spec, in order:
    only declared-unreachable unmet rows fully covered by the Spec's
    declarations —
    run `roundfix archive <slug>` on the branch, then push and open the Pull
-   Request. An archive-eligible `partial` Report can still leave the Run
-   Unresolved; that outcome does not prevent Archive. The declared-only case
+   Request. An archive-eligible `partial` Report now settles the
+   terminal `qa` Task completed, because settlement applies the same
+   declared-acceptance policy archive applies. The declared-only case
    records the declarations' satisfying actions under `unproven`.
 
 6. **Resolve review.** `roundfix watch --source <review-source> --pr <n>
