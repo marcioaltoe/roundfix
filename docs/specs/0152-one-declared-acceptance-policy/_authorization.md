@@ -9,6 +9,7 @@ paths:
   - internal/spec/archive.go
   - internal/spec/archive_test.go
   - internal/docscontract/testdata/corpus-golden.json
+  - internal/spec/archive_layout_characterization_test.go
 operations:
   - implement
   - commit
@@ -57,6 +58,11 @@ declares both, so it contributes nothing. The golden said 10 because retiring
 Spec 0128 dropped the active corpus from ten Specs to nine, and that commit went
 straight to `main` without a pull request, so the docs gate never ran on it.
 `main` is red on `make verify-docs` today; this pull request is what surfaced it.
+
+The same counts are pinned in two places. `internal/spec/archive_layout_characterization_test.go`
+carries them hardcoded alongside the golden's `update` prose, and compares all
+three, so both files move together or neither passes. It is covered by the same
+standing authorization, bounded to recording the measured counts.
 
 ## What is not governed
 

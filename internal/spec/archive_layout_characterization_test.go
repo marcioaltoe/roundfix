@@ -93,7 +93,7 @@ func TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095(t *testing.T
 
 	want := archiveLayoutCorpusGolden{
 		Schema: "roundfix-speccheck-corpus/v2",
-		Update: "Re-recorded because Spec 0140 added the SC-METRIC-UNDECLARED and SC-CONTRACT-UNDECLARED gap detectors. The active corpus reports ten findings for each new code and no errors from either detector. After an intentional detector change, run the focused corpus test, inspect its actual active counts, and update this file in the same change.",
+		Update: "Re-recorded because retiring Spec 0128 as superseded dropped the active corpus from ten Specs to nine. The active corpus reports nine findings for each of SC-METRIC-UNDECLARED and SC-CONTRACT-UNDECLARED and no errors from either detector. After an intentional detector change, run the focused corpus test, inspect its actual active counts, and update this file and the characterization that pins it in the same change.",
 		Active: map[string]int{
 			"SC-ADR-RELATED":               0,
 			"SC-ADR-UNLISTED":              0,
@@ -102,12 +102,12 @@ func TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095(t *testing.T
 			"SC-CONSTRAINT-MISSING":        0,
 			"SC-CONSTRAINT-SOURCE":         0,
 			"SC-CONSTRAINT-UNREASONED":     0,
-			"SC-CONTRACT-UNDECLARED":       10,
+			"SC-CONTRACT-UNDECLARED":       9,
 			"SC-COVERAGE-UNMAPPED":         0,
 			"SC-COVERAGE-UNTASKED":         0,
 			"SC-FINDING-LIFECYCLE":         0,
 			"SC-LOOP-ORDER-DIVERGENT":      0,
-			"SC-METRIC-UNDECLARED":         10,
+			"SC-METRIC-UNDECLARED":         9,
 			"SC-REF-UNRESOLVED":            0,
 			"SC-REHEARSAL-UNDECLARED":      0,
 			"SC-REQUIREMENT-CONTRADICTORY": 0,

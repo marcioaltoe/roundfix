@@ -1,6 +1,6 @@
 {
   "schema": "roundfix-speccheck-corpus/v2",
-  "update": "Re-recorded because Spec 0140 added the SC-METRIC-UNDECLARED and SC-CONTRACT-UNDECLARED gap detectors. The active corpus reports ten findings for each new code and no errors from either detector. After an intentional detector change, run the focused corpus test, inspect its actual active counts, and update this file in the same change.",
+  "update": "Re-recorded because retiring Spec 0128 as superseded dropped the active corpus from ten Specs to nine. The active corpus reports nine findings for each of SC-METRIC-UNDECLARED and SC-CONTRACT-UNDECLARED and no errors from either detector. After an intentional detector change, run the focused corpus test, inspect its actual active counts, and update this file and the characterization that pins it in the same change.",
   "active": {
     "SC-ADR-RELATED": 0,
     "SC-ADR-UNLISTED": 0,
