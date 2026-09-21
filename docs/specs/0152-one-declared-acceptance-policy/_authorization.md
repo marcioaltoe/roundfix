@@ -8,6 +8,7 @@ paths:
   - skills/roundfix/SKILL.md
   - internal/spec/archive.go
   - internal/spec/archive_test.go
+  - internal/docscontract/testdata/corpus-golden.json
 operations:
   - implement
   - commit
@@ -44,6 +45,18 @@ this Spec repairs.
 
 The derived Verification command is public contract surface the skill describes,
 and this Spec changes what it accepts.
+
+`internal/docscontract/testdata/corpus-golden.json` is covered by the standing
+authorization of 2026-09-21, bounded to recording the corpus counts this tree
+actually measures.
+
+The golden did not go stale because of this Spec. Measured both ways: with Spec
+0152 present the sweep counts 9 `SC-CONTRACT-UNDECLARED` and 9
+`SC-METRIC-UNDECLARED`, and with it removed it counts the same 9 — this Spec
+declares both, so it contributes nothing. The golden said 10 because retiring
+Spec 0128 dropped the active corpus from ten Specs to nine, and that commit went
+straight to `main` without a pull request, so the docs gate never ran on it.
+`main` is red on `make verify-docs` today; this pull request is what surfaced it.
 
 ## What is not governed
 
