@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0152-one-declared-acceptance-policy
-status: completed
+status: pending
 type: qa
 complexity: high
 ---
@@ -73,3 +73,9 @@ ADR-0156.
 - Date: `2026-09-21`
 - QA Report: `qa/qa-report-2026-09-21.md`
 - Dependencies not completed: `task_06`
+
+## Invalidation
+
+- Date: `2026-09-21`
+- QA Report: `qa/qa-report-2026-09-21-01.md`
+- Dependencies not completed: `task_07`

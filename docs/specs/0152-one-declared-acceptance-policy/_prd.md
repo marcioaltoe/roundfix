@@ -98,9 +98,14 @@ settlement, the derived QA command, and archive.
    Report and answers whether it is acceptable, and why not when it is not. All
    three deciders reach it: archive, the derived Verification, and the Daemon's
    own gate settlement.
-2. **The derived command stops re-deciding.** It delegates the verdict judgement
-   instead of carrying a second copy of the rule in awk, so the two cannot drift
-   apart again.
+2. **The derived command stops deciding.** It carries no copy of the rule — not
+   in awk, and not by invoking an installed binary, which the repository's
+   hermeticity rule forbids as ambient machine state. It proves what it can
+   prove from repository state alone: that a newest report exists and its
+   verdict is readable.
+
+   Eligibility is applied by whoever settles, in process. That is the Daemon's
+   gate and `settle`, which is the other path that can complete a `qa` Task.
 3. **A qualifying partial settles.** A newest report whose verdict is `partial`
    and whose blocked rows are declared unreachable settles the `qa` Task
    `completed` in a real Implement Run, as it already would have been archived.

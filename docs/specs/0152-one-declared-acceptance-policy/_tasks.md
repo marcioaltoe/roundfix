@@ -19,9 +19,12 @@ graph:
     - id: task_06
       file: task_06.md
       needs: [task_01, task_04]
+    - id: task_07
+      file: task_07.md
+      needs: [task_03, task_06]
     - id: task_05
       file: task_05.md
-      needs: [task_01, task_02, task_03, task_04, task_06]
+      needs: [task_01, task_02, task_03, task_04, task_06, task_07]
 ---
 
 # Task Graph
@@ -33,4 +36,5 @@ graph:
 | task_03 | backend | The derived command delegates |
 | task_04 | docs | State the one policy in the shipped skill |
 | task_06 | backend | The decider that actually settles the gate |
+| task_07 | backend | A rendered command that needs nothing installed |
 | task_05 | qa | Run the final QA gate |

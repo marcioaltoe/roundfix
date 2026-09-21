@@ -69,12 +69,22 @@ Archive calls it in place of its inline judgement.
 ## How the derived command reaches it
 
 The rendered command keeps finding the newest report by name — that selection is
-not in dispute and stays where a reader can see it. What changes is the
-judgement: instead of an awk expression, the command invokes the binary to apply
-the one decision and exits on its status.
+not in dispute and stays where a reader can see it. What it stops doing is
+judging.
 
-This is the point of the Spec. A rendered copy of a rule is a copy that drifts;
-a rendered call to the rule cannot.
+An earlier draft had it invoke `roundfix qa-report accept`. That removed the
+duplication and introduced a worse dependency: the command would run whichever
+`roundfix` happened to be first on `PATH`. Measured on this machine, a Homebrew
+0.14.1 shadowed the current build and rejected `qa-report` outright. The
+repository's own rule in `.agents/skills/write-tasks/SKILL.md` forbids exactly
+this — Verification must be satisfiable "in a fresh worktree using only
+repository state", and an installed binary is ambient machine state.
+
+So the rendered command asserts only what repository state can prove: a newest
+report exists and its verdict is readable. Eligibility is applied by whoever
+settles the Task, in process, from the one decision. Two paths settle a `qa`
+Task — the Daemon's gate and `settle` — and both apply it, so the weaker
+rendered command cannot complete an ineligible gate.
 
 ## API Contracts
 
