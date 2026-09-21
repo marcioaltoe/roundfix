@@ -140,40 +140,17 @@ func ArchiveSpecRoot(specsRoot string, builtInRoot bool) string {
 }
 
 func archiveUnprovenActions(specDir string, report QAReport) ([]string, error) {
-	if report.Verdict == VerdictPass {
-		return nil, nil
+	if err := QAReportEligibility(specDir, report); err != nil {
+		return nil, err
 	}
 	if report.Verdict != VerdictPartial {
-		return nil, fmt.Errorf("newest QA Report verdict is %q; expected %q", report.Verdict, VerdictPass)
-	}
-	if report.RowsBlockedFinding > 0 {
-		return nil, fmt.Errorf("rows_blocked_finding is %d; expected 0", report.RowsBlockedFinding)
-	}
-	if report.RowsBlockedEnvironment > 0 {
-		return nil, fmt.Errorf("rows_blocked_environment is %d; expected 0", report.RowsBlockedEnvironment)
-	}
-	if report.RowsBlockedDeclared == 0 {
-		return nil, fmt.Errorf("newest QA Report verdict is %q; expected %q", report.Verdict, VerdictPass)
+		return nil, nil
 	}
 
 	declarations, err := Unreachable(specDir)
 	if err != nil {
 		return nil, fmt.Errorf("read unreachable acceptance declarations: %w", err)
 	}
-	if report.RowsBlockedDeclared > len(declarations) {
-		plural := ""
-		if len(declarations) != 1 {
-			plural = "s"
-		}
-		return nil, fmt.Errorf(
-			"rows_blocked_declared is %d, but Spec declares %d unreachable acceptance%s; shortfall is %d",
-			report.RowsBlockedDeclared,
-			len(declarations),
-			plural,
-			report.RowsBlockedDeclared-len(declarations),
-		)
-	}
-
 	actions := make([]string, 0, len(declarations))
 	for _, declaration := range declarations {
 		actions = append(actions, declaration.SatisfiedBy)

@@ -7,6 +7,7 @@ package spec
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -354,6 +355,111 @@ func TestArchivedPassCorpusRemainsArchiveEligible(t *testing.T) {
 		t.Fatal("archived corpus has no pass Specs")
 	}
 	t.Logf("checked archive eligibility for %d archived pass Specs", passSpecs)
+}
+
+func TestArchiveAppliesTheOneEligibilityDecision(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name         string
+		report       QAReport
+		declarations int
+		wantActions  []string
+		wantError    string
+	}{
+		{
+			name:   "pass",
+			report: QAReport{Verdict: VerdictPass},
+		},
+		{
+			name: "pass with environment-blocked rows",
+			report: QAReport{
+				Verdict:                VerdictPass,
+				RowsBlockedEnvironment: 1,
+			},
+		},
+		{
+			name: "qualifying partial",
+			report: QAReport{
+				Verdict:             VerdictPartial,
+				RowsBlockedDeclared: 2,
+			},
+			declarations: 2,
+			wantActions:  []string{"action 1", "action 2"},
+		},
+		{
+			name:      "fail verdict",
+			report:    QAReport{Verdict: VerdictFail},
+			wantError: `newest QA Report verdict is "fail"; expected "pass"`,
+		},
+		{
+			name:      "unsupported verdict",
+			report:    QAReport{Verdict: "unknown"},
+			wantError: `newest QA Report verdict is "unknown"; expected "pass"`,
+		},
+		{
+			name: "partial with finding-blocked rows",
+			report: QAReport{
+				Verdict:             VerdictPartial,
+				RowsBlockedFinding:  1,
+				RowsBlockedDeclared: 1,
+			},
+			declarations: 1,
+			wantError:    "rows_blocked_finding is 1; expected 0",
+		},
+		{
+			name: "partial with environment-blocked rows",
+			report: QAReport{
+				Verdict:                VerdictPartial,
+				RowsBlockedEnvironment: 1,
+				RowsBlockedDeclared:    1,
+			},
+			declarations: 1,
+			wantError:    "rows_blocked_environment is 1; expected 0",
+		},
+		{
+			name:      "partial without declared-blocked rows",
+			report:    QAReport{Verdict: VerdictPartial},
+			wantError: `newest QA Report verdict is "partial"; expected "pass"`,
+		},
+		{
+			name: "partial with more declared rows than declarations",
+			report: QAReport{
+				Verdict:             VerdictPartial,
+				RowsBlockedDeclared: 2,
+			},
+			declarations: 1,
+			wantError:    "rows_blocked_declared is 2, but Spec declares 1 unreachable acceptance; shortfall is 1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			specDir := t.TempDir()
+			if tt.declarations > 0 {
+				var prd strings.Builder
+				prd.WriteString("# Test Spec\n\n## Unreachable Acceptance\n")
+				for index := 0; index < tt.declarations; index++ {
+					fmt.Fprintf(&prd, "\n- criterion: criterion %d\n  reason: reason %d\n  satisfied-by: action %d\n", index+1, index+1, index+1)
+				}
+				writeFile(t, filepath.Join(specDir, "_prd.md"), prd.String())
+			}
+
+			actions, err := archiveUnprovenActions(specDir, tt.report)
+			if tt.wantError != "" {
+				if err == nil || err.Error() != tt.wantError {
+					t.Fatalf("archive eligibility error = %v, want %q", err, tt.wantError)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("archive eligibility: %v", err)
+			}
+			if !reflect.DeepEqual(actions, tt.wantActions) {
+				t.Fatalf("unproven actions = %q, want %q", actions, tt.wantActions)
+			}
+		})
+	}
 }
 
 func TestArchivedQAOverrideCorpusIncludesFailedSpec(t *testing.T) {
