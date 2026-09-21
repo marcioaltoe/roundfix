@@ -1,9 +1,12 @@
 ---
 spec: 0152-one-declared-acceptance-policy
-status: active
+status: archived
 created: 2026-09-21
 surfaces: [backend, cli, docs]
+archived: "2026-09-21"
+source_slug: 0152-one-declared-acceptance-policy
 ---
+
 
 # One declared-acceptance policy
 
