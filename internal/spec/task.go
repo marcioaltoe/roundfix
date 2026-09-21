@@ -81,9 +81,10 @@ func ReloadTask(specsRoot string, task *Task) error {
 
 // DerivedQAVerification is the Verification Roundfix supplies for a Task of
 // type qa. It orders QA Reports by their embedded date and numeric rerun
-// sequence, then accepts only the exact passing verdict from the newest one.
-// The command is rendered into the Task file so readers can see the contract,
-// but changing that rendered command does not change the effective contract.
+// sequence, then delegates acceptance of the newest one to Roundfix's shared
+// QA Report eligibility decision.
+// The command is rendered into the Task file so readers can see which report
+// is selected and where its acceptance decision delegates.
 // shellSingleQuoted renders one shell word that survives sh -c verbatim. The
 // derived command interpolates a Spec slug, and a slug is a directory name
 // rather than a validated identifier, so an unquoted one carrying `;` or a
@@ -110,11 +111,7 @@ func DerivedQAVerification(slug string) []string {
 		`if (dated && sequenced) printf \"%s\\t%s\\t%s\\t%s\\t%s\\n\", dated, date, sequenced, sequence, report }" | ` +
 		`sort -k1,1n -k2,2 -k3,3n -k4,4n -k5,5 | tail -1 | cut -f5-)"; ` +
 		`test -n "$newest" || exit 1; ` +
-		`awk "BEGIN { whitespace=\" \t\r\n\f\v\" } NR == 1 && \$0 == \"---\" { frontmatter=1; next } frontmatter && \$0 == \"---\" { closed=1; exit } ` +
-		`frontmatter && index(\$0, \"verdict:\") == 1 { verdict=substr(\$0, 9); ` +
-		`while (length(verdict) > 0 && index(whitespace, substr(verdict, 1, 1)) > 0) verdict=substr(verdict, 2); ` +
-		`while (length(verdict) > 0 && index(whitespace, substr(verdict, length(verdict), 1)) > 0) verdict=substr(verdict, 1, length(verdict)-1); verdicts++ } ` +
-		`END { exit(closed && verdicts == 1 && verdict == \"pass\" ? 0 : 1) }" "$newest"`
+		`roundfix qa-report accept "$newest"`
 	return []string{command}
 }
 

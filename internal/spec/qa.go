@@ -280,7 +280,13 @@ func ReadQAReport(specDir string) (QAReport, error) {
 	if err != nil {
 		return QAReport{}, err
 	}
-	return readQAReport(newest)
+	return ReadQAReportFile(newest)
+}
+
+// ReadQAReportFile reads and validates the verdict and typed blocked-row
+// counts from one QA Report selected by the caller.
+func ReadQAReportFile(path string) (QAReport, error) {
+	return readQAReport(path)
 }
 
 // QAReportEligibility reports whether a parsed QA Report satisfies the

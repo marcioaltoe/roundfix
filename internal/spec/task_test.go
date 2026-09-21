@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -259,100 +260,131 @@ func TestReloadTaskPicksUpAgentEdits(t *testing.T) {
 	}
 }
 
-func TestDerivedQAVerificationRequiresTheNewestReportToPass(t *testing.T) {
-	t.Parallel()
-
+func TestDerivedQAVerificationSettlesAQualifyingPartial(t *testing.T) {
 	const slug = "derived-qa-verification"
-	commands := DerivedQAVerification(slug)
-	if len(commands) != 1 {
-		t.Fatalf("DerivedQAVerification() = %q, want one command", commands)
+	root, command := derivedQAVerificationFixture(t, slug)
+	writeFile(t, filepath.Join(root, "docs", "specs", slug, "_prd.md"), `# Test Spec
+
+## Unreachable Acceptance
+
+- criterion: the unavailable journey
+  reason: the gate cannot create a pull request
+  satisfied-by: task_01
+`)
+	writeFile(t, filepath.Join(root, "docs", "specs", slug, "qa", "qa-report-2026-08-31.md"), derivedQAReportFixture(
+		VerdictPartial,
+		"rows_blocked_declared: 1",
+	))
+
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatalf("derived QA Verification refused a qualifying partial: %v; output: %s", err, output)
 	}
-	if !strings.Contains(commands[0], filepath.ToSlash(filepath.Join("docs", "specs", slug, "qa"))) {
-		t.Fatalf("DerivedQAVerification() = %q, want the Spec's QA directory", commands[0])
-	}
+}
+
+func TestDerivedQAVerificationDelegatesEligibility(t *testing.T) {
+	const slug = "derived-qa-verification"
 
 	tests := []struct {
-		name    string
-		reports map[string]string
-		wantErr bool
+		name         string
+		reports      map[string]string
+		declarations int
+		wantErr      bool
 	}{
 		{
 			name: "only passing report",
 			reports: map[string]string{
-				"qa-report-2026-08-31.md": "pass",
+				"qa-report-2026-08-31.md": derivedQAReportFixture(VerdictPass),
 			},
 		},
 		{
-			name: "passing verdict permits surrounding whitespace",
+			name: "pass with environment-blocked row",
 			reports: map[string]string{
-				"qa-report-2026-08-31.md": "\tpass \r",
+				"qa-report-2026-08-31.md": derivedQAReportFixture(VerdictPass, "rows_blocked_environment: 1"),
 			},
 		},
 		{
 			name: "newer failed rerun defeats older pass",
 			reports: map[string]string{
-				"qa-report-2026-08-31.md":    "pass",
-				"qa-report-2026-08-31-02.md": "fail",
+				"qa-report-2026-08-31.md":    derivedQAReportFixture(VerdictPass),
+				"qa-report-2026-08-31-02.md": derivedQAReportFixture(VerdictFail),
 			},
 			wantErr: true,
 		},
 		{
 			name: "zero rerun still defeats the unsuffixed report",
 			reports: map[string]string{
-				"qa-report-2026-08-31.md":    "pass",
-				"qa-report-2026-08-31-00.md": "fail",
+				"qa-report-2026-08-31.md":    derivedQAReportFixture(VerdictPass),
+				"qa-report-2026-08-31-00.md": derivedQAReportFixture(VerdictFail),
 			},
 			wantErr: true,
 		},
 		{
 			name: "numeric rerun order accepts ten after two",
 			reports: map[string]string{
-				"qa-report-2026-08-31-02.md": "fail",
-				"qa-report-2026-08-31-10.md": "pass",
+				"qa-report-2026-08-31-02.md": derivedQAReportFixture(VerdictFail),
+				"qa-report-2026-08-31-10.md": derivedQAReportFixture(VerdictPass),
 			},
 		},
 		{
 			name: "malformed rerun loses to an unsuffixed report",
 			reports: map[string]string{
-				"qa-report-2026-08-31.md":         "fail",
-				"qa-report-2026-08-31-ffd6852.md": "pass",
+				"qa-report-2026-08-31.md":         derivedQAReportFixture(VerdictFail),
+				"qa-report-2026-08-31-ffd6852.md": derivedQAReportFixture(VerdictPass),
 			},
 			wantErr: true,
 		},
 		{
-			name: "partial is outside the passing domain",
+			name: "partial with finding-blocked row",
 			reports: map[string]string{
-				"qa-report-2026-08-31.md": "partial",
+				"qa-report-2026-08-31.md": derivedQAReportFixture(VerdictPartial, "rows_blocked_finding: 1", "rows_blocked_declared: 1"),
+			},
+			declarations: 1,
+			wantErr:      true,
+		},
+		{
+			name: "partial with environment-blocked row",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md": derivedQAReportFixture(VerdictPartial, "rows_blocked_environment: 1", "rows_blocked_declared: 1"),
+			},
+			declarations: 1,
+			wantErr:      true,
+		},
+		{
+			name: "partial without declared-blocked rows",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md": derivedQAReportFixture(VerdictPartial),
 			},
 			wantErr: true,
 		},
 		{
-			name: "body text cannot override a failed frontmatter verdict",
+			name: "partial declares more blocked rows than the Spec",
 			reports: map[string]string{
-				"qa-report-2026-08-31.md": "fail\n---\n\nverdict: pass",
+				"qa-report-2026-08-31.md": derivedQAReportFixture(VerdictPartial, "rows_blocked_declared: 2"),
 			},
-			wantErr: true,
+			declarations: 1,
+			wantErr:      true,
 		},
 		{
-			name: "duplicate verdict is not a passing report",
+			name: "unparseable report",
 			reports: map[string]string{
-				"qa-report-2026-08-31.md": "fail\nverdict: pass",
+				"qa-report-2026-08-31.md": "not frontmatter\n",
 			},
 			wantErr: true,
 		},
 		{
 			name: "invalid later date loses to a valid report",
 			reports: map[string]string{
-				"qa-report-2026-08-31.md": "fail",
-				"qa-report-2026-13-40.md": "pass",
+				"qa-report-2026-08-31.md": derivedQAReportFixture(VerdictFail),
+				"qa-report-2026-13-40.md": derivedQAReportFixture(VerdictPass),
 			},
 			wantErr: true,
 		},
 		{
 			name: "non-digit date loses to a valid report",
 			reports: map[string]string{
-				"qa-report-2026-08-31.md": "fail",
-				"qa-report-202A-08-31.md": "pass",
+				"qa-report-2026-08-31.md": derivedQAReportFixture(VerdictFail),
+				"qa-report-202A-08-31.md": derivedQAReportFixture(VerdictPass),
 			},
 			wantErr: true,
 		},
@@ -362,14 +394,14 @@ func TestDerivedQAVerificationRequiresTheNewestReportToPass(t *testing.T) {
 			// tail -1 and its verdict was read as the gate's.
 			name: "a sole malformed report is not a candidate",
 			reports: map[string]string{
-				"qa-report-notadate.md": "pass",
+				"qa-report-notadate.md": derivedQAReportFixture(VerdictPass),
 			},
 			wantErr: true,
 		},
 		{
 			name: "a sole report with a malformed sequence is not a candidate",
 			reports: map[string]string{
-				"qa-report-2026-08-31-x2.md": "pass",
+				"qa-report-2026-08-31-x2.md": derivedQAReportFixture(VerdictPass),
 			},
 			wantErr: true,
 		},
@@ -381,22 +413,107 @@ func TestDerivedQAVerificationRequiresTheNewestReportToPass(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			root := t.TempDir()
+			root, command := derivedQAVerificationFixture(t, slug)
+			if tt.declarations > 0 {
+				var prd strings.Builder
+				prd.WriteString("# Test Spec\n\n## Unreachable Acceptance\n")
+				for index := 0; index < tt.declarations; index++ {
+					prd.WriteString("\n- criterion: criterion\n  reason: reason\n  satisfied-by: task_01\n")
+				}
+				writeFile(t, filepath.Join(root, "docs", "specs", slug, "_prd.md"), prd.String())
+			}
 			reportDir := filepath.Join(root, "docs", "specs", slug, "qa")
-			for name, verdict := range tt.reports {
-				writeFile(t, filepath.Join(reportDir, name), "---\nverdict: "+verdict+"\n---\n")
+			for name, report := range tt.reports {
+				writeFile(t, filepath.Join(reportDir, name), report)
 			}
 
-			command := exec.Command("sh", "-c", commands[0])
-			command.Dir = root
 			output, err := command.CombinedOutput()
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("derived QA Verification error = %v, wantErr %v; output: %s", err, tt.wantErr, output)
 			}
 		})
 	}
+}
+
+func TestDerivedQAVerificationFailsClosedWhenDelegateCannotRun(t *testing.T) {
+	const slug = "derived-qa-verification"
+	commands := DerivedQAVerification(slug)
+	root := t.TempDir()
+	writeFile(t, filepath.Join(root, "docs", "specs", slug, "qa", "qa-report-2026-08-31.md"), derivedQAReportFixture(VerdictPass))
+
+	selectorPath := t.TempDir()
+	for _, name := range []string{"awk", "cut", "find", "sort", "tail"} {
+		target, err := exec.LookPath(name)
+		if err != nil {
+			t.Fatalf("locate %s for derived QA Verification: %v", name, err)
+		}
+		if err := os.Symlink(target, filepath.Join(selectorPath, name)); err != nil {
+			t.Fatalf("link %s for derived QA Verification: %v", name, err)
+		}
+	}
+
+	command := exec.Command("sh", "-c", commands[0])
+	command.Dir = root
+	command.Env = append(os.Environ(), "PATH="+selectorPath)
+	if output, err := command.CombinedOutput(); err == nil {
+		t.Fatalf("derived QA Verification accepted without its delegate; output: %s", output)
+	}
+}
+
+func derivedQAVerificationFixture(t *testing.T, slug string) (string, *exec.Cmd) {
+	t.Helper()
+	commands := DerivedQAVerification(slug)
+	if len(commands) != 1 {
+		t.Fatalf("DerivedQAVerification() = %q, want one command", commands)
+	}
+	reportDir := filepath.ToSlash(filepath.Join("docs", "specs", slug, "qa"))
+	if !strings.Contains(commands[0], reportDir) {
+		t.Fatalf("DerivedQAVerification() = %q, want the Spec's QA directory", commands[0])
+	}
+
+	root := t.TempDir()
+	command := exec.Command("sh", "-c", commands[0])
+	command.Dir = root
+	command.Env = append(os.Environ(), "PATH="+derivedQARoundfixBinaryDir(t)+string(os.PathListSeparator)+os.Getenv("PATH"))
+	return root, command
+}
+
+var (
+	derivedQABinaryOnce   sync.Once
+	derivedQABinaryDir    string
+	derivedQABinaryOutput []byte
+	derivedQABinaryErr    error
+)
+
+func derivedQARoundfixBinaryDir(t *testing.T) string {
+	t.Helper()
+	derivedQABinaryOnce.Do(func() {
+		_, testFile, _, ok := runtime.Caller(0)
+		if !ok {
+			derivedQABinaryErr = errors.New("runtime.Caller could not locate the repository")
+			return
+		}
+		repoRoot := filepath.Clean(filepath.Join(filepath.Dir(testFile), "..", ".."))
+		derivedQABinaryDir, derivedQABinaryErr = os.MkdirTemp("", "roundfix-derived-qa-")
+		if derivedQABinaryErr != nil {
+			return
+		}
+		build := exec.Command("go", "build", "-o", filepath.Join(derivedQABinaryDir, "roundfix"), "./cmd/roundfix")
+		build.Dir = repoRoot
+		derivedQABinaryOutput, derivedQABinaryErr = build.CombinedOutput()
+	})
+	if derivedQABinaryErr != nil {
+		t.Fatalf("build Roundfix for derived QA Verification: %v; output: %s", derivedQABinaryErr, derivedQABinaryOutput)
+	}
+	return derivedQABinaryDir
+}
+
+func derivedQAReportFixture(verdict string, extraFrontmatter ...string) string {
+	frontmatter := ""
+	if len(extraFrontmatter) > 0 {
+		frontmatter = strings.Join(extraFrontmatter, "\n") + "\n"
+	}
+	return "---\nverdict: " + verdict + "\n" + frontmatter + "---\n"
 }
 
 func TestDerivedQAVerificationPassesTheChecker(t *testing.T) {

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0152-one-declared-acceptance-policy
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -61,3 +61,58 @@ a second copy of the rule.
 ## References
 
 - [_techspec.md](_techspec.md) — How the derived command reaches it
+
+## Result
+
+Implementation:
+
+- The rendered QA Verification still selects the newest dated-and-sequenced
+  `qa-report-*.md` path in shell, then passes that exact path to
+  `roundfix qa-report accept` instead of parsing or judging its verdict in awk.
+- The read-only `qa-report accept` command parses the selected report and calls
+  `QAReportEligibility` with its Spec directory. It emits no stdout and exits
+  nonzero when the path, report, or shared eligibility decision refuses.
+- `ReadQAReportFile` exposes the existing single-report parser so the command
+  can judge the report selected by the rendered command without selecting a
+  second report or copying parsing rules.
+
+Focused-check evidence:
+
+- Red signal: `rtk env GOCACHE=/tmp/roundfix-task03-go-cache go test -count=1
+  ./internal/spec -run '^TestDerivedQAVerificationSettlesAQualifyingPartial$'`
+  failed before implementation because the rendered awk still rejected
+  `partial`.
+- `rtk env GOCACHE=/tmp/roundfix-task03-go-cache go test -count=1
+  ./internal/spec -run
+  '^(TestDerivedQAVerificationSettlesAQualifyingPartial|TestDerivedQAVerificationDelegatesEligibility|TestDerivedQAVerificationFailsClosedWhenDelegateCannotRun|TestDerivedQAVerificationQuotesTheSpecPath|TestDerivedQAVerificationPassesTheChecker|TestReloadTaskDerivesOnlyQAVerification)$'`
+  passed against a built Roundfix binary.
+- `rtk env GOCACHE=/tmp/roundfix-task03-go-cache go test -count=1
+  ./internal/cli -run '^TestRunQAReportAcceptCommand'` passed for the command's
+  accepted and fail-closed paths.
+- `rtk env GOCACHE=/tmp/roundfix-task03-go-cache make verify-incremental`
+  passed with host process-table access. The first sandboxed run passed the
+  changed packages and failed only the two force-stop integration tests whose
+  process-table read was denied; the permitted rerun exited zero.
+- `rtk git diff --check` passed.
+
+Acceptance evidence:
+
+- `TestDerivedQAVerificationSettlesAQualifyingPartial` accepts a newest
+  `partial` report with one declared blocked row and one matching unreachable
+  acceptance declaration.
+- `TestDerivedQAVerificationDelegatesEligibility` refuses `fail`, a missing
+  report, an unparseable report, finding- and environment-blocked partials, a
+  partial with no declared rows, and a partial declaring more rows than the
+  Spec. The same suite accepts a `pass` carrying an environment-blocked row.
+- The derived-command fixture asserts that the rendered command names
+  `docs/specs/<slug>/qa`; the existing path-quoting suite and checker contract
+  also pass.
+- Missing or malformed selection exits before delegation, while command-level
+  missing, unparseable, and ineligible inputs all exit nonzero. A missing
+  `roundfix` delegate also leaves the shell command nonzero, so an unreachable
+  judgement cannot become acceptance.
+
+Not run:
+
+- The Task's declared `## Verification` commands — reserved for the Daemon by
+  the assigned execution contract.
