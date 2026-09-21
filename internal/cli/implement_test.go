@@ -6067,9 +6067,11 @@ func TestRunImplementQAVerdictMatrix(t *testing.T) {
 		wantState   string
 		hasReport   bool
 		wantDetail  string
+		unreachable bool
 	}{
 		{name: "pass", report: implementQAReport("pass"), wantCode: 0, wantVerdict: "pass", wantState: store.StateClean, hasReport: true},
-		{name: "partial", report: implementQAReport("partial"), wantCode: 1, wantVerdict: "partial", wantState: store.StateUnresolved, hasReport: true},
+		{name: "qualifying partial", report: "---\nverdict: partial\nrows_blocked_declared: 1\n---\n\n# QA Report\n", wantCode: 0, wantVerdict: "partial", wantState: store.StateClean, hasReport: true, unreachable: true},
+		{name: "non-qualifying partial", report: implementQAReport("partial"), wantCode: 1, wantVerdict: "partial", wantState: store.StateUnresolved, hasReport: true},
 		{name: "fail", report: implementQAReport("fail"), wantCode: 1, wantVerdict: "fail", wantState: store.StateUnresolved, hasReport: true},
 		{name: "missing report", report: "", wantCode: 1, wantVerdict: "missing", wantState: store.StateUnresolved, wantDetail: "no QA Report found"},
 		{name: "unreadable verdict", report: "---\nsummary: no verdict field\n---\n\n# QA Report\n", wantCode: 1, wantVerdict: "unreadable", wantState: store.StateUnresolved, hasReport: true},
@@ -6080,6 +6082,18 @@ func TestRunImplementQAVerdictMatrix(t *testing.T) {
 				{id: "task_01", title: "Build the widget core"},
 				implementQAGateSeed("", "task_01"),
 			})
+			if tt.unreachable {
+				prdPath := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "_prd.md")
+				mustWrite(t, prdPath, mustRead(t, prdPath)+`
+## Unreachable Acceptance
+
+- criterion: the unavailable journey
+  reason: the gate cannot create a pull request
+  satisfied-by: task_01
+`)
+				gitImplement(t, repoDir, "add", filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "_prd.md")))
+				gitImplement(t, repoDir, "commit", "-m", "declare unreachable acceptance")
+			}
 			runner := &implementFakeRunner{
 				gitRoot:      repoDir,
 				statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},

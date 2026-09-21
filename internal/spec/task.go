@@ -81,9 +81,11 @@ func ReloadTask(specsRoot string, task *Task) error {
 
 // DerivedQAVerification is the Verification Roundfix supplies for a Task of
 // type qa. It orders QA Reports by their embedded date and numeric rerun
-// sequence, then accepts only the exact passing verdict from the newest one.
-// The command is rendered into the Task file so readers can see the contract,
-// but changing that rendered command does not change the effective contract.
+// sequence, then proves the newest one has readable verdict frontmatter.
+// Eligibility is applied in process by the settlement path, not by this
+// rendered command.
+// The command is rendered into the Task file so readers can see which report
+// is selected and which repository-state precondition it proves.
 // shellSingleQuoted renders one shell word that survives sh -c verbatim. The
 // derived command interpolates a Spec slug, and a slug is a directory name
 // rather than a validated identifier, so an unquoted one carrying `;` or a
@@ -114,7 +116,7 @@ func DerivedQAVerification(slug string) []string {
 		`frontmatter && index(\$0, \"verdict:\") == 1 { verdict=substr(\$0, 9); ` +
 		`while (length(verdict) > 0 && index(whitespace, substr(verdict, 1, 1)) > 0) verdict=substr(verdict, 2); ` +
 		`while (length(verdict) > 0 && index(whitespace, substr(verdict, length(verdict), 1)) > 0) verdict=substr(verdict, 1, length(verdict)-1); verdicts++ } ` +
-		`END { exit(closed && verdicts == 1 && verdict == \"pass\" ? 0 : 1) }" "$newest"`
+		`END { exit(closed && verdicts == 1 && length(verdict) > 0 ? 0 : 1) }" "$newest"`
 	return []string{command}
 }
 

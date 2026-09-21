@@ -55,6 +55,7 @@ Usage:
   roundfix reconcile [run-id] [--apply | --discard-superseded | --carry-forward] [--format <text|json>]
   roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
   roundfix release plan --reset-to <version> [--format <text|json>]
+  roundfix qa-report accept <path>
   roundfix spec check [<slug> ...] [--format <text|json>] [--strict] [--run-verification]
   roundfix spec audit <slug> [--format <text|json>]
   roundfix baseline update [--repo <path>] [--format <text|json>] [--yes | --confirm-plan <digest>] [--adopt-suggested] [--no-skills] [--skills-source-dir <path>]
@@ -96,6 +97,7 @@ Commands:
   supersede  Record that another Spec delivered a Spec's content
   reconcile  Inspect or release proven terminal spec Run worktrees
   release    Plan the next release version without mutating repository or release state
+  qa-report  Apply the declared-acceptance policy to a QA Report
   spec       Check Spec artifact consistency; audit Spec delivery
   baseline   Plan, apply, and validate a Context-Driven Baseline
   profiles   Show Agent Selection Profiles and advisory recommendations
@@ -523,6 +525,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runReconcileCommand(ctx, args[1:], stdout, stderr, environment)
 	case "release":
 		return runReleaseCommand(ctx, args[1:], stdout, stderr, environment)
+	case "qa-report":
+		return runQAReportCommand(ctx, args[1:], stdout, stderr)
 	case "spec":
 		return runSpecCommand(ctx, args[1:], stdout, stderr, environment)
 	case "baseline":

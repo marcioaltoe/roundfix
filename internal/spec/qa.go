@@ -280,7 +280,55 @@ func ReadQAReport(specDir string) (QAReport, error) {
 	if err != nil {
 		return QAReport{}, err
 	}
-	return readQAReport(newest)
+	return ReadQAReportFile(newest)
+}
+
+// ReadQAReportFile reads and validates the verdict and typed blocked-row
+// counts from one QA Report selected by the caller.
+func ReadQAReportFile(path string) (QAReport, error) {
+	return readQAReport(path)
+}
+
+// QAReportEligibility reports whether a parsed QA Report satisfies the
+// archive eligibility policy. A pass is eligible outright. A partial is
+// eligible only when all of its blocked rows are covered by the Spec's
+// unreachable acceptance declarations and none are blocked by a finding or
+// the environment.
+func QAReportEligibility(specDir string, report QAReport) error {
+	if report.Verdict == VerdictPass {
+		return nil
+	}
+	if report.Verdict != VerdictPartial {
+		return fmt.Errorf("newest QA Report verdict is %q; expected %q", report.Verdict, VerdictPass)
+	}
+	if report.RowsBlockedFinding > 0 {
+		return fmt.Errorf("rows_blocked_finding is %d; expected 0", report.RowsBlockedFinding)
+	}
+	if report.RowsBlockedEnvironment > 0 {
+		return fmt.Errorf("rows_blocked_environment is %d; expected 0", report.RowsBlockedEnvironment)
+	}
+	if report.RowsBlockedDeclared == 0 {
+		return fmt.Errorf("newest QA Report verdict is %q; expected %q", report.Verdict, VerdictPass)
+	}
+
+	declarations, err := Unreachable(specDir)
+	if err != nil {
+		return fmt.Errorf("read unreachable acceptance declarations: %w", err)
+	}
+	if report.RowsBlockedDeclared > len(declarations) {
+		plural := ""
+		if len(declarations) != 1 {
+			plural = "s"
+		}
+		return fmt.Errorf(
+			"rows_blocked_declared is %d, but Spec declares %d unreachable acceptance%s; shortfall is %d",
+			report.RowsBlockedDeclared,
+			len(declarations),
+			plural,
+			report.RowsBlockedDeclared-len(declarations),
+		)
+	}
+	return nil
 }
 
 func readQAReport(path string) (QAReport, error) {

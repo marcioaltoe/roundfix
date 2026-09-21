@@ -182,7 +182,7 @@ func (err MissingVerificationError) Error() string {
 	return fmt.Sprintf("Task %q has no Verification commands: add a backticked command bullet to the ## Verification section in %q", err.TaskID, err.Path)
 }
 
-// QAReportError reports a QA Report that exists but whose verdict cannot be
+// QAReportError reports a QA Report path whose contents or verdict cannot be
 // read.
 type QAReportError struct {
 	Path string

@@ -259,17 +259,8 @@ func TestReloadTaskPicksUpAgentEdits(t *testing.T) {
 	}
 }
 
-func TestDerivedQAVerificationRequiresTheNewestReportToPass(t *testing.T) {
-	t.Parallel()
-
+func TestDerivedQAVerificationProvesNewestVerdictReadable(t *testing.T) {
 	const slug = "derived-qa-verification"
-	commands := DerivedQAVerification(slug)
-	if len(commands) != 1 {
-		t.Fatalf("DerivedQAVerification() = %q, want one command", commands)
-	}
-	if !strings.Contains(commands[0], filepath.ToSlash(filepath.Join("docs", "specs", slug, "qa"))) {
-		t.Fatalf("DerivedQAVerification() = %q, want the Spec's QA directory", commands[0])
-	}
 
 	tests := []struct {
 		name    string
@@ -279,82 +270,84 @@ func TestDerivedQAVerificationRequiresTheNewestReportToPass(t *testing.T) {
 		{
 			name: "only passing report",
 			reports: map[string]string{
-				"qa-report-2026-08-31.md": "pass",
+				"qa-report-2026-08-31.md": derivedQAReportFixture(VerdictPass),
 			},
 		},
 		{
-			name: "passing verdict permits surrounding whitespace",
+			name: "failing verdict remains readable",
 			reports: map[string]string{
-				"qa-report-2026-08-31.md": "\tpass \r",
+				"qa-report-2026-08-31.md": derivedQAReportFixture(VerdictFail),
 			},
 		},
 		{
-			name: "newer failed rerun defeats older pass",
+			name: "partial verdict remains readable",
 			reports: map[string]string{
-				"qa-report-2026-08-31.md":    "pass",
-				"qa-report-2026-08-31-02.md": "fail",
+				"qa-report-2026-08-31.md": derivedQAReportFixture(VerdictPartial, "rows_blocked_declared: 1"),
+			},
+		},
+		{
+			name: "newer unreadable rerun defeats older readable report",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md":    derivedQAReportFixture(VerdictPass),
+				"qa-report-2026-08-31-02.md": "not frontmatter\n",
 			},
 			wantErr: true,
 		},
 		{
-			name: "zero rerun still defeats the unsuffixed report",
+			name: "numeric rerun order reads ten after two",
 			reports: map[string]string{
-				"qa-report-2026-08-31.md":    "pass",
-				"qa-report-2026-08-31-00.md": "fail",
+				"qa-report-2026-08-31-02.md": "not frontmatter\n",
+				"qa-report-2026-08-31-10.md": derivedQAReportFixture(VerdictPass),
+			},
+		},
+		{
+			name: "malformed rerun loses to readable unsuffixed report",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md":         derivedQAReportFixture(VerdictPass),
+				"qa-report-2026-08-31-ffd6852.md": "not frontmatter\n",
+			},
+		},
+		{
+			name: "duplicate verdict is unreadable",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md": "---\nverdict: pass\nverdict: fail\n---\n",
 			},
 			wantErr: true,
 		},
 		{
-			name: "numeric rerun order accepts ten after two",
+			name: "body verdict does not replace missing frontmatter verdict",
 			reports: map[string]string{
-				"qa-report-2026-08-31-02.md": "fail",
-				"qa-report-2026-08-31-10.md": "pass",
-			},
-		},
-		{
-			name: "malformed rerun loses to an unsuffixed report",
-			reports: map[string]string{
-				"qa-report-2026-08-31.md":         "fail",
-				"qa-report-2026-08-31-ffd6852.md": "pass",
+				"qa-report-2026-08-31.md": "---\n---\n\nverdict: pass\n",
 			},
 			wantErr: true,
 		},
 		{
-			name: "partial is outside the passing domain",
+			name: "empty verdict is unreadable",
 			reports: map[string]string{
-				"qa-report-2026-08-31.md": "partial",
+				"qa-report-2026-08-31.md": "---\nverdict:   \n---\n",
 			},
 			wantErr: true,
 		},
 		{
-			name: "body text cannot override a failed frontmatter verdict",
+			name: "unparseable report",
 			reports: map[string]string{
-				"qa-report-2026-08-31.md": "fail\n---\n\nverdict: pass",
+				"qa-report-2026-08-31.md": "not frontmatter\n",
 			},
 			wantErr: true,
 		},
 		{
-			name: "duplicate verdict is not a passing report",
+			name: "invalid later date loses to readable valid report",
 			reports: map[string]string{
-				"qa-report-2026-08-31.md": "fail\nverdict: pass",
+				"qa-report-2026-08-31.md": derivedQAReportFixture(VerdictPass),
+				"qa-report-2026-13-40.md": "not frontmatter\n",
 			},
-			wantErr: true,
 		},
 		{
-			name: "invalid later date loses to a valid report",
+			name: "non-digit date loses to readable valid report",
 			reports: map[string]string{
-				"qa-report-2026-08-31.md": "fail",
-				"qa-report-2026-13-40.md": "pass",
+				"qa-report-2026-08-31.md": derivedQAReportFixture(VerdictPass),
+				"qa-report-202A-08-31.md": "not frontmatter\n",
 			},
-			wantErr: true,
-		},
-		{
-			name: "non-digit date loses to a valid report",
-			reports: map[string]string{
-				"qa-report-2026-08-31.md": "fail",
-				"qa-report-202A-08-31.md": "pass",
-			},
-			wantErr: true,
 		},
 		{
 			// The sole report is malformed. Sorting a malformed name last only
@@ -362,14 +355,14 @@ func TestDerivedQAVerificationRequiresTheNewestReportToPass(t *testing.T) {
 			// tail -1 and its verdict was read as the gate's.
 			name: "a sole malformed report is not a candidate",
 			reports: map[string]string{
-				"qa-report-notadate.md": "pass",
+				"qa-report-notadate.md": derivedQAReportFixture(VerdictPass),
 			},
 			wantErr: true,
 		},
 		{
 			name: "a sole report with a malformed sequence is not a candidate",
 			reports: map[string]string{
-				"qa-report-2026-08-31-x2.md": "pass",
+				"qa-report-2026-08-31-x2.md": derivedQAReportFixture(VerdictPass),
 			},
 			wantErr: true,
 		},
@@ -381,22 +374,72 @@ func TestDerivedQAVerificationRequiresTheNewestReportToPass(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			root := t.TempDir()
+			root, command := derivedQAVerificationFixture(t, slug)
 			reportDir := filepath.Join(root, "docs", "specs", slug, "qa")
-			for name, verdict := range tt.reports {
-				writeFile(t, filepath.Join(reportDir, name), "---\nverdict: "+verdict+"\n---\n")
+			for name, report := range tt.reports {
+				writeFile(t, filepath.Join(reportDir, name), report)
 			}
 
-			command := exec.Command("sh", "-c", commands[0])
-			command.Dir = root
 			output, err := command.CombinedOutput()
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("derived QA Verification error = %v, wantErr %v; output: %s", err, tt.wantErr, output)
 			}
 		})
 	}
+}
+
+func TestDerivedQAVerificationInvokesNoRoundfixBinary(t *testing.T) {
+	const slug = "derived-qa-verification"
+	commands := DerivedQAVerification(slug)
+	if strings.Contains(commands[0], "roundfix") {
+		t.Fatalf("DerivedQAVerification() invokes roundfix: %q", commands[0])
+	}
+	root := t.TempDir()
+	writeFile(t, filepath.Join(root, "docs", "specs", slug, "qa", "qa-report-2026-08-31.md"), derivedQAReportFixture(VerdictPass))
+
+	selectorPath := t.TempDir()
+	for _, name := range []string{"awk", "cut", "find", "sort", "tail"} {
+		target, err := exec.LookPath(name)
+		if err != nil {
+			t.Fatalf("locate %s for derived QA Verification: %v", name, err)
+		}
+		if err := os.Symlink(target, filepath.Join(selectorPath, name)); err != nil {
+			t.Fatalf("link %s for derived QA Verification: %v", name, err)
+		}
+	}
+
+	command := exec.Command("sh", "-c", commands[0])
+	command.Dir = root
+	command.Env = append(os.Environ(), "PATH="+selectorPath)
+	if output, err := command.CombinedOutput(); err != nil {
+		t.Fatalf("derived QA Verification required roundfix: %v; output: %s", err, output)
+	}
+}
+
+func derivedQAVerificationFixture(t *testing.T, slug string) (string, *exec.Cmd) {
+	t.Helper()
+	commands := DerivedQAVerification(slug)
+	if len(commands) != 1 {
+		t.Fatalf("DerivedQAVerification() = %q, want one command", commands)
+	}
+	reportDir := filepath.ToSlash(filepath.Join("docs", "specs", slug, "qa"))
+	if !strings.Contains(commands[0], reportDir) {
+		t.Fatalf("DerivedQAVerification() = %q, want the Spec's QA directory", commands[0])
+	}
+
+	root := t.TempDir()
+	command := exec.Command("sh", "-c", commands[0])
+	command.Dir = root
+	command.Env = os.Environ()
+	return root, command
+}
+
+func derivedQAReportFixture(verdict string, extraFrontmatter ...string) string {
+	frontmatter := ""
+	if len(extraFrontmatter) > 0 {
+		frontmatter = strings.Join(extraFrontmatter, "\n") + "\n"
+	}
+	return "---\nverdict: " + verdict + "\n" + frontmatter + "---\n"
 }
 
 func TestDerivedQAVerificationPassesTheChecker(t *testing.T) {
