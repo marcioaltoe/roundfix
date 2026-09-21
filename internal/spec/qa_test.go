@@ -229,6 +229,114 @@ func TestReadQAReportRejectsInvalidDeclaredCount(t *testing.T) {
 	}
 }
 
+func TestQAReportEligibility(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name         string
+		report       QAReport
+		declarations int
+		wantError    string
+	}{
+		{
+			name:   "pass",
+			report: QAReport{Verdict: VerdictPass},
+		},
+		{
+			name: "pass with environment-blocked rows",
+			report: QAReport{
+				Verdict:                VerdictPass,
+				RowsBlockedEnvironment: 1,
+			},
+		},
+		{
+			name: "partial with as many declared rows as declarations",
+			report: QAReport{
+				Verdict:             VerdictPartial,
+				RowsBlockedDeclared: 2,
+			},
+			declarations: 2,
+		},
+		{
+			name: "partial with fewer declared rows than declarations",
+			report: QAReport{
+				Verdict:                 VerdictPartial,
+				RowsBlockedDeclared:     1,
+				RowsBlockedPrecondition: 1,
+			},
+			declarations: 2,
+		},
+		{
+			name:      "fail verdict",
+			report:    QAReport{Verdict: VerdictFail},
+			wantError: `newest QA Report verdict is "fail"; expected "pass"`,
+		},
+		{
+			name:      "unsupported verdict",
+			report:    QAReport{Verdict: "unknown"},
+			wantError: `newest QA Report verdict is "unknown"; expected "pass"`,
+		},
+		{
+			name: "partial with finding-blocked rows",
+			report: QAReport{
+				Verdict:             VerdictPartial,
+				RowsBlockedFinding:  1,
+				RowsBlockedDeclared: 1,
+			},
+			declarations: 1,
+			wantError:    "rows_blocked_finding is 1; expected 0",
+		},
+		{
+			name: "partial with environment-blocked rows",
+			report: QAReport{
+				Verdict:                VerdictPartial,
+				RowsBlockedEnvironment: 1,
+				RowsBlockedDeclared:    1,
+			},
+			declarations: 1,
+			wantError:    "rows_blocked_environment is 1; expected 0",
+		},
+		{
+			name:      "partial without declared-blocked rows",
+			report:    QAReport{Verdict: VerdictPartial},
+			wantError: `newest QA Report verdict is "partial"; expected "pass"`,
+		},
+		{
+			name: "partial with more declared rows than declarations",
+			report: QAReport{
+				Verdict:             VerdictPartial,
+				RowsBlockedDeclared: 3,
+			},
+			declarations: 2,
+			wantError:    "rows_blocked_declared is 3, but Spec declares 2 unreachable acceptances; shortfall is 1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			specDir := t.TempDir()
+			if tt.declarations > 0 {
+				var prd strings.Builder
+				prd.WriteString("# Test Spec\n\n## Unreachable Acceptance\n")
+				for index := 0; index < tt.declarations; index++ {
+					fmt.Fprintf(&prd, "\n- criterion: criterion %d\n  reason: reason %d\n  satisfied-by: action %d\n", index+1, index+1, index+1)
+				}
+				writeFile(t, filepath.Join(specDir, "_prd.md"), prd.String())
+			}
+
+			err := QAReportEligibility(specDir, tt.report)
+			if tt.wantError == "" {
+				if err != nil {
+					t.Fatalf("QAReportEligibility: %v", err)
+				}
+				return
+			}
+			if err == nil || err.Error() != tt.wantError {
+				t.Fatalf("error = %v, want %q", err, tt.wantError)
+			}
+		})
+	}
+}
+
 func TestArchivedQAReportCorpusRemainsReadable(t *testing.T) {
 	t.Parallel()
 	_, testFile, _, ok := runtime.Caller(0)

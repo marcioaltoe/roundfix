@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0152-one-declared-acceptance-policy
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -38,15 +38,15 @@ now stops being acceptable.
 
 ## Subtasks
 
-- [ ] Add the decision and its reasons.
-- [ ] Add unit tests for every accepted and refused shape.
+- [x] Add the decision and its reasons.
+- [x] Add unit tests for every accepted and refused shape.
 
 ## Acceptance Criteria
 
-- [ ] A `pass` is accepted, including one carrying an environment-blocked row.
-- [ ] A qualifying `partial` is accepted; each disqualifying clause refuses.
-- [ ] Each refusal names the reason `archiveUnprovenActions` gives today.
-- [ ] Newest-report selection is untouched.
+- [x] A `pass` is accepted, including one carrying an environment-blocked row.
+- [x] A qualifying `partial` is accepted; each disqualifying clause refuses.
+- [x] Each refusal names the reason `archiveUnprovenActions` gives today.
+- [x] Newest-report selection is untouched.
 
 ## Context
 
@@ -61,3 +61,40 @@ now stops being acceptable.
 ## References
 
 - [_techspec.md](_techspec.md) — The one decision
+
+## Result
+
+Implementation:
+
+- Added exported `QAReportEligibility`, which returns `nil` for an acceptable
+  parsed report and preserves archive's current refusal reasons as errors.
+- Added a table-driven unit suite for plain and environment-blocked `pass`,
+  qualifying `partial` reports, every disqualifying `partial` clause, `fail`,
+  and an unsupported verdict.
+
+Focused-check evidence:
+
+- Red signal: `rtk env GOCACHE=/tmp/roundfix-go-cache go test
+  ./internal/spec -run '^TestQAReportEligibility$'` failed to compile before
+  implementation because `QAReportEligibility` was undefined.
+- `rtk env GOCACHE=/tmp/roundfix-go-cache go test ./internal/spec -run
+  '^(TestQAReportEligibility|TestNewestQAReport)'` passed after implementation.
+- `rtk env GOCACHE=/tmp/roundfix-go-cache make verify-incremental` passed with
+  host process-table access. The first sandboxed run reached and passed
+  `internal/spec`, then failed two unrelated `internal/cli` force-stop tests
+  because process-table access was denied; the permitted rerun exited zero.
+
+Acceptance evidence:
+
+- `TestQAReportEligibility/pass` and `pass_with_environment-blocked_rows`
+  exercise both required `pass` shapes.
+- The qualifying `partial` cases exercise equal and lower declared-row counts;
+  the refusal cases exercise finding-blocked, environment-blocked, zero
+  declared, and over-declared reports.
+- Every refusal case compares the complete error string with the reason
+  `archiveUnprovenActions` currently returns.
+- The production diff adds only `QAReportEligibility` below `ReadQAReport`;
+  `NewestQAReport` and `NewestQAReportFromPaths` are unchanged, and their
+  focused tests pass.
+
+The Daemon-owned command under `## Verification` was not run.
