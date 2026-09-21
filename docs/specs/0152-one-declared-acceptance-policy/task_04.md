@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0152-one-declared-acceptance-policy
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -50,3 +50,29 @@ describes, and this Spec changes what it accepts.
 ## References
 
 - [_authorization.md](_authorization.md) — Approved bounded mutation
+
+## Result
+
+Implemented the shipped-skill wording for the one declared-acceptance policy.
+The canonical skill now states that settlement and archive use the same policy,
+that a qualifying `partial` settles the terminal `qa` Task, and that `fail`,
+undeclared `partial`, missing or unparseable reports, and disallowed blocked
+rows on `pass` refuse. The existing environment-blocked-row exception remains
+documented. The distributed mirror was regenerated from the canonical skill
+with the sanctioned command; the skill version was unchanged.
+
+Focused checks:
+
+- `make skills-sync` — passed.
+- `cmp -s .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` — passed;
+  the mirror is identical to the canonical file.
+- Focused text checks for the policy, qualifying `partial`, and refusal wording
+  in both skill files — passed.
+- `git diff --check` — passed.
+
+Acceptance evidence:
+
+- Both skill files contain the one declared-acceptance policy and settlement /
+  archive behavior, with the focused mirror and text checks passing.
+- The repository skill check remains for Daemon Verification; it was not run
+  here because it is the Task's declared Verification command.
