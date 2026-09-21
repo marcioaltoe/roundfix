@@ -110,6 +110,10 @@ func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	if !runVerificationInSettleSurface(ctx, plan, collaborators.verifier, stdout, stderr) {
 		return exitRunFailed
 	}
+	if err := requireSettleQAReportEligibility(plan); err != nil {
+		fmt.Fprintf(stderr, "%s: settle QA Report is ineligible: %v\n", app.Name, err)
+		return exitRunFailed
+	}
 
 	commitResult, err := settleTaskAndCommit(ctx, plan, collaborators)
 	if err != nil {
@@ -200,6 +204,19 @@ func runVerificationInSettleSurface(ctx context.Context, plan settlePlan, verifi
 func settleVerificationRunID(plan settlePlan) string {
 	replacer := strings.NewReplacer("/", "_", "\\", "_")
 	return "settle-" + replacer.Replace(plan.graph.Spec.Slug) + "-" + replacer.Replace(plan.task.ID)
+}
+
+// requireSettleQAReportEligibility applies the shared QA Report decision before
+// settle can complete a qa Task. Non-qa Tasks retain the existing path.
+func requireSettleQAReportEligibility(plan settlePlan) error {
+	if plan.task.Type != spec.TaskTypeQA {
+		return nil
+	}
+	report, err := spec.ReadQAReport(plan.graph.Spec.Dir)
+	if err != nil {
+		return fmt.Errorf("read newest QA Report: %w", err)
+	}
+	return spec.QAReportEligibility(plan.graph.Spec.Dir, report)
 }
 
 func parseSettleCommand(args []string) (settleRequest, error) {

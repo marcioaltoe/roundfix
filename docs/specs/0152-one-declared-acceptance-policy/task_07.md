@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0152-one-declared-acceptance-policy
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -71,3 +71,61 @@ stops deciding.
 ## References
 
 - [_techspec.md](_techspec.md) — How the derived command reaches it
+
+## Result
+
+Implementation:
+
+- The rendered QA Verification still selects the newest dated-and-sequenced
+  report, but now checks only that the report has closed frontmatter and one
+  non-empty verdict. It does not invoke `roundfix` or encode report
+  eligibility.
+- `settle` now reads the newest QA Report and applies
+  `spec.QAReportEligibility` in process after the Task's Verification passes
+  and before any Task status or commit change. Non-`qa` Tasks bypass this
+  check.
+- The Daemon gate settlement path was left unchanged from Task 06.
+
+Focused-check evidence:
+
+- Red signal: `rtk env GOCACHE=/private/tmp/roundfix-task07-gocache go test
+  -count=1 ./internal/cli -run
+  'TestSettleAppliesEligibilityToAQATask/refuses_an_ineligible_report_after_Verification'`
+  failed before implementation because the rendered command still ran
+  `roundfix qa-report accept` and never reached an in-process eligibility
+  decision.
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-gocache go test -count=1
+  ./internal/spec -run
+  'TestDerivedQAVerification(ProvesNewestVerdictReadable|InvokesNoRoundfixBinary)'`
+  passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-gocache go test -count=1
+  ./internal/cli -run 'TestSettleAppliesEligibilityToAQATask/'` passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-gocache go test -count=1
+  ./internal/spec ./internal/cli` passed `internal/spec`; the sandboxed CLI
+  package run reached two unrelated force-stop integration failures because
+  process-table reads returned `operation not permitted`.
+- The host-permitted rerun, `rtk env
+  GOCACHE=/private/tmp/roundfix-task07-gocache go test -count=1
+  ./internal/cli`, passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-gocache make
+  verify-incremental` passed with host process-table access, covering `go vet`,
+  the complete Go suite, skill checks, and the build.
+
+Acceptance evidence:
+
+- `TestDerivedQAVerificationInvokesNoRoundfixBinary` asserts the rendered text
+  contains no `roundfix` invocation and executes it with a `PATH` containing
+  only the report-selection utilities.
+- `TestDerivedQAVerificationProvesNewestVerdictReadable` covers missing,
+  malformed, duplicate, empty, and body-only verdicts and proves a readable
+  `pass`, `fail`, or `partial` verdict satisfies the rendered command.
+- `TestSettleAppliesEligibilityToAQATask` proves an ineligible newest report
+  leaves the `qa` Task, worktree, and `HEAD` unchanged after Verification, and
+  proves a qualifying `partial` settles the Task `completed`.
+- The same settlement regression proves a backend Task retains its authored
+  Verification and settles through the existing non-`qa` path.
+
+Not run:
+
+- The Task's declared `## Verification` commands — reserved for the Daemon by
+  the assigned execution contract.

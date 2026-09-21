@@ -66,6 +66,108 @@ func TestRunSettleCommitsFailedTaskWorktreeWithDaemonMessage(t *testing.T) {
 	assertNoRunDatabase(t, homeDir)
 }
 
+func TestSettleAppliesEligibilityToAQATask(t *testing.T) {
+	t.Run("refuses an ineligible report after Verification", func(t *testing.T) {
+		homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+			implementQAGateSeed(string(spec.StatusFailed)),
+		})
+		reportDir := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "qa")
+		mustMkdir(t, reportDir)
+		reportPath := filepath.Join(reportDir, "qa-report-2026-09-21.md")
+		mustWrite(t, reportPath, implementQAReport(spec.VerdictFail))
+		taskPath := implementTaskPath(repoDir, "task_qa")
+		beforeTask := mustRead(t, taskPath)
+		beforeStatus := gitSettleOutput(t, repoDir, "status", "--porcelain=v1")
+		beforeHead := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "HEAD"))
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_qa"}, &stdout, &stderr)
+
+		if code != exitRunFailed {
+			t.Fatalf("settle exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
+		}
+		if want := "verify " + spec.DerivedQAVerification(implementTestSlug)[0] + " — ok\n"; !strings.Contains(stdout.String(), want) {
+			t.Fatalf("settle stdout = %q, want successful rendered Verification %q", stdout.String(), want)
+		}
+		for _, want := range []string{"QA Report is ineligible", `newest QA Report verdict is "fail"; expected "pass"`} {
+			if !strings.Contains(stderr.String(), want) {
+				t.Fatalf("settle stderr = %q, want %q", stderr.String(), want)
+			}
+		}
+		if got := mustRead(t, taskPath); got != beforeTask {
+			t.Fatalf("ineligible QA Report changed Task file:\n%s", got)
+		}
+		if got := gitSettleOutput(t, repoDir, "status", "--porcelain=v1"); got != beforeStatus {
+			t.Fatalf("ineligible QA Report changed worktree status from %q to %q", beforeStatus, got)
+		}
+		if got := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "HEAD")); got != beforeHead {
+			t.Fatalf("ineligible QA Report changed HEAD from %s to %s", beforeHead, got)
+		}
+		assertNoRunDatabase(t, homeDir)
+	})
+
+	t.Run("completes a QA Task with a qualifying report", func(t *testing.T) {
+		homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+			implementQAGateSeed(string(spec.StatusFailed)),
+		})
+		prdPath := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "_prd.md")
+		mustWrite(t, prdPath, mustRead(t, prdPath)+`
+## Unreachable Acceptance
+
+- criterion: the gate cannot create a pull request
+  reason: the fixture has no remote
+  satisfied-by: task_qa
+`)
+		reportDir := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "qa")
+		mustMkdir(t, reportDir)
+		reportPath := filepath.Join(reportDir, "qa-report-2026-09-21.md")
+		mustWrite(t, reportPath, "---\nverdict: partial\nrows_blocked_declared: 1\n---\n\n# QA Report\n")
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_qa"}, &stdout, &stderr)
+
+		if code != exitOK {
+			t.Fatalf("settle exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+		}
+		if content := mustRead(t, implementTaskPath(repoDir, "task_qa")); !strings.Contains(content, "status: completed") {
+			t.Fatalf("qualifying QA Report did not complete Task:\n%s", content)
+		}
+		if !strings.Contains(stdout.String(), "settled task_qa completed — ") {
+			t.Fatalf("settle stdout = %q, want completed settlement", stdout.String())
+		}
+		assertNoRunDatabase(t, homeDir)
+	})
+
+	t.Run("leaves non-QA settlement unchanged", func(t *testing.T) {
+		homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+			{
+				id:           "task_01",
+				taskType:     "backend",
+				status:       string(spec.StatusFailed),
+				verification: []string{"test -f recovered.txt"},
+			},
+		})
+		mustWrite(t, filepath.Join(repoDir, "recovered.txt"), "recovered work\n")
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+		if code != exitOK {
+			t.Fatalf("settle exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+		}
+		if content := mustRead(t, implementTaskPath(repoDir, "task_01")); !strings.Contains(content, "status: completed") {
+			t.Fatalf("non-QA Task did not settle as before:\n%s", content)
+		}
+		if !strings.Contains(stdout.String(), "verify test -f recovered.txt — ok\n") {
+			t.Fatalf("settle stdout = %q, want authored non-QA Verification", stdout.String())
+		}
+		assertNoRunDatabase(t, homeDir)
+	})
+}
+
 func TestRunSettleWarnsWhenOtherSpecTasksAreFailed(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
