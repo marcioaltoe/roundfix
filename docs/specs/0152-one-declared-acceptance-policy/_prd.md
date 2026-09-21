@@ -19,11 +19,29 @@ unreachable."
 and that program ends `exit(closed && verdicts == 1 && verdict == "pass" ? 0 : 1)`.
 A qualifying `partial` fails it.
 
-The Daemon runs the rendered command to settle the `qa` Task. So a Spec whose QA
-legitimately ends `partial` with declared-unreachable blocked rows cannot settle
-its gate, and a Spec that cannot settle its gate never reaches the archive that
-would have accepted it. The stricter copy wins by running first, and the
-documented policy never gets consulted.
+And there is a third decider, which pre-PR review found after the first four
+Tasks had shipped. `runQAGate` in `internal/daemon/task_engine.go:2417` settles
+the `qa` Task from the raw verdict:
+
+```go
+if verdict == spec.VerdictPass {
+	qaStatus = spec.StatusCompleted
+}
+```
+
+Every other verdict settles the Task `failed`. It consults neither archive's
+rule nor the rendered command — which means the rendered command is not what
+settles the gate at all, and this Spec's first draft said it was.
+
+So a Spec whose QA legitimately ends `partial` with declared-unreachable blocked
+rows cannot settle its gate, and a Spec that cannot settle its gate never
+reaches the archive that would have accepted it.
+
+The code comment above that line paraphrases ADR-0015 as "Every value except
+`spec.VerdictPass` ends the Run Unresolved". ADR-0015 says something narrower:
+the Daemon "ends the Run as Unresolved on a **failing** verdict". A qualifying
+`partial` is not a failing verdict, so applying the shared decision there is
+consistent with the accepted decision rather than a departure from it.
 
 The generator's own comment says the rendered command exists "so readers can see
 the contract" and that "changing that rendered command does not change the
@@ -45,7 +63,10 @@ settlement, the derived QA command, and archive.
   distinct from a failure, ADR-0091 makes the QA gate a Task node of its own
   type, ADR-0097 carries a QA row forward only on declared, unmoved evidence,
   ADR-0096 makes the gate prove machine facts before spending an agent turn,
-  ADR-0117 checks a defect at the stage that can produce it, ADR-0093 checks
+  ADR-0015 ends a Run Unresolved on a failing verdict — which a qualifying
+  `partial` is not, so this Spec settles it under that decision rather than
+  against it — ADR-0117 checks a defect at the stage that can produce it,
+  ADR-0093 checks
   Spec consistency by citation, ADR-0104 accepts on evidence a Spec did not
   author, ADR-0155 makes the `qa` Task declare the matrix, ADR-0156 makes a
   declared promise name a consuming Task, and ADR-0130 keeps a path governed
@@ -74,14 +95,17 @@ settlement, the derived QA command, and archive.
 ## Core Features
 
 1. **One eligibility function.** A single exported decision takes the newest QA
-   Report and answers whether it is acceptable, and why not when it is not.
-   Archive calls it. The derived Verification reaches the same decision.
+   Report and answers whether it is acceptable, and why not when it is not. All
+   three deciders reach it: archive, the derived Verification, and the Daemon's
+   own gate settlement.
 2. **The derived command stops re-deciding.** It delegates the verdict judgement
    instead of carrying a second copy of the rule in awk, so the two cannot drift
    apart again.
 3. **A qualifying partial settles.** A newest report whose verdict is `partial`
-   and whose blocked rows are declared unreachable settles the `qa` Task, as it
-   already would have been archived.
+   and whose blocked rows are declared unreachable settles the `qa` Task
+   `completed` in a real Implement Run, as it already would have been archived.
+   Settlement applies the decision in process, so it does not depend on which
+   `roundfix` a machine happens to have installed.
 4. **Nothing else loosens.** `fail`, an unparseable report, a missing report, a
    `partial` carrying finding- or environment-blocked rows, a `partial` with no
    declared blocked rows, and a `partial` whose declared count exceeds the
@@ -135,11 +159,15 @@ accept any report would satisfy Core Feature 3 while destroying the gate.
 
 Both implementations were read on this repository before authoring.
 `internal/spec/archive.go:143-156` accepts `pass` and a qualifying `partial`;
-`DerivedQAVerification` in `internal/spec/task.go:95` renders an awk program
-ending `verdict == "pass" ? 0 : 1`. The generator's comment states that the
-rendered command does not change the effective contract, which holds for archive
-and not for Task settlement, where the rendered command is what the Daemon
-executes. Every path this Spec touches was classified by file through the
+`DerivedQAVerification` in `internal/spec/task.go:95` rendered an awk program
+ending `verdict == "pass" ? 0 : 1`.
+
+The first draft of this Spec claimed the Daemon executes that rendered command
+to settle the `qa` Task. It does not, and independent pre-PR review caught the
+error: `runQAGate` settles from the raw verdict and consults neither
+implementation. Reading the two deciders I expected and asserting how they were
+wired, instead of following the settlement path to its end, is what let that
+claim stand through four Tasks. Every path this Spec touches was classified by file through the
 governance probe.
 
 ## Technical candidate
