@@ -47,10 +47,21 @@ documented rule never gets a turn.
 
 ## The one decision
 
-A single exported function in `internal/spec/qa.go` takes a parsed report and
-answers whether it is acceptable, returning the reason when it is not. It states
-exactly the rule archive states today, so nothing that is acceptable now stops
-being acceptable.
+A single exported function in `internal/spec/qa.go` answers whether a parsed
+report is acceptable, returning the reason when it is not. It states exactly the
+rule `archiveUnprovenActions` states today, read from the source rather than
+paraphrased:
+
+- `pass` is accepted outright. `readQAReport` has already refused a `pass`
+  carrying finding-, declared- or precondition-blocked rows, and an
+  environment-blocked row is explicitly allowed to accompany one.
+- `partial` requires no finding-blocked rows, no environment-blocked rows, at
+  least one declared blocked row, and a declared count no greater than the
+  Spec's unreachable acceptance declarations.
+- Every other verdict refuses.
+
+Counting those declarations needs the Spec directory, so the function takes it
+alongside the report.
 
 Archive calls it in place of its inline judgement.
 
@@ -70,8 +81,11 @@ a rendered call to the rule cannot.
    exactly as today.
 2. A newest report with verdict `partial` whose blocked rows are declared
    unreachable settles, and archives as today.
-3. `fail`, an undeclared `partial`, a missing report, an unparseable report and
-   a `pass` carrying blocked rows each refuse, with today's reason.
+3. `fail`, a missing report, an unparseable report, a `partial` carrying
+   finding- or environment-blocked rows, a `partial` with no declared blocked
+   rows, and a `partial` whose declared count exceeds the Spec's unreachable
+   declarations each refuse, with today's reason. A `pass` carrying an
+   environment-blocked row is accepted.
 
 ## Coverage Map
 
@@ -103,9 +117,12 @@ a rendered call to the rule cannot.
 2. **A qualifying partial settles.** The derived command accepts a newest report
    whose verdict is `partial` with declared-unreachable blocked rows. Fails on
    the tree as it stands, where the rendered awk requires `pass`.
-3. **Nothing else loosens.** `fail`, an undeclared partial, a missing report, an
-   unparseable report and a `pass` carrying blocked rows are each still refused
-   by the derived command.
+3. **Nothing else loosens.** `fail`, a missing report, an unparseable report, a
+   `partial` carrying finding- or environment-blocked rows, a `partial` with no
+   declared blocked rows, and a `partial` declaring more than the Spec does are
+   each still refused by the derived command — and a `pass` carrying an
+   environment-blocked row is still accepted, which is the case every Spec in
+   this repository depends on.
 4. **Archive is unchanged.** The reports archive accepts and refuses today are
    accepted and refused after the change, for the same reasons.
 5. **The skill is true.** The shipped skill and its mirror state the one policy

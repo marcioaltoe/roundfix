@@ -26,9 +26,12 @@ a second copy of the rule.
    evaluating it in awk.
 3. MUST settle a newest report whose verdict is `partial` with
    declared-unreachable blocked rows.
-4. MUST still refuse `fail`, an undeclared `partial`, a missing report, an
-   unparseable report, and a `pass` carrying blocked rows.
-5. MUST fail closed: a judgement that cannot be reached is a refusal, never an
+4. MUST still refuse `fail`, a missing report, an unparseable report, and a
+   `partial` that carries finding- or environment-blocked rows, declares none,
+   or declares more than the Spec does.
+5. MUST keep accepting a `pass` carrying an environment-blocked row, which every
+   Spec in this repository depends on.
+6. MUST fail closed: a judgement that cannot be reached is a refusal, never an
    acceptance.
 
 ## Subtasks
@@ -40,8 +43,9 @@ a second copy of the rule.
 ## Acceptance Criteria
 
 - [ ] A qualifying `partial` is accepted by the derived command.
-- [ ] `fail`, an undeclared `partial`, a missing report, an unparseable report
-      and a `pass` with blocked rows are each refused.
+- [ ] `fail`, a missing report, an unparseable report and each disqualifying
+      `partial` shape are refused.
+- [ ] A `pass` carrying an environment-blocked row is accepted.
 - [ ] The rendered command still names the report directory it searches.
 
 ## Context

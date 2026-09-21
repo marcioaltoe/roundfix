@@ -20,8 +20,10 @@ the form ADR-0155 defines, and settles the Spec on evidence.
    that both archive and the derived Verification reach it.
 3. MUST verify that a newest report whose verdict is `partial` with
    declared-unreachable blocked rows settles the terminal `qa` Task.
-4. MUST verify that `fail`, an undeclared partial, a missing report, an
-   unparseable report and a `pass` carrying blocked rows each still refuse.
+4. MUST verify that `fail`, a missing report, an unparseable report and each
+   disqualifying `partial` shape still refuse, and that a `pass` carrying an
+   environment-blocked row is still accepted — this gate's own report carries
+   one.
 5. MUST verify that archive accepts and refuses exactly what it did before, for
    the same reasons.
 6. MUST verify that the shipped skill and its mirror state the one policy, and

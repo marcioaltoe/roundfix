@@ -82,8 +82,15 @@ settlement, the derived QA command, and archive.
    and whose blocked rows are declared unreachable settles the `qa` Task, as it
    already would have been archived.
 4. **Nothing else loosens.** `fail`, an unparseable report, a missing report, a
-   `partial` whose blocked rows are not declared, and a `pass` carrying blocked
-   rows all still refuse, with the reason each gives today.
+   `partial` carrying finding- or environment-blocked rows, a `partial` with no
+   declared blocked rows, and a `partial` whose declared count exceeds the
+   Spec's unreachable declarations all still refuse, with the reason each gives
+   today.
+
+   A `pass` stays accepted exactly as it is today, **including one carrying
+   environment-blocked rows**. ADR-0080 keeps an environment-blocked row
+   distinct from a failure, and every QA Report in this repository carries one.
+   Refusing it would archive nothing ever again.
 
 ## Non-Goals / Out of Scope
 
@@ -102,7 +109,8 @@ settlement, the derived QA command, and archive.
    Task, where today the derived command refuses it.
 2. The same fixture archives, as it does today.
 3. Every refusal in Core Feature 4 is exercised and still refuses, with an
-   unchanged reason.
+   unchanged reason, and a `pass` carrying an environment-blocked row is still
+   accepted.
 
 ## Decisions
 

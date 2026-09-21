@@ -29,8 +29,9 @@ the one decision without changing what archive does.
 
 ## Acceptance Criteria
 
-- [ ] A `pass` archives, a qualifying `partial` archives, and every other shape
-      refuses with today's reason.
+- [ ] A `pass` archives, including one carrying an environment-blocked row.
+- [ ] A qualifying `partial` archives, and every other shape refuses with
+      today's reason.
 - [ ] No archive precondition other than the verdict judgement is touched.
 
 ## Context
