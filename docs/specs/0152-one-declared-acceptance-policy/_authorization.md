@@ -7,6 +7,7 @@ paths:
   - .agents/skills/roundfix/SKILL.md
   - skills/roundfix/SKILL.md
   - internal/spec/archive.go
+  - internal/spec/archive_test.go
 operations:
   - implement
   - commit
@@ -26,6 +27,13 @@ to the CLI behavior the slice itself delivers.
 `internal/spec/archive.go` was granted on 2026-09-21, bounded to calling a
 single shared eligibility decision instead of carrying its own copy of the rule.
 
+`internal/spec/archive_test.go` was granted on 2026-09-21, after the QA gate
+found the first record had missed it. Task 02 pins archive's accepted and
+refused reports with tests, and that is where archive's tests live. The record
+had named the source file and not its test, which is the same class of miss that
+produced the widening on Spec 0151 — a path predicted rather than measured
+against the governed set.
+
 ## Why each governed path is unavoidable
 
 Archive is one of the two places that decide whether the newest QA Report is
@@ -39,10 +47,14 @@ and this Spec changes what it accepts.
 
 ## What is not governed
 
-Measured by file through the governance probe, not inferred from a directory:
-`internal/spec/task.go`, `internal/spec/qa.go`, `internal/spec/task_test.go`,
-`internal/spec/qa_test.go` and `internal/cli/settle.go` are ordinary source that
-no authorization has bounded.
+Computed as the intersection of this Spec's changed paths with the literal set
+in `internal/speccheck/governed.go`, rather than by probing paths guessed in
+advance. Exactly two governed files are touched, both listed above. Everything
+else the Spec changes — `internal/spec/qa.go`, `internal/spec/qa_test.go`,
+`internal/spec/task.go`, `internal/spec/task_test.go`,
+`internal/spec/errors.go`, `internal/cli/cli.go`, `internal/cli/qa_report.go`
+and `internal/cli/qa_report_test.go` — is ordinary source that no authorization
+has bounded.
 
 ## Approved bounded mutation
 
@@ -50,6 +62,9 @@ In `internal/spec/archive.go`: replace the inline verdict judgement with a call
 to the single shared eligibility decision. Archive's own behavior does not
 change — the same reports are accepted and the same reports are refused, for the
 same reasons.
+
+In `internal/spec/archive_test.go`: pin that behavior, so the refactor is proved
+rather than asserted.
 
 In the Roundfix skill and its mirror, state:
 

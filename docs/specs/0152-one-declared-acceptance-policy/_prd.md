@@ -57,11 +57,12 @@ settlement, the derived QA command, and archive.
   `internal/spec/archive.go` granted 2026-09-21, both recorded in
   [_authorization.md](_authorization.md); bounded files:
   `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`,
-  `internal/spec/archive.go`. Sanctioned regeneration: `make skills-sync`.
-  `internal/spec/task.go`, `internal/spec/qa.go`, their tests and
-  `internal/cli` are ordinary source that no authorization has bounded, each
-  measured by file through the governance probe rather than inferred from its
-  directory. Source: `docs/agents/agent-instructions.md`,
+  `internal/spec/archive.go`, `internal/spec/archive_test.go`. Sanctioned
+  regeneration: `make skills-sync`. The bounded set is the intersection of this
+  Spec's changed paths with the literal set in
+  `internal/speccheck/governed.go`, computed rather than predicted; everything
+  else it changes, including `internal/cli/qa_report.go`, is ordinary source
+  that no authorization has bounded. Source: `docs/agents/agent-instructions.md`,
   `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## Goals

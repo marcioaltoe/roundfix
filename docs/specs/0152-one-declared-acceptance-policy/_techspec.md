@@ -26,7 +26,8 @@ Verification command delegates to it instead of re-deciding in awk.
   shipped skill are public contract surfaces. Express maintainer authorization:
   recorded in [_authorization.md](_authorization.md); bounded files:
   `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`,
-  `internal/spec/archive.go`. Sanctioned regeneration: `make skills-sync`.
+  `internal/spec/archive.go`, `internal/spec/archive_test.go`. Sanctioned
+  regeneration: `make skills-sync`.
   Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`,
   `docs/agents/specific-repository.md`.
 
