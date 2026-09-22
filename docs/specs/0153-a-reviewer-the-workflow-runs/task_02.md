@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0153-a-reviewer-the-workflow-runs
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -57,3 +57,23 @@ This Task makes the command gather the evidence and hand it over.
 ## References
 
 - [_techspec.md](_techspec.md) — What the reviewer is handed
+
+## Result
+
+Implemented candidate-diff collection and a reviewer prompt that embeds the
+computed base-to-head diff. Review Agent Sessions now carry an explicit
+read-only access mode: reads are approved, while write permission requests are
+denied when no interactive prompt is available. Existing implementation
+sessions retain their read-write zero-value behavior.
+
+Focused-check evidence:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task02-go-cache go test -count=1 -run 'TestReview(Record|Prompt|Session)' ./internal/cli` — passed. The real two-commit fixture proved the captured prompt contains the `diff --git` header and the added line `+the reviewer receives this changed line`.
+- `rtk env GOCACHE=/private/tmp/roundfix-task02-go-cache go test -count=1 -run '^TestACPXPromptArgsPlaceGlobalsBeforeAgentAndSubcommand$' ./internal/agent` — passed. The read-only request produced `--approve-reads --non-interactive-permissions deny`; normal work requests retained `--approve-all`.
+- `rtk env GOCACHE=/private/tmp/roundfix-task02-go-cache make verify-incremental` — the sandboxed attempt reached the Go suite and failed only where two existing force-stop integration tests could not inspect their spawned process trees. The narrowly host-permitted rerun passed all packages, skill checks, and the build.
+
+Acceptance evidence:
+
+- The fixture-candidate prompt contains the computed diff text, including its file header.
+- The prompt assertion names the fixture's added line, so commit identifiers alone cannot satisfy it.
+- The captured runner request reports readable and non-writable access, and the ACPX argument test proves that request denies write approvals at the runtime boundary.

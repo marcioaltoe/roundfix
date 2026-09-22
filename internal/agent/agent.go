@@ -40,6 +40,23 @@ type SessionRef struct {
 	WorkDir string
 }
 
+// SessionAccess controls which Agent tool requests Roundfix approves. The
+// zero value preserves the read-write access used by implementation sessions.
+type SessionAccess string
+
+const (
+	SessionAccessReadWrite SessionAccess = ""
+	SessionAccessReadOnly  SessionAccess = "read-only"
+)
+
+func (access SessionAccess) CanRead() bool {
+	return access == SessionAccessReadWrite || access == SessionAccessReadOnly
+}
+
+func (access SessionAccess) CanWrite() bool {
+	return access == SessionAccessReadWrite
+}
+
 func SessionRefForRun(runID string, workDir string) SessionRef {
 	runID = strings.TrimSpace(runID)
 	if runID == "" {
@@ -60,6 +77,7 @@ func SessionRefForTask(runID string, taskID string, workDir string) SessionRef {
 type ExecuteRequest struct {
 	Runtime       RuntimeSpec
 	Session       SessionRef
+	Access        SessionAccess
 	RunID         string
 	Batch         rounds.Batch
 	LogPath       string

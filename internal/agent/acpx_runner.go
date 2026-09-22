@@ -1681,8 +1681,12 @@ func acpxPromptArgs(req ACPXPromptRequest) ([]string, error) {
 	}
 	if req.Inert {
 		args = append(args, "--deny-all", "--allowed-tools", "")
-	} else {
+	} else if req.Access == SessionAccessReadOnly {
+		args = append(args, "--approve-reads", "--non-interactive-permissions", "deny")
+	} else if req.Access == SessionAccessReadWrite {
 		args = append(args, "--approve-all")
+	} else {
+		return nil, fmt.Errorf("unsupported Agent Session access %q", req.Access)
 	}
 	if model := strings.TrimSpace(req.Runtime.Model); model != "" {
 		args = append(args, "--model", model)

@@ -1839,6 +1839,7 @@ func TestACPXPromptArgsPlaceGlobalsBeforeAgentAndSubcommand(t *testing.T) {
 	tests := []struct {
 		name    string
 		runtime RuntimeSpec
+		access  SessionAccess
 		want    []string
 	}{
 		{
@@ -1882,11 +1883,26 @@ func TestACPXPromptArgsPlaceGlobalsBeforeAgentAndSubcommand(t *testing.T) {
 				"-f", "-",
 			},
 		},
+		{
+			name:    "read-only session",
+			runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP},
+			access:  SessionAccessReadOnly,
+			want: []string{
+				"--cwd", "/repo",
+				"--format", "json",
+				"--json-strict",
+				"--approve-reads",
+				"--non-interactive-permissions", "deny",
+				"codex", "prompt",
+				"-s", "roundfix-run-1",
+				"-f", "-",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := acpxPromptArgs(ACPXPromptRequest{
-				ExecuteRequest: ExecuteRequest{Runtime: tt.runtime, GitRoot: "/repo"},
+				ExecuteRequest: ExecuteRequest{Runtime: tt.runtime, GitRoot: "/repo", Access: tt.access},
 				Session:        "roundfix-run-1",
 			})
 			if err != nil {

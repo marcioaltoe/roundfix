@@ -1,16 +1,23 @@
-// Suite: pre-PR review records.
-// Invariant: each written record identifies one candidate and one valid outcome with its required detail.
-// Boundary IN: review-record construction, validation, and JSON encoding.
-// Boundary OUT: policy resolution, reviewer execution, command routing, and record storage.
+// Suite: pre-PR review records and reviewer input.
+// Invariant: each review is bound to one candidate whose diff is supplied to a read-only Agent Session.
+// Boundary IN: review-record encoding, candidate diff collection, prompt construction, and runner requests.
+// Boundary OUT: policy resolution, command routing, output classification, and record storage.
 package cli
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"roundfix/internal/agent"
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/gittest"
+	"roundfix/internal/preflight"
+	"roundfix/internal/runevent"
 )
 
 func TestReviewRecordRoundTripsEachOutcome(t *testing.T) {
@@ -150,4 +157,104 @@ func TestReviewRecordRefusesInvalidOutcomeDetails(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestReviewPromptCarriesTheCandidateDiff(t *testing.T) {
+	t.Parallel()
+
+	repository, baseCommit, headCommit := reviewCandidateFixture(t)
+	runner := &recordingReviewRunner{}
+
+	if _, err := runReviewSession(
+		t.Context(),
+		agent.ExecuteRequest{GitRoot: repository},
+		baseCommit,
+		headCommit,
+		preflight.ExecGitRunner{},
+		runner,
+		runevent.Discard,
+	); err != nil {
+		t.Fatalf("run review session: %v", err)
+	}
+
+	for _, want := range []string{
+		baseCommit,
+		headCommit,
+		"diff --git a/review.txt b/review.txt",
+		"+the reviewer receives this changed line",
+	} {
+		if !strings.Contains(runner.request.Prompt, want) {
+			t.Fatalf("review prompt does not contain %q:\n%s", want, runner.request.Prompt)
+		}
+	}
+}
+
+func TestReviewSessionReadsWithoutWriting(t *testing.T) {
+	t.Parallel()
+
+	repository, baseCommit, headCommit := reviewCandidateFixture(t)
+	runner := &recordingReviewRunner{}
+
+	if _, err := runReviewSession(
+		t.Context(),
+		agent.ExecuteRequest{GitRoot: repository},
+		baseCommit,
+		headCommit,
+		preflight.ExecGitRunner{},
+		runner,
+		runevent.Discard,
+	); err != nil {
+		t.Fatalf("run review session: %v", err)
+	}
+
+	if !runner.request.Access.CanRead() {
+		t.Fatal("review session cannot read files")
+	}
+	if runner.request.Access.CanWrite() {
+		t.Fatal("review session can write")
+	}
+}
+
+func reviewCandidateFixture(t *testing.T) (repository string, baseCommit string, headCommit string) {
+	t.Helper()
+
+	repository = t.TempDir()
+	gittest.InitRepo(t, repository, "--initial-branch=main")
+	gittest.PersistIdentity(t, repository)
+	path := filepath.Join(repository, "review.txt")
+	if err := os.WriteFile(path, []byte("before review\n"), 0o644); err != nil {
+		t.Fatalf("write base candidate: %v", err)
+	}
+	gittest.Run(t, repository, "add", "review.txt")
+	gittest.Run(t, repository, "commit", "-m", "base")
+	baseCommit = strings.TrimSpace(gittest.Run(t, repository, "rev-parse", "HEAD"))
+
+	if err := os.WriteFile(path, []byte("before review\nthe reviewer receives this changed line\n"), 0o644); err != nil {
+		t.Fatalf("write head candidate: %v", err)
+	}
+	gittest.Run(t, repository, "add", "review.txt")
+	gittest.Run(t, repository, "commit", "-m", "candidate")
+	headCommit = strings.TrimSpace(gittest.Run(t, repository, "rev-parse", "HEAD"))
+	return repository, baseCommit, headCommit
+}
+
+type recordingReviewRunner struct {
+	request agent.ExecuteRequest
+}
+
+func (*recordingReviewRunner) Probe(context.Context, agent.ProbeRequest) error {
+	return nil
+}
+
+func (runner *recordingReviewRunner) Run(
+	_ context.Context,
+	request agent.ExecuteRequest,
+	_ runevent.Sink,
+) (agent.ExecuteResult, error) {
+	runner.request = request
+	return agent.ExecuteResult{Output: "No findings"}, nil
+}
+
+func (*recordingReviewRunner) EndSession(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+	return nil
 }
