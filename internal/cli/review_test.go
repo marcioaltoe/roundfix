@@ -217,6 +217,18 @@ func TestReviewSessionReadsWithoutWriting(t *testing.T) {
 	}
 }
 
+func TestReviewSessionRefIsUniquePerInvocation(t *testing.T) {
+	t.Parallel()
+
+	const headCommit = "2222222222222222222222222222222222222222"
+	first := reviewSessionRef(headCommit, "/tmp/repository", 0)
+	second := reviewSessionRef(headCommit, "/tmp/repository", 0)
+
+	if first == second {
+		t.Fatalf("review session references = %+v and %+v, want different names for separate invocations", first, second)
+	}
+}
+
 func TestReviewCommandExitsZeroOnExplicitClean(t *testing.T) {
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
@@ -407,6 +419,55 @@ func TestReviewCommandRefusesUnimplementedProvider(t *testing.T) {
 			}
 			if runner.probeCalls != 0 || runner.prepareCalls != 0 || runner.preparedCalls != 0 {
 				t.Fatalf("provider %q used Agent runtime: probes=%d prepares=%d prompts=%d", provider, runner.probeCalls, runner.prepareCalls, runner.preparedCalls)
+			}
+		})
+	}
+}
+
+func TestReviewCommandRefusesProviderProfileMismatch(t *testing.T) {
+	tests := []struct {
+		name              string
+		preferredRuntime  string
+		fallbackRuntime   string
+		mismatchedRuntime string
+	}{
+		{
+			name:              "preferred runtime",
+			preferredRuntime:  "claude",
+			fallbackRuntime:   "codex",
+			mismatchedRuntime: "claude",
+		},
+		{
+			name:              "fallback runtime",
+			preferredRuntime:  "codex",
+			fallbackRuntime:   "opencode",
+			mismatchedRuntime: "opencode",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			runner := &reviewCommandRunner{}
+			fixture := newReviewCommandFixture(t, "codex", runner)
+			writeReviewCommandProfileConfig(
+				t,
+				fixture.repository,
+				fixture.provider,
+				fixture.artifactDir,
+				test.preferredRuntime,
+				test.fallbackRuntime,
+			)
+
+			code, record, stderr := fixture.run(t)
+
+			assertBlockedReviewCommand(t, code, record, stderr, "configuration error")
+			for _, want := range []string{"codex", test.mismatchedRuntime} {
+				if !strings.Contains(record.Reason, want) {
+					t.Fatalf("review refusal = %q, want selected provider and mismatched runtime named", record.Reason)
+				}
+			}
+			if runner.probeCalls != 0 || runner.prepareCalls != 0 || runner.preparedCalls != 0 {
+				t.Fatalf("provider/profile mismatch used Agent runtime: probes=%d prepares=%d prompts=%d", runner.probeCalls, runner.prepareCalls, runner.preparedCalls)
 			}
 		})
 	}
@@ -619,6 +680,32 @@ func writeReviewCommandConfig(t *testing.T, repository string, provider string, 
 pre_pr_review:
   provider: %s
 `, artifactDir, provider))
+}
+
+func writeReviewCommandProfileConfig(
+	t *testing.T,
+	repository string,
+	provider string,
+	artifactDir string,
+	preferredRuntime string,
+	fallbackRuntime string,
+) {
+	t.Helper()
+	mustWrite(t, filepath.Join(repository, ".roundfixrc.yml"), fmt.Sprintf(`defaults:
+  artifact_dir: %q
+pre_pr_review:
+  provider: %s
+profiles:
+  review:
+    preferred:
+      runtime: %s
+      model: preferred-model
+      reasoning_effort: high
+    fallbacks:
+      - runtime: %s
+        model: fallback-model
+        reasoning_effort: high
+`, artifactDir, provider, preferredRuntime, fallbackRuntime))
 }
 
 func (fixture reviewCommandFixture) run(t *testing.T) (int, reviewRecord, string) {

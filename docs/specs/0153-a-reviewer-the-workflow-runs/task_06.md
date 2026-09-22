@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0153-a-reviewer-the-workflow-runs
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -63,3 +63,45 @@ to finish can close the session the second is still using.
 ## References
 
 - [_techspec.md](_techspec.md) — What blocks
+
+## Result
+
+### Implementation
+
+- The command now resolves the `review` Agent Selection Profile and compares
+  every Preferred and Fallback Selection runtime with the selected Pre-PR
+  Review Provider before Agent Selection Profile Readiness. A mismatch writes
+  a blocked record whose configuration error names both values.
+- Review Agent Session names now include a cryptographically random component,
+  so overlapping invocations for the same head do not address the same named
+  session.
+- The command-level regression covers a mismatching Preferred Selection and a
+  mismatching Fallback Selection. The session regression builds two references
+  for the same head and repository.
+
+### Focused checks
+
+- Before the implementation, `go test -count=1 -run
+  '^(TestReviewCommandRefusesProviderProfileMismatch|TestReviewSessionRefIsUniquePerInvocation)$'
+  ./internal/cli` reported four failures: both mismatch subtests reached runtime
+  handling, and both session references were equal.
+- After the implementation, the same combined focused command passed all four
+  tests.
+- `go test -count=1 -run '^TestReview' ./internal/cli` passed 73 tests. This
+  includes the existing candidate-diff prompt, clean/findings outcomes,
+  configured omission, blocking signals, unimplemented providers, and
+  pre-prompt fallback coverage from Tasks 01 through 04.
+- `git diff --check` exited zero.
+
+### Acceptance evidence
+
+- Preferred mismatch: `TestReviewCommandRefusesProviderProfileMismatch/preferred_runtime`
+  observes a blocked configuration error naming `codex` and `claude`, with
+  zero probe, prepare, or prompt calls.
+- Fallback mismatch: `TestReviewCommandRefusesProviderProfileMismatch/fallback_runtime`
+  observes a blocked configuration error naming `codex` and `opencode`, with
+  zero probe, prepare, or prompt calls.
+- Session isolation: `TestReviewSessionRefIsUniquePerInvocation` observes
+  different Agent Session references for identical head and repository inputs.
+
+The Daemon-owned Verification commands were not run in this Agent turn.

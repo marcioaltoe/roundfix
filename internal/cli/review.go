@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -232,15 +233,19 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return finishReviewCommand(stdout, stderr, artifactDir, record, exitPreflight)
 	}
 
+	profile, err := roundconfig.ResolveProfile(loaded.Config, roundconfig.CategoryReview, nil)
+	if err != nil {
+		record.Reason = "runtime failure: " + err.Error()
+		return finishReviewCommand(stdout, stderr, artifactDir, record, exitPreflight)
+	}
+	if err := validateReviewProfileProvider(loaded.Config.PrePRReview.Provider, profile.Profile); err != nil {
+		record.Reason = err.Error()
+		return finishReviewCommand(stdout, stderr, artifactDir, record, exitPreflight)
+	}
 	runner := commandDependenciesForContext(ctx).newEngineCollaborators().runner
 	readiness := proveProfileSelections(ctx, loaded.Config, reviewProfileCategories(), gitState.Root, runner)
 	if readiness.Err != nil {
 		record.Reason = "runtime failure: " + readiness.Err.Error()
-		return finishReviewCommand(stdout, stderr, artifactDir, record, exitPreflight)
-	}
-	profile, err := roundconfig.ResolveProfile(loaded.Config, roundconfig.CategoryReview, nil)
-	if err != nil {
-		record.Reason = "runtime failure: " + err.Error()
 		return finishReviewCommand(stdout, stderr, artifactDir, record, exitPreflight)
 	}
 	result, runErr := runConfiguredReviewSession(
@@ -364,12 +369,34 @@ func runConfiguredReviewSession(
 	return agent.ExecuteResult{}, errors.New("review Agent Selection Profile has no selections")
 }
 
+func validateReviewProfileProvider(provider string, profile roundconfig.AgentSelectionProfile) error {
+	provider = strings.TrimSpace(provider)
+	if runtime := strings.TrimSpace(profile.Preferred.Runtime); runtime != provider {
+		return fmt.Errorf(
+			"review configuration error: selected provider %q does not match profiles.review preferred runtime %q",
+			provider,
+			runtime,
+		)
+	}
+	for index, selection := range profile.Fallbacks {
+		if runtime := strings.TrimSpace(selection.Runtime); runtime != provider {
+			return fmt.Errorf(
+				"review configuration error: selected provider %q does not match profiles.review fallback %d runtime %q",
+				provider,
+				index+1,
+				runtime,
+			)
+		}
+	}
+	return nil
+}
+
 func reviewSessionRef(headCommit string, gitRoot string, selectionIndex int) agent.SessionRef {
 	identity := strings.TrimSpace(headCommit)
 	if len(identity) > 12 {
 		identity = identity[:12]
 	}
-	name := "roundfix-pre-pr-review-" + identity
+	name := "roundfix-pre-pr-review-" + identity + "-" + strings.ToLower(rand.Text())
 	if selectionIndex > 0 {
 		name += fmt.Sprintf("-fallback-%02d", selectionIndex)
 	}
