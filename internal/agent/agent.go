@@ -92,6 +92,7 @@ type ExecuteRequest struct {
 type ExecuteResult struct {
 	LogPath          string
 	Output           string
+	Message          string
 	StopReason       string
 	TransportAnomaly string
 }

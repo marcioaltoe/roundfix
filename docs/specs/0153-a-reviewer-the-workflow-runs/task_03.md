@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0153-a-reviewer-the-workflow-runs
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -68,3 +68,39 @@ exited non-zero while its parsed output said `No findings`.
 ## References
 
 - [_techspec.md](_techspec.md) — What blocks
+
+## Result
+
+Implemented `roundfix review [--base <ref>]` with policy resolution, exact
+candidate commits, Artifact Directory preflight, the configured review profile,
+read-only prompt execution, atomic review-record persistence, and public CLI
+registration. The ACPX result now keeps the parsed Agent message separate from
+the raw JSON-RPC stream so command classification cannot mistake protocol text
+for the review answer.
+
+Focused-check evidence:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task03-go-cache go test -count=1 -run '^(TestReviewCommandExitsZeroOnExplicitClean|TestReviewCommandDefaultsBaseToMain|TestReviewCommandExitsOneAndRecordsFindings|TestReviewCommandBlocksOnRuntimeFailure|TestReviewCommandDoesNotFallbackAfterPromptFailure|TestReviewCommandKeepsATimeoutBlocked|TestReviewCommandBlocksOnTransportAnomaly|TestReviewCommandBlocksOnEmptyAgentOutput|TestReviewCommandClassifiesAgentMessageNotProtocolStream|TestReviewCommandNoneRecordsOmissionWithoutAgentActivity|TestReviewCommandRefusesUnimplementedProvider|TestReviewCommandUsesFallbackOnlyWhenSelectionFailsBeforePrompt|TestReviewCommandProvesArtifactDirectoryWritableBeforeAgentActivity|TestReviewCommandRefusesUnknownFlags|TestReviewCommandAppearsOnPublicHelp)$' ./internal/cli` — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task03-go-cache go test -count=1 -run '^(TestACPXRunPromptPublishesUpdateLinesAndCapturesStopReason|TestACPXPromptExitClassificationMatrix)$' ./internal/agent` — passed; the parsed Agent message and raw protocol stream remain distinct while existing exit classification stays intact.
+- `rtk env GOCACHE=/private/tmp/roundfix-task03-go-cache go test -count=1 -run '^(TestReviewRecord|TestReviewPromptCarriesTheCandidateDiff|TestReviewSessionReadsWithoutWriting)' ./internal/cli` — passed; the prior record, diff, and read-only-session contracts remain intact.
+- `rtk git diff --check` — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task03-go-cache make verify-incremental` — the sandboxed run failed only because two existing force-stop integration tests could not inspect their spawned process trees; the narrowly host-permitted rerun passed vet, every Go package, skill contract checks, and the binary build.
+
+Acceptance evidence:
+
+- Runtime failure, timeout, transport anomaly, empty Agent message,
+  unclassifiable Agent message, and unimplemented provider cases each exit 2,
+  persist `blocked`, and include their reason in both the record and diagnostic.
+- `TestReviewCommandBlocksOnTransportAnomaly` supplies a clean `No findings`
+  message alongside a non-empty anomaly and proves the anomaly wins.
+- `TestReviewCommandKeepsATimeoutBlocked` supplies a clean message alongside a
+  wrapped deadline and proves the timeout blocks after exactly one prepared
+  prompt, without activating a fallback.
+- `TestReviewCommandNoneRecordsOmissionWithoutAgentActivity` proves `none`
+  exits 0, persists `omitted`, and makes zero probe, prepare, or prompt calls.
+- `TestReviewCommandRefusesUnimplementedProvider` proves both `claude` and
+  `coderabbit` exit 2, name the selected provider, remain `blocked`, and make no
+  Agent runtime calls.
+
+The task file's declared Verification commands were not run; the Daemon owns
+those checks.

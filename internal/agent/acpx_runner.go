@@ -539,6 +539,7 @@ type acpxJSONRPCError struct {
 
 type acpxStreamResult struct {
 	output             string
+	message            string
 	stopReason         string
 	promptResultParsed bool
 	agentOutput        bool
@@ -1428,12 +1429,14 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 		forceClosed := runner.cancelPrompt(context.WithoutCancel(ctx), req, waitCh, codexEnv)
 		stream := waitForACPXStream(streamCh, stopGrace(req.StopGrace))
 		result.Output = stream.output
+		result.Message = stream.message
 		result.StopReason = stream.stopReason
 		_ = runner.publishStatus(context.WithoutCancel(ctx), req.ExecuteRequest, sink, "stopped")
 		return result, StopError{LogPath: req.LogPath, Output: result.Output, Killed: forceClosed, Err: ctx.Err()}
 	}
 	stream := <-streamCh
 	result.Output = stream.output
+	result.Message = stream.message
 	result.StopReason = stream.stopReason
 	if waitErr != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
@@ -1463,6 +1466,7 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 
 func (runner *ACPXRunner) readPromptStream(ctx context.Context, req ExecuteRequest, sink runevent.Sink, stdout io.Reader, logFile io.Writer, publishWorkStarted bool) acpxStreamResult {
 	var output bytes.Buffer
+	var message strings.Builder
 	var stopReason string
 	var promptResultParsed bool
 	var agentOutput bool
@@ -1477,7 +1481,7 @@ func (runner *ACPXRunner) readPromptStream(ctx context.Context, req ExecuteReque
 			if _, err := output.Write(line); err != nil && streamErr == nil {
 				streamErr = fmt.Errorf("capture acpx stdout: %w", err)
 			}
-			lineOutput, err := runner.handleStdoutLine(ctx, req, sink, line, &stopReason, &promptResultParsed, publishWorkStarted)
+			lineOutput, err := runner.handleStdoutLine(ctx, req, sink, line, &message, &stopReason, &promptResultParsed, publishWorkStarted)
 			agentOutput = agentOutput || lineOutput
 			if err != nil && streamErr == nil {
 				streamErr = err
@@ -1490,7 +1494,7 @@ func (runner *ACPXRunner) readPromptStream(ctx context.Context, req ExecuteReque
 			break
 		}
 	}
-	return acpxStreamResult{output: output.String(), stopReason: stopReason, promptResultParsed: promptResultParsed, agentOutput: agentOutput, err: streamErr}
+	return acpxStreamResult{output: output.String(), message: message.String(), stopReason: stopReason, promptResultParsed: promptResultParsed, agentOutput: agentOutput, err: streamErr}
 }
 
 func validateACPXPromptRequest(req ACPXPromptRequest) error {
@@ -1800,7 +1804,7 @@ func acpxReasoningEffortConfigKey(runtime RuntimeSpec) (string, error) {
 	}
 }
 
-func (runner *ACPXRunner) handleStdoutLine(ctx context.Context, req ExecuteRequest, sink runevent.Sink, line []byte, stopReason *string, promptResultParsed *bool, publishWorkStarted bool) (bool, error) {
+func (runner *ACPXRunner) handleStdoutLine(ctx context.Context, req ExecuteRequest, sink runevent.Sink, line []byte, agentMessage *strings.Builder, stopReason *string, promptResultParsed *bool, publishWorkStarted bool) (bool, error) {
 	var message acpxJSONRPCMessage
 	if err := json.Unmarshal(line, &message); err != nil {
 		return false, fmt.Errorf("parse acpx stdout JSON-RPC line: %w", err)
@@ -1815,6 +1819,9 @@ func (runner *ACPXRunner) handleStdoutLine(ctx context.Context, req ExecuteReque
 		}
 		if !ok {
 			return false, nil
+		}
+		if update.Kind == StreamUpdateMessage {
+			agentMessage.WriteString(update.Text)
 		}
 		if publishWorkStarted {
 			if err := runner.publishWorkStartedOnce(ctx, req, sink); err != nil {
