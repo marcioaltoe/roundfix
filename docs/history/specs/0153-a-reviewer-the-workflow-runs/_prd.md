@@ -1,9 +1,12 @@
 ---
 spec: 0153-a-reviewer-the-workflow-runs
-status: active
+status: archived
 created: 2026-09-21
 surfaces: [backend, cli, docs]
+archived: "2026-09-22"
+source_slug: 0153-a-reviewer-the-workflow-runs
 ---
+
 
 # A reviewer the workflow runs
 
