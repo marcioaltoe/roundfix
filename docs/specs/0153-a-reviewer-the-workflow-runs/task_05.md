@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0153-a-reviewer-the-workflow-runs
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
