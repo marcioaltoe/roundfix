@@ -76,9 +76,11 @@ provider. Core Feature 1 is already delivered.
    readiness probe, records a configured omission for the candidate, and exits
    zero. It is a decision, not a failure.
 4. **A blocked review is never a pass and never `none`.** A runtime failure, a
-   timeout, or output the command cannot read blocks the selected mode with the
-   reason named. It does not fall back to another provider and does not become a
-   configured omission.
+   timeout, a transport anomaly, a non-zero adapter exit, empty output, or
+   output the command cannot read each block the selected mode with the reason
+   named. None of them falls back to another provider and none becomes a
+   configured omission. A fallback activates only for a selection that failed to
+   start before the prompt was sent.
 5. **An unimplemented provider refuses out loud.** `claude` and `coderabbit` are
    valid policy values this slice does not execute. Selecting one refuses with
    that reason rather than silently reviewing nothing.
@@ -115,6 +117,17 @@ provider. Core Feature 1 is already delivered.
 - **Refuse the providers this slice does not run.** A policy value that
   silently reviews nothing is worse than an error, because the repository
   believes it is covered.
+- **Hand the reviewer its evidence; do not send it looking.** A first attempt
+  gave the session commit identifiers and read-only file tools and asked it to
+  inspect the range. Three review rounds showed why that fails: with write
+  tools it could edit the candidate, without them it could read nothing, and
+  with file tools but no diff it could answer `No findings` having never seen
+  what changed. The command computes the diff and puts it in the prompt, so the
+  reviewer judges content it was given rather than content it must go find.
+- **Only an explicit clean answer is clean.** A timeout, a transport anomaly, a
+  non-zero adapter exit, empty output and unparseable output are each a reason
+  the review did not happen. Treating any of them as anything but blocked lets
+  a broken reviewer look like a strict one.
 
 ## Acceptance evidence
 

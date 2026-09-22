@@ -2,54 +2,69 @@
 task: task_03
 spec: 0153-a-reviewer-the-workflow-runs
 status: pending
-type: docs
-complexity: low
+type: backend
+complexity: high
 ---
 
-# Task 03: Describe the command in the shipped skill and the guide
+# Task 03: The command, its exits and everything that blocks
 
 ## Overview
 
-A new command is public CLI surface, and this repository's hard rule requires
-the skill update to ship with the pull request that changes it.
+`roundfix review [--base <ref>]` resolves the policy, runs the reviewer over the
+diff Task 02 hands it, and reports through the exit status.
+
+The blocking list is the substance. A first attempt treated a clean-looking
+string as clean regardless of how the session ended, and review found two ways
+that lies: a timeout followed by a fallback returning clean, and an adapter that
+exited non-zero while its parsed output said `No findings`.
 
 ## Requirements
 
-1. MUST state that the configured Codex pre-PR reviewer is run by the workflow
-   over the current candidate, and that its record names repository, base and
-   head.
-2. MUST state that explicit `none` performs no reviewer call and no readiness
-   probe and records a configured omission.
-3. MUST state that a runtime failure, a timeout or unreadable output blocks the
-   selected mode and never becomes a pass or an omission.
-4. MUST state that `claude` and `coderabbit` are valid policy values this
-   command refuses to execute for now.
-5. MUST regenerate the distributed mirror with `make skills-sync` rather than
-   editing it.
-6. MUST document the command in the user guide beside the commands it sits with.
+1. MUST exit 0 only on an explicit clean answer, and when the policy is `none`
+   and a configured omission was recorded.
+2. MUST exit 1 when the reviewer returned findings, with the findings recorded.
+3. MUST exit 2 and record blocked for each of: a runtime failure, a timeout, a
+   non-empty transport anomaly, empty agent output, output it cannot classify,
+   and a provider this slice does not execute.
+4. MUST classify the agent's message rather than the raw protocol stream.
+5. MUST activate a configured fallback only for a selection that failed to start
+   before the prompt was sent, and never after a failure of the review itself.
+6. MUST perform no reviewer call and no readiness probe when the policy is
+   `none`.
+7. MUST refuse `claude` and `coderabbit` by naming the provider, and MUST NOT
+   record them as omitted.
+8. MUST prove the artifact directory writeable before spending the reviewer
+   call.
+9. MUST refuse unknown flags, matching the surrounding commands.
 
 ## Subtasks
 
-- [ ] Edit the canonical skill.
-- [ ] Regenerate the mirror with the sanctioned command.
-- [ ] Document the command in the user guide.
+- [ ] Add the command, its preflight and its policy resolution.
+- [ ] Map every terminal signal to its outcome.
+- [ ] Register the command on the public surface.
+- [ ] Add a test per exit and per blocking signal.
 
 ## Acceptance Criteria
 
-- [ ] Both skill files describe the command, its exits and its refusals.
-- [ ] The user guide documents the command, its option and its exit codes.
-- [ ] The repository's skill check passes.
+- [ ] Each of the six blocking signals exits 2, records blocked, and names its
+      reason.
+- [ ] A transport anomaly blocks even when the agent output reads clean.
+- [ ] A timeout activates no fallback.
+- [ ] `none` exits 0 with no `Run` and no `Probe` on the stub.
+- [ ] `claude` and `coderabbit` exit 2 naming the provider.
 
 ## Context
 
 - instruction: `.agents/skills/implement-task/SKILL.md`
-- instruction: `.agents/skills/roundfix/SKILL.md`
-- instruction: `skills/roundfix/SKILL.md`
+- interface: `internal/cli/doctor.go`
+- interface: `internal/agent/acpx_runner.go`
 
 ## Verification
 
-- `grep -q "roundfix review" .agents/skills/roundfix/SKILL.md && grep -q "roundfix review" skills/roundfix/SKILL.md && grep -q "roundfix review" docs/user-guide/commands.md && go run -buildvcs=false ./cmd/roundfix skills check` — expected: exit 0; before this Task none of the three names the command, so the command fails.
+- `out="$(go test -count=1 -v -run "^TestReviewCommand" ./internal/cli 2>&1)" || { printf "%s\n" "$out"; exit 1; }; printf "%s\n" "$out" | grep -q -- "--- PASS: TestReviewCommandBlocksOnTransportAnomaly"` — expected: exit 0; before this Task the case does not exist, so the command fails.
+- `out="$(go test -count=1 -v -run "^TestReviewCommand" ./internal/cli 2>&1)" || { printf "%s\n" "$out"; exit 1; }; printf "%s\n" "$out" | grep -q -- "--- PASS: TestReviewCommandKeepsATimeoutBlocked"` — expected: exit 0; before this Task the case does not exist, so the command fails.
+- `go run -buildvcs=false ./cmd/roundfix --help 2>&1 | grep -q "roundfix review"` — expected: exit 0; the command appears on the public surface. Before this Task the usage has no review line, so the command fails.
 
 ## References
 
-- [_authorization.md](_authorization.md) — Approved bounded mutation
+- [_techspec.md](_techspec.md) — What blocks

@@ -3,67 +3,57 @@ task: task_02
 spec: 0153-a-reviewer-the-workflow-runs
 status: pending
 type: backend
-complexity: high
+complexity: medium
 ---
 
-# Task 02: The command, the Codex path and every refusal
+# Task 02: The diff the reviewer is handed
 
 ## Overview
 
-The operation itself. `roundfix review [--base <ref>]` resolves the policy, runs
-a read-only Codex reviewer session over the candidate through `agent.Runner`,
-and reports through the exit status.
+A reviewer sent to find its own evidence can answer without finding any. The
+first attempt at this Spec passed two commit identifiers and asked the session
+to inspect the range; across three review rounds it could edit the candidate,
+then read nothing, then read files without ever seeing what changed — and in
+that last shape it could return `No findings` having reviewed nothing.
 
-The three exits are the point. A reviewer that found problems is not the same
-event as a reviewer that could not run, and collapsing them makes a broken
-reviewer look like a strict one.
+This Task makes the command gather the evidence and hand it over.
 
 ## Requirements
 
-1. MUST exit 0 when the reviewer ran and returned no findings, and when the
-   policy is `none` and a configured omission was recorded.
-2. MUST exit 1 when the reviewer ran and returned findings, with the findings in
-   the record.
-3. MUST exit 2 when Preflight Validation fails, and when the selected mode is
-   blocked by a runtime failure, a timeout, or output it cannot read.
-4. MUST perform no reviewer call and no readiness probe when the policy is
-   `none`.
-5. MUST refuse `claude` and `coderabbit` by naming the provider, and MUST NOT
-   record them as omitted.
-6. MUST NOT fall back to another provider or to `none` on any failure.
-7. MUST run the reviewer through `agent.Runner` rather than starting a process
-   of its own.
-8. MUST refuse unknown flags, matching the surrounding commands.
+1. MUST compute the candidate diff from the base commit to the head commit.
+2. MUST include that diff in the prompt as content, so the reviewer judges what
+   it was given rather than what it must go find.
+3. MUST run the session with read-only capabilities that permit opening a file
+   the diff references and deny every mutation.
+4. MUST prove, by test, that the prompt carries the diff itself and not merely
+   the commit identifiers.
+5. MUST prove, by test, that the session cannot write.
+6. MUST NOT rely on the reviewer having git, shell, or any diff-producing tool.
 
 ## Subtasks
 
-- [ ] Add the command and its preflight.
-- [ ] Run the Codex reviewer session through the runner and map its outcome.
-- [ ] Register the command on the public surface.
-- [ ] Add tests for each exit, each refusal and the no-call case.
+- [ ] Compute the candidate diff.
+- [ ] Build the prompt that carries it.
+- [ ] Set the read-only capability set for the session.
+- [ ] Add tests for the prompt content and the capability set.
 
 ## Acceptance Criteria
 
-- [ ] With a stubbed runtime the Codex path writes a record and exits 0 or 1
-      according to findings.
-- [ ] `none` exits 0, writes an omitted record, and the stub records no `Run`
-      and no `Probe`.
-- [ ] A runtime failure, a timeout and unreadable output each exit 2 with the
-      reason named, and each records blocked.
-- [ ] `claude` and `coderabbit` exit 2 naming the provider and write no omitted
-      record.
+- [ ] The prompt contains the diff text for a fixture candidate.
+- [ ] The prompt is not satisfied by commit identifiers alone: a test asserts a
+      changed line from the fixture appears in it.
+- [ ] The request the runner receives permits reading and denies writing.
 
 ## Context
 
 - instruction: `.agents/skills/implement-task/SKILL.md`
 - interface: `internal/agent/agent.go`
-- interface: `internal/cli/doctor.go`
 
 ## Verification
 
-- `out="$(go test -count=1 -v -run "^TestReviewCommand" ./internal/cli 2>&1)" || { printf "%s\n" "$out"; exit 1; }; printf "%s\n" "$out" | grep -q -- "--- PASS: TestReviewCommandBlocksWithoutSelectingNone"` — expected: exit 0; before this Task the case does not exist, so the command fails.
-- `go run -buildvcs=false ./cmd/roundfix --help 2>&1 | grep -q "roundfix review"` — expected: exit 0; the command appears on the public surface. Before this Task the usage has no review line, so the command fails.
+- `out="$(go test -count=1 -v -run "^TestReviewPromptCarriesTheCandidateDiff" ./internal/cli 2>&1)" || { printf "%s\n" "$out"; exit 1; }; printf "%s\n" "$out" | grep -q -- "--- PASS: TestReviewPromptCarriesTheCandidateDiff"` — expected: exit 0; before this Task the case does not exist, so the command fails.
+- `out="$(go test -count=1 -v -run "^TestReviewSessionReadsWithoutWriting" ./internal/cli 2>&1)" || { printf "%s\n" "$out"; exit 1; }; printf "%s\n" "$out" | grep -q -- "--- PASS: TestReviewSessionReadsWithoutWriting"` — expected: exit 0; before this Task the case does not exist, so the command fails.
 
 ## References
 
-- [_techspec.md](_techspec.md) — The command
+- [_techspec.md](_techspec.md) — What the reviewer is handed

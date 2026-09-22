@@ -41,6 +41,24 @@ tree, `doctor.go` is that value's only consumer: nothing runs a review.
 `EndSession`. The Daemon already drives agent sessions through it, so the
 reviewer reuses that path and the tests substitute the interface.
 
+## What the reviewer is handed
+
+The command computes the candidate diff from base to head and puts it in the
+prompt as content. The reviewer is not asked to go find anything.
+
+This is the correction the first attempt earned. That design passed the two
+commit identifiers and asked the session to inspect the range, and three review
+rounds walked the consequences: with write approval it could edit the candidate
+it was recording; with the deny-everything set it could read nothing at all;
+with read-only file tools but no diff it could answer `No findings` having never
+seen what changed. Each fix satisfied the previous finding and produced the
+next, because none of them addressed the shape — the reviewer was being sent to
+look for its own evidence.
+
+The session still carries read-only file capabilities, so it can open a file the
+diff references for context. Those are for widening context around evidence it
+already has, not for obtaining the evidence.
+
 ## The command
 
 ```
@@ -50,16 +68,32 @@ roundfix review [--base <ref>]
 `--base` defaults to the repository's main branch. The candidate is the range
 from that base to the current head.
 
-- **Exit 0** — the reviewer ran and returned no findings, or the policy is
+- **Exit 0** — the reviewer returned an explicit clean answer, or the policy is
   `none` and a configured omission was recorded.
-- **Exit 1** — the reviewer ran and returned findings. The record carries them.
-- **Exit 2** — Preflight Validation failed, or the selected mode is blocked:
-  a runtime failure, a timeout, output the command cannot read, or a provider
-  this slice does not execute.
+- **Exit 1** — the reviewer returned findings. The record carries them.
+- **Exit 2** — Preflight Validation failed, or the selected mode is blocked.
 
 The three exits are distinct on purpose. A reviewer that found problems is not
 the same event as a reviewer that could not run, and collapsing them is how a
 blocked review becomes indistinguishable from a clean one.
+
+## What blocks
+
+Every one of these blocks the selected mode with its reason named, and none
+produces a passing or omitted record:
+
+- a runtime failure;
+- a timeout;
+- a non-empty transport anomaly, which is how the runner reports an adapter
+  that exited non-zero while still parsing a prompt result;
+- empty agent output;
+- output the command cannot classify;
+- a provider this slice does not execute.
+
+A fallback from the configured `review` profile activates only for a selection
+that failed to start before the prompt was sent. A failure after the prompt is
+a failure of the review, not of the selection, and the next selection cannot
+answer for it.
 
 ## What the record carries
 
@@ -72,13 +106,6 @@ blocked review becomes indistinguishable from a clean one.
 A record names one head. Nothing in this slice consumes the record — gating
 publication on it is Spec 0126 Core Feature 6 — so a record that is wrong
 blocks no one while the shape is still settling.
-
-## Blocking
-
-`none` is reached only by configuration. A failure never selects it, and a
-provider this slice does not execute never becomes it. `claude` and
-`coderabbit` are valid policy values, so the command refuses them by naming
-them rather than by treating them as invalid input.
 
 ## API Contracts
 
@@ -111,13 +138,17 @@ them rather than by treating them as invalid input.
 
 ## Testing Approach
 
-1. **Codex runs.** With the policy at `codex` and a stubbed runtime, the command
-   starts a session and writes a record naming repository, base and head. Fails
-   on the tree as it stands, where the command does not exist.
+1. **Codex runs, on the diff it was handed.** With the policy at `codex` and a
+   stubbed runtime, the command computes the candidate diff, includes it in the
+   prompt, starts a read-only session and writes a record naming repository,
+   base and head. The stub asserts the prompt contains the diff, not merely the
+   commit identifiers. Fails on the tree as it stands, where the command does
+   not exist.
 2. **`none` calls nothing.** The stubbed runtime records no `Run` and no
    `Probe`, the record says omitted, and the exit status is zero.
-3. **Blocked stays blocked.** A runtime failure, a timeout and unreadable output
-   each exit 2 with the reason named, and the record says blocked in all three.
+3. **Blocked stays blocked.** A runtime failure, a timeout, a transport anomaly,
+   empty output and unclassifiable output each exit 2 with the reason named, and
+   the record says blocked for every one.
 4. **Unimplemented providers refuse.** `claude` and `coderabbit` exit 2 naming
    the provider, and write no omitted record.
 5. **The skill is true.** The shipped skill and its mirror describe the command,
@@ -128,16 +159,22 @@ them rather than by treating them as invalid input.
 ## Build Order
 
 1. The record type and its writer, with unit tests (depends on: none).
-2. The command, its policy resolution and its exits, with the Codex path and
-   every refusal, against a stubbed runtime (depends on: 1).
-3. The shipped skill and the user guide (depends on: 2).
-4. Terminal QA (depends on: 1, 2, 3).
+2. The candidate diff and the prompt that carries it, with the read-only
+   session it runs in (depends on: 1).
+3. The command, its policy resolution, its exits and every blocking signal,
+   against a stubbed runtime (depends on: 2).
+4. The shipped skill and the user guide (depends on: 3).
+5. Terminal QA (depends on: 1, 2, 3, 4).
 
 ## Risks & Considerations
 
 - **A reviewer that costs money in a gate.** Every test substitutes
   `agent.Runner`; no Verification command starts a real session. The
   authorization states this as a limit, not a preference.
+- **A reviewer that answers without looking.** This is the failure the first
+  attempt kept reaching from different directions. The control is that the diff
+  is supplied rather than sought, and that every signal short of an explicit
+  clean answer blocks.
 - **An exit status that hides a blocked review.** Collapsing "found problems"
   into "could not run" would make a broken reviewer look like a strict one.
   Three exits and Testing Approach 3 are the control.
