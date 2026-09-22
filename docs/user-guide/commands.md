@@ -127,6 +127,39 @@ Doctor never runs either command, never deletes skills, and never updates
 embedded artifacts, `.agents/skills`, and `skills-lock.json`. Unrelated extra
 installed skills and lock entries are ignored and are not removed or flagged.
 
+### review
+
+```bash
+roundfix review [--base <ref>]
+```
+
+Runs the configured pre-Pull-Request reviewer over the current candidate. The
+workflow computes the diff from the selected base to the current head and
+hands that diff to the Codex reviewer in a read-only session; it does not ask
+the reviewer to discover the candidate. The resulting record names the
+repository, base commit, head commit, effective provider, and policy source.
+
+`--base <ref>` selects the base Git ref. When omitted, Roundfix uses the
+repository's default branch.
+
+The configured policy accepts `codex`, `claude`, `coderabbit`, and `none`.
+Explicit `none` performs no reviewer call and no readiness probe, records a
+configured omission, and exits `0`. `claude` and `coderabbit` are valid policy
+values that this command refuses to execute for now; they exit `2` as blocked
+instead of being treated as an omission.
+
+Exit codes:
+
+- `0` — explicit clean result (`No findings`) or configured omission.
+- `1` — the reviewer returned findings; the record carries them.
+- `2` — preflight failed or the review was blocked.
+
+Runtime failure, timeout, transport anomaly, empty output, and unclassifiable
+output each block the selected mode, with a reason in the record. None can
+become a pass or an omission. A configured selection fallback is eligible only
+when selection fails before the prompt is sent; failures after the prompt are
+review failures.
+
 ### upgrade
 
 ```bash

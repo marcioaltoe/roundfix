@@ -52,8 +52,9 @@ The independent reviewer for work before a Pull Request is selected with
 `coderabbit`, and `none`. Project Config takes precedence over User Config,
 which takes precedence over the built-in default of `codex`; an absent key
 inherits from the next applicable scope and never means `none`. Declaring this
-policy only reports which reviewer is selected: it invokes no provider, and
-this release does not enforce the policy when publishing a Pull Request.
+policy does not invoke a provider by itself. Run `roundfix review` to enforce
+the selected review policy over the current candidate; publication and merge
+gating remain separate.
 
 This is separate from `review_source`: `pre_pr_review.provider` governs the
 independent review of a candidate before a Pull Request exists, while

@@ -280,6 +280,24 @@ func TestRunInitCreatesUserConfigWithExplicitScope(t *testing.T) {
 	}
 }
 
+func TestReviewCommandAppearsOnPublicHelp(t *testing.T) {
+	t.Parallel()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"--help"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("help exit = %d, want %d", code, exitOK)
+	}
+	if !strings.Contains(stdout.String(), "roundfix review [--base <ref>]") {
+		t.Fatalf("public help does not list review command:\n%s", stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("public help wrote stderr: %q", stderr.String())
+	}
+}
+
 func TestRunInitPromptsForScopeAndDefaultsProject(t *testing.T) {
 	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)

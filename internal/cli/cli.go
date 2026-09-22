@@ -47,6 +47,7 @@ Usage:
   roundfix fetch --source coderabbit --pr <number> [--spec <slug>]
   roundfix resolve --pr <number> [--spec <slug>]
   roundfix watch --source coderabbit --pr <number> [--spec <slug>] --until-clean
+  roundfix review [--base <ref>]
   roundfix implement --spec <slug>
   roundfix window <set|show|clear>
   roundfix settle --spec <slug> --task <task_id>
@@ -90,6 +91,7 @@ Commands:
   fetch      Download review issues for an Open Pull Request
   resolve    Resolve downloaded Unresolved Review Issues
   watch      Fetch and resolve in a watched loop
+  review     Run the configured pre-PR reviewer over the current candidate
   implement  Execute a Spec's Task Graph as one Run
   window     Set, show, or clear this repository's Run Window
   settle     Verify and commit one failed, or completed but uncommitted, Task
@@ -493,6 +495,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runSetupCommand(ctx, args[1:], stdout, stderr, environment)
 	case "doctor":
 		return runDoctorCommand(ctx, args[1:], stdout, stderr, environment)
+	case "review":
+		return runReviewCommand(ctx, args[1:], stdout, stderr, environment)
 	case "gc":
 		return runGCCommand(ctx, args[1:], stdout, stderr, environment)
 	case "storage":
@@ -5191,6 +5195,16 @@ The aggregate profiles: line exact-proves every distinct tuple. The skills:
 line compares Roundfix-owned artifacts with the running binary and external
 artifacts with skills-lock.json. Each failure reports its next action.
 Doctor is offline, read-only, and mutates nothing.
+`
+	case "review":
+		return `Usage:
+  roundfix review [--base <ref>]
+
+Runs the configured pre-PR reviewer over the candidate from the base commit to
+the current HEAD and records the result under the configured Artifact Directory.
+
+Options:
+  --base  Base Git ref; defaults to the repository's main branch
 `
 	case "gc":
 		return `Usage:
