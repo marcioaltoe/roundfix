@@ -50,7 +50,9 @@ Roundfix knows the remediation.
 The `pre-pr-review:` line reports the resolved pre-Pull-Request review provider
 and the configuration layer that supplied it. An explicit `none` reports that
 review is disabled by configuration. This check reads policy only: it invokes
-no provider and mutates nothing.
+no provider and mutates nothing. Use `roundfix review` to run the configured
+policy over the current candidate; that command is the enforcement point for
+the review policy, while publication and merge gating remain separate.
 
 Profile readiness covers every Agent Work Category the effective configuration
 defines — the five required categories plus each optional category
@@ -211,6 +213,39 @@ profiles: ok (3 distinct tuples; 10 category references)
 skills: ok (<total> required: <owned> Roundfix-owned, <external> external)
 codex: ok
 ```
+
+## Pre-PR review
+
+Run the configured reviewer over the current candidate with:
+
+```bash
+roundfix review [--base <ref>]
+```
+
+`--base` selects the base ref; when omitted, Roundfix uses the repository's
+default branch. The workflow computes the base-to-current-head candidate diff
+and hands that diff to the configured Codex reviewer in a read-only session.
+The review record names the repository, base commit, head commit, effective
+provider, and policy source, so it is bound to the candidate that was
+examined.
+
+The policy values are `codex`, `claude`, `coderabbit`, and `none`. Explicit
+`none` performs no reviewer call and no readiness probe, records a configured
+omission for the candidate, and exits `0`. `claude` and `coderabbit` are valid
+policy values, but this command refuses to execute them for now and exits `2`.
+
+Exit codes are:
+
+- Exit `0` — the reviewer returned exactly `No findings`, or explicit `none`
+  recorded its configured omission.
+- Exit `1` — the reviewer returned findings; the record carries them.
+- Exit `2` — preflight failed or the selected review is blocked.
+
+A runtime failure, timeout, transport anomaly, empty output, or
+unclassifiable output blocks the selected mode. Each is recorded as blocked
+with its reason and never becomes a pass or a configured omission. A provider
+selection failure may activate the next configured review fallback only before
+the prompt is sent; failures after the prompt remain blocked review failures.
 
 Use `roundfix upgrade [--check]` to resolve the latest Roundfix release through
 the GitHub CLI. Without `--check`, it downloads the platform asset, verifies

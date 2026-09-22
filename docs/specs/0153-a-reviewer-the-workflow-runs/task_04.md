@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0153-a-reviewer-the-workflow-runs
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -33,15 +33,15 @@ the skill update to ship with the pull request that changes it.
 
 ## Subtasks
 
-- [ ] Edit the canonical skill.
-- [ ] Regenerate the mirror with the sanctioned command.
-- [ ] Document the command in the user guide.
+- [x] Edit the canonical skill.
+- [x] Regenerate the mirror with the sanctioned command.
+- [x] Document the command in the user guide.
 
 ## Acceptance Criteria
 
-- [ ] Both skill files describe the command, its exits and everything that
+- [x] Both skill files describe the command, its exits and everything that
       blocks.
-- [ ] The user guide documents the command, its option and its exit codes.
+- [x] The user guide documents the command, its option and its exit codes.
 - [ ] The repository's skill check passes.
 
 ## Context
@@ -57,3 +57,29 @@ the skill update to ship with the pull request that changes it.
 ## References
 
 - [_authorization.md](_authorization.md) — Approved bounded mutation
+
+## Result
+
+Implemented the public documentation contract for `roundfix review`: the
+workflow hands the current candidate diff to the configured Codex reviewer,
+records repository/base/head identity, treats explicit `none` as a configured
+omission without a call or readiness probe, and records every runtime,
+timeout, transport, empty-output, and unclassifiable-output case as blocked.
+The documentation also states that `claude` and `coderabbit` are valid policy
+values that this command refuses to execute for now, and documents the
+command's `--base` option and exit codes. The older user-guide wording that
+described the policy as reported but unenforced was corrected.
+
+Focused checks:
+
+- `make skills-sync` — passed; the distributed mirror was regenerated.
+- `cmp -s .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` — passed;
+  canonical and mirror are identical.
+- `rg` checks for `roundfix review` in both skill files and
+  `docs/user-guide/commands.md` — passed.
+- Search for stale “reported without enforcing” policy wording in the user
+  guide and both skill files — no matches.
+- `git diff --check` — passed.
+
+The task's declared Verification command, including the repository skill
+check, remains for the Daemon.
