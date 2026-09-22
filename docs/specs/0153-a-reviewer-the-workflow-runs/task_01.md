@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0153-a-reviewer-the-workflow-runs
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -49,3 +49,28 @@ record that binds a review to the candidate it examined.
 ## References
 
 - [_techspec.md](_techspec.md) — What the record carries
+
+## Result
+
+Implemented a JSON review record that names the repository, base commit, head
+commit, effective provider, policy source, and one of the four specified
+outcomes. The constructor copies provider provenance from the resolved
+`config.PrePRReview` value. The writer validates the complete record before it
+emits bytes; findings and blocked outcomes require their corresponding detail.
+
+Focused checks:
+
+- `GOCACHE=/private/tmp/roundfix-task01-go-cache go test -count=1 -run '^TestReviewRecordRoundTripsEachOutcome$' ./internal/cli` — passed; reviewed, findings, blocked, and omitted records encoded and decoded with their required fields.
+- `GOCACHE=/private/tmp/roundfix-task01-go-cache go test -count=1 -run '^TestReviewRecordWithoutHeadIsRefusedBeforeWriting$' ./internal/cli` — passed; the writer returned the missing-head error and wrote zero bytes.
+- `GOCACHE=/private/tmp/roundfix-task01-go-cache go test -count=1 -run '^TestReviewRecordRefusesInvalidOutcomeDetails$' ./internal/cli` — passed; unknown outcomes and missing findings/reasons were refused before writing.
+- `gofmt -d internal/cli/review.go internal/cli/review_test.go` — no output; both new Go files are formatted.
+- `git diff --check -- docs/specs/0153-a-reviewer-the-workflow-runs/task_01.md` — passed.
+- `git diff --name-only -- internal/config/config.go` — no output; policy resolution and defaulting are untouched.
+
+Acceptance evidence:
+
+- Each outcome round-trips with required fields: `TestReviewRecordRoundTripsEachOutcome` covers all four outcome constants, policy provenance, candidate commits, findings, and blocked reason.
+- A record without a head is refused: `TestReviewRecordWithoutHeadIsRefusedBeforeWriting` also proves validation happens before any output.
+- Policy resolution is untouched: the implementation only reads the resolved `config.PrePRReview` value and the config source has no diff.
+
+The declared Verification command was not run; the Daemon owns that check.
