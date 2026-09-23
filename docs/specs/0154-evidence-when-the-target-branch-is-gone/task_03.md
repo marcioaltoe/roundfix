@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0154-evidence-when-the-target-branch-is-gone
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -50,3 +50,34 @@ changes what it can prove.
 ## References
 
 - [_authorization.md](_authorization.md) — Approved bounded mutation
+
+## Result
+
+Implementation evidence:
+
+- The canonical Roundfix skill now documents that an absent target falls back
+  to the default branch and reuses the content-evidence rule accepted for a
+  missed ancestry.
+- The same paragraph states that release requires positive content evidence,
+  while an unreachable default branch, an unarchived Spec, or evidence naming
+  another Spec remains preserved with the missing proof named.
+- The distributed mirror was regenerated with `make skills-sync`; it was not
+  edited independently, and the skill version remains unchanged.
+
+Focused checks:
+
+- `make skills-sync` — passed.
+- `cmp -s .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` — passed;
+  canonical and mirror are byte-identical.
+- Required-term search across both skill files — passed for the fallback,
+  default-branch content evidence, positive release evidence, and each
+  preservation reason.
+- `git diff --check` — passed.
+
+Acceptance evidence:
+
+- Both skill files describe the fallback and what still preserves: evidenced by
+  the synchronized, byte-identical files and the focused term search above.
+- Repository skill check: deferred to the Daemon-owned Verification; it was not
+  run because the Task execution invariant forbids running commands from this
+  section.
