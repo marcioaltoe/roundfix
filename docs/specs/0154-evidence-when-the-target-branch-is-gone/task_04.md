@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0154-evidence-when-the-target-branch-is-gone
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
