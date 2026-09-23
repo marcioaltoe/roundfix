@@ -1096,6 +1096,17 @@ func inspectDeletedTargetRunByContent(
 		))
 		return result
 	}
+	if _, err := newestQAReportAtHeadInDirectories(
+		ctx,
+		runner,
+		gitRoot,
+		defaultHead,
+		[]string{archivedQAReportDirectory(run.SpecSlug)},
+	); err != nil {
+		result.State = ReconciliationUnintegrated
+		result.Reason = reconciliationReasonDefaultBranchSpecNotArchived(run.SpecSlug)
+		return result
+	}
 
 	result.State = ReconciliationSafe
 	result.Reason = boundedReconciliationReason(fmt.Sprintf(
@@ -1212,24 +1223,43 @@ func supersededReconciliationReason(report string) string {
 }
 
 func reconciliationReasonDefaultBranchMissingEvidence(specSlug string) string {
-	return boundedReconciliationReason(fmt.Sprintf(
-		"Spec %q: default branch has no superseding QA Report after target branch disappeared",
+	return boundedSpecReconciliationReason(
 		specSlug,
-	))
+		"default branch has no superseding QA Report after target branch disappeared",
+	)
 }
 
 func reconciliationReasonDefaultBranchSpecNotArchived(specSlug string) string {
-	return boundedReconciliationReason(fmt.Sprintf(
-		"Spec %q: default branch has no superseding QA Report under the archived Spec path; Spec is not archived after target branch disappeared",
+	return boundedSpecReconciliationReason(
 		specSlug,
-	))
+		"default branch has no superseding QA Report under the archived Spec path; Spec is not archived after target branch disappeared",
+	)
 }
 
 func reconciliationReasonDefaultBranchUnresolved(specSlug string) string {
-	return boundedReconciliationReason(fmt.Sprintf(
-		"Spec %q: default branch unresolved; superseding QA Report could not be sought after target branch disappeared",
+	return boundedSpecReconciliationReason(
 		specSlug,
-	))
+		"default branch unresolved; superseding QA Report could not be sought after target branch disappeared",
+	)
+}
+
+func boundedSpecReconciliationReason(specSlug string, proof string) string {
+	reason := fmt.Sprintf("Spec %q: %s", specSlug, proof)
+	if len(reason) <= reconciliationReasonMaxBytes {
+		return reason
+	}
+
+	const ellipsis = "..."
+	abbreviated := ""
+	for _, char := range specSlug {
+		candidate := abbreviated + string(char)
+		if len(fmt.Sprintf("Spec %q: %s", candidate+ellipsis, proof)) > reconciliationReasonMaxBytes {
+			break
+		}
+		abbreviated = candidate
+	}
+	reason = fmt.Sprintf("Spec %q: %s", abbreviated+ellipsis, proof)
+	return boundedReconciliationReason(reason)
 }
 
 func boundedReconciliationReason(reason string) string {
@@ -1310,7 +1340,16 @@ func newestQAReportAtHead(
 	head string,
 	slug string,
 ) (string, error) {
-	directories := qaReportDirectories(slug)
+	return newestQAReportAtHeadInDirectories(ctx, runner, gitRoot, head, qaReportDirectories(slug))
+}
+
+func newestQAReportAtHeadInDirectories(
+	ctx context.Context,
+	runner gitRunner,
+	gitRoot string,
+	head string,
+	directories []string,
+) (string, error) {
 	args := []string{"ls-tree", "-r", "--name-only", "-z", head, "--"}
 	args = append(args, directories...)
 	output, err := runner.Run(ctx, gitRoot, args...)

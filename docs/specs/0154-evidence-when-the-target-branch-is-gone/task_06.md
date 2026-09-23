@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0154-evidence-when-the-target-branch-is-gone
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -67,3 +67,54 @@ not archived` past the cut.
 ## References
 
 - [_prd.md](_prd.md) — Core Features
+
+## Result
+
+### Implementation
+
+- Deleted-target content reconciliation now requires a QA Report under the
+  archived Spec path before it classifies a represented Run tree as `safe`.
+  Without that proof, direct inspection returns `unintegrated`, so pruning
+  preserves the Run Worktree and Run Branch.
+- Present-target inspection remains ancestry-based and unchanged; the archive
+  requirement applies only after the recorded target branch disappears.
+- Missing-proof reasons now reserve the full evidence clause and abbreviate a
+  long Spec slug with an ellipsis, while retaining the existing 160-byte bound.
+
+### Focused checks
+
+- Before the production change,
+  `rtk env GOCACHE=/tmp/roundfix-task06-gocache go test -count=1 -run 'Test(InspectTerminalRunRequiresArchivedEvidence|PruneTerminalReportRequiresArchivedEvidence|ReconcileReasonKeepsProofClauseForLongSlugs)$' ./internal/worktree`
+  exited 1: direct inspection returned `safe`, pruning removed the Run
+  surfaces, and the long-slug reason omitted `Spec is not archived`.
+- After the production change,
+  `rtk env GOCACHE=/tmp/roundfix-task06-gocache go test -count=1 -run 'Test(InspectTerminalRunRequiresArchivedEvidence|PruneTerminalReportRequiresArchivedEvidence|ReconcileReasonKeepsProofClauseForLongSlugs|InspectTerminalRunSafeWhenTargetDeletedAfterSquashMerge|PruneTerminalReconciliationReachableChangedBranch)$' ./internal/worktree`
+  exited 0.
+- `rtk env GOCACHE=/tmp/roundfix-task06-gocache go test -count=1 ./internal/worktree`
+  exited 0.
+- The first sandboxed `rtk env GOCACHE=/tmp/roundfix-task06-gocache make verify-incremental`
+  run reached the full suite but failed because two process-owner integration
+  tests could not read the host process table. Re-running
+  `rtk make verify-incremental` with process-table permission exited 0 after
+  vet, all Go package tests, skill checks, and the build.
+- The Task's authored `## Verification` commands were not run; the Daemon owns
+  those checks and Task settlement.
+
+### Acceptance-criterion evidence
+
+- **Deleted target preserves without archived proof:**
+  `TestInspectTerminalRunRequiresArchivedEvidence/deleted_target_with_active_Spec_evidence_preserves`
+  asserts `unintegrated` and a reason naming both the default branch and the
+  missing archive state.
+- **Prune preserves the same Run:**
+  `TestPruneTerminalReportRequiresArchivedEvidence` asserts no pruned entry and
+  verifies that both the Run Worktree and Run Branch remain.
+- **Present-target behavior is unchanged:**
+  `TestInspectTerminalRunRequiresArchivedEvidence/present_target_without_archived_Spec_evidence_stays_safe`
+  keeps direct inspection `safe`, and
+  `TestPruneTerminalReconciliationReachableChangedBranch` keeps the existing
+  present-target prune behavior.
+- **Long-slug reason keeps the proof:**
+  `TestReconcileReasonKeepsProofClauseForLongSlugs` asserts that the bounded
+  reason still names `default branch` and `Spec is not archived` and remains at
+  most 160 bytes.
