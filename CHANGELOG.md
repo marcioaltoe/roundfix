@@ -2,6 +2,63 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.16.0] - 2026-09-23
+
+### The workflow runs its own pre-PR review
+
+Roundfix could say which reviewer a repository wanted and could not ask one
+anything: the resolved policy was read by `doctor` and by nothing else. The
+review that guards a candidate was performed by whoever happened to be driving,
+recorded nowhere the workflow could read, and bound to no particular commit.
+
+`roundfix review [--base <ref>]` computes the candidate diff, hands it to a
+read-only reviewer session, and records the outcome against the exact base and
+head it examined. It exits 0 on an explicit clean answer, 1 on findings, and 2
+when the selected mode is blocked.
+
+What blocks is the substance. A runtime failure, a timeout, a transport
+anomaly, empty output, output it cannot classify, and a provider this release
+does not execute each block with the reason named. None of them falls back to
+another provider, and none becomes a configured omission. A fallback activates
+only for a selection that failed to start before the prompt was sent, because a
+failure after the prompt is a failure of the review and the next selection
+cannot answer for it.
+
+Explicit `none` performs no reviewer call and no readiness probe. It records a
+configured omission and exits zero — a decision, not a failure. `claude` and
+`coderabbit` remain valid policy values that this release refuses to execute,
+by name, rather than reviewing nothing in silence.
+
+### A supersession the archive can see
+
+A Spec whose content another Spec delivered had no way to leave the active
+queue. Archive proves a Spec finished by reading completed Tasks and a passing
+gate, and a Spec that was never decomposed can have neither.
+
+`roundfix supersede --spec <slug> --by <slug> --reason <text>` records that as
+an amendment with its own frontmatter, leaving the superseded Spec's own
+documents untouched so intent and outcome can both be read. Archive accepts
+that record in place of the evidence such a Spec cannot produce, and keeps every
+other precondition. An unknown superseding Spec, a self-supersession and a
+second supersession are refused.
+
+### One declared-acceptance policy
+
+Whether the newest QA Report let a Spec proceed was decided in three places that
+disagreed, and the strictest copy ran first: a Spec whose QA legitimately ended
+`partial` could not settle its gate, so it never reached the archive that would
+have accepted it.
+
+One exported decision now states the rule, and every path that acts on it
+reaches the same decision — archive, the Daemon's gate settlement, and `settle`.
+A `partial` whose blocked rows are declared unreachable settles the terminal
+`qa` Task instead of failing it. A `pass` carrying an environment-blocked row
+stays accepted, as it always was.
+
+The rendered QA Verification command deliberately stops deciding. It proves a
+newest report exists and its verdict is readable, because reaching the decision
+from a rendered command would require whichever binary happened to be installed.
+
 ## [0.15.0] - 2026-09-19
 
 ### A Profile can declare both verification tiers
