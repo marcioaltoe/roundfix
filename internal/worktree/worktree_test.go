@@ -1634,6 +1634,86 @@ func TestClassifyRunBranchSetFourFailedCycles(t *testing.T) {
 	}
 }
 
+func TestReconcileFallsBackToTheDefaultBranch(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	fixture := newRunBranchSetFixture(t, slug, "qa-report-2026-07-28.md")
+	squashMergeAndDeleteRunBranchSetTarget(t, &fixture, "ma/deleted-target")
+	supersedingReport := qaReportTestPath(slug, "qa-report-2026-07-29.md", false)
+	commitQAReport(t, fixture.repoDir, slug, "qa-report-2026-07-29.md", false, "pass")
+
+	result, err := ClassifyRunBranchSet(
+		context.Background(),
+		fixture.repoDir,
+		fixture.targetBranch,
+		slug,
+		fixture.runs,
+	)
+	if err != nil {
+		t.Fatalf("classify absent-target Run Branch set: %v", err)
+	}
+
+	branch := fixture.refs[0].Branch
+	if !slices.Equal(result.Releasable, []string{branch}) || result.ReleasableProofs[branch] != supersedingReport {
+		t.Fatalf("absent-target classification = %#v, want %q releasable from proof %q", result, branch, supersedingReport)
+	}
+	if len(result.Preserved) != 0 || len(result.PreservedReasons) != 0 {
+		t.Fatalf("absent-target preserved Run Branches = %v reasons=%v, want none", result.Preserved, result.PreservedReasons)
+	}
+
+	mustWriteWorktreeTest(t, filepath.Join(fixture.refs[0].Path, "uncommitted.txt"), "preserve me\n")
+	err = ApplyRunBranchCandidate(context.Background(), result, branch)
+	if err == nil || !strings.Contains(err.Error(), `worktree classification changed to "dirty"`) {
+		t.Fatalf("dirty Worktree apply error = %v, want dirty preservation refusal", err)
+	}
+	assertPathExists(t, fixture.refs[0].Path)
+	assertRunBranchExists(t, fixture.repoDir, branch)
+}
+
+func TestReconcilePreservesWithoutDefaultBranchEvidence(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	tests := []struct {
+		name  string
+		setup func(t *testing.T, fixture *runBranchSetFixture)
+	}{
+		{
+			name:  "default branch has no superseding evidence",
+			setup: func(_ *testing.T, _ *runBranchSetFixture) {},
+		},
+		{
+			name: "default branch cannot be resolved",
+			setup: func(t *testing.T, fixture *runBranchSetFixture) {
+				gitWorktreeTest(t, fixture.repoDir, "checkout", "--detach")
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fixture := newRunBranchSetFixture(t, slug, "qa-report-2026-07-28.md")
+			squashMergeAndDeleteRunBranchSetTarget(t, &fixture, "ma/deleted-target")
+			tt.setup(t, &fixture)
+
+			result, err := ClassifyRunBranchSet(
+				context.Background(),
+				fixture.repoDir,
+				fixture.targetBranch,
+				slug,
+				fixture.runs,
+			)
+			if err != nil {
+				t.Fatalf("classify absent-target Run Branch set: %v", err)
+			}
+
+			branch := fixture.refs[0].Branch
+			assertPreservedRunBranch(t, result, branch, "target branch")
+			if len(result.Releasable) != 0 || len(result.ReleasableProofs) != 0 {
+				t.Fatalf("absent-target classification released work without default-branch evidence: %#v", result)
+			}
+		})
+	}
+}
+
 func TestClassifyRunBranchSetPreservesAbsentTarget(t *testing.T) {
 	t.Parallel()
 	const slug = "0066-run-teardown-reclaims-what-it-created"
@@ -2858,6 +2938,22 @@ func newRunBranchSetFixture(t *testing.T, slug string, reports ...string) runBra
 		})
 	}
 	return fixture
+}
+
+func squashMergeAndDeleteRunBranchSetTarget(t *testing.T, fixture *runBranchSetFixture, targetBranch string) {
+	t.Helper()
+	gitWorktreeTest(t, fixture.repoDir, "branch", targetBranch, "main")
+	targetPath := filepath.Join(t.TempDir(), "target")
+	gitWorktreeTest(t, fixture.repoDir, "worktree", "add", targetPath, targetBranch)
+	commitWorktreeFile(t, targetPath, "target-work.txt", "delivered\n", "target work")
+	gitWorktreeTest(t, fixture.repoDir, "merge", "--squash", targetBranch)
+	gitWorktreeTest(t, fixture.repoDir, "commit", "-m", "squash merge target")
+	gitWorktreeTest(t, fixture.repoDir, "worktree", "remove", targetPath)
+	fixture.targetBranch = targetBranch
+	for index := range fixture.runs {
+		fixture.runs[index].LocalBranch = targetBranch
+	}
+	gitWorktreeTest(t, fixture.repoDir, "branch", "-D", targetBranch)
 }
 
 func assertPreservedRunBranch(t *testing.T, result BranchSetClassification, branch string, reasonFragment string) {

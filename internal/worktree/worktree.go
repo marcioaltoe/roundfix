@@ -422,6 +422,7 @@ func classifyRunBranchSet(
 	if targetAbsent {
 		seen := make(map[string]struct{})
 		reason := reconciliationReasonTargetBranchAbsent(targetBranch)
+		_, defaultHead, defaultResolved := resolveDefaultBranchHead(ctx, runner, root)
 		for _, run := range runs {
 			if run.Kind != store.KindImplement ||
 				strings.TrimSpace(run.LocalBranch) != targetBranch ||
@@ -437,14 +438,25 @@ func classifyRunBranchSet(
 				continue
 			}
 			seen[branch] = struct{}{}
+			if defaultResolved && store.IsTerminalState(run.State) {
+				head, resolveErr := resolveUnambiguousLocalBranch(ctx, runner, root, branch)
+				if resolveErr == nil && head != "" {
+					if report, proven := supersedingQAReport(ctx, runner, root, defaultHead, head, specSlug); proven {
+						release(branch, report)
+						continue
+					}
+				}
+			}
 			preserve(branch, reason)
 		}
+		sort.Strings(result.Releasable)
 		sort.Strings(result.Preserved)
 		result.evidence = &branchSetClassificationEvidence{
 			gitRoot:      root,
 			targetBranch: targetBranch,
 			specSlug:     specSlug,
 			runs:         cloneRuns(runs),
+			releasable:   maps.Clone(result.ReleasableProofs),
 		}
 		return result, nil
 	}
@@ -992,6 +1004,29 @@ func (adapter preflightGitRunner) RunGit(ctx context.Context, workDir string, ar
 	return adapter.runner.Run(ctx, workDir, args...)
 }
 
+func resolveDefaultBranchHead(
+	ctx context.Context,
+	runner gitRunner,
+	gitRoot string,
+) (string, string, bool) {
+	currentBranchOutput, currentBranchErr := runner.Run(ctx, gitRoot, "symbolic-ref", "--quiet", "--short", "HEAD")
+	currentBranch := ""
+	if currentBranchErr == nil {
+		currentBranch = strings.TrimSpace(currentBranchOutput)
+	}
+	defaultBranch := preflight.DetectDefaultBranch(ctx, gitRoot, currentBranch, preflightGitRunner{runner: runner})
+	if defaultBranch.Source == preflight.DefaultBranchUndetermined ||
+		!validLocalBranch(ctx, runner, gitRoot, defaultBranch.Name) {
+		return "", "", false
+	}
+
+	defaultHead, err := resolveUnambiguousLocalBranch(ctx, runner, gitRoot, defaultBranch.Name)
+	if err != nil || defaultHead == "" {
+		return "", "", false
+	}
+	return defaultBranch.Name, defaultHead, true
+}
+
 func inspectDeletedTargetRunByContent(
 	ctx context.Context,
 	runner gitRunner,
@@ -1001,20 +1036,8 @@ func inspectDeletedTargetRunByContent(
 	worktreePresent bool,
 	runBranchPresent bool,
 ) RunWorktreeReconciliation {
-	currentBranchOutput, currentBranchErr := runner.Run(ctx, gitRoot, "symbolic-ref", "--quiet", "--short", "HEAD")
-	currentBranch := ""
-	if currentBranchErr == nil {
-		currentBranch = strings.TrimSpace(currentBranchOutput)
-	}
-	defaultBranch := preflight.DetectDefaultBranch(ctx, gitRoot, currentBranch, preflightGitRunner{runner: runner})
-	if defaultBranch.Source == preflight.DefaultBranchUndetermined ||
-		!validLocalBranch(ctx, runner, gitRoot, defaultBranch.Name) {
-		result.Reason = reconciliationReasonTargetBranch
-		return result
-	}
-
-	defaultHead, err := resolveUnambiguousLocalBranch(ctx, runner, gitRoot, defaultBranch.Name)
-	if err != nil || defaultHead == "" {
+	defaultBranch, defaultHead, resolved := resolveDefaultBranchHead(ctx, runner, gitRoot)
+	if !resolved {
 		result.Reason = reconciliationReasonTargetBranch
 		return result
 	}
@@ -1031,7 +1054,7 @@ func inspectDeletedTargetRunByContent(
 		result.State = ReconciliationUnintegrated
 		result.Reason = boundedReconciliationReason(fmt.Sprintf(
 			"Run Branch content comparison could not prove integration against default branch %q",
-			defaultBranch.Name,
+			defaultBranch,
 		))
 		return result
 	}
@@ -1058,7 +1081,7 @@ func inspectDeletedTargetRunByContent(
 		result.Reason = boundedReconciliationReason(fmt.Sprintf(
 			"Run Branch content is not fully represented: %s against default branch %q",
 			strings.Join(evidence, ", "),
-			defaultBranch.Name,
+			defaultBranch,
 		))
 		return result
 	}
@@ -1066,7 +1089,7 @@ func inspectDeletedTargetRunByContent(
 	result.State = ReconciliationSafe
 	result.Reason = boundedReconciliationReason(fmt.Sprintf(
 		"Run Branch content is fully represented on default branch %q",
-		defaultBranch.Name,
+		defaultBranch,
 	))
 	result.evidence = newTerminalRunReconciliationEvidence(
 		run,

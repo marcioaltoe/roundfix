@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0154-evidence-when-the-target-branch-is-gone
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -62,3 +62,55 @@ The content-evidence rule that already handles a missed ancestry —
 ## References
 
 - [_techspec.md](_techspec.md) — The fallback
+
+## Result
+
+### Implementation
+
+- The absent-target branch-set classifier now resolves the repository default
+  branch and applies `supersedingQAReport` against its head for each terminal
+  Run Branch.
+- Positive evidence records the same releasable proof used by the
+  present-target path. An unresolved default branch, unresolved Run Branch,
+  Active Run, or missing evidence keeps the prior preserved classification.
+- Default-branch resolution is shared with terminal Run inspection so both
+  reconciliation paths use the same detection and ambiguity rules.
+
+### Acceptance evidence
+
+- `TestReconcileFallsBackToTheDefaultBranch` passed after target-branch work was
+  squash-merged into the default branch, the target was deleted, and a newer
+  default-branch QA Report was added; the classification named that report as
+  its releasable proof.
+- `TestReconcilePreservesWithoutDefaultBranchEvidence/default_branch_has_no_superseding_evidence`
+  passed and produced no releasable candidate.
+- `TestReconcilePreservesWithoutDefaultBranchEvidence/default_branch_cannot_be_resolved`
+  passed and produced no releasable candidate.
+- `TestReconcileFallsBackToTheDefaultBranch` also dirtied the registered
+  Worktree after classification; apply refused the candidate as `dirty` and
+  left both the Worktree and Run Branch present.
+- The focused present-target compatibility run passed 13 safe, superseded,
+  unintegrated, dirty, ambiguous-target and existing branch-set assertions.
+
+### Focused checks
+
+- Initial regression command:
+  `rtk go test -count=1 ./internal/worktree -run 'TestReconcile(FallsBackToTheDefaultBranch|PreservesWithoutDefaultBranchEvidence)$'`
+  — the positive case failed on the old absent-target early return while the
+  three negative/subtest cases passed.
+- After implementation:
+  `rtk go test -count=1 ./internal/worktree -run 'Test(Reconcile(FallsBackToTheDefaultBranch|PreservesWithoutDefaultBranchEvidence)|ClassifyRunBranchSetPreservesAbsentTarget|ApplyRunBranchCandidatePreservesNewlyDirtyWorktree|InspectTerminalRunUnknownWhenDeletedTargetDefaultBranchCannotBeResolved)$'`
+  — 7 tests passed.
+- Present-target compatibility:
+  `rtk go test -count=1 ./internal/worktree -run 'Test(InspectTerminalRun(Safe|Unintegrated|ClassifiesSupersededQAReport|Dirty)|ClassifyRunBranchSetPreservesAbsentTarget)$'`
+  — 13 tests passed.
+- Repository incremental gate: `rtk make verify-incremental` passed, including
+  formatting, vet, all Go tests, skill checks and the build.
+- `rtk git diff --check` passed.
+- The two commands under `## Verification` were not run; the Daemon owns them.
+
+### Follow-up
+
+- Task 02 owns preserved reason text that names the missing default-branch
+  proof. This slice retains the existing absent-target reason for every
+  unproven case.
