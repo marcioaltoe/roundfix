@@ -1672,20 +1672,33 @@ func TestReconcileFallsBackToTheDefaultBranch(t *testing.T) {
 
 func TestReconcilePreservesWithoutDefaultBranchEvidence(t *testing.T) {
 	t.Parallel()
+	assertReconcileReasonNamesTheMissingProof(t)
+}
+
+func TestReconcileReasonNamesTheMissingProof(t *testing.T) {
+	t.Parallel()
+	assertReconcileReasonNamesTheMissingProof(t)
+}
+
+func assertReconcileReasonNamesTheMissingProof(t *testing.T) {
+	t.Helper()
 	const slug = "0066-run-teardown-reclaims-what-it-created"
 	tests := []struct {
-		name  string
-		setup func(t *testing.T, fixture *runBranchSetFixture)
+		name       string
+		setup      func(t *testing.T, fixture *runBranchSetFixture)
+		wantReason string
 	}{
 		{
-			name:  "default branch has no superseding evidence",
-			setup: func(_ *testing.T, _ *runBranchSetFixture) {},
+			name:       "default branch has no superseding evidence",
+			setup:      func(_ *testing.T, _ *runBranchSetFixture) {},
+			wantReason: `Spec "0066-run-teardown-reclaims-what-it-created": default branch has no superseding QA Report after target branch disappeared`,
 		},
 		{
 			name: "default branch cannot be resolved",
 			setup: func(t *testing.T, fixture *runBranchSetFixture) {
 				gitWorktreeTest(t, fixture.repoDir, "checkout", "--detach")
 			},
+			wantReason: `Spec "0066-run-teardown-reclaims-what-it-created": default branch unresolved; superseding QA Report could not be sought after target branch disappeared`,
 		},
 	}
 	for _, tt := range tests {
@@ -1706,7 +1719,13 @@ func TestReconcilePreservesWithoutDefaultBranchEvidence(t *testing.T) {
 			}
 
 			branch := fixture.refs[0].Branch
-			assertPreservedRunBranch(t, result, branch, "target branch")
+			assertPreservedRunBranch(t, result, branch, tt.wantReason)
+			if result.PreservedReasons[branch] != tt.wantReason {
+				t.Fatalf("preserved reason = %q, want %q", result.PreservedReasons[branch], tt.wantReason)
+			}
+			if len(result.PreservedReasons[branch]) > reconciliationReasonMaxBytes {
+				t.Fatalf("preserved reason is %d bytes, want at most %d: %q", len(result.PreservedReasons[branch]), reconciliationReasonMaxBytes, result.PreservedReasons[branch])
+			}
 			if len(result.Releasable) != 0 || len(result.ReleasableProofs) != 0 {
 				t.Fatalf("absent-target classification released work without default-branch evidence: %#v", result)
 			}
@@ -1771,7 +1790,7 @@ func TestClassifyRunBranchSetPreservesAbsentTarget(t *testing.T) {
 	if err != nil {
 		t.Fatalf("classify absent-target Run Branch set: %v", err)
 	}
-	wantAbsentReason := reconciliationReasonTargetBranchAbsent(absent.targetBranch)
+	wantAbsentReason := reconciliationReasonDefaultBranchUnresolved(slug)
 	wantPreserved := []string{absent.refs[0].Branch, absent.refs[1].Branch}
 	if !slices.Equal(absentResult.Preserved, wantPreserved) {
 		t.Fatalf("absent-target preserved Run Branches = %v, want %v", absentResult.Preserved, wantPreserved)

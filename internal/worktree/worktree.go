@@ -421,8 +421,11 @@ func classifyRunBranchSet(
 	}
 	if targetAbsent {
 		seen := make(map[string]struct{})
-		reason := reconciliationReasonTargetBranchAbsent(targetBranch)
 		_, defaultHead, defaultResolved := resolveDefaultBranchHead(ctx, runner, root)
+		reason := reconciliationReasonDefaultBranchUnresolved(specSlug)
+		if defaultResolved {
+			reason = reconciliationReasonDefaultBranchMissingEvidence(specSlug)
+		}
 		for _, run := range runs {
 			if run.Kind != store.KindImplement ||
 				strings.TrimSpace(run.LocalBranch) != targetBranch ||
@@ -1200,8 +1203,18 @@ func supersededReconciliationReason(report string) string {
 	return boundedReconciliationReason(reason)
 }
 
-func reconciliationReasonTargetBranchAbsent(branch string) string {
-	return boundedReconciliationReason(fmt.Sprintf("target branch %q is absent", branch))
+func reconciliationReasonDefaultBranchMissingEvidence(specSlug string) string {
+	return boundedReconciliationReason(fmt.Sprintf(
+		"Spec %q: default branch has no superseding QA Report after target branch disappeared",
+		specSlug,
+	))
+}
+
+func reconciliationReasonDefaultBranchUnresolved(specSlug string) string {
+	return boundedReconciliationReason(fmt.Sprintf(
+		"Spec %q: default branch unresolved; superseding QA Report could not be sought after target branch disappeared",
+		specSlug,
+	))
 }
 
 func boundedReconciliationReason(reason string) string {
