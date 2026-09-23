@@ -445,7 +445,11 @@ func classifyRunBranchSet(
 				head, resolveErr := resolveUnambiguousLocalBranch(ctx, runner, root, branch)
 				if resolveErr == nil && head != "" {
 					if report, proven := supersedingQAReport(ctx, runner, root, defaultHead, head, specSlug); proven {
-						release(branch, report)
+						if pathUnderAnyGitDirectory(report, []string{archivedQAReportDirectory(specSlug)}) {
+							release(branch, report)
+						} else {
+							preserve(branch, reconciliationReasonDefaultBranchSpecNotArchived(specSlug))
+						}
 						continue
 					}
 				}
@@ -792,8 +796,12 @@ func matchesQAReportCommitMessage(message string, slug string) bool {
 func qaReportDirectories(slug string) []string {
 	return []string{
 		filepath.ToSlash(filepath.Join("docs", "specs", slug, "qa")),
-		filepath.ToSlash(filepath.Join(filepath.FromSlash(spec.ArchiveDir(spec.ArchiveKindSpec)), slug, "qa")),
+		archivedQAReportDirectory(slug),
 	}
+}
+
+func archivedQAReportDirectory(slug string) string {
+	return filepath.ToSlash(filepath.Join(filepath.FromSlash(spec.ArchiveDir(spec.ArchiveKindSpec)), slug, "qa"))
 }
 
 func pathUnderAnyGitDirectory(path string, directories []string) bool {
@@ -1206,6 +1214,13 @@ func supersededReconciliationReason(report string) string {
 func reconciliationReasonDefaultBranchMissingEvidence(specSlug string) string {
 	return boundedReconciliationReason(fmt.Sprintf(
 		"Spec %q: default branch has no superseding QA Report after target branch disappeared",
+		specSlug,
+	))
+}
+
+func reconciliationReasonDefaultBranchSpecNotArchived(specSlug string) string {
+	return boundedReconciliationReason(fmt.Sprintf(
+		"Spec %q: default branch has no superseding QA Report under the archived Spec path; Spec is not archived after target branch disappeared",
 		specSlug,
 	))
 }

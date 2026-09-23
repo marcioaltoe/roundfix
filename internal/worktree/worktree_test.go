@@ -1639,8 +1639,8 @@ func TestReconcileFallsBackToTheDefaultBranch(t *testing.T) {
 	const slug = "0066-run-teardown-reclaims-what-it-created"
 	fixture := newRunBranchSetFixture(t, slug, "qa-report-2026-07-28.md")
 	squashMergeAndDeleteRunBranchSetTarget(t, &fixture, "ma/deleted-target")
-	supersedingReport := qaReportTestPath(slug, "qa-report-2026-07-29.md", false)
-	commitQAReport(t, fixture.repoDir, slug, "qa-report-2026-07-29.md", false, "pass")
+	supersedingReport := qaReportTestPath(slug, "qa-report-2026-07-29.md", true)
+	commitQAReport(t, fixture.repoDir, slug, "qa-report-2026-07-29.md", true, "pass")
 
 	result, err := ClassifyRunBranchSet(
 		context.Background(),
@@ -1668,6 +1668,122 @@ func TestReconcileFallsBackToTheDefaultBranch(t *testing.T) {
 	}
 	assertPathExists(t, fixture.refs[0].Path)
 	assertRunBranchExists(t, fixture.repoDir, branch)
+}
+
+func TestReconcileFallbackRequiresArchivedEvidence(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	tests := []struct {
+		name        string
+		archived    bool
+		wantRelease bool
+	}{
+		{
+			name:        "archived Spec evidence releases",
+			archived:    true,
+			wantRelease: true,
+		},
+		{
+			name: "active Spec evidence preserves",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fixture := newRunBranchSetFixture(t, slug, "qa-report-2026-07-28.md")
+			squashMergeAndDeleteRunBranchSetTarget(t, &fixture, "ma/deleted-target")
+			report := qaReportTestPath(slug, "qa-report-2026-07-29.md", tt.archived)
+			commitQAReport(
+				t,
+				fixture.repoDir,
+				slug,
+				"qa-report-2026-07-29.md",
+				tt.archived,
+				"pass",
+			)
+
+			result, err := ClassifyRunBranchSet(
+				context.Background(),
+				fixture.repoDir,
+				fixture.targetBranch,
+				slug,
+				fixture.runs,
+			)
+			if err != nil {
+				t.Fatalf("classify absent-target Run Branch set: %v", err)
+			}
+
+			branch := fixture.refs[0].Branch
+			if tt.wantRelease {
+				if !slices.Equal(result.Releasable, []string{branch}) || result.ReleasableProofs[branch] != report {
+					t.Fatalf("absent-target classification = %#v, want %q releasable from archived proof %q", result, branch, report)
+				}
+				if len(result.Preserved) != 0 || len(result.PreservedReasons) != 0 {
+					t.Fatalf("absent-target preserved Run Branches = %v reasons=%v, want none", result.Preserved, result.PreservedReasons)
+				}
+				return
+			}
+
+			assertPreservedRunBranch(t, result, branch, "archived Spec path")
+			if !strings.Contains(result.PreservedReasons[branch], "Spec is not archived") {
+				t.Fatalf("active-only preserved reason = %q, want archive-state explanation", result.PreservedReasons[branch])
+			}
+			if len(result.Releasable) != 0 || len(result.ReleasableProofs) != 0 {
+				t.Fatalf("active-only evidence released absent-target work: %#v", result)
+			}
+		})
+	}
+}
+
+func TestReconcilePresentTargetAcceptsEitherSpecPath(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	tests := []struct {
+		name     string
+		archived bool
+	}{
+		{
+			name: "active Spec path",
+		},
+		{
+			name:     "archived Spec path",
+			archived: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fixture := newRunBranchSetFixture(t, slug, "qa-report-2026-07-28.md")
+			report := qaReportTestPath(slug, "qa-report-2026-07-29.md", tt.archived)
+			commitQAReport(
+				t,
+				fixture.repoDir,
+				slug,
+				"qa-report-2026-07-29.md",
+				tt.archived,
+				"pass",
+			)
+
+			result, err := ClassifyRunBranchSet(
+				context.Background(),
+				fixture.repoDir,
+				fixture.targetBranch,
+				slug,
+				fixture.runs,
+			)
+			if err != nil {
+				t.Fatalf("classify present-target Run Branch set: %v", err)
+			}
+
+			branch := fixture.refs[0].Branch
+			if !slices.Equal(result.Releasable, []string{branch}) || result.ReleasableProofs[branch] != report {
+				t.Fatalf("present-target classification = %#v, want %q releasable from proof %q", result, branch, report)
+			}
+			if len(result.Preserved) != 0 || len(result.PreservedReasons) != 0 {
+				t.Fatalf("present-target preserved Run Branches = %v reasons=%v, want none", result.Preserved, result.PreservedReasons)
+			}
+		})
+	}
 }
 
 func TestReconcilePreservesWithoutDefaultBranchEvidence(t *testing.T) {

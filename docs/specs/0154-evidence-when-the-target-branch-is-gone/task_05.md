@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0154-evidence-when-the-target-branch-is-gone
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -63,3 +63,42 @@ the archive is the only durable record that the work concluded.
 ## References
 
 - [_prd.md](_prd.md) — Core Features
+
+## Result
+
+### Implementation
+
+- The absent-target branch-set fallback now releases a Run Branch only when
+  the shared supersession proof identifies a QA Report under the archived Spec
+  path.
+- Active-path-only evidence now preserves the Run Branch and names both the
+  missing archived-path proof and that the Spec is not archived.
+- Present-target reconciliation still uses the unchanged shared supersession
+  rule, so active and archived Spec paths remain accepted.
+
+### Focused checks
+
+- Before the production change,
+  `rtk go test -run '^TestReconcileFallbackRequiresArchivedEvidence/active_Spec_evidence_preserves$' ./internal/worktree`
+  exited 1 because active-path evidence incorrectly left the Run Branch in
+  `Releasable`.
+- `rtk go test -run '^TestReconcile(FallbackRequiresArchivedEvidence|PresentTargetAcceptsEitherSpecPath|FallsBackToTheDefaultBranch)$' ./internal/worktree`
+  exited 0 with 7 tests passing.
+- `rtk go test ./internal/worktree` exited 0 with 123 tests passing.
+- `rtk make verify-incremental` exited 0 after formatting, vet, all Go package
+  tests, skill checks, and the build.
+- The Task's authored `## Verification` commands were not run; the Daemon owns
+  those checks and Task settlement.
+
+### Acceptance-criterion evidence
+
+- **Absent target with archived-path evidence releases:**
+  `TestReconcileFallbackRequiresArchivedEvidence/archived_Spec_evidence_releases`
+  asserts the archived report path is the release proof.
+- **Absent target with active-only evidence preserves:**
+  `TestReconcileFallbackRequiresArchivedEvidence/active_Spec_evidence_preserves`
+  asserts no release and a reason containing `archived Spec path` and
+  `Spec is not archived`.
+- **Present target accepts either path:**
+  `TestReconcilePresentTargetAcceptsEitherSpecPath` covers active and archived
+  report paths and asserts the same release classification for both.
