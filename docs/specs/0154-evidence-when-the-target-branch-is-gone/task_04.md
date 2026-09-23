@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0154-evidence-when-the-target-branch-is-gone
-status: completed
+status: pending
 type: qa
 complexity: high
 ---
@@ -71,3 +71,9 @@ ADR-0156.
 - Date: `2026-09-23`
 - QA Report: `qa/qa-report-2026-09-23.md`
 - Dependencies not completed: `task_05`
+
+## Invalidation
+
+- Date: `2026-09-23`
+- QA Report: `qa/qa-report-2026-09-23-01.md`
+- Dependencies not completed: `task_06`
