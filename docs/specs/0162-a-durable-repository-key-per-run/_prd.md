@@ -78,6 +78,22 @@ that follow from that choice:
    removed.
 4. A Run Window keyed on a linked worktree's path is shown and cleared from it.
 
+## Recorded limits
+
+The corrective ceiling of two Tasks was spent on the defects of the first two
+pre-PR reviews of 2026-09-24. The third review found one minor gap, carried to a
+future slice:
+
+- In a bare-repository layout, or a linked worktree of a `--separate-git-dir`
+  repository, the default Artifact Root moved from the worktree path to the
+  common Git directory. `gc --sanitize` then classifies a pre-upgrade
+  per-worktree root `overridden` and preserves it instead of reclaiming it; once
+  retention prunes those rows, the old directories are no longer found. Nothing
+  is deleted. Reproduction: bare clone, `git worktree add proj/main`, record a
+  terminal Run on the previous release, upgrade, run `gc --sanitize`. Carried
+  fix: accept a recorded root that equals the default derived from either the
+  recorded key or the recorded checkout.
+
 ## Decisions
 
 - **Record, don't rediscover.** The repository a Run belongs to is a fact at
