@@ -385,6 +385,10 @@ func loadReconcileRuns(ctx context.Context, homeDir, repository, runID string) (
 		if run.Kind != store.KindImplement {
 			continue
 		}
+		// ListRuns has already proven repository membership from the recorded
+		// key. Use the live checkout for Git inspection because the checkout
+		// that created a terminal Run may have been removed intentionally.
+		run.GitRoot = repository
 		all = append(all, run)
 		if store.IsTerminalState(run.State) && (runID == "" || run.ID == runID) {
 			selected = append(selected, run)

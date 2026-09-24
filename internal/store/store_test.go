@@ -390,6 +390,43 @@ func TestARemovedWorktreeRunStaysListed(t *testing.T) {
 	assertRunIDs(t, listed, []string{created.ID})
 }
 
+func TestBareRepositoryWorktreeRunsListFromASibling(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	fixtureRoot, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatalf("resolve fixture root: %v", err)
+	}
+	seedRoot := filepath.Join(fixtureRoot, "seed")
+	bareRoot := filepath.Join(fixtureRoot, "repository.git")
+	firstRoot := filepath.Join(fixtureRoot, "first")
+	secondRoot := filepath.Join(fixtureRoot, "second")
+	gittest.InitRepo(t, seedRoot, "--initial-branch=main")
+	gittest.Run(t, seedRoot, "commit", "--allow-empty", "-m", "seed repository")
+	gittest.Run(t, seedRoot, "clone", "--bare", seedRoot, bareRoot)
+	gittest.Harden(t, bareRoot)
+	gittest.Run(t, bareRoot, "worktree", "add", "-b", "feature/first", firstRoot, "main")
+	gittest.Run(t, bareRoot, "worktree", "add", "-b", "feature/second", secondRoot, "main")
+
+	runStore := openTestStore(t, ctx, filepath.Join(fixtureRoot, "home"))
+	defer closeStore(t, runStore)
+	req := sampleCreateRunRequest()
+	req.GitRoot = firstRoot
+	created, err := runStore.CreateRun(ctx, req)
+	if err != nil {
+		t.Fatalf("create Run from first bare-repository worktree: %v", err)
+	}
+	if created.RepositoryRoot != bareRoot {
+		t.Fatalf("created Run repository key = %q, want %q", created.RepositoryRoot, bareRoot)
+	}
+
+	listed, err := runStore.ListRuns(ctx, ListRunsQuery{GitRoot: secondRoot, States: StatesAll})
+	if err != nil {
+		t.Fatalf("list Runs from sibling bare-repository worktree: %v", err)
+	}
+	assertRunIDs(t, listed, []string{created.ID})
+}
+
 func TestSettleFindsARemovedWorktreeRunByKey(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

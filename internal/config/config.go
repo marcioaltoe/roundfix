@@ -1148,9 +1148,9 @@ func ResolveArtifactDirectory(artifactDir string, gitRoot string, homeDir string
 	return filepath.Join(gitRoot, expanded), nil
 }
 
-// RepositoryRoot returns the main worktree root that owns gitRoot. Linked
-// worktrees resolve through their common Git directory, while paths that are
-// not Git worktrees retain the existing path identity.
+// RepositoryRoot returns the durable repository key that owns gitRoot.
+// Standard worktrees use their main checkout root, bare layouts use their
+// common Git directory, and paths outside Git retain their existing identity.
 func RepositoryRoot(gitRoot string) (string, error) {
 	root, _, err := repositoryRootMetadata(gitRoot)
 	if err != nil {
@@ -1159,8 +1159,8 @@ func RepositoryRoot(gitRoot string) (string, error) {
 	return root, nil
 }
 
-// RepositoryRoots returns the main worktree root followed by every linked
-// worktree path still registered in the common Git directory. The aliases keep
+// RepositoryRoots returns the repository key followed by every linked worktree
+// path still registered in the common Git directory. The aliases keep
 // checkout-derived Run records reachable without changing their stored paths.
 func RepositoryRoots(gitRoot string) ([]string, error) {
 	mainRoot, commonDir, err := repositoryRootMetadata(gitRoot)
@@ -1234,6 +1234,8 @@ func repositoryRootMetadata(gitRoot string) (string, string, error) {
 		commonDir = resolveGitMetadataPath(gitDir, strings.TrimSpace(string(commonDirBytes)))
 		if filepath.Base(commonDir) == ".git" {
 			mainRoot = filepath.Dir(commonDir)
+		} else {
+			mainRoot = commonDir
 		}
 	}
 	return filepath.Clean(mainRoot), commonDir, nil

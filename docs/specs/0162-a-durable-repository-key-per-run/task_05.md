@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0162-a-durable-repository-key-per-run
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -42,3 +42,31 @@ Corrective Task from the second pre-PR review of 2026-09-24. `ListRuns` now list
 ## References
 
 - [_techspec.md](_techspec.md) — Consumers
+
+## Result
+
+- Implementation: repository identity now uses a linked worktree's common Git
+  directory as the key when that directory is not a main checkout's `.git`.
+  Reconciliation uses the current live checkout for Git proof after
+  repository-key-scoped listing has established that each Run belongs to it;
+  the persisted checkout path remains unchanged.
+- Acceptance criterion 1 evidence: `rtk env
+  GOCACHE=/tmp/roundfix-task05-gocache go test -count=1 -run
+  '^(TestReconcileFromMainAfterALinkedWorktreeIsRemoved|TestReconcileAcceptsALinkedWorktreeRunFromTheMainCheckout|TestReconcileRefusesAnotherRepositorysRun|TestReconcileTrustsTheRecordedKeyOverTheCheckoutPath)$'
+  ./internal/cli` exited 0. The real-Git removed-worktree case covers bare
+  `reconcile`, `reconcile <run-id>`, and `reconcile --apply`; the adjacent
+  cases retain linked-worktree acceptance and cross-repository refusal.
+- Acceptance criterion 2 evidence: `rtk env
+  GOCACHE=/tmp/roundfix-task05-gocache go test -count=1 -run
+  '^(TestBareRepositoryWorktreesShareOneKey|TestRepositoryIdentityIsSharedByLinkedWorktrees|TestRepositoryRootDoesNotEnumerateWorktrees)$'
+  ./internal/config` exited 0, and `rtk env
+  GOCACHE=/tmp/roundfix-task05-gocache go test -count=1 -run
+  '^(TestBareRepositoryWorktreeRunsListFromASibling|TestRunsFromALinkedWorktreeAreListedFromTheMainCheckout|TestARemovedWorktreeRunStaysListed)$'
+  ./internal/store` exited 0. These real-Git cases prove two bare-repository
+  worktrees share the common Git-directory key, a Run created in one lists
+  from the other, and ordinary non-bare repository identity stays unchanged.
+- Repository incremental check: `rtk env
+  GOCACHE=/tmp/roundfix-task05-gocache make verify-incremental` exited 0 after
+  vet, the Go suite, skill checks, and the CLI build.
+- Daemon Verification was not run; the Daemon owns the declared command and
+  terminal Task status.
