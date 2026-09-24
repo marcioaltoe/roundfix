@@ -93,12 +93,28 @@ Spec 0154 recorded, and Spec 0125 Core Feature 2.
 
 ## Recorded limits
 
-- A Run recorded before this Spec from a linked worktree that has since been
-  removed stays unlisted: its checkout no longer resolves to the repository, and
-  the maintainer's corrective ceiling of two Tasks was spent on the defects the
-  pre-PR review of 2026-09-24 found. Reproduction: start a Run from a linked
-  worktree on the previous release, remove the worktree, run `roundfix runs list`
-  from the main checkout. A durable repository key per Run is the carried fix.
+The maintainer's corrective ceiling of two Tasks was spent on the defects the
+first pre-PR review of 2026-09-24 found. The second review round found the
+following, carried to Spec 0162, which stores a durable repository key on each
+Run. None removes data; each over-preserves or refuses.
+
+- Linked-worktree Runs stay listed only while their worktree is registered. A
+  Run recorded from a linked worktree, before or after this Spec, drops out of
+  `roundfix runs list`, `reconcile` and settle lookups from the main checkout
+  once `git worktree remove` deletes its entry. Reproduction: start a Run from a
+  linked worktree, remove the worktree, run `roundfix runs list` from the main
+  checkout.
+- `reconcile <run-id>` from the main checkout refuses a linked-worktree Run
+  ("belongs to repository") that `implement` there proposes for carry-forward.
+  Reproduction: leave an Unresolved Run in worktree W, run `implement --spec`
+  for the same Spec from the main checkout, then the command it prints. Run it
+  from W instead.
+- `gc --sanitize` classifies the shared artifact root `overridden` after a
+  linked worktree whose Runs used it is removed, and then reclaims nothing from
+  it. Reproduction: start a Run from W, remove W, run `gc --sanitize`.
+- A Run Window set from a linked worktree before this Spec is keyed on that
+  worktree's path and is no longer found. Reproduction: set a window from W on
+  the previous release, upgrade, run `window show` from W.
 
 ## Decisions
 
