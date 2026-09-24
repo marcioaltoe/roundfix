@@ -92,6 +92,26 @@ alive, and `stop` cannot prove the recorded identity.
 5. A crash after the archive commit resumes without `review-stale`, and a reused
    owner PID does not lock the queue.
 
+## Recorded limits
+
+The corrective ceiling of two Tasks was spent on the defects the first pre-PR
+review of 2026-09-24 found. The second review found that park still mutates the
+user's checkout unsafely. The cause is structural — the loop runs every item in
+the user's own checkout — so the fix is carried to Spec 0168, which gives each
+item its own worktree. No release may ship `roundfix deliver` until Spec 0168
+merges.
+
+- Park can delete files that were ignored when the item started, when the item
+  branch ignores less than the starting branch. Reproduction: commit a local
+  `.gitignore` entry for `local.env` on `main` that `origin/main` lacks, create
+  `local.env`, deliver one Spec and let it park.
+- After an item merges, the next item records the merged item branch as its
+  starting branch, so its park returns the user to a stale delivery branch.
+- A starting branch deleted after it was recorded makes park fail after the
+  reset and clean, so the item never parks and every resume replays its stage.
+- An untracked nested repository created by the item survives park, leaving the
+  checkout dirty and the item unparked.
+
 ## Decisions
 
 - **Fix in place, not behind a flag.** Every limit is a defect of the shipped
