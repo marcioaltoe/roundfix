@@ -35,6 +35,7 @@ below define this Spec's place in the implementation order.
   ADR-0116 applies to cited-policy evidence: preserve checks that compare a claim with the cited record; source-origin absence is an additional structural check, not a substitute for semantic citation validation.
   ADR-0123 remains operative: retirement currently uses conservative local reachability and the Review Artifact resolver never writes into history. The proposed stable-evidence change does not yet supersede it.
   ADR-0152 is a proposed revision only, recorded for review; it creates no current obligation or grant.
+  ADR-0163, added by Spec 0164 on 2026-09-24, supersedes ADR-0123 and ADR-0152 once that Spec's Task 01 lands; Core Feature 8 is delivered there.
 - Tooling authority: applicable — express maintainer authorization on 2026-09-08 covers the terminal lifecycle instruction through [the narrow grant](references/2026-09-08-terminal-lifecycle-authorization.md); bounded files: `internal/baseline/assets/modules/context-workflow.json`, `docs/agents/docs-layout.md`, `docs/agents/setup-context.json`, with sanctioned digest regeneration. The broader [_authorization.md](_authorization.md) remains proposed, including all Go, test, companion-repository and unrelated skill changes. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## System Architecture
