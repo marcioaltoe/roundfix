@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0164-knowledge-lifecycle-and-capture
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
