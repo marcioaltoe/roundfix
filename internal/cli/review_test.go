@@ -1,7 +1,7 @@
 // Suite: pre-PR review records and reviewer input.
-// Invariant: each review is bound to one candidate whose diff is supplied to a read-only Agent Session.
-// Boundary IN: review-record encoding, candidate diff collection, prompt construction, and runner requests.
-// Boundary OUT: policy resolution, command routing, output classification, and record storage.
+// Invariant: each review is bound to one candidate, preserves its answer, and reports one substantive verdict.
+// Boundary IN: candidate diff collection, prompt execution, verdict classification, and artifact persistence.
+// Boundary OUT: policy resolution, top-level command routing, and real ACP adapters.
 package cli
 
 import (
@@ -294,6 +294,136 @@ func TestReviewCommandExitsOneAndRecordsFindings(t *testing.T) {
 		t.Fatalf("review record = %+v, want findings %q", record, findings)
 	}
 	fixture.assertCandidate(t, record)
+}
+
+func TestReviewClassifiesVerdictVariants(t *testing.T) {
+	tests := []struct {
+		name         string
+		answer       string
+		wantCode     int
+		wantOutcome  reviewOutcome
+		wantFindings string
+	}{
+		{
+			name:        "punctuated clean verdict",
+			answer:      "No findings.",
+			wantCode:    exitOK,
+			wantOutcome: reviewOutcomeReviewed,
+		},
+		{
+			name:        "emphasized clean verdict",
+			answer:      "**No findings.**",
+			wantCode:    exitOK,
+			wantOutcome: reviewOutcomeReviewed,
+		},
+		{
+			name:        "lowercase clean verdict",
+			answer:      "no findings",
+			wantCode:    exitOK,
+			wantOutcome: reviewOutcomeReviewed,
+		},
+		{
+			name:         "preamble before emphasized lowercase findings verdict",
+			answer:       "I reviewed the candidate.\n**findings:**\ninternal/cli/review.go:42: first finding\ninternal/cli/review_test.go:42: second finding",
+			wantCode:     exitRunFailed,
+			wantOutcome:  reviewOutcomeFindings,
+			wantFindings: "internal/cli/review.go:42: first finding\ninternal/cli/review_test.go:42: second finding",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			runner := &reviewCommandRunner{
+				results: []reviewCommandRunResult{{
+					result: agent.ExecuteResult{Message: test.answer, StopReason: "end_turn"},
+				}},
+			}
+			fixture := newReviewCommandFixture(t, "codex", runner)
+
+			code, record, stderr := fixture.run(t)
+
+			if code != test.wantCode {
+				t.Fatalf("review exit = %d, want %d; stderr=%q", code, test.wantCode, stderr)
+			}
+			if record.Outcome != test.wantOutcome || record.Findings != test.wantFindings {
+				t.Fatalf("review record = %+v, want outcome %q and findings %q", record, test.wantOutcome, test.wantFindings)
+			}
+		})
+	}
+}
+
+func TestReviewBlocksAmbiguousVerdict(t *testing.T) {
+	tests := []struct {
+		name       string
+		answer     string
+		wantReason string
+	}{
+		{
+			name:       "both verdicts",
+			answer:     "No findings.\nFindings:\ninternal/cli/review.go:42: contradictory verdict",
+			wantReason: "both",
+		},
+		{
+			name:       "neither verdict",
+			answer:     "Review complete.",
+			wantReason: "neither",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			runner := &reviewCommandRunner{
+				results: []reviewCommandRunResult{{
+					result: agent.ExecuteResult{Message: test.answer, StopReason: "end_turn"},
+				}},
+			}
+			fixture := newReviewCommandFixture(t, "codex", runner)
+
+			code, record, stderr := fixture.run(t)
+
+			assertBlockedReviewCommand(t, code, record, stderr, test.wantReason)
+		})
+	}
+}
+
+func TestReviewKeepsTheRawAnswer(t *testing.T) {
+	tests := []struct {
+		name        string
+		answer      string
+		wantOutcome reviewOutcome
+	}{
+		{name: "reviewed", answer: "  **No findings.**\n", wantOutcome: reviewOutcomeReviewed},
+		{name: "findings", answer: "Findings:\ninternal/cli/review.go:42: keep this finding\n", wantOutcome: reviewOutcomeFindings},
+		{name: "blocked", answer: "Review complete, but no verdict was stated.\n", wantOutcome: reviewOutcomeBlocked},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			runner := &reviewCommandRunner{
+				results: []reviewCommandRunResult{{
+					result: agent.ExecuteResult{Message: test.answer, StopReason: "end_turn"},
+				}},
+			}
+			fixture := newReviewCommandFixture(t, "codex", runner)
+
+			_, record, _ := fixture.run(t)
+
+			if record.Outcome != test.wantOutcome {
+				t.Fatalf("review outcome = %q, want %q", record.Outcome, test.wantOutcome)
+			}
+			wantPath := filepath.Join(fixture.artifactDir, reviewAnswerFileName)
+			if record.AnswerPath != wantPath {
+				t.Fatalf("review answer path = %q, want %q", record.AnswerPath, wantPath)
+			}
+			answer, err := os.ReadFile(record.AnswerPath)
+			if err != nil {
+				t.Fatalf("read raw review answer: %v", err)
+			}
+			if string(answer) != test.answer {
+				t.Fatalf("raw review answer = %q, want %q", string(answer), test.answer)
+			}
+		})
+	}
 }
 
 func TestReviewCommandBlocksOnRuntimeFailure(t *testing.T) {

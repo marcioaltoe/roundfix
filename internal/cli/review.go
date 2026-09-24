@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode"
 
 	"roundfix/internal/agent"
 	roundconfig "roundfix/internal/config"
@@ -25,6 +26,7 @@ const (
 	reviewOutcomeBlocked  reviewOutcome = "blocked"
 	reviewOutcomeOmitted  reviewOutcome = "omitted"
 	reviewRecordFileName                = "pre-pr-review.json"
+	reviewAnswerFileName                = "pre-pr-review-answer.txt"
 )
 
 type reviewRecord struct {
@@ -36,6 +38,7 @@ type reviewRecord struct {
 	Outcome    reviewOutcome `json:"outcome"`
 	Findings   string        `json:"findings,omitempty"`
 	Reason     string        `json:"reason,omitempty"`
+	AnswerPath string        `json:"answerPath,omitempty"`
 }
 
 func newReviewRecord(
@@ -259,7 +262,7 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		stderr,
 	)
 	record, code := classifyReviewCommandResult(record, result, runErr)
-	return finishReviewCommand(stdout, stderr, artifactDir, record, code)
+	return finishReviewCommandWithAnswer(stdout, stderr, artifactDir, result.Message, record, code)
 }
 
 func parseReviewCommand(args []string) (reviewCommandRequest, error) {
@@ -432,25 +435,102 @@ func classifyReviewCommandResult(record reviewRecord, result agent.ExecuteResult
 		return record, exitPreflight
 	}
 
-	message := strings.TrimSpace(result.Message)
-	if message == "" {
+	message := result.Message
+	if strings.TrimSpace(message) == "" {
 		record.Reason = "empty agent output"
 		return record, exitPreflight
 	}
-	if message == "No findings" {
+
+	lines := strings.Split(message, "\n")
+	noFindingsVerdict := false
+	findingsVerdict := false
+	findingsLine := -1
+	findingsOnVerdictLine := ""
+	for index, line := range lines {
+		if isNoFindingsVerdictLine(line) {
+			noFindingsVerdict = true
+		}
+		if inlineFindings, ok := parseFindingsVerdictLine(line); ok {
+			findingsVerdict = true
+			if findingsLine == -1 {
+				findingsLine = index
+				findingsOnVerdictLine = inlineFindings
+			}
+		}
+	}
+
+	switch {
+	case noFindingsVerdict && findingsVerdict:
+		record.Reason = "unclassifiable agent output: both no-findings and findings verdicts are present"
+		return record, exitPreflight
+	case !noFindingsVerdict && !findingsVerdict:
+		record.Reason = "unclassifiable agent output: neither a no-findings nor findings verdict is present"
+		return record, exitPreflight
+	case noFindingsVerdict:
 		record.Outcome = reviewOutcomeReviewed
 		return record, exitOK
-	}
-	if strings.HasPrefix(message, "Findings:") {
-		findings := strings.TrimSpace(strings.TrimPrefix(message, "Findings:"))
+	case findingsVerdict:
+		findingsParts := make([]string, 0, 2)
+		if findingsOnVerdictLine != "" {
+			findingsParts = append(findingsParts, findingsOnVerdictLine)
+		}
+		if findingsLine+1 < len(lines) {
+			findingsParts = append(findingsParts, strings.Join(lines[findingsLine+1:], "\n"))
+		}
+		findings := strings.TrimSpace(strings.Join(findingsParts, "\n"))
 		if findings != "" {
 			record.Outcome = reviewOutcomeFindings
 			record.Findings = findings
 			return record, exitRunFailed
 		}
+		record.Reason = "findings verdict has no findings text"
+		return record, exitPreflight
 	}
-	record.Reason = "unclassifiable agent output"
+	record.Reason = "ambiguous agent output"
 	return record, exitPreflight
+}
+
+func isNoFindingsVerdictLine(line string) bool {
+	line = strings.TrimSpace(line)
+	line = strings.TrimSpace(strings.Trim(line, "*_"))
+	line = strings.TrimRightFunc(line, func(character rune) bool {
+		return unicode.IsPunct(character) || unicode.IsSpace(character)
+	})
+	return strings.EqualFold(line, "no findings")
+}
+
+func parseFindingsVerdictLine(line string) (string, bool) {
+	line = strings.TrimSpace(line)
+	line = strings.TrimSpace(strings.TrimLeft(line, "*_"))
+	const verdict = "findings:"
+	if len(line) < len(verdict) || !strings.EqualFold(line[:len(verdict)], verdict) {
+		return "", false
+	}
+
+	findings := strings.TrimSpace(line[len(verdict):])
+	if strings.TrimFunc(findings, func(character rune) bool {
+		return unicode.IsPunct(character) || unicode.IsSpace(character)
+	}) == "" {
+		findings = ""
+	}
+	return findings, true
+}
+
+func finishReviewCommandWithAnswer(
+	stdout io.Writer,
+	stderr io.Writer,
+	artifactDir string,
+	answer string,
+	record reviewRecord,
+	code int,
+) int {
+	answerPath, err := persistReviewAnswer(artifactDir, answer)
+	if err != nil {
+		printReviewCommandFailure(err, stderr)
+		return exitPreflight
+	}
+	record.AnswerPath = answerPath
+	return finishReviewCommand(stdout, stderr, artifactDir, record, code)
 }
 
 func finishReviewCommand(stdout, stderr io.Writer, artifactDir string, record reviewRecord, code int) int {
@@ -493,6 +573,33 @@ func persistReviewRecord(artifactDir string, record reviewRecord) error {
 		return fmt.Errorf("replace review record %q: %w", path, err)
 	}
 	return nil
+}
+
+func persistReviewAnswer(artifactDir string, answer string) (string, error) {
+	path := filepath.Join(artifactDir, reviewAnswerFileName)
+	temp, err := os.CreateTemp(artifactDir, ".pre-pr-review-answer-*.txt")
+	if err != nil {
+		return "", fmt.Errorf("create temporary review answer: %w", err)
+	}
+	tempPath := temp.Name()
+	defer func() {
+		_ = os.Remove(tempPath)
+	}()
+	if _, err := io.WriteString(temp, answer); err != nil {
+		_ = temp.Close()
+		return "", fmt.Errorf("write review answer: %w", err)
+	}
+	if err := temp.Chmod(0o644); err != nil {
+		_ = temp.Close()
+		return "", fmt.Errorf("set review answer permissions: %w", err)
+	}
+	if err := temp.Close(); err != nil {
+		return "", fmt.Errorf("close review answer: %w", err)
+	}
+	if err := os.Rename(tempPath, path); err != nil {
+		return "", fmt.Errorf("replace review answer %q: %w", path, err)
+	}
+	return path, nil
 }
 
 func printReviewCommandFailure(err error, stderr io.Writer) {
