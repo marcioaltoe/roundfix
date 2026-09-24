@@ -58,6 +58,29 @@ func TestPullRequestBoundaryRejectsAPushWithoutAnObservedRemoteHead(t *testing.T
 	}
 }
 
+func TestPullRequestBoundaryObservesRemoteHeadWithoutPushing(t *testing.T) {
+	const headSHA = "0123456789abcdef"
+	runner := newScriptedCommandRunner(t, commandStep{
+		name:   "git",
+		args:   []string{"ls-remote", "--heads", "origin", "refs/heads/feat/delivery"},
+		result: CommandResult{Stdout: headSHA + "\trefs/heads/feat/delivery\n"},
+	})
+	boundary := GitHubCLI{WorkDir: "/repo", Runner: runner}
+
+	remoteHead, found, err := boundary.RemoteBranchHead(t.Context(), "origin", "feat/delivery")
+
+	if err != nil {
+		t.Fatalf("RemoteBranchHead returned error: %v", err)
+	}
+	if !found {
+		t.Fatal("RemoteBranchHead did not find the scripted remote head")
+	}
+	want := RemoteHead{Remote: "origin", Branch: "feat/delivery", SHA: headSHA}
+	if remoteHead != want {
+		t.Fatalf("RemoteBranchHead() = %#v, want %#v", remoteHead, want)
+	}
+}
+
 func TestPullRequestBoundaryReusesAnOpenPullRequest(t *testing.T) {
 	runner := newScriptedCommandRunner(t, commandStep{
 		name: "gh",
@@ -356,6 +379,7 @@ func (runner *scriptedCommandRunner) Run(_ context.Context, workDir, name string
 }
 
 type fakePullRequestBoundary struct {
+	remoteBranchHead        func(context.Context, string, string) (RemoteHead, bool, error)
 	pushBranch              func(context.Context, string, string) (RemoteHead, error)
 	findOrCreatePullRequest func(context.Context, PullRequestRequest) (PullRequestResult, error)
 	currentHeadChecks       func(context.Context, string) (CheckReport, error)
@@ -363,6 +387,13 @@ type fakePullRequestBoundary struct {
 }
 
 var _ PullRequestBoundary = (*fakePullRequestBoundary)(nil)
+
+func (fake *fakePullRequestBoundary) RemoteBranchHead(ctx context.Context, remote, branch string) (RemoteHead, bool, error) {
+	if fake.remoteBranchHead == nil {
+		return RemoteHead{}, false, errors.New("unexpected RemoteBranchHead call")
+	}
+	return fake.remoteBranchHead(ctx, remote, branch)
+}
 
 func (fake *fakePullRequestBoundary) PushBranch(ctx context.Context, remote, branch string) (RemoteHead, error) {
 	if fake.pushBranch == nil {

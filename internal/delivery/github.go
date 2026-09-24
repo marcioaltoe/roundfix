@@ -17,6 +17,7 @@ const pullRequestJSONFields = "number,url,state,headRefName,headRefOid,mergedAt,
 // delivery engine. Implementations must observe remote state before retrying
 // create or merge operations.
 type PullRequestBoundary interface {
+	RemoteBranchHead(ctx context.Context, remote, branch string) (RemoteHead, bool, error)
 	PushBranch(ctx context.Context, remote, branch string) (RemoteHead, error)
 	FindOrCreatePullRequest(ctx context.Context, req PullRequestRequest) (PullRequestResult, error)
 	CurrentHeadChecks(ctx context.Context, number string) (CheckReport, error)
@@ -98,6 +99,37 @@ func NewGitHubCLI(workDir string) GitHubCLI {
 	}
 }
 
+func (client GitHubCLI) RemoteBranchHead(ctx context.Context, remote, branch string) (RemoteHead, bool, error) {
+	remote = strings.TrimSpace(remote)
+	branch = strings.TrimSpace(branch)
+	if remote == "" {
+		return RemoteHead{}, false, errors.New("read remote branch head: remote is required")
+	}
+	if branch == "" {
+		return RemoteHead{}, false, errors.New("read remote branch head: PR Head Branch is required")
+	}
+	if strings.HasPrefix(remote, "-") {
+		return RemoteHead{}, false, fmt.Errorf("read remote branch head: remote %q cannot start with '-'", remote)
+	}
+
+	ref := "refs/heads/" + branch
+	result, err := client.run(ctx, "git", "ls-remote", "--heads", remote, ref)
+	if err != nil {
+		return RemoteHead{}, false, fmt.Errorf("read remote branch head: %w", err)
+	}
+	if result.ExitCode != 0 {
+		return RemoteHead{}, false, commandFailure("read remote branch head", result)
+	}
+	if strings.TrimSpace(result.Stdout) == "" {
+		return RemoteHead{}, false, nil
+	}
+	sha, err := parseRemoteHead(result.Stdout, ref)
+	if err != nil {
+		return RemoteHead{}, false, err
+	}
+	return RemoteHead{Remote: remote, Branch: branch, SHA: sha}, true, nil
+}
+
 func (client GitHubCLI) PushBranch(ctx context.Context, remote, branch string) (RemoteHead, error) {
 	remote = strings.TrimSpace(remote)
 	branch = strings.TrimSpace(branch)
@@ -120,18 +152,14 @@ func (client GitHubCLI) PushBranch(ctx context.Context, remote, branch string) (
 		return RemoteHead{}, commandFailure("push branch", result)
 	}
 
-	result, err = client.run(ctx, "git", "ls-remote", "--heads", remote, ref)
+	remoteHead, found, err := client.RemoteBranchHead(ctx, remote, branch)
 	if err != nil {
 		return RemoteHead{}, fmt.Errorf("read remote head after push: %w", err)
 	}
-	if result.ExitCode != 0 {
-		return RemoteHead{}, commandFailure("read remote head after push", result)
+	if !found {
+		return RemoteHead{}, fmt.Errorf("read remote head after push: git did not report %q", ref)
 	}
-	sha, err := parseRemoteHead(result.Stdout, ref)
-	if err != nil {
-		return RemoteHead{}, err
-	}
-	return RemoteHead{Remote: remote, Branch: branch, SHA: sha}, nil
+	return remoteHead, nil
 }
 
 func (client GitHubCLI) FindOrCreatePullRequest(ctx context.Context, req PullRequestRequest) (PullRequestResult, error) {
