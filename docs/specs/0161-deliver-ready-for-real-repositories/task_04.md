@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0161-deliver-ready-for-real-repositories
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
