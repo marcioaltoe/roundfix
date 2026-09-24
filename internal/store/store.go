@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	roundconfig "roundfix/internal/config"
 	"roundfix/internal/runevent"
 
 	_ "modernc.org/sqlite"
@@ -462,6 +463,11 @@ func (store *Store) createRun(ctx context.Context, req CreateRunRequest, acquire
 	if err := validateCreateRunRequest(req); err != nil {
 		return Run{}, err
 	}
+	repositoryRoot, err := roundconfig.RepositoryRoot(req.GitRoot)
+	if err != nil {
+		return Run{}, fmt.Errorf("resolve Run repository identity: %w", err)
+	}
+	req.GitRoot = repositoryRoot
 	runID, err := newRunID(store.now())
 	if err != nil {
 		return Run{}, err
@@ -1055,22 +1061,37 @@ ORDER BY created_at DESC, id DESC`
 
 // ActiveSpecRun returns the Active Run for one Spec work target, if any.
 func (store *Store) ActiveSpecRun(ctx context.Context, gitRoot string, specSlug string) (Run, bool, error) {
-	return selectActiveRunByTarget(ctx, store.db, targetKindSpec, specTargetKey(gitRoot, specSlug))
+	repositoryRoots, err := roundconfig.RepositoryRoots(gitRoot)
+	if err != nil {
+		return Run{}, false, fmt.Errorf("resolve Active Run repository identity: %w", err)
+	}
+	for _, repositoryRoot := range repositoryRoots {
+		run, found, err := selectActiveRunByTarget(ctx, store.db, targetKindSpec, specTargetKey(repositoryRoot, specSlug))
+		if err != nil || found {
+			return run, found, err
+		}
+	}
+	return Run{}, false, nil
 }
 
 // ActiveRunInGitRoot returns the Active Run of any Kind whose Git root
 // matches. It backs the ADR 0012 single-working-tree Preflight Validation
 // until worktree-per-task lands.
 func (store *Store) ActiveRunInGitRoot(ctx context.Context, gitRoot string) (Run, bool, error) {
+	repositoryRoots, err := roundconfig.RepositoryRoots(gitRoot)
+	if err != nil {
+		return Run{}, false, fmt.Errorf("resolve Active Run repository identity: %w", err)
+	}
+	placeholders, args := repositoryRootArguments(repositoryRoots)
 	row := store.db.QueryRowContext(ctx, `
 SELECT r.id, r.kind, r.state, r.head_repository, r.head_branch, r.base_repository,
        r.pr_number, r.git_root, r.local_branch, r.head_sha, r.artifact_dir, r.work_dir,
        r.spec_slug, r.agent, r.model, r.reasoning_effort, r.owner_pid, r.owner_identity, r.owner_identity_unproven, r.created_at, r.updated_at, r.completed_at
 FROM active_run_locks l
 JOIN runs r ON r.id = l.run_id
-WHERE r.git_root = ?
+WHERE r.git_root IN (`+placeholders+`)
 ORDER BY l.created_at, r.id
-LIMIT 1`, gitRoot)
+LIMIT 1`, args...)
 	run, err := scanRun(row)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Run{}, false, nil
@@ -1084,9 +1105,14 @@ LIMIT 1`, gitRoot)
 // SetRunWindow stores a repository's Run Window. An existing window is
 // returned unchanged unless replace is true.
 func (store *Store) SetRunWindow(ctx context.Context, gitRoot string, cutoff time.Time, replace bool) (RunWindow, bool, error) {
+	repositoryRoot, err := roundconfig.RepositoryRoot(gitRoot)
+	if err != nil {
+		return RunWindow{}, false, fmt.Errorf("resolve Run Window repository identity: %w", err)
+	}
+	gitRoot = repositoryRoot
 	var window RunWindow
 	written := false
-	err := store.withWriteTx(ctx, "Run Window set", func(tx *sql.Tx) error {
+	err = store.withWriteTx(ctx, "Run Window set", func(tx *sql.Tx) error {
 		standing, found, err := selectRunWindow(ctx, tx, gitRoot)
 		if err != nil {
 			return err
@@ -1122,13 +1148,22 @@ ON CONFLICT(git_root) DO UPDATE SET
 
 // RunWindowFor returns the Run Window for one repository, if any.
 func (store *Store) RunWindowFor(ctx context.Context, gitRoot string) (RunWindow, bool, error) {
-	return selectRunWindow(ctx, store.db, gitRoot)
+	repositoryRoot, err := roundconfig.RepositoryRoot(gitRoot)
+	if err != nil {
+		return RunWindow{}, false, fmt.Errorf("resolve Run Window repository identity: %w", err)
+	}
+	return selectRunWindow(ctx, store.db, repositoryRoot)
 }
 
 // ClearRunWindow removes the Run Window for one repository, if present.
 func (store *Store) ClearRunWindow(ctx context.Context, gitRoot string) (bool, error) {
+	repositoryRoot, err := roundconfig.RepositoryRoot(gitRoot)
+	if err != nil {
+		return false, fmt.Errorf("resolve Run Window repository identity: %w", err)
+	}
+	gitRoot = repositoryRoot
 	removed := false
-	err := store.withWriteTx(ctx, "Run Window clear", func(tx *sql.Tx) error {
+	err = store.withWriteTx(ctx, "Run Window clear", func(tx *sql.Tx) error {
 		result, err := tx.ExecContext(ctx, `DELETE FROM run_windows WHERE git_root = ?`, gitRoot)
 		if err != nil {
 			return fmt.Errorf("clear Run Window: %w", err)
@@ -1156,9 +1191,14 @@ FROM runs`
 	args := []any{}
 	gitRoot := strings.TrimSpace(query.GitRoot)
 	if gitRoot != "" {
+		repositoryRoots, err := roundconfig.RepositoryRoots(gitRoot)
+		if err != nil {
+			return nil, fmt.Errorf("resolve Run listing repository identity: %w", err)
+		}
+		placeholders, repositoryArgs := repositoryRootArguments(repositoryRoots)
 		sqlQuery += `
-WHERE git_root = ?`
-		args = append(args, gitRoot)
+WHERE git_root IN (` + placeholders + `)`
+		args = append(args, repositoryArgs...)
 	}
 	sqlQuery += `
 ORDER BY created_at DESC, id DESC`
@@ -1207,23 +1247,31 @@ func (store *Store) Run(ctx context.Context, runID string) (Run, bool, error) {
 }
 
 func (store *Store) LatestKeptSpecRun(ctx context.Context, gitRoot string, specSlug string) (Run, bool, error) {
-	row := store.db.QueryRowContext(ctx, `
-SELECT id, kind, state, head_repository, head_branch, base_repository,
-       pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
-       spec_slug, agent, model, reasoning_effort, owner_pid, owner_identity, owner_identity_unproven, created_at, updated_at, completed_at
-FROM runs
-WHERE kind = ? AND git_root = ? AND spec_slug = ?
-  AND work_dir IS NOT NULL AND TRIM(work_dir) <> ''
-  AND state IN (?, ?, ?, ?)
-ORDER BY updated_at DESC, created_at DESC, id DESC
-LIMIT 1`,
-		KindImplement,
-		gitRoot,
+	repositoryRoots, err := roundconfig.RepositoryRoots(gitRoot)
+	if err != nil {
+		return Run{}, false, fmt.Errorf("resolve kept Run repository identity: %w", err)
+	}
+	placeholders, repositoryArgs := repositoryRootArguments(repositoryRoots)
+	args := []any{KindImplement}
+	args = append(args, repositoryArgs...)
+	args = append(args,
 		specSlug,
 		StateUnresolved,
 		StateFailed,
 		StateStopped,
 		StateIntegrationPending,
+	)
+	row := store.db.QueryRowContext(ctx, `
+SELECT id, kind, state, head_repository, head_branch, base_repository,
+       pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
+       spec_slug, agent, model, reasoning_effort, owner_pid, owner_identity, owner_identity_unproven, created_at, updated_at, completed_at
+FROM runs
+WHERE kind = ? AND git_root IN (`+placeholders+`) AND spec_slug = ?
+  AND work_dir IS NOT NULL AND TRIM(work_dir) <> ''
+  AND state IN (?, ?, ?, ?)
+ORDER BY updated_at DESC, created_at DESC, id DESC
+LIMIT 1`,
+		args...,
 	)
 	run, err := scanRun(row)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -1871,6 +1919,16 @@ func prTargetKey(headRepository string, headBranch string) string {
 
 func specTargetKey(gitRoot string, specSlug string) string {
 	return gitRoot + "#" + specSlug
+}
+
+func repositoryRootArguments(roots []string) (string, []any) {
+	placeholders := make([]string, len(roots))
+	arguments := make([]any, len(roots))
+	for index, root := range roots {
+		placeholders[index] = "?"
+		arguments[index] = root
+	}
+	return strings.Join(placeholders, ", "), arguments
 }
 
 type runQuerier interface {

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0157-reconciliation-and-one-repository-identity
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -45,3 +45,51 @@ complexity: high
 ## References
 
 - [_techspec.md](_techspec.md)
+
+## Result
+
+### Implementation
+
+- Default Artifact Directory identity now resolves a linked worktree through
+  its common Git directory and hashes the main worktree root. A main checkout
+  continues to hash its existing root.
+- Run creation stores that same main-worktree root. Repository-scoped Run
+  lookups include the main root and every path registered in the common Git
+  directory, which keeps earlier checkout-derived rows discoverable without
+  rewriting their recorded Artifact Directory.
+- Active Spec Run, Run Window, retained Spec Run, and repository-scoped active
+  Run lookups use the same repository-root resolution.
+
+### Focused checks
+
+- Before the production change,
+  `rtk env GOCACHE=/tmp/roundfix-task03-gocache go test ./internal/config ./internal/store`
+  exited 1: the linked worktree resolved a different Artifact Directory, both
+  main-checkout Run listings were empty, and the earlier artifact was absent
+  from the listing.
+- After the production change, the same focused command exited 0 for both
+  packages.
+- The first `rtk make verify-incremental` run reached the full suite; Task 03's
+  packages passed, but two force-stop integration tests could not read the
+  sandbox process table. The permission-enabled rerun exited 0 after
+  formatting, vet, all Go package tests, skill checks, and the build.
+- The Task's authored `## Verification` commands were not run; the Daemon owns
+  those checks and Task settlement.
+
+### Acceptance-criterion evidence
+
+- **A linked worktree and the main checkout report the same identity:**
+  `TestRepositoryIdentityIsSharedByLinkedWorktrees` creates a real Git main
+  checkout and linked worktree, then observes the same default Artifact
+  Directory from both.
+- **The main checkout's identity is unchanged:** the same config test compares
+  the resolved main-checkout directory with the pre-change hash of the main
+  root.
+- **A Run recorded from a linked worktree is listed from the main checkout:**
+  `TestRunsFromALinkedWorktreeAreListedFromTheMainCheckout` records through the
+  linked path, lists through the main path, and observes the Run under the main
+  repository root.
+- **An earlier worktree-derived Artifact Directory remains readable:**
+  `TestEarlierWorktreeDerivedArtifactDirectoryRemainsReadable` seeds an earlier
+  linked-path Run and its path-hashed artifact file, lists it from the main
+  checkout, and reads the file through the Run's preserved Artifact Directory.

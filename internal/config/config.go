@@ -1133,7 +1133,11 @@ func ResolveArtifactDirectory(artifactDir string, gitRoot string, homeDir string
 		if homeDir == "" {
 			return "", errors.New("empty artifact_dir requires Roundfix Home")
 		}
-		return filepath.Join(homeDir, ".roundfix", "artifacts", repoID(gitRoot)), nil
+		repositoryRoot, err := RepositoryRoot(gitRoot)
+		if err != nil {
+			return "", fmt.Errorf("resolve repository identity: %w", err)
+		}
+		return filepath.Join(homeDir, ".roundfix", "artifacts", repoID(repositoryRoot)), nil
 	}
 	if filepath.IsAbs(expanded) {
 		return filepath.Clean(expanded), nil
@@ -1142,6 +1146,110 @@ func ResolveArtifactDirectory(artifactDir string, gitRoot string, homeDir string
 		return "", fmt.Errorf("relative artifact_dir %q requires a Git root", artifactDir)
 	}
 	return filepath.Join(gitRoot, expanded), nil
+}
+
+// RepositoryRoot returns the main worktree root that owns gitRoot. Linked
+// worktrees resolve through their common Git directory, while paths that are
+// not Git worktrees retain the existing path identity.
+func RepositoryRoot(gitRoot string) (string, error) {
+	roots, err := RepositoryRoots(gitRoot)
+	if err != nil {
+		return "", err
+	}
+	return roots[0], nil
+}
+
+// RepositoryRoots returns the main worktree root followed by every linked
+// worktree path still registered in the common Git directory. The aliases keep
+// checkout-derived Run records reachable without changing their stored paths.
+func RepositoryRoots(gitRoot string) ([]string, error) {
+	gitRoot = strings.TrimSpace(gitRoot)
+	if gitRoot == "" {
+		return nil, errors.New("Git root is required")
+	}
+	gitRoot = filepath.Clean(gitRoot)
+	gitMarker := filepath.Join(gitRoot, ".git")
+	info, err := os.Stat(gitMarker)
+	if errors.Is(err, os.ErrNotExist) {
+		return []string{gitRoot}, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("stat Git metadata %q: %w", gitMarker, err)
+	}
+
+	mainRoot := gitRoot
+	commonDir := gitMarker
+	if !info.IsDir() {
+		gitDir, err := readGitDirPointer(gitMarker)
+		if err != nil {
+			return nil, err
+		}
+		commonDirPath := filepath.Join(gitDir, "commondir")
+		commonDirBytes, err := os.ReadFile(commonDirPath)
+		if errors.Is(err, os.ErrNotExist) {
+			return []string{gitRoot}, nil
+		}
+		if err != nil {
+			return nil, fmt.Errorf("read common Git directory from %q: %w", commonDirPath, err)
+		}
+		commonDir = resolveGitMetadataPath(gitDir, strings.TrimSpace(string(commonDirBytes)))
+		if filepath.Base(commonDir) == ".git" {
+			mainRoot = filepath.Dir(commonDir)
+		}
+	}
+
+	roots := []string{filepath.Clean(mainRoot)}
+	seen := map[string]struct{}{roots[0]: {}}
+	worktreesDir := filepath.Join(commonDir, "worktrees")
+	entries, err := os.ReadDir(worktreesDir)
+	if errors.Is(err, os.ErrNotExist) {
+		return roots, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("read linked worktrees from %q: %w", worktreesDir, err)
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		gitDirPath := filepath.Join(worktreesDir, entry.Name(), "gitdir")
+		gitDirBytes, err := os.ReadFile(gitDirPath)
+		if err != nil {
+			return nil, fmt.Errorf("read linked worktree path from %q: %w", gitDirPath, err)
+		}
+		linkedMarker := resolveGitMetadataPath(filepath.Dir(gitDirPath), strings.TrimSpace(string(gitDirBytes)))
+		linkedRoot := filepath.Dir(linkedMarker)
+		if _, ok := seen[linkedRoot]; ok {
+			continue
+		}
+		seen[linkedRoot] = struct{}{}
+		roots = append(roots, linkedRoot)
+	}
+	return roots, nil
+}
+
+func readGitDirPointer(path string) (string, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("read Git directory pointer %q: %w", path, err)
+	}
+	const prefix = "gitdir:"
+	value := strings.TrimSpace(string(content))
+	if !strings.HasPrefix(value, prefix) {
+		return "", fmt.Errorf("read Git directory pointer %q: invalid content", path)
+	}
+	value = strings.TrimSpace(strings.TrimPrefix(value, prefix))
+	if value == "" || strings.ContainsAny(value, "\r\n") {
+		return "", fmt.Errorf("read Git directory pointer %q: invalid path", path)
+	}
+	return resolveGitMetadataPath(filepath.Dir(path), value), nil
+}
+
+func resolveGitMetadataPath(base string, path string) string {
+	if filepath.IsAbs(path) {
+		return filepath.Clean(path)
+	}
+	return filepath.Clean(filepath.Join(base, path))
 }
 
 // ReviewArtifactContext identifies the review artifact root for one Open Pull

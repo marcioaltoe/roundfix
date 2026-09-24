@@ -2,7 +2,9 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	roundconfig "roundfix/internal/config"
+	"roundfix/internal/gittest"
 	"roundfix/internal/runevent"
 )
 
@@ -266,6 +270,84 @@ func TestListRunsScopesByRepositoryAndOrdersNewestFirst(t *testing.T) {
 		t.Fatalf("list Runs across repositories: %v", err)
 	}
 	assertRunIDs(t, allRepos, []string{repoBRun.ID, repoANewer.ID, repoAOlder.ID})
+}
+
+func TestRunsFromALinkedWorktreeAreListedFromTheMainCheckout(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	fixtureRoot := t.TempDir()
+	mainRoot, linkedRoot := linkedWorktreeFixture(t, fixtureRoot)
+	homeDir := filepath.Join(fixtureRoot, "home")
+	runStore := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, runStore)
+
+	artifactDir, err := roundconfig.ResolveArtifactDirectory("", linkedRoot, homeDir)
+	if err != nil {
+		t.Fatalf("resolve linked worktree Artifact Directory: %v", err)
+	}
+	req := sampleCreateRunRequest()
+	req.GitRoot = linkedRoot
+	req.ArtifactDir = artifactDir
+	created, err := runStore.CreateRun(ctx, req)
+	if err != nil {
+		t.Fatalf("record Run from linked worktree: %v", err)
+	}
+
+	listed, err := runStore.ListRuns(ctx, ListRunsQuery{GitRoot: mainRoot, States: StatesAll})
+	if err != nil {
+		t.Fatalf("list Runs from main checkout: %v", err)
+	}
+	assertRunIDs(t, listed, []string{created.ID})
+	if listed[0].GitRoot != mainRoot {
+		t.Fatalf("recorded Run Git root = %q, want repository identity %q", listed[0].GitRoot, mainRoot)
+	}
+}
+
+func TestEarlierWorktreeDerivedArtifactDirectoryRemainsReadable(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	fixtureRoot := t.TempDir()
+	mainRoot, linkedRoot := linkedWorktreeFixture(t, fixtureRoot)
+	homeDir := filepath.Join(fixtureRoot, "home")
+	runStore := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, runStore)
+
+	legacySum := sha256.Sum256([]byte(filepath.Clean(linkedRoot)))
+	legacyID := hex.EncodeToString(legacySum[:])[:16]
+	legacyArtifactDir := filepath.Join(homeDir, ".roundfix", "artifacts", legacyID)
+	if err := os.MkdirAll(legacyArtifactDir, 0o755); err != nil {
+		t.Fatalf("create earlier worktree-derived Artifact Directory: %v", err)
+	}
+	markerPath := filepath.Join(legacyArtifactDir, "earlier-run.txt")
+	if err := os.WriteFile(markerPath, []byte("earlier worktree artifact\n"), 0o644); err != nil {
+		t.Fatalf("write earlier worktree artifact: %v", err)
+	}
+
+	req := sampleCreateRunRequest()
+	req.ArtifactDir = legacyArtifactDir
+	created, err := runStore.CreateRun(ctx, req)
+	if err != nil {
+		t.Fatalf("record earlier Run: %v", err)
+	}
+	if _, err := runStore.db.ExecContext(ctx, `UPDATE runs SET git_root = ? WHERE id = ?`, linkedRoot, created.ID); err != nil {
+		t.Fatalf("seed earlier worktree-derived Run identity: %v", err)
+	}
+
+	listed, err := runStore.ListRuns(ctx, ListRunsQuery{GitRoot: mainRoot, States: StatesAll})
+	if err != nil {
+		t.Fatalf("list earlier Run from main checkout: %v", err)
+	}
+	assertRunIDs(t, listed, []string{created.ID})
+	if listed[0].ArtifactDir != legacyArtifactDir {
+		t.Fatalf("listed Artifact Directory = %q, want earlier directory %q", listed[0].ArtifactDir, legacyArtifactDir)
+	}
+	content, err := os.ReadFile(filepath.Join(listed[0].ArtifactDir, filepath.Base(markerPath)))
+	if err != nil {
+		t.Fatalf("read listed earlier artifact: %v", err)
+	}
+	if string(content) != "earlier worktree artifact\n" {
+		t.Fatalf("earlier artifact content = %q", content)
+	}
 }
 
 func TestListRunsStateFilterAndLimit(t *testing.T) {
@@ -1807,6 +1889,20 @@ func sampleCreateRunRequest() CreateRunRequest {
 		ArtifactDir:    filepath.Join("tmp", "repo", ".roundfix"),
 		OwnerPID:       os.Getpid(),
 	}
+}
+
+func linkedWorktreeFixture(t *testing.T, fixtureRoot string) (string, string) {
+	t.Helper()
+	fixtureRoot, err := filepath.EvalSymlinks(fixtureRoot)
+	if err != nil {
+		t.Fatalf("resolve fixture root: %v", err)
+	}
+	mainRoot := filepath.Join(fixtureRoot, "main")
+	linkedRoot := filepath.Join(fixtureRoot, "linked")
+	gittest.InitRepo(t, mainRoot, "--initial-branch=main")
+	gittest.Run(t, mainRoot, "commit", "--allow-empty", "-m", "seed repository")
+	gittest.Run(t, mainRoot, "worktree", "add", "-b", "feature/linked", linkedRoot)
+	return mainRoot, linkedRoot
 }
 
 // buildV3Fixture creates a populated schema v3 Run Database via raw SQL:
