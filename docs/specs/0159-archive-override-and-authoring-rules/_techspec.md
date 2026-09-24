@@ -115,7 +115,9 @@ mirror is regenerated with `make skills-sync`.
 1. The override (depends on: none).
 2. Claimed ordinals (depends on: 1).
 3. Guidance and decision record (depends on: 1, 2).
-4. Terminal QA (depends on: 1, 2, 3).
+4. Terminal QA (depends on: 1, 2, 3, 5, 6).
+5. The override waives what normal archive would refuse (depends on: 3).
+6. Blame the latecomer, survive a broken neighbour (depends on: 5).
 
 ## Risks & Considerations
 
