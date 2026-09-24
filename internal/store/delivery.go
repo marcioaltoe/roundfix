@@ -34,8 +34,10 @@ const (
 )
 
 type DeliveryQueue struct {
-	GitRoot string
-	Items   []DeliveryQueueItem
+	GitRoot       string
+	OwnerPID      int
+	OwnerIdentity string
+	Items         []DeliveryQueueItem
 }
 
 type DeliveryQueueItem struct {
@@ -134,15 +136,19 @@ func (store *Store) DeliveryQueue(ctx context.Context, gitRoot string) (Delivery
 	}
 
 	var queue DeliveryQueue
+	var ownerPID sql.NullInt64
 	err := store.db.QueryRowContext(ctx, `
-SELECT git_root
+SELECT git_root, owner_pid, owner_identity
 FROM delivery_queues
-WHERE git_root = ?`, gitRoot).Scan(&queue.GitRoot)
+WHERE git_root = ?`, gitRoot).Scan(&queue.GitRoot, &ownerPID, &queue.OwnerIdentity)
 	if errors.Is(err, sql.ErrNoRows) {
 		return DeliveryQueue{}, false, nil
 	}
 	if err != nil {
 		return DeliveryQueue{}, false, fmt.Errorf("read Delivery Queue for repository %q: %w", gitRoot, err)
+	}
+	if ownerPID.Valid {
+		queue.OwnerPID = int(ownerPID.Int64)
 	}
 	rows, err := store.db.QueryContext(ctx, `
 SELECT spec_slug, position, stage, blocker, run_id, candidate_commits,
@@ -169,6 +175,88 @@ ORDER BY position`, gitRoot)
 		return DeliveryQueue{}, false, fmt.Errorf("iterate Delivery Queue items: %w", err)
 	}
 	return queue, true, nil
+}
+
+// ClaimDeliveryQueueOwner records the process that exclusively advances one
+// repository's Delivery Queue. Repeating the same claim is idempotent; a
+// different owner is refused until stop releases the recorded process.
+func (store *Store) ClaimDeliveryQueueOwner(ctx context.Context, gitRoot string, pid int, identity string) error {
+	gitRoot = strings.TrimSpace(gitRoot)
+	identity = strings.TrimSpace(identity)
+	if gitRoot == "" {
+		return errors.New("claim Delivery Queue owner: Git root is required")
+	}
+	if pid < 1 {
+		return errors.New("claim Delivery Queue owner: PID is required")
+	}
+	if identity == "" {
+		return errors.New("claim Delivery Queue owner: process identity is required")
+	}
+
+	return store.withWriteTx(ctx, "Delivery Queue owner claim", func(tx *sql.Tx) error {
+		var storedPID sql.NullInt64
+		var storedIdentity string
+		if err := tx.QueryRowContext(ctx, `
+SELECT owner_pid, owner_identity
+FROM delivery_queues
+WHERE git_root = ?`, gitRoot).Scan(&storedPID, &storedIdentity); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf("claim Delivery Queue owner: queue for repository %q does not exist", gitRoot)
+			}
+			return fmt.Errorf("read Delivery Queue owner: %w", err)
+		}
+		if storedPID.Valid && storedPID.Int64 > 0 {
+			if int(storedPID.Int64) == pid && storedIdentity == identity {
+				return nil
+			}
+			return fmt.Errorf(
+				"claim Delivery Queue owner: repository %q already has owner PID %d",
+				gitRoot,
+				storedPID.Int64,
+			)
+		}
+		if _, err := tx.ExecContext(ctx, `
+UPDATE delivery_queues
+SET owner_pid = ?, owner_identity = ?
+WHERE git_root = ?`, pid, identity, gitRoot); err != nil {
+			return fmt.Errorf("record Delivery Queue owner: %w", err)
+		}
+		return nil
+	})
+}
+
+// ReleaseDeliveryQueueOwner clears only the owner identity the caller proved.
+// A stale process can never clear a newer owner's claim.
+func (store *Store) ReleaseDeliveryQueueOwner(ctx context.Context, gitRoot string, pid int, identity string) (bool, error) {
+	gitRoot = strings.TrimSpace(gitRoot)
+	identity = strings.TrimSpace(identity)
+	if gitRoot == "" {
+		return false, errors.New("release Delivery Queue owner: Git root is required")
+	}
+	if pid < 1 {
+		return false, errors.New("release Delivery Queue owner: PID is required")
+	}
+	if identity == "" {
+		return false, errors.New("release Delivery Queue owner: process identity is required")
+	}
+
+	released := false
+	err := store.withWriteTx(ctx, "Delivery Queue owner release", func(tx *sql.Tx) error {
+		result, err := tx.ExecContext(ctx, `
+UPDATE delivery_queues
+SET owner_pid = NULL, owner_identity = ''
+WHERE git_root = ? AND owner_pid = ? AND owner_identity = ?`, gitRoot, pid, identity)
+		if err != nil {
+			return fmt.Errorf("clear Delivery Queue owner: %w", err)
+		}
+		affected, err := result.RowsAffected()
+		if err != nil {
+			return fmt.Errorf("read Delivery Queue owner release result: %w", err)
+		}
+		released = affected > 0
+		return nil
+	})
+	return released, err
 }
 
 // UpdateDeliveryQueueItem persists one item's current delivery state without

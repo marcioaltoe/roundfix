@@ -32,6 +32,12 @@ func TestDeliveryQueueRoundTripsItemsAndReceipts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create Delivery Queue: %v", err)
 	}
+	if err := runStore.ClaimDeliveryQueueOwner(ctx, queue.GitRoot, 4242, "owner-identity"); err != nil {
+		t.Fatalf("claim Delivery Queue owner: %v", err)
+	}
+	if err := runStore.ClaimDeliveryQueueOwner(ctx, queue.GitRoot, 4343, "different-owner"); err == nil {
+		t.Fatal("different Delivery Queue owner claim succeeded")
+	}
 
 	first := queue.Items[0]
 	first.Stage = DeliveryStagePublishing
@@ -72,6 +78,9 @@ func TestDeliveryQueueRoundTripsItemsAndReceipts(t *testing.T) {
 	if err != nil || !found {
 		t.Fatalf("read persisted Delivery Queue: found=%v err=%v", found, err)
 	}
+	if persisted.OwnerPID != 4242 || persisted.OwnerIdentity != "owner-identity" {
+		t.Fatalf("persisted Delivery Queue owner = pid:%d identity:%q", persisted.OwnerPID, persisted.OwnerIdentity)
+	}
 	wantItems := []DeliveryQueueItem{first, second}
 	if !reflect.DeepEqual(persisted.Items, wantItems) {
 		t.Fatalf("persisted Delivery Queue items = %#v, want %#v", persisted.Items, wantItems)
@@ -93,6 +102,49 @@ func TestDeliveryQueueRoundTripsItemsAndReceipts(t *testing.T) {
 	}
 	if len(unmatched) != 1 || unmatched[0].ID != mergeIntent.ID || unmatched[0].Action != DeliveryActionMerge {
 		t.Fatalf("unmatched Delivery Action intents = %#v, want merge intent %#v", unmatched, mergeIntent)
+	}
+	released, err := reopened.ReleaseDeliveryQueueOwner(ctx, queue.GitRoot, 4242, "owner-identity")
+	if err != nil || !released {
+		t.Fatalf("release Delivery Queue owner: released=%v err=%v", released, err)
+	}
+	withoutOwner, found, err := reopened.DeliveryQueue(ctx, queue.GitRoot)
+	if err != nil || !found {
+		t.Fatalf("read released Delivery Queue: found=%v err=%v", found, err)
+	}
+	if withoutOwner.OwnerPID != 0 || withoutOwner.OwnerIdentity != "" {
+		t.Fatalf("released Delivery Queue owner = pid:%d identity:%q", withoutOwner.OwnerPID, withoutOwner.OwnerIdentity)
+	}
+}
+
+func TestDeliveryQueueOwnerMigrationPreservesExistingQueue(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	runStore := openTestStore(t, ctx, homeDir)
+	queue, err := runStore.CreateDeliveryQueue(ctx, "/tmp/existing-delivery", []string{"existing-spec"})
+	if err != nil {
+		t.Fatalf("create existing Delivery Queue: %v", err)
+	}
+	item := queue.Items[0]
+	item.Stage = DeliveryStageParked
+	item.Blocker = "review-stale"
+	if err := runStore.UpdateDeliveryQueueItem(ctx, queue.GitRoot, item); err != nil {
+		t.Fatalf("update existing Delivery Queue item: %v", err)
+	}
+	closeStore(t, runStore)
+	downgradeDeliveryOwnerSchemaFixture(t, ctx, homeDir)
+
+	reopened := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, reopened)
+	persisted, found, err := reopened.DeliveryQueue(ctx, queue.GitRoot)
+	if err != nil || !found {
+		t.Fatalf("read migrated Delivery Queue: found=%v err=%v", found, err)
+	}
+	if len(persisted.Items) != 1 || persisted.Items[0].Stage != DeliveryStageParked || persisted.Items[0].Blocker != "review-stale" {
+		t.Fatalf("migrated Delivery Queue = %+v", persisted)
+	}
+	if persisted.OwnerPID != 0 || persisted.OwnerIdentity != "" {
+		t.Fatalf("migrated Delivery Queue owner = pid:%d identity:%q", persisted.OwnerPID, persisted.OwnerIdentity)
 	}
 }
 
@@ -118,6 +170,29 @@ func downgradeDeliverySchemaFixture(t *testing.T, ctx context.Context, homeDir s
 	for _, statement := range statements {
 		if _, err := db.ExecContext(ctx, statement); err != nil {
 			t.Fatalf("build schema 13 Delivery Queue fixture: %v", err)
+		}
+	}
+}
+
+func downgradeDeliveryOwnerSchemaFixture(t *testing.T, ctx context.Context, homeDir string) {
+	t.Helper()
+	db, err := sql.Open("sqlite", writerDSN(DatabasePath(homeDir)))
+	if err != nil {
+		t.Fatalf("open Delivery Queue owner migration fixture: %v", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Fatalf("close Delivery Queue owner migration fixture: %v", err)
+		}
+	}()
+
+	for _, statement := range []string{
+		`ALTER TABLE delivery_queues DROP COLUMN owner_identity`,
+		`ALTER TABLE delivery_queues DROP COLUMN owner_pid`,
+		`PRAGMA user_version = 14`,
+	} {
+		if _, err := db.ExecContext(ctx, statement); err != nil {
+			t.Fatalf("build schema 14 Delivery Queue owner fixture: %v", err)
 		}
 	}
 }

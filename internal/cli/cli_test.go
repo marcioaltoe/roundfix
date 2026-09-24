@@ -207,6 +207,9 @@ func TestRunHelp(t *testing.T) {
 	if !strings.Contains(stdout.String(), "roundfix runs list") {
 		t.Fatalf("expected help output to list runs command, got %q", stdout.String())
 	}
+	if !strings.Contains(stdout.String(), "roundfix deliver") {
+		t.Fatalf("expected help output to list deliver command, got %q", stdout.String())
+	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
 	}
@@ -423,6 +426,11 @@ func TestRunCommandHelp(t *testing.T) {
 			name:     "watch",
 			args:     []string{"watch", "--help"},
 			contains: []string{"roundfix watch --source coderabbit --pr <number> [--spec <slug>]", "--agent <agent> --model <model> --reasoning-effort <effort>", "use the review profile", "Branch Integrity Preflight", "CleanUnverified", "exits 3", "--reasoning-effort", "--until-clean", "accepted Review Source Evidence", "only check-or-status route to a verified head", "recognised review-completed current-head CodeRabbit check or commit status", "current-head CodeRabbit APPROVED review", "unrecognised signal resolves to pending", "green check is not evidence that a review ran", "explicit Review Source refusal resolves to skipped", "will not merge that head or clear it for merge", "--no-agent-console", "--detach"},
+		},
+		{
+			name:     "deliver",
+			args:     []string{"deliver", "--help"},
+			contains: []string{"roundfix deliver start <slug>...", "roundfix deliver status", "roundfix deliver resume", "roundfix deliver stop"},
 		},
 		{
 			name:     "setup",
