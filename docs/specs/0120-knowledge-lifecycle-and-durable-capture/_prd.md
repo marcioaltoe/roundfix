@@ -144,3 +144,18 @@ validation remains implementation work. The
 [narrow canonical grant](references/2026-09-08-terminal-lifecycle-authorization.md)
 covers the requested instruction and generated guide/manifest only; the broader
 proposed authorization remains unchanged.
+
+## Reestruturação (2026-09-24)
+
+A fila de Specs-portfólio foi reestruturada em sete entregas focadas. Cada Core Feature abaixo tem um destino: já entregue, movida para uma entrega sintetizada, ou cortada por relevância insuficiente. A relevância é a nota 0–4 do Jev (`jev-1.13.0`) para o quanto a CF melhora o papel central do Roundfix; o método e o ranking completo estão no secondbrain em `inbox/roundfix/2026-09-24-reestruturacao-da-fila-com-jev.md`.
+
+| CF | Destino | Relevância |
+|---|---|---|
+| 1 | **Cortada** — marginal ou desnecessária | 1.51 |
+| 2 | Entrega 6 — ciclo de conhecimento enxuto | 2.29 |
+| 3 | Entrega 6 — ciclo de conhecimento enxuto | 2.22 |
+| 4 | Entrega 6 — ciclo de conhecimento enxuto | 2.2 |
+| 5 | **Cortada** — marginal ou desnecessária | 1.95 |
+| 6 | **Cortada** — marginal ou desnecessária | 1.84 |
+| 7 | **Cortada** — marginal ou desnecessária | 1.75 |
+| 8 | Entrega 6 — ciclo de conhecimento enxuto | 2.09 |
