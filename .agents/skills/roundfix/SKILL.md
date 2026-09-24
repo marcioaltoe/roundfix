@@ -247,6 +247,31 @@ with its reason and never becomes a pass or a configured omission. A provider
 selection failure may activate the next configured review fallback only before
 the prompt is sent; failures after the prompt remain blocked review failures.
 
+## Delivery queue
+
+Use the durable delivery queue when a sequence of Specs must outlive the
+terminal session:
+
+```bash
+roundfix deliver start <slug>...
+roundfix deliver status
+roundfix deliver resume
+roundfix deliver stop
+```
+
+For each queued Spec, `roundfix deliver` advances from the Run to merge in
+this order: Run, pre-PR review, archive on the branch, repository gate, push,
+pull request, current-head checks, and squash merge. With pre-PR review set to
+`none`, the queue records the configured omission and proceeds to archive after
+the Run's QA gate.
+
+A blocker parks its item with a reason; it does not stop later queued items.
+When a queue resumes, it reconciles every recorded action that lacks a receipt
+against the observed remote state before retrying that action. This prevents a
+lost acknowledgement from creating a second pull request or merge. Before
+publication, the Spec authorization record must grant all three operations:
+`push`, `pull_request`, and `merge`.
+
 Use `roundfix upgrade [--check]` to resolve the latest Roundfix release through
 the GitHub CLI. Without `--check`, it downloads the platform asset, verifies
 size and checksum when present, and atomically replaces the current executable.

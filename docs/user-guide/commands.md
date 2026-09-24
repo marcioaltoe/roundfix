@@ -160,6 +160,31 @@ become a pass or an omission. A configured selection fallback is eligible only
 when selection fails before the prompt is sent; failures after the prompt are
 review failures.
 
+### deliver
+
+```bash
+roundfix deliver start <slug>...
+roundfix deliver status
+roundfix deliver resume
+roundfix deliver stop
+```
+
+Creates and operates a durable, ordered queue of Specs. Each item advances
+from its Run to merge in this order: Run, pre-PR review, archive on the branch,
+repository gate, push, pull request, current-head checks, and squash merge.
+When the configured pre-PR review is `none`, the queue records that omission
+and archives after the Run's QA gate.
+
+A blocker parks its item with a reason and the queue continues with later
+items. On resume, the owner reconciles every recorded action without a receipt
+against observed state before retrying it, so a lost acknowledgement cannot
+create a duplicate pull request or merge. Publication requires the Spec's
+authorization record to grant `push`, `pull_request`, and `merge`.
+
+`deliver status` prints each item's Spec slug, stage, and blocker. `deliver
+stop` ends the detached owner; `deliver resume` restarts it from the persisted
+queue.
+
 ### upgrade
 
 ```bash

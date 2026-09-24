@@ -49,6 +49,7 @@ Usage:
   roundfix watch --source coderabbit --pr <number> [--spec <slug>] --until-clean
   roundfix review [--base <ref>]
   roundfix implement --spec <slug>
+  roundfix deliver <start|status|resume|stop> [<slug> ...]
   roundfix window <set|show|clear>
   roundfix settle --spec <slug> --task <task_id>
   roundfix reopen --spec <slug>
@@ -93,6 +94,7 @@ Commands:
   watch      Fetch and resolve in a watched loop
   review     Run the configured pre-PR reviewer over the current candidate
   implement  Execute a Spec's Task Graph as one Run
+  deliver    Advance an ordered queue of Specs from Run to merge
   window     Set, show, or clear this repository's Run Window
   settle     Verify and commit one failed, or completed but uncommitted, Task
   reopen     Return a stale completed QA gate to pending
@@ -271,6 +273,8 @@ type commandDependencies struct {
 	pruneTerminalRunWorktrees       func(context.Context, string, string, runworktree.TerminalRunReconciliationStore, runworktree.TerminalRunLookup) ([]runworktree.PrunedRef, error)
 	loadCommittedSpecGraph          func(context.Context, string, roundconfig.SpecsRoot, string, string) (*spec.Graph, string, error)
 	inspectSpecCarryForwards        func(context.Context, *store.Store, string, roundconfig.SpecsRoot, string) ([]specCarryForward, error)
+	startDeliveryOwner              func(context.Context, roundconfig.Loaded, commandEnvironment, io.Writer, io.Writer) int
+	newDeliveryEngine               func(*store.Store, roundconfig.Loaded) deliveryEngine
 	detachTimeouts                  detachPhaseTimeouts
 	attachInteractiveInputAvailable func() bool
 	attachSleep                     func(context.Context) error
@@ -333,6 +337,8 @@ func defaultCommandDependencies() commandDependencies {
 		pruneTerminalRunWorktrees:       pruneTerminalRunWorktrees,
 		loadCommittedSpecGraph:          loadCommittedSpecGraph,
 		inspectSpecCarryForwards:        inspectSpecCarryForwards,
+		startDeliveryOwner:              startDetachedDeliveryOwner,
+		newDeliveryEngine:               newCommandDeliveryEngine,
 		detachTimeouts:                  detachTimeouts,
 		attachInteractiveInputAvailable: attachInteractiveInputAvailable,
 		attachSleep:                     attachSleep,
@@ -517,6 +523,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runOperationalCommand(ctx, args[0], args[1:], stdout, stderr, detachChild, environment)
 	case "implement":
 		return runImplementCommand(ctx, args[1:], stdout, stderr, detachChild, environment)
+	case "deliver":
+		return runDeliverCommand(ctx, args[1:], stdout, stderr, detachChild, environment)
 	case "window":
 		return runWindowCommand(ctx, args[1:], stdout, stderr, environment)
 	case "settle":
@@ -5372,6 +5380,8 @@ Options:
 `
 	case "implement":
 		return implementUsage
+	case "deliver":
+		return deliverUsage
 	case "window":
 		return windowUsage
 	case "settle":

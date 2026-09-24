@@ -120,27 +120,47 @@ func (child *detachChild) reportLiveness() error {
 }
 
 func (child *detachChild) reportRunCreated(runID string, artifactDir string) error {
+	return child.reportStarted(runID, detachedConsoleLogPath(artifactDir, runID))
+}
+
+func (child *detachChild) reportStarted(ownerID string, consoleLog string) error {
 	if child == nil || child.handshake == nil {
 		return nil
 	}
-	runID = strings.TrimSpace(runID)
-	if runID == "" {
-		return errors.New("detached Run id is empty")
+	ownerID = strings.TrimSpace(ownerID)
+	consoleLog = strings.TrimSpace(consoleLog)
+	if ownerID == "" {
+		return errors.New("detached owner id is empty")
 	}
-	consoleLog := detachedConsoleLogPath(artifactDir, runID)
+	if consoleLog == "" {
+		return errors.New("detached owner console log is empty")
+	}
 	if err := os.MkdirAll(filepath.Dir(consoleLog), 0o755); err != nil {
-		return fmt.Errorf("create Detached Run console log directory: %w", err)
+		return fmt.Errorf("create detached owner console log directory: %w", err)
 	}
 	if err := os.Rename(child.tempPath, consoleLog); err != nil {
-		return fmt.Errorf("move Detached Run console log into place: %w", err)
+		return fmt.Errorf("move detached owner console log into place: %w", err)
 	}
-	if _, err := fmt.Fprintf(child.handshake, "%s\t%s\n", runID, consoleLog); err != nil {
-		return fmt.Errorf("write Detached Run handshake: %w", err)
+	if _, err := fmt.Fprintf(child.handshake, "%s\t%s\n", ownerID, consoleLog); err != nil {
+		return fmt.Errorf("write detached owner handshake: %w", err)
 	}
 	return child.Close()
 }
 
 func runDetachedCommand(args []string, req commandRequest, loaded roundconfig.Loaded, stdout, stderr io.Writer, baseEnv []string, workDir string, timeouts detachPhaseTimeouts) int {
+	return runDetachedCommandWithReport(args, req, loaded, stdout, stderr, baseEnv, workDir, timeouts, printDetachedReport)
+}
+
+func runDetachedCommandWithReport(
+	args []string,
+	req commandRequest,
+	loaded roundconfig.Loaded,
+	stdout, stderr io.Writer,
+	baseEnv []string,
+	workDir string,
+	timeouts detachPhaseTimeouts,
+	report func(io.Writer, string, string),
+) int {
 	var tempFile *os.File
 	var err error
 	if req.name == "resolve" || req.name == "watch" {
@@ -237,7 +257,7 @@ func runDetachedCommand(args []string, req commandRequest, loaded roundconfig.Lo
 		printPreflightFailure(req.name, fmt.Errorf("release Detached Run child: %w", err), stderr)
 		return exitPreflight
 	}
-	printDetachedReport(stdout, created.handshake.runID, created.handshake.consoleLog)
+	report(stdout, created.handshake.runID, created.handshake.consoleLog)
 	return exitOK
 }
 

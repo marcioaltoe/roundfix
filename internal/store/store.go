@@ -1350,7 +1350,7 @@ func terminalStateExclusion() (string, []any) {
 	return "state NOT IN (" + strings.Join(placeholders, ", ") + ")", arguments
 }
 
-const schemaVersion = 13
+const schemaVersion = 16
 
 // activeRunLocksColumns is the schema v4 lock-table shape (ADR 0016): one
 // Active Run per work target, keyed by (target_kind, target_key).
@@ -1371,6 +1371,21 @@ func (store *Store) migrate(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	var v15Statements []string
+	if version >= 3 && version < 15 {
+		v15Statements, err = store.deliveryOwnerMigrationStatements(ctx)
+		if err != nil {
+			return err
+		}
+	}
+	var v16Statements []string
+	if version >= 3 && version < schemaVersion {
+		v16Statements, err = store.deliveryBranchMigrationStatements(ctx)
+		if err != nil {
+			return err
+		}
+	}
+	deliveryStatements := append(v15Statements, v16Statements...)
 	switch version {
 	case schemaVersion:
 		return nil
@@ -1386,7 +1401,8 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = append(statements, migrateV10ToV11Statements()...)
 		statements = append(statements, migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
-		return store.applyMigration(ctx, statements)
+		statements = append(statements, migrateV13ToV14Statements()...)
+		return store.applyMigration(ctx, append(statements, deliveryStatements...))
 	case 4:
 		statements := append(migrateV4ToV5Statements(), migrateV5ToV6Statements()...)
 		statements = append(statements, migrateV6ToV7Statements()...)
@@ -1396,7 +1412,8 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = append(statements, migrateV10ToV11Statements()...)
 		statements = append(statements, migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
-		return store.applyMigration(ctx, statements)
+		statements = append(statements, migrateV13ToV14Statements()...)
+		return store.applyMigration(ctx, append(statements, deliveryStatements...))
 	case 5:
 		if err := store.ensureAgentColumn(ctx); err != nil {
 			return err
@@ -1408,7 +1425,8 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = append(statements, migrateV10ToV11Statements()...)
 		statements = append(statements, migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
-		return store.applyMigration(ctx, statements)
+		statements = append(statements, migrateV13ToV14Statements()...)
+		return store.applyMigration(ctx, append(statements, deliveryStatements...))
 	case 6:
 		statements := append(migrateV6ToV7Statements(), migrateV7ToV8Statements()...)
 		statements = append(statements, migrateV8ToV9Statements()...)
@@ -1416,34 +1434,48 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = append(statements, migrateV10ToV11Statements()...)
 		statements = append(statements, migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
-		return store.applyMigration(ctx, statements)
+		statements = append(statements, migrateV13ToV14Statements()...)
+		return store.applyMigration(ctx, append(statements, deliveryStatements...))
 	case 7:
 		statements := append(migrateV7ToV8Statements(), migrateV8ToV9Statements()...)
 		statements = append(statements, migrateV9ToV10Statements()...)
 		statements = append(statements, migrateV10ToV11Statements()...)
 		statements = append(statements, migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
-		return store.applyMigration(ctx, statements)
+		statements = append(statements, migrateV13ToV14Statements()...)
+		return store.applyMigration(ctx, append(statements, deliveryStatements...))
 	case 8:
 		statements := append(migrateV8ToV9Statements(), migrateV9ToV10Statements()...)
 		statements = append(statements, migrateV10ToV11Statements()...)
 		statements = append(statements, migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
-		return store.applyMigration(ctx, statements)
+		statements = append(statements, migrateV13ToV14Statements()...)
+		return store.applyMigration(ctx, append(statements, deliveryStatements...))
 	case 9:
 		statements := append(migrateV9ToV10Statements(), migrateV10ToV11Statements()...)
 		statements = append(statements, migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
-		return store.applyMigration(ctx, statements)
+		statements = append(statements, migrateV13ToV14Statements()...)
+		return store.applyMigration(ctx, append(statements, deliveryStatements...))
 	case 10:
 		statements := append(migrateV10ToV11Statements(), migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
-		return store.applyMigration(ctx, statements)
+		statements = append(statements, migrateV13ToV14Statements()...)
+		return store.applyMigration(ctx, append(statements, deliveryStatements...))
 	case 11:
 		statements := append(migrateV11ToV12Statements(), migrateV12ToV13Statements()...)
-		return store.applyMigration(ctx, statements)
+		statements = append(statements, migrateV13ToV14Statements()...)
+		return store.applyMigration(ctx, append(statements, deliveryStatements...))
 	case 12:
-		return store.applyMigration(ctx, migrateV12ToV13Statements())
+		statements := append(migrateV12ToV13Statements(), migrateV13ToV14Statements()...)
+		return store.applyMigration(ctx, append(statements, deliveryStatements...))
+	case 13:
+		statements := append(migrateV13ToV14Statements(), deliveryStatements...)
+		return store.applyMigration(ctx, statements)
+	case 14:
+		return store.applyMigration(ctx, deliveryStatements)
+	case 15:
+		return store.applyMigration(ctx, v16Statements)
 	default:
 		return fmt.Errorf("migrate Run Database: schema version %d is not supported", version)
 	}
@@ -1460,11 +1492,11 @@ func (store *Store) applyMigration(ctx context.Context, statements []string) err
 	})
 }
 
-// createSchemaStatements creates schema v13 directly on a fresh Run Database.
+// createSchemaStatements creates the current schema directly on a fresh Run Database.
 // spec_slug and the PR-shaped columns use the empty string for "not set";
 // which fields a Run must carry is enforced by Kind in CreateRun.
 func createSchemaStatements() []string {
-	return []string{
+	statements := []string{
 		`CREATE TABLE IF NOT EXISTS runs (
 			id TEXT PRIMARY KEY,
 			kind TEXT NOT NULL,
@@ -1520,8 +1552,10 @@ func createSchemaStatements() []string {
 			cutoff_at INTEGER NOT NULL,
 			created_at INTEGER NOT NULL
 		)`,
-		`PRAGMA user_version = 13`,
 	}
+	statements = append(statements, deliverySchemaStatements(true)...)
+	statements = append(statements, deliveryOwnerColumnStatements(false, false)...)
+	return append(statements, `PRAGMA user_version = 16`)
 }
 
 const runAgentSelectionsColumns = `(
@@ -1636,6 +1670,99 @@ func migrateV12ToV13Statements() []string {
 			created_at INTEGER NOT NULL
 		)`,
 		`PRAGMA user_version = 13`,
+	}
+}
+
+func migrateV13ToV14Statements() []string {
+	statements := deliverySchemaStatements(false)
+	return append(statements, `PRAGMA user_version = 14`)
+}
+
+func (store *Store) deliveryOwnerMigrationStatements(ctx context.Context) ([]string, error) {
+	var ownerPIDExists int
+	var ownerIdentityExists int
+	err := store.db.QueryRowContext(ctx, `
+SELECT
+	EXISTS (SELECT 1 FROM pragma_table_info('delivery_queues') WHERE name = 'owner_pid'),
+	EXISTS (SELECT 1 FROM pragma_table_info('delivery_queues') WHERE name = 'owner_identity')`).Scan(
+		&ownerPIDExists,
+		&ownerIdentityExists,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("inspect Delivery Queue owner columns: %w", err)
+	}
+	statements := deliveryOwnerColumnStatements(ownerPIDExists != 0, ownerIdentityExists != 0)
+	return append(statements, `PRAGMA user_version = 15`), nil
+}
+
+func deliveryOwnerColumnStatements(ownerPIDExists bool, ownerIdentityExists bool) []string {
+	statements := []string{}
+	if !ownerPIDExists {
+		statements = append(statements, `ALTER TABLE delivery_queues ADD COLUMN owner_pid INTEGER`)
+	}
+	if !ownerIdentityExists {
+		statements = append(statements, `ALTER TABLE delivery_queues ADD COLUMN owner_identity TEXT NOT NULL DEFAULT ''`)
+	}
+	return statements
+}
+
+func (store *Store) deliveryBranchMigrationStatements(ctx context.Context) ([]string, error) {
+	var branchExists int
+	if err := store.db.QueryRowContext(ctx, `
+SELECT EXISTS (
+	SELECT 1 FROM pragma_table_info('delivery_queue_items') WHERE name = 'branch'
+)`).Scan(&branchExists); err != nil {
+		return nil, fmt.Errorf("inspect Delivery Queue item branch column: %w", err)
+	}
+	statements := []string{}
+	if branchExists == 0 {
+		statements = append(statements, `ALTER TABLE delivery_queue_items ADD COLUMN branch TEXT NOT NULL DEFAULT ''`)
+	}
+	return append(statements, `PRAGMA user_version = 16`), nil
+}
+
+func deliverySchemaStatements(includeBranch bool) []string {
+	itemTable := `CREATE TABLE IF NOT EXISTS delivery_queue_items (
+			git_root TEXT NOT NULL,
+			spec_slug TEXT NOT NULL,
+			position INTEGER NOT NULL,
+			stage TEXT NOT NULL,
+			blocker TEXT NOT NULL DEFAULT '',`
+	if includeBranch {
+		itemTable += `
+			branch TEXT NOT NULL DEFAULT '',`
+	}
+	itemTable += `
+			run_id TEXT NOT NULL DEFAULT '',
+			candidate_commits TEXT NOT NULL DEFAULT '[]',
+			pull_request_number TEXT NOT NULL DEFAULT '',
+			merge_commit TEXT NOT NULL DEFAULT '',
+			PRIMARY KEY (git_root, spec_slug),
+			UNIQUE (git_root, position),
+			FOREIGN KEY (git_root) REFERENCES delivery_queues(git_root) ON DELETE CASCADE
+		)`
+	return []string{
+		`CREATE TABLE IF NOT EXISTS delivery_queues (
+			git_root TEXT PRIMARY KEY
+		)`,
+		itemTable,
+		`CREATE TABLE IF NOT EXISTS delivery_action_intents (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			git_root TEXT NOT NULL,
+			spec_slug TEXT NOT NULL,
+			action TEXT NOT NULL,
+			created_at TEXT NOT NULL,
+			FOREIGN KEY (git_root, spec_slug)
+				REFERENCES delivery_queue_items(git_root, spec_slug) ON DELETE CASCADE
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_delivery_action_intents_queue
+			ON delivery_action_intents (git_root, id)`,
+		`CREATE TABLE IF NOT EXISTS delivery_action_receipts (
+			intent_id INTEGER PRIMARY KEY,
+			result TEXT NOT NULL,
+			created_at TEXT NOT NULL,
+			FOREIGN KEY (intent_id) REFERENCES delivery_action_intents(id) ON DELETE CASCADE
+		)`,
 	}
 }
 
