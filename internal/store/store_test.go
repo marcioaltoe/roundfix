@@ -390,6 +390,68 @@ func TestARemovedWorktreeRunStaysListed(t *testing.T) {
 	assertRunIDs(t, listed, []string{created.ID})
 }
 
+func TestSettleFindsARemovedWorktreeRunByKey(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	fixtureRoot := t.TempDir()
+	mainRoot, linkedRoot := linkedWorktreeFixture(t, fixtureRoot)
+	runStore := openTestStore(t, ctx, filepath.Join(fixtureRoot, "home"))
+	defer closeStore(t, runStore)
+
+	kept, err := runStore.CreateRun(ctx, CreateRunRequest{
+		Kind:        KindImplement,
+		GitRoot:     linkedRoot,
+		LocalBranch: "feature/linked",
+		SpecSlug:    "settle-spec",
+		Agent:       "codex",
+		OwnerPID:    os.Getpid(),
+	})
+	if err != nil {
+		t.Fatalf("create kept Run from linked worktree: %v", err)
+	}
+	if _, err := runStore.SetRunWorkDir(ctx, kept.ID, linkedRoot); err != nil {
+		t.Fatalf("record kept Run Worktree: %v", err)
+	}
+	if _, err := runStore.CompleteRun(ctx, kept.ID, StateUnresolved); err != nil {
+		t.Fatalf("complete kept Run unresolved: %v", err)
+	}
+
+	otherRoot := filepath.Join(fixtureRoot, "other")
+	gittest.InitRepo(t, otherRoot, "--initial-branch=main")
+	gittest.Run(t, otherRoot, "commit", "--allow-empty", "-m", "seed other repository")
+	other, err := runStore.CreateRun(ctx, CreateRunRequest{
+		Kind:        KindImplement,
+		GitRoot:     otherRoot,
+		LocalBranch: "main",
+		SpecSlug:    "settle-spec",
+		Agent:       "codex",
+		OwnerPID:    os.Getpid(),
+	})
+	if err != nil {
+		t.Fatalf("create other repository Run: %v", err)
+	}
+	if _, err := runStore.SetRunWorkDir(ctx, other.ID, filepath.Join(fixtureRoot, "other-work")); err != nil {
+		t.Fatalf("record other Run Worktree: %v", err)
+	}
+	if _, err := runStore.CompleteRun(ctx, other.ID, StateUnresolved); err != nil {
+		t.Fatalf("complete other Run unresolved: %v", err)
+	}
+	if _, err := runStore.db.ExecContext(ctx,
+		`UPDATE runs SET git_root = ? WHERE id = ?`, mainRoot, other.ID,
+	); err != nil {
+		t.Fatalf("seed misleading checkout alias on other Run: %v", err)
+	}
+
+	gittest.Run(t, mainRoot, "worktree", "remove", linkedRoot)
+	got, found, err := runStore.LatestKeptSpecRun(ctx, mainRoot, "settle-spec")
+	if err != nil {
+		t.Fatalf("find kept Run after linked worktree removal: %v", err)
+	}
+	if !found || got.ID != kept.ID {
+		t.Fatalf("kept Run lookup = found %v Run %q, want %q", found, got.ID, kept.ID)
+	}
+}
+
 func TestEarlierWorktreeDerivedArtifactDirectoryRemainsReadable(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -2084,6 +2146,53 @@ func TestMigrationBackfillsResolvableRepositoryKeys(t *testing.T) {
 	freshSchema := readRunDatabaseSchema(t, fresh)
 	if migratedSchema := readRunDatabaseSchema(t, migrated); migratedSchema != freshSchema {
 		t.Fatalf("migrated schema differs from fresh schema:\n--- migrated ---\n%s\n--- fresh ---\n%s", migratedSchema, freshSchema)
+	}
+}
+
+func TestMigrationLeavesARemovedWorktreeKeyEmpty(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	fixtureRoot := t.TempDir()
+	mainRoot, linkedRoot := linkedWorktreeFixture(t, fixtureRoot)
+	homeDir := filepath.Join(fixtureRoot, "home")
+
+	preMigration := openTestStore(t, ctx, homeDir)
+	req := sampleCreateRunRequest()
+	req.GitRoot = linkedRoot
+	created, err := preMigration.CreateRun(ctx, req)
+	if err != nil {
+		t.Fatalf("create migration row from linked worktree: %v", err)
+	}
+	closeStore(t, preMigration)
+
+	db, err := sql.Open("sqlite", writerDSN(DatabasePath(homeDir)))
+	if err != nil {
+		t.Fatalf("open v16 migration fixture: %v", err)
+	}
+	for _, statement := range []string{
+		`ALTER TABLE runs DROP COLUMN repository_root`,
+		`PRAGMA user_version = 16`,
+	} {
+		if _, err := db.ExecContext(ctx, statement); err != nil {
+			_ = db.Close()
+			t.Fatalf("build v16 migration fixture: %v", err)
+		}
+	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("close v16 migration fixture: %v", err)
+	}
+	gittest.Run(t, mainRoot, "worktree", "remove", linkedRoot)
+
+	migrated := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, migrated)
+	var repositoryRoot string
+	if err := migrated.db.QueryRowContext(ctx,
+		`SELECT repository_root FROM runs WHERE id = ?`, created.ID,
+	).Scan(&repositoryRoot); err != nil {
+		t.Fatalf("read migrated repository root: %v", err)
+	}
+	if repositoryRoot != "" {
+		t.Fatalf("removed-worktree repository root = %q, want empty", repositoryRoot)
 	}
 }
 

@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0162-a-durable-repository-key-per-run
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -42,3 +42,27 @@ Corrective Task from the pre-PR review of 2026-09-24. `LatestKeptSpecRun`, which
 ## References
 
 - [_techspec.md](_techspec.md) — Consumers
+
+## Result
+
+Implemented the three repository-identity corrections in this slice:
+
+- `LatestKeptSpecRun` now matches the recorded `repository_root` and uses checkout aliases only for rows whose key is empty.
+- The repository-root migration now backfills only rows whose checkout still has Git worktree metadata.
+- `sameRepository` now treats a non-empty recorded key as authoritative and resolves `git_root` only for legacy rows without a key.
+
+Acceptance evidence:
+
+- `TestSettleFindsARemovedWorktreeRunByKey` creates and removes a real linked worktree, then proves the kept Run is found by its recorded key while a newer conflicting keyed row is excluded.
+- `TestMigrationLeavesARemovedWorktreeKeyEmpty` migrates a v16 row after its real linked worktree is removed and proves `repository_root` remains empty.
+- `TestReconcileTrustsTheRecordedKeyOverTheCheckoutPath` reuses another repository's former checkout path as a worktree of the current repository and proves explicit reconcile refuses the Run.
+
+Focused checks:
+
+- `GOCACHE=/tmp/roundfix-task04-gocache go test -count=1 -run '^TestSettleFindsARemovedWorktreeRunByKey$' ./internal/store` — passed.
+- `GOCACHE=/tmp/roundfix-task04-gocache go test -count=1 -run '^TestMigrationLeavesARemovedWorktreeKeyEmpty$' ./internal/store` — passed.
+- `GOCACHE=/tmp/roundfix-task04-gocache go test -count=1 -run '^TestReconcileTrustsTheRecordedKeyOverTheCheckoutPath$' ./internal/cli` — passed.
+- Adjacent repository-key, legacy-fallback, migration, and reconcile cases in `internal/store` and `internal/cli` — passed.
+- `GOCACHE=/tmp/roundfix-task04-gocache make verify-incremental` — passed outside the network-restricted sandbox after the sandboxed attempt was blocked from `api.github.com`; vet, all Go tests, skill checks, and build succeeded.
+
+The Daemon-owned `## Verification` command was not run in this Agent turn.

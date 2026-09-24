@@ -101,6 +101,52 @@ func TestReconcileRefusesAnotherRepositorysRun(t *testing.T) {
 	}
 }
 
+func TestReconcileTrustsTheRecordedKeyOverTheCheckoutPath(t *testing.T) {
+	homeDir, repoDir, _ := newReconcileWorkspace(t)
+	otherRepository := t.TempDir()
+	gitImplement(t, otherRepository, "init", "--initial-branch=main")
+	gitImplement(t, otherRepository, "commit", "--allow-empty", "-m", "seed other repository")
+	reusedRoot := filepath.Join(t.TempDir(), "reused")
+	const otherBranch = "feature/original-checkout"
+	gitImplement(t, otherRepository, "worktree", "add", "-b", otherBranch, reusedRoot)
+	reusedRoot, err := filepath.EvalSymlinks(reusedRoot)
+	if err != nil {
+		t.Fatalf("resolve original checkout path: %v", err)
+	}
+	run := createReconcileMetadataRun(t, homeDir, store.CreateRunRequest{
+		Kind:        store.KindImplement,
+		GitRoot:     reusedRoot,
+		LocalBranch: otherBranch,
+		HeadSHA:     strings.TrimSpace(gitImplementOutput(t, reusedRoot, "rev-parse", "HEAD")),
+		SpecSlug:    "other-repository-spec",
+		Agent:       "codex",
+	}, store.StateStopped)
+	gitImplement(t, otherRepository, "worktree", "remove", reusedRoot)
+	gitImplement(t, repoDir, "worktree", "add", "-b", "feature/reused-checkout", reusedRoot)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := runCLIContext(
+		t,
+		context.Background(),
+		[]string{"reconcile", run.ID, "--format=json"},
+		&stdout,
+		&stderr,
+	)
+
+	if code != exitPreflight {
+		t.Fatalf("reused-checkout reconcile exit = %d, want %d; stderr=%q stdout=%q", code, exitPreflight, stderr.String(), stdout.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("reused-checkout reconcile stdout = %q, want empty", stdout.String())
+	}
+	for _, want := range []string{run.ID, reusedRoot, repoDir} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("reused-checkout reconcile stderr = %q, want %q", stderr.String(), want)
+		}
+	}
+}
+
 func TestCarryForwardAcceptsAnUnresolvedRun(t *testing.T) {
 	t.Parallel()
 	for _, state := range []string{store.StateStopped, store.StateUnresolved} {

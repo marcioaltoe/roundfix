@@ -1248,7 +1248,7 @@ func (store *Store) LatestKeptSpecRun(ctx context.Context, gitRoot string, specS
 		return Run{}, false, fmt.Errorf("resolve kept Run repository identity: %w", err)
 	}
 	placeholders, repositoryArgs := repositoryRootArguments(repositoryRoots)
-	args := []any{KindImplement}
+	args := []any{KindImplement, repositoryRoots[0]}
 	args = append(args, repositoryArgs...)
 	args = append(args,
 		specSlug,
@@ -1262,7 +1262,9 @@ SELECT id, kind, state, head_repository, head_branch, base_repository,
        pr_number, git_root, repository_root, local_branch, head_sha, artifact_dir, work_dir,
        spec_slug, agent, model, reasoning_effort, owner_pid, owner_identity, owner_identity_unproven, created_at, updated_at, completed_at
 FROM runs
-WHERE kind = ? AND git_root IN (`+placeholders+`) AND spec_slug = ?
+WHERE kind = ?
+  AND (repository_root = ? OR (repository_root = '' AND git_root IN (`+placeholders+`)))
+  AND spec_slug = ?
   AND work_dir IS NOT NULL AND TRIM(work_dir) <> ''
   AND state IN (?, ?, ?, ?)
 ORDER BY updated_at DESC, created_at DESC, id DESC
@@ -1591,6 +1593,9 @@ WHERE repository_root = ''`)
 		}
 
 		for _, run := range legacyRuns {
+			if _, err := os.Stat(filepath.Join(run.gitRoot, ".git")); err != nil {
+				continue
+			}
 			repositoryRoot, err := roundconfig.RepositoryRoot(run.gitRoot)
 			if err != nil {
 				continue

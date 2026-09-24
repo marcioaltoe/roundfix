@@ -1213,23 +1213,17 @@ func sameRepository(run store.Run, repository string) bool {
 	if err != nil {
 		return false
 	}
-	candidates := []string{run.RepositoryRoot}
-	if checkoutKey, err := roundconfig.RepositoryRoot(run.GitRoot); err == nil {
-		candidates = append(candidates, checkoutKey)
-	}
-	for _, candidate := range candidates {
-		candidate = strings.TrimSpace(candidate)
-		if candidate == "" {
-			continue
-		}
-		if resolved, err := filepath.EvalSymlinks(candidate); err == nil {
-			candidate = resolved
-		}
-		if filepath.Clean(candidate) == filepath.Clean(repositoryKey) {
-			return true
+	candidate := strings.TrimSpace(run.RepositoryRoot)
+	if candidate == "" {
+		candidate, err = roundconfig.RepositoryRoot(run.GitRoot)
+		if err != nil {
+			return false
 		}
 	}
-	return false
+	if resolved, err := filepath.EvalSymlinks(candidate); err == nil {
+		candidate = resolved
+	}
+	return filepath.Clean(candidate) == filepath.Clean(repositoryKey)
 }
 
 func printReconcileValidationFailure(err error, stderr io.Writer) {
