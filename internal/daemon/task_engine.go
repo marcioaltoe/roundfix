@@ -1400,8 +1400,9 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 }
 
 // verifyTask runs one Verification attempt for every Task command
-// sequentially and verbatim through the Verifier, in WorkDir; the first
-// failing command ends that attempt. defaults.verification is never appended:
+// sequentially and verbatim through the Verifier, in WorkDir. An undeclared
+// Task stops at its first failure; an independent Task collects deterministic
+// failures from every command. defaults.verification is never appended:
 // the Daemon gate runs only the Task's own Verification commands (ADR 0014).
 // Command failures return a typed outcome for the repair loop; the returned
 // error is reserved for Stop Requests and infrastructure failures.
@@ -1423,6 +1424,7 @@ func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.T
 		Capacity:                plan.VerificationConcurrency,
 		TemporaryRetryAvailable: !*retryUsed,
 		Commands:                task.Verification,
+		Independent:             task.VerificationMode == spec.VerificationModeIndependent,
 		ClassifyFailure: func(ctx context.Context, command string, diagnosticPath string) (verificationFailureMetadata, error) {
 			return engine.classifyRepeatedFailure(ctx, plan.RunID, task.ID, command, diagnosticPath)
 		},
@@ -1620,14 +1622,30 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 	); err != nil {
 		return "", fmt.Errorf("publish Verification Feedback event for run %q Task %s: %w", plan.RunID, task.ID, err)
 	}
+	commandFailures := first.CommandFailures
+	if len(commandFailures) == 0 {
+		commandFailures = []verificationAttemptFailure{{
+			CommandFailure: first.CommandFailure,
+			Metadata:       verificationFailureMetadata{Repeated: first.Repeated},
+		}}
+	}
+	feedbackFailures := make([]agent.VerificationFailureFeedback, 0, len(commandFailures))
+	for _, failure := range commandFailures {
+		if failure.CommandFailure == nil {
+			continue
+		}
+		feedbackFailures = append(feedbackFailures, agent.VerificationFailureFeedback{
+			Command:         failure.CommandFailure.Command,
+			DiagnosticPath:  failure.CommandFailure.OutputPath,
+			Failure:         fmt.Sprintf("verification failed: %v", failure.CommandFailure),
+			DiagnosticEmpty: diagnosticArtifactEmpty(failure.CommandFailure.OutputPath),
+			Repeated:        failure.Metadata.Repeated,
+		})
+	}
 	prompt, err := agent.BuildVerificationRepairPrompt(task.ID, agent.VerificationFeedback{
-		Command:         first.CommandFailure.Command,
-		DiagnosticPath:  first.CommandFailure.OutputPath,
-		Failure:         first.Failure,
-		DiagnosticEmpty: diagnosticArtifactEmpty(first.CommandFailure.OutputPath),
-		Repeated:        first.Repeated,
-		Attempt:         1,
-		TaskHandoff:     true,
+		Failures:    feedbackFailures,
+		Attempt:     1,
+		TaskHandoff: true,
 	})
 	if err != nil {
 		return "", fmt.Errorf("build Verification Feedback prompt for run %q Task %s: %w", plan.RunID, task.ID, err)

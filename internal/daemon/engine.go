@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -181,6 +182,7 @@ type verificationAttemptRequest struct {
 	// moment this request classifies a temporary command failure.
 	TemporaryRetryAvailable bool
 	Commands                []string
+	Independent             bool
 	FailureClassification   runevent.VerificationClassification
 	FailureReason           runevent.VerificationReason
 	ClassifyFailure         func(context.Context, string, string) (verificationFailureMetadata, error)
@@ -190,9 +192,15 @@ type verificationAttemptRequest struct {
 type verificationAttemptOutcome struct {
 	Failure          string
 	CommandFailure   *VerificationCommandError
+	CommandFailures  []verificationAttemptFailure
 	TemporaryFailure *TemporaryVerificationFailureError
 	UnknownCause     *VerificationUnknownError
 	Repeated         *runevent.RepeatedFailure
+}
+
+type verificationAttemptFailure struct {
+	CommandFailure *VerificationCommandError
+	Metadata       verificationFailureMetadata
 }
 
 type verificationFailureMetadata struct {
@@ -354,13 +362,17 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 	if req.Publish == nil {
 		return verificationAttemptOutcome{}, fmt.Errorf("run verification attempt %d: event publisher is required", req.Attempt)
 	}
-	for _, command := range req.Commands {
+	var failures []verificationAttemptFailure
+	for commandIndex, command := range req.Commands {
 		if err := req.Publish(ctx, req.summary(runevent.VerificationPhaseStarted, command), req.payload(runevent.VerificationPhaseStarted, command)); err != nil {
 			return verificationAttemptOutcome{}, err
 		}
 		outputPath := VerificationOutputPath(req.ArtifactDir, req.RunID, req.BatchNumber, req.Attempt)
 		if req.Retry > 0 {
 			outputPath = VerificationRetryOutputPath(req.ArtifactDir, req.RunID, req.BatchNumber, req.Attempt, req.Retry)
+		}
+		if req.Independent {
+			outputPath = verificationCommandOutputPath(outputPath, commandIndex+1)
 		}
 		result, err := engine.deps.Verifier.Verify(ctx, VerifyRequest{
 			WorkDir:    req.WorkDir,
@@ -380,12 +392,20 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 					return verificationAttemptOutcome{}, publishErr
 				}
 				fmt.Fprintf(engine.deps.Progress, "Verification failed (%s); diagnostics: %s\n", req.identity(), commandErr.OutputPath)
-				return verificationAttemptOutcome{
-					Failure:          fmt.Sprintf("verification failed: %v", err),
-					CommandFailure:   commandErr,
-					TemporaryFailure: temporaryErr,
-					Repeated:         metadata.Repeated,
-				}, nil
+				if temporary || !req.Independent {
+					if publishErr := req.publishVerdict(ctx, runevent.VerificationVerdictFailed, commandErr.OutputPath, "", temporary, metadata); publishErr != nil {
+						return verificationAttemptOutcome{}, publishErr
+					}
+					return verificationAttemptOutcome{
+						Failure:          fmt.Sprintf("verification failed: %v", err),
+						CommandFailure:   commandErr,
+						CommandFailures:  []verificationAttemptFailure{{CommandFailure: commandErr, Metadata: metadata}},
+						TemporaryFailure: temporaryErr,
+						Repeated:         metadata.Repeated,
+					}, nil
+				}
+				failures = append(failures, verificationAttemptFailure{CommandFailure: commandErr, Metadata: metadata})
+				continue
 			}
 			var unknownErr *VerificationUnknownError
 			if errors.As(err, &unknownErr) {
@@ -412,11 +432,29 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 			return verificationAttemptOutcome{}, err
 		}
 	}
+	if len(failures) > 0 {
+		first := failures[0]
+		if err := req.publishVerdict(ctx, runevent.VerificationVerdictFailed, first.CommandFailure.OutputPath, "", false, first.Metadata); err != nil {
+			return verificationAttemptOutcome{}, err
+		}
+		return verificationAttemptOutcome{
+			Failure:         fmt.Sprintf("verification failed: %d commands failed", len(failures)),
+			CommandFailure:  first.CommandFailure,
+			CommandFailures: failures,
+			Repeated:        first.Metadata.Repeated,
+		}, nil
+	}
 	if err := req.publishVerdict(ctx, runevent.VerificationVerdictPassed, "", "", false, verificationFailureMetadata{}); err != nil {
 		return verificationAttemptOutcome{}, err
 	}
 	fmt.Fprintf(engine.deps.Progress, "Verification passed (%s).\n", req.identity())
 	return verificationAttemptOutcome{}, nil
+}
+
+func verificationCommandOutputPath(attemptPath string, commandNumber int) string {
+	extension := filepath.Ext(attemptPath)
+	base := strings.TrimSuffix(attemptPath, extension)
+	return fmt.Sprintf("%s-command-%03d%s", base, commandNumber, extension)
 }
 
 func completeVerificationUnknownCause(unknownErr *VerificationUnknownError, command string, diagnosticPath string) *VerificationUnknownError {
@@ -460,7 +498,7 @@ func (req verificationAttemptRequest) publishFailedCommand(ctx context.Context, 
 	if err := req.Publish(ctx, summary, payload); err != nil {
 		return verificationFailureMetadata{}, err
 	}
-	return metadata, req.publishVerdict(ctx, runevent.VerificationVerdictFailed, commandErr.OutputPath, "", temporary, metadata)
+	return metadata, nil
 }
 
 func (req verificationAttemptRequest) publishInfrastructureFailure(ctx context.Context, command string, err error) error {

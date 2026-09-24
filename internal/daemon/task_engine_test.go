@@ -209,12 +209,13 @@ func TestQACommitMessageDerivesUnscopedSubjectAndTrailer(t *testing.T) {
 // values default to status pending, type backend, and one passing
 // verification command.
 type taskSpecSeed struct {
-	id           string
-	title        string
-	taskType     string
-	status       string
-	needs        []string
-	verification []string
+	id               string
+	title            string
+	taskType         string
+	status           string
+	needs            []string
+	verificationMode spec.VerificationMode
+	verification     []string
 }
 
 type taskCycleRepositorySeed struct {
@@ -622,7 +623,11 @@ None. This fixture measures Task-cycle and QA-gate orchestration rather than a s
 			}
 		}
 		var body strings.Builder
-		body.WriteString(fmt.Sprintf("---\ntask: %s\nspec: %s\nstatus: %s\ntype: %s\n---\n\n# %s\n\n## Verification\n\n", seed.id, slug, status, taskType, title))
+		body.WriteString(fmt.Sprintf("---\ntask: %s\nspec: %s\nstatus: %s\ntype: %s\n", seed.id, slug, status, taskType))
+		if seed.verificationMode != "" {
+			body.WriteString("verification: " + string(seed.verificationMode) + "\n")
+		}
+		body.WriteString(fmt.Sprintf("---\n\n# %s\n\n## Verification\n\n", title))
 		for _, command := range verification {
 			body.WriteString(fmt.Sprintf("- `%s` — expected: passes.\n", command))
 		}
@@ -6635,6 +6640,134 @@ func TestTaskCycleTemporaryVerificationAfterDeterministicRetryAndRepairDoesNotRe
 	}
 	if len(verifier.outputPaths) != 3 {
 		t.Fatalf("expected no second exclusive retry, got paths %v", verifier.outputPaths)
+	}
+}
+
+func TestIndependentVerificationHandsEveryFailureToRepair(t *testing.T) {
+	t.Parallel()
+
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:               "task_01",
+		verificationMode: spec.VerificationModeIndependent,
+		verification:     []string{"verify first", "verify second", "verify third"},
+	}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{
+		calls: fixture.calls,
+		script: []error{
+			errors.New("first failure"),
+			nil,
+			errors.New("third failure"),
+			nil,
+			nil,
+			nil,
+		},
+		outputByCall: map[int]string{
+			1: "first diagnostics\n",
+			3: "third diagnostics\n",
+		},
+	}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("TaskCycle: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 {
+		t.Fatalf("expected repaired Task to settle completed, got %+v", result)
+	}
+	if got := strings.Join(verifier.commands, "|"); got != "verify first|verify second|verify third|verify first|verify second|verify third" {
+		t.Fatalf("expected every command on both attempts, got %q", got)
+	}
+	if len(runner.requests) != 2 {
+		t.Fatalf("expected initial and one repair turn, got %d Agent requests", len(runner.requests))
+	}
+	if len(verifier.outputPaths) != 6 || verifier.outputPaths[0] == verifier.outputPaths[2] {
+		t.Fatalf("expected distinct diagnostics for independent failures, got %v", verifier.outputPaths)
+	}
+	repairPrompt := runner.requests[1].Prompt
+	for _, expected := range []string{
+		"Failed command: verify first",
+		"Diagnostic artifact: " + verifier.outputPaths[0],
+		"Failed command: verify third",
+		"Diagnostic artifact: " + verifier.outputPaths[2],
+	} {
+		if !strings.Contains(repairPrompt, expected) {
+			t.Fatalf("repair prompt does not contain %q:\n%s", expected, repairPrompt)
+		}
+	}
+
+	failedCommands := []string{}
+	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification) {
+		payload := eventPayloadMap(t, event)
+		if payload["phase"] == string(runevent.VerificationPhaseFailed) && payload["attempt"] == float64(1) {
+			failedCommands = append(failedCommands, payload["command"].(string))
+		}
+	}
+	if got := strings.Join(failedCommands, "|"); got != "verify first|verify third" {
+		t.Fatalf("expected both first-attempt failures to be published, got %q", got)
+	}
+}
+
+func TestIndependentVerificationKeepsTemporaryRetryHandling(t *testing.T) {
+	t.Parallel()
+
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:               "task_01",
+		verificationMode: spec.VerificationModeIndependent,
+		verification:     []string{"verify first", "verify second", "verify third"},
+	}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{
+		calls:           fixture.calls,
+		temporaryOnCall: map[int]bool{2: true},
+	}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("TaskCycle: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 {
+		t.Fatalf("expected the exclusive retry to settle the Task completed, got %+v", result)
+	}
+	if got := strings.Join(verifier.commands, "|"); got != "verify first|verify second|verify first|verify second|verify third" {
+		t.Fatalf("expected the temporary failure to stop the first run and the retry to restart every command, got %q", got)
+	}
+	if len(runner.requests) != 1 {
+		t.Fatalf("expected no Agent repair for a temporary failure, got %d Agent requests", len(runner.requests))
+	}
+}
+
+func TestUndeclaredVerificationStopsAtFirstFailure(t *testing.T) {
+	t.Parallel()
+
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:           "task_01",
+		verification: []string{"verify first", "verify second", "verify third"},
+	}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{
+		calls:  fixture.calls,
+		failOn: map[string]error{"verify first": errors.New("first failure")},
+	}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("TaskCycle: %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 1 {
+		t.Fatalf("expected Task to fail after its bounded repair, got %+v", result)
+	}
+	if got := strings.Join(verifier.commands, "|"); got != "verify first|verify first" {
+		t.Fatalf("expected each attempt to stop at its first failure, got %q", got)
+	}
+	if len(runner.requests) != 2 {
+		t.Fatalf("expected exactly one repair turn, got %d Agent requests", len(runner.requests))
 	}
 }
 
