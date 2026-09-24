@@ -64,8 +64,9 @@ installed or specified.
 1. **Tolerant classification, kept evidence.** The verdict line is found
    regardless of letter case, trailing punctuation, Markdown emphasis or a
    preamble before it. An answer that carries both verdicts or neither still
-   blocks. The raw answer is written beside the review record on every outcome,
-   and a blocked record names its path.
+   blocks, and so does any content a no-findings verdict does not account for.
+   The raw answer is written beside the review record for every outcome that
+   reached the reviewer, and a blocked record names its path.
 2. **The `claude` provider.** With `pre_pr_review.provider: claude`, the review
    runs through the `review` profile on a read-only Claude session, with the
    same evidence, fallback and blocking rules as Codex. `coderabbit` stays
@@ -87,7 +88,7 @@ installed or specified.
 
 1. Answers such as `No findings.`, `**No findings**` and a preamble followed by
    `Findings:` are classified; an answer with both or neither verdict blocks;
-   the raw answer file exists for every outcome.
+   the raw answer file exists for every outcome that reached the reviewer.
 2. A `claude` policy produces a review record with provider `claude`.
 3. A candidate carrying a Spec folder produces a prompt with its Decisions and a
    record naming the Spec.
