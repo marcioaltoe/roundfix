@@ -22,9 +22,10 @@ import (
 )
 
 type commandDeliveryWorkflow struct {
-	store  *store.Store
-	loaded roundconfig.Loaded
-	git    preflight.GitRunner
+	store          *store.Store
+	loaded         roundconfig.Loaded
+	git            preflight.GitRunner
+	startingBranch string
 }
 
 const deliveryBranchPrefix = "roundfix/deliver-"
@@ -63,6 +64,7 @@ func (workflow *commandDeliveryWorkflow) CreateItemBranch(ctx context.Context, g
 	if len(state.Dirty) != 0 {
 		return "", errors.New("create item branch: checkout has uncommitted changes")
 	}
+	workflow.startingBranch = state.Branch
 	if state.Branch == branch {
 		return branch, nil
 	}
@@ -129,11 +131,42 @@ func (workflow *commandDeliveryWorkflow) UseItemBranch(ctx context.Context, gitR
 	if len(state.Dirty) != 0 {
 		return errors.New("use item branch: checkout has uncommitted changes")
 	}
+	workflow.startingBranch = state.Branch
 	if state.Branch == branch {
 		return nil
 	}
 	if _, err := workflow.git.RunGit(ctx, gitRoot, "switch", branch); err != nil {
 		return fmt.Errorf("switch to item branch %q: %w", branch, err)
+	}
+	return nil
+}
+
+func (workflow *commandDeliveryWorkflow) ParkItem(ctx context.Context, gitRoot string) error {
+	startingBranch := strings.TrimSpace(workflow.startingBranch)
+	if startingBranch == "" {
+		return errors.New("park item: starting branch is unknown")
+	}
+	if _, err := workflow.git.RunGit(ctx, gitRoot, "reset", "--hard", "HEAD"); err != nil {
+		return fmt.Errorf("discard tracked item changes: %w", err)
+	}
+	if _, err := workflow.git.RunGit(ctx, gitRoot, "clean", "-fd"); err != nil {
+		return fmt.Errorf("discard untracked item changes: %w", err)
+	}
+	state, err := preflight.InspectGit(ctx, gitRoot, workflow.git)
+	if err != nil {
+		return fmt.Errorf("inspect checkout before restoring starting branch: %w", err)
+	}
+	if state.Branch != startingBranch {
+		if _, err := workflow.git.RunGit(ctx, gitRoot, "switch", startingBranch); err != nil {
+			return fmt.Errorf("restore starting branch %q: %w", startingBranch, err)
+		}
+	}
+	state, err = preflight.InspectGit(ctx, gitRoot, workflow.git)
+	if err != nil {
+		return fmt.Errorf("inspect parked checkout: %w", err)
+	}
+	if state.Branch != startingBranch || len(state.Dirty) != 0 {
+		return fmt.Errorf("park item: checkout is branch %q with %d uncommitted change(s), want clean branch %q", state.Branch, len(state.Dirty), startingBranch)
 	}
 	return nil
 }
@@ -214,11 +247,11 @@ func (workflow *commandDeliveryWorkflow) Archive(ctx context.Context, gitRoot, s
 	if err != nil {
 		return delivery.ArchiveResult{}, fmt.Errorf("inspect candidate before archive: %w", err)
 	}
-	if before.HEAD != strings.TrimSpace(reviewedHead) {
-		return delivery.ArchiveResult{Parent: before.HEAD}, nil
-	}
 	if len(before.Dirty) != 0 {
 		return delivery.ArchiveResult{Parent: before.HEAD}, nil
+	}
+	if before.HEAD != strings.TrimSpace(reviewedHead) {
+		return workflow.reconcileArchiveCommit(ctx, gitRoot, specSlug, strings.TrimSpace(reviewedHead), before.HEAD)
 	}
 	result, err := workflow.runRoundfix(ctx, gitRoot, "archive", specSlug)
 	if err != nil {
@@ -247,6 +280,30 @@ func (workflow *commandDeliveryWorkflow) Archive(ctx context.Context, gitRoot, s
 		return delivery.ArchiveResult{}, fmt.Errorf("read archive commit: %w", err)
 	}
 	return delivery.ArchiveResult{Parent: before.HEAD, Head: strings.TrimSpace(head), ExactSpecMove: true}, nil
+}
+
+func (workflow *commandDeliveryWorkflow) reconcileArchiveCommit(
+	ctx context.Context,
+	gitRoot string,
+	specSlug string,
+	reviewedHead string,
+	archiveHead string,
+) (delivery.ArchiveResult, error) {
+	parent, err := workflow.git.RunGit(ctx, gitRoot, "rev-parse", archiveHead+"^")
+	if err != nil {
+		return delivery.ArchiveResult{}, fmt.Errorf("read archive commit parent: %w", err)
+	}
+	parent = strings.TrimSpace(parent)
+	result := delivery.ArchiveResult{Parent: parent, Head: archiveHead}
+	if parent != reviewedHead {
+		return result, nil
+	}
+	source, destination, err := workflow.archivePaths(specSlug)
+	if err != nil {
+		return delivery.ArchiveResult{}, err
+	}
+	result.ExactSpecMove, err = workflow.archiveCommitIsExact(ctx, gitRoot, parent, archiveHead, source, destination)
+	return result, err
 }
 
 func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, specSlug, _ string) (delivery.GateResult, error) {
@@ -435,6 +492,71 @@ func (workflow *commandDeliveryWorkflow) archiveDiffIsExact(ctx context.Context,
 		}
 	}
 	return sawSource && sawDestination, nil
+}
+
+func (workflow *commandDeliveryWorkflow) archiveCommitIsExact(
+	ctx context.Context,
+	gitRoot string,
+	parent string,
+	head string,
+	source string,
+	destination string,
+) (bool, error) {
+	changed, err := workflow.git.RunGit(ctx, gitRoot, "diff", "--name-only", "--no-renames", "-z", parent, head, "--")
+	if err != nil {
+		return false, fmt.Errorf("inspect archive commit diff: %w", err)
+	}
+	sawSource := false
+	sawDestination := false
+	for _, rawPath := range strings.Split(strings.TrimSuffix(changed, "\x00"), "\x00") {
+		changedPath := filepath.ToSlash(rawPath)
+		if changedPath == "" {
+			continue
+		}
+		switch {
+		case changedPath == source || strings.HasPrefix(changedPath, source+"/"):
+			sawSource = true
+		case changedPath == destination || strings.HasPrefix(changedPath, destination+"/"):
+			sawDestination = true
+		default:
+			return false, nil
+		}
+	}
+	if !sawSource || !sawDestination {
+		return false, nil
+	}
+	sourceTree, err := workflow.git.RunGit(ctx, gitRoot, "rev-parse", parent+":"+source)
+	if err != nil {
+		return false, fmt.Errorf("read active Spec tree: %w", err)
+	}
+	destinationTree, err := workflow.git.RunGit(ctx, gitRoot, "rev-parse", head+":"+destination)
+	if err != nil {
+		return false, fmt.Errorf("read archived Spec tree: %w", err)
+	}
+	if strings.TrimSpace(sourceTree) != strings.TrimSpace(destinationTree) {
+		return false, nil
+	}
+	sourceAtHead, err := workflow.gitObjectExists(ctx, gitRoot, head+":"+source)
+	if err != nil {
+		return false, fmt.Errorf("inspect active Spec after archive: %w", err)
+	}
+	destinationAtParent, err := workflow.gitObjectExists(ctx, gitRoot, parent+":"+destination)
+	if err != nil {
+		return false, fmt.Errorf("inspect archive destination before archive: %w", err)
+	}
+	return !sourceAtHead && !destinationAtParent, nil
+}
+
+func (workflow *commandDeliveryWorkflow) gitObjectExists(ctx context.Context, gitRoot, object string) (bool, error) {
+	_, err := workflow.git.RunGit(ctx, gitRoot, "cat-file", "-e", object)
+	if err == nil {
+		return true, nil
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return false, nil
+	}
+	return false, err
 }
 
 func deliveryCommandEnvironment(environment []string, homeDir string) []string {

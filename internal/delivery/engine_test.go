@@ -721,6 +721,11 @@ func (fake *fakeDeliveryWorkflow) UseItemBranch(_ context.Context, _ string, bra
 	return nil
 }
 
+func (fake *fakeDeliveryWorkflow) ParkItem(context.Context, string) error {
+	fake.currentBranch = "main"
+	return nil
+}
+
 func (fake *fakeDeliveryWorkflow) RunSpec(_ context.Context, _ string, slug string) (RunResult, error) {
 	fake.recordEvent(slug, "run")
 	fake.runBranches[slug] = fake.currentBranch

@@ -93,6 +93,7 @@ type CandidateRunner interface {
 type ItemWorkspace interface {
 	CreateItemBranch(ctx context.Context, gitRoot, specSlug string) (string, error)
 	UseItemBranch(ctx context.Context, gitRoot, branch string) error
+	ParkItem(ctx context.Context, gitRoot string) error
 }
 
 type PrePRReviewer interface {
@@ -685,6 +686,9 @@ func (engine *Engine) setStage(
 }
 
 func (engine *Engine) park(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem, blocker string) error {
+	if err := engine.workspace.ParkItem(ctx, gitRoot); err != nil {
+		return fmt.Errorf("restore checkout before parking item as %q: %w", blocker, err)
+	}
 	item.Stage = store.DeliveryStageParked
 	item.Blocker = blocker
 	if err := engine.store.UpdateDeliveryQueueItem(ctx, gitRoot, *item); err != nil {

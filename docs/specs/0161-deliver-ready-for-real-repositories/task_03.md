@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0161-deliver-ready-for-real-repositories
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -43,3 +43,51 @@ A non-exact archive park leaves the checkout dirty so every later item refuses t
 ## References
 
 - [_techspec.md](_techspec.md) — Park and resume
+
+## Result
+
+Implemented clean parking and crash-safe resume without changing the Task
+status or running the Daemon-owned Verification command:
+
+- Every park now asks the item workspace to discard tracked and untracked
+  changes, restore the branch from which that item entered its delivery branch,
+  and prove the restored checkout is clean before persisting `parked`.
+- Archive reconciliation accepts an already-committed child of the reviewed
+  head only when its complete Git diff stays inside the active and archived
+  Spec paths, the source and destination tree identities match, the source is
+  absent at the child, and the destination was absent at the parent. Dirty or
+  broader changes remain stale.
+- `deliver resume` now proves the identity behind a live recorded PID. A proven
+  mismatch releases the stale owner record; an unreadable identity still fails
+  closed, and a matching live owner still blocks the second owner.
+
+Pre-change evidence:
+
+- `TestAParkLeavesACleanCheckout` failed because only the first item started;
+  the dirty checkout prevented the second item from entering its branch.
+- `TestResumeAcceptsTheArchiveCommit` failed because the committed exact move
+  returned `ExactSpecMove: false`.
+- `TestResumeReleasesAStaleOwner` failed because PID liveness blocked resume
+  before the recorded identity was checked.
+
+Focused-check evidence:
+
+- `rtk env GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run '^TestAParkLeavesACleanCheckout$' ./internal/cli` — passed.
+- `rtk env GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run '^TestResumeAcceptsTheArchiveCommit$' ./internal/cli` — passed.
+- `rtk env GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run '^TestResumeReleasesAStaleOwner$' ./internal/cli` — passed.
+- `rtk env GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 ./internal/cli ./internal/delivery` — passed with process-table permission; the sandboxed attempt was blocked only in existing force-stop integration tests that inspect the macOS process table.
+- `rtk env GOCACHE=/tmp/roundfix-task03-gocache go vet ./internal/cli ./internal/delivery` — passed.
+- `rtk git diff --check` — passed.
+
+Acceptance evidence:
+
+1. `TestAParkLeavesACleanCheckout` uses real Git, dirties one tracked and one
+   untracked path during a non-exact archive, observes the next queued Spec
+   start, and finishes on a clean `main` checkout.
+2. `TestResumeAcceptsTheArchiveCommit` creates a real archive commit, resumes
+   an item persisted at `archiving`, and observes the archive head appended
+   without `review-stale`; its negative case rejects the same move when the
+   commit also changes an unrelated path.
+3. `TestResumeReleasesAStaleOwner` observes a live PID with a mismatched process
+   identity released before the new owner starts; its negative case proves an
+   unreadable identity retains the owner and refuses resume.

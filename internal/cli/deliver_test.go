@@ -7,13 +7,17 @@ package cli
 import (
 	"bytes"
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/delivery"
 	"roundfix/internal/gittest"
 	"roundfix/internal/preflight"
 	"roundfix/internal/store"
@@ -156,6 +160,79 @@ func TestDeliverCommandStopsAndResumesPersistedQueue(t *testing.T) {
 	persisted := openDeliveryQueueForCLI(t, homeDir, repoDir)
 	if persisted.OwnerPID != 0 || persisted.OwnerIdentity != "" || len(persisted.Items) != 1 {
 		t.Fatalf("persisted queue after stop/resume = %+v", persisted)
+	}
+}
+
+func TestResumeReleasesAStaleOwner(t *testing.T) {
+	tests := []struct {
+		name           string
+		proofErr       error
+		wantExit       int
+		wantResumed    int
+		wantOwnerPID   int
+		wantDiagnostic string
+	}{
+		{
+			name:           "reused PID",
+			proofErr:       fmt.Errorf("identity mismatch: %w", store.ErrOwnerProcessIdentityUnproven),
+			wantExit:       exitOK,
+			wantResumed:    1,
+			wantDiagnostic: "different process identity",
+		},
+		{
+			name:           "unreadable identity",
+			proofErr:       fmt.Errorf("identity read failed: %w", store.ErrOwnerIdentityUnreadable),
+			wantExit:       exitPreflight,
+			wantOwnerPID:   os.Getpid(),
+			wantDiagnostic: "identity read failed",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+			ctx := context.Background()
+			runStore, err := store.Open(ctx, homeDir)
+			if err != nil {
+				t.Fatalf("open Run Database: %v", err)
+			}
+			if _, err := runStore.CreateDeliveryQueue(ctx, repoDir, []string{implementTestSlug}); err != nil {
+				t.Fatalf("create Delivery Queue: %v", err)
+			}
+			if err := runStore.ClaimDeliveryQueueOwner(ctx, repoDir, os.Getpid(), "recorded-owner-identity"); err != nil {
+				t.Fatalf("claim stale Delivery Queue owner: %v", err)
+			}
+			if err := runStore.Close(); err != nil {
+				t.Fatalf("close Run Database: %v", err)
+			}
+
+			processes := &fakeDeliveryOwnerProcesses{proveErr: tt.proofErr}
+			resumed := 0
+			updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+				dependencies.ownerProcesses = processes
+				dependencies.startDeliveryOwner = func(context.Context, roundconfig.Loaded, commandEnvironment, io.Writer, io.Writer) int {
+					resumed++
+					return exitOK
+				}
+			})
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLI(t, []string{"deliver", "resume"}, &stdout, &stderr)
+
+			if code != tt.wantExit || resumed != tt.wantResumed {
+				t.Fatalf("deliver resume exit=%d resumed=%d stderr=%q, want exit=%d resumed=%d", code, resumed, stderr.String(), tt.wantExit, tt.wantResumed)
+			}
+			if processes.provedPID != os.Getpid() || processes.identity != "recorded-owner-identity" {
+				t.Fatalf("owner identity proof = %+v", processes)
+			}
+			if !strings.Contains(stderr.String(), tt.wantDiagnostic) {
+				t.Fatalf("deliver resume diagnostic = %q, want %q", stderr.String(), tt.wantDiagnostic)
+			}
+			persisted := openDeliveryQueueForCLI(t, homeDir, repoDir)
+			if persisted.OwnerPID != tt.wantOwnerPID {
+				t.Fatalf("persisted owner PID = %d, want %d", persisted.OwnerPID, tt.wantOwnerPID)
+			}
+		})
 	}
 }
 
@@ -322,6 +399,182 @@ func TestResumeReusesTheRecordedItemBranch(t *testing.T) {
 	}
 }
 
+func TestAParkLeavesACleanCheckout(t *testing.T) {
+	_, checkout := newDeliveryBranchRepository(t)
+	ctx := t.Context()
+	runStore, err := store.Open(ctx, t.TempDir())
+	if err != nil {
+		t.Fatalf("open Run Database: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := runStore.Close(); err != nil {
+			t.Errorf("close Run Database: %v", err)
+		}
+	})
+	const parkedSlug = "0161-non-exact-archive"
+	const nextSlug = "0161-next-item"
+	if _, err := runStore.CreateDeliveryQueue(ctx, checkout, []string{parkedSlug, nextSlug}); err != nil {
+		t.Fatalf("create Delivery Queue: %v", err)
+	}
+	workflow := &commandDeliveryWorkflow{
+		store:  runStore,
+		loaded: roundconfig.Loaded{GitRoot: checkout},
+		git:    preflight.ExecGitRunner{},
+	}
+	reviewedHead := strings.TrimSpace(gittest.Run(t, checkout, "rev-parse", "HEAD"))
+	flow := &parkTestDeliveryFlow{checkout: checkout, reviewedHead: reviewedHead}
+	engine := delivery.NewEngine(runStore, delivery.EngineDependencies{
+		Workspace:    workflow,
+		Runner:       flow,
+		Reviewer:     flow,
+		Archiver:     flow,
+		Gate:         flow,
+		Authorizer:   flow,
+		Publication:  flow,
+		PullRequests: flow,
+	})
+
+	if _, err := engine.Run(ctx, checkout); err != nil {
+		t.Fatalf("run Delivery Engine: %v", err)
+	}
+
+	queue, found, err := runStore.DeliveryQueue(ctx, checkout)
+	if err != nil || !found {
+		t.Fatalf("read Delivery Queue: found=%v err=%v", found, err)
+	}
+	if got, want := flow.runs, []string{parkedSlug, nextSlug}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("started items = %v, want %v", got, want)
+	}
+	if queue.Items[0].Stage != store.DeliveryStageParked || queue.Items[1].Branch == "" {
+		t.Fatalf("Delivery Queue after non-exact archive = %+v", queue.Items)
+	}
+	state, err := preflight.InspectGit(ctx, checkout, preflight.ExecGitRunner{})
+	if err != nil {
+		t.Fatalf("inspect checkout after parks: %v", err)
+	}
+	if state.Branch != "main" || len(state.Dirty) != 0 {
+		t.Fatalf("checkout after parks = branch %q dirty=%v, want clean main", state.Branch, state.Dirty)
+	}
+}
+
+func TestResumeAcceptsTheArchiveCommit(t *testing.T) {
+	tests := []struct {
+		name      string
+		extraPath bool
+		wantExact bool
+	}{
+		{name: "exact Spec move", wantExact: true},
+		{name: "move with unrelated change", extraPath: true, wantExact: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repository := t.TempDir()
+			gittest.InitRepo(t, repository, "--initial-branch=main")
+			gittest.PersistIdentity(t, repository)
+			const slug = "0161-archive-resume"
+			source := filepath.Join(repository, "docs", "specs", slug)
+			if err := os.MkdirAll(source, 0o755); err != nil {
+				t.Fatalf("create active Spec: %v", err)
+			}
+			if err := os.MkdirAll(filepath.Join(repository, "docs", "specs", "still-active"), 0o755); err != nil {
+				t.Fatalf("create remaining Spec: %v", err)
+			}
+			if err := os.WriteFile(filepath.Join(source, "_prd.md"), []byte("# Archived Spec\n"), 0o644); err != nil {
+				t.Fatalf("write active Spec: %v", err)
+			}
+			if err := os.WriteFile(filepath.Join(repository, "docs", "specs", "still-active", "_prd.md"), []byte("# Active Spec\n"), 0o644); err != nil {
+				t.Fatalf("write remaining Spec: %v", err)
+			}
+			gittest.Run(t, repository, "add", "docs/specs")
+			gittest.Run(t, repository, "commit", "-m", "docs: add Specs")
+			gittest.Run(t, repository, "switch", "-c", "roundfix/deliver-"+slug)
+			reviewedHead := strings.TrimSpace(gittest.Run(t, repository, "rev-parse", "HEAD"))
+			destination := filepath.Join(repository, "docs", "history", "specs", slug)
+			if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
+				t.Fatalf("create archive root: %v", err)
+			}
+			if err := os.Rename(source, destination); err != nil {
+				t.Fatalf("move Spec to archive root: %v", err)
+			}
+			if tt.extraPath {
+				if err := os.WriteFile(filepath.Join(repository, "unrelated.txt"), []byte("unrelated\n"), 0o644); err != nil {
+					t.Fatalf("write unrelated change: %v", err)
+				}
+			}
+			gittest.Run(t, repository, "add", "-A")
+			gittest.Run(t, repository, "commit", "-m", "docs: archive "+slug)
+			archiveHead := strings.TrimSpace(gittest.Run(t, repository, "rev-parse", "HEAD"))
+			workflow := &commandDeliveryWorkflow{
+				loaded: roundconfig.Loaded{
+					GitRoot: repository,
+					Config:  roundconfig.Config{Specs: roundconfig.Specs{Root: "docs/specs"}},
+				},
+				git: preflight.ExecGitRunner{},
+			}
+
+			result, err := workflow.Archive(t.Context(), repository, slug, reviewedHead)
+
+			if err != nil {
+				t.Fatalf("resume archive reconciliation: %v", err)
+			}
+			if result.ExactSpecMove != tt.wantExact {
+				t.Fatalf("archive result = %+v, want exact=%v", result, tt.wantExact)
+			}
+			if tt.wantExact && (result.Parent != reviewedHead || result.Head != archiveHead) {
+				t.Fatalf("archive result = %+v, want parent %q head %q", result, reviewedHead, archiveHead)
+			}
+			if !tt.wantExact {
+				return
+			}
+
+			runStore, err := store.Open(t.Context(), t.TempDir())
+			if err != nil {
+				t.Fatalf("open Run Database: %v", err)
+			}
+			t.Cleanup(func() {
+				if err := runStore.Close(); err != nil {
+					t.Errorf("close Run Database: %v", err)
+				}
+			})
+			queue, err := runStore.CreateDeliveryQueue(t.Context(), repository, []string{slug})
+			if err != nil {
+				t.Fatalf("create Delivery Queue: %v", err)
+			}
+			item := queue.Items[0]
+			item.Stage = store.DeliveryStageArchiving
+			item.Branch = "roundfix/deliver-" + slug
+			item.CandidateCommits = []string{reviewedHead}
+			if err := runStore.UpdateDeliveryQueueItem(t.Context(), repository, item); err != nil {
+				t.Fatalf("seed archiving item: %v", err)
+			}
+			workflow.store = runStore
+			flow := &parkTestDeliveryFlow{}
+			engine := delivery.NewEngine(runStore, delivery.EngineDependencies{
+				Workspace:    workflow,
+				Runner:       flow,
+				Reviewer:     flow,
+				Archiver:     workflow,
+				Gate:         flow,
+				Authorizer:   flow,
+				Publication:  flow,
+				PullRequests: flow,
+			})
+
+			if _, err := engine.Run(t.Context(), repository); err != nil {
+				t.Fatalf("resume Delivery Engine after archive commit: %v", err)
+			}
+			resumed, found, err := runStore.DeliveryQueue(t.Context(), repository)
+			if err != nil || !found {
+				t.Fatalf("read resumed Delivery Queue: found=%v err=%v", found, err)
+			}
+			got := resumed.Items[0]
+			if got.Blocker == delivery.BlockerReviewStale || !reflect.DeepEqual(got.CandidateCommits, []string{reviewedHead, archiveHead}) {
+				t.Fatalf("resumed archive item = %+v, want archive head accepted past archiving", got)
+			}
+		})
+	}
+}
+
 func newDeliveryBranchRepository(t *testing.T) (string, string) {
 	t.Helper()
 	origin := t.TempDir()
@@ -390,16 +643,89 @@ func TestDeliverCommandRefusesUnknownFlags(t *testing.T) {
 	}
 }
 
+type parkTestDeliveryFlow struct {
+	checkout     string
+	reviewedHead string
+	runs         []string
+}
+
+func (flow *parkTestDeliveryFlow) RunSpec(_ context.Context, _ string, slug string) (delivery.RunResult, error) {
+	flow.runs = append(flow.runs, slug)
+	if len(flow.runs) > 1 {
+		return delivery.RunResult{Outcome: delivery.RunOutcomeUnresolved}, nil
+	}
+	return delivery.RunResult{
+		RunID:            "run-" + slug,
+		Outcome:          delivery.RunOutcomeClean,
+		CandidateCommits: []string{flow.reviewedHead},
+	}, nil
+}
+
+func (flow *parkTestDeliveryFlow) ReviewPolicy(context.Context, string, string) (delivery.ReviewPolicy, error) {
+	return delivery.ReviewPolicyEnabled, nil
+}
+
+func (flow *parkTestDeliveryFlow) Review(_ context.Context, _, _, head string) (delivery.ReviewResult, error) {
+	return delivery.ReviewResult{Outcome: delivery.ReviewOutcomeReviewed, Head: head}, nil
+}
+
+func (flow *parkTestDeliveryFlow) RecordReviewOmission(context.Context, string, string, string) error {
+	return errors.New("unexpected review omission")
+}
+
+func (flow *parkTestDeliveryFlow) Archive(_ context.Context, _, _ string, reviewedHead string) (delivery.ArchiveResult, error) {
+	if err := os.WriteFile(filepath.Join(flow.checkout, "seed.txt"), []byte("tracked archive change\n"), 0o644); err != nil {
+		return delivery.ArchiveResult{}, err
+	}
+	if err := os.WriteFile(filepath.Join(flow.checkout, "archive-fragment.txt"), []byte("non-exact archive\n"), 0o644); err != nil {
+		return delivery.ArchiveResult{}, err
+	}
+	return delivery.ArchiveResult{Parent: reviewedHead, ExactSpecMove: false}, nil
+}
+
+func (flow *parkTestDeliveryFlow) Gate(context.Context, string, string, string) (delivery.GateResult, error) {
+	return delivery.GateResult{}, errors.New("unexpected repository gate")
+}
+
+func (flow *parkTestDeliveryFlow) Authorization(context.Context, string, string) (delivery.Authorization, error) {
+	return delivery.Authorization{}, errors.New("unexpected authorization read")
+}
+
+func (flow *parkTestDeliveryFlow) Publication(context.Context, string, string, string) (delivery.Publication, error) {
+	return delivery.Publication{}, errors.New("unexpected publication plan")
+}
+
+func (flow *parkTestDeliveryFlow) RemoteBranchHead(context.Context, string, string) (delivery.RemoteHead, bool, error) {
+	return delivery.RemoteHead{}, false, errors.New("unexpected remote head read")
+}
+
+func (flow *parkTestDeliveryFlow) PushBranch(context.Context, string, string, string) (delivery.RemoteHead, error) {
+	return delivery.RemoteHead{}, errors.New("unexpected push")
+}
+
+func (flow *parkTestDeliveryFlow) FindOrCreatePullRequest(context.Context, delivery.PullRequestRequest) (delivery.PullRequestResult, error) {
+	return delivery.PullRequestResult{}, errors.New("unexpected pull request creation")
+}
+
+func (flow *parkTestDeliveryFlow) CurrentHeadChecks(context.Context, string) (delivery.CheckReport, error) {
+	return delivery.CheckReport{}, errors.New("unexpected check read")
+}
+
+func (flow *parkTestDeliveryFlow) MergePullRequest(context.Context, string, string) (delivery.MergeResult, error) {
+	return delivery.MergeResult{}, errors.New("unexpected merge")
+}
+
 type fakeDeliveryOwnerProcesses struct {
 	provedPID     int
 	terminatedPID int
 	identity      string
+	proveErr      error
 }
 
 func (fake *fakeDeliveryOwnerProcesses) ProveOwner(_ context.Context, pid int, identity string) error {
 	fake.provedPID = pid
 	fake.identity = identity
-	return nil
+	return fake.proveErr
 }
 
 func (fake *fakeDeliveryOwnerProcesses) TerminateTreeAndWait(_ context.Context, pid int, identity string) ([]store.TerminationOutcome, error) {
