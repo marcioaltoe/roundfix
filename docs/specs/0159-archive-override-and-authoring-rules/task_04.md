@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0159-archive-override-and-authoring-rules
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
