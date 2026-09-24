@@ -1,7 +1,7 @@
 // Suite: selective verification
-// Invariant: every declared change class selects exactly the test sets it can affect.
-// Boundary IN: path classification, local Git change discovery, and set definitions.
-// Boundary OUT: Makefile wiring and the whole-suite partition contract.
+// Invariant: every change class, package, and top-level CLI test belongs to the intended verification set.
+// Boundary IN: path classification, local Git change discovery, set definitions, and Makefile CLI recipe selection.
+// Boundary OUT: execution of the complete repository verification targets.
 package verifyselect_test
 
 import (
@@ -281,31 +281,9 @@ func TestPartitionCoversEveryTestExactlyOnce(t *testing.T) {
 	corePackageSet := makeNameSet(corePackages)
 	baselinePackageSet := makeNameSet(baselinePackages)
 
-	cliTests := listedTests(t, repoRoot, "./internal/cli")
-	baselinePatternText, err := verifyselect.BaselineCLITestPattern(repoRoot)
-	if err != nil {
-		t.Fatalf("BaselineCLITestPattern() error = %v", err)
-	}
-	baselinePattern, err := regexp.Compile(baselinePatternText)
-	if err != nil {
-		t.Fatalf("BaselineCLITestPattern() returned invalid regexp %q: %v", baselinePatternText, err)
-	}
-	coreCLITests := make(nameSet)
-	baselineCLITests := make(nameSet)
-	for _, name := range cliTests {
-		if baselinePattern.MatchString(name) {
-			baselineCLITests[name] = struct{}{}
-			continue
-		}
-		coreCLITests[name] = struct{}{}
-	}
-
 	t.Run("tree satisfies the partition", func(t *testing.T) {
 		if err := partitionError(packages, corePackageSet, baselinePackageSet); err != nil {
 			t.Errorf("package partition: %v", err)
-		}
-		if err := partitionError(cliTests, coreCLITests, baselineCLITests); err != nil {
-			t.Errorf("internal/cli test partition: %v", err)
 		}
 	})
 
@@ -325,21 +303,52 @@ func TestPartitionCoversEveryTestExactlyOnce(t *testing.T) {
 			t.Fatalf("partitionError() error = %q, want %q", err, want)
 		}
 	})
+}
 
-	t.Run("CLI test selected by both invocations is named", func(t *testing.T) {
-		overlap := cliTests[0]
-		coreWithOverlap := cloneNameSet(coreCLITests)
-		baselineWithOverlap := cloneNameSet(baselineCLITests)
-		coreWithOverlap[overlap] = struct{}{}
-		baselineWithOverlap[overlap] = struct{}{}
+func TestPartitionFollowsTheMakefileRecipes(t *testing.T) {
+	repoRoot := findRepositoryRoot(t)
+	makefile := filepath.Join(repoRoot, "Makefile")
+	cliTests := listedTests(t, repoRoot, "./internal/cli")
 
-		err := partitionError(cliTests, coreWithOverlap, baselineWithOverlap)
-		if err == nil {
-			t.Fatalf("partitionError() error = nil after selecting %q in both CLI invocations", overlap)
+	contractError := func(t *testing.T, makefilePath string) error {
+		t.Helper()
+		coreTests, err := makeRecipeCLITests(t, repoRoot, makefilePath, "verify-changed-core", cliTests)
+		if err != nil {
+			return err
 		}
-		want := fmt.Sprintf("%q is selected by 2 sets, want exactly 1", overlap)
-		if err.Error() != want {
-			t.Fatalf("partitionError() error = %q, want %q", err, want)
+		baselineTests, err := makeRecipeCLITests(t, repoRoot, makefilePath, "verify-changed-baseline", cliTests)
+		if err != nil {
+			return err
+		}
+		return partitionError(cliTests, coreTests, baselineTests)
+	}
+
+	t.Run("tree recipes partition every top-level CLI test", func(t *testing.T) {
+		if err := contractError(t, makefile); err != nil {
+			t.Fatalf("Makefile CLI recipe partition: %v", err)
+		}
+	})
+
+	t.Run("drifted recipe pattern breaks the partition", func(t *testing.T) {
+		contents, err := os.ReadFile(makefile)
+		if err != nil {
+			t.Fatalf("ReadFile(%q): %v", makefile, err)
+		}
+		const recipePattern = `-run "$$pattern"`
+		const driftedPattern = `-run "TestNotDeclared"`
+		if count := strings.Count(string(contents), recipePattern); count != 1 {
+			t.Fatalf("Makefile contains %d baseline CLI recipe patterns, want 1", count)
+		}
+		drifted := strings.Replace(string(contents), recipePattern, driftedPattern, 1)
+		driftedRoot := t.TempDir()
+		writeFile(t, driftedRoot, "Makefile", drifted)
+
+		err = contractError(t, filepath.Join(driftedRoot, "Makefile"))
+		if err == nil {
+			t.Fatal("Makefile CLI recipe partition error = nil after changing the baseline -run pattern")
+		}
+		if !strings.Contains(err.Error(), "is selected by 0 sets, want exactly 1") {
+			t.Fatalf("Makefile CLI recipe partition error = %q, want an omitted-test diagnostic", err)
 		}
 	})
 }
@@ -495,6 +504,72 @@ func listedTests(t *testing.T, repoRoot, packagePath string) []string {
 	}
 	sort.Strings(tests)
 	return tests
+}
+
+func makeRecipeCLITests(t *testing.T, repoRoot, makefile, target string, tests []string) (nameSet, error) {
+	t.Helper()
+	contents, err := os.ReadFile(makefile)
+	if err != nil {
+		return nil, fmt.Errorf("read Makefile for dry run: %w", err)
+	}
+	dryRunRoot := t.TempDir()
+	dryRunMakefile := filepath.Join(dryRunRoot, "Makefile")
+	withoutRecursiveMake := strings.ReplaceAll(string(contents), "$(MAKE)", ":")
+	if err := os.WriteFile(dryRunMakefile, []byte(withoutRecursiveMake), 0o644); err != nil {
+		return nil, fmt.Errorf("write Makefile for dry run: %w", err)
+	}
+
+	command := exec.CommandContext(t.Context(), "make", "-n", "--no-print-directory", "-f", dryRunMakefile, "GO=go", target)
+	command.Dir = repoRoot
+	output, err := command.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("make -n %s: %w\n%s", target, err, output)
+	}
+
+	mode, patternText, err := cliRecipePattern(string(output))
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", target, err)
+	}
+	if patternText == "$pattern" {
+		if !strings.Contains(string(output), `pattern="$( go run`) || !strings.Contains(string(output), "./cmd/verify-select -baseline-cli-pattern") {
+			return nil, fmt.Errorf("CLI recipe does not derive $pattern from verify-select: %s", output)
+		}
+		patternText, err = verifyselect.BaselineCLITestPattern(repoRoot)
+		if err != nil {
+			return nil, fmt.Errorf("derive baseline CLI pattern: %w", err)
+		}
+	}
+	pattern, err := regexp.Compile(patternText)
+	if err != nil {
+		return nil, fmt.Errorf("compile CLI recipe -%s pattern %q: %w", mode, patternText, err)
+	}
+
+	selected := make(nameSet)
+	for _, name := range tests {
+		matches := pattern.MatchString(name)
+		if mode == "skip" {
+			matches = !matches
+		}
+		if matches {
+			selected[name] = struct{}{}
+		}
+	}
+	return selected, nil
+}
+
+func cliRecipePattern(dryRun string) (string, string, error) {
+	flagPattern := regexp.MustCompile(`-(run|skip)\s+"([^"]+)"`)
+	var matches [][]string
+	for _, line := range strings.Split(dryRun, "\n") {
+		if !strings.Contains(line, "go test") || !strings.Contains(line, "./internal/cli") {
+			continue
+		}
+		matches = append(matches, flagPattern.FindAllStringSubmatch(line, -1)...)
+	}
+	if len(matches) != 1 {
+		return "", "", fmt.Errorf("found %d -run/-skip arguments on the internal/cli go test command, want 1\n%s", len(matches), dryRun)
+	}
+	return matches[0][1], matches[0][2], nil
 }
 
 func makeNameSet(names []string) nameSet {
