@@ -9,6 +9,7 @@ paths:
   - internal/cli/cli_test.go
   - internal/speccheck/coherence.go
   - internal/docscontract/testdata/corpus-golden.json
+  - internal/spec/archive_layout_characterization_test.go
   - .agents/skills/write-tasks/SKILL.md
   - .agents/skills/write-tasks/references/task-template.md
   - skills/write-tasks/SKILL.md
@@ -51,6 +52,10 @@ set was measured with `GovernedPath` itself.
   registered there.
 - `internal/docscontract/testdata/corpus-golden.json` — pins per-code finding
   counts over the active corpus; a new code may need its entry.
+- `internal/spec/archive_layout_characterization_test.go` — pins the same
+  golden a second time; the golden and its characterization change together.
+  The first Run of this Spec proved the need: Task 02 updated both and the
+  audit refused the unbounded one.
 - The eight skill files — the authorized guidance; `.agents/skills/` is
   canonical and `skills/` is its distributed mirror.
 

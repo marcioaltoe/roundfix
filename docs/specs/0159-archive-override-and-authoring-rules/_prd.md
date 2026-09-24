@@ -52,6 +52,7 @@ providers delivery, which owns reviewer selection.
   `internal/spec/archive.go`, `internal/spec/archive_test.go`,
   `internal/cli/cli_test.go`, `internal/speccheck/coherence.go`,
   `internal/docscontract/testdata/corpus-golden.json`,
+  `internal/spec/archive_layout_characterization_test.go`,
   `.agents/skills/write-tasks/SKILL.md`,
   `.agents/skills/write-tasks/references/task-template.md`,
   `skills/write-tasks/SKILL.md`, `.agents/skills/qa-gate/SKILL.md`,
