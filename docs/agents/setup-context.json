@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:74c30a138531e9d9f509cb8c9eeda13984ac4bb348cbb66a27c53f0754246569",
-  "catalogDigest": "sha256:f10bc8b822dd4cfc797cfd9d79831a00278f3500542f29e234f757c010541f3c",
+  "catalogDigest": "sha256:f2bb4e97367408cf6755ab6fbd5f2bcfe4eb4568a61b12e8c49fef0644ef5e2f",
   "modules": [
     "core",
     "context-workflow",
@@ -234,7 +234,7 @@
       "module": "secondbrain",
       "template": "template.guide.secondbrain",
       "version": "0.0.1",
-      "digest": "32cdc02a45dad354a8c561f574929332af55d16d9af1acc84364e99002043150"
+      "digest": "b848ce0bef534a6e807aa0337a43c086b56450f8ce151b04c4409f143411dcc4"
     },
     {
       "id": "root.repository-extension",
