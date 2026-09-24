@@ -91,7 +91,9 @@ the recorded identity and releases the owner on a mismatch.
 1. Checks (depends on: none).
 2. Branches (depends on: 1).
 3. Park and resume (depends on: 2).
-4. Terminal QA (depends on: 1, 2, 3).
+4. Terminal QA (depends on: 1, 2, 3, 5, 6).
+5. Accept the archive commit the real command makes (depends on: 3).
+6. Park only what the item touched (depends on: 5).
 
 ## Risks & Considerations
 
