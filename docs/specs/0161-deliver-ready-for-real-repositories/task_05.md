@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0161-deliver-ready-for-real-repositories
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -40,3 +40,13 @@ Corrective Task from the pre-PR review of 2026-09-24. `archiveCommitIsExact` com
 ## References
 
 - [_techspec.md](_techspec.md) — Park and resume
+
+## Result
+
+- Resume reconciliation now compares every non-PRD entry in the active and archived Spec trees by Git identity, requires the PRD file kind to remain unchanged, and accepts only archive-owned PRD frontmatter differences (`status`, `archived`, `source_slug`, and optional `unproven`) with the Markdown body unchanged.
+- `TestResumeAcceptsARealArchiveCommit` builds a completed Spec, records declared-only partial QA evidence, calls `spec.Archive`, confirms the real `unproven` stamp, commits that output, and observes resume append the archive head instead of parking as `review-stale`.
+- `TestResumeRefusesAnArchiveCommitWithExtraChanges` observes resume park as `review-stale` for both an unrelated committed path and a changed archived PRD body.
+- Focused check: `GOCACHE=/private/tmp/roundfix-task05-gocache go test -count=1 -run '^TestResumeAcceptsARealArchiveCommit$' ./internal/cli` passed.
+- Focused check: `GOCACHE=/private/tmp/roundfix-task05-gocache go test -count=1 -run '^TestResumeRefusesAnArchiveCommitWithExtraChanges$' ./internal/cli` passed.
+- Adjacent regression check: `GOCACHE=/private/tmp/roundfix-task05-gocache go test -count=1 -run '^(TestAParkLeavesACleanCheckout|TestResume.*)$' ./internal/cli` passed.
+- Diff hygiene: `git diff --check` passed. The Task's declared Verification was not run; the Daemon owns it.

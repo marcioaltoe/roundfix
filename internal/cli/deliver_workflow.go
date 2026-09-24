@@ -8,11 +8,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
+	"time"
 
+	"gopkg.in/yaml.v3"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/daemon"
 	"roundfix/internal/delivery"
@@ -525,15 +529,37 @@ func (workflow *commandDeliveryWorkflow) archiveCommitIsExact(
 	if !sawSource || !sawDestination {
 		return false, nil
 	}
-	sourceTree, err := workflow.git.RunGit(ctx, gitRoot, "rev-parse", parent+":"+source)
+	sourceTree, err := workflow.gitTreeEntries(ctx, gitRoot, parent+":"+source)
 	if err != nil {
 		return false, fmt.Errorf("read active Spec tree: %w", err)
 	}
-	destinationTree, err := workflow.git.RunGit(ctx, gitRoot, "rev-parse", head+":"+destination)
+	destinationTree, err := workflow.gitTreeEntries(ctx, gitRoot, head+":"+destination)
 	if err != nil {
 		return false, fmt.Errorf("read archived Spec tree: %w", err)
 	}
-	if strings.TrimSpace(sourceTree) != strings.TrimSpace(destinationTree) {
+	sourcePRDEntry, ok := sourceTree["_prd.md"]
+	if !ok {
+		return false, nil
+	}
+	destinationPRDEntry, ok := destinationTree["_prd.md"]
+	sourcePRDKind := gitTreeEntryKind(sourcePRDEntry)
+	if !ok || sourcePRDKind == "" || sourcePRDKind != gitTreeEntryKind(destinationPRDEntry) {
+		return false, nil
+	}
+	delete(sourceTree, "_prd.md")
+	delete(destinationTree, "_prd.md")
+	if !maps.Equal(sourceTree, destinationTree) {
+		return false, nil
+	}
+	sourcePRD, err := workflow.git.RunGit(ctx, gitRoot, "show", parent+":"+source+"/_prd.md")
+	if err != nil {
+		return false, fmt.Errorf("read active Spec PRD: %w", err)
+	}
+	destinationPRD, err := workflow.git.RunGit(ctx, gitRoot, "show", head+":"+destination+"/_prd.md")
+	if err != nil {
+		return false, fmt.Errorf("read archived Spec PRD: %w", err)
+	}
+	if !archivePRDChangeIsExact([]byte(sourcePRD), []byte(destinationPRD), filepath.Base(source)) {
 		return false, nil
 	}
 	sourceAtHead, err := workflow.gitObjectExists(ctx, gitRoot, head+":"+source)
@@ -545,6 +571,85 @@ func (workflow *commandDeliveryWorkflow) archiveCommitIsExact(
 		return false, fmt.Errorf("inspect archive destination before archive: %w", err)
 	}
 	return !sourceAtHead && !destinationAtParent, nil
+}
+
+func (workflow *commandDeliveryWorkflow) gitTreeEntries(ctx context.Context, gitRoot, object string) (map[string]string, error) {
+	listing, err := workflow.git.RunGit(ctx, gitRoot, "ls-tree", "-r", "-z", object)
+	if err != nil {
+		return nil, err
+	}
+	entries := make(map[string]string)
+	for _, record := range strings.Split(strings.TrimSuffix(listing, "\x00"), "\x00") {
+		if record == "" {
+			continue
+		}
+		identity, name, ok := strings.Cut(record, "\t")
+		if !ok || identity == "" || name == "" {
+			return nil, fmt.Errorf("malformed ls-tree entry %q", record)
+		}
+		entries[filepath.ToSlash(name)] = identity
+	}
+	return entries, nil
+}
+
+func gitTreeEntryKind(entry string) string {
+	fields := strings.Fields(entry)
+	if len(fields) != 3 {
+		return ""
+	}
+	return fields[0] + " " + fields[1]
+}
+
+func archivePRDChangeIsExact(source, destination []byte, slug string) bool {
+	sourceFrontmatter, sourceBody, ok := splitArchivePRD(source)
+	if !ok {
+		return false
+	}
+	destinationFrontmatter, destinationBody, ok := splitArchivePRD(destination)
+	if !ok || !bytes.Equal(sourceBody, destinationBody) {
+		return false
+	}
+	var sourceValues map[string]any
+	if err := yaml.Unmarshal(sourceFrontmatter, &sourceValues); err != nil {
+		return false
+	}
+	var destinationValues map[string]any
+	if err := yaml.Unmarshal(destinationFrontmatter, &destinationValues); err != nil {
+		return false
+	}
+	status, statusOK := destinationValues["status"].(string)
+	archived, archivedOK := destinationValues["archived"].(string)
+	sourceSlug, sourceSlugOK := destinationValues["source_slug"].(string)
+	if !statusOK || status != "archived" || !archivedOK || !validArchiveDate(archived) || !sourceSlugOK || sourceSlug != slug {
+		return false
+	}
+	for _, key := range []string{"status", "archived", "source_slug", "unproven"} {
+		delete(sourceValues, key)
+		delete(destinationValues, key)
+	}
+	return reflect.DeepEqual(sourceValues, destinationValues)
+}
+
+func splitArchivePRD(content []byte) ([]byte, []byte, bool) {
+	const opening = "---\n"
+	if !bytes.HasPrefix(content, []byte(opening)) {
+		return nil, nil, false
+	}
+	rest := content[len(opening):]
+	end := bytes.Index(rest, []byte("\n---"))
+	if end < 0 {
+		return nil, nil, false
+	}
+	bodyStart := end + len("\n---")
+	for bodyStart < len(rest) && (rest[bodyStart] == '\n' || rest[bodyStart] == '\r') {
+		bodyStart++
+	}
+	return rest[:end], rest[bodyStart:], true
+}
+
+func validArchiveDate(value string) bool {
+	_, err := time.Parse("2006-01-02", value)
+	return err == nil
 }
 
 func (workflow *commandDeliveryWorkflow) gitObjectExists(ctx context.Context, gitRoot, object string) (bool, error) {

@@ -15,11 +15,13 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/delivery"
 	"roundfix/internal/gittest"
 	"roundfix/internal/preflight"
+	"roundfix/internal/spec"
 	"roundfix/internal/store"
 )
 
@@ -457,122 +459,142 @@ func TestAParkLeavesACleanCheckout(t *testing.T) {
 	}
 }
 
-func TestResumeAcceptsTheArchiveCommit(t *testing.T) {
+func TestResumeAcceptsARealArchiveCommit(t *testing.T) {
+	repository, reviewedHead, archiveHead := commitRealArchive(t, nil)
+
+	item := resumeArchivedDelivery(t, repository, reviewedHead)
+
+	if item.Blocker == delivery.BlockerReviewStale {
+		t.Fatalf("resumed archive item = %+v, want real archive commit accepted", item)
+	}
+	if !reflect.DeepEqual(item.CandidateCommits, []string{reviewedHead, archiveHead}) {
+		t.Fatalf("candidate commits = %q, want reviewed and archive heads", item.CandidateCommits)
+	}
+}
+
+func TestResumeRefusesAnArchiveCommitWithExtraChanges(t *testing.T) {
 	tests := []struct {
-		name      string
-		extraPath bool
-		wantExact bool
+		name   string
+		mutate func(*testing.T, string)
 	}{
-		{name: "exact Spec move", wantExact: true},
-		{name: "move with unrelated change", extraPath: true, wantExact: false},
+		{
+			name: "unrelated path",
+			mutate: func(t *testing.T, repository string) {
+				t.Helper()
+				mustWrite(t, filepath.Join(repository, "unrelated.txt"), "unrelated\n")
+			},
+		},
+		{
+			name: "changed PRD body",
+			mutate: func(t *testing.T, repository string) {
+				t.Helper()
+				prdPath := archiveTestRepositoryPath(repository, spec.ArchiveKindSpec, implementTestSlug, "_prd.md")
+				mustWrite(t, prdPath, mustRead(t, prdPath)+"\nChanged after archive.\n")
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repository := t.TempDir()
-			gittest.InitRepo(t, repository, "--initial-branch=main")
-			gittest.PersistIdentity(t, repository)
-			const slug = "0161-archive-resume"
-			source := filepath.Join(repository, "docs", "specs", slug)
-			if err := os.MkdirAll(source, 0o755); err != nil {
-				t.Fatalf("create active Spec: %v", err)
-			}
-			if err := os.MkdirAll(filepath.Join(repository, "docs", "specs", "still-active"), 0o755); err != nil {
-				t.Fatalf("create remaining Spec: %v", err)
-			}
-			if err := os.WriteFile(filepath.Join(source, "_prd.md"), []byte("# Archived Spec\n"), 0o644); err != nil {
-				t.Fatalf("write active Spec: %v", err)
-			}
-			if err := os.WriteFile(filepath.Join(repository, "docs", "specs", "still-active", "_prd.md"), []byte("# Active Spec\n"), 0o644); err != nil {
-				t.Fatalf("write remaining Spec: %v", err)
-			}
-			gittest.Run(t, repository, "add", "docs/specs")
-			gittest.Run(t, repository, "commit", "-m", "docs: add Specs")
-			gittest.Run(t, repository, "switch", "-c", "roundfix/deliver-"+slug)
-			reviewedHead := strings.TrimSpace(gittest.Run(t, repository, "rev-parse", "HEAD"))
-			destination := filepath.Join(repository, "docs", "history", "specs", slug)
-			if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
-				t.Fatalf("create archive root: %v", err)
-			}
-			if err := os.Rename(source, destination); err != nil {
-				t.Fatalf("move Spec to archive root: %v", err)
-			}
-			if tt.extraPath {
-				if err := os.WriteFile(filepath.Join(repository, "unrelated.txt"), []byte("unrelated\n"), 0o644); err != nil {
-					t.Fatalf("write unrelated change: %v", err)
-				}
-			}
-			gittest.Run(t, repository, "add", "-A")
-			gittest.Run(t, repository, "commit", "-m", "docs: archive "+slug)
-			archiveHead := strings.TrimSpace(gittest.Run(t, repository, "rev-parse", "HEAD"))
-			workflow := &commandDeliveryWorkflow{
-				loaded: roundconfig.Loaded{
-					GitRoot: repository,
-					Config:  roundconfig.Config{Specs: roundconfig.Specs{Root: "docs/specs"}},
-				},
-				git: preflight.ExecGitRunner{},
-			}
+			repository, reviewedHead, _ := commitRealArchive(t, tt.mutate)
 
-			result, err := workflow.Archive(t.Context(), repository, slug, reviewedHead)
+			item := resumeArchivedDelivery(t, repository, reviewedHead)
 
-			if err != nil {
-				t.Fatalf("resume archive reconciliation: %v", err)
+			if item.Stage != store.DeliveryStageParked || item.Blocker != delivery.BlockerReviewStale {
+				t.Fatalf("resumed archive item = %+v, want parked as review-stale", item)
 			}
-			if result.ExactSpecMove != tt.wantExact {
-				t.Fatalf("archive result = %+v, want exact=%v", result, tt.wantExact)
-			}
-			if tt.wantExact && (result.Parent != reviewedHead || result.Head != archiveHead) {
-				t.Fatalf("archive result = %+v, want parent %q head %q", result, reviewedHead, archiveHead)
-			}
-			if !tt.wantExact {
-				return
-			}
-
-			runStore, err := store.Open(t.Context(), t.TempDir())
-			if err != nil {
-				t.Fatalf("open Run Database: %v", err)
-			}
-			t.Cleanup(func() {
-				if err := runStore.Close(); err != nil {
-					t.Errorf("close Run Database: %v", err)
-				}
-			})
-			queue, err := runStore.CreateDeliveryQueue(t.Context(), repository, []string{slug})
-			if err != nil {
-				t.Fatalf("create Delivery Queue: %v", err)
-			}
-			item := queue.Items[0]
-			item.Stage = store.DeliveryStageArchiving
-			item.Branch = "roundfix/deliver-" + slug
-			item.CandidateCommits = []string{reviewedHead}
-			if err := runStore.UpdateDeliveryQueueItem(t.Context(), repository, item); err != nil {
-				t.Fatalf("seed archiving item: %v", err)
-			}
-			workflow.store = runStore
-			flow := &parkTestDeliveryFlow{}
-			engine := delivery.NewEngine(runStore, delivery.EngineDependencies{
-				Workspace:    workflow,
-				Runner:       flow,
-				Reviewer:     flow,
-				Archiver:     workflow,
-				Gate:         flow,
-				Authorizer:   flow,
-				Publication:  flow,
-				PullRequests: flow,
-			})
-
-			if _, err := engine.Run(t.Context(), repository); err != nil {
-				t.Fatalf("resume Delivery Engine after archive commit: %v", err)
-			}
-			resumed, found, err := runStore.DeliveryQueue(t.Context(), repository)
-			if err != nil || !found {
-				t.Fatalf("read resumed Delivery Queue: found=%v err=%v", found, err)
-			}
-			got := resumed.Items[0]
-			if got.Blocker == delivery.BlockerReviewStale || !reflect.DeepEqual(got.CandidateCommits, []string{reviewedHead, archiveHead}) {
-				t.Fatalf("resumed archive item = %+v, want archive head accepted past archiving", got)
+			if !reflect.DeepEqual(item.CandidateCommits, []string{reviewedHead}) {
+				t.Fatalf("candidate commits = %q, want only reviewed head", item.CandidateCommits)
 			}
 		})
 	}
+}
+
+func commitRealArchive(t *testing.T, mutate func(*testing.T, string)) (string, string, string) {
+	t.Helper()
+	_, repository := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", status: string(spec.StatusCompleted)},
+	})
+	const unprovenAction = "a maintainer publishes the tagged release"
+	appendArchiveUnreachableDeclarations(t, repository, []string{unprovenAction})
+	writeArchiveQAReport(t, repository, spec.VerdictPartial,
+		"rows_blocked_declared: 1",
+		"rows_blocked_finding: 0",
+		"rows_blocked_environment: 0",
+	)
+	gittest.Run(t, repository, "add", "docs/specs")
+	gittest.Run(t, repository, "commit", "-m", "docs: record passing QA")
+	reviewedHead := strings.TrimSpace(gittest.Run(t, repository, "rev-parse", "HEAD"))
+
+	archiveResult, err := spec.Archive(spec.ArchiveRequest{
+		SpecsRoot:   filepath.Join(repository, "docs", "specs"),
+		BuiltInRoot: true,
+		Slug:        implementTestSlug,
+		ArchivedAt:  time.Date(2026, time.September, 24, 0, 0, 0, 0, time.UTC),
+	})
+	if err != nil {
+		t.Fatalf("archive Spec through real command boundary: %v", err)
+	}
+	if got := readArchivedUnproven(t, filepath.Join(archiveResult.ArchivedDir, "_prd.md")); !reflect.DeepEqual(got, []string{unprovenAction}) {
+		t.Fatalf("real archive unproven actions = %q, want %q", got, []string{unprovenAction})
+	}
+	if mutate != nil {
+		mutate(t, repository)
+	}
+	gittest.Run(t, repository, "add", "-A")
+	gittest.Run(t, repository, "commit", "-m", "docs: archive "+implementTestSlug)
+	archiveHead := strings.TrimSpace(gittest.Run(t, repository, "rev-parse", "HEAD"))
+	return repository, reviewedHead, archiveHead
+}
+
+func resumeArchivedDelivery(t *testing.T, repository string, reviewedHead string) store.DeliveryQueueItem {
+	t.Helper()
+	runStore, err := store.Open(t.Context(), t.TempDir())
+	if err != nil {
+		t.Fatalf("open Run Database: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := runStore.Close(); err != nil {
+			t.Errorf("close Run Database: %v", err)
+		}
+	})
+	queue, err := runStore.CreateDeliveryQueue(t.Context(), repository, []string{implementTestSlug})
+	if err != nil {
+		t.Fatalf("create Delivery Queue: %v", err)
+	}
+	item := queue.Items[0]
+	item.Stage = store.DeliveryStageArchiving
+	item.Branch = strings.TrimSpace(gittest.Run(t, repository, "branch", "--show-current"))
+	item.CandidateCommits = []string{reviewedHead}
+	if err := runStore.UpdateDeliveryQueueItem(t.Context(), repository, item); err != nil {
+		t.Fatalf("seed archiving item: %v", err)
+	}
+	workflow := &commandDeliveryWorkflow{
+		store: runStore,
+		loaded: roundconfig.Loaded{
+			GitRoot: repository,
+			Config:  roundconfig.Config{Specs: roundconfig.Specs{Root: "docs/specs"}},
+		},
+		git: preflight.ExecGitRunner{},
+	}
+	flow := &parkTestDeliveryFlow{}
+	engine := delivery.NewEngine(runStore, delivery.EngineDependencies{
+		Workspace:    workflow,
+		Runner:       flow,
+		Reviewer:     flow,
+		Archiver:     workflow,
+		Gate:         flow,
+		Authorizer:   flow,
+		Publication:  flow,
+		PullRequests: flow,
+	})
+	if _, err := engine.Run(t.Context(), repository); err != nil {
+		t.Fatalf("resume Delivery Engine after archive commit: %v", err)
+	}
+	resumed, found, err := runStore.DeliveryQueue(t.Context(), repository)
+	if err != nil || !found {
+		t.Fatalf("read resumed Delivery Queue: found=%v err=%v", found, err)
+	}
+	return resumed.Items[0]
 }
 
 func newDeliveryBranchRepository(t *testing.T) (string, string) {
