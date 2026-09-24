@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0160-a-review-that-reaches-a-verdict
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
