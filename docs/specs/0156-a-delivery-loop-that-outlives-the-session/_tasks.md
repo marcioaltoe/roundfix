@@ -21,10 +21,13 @@ graph:
       needs: [task_04]
     - id: task_06
       file: task_06.md
-      needs: [task_01, task_02, task_03, task_04, task_05, task_07]
+      needs: [task_01, task_02, task_03, task_04, task_05, task_07, task_08]
     - id: task_07
       file: task_07.md
       needs: [task_05]
+    - id: task_08
+      file: task_08.md
+      needs: [task_07]
 ---
 
 # Task Graph
@@ -37,4 +40,5 @@ graph:
 | task_04 | backend | The command family |
 | task_05 | docs | Describe the queue in the shipped skill and the guide |
 | task_06 | qa | Run the final QA gate |
+| task_08 | backend | Publish only the reviewed head, from each item's own branch |
 | task_07 | backend | A migration ladder that applies from every earlier version |

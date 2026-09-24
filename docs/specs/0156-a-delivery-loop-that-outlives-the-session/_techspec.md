@@ -139,8 +139,9 @@ operation parks the item as `unauthorized` before any external action.
 3. The delivery engine (depends on: 1, 2).
 4. The command family (depends on: 3).
 5. The shipped skill and the user guide (depends on: 4).
-6. Terminal QA (depends on: 1, 2, 3, 4, 5, 7).
+6. Terminal QA (depends on: 1, 2, 3, 4, 5, 7, 8).
 7. A migration ladder that applies from every earlier version (depends on: 5).
+8. Publish only the reviewed head, from each item's own branch (depends on: 7).
 
 ## Risks & Considerations
 

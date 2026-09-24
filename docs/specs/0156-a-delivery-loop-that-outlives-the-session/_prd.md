@@ -112,6 +112,22 @@ eight prerequisite Specs.
 4. A Spec whose authorization record lacks `merge` is parked before any merge
    is attempted.
 
+## Recorded limits
+
+The maintainer's corrective ceiling of two Tasks was spent on the migration
+ladder and on the publication-safety defects the pre-PR review of 2026-09-24
+found. Two lower-severity defects from that review are carried:
+
+- A crash after the archive commit but before the stage advances resumes as
+  `review-stale`, because the new HEAD's parent is the reviewed head.
+  Reproduction: kill the owner between the archive commit and the gating stage,
+  then `deliver resume`. Carried fix: accept a HEAD whose parent is the reviewed
+  head and whose change is exactly the Spec move.
+- `resume` checks only that the recorded owner PID is alive, so a reused PID
+  after a reboot makes both `resume` and `stop` refuse. Reproduction: record an
+  owner, reuse its PID with an unrelated process, then `deliver resume`. Carried
+  fix: compare the recorded process identity and release a stale owner.
+
 ## Decisions
 
 - **Review before archive.** The maintainer set the order on 2026-09-22: archive
