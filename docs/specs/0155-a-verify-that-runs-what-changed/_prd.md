@@ -38,10 +38,14 @@ execution, not from splitting repositories.
   and ADR-0156 makes a declared promise name a consuming Task. This Spec's gate
   is bound by ADR-0080, ADR-0091, ADR-0096, ADR-0097 and ADR-0117. All hold.
   Source: `docs/agents/domain.md`.
-- Tooling authority: not applicable — measured as the intersection of this
-  Spec's changed paths with the literal set in `internal/speccheck/governed.go`,
-  which is empty. `Makefile`, `.roundfixrc.yml`, the CI workflows and the new
-  selector are ordinary source. Source: `docs/agents/agent-instructions.md`,
+- Tooling authority: applicable — a selective gate is build-tool and
+  Verification configuration. Express maintainer authorization: the decision of
+  2026-09-24 for selective gates in one repository, and the standing grant of
+  2026-09-21 for governed paths a slice needs, recorded in
+  [_authorization.md](_authorization.md); bounded files: `Makefile`,
+  `.roundfixrc.yml`, `.github/workflows/ci-verify.yml`. Measured with
+  `GovernedPath` over every changed path; the selector package is ordinary
+  source. Source: `docs/agents/agent-instructions.md`,
   `docs/agents/spec-routing.md`.
 
 ## Goals

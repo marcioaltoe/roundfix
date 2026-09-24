@@ -24,8 +24,9 @@ CI switch to the selective target; `main` and releases keep the complete one.
 - Active ADR obligations: applicable — ADR-0080, ADR-0091, ADR-0093, ADR-0096,
   ADR-0097, ADR-0104, ADR-0117, ADR-0130, ADR-0155 and ADR-0156 hold. Source:
   `docs/agents/domain.md`.
-- Tooling authority: not applicable — the intersection with
-  `internal/speccheck/governed.go` is empty. Source:
+- Tooling authority: applicable — express maintainer authorization recorded in
+  [_authorization.md](_authorization.md); bounded files: `Makefile`,
+  `.roundfixrc.yml`, `.github/workflows/ci-verify.yml`. Source:
   `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`.
 
 ## The two sets
