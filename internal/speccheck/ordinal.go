@@ -39,11 +39,16 @@ func detectOrdinalClaims(result *Result, specsRoot, repoRoot string, graph *spec
 	}
 
 	for _, claim := range claims {
+		fulfilled := false
 		for _, heldPath := range heldPaths[claim.number] {
 			if heldPath == claim.path {
+				fulfilled = true
 				continue
 			}
 			result.Findings = append(result.Findings, ordinalTreeFinding(claim, heldPath))
+		}
+		if fulfilled {
+			continue
 		}
 		for _, other := range otherClaims[claim.number] {
 			result.Findings = append(result.Findings, ordinalSpecFinding(claim, other))
@@ -126,10 +131,7 @@ func activeOrdinalClaims(specsRoot, repoRoot, currentSlug string) (map[string][]
 		}
 		graph, loadErr := spec.LoadForRecovery(specsRoot, activeSpec.Slug)
 		if loadErr != nil {
-			var stale spec.StaleGateError
-			if graph == nil || !errors.As(loadErr, &stale) {
-				return nil, fmt.Errorf("load Task Graph for active Spec %q while checking ADR ordinal claims: %w", activeSpec.Slug, loadErr)
-			}
+			continue
 		}
 		for _, claim := range ordinalClaims(graph, specsRoot, repoRoot) {
 			claims[claim.number] = append(claims[claim.number], claim)

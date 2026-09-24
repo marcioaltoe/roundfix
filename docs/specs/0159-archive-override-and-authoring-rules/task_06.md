@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0159-archive-override-and-authoring-rules
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -39,3 +39,39 @@ Corrective Task from the pre-PR review of 2026-09-24. `SC-ORDINAL-CLAIMED` compa
 ## References
 
 - [_techspec.md](_techspec.md) — Claimed ordinals
+
+## Result
+
+The ordinal detector now treats an exact tree path as a fulfilled claim and
+skips only that claim's comparison with other active Specs. A later claim for
+the same number remains visible through its collision with the fulfilled tree
+path. Claim collection also excludes any neighbouring active Spec whose Task
+Graph cannot load, so that neighbour's validation failure stays local to its
+own check.
+
+Acceptance evidence:
+
+- Fulfilled claim attribution: before the production edit,
+  `rtk env GOCACHE=/tmp/roundfix-task06-gocache go test -count=1 -run '^TestFulfilledOrdinalClaimIsNotBlamedForALaterClaim$' ./internal/speccheck`
+  failed because `first-spec` received `SC-ORDINAL-CLAIMED` for
+  `later-spec`. After the edit, the same focused check passed; it also confirmed
+  that checking `later-spec` reports the collision with the fulfilled tree
+  path.
+- Unloadable-neighbour isolation: before the production edit,
+  `rtk env GOCACHE=/tmp/roundfix-task06-gocache go test -count=1 -run '^TestOrdinalCheckSkipsAnUnloadableActiveSpec$' ./internal/speccheck`
+  failed because a missing neighbour Task file aborted `CheckStage`. After the
+  edit, the same focused check passed without replacing the real filesystem
+  boundary with a mock.
+
+Additional focused-check evidence:
+
+- `rtk env GOCACHE=/tmp/roundfix-task06-gocache go test -count=1 ./internal/speccheck`
+  passed the complete package suite.
+- `rtk env GOCACHE=/tmp/roundfix-task06-gocache make verify-incremental`
+  was first blocked when the sandbox denied an integration test access to
+  `api.github.com`. Re-running the same gate with permitted host access exited
+  0 after vet, all Go tests, skill synchronization checks, skill validation,
+  and the build.
+- `rtk git diff --check` passed before this Result was appended.
+
+The Daemon-owned `## Verification` command was not run in this Agent turn.
