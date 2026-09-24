@@ -73,7 +73,9 @@ header alone.
 
 1. The ceiling (depends on: none).
 2. The budget test (depends on: 1).
-3. Terminal QA (depends on: 1, 2).
+3. Terminal QA (depends on: 1, 2, 4, 5).
+4. A ceiling that frees itself and cannot be raced (depends on: 2).
+5. Keep what the budget test proved (depends on: 4).
 
 ## Risks & Considerations
 

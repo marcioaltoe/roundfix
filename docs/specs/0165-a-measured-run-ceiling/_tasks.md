@@ -12,7 +12,13 @@ graph:
       needs: [task_01]
     - id: task_03
       file: task_03.md
-      needs: [task_01, task_02]
+      needs: [task_01, task_02, task_04, task_05]
+    - id: task_04
+      file: task_04.md
+      needs: [task_02]
+    - id: task_05
+      file: task_05.md
+      needs: [task_04]
 ---
 
 # Task Graph
@@ -21,4 +27,6 @@ graph:
 | --- | --- | --- |
 | task_01 | backend | A machine-wide Active Run ceiling |
 | task_02 | test | A budget test that does not race the header |
+| task_04 | backend | A ceiling that frees itself and cannot be raced |
+| task_05 | test | Keep what the budget test proved |
 | task_03 | qa | Run the final QA gate |
