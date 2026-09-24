@@ -101,6 +101,25 @@ Features 6 and 7 and Spec 0123 Core Feature 3.
 3. A requested full access on a runtime or adapter that cannot honour it fails
    readiness, and no Run is created.
 
+## Recorded limits
+
+The corrective ceiling of two Tasks was spent on the defects the first pre-PR
+review of 2026-09-24 found. The second review found three minor defects,
+carried to Spec 0167:
+
+- In independent mode, a command that fails in both the first run and the
+  exclusive retry is reported twice to the repair turn, and a command the retry
+  shows passing is still carried as failed. Reproduction: a Task declaring
+  `verification: independent` with one always-failing command and one command
+  that fails temporarily once.
+- A named repair Task that completed after the Agent removed or padded the
+  repository command in its Task file makes the next `implement` of the Spec
+  refuse at planning, because the verbatim check also inspects completed Tasks.
+  Reproduction: let the Agent delete the command, settle, then run `implement`
+  again with a later Task failed.
+- A degraded full-access policy reaches only `profiles validate --json`; the
+  text output and Doctor still print `passed`.
+
 ## Decisions
 
 - **Declared, never inferred.** Reading independence from shell text would guess
