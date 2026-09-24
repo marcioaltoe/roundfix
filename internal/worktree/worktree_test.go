@@ -2121,6 +2121,33 @@ func TestClassifyRunBranchSetPreservesActiveRunBranch(t *testing.T) {
 	}
 }
 
+func TestApplyRunBranchCandidateRefusesACandidateWithoutEvidence(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	fixture := newRunBranchSetFixture(t, slug, "qa-report-2026-07-28.md")
+	squashMergeAndDeleteRunBranchSetTarget(t, &fixture, "ma/deleted-target")
+	commitQAReport(t, fixture.repoDir, slug, "qa-report-2026-07-29.md", true, "pass")
+	classification, err := ClassifyRunBranchSet(
+		context.Background(),
+		fixture.repoDir,
+		fixture.targetBranch,
+		slug,
+		fixture.runs,
+	)
+	if err != nil {
+		t.Fatalf("classify Run Branch set: %v", err)
+	}
+	candidate := fixture.refs[0]
+
+	err = ApplyRunBranchCandidate(context.Background(), classification, candidate.Branch)
+
+	if err == nil || !strings.Contains(err.Error(), "worktree revalidation returned no evidence") {
+		t.Fatalf("unproven Run Branch apply error = %v, want revalidation refusal", err)
+	}
+	assertPathExists(t, candidate.Path)
+	assertRunBranchExists(t, fixture.repoDir, candidate.Branch)
+}
+
 func TestApplyRunBranchCandidateRevalidatesProofAndCleanWorktree(t *testing.T) {
 	t.Parallel()
 	const slug = "0066-run-teardown-reclaims-what-it-created"

@@ -649,6 +649,9 @@ func ApplyRunBranchCandidate(ctx context.Context, inspected BranchSetClassificat
 			terminal.State,
 		)
 	}
+	if terminal.evidence == nil {
+		return fmt.Errorf("apply Run Branch candidate %q: worktree revalidation returned no evidence", branch)
+	}
 	return cleanupTerminalRun(ctx, execGitRunner{}, terminal)
 }
 
