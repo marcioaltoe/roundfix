@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0155-a-verify-that-runs-what-changed
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -58,3 +58,58 @@ affect: core, Baseline, both, or neither.
 ## References
 
 - [_techspec.md](_techspec.md) — The selector
+
+## Result
+
+### Implementation
+
+- Added a context-aware selector that combines committed paths since the merge
+  base with unstaged and untracked paths, deduplicates them, and classifies the
+  result into the core and Baseline sets. Any Git or base-resolution error
+  returns both sets with the diagnostic preserved.
+- Added shared package-set definitions and an anchored Baseline CLI test pattern
+  derived by parsing `internal/cli/baseline_*_test.go` declarations.
+- Added the `verify-select` entry point. Its default stdout is one selected set
+  per line; `-packages core|baseline` and `-baseline-cli-pattern` expose the
+  definitions consumed by later Tasks. Diagnostics stay on stderr.
+- Added pure classification cases and real temporary-repository coverage for
+  committed, unstaged, untracked, unresolvable-base, and failing-Git behavior.
+
+### Focused checks
+
+- `rtk env GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 ./internal/verifyselect`
+  — passed.
+- `rtk env GOCACHE=/tmp/roundfix-task01-gocache go vet ./internal/verifyselect ./cmd/verify-select`
+  — passed.
+- `rtk env GOCACHE=/tmp/roundfix-task01-gocache go build -o /tmp/roundfix-verify-select-task01 ./cmd/verify-select`
+  — passed.
+- `rtk env GOCACHE=/tmp/roundfix-task01-gocache go run ./cmd/verify-select -base refs/heads/does-not-exist`
+  — exited 0, printed `core` and `baseline` to stdout, and reported the
+  unresolved base on stderr.
+- `rtk make verify-incremental` — passed after rerunning with the permission its
+  existing GitHub-dependent check requires; formatting, vet, the full Go test
+  suite, skill checks, and the Roundfix build passed.
+- The Task's declared `## Verification` commands were not run; the Daemon owns
+  them.
+
+### Acceptance evidence
+
+1. `TestSelectClassifiesFixtureChangeSets` covers core-only, Baseline-only,
+   mixed, module-file, and documentation-only fixtures; the focused package
+   test passed.
+2. `TestSelectFailsSafeToBothSets` covers an unresolvable base and a Git
+   invocation in a non-repository directory; the focused package test passed,
+   and the live entry-point probe also selected both sets.
+3. `TestBaselineCLITestPatternIsDerived` compares the derived names with an
+   independent declaration scan and checks the pattern against every declared
+   `internal/cli` test; the focused package test passed.
+
+### Follow-ups
+
+- Task 02 owns the whole-suite partition contract. Task 03 owns Makefile and
+  Daemon wiring; neither is included in this diff.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260924T120111Z_5495c6532dc4de3f`
+- Source commit: `2552f2776fb451cee16579b99a0a04a667cad6cb`
