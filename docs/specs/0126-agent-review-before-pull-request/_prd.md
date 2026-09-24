@@ -159,3 +159,18 @@ A durable workflow records the overridden archive and evaluates subsequent
 actions against their own approval and gates; it does not retry the waived
 archive prerequisite or ask again for the same applicable archive approval.
 The absence of authority for a later action remains a separate visible blocker.
+
+## Reestruturação (2026-09-24)
+
+A fila de Specs-portfólio foi reestruturada em sete entregas focadas. Cada Core Feature abaixo tem um destino: já entregue, movida para uma entrega sintetizada, ou cortada por relevância insuficiente. A relevância é a nota 0–4 do Jev (`jev-1.13.0`) para o quanto a CF melhora o papel central do Roundfix; o método e o ranking completo estão no secondbrain em `inbox/roundfix/2026-09-24-reestruturacao-da-fila-com-jev.md`.
+
+| CF | Destino | Relevância |
+|---|---|---|
+| 1 | Entregue por slice anterior | — |
+| 2 | Entrega 4 — providers de review restantes | 2.31 |
+| 3 | Entrega 4 — providers de review restantes | 2.02 |
+| 4 | Entrega 4 — providers de review restantes | 2.1 |
+| 5 | Entrega 4 — providers de review restantes | 2.16 |
+| 6 | Entrega 1 — loop de entrega durável | 2.27 |
+| 7 | **Cortada** — marginal ou desnecessária | 1.78 |
+| 8 | Entrega 1 — loop de entrega durável | 2.28 |
