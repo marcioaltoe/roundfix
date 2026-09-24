@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0158-daemon-verification-and-access-readiness
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -46,3 +46,34 @@ When a Task's Verification carries the configured repository command, the Daemon
 ## References
 
 - [_techspec.md](_techspec.md) — Precondition repair
+
+## Result
+
+Implemented authorization-scoped repository precondition repair. The
+authorization reader preserves an exact, duplicate-free
+`precondition_repairs` Task list. Implement planning validates that every
+identifier belongs to the committed Task Graph and that each named Task
+carries the configured repository command verbatim before any Run record is
+created.
+
+The Task engine uses only the authorization resolution frozen at Run start. A
+named Task may continue after the repository command publishes its known-red
+Daemon Verification event, but its normal post-Agent Verification still runs
+every Task command and is the only path to completed settlement. An unnamed
+Task retains the existing `repository not green on entry` failure.
+
+Focused-check evidence:
+
+- Pre-change: `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run '^TestAuthorizationParsesPreconditionRepairs$' ./internal/authorization` failed to compile because `AuthorizationRecord.PreconditionRepairs` did not exist.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run '^TestAuthorizationParsesPreconditionRepairs$' ./internal/authorization` passed, proving the ordered Task identifiers survive authorization parsing.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run '^(TestNamedTaskRepairsKnownRedPrecondition|TestUnnamedTaskStaysBlockedByRedPrecondition|TestTaskCycleRepositoryGatePreconditionFailureStartsNoAgentSession)$' ./internal/daemon` passed. The named Task received one Agent turn after a red entry, retained the known-red Verification event after the Worktree authorization was changed, reran both Task commands, and settled completed; both unnamed entry points settled failed without Agent work and retained `repository not green on entry`.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run '^(TestPreconditionRepairWithoutConfiguredCommandIsRefused|TestUnknownPreconditionRepairTaskIsRefused)$' ./internal/cli` passed. A whitespace-only near-match for `make verify` and an identifier absent from the Graph were each refused with the Task and reason named, and neither case created a Run record.
+- `rtk git diff --check` passed.
+
+An additional `go test -count=1 ./internal/authorization ./internal/spec`
+attempt passed `internal/authorization` but reached the repository's
+`TestCoverageEquivalence` guard in `internal/spec`, which rejects focused
+package execution when its observed repository-wide corpus differs from the
+recorded corpus. No coverage expectation or generated baseline was changed.
+
+The Daemon-owned `## Verification` command was not run in this Agent turn.

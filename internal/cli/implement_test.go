@@ -657,13 +657,104 @@ func writeImplementSpecAtRoot(t *testing.T, specsRoot string, slug string, seeds
 }
 
 func implementFixtureAuthorization(slug string, operations ...string) string {
+	return implementFixtureAuthorizationWithPreconditionRepairs(slug, nil, operations...)
+}
+
+func implementFixtureAuthorizationWithPreconditionRepairs(slug string, repairs []string, operations ...string) string {
 	var record strings.Builder
-	fmt.Fprintf(&record, "---\nstatus: approved\ngranted: 2026-09-09\naction: run the fixture Spec\nconsuming: %s\npaths:\n  - docs/agents/domain.md\noperations:\n", slug)
+	fmt.Fprintf(&record, "---\nstatus: approved\ngranted: 2026-09-09\naction: run the fixture Spec\nconsuming: %s\npaths:\n  - docs/agents/domain.md\n", slug)
+	if len(repairs) > 0 {
+		record.WriteString("precondition_repairs:\n")
+		for _, taskID := range repairs {
+			fmt.Fprintf(&record, "  - %s\n", taskID)
+		}
+	}
+	record.WriteString("operations:\n")
 	for _, operation := range operations {
 		fmt.Fprintf(&record, "  - %s\n", operation)
 	}
 	record.WriteString("---\n\n# Approved fixture authority\n")
 	return record.String()
+}
+
+func setImplementFixturePreconditionRepairs(t *testing.T, repoDir string, repairs ...string) {
+	t.Helper()
+	path := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "_authorization.md")
+	mustWrite(t, path, implementFixtureAuthorizationWithPreconditionRepairs(implementTestSlug, repairs, "implement", "commit", "push"))
+	gitImplement(t, repoDir, "add", filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "_authorization.md")))
+	gitImplement(t, repoDir, "commit", "-m", "authorize repository precondition repair")
+}
+
+func TestPreconditionRepairWithoutConfiguredCommandIsRefused(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:           "task_01",
+		verification: []string{" make verify "},
+	}})
+	setImplementFixturePreconditionRepairs(t, repoDir, "task_01")
+	withImplementCollaborators(t, &implementFakeRunner{gitRoot: repoDir})
+	withVersionFreshnessFakeDeps(t, versionFreshnessDependencies{currentVersion: func() string { return "dev" }})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("implement exit = %d, want preflight refusal %d; stderr=%q stdout=%q", code, exitPreflight, stderr.String(), stdout.String())
+	}
+	for _, want := range []string{"task_01", "does not carry", `"make verify"`, "verbatim"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("preflight diagnostic %q does not contain %q", stderr.String(), want)
+		}
+	}
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open Run store: %v", err)
+	}
+	defer func() { _ = runStore.Close() }()
+	runIDs, err := runStore.RunIDs(context.Background())
+	if err != nil {
+		t.Fatalf("list Runs: %v", err)
+	}
+	if len(runIDs) != 0 {
+		t.Fatalf("planned repair refusal created Runs: %v", runIDs)
+	}
+}
+
+func TestUnknownPreconditionRepairTaskIsRefused(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:           "task_01",
+		verification: []string{"make verify"},
+	}})
+	setImplementFixturePreconditionRepairs(t, repoDir, "task_99")
+	withImplementCollaborators(t, &implementFakeRunner{gitRoot: repoDir})
+	withVersionFreshnessFakeDeps(t, versionFreshnessDependencies{currentVersion: func() string { return "dev" }})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("implement exit = %d, want preflight refusal %d; stderr=%q stdout=%q", code, exitPreflight, stderr.String(), stdout.String())
+	}
+	for _, want := range []string{"task_99", "not a Task", implementTestSlug} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("preflight diagnostic %q does not contain %q", stderr.String(), want)
+		}
+	}
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open Run store: %v", err)
+	}
+	defer func() { _ = runStore.Close() }()
+	runIDs, err := runStore.RunIDs(context.Background())
+	if err != nil {
+		t.Fatalf("list Runs: %v", err)
+	}
+	if len(runIDs) != 0 {
+		t.Fatalf("unknown repair Task refusal created Runs: %v", runIDs)
+	}
 }
 
 func setImplementFixtureAuthorizationOperations(t *testing.T, repoDir string, operations ...string) {

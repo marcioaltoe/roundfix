@@ -666,7 +666,7 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 	if preconditionErr != nil {
 		return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: preconditionErr}
 	}
-	if required && precondition.Failure != "" {
+	if required && precondition.Failure != "" && !authorizationNamesPreconditionRepair(plan.Authorization, task.ID) {
 		reason := repositoryPreconditionFailureReason(precondition)
 		if settleErr := engine.settleTask(ctx, taskPlan, task, ordinal, spec.StatusFailed, reason); settleErr != nil {
 			return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: settleErr}
@@ -1110,11 +1110,67 @@ func repositoryVerificationCommand(task spec.Task, configured string) (string, b
 		return "", false
 	}
 	for _, command := range task.Verification {
-		if strings.TrimSpace(command) == configured {
+		if command == configured {
 			return command, true
 		}
 	}
 	return "", false
+}
+
+// ValidatePreconditionRepairs checks the frozen authorization against the
+// committed Task Graph and configured repository command before a Run starts.
+func ValidatePreconditionRepairs(authorization spec.AuthorizationResolution, specSlug string, tasks []spec.Task, configured string) error {
+	repairs := authorization.Record.PreconditionRepairs
+	if len(repairs) == 0 {
+		return nil
+	}
+	if authorization.Outcome != spec.AuthorizationGranted {
+		detail := strings.TrimSpace(authorization.Reason.Detail)
+		if detail == "" {
+			detail = fmt.Sprintf("authorization outcome is %q", authorization.Outcome)
+		}
+		return fmt.Errorf(
+			"precondition repair Task %q is not authorized because record %q is not operative: %s",
+			repairs[0],
+			authorization.Record.Source.Path,
+			detail,
+		)
+	}
+	tasksByID := make(map[string]spec.Task, len(tasks))
+	for _, task := range tasks {
+		tasksByID[task.ID] = task
+	}
+	configured = strings.TrimSpace(configured)
+	for _, taskID := range repairs {
+		task, ok := tasksByID[taskID]
+		if !ok {
+			return fmt.Errorf("precondition repair Task %q is not a Task in Spec %q", taskID, specSlug)
+		}
+		if _, carries := repositoryVerificationCommand(task, configured); !carries {
+			command := configured
+			if command == "" {
+				command = "<empty>"
+			}
+			return fmt.Errorf(
+				"precondition repair Task %q does not carry configured repository command %q verbatim",
+				taskID,
+				command,
+			)
+		}
+	}
+	return nil
+}
+
+func authorizationNamesPreconditionRepair(authorization spec.AuthorizationResolution, taskID string) bool {
+	if authorization.Outcome != spec.AuthorizationGranted {
+		return false
+	}
+	for _, repairTaskID := range authorization.Record.PreconditionRepairs {
+		if repairTaskID == taskID {
+			return true
+		}
+	}
+	return false
 }
 
 func repositoryPreconditionFailureReason(outcome verificationAttemptOutcome) string {
@@ -3010,6 +3066,9 @@ func validateTaskPlan(plan TaskPlan) error {
 	}
 	if len(plan.Tasks) == 0 {
 		return errors.New("task cycle: at least one Task is required")
+	}
+	if err := ValidatePreconditionRepairs(plan.Authorization, plan.Spec.Slug, plan.Tasks, plan.RepositoryVerification); err != nil {
+		return fmt.Errorf("task cycle: %w", err)
 	}
 	if plan.Concurrency > 1 {
 		concurrentRequired := map[string]string{

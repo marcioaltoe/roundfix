@@ -636,8 +636,19 @@ None. This fixture measures Task-cycle and QA-gate orchestration rather than a s
 }
 
 func taskFixtureAuthorization(slug string, operations ...spec.AuthorizationOperation) string {
+	return taskFixtureAuthorizationWithPreconditionRepairs(slug, nil, operations...)
+}
+
+func taskFixtureAuthorizationWithPreconditionRepairs(slug string, repairs []string, operations ...spec.AuthorizationOperation) string {
 	var record strings.Builder
-	fmt.Fprintf(&record, "---\nstatus: approved\ngranted: 2026-09-09\naction: run the fixture Spec\nconsuming: %s\npaths:\n  - docs/agents/domain.md\noperations:\n", slug)
+	fmt.Fprintf(&record, "---\nstatus: approved\ngranted: 2026-09-09\naction: run the fixture Spec\nconsuming: %s\npaths:\n  - docs/agents/domain.md\n", slug)
+	if len(repairs) > 0 {
+		record.WriteString("precondition_repairs:\n")
+		for _, taskID := range repairs {
+			fmt.Fprintf(&record, "  - %s\n", taskID)
+		}
+	}
+	record.WriteString("operations:\n")
 	for _, operation := range operations {
 		fmt.Fprintf(&record, "  - %s\n", operation)
 	}
@@ -649,6 +660,18 @@ func setTaskFixtureAuthorizationOperations(t *testing.T, fixture *taskCycleFixtu
 	t.Helper()
 	mustWriteForTest(t, filepath.Join(fixture.gitRoot, "docs", "specs", taskCycleSlug, "_authorization.md"), taskFixtureAuthorization(taskCycleSlug, operations...))
 	commitTaskFixtureSource(t, fixture.gitRoot, "change fixture operation authority")
+}
+
+func setTaskFixturePreconditionRepairs(t *testing.T, fixture *taskCycleFixture, repairs ...string) {
+	t.Helper()
+	mustWriteForTest(t, filepath.Join(fixture.gitRoot, "docs", "specs", taskCycleSlug, "_authorization.md"), taskFixtureAuthorizationWithPreconditionRepairs(
+		taskCycleSlug,
+		repairs,
+		spec.AuthorizationOperationImplement,
+		spec.AuthorizationOperationCommit,
+		spec.AuthorizationOperationPush,
+	))
+	commitTaskFixtureSource(t, fixture.gitRoot, "authorize repository precondition repair")
 }
 
 func removeTaskFixtureAuthorization(t *testing.T, fixture *taskCycleFixture) {
@@ -5812,6 +5835,15 @@ func testPreWorkProbePublishesUnknownCommandReasonAndDiagnosticPath(t *testing.T
 }
 
 func TestTaskCycleRepositoryGatePreconditionFailureStartsNoAgentSession(t *testing.T) {
+	testUnnamedTaskStaysBlockedByRedPrecondition(t)
+}
+
+func TestUnnamedTaskStaysBlockedByRedPrecondition(t *testing.T) {
+	testUnnamedTaskStaysBlockedByRedPrecondition(t)
+}
+
+func testUnnamedTaskStaysBlockedByRedPrecondition(t *testing.T) {
+	t.Helper()
 	t.Parallel()
 	const repositoryVerification = "make verify"
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
@@ -5887,6 +5919,60 @@ func TestTaskCycleRepositoryGatePreconditionFailureStartsNoAgentSession(t *testi
 	if projectedFailure.Classification != string(runevent.VerificationClassificationPrecondition) ||
 		projectedFailure.Reason != string(runevent.VerificationReasonRepositoryNotGreenOnEntry) {
 		t.Fatalf("expected distinct precondition failure in Run Event Stream, got %+v", projectedFailure)
+	}
+}
+
+func TestNamedTaskRepairsKnownRedPrecondition(t *testing.T) {
+	t.Parallel()
+	const repositoryVerification = "make verify"
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:           "task_01",
+		taskType:     string(spec.TaskTypeBackend),
+		verification: []string{"focused check", repositoryVerification},
+	}})
+	setTaskFixturePreconditionRepairs(t, fixture, "task_01")
+	fixture.reloadGraph()
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{
+		calls:  fixture.calls,
+		script: []error{errors.New("exit status 1"), nil, nil},
+	}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	plan.RepositoryVerification = repositoryVerification
+	// The Run-start resolution is authoritative even if the Run Worktree's
+	// authorization record changes before this Task reaches the entry gate.
+	mustWriteForTest(t, filepath.Join(fixture.gitRoot, "docs", "specs", taskCycleSlug, "_authorization.md"), taskFixtureAuthorization(
+		taskCycleSlug,
+		spec.AuthorizationOperationImplement,
+		spec.AuthorizationOperationCommit,
+		spec.AuthorizationOperationPush,
+	))
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 || len(result.Outcomes) != 1 || result.Outcomes[0].Status != string(spec.StatusCompleted) {
+		t.Fatalf("authorized repair settlement = %+v, want one completed Task", result)
+	}
+	if runner.taskCalls["task_01"] != 1 {
+		t.Fatalf("authorized repair Agent calls = %d, want 1", runner.taskCalls["task_01"])
+	}
+	if got := strings.Join(verifier.commands, "|"); got != "make verify|focused check|make verify" {
+		t.Fatalf("Verification commands = %q, want known-red entry then every Task command", got)
+	}
+	var knownRed bool
+	for _, event := range eventsOfKind(fixture.sink, runevent.KindDaemonVerification) {
+		if eventPayloadString(t, event, "classification") == string(runevent.VerificationClassificationPrecondition) &&
+			eventPayloadString(t, event, "reason") == string(runevent.VerificationReasonRepositoryNotGreenOnEntry) {
+			knownRed = true
+			break
+		}
+	}
+	if !knownRed {
+		t.Fatalf("Verification events = %+v, want known-red precondition failure", eventsOfKind(fixture.sink, runevent.KindDaemonVerification))
 	}
 }
 
