@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0158-daemon-verification-and-access-readiness
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -43,3 +43,49 @@ Corrective Task from the pre-PR review of 2026-09-24. A named repair Task that e
 ## References
 
 - [_techspec.md](_techspec.md) — Precondition repair
+
+## Result
+
+### Implementation
+
+- The Task worker now records entry only for an authorized precondition with
+  an observed failed-command verdict. An unknown precondition settles the Task
+  failed before the pre-work probe or Agent Session.
+- A red-entry repair carries the repository command frozen in the Run plan
+  into every post-Agent Verification attempt. Reloading the Task file cannot
+  delete, pad, or replace that settlement obligation.
+- Repository precondition diagnostics use a dedicated
+  `batch-NNN-precondition.log` artifact, separate from Task attempt output.
+- Runtime repository-command detection compares trimmed commands. Planning
+  validation for `precondition_repairs` retains the exact verbatim match.
+
+### Focused checks
+
+- Before the production change,
+  `rtk env GOCACHE=/tmp/roundfix-task06-gocache go test -count=1 -run '^(TestRepairTaskCannotDropTheRepositoryCommand|TestRepairEntryNeedsAnObservedRedGate|TestPreconditionDiagnosticsAreNotOverwritten|TestPaddedRepositoryCommandStillChecksEntry|TestPreconditionRepairPlanningRequiresExactRepositoryCommand)$' ./internal/daemon`
+  exited 1: the four corrective behavior tests failed and the planning
+  exact-match control passed.
+- After the production change, the same focused command exited 0.
+- `rtk env GOCACHE=/tmp/roundfix-task06-gocache go test -count=1 ./internal/daemon`
+  exited 0.
+- `rtk git diff --check` exited 0.
+- The Task's declared `## Verification` command was not run; the Daemon owns
+  that check.
+
+### Acceptance evidence
+
+- `TestRepairTaskCannotDropTheRepositoryCommand` passed: after the Agent
+  removed the repository command, both settlement attempts restored the
+  frozen command and the still-red command settled the Task failed.
+- `TestRepairEntryNeedsAnObservedRedGate` passed: an unknown repository verdict
+  ran only the entry check, started no Agent turn, and settled with the unknown
+  cause retained.
+- `TestPreconditionDiagnosticsAreNotOverwritten` passed: the red-entry marker
+  remained at its dedicated path after Task Verification wrote its own
+  diagnostic.
+- `TestPaddedRepositoryCommandStillChecksEntry` passed: an unnamed Task with a
+  padded repository-command bullet ran the entry check and started no Agent
+  turn.
+- `TestPreconditionRepairPlanningRequiresExactRepositoryCommand` passed: the
+  runtime's trimmed match did not weaken the planning-time verbatim authority
+  check.

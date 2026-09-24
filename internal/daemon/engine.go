@@ -172,12 +172,15 @@ type verificationAttemptRequest struct {
 	RunID       string
 	WorkDir     string
 	ArtifactDir string
-	BatchNumber int
-	WorkItem    string
-	Attempt     int
-	Retry       int
-	Mode        verificationMode
-	Capacity    int
+	// DiagnosticPath reserves a dedicated artifact for a single-command
+	// check whose evidence must outlive ordinary attempt artifacts.
+	DiagnosticPath string
+	BatchNumber    int
+	WorkItem       string
+	Attempt        int
+	Retry          int
+	Mode           verificationMode
+	Capacity       int
 	// TemporaryRetryAvailable records Task-lifecycle budget state at the
 	// moment this request classifies a temporary command failure.
 	TemporaryRetryAvailable bool
@@ -367,12 +370,15 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 		if err := req.Publish(ctx, req.summary(runevent.VerificationPhaseStarted, command), req.payload(runevent.VerificationPhaseStarted, command)); err != nil {
 			return verificationAttemptOutcome{}, err
 		}
-		outputPath := VerificationOutputPath(req.ArtifactDir, req.RunID, req.BatchNumber, req.Attempt)
-		if req.Retry > 0 {
-			outputPath = VerificationRetryOutputPath(req.ArtifactDir, req.RunID, req.BatchNumber, req.Attempt, req.Retry)
-		}
-		if req.Independent {
-			outputPath = verificationCommandOutputPath(outputPath, commandIndex+1)
+		outputPath := strings.TrimSpace(req.DiagnosticPath)
+		if outputPath == "" {
+			outputPath = VerificationOutputPath(req.ArtifactDir, req.RunID, req.BatchNumber, req.Attempt)
+			if req.Retry > 0 {
+				outputPath = VerificationRetryOutputPath(req.ArtifactDir, req.RunID, req.BatchNumber, req.Attempt, req.Retry)
+			}
+			if req.Independent {
+				outputPath = verificationCommandOutputPath(outputPath, commandIndex+1)
+			}
 		}
 		result, err := engine.deps.Verifier.Verify(ctx, VerifyRequest{
 			WorkDir:    req.WorkDir,

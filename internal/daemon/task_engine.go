@@ -666,7 +666,8 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 	if preconditionErr != nil {
 		return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: preconditionErr}
 	}
-	if required && precondition.Failure != "" && !authorizationNamesPreconditionRepair(plan.Authorization, task.ID) {
+	enteredOnRedRepository := required && precondition.CommandFailure != nil && authorizationNamesPreconditionRepair(plan.Authorization, task.ID)
+	if required && precondition.Failure != "" && !enteredOnRedRepository {
 		reason := repositoryPreconditionFailureReason(precondition)
 		if settleErr := engine.settleTask(ctx, taskPlan, task, ordinal, spec.StatusFailed, reason); settleErr != nil {
 			return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: settleErr}
@@ -681,6 +682,10 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 			taskRef:          taskRef,
 			usesTaskWorktree: usesTaskWorktree,
 		}
+	}
+	requiredRepositoryVerification := ""
+	if enteredOnRedRepository {
+		requiredRepositoryVerification = strings.TrimSpace(plan.RepositoryVerification)
 	}
 	probe, probeErr := engine.verifyTaskPreWork(ctx, taskPlan, task, ordinal)
 	if probeErr != nil {
@@ -708,7 +713,7 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 	if ownerErr != nil {
 		return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: ownerErr}
 	}
-	settled, reason, err := engine.executeTask(ctx, taskPlan, task, ordinal, owner)
+	settled, reason, err := engine.executeTask(ctx, taskPlan, task, ordinal, owner, requiredRepositoryVerification)
 	if owner != nil {
 		if closeErr := owner.Close(context.WithoutCancel(ctx)); closeErr != nil {
 			err = errors.Join(err, fmt.Errorf("close Agent Session for run %q Task %s: %w", plan.RunID, task.ID, closeErr))
@@ -983,7 +988,7 @@ func specForSpecsRoot(plan TaskPlan, specsRoot string) spec.Spec {
 // Verification, settlement, and the Task commit on success. It returns
 // the settled status; the returned error is reserved for Stop Requests
 // and infrastructure failures, which halt the cycle.
-func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, owner *agentSessionOwner) (spec.Status, string, error) {
+func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, owner *agentSessionOwner, requiredRepositoryVerification string) (spec.Status, string, error) {
 	// The before-snapshot is taken before the Agent starts, so anything
 	// already dirty — pre-existing user work or a failed Task's preserved
 	// changes — never reaches this Task's commit.
@@ -997,7 +1002,8 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 	}
 	if failure == "" {
 		retryUsed := false
-		verification, verifyErr := engine.verifyTask(ctx, plan, task, ordinal, 1, &retryUsed)
+		verificationTask := taskWithRequiredRepositoryVerification(task, requiredRepositoryVerification)
+		verification, verifyErr := engine.verifyTask(ctx, plan, verificationTask, ordinal, 1, &retryUsed)
 		if verifyErr != nil {
 			return "", "", verifyErr
 		}
@@ -1010,7 +1016,8 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 					return "", "", err
 				}
 				if failure == "" {
-					final, verifyErr := engine.verifyTask(ctx, plan, task, ordinal, 2, &retryUsed)
+					verificationTask = taskWithRequiredRepositoryVerification(task, requiredRepositoryVerification)
+					final, verifyErr := engine.verifyTask(ctx, plan, verificationTask, ordinal, 2, &retryUsed)
 					if verifyErr != nil {
 						return "", "", verifyErr
 					}
@@ -1065,6 +1072,23 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 	return settled, "", nil
 }
 
+func taskWithRequiredRepositoryVerification(task spec.Task, required string) spec.Task {
+	required = strings.TrimSpace(required)
+	if required == "" {
+		return task
+	}
+	commands := append([]string(nil), task.Verification...)
+	for index, command := range commands {
+		if strings.TrimSpace(command) == required {
+			commands[index] = required
+			task.Verification = commands
+			return task
+		}
+	}
+	task.Verification = append(commands, required)
+	return task
+}
+
 func taskVerificationFailureReason(outcome verificationAttemptOutcome) string {
 	reason := verificationTerminalReason(outcome.CommandFailure)
 	if reason != "" {
@@ -1085,6 +1109,7 @@ func (engine *Engine) verifyRepositoryPrecondition(ctx context.Context, plan Tas
 		RunID:                 plan.RunID,
 		WorkDir:               plan.WorkDir,
 		ArtifactDir:           plan.ArtifactDir,
+		DiagnosticPath:        repositoryPreconditionOutputPath(plan.ArtifactDir, plan.RunID, ordinal),
 		BatchNumber:           ordinal,
 		WorkItem:              task.ID,
 		Attempt:               1,
@@ -1110,11 +1135,15 @@ func repositoryVerificationCommand(task spec.Task, configured string) (string, b
 		return "", false
 	}
 	for _, command := range task.Verification {
-		if command == configured {
+		if strings.TrimSpace(command) == configured {
 			return command, true
 		}
 	}
 	return "", false
+}
+
+func repositoryPreconditionOutputPath(artifactDir string, runID string, batchNumber int) string {
+	return filepath.Join(artifactDir, "runs", runID, "verification", fmt.Sprintf("batch-%03d-precondition.log", batchNumber))
 }
 
 // ValidatePreconditionRepairs checks the frozen authorization against the
@@ -1146,7 +1175,7 @@ func ValidatePreconditionRepairs(authorization spec.AuthorizationResolution, spe
 		if !ok {
 			return fmt.Errorf("precondition repair Task %q is not a Task in Spec %q", taskID, specSlug)
 		}
-		if _, carries := repositoryVerificationCommand(task, configured); !carries {
+		if !taskCarriesExactVerificationCommand(task, configured) {
 			command := configured
 			if command == "" {
 				command = "<empty>"
@@ -1159,6 +1188,15 @@ func ValidatePreconditionRepairs(authorization spec.AuthorizationResolution, spe
 		}
 	}
 	return nil
+}
+
+func taskCarriesExactVerificationCommand(task spec.Task, configured string) bool {
+	for _, command := range task.Verification {
+		if command == configured {
+			return true
+		}
+	}
+	return false
 }
 
 func authorizationNamesPreconditionRepair(authorization spec.AuthorizationResolution, taskID string) bool {

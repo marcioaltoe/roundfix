@@ -674,6 +674,19 @@ func setTaskFixturePreconditionRepairs(t *testing.T, fixture *taskCycleFixture, 
 	commitTaskFixtureSource(t, fixture.gitRoot, "authorize repository precondition repair")
 }
 
+func removeTaskVerificationCommandForTest(taskPath string, command string) error {
+	content, err := os.ReadFile(taskPath)
+	if err != nil {
+		return err
+	}
+	bullet := fmt.Sprintf("- `%s` — expected: passes.\n", command)
+	updated := strings.Replace(string(content), bullet, "", 1)
+	if updated == string(content) {
+		return fmt.Errorf("Task file %q does not contain Verification command %q", taskPath, command)
+	}
+	return os.WriteFile(taskPath, []byte(updated), 0o644)
+}
+
 func removeTaskFixtureAuthorization(t *testing.T, fixture *taskCycleFixture) {
 	t.Helper()
 	path := filepath.Join(fixture.gitRoot, "docs", "specs", taskCycleSlug, "_authorization.md")
@@ -5973,6 +5986,213 @@ func TestNamedTaskRepairsKnownRedPrecondition(t *testing.T) {
 	}
 	if !knownRed {
 		t.Fatalf("Verification events = %+v, want known-red precondition failure", eventsOfKind(fixture.sink, runevent.KindDaemonVerification))
+	}
+}
+
+func TestRepairTaskCannotDropTheRepositoryCommand(t *testing.T) {
+	t.Parallel()
+	const repositoryVerification = "make verify"
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:           "task_01",
+		taskType:     string(spec.TaskTypeBackend),
+		verification: []string{"focused check", repositoryVerification},
+	}})
+	setTaskFixturePreconditionRepairs(t, fixture, "task_01")
+	fixture.reloadGraph()
+	var editErr error
+	removed := false
+	runner := &taskFakeRunner{
+		calls:   fixture.calls,
+		gitRoot: fixture.gitRoot,
+		afterTask: func(taskID string) {
+			if removed || taskID != "task_01" {
+				return
+			}
+			removed = true
+			editErr = removeTaskVerificationCommandForTest(
+				taskPathFor(fixture.gitRoot, taskCycleSlug, taskID),
+				repositoryVerification,
+			)
+		},
+	}
+	verifier := &taskFakeVerifier{
+		calls:  fixture.calls,
+		failOn: map[string]error{repositoryVerification: errors.New("exit status 1")},
+	}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	plan.RepositoryVerification = repositoryVerification
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if editErr != nil {
+		t.Fatalf("remove repository command from Task file: %v", editErr)
+	}
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 1 || len(result.Outcomes) != 1 {
+		t.Fatalf("repair settlement = %+v, want one failed Task", result)
+	}
+	if !strings.Contains(result.Outcomes[0].Reason, repositoryVerification) {
+		t.Fatalf("repair failure reason = %q, want frozen repository command", result.Outcomes[0].Reason)
+	}
+	if got := strings.Join(verifier.commands, "|"); got != "make verify|focused check|make verify|focused check|make verify" {
+		t.Fatalf("Verification commands = %q, want repository command restored for both settlement attempts", got)
+	}
+}
+
+func TestRepairEntryNeedsAnObservedRedGate(t *testing.T) {
+	t.Parallel()
+	const repositoryVerification = "make verify"
+	unknownErr := errors.New("runner did not observe the repository verdict")
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:           "task_01",
+		taskType:     string(spec.TaskTypeBackend),
+		verification: []string{"focused check", repositoryVerification},
+	}})
+	setTaskFixturePreconditionRepairs(t, fixture, "task_01")
+	fixture.reloadGraph()
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &characterizationVerdictVerifier{
+		calls:     fixture.calls,
+		unknownOn: map[string]error{repositoryVerification: unknownErr},
+	}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	plan.RepositoryVerification = repositoryVerification
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 1 || len(result.Outcomes) != 1 {
+		t.Fatalf("unknown precondition settlement = %+v, want one failed Task", result)
+	}
+	for _, want := range []string{"repository not green on entry", "Verification unknown", unknownErr.Error()} {
+		if !strings.Contains(result.Outcomes[0].Reason, want) {
+			t.Fatalf("unknown precondition reason %q does not contain %q", result.Outcomes[0].Reason, want)
+		}
+	}
+	if got := strings.Join(verifier.commands, "|"); got != repositoryVerification {
+		t.Fatalf("Verification commands = %q, want only the unobserved entry check", got)
+	}
+	if runner.taskCalls["task_01"] != 0 {
+		t.Fatalf("unknown precondition spent %d Agent turns, want 0", runner.taskCalls["task_01"])
+	}
+}
+
+func TestPreconditionDiagnosticsAreNotOverwritten(t *testing.T) {
+	t.Parallel()
+	const repositoryVerification = "make verify"
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:           "task_01",
+		taskType:     string(spec.TaskTypeBackend),
+		verification: []string{"focused check", repositoryVerification},
+	}})
+	setTaskFixturePreconditionRepairs(t, fixture, "task_01")
+	fixture.reloadGraph()
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{
+		calls:  fixture.calls,
+		script: []error{errors.New("exit status 1"), nil, nil},
+		outputByCall: map[int]string{
+			1: "red-entry-diagnostic\n",
+			2: "task-attempt-diagnostic\n",
+		},
+	}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	plan.RepositoryVerification = repositoryVerification
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 {
+		t.Fatalf("repair settlement = %+v, want one completed Task", result)
+	}
+	if len(verifier.outputPaths) != 3 {
+		t.Fatalf("Verification output paths = %v, want entry plus two Task commands", verifier.outputPaths)
+	}
+	if verifier.outputPaths[0] == verifier.outputPaths[1] {
+		t.Fatalf("precondition diagnostics path %q reused by Task attempt", verifier.outputPaths[0])
+	}
+	diagnostic, readErr := os.ReadFile(verifier.outputPaths[0])
+	if readErr != nil {
+		t.Fatalf("read precondition diagnostic: %v", readErr)
+	}
+	if string(diagnostic) != "red-entry-diagnostic\n" {
+		t.Fatalf("precondition diagnostic = %q, want preserved red-entry evidence", diagnostic)
+	}
+}
+
+func TestPaddedRepositoryCommandStillChecksEntry(t *testing.T) {
+	t.Parallel()
+	const repositoryVerification = "make verify"
+	const paddedRepositoryVerification = "  make verify  "
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:           "task_01",
+		taskType:     string(spec.TaskTypeBackend),
+		verification: []string{"focused check", paddedRepositoryVerification},
+	}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{
+		calls:  fixture.calls,
+		failOn: map[string]error{paddedRepositoryVerification: errors.New("exit status 1")},
+	}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	plan.RepositoryVerification = repositoryVerification
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 1 || len(result.Outcomes) != 1 {
+		t.Fatalf("padded-command settlement = %+v, want one failed Task", result)
+	}
+	if !strings.Contains(result.Outcomes[0].Reason, "repository not green on entry") {
+		t.Fatalf("padded-command reason = %q, want entry refusal", result.Outcomes[0].Reason)
+	}
+	if got := strings.Join(verifier.commands, "|"); got != paddedRepositoryVerification {
+		t.Fatalf("Verification commands = %q, want only the padded entry check", got)
+	}
+	if runner.taskCalls["task_01"] != 0 {
+		t.Fatalf("padded repository command spent %d Agent turns, want 0", runner.taskCalls["task_01"])
+	}
+}
+
+func TestPreconditionRepairPlanningRequiresExactRepositoryCommand(t *testing.T) {
+	t.Parallel()
+	const repositoryVerification = "make verify"
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:           "task_01",
+		taskType:     string(spec.TaskTypeBackend),
+		verification: []string{"focused check", "  make verify  "},
+	}})
+	setTaskFixturePreconditionRepairs(t, fixture, "task_01")
+	fixture.reloadGraph()
+	plan := fixture.plan()
+	plan.RepositoryVerification = repositoryVerification
+	engine := fixture.engine(
+		t,
+		&taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot},
+		&taskFakeVerifier{calls: fixture.calls},
+		&engineFakeCommitter{calls: fixture.calls},
+		fixture.worktree,
+	)
+
+	_, err := engine.TaskCycle(context.Background(), plan)
+
+	if err == nil || !strings.Contains(err.Error(), "does not carry configured repository command") || !strings.Contains(err.Error(), "verbatim") {
+		t.Fatalf("TaskCycle error = %v, want exact-command planning refusal", err)
+	}
+	if got := strings.Join(*fixture.calls, "|"); got != "" {
+		t.Fatalf("planning refusal calls = %q, want no execution", got)
 	}
 }
 
