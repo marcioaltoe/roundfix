@@ -1,9 +1,12 @@
 ---
 spec: 0157-reconciliation-and-one-repository-identity
-status: active
+status: archived
 created: 2026-09-24
 surfaces: [backend, cli]
+archived: "2026-09-24"
+source_slug: 0157-reconciliation-and-one-repository-identity
 ---
+
 
 # Reconciliation and one repository identity
 
