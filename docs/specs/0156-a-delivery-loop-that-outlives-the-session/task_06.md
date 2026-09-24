@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0156-a-delivery-loop-that-outlives-the-session
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
