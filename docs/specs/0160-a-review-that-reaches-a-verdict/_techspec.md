@@ -102,7 +102,9 @@ consulted. A candidate with no Spec folder gets today's prompt.
 2. The claude provider (depends on: 1).
 3. Spec-aware prompt (depends on: 2).
 4. Shipped skill and guide (depends on: 1, 2, 3).
-5. Terminal QA (depends on: 1, 2, 3, 4).
+5. Terminal QA (depends on: 1, 2, 3, 4, 6, 7).
+6. No findings header escapes, no answer is invented (depends on: 4).
+7. Spec context that never blocks and stays bounded (depends on: 6).
 
 ## Risks & Considerations
 
