@@ -421,7 +421,11 @@ func classifyRunBranchSet(
 	}
 	if targetAbsent {
 		seen := make(map[string]struct{})
-		reason := reconciliationReasonTargetBranchAbsent(targetBranch)
+		_, defaultHead, defaultResolved := resolveDefaultBranchHead(ctx, runner, root)
+		reason := reconciliationReasonDefaultBranchUnresolved(specSlug)
+		if defaultResolved {
+			reason = reconciliationReasonDefaultBranchMissingEvidence(specSlug)
+		}
 		for _, run := range runs {
 			if run.Kind != store.KindImplement ||
 				strings.TrimSpace(run.LocalBranch) != targetBranch ||
@@ -437,14 +441,29 @@ func classifyRunBranchSet(
 				continue
 			}
 			seen[branch] = struct{}{}
+			if defaultResolved && store.IsTerminalState(run.State) {
+				head, resolveErr := resolveUnambiguousLocalBranch(ctx, runner, root, branch)
+				if resolveErr == nil && head != "" {
+					if report, proven := supersedingQAReport(ctx, runner, root, defaultHead, head, specSlug); proven {
+						if pathUnderAnyGitDirectory(report, []string{archivedQAReportDirectory(specSlug)}) {
+							release(branch, report)
+						} else {
+							preserve(branch, reconciliationReasonDefaultBranchSpecNotArchived(specSlug))
+						}
+						continue
+					}
+				}
+			}
 			preserve(branch, reason)
 		}
+		sort.Strings(result.Releasable)
 		sort.Strings(result.Preserved)
 		result.evidence = &branchSetClassificationEvidence{
 			gitRoot:      root,
 			targetBranch: targetBranch,
 			specSlug:     specSlug,
 			runs:         cloneRuns(runs),
+			releasable:   maps.Clone(result.ReleasableProofs),
 		}
 		return result, nil
 	}
@@ -777,8 +796,12 @@ func matchesQAReportCommitMessage(message string, slug string) bool {
 func qaReportDirectories(slug string) []string {
 	return []string{
 		filepath.ToSlash(filepath.Join("docs", "specs", slug, "qa")),
-		filepath.ToSlash(filepath.Join(filepath.FromSlash(spec.ArchiveDir(spec.ArchiveKindSpec)), slug, "qa")),
+		archivedQAReportDirectory(slug),
 	}
+}
+
+func archivedQAReportDirectory(slug string) string {
+	return filepath.ToSlash(filepath.Join(filepath.FromSlash(spec.ArchiveDir(spec.ArchiveKindSpec)), slug, "qa"))
 }
 
 func pathUnderAnyGitDirectory(path string, directories []string) bool {
@@ -992,6 +1015,29 @@ func (adapter preflightGitRunner) RunGit(ctx context.Context, workDir string, ar
 	return adapter.runner.Run(ctx, workDir, args...)
 }
 
+func resolveDefaultBranchHead(
+	ctx context.Context,
+	runner gitRunner,
+	gitRoot string,
+) (string, string, bool) {
+	currentBranchOutput, currentBranchErr := runner.Run(ctx, gitRoot, "symbolic-ref", "--quiet", "--short", "HEAD")
+	currentBranch := ""
+	if currentBranchErr == nil {
+		currentBranch = strings.TrimSpace(currentBranchOutput)
+	}
+	defaultBranch := preflight.DetectDefaultBranch(ctx, gitRoot, currentBranch, preflightGitRunner{runner: runner})
+	if defaultBranch.Source == preflight.DefaultBranchUndetermined ||
+		!validLocalBranch(ctx, runner, gitRoot, defaultBranch.Name) {
+		return "", "", false
+	}
+
+	defaultHead, err := resolveUnambiguousLocalBranch(ctx, runner, gitRoot, defaultBranch.Name)
+	if err != nil || defaultHead == "" {
+		return "", "", false
+	}
+	return defaultBranch.Name, defaultHead, true
+}
+
 func inspectDeletedTargetRunByContent(
 	ctx context.Context,
 	runner gitRunner,
@@ -1001,20 +1047,8 @@ func inspectDeletedTargetRunByContent(
 	worktreePresent bool,
 	runBranchPresent bool,
 ) RunWorktreeReconciliation {
-	currentBranchOutput, currentBranchErr := runner.Run(ctx, gitRoot, "symbolic-ref", "--quiet", "--short", "HEAD")
-	currentBranch := ""
-	if currentBranchErr == nil {
-		currentBranch = strings.TrimSpace(currentBranchOutput)
-	}
-	defaultBranch := preflight.DetectDefaultBranch(ctx, gitRoot, currentBranch, preflightGitRunner{runner: runner})
-	if defaultBranch.Source == preflight.DefaultBranchUndetermined ||
-		!validLocalBranch(ctx, runner, gitRoot, defaultBranch.Name) {
-		result.Reason = reconciliationReasonTargetBranch
-		return result
-	}
-
-	defaultHead, err := resolveUnambiguousLocalBranch(ctx, runner, gitRoot, defaultBranch.Name)
-	if err != nil || defaultHead == "" {
+	defaultBranch, defaultHead, resolved := resolveDefaultBranchHead(ctx, runner, gitRoot)
+	if !resolved {
 		result.Reason = reconciliationReasonTargetBranch
 		return result
 	}
@@ -1031,7 +1065,7 @@ func inspectDeletedTargetRunByContent(
 		result.State = ReconciliationUnintegrated
 		result.Reason = boundedReconciliationReason(fmt.Sprintf(
 			"Run Branch content comparison could not prove integration against default branch %q",
-			defaultBranch.Name,
+			defaultBranch,
 		))
 		return result
 	}
@@ -1058,15 +1092,26 @@ func inspectDeletedTargetRunByContent(
 		result.Reason = boundedReconciliationReason(fmt.Sprintf(
 			"Run Branch content is not fully represented: %s against default branch %q",
 			strings.Join(evidence, ", "),
-			defaultBranch.Name,
+			defaultBranch,
 		))
+		return result
+	}
+	if _, err := newestQAReportAtHeadInDirectories(
+		ctx,
+		runner,
+		gitRoot,
+		defaultHead,
+		[]string{archivedQAReportDirectory(run.SpecSlug)},
+	); err != nil {
+		result.State = ReconciliationUnintegrated
+		result.Reason = reconciliationReasonDefaultBranchSpecNotArchived(run.SpecSlug)
 		return result
 	}
 
 	result.State = ReconciliationSafe
 	result.Reason = boundedReconciliationReason(fmt.Sprintf(
 		"Run Branch content is fully represented on default branch %q",
-		defaultBranch.Name,
+		defaultBranch,
 	))
 	result.evidence = newTerminalRunReconciliationEvidence(
 		run,
@@ -1177,8 +1222,44 @@ func supersededReconciliationReason(report string) string {
 	return boundedReconciliationReason(reason)
 }
 
-func reconciliationReasonTargetBranchAbsent(branch string) string {
-	return boundedReconciliationReason(fmt.Sprintf("target branch %q is absent", branch))
+func reconciliationReasonDefaultBranchMissingEvidence(specSlug string) string {
+	return boundedSpecReconciliationReason(
+		specSlug,
+		"default branch has no superseding QA Report after target branch disappeared",
+	)
+}
+
+func reconciliationReasonDefaultBranchSpecNotArchived(specSlug string) string {
+	return boundedSpecReconciliationReason(
+		specSlug,
+		"default branch has no superseding QA Report under the archived Spec path; Spec is not archived after target branch disappeared",
+	)
+}
+
+func reconciliationReasonDefaultBranchUnresolved(specSlug string) string {
+	return boundedSpecReconciliationReason(
+		specSlug,
+		"default branch unresolved; superseding QA Report could not be sought after target branch disappeared",
+	)
+}
+
+func boundedSpecReconciliationReason(specSlug string, proof string) string {
+	reason := fmt.Sprintf("Spec %q: %s", specSlug, proof)
+	if len(reason) <= reconciliationReasonMaxBytes {
+		return reason
+	}
+
+	const ellipsis = "..."
+	abbreviated := ""
+	for _, char := range specSlug {
+		candidate := abbreviated + string(char)
+		if len(fmt.Sprintf("Spec %q: %s", candidate+ellipsis, proof)) > reconciliationReasonMaxBytes {
+			break
+		}
+		abbreviated = candidate
+	}
+	reason = fmt.Sprintf("Spec %q: %s", abbreviated+ellipsis, proof)
+	return boundedReconciliationReason(reason)
 }
 
 func boundedReconciliationReason(reason string) string {
@@ -1259,7 +1340,16 @@ func newestQAReportAtHead(
 	head string,
 	slug string,
 ) (string, error) {
-	directories := qaReportDirectories(slug)
+	return newestQAReportAtHeadInDirectories(ctx, runner, gitRoot, head, qaReportDirectories(slug))
+}
+
+func newestQAReportAtHeadInDirectories(
+	ctx context.Context,
+	runner gitRunner,
+	gitRoot string,
+	head string,
+	directories []string,
+) (string, error) {
 	args := []string{"ls-tree", "-r", "--name-only", "-z", head, "--"}
 	args = append(args, directories...)
 	output, err := runner.Run(ctx, gitRoot, args...)

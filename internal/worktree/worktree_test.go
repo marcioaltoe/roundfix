@@ -1181,6 +1181,7 @@ func TestInspectTerminalRunSafeWhenTargetDeletedAfterSquashMerge(t *testing.T) {
 	gitWorktreeTest(t, fixture.repoDir, "merge", "--squash", fixture.run.LocalBranch)
 	gitWorktreeTest(t, fixture.repoDir, "commit", "-m", "squash merge deleted target")
 	commitWorktreeFile(t, fixture.repoDir, "default-only.txt", "newer default work\n", "advance default branch")
+	commitQAReport(t, fixture.repoDir, fixture.run.SpecSlug, "qa-report-2026-09-23.md", true, "pass")
 	defaultHead := strings.TrimSpace(gitWorktreeTest(t, fixture.repoDir, "rev-parse", "main"))
 	gitWorktreeTest(t, fixture.repoDir, "branch", "-D", fixture.run.LocalBranch)
 
@@ -1198,6 +1199,64 @@ func TestInspectTerminalRunSafeWhenTargetDeletedAfterSquashMerge(t *testing.T) {
 	}
 	if !strings.Contains(result.Reason, `default branch "main"`) || !strings.Contains(result.Reason, "fully represented") {
 		t.Fatalf("expected safe reason to name the deciding content evidence, got %q", result.Reason)
+	}
+}
+
+func TestInspectTerminalRunRequiresArchivedEvidence(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	tests := []struct {
+		name          string
+		targetDeleted bool
+		archived      bool
+		want          ReconciliationState
+	}{
+		{
+			name:          "deleted target with active Spec evidence preserves",
+			targetDeleted: true,
+			want:          ReconciliationUnintegrated,
+		},
+		{
+			name:          "deleted target with archived Spec evidence is safe",
+			targetDeleted: true,
+			archived:      true,
+			want:          ReconciliationSafe,
+		},
+		{
+			name: "present target without archived Spec evidence stays safe",
+			want: ReconciliationSafe,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fixture := newTerminalRunFixture(t, "archive-proof-"+strings.ReplaceAll(tt.name, " ", "-"))
+			fixture.run.SpecSlug = slug
+			fixture.commitRunChange(t, "shared.txt", "represented\n")
+			if tt.targetDeleted {
+				fixture.run.LocalBranch = "ma/" + fixture.run.ID
+				gitWorktreeTest(t, fixture.repoDir, "branch", fixture.run.LocalBranch, fixture.ref.Branch)
+				gitWorktreeTest(t, fixture.repoDir, "merge", "--squash", fixture.run.LocalBranch)
+				gitWorktreeTest(t, fixture.repoDir, "commit", "-m", "squash merge deleted target")
+				commitQAReport(t, fixture.repoDir, slug, "qa-report-2026-09-23.md", tt.archived, "pass")
+				gitWorktreeTest(t, fixture.repoDir, "branch", "-D", fixture.run.LocalBranch)
+			} else {
+				gitWorktreeTest(t, fixture.repoDir, "merge", "--ff-only", fixture.ref.Branch)
+			}
+
+			result, err := InspectTerminalRun(context.Background(), fixture.run)
+			if err != nil {
+				t.Fatalf("inspect terminal Run: %v", err)
+			}
+
+			assertTerminalRunReconciliation(t, result, fixture.run, tt.want)
+			if tt.targetDeleted && !tt.archived {
+				if !strings.Contains(result.Reason, "default branch") ||
+					!strings.Contains(result.Reason, "Spec is not archived") {
+					t.Fatalf("preserved reason = %q, want missing archived-proof explanation", result.Reason)
+				}
+			}
+		})
 	}
 }
 
@@ -1634,6 +1693,250 @@ func TestClassifyRunBranchSetFourFailedCycles(t *testing.T) {
 	}
 }
 
+func TestReconcileFallsBackToTheDefaultBranch(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	fixture := newRunBranchSetFixture(t, slug, "qa-report-2026-07-28.md")
+	squashMergeAndDeleteRunBranchSetTarget(t, &fixture, "ma/deleted-target")
+	supersedingReport := qaReportTestPath(slug, "qa-report-2026-07-29.md", true)
+	commitQAReport(t, fixture.repoDir, slug, "qa-report-2026-07-29.md", true, "pass")
+
+	result, err := ClassifyRunBranchSet(
+		context.Background(),
+		fixture.repoDir,
+		fixture.targetBranch,
+		slug,
+		fixture.runs,
+	)
+	if err != nil {
+		t.Fatalf("classify absent-target Run Branch set: %v", err)
+	}
+
+	branch := fixture.refs[0].Branch
+	if !slices.Equal(result.Releasable, []string{branch}) || result.ReleasableProofs[branch] != supersedingReport {
+		t.Fatalf("absent-target classification = %#v, want %q releasable from proof %q", result, branch, supersedingReport)
+	}
+	if len(result.Preserved) != 0 || len(result.PreservedReasons) != 0 {
+		t.Fatalf("absent-target preserved Run Branches = %v reasons=%v, want none", result.Preserved, result.PreservedReasons)
+	}
+
+	mustWriteWorktreeTest(t, filepath.Join(fixture.refs[0].Path, "uncommitted.txt"), "preserve me\n")
+	err = ApplyRunBranchCandidate(context.Background(), result, branch)
+	if err == nil || !strings.Contains(err.Error(), `worktree classification changed to "dirty"`) {
+		t.Fatalf("dirty Worktree apply error = %v, want dirty preservation refusal", err)
+	}
+	assertPathExists(t, fixture.refs[0].Path)
+	assertRunBranchExists(t, fixture.repoDir, branch)
+}
+
+func TestReconcileFallbackRequiresArchivedEvidence(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	tests := []struct {
+		name        string
+		archived    bool
+		wantRelease bool
+	}{
+		{
+			name:        "archived Spec evidence releases",
+			archived:    true,
+			wantRelease: true,
+		},
+		{
+			name: "active Spec evidence preserves",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fixture := newRunBranchSetFixture(t, slug, "qa-report-2026-07-28.md")
+			squashMergeAndDeleteRunBranchSetTarget(t, &fixture, "ma/deleted-target")
+			report := qaReportTestPath(slug, "qa-report-2026-07-29.md", tt.archived)
+			commitQAReport(
+				t,
+				fixture.repoDir,
+				slug,
+				"qa-report-2026-07-29.md",
+				tt.archived,
+				"pass",
+			)
+
+			result, err := ClassifyRunBranchSet(
+				context.Background(),
+				fixture.repoDir,
+				fixture.targetBranch,
+				slug,
+				fixture.runs,
+			)
+			if err != nil {
+				t.Fatalf("classify absent-target Run Branch set: %v", err)
+			}
+
+			branch := fixture.refs[0].Branch
+			if tt.wantRelease {
+				if !slices.Equal(result.Releasable, []string{branch}) || result.ReleasableProofs[branch] != report {
+					t.Fatalf("absent-target classification = %#v, want %q releasable from archived proof %q", result, branch, report)
+				}
+				if len(result.Preserved) != 0 || len(result.PreservedReasons) != 0 {
+					t.Fatalf("absent-target preserved Run Branches = %v reasons=%v, want none", result.Preserved, result.PreservedReasons)
+				}
+				return
+			}
+
+			assertPreservedRunBranch(t, result, branch, "archived Spec path")
+			if !strings.Contains(result.PreservedReasons[branch], "Spec is not archived") {
+				t.Fatalf("active-only preserved reason = %q, want archive-state explanation", result.PreservedReasons[branch])
+			}
+			if len(result.Releasable) != 0 || len(result.ReleasableProofs) != 0 {
+				t.Fatalf("active-only evidence released absent-target work: %#v", result)
+			}
+		})
+	}
+}
+
+func TestReconcilePresentTargetAcceptsEitherSpecPath(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	tests := []struct {
+		name     string
+		archived bool
+	}{
+		{
+			name: "active Spec path",
+		},
+		{
+			name:     "archived Spec path",
+			archived: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fixture := newRunBranchSetFixture(t, slug, "qa-report-2026-07-28.md")
+			report := qaReportTestPath(slug, "qa-report-2026-07-29.md", tt.archived)
+			commitQAReport(
+				t,
+				fixture.repoDir,
+				slug,
+				"qa-report-2026-07-29.md",
+				tt.archived,
+				"pass",
+			)
+
+			result, err := ClassifyRunBranchSet(
+				context.Background(),
+				fixture.repoDir,
+				fixture.targetBranch,
+				slug,
+				fixture.runs,
+			)
+			if err != nil {
+				t.Fatalf("classify present-target Run Branch set: %v", err)
+			}
+
+			branch := fixture.refs[0].Branch
+			if !slices.Equal(result.Releasable, []string{branch}) || result.ReleasableProofs[branch] != report {
+				t.Fatalf("present-target classification = %#v, want %q releasable from proof %q", result, branch, report)
+			}
+			if len(result.Preserved) != 0 || len(result.PreservedReasons) != 0 {
+				t.Fatalf("present-target preserved Run Branches = %v reasons=%v, want none", result.Preserved, result.PreservedReasons)
+			}
+		})
+	}
+}
+
+func TestReconcilePreservesWithoutDefaultBranchEvidence(t *testing.T) {
+	t.Parallel()
+	assertReconcileReasonNamesTheMissingProof(t)
+}
+
+func TestReconcileReasonNamesTheMissingProof(t *testing.T) {
+	t.Parallel()
+	assertReconcileReasonNamesTheMissingProof(t)
+}
+
+func TestReconcileReasonKeepsProofClauseForLongSlugs(t *testing.T) {
+	t.Parallel()
+	slug := "0154-" + strings.Repeat("long-spec-slug-", 8)
+	fixture := newRunBranchSetFixture(t, slug, "qa-report-2026-09-22.md")
+	squashMergeAndDeleteRunBranchSetTarget(t, &fixture, "ma/deleted-target")
+	commitQAReport(t, fixture.repoDir, slug, "qa-report-2026-09-23.md", false, "pass")
+
+	result, err := ClassifyRunBranchSet(
+		context.Background(),
+		fixture.repoDir,
+		fixture.targetBranch,
+		slug,
+		fixture.runs,
+	)
+	if err != nil {
+		t.Fatalf("classify absent-target Run Branch set: %v", err)
+	}
+
+	branch := fixture.refs[0].Branch
+	assertPreservedRunBranch(t, result, branch, "Spec is not archived")
+	reason := result.PreservedReasons[branch]
+	if !strings.Contains(reason, "default branch") {
+		t.Fatalf("preserved reason = %q, want default-branch proof named", reason)
+	}
+	if len(reason) > reconciliationReasonMaxBytes {
+		t.Fatalf("preserved reason is %d bytes, want at most %d: %q", len(reason), reconciliationReasonMaxBytes, reason)
+	}
+}
+
+func assertReconcileReasonNamesTheMissingProof(t *testing.T) {
+	t.Helper()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	tests := []struct {
+		name       string
+		setup      func(t *testing.T, fixture *runBranchSetFixture)
+		wantReason string
+	}{
+		{
+			name:       "default branch has no superseding evidence",
+			setup:      func(_ *testing.T, _ *runBranchSetFixture) {},
+			wantReason: `Spec "0066-run-teardown-reclaims-what-it-created": default branch has no superseding QA Report after target branch disappeared`,
+		},
+		{
+			name: "default branch cannot be resolved",
+			setup: func(t *testing.T, fixture *runBranchSetFixture) {
+				gitWorktreeTest(t, fixture.repoDir, "checkout", "--detach")
+			},
+			wantReason: `Spec "0066-run-teardown-reclaims-what-it-created": default branch unresolved; superseding QA Report could not be sought after target branch disappeared`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fixture := newRunBranchSetFixture(t, slug, "qa-report-2026-07-28.md")
+			squashMergeAndDeleteRunBranchSetTarget(t, &fixture, "ma/deleted-target")
+			tt.setup(t, &fixture)
+
+			result, err := ClassifyRunBranchSet(
+				context.Background(),
+				fixture.repoDir,
+				fixture.targetBranch,
+				slug,
+				fixture.runs,
+			)
+			if err != nil {
+				t.Fatalf("classify absent-target Run Branch set: %v", err)
+			}
+
+			branch := fixture.refs[0].Branch
+			assertPreservedRunBranch(t, result, branch, tt.wantReason)
+			if result.PreservedReasons[branch] != tt.wantReason {
+				t.Fatalf("preserved reason = %q, want %q", result.PreservedReasons[branch], tt.wantReason)
+			}
+			if len(result.PreservedReasons[branch]) > reconciliationReasonMaxBytes {
+				t.Fatalf("preserved reason is %d bytes, want at most %d: %q", len(result.PreservedReasons[branch]), reconciliationReasonMaxBytes, result.PreservedReasons[branch])
+			}
+			if len(result.Releasable) != 0 || len(result.ReleasableProofs) != 0 {
+				t.Fatalf("absent-target classification released work without default-branch evidence: %#v", result)
+			}
+		})
+	}
+}
+
 func TestClassifyRunBranchSetPreservesAbsentTarget(t *testing.T) {
 	t.Parallel()
 	const slug = "0066-run-teardown-reclaims-what-it-created"
@@ -1691,7 +1994,7 @@ func TestClassifyRunBranchSetPreservesAbsentTarget(t *testing.T) {
 	if err != nil {
 		t.Fatalf("classify absent-target Run Branch set: %v", err)
 	}
-	wantAbsentReason := reconciliationReasonTargetBranchAbsent(absent.targetBranch)
+	wantAbsentReason := reconciliationReasonDefaultBranchUnresolved(slug)
 	wantPreserved := []string{absent.refs[0].Branch, absent.refs[1].Branch}
 	if !slices.Equal(absentResult.Preserved, wantPreserved) {
 		t.Fatalf("absent-target preserved Run Branches = %v, want %v", absentResult.Preserved, wantPreserved)
@@ -2613,6 +2916,35 @@ func TestPruneTerminalReconciliationReachableChangedBranch(t *testing.T) {
 	assertBranchRemoved(t, fixture.repoDir, fixture.ref.Branch)
 }
 
+func TestPruneTerminalReportRequiresArchivedEvidence(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	ctx := context.Background()
+	fixture := newTerminalRunFixture(t, "prune-requires-archived-evidence")
+	fixture.run.SpecSlug = slug
+	fixture.run.LocalBranch = "ma/prune-requires-archived-evidence"
+	fixture.commitRunChange(t, "shared.txt", "represented\n")
+	gitWorktreeTest(t, fixture.repoDir, "branch", fixture.run.LocalBranch, fixture.ref.Branch)
+	gitWorktreeTest(t, fixture.repoDir, "merge", "--squash", fixture.run.LocalBranch)
+	gitWorktreeTest(t, fixture.repoDir, "commit", "-m", "squash merge deleted target")
+	commitQAReport(t, fixture.repoDir, slug, "qa-report-2026-09-23.md", false, "pass")
+	gitWorktreeTest(t, fixture.repoDir, "branch", "-D", fixture.run.LocalBranch)
+	location := filepath.Dir(filepath.Dir(fixture.ref.Path))
+
+	pruned, err := PruneTerminalReport(ctx, fixture.repoDir, location, &recordingTerminalRunStore{}, func(_ context.Context, runID string) (store.Run, bool, error) {
+		return fixture.run, runID == fixture.run.ID, nil
+	})
+	if err != nil {
+		t.Fatalf("prune terminal reconciliation: %v", err)
+	}
+
+	if len(pruned) != 0 {
+		t.Fatalf("expected Run without archived Spec evidence to be preserved, got %#v", pruned)
+	}
+	assertPathExists(t, fixture.ref.Path)
+	assertRunBranchExists(t, fixture.repoDir, fixture.ref.Branch)
+}
+
 func TestPruneTerminalReconciliationPreservesUniqueChangedBranch(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -2858,6 +3190,22 @@ func newRunBranchSetFixture(t *testing.T, slug string, reports ...string) runBra
 		})
 	}
 	return fixture
+}
+
+func squashMergeAndDeleteRunBranchSetTarget(t *testing.T, fixture *runBranchSetFixture, targetBranch string) {
+	t.Helper()
+	gitWorktreeTest(t, fixture.repoDir, "branch", targetBranch, "main")
+	targetPath := filepath.Join(t.TempDir(), "target")
+	gitWorktreeTest(t, fixture.repoDir, "worktree", "add", targetPath, targetBranch)
+	commitWorktreeFile(t, targetPath, "target-work.txt", "delivered\n", "target work")
+	gitWorktreeTest(t, fixture.repoDir, "merge", "--squash", targetBranch)
+	gitWorktreeTest(t, fixture.repoDir, "commit", "-m", "squash merge target")
+	gitWorktreeTest(t, fixture.repoDir, "worktree", "remove", targetPath)
+	fixture.targetBranch = targetBranch
+	for index := range fixture.runs {
+		fixture.runs[index].LocalBranch = targetBranch
+	}
+	gitWorktreeTest(t, fixture.repoDir, "branch", "-D", targetBranch)
 }
 
 func assertPreservedRunBranch(t *testing.T, result BranchSetClassification, branch string, reasonFragment string) {

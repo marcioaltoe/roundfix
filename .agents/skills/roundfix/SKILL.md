@@ -815,6 +815,14 @@ repository. The report classifies every selected Run into one of six states:
 The same report can add two debris candidate kinds beside those legacy Run
 Worktree classifications:
 
+When a Run's target branch is an absent target, reconciliation checks the
+default branch for the same content evidence already accepted for a missed
+ancestry: a superseding QA Report for this Spec. A Run is released only on
+positive content evidence. If the default branch is unreachable, the Spec is
+unarchived, or the evidence names another Spec, the Run remains preserved, and
+the preserved reason names the proof that was missing; an absent target alone
+is not proof of release.
+
 - A `process` candidate is proven when a terminal Run with a proven recorded
   owner identity still owns an inspected live process tree. Its report names
   the Run outcome, owner PID, every inspected process ID, and that ownership
