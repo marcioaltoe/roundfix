@@ -139,12 +139,28 @@ func Select(ctx context.Context, repoRoot, baseRef string) (Selection, error) {
 	if err != nil {
 		return Selection{Sets: BothSets}, err
 	}
-	return SelectPaths(paths), nil
+	selection := SelectPaths(paths)
+	if selection.Sets != BaselineSet {
+		return selection, nil
+	}
+
+	listed, root, err := listGoPackages(ctx, repoRoot)
+	if err != nil {
+		selection.Sets = BothSets
+		return selection, fmt.Errorf("select dependent test sets: %w", err)
+	}
+	importsBaseline, err := coreImportsBaseline(listed, root)
+	if err != nil {
+		selection.Sets = BothSets
+		return selection, fmt.Errorf("select dependent test sets: %w", err)
+	}
+	if importsBaseline {
+		selection.Sets |= CoreSet
+	}
+	return selection, nil
 }
 
-// Packages returns the concrete go test package arguments in one set. The
-// Baseline set also includes core packages whose imports or test imports reach
-// a package under a Baseline root.
+// Packages returns the concrete go test package arguments owned by one set.
 func Packages(ctx context.Context, repoRoot string, set Set) ([]string, error) {
 	if set != CoreSet && set != BaselineSet {
 		return nil, fmt.Errorf("list packages: set must be core or baseline")
@@ -154,19 +170,10 @@ func Packages(ctx context.Context, repoRoot string, set Set) ([]string, error) {
 		return nil, errors.New("list packages: repository root is required")
 	}
 
-	root, err := filepath.Abs(repoRoot)
-	if err != nil {
-		return nil, fmt.Errorf("list packages: resolve repository root: %w", err)
-	}
-	output, err := runCommand(ctx, root, "go", "list", "-json", "./...")
+	listed, root, err := listGoPackages(ctx, repoRoot)
 	if err != nil {
 		return nil, fmt.Errorf("list packages: %w", err)
 	}
-	listed, err := decodePackages(output)
-	if err != nil {
-		return nil, fmt.Errorf("list packages: %w", err)
-	}
-	baselineReach := baselineImporters(listed, root)
 
 	packages := make([]string, 0)
 	for _, listedPackage := range listed {
@@ -178,7 +185,7 @@ func Packages(ctx context.Context, repoRoot string, set Set) ([]string, error) {
 			return nil, fmt.Errorf("list packages: package directory %q is outside repository", listedPackage.Dir)
 		}
 		packageSet := packageSetForDirectory(filepath.ToSlash(relative))
-		if packageSet != set && !(set == BaselineSet && baselineReach[listedPackage.ImportPath]) {
+		if packageSet != set {
 			continue
 		}
 		if relative == "." {
@@ -330,36 +337,54 @@ func decodePackages(output []byte) ([]goListPackage, error) {
 	}
 }
 
-func baselineImporters(packages []goListPackage, root string) map[string]bool {
-	reverseImports := make(map[string][]string)
-	baselineReach := make(map[string]bool)
-	queue := make([]string, 0)
+func listGoPackages(ctx context.Context, repoRoot string) ([]goListPackage, string, error) {
+	root, err := filepath.Abs(repoRoot)
+	if err != nil {
+		return nil, "", fmt.Errorf("resolve repository root: %w", err)
+	}
+	output, err := runCommand(ctx, root, "go", "list", "-json", "./...")
+	if err != nil {
+		return nil, "", err
+	}
+	listed, err := decodePackages(output)
+	if err != nil {
+		return nil, "", err
+	}
+	return listed, root, nil
+}
+
+func coreImportsBaseline(packages []goListPackage, root string) (bool, error) {
+	baselinePackages := make(map[string]struct{})
 	for _, listedPackage := range packages {
 		relative, err := filepath.Rel(root, listedPackage.Dir)
-		if err == nil && packageSetForDirectory(filepath.ToSlash(relative)) == BaselineSet {
-			baselineReach[listedPackage.ImportPath] = true
-			queue = append(queue, listedPackage.ImportPath)
+		if err != nil {
+			return false, fmt.Errorf("make %q relative to repository: %w", listedPackage.Dir, err)
 		}
-		imports := append([]string{}, listedPackage.Imports...)
-		imports = append(imports, listedPackage.TestImports...)
-		imports = append(imports, listedPackage.XTestImports...)
-		for _, imported := range imports {
-			reverseImports[imported] = append(reverseImports[imported], listedPackage.ImportPath)
+		if relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+			return false, fmt.Errorf("package directory %q is outside repository", listedPackage.Dir)
+		}
+		if packageSetForDirectory(filepath.ToSlash(relative)) == BaselineSet {
+			baselinePackages[listedPackage.ImportPath] = struct{}{}
 		}
 	}
 
-	for len(queue) != 0 {
-		imported := queue[0]
-		queue = queue[1:]
-		for _, importer := range reverseImports[imported] {
-			if baselineReach[importer] {
-				continue
+	for _, listedPackage := range packages {
+		relative, err := filepath.Rel(root, listedPackage.Dir)
+		if err != nil {
+			return false, fmt.Errorf("make %q relative to repository: %w", listedPackage.Dir, err)
+		}
+		if packageSetForDirectory(filepath.ToSlash(relative)) != CoreSet {
+			continue
+		}
+		for _, imports := range [][]string{listedPackage.Imports, listedPackage.TestImports, listedPackage.XTestImports} {
+			for _, imported := range imports {
+				if _, ok := baselinePackages[imported]; ok {
+					return true, nil
+				}
 			}
-			baselineReach[importer] = true
-			queue = append(queue, importer)
 		}
 	}
-	return baselineReach
+	return false, nil
 }
 
 func packageSetForDirectory(directory string) Set {

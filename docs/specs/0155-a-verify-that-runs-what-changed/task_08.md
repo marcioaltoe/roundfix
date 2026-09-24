@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0155-a-verify-that-runs-what-changed
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -40,3 +40,17 @@ Corrective Task approved by the maintainer on 2026-09-24 as a one-off exception 
 ## References
 
 - [_techspec.md](_techspec.md) — Build Order
+
+## Result
+
+- Implementation: `Packages` once again assigns packages only by their directory-owned set. `Select` now widens a Baseline-only selection to both sets when `go list -json ./...` reports that a core package imports or test-imports a Baseline package; a core-only selection bypasses that dependency scan and remains core-only. A failed dependency scan fails safe to both sets and returns the diagnostic.
+- Partition evidence: before the implementation, `rtk env GOCACHE=/private/tmp/roundfix-task08-gocache go test -count=1 -run '^TestPartitionCoversEveryTestExactlyOnce$' ./internal/verifyselect` exited 1 because `./cmd/roundfix` belonged to two sets. After the implementation, the same focused test with `-v` exited 0 and reported `TestPartitionCoversEveryTestExactlyOnce` plus both subtests as passing.
+- Selection evidence: `TestBaselineSelectionAlsoRunsTheCoreSet` exercises production imports, external-test imports, and the negative case with no core importer. `TestPackagesAreAPartition` keeps those importers in core while Baseline roots remain in Baseline. Together with the existing core-only staged-change case, `rtk env GOCACHE=/private/tmp/roundfix-task08-gocache go test -count=1 -run '^(TestPackagesAreAPartition|TestBaselineSelectionAlsoRunsTheCoreSet|TestSelectListsStagedPaths)$' ./internal/verifyselect` exited 0.
+- Focused package check: `rtk env GOCACHE=/private/tmp/roundfix-task08-gocache go test -count=1 ./internal/verifyselect` exited 0.
+- Incremental repository check: `rtk make verify-changed` exited 0 after rerunning with network access for tests that query `api.github.com`; formatting, vet, build, selected Go tests, skill tests, and `roundfix skills check` passed.
+- The authored `## Verification` command was not run; the Daemon owns it and Task settlement.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260924T192558Z_edaf3e3e31b800e8`
+- Source commit: `a747ba4c4db8684d615e1660f80e889c0191adbf`
