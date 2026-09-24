@@ -87,6 +87,21 @@ execution, not from splitting repositories.
    removed from both sets or added to both.
 3. An unresolvable base selects both sets.
 
+## Recorded limits
+
+The corrective ceiling, already extended once by the maintainer for this Spec,
+was spent on Tasks 06 to 09. The second pre-PR review of 2026-09-24 found one
+more gap, carried to Spec 0166:
+
+- A change only under `docs/**`, or to Markdown at the root, selects no test
+  set, yet tests read those files: `TestDurableTableLifecyclePolicyCoversEveryTable`
+  reads `docs/user-guide/run-database-lifecycle.md`, and
+  `TestBaselineExamplesParse` reads `README.md`. Such a change passes
+  `make verify-changed` and fails only in the complete `make verify` that pushes
+  to `main` still run. Reproduction: remove the
+  `<!-- durable-table-lifecycle:begin -->` marker in a commit and run
+  `go run ./cmd/verify-select -base HEAD~1`; it prints no set.
+
 ## Decisions
 
 - **Keep `make verify` complete and add a selective target.** Changing the
