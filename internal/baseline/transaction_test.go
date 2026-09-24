@@ -320,6 +320,7 @@ func TestHistoryMoveRemovesEmptiedSource(t *testing.T) {
 		const reviewPath = "docs/specs/reviews/pr-201"
 		reviewDir := filepath.Join(repo, filepath.FromSlash(reviewPath))
 		historyPersistRound(t, reviewDir, "feature/merged", head)
+		historyWriteReviewOutcome(t, reviewDir, "merged", head)
 		historyWriteFiles(t, repo, map[string]string{
 			path.Join(reviewPath, "issues/001.md"): "finished issue\n",
 		})

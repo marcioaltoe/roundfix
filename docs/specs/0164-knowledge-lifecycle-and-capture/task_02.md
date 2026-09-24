@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0164-knowledge-lifecycle-and-capture
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -46,3 +46,64 @@ complexity: medium
 
 - [_techspec.md](_techspec.md) — Review retirement
 - ADR-0163
+
+## Result
+
+Implemented recorded-evidence Review retirement. `ClassifyReview` now reads
+`outcome.md`, validates the declared Pull Request state and required fields,
+accepts a hexadecimal squash receipt without consulting Git, and retains
+missing or malformed outcomes with a specific reason. History layout
+discovery now routes every legacy `_reviews` artifact through the existing
+relocation and collision ledger: live and undecidable artifacts move to
+`docs/specs/reviews/`, while finished artifacts move to
+`docs/history/reviews/`.
+
+Focused checks and evidence:
+
+- Before implementation, `GOCACHE=/tmp/roundfix-task02-gocache rtk go test
+  -count=1 -run '^TestClassifyReviewIgnoresObjectStoreAvailability$'
+  ./internal/spec` failed when the recorded head was absent, and the matching
+  focused history-layout test failed because no legacy live or undecidable
+  relocation was produced.
+- `GOCACHE=/tmp/roundfix-task02-gocache rtk go test -count=1 -run
+  '^TestClassifyReview' ./internal/spec` passed 17 tests. This covers stable
+  classification across present, absent and fetched-only Git objects; an
+  absent-local squash receipt; open and closed outcomes; and missing or
+  malformed records.
+- `GOCACHE=/tmp/roundfix-task02-gocache rtk go test -count=1 -run
+  '^TestHistoryLayoutRelocatesLegacyReviewRootWhateverItsLiveness$'
+  ./internal/baseline` passed. The test checks live, undecidable and finished
+  legacy artifacts, retained findings, report-file preservation and the three
+  destination trees.
+- `GOCACHE=/tmp/roundfix-task02-gocache rtk go test -count=1 ./internal/spec
+  ./internal/baseline` passed, including history-move transaction coverage.
+- `GOCACHE=/tmp/roundfix-task02-gocache rtk go test -count=1 -run
+  '^TestReviewArtifactRootNeverResolvesIntoHistory$' ./internal/config`
+  passed, preserving the resolver boundary required by ADR-0163.
+- `rtk make verify-incremental` first reached two process-owner integration
+  failures because the sandbox denied process-table access. The same command
+  passed with host process-table permission; all packages, skill checks and the
+  build passed.
+
+Acceptance evidence:
+
+- `TestClassifyReviewIgnoresObjectStoreAvailability` proves one recorded-open
+  artifact returns the same answer and reason with its head present, absent or
+  reachable only from a fetched ref.
+- `TestClassifyReviewAcceptsARecordedSquashReceipt` proves a recorded
+  hexadecimal merge commit retires the artifact without a matching local Git
+  object.
+- `TestClassifyReviewWithoutARecordedOutcomeIsUnknown` proves an absent outcome
+  is undecidable and names the missing `outcome.md`; malformed-field cases are
+  covered by `TestClassifyReviewRejectsMalformedRecordedOutcome`.
+- `TestHistoryLayoutRelocatesLegacyReviewRootWhateverItsLiveness` proves live
+  and undecidable legacy artifacts retain their reports under the canonical
+  live root, while a finished artifact relocates to history.
+
+The Task's declared `## Verification` command was not run; the Daemon owns that
+verification and status settlement.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260924T223414Z_54e6f85ae98b6550`
+- Source commit: `c941f8a9c39f435847f76a8bcb7f0110a741d336`
