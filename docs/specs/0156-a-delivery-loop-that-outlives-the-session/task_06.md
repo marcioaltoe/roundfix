@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0156-a-delivery-loop-that-outlives-the-session
-status: completed
+status: pending
 type: qa
 complexity: high
 ---
@@ -62,3 +62,9 @@ applied in process by whoever settles the Task.
 evidence; `_techspec.md` → Testing Approach 1-8; API Contracts 1-3; ADR-0080;
 ADR-0091; ADR-0093; ADR-0096; ADR-0097; ADR-0104; ADR-0117; ADR-0130; ADR-0153;
 ADR-0155; ADR-0156.
+
+## Invalidation
+
+- Date: `2026-09-24`
+- QA Report: `qa/qa-report-2026-09-24.md`
+- Dependencies not completed: `task_08`
