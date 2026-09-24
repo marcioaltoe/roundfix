@@ -1,9 +1,12 @@
 ---
 spec: 0162-a-durable-repository-key-per-run
-status: active
+status: archived
 created: 2026-09-24
 surfaces: [backend, cli]
+archived: "2026-09-24"
+source_slug: 0162-a-durable-repository-key-per-run
 ---
+
 
 # A durable repository key per Run
 
