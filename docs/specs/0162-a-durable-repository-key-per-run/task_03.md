@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0162-a-durable-repository-key-per-run
-status: completed
+status: pending
 type: qa
 complexity: high
 ---
@@ -66,3 +66,9 @@ ADR-0156.
 - Date: `2026-09-24`
 - QA Report: `qa/qa-report-2026-09-24.md`
 - Dependencies not completed: `task_04`
+
+## Invalidation
+
+- Date: `2026-09-24`
+- QA Report: `qa/qa-report-2026-09-24-01.md`
+- Dependencies not completed: `task_05`
