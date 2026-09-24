@@ -26,10 +26,9 @@ import (
 )
 
 type commandDeliveryWorkflow struct {
-	store          *store.Store
-	loaded         roundconfig.Loaded
-	git            preflight.GitRunner
-	startingBranch string
+	store  *store.Store
+	loaded roundconfig.Loaded
+	git    preflight.GitRunner
 }
 
 const deliveryBranchPrefix = "roundfix/deliver-"
@@ -53,14 +52,6 @@ func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) 
 }
 
 func (workflow *commandDeliveryWorkflow) CreateItemBranch(ctx context.Context, gitRoot, specSlug string) (string, error) {
-	branch, err := newDeliveryBranch(specSlug)
-	if err != nil {
-		return "", err
-	}
-	branch, err = workflow.store.RecordDeliveryQueueItemBranch(ctx, gitRoot, specSlug, branch)
-	if err != nil {
-		return "", fmt.Errorf("record item branch: %w", err)
-	}
 	state, err := preflight.InspectGit(ctx, gitRoot, workflow.git)
 	if err != nil {
 		return "", fmt.Errorf("inspect checkout before item branch creation: %w", err)
@@ -68,7 +59,14 @@ func (workflow *commandDeliveryWorkflow) CreateItemBranch(ctx context.Context, g
 	if len(state.Dirty) != 0 {
 		return "", errors.New("create item branch: checkout has uncommitted changes")
 	}
-	workflow.startingBranch = state.Branch
+	branch, err := newDeliveryBranch(specSlug)
+	if err != nil {
+		return "", err
+	}
+	branch, err = workflow.store.RecordDeliveryQueueItemBranch(ctx, gitRoot, specSlug, branch, state.Branch)
+	if err != nil {
+		return "", fmt.Errorf("record item branch: %w", err)
+	}
 	if state.Branch == branch {
 		return branch, nil
 	}
@@ -135,7 +133,6 @@ func (workflow *commandDeliveryWorkflow) UseItemBranch(ctx context.Context, gitR
 	if len(state.Dirty) != 0 {
 		return errors.New("use item branch: checkout has uncommitted changes")
 	}
-	workflow.startingBranch = state.Branch
 	if state.Branch == branch {
 		return nil
 	}
@@ -146,20 +143,47 @@ func (workflow *commandDeliveryWorkflow) UseItemBranch(ctx context.Context, gitR
 }
 
 func (workflow *commandDeliveryWorkflow) ParkItem(ctx context.Context, gitRoot string) error {
-	startingBranch := strings.TrimSpace(workflow.startingBranch)
-	if startingBranch == "" {
-		return errors.New("park item: starting branch is unknown")
+	state, err := preflight.InspectGit(ctx, gitRoot, workflow.git)
+	if err != nil {
+		return fmt.Errorf("inspect checkout before parking item: %w", err)
+	}
+	queue, found, err := workflow.store.DeliveryQueue(ctx, gitRoot)
+	if err != nil {
+		return fmt.Errorf("read Delivery Queue before parking item: %w", err)
+	}
+	if !found {
+		return nil
+	}
+	var active *store.DeliveryQueueItem
+	for index := range queue.Items {
+		item := &queue.Items[index]
+		if item.Stage == store.DeliveryStageMerged || item.Stage == store.DeliveryStageParked {
+			continue
+		}
+		if strings.TrimSpace(item.Branch) == state.Branch && strings.TrimSpace(item.StartingBranch) != "" {
+			active = item
+			break
+		}
+	}
+	if active == nil {
+		return nil
 	}
 	if _, err := workflow.git.RunGit(ctx, gitRoot, "reset", "--hard", "HEAD"); err != nil {
 		return fmt.Errorf("discard tracked item changes: %w", err)
 	}
-	if _, err := workflow.git.RunGit(ctx, gitRoot, "clean", "-fd"); err != nil {
-		return fmt.Errorf("discard untracked item changes: %w", err)
+	untracked := make([]string, 0, len(state.Dirty))
+	for _, changed := range state.Dirty {
+		if changed.Status == "??" {
+			untracked = append(untracked, changed.Path)
+		}
 	}
-	state, err := preflight.InspectGit(ctx, gitRoot, workflow.git)
-	if err != nil {
-		return fmt.Errorf("inspect checkout before restoring starting branch: %w", err)
+	if len(untracked) != 0 {
+		arguments := append([]string{"--literal-pathspecs", "clean", "-fd", "--"}, untracked...)
+		if _, err := workflow.git.RunGit(ctx, gitRoot, arguments...); err != nil {
+			return fmt.Errorf("discard untracked item changes: %w", err)
+		}
 	}
+	startingBranch := strings.TrimSpace(active.StartingBranch)
 	if state.Branch != startingBranch {
 		if _, err := workflow.git.RunGit(ctx, gitRoot, "switch", startingBranch); err != nil {
 			return fmt.Errorf("restore starting branch %q: %w", startingBranch, err)

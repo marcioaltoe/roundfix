@@ -459,6 +459,145 @@ func TestAParkLeavesACleanCheckout(t *testing.T) {
 	}
 }
 
+func TestParkKeepsUntrackedFilesTheItemDidNotCreate(t *testing.T) {
+	_, checkout := newDeliveryBranchRepository(t)
+	gittest.Run(t, checkout, "config", "status.showUntrackedFiles", "no")
+	const specSlug = "0161-hidden-untracked"
+	workflow := newDeliveryBranchWorkflow(t, checkout, specSlug)
+	preexistingPath := filepath.Join(checkout, "user-note.txt")
+	mustWrite(t, preexistingPath, "keep me\n")
+
+	if _, err := workflow.CreateItemBranch(t.Context(), checkout, specSlug); err == nil {
+		t.Fatal("item branch creation accepted a checkout with a hidden untracked file")
+	}
+	if err := workflow.ParkItem(t.Context(), checkout); err != nil {
+		t.Fatalf("park refused item: %v", err)
+	}
+	if got := mustRead(t, preexistingPath); got != "keep me\n" {
+		t.Fatalf("pre-existing untracked file = %q, want preserved content", got)
+	}
+	if got := strings.TrimSpace(gittest.Run(t, checkout, "branch", "--show-current")); got != "main" {
+		t.Fatalf("branch after refused park = %q, want main", got)
+	}
+}
+
+func TestParkNeverTouchesACheckoutTheItemRefused(t *testing.T) {
+	_, checkout := newDeliveryBranchRepository(t)
+	ctx := t.Context()
+	runStore, err := store.Open(ctx, t.TempDir())
+	if err != nil {
+		t.Fatalf("open Run Database: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := runStore.Close(); err != nil {
+			t.Errorf("close Run Database: %v", err)
+		}
+	})
+	const firstSlug = "0161-first-item"
+	const refusedSlug = "0161-refused-item"
+	queue, err := runStore.CreateDeliveryQueue(ctx, checkout, []string{firstSlug, refusedSlug})
+	if err != nil {
+		t.Fatalf("create Delivery Queue: %v", err)
+	}
+	workflow := &commandDeliveryWorkflow{
+		store:  runStore,
+		loaded: roundconfig.Loaded{GitRoot: checkout},
+		git:    preflight.ExecGitRunner{},
+	}
+	if _, err := workflow.CreateItemBranch(ctx, checkout, firstSlug); err != nil {
+		t.Fatalf("create first item branch: %v", err)
+	}
+	if err := workflow.ParkItem(ctx, checkout); err != nil {
+		t.Fatalf("park first item: %v", err)
+	}
+	queue, found, err := runStore.DeliveryQueue(ctx, checkout)
+	if err != nil || !found {
+		t.Fatalf("read Delivery Queue after first branch: found=%v err=%v", found, err)
+	}
+	first := queue.Items[0]
+	first.Stage = store.DeliveryStageParked
+	if err := runStore.UpdateDeliveryQueueItem(ctx, checkout, first); err != nil {
+		t.Fatalf("record first item park: %v", err)
+	}
+
+	seedPath := filepath.Join(checkout, "seed.txt")
+	mustWrite(t, seedPath, "user change\n")
+	if _, err := workflow.CreateItemBranch(ctx, checkout, refusedSlug); err == nil {
+		t.Fatal("second item branch creation accepted a dirty checkout")
+	}
+	beforeStatus := gittest.Run(t, checkout, "status", "--porcelain=v1", "-z", "--untracked-files=all")
+	beforeHead := strings.TrimSpace(gittest.Run(t, checkout, "rev-parse", "HEAD"))
+	beforeBranch := strings.TrimSpace(gittest.Run(t, checkout, "branch", "--show-current"))
+
+	if err := workflow.ParkItem(ctx, checkout); err != nil {
+		t.Fatalf("park refused item: %v", err)
+	}
+	if got := mustRead(t, seedPath); got != "user change\n" {
+		t.Fatalf("tracked user file after park = %q, want untouched content", got)
+	}
+	if got := gittest.Run(t, checkout, "status", "--porcelain=v1", "-z", "--untracked-files=all"); got != beforeStatus {
+		t.Fatalf("status after park = %q, want unchanged %q", got, beforeStatus)
+	}
+	if got := strings.TrimSpace(gittest.Run(t, checkout, "rev-parse", "HEAD")); got != beforeHead {
+		t.Fatalf("HEAD after park = %q, want unchanged %q", got, beforeHead)
+	}
+	if got := strings.TrimSpace(gittest.Run(t, checkout, "branch", "--show-current")); got != beforeBranch {
+		t.Fatalf("branch after park = %q, want unchanged %q", got, beforeBranch)
+	}
+}
+
+func TestParkRestoresTheRecordedStartingBranchAfterACrash(t *testing.T) {
+	_, checkout := newDeliveryBranchRepository(t)
+	ctx := t.Context()
+	homeDir := t.TempDir()
+	firstStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database before crash: %v", err)
+	}
+	const specSlug = "0161-crashed-item"
+	if _, err := firstStore.CreateDeliveryQueue(ctx, checkout, []string{specSlug}); err != nil {
+		t.Fatalf("create Delivery Queue: %v", err)
+	}
+	beforeCrash := &commandDeliveryWorkflow{
+		store:  firstStore,
+		loaded: roundconfig.Loaded{GitRoot: checkout},
+		git:    preflight.ExecGitRunner{},
+	}
+	itemBranch, err := beforeCrash.CreateItemBranch(ctx, checkout, specSlug)
+	if err != nil {
+		t.Fatalf("create item branch before crash: %v", err)
+	}
+	if err := firstStore.Close(); err != nil {
+		t.Fatalf("close Run Database at simulated crash: %v", err)
+	}
+
+	afterCrashStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("reopen Run Database after crash: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := afterCrashStore.Close(); err != nil {
+			t.Errorf("close reopened Run Database: %v", err)
+		}
+	})
+	afterCrash := &commandDeliveryWorkflow{
+		store:  afterCrashStore,
+		loaded: roundconfig.Loaded{GitRoot: checkout},
+		git:    preflight.ExecGitRunner{},
+	}
+	mustWrite(t, filepath.Join(checkout, "item-output.txt"), "discard me\n")
+
+	if err := afterCrash.ParkItem(ctx, checkout); err != nil {
+		t.Fatalf("park item after crash: %v", err)
+	}
+	if got := strings.TrimSpace(gittest.Run(t, checkout, "branch", "--show-current")); got != "main" {
+		t.Fatalf("branch after crash park = %q, want recorded starting branch main (item branch %q)", got, itemBranch)
+	}
+	if got := gittest.Run(t, checkout, "status", "--porcelain=v1", "-z", "--untracked-files=all"); got != "" {
+		t.Fatalf("status after crash park = %q, want clean checkout", got)
+	}
+}
+
 func TestResumeAcceptsARealArchiveCommit(t *testing.T) {
 	repository, reviewedHead, archiveHead := commitRealArchive(t, nil)
 

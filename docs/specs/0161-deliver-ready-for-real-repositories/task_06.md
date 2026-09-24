@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0161-deliver-ready-for-real-repositories
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -42,3 +42,35 @@ Corrective Task from the pre-PR review of 2026-09-24. The clean-checkout check r
 ## References
 
 - [_techspec.md](_techspec.md) — Park and resume
+
+## Result
+
+Implemented item-scoped park ownership. Git inspection now forces complete
+untracked-file enumeration, the Delivery Queue records the item branch and its
+starting branch atomically, and park mutates the checkout only when the current
+branch belongs to a nonterminal item with a recorded starting branch. An owned
+park resets tracked changes, cleans only the explicitly observed untracked
+paths with literal pathspecs, and restores the persisted starting branch.
+
+Acceptance evidence:
+
+- `TestParkKeepsUntrackedFilesTheItemDidNotCreate` passed against real Git with
+  `status.showUntrackedFiles=no`; branch creation refused the hidden untracked
+  file and park preserved its contents.
+- `TestParkNeverTouchesACheckoutTheItemRefused` passed against real Git; after a
+  prior item populated workflow history, the next item's dirty-checkout refusal
+  preserved branch, HEAD, porcelain status, and tracked file contents.
+- `TestParkRestoresTheRecordedStartingBranchAfterACrash` passed after closing
+  and reopening the real Run Database; park removed the item-created untracked
+  file and returned from the item branch to the persisted `main` branch.
+
+Focused checks:
+
+- `GOCACHE=/tmp/roundfix-task06-gocache go test -count=1 -run 'TestPark(KeepsUntrackedFilesTheItemDidNotCreate|NeverTouchesACheckoutTheItemRefused|RestoresTheRecordedStartingBranchAfterACrash)' ./internal/cli` — passed.
+- `GOCACHE=/tmp/roundfix-task06-gocache go test -count=1 -run '^(TestRecordDeliveryQueueItemBranchKeepsTheFirstBranch|TestOpenMigratesV14DeliveryQueueAddingOwnerAndItemBranch)$' ./internal/store` — passed.
+- `GOCACHE=/tmp/roundfix-task06-gocache go test -count=1 -run '^TestInspectGit' ./internal/preflight` — passed.
+- `GOCACHE=/tmp/roundfix-task06-gocache go test -count=1 ./internal/cli` — passed with host process-table permission. The sandboxed run reached two unrelated force-stop integration tests and was blocked by `operation not permitted`; rerunning with the required permission exited 0.
+- `GOCACHE=/tmp/roundfix-task06-gocache go test -count=1 ./internal/store` and `GOCACHE=/tmp/roundfix-task06-gocache go test -count=1 ./internal/preflight` — passed.
+- `git diff --check` — passed.
+
+The Daemon-owned `## Verification` command was not run.

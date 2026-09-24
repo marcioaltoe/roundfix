@@ -169,6 +169,7 @@ func TestRecordDeliveryQueueItemBranchKeepsTheFirstBranch(t *testing.T) {
 		gitRoot,
 		"0161-delivery",
 		"roundfix/deliver-0161-delivery-first",
+		"main",
 	)
 	if err != nil {
 		t.Fatalf("record first item branch: %v", err)
@@ -178,6 +179,7 @@ func TestRecordDeliveryQueueItemBranchKeepsTheFirstBranch(t *testing.T) {
 		gitRoot,
 		"0161-delivery",
 		"roundfix/deliver-0161-delivery-second",
+		"other-starting-branch",
 	)
 	if err != nil {
 		t.Fatalf("record second item branch: %v", err)
@@ -191,6 +193,9 @@ func TestRecordDeliveryQueueItemBranchKeepsTheFirstBranch(t *testing.T) {
 	}
 	if got := queue.Items[0].Branch; got != first {
 		t.Fatalf("persisted item branch = %q, want %q", got, first)
+	}
+	if got := queue.Items[0].StartingBranch; got != "main" {
+		t.Fatalf("persisted starting branch = %q, want main", got)
 	}
 }
 
@@ -228,6 +233,9 @@ func TestOpenMigratesV14DeliveryQueueAddingOwnerAndItemBranch(t *testing.T) {
 	}
 	if persisted.Items[0].Branch != "" {
 		t.Fatalf("migrated Delivery Queue item branch = %q, want empty", persisted.Items[0].Branch)
+	}
+	if persisted.Items[0].StartingBranch != "" {
+		t.Fatalf("migrated Delivery Queue item starting branch = %q, want empty", persisted.Items[0].StartingBranch)
 	}
 	if persisted.OwnerPID != 0 || persisted.OwnerIdentity != "" {
 		t.Fatalf("migrated Delivery Queue owner = pid:%d identity:%q", persisted.OwnerPID, persisted.OwnerIdentity)

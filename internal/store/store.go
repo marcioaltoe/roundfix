@@ -1378,7 +1378,7 @@ func terminalStateExclusion() (string, []any) {
 	return "state NOT IN (" + strings.Join(placeholders, ", ") + ")", arguments
 }
 
-const schemaVersion = 16
+const schemaVersion = 17
 
 // activeRunLocksColumns is the schema v4 lock-table shape (ADR 0016): one
 // Active Run per work target, keyed by (target_kind, target_key).
@@ -1407,13 +1407,21 @@ func (store *Store) migrate(ctx context.Context) error {
 		}
 	}
 	var v16Statements []string
-	if version >= 3 && version < schemaVersion {
+	if version >= 3 && version < 16 {
 		v16Statements, err = store.deliveryBranchMigrationStatements(ctx)
 		if err != nil {
 			return err
 		}
 	}
+	var v17Statements []string
+	if version >= 3 && version < schemaVersion {
+		v17Statements, err = store.deliveryStartingBranchMigrationStatements(ctx)
+		if err != nil {
+			return err
+		}
+	}
 	deliveryStatements := append(v15Statements, v16Statements...)
+	deliveryStatements = append(deliveryStatements, v17Statements...)
 	switch version {
 	case schemaVersion:
 		return nil
@@ -1503,7 +1511,10 @@ func (store *Store) migrate(ctx context.Context) error {
 	case 14:
 		return store.applyMigration(ctx, deliveryStatements)
 	case 15:
-		return store.applyMigration(ctx, v16Statements)
+		statements := append(v16Statements, v17Statements...)
+		return store.applyMigration(ctx, statements)
+	case 16:
+		return store.applyMigration(ctx, v17Statements)
 	default:
 		return fmt.Errorf("migrate Run Database: schema version %d is not supported", version)
 	}
@@ -1583,7 +1594,7 @@ func createSchemaStatements() []string {
 	}
 	statements = append(statements, deliverySchemaStatements(true)...)
 	statements = append(statements, deliveryOwnerColumnStatements(false, false)...)
-	return append(statements, `PRAGMA user_version = 16`)
+	return append(statements, `PRAGMA user_version = 17`)
 }
 
 const runAgentSelectionsColumns = `(
@@ -1749,6 +1760,21 @@ SELECT EXISTS (
 	return append(statements, `PRAGMA user_version = 16`), nil
 }
 
+func (store *Store) deliveryStartingBranchMigrationStatements(ctx context.Context) ([]string, error) {
+	var startingBranchExists int
+	if err := store.db.QueryRowContext(ctx, `
+SELECT EXISTS (
+	SELECT 1 FROM pragma_table_info('delivery_queue_items') WHERE name = 'starting_branch'
+)`).Scan(&startingBranchExists); err != nil {
+		return nil, fmt.Errorf("inspect Delivery Queue item starting branch column: %w", err)
+	}
+	statements := []string{}
+	if startingBranchExists == 0 {
+		statements = append(statements, `ALTER TABLE delivery_queue_items ADD COLUMN starting_branch TEXT NOT NULL DEFAULT ''`)
+	}
+	return append(statements, `PRAGMA user_version = 17`), nil
+}
+
 func deliverySchemaStatements(includeBranch bool) []string {
 	itemTable := `CREATE TABLE IF NOT EXISTS delivery_queue_items (
 			git_root TEXT NOT NULL,
@@ -1758,7 +1784,8 @@ func deliverySchemaStatements(includeBranch bool) []string {
 			blocker TEXT NOT NULL DEFAULT '',`
 	if includeBranch {
 		itemTable += `
-			branch TEXT NOT NULL DEFAULT '',`
+			branch TEXT NOT NULL DEFAULT '',
+			starting_branch TEXT NOT NULL DEFAULT '',`
 	}
 	itemTable += `
 			run_id TEXT NOT NULL DEFAULT '',
