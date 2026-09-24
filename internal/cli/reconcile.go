@@ -360,7 +360,7 @@ func loadReconcileRuns(ctx context.Context, homeDir, repository, runID string) (
 				message: fmt.Sprintf("Run %q is Active; stop it before reconciliation", runID),
 			}
 		}
-		if !sameRepository(run.GitRoot, repository) {
+		if !sameRepository(run, repository) {
 			return reconcileRunSelection{}, validationError{
 				message: fmt.Sprintf(
 					"Run %q belongs to repository %q, not current repository %q",
@@ -385,6 +385,10 @@ func loadReconcileRuns(ctx context.Context, homeDir, repository, runID string) (
 		if run.Kind != store.KindImplement {
 			continue
 		}
+		// ListRuns has already proven repository membership from the recorded
+		// key. Use the live checkout for Git inspection because the checkout
+		// that created a terminal Run may have been removed intentionally.
+		run.GitRoot = repository
 		all = append(all, run)
 		if store.IsTerminalState(run.State) && (runID == "" || run.ID == runID) {
 			selected = append(selected, run)
@@ -1208,19 +1212,22 @@ func reconcileRetryCommand(runID string) string {
 	return "roundfix reconcile " + strings.TrimSpace(runID)
 }
 
-func sameRepository(left, right string) bool {
-	left = strings.TrimSpace(left)
-	right = strings.TrimSpace(right)
-	if left == "" || right == "" {
+func sameRepository(run store.Run, repository string) bool {
+	repositoryKey, err := roundconfig.RepositoryRoot(repository)
+	if err != nil {
 		return false
 	}
-	if resolved, err := filepath.EvalSymlinks(left); err == nil {
-		left = resolved
+	candidate := strings.TrimSpace(run.RepositoryRoot)
+	if candidate == "" {
+		candidate, err = roundconfig.RepositoryRoot(run.GitRoot)
+		if err != nil {
+			return false
+		}
 	}
-	if resolved, err := filepath.EvalSymlinks(right); err == nil {
-		right = resolved
+	if resolved, err := filepath.EvalSymlinks(candidate); err == nil {
+		candidate = resolved
 	}
-	return filepath.Clean(left) == filepath.Clean(right)
+	return filepath.Clean(candidate) == filepath.Clean(repositoryKey)
 }
 
 func printReconcileValidationFailure(err error, stderr io.Writer) {

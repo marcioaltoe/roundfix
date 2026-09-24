@@ -484,6 +484,45 @@ func TestRunGCSanitizeClassifiesEveryRecordedRootAndMutatesOnlyProvenDirectories
 	assertPathExists(t, unsafeMarker)
 }
 
+func TestGCSanitizeKeepsTheSharedRootAfterWorktreeRemoval(t *testing.T) {
+	ctx := context.Background()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	linkedRoot := filepath.Join(t.TempDir(), "linked")
+	gitImplement(t, repoDir, "worktree", "add", "-b", "feature/gc-linked", linkedRoot)
+	linkedRoot, err := filepath.EvalSymlinks(linkedRoot)
+	if err != nil {
+		t.Fatalf("resolve linked worktree: %v", err)
+	}
+	sharedRoot := resolveGCTestArtifactRoot(t, repoDir, homeDir)
+
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open Run store: %v", err)
+	}
+	run := createGCSanitationRun(t, ctx, runStore, linkedRoot, sharedRoot, "linked", true)
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close Run store: %v", err)
+	}
+	writeRunArtifact(t, sharedRoot, run.ID, "linked")
+	gitImplement(t, repoDir, "worktree", "remove", linkedRoot)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := runCLIContext(t, ctx, []string{"gc", "sanitize"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("gc sanitize exit = %d, want %d; stderr=%q stdout=%q", code, exitOK, stderr.String(), stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("gc sanitize stderr = %q, want empty", stderr.String())
+	}
+	if output := stdout.String(); !strings.Contains(output, sharedRoot) || !strings.Contains(output, "Classification: orphaned") {
+		t.Fatalf("gc sanitize output = %q, want shared root classified orphaned", output)
+	} else if strings.Contains(output, "Classification: overridden") {
+		t.Fatalf("gc sanitize output = %q, shared root must not be overridden", output)
+	}
+}
+
 func TestRunStorageReportOutsideGitRepository(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

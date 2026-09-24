@@ -106,6 +106,7 @@ type Run struct {
 	BaseRepository        string
 	PRNumber              string
 	GitRoot               string
+	RepositoryRoot        string
 	LocalBranch           string
 	HeadSHA               string
 	ArtifactDir           string
@@ -463,6 +464,10 @@ func (store *Store) createRun(ctx context.Context, req CreateRunRequest, acquire
 	if err := validateCreateRunRequest(req); err != nil {
 		return Run{}, err
 	}
+	repositoryRoot, err := roundconfig.RepositoryRoot(req.GitRoot)
+	if err != nil {
+		return Run{}, fmt.Errorf("resolve Run repository identity: %w", err)
+	}
 	runID, err := newRunID(store.now())
 	if err != nil {
 		return Run{}, err
@@ -485,10 +490,10 @@ func (store *Store) createRun(ctx context.Context, req CreateRunRequest, acquire
 		if _, err := tx.ExecContext(ctx, `
 INSERT INTO runs (
 	id, kind, state, head_repository, head_branch, base_repository,
-	pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
+	pr_number, git_root, repository_root, local_branch, head_sha, artifact_dir, work_dir,
 	spec_slug, agent, model, reasoning_effort, owner_pid, owner_identity,
 	owner_identity_unproven, created_at, updated_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			runID,
 			req.Kind,
 			StateActive,
@@ -497,6 +502,7 @@ INSERT INTO runs (
 			req.BaseRepository,
 			req.PRNumber,
 			req.GitRoot,
+			repositoryRoot,
 			req.LocalBranch,
 			req.HeadSHA,
 			req.ArtifactDir,
@@ -1027,7 +1033,7 @@ func (store *Store) ActiveRun(ctx context.Context, headRepository string, headBr
 func (store *Store) ActiveReviewRunByTarget(ctx context.Context, headRepository string, headBranch string) (Run, bool, error) {
 	sqlQuery := `
 SELECT id, kind, state, head_repository, head_branch, base_repository,
-       pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
+       pr_number, git_root, repository_root, local_branch, head_sha, artifact_dir, work_dir,
        spec_slug, agent, model, reasoning_effort, owner_pid, owner_identity, owner_identity_unproven, created_at, updated_at, completed_at
 FROM runs
 WHERE head_repository = ? AND head_branch = ?
@@ -1065,7 +1071,7 @@ func (store *Store) ActiveSpecRun(ctx context.Context, gitRoot string, specSlug 
 func (store *Store) ActiveRunInGitRoot(ctx context.Context, gitRoot string) (Run, bool, error) {
 	row := store.db.QueryRowContext(ctx, `
 SELECT r.id, r.kind, r.state, r.head_repository, r.head_branch, r.base_repository,
-       r.pr_number, r.git_root, r.local_branch, r.head_sha, r.artifact_dir, r.work_dir,
+       r.pr_number, r.git_root, r.repository_root, r.local_branch, r.head_sha, r.artifact_dir, r.work_dir,
        r.spec_slug, r.agent, r.model, r.reasoning_effort, r.owner_pid, r.owner_identity, r.owner_identity_unproven, r.created_at, r.updated_at, r.completed_at
 FROM active_run_locks l
 JOIN runs r ON r.id = l.run_id
@@ -1085,6 +1091,7 @@ LIMIT 1`, gitRoot)
 // SetRunWindow stores a repository's Run Window. An existing window is
 // returned unchanged unless replace is true.
 func (store *Store) SetRunWindow(ctx context.Context, gitRoot string, cutoff time.Time, replace bool) (RunWindow, bool, error) {
+	checkoutRoot := gitRoot
 	repositoryRoot, err := roundconfig.RepositoryRoot(gitRoot)
 	if err != nil {
 		return RunWindow{}, false, fmt.Errorf("resolve Run Window repository identity: %w", err)
@@ -1093,13 +1100,18 @@ func (store *Store) SetRunWindow(ctx context.Context, gitRoot string, cutoff tim
 	var window RunWindow
 	written := false
 	err = store.withWriteTx(ctx, "Run Window set", func(tx *sql.Tx) error {
-		standing, found, err := selectRunWindow(ctx, tx, gitRoot)
+		standing, found, err := selectRunWindowForRepository(ctx, tx, gitRoot, checkoutRoot)
 		if err != nil {
 			return err
 		}
 		if found && !replace {
 			window = standing
 			return nil
+		}
+		if found && standing.GitRoot != gitRoot {
+			if _, err := tx.ExecContext(ctx, `DELETE FROM run_windows WHERE git_root = ?`, standing.GitRoot); err != nil {
+				return fmt.Errorf("replace legacy Run Window: %w", err)
+			}
 		}
 
 		cutoffAt := cutoff.Unix()
@@ -1128,15 +1140,17 @@ ON CONFLICT(git_root) DO UPDATE SET
 
 // RunWindowFor returns the Run Window for one repository, if any.
 func (store *Store) RunWindowFor(ctx context.Context, gitRoot string) (RunWindow, bool, error) {
+	checkoutRoot := gitRoot
 	repositoryRoot, err := roundconfig.RepositoryRoot(gitRoot)
 	if err != nil {
 		return RunWindow{}, false, fmt.Errorf("resolve Run Window repository identity: %w", err)
 	}
-	return selectRunWindow(ctx, store.db, repositoryRoot)
+	return selectRunWindowForRepository(ctx, store.db, repositoryRoot, checkoutRoot)
 }
 
 // ClearRunWindow removes the Run Window for one repository, if present.
 func (store *Store) ClearRunWindow(ctx context.Context, gitRoot string) (bool, error) {
+	checkoutRoot := gitRoot
 	repositoryRoot, err := roundconfig.RepositoryRoot(gitRoot)
 	if err != nil {
 		return false, fmt.Errorf("resolve Run Window repository identity: %w", err)
@@ -1144,7 +1158,7 @@ func (store *Store) ClearRunWindow(ctx context.Context, gitRoot string) (bool, e
 	gitRoot = repositoryRoot
 	removed := false
 	err = store.withWriteTx(ctx, "Run Window clear", func(tx *sql.Tx) error {
-		result, err := tx.ExecContext(ctx, `DELETE FROM run_windows WHERE git_root = ?`, gitRoot)
+		result, err := tx.ExecContext(ctx, `DELETE FROM run_windows WHERE git_root = ? OR git_root = ?`, gitRoot, checkoutRoot)
 		if err != nil {
 			return fmt.Errorf("clear Run Window: %w", err)
 		}
@@ -1165,7 +1179,7 @@ func (store *Store) ClearRunWindow(ctx context.Context, gitRoot string) (bool, e
 func (store *Store) ListRuns(ctx context.Context, query ListRunsQuery) ([]Run, error) {
 	sqlQuery := `
 SELECT id, kind, state, head_repository, head_branch, base_repository,
-       pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
+       pr_number, git_root, repository_root, local_branch, head_sha, artifact_dir, work_dir,
        spec_slug, agent, model, reasoning_effort, owner_pid, owner_identity, owner_identity_unproven, created_at, updated_at, completed_at
 FROM runs`
 	args := []any{}
@@ -1177,7 +1191,9 @@ FROM runs`
 		}
 		placeholders, repositoryArgs := repositoryRootArguments(repositoryRoots)
 		sqlQuery += `
-WHERE git_root IN (` + placeholders + `)`
+WHERE repository_root = ?
+   OR (repository_root = '' AND git_root IN (` + placeholders + `))`
+		args = append(args, repositoryRoots[0])
 		args = append(args, repositoryArgs...)
 	}
 	sqlQuery += `
@@ -1232,7 +1248,7 @@ func (store *Store) LatestKeptSpecRun(ctx context.Context, gitRoot string, specS
 		return Run{}, false, fmt.Errorf("resolve kept Run repository identity: %w", err)
 	}
 	placeholders, repositoryArgs := repositoryRootArguments(repositoryRoots)
-	args := []any{KindImplement}
+	args := []any{KindImplement, repositoryRoots[0]}
 	args = append(args, repositoryArgs...)
 	args = append(args,
 		specSlug,
@@ -1243,10 +1259,12 @@ func (store *Store) LatestKeptSpecRun(ctx context.Context, gitRoot string, specS
 	)
 	row := store.db.QueryRowContext(ctx, `
 SELECT id, kind, state, head_repository, head_branch, base_repository,
-       pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
+       pr_number, git_root, repository_root, local_branch, head_sha, artifact_dir, work_dir,
        spec_slug, agent, model, reasoning_effort, owner_pid, owner_identity, owner_identity_unproven, created_at, updated_at, completed_at
 FROM runs
-WHERE kind = ? AND git_root IN (`+placeholders+`) AND spec_slug = ?
+WHERE kind = ?
+  AND (repository_root = ? OR (repository_root = '' AND git_root IN (`+placeholders+`)))
+  AND spec_slug = ?
   AND work_dir IS NOT NULL AND TRIM(work_dir) <> ''
   AND state IN (?, ?, ?, ?)
 ORDER BY updated_at DESC, created_at DESC, id DESC
@@ -1378,7 +1396,7 @@ func terminalStateExclusion() (string, []any) {
 	return "state NOT IN (" + strings.Join(placeholders, ", ") + ")", arguments
 }
 
-const schemaVersion = 17
+const schemaVersion = 18
 
 // activeRunLocksColumns is the schema v4 lock-table shape (ADR 0016): one
 // Active Run per work target, keyed by (target_kind, target_key).
@@ -1414,7 +1432,7 @@ func (store *Store) migrate(ctx context.Context) error {
 		}
 	}
 	var v17Statements []string
-	if version >= 3 && version < schemaVersion {
+	if version >= 3 && version < 17 {
 		v17Statements, err = store.deliveryStartingBranchMigrationStatements(ctx)
 		if err != nil {
 			return err
@@ -1422,13 +1440,14 @@ func (store *Store) migrate(ctx context.Context) error {
 	}
 	deliveryStatements := append(v15Statements, v16Statements...)
 	deliveryStatements = append(deliveryStatements, v17Statements...)
+	var statements []string
 	switch version {
 	case schemaVersion:
 		return nil
 	case 0:
 		return store.applyMigration(ctx, createSchemaStatements())
 	case 3:
-		statements := append(migrateV3ToV4Statements(), migrateV4ToV5Statements()...)
+		statements = append(migrateV3ToV4Statements(), migrateV4ToV5Statements()...)
 		statements = append(statements, migrateV5ToV6Statements()...)
 		statements = append(statements, migrateV6ToV7Statements()...)
 		statements = append(statements, migrateV7ToV8Statements()...)
@@ -1438,9 +1457,9 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = append(statements, migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
 		statements = append(statements, migrateV13ToV14Statements()...)
-		return store.applyMigration(ctx, append(statements, deliveryStatements...))
+		statements = append(statements, deliveryStatements...)
 	case 4:
-		statements := append(migrateV4ToV5Statements(), migrateV5ToV6Statements()...)
+		statements = append(migrateV4ToV5Statements(), migrateV5ToV6Statements()...)
 		statements = append(statements, migrateV6ToV7Statements()...)
 		statements = append(statements, migrateV7ToV8Statements()...)
 		statements = append(statements, migrateV8ToV9Statements()...)
@@ -1449,12 +1468,12 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = append(statements, migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
 		statements = append(statements, migrateV13ToV14Statements()...)
-		return store.applyMigration(ctx, append(statements, deliveryStatements...))
+		statements = append(statements, deliveryStatements...)
 	case 5:
 		if err := store.ensureAgentColumn(ctx); err != nil {
 			return err
 		}
-		statements := append(migrateV5ToV6Statements(), migrateV6ToV7Statements()...)
+		statements = append(migrateV5ToV6Statements(), migrateV6ToV7Statements()...)
 		statements = append(statements, migrateV7ToV8Statements()...)
 		statements = append(statements, migrateV8ToV9Statements()...)
 		statements = append(statements, migrateV9ToV10Statements()...)
@@ -1462,62 +1481,62 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = append(statements, migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
 		statements = append(statements, migrateV13ToV14Statements()...)
-		return store.applyMigration(ctx, append(statements, deliveryStatements...))
+		statements = append(statements, deliveryStatements...)
 	case 6:
-		statements := append(migrateV6ToV7Statements(), migrateV7ToV8Statements()...)
+		statements = append(migrateV6ToV7Statements(), migrateV7ToV8Statements()...)
 		statements = append(statements, migrateV8ToV9Statements()...)
 		statements = append(statements, migrateV9ToV10Statements()...)
 		statements = append(statements, migrateV10ToV11Statements()...)
 		statements = append(statements, migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
 		statements = append(statements, migrateV13ToV14Statements()...)
-		return store.applyMigration(ctx, append(statements, deliveryStatements...))
+		statements = append(statements, deliveryStatements...)
 	case 7:
-		statements := append(migrateV7ToV8Statements(), migrateV8ToV9Statements()...)
+		statements = append(migrateV7ToV8Statements(), migrateV8ToV9Statements()...)
 		statements = append(statements, migrateV9ToV10Statements()...)
 		statements = append(statements, migrateV10ToV11Statements()...)
 		statements = append(statements, migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
 		statements = append(statements, migrateV13ToV14Statements()...)
-		return store.applyMigration(ctx, append(statements, deliveryStatements...))
+		statements = append(statements, deliveryStatements...)
 	case 8:
-		statements := append(migrateV8ToV9Statements(), migrateV9ToV10Statements()...)
+		statements = append(migrateV8ToV9Statements(), migrateV9ToV10Statements()...)
 		statements = append(statements, migrateV10ToV11Statements()...)
 		statements = append(statements, migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
 		statements = append(statements, migrateV13ToV14Statements()...)
-		return store.applyMigration(ctx, append(statements, deliveryStatements...))
+		statements = append(statements, deliveryStatements...)
 	case 9:
-		statements := append(migrateV9ToV10Statements(), migrateV10ToV11Statements()...)
+		statements = append(migrateV9ToV10Statements(), migrateV10ToV11Statements()...)
 		statements = append(statements, migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
 		statements = append(statements, migrateV13ToV14Statements()...)
-		return store.applyMigration(ctx, append(statements, deliveryStatements...))
+		statements = append(statements, deliveryStatements...)
 	case 10:
-		statements := append(migrateV10ToV11Statements(), migrateV11ToV12Statements()...)
+		statements = append(migrateV10ToV11Statements(), migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
 		statements = append(statements, migrateV13ToV14Statements()...)
-		return store.applyMigration(ctx, append(statements, deliveryStatements...))
+		statements = append(statements, deliveryStatements...)
 	case 11:
-		statements := append(migrateV11ToV12Statements(), migrateV12ToV13Statements()...)
+		statements = append(migrateV11ToV12Statements(), migrateV12ToV13Statements()...)
 		statements = append(statements, migrateV13ToV14Statements()...)
-		return store.applyMigration(ctx, append(statements, deliveryStatements...))
+		statements = append(statements, deliveryStatements...)
 	case 12:
-		statements := append(migrateV12ToV13Statements(), migrateV13ToV14Statements()...)
-		return store.applyMigration(ctx, append(statements, deliveryStatements...))
+		statements = append(migrateV12ToV13Statements(), migrateV13ToV14Statements()...)
+		statements = append(statements, deliveryStatements...)
 	case 13:
-		statements := append(migrateV13ToV14Statements(), deliveryStatements...)
-		return store.applyMigration(ctx, statements)
+		statements = append(migrateV13ToV14Statements(), deliveryStatements...)
 	case 14:
-		return store.applyMigration(ctx, deliveryStatements)
+		statements = deliveryStatements
 	case 15:
-		statements := append(v16Statements, v17Statements...)
-		return store.applyMigration(ctx, statements)
+		statements = append(v16Statements, v17Statements...)
 	case 16:
-		return store.applyMigration(ctx, v17Statements)
+		statements = v17Statements
+	case 17:
 	default:
 		return fmt.Errorf("migrate Run Database: schema version %d is not supported", version)
 	}
+	return store.applyRepositoryRootMigration(ctx, statements)
 }
 
 func (store *Store) applyMigration(ctx context.Context, statements []string) error {
@@ -1526,6 +1545,79 @@ func (store *Store) applyMigration(ctx context.Context, statements []string) err
 			if _, err := tx.ExecContext(ctx, statement); err != nil {
 				return fmt.Errorf("apply Run Database migration: %w", err)
 			}
+		}
+		return nil
+	})
+}
+
+func (store *Store) applyRepositoryRootMigration(ctx context.Context, statements []string) error {
+	type legacyRun struct {
+		id      string
+		gitRoot string
+	}
+
+	return store.withWriteTx(ctx, "Run Database migration", func(tx *sql.Tx) error {
+		for _, statement := range statements {
+			if _, err := tx.ExecContext(ctx, statement); err != nil {
+				return fmt.Errorf("apply Run Database migration: %w", err)
+			}
+		}
+
+		var repositoryRootExists int
+		if err := tx.QueryRowContext(ctx, `
+SELECT EXISTS (
+	SELECT 1 FROM pragma_table_info('runs') WHERE name = 'repository_root'
+)`).Scan(&repositoryRootExists); err != nil {
+			return fmt.Errorf("inspect Run repository root column: %w", err)
+		}
+		if repositoryRootExists == 0 {
+			if _, err := tx.ExecContext(ctx,
+				`ALTER TABLE runs ADD COLUMN repository_root TEXT NOT NULL DEFAULT ''`,
+			); err != nil {
+				return fmt.Errorf("add Run repository root column: %w", err)
+			}
+		}
+
+		rows, err := tx.QueryContext(ctx, `
+SELECT id, git_root
+FROM runs
+WHERE repository_root = ''`)
+		if err != nil {
+			return fmt.Errorf("read Runs for repository root backfill: %w", err)
+		}
+		legacyRuns := []legacyRun{}
+		for rows.Next() {
+			var run legacyRun
+			if err := rows.Scan(&run.id, &run.gitRoot); err != nil {
+				_ = rows.Close()
+				return fmt.Errorf("scan Run for repository root backfill: %w", err)
+			}
+			legacyRuns = append(legacyRuns, run)
+		}
+		if err := rows.Err(); err != nil {
+			_ = rows.Close()
+			return fmt.Errorf("iterate Runs for repository root backfill: %w", err)
+		}
+		if err := rows.Close(); err != nil {
+			return fmt.Errorf("close Runs for repository root backfill: %w", err)
+		}
+
+		for _, run := range legacyRuns {
+			if _, err := os.Stat(filepath.Join(run.gitRoot, ".git")); err != nil {
+				continue
+			}
+			repositoryRoot, err := roundconfig.RepositoryRoot(run.gitRoot)
+			if err != nil {
+				continue
+			}
+			if _, err := tx.ExecContext(ctx,
+				`UPDATE runs SET repository_root = ? WHERE id = ?`, repositoryRoot, run.id,
+			); err != nil {
+				return fmt.Errorf("backfill Run repository root: %w", err)
+			}
+		}
+		if _, err := tx.ExecContext(ctx, `PRAGMA user_version = 18`); err != nil {
+			return fmt.Errorf("record Run Database migration version: %w", err)
 		}
 		return nil
 	})
@@ -1559,8 +1651,7 @@ func createSchemaStatements() []string {
 			stop_requested_at TEXT,
 			created_at TEXT NOT NULL,
 			updated_at TEXT NOT NULL,
-			completed_at TEXT NOT NULL DEFAULT ''
-		)`,
+			completed_at TEXT NOT NULL DEFAULT '', repository_root TEXT NOT NULL DEFAULT '')`,
 		`CREATE TABLE IF NOT EXISTS active_run_locks ` + activeRunLocksColumns,
 		`CREATE INDEX IF NOT EXISTS idx_runs_head ON runs (head_repository, head_branch)`,
 		`CREATE TABLE IF NOT EXISTS interactive_defaults (
@@ -1594,7 +1685,7 @@ func createSchemaStatements() []string {
 	}
 	statements = append(statements, deliverySchemaStatements(true)...)
 	statements = append(statements, deliveryOwnerColumnStatements(false, false)...)
-	return append(statements, `PRAGMA user_version = 17`)
+	return append(statements, `PRAGMA user_version = 18`)
 }
 
 const runAgentSelectionsColumns = `(
@@ -1964,10 +2055,23 @@ WHERE git_root = ?`, gitRoot)
 	return window, true, nil
 }
 
+func selectRunWindowForRepository(
+	ctx context.Context,
+	querier runQuerier,
+	repositoryRoot string,
+	checkoutRoot string,
+) (RunWindow, bool, error) {
+	window, found, err := selectRunWindow(ctx, querier, repositoryRoot)
+	if err != nil || found || repositoryRoot == checkoutRoot {
+		return window, found, err
+	}
+	return selectRunWindow(ctx, querier, checkoutRoot)
+}
+
 func selectActiveRunByTarget(ctx context.Context, querier runQuerier, targetKind string, targetKey string) (Run, bool, error) {
 	row := querier.QueryRowContext(ctx, `
 SELECT r.id, r.kind, r.state, r.head_repository, r.head_branch, r.base_repository,
-       r.pr_number, r.git_root, r.local_branch, r.head_sha, r.artifact_dir, r.work_dir,
+       r.pr_number, r.git_root, r.repository_root, r.local_branch, r.head_sha, r.artifact_dir, r.work_dir,
        r.spec_slug, r.agent, r.model, r.reasoning_effort, r.owner_pid, r.owner_identity, r.owner_identity_unproven, r.created_at, r.updated_at, r.completed_at
 FROM active_run_locks l
 JOIN runs r ON r.id = l.run_id
@@ -1988,7 +2092,7 @@ WHERE l.target_kind = ? AND l.target_key = ?`,
 func selectRun(ctx context.Context, querier runQuerier, runID string) (Run, error) {
 	row := querier.QueryRowContext(ctx, `
 SELECT id, kind, state, head_repository, head_branch, base_repository,
-       pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
+       pr_number, git_root, repository_root, local_branch, head_sha, artifact_dir, work_dir,
        spec_slug, agent, model, reasoning_effort, owner_pid, owner_identity, owner_identity_unproven, created_at, updated_at, completed_at
 FROM runs
 WHERE id = ?`, runID)
@@ -2017,6 +2121,7 @@ func scanRun(row runScanner) (Run, error) {
 		&run.BaseRepository,
 		&run.PRNumber,
 		&run.GitRoot,
+		&run.RepositoryRoot,
 		&run.LocalBranch,
 		&run.HeadSHA,
 		&run.ArtifactDir,

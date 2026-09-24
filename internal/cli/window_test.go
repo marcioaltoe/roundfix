@@ -8,6 +8,7 @@ package cli
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,6 +17,58 @@ import (
 
 	"roundfix/internal/store"
 )
+
+func TestRunWindowKeyedOnAWorktreeIsFound(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	linkedRoot := filepath.Join(t.TempDir(), "linked")
+	gitImplement(t, repoDir, "worktree", "add", "-b", "feature/window-linked", linkedRoot)
+	linkedRoot, err := filepath.EvalSymlinks(linkedRoot)
+	if err != nil {
+		t.Fatalf("resolve linked worktree: %v", err)
+	}
+	setCommandEnvironmentForTest(t, homeDir, linkedRoot)
+	now := time.Date(2026, time.September, 25, 9, 0, 0, 0, time.UTC)
+	cutoff := now.Add(3 * time.Hour)
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.currentRunWindowTime = func() time.Time { return now }
+	})
+
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close Run Database: %v", err)
+	}
+	db, err := sql.Open("sqlite", "file:"+store.DatabasePath(homeDir))
+	if err != nil {
+		t.Fatalf("open legacy Run Window database: %v", err)
+	}
+	if _, err := db.Exec(
+		`INSERT INTO run_windows (git_root, cutoff_at, created_at) VALUES (?, ?, ?)`,
+		linkedRoot,
+		cutoff.Unix(),
+		now.Add(-time.Hour).Unix(),
+	); err != nil {
+		_ = db.Close()
+		t.Fatalf("seed worktree-keyed Run Window: %v", err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("close legacy Run Window database: %v", err)
+	}
+
+	stdout := runWindowCommandForTest(t, []string{"window", "show"}, exitOK)
+	if !strings.Contains(stdout, "Cutoff: 2026-09-25 12:00 UTC") {
+		t.Fatalf("worktree-keyed window show output = %q, want stored cutoff", stdout)
+	}
+	stdout = runWindowCommandForTest(t, []string{"window", "clear"}, exitOK)
+	if !strings.Contains(stdout, "Run Window cleared") {
+		t.Fatalf("worktree-keyed window clear output = %q, want cleared report", stdout)
+	}
+	if _, found := readWindowForTest(t, homeDir, linkedRoot); found {
+		t.Fatal("window clear left the worktree-keyed Run Window stored")
+	}
+}
 
 func TestWindowSetResolvesNextOccurrenceFromNestedWorktreePath(t *testing.T) {
 	location := time.FixedZone("BRT", -3*60*60)

@@ -3323,6 +3323,36 @@ func TestRepositoryIdentityIsSharedByLinkedWorktrees(t *testing.T) {
 	}
 }
 
+func TestBareRepositoryWorktreesShareOneKey(t *testing.T) {
+	t.Parallel()
+	fixtureRoot, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatalf("resolve fixture root: %v", err)
+	}
+	seedRoot := filepath.Join(fixtureRoot, "seed")
+	bareRoot := filepath.Join(fixtureRoot, "repository.git")
+	firstRoot := filepath.Join(fixtureRoot, "first")
+	secondRoot := filepath.Join(fixtureRoot, "second")
+	gittest.InitRepo(t, seedRoot, "--initial-branch=main")
+	gittest.Run(t, seedRoot, "commit", "--allow-empty", "-m", "seed repository")
+	gittest.Run(t, seedRoot, "clone", "--bare", seedRoot, bareRoot)
+	gittest.Harden(t, bareRoot)
+	gittest.Run(t, bareRoot, "worktree", "add", "-b", "feature/first", firstRoot, "main")
+	gittest.Run(t, bareRoot, "worktree", "add", "-b", "feature/second", secondRoot, "main")
+
+	firstKey, err := RepositoryRoot(firstRoot)
+	if err != nil {
+		t.Fatalf("resolve first bare-repository worktree key: %v", err)
+	}
+	secondKey, err := RepositoryRoot(secondRoot)
+	if err != nil {
+		t.Fatalf("resolve second bare-repository worktree key: %v", err)
+	}
+	if firstKey != bareRoot || secondKey != bareRoot {
+		t.Fatalf("bare-repository worktree keys = (%q, %q), want common Git directory %q", firstKey, secondKey, bareRoot)
+	}
+}
+
 func TestRepositoryRootDoesNotEnumerateWorktrees(t *testing.T) {
 	t.Parallel()
 	mainRoot := filepath.Join(t.TempDir(), "main")
