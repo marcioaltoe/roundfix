@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0159-archive-override-and-authoring-rules
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -43,3 +43,24 @@ A Task names the ADR it creates with `creates:`, and nothing checks that the num
 ## References
 
 - [_techspec.md](_techspec.md) — Claimed ordinals
+
+## Result
+
+Implemented `SC-ORDINAL-CLAIMED` as a Tasks-stage error. The detector checks
+ADR `creates:` claims from the Spec under review against differently named
+files in `docs/adr/` and against claims from Tasks in other active Specs. An
+existing file at the exact claimed path remains a fulfilled claim.
+
+Focused checks:
+
+- Red signal: `GOCACHE=/tmp/roundfix-task-02-gocache go test -count=1 -run '^TestOrdinalClaimedOnTree$' ./internal/speccheck` failed to compile because `CodeOrdinalClaimed` did not exist before the implementation.
+- `GOCACHE=/tmp/roundfix-task-02-gocache go test -count=1 -run 'TestOrdinal|TestStageScope' ./internal/speccheck` passed.
+- `GOCACHE=/tmp/roundfix-task-02-gocache go test -count=1 ./internal/speccheck` passed.
+- `GOCACHE=/tmp/roundfix-task-02-gocache go test -count=1 -tags docscontract -run '^TestCheckCorpusGolden$' ./internal/docscontract` passed. Active corpus counts did not change, so the corpus golden was not updated.
+
+Acceptance evidence:
+
+- `TestOrdinalClaimedOnTree` and `TestOrdinalClaimedByAnotherActiveSpec` cover the tree-held and cross-active-Spec collision cases and assert `SC-ORDINAL-CLAIMED` error findings.
+- `TestDistinctOrdinalsAreAccepted` covers both distinct active-Spec ordinals and an exact-path fulfilled claim without an ordinal finding.
+
+Follow-ups: none.
