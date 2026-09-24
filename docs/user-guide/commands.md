@@ -155,12 +155,22 @@ surrounding Markdown emphasis, and trailing punctuation are normalized, or a
 `Findings:` verdict with its findings text. Exactly one verdict must be present;
 both verdicts or neither verdict block the review. Every answer that reaches the
 reviewer is kept in `pre-pr-review-answer.txt`, and the review record's
-`answerPath` names that file.
+`answerPath` names that file. Roundfix sets `answerPath` only when the prompt
+reached a reviewer; a pre-prompt failure has no answer path or answer file.
 
 When the candidate adds or changes a Spec folder under the configured Spec
-Root, the review prompt carries that Spec's PRD `Decisions` section and
-TechSpec. The reviewer judges the delivery against those decisions and the
-alternatives they reject, and the record names the consulted Specs in `specs`.
+Root, or under its resolved archive root, Roundfix discovers that folder from
+the candidate diff. Specs archived within the candidate are read from the
+archive root at `HEAD`. For each usable Spec, the review prompt carries the
+PRD `Decisions` section and TechSpec. A changed Spec without a `## Decisions`
+section, a PRD, or a TechSpec is skipped, its slug is listed in the record's
+`skippedSpecs`, and the review proceeds with the remaining context. The
+record's `specs` names the Specs whose context was carried.
+
+Spec context is bounded at 32 KiB per Spec and 64 KiB in total. When context is
+truncated, the prompt includes `[Spec context truncated]` and the record sets
+`specContextTruncated` to true. The reviewer judges the delivery against the
+carried decisions and the alternatives they reject.
 
 Exit codes:
 
