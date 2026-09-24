@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"roundfix/internal/agent"
+	"roundfix/internal/gittest"
 )
 
 var updateProfilesConfigGoldens = flag.Bool(
@@ -3289,6 +3290,84 @@ func TestValidateArtifactDirectoryResolvesAndCreatesPaths(t *testing.T) {
 		t.Fatalf("expected absolute artifact dir unchanged, got %q", absolutePath)
 	}
 	assertDir(t, absolutePath)
+}
+
+func TestRepositoryIdentityIsSharedByLinkedWorktrees(t *testing.T) {
+	t.Parallel()
+	fixtureRoot, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatalf("resolve fixture root: %v", err)
+	}
+	mainRoot := filepath.Join(fixtureRoot, "main")
+	linkedRoot := filepath.Join(fixtureRoot, "linked")
+	homeDir := filepath.Join(fixtureRoot, "home")
+	gittest.InitRepo(t, mainRoot, "--initial-branch=main")
+	gittest.Run(t, mainRoot, "commit", "--allow-empty", "-m", "seed repository")
+	gittest.Run(t, mainRoot, "worktree", "add", "-b", "feature/linked", linkedRoot)
+
+	mainArtifacts, err := ResolveArtifactDirectory("", mainRoot, homeDir)
+	if err != nil {
+		t.Fatalf("resolve main checkout Artifact Directory: %v", err)
+	}
+	linkedArtifacts, err := ResolveArtifactDirectory("", linkedRoot, homeDir)
+	if err != nil {
+		t.Fatalf("resolve linked worktree Artifact Directory: %v", err)
+	}
+
+	if linkedArtifacts != mainArtifacts {
+		t.Fatalf("linked worktree Artifact Directory = %q, want main checkout directory %q", linkedArtifacts, mainArtifacts)
+	}
+	wantMainIdentity := filepath.Join(homeDir, ".roundfix", "artifacts", repoID(mainRoot))
+	if mainArtifacts != wantMainIdentity {
+		t.Fatalf("main checkout Artifact Directory = %q, want unchanged identity %q", mainArtifacts, wantMainIdentity)
+	}
+}
+
+func TestRepositoryRootDoesNotEnumerateWorktrees(t *testing.T) {
+	t.Parallel()
+	mainRoot := filepath.Join(t.TempDir(), "main")
+	gittest.InitRepo(t, mainRoot, "--initial-branch=main")
+
+	worktreesPath := filepath.Join(mainRoot, ".git", "worktrees")
+	mustWrite(t, worktreesPath, "not a directory")
+
+	root, err := RepositoryRoot(mainRoot)
+	if err != nil {
+		t.Fatalf("resolve main worktree without enumerating linked worktrees: %v", err)
+	}
+	if root != mainRoot {
+		t.Fatalf("RepositoryRoot(%q) = %q, want %q", mainRoot, root, mainRoot)
+	}
+}
+
+func TestRepositoryRootsSkipsAnUnreadableWorktreeEntry(t *testing.T) {
+	t.Parallel()
+	fixtureRoot, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatalf("resolve fixture root: %v", err)
+	}
+	mainRoot := filepath.Join(fixtureRoot, "main")
+	linkedRoot := filepath.Join(fixtureRoot, "linked")
+	gittest.InitRepo(t, mainRoot, "--initial-branch=main")
+	gittest.Run(t, mainRoot, "commit", "--allow-empty", "-m", "seed repository")
+	gittest.Run(t, mainRoot, "worktree", "add", "-b", "feature/linked", linkedRoot)
+
+	unreadableEntry := filepath.Join(mainRoot, ".git", "worktrees", "unreadable")
+	mustMkdir(t, filepath.Join(unreadableEntry, "gitdir"))
+
+	roots, err := RepositoryRoots(mainRoot)
+	if err != nil {
+		t.Fatalf("resolve repository roots with unreadable worktree entry: %v", err)
+	}
+	want := []string{mainRoot, linkedRoot}
+	if len(roots) != len(want) {
+		t.Fatalf("RepositoryRoots(%q) = %v, want %v", mainRoot, roots, want)
+	}
+	for index := range want {
+		if roots[index] != want[index] {
+			t.Fatalf("RepositoryRoots(%q) = %v, want %v", mainRoot, roots, want)
+		}
+	}
 }
 
 func TestValidateArtifactDirectoryRejectsInvalidPaths(t *testing.T) {

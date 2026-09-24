@@ -1542,6 +1542,105 @@ func TestQAReportOnlyBranch(t *testing.T) {
 	}
 }
 
+func TestSupersedingQAReportRecognisesAnArchivedCopy(t *testing.T) {
+	t.Parallel()
+	const (
+		slug       = "0157-reconciliation-and-one-repository-identity"
+		reportName = "qa-report-2026-09-24.md"
+	)
+	fixture := newTerminalRunFixture(t, "superseding-archived-copy")
+	commitQAReport(t, fixture.ref.Path, slug, reportName, false, "pass")
+	want := qaReportTestPath(slug, reportName, true)
+	commitQAReport(t, fixture.repoDir, slug, reportName, true, "pass")
+
+	report, proven := SupersedingQAReport(
+		context.Background(),
+		fixture.repoDir,
+		strings.TrimSpace(gitWorktreeTest(t, fixture.repoDir, "rev-parse", "main")),
+		strings.TrimSpace(gitWorktreeTest(t, fixture.ref.Path, "rev-parse", "HEAD")),
+		slug,
+	)
+	if !proven || report != want {
+		t.Fatalf("superseding QA Report = %q, proven = %v, want archived copy %q", report, proven, want)
+	}
+}
+
+func TestSupersedingQAReportRequiresTheSameContent(t *testing.T) {
+	t.Parallel()
+	const (
+		slug       = "0157-reconciliation-and-one-repository-identity"
+		reportName = "qa-report-2026-09-24.md"
+	)
+	fixture := newTerminalRunFixture(t, "superseding-same-name-different-content")
+	commitWorktreeFile(
+		t,
+		fixture.ref.Path,
+		qaReportTestPath(slug, reportName, false),
+		"verdict: fail\n",
+		qaReportCommitMessage(slug, "fail"),
+	)
+	commitWorktreeFile(
+		t,
+		fixture.repoDir,
+		qaReportTestPath(slug, reportName, true),
+		"verdict: pass\n",
+		qaReportCommitMessage(slug, "pass"),
+	)
+
+	report, proven := SupersedingQAReport(
+		context.Background(),
+		fixture.repoDir,
+		strings.TrimSpace(gitWorktreeTest(t, fixture.repoDir, "rev-parse", "main")),
+		strings.TrimSpace(gitWorktreeTest(t, fixture.ref.Path, "rev-parse", "HEAD")),
+		slug,
+	)
+	if proven || report != "" {
+		t.Fatalf("superseding QA Report = %q, proven = %v, want no superseding report", report, proven)
+	}
+}
+
+func TestSupersedingQAReportStillPrefersNewerReport(t *testing.T) {
+	t.Parallel()
+	const slug = "0157-reconciliation-and-one-repository-identity"
+	tests := []struct {
+		name         string
+		runReport    string
+		targetReport string
+	}{
+		{
+			name:         "later date",
+			runReport:    "qa-report-2026-09-23.md",
+			targetReport: "qa-report-2026-09-24.md",
+		},
+		{
+			name:         "later sequence",
+			runReport:    "qa-report-2026-09-24.md",
+			targetReport: "qa-report-2026-09-24-02.md",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			fixture := newTerminalRunFixture(t, "superseding-newer-"+strings.ReplaceAll(tt.name, " ", "-"))
+			commitQAReport(t, fixture.ref.Path, slug, tt.runReport, false, "fail")
+			want := qaReportTestPath(slug, tt.targetReport, true)
+			commitQAReport(t, fixture.repoDir, slug, tt.targetReport, true, "pass")
+
+			report, proven := SupersedingQAReport(
+				context.Background(),
+				fixture.repoDir,
+				strings.TrimSpace(gitWorktreeTest(t, fixture.repoDir, "rev-parse", "main")),
+				strings.TrimSpace(gitWorktreeTest(t, fixture.ref.Path, "rev-parse", "HEAD")),
+				slug,
+			)
+			if !proven || report != want {
+				t.Fatalf("superseding QA Report = %q, proven = %v, want newer report %q", report, proven, want)
+			}
+		})
+	}
+}
+
 func TestInspectTerminalRunBoundsSupersededReason(t *testing.T) {
 	t.Parallel()
 	slug := "0053-" + strings.Repeat("long-spec-slug-", 8)
@@ -2119,6 +2218,33 @@ func TestClassifyRunBranchSetPreservesActiveRunBranch(t *testing.T) {
 	if slices.Contains(result.Releasable, fixture.refs[0].Branch) {
 		t.Fatalf("Active Run Branch %q must not be releasable", fixture.refs[0].Branch)
 	}
+}
+
+func TestApplyRunBranchCandidateRefusesACandidateWithoutEvidence(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	fixture := newRunBranchSetFixture(t, slug, "qa-report-2026-07-28.md")
+	squashMergeAndDeleteRunBranchSetTarget(t, &fixture, "ma/deleted-target")
+	commitQAReport(t, fixture.repoDir, slug, "qa-report-2026-07-29.md", true, "pass")
+	classification, err := ClassifyRunBranchSet(
+		context.Background(),
+		fixture.repoDir,
+		fixture.targetBranch,
+		slug,
+		fixture.runs,
+	)
+	if err != nil {
+		t.Fatalf("classify Run Branch set: %v", err)
+	}
+	candidate := fixture.refs[0]
+
+	err = ApplyRunBranchCandidate(context.Background(), classification, candidate.Branch)
+
+	if err == nil || !strings.Contains(err.Error(), "worktree revalidation returned no evidence") {
+		t.Fatalf("unproven Run Branch apply error = %v, want revalidation refusal", err)
+	}
+	assertPathExists(t, candidate.Path)
+	assertRunBranchExists(t, fixture.repoDir, candidate.Branch)
 }
 
 func TestApplyRunBranchCandidateRevalidatesProofAndCleanWorktree(t *testing.T) {
