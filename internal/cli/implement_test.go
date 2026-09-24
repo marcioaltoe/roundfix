@@ -6051,14 +6051,13 @@ func TestBudgetExceededRunIsFoundWithoutTheHeaderLine(t *testing.T) {
 }
 
 // Invariant: an Implement Run ended by its configured Run Budget records the
-// distinct BudgetExceeded cause, preserves an already completed Task, and
-// keeps the next Task plus the non-integrated Run Worktree and Run Branch
-// recoverable.
+// distinct BudgetExceeded cause, preserves already completed Tasks, and keeps
+// the non-integrated Run Worktree and Run Branch recoverable.
 // Owning layer: public Implement Command integration.
 // Existing canonical suite: TestRunImplementStopRequestEndsStoppedWithInterruptMapping.
 func TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
-		{id: "task_01", title: "Complete before the Run Budget", status: string(spec.StatusCompleted)},
+		{id: "task_01", title: "Complete before the Run Budget"},
 		{id: "task_02", title: "Reach the Run Budget", needs: []string{"task_01"}},
 	})
 	const maximum = 500 * time.Millisecond
@@ -6066,8 +6065,9 @@ func TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch(t *testing.T) {
 	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
 	gitImplement(t, repoDir, "commit", "-m", "configure bounded implement run")
 	runner := &implementFakeRunner{
-		gitRoot:     repoDir,
-		blockByTask: map[string]bool{"task_02": true},
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		blockByTask:  map[string]bool{"task_02": true},
 	}
 	committer, verifier, _, _ := withImplementCollaborators(t, runner)
 	var stdout bytes.Buffer
@@ -6105,14 +6105,14 @@ func TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch(t *testing.T) {
 		!strings.Contains(stdout.String(), "task_02 pending — Reach the Run Budget\n") {
 		t.Fatalf("BudgetExceeded Task report lost settled status: %q", stdout.String())
 	}
-	if committer.calls != 0 || verifier.calls != 0 {
-		t.Fatalf("already completed Task was re-executed: commits %d verifications %d", committer.calls, verifier.calls)
+	if committer.calls != 1 || verifier.calls != 1 {
+		t.Fatalf("work before budget = commits %d verifications %d, want 1 each", committer.calls, verifier.calls)
 	}
 	if content := mustRead(t, filepath.Join(run.WorkDir, "docs", "specs", implementTestSlug, "task_01.md")); !strings.Contains(content, "status: completed") {
 		t.Fatalf("completed Task status was not preserved in Run Worktree:\n%s", content)
 	}
-	if content := mustRead(t, filepath.Join(run.WorkDir, "docs", "specs", implementTestSlug, "task_02.md")); !strings.Contains(content, "status: pending") && !strings.Contains(content, "status: in_progress") {
-		t.Fatalf("next Task did not retain a recoverable status:\n%s", content)
+	if content := mustRead(t, filepath.Join(run.WorkDir, "docs", "specs", implementTestSlug, "task_02.md")); !strings.Contains(content, "status: in_progress") {
+		t.Fatalf("interrupted Task did not retain current settlement:\n%s", content)
 	}
 	assertRunWorktreeExists(t, run.WorkDir)
 	if got := strings.TrimSpace(gitImplementOutput(t, run.WorkDir, "branch", "--list", runworktree.BranchName(runID))); got == "" {
@@ -6122,6 +6122,115 @@ func TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch(t *testing.T) {
 		t.Fatalf("BudgetExceeded diagnostics did not name preserved Run Worktree: %q", stderr.String())
 	}
 	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+// Invariant: a Task settled during an Implement Run keeps its commit and
+// completed status when the Run Budget expires after that settlement.
+// Owning layer: daemon Task-cycle integration through the Implement fixture.
+// Existing canonical suite: TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch.
+func TestBudgetExceededKeepsWorkSettledBeforeTheBudget(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Complete before the Run Budget"},
+		{id: "task_02", title: "Remain pending after the Run Budget", needs: []string{"task_01"}},
+	})
+	ctx := context.Background()
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := runStore.Close(); err != nil {
+			t.Errorf("close Run Database: %v", err)
+		}
+	})
+	run, err := runStore.CreateRun(ctx, store.CreateRunRequest{
+		Kind:        store.KindImplement,
+		GitRoot:     repoDir,
+		LocalBranch: "ma/widget-flow",
+		SpecSlug:    implementTestSlug,
+	})
+	if err != nil {
+		t.Fatalf("create Implement Run: %v", err)
+	}
+	specsRoot := filepath.Join(repoDir, "docs", "specs")
+	graph, err := spec.Load(specsRoot, implementTestSlug)
+	if err != nil {
+		t.Fatalf("load fixture Spec: %v", err)
+	}
+	head := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+
+	const maximum = time.Hour
+	startedAt := time.Now()
+	deadline := startedAt.Add(maximum)
+	settled := make(chan struct{})
+	var settleOnce sync.Once
+	committer := &fakeCommitter{
+		afterCommit: func(context.Context, daemon.CommitRequest) error {
+			settleOnce.Do(func() { close(settled) })
+			return nil
+		},
+	}
+	verifier := &fakeVerifier{}
+	engine, err := daemon.NewEngine(daemon.Dependencies{
+		Runner: &implementFakeRunner{
+			gitRoot:      repoDir,
+			statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		},
+		Verifier:     verifier,
+		Committer:    committer,
+		Pusher:       &fakePusher{},
+		Source:       &fakeSourceResolver{},
+		Runs:         runStore,
+		Worktree:     &fakeWorktree{},
+		PriorChanges: emptyPriorChangedResolver{},
+		Now: func() time.Time {
+			select {
+			case <-settled:
+				return deadline.Add(time.Second)
+			default:
+				return startedAt
+			}
+		},
+	})
+	if err != nil {
+		t.Fatalf("create Run engine: %v", err)
+	}
+
+	result, err := engine.TaskCycle(ctx, daemon.TaskPlan{
+		RunID:                   run.ID,
+		Session:                 agent.SessionRefForRun(run.ID, repoDir),
+		WorkDir:                 repoDir,
+		RunWorktree:             runworktree.Ref{RunID: run.ID, Path: repoDir, Branch: runworktree.BranchName(run.ID), UserRoot: repoDir},
+		TargetBranch:            run.LocalBranch,
+		HeadSHA:                 head,
+		Authorization:           spec.ReadSpecAuthorization(ctx, repoDir, specsRoot, implementTestSlug, head),
+		SpecsRoot:               specsRoot,
+		ArtifactDir:             t.TempDir(),
+		Spec:                    graph.Spec,
+		Tasks:                   graph.Tasks,
+		Runtime:                 agent.RuntimeSpec{ID: "codex", DisplayName: "Codex"},
+		Concurrency:             1,
+		VerificationConcurrency: 1,
+		RunStartedAt:            startedAt,
+		BudgetEnabled:           true,
+		MaxRunDuration:          maximum,
+	})
+
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("Task cycle error = %v, want Run Budget deadline", err)
+	}
+	if result.TerminalOutcome != store.StateBudgetExceeded {
+		t.Fatalf("terminal outcome = %q, want %q", result.TerminalOutcome, store.StateBudgetExceeded)
+	}
+	if result.Completed != 1 || committer.calls != 1 || verifier.calls != 1 {
+		t.Fatalf("settled work = completed %d, commits %d, verifications %d; want 1 each", result.Completed, committer.calls, verifier.calls)
+	}
+	if content := mustRead(t, implementTaskPath(repoDir, "task_01")); !strings.Contains(content, "status: completed") {
+		t.Fatalf("settled Task status was not preserved:\n%s", content)
+	}
+	if content := mustRead(t, implementTaskPath(repoDir, "task_02")); !strings.Contains(content, "status: pending") {
+		t.Fatalf("Task after the Run Budget did not remain pending:\n%s", content)
+	}
 }
 
 // Invariant: the configured Run Budget bounds setup and post-cycle

@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0165-a-measured-run-ceiling
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -39,3 +39,41 @@ Corrective Task from the pre-PR review of 2026-09-24. Task 02 went beyond findin
 ## References
 
 - [_techspec.md](_techspec.md) — The budget test
+
+## Result
+
+### Implementation
+
+- Restored `TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch` to
+  start `task_01` pending, settle it during the Run, require one Verification
+  and one commit, and require `task_02` to retain `in_progress`; the
+  header-independent Run lookup remains the only Task 02 behavior change.
+- Added `TestBudgetExceededKeepsWorkSettledBeforeTheBudget`. Its injected
+  daemon clock crosses the one-hour test deadline only after the fake
+  committer records `task_01`, so it proves preservation without sleeping or
+  racing real elapsed time.
+- Production code and the original test's configured 500 ms budget are
+  unchanged.
+
+### Acceptance evidence
+
+- The settled Task's commit and status are asserted by both budget tests. The
+  restored CLI test passed with one Verification, one commit, and
+  `status: completed`; the deterministic case passed with one completed Task,
+  one Verification, one commit, `task_01` completed, and `task_02` pending
+  after the injected BudgetExceeded boundary.
+- `TestBudgetExceededRunIsFoundWithoutTheHeaderLine` passed, confirming that
+  restoring the settlement fixture did not restore the header dependency.
+
+### Focused checks
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache go test -count=1 -run '^TestBudgetExceededKeepsWorkSettledBeforeTheBudget$' ./internal/cli` — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache go test -race -count=1 -run '^TestBudgetExceededKeepsWorkSettledBeforeTheBudget$' ./internal/cli` — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache go test -count=1 -run '^TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch$' ./internal/cli` — passed after allowing its existing GitHub version-freshness lookup through the sandbox.
+- `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache go test -count=1 -run '^TestBudgetExceededRunIsFoundWithoutTheHeaderLine$' ./internal/cli` — passed.
+- The Task's declared Verification command was not run; it remains
+  Daemon-owned.
+
+### Follow-ups
+
+- None found within this Task's slice.
