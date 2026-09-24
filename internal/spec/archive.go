@@ -102,7 +102,11 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 	} else {
 		sourceDir = graph.Spec.Dir
 		if qaOverride != nil {
+			allTasksCompleted := true
 			for _, task := range graph.Tasks {
+				if task.Status != StatusCompleted {
+					allTasksCompleted = false
+				}
 				if task.Type != TaskTypeQA && task.Status != StatusCompleted {
 					return ArchiveResult{}, fmt.Errorf("Task %q is %q; QA archive override requires every non-QA Task to be %q", task.ID, task.Status, StatusCompleted)
 				}
@@ -110,14 +114,16 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 			report, reportErr := ReadQAReport(graph.Spec.Dir)
 			switch {
 			case reportErr == nil:
-				if _, eligibilityErr := archiveUnprovenActions(graph.Spec.Dir, report); eligibilityErr == nil {
-					return ArchiveResult{}, errors.New("QA archive override is not allowed because the newest QA Report already qualifies for normal archive")
+				if allTasksCompleted {
+					if _, eligibilityErr := archiveUnprovenActions(graph.Spec.Dir, report); eligibilityErr == nil {
+						return ArchiveResult{}, errors.New("QA archive override is not allowed because the Spec already qualifies for normal archive")
+					}
 				}
 				qaOverrideOutcome = report.Verdict
 			case errors.Is(reportErr, ErrNoQAReport):
 				qaOverrideOutcome = "missing"
 			default:
-				qaOverrideOutcome = reportErr.Error()
+				qaOverrideOutcome = qaArchiveOverrideErrorOutcome(graph.Spec.Dir, reportErr)
 			}
 		} else {
 			for _, task := range graph.Tasks {
@@ -184,6 +190,34 @@ func validateQAArchiveOverride(override *QAArchiveOverride) (*QAArchiveOverride,
 		return nil, errors.New("QA archive override requires an archived revision")
 	}
 	return normalized, nil
+}
+
+func qaArchiveOverrideErrorOutcome(specDir string, err error) string {
+	var reportErr QAReportError
+	if !errors.As(err, &reportErr) {
+		return err.Error()
+	}
+	relativeErr := reportErr.Err
+	var pathErr *os.PathError
+	if errors.As(relativeErr, &pathErr) {
+		relativeErr = &os.PathError{
+			Op:   pathErr.Op,
+			Path: qaArchiveOverrideRelativePath(specDir, pathErr.Path),
+			Err:  pathErr.Err,
+		}
+	}
+	return QAReportError{
+		Path: qaArchiveOverrideRelativePath(specDir, reportErr.Path),
+		Err:  relativeErr,
+	}.Error()
+}
+
+func qaArchiveOverrideRelativePath(specDir string, path string) string {
+	relativePath, err := filepath.Rel(specDir, path)
+	if err != nil || filepath.IsAbs(relativePath) {
+		return filepath.Join("qa", filepath.Base(path))
+	}
+	return relativePath
 }
 
 // ArchiveSpecRoot returns the filesystem directory holding retired Specs for

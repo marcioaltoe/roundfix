@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0159-archive-override-and-authoring-rules
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -43,3 +43,54 @@ Corrective Task from the pre-PR review of 2026-09-24. The override refuses whene
 ## References
 
 - [_techspec.md](_techspec.md) — The override
+
+## Result
+
+The override now tests the complete normal-archive predicate before refusing:
+every Task must be `completed` and the newest QA Report must be eligible. A
+failed or pending QA Task therefore remains override-eligible even when the
+newest report says `pass`, while every non-QA Task must still be completed.
+Unreadable-report provenance re-renders the typed `QAReportError` with a path
+relative to the Spec folder before storing `qa_override_qa_outcome`.
+
+The archive skill now distinguishes normal Task completion from override Task
+completion, states the same refusal boundary as the implementation, and
+documents Spec-relative unreadable-report outcomes. `make skills-sync`
+regenerated `skills/archive-spec/SKILL.md`, and the command guide carries the
+same rules.
+
+Acceptance evidence:
+
+- Failed QA Task with a `pass` report: before the production edit,
+  `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache go test -count=1 -run '^TestArchiveQAOverrideAcceptsAFailedQATaskWithAPassReport$' ./internal/spec`
+  failed because the eligible report alone refused the override. After the
+  edit, the same focused check passed and confirmed that the QA Task and report
+  moved byte-identically.
+- Refusal only when normal archive succeeds:
+  `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache go test -count=1 -run '^TestArchiveQAOverrideRefusedOnlyWhenNormalArchiveSucceeds$' ./internal/spec`
+  passed for both a `pass` report and a qualifying declared `partial`, with all
+  Tasks completed and refused evidence left unchanged.
+- Relative unreadable-report outcome: before the production edit,
+  `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache go test -count=1 -run '^TestArchiveQAOverrideRecordsARelativeOutcome$' ./internal/spec`
+  failed because `qa_override_qa_outcome` contained the temporary Spec's
+  absolute path. A strengthened broken-symlink case then exposed the same path
+  inside the nested `os.PathError`; after both typed path layers were
+  relativized, the focused check passed and found only
+  `qa/qa-report-2026-09-24.md` in the stored diagnostic.
+
+Additional focused-check evidence:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache go test -count=1 ./internal/spec`
+  passed, including the prior Task 01 override cases and the new regressions.
+- `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache go test -count=1 ./skills`
+  passed, including the identical canonical QA settlement contract.
+- `rtk cmp -s .agents/skills/archive-spec/SKILL.md skills/archive-spec/SKILL.md`
+  passed after `rtk make skills-sync`.
+- `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache make verify-incremental`
+  first reached the full suite but the sandbox denied process-table access to
+  two unrelated force-stop integration tests. Re-running the same gate with
+  process-table permission passed vet, all tests, skill synchronization and
+  validation, and the build.
+- `rtk git diff --check` passed.
+
+The Daemon-owned `## Verification` command was not run in this Agent turn.

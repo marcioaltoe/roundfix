@@ -13,7 +13,7 @@ version: 0.0.2
 
 # Archive Spec
 
-Move a completed spec out of the active set: `<resolved-spec-root>/<slug>/` → `<resolved-archive-root>/<slug>/`, with the completion stamped in its frontmatter. The source is the configured Spec Root; the destination is its resolved archive root — `docs/history/specs/` for the built-in `docs/specs` root, or `<spec-root>/_archived/` for an external or non-default root, matching the `roundfix archive` destination. Archived means _implemented, verified, and self-contained_ — every task done, QA passed, and every indexed reference owned by the Spec — after this, one `ls <spec-root>/` separates live work from history, and the archive stays greppable as the record of what was built and why.
+Move a completed spec out of the active set: `<resolved-spec-root>/<slug>/` → `<resolved-archive-root>/<slug>/`, with the completion stamped in its frontmatter. The source is the configured Spec Root; the destination is its resolved archive root — `docs/history/specs/` for the built-in `docs/specs` root, or `<spec-root>/_archived/` for an external or non-default root, matching the `roundfix archive` destination. A normal archive means _implemented, verified, and self-contained_ — every task done, QA passed, and every indexed reference owned by the Spec. A QA Archive Override records the explicit exception without claiming verification. After either disposition, one `ls <spec-root>/` separates live work from history, and the archive stays greppable as the record of what was built and why.
 
 The trigger is spec completion, not publication: run this automatically at the end of the `implement-spec` loop once the QA gate passes, or whenever the user asks. Merge and release are separate, user-driven steps — the archive commit simply travels with the branch and ships inside the feature's own PR.
 
@@ -35,12 +35,16 @@ may move:
 
 Check all three with fresh command evidence before touching anything:
 
-1. **Every task completed.** Read each `task_NN.md` listed in `_tasks.md`; every
-   `status` must be `completed`.
+1. **Required tasks completed.** For a normal archive, read each `task_NN.md`
+   listed in `_tasks.md`; every `status` must be `completed`. For a QA Archive
+   Override, every non-QA Task must be `completed`; the QA Task may remain
+   `pending` or `failed`. If the QA Task is also `completed`, the newest report
+   must remain ineligible or the override is unnecessary and refused.
 
    **Command:** run `grep -n '^status:' <each-task-file-listed-in-_tasks.md>` and
-   retain its output. Any value other than `status: completed` blocks the
-   archive and names the Task file.
+   retain its output. Any value other than `status: completed` blocks a normal
+   archive. During an override, only a non-QA Task with another status blocks
+   the archive; name that Task file.
 
 2. **QA passed.** The newest report in `qa/` must pass the repository's QA
    verifier. Do not substitute a line grep for structured validation. In
@@ -51,8 +55,10 @@ Check all three with fresh command evidence before touching anything:
    present, and reject `verdict: pass` when `rows_blocked_finding` is nonzero.
    Retain the verifier's report path and result as evidence. A missing `qa/`
    directory, malformed newest report, or non-passing verdict blocks the
-   archive; proceed only if the user explicitly says "archive anyway", and
-   record that override in the stamped frontmatter (`qa_override: true`).
+   normal archive. Proceed only under an explicit QA Archive Override and record
+   it in the stamped frontmatter (`qa_override: true`). A qualifying newest
+   report does not make a failed or pending QA Task completed; the override is
+   refused only when the report qualifies and every Task is completed.
 
 3. **The Spec is self-contained.** Apply this precondition when
    `docs/specs/<slug>/references/_index.md` exists or is a symbolic link; a
@@ -206,10 +212,13 @@ Check all three with fresh command evidence before touching anything:
    cat "$parsed_index"
    ```
 
-`qa_override: true` overrides only failed or missing QA evidence in precondition
-2. It never overrides self-containment: verification can be overridden by the
-maintainer, but self-containment is a property of the artifact and must be
-repaired by finishing adoption.
+`qa_override: true` overrides only the unmet normal QA prerequisite: an
+incomplete QA Task, an ineligible newest report, or missing or unreadable QA
+evidence. It is refused only when every Task is completed and the newest report
+qualifies, because that Spec can archive normally. It never overrides
+self-containment: verification can be overridden by the maintainer, but
+self-containment is a property of the artifact and must be repaired by finishing
+adoption.
 
 A merged PR or release tag is **not** a precondition. If the user passes `--release`, or a merged PR/tag is already known, stamp it as metadata — but never block the archive waiting for one.
 
@@ -224,9 +233,13 @@ approval and reason with the archive command:
 roundfix archive <slug> --qa-override --approval <source> --reason <text>
 ```
 
-The override still requires every non-QA Task to be `completed`, refuses when
-QA already qualifies, and records the approval source, reason, observed QA
-outcome and archived revision. It does not change the QA Task or report.
+The override still requires every non-QA Task to be `completed`. It accepts a
+failed or pending QA Task regardless of the newest report's verdict and refuses
+only when every Task is completed and the newest report qualifies, because the
+same Spec can archive normally. It records the approval source, reason, observed
+QA outcome and archived revision without changing the QA Task or report. An
+unreadable report's recorded outcome names its path relative to the Spec folder,
+never the machine's absolute path.
 
 ## Steps
 
@@ -235,7 +248,7 @@ outcome and archived revision. It does not change the QA Task or report.
    ```yaml
    status: archived
    archived: YYYY-MM-DD
-   qa_override: true # only when archiving despite failed/missing QA
+   qa_override: true # only when normal QA archive eligibility is unmet
    release: <tag or PR URL> # only when known — from --release or an already-merged PR/tag
    ```
 

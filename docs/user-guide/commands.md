@@ -826,16 +826,20 @@ archive stamps the declarations' `satisfied-by` actions under `unproven` in
 Every other refusal is unchanged: a finding-blocked row, an
 environment-blocked row, a declared count not covered by the Spec's
 declarations, or `verdict: fail` exits `2` and names the first unmet condition.
-`qa_override` keeps its existing meaning for explicitly authorized archival of
-genuinely failed or missing evidence; declared unreachability does not use or
-weaken that override.
+`qa_override` keeps its existing meaning for explicitly authorized archival
+when the normal QA prerequisite is unmet; declared unreachability does not use
+or weaken that override.
 
 Use `--qa-override` only with explicit authorization to archive despite failed,
 missing or otherwise ineligible QA. `--approval <source>` records who or what
 authorized the override, and `--reason <text>` records why. The command still
-requires every non-QA Task to be `completed`, refuses when QA already qualifies,
-and stamps the approval source, reason, observed QA outcome and archived
-revision without changing the QA Task or report verdict.
+requires every non-QA Task to be `completed`. It accepts a failed or pending QA
+Task regardless of the newest report's verdict, and refuses only when every
+Task is `completed` and that report qualifies because the same Spec can archive
+normally. It stamps the approval source, reason, observed QA outcome and
+archived revision without changing the QA Task or report verdict. When the
+newest report is unreadable, the recorded outcome names it relative to the Spec
+folder and never stores an absolute machine path.
 
 ### supersede
 
