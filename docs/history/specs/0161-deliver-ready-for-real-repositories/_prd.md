@@ -1,9 +1,12 @@
 ---
 spec: 0161-deliver-ready-for-real-repositories
-status: active
+status: archived
 created: 2026-09-24
 surfaces: [backend, cli]
+archived: "2026-09-24"
+source_slug: 0161-deliver-ready-for-real-repositories
 ---
+
 
 # Deliver, ready for real repositories
 
