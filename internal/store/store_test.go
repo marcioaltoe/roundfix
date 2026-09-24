@@ -223,6 +223,62 @@ func TestCreateRunRecordsTheRepositoryKey(t *testing.T) {
 	}
 }
 
+func TestActiveImplementRunsAreCountedAcrossRepositories(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	activeByRepository := map[string]string{
+		filepath.Join("tmp", "first-repo"):  "0001-first-spec",
+		filepath.Join("tmp", "second-repo"): "0002-second-spec",
+	}
+	for gitRoot, specSlug := range activeByRepository {
+		if _, err := runStore.CreateRun(ctx, CreateRunRequest{
+			Kind:        KindImplement,
+			GitRoot:     gitRoot,
+			LocalBranch: "feat/measured-run-ceiling",
+			SpecSlug:    specSlug,
+		}); err != nil {
+			t.Fatalf("create Active Implement Run for %s: %v", gitRoot, err)
+		}
+	}
+
+	terminal, err := runStore.CreateRun(ctx, CreateRunRequest{
+		Kind:        KindImplement,
+		GitRoot:     filepath.Join("tmp", "terminal-repo"),
+		LocalBranch: "feat/done",
+		SpecSlug:    "0003-terminal-spec",
+	})
+	if err != nil {
+		t.Fatalf("create terminal Implement Run: %v", err)
+	}
+	if _, err := runStore.CompleteRun(ctx, terminal.ID, StateClean); err != nil {
+		t.Fatalf("complete terminal Implement Run: %v", err)
+	}
+	if _, err := runStore.CreateRun(ctx, sampleCreateRunRequest()); err != nil {
+		t.Fatalf("create Active Fetch Run: %v", err)
+	}
+
+	runs, err := runStore.ActiveImplementRuns(ctx)
+	if err != nil {
+		t.Fatalf("list Active Implement Runs: %v", err)
+	}
+	if len(runs) != len(activeByRepository) {
+		t.Fatalf("ActiveImplementRuns() returned %d Runs, want %d: %#v", len(runs), len(activeByRepository), runs)
+	}
+	for _, run := range runs {
+		wantSpec, ok := activeByRepository[run.GitRoot]
+		if !ok || run.SpecSlug != wantSpec {
+			t.Fatalf("unexpected Active Implement Run: %#v", run)
+		}
+		delete(activeByRepository, run.GitRoot)
+	}
+	if len(activeByRepository) != 0 {
+		t.Fatalf("missing Active Implement Runs for repositories: %#v", activeByRepository)
+	}
+}
+
 func TestStoppedRunReleasesActiveLock(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

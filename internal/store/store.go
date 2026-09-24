@@ -1227,6 +1227,22 @@ ORDER BY created_at DESC, id DESC`
 	return runs, nil
 }
 
+// ActiveImplementRuns returns every non-terminal Implement Run in the Run
+// Database, regardless of repository.
+func (store *Store) ActiveImplementRuns(ctx context.Context) ([]Run, error) {
+	runs, err := store.ListRuns(ctx, ListRunsQuery{States: StatesActive})
+	if err != nil {
+		return nil, fmt.Errorf("list Active Implement Runs: %w", err)
+	}
+	active := make([]Run, 0, len(runs))
+	for _, run := range runs {
+		if run.Kind == KindImplement {
+			active = append(active, run)
+		}
+	}
+	return active, nil
+}
+
 func (store *Store) Run(ctx context.Context, runID string) (Run, bool, error) {
 	runID = strings.TrimSpace(runID)
 	if runID == "" {

@@ -363,6 +363,20 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 			return exitPreflight
 		}
 	}
+	if maxActive := loadedConfig.Config.Runs.MaxActive; maxActive > 0 {
+		activeRuns, err := runStore.ActiveImplementRuns(ctx)
+		if err != nil {
+			printPreflightFailure("implement", err, stderr)
+			return exitPreflight
+		}
+		if len(activeRuns) >= maxActive {
+			printPreflightFailure("implement", implementRunCeilingError{
+				MaxActive: maxActive,
+				Holders:   activeRuns,
+			}, stderr)
+			return exitPreflight
+		}
+	}
 
 	run, err := createRunReclaimingOrphan(ctx, runStore, stderr, func() (store.Run, error) {
 		return runStore.CreateRun(ctx, store.CreateRunRequest{
@@ -629,6 +643,31 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitRunFailed
 	}
 	return exitOK
+}
+
+type implementRunCeilingError struct {
+	MaxActive int
+	Holders   []store.Run
+}
+
+func (err implementRunCeilingError) Error() string {
+	var message strings.Builder
+	fmt.Fprintf(
+		&message,
+		"Active Implement Run ceiling reached: %d Run(s) hold %d slot(s)",
+		len(err.Holders),
+		err.MaxActive,
+	)
+	for _, run := range err.Holders {
+		fmt.Fprintf(
+			&message,
+			"\n- run_id=%s repository=%s spec=%s",
+			run.ID,
+			run.GitRoot,
+			run.SpecSlug,
+		)
+	}
+	return message.String()
 }
 
 func selectImplementCarryForward(results []specCarryForward) (specCarryForward, []string, bool) {

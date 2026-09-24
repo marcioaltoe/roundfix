@@ -77,6 +77,22 @@ other Roundfix Runs, CI jobs, manually started commands, or other processes.
 Projects must still choose a safe Task Capacity for Worktree Bootstrap, Agent
 work, and resources used outside Daemon Verification.
 
+## Active Implement Run ceiling
+
+`runs.max_active` limits Active Implement Runs across every repository in the
+Run Database. The built-in value is `3`; set it in User Config to the measured
+capacity of the machine:
+
+```yaml
+runs:
+  max_active: 3
+```
+
+When the number of Active Implement Runs reaches the ceiling, `implement`
+refuses before creating another Run and lists each holding Run's id,
+repository, and Spec. Set `max_active: 0` to disable the bound. Negative values
+fail configuration validation.
+
 ## Context-Driven Baseline state
 
 User Config and Project Config are operational Roundfix state. They do not
@@ -184,6 +200,10 @@ specs:
   # Directory holding Spec folders; relative values resolve against the repo root.
   root: "docs/specs"
 
+runs:
+  # Maximum Active Implement Runs across repositories; 0 disables the bound.
+  max_active: 3
+
 worktree:
   # Parent directory; Roundfix always appends <repo-slug>/<run-id>[.<task_id>].
   location: "~/.roundfix/worktrees"
@@ -251,6 +271,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `watch.push_remote` | `""` | Uses the upstream remote detected by Preflight Validation. |
 | `watch.push_branch` | `""` | Uses the upstream branch detected by Preflight Validation. |
 | `implement.auto_push` | `false` | Leaves a Clean Spec Run local. `true` pushes its upstream branch but never opens a pull request. |
+| `runs.max_active` | `3` | Limits Active Implement Runs across every repository in the Run Database. `0` disables the bound. |
 | `notify.enabled` | `true` | Sends one terminal outcome notification for `resolve`, `watch`, and `implement`. |
 | `notify.command` | `""` | Uses the native desktop notifier. A non-empty shell command replaces it. |
 | `budget.enabled` | `true` | Enforces the configured Run duration budget. |

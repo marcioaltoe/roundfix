@@ -5325,6 +5325,105 @@ func TestRunImplementPreflightRejectsActiveRunInWorkingTree(t *testing.T) {
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
 }
 
+func TestImplementRefusesAtTheActiveRunCeiling(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	writeUserConfig(t, homeDir, "runs:\n  max_active: 2\n")
+	withImplementCollaborators(t, &implementFakeRunner{gitRoot: repoDir})
+
+	ctx := context.Background()
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	holders := make([]store.Run, 0, 2)
+	for index, seed := range []struct {
+		repository string
+		spec       string
+	}{
+		{repository: filepath.Join(homeDir, "repository-one"), spec: "0001-first-spec"},
+		{repository: filepath.Join(homeDir, "repository-two"), spec: "0002-second-spec"},
+	} {
+		run, createErr := runStore.CreateRun(ctx, store.CreateRunRequest{
+			Kind:          store.KindImplement,
+			GitRoot:       seed.repository,
+			LocalBranch:   fmt.Sprintf("feat/holder-%d", index+1),
+			SpecSlug:      seed.spec,
+			OwnerPID:      os.Getpid(),
+			OwnerIdentity: fmt.Sprintf("holder-%d", index+1),
+		})
+		if createErr != nil {
+			t.Fatalf("create holding Run: %v", createErr)
+		}
+		holders = append(holders, run)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close store: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := runCLIContext(t, ctx, []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("implement exit = %d, want %d; stderr=%q", code, exitPreflight, stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("implement stdout = %q, want empty", stdout.String())
+	}
+	for _, holder := range holders {
+		for _, want := range []string{holder.ID, holder.GitRoot, holder.SpecSlug} {
+			if !strings.Contains(stderr.String(), want) {
+				t.Fatalf("ceiling refusal missing %q: %q", want, stderr.String())
+			}
+		}
+	}
+	assertRunCount(t, store.DatabasePath(homeDir), len(holders))
+}
+
+func TestImplementRunCeilingZeroDisables(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	writeUserConfig(t, homeDir, "runs:\n  max_active: 0\n")
+	withImplementCollaborators(t, &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	})
+
+	ctx := context.Background()
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	for index := range 2 {
+		if _, err := runStore.CreateRun(ctx, store.CreateRunRequest{
+			Kind:          store.KindImplement,
+			GitRoot:       filepath.Join(homeDir, fmt.Sprintf("repository-%d", index+1)),
+			LocalBranch:   fmt.Sprintf("feat/holder-%d", index+1),
+			SpecSlug:      fmt.Sprintf("000%d-holder-spec", index+1),
+			OwnerPID:      os.Getpid(),
+			OwnerIdentity: fmt.Sprintf("holder-%d", index+1),
+		}); err != nil {
+			t.Fatalf("create holding Run: %v", err)
+		}
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close store: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := runCLIContext(t, ctx, []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("implement exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Clean: all 1 Task(s) completed.") {
+		t.Fatalf("implement stdout missing Clean outcome: %q", stdout.String())
+	}
+	assertRunCount(t, store.DatabasePath(homeDir), 3)
+}
+
 func TestRunImplementPreflightProbeFailureCreatesNoRun(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})

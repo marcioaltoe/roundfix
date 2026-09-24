@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0165-a-measured-run-ceiling
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -43,3 +43,46 @@ Nothing bounds how many Implement Runs one machine starts; five at once on 2026-
 ## References
 
 - [_techspec.md](_techspec.md) — The ceiling
+
+## Result
+
+Implemented `runs.max_active` with a built-in value of `3`, strict rejection
+of negative values, and `0` as the disabled value. The Run Database now exposes
+every non-terminal Implement Run across repositories, and `implement` checks
+that machine-wide set after the unchanged per-checkout Active Run check and
+before Run creation. A refusal exits `2` and lists every holder's Run id,
+repository, and Spec. The configuration guide documents the default, refusal,
+and disable behavior.
+
+Acceptance evidence:
+
+- With two Active Implement Runs in different repositories and
+  `runs.max_active: 2`, `TestImplementRefusesAtTheActiveRunCeiling` observed
+  exit `2`, found both holders' ids, repositories, and Specs in stderr, and
+  confirmed the Run Database still contained only the two seeded Runs.
+- With the same machine-wide pressure and `runs.max_active: 0`,
+  `TestImplementRunCeilingZeroDisables` allowed the third Implement Run to
+  reach its normal Clean fixture outcome. `TestConfigRefusesANegativeRunsMaxActive`
+  confirmed that `-1` fails validation.
+- `TestActiveImplementRunsAreCountedAcrossRepositories` confirmed that the
+  store returns non-terminal Implement Runs from two repositories while
+  excluding a terminal Implement Run and an Active Fetch Run.
+- `TestRunImplementPreflightRejectsActiveRunInWorkingTree` passed with its
+  existing refusal text and no added Run, preserving the per-checkout check.
+
+Focused checks:
+
+- Pre-change signal: `rtk env GOCACHE=/tmp/roundfix-0165-go-cache go test -count=1 -run '^TestConfig(RunsMaxActiveDefaultsToThree|RefusesANegativeRunsMaxActive)$' ./internal/config` failed to build because `Config.Runs` did not exist.
+- `rtk env GOCACHE=/tmp/roundfix-0165-go-cache go test -count=1 -run '^TestConfig(RunsMaxActiveDefaultsToThree|RefusesANegativeRunsMaxActive)$' ./internal/config` — passed.
+- `rtk env GOCACHE=/tmp/roundfix-0165-go-cache go test -count=1 -run '^TestActiveImplementRunsAreCountedAcrossRepositories$' ./internal/store` — passed.
+- `rtk env GOCACHE=/tmp/roundfix-0165-go-cache go test -count=1 -run '^TestImplement(RefusesAtTheActiveRunCeiling|RunCeilingZeroDisables)$' ./internal/cli` — passed.
+- Adjacent config generation, store listing, and the existing per-checkout
+  refusal checks passed in focused package runs.
+- `rtk env GOCACHE=/tmp/roundfix-0165-go-cache make verify-incremental` — the
+  sandboxed attempt reached the existing force-stop integration tests but
+  could not enumerate the process table (`operation not permitted`); the
+  rerun with process-table access passed vet, the full Go suite, skill checks,
+  and the build.
+
+The Daemon-owned command under `## Verification` was not run in this Agent
+turn.

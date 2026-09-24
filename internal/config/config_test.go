@@ -319,6 +319,25 @@ func TestBuiltinRuntimeDefaults(t *testing.T) {
 	}
 }
 
+func TestConfigRunsMaxActiveDefaultsToThree(t *testing.T) {
+	t.Parallel()
+
+	if got := Builtin().Runs.MaxActive; got != 3 {
+		t.Fatalf("Runs.MaxActive = %d, want 3", got)
+	}
+}
+
+func TestConfigRefusesANegativeRunsMaxActive(t *testing.T) {
+	t.Parallel()
+	config := Builtin()
+	config.Runs.MaxActive = -1
+
+	err := Validate(config)
+	if err == nil || !strings.Contains(err.Error(), "runs.max_active must be greater than or equal to 0") {
+		t.Fatalf("Validate() error = %v, want negative runs.max_active refusal", err)
+	}
+}
+
 func TestBuiltinProfilesGeneratedCodexPolicy(t *testing.T) {
 	t.Parallel()
 	config := Builtin()
