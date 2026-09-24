@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0158-daemon-verification-and-access-readiness
-status: completed
+status: pending
 type: qa
 complexity: high
 ---
@@ -62,3 +62,9 @@ applied in process by whoever settles the Task.
 evidence; `_techspec.md` → Testing Approach 1-4; API Contracts 1-3; ADR-0011;
 ADR-0038; ADR-0056; ADR-0057; ADR-0080; ADR-0091; ADR-0093; ADR-0096; ADR-0097; ADR-0104;
 ADR-0117; ADR-0130; ADR-0155; ADR-0156.
+
+## Invalidation
+
+- Date: `2026-09-24`
+- QA Report: `qa/qa-report-2026-09-24.md`
+- Dependencies not completed: `task_06`, `task_07`
