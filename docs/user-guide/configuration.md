@@ -278,6 +278,18 @@ plus a non-empty ordered Fallback Chain. Project Config replaces User Config,
 User Config replaces built-ins, and no tuple field or fallback entry merges
 across scopes.
 
+### Access policy readiness
+
+When `defaults.agent_full_access: true`, profile readiness applies the
+requested full-access mode during the disposable proof for the Preferred
+Selection and every Fallback Selection. The proof records the effective access
+policy. If a runtime has no mode for that policy or its adapter refuses the
+mode, readiness refuses before a Run is created and names the failed predicate
+and the remedy: disable full access or select a runtime that supports it.
+
+When full access is not requested, readiness keeps the runtime's normal access
+policy and performs no additional access-mode proof.
+
 Required profiles are `general`, `backend`, `frontend`, `qa`, and `review`.
 Optional Task Type profiles `data`, `infra`, `docs`, `test`, and `chore`
 inherit the effective `general` profile when absent. `roundfix profiles show`

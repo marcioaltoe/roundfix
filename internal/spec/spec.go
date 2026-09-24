@@ -84,6 +84,10 @@ type SkippedSpec struct {
 	Reason string
 }
 
+type VerificationMode string
+
+const VerificationModeIndependent VerificationMode = "independent"
+
 // Task is one Task Graph node joined with its parsed task file. File is the
 // task file path relative to the Spec Root.
 type Task struct {
@@ -98,6 +102,7 @@ type Task struct {
 	Context          []TaskContextRef
 	Requirements     []TaskDeclaration
 	RehearsalCases   []TaskDeclaration
+	VerificationMode VerificationMode
 	Verification     []string
 	NegativeControl  []string
 	TaskRepairPaths  []string
@@ -932,6 +937,7 @@ func loadTask(dir string, slug string, node manifestNode) (Task, error) {
 		Context:          append([]TaskContextRef(nil), document.Context...),
 		Requirements:     append([]TaskDeclaration(nil), document.Requirements...),
 		RehearsalCases:   append([]TaskDeclaration(nil), document.RehearsalCases...),
+		VerificationMode: document.VerificationMode,
 		Verification:     verification,
 		NegativeControl:  append([]string(nil), document.NegativeControl...),
 		TaskRepairPaths:  append([]string(nil), document.TaskRepairPaths...),

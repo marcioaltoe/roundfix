@@ -19,6 +19,7 @@ type taskFrontmatter struct {
 	Status          string           `yaml:"status"`
 	Type            string           `yaml:"type"`
 	Complexity      string           `yaml:"complexity"`
+	Verification    string           `yaml:"verification"`
 	TaskRepairPaths []string         `yaml:"repair_paths"`
 	AssignedRepairs []AssignedRepair `yaml:"assigned_repairs"`
 }
@@ -32,6 +33,7 @@ type taskDocument struct {
 	Context          []TaskContextRef
 	Requirements     []TaskDeclaration
 	RehearsalCases   []TaskDeclaration
+	VerificationMode VerificationMode
 	Verification     []string
 	NegativeControl  []string
 	TaskRepairPaths  []string
@@ -71,6 +73,7 @@ func ReloadTask(specsRoot string, task *Task) error {
 	task.Context = append([]TaskContextRef(nil), document.Context...)
 	task.Requirements = append([]TaskDeclaration(nil), document.Requirements...)
 	task.RehearsalCases = append([]TaskDeclaration(nil), document.RehearsalCases...)
+	task.VerificationMode = document.VerificationMode
 	task.Verification = verification
 	task.NegativeControl = append([]string(nil), document.NegativeControl...)
 	task.TaskRepairPaths = append([]string(nil), document.TaskRepairPaths...)
@@ -281,6 +284,10 @@ func parseTaskDocument(content []byte, taskPath string) (taskDocument, error) {
 	if err != nil {
 		return taskDocument{}, err
 	}
+	verificationMode, err := parseVerificationMode(frontmatter.Verification)
+	if err != nil {
+		return taskDocument{}, err
+	}
 	contextRefs, err := parseTaskContextRefs(body)
 	if err != nil {
 		return taskDocument{}, err
@@ -296,11 +303,24 @@ func parseTaskDocument(content []byte, taskPath string) (taskDocument, error) {
 		Context:          contextRefs,
 		Requirements:     parseTaskRequirements(body, bodyLineOffset),
 		RehearsalCases:   parseTaskSectionBullets(body, "Rehearsal Cases", bodyLineOffset),
+		VerificationMode: verificationMode,
 		Verification:     parseVerificationCommands(body),
 		NegativeControl:  parseNegativeControlDeclarations(body),
 		TaskRepairPaths:  append([]string(nil), frontmatter.TaskRepairPaths...),
 		AssignedRepairs:  append([]AssignedRepair(nil), frontmatter.AssignedRepairs...),
 	}, nil
+}
+
+func parseVerificationMode(value string) (VerificationMode, error) {
+	value = strings.TrimSpace(value)
+	switch VerificationMode(value) {
+	case "":
+		return "", nil
+	case VerificationModeIndependent:
+		return VerificationModeIndependent, nil
+	default:
+		return "", fmt.Errorf("unsupported verification %q (allowed: %s)", value, VerificationModeIndependent)
+	}
 }
 
 // parseTaskTitle extracts the title from the first level-one heading,

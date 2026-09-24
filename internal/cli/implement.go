@@ -256,6 +256,10 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitOK
 	}
 	authorization := spec.ReadSpecAuthorization(ctx, gitState.Root, checkoutSpecsRoot, graph.Spec.Slug, gitState.HEAD)
+	if err := daemon.ValidatePreconditionRepairs(authorization, graph.Spec.Slug, graph.Tasks, loadedConfig.Config.Defaults.Verification); err != nil {
+		printPreflightFailure("implement", err, stderr)
+		return exitPreflight
+	}
 	defaultBranch := preflight.DetectDefaultBranch(ctx, gitState.Root, gitState.Branch, nil)
 	if defaultBranch.IsDefault(gitState.Branch) {
 		printPreflightFailure("implement", validationError{message: fmt.Sprintf(

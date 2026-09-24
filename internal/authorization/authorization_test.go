@@ -75,6 +75,48 @@ func TestAuthorizationParseCharacterization(t *testing.T) {
 	}
 }
 
+func TestAuthorizationParsesPreconditionRepairs(t *testing.T) {
+	t.Parallel()
+
+	const slug = "precondition-repairs"
+	repoRoot, recordPath := writeAuthorizationRecordForTest(
+		t,
+		slug,
+		"authorize repository gate repair",
+		"---",
+		"---",
+		"\n",
+	)
+	recordFile := filepath.Join(repoRoot, filepath.FromSlash(recordPath))
+	content, err := os.ReadFile(recordFile)
+	if err != nil {
+		t.Fatalf("read authorization record: %v", err)
+	}
+	content = []byte(strings.Replace(
+		string(content),
+		"operations:\n",
+		"precondition_repairs:\n  - task_02\n  - task_04\noperations:\n",
+		1,
+	))
+	if err := os.WriteFile(recordFile, content, 0o644); err != nil {
+		t.Fatalf("write authorization record: %v", err)
+	}
+
+	resolution := ReadAuthorization(context.Background(), AuthorizationReadRequest{
+		RepoRoot:   repoRoot,
+		RecordPath: recordPath,
+		Role:       AuthorizationRoleSpec,
+		AskingSpec: slug,
+	})
+
+	if resolution.Outcome != AuthorizationGranted {
+		t.Fatalf("authorization outcome = %q, want granted: %#v", resolution.Outcome, resolution.Reason)
+	}
+	if !reflect.DeepEqual(resolution.Record.PreconditionRepairs, []string{"task_02", "task_04"}) {
+		t.Fatalf("precondition repairs = %#v, want task_02 and task_04", resolution.Record.PreconditionRepairs)
+	}
+}
+
 func TestDelimiterWithTrailingCarriageReturnGrants(t *testing.T) {
 	t.Parallel()
 

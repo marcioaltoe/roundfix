@@ -270,6 +270,57 @@ func (verifier engineOutcomeVerifier) Verify(_ context.Context, req VerifyReques
 	return VerifyResult{OutputPath: req.OutputPath}, verifier.err
 }
 
+type engineIndependentUnknownVerifier struct{}
+
+func (engineIndependentUnknownVerifier) Verify(_ context.Context, req VerifyRequest) (VerifyResult, error) {
+	switch req.Command {
+	case "verify deterministic":
+		return VerifyResult{OutputPath: req.OutputPath}, &VerificationCommandError{
+			Command:    req.Command,
+			OutputPath: req.OutputPath,
+			Err:        errors.New("exit status 7"),
+		}
+	case "verify unknown":
+		return VerifyResult{OutputPath: req.OutputPath}, &VerificationUnknownError{
+			Command:        req.Command,
+			DiagnosticPath: req.OutputPath,
+			Err:            errors.New("runner lost the command verdict"),
+		}
+	default:
+		return VerifyResult{OutputPath: req.OutputPath}, nil
+	}
+}
+
+func TestIndependentVerificationKeepsCollectedFailuresBesideUnknownCause(t *testing.T) {
+	t.Parallel()
+
+	engine := &Engine{deps: Dependencies{Verifier: engineIndependentUnknownVerifier{}, Progress: &bytes.Buffer{}}}
+	outcome, err := engine.runVerificationAttempt(context.Background(), verificationAttemptRequest{
+		Attempt:     1,
+		Commands:    []string{"verify deterministic", "verify unknown"},
+		Independent: true,
+		ArtifactDir: t.TempDir(),
+		Publish: func(context.Context, string, map[string]any) error {
+			return nil
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("run independent Verification: %v", err)
+	}
+	if outcome.CommandFailure == nil || outcome.CommandFailure.Command != "verify deterministic" || len(outcome.CommandFailures) != 1 {
+		t.Fatalf("collected command failures = %+v, want the deterministic failure retained", outcome.CommandFailures)
+	}
+	if outcome.UnknownCause == nil || outcome.UnknownCause.Command != "verify unknown" {
+		t.Fatalf("unknown cause = %+v, want the later unobserved command", outcome.UnknownCause)
+	}
+	for _, expected := range []string{"verify deterministic", "verify unknown", "runner lost the command verdict"} {
+		if !strings.Contains(outcome.Failure, expected) {
+			t.Fatalf("attempt reason %q does not report %q", outcome.Failure, expected)
+		}
+	}
+}
+
 func TestVerificationUnknownCauseIsSetOnlyWhenNoVerdictWasObserved(t *testing.T) {
 	t.Parallel()
 	unknownErr := &VerificationUnknownError{

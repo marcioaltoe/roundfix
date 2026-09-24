@@ -63,6 +63,7 @@ const (
 	AuthorizationReasonConsuming           = authorization.AuthorizationReasonConsuming
 	AuthorizationReasonPaths               = authorization.AuthorizationReasonPaths
 	AuthorizationReasonOperations          = authorization.AuthorizationReasonOperations
+	AuthorizationReasonPreconditionRepairs = authorization.AuthorizationReasonPreconditionRepairs
 	AuthorizationReasonRegeneration        = authorization.AuthorizationReasonRegeneration
 	AuthorizationReasonContradictory       = authorization.AuthorizationReasonContradictory
 	AuthorizationReasonUnreadableRecord    = authorization.AuthorizationReasonUnreadableRecord

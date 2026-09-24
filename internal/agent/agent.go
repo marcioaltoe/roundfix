@@ -14,13 +14,115 @@ import (
 )
 
 type RuntimeSpec struct {
-	ID              string
-	DisplayName     string
-	Protocol        string
-	Command         string
-	Model           string
-	ReasoningEffort string
-	FullAccessMode  string
+	ID                      string
+	DisplayName             string
+	Protocol                string
+	Command                 string
+	Model                   string
+	ReasoningEffort         string
+	RequestedAccessPolicy   AccessPolicy
+	SupportedFullAccessMode string
+	FullAccessMode          string
+}
+
+type AccessPolicy string
+
+const (
+	AccessPolicyRuntimeDefault AccessPolicy = ""
+	AccessPolicyFullAccess     AccessPolicy = "full-access"
+
+	AccessPolicyUnsupported      = "access_policy_unsupported"
+	AccessPolicyRejected         = "access_policy_rejected"
+	AccessModeAvailablePredicate = "runtime_has_access_mode"
+	AccessModeAcceptedPredicate  = "adapter_accepts_access_mode"
+)
+
+// AccessModeFor reports the adapter mode a runtime can use to honour policy.
+// Runtime-default access needs no mode; every stronger policy must name one.
+func (runtime RuntimeSpec) AccessModeFor(policy AccessPolicy) (string, bool) {
+	switch policy {
+	case AccessPolicyRuntimeDefault:
+		return "", true
+	case AccessPolicyFullAccess:
+		mode := strings.TrimSpace(runtime.SupportedFullAccessMode)
+		if mode == "" {
+			// Preserve RuntimeSpec literals from before capability reporting was
+			// explicit; FullAccessMode was then the only available signal.
+			mode = strings.TrimSpace(runtime.FullAccessMode)
+		}
+		return mode, mode != ""
+	default:
+		return "", false
+	}
+}
+
+// RequestedPolicy preserves RuntimeSpec values constructed before access
+// policy became explicit: a named full-access mode still represents the
+// full-access request that caused it to be selected.
+func (runtime RuntimeSpec) RequestedPolicy() AccessPolicy {
+	if runtime.RequestedAccessPolicy != AccessPolicyRuntimeDefault {
+		return runtime.RequestedAccessPolicy
+	}
+	if strings.TrimSpace(runtime.FullAccessMode) != "" {
+		return AccessPolicyFullAccess
+	}
+	return AccessPolicyRuntimeDefault
+}
+
+func (runtime RuntimeSpec) ValidateRequestedAccessPolicy() error {
+	policy := runtime.RequestedPolicy()
+	if _, ok := runtime.AccessModeFor(policy); ok {
+		return nil
+	}
+	return &AccessPolicyError{
+		Kind:      AccessPolicyUnsupported,
+		Runtime:   strings.TrimSpace(runtime.ID),
+		Policy:    policy,
+		Predicate: AccessModeAvailablePredicate,
+	}
+}
+
+// AccessPolicyError reports why readiness could not honour a requested access
+// policy. Predicate distinguishes missing runtime support from adapter refusal.
+type AccessPolicyError struct {
+	Kind      string
+	Runtime   string
+	Policy    AccessPolicy
+	Mode      string
+	Predicate string
+	Err       error
+}
+
+func (err *AccessPolicyError) Error() string {
+	if err == nil {
+		return ""
+	}
+	message := fmt.Sprintf("requested access policy %q failed predicate %q for runtime %q", err.Policy, strings.TrimSpace(err.Predicate), strings.TrimSpace(err.Runtime))
+	if mode := strings.TrimSpace(err.Mode); mode != "" {
+		message += fmt.Sprintf(" with adapter mode %q", mode)
+	}
+	if err.Err != nil {
+		message += ": " + err.Err.Error()
+	}
+	return message + "; recovery: " + err.RecoveryAction()
+}
+
+func (err *AccessPolicyError) Unwrap() error {
+	if err == nil {
+		return nil
+	}
+	return err.Err
+}
+
+func (err *AccessPolicyError) Classification() string {
+	if err == nil {
+		return ""
+	}
+	return strings.TrimSpace(err.Kind)
+}
+
+func (err *AccessPolicyError) RecoveryAction() string {
+	return "disable full access or select a runtime that supports it"
 }
 
 type RuntimeOptions struct {
@@ -213,8 +315,17 @@ type VerificationFeedback struct {
 	Failure         string
 	DiagnosticEmpty bool
 	Repeated        *runevent.RepeatedFailure
+	Failures        []VerificationFailureFeedback
 	Attempt         int
 	TaskHandoff     bool
+}
+
+type VerificationFailureFeedback struct {
+	Command         string
+	DiagnosticPath  string
+	Failure         string
+	DiagnosticEmpty bool
+	Repeated        *runevent.RepeatedFailure
 }
 
 func RuntimeFor(opts RuntimeOptions) (RuntimeSpec, error) {
@@ -244,13 +355,17 @@ func RuntimeFor(opts RuntimeOptions) (RuntimeSpec, error) {
 		spec.Protocol = ProtocolStdio
 		spec.Command = opts.CommandOverride
 	}
-	if opts.EnableFullAccess {
+	if opts.CommandOverride == "" {
 		switch spec.ID {
 		case "codex":
-			spec.FullAccessMode = "full-access"
+			spec.SupportedFullAccessMode = "full-access"
 		case "claude":
-			spec.FullAccessMode = "bypassPermissions"
+			spec.SupportedFullAccessMode = "bypassPermissions"
 		}
+	}
+	if opts.EnableFullAccess {
+		spec.RequestedAccessPolicy = AccessPolicyFullAccess
+		spec.FullAccessMode, _ = spec.AccessModeFor(AccessPolicyFullAccess)
 	}
 	spec.Model = opts.Model
 	spec.ReasoningEffort = opts.ReasoningEffort
@@ -307,26 +422,39 @@ func BuildVerificationRepairPrompt(workItem string, feedback VerificationFeedbac
 	if workItem == "" {
 		return "", errors.New("work item is required")
 	}
-	command := strings.TrimSpace(feedback.Command)
-	if command == "" {
-		return "", errors.New("failed command is required")
+	failures := append([]VerificationFailureFeedback(nil), feedback.Failures...)
+	if len(failures) == 0 {
+		failures = []VerificationFailureFeedback{{
+			Command:         feedback.Command,
+			DiagnosticPath:  feedback.DiagnosticPath,
+			Failure:         feedback.Failure,
+			DiagnosticEmpty: feedback.DiagnosticEmpty,
+			Repeated:        feedback.Repeated,
+		}}
 	}
-	diagnosticPath := strings.TrimSpace(feedback.DiagnosticPath)
-	if diagnosticPath == "" {
-		return "", errors.New("diagnostic artifact path is required")
-	}
-	failure := strings.TrimSpace(feedback.Failure)
-	if failure == "" {
-		return "", errors.New("verification failure is required")
-	}
-	if feedback.Repeated != nil {
-		if strings.TrimSpace(feedback.Repeated.Signature) == "" {
+	for index := range failures {
+		failures[index].Command = strings.TrimSpace(failures[index].Command)
+		if failures[index].Command == "" {
+			return "", errors.New("failed command is required")
+		}
+		failures[index].DiagnosticPath = strings.TrimSpace(failures[index].DiagnosticPath)
+		if failures[index].DiagnosticPath == "" {
+			return "", errors.New("diagnostic artifact path is required")
+		}
+		failures[index].Failure = strings.TrimSpace(failures[index].Failure)
+		if failures[index].Failure == "" {
+			return "", errors.New("verification failure is required")
+		}
+		if failures[index].Repeated == nil {
+			continue
+		}
+		if strings.TrimSpace(failures[index].Repeated.Signature) == "" {
 			return "", errors.New("repeated failure signature is required")
 		}
-		if strings.TrimSpace(feedback.Repeated.RunID) == "" {
+		if strings.TrimSpace(failures[index].Repeated.RunID) == "" {
 			return "", errors.New("repeated failure Run ID is required")
 		}
-		if feedback.Repeated.Attempt < 1 {
+		if failures[index].Repeated.Attempt < 1 {
 			return "", errors.New("repeated failure attempt is required")
 		}
 	}
@@ -338,23 +466,25 @@ func BuildVerificationRepairPrompt(workItem string, feedback VerificationFeedbac
 	builder.WriteString("Verification Feedback for the same Roundfix Agent Session.\n\n")
 	builder.WriteString(fmt.Sprintf("Work Item: %s\n", workItem))
 	builder.WriteString(fmt.Sprintf("Attempt: %d\n", feedback.Attempt))
-	builder.WriteString(fmt.Sprintf("Failed command: %s\n", command))
-	builder.WriteString(fmt.Sprintf("Diagnostic artifact: %s\n", diagnosticPath))
-	builder.WriteString(fmt.Sprintf("Failure: %s\n\n", failure))
-	if feedback.Repeated != nil {
-		builder.WriteString(fmt.Sprintf(
-			"Repeated Failure: this diagnostic matches Run %s attempt %d (signature %s).\n\n",
-			strings.TrimSpace(feedback.Repeated.RunID),
-			feedback.Repeated.Attempt,
-			strings.TrimSpace(feedback.Repeated.Signature),
-		))
-	}
-	if feedback.DiagnosticEmpty {
-		builder.WriteString("The command produced no output.\n")
-		if redirectTarget := verificationRedirectTarget(command); redirectTarget != "" {
-			builder.WriteString(fmt.Sprintf("The command redirected its output to: %s\n", redirectTarget))
+	for _, failure := range failures {
+		builder.WriteString(fmt.Sprintf("Failed command: %s\n", failure.Command))
+		builder.WriteString(fmt.Sprintf("Diagnostic artifact: %s\n", failure.DiagnosticPath))
+		builder.WriteString(fmt.Sprintf("Failure: %s\n\n", failure.Failure))
+		if failure.Repeated != nil {
+			builder.WriteString(fmt.Sprintf(
+				"Repeated Failure: this diagnostic matches Run %s attempt %d (signature %s).\n\n",
+				strings.TrimSpace(failure.Repeated.RunID),
+				failure.Repeated.Attempt,
+				strings.TrimSpace(failure.Repeated.Signature),
+			))
 		}
-		builder.WriteString("\n")
+		if failure.DiagnosticEmpty {
+			builder.WriteString("The command produced no output.\n")
+			if redirectTarget := verificationRedirectTarget(failure.Command); redirectTarget != "" {
+				builder.WriteString(fmt.Sprintf("The command redirected its output to: %s\n", redirectTarget))
+			}
+			builder.WriteString("\n")
+		}
 	}
 	builder.WriteString("Required actions:\n")
 	builder.WriteString("1. Inspect the diagnostic artifact path and the related code or tests.\n")

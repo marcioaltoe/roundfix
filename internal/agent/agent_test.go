@@ -108,6 +108,37 @@ func TestRuntimeForCodexFullAccessOptIn(t *testing.T) {
 	}
 }
 
+func TestRuntimeReportsAccessPolicySupport(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		agent       string
+		requested   bool
+		queryPolicy AccessPolicy
+		wantMode    string
+		wantOK      bool
+	}{
+		{name: "Codex reports full-access support before a request", agent: "codex", queryPolicy: AccessPolicyFullAccess, wantMode: "full-access", wantOK: true},
+		{name: "Claude supports requested full access", agent: "claude", requested: true, queryPolicy: AccessPolicyFullAccess, wantMode: "bypassPermissions", wantOK: true},
+		{name: "OpenCode reports requested full access unavailable", agent: "opencode", requested: true, queryPolicy: AccessPolicyFullAccess, wantOK: false},
+		{name: "default access needs no runtime mode", agent: "opencode", requested: false, queryPolicy: AccessPolicyRuntimeDefault, wantOK: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			runtime, err := RuntimeFor(RuntimeOptions{Agent: tt.agent, EnableFullAccess: tt.requested})
+			if err != nil {
+				t.Fatalf("runtime for %s: %v", tt.agent, err)
+			}
+			mode, ok := runtime.AccessModeFor(tt.queryPolicy)
+			if ok != tt.wantOK || mode != tt.wantMode {
+				t.Fatalf("access mode = %q, %t, want %q, %t (runtime %#v)", mode, ok, tt.wantMode, tt.wantOK, runtime)
+			}
+		})
+	}
+}
+
 func TestModelCatalogsExposeOrderedPickerData(t *testing.T) {
 	t.Parallel()
 
