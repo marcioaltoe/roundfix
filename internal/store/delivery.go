@@ -45,6 +45,7 @@ type DeliveryQueueItem struct {
 	Position          int
 	Stage             DeliveryStage
 	Blocker           string
+	Branch            string
 	RunID             string
 	CandidateCommits  []string
 	PullRequestNumber string
@@ -100,6 +101,38 @@ func (store *Store) CreateDeliveryQueue(ctx context.Context, gitRoot string, spe
 		Items:   items,
 	}
 	err := store.withWriteTx(ctx, "Delivery Queue creation", func(tx *sql.Tx) error {
+		var ownerPID sql.NullInt64
+		err := tx.QueryRowContext(ctx, `
+SELECT owner_pid
+FROM delivery_queues
+WHERE git_root = ?`, gitRoot).Scan(&ownerPID)
+		switch {
+		case err == nil:
+			if ownerPID.Valid && ownerPID.Int64 > 0 {
+				return fmt.Errorf("create Delivery Queue: repository %q already has owner PID %d", gitRoot, ownerPID.Int64)
+			}
+			var unfinished int
+			if err := tx.QueryRowContext(ctx, `
+SELECT COUNT(*)
+FROM delivery_queue_items
+WHERE git_root = ? AND stage NOT IN (?, ?)`,
+				gitRoot,
+				DeliveryStageMerged,
+				DeliveryStageParked,
+			).Scan(&unfinished); err != nil {
+				return fmt.Errorf("inspect existing Delivery Queue: %w", err)
+			}
+			if unfinished > 0 {
+				return fmt.Errorf("create Delivery Queue: repository %q already has %d unfinished item(s)", gitRoot, unfinished)
+			}
+			if _, err := tx.ExecContext(ctx, `DELETE FROM delivery_queues WHERE git_root = ?`, gitRoot); err != nil {
+				return fmt.Errorf("replace terminal Delivery Queue: %w", err)
+			}
+		case errors.Is(err, sql.ErrNoRows):
+			// No queue exists yet.
+		case err != nil:
+			return fmt.Errorf("inspect existing Delivery Queue: %w", err)
+		}
 		if _, err := tx.ExecContext(ctx, `
 INSERT INTO delivery_queues (git_root)
 VALUES (?)`, gitRoot); err != nil {
@@ -108,9 +141,9 @@ VALUES (?)`, gitRoot); err != nil {
 		for _, item := range items {
 			if _, err := tx.ExecContext(ctx, `
 INSERT INTO delivery_queue_items (
-	git_root, spec_slug, position, stage, blocker, run_id,
+	git_root, spec_slug, position, stage, blocker, branch, run_id,
 	candidate_commits, pull_request_number, merge_commit
-) VALUES (?, ?, ?, ?, '', '', '[]', '', '')`,
+) VALUES (?, ?, ?, ?, '', '', '', '[]', '', '')`,
 				gitRoot,
 				item.SpecSlug,
 				item.Position,
@@ -151,7 +184,7 @@ WHERE git_root = ?`, gitRoot).Scan(&queue.GitRoot, &ownerPID, &queue.OwnerIdenti
 		queue.OwnerPID = int(ownerPID.Int64)
 	}
 	rows, err := store.db.QueryContext(ctx, `
-SELECT spec_slug, position, stage, blocker, run_id, candidate_commits,
+SELECT spec_slug, position, stage, blocker, branch, run_id, candidate_commits,
        pull_request_number, merge_commit
 FROM delivery_queue_items
 WHERE git_root = ?
@@ -265,6 +298,7 @@ func (store *Store) UpdateDeliveryQueueItem(ctx context.Context, gitRoot string,
 	gitRoot = strings.TrimSpace(gitRoot)
 	item.SpecSlug = strings.TrimSpace(item.SpecSlug)
 	item.Blocker = strings.TrimSpace(item.Blocker)
+	item.Branch = strings.TrimSpace(item.Branch)
 	item.RunID = strings.TrimSpace(item.RunID)
 	item.PullRequestNumber = strings.TrimSpace(item.PullRequestNumber)
 	item.MergeCommit = strings.TrimSpace(item.MergeCommit)
@@ -308,11 +342,12 @@ WHERE git_root = ? AND spec_slug = ?`, gitRoot, item.SpecSlug).Scan(&storedPosit
 
 		if _, err := tx.ExecContext(ctx, `
 UPDATE delivery_queue_items
-SET stage = ?, blocker = ?, run_id = ?, candidate_commits = ?,
+SET stage = ?, blocker = ?, branch = ?, run_id = ?, candidate_commits = ?,
     pull_request_number = ?, merge_commit = ?
 WHERE git_root = ? AND spec_slug = ?`,
 			item.Stage,
 			item.Blocker,
+			item.Branch,
 			item.RunID,
 			string(encodedCommits),
 			item.PullRequestNumber,
@@ -470,6 +505,7 @@ func scanDeliveryQueueItem(row deliveryQueueItemScanner) (DeliveryQueueItem, err
 		&item.Position,
 		&item.Stage,
 		&item.Blocker,
+		&item.Branch,
 		&item.RunID,
 		&candidateCommits,
 		&item.PullRequestNumber,

@@ -18,7 +18,7 @@ const pullRequestJSONFields = "number,url,state,headRefName,headRefOid,mergedAt,
 // create or merge operations.
 type PullRequestBoundary interface {
 	RemoteBranchHead(ctx context.Context, remote, branch string) (RemoteHead, bool, error)
-	PushBranch(ctx context.Context, remote, branch string) (RemoteHead, error)
+	PushBranch(ctx context.Context, remote, branch, head string) (RemoteHead, error)
 	FindOrCreatePullRequest(ctx context.Context, req PullRequestRequest) (PullRequestResult, error)
 	CurrentHeadChecks(ctx context.Context, number string) (CheckReport, error)
 	MergePullRequest(ctx context.Context, number, expectedHead string) (MergeResult, error)
@@ -68,6 +68,16 @@ type PullRequestCheck struct {
 type MergeResult struct {
 	PullRequest   PullRequest
 	AlreadyMerged bool
+}
+
+type PullRequestHeadMismatchError struct {
+	Operation string
+	Found     string
+	Expected  string
+}
+
+func (err PullRequestHeadMismatchError) Error() string {
+	return fmt.Sprintf("%s: PR Head Branch is at %q, expected %q", err.Operation, err.Found, err.Expected)
 }
 
 // CommandResult preserves an invoked command's output and exit status. A
@@ -130,21 +140,25 @@ func (client GitHubCLI) RemoteBranchHead(ctx context.Context, remote, branch str
 	return RemoteHead{Remote: remote, Branch: branch, SHA: sha}, true, nil
 }
 
-func (client GitHubCLI) PushBranch(ctx context.Context, remote, branch string) (RemoteHead, error) {
+func (client GitHubCLI) PushBranch(ctx context.Context, remote, branch, head string) (RemoteHead, error) {
 	remote = strings.TrimSpace(remote)
 	branch = strings.TrimSpace(branch)
+	head = strings.TrimSpace(head)
 	if remote == "" {
 		return RemoteHead{}, errors.New("push branch: remote is required")
 	}
 	if branch == "" {
 		return RemoteHead{}, errors.New("push branch: PR Head Branch is required")
 	}
+	if head == "" {
+		return RemoteHead{}, errors.New("push branch: reviewed head is required")
+	}
 	if strings.HasPrefix(remote, "-") {
 		return RemoteHead{}, fmt.Errorf("push branch: remote %q cannot start with '-'", remote)
 	}
 
 	ref := "refs/heads/" + branch
-	result, err := client.run(ctx, "git", "push", remote, "HEAD:"+ref)
+	result, err := client.run(ctx, "git", "push", remote, head+":"+ref)
 	if err != nil {
 		return RemoteHead{}, fmt.Errorf("push branch: %w", err)
 	}
@@ -288,26 +302,26 @@ func (client GitHubCLI) MergePullRequest(ctx context.Context, number, expectedHe
 	if number == "" {
 		return MergeResult{}, errors.New("merge pull request: pull request number is required")
 	}
+	if expectedHead == "" {
+		return MergeResult{}, errors.New("merge pull request: expected PR Head Branch revision is required")
+	}
 
 	current, err := client.pullRequest(ctx, number)
 	if err != nil {
 		return MergeResult{}, fmt.Errorf("read pull request before merge: %w", err)
+	}
+	if current.HeadSHA != expectedHead {
+		return MergeResult{}, PullRequestHeadMismatchError{
+			Operation: "merge pull request",
+			Found:     current.HeadSHA,
+			Expected:  expectedHead,
+		}
 	}
 	if current.isMerged() {
 		if current.MergeCommit == "" {
 			return MergeResult{}, errors.New("read existing merge: gh returned an empty merge commit")
 		}
 		return MergeResult{PullRequest: current, AlreadyMerged: true}, nil
-	}
-	if expectedHead == "" {
-		return MergeResult{}, errors.New("merge pull request: expected PR Head Branch revision is required")
-	}
-	if current.HeadSHA != expectedHead {
-		return MergeResult{}, fmt.Errorf(
-			"merge pull request: PR Head Branch is at %q, expected %q",
-			current.HeadSHA,
-			expectedHead,
-		)
 	}
 
 	result, err := client.run(
@@ -330,6 +344,13 @@ func (client GitHubCLI) MergePullRequest(ctx context.Context, number, expectedHe
 	}
 	if !merged.isMerged() {
 		return MergeResult{}, errors.New("merge pull request: GitHub did not report the pull request as merged")
+	}
+	if merged.HeadSHA != expectedHead {
+		return MergeResult{}, PullRequestHeadMismatchError{
+			Operation: "read merged pull request",
+			Found:     merged.HeadSHA,
+			Expected:  expectedHead,
+		}
 	}
 	if merged.MergeCommit == "" {
 		return MergeResult{}, errors.New("merge pull request: gh returned an empty merge commit")

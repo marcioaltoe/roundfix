@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"roundfix/internal/store"
 )
@@ -17,7 +18,14 @@ const (
 	BlockerReviewStale    = "review-stale"
 	BlockerGateFailed     = "gate-failed"
 	BlockerChecksFailed   = "checks-failed"
+	BlockerChecksTimeout  = "checks-timeout"
 	BlockerUnauthorized   = "unauthorized"
+	BlockerDeliveryError  = "delivery-error"
+)
+
+const (
+	defaultCheckTimeout  = 30 * time.Minute
+	defaultCheckInterval = 15 * time.Second
 )
 
 type RunOutcome string
@@ -82,6 +90,11 @@ type CandidateRunner interface {
 	RunSpec(ctx context.Context, gitRoot, specSlug string) (RunResult, error)
 }
 
+type ItemWorkspace interface {
+	CreateItemBranch(ctx context.Context, gitRoot, specSlug string) (string, error)
+	UseItemBranch(ctx context.Context, gitRoot, branch string) error
+}
+
 type PrePRReviewer interface {
 	ReviewPolicy(ctx context.Context, gitRoot, specSlug string) (ReviewPolicy, error)
 	Review(ctx context.Context, gitRoot, specSlug, head string) (ReviewResult, error)
@@ -101,28 +114,46 @@ type AuthorizationReader interface {
 }
 
 type PublicationPlanner interface {
-	Publication(ctx context.Context, gitRoot, specSlug string) (Publication, error)
+	Publication(ctx context.Context, gitRoot, specSlug, branch string) (Publication, error)
+}
+
+type Clock interface {
+	Now() time.Time
+}
+
+type Sleeper interface {
+	Sleep(context.Context, time.Duration) error
 }
 
 type EngineDependencies struct {
-	Runner       CandidateRunner
-	Reviewer     PrePRReviewer
-	Archiver     CandidateArchiver
-	Gate         RepositoryGate
-	Authorizer   AuthorizationReader
-	Publication  PublicationPlanner
-	PullRequests PullRequestBoundary
+	Workspace     ItemWorkspace
+	Runner        CandidateRunner
+	Reviewer      PrePRReviewer
+	Archiver      CandidateArchiver
+	Gate          RepositoryGate
+	Authorizer    AuthorizationReader
+	Publication   PublicationPlanner
+	PullRequests  PullRequestBoundary
+	Clock         Clock
+	Sleeper       Sleeper
+	CheckTimeout  time.Duration
+	CheckInterval time.Duration
 }
 
 type Engine struct {
-	store        *store.Store
-	runner       CandidateRunner
-	reviewer     PrePRReviewer
-	archiver     CandidateArchiver
-	gate         RepositoryGate
-	authorizer   AuthorizationReader
-	publication  PublicationPlanner
-	pullRequests PullRequestBoundary
+	store         *store.Store
+	workspace     ItemWorkspace
+	runner        CandidateRunner
+	reviewer      PrePRReviewer
+	archiver      CandidateArchiver
+	gate          RepositoryGate
+	authorizer    AuthorizationReader
+	publication   PublicationPlanner
+	pullRequests  PullRequestBoundary
+	clock         Clock
+	sleeper       Sleeper
+	checkTimeout  time.Duration
+	checkInterval time.Duration
 }
 
 type EngineResult struct {
@@ -130,15 +161,36 @@ type EngineResult struct {
 }
 
 func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
+	clock := dependencies.Clock
+	if clock == nil {
+		clock = realClock{}
+	}
+	sleeper := dependencies.Sleeper
+	if sleeper == nil {
+		sleeper = realSleeper{}
+	}
+	checkTimeout := dependencies.CheckTimeout
+	if checkTimeout <= 0 {
+		checkTimeout = defaultCheckTimeout
+	}
+	checkInterval := dependencies.CheckInterval
+	if checkInterval <= 0 {
+		checkInterval = defaultCheckInterval
+	}
 	return &Engine{
-		store:        runStore,
-		runner:       dependencies.Runner,
-		reviewer:     dependencies.Reviewer,
-		archiver:     dependencies.Archiver,
-		gate:         dependencies.Gate,
-		authorizer:   dependencies.Authorizer,
-		publication:  dependencies.Publication,
-		pullRequests: dependencies.PullRequests,
+		store:         runStore,
+		workspace:     dependencies.Workspace,
+		runner:        dependencies.Runner,
+		reviewer:      dependencies.Reviewer,
+		archiver:      dependencies.Archiver,
+		gate:          dependencies.Gate,
+		authorizer:    dependencies.Authorizer,
+		publication:   dependencies.Publication,
+		pullRequests:  dependencies.PullRequests,
+		clock:         clock,
+		sleeper:       sleeper,
+		checkTimeout:  checkTimeout,
+		checkInterval: checkInterval,
 	}
 }
 
@@ -164,7 +216,13 @@ func (engine *Engine) Run(ctx context.Context, gitRoot string) (EngineResult, er
 			continue
 		}
 		if err := engine.advanceItem(ctx, gitRoot, &item); err != nil {
-			return EngineResult{}, fmt.Errorf("deliver Spec %q: %w", item.SpecSlug, err)
+			if ctx.Err() != nil {
+				return EngineResult{}, fmt.Errorf("deliver Spec %q: %w", item.SpecSlug, err)
+			}
+			reason := BlockerDeliveryError + ": " + err.Error()
+			if parkErr := engine.park(ctx, gitRoot, &item, reason); parkErr != nil {
+				return EngineResult{}, fmt.Errorf("deliver Spec %q: %w", item.SpecSlug, errors.Join(err, parkErr))
+			}
 		}
 		queue.Items[index] = item
 	}
@@ -177,6 +235,8 @@ func (engine *Engine) validate() error {
 		return errors.New("run Delivery Engine: engine is required")
 	case engine.store == nil:
 		return errors.New("run Delivery Engine: store is required")
+	case engine.workspace == nil:
+		return errors.New("run Delivery Engine: item workspace is required")
 	case engine.runner == nil:
 		return errors.New("run Delivery Engine: candidate runner is required")
 	case engine.reviewer == nil:
@@ -197,12 +257,28 @@ func (engine *Engine) validate() error {
 }
 
 func (engine *Engine) advanceItem(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem) error {
+	if item.Stage == store.DeliveryStageQueued {
+		branch, err := engine.workspace.CreateItemBranch(ctx, gitRoot, item.SpecSlug)
+		if err != nil {
+			return fmt.Errorf("create item branch: %w", err)
+		}
+		item.Branch = strings.TrimSpace(branch)
+		if item.Branch == "" {
+			return errors.New("create item branch: branch is empty")
+		}
+		if err := engine.setStage(ctx, gitRoot, item, store.DeliveryStageRunning); err != nil {
+			return err
+		}
+	} else {
+		if strings.TrimSpace(item.Branch) == "" {
+			return errors.New("recorded item branch is missing")
+		}
+		if err := engine.workspace.UseItemBranch(ctx, gitRoot, item.Branch); err != nil {
+			return fmt.Errorf("use item branch %q: %w", item.Branch, err)
+		}
+	}
 	for item.Stage != store.DeliveryStageMerged && item.Stage != store.DeliveryStageParked {
 		switch item.Stage {
-		case store.DeliveryStageQueued:
-			if err := engine.setStage(ctx, gitRoot, item, store.DeliveryStageRunning); err != nil {
-				return err
-			}
 		case store.DeliveryStageRunning:
 			if err := engine.runCandidate(ctx, gitRoot, item); err != nil {
 				return err
@@ -336,12 +412,15 @@ func (engine *Engine) publishCandidate(ctx context.Context, gitRoot string, item
 	if !authorized {
 		return engine.park(ctx, gitRoot, item, BlockerUnauthorized)
 	}
-	publication, err := engine.publication.Publication(ctx, gitRoot, item.SpecSlug)
+	publication, err := engine.publication.Publication(ctx, gitRoot, item.SpecSlug, item.Branch)
 	if err != nil {
 		return fmt.Errorf("plan publication: %w", err)
 	}
 	if err := validatePublication(publication); err != nil {
 		return err
+	}
+	if publication.HeadBranch != item.Branch {
+		return fmt.Errorf("plan publication: PR Head Branch %q does not match recorded item branch %q", publication.HeadBranch, item.Branch)
 	}
 	head, err := candidateHead(*item)
 	if err != nil {
@@ -369,10 +448,9 @@ func (engine *Engine) push(ctx context.Context, gitRoot, specSlug string, public
 			return fmt.Errorf("reconcile push intent: %w", err)
 		}
 		if found {
-			if observed.SHA != expectedHead {
-				return fmt.Errorf("reconcile push intent: remote head is %q, expected %q", observed.SHA, expectedHead)
+			if observed.SHA == expectedHead {
+				return engine.recordReceipt(ctx, intent.ID, expectedHead)
 			}
-			return engine.recordReceipt(ctx, intent.ID, expectedHead)
 		}
 	} else {
 		intent, err = engine.store.RecordDeliveryActionIntent(ctx, gitRoot, specSlug, store.DeliveryActionPush)
@@ -381,7 +459,7 @@ func (engine *Engine) push(ctx context.Context, gitRoot, specSlug string, public
 		}
 	}
 
-	remoteHead, err := engine.pullRequests.PushBranch(ctx, publication.Remote, publication.HeadBranch)
+	remoteHead, err := engine.pullRequests.PushBranch(ctx, publication.Remote, publication.HeadBranch, expectedHead)
 	if err != nil {
 		return fmt.Errorf("push candidate: %w", err)
 	}
@@ -420,8 +498,22 @@ func (engine *Engine) createPullRequest(
 	if strings.TrimSpace(result.PullRequest.Number) == "" {
 		return PullRequest{}, errors.New("find or create pull request: pull request number is empty")
 	}
+	if result.PullRequest.HeadBranch != publication.HeadBranch {
+		return PullRequest{}, fmt.Errorf(
+			"find or create pull request: PR Head Branch is %q, expected recorded item branch %q",
+			result.PullRequest.HeadBranch,
+			publication.HeadBranch,
+		)
+	}
 	if result.PullRequest.HeadSHA != expectedHead {
 		return PullRequest{}, fmt.Errorf("find or create pull request: PR Head Branch is at %q, expected %q", result.PullRequest.HeadSHA, expectedHead)
+	}
+	ownedByAnotherItem, err := engine.pullRequestOwnedByAnotherItem(ctx, gitRoot, specSlug, result.PullRequest.Number)
+	if err != nil {
+		return PullRequest{}, err
+	}
+	if ownedByAnotherItem {
+		return PullRequest{}, fmt.Errorf("find or create pull request: pull request %s is recorded by another Delivery Queue item", result.PullRequest.Number)
 	}
 	if err := engine.recordReceipt(ctx, intent.ID, result.PullRequest.Number); err != nil {
 		return PullRequest{}, err
@@ -434,20 +526,37 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 	if err != nil {
 		return err
 	}
-	report, err := engine.pullRequests.CurrentHeadChecks(ctx, item.PullRequestNumber)
-	if err != nil {
-		return fmt.Errorf("read current-head checks: %w", err)
-	}
-	if report.HeadSHA != head {
-		return engine.park(ctx, gitRoot, item, BlockerReviewStale)
-	}
-	for _, check := range report.Checks {
-		bucket := strings.ToLower(strings.TrimSpace(check.Bucket))
-		if bucket != "pass" && bucket != "skipping" {
-			return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+	deadline := engine.clock.Now().Add(engine.checkTimeout)
+	for {
+		report, err := engine.pullRequests.CurrentHeadChecks(ctx, item.PullRequestNumber)
+		if err != nil {
+			return fmt.Errorf("read current-head checks: %w", err)
+		}
+		if report.HeadSHA != head {
+			return engine.park(ctx, gitRoot, item, BlockerReviewStale)
+		}
+		pending := len(report.Checks) == 0
+		for _, check := range report.Checks {
+			switch strings.ToLower(strings.TrimSpace(check.Bucket)) {
+			case "pass", "skipping":
+			case "fail", "cancel", "cancelled":
+				return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+			default:
+				pending = true
+			}
+		}
+		if !pending {
+			return engine.setStage(ctx, gitRoot, item, store.DeliveryStageMerging)
+		}
+		remaining := deadline.Sub(engine.clock.Now())
+		if remaining <= 0 {
+			return engine.park(ctx, gitRoot, item, BlockerChecksTimeout)
+		}
+		wait := min(engine.checkInterval, remaining)
+		if err := engine.sleeper.Sleep(ctx, wait); err != nil {
+			return fmt.Errorf("wait for current-head checks: %w", err)
 		}
 	}
-	return engine.setStage(ctx, gitRoot, item, store.DeliveryStageMerging)
 }
 
 func (engine *Engine) mergeCandidate(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem) error {
@@ -474,7 +583,14 @@ func (engine *Engine) mergeCandidate(ctx context.Context, gitRoot string, item *
 	}
 	result, err := engine.pullRequests.MergePullRequest(ctx, item.PullRequestNumber, head)
 	if err != nil {
+		var mismatch PullRequestHeadMismatchError
+		if errors.As(err, &mismatch) {
+			return engine.park(ctx, gitRoot, item, BlockerReviewStale)
+		}
 		return fmt.Errorf("merge pull request: %w", err)
+	}
+	if strings.TrimSpace(result.PullRequest.HeadSHA) != head {
+		return engine.park(ctx, gitRoot, item, BlockerReviewStale)
 	}
 	mergeCommit := strings.TrimSpace(result.PullRequest.MergeCommit)
 	if mergeCommit == "" {
@@ -485,6 +601,27 @@ func (engine *Engine) mergeCandidate(ctx context.Context, gitRoot string, item *
 	}
 	item.MergeCommit = mergeCommit
 	return engine.setStage(ctx, gitRoot, item, store.DeliveryStageMerged)
+}
+
+func (engine *Engine) pullRequestOwnedByAnotherItem(
+	ctx context.Context,
+	gitRoot string,
+	specSlug string,
+	pullRequestNumber string,
+) (bool, error) {
+	queue, found, err := engine.store.DeliveryQueue(ctx, gitRoot)
+	if err != nil {
+		return false, fmt.Errorf("check pull request ownership: %w", err)
+	}
+	if !found {
+		return false, errors.New("check pull request ownership: Delivery Queue does not exist")
+	}
+	for _, other := range queue.Items {
+		if other.SpecSlug != specSlug && other.PullRequestNumber == pullRequestNumber {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (engine *Engine) authorized(ctx context.Context, gitRoot, specSlug string) (bool, error) {
@@ -574,9 +711,30 @@ func validatePublication(publication Publication) error {
 		return errors.New("plan publication: PR Head Branch is required")
 	case strings.TrimSpace(publication.BaseBranch) == "":
 		return errors.New("plan publication: base branch is required")
+	case strings.TrimSpace(publication.HeadBranch) == strings.TrimSpace(publication.BaseBranch):
+		return errors.New("plan publication: PR Head Branch cannot be the base branch")
 	case strings.TrimSpace(publication.Title) == "":
 		return errors.New("plan publication: pull request title is required")
 	default:
+		return nil
+	}
+}
+
+type realClock struct{}
+
+func (realClock) Now() time.Time {
+	return time.Now()
+}
+
+type realSleeper struct{}
+
+func (realSleeper) Sleep(ctx context.Context, duration time.Duration) error {
+	timer := time.NewTimer(duration)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
 		return nil
 	}
 }

@@ -89,6 +89,19 @@ func runDeliverStart(ctx context.Context, args []string, stdout, stderr io.Write
 	if err != nil {
 		return printDeliverFailure("start", err, stderr)
 	}
+	if existing, found, readErr := runStore.DeliveryQueue(ctx, loaded.GitRoot); readErr != nil {
+		_ = runStore.Close()
+		return printDeliverFailure("start", readErr, stderr)
+	} else if found && existing.OwnerPID > 0 && !store.ProcessAlive(existing.OwnerPID) {
+		released, releaseErr := runStore.ReleaseDeliveryQueueOwner(ctx, loaded.GitRoot, existing.OwnerPID, existing.OwnerIdentity)
+		if releaseErr != nil || !released {
+			_ = runStore.Close()
+			if releaseErr == nil {
+				releaseErr = errors.New("Delivery Queue owner changed while start was checking it")
+			}
+			return printDeliverFailure("start", releaseErr, stderr)
+		}
+	}
 	if _, err := runStore.CreateDeliveryQueue(ctx, loaded.GitRoot, slugs); err != nil {
 		_ = runStore.Close()
 		return printDeliverFailure("start", err, stderr)

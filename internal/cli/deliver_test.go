@@ -9,10 +9,13 @@ import (
 	"context"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/gittest"
+	"roundfix/internal/preflight"
 	"roundfix/internal/store"
 )
 
@@ -153,6 +156,93 @@ func TestDeliverCommandStopsAndResumesPersistedQueue(t *testing.T) {
 	persisted := openDeliveryQueueForCLI(t, homeDir, repoDir)
 	if persisted.OwnerPID != 0 || persisted.OwnerIdentity != "" || len(persisted.Items) != 1 {
 		t.Fatalf("persisted queue after stop/resume = %+v", persisted)
+	}
+}
+
+func TestATerminalQueueIsReplacedByANewStart(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	ctx := context.Background()
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database: %v", err)
+	}
+	queue, err := runStore.CreateDeliveryQueue(ctx, repoDir, []string{"old-spec"})
+	if err != nil {
+		t.Fatalf("create old Delivery Queue: %v", err)
+	}
+	old := queue.Items[0]
+	old.Stage = store.DeliveryStageParked
+	old.Blocker = "old blocker"
+	if err := runStore.UpdateDeliveryQueueItem(ctx, repoDir, old); err != nil {
+		t.Fatalf("park old Delivery Queue item: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close Run Database: %v", err)
+	}
+	started := 0
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.startDeliveryOwner = func(context.Context, roundconfig.Loaded, commandEnvironment, io.Writer, io.Writer) int {
+			started++
+			return exitOK
+		}
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLI(t, []string{"deliver", "start", implementTestSlug}, &stdout, &stderr)
+
+	if code != exitOK || stderr.Len() != 0 {
+		t.Fatalf("replacement deliver start exit=%d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if started != 1 {
+		t.Fatalf("detached owner starts = %d, want 1", started)
+	}
+	replaced := openDeliveryQueueForCLI(t, homeDir, repoDir)
+	if len(replaced.Items) != 1 || replaced.Items[0].SpecSlug != implementTestSlug || replaced.Items[0].Stage != store.DeliveryStageQueued {
+		t.Fatalf("replacement Delivery Queue = %+v", replaced)
+	}
+}
+
+func TestDeliveryWorkflowCreatesAnItemBranchFromTheRefreshedDefault(t *testing.T) {
+	t.Parallel()
+	origin := t.TempDir()
+	gittest.InitRepo(t, origin, "--initial-branch=main")
+	gittest.PersistIdentity(t, origin)
+	seedPath := filepath.Join(origin, "seed.txt")
+	if err := os.WriteFile(seedPath, []byte("seed\n"), 0o644); err != nil {
+		t.Fatalf("write origin seed: %v", err)
+	}
+	gittest.Run(t, origin, "add", "seed.txt")
+	gittest.Run(t, origin, "commit", "-m", "chore: seed")
+
+	checkout := filepath.Join(t.TempDir(), "checkout")
+	gittest.Run(t, "", "clone", origin, checkout)
+	gittest.Harden(t, checkout)
+	if err := os.WriteFile(seedPath, []byte("refreshed\n"), 0o644); err != nil {
+		t.Fatalf("refresh origin seed: %v", err)
+	}
+	gittest.Run(t, origin, "add", "seed.txt")
+	gittest.Run(t, origin, "commit", "-m", "fix: refresh default")
+	wantHead := strings.TrimSpace(gittest.Run(t, origin, "rev-parse", "main"))
+	workflow := &commandDeliveryWorkflow{
+		loaded: roundconfig.Loaded{GitRoot: checkout},
+		git:    preflight.ExecGitRunner{},
+	}
+
+	branch, err := workflow.CreateItemBranch(t.Context(), checkout, "0156-delivery")
+
+	if err != nil {
+		t.Fatalf("create item branch: %v", err)
+	}
+	if branch != "roundfix/deliver-0156-delivery" {
+		t.Fatalf("item branch = %q", branch)
+	}
+	if got := strings.TrimSpace(gittest.Run(t, checkout, "branch", "--show-current")); got != branch {
+		t.Fatalf("current branch = %q, want %q", got, branch)
+	}
+	if got := strings.TrimSpace(gittest.Run(t, checkout, "rev-parse", "HEAD")); got != wantHead {
+		t.Fatalf("item branch head = %q, want refreshed default %q", got, wantHead)
 	}
 }
 

@@ -12,12 +12,12 @@ import (
 	"testing"
 )
 
-func TestPullRequestBoundaryPushesBranchAndReportsRemoteHead(t *testing.T) {
+func TestPushPublishesTheRecordedHeadNotTheCheckout(t *testing.T) {
 	const headSHA = "0123456789abcdef"
 	runner := newScriptedCommandRunner(t,
 		commandStep{
 			name: "git",
-			args: []string{"push", "origin", "HEAD:refs/heads/feat/delivery"},
+			args: []string{"push", "origin", headSHA + ":refs/heads/feat/delivery"},
 		},
 		commandStep{
 			name:   "git",
@@ -27,7 +27,7 @@ func TestPullRequestBoundaryPushesBranchAndReportsRemoteHead(t *testing.T) {
 	)
 	boundary := GitHubCLI{WorkDir: "/repo", Runner: runner}
 
-	remoteHead, err := boundary.PushBranch(t.Context(), "origin", "feat/delivery")
+	remoteHead, err := boundary.PushBranch(t.Context(), "origin", "feat/delivery", headSHA)
 
 	if err != nil {
 		t.Fatalf("PushBranch returned error: %v", err)
@@ -42,7 +42,7 @@ func TestPullRequestBoundaryRejectsAPushWithoutAnObservedRemoteHead(t *testing.T
 	runner := newScriptedCommandRunner(t,
 		commandStep{
 			name: "git",
-			args: []string{"push", "origin", "HEAD:refs/heads/feat/delivery"},
+			args: []string{"push", "origin", "head-one:refs/heads/feat/delivery"},
 		},
 		commandStep{
 			name: "git",
@@ -51,7 +51,7 @@ func TestPullRequestBoundaryRejectsAPushWithoutAnObservedRemoteHead(t *testing.T
 	)
 	boundary := GitHubCLI{WorkDir: "/repo", Runner: runner}
 
-	_, err := boundary.PushBranch(t.Context(), "origin", "feat/delivery")
+	_, err := boundary.PushBranch(t.Context(), "origin", "feat/delivery", "head-one")
 
 	if err == nil || err.Error() != `read remote head after push: git did not report "refs/heads/feat/delivery"` {
 		t.Fatalf("PushBranch error = %v, want missing remote-head error", err)
@@ -380,7 +380,7 @@ func (runner *scriptedCommandRunner) Run(_ context.Context, workDir, name string
 
 type fakePullRequestBoundary struct {
 	remoteBranchHead        func(context.Context, string, string) (RemoteHead, bool, error)
-	pushBranch              func(context.Context, string, string) (RemoteHead, error)
+	pushBranch              func(context.Context, string, string, string) (RemoteHead, error)
 	findOrCreatePullRequest func(context.Context, PullRequestRequest) (PullRequestResult, error)
 	currentHeadChecks       func(context.Context, string) (CheckReport, error)
 	mergePullRequest        func(context.Context, string, string) (MergeResult, error)
@@ -395,11 +395,11 @@ func (fake *fakePullRequestBoundary) RemoteBranchHead(ctx context.Context, remot
 	return fake.remoteBranchHead(ctx, remote, branch)
 }
 
-func (fake *fakePullRequestBoundary) PushBranch(ctx context.Context, remote, branch string) (RemoteHead, error) {
+func (fake *fakePullRequestBoundary) PushBranch(ctx context.Context, remote, branch, head string) (RemoteHead, error) {
 	if fake.pushBranch == nil {
 		return RemoteHead{}, errors.New("unexpected PushBranch call")
 	}
-	return fake.pushBranch(ctx, remote, branch)
+	return fake.pushBranch(ctx, remote, branch, head)
 }
 
 func (fake *fakePullRequestBoundary) FindOrCreatePullRequest(ctx context.Context, req PullRequestRequest) (PullRequestResult, error) {

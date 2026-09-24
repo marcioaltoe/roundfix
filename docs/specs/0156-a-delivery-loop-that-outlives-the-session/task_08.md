@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0156-a-delivery-loop-that-outlives-the-session
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -50,3 +50,23 @@ Corrective Task from the pre-PR review of 2026-09-24. Every item publishes from 
 ## References
 
 - [_techspec.md](_techspec.md) — Build Order
+
+## Result
+
+Implemented the corrective delivery slice without changing Task status. Delivery Queue items now persist a dedicated branch; the owner creates that branch from the fetched default branch before the item's Run and restores it on resume. Publication uses the recorded branch and candidate SHA, rejects the base branch, refuses pull requests owned by another item or naming another head branch, retries unmatched pushes when the remote differs, and validates the reviewed head before accepting an existing merge.
+
+Pending and absent checks now poll until they pass, fail or cancel, or reach the bounded timeout. A failed or cancelled check parks as `checks-failed`; a timeout parks as `checks-timeout`. Other item-scoped errors persist a `delivery-error` reason and let the queue advance. `deliver start` can replace only a terminal, unowned queue; unfinished or owned queues remain protected.
+
+Focused checks:
+
+- `GOCACHE=/tmp/roundfix-task08-gocache go test -count=1 ./internal/delivery ./internal/store` — passed.
+- `GOCACHE=/tmp/roundfix-task08-gocache go test -count=1 -run '^TestDeliverCommand|^TestATerminalQueue|^TestDeliveryWorkflow' ./internal/cli` — passed, including a real-Git fetch-and-branch integration case.
+- `GOCACHE=/tmp/roundfix-task08-gocache go test ./internal/cli` — the delivery tests passed, but the package run failed in two unrelated Force Stop integration cases because the sandbox denied process-table access with `operation not permitted`.
+- The authored `## Verification` command was not run; Daemon Verification owns it.
+
+Acceptance evidence:
+
+- Two items use distinct persisted branches, and a parked item's pull request is not merged or adopted by another item: `TestEachItemPublishesFromItsOwnBranch` and `TestAPullRequestOfAnotherItemIsNeverReused` passed in `./internal/delivery`.
+- Push sends `<recorded-sha>:refs/heads/<recorded-branch>` even when checkout `HEAD` is unrelated, and publication refuses the base branch: `TestPushPublishesTheRecordedHeadNotTheCheckout` and `TestPushRefusesTheBaseBranch` passed in `./internal/delivery`.
+- Pending and absent checks are awaited, the wait is bounded, an item-scoped error parks with its reason while the next item continues, and a terminal unowned queue can be replaced: `TestPendingChecksAreAwaitedNotParked`, `TestChecksTimeoutParksTheItem`, `TestAnItemErrorParksAndTheQueueContinues`, and `TestATerminalQueueIsReplacedByANewStart` passed across `./internal/delivery` and the focused `./internal/cli` run.
+- An unmatched push intent retries when the remote branch differs, and an already merged pull request at another head parks as `review-stale`: `TestUnmatchedPushIntentRetriesWhenTheRemoteDiffers` and `TestAnAlreadyMergedPullRequestMustCarryTheReviewedHead` passed in `./internal/delivery`.

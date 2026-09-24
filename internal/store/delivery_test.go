@@ -41,6 +41,7 @@ func TestDeliveryQueueRoundTripsItemsAndReceipts(t *testing.T) {
 
 	first := queue.Items[0]
 	first.Stage = DeliveryStagePublishing
+	first.Branch = "roundfix/deliver-0156"
 	first.RunID = legacyRun.ID
 	first.CandidateCommits = []string{"candidate-one", "candidate-two"}
 	first.PullRequestNumber = "42"
@@ -50,6 +51,7 @@ func TestDeliveryQueueRoundTripsItemsAndReceipts(t *testing.T) {
 
 	second := queue.Items[1]
 	second.Stage = DeliveryStageParked
+	second.Branch = "roundfix/deliver-0157"
 	second.Blocker = "review-stale"
 	second.RunID = "run_second"
 	second.CandidateCommits = []string{"candidate-three"}
@@ -116,7 +118,43 @@ func TestDeliveryQueueRoundTripsItemsAndReceipts(t *testing.T) {
 	}
 }
 
-func TestOpenMigratesV14DeliveryQueueAddingOwner(t *testing.T) {
+func TestCreateDeliveryQueueReplacesOnlyATerminalUnownedQueue(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+	const gitRoot = "/tmp/replace-delivery"
+	queue, err := runStore.CreateDeliveryQueue(ctx, gitRoot, []string{"unfinished"})
+	if err != nil {
+		t.Fatalf("create unfinished Delivery Queue: %v", err)
+	}
+	if _, err := runStore.CreateDeliveryQueue(ctx, gitRoot, []string{"replacement"}); err == nil {
+		t.Fatal("unfinished Delivery Queue was replaced")
+	}
+	item := queue.Items[0]
+	item.Stage = DeliveryStageMerged
+	if err := runStore.UpdateDeliveryQueueItem(ctx, gitRoot, item); err != nil {
+		t.Fatalf("finish Delivery Queue: %v", err)
+	}
+	if err := runStore.ClaimDeliveryQueueOwner(ctx, gitRoot, 4242, "live-owner"); err != nil {
+		t.Fatalf("claim terminal Delivery Queue: %v", err)
+	}
+	if _, err := runStore.CreateDeliveryQueue(ctx, gitRoot, []string{"replacement"}); err == nil {
+		t.Fatal("owned terminal Delivery Queue was replaced")
+	}
+	if released, err := runStore.ReleaseDeliveryQueueOwner(ctx, gitRoot, 4242, "live-owner"); err != nil || !released {
+		t.Fatalf("release terminal Delivery Queue: released=%v err=%v", released, err)
+	}
+	replaced, err := runStore.CreateDeliveryQueue(ctx, gitRoot, []string{"replacement"})
+	if err != nil {
+		t.Fatalf("replace terminal unowned Delivery Queue: %v", err)
+	}
+	if len(replaced.Items) != 1 || replaced.Items[0].SpecSlug != "replacement" {
+		t.Fatalf("replacement Delivery Queue = %+v", replaced)
+	}
+}
+
+func TestOpenMigratesV14DeliveryQueueAddingOwnerAndItemBranch(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	freshHomeDir := t.TempDir()
@@ -147,6 +185,9 @@ func TestOpenMigratesV14DeliveryQueueAddingOwner(t *testing.T) {
 	}
 	if len(persisted.Items) != 1 || persisted.Items[0].Stage != DeliveryStageParked || persisted.Items[0].Blocker != "review-stale" {
 		t.Fatalf("migrated Delivery Queue = %+v", persisted)
+	}
+	if persisted.Items[0].Branch != "" {
+		t.Fatalf("migrated Delivery Queue item branch = %q, want empty", persisted.Items[0].Branch)
 	}
 	if persisted.OwnerPID != 0 || persisted.OwnerIdentity != "" {
 		t.Fatalf("migrated Delivery Queue owner = pid:%d identity:%q", persisted.OwnerPID, persisted.OwnerIdentity)

@@ -25,6 +25,8 @@ type commandDeliveryWorkflow struct {
 	git    preflight.GitRunner
 }
 
+const deliveryBranchPrefix = "roundfix/deliver-"
+
 func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) deliveryEngine {
 	workflow := &commandDeliveryWorkflow{
 		store:  runStore,
@@ -32,6 +34,7 @@ func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) 
 		git:    preflight.ExecGitRunner{},
 	}
 	return delivery.NewEngine(runStore, delivery.EngineDependencies{
+		Workspace:    workflow,
 		Runner:       workflow,
 		Reviewer:     workflow,
 		Archiver:     workflow,
@@ -40,6 +43,53 @@ func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) 
 		Publication:  workflow,
 		PullRequests: delivery.NewGitHubCLI(loaded.GitRoot),
 	})
+}
+
+func (workflow *commandDeliveryWorkflow) CreateItemBranch(ctx context.Context, gitRoot, specSlug string) (string, error) {
+	state, err := preflight.InspectGit(ctx, gitRoot, workflow.git)
+	if err != nil {
+		return "", fmt.Errorf("inspect checkout before item branch creation: %w", err)
+	}
+	if len(state.Dirty) != 0 {
+		return "", errors.New("create item branch: checkout has uncommitted changes")
+	}
+	defaultBranch := preflight.DetectDefaultBranch(ctx, gitRoot, state.Branch, workflow.git)
+	if defaultBranch.Source == preflight.DefaultBranchUndetermined {
+		return "", errors.New("create item branch: repository default branch is unknown")
+	}
+	remote := strings.TrimSpace(workflow.loaded.Config.Watch.PushRemote)
+	if remote == "" {
+		remote = "origin"
+	}
+	if _, err := workflow.git.RunGit(ctx, gitRoot, "fetch", remote, defaultBranch.Name); err != nil {
+		return "", fmt.Errorf("refresh default branch %q: %w", defaultBranch.Name, err)
+	}
+	branch := deliveryBranchPrefix + specSlug
+	if _, err := workflow.git.RunGit(ctx, gitRoot, "switch", "-c", branch, remote+"/"+defaultBranch.Name); err != nil {
+		return "", fmt.Errorf("create item branch %q: %w", branch, err)
+	}
+	return branch, nil
+}
+
+func (workflow *commandDeliveryWorkflow) UseItemBranch(ctx context.Context, gitRoot, branch string) error {
+	branch = strings.TrimSpace(branch)
+	if branch == "" {
+		return errors.New("use item branch: branch is required")
+	}
+	state, err := preflight.InspectGit(ctx, gitRoot, workflow.git)
+	if err != nil {
+		return fmt.Errorf("inspect checkout before selecting item branch: %w", err)
+	}
+	if len(state.Dirty) != 0 {
+		return errors.New("use item branch: checkout has uncommitted changes")
+	}
+	if state.Branch == branch {
+		return nil
+	}
+	if _, err := workflow.git.RunGit(ctx, gitRoot, "switch", branch); err != nil {
+		return fmt.Errorf("switch to item branch %q: %w", branch, err)
+	}
+	return nil
 }
 
 func (workflow *commandDeliveryWorkflow) RunSpec(ctx context.Context, gitRoot, specSlug string) (delivery.RunResult, error) {
@@ -204,7 +254,7 @@ func (workflow *commandDeliveryWorkflow) Authorization(ctx context.Context, gitR
 	return delivery.Authorization{Operations: operations}, nil
 }
 
-func (workflow *commandDeliveryWorkflow) Publication(ctx context.Context, gitRoot, specSlug string) (delivery.Publication, error) {
+func (workflow *commandDeliveryWorkflow) Publication(ctx context.Context, gitRoot, specSlug, branch string) (delivery.Publication, error) {
 	state, err := preflight.InspectGit(ctx, gitRoot, workflow.git)
 	if err != nil {
 		return delivery.Publication{}, fmt.Errorf("inspect publication candidate: %w", err)
@@ -213,13 +263,17 @@ func (workflow *commandDeliveryWorkflow) Publication(ctx context.Context, gitRoo
 	if defaultBranch.Source == preflight.DefaultBranchUndetermined {
 		return delivery.Publication{}, errors.New("plan publication: repository default branch is unknown")
 	}
+	branch = strings.TrimSpace(branch)
+	if state.Branch != branch {
+		return delivery.Publication{}, fmt.Errorf("plan publication: checkout branch is %q, recorded item branch is %q", state.Branch, branch)
+	}
 	remote := strings.TrimSpace(workflow.loaded.Config.Watch.PushRemote)
 	if remote == "" {
 		remote = "origin"
 	}
 	return delivery.Publication{
 		Remote:     remote,
-		HeadBranch: state.Branch,
+		HeadBranch: branch,
 		BaseBranch: defaultBranch.Name,
 		Title:      "feat: deliver " + specSlug,
 		Body:       "Delivers Spec " + specSlug + ".",
