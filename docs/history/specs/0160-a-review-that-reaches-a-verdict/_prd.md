@@ -1,9 +1,12 @@
 ---
 spec: 0160-a-review-that-reaches-a-verdict
-status: active
+status: archived
 created: 2026-09-24
 surfaces: [backend, cli, docs]
+archived: "2026-09-24"
+source_slug: 0160-a-review-that-reaches-a-verdict
 ---
+
 
 # A review that reaches a verdict
 
