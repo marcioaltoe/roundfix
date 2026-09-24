@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0164-knowledge-lifecycle-and-capture
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -50,3 +50,34 @@ This is an authorized tooling Task. It may change only `internal/spec/archive.go
 ## References
 
 - [_techspec.md](_techspec.md) — History families
+
+## Result
+
+Implementation:
+
+- Added `ArchiveKindHandoff`, `ArchiveKinds()`, and the `docs/history/handoffs` resolver entry while preserving the five existing `ArchiveDir` paths.
+- Extended `clause.context.docs-one-job-per-directory` with all six history families, ADR/Review retirement rules, and disposition recording requirements; bumped the module, guide, and rule versions from 18/12/13 to 19/13/14.
+- Regenerated `docs/agents/docs-layout.md` and `docs/agents/setup-context.json` through the public Baseline update, then regenerated the sanctioned catalog digests and dependent baseline fixture/golden snapshots.
+- Added resolver-list and rendered-guide contract tests.
+
+Focused checks:
+
+- `GOCACHE=/tmp/roundfix-task04-gocache go test -count=1 ./internal/spec`: passed.
+- `GOCACHE=/tmp/roundfix-task04-gocache go test -count=1 -tags docscontract ./internal/docscontract`: passed.
+- `make baseline-digests`: passed (`ok roundfix/internal/baseline`); it rewrote only the sanctioned catalog digest pins and dependent baseline fixture/golden snapshots.
+- `GOCACHE=/tmp/roundfix-task04-gocache go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`: applied and verified the managed refresh; a second invocation reported `File changes: 0` and `Idempotence: verified`.
+
+Acceptance evidence:
+
+- `ArchiveKinds()` lists Specs, Findings, ADRs, Backlog Entries, Review Artifacts, and handoffs; the existing archive package test passed with all six resolver paths.
+- The rendered guide names every `ArchiveDir` returned by `ArchiveKinds()`; `TestDocsLayoutGuideNamesEveryHistoryFamily` passed in the docs-contract package test.
+- The module clause contains the required disposition and retirement language, and the second managed refresh was a no-op.
+
+Not run:
+
+- The declared `## Verification` command remains daemon-owned and was not run in this turn.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260924T223414Z_54e6f85ae98b6550`
+- Source commit: `07ddb97c8a76fc43a86fb9187223d14bcce83397`
