@@ -8,10 +8,9 @@ defaults:
   # answers ACP -32602 Invalid params — which fails every Task in the Run before
   # any Agent work starts. Measured on codex-acp 1.1.9, 2026-08-04.
   agent_full_access: false
-  # Verification command for review Batches; Spec Tasks use their task file commands.
-  # `make verify` is the complete gate here: fmt-check, the Go suite,
-  # `roundfix skills check`, the build, and `roundfix spec check`.
-  verification: make verify
+  # Selective repository Verification for review Batches and Run QA gates.
+  # Use `make verify` for the complete gate on main and releases.
+  verification: make verify-changed
   # Empty uses Roundfix Home artifacts/<repo-id>; set a path to override.
   artifact_dir: ""
   auto_commit: true
