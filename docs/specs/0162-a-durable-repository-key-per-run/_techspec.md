@@ -80,7 +80,8 @@ the key, and clear both.
 
 1. The key and its migration (depends on: none).
 2. Consumers (depends on: 1).
-3. Terminal QA (depends on: 1, 2).
+3. Terminal QA (depends on: 1, 2, 4).
+4. Every lookup, and only the recorded key (depends on: 2).
 
 ## Risks & Considerations
 
