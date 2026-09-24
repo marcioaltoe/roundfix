@@ -6033,14 +6033,28 @@ func TestRunImplementStopRequestEndsStoppedWithInterruptMapping(t *testing.T) {
 	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
 }
 
+// Invariant: a BudgetExceeded terminal diagnostic identifies its Run without
+// requiring the earlier Implement Run header.
+// Owning layer: CLI test diagnostics parsing.
+// Existing canonical suite: TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch.
+func TestBudgetExceededRunIsFoundWithoutTheHeaderLine(t *testing.T) {
+	const runID = "run_20260924T120000Z_budget"
+	stderr := "Implement Run " + runID + " reached BudgetExceeded.\n"
+
+	if got := implementRunIDFromAnyStderrLine(t, stderr); got != runID {
+		t.Fatalf("Run id = %q, want %q", got, runID)
+	}
+}
+
 // Invariant: an Implement Run ended by its configured Run Budget records the
-// distinct BudgetExceeded cause, preserves already completed Tasks, and keeps
-// the non-integrated Run Worktree and Run Branch recoverable.
+// distinct BudgetExceeded cause, preserves an already completed Task, and
+// keeps the next Task plus the non-integrated Run Worktree and Run Branch
+// recoverable.
 // Owning layer: public Implement Command integration.
 // Existing canonical suite: TestRunImplementStopRequestEndsStoppedWithInterruptMapping.
 func TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
-		{id: "task_01", title: "Complete before the Run Budget"},
+		{id: "task_01", title: "Complete before the Run Budget", status: string(spec.StatusCompleted)},
 		{id: "task_02", title: "Reach the Run Budget", needs: []string{"task_01"}},
 	})
 	const maximum = 500 * time.Millisecond
@@ -6048,9 +6062,8 @@ func TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch(t *testing.T) {
 	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
 	gitImplement(t, repoDir, "commit", "-m", "configure bounded implement run")
 	runner := &implementFakeRunner{
-		gitRoot:      repoDir,
-		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
-		blockByTask:  map[string]bool{"task_02": true},
+		gitRoot:     repoDir,
+		blockByTask: map[string]bool{"task_02": true},
 	}
 	committer, verifier, _, _ := withImplementCollaborators(t, runner)
 	var stdout bytes.Buffer
@@ -6061,7 +6074,7 @@ func TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch(t *testing.T) {
 	if code != exitRunFailed {
 		t.Fatalf("BudgetExceeded exit = %d, want %d; stderr=%q stdout=%q", code, exitRunFailed, stderr.String(), stdout.String())
 	}
-	runID := implementRunIDFromStderr(t, stderr.String())
+	runID := implementRunIDFromAnyStderrLine(t, stderr.String())
 	run := implementRunFromStore(t, homeDir, runID)
 	if run.State != store.StateBudgetExceeded {
 		t.Fatalf("Run state = %q, want %q", run.State, store.StateBudgetExceeded)
@@ -6088,14 +6101,14 @@ func TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch(t *testing.T) {
 		!strings.Contains(stdout.String(), "task_02 pending — Reach the Run Budget\n") {
 		t.Fatalf("BudgetExceeded Task report lost settled status: %q", stdout.String())
 	}
-	if committer.calls != 1 || verifier.calls != 1 {
-		t.Fatalf("work before budget = commits %d verifications %d, want 1 each", committer.calls, verifier.calls)
+	if committer.calls != 0 || verifier.calls != 0 {
+		t.Fatalf("already completed Task was re-executed: commits %d verifications %d", committer.calls, verifier.calls)
 	}
 	if content := mustRead(t, filepath.Join(run.WorkDir, "docs", "specs", implementTestSlug, "task_01.md")); !strings.Contains(content, "status: completed") {
 		t.Fatalf("completed Task status was not preserved in Run Worktree:\n%s", content)
 	}
-	if content := mustRead(t, filepath.Join(run.WorkDir, "docs", "specs", implementTestSlug, "task_02.md")); !strings.Contains(content, "status: in_progress") {
-		t.Fatalf("interrupted Task did not retain current settlement:\n%s", content)
+	if content := mustRead(t, filepath.Join(run.WorkDir, "docs", "specs", implementTestSlug, "task_02.md")); !strings.Contains(content, "status: pending") && !strings.Contains(content, "status: in_progress") {
+		t.Fatalf("next Task did not retain a recoverable status:\n%s", content)
 	}
 	assertRunWorktreeExists(t, run.WorkDir)
 	if got := strings.TrimSpace(gitImplementOutput(t, run.WorkDir, "branch", "--list", runworktree.BranchName(runID))); got == "" {

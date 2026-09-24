@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0165-a-measured-run-ceiling
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -39,3 +39,39 @@ complexity: low
 ## References
 
 - [_techspec.md](_techspec.md) — The budget test
+
+## Result
+
+The budget integration test now reads the Run id from the terminal
+`Implement Run <id> reached BudgetExceeded.` diagnostic instead of depending
+on the later `Implement Run: <id>` header. The configured 500 ms budget is
+unchanged, and no production code changed. Its fixture now starts with the
+Task whose preservation it checks already completed, so budget expiry during
+Run Worktree setup or during the next Task produces the same assertions. The new
+`TestBudgetExceededRunIsFoundWithoutTheHeaderLine` pins the non-header lookup
+against the diagnostic form emitted by BudgetExceeded paths.
+
+Acceptance evidence:
+
+- `TestBudgetExceededRunIsFoundWithoutTheHeaderLine` passed with stderr that
+  contains the BudgetExceeded terminal diagnostic and no header line.
+- `TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch` passed while
+  resolving the Run through the non-header diagnostic, then confirmed the
+  BudgetExceeded state, the completed Task, a recoverable next Task, and the
+  preserved Run Worktree and Run Branch whether the next Task started or not.
+
+Focused checks:
+
+- Pre-change signal: repository search found no
+  `TestBudgetExceededRunIsFoundWithoutTheHeaderLine`, and the existing budget
+  test called the header-only `implementRunIDFromStderr` helper.
+- An interim focused rerun after only changing the parser reached
+  BudgetExceeded before `task_01` settled and failed the old timing-sensitive
+  completed-Task assertion; the fixture now removes that incidental race.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run '^TestBudgetExceededRunIsFoundWithoutTheHeaderLine$' ./internal/cli` — passed.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=5 -run '^TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch$' ./internal/cli` — passed five consecutive runs.
+- `rtk make verify-incremental` — passed vet, the full Go suite, skill
+  consistency checks, and the Roundfix build.
+
+The Daemon-owned command under `## Verification` was not run in this Agent
+turn.
