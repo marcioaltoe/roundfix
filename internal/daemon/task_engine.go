@@ -666,7 +666,8 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 	if preconditionErr != nil {
 		return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: preconditionErr}
 	}
-	if required && precondition.Failure != "" {
+	enteredOnRedRepository := required && precondition.CommandFailure != nil && authorizationNamesPreconditionRepair(plan.Authorization, task.ID)
+	if required && precondition.Failure != "" && !enteredOnRedRepository {
 		reason := repositoryPreconditionFailureReason(precondition)
 		if settleErr := engine.settleTask(ctx, taskPlan, task, ordinal, spec.StatusFailed, reason); settleErr != nil {
 			return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: settleErr}
@@ -681,6 +682,10 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 			taskRef:          taskRef,
 			usesTaskWorktree: usesTaskWorktree,
 		}
+	}
+	requiredRepositoryVerification := ""
+	if enteredOnRedRepository {
+		requiredRepositoryVerification = strings.TrimSpace(plan.RepositoryVerification)
 	}
 	probe, probeErr := engine.verifyTaskPreWork(ctx, taskPlan, task, ordinal)
 	if probeErr != nil {
@@ -708,7 +713,7 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 	if ownerErr != nil {
 		return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: ownerErr}
 	}
-	settled, reason, err := engine.executeTask(ctx, taskPlan, task, ordinal, owner)
+	settled, reason, err := engine.executeTask(ctx, taskPlan, task, ordinal, owner, requiredRepositoryVerification)
 	if owner != nil {
 		if closeErr := owner.Close(context.WithoutCancel(ctx)); closeErr != nil {
 			err = errors.Join(err, fmt.Errorf("close Agent Session for run %q Task %s: %w", plan.RunID, task.ID, closeErr))
@@ -983,7 +988,7 @@ func specForSpecsRoot(plan TaskPlan, specsRoot string) spec.Spec {
 // Verification, settlement, and the Task commit on success. It returns
 // the settled status; the returned error is reserved for Stop Requests
 // and infrastructure failures, which halt the cycle.
-func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, owner *agentSessionOwner) (spec.Status, string, error) {
+func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, owner *agentSessionOwner, requiredRepositoryVerification string) (spec.Status, string, error) {
 	// The before-snapshot is taken before the Agent starts, so anything
 	// already dirty — pre-existing user work or a failed Task's preserved
 	// changes — never reaches this Task's commit.
@@ -997,7 +1002,8 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 	}
 	if failure == "" {
 		retryUsed := false
-		verification, verifyErr := engine.verifyTask(ctx, plan, task, ordinal, 1, &retryUsed)
+		verificationTask := taskWithRequiredRepositoryVerification(task, requiredRepositoryVerification)
+		verification, verifyErr := engine.verifyTask(ctx, plan, verificationTask, ordinal, 1, &retryUsed)
 		if verifyErr != nil {
 			return "", "", verifyErr
 		}
@@ -1010,7 +1016,8 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 					return "", "", err
 				}
 				if failure == "" {
-					final, verifyErr := engine.verifyTask(ctx, plan, task, ordinal, 2, &retryUsed)
+					verificationTask = taskWithRequiredRepositoryVerification(task, requiredRepositoryVerification)
+					final, verifyErr := engine.verifyTask(ctx, plan, verificationTask, ordinal, 2, &retryUsed)
 					if verifyErr != nil {
 						return "", "", verifyErr
 					}
@@ -1065,9 +1072,29 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 	return settled, "", nil
 }
 
+func taskWithRequiredRepositoryVerification(task spec.Task, required string) spec.Task {
+	required = strings.TrimSpace(required)
+	if required == "" {
+		return task
+	}
+	commands := append([]string(nil), task.Verification...)
+	for index, command := range commands {
+		if strings.TrimSpace(command) == required {
+			commands[index] = required
+			task.Verification = commands
+			return task
+		}
+	}
+	task.Verification = append(commands, required)
+	return task
+}
+
 func taskVerificationFailureReason(outcome verificationAttemptOutcome) string {
-	reason := verificationTerminalReason(outcome.CommandFailure)
+	reason := verificationAttemptFailureReason(outcome.CommandFailures, outcome.UnknownCause)
 	if reason != "" {
+		return reason
+	}
+	if reason := verificationTerminalReason(outcome.CommandFailure); reason != "" {
 		return reason
 	}
 	return terminalReasonLine(outcome.Failure)
@@ -1085,6 +1112,7 @@ func (engine *Engine) verifyRepositoryPrecondition(ctx context.Context, plan Tas
 		RunID:                 plan.RunID,
 		WorkDir:               plan.WorkDir,
 		ArtifactDir:           plan.ArtifactDir,
+		DiagnosticPath:        repositoryPreconditionOutputPath(plan.ArtifactDir, plan.RunID, ordinal),
 		BatchNumber:           ordinal,
 		WorkItem:              task.ID,
 		Attempt:               1,
@@ -1115,6 +1143,75 @@ func repositoryVerificationCommand(task spec.Task, configured string) (string, b
 		}
 	}
 	return "", false
+}
+
+func repositoryPreconditionOutputPath(artifactDir string, runID string, batchNumber int) string {
+	return filepath.Join(artifactDir, "runs", runID, "verification", fmt.Sprintf("batch-%03d-precondition.log", batchNumber))
+}
+
+// ValidatePreconditionRepairs checks the frozen authorization against the
+// committed Task Graph and configured repository command before a Run starts.
+func ValidatePreconditionRepairs(authorization spec.AuthorizationResolution, specSlug string, tasks []spec.Task, configured string) error {
+	repairs := authorization.Record.PreconditionRepairs
+	if len(repairs) == 0 {
+		return nil
+	}
+	if authorization.Outcome != spec.AuthorizationGranted {
+		detail := strings.TrimSpace(authorization.Reason.Detail)
+		if detail == "" {
+			detail = fmt.Sprintf("authorization outcome is %q", authorization.Outcome)
+		}
+		return fmt.Errorf(
+			"precondition repair Task %q is not authorized because record %q is not operative: %s",
+			repairs[0],
+			authorization.Record.Source.Path,
+			detail,
+		)
+	}
+	tasksByID := make(map[string]spec.Task, len(tasks))
+	for _, task := range tasks {
+		tasksByID[task.ID] = task
+	}
+	configured = strings.TrimSpace(configured)
+	for _, taskID := range repairs {
+		task, ok := tasksByID[taskID]
+		if !ok {
+			return fmt.Errorf("precondition repair Task %q is not a Task in Spec %q", taskID, specSlug)
+		}
+		if !taskCarriesExactVerificationCommand(task, configured) {
+			command := configured
+			if command == "" {
+				command = "<empty>"
+			}
+			return fmt.Errorf(
+				"precondition repair Task %q does not carry configured repository command %q verbatim",
+				taskID,
+				command,
+			)
+		}
+	}
+	return nil
+}
+
+func taskCarriesExactVerificationCommand(task spec.Task, configured string) bool {
+	for _, command := range task.Verification {
+		if command == configured {
+			return true
+		}
+	}
+	return false
+}
+
+func authorizationNamesPreconditionRepair(authorization spec.AuthorizationResolution, taskID string) bool {
+	if authorization.Outcome != spec.AuthorizationGranted {
+		return false
+	}
+	for _, repairTaskID := range authorization.Record.PreconditionRepairs {
+		if repairTaskID == taskID {
+			return true
+		}
+	}
+	return false
 }
 
 func repositoryPreconditionFailureReason(outcome verificationAttemptOutcome) string {
@@ -1400,8 +1497,9 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 }
 
 // verifyTask runs one Verification attempt for every Task command
-// sequentially and verbatim through the Verifier, in WorkDir; the first
-// failing command ends that attempt. defaults.verification is never appended:
+// sequentially and verbatim through the Verifier, in WorkDir. An undeclared
+// Task stops at its first failure; an independent Task collects deterministic
+// failures from every command. defaults.verification is never appended:
 // the Daemon gate runs only the Task's own Verification commands (ADR 0014).
 // Command failures return a typed outcome for the repair loop; the returned
 // error is reserved for Stop Requests and infrastructure failures.
@@ -1423,6 +1521,7 @@ func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.T
 		Capacity:                plan.VerificationConcurrency,
 		TemporaryRetryAvailable: !*retryUsed,
 		Commands:                task.Verification,
+		Independent:             task.VerificationMode == spec.VerificationModeIndependent,
 		ClassifyFailure: func(ctx context.Context, command string, diagnosticPath string) (verificationFailureMetadata, error) {
 			return engine.classifyRepeatedFailure(ctx, plan.RunID, task.ID, command, diagnosticPath)
 		},
@@ -1442,7 +1541,38 @@ func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.T
 	request.Retry = 1
 	request.Mode = verificationExclusive
 	request.TemporaryRetryAvailable = false
-	return engine.runTaskVerificationRequest(ctx, plan, task, request)
+	retry, err := engine.runTaskVerificationRequest(ctx, plan, task, request)
+	if err != nil {
+		return retry, err
+	}
+	return retainCollectedVerificationFailures(retry, verification), nil
+}
+
+func retainCollectedVerificationFailures(retry verificationAttemptOutcome, initial verificationAttemptOutcome) verificationAttemptOutcome {
+	if initial.TemporaryFailure == nil || initial.TemporaryFailure.CommandFailure == nil {
+		return retry
+	}
+	retained := make([]verificationAttemptFailure, 0, len(initial.CommandFailures))
+	for _, failure := range initial.CommandFailures {
+		if failure.CommandFailure != initial.TemporaryFailure.CommandFailure {
+			retained = append(retained, failure)
+		}
+	}
+	if len(retained) == 0 {
+		return retry
+	}
+	commandFailures := retry.CommandFailures
+	if len(commandFailures) == 0 && retry.CommandFailure != nil {
+		commandFailures = []verificationAttemptFailure{{
+			CommandFailure: retry.CommandFailure,
+			Metadata:       verificationFailureMetadata{Repeated: retry.Repeated},
+		}}
+	}
+	retry.CommandFailures = append(retained, commandFailures...)
+	retry.CommandFailure = retry.CommandFailures[0].CommandFailure
+	retry.Repeated = retry.CommandFailures[0].Metadata.Repeated
+	retry.Failure = verificationAttemptFailureReason(retry.CommandFailures, retry.UnknownCause)
+	return retry
 }
 
 func (engine *Engine) classifyRepeatedFailure(ctx context.Context, runID string, workItem string, command string, diagnosticPath string) (verificationFailureMetadata, error) {
@@ -1620,14 +1750,30 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 	); err != nil {
 		return "", fmt.Errorf("publish Verification Feedback event for run %q Task %s: %w", plan.RunID, task.ID, err)
 	}
+	commandFailures := first.CommandFailures
+	if len(commandFailures) == 0 {
+		commandFailures = []verificationAttemptFailure{{
+			CommandFailure: first.CommandFailure,
+			Metadata:       verificationFailureMetadata{Repeated: first.Repeated},
+		}}
+	}
+	feedbackFailures := make([]agent.VerificationFailureFeedback, 0, len(commandFailures))
+	for _, failure := range commandFailures {
+		if failure.CommandFailure == nil {
+			continue
+		}
+		feedbackFailures = append(feedbackFailures, agent.VerificationFailureFeedback{
+			Command:         failure.CommandFailure.Command,
+			DiagnosticPath:  failure.CommandFailure.OutputPath,
+			Failure:         fmt.Sprintf("verification failed: %v", failure.CommandFailure),
+			DiagnosticEmpty: diagnosticArtifactEmpty(failure.CommandFailure.OutputPath),
+			Repeated:        failure.Metadata.Repeated,
+		})
+	}
 	prompt, err := agent.BuildVerificationRepairPrompt(task.ID, agent.VerificationFeedback{
-		Command:         first.CommandFailure.Command,
-		DiagnosticPath:  first.CommandFailure.OutputPath,
-		Failure:         first.Failure,
-		DiagnosticEmpty: diagnosticArtifactEmpty(first.CommandFailure.OutputPath),
-		Repeated:        first.Repeated,
-		Attempt:         1,
-		TaskHandoff:     true,
+		Failures:    feedbackFailures,
+		Attempt:     1,
+		TaskHandoff: true,
 	})
 	if err != nil {
 		return "", fmt.Errorf("build Verification Feedback prompt for run %q Task %s: %w", plan.RunID, task.ID, err)
@@ -2992,6 +3138,9 @@ func validateTaskPlan(plan TaskPlan) error {
 	}
 	if len(plan.Tasks) == 0 {
 		return errors.New("task cycle: at least one Task is required")
+	}
+	if err := ValidatePreconditionRepairs(plan.Authorization, plan.Spec.Slug, plan.Tasks, plan.RepositoryVerification); err != nil {
+		return fmt.Errorf("task cycle: %w", err)
 	}
 	if plan.Concurrency > 1 {
 		concurrentRequired := map[string]string{

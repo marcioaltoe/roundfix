@@ -209,6 +209,69 @@ func TestPullRequestBoundaryReportsCurrentHeadChecks(t *testing.T) {
 	}
 }
 
+func TestNoChecksReportedIsAnEmptyReport(t *testing.T) {
+	const pullRequest = `{"number":18,"url":"https://github.test/acme/repo/pull/18","state":"OPEN","headRefName":"feat/delivery","headRefOid":"head-two","mergedAt":"","mergeCommit":null}`
+	runner := newScriptedCommandRunner(t,
+		commandStep{
+			name:   "gh",
+			args:   []string{"pr", "view", "18", "--json", pullRequestJSONFields},
+			result: CommandResult{Stdout: pullRequest},
+		},
+		commandStep{
+			name: "gh",
+			args: []string{"pr", "checks", "18", "--json", "bucket,link,name,state,workflow"},
+			result: CommandResult{
+				Stderr:   "no checks reported on the 'feat/delivery' branch\n",
+				ExitCode: 1,
+			},
+		},
+		commandStep{
+			name:   "gh",
+			args:   []string{"pr", "view", "18", "--json", pullRequestJSONFields},
+			result: CommandResult{Stdout: pullRequest},
+		},
+	)
+	boundary := GitHubCLI{WorkDir: "/repo", Runner: runner}
+
+	report, err := boundary.CurrentHeadChecks(t.Context(), "18")
+
+	if err != nil {
+		t.Fatalf("CurrentHeadChecks returned error: %v", err)
+	}
+	if report.HeadSHA != "head-two" {
+		t.Fatalf("CurrentHeadChecks HeadSHA = %q, want head-two", report.HeadSHA)
+	}
+	if len(report.Checks) != 0 {
+		t.Fatalf("CurrentHeadChecks Checks = %#v, want an empty report", report.Checks)
+	}
+}
+
+func TestCheckCommandFailuresRemainErrors(t *testing.T) {
+	const pullRequest = `{"number":18,"url":"https://github.test/acme/repo/pull/18","state":"OPEN","headRefName":"feat/delivery","headRefOid":"head-two","mergedAt":"","mergeCommit":null}`
+	runner := newScriptedCommandRunner(t,
+		commandStep{
+			name:   "gh",
+			args:   []string{"pr", "view", "18", "--json", pullRequestJSONFields},
+			result: CommandResult{Stdout: pullRequest},
+		},
+		commandStep{
+			name: "gh",
+			args: []string{"pr", "checks", "18", "--json", "bucket,link,name,state,workflow"},
+			result: CommandResult{
+				Stderr:   "failed: no checks reported because GitHub was unavailable\n",
+				ExitCode: 1,
+			},
+		},
+	)
+	boundary := GitHubCLI{WorkDir: "/repo", Runner: runner}
+
+	_, err := boundary.CurrentHeadChecks(t.Context(), "18")
+
+	if err == nil || err.Error() != "read pull request checks: failed: no checks reported because GitHub was unavailable" {
+		t.Fatalf("CurrentHeadChecks error = %v, want the gh command failure", err)
+	}
+}
+
 func TestPullRequestBoundaryReportsFailedCurrentHeadChecks(t *testing.T) {
 	const pullRequest = `{"number":18,"state":"OPEN","headRefName":"feat/delivery","headRefOid":"head-two","mergedAt":"","mergeCommit":null}`
 	runner := newScriptedCommandRunner(t,

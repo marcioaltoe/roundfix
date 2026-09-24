@@ -25,7 +25,7 @@ func TestInspectGitDetectsRepositoryState(t *testing.T) {
 			gitKey("rev-parse", "HEAD"):                                         "abc123",
 			gitKey("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"): "origin/feature/review",
 			gitKey("rev-list", "--count", "@{u}..HEAD"):                         "2",
-			gitKey("status", "--porcelain=v1", "-z"):                            " M src/app.go\x00?? docs/note.md\x00",
+			gitKey("status", "--porcelain=v1", "-z", "--untracked-files=all"):   " M src/app.go\x00?? docs/note.md\x00",
 		},
 	}
 
@@ -184,11 +184,11 @@ func TestRunValidatesPullRequestTargetResolutionShapes(t *testing.T) {
 			name: "explicit differing PR Head Branch refuses",
 			git: fakeGitRunner{
 				outputs: map[string]string{
-					gitKey("rev-parse", "--show-toplevel"):                        "/repo",
-					gitKey("branch", "--show-current"):                            "feature/review",
-					gitKey("rev-parse", "HEAD"):                                   "abc123",
-					gitKey("status", "--porcelain=v1", "-z"):                      "",
-					gitKey("rev-parse", "--verify", "refs/heads/explicit/review"): "explicit-head",
+					gitKey("rev-parse", "--show-toplevel"):                            "/repo",
+					gitKey("branch", "--show-current"):                                "feature/review",
+					gitKey("rev-parse", "HEAD"):                                       "abc123",
+					gitKey("status", "--porcelain=v1", "-z", "--untracked-files=all"): "",
+					gitKey("rev-parse", "--verify", "refs/heads/explicit/review"):     "explicit-head",
 				},
 				errors: map[string]error{
 					gitKey("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"): errors.New("no upstream"),
@@ -679,10 +679,10 @@ func cleanGitRunner(upstream string) fakeGitRunner {
 func cleanGitRunnerAt(root string, upstream string) fakeGitRunner {
 	runner := fakeGitRunner{
 		outputs: map[string]string{
-			gitKey("rev-parse", "--show-toplevel"):   root,
-			gitKey("branch", "--show-current"):       "feature/review",
-			gitKey("rev-parse", "HEAD"):              "abc123",
-			gitKey("status", "--porcelain=v1", "-z"): "",
+			gitKey("rev-parse", "--show-toplevel"):                            root,
+			gitKey("branch", "--show-current"):                                "feature/review",
+			gitKey("rev-parse", "HEAD"):                                       "abc123",
+			gitKey("status", "--porcelain=v1", "-z", "--untracked-files=all"): "",
 		},
 		errors: map[string]error{},
 	}

@@ -657,13 +657,104 @@ func writeImplementSpecAtRoot(t *testing.T, specsRoot string, slug string, seeds
 }
 
 func implementFixtureAuthorization(slug string, operations ...string) string {
+	return implementFixtureAuthorizationWithPreconditionRepairs(slug, nil, operations...)
+}
+
+func implementFixtureAuthorizationWithPreconditionRepairs(slug string, repairs []string, operations ...string) string {
 	var record strings.Builder
-	fmt.Fprintf(&record, "---\nstatus: approved\ngranted: 2026-09-09\naction: run the fixture Spec\nconsuming: %s\npaths:\n  - docs/agents/domain.md\noperations:\n", slug)
+	fmt.Fprintf(&record, "---\nstatus: approved\ngranted: 2026-09-09\naction: run the fixture Spec\nconsuming: %s\npaths:\n  - docs/agents/domain.md\n", slug)
+	if len(repairs) > 0 {
+		record.WriteString("precondition_repairs:\n")
+		for _, taskID := range repairs {
+			fmt.Fprintf(&record, "  - %s\n", taskID)
+		}
+	}
+	record.WriteString("operations:\n")
 	for _, operation := range operations {
 		fmt.Fprintf(&record, "  - %s\n", operation)
 	}
 	record.WriteString("---\n\n# Approved fixture authority\n")
 	return record.String()
+}
+
+func setImplementFixturePreconditionRepairs(t *testing.T, repoDir string, repairs ...string) {
+	t.Helper()
+	path := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "_authorization.md")
+	mustWrite(t, path, implementFixtureAuthorizationWithPreconditionRepairs(implementTestSlug, repairs, "implement", "commit", "push"))
+	gitImplement(t, repoDir, "add", filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "_authorization.md")))
+	gitImplement(t, repoDir, "commit", "-m", "authorize repository precondition repair")
+}
+
+func TestPreconditionRepairWithoutConfiguredCommandIsRefused(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:           "task_01",
+		verification: []string{" make verify "},
+	}})
+	setImplementFixturePreconditionRepairs(t, repoDir, "task_01")
+	withImplementCollaborators(t, &implementFakeRunner{gitRoot: repoDir})
+	withVersionFreshnessFakeDeps(t, versionFreshnessDependencies{currentVersion: func() string { return "dev" }})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("implement exit = %d, want preflight refusal %d; stderr=%q stdout=%q", code, exitPreflight, stderr.String(), stdout.String())
+	}
+	for _, want := range []string{"task_01", "does not carry", `"make verify"`, "verbatim"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("preflight diagnostic %q does not contain %q", stderr.String(), want)
+		}
+	}
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open Run store: %v", err)
+	}
+	defer func() { _ = runStore.Close() }()
+	runIDs, err := runStore.RunIDs(context.Background())
+	if err != nil {
+		t.Fatalf("list Runs: %v", err)
+	}
+	if len(runIDs) != 0 {
+		t.Fatalf("planned repair refusal created Runs: %v", runIDs)
+	}
+}
+
+func TestUnknownPreconditionRepairTaskIsRefused(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:           "task_01",
+		verification: []string{"make verify"},
+	}})
+	setImplementFixturePreconditionRepairs(t, repoDir, "task_99")
+	withImplementCollaborators(t, &implementFakeRunner{gitRoot: repoDir})
+	withVersionFreshnessFakeDeps(t, versionFreshnessDependencies{currentVersion: func() string { return "dev" }})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("implement exit = %d, want preflight refusal %d; stderr=%q stdout=%q", code, exitPreflight, stderr.String(), stdout.String())
+	}
+	for _, want := range []string{"task_99", "not a Task", implementTestSlug} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("preflight diagnostic %q does not contain %q", stderr.String(), want)
+		}
+	}
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open Run store: %v", err)
+	}
+	defer func() { _ = runStore.Close() }()
+	runIDs, err := runStore.RunIDs(context.Background())
+	if err != nil {
+		t.Fatalf("list Runs: %v", err)
+	}
+	if len(runIDs) != 0 {
+		t.Fatalf("unknown repair Task refusal created Runs: %v", runIDs)
+	}
 }
 
 func setImplementFixtureAuthorizationOperations(t *testing.T, repoDir string, operations ...string) {
@@ -725,6 +816,36 @@ func TestImplementTaskContentChoosesVerificationByTaskType(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("supported policy is proven for preferred and fallback selections", func(t *testing.T) {
+		runner := &profileReadinessExactRunner{prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
+			if req.Runtime.RequestedAccessPolicy != agent.AccessPolicyFullAccess || req.Runtime.FullAccessMode == "" {
+				t.Fatalf("selection proof received unhonoured access policy: %#v", req.Runtime)
+			}
+			return agent.SelectionProof{EffectiveAccessPolicy: agent.AccessPolicyFullAccess}, nil
+		}}
+
+		result, err := runProfileOperationalPreflight(
+			context.Background(),
+			commandRequest{name: "implement", agentFullAccess: true},
+			roundconfig.Builtin(),
+			[]roundconfig.WorkCategory{roundconfig.CategoryBackend},
+			"/workspace",
+			runner,
+			io.Discard,
+		)
+		if err != nil {
+			t.Fatalf("supported access policy preflight: %v", err)
+		}
+		if len(result.Proofs) < 2 || len(runner.exactRequests) != len(result.Proofs) {
+			t.Fatalf("preferred and fallback proofs = %d requests for %d reports, want at least two matching proofs", len(runner.exactRequests), len(result.Proofs))
+		}
+		for _, proof := range result.Proofs {
+			if proof.EffectiveAccessPolicy != agent.AccessPolicyFullAccess {
+				t.Fatalf("effective access policy = %q for %+v", proof.EffectiveAccessPolicy, proof.Selection)
+			}
+		}
+	})
 }
 
 func implementTaskContent(slug string, seed implementSeed) string {
@@ -5258,6 +5379,86 @@ func TestImplementProfilePreflightFailureCreatesNoRunWorktreeOrAgentPrompt(t *te
 		t.Fatalf("expected no Run Worktree root under %s", homeDir)
 	} else if !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("stat worktree root: %v", err)
+	}
+}
+
+func TestProfilePreflightRefusesUnhonouredAccessPolicy(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		agent      string
+		model      string
+		prove      func(agent.ProbeRequest) (agent.SelectionProof, error)
+		predicate  string
+		adapterErr string
+	}{
+		{
+			name:      "runtime has no full-access mode",
+			agent:     "opencode",
+			model:     "opencode-test",
+			predicate: agent.AccessModeAvailablePredicate,
+		},
+		{
+			name:  "adapter refuses full-access mode",
+			agent: "codex",
+			model: "gpt-test",
+			prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
+				return agent.SelectionProof{}, &agent.AccessPolicyError{
+					Kind:      agent.AccessPolicyRejected,
+					Runtime:   req.Runtime.ID,
+					Policy:    req.Runtime.RequestedAccessPolicy,
+					Mode:      req.Runtime.FullAccessMode,
+					Predicate: agent.AccessModeAcceptedPredicate,
+					Err:       errors.New("adapter refused mode"),
+				}
+			},
+			predicate:  agent.AccessModeAcceptedPredicate,
+			adapterErr: "adapter refused mode",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, _ := newImplementWorkspace(t, []implementSeed{{id: "task_01", taskType: "backend"}})
+			runner := &profileReadinessExactRunner{prove: tt.prove}
+			withImplementCollaborators(t, runner)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLIContext(t, context.Background(), []string{
+				"implement",
+				"--spec", implementTestSlug,
+				"--agent", tt.agent,
+				"--model", tt.model,
+				"--reasoning-effort=",
+				"--agent-full-access",
+				"--no-input",
+			}, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("preflight exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
+			}
+			for _, want := range []string{
+				fmt.Sprintf(`profile proof failed for runtime %q, model %q`, tt.agent, tt.model),
+				tt.predicate,
+				"disable full access or select a runtime that supports it",
+				tt.adapterErr,
+			} {
+				if want != "" && !strings.Contains(stderr.String(), want) {
+					t.Fatalf("stderr missing %q in %q", want, stderr.String())
+				}
+			}
+			if stdout.Len() != 0 || runner.calls != 0 {
+				t.Fatalf("access refusal created output or Agent work: stdout=%q calls=%d", stdout.String(), runner.calls)
+			}
+			assertNoRunDatabase(t, homeDir)
+			if _, err := os.Stat(filepath.Join(homeDir, ".roundfix", "worktrees")); err == nil {
+				t.Fatalf("access refusal created a Run Worktree under %s", homeDir)
+			} else if !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("stat Run Worktree root: %v", err)
+			}
+		})
 	}
 }
 

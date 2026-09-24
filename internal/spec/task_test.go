@@ -526,6 +526,56 @@ func TestReloadTaskDerivesOnlyQAVerification(t *testing.T) {
 	}
 }
 
+func TestTaskParsesIndependentVerification(t *testing.T) {
+	t.Parallel()
+
+	t.Run("records the declaration", func(t *testing.T) {
+		t.Parallel()
+
+		gitRoot := t.TempDir()
+		specsRoot := defaultSpecsRoot(gitRoot)
+		relFile := filepath.Join("demo", "task_01.md")
+		content := strings.Replace(
+			taskFixture("task_01", "Collect every failure", "pending", "backend", defaultVerificationSection),
+			"complexity: low\n",
+			"complexity: low\nverification: independent\n",
+			1,
+		)
+		writeFile(t, filepath.Join(specsRoot, relFile), content)
+
+		task := &Task{ID: "task_01", File: relFile}
+		if err := ReloadTask(specsRoot, task); err != nil {
+			t.Fatalf("ReloadTask: %v", err)
+		}
+		if task.VerificationMode != VerificationModeIndependent {
+			t.Fatalf("VerificationMode = %q, want %q", task.VerificationMode, VerificationModeIndependent)
+		}
+	})
+
+	t.Run("refuses an unknown value by name", func(t *testing.T) {
+		t.Parallel()
+
+		gitRoot := t.TempDir()
+		specsRoot := defaultSpecsRoot(gitRoot)
+		relFile := filepath.Join("demo", "task_01.md")
+		content := strings.Replace(
+			taskFixture("task_01", "Reject an unknown mode", "pending", "backend", defaultVerificationSection),
+			"complexity: low\n",
+			"complexity: low\nverification: sequential-groups\n",
+			1,
+		)
+		writeFile(t, filepath.Join(specsRoot, relFile), content)
+
+		err := ReloadTask(specsRoot, &Task{ID: "task_01", File: relFile})
+		if err == nil {
+			t.Fatal("ReloadTask succeeded, want an unsupported verification error")
+		}
+		if !strings.Contains(err.Error(), `unsupported verification "sequential-groups"`) {
+			t.Fatalf("ReloadTask error = %q, want the unknown value named", err)
+		}
+	})
+}
+
 func TestNegativeControlSectionParsesInOrder(t *testing.T) {
 	t.Parallel()
 

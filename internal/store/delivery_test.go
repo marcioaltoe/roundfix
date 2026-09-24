@@ -154,6 +154,51 @@ func TestCreateDeliveryQueueReplacesOnlyATerminalUnownedQueue(t *testing.T) {
 	}
 }
 
+func TestRecordDeliveryQueueItemBranchKeepsTheFirstBranch(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+	const gitRoot = "/tmp/record-item-branch"
+	if _, err := runStore.CreateDeliveryQueue(ctx, gitRoot, []string{"0161-delivery"}); err != nil {
+		t.Fatalf("create Delivery Queue: %v", err)
+	}
+
+	first, err := runStore.RecordDeliveryQueueItemBranch(
+		ctx,
+		gitRoot,
+		"0161-delivery",
+		"roundfix/deliver-0161-delivery-first",
+		"main",
+	)
+	if err != nil {
+		t.Fatalf("record first item branch: %v", err)
+	}
+	second, err := runStore.RecordDeliveryQueueItemBranch(
+		ctx,
+		gitRoot,
+		"0161-delivery",
+		"roundfix/deliver-0161-delivery-second",
+		"other-starting-branch",
+	)
+	if err != nil {
+		t.Fatalf("record second item branch: %v", err)
+	}
+	if first != "roundfix/deliver-0161-delivery-first" || second != first {
+		t.Fatalf("recorded item branches = %q then %q, want first branch retained", first, second)
+	}
+	queue, found, err := runStore.DeliveryQueue(ctx, gitRoot)
+	if err != nil || !found {
+		t.Fatalf("read Delivery Queue: found=%v err=%v", found, err)
+	}
+	if got := queue.Items[0].Branch; got != first {
+		t.Fatalf("persisted item branch = %q, want %q", got, first)
+	}
+	if got := queue.Items[0].StartingBranch; got != "main" {
+		t.Fatalf("persisted starting branch = %q, want main", got)
+	}
+}
+
 func TestOpenMigratesV14DeliveryQueueAddingOwnerAndItemBranch(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -188,6 +233,9 @@ func TestOpenMigratesV14DeliveryQueueAddingOwnerAndItemBranch(t *testing.T) {
 	}
 	if persisted.Items[0].Branch != "" {
 		t.Fatalf("migrated Delivery Queue item branch = %q, want empty", persisted.Items[0].Branch)
+	}
+	if persisted.Items[0].StartingBranch != "" {
+		t.Fatalf("migrated Delivery Queue item starting branch = %q, want empty", persisted.Items[0].StartingBranch)
 	}
 	if persisted.OwnerPID != 0 || persisted.OwnerIdentity != "" {
 		t.Fatalf("migrated Delivery Queue owner = pid:%d identity:%q", persisted.OwnerPID, persisted.OwnerIdentity)

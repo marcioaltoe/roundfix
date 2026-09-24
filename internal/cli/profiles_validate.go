@@ -27,17 +27,18 @@ type profilesValidateResponse struct {
 }
 
 type profileProofReport struct {
-	Selection           roundconfig.AgentSelection `json:"selection"`
-	Status              string                     `json:"status"`
-	References          []profileProofReference    `json:"references"`
-	Classification      string                     `json:"classification,omitempty"`
-	Encoding            string                     `json:"encoding,omitempty"`
-	AdapterCommand      string                     `json:"adapter_command,omitempty"`
-	AdapterVersion      string                     `json:"adapter_version,omitempty"`
-	AdvertisedModels    []string                   `json:"advertised_models,omitempty"`
-	AdvertisedReasoning []string                   `json:"advertised_reasoning,omitempty"`
-	NextAction          string                     `json:"next_action,omitempty"`
-	Error               string                     `json:"error,omitempty"`
+	Selection             roundconfig.AgentSelection `json:"selection"`
+	Status                string                     `json:"status"`
+	References            []profileProofReference    `json:"references"`
+	EffectiveAccessPolicy agent.AccessPolicy         `json:"effective_access_policy,omitempty"`
+	Classification        string                     `json:"classification,omitempty"`
+	Encoding              string                     `json:"encoding,omitempty"`
+	AdapterCommand        string                     `json:"adapter_command,omitempty"`
+	AdapterVersion        string                     `json:"adapter_version,omitempty"`
+	AdvertisedModels      []string                   `json:"advertised_models,omitempty"`
+	AdvertisedReasoning   []string                   `json:"advertised_reasoning,omitempty"`
+	NextAction            string                     `json:"next_action,omitempty"`
+	Error                 string                     `json:"error,omitempty"`
 }
 
 type profileProofReference struct {
@@ -181,6 +182,16 @@ func proveProfileSelectionsWithOptions(ctx context.Context, config roundconfig.C
 				Err:            err,
 			}}
 		}
+		if err := runtime.ValidateRequestedAccessPolicy(); err != nil {
+			applyProfileProofFailure(&proofs[index], err)
+			return profileProofResult{Proofs: proofs, Err: profileProofError{
+				Selection:      proofs[index].Selection,
+				References:     proofs[index].References,
+				Classification: proofs[index].Classification,
+				NextAction:     proofs[index].NextAction,
+				Err:            err,
+			}}
+		}
 		proof, err := proveProfileSelection(ctx, runner, agent.ProbeRequest{Runtime: runtime, WorkDir: workDir})
 		if err != nil {
 			applyProfileProofFailure(&proofs[index], err)
@@ -193,6 +204,7 @@ func proveProfileSelectionsWithOptions(ctx context.Context, config roundconfig.C
 			}}
 		}
 		proofs[index].Status = "passed"
+		proofs[index].EffectiveAccessPolicy = proof.EffectiveAccessPolicy
 		proofs[index].Encoding = strings.TrimSpace(proof.Assignment.Encoding)
 		proofs[index].AdapterCommand = strings.TrimSpace(proof.Adapter.Command)
 		proofs[index].AdapterVersion = strings.TrimSpace(proof.Adapter.Version)
@@ -268,6 +280,10 @@ func profileProofNextAction(err error) string {
 	var cleanup *agent.AgentSessionCleanupError
 	if errors.As(err, &cleanup) {
 		return "restore Agent Session cleanup, then rerun `roundfix profiles validate`; if the tuple remains unavailable, " + configureAction
+	}
+	var accessPolicy *agent.AccessPolicyError
+	if errors.As(err, &accessPolicy) {
+		return accessPolicy.RecoveryAction() + ", then rerun `roundfix profiles validate`"
 	}
 	var unsupported *agent.SelectionUnsupportedError
 	if errors.As(err, &unsupported) {

@@ -94,15 +94,16 @@ type AuthorizationSource struct {
 // AuthorizationRecord is the inspectable projection of one authorization
 // record, including non-granting proposals and refused records.
 type AuthorizationRecord struct {
-	Role          AuthorizationRole
-	Status        AuthorizationStatus
-	GrantedAt     time.Time
-	Action        string
-	Consuming     []string
-	Paths         []string
-	Operations    []AuthorizationOperation
-	Regenerations []AuthorizationRegeneration
-	Source        AuthorizationSource
+	Role                AuthorizationRole
+	Status              AuthorizationStatus
+	GrantedAt           time.Time
+	Action              string
+	Consuming           []string
+	Paths               []string
+	Operations          []AuthorizationOperation
+	PreconditionRepairs []string
+	Regenerations       []AuthorizationRegeneration
+	Source              AuthorizationSource
 }
 
 // NamesSpec reports whether the declared consuming field names specSlug. The
@@ -136,6 +137,7 @@ const (
 	AuthorizationReasonConsuming           AuthorizationReasonCode = "consuming"
 	AuthorizationReasonPaths               AuthorizationReasonCode = "paths"
 	AuthorizationReasonOperations          AuthorizationReasonCode = "operations"
+	AuthorizationReasonPreconditionRepairs AuthorizationReasonCode = "precondition_repairs"
 	AuthorizationReasonRegeneration        AuthorizationReasonCode = "sanctioned_regeneration"
 	AuthorizationReasonContradictory       AuthorizationReasonCode = "contradictory"
 	AuthorizationReasonUnreadableRecord    AuthorizationReasonCode = "unreadable_record"
@@ -490,6 +492,33 @@ func parseAuthorizationFrontmatter(
 			}
 			seen[operation] = struct{}{}
 			record.Operations = append(record.Operations, operation)
+		}
+	}
+	if node, ok := fields["precondition_repairs"]; ok && node.Tag != "!!null" {
+		values, err := authorizationStringSequence(node)
+		if err != nil {
+			return record, fieldShapeReason("precondition_repairs", err)
+		}
+		seen := make(map[string]struct{}, len(values))
+		for _, value := range values {
+			if value == "" || strings.TrimSpace(value) != value {
+				return record, authorizationReason(
+					AuthorizationReasonPreconditionRepairs,
+					"precondition_repairs",
+					value,
+					fmt.Sprintf("precondition_repairs contains invalid Task identifier %q", value),
+				)
+			}
+			if _, duplicate := seen[value]; duplicate {
+				return record, authorizationReason(
+					AuthorizationReasonPreconditionRepairs,
+					"precondition_repairs",
+					value,
+					fmt.Sprintf("precondition_repairs repeats Task identifier %q", value),
+				)
+			}
+			seen[value] = struct{}{}
+			record.PreconditionRepairs = append(record.PreconditionRepairs, value)
 		}
 	}
 	regenerations, reason := parseAuthorizationRegenerations(body)
