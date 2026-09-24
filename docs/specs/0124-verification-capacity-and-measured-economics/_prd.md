@@ -103,3 +103,16 @@ The [_techspec.md](_techspec.md) records the reviewable implementation map,
 coverage and build order. It is a proposed candidate, not a completed authoring
 gate or permission to dispatch. Exact governed grants and the named decisions
 remain pending; no Task Graph or implementation result is claimed.
+
+## Reestruturação (2026-09-24)
+
+A fila de Specs-portfólio foi reestruturada em sete entregas focadas. Cada Core Feature abaixo tem um destino: já entregue, movida para uma entrega sintetizada, ou cortada por relevância insuficiente. A relevância é a nota 0–4 do Jev (`jev-1.13.0`) para o quanto a CF melhora o papel central do Roundfix; o método e o ranking completo estão no secondbrain em `inbox/roundfix/2026-09-24-reestruturacao-da-fila-com-jev.md`.
+
+| CF | Destino | Relevância |
+|---|---|---|
+| 1 | **Cortada** — marginal ou desnecessária | 1.97 |
+| 2 | Entrega 7 — medição mínima | 2.13 |
+| 3 | Entrega 7 — medição mínima | 2.1 |
+| 4 | **Cortada** — marginal ou desnecessária | 0.79 |
+| 5 | Entregue por slice anterior | — |
+| 6 | Entrega 7 — medição mínima | 2.38 |
