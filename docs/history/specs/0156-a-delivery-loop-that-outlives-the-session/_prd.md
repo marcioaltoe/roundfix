@@ -1,9 +1,12 @@
 ---
 spec: 0156-a-delivery-loop-that-outlives-the-session
-status: active
+status: archived
 created: 2026-09-24
 surfaces: [backend, cli, docs]
+archived: "2026-09-24"
+source_slug: 0156-a-delivery-loop-that-outlives-the-session
 ---
+
 
 # A delivery loop that outlives the session
 
