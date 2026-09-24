@@ -1,9 +1,12 @@
 ---
 spec: 0155-a-verify-that-runs-what-changed
-status: active
+status: archived
 created: 2026-09-24
 surfaces: [backend, docs]
+archived: "2026-09-24"
+source_slug: 0155-a-verify-that-runs-what-changed
 ---
+
 
 # A verify that runs what changed
 
