@@ -18,13 +18,16 @@ graph:
       needs: [task_03]
     - id: task_05
       file: task_05.md
-      needs: [task_01, task_02, task_03, task_04, task_06, task_07]
+      needs: [task_01, task_02, task_03, task_04, task_06, task_07, task_08]
     - id: task_06
       file: task_06.md
       needs: [task_04]
     - id: task_07
       file: task_07.md
       needs: [task_06]
+    - id: task_08
+      file: task_08.md
+      needs: [task_07]
 ---
 
 # Task Graph
@@ -37,4 +40,5 @@ graph:
 | task_04 | infra | Pull requests run the selective gate |
 | task_06 | backend | Select every set a change can affect |
 | task_07 | test | The partition follows what the recipes run |
+| task_08 | backend | Keep the partition, widen the selection |
 | task_05 | qa | Run the final QA gate |
