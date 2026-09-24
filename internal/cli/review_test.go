@@ -633,8 +633,8 @@ func TestReviewClassifiesVerdictVariants(t *testing.T) {
 		{
 			name:        "plain preamble before clean verdict",
 			answer:      "I reviewed the candidate.\nNo findings",
-			wantCode:    exitOK,
-			wantOutcome: reviewOutcomeReviewed,
+			wantCode:    exitPreflight,
+			wantOutcome: reviewOutcomeBlocked,
 		},
 		{
 			name:         "preamble before emphasized lowercase findings verdict",
@@ -661,6 +661,122 @@ func TestReviewClassifiesVerdictVariants(t *testing.T) {
 			}
 			if record.Outcome != test.wantOutcome || record.Findings != test.wantFindings {
 				t.Fatalf("review record = %+v, want outcome %q and findings %q", record, test.wantOutcome, test.wantFindings)
+			}
+		})
+	}
+}
+
+func TestReviewPassesOnlyAWholeAnswerVerdict(t *testing.T) {
+	tests := []struct {
+		name   string
+		answer string
+	}{
+		{name: "punctuated no findings", answer: "No findings."},
+		{name: "emphasized no findings", answer: "**No findings**"},
+		{name: "findings none", answer: "Findings: none"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			runner := &reviewCommandRunner{
+				results: []reviewCommandRunResult{{
+					result: agent.ExecuteResult{Message: test.answer, StopReason: "end_turn"},
+				}},
+			}
+			fixture := newReviewCommandFixture(t, "codex", runner)
+
+			code, record, stderr := fixture.run(t)
+
+			if code != exitOK || record.Outcome != reviewOutcomeReviewed {
+				t.Fatalf("whole-answer review exit=%d record=%+v stderr=%q, want reviewed", code, record, stderr)
+			}
+		})
+	}
+}
+
+func TestReviewBlocksEveryPreambleBesideNoFindings(t *testing.T) {
+	tests := []struct {
+		name   string
+		answer string
+	}{
+		{
+			name:   "blockquoted list",
+			answer: "> - internal/cli/review.go:42: classifier accepts a hidden finding\nNo findings",
+		},
+		{
+			name:   "table",
+			answer: "| File | Finding |\n| --- | --- |\n| internal/cli/review.go | classifier accepts a hidden finding |\nNo findings",
+		},
+		{
+			name:   "setext heading",
+			answer: "Correctness\n-----------\ninternal/cli/review.go:42: classifier accepts a hidden finding\nNo findings",
+		},
+		{
+			name:   "linked path line",
+			answer: "[internal/cli/review.go:42](internal/cli/review.go#L42): classifier accepts a hidden finding\nNo findings",
+		},
+		{
+			name:   "line range",
+			answer: "internal/cli/review.go:42-43: classifier accepts a hidden finding\nNo findings",
+		},
+		{
+			name:   "unicode bullet",
+			answer: "• internal/cli/review.go:42: classifier accepts a hidden finding\nNo findings",
+		},
+		{
+			name:   "html",
+			answer: "<p>internal/cli/review.go:42: classifier accepts a hidden finding</p>\nNo findings",
+		},
+		{
+			name:   "fenced code",
+			answer: "```text\ninternal/cli/review.go:42: classifier accepts a hidden finding\n```\nNo findings",
+		},
+		{
+			name:   "plain prose",
+			answer: "The classifier accepts a hidden finding.\nNo findings",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			runner := &reviewCommandRunner{
+				results: []reviewCommandRunResult{{
+					result: agent.ExecuteResult{Message: test.answer, StopReason: "end_turn"},
+				}},
+			}
+			fixture := newReviewCommandFixture(t, "codex", runner)
+
+			code, record, stderr := fixture.run(t)
+
+			assertBlockedReviewCommand(t, code, record, stderr, "does not account for other content")
+		})
+	}
+}
+
+func TestReviewRecognisesAColonlessFindingsHeader(t *testing.T) {
+	const finding = "internal/cli/review.go:42: classifier accepts a hidden finding"
+	tests := []struct {
+		name   string
+		answer string
+	}{
+		{name: "plain", answer: "Findings\n" + finding},
+		{name: "emphasized", answer: "**Findings**\n" + finding},
+		{name: "fullwidth colon", answer: "Findings：\n" + finding},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			runner := &reviewCommandRunner{
+				results: []reviewCommandRunResult{{
+					result: agent.ExecuteResult{Message: test.answer, StopReason: "end_turn"},
+				}},
+			}
+			fixture := newReviewCommandFixture(t, "codex", runner)
+
+			code, record, stderr := fixture.run(t)
+
+			if code != exitRunFailed || record.Outcome != reviewOutcomeFindings || record.Findings != finding {
+				t.Fatalf("colonless findings review exit=%d record=%+v stderr=%q, want findings %q", code, record, stderr, finding)
 			}
 		})
 	}
@@ -806,7 +922,7 @@ func TestReviewReadsFindingsNoneAsNoFindings(t *testing.T) {
 		{name: "none", answer: "Findings: none", wantCode: exitOK, wantOutcome: reviewOutcomeReviewed},
 		{name: "not applicable", answer: "Findings: n/a", wantCode: exitOK, wantOutcome: reviewOutcomeReviewed},
 		{name: "no findings", answer: "Findings: no findings", wantCode: exitOK, wantOutcome: reviewOutcomeReviewed},
-		{name: "plain preamble before none", answer: "I reviewed the candidate.\nFindings: none", wantCode: exitOK, wantOutcome: reviewOutcomeReviewed},
+		{name: "plain preamble before none", answer: "I reviewed the candidate.\nFindings: none", wantCode: exitPreflight, wantOutcome: reviewOutcomeBlocked},
 		{name: "structured content before none", answer: "## Correctness\n1. internal/cli/review.go:42: finding\nFindings: none", wantCode: exitPreflight, wantOutcome: reviewOutcomeBlocked},
 		{name: "text follows none", answer: "Findings: none\ninternal/cli/review.go:42: finding follows", wantCode: exitRunFailed, wantOutcome: reviewOutcomeFindings},
 	}

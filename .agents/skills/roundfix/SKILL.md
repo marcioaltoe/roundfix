@@ -239,12 +239,12 @@ supported local CodeRabbit review surface is installed or specified, and exits
 Roundfix classifies the reviewer's answer by substance, not exact formatting.
 It recognizes a `No findings` verdict after case folding, surrounding Markdown
 emphasis, and trailing punctuation are normalized, or a `Findings:` verdict
-with its findings text. A no-findings verdict passes only when it accounts for
-the whole answer: it is the only content line, or the last content line after a
-preamble with no list item, heading, or `path:line` reference. Anything else
-beside it blocks. `Findings: none`, `Findings: n/a`, and `Findings: no findings`
-with nothing after them are read as no findings. A verdict-shaped line after a
-`Findings:` header is part of that header's findings text and does not create a
+with its findings text. A pass must be the whole answer: after normalization,
+the answer is `No findings`, or its only content line is `Findings:` with only
+`none`, `n/a`, or `no findings` after the colon. Any other headerless answer
+blocks as ambiguous. A line that normalizes to `Findings` after an optional
+trailing ASCII or fullwidth colon is removed starts the findings body. A
+verdict-shaped line after that header is findings text and does not create a
 conflict. Exactly one verdict must be present; both verdicts or neither verdict
 block the review. Every answer that reaches the reviewer is kept in
 `pre-pr-review-answer.txt`, and the review record's `answerPath` names that

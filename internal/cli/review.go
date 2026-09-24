@@ -862,7 +862,7 @@ func classifyReviewCommandResult(record reviewRecord, result agent.ExecuteResult
 		record.Reason = "unclassifiable agent output: neither a no-findings nor findings verdict is present"
 		return record, exitPreflight
 	case len(noFindingsLines) > 0:
-		if len(noFindingsLines) != 1 || !noFindingsVerdictAccountsForAnswer(lines, noFindingsLines[0]) {
+		if len(noFindingsLines) != 1 || !reviewVerdictIsOnlyContentLine(lines, noFindingsLines[0]) {
 			record.Reason = "unclassifiable agent output: no-findings verdict does not account for other content"
 			return record, exitPreflight
 		}
@@ -878,7 +878,7 @@ func classifyReviewCommandResult(record reviewRecord, result agent.ExecuteResult
 		}
 		findings := strings.TrimSpace(strings.Join(findingsParts, "\n"))
 		if findingsVerdictMeansNoFindings(findingsOnVerdictLine, lines[findingsLine+1:]) {
-			if !noFindingsVerdictAccountsForAnswer(lines, findingsLine) {
+			if !reviewVerdictIsOnlyContentLine(lines, findingsLine) {
 				record.Reason = "unclassifiable agent output: no-findings verdict does not account for other content"
 				return record, exitPreflight
 			}
@@ -897,78 +897,13 @@ func classifyReviewCommandResult(record reviewRecord, result agent.ExecuteResult
 	return record, exitPreflight
 }
 
-func noFindingsVerdictAccountsForAnswer(lines []string, verdictLine int) bool {
+func reviewVerdictIsOnlyContentLine(lines []string, verdictLine int) bool {
 	for index, line := range lines {
-		if strings.TrimSpace(line) == "" {
-			continue
-		}
-		if index == verdictLine {
-			continue
-		}
-		if index > verdictLine || !isReviewPreambleLine(line) {
+		if index != verdictLine && strings.TrimSpace(line) != "" {
 			return false
 		}
 	}
 	return true
-}
-
-func isReviewPreambleLine(line string) bool {
-	line = strings.TrimSpace(line)
-	if line == "" || isNoFindingsVerdictLine(line) {
-		return false
-	}
-	if strings.HasPrefix(line, "#") || isReviewListItem(line) {
-		return false
-	}
-	return !hasReviewPathLineReference(line)
-}
-
-func isReviewListItem(line string) bool {
-	line = strings.TrimSpace(line)
-	if len(line) < 2 {
-		return false
-	}
-	if strings.ContainsRune("-*+", rune(line[0])) && unicode.IsSpace(rune(line[1])) {
-		return true
-	}
-	index := 0
-	for index < len(line) && line[index] >= '0' && line[index] <= '9' {
-		index++
-	}
-	return index > 0 && index+1 < len(line) && (line[index] == '.' || line[index] == ')') && unicode.IsSpace(rune(line[index+1]))
-}
-
-func hasReviewPathLineReference(line string) bool {
-	for _, field := range strings.Fields(line) {
-		field = strings.Trim(field, "`*_[](){}<>,;\"'.:")
-		separator := strings.LastIndexByte(field, ':')
-		if separator <= 0 || separator+1 == len(field) {
-			continue
-		}
-		path := field[:separator]
-		lineNumber := field[separator+1:]
-		pathHasLetter := false
-		for _, character := range path {
-			if unicode.IsLetter(character) {
-				pathHasLetter = true
-				break
-			}
-		}
-		if !pathHasLetter {
-			continue
-		}
-		allDigits := true
-		for _, character := range lineNumber {
-			if !unicode.IsDigit(character) {
-				allDigits = false
-				break
-			}
-		}
-		if allDigits {
-			return true
-		}
-	}
-	return false
 }
 
 func findingsVerdictMeansNoFindings(inlineFindings string, followingLines []string) bool {
@@ -997,10 +932,17 @@ func normalizeReviewVerdictText(text string) string {
 
 func parseFindingsVerdictLine(line string) (string, bool) {
 	line = strings.TrimSpace(line)
-	header, findings, found := strings.Cut(line, ":")
-	if !found || !strings.EqualFold(normalizeReviewVerdictText(header), "findings") {
+	separator := strings.IndexAny(line, ":：")
+	if separator < 0 {
+		return "", isFindingsVerdictHeader(line)
+	}
+
+	header := line[:separator]
+	if !isFindingsVerdictHeader(header) {
 		return "", false
 	}
+	_, separatorSize := utf8.DecodeRuneInString(line[separator:])
+	findings := line[separator+separatorSize:]
 
 	findings = strings.TrimSpace(findings)
 	if strings.TrimFunc(findings, func(character rune) bool {
@@ -1009,6 +951,12 @@ func parseFindingsVerdictLine(line string) (string, bool) {
 		findings = ""
 	}
 	return findings, true
+}
+
+func isFindingsVerdictHeader(text string) bool {
+	text = strings.TrimSpace(text)
+	text = strings.TrimSpace(strings.TrimSuffix(strings.TrimSuffix(text, "："), ":"))
+	return strings.EqualFold(normalizeReviewVerdictText(text), "findings")
 }
 
 func finishReviewCommandWithAnswer(
