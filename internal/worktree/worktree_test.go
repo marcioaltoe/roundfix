@@ -1565,6 +1565,40 @@ func TestSupersedingQAReportRecognisesAnArchivedCopy(t *testing.T) {
 	}
 }
 
+func TestSupersedingQAReportRequiresTheSameContent(t *testing.T) {
+	t.Parallel()
+	const (
+		slug       = "0157-reconciliation-and-one-repository-identity"
+		reportName = "qa-report-2026-09-24.md"
+	)
+	fixture := newTerminalRunFixture(t, "superseding-same-name-different-content")
+	commitWorktreeFile(
+		t,
+		fixture.ref.Path,
+		qaReportTestPath(slug, reportName, false),
+		"verdict: fail\n",
+		qaReportCommitMessage(slug, "fail"),
+	)
+	commitWorktreeFile(
+		t,
+		fixture.repoDir,
+		qaReportTestPath(slug, reportName, true),
+		"verdict: pass\n",
+		qaReportCommitMessage(slug, "pass"),
+	)
+
+	report, proven := SupersedingQAReport(
+		context.Background(),
+		fixture.repoDir,
+		strings.TrimSpace(gitWorktreeTest(t, fixture.repoDir, "rev-parse", "main")),
+		strings.TrimSpace(gitWorktreeTest(t, fixture.ref.Path, "rev-parse", "HEAD")),
+		slug,
+	)
+	if proven || report != "" {
+		t.Fatalf("superseding QA Report = %q, proven = %v, want no superseding report", report, proven)
+	}
+}
+
 func TestSupersedingQAReportStillPrefersNewerReport(t *testing.T) {
 	t.Parallel()
 	const slug = "0157-reconciliation-and-one-repository-identity"

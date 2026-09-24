@@ -1296,7 +1296,7 @@ func newTerminalRunReconciliationEvidence(run store.Run, gitRoot string, result 
 // SupersedingQAReport reports the target-side QA Report that supersedes
 // targetHead..runHead, and whether supersession is proven. Both halves are
 // required: QAReportOnlyBranch proves the branch holds nothing but QA reports,
-// which is not proof that the target has the same report under an archived
+// which is not proof that the target has an identical report under an archived
 // root or a newer report. Callers that act on supersession — the reconcile
 // classifier and Branch Integrity Preflight — must agree, or one offers a
 // release the other refuses.
@@ -1332,6 +1332,14 @@ func supersedingQAReport(
 	}
 	runReportName := filepath.Base(filepath.FromSlash(runReport))
 	targetReportName := filepath.Base(filepath.FromSlash(targetReport))
+	if runReportName == targetReportName {
+		runBlob, runBlobErr := runner.Run(ctx, gitRoot, "rev-parse", "--verify", runHead+":"+runReport)
+		targetBlob, targetBlobErr := runner.Run(ctx, gitRoot, "rev-parse", "--verify", targetHead+":"+targetReport)
+		if runBlobErr != nil || targetBlobErr != nil ||
+			strings.TrimSpace(runBlob) == "" || strings.TrimSpace(runBlob) != strings.TrimSpace(targetBlob) {
+			return "", false
+		}
+	}
 	newest, err := spec.NewestQAReportFromPaths([]string{runReportName, targetReportName})
 	if err != nil || newest != targetReportName {
 		return "", false

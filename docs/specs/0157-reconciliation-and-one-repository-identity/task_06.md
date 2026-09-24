@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0157-reconciliation-and-one-repository-identity
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -39,3 +39,37 @@ Corrective Task from the pre-PR review of 2026-09-24. `supersedingQAReport` now 
 ## References
 
 - [_techspec.md](_techspec.md) — Report identity
+
+## Result
+
+Implemented content-backed QA Report identity for the same-name,
+different-root case. `supersedingQAReport` now resolves the Run-side and
+target-side Git blob IDs and refuses supersession unless both IDs are present
+and equal. Differently named reports retain their existing newest-report
+ordering.
+
+Focused-check evidence:
+
+- Before the production change,
+  `rtk env GOCACHE=/private/tmp/roundfix-task06-gocache go test -count=1 -run '^TestSupersedingQAReportRequiresTheSameContent$' ./internal/worktree`
+  failed because an archived `verdict: pass` report superseded a same-named
+  active `verdict: fail` report. After the change, the command exited 0. This
+  covers the criterion that same name with different content is not proven
+  superseded.
+- `rtk env GOCACHE=/private/tmp/roundfix-task06-gocache go test -count=1 -run '^TestSupersedingQAReportRecognisesAnArchivedCopy$' ./internal/worktree`
+  exited 0 after the change. This covers the criterion that byte-identical
+  content under the active and archived QA roots is recognised.
+- `rtk env GOCACHE=/private/tmp/roundfix-task06-gocache go test -count=1 -run '^TestSupersedingQAReport' ./internal/worktree`
+  exited 0, covering both identity cases and the existing later-date and
+  later-sequence behavior.
+- `rtk env GOCACHE=/private/tmp/roundfix-task06-gocache go test -count=1 ./internal/worktree`
+  exited 0 after the final Go edits, and `rtk git diff --check` exited 0.
+
+The first pre-change attempt used Go's default build cache and could not open
+the sandbox-external cache, so all recorded Go evidence uses the task-scoped
+cache above. The Daemon-owned `## Verification` command was not run.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260924T173241Z_9612fd1f6966c280`
+- Source commit: `e1a3dff483c45fcc565cbb23bab9071564cd134f`
