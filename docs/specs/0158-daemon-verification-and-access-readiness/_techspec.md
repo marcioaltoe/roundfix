@@ -114,7 +114,9 @@ preflight already proves.
 2. Precondition repair (depends on: 1).
 3. Access policy in readiness (depends on: 2).
 4. Decisions recorded (depends on: 1, 2, 3).
-5. Terminal QA (depends on: 1, 2, 3, 4).
+5. Terminal QA (depends on: 1, 2, 3, 4, 6, 7).
+6. A repair entry that the gate still closes (depends on: 4).
+7. Keep every failure and name a degraded access (depends on: 6).
 
 ## Risks & Considerations
 
