@@ -1,9 +1,9 @@
 ---
-status: proposed
+status: superseded
 created_at: 2026-09-08T17:03:35Z
-updated_at: 2026-09-08T17:03:35Z
+updated_at: 2026-09-24T00:00:00Z
 deprecated_at: null
-superseded_by: null
+superseded_by: ADR-0163
 ---
 
 # Review Artifact retirement uses stable evidence

@@ -1,9 +1,9 @@
 ---
-status: accepted # proposed | accepted | rejected | deprecated | superseded
+status: superseded # proposed | accepted | rejected | deprecated | superseded
 created_at: 2026-08-12T14:16:46Z
-updated_at: 2026-08-12T14:16:46Z
+updated_at: 2026-09-24T00:00:00Z
 deprecated_at: null # null or YYYY-MM-DDTHH:MM:SSZ
-superseded_by: null # null or ADR-NNNN
+superseded_by: ADR-0163 # null or ADR-NNNN
 ---
 
 # A Review retires on local reachability, and never writes into history
