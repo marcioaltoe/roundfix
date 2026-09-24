@@ -224,20 +224,35 @@ roundfix review [--base <ref>]
 
 `--base` selects the base ref; when omitted, Roundfix uses the repository's
 default branch. The workflow computes the base-to-current-head candidate diff
-and hands that diff to the configured Codex reviewer in a read-only session.
+and hands that diff to the configured reviewer in a read-only session.
 The review record names the repository, base commit, head commit, effective
 provider, and policy source, so it is bound to the candidate that was
 examined.
 
 The policy values are `codex`, `claude`, `coderabbit`, and `none`. Explicit
 `none` performs no reviewer call and no readiness probe, records a configured
-omission for the candidate, and exits `0`. `claude` and `coderabbit` are valid
-policy values, but this command refuses to execute them for now and exits `2`.
+omission for the candidate, and exits `0`. `claude` runs through the same
+read-only review path as `codex`. `coderabbit` remains refused because no
+supported local CodeRabbit review surface is installed or specified, and exits
+`2`.
+
+Roundfix classifies the reviewer's answer by substance, not exact formatting.
+It recognizes a `No findings` verdict after case folding, surrounding Markdown
+emphasis, and trailing punctuation are normalized, or a `Findings:` verdict
+with its findings text. Exactly one verdict must be present; both verdicts or
+neither verdict block the review. Every answer that reaches the reviewer is
+kept in `pre-pr-review-answer.txt`, and the review record's `answerPath` names
+that file.
+
+When the candidate adds or changes a Spec folder under the configured Spec
+Root, the review prompt carries that Spec's PRD `Decisions` section and
+TechSpec. The reviewer must judge the delivery against those decisions and the
+alternatives they reject, and the record names the consulted Specs in `specs`.
 
 Exit codes are:
 
-- Exit `0` — the reviewer returned exactly `No findings`, or explicit `none`
-  recorded its configured omission.
+- Exit `0` — the reviewer returned one substantive no-findings verdict, or
+  explicit `none` recorded its configured omission.
 - Exit `1` — the reviewer returned findings; the record carries them.
 - Exit `2` — preflight failed or the selected review is blocked.
 

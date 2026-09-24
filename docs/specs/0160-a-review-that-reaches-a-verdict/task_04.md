@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0160-a-review-that-reaches-a-verdict
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -42,3 +42,30 @@ The Roundfix skill says `claude` is refused and that only an exact `No findings`
 ## References
 
 - [_techspec.md](_techspec.md) — Build Order
+
+## Result
+
+Implementation:
+
+- Updated the canonical Roundfix skill to document the running `claude` provider,
+  substance-based verdict classification, raw answers retained at `answerPath`,
+  and review against a delivery's Spec Decisions and rejected alternatives.
+- Kept `coderabbit` documented as refused because no supported local CodeRabbit
+  review surface is installed or specified.
+- Updated the user guide with the same behavior and regenerated the distributed
+  `skills/roundfix` mirror using `make skills-sync`.
+
+Focused checks:
+
+- `make skills-sync` — completed; the distributed mirror was regenerated from
+  the canonical skill.
+- `git diff --check` — passed.
+- The declared Verification command, including `go run -buildvcs=false
+  ./cmd/roundfix skills check`, was not run because the Daemon owns that gate.
+
+Acceptance evidence:
+
+- Both skill copies and the guide contain the new provider, classification,
+  `answerPath`, and Spec-review behavior at `.agents/skills/roundfix/SKILL.md:232-250`,
+  `skills/roundfix/SKILL.md:232-250`, and `docs/user-guide/commands.md:145-163`.
+- The final skill check remains pending Daemon Verification.
