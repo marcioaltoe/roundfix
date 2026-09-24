@@ -13,22 +13,23 @@ import (
 	"roundfix/internal/spec"
 )
 
-// CodeBacklogUnmoved identifies a Backlog Entry that declares itself promoted
-// to a Spec while still living in docs/backlog/. The Backlog Operational
-// Contract requires a promoted entry to move into that Spec's references/,
-// where the adoption index records it.
+// CodeBacklogUnmoved identifies a promoted or terminal Backlog Entry that still
+// lives in docs/backlog/. The Backlog Operational Contract requires promoted
+// entries to move into a Spec's references/ and terminal entries to move into
+// history.
 const CodeBacklogUnmoved = "SC-BACKLOG-UNMOVED"
 
 const backlogPath = "docs/backlog"
 
-// backlogFrontmatter carries only the two declared values this rule reads.
-// Nothing here infers intent: an entry is a defect when it says it is promoted
-// and its own location contradicts that.
+// backlogFrontmatter carries only the declared values this rule reads. Nothing
+// here infers intent: an entry is a defect when its written status contradicts
+// its location.
 type backlogFrontmatter struct {
 	status    findingFrontmatterValue
 	hasStatus bool
 	spec      findingFrontmatterValue
 	hasSpec   bool
+	reason    findingFrontmatterValue
 }
 
 type backlogDocument struct {
@@ -36,7 +37,8 @@ type backlogDocument struct {
 	frontmatter backlogFrontmatter
 }
 
-// detectBacklogPromotion reports promoted Backlog Entries that never moved.
+// detectBacklogPromotion reports promoted or terminal Backlog Entries that
+// never moved.
 // It is presence-aware per ADR-0094: a repository with no backlog directory,
 // or one holding no entries, skips instead of failing.
 func detectBacklogPromotion(result *Result, repoRoot string) error {
@@ -63,7 +65,25 @@ func detectBacklogPromotion(result *Result, repoRoot string) error {
 	}
 
 	for _, document := range documents {
-		if !document.frontmatter.hasStatus || document.frontmatter.status.value != "promoted" {
+		if !document.frontmatter.hasStatus {
+			continue
+		}
+		status := document.frontmatter.status.value
+		if terminalBacklogStatus(status) {
+			fix := "Move " + document.displayPath + " to " + spec.ArchiveDir(spec.ArchiveKindBacklog) + "/."
+			if !hasBacklogValue(document.frontmatter.spec.value) && !hasBacklogValue(document.frontmatter.reason.value) {
+				fix = "Add a non-empty reason to " + document.displayPath + ", then move it to " + spec.ArchiveDir(spec.ArchiveKindBacklog) + "/."
+			}
+			result.Findings = append(result.Findings, Finding{
+				Code:     CodeBacklogUnmoved,
+				Severity: SeverityError,
+				Summary:  document.displayPath + " declares terminal status " + strconv.Quote(status) + " but still lives in " + backlogPath,
+				Where:    []Location{{Path: document.displayPath, Line: document.frontmatter.status.line}},
+				Fix:      fix,
+			})
+			continue
+		}
+		if status != "promoted" {
 			continue
 		}
 		if !document.frontmatter.hasSpec || strings.TrimSpace(document.frontmatter.spec.value) == "" ||
@@ -178,7 +198,27 @@ func parseBacklogFrontmatter(content []byte) (backlogFrontmatter, error) {
 			}
 			frontmatter.spec = findingFrontmatterValue{value: decoded, line: value.Line}
 			frontmatter.hasSpec = decoded != ""
+		case "reason":
+			decoded, err := findingScalar(value)
+			if err != nil {
+				return backlogFrontmatter{}, fmt.Errorf("read reason: %w", err)
+			}
+			frontmatter.reason = findingFrontmatterValue{value: decoded, line: value.Line}
 		}
 	}
 	return frontmatter, nil
+}
+
+func terminalBacklogStatus(status string) bool {
+	switch status {
+	case "declined", "done", "deprecated", "superseded", "closed", "cancelled":
+		return true
+	default:
+		return false
+	}
+}
+
+func hasBacklogValue(value string) bool {
+	value = strings.TrimSpace(value)
+	return value != "" && !strings.EqualFold(value, "null")
 }

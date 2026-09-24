@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0164-knowledge-lifecycle-and-capture
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -48,3 +48,27 @@ This is an authorized tooling Task for `internal/speccheck/backlog.go` and `inte
 ## References
 
 - [_techspec.md](_techspec.md) — Terminal dispositions
+
+## Result
+
+Implemented the two documented terminal-disposition routes without adding a detector code. Archived Findings now close through either a resolvable `absorbed_by` or non-empty `closure_reason` and `closure_evidence`; a present invalid absorber remains an `SC-ARCHIVE-LICENSE` error. Backlog retirement now recognizes every declared terminal status with its required `spec` or `reason`, and `SC-BACKLOG-UNMOVED` reports terminal entries that remain under `docs/backlog/` with the History Root destination and missing-reason guidance when applicable.
+
+Acceptance evidence:
+
+- An archived Finding with closure fields and no absorber passes: `TestArchivedFindingClosesWithReasonAndEvidence` passed in `./internal/speccheck`.
+- Closure fields beside an invalid `absorbed_by` still fail: `TestArchivedFindingClosureCannotHideAnInvalidAbsorber` passed, including the invalid-absorber diagnostic and the missing-license Fix naming both routes.
+- Every terminal Backlog status retires with a `spec` or non-empty `reason`, while `open`, `promoted`, unknown, blank-evidence, and missing-evidence cases do not: `TestClassifyBacklogEntryRetiresEveryClosedStatus` passed in `./internal/spec`.
+- A terminal Backlog Entry left in `docs/backlog/` is reported: `TestTerminalBacklogEntryLeftActiveIsUnmoved` passed and asserted both `docs/history/backlog/` and the missing `reason` in the Fix.
+
+Focused checks:
+
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 ./internal/speccheck ./internal/spec` — passed.
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -tags docscontract -run '^TestCheckCorpusGolden$' ./internal/docscontract` — passed with the existing golden unchanged.
+- `make verify-incremental` — passed after rerunning with the network access required by GitHub-backed integration checks; vet, the repository Go suite, skill synchronization checks, skill validation, and the build all exited successfully.
+
+The Task's declared `## Verification` command was not run; Daemon Verification remains authoritative. No follow-up work was discovered.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260924T223414Z_54e6f85ae98b6550`
+- Source commit: `64dee5744bd809e5aae0e53dc64e0a4eb07a3340`

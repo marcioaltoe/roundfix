@@ -133,13 +133,15 @@ type findingFrontmatterValue struct {
 }
 
 type findingFrontmatter struct {
-	status     findingFrontmatterValue
-	hasStatus  bool
-	kind       findingFrontmatterValue
-	hasKind    bool
-	members    []findingFrontmatterValue
-	absorbedBy findingFrontmatterValue
-	hasLicense bool
+	status          findingFrontmatterValue
+	hasStatus       bool
+	kind            findingFrontmatterValue
+	hasKind         bool
+	members         []findingFrontmatterValue
+	absorbedBy      findingFrontmatterValue
+	hasLicense      bool
+	closureReason   findingFrontmatterValue
+	closureEvidence findingFrontmatterValue
 }
 
 type findingDocument struct {
@@ -303,6 +305,18 @@ func parseFindingFrontmatter(content []byte) (findingFrontmatter, error) {
 			}
 			frontmatter.absorbedBy = findingFrontmatterValue{value: decoded, line: value.Line + 1}
 			frontmatter.hasLicense = true
+		case "closure_reason":
+			decoded, err := findingScalar(value)
+			if err != nil {
+				return findingFrontmatter{}, fmt.Errorf("read closure_reason: %w", err)
+			}
+			frontmatter.closureReason = findingFrontmatterValue{value: decoded, line: value.Line + 1}
+		case "closure_evidence":
+			decoded, err := findingScalar(value)
+			if err != nil {
+				return findingFrontmatter{}, fmt.Errorf("read closure_evidence: %w", err)
+			}
+			frontmatter.closureEvidence = findingFrontmatterValue{value: decoded, line: value.Line + 1}
 		}
 	}
 	return frontmatter, nil
@@ -399,26 +413,29 @@ func repositoryDirectoryNames(directory string, skipUnderscore bool) (map[string
 
 func detectArchiveLicenses(result *Result, archived []findingDocument, rollups, activeSpecs, archivedSpecs map[string]bool) {
 	for _, document := range archived {
-		if !document.frontmatter.hasLicense {
+		if document.frontmatter.hasLicense {
+			license := document.frontmatter.absorbedBy
+			if rollups[license.value] || activeSpecs[license.value] || archivedSpecs[license.value] {
+				continue
+			}
 			result.Findings = append(result.Findings, Finding{
 				Code:     CodeArchiveLicense,
 				Severity: SeverityError,
-				Summary:  document.displayPath + " has no absorbed_by license",
-				Where:    []Location{{Path: document.displayPath, Line: 1}},
-				Fix:      "Add absorbed_by to the YAML frontmatter in " + document.displayPath + ", naming an active Rollup basename or an active or archived Spec slug.",
+				Summary:  document.displayPath + " declares unresolved absorbed_by " + strconv.Quote(license.value),
+				Where:    []Location{{Path: document.displayPath, Line: license.line}},
+				Fix:      "Point absorbed_by in " + document.displayPath + " to an active Rollup basename or an active or archived Spec slug.",
 			})
 			continue
 		}
-		license := document.frontmatter.absorbedBy
-		if rollups[license.value] || activeSpecs[license.value] || archivedSpecs[license.value] {
+		if strings.TrimSpace(document.frontmatter.closureReason.value) != "" && strings.TrimSpace(document.frontmatter.closureEvidence.value) != "" {
 			continue
 		}
 		result.Findings = append(result.Findings, Finding{
 			Code:     CodeArchiveLicense,
 			Severity: SeverityError,
-			Summary:  document.displayPath + " declares unresolved absorbed_by " + strconv.Quote(license.value),
-			Where:    []Location{{Path: document.displayPath, Line: license.line}},
-			Fix:      "Point absorbed_by in " + document.displayPath + " to an active Rollup basename or an active or archived Spec slug.",
+			Summary:  document.displayPath + " has neither an absorbed_by license nor complete closure fields",
+			Where:    []Location{{Path: document.displayPath, Line: 1}},
+			Fix:      "Add absorbed_by to the YAML frontmatter in " + document.displayPath + ", naming an active Rollup basename or an active or archived Spec slug, or add non-empty closure_reason and closure_evidence fields.",
 		})
 	}
 }
