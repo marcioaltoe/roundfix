@@ -18,13 +18,16 @@ graph:
       needs: [task_01, task_02, task_03]
     - id: task_05
       file: task_05.md
-      needs: [task_01, task_02, task_03, task_04, task_06, task_07]
+      needs: [task_01, task_02, task_03, task_04, task_06, task_07, task_08]
     - id: task_06
       file: task_06.md
       needs: [task_04]
     - id: task_07
       file: task_07.md
       needs: [task_06]
+    - id: task_08
+      file: task_08.md
+      needs: [task_07]
 ---
 
 # Task Graph
@@ -37,4 +40,5 @@ graph:
 | task_04 | docs | Keep the shipped skill and the guide true |
 | task_06 | backend | No findings header escapes, no answer is invented |
 | task_07 | backend | Spec context that never blocks and stays bounded |
+| task_08 | docs | Describe the Spec-context contract the correctives delivered |
 | task_05 | qa | Run the final QA gate |
