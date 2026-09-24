@@ -401,19 +401,18 @@ func TestPushRefusesTheBaseBranch(t *testing.T) {
 	}
 }
 
-func TestPendingChecksAreAwaitedNotParked(t *testing.T) {
+func TestDeliveryWaitsThroughUnreportedChecks(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	runStore := openDeliveryEngineStore(t, ctx)
-	const gitRoot = "/repo-pending-checks"
-	if _, err := runStore.CreateDeliveryQueue(ctx, gitRoot, []string{"pending-spec"}); err != nil {
+	const gitRoot = "/repo-unreported-checks"
+	if _, err := runStore.CreateDeliveryQueue(ctx, gitRoot, []string{"unreported-spec"}); err != nil {
 		t.Fatalf("create Delivery Queue: %v", err)
 	}
 	workflow := newFakeDeliveryWorkflow()
 	boundary := newFakeDeliveryBoundary()
-	boundary.checkReports["pending-spec"] = []CheckReport{
+	boundary.checkReports["unreported-spec"] = []CheckReport{
 		{Checks: []PullRequestCheck{}},
-		{Checks: []PullRequestCheck{{Name: "verify", Bucket: "pending"}}},
 		{Checks: []PullRequestCheck{{Name: "verify", Bucket: "pass"}}},
 	}
 	clock := &fakeDeliveryClock{now: time.Unix(100, 0)}
@@ -425,7 +424,69 @@ func TestPendingChecksAreAwaitedNotParked(t *testing.T) {
 
 	item := readDeliveryQueue(t, ctx, runStore, gitRoot).Items[0]
 	if item.Stage != store.DeliveryStageMerged {
-		t.Fatalf("pending-check item = %+v, want merged after checks passed", item)
+		t.Fatalf("unreported-check item = %+v, want merged after checks passed", item)
+	}
+	if clock.sleeps != 1 {
+		t.Fatalf("check waits = %d, want 1", clock.sleeps)
+	}
+}
+
+func TestCheckReadErrorsAreRetriedUntilTheDeadline(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runStore := openDeliveryEngineStore(t, ctx)
+	const gitRoot = "/repo-check-read-error"
+	if _, err := runStore.CreateDeliveryQueue(ctx, gitRoot, []string{"retry-check-spec"}); err != nil {
+		t.Fatalf("create Delivery Queue: %v", err)
+	}
+	workflow := newFakeDeliveryWorkflow()
+	boundary := newFakeDeliveryBoundary()
+	boundary.checkErrors["retry-check-spec"] = []error{errors.New("temporary check read failure")}
+	boundary.checkReports["retry-check-spec"] = []CheckReport{
+		{Checks: []PullRequestCheck{{Name: "verify", Bucket: "pass"}}},
+	}
+	clock := &fakeDeliveryClock{now: time.Unix(100, 0)}
+	engine := newTestDeliveryEngineWithWait(runStore, workflow, boundary, clock, clock)
+
+	if _, err := engine.Run(ctx, gitRoot); err != nil {
+		t.Fatalf("run Delivery Engine: %v", err)
+	}
+
+	item := readDeliveryQueue(t, ctx, runStore, gitRoot).Items[0]
+	if item.Stage != store.DeliveryStageMerged {
+		t.Fatalf("check-read-error item = %+v, want merged after retry", item)
+	}
+	if clock.sleeps != 1 {
+		t.Fatalf("check waits = %d, want 1", clock.sleeps)
+	}
+}
+
+func TestPersistentCheckReadErrorsParkAtTheDeadline(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runStore := openDeliveryEngineStore(t, ctx)
+	const gitRoot = "/repo-persistent-check-read-error"
+	if _, err := runStore.CreateDeliveryQueue(ctx, gitRoot, []string{"timeout-check-spec"}); err != nil {
+		t.Fatalf("create Delivery Queue: %v", err)
+	}
+	workflow := newFakeDeliveryWorkflow()
+	boundary := newFakeDeliveryBoundary()
+	boundary.checkErrors["timeout-check-spec"] = []error{
+		errors.New("temporary check read failure"),
+		errors.New("temporary check read failure"),
+		errors.New("temporary check read failure"),
+	}
+	clock := &fakeDeliveryClock{now: time.Unix(100, 0)}
+	engine := newTestDeliveryEngineWithWait(runStore, workflow, boundary, clock, clock)
+	engine.checkTimeout = 2 * time.Second
+
+	if _, err := engine.Run(ctx, gitRoot); err != nil {
+		t.Fatalf("run Delivery Engine: %v", err)
+	}
+
+	item := readDeliveryQueue(t, ctx, runStore, gitRoot).Items[0]
+	if item.Stage != store.DeliveryStageParked || item.Blocker != BlockerChecksTimeout {
+		t.Fatalf("check-read-error item = %+v, want parked as checks-timeout", item)
 	}
 	if clock.sleeps != 2 {
 		t.Fatalf("check waits = %d, want 2", clock.sleeps)
@@ -739,6 +800,7 @@ type fakeDeliveryBoundary struct {
 	merged             map[string]string
 	failedChecks       map[string]bool
 	cancelledChecks    map[string]bool
+	checkErrors        map[string][]error
 	checkReports       map[string][]CheckReport
 	findPullRequest    func(PullRequestRequest) PullRequestResult
 	pushEffects        int
@@ -756,6 +818,7 @@ func newFakeDeliveryBoundary() *fakeDeliveryBoundary {
 		merged:          map[string]string{},
 		failedChecks:    map[string]bool{},
 		cancelledChecks: map[string]bool{},
+		checkErrors:     map[string][]error{},
 		checkReports:    map[string][]CheckReport{},
 		callsBySlug:     map[string]int{},
 	}
@@ -798,6 +861,11 @@ func (fake *fakeDeliveryBoundary) CurrentHeadChecks(_ context.Context, number st
 	}
 	fake.recordCall(pullRequest.HeadBranch, "checks")
 	slug := slugFromBranch(pullRequest.HeadBranch)
+	if errs := fake.checkErrors[slug]; len(errs) > 0 {
+		err := errs[0]
+		fake.checkErrors[slug] = errs[1:]
+		return CheckReport{}, err
+	}
 	if reports := fake.checkReports[slug]; len(reports) > 0 {
 		report := reports[0]
 		fake.checkReports[slug] = reports[1:]

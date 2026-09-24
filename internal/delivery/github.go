@@ -268,6 +268,11 @@ func (client GitHubCLI) CurrentHeadChecks(ctx context.Context, number string) (C
 	if err != nil {
 		return CheckReport{}, fmt.Errorf("read pull request checks: %w", err)
 	}
+	checkError := strings.TrimSpace(result.Stderr)
+	if result.ExitCode == 1 && strings.TrimSpace(result.Stdout) == "" &&
+		strings.HasPrefix(checkError, "no checks reported on the '") && strings.HasSuffix(checkError, "' branch") {
+		result.Stdout = "[]"
+	}
 	if result.ExitCode != 0 && strings.TrimSpace(result.Stdout) == "" {
 		return CheckReport{}, commandFailure("read pull request checks", result)
 	}

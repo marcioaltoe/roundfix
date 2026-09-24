@@ -529,24 +529,25 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 	deadline := engine.clock.Now().Add(engine.checkTimeout)
 	for {
 		report, err := engine.pullRequests.CurrentHeadChecks(ctx, item.PullRequestNumber)
-		if err != nil {
-			return fmt.Errorf("read current-head checks: %w", err)
-		}
-		if report.HeadSHA != head {
-			return engine.park(ctx, gitRoot, item, BlockerReviewStale)
-		}
-		pending := len(report.Checks) == 0
-		for _, check := range report.Checks {
-			switch strings.ToLower(strings.TrimSpace(check.Bucket)) {
-			case "pass", "skipping":
-			case "fail", "cancel", "cancelled":
-				return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
-			default:
-				pending = true
+		if err == nil {
+			if report.HeadSHA != head {
+				return engine.park(ctx, gitRoot, item, BlockerReviewStale)
 			}
-		}
-		if !pending {
-			return engine.setStage(ctx, gitRoot, item, store.DeliveryStageMerging)
+			pending := len(report.Checks) == 0
+			for _, check := range report.Checks {
+				switch strings.ToLower(strings.TrimSpace(check.Bucket)) {
+				case "pass", "skipping":
+				case "fail", "cancel", "cancelled":
+					return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+				default:
+					pending = true
+				}
+			}
+			if !pending {
+				return engine.setStage(ctx, gitRoot, item, store.DeliveryStageMerging)
+			}
+		} else if ctx.Err() != nil {
+			return fmt.Errorf("read current-head checks: %w", err)
 		}
 		remaining := deadline.Sub(engine.clock.Now())
 		if remaining <= 0 {

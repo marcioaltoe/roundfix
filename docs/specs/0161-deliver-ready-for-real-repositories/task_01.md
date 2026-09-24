@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0161-deliver-ready-for-real-repositories
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -42,3 +42,36 @@ Right after `gh pr create`, `gh pr checks` exits 1 with `no checks reported`, wh
 ## References
 
 - [_techspec.md](_techspec.md) — Checks
+
+## Result
+
+Implemented the bounded check wait without changing the Task status or running
+the Daemon-owned Verification command:
+
+- `CurrentHeadChecks` maps gh exit 1 with empty stdout and the exact
+  `no checks reported on the '<branch>' branch` stderr shape to an empty check
+  report, while preserving other command failures.
+- The Delivery Engine already treated an empty report as pending; its regression
+  test now carries the acceptance-contract name and proves the item merges after
+  checks report success.
+- A check read error now stays inside the existing bounded wait. A later
+  successful report advances to merge, repeated errors park as `checks-timeout`,
+  and context cancellation still returns through the existing cancellation path.
+
+Focused-check evidence:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task-0161-01-gocache go test -count=1 -run '^(TestNoChecksReportedIsAnEmptyReport|TestCheckCommandFailuresRemainErrors|TestDeliveryWaitsThroughUnreportedChecks|TestCheckReadErrorsAreRetriedUntilTheDeadline|TestPersistentCheckReadErrorsParkAtTheDeadline)$' ./internal/delivery` — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task-0161-01-gocache go test -count=1 ./internal/delivery` — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task-0161-01-gocache go vet ./internal/delivery` — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task-0161-01-gocache make verify-incremental` — blocked when an existing integration check attempted to reach `api.github.com`; the sandbox denied network access and rejected escalation. This is not the Task's declared Verification.
+
+Acceptance evidence:
+
+1. `TestNoChecksReportedIsAnEmptyReport` passes against the exact gh 2.101.0
+   stderr, and `TestCheckCommandFailuresRemainErrors` proves the mapping stays
+   narrow.
+2. `TestDeliveryWaitsThroughUnreportedChecks` passes and observes one bounded
+   wait before the item merges after a passing report.
+3. `TestCheckReadErrorsAreRetriedUntilTheDeadline` passes after a transient
+   read error, and `TestPersistentCheckReadErrorsParkAtTheDeadline` proves
+   repeated errors stop at the configured timeout.
