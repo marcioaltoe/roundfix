@@ -6,6 +6,7 @@ package verifyselect_test
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -189,6 +190,84 @@ func TestBaselineCLITestPatternIsDerived(t *testing.T) {
 	}
 }
 
+func TestPartitionCoversEveryTestExactlyOnce(t *testing.T) {
+	repoRoot := findRepositoryRoot(t)
+
+	packages := listedPackages(t, repoRoot)
+	corePackages, err := verifyselect.Packages(t.Context(), repoRoot, verifyselect.CoreSet)
+	if err != nil {
+		t.Fatalf("Packages(core) error = %v", err)
+	}
+	baselinePackages, err := verifyselect.Packages(t.Context(), repoRoot, verifyselect.BaselineSet)
+	if err != nil {
+		t.Fatalf("Packages(baseline) error = %v", err)
+	}
+	corePackageSet := makeNameSet(corePackages)
+	baselinePackageSet := makeNameSet(baselinePackages)
+
+	cliTests := listedTests(t, repoRoot, "./internal/cli")
+	baselinePatternText, err := verifyselect.BaselineCLITestPattern(repoRoot)
+	if err != nil {
+		t.Fatalf("BaselineCLITestPattern() error = %v", err)
+	}
+	baselinePattern, err := regexp.Compile(baselinePatternText)
+	if err != nil {
+		t.Fatalf("BaselineCLITestPattern() returned invalid regexp %q: %v", baselinePatternText, err)
+	}
+	coreCLITests := make(nameSet)
+	baselineCLITests := make(nameSet)
+	for _, name := range cliTests {
+		if baselinePattern.MatchString(name) {
+			baselineCLITests[name] = struct{}{}
+			continue
+		}
+		coreCLITests[name] = struct{}{}
+	}
+
+	t.Run("tree satisfies the partition", func(t *testing.T) {
+		if err := partitionError(packages, corePackageSet, baselinePackageSet); err != nil {
+			t.Errorf("package partition: %v", err)
+		}
+		if err := partitionError(cliTests, coreCLITests, baselineCLITests); err != nil {
+			t.Errorf("internal/cli test partition: %v", err)
+		}
+	})
+
+	t.Run("package omitted from both sets is named", func(t *testing.T) {
+		missing := packages[0]
+		coreWithout := cloneNameSet(corePackageSet)
+		baselineWithout := cloneNameSet(baselinePackageSet)
+		delete(coreWithout, missing)
+		delete(baselineWithout, missing)
+
+		err := partitionError(packages, coreWithout, baselineWithout)
+		if err == nil {
+			t.Fatalf("partitionError() error = nil after removing %q from both package sets", missing)
+		}
+		want := fmt.Sprintf("%q is selected by 0 sets, want exactly 1", missing)
+		if err.Error() != want {
+			t.Fatalf("partitionError() error = %q, want %q", err, want)
+		}
+	})
+
+	t.Run("CLI test selected by both invocations is named", func(t *testing.T) {
+		overlap := cliTests[0]
+		coreWithOverlap := cloneNameSet(coreCLITests)
+		baselineWithOverlap := cloneNameSet(baselineCLITests)
+		coreWithOverlap[overlap] = struct{}{}
+		baselineWithOverlap[overlap] = struct{}{}
+
+		err := partitionError(cliTests, coreWithOverlap, baselineWithOverlap)
+		if err == nil {
+			t.Fatalf("partitionError() error = nil after selecting %q in both CLI invocations", overlap)
+		}
+		want := fmt.Sprintf("%q is selected by 2 sets, want exactly 1", overlap)
+		if err.Error() != want {
+			t.Fatalf("partitionError() error = %q, want %q", err, want)
+		}
+	})
+}
+
 func TestRunPrintsRequestedDefinitions(t *testing.T) {
 	repo := t.TempDir()
 	writeFile(t, repo, "go.mod", "module example.test/fixture\n\ngo 1.26\n")
@@ -287,4 +366,88 @@ func declaredTests(t *testing.T, glob string) []string {
 	}
 	sort.Strings(names)
 	return names
+}
+
+type nameSet map[string]struct{}
+
+func listedPackages(t *testing.T, repoRoot string) []string {
+	t.Helper()
+	command := exec.CommandContext(t.Context(), "go", "list", "-f", "{{.Dir}}", "./...")
+	command.Dir = repoRoot
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatalf("go list ./...: %v\n%s", err, output)
+	}
+
+	packages := make([]string, 0)
+	for _, directory := range strings.Fields(string(output)) {
+		relative, relErr := filepath.Rel(repoRoot, directory)
+		if relErr != nil {
+			t.Fatalf("make package directory %q relative to repository: %v", directory, relErr)
+		}
+		if relative == "." {
+			packages = append(packages, ".")
+			continue
+		}
+		packages = append(packages, "./"+filepath.ToSlash(relative))
+	}
+	if len(packages) == 0 {
+		t.Fatal("go list ./... returned no packages")
+	}
+	sort.Strings(packages)
+	return packages
+}
+
+func listedTests(t *testing.T, repoRoot, packagePath string) []string {
+	t.Helper()
+	command := exec.CommandContext(t.Context(), "go", "test", "-list", "^Test", packagePath)
+	command.Dir = repoRoot
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatalf("go test -list ^Test %s: %v\n%s", packagePath, err, output)
+	}
+
+	tests := make([]string, 0)
+	for _, line := range strings.Split(string(output), "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "Test") {
+			tests = append(tests, line)
+		}
+	}
+	if len(tests) == 0 {
+		t.Fatalf("go test -list ^Test %s returned no tests", packagePath)
+	}
+	sort.Strings(tests)
+	return tests
+}
+
+func makeNameSet(names []string) nameSet {
+	set := make(nameSet, len(names))
+	for _, name := range names {
+		set[name] = struct{}{}
+	}
+	return set
+}
+
+func cloneNameSet(source nameSet) nameSet {
+	clone := make(nameSet, len(source))
+	for name := range source {
+		clone[name] = struct{}{}
+	}
+	return clone
+}
+
+func partitionError(items []string, sets ...nameSet) error {
+	for _, item := range items {
+		memberships := 0
+		for _, set := range sets {
+			if _, ok := set[item]; ok {
+				memberships++
+			}
+		}
+		if memberships != 1 {
+			return fmt.Errorf("%q is selected by %d sets, want exactly 1", item, memberships)
+		}
+	}
+	return nil
 }
