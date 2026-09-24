@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0156-a-delivery-loop-that-outlives-the-session
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -41,3 +41,46 @@ Corrective Task from the QA gate of 2026-09-24: the repository Verification fail
 ## References
 
 - [_techspec.md](_techspec.md) — Build Order
+
+## Result
+
+The Run Database migration now inspects the existing `delivery_queues` owner
+columns before building the version 15 statement list. It adds only missing
+columns, so older-version fixtures that already contain the later queue table
+do not collide with `owner_pid` or `owner_identity`. Fresh version 15 databases
+create the version 14 queue shape and apply the same owner-column statements as
+the migration path, which leaves their stored SQLite schema byte-identical.
+
+Focused checks:
+
+- Before the implementation change,
+  `GOCACHE=/tmp/roundfix-task07-gocache go test -count=1 -run
+  '^TestOpenMigratesV11RunDatabaseAddingOwnerIdentityUnproven$'
+  ./internal/store` failed with `duplicate column name: owner_pid`.
+- Before the implementation change, the new
+  `TestOpenMigratesV14DeliveryQueueAddingOwner` failed because the migrated
+  `delivery_queues` schema text differed from a fresh version 15 schema.
+- Individual focused runs of
+  `TestOpenMigratesV11RunDatabaseAddingOwnerIdentityUnproven`,
+  `TestOpenMigratesV12RunDatabaseAddingRunWindows`,
+  `TestOpenMigratesV14DeliveryQueueAddingOwner`, and
+  `TestBranchIntegrityPreflightMigratesOutdatedRunDatabase` passed after the
+  implementation change.
+- `GOCACHE=/tmp/roundfix-task07-gocache make verify-incremental` passed after
+  the final code edit, including repository-wide formatting, vet, tests, skill
+  checks, and build.
+- `git diff --check` passed after this Result update.
+
+Acceptance evidence:
+
+- The repository-wide incremental suite exercised the existing migration
+  coverage from every supported earlier Run Database schema version. The named
+  version 11, version 12, and Branch Integrity Preflight regressions also passed
+  independently without a duplicate-column error.
+- `TestOpenMigratesV14DeliveryQueueAddingOwner` starts with a persisted queue,
+  removes both owner columns, sets schema version 14, and reopens through the
+  production migration. It observes the preserved queue and its new empty
+  owner fields, then compares every stored SQLite schema definition with a
+  fresh version 15 database byte for byte.
+
+The Daemon-owned command under `## Verification` was not run.

@@ -1371,6 +1371,13 @@ func (store *Store) migrate(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	var v15Statements []string
+	if version >= 3 && version < schemaVersion {
+		v15Statements, err = store.deliveryOwnerMigrationStatements(ctx)
+		if err != nil {
+			return err
+		}
+	}
 	switch version {
 	case schemaVersion:
 		return nil
@@ -1387,7 +1394,7 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = append(statements, migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
 		statements = append(statements, migrateV13ToV14Statements()...)
-		return store.applyMigration(ctx, append(statements, migrateV14ToV15Statements()...))
+		return store.applyMigration(ctx, append(statements, v15Statements...))
 	case 4:
 		statements := append(migrateV4ToV5Statements(), migrateV5ToV6Statements()...)
 		statements = append(statements, migrateV6ToV7Statements()...)
@@ -1398,7 +1405,7 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = append(statements, migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
 		statements = append(statements, migrateV13ToV14Statements()...)
-		return store.applyMigration(ctx, append(statements, migrateV14ToV15Statements()...))
+		return store.applyMigration(ctx, append(statements, v15Statements...))
 	case 5:
 		if err := store.ensureAgentColumn(ctx); err != nil {
 			return err
@@ -1411,7 +1418,7 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = append(statements, migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
 		statements = append(statements, migrateV13ToV14Statements()...)
-		return store.applyMigration(ctx, append(statements, migrateV14ToV15Statements()...))
+		return store.applyMigration(ctx, append(statements, v15Statements...))
 	case 6:
 		statements := append(migrateV6ToV7Statements(), migrateV7ToV8Statements()...)
 		statements = append(statements, migrateV8ToV9Statements()...)
@@ -1420,7 +1427,7 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = append(statements, migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
 		statements = append(statements, migrateV13ToV14Statements()...)
-		return store.applyMigration(ctx, append(statements, migrateV14ToV15Statements()...))
+		return store.applyMigration(ctx, append(statements, v15Statements...))
 	case 7:
 		statements := append(migrateV7ToV8Statements(), migrateV8ToV9Statements()...)
 		statements = append(statements, migrateV9ToV10Statements()...)
@@ -1428,37 +1435,37 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = append(statements, migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
 		statements = append(statements, migrateV13ToV14Statements()...)
-		return store.applyMigration(ctx, append(statements, migrateV14ToV15Statements()...))
+		return store.applyMigration(ctx, append(statements, v15Statements...))
 	case 8:
 		statements := append(migrateV8ToV9Statements(), migrateV9ToV10Statements()...)
 		statements = append(statements, migrateV10ToV11Statements()...)
 		statements = append(statements, migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
 		statements = append(statements, migrateV13ToV14Statements()...)
-		return store.applyMigration(ctx, append(statements, migrateV14ToV15Statements()...))
+		return store.applyMigration(ctx, append(statements, v15Statements...))
 	case 9:
 		statements := append(migrateV9ToV10Statements(), migrateV10ToV11Statements()...)
 		statements = append(statements, migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
 		statements = append(statements, migrateV13ToV14Statements()...)
-		return store.applyMigration(ctx, append(statements, migrateV14ToV15Statements()...))
+		return store.applyMigration(ctx, append(statements, v15Statements...))
 	case 10:
 		statements := append(migrateV10ToV11Statements(), migrateV11ToV12Statements()...)
 		statements = append(statements, migrateV12ToV13Statements()...)
 		statements = append(statements, migrateV13ToV14Statements()...)
-		return store.applyMigration(ctx, append(statements, migrateV14ToV15Statements()...))
+		return store.applyMigration(ctx, append(statements, v15Statements...))
 	case 11:
 		statements := append(migrateV11ToV12Statements(), migrateV12ToV13Statements()...)
 		statements = append(statements, migrateV13ToV14Statements()...)
-		return store.applyMigration(ctx, append(statements, migrateV14ToV15Statements()...))
+		return store.applyMigration(ctx, append(statements, v15Statements...))
 	case 12:
 		statements := append(migrateV12ToV13Statements(), migrateV13ToV14Statements()...)
-		return store.applyMigration(ctx, append(statements, migrateV14ToV15Statements()...))
+		return store.applyMigration(ctx, append(statements, v15Statements...))
 	case 13:
-		statements := append(migrateV13ToV14Statements(), migrateV14ToV15Statements()...)
+		statements := append(migrateV13ToV14Statements(), v15Statements...)
 		return store.applyMigration(ctx, statements)
 	case 14:
-		return store.applyMigration(ctx, migrateV14ToV15Statements())
+		return store.applyMigration(ctx, v15Statements)
 	default:
 		return fmt.Errorf("migrate Run Database: schema version %d is not supported", version)
 	}
@@ -1536,7 +1543,8 @@ func createSchemaStatements() []string {
 			created_at INTEGER NOT NULL
 		)`,
 	}
-	statements = append(statements, deliverySchemaStatements(true)...)
+	statements = append(statements, deliverySchemaStatements()...)
+	statements = append(statements, deliveryOwnerColumnStatements(false, false)...)
 	return append(statements, `PRAGMA user_version = 15`)
 }
 
@@ -1656,31 +1664,43 @@ func migrateV12ToV13Statements() []string {
 }
 
 func migrateV13ToV14Statements() []string {
-	statements := deliverySchemaStatements(false)
+	statements := deliverySchemaStatements()
 	return append(statements, `PRAGMA user_version = 14`)
 }
 
-func migrateV14ToV15Statements() []string {
-	return []string{
-		`ALTER TABLE delivery_queues ADD COLUMN owner_pid INTEGER`,
-		`ALTER TABLE delivery_queues ADD COLUMN owner_identity TEXT NOT NULL DEFAULT ''`,
-		`PRAGMA user_version = 15`,
+func (store *Store) deliveryOwnerMigrationStatements(ctx context.Context) ([]string, error) {
+	var ownerPIDExists int
+	var ownerIdentityExists int
+	err := store.db.QueryRowContext(ctx, `
+SELECT
+	EXISTS (SELECT 1 FROM pragma_table_info('delivery_queues') WHERE name = 'owner_pid'),
+	EXISTS (SELECT 1 FROM pragma_table_info('delivery_queues') WHERE name = 'owner_identity')`).Scan(
+		&ownerPIDExists,
+		&ownerIdentityExists,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("inspect Delivery Queue owner columns: %w", err)
 	}
+	statements := deliveryOwnerColumnStatements(ownerPIDExists != 0, ownerIdentityExists != 0)
+	return append(statements, `PRAGMA user_version = 15`), nil
 }
 
-func deliverySchemaStatements(withOwner bool) []string {
-	queueStatement := `CREATE TABLE IF NOT EXISTS delivery_queues (
-			git_root TEXT PRIMARY KEY
-		)`
-	if withOwner {
-		queueStatement = `CREATE TABLE IF NOT EXISTS delivery_queues (
-			git_root TEXT PRIMARY KEY,
-			owner_pid INTEGER,
-			owner_identity TEXT NOT NULL DEFAULT ''
-		)`
+func deliveryOwnerColumnStatements(ownerPIDExists bool, ownerIdentityExists bool) []string {
+	statements := []string{}
+	if !ownerPIDExists {
+		statements = append(statements, `ALTER TABLE delivery_queues ADD COLUMN owner_pid INTEGER`)
 	}
+	if !ownerIdentityExists {
+		statements = append(statements, `ALTER TABLE delivery_queues ADD COLUMN owner_identity TEXT NOT NULL DEFAULT ''`)
+	}
+	return statements
+}
+
+func deliverySchemaStatements() []string {
 	return []string{
-		queueStatement,
+		`CREATE TABLE IF NOT EXISTS delivery_queues (
+			git_root TEXT PRIMARY KEY
+		)`,
 		`CREATE TABLE IF NOT EXISTS delivery_queue_items (
 			git_root TEXT NOT NULL,
 			spec_slug TEXT NOT NULL,

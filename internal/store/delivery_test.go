@@ -116,9 +116,14 @@ func TestDeliveryQueueRoundTripsItemsAndReceipts(t *testing.T) {
 	}
 }
 
-func TestDeliveryQueueOwnerMigrationPreservesExistingQueue(t *testing.T) {
+func TestOpenMigratesV14DeliveryQueueAddingOwner(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
+	freshHomeDir := t.TempDir()
+	fresh := openTestStore(t, ctx, freshHomeDir)
+	freshSchema := readRunDatabaseSchema(t, fresh)
+	closeStore(t, fresh)
+
 	homeDir := t.TempDir()
 	runStore := openTestStore(t, ctx, homeDir)
 	queue, err := runStore.CreateDeliveryQueue(ctx, "/tmp/existing-delivery", []string{"existing-spec"})
@@ -146,6 +151,42 @@ func TestDeliveryQueueOwnerMigrationPreservesExistingQueue(t *testing.T) {
 	if persisted.OwnerPID != 0 || persisted.OwnerIdentity != "" {
 		t.Fatalf("migrated Delivery Queue owner = pid:%d identity:%q", persisted.OwnerPID, persisted.OwnerIdentity)
 	}
+	if migratedSchema := readRunDatabaseSchema(t, reopened); migratedSchema != freshSchema {
+		t.Fatalf("migrated schema differs from fresh schema:\n--- migrated ---\n%s\n--- fresh ---\n%s", migratedSchema, freshSchema)
+	}
+}
+
+func readRunDatabaseSchema(t *testing.T, store *Store) string {
+	t.Helper()
+	rows, err := store.db.Query(`
+SELECT type, name, tbl_name, sql
+FROM sqlite_schema
+WHERE sql IS NOT NULL
+ORDER BY type, name`)
+	if err != nil {
+		t.Fatalf("read Run Database schema: %v", err)
+	}
+	defer func() {
+		if err := rows.Close(); err != nil {
+			t.Fatalf("close Run Database schema rows: %v", err)
+		}
+	}()
+
+	schema := ""
+	for rows.Next() {
+		var objectType string
+		var name string
+		var tableName string
+		var sqlText string
+		if err := rows.Scan(&objectType, &name, &tableName, &sqlText); err != nil {
+			t.Fatalf("scan Run Database schema: %v", err)
+		}
+		schema += objectType + "\x00" + name + "\x00" + tableName + "\x00" + sqlText + "\n"
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatalf("iterate Run Database schema: %v", err)
+	}
+	return schema
 }
 
 func downgradeDeliverySchemaFixture(t *testing.T, ctx context.Context, homeDir string) {
