@@ -29,6 +29,20 @@ Validate the assembled feature against the promises in its spec by exercising th
    and count it in `rows_blocked_declared`. Keep the three causes separate:
    never fold one into another to make the report or verdict look cleaner.
 
+### QA settlement
+
+The same outcome settles the authored `qa` Task and determines what archive
+may move:
+
+| Outcome | Settles | Archives |
+| --- | --- | --- |
+| `pass` | Settles the QA Task as `completed` and makes the Spec archive-eligible when the report has no disallowed blocked rows. | The Spec and its QA report and evidence. |
+| qualifying declared `partial` | Settles the QA Task as `completed` when every unmet row is covered by a matching `## Unreachable Acceptance` declaration; the declaration actions remain `unproven`. | The Spec, its QA report and evidence, and the declarations' `satisfied-by` record. |
+| `environment-blocked` | Leaves the row blocked; the report can still settle as `pass` when equivalent evidence satisfies the environment policy. | Nothing by itself; a qualifying report can archive the Spec. |
+| `failed` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
+| `missing` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
+| `override` | Does not change the QA Task status or report verdict; settles archive as explicitly authorized despite failed or missing QA. | The Spec with `qa_override` approval, reason, QA outcome and revision; QA files move byte-identically. |
+
 ## 1. Resolve scope and preconditions
 
 Resolve `docs/specs/<slug>/`, then read `_tasks.md`, `_prd.md`, every

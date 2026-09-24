@@ -17,6 +17,20 @@ Move a completed spec out of the active set: `<resolved-spec-root>/<slug>/` → 
 
 The trigger is spec completion, not publication: run this automatically at the end of the `implement-spec` loop once the QA gate passes, or whenever the user asks. Merge and release are separate, user-driven steps — the archive commit simply travels with the branch and ships inside the feature's own PR.
 
+### QA settlement
+
+The same outcome settles the authored `qa` Task and determines what archive
+may move:
+
+| Outcome | Settles | Archives |
+| --- | --- | --- |
+| `pass` | Settles the QA Task as `completed` and makes the Spec archive-eligible when the report has no disallowed blocked rows. | The Spec and its QA report and evidence. |
+| qualifying declared `partial` | Settles the QA Task as `completed` when every unmet row is covered by a matching `## Unreachable Acceptance` declaration; the declaration actions remain `unproven`. | The Spec, its QA report and evidence, and the declarations' `satisfied-by` record. |
+| `environment-blocked` | Leaves the row blocked; the report can still settle as `pass` when equivalent evidence satisfies the environment policy. | Nothing by itself; a qualifying report can archive the Spec. |
+| `failed` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
+| `missing` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
+| `override` | Does not change the QA Task status or report verdict; settles archive as explicitly authorized despite failed or missing QA. | The Spec with `qa_override` approval, reason, QA outcome and revision; QA files move byte-identically. |
+
 ## Preconditions — verify, don't trust
 
 Check all three with fresh command evidence before touching anything:
@@ -202,6 +216,17 @@ A merged PR or release tag is **not** a precondition. If the user passes `--rele
 If any check fails, stop and report the offending Task, report, source, or link
 and the adoption step that fixes a self-containment failure — the Spec stays
 active.
+
+To archive despite failed, missing or otherwise ineligible QA, use the explicit
+approval and reason with the archive command:
+
+```bash
+roundfix archive <slug> --qa-override --approval <source> --reason <text>
+```
+
+The override still requires every non-QA Task to be `completed`, refuses when
+QA already qualifies, and records the approval source, reason, observed QA
+outcome and archived revision. It does not change the QA Task or report.
 
 ## Steps
 

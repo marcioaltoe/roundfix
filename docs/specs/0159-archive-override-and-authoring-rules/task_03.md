@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0159-archive-override-and-authoring-rules
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -47,3 +47,25 @@ The QA gate, archive and Roundfix skills each describe settlement in their own w
 ## References
 
 - [_techspec.md](_techspec.md) — Guidance
+
+## Result
+
+Implemented the shared QA settlement guidance and archive override documentation.
+The three canonical workflow skills now carry one byte-identical six-row
+`### QA settlement` table. The archive command documentation names
+`--qa-override`, `--approval`, and `--reason`; write-tasks guidance and its
+template name all required Task declarations and authoring constraints. The
+distributed owned-skill mirror was regenerated with `make skills-sync`.
+
+Focused checks:
+
+- `GOCACHE=/private/tmp/roundfix-0159-task03-gocache go test ./skills -run 'TestSettlementGuidanceIsOneTable|TestTaskAuthoringGuidanceNamesDeclarations' -count=1` — passed after correcting the template wording to say `property-shaped acceptance`.
+- `GOCACHE=/private/tmp/roundfix-0159-task03-gocache make skills-sync-check` — passed; the owned mirror check and its focused skill checks passed.
+- `make skills-sync` — passed; regenerated `skills/` from `.agents/skills/`.
+
+Acceptance evidence:
+
+- The contract test reads all three canonical sections, compares them byte-for-byte, and checks rows for `pass`, qualifying declared `partial`, `environment-blocked`, `failed`, `missing`, and `override`.
+- The task-writing skill and template contain `verification: independent`, `precondition_repairs`, `SC-ORDINAL-CLAIMED`, named temporal prerequisites without release authority, property-shaped acceptance, test seams, narrow Spec commits, and repository-gate coverage for newly required test classes.
+
+The Daemon still owns the authored Verification command and terminal Task status.

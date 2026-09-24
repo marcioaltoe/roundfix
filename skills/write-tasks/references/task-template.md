@@ -66,6 +66,7 @@ task: task_02
 spec: <feature-slug>
 status: pending # pending | in_progress | completed | failed — only implement-task changes this
 type: backend # REQUIRED: backend | frontend | data | infra | docs | test | chore | qa; qa is only for the authored terminal gate
+verification: independent # optional; declare only when every Verification command is independent and must run after a failure
 complexity: medium # low | medium | high
 ---
 
@@ -78,6 +79,8 @@ complexity: medium # low | medium | high
 ## Requirements
 
 <!-- Numbered. MUST for the contract, SHOULD for preferences. Behavior and interfaces, not file paths. -->
+
+<!-- If a Task creates `docs/adr/NNNN-...`, it claims that ordinal; a duplicate is refused with `SC-ORDINAL-CLAIMED`. A future release, external observation, or generated identifier is a named temporal prerequisite and never invents release authority. -->
 
 1. MUST ...
 2. SHOULD ...
@@ -92,6 +95,8 @@ complexity: medium # low | medium | high
 
 <!-- Independently verifiable checkboxes — each one checkable by a command, a test, or an observable behavior.
      qa-gate re-validates these against the running app at the end of the spec. -->
+
+<!-- Shape acceptance as property-shaped acceptance over meaningful inputs and failure boundaries. Name the narrowest test seam that can fail for the regression, update the affected existing contract when possible, and declare any newly required test class only after confirming the repository gate runs it. Keep Spec commits narrow. -->
 
 - [ ] ...
 
@@ -111,6 +116,8 @@ complexity: medium # low | medium | high
 <!-- The exact commands that prove this task done, with what to expect from each.
      The Daemon runs these verbatim after the Agent turn and will not settle the task completed until they pass.
      Use portable shell forms: prefer grep over rg in Task gates, avoid wc-pipeline shape checks, use repository build flags such as go build -buildvcs=false ./... when a build is required, and include executable checks that prove the Task's effect. -->
+
+<!-- A red repository gate admits only a Task named in the frozen `_authorization.md` `precondition_repairs` list; the Task or Agent cannot add itself. -->
 
 - `<command>` — expected: ...
 

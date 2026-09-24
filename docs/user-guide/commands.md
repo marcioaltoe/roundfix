@@ -812,6 +812,7 @@ settlements integrate onto the Run Branch before the Run-level integration.
 
 ```bash
 roundfix archive <slug>
+roundfix archive <slug> --qa-override --approval <source> --reason <text>
 ```
 
 Non-interactive; creates no Run and never pushes. Verifies every Task is
@@ -828,6 +829,13 @@ declarations, or `verdict: fail` exits `2` and names the first unmet condition.
 `qa_override` keeps its existing meaning for explicitly authorized archival of
 genuinely failed or missing evidence; declared unreachability does not use or
 weaken that override.
+
+Use `--qa-override` only with explicit authorization to archive despite failed,
+missing or otherwise ineligible QA. `--approval <source>` records who or what
+authorized the override, and `--reason <text>` records why. The command still
+requires every non-QA Task to be `completed`, refuses when QA already qualifies,
+and stamps the approval source, reason, observed QA outcome and archived
+revision without changing the QA Task or report verdict.
 
 ### supersede
 
