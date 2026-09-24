@@ -23,6 +23,84 @@ import (
 	runworktree "roundfix/internal/worktree"
 )
 
+func TestReconcileAcceptsALinkedWorktreeRunFromTheMainCheckout(t *testing.T) {
+	homeDir, repoDir, _ := newReconcileWorkspace(t)
+	linkedRoot := filepath.Join(t.TempDir(), "linked")
+	const linkedBranch = "feature/linked-reconcile"
+	gitImplement(t, repoDir, "worktree", "add", "-b", linkedBranch, linkedRoot)
+	linkedRoot, err := filepath.EvalSymlinks(linkedRoot)
+	if err != nil {
+		t.Fatalf("resolve linked worktree: %v", err)
+	}
+	run := createReconcileMetadataRun(t, homeDir, store.CreateRunRequest{
+		Kind:        store.KindImplement,
+		GitRoot:     linkedRoot,
+		LocalBranch: linkedBranch,
+		HeadSHA:     strings.TrimSpace(gitImplementOutput(t, linkedRoot, "rev-parse", "HEAD")),
+		SpecSlug:    "reconcile-spec",
+		Agent:       "codex",
+	}, store.StateStopped)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := runCLIContext(
+		t,
+		context.Background(),
+		[]string{"reconcile", run.ID, "--format=json"},
+		&stdout,
+		&stderr,
+	)
+
+	if code != exitOK {
+		t.Fatalf("linked-worktree reconcile exit = %d, want %d; stderr=%q stdout=%q", code, exitOK, stderr.String(), stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("linked-worktree reconcile stderr = %q, want empty", stderr.String())
+	}
+	var report reconcileReport
+	if err := json.Unmarshal(stdout.Bytes(), &report); err != nil {
+		t.Fatalf("decode linked-worktree reconcile report: %v\n%s", err, stdout.String())
+	}
+	if len(report.Results) != 1 || report.Results[0].RunID != run.ID {
+		t.Fatalf("linked-worktree reconcile results = %+v, want Run %q", report.Results, run.ID)
+	}
+}
+
+func TestReconcileRefusesAnotherRepositorysRun(t *testing.T) {
+	homeDir, repoDir, _ := newReconcileWorkspace(t)
+	otherRepository := t.TempDir()
+	gitImplement(t, otherRepository, "init", "--initial-branch=main")
+	run := createReconcileMetadataRun(t, homeDir, store.CreateRunRequest{
+		Kind:        store.KindImplement,
+		GitRoot:     otherRepository,
+		LocalBranch: "main",
+		SpecSlug:    "other-repository-spec",
+		Agent:       "codex",
+	}, store.StateStopped)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := runCLIContext(
+		t,
+		context.Background(),
+		[]string{"reconcile", run.ID, "--format=json"},
+		&stdout,
+		&stderr,
+	)
+
+	if code != exitPreflight {
+		t.Fatalf("other-repository reconcile exit = %d, want %d; stderr=%q stdout=%q", code, exitPreflight, stderr.String(), stdout.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("other-repository reconcile stdout = %q, want empty", stdout.String())
+	}
+	for _, want := range []string{run.ID, otherRepository, repoDir} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("other-repository reconcile stderr = %q, want %q", stderr.String(), want)
+		}
+	}
+}
+
 func TestCarryForwardAcceptsAnUnresolvedRun(t *testing.T) {
 	t.Parallel()
 	for _, state := range []string{store.StateStopped, store.StateUnresolved} {

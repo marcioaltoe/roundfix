@@ -360,7 +360,7 @@ func loadReconcileRuns(ctx context.Context, homeDir, repository, runID string) (
 				message: fmt.Sprintf("Run %q is Active; stop it before reconciliation", runID),
 			}
 		}
-		if !sameRepository(run.GitRoot, repository) {
+		if !sameRepository(run, repository) {
 			return reconcileRunSelection{}, validationError{
 				message: fmt.Sprintf(
 					"Run %q belongs to repository %q, not current repository %q",
@@ -1208,19 +1208,28 @@ func reconcileRetryCommand(runID string) string {
 	return "roundfix reconcile " + strings.TrimSpace(runID)
 }
 
-func sameRepository(left, right string) bool {
-	left = strings.TrimSpace(left)
-	right = strings.TrimSpace(right)
-	if left == "" || right == "" {
+func sameRepository(run store.Run, repository string) bool {
+	repositoryKey, err := roundconfig.RepositoryRoot(repository)
+	if err != nil {
 		return false
 	}
-	if resolved, err := filepath.EvalSymlinks(left); err == nil {
-		left = resolved
+	candidates := []string{run.RepositoryRoot}
+	if checkoutKey, err := roundconfig.RepositoryRoot(run.GitRoot); err == nil {
+		candidates = append(candidates, checkoutKey)
 	}
-	if resolved, err := filepath.EvalSymlinks(right); err == nil {
-		right = resolved
+	for _, candidate := range candidates {
+		candidate = strings.TrimSpace(candidate)
+		if candidate == "" {
+			continue
+		}
+		if resolved, err := filepath.EvalSymlinks(candidate); err == nil {
+			candidate = resolved
+		}
+		if filepath.Clean(candidate) == filepath.Clean(repositoryKey) {
+			return true
+		}
 	}
-	return filepath.Clean(left) == filepath.Clean(right)
+	return false
 }
 
 func printReconcileValidationFailure(err error, stderr io.Writer) {

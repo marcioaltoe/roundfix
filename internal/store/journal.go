@@ -1461,7 +1461,7 @@ type ArtifactRootRun struct {
 
 func DiscoverArtifactRoots(ctx context.Context, runStore *Store) ([]ArtifactRoot, error) {
 	rows, err := runStore.db.QueryContext(ctx, `
-SELECT id, git_root, state, artifact_dir, completed_at
+SELECT id, COALESCE(NULLIF(repository_root, ''), git_root), state, artifact_dir, completed_at
 FROM runs
 ORDER BY artifact_dir, id`)
 	if err != nil {

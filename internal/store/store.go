@@ -1091,6 +1091,7 @@ LIMIT 1`, gitRoot)
 // SetRunWindow stores a repository's Run Window. An existing window is
 // returned unchanged unless replace is true.
 func (store *Store) SetRunWindow(ctx context.Context, gitRoot string, cutoff time.Time, replace bool) (RunWindow, bool, error) {
+	checkoutRoot := gitRoot
 	repositoryRoot, err := roundconfig.RepositoryRoot(gitRoot)
 	if err != nil {
 		return RunWindow{}, false, fmt.Errorf("resolve Run Window repository identity: %w", err)
@@ -1099,13 +1100,18 @@ func (store *Store) SetRunWindow(ctx context.Context, gitRoot string, cutoff tim
 	var window RunWindow
 	written := false
 	err = store.withWriteTx(ctx, "Run Window set", func(tx *sql.Tx) error {
-		standing, found, err := selectRunWindow(ctx, tx, gitRoot)
+		standing, found, err := selectRunWindowForRepository(ctx, tx, gitRoot, checkoutRoot)
 		if err != nil {
 			return err
 		}
 		if found && !replace {
 			window = standing
 			return nil
+		}
+		if found && standing.GitRoot != gitRoot {
+			if _, err := tx.ExecContext(ctx, `DELETE FROM run_windows WHERE git_root = ?`, standing.GitRoot); err != nil {
+				return fmt.Errorf("replace legacy Run Window: %w", err)
+			}
 		}
 
 		cutoffAt := cutoff.Unix()
@@ -1134,15 +1140,17 @@ ON CONFLICT(git_root) DO UPDATE SET
 
 // RunWindowFor returns the Run Window for one repository, if any.
 func (store *Store) RunWindowFor(ctx context.Context, gitRoot string) (RunWindow, bool, error) {
+	checkoutRoot := gitRoot
 	repositoryRoot, err := roundconfig.RepositoryRoot(gitRoot)
 	if err != nil {
 		return RunWindow{}, false, fmt.Errorf("resolve Run Window repository identity: %w", err)
 	}
-	return selectRunWindow(ctx, store.db, repositoryRoot)
+	return selectRunWindowForRepository(ctx, store.db, repositoryRoot, checkoutRoot)
 }
 
 // ClearRunWindow removes the Run Window for one repository, if present.
 func (store *Store) ClearRunWindow(ctx context.Context, gitRoot string) (bool, error) {
+	checkoutRoot := gitRoot
 	repositoryRoot, err := roundconfig.RepositoryRoot(gitRoot)
 	if err != nil {
 		return false, fmt.Errorf("resolve Run Window repository identity: %w", err)
@@ -1150,7 +1158,7 @@ func (store *Store) ClearRunWindow(ctx context.Context, gitRoot string) (bool, e
 	gitRoot = repositoryRoot
 	removed := false
 	err = store.withWriteTx(ctx, "Run Window clear", func(tx *sql.Tx) error {
-		result, err := tx.ExecContext(ctx, `DELETE FROM run_windows WHERE git_root = ?`, gitRoot)
+		result, err := tx.ExecContext(ctx, `DELETE FROM run_windows WHERE git_root = ? OR git_root = ?`, gitRoot, checkoutRoot)
 		if err != nil {
 			return fmt.Errorf("clear Run Window: %w", err)
 		}
@@ -2014,6 +2022,19 @@ WHERE git_root = ?`, gitRoot)
 	window.CutoffAt = time.Unix(cutoffAt, 0).UTC()
 	window.CreatedAt = time.Unix(createdAt, 0).UTC()
 	return window, true, nil
+}
+
+func selectRunWindowForRepository(
+	ctx context.Context,
+	querier runQuerier,
+	repositoryRoot string,
+	checkoutRoot string,
+) (RunWindow, bool, error) {
+	window, found, err := selectRunWindow(ctx, querier, repositoryRoot)
+	if err != nil || found || repositoryRoot == checkoutRoot {
+		return window, found, err
+	}
+	return selectRunWindow(ctx, querier, checkoutRoot)
 }
 
 func selectActiveRunByTarget(ctx context.Context, querier runQuerier, targetKind string, targetKey string) (Run, bool, error) {
