@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0155-a-verify-that-runs-what-changed
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
