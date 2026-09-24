@@ -225,10 +225,10 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	case "none":
 		record.Outcome = reviewOutcomeOmitted
 		return finishReviewCommand(stdout, stderr, artifactDir, record, exitOK)
-	case "claude", "coderabbit":
-		record.Reason = fmt.Sprintf("provider %q is not implemented by roundfix review", loaded.Config.PrePRReview.Provider)
+	case "coderabbit":
+		record.Reason = "provider \"coderabbit\" is unavailable: no supported local CodeRabbit review surface is installed or specified"
 		return finishReviewCommand(stdout, stderr, artifactDir, record, exitPreflight)
-	case "codex":
+	case "codex", "claude":
 		// Config loading validates the policy vocabulary. Keep this switch
 		// exhaustive so an invalid in-memory value still fails closed.
 	default:

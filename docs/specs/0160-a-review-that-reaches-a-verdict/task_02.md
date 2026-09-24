@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0160-a-review-that-reaches-a-verdict
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -40,3 +40,22 @@ complexity: low
 ## References
 
 - [_techspec.md](_techspec.md) — The claude provider
+
+## Result
+
+Implemented the provider dispatch so `claude` uses the existing agent-review
+path shared with `codex`. That path resolves the `review` profile, rejects
+provider/runtime mismatches, prepares a read-only session, applies the existing
+fallback and blocking rules, and persists the review record and raw answer.
+`coderabbit` still stops before Agent activity and now names the absent local
+CodeRabbit review surface.
+
+Focused checks:
+
+- `GOCACHE=/private/tmp/roundfix-task02-gocache go test -count=1 -run '^TestReviewRunsTheClaudeProvider$' ./internal/cli` passed. The test observes a reviewed record whose provider is `claude`, the persisted raw answer, one prepared session, and read-only access.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache go test -count=1 -run '^TestReviewRefusesCodeRabbitNamingTheMissingSurface$' ./internal/cli` passed. The test observes a blocked record and stderr naming the missing local CodeRabbit review surface, with no Agent activity.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache go test -count=1 -run '^TestReviewCommandRefusesProviderProfileMismatch$' ./internal/cli` passed, including the `claude` provider with a mismatched preferred runtime.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache go test -count=1 -run '^TestReview' ./internal/cli` passed for the focused review suite.
+
+The Task's declared Verification command was not run; the Daemon owns that
+check and the terminal Task verdict.

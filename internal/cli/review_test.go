@@ -535,50 +535,86 @@ func TestReviewCommandNoneRecordsOmissionWithoutAgentActivity(t *testing.T) {
 	}
 }
 
-func TestReviewCommandRefusesUnimplementedProvider(t *testing.T) {
-	for _, provider := range []string{"claude", "coderabbit"} {
-		t.Run(provider, func(t *testing.T) {
-			runner := &reviewCommandRunner{}
-			fixture := newReviewCommandFixture(t, provider, runner)
+func TestReviewRunsTheClaudeProvider(t *testing.T) {
+	runner := &reviewCommandRunner{
+		results: []reviewCommandRunResult{{
+			result: agent.ExecuteResult{Message: "No findings", StopReason: "end_turn"},
+		}},
+	}
+	fixture := newReviewCommandFixture(t, "claude", runner)
+	writeReviewCommandProfileConfig(t, fixture.repository, fixture.provider, fixture.artifactDir, "claude", "claude")
 
-			code, record, stderr := fixture.run(t)
+	code, record, stderr := fixture.run(t)
 
-			assertBlockedReviewCommand(t, code, record, stderr, provider)
-			if record.Outcome == reviewOutcomeOmitted {
-				t.Fatalf("provider %q was recorded as omitted", provider)
-			}
-			if runner.probeCalls != 0 || runner.prepareCalls != 0 || runner.preparedCalls != 0 {
-				t.Fatalf("provider %q used Agent runtime: probes=%d prepares=%d prompts=%d", provider, runner.probeCalls, runner.prepareCalls, runner.preparedCalls)
-			}
-		})
+	if code != exitOK || record.Outcome != reviewOutcomeReviewed {
+		t.Fatalf("Claude review exit=%d record=%+v stderr=%q", code, record, stderr)
+	}
+	fixture.assertCandidate(t, record)
+	answer, err := os.ReadFile(record.AnswerPath)
+	if err != nil {
+		t.Fatalf("read Claude review answer: %v", err)
+	}
+	if string(answer) != "No findings" {
+		t.Fatalf("Claude review answer = %q, want %q", string(answer), "No findings")
+	}
+	if !runner.request.Access.CanRead() || runner.request.Access.CanWrite() {
+		t.Fatalf("Claude review access = %+v, want read-only", runner.request.Access)
+	}
+	if runner.prepareCalls != 1 || runner.preparedCalls != 1 || runner.endCalls != 1 {
+		t.Fatalf("Claude review calls: prepares=%d prompts=%d ends=%d, want 1 each", runner.prepareCalls, runner.preparedCalls, runner.endCalls)
+	}
+}
+
+func TestReviewRefusesCodeRabbitNamingTheMissingSurface(t *testing.T) {
+	runner := &reviewCommandRunner{}
+	fixture := newReviewCommandFixture(t, "coderabbit", runner)
+
+	code, record, stderr := fixture.run(t)
+
+	assertBlockedReviewCommand(t, code, record, stderr, "local CodeRabbit review surface")
+	if record.Outcome == reviewOutcomeOmitted {
+		t.Fatal("CodeRabbit refusal was recorded as omitted")
+	}
+	if runner.probeCalls != 0 || runner.prepareCalls != 0 || runner.preparedCalls != 0 {
+		t.Fatalf("CodeRabbit refusal used Agent runtime: probes=%d prepares=%d prompts=%d", runner.probeCalls, runner.prepareCalls, runner.preparedCalls)
 	}
 }
 
 func TestReviewCommandRefusesProviderProfileMismatch(t *testing.T) {
 	tests := []struct {
 		name              string
+		provider          string
 		preferredRuntime  string
 		fallbackRuntime   string
 		mismatchedRuntime string
 	}{
 		{
 			name:              "preferred runtime",
+			provider:          "codex",
 			preferredRuntime:  "claude",
 			fallbackRuntime:   "codex",
 			mismatchedRuntime: "claude",
 		},
 		{
 			name:              "fallback runtime",
+			provider:          "codex",
 			preferredRuntime:  "codex",
 			fallbackRuntime:   "opencode",
 			mismatchedRuntime: "opencode",
+		},
+		{
+			name:              "Claude provider",
+			provider:          "claude",
+			preferredRuntime:  "codex",
+			fallbackRuntime:   "claude",
+			mismatchedRuntime: "codex",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			runner := &reviewCommandRunner{}
-			fixture := newReviewCommandFixture(t, "codex", runner)
+			fixture := newReviewCommandFixture(t, test.provider, runner)
 			writeReviewCommandProfileConfig(
 				t,
 				fixture.repository,
@@ -591,7 +627,7 @@ func TestReviewCommandRefusesProviderProfileMismatch(t *testing.T) {
 			code, record, stderr := fixture.run(t)
 
 			assertBlockedReviewCommand(t, code, record, stderr, "configuration error")
-			for _, want := range []string{"codex", test.mismatchedRuntime} {
+			for _, want := range []string{test.provider, test.mismatchedRuntime} {
 				if !strings.Contains(record.Reason, want) {
 					t.Fatalf("review refusal = %q, want selected provider and mismatched runtime named", record.Reason)
 				}
@@ -727,6 +763,7 @@ type reviewCommandRunner struct {
 	prepareCalls  int
 	preparedCalls int
 	endCalls      int
+	request       agent.ExecuteRequest
 	prepareErrors []error
 	results       []reviewCommandRunResult
 }
@@ -745,9 +782,10 @@ func (runner *reviewCommandRunner) PrepareSession(context.Context, agent.Execute
 	return nil
 }
 
-func (runner *reviewCommandRunner) RunPrepared(context.Context, agent.ExecuteRequest, runevent.Sink) (agent.ExecuteResult, error) {
+func (runner *reviewCommandRunner) RunPrepared(_ context.Context, request agent.ExecuteRequest, _ runevent.Sink) (agent.ExecuteResult, error) {
 	index := runner.preparedCalls
 	runner.preparedCalls++
+	runner.request = request
 	if index < len(runner.results) {
 		return runner.results[index].result, runner.results[index].err
 	}
