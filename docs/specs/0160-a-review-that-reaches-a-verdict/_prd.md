@@ -40,8 +40,8 @@ installed or specified.
   `docs/agents/cli.md`.
 - Active ADR obligations: applicable — ADR-0093 checks Spec consistency by
   citation, ADR-0104 accepts on evidence a Spec did not author, ADR-0130 keeps a
-  path governed once bounded, ADR-0153 keeps review evidence bound to the
-  candidate it examined, ADR-0155 makes the `qa` Task declare the matrix and
+  path governed once bounded, ADR-0153 makes pre-PR review an explicit
+  provider policy, ADR-0155 makes the `qa` Task declare the matrix and
   ADR-0156 makes a declared promise name a consuming Task. This Spec's gate is
   bound by ADR-0080, ADR-0091, ADR-0096, ADR-0097 and ADR-0117. All hold.
   Source: `docs/agents/domain.md`.
