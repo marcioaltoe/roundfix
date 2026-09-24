@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0158-daemon-verification-and-access-readiness
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -42,3 +42,26 @@ Two decisions change what the Daemon allows and must outlive this Spec: independ
 ## References
 
 - [_techspec.md](_techspec.md) — Decisions
+
+## Result
+
+Recorded the two accepted decisions required by this Task. ADR-0159 makes
+independence an explicit `verification: independent` declaration and rejects
+inferring it from command text. ADR-0160 makes the Run-start frozen
+`precondition_repairs` authorization the only entry to a red repository gate
+and requires the same repository command to pass before settlement. The
+configuration guide now documents that requested `agent_full_access` is proven
+during profile readiness and refused before Run creation when it cannot be
+honoured.
+
+Focused-check evidence:
+
+- Pre-change: both ADR paths were absent, and the configuration guide had no
+  sentence covering refusal of an unhonoured requested full-access mode before
+  a Run.
+- `rtk git diff --check` passed.
+- `rtk rg -n '^status: accepted$' docs/adr/0159-verification-runs-past-a-failure-only-when-declared-independent.md docs/adr/0160-only-the-frozen-authorization-opens-a-red-repository-gate.md` found accepted status in both ADRs.
+- `rtk rg -n -i 'access policy readiness|agent_full_access|readiness refuses before a Run|requested full-access mode' docs/user-guide/configuration.md` found the new readiness refusal guidance and the existing configuration key.
+- Referenced ADR and TechSpec paths were checked as present.
+
+The Daemon-owned `## Verification` command was not run in this Agent turn.
