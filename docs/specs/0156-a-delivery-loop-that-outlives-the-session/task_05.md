@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0156-a-delivery-loop-that-outlives-the-session
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -43,3 +43,37 @@ A new command family is public CLI surface, and the repository's hard rule requi
 ## References
 
 - [_techspec.md](_techspec.md) — Components
+
+## Result
+
+Updated the canonical Roundfix skill with the `roundfix deliver` command
+family, its Run-to-merge order, blocker parking, resume reconciliation, and
+the required `push`, `pull_request`, and `merge` authorization. Documented the
+same command family and behavior in the user command guide. Regenerated
+`skills/roundfix/SKILL.md` from `.agents/skills/roundfix/SKILL.md` with the
+sanctioned `make skills-sync` target; the mirror was not hand-edited.
+
+Focused checks:
+
+- `make skills-sync` passed.
+- `git diff --check` passed.
+- `cmp -s .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` passed;
+  the canonical skill and distributed mirror match byte-for-byte.
+- Manual diff inspection confirmed the guide contains `roundfix deliver start`
+  and the skill sections describe the ordered stages, parking, reconciliation,
+  and publication authorization.
+- The Task's declared Verification commands were not run; the Daemon owns
+  those checks and final settlement.
+
+Acceptance evidence:
+
+- Both skill files describe the command family: the canonical section and its
+  synced mirror contain the four `deliver` commands and queue rules.
+- The user guide documents it in the `deliver` command-reference section.
+- Skill-check evidence is pending the Daemon's declared Verification; no
+  terminal pass or Task status was claimed in this handoff.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260924T121521Z_744099e82ec81b88`
+- Source commit: `ea8fd7a54b289cc76faf51a8515849d1b7c20e17`
