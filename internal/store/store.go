@@ -463,11 +463,6 @@ func (store *Store) createRun(ctx context.Context, req CreateRunRequest, acquire
 	if err := validateCreateRunRequest(req); err != nil {
 		return Run{}, err
 	}
-	repositoryRoot, err := roundconfig.RepositoryRoot(req.GitRoot)
-	if err != nil {
-		return Run{}, fmt.Errorf("resolve Run repository identity: %w", err)
-	}
-	req.GitRoot = repositoryRoot
 	runID, err := newRunID(store.now())
 	if err != nil {
 		return Run{}, err
@@ -1061,37 +1056,22 @@ ORDER BY created_at DESC, id DESC`
 
 // ActiveSpecRun returns the Active Run for one Spec work target, if any.
 func (store *Store) ActiveSpecRun(ctx context.Context, gitRoot string, specSlug string) (Run, bool, error) {
-	repositoryRoots, err := roundconfig.RepositoryRoots(gitRoot)
-	if err != nil {
-		return Run{}, false, fmt.Errorf("resolve Active Run repository identity: %w", err)
-	}
-	for _, repositoryRoot := range repositoryRoots {
-		run, found, err := selectActiveRunByTarget(ctx, store.db, targetKindSpec, specTargetKey(repositoryRoot, specSlug))
-		if err != nil || found {
-			return run, found, err
-		}
-	}
-	return Run{}, false, nil
+	return selectActiveRunByTarget(ctx, store.db, targetKindSpec, specTargetKey(gitRoot, specSlug))
 }
 
 // ActiveRunInGitRoot returns the Active Run of any Kind whose Git root
 // matches. It backs the ADR 0012 single-working-tree Preflight Validation
 // until worktree-per-task lands.
 func (store *Store) ActiveRunInGitRoot(ctx context.Context, gitRoot string) (Run, bool, error) {
-	repositoryRoots, err := roundconfig.RepositoryRoots(gitRoot)
-	if err != nil {
-		return Run{}, false, fmt.Errorf("resolve Active Run repository identity: %w", err)
-	}
-	placeholders, args := repositoryRootArguments(repositoryRoots)
 	row := store.db.QueryRowContext(ctx, `
 SELECT r.id, r.kind, r.state, r.head_repository, r.head_branch, r.base_repository,
        r.pr_number, r.git_root, r.local_branch, r.head_sha, r.artifact_dir, r.work_dir,
        r.spec_slug, r.agent, r.model, r.reasoning_effort, r.owner_pid, r.owner_identity, r.owner_identity_unproven, r.created_at, r.updated_at, r.completed_at
 FROM active_run_locks l
 JOIN runs r ON r.id = l.run_id
-WHERE r.git_root IN (`+placeholders+`)
+WHERE r.git_root = ?
 ORDER BY l.created_at, r.id
-LIMIT 1`, args...)
+LIMIT 1`, gitRoot)
 	run, err := scanRun(row)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Run{}, false, nil

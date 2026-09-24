@@ -1152,54 +1152,27 @@ func ResolveArtifactDirectory(artifactDir string, gitRoot string, homeDir string
 // worktrees resolve through their common Git directory, while paths that are
 // not Git worktrees retain the existing path identity.
 func RepositoryRoot(gitRoot string) (string, error) {
-	roots, err := RepositoryRoots(gitRoot)
+	root, _, err := repositoryRootMetadata(gitRoot)
 	if err != nil {
 		return "", err
 	}
-	return roots[0], nil
+	return root, nil
 }
 
 // RepositoryRoots returns the main worktree root followed by every linked
 // worktree path still registered in the common Git directory. The aliases keep
 // checkout-derived Run records reachable without changing their stored paths.
 func RepositoryRoots(gitRoot string) ([]string, error) {
-	gitRoot = strings.TrimSpace(gitRoot)
-	if gitRoot == "" {
-		return nil, errors.New("Git root is required")
-	}
-	gitRoot = filepath.Clean(gitRoot)
-	gitMarker := filepath.Join(gitRoot, ".git")
-	info, err := os.Stat(gitMarker)
-	if errors.Is(err, os.ErrNotExist) {
-		return []string{gitRoot}, nil
-	}
+	mainRoot, commonDir, err := repositoryRootMetadata(gitRoot)
 	if err != nil {
-		return nil, fmt.Errorf("stat Git metadata %q: %w", gitMarker, err)
+		return nil, err
+	}
+	roots := []string{mainRoot}
+	if commonDir == "" {
+		return roots, nil
 	}
 
-	mainRoot := gitRoot
-	commonDir := gitMarker
-	if !info.IsDir() {
-		gitDir, err := readGitDirPointer(gitMarker)
-		if err != nil {
-			return nil, err
-		}
-		commonDirPath := filepath.Join(gitDir, "commondir")
-		commonDirBytes, err := os.ReadFile(commonDirPath)
-		if errors.Is(err, os.ErrNotExist) {
-			return []string{gitRoot}, nil
-		}
-		if err != nil {
-			return nil, fmt.Errorf("read common Git directory from %q: %w", commonDirPath, err)
-		}
-		commonDir = resolveGitMetadataPath(gitDir, strings.TrimSpace(string(commonDirBytes)))
-		if filepath.Base(commonDir) == ".git" {
-			mainRoot = filepath.Dir(commonDir)
-		}
-	}
-
-	roots := []string{filepath.Clean(mainRoot)}
-	seen := map[string]struct{}{roots[0]: {}}
+	seen := map[string]struct{}{mainRoot: {}}
 	worktreesDir := filepath.Join(commonDir, "worktrees")
 	entries, err := os.ReadDir(worktreesDir)
 	if errors.Is(err, os.ErrNotExist) {
@@ -1215,7 +1188,7 @@ func RepositoryRoots(gitRoot string) ([]string, error) {
 		gitDirPath := filepath.Join(worktreesDir, entry.Name(), "gitdir")
 		gitDirBytes, err := os.ReadFile(gitDirPath)
 		if err != nil {
-			return nil, fmt.Errorf("read linked worktree path from %q: %w", gitDirPath, err)
+			continue
 		}
 		linkedMarker := resolveGitMetadataPath(filepath.Dir(gitDirPath), strings.TrimSpace(string(gitDirBytes)))
 		linkedRoot := filepath.Dir(linkedMarker)
@@ -1226,6 +1199,44 @@ func RepositoryRoots(gitRoot string) ([]string, error) {
 		roots = append(roots, linkedRoot)
 	}
 	return roots, nil
+}
+
+func repositoryRootMetadata(gitRoot string) (string, string, error) {
+	gitRoot = strings.TrimSpace(gitRoot)
+	if gitRoot == "" {
+		return "", "", errors.New("Git root is required")
+	}
+	gitRoot = filepath.Clean(gitRoot)
+	gitMarker := filepath.Join(gitRoot, ".git")
+	info, err := os.Stat(gitMarker)
+	if errors.Is(err, os.ErrNotExist) {
+		return gitRoot, "", nil
+	}
+	if err != nil {
+		return "", "", fmt.Errorf("stat Git metadata %q: %w", gitMarker, err)
+	}
+
+	mainRoot := gitRoot
+	commonDir := gitMarker
+	if !info.IsDir() {
+		gitDir, err := readGitDirPointer(gitMarker)
+		if err != nil {
+			return "", "", err
+		}
+		commonDirPath := filepath.Join(gitDir, "commondir")
+		commonDirBytes, err := os.ReadFile(commonDirPath)
+		if errors.Is(err, os.ErrNotExist) {
+			return gitRoot, "", nil
+		}
+		if err != nil {
+			return "", "", fmt.Errorf("read common Git directory from %q: %w", commonDirPath, err)
+		}
+		commonDir = resolveGitMetadataPath(gitDir, strings.TrimSpace(string(commonDirBytes)))
+		if filepath.Base(commonDir) == ".git" {
+			mainRoot = filepath.Dir(commonDir)
+		}
+	}
+	return filepath.Clean(mainRoot), commonDir, nil
 }
 
 func readGitDirPointer(path string) (string, error) {

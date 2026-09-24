@@ -163,6 +163,33 @@ func TestCreateRunRejectsDuplicateActiveRunWithoutNewRecord(t *testing.T) {
 	}
 }
 
+func TestCreateRunKeepsTheCheckoutGitRoot(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	fixtureRoot := t.TempDir()
+	_, linkedRoot := linkedWorktreeFixture(t, fixtureRoot)
+	runStore := openTestStore(t, ctx, filepath.Join(fixtureRoot, "home"))
+	defer closeStore(t, runStore)
+
+	req := sampleCreateRunRequest()
+	req.GitRoot = linkedRoot
+	created, err := runStore.CreateRun(ctx, req)
+	if err != nil {
+		t.Fatalf("create Run from linked worktree: %v", err)
+	}
+	if created.GitRoot != linkedRoot {
+		t.Fatalf("created Run Git root = %q, want checkout %q", created.GitRoot, linkedRoot)
+	}
+
+	stored, found, err := runStore.Run(ctx, created.ID)
+	if err != nil || !found {
+		t.Fatalf("read created Run: found=%v err=%v", found, err)
+	}
+	if stored.GitRoot != linkedRoot {
+		t.Fatalf("stored Run Git root = %q, want checkout %q", stored.GitRoot, linkedRoot)
+	}
+}
+
 func TestStoppedRunReleasesActiveLock(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -292,14 +319,18 @@ func TestRunsFromALinkedWorktreeAreListedFromTheMainCheckout(t *testing.T) {
 	if err != nil {
 		t.Fatalf("record Run from linked worktree: %v", err)
 	}
+	unreadableEntry := filepath.Join(mainRoot, ".git", "worktrees", "unreadable")
+	if err := os.MkdirAll(filepath.Join(unreadableEntry, "gitdir"), 0o755); err != nil {
+		t.Fatalf("create unreadable worktree entry: %v", err)
+	}
 
 	listed, err := runStore.ListRuns(ctx, ListRunsQuery{GitRoot: mainRoot, States: StatesAll})
 	if err != nil {
 		t.Fatalf("list Runs from main checkout: %v", err)
 	}
 	assertRunIDs(t, listed, []string{created.ID})
-	if listed[0].GitRoot != mainRoot {
-		t.Fatalf("recorded Run Git root = %q, want repository identity %q", listed[0].GitRoot, mainRoot)
+	if listed[0].GitRoot != linkedRoot {
+		t.Fatalf("recorded Run Git root = %q, want checkout %q", listed[0].GitRoot, linkedRoot)
 	}
 }
 
@@ -2992,6 +3023,57 @@ func TestActiveRunInGitRootFindsActiveRunsOfAnyKind(t *testing.T) {
 	}
 	if !ok || found.ID != implementRun.ID || found.Kind != KindImplement {
 		t.Fatalf("expected implement Run active in git root, ok=%v found=%#v", ok, found)
+	}
+}
+
+func TestActiveRunLockStaysPerCheckout(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	fixtureRoot := t.TempDir()
+	mainRoot, linkedRoot := linkedWorktreeFixture(t, fixtureRoot)
+	runStore := openTestStore(t, ctx, filepath.Join(fixtureRoot, "home"))
+	defer closeStore(t, runStore)
+
+	mainReq := sampleImplementCreateRunRequest()
+	mainReq.GitRoot = mainRoot
+	mainReq.LocalBranch = "main"
+	mainRun, err := runStore.CreateRun(ctx, mainReq)
+	if err != nil {
+		t.Fatalf("create main-worktree Run: %v", err)
+	}
+
+	linkedReq := sampleImplementCreateRunRequest()
+	linkedReq.GitRoot = linkedRoot
+	linkedReq.LocalBranch = "feature/linked"
+	linkedRun, err := runStore.CreateRun(ctx, linkedReq)
+	if err != nil {
+		t.Fatalf("create linked-worktree Run alongside main-worktree Run: %v", err)
+	}
+
+	for _, testCase := range []struct {
+		name    string
+		gitRoot string
+		wantID  string
+	}{
+		{name: "main checkout", gitRoot: mainRoot, wantID: mainRun.ID},
+		{name: "linked worktree", gitRoot: linkedRoot, wantID: linkedRun.ID},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			active, found, err := runStore.ActiveRunInGitRoot(ctx, testCase.gitRoot)
+			if err != nil || !found {
+				t.Fatalf("find Active Run in %q: found=%v err=%v", testCase.gitRoot, found, err)
+			}
+			if active.ID != testCase.wantID {
+				t.Fatalf("Active Run in %q = %s, want %s", testCase.gitRoot, active.ID, testCase.wantID)
+			}
+			active, found, err = runStore.ActiveSpecRun(ctx, testCase.gitRoot, mainReq.SpecSlug)
+			if err != nil || !found {
+				t.Fatalf("find Active Spec Run in %q: found=%v err=%v", testCase.gitRoot, found, err)
+			}
+			if active.ID != testCase.wantID {
+				t.Fatalf("Active Spec Run in %q = %s, want %s", testCase.gitRoot, active.ID, testCase.wantID)
+			}
+		})
 	}
 }
 
