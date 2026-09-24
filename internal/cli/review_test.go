@@ -445,6 +445,67 @@ func TestReviewClassifiesVerdictVariants(t *testing.T) {
 	}
 }
 
+func TestReviewRecognisesEmphasizedFindingsHeader(t *testing.T) {
+	tests := []struct {
+		name         string
+		answer       string
+		wantFindings string
+	}{
+		{
+			name:         "bold",
+			answer:       "**Findings**:\ninternal/cli/review.go:42: bold header",
+			wantFindings: "internal/cli/review.go:42: bold header",
+		},
+		{
+			name:         "italic",
+			answer:       "_Findings_:\ninternal/cli/review.go:42: italic header",
+			wantFindings: "internal/cli/review.go:42: italic header",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			runner := &reviewCommandRunner{
+				results: []reviewCommandRunResult{{
+					result: agent.ExecuteResult{Message: test.answer, StopReason: "end_turn"},
+				}},
+			}
+			fixture := newReviewCommandFixture(t, "codex", runner)
+
+			code, record, stderr := fixture.run(t)
+
+			if code != exitRunFailed || record.Outcome != reviewOutcomeFindings || record.Findings != test.wantFindings {
+				t.Fatalf("emphasized findings review exit=%d record=%+v stderr=%q; want findings %q", code, record, stderr, test.wantFindings)
+			}
+		})
+	}
+}
+
+func TestReviewBlocksEmphasizedFindingsBesideNoFindings(t *testing.T) {
+	tests := []struct {
+		name   string
+		answer string
+	}{
+		{name: "bold", answer: "No findings.\n**Findings**:\ninternal/cli/review.go:42: contradictory verdict"},
+		{name: "italic", answer: "No findings.\n_Findings_:\ninternal/cli/review.go:42: contradictory verdict"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			runner := &reviewCommandRunner{
+				results: []reviewCommandRunResult{{
+					result: agent.ExecuteResult{Message: test.answer, StopReason: "end_turn"},
+				}},
+			}
+			fixture := newReviewCommandFixture(t, "codex", runner)
+
+			code, record, stderr := fixture.run(t)
+
+			assertBlockedReviewCommand(t, code, record, stderr, "both")
+		})
+	}
+}
+
 func TestReviewBlocksAmbiguousVerdict(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -530,6 +591,27 @@ func TestReviewCommandBlocksOnRuntimeFailure(t *testing.T) {
 	assertBlockedReviewCommand(t, code, record, stderr, "runtime failure")
 	if runner.preparedCalls != 1 {
 		t.Fatalf("review prompt calls = %d, want 1 with no fallback", runner.preparedCalls)
+	}
+}
+
+func TestReviewKeepsNoAnswerWhenTheReviewerWasNotReached(t *testing.T) {
+	runner := &reviewCommandRunner{
+		prepareErrors: []error{errors.New("prepare review session")},
+	}
+	fixture := newReviewCommandFixture(t, "codex", runner)
+
+	code, record, stderr := fixture.run(t)
+
+	assertBlockedReviewCommand(t, code, record, stderr, "runtime failure")
+	if runner.preparedCalls != 0 {
+		t.Fatalf("review prompt calls = %d, want 0", runner.preparedCalls)
+	}
+	if record.AnswerPath != "" {
+		t.Fatalf("review answer path = %q, want empty", record.AnswerPath)
+	}
+	answerPath := filepath.Join(fixture.artifactDir, reviewAnswerFileName)
+	if _, err := os.Stat(answerPath); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("review answer file stat error = %v, want not exist", err)
 	}
 }
 

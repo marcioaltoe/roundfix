@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0160-a-review-that-reaches-a-verdict
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -40,3 +40,19 @@ Corrective Task from the pre-PR review of 2026-09-24. `parseFindingsVerdictLine`
 ## References
 
 - [_techspec.md](_techspec.md) — Classification
+
+## Result
+
+- Findings headers now split at the first colon and normalize the header text with the same whitespace, Markdown-emphasis, punctuation, and case handling as `No findings`; `**Findings**:` and `_Findings_:` therefore participate in the existing exactly-one-verdict rule.
+- The configured review-session path now reports whether execution crossed the prompt-sent boundary. The command writes `pre-pr-review-answer.txt` and sets `answerPath` only after that boundary; preparation and other pre-prompt failures persist only the blocked review record.
+- Acceptance criterion 1: `TestReviewRecognisesEmphasizedFindingsHeader` passed for bold and italic headers and preserved their findings text; `TestReviewBlocksEmphasizedFindingsBesideNoFindings` passed for both forms beside `No findings.`, proving exit `2`, outcome `blocked`, and a reason naming both verdicts.
+- Acceptance criterion 2: `TestReviewKeepsNoAnswerWhenTheReviewerWasNotReached` passed after a session-preparation failure, proving zero prompt calls, an empty `answerPath`, and no `pre-pr-review-answer.txt` file.
+- Red signal: before the implementation change, the three new regression tests failed because emphasized findings were unclassified or incorrectly reviewed and the pre-prompt failure wrote an empty answer artifact.
+- Focused checks: `GOCACHE=/private/tmp/roundfix-0160-task06-go-cache go test -count=1 -run '^(TestReviewBlocksEmphasizedFindingsBesideNoFindings|TestReviewRecognisesEmphasizedFindingsHeader|TestReviewKeepsNoAnswerWhenTheReviewerWasNotReached)$' ./internal/cli` passed; `GOCACHE=/private/tmp/roundfix-0160-task06-go-cache go test -count=1 -run '^TestReview' ./internal/cli` passed.
+- `make verify-incremental` passed with process-table access. The sandboxed attempt had first reached only the unrelated force-stop integration failures caused by `operation not permitted` while enumerating the process tree; the permission-enabled rerun passed all packages, skill checks, and the build.
+- The Task's declared Verification command was not run; Daemon Verification remains the settlement authority.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260924T193553Z_7f2a4b9ff0f723fb`
+- Source commit: `dddfce839b0d063803efee9dfad7483163090119`

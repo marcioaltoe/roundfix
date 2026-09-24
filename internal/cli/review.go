@@ -287,7 +287,7 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		record.Reason = "prepare Spec-aware review: " + err.Error()
 		return finishReviewCommand(stdout, stderr, artifactDir, record, exitPreflight)
 	}
-	result, consultedSpecs, runErr := runConfiguredReviewSession(
+	result, consultedSpecs, promptSent, runErr := runConfiguredReviewSession(
 		ctx,
 		gitState.Root,
 		baseCommit,
@@ -300,6 +300,9 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	)
 	record.Specs = consultedSpecs
 	record, code := classifyReviewCommandResult(record, result, runErr)
+	if !promptSent {
+		return finishReviewCommand(stdout, stderr, artifactDir, record, code)
+	}
 	return finishReviewCommandWithAnswer(stdout, stderr, artifactDir, result.Message, record, code)
 }
 
@@ -359,17 +362,17 @@ func runConfiguredReviewSession(
 	gitRunner preflight.GitRunner,
 	runner agent.Runner,
 	stderr io.Writer,
-) (agent.ExecuteResult, []string, error) {
+) (agent.ExecuteResult, []string, bool, error) {
 	if runner == nil {
-		return agent.ExecuteResult{}, nil, errors.New("review Agent runner is required")
+		return agent.ExecuteResult{}, nil, false, errors.New("review Agent runner is required")
 	}
 	diff, err := reviewCandidateDiff(ctx, gitRoot, baseCommit, headCommit, gitRunner)
 	if err != nil {
-		return agent.ExecuteResult{}, nil, err
+		return agent.ExecuteResult{}, nil, false, err
 	}
 	contexts, err := reviewCandidateSpecContexts(ctx, gitRoot, baseCommit, headCommit, specsRoot, gitRunner)
 	if err != nil {
-		return agent.ExecuteResult{}, nil, err
+		return agent.ExecuteResult{}, nil, false, err
 	}
 	consultedSpecs := make([]string, 0, len(contexts))
 	for _, context := range contexts {
@@ -385,12 +388,12 @@ func runConfiguredReviewSession(
 	if !canPrepare || !canRunPrepared {
 		runtime, runtimeErr := runtimeForProfileSelection(profile.Profile.Preferred)
 		if runtimeErr != nil {
-			return agent.ExecuteResult{}, consultedSpecs, runtimeErr
+			return agent.ExecuteResult{}, consultedSpecs, false, runtimeErr
 		}
 		request.Runtime = runtime
 		request.Session = reviewSessionRef(headCommit, gitRoot, 0)
 		result, runErr := runner.Run(ctx, request, runevent.Discard)
-		return result, consultedSpecs, runErr
+		return result, consultedSpecs, true, runErr
 	}
 
 	selections := make([]roundconfig.AgentSelection, 0, len(profile.Profile.Fallbacks)+1)
@@ -399,7 +402,7 @@ func runConfiguredReviewSession(
 	for index, selection := range selections {
 		runtime, runtimeErr := runtimeForProfileSelection(selection)
 		if runtimeErr != nil {
-			return agent.ExecuteResult{}, consultedSpecs, runtimeErr
+			return agent.ExecuteResult{}, consultedSpecs, false, runtimeErr
 		}
 		request.Runtime = runtime
 		request.Session = reviewSessionRef(headCommit, gitRoot, index)
@@ -409,15 +412,15 @@ func runConfiguredReviewSession(
 				fmt.Fprintf(stderr, "roundfix: review Agent Selection failed before prompt (%v); activating fallback %d.\n", prepareErr, index+1)
 				continue
 			}
-			return agent.ExecuteResult{}, consultedSpecs, prepareErr
+			return agent.ExecuteResult{}, consultedSpecs, false, prepareErr
 		}
 		result, runErr := preparedRunner.RunPrepared(ctx, request, runevent.Discard)
 		_ = runner.EndSession(context.WithoutCancel(ctx), runtime, request.Session)
 		// Once RunPrepared is called, the prompt has been sent. Every failure
 		// from that boundary belongs to this review and cannot activate fallback.
-		return result, consultedSpecs, runErr
+		return result, consultedSpecs, true, runErr
 	}
-	return agent.ExecuteResult{}, consultedSpecs, errors.New("review Agent Selection Profile has no selections")
+	return agent.ExecuteResult{}, consultedSpecs, false, errors.New("review Agent Selection Profile has no selections")
 }
 
 func reviewCandidateSpecsRoot(configuredRoot string, gitRoot string) (string, error) {
@@ -724,23 +727,25 @@ func classifyReviewCommandResult(record reviewRecord, result agent.ExecuteResult
 }
 
 func isNoFindingsVerdictLine(line string) bool {
-	line = strings.TrimSpace(line)
-	line = strings.TrimSpace(strings.Trim(line, "*_"))
-	line = strings.TrimRightFunc(line, func(character rune) bool {
+	return strings.EqualFold(normalizeReviewVerdictText(line), "no findings")
+}
+
+func normalizeReviewVerdictText(text string) string {
+	text = strings.TrimSpace(text)
+	text = strings.TrimSpace(strings.Trim(text, "*_"))
+	return strings.TrimRightFunc(text, func(character rune) bool {
 		return unicode.IsPunct(character) || unicode.IsSpace(character)
 	})
-	return strings.EqualFold(line, "no findings")
 }
 
 func parseFindingsVerdictLine(line string) (string, bool) {
 	line = strings.TrimSpace(line)
-	line = strings.TrimSpace(strings.TrimLeft(line, "*_"))
-	const verdict = "findings:"
-	if len(line) < len(verdict) || !strings.EqualFold(line[:len(verdict)], verdict) {
+	header, findings, found := strings.Cut(line, ":")
+	if !found || !strings.EqualFold(normalizeReviewVerdictText(header), "findings") {
 		return "", false
 	}
 
-	findings := strings.TrimSpace(line[len(verdict):])
+	findings = strings.TrimSpace(findings)
 	if strings.TrimFunc(findings, func(character rune) bool {
 		return unicode.IsPunct(character) || unicode.IsSpace(character)
 	}) == "" {
