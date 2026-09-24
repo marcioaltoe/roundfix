@@ -1542,6 +1542,71 @@ func TestQAReportOnlyBranch(t *testing.T) {
 	}
 }
 
+func TestSupersedingQAReportRecognisesAnArchivedCopy(t *testing.T) {
+	t.Parallel()
+	const (
+		slug       = "0157-reconciliation-and-one-repository-identity"
+		reportName = "qa-report-2026-09-24.md"
+	)
+	fixture := newTerminalRunFixture(t, "superseding-archived-copy")
+	commitQAReport(t, fixture.ref.Path, slug, reportName, false, "pass")
+	want := qaReportTestPath(slug, reportName, true)
+	commitQAReport(t, fixture.repoDir, slug, reportName, true, "pass")
+
+	report, proven := SupersedingQAReport(
+		context.Background(),
+		fixture.repoDir,
+		strings.TrimSpace(gitWorktreeTest(t, fixture.repoDir, "rev-parse", "main")),
+		strings.TrimSpace(gitWorktreeTest(t, fixture.ref.Path, "rev-parse", "HEAD")),
+		slug,
+	)
+	if !proven || report != want {
+		t.Fatalf("superseding QA Report = %q, proven = %v, want archived copy %q", report, proven, want)
+	}
+}
+
+func TestSupersedingQAReportStillPrefersNewerReport(t *testing.T) {
+	t.Parallel()
+	const slug = "0157-reconciliation-and-one-repository-identity"
+	tests := []struct {
+		name         string
+		runReport    string
+		targetReport string
+	}{
+		{
+			name:         "later date",
+			runReport:    "qa-report-2026-09-23.md",
+			targetReport: "qa-report-2026-09-24.md",
+		},
+		{
+			name:         "later sequence",
+			runReport:    "qa-report-2026-09-24.md",
+			targetReport: "qa-report-2026-09-24-02.md",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			fixture := newTerminalRunFixture(t, "superseding-newer-"+strings.ReplaceAll(tt.name, " ", "-"))
+			commitQAReport(t, fixture.ref.Path, slug, tt.runReport, false, "fail")
+			want := qaReportTestPath(slug, tt.targetReport, true)
+			commitQAReport(t, fixture.repoDir, slug, tt.targetReport, true, "pass")
+
+			report, proven := SupersedingQAReport(
+				context.Background(),
+				fixture.repoDir,
+				strings.TrimSpace(gitWorktreeTest(t, fixture.repoDir, "rev-parse", "main")),
+				strings.TrimSpace(gitWorktreeTest(t, fixture.ref.Path, "rev-parse", "HEAD")),
+				slug,
+			)
+			if !proven || report != want {
+				t.Fatalf("superseding QA Report = %q, proven = %v, want newer report %q", report, proven, want)
+			}
+		})
+	}
+}
+
 func TestInspectTerminalRunBoundsSupersededReason(t *testing.T) {
 	t.Parallel()
 	slug := "0053-" + strings.Repeat("long-spec-slug-", 8)
