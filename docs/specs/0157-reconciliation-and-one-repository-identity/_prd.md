@@ -91,6 +91,15 @@ Spec 0154 recorded, and Spec 0125 Core Feature 2.
 3. A Run started from a linked worktree appears in `roundfix runs list` from the
    main checkout, and the main checkout's identity is unchanged.
 
+## Recorded limits
+
+- A Run recorded before this Spec from a linked worktree that has since been
+  removed stays unlisted: its checkout no longer resolves to the repository, and
+  the maintainer's corrective ceiling of two Tasks was spent on the defects the
+  pre-PR review of 2026-09-24 found. Reproduction: start a Run from a linked
+  worktree on the previous release, remove the worktree, run `roundfix runs list`
+  from the main checkout. A durable repository key per Run is the carried fix.
+
 ## Decisions
 
 - **Anchor on the main worktree.** Deriving identity from the main worktree's

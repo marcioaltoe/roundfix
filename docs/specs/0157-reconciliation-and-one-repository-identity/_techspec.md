@@ -103,7 +103,9 @@ listed.
 1. Refuse the unproven candidate (depends on: none).
 2. Report identity independent of root (depends on: 1).
 3. Shared repository identity and reachable earlier records (depends on: 2).
-4. Terminal QA (depends on: 1, 2, 3).
+4. Terminal QA (depends on: 1, 2, 3, 5, 6).
+5. Keep each Run's checkout, share only the identity (depends on: 3).
+6. Same report means same content (depends on: 5).
 
 ## Risks & Considerations
 
