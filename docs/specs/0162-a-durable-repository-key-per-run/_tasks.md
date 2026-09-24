@@ -12,10 +12,13 @@ graph:
       needs: [task_01]
     - id: task_03
       file: task_03.md
-      needs: [task_01, task_02, task_04]
+      needs: [task_01, task_02, task_04, task_05]
     - id: task_04
       file: task_04.md
       needs: [task_02]
+    - id: task_05
+      file: task_05.md
+      needs: [task_04]
 ---
 
 # Task Graph
@@ -25,4 +28,5 @@ graph:
 | task_01 | backend | Record the repository key |
 | task_02 | backend | Every lookup uses the key |
 | task_04 | backend | Every lookup, and only the recorded key |
+| task_05 | backend | Removed worktrees and bare layouts |
 | task_03 | qa | Run the final QA gate |

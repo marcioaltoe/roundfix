@@ -80,8 +80,9 @@ the key, and clear both.
 
 1. The key and its migration (depends on: none).
 2. Consumers (depends on: 1).
-3. Terminal QA (depends on: 1, 2, 4).
+3. Terminal QA (depends on: 1, 2, 4, 5).
 4. Every lookup, and only the recorded key (depends on: 2).
+5. Removed worktrees and bare layouts (depends on: 4).
 
 ## Risks & Considerations
 
