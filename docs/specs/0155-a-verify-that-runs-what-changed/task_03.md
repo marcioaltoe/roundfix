@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0155-a-verify-that-runs-what-changed
-status: pending
+status: completed
 type: infra
 complexity: low
 ---
@@ -53,3 +53,53 @@ QA gate executes.
 ## References
 
 - [_techspec.md](_techspec.md) — The targets
+
+## Result
+
+### Implementation
+
+- Added `verify-changed` with `fmt-check`, `vet`, and `build` as whole-tree
+  prerequisites. It passes `VERIFY_BASE` to `verify-select`, defaulting to
+  `main`, and dispatches only the sets the selector prints.
+- Added separate core and Baseline recipes. The core recipe excludes the
+  Baseline CLI test pattern; the Baseline recipe runs the Baseline packages,
+  the matching CLI tests, `skills-sync-check`, and `skills-check`.
+- Left the `verify` recipe unchanged and pointed the repository Verification
+  setting at `make verify-changed`; its comment names `make verify` as the
+  complete gate for `main` and releases.
+
+### Focused checks
+
+- `rtk env GOCACHE=/tmp/roundfix-task03-selector-gocache go test
+  ./internal/verifyselect ./cmd/verify-select` — passed; the selector package
+  completed in 11.743 seconds and the entry point compiled.
+- `rtk env GOCACHE=/tmp/roundfix-task03-prereq-gocache make fmt-check vet
+  build` — passed.
+- `rtk env GOCACHE=/tmp/roundfix-task03-core-gocache make
+  verify-changed-core` — the sandboxed attempt was blocked when the existing
+  suite reached `api.github.com`; the permitted rerun passed, including
+  `internal/cli` in 55.694 seconds.
+- `rtk make -n verify` — exited 0 and retained `go test -parallel 16 ./...`,
+  followed by both skill checks and the build.
+- `rtk rg -n
+  "^VERIFY_BASE|^VERIFY_SELECT|^verify:|^verify-changed:|skills-sync-check skills-check|verification: make verify-changed"
+  Makefile .roundfixrc.yml` — exited 0 and found the expected wiring.
+- The Task's declared `## Verification` command was not run; the Daemon owns
+  it.
+
+### Acceptance evidence
+
+1. The selector package's core-only cases passed, `verify-changed` dispatches
+   one helper for each selector output line, and `verify-changed-core` completed
+   without Baseline packages or skill checks. The exact top-level core-only
+   journey needs a committed Makefile baseline and remains part of Task 05's
+   terminal QA matrix.
+2. The `verify` recipe is unchanged. Its focused dry run still expands the
+   complete `./...` package test plus both skill checks and the build.
+3. `.roundfixrc.yml` now contains `verification: make verify-changed`, as shown
+   by the focused wiring inspection.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260924T124305Z_70f339f47cee7834`
+- Source commit: `cc0d2d4439907c2d7103f8ae42fbecacd62ebd8b`

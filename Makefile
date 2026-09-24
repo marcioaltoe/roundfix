@@ -29,7 +29,7 @@ GO_FILES := $(shell find . -name '*.go' -not -path './.git/*')
 
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap verify verify-incremental spec-check spec-budget fmt fmt-check vet test test-race baseline-digests build install run version clean deps skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
+.PHONY: help bootstrap verify verify-changed verify-changed-core verify-changed-baseline verify-incremental spec-check spec-budget fmt fmt-check vet test test-race baseline-digests build install run version clean deps skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n"} \
@@ -52,8 +52,39 @@ deps: ## Download, tidy, and verify Go modules
 # CI selects test-budget here, so the suite's wall clock is a live fitness
 # function there; the local default stays the plain cached test target.
 VERIFY_TEST_TARGET ?= test
+VERIFY_BASE ?= main
+VERIFY_SELECT := $(GO) run $(RUN_FLAGS) ./cmd/verify-select
 
 verify: fmt-check vet $(VERIFY_TEST_TARGET) skills-sync-check skills-check build ## Run the required local verification gate
+
+verify-changed: fmt-check vet build ## Verify the test sets selected by changes from VERIFY_BASE
+	@sets="$$( $(VERIFY_SELECT) -base "$(VERIFY_BASE)" )" || exit $$?; \
+	for set in $$sets; do \
+		$(MAKE) --no-print-directory "verify-changed-$$set" || exit $$?; \
+	done
+
+verify-changed-core:
+	@packages="$$( $(VERIFY_SELECT) -packages core )" || exit $$?; \
+	non_cli_packages=; \
+	for package in $$packages; do \
+		if [ "$$package" != "./internal/cli" ]; then \
+			non_cli_packages="$$non_cli_packages $$package"; \
+		fi; \
+	done; \
+	if [ -n "$$non_cli_packages" ]; then \
+		$(GO) test -parallel $(GO_TEST_PARALLEL) $$non_cli_packages || exit $$?; \
+	fi; \
+	pattern="$$( $(VERIFY_SELECT) -baseline-cli-pattern )" || exit $$?; \
+	$(GO) test -parallel $(GO_TEST_PARALLEL) -skip "$$pattern" ./internal/cli
+
+verify-changed-baseline:
+	@packages="$$( $(VERIFY_SELECT) -packages baseline )" || exit $$?; \
+	if [ -n "$$packages" ]; then \
+		$(GO) test -parallel $(GO_TEST_PARALLEL) $$packages || exit $$?; \
+	fi; \
+	pattern="$$( $(VERIFY_SELECT) -baseline-cli-pattern )" || exit $$?; \
+	$(GO) test -parallel $(GO_TEST_PARALLEL) -run "$$pattern" ./internal/cli || exit $$?; \
+	$(MAKE) --no-print-directory skills-sync-check skills-check
 
 verify-incremental: fmt-check vet test skills-sync-check skills-check build ## Run fast local verification with reusable caches
 
