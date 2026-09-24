@@ -91,7 +91,9 @@ runs:
 When the number of Active Implement Runs reaches the ceiling, `implement`
 refuses before creating another Run and lists each holding Run's id,
 repository, and Spec. Set `max_active: 0` to disable the bound. Negative values
-fail configuration validation.
+fail configuration validation. Only User Config can set this machine-wide
+ceiling. A `runs.max_active` value in Project Config is ignored with a warning,
+so a repository cannot raise or disable the user's limit.
 
 ## Context-Driven Baseline state
 
@@ -271,7 +273,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `watch.push_remote` | `""` | Uses the upstream remote detected by Preflight Validation. |
 | `watch.push_branch` | `""` | Uses the upstream branch detected by Preflight Validation. |
 | `implement.auto_push` | `false` | Leaves a Clean Spec Run local. `true` pushes its upstream branch but never opens a pull request. |
-| `runs.max_active` | `3` | Limits Active Implement Runs across every repository in the Run Database. `0` disables the bound. |
+| `runs.max_active` | `3` | Limits Active Implement Runs across every repository in the Run Database. Only User Config can set it; Project Config is ignored with a warning. `0` disables the bound. |
 | `notify.enabled` | `true` | Sends one terminal outcome notification for `resolve`, `watch`, and `implement`. |
 | `notify.command` | `""` | Uses the native desktop notifier. A non-empty shell command replaces it. |
 | `budget.enabled` | `true` | Enforces the configured Run duration budget. |

@@ -169,22 +169,23 @@ type InteractiveDefaults struct {
 }
 
 type CreateRunRequest struct {
-	Kind            string
-	HeadRepository  string
-	HeadBranch      string
-	BaseRepository  string
-	PRNumber        string
-	GitRoot         string
-	LocalBranch     string
-	HeadSHA         string
-	ArtifactDir     string
-	WorkDir         string
-	SpecSlug        string
-	Agent           string
-	Model           string
-	ReasoningEffort string
-	OwnerPID        int
-	OwnerIdentity   string
+	Kind                   string
+	HeadRepository         string
+	HeadBranch             string
+	BaseRepository         string
+	PRNumber               string
+	GitRoot                string
+	LocalBranch            string
+	HeadSHA                string
+	ArtifactDir            string
+	WorkDir                string
+	SpecSlug               string
+	Agent                  string
+	Model                  string
+	ReasoningEffort        string
+	OwnerPID               int
+	OwnerIdentity          string
+	MaxActiveImplementRuns int
 }
 
 // RunStateFilter selects which Run states a listing includes. The zero
@@ -223,6 +224,11 @@ type ActiveRunError struct {
 	Existing Run
 }
 
+type ActiveImplementRunCeilingError struct {
+	MaxActive int
+	Holders   []Run
+}
+
 // SchemaVersionError reports a Run Database whose schema version differs from
 // the one this binary supports. Read-only surfaces never migrate; the guard
 // only converts silent SQL errors on unmigrated databases into this
@@ -249,6 +255,28 @@ func (err ActiveRunError) Error() string {
 		return fmt.Sprintf("Active Run already exists for repository %q and Spec %q; existing run_id=%s state=%s; stop it with: roundfix stop %s", err.Existing.GitRoot, err.Existing.SpecSlug, err.Existing.ID, err.Existing.State, err.Existing.ID)
 	}
 	return fmt.Sprintf("Active Run already exists for Head Repository %q and PR Head Branch %q; existing run_id=%s state=%s", err.Existing.HeadRepository, err.Existing.HeadBranch, err.Existing.ID, err.Existing.State)
+}
+
+func (err ActiveImplementRunCeilingError) Error() string {
+	var message strings.Builder
+	fmt.Fprintf(
+		&message,
+		"Active Implement Run ceiling reached: %d Run(s) hold %d slot(s)",
+		len(err.Holders),
+		err.MaxActive,
+	)
+	for _, run := range err.Holders {
+		fmt.Fprintf(
+			&message,
+			"\n- run_id=%s repository=%s spec=%s; stop it with: roundfix stop %s",
+			run.ID,
+			run.GitRoot,
+			run.SpecSlug,
+			run.ID,
+		)
+	}
+	message.WriteString("\nChange runs.max_active in User Config to raise or disable the ceiling.")
+	return message.String()
 }
 
 func DatabasePath(homeDir string) string {
@@ -484,6 +512,18 @@ func (store *Store) createRun(ctx context.Context, req CreateRunRequest, acquire
 			}
 			if found {
 				return ActiveRunError{Existing: existing}
+			}
+		}
+		if req.Kind == KindImplement && req.MaxActiveImplementRuns > 0 {
+			holders, err := selectActiveImplementRuns(ctx, tx)
+			if err != nil {
+				return fmt.Errorf("count Active Implement Runs before Run creation: %w", err)
+			}
+			if len(holders) >= req.MaxActiveImplementRuns {
+				return ActiveImplementRunCeilingError{
+					MaxActive: req.MaxActiveImplementRuns,
+					Holders:   holders,
+				}
 			}
 		}
 
@@ -1230,17 +1270,11 @@ ORDER BY created_at DESC, id DESC`
 // ActiveImplementRuns returns every non-terminal Implement Run in the Run
 // Database, regardless of repository.
 func (store *Store) ActiveImplementRuns(ctx context.Context) ([]Run, error) {
-	runs, err := store.ListRuns(ctx, ListRunsQuery{States: StatesActive})
+	runs, err := selectActiveImplementRuns(ctx, store.db)
 	if err != nil {
 		return nil, fmt.Errorf("list Active Implement Runs: %w", err)
 	}
-	active := make([]Run, 0, len(runs))
-	for _, run := range runs {
-		if run.Kind == KindImplement {
-			active = append(active, run)
-		}
-	}
-	return active, nil
+	return runs, nil
 }
 
 func (store *Store) Run(ctx context.Context, runID string) (Run, bool, error) {
@@ -2046,6 +2080,7 @@ func repositoryRootArguments(roots []string) (string, []any) {
 }
 
 type runQuerier interface {
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
 }
 
@@ -2103,6 +2138,37 @@ WHERE l.target_kind = ? AND l.target_key = ?`,
 		return Run{}, false, err
 	}
 	return run, true, nil
+}
+
+func selectActiveImplementRuns(ctx context.Context, querier runQuerier) ([]Run, error) {
+	terminalClause, terminalArguments := terminalStateExclusion()
+	arguments := append([]any{KindImplement}, terminalArguments...)
+	rows, err := querier.QueryContext(ctx, `
+SELECT id, kind, state, head_repository, head_branch, base_repository,
+       pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
+       spec_slug, agent, model, reasoning_effort, owner_pid, owner_identity, owner_identity_unproven, created_at, updated_at, completed_at
+FROM runs
+WHERE kind = ? AND `+terminalClause+`
+ORDER BY created_at DESC, id DESC`, arguments...)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	runs := []Run{}
+	for rows.Next() {
+		run, err := scanRun(rows)
+		if err != nil {
+			return nil, err
+		}
+		runs = append(runs, run)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return runs, nil
 }
 
 func selectRun(ctx context.Context, querier runQuerier, runID string) (Run, error) {

@@ -5325,11 +5325,12 @@ func TestRunImplementPreflightRejectsActiveRunInWorkingTree(t *testing.T) {
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
 }
 
-func TestImplementRefusesAtTheActiveRunCeiling(t *testing.T) {
+func TestRunCeilingRefusalNamesTheWayOut(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	writeUserConfig(t, homeDir, "runs:\n  max_active: 2\n")
 	withImplementCollaborators(t, &implementFakeRunner{gitRoot: repoDir})
+	withVersionFreshnessFakeDeps(t, versionFreshnessDependencies{currentVersion: func() string { return "dev" }})
 
 	ctx := context.Background()
 	runStore, err := store.Open(ctx, homeDir)
@@ -5372,11 +5373,14 @@ func TestImplementRefusesAtTheActiveRunCeiling(t *testing.T) {
 		t.Fatalf("implement stdout = %q, want empty", stdout.String())
 	}
 	for _, holder := range holders {
-		for _, want := range []string{holder.ID, holder.GitRoot, holder.SpecSlug} {
+		for _, want := range []string{holder.ID, holder.GitRoot, holder.SpecSlug, "roundfix stop " + holder.ID} {
 			if !strings.Contains(stderr.String(), want) {
 				t.Fatalf("ceiling refusal missing %q: %q", want, stderr.String())
 			}
 		}
+	}
+	if !strings.Contains(stderr.String(), "runs.max_active") {
+		t.Fatalf("ceiling refusal missing runs.max_active: %q", stderr.String())
 	}
 	assertRunCount(t, store.DatabasePath(homeDir), len(holders))
 }

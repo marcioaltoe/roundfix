@@ -338,6 +338,34 @@ func TestConfigRefusesANegativeRunsMaxActive(t *testing.T) {
 	}
 }
 
+func TestProjectConfigCannotRaiseTheRunCeiling(t *testing.T) {
+	t.Parallel()
+	for _, projectMax := range []int{0, 9} {
+		t.Run(fmt.Sprintf("project max %d", projectMax), func(t *testing.T) {
+			homeDir := t.TempDir()
+			workDir := t.TempDir()
+			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+			mustMkdir(t, filepath.Join(workDir, ".git"))
+			mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), "runs:\n  max_active: 1\n")
+			mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), fmt.Sprintf("runs:\n  max_active: %d\n", projectMax))
+			var stderr bytes.Buffer
+
+			loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir, Stderr: &stderr})
+			if err != nil {
+				t.Fatalf("load layered config: %v", err)
+			}
+			if loaded.Config.Runs.MaxActive != 1 {
+				t.Fatalf("Runs.MaxActive = %d, want User Config ceiling 1", loaded.Config.Runs.MaxActive)
+			}
+			for _, want := range []string{"runs.max_active", "Project Config", "ignored", "User Config"} {
+				if !strings.Contains(stderr.String(), want) {
+					t.Fatalf("Project Config warning %q does not contain %q", stderr.String(), want)
+				}
+			}
+		})
+	}
+}
+
 func TestBuiltinProfilesGeneratedCodexPolicy(t *testing.T) {
 	t.Parallel()
 	config := Builtin()
