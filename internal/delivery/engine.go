@@ -93,6 +93,7 @@ type CandidateRunner interface {
 type ItemWorkspace interface {
 	CreateItemBranch(ctx context.Context, gitRoot, specSlug string) (string, error)
 	UseItemBranch(ctx context.Context, gitRoot, branch string) error
+	ParkItem(ctx context.Context, gitRoot string) error
 }
 
 type PrePRReviewer interface {
@@ -529,24 +530,25 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 	deadline := engine.clock.Now().Add(engine.checkTimeout)
 	for {
 		report, err := engine.pullRequests.CurrentHeadChecks(ctx, item.PullRequestNumber)
-		if err != nil {
-			return fmt.Errorf("read current-head checks: %w", err)
-		}
-		if report.HeadSHA != head {
-			return engine.park(ctx, gitRoot, item, BlockerReviewStale)
-		}
-		pending := len(report.Checks) == 0
-		for _, check := range report.Checks {
-			switch strings.ToLower(strings.TrimSpace(check.Bucket)) {
-			case "pass", "skipping":
-			case "fail", "cancel", "cancelled":
-				return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
-			default:
-				pending = true
+		if err == nil {
+			if report.HeadSHA != head {
+				return engine.park(ctx, gitRoot, item, BlockerReviewStale)
 			}
-		}
-		if !pending {
-			return engine.setStage(ctx, gitRoot, item, store.DeliveryStageMerging)
+			pending := len(report.Checks) == 0
+			for _, check := range report.Checks {
+				switch strings.ToLower(strings.TrimSpace(check.Bucket)) {
+				case "pass", "skipping":
+				case "fail", "cancel", "cancelled":
+					return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+				default:
+					pending = true
+				}
+			}
+			if !pending {
+				return engine.setStage(ctx, gitRoot, item, store.DeliveryStageMerging)
+			}
+		} else if ctx.Err() != nil {
+			return fmt.Errorf("read current-head checks: %w", err)
 		}
 		remaining := deadline.Sub(engine.clock.Now())
 		if remaining <= 0 {
@@ -684,6 +686,9 @@ func (engine *Engine) setStage(
 }
 
 func (engine *Engine) park(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem, blocker string) error {
+	if err := engine.workspace.ParkItem(ctx, gitRoot); err != nil {
+		return fmt.Errorf("restore checkout before parking item as %q: %w", blocker, err)
+	}
 	item.Stage = store.DeliveryStageParked
 	item.Blocker = blocker
 	if err := engine.store.UpdateDeliveryQueueItem(ctx, gitRoot, *item); err != nil {

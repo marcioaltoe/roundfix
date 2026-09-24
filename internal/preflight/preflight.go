@@ -453,7 +453,7 @@ func InspectGit(ctx context.Context, workDir string, runner GitRunner) (GitState
 		}
 	}
 
-	status, err := runner.RunGit(ctx, root, "status", "--porcelain=v1", "-z")
+	status, err := runner.RunGit(ctx, root, "status", "--porcelain=v1", "-z", "--untracked-files=all")
 	if err != nil {
 		return GitState{}, fmt.Errorf("detect dirty worktree status: %w", err)
 	}

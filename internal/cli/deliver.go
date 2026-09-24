@@ -166,10 +166,25 @@ func runDeliverResume(ctx context.Context, args []string, stdout, stderr io.Writ
 	if !found {
 		return printDeliverFailure("resume", fmt.Errorf("Delivery Queue for repository %q does not exist", loaded.GitRoot), stderr)
 	}
-	if queue.OwnerPID > 0 && store.ProcessAlive(queue.OwnerPID) {
-		return printDeliverFailure("resume", fmt.Errorf("Delivery Queue already has owner PID %d; run 'roundfix deliver stop' first", queue.OwnerPID), stderr)
-	}
 	if queue.OwnerPID > 0 {
+		ownerState := "is not running"
+		if store.ProcessAlive(queue.OwnerPID) {
+			controller := commandDependenciesForContext(ctx).ownerProcesses
+			if controller == nil {
+				return printDeliverFailure("resume", errors.New("Delivery Queue owner process controller is required"), stderr)
+			}
+			proofErr := controller.ProveOwner(ctx, queue.OwnerPID, queue.OwnerIdentity)
+			switch {
+			case proofErr == nil && store.ProcessAlive(queue.OwnerPID):
+				return printDeliverFailure("resume", fmt.Errorf("Delivery Queue already has owner PID %d; run 'roundfix deliver stop' first", queue.OwnerPID), stderr)
+			case proofErr == nil:
+				// The process exited between the liveness check and identity proof.
+			case errors.Is(proofErr, store.ErrOwnerProcessIdentityUnproven):
+				ownerState = "has a different process identity"
+			default:
+				return printDeliverFailure("resume", proofErr, stderr)
+			}
+		}
 		released, releaseErr := runStore.ReleaseDeliveryQueueOwner(ctx, loaded.GitRoot, queue.OwnerPID, queue.OwnerIdentity)
 		if releaseErr != nil {
 			return printDeliverFailure("resume", releaseErr, stderr)
@@ -177,7 +192,7 @@ func runDeliverResume(ctx context.Context, args []string, stdout, stderr io.Writ
 		if !released {
 			return printDeliverFailure("resume", errors.New("Delivery Queue owner changed while resume was checking it"), stderr)
 		}
-		fmt.Fprintf(stderr, "roundfix: Delivery Queue owner PID %d is not running; reclaimed its owner record.\n", queue.OwnerPID)
+		fmt.Fprintf(stderr, "roundfix: Delivery Queue owner PID %d %s; reclaimed its owner record.\n", queue.OwnerPID, ownerState)
 	}
 	return commandDependenciesForContext(ctx).startDeliveryOwner(ctx, loaded, environment, stdout, stderr)
 }
