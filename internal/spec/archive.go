@@ -6,10 +6,20 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
 )
+
+// QAArchiveOverride records the maintainer authority and revision that permit
+// archiving a Spec whose newest QA evidence does not qualify for normal
+// archive. It never changes the QA Task or QA Report.
+type QAArchiveOverride struct {
+	Approval string
+	Reason   string
+	Revision string
+}
 
 // ArchiveKind names a retired artifact family.
 type ArchiveKind string
@@ -47,6 +57,7 @@ type ArchiveRequest struct {
 	BuiltInRoot bool
 	Slug        string
 	ArchivedAt  time.Time
+	QAOverride  *QAArchiveOverride
 }
 
 // ArchiveResult reports the filesystem paths touched by Archive.
@@ -54,6 +65,7 @@ type ArchiveResult struct {
 	SourceDir   string
 	ArchivedDir string
 	ArchivedOn  string
+	QAOverride  bool
 }
 
 // Archive verifies either completion and QA evidence for a Spec with a Task
@@ -62,15 +74,23 @@ type ArchiveResult struct {
 // when its blocked rows are declared unreachable. Superseded Specs move
 // byte-identically because their amendment already records their disposition.
 func Archive(req ArchiveRequest) (ArchiveResult, error) {
+	qaOverride, err := validateQAArchiveOverride(req.QAOverride)
+	if err != nil {
+		return ArchiveResult{}, err
+	}
 	sourceDir := filepath.Join(filepath.Clean(req.SpecsRoot), req.Slug)
 	stampMetadata := true
 	var unproven []string
+	qaOverrideOutcome := ""
 
 	graph, err := Load(req.SpecsRoot, req.Slug)
 	if err != nil {
 		var manifestErr ManifestError
 		if !errors.As(err, &manifestErr) || manifestErr.Reason != missingManifestReason || manifestErr.Err != nil {
 			return ArchiveResult{}, err
+		}
+		if qaOverride != nil {
+			return ArchiveResult{}, fmt.Errorf("QA archive override requires a Task Graph: %w", err)
 		}
 		if _, supersessionErr := ReadSupersession(sourceDir); supersessionErr != nil {
 			if errors.Is(supersessionErr, ErrNoSupersession) {
@@ -81,18 +101,38 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 		stampMetadata = false
 	} else {
 		sourceDir = graph.Spec.Dir
-		for _, task := range graph.Tasks {
-			if task.Status != StatusCompleted {
-				return ArchiveResult{}, fmt.Errorf("Task %q is %q; archive requires every Task to be %q", task.ID, task.Status, StatusCompleted)
+		if qaOverride != nil {
+			for _, task := range graph.Tasks {
+				if task.Type != TaskTypeQA && task.Status != StatusCompleted {
+					return ArchiveResult{}, fmt.Errorf("Task %q is %q; QA archive override requires every non-QA Task to be %q", task.ID, task.Status, StatusCompleted)
+				}
 			}
-		}
-		report, reportErr := ReadQAReport(graph.Spec.Dir)
-		if reportErr != nil {
-			return ArchiveResult{}, fmt.Errorf("no passing QA verdict: %w", reportErr)
-		}
-		unproven, reportErr = archiveUnprovenActions(graph.Spec.Dir, report)
-		if reportErr != nil {
-			return ArchiveResult{}, fmt.Errorf("no passing QA verdict: %w", reportErr)
+			report, reportErr := ReadQAReport(graph.Spec.Dir)
+			switch {
+			case reportErr == nil:
+				if _, eligibilityErr := archiveUnprovenActions(graph.Spec.Dir, report); eligibilityErr == nil {
+					return ArchiveResult{}, errors.New("QA archive override is not allowed because the newest QA Report already qualifies for normal archive")
+				}
+				qaOverrideOutcome = report.Verdict
+			case errors.Is(reportErr, ErrNoQAReport):
+				qaOverrideOutcome = "missing"
+			default:
+				qaOverrideOutcome = reportErr.Error()
+			}
+		} else {
+			for _, task := range graph.Tasks {
+				if task.Status != StatusCompleted {
+					return ArchiveResult{}, fmt.Errorf("Task %q is %q; archive requires every Task to be %q", task.ID, task.Status, StatusCompleted)
+				}
+			}
+			report, reportErr := ReadQAReport(graph.Spec.Dir)
+			if reportErr != nil {
+				return ArchiveResult{}, fmt.Errorf("no passing QA verdict: %w", reportErr)
+			}
+			unproven, reportErr = archiveUnprovenActions(graph.Spec.Dir, report)
+			if reportErr != nil {
+				return ArchiveResult{}, fmt.Errorf("no passing QA verdict: %w", reportErr)
+			}
 		}
 	}
 
@@ -107,7 +147,7 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 	archivedOn := archiveDate(req.ArchivedAt)
 	if stampMetadata {
 		prdPath := filepath.Join(sourceDir, "_prd.md")
-		if err := stampArchiveMetadata(prdPath, req.Slug, archivedOn, unproven); err != nil {
+		if err := stampArchiveMetadata(prdPath, req.Slug, archivedOn, unproven, qaOverride, qaOverrideOutcome); err != nil {
 			return ArchiveResult{}, err
 		}
 	}
@@ -121,7 +161,29 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 		SourceDir:   sourceDir,
 		ArchivedDir: archivedDir,
 		ArchivedOn:  archivedOn,
+		QAOverride:  qaOverride != nil,
 	}, nil
+}
+
+func validateQAArchiveOverride(override *QAArchiveOverride) (*QAArchiveOverride, error) {
+	if override == nil {
+		return nil, nil
+	}
+	normalized := &QAArchiveOverride{
+		Approval: strings.TrimSpace(override.Approval),
+		Reason:   strings.TrimSpace(override.Reason),
+		Revision: strings.TrimSpace(override.Revision),
+	}
+	if normalized.Approval == "" {
+		return nil, errors.New("QA archive override requires an approval source")
+	}
+	if normalized.Reason == "" {
+		return nil, errors.New("QA archive override requires a reason")
+	}
+	if normalized.Revision == "" {
+		return nil, errors.New("QA archive override requires an archived revision")
+	}
+	return normalized, nil
 }
 
 // ArchiveSpecRoot returns the filesystem directory holding retired Specs for
@@ -165,7 +227,7 @@ func archiveDate(value time.Time) string {
 	return value.Format("2006-01-02")
 }
 
-func stampArchiveMetadata(prdPath string, slug string, archivedOn string, unproven []string) error {
+func stampArchiveMetadata(prdPath string, slug string, archivedOn string, unproven []string, qaOverride *QAArchiveOverride, qaOverrideOutcome string) error {
 	content, err := os.ReadFile(prdPath)
 	if err != nil {
 		return fmt.Errorf("read Spec PRD %q: %w", prdPath, err)
@@ -187,6 +249,13 @@ func stampArchiveMetadata(prdPath string, slug string, archivedOn string, unprov
 	setArchiveFrontmatterValue(mapping, "source_slug", slug)
 	if len(unproven) > 0 {
 		setArchiveFrontmatterNode(mapping, "unproven", archiveSequenceNode(unproven))
+	}
+	if qaOverride != nil {
+		setArchiveFrontmatterNode(mapping, "qa_override", archiveBoolNode(true))
+		setArchiveFrontmatterValue(mapping, "qa_override_approval", qaOverride.Approval)
+		setArchiveFrontmatterValue(mapping, "qa_override_reason", qaOverride.Reason)
+		setArchiveFrontmatterValue(mapping, "qa_override_qa_outcome", qaOverrideOutcome)
+		setArchiveFrontmatterValue(mapping, "qa_override_revision", qaOverride.Revision)
 	}
 
 	var encoded bytes.Buffer
@@ -232,6 +301,10 @@ func setArchiveFrontmatterNode(mapping *yaml.Node, key string, value *yaml.Node)
 
 func archiveScalarNode(value string) *yaml.Node {
 	return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: value}
+}
+
+func archiveBoolNode(value bool) *yaml.Node {
+	return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!bool", Value: fmt.Sprintf("%t", value)}
 }
 
 func archiveSequenceNode(values []string) *yaml.Node {

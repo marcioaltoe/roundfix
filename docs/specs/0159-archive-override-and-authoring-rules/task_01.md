@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0159-archive-override-and-authoring-rules
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -44,3 +44,37 @@ The Baseline guidance and the archive skill describe archiving a Spec despite fa
 ## References
 
 - [_techspec.md](_techspec.md) — The override
+
+## Result
+
+Implemented the authorized QA Archive Override without changing the normal
+archive path. `ArchiveRequest` now accepts approval, reason and revision
+provenance; the override still requires every non-QA Task completed, refuses
+an already-qualifying newest QA Report, records failed, missing or unreadable
+QA as observed, and stamps all five override fields. The archive result and
+CLI output identify the override disposition. QA Task files and every QA
+Report move unchanged.
+
+The archive command accepts the documented positional form with
+`--qa-override`, `--approval` and `--reason`. It rejects either provenance flag
+without the override and rejects the override unless both non-empty values are
+present. The CLI resolves the archived repository `HEAD` and records its full
+revision. Invocation without the override retains the existing eligibility,
+metadata and output behavior.
+
+Focused-check evidence:
+
+- Pre-change: `rtk env GOCACHE=/private/tmp/roundfix-task01-gocache go test -count=1 -run '^TestArchiveQAOverrideStampsProvenance$' ./internal/spec` failed to compile because `ArchiveRequest.QAOverride`, `QAArchiveOverride` and `ArchiveResult.QAOverride` did not exist.
+- `rtk env GOCACHE=/private/tmp/roundfix-task01-gocache go test -count=1 -run '^TestArchiveQAOverrideStampsProvenance$' ./internal/spec` passed. Its failed, missing and unreadable QA cases assert every provenance field and compare the QA Task plus all QA Reports byte-for-byte before and after the move.
+- `rtk env GOCACHE=/private/tmp/roundfix-task01-gocache go test -count=1 -run '^TestArchiveQAOverride(StillRequiresNonQATasks|RefusedWhenQAQualifies)$' ./internal/spec` passed. It covers a pending non-QA Task plus pass and qualifying declared-partial reports, with refused archives leaving QA evidence unchanged.
+- `rtk env GOCACHE=/private/tmp/roundfix-task01-gocache go test -count=1 -run '^Test(ArchiveCommandQAOverrideRequiresApprovalAndReason|RunArchiveQAOverrideReportsOverride)$' ./internal/cli` passed. It covers every missing/stray flag combination and the exact accepted CLI form, full `HEAD` stamp, override output, and byte-identical QA Task and Report.
+- `rtk env GOCACHE=/private/tmp/roundfix-task01-gocache go test -count=1 -run '^(TestArchive|TestRunArchive|TestSpec0058|TestArchived)' ./internal/spec ./internal/cli` passed, including the existing normal archive, supersession, declared partial, external-root, help and historical-corpus cases.
+- `rtk git diff --check` passed.
+
+A broader `rtk env GOCACHE=/private/tmp/roundfix-task01-gocache go test
+-count=1 ./internal/spec ./internal/cli` attempt was blocked when an unrelated
+CLI test path tried to reach `api.github.com`; permission to expose that
+unspecified request was denied, so the attempt produced no package verdict and
+was not counted as evidence.
+
+The Daemon-owned `## Verification` command was not run in this Agent turn.
