@@ -36,8 +36,9 @@ that follow from that choice:
   and ADR-0156 makes a declared promise name a consuming Task. This Spec's gate
   is bound by ADR-0080, ADR-0091, ADR-0096, ADR-0097 and ADR-0117. All hold.
   Source: `docs/agents/domain.md`.
-- Tooling authority: not applicable — the intersection of this Spec's changed
-  paths with `GovernedPath` is empty. Source:
+- Tooling authority: applicable — the standing grant of 2026-09-21 for governed
+  paths a slice needs, recorded in [_authorization.md](_authorization.md);
+  bounded files: `internal/cli/cli_test.go`. Source:
   `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`.
 
 ## Goals

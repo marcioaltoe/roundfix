@@ -3,7 +3,8 @@ status: approved
 granted: 2026-09-24
 action: record a durable repository key on each Run and make listing, reconcile, gc and Run Window lookups use it
 consuming: 0162-a-durable-repository-key-per-run
-paths: []
+paths:
+  - internal/cli/cli_test.go
 operations:
   - implement
   - commit
@@ -20,9 +21,16 @@ recorded and carry them to a Spec of their own.
 
 ## Governed paths
 
-None. Measured with `GovernedPath`: `internal/store`, `internal/config`,
+`internal/cli/cli_test.go` rides the standing grant of 2026-09-21 for governed
+paths a slice genuinely needs. It seeds outdated Run Databases by dropping the
+columns later migrations add; a new `runs.repository_root` column must be
+dropped there too, or the Branch Integrity Preflight migration test seeds a
+database that already has it. The first Run of this Spec proved the need: its
+Task edited that seed and was refused for lack of a bound path.
+
+Everything else — `internal/store`, `internal/config`,
 `internal/cli/reconcile.go`, `internal/cli/gc.go`, `internal/cli/window.go` and
-their tests are ordinary source.
+their other tests — is ordinary source, measured with `GovernedPath`.
 
 ## Limits
 
