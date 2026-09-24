@@ -239,11 +239,17 @@ supported local CodeRabbit review surface is installed or specified, and exits
 Roundfix classifies the reviewer's answer by substance, not exact formatting.
 It recognizes a `No findings` verdict after case folding, surrounding Markdown
 emphasis, and trailing punctuation are normalized, or a `Findings:` verdict
-with its findings text. Exactly one verdict must be present; both verdicts or
-neither verdict block the review. Every answer that reaches the reviewer is
-kept in `pre-pr-review-answer.txt`, and the review record's `answerPath` names
-that file. Roundfix sets `answerPath` only after it sends the prompt to a
-reviewer; a pre-prompt failure has no answer path or answer file.
+with its findings text. A no-findings verdict passes only when it accounts for
+the whole answer: it is the only content line, or the last content line after a
+preamble with no list item, heading, or `path:line` reference. Anything else
+beside it blocks. `Findings: none`, `Findings: n/a`, and `Findings: no findings`
+with nothing after them are read as no findings. A verdict-shaped line after a
+`Findings:` header is part of that header's findings text and does not create a
+conflict. Exactly one verdict must be present; both verdicts or neither verdict
+block the review. Every answer that reaches the reviewer is kept in
+`pre-pr-review-answer.txt`, and the review record's `answerPath` names that
+file. Roundfix sets `answerPath` only after it sends the prompt to a reviewer;
+a pre-prompt failure has no answer path or answer file.
 
 When the candidate adds or changes a Spec folder under the configured Spec
 Root, or under its resolved archive root, Roundfix discovers that folder from
@@ -257,7 +263,9 @@ record's `specs` names the Specs whose context was carried.
 Spec context is bounded at 32 KiB per Spec and 64 KiB in total. When context is
 truncated, the prompt includes `[Spec context truncated]` and the record sets
 `specContextTruncated` to true. The reviewer must judge the delivery against
-the carried decisions and the alternatives they reject.
+the carried decisions and the alternatives they reject. Specs dropped by the
+total context bound are named in the record's `skippedSpecs`; the record's
+`specs` names the Specs whose context was carried.
 
 Exit codes are:
 
