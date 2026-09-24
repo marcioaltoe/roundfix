@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0160-a-review-that-reaches-a-verdict
-status: completed
+status: pending
 type: qa
 complexity: high
 ---
@@ -72,3 +72,9 @@ ADR-0155; ADR-0156.
 - Date: `2026-09-24`
 - QA Report: `qa/qa-report-2026-09-24-01.md`
 - Dependencies not completed: `task_09`
+
+## Invalidation
+
+- Date: `2026-09-24`
+- QA Report: `qa/qa-report-2026-09-24-02.md`
+- Dependencies not completed: `task_11`
