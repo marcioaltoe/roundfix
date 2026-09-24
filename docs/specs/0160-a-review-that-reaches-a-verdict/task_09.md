@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0160-a-review-that-reaches-a-verdict
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -44,3 +44,51 @@ Second pre-PR review of 2026-09-24, blocker: the classifier accepts a `No findin
 ## References
 
 - [_techspec.md](_techspec.md) — Classification
+
+## Result
+
+Implemented structural verdict classification so a clean verdict accounts for
+the complete answer, while a `Findings:` body owns every later line. A
+`Findings:` value of `none`, `n/a`, or `no findings` now produces a reviewed
+outcome only when it is the terminal content and any preceding content is a
+plain preamble. The command also clears stale answer evidence before an
+unreached review, always serializes `skippedSpecs` as a list, and records each
+Spec omitted by the total context bound.
+
+Focused-check evidence:
+
+- Acceptance criterion 1: the pre-change run of
+  `TestReviewBlocksContentBesideANoFindingsVerdict` reproduced all three false
+  passes with exit 0; the post-change focused run exits 0 with all three cases
+  observing command exit 2. `TestReviewClassifiesVerdictVariants`,
+  `TestReviewBlocksEmphasizedFindingsBesideNoFindings`, and
+  `TestReviewBlocksAmbiguousVerdict` also pass individually.
+- Acceptance criterion 2: the pre-change runs of
+  `TestReviewReadsFindingsNoneAsNoFindings` and
+  `TestReviewIgnoresAQuotedVerdictInsideFindings` failed; their post-change
+  focused runs exit 0. The first covers `none`, `n/a`, `no findings`, a safe
+  preamble, structured content before the clean verdict, and text after it.
+  The second proves a verdict-shaped line in the findings body remains finding
+  text. `TestReviewRecognisesEmphasizedFindingsHeader` also passes individually.
+- Acceptance criterion 3: the pre-change runs of
+  `TestReviewRemovesAStaleAnswerFile`,
+  `TestReviewRecordsEmptySkippedSpecsAsAList`, and
+  `TestReviewRecordsDroppedSpecs` failed on the stale file, `null` list, and
+  unnamed omissions respectively; all three post-change focused runs exit 0.
+  `TestReviewKeepsTheRawAnswer`,
+  `TestReviewKeepsNoAnswerWhenTheReviewerWasNotReached`,
+  `TestReviewBoundsSpecContext`, and
+  `TestReviewReportsSpecReadingFailureDistinctly` also pass individually.
+- `rtk env GOCACHE=/tmp/roundfix-task09-gocache go vet ./internal/cli` exits 0.
+- `rtk git diff --check` exits 0.
+
+Not run: the Task's authored `## Verification` command, which is reserved for
+Daemon Verification. A broader `^TestReview` sweep was not completed because it
+attempted a live GitHub request; sandbox escalation was rejected because this
+Task does not authorize external API use. The local-only focused tests above
+do not use that boundary.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260924T212727Z_e4cc3cafb0fa837a`
+- Source commit: `f5a15f062d6c3d5dbba41c44a8e2a567fc73e744`

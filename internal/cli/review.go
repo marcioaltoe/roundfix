@@ -271,6 +271,10 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		printReviewCommandFailure(err, stderr)
 		return exitPreflight
 	}
+	if err := removeReviewAnswer(artifactDir); err != nil {
+		printReviewCommandFailure(err, stderr)
+		return exitPreflight
+	}
 
 	record := newReviewRecord(gitState.Root, baseCommit, gitState.HEAD, loaded.Config.PrePRReview, reviewOutcomeBlocked)
 	switch loaded.Config.PrePRReview.Provider {
@@ -323,7 +327,7 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	for _, context := range specContext.contexts {
 		record.Specs = append(record.Specs, context.slug)
 	}
-	record.SkippedSpecs = specContext.skipped
+	record.SkippedSpecs = append([]string{}, specContext.skipped...)
 	record.SpecContextTruncated = specContext.truncated
 	record, code := classifyReviewCommandResult(record, result, runErr)
 	if !promptSent {
@@ -621,20 +625,25 @@ func reviewCandidateSpecContexts(
 			body: "PRD Decisions:\n" + decisions + "\n\nTechSpec:\n" + strings.TrimSpace(technicalSpec),
 		})
 	}
-	result.contexts, result.truncated = boundReviewSpecContexts(result.contexts)
+	var dropped []string
+	result.contexts, dropped, result.truncated = boundReviewSpecContexts(result.contexts)
+	result.skipped = append(result.skipped, dropped...)
+	sort.Strings(result.skipped)
 	return result, nil
 }
 
-func boundReviewSpecContexts(contexts []reviewSpecContext) ([]reviewSpecContext, bool) {
+func boundReviewSpecContexts(contexts []reviewSpecContext) ([]reviewSpecContext, []string, bool) {
 	if len(contexts) == 0 {
-		return contexts, false
+		return contexts, []string{}, false
 	}
 	perSpecBounded := make([]reviewSpecContext, 0, len(contexts))
+	dropped := make([]string, 0)
 	truncated := false
 	for _, context := range contexts {
 		envelopeLength := len(renderReviewSpecContext(reviewSpecContext{slug: context.slug}))
 		bodyLimit := reviewSpecContextPerSpecLimit - envelopeLength
 		if bodyLimit < len(reviewSpecContextTruncationMarker) {
+			dropped = append(dropped, context.slug)
 			truncated = true
 			continue
 		}
@@ -646,7 +655,7 @@ func boundReviewSpecContexts(contexts []reviewSpecContext) ([]reviewSpecContext,
 
 	remaining := reviewSpecContextTotalLimit - len(reviewSpecContextInstruction) - len(reviewSpecContextTruncationMarker)
 	bounded := make([]reviewSpecContext, 0, len(perSpecBounded))
-	for _, context := range perSpecBounded {
+	for index, context := range perSpecBounded {
 		block := renderReviewSpecContext(context)
 		if len(block) <= remaining {
 			bounded = append(bounded, context)
@@ -656,17 +665,19 @@ func boundReviewSpecContexts(contexts []reviewSpecContext) ([]reviewSpecContext,
 
 		envelopeLength := len(renderReviewSpecContext(reviewSpecContext{slug: context.slug}))
 		bodyLimit := remaining - envelopeLength
+		omittedStart := index
 		if bodyLimit >= len(reviewSpecContextTruncationMarker) {
 			context.body, _ = truncateReviewSpecContext(context.body, bodyLimit)
 			bounded = append(bounded, context)
+			omittedStart++
+		}
+		for _, omitted := range perSpecBounded[omittedStart:] {
+			dropped = append(dropped, omitted.slug)
 		}
 		truncated = true
 		break
 	}
-	if len(bounded) < len(perSpecBounded) {
-		truncated = true
-	}
-	return bounded, truncated
+	return bounded, dropped, truncated
 }
 
 func truncateReviewSpecContext(value string, limit int) (string, bool) {
@@ -827,34 +838,37 @@ func classifyReviewCommandResult(record reviewRecord, result agent.ExecuteResult
 	}
 
 	lines := strings.Split(message, "\n")
-	noFindingsVerdict := false
-	findingsVerdict := false
+	noFindingsLines := make([]int, 0, 1)
 	findingsLine := -1
 	findingsOnVerdictLine := ""
 	for index, line := range lines {
-		if isNoFindingsVerdictLine(line) {
-			noFindingsVerdict = true
-		}
 		if inlineFindings, ok := parseFindingsVerdictLine(line); ok {
-			findingsVerdict = true
 			if findingsLine == -1 {
 				findingsLine = index
 				findingsOnVerdictLine = inlineFindings
 			}
+			continue
+		}
+		if findingsLine == -1 && isNoFindingsVerdictLine(line) {
+			noFindingsLines = append(noFindingsLines, index)
 		}
 	}
 
 	switch {
-	case noFindingsVerdict && findingsVerdict:
+	case len(noFindingsLines) > 0 && findingsLine >= 0:
 		record.Reason = "unclassifiable agent output: both no-findings and findings verdicts are present"
 		return record, exitPreflight
-	case !noFindingsVerdict && !findingsVerdict:
+	case len(noFindingsLines) == 0 && findingsLine < 0:
 		record.Reason = "unclassifiable agent output: neither a no-findings nor findings verdict is present"
 		return record, exitPreflight
-	case noFindingsVerdict:
+	case len(noFindingsLines) > 0:
+		if len(noFindingsLines) != 1 || !noFindingsVerdictAccountsForAnswer(lines, noFindingsLines[0]) {
+			record.Reason = "unclassifiable agent output: no-findings verdict does not account for other content"
+			return record, exitPreflight
+		}
 		record.Outcome = reviewOutcomeReviewed
 		return record, exitOK
-	case findingsVerdict:
+	case findingsLine >= 0:
 		findingsParts := make([]string, 0, 2)
 		if findingsOnVerdictLine != "" {
 			findingsParts = append(findingsParts, findingsOnVerdictLine)
@@ -863,6 +877,14 @@ func classifyReviewCommandResult(record reviewRecord, result agent.ExecuteResult
 			findingsParts = append(findingsParts, strings.Join(lines[findingsLine+1:], "\n"))
 		}
 		findings := strings.TrimSpace(strings.Join(findingsParts, "\n"))
+		if findingsVerdictMeansNoFindings(findingsOnVerdictLine, lines[findingsLine+1:]) {
+			if !noFindingsVerdictAccountsForAnswer(lines, findingsLine) {
+				record.Reason = "unclassifiable agent output: no-findings verdict does not account for other content"
+				return record, exitPreflight
+			}
+			record.Outcome = reviewOutcomeReviewed
+			return record, exitOK
+		}
 		if findings != "" {
 			record.Outcome = reviewOutcomeFindings
 			record.Findings = findings
@@ -873,6 +895,92 @@ func classifyReviewCommandResult(record reviewRecord, result agent.ExecuteResult
 	}
 	record.Reason = "ambiguous agent output"
 	return record, exitPreflight
+}
+
+func noFindingsVerdictAccountsForAnswer(lines []string, verdictLine int) bool {
+	for index, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		if index == verdictLine {
+			continue
+		}
+		if index > verdictLine || !isReviewPreambleLine(line) {
+			return false
+		}
+	}
+	return true
+}
+
+func isReviewPreambleLine(line string) bool {
+	line = strings.TrimSpace(line)
+	if line == "" || isNoFindingsVerdictLine(line) {
+		return false
+	}
+	if strings.HasPrefix(line, "#") || isReviewListItem(line) {
+		return false
+	}
+	return !hasReviewPathLineReference(line)
+}
+
+func isReviewListItem(line string) bool {
+	line = strings.TrimSpace(line)
+	if len(line) < 2 {
+		return false
+	}
+	if strings.ContainsRune("-*+", rune(line[0])) && unicode.IsSpace(rune(line[1])) {
+		return true
+	}
+	index := 0
+	for index < len(line) && line[index] >= '0' && line[index] <= '9' {
+		index++
+	}
+	return index > 0 && index+1 < len(line) && (line[index] == '.' || line[index] == ')') && unicode.IsSpace(rune(line[index+1]))
+}
+
+func hasReviewPathLineReference(line string) bool {
+	for _, field := range strings.Fields(line) {
+		field = strings.Trim(field, "`*_[](){}<>,;\"'.:")
+		separator := strings.LastIndexByte(field, ':')
+		if separator <= 0 || separator+1 == len(field) {
+			continue
+		}
+		path := field[:separator]
+		lineNumber := field[separator+1:]
+		pathHasLetter := false
+		for _, character := range path {
+			if unicode.IsLetter(character) {
+				pathHasLetter = true
+				break
+			}
+		}
+		if !pathHasLetter {
+			continue
+		}
+		allDigits := true
+		for _, character := range lineNumber {
+			if !unicode.IsDigit(character) {
+				allDigits = false
+				break
+			}
+		}
+		if allDigits {
+			return true
+		}
+	}
+	return false
+}
+
+func findingsVerdictMeansNoFindings(inlineFindings string, followingLines []string) bool {
+	if strings.TrimSpace(strings.Join(followingLines, "\n")) != "" {
+		return false
+	}
+	switch strings.ToLower(normalizeReviewVerdictText(inlineFindings)) {
+	case "none", "n/a", "no findings":
+		return true
+	default:
+		return false
+	}
 }
 
 func isNoFindingsVerdictLine(line string) bool {
@@ -987,6 +1095,14 @@ func persistReviewAnswer(artifactDir string, answer string) (string, error) {
 		return "", fmt.Errorf("replace review answer %q: %w", path, err)
 	}
 	return path, nil
+}
+
+func removeReviewAnswer(artifactDir string) error {
+	path := filepath.Join(artifactDir, reviewAnswerFileName)
+	if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("remove stale review answer %q: %w", path, err)
+	}
+	return nil
 }
 
 func printReviewCommandFailure(err error, stderr io.Writer) {

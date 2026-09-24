@@ -389,9 +389,12 @@ func TestReviewBoundsSpecContext(t *testing.T) {
 			body: strings.Repeat("x", reviewSpecContextPerSpecLimit),
 		}
 	}
-	bounded, truncated := boundReviewSpecContexts(contexts)
+	bounded, dropped, truncated := boundReviewSpecContexts(contexts)
 	if !truncated {
 		t.Fatal("total-bound fixture was not recorded as truncated")
+	}
+	if len(dropped) == 0 {
+		t.Fatal("total-bound fixture did not report a dropped Spec")
 	}
 	for _, context := range bounded {
 		if !strings.Contains(context.body, reviewSpecContextTruncationMarker) {
@@ -401,6 +404,44 @@ func TestReviewBoundsSpecContext(t *testing.T) {
 	totalContext := appendReviewSpecContexts("", reviewSpecContextResult{contexts: bounded, truncated: truncated})
 	if len(totalContext) > reviewSpecContextTotalLimit {
 		t.Fatalf("total Spec context length = %d, want at most %d", len(totalContext), reviewSpecContextTotalLimit)
+	}
+}
+
+func TestReviewRecordsDroppedSpecs(t *testing.T) {
+	const specsRoot = "planning/specs"
+	runner := &reviewCommandRunner{
+		results: []reviewCommandRunResult{{
+			result: agent.ExecuteResult{Message: "No findings", StopReason: "end_turn"},
+		}},
+	}
+	fixture := newReviewCommandFixture(t, "codex", runner)
+	for index := 1; index <= 4; index++ {
+		slug := fmt.Sprintf("0160-bounded-context-%d", index)
+		specDir := filepath.Join(fixture.repository, filepath.FromSlash(specsRoot), slug)
+		if err := os.MkdirAll(specDir, 0o755); err != nil {
+			t.Fatalf("create Spec directory: %v", err)
+		}
+		oversized := strings.Repeat(fmt.Sprintf("%d", index), reviewSpecContextPerSpecLimit)
+		mustWrite(t, filepath.Join(specDir, "_prd.md"), "# Spec\n\n## Decisions\n\n"+oversized+"\n")
+		mustWrite(t, filepath.Join(specDir, "_techspec.md"), "# TechSpec\n\n"+oversized+"\n")
+	}
+	gittest.Run(t, fixture.repository, "add", specsRoot)
+	gittest.Run(t, fixture.repository, "commit", "-m", "add bounded Specs")
+	fixture.headCommit = strings.TrimSpace(gittest.Run(t, fixture.repository, "rev-parse", "HEAD"))
+	writeReviewCommandConfigWithSpecsRoot(t, fixture.repository, fixture.provider, fixture.artifactDir, specsRoot)
+
+	code, record, stderr := fixture.run(t)
+
+	if code != exitOK || record.Outcome != reviewOutcomeReviewed {
+		t.Fatalf("bounded Specs review exit=%d record=%+v stderr=%q", code, record, stderr)
+	}
+	if !reflect.DeepEqual(record.SkippedSpecs, []string{"0160-bounded-context-3", "0160-bounded-context-4"}) {
+		t.Fatalf("review skipped Specs = %v, want dropped Specs named", record.SkippedSpecs)
+	}
+	for _, slug := range record.SkippedSpecs {
+		if strings.Contains(runner.request.Prompt, "BEGIN SPEC CONTEXT: "+slug) {
+			t.Fatalf("review prompt carries dropped Spec %q", slug)
+		}
 	}
 }
 
@@ -590,6 +631,12 @@ func TestReviewClassifiesVerdictVariants(t *testing.T) {
 			wantOutcome: reviewOutcomeReviewed,
 		},
 		{
+			name:        "plain preamble before clean verdict",
+			answer:      "I reviewed the candidate.\nNo findings",
+			wantCode:    exitOK,
+			wantOutcome: reviewOutcomeReviewed,
+		},
+		{
 			name:         "preamble before emphasized lowercase findings verdict",
 			answer:       "I reviewed the candidate.\n**findings:**\ninternal/cli/review.go:42: first finding\ninternal/cli/review_test.go:42: second finding",
 			wantCode:     exitRunFailed,
@@ -714,6 +761,93 @@ func TestReviewBlocksAmbiguousVerdict(t *testing.T) {
 	}
 }
 
+func TestReviewBlocksContentBesideANoFindingsVerdict(t *testing.T) {
+	tests := []struct {
+		name   string
+		answer string
+	}{
+		{
+			name:   "findings under a Findings heading",
+			answer: "## Findings\n1. internal/cli/review.go:42: classifier accepts unrelated clean verdicts\n\n## Security\nNo findings",
+		},
+		{
+			name:   "findings under a topic heading",
+			answer: "## Correctness\ninternal/cli/review.go:42: classifier accepts topic findings\nNo findings",
+		},
+		{
+			name:   "finding after the verdict",
+			answer: "No findings\ninternal/cli/review.go:42: classifier ignores trailing findings",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			runner := &reviewCommandRunner{
+				results: []reviewCommandRunResult{{
+					result: agent.ExecuteResult{Message: test.answer, StopReason: "end_turn"},
+				}},
+			}
+			fixture := newReviewCommandFixture(t, "codex", runner)
+
+			code, record, stderr := fixture.run(t)
+
+			assertBlockedReviewCommand(t, code, record, stderr, "unclassifiable agent output")
+		})
+	}
+}
+
+func TestReviewReadsFindingsNoneAsNoFindings(t *testing.T) {
+	tests := []struct {
+		name        string
+		answer      string
+		wantCode    int
+		wantOutcome reviewOutcome
+	}{
+		{name: "none", answer: "Findings: none", wantCode: exitOK, wantOutcome: reviewOutcomeReviewed},
+		{name: "not applicable", answer: "Findings: n/a", wantCode: exitOK, wantOutcome: reviewOutcomeReviewed},
+		{name: "no findings", answer: "Findings: no findings", wantCode: exitOK, wantOutcome: reviewOutcomeReviewed},
+		{name: "plain preamble before none", answer: "I reviewed the candidate.\nFindings: none", wantCode: exitOK, wantOutcome: reviewOutcomeReviewed},
+		{name: "structured content before none", answer: "## Correctness\n1. internal/cli/review.go:42: finding\nFindings: none", wantCode: exitPreflight, wantOutcome: reviewOutcomeBlocked},
+		{name: "text follows none", answer: "Findings: none\ninternal/cli/review.go:42: finding follows", wantCode: exitRunFailed, wantOutcome: reviewOutcomeFindings},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			runner := &reviewCommandRunner{
+				results: []reviewCommandRunResult{{
+					result: agent.ExecuteResult{Message: test.answer, StopReason: "end_turn"},
+				}},
+			}
+			fixture := newReviewCommandFixture(t, "codex", runner)
+
+			code, record, stderr := fixture.run(t)
+
+			if code != test.wantCode || record.Outcome != test.wantOutcome {
+				t.Fatalf("review exit=%d record=%+v stderr=%q, want exit=%d outcome=%q", code, record, stderr, test.wantCode, test.wantOutcome)
+			}
+		})
+	}
+}
+
+func TestReviewIgnoresAQuotedVerdictInsideFindings(t *testing.T) {
+	const answer = "Findings:\nNo findings\ninternal/cli/review.go:42: the findings body quoted the clean verdict"
+	runner := &reviewCommandRunner{
+		results: []reviewCommandRunResult{{
+			result: agent.ExecuteResult{Message: answer, StopReason: "end_turn"},
+		}},
+	}
+	fixture := newReviewCommandFixture(t, "codex", runner)
+
+	code, record, stderr := fixture.run(t)
+
+	if code != exitRunFailed || record.Outcome != reviewOutcomeFindings {
+		t.Fatalf("quoted verdict review exit=%d record=%+v stderr=%q, want findings", code, record, stderr)
+	}
+	if record.Findings != "No findings\ninternal/cli/review.go:42: the findings body quoted the clean verdict" {
+		t.Fatalf("review findings = %q, want quoted verdict preserved", record.Findings)
+	}
+}
+
 func TestReviewKeepsTheRawAnswer(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -786,6 +920,59 @@ func TestReviewKeepsNoAnswerWhenTheReviewerWasNotReached(t *testing.T) {
 	answerPath := filepath.Join(fixture.artifactDir, reviewAnswerFileName)
 	if _, err := os.Stat(answerPath); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("review answer file stat error = %v, want not exist", err)
+	}
+}
+
+func TestReviewRemovesAStaleAnswerFile(t *testing.T) {
+	runner := &reviewCommandRunner{
+		prepareErrors: []error{errors.New("prepare review session")},
+	}
+	fixture := newReviewCommandFixture(t, "codex", runner)
+	answerPath := filepath.Join(fixture.artifactDir, reviewAnswerFileName)
+	if err := os.MkdirAll(fixture.artifactDir, 0o755); err != nil {
+		t.Fatalf("create Artifact Directory: %v", err)
+	}
+	mustWrite(t, answerPath, "stale answer from an earlier review")
+
+	code, record, stderr := fixture.run(t)
+
+	assertBlockedReviewCommand(t, code, record, stderr, "runtime failure")
+	if _, err := os.Stat(answerPath); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("stale review answer stat error = %v, want not exist", err)
+	}
+}
+
+func TestReviewRecordsEmptySkippedSpecsAsAList(t *testing.T) {
+	const slug = "0160-unreadable-skipped-specs"
+	runner := &reviewCommandRunner{}
+	fixture := newReviewCommandFixture(t, "codex", runner)
+	specDir := filepath.Join(fixture.repository, "docs", "specs", slug)
+	if err := os.MkdirAll(specDir, 0o755); err != nil {
+		t.Fatalf("create Spec directory: %v", err)
+	}
+	mustWrite(t, filepath.Join(specDir, "_prd.md"), "# Spec\n\n## Decisions\n\n- Read candidate files.\n")
+	mustWrite(t, filepath.Join(specDir, "_techspec.md"), "# TechSpec\n")
+	gittest.Run(t, fixture.repository, "add", "docs/specs")
+	gittest.Run(t, fixture.repository, "commit", "-m", "add unreadable Spec")
+	fixture.headCommit = strings.TrimSpace(gittest.Run(t, fixture.repository, "rev-parse", "HEAD"))
+	withReviewSpecGitRunner(t, failingSpecFileGitRunner{delegate: preflight.ExecGitRunner{}})
+
+	code, record, stderr := fixture.run(t)
+
+	assertBlockedReviewCommand(t, code, record, stderr, "Spec context read failure")
+	if record.SkippedSpecs == nil {
+		t.Fatal("review skipped Specs = nil, want an empty list")
+	}
+	recordBytes, err := os.ReadFile(filepath.Join(fixture.artifactDir, reviewRecordFileName))
+	if err != nil {
+		t.Fatalf("read review record: %v", err)
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(recordBytes, &fields); err != nil {
+		t.Fatalf("decode review record fields: %v", err)
+	}
+	if string(fields["skippedSpecs"]) != "[]" {
+		t.Fatalf("review skippedSpecs JSON = %s, want []", fields["skippedSpecs"])
 	}
 }
 
