@@ -292,6 +292,55 @@ WHERE git_root = ? AND owner_pid = ? AND owner_identity = ?`, gitRoot, pid, iden
 	return released, err
 }
 
+// RecordDeliveryQueueItemBranch records the first branch assigned to one item
+// and returns that durable value on retries.
+func (store *Store) RecordDeliveryQueueItemBranch(
+	ctx context.Context,
+	gitRoot string,
+	specSlug string,
+	branch string,
+) (string, error) {
+	gitRoot = strings.TrimSpace(gitRoot)
+	specSlug = strings.TrimSpace(specSlug)
+	branch = strings.TrimSpace(branch)
+	if gitRoot == "" {
+		return "", errors.New("record Delivery Queue item branch: Git root is required")
+	}
+	if specSlug == "" {
+		return "", errors.New("record Delivery Queue item branch: Spec slug is required")
+	}
+	if branch == "" {
+		return "", errors.New("record Delivery Queue item branch: branch is required")
+	}
+
+	recorded := ""
+	err := store.withWriteTx(ctx, fmt.Sprintf("Delivery Queue item %q branch recording", specSlug), func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(ctx, `
+UPDATE delivery_queue_items
+SET branch = ?
+WHERE git_root = ? AND spec_slug = ? AND branch = ''`, branch, gitRoot, specSlug); err != nil {
+			return fmt.Errorf("record Delivery Queue item %q branch: %w", specSlug, err)
+		}
+		if err := tx.QueryRowContext(ctx, `
+SELECT branch
+FROM delivery_queue_items
+WHERE git_root = ? AND spec_slug = ?`, gitRoot, specSlug).Scan(&recorded); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf("record Delivery Queue item %q branch: item does not exist", specSlug)
+			}
+			return fmt.Errorf("read Delivery Queue item %q branch: %w", specSlug, err)
+		}
+		if strings.TrimSpace(recorded) == "" {
+			return fmt.Errorf("record Delivery Queue item %q branch: recorded branch is empty", specSlug)
+		}
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+	return recorded, nil
+}
+
 // UpdateDeliveryQueueItem persists one item's current delivery state without
 // changing its original queue position.
 func (store *Store) UpdateDeliveryQueueItem(ctx context.Context, gitRoot string, item DeliveryQueueItem) error {

@@ -3,6 +3,8 @@ package cli
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -46,12 +48,33 @@ func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) 
 }
 
 func (workflow *commandDeliveryWorkflow) CreateItemBranch(ctx context.Context, gitRoot, specSlug string) (string, error) {
+	branch, err := newDeliveryBranch(specSlug)
+	if err != nil {
+		return "", err
+	}
+	branch, err = workflow.store.RecordDeliveryQueueItemBranch(ctx, gitRoot, specSlug, branch)
+	if err != nil {
+		return "", fmt.Errorf("record item branch: %w", err)
+	}
 	state, err := preflight.InspectGit(ctx, gitRoot, workflow.git)
 	if err != nil {
 		return "", fmt.Errorf("inspect checkout before item branch creation: %w", err)
 	}
 	if len(state.Dirty) != 0 {
 		return "", errors.New("create item branch: checkout has uncommitted changes")
+	}
+	if state.Branch == branch {
+		return branch, nil
+	}
+	exists, err := localItemBranchExists(ctx, workflow.git, gitRoot, branch)
+	if err != nil {
+		return "", fmt.Errorf("inspect item branch %q: %w", branch, err)
+	}
+	if exists {
+		if _, err := workflow.git.RunGit(ctx, gitRoot, "switch", branch); err != nil {
+			return "", fmt.Errorf("reuse item branch %q: %w", branch, err)
+		}
+		return branch, nil
 	}
 	defaultBranch := preflight.DetectDefaultBranch(ctx, gitRoot, state.Branch, workflow.git)
 	if defaultBranch.Source == preflight.DefaultBranchUndetermined {
@@ -64,11 +87,34 @@ func (workflow *commandDeliveryWorkflow) CreateItemBranch(ctx context.Context, g
 	if _, err := workflow.git.RunGit(ctx, gitRoot, "fetch", remote, defaultBranch.Name); err != nil {
 		return "", fmt.Errorf("refresh default branch %q: %w", defaultBranch.Name, err)
 	}
-	branch := deliveryBranchPrefix + specSlug
-	if _, err := workflow.git.RunGit(ctx, gitRoot, "switch", "-c", branch, remote+"/"+defaultBranch.Name); err != nil {
+	if _, err := workflow.git.RunGit(ctx, gitRoot, "switch", "--no-track", "-c", branch, remote+"/"+defaultBranch.Name); err != nil {
 		return "", fmt.Errorf("create item branch %q: %w", branch, err)
 	}
 	return branch, nil
+}
+
+func newDeliveryBranch(specSlug string) (string, error) {
+	specSlug = strings.TrimSpace(specSlug)
+	if specSlug == "" {
+		return "", errors.New("create item branch: Spec slug is required")
+	}
+	var suffix [8]byte
+	if _, err := rand.Read(suffix[:]); err != nil {
+		return "", fmt.Errorf("create item branch: generate branch suffix: %w", err)
+	}
+	return deliveryBranchPrefix + specSlug + "-" + hex.EncodeToString(suffix[:]), nil
+}
+
+func localItemBranchExists(ctx context.Context, runner preflight.GitRunner, gitRoot, branch string) (bool, error) {
+	_, err := runner.RunGit(ctx, gitRoot, "show-ref", "--verify", "--quiet", "refs/heads/"+branch)
+	if err == nil {
+		return true, nil
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+		return false, nil
+	}
+	return false, err
 }
 
 func (workflow *commandDeliveryWorkflow) UseItemBranch(ctx context.Context, gitRoot, branch string) error {

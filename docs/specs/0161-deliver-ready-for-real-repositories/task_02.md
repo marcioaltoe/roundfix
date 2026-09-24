@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0161-deliver-ready-for-real-repositories
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -42,3 +42,44 @@ The item branch is created tracking `origin/<default>`, so with `implement.auto_
 ## References
 
 - [_techspec.md](_techspec.md) — Branches
+
+## Result
+
+Implemented durable per-delivery item branches without changing the Task status
+or running the Daemon-owned Verification command:
+
+- Branch creation records `roundfix/deliver-<slug>-<random suffix>` on the
+  Delivery Queue item before inspecting or changing the Git checkout.
+- The first creation refreshes the default branch and uses
+  `git switch --no-track -c`, so the local item branch has no upstream.
+- A retry keeps the first recorded branch. If that branch already exists
+  locally, the workflow switches to it without fetching or creating another
+  branch.
+
+Focused-check evidence:
+
+- Before the implementation,
+  `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test ./internal/cli -run '^TestItemBranchHasNoUpstream$' -count=1`
+  failed because the item branch upstream was `origin/main`.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 ./internal/cli -run '^(TestDeliveryWorkflowCreatesAnItemBranchFromTheRefreshedDefault|TestItemBranchHasNoUpstream|TestEachDeliveryGetsItsOwnBranch|TestResumeReusesTheRecordedItemBranch)$'`
+  — passed.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 ./internal/store -run '^TestRecordDeliveryQueueItemBranchKeepsTheFirstBranch$'`
+  — passed.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 ./internal/cli ./internal/store`
+  — the sandboxed run reached two unrelated force-stop integration tests and
+  was blocked from reading the process table; the rerun with process-table
+  permission passed both affected package suites.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go vet ./internal/cli ./internal/store`
+  — passed.
+- `rtk git diff --check` — passed.
+
+Acceptance evidence:
+
+1. `TestItemBranchHasNoUpstream` creates the branch with real Git and observes
+   an empty `%(upstream:short)` value.
+2. `TestEachDeliveryGetsItsOwnBranch` replaces a terminal queue with a second
+   delivery of the same slug and observes two different suffixed branch names.
+3. `TestResumeReusesTheRecordedItemBranch` leaves the item at `queued` after
+   branch creation, makes its remote unavailable, and observes that retry uses
+   the recorded local branch. `TestRecordDeliveryQueueItemBranchKeepsTheFirstBranch`
+   also proves a later proposal cannot overwrite the durable branch value.

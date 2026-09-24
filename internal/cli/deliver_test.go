@@ -206,6 +206,124 @@ func TestATerminalQueueIsReplacedByANewStart(t *testing.T) {
 
 func TestDeliveryWorkflowCreatesAnItemBranchFromTheRefreshedDefault(t *testing.T) {
 	t.Parallel()
+	origin, checkout := newDeliveryBranchRepository(t)
+	seedPath := filepath.Join(origin, "seed.txt")
+	if err := os.WriteFile(seedPath, []byte("refreshed\n"), 0o644); err != nil {
+		t.Fatalf("refresh origin seed: %v", err)
+	}
+	gittest.Run(t, origin, "add", "seed.txt")
+	gittest.Run(t, origin, "commit", "-m", "fix: refresh default")
+	wantHead := strings.TrimSpace(gittest.Run(t, origin, "rev-parse", "main"))
+	workflow := newDeliveryBranchWorkflow(t, checkout, "0156-delivery")
+
+	branch, err := workflow.CreateItemBranch(t.Context(), checkout, "0156-delivery")
+
+	if err != nil {
+		t.Fatalf("create item branch: %v", err)
+	}
+	if !strings.HasPrefix(branch, "roundfix/deliver-0156-delivery-") {
+		t.Fatalf("item branch = %q, want per-delivery suffix", branch)
+	}
+	if got := strings.TrimSpace(gittest.Run(t, checkout, "branch", "--show-current")); got != branch {
+		t.Fatalf("current branch = %q, want %q", got, branch)
+	}
+	if got := strings.TrimSpace(gittest.Run(t, checkout, "rev-parse", "HEAD")); got != wantHead {
+		t.Fatalf("item branch head = %q, want refreshed default %q", got, wantHead)
+	}
+}
+
+func TestItemBranchHasNoUpstream(t *testing.T) {
+	t.Parallel()
+	_, checkout := newDeliveryBranchRepository(t)
+	workflow := newDeliveryBranchWorkflow(t, checkout, "0161-untracked")
+
+	branch, err := workflow.CreateItemBranch(t.Context(), checkout, "0161-untracked")
+
+	if err != nil {
+		t.Fatalf("create item branch: %v", err)
+	}
+	upstream := strings.TrimSpace(gittest.Run(
+		t,
+		checkout,
+		"for-each-ref",
+		"--format=%(upstream:short)",
+		"refs/heads/"+branch,
+	))
+	if upstream != "" {
+		t.Fatalf("item branch upstream = %q, want none", upstream)
+	}
+}
+
+func TestEachDeliveryGetsItsOwnBranch(t *testing.T) {
+	t.Parallel()
+	_, checkout := newDeliveryBranchRepository(t)
+	workflow := newDeliveryBranchWorkflow(t, checkout, "0161-repeat")
+
+	firstBranch, err := workflow.CreateItemBranch(t.Context(), checkout, "0161-repeat")
+	if err != nil {
+		t.Fatalf("create first item branch: %v", err)
+	}
+	queue, found, err := workflow.store.DeliveryQueue(t.Context(), checkout)
+	if err != nil || !found {
+		t.Fatalf("read first Delivery Queue: found=%v err=%v", found, err)
+	}
+	firstItem := queue.Items[0]
+	firstItem.Stage = store.DeliveryStageParked
+	if err := workflow.store.UpdateDeliveryQueueItem(t.Context(), checkout, firstItem); err != nil {
+		t.Fatalf("park first delivery: %v", err)
+	}
+	gittest.Run(t, checkout, "switch", "main")
+	if _, err := workflow.store.CreateDeliveryQueue(t.Context(), checkout, []string{"0161-repeat"}); err != nil {
+		t.Fatalf("create second Delivery Queue: %v", err)
+	}
+
+	secondBranch, err := workflow.CreateItemBranch(t.Context(), checkout, "0161-repeat")
+
+	if err != nil {
+		t.Fatalf("create second item branch: %v", err)
+	}
+	if firstBranch == secondBranch {
+		t.Fatalf("delivery branches = %q and %q, want different branches", firstBranch, secondBranch)
+	}
+}
+
+func TestResumeReusesTheRecordedItemBranch(t *testing.T) {
+	t.Parallel()
+	_, checkout := newDeliveryBranchRepository(t)
+	workflow := newDeliveryBranchWorkflow(t, checkout, "0161-resume")
+
+	firstBranch, err := workflow.CreateItemBranch(t.Context(), checkout, "0161-resume")
+	if err != nil {
+		t.Fatalf("create item branch before crash: %v", err)
+	}
+	queue, found, err := workflow.store.DeliveryQueue(t.Context(), checkout)
+	if err != nil || !found {
+		t.Fatalf("read Delivery Queue after branch creation: found=%v err=%v", found, err)
+	}
+	if got := queue.Items[0].Branch; got != firstBranch {
+		t.Fatalf("recorded item branch = %q, want %q", got, firstBranch)
+	}
+	if queue.Items[0].Stage != store.DeliveryStageQueued {
+		t.Fatalf("item stage after simulated crash = %q, want queued", queue.Items[0].Stage)
+	}
+	gittest.Run(t, checkout, "switch", "main")
+	gittest.Run(t, checkout, "remote", "set-url", "origin", filepath.Join(t.TempDir(), "missing-origin"))
+
+	resumedBranch, err := workflow.CreateItemBranch(t.Context(), checkout, "0161-resume")
+
+	if err != nil {
+		t.Fatalf("resume item branch: %v", err)
+	}
+	if resumedBranch != firstBranch {
+		t.Fatalf("resumed item branch = %q, want recorded branch %q", resumedBranch, firstBranch)
+	}
+	if got := strings.TrimSpace(gittest.Run(t, checkout, "branch", "--show-current")); got != firstBranch {
+		t.Fatalf("current branch after resume = %q, want %q", got, firstBranch)
+	}
+}
+
+func newDeliveryBranchRepository(t *testing.T) (string, string) {
+	t.Helper()
 	origin := t.TempDir()
 	gittest.InitRepo(t, origin, "--initial-branch=main")
 	gittest.PersistIdentity(t, origin)
@@ -215,34 +333,30 @@ func TestDeliveryWorkflowCreatesAnItemBranchFromTheRefreshedDefault(t *testing.T
 	}
 	gittest.Run(t, origin, "add", "seed.txt")
 	gittest.Run(t, origin, "commit", "-m", "chore: seed")
-
 	checkout := filepath.Join(t.TempDir(), "checkout")
 	gittest.Run(t, "", "clone", origin, checkout)
 	gittest.Harden(t, checkout)
-	if err := os.WriteFile(seedPath, []byte("refreshed\n"), 0o644); err != nil {
-		t.Fatalf("refresh origin seed: %v", err)
+	return origin, checkout
+}
+
+func newDeliveryBranchWorkflow(t *testing.T, checkout string, specSlug string) *commandDeliveryWorkflow {
+	t.Helper()
+	runStore, err := store.Open(t.Context(), t.TempDir())
+	if err != nil {
+		t.Fatalf("open Run Database: %v", err)
 	}
-	gittest.Run(t, origin, "add", "seed.txt")
-	gittest.Run(t, origin, "commit", "-m", "fix: refresh default")
-	wantHead := strings.TrimSpace(gittest.Run(t, origin, "rev-parse", "main"))
-	workflow := &commandDeliveryWorkflow{
+	t.Cleanup(func() {
+		if err := runStore.Close(); err != nil {
+			t.Errorf("close Run Database: %v", err)
+		}
+	})
+	if _, err := runStore.CreateDeliveryQueue(t.Context(), checkout, []string{specSlug}); err != nil {
+		t.Fatalf("create Delivery Queue: %v", err)
+	}
+	return &commandDeliveryWorkflow{
+		store:  runStore,
 		loaded: roundconfig.Loaded{GitRoot: checkout},
 		git:    preflight.ExecGitRunner{},
-	}
-
-	branch, err := workflow.CreateItemBranch(t.Context(), checkout, "0156-delivery")
-
-	if err != nil {
-		t.Fatalf("create item branch: %v", err)
-	}
-	if branch != "roundfix/deliver-0156-delivery" {
-		t.Fatalf("item branch = %q", branch)
-	}
-	if got := strings.TrimSpace(gittest.Run(t, checkout, "branch", "--show-current")); got != branch {
-		t.Fatalf("current branch = %q, want %q", got, branch)
-	}
-	if got := strings.TrimSpace(gittest.Run(t, checkout, "rev-parse", "HEAD")); got != wantHead {
-		t.Fatalf("item branch head = %q, want refreshed default %q", got, wantHead)
 	}
 }
 
