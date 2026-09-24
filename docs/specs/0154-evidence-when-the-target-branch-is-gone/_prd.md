@@ -98,6 +98,34 @@ preserved result with the missing proof named.
   retain.
 - Releasing a Run whose Worktree holds uncommitted changes. Dirty stays dirty.
 
+## What this Spec does not yet guarantee
+
+Independent pre-PR review found two defects after the corrective ceiling and the
+review cap were both reached. The maintainer chose on 2026-09-24 to deliver with
+them recorded rather than take a third corrective Task. Both are carried to the
+restructured queue's delivery 3 (verification and settlement reliability), which
+owns reconciliation.
+
+**`reconcile --apply` can panic on a revalidated fallback candidate.** With a
+deleted target and a clean Run Branch whose default branch carries an archived
+superseding report, the absent-target fallback can make the branch a cleanup
+candidate. On revalidation `InspectTerminalRun` compares the active report path
+with the archived one and returns an unintegrated result without evidence, and
+`ApplyRunBranchCandidate` still calls `cleanupTerminalRun`, which reads
+`fresh.evidence.worktreePresent` through a nil evidence pointer. This path did
+not exist before this Spec, so the defect is introduced here. The repair is to
+carry the reconciliation evidence through that result, or refuse the candidate
+before cleanup.
+
+**An archived copy of the same QA Report is not recognised.** Archive moves
+`qa-report-YYYY-MM-DD(.NN).md` from `docs/specs/<slug>/qa` to
+`docs/history/specs/<slug>/qa` without renaming it, so the Run-side and
+default-side reports share date and sequence. `NewestQAReportFromPaths` breaks
+the tie by full path, `docs/history/...` sorts before `docs/specs/...`, and the
+active Run path wins, so `proven` is false. This errs toward preserving a Run,
+which is the safe direction. The repair is to compare report identity
+independently of the active or archived root.
+
 ## Success Metrics
 
 1. A fixture whose Run Branch was squash-merged into the default branch and
