@@ -1,9 +1,12 @@
 ---
 spec: 0154-evidence-when-the-target-branch-is-gone
-status: active
+status: archived
 created: 2026-09-23
 surfaces: [backend, cli, docs]
+archived: "2026-09-24"
+source_slug: 0154-evidence-when-the-target-branch-is-gone
 ---
+
 
 # Evidence when the target branch is gone
 
