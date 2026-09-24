@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0155-a-verify-that-runs-what-changed
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -39,3 +39,20 @@ QA finding F-001 of 2026-09-24: Task 07 moved `internal/cli` membership to Makef
 ## References
 
 - [_techspec.md](_techspec.md) — Build Order
+
+## Result
+
+- Added `overlapping recipes name the duplicated test` to exercise the real
+  Makefile recipe parser with a copied recipe whose Baseline pattern also
+  selects one core `internal/cli` test. The assertion requires the resulting
+  two-set diagnostic to name that test exactly.
+- Added `package selected by both sets is named` to put one repository package
+  in both computed package sets. The assertion requires the resulting two-set
+  diagnostic to name that package exactly.
+- Focused acceptance evidence:
+  - `GOCACHE=/tmp/roundfix-task09-gocache go test -count=1 -run '^TestPartitionCoversEveryTestExactlyOnce/package_selected_by_both_sets_is_named$' ./internal/verifyselect` exited 0.
+  - `GOCACHE=/tmp/roundfix-task09-gocache go test -count=1 -run '^TestPartitionFollowsTheMakefileRecipes/overlapping_recipes_name_the_duplicated_test$' ./internal/verifyselect` exited 0.
+- The first focused invocation with the default Go cache did not reach
+  compilation because the sandbox denied access to `~/Library/Caches/go-build`;
+  rerunning with the task-scoped cache above resolved the environment issue.
+- The Daemon-owned `## Verification` command was not run.

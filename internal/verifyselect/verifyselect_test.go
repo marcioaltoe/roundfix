@@ -339,6 +339,23 @@ func TestPartitionCoversEveryTestExactlyOnce(t *testing.T) {
 			t.Fatalf("partitionError() error = %q, want %q", err, want)
 		}
 	})
+
+	t.Run("package selected by both sets is named", func(t *testing.T) {
+		duplicated := packages[0]
+		coreWithDuplicate := cloneNameSet(corePackageSet)
+		baselineWithDuplicate := cloneNameSet(baselinePackageSet)
+		coreWithDuplicate[duplicated] = struct{}{}
+		baselineWithDuplicate[duplicated] = struct{}{}
+
+		err := partitionError(packages, coreWithDuplicate, baselineWithDuplicate)
+		if err == nil {
+			t.Fatalf("partitionError() error = nil after selecting %q in both package sets", duplicated)
+		}
+		want := fmt.Sprintf("%q is selected by 2 sets, want exactly 1", duplicated)
+		if err.Error() != want {
+			t.Fatalf("partitionError() error = %q, want %q", err, want)
+		}
+	})
 }
 
 func TestPartitionFollowsTheMakefileRecipes(t *testing.T) {
@@ -385,6 +402,52 @@ func TestPartitionFollowsTheMakefileRecipes(t *testing.T) {
 		}
 		if !strings.Contains(err.Error(), "is selected by 0 sets, want exactly 1") {
 			t.Fatalf("Makefile CLI recipe partition error = %q, want an omitted-test diagnostic", err)
+		}
+	})
+
+	t.Run("overlapping recipes name the duplicated test", func(t *testing.T) {
+		baselineTests, err := makeRecipeCLITests(t, repoRoot, makefile, "verify-changed-baseline", cliTests)
+		if err != nil {
+			t.Fatalf("read baseline CLI recipe: %v", err)
+		}
+		duplicated := ""
+		for _, name := range cliTests {
+			if _, isBaseline := baselineTests[name]; !isBaseline {
+				duplicated = name
+				break
+			}
+		}
+		if duplicated == "" {
+			t.Fatal("internal/cli has no core test to duplicate in the baseline recipe")
+		}
+
+		overlappingTests := make([]string, 0, len(baselineTests)+1)
+		for name := range baselineTests {
+			overlappingTests = append(overlappingTests, regexp.QuoteMeta(name))
+		}
+		overlappingTests = append(overlappingTests, regexp.QuoteMeta(duplicated))
+		sort.Strings(overlappingTests)
+
+		contents, err := os.ReadFile(makefile)
+		if err != nil {
+			t.Fatalf("ReadFile(%q): %v", makefile, err)
+		}
+		const recipePattern = `-run "$$pattern"`
+		if count := strings.Count(string(contents), recipePattern); count != 1 {
+			t.Fatalf("Makefile contains %d baseline CLI recipe patterns, want 1", count)
+		}
+		overlappingPattern := `-run "^(` + strings.Join(overlappingTests, "|") + `)$$"`
+		overlapping := strings.Replace(string(contents), recipePattern, overlappingPattern, 1)
+		overlappingRoot := t.TempDir()
+		writeFile(t, overlappingRoot, "Makefile", overlapping)
+
+		err = contractError(t, filepath.Join(overlappingRoot, "Makefile"))
+		if err == nil {
+			t.Fatalf("Makefile CLI recipe partition error = nil after selecting %q in both recipes", duplicated)
+		}
+		want := fmt.Sprintf("%q is selected by 2 sets, want exactly 1", duplicated)
+		if err.Error() != want {
+			t.Fatalf("Makefile CLI recipe partition error = %q, want %q", err, want)
 		}
 	})
 }
