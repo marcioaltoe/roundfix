@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0162-a-durable-repository-key-per-run
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
