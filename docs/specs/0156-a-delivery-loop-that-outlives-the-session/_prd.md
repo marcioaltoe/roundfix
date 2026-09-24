@@ -128,6 +128,26 @@ found. Two lower-severity defects from that review are carried:
   owner, reuse its PID with an unrelated process, then `deliver resume`. Carried
   fix: compare the recorded process identity and release a stale owner.
 
+The second pre-PR review round of 2026-09-24 found four more defects, carried
+to Spec 0161 as a blocking follow-up. No release may ship `roundfix deliver`
+until Spec 0161 is merged.
+
+- Checks not yet reported: `gh pr checks` exits 1 with `no checks reported`
+  right after the pull request is created, which parks the item as
+  `delivery-error` instead of waiting. Reproduction: deliver one Spec to a
+  repository whose CI has not attached a check yet.
+- Item branch upstream: the item branch is created tracking
+  `origin/<default>`, so with `implement.auto_push: true` a Clean Run pushes to
+  the default branch before review. Reproduction: set `implement.auto_push:
+  true` and deliver one Spec; `git rev-parse @{u}` on the item branch prints
+  `origin/main`.
+- Re-delivery: the item branch name is fixed per slug and created with
+  `git switch -c`, so delivering a parked Spec again, or resuming after a crash
+  between branch creation and the stage write, parks with "branch already
+  exists".
+- Dirty checkout after a non-exact archive: the archive changes stay
+  uncommitted, and every later item refuses to start on a dirty checkout.
+
 ## Decisions
 
 - **Review before archive.** The maintainer set the order on 2026-09-22: archive
