@@ -1074,6 +1074,68 @@ func TestProveExactSelectionOfficialFixturesNoPrompt(t *testing.T) {
 	}
 }
 
+func TestDisposableProofAppliesRequestedAccessMode(t *testing.T) {
+	t.Parallel()
+
+	models := []string{"opus-test"}
+	efforts := []string{"medium", "high"}
+	runtime := RuntimeSpec{
+		ID:                    "claude",
+		Protocol:              ProtocolACP,
+		Model:                 "opus-test",
+		ReasoningEffort:       "high",
+		RequestedAccessPolicy: AccessPolicyFullAccess,
+		FullAccessMode:        "bypassPermissions",
+	}
+
+	harness := newFakeACPXHarness(t)
+	harness.setEnv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"sessions show":         sessionCapabilitySnapshotFixture(t, "opus-test", models, "effort", "medium", efforts),
+		"set effort value=high": selectionStateFixture(t, "effort", "high", "opus-test", models, "effort", "high", efforts),
+	}))
+
+	proof, err := harness.runner.ProveExactSelection(context.Background(), ProbeRequest{
+		Runtime: runtime,
+		WorkDir: harness.gitRoot,
+	})
+	if err != nil {
+		t.Fatalf("prove exact selection with full access: %v", err)
+	}
+	if proof.EffectiveAccessPolicy != AccessPolicyFullAccess {
+		t.Fatalf("effective access policy = %q, want %q", proof.EffectiveAccessPolicy, AccessPolicyFullAccess)
+	}
+
+	invocations := readJSONInvocations(t, harness.invocationsPath)
+	var modeCalls [][]string
+	for _, invocation := range invocations {
+		if fakeACPXCommandKey(invocation) == "set-mode" {
+			modeCalls = append(modeCalls, invocation)
+		}
+	}
+	if len(modeCalls) != 1 || invocationValue(modeCalls[0], "-s") == "" || !containsArg(modeCalls[0], "bypassPermissions") {
+		t.Fatalf("disposable proof mode calls = %#v, want one bypassPermissions call on the disposable session", modeCalls)
+	}
+	assertLastInvocationClosesDisposable(t, harness)
+
+	refused := newFakeACPXHarness(t)
+	refused.setEnv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"sessions show":         sessionCapabilitySnapshotFixture(t, "opus-test", models, "effort", "medium", efforts),
+		"set effort value=high": selectionStateFixture(t, "effort", "high", "opus-test", models, "effort", "high", efforts),
+	}))
+	refused.setEnv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"set-mode": 2}))
+	refused.setEnv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{"set-mode": "mode rejected\n"}))
+
+	_, err = refused.runner.ProveExactSelection(context.Background(), ProbeRequest{Runtime: runtime, WorkDir: refused.gitRoot})
+	if err == nil {
+		t.Fatal("expected disposable proof to fail when the adapter refuses the access mode")
+	}
+	var accessErr *AccessPolicyError
+	if !errors.As(err, &accessErr) || accessErr.Classification() != AccessPolicyRejected || accessErr.Predicate != AccessModeAcceptedPredicate {
+		t.Fatalf("access refusal = %T %v, want %q at predicate %q", err, err, AccessPolicyRejected, AccessModeAcceptedPredicate)
+	}
+	assertLastInvocationClosesDisposable(t, refused)
+}
+
 func TestProveExactSelectionModelVariant(t *testing.T) {
 	t.Parallel()
 

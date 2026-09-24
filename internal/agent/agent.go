@@ -14,13 +14,115 @@ import (
 )
 
 type RuntimeSpec struct {
-	ID              string
-	DisplayName     string
-	Protocol        string
-	Command         string
-	Model           string
-	ReasoningEffort string
-	FullAccessMode  string
+	ID                      string
+	DisplayName             string
+	Protocol                string
+	Command                 string
+	Model                   string
+	ReasoningEffort         string
+	RequestedAccessPolicy   AccessPolicy
+	SupportedFullAccessMode string
+	FullAccessMode          string
+}
+
+type AccessPolicy string
+
+const (
+	AccessPolicyRuntimeDefault AccessPolicy = ""
+	AccessPolicyFullAccess     AccessPolicy = "full-access"
+
+	AccessPolicyUnsupported      = "access_policy_unsupported"
+	AccessPolicyRejected         = "access_policy_rejected"
+	AccessModeAvailablePredicate = "runtime_has_access_mode"
+	AccessModeAcceptedPredicate  = "adapter_accepts_access_mode"
+)
+
+// AccessModeFor reports the adapter mode a runtime can use to honour policy.
+// Runtime-default access needs no mode; every stronger policy must name one.
+func (runtime RuntimeSpec) AccessModeFor(policy AccessPolicy) (string, bool) {
+	switch policy {
+	case AccessPolicyRuntimeDefault:
+		return "", true
+	case AccessPolicyFullAccess:
+		mode := strings.TrimSpace(runtime.SupportedFullAccessMode)
+		if mode == "" {
+			// Preserve RuntimeSpec literals from before capability reporting was
+			// explicit; FullAccessMode was then the only available signal.
+			mode = strings.TrimSpace(runtime.FullAccessMode)
+		}
+		return mode, mode != ""
+	default:
+		return "", false
+	}
+}
+
+// RequestedPolicy preserves RuntimeSpec values constructed before access
+// policy became explicit: a named full-access mode still represents the
+// full-access request that caused it to be selected.
+func (runtime RuntimeSpec) RequestedPolicy() AccessPolicy {
+	if runtime.RequestedAccessPolicy != AccessPolicyRuntimeDefault {
+		return runtime.RequestedAccessPolicy
+	}
+	if strings.TrimSpace(runtime.FullAccessMode) != "" {
+		return AccessPolicyFullAccess
+	}
+	return AccessPolicyRuntimeDefault
+}
+
+func (runtime RuntimeSpec) ValidateRequestedAccessPolicy() error {
+	policy := runtime.RequestedPolicy()
+	if _, ok := runtime.AccessModeFor(policy); ok {
+		return nil
+	}
+	return &AccessPolicyError{
+		Kind:      AccessPolicyUnsupported,
+		Runtime:   strings.TrimSpace(runtime.ID),
+		Policy:    policy,
+		Predicate: AccessModeAvailablePredicate,
+	}
+}
+
+// AccessPolicyError reports why readiness could not honour a requested access
+// policy. Predicate distinguishes missing runtime support from adapter refusal.
+type AccessPolicyError struct {
+	Kind      string
+	Runtime   string
+	Policy    AccessPolicy
+	Mode      string
+	Predicate string
+	Err       error
+}
+
+func (err *AccessPolicyError) Error() string {
+	if err == nil {
+		return ""
+	}
+	message := fmt.Sprintf("requested access policy %q failed predicate %q for runtime %q", err.Policy, strings.TrimSpace(err.Predicate), strings.TrimSpace(err.Runtime))
+	if mode := strings.TrimSpace(err.Mode); mode != "" {
+		message += fmt.Sprintf(" with adapter mode %q", mode)
+	}
+	if err.Err != nil {
+		message += ": " + err.Err.Error()
+	}
+	return message + "; recovery: " + err.RecoveryAction()
+}
+
+func (err *AccessPolicyError) Unwrap() error {
+	if err == nil {
+		return nil
+	}
+	return err.Err
+}
+
+func (err *AccessPolicyError) Classification() string {
+	if err == nil {
+		return ""
+	}
+	return strings.TrimSpace(err.Kind)
+}
+
+func (err *AccessPolicyError) RecoveryAction() string {
+	return "disable full access or select a runtime that supports it"
 }
 
 type RuntimeOptions struct {
@@ -253,13 +355,17 @@ func RuntimeFor(opts RuntimeOptions) (RuntimeSpec, error) {
 		spec.Protocol = ProtocolStdio
 		spec.Command = opts.CommandOverride
 	}
-	if opts.EnableFullAccess {
+	if opts.CommandOverride == "" {
 		switch spec.ID {
 		case "codex":
-			spec.FullAccessMode = "full-access"
+			spec.SupportedFullAccessMode = "full-access"
 		case "claude":
-			spec.FullAccessMode = "bypassPermissions"
+			spec.SupportedFullAccessMode = "bypassPermissions"
 		}
+	}
+	if opts.EnableFullAccess {
+		spec.RequestedAccessPolicy = AccessPolicyFullAccess
+		spec.FullAccessMode, _ = spec.AccessModeFor(AccessPolicyFullAccess)
 	}
 	spec.Model = opts.Model
 	spec.ReasoningEffort = opts.ReasoningEffort

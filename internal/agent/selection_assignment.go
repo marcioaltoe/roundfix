@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"roundfix/internal/runevent"
 )
 
 const (
@@ -71,13 +73,14 @@ func (catalogue RuntimeCatalogue) AdvertisesModel(requested string) bool {
 
 // SelectionProof records one exact, token-free Agent Selection proof.
 type SelectionProof struct {
-	Runtime         string
-	Model           string
-	ReasoningEffort string
-	Assignment      SelectionAssignment
-	Catalogue       RuntimeCatalogue
-	Adapter         AdapterEvidence
-	Status          string
+	Runtime               string
+	Model                 string
+	ReasoningEffort       string
+	EffectiveAccessPolicy AccessPolicy
+	Assignment            SelectionAssignment
+	Catalogue             RuntimeCatalogue
+	Adapter               AdapterEvidence
+	Status                string
 }
 
 // SessionSelectionRequest applies one canonical selection to an existing
@@ -102,6 +105,9 @@ func (runner *ACPXRunner) ProveExactSelection(ctx context.Context, request Probe
 	}
 	if strings.TrimSpace(request.Runtime.ID) == "" {
 		return SelectionProof{}, errors.New("ACP Runtime id is required")
+	}
+	if err := request.Runtime.ValidateRequestedAccessPolicy(); err != nil {
+		return SelectionProof{}, err
 	}
 	workDir := strings.TrimSpace(request.WorkDir)
 	if workDir == "" {
@@ -139,6 +145,16 @@ func (runner *ACPXRunner) ProveExactSelection(ctx context.Context, request Probe
 			Capabilities: capabilities,
 			Catalogue:    catalogue,
 		}, codexEnv)
+	}
+	if setupErr == nil {
+		setupErr = runner.applyFullAccess(setupCtx, ExecuteRequest{
+			Runtime: request.Runtime,
+			Session: session,
+			GitRoot: workDir,
+		}, runevent.Discard, codexEnv)
+		if setupErr == nil {
+			proof.EffectiveAccessPolicy = request.Runtime.RequestedPolicy()
+		}
 	}
 	setupCancel()
 

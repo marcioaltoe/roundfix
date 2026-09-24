@@ -816,6 +816,36 @@ func TestImplementTaskContentChoosesVerificationByTaskType(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("supported policy is proven for preferred and fallback selections", func(t *testing.T) {
+		runner := &profileReadinessExactRunner{prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
+			if req.Runtime.RequestedAccessPolicy != agent.AccessPolicyFullAccess || req.Runtime.FullAccessMode == "" {
+				t.Fatalf("selection proof received unhonoured access policy: %#v", req.Runtime)
+			}
+			return agent.SelectionProof{EffectiveAccessPolicy: agent.AccessPolicyFullAccess}, nil
+		}}
+
+		result, err := runProfileOperationalPreflight(
+			context.Background(),
+			commandRequest{name: "implement", agentFullAccess: true},
+			roundconfig.Builtin(),
+			[]roundconfig.WorkCategory{roundconfig.CategoryBackend},
+			"/workspace",
+			runner,
+			io.Discard,
+		)
+		if err != nil {
+			t.Fatalf("supported access policy preflight: %v", err)
+		}
+		if len(result.Proofs) < 2 || len(runner.exactRequests) != len(result.Proofs) {
+			t.Fatalf("preferred and fallback proofs = %d requests for %d reports, want at least two matching proofs", len(runner.exactRequests), len(result.Proofs))
+		}
+		for _, proof := range result.Proofs {
+			if proof.EffectiveAccessPolicy != agent.AccessPolicyFullAccess {
+				t.Fatalf("effective access policy = %q for %+v", proof.EffectiveAccessPolicy, proof.Selection)
+			}
+		}
+	})
 }
 
 func implementTaskContent(slug string, seed implementSeed) string {
@@ -5349,6 +5379,86 @@ func TestImplementProfilePreflightFailureCreatesNoRunWorktreeOrAgentPrompt(t *te
 		t.Fatalf("expected no Run Worktree root under %s", homeDir)
 	} else if !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("stat worktree root: %v", err)
+	}
+}
+
+func TestProfilePreflightRefusesUnhonouredAccessPolicy(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		agent      string
+		model      string
+		prove      func(agent.ProbeRequest) (agent.SelectionProof, error)
+		predicate  string
+		adapterErr string
+	}{
+		{
+			name:      "runtime has no full-access mode",
+			agent:     "opencode",
+			model:     "opencode-test",
+			predicate: agent.AccessModeAvailablePredicate,
+		},
+		{
+			name:  "adapter refuses full-access mode",
+			agent: "codex",
+			model: "gpt-test",
+			prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
+				return agent.SelectionProof{}, &agent.AccessPolicyError{
+					Kind:      agent.AccessPolicyRejected,
+					Runtime:   req.Runtime.ID,
+					Policy:    req.Runtime.RequestedAccessPolicy,
+					Mode:      req.Runtime.FullAccessMode,
+					Predicate: agent.AccessModeAcceptedPredicate,
+					Err:       errors.New("adapter refused mode"),
+				}
+			},
+			predicate:  agent.AccessModeAcceptedPredicate,
+			adapterErr: "adapter refused mode",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, _ := newImplementWorkspace(t, []implementSeed{{id: "task_01", taskType: "backend"}})
+			runner := &profileReadinessExactRunner{prove: tt.prove}
+			withImplementCollaborators(t, runner)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLIContext(t, context.Background(), []string{
+				"implement",
+				"--spec", implementTestSlug,
+				"--agent", tt.agent,
+				"--model", tt.model,
+				"--reasoning-effort=",
+				"--agent-full-access",
+				"--no-input",
+			}, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("preflight exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
+			}
+			for _, want := range []string{
+				fmt.Sprintf(`profile proof failed for runtime %q, model %q`, tt.agent, tt.model),
+				tt.predicate,
+				"disable full access or select a runtime that supports it",
+				tt.adapterErr,
+			} {
+				if want != "" && !strings.Contains(stderr.String(), want) {
+					t.Fatalf("stderr missing %q in %q", want, stderr.String())
+				}
+			}
+			if stdout.Len() != 0 || runner.calls != 0 {
+				t.Fatalf("access refusal created output or Agent work: stdout=%q calls=%d", stdout.String(), runner.calls)
+			}
+			assertNoRunDatabase(t, homeDir)
+			if _, err := os.Stat(filepath.Join(homeDir, ".roundfix", "worktrees")); err == nil {
+				t.Fatalf("access refusal created a Run Worktree under %s", homeDir)
+			} else if !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("stat Run Worktree root: %v", err)
+			}
+		})
 	}
 }
 

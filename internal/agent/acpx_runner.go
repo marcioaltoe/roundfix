@@ -1322,17 +1322,28 @@ func (runner *ACPXRunner) warmSessionForDeferredEffort(
 }
 
 func (runner *ACPXRunner) applyFullAccess(ctx context.Context, req ExecuteRequest, sink runevent.Sink, codexEnv []string) error {
-	mode := strings.TrimSpace(req.Runtime.FullAccessMode)
-	if mode == "" {
+	policy := req.Runtime.RequestedPolicy()
+	if policy == AccessPolicyRuntimeDefault {
 		return nil
 	}
+	if err := req.Runtime.ValidateRequestedAccessPolicy(); err != nil {
+		return err
+	}
+	mode, _ := req.Runtime.AccessModeFor(policy)
 	sessionName := strings.TrimSpace(req.Session.Name)
 	args, err := acpxSetModeArgs(req.Runtime, mode, sessionName, req.GitRoot)
 	if err != nil {
 		return err
 	}
 	if err := runner.runACPXCommandWithEnv(ctx, args, codexEnv); err != nil {
-		return fmt.Errorf("set acpx Agent Session mode %q: %w", mode, err)
+		return &AccessPolicyError{
+			Kind:      AccessPolicyRejected,
+			Runtime:   strings.TrimSpace(req.Runtime.ID),
+			Policy:    policy,
+			Mode:      mode,
+			Predicate: AccessModeAcceptedPredicate,
+			Err:       fmt.Errorf("set acpx Agent Session mode %q: %w", mode, err),
+		}
 	}
 	if req.Runtime.ID != "codex" || mode != "full-access" {
 		return nil
