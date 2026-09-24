@@ -102,12 +102,13 @@ consulted. A candidate with no Spec folder gets today's prompt.
 2. The claude provider (depends on: 1).
 3. Spec-aware prompt (depends on: 2).
 4. Shipped skill and guide (depends on: 1, 2, 3).
-5. Terminal QA (depends on: 1, 2, 3, 4, 6, 7, 8, 9, 10).
+5. Terminal QA (depends on: 1, 2, 3, 4, 6, 7, 8, 9, 10, 11).
 6. No findings header escapes, no answer is invented (depends on: 4).
 7. Spec context that never blocks and stays bounded (depends on: 6).
 8. Describe the Spec-context contract the correctives delivered (depends on: 7).
 9. A no-findings verdict must account for the whole answer (depends on: 8).
 10. Describe the whole-answer verdict contract (depends on: 9).
+11. A pass is the whole answer (depends on: 10).
 
 ## Risks & Considerations
 

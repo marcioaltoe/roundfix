@@ -18,7 +18,7 @@ graph:
       needs: [task_01, task_02, task_03]
     - id: task_05
       file: task_05.md
-      needs: [task_01, task_02, task_03, task_04, task_06, task_07, task_08, task_09, task_10]
+      needs: [task_01, task_02, task_03, task_04, task_06, task_07, task_08, task_09, task_10, task_11]
     - id: task_06
       file: task_06.md
       needs: [task_04]
@@ -34,6 +34,9 @@ graph:
     - id: task_10
       file: task_10.md
       needs: [task_09]
+    - id: task_11
+      file: task_11.md
+      needs: [task_10]
 ---
 
 # Task Graph
@@ -49,4 +52,5 @@ graph:
 | task_08 | docs | Describe the Spec-context contract the correctives delivered |
 | task_09 | backend | A no-findings verdict must account for the whole answer |
 | task_10 | docs | Describe the whole-answer verdict contract |
+| task_11 | backend | A pass is the whole answer |
 | task_05 | qa | Run the final QA gate |

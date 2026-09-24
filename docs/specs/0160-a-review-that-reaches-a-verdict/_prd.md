@@ -64,7 +64,8 @@ installed or specified.
 1. **Tolerant classification, kept evidence.** The verdict line is found
    regardless of letter case, trailing punctuation, Markdown emphasis or a
    preamble before it. An answer that carries both verdicts or neither still
-   blocks, and so does any content a no-findings verdict does not account for.
+   blocks. A no-findings verdict passes only when it is the whole answer; any
+   other content beside it blocks.
    The raw answer is written beside the review record for every outcome that
    reached the reviewer, and a blocked record names its path.
 2. **The `claude` provider.** With `pre_pr_review.provider: claude`, the review
@@ -95,6 +96,9 @@ installed or specified.
 
 ## Decisions
 
+- **Allow the verdict, not a preamble.** Three review rounds each found new
+  ways for a findings-bearing preamble to slip past a blocklist, so a pass now
+  requires the verdict to be the whole answer.
 - **Tolerate form, not meaning.** Only presentation varies; an answer that does
   not commit to exactly one verdict still blocks, so tolerance never turns an
   unclear review into a pass.
