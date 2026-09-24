@@ -38,8 +38,10 @@ func TestClassifyPath(t *testing.T) {
 		{name: "Makefile", path: "Makefile", want: verifyselect.BothSets},
 		{name: "core source", path: "internal/app/version.go", want: verifyselect.CoreSet},
 		{name: "core test", path: "internal/app/version_test.go", want: verifyselect.CoreSet},
+		{name: "Markdown in core package", path: "internal/app/README.md", want: verifyselect.CoreSet},
 		{name: "documentation", path: "docs/user-guide/commands.md", want: verifyselect.NoSet},
-		{name: "unrelated data", path: "testdata/input.json", want: verifyselect.NoSet},
+		{name: "root Markdown", path: "README.md", want: verifyselect.NoSet},
+		{name: "unrelated data", path: "testdata/input.json", want: verifyselect.BothSets},
 	}
 
 	for _, test := range tests {
@@ -49,6 +51,37 @@ func TestClassifyPath(t *testing.T) {
 				t.Fatalf("ClassifyPath(%q) = %v, want %v", test.path, got.Names(), test.want.Names())
 			}
 		})
+	}
+}
+
+func TestFixtureChangesSelectTheOwningSet(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		path string
+		want verifyselect.Set
+	}{
+		{name: "core package fixture", path: "internal/app/testdata/version.golden", want: verifyselect.CoreSet},
+		{name: "Baseline package fixture", path: "internal/baseline/testdata/profile.golden", want: verifyselect.BaselineSet},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			if got := verifyselect.ClassifyPath(test.path); got != test.want {
+				t.Fatalf("ClassifyPath(%q) = %v, want %v", test.path, got.Names(), test.want.Names())
+			}
+		})
+	}
+}
+
+func TestUnknownNonDocumentationPathsFailSafe(t *testing.T) {
+	t.Parallel()
+
+	selection := verifyselect.SelectPaths([]string{".github/workflows/unknown.yml"})
+	if selection.Sets != verifyselect.BothSets {
+		t.Fatalf("SelectPaths() sets = %v, want %v", selection.Sets.Names(), verifyselect.BothSets.Names())
 	}
 }
 
@@ -104,6 +137,29 @@ func TestSelectListsCommittedUnstagedAndUntrackedPaths(t *testing.T) {
 	}
 }
 
+func TestSelectListsStagedPaths(t *testing.T) {
+	repo := newGitRepository(t)
+	writeFile(t, repo, "base.txt", "base\n")
+	runGit(t, repo, "add", "base.txt")
+	runGit(t, repo, "commit", "-q", "-m", "base")
+	base := strings.TrimSpace(runGit(t, repo, "rev-parse", "HEAD"))
+
+	writeFile(t, repo, "internal/app/staged.go", "package app\n")
+	runGit(t, repo, "add", "internal/app/staged.go")
+
+	selection, err := verifyselect.Select(t.Context(), repo, base)
+	if err != nil {
+		t.Fatalf("Select() error = %v", err)
+	}
+	wantPaths := []string{"internal/app/staged.go"}
+	if !reflect.DeepEqual(selection.Paths, wantPaths) {
+		t.Fatalf("Select() paths = %v, want %v", selection.Paths, wantPaths)
+	}
+	if selection.Sets != verifyselect.CoreSet {
+		t.Fatalf("Select() sets = %v, want %v", selection.Sets.Names(), verifyselect.CoreSet.Names())
+	}
+}
+
 func TestSelectFailsSafeToBothSets(t *testing.T) {
 	t.Run("unresolvable base", func(t *testing.T) {
 		repo := newGitRepository(t)
@@ -153,6 +209,26 @@ func TestPackagesExposeEachSet(t *testing.T) {
 	wantBaseline := []string{"./internal/baseline", "./internal/baselineacp", "./skills/check"}
 	if !reflect.DeepEqual(baseline, wantBaseline) {
 		t.Fatalf("Packages(baseline) = %v, want %v", baseline, wantBaseline)
+	}
+}
+
+func TestBaselineChangesAlsoRunCoreImporters(t *testing.T) {
+	repo := t.TempDir()
+	writeFile(t, repo, "go.mod", "module example.test/fixture\n\ngo 1.26\n")
+	writeFile(t, repo, "internal/baseline/base.go", "package baseline\n")
+	writeFile(t, repo, "core/direct/direct.go", "package direct\n\nimport _ \"example.test/fixture/internal/baseline\"\n")
+	writeFile(t, repo, "core/transitive/transitive.go", "package transitive\n\nimport _ \"example.test/fixture/core/direct\"\n")
+	writeFile(t, repo, "core/testonly/testonly.go", "package testonly\n")
+	writeFile(t, repo, "core/testonly/testonly_test.go", "package testonly_test\n\nimport _ \"example.test/fixture/internal/baseline\"\n")
+	writeFile(t, repo, "core/unrelated/unrelated.go", "package unrelated\n")
+
+	packages, err := verifyselect.Packages(t.Context(), repo, verifyselect.BaselineSet)
+	if err != nil {
+		t.Fatalf("Packages(baseline) error = %v", err)
+	}
+	want := []string{"./core/direct", "./core/testonly", "./core/transitive", "./internal/baseline"}
+	if !reflect.DeepEqual(packages, want) {
+		t.Fatalf("Packages(baseline) = %v, want %v", packages, want)
 	}
 }
 

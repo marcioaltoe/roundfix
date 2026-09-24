@@ -4,6 +4,7 @@ package verifyselect
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -63,10 +64,12 @@ func ClassifyPath(path string) Set {
 		inDirectory(path, ".agents/skills"),
 		strings.HasPrefix(path, "internal/cli/baseline_"):
 		return BaselineSet
-	case strings.HasSuffix(path, ".go"):
+	case inDirectory(path, "cmd"), inDirectory(path, "internal"), strings.HasSuffix(path, ".go"):
 		return CoreSet
-	default:
+	case inDirectory(path, "docs"), isMarkdown(path):
 		return NoSet
+	default:
+		return BothSets
 	}
 }
 
@@ -91,8 +94,8 @@ func SelectPaths(paths []string) Selection {
 }
 
 // ChangedPaths lists committed changes since the merge base with baseRef,
-// unstaged changes, and untracked files. Returned paths are repository-relative,
-// unique, and sorted.
+// staged changes, unstaged changes, and untracked files. Returned paths are
+// repository-relative, unique, and sorted.
 func ChangedPaths(ctx context.Context, repoRoot, baseRef string) ([]string, error) {
 	repoRoot = strings.TrimSpace(repoRoot)
 	baseRef = strings.TrimSpace(baseRef)
@@ -114,6 +117,7 @@ func ChangedPaths(ctx context.Context, repoRoot, baseRef string) ([]string, erro
 
 	commands := [][]string{
 		{"diff", "--name-only", "-z", "--no-renames", mergeBase, "HEAD"},
+		{"diff", "--cached", "--name-only", "-z", "--no-renames"},
 		{"diff", "--name-only", "-z", "--no-renames"},
 		{"ls-files", "--others", "--exclude-standard", "-z"},
 	}
@@ -138,9 +142,9 @@ func Select(ctx context.Context, repoRoot, baseRef string) (Selection, error) {
 	return SelectPaths(paths), nil
 }
 
-// Packages returns the concrete go test package arguments in one set. Package
-// directories under the Baseline roots belong to BaselineSet; every other
-// package belongs to CoreSet.
+// Packages returns the concrete go test package arguments in one set. The
+// Baseline set also includes core packages whose imports or test imports reach
+// a package under a Baseline root.
 func Packages(ctx context.Context, repoRoot string, set Set) ([]string, error) {
 	if set != CoreSet && set != BaselineSet {
 		return nil, fmt.Errorf("list packages: set must be core or baseline")
@@ -154,25 +158,27 @@ func Packages(ctx context.Context, repoRoot string, set Set) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("list packages: resolve repository root: %w", err)
 	}
-	output, err := runCommand(ctx, root, "go", "list", "-f", "{{.Dir}}", "./...")
+	output, err := runCommand(ctx, root, "go", "list", "-json", "./...")
 	if err != nil {
 		return nil, fmt.Errorf("list packages: %w", err)
 	}
+	listed, err := decodePackages(output)
+	if err != nil {
+		return nil, fmt.Errorf("list packages: %w", err)
+	}
+	baselineReach := baselineImporters(listed, root)
 
 	packages := make([]string, 0)
-	for _, directory := range strings.Split(strings.TrimSpace(string(output)), "\n") {
-		if directory == "" {
-			continue
-		}
-		relative, relErr := filepath.Rel(root, directory)
+	for _, listedPackage := range listed {
+		relative, relErr := filepath.Rel(root, listedPackage.Dir)
 		if relErr != nil {
-			return nil, fmt.Errorf("list packages: make %q relative to repository: %w", directory, relErr)
+			return nil, fmt.Errorf("list packages: make %q relative to repository: %w", listedPackage.Dir, relErr)
 		}
 		if relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
-			return nil, fmt.Errorf("list packages: package directory %q is outside repository", directory)
+			return nil, fmt.Errorf("list packages: package directory %q is outside repository", listedPackage.Dir)
 		}
 		packageSet := packageSetForDirectory(filepath.ToSlash(relative))
-		if packageSet != set {
+		if packageSet != set && !(set == BaselineSet && baselineReach[listedPackage.ImportPath]) {
 			continue
 		}
 		if relative == "." {
@@ -294,6 +300,66 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 
 func inDirectory(path, directory string) bool {
 	return path == directory || strings.HasPrefix(path, directory+"/")
+}
+
+func isMarkdown(path string) bool {
+	extension := strings.ToLower(filepath.Ext(path))
+	return extension == ".md" || extension == ".markdown"
+}
+
+type goListPackage struct {
+	Dir          string
+	ImportPath   string
+	Imports      []string
+	TestImports  []string
+	XTestImports []string
+}
+
+func decodePackages(output []byte) ([]goListPackage, error) {
+	decoder := json.NewDecoder(bytes.NewReader(output))
+	packages := make([]goListPackage, 0)
+	for {
+		var listedPackage goListPackage
+		if err := decoder.Decode(&listedPackage); err != nil {
+			if errors.Is(err, io.EOF) {
+				return packages, nil
+			}
+			return nil, fmt.Errorf("decode go list output: %w", err)
+		}
+		packages = append(packages, listedPackage)
+	}
+}
+
+func baselineImporters(packages []goListPackage, root string) map[string]bool {
+	reverseImports := make(map[string][]string)
+	baselineReach := make(map[string]bool)
+	queue := make([]string, 0)
+	for _, listedPackage := range packages {
+		relative, err := filepath.Rel(root, listedPackage.Dir)
+		if err == nil && packageSetForDirectory(filepath.ToSlash(relative)) == BaselineSet {
+			baselineReach[listedPackage.ImportPath] = true
+			queue = append(queue, listedPackage.ImportPath)
+		}
+		imports := append([]string{}, listedPackage.Imports...)
+		imports = append(imports, listedPackage.TestImports...)
+		imports = append(imports, listedPackage.XTestImports...)
+		for _, imported := range imports {
+			reverseImports[imported] = append(reverseImports[imported], listedPackage.ImportPath)
+		}
+	}
+
+	for len(queue) != 0 {
+		imported := queue[0]
+		queue = queue[1:]
+		for _, importer := range reverseImports[imported] {
+			if baselineReach[importer] {
+				continue
+			}
+			baselineReach[importer] = true
+			queue = append(queue, importer)
+		}
+	}
+	return baselineReach
 }
 
 func packageSetForDirectory(directory string) Set {
