@@ -1136,6 +1136,47 @@ func TestDisposableProofAppliesRequestedAccessMode(t *testing.T) {
 	assertLastInvocationClosesDisposable(t, refused)
 }
 
+func TestProofRecordsADegradedFullAccess(t *testing.T) {
+	t.Parallel()
+
+	models := []string{"gpt-test"}
+	efforts := []string{"medium", "xhigh"}
+	runtime := RuntimeSpec{
+		ID:                      "codex",
+		Protocol:                ProtocolACP,
+		Model:                   "gpt-test",
+		ReasoningEffort:         "xhigh",
+		RequestedAccessPolicy:   AccessPolicyFullAccess,
+		SupportedFullAccessMode: "full-access",
+	}
+	harness := newFakeACPXHarness(t)
+	harness.setEnv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"sessions show":                    sessionCapabilitySnapshotFixture(t, "gpt-test", models, "reasoning_effort", "medium", efforts),
+		"set reasoning_effort value=xhigh": selectionStateFixture(t, "reasoning_effort", "xhigh", "gpt-test", models, "reasoning_effort", "xhigh", efforts),
+	}))
+	harness.setEnv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"set sandbox_mode": 2}))
+	harness.setEnv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{
+		"set sandbox_mode": "ACP session does not advertise config option 'sandbox_mode'\n",
+	}))
+
+	proof, err := harness.runner.ProveExactSelection(context.Background(), ProbeRequest{
+		Runtime: runtime,
+		WorkDir: harness.gitRoot,
+	})
+
+	if err != nil {
+		t.Fatalf("prove exact selection with unavailable Codex sandbox preset: %v", err)
+	}
+	policy := string(proof.EffectiveAccessPolicy)
+	if !strings.Contains(policy, "degraded") || !strings.Contains(policy, acpxCodexFullAccessSandbox) {
+		t.Fatalf("effective access policy = %q, want a degraded policy naming unavailable preset %q", policy, acpxCodexFullAccessSandbox)
+	}
+	if proof.EffectiveAccessPolicy == AccessPolicyFullAccess {
+		t.Fatalf("effective access policy = %q, want the sandbox degradation qualified", proof.EffectiveAccessPolicy)
+	}
+	assertLastInvocationClosesDisposable(t, harness)
+}
+
 func TestProveExactSelectionModelVariant(t *testing.T) {
 	t.Parallel()
 

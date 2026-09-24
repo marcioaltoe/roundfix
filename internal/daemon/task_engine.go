@@ -1090,8 +1090,11 @@ func taskWithRequiredRepositoryVerification(task spec.Task, required string) spe
 }
 
 func taskVerificationFailureReason(outcome verificationAttemptOutcome) string {
-	reason := verificationTerminalReason(outcome.CommandFailure)
+	reason := verificationAttemptFailureReason(outcome.CommandFailures, outcome.UnknownCause)
 	if reason != "" {
+		return reason
+	}
+	if reason := verificationTerminalReason(outcome.CommandFailure); reason != "" {
 		return reason
 	}
 	return terminalReasonLine(outcome.Failure)
@@ -1538,7 +1541,38 @@ func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.T
 	request.Retry = 1
 	request.Mode = verificationExclusive
 	request.TemporaryRetryAvailable = false
-	return engine.runTaskVerificationRequest(ctx, plan, task, request)
+	retry, err := engine.runTaskVerificationRequest(ctx, plan, task, request)
+	if err != nil {
+		return retry, err
+	}
+	return retainCollectedVerificationFailures(retry, verification), nil
+}
+
+func retainCollectedVerificationFailures(retry verificationAttemptOutcome, initial verificationAttemptOutcome) verificationAttemptOutcome {
+	if initial.TemporaryFailure == nil || initial.TemporaryFailure.CommandFailure == nil {
+		return retry
+	}
+	retained := make([]verificationAttemptFailure, 0, len(initial.CommandFailures))
+	for _, failure := range initial.CommandFailures {
+		if failure.CommandFailure != initial.TemporaryFailure.CommandFailure {
+			retained = append(retained, failure)
+		}
+	}
+	if len(retained) == 0 {
+		return retry
+	}
+	commandFailures := retry.CommandFailures
+	if len(commandFailures) == 0 && retry.CommandFailure != nil {
+		commandFailures = []verificationAttemptFailure{{
+			CommandFailure: retry.CommandFailure,
+			Metadata:       verificationFailureMetadata{Repeated: retry.Repeated},
+		}}
+	}
+	retry.CommandFailures = append(retained, commandFailures...)
+	retry.CommandFailure = retry.CommandFailures[0].CommandFailure
+	retry.Repeated = retry.CommandFailures[0].Metadata.Repeated
+	retry.Failure = verificationAttemptFailureReason(retry.CommandFailures, retry.UnknownCause)
+	return retry
 }
 
 func (engine *Engine) classifyRepeatedFailure(ctx context.Context, runID string, workItem string, command string, diagnosticPath string) (verificationFailureMetadata, error) {

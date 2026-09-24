@@ -7016,6 +7016,54 @@ func TestIndependentVerificationHandsEveryFailureToRepair(t *testing.T) {
 	}
 }
 
+func TestIndependentVerificationKeepsCollectedFailuresBesideATemporaryOne(t *testing.T) {
+	t.Parallel()
+
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:               "task_01",
+		verificationMode: spec.VerificationModeIndependent,
+		verification:     []string{"verify deterministic", "verify temporary"},
+	}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{
+		calls:           fixture.calls,
+		temporaryOnCall: map[int]bool{2: true},
+		script: []error{
+			errors.New("deterministic failure"),
+			nil,
+			nil,
+			nil,
+			nil,
+		},
+		outputByCall: map[int]string{1: "deterministic diagnostics\n"},
+	}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("TaskCycle: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 {
+		t.Fatalf("expected the retained deterministic failure to receive one repair turn, got %+v", result)
+	}
+	if got := strings.Join(verifier.commands, "|"); got != "verify deterministic|verify temporary|verify deterministic|verify temporary|verify deterministic|verify temporary" {
+		t.Fatalf("expected initial attempt, exclusive retry, and repaired attempt, got %q", got)
+	}
+	if len(runner.requests) != 2 {
+		t.Fatalf("expected initial and one repair Agent turn, got %d", len(runner.requests))
+	}
+	repairPrompt := runner.requests[1].Prompt
+	for _, expected := range []string{
+		"Failed command: verify deterministic",
+		"Diagnostic artifact: " + verifier.outputPaths[0],
+	} {
+		if !strings.Contains(repairPrompt, expected) {
+			t.Fatalf("repair prompt does not contain retained failure %q:\n%s", expected, repairPrompt)
+		}
+	}
+}
+
 func TestIndependentVerificationKeepsTemporaryRetryHandling(t *testing.T) {
 	t.Parallel()
 

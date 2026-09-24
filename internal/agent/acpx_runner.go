@@ -46,6 +46,7 @@ const (
 	acpxCodexSandboxUnavailable    = "codex_sandbox_full_access_unavailable"
 	acpxCodexSandboxModeKey        = "sandbox_mode"
 	acpxCodexFullAccessSandbox     = "danger-full-access"
+	acpxCodexDegradedFullAccess    = AccessPolicy("full-access (degraded: danger-full-access sandbox preset unavailable)")
 	acpxCodexReasoningEffortKey    = "reasoning_effort"
 	acpxGenericReasoningEffortKey  = "effort"
 	acpxDeferredEffortWarmupPrompt = "Session setup."
@@ -1263,7 +1264,7 @@ func (runner *ACPXRunner) ensureSession(ctx context.Context, req ExecuteRequest,
 		}
 		return selectionPreflightError(req.Runtime, "apply deferred selection", err)
 	}
-	if err := runner.applyFullAccess(ctx, req, sink, codexEnv); err != nil {
+	if _, err := runner.applyFullAccess(ctx, req, sink, codexEnv); err != nil {
 		return err
 	}
 	if err := runner.publishStatus(ctx, req, sink, AgentSessionStartedStatus); err != nil {
@@ -1321,22 +1322,22 @@ func (runner *ACPXRunner) warmSessionForDeferredEffort(
 	return proof, nil
 }
 
-func (runner *ACPXRunner) applyFullAccess(ctx context.Context, req ExecuteRequest, sink runevent.Sink, codexEnv []string) error {
+func (runner *ACPXRunner) applyFullAccess(ctx context.Context, req ExecuteRequest, sink runevent.Sink, codexEnv []string) (AccessPolicy, error) {
 	policy := req.Runtime.RequestedPolicy()
 	if policy == AccessPolicyRuntimeDefault {
-		return nil
+		return policy, nil
 	}
 	if err := req.Runtime.ValidateRequestedAccessPolicy(); err != nil {
-		return err
+		return AccessPolicyRuntimeDefault, err
 	}
 	mode, _ := req.Runtime.AccessModeFor(policy)
 	sessionName := strings.TrimSpace(req.Session.Name)
 	args, err := acpxSetModeArgs(req.Runtime, mode, sessionName, req.GitRoot)
 	if err != nil {
-		return err
+		return AccessPolicyRuntimeDefault, err
 	}
 	if err := runner.runACPXCommandWithEnv(ctx, args, codexEnv); err != nil {
-		return &AccessPolicyError{
+		return AccessPolicyRuntimeDefault, &AccessPolicyError{
 			Kind:      AccessPolicyRejected,
 			Runtime:   strings.TrimSpace(req.Runtime.ID),
 			Policy:    policy,
@@ -1346,23 +1347,23 @@ func (runner *ACPXRunner) applyFullAccess(ctx context.Context, req ExecuteReques
 		}
 	}
 	if req.Runtime.ID != "codex" || mode != "full-access" {
-		return nil
+		return policy, nil
 	}
 	args, err = acpxSetConfigArgs(req.Runtime, acpxCodexSandboxModeKey, acpxCodexFullAccessSandbox, sessionName, req.GitRoot)
 	if err != nil {
-		return err
+		return AccessPolicyRuntimeDefault, err
 	}
 	if err := runner.runACPXCommandWithEnv(ctx, args, codexEnv); err != nil {
 		if isCodexSandboxUnavailable(err) {
 			runner.warningf("codex full-access sandbox preset unavailable for Agent Session %q: %v", sessionName, err)
 			if publishErr := runner.publishStatus(ctx, req, sink, acpxCodexSandboxUnavailable); publishErr != nil {
-				return publishErr
+				return AccessPolicyRuntimeDefault, publishErr
 			}
-			return nil
+			return acpxCodexDegradedFullAccess, nil
 		}
-		return fmt.Errorf("set acpx Codex sandbox preset %q: %w", acpxCodexFullAccessSandbox, err)
+		return AccessPolicyRuntimeDefault, fmt.Errorf("set acpx Codex sandbox preset %q: %w", acpxCodexFullAccessSandbox, err)
 	}
-	return nil
+	return policy, nil
 }
 
 func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, sink runevent.Sink) (ExecuteResult, error) {

@@ -147,13 +147,14 @@ func (runner *ACPXRunner) ProveExactSelection(ctx context.Context, request Probe
 		}, codexEnv)
 	}
 	if setupErr == nil {
-		setupErr = runner.applyFullAccess(setupCtx, ExecuteRequest{
+		var effectiveAccessPolicy AccessPolicy
+		effectiveAccessPolicy, setupErr = runner.applyFullAccess(setupCtx, ExecuteRequest{
 			Runtime: request.Runtime,
 			Session: session,
 			GitRoot: workDir,
 		}, runevent.Discard, codexEnv)
 		if setupErr == nil {
-			proof.EffectiveAccessPolicy = request.Runtime.RequestedPolicy()
+			proof.EffectiveAccessPolicy = effectiveAccessPolicy
 		}
 	}
 	setupCancel()
