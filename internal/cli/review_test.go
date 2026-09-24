@@ -258,6 +258,180 @@ An extra command-line argument was rejected.
 	}
 }
 
+func TestReviewSkipsASpecWithoutDecisions(t *testing.T) {
+	const slug = "0159-no-decisions"
+	const missingTechSpecSlug = "0158-missing-techspec"
+	const specsRoot = "planning/specs"
+	runner := &reviewCommandRunner{
+		results: []reviewCommandRunResult{{
+			result: agent.ExecuteResult{Message: "No findings", StopReason: "end_turn"},
+		}},
+	}
+	fixture := newReviewCommandFixture(t, "codex", runner)
+	specDir := filepath.Join(fixture.repository, filepath.FromSlash(specsRoot), slug)
+	if err := os.MkdirAll(specDir, 0o755); err != nil {
+		t.Fatalf("create Spec directory: %v", err)
+	}
+	mustWrite(t, filepath.Join(specDir, "_prd.md"), "# Spec without decisions\n")
+	mustWrite(t, filepath.Join(specDir, "_techspec.md"), "# Technical design\n")
+	missingTechSpecDir := filepath.Join(fixture.repository, filepath.FromSlash(specsRoot), missingTechSpecSlug)
+	if err := os.MkdirAll(missingTechSpecDir, 0o755); err != nil {
+		t.Fatalf("create incomplete Spec directory: %v", err)
+	}
+	mustWrite(t, filepath.Join(missingTechSpecDir, "_prd.md"), "# Incomplete Spec\n\n## Decisions\n\n- This PRD has no TechSpec.\n")
+	gittest.Run(t, fixture.repository, "add", specsRoot)
+	gittest.Run(t, fixture.repository, "commit", "-m", "add Spec without decisions")
+	fixture.headCommit = strings.TrimSpace(gittest.Run(t, fixture.repository, "rev-parse", "HEAD"))
+	writeReviewCommandConfigWithSpecsRoot(t, fixture.repository, fixture.provider, fixture.artifactDir, specsRoot)
+
+	code, record, stderr := fixture.run(t)
+
+	if code != exitOK || record.Outcome != reviewOutcomeReviewed {
+		t.Fatalf("review with skipped Spec exit=%d record=%+v stderr=%q", code, record, stderr)
+	}
+	if len(record.Specs) != 0 {
+		t.Fatalf("review Specs = %v, want empty", record.Specs)
+	}
+	if !reflect.DeepEqual(record.SkippedSpecs, []string{missingTechSpecSlug, slug}) {
+		t.Fatalf("review skipped Specs = %v, want [%s %s]", record.SkippedSpecs, missingTechSpecSlug, slug)
+	}
+	if runner.preparedCalls != 1 {
+		t.Fatalf("review prompt calls = %d, want 1", runner.preparedCalls)
+	}
+	if strings.Contains(runner.request.Prompt, "BEGIN SPEC CONTEXT") {
+		t.Fatalf("review prompt carries skipped Spec context:\n%s", runner.request.Prompt)
+	}
+}
+
+func TestReviewReadsAnArchivedSpecFromTheCandidate(t *testing.T) {
+	const slug = "0158-archived-with-candidate"
+	runner := &reviewCommandRunner{
+		results: []reviewCommandRunResult{{
+			result: agent.ExecuteResult{Message: "No findings", StopReason: "end_turn"},
+		}},
+	}
+	fixture := newReviewCommandFixture(t, "codex", runner)
+	archiveRoot := filepath.FromSlash("docs/history/specs")
+	specDir := filepath.Join(fixture.repository, archiveRoot, slug)
+	if err := os.MkdirAll(specDir, 0o755); err != nil {
+		t.Fatalf("create archived Spec directory: %v", err)
+	}
+	mustWrite(t, filepath.Join(specDir, "_prd.md"), "# Archived Spec\n\n## Decisions\n\n- Keep archived context visible.\n")
+	mustWrite(t, filepath.Join(specDir, "_techspec.md"), "# Archived technical design\n\nRead this file from HEAD.\n")
+	gittest.Run(t, fixture.repository, "add", filepath.ToSlash(filepath.Join(archiveRoot, slug)))
+	gittest.Run(t, fixture.repository, "commit", "-m", "archive Spec in candidate")
+	fixture.headCommit = strings.TrimSpace(gittest.Run(t, fixture.repository, "rev-parse", "HEAD"))
+	mustWrite(t, filepath.Join(specDir, "_techspec.md"), "# Worktree-only technical design\n")
+
+	code, record, stderr := fixture.run(t)
+
+	if code != exitOK || record.Outcome != reviewOutcomeReviewed {
+		t.Fatalf("archived Spec review exit=%d record=%+v stderr=%q", code, record, stderr)
+	}
+	if !reflect.DeepEqual(record.Specs, []string{slug}) {
+		t.Fatalf("review Specs = %v, want [%s]", record.Specs, slug)
+	}
+	for _, want := range []string{slug, "Keep archived context visible.", "Read this file from HEAD."} {
+		if !strings.Contains(runner.request.Prompt, want) {
+			t.Fatalf("archived Spec prompt does not contain %q:\n%s", want, runner.request.Prompt)
+		}
+	}
+	if strings.Contains(runner.request.Prompt, "Worktree-only technical design") {
+		t.Fatalf("archived Spec prompt read the worktree instead of HEAD:\n%s", runner.request.Prompt)
+	}
+}
+
+func TestReviewBoundsSpecContext(t *testing.T) {
+	const slug = "0160-oversized-context"
+	const specsRoot = "planning/specs"
+	runner := &reviewCommandRunner{
+		results: []reviewCommandRunResult{{
+			result: agent.ExecuteResult{Message: "No findings", StopReason: "end_turn"},
+		}},
+	}
+	fixture := newReviewCommandFixture(t, "codex", runner)
+	specDir := filepath.Join(fixture.repository, filepath.FromSlash(specsRoot), slug)
+	if err := os.MkdirAll(specDir, 0o755); err != nil {
+		t.Fatalf("create Spec directory: %v", err)
+	}
+	oversized := strings.Repeat("candidate context ", reviewSpecContextPerSpecLimit)
+	mustWrite(t, filepath.Join(specDir, "_prd.md"), "# Oversized Spec\n\n## Decisions\n\n"+oversized+"\n")
+	mustWrite(t, filepath.Join(specDir, "_techspec.md"), "# Oversized technical design\n\n"+oversized+"\n")
+	gittest.Run(t, fixture.repository, "add", specsRoot)
+	gittest.Run(t, fixture.repository, "commit", "-m", "add oversized Spec")
+	fixture.headCommit = strings.TrimSpace(gittest.Run(t, fixture.repository, "rev-parse", "HEAD"))
+	writeReviewCommandConfigWithSpecsRoot(t, fixture.repository, fixture.provider, fixture.artifactDir, specsRoot)
+
+	code, record, stderr := fixture.run(t)
+
+	if code != exitOK || record.Outcome != reviewOutcomeReviewed {
+		t.Fatalf("bounded Spec review exit=%d record=%+v stderr=%q", code, record, stderr)
+	}
+	if !record.SpecContextTruncated {
+		t.Fatalf("review record = %+v, want Spec context truncation recorded", record)
+	}
+	contextStart := strings.Index(runner.request.Prompt, "--- BEGIN SPEC CONTEXT:")
+	if contextStart < 0 {
+		t.Fatalf("review prompt has no Spec context block:\n%s", runner.request.Prompt)
+	}
+	carried := runner.request.Prompt[contextStart:]
+	if !strings.Contains(carried, reviewSpecContextTruncationMarker) {
+		t.Fatalf("bounded Spec context has no truncation marker:\n%s", carried)
+	}
+	if len(carried) > reviewSpecContextPerSpecLimit+1024 {
+		t.Fatalf("bounded Spec context length = %d, want at most %d plus envelope", len(carried), reviewSpecContextPerSpecLimit)
+	}
+
+	contexts := make([]reviewSpecContext, 4)
+	for index := range contexts {
+		contexts[index] = reviewSpecContext{
+			slug: fmt.Sprintf("oversized-%d", index),
+			body: strings.Repeat("x", reviewSpecContextPerSpecLimit),
+		}
+	}
+	bounded, truncated := boundReviewSpecContexts(contexts)
+	if !truncated {
+		t.Fatal("total-bound fixture was not recorded as truncated")
+	}
+	for _, context := range bounded {
+		if !strings.Contains(context.body, reviewSpecContextTruncationMarker) {
+			t.Fatalf("total-bound context %q has no visible marker", context.slug)
+		}
+	}
+	totalContext := appendReviewSpecContexts("", reviewSpecContextResult{contexts: bounded, truncated: truncated})
+	if len(totalContext) > reviewSpecContextTotalLimit {
+		t.Fatalf("total Spec context length = %d, want at most %d", len(totalContext), reviewSpecContextTotalLimit)
+	}
+}
+
+func TestReviewReportsSpecReadingFailureDistinctly(t *testing.T) {
+	const slug = "0160-unreadable-context"
+	const specsRoot = "planning/specs"
+	runner := &reviewCommandRunner{}
+	fixture := newReviewCommandFixture(t, "codex", runner)
+	specDir := filepath.Join(fixture.repository, filepath.FromSlash(specsRoot), slug)
+	if err := os.MkdirAll(specDir, 0o755); err != nil {
+		t.Fatalf("create Spec directory: %v", err)
+	}
+	mustWrite(t, filepath.Join(specDir, "_prd.md"), "# Spec\n\n## Decisions\n\n- Read candidate files.\n")
+	mustWrite(t, filepath.Join(specDir, "_techspec.md"), "# Technical design\n")
+	gittest.Run(t, fixture.repository, "add", specsRoot)
+	gittest.Run(t, fixture.repository, "commit", "-m", "add unreadable Spec fixture")
+	fixture.headCommit = strings.TrimSpace(gittest.Run(t, fixture.repository, "rev-parse", "HEAD"))
+	writeReviewCommandConfigWithSpecsRoot(t, fixture.repository, fixture.provider, fixture.artifactDir, specsRoot)
+	withReviewSpecGitRunner(t, failingSpecFileGitRunner{delegate: preflight.ExecGitRunner{}})
+
+	code, record, stderr := fixture.run(t)
+
+	assertBlockedReviewCommand(t, code, record, stderr, "Spec context read failure")
+	if strings.Contains(record.Reason, "runtime failure") {
+		t.Fatalf("Spec read reason = %q, want a distinct non-runtime reason", record.Reason)
+	}
+	if runner.preparedCalls != 0 {
+		t.Fatalf("review prompt calls = %d, want 0 after Spec read failure", runner.preparedCalls)
+	}
+}
+
 func TestReviewPromptWithoutSpecIsUnchanged(t *testing.T) {
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
@@ -909,6 +1083,17 @@ func reviewCandidateFixture(t *testing.T) (repository string, baseCommit string,
 
 type recordingReviewRunner struct {
 	request agent.ExecuteRequest
+}
+
+type failingSpecFileGitRunner struct {
+	delegate preflight.GitRunner
+}
+
+func (runner failingSpecFileGitRunner) RunGit(ctx context.Context, workDir string, args ...string) (string, error) {
+	if len(args) > 1 && args[0] == "show" && strings.Contains(args[1], "_prd.md") {
+		return "", errors.New("candidate Spec object is unreadable")
+	}
+	return runner.delegate.RunGit(ctx, workDir, args...)
 }
 
 func (*recordingReviewRunner) Probe(context.Context, agent.ProbeRequest) error {

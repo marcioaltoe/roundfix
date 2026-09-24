@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0160-a-review-that-reaches-a-verdict
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -42,3 +42,21 @@ Corrective Task from the pre-PR review of 2026-09-24. A candidate touching a Spe
 ## References
 
 - [_techspec.md](_techspec.md) — Spec-aware prompt
+
+## Result
+
+- The review command now discovers changed Spec folders under both the configured Spec Root and its resolved archive root, reads usable PRD Decisions and TechSpec content from `HEAD`, records unusable folders in `skippedSpecs`, and continues to the reviewer.
+- Spec context is capped at 32 KiB per Spec and 64 KiB in total. Truncated content carries a visible `[Spec context truncated]` marker, and the review record sets `specContextTruncated`.
+- Genuine candidate Spec read errors remain blocking, but their record reason is `Spec context read failure` rather than a reviewer runtime failure.
+- Acceptance criterion 1: `GOCACHE=/tmp/roundfix-task07-gocache go test -count=1 -run '^TestReviewSkipsASpecWithoutDecisions$' ./internal/cli` passed. The test covers a PRD without `## Decisions` and a second changed Spec without `_techspec.md`; both slugs are recorded as skipped, no Spec block is appended, and the reviewer still returns a reviewed outcome.
+- Acceptance criterion 2: `GOCACHE=/tmp/roundfix-task07-gocache go test -count=1 -run '^TestReviewReadsAnArchivedSpecFromTheCandidate$' ./internal/cli` passed. The test adds a Spec under `docs/history/specs`, changes the worktree copy after committing, and proves the prompt carries the archived files from `HEAD` rather than the worktree.
+- Acceptance criterion 3: `GOCACHE=/tmp/roundfix-task07-gocache go test -count=1 -run '^TestReviewBoundsSpecContext$' ./internal/cli` passed. The test observes the prompt marker and record flag for an oversized Spec, asserts the per-Spec envelope, and checks a four-context input against the total cap.
+- Requirement 4 focused evidence: `GOCACHE=/tmp/roundfix-task07-gocache go test -count=1 -run '^TestReviewReportsSpecReadingFailureDistinctly$' ./internal/cli` passed; the reviewer is not called and neither the record nor stderr labels the local read error as a runtime failure.
+- Post-adjustment focused sweep: `GOCACHE=/tmp/roundfix-task07-gocache go test -count=1 -run '^TestReview(SkipsASpecWithoutDecisions|ReadsAnArchivedSpecFromTheCandidate|BoundsSpecContext|ReportsSpecReadingFailureDistinctly|PromptCarriesSpecDecisions)$' ./internal/cli` passed.
+- Regression checks: `GOCACHE=/tmp/roundfix-task07-gocache go test -count=1 -run '^TestReview' ./internal/cli` passed with the existing GitHub integration boundary allowed after the sandboxed attempt was blocked at `api.github.com`. After the final context-bound adjustment, `GOCACHE=/tmp/roundfix-task07-gocache make verify-incremental` passed with the same network allowance; vet, all packages, the focused skill-policy tests, the Roundfix skill check, and the build succeeded.
+- The Task's declared Verification command was not run; Daemon Verification remains the settlement authority.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260924T193553Z_7f2a4b9ff0f723fb`
+- Source commit: `6df23f2edf460ebbe2d60fdecf7f1f60d2e1e3e5`
