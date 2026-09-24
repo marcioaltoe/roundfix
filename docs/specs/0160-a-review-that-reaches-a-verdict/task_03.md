@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0160-a-review-that-reaches-a-verdict
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -21,13 +21,13 @@ The reviewer judges the diff for correctness but never sees the decisions and re
 
 ## Subtasks
 
-- [ ] Implement the requirements above.
-- [ ] Add a test for each acceptance criterion.
+- [x] Implement the requirements above.
+- [x] Add a test for each acceptance criterion.
 
 ## Acceptance Criteria
 
-- [ ] A candidate adding a Spec folder yields a prompt with its Decisions and a record naming it.
-- [ ] A candidate without one yields the prior prompt.
+- [x] A candidate adding a Spec folder yields a prompt with its Decisions and a record naming it.
+- [x] A candidate without one yields the prior prompt.
 
 ## Context
 
@@ -41,3 +41,12 @@ The reviewer judges the diff for correctness but never sees the decisions and re
 ## References
 
 - [_techspec.md](_techspec.md) — Spec-aware prompt
+
+## Result
+
+- The review command now derives added or changed Spec folders from the candidate under the configured Spec Root, reads each PRD Decisions section and complete TechSpec from the candidate commit, appends labelled untrusted-context blocks to the reviewer prompt, and records the sorted consulted slugs in `specs`.
+- A candidate without a changed Spec retains the prior prompt byte-for-byte and writes an empty `specs` array.
+- Acceptance criterion 1: `TestReviewPromptCarriesSpecDecisions` passed in the focused `review.go` sweep. It uses a non-default configured Spec Root and proves the prompt carries only the PRD Decisions section, the complete TechSpec, the contradiction/rejected-alternative instruction, and the consulted slug.
+- Acceptance criterion 2: `TestReviewPromptWithoutSpecIsUnchanged` passed in the focused `review.go` sweep. It compares the executed prompt byte-for-byte with the prior prompt builder and proves the record has no consulted Specs.
+- Focused checks: `go test -count=1 -run '^(TestReviewRecord.*|TestReviewPrompt.*|TestReviewSession.*|TestReviewClassifies.*|TestReviewBlocks.*|TestReviewKeeps.*|TestReviewRunsTheClaudeProvider|TestReviewRefusesCodeRabbitNamingTheMissingSurface|TestReviewCommand(Exits|Defaults|Blocks|Does|Keeps|Classifies|None|RefusesProvider|UsesFallback|Proves|RefusesUnknown).*)$' ./internal/cli` passed; `make verify-incremental` passed with its existing GitHub integration tests granted network access after the sandboxed attempt was blocked at `api.github.com`.
+- The Task's declared Verification command was not run; Daemon Verification remains the settlement authority.

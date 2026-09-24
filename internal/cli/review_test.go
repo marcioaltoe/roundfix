@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -78,7 +79,7 @@ func TestReviewRecordRoundTripsEachOutcome(t *testing.T) {
 			if err := json.Unmarshal(output.Bytes(), &got); err != nil {
 				t.Fatalf("decode review record: %v", err)
 			}
-			if got != want {
+			if !reflect.DeepEqual(got, want) {
 				t.Fatalf("review record = %+v, want %+v", got, want)
 			}
 		})
@@ -188,6 +189,98 @@ func TestReviewPromptCarriesTheCandidateDiff(t *testing.T) {
 		if !strings.Contains(runner.request.Prompt, want) {
 			t.Fatalf("review prompt does not contain %q:\n%s", want, runner.request.Prompt)
 		}
+	}
+}
+
+func TestReviewPromptCarriesSpecDecisions(t *testing.T) {
+	const slug = "0160-spec-aware-review"
+	const specsRoot = "planning/specs"
+	runner := &reviewCommandRunner{
+		results: []reviewCommandRunResult{{
+			result: agent.ExecuteResult{Message: "No findings", StopReason: "end_turn"},
+		}},
+	}
+	fixture := newReviewCommandFixture(t, "codex", runner)
+	specDir := filepath.Join(fixture.repository, filepath.FromSlash(specsRoot), slug)
+	if err := os.MkdirAll(specDir, 0o755); err != nil {
+		t.Fatalf("create Spec directory: %v", err)
+	}
+	mustWrite(t, filepath.Join(specDir, "_prd.md"), `# Spec-aware review
+
+## Decisions
+
+- Read the Spec from the candidate.
+
+## Acceptance evidence
+
+This content is outside the Decisions section.
+`)
+	mustWrite(t, filepath.Join(specDir, "_techspec.md"), `# Spec-aware review
+
+## Design
+
+The reviewer receives the complete TechSpec.
+
+## Rejected alternatives
+
+An extra command-line argument was rejected.
+`)
+	gittest.Run(t, fixture.repository, "add", specsRoot)
+	gittest.Run(t, fixture.repository, "commit", "-m", "add spec")
+	fixture.headCommit = strings.TrimSpace(gittest.Run(t, fixture.repository, "rev-parse", "HEAD"))
+	writeReviewCommandConfigWithSpecsRoot(t, fixture.repository, fixture.provider, fixture.artifactDir, specsRoot)
+
+	code, record, stderr := fixture.run(t)
+
+	if code != exitOK || record.Outcome != reviewOutcomeReviewed {
+		t.Fatalf("spec-aware review exit=%d record=%+v stderr=%q", code, record, stderr)
+	}
+	if len(record.Specs) != 1 || record.Specs[0] != slug {
+		t.Fatalf("review Specs = %v, want [%s]", record.Specs, slug)
+	}
+	for _, want := range []string{
+		"--- BEGIN SPEC CONTEXT: " + slug + " ---",
+		"## Decisions\n\n- Read the Spec from the candidate.",
+		"The reviewer receives the complete TechSpec.",
+		"An extra command-line argument was rejected.",
+		"contradicts a recorded decision or adopts an alternative the Spec rejected",
+	} {
+		if !strings.Contains(runner.request.Prompt, want) {
+			t.Fatalf("review prompt does not contain %q:\n%s", want, runner.request.Prompt)
+		}
+	}
+	contextStart := strings.LastIndex(runner.request.Prompt, "--- BEGIN SPEC CONTEXT:")
+	if contextStart < 0 {
+		t.Fatalf("review prompt has no Spec context block:\n%s", runner.request.Prompt)
+	}
+	if strings.Contains(runner.request.Prompt[contextStart:], "This content is outside the Decisions section.") {
+		t.Fatalf("Spec context carries PRD content outside Decisions:\n%s", runner.request.Prompt[contextStart:])
+	}
+}
+
+func TestReviewPromptWithoutSpecIsUnchanged(t *testing.T) {
+	runner := &reviewCommandRunner{
+		results: []reviewCommandRunResult{{
+			result: agent.ExecuteResult{Message: "No findings", StopReason: "end_turn"},
+		}},
+	}
+	fixture := newReviewCommandFixture(t, "codex", runner)
+	diff, err := reviewCandidateDiff(t.Context(), fixture.repository, fixture.baseCommit, fixture.headCommit, preflight.ExecGitRunner{})
+	if err != nil {
+		t.Fatalf("read candidate diff: %v", err)
+	}
+	wantPrompt := buildReviewPrompt(fixture.baseCommit, fixture.headCommit, diff)
+
+	code, record, stderr := fixture.run(t)
+
+	if code != exitOK || record.Outcome != reviewOutcomeReviewed {
+		t.Fatalf("review exit=%d record=%+v stderr=%q", code, record, stderr)
+	}
+	if len(record.Specs) != 0 {
+		t.Fatalf("review Specs = %v, want empty", record.Specs)
+	}
+	if runner.request.Prompt != wantPrompt {
+		t.Fatalf("review prompt changed without a candidate Spec:\n--- got ---\n%s\n--- want ---\n%s", runner.request.Prompt, wantPrompt)
 	}
 }
 
@@ -850,6 +943,23 @@ pre_pr_review:
 `, artifactDir, provider))
 }
 
+func writeReviewCommandConfigWithSpecsRoot(
+	t *testing.T,
+	repository string,
+	provider string,
+	artifactDir string,
+	specsRoot string,
+) {
+	t.Helper()
+	mustWrite(t, filepath.Join(repository, ".roundfixrc.yml"), fmt.Sprintf(`defaults:
+  artifact_dir: %q
+pre_pr_review:
+  provider: %s
+specs:
+  root: %q
+`, artifactDir, provider, specsRoot))
+}
+
 func writeReviewCommandProfileConfig(
 	t *testing.T,
 	repository string,
@@ -894,7 +1004,7 @@ func (fixture reviewCommandFixture) run(t *testing.T) (int, reviewRecord, string
 	if err := json.Unmarshal(fileBytes, &fileRecord); err != nil {
 		t.Fatalf("decode persisted review record: %v", err)
 	}
-	if fileRecord != stdoutRecord {
+	if !reflect.DeepEqual(fileRecord, stdoutRecord) {
 		t.Fatalf("persisted record = %+v, stdout record = %+v", fileRecord, stdoutRecord)
 	}
 	return code, fileRecord, stderr.String()
