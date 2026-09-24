@@ -18,7 +18,7 @@ graph:
       needs: [task_03]
     - id: task_05
       file: task_05.md
-      needs: [task_01, task_02, task_03, task_04, task_06, task_07, task_08]
+      needs: [task_01, task_02, task_03, task_04, task_06, task_07, task_08, task_09]
     - id: task_06
       file: task_06.md
       needs: [task_04]
@@ -28,6 +28,9 @@ graph:
     - id: task_08
       file: task_08.md
       needs: [task_07]
+    - id: task_09
+      file: task_09.md
+      needs: [task_08]
 ---
 
 # Task Graph
@@ -41,4 +44,5 @@ graph:
 | task_06 | backend | Select every set a change can affect |
 | task_07 | test | The partition follows what the recipes run |
 | task_08 | backend | Keep the partition, widen the selection |
+| task_09 | test | Duplicate membership is a named failure |
 | task_05 | qa | Run the final QA gate |

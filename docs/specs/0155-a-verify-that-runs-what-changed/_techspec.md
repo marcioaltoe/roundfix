@@ -128,10 +128,11 @@ base cannot be resolved or Git fails, it selects both.
 2. The partition contract (depends on: 1).
 3. The Makefile target and the Daemon configuration (depends on: 1, 2).
 4. The pull request CI job (depends on: 3).
-5. Terminal QA (depends on: 1, 2, 3, 4, 6, 7, 8).
+5. Terminal QA (depends on: 1, 2, 3, 4, 6, 7, 8, 9).
 6. Select every set a change can affect (depends on: 4).
 7. The partition follows what the recipes run (depends on: 6).
 8. Keep the partition, widen the selection (depends on: 7).
+9. Duplicate membership is a named failure (depends on: 8).
 
 ## Risks & Considerations
 
