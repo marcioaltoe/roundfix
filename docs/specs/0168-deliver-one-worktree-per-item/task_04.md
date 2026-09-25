@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0168-deliver-one-worktree-per-item
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -44,3 +44,24 @@ Tasks 02 and 03 change what `roundfix deliver` does to the checkout and what `de
 ## References
 
 - [_techspec.md](_techspec.md) — API Contracts
+
+## Result
+
+Implemented the delivery-queue documentation contract in the canonical
+Roundfix skill and user guide. Both now describe one linked worktree per queued
+Spec under `worktree.location`, creation from the refreshed default branch, an
+untouched and possibly dirty user checkout, parked-item retention and status
+visibility, missing-worktree recreation or `item-worktree-missing` parking, and
+removal of the worktree and local item branch after merge.
+
+Focused checks:
+
+- `make skills-sync` — passed; regenerated the distributed skill mirror.
+- Required worktree, checkout, and missing-worktree phrases found in both the
+  canonical skill and user guide with `rg -F` — passed.
+- Canonical and distributed skill files compared byte-for-byte with `cmp -s` —
+  passed.
+- `git diff --check` — passed.
+
+The declared skill-check command remains for Daemon Verification; Task status
+remains daemon-owned.

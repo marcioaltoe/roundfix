@@ -207,6 +207,15 @@ repository gate, push, pull request, current-head checks, and squash merge.
 When the configured pre-PR review is `none`, the queue records that omission
 and archives after the Run's QA gate.
 
+Each queued Spec runs in its own linked worktree under `worktree.location`,
+created from the refreshed default branch.
+`roundfix deliver` never switches, resets or cleans your checkout, and it does not need the checkout to be clean.
+A parked item keeps its worktree, and `deliver status` prints that path. On
+resume, Roundfix recreates a missing worktree from its recorded branch; if the
+branch is missing too, it parks the item as `item-worktree-missing` instead of
+replaying the stage. After an item merges, its worktree and local item branch
+are removed.
+
 A blocker parks its item with a reason and the queue continues with later
 items. On resume, the owner reconciles every recorded action without a receipt
 against observed state before retrying it, so a lost acknowledgement cannot
