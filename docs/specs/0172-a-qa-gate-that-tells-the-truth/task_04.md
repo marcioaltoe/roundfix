@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0172-a-qa-gate-that-tells-the-truth
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -47,3 +47,25 @@ complexity: medium
 ## References
 
 - [_techspec.md](_techspec.md) — The unknown classification
+
+## Result
+
+### Implementation
+
+- `publishUnknownFailure` now writes `classification: verification_unknown`, the command, the runner cause or `reason unavailable`, and the retained diagnostic path or `unavailable` on both the `failed` and `verdict` events. This explicit metadata bypasses a request's preset precondition classification and reason.
+- The existing `publishFailedCommand` and `publishVerdict` command-verdict path remains unchanged. The Task-owned projection suite in `internal/daemon/unknown_verification_projection_test.go` covers the ordinary unknown, missing-evidence, precondition-override, and deterministic negative cases; the existing QA-gate integration assertion now expects the classified unknown evidence.
+- The user guide and the Roundfix skill now document the projected unknown fields. `make skills-sync` regenerated the shipped `skills/roundfix/SKILL.md` mirror from the canonical skill.
+
+### Focused checks
+
+- Before the production change, `rtk env GOCACHE=/private/tmp/roundfix-task04-gocache go test -count=1 -run '^TestUnobservedVerificationProjectsAsUnknown$' ./internal/daemon` failed with `record 0 classification = "", want "verification_unknown"`.
+- `rtk env GOCACHE=/private/tmp/roundfix-task04-gocache go test -count=1 ./internal/daemon` passed after the implementation and integration-assertion update.
+- `rtk make skills-sync` exited `0`; `rtk shasum .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` reported the same SHA-1 (`aa4e4aa6de44033397d0ad157e744ff3daa3690d`) for both copies.
+- `rtk git diff --check` exited `0`.
+- The Task's declared `## Verification` command was not run; the Daemon owns that gate.
+
+### Acceptance evidence
+
+- `TestUnobservedVerificationProjectsAsUnknown` captures both published payloads, projects them through `runevent.ProjectStreamEvent`, and proves the failed and verdict records carry `verification_unknown` with the exact command, cause text, and diagnostic path.
+- `TestUnobservedVerificationWithoutDiagnosticProjectsUnavailable` proves missing cause text and diagnostics project as `reason unavailable` and `unavailable`; `TestUnobservedPreconditionVerificationProjectsAsUnknown` proves unknown evidence overrides preset precondition metadata on both records.
+- `TestDeterministicVerificationFailureProjectsUnclassified` proves a deterministic command failure and its verdict still project with no classification or reason.

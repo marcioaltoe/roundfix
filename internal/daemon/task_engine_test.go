@@ -1693,8 +1693,12 @@ func TestQAGateRefusesOnUnobservedRepositoryVerification(t *testing.T) {
 				t.Fatalf("unobserved repository Verification published %d events, want waiting, started, failed, and verdict: %+v", len(verificationEvents), verificationEvents)
 			}
 			for _, event := range verificationEvents[2:] {
-				if payload := eventPayloadMap(t, event); payload["classification"] != nil || payload["reason"] != nil {
-					t.Fatalf("unobserved repository Verification changed publisher classification payload: %v", payload)
+				payload := eventPayloadMap(t, event)
+				if payload["classification"] != string(runevent.VerificationClassificationUnknown) || payload["command"] != command || payload["reason"] != cause.Error() {
+					t.Fatalf("unobserved repository Verification evidence payload = %v", payload)
+				}
+				if _, ok := payload["diagnostic_path"]; !ok {
+					t.Fatalf("unobserved repository Verification omitted diagnostic state: %v", payload)
 				}
 			}
 		})

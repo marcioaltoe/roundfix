@@ -1107,6 +1107,11 @@ reason `temporary_verification_failure`, retained `diagnostic_path`, and
 whether the exclusive retry remains available. Requested JSONL remains on
 stdout; follow progress and operational diagnostics remain on stderr.
 
+An Unobserved Verification adds classification `verification_unknown` with
+`command`, `reason`, and `diagnostic_path` on both its `failed` and `verdict`
+records. `reason` carries the runner cause or `reason unavailable`, and
+`diagnostic_path` carries the retained path or `unavailable`.
+
 The outcome record carries the terminal state plus bounded reason and next
 action when non-Clean. When available, it also carries Review Issue knowledge,
 Console Log, Attach command, accepted Evidence kind and head, and the verified
