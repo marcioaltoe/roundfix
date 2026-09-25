@@ -88,8 +88,12 @@ wherever the calling test has one.
 
 In `internal/worktree/worktree_test.go`, every `BootstrapSpec.Timeout` that is
 not the subject of its test is derived from `testwait.Bound(t)`.
-`TestRunBootstrapReturnsBootstrapErrorOnTimeout` keeps its 10 ms bound against
-`sleep 1`, because load can only lengthen the sleep. Each round of
+`TestRunBootstrapReturnsBootstrapErrorOnTimeout` first kept its 10 ms bound
+against `sleep 1` on the premise that load can only lengthen the sleep; the third
+QA gate disproved it, because load also delays the start the test classifies.
+Task 08 replaces it: the command marks its start, blocks on a FIFO past a
+one-second timeout, and the test waits for the marker before asserting the
+post-start classification and exact message. Each round of
 `TestBootstrapSerializesAcrossSiblings` waits for its sibling starts and results
 through `testwait`, and releasing a sibling cannot block past the deadline when
 that sibling has already exited.
