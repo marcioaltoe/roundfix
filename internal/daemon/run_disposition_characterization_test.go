@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -300,6 +301,14 @@ func TestRunDispositionCharacterizationPreflightRefusesOnAnUnintegratedBranch(t 
 	if err != nil {
 		t.Fatalf("build Roundfix CLI: %v\n%s", err, buildOutput)
 	}
+	cachePath := filepath.Join(homeDir, ".roundfix", "version-check.json")
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0o755); err != nil {
+		t.Fatalf("create version cache directory: %v", err)
+	}
+	cacheBefore := []byte("{\n  \"checked_at\": \"" + time.Now().UTC().Format(time.RFC3339Nano) + "\"\n}\n")
+	if err := os.WriteFile(cachePath, cacheBefore, 0o644); err != nil {
+		t.Fatalf("seed fresh version cache: %v", err)
+	}
 	command := exec.Command(binary,
 		"resolve",
 		"--pr", "123",
@@ -314,6 +323,13 @@ func TestRunDispositionCharacterizationPreflightRefusesOnAnUnintegratedBranch(t 
 	command.Stdout = &stdout
 	command.Stderr = &stderr
 	err = command.Run()
+	cacheAfter, cacheErr := os.ReadFile(cachePath)
+	if cacheErr != nil {
+		t.Fatalf("read version cache after resolve: %v", cacheErr)
+	}
+	if !bytes.Equal(cacheAfter, cacheBefore) {
+		t.Fatalf("resolve changed seeded version cache\nbefore: %s\nafter: %s", cacheBefore, cacheAfter)
+	}
 	var exitErr *exec.ExitError
 	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 2 {
 		t.Fatalf("resolve exit error = %v, stdout=%q stderr=%q; want Branch Integrity exit 2", err, stdout.String(), stderr.String())

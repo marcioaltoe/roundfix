@@ -1,9 +1,12 @@
 ---
 spec: 0171-a-deterministic-suite-under-load
-status: active
+status: archived
 created: 2026-09-25
 surfaces: [backend]
+archived: "2026-09-25"
+source_slug: 0171-a-deterministic-suite-under-load
 ---
+
 
 # A deterministic suite under load
 
@@ -105,7 +108,9 @@ creates adapters that cannot execute.
 
 ## Non-Goals / Out of Scope
 
-- Changing any product timeout, Run behavior, command output or exit code.
+- Changing any product timeout, Run behavior, command output or exit code. The
+  one production change, serializing Git worktree administration per
+  repository (task_07), changes none of them.
 - The attach budget `attachDetachBudget`, which Spec 0124 owns.
 - Other network boundaries: review sources and pull request calls are already
   injected per test through command dependencies.

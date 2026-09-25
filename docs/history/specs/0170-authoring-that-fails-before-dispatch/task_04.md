@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0170-authoring-that-fails-before-dispatch
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -75,3 +75,42 @@ the templates and the skill and pins the label with a contract test.
 
 - `_prd.md` → Goal 3; Core Feature 4; Success Metric 6.
 - `_techspec.md` → Templates and skills; Testing Approach 4; ADR-0131.
+
+## Result
+
+Implementation evidence:
+
+- Updated the canonical PRD and TechSpec Tooling authority rows to use
+  `bounded files:`; `make skills-sync` regenerated their mirrors.
+- Added the status-preserving Verification guidance, including
+  `SC-VERIFY-INVERTED-EXIT` and the `out="$(tool 2>&1)" || exit 1; ! printf
+  '%s\n' "$out" | grep -q pattern` form, to the canonical Task template and
+  regenerated its mirror.
+- Added the explicit `interface:`/`creates:` declaration rule, authorization
+  and `SC-TOOLING-UNDECLARED` rule, and CLI-guide/`SC-CLI-UNDOCUMENTED` rule to
+  the canonical write-tasks skill and regenerated its mirror.
+- Added the three named contract tests in
+  `skills/baseline_skill_contract_test.go`.
+
+Focused checks:
+
+- `gofmt -w skills/baseline_skill_contract_test.go` — passed.
+- The three named contract tests, run individually with a task-scoped
+  `GOCACHE`, passed.
+- `make skills-sync` — passed; Git emitted a non-blocking fsmonitor IPC
+  diagnostic while reporting status.
+- `go test -count=1 ./skills -run
+  'TestAuthoringTemplatesUseTheBoundedFilesLabel|TestTaskTemplateStatesTheStatusPreservingVerificationForm|TestWriteTasksSkillStatesTheDeclaredPathRules|TestAuthorialSkillSync'`
+  with task-scoped `GOCACHE` — passed.
+- `git diff --check` — passed.
+
+Acceptance evidence:
+
+- Canonical and mirror template labels are covered by
+  `TestAuthoringTemplatesUseTheBoundedFilesLabel`; the canonical/mirror skill
+  trees are covered by `TestAuthorialSkillSync`.
+- The Task-template wording and write-tasks rules are covered by
+  `TestTaskTemplateStatesTheStatusPreservingVerificationForm` and
+  `TestWriteTasksSkillStatesTheDeclaredPathRules`.
+- All three contract tests and the post-sync mirror contract passed. The
+  authored Verification command remains for the Daemon to run.

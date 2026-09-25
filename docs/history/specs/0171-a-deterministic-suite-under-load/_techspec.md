@@ -14,7 +14,9 @@ test deadline and end at once when the watched work ends; move the Implement,
 Daemon and worktree tests onto it and raise the product timeouts they do not
 examine; answer the release lookup offline in every `internal/cli` test process
 and seed a fresh version cache for built binaries; resolve the adapter
-fixture's link target to an absolute path. No production file changes.
+fixture's link target to an absolute path. The only production change is the
+corrective serialization of Git worktree administration in `internal/worktree`
+(task_07), added after the first QA gate reproduced a Git race.
 
 ## Project Constraints
 
@@ -86,8 +88,12 @@ wherever the calling test has one.
 
 In `internal/worktree/worktree_test.go`, every `BootstrapSpec.Timeout` that is
 not the subject of its test is derived from `testwait.Bound(t)`.
-`TestRunBootstrapReturnsBootstrapErrorOnTimeout` keeps its 10 ms bound against
-`sleep 1`, because load can only lengthen the sleep. Each round of
+`TestRunBootstrapReturnsBootstrapErrorOnTimeout` first kept its 10 ms bound
+against `sleep 1` on the premise that load can only lengthen the sleep; the third
+QA gate disproved it, because load also delays the start the test classifies.
+Task 08 replaces it: the command marks its start, blocks on a FIFO past a
+one-second timeout, and the test waits for the marker before asserting the
+post-start classification and exact message. Each round of
 `TestBootstrapSerializesAcrossSiblings` waits for its sibling starts and results
 through `testwait`, and releasing a sibling cannot block past the deadline when
 that sibling has already exited.
@@ -179,6 +185,16 @@ made. The fixture stays the compiled test binary that ADR-0125 requires.
 6. **Repository gate.** The terminal QA Task records the Daemon's repository
    Verification result as a fact.
 
+## Worktree administration lock
+
+The first QA gate reproduced the concurrent-bootstrap failure: one `git worktree
+add` read a sibling's administrative files while Git was still writing them
+(`failed to read .git/worktrees/<task>/commondir: Result too large`).
+`internal/worktree` now serializes `git worktree add`, `remove`, `prune` and
+`move` per Git common directory, inside one process and across processes, for
+the duration of the Git command only, bounded by the caller's context. No
+output, exit code or path layout changes.
+
 ## Build Order
 
 1. The wait helper (depends on: none).
@@ -186,7 +202,9 @@ made. The fixture stays the compiled test binary that ADR-0125 requires.
 3. The Daemon and worktree tests (depends on: 1).
 4. The release lookup (depends on: 2).
 5. The adapter fixture (depends on: none).
-6. Terminal QA (depends on: 1, 2, 3, 4, 5).
+6. Terminal QA (depends on: 1, 2, 3, 4, 5, 7, 8).
+7. The worktree administration lock (depends on: 3).
+8. The bootstrap timeout test (depends on: 7).
 
 The release lookup waits for the Implement tests only because both edit
 `internal/cli/implement_test.go`.

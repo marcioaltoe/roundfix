@@ -148,6 +148,48 @@ func TestCollisionsLearnsPathFromDeclaredContext(t *testing.T) {
 	}
 }
 
+func TestCreatedVerificationOperandIsACollisionTouch(t *testing.T) {
+	t.Parallel()
+	repoRoot := t.TempDir()
+	const createdPath = "internal/generated/client.go"
+	context := []TaskContextRef{{Kind: ContextKindCreates, Path: createdPath}}
+	verification := []string{"test -f " + createdPath}
+	graph := &Graph{Tasks: []Task{
+		{ID: "task_01", Context: context, Verification: verification},
+		{ID: "task_02", Context: context, Verification: verification},
+	}}
+
+	collisions, err := Collisions(repoRoot, graph)
+	if err != nil {
+		t.Fatalf("Collisions returned error: %v", err)
+	}
+	want := []WaveCollision{{
+		First:  "task_01",
+		Second: "task_02",
+		Paths:  map[string]TouchSource{createdPath: TouchFromVerification},
+	}}
+	if !reflect.DeepEqual(collisions, want) {
+		t.Fatalf("Collisions = %#v, want %#v", collisions, want)
+	}
+}
+
+func TestTaskVerificationFilesReadsExistingOperands(t *testing.T) {
+	t.Parallel()
+	repoRoot := t.TempDir()
+	writeCollisionFile(t, repoRoot, "internal/spec/existing.go", "package spec\n")
+
+	got, err := TaskVerificationFiles(repoRoot, Task{
+		Verification: []string{"go test internal/spec/existing.go internal/spec/missing.go"},
+	})
+	if err != nil {
+		t.Fatalf("TaskVerificationFiles returned error: %v", err)
+	}
+	want := []string{"internal/spec/existing.go"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("TaskVerificationFiles = %#v, want %#v", got, want)
+	}
+}
+
 func TestCollisionsLearnsPathFromPackedPriorRunSettlementCommits(t *testing.T) {
 	repoRoot := t.TempDir()
 	gittest.InitRepo(t, repoRoot, "--initial-branch=main")

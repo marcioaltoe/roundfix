@@ -115,16 +115,12 @@ func collisionRepoRoot(repoRoot string) (string, error) {
 
 func declaredTaskTouches(repoRoot string, task Task) (map[string]TouchSource, error) {
 	paths := make(map[string]TouchSource)
-	for _, command := range task.Verification {
-		for _, candidate := range shellWords(command) {
-			path, exists, err := repositoryFile(repoRoot, candidate)
-			if err != nil {
-				return nil, fmt.Errorf("inspect Verification path %q: %w", candidate, err)
-			}
-			if exists {
-				addTouchSource(paths, path, TouchFromVerification)
-			}
-		}
+	verificationFiles, err := TaskVerificationFiles(repoRoot, task)
+	if err != nil {
+		return nil, err
+	}
+	for _, path := range verificationFiles {
+		addTouchSource(paths, path, TouchFromVerification)
 	}
 	for _, ref := range task.Context {
 		path, exists, err := repositoryFile(repoRoot, ref.Path)
@@ -136,6 +132,55 @@ func declaredTaskTouches(repoRoot string, task Task) (map[string]TouchSource, er
 		}
 	}
 	return paths, nil
+}
+
+// TaskVerificationFiles returns the repository files named as literal operands
+// in a Task's Verification. Existing regular files are included, as are
+// non-existent operands the same Task declares under creates:.
+func TaskVerificationFiles(repoRoot string, task Task) ([]string, error) {
+	root, err := collisionRepoRoot(repoRoot)
+	if err != nil {
+		return nil, err
+	}
+	created := make(map[string]bool)
+	for _, ref := range task.Context {
+		if ref.Kind == ContextKindCreates {
+			created[ref.Path] = true
+		}
+	}
+
+	seen := make(map[string]bool)
+	var paths []string
+	for _, command := range task.Verification {
+		for _, candidate := range shellWords(command) {
+			path, exists, err := repositoryFile(root, candidate)
+			if err != nil {
+				return nil, fmt.Errorf("inspect Verification path %q: %w", candidate, err)
+			}
+			if !exists {
+				path = verificationCreatedPath(candidate, created)
+			}
+			if path == "" || seen[path] {
+				continue
+			}
+			seen[path] = true
+			paths = append(paths, path)
+		}
+	}
+	return paths, nil
+}
+
+func verificationCreatedPath(candidate string, created map[string]bool) string {
+	candidate = strings.TrimSpace(candidate)
+	if candidate == "" || filepath.IsAbs(candidate) || strings.HasPrefix(candidate, "-") ||
+		strings.ContainsAny(candidate, "$`*?[]{}") {
+		return ""
+	}
+	clean := filepath.ToSlash(filepath.Clean(filepath.FromSlash(candidate)))
+	if clean == "." || clean == ".." || strings.HasPrefix(clean, "../") || !created[clean] {
+		return ""
+	}
+	return clean
 }
 
 // repositoryFile reads a candidate lifted out of a Verification command or a

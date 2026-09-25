@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0171-a-deterministic-suite-under-load
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -76,3 +76,51 @@ other Tasks move onto.
 
 - [_prd.md](_prd.md) — Core Feature 1; Success Metric 3
 - [_techspec.md](_techspec.md) — The wait helper; API Contracts 1-2
+
+## Result
+
+Implemented `internal/testwait` as a test-only package. `Bound` reads an
+optional `Deadline() (time.Time, bool)` capability and otherwise uses only the
+ten-minute fallback. `Until` gives a ready value priority over ended work and
+reports ended work or a deadline stack dump through `t.Fatalf`. `Poll` checks
+its condition immediately and at a 10 ms interval, performs a final check when
+watched work ends, and reports the last observation at the deadline. Package
+documentation records the test-goroutine, caller-owned cancellation and
+cleanup contract. Neither the package nor its tests imports or invokes a
+process API, so ADR-0126's suite-guard installation contract is not engaged.
+
+Focused evidence by acceptance criterion:
+
+- Deadline bound: `TestBoundFollowsTheTestDeadline` asserts the returned bound
+  is ten minutes minus `Margin` within one second;
+  `TestBoundFallsBackWithoutATestDeadline` asserts the exact ten-minute
+  fallback. Both passed in `rtk env
+  GOCACHE=/private/tmp/roundfix-task-01-gocache go test -count=1 -v -run
+  '^TestBound' ./internal/testwait` (exit 0).
+- Channel wait: `TestUntilReturnsTheReadyValue` pins the first queued value;
+  `TestUntilPrefersTheReadyValueOverAnEndedWork` pins ready-over-ended
+  priority; `TestUntilFailsAtOnceWhenTheWorkEnds` checks the recorded ended
+  value and an elapsed time below one second; and
+  `TestUntilFailsAtTheDeadlineAndNotBefore` checks at least 300 ms elapsed,
+  the named wait and another goroutine's stack. All passed in `rtk env
+  GOCACHE=/private/tmp/roundfix-task-01-gocache go test -count=1 -v -run
+  '^TestUntil' ./internal/testwait` (exit 0; the deadline case took 0.30 s).
+- Polling wait: `TestPollReturnsWhenTheConditionHolds` pins repeated condition
+  evaluation; `TestPollFailsAtOnceWhenTheWorkEnds` pins the final false check,
+  ended value and elapsed time below one second;
+  `TestPollReturnsWhenEndedWorkPublishedItsLastEffect` pins the final true
+  check; and `TestPollFailsAtTheDeadlineWithTheLastObservation` pins at least
+  300 ms elapsed, the named wait and the final observation. All passed in `rtk
+  env GOCACHE=/private/tmp/roundfix-task-01-gocache go test -count=1 -v -run
+  '^TestPoll' ./internal/testwait` (exit 0; the deadline case took 0.30 s).
+
+Additional focused checks:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task-01-gocache go test
+  ./internal/testwait` — exit 0.
+- `rtk env GOCACHE=/private/tmp/roundfix-task-01-gocache go vet
+  ./internal/testwait` — exit 0.
+- `rtk env GOCACHE=/private/tmp/roundfix-task-01-gocache go test -race
+  ./internal/testwait` — exit 0.
+
+The Daemon-owned command in `## Verification` was not run.

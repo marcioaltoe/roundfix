@@ -76,10 +76,18 @@ by each Task file. The preflight never moves either responsibility.
   copy and adopts nothing.
 - **Context entries are labeled paths.** Add `## Context` only when the Task
   needs specific instruction or interface paths beyond the standard Spec
-  bundle. Use bullets shaped as `- instruction: <path>` or
-  `- interface: <path>`. Paths must be clean, repository-relative, and unique;
+  bundle. Use bullets shaped as `- instruction: <path>`,
+  `- interface: <path>`, or `- creates: <path>`. Paths must be clean,
+  repository-relative, and unique;
   a Task may declare at most 50 unique entries. The Daemon reserves those paths
   before filling the 200-path Spec Context Bundle with prior changed files.
+- **Declared edits and governed paths are explicit.** Every path a Task edits
+  is declared under `interface:` or `creates:`, never `instruction:`. Each
+  declared or Verification-read Governed Path must appear in the Spec's
+  `_authorization.md` `paths:` and in both `bounded files:` rows, or authoring
+  is refused with `SC-TOOLING-UNDECLARED`. A Task naming a CLI surface names
+  its skill or guide itself or through a Task it depends on; otherwise it is
+  reported with `SC-CLI-UNDOCUMENTED`.
 
 ## Decomposition rules
 
