@@ -126,6 +126,13 @@ remain:
   it.
 - `SC-BACKLOG-UNMOVED` also reports a terminal Backlog Entry in `docs/backlog/`.
 
+## Recorded limits
+
+- The archived-Finding closure check accepts a Finding without an absorber only
+  when both `closure_reason` and `closure_evidence` are non-empty, but no test
+  pins the one-field and blank-field cases. Found by the pre-PR review of
+  2026-09-24; carried as a test-coverage gap.
+
 ## Decisions
 
 - **Record, don't rediscover.** Liveness read from the object store depends on a

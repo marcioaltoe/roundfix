@@ -33,8 +33,8 @@ below define this Spec's place in the implementation order.
 - Active ADR obligations: applicable — preserve the one-way mirror and fleet Inbox boundary, the existing History Root, and accepted regeneration ownership under ADR-0149. Source: `docs/agents/docs-layout.md`.
   ADR-0083 applies to the source-adoption validation follow-up: adopted Findings and Backlog Entries move to one owning Spec, with no copy or stub left at the original path.
   ADR-0116 applies to cited-policy evidence: preserve checks that compare a claim with the cited record; source-origin absence is an additional structural check, not a substitute for semantic citation validation.
-  ADR-0123 remains operative: retirement currently uses conservative local reachability and the Review Artifact resolver never writes into history. The proposed stable-evidence change does not yet supersede it.
-  ADR-0152 is a proposed revision only, recorded for review; it creates no current obligation or grant.
+  ADR-0123, historically, used conservative local reachability for retirement and kept the Review Artifact resolver out of history. The proposed stable-evidence change does not yet supersede it.
+  ADR-0152 was a proposed revision, recorded for review and never accepted.
   ADR-0163, added by Spec 0164 on 2026-09-24, supersedes ADR-0123 and ADR-0152 once that Spec's Task 01 lands; Core Feature 8 is delivered there.
 - Tooling authority: applicable — express maintainer authorization on 2026-09-08 covers the terminal lifecycle instruction through [the narrow grant](references/2026-09-08-terminal-lifecycle-authorization.md); bounded files: `internal/baseline/assets/modules/context-workflow.json`, `docs/agents/docs-layout.md`, `docs/agents/setup-context.json`, with sanctioned digest regeneration. The broader [_authorization.md](_authorization.md) remains proposed, including all Go, test, companion-repository and unrelated skill changes. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
@@ -84,8 +84,7 @@ support for archived Rollup basenames or assert pending implementation passed.
 
 ### Review retirement and upstream boundaries
 
-ADR-0123 remains operative until the proposed replacement in ADR-0152 is
-approved. The new retirement result records stable provider/recorded evidence,
+ADR-0123 governed retirement until ADR-0163 superseded it and ADR-0152. The new retirement result records stable provider/recorded evidence,
 including a squash outcome, or an explicit unknown reason. Fetching or pruning
 a local Git object must not change the lifecycle verdict. Move a legacy
 `docs/specs/_reviews` path independently of that verdict, retaining its active
@@ -188,7 +187,7 @@ Retirement revises an accepted policy and is pending that decision. A source mov
 - Delivery through squash merge requires the configured pre-PR review policy outcome and passing required checks for the current candidate. Explicit none records intentional review omission; enabled-provider failure cannot select none. Releases, tags and paid consumption are not implied.
 - Preserve configured reviewer selection; this Spec introduces no separate reviewer override.
 - The proposed mechanisms and unresolved trade-offs above remain candidates. Existing accepted ADRs named in Project Constraints remain operative until any explicit revision is accepted.
-- [Proposed ADR-0152](../../adr/0152-review-artifact-retirement-uses-stable-evidence.md) challenges the object-dependent retirement rule in ADR-0123; it does not supersede that rule yet.
+- [ADR-0152](../../history/adr/0152-review-artifact-retirement-uses-stable-evidence.md) proposed replacing the object-dependent retirement rule in ADR-0123; ADR-0163 superseded both.
 
 ## Cross-Spec dependencies
 
