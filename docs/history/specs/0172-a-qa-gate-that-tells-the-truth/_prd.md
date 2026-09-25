@@ -1,9 +1,12 @@
 ---
 spec: 0172-a-qa-gate-that-tells-the-truth
-status: active
+status: archived
 created: 2026-09-25
 surfaces: [backend, cli, docs]
+archived: "2026-09-25"
+source_slug: 0172-a-qa-gate-that-tells-the-truth
 ---
+
 
 # A QA gate that tells the truth
 
