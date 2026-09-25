@@ -57,6 +57,9 @@ Greenfield composition emits only guides and pointers selected by the Baseline
 Profile. It creates no generic repository guide and no residual carrier when
 there are no Repository-Specific Normative Rules.
 
+When Greenfield retains managed source that needs classification, Greenfield
+refuses and names `preservation.mode=preservation` as the route to choose.
+
 For update or Baseline Readoption, interpret the complete retention ledger
 before approving it. Every existing rule must retain its exact source bytes in
 one active semantic owner, a recognized typed repository document, or
@@ -174,6 +177,8 @@ roundfix baseline skills restore --repo . --profile <built-in-id> --skill <skill
 The CLI owns project-decision collection and rendering. This skill does not
 collect, derive, validate, or render decisions; it explains the public result
 and sends every correction back through `roundfix baseline`.
+
+Changing only the HTTP mode retains every exception and the source.
 
 For the Standard TypeScript Monorepo Profile, UUID version 7 is a visible
 suggestion for `identifier.strategy`. The human must explicitly keep it or
