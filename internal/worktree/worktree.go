@@ -1547,7 +1547,7 @@ func revalidateTerminalRunApply(
 func cleanupTerminalRun(ctx context.Context, runner gitRunner, fresh RunWorktreeReconciliation) error {
 	evidence := fresh.evidence
 	if fresh.evidence.worktreePresent {
-		if _, err := runner.Run(ctx, evidence.gitRoot, "worktree", "remove", fresh.Path); err != nil {
+		if _, err := runWorktreeCommand(ctx, runner, evidence.gitRoot, "worktree", "remove", fresh.Path); err != nil {
 			return terminalRunApplyFailure(
 				ctx,
 				runner,
@@ -1609,7 +1609,7 @@ func Create(ctx context.Context, opts CreateOptions) (Ref, error) {
 	}
 
 	runner := execGitRunner{}
-	if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "add", "-b", ref.Branch, ref.Path, headSHA); err != nil {
+	if _, err := runWorktreeCommand(ctx, runner, ref.UserRoot, "worktree", "add", "-b", ref.Branch, ref.Path, headSHA); err != nil {
 		return Ref{}, fmt.Errorf("create Run Worktree: %w", err)
 	}
 	if err := copyProvisionedFiles(ref.UserRoot, ref.Path, opts.CopyList); err != nil {
@@ -1658,7 +1658,7 @@ func CreateItem(ctx context.Context, ref ItemRef, opts ItemCreateOptions) error 
 	}
 
 	runner := execGitRunner{}
-	if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "add", "--no-track", "-b", ref.Branch, ref.Path, headSHA); err != nil {
+	if _, err := runWorktreeCommand(ctx, runner, ref.UserRoot, "worktree", "add", "--no-track", "-b", ref.Branch, ref.Path, headSHA); err != nil {
 		return fmt.Errorf("create item Worktree: %w", err)
 	}
 	return ProvisionItem(ctx, ref, ItemProvisionOptions{
@@ -1715,7 +1715,7 @@ func UseItem(ctx context.Context, ref ItemRef) error {
 		case !errors.Is(statErr, os.ErrNotExist):
 			return fmt.Errorf("use item Worktree %q: stat recorded path: %w", ref.Path, statErr)
 		}
-		if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "prune"); err != nil {
+		if _, err := runWorktreeCommand(ctx, runner, ref.UserRoot, "worktree", "prune"); err != nil {
 			return fmt.Errorf("use item Worktree %q: prune missing registration: %w", ref.Path, err)
 		}
 		break
@@ -1735,7 +1735,7 @@ func UseItem(ctx context.Context, ref ItemRef) error {
 	if err := os.MkdirAll(filepath.Dir(ref.Path), 0o755); err != nil {
 		return fmt.Errorf("use item Worktree: create parent %q: %w", filepath.Dir(ref.Path), err)
 	}
-	if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "add", ref.Path, ref.Branch); err != nil {
+	if _, err := runWorktreeCommand(ctx, runner, ref.UserRoot, "worktree", "add", ref.Path, ref.Branch); err != nil {
 		return fmt.Errorf("use item Worktree: recreate %q from branch %q: %w", ref.Path, ref.Branch, err)
 	}
 	return nil
@@ -1782,12 +1782,12 @@ func CleanupItem(ctx context.Context, ref ItemRef) error {
 	}
 	if pathIsRegistered {
 		if _, err := os.Stat(ref.Path); errors.Is(err, os.ErrNotExist) {
-			if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "prune"); err != nil {
+			if _, err := runWorktreeCommand(ctx, runner, ref.UserRoot, "worktree", "prune"); err != nil {
 				return fmt.Errorf("clean up item Worktree %q: prune missing registration: %w", ref.Path, err)
 			}
 		} else if err != nil {
 			return fmt.Errorf("clean up item Worktree %q: stat recorded path: %w", ref.Path, err)
-		} else if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "remove", "--force", ref.Path); err != nil {
+		} else if _, err := runWorktreeCommand(ctx, runner, ref.UserRoot, "worktree", "remove", "--force", ref.Path); err != nil {
 			return fmt.Errorf("clean up item Worktree %q: %w", ref.Path, err)
 		}
 	} else if _, err := os.Lstat(ref.Path); err == nil {
@@ -1937,6 +1937,10 @@ func CreateTask(ctx context.Context, run Ref, taskID string, copyList []string) 
 }
 
 func CreateTaskWithOptions(ctx context.Context, run Ref, taskID string, opts TaskCreateOptions) (TaskRef, error) {
+	return createTaskWithOptions(ctx, execGitRunner{}, run, taskID, opts)
+}
+
+func createTaskWithOptions(ctx context.Context, runner gitRunner, run Ref, taskID string, opts TaskCreateOptions) (TaskRef, error) {
 	if err := validateRef(run); err != nil {
 		return TaskRef{}, taskWorktreeCreationError(run.RunID, taskID, opts.Concurrency, err)
 	}
@@ -1945,7 +1949,6 @@ func CreateTaskWithOptions(ctx context.Context, run Ref, taskID string, opts Tas
 		return TaskRef{}, taskWorktreeCreationError(run.RunID, taskID, opts.Concurrency, err)
 	}
 
-	runner := execGitRunner{}
 	baseSHA, err := gitRevision(ctx, runner, run.UserRoot, run.Branch)
 	if err != nil {
 		return TaskRef{}, taskWorktreeCreationError(
@@ -1971,7 +1974,7 @@ func CreateTaskWithOptions(ctx context.Context, run Ref, taskID string, opts Tas
 			fmt.Errorf("create parent %q: %w", filepath.Dir(ref.Path), err),
 		)
 	}
-	if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "add", "-b", ref.Branch, ref.Path, baseSHA); err != nil {
+	if _, err := runWorktreeCommand(ctx, runner, ref.UserRoot, "worktree", "add", "-b", ref.Branch, ref.Path, baseSHA); err != nil {
 		return TaskRef{}, taskWorktreeCreationError(ref.RunID, ref.TaskID, opts.Concurrency, err)
 	}
 	if err := copyProvisionedFiles(ref.UserRoot, ref.Path, opts.CopyList); err != nil {
@@ -2267,7 +2270,7 @@ func CleanupClean(ctx context.Context, ref Ref) error {
 		return err
 	}
 	runner := execGitRunner{}
-	if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "remove", "--force", ref.Path); err != nil {
+	if _, err := runWorktreeCommand(ctx, runner, ref.UserRoot, "worktree", "remove", "--force", ref.Path); err != nil {
 		return fmt.Errorf("remove Run Worktree %q: %w", ref.Path, err)
 	}
 	if err := deleteRunBranch(ctx, runner, ref.UserRoot, ref.Branch); err != nil {
@@ -2281,7 +2284,7 @@ func CleanupTask(ctx context.Context, task TaskRef) error {
 		return err
 	}
 	runner := execGitRunner{}
-	if _, err := runner.Run(ctx, task.UserRoot, "worktree", "remove", "--force", task.Path); err != nil {
+	if _, err := runWorktreeCommand(ctx, runner, task.UserRoot, "worktree", "remove", "--force", task.Path); err != nil {
 		return fmt.Errorf("remove Task Worktree %q: %w", task.Path, err)
 	}
 	if err := deleteRunBranch(ctx, runner, task.UserRoot, task.Branch); err != nil {
@@ -2400,7 +2403,7 @@ func pruneReleasedRunTaskRefs(ctx context.Context, runner gitRunner, userRoot st
 			continue
 		}
 		if _, err := os.Stat(ref.Path); err == nil {
-			if _, err := runner.Run(ctx, userRoot, "worktree", "remove", "--force", ref.Path); err != nil {
+			if _, err := runWorktreeCommand(ctx, runner, userRoot, "worktree", "remove", "--force", ref.Path); err != nil {
 				errs = append(errs, fmt.Errorf("remove terminal Task Worktree %q: %w", ref.Path, err))
 				continue
 			}
@@ -2521,7 +2524,7 @@ func recordedGitRoot(ctx context.Context, runner gitRunner, value string) (strin
 }
 
 func listRegisteredWorktrees(ctx context.Context, runner gitRunner, gitRoot string) ([]registeredWorktree, error) {
-	output, err := runner.Run(ctx, gitRoot, "worktree", "list", "--porcelain", "-z")
+	output, err := runWorktreeCommand(ctx, runner, gitRoot, "worktree", "list", "--porcelain", "-z")
 	if err != nil {
 		return nil, fmt.Errorf("list registered Git worktrees: %w", err)
 	}
@@ -3016,7 +3019,7 @@ func checkedOutBranchPath(ctx context.Context, runner gitRunner, userRoot, targe
 }
 
 func worktreePathsByBranch(ctx context.Context, runner gitRunner, userRoot string) (map[string]string, error) {
-	output, err := runner.Run(ctx, userRoot, "worktree", "list", "--porcelain")
+	output, err := runWorktreeCommand(ctx, runner, userRoot, "worktree", "list", "--porcelain")
 	if err != nil {
 		return nil, fmt.Errorf("list git worktrees: %w", err)
 	}

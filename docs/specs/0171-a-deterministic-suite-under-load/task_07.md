@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0171-a-deterministic-suite-under-load
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -47,3 +47,42 @@ Corrective Task from QA finding F-001 of 2026-09-25. Under a concurrent `go test
 
 - [_techspec.md](_techspec.md) — Build Order
 - [qa/qa-report-2026-09-25.md](qa/qa-report-2026-09-25.md) — F-001
+
+## Result
+
+Implemented a repository-scoped Git worktree administration lock. Each command
+resolves the Git common directory, waits on an in-process permit and an
+OS-backed advisory file lock, runs one Git `worktree` command, and releases both
+locks on every return path. All `add`, `remove`, `prune`, and `list` call sites
+in `internal/worktree` use this boundary; the boundary also covers `move`.
+Copying provisioned files and Worktree Bootstrap remain outside the locked
+region.
+
+Acceptance evidence:
+
+1. `TestConcurrentTaskWorktreeCreationIsSerialized` starts 12 Task Worktree
+   creations at the same common-directory boundary and records a maximum of one
+   active administrative command; all 12 return successfully.
+2. `TestWorktreeAdministrationIsSerializedAcrossProcesses` holds the lock in
+   the parent process and proves a helper subprocess reaches its context
+   deadline without running the competing command.
+3. `TestWorktreeAdministrationWaitEndsWithTheContext` cancels an in-process
+   waiter and observes `context.Canceled` without command execution.
+4. `TestWorktreeAdministrationOfDifferentRepositoriesRunsConcurrently` holds
+   two commands from distinct common directories active at the same time.
+
+Focused checks:
+
+- Red: `GOCACHE=/tmp/roundfix-task07-gocache go test ./internal/worktree`
+  failed to compile before implementation because `createTaskWithOptions` and
+  `runWorktreeCommand` did not exist.
+- `GOCACHE=/tmp/roundfix-task07-gocache go test ./internal/worktree` passed.
+- `GOCACHE=/tmp/roundfix-task07-gocache go test -race ./internal/worktree`
+  passed.
+- `GOCACHE=/tmp/roundfix-task07-gocache go test -count=5 ./internal/worktree`
+  passed in 36.886 seconds.
+- `GOCACHE=/tmp/roundfix-task07-gocache go vet ./internal/worktree` passed.
+- `GOOS=windows GOARCH=amd64 GOCACHE=/tmp/roundfix-task07-gocache go test -c
+  -o /tmp/roundfix-task07-worktree.test.exe ./internal/worktree` passed.
+
+The Daemon-owned `## Verification` command was not run.
