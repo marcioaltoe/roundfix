@@ -1532,6 +1532,63 @@ func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
 	}
 }
 
+func TestDoctorLeavesAnObsoleteLockEntryUntouched(t *testing.T) {
+	t.Parallel()
+	homeDir := t.TempDir()
+	repoDir := t.TempDir()
+	setCommandEnvironmentForTest(t, homeDir, repoDir)
+	mustMkdir(t, filepath.Join(repoDir, ".git"))
+	writeDoctorReadyRepositoryFixture(t, repoDir)
+
+	lockPath := filepath.Join(repoDir, "skills-lock.json")
+	var lock map[string]any
+	if err := json.Unmarshal(mustReadBytes(t, lockPath), &lock); err != nil {
+		t.Fatalf("decode Doctor skills lock fixture: %v", err)
+	}
+	lock["skills"].(map[string]any)["obsolete-task05"] = map[string]any{
+		"computedHash": "no-longer-required",
+	}
+	lockBytes, err := json.MarshalIndent(lock, "", "  ")
+	if err != nil {
+		t.Fatalf("encode Doctor skills lock fixture: %v", err)
+	}
+	if err := os.WriteFile(lockPath, append(lockBytes, '\n'), 0o644); err != nil {
+		t.Fatalf("write Doctor skills lock fixture: %v", err)
+	}
+	before := mustReadBytes(t, lockPath)
+
+	checker := newDoctorFakeHealthChecker(
+		CheckResult{Name: HealthCheckNode, Status: CheckStatusOK},
+		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK},
+		CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK},
+	)
+	withDoctorFakeLoadedAndReadiness(t, checker, roundconfig.Loaded{
+		Config:  roundconfig.Builtin(),
+		GitRoot: repoDir,
+		HomeDir: homeDir,
+	}, func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult {
+		return profileProofResult{}
+	})
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.doctor.resolveExternal = resolveExternalSkillRequirement
+		dependencies.doctor.checkSkills = skills.CheckRepositoryWithExternal
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLI(t, []string{"doctor"}, &stdout, &stderr)
+
+	if code != exitOK || stderr.Len() != 0 {
+		t.Fatalf("Doctor exit = %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "skills: ok") {
+		t.Fatalf("Doctor did not report Repository Skill Set readiness: %q", stdout.String())
+	}
+	if after := mustReadBytes(t, lockPath); !bytes.Equal(after, before) {
+		t.Fatalf("Doctor changed obsolete lock entry:\nbefore=%s\nafter=%s", before, after)
+	}
+}
+
 func TestRunDoctorRejectsArguments(t *testing.T) {
 	t.Parallel()
 	var stdout bytes.Buffer

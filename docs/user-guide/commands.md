@@ -325,6 +325,7 @@ roundfix baseline profile init --id <id> [--from <built-in-id>]
 roundfix baseline profile show <id> [--format <text|json>]
 roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
 roundfix baseline skills restore --profile <id> [--skill <name> ...] [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
+roundfix baseline skills reconcile --profile <id> --source <owner/repo> --revision <commit> [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
 roundfix baseline assets sync --source-dir <path> [--check] [--format <text|json>]
 ```
 
@@ -418,6 +419,13 @@ Set operation. Its non-empty preview exits `3` with a current Plan Digest;
 `--confirm-plan` applies only that exact preview. `--source-dir` selects an
 offline Git checkout or bare object store containing the declared immutable
 source commit.
+
+`baseline skills reconcile` removes only lock entries proven absent from one
+source repository at the exact 40-hex commit passed with `--revision`, and only
+when the selected Profile does not require them. A non-empty preview exits `3`
+with its Plan Digest; `--confirm-plan` applies that exact plan and retains every
+installed skill tree. Mutable revisions are refused before source acquisition.
+Doctor remains offline and read-only; it never reconciles or edits the lock.
 
 `baseline assets sync` is a maintainer operation over an explicit canonical
 setups directory. `--check` is read-only. Refresh validates the generated

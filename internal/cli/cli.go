@@ -68,6 +68,7 @@ Usage:
   roundfix baseline profile show <id> [--format <text|json>]
   roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
   roundfix baseline skills restore --profile <id> [--skill <name> ...] [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
+  roundfix baseline skills reconcile --profile <id> --source <owner/repo> --revision <commit> [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
   roundfix baseline assets sync --source-dir <path> [--check] [--format <text|json>]
   roundfix profiles show [--category <category>] [--json]
   roundfix profiles configure --scope user|project [--file <path>] [--remove <category>] [--dry-run] [--yes] [--json]
@@ -5465,6 +5466,7 @@ explicit post-QA authority.
   roundfix baseline profile show <id> [--format <text|json>]
   roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
   roundfix baseline skills restore --profile <id> [--skill <name> ...] [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
+  roundfix baseline skills reconcile --profile <id> --source <owner/repo> --revision <commit> [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
   roundfix baseline assets sync --source-dir <path> [--check] [--format <text|json>]
 
 The root command guides one interactive adoption or update from repository
@@ -5479,7 +5481,7 @@ Commands:
   apply    Automation: apply and verify exactly one approved portable Baseline Plan without prompting.
   capabilities  Re-check Profile capability evidence without decisions, prompts, or writes.
   profile  Author, inspect, and validate built-in or repository-owned Baseline Profiles.
-  skills   Preview or apply immutable external Repository Skill Set restoration.
+  skills   Restore external Repository Skill Set members or reconcile obsolete lock entries.
   assets   Check or refresh Go-owned canonical Baseline setup snapshots.
 
 The interactive root command refuses redirected or absent terminal input.
@@ -5688,6 +5690,37 @@ Options:
                   or omit to restore every drifted external profile skill
   --source-dir    Declared offline Git checkout or bare object store containing
                   every selected skill's exact immutable commit
+  --confirm-plan  Exact lowercase Plan Digest returned by the current preview
+  --repo          Git worktree or a path inside it (default current directory)
+  --format        Output format: text or json (default text)
+`
+	case "baseline skills reconcile":
+		return `Usage:
+  roundfix baseline skills reconcile --profile <id> --source <owner/repo> --revision <commit> [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
+
+Previews or applies removal of obsolete skills-lock.json entries for one
+source repository at one immutable commit. Installed skill trees are retained.
+A missing Profile-required skill blocks the complete reconciliation.
+
+A non-empty preview exits 3 and returns its exact Plan Digest. Apply requires
+that digest through --confirm-plan and uses the recoverable Baseline
+transaction to update skills-lock.json atomically. An empty reconciliation is
+an idempotent exit 0. Mutable or malformed revisions are refused before source
+acquisition.
+
+Exit codes:
+  0  no obsolete entries remain, or the confirmed reconciliation was applied
+  1  source acquisition, proof, apply, output, rollback, or recovery failure
+  2  invalid arguments, profile, lock schema, source, revision, or unsafe target
+  3  confirmation is required or does not match the current Change Plan
+  130 operation canceled
+
+Options:
+  --profile       Required built-in Baseline Profile
+  --source        Required source repository as owner/repo
+  --revision      Required exact immutable 40-hex source commit
+  --source-dir    Declared offline Git checkout or bare object store containing
+                  the selected source repository's exact immutable commit
   --confirm-plan  Exact lowercase Plan Digest returned by the current preview
   --repo          Git worktree or a path inside it (default current directory)
   --format        Output format: text or json (default text)

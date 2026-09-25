@@ -62,17 +62,31 @@ func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 	case "profile":
 		return runBaselineProfileCommand(args[1:], stdout, stderr, environment)
 	case "skills":
-		if len(args) == 1 || args[1] != "restore" {
+		if len(args) == 1 {
 			printBaselineProfileFailure(
 				"baseline skills",
-				validationError{message: "baseline skills requires the restore command"},
+				validationError{message: "baseline skills requires the restore or reconcile command"},
 				false,
 				stdout,
 				stderr,
 			)
 			return exitPreflight
 		}
-		return runBaselineSkillsRestoreCommand(ctx, args[2:], stdout, stderr)
+		switch args[1] {
+		case "restore":
+			return runBaselineSkillsRestoreCommand(ctx, args[2:], stdout, stderr)
+		case "reconcile":
+			return runBaselineSkillsReconcileCommand(ctx, args[2:], stdout, stderr)
+		default:
+			printBaselineProfileFailure(
+				"baseline skills",
+				validationError{message: "baseline skills requires the restore or reconcile command"},
+				false,
+				stdout,
+				stderr,
+			)
+			return exitPreflight
+		}
 	case "assets":
 		if len(args) == 1 || args[1] != "sync" {
 			printBaselineProfileFailure(
