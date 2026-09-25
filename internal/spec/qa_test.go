@@ -63,6 +63,214 @@ func TestReadQAReportAcceptsOlderReportWithoutAuditorMetadata(t *testing.T) {
 	}
 }
 
+func TestReadQAReportReadsAPendingVerdict(t *testing.T) {
+	t.Parallel()
+	specDir := t.TempDir()
+	writeFile(t, filepath.Join(specDir, "qa", "qa-report-2026-09-25.md"), qaReportFixture(VerdictPending))
+
+	report, err := ReadQAReport(specDir)
+	if err != nil {
+		t.Fatalf("ReadQAReport: %v", err)
+	}
+	if report.Verdict != VerdictPending {
+		t.Errorf("Verdict = %q, want %q", report.Verdict, VerdictPending)
+	}
+}
+
+func TestQAReportEligibilityRefusesAPendingVerdict(t *testing.T) {
+	t.Parallel()
+	err := QAReportEligibility(t.TempDir(), QAReport{Verdict: VerdictPending})
+	want := `newest QA Report verdict is "pending"; expected "pass"`
+	if err == nil || err.Error() != want {
+		t.Fatalf("error = %v, want %q", err, want)
+	}
+}
+
+func TestQAReportEligibilityRefusesAHollowPass(t *testing.T) {
+	t.Parallel()
+	specDir := t.TempDir()
+	writeFile(t, filepath.Join(specDir, "qa", "qa-report-2026-09-25.md"), `---
+verdict: pass
+---
+
+# QA Report
+
+## Results
+
+| # | Status | Provenance |
+| - | --- | --- |
+`)
+
+	report, err := ReadQAReport(specDir)
+	if err != nil {
+		t.Fatalf("ReadQAReport: %v", err)
+	}
+	if err := QAReportEligibility(specDir, report); err == nil || !strings.Contains(err.Error(), "records no QA row") {
+		t.Fatalf("QAReportEligibility error = %v, want hollow-report refusal", err)
+	}
+}
+
+func TestQAReportEligibilityRefusesAHollowPartial(t *testing.T) {
+	t.Parallel()
+	specDir := t.TempDir()
+	writeFile(t, filepath.Join(specDir, "_prd.md"), `# Test Spec
+
+## Unreachable Acceptance
+
+- criterion: unavailable journey
+  reason: no open pull request
+  satisfied-by: task_01
+`)
+	writeFile(t, filepath.Join(specDir, "qa", "qa-report-2026-09-25.md"), `---
+verdict: partial
+rows_blocked_declared: 1
+---
+
+# QA Report
+
+## Results
+
+| # | Status | Provenance |
+| - | --- | --- |
+`)
+
+	report, err := ReadQAReport(specDir)
+	if err != nil {
+		t.Fatalf("ReadQAReport: %v", err)
+	}
+	if err := QAReportEligibility(specDir, report); err == nil || !strings.Contains(err.Error(), "records no QA row") {
+		t.Fatalf("QAReportEligibility error = %v, want hollow-report refusal", err)
+	}
+}
+
+func TestQAReportEligibilityAcceptsAPassWithAResultsRow(t *testing.T) {
+	t.Parallel()
+	specDir := t.TempDir()
+	writeFile(t, filepath.Join(specDir, "qa", "qa-report-2026-09-25.md"), `---
+verdict: pass
+---
+
+# QA Report
+
+## Results
+
+### User flows
+
+| # | Outcome | Evidence |
+| - | --- | --- |
+| R01 | pass | observed CLI output |
+
+## Findings
+
+None.
+`)
+
+	report, err := ReadQAReport(specDir)
+	if err != nil {
+		t.Fatalf("ReadQAReport: %v", err)
+	}
+	if err := QAReportEligibility(specDir, report); err != nil {
+		t.Fatalf("QAReportEligibility: %v", err)
+	}
+}
+
+func TestQAReportEligibilityAcceptsAMatrixUnderAStatusTable(t *testing.T) {
+	t.Parallel()
+	specDir := t.TempDir()
+	writeFile(t, filepath.Join(specDir, "qa", "qa-report-2026-09-25.md"), `---
+verdict: pass
+---
+
+# QA Report
+
+## Results
+
+| # | Outcome |
+| - | --- |
+
+## Acceptance matrix
+
+| Requirement | Status | Evidence |
+| --- | --- | --- |
+| R01 | pass | observed CLI output |
+`)
+
+	report, err := ReadQAReport(specDir)
+	if err != nil {
+		t.Fatalf("ReadQAReport: %v", err)
+	}
+	if err := QAReportEligibility(specDir, report); err != nil {
+		t.Fatalf("QAReportEligibility: %v", err)
+	}
+}
+
+func TestQAReportEligibilityKeepsAReportWithoutAResultsSection(t *testing.T) {
+	t.Parallel()
+	specDir := t.TempDir()
+	writeFile(t, filepath.Join(specDir, "qa", "qa-report-2026-09-25.md"), qaReportFixture(VerdictPass))
+
+	report, err := ReadQAReport(specDir)
+	if err != nil {
+		t.Fatalf("ReadQAReport: %v", err)
+	}
+	if err := QAReportEligibility(specDir, report); err != nil {
+		t.Fatalf("QAReportEligibility: %v", err)
+	}
+}
+
+func TestQAReportEligibilityKeepsExistingPartialRefusalPrecedence(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name         string
+		report       QAReport
+		declarations int
+		wantError    string
+	}{
+		{
+			name:         "finding-blocked rows precede hollow report",
+			report:       QAReport{Verdict: VerdictPartial, Hollow: true, RowsBlockedFinding: 1, RowsBlockedDeclared: 1},
+			declarations: 1,
+			wantError:    "rows_blocked_finding is 1; expected 0",
+		},
+		{
+			name:         "environment-blocked rows precede hollow report",
+			report:       QAReport{Verdict: VerdictPartial, Hollow: true, RowsBlockedEnvironment: 1, RowsBlockedDeclared: 1},
+			declarations: 1,
+			wantError:    "rows_blocked_environment is 1; expected 0",
+		},
+		{
+			name:      "missing declared rows precede hollow report",
+			report:    QAReport{Verdict: VerdictPartial, Hollow: true},
+			wantError: `newest QA Report verdict is "partial"; expected "pass"`,
+		},
+		{
+			name:         "declaration shortfall precedes hollow report",
+			report:       QAReport{Verdict: VerdictPartial, Hollow: true, RowsBlockedDeclared: 2},
+			declarations: 1,
+			wantError:    "rows_blocked_declared is 2, but Spec declares 1 unreachable acceptance; shortfall is 1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			specDir := t.TempDir()
+			if tt.declarations > 0 {
+				var prd strings.Builder
+				prd.WriteString("# Test Spec\n\n## Unreachable Acceptance\n")
+				for index := 0; index < tt.declarations; index++ {
+					fmt.Fprintf(&prd, "\n- criterion: criterion %d\n  reason: reason %d\n  satisfied-by: task_%02d\n", index+1, index+1, index+1)
+				}
+				writeFile(t, filepath.Join(specDir, "_prd.md"), prd.String())
+			}
+
+			err := QAReportEligibility(specDir, tt.report)
+			if err == nil || err.Error() != tt.wantError {
+				t.Fatalf("error = %v, want %q", err, tt.wantError)
+			}
+		})
+	}
+}
+
 func TestQAVerdictValidatesBlockedCounts(t *testing.T) {
 	t.Parallel()
 	tests := []struct {

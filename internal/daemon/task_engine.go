@@ -2585,7 +2585,8 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 			return "", "", false, fmt.Errorf("stop run %q after the QA step Agent: %w", plan.RunID, err)
 		}
 	}
-	verdict, reportPath, accepted = engine.settleQAVerdict(plan)
+	var eligibilityErr error
+	verdict, reportPath, accepted, eligibilityErr = engine.settleQAVerdict(plan)
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
 		fmt.Sprintf("QA verdict %s for Spec %s.", verdict, plan.Spec.Slug),
 		map[string]any{"phase": "verdict", "verdict": verdict, "report": reportPath},
@@ -2598,6 +2599,8 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	if accepted {
 		qaStatus = spec.StatusCompleted
 		qaReason = ""
+	} else if eligibilityErr != nil && (verdict == spec.VerdictPass || verdict == spec.VerdictPartial) {
+		qaReason = fmt.Sprintf("QA verdict %s not accepted: %v", verdict, eligibilityErr)
 	}
 	if err := engine.settleTask(ctx, plan, qaTask, ordinal, qaStatus, qaReason); err != nil {
 		return "", "", false, err
@@ -2856,7 +2859,7 @@ func mechanicalQAReportContent(result speccheck.MechanicalResult, evidence spec.
 
 	var content bytes.Buffer
 	content.WriteString("---\n")
-	verdict := spec.VerdictPass
+	verdict := spec.VerdictPending
 	if result.Blocking || len(result.Findings) > 0 || len(result.RepairFailures) > 0 {
 		verdict = spec.VerdictFail
 	}
@@ -2988,18 +2991,21 @@ func pullRequestRepository(rawURL string) string {
 // report's own verdict when readable, missing when no report exists, and
 // unreadable when the report exists but its verdict cannot be read
 // (ADR 0015). The report path comes back relative to the working tree,
-// empty when no report exists.
-func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string, bool) {
+// empty when no report exists. A readable report also returns the shared
+// eligibility error so settlement can name why a pass or partial was refused.
+func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string, bool, error) {
 	verdict := ""
 	accepted := false
+	var eligibilityErr error
 	switch report, err := spec.ReadQAReport(plan.Spec.Dir); {
 	case err == nil:
 		verdict = report.Verdict
-		accepted = spec.QAReportEligibility(plan.Spec.Dir, report) == nil
+		eligibilityErr = spec.QAReportEligibility(plan.Spec.Dir, report)
+		accepted = eligibilityErr == nil
 	case errors.Is(err, spec.ErrNoQAReport):
 		// ReadQAReport already searched the report directory. Preserve that
 		// proven absence instead of repeating the same filesystem scan below.
-		return qaVerdictMissing, "", false
+		return qaVerdictMissing, "", false, nil
 	default:
 		fmt.Fprintf(engine.deps.Progress, "QA Report verdict unreadable: %v\n", err)
 		verdict = qaVerdictUnreadable
@@ -3011,7 +3017,7 @@ func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string, bool) {
 			reportPath = relative
 		}
 	}
-	return verdict, reportPath, accepted
+	return verdict, reportPath, accepted, eligibilityErr
 }
 
 // commitQAReport creates the QA Report commit from the QA step's snapshot

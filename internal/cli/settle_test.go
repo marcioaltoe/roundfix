@@ -168,6 +168,30 @@ func TestSettleAppliesEligibilityToAQATask(t *testing.T) {
 	})
 }
 
+func TestSettleQATaskRefusesAHollowPass(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		implementQAGateSeed(string(spec.StatusFailed)),
+	})
+	reportPath := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "qa", "qa-report-2026-09-25.md")
+	mustMkdir(t, filepath.Dir(reportPath))
+	mustWrite(t, reportPath, "---\nverdict: pass\n---\n\n# QA Report\n\n## Results\n\n| # | Status |\n| - | --- |\n")
+	var stdout, stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_qa"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("settle exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "records no QA row") {
+		t.Fatalf("settle stderr = %q, want hollow-report refusal", stderr.String())
+	}
+	if content := mustRead(t, implementTaskPath(repoDir, "task_qa")); !strings.Contains(content, "status: failed") {
+		t.Fatalf("hollow report changed QA Task status:\n%s", content)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
 func TestRunSettleWarnsWhenOtherSpecTasksAreFailed(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{

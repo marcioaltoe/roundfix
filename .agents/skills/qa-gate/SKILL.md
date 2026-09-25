@@ -19,7 +19,7 @@ Validate the assembled feature against the promises in its spec by exercising th
 1. **Real user seat.** Enter through the same frontend, API, CLI, data workflow, or documented operational path as the intended actor. Internal helpers and code inspection can diagnose a failure, but cannot prove a user story passes.
 2. **Proof beyond optimistic state.** A pass requires the expected observable, an independent confirmation through a fresh load or another public read path, persistence across refresh/restart when relevant, and captured evidence.
 3. **Resumable evidence.** Create the dated report with every row `pending` before the first check. Update it after each row so an interrupted run resumes from disk instead of repeating completed work.
-4. **One honest verdict.** Every planned row ends as `pass`, `fail`, `blocked`, or `skipped`; the report closes with zero `pending` rows.
+4. **One honest verdict.** The seeded report starts pending. Every planned row ends as `pass`, `fail`, `blocked`, or `skipped`; the report closes with zero `pending` rows. A report that records no QA row never settles the gate.
 5. **Typed blocked causes.** Record a row that is unreachable for a proved
    environmental cause as `blocked (environment: <cause>)` and count it in
    `rows_blocked_environment`; record a row stopped by a finding as `blocked
