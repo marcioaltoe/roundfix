@@ -1562,6 +1562,13 @@ func retainCollectedVerificationFailures(retry verificationAttemptOutcome, initi
 	if retry.UnknownCause != nil {
 		delete(verdicts, retry.UnknownCause.Command)
 	}
+	retryTemporaryCommand := ""
+	retryEndedTemporarily := false
+	if retry.TemporaryFailure != nil && retry.TemporaryFailure.CommandFailure != nil {
+		retryEndedTemporarily = true
+		retryTemporaryCommand = retry.TemporaryFailure.CommandFailure.Command
+		delete(verdicts, retryTemporaryCommand)
+	}
 	commandFailures := retry.CommandFailures
 	if len(commandFailures) == 0 && retry.CommandFailure != nil {
 		commandFailures = []verificationAttemptFailure{{
@@ -1595,6 +1602,9 @@ func retainCollectedVerificationFailures(retry verificationAttemptOutcome, initi
 		}
 	}
 	for _, failure := range commandFailures {
+		if retryEndedTemporarily && failure.CommandFailure != nil && failure.CommandFailure.Command == retryTemporaryCommand {
+			continue
+		}
 		appendFailure(failure)
 	}
 	if len(merged) == 0 {
