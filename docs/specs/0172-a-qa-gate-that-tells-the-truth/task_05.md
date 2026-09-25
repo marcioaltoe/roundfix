@@ -38,6 +38,8 @@ complexity: medium
 - interface: `internal/daemon/task_engine.go`
 - interface: `internal/runevent/stream.go`
 - interface: `internal/cli/events.go`
+- interface: `internal/cli/cli_test.go`
+- interface: `docs/references/coverage-record.json`
 - interface: `docs/user-guide/commands.md`
 - interface: `.agents/skills/roundfix/SKILL.md`
 

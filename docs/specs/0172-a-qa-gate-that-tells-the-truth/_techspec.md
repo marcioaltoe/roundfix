@@ -31,7 +31,8 @@ record it cannot project.
   [_authorization.md](_authorization.md); bounded files:
   `internal/cli/cli_test.go`, `internal/spec/archive_test.go`,
   `.agents/skills/qa-gate/SKILL.md`, `skills/qa-gate/SKILL.md`,
-  `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`. Source:
+  `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`,
+  `docs/references/coverage-record.json`. Source:
   `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`.
 
 ## The pending seed and the hollow report
