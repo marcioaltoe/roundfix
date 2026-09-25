@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0169-override-and-ordinal-follow-ups
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
