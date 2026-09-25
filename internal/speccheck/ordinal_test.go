@@ -107,6 +107,54 @@ func TestSameSpecDuplicateOrdinalIsClaimed(t *testing.T) {
 	})
 }
 
+func TestSameSpecDuplicateBesideAFulfilledClaimIsReportedOnce(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := t.TempDir()
+	specsRoot := filepath.Join(repoRoot, "docs", "specs")
+	const fulfilledClaim = "docs/adr/0042-first-decision.md"
+	writeOrdinalSpecClaims(t, repoRoot, "claiming-spec",
+		fulfilledClaim,
+		"docs/adr/0042-second-decision.md",
+	)
+	writeCitationFixtureFile(t, repoRoot, fulfilledClaim, "# First decision\n")
+
+	result, err := speccheck.CheckStage(specsRoot, repoRoot, "claiming-spec", speccheck.StageTasks)
+	if err != nil {
+		t.Fatalf("CheckStage(StageTasks): %v", err)
+	}
+	findings := findingsWithCode(result, speccheck.CodeOrdinalClaimed)
+	if len(findings) != 1 {
+		t.Fatalf("%s findings = %#v, want one", speccheck.CodeOrdinalClaimed, findings)
+	}
+}
+
+func TestSameSpecDuplicateFixNamesRenumbering(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := t.TempDir()
+	specsRoot := filepath.Join(repoRoot, "docs", "specs")
+	writeOrdinalSpecClaims(t, repoRoot, "claiming-spec",
+		"docs/adr/0042-first-decision.md",
+		"docs/adr/0042-second-decision.md",
+	)
+
+	result, err := speccheck.CheckStage(specsRoot, repoRoot, "claiming-spec", speccheck.StageTasks)
+	if err != nil {
+		t.Fatalf("CheckStage(StageTasks): %v", err)
+	}
+	findings := findingsWithCode(result, speccheck.CodeOrdinalClaimed)
+	if len(findings) != 1 {
+		t.Fatalf("%s findings = %#v, want one", speccheck.CodeOrdinalClaimed, findings)
+	}
+	if summary := findings[0].Summary; !strings.Contains(summary, "is claimed by both") {
+		t.Errorf("summary = %q, want same-Spec duplicate message", summary)
+	}
+	if fix := findings[0].Fix; !strings.Contains(fix, "Renumber one Task's `creates:` path") {
+		t.Errorf("fix = %q, want renumbering instruction", fix)
+	}
+}
+
 func TestFulfilledOrdinalClaimIsNotBlamedForALaterClaim(t *testing.T) {
 	t.Parallel()
 
