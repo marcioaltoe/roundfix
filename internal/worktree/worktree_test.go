@@ -163,6 +163,226 @@ func TestCreateRunsBootstrapAfterCopyInRunWorktreeRoot(t *testing.T) {
 	}
 }
 
+func TestCleanupKeepsARegisteredItemWorktreeOnAnotherBranch(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	repoDir := initWorktreeRepo(t)
+	mustWriteWorktreeTest(t, filepath.Join(repoDir, "tracked.txt"), "base\n")
+	gitWorktreeTest(t, repoDir, "add", "tracked.txt")
+	gitWorktreeTest(t, repoDir, "commit", "-m", "initial")
+	headSHA := strings.TrimSpace(gitWorktreeTest(t, repoDir, "rev-parse", "HEAD"))
+	ref, err := ItemRefFor(
+		repoDir,
+		filepath.Join(homeDir, ".roundfix", "worktrees"),
+		"roundfix/deliver-other-branch",
+	)
+	if err != nil {
+		t.Fatalf("derive item Worktree ref: %v", err)
+	}
+	if err := CreateItem(ctx, ref, ItemCreateOptions{HeadSHA: headSHA}); err != nil {
+		t.Fatalf("create item Worktree: %v", err)
+	}
+	gitWorktreeTest(t, ref.Path, "switch", "-c", "user-work")
+	uncommittedPath := filepath.Join(ref.Path, "uncommitted.txt")
+	mustWriteWorktreeTest(t, uncommittedPath, "keep me\n")
+
+	err = CleanupItem(ctx, ref)
+
+	if err == nil || !strings.Contains(err.Error(), "registered branch") {
+		t.Fatalf("cleanup registered item Worktree error = %v, want branch-mismatch refusal", err)
+	}
+	if got := mustReadWorktreeTest(t, uncommittedPath); got != "keep me\n" {
+		t.Fatalf("uncommitted item file = %q, want preserved content", got)
+	}
+	if registered := gitWorktreeTest(t, repoDir, "worktree", "list", "--porcelain"); !strings.Contains(registered, ref.Path) {
+		t.Fatalf("registered worktrees = %q, want preserved path %q", registered, ref.Path)
+	}
+}
+
+func TestCleanupKeepsADetachedItemWorktree(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	repoDir := initWorktreeRepo(t)
+	mustWriteWorktreeTest(t, filepath.Join(repoDir, "tracked.txt"), "base\n")
+	gitWorktreeTest(t, repoDir, "add", "tracked.txt")
+	gitWorktreeTest(t, repoDir, "commit", "-m", "initial")
+	headSHA := strings.TrimSpace(gitWorktreeTest(t, repoDir, "rev-parse", "HEAD"))
+	ref, err := ItemRefFor(
+		repoDir,
+		filepath.Join(homeDir, ".roundfix", "worktrees"),
+		"roundfix/deliver-detached",
+	)
+	if err != nil {
+		t.Fatalf("derive item Worktree ref: %v", err)
+	}
+	if err := CreateItem(ctx, ref, ItemCreateOptions{HeadSHA: headSHA}); err != nil {
+		t.Fatalf("create item Worktree: %v", err)
+	}
+	gitWorktreeTest(t, ref.Path, "switch", "--detach")
+	uncommittedPath := filepath.Join(ref.Path, "uncommitted.txt")
+	mustWriteWorktreeTest(t, uncommittedPath, "keep me detached\n")
+
+	err = CleanupItem(ctx, ref)
+
+	if err == nil || !strings.Contains(err.Error(), "detached") {
+		t.Fatalf("cleanup detached item Worktree error = %v, want detached-registration refusal", err)
+	}
+	if got := mustReadWorktreeTest(t, uncommittedPath); got != "keep me detached\n" {
+		t.Fatalf("detached item file = %q, want preserved content", got)
+	}
+	if registered := gitWorktreeTest(t, repoDir, "worktree", "list", "--porcelain"); !strings.Contains(registered, ref.Path) {
+		t.Fatalf("registered worktrees = %q, want preserved path %q", registered, ref.Path)
+	}
+}
+
+func TestCleanupRecoversAHalfRemovedItemWorktree(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	repoDir := initWorktreeRepo(t)
+	mustWriteWorktreeTest(t, filepath.Join(repoDir, "tracked.txt"), "base\n")
+	gitWorktreeTest(t, repoDir, "add", "tracked.txt")
+	gitWorktreeTest(t, repoDir, "commit", "-m", "initial")
+	headSHA := strings.TrimSpace(gitWorktreeTest(t, repoDir, "rev-parse", "HEAD"))
+	ref, err := ItemRefFor(
+		repoDir,
+		filepath.Join(homeDir, ".roundfix", "worktrees"),
+		"roundfix/deliver-half-removed",
+	)
+	if err != nil {
+		t.Fatalf("derive item Worktree ref: %v", err)
+	}
+	if err := CreateItem(ctx, ref, ItemCreateOptions{HeadSHA: headSHA}); err != nil {
+		t.Fatalf("create item Worktree: %v", err)
+	}
+
+	readOnlyDir := filepath.Join(ref.Path, "read-only")
+	mustMkdirWorktreeTest(t, readOnlyDir)
+	mustWriteWorktreeTest(t, filepath.Join(readOnlyDir, "bootstrap-output.txt"), "kept after partial removal\n")
+	if err := os.Chmod(readOnlyDir, 0o500); err != nil {
+		t.Fatalf("make item Worktree directory read-only: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chmod(readOnlyDir, 0o700)
+	})
+
+	// Reproduce a half-finished removal deterministically: Git drops the
+	// worktree's admin directory (its registration) while the item directory,
+	// its .git pointer and a read-only subdirectory stay on disk. Relying on a
+	// failing `git worktree remove` is not portable: some Git versions delete
+	// the .git pointer before failing.
+	adminMarker := strings.TrimSpace(mustReadWorktreeTest(t, filepath.Join(ref.Path, ".git")))
+	adminDir := strings.TrimSpace(strings.TrimPrefix(adminMarker, "gitdir:"))
+	if err := os.RemoveAll(adminDir); err != nil {
+		t.Fatalf("remove item Worktree admin directory %q: %v", adminDir, err)
+	}
+	if _, err := os.Stat(ref.Path); err != nil {
+		t.Fatalf("half-removed item Worktree path = %q: %v", ref.Path, err)
+	}
+	if registered := gitWorktreeTest(t, repoDir, "worktree", "list", "--porcelain"); strings.Contains(registered, ref.Path) {
+		t.Fatalf("half-removed item Worktree remained registered: %s", registered)
+	}
+	marker := strings.TrimSpace(mustReadWorktreeTest(t, filepath.Join(ref.Path, ".git")))
+	commonDir := strings.TrimSpace(gitWorktreeTest(t, repoDir, "rev-parse", "--path-format=absolute", "--git-common-dir"))
+	if !strings.HasPrefix(marker, "gitdir: "+filepath.Join(commonDir, "worktrees")+string(filepath.Separator)) {
+		t.Fatalf("half-removed item Worktree marker = %q, want this repository's worktrees admin directory", marker)
+	}
+	gitDir := strings.TrimSpace(strings.TrimPrefix(marker, "gitdir:"))
+	if _, err := os.Lstat(gitDir); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("half-removed item Worktree admin directory %q still exists: %v", gitDir, err)
+	}
+
+	if err := CleanupItem(ctx, ref); err != nil {
+		t.Fatalf("retry item Worktree cleanup: %v", err)
+	}
+
+	assertPathRemoved(t, ref.Path)
+	assertBranchRemoved(t, repoDir, ref.Branch)
+}
+
+func TestCleanupPreservesAnUnregisteredPathWithoutThisRepositorysMarker(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	repoDir := initWorktreeRepo(t)
+	ref, err := ItemRefFor(
+		repoDir,
+		filepath.Join(t.TempDir(), "worktrees"),
+		"roundfix/deliver-unregistered",
+	)
+	if err != nil {
+		t.Fatalf("derive item Worktree ref: %v", err)
+	}
+	mustMkdirWorktreeTest(t, ref.Path)
+	mustWriteWorktreeTest(t, filepath.Join(ref.Path, ".git"), "gitdir: /tmp/not-this-repository/worktrees/item\n")
+
+	err = CleanupItem(ctx, ref)
+	if err == nil || !strings.Contains(err.Error(), "outside this repository's worktrees admin directory") {
+		t.Fatalf("cleanup unregistered path error = %v, want repository-marker refusal", err)
+	}
+	assertPathExists(t, ref.Path)
+}
+
+func TestCleanupPreservesAnUnregisteredPathWhileItsAdminDirectoryExists(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	location := filepath.Join(t.TempDir(), "worktrees")
+	repoDir := initWorktreeRepo(t)
+	mustWriteWorktreeTest(t, filepath.Join(repoDir, "tracked.txt"), "base\n")
+	gitWorktreeTest(t, repoDir, "add", "tracked.txt")
+	gitWorktreeTest(t, repoDir, "commit", "-m", "initial")
+	headSHA := strings.TrimSpace(gitWorktreeTest(t, repoDir, "rev-parse", "HEAD"))
+	registeredRef, err := ItemRefFor(repoDir, location, "roundfix/deliver-registered-source")
+	if err != nil {
+		t.Fatalf("derive registered item Worktree ref: %v", err)
+	}
+	if err := CreateItem(ctx, registeredRef, ItemCreateOptions{HeadSHA: headSHA}); err != nil {
+		t.Fatalf("create registered item Worktree: %v", err)
+	}
+	marker := mustReadWorktreeTest(t, filepath.Join(registeredRef.Path, ".git"))
+
+	ref, err := ItemRefFor(repoDir, location, "roundfix/deliver-unregistered-target")
+	if err != nil {
+		t.Fatalf("derive unregistered item Worktree ref: %v", err)
+	}
+	mustMkdirWorktreeTest(t, ref.Path)
+	mustWriteWorktreeTest(t, filepath.Join(ref.Path, ".git"), marker)
+	mustWriteWorktreeTest(t, filepath.Join(ref.Path, "valuable.txt"), "keep live-admin path\n")
+
+	err = CleanupItem(ctx, ref)
+
+	if err == nil || !strings.Contains(err.Error(), "still exists") {
+		t.Fatalf("cleanup live-admin item path error = %v, want existing-admin refusal", err)
+	}
+	if got := mustReadWorktreeTest(t, filepath.Join(ref.Path, "valuable.txt")); got != "keep live-admin path\n" {
+		t.Fatalf("live-admin item path content = %q, want preserved content", got)
+	}
+}
+
+func TestCleanupPreservesAPathNotDerivedForTheItem(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	location := filepath.Join(t.TempDir(), "worktrees")
+	repoDir := initWorktreeRepo(t)
+	ref, err := ItemRefFor(repoDir, location, "roundfix/deliver-derived-path")
+	if err != nil {
+		t.Fatalf("derive item Worktree ref: %v", err)
+	}
+	ref.Path = filepath.Join(filepath.Dir(ref.Path), "another-item-path")
+	mustMkdirWorktreeTest(t, ref.Path)
+	mustWriteWorktreeTest(t, filepath.Join(ref.Path, "valuable.txt"), "keep derived-path mismatch\n")
+
+	err = CleanupItem(ctx, ref)
+
+	if err == nil || !strings.Contains(err.Error(), "does not match derived path") {
+		t.Fatalf("cleanup non-derived item path error = %v, want derived-path refusal", err)
+	}
+	if got := mustReadWorktreeTest(t, filepath.Join(ref.Path, "valuable.txt")); got != "keep derived-path mismatch\n" {
+		t.Fatalf("non-derived item path content = %q, want preserved content", got)
+	}
+}
+
 func TestCreateTaskRunsBootstrapAfterCopyInTaskWorktreeRoot(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"maps"
 	"os"
 	"os/exec"
@@ -63,6 +64,22 @@ type TaskCreateOptions struct {
 	Bootstrap       BootstrapSpec
 	BootstrapOutput io.Writer
 	Concurrency     int
+}
+
+// ItemCreateOptions configures a Delivery Queue item's linked worktree.
+type ItemCreateOptions struct {
+	HeadSHA         string
+	CopyList        []string
+	Bootstrap       BootstrapSpec
+	BootstrapOutput io.Writer
+}
+
+// ItemProvisionOptions configures copy and bootstrap for an existing item
+// worktree.
+type ItemProvisionOptions struct {
+	CopyList        []string
+	Bootstrap       BootstrapSpec
+	BootstrapOutput io.Writer
 }
 
 type BootstrapSpec struct {
@@ -142,6 +159,17 @@ type TaskRef struct {
 	UserRoot string
 	BaseSHA  string
 }
+
+// ItemRef identifies one Delivery Queue item's linked worktree.
+type ItemRef struct {
+	Path     string
+	Branch   string
+	UserRoot string
+	location string
+}
+
+// ErrItemBranchMissing reports that an item's recorded branch no longer exists.
+var ErrItemBranchMissing = errors.New("item branch is missing")
 
 type TaskIntegration struct {
 	Mode   string
@@ -1593,6 +1621,317 @@ func Create(ctx context.Context, opts CreateOptions) (Ref, error) {
 	return ref, nil
 }
 
+// ItemRefFor derives one item worktree path from its repository and branch.
+func ItemRefFor(userRoot, location, branch string) (ItemRef, error) {
+	userRoot = filepath.Clean(strings.TrimSpace(userRoot))
+	if userRoot == "." || userRoot == "" {
+		return ItemRef{}, errors.New("derive item Worktree ref: user root is required")
+	}
+	branch = strings.TrimSpace(branch)
+	if branch == "" {
+		return ItemRef{}, errors.New("derive item Worktree ref: branch is required")
+	}
+	if strings.ContainsAny(branch, "\r\n\x00") {
+		return ItemRef{}, errors.New("derive item Worktree ref: branch contains invalid characters")
+	}
+	digest := sha256.Sum256([]byte(branch))
+	segment := sanitizeSlugBase(branch) + "-" + hex.EncodeToString(digest[:])[:8]
+	location = filepath.Clean(strings.TrimSpace(location))
+	path, err := deriveRootPath(location, userRoot, segment)
+	if err != nil {
+		return ItemRef{}, err
+	}
+	return ItemRef{Path: path, Branch: branch, UserRoot: userRoot, location: location}, nil
+}
+
+// CreateItem creates and provisions a linked item worktree from opts.HeadSHA.
+func CreateItem(ctx context.Context, ref ItemRef, opts ItemCreateOptions) error {
+	if err := validateItemRef(ref); err != nil {
+		return err
+	}
+	headSHA := strings.TrimSpace(opts.HeadSHA)
+	if headSHA == "" {
+		return errors.New("create item Worktree: HEAD is required")
+	}
+	if err := os.MkdirAll(filepath.Dir(ref.Path), 0o755); err != nil {
+		return fmt.Errorf("create item Worktree parent %q: %w", filepath.Dir(ref.Path), err)
+	}
+
+	runner := execGitRunner{}
+	if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "add", "--no-track", "-b", ref.Branch, ref.Path, headSHA); err != nil {
+		return fmt.Errorf("create item Worktree: %w", err)
+	}
+	return ProvisionItem(ctx, ref, ItemProvisionOptions{
+		CopyList:        opts.CopyList,
+		Bootstrap:       opts.Bootstrap,
+		BootstrapOutput: opts.BootstrapOutput,
+	})
+}
+
+// ProvisionItem copies configured files and runs bootstrap in an existing
+// item worktree.
+func ProvisionItem(ctx context.Context, ref ItemRef, opts ItemProvisionOptions) error {
+	if err := validateItemRef(ref); err != nil {
+		return err
+	}
+	if err := copyProvisionedFiles(ref.UserRoot, ref.Path, opts.CopyList); err != nil {
+		return err
+	}
+	if err := runBootstrap(ctx, ref.Path, opts.Bootstrap, opts.BootstrapOutput); err != nil {
+		return err
+	}
+	return nil
+}
+
+// UseItem keeps a correctly registered item worktree or recreates a missing
+// worktree from its recorded branch.
+func UseItem(ctx context.Context, ref ItemRef) error {
+	if err := validateItemRef(ref); err != nil {
+		return err
+	}
+	runner := execGitRunner{}
+	worktrees, err := listRegisteredWorktrees(ctx, runner, ref.UserRoot)
+	if err != nil {
+		return fmt.Errorf("use item Worktree: %w", err)
+	}
+	for _, worktree := range worktrees {
+		if !samePath(worktree.Path, ref.Path) {
+			continue
+		}
+		if worktree.Branch != ref.Branch {
+			return fmt.Errorf(
+				"use item Worktree %q: registered branch is %q, expected %q",
+				ref.Path,
+				worktree.Branch,
+				ref.Branch,
+			)
+		}
+		info, statErr := os.Stat(ref.Path)
+		switch {
+		case statErr == nil && info.IsDir():
+			return nil
+		case statErr == nil:
+			return fmt.Errorf("use item Worktree %q: recorded path is not a directory", ref.Path)
+		case !errors.Is(statErr, os.ErrNotExist):
+			return fmt.Errorf("use item Worktree %q: stat recorded path: %w", ref.Path, statErr)
+		}
+		if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "prune"); err != nil {
+			return fmt.Errorf("use item Worktree %q: prune missing registration: %w", ref.Path, err)
+		}
+		break
+	}
+	if info, err := os.Lstat(ref.Path); err == nil {
+		return fmt.Errorf("use item Worktree %q: unregistered path exists with mode %s", ref.Path, info.Mode())
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("use item Worktree %q: inspect recorded path: %w", ref.Path, err)
+	}
+	branchExists, err := localBranchExists(ctx, runner, ref.UserRoot, ref.Branch)
+	if err != nil {
+		return fmt.Errorf("use item Worktree: inspect branch %q: %w", ref.Branch, err)
+	}
+	if !branchExists {
+		return ErrItemBranchMissing
+	}
+	if err := os.MkdirAll(filepath.Dir(ref.Path), 0o755); err != nil {
+		return fmt.Errorf("use item Worktree: create parent %q: %w", filepath.Dir(ref.Path), err)
+	}
+	if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "add", ref.Path, ref.Branch); err != nil {
+		return fmt.Errorf("use item Worktree: recreate %q from branch %q: %w", ref.Path, ref.Branch, err)
+	}
+	return nil
+}
+
+// CleanupItem removes a merged item's worktree and local branch. Repeating the
+// cleanup after either surface is already absent is safe.
+func CleanupItem(ctx context.Context, ref ItemRef) error {
+	if err := validateItemRef(ref); err != nil {
+		return err
+	}
+	expected, err := ItemRefFor(ref.UserRoot, ref.location, ref.Branch)
+	if err != nil {
+		return fmt.Errorf("clean up item Worktree: derive configured path: %w", err)
+	}
+	if ref.Path != expected.Path {
+		return fmt.Errorf("clean up item Worktree: recorded path %q does not match derived path %q", ref.Path, expected.Path)
+	}
+	runner := execGitRunner{}
+	worktrees, err := listRegisteredWorktrees(ctx, runner, ref.UserRoot)
+	if err != nil {
+		return fmt.Errorf("clean up item Worktree: %w", err)
+	}
+	registeredPath := registeredBranchPath(worktrees, ref.Branch)
+	if registeredPath != "" && !samePath(registeredPath, ref.Path) {
+		return fmt.Errorf(
+			"clean up item Worktree: branch %q is checked out at %q, expected %q",
+			ref.Branch,
+			registeredPath,
+			ref.Path,
+		)
+	}
+	registered, pathIsRegistered := registeredWorktreeAtPath(worktrees, ref.Path)
+	if pathIsRegistered && registered.Branch != ref.Branch {
+		if registered.Branch == "" {
+			return fmt.Errorf("clean up item Worktree %q: path is still registered with detached HEAD", ref.Path)
+		}
+		return fmt.Errorf(
+			"clean up item Worktree %q: registered branch is %q, expected %q",
+			ref.Path,
+			registered.Branch,
+			ref.Branch,
+		)
+	}
+	if pathIsRegistered {
+		if _, err := os.Stat(ref.Path); errors.Is(err, os.ErrNotExist) {
+			if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "prune"); err != nil {
+				return fmt.Errorf("clean up item Worktree %q: prune missing registration: %w", ref.Path, err)
+			}
+		} else if err != nil {
+			return fmt.Errorf("clean up item Worktree %q: stat recorded path: %w", ref.Path, err)
+		} else if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "remove", "--force", ref.Path); err != nil {
+			return fmt.Errorf("clean up item Worktree %q: %w", ref.Path, err)
+		}
+	} else if _, err := os.Lstat(ref.Path); err == nil {
+		if err := removeUnregisteredItemWorktree(ctx, runner, ref); err != nil {
+			return fmt.Errorf("clean up item Worktree %q: %w", ref.Path, err)
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("clean up item Worktree %q: inspect recorded path: %w", ref.Path, err)
+	}
+	return deleteItemBranch(ctx, runner, ref.UserRoot, ref.Branch)
+}
+
+func removeUnregisteredItemWorktree(ctx context.Context, runner gitRunner, ref ItemRef) error {
+	if !filepath.IsAbs(ref.Path) || filepath.Clean(ref.Path) != ref.Path {
+		return errors.New("unregistered path is not a clean absolute path")
+	}
+	info, err := os.Lstat(ref.Path)
+	if err != nil {
+		return fmt.Errorf("stat unregistered path: %w", err)
+	}
+	if !info.IsDir() {
+		return errors.New("unregistered path is not a directory")
+	}
+
+	markerPath := filepath.Join(ref.Path, ".git")
+	markerInfo, err := os.Lstat(markerPath)
+	if err != nil {
+		return fmt.Errorf("inspect Git directory pointer: %w", err)
+	}
+	if !markerInfo.Mode().IsRegular() {
+		return errors.New("Git directory pointer is not a regular file")
+	}
+	marker, err := os.ReadFile(markerPath)
+	if err != nil {
+		return fmt.Errorf("read Git directory pointer: %w", err)
+	}
+	const gitDirPrefix = "gitdir:"
+	gitDir := strings.TrimSpace(string(marker))
+	if !strings.HasPrefix(gitDir, gitDirPrefix) {
+		return errors.New("Git directory pointer has invalid content")
+	}
+	gitDir = strings.TrimSpace(strings.TrimPrefix(gitDir, gitDirPrefix))
+	if gitDir == "" || strings.ContainsAny(gitDir, "\x00\r\n") {
+		return errors.New("Git directory pointer has an invalid path")
+	}
+	if !filepath.IsAbs(gitDir) {
+		gitDir = filepath.Join(filepath.Dir(markerPath), gitDir)
+	}
+	gitDir = filepath.Clean(gitDir)
+
+	commonDirOutput, err := runner.Run(
+		ctx,
+		ref.UserRoot,
+		"rev-parse",
+		"--path-format=absolute",
+		"--git-common-dir",
+	)
+	if err != nil {
+		return fmt.Errorf("resolve repository Git directory: %w", err)
+	}
+	commonDir := strings.TrimSpace(commonDirOutput)
+	if commonDir == "" || strings.ContainsAny(commonDir, "\x00\r\n") || !filepath.IsAbs(commonDir) {
+		return fmt.Errorf("repository Git directory is invalid: %q", commonDir)
+	}
+	adminRoot := filepath.Join(filepath.Clean(commonDir), "worktrees")
+	if !samePath(filepath.Dir(gitDir), adminRoot) {
+		return fmt.Errorf("Git directory pointer %q is outside this repository's worktrees admin directory", gitDir)
+	}
+	if _, err := os.Lstat(gitDir); err == nil {
+		return fmt.Errorf("Git directory pointer %q still exists", gitDir)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("inspect Git administration directory %q: %w", gitDir, err)
+	}
+
+	if err := makeTreeOwnerWritable(ref.Path); err != nil {
+		return fmt.Errorf("make unregistered item Worktree writable: %w", err)
+	}
+	if err := os.RemoveAll(ref.Path); err != nil {
+		return fmt.Errorf("remove unregistered item Worktree: %w", err)
+	}
+	return nil
+}
+
+func makeTreeOwnerWritable(root string) error {
+	return filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if entry.Type()&os.ModeSymlink != 0 {
+			return nil
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		mode := info.Mode().Perm()
+		switch {
+		case entry.IsDir():
+			mode |= 0o700
+		case entry.Type().IsRegular():
+			mode |= 0o600
+		default:
+			return nil
+		}
+		return os.Chmod(path, mode)
+	})
+}
+
+// CleanupItemBranch deletes an item branch only when no worktree has it
+// checked out. It is used for migrated items that predate recorded worktrees.
+func CleanupItemBranch(ctx context.Context, userRoot, branch string) error {
+	userRoot = strings.TrimSpace(userRoot)
+	branch = strings.TrimSpace(branch)
+	if userRoot == "" {
+		return errors.New("clean up item branch: user root is required")
+	}
+	if branch == "" {
+		return errors.New("clean up item branch: branch is required")
+	}
+	runner := execGitRunner{}
+	worktrees, err := listRegisteredWorktrees(ctx, runner, userRoot)
+	if err != nil {
+		return fmt.Errorf("clean up item branch: %w", err)
+	}
+	if registeredBranchPath(worktrees, branch) != "" {
+		return nil
+	}
+	return deleteItemBranch(ctx, runner, userRoot, branch)
+}
+
+func deleteItemBranch(ctx context.Context, runner gitRunner, userRoot, branch string) error {
+	branchExists, err := localBranchExists(ctx, runner, userRoot, branch)
+	if err != nil {
+		return fmt.Errorf("clean up item branch %q: inspect existence: %w", branch, err)
+	}
+	if !branchExists {
+		return nil
+	}
+	if _, err := runner.Run(ctx, userRoot, "branch", "-D", branch); err != nil {
+		return fmt.Errorf("clean up item branch %q: %w", branch, err)
+	}
+	return nil
+}
+
 func CreateTask(ctx context.Context, run Ref, taskID string, copyList []string) (TaskRef, error) {
 	return CreateTaskWithOptions(ctx, run, taskID, TaskCreateOptions{CopyList: copyList, Concurrency: 1})
 }
@@ -2270,6 +2609,15 @@ func registeredBranchPath(worktrees []registeredWorktree, branch string) string 
 	return ""
 }
 
+func registeredWorktreeAtPath(worktrees []registeredWorktree, path string) (registeredWorktree, bool) {
+	for _, worktree := range worktrees {
+		if samePath(worktree.Path, path) {
+			return worktree, true
+		}
+	}
+	return registeredWorktree{}, false
+}
+
 func validLocalBranch(ctx context.Context, runner gitRunner, gitRoot, branch string) bool {
 	if branch == "" || strings.TrimSpace(branch) != branch || strings.HasPrefix(branch, "-") {
 		return false
@@ -2433,6 +2781,19 @@ func validateTaskRef(ref TaskRef) error {
 	}
 	if strings.TrimSpace(ref.UserRoot) == "" {
 		return errors.New("Task Worktree ref: user root is required")
+	}
+	return nil
+}
+
+func validateItemRef(ref ItemRef) error {
+	if strings.TrimSpace(ref.Path) == "" {
+		return errors.New("item Worktree ref: path is required")
+	}
+	if strings.TrimSpace(ref.Branch) == "" {
+		return errors.New("item Worktree ref: branch is required")
+	}
+	if strings.TrimSpace(ref.UserRoot) == "" {
+		return errors.New("item Worktree ref: user root is required")
 	}
 	return nil
 }

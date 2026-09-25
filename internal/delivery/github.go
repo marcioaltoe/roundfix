@@ -17,6 +17,7 @@ const pullRequestJSONFields = "number,url,state,headRefName,headRefOid,mergedAt,
 // delivery engine. Implementations must observe remote state before retrying
 // create or merge operations.
 type PullRequestBoundary interface {
+	WithWorkDir(workDir string) PullRequestBoundary
 	RemoteBranchHead(ctx context.Context, remote, branch string) (RemoteHead, bool, error)
 	PushBranch(ctx context.Context, remote, branch, head string) (RemoteHead, error)
 	FindOrCreatePullRequest(ctx context.Context, req PullRequestRequest) (PullRequestResult, error)
@@ -107,6 +108,11 @@ func NewGitHubCLI(workDir string) GitHubCLI {
 		WorkDir: workDir,
 		Runner:  execCommandRunner{},
 	}
+}
+
+func (client GitHubCLI) WithWorkDir(workDir string) PullRequestBoundary {
+	client.WorkDir = strings.TrimSpace(workDir)
+	return client
 }
 
 func (client GitHubCLI) RemoteBranchHead(ctx context.Context, remote, branch string) (RemoteHead, bool, error) {

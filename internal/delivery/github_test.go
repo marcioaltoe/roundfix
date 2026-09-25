@@ -449,6 +449,10 @@ type fakePullRequestBoundary struct {
 	mergePullRequest        func(context.Context, string, string) (MergeResult, error)
 }
 
+func (fake *fakePullRequestBoundary) WithWorkDir(string) PullRequestBoundary {
+	return fake
+}
+
 var _ PullRequestBoundary = (*fakePullRequestBoundary)(nil)
 
 func (fake *fakePullRequestBoundary) RemoteBranchHead(ctx context.Context, remote, branch string) (RemoteHead, bool, error) {

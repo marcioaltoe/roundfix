@@ -154,48 +154,160 @@ func TestCreateDeliveryQueueReplacesOnlyATerminalUnownedQueue(t *testing.T) {
 	}
 }
 
-func TestRecordDeliveryQueueItemBranchKeepsTheFirstBranch(t *testing.T) {
+func TestDeliveryItemRecordsItsWorktreeWithItsBranch(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
-	const gitRoot = "/tmp/record-item-branch"
-	if _, err := runStore.CreateDeliveryQueue(ctx, gitRoot, []string{"0161-delivery"}); err != nil {
+	const gitRoot = "/tmp/record-item-worktree"
+	if _, err := runStore.CreateDeliveryQueue(ctx, gitRoot, []string{"0168-delivery"}); err != nil {
 		t.Fatalf("create Delivery Queue: %v", err)
 	}
 
-	first, err := runStore.RecordDeliveryQueueItemBranch(
+	if _, _, _, err := runStore.RecordDeliveryQueueItemWorktree(
 		ctx,
 		gitRoot,
-		"0161-delivery",
-		"roundfix/deliver-0161-delivery-first",
-		"main",
-	)
-	if err != nil {
-		t.Fatalf("record first item branch: %v", err)
+		"0168-delivery",
+		"roundfix/deliver-0168-delivery-first",
+		"",
+	); err == nil {
+		t.Fatal("record item branch without a worktree succeeded")
 	}
-	second, err := runStore.RecordDeliveryQueueItemBranch(
+
+	firstBranch, firstWorktree, firstProvisioned, err := runStore.RecordDeliveryQueueItemWorktree(
 		ctx,
 		gitRoot,
-		"0161-delivery",
-		"roundfix/deliver-0161-delivery-second",
-		"other-starting-branch",
+		"0168-delivery",
+		"roundfix/deliver-0168-delivery-first",
+		"/tmp/worktrees/0168-delivery-first",
 	)
 	if err != nil {
-		t.Fatalf("record second item branch: %v", err)
+		t.Fatalf("record first item branch and worktree: %v", err)
 	}
-	if first != "roundfix/deliver-0161-delivery-first" || second != first {
-		t.Fatalf("recorded item branches = %q then %q, want first branch retained", first, second)
+	if firstProvisioned {
+		t.Fatal("newly recorded item worktree is already provisioned")
+	}
+	if err := runStore.SetDeliveryQueueItemWorktreeProvisioned(ctx, gitRoot, "0168-delivery", true); err != nil {
+		t.Fatalf("record item worktree provisioning: %v", err)
+	}
+	secondBranch, secondWorktree, secondProvisioned, err := runStore.RecordDeliveryQueueItemWorktree(
+		ctx,
+		gitRoot,
+		"0168-delivery",
+		"roundfix/deliver-0168-delivery-second",
+		"/tmp/worktrees/0168-delivery-second",
+	)
+	if err != nil {
+		t.Fatalf("record second item branch and worktree: %v", err)
+	}
+	if firstBranch != "roundfix/deliver-0168-delivery-first" || secondBranch != firstBranch {
+		t.Fatalf("recorded item branches = %q then %q, want first branch retained", firstBranch, secondBranch)
+	}
+	if firstWorktree != "/tmp/worktrees/0168-delivery-first" || secondWorktree != firstWorktree {
+		t.Fatalf("recorded item worktrees = %q then %q, want first worktree retained", firstWorktree, secondWorktree)
+	}
+	if !secondProvisioned {
+		t.Fatal("recorded item worktree lost its provisioning state")
 	}
 	queue, found, err := runStore.DeliveryQueue(ctx, gitRoot)
 	if err != nil || !found {
 		t.Fatalf("read Delivery Queue: found=%v err=%v", found, err)
 	}
-	if got := queue.Items[0].Branch; got != first {
-		t.Fatalf("persisted item branch = %q, want %q", got, first)
+	if got := queue.Items[0].Branch; got != firstBranch {
+		t.Fatalf("persisted item branch = %q, want %q", got, firstBranch)
 	}
-	if got := queue.Items[0].StartingBranch; got != "main" {
-		t.Fatalf("persisted starting branch = %q, want main", got)
+	if got := queue.Items[0].Worktree; got != firstWorktree {
+		t.Fatalf("persisted item worktree = %q, want %q", got, firstWorktree)
+	}
+	if !queue.Items[0].WorktreeProvisioned {
+		t.Fatal("persisted item worktree is not provisioned")
+	}
+}
+
+func TestOpenMigratesDeliveryQueueAddingItemWorktree(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	freshHomeDir := t.TempDir()
+	fresh := openTestStore(t, ctx, freshHomeDir)
+	freshSchema := readRunDatabaseSchema(t, fresh)
+	closeStore(t, fresh)
+
+	homeDir := t.TempDir()
+	runStore := openTestStore(t, ctx, homeDir)
+	queue, err := runStore.CreateDeliveryQueue(ctx, "/tmp/existing-delivery-worktree", []string{"existing-spec"})
+	if err != nil {
+		t.Fatalf("create existing Delivery Queue: %v", err)
+	}
+	item := queue.Items[0]
+	item.Branch = "roundfix/deliver-existing-spec"
+	item.Stage = DeliveryStageParked
+	if err := runStore.UpdateDeliveryQueueItem(ctx, queue.GitRoot, item); err != nil {
+		t.Fatalf("update existing Delivery Queue item: %v", err)
+	}
+	closeStore(t, runStore)
+	downgradeDeliveryWorktreeSchemaFixture(t, ctx, homeDir)
+
+	reopened := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, reopened)
+	persisted, found, err := reopened.DeliveryQueue(ctx, queue.GitRoot)
+	if err != nil || !found {
+		t.Fatalf("read migrated Delivery Queue: found=%v err=%v", found, err)
+	}
+	if len(persisted.Items) != 1 || persisted.Items[0].Branch != item.Branch || persisted.Items[0].Stage != item.Stage {
+		t.Fatalf("migrated Delivery Queue = %+v", persisted)
+	}
+	if persisted.Items[0].Worktree != "" {
+		t.Fatalf("migrated Delivery Queue item worktree = %q, want empty", persisted.Items[0].Worktree)
+	}
+	if persisted.Items[0].WorktreeProvisioned {
+		t.Fatal("migrated Delivery Queue item worktree is already provisioned")
+	}
+	if migratedSchema := readRunDatabaseSchema(t, reopened); migratedSchema != freshSchema {
+		t.Fatalf("migrated schema differs from fresh schema:\n--- migrated ---\n%s\n--- fresh ---\n%s", migratedSchema, freshSchema)
+	}
+}
+
+func TestOpenMigratesDeliveryQueueAddingWorktreeProvisioning(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	freshHomeDir := t.TempDir()
+	fresh := openTestStore(t, ctx, freshHomeDir)
+	freshSchema := readRunDatabaseSchema(t, fresh)
+	closeStore(t, fresh)
+
+	homeDir := t.TempDir()
+	runStore := openTestStore(t, ctx, homeDir)
+	queue, err := runStore.CreateDeliveryQueue(ctx, "/tmp/existing-delivery-provisioning", []string{"existing-spec"})
+	if err != nil {
+		t.Fatalf("create existing Delivery Queue: %v", err)
+	}
+	branch, worktree, _, err := runStore.RecordDeliveryQueueItemWorktree(
+		ctx,
+		queue.GitRoot,
+		queue.Items[0].SpecSlug,
+		"roundfix/deliver-existing-spec",
+		"/tmp/worktrees/existing-spec",
+	)
+	if err != nil {
+		t.Fatalf("record existing item worktree: %v", err)
+	}
+	closeStore(t, runStore)
+	downgradeDeliveryWorktreeProvisioningSchemaFixture(t, ctx, homeDir)
+
+	reopened := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, reopened)
+	persisted, found, err := reopened.DeliveryQueue(ctx, queue.GitRoot)
+	if err != nil || !found {
+		t.Fatalf("read migrated Delivery Queue: found=%v err=%v", found, err)
+	}
+	if len(persisted.Items) != 1 || persisted.Items[0].Branch != branch || persisted.Items[0].Worktree != worktree {
+		t.Fatalf("migrated Delivery Queue = %+v", persisted)
+	}
+	if persisted.Items[0].WorktreeProvisioned {
+		t.Fatal("schema version 19 item migrated as provisioned")
+	}
+	if migratedSchema := readRunDatabaseSchema(t, reopened); migratedSchema != freshSchema {
+		t.Fatalf("migrated schema differs from fresh schema:\n--- migrated ---\n%s\n--- fresh ---\n%s", migratedSchema, freshSchema)
 	}
 }
 
@@ -233,9 +345,6 @@ func TestOpenMigratesV14DeliveryQueueAddingOwnerAndItemBranch(t *testing.T) {
 	}
 	if persisted.Items[0].Branch != "" {
 		t.Fatalf("migrated Delivery Queue item branch = %q, want empty", persisted.Items[0].Branch)
-	}
-	if persisted.Items[0].StartingBranch != "" {
-		t.Fatalf("migrated Delivery Queue item starting branch = %q, want empty", persisted.Items[0].StartingBranch)
 	}
 	if persisted.OwnerPID != 0 || persisted.OwnerIdentity != "" {
 		t.Fatalf("migrated Delivery Queue owner = pid:%d identity:%q", persisted.OwnerPID, persisted.OwnerIdentity)
@@ -323,6 +432,51 @@ func downgradeDeliveryOwnerSchemaFixture(t *testing.T, ctx context.Context, home
 	} {
 		if _, err := db.ExecContext(ctx, statement); err != nil {
 			t.Fatalf("build schema 14 Delivery Queue owner fixture: %v", err)
+		}
+	}
+}
+
+func downgradeDeliveryWorktreeSchemaFixture(t *testing.T, ctx context.Context, homeDir string) {
+	t.Helper()
+	db, err := sql.Open("sqlite", writerDSN(DatabasePath(homeDir)))
+	if err != nil {
+		t.Fatalf("open Delivery Queue worktree migration fixture: %v", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Fatalf("close Delivery Queue worktree migration fixture: %v", err)
+		}
+	}()
+
+	for _, statement := range []string{
+		`ALTER TABLE delivery_queue_items DROP COLUMN worktree_provisioned`,
+		`ALTER TABLE delivery_queue_items DROP COLUMN worktree`,
+		`PRAGMA user_version = 18`,
+	} {
+		if _, err := db.ExecContext(ctx, statement); err != nil {
+			t.Fatalf("build schema 18 Delivery Queue worktree fixture: %v", err)
+		}
+	}
+}
+
+func downgradeDeliveryWorktreeProvisioningSchemaFixture(t *testing.T, ctx context.Context, homeDir string) {
+	t.Helper()
+	db, err := sql.Open("sqlite", writerDSN(DatabasePath(homeDir)))
+	if err != nil {
+		t.Fatalf("open Delivery Queue worktree provisioning migration fixture: %v", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Fatalf("close Delivery Queue worktree provisioning migration fixture: %v", err)
+		}
+	}()
+
+	for _, statement := range []string{
+		`ALTER TABLE delivery_queue_items DROP COLUMN worktree_provisioned`,
+		`PRAGMA user_version = 19`,
+	} {
+		if _, err := db.ExecContext(ctx, statement); err != nil {
+			t.Fatalf("build schema 19 Delivery Queue worktree provisioning fixture: %v", err)
 		}
 	}
 }

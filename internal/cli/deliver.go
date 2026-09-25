@@ -28,7 +28,7 @@ next item.
 
 Commands:
   start   Validate and record a new queue, then start its detached owner
-  status  Print every queued Spec's stage and blocker
+  status  Print every queued Spec's stage, blocker and item worktree
   resume  Start a detached owner for the persisted queue
   stop    Prove and terminate the persisted queue owner
 `
@@ -139,7 +139,11 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 		if blocker == "" {
 			blocker = "-"
 		}
-		fmt.Fprintf(stdout, "%s\t%s\t%s\n", item.SpecSlug, item.Stage, blocker)
+		itemWorktree := item.Worktree
+		if itemWorktree == "" {
+			itemWorktree = "-"
+		}
+		fmt.Fprintf(stdout, "%s\t%s\t%s\t%s\n", item.SpecSlug, item.Stage, blocker, itemWorktree)
 	}
 	return exitOK
 }

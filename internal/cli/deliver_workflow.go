@@ -23,6 +23,7 @@ import (
 	"roundfix/internal/preflight"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
+	runworktree "roundfix/internal/worktree"
 )
 
 type commandDeliveryWorkflow struct {
@@ -51,50 +52,68 @@ func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) 
 	})
 }
 
-func (workflow *commandDeliveryWorkflow) CreateItemBranch(ctx context.Context, gitRoot, specSlug string) (string, error) {
-	state, err := preflight.InspectGit(ctx, gitRoot, workflow.git)
-	if err != nil {
-		return "", fmt.Errorf("inspect checkout before item branch creation: %w", err)
-	}
-	if len(state.Dirty) != 0 {
-		return "", errors.New("create item branch: checkout has uncommitted changes")
-	}
+func (workflow *commandDeliveryWorkflow) CreateItemBranch(ctx context.Context, gitRoot, specSlug string) (string, string, error) {
 	branch, err := newDeliveryBranch(specSlug)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	branch, err = workflow.store.RecordDeliveryQueueItemBranch(ctx, gitRoot, specSlug, branch, state.Branch)
+	ref, err := runworktree.ItemRefFor(gitRoot, workflow.loaded.Config.Worktree.Location, branch)
 	if err != nil {
-		return "", fmt.Errorf("record item branch: %w", err)
+		return "", "", err
 	}
-	if state.Branch == branch {
-		return branch, nil
+	branch, itemWorktree, provisioned, err := workflow.store.RecordDeliveryQueueItemWorktree(ctx, gitRoot, specSlug, branch, ref.Path)
+	if err != nil {
+		return "", "", fmt.Errorf("record item branch and worktree: %w", err)
 	}
+	ref, err = runworktree.ItemRefFor(gitRoot, workflow.loaded.Config.Worktree.Location, branch)
+	if err != nil {
+		return "", "", err
+	}
+	if ref.Path != itemWorktree {
+		return "", "", fmt.Errorf("recorded item worktree %q does not match derived path %q", itemWorktree, ref.Path)
+	}
+
 	exists, err := localItemBranchExists(ctx, workflow.git, gitRoot, branch)
 	if err != nil {
-		return "", fmt.Errorf("inspect item branch %q: %w", branch, err)
+		return "", "", fmt.Errorf("inspect item branch %q: %w", branch, err)
 	}
 	if exists {
-		if _, err := workflow.git.RunGit(ctx, gitRoot, "switch", branch); err != nil {
-			return "", fmt.Errorf("reuse item branch %q: %w", branch, err)
+		if err := workflow.useAndProvisionItem(ctx, gitRoot, specSlug, ref, provisioned); err != nil {
+			return "", "", fmt.Errorf("use recorded item worktree %q: %w", itemWorktree, err)
 		}
-		return branch, nil
+		return branch, itemWorktree, nil
 	}
-	defaultBranch := preflight.DetectDefaultBranch(ctx, gitRoot, state.Branch, workflow.git)
+	if provisioned {
+		if err := workflow.store.SetDeliveryQueueItemWorktreeProvisioned(ctx, gitRoot, specSlug, false); err != nil {
+			return "", "", err
+		}
+	}
+	defaultBranch := preflight.DetectDefaultBranch(ctx, gitRoot, "", workflow.git)
 	if defaultBranch.Source == preflight.DefaultBranchUndetermined {
-		return "", errors.New("create item branch: repository default branch is unknown")
+		return "", "", errors.New("create item branch: repository default branch is unknown")
 	}
 	remote := strings.TrimSpace(workflow.loaded.Config.Watch.PushRemote)
 	if remote == "" {
 		remote = "origin"
 	}
 	if _, err := workflow.git.RunGit(ctx, gitRoot, "fetch", remote, defaultBranch.Name); err != nil {
-		return "", fmt.Errorf("refresh default branch %q: %w", defaultBranch.Name, err)
+		return "", "", fmt.Errorf("refresh default branch %q: %w", defaultBranch.Name, err)
 	}
-	if _, err := workflow.git.RunGit(ctx, gitRoot, "switch", "--no-track", "-c", branch, remote+"/"+defaultBranch.Name); err != nil {
-		return "", fmt.Errorf("create item branch %q: %w", branch, err)
+	if err := runworktree.CreateItem(ctx, ref, runworktree.ItemCreateOptions{
+		HeadSHA:  remote + "/" + defaultBranch.Name,
+		CopyList: workflow.loaded.Config.Worktree.Copy,
+		Bootstrap: runworktree.BootstrapSpec{
+			Command: workflow.loaded.Config.Worktree.Bootstrap,
+			Timeout: workflow.loaded.Config.Worktree.BootstrapTimeout,
+		},
+		BootstrapOutput: os.Stderr,
+	}); err != nil {
+		return "", "", fmt.Errorf("create item branch %q in worktree %q: %w", branch, itemWorktree, err)
 	}
-	return branch, nil
+	if err := workflow.store.SetDeliveryQueueItemWorktreeProvisioned(ctx, gitRoot, specSlug, true); err != nil {
+		return "", "", err
+	}
+	return branch, itemWorktree, nil
 }
 
 func newDeliveryBranch(specSlug string) (string, error) {
@@ -121,80 +140,98 @@ func localItemBranchExists(ctx context.Context, runner preflight.GitRunner, gitR
 	return false, err
 }
 
-func (workflow *commandDeliveryWorkflow) UseItemBranch(ctx context.Context, gitRoot, branch string) error {
+func (workflow *commandDeliveryWorkflow) UseItemBranch(
+	ctx context.Context,
+	gitRoot string,
+	specSlug string,
+	branch string,
+	itemWorktree string,
+	provisioned bool,
+) (string, error) {
+	specSlug = strings.TrimSpace(specSlug)
+	if specSlug == "" {
+		return "", errors.New("use item branch: Spec slug is required")
+	}
 	branch = strings.TrimSpace(branch)
 	if branch == "" {
-		return errors.New("use item branch: branch is required")
+		return "", errors.New("use item branch: branch is required")
 	}
-	state, err := preflight.InspectGit(ctx, gitRoot, workflow.git)
+	itemWorktree = strings.TrimSpace(itemWorktree)
+	if itemWorktree == "" {
+		return "", errors.New("use item branch: worktree is required")
+	}
+	err := workflow.useAndProvisionItem(ctx, gitRoot, specSlug, runworktree.ItemRef{
+		Path:     itemWorktree,
+		Branch:   branch,
+		UserRoot: gitRoot,
+	}, provisioned)
+	if errors.Is(err, runworktree.ErrItemBranchMissing) {
+		return "", delivery.ErrItemWorktreeMissing
+	}
 	if err != nil {
-		return fmt.Errorf("inspect checkout before selecting item branch: %w", err)
+		return "", fmt.Errorf("use item branch: %w", err)
 	}
-	if len(state.Dirty) != 0 {
-		return errors.New("use item branch: checkout has uncommitted changes")
-	}
-	if state.Branch == branch {
-		return nil
-	}
-	if _, err := workflow.git.RunGit(ctx, gitRoot, "switch", branch); err != nil {
-		return fmt.Errorf("switch to item branch %q: %w", branch, err)
-	}
-	return nil
+	return itemWorktree, nil
 }
 
-func (workflow *commandDeliveryWorkflow) ParkItem(ctx context.Context, gitRoot string) error {
-	state, err := preflight.InspectGit(ctx, gitRoot, workflow.git)
-	if err != nil {
-		return fmt.Errorf("inspect checkout before parking item: %w", err)
+func (workflow *commandDeliveryWorkflow) useAndProvisionItem(
+	ctx context.Context,
+	gitRoot string,
+	specSlug string,
+	ref runworktree.ItemRef,
+	provisioned bool,
+) error {
+	if _, err := os.Stat(ref.Path); errors.Is(err, os.ErrNotExist) {
+		if provisioned {
+			if err := workflow.store.SetDeliveryQueueItemWorktreeProvisioned(ctx, gitRoot, specSlug, false); err != nil {
+				return err
+			}
+			provisioned = false
+		}
+	} else if err != nil {
+		return fmt.Errorf("inspect recorded item worktree %q: %w", ref.Path, err)
 	}
-	queue, found, err := workflow.store.DeliveryQueue(ctx, gitRoot)
-	if err != nil {
-		return fmt.Errorf("read Delivery Queue before parking item: %w", err)
+	if err := runworktree.UseItem(ctx, ref); err != nil {
+		return err
 	}
-	if !found {
+	if provisioned {
 		return nil
 	}
-	var active *store.DeliveryQueueItem
-	for index := range queue.Items {
-		item := &queue.Items[index]
-		if item.Stage == store.DeliveryStageMerged || item.Stage == store.DeliveryStageParked {
-			continue
-		}
-		if strings.TrimSpace(item.Branch) == state.Branch && strings.TrimSpace(item.StartingBranch) != "" {
-			active = item
-			break
-		}
+	if err := runworktree.ProvisionItem(ctx, ref, runworktree.ItemProvisionOptions{
+		CopyList: workflow.loaded.Config.Worktree.Copy,
+		Bootstrap: runworktree.BootstrapSpec{
+			Command: workflow.loaded.Config.Worktree.Bootstrap,
+			Timeout: workflow.loaded.Config.Worktree.BootstrapTimeout,
+		},
+		BootstrapOutput: os.Stderr,
+	}); err != nil {
+		return err
 	}
-	if active == nil {
+	return workflow.store.SetDeliveryQueueItemWorktreeProvisioned(ctx, gitRoot, specSlug, true)
+}
+
+func (workflow *commandDeliveryWorkflow) RemoveItemBranch(ctx context.Context, gitRoot, branch, itemWorktree string) error {
+	gitRoot = strings.TrimSpace(gitRoot)
+	branch = strings.TrimSpace(branch)
+	itemWorktree = strings.TrimSpace(itemWorktree)
+	if itemWorktree == "" {
+		if branch == "" {
+			return nil
+		}
+		if err := runworktree.CleanupItemBranch(ctx, gitRoot, branch); err != nil {
+			return fmt.Errorf("remove item branch without recorded worktree: %w", err)
+		}
 		return nil
 	}
-	if _, err := workflow.git.RunGit(ctx, gitRoot, "reset", "--hard", "HEAD"); err != nil {
-		return fmt.Errorf("discard tracked item changes: %w", err)
-	}
-	untracked := make([]string, 0, len(state.Dirty))
-	for _, changed := range state.Dirty {
-		if changed.Status == "??" {
-			untracked = append(untracked, changed.Path)
-		}
-	}
-	if len(untracked) != 0 {
-		arguments := append([]string{"--literal-pathspecs", "clean", "-fd", "--"}, untracked...)
-		if _, err := workflow.git.RunGit(ctx, gitRoot, arguments...); err != nil {
-			return fmt.Errorf("discard untracked item changes: %w", err)
-		}
-	}
-	startingBranch := strings.TrimSpace(active.StartingBranch)
-	if state.Branch != startingBranch {
-		if _, err := workflow.git.RunGit(ctx, gitRoot, "switch", startingBranch); err != nil {
-			return fmt.Errorf("restore starting branch %q: %w", startingBranch, err)
-		}
-	}
-	state, err = preflight.InspectGit(ctx, gitRoot, workflow.git)
+	ref, err := runworktree.ItemRefFor(gitRoot, workflow.loaded.Config.Worktree.Location, branch)
 	if err != nil {
-		return fmt.Errorf("inspect parked checkout: %w", err)
+		return fmt.Errorf("derive item worktree for cleanup: %w", err)
 	}
-	if state.Branch != startingBranch || len(state.Dirty) != 0 {
-		return fmt.Errorf("park item: checkout is branch %q with %d uncommitted change(s), want clean branch %q", state.Branch, len(state.Dirty), startingBranch)
+	if ref.Path != itemWorktree {
+		return fmt.Errorf("recorded item worktree %q does not match derived path %q", itemWorktree, ref.Path)
+	}
+	if err := runworktree.CleanupItem(ctx, ref); err != nil {
+		return fmt.Errorf("remove item worktree and branch: %w", err)
 	}
 	return nil
 }
@@ -204,7 +241,7 @@ func (workflow *commandDeliveryWorkflow) RunSpec(ctx context.Context, gitRoot, s
 	if err != nil {
 		return delivery.RunResult{}, fmt.Errorf("start Implement executor: %w", err)
 	}
-	run, found, err := workflow.latestImplementRun(ctx, gitRoot, specSlug)
+	run, found, err := workflow.latestImplementRun(ctx, workflow.loaded.GitRoot, specSlug)
 	if err != nil {
 		return delivery.RunResult{}, err
 	}
@@ -289,7 +326,7 @@ func (workflow *commandDeliveryWorkflow) Archive(ctx context.Context, gitRoot, s
 		return delivery.ArchiveResult{}, result.failure("roundfix archive")
 	}
 
-	source, destination, err := workflow.archivePaths(specSlug)
+	source, destination, err := workflow.archivePaths(gitRoot, specSlug)
 	if err != nil {
 		return delivery.ArchiveResult{}, err
 	}
@@ -326,7 +363,7 @@ func (workflow *commandDeliveryWorkflow) reconcileArchiveCommit(
 	if parent != reviewedHead {
 		return result, nil
 	}
-	source, destination, err := workflow.archivePaths(specSlug)
+	source, destination, err := workflow.archivePaths(gitRoot, specSlug)
 	if err != nil {
 		return delivery.ArchiveResult{}, err
 	}
@@ -481,20 +518,20 @@ func (workflow *commandDeliveryWorkflow) runReview(ctx context.Context, gitRoot 
 	return record, result, nil
 }
 
-func (workflow *commandDeliveryWorkflow) archivePaths(specSlug string) (string, string, error) {
-	specsRoot, err := roundconfig.ResolveSpecsRoot(workflow.loaded, workflow.loaded.GitRoot)
+func (workflow *commandDeliveryWorkflow) archivePaths(gitRoot, specSlug string) (string, string, error) {
+	specsRoot, err := roundconfig.ResolveSpecsRoot(workflow.loaded, gitRoot)
 	if err != nil {
 		return "", "", err
 	}
-	source, err := filepath.Rel(workflow.loaded.GitRoot, filepath.Join(specsRoot.Path, specSlug))
+	source, err := filepath.Rel(gitRoot, filepath.Join(specsRoot.Path, specSlug))
 	if err != nil {
 		return "", "", fmt.Errorf("resolve active Spec path: %w", err)
 	}
 	destinationRoot := filepath.Join(specsRoot.Path, "_archived")
 	if specsRoot.BuiltInRoot {
-		destinationRoot = filepath.Join(workflow.loaded.GitRoot, filepath.FromSlash(spec.ArchiveDir(spec.ArchiveKindSpec)))
+		destinationRoot = filepath.Join(gitRoot, filepath.FromSlash(spec.ArchiveDir(spec.ArchiveKindSpec)))
 	}
-	destination, err := filepath.Rel(workflow.loaded.GitRoot, filepath.Join(destinationRoot, specSlug))
+	destination, err := filepath.Rel(gitRoot, filepath.Join(destinationRoot, specSlug))
 	if err != nil {
 		return "", "", fmt.Errorf("resolve archived Spec path: %w", err)
 	}
