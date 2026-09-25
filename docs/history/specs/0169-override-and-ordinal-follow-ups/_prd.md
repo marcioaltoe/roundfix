@@ -81,6 +81,14 @@ five minor gaps recorded by its second pre-PR review:
 3. A same-Spec duplicate ordinal is reported at authoring, and the skip is
    listed for a Spec without `_tasks.md`.
 
+## Recorded limits
+
+- The mandatory rule in `docs/agents/docs-layout.md`, generated from the Baseline
+  module `spec-workflow.json`, still describes stamping `qa_override: true` by
+  hand. It is Baseline-owned and outside this Spec's authority; found by the
+  second pre-PR review of 2026-09-25 and carried to Backlog Entry
+  `docs/backlog/2026-09-25-docs-layout-still-describes-hand-stamped-overrides.md`.
+
 ## Decisions
 
 - **Record the waived fact, not a summary.** ADR-0154 asks for a truthful
