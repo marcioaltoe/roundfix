@@ -50,10 +50,27 @@ const (
 	fakeAdapterDirEnv  = "ROUNDFIX_FAKE_ADAPTER_DIR"
 )
 
+const (
+	fakeAdapterProvisionEnv = "ROUNDFIX_FAKE_ADAPTER_PROVISION"
+	fakeAdapterArgv0Env     = "ROUNDFIX_FAKE_ADAPTER_ARGV0"
+	fakeAdapterReexecOutput = "fixture-from-reexecuted-test-binary"
+)
+
+var fakeAdapterBinaryPath string
+
 var packageAdapterLinks map[string]string
 
 func TestMain(m *testing.M) {
 	if code, ok := runFakeAdapterProcess(); ok {
+		os.Exit(code)
+	}
+	resolvedTestBinary, err := filepath.Abs(os.Args[0])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "resolve compiled test binary: %v\n", err)
+		os.Exit(2)
+	}
+	fakeAdapterBinaryPath = resolvedTestBinary
+	if code, ok := runFakeAdapterProvisionProcess(); ok {
 		os.Exit(code)
 	}
 	if os.Getenv(fakeACPXEnv) == "1" {
@@ -66,6 +83,76 @@ func TestMain(m *testing.M) {
 		code = 1
 	}
 	os.Exit(code)
+}
+
+func TestFakeAdapterRunsFromARelativeTestBinaryPath(t *testing.T) {
+	runFakeAdapterProvisionTest(t, false)
+}
+
+func TestFakeAdapterRunsFromAnAbsoluteTestBinaryPath(t *testing.T) {
+	runFakeAdapterProvisionTest(t, true)
+}
+
+func runFakeAdapterProvisionTest(t *testing.T, absolute bool) {
+	t.Helper()
+
+	testBinary, err := filepath.Abs(os.Args[0])
+	if err != nil {
+		t.Fatalf("resolve compiled test binary: %v", err)
+	}
+	packageDir := filepath.Dir(testBinary)
+	commandPath := testBinary
+	if !absolute {
+		commandPath = "." + string(os.PathSeparator) + filepath.Base(testBinary)
+	}
+	adapterPath := filepath.Join(t.TempDir(), "fake-adapter")
+	command := &exec.Cmd{
+		Path: testBinary,
+		Args: []string{commandPath},
+		Dir:  packageDir,
+	}
+	command.Env = environmentForTest(
+		fakeAdapterProvisionEnv+"="+adapterPath,
+		fakeAdapterArgv0Env+"="+strconv.FormatBool(absolute),
+	)
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatalf("run child through %q: %v\n%s", commandPath, err, output)
+	}
+	if got := strings.TrimSpace(string(output)); got != fakeAdapterReexecOutput {
+		t.Fatalf("adapter output = %q, want %q", got, fakeAdapterReexecOutput)
+	}
+}
+
+func runFakeAdapterProvisionProcess() (int, bool) {
+	adapterPath := os.Getenv(fakeAdapterProvisionEnv)
+	if adapterPath == "" {
+		return 0, false
+	}
+	wantAbsolute, err := strconv.ParseBool(os.Getenv(fakeAdapterArgv0Env))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "parse expected argv[0] form: %v\n", err)
+		return 2, true
+	}
+	if gotAbsolute := filepath.IsAbs(os.Args[0]); gotAbsolute != wantAbsolute {
+		fmt.Fprintf(os.Stderr, "argv[0] absolute = %t, want %t: %q\n", gotAbsolute, wantAbsolute, os.Args[0])
+		return 2, true
+	}
+	output := fakeAdapterReexecOutput
+	if err := provisionFakeAdapter(adapterPath, fakeAdapterFixture{Output: &output}); err != nil {
+		fmt.Fprintf(os.Stderr, "provision fake adapter: %v\n", err)
+		return 2, true
+	}
+	probe, err := exec.Command(adapterPath, "--version").CombinedOutput()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "run fake adapter: %v: %s\n", err, probe)
+		return 2, true
+	}
+	if _, err := os.Stdout.Write(probe); err != nil {
+		fmt.Fprintf(os.Stderr, "write fake adapter output: %v\n", err)
+		return 2, true
+	}
+	return 0, true
 }
 
 func TestFixtureBinarySurvivesConcurrentExec(t *testing.T) {
@@ -3934,7 +4021,7 @@ type fakeAdapterFixture struct {
 }
 
 func provisionFakeAdapter(path string, fixture fakeAdapterFixture) error {
-	if err := os.Symlink(os.Args[0], path); err != nil {
+	if err := os.Symlink(fakeAdapterBinaryPath, path); err != nil {
 		return fmt.Errorf("symlink compiled test binary: %w", err)
 	}
 	if err := writeFakeAdapterFixture(path, fixture); err != nil {

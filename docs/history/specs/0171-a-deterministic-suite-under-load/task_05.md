@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0171-a-deterministic-suite-under-load
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -61,3 +61,42 @@ cannot execute.
 
 - [_prd.md](_prd.md) — Core Feature 5; Success Metric 5
 - [_techspec.md](_techspec.md) — The adapter fixture
+
+## Result
+
+Implementation:
+
+- `TestMain` resolves the compiled test binary's `os.Args[0]` to an absolute
+  path before any fake adapter is provisioned. `provisionFakeAdapter` uses that
+  captured path for its symlink target.
+- The fake adapter remains the compiled test binary with behavior stored in
+  the non-executable `.fixture.json` sidecar. `provisionPackageAdapterLinks`
+  remains unchanged, and no production file changed.
+- `TestFakeAdapterRunsFromARelativeTestBinaryPath` and
+  `TestFakeAdapterRunsFromAnAbsoluteTestBinaryPath` re-execute the compiled
+  package test binary in a child, assert the child's actual `argv[0]` form,
+  provision an adapter in a separate temporary directory, execute it, and
+  observe the configured output.
+
+Focused checks:
+
+- Before the repair,
+  `rtk env GOCACHE=/tmp/roundfix-task05-gocache go test -count=1 -run '^TestFakeAdapterRunsFromARelativeTestBinaryPath$' ./internal/agent`
+  failed because the adapter symlink stored `./agent.test` and could not execute
+  it from the adapter directory (`no such file or directory`).
+- After the repair,
+  `rtk env GOCACHE=/tmp/roundfix-task05-gocache go test -count=1 -run '^(TestFakeAdapterRunsFromA(Relative|Absolute)TestBinaryPath|TestFixtureBinarySurvivesConcurrentExec)$' ./internal/agent`
+  exited 0 (`ok roundfix/internal/agent`), covering both new path cases and the
+  existing compiled-binary concurrency fixture.
+- The authored `## Verification` command was not run; the Daemon owns it.
+
+Acceptance evidence:
+
+- Relative path: `TestFakeAdapterRunsFromARelativeTestBinaryPath` passed after
+  its child received relative `argv[0]`, provisioned the adapter, and observed
+  `fixture-from-reexecuted-test-binary`.
+- Absolute path: `TestFakeAdapterRunsFromAnAbsoluteTestBinaryPath` passed after
+  its child received absolute `argv[0]`, provisioned the adapter, and observed
+  the same configured output.
+
+Follow-ups: none.

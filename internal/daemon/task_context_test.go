@@ -346,12 +346,12 @@ func TestTaskCycleParallelTaskPromptUsesTaskWorktreeContextBase(t *testing.T) {
 		}{result: result, err: err}
 	}()
 
-	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_03")
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2, resultCh), "task_01", "task_03")
 	runner.releaseTask("task_01")
 	if got := waitIntegratedTask(t, taskWorktrees); got != "task_01" {
 		t.Fatalf("expected task_01 integrated before task_02, got %s", got)
 	}
-	if got := strings.Join(waitSchedulerStarts(t, runner, 1), "|"); got != "task_02" {
+	if got := strings.Join(waitSchedulerStarts(t, runner, 1, resultCh), "|"); got != "task_02" {
 		t.Fatalf("expected task_02 to start after task_01 integration, got %s", got)
 	}
 	runner.releaseTask("task_02")

@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0171-a-deterministic-suite-under-load
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
@@ -36,9 +36,11 @@ settles the Spec on evidence.
    (https://pkg.go.dev/testing#T.Deadline) and that the four failures come from
    the QA reports of the Runs named in the adopted Backlog Entry; when a source
    cannot be obtained, record the row blocked with that reason.
-7. MUST verify that no production file, `internal/cli/cli_test.go`,
-   `docs/references/coverage-record.json` or the Makefile changed, from Git
-   evidence against the delivery target.
+7. MUST verify from Git evidence against the delivery target that the only
+   production files changed are task_07's bounded corrective paths
+   (`internal/worktree/worktree.go` and `internal/worktree/adminlock*.go`),
+   and that `internal/cli/cli_test.go`,
+   `docs/references/coverage-record.json` and the Makefile did not change.
 8. MUST verify that this Spec's own artifacts satisfy the promise rule.
 9. MUST NOT accept a row whose only evidence is that a file was read.
 
