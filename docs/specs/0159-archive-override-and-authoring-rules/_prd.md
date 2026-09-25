@@ -110,6 +110,24 @@ providers delivery, which owns reviewer selection.
 3. The settlement table is identical across the three skills and their
    distributed mirrors.
 
+## Recorded limits
+
+The corrective ceiling of two Tasks was spent on the defects the first pre-PR
+review of 2026-09-24 found. The second review found five minor gaps, carried to
+Spec 0169:
+
+- An override of a Spec whose QA Task is failed or pending while its newest
+  report says `pass` stamps `qa_override_qa_outcome: pass` and records nowhere
+  that the QA Task was not completed.
+- The Roundfix skill still says the override "refuses when QA already
+  qualifies", the rule before Task 05.
+- The archive-spec skill's Steps still describe stamping `qa_override: true` by
+  hand instead of running the command.
+- Two Tasks of one Spec creating different paths with the same ADR number are
+  not reported until one of the files exists.
+- A Spec without `_tasks.md` does not list `SC-ORDINAL-CLAIMED` among the
+  detectors it skipped.
+
 ## Decisions
 
 - **Archive-only, and only when needed.** An override on a Spec whose QA already
