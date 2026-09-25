@@ -91,7 +91,7 @@ func TestDeliveryActionsRunInTheItemWorktree(t *testing.T) {
 	workflow := newFakeDeliveryWorkflow()
 	workflow.worktrees[specSlug] = itemWorktree
 	workflow.recordWorkspace = func(branch, worktree string) error {
-		_, _, err := runStore.RecordDeliveryQueueItemWorktree(ctx, gitRoot, specSlug, branch, worktree)
+		_, _, _, err := runStore.RecordDeliveryQueueItemWorktree(ctx, gitRoot, specSlug, branch, worktree)
 		return err
 	}
 	boundary := newFakeDeliveryBoundary()
@@ -771,7 +771,7 @@ func recordDeliveryItemWorkspace(
 	item *store.DeliveryQueueItem,
 ) {
 	t.Helper()
-	branch, itemWorktree, err := runStore.RecordDeliveryQueueItemWorktree(
+	branch, itemWorktree, provisioned, err := runStore.RecordDeliveryQueueItemWorktree(
 		ctx,
 		gitRoot,
 		item.SpecSlug,
@@ -783,6 +783,7 @@ func recordDeliveryItemWorkspace(
 	}
 	item.Branch = branch
 	item.Worktree = itemWorktree
+	item.WorktreeProvisioned = provisioned
 }
 
 func assertNoUnmatchedDeliveryIntents(t *testing.T, ctx context.Context, runStore *store.Store, gitRoot string) {
@@ -852,7 +853,14 @@ func (fake *fakeDeliveryWorkflow) CreateItemBranch(_ context.Context, _ string, 
 	return branch, itemWorktree, nil
 }
 
-func (fake *fakeDeliveryWorkflow) UseItemBranch(_ context.Context, _ string, branch, itemWorktree string) (string, error) {
+func (fake *fakeDeliveryWorkflow) UseItemBranch(
+	_ context.Context,
+	_ string,
+	_ string,
+	branch string,
+	itemWorktree string,
+	_ bool,
+) (string, error) {
 	fake.currentBranch = branch
 	fake.currentWorktree = itemWorktree
 	return itemWorktree, nil

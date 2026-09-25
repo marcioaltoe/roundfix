@@ -41,16 +41,17 @@ type DeliveryQueue struct {
 }
 
 type DeliveryQueueItem struct {
-	SpecSlug          string
-	Position          int
-	Stage             DeliveryStage
-	Blocker           string
-	Branch            string
-	Worktree          string
-	RunID             string
-	CandidateCommits  []string
-	PullRequestNumber string
-	MergeCommit       string
+	SpecSlug            string
+	Position            int
+	Stage               DeliveryStage
+	Blocker             string
+	Branch              string
+	Worktree            string
+	WorktreeProvisioned bool
+	RunID               string
+	CandidateCommits    []string
+	PullRequestNumber   string
+	MergeCommit         string
 }
 
 type DeliveryActionIntent struct {
@@ -185,7 +186,7 @@ WHERE git_root = ?`, gitRoot).Scan(&queue.GitRoot, &ownerPID, &queue.OwnerIdenti
 		queue.OwnerPID = int(ownerPID.Int64)
 	}
 	rows, err := store.db.QueryContext(ctx, `
-SELECT spec_slug, position, stage, blocker, branch, worktree, run_id, candidate_commits,
+SELECT spec_slug, position, stage, blocker, branch, worktree, worktree_provisioned, run_id, candidate_commits,
        pull_request_number, merge_commit
 FROM delivery_queue_items
 WHERE git_root = ?
@@ -301,26 +302,27 @@ func (store *Store) RecordDeliveryQueueItemWorktree(
 	specSlug string,
 	branch string,
 	worktree string,
-) (string, string, error) {
+) (string, string, bool, error) {
 	gitRoot = strings.TrimSpace(gitRoot)
 	specSlug = strings.TrimSpace(specSlug)
 	branch = strings.TrimSpace(branch)
 	worktree = strings.TrimSpace(worktree)
 	if gitRoot == "" {
-		return "", "", errors.New("record Delivery Queue item worktree: Git root is required")
+		return "", "", false, errors.New("record Delivery Queue item worktree: Git root is required")
 	}
 	if specSlug == "" {
-		return "", "", errors.New("record Delivery Queue item worktree: Spec slug is required")
+		return "", "", false, errors.New("record Delivery Queue item worktree: Spec slug is required")
 	}
 	if branch == "" {
-		return "", "", errors.New("record Delivery Queue item worktree: branch is required")
+		return "", "", false, errors.New("record Delivery Queue item worktree: branch is required")
 	}
 	if worktree == "" {
-		return "", "", errors.New("record Delivery Queue item worktree: worktree is required")
+		return "", "", false, errors.New("record Delivery Queue item worktree: worktree is required")
 	}
 
 	recordedBranch := ""
 	recordedWorktree := ""
+	recordedProvisioned := false
 	err := store.withWriteTx(ctx, fmt.Sprintf("Delivery Queue item %q worktree recording", specSlug), func(tx *sql.Tx) error {
 		if _, err := tx.ExecContext(ctx, `
 UPDATE delivery_queue_items
@@ -330,9 +332,13 @@ WHERE git_root = ? AND spec_slug = ? AND branch = '' AND worktree = ''`,
 			return fmt.Errorf("record Delivery Queue item %q worktree: %w", specSlug, err)
 		}
 		if err := tx.QueryRowContext(ctx, `
-SELECT branch, worktree
+SELECT branch, worktree, worktree_provisioned
 FROM delivery_queue_items
-WHERE git_root = ? AND spec_slug = ?`, gitRoot, specSlug).Scan(&recordedBranch, &recordedWorktree); err != nil {
+WHERE git_root = ? AND spec_slug = ?`, gitRoot, specSlug).Scan(
+			&recordedBranch,
+			&recordedWorktree,
+			&recordedProvisioned,
+		); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return fmt.Errorf("record Delivery Queue item %q worktree: item does not exist", specSlug)
 			}
@@ -347,9 +353,45 @@ WHERE git_root = ? AND spec_slug = ?`, gitRoot, specSlug).Scan(&recordedBranch, 
 		return nil
 	})
 	if err != nil {
-		return "", "", err
+		return "", "", false, err
 	}
-	return recordedBranch, recordedWorktree, nil
+	return recordedBranch, recordedWorktree, recordedProvisioned, nil
+}
+
+// SetDeliveryQueueItemWorktreeProvisioned records whether the current item
+// worktree finished its copy and bootstrap steps.
+func (store *Store) SetDeliveryQueueItemWorktreeProvisioned(
+	ctx context.Context,
+	gitRoot string,
+	specSlug string,
+	provisioned bool,
+) error {
+	gitRoot = strings.TrimSpace(gitRoot)
+	specSlug = strings.TrimSpace(specSlug)
+	if gitRoot == "" {
+		return errors.New("record Delivery Queue item provisioning: Git root is required")
+	}
+	if specSlug == "" {
+		return errors.New("record Delivery Queue item provisioning: Spec slug is required")
+	}
+
+	return store.withWriteTx(ctx, fmt.Sprintf("Delivery Queue item %q provisioning update", specSlug), func(tx *sql.Tx) error {
+		result, err := tx.ExecContext(ctx, `
+UPDATE delivery_queue_items
+SET worktree_provisioned = ?
+WHERE git_root = ? AND spec_slug = ?`, provisioned, gitRoot, specSlug)
+		if err != nil {
+			return fmt.Errorf("record Delivery Queue item %q provisioning: %w", specSlug, err)
+		}
+		updated, err := result.RowsAffected()
+		if err != nil {
+			return fmt.Errorf("read Delivery Queue item %q provisioning update: %w", specSlug, err)
+		}
+		if updated != 1 {
+			return fmt.Errorf("record Delivery Queue item %q provisioning: item does not exist", specSlug)
+		}
+		return nil
+	})
 }
 
 // UpdateDeliveryQueueItem persists one item's current delivery state without
@@ -567,6 +609,7 @@ func scanDeliveryQueueItem(row deliveryQueueItemScanner) (DeliveryQueueItem, err
 		&item.Blocker,
 		&item.Branch,
 		&item.Worktree,
+		&item.WorktreeProvisioned,
 		&item.RunID,
 		&candidateCommits,
 		&item.PullRequestNumber,

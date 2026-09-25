@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0168-deliver-one-worktree-per-item
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -43,3 +43,47 @@ Corrective Task from the pre-PR review of 2026-09-25. `worktree.copy` and bootst
 ## References
 
 - [_techspec.md](_techspec.md) — Build Order
+
+## Result
+
+Implemented durable item-worktree provisioning state as schema version 20.
+Each item records `worktree_provisioned`; schema version 19 databases migrate
+with the marker false, and ordinary stage updates cannot overwrite the marker
+changed by provisioning recovery.
+
+Item creation records the marker only after copy and bootstrap succeed. Resume
+clears it before recreating a missing worktree, provisions every recreated or
+previously unfinished worktree through `internal/worktree`, and records success
+only after both steps finish. Merged items without a recorded worktree use
+branch-only cleanup: a branch checked out anywhere is preserved, an unchecked
+branch is deleted, and an absent branch is already clean.
+
+Acceptance evidence:
+
+- Recreated worktree carries copied files and bootstrap output:
+  `TestRecreatedItemWorktreeIsProvisioned` removed a provisioned real-Git
+  worktree, changed both provisioning inputs, resumed it, and observed the
+  current copied file, current bootstrap output and a true durable marker.
+- Interrupted provisioning is completed on reuse:
+  `TestUnfinishedProvisioningIsCompletedOnReuse` failed a real bootstrap after
+  it wrote partial output, observed a false marker, reused the same branch and
+  worktree, and observed the completed copy, bootstrap output and true marker.
+- Migrated merged item does not block the next item:
+  `TestMigratedMergedItemDoesNotBlockResume` seeded merged items with branches
+  but no worktrees, preserved a checked-out branch, deleted an unchecked
+  branch, merged the next queued item and observed no new effects on an
+  all-merged resume.
+
+Focused checks:
+
+- `GOCACHE=/tmp/roundfix-task06-gocache go test -count=1 ./internal/store ./internal/worktree ./internal/delivery` — passed.
+- `GOCACHE=/tmp/roundfix-task06-gocache go test -count=1 ./internal/cli -run 'Test(Deliver|EachItem|ItemBranch|EachDelivery|Resume|Park|AMerged|Recreated|Unfinished|Migrated)'` — passed.
+- `GOCACHE=/tmp/roundfix-task06-gocache make fmt-check vet skills-sync-check skills-check build` — passed.
+- `GOCACHE=/tmp/roundfix-task06-gocache make verify-incremental` — formatting
+  and vet passed; the unfiltered Go suite was blocked when an existing test
+  attempted unauthorized network access to `api.github.com`. The configured
+  `make verify-changed` reached the same environment block. The focused
+  offline package checks above passed afterward.
+
+The Task's declared `## Verification` command was not run; Daemon Verification
+owns that command and the terminal Task status.

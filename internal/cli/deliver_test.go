@@ -70,7 +70,7 @@ func TestDeliverStatusPrintsTheItemWorktree(t *testing.T) {
 		t.Fatalf("recorded Delivery Queue: found=%v items=%d err=%v", found, len(queue.Items), err)
 	}
 	item := queue.Items[0]
-	if _, _, err := runStore.RecordDeliveryQueueItemWorktree(
+	if _, _, _, err := runStore.RecordDeliveryQueueItemWorktree(
 		context.Background(),
 		repoDir,
 		item.SpecSlug,
@@ -635,6 +635,96 @@ func TestResumeRecreatesAMissingItemWorktree(t *testing.T) {
 	}
 }
 
+func TestRecreatedItemWorktreeIsProvisioned(t *testing.T) {
+	t.Parallel()
+	_, checkout := newDeliveryBranchRepository(t)
+	const specSlug = "0168-recreated-provisioning"
+	workflow := newDeliveryBranchWorkflow(t, checkout, specSlug)
+	copyPath := filepath.Join(checkout, "delivery.env")
+	mustWrite(t, copyPath, "initial copy\n")
+	workflow.loaded.Config.Worktree.Copy = []string{"delivery.env"}
+	workflow.loaded.Config.Worktree.Bootstrap = "printf 'initial bootstrap\\n' > delivery-bootstrap.txt"
+	workflow.loaded.Config.Worktree.BootstrapTimeout = time.Minute
+
+	_, itemWorktree, err := workflow.CreateItemBranch(t.Context(), checkout, specSlug)
+	if err != nil {
+		t.Fatalf("create item worktree: %v", err)
+	}
+	item := readDeliveryItemForCLI(t, workflow.store, checkout)
+	if !item.WorktreeProvisioned {
+		t.Fatal("created item worktree is not recorded as provisioned")
+	}
+	seedDeliveryItemStage(t, workflow.store, checkout, store.DeliveryStageRunning)
+	gittest.Run(t, checkout, "worktree", "remove", "--force", itemWorktree)
+	mustWrite(t, copyPath, "recreated copy\n")
+	workflow.loaded.Config.Worktree.Bootstrap = "printf 'recreated bootstrap\\n' > delivery-bootstrap.txt"
+	flow := &parkTestDeliveryFlow{parkSlug: specSlug}
+	engine := newDeliveryLifecycleTestEngine(workflow.store, workflow, flow)
+
+	if _, err := engine.Run(t.Context(), checkout); err != nil {
+		t.Fatalf("resume Delivery Engine: %v", err)
+	}
+
+	if got := mustRead(t, filepath.Join(itemWorktree, "delivery.env")); got != "recreated copy\n" {
+		t.Fatalf("recreated worktree copy = %q, want current source", got)
+	}
+	if got := mustRead(t, filepath.Join(itemWorktree, "delivery-bootstrap.txt")); got != "recreated bootstrap\n" {
+		t.Fatalf("recreated worktree bootstrap output = %q", got)
+	}
+	if item := readDeliveryItemForCLI(t, workflow.store, checkout); !item.WorktreeProvisioned {
+		t.Fatal("recreated item worktree is not recorded as provisioned")
+	}
+}
+
+func TestUnfinishedProvisioningIsCompletedOnReuse(t *testing.T) {
+	t.Parallel()
+	_, checkout := newDeliveryBranchRepository(t)
+	const specSlug = "0168-interrupted-provisioning"
+	workflow := newDeliveryBranchWorkflow(t, checkout, specSlug)
+	copyPath := filepath.Join(checkout, "delivery.env")
+	mustWrite(t, copyPath, "partial copy\n")
+	workflow.loaded.Config.Worktree.Copy = []string{"delivery.env"}
+	workflow.loaded.Config.Worktree.Bootstrap = "printf 'partial bootstrap\\n' > delivery-bootstrap.txt; exit 1"
+	workflow.loaded.Config.Worktree.BootstrapTimeout = time.Minute
+
+	_, _, err := workflow.CreateItemBranch(t.Context(), checkout, specSlug)
+	if err == nil {
+		t.Fatal("interrupted item provisioning succeeded")
+	}
+	item := readDeliveryItemForCLI(t, workflow.store, checkout)
+	if item.WorktreeProvisioned {
+		t.Fatal("interrupted item worktree is recorded as provisioned")
+	}
+	firstBranch := item.Branch
+	firstWorktree := item.Worktree
+	mustWrite(t, copyPath, "completed copy\n")
+	workflow.loaded.Config.Worktree.Bootstrap = "printf 'completed bootstrap\\n' > delivery-bootstrap.txt"
+
+	resumedBranch, resumedWorktree, err := workflow.CreateItemBranch(t.Context(), checkout, specSlug)
+	if err != nil {
+		t.Fatalf("reuse unfinished item worktree: %v", err)
+	}
+
+	if resumedBranch != firstBranch || resumedWorktree != firstWorktree {
+		t.Fatalf(
+			"reused item workspace = branch %q worktree %q, want %q and %q",
+			resumedBranch,
+			resumedWorktree,
+			firstBranch,
+			firstWorktree,
+		)
+	}
+	if got := mustRead(t, filepath.Join(resumedWorktree, "delivery.env")); got != "completed copy\n" {
+		t.Fatalf("reused worktree copy = %q, want completed source", got)
+	}
+	if got := mustRead(t, filepath.Join(resumedWorktree, "delivery-bootstrap.txt")); got != "completed bootstrap\n" {
+		t.Fatalf("reused worktree bootstrap output = %q", got)
+	}
+	if item := readDeliveryItemForCLI(t, workflow.store, checkout); !item.WorktreeProvisioned {
+		t.Fatal("reused item worktree is not recorded as provisioned")
+	}
+}
+
 func TestResumeParksWhenTheItemBranchIsGone(t *testing.T) {
 	t.Parallel()
 	_, checkout := newDeliveryBranchRepository(t)
@@ -697,6 +787,90 @@ func TestAMergedItemLeavesNoWorktreeOrBranch(t *testing.T) {
 	}
 	if exists {
 		t.Fatalf("merged item branch %q still exists", item.Branch)
+	}
+}
+
+func TestMigratedMergedItemDoesNotBlockResume(t *testing.T) {
+	t.Parallel()
+	_, checkout := newDeliveryBranchRepository(t)
+	const (
+		checkedOutSlug = "0168-migrated-checked-out"
+		deletableSlug  = "0168-migrated-deletable"
+		nextSlug       = "0168-after-migrated"
+	)
+	checkedOutBranch := "roundfix/deliver-" + checkedOutSlug
+	deletableBranch := "roundfix/deliver-" + deletableSlug
+	gittest.Run(t, checkout, "switch", "-c", checkedOutBranch)
+	gittest.Run(t, checkout, "branch", deletableBranch, "main")
+
+	runStore, err := store.Open(t.Context(), t.TempDir())
+	if err != nil {
+		t.Fatalf("open Run Database: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := runStore.Close(); err != nil {
+			t.Errorf("close Run Database: %v", err)
+		}
+	})
+	queue, err := runStore.CreateDeliveryQueue(t.Context(), checkout, []string{checkedOutSlug, deletableSlug, nextSlug})
+	if err != nil {
+		t.Fatalf("create Delivery Queue: %v", err)
+	}
+	for index, branch := range []string{checkedOutBranch, deletableBranch} {
+		item := queue.Items[index]
+		item.Stage = store.DeliveryStageMerged
+		item.Branch = branch
+		if err := runStore.UpdateDeliveryQueueItem(t.Context(), checkout, item); err != nil {
+			t.Fatalf("seed migrated merged item %q: %v", item.SpecSlug, err)
+		}
+	}
+	workflow := &commandDeliveryWorkflow{
+		store: runStore,
+		loaded: roundconfig.Loaded{
+			GitRoot: checkout,
+			Config: roundconfig.Config{
+				Worktree: roundconfig.Worktree{Location: filepath.Join(t.TempDir(), "worktrees")},
+			},
+		},
+		git: preflight.ExecGitRunner{},
+	}
+	flow := &parkTestDeliveryFlow{}
+	engine := newDeliveryLifecycleTestEngine(runStore, workflow, flow)
+
+	if _, err := engine.Run(t.Context(), checkout); err != nil {
+		t.Fatalf("resume Delivery Engine with migrated merged items: %v", err)
+	}
+
+	queue, found, err := runStore.DeliveryQueue(t.Context(), checkout)
+	if err != nil || !found {
+		t.Fatalf("read resumed Delivery Queue: found=%v err=%v", found, err)
+	}
+	if queue.Items[2].Stage != store.DeliveryStageMerged || flow.runCalls != 1 {
+		t.Fatalf("next item = %+v with %d Implement calls, want merged after one call", queue.Items[2], flow.runCalls)
+	}
+	if got := strings.TrimSpace(gittest.Run(t, checkout, "branch", "--show-current")); got != checkedOutBranch {
+		t.Fatalf("checked-out migrated branch = %q, want preserved %q", got, checkedOutBranch)
+	}
+	exists, err := localItemBranchExists(t.Context(), preflight.ExecGitRunner{}, checkout, deletableBranch)
+	if err != nil {
+		t.Fatalf("inspect deletable migrated branch: %v", err)
+	}
+	if exists {
+		t.Fatalf("unchecked-out migrated branch %q still exists", deletableBranch)
+	}
+	pullRequestCount := len(flow.pullRequests)
+
+	if _, err := engine.Run(t.Context(), checkout); err != nil {
+		t.Fatalf("resume all-merged Delivery Queue: %v", err)
+	}
+	if flow.runCalls != 1 || len(flow.pullRequests) != pullRequestCount {
+		t.Fatalf(
+			"all-merged resume effects = Implement calls %d pull requests %d, want %d and %d",
+			flow.runCalls,
+			len(flow.pullRequests),
+			1,
+			pullRequestCount,
+		)
 	}
 }
 
@@ -842,7 +1016,7 @@ func resumeArchivedDelivery(t *testing.T, repository string, reviewedHead string
 	item.Branch = strings.TrimSpace(gittest.Run(t, repository, "branch", "--show-current"))
 	item.Worktree = repository
 	item.CandidateCommits = []string{reviewedHead}
-	if _, _, err := runStore.RecordDeliveryQueueItemWorktree(
+	if _, _, _, err := runStore.RecordDeliveryQueueItemWorktree(
 		t.Context(),
 		repository,
 		item.SpecSlug,
@@ -970,7 +1144,14 @@ func (flow *parkTestDeliveryFlow) CreateItemBranch(context.Context, string, stri
 	return "", "", errors.New("unexpected item worktree creation")
 }
 
-func (flow *parkTestDeliveryFlow) UseItemBranch(_ context.Context, _ string, _ string, itemWorktree string) (string, error) {
+func (flow *parkTestDeliveryFlow) UseItemBranch(
+	_ context.Context,
+	_ string,
+	_ string,
+	_ string,
+	itemWorktree string,
+	_ bool,
+) (string, error) {
 	return itemWorktree, nil
 }
 

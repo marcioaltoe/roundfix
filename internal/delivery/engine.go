@@ -97,7 +97,7 @@ type CandidateRunner interface {
 
 type ItemWorkspace interface {
 	CreateItemBranch(ctx context.Context, gitRoot, specSlug string) (branch, worktree string, err error)
-	UseItemBranch(ctx context.Context, gitRoot, branch, worktree string) (string, error)
+	UseItemBranch(ctx context.Context, gitRoot, specSlug, branch, worktree string, provisioned bool) (string, error)
 	RemoveItemBranch(ctx context.Context, gitRoot, branch, worktree string) error
 }
 
@@ -283,6 +283,7 @@ func (engine *Engine) advanceItem(ctx context.Context, gitRoot string, item *sto
 		if item.Worktree == "" {
 			return errors.New("create item worktree: path is empty")
 		}
+		item.WorktreeProvisioned = true
 		if err := engine.setStage(ctx, gitRoot, item, store.DeliveryStageRunning); err != nil {
 			return err
 		}
@@ -290,7 +291,14 @@ func (engine *Engine) advanceItem(ctx context.Context, gitRoot string, item *sto
 		if strings.TrimSpace(item.Branch) == "" {
 			return errors.New("recorded item branch is missing")
 		}
-		itemWorktree, err := engine.workspace.UseItemBranch(ctx, gitRoot, item.Branch, item.Worktree)
+		itemWorktree, err := engine.workspace.UseItemBranch(
+			ctx,
+			gitRoot,
+			item.SpecSlug,
+			item.Branch,
+			item.Worktree,
+			item.WorktreeProvisioned,
+		)
 		if err != nil {
 			if errors.Is(err, ErrItemWorktreeMissing) {
 				return engine.park(ctx, gitRoot, item, BlockerItemWorktreeMissing)
@@ -301,6 +309,7 @@ func (engine *Engine) advanceItem(ctx context.Context, gitRoot string, item *sto
 		if item.Worktree == "" {
 			return errors.New("use item branch: worktree is empty")
 		}
+		item.WorktreeProvisioned = true
 	}
 	for item.Stage != store.DeliveryStageMerged && item.Stage != store.DeliveryStageParked {
 		switch item.Stage {

@@ -73,6 +73,14 @@ type ItemCreateOptions struct {
 	BootstrapOutput io.Writer
 }
 
+// ItemProvisionOptions configures copy and bootstrap for an existing item
+// worktree.
+type ItemProvisionOptions struct {
+	CopyList        []string
+	Bootstrap       BootstrapSpec
+	BootstrapOutput io.Writer
+}
+
 type BootstrapSpec struct {
 	Command string
 	Timeout time.Duration
@@ -1650,6 +1658,19 @@ func CreateItem(ctx context.Context, ref ItemRef, opts ItemCreateOptions) error 
 	if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "add", "--no-track", "-b", ref.Branch, ref.Path, headSHA); err != nil {
 		return fmt.Errorf("create item Worktree: %w", err)
 	}
+	return ProvisionItem(ctx, ref, ItemProvisionOptions{
+		CopyList:        opts.CopyList,
+		Bootstrap:       opts.Bootstrap,
+		BootstrapOutput: opts.BootstrapOutput,
+	})
+}
+
+// ProvisionItem copies configured files and runs bootstrap in an existing
+// item worktree.
+func ProvisionItem(ctx context.Context, ref ItemRef, opts ItemProvisionOptions) error {
+	if err := validateItemRef(ref); err != nil {
+		return err
+	}
 	if err := copyProvisionedFiles(ref.UserRoot, ref.Path, opts.CopyList); err != nil {
 		return err
 	}
@@ -1752,15 +1773,41 @@ func CleanupItem(ctx context.Context, ref ItemRef) error {
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("clean up item Worktree %q: inspect recorded path: %w", ref.Path, err)
 	}
-	branchExists, err := localBranchExists(ctx, runner, ref.UserRoot, ref.Branch)
+	return deleteItemBranch(ctx, runner, ref.UserRoot, ref.Branch)
+}
+
+// CleanupItemBranch deletes an item branch only when no worktree has it
+// checked out. It is used for migrated items that predate recorded worktrees.
+func CleanupItemBranch(ctx context.Context, userRoot, branch string) error {
+	userRoot = strings.TrimSpace(userRoot)
+	branch = strings.TrimSpace(branch)
+	if userRoot == "" {
+		return errors.New("clean up item branch: user root is required")
+	}
+	if branch == "" {
+		return errors.New("clean up item branch: branch is required")
+	}
+	runner := execGitRunner{}
+	worktrees, err := listRegisteredWorktrees(ctx, runner, userRoot)
 	if err != nil {
-		return fmt.Errorf("clean up item branch %q: inspect existence: %w", ref.Branch, err)
+		return fmt.Errorf("clean up item branch: %w", err)
+	}
+	if registeredBranchPath(worktrees, branch) != "" {
+		return nil
+	}
+	return deleteItemBranch(ctx, runner, userRoot, branch)
+}
+
+func deleteItemBranch(ctx context.Context, runner gitRunner, userRoot, branch string) error {
+	branchExists, err := localBranchExists(ctx, runner, userRoot, branch)
+	if err != nil {
+		return fmt.Errorf("clean up item branch %q: inspect existence: %w", branch, err)
 	}
 	if !branchExists {
 		return nil
 	}
-	if _, err := runner.Run(ctx, ref.UserRoot, "branch", "-D", ref.Branch); err != nil {
-		return fmt.Errorf("clean up item branch %q: %w", ref.Branch, err)
+	if _, err := runner.Run(ctx, userRoot, "branch", "-D", branch); err != nil {
+		return fmt.Errorf("clean up item branch %q: %w", branch, err)
 	}
 	return nil
 }

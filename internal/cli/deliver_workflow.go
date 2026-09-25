@@ -61,7 +61,7 @@ func (workflow *commandDeliveryWorkflow) CreateItemBranch(ctx context.Context, g
 	if err != nil {
 		return "", "", err
 	}
-	branch, itemWorktree, err := workflow.store.RecordDeliveryQueueItemWorktree(ctx, gitRoot, specSlug, branch, ref.Path)
+	branch, itemWorktree, provisioned, err := workflow.store.RecordDeliveryQueueItemWorktree(ctx, gitRoot, specSlug, branch, ref.Path)
 	if err != nil {
 		return "", "", fmt.Errorf("record item branch and worktree: %w", err)
 	}
@@ -78,10 +78,15 @@ func (workflow *commandDeliveryWorkflow) CreateItemBranch(ctx context.Context, g
 		return "", "", fmt.Errorf("inspect item branch %q: %w", branch, err)
 	}
 	if exists {
-		if err := runworktree.UseItem(ctx, ref); err != nil {
+		if err := workflow.useAndProvisionItem(ctx, gitRoot, specSlug, ref, provisioned); err != nil {
 			return "", "", fmt.Errorf("use recorded item worktree %q: %w", itemWorktree, err)
 		}
 		return branch, itemWorktree, nil
+	}
+	if provisioned {
+		if err := workflow.store.SetDeliveryQueueItemWorktreeProvisioned(ctx, gitRoot, specSlug, false); err != nil {
+			return "", "", err
+		}
 	}
 	defaultBranch := preflight.DetectDefaultBranch(ctx, gitRoot, "", workflow.git)
 	if defaultBranch.Source == preflight.DefaultBranchUndetermined {
@@ -104,6 +109,9 @@ func (workflow *commandDeliveryWorkflow) CreateItemBranch(ctx context.Context, g
 		BootstrapOutput: os.Stderr,
 	}); err != nil {
 		return "", "", fmt.Errorf("create item branch %q in worktree %q: %w", branch, itemWorktree, err)
+	}
+	if err := workflow.store.SetDeliveryQueueItemWorktreeProvisioned(ctx, gitRoot, specSlug, true); err != nil {
+		return "", "", err
 	}
 	return branch, itemWorktree, nil
 }
@@ -132,7 +140,18 @@ func localItemBranchExists(ctx context.Context, runner preflight.GitRunner, gitR
 	return false, err
 }
 
-func (workflow *commandDeliveryWorkflow) UseItemBranch(ctx context.Context, gitRoot, branch, itemWorktree string) (string, error) {
+func (workflow *commandDeliveryWorkflow) UseItemBranch(
+	ctx context.Context,
+	gitRoot string,
+	specSlug string,
+	branch string,
+	itemWorktree string,
+	provisioned bool,
+) (string, error) {
+	specSlug = strings.TrimSpace(specSlug)
+	if specSlug == "" {
+		return "", errors.New("use item branch: Spec slug is required")
+	}
 	branch = strings.TrimSpace(branch)
 	if branch == "" {
 		return "", errors.New("use item branch: branch is required")
@@ -141,11 +160,11 @@ func (workflow *commandDeliveryWorkflow) UseItemBranch(ctx context.Context, gitR
 	if itemWorktree == "" {
 		return "", errors.New("use item branch: worktree is required")
 	}
-	err := runworktree.UseItem(ctx, runworktree.ItemRef{
+	err := workflow.useAndProvisionItem(ctx, gitRoot, specSlug, runworktree.ItemRef{
 		Path:     itemWorktree,
 		Branch:   branch,
 		UserRoot: gitRoot,
-	})
+	}, provisioned)
 	if errors.Is(err, runworktree.ErrItemBranchMissing) {
 		return "", delivery.ErrItemWorktreeMissing
 	}
@@ -155,10 +174,57 @@ func (workflow *commandDeliveryWorkflow) UseItemBranch(ctx context.Context, gitR
 	return itemWorktree, nil
 }
 
+func (workflow *commandDeliveryWorkflow) useAndProvisionItem(
+	ctx context.Context,
+	gitRoot string,
+	specSlug string,
+	ref runworktree.ItemRef,
+	provisioned bool,
+) error {
+	if _, err := os.Stat(ref.Path); errors.Is(err, os.ErrNotExist) {
+		if provisioned {
+			if err := workflow.store.SetDeliveryQueueItemWorktreeProvisioned(ctx, gitRoot, specSlug, false); err != nil {
+				return err
+			}
+			provisioned = false
+		}
+	} else if err != nil {
+		return fmt.Errorf("inspect recorded item worktree %q: %w", ref.Path, err)
+	}
+	if err := runworktree.UseItem(ctx, ref); err != nil {
+		return err
+	}
+	if provisioned {
+		return nil
+	}
+	if err := runworktree.ProvisionItem(ctx, ref, runworktree.ItemProvisionOptions{
+		CopyList: workflow.loaded.Config.Worktree.Copy,
+		Bootstrap: runworktree.BootstrapSpec{
+			Command: workflow.loaded.Config.Worktree.Bootstrap,
+			Timeout: workflow.loaded.Config.Worktree.BootstrapTimeout,
+		},
+		BootstrapOutput: os.Stderr,
+	}); err != nil {
+		return err
+	}
+	return workflow.store.SetDeliveryQueueItemWorktreeProvisioned(ctx, gitRoot, specSlug, true)
+}
+
 func (workflow *commandDeliveryWorkflow) RemoveItemBranch(ctx context.Context, gitRoot, branch, itemWorktree string) error {
+	branch = strings.TrimSpace(branch)
+	itemWorktree = strings.TrimSpace(itemWorktree)
+	if itemWorktree == "" {
+		if branch == "" {
+			return nil
+		}
+		if err := runworktree.CleanupItemBranch(ctx, strings.TrimSpace(gitRoot), branch); err != nil {
+			return fmt.Errorf("remove item branch without recorded worktree: %w", err)
+		}
+		return nil
+	}
 	if err := runworktree.CleanupItem(ctx, runworktree.ItemRef{
-		Path:     strings.TrimSpace(itemWorktree),
-		Branch:   strings.TrimSpace(branch),
+		Path:     itemWorktree,
+		Branch:   branch,
 		UserRoot: strings.TrimSpace(gitRoot),
 	}); err != nil {
 		return fmt.Errorf("remove item worktree and branch: %w", err)
