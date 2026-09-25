@@ -91,9 +91,8 @@ type CandidateRunner interface {
 }
 
 type ItemWorkspace interface {
-	CreateItemBranch(ctx context.Context, gitRoot, specSlug string) (string, error)
-	UseItemBranch(ctx context.Context, gitRoot, branch string) error
-	ParkItem(ctx context.Context, gitRoot string) error
+	CreateItemBranch(ctx context.Context, gitRoot, specSlug string) (branch, worktree string, err error)
+	UseItemBranch(ctx context.Context, gitRoot, branch, worktree string) (string, error)
 }
 
 type PrePRReviewer interface {
@@ -259,13 +258,17 @@ func (engine *Engine) validate() error {
 
 func (engine *Engine) advanceItem(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem) error {
 	if item.Stage == store.DeliveryStageQueued {
-		branch, err := engine.workspace.CreateItemBranch(ctx, gitRoot, item.SpecSlug)
+		branch, itemWorktree, err := engine.workspace.CreateItemBranch(ctx, gitRoot, item.SpecSlug)
 		if err != nil {
-			return fmt.Errorf("create item branch: %w", err)
+			return fmt.Errorf("create item worktree: %w", err)
 		}
 		item.Branch = strings.TrimSpace(branch)
 		if item.Branch == "" {
-			return errors.New("create item branch: branch is empty")
+			return errors.New("create item worktree: branch is empty")
+		}
+		item.Worktree = strings.TrimSpace(itemWorktree)
+		if item.Worktree == "" {
+			return errors.New("create item worktree: path is empty")
 		}
 		if err := engine.setStage(ctx, gitRoot, item, store.DeliveryStageRunning); err != nil {
 			return err
@@ -274,8 +277,13 @@ func (engine *Engine) advanceItem(ctx context.Context, gitRoot string, item *sto
 		if strings.TrimSpace(item.Branch) == "" {
 			return errors.New("recorded item branch is missing")
 		}
-		if err := engine.workspace.UseItemBranch(ctx, gitRoot, item.Branch); err != nil {
+		itemWorktree, err := engine.workspace.UseItemBranch(ctx, gitRoot, item.Branch, item.Worktree)
+		if err != nil {
 			return fmt.Errorf("use item branch %q: %w", item.Branch, err)
+		}
+		item.Worktree = strings.TrimSpace(itemWorktree)
+		if item.Worktree == "" {
+			return errors.New("use item branch: worktree is empty")
 		}
 	}
 	for item.Stage != store.DeliveryStageMerged && item.Stage != store.DeliveryStageParked {
@@ -316,7 +324,11 @@ func (engine *Engine) advanceItem(ctx context.Context, gitRoot string, item *sto
 }
 
 func (engine *Engine) runCandidate(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem) error {
-	result, err := engine.runner.RunSpec(ctx, gitRoot, item.SpecSlug)
+	workDir, err := itemWorkDir(*item)
+	if err != nil {
+		return err
+	}
+	result, err := engine.runner.RunSpec(ctx, workDir, item.SpecSlug)
 	if err != nil {
 		return fmt.Errorf("run Implement executor: %w", err)
 	}
@@ -336,21 +348,25 @@ func (engine *Engine) runCandidate(ctx context.Context, gitRoot string, item *st
 }
 
 func (engine *Engine) reviewCandidate(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem) error {
+	workDir, err := itemWorkDir(*item)
+	if err != nil {
+		return err
+	}
 	head, err := candidateHead(*item)
 	if err != nil {
 		return err
 	}
-	policy, err := engine.reviewer.ReviewPolicy(ctx, gitRoot, item.SpecSlug)
+	policy, err := engine.reviewer.ReviewPolicy(ctx, workDir, item.SpecSlug)
 	if err != nil {
 		return fmt.Errorf("resolve Pre-PR Review Policy: %w", err)
 	}
 	switch policy {
 	case ReviewPolicyNone:
-		if err := engine.reviewer.RecordReviewOmission(ctx, gitRoot, item.SpecSlug, head); err != nil {
+		if err := engine.reviewer.RecordReviewOmission(ctx, workDir, item.SpecSlug, head); err != nil {
 			return fmt.Errorf("record configured review omission: %w", err)
 		}
 	case ReviewPolicyEnabled:
-		result, err := engine.reviewer.Review(ctx, gitRoot, item.SpecSlug, head)
+		result, err := engine.reviewer.Review(ctx, workDir, item.SpecSlug, head)
 		if err != nil {
 			return fmt.Errorf("run pre-PR review: %w", err)
 		}
@@ -373,11 +389,15 @@ func (engine *Engine) reviewCandidate(ctx context.Context, gitRoot string, item 
 }
 
 func (engine *Engine) archiveCandidate(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem) error {
+	workDir, err := itemWorkDir(*item)
+	if err != nil {
+		return err
+	}
 	reviewedHead, err := candidateHead(*item)
 	if err != nil {
 		return err
 	}
-	result, err := engine.archiver.Archive(ctx, gitRoot, item.SpecSlug, reviewedHead)
+	result, err := engine.archiver.Archive(ctx, workDir, item.SpecSlug, reviewedHead)
 	if err != nil {
 		return fmt.Errorf("archive Spec: %w", err)
 	}
@@ -391,11 +411,15 @@ func (engine *Engine) archiveCandidate(ctx context.Context, gitRoot string, item
 }
 
 func (engine *Engine) gateCandidate(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem) error {
+	workDir, err := itemWorkDir(*item)
+	if err != nil {
+		return err
+	}
 	head, err := candidateHead(*item)
 	if err != nil {
 		return err
 	}
-	result, err := engine.gate.Gate(ctx, gitRoot, item.SpecSlug, head)
+	result, err := engine.gate.Gate(ctx, workDir, item.SpecSlug, head)
 	if err != nil {
 		return fmt.Errorf("run repository gate: %w", err)
 	}
@@ -406,14 +430,18 @@ func (engine *Engine) gateCandidate(ctx context.Context, gitRoot string, item *s
 }
 
 func (engine *Engine) publishCandidate(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem) error {
-	authorized, err := engine.authorized(ctx, gitRoot, item.SpecSlug)
+	workDir, err := itemWorkDir(*item)
+	if err != nil {
+		return err
+	}
+	authorized, err := engine.authorized(ctx, workDir, item.SpecSlug)
 	if err != nil {
 		return err
 	}
 	if !authorized {
 		return engine.park(ctx, gitRoot, item, BlockerUnauthorized)
 	}
-	publication, err := engine.publication.Publication(ctx, gitRoot, item.SpecSlug, item.Branch)
+	publication, err := engine.publication.Publication(ctx, workDir, item.SpecSlug, item.Branch)
 	if err != nil {
 		return fmt.Errorf("plan publication: %w", err)
 	}
@@ -427,10 +455,10 @@ func (engine *Engine) publishCandidate(ctx context.Context, gitRoot string, item
 	if err != nil {
 		return err
 	}
-	if err := engine.push(ctx, gitRoot, item.SpecSlug, publication, head); err != nil {
+	if err := engine.push(ctx, gitRoot, workDir, item.SpecSlug, publication, head); err != nil {
 		return err
 	}
-	pullRequest, err := engine.createPullRequest(ctx, gitRoot, item.SpecSlug, publication, head)
+	pullRequest, err := engine.createPullRequest(ctx, gitRoot, workDir, item.SpecSlug, publication, head)
 	if err != nil {
 		return err
 	}
@@ -438,13 +466,14 @@ func (engine *Engine) publishCandidate(ctx context.Context, gitRoot string, item
 	return engine.setStage(ctx, gitRoot, item, store.DeliveryStageChecking)
 }
 
-func (engine *Engine) push(ctx context.Context, gitRoot, specSlug string, publication Publication, expectedHead string) error {
+func (engine *Engine) push(ctx context.Context, gitRoot, workDir, specSlug string, publication Publication, expectedHead string) error {
+	pullRequests := engine.pullRequests.WithWorkDir(workDir)
 	intent, unmatched, err := engine.actionIntent(ctx, gitRoot, specSlug, store.DeliveryActionPush)
 	if err != nil {
 		return err
 	}
 	if unmatched {
-		observed, found, err := engine.pullRequests.RemoteBranchHead(ctx, publication.Remote, publication.HeadBranch)
+		observed, found, err := pullRequests.RemoteBranchHead(ctx, publication.Remote, publication.HeadBranch)
 		if err != nil {
 			return fmt.Errorf("reconcile push intent: %w", err)
 		}
@@ -460,7 +489,7 @@ func (engine *Engine) push(ctx context.Context, gitRoot, specSlug string, public
 		}
 	}
 
-	remoteHead, err := engine.pullRequests.PushBranch(ctx, publication.Remote, publication.HeadBranch, expectedHead)
+	remoteHead, err := pullRequests.PushBranch(ctx, publication.Remote, publication.HeadBranch, expectedHead)
 	if err != nil {
 		return fmt.Errorf("push candidate: %w", err)
 	}
@@ -473,10 +502,12 @@ func (engine *Engine) push(ctx context.Context, gitRoot, specSlug string, public
 func (engine *Engine) createPullRequest(
 	ctx context.Context,
 	gitRoot string,
+	workDir string,
 	specSlug string,
 	publication Publication,
 	expectedHead string,
 ) (PullRequest, error) {
+	pullRequests := engine.pullRequests.WithWorkDir(workDir)
 	intent, unmatched, err := engine.actionIntent(ctx, gitRoot, specSlug, store.DeliveryActionCreatePullRequest)
 	if err != nil {
 		return PullRequest{}, err
@@ -487,7 +518,7 @@ func (engine *Engine) createPullRequest(
 			return PullRequest{}, fmt.Errorf("record create-pull-request intent: %w", err)
 		}
 	}
-	result, err := engine.pullRequests.FindOrCreatePullRequest(ctx, PullRequestRequest{
+	result, err := pullRequests.FindOrCreatePullRequest(ctx, PullRequestRequest{
 		HeadBranch: publication.HeadBranch,
 		BaseBranch: publication.BaseBranch,
 		Title:      publication.Title,
@@ -523,13 +554,18 @@ func (engine *Engine) createPullRequest(
 }
 
 func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem) error {
+	workDir, err := itemWorkDir(*item)
+	if err != nil {
+		return err
+	}
+	pullRequests := engine.pullRequests.WithWorkDir(workDir)
 	head, err := candidateHead(*item)
 	if err != nil {
 		return err
 	}
 	deadline := engine.clock.Now().Add(engine.checkTimeout)
 	for {
-		report, err := engine.pullRequests.CurrentHeadChecks(ctx, item.PullRequestNumber)
+		report, err := pullRequests.CurrentHeadChecks(ctx, item.PullRequestNumber)
 		if err == nil {
 			if report.HeadSHA != head {
 				return engine.park(ctx, gitRoot, item, BlockerReviewStale)
@@ -562,7 +598,11 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 }
 
 func (engine *Engine) mergeCandidate(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem) error {
-	authorized, err := engine.authorized(ctx, gitRoot, item.SpecSlug)
+	workDir, err := itemWorkDir(*item)
+	if err != nil {
+		return err
+	}
+	authorized, err := engine.authorized(ctx, workDir, item.SpecSlug)
 	if err != nil {
 		return err
 	}
@@ -583,7 +623,7 @@ func (engine *Engine) mergeCandidate(ctx context.Context, gitRoot string, item *
 			return fmt.Errorf("record merge intent: %w", err)
 		}
 	}
-	result, err := engine.pullRequests.MergePullRequest(ctx, item.PullRequestNumber, head)
+	result, err := engine.pullRequests.WithWorkDir(workDir).MergePullRequest(ctx, item.PullRequestNumber, head)
 	if err != nil {
 		var mismatch PullRequestHeadMismatchError
 		if errors.As(err, &mismatch) {
@@ -626,8 +666,8 @@ func (engine *Engine) pullRequestOwnedByAnotherItem(
 	return false, nil
 }
 
-func (engine *Engine) authorized(ctx context.Context, gitRoot, specSlug string) (bool, error) {
-	authorization, err := engine.authorizer.Authorization(ctx, gitRoot, specSlug)
+func (engine *Engine) authorized(ctx context.Context, workDir, specSlug string) (bool, error) {
+	authorization, err := engine.authorizer.Authorization(ctx, workDir, specSlug)
 	if err != nil {
 		return false, fmt.Errorf("read delivery authorization: %w", err)
 	}
@@ -686,15 +726,20 @@ func (engine *Engine) setStage(
 }
 
 func (engine *Engine) park(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem, blocker string) error {
-	if err := engine.workspace.ParkItem(ctx, gitRoot); err != nil {
-		return fmt.Errorf("restore checkout before parking item as %q: %w", blocker, err)
-	}
 	item.Stage = store.DeliveryStageParked
 	item.Blocker = blocker
 	if err := engine.store.UpdateDeliveryQueueItem(ctx, gitRoot, *item); err != nil {
 		return fmt.Errorf("park item as %q: %w", blocker, err)
 	}
 	return nil
+}
+
+func itemWorkDir(item store.DeliveryQueueItem) (string, error) {
+	workDir := strings.TrimSpace(item.Worktree)
+	if workDir == "" {
+		return "", errors.New("recorded item worktree is missing")
+	}
+	return workDir, nil
 }
 
 func candidateHead(item store.DeliveryQueueItem) (string, error) {

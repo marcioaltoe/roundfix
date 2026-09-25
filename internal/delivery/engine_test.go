@@ -75,6 +75,54 @@ func TestDeliveryEngineMergesAQueueWithoutAnOperator(t *testing.T) {
 	}
 }
 
+func TestDeliveryActionsRunInTheItemWorktree(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runStore := openDeliveryEngineStore(t, ctx)
+	const (
+		gitRoot      = "/repo"
+		specSlug     = "spec-one"
+		itemWorktree = "/worktrees/spec-one"
+	)
+	if _, err := runStore.CreateDeliveryQueue(ctx, gitRoot, []string{specSlug}); err != nil {
+		t.Fatalf("create Delivery Queue: %v", err)
+	}
+
+	workflow := newFakeDeliveryWorkflow()
+	workflow.worktrees[specSlug] = itemWorktree
+	workflow.recordWorkspace = func(branch, worktree string) error {
+		_, _, err := runStore.RecordDeliveryQueueItemWorktree(ctx, gitRoot, specSlug, branch, worktree)
+		return err
+	}
+	boundary := newFakeDeliveryBoundary()
+	engine := newTestDeliveryEngine(runStore, workflow, boundary)
+
+	if _, err := engine.Run(ctx, gitRoot); err != nil {
+		t.Fatalf("run Delivery Engine: %v", err)
+	}
+
+	for action, workdirs := range workflow.actionWorkdirs {
+		for _, workdir := range workdirs {
+			if workdir != itemWorktree {
+				t.Fatalf("%s working directory = %q, want %q", action, workdir, itemWorktree)
+			}
+		}
+	}
+	if got, want := len(workflow.actionWorkdirs), 7; got != want {
+		t.Fatalf("workflow actions with a working directory = %d, want %d: %#v", got, want, workflow.actionWorkdirs)
+	}
+	if got, want := boundary.workdirs, []string{itemWorktree, itemWorktree, itemWorktree, itemWorktree}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("GitHub action working directories = %q, want %q", got, want)
+	}
+	if _, found, err := runStore.DeliveryQueue(ctx, itemWorktree); err != nil || found {
+		t.Fatalf("Delivery Queue keyed by item worktree: found=%v err=%v", found, err)
+	}
+	item := readDeliveryQueue(t, ctx, runStore, gitRoot).Items[0]
+	if item.Worktree != itemWorktree {
+		t.Fatalf("recorded item worktree = %q, want %q", item.Worktree, itemWorktree)
+	}
+}
+
 func TestDeliveryEngineResumesWithoutDoubleEffects(t *testing.T) {
 	t.Parallel()
 
@@ -90,7 +138,9 @@ func TestDeliveryEngineResumesWithoutDoubleEffects(t *testing.T) {
 		item := queue.Items[0]
 		item.Stage = store.DeliveryStagePublishing
 		item.Branch = "deliver/spec-push"
+		item.Worktree = "/worktrees/spec-push"
 		item.CandidateCommits = []string{"reviewed-spec-push", "archived-spec-push"}
+		recordDeliveryItemWorkspace(t, ctx, runStore, gitRoot, &item)
 		if err := runStore.UpdateDeliveryQueueItem(ctx, gitRoot, item); err != nil {
 			t.Fatalf("seed publishing item: %v", err)
 		}
@@ -128,7 +178,9 @@ func TestDeliveryEngineResumesWithoutDoubleEffects(t *testing.T) {
 		item := queue.Items[0]
 		item.Stage = store.DeliveryStagePublishing
 		item.Branch = "deliver/spec-pull-request"
+		item.Worktree = "/worktrees/spec-pull-request"
 		item.CandidateCommits = []string{"reviewed-spec-pull-request", "archived-spec-pull-request"}
+		recordDeliveryItemWorkspace(t, ctx, runStore, gitRoot, &item)
 		if err := runStore.UpdateDeliveryQueueItem(ctx, gitRoot, item); err != nil {
 			t.Fatalf("seed publishing item: %v", err)
 		}
@@ -169,8 +221,10 @@ func TestDeliveryEngineResumesWithoutDoubleEffects(t *testing.T) {
 		item := queue.Items[0]
 		item.Stage = store.DeliveryStageMerging
 		item.Branch = "deliver/spec-merge"
+		item.Worktree = "/worktrees/spec-merge"
 		item.CandidateCommits = []string{"reviewed-spec-merge", "archived-spec-merge"}
 		item.PullRequestNumber = "1"
+		recordDeliveryItemWorkspace(t, ctx, runStore, gitRoot, &item)
 		if err := runStore.UpdateDeliveryQueueItem(ctx, gitRoot, item); err != nil {
 			t.Fatalf("seed merging item: %v", err)
 		}
@@ -346,7 +400,9 @@ func TestAPullRequestOfAnotherItemIsNeverReused(t *testing.T) {
 	second := queue.Items[1]
 	second.Stage = store.DeliveryStagePublishing
 	second.Branch = "roundfix/deliver-second-spec"
+	second.Worktree = "/worktrees/second-spec"
 	second.CandidateCommits = []string{"reviewed-second", "archived-second"}
+	recordDeliveryItemWorkspace(t, ctx, runStore, gitRoot, &second)
 	if err := runStore.UpdateDeliveryQueueItem(ctx, gitRoot, second); err != nil {
 		t.Fatalf("seed second item: %v", err)
 	}
@@ -534,7 +590,9 @@ func TestUnmatchedPushIntentRetriesWhenTheRemoteDiffers(t *testing.T) {
 	item := queue.Items[0]
 	item.Stage = store.DeliveryStagePublishing
 	item.Branch = "roundfix/deliver-retry-spec"
+	item.Worktree = "/worktrees/retry-spec"
 	item.CandidateCommits = []string{"reviewed-retry", "archived-retry"}
+	recordDeliveryItemWorkspace(t, ctx, runStore, gitRoot, &item)
 	if err := runStore.UpdateDeliveryQueueItem(ctx, gitRoot, item); err != nil {
 		t.Fatalf("seed publishing item: %v", err)
 	}
@@ -595,8 +653,10 @@ func TestAnAlreadyMergedPullRequestMustCarryTheReviewedHead(t *testing.T) {
 	item := queue.Items[0]
 	item.Stage = store.DeliveryStageMerging
 	item.Branch = "roundfix/deliver-merged-spec"
+	item.Worktree = "/worktrees/merged-spec"
 	item.CandidateCommits = []string{"reviewed-merged", "archived-merged"}
 	item.PullRequestNumber = "41"
+	recordDeliveryItemWorkspace(t, ctx, runStore, gitRoot, &item)
 	if err := runStore.UpdateDeliveryQueueItem(ctx, gitRoot, item); err != nil {
 		t.Fatalf("seed merging item: %v", err)
 	}
@@ -667,6 +727,28 @@ func readDeliveryQueue(t *testing.T, ctx context.Context, runStore *store.Store,
 	return queue
 }
 
+func recordDeliveryItemWorkspace(
+	t *testing.T,
+	ctx context.Context,
+	runStore *store.Store,
+	gitRoot string,
+	item *store.DeliveryQueueItem,
+) {
+	t.Helper()
+	branch, itemWorktree, err := runStore.RecordDeliveryQueueItemWorktree(
+		ctx,
+		gitRoot,
+		item.SpecSlug,
+		item.Branch,
+		item.Worktree,
+	)
+	if err != nil {
+		t.Fatalf("record Delivery Queue item worktree: %v", err)
+	}
+	item.Branch = branch
+	item.Worktree = itemWorktree
+}
+
 func assertNoUnmatchedDeliveryIntents(t *testing.T, ctx context.Context, runStore *store.Store, gitRoot string) {
 	t.Helper()
 	intents, err := runStore.UnmatchedDeliveryActionIntents(ctx, gitRoot)
@@ -679,19 +761,23 @@ func assertNoUnmatchedDeliveryIntents(t *testing.T, ctx context.Context, runStor
 }
 
 type fakeDeliveryWorkflow struct {
-	runErrors      map[string]error
-	runs           map[string]RunResult
-	policies       map[string]ReviewPolicy
-	reviewResults  map[string]ReviewResult
-	archives       map[string]ArchiveResult
-	gates          map[string]GateResult
-	authorizations map[string]Authorization
-	publications   map[string]Publication
-	reviews        []string
-	omissions      []string
-	events         map[string][]string
-	runBranches    map[string]string
-	currentBranch  string
+	runErrors       map[string]error
+	runs            map[string]RunResult
+	policies        map[string]ReviewPolicy
+	reviewResults   map[string]ReviewResult
+	archives        map[string]ArchiveResult
+	gates           map[string]GateResult
+	authorizations  map[string]Authorization
+	publications    map[string]Publication
+	reviews         []string
+	omissions       []string
+	events          map[string][]string
+	runBranches     map[string]string
+	worktrees       map[string]string
+	actionWorkdirs  map[string][]string
+	currentBranch   string
+	currentWorktree string
+	recordWorkspace func(branch, worktree string) error
 }
 
 func newFakeDeliveryWorkflow() *fakeDeliveryWorkflow {
@@ -706,28 +792,37 @@ func newFakeDeliveryWorkflow() *fakeDeliveryWorkflow {
 		publications:   map[string]Publication{},
 		events:         map[string][]string{},
 		runBranches:    map[string]string{},
+		worktrees:      map[string]string{},
+		actionWorkdirs: map[string][]string{},
 	}
 }
 
-func (fake *fakeDeliveryWorkflow) CreateItemBranch(_ context.Context, _ string, slug string) (string, error) {
+func (fake *fakeDeliveryWorkflow) CreateItemBranch(_ context.Context, _ string, slug string) (string, string, error) {
 	branch := "roundfix/deliver-" + slug
+	itemWorktree := fake.worktrees[slug]
+	if itemWorktree == "" {
+		itemWorktree = "/worktrees/" + slug
+	}
 	fake.currentBranch = branch
+	fake.currentWorktree = itemWorktree
 	fake.recordEvent(slug, "create-branch")
-	return branch, nil
+	if fake.recordWorkspace != nil {
+		if err := fake.recordWorkspace(branch, itemWorktree); err != nil {
+			return "", "", err
+		}
+	}
+	return branch, itemWorktree, nil
 }
 
-func (fake *fakeDeliveryWorkflow) UseItemBranch(_ context.Context, _ string, branch string) error {
+func (fake *fakeDeliveryWorkflow) UseItemBranch(_ context.Context, _ string, branch, itemWorktree string) (string, error) {
 	fake.currentBranch = branch
-	return nil
+	fake.currentWorktree = itemWorktree
+	return itemWorktree, nil
 }
 
-func (fake *fakeDeliveryWorkflow) ParkItem(context.Context, string) error {
-	fake.currentBranch = "main"
-	return nil
-}
-
-func (fake *fakeDeliveryWorkflow) RunSpec(_ context.Context, _ string, slug string) (RunResult, error) {
+func (fake *fakeDeliveryWorkflow) RunSpec(_ context.Context, workDir string, slug string) (RunResult, error) {
 	fake.recordEvent(slug, "run")
+	fake.recordWorkdir("implement", workDir)
 	fake.runBranches[slug] = fake.currentBranch
 	if err, ok := fake.runErrors[slug]; ok {
 		return RunResult{}, err
@@ -738,16 +833,18 @@ func (fake *fakeDeliveryWorkflow) RunSpec(_ context.Context, _ string, slug stri
 	return RunResult{RunID: "run-" + slug, Outcome: RunOutcomeClean, CandidateCommits: []string{"reviewed-" + slug}}, nil
 }
 
-func (fake *fakeDeliveryWorkflow) ReviewPolicy(_ context.Context, _ string, slug string) (ReviewPolicy, error) {
+func (fake *fakeDeliveryWorkflow) ReviewPolicy(_ context.Context, workDir string, slug string) (ReviewPolicy, error) {
 	fake.recordEvent(slug, "policy")
+	fake.recordWorkdir("review-policy", workDir)
 	if policy, ok := fake.policies[slug]; ok {
 		return policy, nil
 	}
 	return ReviewPolicyEnabled, nil
 }
 
-func (fake *fakeDeliveryWorkflow) Review(_ context.Context, _ string, slug, head string) (ReviewResult, error) {
+func (fake *fakeDeliveryWorkflow) Review(_ context.Context, workDir string, slug, head string) (ReviewResult, error) {
 	fake.recordEvent(slug, "review")
+	fake.recordWorkdir("review", workDir)
 	fake.reviews = append(fake.reviews, slug)
 	if result, ok := fake.reviewResults[slug]; ok {
 		return result, nil
@@ -755,38 +852,43 @@ func (fake *fakeDeliveryWorkflow) Review(_ context.Context, _ string, slug, head
 	return ReviewResult{Outcome: ReviewOutcomeReviewed, Head: head}, nil
 }
 
-func (fake *fakeDeliveryWorkflow) RecordReviewOmission(_ context.Context, _ string, slug, _ string) error {
+func (fake *fakeDeliveryWorkflow) RecordReviewOmission(_ context.Context, workDir string, slug, _ string) error {
 	fake.recordEvent(slug, "review-omitted")
+	fake.recordWorkdir("review", workDir)
 	fake.omissions = append(fake.omissions, slug)
 	return nil
 }
 
-func (fake *fakeDeliveryWorkflow) Archive(_ context.Context, _ string, slug, reviewedHead string) (ArchiveResult, error) {
+func (fake *fakeDeliveryWorkflow) Archive(_ context.Context, workDir string, slug, reviewedHead string) (ArchiveResult, error) {
 	fake.recordEvent(slug, "archive")
+	fake.recordWorkdir("archive", workDir)
 	if result, ok := fake.archives[slug]; ok {
 		return result, nil
 	}
 	return ArchiveResult{Parent: reviewedHead, Head: "archived-" + slug, ExactSpecMove: true}, nil
 }
 
-func (fake *fakeDeliveryWorkflow) Gate(_ context.Context, _ string, slug, _ string) (GateResult, error) {
+func (fake *fakeDeliveryWorkflow) Gate(_ context.Context, workDir string, slug, _ string) (GateResult, error) {
 	fake.recordEvent(slug, "gate")
+	fake.recordWorkdir("gate", workDir)
 	if result, ok := fake.gates[slug]; ok {
 		return result, nil
 	}
 	return GateResult{Passed: true}, nil
 }
 
-func (fake *fakeDeliveryWorkflow) Authorization(_ context.Context, _ string, slug string) (Authorization, error) {
+func (fake *fakeDeliveryWorkflow) Authorization(_ context.Context, workDir string, slug string) (Authorization, error) {
 	fake.recordEvent(slug, "authorization")
+	fake.recordWorkdir("authorization", workDir)
 	if authorization, ok := fake.authorizations[slug]; ok {
 		return authorization, nil
 	}
 	return Authorization{Operations: []string{"push", "pull_request", "merge"}}, nil
 }
 
-func (fake *fakeDeliveryWorkflow) Publication(_ context.Context, _ string, slug, branch string) (Publication, error) {
+func (fake *fakeDeliveryWorkflow) Publication(_ context.Context, workDir string, slug, branch string) (Publication, error) {
 	fake.recordEvent(slug, "publication")
+	fake.recordWorkdir("publication", workDir)
 	if publication, ok := fake.publications[slug]; ok {
 		return publication, nil
 	}
@@ -797,6 +899,10 @@ func (fake *fakeDeliveryWorkflow) Publication(_ context.Context, _ string, slug,
 
 func (fake *fakeDeliveryWorkflow) recordEvent(slug, event string) {
 	fake.events[slug] = append(fake.events[slug], event)
+}
+
+func (fake *fakeDeliveryWorkflow) recordWorkdir(action, workDir string) {
+	fake.actionWorkdirs[action] = append(fake.actionWorkdirs[action], workDir)
 }
 
 type fakeDeliveryBoundary struct {
@@ -814,6 +920,8 @@ type fakeDeliveryBoundary struct {
 	totalCalls         int
 	callsBySlug        map[string]int
 	recordEvent        func(string, string)
+	workdirs           []string
+	workdir            string
 }
 
 func newFakeDeliveryBoundary() *fakeDeliveryBoundary {
@@ -830,6 +938,12 @@ func newFakeDeliveryBoundary() *fakeDeliveryBoundary {
 }
 
 var _ PullRequestBoundary = (*fakeDeliveryBoundary)(nil)
+
+func (fake *fakeDeliveryBoundary) WithWorkDir(workDir string) PullRequestBoundary {
+	fake.workdir = workDir
+	fake.workdirs = append(fake.workdirs, workDir)
+	return fake
+}
 
 func (fake *fakeDeliveryBoundary) RemoteBranchHead(_ context.Context, remote, branch string) (RemoteHead, bool, error) {
 	fake.recordCall(branch, "observe-push")

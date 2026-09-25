@@ -65,6 +65,14 @@ type TaskCreateOptions struct {
 	Concurrency     int
 }
 
+// ItemCreateOptions configures a Delivery Queue item's linked worktree.
+type ItemCreateOptions struct {
+	HeadSHA         string
+	CopyList        []string
+	Bootstrap       BootstrapSpec
+	BootstrapOutput io.Writer
+}
+
 type BootstrapSpec struct {
 	Command string
 	Timeout time.Duration
@@ -141,6 +149,13 @@ type TaskRef struct {
 	Branch   string
 	UserRoot string
 	BaseSHA  string
+}
+
+// ItemRef identifies one Delivery Queue item's linked worktree.
+type ItemRef struct {
+	Path     string
+	Branch   string
+	UserRoot string
 }
 
 type TaskIntegration struct {
@@ -1593,6 +1608,54 @@ func Create(ctx context.Context, opts CreateOptions) (Ref, error) {
 	return ref, nil
 }
 
+// ItemRefFor derives one item worktree path from its repository and branch.
+func ItemRefFor(userRoot, location, branch string) (ItemRef, error) {
+	userRoot = filepath.Clean(strings.TrimSpace(userRoot))
+	if userRoot == "." || userRoot == "" {
+		return ItemRef{}, errors.New("derive item Worktree ref: user root is required")
+	}
+	branch = strings.TrimSpace(branch)
+	if branch == "" {
+		return ItemRef{}, errors.New("derive item Worktree ref: branch is required")
+	}
+	if strings.ContainsAny(branch, "\r\n\x00") {
+		return ItemRef{}, errors.New("derive item Worktree ref: branch contains invalid characters")
+	}
+	digest := sha256.Sum256([]byte(branch))
+	segment := sanitizeSlugBase(branch) + "-" + hex.EncodeToString(digest[:])[:8]
+	path, err := deriveRootPath(location, userRoot, segment)
+	if err != nil {
+		return ItemRef{}, err
+	}
+	return ItemRef{Path: path, Branch: branch, UserRoot: userRoot}, nil
+}
+
+// CreateItem creates and provisions a linked item worktree from opts.HeadSHA.
+func CreateItem(ctx context.Context, ref ItemRef, opts ItemCreateOptions) error {
+	if err := validateItemRef(ref); err != nil {
+		return err
+	}
+	headSHA := strings.TrimSpace(opts.HeadSHA)
+	if headSHA == "" {
+		return errors.New("create item Worktree: HEAD is required")
+	}
+	if err := os.MkdirAll(filepath.Dir(ref.Path), 0o755); err != nil {
+		return fmt.Errorf("create item Worktree parent %q: %w", filepath.Dir(ref.Path), err)
+	}
+
+	runner := execGitRunner{}
+	if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "add", "--no-track", "-b", ref.Branch, ref.Path, headSHA); err != nil {
+		return fmt.Errorf("create item Worktree: %w", err)
+	}
+	if err := copyProvisionedFiles(ref.UserRoot, ref.Path, opts.CopyList); err != nil {
+		return err
+	}
+	if err := runBootstrap(ctx, ref.Path, opts.Bootstrap, opts.BootstrapOutput); err != nil {
+		return err
+	}
+	return nil
+}
+
 func CreateTask(ctx context.Context, run Ref, taskID string, copyList []string) (TaskRef, error) {
 	return CreateTaskWithOptions(ctx, run, taskID, TaskCreateOptions{CopyList: copyList, Concurrency: 1})
 }
@@ -2433,6 +2496,19 @@ func validateTaskRef(ref TaskRef) error {
 	}
 	if strings.TrimSpace(ref.UserRoot) == "" {
 		return errors.New("Task Worktree ref: user root is required")
+	}
+	return nil
+}
+
+func validateItemRef(ref ItemRef) error {
+	if strings.TrimSpace(ref.Path) == "" {
+		return errors.New("item Worktree ref: path is required")
+	}
+	if strings.TrimSpace(ref.Branch) == "" {
+		return errors.New("item Worktree ref: branch is required")
+	}
+	if strings.TrimSpace(ref.UserRoot) == "" {
+		return errors.New("item Worktree ref: user root is required")
 	}
 	return nil
 }

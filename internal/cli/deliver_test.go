@@ -25,7 +25,7 @@ import (
 	"roundfix/internal/store"
 )
 
-func TestDeliverCommandRecordsAQueueAndReportsIt(t *testing.T) {
+func TestDeliverStatusPrintsTheItemWorktree(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	started := 0
@@ -52,6 +52,15 @@ func TestDeliverCommandRecordsAQueueAndReportsIt(t *testing.T) {
 	if started != 1 {
 		t.Fatalf("detached owner starts = %d, want 1", started)
 	}
+	stdout.Reset()
+	stderr.Reset()
+	code = runCLI(t, []string{"deliver", "status"}, &stdout, &stderr)
+	if code != exitOK || stderr.Len() != 0 {
+		t.Fatalf("deliver status without worktree exit=%d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if got, want := stdout.String(), implementTestSlug+"\tqueued\t-\t-\n"; got != want {
+		t.Fatalf("deliver status without worktree = %q, want %q", got, want)
+	}
 	runStore, err := store.Open(context.Background(), homeDir)
 	if err != nil {
 		t.Fatalf("open Run Database: %v", err)
@@ -61,8 +70,19 @@ func TestDeliverCommandRecordsAQueueAndReportsIt(t *testing.T) {
 		t.Fatalf("recorded Delivery Queue: found=%v items=%d err=%v", found, len(queue.Items), err)
 	}
 	item := queue.Items[0]
+	if _, _, err := runStore.RecordDeliveryQueueItemWorktree(
+		context.Background(),
+		repoDir,
+		item.SpecSlug,
+		"roundfix/deliver-status",
+		"/worktrees/delivery-item",
+	); err != nil {
+		t.Fatalf("record Delivery Queue item worktree: %v", err)
+	}
 	item.Stage = store.DeliveryStageParked
 	item.Blocker = "review-stale"
+	item.Branch = "roundfix/deliver-status"
+	item.Worktree = "/worktrees/delivery-item"
 	if err := runStore.UpdateDeliveryQueueItem(context.Background(), repoDir, item); err != nil {
 		t.Fatalf("park Delivery Queue item: %v", err)
 	}
@@ -77,7 +97,7 @@ func TestDeliverCommandRecordsAQueueAndReportsIt(t *testing.T) {
 	if code != exitOK || stderr.Len() != 0 {
 		t.Fatalf("deliver status exit=%d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
 	}
-	if got, want := stdout.String(), implementTestSlug+"\tparked\treview-stale\n"; got != want {
+	if got, want := stdout.String(), implementTestSlug+"\tparked\treview-stale\t/worktrees/delivery-item\n"; got != want {
 		t.Fatalf("deliver status = %q, want %q", got, want)
 	}
 }
@@ -283,7 +303,7 @@ func TestATerminalQueueIsReplacedByANewStart(t *testing.T) {
 	}
 }
 
-func TestDeliveryWorkflowCreatesAnItemBranchFromTheRefreshedDefault(t *testing.T) {
+func TestEachItemRunsInItsOwnWorktree(t *testing.T) {
 	t.Parallel()
 	origin, checkout := newDeliveryBranchRepository(t)
 	seedPath := filepath.Join(origin, "seed.txt")
@@ -293,37 +313,31 @@ func TestDeliveryWorkflowCreatesAnItemBranchFromTheRefreshedDefault(t *testing.T
 	gittest.Run(t, origin, "add", "seed.txt")
 	gittest.Run(t, origin, "commit", "-m", "fix: refresh default")
 	wantHead := strings.TrimSpace(gittest.Run(t, origin, "rev-parse", "main"))
-	workflow := newDeliveryBranchWorkflow(t, checkout, "0156-delivery")
+	const specSlug = "0168-item-worktree"
+	workflow := newDeliveryBranchWorkflow(t, checkout, specSlug)
+	copyPath := filepath.Join(checkout, "delivery.env")
+	mustWrite(t, copyPath, "copied from user checkout\n")
+	workflow.loaded.Config.Worktree.Copy = []string{"delivery.env"}
+	workflow.loaded.Config.Worktree.Bootstrap = "printf 'bootstrapped\\n' > delivery-bootstrap.txt"
+	workflow.loaded.Config.Worktree.BootstrapTimeout = time.Minute
 
-	branch, err := workflow.CreateItemBranch(t.Context(), checkout, "0156-delivery")
+	branch, itemWorktree, err := workflow.CreateItemBranch(t.Context(), checkout, specSlug)
 
 	if err != nil {
-		t.Fatalf("create item branch: %v", err)
+		t.Fatalf("create item worktree: %v", err)
 	}
-	if !strings.HasPrefix(branch, "roundfix/deliver-0156-delivery-") {
+	if !strings.HasPrefix(branch, "roundfix/deliver-"+specSlug+"-") {
 		t.Fatalf("item branch = %q, want per-delivery suffix", branch)
 	}
-	if got := strings.TrimSpace(gittest.Run(t, checkout, "branch", "--show-current")); got != branch {
-		t.Fatalf("current branch = %q, want %q", got, branch)
+	if !strings.HasPrefix(itemWorktree, workflow.loaded.Config.Worktree.Location+string(filepath.Separator)) {
+		t.Fatalf("item worktree = %q, want under %q", itemWorktree, workflow.loaded.Config.Worktree.Location)
 	}
-	if got := strings.TrimSpace(gittest.Run(t, checkout, "rev-parse", "HEAD")); got != wantHead {
+	if got := strings.TrimSpace(gittest.Run(t, itemWorktree, "rev-parse", "HEAD")); got != wantHead {
 		t.Fatalf("item branch head = %q, want refreshed default %q", got, wantHead)
-	}
-}
-
-func TestItemBranchHasNoUpstream(t *testing.T) {
-	t.Parallel()
-	_, checkout := newDeliveryBranchRepository(t)
-	workflow := newDeliveryBranchWorkflow(t, checkout, "0161-untracked")
-
-	branch, err := workflow.CreateItemBranch(t.Context(), checkout, "0161-untracked")
-
-	if err != nil {
-		t.Fatalf("create item branch: %v", err)
 	}
 	upstream := strings.TrimSpace(gittest.Run(
 		t,
-		checkout,
+		itemWorktree,
 		"for-each-ref",
 		"--format=%(upstream:short)",
 		"refs/heads/"+branch,
@@ -331,78 +345,43 @@ func TestItemBranchHasNoUpstream(t *testing.T) {
 	if upstream != "" {
 		t.Fatalf("item branch upstream = %q, want none", upstream)
 	}
-}
-
-func TestEachDeliveryGetsItsOwnBranch(t *testing.T) {
-	t.Parallel()
-	_, checkout := newDeliveryBranchRepository(t)
-	workflow := newDeliveryBranchWorkflow(t, checkout, "0161-repeat")
-
-	firstBranch, err := workflow.CreateItemBranch(t.Context(), checkout, "0161-repeat")
-	if err != nil {
-		t.Fatalf("create first item branch: %v", err)
+	if got := strings.TrimSpace(gittest.Run(t, checkout, "branch", "--show-current")); got != "main" {
+		t.Fatalf("user checkout branch = %q, want unchanged main", got)
+	}
+	if got := mustRead(t, filepath.Join(itemWorktree, "delivery.env")); got != "copied from user checkout\n" {
+		t.Fatalf("provisioned copy = %q", got)
+	}
+	if got := mustRead(t, filepath.Join(itemWorktree, "delivery-bootstrap.txt")); got != "bootstrapped\n" {
+		t.Fatalf("bootstrap output = %q", got)
 	}
 	queue, found, err := workflow.store.DeliveryQueue(t.Context(), checkout)
 	if err != nil || !found {
-		t.Fatalf("read first Delivery Queue: found=%v err=%v", found, err)
+		t.Fatalf("read Delivery Queue: found=%v err=%v", found, err)
 	}
-	firstItem := queue.Items[0]
-	firstItem.Stage = store.DeliveryStageParked
-	if err := workflow.store.UpdateDeliveryQueueItem(t.Context(), checkout, firstItem); err != nil {
-		t.Fatalf("park first delivery: %v", err)
-	}
-	gittest.Run(t, checkout, "switch", "main")
-	if _, err := workflow.store.CreateDeliveryQueue(t.Context(), checkout, []string{"0161-repeat"}); err != nil {
-		t.Fatalf("create second Delivery Queue: %v", err)
-	}
-
-	secondBranch, err := workflow.CreateItemBranch(t.Context(), checkout, "0161-repeat")
-
-	if err != nil {
-		t.Fatalf("create second item branch: %v", err)
-	}
-	if firstBranch == secondBranch {
-		t.Fatalf("delivery branches = %q and %q, want different branches", firstBranch, secondBranch)
+	if queue.Items[0].Branch != branch || queue.Items[0].Worktree != itemWorktree {
+		t.Fatalf("recorded item workspace = branch %q worktree %q, want %q and %q", queue.Items[0].Branch, queue.Items[0].Worktree, branch, itemWorktree)
 	}
 }
 
-func TestResumeReusesTheRecordedItemBranch(t *testing.T) {
-	t.Parallel()
-	_, checkout := newDeliveryBranchRepository(t)
-	workflow := newDeliveryBranchWorkflow(t, checkout, "0161-resume")
+func TestDeliverNeverTouchesTheUserCheckout(t *testing.T) {
+	origin, checkout := newDeliveryBranchRepository(t)
+	gittest.Run(t, checkout, "switch", "-c", "user-work")
+	mustWrite(t, filepath.Join(checkout, ".gitignore"), "ignored.txt\n")
+	gittest.Run(t, checkout, "add", ".gitignore")
+	gittest.Run(t, checkout, "commit", "-m", "chore: ignore user file")
+	mustWrite(t, filepath.Join(checkout, "seed.txt"), "dirty user change\n")
+	mustWrite(t, filepath.Join(checkout, "ignored.txt"), "ignored user content\n")
+	nestedRepository := filepath.Join(checkout, "nested-repository")
+	gittest.InitRepo(t, nestedRepository, "--initial-branch=main")
+	mustWrite(t, filepath.Join(nestedRepository, "nested.txt"), "nested repository content\n")
 
-	firstBranch, err := workflow.CreateItemBranch(t.Context(), checkout, "0161-resume")
-	if err != nil {
-		t.Fatalf("create item branch before crash: %v", err)
-	}
-	queue, found, err := workflow.store.DeliveryQueue(t.Context(), checkout)
-	if err != nil || !found {
-		t.Fatalf("read Delivery Queue after branch creation: found=%v err=%v", found, err)
-	}
-	if got := queue.Items[0].Branch; got != firstBranch {
-		t.Fatalf("recorded item branch = %q, want %q", got, firstBranch)
-	}
-	if queue.Items[0].Stage != store.DeliveryStageQueued {
-		t.Fatalf("item stage after simulated crash = %q, want queued", queue.Items[0].Stage)
-	}
-	gittest.Run(t, checkout, "switch", "main")
-	gittest.Run(t, checkout, "remote", "set-url", "origin", filepath.Join(t.TempDir(), "missing-origin"))
+	beforeBranch := strings.TrimSpace(gittest.Run(t, checkout, "branch", "--show-current"))
+	beforeHead := strings.TrimSpace(gittest.Run(t, checkout, "rev-parse", "HEAD"))
+	beforeStatus := gittest.Run(t, checkout, "status", "--porcelain=v1", "-z", "--untracked-files=all", "--ignored=matching")
+	beforeSeed := mustRead(t, filepath.Join(checkout, "seed.txt"))
+	beforeIgnored := mustRead(t, filepath.Join(checkout, "ignored.txt"))
+	beforeNested := mustRead(t, filepath.Join(nestedRepository, "nested.txt"))
 
-	resumedBranch, err := workflow.CreateItemBranch(t.Context(), checkout, "0161-resume")
-
-	if err != nil {
-		t.Fatalf("resume item branch: %v", err)
-	}
-	if resumedBranch != firstBranch {
-		t.Fatalf("resumed item branch = %q, want recorded branch %q", resumedBranch, firstBranch)
-	}
-	if got := strings.TrimSpace(gittest.Run(t, checkout, "branch", "--show-current")); got != firstBranch {
-		t.Fatalf("current branch after resume = %q, want %q", got, firstBranch)
-	}
-}
-
-func TestAParkLeavesACleanCheckout(t *testing.T) {
-	_, checkout := newDeliveryBranchRepository(t)
 	ctx := t.Context()
 	runStore, err := store.Open(ctx, t.TempDir())
 	if err != nil {
@@ -413,18 +392,23 @@ func TestAParkLeavesACleanCheckout(t *testing.T) {
 			t.Errorf("close Run Database: %v", err)
 		}
 	})
-	const parkedSlug = "0161-non-exact-archive"
-	const nextSlug = "0161-next-item"
-	if _, err := runStore.CreateDeliveryQueue(ctx, checkout, []string{parkedSlug, nextSlug}); err != nil {
+	const parkedSlug = "0168-parked"
+	const mergedSlug = "0168-merged"
+	if _, err := runStore.CreateDeliveryQueue(ctx, checkout, []string{parkedSlug, mergedSlug}); err != nil {
 		t.Fatalf("create Delivery Queue: %v", err)
 	}
 	workflow := &commandDeliveryWorkflow{
-		store:  runStore,
-		loaded: roundconfig.Loaded{GitRoot: checkout},
-		git:    preflight.ExecGitRunner{},
+		store: runStore,
+		loaded: roundconfig.Loaded{
+			GitRoot: checkout,
+			Config: roundconfig.Config{
+				Worktree: roundconfig.Worktree{Location: filepath.Join(t.TempDir(), "worktrees")},
+			},
+		},
+		git: preflight.ExecGitRunner{},
 	}
-	reviewedHead := strings.TrimSpace(gittest.Run(t, checkout, "rev-parse", "HEAD"))
-	flow := &parkTestDeliveryFlow{checkout: checkout, reviewedHead: reviewedHead}
+	reviewedHead := strings.TrimSpace(gittest.Run(t, origin, "rev-parse", "main"))
+	flow := &parkTestDeliveryFlow{parkSlug: parkedSlug, reviewedHead: reviewedHead}
 	engine := delivery.NewEngine(runStore, delivery.EngineDependencies{
 		Workspace:    workflow,
 		Runner:       flow,
@@ -444,157 +428,68 @@ func TestAParkLeavesACleanCheckout(t *testing.T) {
 	if err != nil || !found {
 		t.Fatalf("read Delivery Queue: found=%v err=%v", found, err)
 	}
-	if got, want := flow.runs, []string{parkedSlug, nextSlug}; !reflect.DeepEqual(got, want) {
-		t.Fatalf("started items = %v, want %v", got, want)
+	if queue.Items[0].Stage != store.DeliveryStageParked || queue.Items[1].Stage != store.DeliveryStageMerged {
+		t.Fatalf("Delivery Queue stages = %q and %q, want parked and merged", queue.Items[0].Stage, queue.Items[1].Stage)
 	}
-	if queue.Items[0].Stage != store.DeliveryStageParked || queue.Items[1].Branch == "" {
-		t.Fatalf("Delivery Queue after non-exact archive = %+v", queue.Items)
-	}
-	state, err := preflight.InspectGit(ctx, checkout, preflight.ExecGitRunner{})
-	if err != nil {
-		t.Fatalf("inspect checkout after parks: %v", err)
-	}
-	if state.Branch != "main" || len(state.Dirty) != 0 {
-		t.Fatalf("checkout after parks = branch %q dirty=%v, want clean main", state.Branch, state.Dirty)
-	}
-}
-
-func TestParkKeepsUntrackedFilesTheItemDidNotCreate(t *testing.T) {
-	_, checkout := newDeliveryBranchRepository(t)
-	gittest.Run(t, checkout, "config", "status.showUntrackedFiles", "no")
-	const specSlug = "0161-hidden-untracked"
-	workflow := newDeliveryBranchWorkflow(t, checkout, specSlug)
-	preexistingPath := filepath.Join(checkout, "user-note.txt")
-	mustWrite(t, preexistingPath, "keep me\n")
-
-	if _, err := workflow.CreateItemBranch(t.Context(), checkout, specSlug); err == nil {
-		t.Fatal("item branch creation accepted a checkout with a hidden untracked file")
-	}
-	if err := workflow.ParkItem(t.Context(), checkout); err != nil {
-		t.Fatalf("park refused item: %v", err)
-	}
-	if got := mustRead(t, preexistingPath); got != "keep me\n" {
-		t.Fatalf("pre-existing untracked file = %q, want preserved content", got)
-	}
-	if got := strings.TrimSpace(gittest.Run(t, checkout, "branch", "--show-current")); got != "main" {
-		t.Fatalf("branch after refused park = %q, want main", got)
-	}
-}
-
-func TestParkNeverTouchesACheckoutTheItemRefused(t *testing.T) {
-	_, checkout := newDeliveryBranchRepository(t)
-	ctx := t.Context()
-	runStore, err := store.Open(ctx, t.TempDir())
-	if err != nil {
-		t.Fatalf("open Run Database: %v", err)
-	}
-	t.Cleanup(func() {
-		if err := runStore.Close(); err != nil {
-			t.Errorf("close Run Database: %v", err)
-		}
-	})
-	const firstSlug = "0161-first-item"
-	const refusedSlug = "0161-refused-item"
-	queue, err := runStore.CreateDeliveryQueue(ctx, checkout, []string{firstSlug, refusedSlug})
-	if err != nil {
-		t.Fatalf("create Delivery Queue: %v", err)
-	}
-	workflow := &commandDeliveryWorkflow{
-		store:  runStore,
-		loaded: roundconfig.Loaded{GitRoot: checkout},
-		git:    preflight.ExecGitRunner{},
-	}
-	if _, err := workflow.CreateItemBranch(ctx, checkout, firstSlug); err != nil {
-		t.Fatalf("create first item branch: %v", err)
-	}
-	if err := workflow.ParkItem(ctx, checkout); err != nil {
-		t.Fatalf("park first item: %v", err)
-	}
-	queue, found, err := runStore.DeliveryQueue(ctx, checkout)
-	if err != nil || !found {
-		t.Fatalf("read Delivery Queue after first branch: found=%v err=%v", found, err)
-	}
-	first := queue.Items[0]
-	first.Stage = store.DeliveryStageParked
-	if err := runStore.UpdateDeliveryQueueItem(ctx, checkout, first); err != nil {
-		t.Fatalf("record first item park: %v", err)
-	}
-
-	seedPath := filepath.Join(checkout, "seed.txt")
-	mustWrite(t, seedPath, "user change\n")
-	if _, err := workflow.CreateItemBranch(ctx, checkout, refusedSlug); err == nil {
-		t.Fatal("second item branch creation accepted a dirty checkout")
-	}
-	beforeStatus := gittest.Run(t, checkout, "status", "--porcelain=v1", "-z", "--untracked-files=all")
-	beforeHead := strings.TrimSpace(gittest.Run(t, checkout, "rev-parse", "HEAD"))
-	beforeBranch := strings.TrimSpace(gittest.Run(t, checkout, "branch", "--show-current"))
-
-	if err := workflow.ParkItem(ctx, checkout); err != nil {
-		t.Fatalf("park refused item: %v", err)
-	}
-	if got := mustRead(t, seedPath); got != "user change\n" {
-		t.Fatalf("tracked user file after park = %q, want untouched content", got)
-	}
-	if got := gittest.Run(t, checkout, "status", "--porcelain=v1", "-z", "--untracked-files=all"); got != beforeStatus {
-		t.Fatalf("status after park = %q, want unchanged %q", got, beforeStatus)
-	}
-	if got := strings.TrimSpace(gittest.Run(t, checkout, "rev-parse", "HEAD")); got != beforeHead {
-		t.Fatalf("HEAD after park = %q, want unchanged %q", got, beforeHead)
+	if queue.Items[0].Worktree == "" || queue.Items[1].Worktree == "" || queue.Items[0].Worktree == queue.Items[1].Worktree {
+		t.Fatalf("item worktrees = %q and %q, want distinct recorded paths", queue.Items[0].Worktree, queue.Items[1].Worktree)
 	}
 	if got := strings.TrimSpace(gittest.Run(t, checkout, "branch", "--show-current")); got != beforeBranch {
-		t.Fatalf("branch after park = %q, want unchanged %q", got, beforeBranch)
+		t.Fatalf("user checkout branch = %q, want unchanged %q", got, beforeBranch)
+	}
+	if got := strings.TrimSpace(gittest.Run(t, checkout, "rev-parse", "HEAD")); got != beforeHead {
+		t.Fatalf("user checkout HEAD = %q, want unchanged %q", got, beforeHead)
+	}
+	if got := gittest.Run(t, checkout, "status", "--porcelain=v1", "-z", "--untracked-files=all", "--ignored=matching"); got != beforeStatus {
+		t.Fatalf("user checkout status = %q, want unchanged %q", got, beforeStatus)
+	}
+	if got := mustRead(t, filepath.Join(checkout, "seed.txt")); got != beforeSeed {
+		t.Fatalf("tracked user file = %q, want unchanged %q", got, beforeSeed)
+	}
+	if got := mustRead(t, filepath.Join(checkout, "ignored.txt")); got != beforeIgnored {
+		t.Fatalf("ignored user file = %q, want unchanged %q", got, beforeIgnored)
+	}
+	if got := mustRead(t, filepath.Join(nestedRepository, "nested.txt")); got != beforeNested {
+		t.Fatalf("nested repository file = %q, want unchanged %q", got, beforeNested)
 	}
 }
 
-func TestParkRestoresTheRecordedStartingBranchAfterACrash(t *testing.T) {
+func TestParkLeavesTheItemWorktreeInPlace(t *testing.T) {
+	t.Parallel()
 	_, checkout := newDeliveryBranchRepository(t)
-	ctx := t.Context()
-	homeDir := t.TempDir()
-	firstStore, err := store.Open(ctx, homeDir)
-	if err != nil {
-		t.Fatalf("open Run Database before crash: %v", err)
-	}
-	const specSlug = "0161-crashed-item"
-	if _, err := firstStore.CreateDeliveryQueue(ctx, checkout, []string{specSlug}); err != nil {
-		t.Fatalf("create Delivery Queue: %v", err)
-	}
-	beforeCrash := &commandDeliveryWorkflow{
-		store:  firstStore,
-		loaded: roundconfig.Loaded{GitRoot: checkout},
-		git:    preflight.ExecGitRunner{},
-	}
-	itemBranch, err := beforeCrash.CreateItemBranch(ctx, checkout, specSlug)
-	if err != nil {
-		t.Fatalf("create item branch before crash: %v", err)
-	}
-	if err := firstStore.Close(); err != nil {
-		t.Fatalf("close Run Database at simulated crash: %v", err)
-	}
-
-	afterCrashStore, err := store.Open(ctx, homeDir)
-	if err != nil {
-		t.Fatalf("reopen Run Database after crash: %v", err)
-	}
-	t.Cleanup(func() {
-		if err := afterCrashStore.Close(); err != nil {
-			t.Errorf("close reopened Run Database: %v", err)
-		}
+	const specSlug = "0168-park-worktree"
+	workflow := newDeliveryBranchWorkflow(t, checkout, specSlug)
+	flow := &parkTestDeliveryFlow{parkSlug: specSlug}
+	engine := delivery.NewEngine(workflow.store, delivery.EngineDependencies{
+		Workspace:    workflow,
+		Runner:       flow,
+		Reviewer:     flow,
+		Archiver:     flow,
+		Gate:         flow,
+		Authorizer:   flow,
+		Publication:  flow,
+		PullRequests: flow,
 	})
-	afterCrash := &commandDeliveryWorkflow{
-		store:  afterCrashStore,
-		loaded: roundconfig.Loaded{GitRoot: checkout},
-		git:    preflight.ExecGitRunner{},
-	}
-	mustWrite(t, filepath.Join(checkout, "item-output.txt"), "discard me\n")
 
-	if err := afterCrash.ParkItem(ctx, checkout); err != nil {
-		t.Fatalf("park item after crash: %v", err)
+	if _, err := engine.Run(t.Context(), checkout); err != nil {
+		t.Fatalf("run Delivery Engine: %v", err)
 	}
-	if got := strings.TrimSpace(gittest.Run(t, checkout, "branch", "--show-current")); got != "main" {
-		t.Fatalf("branch after crash park = %q, want recorded starting branch main (item branch %q)", got, itemBranch)
+
+	queue, found, err := workflow.store.DeliveryQueue(t.Context(), checkout)
+	if err != nil || !found {
+		t.Fatalf("read Delivery Queue: found=%v err=%v", found, err)
 	}
-	if got := gittest.Run(t, checkout, "status", "--porcelain=v1", "-z", "--untracked-files=all"); got != "" {
-		t.Fatalf("status after crash park = %q, want clean checkout", got)
+	item := queue.Items[0]
+	if item.Stage != store.DeliveryStageParked || item.Worktree == "" {
+		t.Fatalf("parked item = %+v, want parked with recorded worktree", item)
+	}
+	info, err := os.Stat(item.Worktree)
+	if err != nil || !info.IsDir() {
+		t.Fatalf("parked item worktree %q: info=%v err=%v", item.Worktree, info, err)
+	}
+	registered := gittest.Run(t, checkout, "worktree", "list", "--porcelain")
+	if !strings.Contains(registered, "branch refs/heads/"+item.Branch+"\n") {
+		t.Fatalf("registered worktrees = %q, want parked branch %q", registered, item.Branch)
 	}
 }
 
@@ -703,7 +598,17 @@ func resumeArchivedDelivery(t *testing.T, repository string, reviewedHead string
 	item := queue.Items[0]
 	item.Stage = store.DeliveryStageArchiving
 	item.Branch = strings.TrimSpace(gittest.Run(t, repository, "branch", "--show-current"))
+	item.Worktree = repository
 	item.CandidateCommits = []string{reviewedHead}
+	if _, _, err := runStore.RecordDeliveryQueueItemWorktree(
+		t.Context(),
+		repository,
+		item.SpecSlug,
+		item.Branch,
+		item.Worktree,
+	); err != nil {
+		t.Fatalf("record archiving item worktree: %v", err)
+	}
 	if err := runStore.UpdateDeliveryQueueItem(t.Context(), repository, item); err != nil {
 		t.Fatalf("seed archiving item: %v", err)
 	}
@@ -717,7 +622,7 @@ func resumeArchivedDelivery(t *testing.T, repository string, reviewedHead string
 	}
 	flow := &parkTestDeliveryFlow{}
 	engine := delivery.NewEngine(runStore, delivery.EngineDependencies{
-		Workspace:    workflow,
+		Workspace:    flow,
 		Runner:       flow,
 		Reviewer:     flow,
 		Archiver:     workflow,
@@ -768,9 +673,14 @@ func newDeliveryBranchWorkflow(t *testing.T, checkout string, specSlug string) *
 		t.Fatalf("create Delivery Queue: %v", err)
 	}
 	return &commandDeliveryWorkflow{
-		store:  runStore,
-		loaded: roundconfig.Loaded{GitRoot: checkout},
-		git:    preflight.ExecGitRunner{},
+		store: runStore,
+		loaded: roundconfig.Loaded{
+			GitRoot: checkout,
+			Config: roundconfig.Config{
+				Worktree: roundconfig.Worktree{Location: filepath.Join(t.TempDir(), "worktrees")},
+			},
+		},
+		git: preflight.ExecGitRunner{},
 	}
 }
 
@@ -805,20 +715,33 @@ func TestDeliverCommandRefusesUnknownFlags(t *testing.T) {
 }
 
 type parkTestDeliveryFlow struct {
-	checkout     string
+	parkSlug     string
 	reviewedHead string
-	runs         []string
+	workDir      string
+	remoteHeads  map[string]string
+	pullRequests map[string]delivery.PullRequest
+}
+
+func (flow *parkTestDeliveryFlow) CreateItemBranch(context.Context, string, string) (string, string, error) {
+	return "", "", errors.New("unexpected item worktree creation")
+}
+
+func (flow *parkTestDeliveryFlow) UseItemBranch(_ context.Context, _ string, _ string, itemWorktree string) (string, error) {
+	return itemWorktree, nil
 }
 
 func (flow *parkTestDeliveryFlow) RunSpec(_ context.Context, _ string, slug string) (delivery.RunResult, error) {
-	flow.runs = append(flow.runs, slug)
-	if len(flow.runs) > 1 {
+	if slug == flow.parkSlug {
 		return delivery.RunResult{Outcome: delivery.RunOutcomeUnresolved}, nil
+	}
+	head := flow.reviewedHead
+	if head == "" {
+		head = "reviewed-" + slug
 	}
 	return delivery.RunResult{
 		RunID:            "run-" + slug,
 		Outcome:          delivery.RunOutcomeClean,
-		CandidateCommits: []string{flow.reviewedHead},
+		CandidateCommits: []string{head},
 	}, nil
 }
 
@@ -834,46 +757,75 @@ func (flow *parkTestDeliveryFlow) RecordReviewOmission(context.Context, string, 
 	return errors.New("unexpected review omission")
 }
 
-func (flow *parkTestDeliveryFlow) Archive(_ context.Context, _, _ string, reviewedHead string) (delivery.ArchiveResult, error) {
-	if err := os.WriteFile(filepath.Join(flow.checkout, "seed.txt"), []byte("tracked archive change\n"), 0o644); err != nil {
-		return delivery.ArchiveResult{}, err
-	}
-	if err := os.WriteFile(filepath.Join(flow.checkout, "archive-fragment.txt"), []byte("non-exact archive\n"), 0o644); err != nil {
-		return delivery.ArchiveResult{}, err
-	}
-	return delivery.ArchiveResult{Parent: reviewedHead, ExactSpecMove: false}, nil
+func (flow *parkTestDeliveryFlow) Archive(_ context.Context, _, slug string, reviewedHead string) (delivery.ArchiveResult, error) {
+	return delivery.ArchiveResult{Parent: reviewedHead, Head: "archived-" + slug, ExactSpecMove: true}, nil
 }
 
 func (flow *parkTestDeliveryFlow) Gate(context.Context, string, string, string) (delivery.GateResult, error) {
-	return delivery.GateResult{}, errors.New("unexpected repository gate")
+	return delivery.GateResult{Passed: true}, nil
 }
 
 func (flow *parkTestDeliveryFlow) Authorization(context.Context, string, string) (delivery.Authorization, error) {
-	return delivery.Authorization{}, errors.New("unexpected authorization read")
+	return delivery.Authorization{Operations: []string{"push", "pull_request", "merge"}}, nil
 }
 
-func (flow *parkTestDeliveryFlow) Publication(context.Context, string, string, string) (delivery.Publication, error) {
-	return delivery.Publication{}, errors.New("unexpected publication plan")
+func (flow *parkTestDeliveryFlow) Publication(_ context.Context, _ string, slug, branch string) (delivery.Publication, error) {
+	return delivery.Publication{Remote: "origin", HeadBranch: branch, BaseBranch: "main", Title: slug}, nil
 }
 
-func (flow *parkTestDeliveryFlow) RemoteBranchHead(context.Context, string, string) (delivery.RemoteHead, bool, error) {
-	return delivery.RemoteHead{}, false, errors.New("unexpected remote head read")
+func (flow *parkTestDeliveryFlow) WithWorkDir(workDir string) delivery.PullRequestBoundary {
+	flow.workDir = workDir
+	if flow.remoteHeads == nil {
+		flow.remoteHeads = map[string]string{}
+	}
+	if flow.pullRequests == nil {
+		flow.pullRequests = map[string]delivery.PullRequest{}
+	}
+	return flow
 }
 
-func (flow *parkTestDeliveryFlow) PushBranch(context.Context, string, string, string) (delivery.RemoteHead, error) {
-	return delivery.RemoteHead{}, errors.New("unexpected push")
+func (flow *parkTestDeliveryFlow) RemoteBranchHead(_ context.Context, remote, branch string) (delivery.RemoteHead, bool, error) {
+	head, found := flow.remoteHeads[branch]
+	return delivery.RemoteHead{Remote: remote, Branch: branch, SHA: head}, found, nil
 }
 
-func (flow *parkTestDeliveryFlow) FindOrCreatePullRequest(context.Context, delivery.PullRequestRequest) (delivery.PullRequestResult, error) {
-	return delivery.PullRequestResult{}, errors.New("unexpected pull request creation")
+func (flow *parkTestDeliveryFlow) PushBranch(_ context.Context, remote, branch, head string) (delivery.RemoteHead, error) {
+	flow.remoteHeads[branch] = head
+	return delivery.RemoteHead{Remote: remote, Branch: branch, SHA: head}, nil
 }
 
-func (flow *parkTestDeliveryFlow) CurrentHeadChecks(context.Context, string) (delivery.CheckReport, error) {
-	return delivery.CheckReport{}, errors.New("unexpected check read")
+func (flow *parkTestDeliveryFlow) FindOrCreatePullRequest(_ context.Context, req delivery.PullRequestRequest) (delivery.PullRequestResult, error) {
+	pullRequest := delivery.PullRequest{
+		Number:     fmt.Sprintf("%d", len(flow.pullRequests)+1),
+		State:      "OPEN",
+		HeadBranch: req.HeadBranch,
+		HeadSHA:    flow.remoteHeads[req.HeadBranch],
+	}
+	flow.pullRequests[pullRequest.Number] = pullRequest
+	return delivery.PullRequestResult{PullRequest: pullRequest, Created: true}, nil
 }
 
-func (flow *parkTestDeliveryFlow) MergePullRequest(context.Context, string, string) (delivery.MergeResult, error) {
-	return delivery.MergeResult{}, errors.New("unexpected merge")
+func (flow *parkTestDeliveryFlow) CurrentHeadChecks(_ context.Context, number string) (delivery.CheckReport, error) {
+	pullRequest, found := flow.pullRequests[number]
+	if !found {
+		return delivery.CheckReport{}, errors.New("pull request not found")
+	}
+	return delivery.CheckReport{
+		HeadSHA: pullRequest.HeadSHA,
+		Checks:  []delivery.PullRequestCheck{{Name: "test", Bucket: "pass"}},
+	}, nil
+}
+
+func (flow *parkTestDeliveryFlow) MergePullRequest(_ context.Context, number, expectedHead string) (delivery.MergeResult, error) {
+	pullRequest, found := flow.pullRequests[number]
+	if !found {
+		return delivery.MergeResult{}, errors.New("pull request not found")
+	}
+	pullRequest.State = "MERGED"
+	pullRequest.HeadSHA = expectedHead
+	pullRequest.MergeCommit = "merge-" + number
+	flow.pullRequests[number] = pullRequest
+	return delivery.MergeResult{PullRequest: pullRequest}, nil
 }
 
 type fakeDeliveryOwnerProcesses struct {

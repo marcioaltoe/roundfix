@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0168-deliver-one-worktree-per-item
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -50,3 +50,26 @@ complexity: high
 ## References
 
 - [_techspec.md](_techspec.md) — The item worktree
+
+## Result
+
+Implemented the item-worktree slice without changing the Daemon-owned status:
+
+- The workflow derives and records each item's branch and worktree before Git creates either, refreshes the default branch, creates an untracked branch in a linked worktree, and provisions configured copy files and bootstrap through `internal/worktree`.
+- The Delivery Engine keeps queue and action records keyed by the user's repository while running implement, review, archive, gate, authorization, publication, push, pull-request, check, and merge operations from the recorded item worktree.
+- Parking now only persists the blocker and leaves every checkout and the item worktree unchanged.
+- `deliver status` prints the recorded item worktree as its fourth tab-separated field and prints `-` when none is recorded.
+
+Focused check:
+
+- `GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 ./internal/delivery ./internal/cli ./internal/worktree` — passed.
+
+Acceptance evidence:
+
+- `TestEachItemRunsInItsOwnWorktree` uses real Git to prove the worktree starts at the refreshed default-branch head, has no upstream, lives under `worktree.location`, receives copied files and bootstrap output, and is recorded with its branch.
+- `TestDeliverNeverTouchesTheUserCheckout` uses real Git to run one parked item and one merged item while preserving a dirty non-default user checkout's branch, HEAD, porcelain status, tracked content, ignored content, and nested repository content; it also proves the two items record distinct worktrees.
+- `TestParkLeavesTheItemWorktreeInPlace` proves a parked item's recorded directory still exists and its branch remains registered as a linked worktree.
+- `TestDeliveryActionsRunInTheItemWorktree` proves every per-item workflow and GitHub boundary receives the item worktree while the Delivery Queue remains keyed only by the user's repository.
+- `TestDeliverStatusPrintsTheItemWorktree` proves both the recorded-path and empty-path (`-`) status fields.
+
+Follow-up: Task 03 remains responsible for recreating missing item worktrees on resume and removing merged item worktrees and local branches.
