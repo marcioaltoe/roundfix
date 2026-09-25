@@ -136,6 +136,18 @@ reason given under Non-Goals.
 4. Reconciliation removes an entry absent at the selected commit and keeps
    present, moved, unrelated and unreachable-source entries.
 
+## Recorded limits
+
+Found by the pre-PR review of 2026-09-25 and carried to Backlog Entries:
+
+- `baseline skills reconcile` (like `baseline skills restore`) reads
+  `skills-lock.json` before the network fetch but snapshots its preimage after,
+  so a concurrent lock rewrite during the fetch can be overwritten. Carried to
+  `docs/backlog/2026-09-25-skills-lock-preimage-taken-after-the-fetch.md`.
+- The blocked required-removed result prints `"plannedChanges": null` and exits
+  3, which the help documents only for plan confirmation. Carried to
+  `docs/backlog/2026-09-25-reconcile-required-removed-breaks-the-output-contract.md`.
+
 ## Decisions
 
 - **Carry the untouched fields forward.** Of the three designs the 2026-08-07
