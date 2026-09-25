@@ -12,7 +12,7 @@ import (
 
 const (
 	// CodeOrdinalClaimed identifies an ADR ordinal held by another tree path
-	// or claimed by a Task in another active Spec.
+	// or claimed for another path by an active Spec Task.
 	CodeOrdinalClaimed = "SC-ORDINAL-CLAIMED"
 )
 
@@ -27,6 +27,13 @@ func detectOrdinalClaims(result *Result, specsRoot, repoRoot string, graph *spec
 	claims := ordinalClaims(graph, specsRoot, repoRoot)
 	if len(claims) == 0 {
 		return nil
+	}
+	for index, claim := range claims {
+		for _, other := range claims[:index] {
+			if claim.number == other.number && claim.path != other.path {
+				result.Findings = append(result.Findings, ordinalSpecFinding(claim, other))
+			}
+		}
 	}
 
 	heldPaths, err := heldADRPaths(repoRoot)

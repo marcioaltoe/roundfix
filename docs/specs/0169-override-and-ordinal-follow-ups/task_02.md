@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0169-override-and-ordinal-follow-ups
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -19,13 +19,13 @@ Two Tasks of one Spec creating different paths with the same ADR number are not 
 
 ## Subtasks
 
-- [ ] Implement the requirements above.
-- [ ] Add a test for each acceptance criterion.
+- [x] Implement the requirements above.
+- [x] Add a test for each acceptance criterion.
 
 ## Acceptance Criteria
 
-- [ ] A same-Spec duplicate is reported; distinct numbers pass.
-- [ ] A Spec without `_tasks.md` lists the skip.
+- [x] A same-Spec duplicate is reported; distinct numbers pass.
+- [x] A Spec without `_tasks.md` lists the skip.
 
 ## Context
 
@@ -40,3 +40,13 @@ Two Tasks of one Spec creating different paths with the same ADR number are not 
 ## References
 
 - [_techspec.md](_techspec.md) — The ordinal check
+
+## Result
+
+- Implementation: the ordinal detector now compares claims within the current Task Graph before checking repository and other-Spec claims, and the missing-Task-Graph path records `SC-ORDINAL-CLAIMED` among its skipped detectors.
+- Red evidence: `TestSameSpecDuplicateOrdinalIsClaimed` initially reported no `SC-ORDINAL-CLAIMED` finding for two paths with ordinal `0042`; `TestMissingTaskGraphListsTheOrdinalSkip` initially reported a skip list without `SC-ORDINAL-CLAIMED`.
+- Acceptance criterion 1: `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run '^TestSameSpecDuplicateOrdinalIsClaimed$' ./internal/speccheck` passed. Its duplicate-ordinal subtest requires one finding naming both paths, and its distinct-ordinals subtest requires no finding.
+- Acceptance criterion 2: `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run '^TestMissingTaskGraphListsTheOrdinalSkip$' ./internal/speccheck` passed and requires the missing `_tasks.md` skip to name `SC-ORDINAL-CLAIMED`.
+- Focused package check: `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 ./internal/speccheck` passed.
+- Incremental repository check: `rtk env GOCACHE=/tmp/roundfix-task02-gocache make verify-incremental` passed after the sandbox-blocked first attempt was rerun with network permission; vet, the repository test sweep, skill checks, and the build exited zero.
+- Daemon Verification: not run; the Daemon owns the declared `## Verification` command and Task settlement.
