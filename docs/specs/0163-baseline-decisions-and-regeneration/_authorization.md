@@ -8,6 +8,7 @@ paths:
   - internal/baseline/plan_test.go
   - internal/baseline/derived_ownership_test.go
   - internal/speccheck/mechanical_test.go
+  - internal/cli/baseline_documentation_contract_test.go
   - skills/_ownership.yml
   - .agents/skills/roundfix/SKILL.md
   - skills/roundfix/SKILL.md
@@ -83,6 +84,11 @@ for governed paths a slice genuinely needs: the mechanical audit's tests call
 `baseline.OutputsFor`, so declaring the skill regeneration outputs changes their
 expectations. The first Run proved the need: Task 03 edited it and the QA
 authorization audit refused the unbounded path.
+
+`internal/cli/baseline_documentation_contract_test.go` also rides the standing
+grant of 2026-09-21: it parses every documented `roundfix baseline` example, and
+the new `baseline skills reconcile` example needs its case. The second Run's QA
+precondition proved the need.
 
 ## Limits
 

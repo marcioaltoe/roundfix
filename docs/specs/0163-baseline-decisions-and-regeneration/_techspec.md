@@ -29,7 +29,8 @@ immutable commit. Then update the two shipped skills.
   2026-09-24, recorded in [_authorization.md](_authorization.md); bounded files:
   `internal/cli/baseline_human_test.go`, `internal/baseline/plan_test.go`,
   `internal/baseline/derived_ownership_test.go`,
-  `internal/speccheck/mechanical_test.go`, `skills/_ownership.yml`,
+  `internal/speccheck/mechanical_test.go`,
+  `internal/cli/baseline_documentation_contract_test.go`, `skills/_ownership.yml`,
   `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`,
   `.agents/skills/setup-context-driven/SKILL.md`,
   `skills/setup-context-driven/SKILL.md`. Sanctioned regeneration:
@@ -168,7 +169,8 @@ changed.
 4. Lock reconciliation engine (depends on: 3).
 5. Lock reconciliation command (depends on: 4).
 6. Shipped guidance and sanctioned regeneration (depends on: 5).
-7. Terminal QA (depends on: 1, 2, 3, 4, 5, 6).
+7. Terminal QA (depends on: 1, 2, 3, 4, 5, 6, 8).
+8. The documented reconcile example parses (depends on: 6).
 
 ## Risks & Considerations
 

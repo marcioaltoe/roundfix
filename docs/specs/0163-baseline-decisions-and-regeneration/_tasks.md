@@ -24,7 +24,10 @@ graph:
       needs: [task_05]
     - id: task_07
       file: task_07.md
-      needs: [task_01, task_02, task_03, task_04, task_05, task_06]
+      needs: [task_01, task_02, task_03, task_04, task_05, task_06, task_08]
+    - id: task_08
+      file: task_08.md
+      needs: [task_06]
 ---
 
 # Task Graph
@@ -37,4 +40,5 @@ graph:
 | task_04 | backend | Reconcile the lock on proven absence |
 | task_05 | backend | The lock reconciliation command |
 | task_06 | docs | Shipped skills describe the changes |
+| task_08 | test | The documented reconcile example parses |
 | task_07 | qa | Run the final QA gate |
