@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0171-a-deterministic-suite-under-load
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -68,3 +68,51 @@ a one-second bootstrap timeout it does not examine. This Task moves
 
 - [_prd.md](_prd.md) — Core Feature 2; Success Metrics 1-2
 - [_techspec.md](_techspec.md) — The Implement tests
+
+## Result
+
+Implemented the Implement-test wait migration without changing production
+behavior. Every named helper now delegates to `testwait.Until` or
+`testwait.Poll`; fixed wait budgets, timer selects and literal 90-second waits
+were removed. The two tests that run `runImplementCommandAsync` pass its result
+channel through every intervening Agent-start, journal and file wait. An ended
+command is formatted with its exit code, stdout and stderr for `testwait`'s
+immediate failure diagnostic. The three bootstrap tests derive their
+non-subject product timeout from `testwait.Bound(t)`. `attachDetachBudget` and
+the attach follow loop remain unchanged, and no production or governed file
+was edited.
+
+Focused evidence by acceptance criterion:
+
+- Wait migration and source constraints: `rtk rg -n
+  'implementWaitBudget|detachStartupBudget|time\.After\(|time\.NewTimer\(|bootstrap_timeout:
+  1s|90[[:space:]]*\*[[:space:]]*time\.Second|command, "1s"\)'
+  internal/cli/implement_test.go` found no matches (exit 1), while `rtk rg -n
+  'testwait\.(Until|Poll|Bound)|attachDetachBudget'
+  internal/cli/implement_test.go` found all nine migrated waits, the three
+  deadline-derived bootstrap timeouts, and the unchanged attach budget (exit
+  0). `rtk git diff --check` also exited 0.
+- Queued cancellation and bootstrap behavior: `rtk env
+  GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -ldflags '-X
+  roundfix/internal/app.Version=dev' -run
+  '^(TestRunImplementQueuedCancellationStartsNoChildAndKeepsResumableTasks|TestRunImplementBootstrapsEachConcurrentTaskWorktreeBeforeAgentWork|TestRunImplementBootstrapFailureEndsFailedBeforeAgentWork|TestRunImplementBootstrapRunsBeforeAgentWorkAndVerification)$'
+  ./internal/cli` passed (exit 0, 1.756 s). A focused stress variant with the
+  same selection and link flag at `-count=2 -cpu 1,4` also passed (exit 0,
+  2.847 s). The development-version link flag prevents the live release lookup
+  assigned to Task 04 and changes no repository file.
+
+Additional focused checks:
+
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -ldflags '-X
+  roundfix/internal/app.Version=dev' -run
+  '^(TestRunImplementDetachPrintsReportAndCompletesRun|TestRunImplementDetachSurvivesCallerProcessGroupKill|TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow)$'
+  ./internal/cli` passed (exit 0, 3.177 s), exercising the other converted
+  line, process, file, Run-state, outcome and journal wait paths.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache make verify-incremental`
+  passed `go vet ./...` and began the repository-wide test phase, then the
+  sandbox blocked the pre-existing live `api.github.com` release lookup. That
+  lookup is explicitly owned by Task 04, so this Task did not alter or bypass
+  it.
+
+The Daemon-owned command in `## Verification`, including its `-count=5`
+stress, was not run.

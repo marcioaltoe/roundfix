@@ -31,6 +31,7 @@ import (
 	"roundfix/internal/speccheck"
 	"roundfix/internal/store"
 	"roundfix/internal/suiteguard"
+	"roundfix/internal/testwait"
 	roundtui "roundfix/internal/tui"
 	runworktree "roundfix/internal/worktree"
 )
@@ -281,101 +282,77 @@ func parseDetachedReport(t *testing.T, stdout string) (string, string) {
 	return runID, consoleLog
 }
 
-func readLineWithTimeout(t *testing.T, reader *bufio.Reader, timeout time.Duration) string {
+func readLineWithTimeout(t *testing.T, reader *bufio.Reader) string {
 	t.Helper()
-	lineCh := make(chan string, 1)
-	errCh := make(chan error, 1)
+	type readResult struct {
+		line string
+		err  error
+	}
+	resultCh := make(chan readResult, 1)
 	go func() {
 		line, err := reader.ReadString('\n')
-		if err != nil {
-			errCh <- err
-			return
-		}
-		lineCh <- line
+		resultCh <- readResult{line: line, err: err}
 	}()
-	timer := time.NewTimer(timeout)
-	defer timer.Stop()
-	select {
-	case line := <-lineCh:
-		return line
-	case err := <-errCh:
-		t.Fatalf("read line: %v", err)
-	case <-timer.C:
-		t.Fatalf("timed out waiting for line")
+	var ended <-chan struct{}
+	result := testwait.Until(t, "line", resultCh, ended)
+	if result.err != nil {
+		t.Fatalf("read line: %v", result.err)
 	}
-	return ""
+	return result.line
 }
 
-func waitProcessForTest(cmd *exec.Cmd, timeout time.Duration) (error, bool) {
+func waitProcessForTest(t *testing.T, cmd *exec.Cmd) error {
+	t.Helper()
 	waitCh := make(chan error, 1)
 	go func() {
 		waitCh <- cmd.Wait()
 	}()
-	timer := time.NewTimer(timeout)
-	defer timer.Stop()
-	select {
-	case err := <-waitCh:
-		return err, true
-	case <-timer.C:
-		return nil, false
-	}
+	var ended <-chan struct{}
+	return testwait.Until(t, "process exit", waitCh, ended)
 }
 
-func waitForFile(t *testing.T, path string, timeout time.Duration) {
+func waitForFile(t *testing.T, path string, ended <-chan implementCommandResult) {
 	t.Helper()
-	deadline := time.Now().Add(timeout)
-	for time.Now().Before(deadline) {
-		if _, err := os.Stat(path); err == nil {
-			return
-		}
-		time.Sleep(25 * time.Millisecond)
-	}
-	t.Fatalf("timed out waiting for %s", path)
+	testwait.Poll(t, "file "+path, ended, func() (bool, string) {
+		_, err := os.Stat(path)
+		return err == nil, fmt.Sprintf("stat error: %v", err)
+	})
 }
 
 // waitForFileContains polls a file until it contains substr. A detached child's
 // console log is flushed a hair after the store State flips, so reading it once
 // right after the state change races under load.
-func waitForFileContains(t *testing.T, path string, substr string, timeout time.Duration) {
+func waitForFileContains(t *testing.T, path string, substr string, ended <-chan implementCommandResult) {
 	t.Helper()
-	deadline := time.Now().Add(timeout)
-	var last string
-	for time.Now().Before(deadline) {
+	testwait.Poll(t, fmt.Sprintf("%s to contain %q", path, substr), ended, func() (bool, string) {
 		data, err := os.ReadFile(path)
-		if err == nil {
-			last = string(data)
-			if strings.Contains(last, substr) {
-				return
-			}
+		if err != nil {
+			return false, fmt.Sprintf("read error: %v", err)
 		}
-		time.Sleep(25 * time.Millisecond)
-	}
-	t.Fatalf("timed out waiting for %s to contain %q; last content %q", path, substr, last)
+		last := string(data)
+		return strings.Contains(last, substr), fmt.Sprintf("last content %q", last)
+	})
 }
 
-func waitForRunState(t *testing.T, homeDir string, runID string, state string, timeout time.Duration) store.Run {
+func waitForRunState(t *testing.T, homeDir string, runID string, state string, ended <-chan implementCommandResult) store.Run {
 	t.Helper()
-	deadline := time.Now().Add(timeout)
 	var last store.Run
-	for time.Now().Before(deadline) {
+	testwait.Poll(t, fmt.Sprintf("Run %s state %s", runID, state), ended, func() (bool, string) {
 		reader, err := store.OpenReader(context.Background(), homeDir)
-		if err == nil {
-			run, found, runErr := reader.Run(context.Background(), runID)
-			_ = reader.Close()
-			if runErr != nil {
-				t.Fatalf("read Run %s: %v", runID, runErr)
-			}
-			if found {
-				last = run
-				if run.State == state {
-					return run
-				}
-			}
+		if err != nil {
+			return false, fmt.Sprintf("open reader: %v", err)
 		}
-		time.Sleep(25 * time.Millisecond)
-	}
-	t.Fatalf("timed out waiting for Run %s state %s; last state %s", runID, state, last.State)
-	return store.Run{}
+		run, found, runErr := reader.Run(context.Background(), runID)
+		_ = reader.Close()
+		if runErr != nil {
+			t.Fatalf("read Run %s: %v", runID, runErr)
+		}
+		if found {
+			last = run
+		}
+		return found && run.State == state, "last state " + last.State
+	})
+	return last
 }
 
 // waitForCleanOutcomeEvent polls the Run Event Journal until the Clean Daemon
@@ -383,10 +360,9 @@ func waitForRunState(t *testing.T, homeDir string, runID string, state string, t
 // flip to Clean a hair before those durable events are appended, so a single
 // snapshot races under load; polling removes the race without masking a
 // product bug.
-func waitForCleanOutcomeEvent(t *testing.T, homeDir string, runID string, timeout time.Duration) {
+func waitForCleanOutcomeEvent(t *testing.T, homeDir string, runID string, ended <-chan implementCommandResult) {
 	t.Helper()
-	deadline := time.Now().Add(timeout)
-	for time.Now().Before(deadline) {
+	testwait.Poll(t, "journaled Clean outcome for Run "+runID, ended, func() (bool, string) {
 		events := runEventsForRun(t, homeDir, runID)
 		if len(events) >= 2 {
 			outcome := events[len(events)-2].Event
@@ -397,17 +373,15 @@ func waitForCleanOutcomeEvent(t *testing.T, homeDir string, runID string, timeou
 				receipt.Kind == runevent.KindDaemonStatus &&
 				json.Unmarshal(receipt.Payload, &payload) == nil &&
 				strings.HasPrefix(payload.Event, "outcome_notification_") {
-				return
+				return true, "Clean outcome and notification receipt visible"
 			}
 		}
-		time.Sleep(25 * time.Millisecond)
-	}
-	events := runEventsForRun(t, homeDir, runID)
-	if len(events) == 0 {
-		t.Fatalf("timed out waiting for journaled Clean outcome for Run %s; no events", runID)
-	}
-	last := events[len(events)-1].Event
-	t.Fatalf("timed out waiting for journaled Clean outcome for Run %s; last kind=%s payload=%s", runID, last.Kind, string(last.Payload))
+		if len(events) == 0 {
+			return false, "no events"
+		}
+		last := events[len(events)-1].Event
+		return false, fmt.Sprintf("last kind=%s payload=%s", last.Kind, string(last.Payload))
+	})
 }
 
 func runEventsForRun(t *testing.T, homeDir string, runID string) []store.JournalEvent {
@@ -1459,6 +1433,10 @@ type implementCommandResult struct {
 	code   int
 }
 
+func (result implementCommandResult) String() string {
+	return fmt.Sprintf("exit code %d; stdout=%q; stderr=%q", result.code, result.stdout, result.stderr)
+}
+
 func runImplementCommandAsync(t *testing.T, ctx context.Context, args ...string) <-chan implementCommandResult {
 	t.Helper()
 	resultCh := make(chan implementCommandResult, 1)
@@ -1474,24 +1452,6 @@ func runImplementCommandAsync(t *testing.T, ctx context.Context, args ...string)
 	}()
 	return resultCh
 }
-
-// implementWaitBudget bounds every "this eventually happened" wait in the
-// Implement tests. It is deliberately far longer than the work needs: a
-// passing wait returns the moment its condition holds and pays none of it,
-// while a stuck one still fails. These tests orchestrate real child processes
-// and assert concurrency semantics, so they need CPU to make progress — and
-// they now run alongside hundreds of parallel siblings. A tight budget here
-// measures how loaded the machine is, not whether the code works.
-const implementWaitBudget = 90 * time.Second
-
-// detachStartupBudget bounds the wait for a detached caller's first stdout
-// line, which it prints once the Run exists. It follows implementWaitBudget's
-// reasoning and pays nothing when the child is prompt: the timer is read only
-// on failure. The literal it replaced was 5s, which the full parallel sweep
-// exceeded at 6.21s while the same test passed 20/20 focused runs in under a
-// second — the budget was reporting machine load, not a defect. See
-// docs/findings/2026-08-03-a-200ms-attach-budget-fails-under-ci-load.md.
-const detachStartupBudget = 30 * time.Second
 
 // attachDetachBudget bounds one attach invocation against an Active Run. It is
 // not free the way the budgets above are: attach exits its follow loop when
@@ -1511,15 +1471,8 @@ const attachDetachBudget = 2 * time.Second
 
 func waitImplementCommandResult(t *testing.T, resultCh <-chan implementCommandResult) implementCommandResult {
 	t.Helper()
-	timer := time.NewTimer(implementWaitBudget)
-	defer timer.Stop()
-	select {
-	case result := <-resultCh:
-		return result
-	case <-timer.C:
-		t.Fatal("timed out waiting for Implement Command")
-		return implementCommandResult{}
-	}
+	var ended <-chan struct{}
+	return testwait.Until(t, "Implement Command", resultCh, ended)
 }
 
 type implementAgentOverlapProbe struct {
@@ -1567,21 +1520,12 @@ func (probe *implementAgentOverlapProbe) maxObservedActive() int {
 	return probe.maxActive
 }
 
-func waitImplementAgentStarts(t *testing.T, probe *implementAgentOverlapProbe, count int) []string {
+func waitImplementAgentStarts(t *testing.T, probe *implementAgentOverlapProbe, count int, ended <-chan implementCommandResult) []string {
 	t.Helper()
 	started := make([]string, 0, count)
 	for len(started) < count {
-		select {
-		case name := <-probe.started:
-			started = append(started, name)
-		case <-time.After(implementWaitBudget):
-			t.Fatalf(
-				"timed out waiting for %d Agent starts; got %d (%v)",
-				count,
-				len(started),
-				started,
-			)
-		}
+		what := fmt.Sprintf("%d Agent starts; got %d (%v)", count, len(started), started)
+		started = append(started, testwait.Until(t, what, probe.started, ended))
 	}
 	return started
 }
@@ -1697,23 +1641,14 @@ func implementVerificationEvidenceFromEvents(t *testing.T, events []store.Journa
 	return evidence
 }
 
-func waitForImplementJournal(t *testing.T, homeDir string, runID string, condition func([]store.JournalEvent) bool) []store.JournalEvent {
+func waitForImplementJournal(t *testing.T, homeDir string, runID string, ended <-chan implementCommandResult, condition func([]store.JournalEvent) bool) []store.JournalEvent {
 	t.Helper()
-	timer := time.NewTimer(implementWaitBudget)
-	defer timer.Stop()
-	ticker := time.NewTicker(10 * time.Millisecond)
-	defer ticker.Stop()
-	for {
-		events := runEventsForRun(t, homeDir, runID)
-		if condition(events) {
-			return events
-		}
-		select {
-		case <-ticker.C:
-		case <-timer.C:
-			t.Fatalf("timed out waiting for Run Event Journal condition for Run %s; last events=%+v", runID, events)
-		}
-	}
+	var events []store.JournalEvent
+	testwait.Poll(t, "Run Event Journal condition for Run "+runID, ended, func() (bool, string) {
+		events = runEventsForRun(t, homeDir, runID)
+		return condition(events), fmt.Sprintf("last events=%+v", events)
+	})
+	return events
 }
 
 func onlyImplementRunID(t *testing.T, homeDir string) string {
@@ -1847,7 +1782,7 @@ func TestRunImplementDetachPrintsReportAndCompletesRun(t *testing.T) {
 		t.Fatalf("detach stdout mismatch\nwant: %q\ngot:  %q", wantStdout, stdout)
 	}
 
-	run := waitForRunState(t, homeDir, runID, store.StateClean, 90*time.Second)
+	run := waitForRunState(t, homeDir, runID, store.StateClean, nil)
 	if run.Kind != store.KindImplement {
 		t.Fatalf("expected Implement Run, got %s", run.Kind)
 	}
@@ -1855,8 +1790,8 @@ func TestRunImplementDetachPrintsReportAndCompletesRun(t *testing.T) {
 		t.Fatal("expected Run Worktree recorded on detached Run")
 	}
 	assertRunWorktreeRemoved(t, run.WorkDir)
-	waitForFileContains(t, consoleLog, "Implement Run "+runID+" reached Clean", 90*time.Second)
-	waitForCleanOutcomeEvent(t, homeDir, runID, 90*time.Second)
+	waitForFileContains(t, consoleLog, "Implement Run "+runID+" reached Clean", nil)
+	waitForCleanOutcomeEvent(t, homeDir, runID, nil)
 }
 
 func TestRunImplementDetachReportsAndRelaysPreflightFailure(t *testing.T) {
@@ -1915,7 +1850,7 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 		t.Fatalf("start detach caller: %v", err)
 	}
 
-	firstLine := readLineWithTimeout(t, bufio.NewReader(stdoutPipe), detachStartupBudget)
+	firstLine := readLineWithTimeout(t, bufio.NewReader(stdoutPipe))
 	runID, ok := strings.CutPrefix(strings.TrimSpace(firstLine), "Run ID: ")
 	if !ok || strings.TrimSpace(runID) == "" {
 		t.Fatalf("expected first detach line with Run id, got %q stderr=%q", firstLine, stderr.String())
@@ -1923,8 +1858,8 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 	if err := syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL); err != nil && !errors.Is(err, syscall.ESRCH) {
 		t.Fatalf("kill caller process group: %v", err)
 	}
-	_, _ = waitProcessForTest(cmd, 2*time.Second)
-	waitForFile(t, promptStarted, implementWaitBudget)
+	_ = waitProcessForTest(t, cmd)
+	waitForFile(t, promptStarted, nil)
 
 	var attachStdout bytes.Buffer
 	var attachStderr bytes.Buffer
@@ -1939,11 +1874,11 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 	}
 
 	mustWrite(t, releasePrompt, "release\n")
-	run := waitForRunState(t, homeDir, runID, store.StateClean, 90*time.Second)
+	run := waitForRunState(t, homeDir, runID, store.StateClean, nil)
 	if run.State != store.StateClean {
 		t.Fatalf("expected detached child to reach Clean after caller kill, got %s", run.State)
 	}
-	waitForCleanOutcomeEvent(t, homeDir, runID, 90*time.Second)
+	waitForCleanOutcomeEvent(t, homeDir, runID, nil)
 }
 
 func TestRunHelpListsImplementCommand(t *testing.T) {
@@ -2705,14 +2640,14 @@ func TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow(t *testin
 	t.Cleanup(cancel)
 
 	resultCh := runImplementCommandAsync(t, ctx, "implement", "--spec", implementTestSlug, "--no-input")
-	assertImplementTaskSet(t, waitImplementAgentStarts(t, overlap, 2), "task_01", "task_02")
+	assertImplementTaskSet(t, waitImplementAgentStarts(t, overlap, 2, resultCh), "task_01", "task_02")
 	if got := overlap.maxObservedActive(); got != 2 {
 		t.Fatalf("expected two simultaneous Agent turns, got max active %d", got)
 	}
 	overlap.releaseAgents()
 
 	runID := onlyImplementRunID(t, homeDir)
-	events := waitForImplementJournal(t, homeDir, runID, func(events []store.JournalEvent) bool {
+	events := waitForImplementJournal(t, homeDir, runID, resultCh, func(events []store.JournalEvent) bool {
 		waiting := 0
 		started := 0
 		for _, event := range implementVerificationEvidenceFromEvents(t, events) {
@@ -2743,13 +2678,13 @@ func TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow(t *testin
 	if firstTask == secondTask {
 		secondTask = "task_02"
 	}
-	waitForFile(t, startedPaths[firstTask], implementWaitBudget)
+	waitForFile(t, startedPaths[firstTask], resultCh)
 	if _, err := os.Stat(startedPaths[secondTask]); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("expected %s to remain queued before capacity release, stat error %v", secondTask, err)
 	}
 	releaseImplementNamedPipe(t, releasePaths[firstTask])
 
-	events = waitForImplementJournal(t, homeDir, runID, func(events []store.JournalEvent) bool {
+	events = waitForImplementJournal(t, homeDir, runID, resultCh, func(events []store.JournalEvent) bool {
 		started := 0
 		for _, event := range implementVerificationEvidenceFromEvents(t, events) {
 			if event.phase == string(runevent.VerificationPhaseStarted) {
@@ -2758,7 +2693,7 @@ func TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow(t *testin
 		}
 		return started == 2
 	})
-	waitForFile(t, startedPaths[secondTask], implementWaitBudget)
+	waitForFile(t, startedPaths[secondTask], resultCh)
 	releaseImplementNamedPipe(t, releasePaths[secondTask])
 
 	result := waitImplementCommandResult(t, resultCh)
@@ -3138,10 +3073,10 @@ func TestRunImplementQueuedCancellationStartsNoChildAndKeepsResumableTasks(t *te
 	t.Cleanup(cancel)
 
 	resultCh := runImplementCommandAsync(t, ctx, "implement", "--spec", implementTestSlug, "--no-input")
-	assertImplementTaskSet(t, waitImplementAgentStarts(t, overlap, 2), "task_01", "task_02")
+	assertImplementTaskSet(t, waitImplementAgentStarts(t, overlap, 2, resultCh), "task_01", "task_02")
 	overlap.releaseAgents()
 	runID := onlyImplementRunID(t, homeDir)
-	events := waitForImplementJournal(t, homeDir, runID, func(events []store.JournalEvent) bool {
+	events := waitForImplementJournal(t, homeDir, runID, resultCh, func(events []store.JournalEvent) bool {
 		waiting := 0
 		started := 0
 		for _, event := range implementVerificationEvidenceFromEvents(t, events) {
@@ -3168,7 +3103,7 @@ func TestRunImplementQueuedCancellationStartsNoChildAndKeepsResumableTasks(t *te
 	if activeTask == queuedTask {
 		queuedTask = "task_02"
 	}
-	waitForFile(t, startedPaths[activeTask], implementWaitBudget)
+	waitForFile(t, startedPaths[activeTask], resultCh)
 	if _, err := os.Stat(startedPaths[queuedTask]); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("expected queued Task %s to start no child process, stat error %v", queuedTask, err)
 	}
@@ -3244,7 +3179,7 @@ func TestRunImplementBootstrapFailureEndsFailedBeforeAgentWork(t *testing.T) {
 		title: "Build the widget core",
 	}})
 	command := "printf bootstrap-output; exit 7"
-	configureWorktreeBootstrap(t, repoDir, command, "1s")
+	configureWorktreeBootstrap(t, repoDir, command, testwait.Bound(t).String())
 	runner := &implementFakeRunner{gitRoot: repoDir}
 	withAgentRunner(t, runner)
 	var stdout bytes.Buffer
@@ -3306,7 +3241,7 @@ func TestRunImplementBootstrapRunsBeforeAgentWorkAndVerification(t *testing.T) {
 	mustWrite(t, filepath.Join(repoDir, ".gitignore"), "bootstrap.cwd\nbootstrap.ready\n")
 	gitImplement(t, repoDir, "add", ".gitignore")
 	gitImplement(t, repoDir, "commit", "-m", "ignore bootstrap markers")
-	configureWorktreeBootstrap(t, repoDir, command, "1s")
+	configureWorktreeBootstrap(t, repoDir, command, testwait.Bound(t).String())
 	runner := &implementFakeRunner{
 		gitRoot:      repoDir,
 		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
@@ -3351,7 +3286,7 @@ func TestRunImplementBootstrapsEachConcurrentTaskWorktreeBeforeAgentWork(t *test
 	mustWrite(t, filepath.Join(repoDir, ".gitignore"), "bootstrap.cwd\nbootstrap.ready\n")
 	gitImplement(t, repoDir, "add", ".gitignore")
 	gitImplement(t, repoDir, "commit", "-m", "ignore bootstrap markers")
-	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), fmt.Sprintf("worktree:\n  concurrency: 2\n  bootstrap: %q\n  bootstrap_timeout: 1s\n", command))
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), fmt.Sprintf("worktree:\n  concurrency: 2\n  bootstrap: %q\n  bootstrap_timeout: %s\n", command, testwait.Bound(t)))
 	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
 	gitImplement(t, repoDir, "commit", "-m", "configure concurrent worktree bootstrap")
 	runner := &implementFakeRunner{
