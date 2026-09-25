@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0172-a-qa-gate-that-tells-the-truth
-status: pending
+status: failed
 type: qa
 complexity: medium
 ---
