@@ -35,7 +35,7 @@ carried it here.
 
 ## Goals
 
-- No change a test can observe passes the selective gate untested.
+- No documentation or root Markdown change passes the selective gate untested.
 
 ## Core Features
 
@@ -52,6 +52,14 @@ carried it here.
 
 1. A change to `docs/user-guide/run-database-lifecycle.md` or `README.md` alone
    selects both sets.
+
+## Recorded limits
+
+- A core-only change still selects only the core set, although Baseline
+  packages import core packages (`internal/baseline` imports `internal/spec`).
+  Spec 0155 accepted this coupling to keep the selective gate selective; the
+  complete `make verify` on pushes to `main` covers it. Found by the pre-PR
+  review of 2026-09-25.
 
 ## Decisions
 
