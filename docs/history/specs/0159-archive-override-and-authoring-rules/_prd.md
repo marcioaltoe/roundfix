@@ -1,9 +1,12 @@
 ---
 spec: 0159-archive-override-and-authoring-rules
-status: active
+status: archived
 created: 2026-09-24
 surfaces: [backend, cli, docs]
+archived: "2026-09-25"
+source_slug: 0159-archive-override-and-authoring-rules
 ---
+
 
 # Archive override and authoring rules
 
