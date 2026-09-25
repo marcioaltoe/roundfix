@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0165-a-measured-run-ceiling
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
