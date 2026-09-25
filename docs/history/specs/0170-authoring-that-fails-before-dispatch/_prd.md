@@ -1,9 +1,12 @@
 ---
 spec: 0170-authoring-that-fails-before-dispatch
-status: active
+status: archived
 created: 2026-09-25
 surfaces: [backend, cli, docs]
+archived: "2026-09-25"
+source_slug: 0170-authoring-that-fails-before-dispatch
 ---
+
 
 # Authoring that fails before dispatch
 
