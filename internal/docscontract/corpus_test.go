@@ -296,6 +296,7 @@ var corpusFindingCodes = []string{
 	speccheck.CodeConstraintSource,
 	speccheck.CodeToolingUnauthorized,
 	speccheck.CodeToolingUnbounded,
+	speccheck.CodeToolingUndeclared,
 	speccheck.CodeADRUnlisted,
 	speccheck.CodeADRRelated,
 	speccheck.CodeMetricUndeclared,

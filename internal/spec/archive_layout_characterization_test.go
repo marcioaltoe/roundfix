@@ -114,6 +114,7 @@ func TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095(t *testing.T
 			"SC-ROLLUP-MEMBER":             0,
 			"SC-TOOLING-UNAUTHORIZED":      0,
 			"SC-TOOLING-UNBOUNDED":         0,
+			"SC-TOOLING-UNDECLARED":        0,
 			"SC-VERIFY-INVERTED-EXIT":      0,
 			"SC-VERIFY-NON-HERMETIC":       0,
 			"SC-VERIFY-VACUOUS-COMMAND":    0,

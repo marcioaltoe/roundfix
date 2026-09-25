@@ -73,6 +73,7 @@ var stagedDetectors = []stagedDetector{
 	{code: CodeQAVerificationAuthored, stage: StageTasks},
 	{code: CodeOrdinalClaimed, stage: StageTasks},
 	{code: CodeWaveCollision, stage: StageTasks},
+	{code: CodeToolingUndeclared, stage: StageTasks},
 }
 
 // CheckStage runs the detectors whose inputs exist by stage. StageAll keeps

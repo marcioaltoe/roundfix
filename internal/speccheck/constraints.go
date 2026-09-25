@@ -31,6 +31,9 @@ const (
 	// CodeToolingUnapproved identifies a claimed authorization whose cited
 	// record is not an operative grant.
 	CodeToolingUnapproved = "SC-TOOLING-UNAPPROVED"
+	// CodeToolingUndeclared identifies a Task-declared Governed Path omitted
+	// from its authorization record or a present Tooling authority row.
+	CodeToolingUndeclared = "SC-TOOLING-UNDECLARED"
 )
 
 const (
@@ -76,6 +79,7 @@ type constraintRow struct {
 	Raw           string
 	Authorization authorizationReferenceSelection
 	BoundedFiles  bool
+	BoundedPaths  []string
 	Line          int
 }
 
@@ -150,6 +154,7 @@ func Check(specsRoot, repoRoot, slug string) (Result, error) {
 		for _, code := range citationCoverageDetectorCodes {
 			addSkip(&result, code, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_prd.md")))
 		}
+		addSkip(&result, CodeToolingUndeclared, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_prd.md")))
 		return result, nil
 	}
 
@@ -173,6 +178,17 @@ func Check(specsRoot, repoRoot, slug string) (Result, error) {
 	executableTaskGraph := regularRepositoryFile(repoRoot, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_tasks.md")))
 	for artifactIndex := range artifacts {
 		detectConstraintRows(&result, repoRoot, slug, artifacts, artifactIndex, executableTaskGraph && artifactIndex == 0)
+	}
+	graph, graphPresent, err := loadOptionalTaskGraph(filepath.Clean(specsRoot), slug, specDir)
+	if err != nil {
+		return result, err
+	}
+	if graphPresent {
+		if err := detectUndeclaredGovernedPaths(&result, filepath.Clean(specsRoot), repoRoot, graph, artifacts); err != nil {
+			return result, err
+		}
+	} else {
+		addSkip(&result, CodeToolingUndeclared, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_tasks.md")))
 	}
 	if err := detectCitationCoverageAndReferences(&result, specsRoot, repoRoot, slug, specDir, present); err != nil {
 		return result, err
@@ -285,7 +301,40 @@ func parseConstraintRow(raw string, line int) (constraintRow, bool) {
 	}
 	row.Reason = strings.Trim(strings.TrimSpace(reason), "—–-:.; ")
 	row.BoundedFiles = recordsBoundedFiles(raw)
+	row.BoundedPaths = boundedFilePaths(raw)
 	return row, true
+}
+
+func boundedFilePaths(raw string) []string {
+	lower := strings.ToLower(raw)
+	prefix := "bounded files:"
+	index := strings.Index(lower, prefix)
+	if proposed := strings.Index(lower, "bounded proposed files:"); proposed >= 0 && (index < 0 || proposed < index) {
+		prefix = "bounded proposed files:"
+		index = proposed
+	}
+	if index < 0 {
+		return nil
+	}
+	value := raw[index+len(prefix):]
+	lowerValue := strings.ToLower(value)
+	end := len(value)
+	for _, delimiter := range []string{"sanctioned regeneration:", "source:"} {
+		if delimiterIndex := strings.Index(lowerValue, delimiter); delimiterIndex >= 0 && delimiterIndex < end {
+			end = delimiterIndex
+		}
+	}
+	seen := make(map[string]bool)
+	var paths []string
+	for _, match := range backtickPattern.FindAllStringSubmatch(value[:end], -1) {
+		clean := cleanMechanicalPath(match[1])
+		if clean == "" || seen[clean] {
+			continue
+		}
+		seen[clean] = true
+		paths = append(paths, clean)
+	}
+	return paths
 }
 
 func authorizationReferences(raw, sourcePath, repoRoot, artifactPath string) []authorizationReference {
