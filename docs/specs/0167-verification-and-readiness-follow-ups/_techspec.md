@@ -84,7 +84,8 @@ degraded.
 
 1. Retry verdicts and completed repairs (depends on: none).
 2. Degraded access (depends on: 1).
-3. Terminal QA (depends on: 1, 2, 4).
+3. Terminal QA (depends on: 1, 2, 4, 5).
+5. Only a verdict replaces a verdict; setup writes a project template (depends on: 4).
 4. A quiet project init and a budget test without a race (depends on: 2).
 
 ## Risks & Considerations
