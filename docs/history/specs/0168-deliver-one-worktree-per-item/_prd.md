@@ -100,6 +100,15 @@ restore safe added state that guesses what the user had:
 4. A resume whose recorded worktree is gone recreates it from the recorded
    branch; with the branch gone too, the item parks with a named blocker.
 
+## Recorded limits
+
+- A truly half-removed item directory is deleted whole, even if someone created
+  a different registered worktree inside it; that nested worktree's
+  uncommitted files would be lost. Contrived (it needs a worktree created inside
+  a Roundfix item directory); found by the focused verification of Task 08 on
+  2026-09-25 and carried to Backlog Entry
+  `docs/backlog/2026-09-25-half-removed-item-cleanup-ignores-nested-worktrees.md`.
+
 ## Decisions
 
 - **A worktree per item, not a safer park.** Four park defects in two review
