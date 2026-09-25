@@ -1,9 +1,12 @@
 ---
 spec: 0169-override-and-ordinal-follow-ups
-status: active
+status: archived
 created: 2026-09-25
 surfaces: [backend, cli, docs]
+archived: "2026-09-25"
+source_slug: 0169-override-and-ordinal-follow-ups
 ---
+
 
 # Override and ordinal follow-ups
 
