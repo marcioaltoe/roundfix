@@ -1,9 +1,12 @@
 ---
 spec: 0165-a-measured-run-ceiling
-status: active
+status: archived
 created: 2026-09-24
 surfaces: [backend, cli]
+archived: "2026-09-25"
+source_slug: 0165-a-measured-run-ceiling
 ---
+
 
 # A measured Run ceiling
 
