@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0168-deliver-one-worktree-per-item
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
