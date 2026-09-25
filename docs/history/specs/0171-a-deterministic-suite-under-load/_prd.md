@@ -1,9 +1,12 @@
 ---
 spec: 0171-a-deterministic-suite-under-load
-status: active
+status: archived
 created: 2026-09-25
 surfaces: [backend]
+archived: "2026-09-25"
+source_slug: 0171-a-deterministic-suite-under-load
 ---
+
 
 # A deterministic suite under load
 
