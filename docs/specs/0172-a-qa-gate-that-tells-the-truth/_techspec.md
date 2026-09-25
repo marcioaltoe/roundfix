@@ -184,7 +184,8 @@ warning, and the first two name the two classified record shapes.
 3. The temporary retry (depends on: 2).
 4. The unknown classification (depends on: 3).
 5. The event stream (depends on: 4).
-6. Terminal QA (depends on: 1, 2, 3, 4, 5).
+6. Terminal QA (depends on: 1, 2, 3, 4, 5, 7).
+7. The journal consumer corpus harness (depends on: 5).
 
 ## Risks & Considerations
 
