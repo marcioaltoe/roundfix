@@ -1,7 +1,8 @@
 ---
-status: pending
+status: done
 created_at: 2026-09-16
 updated_at: 2026-09-25
+absorbed_by: 0171-a-deterministic-suite-under-load
 ---
 
 # ACPX fixtures — The adapter fixture symlinks a relative test binary path (2026-09-16)
@@ -34,3 +35,9 @@ review of that delivery found a narrower defect the change introduced.
 ## Addendum — 2026-09-25 — Revalidated in triage
 
 Revalidated against main 7a9b6ec6: still holds: acpx_runner_test.go still symlinks os.Args[0]; a compiled test binary run by relative path fails, by absolute path passes. Ranked in the 2026-09-25 triage priority list.
+
+## Addendum — 2026-09-25 — Adopted by Spec 0171
+
+Adopted by Spec 0171-a-deterministic-suite-under-load. Its Task resolves
+`os.Args[0]` to an absolute path before `provisionFakeAdapter` links it, and
+proves the fixture runs from a compiled test binary started by a relative path.

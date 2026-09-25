@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-09-25
-spec: null
+spec: 0170-authoring-that-fails-before-dispatch
 reason: null
 ---
 
