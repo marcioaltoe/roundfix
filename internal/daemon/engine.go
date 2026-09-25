@@ -196,6 +196,7 @@ type verificationAttemptOutcome struct {
 	Failure          string
 	CommandFailure   *VerificationCommandError
 	CommandFailures  []verificationAttemptFailure
+	ReachedCommands  []string
 	TemporaryFailure *TemporaryVerificationFailureError
 	UnknownCause     *VerificationUnknownError
 	Repeated         *runevent.RepeatedFailure
@@ -366,7 +367,9 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 		return verificationAttemptOutcome{}, fmt.Errorf("run verification attempt %d: event publisher is required", req.Attempt)
 	}
 	var failures []verificationAttemptFailure
+	reachedCommands := make([]string, 0, len(req.Commands))
 	for commandIndex, command := range req.Commands {
+		reachedCommands = append(reachedCommands, command)
 		if err := req.Publish(ctx, req.summary(runevent.VerificationPhaseStarted, command), req.payload(runevent.VerificationPhaseStarted, command)); err != nil {
 			return verificationAttemptOutcome{}, err
 		}
@@ -414,6 +417,7 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 						Failure:          verificationAttemptFailureReason(failures, nil),
 						CommandFailure:   first.CommandFailure,
 						CommandFailures:  failures,
+						ReachedCommands:  reachedCommands,
 						TemporaryFailure: temporaryErr,
 						Repeated:         first.Metadata.Repeated,
 					}, nil
@@ -432,8 +436,9 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 				}
 				fmt.Fprintf(engine.deps.Progress, "Verification unknown (%s); diagnostics: %s\n", req.identity(), diagnostics)
 				outcome := verificationAttemptOutcome{
-					Failure:      verificationAttemptFailureReason(failures, unknownErr),
-					UnknownCause: unknownErr,
+					Failure:         verificationAttemptFailureReason(failures, unknownErr),
+					ReachedCommands: reachedCommands,
+					UnknownCause:    unknownErr,
 				}
 				if len(failures) > 0 {
 					outcome.CommandFailure = failures[0].CommandFailure
@@ -460,6 +465,7 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 			Failure:         verificationAttemptFailureReason(failures, nil),
 			CommandFailure:  first.CommandFailure,
 			CommandFailures: failures,
+			ReachedCommands: reachedCommands,
 			Repeated:        first.Metadata.Repeated,
 		}, nil
 	}
@@ -467,7 +473,7 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 		return verificationAttemptOutcome{}, err
 	}
 	fmt.Fprintf(engine.deps.Progress, "Verification passed (%s).\n", req.identity())
-	return verificationAttemptOutcome{}, nil
+	return verificationAttemptOutcome{ReachedCommands: reachedCommands}, nil
 }
 
 func verificationAttemptFailureReason(failures []verificationAttemptFailure, unknownErr *VerificationUnknownError) string {

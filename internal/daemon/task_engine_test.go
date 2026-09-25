@@ -6196,6 +6196,45 @@ func TestPreconditionRepairPlanningRequiresExactRepositoryCommand(t *testing.T) 
 	}
 }
 
+func TestCompletedRepairTaskDoesNotBlockPlanning(t *testing.T) {
+	t.Parallel()
+	const repositoryVerification = "make verify"
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:           "task_01",
+		status:       string(spec.StatusCompleted),
+		verification: []string{"focused check"},
+	}})
+	setTaskFixturePreconditionRepairs(t, fixture, "task_01")
+	fixture.reloadGraph()
+	plan := fixture.plan()
+
+	err := ValidatePreconditionRepairs(plan.Authorization, plan.Spec.Slug, plan.Tasks, repositoryVerification)
+
+	if err != nil {
+		t.Fatalf("ValidatePreconditionRepairs() error = %v, want completed repair Task ignored", err)
+	}
+}
+
+func TestPendingRepairTaskStillNeedsTheVerbatimCommand(t *testing.T) {
+	t.Parallel()
+	const repositoryVerification = "make verify"
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:           "task_01",
+		status:       string(spec.StatusPending),
+		verification: []string{"focused check"},
+	}})
+	setTaskFixturePreconditionRepairs(t, fixture, "task_01")
+	fixture.reloadGraph()
+	plan := fixture.plan()
+
+	err := ValidatePreconditionRepairs(plan.Authorization, plan.Spec.Slug, plan.Tasks, repositoryVerification)
+
+	if err == nil || !strings.Contains(err.Error(), `precondition repair Task "task_01"`) ||
+		!strings.Contains(err.Error(), `configured repository command "make verify" verbatim`) {
+		t.Fatalf("ValidatePreconditionRepairs() error = %v, want pending repair exact-command refusal", err)
+	}
+}
+
 func TestTaskCycleRepositoryGatePreconditionPassesThenProbeRefusesVacuousGate(t *testing.T) {
 	t.Parallel()
 	const repositoryVerification = "make verify"
@@ -7016,7 +7055,127 @@ func TestIndependentVerificationHandsEveryFailureToRepair(t *testing.T) {
 	}
 }
 
-func TestIndependentVerificationKeepsCollectedFailuresBesideATemporaryOne(t *testing.T) {
+func TestRetryVerdictReplacesTheFirstRun(t *testing.T) {
+	t.Parallel()
+
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:               "task_01",
+		verificationMode: spec.VerificationModeIndependent,
+		verification:     []string{"verify recovered", "verify current"},
+	}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{
+		calls:           fixture.calls,
+		temporaryOnCall: map[int]bool{2: true},
+		script: []error{
+			errors.New("recovered first-run failure"),
+			nil,
+			errors.New("current retry failure"),
+			nil,
+			nil,
+		},
+	}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("TaskCycle: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 {
+		t.Fatalf("expected repaired Task to settle completed, got %+v", result)
+	}
+	if len(runner.requests) != 2 {
+		t.Fatalf("expected initial and one repair Agent turn, got %d", len(runner.requests))
+	}
+	repairPrompt := runner.requests[1].Prompt
+	if strings.Contains(repairPrompt, "Failed command: verify recovered") {
+		t.Fatalf("repair prompt retained a command that passed on retry:\n%s", repairPrompt)
+	}
+	if got := strings.Count(repairPrompt, "Failed command: verify current"); got != 1 {
+		t.Fatalf("current retry failure count = %d, want 1:\n%s", got, repairPrompt)
+	}
+}
+
+func TestAFailureRepeatedOnRetryReachesRepairOnce(t *testing.T) {
+	t.Parallel()
+
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:               "task_01",
+		verificationMode: spec.VerificationModeIndependent,
+		verification:     []string{"verify repeated", "verify temporary"},
+	}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{
+		calls:           fixture.calls,
+		temporaryOnCall: map[int]bool{2: true},
+		script: []error{
+			errors.New("first-run failure"),
+			errors.New("retry failure"),
+			nil,
+			nil,
+			nil,
+		},
+	}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("TaskCycle: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 {
+		t.Fatalf("expected repaired Task to settle completed, got %+v", result)
+	}
+	if len(runner.requests) != 2 {
+		t.Fatalf("expected initial and one repair Agent turn, got %d", len(runner.requests))
+	}
+	repairPrompt := runner.requests[1].Prompt
+	if got := strings.Count(repairPrompt, "Failed command: verify repeated"); got != 1 {
+		t.Fatalf("repeated failure command count = %d, want 1:\n%s", got, repairPrompt)
+	}
+	if got := strings.Count(repairPrompt, `verification failed: verification command "verify repeated"`); got != 1 {
+		t.Fatalf("repeated failure reason count = %d, want 1:\n%s", got, repairPrompt)
+	}
+}
+
+func TestRetryKeepsFirstRunFailuresForCommandsItDidNotReach(t *testing.T) {
+	t.Parallel()
+
+	initialReached := &VerificationCommandError{Command: "verify reached", OutputPath: "initial-reached.log", Err: errors.New("initial failure")}
+	initialUnreached := &VerificationCommandError{Command: "verify unreached", OutputPath: "initial-unreached.log", Err: errors.New("unreached failure")}
+	initialTemporary := &VerificationCommandError{Command: "verify temporary", OutputPath: "initial-temporary.log", Err: errors.New("exit status 75")}
+	retryReached := &VerificationCommandError{Command: "verify reached", OutputPath: "retry-reached.log", Err: errors.New("retry failure")}
+	initial := verificationAttemptOutcome{
+		CommandFailure: initialReached,
+		CommandFailures: []verificationAttemptFailure{
+			{CommandFailure: initialReached},
+			{CommandFailure: initialUnreached},
+			{CommandFailure: initialTemporary},
+		},
+		TemporaryFailure: &TemporaryVerificationFailureError{CommandFailure: initialTemporary},
+	}
+	retry := verificationAttemptOutcome{
+		CommandFailure:  retryReached,
+		CommandFailures: []verificationAttemptFailure{{CommandFailure: retryReached}},
+		ReachedCommands: []string{"verify reached"},
+	}
+
+	got := retainCollectedVerificationFailures(retry, initial)
+
+	commands := make([]string, 0, len(got.CommandFailures))
+	for _, failure := range got.CommandFailures {
+		commands = append(commands, failure.CommandFailure.Command)
+	}
+	if got := strings.Join(commands, "|"); got != "verify unreached|verify temporary|verify reached" {
+		t.Fatalf("merged failure commands = %q, want only unreached first-run failures plus the retry verdict", got)
+	}
+	if got.CommandFailures[len(got.CommandFailures)-1].CommandFailure != retryReached {
+		t.Fatal("retry failure did not replace the first-run verdict for the reached command")
+	}
+}
+
+func TestIndependentVerificationReplacesCollectedFailuresForRetriedCommands(t *testing.T) {
 	t.Parallel()
 
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
@@ -7032,10 +7191,7 @@ func TestIndependentVerificationKeepsCollectedFailuresBesideATemporaryOne(t *tes
 			errors.New("deterministic failure"),
 			nil,
 			nil,
-			nil,
-			nil,
 		},
-		outputByCall: map[int]string{1: "deterministic diagnostics\n"},
 	}
 	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
 
@@ -7045,22 +7201,13 @@ func TestIndependentVerificationKeepsCollectedFailuresBesideATemporaryOne(t *tes
 		t.Fatalf("TaskCycle: %v", err)
 	}
 	if result.Completed != 1 || result.Failed != 0 {
-		t.Fatalf("expected the retained deterministic failure to receive one repair turn, got %+v", result)
+		t.Fatalf("expected the retry verdicts to settle the Task completed, got %+v", result)
 	}
-	if got := strings.Join(verifier.commands, "|"); got != "verify deterministic|verify temporary|verify deterministic|verify temporary|verify deterministic|verify temporary" {
-		t.Fatalf("expected initial attempt, exclusive retry, and repaired attempt, got %q", got)
+	if got := strings.Join(verifier.commands, "|"); got != "verify deterministic|verify temporary|verify deterministic|verify temporary" {
+		t.Fatalf("expected the initial attempt and exclusive retry only, got %q", got)
 	}
-	if len(runner.requests) != 2 {
-		t.Fatalf("expected initial and one repair Agent turn, got %d", len(runner.requests))
-	}
-	repairPrompt := runner.requests[1].Prompt
-	for _, expected := range []string{
-		"Failed command: verify deterministic",
-		"Diagnostic artifact: " + verifier.outputPaths[0],
-	} {
-		if !strings.Contains(repairPrompt, expected) {
-			t.Fatalf("repair prompt does not contain retained failure %q:\n%s", expected, repairPrompt)
-		}
+	if len(runner.requests) != 1 {
+		t.Fatalf("expected no repair turn after every retried command passed, got %d Agent requests", len(runner.requests))
 	}
 }
 

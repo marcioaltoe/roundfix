@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0167-verification-and-readiness-follow-ups
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -40,3 +40,28 @@ In independent mode a command failing in both the first run and the exclusive re
 ## References
 
 - [_techspec.md](_techspec.md) — Retry verdicts
+
+## Result
+
+### Implementation
+
+- Verification attempts now record every command they reach. Exclusive-retry reconciliation replaces the first-run verdict for those commands, preserves failures for commands the retry did not reach, and keys the merged failures by command so each current failure reaches feedback once.
+- Precondition-repair planning now treats completed named Tasks as history while retaining the exact configured-command requirement for every unfinished named Task.
+
+### Focused checks
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task-0167-01-gocache go test -count=1 -run '^(TestIndependentVerification|TestRetryKeepsFirstRunFailuresForCommandsItDidNotReach)' ./internal/daemon` — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task-0167-01-gocache go test -count=1 -run '^(Test.*PreconditionRepair|TestCompletedRepairTaskDoesNotBlockPlanning|TestPendingRepairTaskStillNeedsTheVerbatimCommand)' ./internal/daemon` — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task-0167-01-gocache go test -count=1 ./internal/daemon` — passed.
+- `rtk git diff --check` — passed.
+- The Task's declared `## Verification` command was not run; Daemon Verification owns it.
+
+### Acceptance evidence
+
+- A command failing on both runs appears once in both the repair request and its reason, while a command passing on retry is absent: `TestAFailureRepeatedOnRetryReachesRepairOnce` and `TestRetryVerdictReplacesTheFirstRun` passed in the focused daemon-package checks. `TestRetryKeepsFirstRunFailuresForCommandsItDidNotReach` also passed, covering the required carry-forward boundary.
+- A completed repair Task without the configured command is accepted and a pending repair Task without it is refused: `TestCompletedRepairTaskDoesNotBlockPlanning` and `TestPendingRepairTaskStillNeedsTheVerbatimCommand` passed in the focused daemon-package checks.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260925T130748Z_a530f45ca2f07eff`
+- Source commit: `f2a6fc7a902f10b85140c8a5891d5c67141f6d3c`
