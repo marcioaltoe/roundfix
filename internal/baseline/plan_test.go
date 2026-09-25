@@ -2307,6 +2307,48 @@ func TestPlanDocumentMissingDecisionsReturnsResultWithoutPartialPlan(t *testing.
 	}
 }
 
+func TestBuildPlanGreenfieldStaleManagedSourceNamesPreservation(t *testing.T) {
+	t.Parallel()
+
+	repo := newPlanRepository(t)
+	catalog, profile, decisions, modules, artifacts := preservationProfileFixture(t, repo)
+	stalePath := writeStaleManagedCarrier(
+		t,
+		repo,
+		catalog,
+		profile,
+		decisions,
+		modules,
+		artifacts,
+	)
+	commitInspectionRepository(t, repo, "seed stale managed carrier")
+
+	outcome, err := BuildPlan(context.Background(), PlanRequest{
+		Repository: repo,
+		ProfileID:  "go-cli-tui",
+		Decisions:  decisions,
+		Preservation: RootPreservationRequest{
+			Mode: PreservationModeGreenfield,
+		},
+	})
+	if err != nil {
+		t.Fatalf("BuildPlan() Greenfield stale managed source: %v", err)
+	}
+	if outcome.Plan != nil || outcome.Result.State != "action_required" {
+		t.Fatalf("BuildPlan() Greenfield stale managed outcome = %+v", outcome)
+	}
+	if !strings.Contains(outcome.Result.NextAction, "preservation.mode=preservation") {
+		t.Fatalf("BuildPlan() Greenfield stale managed next action = %q", outcome.Result.NextAction)
+	}
+	if !hasRepositoryFinding(
+		outcome.Result.Warnings,
+		"baseline.preservation.greenfield.managed-source-retained",
+		stalePath,
+	) {
+		t.Fatalf("BuildPlan() Greenfield stale managed finding missing: %+v", outcome.Result.Warnings)
+	}
+}
+
 func TestToolingAuthorityClause(t *testing.T) {
 	t.Parallel()
 

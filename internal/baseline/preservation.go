@@ -552,6 +552,42 @@ func PlanRootPreservation(
 	return planRootPreservationWithCatalog(inspection, request, nil)
 }
 
+// PlanRootPreservationWithProfile resolves the active managed artifacts before
+// planning, so stale managed carriers participate in preservation decisions.
+func PlanRootPreservationWithProfile(
+	inspection RepositoryInspection,
+	request RootPreservationRequest,
+	catalog *Catalog,
+	profile ResolvedProfile,
+	decisions []DecisionValue,
+) (RootPreservationPlan, error) {
+	if catalog == nil {
+		return RootPreservationPlan{}, errors.New("plan root-instruction preservation: catalog is required")
+	}
+	_, artifacts, err := resolveManagedArtifacts(catalog, profile, decisions, false)
+	if err != nil {
+		return RootPreservationPlan{}, err
+	}
+	classifications, err := classifyCarriers(
+		inspection.Root,
+		inspection.Snapshot.Carriers,
+		catalog,
+		artifacts,
+	)
+	if err != nil {
+		return RootPreservationPlan{}, err
+	}
+	semanticOwners, err := ResolveSemanticOwnerRegistry(catalog, profile, decisions)
+	if err != nil {
+		return RootPreservationPlan{}, err
+	}
+	request.semanticOwners = semanticOwners
+	request.managedArtifacts = artifacts
+	request.classifyCarriers = true
+	request.classifications = classifications
+	return planRootPreservationWithCatalog(inspection, request, catalog)
+}
+
 func planRootPreservationWithCatalog(
 	inspection RepositoryInspection,
 	request RootPreservationRequest,
@@ -650,6 +686,19 @@ func planRootPreservationWithCatalog(
 	plan.SourceBaseline = buildReadoptionSourceBaseline(sources)
 	plan.Findings = sortedFindings(plan.Findings)
 
+	if request.Mode == PreservationModeGreenfield && len(staleManagedSources) != 0 {
+		for _, source := range staleManagedSources {
+			plan.Findings = append(plan.Findings, Finding{
+				Code:    "baseline.preservation.greenfield.managed-source-retained",
+				Path:    source.sourcePath,
+				Message: "Greenfield cannot retain stale managed source without classification",
+			})
+		}
+		plan.Findings = sortedFindings(plan.Findings)
+		plan.State = PreservationStateBlocked
+		plan.NextAction = "rerun with preservation.mode=preservation to review and classify every retained managed source"
+		return plan, nil
+	}
 	if len(plan.Findings) != 0 {
 		plan.State = PreservationStateBlocked
 		plan.NextAction = "repair every blocking root carrier or backup collision and rerun Baseline planning"

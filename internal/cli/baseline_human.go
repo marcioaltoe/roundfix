@@ -1792,17 +1792,36 @@ func promptBaselineClassification(
 	analyzer baselineSemanticAnalyzer,
 ) (baseline.RootPreservationRequest, error) {
 	request := baseline.RootPreservationRequest{Mode: mode}
-	if mode != baseline.PreservationModePreservation {
+	if mode == baseline.PreservationModeManagedRefresh {
 		return request, nil
 	}
-	plan, err := baseline.PlanRootPreservation(inspection, request)
+	var (
+		plan baseline.RootPreservationPlan
+		err  error
+	)
+	if mode == baseline.PreservationModeGreenfield {
+		plan, err = baseline.PlanRootPreservationWithProfile(
+			inspection,
+			request,
+			catalog,
+			profile,
+			decisions,
+		)
+	} else {
+		plan, err = baseline.PlanRootPreservation(inspection, request)
+	}
 	if err != nil {
-		return baseline.RootPreservationRequest{}, fmt.Errorf("prepare consolidated classification review: %w", err)
+		return baseline.RootPreservationRequest{}, fmt.Errorf("plan instruction preservation: %w", err)
 	}
 	if plan.State == baseline.PreservationStateBlocked {
+		result := baselineHumanActionResult("preflight", plan.NextAction, plan.NextAction)
+		result.Warnings = append(plan.Warnings, plan.Findings...)
 		return baseline.RootPreservationRequest{}, &baselineHumanActionError{
-			result: baselineHumanActionResult("preflight", plan.NextAction, plan.NextAction),
+			result: result,
 		}
+	}
+	if mode != baseline.PreservationModePreservation {
+		return request, nil
 	}
 	if plan.DecisionSkeleton == nil {
 		return request, nil

@@ -502,8 +502,17 @@ func TestCarrierClassification(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if preservation.State != PreservationStateActionRequired {
-			t.Fatalf("stale managed carrier preservation state = %q, want action_required", preservation.State)
+		if preservation.State != PreservationStateBlocked {
+			t.Fatalf("stale managed carrier preservation state = %q, want blocked", preservation.State)
+		}
+		if !hasRepositoryFinding(
+			preservation.Findings,
+			"baseline.preservation.greenfield.managed-source-retained",
+			guides[1].Path,
+		) ||
+			!strings.Contains(preservation.NextAction, "preservation.mode=preservation") ||
+			preservation.DecisionSkeleton != nil {
+			t.Fatalf("stale managed carrier refusal = %+v", preservation)
 		}
 		staleIsRetentionInput := false
 		for _, entry := range preservation.SourceBaseline.Entries {

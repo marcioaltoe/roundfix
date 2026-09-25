@@ -1044,6 +1044,60 @@ func TestConsolidatedReviewEditsManagedClassification(t *testing.T) {
 	}
 }
 
+func TestHumanGreenfieldRefusesBeforeClassification(t *testing.T) {
+	t.Parallel()
+
+	repo := greenfieldStaleManagedHumanRepository(t)
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load embedded catalog: %v", err)
+	}
+	profile, err := baseline.ResolveProfile(repo, "go-cli-tui", catalog)
+	if err != nil {
+		t.Fatalf("resolve Go CLI Profile: %v", err)
+	}
+	inspection, err := baseline.InspectRepository(context.Background(), repo, nil)
+	if err != nil {
+		t.Fatalf("inspect stale managed repository: %v", err)
+	}
+	var prompts bytes.Buffer
+	analyzer := &forbiddenBaselineSemanticAnalyzer{t: t}
+	_, err = promptBaselineClassification(
+		context.Background(),
+		&baselineHumanPrompt{reader: bufioReader(""), writer: &prompts},
+		io.Discard,
+		inspection,
+		baseline.PreservationModeGreenfield,
+		catalog,
+		profile,
+		humanBaselineFixtureDecisions(),
+		analyzer,
+	)
+	var actionErr *baselineHumanActionError
+	if !errors.As(err, &actionErr) {
+		t.Fatalf("Greenfield stale managed error = %v, want human action", err)
+	}
+	if !strings.Contains(actionErr.result.NextAction, "preservation.mode=preservation") {
+		t.Fatalf("Greenfield stale managed next action = %q", actionErr.result.NextAction)
+	}
+	found := false
+	for _, finding := range actionErr.result.Warnings {
+		if finding.Code == "baseline.preservation.greenfield.managed-source-retained" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("Greenfield stale managed finding missing: %+v", actionErr.result.Warnings)
+	}
+	if prompts.Len() != 0 {
+		t.Fatalf("Greenfield stale managed path prompted for classification:\n%s", prompts.String())
+	}
+	if analyzer.called {
+		t.Fatal("Greenfield stale managed path invoked semantic classification")
+	}
+}
+
 func TestHumanAutomationPlanParity(t *testing.T) {
 	t.Parallel()
 	repo := newHumanBaselineRepository(t)
@@ -1529,6 +1583,38 @@ func newHumanBaselineRepository(t *testing.T) string {
 	writeBaselinePlanTestFile(t, repo, "Makefile", "verify:\n\t@true\n")
 	commitBaselinePlanTestRepository(t, repo)
 	return repo
+}
+
+func greenfieldStaleManagedHumanRepository(t *testing.T) string {
+	t.Helper()
+	repo := newBaselineUpdateRepository(t)
+	manifest := ReadBaselineSetupManifest(t, repo)
+	for _, artifact := range manifest.ManagedArtifacts {
+		if artifact.Kind != "guide" {
+			continue
+		}
+		path := filepath.Join(repo, filepath.FromSlash(artifact.Path))
+		content, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read managed guide %q: %v", artifact.Path, err)
+		}
+		endMarker := []byte("<!-- setup-context-driven:end id=" + artifact.ID + " -->")
+		end := bytes.Index(content, endMarker)
+		if end < 0 {
+			t.Fatalf("managed guide %q lacks end marker for %q", artifact.Path, artifact.ID)
+		}
+		content = append(
+			append([]byte(nil), content[:end]...),
+			append([]byte("stale managed guidance\n"), content[end:]...)...,
+		)
+		if err := os.WriteFile(path, content, 0o644); err != nil {
+			t.Fatalf("write stale managed guide %q: %v", artifact.Path, err)
+		}
+		commitBaselinePlanTestRepository(t, repo)
+		return repo
+	}
+	t.Fatal("adopted fixture has no managed guide")
+	return ""
 }
 
 func divergencePromptFixture(
