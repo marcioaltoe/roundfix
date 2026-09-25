@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0168-deliver-one-worktree-per-item
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -42,3 +42,35 @@ A Delivery Queue item records its branch and a starting branch, but no worktree.
 ## References
 
 - [_techspec.md](_techspec.md) — The item record
+
+## Result
+
+Implemented the Delivery Queue item worktree record as schema version 19. New
+databases create the `worktree` column, schema version 18 databases add it with
+an empty default, and queue reads expose it as `DeliveryQueueItem.Worktree`.
+`RecordDeliveryQueueItemWorktree` writes the proposed branch and worktree in
+one conditional update and returns the first durable pair on retries.
+
+Acceptance evidence:
+
+- Branch and worktree recorded together and read back:
+  `TestDeliveryItemRecordsItsWorktreeWithItsBranch` passed against the real
+  SQLite store.
+- Second proposal keeps the first pair: the same test proposed a different
+  branch and worktree, then observed the original pair in both the return value
+  and the persisted queue item.
+- Previous schema migrates with an empty worktree:
+  `TestOpenMigratesDeliveryQueueAddingItemWorktree` opened a schema version 18
+  fixture, preserved its existing item, observed an empty worktree, and matched
+  the fresh schema.
+
+Focused checks:
+
+- `GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 -run 'TestDeliveryItemRecordsItsWorktreeWithItsBranch|TestOpenMigratesDeliveryQueueAddingItemWorktree' ./internal/store` — passed.
+- `GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 ./internal/store` — passed.
+- `GOCACHE=/tmp/roundfix-task01-gocache make verify-incremental` — passed after
+  rerunning outside the network sandbox; the first attempt was blocked from
+  reaching `api.github.com`.
+
+The Task's declared `## Verification` command was not run; Daemon Verification
+owns that command and the terminal Task status.

@@ -1446,7 +1446,7 @@ func terminalStateExclusion() (string, []any) {
 	return "state NOT IN (" + strings.Join(placeholders, ", ") + ")", arguments
 }
 
-const schemaVersion = 18
+const schemaVersion = 19
 
 // activeRunLocksColumns is the schema v4 lock-table shape (ADR 0016): one
 // Active Run per work target, keyed by (target_kind, target_key).
@@ -1488,8 +1488,16 @@ func (store *Store) migrate(ctx context.Context) error {
 			return err
 		}
 	}
+	var v19Statements []string
+	if version >= 3 && version < 19 {
+		v19Statements, err = store.deliveryWorktreeMigrationStatements(ctx)
+		if err != nil {
+			return err
+		}
+	}
 	deliveryStatements := append(v15Statements, v16Statements...)
 	deliveryStatements = append(deliveryStatements, v17Statements...)
+	deliveryStatements = append(deliveryStatements, v19Statements...)
 	var statements []string
 	switch version {
 	case schemaVersion:
@@ -1580,9 +1588,13 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = deliveryStatements
 	case 15:
 		statements = append(v16Statements, v17Statements...)
+		statements = append(statements, v19Statements...)
 	case 16:
-		statements = v17Statements
+		statements = append(v17Statements, v19Statements...)
 	case 17:
+		statements = v19Statements
+	case 18:
+		statements = v19Statements
 	default:
 		return fmt.Errorf("migrate Run Database: schema version %d is not supported", version)
 	}
@@ -1666,7 +1678,7 @@ WHERE repository_root = ''`)
 				return fmt.Errorf("backfill Run repository root: %w", err)
 			}
 		}
-		if _, err := tx.ExecContext(ctx, `PRAGMA user_version = 18`); err != nil {
+		if _, err := tx.ExecContext(ctx, `PRAGMA user_version = 19`); err != nil {
 			return fmt.Errorf("record Run Database migration version: %w", err)
 		}
 		return nil
@@ -1735,7 +1747,7 @@ func createSchemaStatements() []string {
 	}
 	statements = append(statements, deliverySchemaStatements(true)...)
 	statements = append(statements, deliveryOwnerColumnStatements(false, false)...)
-	return append(statements, `PRAGMA user_version = 18`)
+	return append(statements, `PRAGMA user_version = 19`)
 }
 
 const runAgentSelectionsColumns = `(
@@ -1916,6 +1928,21 @@ SELECT EXISTS (
 	return append(statements, `PRAGMA user_version = 17`), nil
 }
 
+func (store *Store) deliveryWorktreeMigrationStatements(ctx context.Context) ([]string, error) {
+	var worktreeExists int
+	if err := store.db.QueryRowContext(ctx, `
+SELECT EXISTS (
+	SELECT 1 FROM pragma_table_info('delivery_queue_items') WHERE name = 'worktree'
+)`).Scan(&worktreeExists); err != nil {
+		return nil, fmt.Errorf("inspect Delivery Queue item worktree column: %w", err)
+	}
+	statements := []string{}
+	if worktreeExists == 0 {
+		statements = append(statements, `ALTER TABLE delivery_queue_items ADD COLUMN worktree TEXT NOT NULL DEFAULT ''`)
+	}
+	return statements, nil
+}
+
 func deliverySchemaStatements(includeBranch bool) []string {
 	itemTable := `CREATE TABLE IF NOT EXISTS delivery_queue_items (
 			git_root TEXT NOT NULL,
@@ -1932,7 +1959,11 @@ func deliverySchemaStatements(includeBranch bool) []string {
 			run_id TEXT NOT NULL DEFAULT '',
 			candidate_commits TEXT NOT NULL DEFAULT '[]',
 			pull_request_number TEXT NOT NULL DEFAULT '',
-			merge_commit TEXT NOT NULL DEFAULT '',
+			merge_commit TEXT NOT NULL DEFAULT ''`
+	if includeBranch {
+		itemTable += `, worktree TEXT NOT NULL DEFAULT ''`
+	}
+	itemTable += `,
 			PRIMARY KEY (git_root, spec_slug),
 			UNIQUE (git_root, position),
 			FOREIGN KEY (git_root) REFERENCES delivery_queues(git_root) ON DELETE CASCADE

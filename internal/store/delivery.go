@@ -46,6 +46,7 @@ type DeliveryQueueItem struct {
 	Stage             DeliveryStage
 	Blocker           string
 	Branch            string
+	Worktree          string
 	StartingBranch    string
 	RunID             string
 	CandidateCommits  []string
@@ -185,7 +186,7 @@ WHERE git_root = ?`, gitRoot).Scan(&queue.GitRoot, &ownerPID, &queue.OwnerIdenti
 		queue.OwnerPID = int(ownerPID.Int64)
 	}
 	rows, err := store.db.QueryContext(ctx, `
-SELECT spec_slug, position, stage, blocker, branch, starting_branch, run_id, candidate_commits,
+SELECT spec_slug, position, stage, blocker, branch, worktree, starting_branch, run_id, candidate_commits,
        pull_request_number, merge_commit
 FROM delivery_queue_items
 WHERE git_root = ?
@@ -349,6 +350,65 @@ WHERE git_root = ? AND spec_slug = ?`, gitRoot, specSlug).Scan(&recorded, &start
 		return "", err
 	}
 	return recorded, nil
+}
+
+// RecordDeliveryQueueItemWorktree records the first item branch and worktree
+// together and returns the durable pair on retries.
+func (store *Store) RecordDeliveryQueueItemWorktree(
+	ctx context.Context,
+	gitRoot string,
+	specSlug string,
+	branch string,
+	worktree string,
+) (string, string, error) {
+	gitRoot = strings.TrimSpace(gitRoot)
+	specSlug = strings.TrimSpace(specSlug)
+	branch = strings.TrimSpace(branch)
+	worktree = strings.TrimSpace(worktree)
+	if gitRoot == "" {
+		return "", "", errors.New("record Delivery Queue item worktree: Git root is required")
+	}
+	if specSlug == "" {
+		return "", "", errors.New("record Delivery Queue item worktree: Spec slug is required")
+	}
+	if branch == "" {
+		return "", "", errors.New("record Delivery Queue item worktree: branch is required")
+	}
+	if worktree == "" {
+		return "", "", errors.New("record Delivery Queue item worktree: worktree is required")
+	}
+
+	recordedBranch := ""
+	recordedWorktree := ""
+	err := store.withWriteTx(ctx, fmt.Sprintf("Delivery Queue item %q worktree recording", specSlug), func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(ctx, `
+UPDATE delivery_queue_items
+SET branch = ?, worktree = ?
+WHERE git_root = ? AND spec_slug = ? AND branch = '' AND worktree = ''`,
+			branch, worktree, gitRoot, specSlug); err != nil {
+			return fmt.Errorf("record Delivery Queue item %q worktree: %w", specSlug, err)
+		}
+		if err := tx.QueryRowContext(ctx, `
+SELECT branch, worktree
+FROM delivery_queue_items
+WHERE git_root = ? AND spec_slug = ?`, gitRoot, specSlug).Scan(&recordedBranch, &recordedWorktree); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf("record Delivery Queue item %q worktree: item does not exist", specSlug)
+			}
+			return fmt.Errorf("read Delivery Queue item %q worktree: %w", specSlug, err)
+		}
+		if strings.TrimSpace(recordedBranch) == "" {
+			return fmt.Errorf("record Delivery Queue item %q worktree: recorded branch is empty", specSlug)
+		}
+		if strings.TrimSpace(recordedWorktree) == "" {
+			return fmt.Errorf("record Delivery Queue item %q worktree: recorded worktree is empty", specSlug)
+		}
+		return nil
+	})
+	if err != nil {
+		return "", "", err
+	}
+	return recordedBranch, recordedWorktree, nil
 }
 
 // UpdateDeliveryQueueItem persists one item's current delivery state without
@@ -565,6 +625,7 @@ func scanDeliveryQueueItem(row deliveryQueueItemScanner) (DeliveryQueueItem, err
 		&item.Stage,
 		&item.Blocker,
 		&item.Branch,
+		&item.Worktree,
 		&item.StartingBranch,
 		&item.RunID,
 		&candidateCommits,
