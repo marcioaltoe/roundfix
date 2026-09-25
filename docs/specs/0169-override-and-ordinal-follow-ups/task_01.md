@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0169-override-and-ordinal-follow-ups
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -21,13 +21,13 @@ An override of a failed or pending QA Task whose newest report says `pass` stamp
 
 ## Subtasks
 
-- [ ] Implement the requirements above.
-- [ ] Add a test for each acceptance criterion.
+- [x] Implement the requirements above.
+- [x] Add a test for each acceptance criterion.
 
 ## Acceptance Criteria
 
-- [ ] A failed QA Task with a `pass` report records its status; a completed QA Task records none.
-- [ ] Both skills and the guide carry the current rule and the command as the only path.
+- [x] A failed QA Task with a `pass` report records its status; a completed QA Task records none.
+- [x] Both skills and the guide carry the current rule and the command as the only path.
 
 ## Context
 
@@ -43,3 +43,34 @@ An override of a failed or pending QA Task whose newest report says `pass` stamp
 ## References
 
 - [_techspec.md](_techspec.md) — The stamp and the guidance
+
+## Result
+
+Implemented the override stamp so an unresolved QA Task contributes
+`qa_override_qa_task_status`, while a completed QA Task leaves that key absent.
+The Roundfix skill now says the override is refused only when a normal archive
+would succeed. The archive-spec Steps reserve overrides for
+`roundfix archive --qa-override` and prohibit hand-stamping. The command guide
+documents the new conditional field, and `make skills-sync` regenerated both
+skill mirrors.
+
+Focused evidence:
+
+- Before the production change,
+  `rtk env GOCACHE=/tmp/roundfix-task01-gocache go test ./internal/spec -run '^TestArchiveQAOverrideRecordsTheQATaskStatus$' -count=1`
+  failed because `qa_override_qa_task_status` was absent.
+- After the production change, the same focused test passed, and
+  `TestArchiveQAOverrideOmitsTheStatusForACompletedQATask` passed in its own
+  focused run.
+- `rtk env GOCACHE=/tmp/roundfix-task01-gocache go test ./internal/spec -count=1`
+  passed, covering the archive package behavior including both new regression
+  tests.
+- `rtk make GOCACHE=/tmp/roundfix-task01-gocache skills-sync-check` passed,
+  proving the canonical and shipped skill trees match.
+- A targeted `rtk rg` inspection found `normal archive would succeed` and
+  `qa_override_qa_task_status` in both Roundfix skill copies, the no-hand-stamp
+  rule in both archive-spec copies, and the new field in the command guide.
+- `rtk make GOCACHE=/tmp/roundfix-task01-gocache baseline-digests` passed and
+  reported `changed: false`; `rtk git diff --check` also passed.
+
+The Daemon-owned `## Verification` command was not run.

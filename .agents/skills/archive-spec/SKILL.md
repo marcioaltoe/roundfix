@@ -243,12 +243,16 @@ never the machine's absolute path.
 
 ## Steps
 
-1. **Stamp** `_prd.md` frontmatter:
+For a QA Archive Override, perform the archive only through
+`roundfix archive <slug> --qa-override --approval <source> --reason <text>`.
+Never hand-stamp `qa_override: true`; the command owns its refusals and
+provenance. The manual steps below apply only to a normal archive.
+
+1. **Stamp** `_prd.md` frontmatter for a normal archive:
 
    ```yaml
    status: archived
    archived: YYYY-MM-DD
-   qa_override: true # only when normal QA archive eligibility is unmet
    release: <tag or PR URL> # only when known — from --release or an already-merged PR/tag
    ```
 

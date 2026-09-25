@@ -302,6 +302,74 @@ func TestArchiveQAOverrideAcceptsAFailedQATaskWithAPassReport(t *testing.T) {
 	}
 }
 
+func TestArchiveQAOverrideRecordsTheQATaskStatus(t *testing.T) {
+	t.Parallel()
+	specsRoot := defaultSpecsRoot(t.TempDir())
+	writeArchiveOverrideFixture(t, specsRoot, StatusCompleted, StatusFailed, map[string]string{
+		"qa-report-2026-09-24.md": "---\nverdict: pass\n---\n\n# QA Report\n",
+	}, "")
+
+	result, err := Archive(ArchiveRequest{
+		SpecsRoot: specsRoot,
+		Slug:      "demo",
+		QAOverride: &QAArchiveOverride{
+			Approval: "maintainer request",
+			Reason:   "archive despite the failed QA Task",
+			Revision: "0123456789abcdef",
+		},
+	})
+	if err != nil {
+		t.Fatalf("Archive(QA override): %v", err)
+	}
+
+	var frontmatter map[string]any
+	content := archiveTestReadFile(t, filepath.Join(result.ArchivedDir, "_prd.md"))
+	frontmatterBytes, _, err := splitFrontmatter([]byte(content))
+	if err != nil {
+		t.Fatalf("parse archived override PRD: %v", err)
+	}
+	if err := yaml.Unmarshal(frontmatterBytes, &frontmatter); err != nil {
+		t.Fatalf("decode archived override PRD: %v", err)
+	}
+	if got := frontmatter["qa_override_qa_task_status"]; got != string(StatusFailed) {
+		t.Fatalf("qa_override_qa_task_status = %#v, want %q", got, StatusFailed)
+	}
+}
+
+func TestArchiveQAOverrideOmitsTheStatusForACompletedQATask(t *testing.T) {
+	t.Parallel()
+	specsRoot := defaultSpecsRoot(t.TempDir())
+	writeArchiveOverrideFixture(t, specsRoot, StatusCompleted, StatusCompleted, map[string]string{
+		"qa-report-2026-09-24.md": "---\nverdict: fail\n---\n\n# QA Report\n",
+	}, "")
+
+	result, err := Archive(ArchiveRequest{
+		SpecsRoot: specsRoot,
+		Slug:      "demo",
+		QAOverride: &QAArchiveOverride{
+			Approval: "maintainer request",
+			Reason:   "archive despite the failed QA report",
+			Revision: "0123456789abcdef",
+		},
+	})
+	if err != nil {
+		t.Fatalf("Archive(QA override): %v", err)
+	}
+
+	var frontmatter map[string]any
+	content := archiveTestReadFile(t, filepath.Join(result.ArchivedDir, "_prd.md"))
+	frontmatterBytes, _, err := splitFrontmatter([]byte(content))
+	if err != nil {
+		t.Fatalf("parse archived override PRD: %v", err)
+	}
+	if err := yaml.Unmarshal(frontmatterBytes, &frontmatter); err != nil {
+		t.Fatalf("decode archived override PRD: %v", err)
+	}
+	if got, ok := frontmatter["qa_override_qa_task_status"]; ok {
+		t.Fatalf("qa_override_qa_task_status = %#v, want field omitted", got)
+	}
+}
+
 func TestArchiveQAOverrideStillRequiresNonQATasks(t *testing.T) {
 	t.Parallel()
 	specsRoot := defaultSpecsRoot(t.TempDir())

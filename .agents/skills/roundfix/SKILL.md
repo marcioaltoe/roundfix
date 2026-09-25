@@ -2293,9 +2293,10 @@ roundfix archive <slug> --qa-override --approval <source> --reason <text>
 ```
 
 The command requires both approval and reason, keeps every non-QA Task
-`completed`, refuses when QA already qualifies, and stamps the approval source,
-reason, observed QA outcome and archived revision. It does not change the QA
-Task or report verdict.
+`completed`, and is refused only when a normal archive would succeed. It stamps
+the approval source, reason, observed QA outcome and archived revision. When the
+QA Task is not completed, it also stamps `qa_override_qa_task_status`. It does
+not change the QA Task or report verdict.
 
 ## Assigned Review Issue Batches
 
