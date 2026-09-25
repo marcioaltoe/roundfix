@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0163-baseline-decisions-and-regeneration
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -47,3 +47,59 @@ complexity: medium
 
 - [_techspec.md](_techspec.md) — Skill regeneration ownership
 - [2026-09-08-skill-regeneration-declares-its-owned-outputs.md](../0121-baseline-decisions-and-complete-regeneration/references/2026-09-08-skill-regeneration-declares-its-owned-outputs.md)
+
+## Result
+
+### Implementation
+
+- `skills/_ownership.yml` now declares the shipped skill mirrors as dedicated
+  outputs of `make skills-sync`.
+- `OutputsFor` handles that command by validating the ownership record, reading
+  `OWNED_SKILLS` from the Makefile, and returning the sorted regular files under
+  only those `skills/<owned>/` directories. Other commands retain the existing
+  `internal/baseline` ownership resolution path.
+- The mechanical audit needs no production change: its command-only grant path
+  already consumes `OutputsFor`, and the new integration regressions prove both
+  acceptance of an owned mirror and refusal without path or command authority.
+
+### Focused checks
+
+- Before the implementation,
+  `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1 -run '^TestOutputsForSkillsSyncListsOwnedSkillMirrors$' ./internal/baseline`
+  failed because `OutputsFor` tried to resolve `make skills-sync` only below the
+  fixture's `internal/baseline/derived` tree. The matching mechanical audit
+  regression failed through the same unresolved-output path.
+- After the implementation,
+  `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1 -run '^(TestOutputsForSkillsSync|TestOutputsForBaselineDigests)' ./internal/baseline`
+  and
+  `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1 -run '^TestMechanicalAudit' ./internal/speccheck`
+  passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1 ./internal/baseline ./internal/speccheck`
+  passed (`internal/baseline` 55.255s; `internal/speccheck` 18.921s).
+- `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache make verify-incremental`
+  passed after the existing GitHub-backed test boundary received network access.
+  `rtk git diff --check` also passed.
+
+### Acceptance evidence
+
+1. `TestOutputsForSkillsSyncListsOwnedSkillMirrors` compares the complete sorted
+   set of files below two Makefile-owned mirror directories, including a nested
+   regular file.
+2. `TestOutputsForSkillsSyncExcludesAuthorialAndUnownedFiles` proves that the
+   canonical `.agents/skills` file, root Go file, `skills/testdata`,
+   `recommended.txt`, and an unowned skill directory do not enter the set.
+3. `TestOutputsForBaselineDigestsUnchangedBySkillOwnership` proves the existing
+   command still returns exactly its fixture's Baseline-owned regular file and
+   no skill mirror.
+4. `TestMechanicalAuditAcceptsSkillMirrorUnderSkillsSync` proves a command-only
+   grant admits an owned mirror change, while
+   `TestMechanicalAuditRefusesSkillMirrorWithoutSkillsSync` proves a grant naming
+   neither the mirror nor the command still raises the path-escape finding.
+
+The Task's declared `## Verification` command was not run; Verification remains
+Daemon-owned.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260925T135958Z_cb4c08f055bb883c`
+- Source commit: `65ba70b79df26d43966b1d93bb0ddcf5e8277780`

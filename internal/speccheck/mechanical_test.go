@@ -658,6 +658,54 @@ func TestMechanicalAuthPathsAcceptsDeclaredRegenerationOutput(t *testing.T) {
 	assertNoMechanicalCode(t, result, speccheck.CodeMechanicalAuthPaths)
 }
 
+func TestMechanicalAuditAcceptsSkillMirrorUnderSkillsSync(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := newMechanicalGitRepo(t)
+	const authorizationPath = "docs/workflow/authorizations/mechanical.md"
+	target := commitMechanicalSkillsSyncFixture(
+		t,
+		repoRoot,
+		authorizationPath,
+		mechanicalRegenerationAuthorization("command: make skills-sync\n"),
+	)
+	writeMechanicalFile(t, repoRoot, "skills/roundfix/SKILL.md", "regenerated\n")
+	consumer := commitMechanicalFiles(t, repoRoot, "regenerate owned skill mirror", "skills/roundfix/SKILL.md")
+
+	result := runMechanical(t, speccheck.MechanicalRequest{
+		RepoRoot:               repoRoot,
+		AuthorizationPath:      authorizationPath,
+		DeliveryTargetRevision: target,
+		TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_03", SHA: consumer}},
+	})
+
+	assertNoMechanicalCode(t, result, speccheck.CodeMechanicalAuthPaths)
+}
+
+func TestMechanicalAuditRefusesSkillMirrorWithoutSkillsSync(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := newMechanicalGitRepo(t)
+	const authorizationPath = "docs/workflow/authorizations/mechanical.md"
+	target := commitMechanicalSkillsSyncFixture(
+		t,
+		repoRoot,
+		authorizationPath,
+		mechanicalTypedAuthorization("mechanical", "Makefile"),
+	)
+	writeMechanicalFile(t, repoRoot, "skills/roundfix/SKILL.md", "hand edited\n")
+	consumer := commitMechanicalFiles(t, repoRoot, "change skill mirror without regeneration grant", "skills/roundfix/SKILL.md")
+
+	result := runMechanical(t, speccheck.MechanicalRequest{
+		RepoRoot:               repoRoot,
+		AuthorizationPath:      authorizationPath,
+		DeliveryTargetRevision: target,
+		TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_03", SHA: consumer}},
+	})
+
+	assertMechanicalPathEscapedGrant(t, result, "skills/roundfix/SKILL.md", authorizationPath)
+}
+
 func TestEnumeratedOutputsAreAuthoritative(t *testing.T) {
 	t.Parallel()
 
@@ -2488,6 +2536,32 @@ func commitMechanicalRegenerationFixture(
 		mechanicalEnumeratedOutput,
 		mechanicalOwnerDerivedOutput,
 		mechanicalFrozenOutput,
+		authorizationPath,
+	)
+}
+
+func commitMechanicalSkillsSyncFixture(
+	t *testing.T,
+	repoRoot string,
+	authorizationPath string,
+	authorization string,
+) string {
+	t.Helper()
+
+	writeMechanicalFile(t, repoRoot, "Makefile",
+		"DERIVED_DIGEST_PATHS := internal/baseline/derived\n"+
+			"OWNED_SKILLS := roundfix\n")
+	writeMechanicalFile(t, repoRoot, "skills/_ownership.yml",
+		"owner: dedicated\ncommand: make skills-sync\nreason: mirrored owned skills\n")
+	writeMechanicalFile(t, repoRoot, "skills/roundfix/SKILL.md", "original\n")
+	writeMechanicalFile(t, repoRoot, authorizationPath, authorization)
+	return commitMechanicalFiles(
+		t,
+		repoRoot,
+		"record skill regeneration fixture",
+		"Makefile",
+		"skills/_ownership.yml",
+		"skills/roundfix/SKILL.md",
 		authorizationPath,
 	)
 }
