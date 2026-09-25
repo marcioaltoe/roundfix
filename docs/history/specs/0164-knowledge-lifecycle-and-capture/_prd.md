@@ -1,9 +1,12 @@
 ---
 spec: 0164-knowledge-lifecycle-and-capture
-status: active
+status: archived
 created: 2026-09-24
 surfaces: [backend, docs]
+archived: "2026-09-25"
+source_slug: 0164-knowledge-lifecycle-and-capture
 ---
+
 
 # Knowledge lifecycle and capture
 
