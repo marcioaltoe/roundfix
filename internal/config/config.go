@@ -780,6 +780,10 @@ func DefaultConfigYAML() string {
 	return defaultConfigYAML(InitScopeUser)
 }
 
+func DefaultProjectConfigYAML() string {
+	return defaultConfigYAML(InitScopeProject)
+}
+
 func defaultConfigYAML(scope string) string {
 	config := Builtin()
 	runsConfig := ""

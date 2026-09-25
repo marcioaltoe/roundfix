@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0167-verification-and-readiness-follow-ups
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -41,3 +41,28 @@ Corrective Task from the pre-PR review of 2026-09-25. `retainCollectedVerificati
 ## References
 
 - [_techspec.md](_techspec.md) — Build Order
+
+## Result
+
+Implementation:
+
+- Retry merging now replaces a first-run command failure only when the retry observed a pass or failure for that command. An unobserved retry keeps the first-run deterministic failure, and the first-run temporary failure is excluded from repair feedback.
+- Setup now generates a new Project Config from the project-scope template, while a new User Config continues to use the user-scope template.
+- Added the three named regression tests and updated the existing retry-merge expectation so temporary failures remain retry control flow rather than repair targets.
+
+Focused checks:
+
+- `GOCACHE=/tmp/roundfix-task05-gocache go test -count=1 -run '^(TestUnknownOnRetryKeepsTheFirstRunFailure|TestFirstRunTemporaryFailureIsNotARepairTarget)$' ./internal/daemon` — exit 0.
+- `GOCACHE=/tmp/roundfix-task05-gocache go test -count=1 -run '^TestSetupWritesNoRunCeilingIntoProjectConfig$' ./internal/cli` — exit 0.
+- `GOCACHE=/tmp/roundfix-task05-gocache go test -count=1 -run '^(TestRetryVerdictReplacesTheFirstRun|TestAFailureRepeatedOnRetryReachesRepairOnce|TestRetryKeepsFirstRunFailuresForCommandsItDidNotReach|TestIndependentVerificationReplacesCollectedFailuresForRetriedCommands|TestIndependentVerificationKeepsTemporaryRetryHandling)$' ./internal/daemon` — exit 0.
+- `GOCACHE=/tmp/roundfix-task05-gocache go test -count=1 -run '^(TestRunSetupFreshMachineAcceptsOffers|TestRunSetupHealthyMachineIsIdempotent|TestRunSetupNewerACPXIsReadyWithoutInstall|TestSetupCommandCompatibility|TestSetupWritesNoRunCeilingIntoProjectConfig)$' ./internal/cli` — exit 0.
+- `GOCACHE=/tmp/roundfix-task05-gocache go test -count=1 -run '^(TestProjectConfigCannotRaiseTheRunCeiling|TestProjectInitWritesNoRunCeiling|TestProjectInitThenLoadWarnsNothing)$' ./internal/config` — exit 0.
+- `git diff --check` — exit 0.
+
+Acceptance evidence:
+
+- Unknown on retry keeps the first-run deterministic failure as the repair target: `TestUnknownOnRetryKeepsTheFirstRunFailure` exercises the merge directly and exits 0.
+- Setup followed by Load warns nothing: `TestSetupWritesNoRunCeilingIntoProjectConfig` runs setup, loads the emitted Project Config through the real config loader, asserts no `runs.max_active`, and exits 0 with no warning.
+- A first-run temporary failure is never a repair target: `TestFirstRunTemporaryFailureIsNotARepairTarget` exits 0.
+
+The Task's declared `## Verification` command was not run; Daemon Verification owns that command and the terminal Task status.

@@ -1555,9 +1555,12 @@ func retainCollectedVerificationFailures(retry verificationAttemptOutcome, initi
 	if initial.TemporaryFailure == nil || initial.TemporaryFailure.CommandFailure == nil {
 		return retry
 	}
-	reached := make(map[string]struct{}, len(retry.ReachedCommands))
+	verdicts := make(map[string]struct{}, len(retry.ReachedCommands))
 	for _, command := range retry.ReachedCommands {
-		reached[command] = struct{}{}
+		verdicts[command] = struct{}{}
+	}
+	if retry.UnknownCause != nil {
+		delete(verdicts, retry.UnknownCause.Command)
 	}
 	commandFailures := retry.CommandFailures
 	if len(commandFailures) == 0 && retry.CommandFailure != nil {
@@ -1584,7 +1587,10 @@ func retainCollectedVerificationFailures(retry verificationAttemptOutcome, initi
 		if failure.CommandFailure == nil {
 			continue
 		}
-		if _, retried := reached[failure.CommandFailure.Command]; !retried {
+		if failure.CommandFailure.Command == initial.TemporaryFailure.CommandFailure.Command {
+			continue
+		}
+		if _, replaced := verdicts[failure.CommandFailure.Command]; !replaced {
 			appendFailure(failure)
 		}
 	}

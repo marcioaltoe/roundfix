@@ -7139,6 +7139,67 @@ func TestAFailureRepeatedOnRetryReachesRepairOnce(t *testing.T) {
 	}
 }
 
+func TestUnknownOnRetryKeepsTheFirstRunFailure(t *testing.T) {
+	t.Parallel()
+
+	initialDeterministic := &VerificationCommandError{Command: "verify deterministic", OutputPath: "initial-deterministic.log", Err: errors.New("initial failure")}
+	initialTemporary := &VerificationCommandError{Command: "verify temporary", OutputPath: "initial-temporary.log", Err: errors.New("exit status 75")}
+	initial := verificationAttemptOutcome{
+		CommandFailure: initialDeterministic,
+		CommandFailures: []verificationAttemptFailure{
+			{CommandFailure: initialDeterministic},
+			{CommandFailure: initialTemporary},
+		},
+		TemporaryFailure: &TemporaryVerificationFailureError{CommandFailure: initialTemporary},
+	}
+	retryUnknown := &VerificationUnknownError{Command: "verify deterministic", DiagnosticPath: "retry-deterministic.log", Err: errors.New("runner lost the command verdict")}
+	retry := verificationAttemptOutcome{
+		Failure:         verificationUnknownTerminalReason(retryUnknown),
+		ReachedCommands: []string{"verify deterministic"},
+		UnknownCause:    retryUnknown,
+	}
+
+	got := retainCollectedVerificationFailures(retry, initial)
+
+	if len(got.CommandFailures) != 1 || got.CommandFailures[0].CommandFailure != initialDeterministic {
+		t.Fatalf("merged failures = %+v, want the first-run deterministic failure", got.CommandFailures)
+	}
+	if got.CommandFailure != initialDeterministic {
+		t.Fatalf("repair target = %+v, want first-run deterministic failure", got.CommandFailure)
+	}
+	for _, want := range []string{"verify deterministic", "runner lost the command verdict"} {
+		if !strings.Contains(got.Failure, want) {
+			t.Fatalf("merged failure reason %q does not contain %q", got.Failure, want)
+		}
+	}
+}
+
+func TestFirstRunTemporaryFailureIsNotARepairTarget(t *testing.T) {
+	t.Parallel()
+
+	initialTemporary := &VerificationCommandError{Command: "verify temporary", OutputPath: "initial-temporary.log", Err: errors.New("exit status 75")}
+	initial := verificationAttemptOutcome{
+		CommandFailure:   initialTemporary,
+		CommandFailures:  []verificationAttemptFailure{{CommandFailure: initialTemporary}},
+		TemporaryFailure: &TemporaryVerificationFailureError{CommandFailure: initialTemporary},
+	}
+	retryUnknown := &VerificationUnknownError{Command: "verify earlier", DiagnosticPath: "retry-earlier.log", Err: errors.New("runner lost the command verdict")}
+	retry := verificationAttemptOutcome{
+		Failure:         verificationUnknownTerminalReason(retryUnknown),
+		ReachedCommands: []string{"verify earlier"},
+		UnknownCause:    retryUnknown,
+	}
+
+	got := retainCollectedVerificationFailures(retry, initial)
+
+	if got.CommandFailure != nil || len(got.CommandFailures) != 0 {
+		t.Fatalf("repair failures = %+v, want no first-run temporary failure", got.CommandFailures)
+	}
+	if got.UnknownCause != retryUnknown {
+		t.Fatalf("unknown cause = %+v, want retry cause %+v", got.UnknownCause, retryUnknown)
+	}
+}
+
 func TestRetryKeepsFirstRunFailuresForCommandsItDidNotReach(t *testing.T) {
 	t.Parallel()
 
@@ -7167,7 +7228,7 @@ func TestRetryKeepsFirstRunFailuresForCommandsItDidNotReach(t *testing.T) {
 	for _, failure := range got.CommandFailures {
 		commands = append(commands, failure.CommandFailure.Command)
 	}
-	if got := strings.Join(commands, "|"); got != "verify unreached|verify temporary|verify reached" {
+	if got := strings.Join(commands, "|"); got != "verify unreached|verify reached" {
 		t.Fatalf("merged failure commands = %q, want only unreached first-run failures plus the retry verdict", got)
 	}
 	if got.CommandFailures[len(got.CommandFailures)-1].CommandFailure != retryReached {

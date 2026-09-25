@@ -3612,6 +3612,36 @@ func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
 	}
 }
 
+func TestSetupWritesNoRunCeilingIntoProjectConfig(t *testing.T) {
+	t.Parallel()
+	fake := newSetupFakeDeps()
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("setup exit = %d, want %d (stderr %q)", code, exitOK, stderr.String())
+	}
+	projectContent := fake.files[fake.projectConfigPath]
+	if strings.Contains(projectContent, "max_active:") {
+		t.Fatalf("setup-created Project Config contains the User Config-only Run ceiling:\n%s", projectContent)
+	}
+
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+	mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), projectContent)
+	var loadStderr bytes.Buffer
+	if _, err := roundconfig.Load(roundconfig.LoadOptions{HomeDir: homeDir, WorkDir: workDir, Stderr: &loadStderr}); err != nil {
+		t.Fatalf("load setup-created Project Config: %v", err)
+	}
+	if loadStderr.Len() != 0 {
+		t.Fatalf("Load() warning after setup = %q, want none", loadStderr.String())
+	}
+}
+
 func TestRunSetupHealthyMachineIsIdempotent(t *testing.T) {
 	t.Parallel()
 	assertSetupCommandHealthyMachineIsIdempotent(t)
