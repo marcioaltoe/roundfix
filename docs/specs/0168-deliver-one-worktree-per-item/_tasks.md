@@ -18,13 +18,16 @@ graph:
       needs: [task_03]
     - id: task_05
       file: task_05.md
-      needs: [task_01, task_02, task_03, task_04, task_06, task_07]
+      needs: [task_01, task_02, task_03, task_04, task_06, task_07, task_08]
     - id: task_06
       file: task_06.md
       needs: [task_04]
     - id: task_07
       file: task_07.md
       needs: [task_06]
+    - id: task_08
+      file: task_08.md
+      needs: [task_07]
 ---
 
 # Task Graph
@@ -37,4 +40,5 @@ graph:
 | task_04 | docs | Describe item worktrees in the shipped skill and the guide |
 | task_06 | backend | Provision every item worktree, and let migrated merged items rest |
 | task_07 | backend | A half-removed item worktree never blocks the queue |
+| task_08 | backend | Remove only a truly half-removed item worktree |
 | task_05 | qa | Run the final QA gate |
