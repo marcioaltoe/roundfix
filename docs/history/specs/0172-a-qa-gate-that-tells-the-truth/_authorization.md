@@ -10,6 +10,7 @@ paths:
   - skills/qa-gate/SKILL.md
   - .agents/skills/roundfix/SKILL.md
   - skills/roundfix/SKILL.md
+  - docs/references/coverage-record.json
 operations:
   - implement
   - commit
@@ -27,6 +28,11 @@ of 2026-09-18 for keeping the shipped skills true to the CLI. The set was
 measured with `GovernedPath`.
 
 ## Why each governed path is unavoidable
+
+- `docs/references/coverage-record.json` — added 2026-09-25 after the first QA
+  gate's authorization audit: task_05 replaces the top-level `roundfix events`
+  test that pinned an abort on a malformed record, and the coverage record lists
+  every recorded top-level test name, so it changes with the replacement.
 
 - `internal/cli/cli_test.go` — the `roundfix events` tests live there, and the
   test that pins an abort on a malformed record is replaced by one that pins

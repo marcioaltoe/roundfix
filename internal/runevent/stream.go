@@ -255,7 +255,7 @@ func projectVerificationRecord(record *StreamRecord, fields map[string]json.RawM
 	}
 	switch VerificationClassification(record.Classification) {
 	case VerificationClassificationVacuous:
-		record.Commands, err = requiredPayloadStrings(fields, event, "commands")
+		record.Commands, err = vacuousVerificationCommands(fields, event)
 	case VerificationClassificationUnknown:
 		record.Command, err = requiredPayloadString(fields, event, "command")
 		if err == nil {
@@ -290,6 +290,33 @@ func projectVerificationRecord(record *StreamRecord, fields map[string]json.RawM
 	}
 	record.Summary = verificationStreamSummary(record.Attempt, record.Phase, record.Verdict)
 	return nil
+}
+
+func vacuousVerificationCommands(fields map[string]json.RawMessage, event RunEvent) ([]string, error) {
+	if _, ok := fields["commands"]; ok {
+		return requiredPayloadStrings(fields, event, "commands")
+	}
+	raw, ok := fields["probed_commands"]
+	if !ok {
+		return nil, streamMissingField(event, "commands")
+	}
+	var probed []struct {
+		Command string `json:"command"`
+		Verdict string `json:"verdict"`
+	}
+	if err := json.Unmarshal(raw, &probed); err != nil {
+		return nil, streamPayloadFieldError(event, "probed_commands", err)
+	}
+	commands := make([]string, 0, len(probed))
+	for _, result := range probed {
+		if result.Verdict == string(VerificationVerdictPassed) {
+			commands = append(commands, result.Command)
+		}
+	}
+	if len(commands) == 0 {
+		return nil, streamMissingField(event, "commands")
+	}
+	return commands, nil
 }
 
 func projectOutcomeRecord(record *StreamRecord, fields map[string]json.RawMessage, event RunEvent) error {

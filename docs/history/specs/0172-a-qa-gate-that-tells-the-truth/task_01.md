@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0172-a-qa-gate-that-tells-the-truth
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -55,3 +55,41 @@ complexity: high
 ## References
 
 - [_techspec.md](_techspec.md) — The pending seed and the hollow report
+
+## Result
+
+Implemented the pending seed and shared hollow-report refusal. QA Report
+parsing now records whether a Results-bearing report has any QA data row,
+eligibility rejects hollow `pass` and otherwise-eligible `partial` reports,
+and the Daemon preserves the refusal cause when settling those verdicts. The
+same decision now reaches archive, settle and `qa-report accept`; pending QA
+commits remain recognizable as QA-report-only work.
+
+Documentation now states the pending and hollow-report contract in the QA
+skill, all three maintainer command sections, and the QA Report glossary entry.
+`make skills-sync` regenerated the shipped skill copy, and the repository's
+required digest regeneration reported no derived changes.
+
+Focused checks:
+
+- Red signal: `GOCACHE=/private/tmp/roundfix-task-0172-01-gocache go test ./internal/spec -run '^TestReadQAReportReadsAPendingVerdict$'` failed to compile before implementation because `VerdictPending` and `QAReport.Hollow` did not exist.
+- `GOCACHE=/private/tmp/roundfix-task-0172-01-gocache go test ./internal/spec` — passed.
+- `GOCACHE=/private/tmp/roundfix-task-0172-01-gocache go test ./internal/daemon` — passed after correcting the untouched-seed fixture to preserve the real Daemon seed.
+- `GOCACHE=/private/tmp/roundfix-task-0172-01-gocache go test ./internal/cli -run '^(TestQAReportAcceptRefusesAPendingReport|TestQAReportAcceptRefusesAHollowPass|TestArchiveRefusesAHollowPass|TestSettleQATaskRefusesAHollowPass)$'` — passed.
+- `GOCACHE=/private/tmp/roundfix-task-0172-01-gocache go test ./internal/worktree -run '^TestQAReportOnlyBranchAcceptsAPendingQACommit$'` — passed.
+- `make skills-sync` and `diff -r .agents/skills/qa-gate skills/qa-gate` — passed; canonical and shipped QA skills are byte-identical.
+- `GOCACHE=/private/tmp/roundfix-task-0172-01-gocache make baseline-digests` — passed and reported no derived changes.
+- `GOCACHE=/private/tmp/roundfix-task-0172-01-gocache make verify-incremental` — the first full run passed format, vet, the full Go suite, skill checks and build. A post-edit rerun reached one unrelated existing CLI failure: `TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWorktree` observed `Failed` instead of `Unresolved`; its immediate isolated `-count=1` rerun passed. Task 01 does not change temporary Verification flow.
+- `git diff -- internal/spec/archive_test.go` — no output; the required archive corpus test file remains byte-identical.
+
+Acceptance evidence:
+
+- Pending readability/refusal and untouched-seed settlement are covered by `TestReadQAReportReadsAPendingVerdict`, `TestQAReportEligibilityRefusesAPendingVerdict`, `TestMechanicalQAReportSeedStartsPending`, and `TestQASettlementRefusesAnUntouchedSeed`.
+- Hollow `pass` and qualifying `partial` refusals are covered at the shared decision, Daemon settlement, archive, settle and `qa-report accept` boundaries by the new named regression tests.
+- Positive compatibility is covered by the Results-row, external Status-table and no-Results tests; the full incremental suite also ran `TestArchivedPassCorpusRemainsArchiveEligible` without changing `internal/spec/archive_test.go`.
+- Refused-pass reason propagation and pending QA-only commit recognition are covered by `TestQASettlementRefusesAHollowPass` and `TestQAReportOnlyBranchAcceptsAPendingQACommit`.
+
+The authored `## Verification` command was not run; Daemon Verification owns
+that command and terminal Task settlement. No follow-up work was identified
+inside this Task's slice; the unrelated full-suite observation above remains
+recorded for the Daemon handoff rather than broadening this diff.

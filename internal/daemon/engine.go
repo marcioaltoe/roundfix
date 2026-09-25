@@ -549,15 +549,52 @@ func (req verificationAttemptRequest) publishInfrastructureFailure(ctx context.C
 }
 
 func (req verificationAttemptRequest) publishUnknownFailure(ctx context.Context, command string, unknownErr *VerificationUnknownError) error {
+	command, reason, diagnosticPath := verificationUnknownProjectionEvidence(command, unknownErr)
 	payload := req.payload(runevent.VerificationPhaseFailed, command)
 	payload["error"] = unknownErr.Error()
-	if unknownErr.DiagnosticPath != "" {
-		payload["diagnostic_path"] = unknownErr.DiagnosticPath
-	}
+	applyUnknownVerificationEvidence(payload, command, reason, diagnosticPath)
 	if err := req.Publish(ctx, req.summary(runevent.VerificationPhaseFailed, command), payload); err != nil {
 		return err
 	}
-	return req.publishVerdict(ctx, runevent.VerificationVerdictFailed, unknownErr.DiagnosticPath, unknownErr.Error(), false, verificationFailureMetadata{})
+	verdictPayload := req.payload(runevent.VerificationPhaseVerdict, command)
+	verdictPayload["verdict"] = string(runevent.VerificationVerdictFailed)
+	verdictPayload["error"] = unknownErr.Error()
+	applyUnknownVerificationEvidence(verdictPayload, command, reason, diagnosticPath)
+	return req.Publish(ctx, req.unknownVerdictSummary(), verdictPayload)
+}
+
+func verificationUnknownProjectionEvidence(command string, unknownErr *VerificationUnknownError) (string, string, string) {
+	reason := "reason unavailable"
+	diagnosticPath := "unavailable"
+	if strings.TrimSpace(unknownErr.Command) != "" {
+		command = unknownErr.Command
+	}
+	if unknownErr.Err != nil && strings.TrimSpace(unknownErr.Err.Error()) != "" {
+		reason = unknownErr.Err.Error()
+	}
+	if strings.TrimSpace(unknownErr.DiagnosticPath) != "" {
+		diagnosticPath = unknownErr.DiagnosticPath
+	}
+	return command, reason, diagnosticPath
+}
+
+func applyUnknownVerificationEvidence(payload map[string]any, command string, reason string, diagnosticPath string) {
+	payload["classification"] = string(runevent.VerificationClassificationUnknown)
+	payload["command"] = command
+	payload["reason"] = reason
+	payload["diagnostic_path"] = diagnosticPath
+}
+
+func (req verificationAttemptRequest) unknownVerdictSummary() string {
+	identity := req.identity()
+	summary := fmt.Sprintf("Verification %s verdict: %s", identity, runevent.VerificationVerdictFailed)
+	if req.WorkItem != "" {
+		return fmt.Sprintf("Verification %s for Task %s verdict: %s", identity, req.WorkItem, runevent.VerificationVerdictFailed)
+	}
+	if req.BatchNumber > 0 {
+		return fmt.Sprintf("Verification %s for Batch %03d verdict: %s", identity, req.BatchNumber, runevent.VerificationVerdictFailed)
+	}
+	return summary
 }
 
 func (req verificationAttemptRequest) publishVerdict(ctx context.Context, verdict runevent.VerificationVerdict, diagnosticPath string, failure string, temporary bool, metadata verificationFailureMetadata) error {

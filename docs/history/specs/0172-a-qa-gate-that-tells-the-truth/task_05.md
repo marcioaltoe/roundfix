@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0172-a-qa-gate-that-tells-the-truth
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -38,6 +38,8 @@ complexity: medium
 - interface: `internal/daemon/task_engine.go`
 - interface: `internal/runevent/stream.go`
 - interface: `internal/cli/events.go`
+- interface: `internal/cli/cli_test.go`
+- interface: `docs/references/coverage-record.json`
 - interface: `docs/user-guide/commands.md`
 - interface: `.agents/skills/roundfix/SKILL.md`
 
@@ -48,3 +50,39 @@ complexity: medium
 ## References
 
 - [_techspec.md](_techspec.md) — The event stream
+
+## Result
+
+Implemented the event-stream slice without changing the Daemon-owned Task
+status. Vacuous pre-work publications now retain `probed_commands` and add the
+ordered vacuous `commands`; projection reads the current field and derives
+legacy journals from passed probe entries. `roundfix events` now writes one
+cursor- and kind-specific stderr warning for an unprojectable record, advances
+past it in replay and follow, and keeps stdout as JSONL records only. The user
+guide, domain context, canonical Roundfix skill, embedded skill copy, and
+coverage record now describe and track that contract.
+
+Acceptance evidence:
+
+- A published vacuous event projects its ordered commands in
+  `TestVacuousPreWorkEventProjectsItsCommands`, and CLI replay emits it with
+  exit `0` in `TestEventsReplaysAVacuousPreWorkEvent`.
+- Legacy `probed_commands` projection passes in
+  `TestProjectVacuousEventJournaledBeforeTheFixReadsProbedCommands`; the
+  separate `TestProjectVacuousEventWithoutCommandsIsMalformed` negative case
+  still rejects an event with neither field.
+- Replay and follow each skip exactly one malformed record, warn with cursor,
+  kind, and projection error, and emit the next record in
+  `TestEventsMalformedRelevantPayloadWarnsAndContinues` and
+  `TestEventsFollowWarnsOnAMalformedRecordAndContinues`.
+
+Focused checks:
+
+- `GOCACHE=/private/tmp/roundfix-task05-gocache go test -count=1 ./internal/daemon -run '^TestVacuousPreWorkEventProjectsItsCommands$'` — passed.
+- `GOCACHE=/private/tmp/roundfix-task05-gocache go test -count=1 ./internal/runevent -run '^TestProjectVacuousEvent'` — passed.
+- `GOCACHE=/private/tmp/roundfix-task05-gocache go test -count=1 ./internal/cli -run '^TestEvents(MalformedRelevantPayloadWarnsAndContinues|FollowWarnsOnAMalformedRecordAndContinues|ReplaysAVacuousPreWorkEvent)$'` — passed.
+- `GOCACHE=/private/tmp/roundfix-task05-gocache go test -count=1 ./internal/daemon ./internal/runevent ./internal/cli` — daemon and runevent passed; the sandbox blocked an existing CLI test's `cafe.github.com` boundary, then `./internal/cli` passed on the permitted rerun.
+- `GOCACHE=/private/tmp/roundfix-task05-gocache go test -count=1 ./internal/spec -run '^TestCoverageEquivalence$'` — passed after deliberate coverage-record regeneration.
+- `make skills-sync-check` and `git diff --check` — passed.
+
+The Task's declared `## Verification` command was not run; the Daemon owns it.

@@ -820,6 +820,11 @@ unknown` and `<task_id> stays <status> — verification verdict unknown` instead
 with the cause on stderr. Settle has no Verification repair: fix the cause and
 run it again.
 
+For a QA Task, settle applies the same report eligibility decision as archive
+after Verification passes. A `pending` verdict is never accepted, and a report
+that records no QA row is refused even when it says `pass` or would otherwise
+qualify as declared-only `partial`.
+
 When other Tasks of the Spec are `failed` at settle time, one stderr warning
 names them: their work may be swept into this commit. Settle creates no Run,
 writes no Run Event Journal entries, and never pushes; Task Worktree
@@ -840,6 +845,9 @@ archive stamps the declarations' `satisfied-by` actions under `unproven` in
 `_prd.md`, so the archived record names what was never verified. It then moves
 `<specs.root>/<slug>/` to `<specs.root>/_archived/<slug>/`.
 
+A `pending` verdict is never accepted. A `pass` or otherwise-eligible `partial`
+that records no QA row is refused before archive changes the Spec.
+
 Every other refusal is unchanged: a finding-blocked row, an
 environment-blocked row, a declared count not covered by the Spec's
 declarations, or `verdict: fail` exits `2` and names the first unmet condition.
@@ -859,6 +867,17 @@ Task is not completed, it also stamps `qa_override_qa_task_status` with that
 status; a completed QA Task omits the field. When the newest report is
 unreadable, the recorded outcome names it relative to the Spec folder and never
 stores an absolute machine path.
+
+### qa-report accept
+
+```bash
+roundfix qa-report accept <path>
+```
+
+Reads the selected QA Report and exits zero only when the shared archive and
+settlement eligibility decision accepts it. A `pending` verdict is never
+accepted, and a `pass` or otherwise-eligible `partial` that records no QA row
+is refused. The command writes no files.
 
 ### supersede
 
@@ -1064,6 +1083,12 @@ interrupting `--follow` exits `130`. A terminal Run replays and exits `0`. Use
 `events` for automation, `attach` for the human view, and the Detached Run
 Console Log as a compact text record — not a state API.
 
+If a journal entry cannot be projected,
+the command skips a record it cannot project, writes one warning to stderr with
+its cursor, event kind, and
+projection error, then continues replay or follow. stdout remains JSONL only;
+store and output write errors still exit `1`.
+
 For a Detached Run's stable terminal subscription, use:
 
 ```bash
@@ -1087,6 +1112,15 @@ applicable. A Temporary Verification Failure adds classification `temporary`,
 reason `temporary_verification_failure`, retained `diagnostic_path`, and
 whether the exclusive retry remains available. Requested JSONL remains on
 stdout; follow progress and operational diagnostics remain on stderr.
+
+An Unobserved Verification adds classification `verification_unknown` with
+`command`, `reason`, and `diagnostic_path` on both its `failed` and `verdict`
+records. `reason` carries the runner cause or `reason unavailable`, and
+`diagnostic_path` carries the retained path or `unavailable`.
+
+A Vacuous Verification adds classification `verification_vacuous` and the
+`commands` field containing the commands that passed against the unchanged
+tree.
 
 The outcome record carries the terminal state plus bounded reason and next
 action when non-Clean. When available, it also carries Review Issue knowledge,

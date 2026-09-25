@@ -1853,6 +1853,23 @@ func TestQAReportOnlyBranch(t *testing.T) {
 	}
 }
 
+func TestQAReportOnlyBranchAcceptsAPendingQACommit(t *testing.T) {
+	t.Parallel()
+	const slug = "0053-qa-gate-reachability-and-verdict-semantics"
+	fixture := newTerminalRunFixture(t, "qa-report-only-pending")
+	targetHead := strings.TrimSpace(gitWorktreeTest(t, fixture.repoDir, "rev-parse", "main"))
+	commitQAReport(t, fixture.ref.Path, slug, "qa-report-2026-09-25.md", false, spec.VerdictPending)
+	runHead := strings.TrimSpace(gitWorktreeTest(t, fixture.repoDir, "rev-parse", fixture.ref.Branch))
+
+	got, err := QAReportOnlyBranch(context.Background(), fixture.repoDir, targetHead, runHead, slug)
+	if err != nil {
+		t.Fatalf("QAReportOnlyBranch: %v", err)
+	}
+	if !got {
+		t.Fatal("pending QA commit was not accepted as QA-report-only")
+	}
+}
+
 func TestSupersedingQAReportRecognisesAnArchivedCopy(t *testing.T) {
 	t.Parallel()
 	const (

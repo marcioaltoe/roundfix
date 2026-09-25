@@ -1,9 +1,12 @@
 ---
 spec: 0172-a-qa-gate-that-tells-the-truth
-status: active
+status: archived
 created: 2026-09-25
 surfaces: [backend, cli, docs]
+archived: "2026-09-25"
+source_slug: 0172-a-qa-gate-that-tells-the-truth
 ---
+
 
 # A QA gate that tells the truth
 
@@ -61,7 +64,8 @@ measured:
   recorded in [_authorization.md](_authorization.md); bounded files:
   `internal/cli/cli_test.go`, `internal/spec/archive_test.go`,
   `.agents/skills/qa-gate/SKILL.md`, `skills/qa-gate/SKILL.md`,
-  `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`. Sanctioned
+  `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`,
+  `docs/references/coverage-record.json`. Sanctioned
   regeneration: `make skills-sync`. Source:
   `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`.
 

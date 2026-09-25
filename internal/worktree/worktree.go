@@ -810,7 +810,7 @@ func parseQAReportOnlyLog(output string) ([]qaReportOnlyCommit, bool) {
 
 func matchesQAReportCommitMessage(message string, slug string) bool {
 	message = strings.TrimRight(message, "\r\n")
-	for _, verdict := range []string{spec.VerdictPass, spec.VerdictFail, spec.VerdictPartial} {
+	for _, verdict := range []string{spec.VerdictPass, spec.VerdictFail, spec.VerdictPartial, spec.VerdictPending} {
 		want := fmt.Sprintf(
 			"docs: qa report for %s (%s)\n\nRoundfix-Spec: %s",
 			slug,

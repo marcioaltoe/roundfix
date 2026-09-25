@@ -20,6 +20,7 @@ const (
 	VerdictPass    = "pass"
 	VerdictFail    = "fail"
 	VerdictPartial = "partial"
+	VerdictPending = "pending"
 )
 
 // The terminal row a gate writes when it refuses at a precondition check. The
@@ -48,6 +49,10 @@ var ErrNoQAReport = errors.New("no QA Report found")
 // Each blocked-row cause remains independent; absent counts are zero.
 type QAReport struct {
 	Verdict string
+	// Hollow reports have a Results section but record no QA row there or in
+	// another table with a Status column. The zero value preserves the
+	// eligibility of reports built in code and older reports without Results.
+	Hollow bool
 	// AuditingBinary and AuditorStaleness name the Roundfix that produced the
 	// report and what it established about its age. They are optional so QA
 	// Reports written before this metadata existed remain readable.
@@ -296,6 +301,9 @@ func ReadQAReportFile(path string) (QAReport, error) {
 // the environment.
 func QAReportEligibility(specDir string, report QAReport) error {
 	if report.Verdict == VerdictPass {
+		if report.Hollow {
+			return fmt.Errorf("newest QA Report verdict is %q but records no QA row", report.Verdict)
+		}
 		return nil
 	}
 	if report.Verdict != VerdictPartial {
@@ -328,6 +336,9 @@ func QAReportEligibility(specDir string, report QAReport) error {
 			report.RowsBlockedDeclared-len(declarations),
 		)
 	}
+	if report.Hollow {
+		return fmt.Errorf("newest QA Report verdict is %q but records no QA row", report.Verdict)
+	}
 	return nil
 }
 
@@ -336,7 +347,7 @@ func readQAReport(path string) (QAReport, error) {
 	if err != nil {
 		return QAReport{}, QAReportError{Path: path, Err: err}
 	}
-	frontmatterBytes, _, err := splitFrontmatter(content)
+	frontmatterBytes, body, err := splitFrontmatter(content)
 	if err != nil {
 		return QAReport{}, QAReportError{Path: path, Err: err}
 	}
@@ -376,6 +387,7 @@ func readQAReport(path string) (QAReport, error) {
 	// written down.
 	report := QAReport{
 		Verdict:                 frontmatter.Verdict,
+		Hollow:                  qaReportHollow(body),
 		AuditingBinary:          frontmatter.AuditingBinary,
 		AuditorStaleness:        frontmatter.AuditorStaleness,
 		RowsBlockedEnvironment:  rowsBlockedEnvironment,
@@ -410,13 +422,106 @@ func readQAReport(path string) (QAReport, error) {
 			}
 		}
 		return report, nil
-	case VerdictFail, VerdictPartial:
+	case VerdictFail, VerdictPartial, VerdictPending:
 		return report, nil
 	case "":
 		return QAReport{}, QAReportError{Path: path, Err: errors.New("frontmatter has no verdict field")}
 	default:
 		return QAReport{}, QAReportError{Path: path, Err: fmt.Errorf("unsupported verdict %q", report.Verdict)}
 	}
+}
+
+// qaReportHollow reports whether a QA Report opened a Results section but
+// recorded no data row in that section or in any other table with a Status
+// column. Results stays active through deeper headings and ends only at the
+// next level-one or level-two heading.
+func qaReportHollow(body []byte) bool {
+	lines := strings.Split(string(body), "\n")
+	hasResults := false
+	inResults := false
+	inFence := false
+	fence := ""
+
+	for index := 0; index < len(lines); {
+		trimmed := strings.TrimSpace(lines[index])
+		if marker, ok := markdownFenceMarker(trimmed); ok {
+			if !inFence {
+				inFence = true
+				fence = marker
+			} else if marker == fence {
+				inFence = false
+				fence = ""
+			}
+			index++
+			continue
+		}
+		if inFence {
+			index++
+			continue
+		}
+
+		if depth, heading, ok := markdownHeading(trimmed); ok {
+			if depth <= 2 {
+				inResults = depth == 2 && heading == "Results"
+				if inResults {
+					hasResults = true
+				}
+			}
+			index++
+			continue
+		}
+
+		header := markdownTableCells(lines[index])
+		if len(header) == 0 || index+1 >= len(lines) || !markdownTableSeparator(markdownTableCells(lines[index+1])) {
+			index++
+			continue
+		}
+
+		statusTable := false
+		for _, cell := range header {
+			if strings.EqualFold(cell, "Status") {
+				statusTable = true
+				break
+			}
+		}
+		index += 2
+		for index < len(lines) {
+			cells := markdownTableCells(lines[index])
+			if len(cells) == 0 {
+				break
+			}
+			if !markdownTableSeparator(cells) && (inResults || statusTable) {
+				return false
+			}
+			index++
+		}
+	}
+	return hasResults
+}
+
+func markdownHeading(line string) (int, string, bool) {
+	depth := 0
+	for depth < len(line) && line[depth] == '#' {
+		depth++
+	}
+	if depth == 0 || depth > 6 || depth == len(line) || (line[depth] != ' ' && line[depth] != '\t') {
+		return 0, "", false
+	}
+	heading := strings.TrimSpace(line[depth:])
+	if closing := strings.LastIndex(heading, " #"); closing >= 0 && strings.Trim(heading[closing:], " #\t") == "" {
+		heading = strings.TrimSpace(heading[:closing])
+	}
+	return depth, heading, true
+}
+
+func markdownFenceMarker(line string) (string, bool) {
+	if strings.HasPrefix(line, "```") {
+		return "```", true
+	}
+	if strings.HasPrefix(line, "~~~") {
+		return "~~~", true
+	}
+	return "", false
 }
 
 // qaBlockedCount reads one optional typed blocked-cause count. An absent field

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0172-a-qa-gate-that-tells-the-truth
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -44,3 +44,24 @@ In independent Verification, when command A fails deterministically on the first
 ## References
 
 - [_techspec.md](_techspec.md) — The temporary retry
+
+## Result
+
+### Implementation
+
+- `retainCollectedVerificationFailures` now treats the retry's temporary command as unobserved for verdict replacement: it keeps that command's first-run deterministic failure, excludes the retry's temporary command failure from the merged deterministic failures, and leaves `TemporaryFailure` on the retry outcome.
+- Added the Task-owned retry regression suite in `internal/daemon/verification_retry_test.go` with separate cases for temporary retention, pass replacement, and the complete Task-cycle settlement path.
+
+### Focused checks
+
+- Before the production change, `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1 -run '^TestTemporaryOnRetryKeepsTheFirstRunDeterministicFailure$' ./internal/daemon` failed because the merged repair target used `retry-deterministic.log` instead of the first-run deterministic failure.
+- `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1 -run '^(TestTemporaryOnRetryKeepsTheFirstRunDeterministicFailure|TestPassOnRetryReplacesTheFirstRunFailure|TestIndependentVerificationTemporaryRetryNamesTheDeterministicFailure)$' ./internal/daemon` passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1 -run '^(TestUnknownOnRetryKeepsTheFirstRunFailure|TestRetryKeepsFirstRunFailuresForCommandsItDidNotReach|TestIndependentVerificationReplacesCollectedFailuresForRetriedCommands)$' ./internal/daemon` passed unchanged.
+- `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1 ./internal/daemon` passed.
+- The Task's declared `## Verification` command was not run; the Daemon owns that gate.
+
+### Acceptance evidence
+
+- `TestTemporaryOnRetryKeepsTheFirstRunDeterministicFailure` proves the merged repair target remains A's first-run deterministic failure, the Task reason names `initial-deterministic.log`, the retry diagnostic does not replace it, and the retry's `TemporaryFailure` remains attached.
+- `TestIndependentVerificationTemporaryRetryNamesTheDeterministicFailure` drives the sequence through `TaskCycle` and proves the Task settles failed with A's first-run diagnostic path after one Agent request, with no Verification Feedback repair turn.
+- `TestPassOnRetryReplacesTheFirstRunFailure` proves A's first-run failure and diagnostic are removed when A passes before the retry ends temporarily on B. The unchanged retry tests cover unknown, unreached, and deterministic/pass replacement behavior.

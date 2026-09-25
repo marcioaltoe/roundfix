@@ -1312,6 +1312,7 @@ func (engine *Engine) publishPreWorkProbeFindings(ctx context.Context, plan Task
 			"phase":           string(runevent.VerificationPhaseFailed),
 			"task":            task.ID,
 			"classification":  string(runevent.VerificationClassificationVacuous),
+			"commands":        vacuous,
 			"probed_commands": probedCommands,
 		}
 		if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonVerification, summary, payload); err != nil {
@@ -1562,6 +1563,13 @@ func retainCollectedVerificationFailures(retry verificationAttemptOutcome, initi
 	if retry.UnknownCause != nil {
 		delete(verdicts, retry.UnknownCause.Command)
 	}
+	retryTemporaryCommand := ""
+	retryEndedTemporarily := false
+	if retry.TemporaryFailure != nil && retry.TemporaryFailure.CommandFailure != nil {
+		retryEndedTemporarily = true
+		retryTemporaryCommand = retry.TemporaryFailure.CommandFailure.Command
+		delete(verdicts, retryTemporaryCommand)
+	}
 	commandFailures := retry.CommandFailures
 	if len(commandFailures) == 0 && retry.CommandFailure != nil {
 		commandFailures = []verificationAttemptFailure{{
@@ -1595,6 +1603,9 @@ func retainCollectedVerificationFailures(retry verificationAttemptOutcome, initi
 		}
 	}
 	for _, failure := range commandFailures {
+		if retryEndedTemporarily && failure.CommandFailure != nil && failure.CommandFailure.Command == retryTemporaryCommand {
+			continue
+		}
 		appendFailure(failure)
 	}
 	if len(merged) == 0 {
@@ -2585,7 +2596,8 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 			return "", "", false, fmt.Errorf("stop run %q after the QA step Agent: %w", plan.RunID, err)
 		}
 	}
-	verdict, reportPath, accepted = engine.settleQAVerdict(plan)
+	var eligibilityErr error
+	verdict, reportPath, accepted, eligibilityErr = engine.settleQAVerdict(plan)
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
 		fmt.Sprintf("QA verdict %s for Spec %s.", verdict, plan.Spec.Slug),
 		map[string]any{"phase": "verdict", "verdict": verdict, "report": reportPath},
@@ -2598,6 +2610,8 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	if accepted {
 		qaStatus = spec.StatusCompleted
 		qaReason = ""
+	} else if eligibilityErr != nil && (verdict == spec.VerdictPass || verdict == spec.VerdictPartial) {
+		qaReason = fmt.Sprintf("QA verdict %s not accepted: %v", verdict, eligibilityErr)
 	}
 	if err := engine.settleTask(ctx, plan, qaTask, ordinal, qaStatus, qaReason); err != nil {
 		return "", "", false, err
@@ -2785,12 +2799,11 @@ func (engine *Engine) writeMechanicalQAReport(ctx context.Context, plan TaskPlan
 		return "", fmt.Errorf("create QA Report directory %q: %w", reportDir, err)
 	}
 	date := engine.deps.Now().Format("2006-01-02")
-	for sequence := 0; sequence < 10000; sequence++ {
-		name := fmt.Sprintf("qa-report-%s.md", date)
-		if sequence > 0 {
-			name = fmt.Sprintf("qa-report-%s-%02d.md", date, sequence)
+	for {
+		path, err := nextMechanicalQAReportPath(reportDir, date)
+		if err != nil {
+			return "", err
 		}
-		path := filepath.Join(reportDir, name)
 		file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
 		if errors.Is(err, os.ErrExist) {
 			continue
@@ -2805,7 +2818,79 @@ func (engine *Engine) writeMechanicalQAReport(ctx context.Context, plan TaskPlan
 		}
 		return artifactCommitPath(plan, path), nil
 	}
-	return "", fmt.Errorf("create QA Report for %s: same-day numeric suffixes exhausted", date)
+}
+
+func nextMechanicalQAReportPath(reportDir, date string) (string, error) {
+	entries, err := os.ReadDir(reportDir)
+	if err != nil {
+		return "", fmt.Errorf("read QA Report directory %q: %w", reportDir, err)
+	}
+
+	foundSameDate := false
+	highestSequence := 0
+	for _, entry := range entries {
+		reportDate, suffix, ok := mechanicalQAReportDateAndSuffix(entry.Name())
+		if !ok {
+			continue
+		}
+		if reportDate > date {
+			return "", fmt.Errorf("create QA Report for %s: later-dated QA Report %q already exists", date, filepath.Join(reportDir, entry.Name()))
+		}
+		if reportDate != date {
+			continue
+		}
+		foundSameDate = true
+		if !strings.HasPrefix(suffix, "-") || !mechanicalQAReportDigits(suffix[1:]) {
+			continue
+		}
+		sequence, err := strconv.Atoi(suffix[1:])
+		if err != nil || sequence < 0 {
+			continue
+		}
+		if sequence > highestSequence {
+			highestSequence = sequence
+		}
+	}
+
+	if !foundSameDate {
+		return filepath.Join(reportDir, fmt.Sprintf("qa-report-%s.md", date)), nil
+	}
+	if highestSequence == int(^uint(0)>>1) {
+		return "", fmt.Errorf("create QA Report for %s: same-day numeric suffixes exhausted", date)
+	}
+	return filepath.Join(reportDir, fmt.Sprintf("qa-report-%s-%02d.md", date, highestSequence+1)), nil
+}
+
+func mechanicalQAReportDateAndSuffix(name string) (date, suffix string, ok bool) {
+	const (
+		prefix = "qa-report-"
+		ext    = ".md"
+		layout = "2006-01-02"
+	)
+	if !strings.HasPrefix(name, prefix) || !strings.HasSuffix(name, ext) {
+		return "", "", false
+	}
+	rest := strings.TrimSuffix(strings.TrimPrefix(name, prefix), ext)
+	if len(rest) < len(layout) {
+		return "", "", false
+	}
+	date = rest[:len(layout)]
+	if _, err := time.Parse(layout, date); err != nil {
+		return "", "", false
+	}
+	return date, rest[len(layout):], true
+}
+
+func mechanicalQAReportDigits(value string) bool {
+	if value == "" {
+		return false
+	}
+	for _, digit := range value {
+		if digit < '0' || digit > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // mechanicalQAReportContent renders the QA Report bytes one mechanical result
@@ -2856,7 +2941,7 @@ func mechanicalQAReportContent(result speccheck.MechanicalResult, evidence spec.
 
 	var content bytes.Buffer
 	content.WriteString("---\n")
-	verdict := spec.VerdictPass
+	verdict := spec.VerdictPending
 	if result.Blocking || len(result.Findings) > 0 || len(result.RepairFailures) > 0 {
 		verdict = spec.VerdictFail
 	}
@@ -2988,18 +3073,21 @@ func pullRequestRepository(rawURL string) string {
 // report's own verdict when readable, missing when no report exists, and
 // unreadable when the report exists but its verdict cannot be read
 // (ADR 0015). The report path comes back relative to the working tree,
-// empty when no report exists.
-func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string, bool) {
+// empty when no report exists. A readable report also returns the shared
+// eligibility error so settlement can name why a pass or partial was refused.
+func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string, bool, error) {
 	verdict := ""
 	accepted := false
+	var eligibilityErr error
 	switch report, err := spec.ReadQAReport(plan.Spec.Dir); {
 	case err == nil:
 		verdict = report.Verdict
-		accepted = spec.QAReportEligibility(plan.Spec.Dir, report) == nil
+		eligibilityErr = spec.QAReportEligibility(plan.Spec.Dir, report)
+		accepted = eligibilityErr == nil
 	case errors.Is(err, spec.ErrNoQAReport):
 		// ReadQAReport already searched the report directory. Preserve that
 		// proven absence instead of repeating the same filesystem scan below.
-		return qaVerdictMissing, "", false
+		return qaVerdictMissing, "", false, nil
 	default:
 		fmt.Fprintf(engine.deps.Progress, "QA Report verdict unreadable: %v\n", err)
 		verdict = qaVerdictUnreadable
@@ -3011,7 +3099,7 @@ func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string, bool) {
 			reportPath = relative
 		}
 	}
-	return verdict, reportPath, accepted
+	return verdict, reportPath, accepted, eligibilityErr
 }
 
 // commitQAReport creates the QA Report commit from the QA step's snapshot

@@ -2,6 +2,8 @@ package runevent
 
 import (
 	"encoding/json"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -46,5 +48,61 @@ func TestProjectStreamEventProjectsSelectionReceiptInExistingCategory(t *testing
 	}
 	if record.ScopeKind != "agent_session" || record.ScopeID != "roundfix-run-1-task_04" || record.Status != SelectionReceiptStatusApplied {
 		t.Fatalf("selection receipt scope/status = %#v", record)
+	}
+}
+
+func TestProjectVacuousEventJournaledBeforeTheFixReadsProbedCommands(t *testing.T) {
+	t.Parallel()
+	event := RunEvent{
+		RunID:       "run_legacy_vacuous",
+		Batch:       5,
+		Source:      SourceDaemon,
+		Kind:        KindDaemonVerification,
+		ReviewIssue: "task_05",
+		Time:        time.Date(2026, 9, 25, 12, 0, 0, 0, time.UTC),
+		Payload: []byte(`{
+			"attempt":1,
+			"phase":"failed",
+			"task":"task_05",
+			"classification":"verification_vacuous",
+			"probed_commands":[
+				{"command":"test -f first","verdict":"passed","probe_log_path":"/tmp/first.log"},
+				{"command":"test -f missing","verdict":"failed","probe_log_path":"/tmp/missing.log"},
+				{"command":"test -f second","verdict":"passed","probe_log_path":"/tmp/second.log"}
+			]
+		}`),
+	}
+
+	record, ok, err := ProjectStreamEvent(4, event, AllStreamCategories())
+	if err != nil {
+		t.Fatalf("project legacy vacuous event: %v", err)
+	}
+	if !ok {
+		t.Fatal("legacy vacuous event did not project")
+	}
+	want := []string{"test -f first", "test -f second"}
+	if !reflect.DeepEqual(record.Commands, want) {
+		t.Fatalf("commands = %q, want passed commands %q", record.Commands, want)
+	}
+}
+
+func TestProjectVacuousEventWithoutCommandsIsMalformed(t *testing.T) {
+	t.Parallel()
+	event := RunEvent{
+		RunID:       "run_malformed_vacuous",
+		Batch:       5,
+		Source:      SourceDaemon,
+		Kind:        KindDaemonVerification,
+		ReviewIssue: "task_05",
+		Time:        time.Date(2026, 9, 25, 12, 0, 0, 0, time.UTC),
+		Payload:     []byte(`{"attempt":1,"phase":"failed","task":"task_05","classification":"verification_vacuous"}`),
+	}
+
+	_, _, err := ProjectStreamEvent(4, event, AllStreamCategories())
+	if err == nil {
+		t.Fatal("expected vacuous event without commands to fail projection")
+	}
+	if !strings.Contains(err.Error(), `missing payload field "commands"`) {
+		t.Fatalf("projection error = %q, want missing commands", err)
 	}
 }

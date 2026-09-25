@@ -31,7 +31,8 @@ record it cannot project.
   [_authorization.md](_authorization.md); bounded files:
   `internal/cli/cli_test.go`, `internal/spec/archive_test.go`,
   `.agents/skills/qa-gate/SKILL.md`, `skills/qa-gate/SKILL.md`,
-  `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`. Source:
+  `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`,
+  `docs/references/coverage-record.json`. Source:
   `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`.
 
 ## The pending seed and the hollow report
@@ -183,7 +184,8 @@ warning, and the first two name the two classified record shapes.
 3. The temporary retry (depends on: 2).
 4. The unknown classification (depends on: 3).
 5. The event stream (depends on: 4).
-6. Terminal QA (depends on: 1, 2, 3, 4, 5).
+6. Terminal QA (depends on: 1, 2, 3, 4, 5, 7).
+7. The journal consumer corpus harness (depends on: 5).
 
 ## Risks & Considerations
 

@@ -412,6 +412,28 @@ func TestRunArchiveRefusesIncompleteTask(t *testing.T) {
 	assertNoRunDatabase(t, homeDir)
 }
 
+func TestArchiveRefusesAHollowPass(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Build the widget core", status: string(spec.StatusCompleted)},
+	})
+	writeArchiveQAReport(t, repoDir, spec.VerdictPass)
+	reportPath := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "qa", "qa-report-2026-07-06.md")
+	mustWrite(t, reportPath, "---\nverdict: pass\n---\n\n# QA Report\n\n## Results\n\n| # | Status |\n| - | --- |\n")
+	var stdout, stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
+
+	if code != exitPreflight || stdout.Len() != 0 {
+		t.Fatalf("archive = exit %d stdout %q, want refusal", code, stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "records no QA row") {
+		t.Fatalf("archive stderr = %q, want hollow-report refusal", stderr.String())
+	}
+	assertPathExists(t, filepath.Join(repoDir, "docs", "specs", implementTestSlug))
+	assertNoRunDatabase(t, homeDir)
+}
+
 func TestRunArchiveRefusesMissingOrNonPassingQA(t *testing.T) {
 	t.Parallel()
 	tests := []struct {

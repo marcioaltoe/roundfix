@@ -761,6 +761,7 @@ type taskFakeRunner struct {
 	afterTask        func(string)
 	afterQA          func()
 	qaReport         string
+	preserveQASeed   bool
 	qaReportPath     string
 	qaSeed           string
 	qaPrompts        []string
@@ -809,7 +810,10 @@ func (runner *taskFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest,
 		} else if !errors.Is(err, os.ErrNotExist) {
 			return agent.ExecuteResult{}, err
 		}
-		if runner.qaReport == "" {
+		if runner.preserveQASeed {
+			// Leave the Daemon-authored seed byte-identical to model an Agent
+			// that exits without recording any QA result.
+		} else if runner.qaReport == "" {
 			// An empty scripted result models an Agent that leaves no report.
 			// Remove the Daemon seed so the existing missing-verdict settlement
 			// remains exercised independently from unreadable frontmatter.
@@ -1658,8 +1662,12 @@ func TestQAGateRefusesOnUnobservedRepositoryVerification(t *testing.T) {
 				t.Fatalf("unobserved repository Verification published %d events, want waiting, started, failed, and verdict: %+v", len(verificationEvents), verificationEvents)
 			}
 			for _, event := range verificationEvents[2:] {
-				if payload := eventPayloadMap(t, event); payload["classification"] != nil || payload["reason"] != nil {
-					t.Fatalf("unobserved repository Verification changed publisher classification payload: %v", payload)
+				payload := eventPayloadMap(t, event)
+				if payload["classification"] != string(runevent.VerificationClassificationUnknown) || payload["command"] != command || payload["reason"] != cause.Error() {
+					t.Fatalf("unobserved repository Verification evidence payload = %v", payload)
+				}
+				if _, ok := payload["diagnostic_path"]; !ok {
+					t.Fatalf("unobserved repository Verification omitted diagnostic state: %v", payload)
 				}
 			}
 		})
@@ -2342,8 +2350,8 @@ func TestWriteMechanicalQAReportRecordsTheRefusal(t *testing.T) {
 			}},
 		})
 
-		if !strings.Contains(report, "\nverdict: pass\n") {
-			t.Fatalf("non-blocking mechanical QA Report has no pass verdict:\n%s", report)
+		if !strings.Contains(report, "\nverdict: pending\n") {
+			t.Fatalf("non-blocking mechanical QA Report has no pending verdict:\n%s", report)
 		}
 		for _, count := range []string{
 			"rows_blocked_environment: 0",
@@ -2359,8 +2367,8 @@ func TestWriteMechanicalQAReportRecordsTheRefusal(t *testing.T) {
 	t.Run("NonBlocking zero-row result records no refusal", func(t *testing.T) {
 		report := writeReport(t, speccheck.MechanicalResult{})
 
-		if !strings.Contains(report, "\nverdict: pass\n") {
-			t.Fatalf("non-blocking zero-row QA Report has no pass verdict:\n%s", report)
+		if !strings.Contains(report, "\nverdict: pending\n") {
+			t.Fatalf("non-blocking zero-row QA Report has no pending verdict:\n%s", report)
 		}
 		for _, refused := range []string{"| QA-PRECONDITION |", "| fail |", "mechanical refusal"} {
 			if strings.Contains(report, refused) {
@@ -8749,7 +8757,7 @@ func TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport(t *testing.T) {
 		wantReason  string
 	}{
 		{name: "pass with environment-blocked row", report: "---\nverdict: pass\nrows_blocked_environment: 1\n---\n\n# QA Report\n", wantVerdict: spec.VerdictPass, wantStatus: spec.StatusCompleted},
-		{name: "non-qualifying partial", report: qaReportForTest(spec.VerdictPartial), wantVerdict: spec.VerdictPartial, wantStatus: spec.StatusFailed, wantReason: "QA verdict partial"},
+		{name: "non-qualifying partial", report: qaReportForTest(spec.VerdictPartial), wantVerdict: spec.VerdictPartial, wantStatus: spec.StatusFailed, wantReason: `QA verdict partial not accepted: newest QA Report verdict is "partial"; expected "pass"`},
 		{name: "fail", report: qaReportForTest(spec.VerdictFail), wantVerdict: spec.VerdictFail, wantStatus: spec.StatusFailed, wantReason: "QA verdict fail"},
 		{name: "missing report", report: "", wantVerdict: "missing", wantStatus: spec.StatusFailed, wantReason: "QA verdict missing"},
 		{name: "unreadable verdict", report: "---\nsummary: no verdict field\n---\n\n# QA Report\n", wantVerdict: "unreadable", wantStatus: spec.StatusFailed, wantReason: "QA verdict unreadable"},

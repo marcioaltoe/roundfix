@@ -37,6 +37,40 @@ func TestRunQAReportAcceptCommandAcceptsAQualifyingPartial(t *testing.T) {
 	}
 }
 
+func TestQAReportAcceptRefusesAPendingReport(t *testing.T) {
+	t.Parallel()
+	specDir := t.TempDir()
+	reportPath := filepath.Join(specDir, "qa", "qa-report-2026-09-25.md")
+	writeQAReportTestFile(t, reportPath, "---\nverdict: pending\n---\n\n# QA Report\n")
+	var stdout, stderr bytes.Buffer
+
+	code := runCLI(t, []string{"qa-report", "accept", reportPath}, &stdout, &stderr)
+
+	if code != exitRunFailed || stdout.Len() != 0 {
+		t.Fatalf("qa-report accept = exit %d stdout %q, want failed exit and empty stdout", code, stdout.String())
+	}
+	if !strings.Contains(stderr.String(), `verdict is "pending"`) {
+		t.Fatalf("qa-report accept stderr = %q, want pending-verdict refusal", stderr.String())
+	}
+}
+
+func TestQAReportAcceptRefusesAHollowPass(t *testing.T) {
+	t.Parallel()
+	specDir := t.TempDir()
+	reportPath := filepath.Join(specDir, "qa", "qa-report-2026-09-25.md")
+	writeQAReportTestFile(t, reportPath, "---\nverdict: pass\n---\n\n# QA Report\n\n## Results\n\n| # | Status |\n| - | --- |\n")
+	var stdout, stderr bytes.Buffer
+
+	code := runCLI(t, []string{"qa-report", "accept", reportPath}, &stdout, &stderr)
+
+	if code != exitRunFailed || stdout.Len() != 0 {
+		t.Fatalf("qa-report accept = exit %d stdout %q, want failed exit and empty stdout", code, stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "records no QA row") {
+		t.Fatalf("qa-report accept stderr = %q, want hollow-report refusal", stderr.String())
+	}
+}
+
 func TestRunQAReportAcceptCommandFailsClosed(t *testing.T) {
 	tests := []struct {
 		name      string
