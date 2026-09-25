@@ -1,9 +1,12 @@
 ---
 spec: 0163-baseline-decisions-and-regeneration
-status: active
+status: archived
 created: 2026-09-24
 surfaces: [backend, cli, docs]
+archived: "2026-09-25"
+source_slug: 0163-baseline-decisions-and-regeneration
 ---
+
 
 # Baseline decisions and regeneration
 
