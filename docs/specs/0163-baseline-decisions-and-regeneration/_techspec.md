@@ -28,7 +28,8 @@ immutable commit. Then update the two shipped skills.
 - Tooling authority: applicable — express maintainer authorization granted
   2026-09-24, recorded in [_authorization.md](_authorization.md); bounded files:
   `internal/cli/baseline_human_test.go`, `internal/baseline/plan_test.go`,
-  `internal/baseline/derived_ownership_test.go`, `skills/_ownership.yml`,
+  `internal/baseline/derived_ownership_test.go`,
+  `internal/speccheck/mechanical_test.go`, `skills/_ownership.yml`,
   `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`,
   `.agents/skills/setup-context-driven/SKILL.md`,
   `skills/setup-context-driven/SKILL.md`. Sanctioned regeneration:

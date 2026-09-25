@@ -7,6 +7,7 @@ paths:
   - internal/cli/baseline_human_test.go
   - internal/baseline/plan_test.go
   - internal/baseline/derived_ownership_test.go
+  - internal/speccheck/mechanical_test.go
   - skills/_ownership.yml
   - .agents/skills/roundfix/SKILL.md
   - skills/roundfix/SKILL.md
@@ -74,6 +75,14 @@ command: make baseline-digests
 ```yaml
 command: make skills-sync
 ```
+
+## Added after the first Run
+
+`internal/speccheck/mechanical_test.go` rides the standing grant of 2026-09-21
+for governed paths a slice genuinely needs: the mechanical audit's tests call
+`baseline.OutputsFor`, so declaring the skill regeneration outputs changes their
+expectations. The first Run proved the need: Task 03 edited it and the QA
+authorization audit refused the unbounded path.
 
 ## Limits
 
