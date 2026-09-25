@@ -78,6 +78,9 @@ func (workflow *commandDeliveryWorkflow) CreateItemBranch(ctx context.Context, g
 		return "", "", fmt.Errorf("inspect item branch %q: %w", branch, err)
 	}
 	if exists {
+		if err := runworktree.UseItem(ctx, ref); err != nil {
+			return "", "", fmt.Errorf("use recorded item worktree %q: %w", itemWorktree, err)
+		}
 		return branch, itemWorktree, nil
 	}
 	defaultBranch := preflight.DetectDefaultBranch(ctx, gitRoot, "", workflow.git)
@@ -129,7 +132,7 @@ func localItemBranchExists(ctx context.Context, runner preflight.GitRunner, gitR
 	return false, err
 }
 
-func (workflow *commandDeliveryWorkflow) UseItemBranch(_ context.Context, _, branch, itemWorktree string) (string, error) {
+func (workflow *commandDeliveryWorkflow) UseItemBranch(ctx context.Context, gitRoot, branch, itemWorktree string) (string, error) {
 	branch = strings.TrimSpace(branch)
 	if branch == "" {
 		return "", errors.New("use item branch: branch is required")
@@ -138,7 +141,29 @@ func (workflow *commandDeliveryWorkflow) UseItemBranch(_ context.Context, _, bra
 	if itemWorktree == "" {
 		return "", errors.New("use item branch: worktree is required")
 	}
+	err := runworktree.UseItem(ctx, runworktree.ItemRef{
+		Path:     itemWorktree,
+		Branch:   branch,
+		UserRoot: gitRoot,
+	})
+	if errors.Is(err, runworktree.ErrItemBranchMissing) {
+		return "", delivery.ErrItemWorktreeMissing
+	}
+	if err != nil {
+		return "", fmt.Errorf("use item branch: %w", err)
+	}
 	return itemWorktree, nil
+}
+
+func (workflow *commandDeliveryWorkflow) RemoveItemBranch(ctx context.Context, gitRoot, branch, itemWorktree string) error {
+	if err := runworktree.CleanupItem(ctx, runworktree.ItemRef{
+		Path:     strings.TrimSpace(itemWorktree),
+		Branch:   strings.TrimSpace(branch),
+		UserRoot: strings.TrimSpace(gitRoot),
+	}); err != nil {
+		return fmt.Errorf("remove item worktree and branch: %w", err)
+	}
+	return nil
 }
 
 func (workflow *commandDeliveryWorkflow) RunSpec(ctx context.Context, gitRoot, specSlug string) (delivery.RunResult, error) {

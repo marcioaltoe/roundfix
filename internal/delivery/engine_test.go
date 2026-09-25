@@ -252,6 +252,42 @@ func TestDeliveryEngineResumesWithoutDoubleEffects(t *testing.T) {
 	})
 }
 
+func TestDeliveryEngineRetriesMergedItemCleanupWithoutReplayingMerge(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runStore := openDeliveryEngineStore(t, ctx)
+	const gitRoot = "/repo-cleanup-retry"
+	if _, err := runStore.CreateDeliveryQueue(ctx, gitRoot, []string{"cleanup-retry"}); err != nil {
+		t.Fatalf("create Delivery Queue: %v", err)
+	}
+
+	workflow := newFakeDeliveryWorkflow()
+	workflow.removeErrors = []error{errors.New("worktree is busy")}
+	boundary := newFakeDeliveryBoundary()
+	engine := newTestDeliveryEngine(runStore, workflow, boundary)
+
+	if _, err := engine.Run(ctx, gitRoot); err == nil {
+		t.Fatal("Delivery Engine succeeded after item cleanup failed")
+	}
+	item := readDeliveryQueue(t, ctx, runStore, gitRoot).Items[0]
+	if item.Stage != store.DeliveryStageMerged {
+		t.Fatalf("item stage after cleanup failure = %q, want merged", item.Stage)
+	}
+	if boundary.mergeEffects != 1 {
+		t.Fatalf("merge effects after cleanup failure = %d, want one", boundary.mergeEffects)
+	}
+
+	if _, err := engine.Run(ctx, gitRoot); err != nil {
+		t.Fatalf("retry merged item cleanup: %v", err)
+	}
+	if workflow.removeCalls != 2 {
+		t.Fatalf("item cleanup calls = %d, want two", workflow.removeCalls)
+	}
+	if boundary.mergeEffects != 1 {
+		t.Fatalf("merge effects after cleanup retry = %d, want one", boundary.mergeEffects)
+	}
+}
+
 func TestDeliveryEngineParksAStaleReview(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -778,6 +814,8 @@ type fakeDeliveryWorkflow struct {
 	currentBranch   string
 	currentWorktree string
 	recordWorkspace func(branch, worktree string) error
+	removeErrors    []error
+	removeCalls     int
 }
 
 func newFakeDeliveryWorkflow() *fakeDeliveryWorkflow {
@@ -818,6 +856,14 @@ func (fake *fakeDeliveryWorkflow) UseItemBranch(_ context.Context, _ string, bra
 	fake.currentBranch = branch
 	fake.currentWorktree = itemWorktree
 	return itemWorktree, nil
+}
+
+func (fake *fakeDeliveryWorkflow) RemoveItemBranch(context.Context, string, string, string) error {
+	fake.removeCalls++
+	if fake.removeCalls <= len(fake.removeErrors) {
+		return fake.removeErrors[fake.removeCalls-1]
+	}
+	return nil
 }
 
 func (fake *fakeDeliveryWorkflow) RunSpec(_ context.Context, workDir string, slug string) (RunResult, error) {

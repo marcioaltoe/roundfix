@@ -47,7 +47,6 @@ type DeliveryQueueItem struct {
 	Blocker           string
 	Branch            string
 	Worktree          string
-	StartingBranch    string
 	RunID             string
 	CandidateCommits  []string
 	PullRequestNumber string
@@ -143,9 +142,9 @@ VALUES (?)`, gitRoot); err != nil {
 		for _, item := range items {
 			if _, err := tx.ExecContext(ctx, `
 INSERT INTO delivery_queue_items (
-	git_root, spec_slug, position, stage, blocker, branch, starting_branch, run_id,
+	git_root, spec_slug, position, stage, blocker, branch, run_id,
 	candidate_commits, pull_request_number, merge_commit
-) VALUES (?, ?, ?, ?, '', '', '', '', '[]', '', '')`,
+) VALUES (?, ?, ?, ?, '', '', '', '[]', '', '')`,
 				gitRoot,
 				item.SpecSlug,
 				item.Position,
@@ -186,7 +185,7 @@ WHERE git_root = ?`, gitRoot).Scan(&queue.GitRoot, &ownerPID, &queue.OwnerIdenti
 		queue.OwnerPID = int(ownerPID.Int64)
 	}
 	rows, err := store.db.QueryContext(ctx, `
-SELECT spec_slug, position, stage, blocker, branch, worktree, starting_branch, run_id, candidate_commits,
+SELECT spec_slug, position, stage, blocker, branch, worktree, run_id, candidate_commits,
        pull_request_number, merge_commit
 FROM delivery_queue_items
 WHERE git_root = ?
@@ -292,64 +291,6 @@ WHERE git_root = ? AND owner_pid = ? AND owner_identity = ?`, gitRoot, pid, iden
 		return nil
 	})
 	return released, err
-}
-
-// RecordDeliveryQueueItemBranch records the first item and starting branches
-// together and returns the durable item branch on retries.
-func (store *Store) RecordDeliveryQueueItemBranch(
-	ctx context.Context,
-	gitRoot string,
-	specSlug string,
-	branch string,
-	startingBranch string,
-) (string, error) {
-	gitRoot = strings.TrimSpace(gitRoot)
-	specSlug = strings.TrimSpace(specSlug)
-	branch = strings.TrimSpace(branch)
-	startingBranch = strings.TrimSpace(startingBranch)
-	if gitRoot == "" {
-		return "", errors.New("record Delivery Queue item branch: Git root is required")
-	}
-	if specSlug == "" {
-		return "", errors.New("record Delivery Queue item branch: Spec slug is required")
-	}
-	if branch == "" {
-		return "", errors.New("record Delivery Queue item branch: branch is required")
-	}
-	if startingBranch == "" {
-		return "", errors.New("record Delivery Queue item branch: starting branch is required")
-	}
-
-	recorded := ""
-	err := store.withWriteTx(ctx, fmt.Sprintf("Delivery Queue item %q branch recording", specSlug), func(tx *sql.Tx) error {
-		if _, err := tx.ExecContext(ctx, `
-UPDATE delivery_queue_items
-SET branch = ?, starting_branch = ?
-WHERE git_root = ? AND spec_slug = ? AND branch = '' AND starting_branch = ''`,
-			branch, startingBranch, gitRoot, specSlug); err != nil {
-			return fmt.Errorf("record Delivery Queue item %q branch: %w", specSlug, err)
-		}
-		if err := tx.QueryRowContext(ctx, `
-SELECT branch, starting_branch
-FROM delivery_queue_items
-WHERE git_root = ? AND spec_slug = ?`, gitRoot, specSlug).Scan(&recorded, &startingBranch); err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return fmt.Errorf("record Delivery Queue item %q branch: item does not exist", specSlug)
-			}
-			return fmt.Errorf("read Delivery Queue item %q branch: %w", specSlug, err)
-		}
-		if strings.TrimSpace(recorded) == "" {
-			return fmt.Errorf("record Delivery Queue item %q branch: recorded branch is empty", specSlug)
-		}
-		if strings.TrimSpace(startingBranch) == "" {
-			return fmt.Errorf("record Delivery Queue item %q branch: recorded starting branch is empty", specSlug)
-		}
-		return nil
-	})
-	if err != nil {
-		return "", err
-	}
-	return recorded, nil
 }
 
 // RecordDeliveryQueueItemWorktree records the first item branch and worktree
@@ -626,7 +567,6 @@ func scanDeliveryQueueItem(row deliveryQueueItemScanner) (DeliveryQueueItem, err
 		&item.Blocker,
 		&item.Branch,
 		&item.Worktree,
-		&item.StartingBranch,
 		&item.RunID,
 		&candidateCommits,
 		&item.PullRequestNumber,

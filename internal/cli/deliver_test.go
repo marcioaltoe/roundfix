@@ -363,6 +363,97 @@ func TestEachItemRunsInItsOwnWorktree(t *testing.T) {
 	}
 }
 
+func TestItemBranchHasNoUpstream(t *testing.T) {
+	t.Parallel()
+	_, checkout := newDeliveryBranchRepository(t)
+	const specSlug = "0168-no-upstream"
+	workflow := newDeliveryBranchWorkflow(t, checkout, specSlug)
+
+	branch, itemWorktree, err := workflow.CreateItemBranch(t.Context(), checkout, specSlug)
+	if err != nil {
+		t.Fatalf("create item worktree: %v", err)
+	}
+	upstream := strings.TrimSpace(gittest.Run(
+		t,
+		itemWorktree,
+		"for-each-ref",
+		"--format=%(upstream:short)",
+		"refs/heads/"+branch,
+	))
+	if upstream != "" {
+		t.Fatalf("item branch upstream = %q, want none", upstream)
+	}
+}
+
+func TestEachDeliveryGetsItsOwnBranch(t *testing.T) {
+	t.Parallel()
+	_, checkout := newDeliveryBranchRepository(t)
+	const specSlug = "0168-repeat"
+	workflow := newDeliveryBranchWorkflow(t, checkout, specSlug)
+
+	firstBranch, firstWorktree, err := workflow.CreateItemBranch(t.Context(), checkout, specSlug)
+	if err != nil {
+		t.Fatalf("create first item worktree: %v", err)
+	}
+	queue, found, err := workflow.store.DeliveryQueue(t.Context(), checkout)
+	if err != nil || !found {
+		t.Fatalf("read first Delivery Queue: found=%v err=%v", found, err)
+	}
+	firstItem := queue.Items[0]
+	firstItem.Stage = store.DeliveryStageParked
+	if err := workflow.store.UpdateDeliveryQueueItem(t.Context(), checkout, firstItem); err != nil {
+		t.Fatalf("park first delivery: %v", err)
+	}
+	if _, err := workflow.store.CreateDeliveryQueue(t.Context(), checkout, []string{specSlug}); err != nil {
+		t.Fatalf("create second Delivery Queue: %v", err)
+	}
+
+	secondBranch, secondWorktree, err := workflow.CreateItemBranch(t.Context(), checkout, specSlug)
+	if err != nil {
+		t.Fatalf("create second item worktree: %v", err)
+	}
+	if firstBranch == secondBranch {
+		t.Fatalf("delivery branches = %q and %q, want different branches", firstBranch, secondBranch)
+	}
+	if firstWorktree == secondWorktree {
+		t.Fatalf("delivery worktrees = %q and %q, want different worktrees", firstWorktree, secondWorktree)
+	}
+}
+
+func TestResumeReusesTheRecordedItemBranch(t *testing.T) {
+	t.Parallel()
+	_, checkout := newDeliveryBranchRepository(t)
+	const specSlug = "0168-resume-branch"
+	workflow := newDeliveryBranchWorkflow(t, checkout, specSlug)
+
+	firstBranch, firstWorktree, err := workflow.CreateItemBranch(t.Context(), checkout, specSlug)
+	if err != nil {
+		t.Fatalf("create item worktree before crash: %v", err)
+	}
+	queue, found, err := workflow.store.DeliveryQueue(t.Context(), checkout)
+	if err != nil || !found {
+		t.Fatalf("read Delivery Queue after worktree creation: found=%v err=%v", found, err)
+	}
+	if got := queue.Items[0].Branch; got != firstBranch {
+		t.Fatalf("recorded item branch = %q, want %q", got, firstBranch)
+	}
+	if queue.Items[0].Stage != store.DeliveryStageQueued {
+		t.Fatalf("item stage after simulated crash = %q, want queued", queue.Items[0].Stage)
+	}
+	gittest.Run(t, checkout, "remote", "set-url", "origin", filepath.Join(t.TempDir(), "missing-origin"))
+
+	resumedBranch, resumedWorktree, err := workflow.CreateItemBranch(t.Context(), checkout, specSlug)
+	if err != nil {
+		t.Fatalf("resume item worktree: %v", err)
+	}
+	if resumedBranch != firstBranch {
+		t.Fatalf("resumed item branch = %q, want recorded branch %q", resumedBranch, firstBranch)
+	}
+	if resumedWorktree != firstWorktree {
+		t.Fatalf("resumed item worktree = %q, want recorded worktree %q", resumedWorktree, firstWorktree)
+	}
+}
+
 func TestDeliverNeverTouchesTheUserCheckout(t *testing.T) {
 	origin, checkout := newDeliveryBranchRepository(t)
 	gittest.Run(t, checkout, "switch", "-c", "user-work")
@@ -491,6 +582,157 @@ func TestParkLeavesTheItemWorktreeInPlace(t *testing.T) {
 	if !strings.Contains(registered, "branch refs/heads/"+item.Branch+"\n") {
 		t.Fatalf("registered worktrees = %q, want parked branch %q", registered, item.Branch)
 	}
+}
+
+func TestResumeUsesTheRecordedItemWorktree(t *testing.T) {
+	t.Parallel()
+	_, checkout := newDeliveryBranchRepository(t)
+	const specSlug = "0168-resume-existing-worktree"
+	workflow := newDeliveryBranchWorkflow(t, checkout, specSlug)
+	branch, itemWorktree, err := workflow.CreateItemBranch(t.Context(), checkout, specSlug)
+	if err != nil {
+		t.Fatalf("create item worktree: %v", err)
+	}
+	seedDeliveryItemStage(t, workflow.store, checkout, store.DeliveryStageRunning)
+	flow := &parkTestDeliveryFlow{parkSlug: specSlug}
+	engine := newDeliveryLifecycleTestEngine(workflow.store, workflow, flow)
+
+	if _, err := engine.Run(t.Context(), checkout); err != nil {
+		t.Fatalf("resume Delivery Engine: %v", err)
+	}
+
+	if flow.runCalls != 1 || flow.runWorkDir != itemWorktree {
+		t.Fatalf("resumed Implement calls = %d at %q, want one at %q", flow.runCalls, flow.runWorkDir, itemWorktree)
+	}
+	if got := strings.TrimSpace(gittest.Run(t, itemWorktree, "branch", "--show-current")); got != branch {
+		t.Fatalf("recorded worktree branch = %q, want %q", got, branch)
+	}
+}
+
+func TestResumeRecreatesAMissingItemWorktree(t *testing.T) {
+	t.Parallel()
+	_, checkout := newDeliveryBranchRepository(t)
+	const specSlug = "0168-resume-missing-worktree"
+	workflow := newDeliveryBranchWorkflow(t, checkout, specSlug)
+	branch, itemWorktree, err := workflow.CreateItemBranch(t.Context(), checkout, specSlug)
+	if err != nil {
+		t.Fatalf("create item worktree: %v", err)
+	}
+	seedDeliveryItemStage(t, workflow.store, checkout, store.DeliveryStageRunning)
+	gittest.Run(t, checkout, "worktree", "remove", itemWorktree)
+	flow := &parkTestDeliveryFlow{parkSlug: specSlug}
+	engine := newDeliveryLifecycleTestEngine(workflow.store, workflow, flow)
+
+	if _, err := engine.Run(t.Context(), checkout); err != nil {
+		t.Fatalf("resume Delivery Engine: %v", err)
+	}
+
+	if flow.runCalls != 1 || flow.runWorkDir != itemWorktree {
+		t.Fatalf("resumed Implement calls = %d at %q, want one at recreated worktree %q", flow.runCalls, flow.runWorkDir, itemWorktree)
+	}
+	if got := strings.TrimSpace(gittest.Run(t, itemWorktree, "branch", "--show-current")); got != branch {
+		t.Fatalf("recreated worktree branch = %q, want %q", got, branch)
+	}
+}
+
+func TestResumeParksWhenTheItemBranchIsGone(t *testing.T) {
+	t.Parallel()
+	_, checkout := newDeliveryBranchRepository(t)
+	const specSlug = "0168-resume-missing-branch"
+	workflow := newDeliveryBranchWorkflow(t, checkout, specSlug)
+	branch, itemWorktree, err := workflow.CreateItemBranch(t.Context(), checkout, specSlug)
+	if err != nil {
+		t.Fatalf("create item worktree: %v", err)
+	}
+	seedDeliveryItemStage(t, workflow.store, checkout, store.DeliveryStageRunning)
+	gittest.Run(t, checkout, "worktree", "remove", itemWorktree)
+	gittest.Run(t, checkout, "branch", "-D", branch)
+	flow := &parkTestDeliveryFlow{parkSlug: specSlug}
+	engine := newDeliveryLifecycleTestEngine(workflow.store, workflow, flow)
+
+	if _, err := engine.Run(t.Context(), checkout); err != nil {
+		t.Fatalf("resume Delivery Engine: %v", err)
+	}
+	item := readDeliveryItemForCLI(t, workflow.store, checkout)
+	if item.Stage != store.DeliveryStageParked || item.Blocker != delivery.BlockerItemWorktreeMissing {
+		t.Fatalf("resumed item = %+v, want parked with %q", item, delivery.BlockerItemWorktreeMissing)
+	}
+	if flow.runCalls != 0 {
+		t.Fatalf("Implement calls after missing branch = %d, want none", flow.runCalls)
+	}
+	if _, err := engine.Run(t.Context(), checkout); err != nil {
+		t.Fatalf("resume parked Delivery Engine: %v", err)
+	}
+	if flow.runCalls != 0 {
+		t.Fatalf("Implement calls after second resume = %d, want none", flow.runCalls)
+	}
+}
+
+func TestAMergedItemLeavesNoWorktreeOrBranch(t *testing.T) {
+	t.Parallel()
+	_, checkout := newDeliveryBranchRepository(t)
+	const specSlug = "0168-merged-cleanup"
+	workflow := newDeliveryBranchWorkflow(t, checkout, specSlug)
+	mustWrite(t, filepath.Join(checkout, "delivery.env"), "copied into item worktree\n")
+	workflow.loaded.Config.Worktree.Copy = []string{"delivery.env"}
+	workflow.loaded.Config.Worktree.Bootstrap = "printf 'bootstrap residue\\n' > delivery-bootstrap.txt"
+	workflow.loaded.Config.Worktree.BootstrapTimeout = time.Minute
+	flow := &parkTestDeliveryFlow{}
+	engine := newDeliveryLifecycleTestEngine(workflow.store, workflow, flow)
+
+	if _, err := engine.Run(t.Context(), checkout); err != nil {
+		t.Fatalf("run Delivery Engine: %v", err)
+	}
+
+	item := readDeliveryItemForCLI(t, workflow.store, checkout)
+	if item.Stage != store.DeliveryStageMerged {
+		t.Fatalf("merged item stage = %q, want merged", item.Stage)
+	}
+	if _, err := os.Stat(item.Worktree); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("merged item worktree %q still exists: %v", item.Worktree, err)
+	}
+	exists, err := localItemBranchExists(t.Context(), preflight.ExecGitRunner{}, checkout, item.Branch)
+	if err != nil {
+		t.Fatalf("inspect merged item branch: %v", err)
+	}
+	if exists {
+		t.Fatalf("merged item branch %q still exists", item.Branch)
+	}
+}
+
+func seedDeliveryItemStage(t *testing.T, runStore *store.Store, gitRoot string, stage store.DeliveryStage) {
+	t.Helper()
+	item := readDeliveryItemForCLI(t, runStore, gitRoot)
+	item.Stage = stage
+	if err := runStore.UpdateDeliveryQueueItem(t.Context(), gitRoot, item); err != nil {
+		t.Fatalf("seed Delivery Queue item stage %q: %v", stage, err)
+	}
+}
+
+func readDeliveryItemForCLI(t *testing.T, runStore *store.Store, gitRoot string) store.DeliveryQueueItem {
+	t.Helper()
+	queue, found, err := runStore.DeliveryQueue(t.Context(), gitRoot)
+	if err != nil || !found || len(queue.Items) != 1 {
+		t.Fatalf("read Delivery Queue item: found=%v items=%d err=%v", found, len(queue.Items), err)
+	}
+	return queue.Items[0]
+}
+
+func newDeliveryLifecycleTestEngine(
+	runStore *store.Store,
+	workflow *commandDeliveryWorkflow,
+	flow *parkTestDeliveryFlow,
+) *delivery.Engine {
+	return delivery.NewEngine(runStore, delivery.EngineDependencies{
+		Workspace:    workflow,
+		Runner:       flow,
+		Reviewer:     flow,
+		Archiver:     flow,
+		Gate:         flow,
+		Authorizer:   flow,
+		Publication:  flow,
+		PullRequests: flow,
+	})
 }
 
 func TestResumeAcceptsARealArchiveCommit(t *testing.T) {
@@ -718,6 +960,8 @@ type parkTestDeliveryFlow struct {
 	parkSlug     string
 	reviewedHead string
 	workDir      string
+	runWorkDir   string
+	runCalls     int
 	remoteHeads  map[string]string
 	pullRequests map[string]delivery.PullRequest
 }
@@ -730,7 +974,13 @@ func (flow *parkTestDeliveryFlow) UseItemBranch(_ context.Context, _ string, _ s
 	return itemWorktree, nil
 }
 
-func (flow *parkTestDeliveryFlow) RunSpec(_ context.Context, _ string, slug string) (delivery.RunResult, error) {
+func (flow *parkTestDeliveryFlow) RemoveItemBranch(context.Context, string, string, string) error {
+	return nil
+}
+
+func (flow *parkTestDeliveryFlow) RunSpec(_ context.Context, workDir string, slug string) (delivery.RunResult, error) {
+	flow.runWorkDir = workDir
+	flow.runCalls++
 	if slug == flow.parkSlug {
 		return delivery.RunResult{Outcome: delivery.RunOutcomeUnresolved}, nil
 	}

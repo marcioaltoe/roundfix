@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0168-deliver-one-worktree-per-item
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -48,3 +48,54 @@ With each item in its own worktree, resume must find or rebuild that worktree, m
 ## References
 
 - [_techspec.md](_techspec.md) — Park, resume and merge; Retired
+
+## Result
+
+### Implementation
+
+- Resume now validates the recorded item worktree against Git, reuses it when
+  its recorded branch is checked out there, and recreates an absent worktree
+  from the recorded local branch.
+- When both recorded surfaces are absent, the engine persists `parked` with
+  `item-worktree-missing`; a later resume skips the parked item instead of
+  replaying its stage.
+- After persisting `merged`, the engine removes the item worktree and local
+  branch. Cleanup errors leave `merged` persisted, and the next resume retries
+  cleanup without repeating the merge.
+- The Go item record and store queries no longer read or write the retired
+  starting branch. The database column and its migration remain for older
+  databases.
+- Real-Git lifecycle tests replaced the retired checkout-restoration coverage,
+  and the named branch and archive guarantees remain covered.
+
+### Focused checks
+
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run '^(TestResumeUsesTheRecordedItemWorktree|TestResumeRecreatesAMissingItemWorktree|TestResumeParksWhenTheItemBranchIsGone|TestAMergedItemLeavesNoWorktreeOrBranch)$' ./internal/cli` — passed.
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run '^TestDeliveryEngineRetriesMergedItemCleanupWithoutReplayingMerge$' ./internal/delivery` — passed.
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 ./internal/delivery` — passed.
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 ./internal/store` — passed.
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 ./internal/worktree` — passed.
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 ./internal/cli` — passed with process-table access. The first sandboxed run failed only because two force-stop integration tests could not read the host process table.
+- The Task's authored `## Verification` command was not run; Daemon Verification owns it.
+
+### Acceptance evidence
+
+- `TestResumeUsesTheRecordedItemWorktree` passed against a real linked
+  worktree and observed the resumed stage run at the recorded path.
+- `TestResumeRecreatesAMissingItemWorktree` passed after `git worktree remove`
+  removed the recorded worktree while preserving its branch.
+- `TestResumeParksWhenTheItemBranchIsGone` passed after removing both surfaces
+  and observed zero stage runs across the first and second resume.
+- `TestAMergedItemLeavesNoWorktreeOrBranch` passed with copied and bootstrap
+  residue in the item worktree, then observed both the path and local branch
+  absent.
+- `TestItemBranchHasNoUpstream`, `TestEachDeliveryGetsItsOwnBranch`,
+  `TestResumeReusesTheRecordedItemBranch`,
+  `TestResumeAcceptsARealArchiveCommit`, and
+  `TestResumeRefusesAnArchiveCommitWithExtraChanges` passed in separate
+  focused runs.
+
+### Follow-up
+
+- Task 04 owns the shipped skill and user-guide updates for this CLI-visible
+  behavior.

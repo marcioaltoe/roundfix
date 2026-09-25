@@ -287,9 +287,6 @@ func TestOpenMigratesV14DeliveryQueueAddingOwnerAndItemBranch(t *testing.T) {
 	if persisted.Items[0].Branch != "" {
 		t.Fatalf("migrated Delivery Queue item branch = %q, want empty", persisted.Items[0].Branch)
 	}
-	if persisted.Items[0].StartingBranch != "" {
-		t.Fatalf("migrated Delivery Queue item starting branch = %q, want empty", persisted.Items[0].StartingBranch)
-	}
 	if persisted.OwnerPID != 0 || persisted.OwnerIdentity != "" {
 		t.Fatalf("migrated Delivery Queue owner = pid:%d identity:%q", persisted.OwnerPID, persisted.OwnerIdentity)
 	}

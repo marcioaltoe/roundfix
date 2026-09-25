@@ -12,16 +12,21 @@ import (
 )
 
 const (
-	BlockerRunUnresolved  = "run-unresolved"
-	BlockerReviewFindings = "review-findings"
-	BlockerReviewBlocked  = "review-blocked"
-	BlockerReviewStale    = "review-stale"
-	BlockerGateFailed     = "gate-failed"
-	BlockerChecksFailed   = "checks-failed"
-	BlockerChecksTimeout  = "checks-timeout"
-	BlockerUnauthorized   = "unauthorized"
-	BlockerDeliveryError  = "delivery-error"
+	BlockerRunUnresolved       = "run-unresolved"
+	BlockerReviewFindings      = "review-findings"
+	BlockerReviewBlocked       = "review-blocked"
+	BlockerReviewStale         = "review-stale"
+	BlockerGateFailed          = "gate-failed"
+	BlockerChecksFailed        = "checks-failed"
+	BlockerChecksTimeout       = "checks-timeout"
+	BlockerUnauthorized        = "unauthorized"
+	BlockerDeliveryError       = "delivery-error"
+	BlockerItemWorktreeMissing = "item-worktree-missing"
 )
+
+// ErrItemWorktreeMissing reports that neither an item's recorded worktree nor
+// its recorded branch remains available for resume.
+var ErrItemWorktreeMissing = errors.New("item worktree and branch are missing")
 
 const (
 	defaultCheckTimeout  = 30 * time.Minute
@@ -93,6 +98,7 @@ type CandidateRunner interface {
 type ItemWorkspace interface {
 	CreateItemBranch(ctx context.Context, gitRoot, specSlug string) (branch, worktree string, err error)
 	UseItemBranch(ctx context.Context, gitRoot, branch, worktree string) (string, error)
+	RemoveItemBranch(ctx context.Context, gitRoot, branch, worktree string) error
 }
 
 type PrePRReviewer interface {
@@ -212,16 +218,23 @@ func (engine *Engine) Run(ctx context.Context, gitRoot string) (EngineResult, er
 
 	for index := range queue.Items {
 		item := queue.Items[index]
-		if item.Stage == store.DeliveryStageMerged || item.Stage == store.DeliveryStageParked {
+		if item.Stage == store.DeliveryStageParked {
 			continue
 		}
-		if err := engine.advanceItem(ctx, gitRoot, &item); err != nil {
-			if ctx.Err() != nil {
-				return EngineResult{}, fmt.Errorf("deliver Spec %q: %w", item.SpecSlug, err)
+		if item.Stage != store.DeliveryStageMerged {
+			if err := engine.advanceItem(ctx, gitRoot, &item); err != nil {
+				if ctx.Err() != nil {
+					return EngineResult{}, fmt.Errorf("deliver Spec %q: %w", item.SpecSlug, err)
+				}
+				reason := BlockerDeliveryError + ": " + err.Error()
+				if parkErr := engine.park(ctx, gitRoot, &item, reason); parkErr != nil {
+					return EngineResult{}, fmt.Errorf("deliver Spec %q: %w", item.SpecSlug, errors.Join(err, parkErr))
+				}
 			}
-			reason := BlockerDeliveryError + ": " + err.Error()
-			if parkErr := engine.park(ctx, gitRoot, &item, reason); parkErr != nil {
-				return EngineResult{}, fmt.Errorf("deliver Spec %q: %w", item.SpecSlug, errors.Join(err, parkErr))
+		}
+		if item.Stage == store.DeliveryStageMerged {
+			if err := engine.workspace.RemoveItemBranch(ctx, gitRoot, item.Branch, item.Worktree); err != nil {
+				return EngineResult{}, fmt.Errorf("clean up merged Spec %q: %w", item.SpecSlug, err)
 			}
 		}
 		queue.Items[index] = item
@@ -279,6 +292,9 @@ func (engine *Engine) advanceItem(ctx context.Context, gitRoot string, item *sto
 		}
 		itemWorktree, err := engine.workspace.UseItemBranch(ctx, gitRoot, item.Branch, item.Worktree)
 		if err != nil {
+			if errors.Is(err, ErrItemWorktreeMissing) {
+				return engine.park(ctx, gitRoot, item, BlockerItemWorktreeMissing)
+			}
 			return fmt.Errorf("use item branch %q: %w", item.Branch, err)
 		}
 		item.Worktree = strings.TrimSpace(itemWorktree)
