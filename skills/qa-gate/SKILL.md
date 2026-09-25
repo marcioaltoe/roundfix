@@ -186,11 +186,12 @@ The scope is complete when coverage is complete and closed.
 
 Create a collision-safe report path before execution:
 `docs/specs/<slug>/qa/qa-report-YYYY-MM-DD.md` for the day's first report, then
-`qa-report-YYYY-MM-DD-NN.md` with the next unused numeric `-NN` suffix for
-same-day reruns. Numeric same-day suffixes are the only allowed suffixes; never
-use a scope or build slug. Resume an existing `status: in-progress` report only
-when it is for the same build; otherwise create the next numeric sibling and
-preserve older reports as history.
+`qa-report-YYYY-MM-DD-NN.md` with a suffix one above the highest existing suffix
+of that date for same-day reruns; an earlier gap is never filled. Numeric
+same-day suffixes are the only allowed suffixes; never use a scope or build
+slug. Resume an existing `status: in-progress` report only when it is for the
+same build; otherwise create the next numeric sibling and preserve older
+reports as history.
 
 Read the Pull Request fact in the Roundfix QA prompt before planning Pull
 Request journeys:

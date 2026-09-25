@@ -2788,12 +2788,11 @@ func (engine *Engine) writeMechanicalQAReport(ctx context.Context, plan TaskPlan
 		return "", fmt.Errorf("create QA Report directory %q: %w", reportDir, err)
 	}
 	date := engine.deps.Now().Format("2006-01-02")
-	for sequence := 0; sequence < 10000; sequence++ {
-		name := fmt.Sprintf("qa-report-%s.md", date)
-		if sequence > 0 {
-			name = fmt.Sprintf("qa-report-%s-%02d.md", date, sequence)
+	for {
+		path, err := nextMechanicalQAReportPath(reportDir, date)
+		if err != nil {
+			return "", err
 		}
-		path := filepath.Join(reportDir, name)
 		file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
 		if errors.Is(err, os.ErrExist) {
 			continue
@@ -2808,7 +2807,79 @@ func (engine *Engine) writeMechanicalQAReport(ctx context.Context, plan TaskPlan
 		}
 		return artifactCommitPath(plan, path), nil
 	}
-	return "", fmt.Errorf("create QA Report for %s: same-day numeric suffixes exhausted", date)
+}
+
+func nextMechanicalQAReportPath(reportDir, date string) (string, error) {
+	entries, err := os.ReadDir(reportDir)
+	if err != nil {
+		return "", fmt.Errorf("read QA Report directory %q: %w", reportDir, err)
+	}
+
+	foundSameDate := false
+	highestSequence := 0
+	for _, entry := range entries {
+		reportDate, suffix, ok := mechanicalQAReportDateAndSuffix(entry.Name())
+		if !ok {
+			continue
+		}
+		if reportDate > date {
+			return "", fmt.Errorf("create QA Report for %s: later-dated QA Report %q already exists", date, filepath.Join(reportDir, entry.Name()))
+		}
+		if reportDate != date {
+			continue
+		}
+		foundSameDate = true
+		if !strings.HasPrefix(suffix, "-") || !mechanicalQAReportDigits(suffix[1:]) {
+			continue
+		}
+		sequence, err := strconv.Atoi(suffix[1:])
+		if err != nil || sequence < 0 {
+			continue
+		}
+		if sequence > highestSequence {
+			highestSequence = sequence
+		}
+	}
+
+	if !foundSameDate {
+		return filepath.Join(reportDir, fmt.Sprintf("qa-report-%s.md", date)), nil
+	}
+	if highestSequence == int(^uint(0)>>1) {
+		return "", fmt.Errorf("create QA Report for %s: same-day numeric suffixes exhausted", date)
+	}
+	return filepath.Join(reportDir, fmt.Sprintf("qa-report-%s-%02d.md", date, highestSequence+1)), nil
+}
+
+func mechanicalQAReportDateAndSuffix(name string) (date, suffix string, ok bool) {
+	const (
+		prefix = "qa-report-"
+		ext    = ".md"
+		layout = "2006-01-02"
+	)
+	if !strings.HasPrefix(name, prefix) || !strings.HasSuffix(name, ext) {
+		return "", "", false
+	}
+	rest := strings.TrimSuffix(strings.TrimPrefix(name, prefix), ext)
+	if len(rest) < len(layout) {
+		return "", "", false
+	}
+	date = rest[:len(layout)]
+	if _, err := time.Parse(layout, date); err != nil {
+		return "", "", false
+	}
+	return date, rest[len(layout):], true
+}
+
+func mechanicalQAReportDigits(value string) bool {
+	if value == "" {
+		return false
+	}
+	for _, digit := range value {
+		if digit < '0' || digit > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // mechanicalQAReportContent renders the QA Report bytes one mechanical result

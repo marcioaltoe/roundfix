@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0172-a-qa-gate-that-tells-the-truth
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -45,3 +45,50 @@ complexity: medium
 ## References
 
 - [_techspec.md](_techspec.md) — The allocator
+
+## Result
+
+Implementation:
+
+- The mechanical QA Report allocator now re-reads the report directory before
+  each exclusive-create attempt, allocates one above the highest numeric suffix
+  for the current date, and never fills an earlier gap. An `os.ErrExist`
+  collision restarts allocation from a fresh directory snapshot.
+- Allocation now refuses when any valid later-dated QA Report name is present;
+  the error names that report and no current-date report is created.
+- The qa-gate naming rule now says `one above the highest existing suffix of
+  that date`; `make skills-sync` regenerated the shipped skill mirror.
+- The allocation coverage lives in
+  `internal/daemon/qa_report_sequence_test.go`, and every successful allocation
+  asserts that `NewestQAReport` selects the path just written.
+
+Focused checks:
+
+- Red reproduction before the production change:
+  `GOCACHE=/private/tmp/roundfix-0172-task02-gocache go test -count=1 -run
+  '^TestMechanicalQAReport(AllocatesAboveTheHighestSequence|StartsUnsuffixedOnAFreshDate|FollowsTheUnsuffixedReportWithSequenceOne|RefusesBehindALaterDatedReport)$'
+  ./internal/daemon` failed because the gap case wrote `-01` instead of `-03`
+  and the later-date case wrote a current-date report instead of refusing.
+- `GOCACHE=/private/tmp/roundfix-0172-task02-gocache go test -count=1 -run
+  '^(TestMechanicalQAReport.*|TestWriteMechanicalQAReportPreservesSameDayNamingAndPriorReport)$'
+  ./internal/daemon` exited 0 after the implementation change.
+- `GOCACHE=/private/tmp/roundfix-0172-task02-gocache go test -count=1 -run
+  '^TestNewestQAReport' ./internal/spec` exited 0.
+- `make skills-sync-check` exited 0. A focused search found `one above the
+  highest` in both QA skill copies and no `next unused numeric` occurrence.
+
+Acceptance evidence:
+
+- Highest sequence with a gap: `TestMechanicalQAReportAllocatesAboveTheHighestSequence`
+  wrote `qa-report-D-03.md` beside the unsuffixed and `-02` reports, then
+  observed `NewestQAReport` return `-03`.
+- Fresh and second same-day allocations:
+  `TestMechanicalQAReportStartsUnsuffixedOnAFreshDate` observed the unsuffixed
+  name, and `TestMechanicalQAReportFollowsTheUnsuffixedReportWithSequenceOne`
+  observed `-01`; both observed `NewestQAReport` return the allocated path.
+- Later-date refusal: `TestMechanicalQAReportRefusesBehindALaterDatedReport`
+  observed an error containing the later report's name, an empty returned path,
+  and an unchanged QA directory containing only that later report.
+
+The Task's authored `## Verification` command was not run; the Daemon owns that
+command and settlement.
