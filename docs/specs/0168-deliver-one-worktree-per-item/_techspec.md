@@ -149,7 +149,8 @@ changes is refused.
 2. The item worktree (depends on: 1).
 3. Park, resume and merge; retire the restore machinery (depends on: 2).
 4. The shipped skill and the user guide (depends on: 3).
-5. Terminal QA (depends on: 1, 2, 3, 4).
+5. Terminal QA (depends on: 1, 2, 3, 4, 6).
+6. Provision every item worktree, and let migrated merged items rest (depends on: 4).
 
 ## Risks & Considerations
 
