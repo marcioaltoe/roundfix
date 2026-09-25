@@ -21,10 +21,13 @@ graph:
       needs: []
     - id: task_06
       file: task_06.md
-      needs: [task_01, task_02, task_03, task_04, task_05, task_07]
+      needs: [task_01, task_02, task_03, task_04, task_05, task_07, task_08]
     - id: task_07
       file: task_07.md
       needs: [task_03]
+    - id: task_08
+      file: task_08.md
+      needs: [task_07]
 ---
 
 # Task Graph
@@ -37,4 +40,5 @@ graph:
 | task_04 | backend | No live release lookup in tests |
 | task_05 | backend | An adapter fixture that survives a relative path |
 | task_07 | backend | Worktree administration is serialized per repository |
+| task_08 | backend | The bootstrap timeout test observes the start it classifies |
 | task_06 | qa | Run the final QA gate |

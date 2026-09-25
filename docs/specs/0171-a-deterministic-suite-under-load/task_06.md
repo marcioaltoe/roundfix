@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0171-a-deterministic-suite-under-load
-status: failed
+status: pending
 type: qa
 complexity: high
 ---

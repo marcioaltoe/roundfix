@@ -198,8 +198,9 @@ output, exit code or path layout changes.
 3. The Daemon and worktree tests (depends on: 1).
 4. The release lookup (depends on: 2).
 5. The adapter fixture (depends on: none).
-6. Terminal QA (depends on: 1, 2, 3, 4, 5, 7).
+6. Terminal QA (depends on: 1, 2, 3, 4, 5, 7, 8).
 7. The worktree administration lock (depends on: 3).
+8. The bootstrap timeout test (depends on: 7).
 
 The release lookup waits for the Implement tests only because both edit
 `internal/cli/implement_test.go`.
