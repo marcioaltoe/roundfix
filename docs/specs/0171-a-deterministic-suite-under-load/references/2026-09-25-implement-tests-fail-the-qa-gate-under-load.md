@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-09-25
-spec: null
+spec: 0171-a-deterministic-suite-under-load
 reason: null
 ---
 

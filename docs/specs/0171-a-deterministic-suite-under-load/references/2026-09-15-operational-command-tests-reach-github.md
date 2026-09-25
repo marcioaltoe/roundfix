@@ -1,7 +1,8 @@
 ---
-status: pending
+status: done
 created_at: 2026-09-15
 updated_at: 2026-09-25
+absorbed_by: 0171-a-deterministic-suite-under-load
 ---
 
 # CLI tests — Operational command tests reach GitHub through the version freshness check (2026-09-15)
@@ -45,3 +46,11 @@ these tests non-hermetic, so the cause is recorded here.
 ## Addendum — 2026-09-25 — Revalidated in triage
 
 Revalidated against main 7a9b6ec6: still holds: the default versionFreshnessDeps stays live for fetch, resolve, watch and implement tests; Spec 0165's QA hit api.github.com again. Ranked in the 2026-09-25 triage priority list.
+
+## Addendum — 2026-09-25 — Adopted by Spec 0171
+
+Adopted by Spec 0171-a-deterministic-suite-under-load. Its Task gives every
+`internal/cli` test process a release lookup that never leaves the machine,
+seeds a fresh version cache in the HOME of every built binary a test runs for an
+operational command, and adds guard tests that fail when a live lookup could
+happen.
