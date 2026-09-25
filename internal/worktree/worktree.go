@@ -165,6 +165,7 @@ type ItemRef struct {
 	Path     string
 	Branch   string
 	UserRoot string
+	location string
 }
 
 // ErrItemBranchMissing reports that an item's recorded branch no longer exists.
@@ -1635,11 +1636,12 @@ func ItemRefFor(userRoot, location, branch string) (ItemRef, error) {
 	}
 	digest := sha256.Sum256([]byte(branch))
 	segment := sanitizeSlugBase(branch) + "-" + hex.EncodeToString(digest[:])[:8]
+	location = filepath.Clean(strings.TrimSpace(location))
 	path, err := deriveRootPath(location, userRoot, segment)
 	if err != nil {
 		return ItemRef{}, err
 	}
-	return ItemRef{Path: path, Branch: branch, UserRoot: userRoot}, nil
+	return ItemRef{Path: path, Branch: branch, UserRoot: userRoot, location: location}, nil
 }
 
 // CreateItem creates and provisions a linked item worktree from opts.HeadSHA.
@@ -1745,6 +1747,13 @@ func CleanupItem(ctx context.Context, ref ItemRef) error {
 	if err := validateItemRef(ref); err != nil {
 		return err
 	}
+	expected, err := ItemRefFor(ref.UserRoot, ref.location, ref.Branch)
+	if err != nil {
+		return fmt.Errorf("clean up item Worktree: derive configured path: %w", err)
+	}
+	if ref.Path != expected.Path {
+		return fmt.Errorf("clean up item Worktree: recorded path %q does not match derived path %q", ref.Path, expected.Path)
+	}
 	runner := execGitRunner{}
 	worktrees, err := listRegisteredWorktrees(ctx, runner, ref.UserRoot)
 	if err != nil {
@@ -1759,7 +1768,19 @@ func CleanupItem(ctx context.Context, ref ItemRef) error {
 			ref.Path,
 		)
 	}
-	if registeredPath != "" {
+	registered, pathIsRegistered := registeredWorktreeAtPath(worktrees, ref.Path)
+	if pathIsRegistered && registered.Branch != ref.Branch {
+		if registered.Branch == "" {
+			return fmt.Errorf("clean up item Worktree %q: path is still registered with detached HEAD", ref.Path)
+		}
+		return fmt.Errorf(
+			"clean up item Worktree %q: registered branch is %q, expected %q",
+			ref.Path,
+			registered.Branch,
+			ref.Branch,
+		)
+	}
+	if pathIsRegistered {
 		if _, err := os.Stat(ref.Path); errors.Is(err, os.ErrNotExist) {
 			if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "prune"); err != nil {
 				return fmt.Errorf("clean up item Worktree %q: prune missing registration: %w", ref.Path, err)
@@ -1834,6 +1855,11 @@ func removeUnregisteredItemWorktree(ctx context.Context, runner gitRunner, ref I
 	adminRoot := filepath.Join(filepath.Clean(commonDir), "worktrees")
 	if !samePath(filepath.Dir(gitDir), adminRoot) {
 		return fmt.Errorf("Git directory pointer %q is outside this repository's worktrees admin directory", gitDir)
+	}
+	if _, err := os.Lstat(gitDir); err == nil {
+		return fmt.Errorf("Git directory pointer %q still exists", gitDir)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("inspect Git administration directory %q: %w", gitDir, err)
 	}
 
 	if err := makeTreeOwnerWritable(ref.Path); err != nil {
@@ -2581,6 +2607,15 @@ func registeredBranchPath(worktrees []registeredWorktree, branch string) string 
 		}
 	}
 	return ""
+}
+
+func registeredWorktreeAtPath(worktrees []registeredWorktree, path string) (registeredWorktree, bool) {
+	for _, worktree := range worktrees {
+		if samePath(worktree.Path, path) {
+			return worktree, true
+		}
+	}
+	return registeredWorktree{}, false
 }
 
 func validLocalBranch(ctx context.Context, runner gitRunner, gitRoot, branch string) bool {

@@ -211,22 +211,26 @@ func (workflow *commandDeliveryWorkflow) useAndProvisionItem(
 }
 
 func (workflow *commandDeliveryWorkflow) RemoveItemBranch(ctx context.Context, gitRoot, branch, itemWorktree string) error {
+	gitRoot = strings.TrimSpace(gitRoot)
 	branch = strings.TrimSpace(branch)
 	itemWorktree = strings.TrimSpace(itemWorktree)
 	if itemWorktree == "" {
 		if branch == "" {
 			return nil
 		}
-		if err := runworktree.CleanupItemBranch(ctx, strings.TrimSpace(gitRoot), branch); err != nil {
+		if err := runworktree.CleanupItemBranch(ctx, gitRoot, branch); err != nil {
 			return fmt.Errorf("remove item branch without recorded worktree: %w", err)
 		}
 		return nil
 	}
-	if err := runworktree.CleanupItem(ctx, runworktree.ItemRef{
-		Path:     itemWorktree,
-		Branch:   branch,
-		UserRoot: strings.TrimSpace(gitRoot),
-	}); err != nil {
+	ref, err := runworktree.ItemRefFor(gitRoot, workflow.loaded.Config.Worktree.Location, branch)
+	if err != nil {
+		return fmt.Errorf("derive item worktree for cleanup: %w", err)
+	}
+	if ref.Path != itemWorktree {
+		return fmt.Errorf("recorded item worktree %q does not match derived path %q", itemWorktree, ref.Path)
+	}
+	if err := runworktree.CleanupItem(ctx, ref); err != nil {
 		return fmt.Errorf("remove item worktree and branch: %w", err)
 	}
 	return nil
