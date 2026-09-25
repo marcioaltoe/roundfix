@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0168-deliver-one-worktree-per-item
-status: completed
+status: pending
 type: qa
 complexity: high
 ---
@@ -74,3 +74,9 @@ ADR-0156.
 - Date: `2026-09-25`
 - QA Report: `qa/qa-report-2026-09-25-01.md`
 - Dependencies not completed: `task_07`
+
+## Invalidation
+
+- Date: `2026-09-25`
+- QA Report: `qa/qa-report-2026-09-25-02.md`
+- Dependencies not completed: `task_08`
