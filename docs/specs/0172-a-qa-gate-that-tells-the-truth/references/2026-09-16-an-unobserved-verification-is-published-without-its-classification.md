@@ -1,7 +1,8 @@
 ---
-status: pending
+status: done
 created_at: 2026-09-16
 updated_at: 2026-09-25
+spec: 0172-a-qa-gate-that-tells-the-truth
 ---
 
 # Run Events — An unobserved Verification is published without its classification (2026-09-16)
@@ -41,3 +42,12 @@ promises nothing about event shape and the gap is recorded here.
 ## Addendum — 2026-09-25 — Revalidated in triage
 
 Revalidated against main 7a9b6ec6: still holds: publishUnknownFailure publishes with empty verificationFailureMetadata (internal/daemon/engine.go). Ranked in the 2026-09-25 triage priority list.
+
+## Addendum — 2026-09-25 — Implementation owner
+
+[0172-a-qa-gate-that-tells-the-truth](../_prd.md) adopts this Finding: its
+shared attempt publisher will emit `classification: verification_unknown` with
+`command`, `reason` and `diagnostic_path` for an unobserved outcome, and a
+command verdict stays unclassified. The source moves once into that Spec's
+reference index. Its lifecycle status records adoption, not implementation or
+QA completion.

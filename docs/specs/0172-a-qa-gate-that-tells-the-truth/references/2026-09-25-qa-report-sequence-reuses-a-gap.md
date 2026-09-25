@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-09-25
-spec: null
+spec: 0172-a-qa-gate-that-tells-the-truth
 reason: null
 ---
 
