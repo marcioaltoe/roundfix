@@ -7546,6 +7546,7 @@ func macroProfilesYAML() string {
 
 func runRoundfixBinaryMacro(t *testing.T, binary string, dir string, homeDir string, fakeBinDir string, stdin string, extraEnv map[string]string, args ...string) (string, string, int) {
 	t.Helper()
+	seedFreshVersionCache(t, homeDir)
 	cmd := exec.Command(binary, args...)
 	cmd.Dir = dir
 	env := isolatedGitEnvForTest()
