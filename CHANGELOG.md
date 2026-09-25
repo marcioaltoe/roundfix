@@ -2,6 +2,95 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.17.0] - 2026-09-25
+
+### A delivery loop that outlives the session
+
+`roundfix deliver start|status|resume|stop` advances a durable queue of Specs
+from Run to squash merge — Run, pre-PR review bound to the head, archive on the
+branch, repository gate, push, pull request, checks, merge — without a chat
+session driving it. The queue lives in the Run Database, so a lost terminal or a
+reboot costs nothing: `resume` reconciles every recorded push, pull request and
+merge against what GitHub and Git actually show before retrying, so a lost
+acknowledgement never opens a second pull request or merges twice.
+
+Each item runs in its own linked worktree created from the refreshed default
+branch. Every per-item action happens there, so your checkout is never switched,
+reset, cleaned or required to be clean. A blocked item parks with its reason and
+the queue continues; checks that have not reported yet are awaited; only the
+reviewed head is pushed, from the item's own untracked branch, and publication
+requires `push`, `pull_request` and `merge` in the Spec's authorization.
+
+### A verify that runs what changed
+
+`make verify-changed` runs format, vet and build over the whole tree and only
+the test sets a change can affect — the core set, the Baseline set, or both —
+failing safe to both on any doubt. Pull request CI and the Daemon's repository
+gate use it; pushes to `main` keep the complete `make verify`. Documentation and
+root Markdown changes run both sets, because tests read them.
+
+### A review that reaches a verdict
+
+`roundfix review` classifies the reviewer's answer by substance: a pass requires
+the whole answer to be the no-findings verdict, tolerant of case, punctuation and
+emphasis, and anything beside it blocks. The raw answer is kept at `answerPath`.
+The `claude` provider now runs, and a review of a Spec's delivery carries that
+Spec's decisions and TechSpec so the reviewer can judge the implementation
+against them.
+
+### Verification that names every failure
+
+A Task may declare `verification: independent` to run every Verification command
+past a failure and hand each one to its single repair turn. A Task named in the
+Spec's frozen authorization (`precondition_repairs`) may enter while the
+repository gate is red, and settles only when that gate passes again. Requested
+full access is proven during profile readiness and refused before a Run when the
+runtime cannot honour it; a degraded policy is printed.
+
+### One repository, one identity
+
+A repository keeps one identity across all its worktrees, recorded on every Run,
+so Runs started from linked worktrees are listed, reconciled and settled from
+the main checkout even after the worktree is removed. `reconcile --apply` refuses
+a cleanup candidate it cannot prove instead of crashing.
+
+### A measured Run ceiling
+
+`runs.max_active` in User Config (default 3) bounds Active Implement Runs across
+every repository on the machine; `implement` refuses at the ceiling, naming the
+Runs that hold it. Project Config cannot raise it.
+
+### Archive override, claimed ordinals and one settlement table
+
+`roundfix archive <slug> --qa-override --approval <source> --reason <text>`
+archives a Spec whose QA failed or never ran on maintainer authority, stamping
+exactly what was waived. Spec check refuses an ADR number claimed twice
+(`SC-ORDINAL-CLAIMED`). The QA gate, archive and Roundfix skills share one
+settlement table, and the task-writing skill documents every Task declaration.
+
+### Knowledge that closes cleanly
+
+Review artifacts retire on recorded evidence (`outcome.md`) instead of local Git
+ancestry (ADR-0163 supersedes ADR-0123), archived Findings may close with a
+reason and evidence, terminal Backlog entries retire, and Secondbrain capture
+names who publishes an entry.
+
+### Baseline decisions and skill regeneration
+
+Changing the HTTP mode keeps the rest of the decision; Greenfield refuses early
+when managed source needs Preservation; skill regeneration declares its outputs;
+and `roundfix baseline skills reconcile` removes obsolete `skills-lock.json`
+entries only on proven absence at a pinned revision.
+
+### Fixes
+
+- Reconciliation reads evidence when a squash-merged target branch is gone.
+- A QA Report and its archived copy are recognised as the same report only when
+  their content is identical.
+- `roundfix init` and `roundfix setup` write a Project Config template without
+  User-only keys.
+- Known limits carried to follow-up work are recorded in each archived PRD.
+
 ## [0.16.0] - 2026-09-23
 
 ### The workflow runs its own pre-PR review
