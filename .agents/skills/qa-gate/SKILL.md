@@ -127,6 +127,7 @@ defect; do not run the gate outside that node.
 | Applicable tooling authority declares bounded files. | `SC-TOOLING-UNBOUNDED` |
 | A tooling authorization record states its grant in readable fields. | `SC-TOOLING-UNTYPED` |
 | Every pending non-QA Task declaration of a Governed Path appears in the authorization record and each present Tooling authority row. | `SC-TOOLING-UNDECLARED` |
+| Every pending non-QA Task that names a CLI surface also names a guide in that Task or its transitive dependencies. | `SC-CLI-UNDOCUMENTED` |
 | Active ADR obligations are listed, related decisions are accounted for, and attributed claims match the cited record. | `SC-ADR-UNLISTED`, `SC-ADR-RELATED`, and `SC-CITATION-UNSUPPORTED` |
 | Task requirements do not contradict each other, rehearsals are declared, and Verification can distinguish Task work from no work. | `SC-REQUIREMENT-CONTRADICTORY`, `SC-REHEARSAL-UNDECLARED`, and `SC-VERIFY-WORK-INDEPENDENT` |
 | Emitted vocabulary is documented through the TechSpec's Vocabulary Contract. | `SC-VOCABULARY-UNDOCUMENTED` |

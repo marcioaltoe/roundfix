@@ -22,6 +22,9 @@ const (
 	// CodeWaveCollision identifies Tasks that the Task Graph permits in one
 	// Wave even though their written evidence names a shared repository file.
 	CodeWaveCollision = "SC-WAVE-COLLISION"
+	// CodeCLIUndocumented identifies a pending CLI Task whose dependency
+	// ancestry names no guide for the surface it changes.
+	CodeCLIUndocumented = "SC-CLI-UNDOCUMENTED"
 )
 
 // Stage names the authoring moment a caller is validating.
@@ -74,6 +77,7 @@ var stagedDetectors = []stagedDetector{
 	{code: CodeOrdinalClaimed, stage: StageTasks},
 	{code: CodeWaveCollision, stage: StageTasks},
 	{code: CodeToolingUndeclared, stage: StageTasks},
+	{code: CodeCLIUndocumented, stage: StageTasks},
 }
 
 // CheckStage runs the detectors whose inputs exist by stage. StageAll keeps

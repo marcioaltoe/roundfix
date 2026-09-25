@@ -40,6 +40,10 @@ _Avoid_: Protected file, restricted path, tooling file
 A Governed Path named by a pending non-QA Task but omitted from its authorization record or a present Tooling authority row.
 _Avoid_: Unauthorized edit, inferred path, ordinary path
 
+**Undocumented CLI Surface**:
+A CLI source or contract-test path named by a pending non-QA Task that names no guide in itself or its dependency ancestry.
+_Avoid_: Missing documentation, undocumented command, downstream guide
+
 **Process Residue**:
 A process Roundfix started that outlived the Run that started it, so no live Run record owns it. The readiness diagnostic reports residue with each process's age, its consumed CPU time, and its originating Run when the Run Database still knows it; reporting settles nothing and creates no Run record.
 _Avoid_: Orphan, zombie, leaked run, stale process

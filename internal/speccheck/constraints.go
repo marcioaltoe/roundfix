@@ -155,6 +155,7 @@ func Check(specsRoot, repoRoot, slug string) (Result, error) {
 			addSkip(&result, code, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_prd.md")))
 		}
 		addSkip(&result, CodeToolingUndeclared, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_prd.md")))
+		addSkip(&result, CodeCLIUndocumented, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_prd.md")))
 		return result, nil
 	}
 
@@ -187,8 +188,12 @@ func Check(specsRoot, repoRoot, slug string) (Result, error) {
 		if err := detectUndeclaredGovernedPaths(&result, filepath.Clean(specsRoot), repoRoot, graph, artifacts); err != nil {
 			return result, err
 		}
+		if err := detectUndocumentedCLISurfaces(&result, filepath.Clean(specsRoot), repoRoot, graph); err != nil {
+			return result, err
+		}
 	} else {
 		addSkip(&result, CodeToolingUndeclared, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_tasks.md")))
+		addSkip(&result, CodeCLIUndocumented, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_tasks.md")))
 	}
 	if err := detectCitationCoverageAndReferences(&result, specsRoot, repoRoot, slug, specDir, present); err != nil {
 		return result, err

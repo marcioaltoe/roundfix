@@ -99,6 +99,7 @@ func TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095(t *testing.T
 			"SC-ADR-UNLISTED":              0,
 			"SC-ARCHIVE-LICENSE":           0,
 			"SC-CITATION-UNSUPPORTED":      0,
+			"SC-CLI-UNDOCUMENTED":          0,
 			"SC-CONSTRAINT-MISSING":        0,
 			"SC-CONSTRAINT-SOURCE":         0,
 			"SC-CONSTRAINT-UNREASONED":     0,
