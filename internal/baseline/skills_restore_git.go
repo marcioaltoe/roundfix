@@ -173,8 +173,32 @@ func acquireRestoreGroup(
 	contracts []restoreSkillContract,
 	sourceDir string,
 ) (map[string][]restoreFile, error) {
+	result := make(map[string][]restoreFile, len(contracts))
+	err := withAcquiredRestoreCommit(ctx, provenance, sourceDir, func(objectStore string) error {
+		gitRunner := execBatchObjectGitRunner{}
+		for _, contract := range contracts {
+			files, err := readRestoreGitTree(ctx, objectStore, contract, gitRunner)
+			if err != nil {
+				return err
+			}
+			result[contract.Name] = files
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func withAcquiredRestoreCommit(
+	ctx context.Context,
+	provenance restoreProvenance,
+	sourceDir string,
+	inspect func(string) error,
+) error {
 	if provenance.Provider != "github" {
-		return nil, restoreError(
+		return restoreError(
 			SkillsRestoreExecution,
 			"source.provider-unsupported",
 			fmt.Sprintf("Skill source provider %q is not supported.", provenance.Provider),
@@ -184,7 +208,7 @@ func acquireRestoreGroup(
 	}
 	temporary, err := os.MkdirTemp("", "roundfix-baseline-skills-restore-")
 	if err != nil {
-		return nil, restoreError(
+		return restoreError(
 			SkillsRestoreExecution,
 			"source.acquire-failed",
 			fmt.Sprintf("Could not create the immutable source staging area: %v.", err),
@@ -195,7 +219,7 @@ func acquireRestoreGroup(
 	defer os.RemoveAll(temporary)
 	objectStore := filepath.Join(temporary, "objects.git")
 	if _, err := runRestoreGit(ctx, "init", "--bare", objectStore); err != nil {
-		return nil, classifyRestoreGitError(err, provenance)
+		return classifyRestoreGitError(err, provenance)
 	}
 	origin := "https://github.com/" + provenance.Repository + ".git"
 	if sourceDir != "" {
@@ -207,7 +231,7 @@ func acquireRestoreGroup(
 		"fetch", "--no-tags", "--depth=1",
 		origin, provenance.Ref,
 	); err != nil {
-		return nil, classifyRestoreGitError(err, provenance)
+		return classifyRestoreGitError(err, provenance)
 	}
 	resolved, err := runRestoreGit(
 		ctx,
@@ -215,10 +239,10 @@ func acquireRestoreGroup(
 		"rev-parse", "--verify", "FETCH_HEAD^{commit}",
 	)
 	if err != nil {
-		return nil, classifyRestoreGitError(err, provenance)
+		return classifyRestoreGitError(err, provenance)
 	}
 	if strings.TrimSpace(string(resolved)) != provenance.Ref {
-		return nil, restoreError(
+		return restoreError(
 			SkillsRestoreExecution,
 			"source.commit-mismatch",
 			fmt.Sprintf(
@@ -231,17 +255,10 @@ func acquireRestoreGroup(
 			errors.New("acquired commit identity mismatch"),
 		)
 	}
-
-	result := make(map[string][]restoreFile, len(contracts))
-	gitRunner := execBatchObjectGitRunner{}
-	for _, contract := range contracts {
-		files, err := readRestoreGitTree(ctx, objectStore, contract, gitRunner)
-		if err != nil {
-			return nil, err
-		}
-		result[contract.Name] = files
+	if inspect == nil {
+		return errors.New("inspect acquired restore commit: callback is required")
 	}
-	return result, nil
+	return inspect(objectStore)
 }
 
 func readRestoreGitTree(

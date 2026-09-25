@@ -40,6 +40,11 @@ type skillsLockDocument struct {
 	root   orderedJSONValue
 }
 
+type skillsLockEntry struct {
+	name  string
+	value orderedJSONValue
+}
+
 func loadSkillsLock(filename string) (skillsLockDocument, error) {
 	info, err := os.Lstat(filename)
 	if errors.Is(err, fs.ErrNotExist) {
@@ -139,6 +144,33 @@ func (document *skillsLockDocument) setSkillsEntry(name string, entry map[string
 		orderedJSONField{name: "computedHash", value: orderedString(stringMapValue(entry, "computedHash"))},
 	)
 	skills.setField(name, value)
+}
+
+func (document skillsLockDocument) skillEntries() []skillsLockEntry {
+	skills, ok := document.root.field("skills")
+	if !ok || skills.kind != orderedJSONObject {
+		return nil
+	}
+	entries := make([]skillsLockEntry, len(skills.object))
+	for index, field := range skills.object {
+		entries[index] = skillsLockEntry{name: field.name, value: field.value.clone()}
+	}
+	return entries
+}
+
+func (document *skillsLockDocument) removeSkillsEntry(name string) bool {
+	skills := document.root.fieldPointer("skills")
+	if skills == nil || skills.kind != orderedJSONObject {
+		return false
+	}
+	for index, field := range skills.object {
+		if field.name != name {
+			continue
+		}
+		skills.object = append(skills.object[:index:index], skills.object[index+1:]...)
+		return true
+	}
+	return false
 }
 
 func (document skillsLockDocument) marshalIndent() ([]byte, error) {
@@ -256,6 +288,11 @@ func (value orderedJSONValue) field(name string) (orderedJSONValue, bool) {
 		}
 	}
 	return orderedJSONValue{}, false
+}
+
+func (value orderedJSONValue) stringField(name string) (string, bool) {
+	field, ok := value.field(name)
+	return field.text, ok && field.kind == orderedJSONString
 }
 
 func (value *orderedJSONValue) fieldPointer(name string) *orderedJSONValue {

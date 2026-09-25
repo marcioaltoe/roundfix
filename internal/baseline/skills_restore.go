@@ -123,7 +123,7 @@ type RestoreFinding struct {
 // MarshalJSON preserves the maintained operation-specific restoration shape:
 // file changes carry byte digests, while lock edits carry entry documents.
 func (change RestorePlannedChange) MarshalJSON() ([]byte, error) {
-	if change.Action == "update-lock-entry" {
+	if change.Action == "update-lock-entry" || change.Action == "remove-lock-entry" {
 		return json.Marshal(struct {
 			Action string         `json:"action"`
 			Path   string         `json:"path"`
@@ -178,9 +178,10 @@ func (err *SkillsRestoreError) Unwrap() error {
 }
 
 type restoreProfile struct {
-	ID     string
-	Setup  string
-	Skills map[string]restoreSkillContract
+	ID             string
+	Setup          string
+	Skills         map[string]restoreSkillContract
+	RequiredSkills map[string]struct{}
 }
 
 type restoreSkillContract struct {
@@ -632,7 +633,50 @@ func loadRestoreProfile(catalog *Catalog, profileID string) (restoreProfile, err
 			TreeDigest: skill.TreeDigest,
 		}
 	}
-	return restoreProfile{ID: profileDocument.ID, Setup: setupDocument.ID, Skills: contracts}, nil
+	requiredSkills := make(map[string]struct{})
+	modules, ok := catalog.OrderedModules(profileID)
+	if !ok {
+		return restoreProfile{}, restoreError(
+			SkillsRestoreInvalid,
+			"restore.assets-invalid",
+			fmt.Sprintf("Embedded Baseline Profile %q has no resolved modules.", profileID),
+			"Fix the embedded Baseline catalog before restoring skills.",
+			errors.New("profile modules are missing"),
+		)
+	}
+	for _, moduleID := range modules {
+		module, exists := catalog.Module(moduleID)
+		if !exists {
+			return restoreProfile{}, restoreError(
+				SkillsRestoreInvalid,
+				"restore.assets-invalid",
+				fmt.Sprintf("Embedded Baseline Profile %q references a missing module.", profileID),
+				"Fix the embedded Baseline catalog before restoring skills.",
+				errors.New("profile module is missing"),
+			)
+		}
+		var moduleDocument struct {
+			RequiredSkills []string `json:"requiredSkills"`
+		}
+		if err := json.Unmarshal(module.Data, &moduleDocument); err != nil {
+			return restoreProfile{}, restoreError(
+				SkillsRestoreInvalid,
+				"restore.assets-invalid",
+				fmt.Sprintf("Embedded Baseline module %q is invalid.", moduleID),
+				"Fix the embedded Baseline catalog before restoring skills.",
+				err,
+			)
+		}
+		for _, name := range moduleDocument.RequiredSkills {
+			requiredSkills[name] = struct{}{}
+		}
+	}
+	return restoreProfile{
+		ID:             profileDocument.ID,
+		Setup:          setupDocument.ID,
+		Skills:         contracts,
+		RequiredSkills: requiredSkills,
+	}, nil
 }
 
 func selectRestoreSkills(profile restoreProfile, requested []string) ([]restoreSkillContract, error) {
