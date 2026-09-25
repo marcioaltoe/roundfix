@@ -25,7 +25,8 @@ the command, and make ordinal claims unique within one Spec with a visible skip.
   [_authorization.md](_authorization.md); bounded files:
   `internal/spec/archive.go`, `internal/spec/archive_test.go`,
   `.agents/skills/archive-spec/SKILL.md`, `skills/archive-spec/SKILL.md`,
-  `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`. Source:
+  `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`,
+  `.agents/skills/qa-gate/SKILL.md`, `skills/qa-gate/SKILL.md`. Source:
   `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`.
 
 ## The stamp and the guidance
@@ -76,7 +77,8 @@ number with different paths. `internal/speccheck/citations.go` adds
 
 1. The stamp and the guidance (depends on: none).
 2. The ordinal check (depends on: 1).
-3. Terminal QA (depends on: 1, 2).
+3. Terminal QA (depends on: 1, 2, 4).
+4. One instruction for overrides, one finding per conflict (depends on: 2).
 
 ## Risks & Considerations
 

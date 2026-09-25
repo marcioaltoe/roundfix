@@ -10,6 +10,8 @@ paths:
   - skills/archive-spec/SKILL.md
   - .agents/skills/roundfix/SKILL.md
   - skills/roundfix/SKILL.md
+  - .agents/skills/qa-gate/SKILL.md
+  - skills/qa-gate/SKILL.md
 operations:
   - implement
   - commit
@@ -43,6 +45,12 @@ and `docs/user-guide/commands.md` are ordinary.
 ```yaml
 command: make skills-sync
 ```
+
+## Added after the pre-PR review
+
+`.agents/skills/qa-gate/SKILL.md` and its mirror carry the override field list;
+the maintainer's authorization of 2026-09-24 for the archive override guidance
+covers them.
 
 ## Limits
 

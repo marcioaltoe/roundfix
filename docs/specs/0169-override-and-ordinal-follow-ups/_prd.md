@@ -43,7 +43,8 @@ five minor gaps recorded by its second pre-PR review:
   [_authorization.md](_authorization.md); bounded files:
   `internal/spec/archive.go`, `internal/spec/archive_test.go`,
   `.agents/skills/archive-spec/SKILL.md`, `skills/archive-spec/SKILL.md`,
-  `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`. Sanctioned
+  `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`,
+  `.agents/skills/qa-gate/SKILL.md`, `skills/qa-gate/SKILL.md`. Sanctioned
   regeneration: `make skills-sync`. Source:
   `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`.
 

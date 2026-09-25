@@ -12,7 +12,10 @@ graph:
       needs: [task_01]
     - id: task_03
       file: task_03.md
-      needs: [task_01, task_02]
+      needs: [task_01, task_02, task_04]
+    - id: task_04
+      file: task_04.md
+      needs: [task_02]
 ---
 
 # Task Graph
@@ -21,4 +24,5 @@ graph:
 | --- | --- | --- |
 | task_01 | backend | The stamp names the waived Task; guidance matches the command |
 | task_02 | backend | Ordinals unique within a Spec, and a visible skip |
+| task_04 | backend | One instruction for overrides, one finding per conflict |
 | task_03 | qa | Run the final QA gate |
