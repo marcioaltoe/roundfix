@@ -98,6 +98,7 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 	stampMetadata := true
 	var unproven []string
 	qaOverrideOutcome := ""
+	qaOverrideQATaskStatus := ""
 
 	graph, err := Load(req.SpecsRoot, req.Slug)
 	if err != nil {
@@ -122,6 +123,9 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 			for _, task := range graph.Tasks {
 				if task.Status != StatusCompleted {
 					allTasksCompleted = false
+				}
+				if task.Type == TaskTypeQA && task.Status != StatusCompleted {
+					qaOverrideQATaskStatus = string(task.Status)
 				}
 				if task.Type != TaskTypeQA && task.Status != StatusCompleted {
 					return ArchiveResult{}, fmt.Errorf("Task %q is %q; QA archive override requires every non-QA Task to be %q", task.ID, task.Status, StatusCompleted)
@@ -169,7 +173,7 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 	archivedOn := archiveDate(req.ArchivedAt)
 	if stampMetadata {
 		prdPath := filepath.Join(sourceDir, "_prd.md")
-		if err := stampArchiveMetadata(prdPath, req.Slug, archivedOn, unproven, qaOverride, qaOverrideOutcome); err != nil {
+		if err := stampArchiveMetadata(prdPath, req.Slug, archivedOn, unproven, qaOverride, qaOverrideOutcome, qaOverrideQATaskStatus); err != nil {
 			return ArchiveResult{}, err
 		}
 	}
@@ -277,7 +281,7 @@ func archiveDate(value time.Time) string {
 	return value.Format("2006-01-02")
 }
 
-func stampArchiveMetadata(prdPath string, slug string, archivedOn string, unproven []string, qaOverride *QAArchiveOverride, qaOverrideOutcome string) error {
+func stampArchiveMetadata(prdPath string, slug string, archivedOn string, unproven []string, qaOverride *QAArchiveOverride, qaOverrideOutcome string, qaOverrideQATaskStatus string) error {
 	content, err := os.ReadFile(prdPath)
 	if err != nil {
 		return fmt.Errorf("read Spec PRD %q: %w", prdPath, err)
@@ -305,6 +309,9 @@ func stampArchiveMetadata(prdPath string, slug string, archivedOn string, unprov
 		setArchiveFrontmatterValue(mapping, "qa_override_approval", qaOverride.Approval)
 		setArchiveFrontmatterValue(mapping, "qa_override_reason", qaOverride.Reason)
 		setArchiveFrontmatterValue(mapping, "qa_override_qa_outcome", qaOverrideOutcome)
+		if qaOverrideQATaskStatus != "" {
+			setArchiveFrontmatterValue(mapping, "qa_override_qa_task_status", qaOverrideQATaskStatus)
+		}
 		setArchiveFrontmatterValue(mapping, "qa_override_revision", qaOverride.Revision)
 	}
 

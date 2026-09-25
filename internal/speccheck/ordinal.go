@@ -12,7 +12,7 @@ import (
 
 const (
 	// CodeOrdinalClaimed identifies an ADR ordinal held by another tree path
-	// or claimed by a Task in another active Spec.
+	// or claimed for another path by an active Spec Task.
 	CodeOrdinalClaimed = "SC-ORDINAL-CLAIMED"
 )
 
@@ -28,11 +28,21 @@ func detectOrdinalClaims(result *Result, specsRoot, repoRoot string, graph *spec
 	if len(claims) == 0 {
 		return nil
 	}
-
 	heldPaths, err := heldADRPaths(repoRoot)
 	if err != nil {
 		return err
 	}
+	for index, claim := range claims {
+		for _, other := range claims[:index] {
+			if claim.number == other.number && claim.path != other.path {
+				if ordinalClaimIsHeld(claim, heldPaths) || ordinalClaimIsHeld(other, heldPaths) {
+					continue
+				}
+				result.Findings = append(result.Findings, ordinalSameSpecFinding(claim, other))
+			}
+		}
+	}
+
 	otherClaims, err := activeOrdinalClaims(specsRoot, repoRoot, graph.Spec.Slug)
 	if err != nil {
 		return err
@@ -55,6 +65,15 @@ func detectOrdinalClaims(result *Result, specsRoot, repoRoot string, graph *spec
 		}
 	}
 	return nil
+}
+
+func ordinalClaimIsHeld(claim ordinalClaim, heldPaths map[string][]string) bool {
+	for _, heldPath := range heldPaths[claim.number] {
+		if heldPath == claim.path {
+			return true
+		}
+	}
+	return false
 }
 
 func ordinalClaims(graph *spec.Graph, specsRoot, repoRoot string) []ordinalClaim {
@@ -166,5 +185,19 @@ func ordinalSpecFinding(claim, other ordinalClaim) Finding {
 			{Path: other.taskPath, Line: 1},
 		},
 		Fix: "Give one active Spec an unclaimed ADR ordinal and update its `creates:` path.",
+	}
+}
+
+func ordinalSameSpecFinding(claim, other ordinalClaim) Finding {
+	return Finding{
+		Code:     CodeOrdinalClaimed,
+		Severity: SeverityError,
+		Summary: "ADR ordinal " + claim.number + " is claimed by both " + claim.path +
+			" and " + other.path + " in active Spec " + claim.specSlug,
+		Where: []Location{
+			{Path: claim.taskPath, Line: 1},
+			{Path: other.taskPath, Line: 1},
+		},
+		Fix: "Renumber one Task's `creates:` path to an unclaimed ADR ordinal.",
 	}
 }

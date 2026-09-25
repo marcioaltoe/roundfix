@@ -79,6 +79,30 @@ func TestCheckFindingLifecycle(t *testing.T) {
 	})
 }
 
+func TestMissingTaskGraphListsTheOrdinalSkip(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := t.TempDir()
+	const slug = "missing-task-graph"
+	writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/_prd.md", `---
+spec: missing-task-graph
+status: active
+created: 2026-09-25
+surfaces: [backend]
+---
+
+# Missing Task Graph
+`)
+
+	result, err := speccheck.Check(filepath.Join(repoRoot, "docs", "specs"), repoRoot, slug)
+	if err != nil {
+		t.Fatalf("Check(): %v", err)
+	}
+	if !hasSkip(result, speccheck.CodeOrdinalClaimed, "docs/specs/"+slug+"/_tasks.md") {
+		t.Fatalf("Skipped = %#v, want %s missing Task Graph", result.Skipped, speccheck.CodeOrdinalClaimed)
+	}
+}
+
 func TestCheckRollupMember(t *testing.T) {
 	t.Parallel()
 

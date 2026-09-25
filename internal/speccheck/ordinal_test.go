@@ -5,6 +5,7 @@
 package speccheck_test
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -59,6 +60,98 @@ func TestOrdinalClaimedByAnotherActiveSpec(t *testing.T) {
 		if !strings.Contains(findings[0].Summary, want) {
 			t.Errorf("summary = %q, want %q", findings[0].Summary, want)
 		}
+	}
+}
+
+func TestSameSpecDuplicateOrdinalIsClaimed(t *testing.T) {
+	t.Parallel()
+
+	t.Run("duplicate ordinal with different paths", func(t *testing.T) {
+		repoRoot := t.TempDir()
+		specsRoot := filepath.Join(repoRoot, "docs", "specs")
+		writeOrdinalSpecClaims(t, repoRoot, "claiming-spec",
+			"docs/adr/0042-first-decision.md",
+			"docs/adr/0042-second-decision.md",
+		)
+
+		result, err := speccheck.CheckStage(specsRoot, repoRoot, "claiming-spec", speccheck.StageTasks)
+		if err != nil {
+			t.Fatalf("CheckStage(StageTasks): %v", err)
+		}
+		findings := findingsWithCode(result, speccheck.CodeOrdinalClaimed)
+		if len(findings) != 1 {
+			t.Fatalf("%s findings = %#v, want one", speccheck.CodeOrdinalClaimed, findings)
+		}
+		for _, want := range []string{"0042", "docs/adr/0042-first-decision.md", "docs/adr/0042-second-decision.md", "claiming-spec"} {
+			if !strings.Contains(findings[0].Summary, want) {
+				t.Errorf("summary = %q, want %q", findings[0].Summary, want)
+			}
+		}
+	})
+
+	t.Run("distinct ordinals", func(t *testing.T) {
+		repoRoot := t.TempDir()
+		specsRoot := filepath.Join(repoRoot, "docs", "specs")
+		writeOrdinalSpecClaims(t, repoRoot, "claiming-spec",
+			"docs/adr/0042-first-decision.md",
+			"docs/adr/0043-second-decision.md",
+		)
+
+		result, err := speccheck.CheckStage(specsRoot, repoRoot, "claiming-spec", speccheck.StageTasks)
+		if err != nil {
+			t.Fatalf("CheckStage(StageTasks): %v", err)
+		}
+		if findings := findingsWithCode(result, speccheck.CodeOrdinalClaimed); len(findings) != 0 {
+			t.Fatalf("%s findings = %#v, want none", speccheck.CodeOrdinalClaimed, findings)
+		}
+	})
+}
+
+func TestSameSpecDuplicateBesideAFulfilledClaimIsReportedOnce(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := t.TempDir()
+	specsRoot := filepath.Join(repoRoot, "docs", "specs")
+	const fulfilledClaim = "docs/adr/0042-first-decision.md"
+	writeOrdinalSpecClaims(t, repoRoot, "claiming-spec",
+		fulfilledClaim,
+		"docs/adr/0042-second-decision.md",
+	)
+	writeCitationFixtureFile(t, repoRoot, fulfilledClaim, "# First decision\n")
+
+	result, err := speccheck.CheckStage(specsRoot, repoRoot, "claiming-spec", speccheck.StageTasks)
+	if err != nil {
+		t.Fatalf("CheckStage(StageTasks): %v", err)
+	}
+	findings := findingsWithCode(result, speccheck.CodeOrdinalClaimed)
+	if len(findings) != 1 {
+		t.Fatalf("%s findings = %#v, want one", speccheck.CodeOrdinalClaimed, findings)
+	}
+}
+
+func TestSameSpecDuplicateFixNamesRenumbering(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := t.TempDir()
+	specsRoot := filepath.Join(repoRoot, "docs", "specs")
+	writeOrdinalSpecClaims(t, repoRoot, "claiming-spec",
+		"docs/adr/0042-first-decision.md",
+		"docs/adr/0042-second-decision.md",
+	)
+
+	result, err := speccheck.CheckStage(specsRoot, repoRoot, "claiming-spec", speccheck.StageTasks)
+	if err != nil {
+		t.Fatalf("CheckStage(StageTasks): %v", err)
+	}
+	findings := findingsWithCode(result, speccheck.CodeOrdinalClaimed)
+	if len(findings) != 1 {
+		t.Fatalf("%s findings = %#v, want one", speccheck.CodeOrdinalClaimed, findings)
+	}
+	if summary := findings[0].Summary; !strings.Contains(summary, "is claimed by both") {
+		t.Errorf("summary = %q, want same-Spec duplicate message", summary)
+	}
+	if fix := findings[0].Fix; !strings.Contains(fix, "Renumber one Task's `creates:` path") {
+		t.Errorf("fix = %q, want renumbering instruction", fix)
 	}
 }
 
@@ -163,6 +256,11 @@ func TestDistinctOrdinalsAreAccepted(t *testing.T) {
 
 func writeOrdinalSpec(t *testing.T, repoRoot, slug, claim string) {
 	t.Helper()
+	writeOrdinalSpecClaims(t, repoRoot, slug, claim)
+}
+
+func writeOrdinalSpecClaims(t *testing.T, repoRoot, slug string, claims ...string) {
+	t.Helper()
 
 	writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/_prd.md", `---
 spec: `+slug+`
@@ -173,6 +271,11 @@ surfaces: [backend]
 
 # Ordinal claim fixture
 `)
+	var nodes strings.Builder
+	for index := range claims {
+		id := fmt.Sprintf("task_%02d", index+1)
+		fmt.Fprintf(&nodes, "    - id: %s\n      file: %s.md\n      needs: []\n", id, id)
+	}
 	writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/_tasks.md", `---
 schema: spec-tasks/v1
 spec: `+slug+`
@@ -180,19 +283,18 @@ qa: declined
 qa_reason: no behavioral surface in this fixture
 graph:
   nodes:
-    - id: task_01
-      file: task_01.md
-      needs: []
----
+`+nodes.String()+`---
 `)
-	writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/task_01.md", `---
-task: task_01
+	for index, claim := range claims {
+		id := fmt.Sprintf("task_%02d", index+1)
+		writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/"+id+".md", `---
+task: `+id+`
 spec: `+slug+`
 status: pending
 type: backend
 ---
 
-# Task 01: Claim an ADR ordinal
+# Claim an ADR ordinal
 
 ## Context
 
@@ -202,4 +304,5 @@ type: backend
 
 - `+"`test -f "+claim+"`"+`
 `)
+	}
 }

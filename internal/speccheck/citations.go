@@ -949,6 +949,7 @@ func detectCitationCoverageAndReferences(
 		addSkip(result, CodeReferenceUnresolved, manifestDisplayPath)
 		addSkip(result, CodeVerifyInvertedExit, manifestDisplayPath)
 		addSkip(result, CodeVerifyNonHermetic, manifestDisplayPath)
+		addSkip(result, CodeOrdinalClaimed, manifestDisplayPath)
 		addSkip(result, CodeWaveCollision, manifestDisplayPath)
 	}
 

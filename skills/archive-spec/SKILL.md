@@ -29,7 +29,7 @@ may move:
 | `environment-blocked` | Leaves the row blocked; the report can still settle as `pass` when equivalent evidence satisfies the environment policy. | Nothing by itself; a qualifying report can archive the Spec. |
 | `failed` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
 | `missing` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
-| `override` | Does not change the QA Task status or report verdict; settles archive as explicitly authorized despite failed or missing QA. | The Spec with `qa_override` approval, reason, QA outcome and revision; QA files move byte-identically. |
+| `override` | Does not change the QA Task status or report verdict; settles archive as explicitly authorized despite failed or missing QA. | The Spec with `qa_override`, `qa_override_approval`, `qa_override_reason`, `qa_override_qa_outcome`, `qa_override_qa_task_status` when the QA Task is incomplete, and `qa_override_revision`; QA files move byte-identically. |
 
 ## Preconditions — verify, don't trust
 
@@ -55,10 +55,12 @@ Check all three with fresh command evidence before touching anything:
    present, and reject `verdict: pass` when `rows_blocked_finding` is nonzero.
    Retain the verifier's report path and result as evidence. A missing `qa/`
    directory, malformed newest report, or non-passing verdict blocks the
-   normal archive. Proceed only under an explicit QA Archive Override and record
-   it in the stamped frontmatter (`qa_override: true`). A qualifying newest
-   report does not make a failed or pending QA Task completed; the override is
-   refused only when the report qualifies and every Task is completed.
+   normal archive. Proceed only under an explicit QA Archive Override performed
+   through `roundfix archive <slug> --qa-override --approval <source> --reason
+   <text>`. Never record the override by editing stamped frontmatter. A
+   qualifying newest report does not make a failed or pending QA Task completed;
+   the override is refused only when the report qualifies and every Task is
+   completed.
 
 3. **The Spec is self-contained.** Apply this precondition when
    `docs/specs/<slug>/references/_index.md` exists or is a symbolic link; a
@@ -212,13 +214,14 @@ Check all three with fresh command evidence before touching anything:
    cat "$parsed_index"
    ```
 
-`qa_override: true` overrides only the unmet normal QA prerequisite: an
-incomplete QA Task, an ineligible newest report, or missing or unreadable QA
-evidence. It is refused only when every Task is completed and the newest report
-qualifies, because that Spec can archive normally. It never overrides
-self-containment: verification can be overridden by the maintainer, but
-self-containment is a property of the artifact and must be repaired by finishing
-adoption.
+A QA Archive Override performed only through `roundfix archive <slug>
+--qa-override --approval <source> --reason <text>` overrides the unmet normal QA
+prerequisite: an incomplete QA Task, an ineligible newest report, or missing or
+unreadable QA evidence. The command is refused only when every Task is completed
+and the newest report qualifies, because that Spec can archive normally. It
+never overrides self-containment: verification can be overridden by the
+maintainer, but self-containment is a property of the artifact and must be
+repaired by finishing adoption.
 
 A merged PR or release tag is **not** a precondition. If the user passes `--release`, or a merged PR/tag is already known, stamp it as metadata — but never block the archive waiting for one.
 
@@ -237,18 +240,23 @@ The override still requires every non-QA Task to be `completed`. It accepts a
 failed or pending QA Task regardless of the newest report's verdict and refuses
 only when every Task is completed and the newest report qualifies, because the
 same Spec can archive normally. It records the approval source, reason, observed
-QA outcome and archived revision without changing the QA Task or report. An
+QA outcome and archived revision without changing the QA Task or report. When
+the QA Task is not completed, it also records `qa_override_qa_task_status`. An
 unreadable report's recorded outcome names its path relative to the Spec folder,
 never the machine's absolute path.
 
 ## Steps
 
-1. **Stamp** `_prd.md` frontmatter:
+For a QA Archive Override, perform the archive only through
+`roundfix archive <slug> --qa-override --approval <source> --reason <text>`.
+Never hand-stamp `qa_override: true`; the command owns its refusals and
+provenance. The manual steps below apply only to a normal archive.
+
+1. **Stamp** `_prd.md` frontmatter for a normal archive:
 
    ```yaml
    status: archived
    archived: YYYY-MM-DD
-   qa_override: true # only when normal QA archive eligibility is unmet
    release: <tag or PR URL> # only when known — from --release or an already-merged PR/tag
    ```
 

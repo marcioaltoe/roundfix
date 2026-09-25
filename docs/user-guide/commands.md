@@ -837,9 +837,11 @@ requires every non-QA Task to be `completed`. It accepts a failed or pending QA
 Task regardless of the newest report's verdict, and refuses only when every
 Task is `completed` and that report qualifies because the same Spec can archive
 normally. It stamps the approval source, reason, observed QA outcome and
-archived revision without changing the QA Task or report verdict. When the
-newest report is unreadable, the recorded outcome names it relative to the Spec
-folder and never stores an absolute machine path.
+archived revision without changing the QA Task or report verdict. When the QA
+Task is not completed, it also stamps `qa_override_qa_task_status` with that
+status; a completed QA Task omits the field. When the newest report is
+unreadable, the recorded outcome names it relative to the Spec folder and never
+stores an absolute machine path.
 
 ### supersede
 
