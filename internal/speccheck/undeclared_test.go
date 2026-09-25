@@ -80,6 +80,33 @@ func TestBoundedFilesRowPathTheRecordDoesNotGrantIsRefused(t *testing.T) {
 	fixture.requireFindingCount(1)
 }
 
+func TestBoundedRowPathTheRecordOmitsIsRefusedWithoutATask(t *testing.T) {
+	t.Parallel()
+	fixture := newUndeclaredFixture(t)
+	fixture.writeTask("pending", "backend", "", "true")
+	fixture.writeGrant([]string{"internal/example.go"}, nil)
+	fixture.writeArtifacts([]string{"Makefile"}, []string{"Makefile"})
+	fixture.requireFindingCount(1)
+}
+
+func TestBoundedRowPathTheRecordGrantsPassesWithoutATask(t *testing.T) {
+	t.Parallel()
+	fixture := newUndeclaredFixture(t)
+	fixture.writeTask("pending", "backend", "", "true")
+	fixture.writeGrant([]string{"Makefile"}, nil)
+	fixture.writeArtifacts([]string{"Makefile"}, []string{"Makefile"})
+	fixture.requireFindingCount(0)
+}
+
+func TestBoundedRowSanctionedRegenerationOutputPassesWithoutATask(t *testing.T) {
+	t.Parallel()
+	fixture := newUndeclaredFixture(t)
+	fixture.writeTask("pending", "backend", "", "true")
+	fixture.writeGrant([]string{"Makefile"}, []string{"skills/qa-gate/SKILL.md"})
+	fixture.writeArtifacts([]string{"skills/qa-gate/SKILL.md"}, []string{"skills/qa-gate/SKILL.md"})
+	fixture.requireFindingCount(0)
+}
+
 func TestGovernedPathWithoutAGrantIsRefused(t *testing.T) {
 	t.Parallel()
 	fixture := newUndeclaredFixture(t)

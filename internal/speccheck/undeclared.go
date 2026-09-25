@@ -35,6 +35,7 @@ func detectUndeclaredGovernedPaths(
 		return fmt.Errorf("read undeclared Governed Path authorization: %w", err)
 	}
 	rows := presentToolingRows(artifacts)
+	reportedTaskPaths := make(map[string]bool)
 	for _, task := range graph.Tasks {
 		if task.Status == spec.StatusCompleted || task.Type == spec.TaskTypeQA {
 			continue
@@ -83,7 +84,37 @@ func detectUndeclaredGovernedPaths(
 				Where:    locations,
 				Fix:      "Add `" + touch.path + "` to " + strings.Join(declarations, ", ") + ".",
 			})
+			reportedTaskPaths[touch.path] = true
 		}
+	}
+
+	rowLocations := make(map[string][]Location)
+	for _, artifact := range rows {
+		row := artifact.rows[strings.ToLower(constraintTooling)]
+		for _, path := range row.BoundedPaths {
+			if !GovernedPath(path) || grant.regenerated[path] || reportedTaskPaths[path] {
+				continue
+			}
+			rowLocations[path] = append(rowLocations[path], Location{Path: artifact.displayPath, Line: row.Line})
+		}
+	}
+	paths := make([]string, 0, len(rowLocations))
+	for path := range rowLocations {
+		if !grant.granted || !grant.paths[path] {
+			paths = append(paths, path)
+		}
+	}
+	sort.Strings(paths)
+	for _, path := range paths {
+		locations := append([]Location(nil), rowLocations[path]...)
+		locations = append(locations, grant.location)
+		result.Findings = append(result.Findings, Finding{
+			Code:     CodeToolingUndeclared,
+			Severity: SeverityError,
+			Summary:  "Tooling authority row declares Governed Path " + path + ", but its authorization record omits it",
+			Where:    locations,
+			Fix:      "Add `" + path + "` to " + grant.location.Path + ".",
+		})
 	}
 	return nil
 }

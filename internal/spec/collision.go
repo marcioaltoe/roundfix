@@ -115,7 +115,7 @@ func collisionRepoRoot(repoRoot string) (string, error) {
 
 func declaredTaskTouches(repoRoot string, task Task) (map[string]TouchSource, error) {
 	paths := make(map[string]TouchSource)
-	verificationFiles, err := TaskVerificationFiles(repoRoot, Task{Verification: task.Verification})
+	verificationFiles, err := TaskVerificationFiles(repoRoot, task)
 	if err != nil {
 		return nil, err
 	}

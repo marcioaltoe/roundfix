@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0170-authoring-that-fails-before-dispatch
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -20,13 +20,13 @@ Corrective Task from the pre-PR review of 2026-09-25. `declaredTaskTouches` in `
 
 ## Subtasks
 
-- [ ] Implement the requirements above.
-- [ ] Add a named test for each acceptance criterion, each negative case separate.
+- [x] Implement the requirements above.
+- [x] Add a named test for each acceptance criterion, each negative case separate.
 
 ## Acceptance Criteria
 
-- [ ] Two Tasks that may run together and name the same not-yet-existing `creates:` operand in their Verification are reported by the wave-collision check.
-- [ ] A Governed Path in a `bounded files:` row that the record omits is refused with no Task declaring it; the same path granted by the record passes.
+- [x] Two Tasks that may run together and name the same not-yet-existing `creates:` operand in their Verification are reported by the wave-collision check.
+- [x] A Governed Path in a `bounded files:` row that the record omits is refused with no Task declaring it; the same path granted by the record passes.
 
 ## Context
 
@@ -43,3 +43,27 @@ Corrective Task from the pre-PR review of 2026-09-25. `declaredTaskTouches` in `
 ## References
 
 - [_techspec.md](_techspec.md) — Undeclared Governed Paths
+
+## Result
+
+Implementation:
+
+- `declaredTaskTouches` now gives `TaskVerificationFiles` the complete Task, preserving `creates:` evidence for non-existent Verification operands.
+- The undeclared-path detector now compares every Governed Path in each present Tooling authority row with the selected authorization record, exempts sanctioned regeneration outputs, emits row-only omissions deterministically, and avoids adding a row-only duplicate for a path already reported from a Task.
+- The shared clean Spec fixture now records the `Makefile` path and `implement` operation its existing prose and executable Task Graph already claimed. No existing assertion or finding message changed, and `internal/docscontract/testdata/corpus-golden.json` remains unchanged at `SC-TOOLING-UNDECLARED: 0`.
+
+Focused checks:
+
+- Before the implementation, `go test -count=1 -run '^(TestCreatedVerificationOperandIsACollisionTouch|TestBoundedRowPathTheRecordOmitsIsRefusedWithoutATask|TestBoundedRowPathTheRecordGrantsPassesWithoutATask|TestBoundedRowSanctionedRegenerationOutputPassesWithoutATask)$' ./internal/spec ./internal/speccheck` failed in the created-operand and omitted-row cases, while both acceptance companions passed.
+- After the implementation, the same focused command passed both packages.
+- `go test -count=1 -run '^TestSpecCheckRunVerification$' ./internal/cli` passed after the clean fixture grant was made truthful.
+- `go test -count=1 ./internal/spec ./internal/speccheck` passed.
+- `make verify-incremental` passed with the Task-scoped Go build cache.
+- The Task's declared `## Verification` command was not run; Daemon Verification remains pending.
+
+Acceptance evidence:
+
+- Created Verification operand collision: `TestCreatedVerificationOperandIsACollisionTouch` passes and observes one Wave collision on `internal/generated/client.go` with `TouchFromVerification`.
+- Bounded-row record agreement: `TestBoundedRowPathTheRecordOmitsIsRefusedWithoutATask` passes with one `SC-TOOLING-UNDECLARED`; `TestBoundedRowPathTheRecordGrantsPassesWithoutATask` passes with none. `TestBoundedRowSanctionedRegenerationOutputPassesWithoutATask` separately preserves the regeneration exemption.
+
+Follow-ups: none. The change introduces no new domain term, so `CONTEXT.md` needs no update.
