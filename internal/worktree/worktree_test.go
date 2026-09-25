@@ -163,6 +163,85 @@ func TestCreateRunsBootstrapAfterCopyInRunWorktreeRoot(t *testing.T) {
 	}
 }
 
+func TestCleanupRecoversAHalfRemovedItemWorktree(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	repoDir := initWorktreeRepo(t)
+	mustWriteWorktreeTest(t, filepath.Join(repoDir, "tracked.txt"), "base\n")
+	gitWorktreeTest(t, repoDir, "add", "tracked.txt")
+	gitWorktreeTest(t, repoDir, "commit", "-m", "initial")
+	headSHA := strings.TrimSpace(gitWorktreeTest(t, repoDir, "rev-parse", "HEAD"))
+	ref, err := ItemRefFor(
+		repoDir,
+		filepath.Join(homeDir, ".roundfix", "worktrees"),
+		"roundfix/deliver-half-removed",
+	)
+	if err != nil {
+		t.Fatalf("derive item Worktree ref: %v", err)
+	}
+	if err := CreateItem(ctx, ref, ItemCreateOptions{HeadSHA: headSHA}); err != nil {
+		t.Fatalf("create item Worktree: %v", err)
+	}
+
+	readOnlyDir := filepath.Join(ref.Path, "read-only")
+	mustMkdirWorktreeTest(t, readOnlyDir)
+	mustWriteWorktreeTest(t, filepath.Join(readOnlyDir, "bootstrap-output.txt"), "kept after partial removal\n")
+	if err := os.Chmod(readOnlyDir, 0o500); err != nil {
+		t.Fatalf("make item Worktree directory read-only: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chmod(readOnlyDir, 0o700)
+	})
+
+	cmdArgs := append([]string{"-C", repoDir}, gitConfigArgsForWorktreeTest()...)
+	cmdArgs = append(cmdArgs, "-c", "core.fsmonitor=false", "worktree", "remove", "--force", ref.Path)
+	cmd := exec.Command("git", cmdArgs...)
+	cmd.Env = isolatedGitEnvForWorktreeTest()
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("git worktree remove unexpectedly removed the read-only item Worktree: %s", output)
+	}
+	if _, err := os.Stat(ref.Path); err != nil {
+		t.Fatalf("half-removed item Worktree path = %q: %v", ref.Path, err)
+	}
+	if registered := gitWorktreeTest(t, repoDir, "worktree", "list", "--porcelain"); strings.Contains(registered, ref.Path) {
+		t.Fatalf("half-removed item Worktree remained registered: %s", registered)
+	}
+	marker := strings.TrimSpace(mustReadWorktreeTest(t, filepath.Join(ref.Path, ".git")))
+	commonDir := strings.TrimSpace(gitWorktreeTest(t, repoDir, "rev-parse", "--path-format=absolute", "--git-common-dir"))
+	if !strings.HasPrefix(marker, "gitdir: "+filepath.Join(commonDir, "worktrees")+string(filepath.Separator)) {
+		t.Fatalf("half-removed item Worktree marker = %q, want this repository's worktrees admin directory", marker)
+	}
+
+	if err := CleanupItem(ctx, ref); err != nil {
+		t.Fatalf("retry item Worktree cleanup: %v", err)
+	}
+
+	assertPathRemoved(t, ref.Path)
+	assertBranchRemoved(t, repoDir, ref.Branch)
+}
+
+func TestCleanupPreservesAnUnregisteredPathWithoutThisRepositorysMarker(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	repoDir := initWorktreeRepo(t)
+	unregisteredPath := filepath.Join(t.TempDir(), "unregistered")
+	mustMkdirWorktreeTest(t, unregisteredPath)
+	mustWriteWorktreeTest(t, filepath.Join(unregisteredPath, ".git"), "gitdir: /tmp/not-this-repository/worktrees/item\n")
+	ref := ItemRef{
+		Path:     unregisteredPath,
+		Branch:   "roundfix/deliver-unregistered",
+		UserRoot: repoDir,
+	}
+
+	err := CleanupItem(ctx, ref)
+	if err == nil || !strings.Contains(err.Error(), "outside this repository's worktrees admin directory") {
+		t.Fatalf("cleanup unregistered path error = %v, want repository-marker refusal", err)
+	}
+	assertPathExists(t, unregisteredPath)
+}
+
 func TestCreateTaskRunsBootstrapAfterCopyInTaskWorktreeRoot(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

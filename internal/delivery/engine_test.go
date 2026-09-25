@@ -266,12 +266,15 @@ func TestDeliveryEngineRetriesMergedItemCleanupWithoutReplayingMerge(t *testing.
 	boundary := newFakeDeliveryBoundary()
 	engine := newTestDeliveryEngine(runStore, workflow, boundary)
 
-	if _, err := engine.Run(ctx, gitRoot); err == nil {
-		t.Fatal("Delivery Engine succeeded after item cleanup failed")
+	if _, err := engine.Run(ctx, gitRoot); err != nil {
+		t.Fatalf("Delivery Engine stopped after item cleanup failed: %v", err)
 	}
 	item := readDeliveryQueue(t, ctx, runStore, gitRoot).Items[0]
 	if item.Stage != store.DeliveryStageMerged {
 		t.Fatalf("item stage after cleanup failure = %q, want merged", item.Stage)
+	}
+	if !strings.HasPrefix(item.Blocker, cleanupWarningPrefix) {
+		t.Fatalf("item cleanup warning = %q, want prefix %q", item.Blocker, cleanupWarningPrefix)
 	}
 	if boundary.mergeEffects != 1 {
 		t.Fatalf("merge effects after cleanup failure = %d, want one", boundary.mergeEffects)
@@ -285,6 +288,52 @@ func TestDeliveryEngineRetriesMergedItemCleanupWithoutReplayingMerge(t *testing.
 	}
 	if boundary.mergeEffects != 1 {
 		t.Fatalf("merge effects after cleanup retry = %d, want one", boundary.mergeEffects)
+	}
+	item = readDeliveryQueue(t, ctx, runStore, gitRoot).Items[0]
+	if item.Blocker != "" {
+		t.Fatalf("item cleanup warning after successful retry = %q, want empty", item.Blocker)
+	}
+}
+
+func TestAFailedMergedCleanupDoesNotStopTheQueue(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runStore := openDeliveryEngineStore(t, ctx)
+	const gitRoot = "/repo-cleanup-warning"
+	if _, err := runStore.CreateDeliveryQueue(ctx, gitRoot, []string{"cleanup-fails", "next-spec"}); err != nil {
+		t.Fatalf("create Delivery Queue: %v", err)
+	}
+
+	workflow := newFakeDeliveryWorkflow()
+	workflow.removeErrors = []error{errors.New("worktree is still read-only")}
+	boundary := newFakeDeliveryBoundary()
+	engine := newTestDeliveryEngine(runStore, workflow, boundary)
+
+	result, err := engine.Run(ctx, gitRoot)
+	if err != nil {
+		t.Fatalf("run Delivery Engine: %v", err)
+	}
+	if len(result.Items) != 2 {
+		t.Fatalf("result items = %d, want two", len(result.Items))
+	}
+	if result.Items[0].Stage != store.DeliveryStageMerged ||
+		!strings.Contains(result.Items[0].Blocker, "warning") ||
+		!strings.Contains(result.Items[0].Blocker, "worktree is still read-only") {
+		t.Fatalf("failed-cleanup item = %+v, want merged with its cleanup warning", result.Items[0])
+	}
+	if result.Items[1].Stage != store.DeliveryStageMerged {
+		t.Fatalf("next item = %+v, want merged", result.Items[1])
+	}
+	if workflow.removeCalls != 2 {
+		t.Fatalf("item cleanup calls = %d, want two", workflow.removeCalls)
+	}
+	if boundary.mergeEffects != 2 {
+		t.Fatalf("merge effects = %d, want two", boundary.mergeEffects)
+	}
+
+	persisted := readDeliveryQueue(t, ctx, runStore, gitRoot)
+	if persisted.Items[0].Blocker != result.Items[0].Blocker {
+		t.Fatalf("persisted cleanup warning = %q, want %q", persisted.Items[0].Blocker, result.Items[0].Blocker)
 	}
 }
 

@@ -24,6 +24,8 @@ const (
 	BlockerItemWorktreeMissing = "item-worktree-missing"
 )
 
+const cleanupWarningPrefix = "warning: cleanup failed"
+
 // ErrItemWorktreeMissing reports that neither an item's recorded worktree nor
 // its recorded branch remains available for resume.
 var ErrItemWorktreeMissing = errors.New("item worktree and branch are missing")
@@ -234,7 +236,20 @@ func (engine *Engine) Run(ctx context.Context, gitRoot string) (EngineResult, er
 		}
 		if item.Stage == store.DeliveryStageMerged {
 			if err := engine.workspace.RemoveItemBranch(ctx, gitRoot, item.Branch, item.Worktree); err != nil {
-				return EngineResult{}, fmt.Errorf("clean up merged Spec %q: %w", item.SpecSlug, err)
+				item.Blocker = cleanupWarningPrefix + ": " + err.Error()
+				if persistErr := engine.store.UpdateDeliveryQueueItem(ctx, gitRoot, item); persistErr != nil {
+					return EngineResult{}, fmt.Errorf(
+						"record cleanup warning for merged Spec %q after %v: %w",
+						item.SpecSlug,
+						err,
+						persistErr,
+					)
+				}
+			} else if strings.HasPrefix(item.Blocker, cleanupWarningPrefix) {
+				item.Blocker = ""
+				if err := engine.store.UpdateDeliveryQueueItem(ctx, gitRoot, item); err != nil {
+					return EngineResult{}, fmt.Errorf("clear cleanup warning for merged Spec %q: %w", item.SpecSlug, err)
+				}
 			}
 		}
 		queue.Items[index] = item

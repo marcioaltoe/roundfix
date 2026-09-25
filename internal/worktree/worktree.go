@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"maps"
 	"os"
 	"os/exec"
@@ -1769,11 +1770,104 @@ func CleanupItem(ctx context.Context, ref ItemRef) error {
 			return fmt.Errorf("clean up item Worktree %q: %w", ref.Path, err)
 		}
 	} else if _, err := os.Lstat(ref.Path); err == nil {
-		return fmt.Errorf("clean up item Worktree %q: unregistered path still exists", ref.Path)
+		if err := removeUnregisteredItemWorktree(ctx, runner, ref); err != nil {
+			return fmt.Errorf("clean up item Worktree %q: %w", ref.Path, err)
+		}
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("clean up item Worktree %q: inspect recorded path: %w", ref.Path, err)
 	}
 	return deleteItemBranch(ctx, runner, ref.UserRoot, ref.Branch)
+}
+
+func removeUnregisteredItemWorktree(ctx context.Context, runner gitRunner, ref ItemRef) error {
+	if !filepath.IsAbs(ref.Path) || filepath.Clean(ref.Path) != ref.Path {
+		return errors.New("unregistered path is not a clean absolute path")
+	}
+	info, err := os.Lstat(ref.Path)
+	if err != nil {
+		return fmt.Errorf("stat unregistered path: %w", err)
+	}
+	if !info.IsDir() {
+		return errors.New("unregistered path is not a directory")
+	}
+
+	markerPath := filepath.Join(ref.Path, ".git")
+	markerInfo, err := os.Lstat(markerPath)
+	if err != nil {
+		return fmt.Errorf("inspect Git directory pointer: %w", err)
+	}
+	if !markerInfo.Mode().IsRegular() {
+		return errors.New("Git directory pointer is not a regular file")
+	}
+	marker, err := os.ReadFile(markerPath)
+	if err != nil {
+		return fmt.Errorf("read Git directory pointer: %w", err)
+	}
+	const gitDirPrefix = "gitdir:"
+	gitDir := strings.TrimSpace(string(marker))
+	if !strings.HasPrefix(gitDir, gitDirPrefix) {
+		return errors.New("Git directory pointer has invalid content")
+	}
+	gitDir = strings.TrimSpace(strings.TrimPrefix(gitDir, gitDirPrefix))
+	if gitDir == "" || strings.ContainsAny(gitDir, "\x00\r\n") {
+		return errors.New("Git directory pointer has an invalid path")
+	}
+	if !filepath.IsAbs(gitDir) {
+		gitDir = filepath.Join(filepath.Dir(markerPath), gitDir)
+	}
+	gitDir = filepath.Clean(gitDir)
+
+	commonDirOutput, err := runner.Run(
+		ctx,
+		ref.UserRoot,
+		"rev-parse",
+		"--path-format=absolute",
+		"--git-common-dir",
+	)
+	if err != nil {
+		return fmt.Errorf("resolve repository Git directory: %w", err)
+	}
+	commonDir := strings.TrimSpace(commonDirOutput)
+	if commonDir == "" || strings.ContainsAny(commonDir, "\x00\r\n") || !filepath.IsAbs(commonDir) {
+		return fmt.Errorf("repository Git directory is invalid: %q", commonDir)
+	}
+	adminRoot := filepath.Join(filepath.Clean(commonDir), "worktrees")
+	if !samePath(filepath.Dir(gitDir), adminRoot) {
+		return fmt.Errorf("Git directory pointer %q is outside this repository's worktrees admin directory", gitDir)
+	}
+
+	if err := makeTreeOwnerWritable(ref.Path); err != nil {
+		return fmt.Errorf("make unregistered item Worktree writable: %w", err)
+	}
+	if err := os.RemoveAll(ref.Path); err != nil {
+		return fmt.Errorf("remove unregistered item Worktree: %w", err)
+	}
+	return nil
+}
+
+func makeTreeOwnerWritable(root string) error {
+	return filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if entry.Type()&os.ModeSymlink != 0 {
+			return nil
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		mode := info.Mode().Perm()
+		switch {
+		case entry.IsDir():
+			mode |= 0o700
+		case entry.Type().IsRegular():
+			mode |= 0o600
+		default:
+			return nil
+		}
+		return os.Chmod(path, mode)
+	})
 }
 
 // CleanupItemBranch deletes an item branch only when no worktree has it
