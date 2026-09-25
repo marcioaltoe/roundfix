@@ -66,8 +66,6 @@ func ClassifyPath(path string) Set {
 		return BaselineSet
 	case inDirectory(path, "cmd"), inDirectory(path, "internal"), strings.HasSuffix(path, ".go"):
 		return CoreSet
-	case inDirectory(path, "docs"), isMarkdown(path):
-		return NoSet
 	default:
 		return BothSets
 	}
@@ -307,11 +305,6 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 
 func inDirectory(path, directory string) bool {
 	return path == directory || strings.HasPrefix(path, directory+"/")
-}
-
-func isMarkdown(path string) bool {
-	extension := strings.ToLower(filepath.Ext(path))
-	return extension == ".md" || extension == ".markdown"
 }
 
 type goListPackage struct {

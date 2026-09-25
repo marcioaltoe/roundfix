@@ -39,8 +39,8 @@ func TestClassifyPath(t *testing.T) {
 		{name: "core source", path: "internal/app/version.go", want: verifyselect.CoreSet},
 		{name: "core test", path: "internal/app/version_test.go", want: verifyselect.CoreSet},
 		{name: "Markdown in core package", path: "internal/app/README.md", want: verifyselect.CoreSet},
-		{name: "documentation", path: "docs/user-guide/commands.md", want: verifyselect.NoSet},
-		{name: "root Markdown", path: "README.md", want: verifyselect.NoSet},
+		{name: "documentation", path: "docs/user-guide/run-database-lifecycle.md", want: verifyselect.BothSets},
+		{name: "root Markdown", path: "README.md", want: verifyselect.BothSets},
 		{name: "unrelated data", path: "testdata/input.json", want: verifyselect.BothSets},
 	}
 
@@ -51,6 +51,24 @@ func TestClassifyPath(t *testing.T) {
 				t.Fatalf("ClassifyPath(%q) = %v, want %v", test.path, got.Names(), test.want.Names())
 			}
 		})
+	}
+}
+
+func TestDocumentationSelectsBothSets(t *testing.T) {
+	t.Parallel()
+
+	selection := verifyselect.SelectPaths([]string{"docs/user-guide/run-database-lifecycle.md"})
+	if selection.Sets != verifyselect.BothSets {
+		t.Fatalf("SelectPaths() sets = %v, want %v", selection.Sets.Names(), verifyselect.BothSets.Names())
+	}
+}
+
+func TestRootMarkdownSelectsBothSets(t *testing.T) {
+	t.Parallel()
+
+	selection := verifyselect.SelectPaths([]string{"README.md"})
+	if selection.Sets != verifyselect.BothSets {
+		t.Fatalf("SelectPaths() sets = %v, want %v", selection.Sets.Names(), verifyselect.BothSets.Names())
 	}
 }
 
@@ -97,7 +115,7 @@ func TestSelectClassifiesFixtureChangeSets(t *testing.T) {
 		{name: "Baseline only", paths: []string{"skills/roundfix/SKILL.md"}, want: verifyselect.BaselineSet},
 		{name: "both path classes", paths: []string{"internal/app/version.go", "internal/baseline/catalog.go"}, want: verifyselect.BothSets},
 		{name: "module file", paths: []string{"go.mod"}, want: verifyselect.BothSets},
-		{name: "documentation only", paths: []string{"docs/user-guide/commands.md"}, want: verifyselect.NoSet},
+		{name: "documentation only", paths: []string{"docs/user-guide/run-database-lifecycle.md"}, want: verifyselect.BothSets},
 	}
 
 	for _, test := range tests {
