@@ -79,6 +79,14 @@ races a real 500 ms clock.
 4. A project-scope `init` followed by any command warns nothing, and the budget
    test passes without depending on wall-clock timing.
 
+## Recorded limits
+
+- A temporary failure on the exclusive retry still replaces a command's
+  first-run deterministic failure; the Task settles failed, but its reason names
+  only the temporary failure. Found by the second pre-PR review of 2026-09-25;
+  carried to Backlog Entry
+  `docs/backlog/2026-09-25-temporary-retry-hides-a-deterministic-failure.md`.
+
 ## Decisions
 
 - **Latest evidence wins.** The exclusive retry exists to replace an unreliable
