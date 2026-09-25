@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0163-baseline-decisions-and-regeneration
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
