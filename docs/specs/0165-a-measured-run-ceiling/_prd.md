@@ -72,6 +72,21 @@ retry to its own diagnostic file, and Core Feature 6 is deferred.
    `implement` refuses with both Runs named and creates nothing.
 2. The budget test passes when the header line is absent from stderr.
 
+## Recorded limits
+
+The corrective ceiling of two Tasks was spent on the defects the first pre-PR
+review of 2026-09-24 found. The second review found two more, carried to Spec
+0167:
+
+- `roundfix init` writes the default template, which now contains
+  `runs.max_active`, to Project Config, so every later command warns that the
+  key is ignored there. Reproduction: `roundfix init` in a fresh repository,
+  choose project scope, then run `roundfix runs list`.
+- The restored `TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch`
+  needs `task_01` to settle inside a real 500 ms budget and flakes without load
+  (2 of 15 runs). Carried fix: inject the budget clock so it crosses the budget
+  only after the fake committer records the Task.
+
 ## Decisions
 
 - **Measure, then bound.** The default is the concurrency observed to keep the
