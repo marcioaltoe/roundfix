@@ -1,9 +1,12 @@
 ---
 spec: 0168-deliver-one-worktree-per-item
-status: active
+status: archived
 created: 2026-09-24
 surfaces: [backend, cli, docs]
+archived: "2026-09-25"
+source_slug: 0168-deliver-one-worktree-per-item
 ---
+
 
 # Deliver, one worktree per item
 
