@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0171-a-deterministic-suite-under-load
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -39,3 +39,27 @@ Corrective Task from the third QA gate of 2026-09-25, whose repository Verificat
 ## References
 
 - [_techspec.md](_techspec.md) — Build Order
+
+## Result
+
+- `TestRunBootstrapReturnsBootstrapErrorOnTimeout` now runs the bootstrap in a
+  goroutine, waits through `internal/testwait` for a command-created start
+  marker, and keeps the shell blocked on a test-owned FIFO until the one-second
+  bootstrap timeout fires. The assertions still require
+  `BootstrapFailureAfterStart` and the exact `timed out after 1s` error text.
+- The existing before-start assertions in
+  `TestBootstrapFailureAfterWorkIsClassifiedApart` remain unchanged, and no
+  production classification code changed.
+- Focused load check:
+  `GOCACHE=/private/tmp/roundfix-task08-gocache rtk go test -count=3 -cpu 1,4 -run '^TestRunBootstrapReturnsBootstrapErrorOnTimeout$' ./internal/worktree`
+  exited 0 and reported 6 passing executions while
+  `GOCACHE=/private/tmp/roundfix-task08-gocache rtk go test -count=10 ./internal/testwait`
+  ran beside it and reported 100 passing executions.
+- Focused wall-time check:
+  `GOCACHE=/private/tmp/roundfix-task08-gocache rtk go test -count=1 -v -run '^TestRunBootstrapReturnsBootstrapErrorOnTimeout$' ./internal/worktree`
+  exited 0 in 1.64 seconds including package startup, below the five-second
+  requirement.
+- The first focused attempts did not compile because the sandbox denied Go's
+  default cache under `~/Library/Caches/go-build`; rerunning with the
+  task-scoped cache above removed that environment failure. The Daemon-owned
+  20-count Verification remains intentionally unrun.
