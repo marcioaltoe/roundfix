@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0170-authoring-that-fails-before-dispatch
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -82,3 +82,53 @@ names a CLI surface and neither it nor a Task it depends on names a guide.
 - `_prd.md` → Goal 2; Core Feature 2; Success Metrics 3-4.
 - `_techspec.md` → CLI changes without their guide; API Contract 2; Testing
   Approach 2; Vocabulary Contract; ADR-0093; ADR-0094; ADR-0117.
+
+## Result
+
+Implemented the Task-stage `SC-CLI-UNDOCUMENTED` gap detector. It checks only
+pending non-QA Tasks, recognizes the declared CLI source and contract-test
+surfaces, walks transitive `needs` ancestors for a declared guide, and reports
+the Task file at the CLI Context entry's line. Missing PRD and Task Graph inputs
+now record the detector as skipped.
+
+The stable code is registered in the staged detector set and the corpus code
+list. The active-corpus golden and archive-layout pin each carry count `0`
+without changing any other count or the golden's `update` text. The Roundfix
+and QA-gate source skills document the rule, `CONTEXT.md` defines
+**Undocumented CLI Surface**, and `make skills-sync` regenerated both mirrors.
+The repository-required `make baseline-digests` reported no derived changes.
+
+Focused checks:
+
+- Red signal: the focused new-test command initially failed to build because
+  `speccheck.CodeCLIUndocumented` did not exist.
+- `GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 ./internal/speccheck`
+  passed after the final detector and test edits.
+- `GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run
+  '^TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095$'
+  ./internal/spec` passed.
+- `GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -tags docscontract
+  -run '^(TestCheckCorpusGolden|TestCheckActiveCorpusHasNoErrors)$'
+  ./internal/docscontract` passed.
+- `diff -r .agents/skills/roundfix skills/roundfix` and `diff -r
+  .agents/skills/qa-gate skills/qa-gate` both exited `0`.
+- `GOCACHE=/tmp/roundfix-task02-gocache make baseline-digests` exited `0`
+  and reported `changed:false`.
+- `GOCACHE=/tmp/roundfix-task02-gocache make verify-incremental` reached the
+  repository-wide test phase but could not finish because the sandbox blocked
+  an existing integration path's access to `api.github.com`; the escalation
+  request was rejected. This is recorded as blocked, not passing.
+- The daemon-owned command under `## Verification` was not run.
+
+Acceptance evidence:
+
+- `TestCLISurfaceWithoutAGuideIsReported` locates the surface declaration and
+  reports a gap; `TestStrictPromotesAnUndocumentedCLISurface` proves strict
+  promotion to an error.
+- `TestCLISurfaceNamingItsGuidePasses` and
+  `TestCLISurfaceWhoseDependencyNamesTheGuidePasses` cover local and
+  two-edge transitive ancestry, while `TestGuideOnlyInADependentTaskDoesNotCount`
+  proves dependencies are followed in only the permitted direction.
+- `TestCLIContractTestIsASurface` proves `internal/cli/cli_test.go` is a
+  surface, and `TestOrdinaryCLITestIsNotASurface` proves another CLI test file
+  is excluded.

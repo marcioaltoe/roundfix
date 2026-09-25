@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0170-authoring-that-fails-before-dispatch
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

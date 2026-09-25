@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0170-authoring-that-fails-before-dispatch
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -108,3 +108,43 @@ code where the other `spec check` codes are documented.
 - `_techspec.md` → Undeclared Governed Paths; API Contract 1; Testing
   Approach 1; Vocabulary Contract; ADR-0093; ADR-0094; ADR-0117; ADR-0130;
   ADR-0149.
+
+## Result
+
+Implemented `SC-TOOLING-UNDECLARED` as a Task-stage error. The Tooling
+authority row now retains its backticked `bounded files:` paths without
+changing `recordsBoundedFiles`; the detector compares pending non-QA Task
+Context and Verification declarations with the selected grant, every present
+row, and sanctioned regeneration outputs. Verification operands now flow
+through exported `spec.TaskVerificationFiles`, which `spec.Collisions` reuses
+without changing its existing touch set.
+
+Focused checks:
+
+- Red check: the two initial regression tests failed to compile because
+  `CodeToolingUndeclared` and `TaskVerificationFiles` did not exist.
+- `go test -count=1 -run '^(TestUndeclaredGoverned|TestDeclaredGovernedPathsPass|TestGovernedPathMissingFromABoundedFilesRowIsRefused|TestBoundedFilesRowPathTheRecordDoesNotGrantIsRefused|TestGovernedPathWithoutAGrantIsRefused|TestInstructionContextPathIsNotAudited|TestCompletedTaskIsNotAudited|TestOrdinaryPathNeedsNoDeclaration|TestSanctionedRegenerationOutputCountsAsDeclared|TestMissingTaskGraphListsTheUndeclaredGovernedPathSkip|TestTaskVerificationFilesReadsExistingOperands|TestCollisionsFindsTheMeasuredShape|TestCollisionsReturnsEveryPairAndSharedPath|TestCollisionsLearnsPathFromDeclaredContext)$' ./internal/speccheck ./internal/spec` — passed.
+- `go test -count=1 ./internal/spec ./internal/speccheck` — passed.
+- `go test -count=1 -tags docscontract ./internal/docscontract` — passed.
+- `make skills-sync` — passed; `diff -r` reports both required mirrors equal
+  to their canonical skill directories.
+- `make baseline-digests` — passed with `changed:false`; no derived digest
+  changed.
+- `git diff --check` — passed, and `internal/speccheck/mechanical.go` has no
+  diff.
+- `make verify-incremental` — not completed: the existing full test sweep
+  attempted `api.github.com`, sandbox policy blocked the network request, and
+  the escalation request was rejected. `go vet ./...` had completed before
+  the network block. The Daemon-owned Verification command was not run.
+
+Acceptance evidence:
+
+- Undeclared `interface:`, `creates:`, and Verification paths are refused;
+  `TestDeclaredGovernedPathsPass` covers the fully declared case.
+- The focused suite refuses a path missing from one row, a row path missing
+  from the grant, and a Governed Path with no granted record.
+- The focused suite exempts `instruction:` entries, completed and QA Tasks,
+  ordinary paths, and sanctioned regeneration outputs.
+- The docscontract suite passed with `SC-TOOLING-UNDECLARED: 0` in the corpus
+  golden and its archive-layout pin, and its active-corpus check reported no
+  errors.

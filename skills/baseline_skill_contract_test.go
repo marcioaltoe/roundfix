@@ -685,6 +685,86 @@ func TestWriteTechSpecProjectConstraints(t *testing.T) {
 	testAuthoringProjectConstraints(t, "write-techspec", "techspec-template.md")
 }
 
+func TestAuthoringTemplatesUseTheBoundedFilesLabel(t *testing.T) {
+	t.Parallel()
+	repoRoot := filepath.Clean(filepath.Join(".."))
+	for _, test := range []struct {
+		name string
+		path string
+	}{
+		{name: "PRD", path: filepath.Join(".agents", "skills", "write-prd", "references", "prd-template.md")},
+		{name: "TechSpec", path: filepath.Join(".agents", "skills", "write-techspec", "references", "techspec-template.md")},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			content := string(readBaselineSkillContractFile(t, filepath.Join(repoRoot, test.path)))
+			rowStart := strings.Index(content, "- Tooling authority:")
+			if rowStart == -1 {
+				t.Fatal("Tooling authority row is missing")
+			}
+			rowEnd := strings.IndexByte(content[rowStart:], '\n')
+			if rowEnd == -1 {
+				rowEnd = len(content) - rowStart
+			}
+			row := content[rowStart : rowStart+rowEnd]
+			if !strings.Contains(row, "bounded files:") {
+				t.Errorf("Tooling authority row missing %q", "bounded files:")
+			}
+			if strings.Contains(content, "bounded paths:") {
+				t.Errorf("template still contains %q", "bounded paths:")
+			}
+		})
+	}
+}
+
+func TestTaskTemplateStatesTheStatusPreservingVerificationForm(t *testing.T) {
+	t.Parallel()
+	repoRoot := filepath.Clean(filepath.Join(".."))
+	content := string(readBaselineSkillContractFile(
+		t,
+		filepath.Join(repoRoot, ".agents", "skills", "write-tasks", "references", "task-template.md"),
+	))
+	verificationStart := strings.Index(content, "## Verification")
+	if verificationStart == -1 {
+		t.Fatal("Verification section is missing")
+	}
+	verification := content[verificationStart:]
+	for _, required := range []string{
+		"tool piped into grep inside a command substitution hides the tool's status",
+		"SC-VERIFY-INVERTED-EXIT",
+		`out="$(tool 2>&1)" || exit 1; ! printf '%s\n' "$out" | grep -q pattern`,
+	} {
+		if !strings.Contains(verification, required) {
+			t.Errorf("Verification guidance missing %q", required)
+		}
+	}
+}
+
+func TestWriteTasksSkillStatesTheDeclaredPathRules(t *testing.T) {
+	t.Parallel()
+	repoRoot := filepath.Clean(filepath.Join(".."))
+	content := string(readBaselineSkillContractFile(
+		t,
+		filepath.Join(repoRoot, ".agents", "skills", "write-tasks", "SKILL.md"),
+	))
+	for _, required := range []string{
+		"Every path a Task edits",
+		"interface:",
+		"creates:",
+		"never `instruction:`",
+		"Verification-read Governed Path",
+		"_authorization.md` `paths:",
+		"both `bounded files:` rows",
+		"SC-TOOLING-UNDECLARED",
+		"Task naming a CLI surface",
+		"skill or guide itself or through a Task it depends on",
+		"SC-CLI-UNDOCUMENTED",
+	} {
+		if !strings.Contains(content, required) {
+			t.Errorf("write-tasks skill missing %q", required)
+		}
+	}
+}
+
 func TestSpecReferenceLifecycleSkillContracts(t *testing.T) {
 	t.Parallel()
 	repoRoot := filepath.Clean(filepath.Join(".."))

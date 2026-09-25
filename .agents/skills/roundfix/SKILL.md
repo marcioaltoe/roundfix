@@ -961,6 +961,10 @@ The authoring-honesty contract includes these stable error identifiers:
 - `SC-REHEARSAL-UNDECLARED` — a Task that rehearses or proves a gate lacks a
   complete `## Rehearsal Cases` declaration with
   `- Case: <case>; Observation: <observation>` entries.
+- `SC-TOOLING-UNDECLARED` — a pending non-QA Task declares a Governed Path
+  that its authorization record or a present Tooling authority row omits.
+- `SC-CLI-UNDOCUMENTED` — a pending non-QA Task names a CLI surface without
+  naming a guide in that Task or its transitive dependencies.
 - `SC-LOOP-ORDER-DIVERGENT` — the shipped clause, repository guide, and
   Baseline module asset declare different Spec loop orders.
 
