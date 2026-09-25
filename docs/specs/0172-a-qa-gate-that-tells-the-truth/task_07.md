@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0172-a-qa-gate-that-tells-the-truth
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -39,3 +39,31 @@ Corrective Task from the second QA gate of 2026-09-25, whose repository Verifica
 ## References
 
 - [_techspec.md](_techspec.md) — Build Order
+
+## Result
+
+- Implementation: the CLI journal-consumer harness now passes a dedicated
+  stderr buffer to `replayEventStream` and refuses any warning from the
+  well-formed recorded journal. Its serialized `task10CLIObservations` remain
+  unchanged.
+- Signature sweep: compared the Go function signatures changed between the
+  Spec's authoring baseline (`256ad156`) and Task 05 (`bd72aede`), then searched
+  every `internal/**/testdata` file for calls to the changed production
+  functions. The CLI corpus harness was the only testdata caller of
+  `replayEventStream`; no testdata harness calls its changed internal helper
+  `encodeStreamEntry`, so no other harness required an update.
+- Focused pre-change signal: `rtk env
+  GOCACHE=/private/tmp/roundfix-task07-go-build go test -count=1
+  ./internal/store -run
+  '^TestJournalConsumerCorpusReplaysEveryConsumer/events_Attach_reconcile_and_gc_preserve_pre-change_observations$'`
+  failed because the harness supplied six arguments to the seven-argument
+  `replayEventStream` signature.
+- Acceptance evidence: after the harness update, the focused command above
+  exited 0, proving the `events`, Attach, reconcile, and GC consumer subtest
+  compiles and preserves its recorded observations. `rtk env
+  GOCACHE=/private/tmp/roundfix-task07-go-build go test -count=1
+  ./internal/store -run
+  '^TestJournalConsumerCorpusReplaysEveryConsumer/Cockpit_rendering_preserves_the_pre-change_frame$'`
+  also exited 0, covering the parent test's other subtest independently.
+- Not run: the command under `## Verification`; the Daemon owns that command
+  and the terminal Task verdict.

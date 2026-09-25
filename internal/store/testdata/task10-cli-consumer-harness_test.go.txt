@@ -46,8 +46,12 @@ func TestTask10PrechangeJournalCLIConsumers(t *testing.T) {
 	run := runs[0]
 
 	var eventOutput bytes.Buffer
-	if _, err := replayEventStream(ctx, reader, run.ID, 0, runevent.AllStreamCategories(), json.NewEncoder(&eventOutput)); err != nil {
+	var eventErrors bytes.Buffer
+	if _, err := replayEventStream(ctx, reader, run.ID, 0, runevent.AllStreamCategories(), json.NewEncoder(&eventOutput), &eventErrors); err != nil {
 		t.Fatalf("events consumer: %v", err)
+	}
+	if eventErrors.Len() != 0 {
+		t.Fatalf("events consumer stderr: %s", eventErrors.String())
 	}
 	eventLines := bytes.Split(bytes.TrimSpace(eventOutput.Bytes()), []byte("\n"))
 	events := make([]map[string]any, 0, len(eventLines))
