@@ -1,7 +1,7 @@
 ---
 status: pending
 created_at: 2026-09-14
-updated_at: 2026-09-14
+updated_at: 2026-09-25
 ---
 
 # QA gate — The mechanical stage audits only the current Run's Task commits (2026-09-14)
@@ -47,3 +47,7 @@ the commits the stage never received, and routes the gap here.
     but no commit identity (`internal/speccheck/report.go`). The Codex review
     of Spec 0138 raised this, and the repeated audit belongs to the same
     follow-up.
+
+## Addendum — 2026-09-25 — Revalidated in triage
+
+Revalidated against main 7a9b6ec6: still holds: the audit range is plan.HeadSHA..HEAD and the report has no commit column (internal/daemon/task_engine.go, internal/speccheck/report.go). Ranked in the 2026-09-25 triage priority list.

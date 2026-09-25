@@ -1,7 +1,7 @@
 ---
 status: pending
 created_at: 2026-09-15
-updated_at: 2026-09-15
+updated_at: 2026-09-25
 ---
 
 # CLI tests — Operational command tests reach GitHub through the version freshness check (2026-09-15)
@@ -41,3 +41,7 @@ these tests non-hermetic, so the cause is recorded here.
   - Spec 0139 does not change this. Once the Daemon runs the repository
     Verification outside the sandbox, the lookup can reach the network again,
     but the suite still depends on it.
+
+## Addendum — 2026-09-25 — Revalidated in triage
+
+Revalidated against main 7a9b6ec6: still holds: the default versionFreshnessDeps stays live for fetch, resolve, watch and implement tests; Spec 0165's QA hit api.github.com again. Ranked in the 2026-09-25 triage priority list.
