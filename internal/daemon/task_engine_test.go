@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"slices"
 	"sort"
 	"strconv"
@@ -29,42 +28,11 @@ import (
 	"roundfix/internal/spec"
 	"roundfix/internal/speccheck"
 	"roundfix/internal/store"
+	"roundfix/internal/testwait"
 	runworktree "roundfix/internal/worktree"
 )
 
-const (
-	taskCycleSlug          = "0001-sample-feature"
-	testWaitDeadlineMargin = time.Second
-	testWaitFallback       = 30 * time.Second
-)
-
-func testWaitBound(t testing.TB) time.Duration {
-	t.Helper()
-	deadliner, ok := t.(interface {
-		Deadline() (time.Time, bool)
-	})
-	if !ok {
-		return testWaitFallback
-	}
-	deadline, ok := deadliner.Deadline()
-	if !ok {
-		return testWaitFallback
-	}
-	return time.Until(deadline) - testWaitDeadlineMargin
-}
-
-func failTestWait(t testing.TB, waitingFor string) {
-	t.Helper()
-	stack := make([]byte, 64<<10)
-	for {
-		n := runtime.Stack(stack, true)
-		if n < len(stack) {
-			t.Fatalf("timed out waiting for %s\n%s", waitingFor, stack[:n])
-			return
-		}
-		stack = make([]byte, len(stack)*2)
-	}
-}
+const taskCycleSlug = "0001-sample-feature"
 
 type testWaitProbe struct {
 	testing.TB
@@ -101,17 +69,17 @@ func TestWaitBoundFollowsTheTestDeadline(t *testing.T) {
 	t.Parallel()
 	deadline := time.Now().Add(5 * time.Second)
 	withDeadline := &testWaitProbe{TB: t, deadline: deadline, hasDeadline: true}
-	upperBound := time.Until(deadline) - testWaitDeadlineMargin
+	upperBound := time.Until(deadline) - testwait.Margin
 
-	got := testWaitBound(withDeadline)
+	got := testwait.Bound(withDeadline)
 
-	lowerBound := time.Until(deadline) - testWaitDeadlineMargin
+	lowerBound := time.Until(deadline) - testwait.Margin
 	if got < lowerBound || got > upperBound {
-		t.Fatalf("testWaitBound() = %s, want between %s and %s", got, lowerBound, upperBound)
+		t.Fatalf("testwait.Bound() = %s, want between %s and %s", got, lowerBound, upperBound)
 	}
 	withoutDeadline := &testWaitProbe{TB: t}
-	if got := testWaitBound(withoutDeadline); got != testWaitFallback {
-		t.Fatalf("testWaitBound() without deadline = %s, want %s", got, testWaitFallback)
+	if got := testwait.Bound(withoutDeadline); got != 10*time.Minute {
+		t.Fatalf("testwait.Bound() without deadline = %s, want %s", got, 10*time.Minute)
 	}
 
 	started := make(chan struct{})
@@ -121,11 +89,12 @@ func TestWaitBoundFollowsTheTestDeadline(t *testing.T) {
 	t.Cleanup(func() { close(release) })
 	expired := &testWaitProbe{
 		TB:          t,
-		deadline:    time.Now().Add(-testWaitDeadlineMargin),
+		deadline:    time.Now().Add(-testwait.Margin),
 		hasDeadline: true,
 	}
-	<-time.After(testWaitBound(expired))
-	failTestWait(expired, "deadline diagnostic")
+	var ready <-chan struct{}
+	var ended <-chan struct{}
+	testwait.Until(expired, "deadline diagnostic", ready, ended)
 	if !strings.HasPrefix(expired.fatalMessage, "timed out waiting for deadline diagnostic\n") {
 		t.Fatalf("wait failure = %q, want named deadline diagnostic", expired.fatalMessage)
 	}
@@ -3125,17 +3094,17 @@ func (runner *taskSchedulerRunner) qaPrompts() []string {
 	return prompts
 }
 
-func waitSchedulerStarts(t *testing.T, runner *taskSchedulerRunner, count int) []string {
+type taskCycleOutcome = struct {
+	result TaskCycleResult
+	err    error
+}
+
+func waitSchedulerStarts(t *testing.T, runner *taskSchedulerRunner, count int, ended <-chan taskCycleOutcome) []string {
 	t.Helper()
 	started := make([]string, 0, count)
 	for len(started) < count {
-		select {
-		case taskID := <-runner.started:
-			started = append(started, taskID)
-		case <-time.After(testWaitBound(t)):
-			failTestWait(t, fmt.Sprintf("%d Task start(s), got %v", count, started))
-			return started
-		}
+		waitingFor := fmt.Sprintf("%d Task start(s), got %v", count, started)
+		started = append(started, testwait.Until(t, waitingFor, runner.started, ended))
 	}
 	return started
 }
@@ -3279,15 +3248,9 @@ func (verifier *taskCapacityVerifier) releaseAttempt(taskID string, attempt int)
 	}
 }
 
-func (verifier *taskCapacityVerifier) waitStart(t *testing.T) taskVerificationStart {
+func (verifier *taskCapacityVerifier) waitStart(t *testing.T, ended <-chan taskCycleOutcome) taskVerificationStart {
 	t.Helper()
-	select {
-	case started := <-verifier.started:
-		return started
-	case <-time.After(testWaitBound(t)):
-		failTestWait(t, "Verification start")
-		return taskVerificationStart{}
-	}
+	return testwait.Until(t, "Verification start", verifier.started, ended)
 }
 
 func (verifier *taskCapacityVerifier) assertNoStart(t *testing.T) {
@@ -3470,13 +3433,7 @@ func (worktrees *fakeTaskWorktrees) integratedTask(taskID string) bool {
 
 func waitIntegratedTask(t *testing.T, worktrees *fakeTaskWorktrees) string {
 	t.Helper()
-	select {
-	case taskID := <-worktrees.integratedSignal:
-		return taskID
-	case <-time.After(testWaitBound(t)):
-		failTestWait(t, "Task integration")
-		return ""
-	}
+	return testwait.Until[string, struct{}](t, "Task integration", worktrees.integratedSignal, nil)
 }
 
 func waitTaskCycleResult(t *testing.T, resultCh <-chan struct {
@@ -3487,16 +3444,7 @@ func waitTaskCycleResult(t *testing.T, resultCh <-chan struct {
 	err    error
 } {
 	t.Helper()
-	select {
-	case outcome := <-resultCh:
-		return outcome
-	case <-time.After(testWaitBound(t)):
-		failTestWait(t, "TaskCycle result")
-		return struct {
-			result TaskCycleResult
-			err    error
-		}{}
-	}
+	return testwait.Until[taskCycleOutcome, struct{}](t, "TaskCycle result", resultCh, nil)
 }
 
 func taskStartedEvents(t *testing.T, sink *captureEventSink) []string {
@@ -3709,22 +3657,12 @@ type gateAcquireResult struct {
 
 func waitGateAcquireResult(t *testing.T, results <-chan gateAcquireResult) gateAcquireResult {
 	t.Helper()
-	select {
-	case result := <-results:
-		return result
-	case <-time.After(testWaitBound(t)):
-		failTestWait(t, "Verification gate acquisition")
-		return gateAcquireResult{}
-	}
+	return testwait.Until[gateAcquireResult, struct{}](t, "Verification gate acquisition", results, nil)
 }
 
 func waitObservedGateEntry(t *testing.T, entered <-chan struct{}) {
 	t.Helper()
-	select {
-	case <-entered:
-	case <-time.After(testWaitBound(t)):
-		failTestWait(t, "Verification gate entry")
-	}
+	testwait.Until[struct{}, struct{}](t, "Verification gate entry", entered, nil)
 }
 
 func TestTaskCycleExclusiveRetryDrainsSharedAttemptsAndBlocksLaterShared(t *testing.T) {
@@ -4428,17 +4366,17 @@ func TestTaskCycleIntegratedVerificationCapacityOneBoundsConcurrentTaskWorktrees
 		}{result: result, err: err}
 	}()
 
-	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_02")
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2, resultCh), "task_01", "task_02")
 	if got := runner.maxObservedActive(); got != 2 {
 		t.Fatalf("expected two overlapping Agent turns, got max active %d", got)
 	}
 	runner.releaseTask("task_01")
 	runner.releaseTask("task_02")
 
-	first := verifier.waitStart(t)
+	first := verifier.waitStart(t, resultCh)
 	verifier.assertNoStart(t)
 	verifier.releaseAttempt(first.taskID, first.attempt)
-	second := verifier.waitStart(t)
+	second := verifier.waitStart(t, resultCh)
 	if second.taskID == first.taskID {
 		t.Fatalf("expected the other Task to acquire after release, got %+v then %+v", first, second)
 	}
@@ -4482,11 +4420,11 @@ func TestTaskCycleVerificationCapacityTwoOverlapsReadyAttemptsWithoutPermitLoss(
 		}{result: result, err: err}
 	}()
 
-	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_02")
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2, resultCh), "task_01", "task_02")
 	runner.releaseTask("task_01")
 	runner.releaseTask("task_02")
-	first := verifier.waitStart(t)
-	second := verifier.waitStart(t)
+	first := verifier.waitStart(t, resultCh)
+	second := verifier.waitStart(t, resultCh)
 	if first.taskID == second.taskID {
 		t.Fatalf("expected distinct ready Tasks to overlap, got %+v and %+v", first, second)
 	}
@@ -4583,25 +4521,25 @@ func TestTaskCycleRepairReacquiresVerificationCapacityAfterFeedback(t *testing.T
 		}{result: result, err: err}
 	}()
 
-	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_02")
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2, resultCh), "task_01", "task_02")
 	runner.releaseTask("task_01")
-	if started := verifier.waitStart(t); started != (taskVerificationStart{taskID: "task_01", attempt: 1}) {
+	if started := verifier.waitStart(t, resultCh); started != (taskVerificationStart{taskID: "task_01", attempt: 1}) {
 		t.Fatalf("expected task_01 attempt 1 first, got %+v", started)
 	}
-	if started := waitSchedulerStarts(t, runner, 1); len(started) != 1 || started[0] != "task_01" {
+	if started := waitSchedulerStarts(t, runner, 1, resultCh); len(started) != 1 || started[0] != "task_01" {
 		t.Fatalf("expected task_01 Verification Feedback Agent, got %v", started)
 	}
 
 	runner.releaseTask("task_02")
-	if started := verifier.waitStart(t); started != (taskVerificationStart{taskID: "task_02", attempt: 1}) {
+	if started := verifier.waitStart(t, resultCh); started != (taskVerificationStart{taskID: "task_02", attempt: 1}) {
 		t.Fatalf("expected task_02 to verify while task_01 repair held no capacity, got %+v", started)
 	}
 	close(repairRelease)
-	waitPublishedVerificationPhase(t, fixture.sink.published, "task_01", 2, runevent.VerificationPhaseWaiting)
+	waitPublishedVerificationPhase(t, fixture.sink.published, "task_01", 2, runevent.VerificationPhaseWaiting, resultCh)
 	verifier.assertNoStart(t)
 
 	verifier.releaseAttempt("task_02", 1)
-	if started := verifier.waitStart(t); started != (taskVerificationStart{taskID: "task_01", attempt: 2}) {
+	if started := verifier.waitStart(t, resultCh); started != (taskVerificationStart{taskID: "task_01", attempt: 2}) {
 		t.Fatalf("expected task_01 attempt 2 to reacquire after task_02, got %+v", started)
 	}
 	verifier.releaseAttempt("task_01", 2)
@@ -4849,15 +4787,15 @@ func TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSe
 		}{result: result, err: err}
 	}()
 
-	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_02")
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2, resultCh), "task_01", "task_02")
 	runner.releaseTask("task_01")
 	runner.releaseTask("task_02")
-	active := verifier.waitStart(t)
+	active := verifier.waitStart(t, resultCh)
 	queuedTask := "task_01"
 	if active.taskID == queuedTask {
 		queuedTask = "task_02"
 	}
-	waitPublishedVerificationPhase(t, fixture.sink.published, queuedTask, 1, runevent.VerificationPhaseWaiting)
+	waitPublishedVerificationPhase(t, fixture.sink.published, queuedTask, 1, runevent.VerificationPhaseWaiting, resultCh)
 	verifier.assertNoStart(t)
 	cancel()
 
@@ -4910,15 +4848,15 @@ func TestTaskCycleStopRequestWhileQueuedForVerificationStartsNoCommandAndStaysRe
 		}{result: result, err: err}
 	}()
 
-	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_02")
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2, resultCh), "task_01", "task_02")
 	runner.releaseTask("task_01")
 	runner.releaseTask("task_02")
-	active := verifier.waitStart(t)
+	active := verifier.waitStart(t, resultCh)
 	queuedTask := "task_01"
 	if active.taskID == queuedTask {
 		queuedTask = "task_02"
 	}
-	waitPublishedVerificationPhase(t, fixture.sink.published, queuedTask, 1, runevent.VerificationPhaseWaiting)
+	waitPublishedVerificationPhase(t, fixture.sink.published, queuedTask, 1, runevent.VerificationPhaseWaiting, resultCh)
 	verifier.assertNoStart(t)
 
 	if err := fixture.store.RequestStop(context.Background(), fixture.run.ID); err != nil {
@@ -4926,7 +4864,7 @@ func TestTaskCycleStopRequestWhileQueuedForVerificationStartsNoCommandAndStaysRe
 	}
 	// The queued Task leaves the queue on the Stop Request alone, while the
 	// active attempt still holds the only Verification permit.
-	waitPublishedStopEvent(t, fixture.sink.published)
+	waitPublishedStopEvent(t, fixture.sink.published, resultCh)
 	verifier.assertNoStart(t)
 	verifier.releaseAttempt(active.taskID, 1)
 
@@ -4959,35 +4897,26 @@ func TestTaskCycleStopRequestWhileQueuedForVerificationStartsNoCommandAndStaysRe
 	}
 }
 
-func waitPublishedStopEvent(t *testing.T, published <-chan runevent.RunEvent) {
+func waitPublishedStopEvent(t *testing.T, published <-chan runevent.RunEvent, ended <-chan taskCycleOutcome) {
 	t.Helper()
 	for {
-		select {
-		case event := <-published:
-			if event.Kind == runevent.KindDaemonStatus && strings.Contains(event.Summary, "Stop Request") {
-				return
-			}
-		case <-time.After(testWaitBound(t)):
-			failTestWait(t, "the Stop Request to reach the Run Event Stream")
+		event := testwait.Until(t, "the Stop Request to reach the Run Event Stream", published, ended)
+		if event.Kind == runevent.KindDaemonStatus && strings.Contains(event.Summary, "Stop Request") {
 			return
 		}
 	}
 }
 
-func waitPublishedVerificationPhase(t *testing.T, published <-chan runevent.RunEvent, taskID string, attempt int, phase runevent.VerificationPhase) {
+func waitPublishedVerificationPhase(t *testing.T, published <-chan runevent.RunEvent, taskID string, attempt int, phase runevent.VerificationPhase, ended <-chan taskCycleOutcome) {
 	t.Helper()
+	waitingFor := fmt.Sprintf("Task %s Verification attempt %d phase %s", taskID, attempt, phase)
 	for {
-		select {
-		case event := <-published:
-			if event.Kind != runevent.KindDaemonVerification || event.ReviewIssue != taskID {
-				continue
-			}
-			payload := eventPayloadMap(t, event)
-			if payload["attempt"] == float64(attempt) && payload["phase"] == string(phase) {
-				return
-			}
-		case <-time.After(testWaitBound(t)):
-			failTestWait(t, fmt.Sprintf("Task %s Verification attempt %d phase %s", taskID, attempt, phase))
+		event := testwait.Until(t, waitingFor, published, ended)
+		if event.Kind != runevent.KindDaemonVerification || event.ReviewIssue != taskID {
+			continue
+		}
+		payload := eventPayloadMap(t, event)
+		if payload["attempt"] == float64(attempt) && payload["phase"] == string(phase) {
 			return
 		}
 	}
@@ -5044,14 +4973,14 @@ func TestTaskCycleSchedulesIndependentWaveWithConcurrencyCap(t *testing.T) {
 		}{result: result, err: err}
 	}()
 
-	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_02")
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2, resultCh), "task_01", "task_02")
 	assertNoSchedulerStart(t, runner)
 	runner.releaseTask("task_01")
-	if got := strings.Join(waitSchedulerStarts(t, runner, 1), "|"); got != "task_03" {
+	if got := strings.Join(waitSchedulerStarts(t, runner, 1, resultCh), "|"); got != "task_03" {
 		t.Fatalf("expected task_03 to start when one slot opened, got %s", got)
 	}
 	runner.releaseTask("task_02")
-	if got := strings.Join(waitSchedulerStarts(t, runner, 1), "|"); got != "task_04" {
+	if got := strings.Join(waitSchedulerStarts(t, runner, 1, resultCh), "|"); got != "task_04" {
 		t.Fatalf("expected task_04 to start when the next slot opened, got %s", got)
 	}
 	runner.releaseTask("task_03")
@@ -5342,7 +5271,7 @@ func TestTaskCycleStopRequestMidWaveDrainsRunningTasksAndStartsNothingNew(t *tes
 		}{result: result, err: err}
 	}()
 
-	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_02")
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2, resultCh), "task_01", "task_02")
 	runner.releaseTask("task_01")
 	if got := waitIntegratedTask(t, taskWorktrees); got != "task_01" {
 		t.Fatalf("expected task_01 to integrate first, got %s", got)
@@ -9384,7 +9313,7 @@ func TestTaskCycleStopRequestMidWaveSkipsQAWithEveryTaskCompleted(t *testing.T) 
 		}{result: result, err: err}
 	}()
 
-	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_02")
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2, resultCh), "task_01", "task_02")
 	runner.releaseTask("task_01")
 	if got := waitIntegratedTask(t, taskWorktrees); got != "task_01" {
 		t.Fatalf("expected task_01 to integrate first, got %s", got)

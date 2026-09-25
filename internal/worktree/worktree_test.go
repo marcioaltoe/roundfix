@@ -12,6 +12,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
 	"roundfix/internal/suiteguard"
+	"roundfix/internal/testwait"
 )
 
 // Suite: Run Worktree git lifecycle.
@@ -144,7 +146,7 @@ func TestCreateRunsBootstrapAfterCopyInRunWorktreeRoot(t *testing.T) {
 		CopyList: []string{".env"},
 		Bootstrap: BootstrapSpec{
 			Command: "test -f .env && pwd > bootstrap.pwd && cat .env > bootstrap.env && printf bootstrap-output",
-			Timeout: time.Second,
+			Timeout: testwait.Bound(t),
 		},
 		BootstrapOutput: &output,
 	})
@@ -394,7 +396,7 @@ func TestCreateTaskRunsBootstrapAfterCopyInTaskWorktreeRoot(t *testing.T) {
 		CopyList: []string{".env.task"},
 		Bootstrap: BootstrapSpec{
 			Command: "test -f .env.task && pwd > task-bootstrap.pwd && cat .env.task > task-bootstrap.env && printf task-bootstrap-output",
-			Timeout: time.Second,
+			Timeout: testwait.Bound(t),
 		},
 		BootstrapOutput: &output,
 	})
@@ -449,16 +451,18 @@ func TestBootstrapSerializesAcrossSiblings(t *testing.T) {
 	}
 }
 
+type bootstrapSiblingEvent struct {
+	taskID  string
+	started bool
+	err     error
+}
+
 // bootstrapSerializationRound runs one round in its own function so the round's
 // context is cancelled when the round ends. Deferring inside the loop instead
 // held every round's cancel until the test returned.
 func bootstrapSerializationRound(t *testing.T, round int) {
 	t.Helper()
 	const siblings = 4
-	type bootstrapResult struct {
-		taskID string
-		err    error
-	}
 
 	roundCtx, cancel := context.WithCancel(t.Context())
 	defer cancel()
@@ -470,8 +474,8 @@ func bootstrapSerializationRound(t *testing.T, round int) {
 	}
 
 	start := make(chan struct{})
-	started := make(chan string, siblings)
-	results := make(chan bootstrapResult, siblings)
+	events := make(chan bootstrapSiblingEvent, siblings*2)
+	endedByTask := make(map[string]<-chan bootstrapSiblingEvent, siblings)
 	for sibling := range siblings {
 		taskID := fmt.Sprintf("task_%02d", sibling+1)
 		worktreeDir := filepath.Join(root, taskID)
@@ -484,46 +488,64 @@ func bootstrapSerializationRound(t *testing.T, round int) {
 			lockPath,
 			releasePath,
 		)
+		ended := make(chan bootstrapSiblingEvent, 1)
+		endedByTask[taskID] = ended
 		go func() {
 			<-start
 			err := runBootstrap(
 				roundCtx,
 				worktreeDir,
-				BootstrapSpec{Command: command, Timeout: 5 * time.Second},
-				&bootstrapStartWriter{taskID: taskID, started: started},
+				BootstrapSpec{Command: command, Timeout: testwait.Bound(t)},
+				&bootstrapStartWriter{taskID: taskID, events: events},
 			)
-			results <- bootstrapResult{taskID: taskID, err: err}
+			result := bootstrapSiblingEvent{taskID: taskID, err: err}
+			ended <- result
+			events <- result
 		}()
 	}
 	close(start)
 
 	seen := make(map[string]struct{}, siblings)
 	completed := 0
-	for len(seen) < siblings {
-		select {
-		case taskID := <-started:
-			if _, duplicate := seen[taskID]; duplicate {
-				t.Fatalf("round %d: sibling %s reported bootstrap start twice", round, taskID)
+	for len(seen) < siblings || completed < siblings {
+		startedSoFar := bootstrapSiblingNames(seen)
+		event := testwait.Until[bootstrapSiblingEvent, struct{}](
+			t,
+			fmt.Sprintf("round %d sibling event; siblings started so far: %v", round, startedSoFar),
+			events,
+			nil,
+		)
+		if event.started {
+			if _, duplicate := seen[event.taskID]; duplicate {
+				t.Fatalf("round %d: sibling %s reported bootstrap start twice", round, event.taskID)
 			}
-			seen[taskID] = struct{}{}
-			releaseBootstrap(t, releasePath)
-		case result := <-results:
-			if result.err != nil {
-				t.Fatalf("round %d: sibling %s bootstrap: %v", round, result.taskID, result.err)
-			}
-			completed++
+			seen[event.taskID] = struct{}{}
+			releaseBootstrap(t, round, event.taskID, releasePath, bootstrapSiblingNames(seen), endedByTask[event.taskID])
+			continue
 		}
-	}
-	for completed < siblings {
-		result := <-results
-		if result.err != nil {
-			t.Fatalf("round %d: sibling %s bootstrap: %v", round, result.taskID, result.err)
+		if event.err != nil {
+			t.Fatalf(
+				"round %d: sibling %s bootstrap: %v; siblings started so far: %v",
+				round,
+				event.taskID,
+				event.err,
+				bootstrapSiblingNames(seen),
+			)
 		}
 		completed++
 	}
 	if _, err := os.Stat(lockPath); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("round %d: expected shared bootstrap lock removed, stat err=%v", round, err)
 	}
+}
+
+func bootstrapSiblingNames(seen map[string]struct{}) []string {
+	names := make([]string, 0, len(seen))
+	for taskID := range seen {
+		names = append(names, taskID)
+	}
+	slices.Sort(names)
+	return names
 }
 
 func TestBootstrapFailureAfterWorkIsClassifiedApart(t *testing.T) {
@@ -533,7 +555,7 @@ func TestBootstrapFailureAfterWorkIsClassifiedApart(t *testing.T) {
 	beforeErr := runBootstrap(
 		context.Background(),
 		"",
-		BootstrapSpec{Command: command, Timeout: time.Second},
+		BootstrapSpec{Command: command, Timeout: testwait.Bound(t)},
 		io.Discard,
 	)
 	var before *BootstrapError
@@ -551,7 +573,7 @@ func TestBootstrapFailureAfterWorkIsClassifiedApart(t *testing.T) {
 	afterErr := runBootstrap(
 		context.Background(),
 		worktreeDir,
-		BootstrapSpec{Command: command, Timeout: time.Second},
+		BootstrapSpec{Command: command, Timeout: testwait.Bound(t)},
 		io.Discard,
 	)
 	var after *BootstrapError
@@ -574,7 +596,7 @@ func TestRunBootstrapReturnsBootstrapErrorOnNonZeroExit(t *testing.T) {
 	var output bytes.Buffer
 	command := "printf failure-tail; exit 7"
 
-	err := runBootstrap(context.Background(), t.TempDir(), BootstrapSpec{Command: command, Timeout: time.Second}, &output)
+	err := runBootstrap(context.Background(), t.TempDir(), BootstrapSpec{Command: command, Timeout: testwait.Bound(t)}, &output)
 
 	var bootstrapErr *BootstrapError
 	if !errors.As(err, &bootstrapErr) {
@@ -598,10 +620,10 @@ func TestRunBootstrapReturnsBootstrapErrorOnNonZeroExit(t *testing.T) {
 }
 
 type bootstrapStartWriter struct {
-	taskID  string
-	started chan<- string
-	buffer  bytes.Buffer
-	once    sync.Once
+	taskID string
+	events chan<- bootstrapSiblingEvent
+	buffer bytes.Buffer
+	once   sync.Once
 }
 
 func (writer *bootstrapStartWriter) Write(p []byte) (int, error) {
@@ -611,24 +633,69 @@ func (writer *bootstrapStartWriter) Write(p []byte) (int, error) {
 	}
 	if strings.Contains(writer.buffer.String(), "bootstrap-started\n") {
 		writer.once.Do(func() {
-			writer.started <- writer.taskID
+			writer.events <- bootstrapSiblingEvent{taskID: writer.taskID, started: true}
 		})
 	}
 	return written, nil
 }
 
-func releaseBootstrap(t *testing.T, path string) {
+func releaseBootstrap(t *testing.T, round int, taskID string, path string, startedSoFar []string, ended <-chan bootstrapSiblingEvent) {
 	t.Helper()
-	release, err := os.OpenFile(path, os.O_WRONLY, 0)
+	waitingFor := fmt.Sprintf("round %d sibling %s bootstrap release; siblings started so far: %v", round, taskID, startedSoFar)
+	testwait.Poll(t, waitingFor, ended, func() (bool, string) {
+		released, err := tryWriteBootstrapRelease(path)
+		if err != nil {
+			t.Fatalf("round %d: release sibling %s bootstrap: %v; siblings started so far: %v", round, taskID, err, startedSoFar)
+		}
+		if !released {
+			return false, "sibling has not opened the release FIFO"
+		}
+		return true, "release written"
+	})
+}
+
+func tryWriteBootstrapRelease(path string) (bool, error) {
+	// A non-blocking write-only open reports that no reader exists instead of
+	// waiting forever when the sibling exited before opening its read end.
+	release, err := os.OpenFile(path, os.O_WRONLY|syscall.O_NONBLOCK, 0)
+	if errors.Is(err, syscall.ENXIO) {
+		return false, nil
+	}
 	if err != nil {
-		t.Fatalf("open bootstrap release FIFO: %v", err)
+		return false, fmt.Errorf("open bootstrap release FIFO: %w", err)
 	}
 	if _, err := io.WriteString(release, "release\n"); err != nil {
 		_ = release.Close()
-		t.Fatalf("write bootstrap release: %v", err)
+		return false, fmt.Errorf("write bootstrap release FIFO: %w", err)
 	}
 	if err := release.Close(); err != nil {
-		t.Fatalf("close bootstrap release FIFO: %v", err)
+		return false, fmt.Errorf("close bootstrap release FIFO: %w", err)
+	}
+	return true, nil
+}
+
+func TestTryWriteBootstrapReleaseReturnsWithoutAReader(t *testing.T) {
+	t.Parallel()
+	releasePath := filepath.Join(t.TempDir(), "bootstrap.release")
+	if output, err := exec.Command("mkfifo", releasePath).CombinedOutput(); err != nil {
+		t.Fatalf("create bootstrap release FIFO: %v: %s", err, output)
+	}
+
+	type releaseResult struct {
+		released bool
+		err      error
+	}
+	resultCh := make(chan releaseResult, 1)
+	go func() {
+		released, err := tryWriteBootstrapRelease(releasePath)
+		resultCh <- releaseResult{released: released, err: err}
+	}()
+	result := testwait.Until[releaseResult, struct{}](t, "release attempt without a FIFO reader", resultCh, nil)
+	if result.err != nil {
+		t.Fatalf("release attempt without a FIFO reader: %v", result.err)
+	}
+	if result.released {
+		t.Fatal("release attempt without a FIFO reader reported a write")
 	}
 }
 

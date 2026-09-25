@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0171-a-deterministic-suite-under-load
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -77,3 +77,44 @@ and the sibling round has no bound at all. This Task moves both files onto
 
 - [_prd.md](_prd.md) — Core Feature 3; Success Metrics 1-2
 - [_techspec.md](_techspec.md) — The Daemon and worktree tests
+
+## Result
+
+### Implementation
+
+- Replaced the Daemon test-local wait bound, fallback, timeout failure, and
+  `time.After` paths with `internal/testwait`; timed-out waits retain the full
+  goroutine dump supplied by `testwait`.
+- Made scheduler-start, Verification-start, published Verification-phase, and
+  published Stop-event waits observe the in-flight `TaskCycle` result channel.
+  The two cross-file scheduler-wait callers pass the same result channel.
+- Derived every non-timeout bootstrap bound from `testwait.Bound(t)` and kept
+  the timeout test's 10 ms bound against `sleep 1`.
+- Made each bootstrap serialization round consume named sibling start and
+  result events through `testwait`. FIFO release now retries a non-blocking
+  open while watching that sibling's result, so an exited sibling cannot leave
+  the test blocked in a write-only FIFO open. Added a regression test for the
+  no-reader release attempt.
+
+### Focused checks
+
+- `GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=3 -cpu 1,4 -run '^(TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement|TestTaskCycleStopRequestWhileQueuedForVerificationStartsNoCommandAndStaysResumable)$' ./internal/daemon` — exit 0.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=3 -cpu 1,4 -run '^(TestBootstrapSerializesAcrossSiblings|TestTryWriteBootstrapReleaseReturnsWithoutAReader|TestCreateRunsBootstrapAfterCopyInRunWorktreeRoot|TestCreateTaskRunsBootstrapAfterCopyInTaskWorktreeRoot|TestBootstrapFailureAfterWorkIsClassifiedApart|TestRunBootstrapReturnsBootstrapErrorOnNonZeroExit|TestRunBootstrapReturnsBootstrapErrorOnTimeout)$' ./internal/worktree` — exit 0.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache make verify-incremental` — exit 0 after rerunning with approved network access; the sandboxed attempt was blocked when an existing test reached `api.github.com`.
+- `git diff --check` — exit 0.
+
+### Acceptance evidence
+
+- Criterion 1: source inspection finds `testwait` use in both target files, no
+  `time.After`, `testWaitBound`, fallback, margin, or local timeout failure in
+  the Daemon file, and no one- or five-second bootstrap timeout in the worktree
+  file. The only behavior-under-test bootstrap bounds remain 10 ms for timeout
+  and 1 ns for the empty-command skip.
+- Criterion 2: the two queued Daemon tests and all named bootstrap tests passed
+  six focused iterations each across CPU settings 1 and 4 (`-count=3 -cpu
+  1,4`). The authored count-10 Verification command was not run; the Daemon
+  owns that gate.
+- Scope: `git diff --exit-code` reports no change to
+  `docs/references/coverage-record.json`, `_tasks.md`, or
+  `internal/worktree/worktree.go`. The diff adds one top-level test and removes
+  or renames none.
