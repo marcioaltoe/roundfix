@@ -90,16 +90,18 @@ func TestCheckBacklogUnmoved(t *testing.T) {
 		}
 	})
 
-	t.Run("green declined entry stays put", func(t *testing.T) {
+	t.Run("red declined entry must move to history", func(t *testing.T) {
 		t.Parallel()
 
 		repoRoot := writeBacklogCarrier(t)
-		writeFindingsArtifact(t, repoRoot, "docs/backlog/2026-08-06-declined.md",
+		const entryPath = "docs/backlog/2026-08-06-declined.md"
+		writeFindingsArtifact(t, repoRoot, entryPath,
 			"---\ntype: feat\nstatus: declined\ncreated: 2026-08-06\nspec: null\nreason: superseded\n---\n\n# Declined\n")
 
 		result := checkBacklogCarrier(t, repoRoot)
-		if findings := findingsWithCode(result, speccheck.CodeBacklogUnmoved); len(findings) != 0 {
-			t.Fatalf("%s findings = %#v, want none", speccheck.CodeBacklogUnmoved, findings)
+		finding := requireRenderedFinding(t, result, speccheck.CodeBacklogUnmoved, entryPath, 2)
+		if !strings.Contains(finding.Fix, "docs/history/backlog/") {
+			t.Fatalf("fix = %q, want history destination", finding.Fix)
 		}
 	})
 
@@ -150,6 +152,24 @@ func TestCheckBacklogUnmoved(t *testing.T) {
 			t.Fatalf("Check(backlog carrier) error = %q, want wrapped detector cause", err)
 		}
 	})
+}
+
+func TestTerminalBacklogEntryLeftActiveIsUnmoved(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := writeBacklogCarrier(t)
+	const entryPath = "docs/backlog/2026-08-06-terminal.md"
+	writeFindingsArtifact(t, repoRoot, entryPath,
+		"---\ntype: feat\nstatus: done\ncreated: 2026-08-06\nspec: null\nreason: null\n---\n\n# Terminal\n")
+
+	result := checkBacklogCarrier(t, repoRoot)
+	finding := requireRenderedFinding(t, result, speccheck.CodeBacklogUnmoved, entryPath, 2)
+	if !strings.Contains(finding.Fix, "docs/history/backlog/") {
+		t.Fatalf("fix = %q, want history destination", finding.Fix)
+	}
+	if !strings.Contains(finding.Fix, "reason") {
+		t.Fatalf("fix = %q, want missing reason", finding.Fix)
+	}
 }
 
 func writeBacklogCarrier(t *testing.T) string {

@@ -139,7 +139,7 @@ func TestCheckArchiveLicense(t *testing.T) {
 		{
 			name:        "red missing license",
 			frontmatter: "---\nstatus: done\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\n---\n",
-			wantSummary: "no absorbed_by license",
+			wantSummary: "neither an absorbed_by license nor complete closure fields",
 			wantLine:    1,
 		},
 		{
@@ -198,6 +198,53 @@ func TestCheckArchiveLicense(t *testing.T) {
 		}
 		if !hasSkip(result, speccheck.CodeArchiveLicense, spec.ArchiveDir(spec.ArchiveKindFinding)) {
 			t.Fatalf("Skipped = %#v, want %s missing archive", result.Skipped, speccheck.CodeArchiveLicense)
+		}
+	})
+}
+
+func TestArchivedFindingClosesWithReasonAndEvidence(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := writeFindingsCarrier(t)
+	archivedPath := archivedSpeccheckPath(spec.ArchiveKindFinding, "2026-08-06-closed-without-spec.md")
+	writeFindingsArtifact(t, repoRoot, archivedPath, "---\nstatus: closed\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\nclosure_reason: no implementation remains\nclosure_evidence: docs/references/disposition.md\n---\n\n# Closed without a Spec\n")
+
+	result := checkFindingsCarrier(t, repoRoot)
+	if findings := findingsWithCode(result, speccheck.CodeArchiveLicense); len(findings) != 0 {
+		t.Fatalf("%s findings = %#v, want closure reason and evidence accepted", speccheck.CodeArchiveLicense, findings)
+	}
+}
+
+func TestArchivedFindingClosureCannotHideAnInvalidAbsorber(t *testing.T) {
+	t.Parallel()
+
+	t.Run("invalid absorber remains an error", func(t *testing.T) {
+		t.Parallel()
+
+		repoRoot := writeFindingsCarrier(t)
+		archivedPath := archivedSpeccheckPath(spec.ArchiveKindFinding, "2026-08-06-invalid-absorber.md")
+		writeFindingsArtifact(t, repoRoot, archivedPath, "---\nstatus: done\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\nabsorbed_by: missing-owner\nclosure_reason: no implementation remains\nclosure_evidence: docs/references/disposition.md\n---\n\n# Invalid absorber\n")
+
+		result := checkFindingsCarrier(t, repoRoot)
+		finding := requireRenderedFinding(t, result, speccheck.CodeArchiveLicense, archivedPath, 5)
+		if !strings.Contains(finding.Summary, `"missing-owner"`) {
+			t.Fatalf("summary = %q, want unresolved absorber", finding.Summary)
+		}
+	})
+
+	t.Run("missing license fix names both routes", func(t *testing.T) {
+		t.Parallel()
+
+		repoRoot := writeFindingsCarrier(t)
+		archivedPath := archivedSpeccheckPath(spec.ArchiveKindFinding, "2026-08-06-missing-license.md")
+		writeFindingsArtifact(t, repoRoot, archivedPath, "---\nstatus: closed\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\n---\n\n# Missing license\n")
+
+		result := checkFindingsCarrier(t, repoRoot)
+		finding := requireRenderedFinding(t, result, speccheck.CodeArchiveLicense, archivedPath, 1)
+		for _, field := range []string{"absorbed_by", "closure_reason", "closure_evidence"} {
+			if !strings.Contains(finding.Fix, field) {
+				t.Fatalf("fix = %q, want both license routes including %s", finding.Fix, field)
+			}
 		}
 	})
 }

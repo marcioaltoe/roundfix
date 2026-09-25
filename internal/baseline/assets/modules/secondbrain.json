@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "secondbrain",
-  "version": 9,
+  "version": 10,
   "kind": "knowledge-source",
   "title": "Secondbrain guidance",
   "dependsOn": [
@@ -32,7 +32,7 @@
   "supportingGuides": [
     {
       "id": "guide.secondbrain",
-      "version": 9,
+      "version": 10,
       "path": "docs/agents/secondbrain.md",
       "template": "template.guide.secondbrain",
       "rules": [
@@ -83,7 +83,7 @@
     },
     {
       "id": "rule.secondbrain.read-only",
-      "version": 9,
+      "version": 10,
       "coverage": [
         "coverage.secondbrain",
         "coverage.universal-safety"
@@ -127,7 +127,7 @@
         {
           "id": "clause.secondbrain.capture-self-contained",
           "enforcement": "mandatory",
-          "guidance": "Write each Inbox Entry so the triaging session can act on it without the author's context: the observation, its evidence with commands and paths, and the reasoning that makes it actionable. Commit the entry at the moment of capture, because durability is the point of the door. Never commit, edit, or move an entry another session created, even in the same namespace on the same day; two projects reporting one class of defect is signal for Triage, not a merge conflict to resolve."
+          "guidance": "Write each Inbox Entry so the triaging session can act on it without the author's context: the observation, its evidence with commands and paths, and the reasoning that makes it actionable. The publication owner is an installed scheduler that commits and pushes the checkout, or the capturing session when no scheduler is installed. Under a scheduler, the session writes the entry and does not commit. Without one, the session commits and pushes only its own entry's path, never stages another session's change, and never installs a second schedule. Evidence has three levels: `captured locally`, `committed locally`, and `confirmed on the remote`; a session reports only the level it observed, and a scheduler's presence or last exit status is never confirmation. Never commit, edit, or move an entry another session created, even in the same namespace on the same day; two projects reporting one class of defect is signal for Triage, not a merge conflict to resolve."
         },
         {
           "id": "clause.secondbrain.prohibit-writes",

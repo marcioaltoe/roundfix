@@ -347,6 +347,22 @@ func TestGuidanceCompositionDocumentation(t *testing.T) {
 	}
 }
 
+func TestDocsLayoutGuideNamesEveryHistoryFamily(t *testing.T) {
+	t.Parallel()
+
+	root := baselineDocumentationRepoRoot()
+	guide := readBaselineDocumentation(t, filepath.Join(root, "docs", "agents", "docs-layout.md"))
+	for _, kind := range spec.ArchiveKinds() {
+		directory := spec.ArchiveDir(kind)
+		if directory == "" {
+			t.Fatalf("ArchiveKinds() includes %q without an archive directory", kind)
+		}
+		if !strings.Contains(guide, directory) {
+			t.Fatalf("docs layout guide does not name %s for archive kind %q", directory, kind)
+		}
+	}
+}
+
 func TestProjectConstraintDocumentation(t *testing.T) {
 	t.Parallel()
 	root := baselineDocumentationRepoRoot()

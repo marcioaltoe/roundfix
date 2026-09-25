@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:74c30a138531e9d9f509cb8c9eeda13984ac4bb348cbb66a27c53f0754246569",
-  "catalogDigest": "sha256:733a35a2044207ae192d2199dbd75329d581898b4b719d594f5b3aa4845dc68f",
+  "catalogDigest": "sha256:f2bb4e97367408cf6755ab6fbd5f2bcfe4eb4568a61b12e8c49fef0644ef5e2f",
   "modules": [
     "core",
     "context-workflow",
@@ -81,7 +81,7 @@
       "module": "context-workflow",
       "template": "template.guide.docs-layout",
       "version": "0.0.1",
-      "digest": "5e560e7fb0280192611c7e81928af5a851588d0d4bb6a7642142ce8923c0dd18"
+      "digest": "ce4abf7cc722e1c4e51ee30f7bbfd552ee582977338d19b7cf12c0507b6eeb74"
     },
     {
       "id": "root.context-workflow",
@@ -234,7 +234,7 @@
       "module": "secondbrain",
       "template": "template.guide.secondbrain",
       "version": "0.0.1",
-      "digest": "32cdc02a45dad354a8c561f574929332af55d16d9af1acc84364e99002043150"
+      "digest": "b848ce0bef534a6e807aa0337a43c086b56450f8ce151b04c4409f143411dcc4"
     },
     {
       "id": "root.repository-extension",
@@ -255,7 +255,7 @@
       "classification": "repository-command",
       "repositoryExecutable": true,
       "declarationPath": "Makefile",
-      "declarationDigest": "sha256:c7ac8350c9f9b4f3fb3095d609c5e7c642b48a3daf4e41ff438ce893418da5d7"
+      "declarationDigest": "sha256:6221211d07ede987f02071507a0fd70ede87eab77fb3ecacdc519c78ddd0ae74"
     }
   ]
 }

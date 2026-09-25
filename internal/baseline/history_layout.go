@@ -251,6 +251,7 @@ func historyLayoutAppendReviews(
 			return fmt.Errorf("classify Review Artifact %q: %w", path.Join(reviewRoot, entry.Name()), err)
 		}
 		reviewPath := path.Join(reviewRoot, entry.Name())
+		to := ""
 		switch liveness {
 		case spec.ReviewLive:
 			*retainedReviews = append(*retainedReviews, Finding{
@@ -258,24 +259,28 @@ func historyLayoutAppendReviews(
 				Path:    reviewPath,
 				Message: fmt.Sprintf("Review Artifact retained as %s: %s", liveness, reason),
 			})
-			continue
+			if reviewRoot != "docs/specs/_reviews" {
+				continue
+			}
+			to = path.Join("docs/specs/reviews", entry.Name())
 		case spec.ReviewUndecidable:
 			*retainedReviews = append(*retainedReviews, Finding{
 				Code:    historyReviewUndecidableCode,
 				Path:    reviewPath,
 				Message: fmt.Sprintf("Review Artifact retained as %s: %s", liveness, reason),
 			})
-			continue
+			if reviewRoot != "docs/specs/_reviews" {
+				continue
+			}
+			to = path.Join("docs/specs/reviews", entry.Name())
 		case spec.ReviewFinished:
-			// Finished orphan reviews relocate below.
+			to = path.Join(spec.ArchiveDir(spec.ArchiveKindReview), entry.Name())
 		default:
 			// Preserve the prior non-finished decision if ReviewLiveness gains
 			// another answer before Baseline reporting learns how to name it.
 			continue
 		}
-		from := reviewPath
-		to := path.Join(spec.ArchiveDir(spec.ArchiveKindReview), entry.Name())
-		if err := historyLayoutAppendTree(root, from, to, sources); err != nil {
+		if err := historyLayoutAppendTree(root, reviewPath, to, sources); err != nil {
 			return err
 		}
 	}

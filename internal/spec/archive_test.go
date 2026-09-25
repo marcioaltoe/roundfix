@@ -33,6 +33,7 @@ func TestArchiveDirAnswersEveryRetiredKind(t *testing.T) {
 		{name: "ADRs", kind: ArchiveKindADR, want: "docs/history/adr"},
 		{name: "backlog entries", kind: ArchiveKindBacklog, want: "docs/history/backlog"},
 		{name: "Review Artifacts", kind: ArchiveKindReview, want: "docs/history/reviews"},
+		{name: "handoffs", kind: ArchiveKindHandoff, want: "docs/history/handoffs"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -42,6 +43,27 @@ func TestArchiveDirAnswersEveryRetiredKind(t *testing.T) {
 				t.Fatalf("ArchiveDir(%q) = %q, want %q", test.kind, got, test.want)
 			}
 		})
+	}
+}
+
+func TestArchiveKindsNameEveryRetiredFamily(t *testing.T) {
+	t.Parallel()
+
+	want := []ArchiveKind{
+		ArchiveKindSpec,
+		ArchiveKindFinding,
+		ArchiveKindADR,
+		ArchiveKindBacklog,
+		ArchiveKindReview,
+		ArchiveKindHandoff,
+	}
+	if got := ArchiveKinds(); !reflect.DeepEqual(got, want) {
+		t.Fatalf("ArchiveKinds() = %#v, want %#v", got, want)
+	}
+	for _, kind := range ArchiveKinds() {
+		if got := ArchiveDir(kind); got == "" {
+			t.Fatalf("ArchiveKinds() includes %q without an archive directory", kind)
+		}
 	}
 }
 

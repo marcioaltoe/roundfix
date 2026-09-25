@@ -37,11 +37,34 @@ func ClassifyADR(content []byte) Retirement {
 
 // ClassifyBacklogEntry reports whether content is a retired typed intent entry.
 func ClassifyBacklogEntry(content []byte) Retirement {
-	status, _ := retirementStatus(content)
+	frontmatter, _, err := splitFrontmatter(content)
+	if err != nil {
+		return Retirement{}
+	}
+	var document struct {
+		Status string `yaml:"status"`
+		Spec   string `yaml:"spec"`
+		Reason string `yaml:"reason"`
+	}
+	if err := yaml.Unmarshal(frontmatter, &document); err != nil {
+		return Retirement{}
+	}
+	status := strings.ToLower(strings.TrimSpace(document.Status))
 	if status == "declined" {
 		return Retirement{Retired: true, Reason: status}
 	}
+	switch status {
+	case "done", "deprecated", "superseded", "closed", "cancelled":
+		if backlogDispositionValue(document.Spec) || backlogDispositionValue(document.Reason) {
+			return Retirement{Retired: true, Reason: status}
+		}
+	}
 	return Retirement{}
+}
+
+func backlogDispositionValue(value string) bool {
+	value = strings.TrimSpace(value)
+	return value != "" && !strings.EqualFold(value, "null")
 }
 
 func retirementStatus(content []byte) (string, []byte) {

@@ -20,7 +20,21 @@ const (
 	ArchiveKindADR     ArchiveKind = "adr"
 	ArchiveKindBacklog ArchiveKind = "backlog"
 	ArchiveKindReview  ArchiveKind = "reviews"
+	ArchiveKindHandoff ArchiveKind = "handoffs"
 )
+
+// ArchiveKinds returns every retired artifact family understood by the Spec
+// package.
+func ArchiveKinds() []ArchiveKind {
+	return []ArchiveKind{
+		ArchiveKindSpec,
+		ArchiveKindFinding,
+		ArchiveKindADR,
+		ArchiveKindBacklog,
+		ArchiveKindReview,
+		ArchiveKindHandoff,
+	}
+}
 
 // ArchiveDir returns the repository-relative directory holding retired
 // artifacts of kind. Unknown kinds return an empty directory.
@@ -36,6 +50,8 @@ func ArchiveDir(kind ArchiveKind) string {
 		return "docs/history/backlog"
 	case ArchiveKindReview:
 		return "docs/history/reviews"
+	case ArchiveKindHandoff:
+		return "docs/history/handoffs"
 	default:
 		return ""
 	}

@@ -58,6 +58,39 @@ func TestClassifyBacklogEntryRetirement(t *testing.T) {
 	}
 }
 
+func TestClassifyBacklogEntryRetiresEveryClosedStatus(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		status   string
+		evidence string
+		want     Retirement
+	}{
+		{name: "declined keeps retiring without additional evidence", status: "declined", want: Retirement{Retired: true, Reason: "declined"}},
+		{name: "done with Spec", status: "done", evidence: "spec: 0164-knowledge-lifecycle-and-capture\n", want: Retirement{Retired: true, Reason: "done"}},
+		{name: "deprecated with reason", status: "deprecated", evidence: "reason: replaced by current guidance\n", want: Retirement{Retired: true, Reason: "deprecated"}},
+		{name: "superseded with Spec", status: "superseded", evidence: "spec: 0164-knowledge-lifecycle-and-capture\n", want: Retirement{Retired: true, Reason: "superseded"}},
+		{name: "closed with reason", status: "closed", evidence: "reason: no implementation remains\n", want: Retirement{Retired: true, Reason: "closed"}},
+		{name: "cancelled with Spec", status: "cancelled", evidence: "spec: 0164-knowledge-lifecycle-and-capture\n", want: Retirement{Retired: true, Reason: "cancelled"}},
+		{name: "terminal without evidence", status: "done", evidence: "spec: null\nreason: null\n", want: Retirement{}},
+		{name: "terminal with blank evidence", status: "closed", evidence: "spec: '  '\nreason: '  '\n", want: Retirement{}},
+		{name: "open never retires", status: "open", evidence: "reason: deliberately retained\n", want: Retirement{}},
+		{name: "promoted never retires", status: "promoted", evidence: "spec: 0164-knowledge-lifecycle-and-capture\n", want: Retirement{}},
+		{name: "unknown never retires", status: "blocked", evidence: "reason: unknown is not terminal\n", want: Retirement{}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			content := "---\nstatus: " + test.status + "\n" + test.evidence + "---\n\n# Backlog Entry\n"
+			if got := ClassifyBacklogEntry([]byte(content)); got != test.want {
+				t.Fatalf("ClassifyBacklogEntry() = %+v, want %+v", got, test.want)
+			}
+		})
+	}
+}
+
 func retirementDocument(status string) string {
 	return "---\nstatus: " + status + "\n---\n\n# Document\n"
 }

@@ -145,31 +145,23 @@ func TestDiscoverHistoryLayoutClassifiesActiveDocuments(t *testing.T) {
 	historyAssertUnchanged(t, repo, before)
 }
 
-func TestDiscoverHistoryLayoutClassifiesOrphanReviews(t *testing.T) {
+func TestHistoryLayoutRelocatesLegacyReviewRootWhateverItsLiveness(t *testing.T) {
 	t.Parallel()
 
-	repo, mainHead := historyGitRepo(t)
-	liveHead := historyBranchCommit(t, repo, "feature/live")
-	gittest.Run(t, repo, "switch", "main")
-
-	finishedReview := filepath.Join(repo, "docs", "specs", "reviews", "pr-101")
-	historyPersistRound(t, finishedReview, "feature/merged", mainHead)
+	repo := t.TempDir()
+	legacyLiveReview := filepath.Join(repo, "docs", "specs", "_reviews", "pr-101")
+	historyPersistRound(t, legacyLiveReview, "feature/live", "11111111")
+	historyWriteReviewOutcome(t, legacyLiveReview, "open", "")
+	legacyUnknownReview := filepath.Join(repo, "docs", "specs", "_reviews", "pr-102")
+	historyPersistRound(t, legacyUnknownReview, "feature/unknown", "22222222")
+	legacyFinishedReview := filepath.Join(repo, "docs", "specs", "_reviews", "pr-103")
+	historyPersistRound(t, legacyFinishedReview, "feature/closed", "33333333")
+	historyWriteReviewOutcome(t, legacyFinishedReview, "closed", "")
 	historyWriteFiles(t, repo, map[string]string{
-		"docs/specs/reviews/pr-101/issues/001.md": "finished issue\n",
+		"docs/specs/_reviews/pr-101/issues/001.md": "live retained report\n",
+		"docs/specs/_reviews/pr-102/issues/001.md": "unknown retained report\n",
+		"docs/specs/_reviews/pr-103/issues/001.md": "finished retained report\n",
 	})
-
-	liveReview := filepath.Join(repo, "docs", "specs", "reviews", "pr-102")
-	historyPersistRound(t, liveReview, "feature/live", liveHead)
-
-	undecidableReview := filepath.Join(repo, "docs", "specs", "reviews", "pr-103")
-	historyPersistRound(t, undecidableReview, "feature/unknown", mainHead)
-	historyReplaceRoundHead(t, undecidableReview, mainHead, "")
-
-	legacyFinishedReview := filepath.Join(repo, "docs", "specs", "_reviews", "pr-104")
-	historyPersistRound(t, legacyFinishedReview, "feature/merged", mainHead)
-
-	specOwnedReview := filepath.Join(repo, "docs", "specs", "0094-widget", "reviews")
-	historyPersistRound(t, specOwnedReview, "feature/merged", mainHead)
 
 	before := historySnapshot(t, repo)
 	got, collisions, err := DiscoverHistoryLayout(context.Background(), repo)
@@ -179,24 +171,53 @@ func TestDiscoverHistoryLayoutClassifiesOrphanReviews(t *testing.T) {
 	if len(collisions) != 0 {
 		t.Fatalf("DiscoverHistoryLayout() collisions = %#v, want none", collisions)
 	}
-	if len(got) != 3 {
-		t.Fatalf("DiscoverHistoryLayout() reported %d relocations, want 3: %#v", len(got), got)
+	wantDestinations := map[string]string{
+		"docs/specs/_reviews/pr-101/": "docs/specs/reviews/pr-101/",
+		"docs/specs/_reviews/pr-102/": "docs/specs/reviews/pr-102/",
+		"docs/specs/_reviews/pr-103/": "docs/history/reviews/pr-103/",
 	}
+	seen := make(map[string]bool, len(wantDestinations))
 	for _, relocation := range got {
-		if relocation.From != "docs/specs/reviews/pr-101/issues/001.md" &&
-			!strings.HasPrefix(relocation.From, "docs/specs/reviews/pr-101/round-001/") &&
-			!strings.HasPrefix(relocation.From, "docs/specs/_reviews/pr-104/round-001/") {
-			t.Fatalf("DiscoverHistoryLayout() relocated non-finished or Spec-owned Review Artifact file %q", relocation.From)
-		}
-		if strings.HasPrefix(relocation.From, "docs/specs/_reviews/") {
-			if !strings.HasPrefix(relocation.To, "docs/history/reviews/pr-104/") {
-				t.Fatalf("legacy review relocation destination = %q", relocation.To)
+		matched := false
+		for sourcePrefix, destinationPrefix := range wantDestinations {
+			if !strings.HasPrefix(relocation.From, sourcePrefix) {
+				continue
 			}
-		} else if !strings.HasPrefix(relocation.To, "docs/history/reviews/pr-101/") {
-			t.Fatalf("live review relocation destination = %q", relocation.To)
+			matched = true
+			seen[sourcePrefix] = true
+			want := destinationPrefix + strings.TrimPrefix(relocation.From, sourcePrefix)
+			if relocation.To != want {
+				t.Fatalf("legacy Review Artifact relocation = %q -> %q, want destination %q", relocation.From, relocation.To, want)
+			}
+			break
+		}
+		if !matched {
+			t.Fatalf("DiscoverHistoryLayout() reported unexpected relocation %#v", relocation)
 		}
 		if relocation.ContentIdentity == "" {
 			t.Fatalf("review relocation %#v has no content identity", relocation)
+		}
+	}
+	for sourcePrefix := range wantDestinations {
+		if !seen[sourcePrefix] {
+			t.Errorf("DiscoverHistoryLayout() reported no relocation below %q", sourcePrefix)
+		}
+	}
+
+	_, findings, err := planHistoryMoves(context.Background(), repo)
+	if err != nil {
+		t.Fatalf("planHistoryMoves() error = %v", err)
+	}
+	wantFindings := []Finding{
+		{Code: historyReviewLiveCode, Path: "docs/specs/_reviews/pr-101"},
+		{Code: historyReviewUndecidableCode, Path: "docs/specs/_reviews/pr-102"},
+	}
+	if len(findings) != len(wantFindings) {
+		t.Fatalf("retained review findings = %#v, want %#v", findings, wantFindings)
+	}
+	for index, want := range wantFindings {
+		if findings[index].Code != want.Code || findings[index].Path != want.Path {
+			t.Errorf("retained review finding %d = %#v, want code %q path %q", index, findings[index], want.Code, want.Path)
 		}
 	}
 	historyAssertUnchanged(t, repo, before)
@@ -211,9 +232,9 @@ func TestRetainedReviewReport(t *testing.T) {
 
 	liveReview := filepath.Join(repo, "docs", "specs", "reviews", "pr-201")
 	historyPersistRound(t, liveReview, "feature/live-report", liveHead)
+	historyWriteReviewOutcome(t, liveReview, "open", "")
 	undecidableReview := filepath.Join(repo, "docs", "specs", "reviews", "pr-202")
 	historyPersistRound(t, undecidableReview, "feature/unknown", liveHead)
-	historyReplaceRoundHead(t, undecidableReview, liveHead, "")
 
 	before := historySnapshot(t, repo)
 	relocations, collisions, err := DiscoverHistoryLayout(context.Background(), repo)
@@ -249,8 +270,7 @@ func TestRetainedReviewReport(t *testing.T) {
 			t.Errorf("retained review finding %d = %#v, want code %q path %q", index, finding, want[index].Code, want[index].Path)
 		}
 		if !strings.Contains(finding.Message, strings.TrimPrefix(finding.Code, "baseline.history.review.")) ||
-			!strings.Contains(finding.Message, "newest Round") &&
-				!strings.Contains(finding.Message, "recorded head") {
+			!strings.Contains(finding.Message, "recorded outcome") {
 			t.Errorf("retained review finding %d lacks liveness answer or classifier reason: %#v", index, finding)
 		}
 	}
@@ -395,20 +415,15 @@ func historyPersistRound(t *testing.T, reviewDir string, branch string, head str
 	}
 }
 
-func historyReplaceRoundHead(t *testing.T, reviewDir string, oldHead string, newHead string) {
+func historyWriteReviewOutcome(t *testing.T, reviewDir string, state string, mergeCommit string) {
 	t.Helper()
 
-	path := filepath.Join(reviewDir, "round-001", "round.md")
-	content, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read Review Artifact metadata fixture: %v", err)
-	}
-	replaced := strings.Replace(string(content), "head_sha: "+oldHead, "head_sha: \""+newHead+"\"", 1)
-	if replaced == string(content) {
-		t.Fatalf("Review Artifact metadata fixture %q has no %q head record", path, oldHead)
-	}
-	content = []byte(replaced)
-	if err := os.WriteFile(path, content, 0o644); err != nil {
-		t.Fatalf("write Review Artifact metadata fixture: %v", err)
+	content := "---\n" +
+		"pull_request_state: " + state + "\n" +
+		"merge_commit: \"" + mergeCommit + "\"\n" +
+		"recorded_at: 2026-09-24T00:00:00Z\n" +
+		"---\n"
+	if err := os.WriteFile(filepath.Join(reviewDir, "outcome.md"), []byte(content), 0o644); err != nil {
+		t.Fatalf("write Review Artifact outcome fixture: %v", err)
 	}
 }
