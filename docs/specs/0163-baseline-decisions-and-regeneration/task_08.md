@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0163-baseline-decisions-and-regeneration
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -39,3 +39,22 @@ Corrective Task from the QA gate of 2026-09-25: the repository Verification fail
 ## References
 
 - [_techspec.md](_techspec.md) — Build Order
+
+## Result
+
+- Implementation: `parsePublishedBaselineExample` now sends `skills reconcile`
+  examples through `parseBaselineSkillsReconcileCommand`. No production code or
+  published example changed.
+- Malformed-input coverage: `TestBaselineSkillsReconcileExampleParses` passes an
+  incomplete `--revision` flag through the documentation-example dispatcher and
+  requires the reconcile parser's validation error.
+- Pre-change signal: `rtk env GOCACHE=/private/tmp/roundfix-task08-gocache go test -count=1 -run '^TestBaselineExamplesParse$' ./internal/cli` exited 1 because the published reconcile example fell through to the baseline parser as an unexpected `skills` argument.
+- Focused check: `rtk env GOCACHE=/private/tmp/roundfix-task08-gocache go test -count=1 -run '^TestBaselineSkillsReconcileExampleParses$' ./internal/cli` exited 0.
+- Acceptance criterion evidence: `rtk env GOCACHE=/private/tmp/roundfix-task08-gocache go test -count=1 -run '^TestBaselineExamplesParse$' ./internal/cli` exited 0 with the documented reconcile example parsed by the real command parser.
+- Incremental gate: `rtk env GOCACHE=/private/tmp/roundfix-task08-gocache make verify-incremental` did not complete because the sandbox blocked an attempted connection to `api.github.com`; no passing result is claimed. `go vet` and the package results emitted before the block reported no failures.
+- Daemon Verification: not run; the Daemon owns the declared combined command.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260925T153433Z_8603eb3e79157622`
+- Source commit: `ba54399d8d69208a3ffe331c4ba70653051f202c`
