@@ -483,6 +483,95 @@ func TestProjectDecisionPrompts(t *testing.T) {
 	})
 }
 
+func TestHTTPContractModeChangeRetainsExceptionsAndSource(t *testing.T) {
+	t.Parallel()
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load Baseline catalog: %v", err)
+	}
+	current := archivedFindingHTTPContractDecision()
+	before := archivedFindingHTTPContractDecision()
+	want := archivedFindingHTTPContractDecision()
+	want["mode"] = "REST"
+
+	got, err := promptBaselineDecision(
+		context.Background(),
+		&baselineHumanPrompt{reader: bufioReader("2\n1\n"), writer: &bytes.Buffer{}},
+		catalog,
+		"http.contract",
+		map[string]any{"http.contract": current},
+	)
+	if err != nil {
+		t.Fatalf("change HTTP Contract mode: %v", err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("changed HTTP Contract = %#v, want %#v", got, want)
+	}
+	if !reflect.DeepEqual(current, before) {
+		t.Fatalf("mode change mutated stored HTTP Contract: got %#v, want %#v", current, before)
+	}
+}
+
+func TestHTTPContractModeChangeReviewNamesKeptExceptions(t *testing.T) {
+	t.Parallel()
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load Baseline catalog: %v", err)
+	}
+	var output bytes.Buffer
+	_, err = promptBaselineDecision(
+		context.Background(),
+		&baselineHumanPrompt{reader: bufioReader("2\n1\n"), writer: &output},
+		catalog,
+		"http.contract",
+		map[string]any{"http.contract": archivedFindingHTTPContractDecision()},
+	)
+	if err != nil {
+		t.Fatalf("review HTTP Contract mode change: %v", err)
+	}
+
+	var changeLine string
+	for _, line := range strings.Split(output.String(), "\n") {
+		if strings.Contains(line, "Change http.contract") {
+			changeLine = line
+			break
+		}
+	}
+	if changeLine == "" {
+		t.Fatalf("HTTP Contract review has no change line:\n%s", output.String())
+	}
+	for _, scope := range []string{"/api/auth/*", "/health", "/openapi.json", "/reference"} {
+		if !strings.Contains(changeLine, scope) {
+			t.Errorf("HTTP Contract change review line %q does not name kept scope %q", changeLine, scope)
+		}
+	}
+}
+
+func TestHTTPContractExplicitValueStillReplacesExceptions(t *testing.T) {
+	t.Parallel()
+	explicit := archivedFindingHTTPContractDecision()
+	exceptions := explicit["exceptions"].([]any)
+	explicit["exceptions"] = append([]any(nil), exceptions[:len(exceptions)-1]...)
+	encoded, err := json.Marshal(explicit)
+	if err != nil {
+		t.Fatalf("encode explicit HTTP Contract: %v", err)
+	}
+	request, err := parseBaselinePlanCommand([]string{
+		"--decision", "http.contract=" + string(encoded),
+	})
+	if err != nil {
+		t.Fatalf("parse explicit HTTP Contract: %v", err)
+	}
+	decisions, _, err := loadBaselinePlanDecisions(request)
+	if err != nil {
+		t.Fatalf("load explicit HTTP Contract: %v", err)
+	}
+	want := []baseline.DecisionValue{{ID: "http.contract", Value: explicit}}
+	if !reflect.DeepEqual(decisions, want) {
+		t.Fatalf("explicit decisions = %#v, want exact replacement %#v", decisions, want)
+	}
+}
+
 func TestToolingAuthorityNoPrompt(t *testing.T) {
 	t.Parallel()
 	catalog, err := baseline.LoadEmbeddedCatalog()
@@ -952,6 +1041,60 @@ func TestConsolidatedReviewEditsManagedClassification(t *testing.T) {
 	if !strings.Contains(stdout.String(), "Consolidated Change Plan review") ||
 		strings.Contains(stdout.String(), "Category: decision") {
 		t.Fatalf("edited managed classification did not produce a valid review:\n%s", stdout.String())
+	}
+}
+
+func TestHumanGreenfieldRefusesBeforeClassification(t *testing.T) {
+	t.Parallel()
+
+	repo := greenfieldStaleManagedHumanRepository(t)
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load embedded catalog: %v", err)
+	}
+	profile, err := baseline.ResolveProfile(repo, "go-cli-tui", catalog)
+	if err != nil {
+		t.Fatalf("resolve Go CLI Profile: %v", err)
+	}
+	inspection, err := baseline.InspectRepository(context.Background(), repo, nil)
+	if err != nil {
+		t.Fatalf("inspect stale managed repository: %v", err)
+	}
+	var prompts bytes.Buffer
+	analyzer := &forbiddenBaselineSemanticAnalyzer{t: t}
+	_, err = promptBaselineClassification(
+		context.Background(),
+		&baselineHumanPrompt{reader: bufioReader(""), writer: &prompts},
+		io.Discard,
+		inspection,
+		baseline.PreservationModeGreenfield,
+		catalog,
+		profile,
+		humanBaselineFixtureDecisions(),
+		analyzer,
+	)
+	var actionErr *baselineHumanActionError
+	if !errors.As(err, &actionErr) {
+		t.Fatalf("Greenfield stale managed error = %v, want human action", err)
+	}
+	if !strings.Contains(actionErr.result.NextAction, "preservation.mode=preservation") {
+		t.Fatalf("Greenfield stale managed next action = %q", actionErr.result.NextAction)
+	}
+	found := false
+	for _, finding := range actionErr.result.Warnings {
+		if finding.Code == "baseline.preservation.greenfield.managed-source-retained" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("Greenfield stale managed finding missing: %+v", actionErr.result.Warnings)
+	}
+	if prompts.Len() != 0 {
+		t.Fatalf("Greenfield stale managed path prompted for classification:\n%s", prompts.String())
+	}
+	if analyzer.called {
+		t.Fatal("Greenfield stale managed path invoked semantic classification")
 	}
 }
 
@@ -1442,6 +1585,38 @@ func newHumanBaselineRepository(t *testing.T) string {
 	return repo
 }
 
+func greenfieldStaleManagedHumanRepository(t *testing.T) string {
+	t.Helper()
+	repo := newBaselineUpdateRepository(t)
+	manifest := ReadBaselineSetupManifest(t, repo)
+	for _, artifact := range manifest.ManagedArtifacts {
+		if artifact.Kind != "guide" {
+			continue
+		}
+		path := filepath.Join(repo, filepath.FromSlash(artifact.Path))
+		content, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read managed guide %q: %v", artifact.Path, err)
+		}
+		endMarker := []byte("<!-- setup-context-driven:end id=" + artifact.ID + " -->")
+		end := bytes.Index(content, endMarker)
+		if end < 0 {
+			t.Fatalf("managed guide %q lacks end marker for %q", artifact.Path, artifact.ID)
+		}
+		content = append(
+			append([]byte(nil), content[:end]...),
+			append([]byte("stale managed guidance\n"), content[end:]...)...,
+		)
+		if err := os.WriteFile(path, content, 0o644); err != nil {
+			t.Fatalf("write stale managed guide %q: %v", artifact.Path, err)
+		}
+		commitBaselinePlanTestRepository(t, repo)
+		return repo
+	}
+	t.Fatal("adopted fixture has no managed guide")
+	return ""
+}
+
 func divergencePromptFixture(
 	t *testing.T,
 ) (string, *baseline.Catalog, baseline.ResolvedProfile) {
@@ -1558,6 +1733,42 @@ func newCLIProjectDecisionRepository(t *testing.T) string {
 
 func projectDecisionHumanAnswers() string {
 	return "\nmake verify\n\n\n\n\n\n\n\n2\n2\n2\n"
+}
+
+func archivedFindingHTTPContractDecision() map[string]any {
+	return map[string]any{
+		"mode": "Post-only",
+		"exceptions": []any{
+			map[string]any{
+				"scope":   "/api/auth/*",
+				"methods": []any{"GET", "POST"},
+				"owner":   "Better Auth",
+				"reason":  "Provider protocol routes require GET and POST semantics.",
+			},
+			map[string]any{
+				"scope":   "/health",
+				"methods": []any{"GET"},
+				"owner":   "operations",
+				"reason":  "Health probes require read semantics.",
+			},
+			map[string]any{
+				"scope":   "/openapi.json",
+				"methods": []any{"GET"},
+				"owner":   "API documentation",
+				"reason":  "The generated API description is read-only.",
+			},
+			map[string]any{
+				"scope":   "/reference",
+				"methods": []any{"GET"},
+				"owner":   "API documentation",
+				"reason":  "The API reference is read-only.",
+			},
+		},
+		"source": map[string]any{
+			"digest": "397bc399",
+			"path":   "packages/backend/src/infra/controllers/http/app.ts",
+		},
+	}
 }
 
 func buildCLIProjectDecisionPlan(

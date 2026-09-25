@@ -20,6 +20,7 @@ const (
 	derivedOwnershipYAML = "_ownership.yaml"
 
 	sanctionedBaselineDigestCommand = "make baseline-digests"
+	sanctionedSkillsSyncCommand     = "make skills-sync"
 	baselineDigestRegenerationHint  = "run '" + sanctionedBaselineDigestCommand + "'"
 )
 
@@ -60,6 +61,10 @@ func OutputsFor(repoRoot string, command string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	command = strings.TrimSpace(command)
+	if command == sanctionedSkillsSyncCommand {
+		return outputsForSkillsSync(root)
+	}
 	scanRoots, err := readDerivedDigestScanRoots(root)
 	if err != nil {
 		return nil, err
@@ -72,7 +77,6 @@ func OutputsFor(repoRoot string, command string) ([]string, error) {
 		return nil, fmt.Errorf("resolve derived ownership: %w", err)
 	}
 
-	command = strings.TrimSpace(command)
 	outputs := make([]string, 0)
 	for artifactPath, record := range resolved {
 		ownedCommand, ownsOutput := commandForDerivedOwnership(record)
@@ -90,6 +94,86 @@ func OutputsFor(repoRoot string, command string) ([]string, error) {
 	}
 	sort.Strings(outputs)
 	return outputs, nil
+}
+
+func outputsForSkillsSync(repoRoot string) ([]string, error) {
+	const ownershipPath = "skills/_ownership.yml"
+	record, err := readDerivedOwnershipRecord(os.DirFS(repoRoot), ownershipPath)
+	if err != nil {
+		return nil, fmt.Errorf("read skill ownership: %w", err)
+	}
+	command, ownsOutputs := commandForDerivedOwnership(record)
+	if !ownsOutputs || command != sanctionedSkillsSyncCommand {
+		return nil, fmt.Errorf(
+			"ownership record %q does not assign %q",
+			ownershipPath,
+			sanctionedSkillsSyncCommand,
+		)
+	}
+
+	ownedSkills, err := readOwnedSkills(repoRoot)
+	if err != nil {
+		return nil, err
+	}
+	fileSystem := os.DirFS(repoRoot)
+	outputs := make([]string, 0)
+	for _, skill := range ownedSkills {
+		skillRoot := path.Join("skills", skill)
+		if err := fs.WalkDir(fileSystem, skillRoot, func(filePath string, entry fs.DirEntry, walkErr error) error {
+			if walkErr != nil {
+				return fmt.Errorf("walk owned skill mirror %q: %w", filePath, walkErr)
+			}
+			if entry.IsDir() {
+				return nil
+			}
+			info, err := entry.Info()
+			if err != nil {
+				return fmt.Errorf("stat owned skill mirror %q: %w", filePath, err)
+			}
+			if info.Mode().IsRegular() {
+				outputs = append(outputs, filePath)
+			}
+			return nil
+		}); err != nil {
+			return nil, err
+		}
+	}
+	sort.Strings(outputs)
+	return outputs, nil
+}
+
+func readOwnedSkills(repoRoot string) ([]string, error) {
+	content, err := os.ReadFile(filepath.Join(repoRoot, "Makefile"))
+	if err != nil {
+		return nil, fmt.Errorf("read Makefile OWNED_SKILLS: %w", err)
+	}
+
+	const assignment = "OWNED_SKILLS :="
+	for _, line := range strings.Split(string(content), "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, assignment) {
+			continue
+		}
+		fields := strings.Fields(strings.TrimSpace(strings.TrimPrefix(line, assignment)))
+		if len(fields) == 0 {
+			return nil, errors.New("Makefile OWNED_SKILLS is empty")
+		}
+		ownedSkills := make([]string, 0, len(fields))
+		seen := make(map[string]struct{}, len(fields))
+		for _, field := range fields {
+			clean := path.Clean(field)
+			if clean != field || clean == "." || strings.ContainsAny(clean, `/\\`) {
+				return nil, fmt.Errorf("owned skill %q is not a directory name", field)
+			}
+			if _, duplicate := seen[clean]; duplicate {
+				return nil, fmt.Errorf("owned skill %q is declared more than once", field)
+			}
+			seen[clean] = struct{}{}
+			ownedSkills = append(ownedSkills, clean)
+		}
+		return ownedSkills, nil
+	}
+	return nil, errors.New("Makefile has no OWNED_SKILLS assignment")
 }
 
 func readDerivedDigestScanRoots(repoRoot string) ([]string, error) {

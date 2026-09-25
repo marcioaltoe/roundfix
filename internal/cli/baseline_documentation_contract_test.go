@@ -52,6 +52,19 @@ func TestBaselineExamplesParse(t *testing.T) {
 	}
 }
 
+func TestBaselineSkillsReconcileExampleParses(t *testing.T) {
+	t.Parallel()
+	err := parsePublishedBaselineExample([]string{
+		"skills", "reconcile",
+		"--profile", "go-cli-tui",
+		"--source", "example/skills",
+		"--revision",
+	}, "")
+	if err == nil || !strings.Contains(err.Error(), "invalid baseline skills reconcile arguments") {
+		t.Fatalf("malformed reconcile example error = %v", err)
+	}
+}
+
 func parsePublishedBaselineExample(args []string, workDir string) error {
 	switch {
 	case len(args) == 0:
@@ -80,6 +93,9 @@ func parsePublishedBaselineExample(args []string, workDir string) error {
 		return err
 	case len(args) >= 2 && args[0] == "skills" && args[1] == "restore":
 		_, err := parseBaselineSkillsRestoreCommand(args[2:])
+		return err
+	case len(args) >= 2 && args[0] == "skills" && args[1] == "reconcile":
+		_, err := parseBaselineSkillsReconcileCommand(args[2:])
 		return err
 	case len(args) >= 2 && args[0] == "assets" && args[1] == "sync":
 		_, err := parseBaselineAssetsSyncCommand(args[2:])

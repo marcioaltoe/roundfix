@@ -1,0 +1,3 @@
+owner: dedicated
+command: make skills-sync
+reason: Mirrors of the Roundfix-owned skills are regenerated from their canonical authorial copies.

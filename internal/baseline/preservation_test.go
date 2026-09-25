@@ -53,6 +53,101 @@ func TestGreenfieldPlanBacksUpWithoutImport(t *testing.T) {
 	}
 }
 
+func TestGreenfieldWithStaleManagedSourceRefusesNamingPreservation(t *testing.T) {
+	t.Parallel()
+
+	repo := newInspectionRepository(t)
+	catalog, profile, decisions, modules, artifacts := preservationProfileFixture(t, repo)
+	stalePath := writeStaleManagedCarrier(
+		t,
+		repo,
+		catalog,
+		profile,
+		decisions,
+		modules,
+		artifacts,
+	)
+	commitInspectionRepository(t, repo, "seed stale managed carrier")
+
+	inspection := inspectPreservationRepository(t, repo)
+	classifications, err := classifyCarriers(
+		repo,
+		inspection.Snapshot.Carriers,
+		catalog,
+		artifacts,
+	)
+	if err != nil {
+		t.Fatalf("classify stale managed carrier: %v", err)
+	}
+	plan, err := planRootPreservationWithCatalog(
+		inspection,
+		RootPreservationRequest{
+			Mode:             PreservationModeGreenfield,
+			managedArtifacts: artifacts,
+			classifyCarriers: true,
+			classifications:  classifications,
+		},
+		catalog,
+	)
+	if err != nil {
+		t.Fatalf("plan Greenfield with stale managed source: %v", err)
+	}
+	if plan.State != PreservationStateBlocked {
+		t.Fatalf("Greenfield stale managed state = %q, want %q", plan.State, PreservationStateBlocked)
+	}
+	if !hasRepositoryFinding(
+		plan.Findings,
+		"baseline.preservation.greenfield.managed-source-retained",
+		stalePath,
+	) {
+		t.Fatalf("Greenfield stale managed finding missing: %+v", plan.Findings)
+	}
+	if !strings.Contains(plan.NextAction, "preservation.mode=preservation") {
+		t.Fatalf("Greenfield stale managed next action = %q", plan.NextAction)
+	}
+	if plan.DecisionSkeleton != nil {
+		t.Fatalf("Greenfield stale managed plan emitted decision skeleton: %+v", plan.DecisionSkeleton)
+	}
+	if len(plan.SourceBaseline.Entries) == 0 || plan.SourceBaseline.Entries[0].Path != stalePath {
+		t.Fatalf("Greenfield stale managed source was discarded: %+v", plan.SourceBaseline.Entries)
+	}
+}
+
+func TestGreenfieldWithoutStaleManagedSourceStillPlans(t *testing.T) {
+	t.Parallel()
+
+	repo := newInspectionRepository(t)
+	writeInspectionFile(t, repo, "README.md", "# Greenfield repository\n")
+	commitInspectionRepository(t, repo, "seed Greenfield repository")
+	catalog, _, _, _, artifacts := preservationProfileFixture(t, repo)
+	inspection := inspectPreservationRepository(t, repo)
+	classifications, err := classifyCarriers(
+		repo,
+		inspection.Snapshot.Carriers,
+		catalog,
+		artifacts,
+	)
+	if err != nil {
+		t.Fatalf("classify Greenfield carriers: %v", err)
+	}
+	plan, err := planRootPreservationWithCatalog(
+		inspection,
+		RootPreservationRequest{
+			Mode:             PreservationModeGreenfield,
+			managedArtifacts: artifacts,
+			classifyCarriers: true,
+			classifications:  classifications,
+		},
+		catalog,
+	)
+	if err != nil {
+		t.Fatalf("plan Greenfield without stale managed source: %v", err)
+	}
+	if plan.State != PreservationStateReady || plan.DecisionSkeleton != nil {
+		t.Fatalf("Greenfield without stale managed source plan = %+v", plan)
+	}
+}
+
 func TestManagedRefreshPlanNeedsNoClassificationInputOrBackup(t *testing.T) {
 	t.Parallel()
 
@@ -890,6 +985,62 @@ func inspectPreservationRepository(t *testing.T, repo string) RepositoryInspecti
 		t.Fatalf("inspect preservation repository: %v", err)
 	}
 	return inspection
+}
+
+func preservationProfileFixture(
+	t *testing.T,
+	repo string,
+) (*Catalog, ResolvedProfile, []DecisionValue, []string, []plannedArtifact) {
+	t.Helper()
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load embedded catalog: %v", err)
+	}
+	profile, err := ResolveProfile(repo, "go-cli-tui", catalog)
+	if err != nil {
+		t.Fatalf("resolve Go CLI Profile: %v", err)
+	}
+	decisions := planTestDecisions()
+	modules, artifacts, err := resolveManagedArtifacts(catalog, profile, decisions, false)
+	if err != nil {
+		t.Fatalf("resolve managed artifacts: %v", err)
+	}
+	return catalog, profile, decisions, modules, artifacts
+}
+
+func writeStaleManagedCarrier(
+	t *testing.T,
+	repo string,
+	catalog *Catalog,
+	profile ResolvedProfile,
+	decisions []DecisionValue,
+	modules []string,
+	artifacts []plannedArtifact,
+) string {
+	t.Helper()
+	manifestBytes, err := marshalSetupManifestBytes(buildSetupManifest(
+		catalog,
+		profile,
+		decisions,
+		modules,
+		artifacts,
+		nil,
+	))
+	if err != nil {
+		t.Fatalf("marshal Setup Manifest: %v", err)
+	}
+	writeInspectionFile(t, repo, manifestPath, string(append(manifestBytes, '\n')))
+	for _, artifact := range artifacts {
+		if artifact.Kind != "guide" {
+			continue
+		}
+		stale := artifact
+		stale.Body += "\nstale managed guidance"
+		writeInspectionFile(t, repo, stale.Path, upsertManagedBlock("", stale))
+		return stale.Path
+	}
+	t.Fatal("Profile has no managed guide artifact")
+	return ""
 }
 
 func writeManagedRefreshManifest(t *testing.T, repo string, artifact ManifestArtifact) {

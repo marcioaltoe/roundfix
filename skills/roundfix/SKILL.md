@@ -477,8 +477,14 @@ Use explicit maintenance operations only when the user placed them in scope:
 roundfix baseline profile show <profile-id> --format json
 roundfix baseline profile validate <profile-id> --format text
 roundfix baseline skills restore --repo . --profile <built-in-id> --skill <skill-name> --format json
+roundfix baseline skills reconcile --repo . --profile <built-in-id> --source <owner/repo> --revision <40-hex-commit> --format json
 roundfix baseline assets sync --source-dir <canonical-setups> --check --format json
 ```
+
+`roundfix baseline skills reconcile` removes only lock entries absent at the
+selected immutable commit. It preserves present, moved, unrelated, and
+required entries, and requires the same reviewed Plan Digest confirmation as
+skill restoration before applying a non-empty plan.
 
 Editing Roundfix-owned skill content no longer requires a Baseline digest or
 characterization-corpus regeneration step: compatibility readiness depends on

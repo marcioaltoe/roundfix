@@ -102,6 +102,67 @@ func TestOutputsForCommand(t *testing.T) {
 	})
 }
 
+func TestOutputsForSkillsSyncListsOwnedSkillMirrors(t *testing.T) {
+	t.Parallel()
+
+	repository := newSkillsSyncOwnershipRepository(t, "roundfix setup-context-driven")
+	writeCleanupOwnershipFile(t, repository, "skills/roundfix/SKILL.md", "roundfix\n")
+	writeCleanupOwnershipFile(t, repository, "skills/roundfix/references/guide.md", "guide\n")
+	writeCleanupOwnershipFile(t, repository, "skills/setup-context-driven/SKILL.md", "setup\n")
+
+	got, err := OutputsFor(repository, "make skills-sync")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{
+		"skills/roundfix/SKILL.md",
+		"skills/roundfix/references/guide.md",
+		"skills/setup-context-driven/SKILL.md",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("make skills-sync outputs = %v, want %v", got, want)
+	}
+}
+
+func TestOutputsForSkillsSyncExcludesAuthorialAndUnownedFiles(t *testing.T) {
+	t.Parallel()
+
+	repository := newSkillsSyncOwnershipRepository(t, "roundfix")
+	writeCleanupOwnershipFile(t, repository, "skills/roundfix/SKILL.md", "mirror\n")
+	writeCleanupOwnershipFile(t, repository, ".agents/skills/roundfix/SKILL.md", "authorial\n")
+	writeCleanupOwnershipFile(t, repository, "skills/repository.go", "package skills\n")
+	writeCleanupOwnershipFile(t, repository, "skills/testdata/fixture.txt", "fixture\n")
+	writeCleanupOwnershipFile(t, repository, "skills/recommended.txt", "recommended\n")
+	writeCleanupOwnershipFile(t, repository, "skills/unowned/SKILL.md", "unowned\n")
+
+	got, err := OutputsFor(repository, "make skills-sync")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"skills/roundfix/SKILL.md"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("make skills-sync outputs = %v, want only owned mirror files %v", got, want)
+	}
+}
+
+func TestOutputsForBaselineDigestsUnchangedBySkillOwnership(t *testing.T) {
+	t.Parallel()
+
+	repository := newSkillsSyncOwnershipRepository(t, "roundfix")
+	writeCleanupOwnershipFile(t, repository, "internal/baseline/derived/_ownership.yml", "owner: sanctioned\nreason: fixture\n")
+	writeCleanupOwnershipFile(t, repository, "internal/baseline/derived/output.txt", "derived\n")
+	writeCleanupOwnershipFile(t, repository, "skills/roundfix/SKILL.md", "mirror\n")
+
+	got, err := OutputsFor(repository, sanctionedBaselineDigestCommand)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"internal/baseline/derived/output.txt"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("make baseline-digests outputs = %v, want unchanged %v", got, want)
+	}
+}
+
 func TestCleanupRegenerationOwnershipParity(t *testing.T) {
 	t.Run("repository ownership matches the suite guard reader", func(t *testing.T) {
 		repository := filepath.Clean(filepath.Join("..", ".."))
@@ -290,6 +351,18 @@ func newOutputsForCommandRepository(t *testing.T) string {
 			t.Fatalf("write fixture %q: %v", relative, err)
 		}
 	}
+	return repository
+}
+
+func newSkillsSyncOwnershipRepository(t *testing.T, ownedSkills string) string {
+	t.Helper()
+
+	repository := t.TempDir()
+	writeCleanupOwnershipFile(t, repository, "Makefile",
+		"DERIVED_DIGEST_PATHS := internal/baseline/derived\n"+
+			"OWNED_SKILLS := "+ownedSkills+"\n")
+	writeCleanupOwnershipFile(t, repository, "skills/_ownership.yml",
+		"owner: dedicated\ncommand: make skills-sync\nreason: mirrored owned skills\n")
 	return repository
 }
 
