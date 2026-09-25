@@ -366,6 +366,59 @@ func TestProjectConfigCannotRaiseTheRunCeiling(t *testing.T) {
 	}
 }
 
+func TestProjectInitWritesNoRunCeiling(t *testing.T) {
+	t.Parallel()
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+
+	projectResult, err := Init(context.Background(), InitOptions{
+		Scope:   InitScopeProject,
+		HomeDir: homeDir,
+		WorkDir: workDir,
+	})
+	if err != nil {
+		t.Fatalf("initialize Project Config: %v", err)
+	}
+	if content := mustRead(t, projectResult.Path); strings.Contains(content, "max_active:") {
+		t.Fatalf("Project Config contains the User Config-only Run ceiling:\n%s", content)
+	}
+
+	userResult, err := Init(context.Background(), InitOptions{
+		Scope:   InitScopeUser,
+		HomeDir: homeDir,
+		WorkDir: workDir,
+	})
+	if err != nil {
+		t.Fatalf("initialize User Config: %v", err)
+	}
+	if content := mustRead(t, userResult.Path); !strings.Contains(content, "max_active:") {
+		t.Fatalf("User Config is missing the Run ceiling:\n%s", content)
+	}
+}
+
+func TestProjectInitThenLoadWarnsNothing(t *testing.T) {
+	t.Parallel()
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+
+	if _, err := Init(context.Background(), InitOptions{
+		Scope:   InitScopeProject,
+		HomeDir: homeDir,
+		WorkDir: workDir,
+	}); err != nil {
+		t.Fatalf("initialize Project Config: %v", err)
+	}
+	var stderr bytes.Buffer
+	if _, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir, Stderr: &stderr}); err != nil {
+		t.Fatalf("load initialized Project Config: %v", err)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("Load() warning after project init = %q, want none", stderr.String())
+	}
+}
+
 func TestBuiltinProfilesGeneratedCodexPolicy(t *testing.T) {
 	t.Parallel()
 	config := Builtin()
@@ -412,24 +465,18 @@ func TestDefaultConfigYAMLVerificationCapacity(t *testing.T) {
 			t.Fatalf("generated config is missing %q:\n%s", want, content)
 		}
 	}
-	for _, scope := range []string{InitScopeUser, InitScopeProject} {
-		t.Run(scope, func(t *testing.T) {
-			homeDir := t.TempDir()
-			workDir := t.TempDir()
-			mustMkdir(t, filepath.Join(workDir, ".git"))
-
-			result, err := Init(context.Background(), InitOptions{
-				Scope:   scope,
-				HomeDir: homeDir,
-				WorkDir: workDir,
-			})
-			if err != nil {
-				t.Fatalf("generate %s config: %v", scope, err)
-			}
-			if got := mustRead(t, result.Path); got != content {
-				t.Fatalf("generated %s config differs from DefaultConfigYAML", scope)
-			}
-		})
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	result, err := Init(context.Background(), InitOptions{
+		Scope:   InitScopeUser,
+		HomeDir: homeDir,
+		WorkDir: workDir,
+	})
+	if err != nil {
+		t.Fatalf("generate User Config: %v", err)
+	}
+	if got := mustRead(t, result.Path); got != content {
+		t.Fatal("generated User Config differs from DefaultConfigYAML")
 	}
 }
 
