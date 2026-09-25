@@ -22,8 +22,10 @@ readiness output.
 - Active ADR obligations: applicable — ADR-0038, ADR-0056, ADR-0080, ADR-0091, ADR-0093,
   ADR-0096, ADR-0097, ADR-0104, ADR-0117, ADR-0130, ADR-0155, ADR-0156,
   ADR-0159 and ADR-0160 hold. Source: `docs/agents/domain.md`.
-- Tooling authority: not applicable — empty intersection with `GovernedPath`.
-  Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`.
+- Tooling authority: applicable — express maintainer authorization recorded in
+  [_authorization.md](_authorization.md); bounded files:
+  `internal/cli/cli_test.go`. Source: `docs/agents/agent-instructions.md`,
+  `docs/agents/spec-routing.md`.
 
 ## Retry verdicts
 
