@@ -490,6 +490,113 @@ func TestRunArchiveRefusesMissingOrNonPassingQA(t *testing.T) {
 	}
 }
 
+func TestArchiveCommandQAOverrideRequiresApprovalAndReason(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		args       []string
+		wantStderr string
+	}{
+		{
+			name:       "override without approval or reason",
+			args:       []string{"archive", implementTestSlug, "--qa-override"},
+			wantStderr: "--qa-override requires --approval <source> and --reason <text>",
+		},
+		{
+			name:       "override without approval",
+			args:       []string{"archive", implementTestSlug, "--qa-override", "--reason", "archive the failed gate"},
+			wantStderr: "--qa-override requires --approval <source>",
+		},
+		{
+			name:       "override without reason",
+			args:       []string{"archive", implementTestSlug, "--qa-override", "--approval", "maintainer request"},
+			wantStderr: "--qa-override requires --reason <text>",
+		},
+		{
+			name:       "approval without override",
+			args:       []string{"archive", implementTestSlug, "--approval", "maintainer request"},
+			wantStderr: "--approval and --reason require --qa-override",
+		},
+		{
+			name:       "reason without override",
+			args:       []string{"archive", implementTestSlug, "--reason", "archive the failed gate"},
+			wantStderr: "--approval and --reason require --qa-override",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLIContext(t, context.Background(), tt.args, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("archive exit = %d, want %d; stderr=%q", code, exitPreflight, stderr.String())
+			}
+			if stdout.String() != "" {
+				t.Fatalf("archive stdout = %q, want empty", stdout.String())
+			}
+			if !strings.Contains(stderr.String(), tt.wantStderr) {
+				t.Fatalf("archive stderr = %q, want %q", stderr.String(), tt.wantStderr)
+			}
+		})
+	}
+}
+
+func TestRunArchiveQAOverrideReportsOverride(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Build the widget core", status: string(spec.StatusCompleted)},
+		implementQAGateSeed(string(spec.StatusFailed), "task_01"),
+	})
+	writeArchiveQAReport(t, repoDir, spec.VerdictFail)
+	activeDir := filepath.Join(repoDir, "docs", "specs", implementTestSlug)
+	qaTaskBefore := mustRead(t, filepath.Join(activeDir, "task_qa.md"))
+	reportBefore := mustRead(t, filepath.Join(activeDir, "qa", "qa-report-2026-07-06.md"))
+	wantRevision := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{
+		"archive", implementTestSlug,
+		"--qa-override",
+		"--approval", "maintainer request 2026-09-24",
+		"--reason", "retain the failed QA evidence",
+	}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("archive exit = %d, want %d; stderr=%q stdout=%q", code, exitOK, stderr.String(), stdout.String())
+	}
+	if stderr.String() != "" {
+		t.Fatalf("archive stderr = %q, want empty", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "QA override") {
+		t.Fatalf("archive stdout = %q, want override disposition", stdout.String())
+	}
+	archivedDir := archiveTestRepositoryPath(repoDir, spec.ArchiveKindSpec, implementTestSlug)
+	if got := mustRead(t, filepath.Join(archivedDir, "task_qa.md")); got != qaTaskBefore {
+		t.Fatalf("QA Task changed during override\nbefore: %q\nafter:  %q", qaTaskBefore, got)
+	}
+	if got := mustRead(t, filepath.Join(archivedDir, "qa", "qa-report-2026-07-06.md")); got != reportBefore {
+		t.Fatalf("QA Report changed during override\nbefore: %q\nafter:  %q", reportBefore, got)
+	}
+	prd := mustRead(t, filepath.Join(archivedDir, "_prd.md"))
+	for _, want := range []string{
+		"qa_override: true",
+		"qa_override_approval: maintainer request 2026-09-24",
+		"qa_override_reason: retain the failed QA evidence",
+		"qa_override_qa_outcome: fail",
+		"qa_override_revision: " + wantRevision,
+	} {
+		if !strings.Contains(prd, want) {
+			t.Fatalf("archived PRD does not contain %q:\n%s", want, prd)
+		}
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
 func TestRunArchiveHelp(t *testing.T) {
 	t.Parallel()
 	var stdout bytes.Buffer

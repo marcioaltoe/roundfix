@@ -71,6 +71,7 @@ var stagedDetectors = []stagedDetector{
 	{code: CodeRequirementContradictory, stage: StageTasks},
 	{code: CodeRehearsalUndeclared, stage: StageTasks},
 	{code: CodeQAVerificationAuthored, stage: StageTasks},
+	{code: CodeOrdinalClaimed, stage: StageTasks},
 	{code: CodeWaveCollision, stage: StageTasks},
 }
 
@@ -241,6 +242,9 @@ func detectTechSpecCoverage(result *Result, repoRoot, prdPath, techSpecPath stri
 }
 
 func detectWaveCollisions(result *Result, repoRoot string, graph *spec.Graph) error {
+	if err := detectOrdinalClaims(result, filepath.Dir(graph.Spec.Dir), repoRoot, graph); err != nil {
+		return fmt.Errorf("detect claimed ADR ordinals: %w", err)
+	}
 	collisions, err := spec.Collisions(repoRoot, graph)
 	if err != nil {
 		return fmt.Errorf("detect Task Graph Wave collisions: %w", err)

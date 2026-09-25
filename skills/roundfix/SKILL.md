@@ -2233,6 +2233,20 @@ self-supersession, or a Spec that already carries a supersession. Exit `0`
 means the amendment was recorded, exit `1` means the write failed, and exit
 `2` means Preflight Validation failed.
 
+### QA settlement
+
+The same outcome settles the authored `qa` Task and determines what archive
+may move:
+
+| Outcome | Settles | Archives |
+| --- | --- | --- |
+| `pass` | Settles the QA Task as `completed` and makes the Spec archive-eligible when the report has no disallowed blocked rows. | The Spec and its QA report and evidence. |
+| qualifying declared `partial` | Settles the QA Task as `completed` when every unmet row is covered by a matching `## Unreachable Acceptance` declaration; the declaration actions remain `unproven`. | The Spec, its QA report and evidence, and the declarations' `satisfied-by` record. |
+| `environment-blocked` | Leaves the row blocked; the report can still settle as `pass` when equivalent evidence satisfies the environment policy. | Nothing by itself; a qualifying report can archive the Spec. |
+| `failed` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
+| `missing` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
+| `override` | Does not change the QA Task status or report verdict; settles archive as explicitly authorized despite failed or missing QA. | The Spec with `qa_override` approval, reason, QA outcome and revision; QA files move byte-identically. |
+
 ## Archive Command
 
 Use `roundfix archive <slug>` after a Spec's Tasks are completed and the newest
@@ -2271,6 +2285,17 @@ declarations, `verdict: fail`, missing QA, and any non-completed Task all
 refuse. `qa_override` keeps its existing meaning for explicitly authorized
 archival of genuinely failed or missing evidence; declared unreachability does
 not use or weaken that override.
+
+To archive despite failed, missing or otherwise ineligible QA, run:
+
+```bash
+roundfix archive <slug> --qa-override --approval <source> --reason <text>
+```
+
+The command requires both approval and reason, keeps every non-QA Task
+`completed`, refuses when QA already qualifies, and stamps the approval source,
+reason, observed QA outcome and archived revision. It does not change the QA
+Task or report verdict.
 
 ## Assigned Review Issue Batches
 

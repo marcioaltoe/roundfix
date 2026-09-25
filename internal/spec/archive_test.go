@@ -177,6 +177,257 @@ func TestArchiveSpecRootExternalKeepsArchiveBesideActiveRoot(t *testing.T) {
 	}
 }
 
+func TestArchiveQAOverrideStampsProvenance(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name        string
+		reports     map[string]string
+		wantOutcome func(string) string
+	}{
+		{
+			name: "failed QA",
+			reports: map[string]string{
+				"qa-report-2026-09-23.md":    "---\nverdict: pass\n---\n\n# Earlier QA Report\n",
+				"qa-report-2026-09-24-02.md": "---\nverdict: fail\n---\n\n# Failed QA Report\n",
+			},
+			wantOutcome: func(string) string { return VerdictFail },
+		},
+		{
+			name:        "missing QA",
+			wantOutcome: func(string) string { return "missing" },
+		},
+		{
+			name: "unreadable QA",
+			reports: map[string]string{
+				"qa-report-2026-09-24.md": "not frontmatter\n",
+			},
+			wantOutcome: func(specDir string) string {
+				_, err := ReadQAReport(specDir)
+				if err == nil {
+					t.Fatal("ReadQAReport accepted the unreadable fixture")
+				}
+				var reportErr QAReportError
+				if !errors.As(err, &reportErr) {
+					t.Fatalf("ReadQAReport error = %T, want QAReportError", err)
+				}
+				relativePath, err := filepath.Rel(specDir, reportErr.Path)
+				if err != nil {
+					t.Fatalf("make QA Report path relative: %v", err)
+				}
+				return QAReportError{Path: relativePath, Err: reportErr.Err}.Error()
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			const slug = "demo"
+			const approval = "maintainer request 2026-09-24"
+			const reason = "retain the failed gate as evidence"
+			const revision = "0123456789abcdef"
+			specsRoot := defaultSpecsRoot(t.TempDir())
+			specDir := writeArchiveOverrideFixture(t, specsRoot, StatusCompleted, StatusFailed, tt.reports, "")
+			beforeEvidence := archiveOverrideEvidence(t, specDir)
+			wantOutcome := tt.wantOutcome(specDir)
+
+			result, err := Archive(ArchiveRequest{
+				SpecsRoot: specsRoot,
+				Slug:      slug,
+				QAOverride: &QAArchiveOverride{
+					Approval: approval,
+					Reason:   reason,
+					Revision: revision,
+				},
+				ArchivedAt: time.Date(2026, time.September, 24, 0, 0, 0, 0, time.UTC),
+			})
+			if err != nil {
+				t.Fatalf("Archive(QA override): %v", err)
+			}
+			if !result.QAOverride {
+				t.Fatal("Archive result did not report the QA override")
+			}
+
+			var frontmatter struct {
+				Status           string `yaml:"status"`
+				QAOverride       bool   `yaml:"qa_override"`
+				Approval         string `yaml:"qa_override_approval"`
+				Reason           string `yaml:"qa_override_reason"`
+				QAOutcome        string `yaml:"qa_override_qa_outcome"`
+				OverrideRevision string `yaml:"qa_override_revision"`
+			}
+			content := archiveTestReadFile(t, filepath.Join(result.ArchivedDir, "_prd.md"))
+			frontmatterBytes, _, err := splitFrontmatter([]byte(content))
+			if err != nil {
+				t.Fatalf("parse archived override PRD: %v", err)
+			}
+			if err := yaml.Unmarshal(frontmatterBytes, &frontmatter); err != nil {
+				t.Fatalf("decode archived override PRD: %v", err)
+			}
+			if frontmatter.Status != "archived" || !frontmatter.QAOverride || frontmatter.Approval != approval || frontmatter.Reason != reason || frontmatter.QAOutcome != wantOutcome || frontmatter.OverrideRevision != revision {
+				t.Fatalf("archived override frontmatter = %+v, want all override provenance", frontmatter)
+			}
+			if afterEvidence := archiveOverrideEvidence(t, result.ArchivedDir); !reflect.DeepEqual(afterEvidence, beforeEvidence) {
+				t.Fatalf("QA override changed QA evidence\nbefore: %#v\nafter:  %#v", beforeEvidence, afterEvidence)
+			}
+		})
+	}
+}
+
+func TestArchiveQAOverrideAcceptsAFailedQATaskWithAPassReport(t *testing.T) {
+	t.Parallel()
+	specsRoot := defaultSpecsRoot(t.TempDir())
+	specDir := writeArchiveOverrideFixture(t, specsRoot, StatusCompleted, StatusFailed, map[string]string{
+		"qa-report-2026-09-24.md": "---\nverdict: pass\n---\n\n# QA Report\n",
+	}, "")
+	beforeEvidence := archiveOverrideEvidence(t, specDir)
+
+	result, err := Archive(ArchiveRequest{
+		SpecsRoot: specsRoot,
+		Slug:      "demo",
+		QAOverride: &QAArchiveOverride{
+			Approval: "maintainer request",
+			Reason:   "archive despite the failed QA Task",
+			Revision: "0123456789abcdef",
+		},
+	})
+	if err != nil {
+		t.Fatalf("Archive(QA override): %v", err)
+	}
+	if !result.QAOverride {
+		t.Fatal("Archive result did not report the QA override")
+	}
+	if afterEvidence := archiveOverrideEvidence(t, result.ArchivedDir); !reflect.DeepEqual(afterEvidence, beforeEvidence) {
+		t.Fatalf("QA override changed QA evidence\nbefore: %#v\nafter:  %#v", beforeEvidence, afterEvidence)
+	}
+}
+
+func TestArchiveQAOverrideStillRequiresNonQATasks(t *testing.T) {
+	t.Parallel()
+	specsRoot := defaultSpecsRoot(t.TempDir())
+	specDir := writeArchiveOverrideFixture(t, specsRoot, StatusPending, StatusFailed, map[string]string{
+		"qa-report-2026-09-24.md": "---\nverdict: fail\n---\n\n# QA Report\n",
+	}, "")
+	beforeEvidence := archiveOverrideEvidence(t, specDir)
+
+	_, err := Archive(ArchiveRequest{
+		SpecsRoot: specsRoot,
+		Slug:      "demo",
+		QAOverride: &QAArchiveOverride{
+			Approval: "maintainer request",
+			Reason:   "archive the failed gate",
+			Revision: "0123456789abcdef",
+		},
+	})
+	if err == nil || !strings.Contains(err.Error(), `Task "task_01" is "pending"; QA archive override requires every non-QA Task to be "completed"`) {
+		t.Fatalf("Archive(QA override) error = %v, want pending non-QA Task refusal", err)
+	}
+	if afterEvidence := archiveOverrideEvidence(t, specDir); !reflect.DeepEqual(afterEvidence, beforeEvidence) {
+		t.Fatalf("refused QA override changed QA evidence\nbefore: %#v\nafter:  %#v", beforeEvidence, afterEvidence)
+	}
+}
+
+func TestArchiveQAOverrideRefusedWhenQAQualifies(t *testing.T) {
+	t.Parallel()
+	testArchiveQAOverrideRefusedOnlyWhenNormalArchiveSucceeds(t)
+}
+
+func TestArchiveQAOverrideRefusedOnlyWhenNormalArchiveSucceeds(t *testing.T) {
+	t.Parallel()
+	testArchiveQAOverrideRefusedOnlyWhenNormalArchiveSucceeds(t)
+}
+
+func testArchiveQAOverrideRefusedOnlyWhenNormalArchiveSucceeds(t *testing.T) {
+	t.Helper()
+	tests := []struct {
+		name    string
+		report  string
+		prdTail string
+	}{
+		{
+			name:   "pass",
+			report: "---\nverdict: pass\n---\n\n# QA Report\n",
+		},
+		{
+			name:    "qualifying declared partial",
+			report:  "---\nverdict: partial\nrows_blocked_declared: 1\n---\n\n# QA Report\n",
+			prdTail: "\n## Unreachable Acceptance\n\n- criterion: production publication\n  reason: the gate cannot publish\n  satisfied-by: a maintainer publishes\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			specsRoot := defaultSpecsRoot(t.TempDir())
+			specDir := writeArchiveOverrideFixture(t, specsRoot, StatusCompleted, StatusCompleted, map[string]string{
+				"qa-report-2026-09-24.md": tt.report,
+			}, tt.prdTail)
+			beforeEvidence := archiveOverrideEvidence(t, specDir)
+
+			_, err := Archive(ArchiveRequest{
+				SpecsRoot: specsRoot,
+				Slug:      "demo",
+				QAOverride: &QAArchiveOverride{
+					Approval: "maintainer request",
+					Reason:   "not actually needed",
+					Revision: "0123456789abcdef",
+				},
+			})
+			if err == nil || !strings.Contains(err.Error(), "QA archive override is not allowed because the Spec already qualifies for normal archive") {
+				t.Fatalf("Archive(QA override) error = %v, want already-qualifying refusal", err)
+			}
+			if afterEvidence := archiveOverrideEvidence(t, specDir); !reflect.DeepEqual(afterEvidence, beforeEvidence) {
+				t.Fatalf("refused QA override changed QA evidence\nbefore: %#v\nafter:  %#v", beforeEvidence, afterEvidence)
+			}
+		})
+	}
+}
+
+func TestArchiveQAOverrideRecordsARelativeOutcome(t *testing.T) {
+	t.Parallel()
+	const reportName = "qa-report-2026-09-24.md"
+	specsRoot := defaultSpecsRoot(t.TempDir())
+	specDir := writeArchiveOverrideFixture(t, specsRoot, StatusCompleted, StatusFailed, nil, "")
+	qaDir := filepath.Join(specDir, "qa")
+	if err := os.MkdirAll(qaDir, 0o755); err != nil {
+		t.Fatalf("create QA directory: %v", err)
+	}
+	if err := os.Symlink(filepath.Join(specDir, "missing-report.md"), filepath.Join(qaDir, reportName)); err != nil {
+		t.Fatalf("create unreadable QA Report symlink: %v", err)
+	}
+
+	result, err := Archive(ArchiveRequest{
+		SpecsRoot: specsRoot,
+		Slug:      "demo",
+		QAOverride: &QAArchiveOverride{
+			Approval: "maintainer request",
+			Reason:   "archive despite unreadable QA evidence",
+			Revision: "0123456789abcdef",
+		},
+	})
+	if err != nil {
+		t.Fatalf("Archive(QA override): %v", err)
+	}
+
+	var frontmatter struct {
+		QAOutcome string `yaml:"qa_override_qa_outcome"`
+	}
+	content := archiveTestReadFile(t, filepath.Join(result.ArchivedDir, "_prd.md"))
+	frontmatterBytes, _, err := splitFrontmatter([]byte(content))
+	if err != nil {
+		t.Fatalf("parse archived override PRD: %v", err)
+	}
+	if err := yaml.Unmarshal(frontmatterBytes, &frontmatter); err != nil {
+		t.Fatalf("decode archived override PRD: %v", err)
+	}
+	if strings.Contains(frontmatter.QAOutcome, specDir) {
+		t.Fatalf("qa_override_qa_outcome contains absolute Spec path %q: %q", specDir, frontmatter.QAOutcome)
+	}
+	if relativeReport := filepath.Join("qa", reportName); !strings.Contains(frontmatter.QAOutcome, relativeReport) {
+		t.Fatalf("qa_override_qa_outcome = %q, want relative report path %q", frontmatter.QAOutcome, relativeReport)
+	}
+}
+
 const (
 	spec0058ReplaySlug    = "0058-npm-trusted-publishing-and-release-preflight"
 	spec0058ReleaseAction = "a maintainer publishes a tagged release and records the run"
@@ -627,4 +878,41 @@ func archiveTestPath(kind ArchiveKind, elements ...string) string {
 
 func archiveTestRepositoryPath(repoRoot string, kind ArchiveKind, elements ...string) string {
 	return filepath.Join(repoRoot, filepath.FromSlash(archiveTestPath(kind, elements...)))
+}
+
+func writeArchiveOverrideFixture(t *testing.T, specsRoot string, nonQAStatus Status, qaStatus Status, reports map[string]string, prdTail string) string {
+	t.Helper()
+	const nodes = `    - id: task_01
+      file: task_01.md
+      needs: []
+    - id: task_qa
+      file: task_qa.md
+      needs: [task_01]
+`
+	writeSpecDir(t, specsRoot, "demo", map[string]string{
+		"_prd.md":    prdFixture("active") + prdTail,
+		"_tasks.md":  manifestFixtureWithQA("spec-tasks/v1", "qa: task_qa\n", nodes, ""),
+		"task_01.md": taskFixture("task_01", "Build", string(nonQAStatus), string(TaskTypeBackend), defaultVerificationSection),
+		"task_qa.md": taskFixture("task_qa", "QA", string(qaStatus), string(TaskTypeQA), defaultVerificationSection),
+	})
+	specDir := filepath.Join(specsRoot, "demo")
+	for name, content := range reports {
+		writeFile(t, filepath.Join(specDir, "qa", name), content)
+	}
+	return specDir
+}
+
+func archiveOverrideEvidence(t *testing.T, specDir string) map[string]string {
+	t.Helper()
+	evidence := map[string]string{
+		"task_qa.md": archiveTestReadFile(t, filepath.Join(specDir, "task_qa.md")),
+	}
+	reports, err := filepath.Glob(filepath.Join(specDir, "qa", "qa-report-*.md"))
+	if err != nil {
+		t.Fatalf("find QA Reports under %q: %v", specDir, err)
+	}
+	for _, reportPath := range reports {
+		evidence[filepath.ToSlash(filepath.Join("qa", filepath.Base(reportPath)))] = archiveTestReadFile(t, reportPath)
+	}
+	return evidence
 }

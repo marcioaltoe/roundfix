@@ -33,6 +33,7 @@ func TestStageScopeRunsOnlyDetectorsTheStageCanDecide(t *testing.T) {
 		speccheck.CodeVerifyWorkIndependent,
 		speccheck.CodeVerifyInvertedExit,
 		speccheck.CodeVerifyNonHermetic,
+		speccheck.CodeOrdinalClaimed,
 		speccheck.CodeWaveCollision,
 	} {
 		if findings := findingsWithCode(prdResult, code); len(findings) != 0 {
@@ -53,6 +54,7 @@ func TestStageScopeRunsOnlyDetectorsTheStageCanDecide(t *testing.T) {
 		speccheck.CodeVerifyInvertedExit,
 		speccheck.CodeVerifyNonHermetic,
 		speccheck.CodeRequirementContradictory,
+		speccheck.CodeOrdinalClaimed,
 		speccheck.CodeWaveCollision,
 	} {
 		if findings := findingsWithCode(techSpecResult, code); len(findings) != 0 {
@@ -135,6 +137,7 @@ func TestStageScopeNamesTheDetectorsItSkipped(t *testing.T) {
 		speccheck.CodeVerifyNonHermetic,
 		speccheck.CodeRequirementContradictory,
 		speccheck.CodeRehearsalUndeclared,
+		speccheck.CodeOrdinalClaimed,
 		speccheck.CodeWaveCollision,
 	} {
 		if !hasSkip(result, code, "stage prd") {
