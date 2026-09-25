@@ -35,6 +35,7 @@ const (
 	defaultRunDuration              = 2 * time.Hour
 	defaultJournalRetention         = 336 * time.Hour
 	defaultWorktreeLocation         = "~/.roundfix/worktrees"
+	defaultRunsMaxActive            = 3
 	defaultWorktreeConcurrency      = 2
 	defaultVerificationConcurrency  = 1
 	defaultWorktreeBootstrapTimeout = 10 * time.Minute
@@ -62,6 +63,7 @@ type Config struct {
 	Logs         Logs
 	Store        Store
 	Specs        Specs
+	Runs         Runs
 }
 
 type Defaults struct {
@@ -163,6 +165,10 @@ type Specs struct {
 	Root string
 }
 
+type Runs struct {
+	MaxActive int
+}
+
 type Loaded struct {
 	Config            Config
 	GitRoot           string
@@ -233,6 +239,7 @@ type configOverlay struct {
 	Logs         *logsOverlay         `yaml:"logs"`
 	Store        *storeOverlay        `yaml:"store"`
 	Specs        *specsOverlay        `yaml:"specs"`
+	Runs         *runsOverlay         `yaml:"runs"`
 }
 
 type defaultsOverlay struct {
@@ -363,6 +370,10 @@ type worktreeOverlay struct {
 	Copy             *[]string      `yaml:"copy"`
 	Bootstrap        *string        `yaml:"bootstrap"`
 	BootstrapTimeout *durationValue `yaml:"bootstrap_timeout"`
+}
+
+type runsOverlay struct {
+	MaxActive *int `yaml:"max_active"`
 }
 
 type verificationOverlay struct {
@@ -564,27 +575,35 @@ var deprecatedConfigKeys = []deprecatedConfigKey{
 	},
 }
 
-type deprecatedConfigWarnings struct {
+type configWarnings struct {
 	stderr  io.Writer
 	emitted map[string]bool
 }
 
-func newDeprecatedConfigWarnings(stderr io.Writer) *deprecatedConfigWarnings {
+func newConfigWarnings(stderr io.Writer) *configWarnings {
 	if stderr == nil {
 		stderr = os.Stderr
 	}
-	return &deprecatedConfigWarnings{
+	return &configWarnings{
 		stderr:  stderr,
 		emitted: map[string]bool{},
 	}
 }
 
-func (warnings *deprecatedConfigWarnings) warn(key deprecatedConfigKey) {
+func (warnings *configWarnings) warn(key deprecatedConfigKey) {
 	if warnings == nil || warnings.emitted[key.name] {
 		return
 	}
 	warnings.emitted[key.name] = true
 	fmt.Fprintf(warnings.stderr, "config: %s is deprecated and ignored; use %s\n", key.name, key.replacement)
+}
+
+func (warnings *configWarnings) warnIgnoredProjectSetting(name string) {
+	if warnings == nil || warnings.emitted[name] {
+		return
+	}
+	warnings.emitted[name] = true
+	fmt.Fprintf(warnings.stderr, "config: %s in Project Config is ignored; set %s in User Config\n", name, name)
 }
 
 func Builtin() Config {
@@ -654,6 +673,9 @@ func Builtin() Config {
 		Specs: Specs{
 			Root: defaultSpecsRoot,
 		},
+		Runs: Runs{
+			MaxActive: defaultRunsMaxActive,
+		},
 	}
 }
 
@@ -673,7 +695,7 @@ func Load(opts LoadOptions) (Loaded, error) {
 		HomeDir:        homeDir,
 		UserConfigPath: filepath.Join(homeDir, userConfigRelPath),
 	}
-	warnings := newDeprecatedConfigWarnings(opts.Stderr)
+	warnings := newConfigWarnings(opts.Stderr)
 	if err := applyConfigFile(&loaded.Config, loaded.UserConfigPath, warnings, ProfileSourceUser); err != nil {
 		return Loaded{}, err
 	}
@@ -700,7 +722,7 @@ func Load(opts LoadOptions) (Loaded, error) {
 // with the same precedence and validation as Load. A nil scope is absent.
 func ResolveConfigProposal(userContent []byte, projectContent []byte) (Config, error) {
 	config := Builtin()
-	warnings := newDeprecatedConfigWarnings(io.Discard)
+	warnings := newConfigWarnings(io.Discard)
 	if userContent != nil {
 		if err := applyConfigContent(&config, "User Config proposal", userContent, warnings, ProfileSourceUser); err != nil {
 			return Config{}, err
@@ -820,6 +842,10 @@ specs:
   # Directory holding Spec folders; relative paths resolve against the repository root.
   root: %q
 
+runs:
+  # Maximum Active Implement Runs across repositories; 0 disables the bound.
+  max_active: %d
+
 worktree:
   # Parent directory; Roundfix always appends <repo-slug>/<run-id>.
   location: %q
@@ -886,6 +912,7 @@ resolve:
 		config.Defaults.Verification,
 		config.Defaults.AutoCommit,
 		config.Specs.Root,
+		config.Runs.MaxActive,
 		config.Worktree.Location,
 		config.Worktree.Concurrency,
 		formatConfigDuration(config.Worktree.BootstrapTimeout),
@@ -953,6 +980,9 @@ func Validate(config Config) error {
 	}
 	if config.Store.JournalRetention < 0 {
 		return errors.New("store.journal_retention must be greater than or equal to 0")
+	}
+	if config.Runs.MaxActive < 0 {
+		return errors.New("runs.max_active must be greater than or equal to 0")
 	}
 	if strings.TrimSpace(config.Specs.Root) == "" {
 		return errors.New("specs.root must not be empty")
@@ -1398,7 +1428,7 @@ func ResolveWorktreeLocation(location string, gitRoot string, homeDir string) (s
 	return resolved, nil
 }
 
-func applyConfigFile(config *Config, path string, warnings *deprecatedConfigWarnings, source ProfileSource) error {
+func applyConfigFile(config *Config, path string, warnings *configWarnings, source ProfileSource) error {
 	content, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
@@ -1409,7 +1439,7 @@ func applyConfigFile(config *Config, path string, warnings *deprecatedConfigWarn
 	return applyConfigContent(config, path, content, warnings, source)
 }
 
-func applyConfigContent(config *Config, label string, content []byte, warnings *deprecatedConfigWarnings, source ProfileSource) error {
+func applyConfigContent(config *Config, label string, content []byte, warnings *configWarnings, source ProfileSource) error {
 	var document yaml.Node
 	decoder := yaml.NewDecoder(bytes.NewReader(content))
 	if err := decoder.Decode(&document); err != nil {
@@ -1417,6 +1447,9 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 			return nil
 		}
 		return fmt.Errorf("parse config %q: %w", label, err)
+	}
+	if source == ProfileSourceProject && removeYAMLPath(&document, []string{"runs", "max_active"}) {
+		warnings.warnIgnoredProjectSetting("runs.max_active")
 	}
 	stripDeprecatedConfigKeys(&document, warnings)
 	if value, found := yamlValueAtPath(&document, []string{"review_source", "request_review"}); found && value.Tag == "!!null" {
@@ -1453,7 +1486,7 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 	return nil
 }
 
-func stripDeprecatedConfigKeys(document *yaml.Node, warnings *deprecatedConfigWarnings) {
+func stripDeprecatedConfigKeys(document *yaml.Node, warnings *configWarnings) {
 	for _, key := range deprecatedConfigKeys {
 		if removeYAMLPath(document, key.path) {
 			warnings.warn(key)
@@ -1671,6 +1704,11 @@ func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
 	if overlay.Specs != nil {
 		if overlay.Specs.Root != nil {
 			config.Specs.Root = *overlay.Specs.Root
+		}
+	}
+	if source != ProfileSourceProject && overlay.Runs != nil {
+		if overlay.Runs.MaxActive != nil {
+			config.Runs.MaxActive = *overlay.Runs.MaxActive
 		}
 	}
 }

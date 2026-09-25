@@ -363,24 +363,48 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 			return exitPreflight
 		}
 	}
+	if maxActive := loadedConfig.Config.Runs.MaxActive; maxActive > 0 {
+		activeRuns, err := runStore.ActiveImplementRuns(ctx)
+		if err != nil {
+			printPreflightFailure("implement", err, stderr)
+			return exitPreflight
+		}
+		holders := activeRuns[:0]
+		for _, active := range activeRuns {
+			if _, reclaimed, err := reclaimOrphanedActiveRun(ctx, runStore, active, stderr); err != nil {
+				printPreflightFailure("implement", err, stderr)
+				return exitPreflight
+			} else if !reclaimed {
+				holders = append(holders, active)
+			}
+		}
+		if len(holders) >= maxActive {
+			printPreflightFailure("implement", store.ActiveImplementRunCeilingError{
+				MaxActive: maxActive,
+				Holders:   holders,
+			}, stderr)
+			return exitPreflight
+		}
+	}
 
 	run, err := createRunReclaimingOrphan(ctx, runStore, stderr, func() (store.Run, error) {
 		return runStore.CreateRun(ctx, store.CreateRunRequest{
-			Kind:            store.KindImplement,
-			GitRoot:         gitState.Root,
-			LocalBranch:     gitState.Branch,
-			HeadSHA:         gitState.HEAD,
-			SpecSlug:        graph.Spec.Slug,
-			Agent:           runtime.ID,
-			Model:           runtime.Model,
-			ReasoningEffort: runtime.ReasoningEffort,
-			OwnerPID:        os.Getpid(),
-			OwnerIdentity:   commandDependenciesForContext(ctx).implementOwnerIdentity(ctx),
+			Kind:                   store.KindImplement,
+			GitRoot:                gitState.Root,
+			LocalBranch:            gitState.Branch,
+			HeadSHA:                gitState.HEAD,
+			SpecSlug:               graph.Spec.Slug,
+			Agent:                  runtime.ID,
+			Model:                  runtime.Model,
+			ReasoningEffort:        runtime.ReasoningEffort,
+			OwnerPID:               os.Getpid(),
+			OwnerIdentity:          commandDependenciesForContext(ctx).implementOwnerIdentity(ctx),
+			MaxActiveImplementRuns: loadedConfig.Config.Runs.MaxActive,
 		})
 	})
 	if err != nil {
-		// A lost work-target race surfaces the store's ActiveRunError as-is;
-		// it already names the blocking run id and the stop command.
+		// Lost work-target and machine-ceiling races surface typed Store errors;
+		// each already names the blocking Run and its next action.
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}

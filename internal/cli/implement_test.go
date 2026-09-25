@@ -5325,6 +5325,109 @@ func TestRunImplementPreflightRejectsActiveRunInWorkingTree(t *testing.T) {
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
 }
 
+func TestRunCeilingRefusalNamesTheWayOut(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	writeUserConfig(t, homeDir, "runs:\n  max_active: 2\n")
+	withImplementCollaborators(t, &implementFakeRunner{gitRoot: repoDir})
+	withVersionFreshnessFakeDeps(t, versionFreshnessDependencies{currentVersion: func() string { return "dev" }})
+
+	ctx := context.Background()
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	holders := make([]store.Run, 0, 2)
+	for index, seed := range []struct {
+		repository string
+		spec       string
+	}{
+		{repository: filepath.Join(homeDir, "repository-one"), spec: "0001-first-spec"},
+		{repository: filepath.Join(homeDir, "repository-two"), spec: "0002-second-spec"},
+	} {
+		run, createErr := runStore.CreateRun(ctx, store.CreateRunRequest{
+			Kind:          store.KindImplement,
+			GitRoot:       seed.repository,
+			LocalBranch:   fmt.Sprintf("feat/holder-%d", index+1),
+			SpecSlug:      seed.spec,
+			OwnerPID:      os.Getpid(),
+			OwnerIdentity: fmt.Sprintf("holder-%d", index+1),
+		})
+		if createErr != nil {
+			t.Fatalf("create holding Run: %v", createErr)
+		}
+		holders = append(holders, run)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close store: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := runCLIContext(t, ctx, []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("implement exit = %d, want %d; stderr=%q", code, exitPreflight, stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("implement stdout = %q, want empty", stdout.String())
+	}
+	for _, holder := range holders {
+		for _, want := range []string{holder.ID, holder.GitRoot, holder.SpecSlug, "roundfix stop " + holder.ID} {
+			if !strings.Contains(stderr.String(), want) {
+				t.Fatalf("ceiling refusal missing %q: %q", want, stderr.String())
+			}
+		}
+	}
+	if !strings.Contains(stderr.String(), "runs.max_active") {
+		t.Fatalf("ceiling refusal missing runs.max_active: %q", stderr.String())
+	}
+	assertRunCount(t, store.DatabasePath(homeDir), len(holders))
+}
+
+func TestImplementRunCeilingZeroDisables(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	writeUserConfig(t, homeDir, "runs:\n  max_active: 0\n")
+	withImplementCollaborators(t, &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	})
+
+	ctx := context.Background()
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	for index := range 2 {
+		if _, err := runStore.CreateRun(ctx, store.CreateRunRequest{
+			Kind:          store.KindImplement,
+			GitRoot:       filepath.Join(homeDir, fmt.Sprintf("repository-%d", index+1)),
+			LocalBranch:   fmt.Sprintf("feat/holder-%d", index+1),
+			SpecSlug:      fmt.Sprintf("000%d-holder-spec", index+1),
+			OwnerPID:      os.Getpid(),
+			OwnerIdentity: fmt.Sprintf("holder-%d", index+1),
+		}); err != nil {
+			t.Fatalf("create holding Run: %v", err)
+		}
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close store: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := runCLIContext(t, ctx, []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("implement exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Clean: all 1 Task(s) completed.") {
+		t.Fatalf("implement stdout missing Clean outcome: %q", stdout.String())
+	}
+	assertRunCount(t, store.DatabasePath(homeDir), 3)
+}
+
 func TestRunImplementPreflightProbeFailureCreatesNoRun(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
@@ -5934,6 +6037,19 @@ func TestRunImplementStopRequestEndsStoppedWithInterruptMapping(t *testing.T) {
 	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
 }
 
+// Invariant: a BudgetExceeded terminal diagnostic identifies its Run without
+// requiring the earlier Implement Run header.
+// Owning layer: CLI test diagnostics parsing.
+// Existing canonical suite: TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch.
+func TestBudgetExceededRunIsFoundWithoutTheHeaderLine(t *testing.T) {
+	const runID = "run_20260924T120000Z_budget"
+	stderr := "Implement Run " + runID + " reached BudgetExceeded.\n"
+
+	if got := implementRunIDFromAnyStderrLine(t, stderr); got != runID {
+		t.Fatalf("Run id = %q, want %q", got, runID)
+	}
+}
+
 // Invariant: an Implement Run ended by its configured Run Budget records the
 // distinct BudgetExceeded cause, preserves already completed Tasks, and keeps
 // the non-integrated Run Worktree and Run Branch recoverable.
@@ -5962,7 +6078,7 @@ func TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch(t *testing.T) {
 	if code != exitRunFailed {
 		t.Fatalf("BudgetExceeded exit = %d, want %d; stderr=%q stdout=%q", code, exitRunFailed, stderr.String(), stdout.String())
 	}
-	runID := implementRunIDFromStderr(t, stderr.String())
+	runID := implementRunIDFromAnyStderrLine(t, stderr.String())
 	run := implementRunFromStore(t, homeDir, runID)
 	if run.State != store.StateBudgetExceeded {
 		t.Fatalf("Run state = %q, want %q", run.State, store.StateBudgetExceeded)
@@ -6006,6 +6122,115 @@ func TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch(t *testing.T) {
 		t.Fatalf("BudgetExceeded diagnostics did not name preserved Run Worktree: %q", stderr.String())
 	}
 	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+// Invariant: a Task settled during an Implement Run keeps its commit and
+// completed status when the Run Budget expires after that settlement.
+// Owning layer: daemon Task-cycle integration through the Implement fixture.
+// Existing canonical suite: TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch.
+func TestBudgetExceededKeepsWorkSettledBeforeTheBudget(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Complete before the Run Budget"},
+		{id: "task_02", title: "Remain pending after the Run Budget", needs: []string{"task_01"}},
+	})
+	ctx := context.Background()
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := runStore.Close(); err != nil {
+			t.Errorf("close Run Database: %v", err)
+		}
+	})
+	run, err := runStore.CreateRun(ctx, store.CreateRunRequest{
+		Kind:        store.KindImplement,
+		GitRoot:     repoDir,
+		LocalBranch: "ma/widget-flow",
+		SpecSlug:    implementTestSlug,
+	})
+	if err != nil {
+		t.Fatalf("create Implement Run: %v", err)
+	}
+	specsRoot := filepath.Join(repoDir, "docs", "specs")
+	graph, err := spec.Load(specsRoot, implementTestSlug)
+	if err != nil {
+		t.Fatalf("load fixture Spec: %v", err)
+	}
+	head := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+
+	const maximum = time.Hour
+	startedAt := time.Now()
+	deadline := startedAt.Add(maximum)
+	settled := make(chan struct{})
+	var settleOnce sync.Once
+	committer := &fakeCommitter{
+		afterCommit: func(context.Context, daemon.CommitRequest) error {
+			settleOnce.Do(func() { close(settled) })
+			return nil
+		},
+	}
+	verifier := &fakeVerifier{}
+	engine, err := daemon.NewEngine(daemon.Dependencies{
+		Runner: &implementFakeRunner{
+			gitRoot:      repoDir,
+			statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		},
+		Verifier:     verifier,
+		Committer:    committer,
+		Pusher:       &fakePusher{},
+		Source:       &fakeSourceResolver{},
+		Runs:         runStore,
+		Worktree:     &fakeWorktree{},
+		PriorChanges: emptyPriorChangedResolver{},
+		Now: func() time.Time {
+			select {
+			case <-settled:
+				return deadline.Add(time.Second)
+			default:
+				return startedAt
+			}
+		},
+	})
+	if err != nil {
+		t.Fatalf("create Run engine: %v", err)
+	}
+
+	result, err := engine.TaskCycle(ctx, daemon.TaskPlan{
+		RunID:                   run.ID,
+		Session:                 agent.SessionRefForRun(run.ID, repoDir),
+		WorkDir:                 repoDir,
+		RunWorktree:             runworktree.Ref{RunID: run.ID, Path: repoDir, Branch: runworktree.BranchName(run.ID), UserRoot: repoDir},
+		TargetBranch:            run.LocalBranch,
+		HeadSHA:                 head,
+		Authorization:           spec.ReadSpecAuthorization(ctx, repoDir, specsRoot, implementTestSlug, head),
+		SpecsRoot:               specsRoot,
+		ArtifactDir:             t.TempDir(),
+		Spec:                    graph.Spec,
+		Tasks:                   graph.Tasks,
+		Runtime:                 agent.RuntimeSpec{ID: "codex", DisplayName: "Codex"},
+		Concurrency:             1,
+		VerificationConcurrency: 1,
+		RunStartedAt:            startedAt,
+		BudgetEnabled:           true,
+		MaxRunDuration:          maximum,
+	})
+
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("Task cycle error = %v, want Run Budget deadline", err)
+	}
+	if result.TerminalOutcome != store.StateBudgetExceeded {
+		t.Fatalf("terminal outcome = %q, want %q", result.TerminalOutcome, store.StateBudgetExceeded)
+	}
+	if result.Completed != 1 || committer.calls != 1 || verifier.calls != 1 {
+		t.Fatalf("settled work = completed %d, commits %d, verifications %d; want 1 each", result.Completed, committer.calls, verifier.calls)
+	}
+	if content := mustRead(t, implementTaskPath(repoDir, "task_01")); !strings.Contains(content, "status: completed") {
+		t.Fatalf("settled Task status was not preserved:\n%s", content)
+	}
+	if content := mustRead(t, implementTaskPath(repoDir, "task_02")); !strings.Contains(content, "status: pending") {
+		t.Fatalf("Task after the Run Budget did not remain pending:\n%s", content)
+	}
 }
 
 // Invariant: the configured Run Budget bounds setup and post-cycle

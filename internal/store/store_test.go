@@ -223,6 +223,141 @@ func TestCreateRunRecordsTheRepositoryKey(t *testing.T) {
 	}
 }
 
+func TestActiveImplementRunsAreCountedAcrossRepositories(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	activeByRepository := map[string]string{
+		filepath.Join("tmp", "first-repo"):  "0001-first-spec",
+		filepath.Join("tmp", "second-repo"): "0002-second-spec",
+	}
+	for gitRoot, specSlug := range activeByRepository {
+		if _, err := runStore.CreateRun(ctx, CreateRunRequest{
+			Kind:        KindImplement,
+			GitRoot:     gitRoot,
+			LocalBranch: "feat/measured-run-ceiling",
+			SpecSlug:    specSlug,
+		}); err != nil {
+			t.Fatalf("create Active Implement Run for %s: %v", gitRoot, err)
+		}
+	}
+
+	terminal, err := runStore.CreateRun(ctx, CreateRunRequest{
+		Kind:        KindImplement,
+		GitRoot:     filepath.Join("tmp", "terminal-repo"),
+		LocalBranch: "feat/done",
+		SpecSlug:    "0003-terminal-spec",
+	})
+	if err != nil {
+		t.Fatalf("create terminal Implement Run: %v", err)
+	}
+	if _, err := runStore.CompleteRun(ctx, terminal.ID, StateClean); err != nil {
+		t.Fatalf("complete terminal Implement Run: %v", err)
+	}
+	if _, err := runStore.CreateRun(ctx, sampleCreateRunRequest()); err != nil {
+		t.Fatalf("create Active Fetch Run: %v", err)
+	}
+
+	runs, err := runStore.ActiveImplementRuns(ctx)
+	if err != nil {
+		t.Fatalf("list Active Implement Runs: %v", err)
+	}
+	if len(runs) != len(activeByRepository) {
+		t.Fatalf("ActiveImplementRuns() returned %d Runs, want %d: %#v", len(runs), len(activeByRepository), runs)
+	}
+	for _, run := range runs {
+		wantSpec, ok := activeByRepository[run.GitRoot]
+		if !ok || run.SpecSlug != wantSpec {
+			t.Fatalf("unexpected Active Implement Run: %#v", run)
+		}
+		delete(activeByRepository, run.GitRoot)
+	}
+	if len(activeByRepository) != 0 {
+		t.Fatalf("missing Active Implement Runs for repositories: %#v", activeByRepository)
+	}
+}
+
+func TestRunCeilingIsCountedInsideTheCreateTransaction(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	firstStore := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, firstStore)
+	secondStore := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, secondStore)
+
+	type creationResult struct {
+		run Run
+		err error
+	}
+	start := make(chan struct{})
+	results := make(chan creationResult, 2)
+	requests := []struct {
+		store *Store
+		req   CreateRunRequest
+	}{
+		{
+			store: firstStore,
+			req: CreateRunRequest{
+				Kind:                   KindImplement,
+				GitRoot:                filepath.Join(homeDir, "first-repository"),
+				LocalBranch:            "feat/first-run",
+				SpecSlug:               "0001-first-spec",
+				MaxActiveImplementRuns: 1,
+			},
+		},
+		{
+			store: secondStore,
+			req: CreateRunRequest{
+				Kind:                   KindImplement,
+				GitRoot:                filepath.Join(homeDir, "second-repository"),
+				LocalBranch:            "feat/second-run",
+				SpecSlug:               "0002-second-spec",
+				MaxActiveImplementRuns: 1,
+			},
+		},
+	}
+	for _, request := range requests {
+		go func(runStore *Store, req CreateRunRequest) {
+			<-start
+			run, err := runStore.CreateRun(ctx, req)
+			results <- creationResult{run: run, err: err}
+		}(request.store, request.req)
+	}
+	close(start)
+
+	created := 0
+	refused := 0
+	for range requests {
+		result := <-results
+		if result.err == nil {
+			created++
+			continue
+		}
+		var ceilingErr ActiveImplementRunCeilingError
+		if !errors.As(result.err, &ceilingErr) {
+			t.Fatalf("CreateRun() error = %T %v, want ActiveImplementRunCeilingError", result.err, result.err)
+		}
+		if ceilingErr.MaxActive != 1 || len(ceilingErr.Holders) != 1 {
+			t.Fatalf("ceiling error = %#v, want one holder at ceiling 1", ceilingErr)
+		}
+		refused++
+	}
+	if created != 1 || refused != 1 {
+		t.Fatalf("concurrent creations: created=%d refused=%d, want 1 and 1", created, refused)
+	}
+
+	active, err := firstStore.ActiveImplementRuns(ctx)
+	if err != nil {
+		t.Fatalf("list Active Implement Runs: %v", err)
+	}
+	if len(active) != 1 {
+		t.Fatalf("ActiveImplementRuns() returned %d Runs, want 1: %#v", len(active), active)
+	}
+}
+
 func TestStoppedRunReleasesActiveLock(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
