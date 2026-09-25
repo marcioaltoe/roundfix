@@ -2145,7 +2145,7 @@ func selectActiveImplementRuns(ctx context.Context, querier runQuerier) ([]Run, 
 	arguments := append([]any{KindImplement}, terminalArguments...)
 	rows, err := querier.QueryContext(ctx, `
 SELECT id, kind, state, head_repository, head_branch, base_repository,
-       pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
+       pr_number, git_root, repository_root, local_branch, head_sha, artifact_dir, work_dir,
        spec_slug, agent, model, reasoning_effort, owner_pid, owner_identity, owner_identity_unproven, created_at, updated_at, completed_at
 FROM runs
 WHERE kind = ? AND `+terminalClause+`
