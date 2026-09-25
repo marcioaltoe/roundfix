@@ -268,13 +268,15 @@ func TestCleanupRecoversAHalfRemovedItemWorktree(t *testing.T) {
 		_ = os.Chmod(readOnlyDir, 0o700)
 	})
 
-	cmdArgs := append([]string{"-C", repoDir}, gitConfigArgsForWorktreeTest()...)
-	cmdArgs = append(cmdArgs, "-c", "core.fsmonitor=false", "worktree", "remove", "--force", ref.Path)
-	cmd := exec.Command("git", cmdArgs...)
-	cmd.Env = isolatedGitEnvForWorktreeTest()
-	output, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatalf("git worktree remove unexpectedly removed the read-only item Worktree: %s", output)
+	// Reproduce a half-finished removal deterministically: Git drops the
+	// worktree's admin directory (its registration) while the item directory,
+	// its .git pointer and a read-only subdirectory stay on disk. Relying on a
+	// failing `git worktree remove` is not portable: some Git versions delete
+	// the .git pointer before failing.
+	adminMarker := strings.TrimSpace(mustReadWorktreeTest(t, filepath.Join(ref.Path, ".git")))
+	adminDir := strings.TrimSpace(strings.TrimPrefix(adminMarker, "gitdir:"))
+	if err := os.RemoveAll(adminDir); err != nil {
+		t.Fatalf("remove item Worktree admin directory %q: %v", adminDir, err)
 	}
 	if _, err := os.Stat(ref.Path); err != nil {
 		t.Fatalf("half-removed item Worktree path = %q: %v", ref.Path, err)
