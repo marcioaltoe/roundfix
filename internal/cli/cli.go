@@ -259,6 +259,7 @@ type commandDependencies struct {
 	fallbackConfirmationAvailable   func(io.Writer) bool
 	runsListNow                     func() time.Time
 	currentRunWindowTime            func() time.Time
+	implementBudgetNow              func() time.Time
 	runsInteractiveInputAvailable   func() bool
 	doctor                          doctorDependencies
 	runBrowserSession               func(context.Context, io.Writer, []store.Run, []store.Run) (roundtui.BrowserOutcome, error)
@@ -323,6 +324,7 @@ func defaultCommandDependencies() commandDependencies {
 		fallbackConfirmationAvailable:   fallbackConfirmationAvailable,
 		runsListNow:                     runsListNow,
 		currentRunWindowTime:            runWindowNow,
+		implementBudgetNow:              time.Now,
 		runsInteractiveInputAvailable:   runsInteractiveInputAvailable,
 		doctor:                          defaultDoctorDependencies(),
 		runBrowserSession:               runBrowserSession,

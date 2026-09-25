@@ -471,6 +471,9 @@ func doctorProfileReadinessResult(readiness profileProofResult) CheckResult {
 	if readiness.Err == nil {
 		result.Status = CheckStatusOK
 		result.Detail = fmt.Sprintf("%d distinct tuples; %d category references", len(readiness.Proofs), profileProofReferenceCount(readiness.Proofs))
+		if policies := degradedAccessPolicies(readiness.Proofs); len(policies) > 0 {
+			result.Detail += "; effective access policy: " + strings.Join(policies, ", ")
+		}
 		return result
 	}
 

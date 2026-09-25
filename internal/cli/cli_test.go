@@ -2120,6 +2120,125 @@ func TestProfilesValidateDeduplicatesProofsAndReportsEveryReference(t *testing.T
 	assertNoRunDatabase(t, homeDir)
 }
 
+func TestProfilesValidateTextNamesADegradedPolicy(t *testing.T) {
+	const degradedPolicy = agent.AccessPolicy("full-access (degraded: sandbox preset unavailable)")
+	tests := []struct {
+		name       string
+		policy     agent.AccessPolicy
+		wantStdout string
+	}{
+		{
+			name:   "degraded full access",
+			policy: degradedPolicy,
+			wantStdout: "Profiles validate passed.\n" +
+				"1. codex / gpt-5.6-sol / high — passed (effective access policy: " + string(degradedPolicy) + ")\n" +
+				"   - backend preferred source=built-in\n" +
+				"2. codex / gpt-5.5 / xhigh — passed (effective access policy: " + string(degradedPolicy) + ")\n" +
+				"   - backend fallback[1] source=built-in\n",
+		},
+		{
+			name:   "ordinary full access",
+			policy: agent.AccessPolicyFullAccess,
+			wantStdout: "Profiles validate passed.\n" +
+				"1. codex / gpt-5.6-sol / high — passed\n" +
+				"   - backend preferred source=built-in\n" +
+				"2. codex / gpt-5.5 / xhigh — passed\n" +
+				"   - backend fallback[1] source=built-in\n",
+		},
+		{
+			name:   "runtime default access",
+			policy: agent.AccessPolicyRuntimeDefault,
+			wantStdout: "Profiles validate passed.\n" +
+				"1. codex / gpt-5.6-sol / high — passed\n" +
+				"   - backend preferred source=built-in\n" +
+				"2. codex / gpt-5.5 / xhigh — passed\n" +
+				"   - backend fallback[1] source=built-in\n",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, _ := withCLIWorkspace(t)
+			withAgentRunner(t, &profileReadinessExactRunner{prove: func(agent.ProbeRequest) (agent.SelectionProof, error) {
+				return agent.SelectionProof{EffectiveAccessPolicy: tt.policy}, nil
+			}})
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLI(t, []string{"profiles", "validate", "--category", "backend"}, &stdout, &stderr)
+
+			if code != exitOK {
+				t.Fatalf("profiles validate exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+			}
+			if got := stdout.String(); got != tt.wantStdout {
+				t.Fatalf("profiles validate stdout:\nwant: %q\n got: %q", tt.wantStdout, got)
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("profiles validate stderr = %q, want empty", stderr.String())
+			}
+			assertNoRunDatabase(t, homeDir)
+		})
+	}
+}
+
+func TestDoctorNamesADegradedPolicy(t *testing.T) {
+	const degradedPolicy = agent.AccessPolicy("full-access (degraded: sandbox preset unavailable)")
+	tests := []struct {
+		name             string
+		policy           agent.AccessPolicy
+		wantProfilesLine string
+	}{
+		{
+			name:             "degraded full access",
+			policy:           degradedPolicy,
+			wantProfilesLine: "profiles: ok (3 distinct tuples; 10 category references; effective access policy: " + string(degradedPolicy) + ")",
+		},
+		{
+			name:             "ordinary full access",
+			policy:           agent.AccessPolicyFullAccess,
+			wantProfilesLine: "profiles: ok (3 distinct tuples; 10 category references)",
+		},
+		{
+			name:             "runtime default access",
+			policy:           agent.AccessPolicyRuntimeDefault,
+			wantProfilesLine: "profiles: ok (3 distinct tuples; 10 category references)",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			withCLIWorkspace(t)
+			withAgentRunner(t, &profileReadinessExactRunner{prove: func(agent.ProbeRequest) (agent.SelectionProof, error) {
+				return agent.SelectionProof{EffectiveAccessPolicy: tt.policy}, nil
+			}})
+			withDoctorFakeDeps(t, newDoctorFakeHealthChecker(
+				CheckResult{Name: HealthCheckNode, Status: CheckStatusOK},
+				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK},
+				CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK},
+			))
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLI(t, []string{"doctor"}, &stdout, &stderr)
+
+			if code != exitOK {
+				t.Fatalf("doctor exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+			}
+			profilesLine := ""
+			for _, line := range strings.Split(strings.TrimSpace(stdout.String()), "\n") {
+				if strings.HasPrefix(line, HealthCheckProfiles+": ") {
+					profilesLine = line
+					break
+				}
+			}
+			if profilesLine != tt.wantProfilesLine {
+				t.Fatalf("Doctor profile readiness line:\nwant: %q\n got: %q\nstdout: %q", tt.wantProfilesLine, profilesLine, stdout.String())
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("doctor stderr = %q, want empty", stderr.String())
+			}
+		})
+	}
+}
+
 const wantProfileProofFallbackBoundary = "fallback: Fallback Chains activate only after Run creation (ADR-0050); Preflight proves every configured tuple and substitutes none"
 
 func TestProfileProofErrorAppendsFallbackBoundaryAfterExistingFields(t *testing.T) {
@@ -3490,6 +3609,36 @@ func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected --yes to avoid prompts, got stderr %q", stderr.String())
+	}
+}
+
+func TestSetupWritesNoRunCeilingIntoProjectConfig(t *testing.T) {
+	t.Parallel()
+	fake := newSetupFakeDeps()
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("setup exit = %d, want %d (stderr %q)", code, exitOK, stderr.String())
+	}
+	projectContent := fake.files[fake.projectConfigPath]
+	if strings.Contains(projectContent, "max_active:") {
+		t.Fatalf("setup-created Project Config contains the User Config-only Run ceiling:\n%s", projectContent)
+	}
+
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+	mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), projectContent)
+	var loadStderr bytes.Buffer
+	if _, err := roundconfig.Load(roundconfig.LoadOptions{HomeDir: homeDir, WorkDir: workDir, Stderr: &loadStderr}); err != nil {
+		t.Fatalf("load setup-created Project Config: %v", err)
+	}
+	if loadStderr.Len() != 0 {
+		t.Fatalf("Load() warning after setup = %q, want none", loadStderr.String())
 	}
 }
 

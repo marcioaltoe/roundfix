@@ -375,12 +375,37 @@ func printProfilesValidateSuccess(req profilesValidateRequest, result profilePro
 	}
 	fmt.Fprintln(stdout, "Profiles validate passed.")
 	for index, proof := range result.Proofs {
-		fmt.Fprintf(stdout, "%d. %s — %s\n", index+1, formatProfileSelection(proof.Selection), proof.Status)
+		status := proof.Status
+		if isDegradedAccessPolicy(proof.EffectiveAccessPolicy) {
+			status += " (effective access policy: " + string(proof.EffectiveAccessPolicy) + ")"
+		}
+		fmt.Fprintf(stdout, "%d. %s — %s\n", index+1, formatProfileSelection(proof.Selection), status)
 		for _, reference := range proof.References {
 			fmt.Fprintf(stdout, "   - %s\n", formatProfileProofReference(reference))
 		}
 	}
 	return nil
+}
+
+func isDegradedAccessPolicy(policy agent.AccessPolicy) bool {
+	return strings.Contains(string(policy), "(degraded:")
+}
+
+func degradedAccessPolicies(proofs []profileProofReport) []string {
+	policies := make([]string, 0)
+	seen := make(map[agent.AccessPolicy]struct{})
+	for _, proof := range proofs {
+		policy := proof.EffectiveAccessPolicy
+		if !isDegradedAccessPolicy(policy) {
+			continue
+		}
+		if _, ok := seen[policy]; ok {
+			continue
+		}
+		seen[policy] = struct{}{}
+		policies = append(policies, string(policy))
+	}
+	return policies
 }
 
 func printProfilesValidateOutputError(err error, stderr io.Writer) int {

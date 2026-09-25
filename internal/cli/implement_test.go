@@ -6040,7 +6040,7 @@ func TestRunImplementStopRequestEndsStoppedWithInterruptMapping(t *testing.T) {
 // Invariant: a BudgetExceeded terminal diagnostic identifies its Run without
 // requiring the earlier Implement Run header.
 // Owning layer: CLI test diagnostics parsing.
-// Existing canonical suite: TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch.
+// Existing canonical suite: TestBudgetClockCrossesAfterTheSettledTask.
 func TestBudgetExceededRunIsFoundWithoutTheHeaderLine(t *testing.T) {
 	const runID = "run_20260924T120000Z_budget"
 	stderr := "Implement Run " + runID + " reached BudgetExceeded.\n"
@@ -6055,21 +6055,52 @@ func TestBudgetExceededRunIsFoundWithoutTheHeaderLine(t *testing.T) {
 // the non-integrated Run Worktree and Run Branch recoverable.
 // Owning layer: public Implement Command integration.
 // Existing canonical suite: TestRunImplementStopRequestEndsStoppedWithInterruptMapping.
-func TestRunImplementBudgetExceededPreservesRunWorktreeAndBranch(t *testing.T) {
+func TestBudgetClockCrossesAfterTheSettledTask(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Complete before the Run Budget"},
 		{id: "task_02", title: "Reach the Run Budget", needs: []string{"task_01"}},
 	})
-	const maximum = 500 * time.Millisecond
+	const maximum = time.Hour
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "budget:\n  max_run_duration: "+maximum.String()+"\n")
 	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
 	gitImplement(t, repoDir, "commit", "-m", "configure bounded implement run")
+	settled := make(chan struct{})
+	secondTaskStarted := make(chan struct{})
+	var settleOnce sync.Once
+	var secondTaskOnce sync.Once
 	runner := &implementFakeRunner{
 		gitRoot:      repoDir,
 		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
-		blockByTask:  map[string]bool{"task_02": true},
+		onTask: func(_ agent.ExecuteRequest, taskID string) error {
+			if taskID != "task_02" {
+				return nil
+			}
+			select {
+			case <-settled:
+				secondTaskOnce.Do(func() { close(secondTaskStarted) })
+				return nil
+			default:
+				return errors.New("task_02 started before task_01 settled")
+			}
+		},
 	}
 	committer, verifier, _, _ := withImplementCollaborators(t, runner)
+	withVersionFreshnessFakeDeps(t, versionFreshnessDependencies{currentVersion: func() string { return "dev" }})
+	clockBeforeBudget := time.Now()
+	committer.afterCommit = func(context.Context, daemon.CommitRequest) error {
+		settleOnce.Do(func() { close(settled) })
+		return nil
+	}
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.implementBudgetNow = func() time.Time {
+			select {
+			case <-secondTaskStarted:
+				return clockBeforeBudget.Add(2 * maximum)
+			default:
+				return clockBeforeBudget
+			}
+		}
+	})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 

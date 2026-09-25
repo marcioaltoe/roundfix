@@ -248,7 +248,7 @@ func (runner *setupRunner) buildProposal(ctx context.Context) (setupProposal, bo
 		return setupProposal{}, false
 	}
 	if strings.TrimSpace(runner.loaded.GitRoot) != "" {
-		project, ok := runner.readFileProposal("Project Config", runner.loaded.ProjectConfigPath, []byte(roundconfig.DefaultConfigYAML()))
+		project, ok := runner.readFileProposal("Project Config", runner.loaded.ProjectConfigPath, []byte(roundconfig.DefaultProjectConfigYAML()))
 		if !ok {
 			return setupProposal{}, false
 		}

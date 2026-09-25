@@ -1178,6 +1178,9 @@ func ValidatePreconditionRepairs(authorization spec.AuthorizationResolution, spe
 		if !ok {
 			return fmt.Errorf("precondition repair Task %q is not a Task in Spec %q", taskID, specSlug)
 		}
+		if task.Status == spec.StatusCompleted {
+			continue
+		}
 		if !taskCarriesExactVerificationCommand(task, configured) {
 			command := configured
 			if command == "" {
@@ -1552,14 +1555,12 @@ func retainCollectedVerificationFailures(retry verificationAttemptOutcome, initi
 	if initial.TemporaryFailure == nil || initial.TemporaryFailure.CommandFailure == nil {
 		return retry
 	}
-	retained := make([]verificationAttemptFailure, 0, len(initial.CommandFailures))
-	for _, failure := range initial.CommandFailures {
-		if failure.CommandFailure != initial.TemporaryFailure.CommandFailure {
-			retained = append(retained, failure)
-		}
+	verdicts := make(map[string]struct{}, len(retry.ReachedCommands))
+	for _, command := range retry.ReachedCommands {
+		verdicts[command] = struct{}{}
 	}
-	if len(retained) == 0 {
-		return retry
+	if retry.UnknownCause != nil {
+		delete(verdicts, retry.UnknownCause.Command)
 	}
 	commandFailures := retry.CommandFailures
 	if len(commandFailures) == 0 && retry.CommandFailure != nil {
@@ -1568,7 +1569,38 @@ func retainCollectedVerificationFailures(retry verificationAttemptOutcome, initi
 			Metadata:       verificationFailureMetadata{Repeated: retry.Repeated},
 		}}
 	}
-	retry.CommandFailures = append(retained, commandFailures...)
+	merged := make([]verificationAttemptFailure, 0, len(initial.CommandFailures)+len(commandFailures))
+	mergedByCommand := make(map[string]int, cap(merged))
+	appendFailure := func(failure verificationAttemptFailure) {
+		if failure.CommandFailure == nil {
+			return
+		}
+		command := failure.CommandFailure.Command
+		if index, ok := mergedByCommand[command]; ok {
+			merged[index] = failure
+			return
+		}
+		mergedByCommand[command] = len(merged)
+		merged = append(merged, failure)
+	}
+	for _, failure := range initial.CommandFailures {
+		if failure.CommandFailure == nil {
+			continue
+		}
+		if failure.CommandFailure.Command == initial.TemporaryFailure.CommandFailure.Command {
+			continue
+		}
+		if _, replaced := verdicts[failure.CommandFailure.Command]; !replaced {
+			appendFailure(failure)
+		}
+	}
+	for _, failure := range commandFailures {
+		appendFailure(failure)
+	}
+	if len(merged) == 0 {
+		return retry
+	}
+	retry.CommandFailures = merged
 	retry.CommandFailure = retry.CommandFailures[0].CommandFailure
 	retry.Repeated = retry.CommandFailures[0].Metadata.Repeated
 	retry.Failure = verificationAttemptFailureReason(retry.CommandFailures, retry.UnknownCause)

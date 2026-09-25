@@ -769,7 +769,7 @@ func Init(ctx context.Context, opts InitOptions) (InitResult, error) {
 		path = filepath.Join(gitRoot, projectConfigName)
 	}
 
-	overwritten, err := writeDefaultConfig(ctx, path, opts.Force)
+	overwritten, err := writeDefaultConfig(ctx, path, opts.Force, scope)
 	if err != nil {
 		return InitResult{}, err
 	}
@@ -777,7 +777,22 @@ func Init(ctx context.Context, opts InitOptions) (InitResult, error) {
 }
 
 func DefaultConfigYAML() string {
+	return defaultConfigYAML(InitScopeUser)
+}
+
+func DefaultProjectConfigYAML() string {
+	return defaultConfigYAML(InitScopeProject)
+}
+
+func defaultConfigYAML(scope string) string {
 	config := Builtin()
+	runsConfig := ""
+	if scope == InitScopeUser {
+		runsConfig = fmt.Sprintf(`runs:
+  # Maximum Active Implement Runs across repositories; 0 disables the bound.
+  max_active: %d
+`, config.Runs.MaxActive)
+	}
 	return fmt.Sprintf(`# Roundfix config.
 # User Config: ~/.roundfix/config.yml
 # Project Config: <repo>/.roundfixrc.yml
@@ -842,10 +857,7 @@ specs:
   # Directory holding Spec folders; relative paths resolve against the repository root.
   root: %q
 
-runs:
-  # Maximum Active Implement Runs across repositories; 0 disables the bound.
-  max_active: %d
-
+%s
 worktree:
   # Parent directory; Roundfix always appends <repo-slug>/<run-id>.
   location: %q
@@ -912,7 +924,7 @@ resolve:
 		config.Defaults.Verification,
 		config.Defaults.AutoCommit,
 		config.Specs.Root,
-		config.Runs.MaxActive,
+		runsConfig,
 		config.Worktree.Location,
 		config.Worktree.Concurrency,
 		formatConfigDuration(config.Worktree.BootstrapTimeout),
@@ -1062,7 +1074,7 @@ func ResolveSpecsRoot(loaded Loaded, repoRoot string) (SpecsRoot, error) {
 	}, nil
 }
 
-func writeDefaultConfig(ctx context.Context, path string, force bool) (bool, error) {
+func writeDefaultConfig(ctx context.Context, path string, force bool, scope string) (bool, error) {
 	if err := ctx.Err(); err != nil {
 		return false, err
 	}
@@ -1092,7 +1104,7 @@ func writeDefaultConfig(ctx context.Context, path string, force bool) (bool, err
 	if err != nil {
 		return false, fmt.Errorf("create config %q: %w", path, err)
 	}
-	_, writeErr := file.WriteString(DefaultConfigYAML())
+	_, writeErr := file.WriteString(defaultConfigYAML(scope))
 	closeErr := file.Close()
 	if writeErr != nil {
 		return false, fmt.Errorf("write config %q: %w", path, writeErr)
