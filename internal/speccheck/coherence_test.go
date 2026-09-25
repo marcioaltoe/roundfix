@@ -212,10 +212,12 @@ func TestPromiseSectionDeclaration(t *testing.T) {
 			stage:           speccheck.StageTechSpec,
 		},
 		{
-			name:            "none mixed with numbered declarations",
-			prdSection:      "## Success Metrics\n\nNone. This line does not erase numbered metrics.\n1. The fixture records one outcome.\n",
-			techSpecSection: "## API Contracts\n\nNone. This line does not erase numbered contracts.\n1. The fixture exposes one contract.\n",
-			stage:           speccheck.StageTechSpec,
+			name:         "none mixed with numbered declarations",
+			prdSection:   "## Success Metrics\n\nNone. This line does not erase numbered metrics.\n1. The fixture records one outcome.\n",
+			stage:        speccheck.StagePRD,
+			wantCode:     speccheck.CodeMetricUndeclared,
+			wantArtifact: "_prd.md",
+			wantSection:  "Success Metrics",
 		},
 		{
 			name:            "none without a reason",

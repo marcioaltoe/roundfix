@@ -73,7 +73,6 @@ back on every later command in that HOME.
 ## Context
 
 - creates: `internal/cli/version_freshness_isolation_test.go`
-- interface: `internal/cli/upgrade.go`
 - interface: `internal/cli/upgrade_test.go`
 - interface: `internal/cli/implement_test.go`
 - interface: `internal/daemon/run_disposition_characterization_test.go`

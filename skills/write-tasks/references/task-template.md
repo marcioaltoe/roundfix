@@ -117,6 +117,8 @@ complexity: medium # low | medium | high
      The Daemon runs these verbatim after the Agent turn and will not settle the task completed until they pass.
      Use portable shell forms: prefer grep over rg in Task gates, avoid wc-pipeline shape checks, use repository build flags such as go build -buildvcs=false ./... when a build is required, and include executable checks that prove the Task's effect. -->
 
+<!-- A tool piped into grep inside a command substitution hides the tool's status and is refused with `SC-VERIFY-INVERTED-EXIT`. Preserve the status with `out="$(tool 2>&1)" || exit 1; ! printf '%s\n' "$out" | grep -q pattern`. -->
+
 <!-- A red repository gate admits only a Task named in the frozen `_authorization.md` `precondition_repairs` list; the Task or Agent cannot add itself. -->
 
 - `<command>` — expected: ...

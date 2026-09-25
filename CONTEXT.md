@@ -36,6 +36,14 @@ _Avoid_: Auto-fix, gate edit, remediation
 A repository path the tooling-authority rules bind — the configuration, scripts, ignore files, plugin declarations, and version pins of linters, formatters, typecheckers, test runners, architecture checkers, build tools, package managers, and code generators. The changed-path audit judges a Task commit only against its governed paths; an ordinary source, test, or documentation file is not governed and needs no grant. The declared set is held to the record: every path any authorization has ever bounded stays governed.
 _Avoid_: Protected file, restricted path, tooling file
 
+**Undeclared Governed Path**:
+A Governed Path named by a pending non-QA Task but omitted from its authorization record or a present Tooling authority row.
+_Avoid_: Unauthorized edit, inferred path, ordinary path
+
+**Undocumented CLI Surface**:
+A CLI source or contract-test path named by a pending non-QA Task that names no guide in itself or its dependency ancestry.
+_Avoid_: Missing documentation, undocumented command, downstream guide
+
 **Process Residue**:
 A process Roundfix started that outlived the Run that started it, so no live Run record owns it. The readiness diagnostic reports residue with each process's age, its consumed CPU time, and its originating Run when the Run Database still knows it; reporting settles nothing and creates no Run record.
 _Avoid_: Orphan, zombie, leaked run, stale process
