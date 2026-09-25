@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0163-baseline-decisions-and-regeneration
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -44,3 +44,51 @@ The `http-contract` branch of `promptBaselineDecision` returns `{"mode": ...}` o
 
 - [_techspec.md](_techspec.md) — The HTTP mode change
 - [2026-08-07-changing-the-http-contract-discards-its-exceptions.md](../../history/findings/2026-08-07-changing-the-http-contract-discards-its-exceptions.md)
+
+## Result
+
+### Implementation
+
+- A valid stored HTTP Contract now changes through a deep clone: the selected
+  mode replaces `mode`, every exception and `source` stays intact, the stored
+  value is not mutated, and `baseline.ValidateDecisionValue` validates the
+  result.
+- The change option names every retained exception scope. With no valid stored
+  value, the existing mode-only prompt remains unchanged.
+- Explicit `--decision` input still enters planning as the exact supplied typed
+  decision, including a deliberately shorter exception list.
+
+### Focused checks
+
+- Before the implementation,
+  `GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 -run '^TestHTTPContractModeChangeRetainsExceptionsAndSource$' ./internal/cli`
+  failed because the result contained only `mode`.
+- Before the implementation,
+  `GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 -run '^TestHTTPContractModeChangeReviewNamesKeptExceptions$' ./internal/cli`
+  failed because the change line named none of the four scopes.
+- After the implementation, each of the three named Task tests passed when run
+  individually. `TestHumanBaselineDecisionDefaults`,
+  `TestProjectDecisionPrompts`, and `TestProjectDecisionReuse` also passed as
+  focused regressions.
+- `GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 ./internal/cli`
+  passed in 90.251 seconds after the existing GitHub-backed tests received the
+  network access they require. `git diff --check` also passed.
+
+### Acceptance evidence
+
+1. `TestHTTPContractModeChangeRetainsExceptionsAndSource` compares the archived
+   Finding fixture field by field after a mode-only change and separately proves
+   that the stored value was not mutated.
+2. `TestHTTPContractModeChangeReviewNamesKeptExceptions` isolates the change
+   option and proves it names `/api/auth/*`, `/health`, `/openapi.json`, and
+   `/reference`.
+3. `TestHTTPContractExplicitValueStillReplacesExceptions` sends an explicit
+   `--decision` value with one fewer exception and compares the parsed decision
+   exactly with that value.
+
+The Daemon-owned `## Verification` command was not run.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260925T135958Z_cb4c08f055bb883c`
+- Source commit: `05c25931c2b1c54c9969b7d0900d95ef4edb5da2`

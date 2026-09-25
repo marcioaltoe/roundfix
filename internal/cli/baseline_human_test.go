@@ -483,6 +483,95 @@ func TestProjectDecisionPrompts(t *testing.T) {
 	})
 }
 
+func TestHTTPContractModeChangeRetainsExceptionsAndSource(t *testing.T) {
+	t.Parallel()
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load Baseline catalog: %v", err)
+	}
+	current := archivedFindingHTTPContractDecision()
+	before := archivedFindingHTTPContractDecision()
+	want := archivedFindingHTTPContractDecision()
+	want["mode"] = "REST"
+
+	got, err := promptBaselineDecision(
+		context.Background(),
+		&baselineHumanPrompt{reader: bufioReader("2\n1\n"), writer: &bytes.Buffer{}},
+		catalog,
+		"http.contract",
+		map[string]any{"http.contract": current},
+	)
+	if err != nil {
+		t.Fatalf("change HTTP Contract mode: %v", err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("changed HTTP Contract = %#v, want %#v", got, want)
+	}
+	if !reflect.DeepEqual(current, before) {
+		t.Fatalf("mode change mutated stored HTTP Contract: got %#v, want %#v", current, before)
+	}
+}
+
+func TestHTTPContractModeChangeReviewNamesKeptExceptions(t *testing.T) {
+	t.Parallel()
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load Baseline catalog: %v", err)
+	}
+	var output bytes.Buffer
+	_, err = promptBaselineDecision(
+		context.Background(),
+		&baselineHumanPrompt{reader: bufioReader("2\n1\n"), writer: &output},
+		catalog,
+		"http.contract",
+		map[string]any{"http.contract": archivedFindingHTTPContractDecision()},
+	)
+	if err != nil {
+		t.Fatalf("review HTTP Contract mode change: %v", err)
+	}
+
+	var changeLine string
+	for _, line := range strings.Split(output.String(), "\n") {
+		if strings.Contains(line, "Change http.contract") {
+			changeLine = line
+			break
+		}
+	}
+	if changeLine == "" {
+		t.Fatalf("HTTP Contract review has no change line:\n%s", output.String())
+	}
+	for _, scope := range []string{"/api/auth/*", "/health", "/openapi.json", "/reference"} {
+		if !strings.Contains(changeLine, scope) {
+			t.Errorf("HTTP Contract change review line %q does not name kept scope %q", changeLine, scope)
+		}
+	}
+}
+
+func TestHTTPContractExplicitValueStillReplacesExceptions(t *testing.T) {
+	t.Parallel()
+	explicit := archivedFindingHTTPContractDecision()
+	exceptions := explicit["exceptions"].([]any)
+	explicit["exceptions"] = append([]any(nil), exceptions[:len(exceptions)-1]...)
+	encoded, err := json.Marshal(explicit)
+	if err != nil {
+		t.Fatalf("encode explicit HTTP Contract: %v", err)
+	}
+	request, err := parseBaselinePlanCommand([]string{
+		"--decision", "http.contract=" + string(encoded),
+	})
+	if err != nil {
+		t.Fatalf("parse explicit HTTP Contract: %v", err)
+	}
+	decisions, _, err := loadBaselinePlanDecisions(request)
+	if err != nil {
+		t.Fatalf("load explicit HTTP Contract: %v", err)
+	}
+	want := []baseline.DecisionValue{{ID: "http.contract", Value: explicit}}
+	if !reflect.DeepEqual(decisions, want) {
+		t.Fatalf("explicit decisions = %#v, want exact replacement %#v", decisions, want)
+	}
+}
+
 func TestToolingAuthorityNoPrompt(t *testing.T) {
 	t.Parallel()
 	catalog, err := baseline.LoadEmbeddedCatalog()
@@ -1558,6 +1647,42 @@ func newCLIProjectDecisionRepository(t *testing.T) string {
 
 func projectDecisionHumanAnswers() string {
 	return "\nmake verify\n\n\n\n\n\n\n\n2\n2\n2\n"
+}
+
+func archivedFindingHTTPContractDecision() map[string]any {
+	return map[string]any{
+		"mode": "Post-only",
+		"exceptions": []any{
+			map[string]any{
+				"scope":   "/api/auth/*",
+				"methods": []any{"GET", "POST"},
+				"owner":   "Better Auth",
+				"reason":  "Provider protocol routes require GET and POST semantics.",
+			},
+			map[string]any{
+				"scope":   "/health",
+				"methods": []any{"GET"},
+				"owner":   "operations",
+				"reason":  "Health probes require read semantics.",
+			},
+			map[string]any{
+				"scope":   "/openapi.json",
+				"methods": []any{"GET"},
+				"owner":   "API documentation",
+				"reason":  "The generated API description is read-only.",
+			},
+			map[string]any{
+				"scope":   "/reference",
+				"methods": []any{"GET"},
+				"owner":   "API documentation",
+				"reason":  "The API reference is read-only.",
+			},
+		},
+		"source": map[string]any{
+			"digest": "397bc399",
+			"path":   "packages/backend/src/infra/controllers/http/app.ts",
+		},
+	}
 }
 
 func buildCLIProjectDecisionPlan(

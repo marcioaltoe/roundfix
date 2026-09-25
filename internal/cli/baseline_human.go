@@ -1467,12 +1467,21 @@ func promptBaselineDecision(
 	if err != nil {
 		return nil, err
 	}
+	var retainedHTTPContract any
 	if value, ok := current[id]; ok {
 		if baseline.ValidateDecisionValue(catalog, id, value) == nil {
 			encoded, _ := json.Marshal(value)
+			changeOption := "Change " + id
+			if declaration.Type == "http-contract" {
+				retainedHTTPContract = value
+				changeOption += " mode; keep exceptions and source"
+				if scopes := baselineHTTPContractExceptionScopes(value); len(scopes) != 0 {
+					changeOption += " (scopes: " + strings.Join(scopes, ", ") + ")"
+				}
+			}
 			selected, err := prompt.selectOneDefault(ctx, declaration.Summary, []string{
 				fmt.Sprintf("Keep %s=%s", id, encoded),
-				"Change " + id,
+				changeOption,
 			}, 0)
 			if err != nil {
 				return nil, err
@@ -1623,7 +1632,22 @@ func promptBaselineDecision(
 		if err != nil {
 			return nil, err
 		}
-		return map[string]any{"mode": declaration.Modes[selected]}, nil
+		value := map[string]any{"mode": declaration.Modes[selected]}
+		if retainedHTTPContract != nil {
+			currentValue, ok := retainedHTTPContract.(map[string]any)
+			if !ok {
+				return nil, fmt.Errorf("prompt Baseline decision %q: current value is not an object", id)
+			}
+			value, err = cloneBaselineDecisionObject(currentValue)
+			if err != nil {
+				return nil, fmt.Errorf("prompt Baseline decision %q: clone current value: %w", id, err)
+			}
+			value["mode"] = declaration.Modes[selected]
+		}
+		if err := baseline.ValidateDecisionValue(catalog, id, value); err != nil {
+			return nil, fmt.Errorf("prompt Baseline decision %q: validate mode change: %w", id, err)
+		}
+		return value, nil
 	case "string":
 		if value, ok := declaration.Default.(string); ok && strings.TrimSpace(value) != "" {
 			return prompt.readNonEmptyDefault(ctx, declaration.Summary+" ("+id+")", value)
@@ -1632,6 +1656,29 @@ func promptBaselineDecision(
 	default:
 		return nil, fmt.Errorf("prompt Baseline decision %q: unsupported type %q", id, declaration.Type)
 	}
+}
+
+func baselineHTTPContractExceptionScopes(value any) []string {
+	contract, ok := value.(map[string]any)
+	if !ok {
+		return nil
+	}
+	exceptions, ok := contract["exceptions"].([]any)
+	if !ok {
+		return nil
+	}
+	scopes := make([]string, 0, len(exceptions))
+	for _, rawException := range exceptions {
+		exception, ok := rawException.(map[string]any)
+		if !ok {
+			continue
+		}
+		scope, _ := exception["scope"].(string)
+		if scope != "" {
+			scopes = append(scopes, scope)
+		}
+	}
+	return scopes
 }
 
 func baselineAuthProviderSuggestion(
