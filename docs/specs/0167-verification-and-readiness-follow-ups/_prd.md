@@ -38,6 +38,10 @@ readiness with three minor defects recorded by its second pre-PR review:
   paths with `GovernedPath` is empty. Source:
   `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`.
 
+Spec 0165 carried two more defects here: a project-scope `roundfix init` makes
+every later command warn about `runs.max_active`, and the Implement budget test
+races a real 500 ms clock.
+
 ## Goals
 
 - The repair turn sees each current failure exactly once.
@@ -54,6 +58,9 @@ readiness with three minor defects recorded by its second pre-PR review:
 3. **Degraded access is printed.** The text output of `profiles validate` and
    Doctor's profile readiness line name a degraded effective access policy.
 
+4. **A quiet project init and a deterministic budget test.** Project Config
+   templates omit `runs.max_active`, and the budget test's clock is injected.
+
 ## Non-Goals / Out of Scope
 
 - Changing when a repair Task may enter or how it settles.
@@ -65,6 +72,8 @@ readiness with three minor defects recorded by its second pre-PR review:
 2. `implement` proceeds for a Spec whose completed repair Task no longer carries
    the command verbatim.
 3. The text readiness output names a degraded policy.
+4. A project-scope `init` followed by any command warns nothing, and the budget
+   test passes without depending on wall-clock timing.
 
 ## Decisions
 

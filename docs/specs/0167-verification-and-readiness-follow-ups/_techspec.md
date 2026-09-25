@@ -57,9 +57,11 @@ degraded.
 - Core Feature 1 → Retry verdicts.
 - Core Feature 2 → Completed repairs.
 - Core Feature 3 → Degraded access.
+- Core Feature 4 → Build Order.
 - Success Metric 1 → Testing Approach 1.
 - Success Metric 2 → Testing Approach 1.
 - Success Metric 3 → Testing Approach 2.
+- Success Metric 4 → Testing Approach 2.
 - API Contracts 1-3 → Retry verdicts, Completed repairs, Degraded access.
 
 ## Integration Points
@@ -80,7 +82,8 @@ degraded.
 
 1. Retry verdicts and completed repairs (depends on: none).
 2. Degraded access (depends on: 1).
-3. Terminal QA (depends on: 1, 2).
+3. Terminal QA (depends on: 1, 2, 4).
+4. A quiet project init and a budget test without a race (depends on: 2).
 
 ## Risks & Considerations
 

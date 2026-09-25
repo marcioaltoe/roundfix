@@ -22,8 +22,10 @@ settles the Spec on evidence.
    not refuse planning, while a pending one does.
 4. MUST verify that the text output of `profiles validate` and Doctor name a
    degraded access policy and are unchanged otherwise.
-5. MUST verify that this Spec's own artifacts satisfy the promise rule.
-6. MUST NOT accept a row whose only evidence is that a file was read.
+5. MUST verify that a project-scope `init` followed by any command warns
+   nothing, and that the budget test's clock is injected.
+6. MUST verify that this Spec's own artifacts satisfy the promise rule.
+7. MUST NOT accept a row whose only evidence is that a file was read.
 
 ## Subtasks
 
@@ -52,7 +54,7 @@ applied in process by whoever settles the Task.
 
 ## References
 
-`_prd.md` → Goals 1-3; Core Features 1-3; Success Metrics 1-3; Acceptance
+`_prd.md` → Goals 1-3; Core Features 1-4; Success Metrics 1-4; Acceptance
 evidence; `_techspec.md` → Testing Approach 1-3; API Contracts 1-3; ADR-0038;
 ADR-0056; ADR-0080; ADR-0091; ADR-0093; ADR-0096; ADR-0097; ADR-0104; ADR-0117; ADR-0130;
 ADR-0155; ADR-0156; ADR-0159; ADR-0160.
