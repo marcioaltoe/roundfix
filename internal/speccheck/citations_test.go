@@ -239,6 +239,38 @@ func TestArchivedFindingClosesWithReasonAndEvidence(t *testing.T) {
 	}
 }
 
+func TestArchivedFindingWithOnlyClosureReasonIsRefused(t *testing.T) {
+	t.Parallel()
+
+	requireIncompleteClosureFinding(t, "closure_reason: no implementation remains\n")
+}
+
+func TestArchivedFindingWithOnlyClosureEvidenceIsRefused(t *testing.T) {
+	t.Parallel()
+
+	requireIncompleteClosureFinding(t, "closure_evidence: docs/references/disposition.md\n")
+}
+
+func TestArchivedFindingWithABlankClosureReasonIsRefused(t *testing.T) {
+	t.Parallel()
+
+	requireIncompleteClosureFinding(t, "closure_reason: '   '\nclosure_evidence: docs/references/disposition.md\n")
+}
+
+func requireIncompleteClosureFinding(t *testing.T, closureFields string) {
+	t.Helper()
+
+	repoRoot := writeFindingsCarrier(t)
+	archivedPath := archivedSpeccheckPath(spec.ArchiveKindFinding, "2026-08-06-incomplete-closure.md")
+	writeFindingsArtifact(t, repoRoot, archivedPath, "---\nstatus: closed\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\n"+closureFields+"---\n\n# Incomplete closure\n")
+
+	result := checkFindingsCarrier(t, repoRoot)
+	finding := requireRenderedFinding(t, result, speccheck.CodeArchiveLicense, archivedPath, 1)
+	if !strings.Contains(finding.Summary, "complete closure fields") {
+		t.Fatalf("summary = %q, want incomplete closure fields", finding.Summary)
+	}
+}
+
 func TestArchivedFindingClosureCannotHideAnInvalidAbsorber(t *testing.T) {
 	t.Parallel()
 
@@ -845,6 +877,143 @@ func TestCheckReferenceIndexUnresolved(t *testing.T) {
 	if !hasLocation(finding, "docs/specs/reference-index-unresolved/references/_index.md") {
 		t.Errorf("locations = %#v, want declaring reference index line", finding.Where)
 	}
+}
+
+func TestAdoptedBacklogEntryLeftInPlaceIsRefused(t *testing.T) {
+	t.Parallel()
+
+	result, sourcePath, indexedPath := checkAdoptedSourceFixture(t, "docs/backlog/2026-09-25-left-behind.md", true)
+	requireLeftBehindAdoptedSourceFinding(t, result, sourcePath, indexedPath)
+}
+
+func TestAdoptedFindingLeftInPlaceIsRefused(t *testing.T) {
+	t.Parallel()
+
+	result, sourcePath, indexedPath := checkAdoptedSourceFixture(t, "docs/findings/2026-09-25-left-behind.md", true)
+	requireLeftBehindAdoptedSourceFinding(t, result, sourcePath, indexedPath)
+}
+
+func TestAdoptedSourceMovedOncePasses(t *testing.T) {
+	t.Parallel()
+
+	result, _, _ := checkAdoptedSourceFixture(t, "docs/backlog/2026-09-25-moved.md", false)
+	if findings := findingsWithCode(result, speccheck.CodeReferenceUnresolved); len(findings) != 0 {
+		t.Fatalf("%s findings = %#v, want a single moved copy accepted", speccheck.CodeReferenceUnresolved, findings)
+	}
+}
+
+func checkAdoptedSourceFixture(t *testing.T, sourcePath string, leaveOriginal bool) (speccheck.Result, string, string) {
+	t.Helper()
+
+	const slug = "adopted-source"
+	repoRoot := t.TempDir()
+	writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/_prd.md", "# Adopted source fixture\n\n## Success Metrics\n\nNone. This fixture declares no measurable outcome.\n")
+	indexedPath := "docs/specs/" + slug + "/references/" + filepath.Base(sourcePath)
+	writeCitationFixtureFile(t, repoRoot, indexedPath, "# Adopted source\n")
+	if leaveOriginal {
+		writeCitationFixtureFile(t, repoRoot, sourcePath, "# Original source\n")
+	}
+	referenceType := "backlog"
+	if strings.HasPrefix(sourcePath, "docs/findings/") {
+		referenceType = "finding"
+	}
+	index := "# Adopted sources\n\n| source | type | owner | adopted date | path |\n| --- | --- | --- | --- | --- |\n| " + sourcePath + " | " + referenceType + " | 0170 | 2026-09-25 | " + filepath.Base(indexedPath) + " |\n"
+	writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/references/_index.md", index)
+
+	result, err := speccheck.Check(filepath.Join(repoRoot, "docs", "specs"), repoRoot, slug)
+	if err != nil {
+		t.Fatalf("Check(%s): %v", slug, err)
+	}
+	return result, sourcePath, indexedPath
+}
+
+func requireLeftBehindAdoptedSourceFinding(t *testing.T, result speccheck.Result, sourcePath, indexedPath string) {
+	t.Helper()
+
+	findings := findingsWithCode(result, speccheck.CodeReferenceUnresolved)
+	if len(findings) != 1 {
+		t.Fatalf("%s findings = %#v, want one left-behind source finding", speccheck.CodeReferenceUnresolved, findings)
+	}
+	finding := findings[0]
+	for _, path := range []string{sourcePath, indexedPath} {
+		if !strings.Contains(finding.Summary, path) {
+			t.Errorf("summary = %q, want path %q", finding.Summary, path)
+		}
+	}
+}
+
+func TestWrappedNoneSuccessMetricsIsAccepted(t *testing.T) {
+	t.Parallel()
+
+	result := checkPromiseDeclarationFixture(t,
+		"## Success Metrics\n\nNone. This fixture changes no measurable\noutcome.\n",
+		"",
+		speccheck.StagePRD,
+	)
+	if findings := findingsWithCode(result, speccheck.CodeMetricUndeclared); len(findings) != 0 {
+		t.Fatalf("%s findings = %#v, want wrapped None paragraph accepted", speccheck.CodeMetricUndeclared, findings)
+	}
+}
+
+func TestWrappedNoneAPIContractsIsAccepted(t *testing.T) {
+	t.Parallel()
+
+	result := checkPromiseDeclarationFixture(t,
+		"## Success Metrics\n\nNone. This fixture changes no measurable outcome.\n",
+		"## API Contracts\n\nNone. This fixture changes no public\ninterface.\n",
+		speccheck.StageTechSpec,
+	)
+	if findings := findingsWithCode(result, speccheck.CodeContractUndeclared); len(findings) != 0 {
+		t.Fatalf("%s findings = %#v, want wrapped None paragraph accepted", speccheck.CodeContractUndeclared, findings)
+	}
+}
+
+func TestNoneWithoutAReasonIsRefused(t *testing.T) {
+	t.Parallel()
+
+	result := checkPromiseDeclarationFixture(t, "## Success Metrics\n\nNone.\n", "", speccheck.StagePRD)
+	if findings := findingsWithCode(result, speccheck.CodeMetricUndeclared); len(findings) != 1 {
+		t.Fatalf("%s findings = %#v, want reasonless None refused", speccheck.CodeMetricUndeclared, findings)
+	}
+}
+
+func TestNoneFollowedByASecondBlockIsRefused(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name    string
+		content string
+	}{
+		{name: "paragraph", content: "None. No measurable outcome.\n\nA second block.\n"},
+		{name: "list", content: "None. No measurable outcome.\n- A mixed list.\n"},
+		{name: "table", content: "None. No measurable outcome.\n| Mixed | table |\n| --- | --- |\n"},
+	} {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			result := checkPromiseDeclarationFixture(t, "## Success Metrics\n\n"+tt.content, "", speccheck.StagePRD)
+			if findings := findingsWithCode(result, speccheck.CodeMetricUndeclared); len(findings) != 1 {
+				t.Fatalf("%s findings = %#v, want mixed None section refused", speccheck.CodeMetricUndeclared, findings)
+			}
+		})
+	}
+}
+
+func checkPromiseDeclarationFixture(t *testing.T, prdSection, techSpecSection string, stage speccheck.Stage) speccheck.Result {
+	t.Helper()
+
+	const slug = "promise-declaration-task-three"
+	repoRoot := t.TempDir()
+	writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/_prd.md", "# Promise declaration fixture\n\n"+prdSection)
+	if stage == speccheck.StageTechSpec {
+		writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/_techspec.md", "# Promise declaration fixture\n\n"+techSpecSection)
+	}
+	result, err := speccheck.CheckStage(filepath.Join(repoRoot, "docs", "specs"), repoRoot, slug, stage)
+	if err != nil {
+		t.Fatalf("CheckStage(%s): %v", stage, err)
+	}
+	return result
 }
 
 func TestCheckCoverageUntaskedSkippedWithoutTaskGraph(t *testing.T) {

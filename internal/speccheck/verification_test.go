@@ -181,6 +181,81 @@ func TestVerifyInvertedExit(t *testing.T) {
 	}
 }
 
+func TestInvertedExitRefusesACapturedPipeToGrepTestedEmpty(t *testing.T) {
+	t.Parallel()
+
+	findings := speccheck.InvertedExitVerification(spec.Task{
+		File:         "fixture/task_01.md",
+		Verification: []string{`matches="$(go vet ./... 2>&1 | grep warning)"; test -z "$matches"`},
+	})
+	requirePipeToGrepFinding(t, findings)
+}
+
+func TestInvertedExitRefusesAnInlinePipeToGrepTestedEmpty(t *testing.T) {
+	t.Parallel()
+
+	findings := speccheck.InvertedExitVerification(spec.Task{
+		File:         "fixture/task_01.md",
+		Verification: []string{`[ -z "$(go vet ./... 2>&1 | grep warning)" ]`},
+	})
+	requirePipeToGrepFinding(t, findings)
+}
+
+func TestInvertedExitAcceptsAStatusPreservingCapture(t *testing.T) {
+	t.Parallel()
+
+	requireNoInvertedExitFinding(t, `out="$(tool 2>&1)" || exit 1; ! printf '%s\n' "$out" | grep -q pattern`)
+}
+
+func TestInvertedExitAcceptsTheSkillCaptureForm(t *testing.T) {
+	t.Parallel()
+
+	requireNoInvertedExitFinding(t, `matches="$(find path -name '*.tmp' -print)" || exit 1; test -z "$matches"`)
+}
+
+func TestInvertedExitAcceptsAPipefailPipeToGrep(t *testing.T) {
+	t.Parallel()
+
+	requireNoInvertedExitFinding(t, `set -o pipefail; matches="$(go vet ./... 2>&1 | grep warning)"; test -z "$matches"`)
+}
+
+func TestInvertedExitAcceptsTheNamedPassPattern(t *testing.T) {
+	t.Parallel()
+
+	requireNoInvertedExitFinding(t, `out="$(go test -v ./internal/speccheck)" || exit 1; printf '%s\n' "$out" | grep -q -- '--- PASS: TestCheck'`)
+}
+
+func requirePipeToGrepFinding(t *testing.T, findings []speccheck.Finding) {
+	t.Helper()
+
+	if len(findings) != 1 {
+		t.Fatalf("InvertedExitVerification() = %#v, want one finding", findings)
+	}
+	finding := findings[0]
+	if finding.Code != speccheck.CodeVerifyInvertedExit || finding.Severity != speccheck.SeverityError {
+		t.Errorf("finding identity = %s/%s, want %s/%s", finding.Code, finding.Severity, speccheck.CodeVerifyInvertedExit, speccheck.SeverityError)
+	}
+	if !strings.Contains(finding.Summary, "pipe-to-grep output tested empty") {
+		t.Errorf("finding summary = %q, want named pipe-to-grep form", finding.Summary)
+	}
+	const replacement = `out="$(tool 2>&1)" || exit 1; ! printf '%s\n' "$out" | grep -q pattern`
+	if !strings.Contains(finding.Fix, replacement) {
+		t.Errorf("finding fix = %q, want status-preserving replacement %q", finding.Fix, replacement)
+	}
+}
+
+func requireNoInvertedExitFinding(t *testing.T, command string) {
+	t.Helper()
+
+	findings := speccheck.InvertedExitVerification(spec.Task{
+		File:         "fixture/task_01.md",
+		Verification: []string{command},
+	})
+	if len(findings) != 0 {
+		t.Fatalf("InvertedExitVerification(%q) = %#v, want no finding", command, findings)
+	}
+}
+
 func TestVerifyInvertedExitSkipsWithoutTaskGraph(t *testing.T) {
 	t.Parallel()
 

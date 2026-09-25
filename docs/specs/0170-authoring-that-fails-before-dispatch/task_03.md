@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0170-authoring-that-fails-before-dispatch
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -78,3 +78,43 @@ unpinned. This Task fixes the three and adds the missing tests.
 - `_prd.md` → Goal 4; Core Feature 3; Success Metric 5.
 - `_techspec.md` → Honesty gaps; API Contract 3; Testing Approach 3; ADR-0083;
   ADR-0092; ADR-0093.
+
+## Result
+
+Implemented the three checker corrections and pinned the existing archived-
+Finding closure behavior:
+
+- `SC-VERIFY-INVERTED-EXIT` now recognises captured and inline pipe-to-`grep`
+  emptiness tests, names that form, and gives the status-preserving replacement.
+  It leaves `pipefail`, the write-tasks capture form, and the named-pass pattern
+  accepted.
+- Promise declarations now treat wrapped lines as one `None.` paragraph while
+  refusing a missing reason, a second paragraph, a list, a table, or numbered
+  declarations mixed into that paragraph.
+- Reference-index rows retain their `source` cell and report an adopted Finding
+  or Backlog Entry that remains at its active-family source path, naming both
+  that original and the indexed copy.
+- Regression tests now pin reason-only, evidence-only, and blank-reason
+  archived Findings as `SC-ARCHIVE-LICENSE` errors.
+
+Focused-check evidence by acceptance criterion:
+
+1. `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 ./internal/speccheck`
+   passed, including the captured, inline, status-preserving, skill-capture,
+   `pipefail`, and named-pass cases.
+2. The same package check passed the wrapped Success Metrics and API Contracts
+   cases and the reasonless, second-block, list, table, and mixed numbered
+   refusals.
+3. The same package check passed left-behind Backlog Entry, left-behind Finding,
+   and single-move reference-index cases.
+4. The same package check passed all three incomplete closure-field cases with
+   `SC-ARCHIVE-LICENSE`.
+
+Additional focused evidence:
+
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -tags docscontract ./internal/docscontract`
+  passed; the active corpus golden remains unchanged.
+- `make verify-incremental` passed after rerunning outside the restricted
+  network sandbox required by its GitHub-backed tests.
+- The Task's authored `## Verification` command was not run; Daemon
+  Verification remains the settlement authority.

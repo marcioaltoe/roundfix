@@ -1,6 +1,7 @@
 package speccheck
 
 import (
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -78,10 +79,14 @@ var (
 		`(?:^|(?:&&|\|\||;)\s*)(?:rtk\s+)?test\b[^;&|]*` +
 			`(?:-(?:eq|ne|gt|ge|lt|le)\b|(?:^|\s)(?:=|==|!=)(?:\s|$))`,
 	)
-	shellAssignmentPattern  = regexp.MustCompile(`(?:^|[;&]\s*|\s)([A-Za-z_][A-Za-z0-9_]*)=`)
-	shellReadPattern        = regexp.MustCompile(`(?:^|[;&|{]\s*)read(?:\s+-[A-Za-z]+)*\s+([A-Za-z_][A-Za-z0-9_]*)`)
-	shellForPattern         = regexp.MustCompile(`(?:^|[;&|{]\s*)for\s+([A-Za-z_][A-Za-z0-9_]*)\s+in\b`)
-	environmentGuardPattern = regexp.MustCompile(
+	inlineEmptySubstitutionPattern = regexp.MustCompile(`(?:^|[;&|]\s*)(?:rtk\s+)?(?:test\s+-z|\[\s*-z)\s+"?$`)
+	substitutionAssignmentPattern  = regexp.MustCompile(`([A-Za-z_][A-Za-z0-9_]*)\s*=\s*"?$`)
+	commandSubstitutionPattern     = regexp.MustCompile(`\$\(([^()]*)\)`)
+	pipefailPattern                = regexp.MustCompile(`(?:^|[;&]\s*)set\s+-o\s+pipefail(?:\s|;|&|$)`)
+	shellAssignmentPattern         = regexp.MustCompile(`(?:^|[;&]\s*|\s)([A-Za-z_][A-Za-z0-9_]*)=`)
+	shellReadPattern               = regexp.MustCompile(`(?:^|[;&|{]\s*)read(?:\s+-[A-Za-z]+)*\s+([A-Za-z_][A-Za-z0-9_]*)`)
+	shellForPattern                = regexp.MustCompile(`(?:^|[;&|{]\s*)for\s+([A-Za-z_][A-Za-z0-9_]*)\s+in\b`)
+	environmentGuardPattern        = regexp.MustCompile(
 		`(?:^|(?:&&|\|\||;)\s*)(?:rtk\s+)?(?:test\s+-n|\[\s*-n)\s+` +
 			`"?\$(?:\{([A-Za-z_][A-Za-z0-9_]*)[^}]*\}|([A-Za-z_][A-Za-z0-9_]*))`,
 	)
@@ -161,6 +166,11 @@ func InvertedExitVerification(task spec.Task) []Finding {
 func invertedExitVerificationCommand(command string) (invertedExitForm, bool) {
 	normalized := strings.Join(strings.Fields(strings.ToLower(command)), " ")
 	switch {
+	case pipeToGrepOutputTestedEmpty(command):
+		return invertedExitForm{
+			name:        "pipe-to-grep output tested empty",
+			replacement: "`out=\"$(tool 2>&1)\" || exit 1; ! printf '%s\\n' \"$out\" | grep -q pattern`",
+		}, true
 	case bareTestSubstitutionPattern.MatchString(normalized):
 		return invertedExitForm{
 			name:        "test $(...) without a comparison",
@@ -179,6 +189,113 @@ func invertedExitVerificationCommand(command string) (invertedExitForm, bool) {
 	default:
 		return invertedExitForm{}, false
 	}
+}
+
+type commandSubstitution struct {
+	content    string
+	start, end int
+}
+
+func pipeToGrepOutputTestedEmpty(command string) bool {
+	lower := strings.ToLower(command)
+	for _, substitution := range commandSubstitutions(command) {
+		if pipefailPattern.MatchString(lower[:substitution.start]) {
+			continue
+		}
+		members := shellPipelineMembers(substitution.content)
+		if len(members) < 2 || shellCommandName(members[len(members)-1]) != "grep" {
+			continue
+		}
+		first := shellCommandName(members[0])
+		if first == "printf" || first == "echo" {
+			continue
+		}
+		if substitutionTestedEmpty(command, substitution) {
+			return true
+		}
+	}
+	return false
+}
+
+func commandSubstitutions(command string) []commandSubstitution {
+	var substitutions []commandSubstitution
+	for _, match := range commandSubstitutionPattern.FindAllStringSubmatchIndex(command, -1) {
+		substitutions = append(substitutions, commandSubstitution{
+			content: command[match[2]:match[3]],
+			start:   match[0],
+			end:     match[1],
+		})
+	}
+	return substitutions
+}
+
+func shellPipelineMembers(command string) []string {
+	var members []string
+	start := 0
+	singleQuoted := false
+	doubleQuoted := false
+	for index := 0; index < len(command); index++ {
+		switch command[index] {
+		case '\\':
+			if !singleQuoted && index+1 < len(command) {
+				index++
+			}
+			continue
+		case '\'':
+			if !doubleQuoted {
+				singleQuoted = !singleQuoted
+			}
+			continue
+		case '"':
+			if !singleQuoted {
+				doubleQuoted = !doubleQuoted
+			}
+			continue
+		}
+		if singleQuoted || doubleQuoted {
+			continue
+		}
+		if command[index] == '|' {
+			if index > 0 && command[index-1] == '|' || index+1 < len(command) && command[index+1] == '|' {
+				continue
+			}
+			members = append(members, strings.TrimSpace(command[start:index]))
+			start = index + 1
+		}
+	}
+	members = append(members, strings.TrimSpace(command[start:]))
+	return members
+}
+
+func shellCommandName(command string) string {
+	fields := strings.Fields(strings.TrimSpace(command))
+	for index, field := range fields {
+		field = strings.TrimSpace(field)
+		if field == "!" || field == "env" || strings.Contains(field, "=") {
+			continue
+		}
+		if field == "rtk" && index+1 < len(fields) {
+			continue
+		}
+		return strings.ToLower(filepath.Base(field))
+	}
+	return ""
+}
+
+func substitutionTestedEmpty(command string, substitution commandSubstitution) bool {
+	prefix := command[:substitution.start]
+	if inlineEmptySubstitutionPattern.MatchString(strings.ToLower(prefix)) {
+		return true
+	}
+	assignment := substitutionAssignmentPattern.FindStringSubmatch(prefix)
+	if len(assignment) != 2 {
+		return false
+	}
+	variable := regexp.QuoteMeta(assignment[1])
+	emptyVariablePattern := regexp.MustCompile(
+		`(?i)(?:^|(?:&&|\|\||;)\s*)(?:rtk\s+)?(?:test\s+-z|\[\s*-z)\s+"?\$(?:\{` + variable + `\}|` + variable + `)"?`,
+	)
+	return emptyVariablePattern.MatchString(command[substitution.end:])
 }
 
 // NonHermeticVerification reports authored commands whose success depends on

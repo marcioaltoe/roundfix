@@ -1310,16 +1310,14 @@ func parsePromiseSection(content []byte, heading string, kind coverageKind) prom
 	}
 
 	units := make([]coverageUnit, 0)
-	firstNonEmpty := ""
-	nonEmptyLines := 0
+	firstNonEmpty := -1
 	for offset, line := range sectionContent {
 		trimmed := strings.TrimSpace(line)
 		if trimmed == "" {
 			continue
 		}
-		nonEmptyLines++
-		if firstNonEmpty == "" {
-			firstNonEmpty = trimmed
+		if firstNonEmpty == -1 {
+			firstNonEmpty = offset
 		}
 		match := numberedItemPattern.FindStringSubmatch(line)
 		if len(match) != 2 {
@@ -1334,13 +1332,54 @@ func parsePromiseSection(content []byte, heading string, kind coverageKind) prom
 			})
 		}
 	}
+	if firstNonEmpty == -1 {
+		return promiseDeclaration{state: promiseNoDeclaration, line: sectionLine}
+	}
+	firstLine := strings.TrimSpace(sectionContent[firstNonEmpty])
+	if strings.HasPrefix(firstLine, "None.") {
+		if validNoneParagraph(sectionContent[firstNonEmpty:]) {
+			return promiseDeclaration{state: promiseExplicitNone, line: sectionLine}
+		}
+		return promiseDeclaration{state: promiseNoDeclaration, line: sectionLine}
+	}
 	if len(units) > 0 {
 		return promiseDeclaration{state: promiseDeclaredUnits, units: units, line: sectionLine}
 	}
-	if nonEmptyLines == 1 && strings.HasPrefix(firstNonEmpty, "None.") && strings.TrimSpace(strings.TrimPrefix(firstNonEmpty, "None.")) != "" {
-		return promiseDeclaration{state: promiseExplicitNone, line: sectionLine}
-	}
 	return promiseDeclaration{state: promiseNoDeclaration, line: sectionLine}
+}
+
+func validNoneParagraph(lines []string) bool {
+	var reason strings.Builder
+	paragraphEnded := false
+	for index, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			if index > 0 {
+				paragraphEnded = true
+			}
+			continue
+		}
+		if paragraphEnded || index > 0 && markdownBlockLine(trimmed) {
+			return false
+		}
+		if index == 0 {
+			trimmed = strings.TrimSpace(strings.TrimPrefix(trimmed, "None."))
+		}
+		if trimmed != "" {
+			if reason.Len() > 0 {
+				reason.WriteByte(' ')
+			}
+			reason.WriteString(trimmed)
+		}
+	}
+	return strings.TrimSpace(reason.String()) != ""
+}
+
+func markdownBlockLine(line string) bool {
+	if strings.HasPrefix(line, "|") || strings.HasPrefix(line, "- ") || strings.HasPrefix(line, "* ") || strings.HasPrefix(line, "+ ") {
+		return true
+	}
+	return len(numberedItemPattern.FindStringSubmatch(line)) == 2
 }
 
 func detectPromiseDeclaration(result *Result, declaration promiseDeclaration, artifact, section, code string) {
@@ -1579,6 +1618,25 @@ func detectReferenceIndex(result *Result, repoRoot, specDir string) error {
 			}
 		}
 		if ok {
+			leftBehind, sourcePath, sourceErr := indexedSourceStillExists(repoRoot, entry.Source)
+			if sourceErr != nil {
+				return sourceErr
+			}
+			if !leftBehind {
+				continue
+			}
+			indexedDisplayPath := artifactDisplayPath(repoRoot, resolvedPath)
+			result.Findings = append(result.Findings, Finding{
+				Code:     CodeReferenceUnresolved,
+				Severity: SeverityError,
+				Summary:  indexDisplayPath + " leaves adopted source " + entry.Source + " in place after indexing copy " + indexedDisplayPath,
+				Where: []Location{
+					{Path: indexDisplayPath, Line: entry.Line},
+					{Path: sourcePath, Line: 1},
+					{Path: indexedDisplayPath, Line: 1},
+				},
+				Fix: "Keep the indexed copy at " + indexedDisplayPath + " and remove the original at " + sourcePath + ".",
+			})
 			continue
 		}
 		missingDisplayPath := entry.Path
@@ -1600,8 +1658,9 @@ func detectReferenceIndex(result *Result, repoRoot, specDir string) error {
 }
 
 type indexedReference struct {
-	Path string
-	Line int
+	Source string
+	Path   string
+	Line   int
 }
 
 func parseReferenceIndexEntries(content []byte) []indexedReference {
@@ -1622,10 +1681,37 @@ func parseReferenceIndexEntries(content []byte) []indexedReference {
 			continue
 		}
 		if len(cells) >= 5 && strings.TrimSpace(cells[4]) != "" {
-			entries = append(entries, indexedReference{Path: strings.TrimSpace(cells[4]), Line: index + 1})
+			entries = append(entries, indexedReference{
+				Source: strings.TrimSpace(cells[0]),
+				Path:   strings.TrimSpace(cells[4]),
+				Line:   index + 1,
+			})
 		}
 	}
 	return entries
+}
+
+func indexedSourceStillExists(repoRoot, source string) (bool, string, error) {
+	source = strings.Trim(strings.TrimSpace(source), "`")
+	if filepath.IsAbs(source) || strings.Contains(source, `\`) {
+		return false, "", nil
+	}
+	clean := filepath.ToSlash(filepath.Clean(filepath.FromSlash(source)))
+	if !strings.HasPrefix(clean, "docs/findings/") && !strings.HasPrefix(clean, "docs/backlog/") {
+		return false, "", nil
+	}
+	resolved, ok := resolveRepositoryPath(repoRoot, clean)
+	if !ok {
+		return false, "", nil
+	}
+	info, err := os.Stat(resolved)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, clean, nil
+	}
+	if err != nil {
+		return false, clean, fmt.Errorf("inspect indexed source %q: %w", resolved, err)
+	}
+	return info.Mode().IsRegular(), clean, nil
 }
 
 func resolveIndexedReference(indexDir, relative string) (string, bool) {
