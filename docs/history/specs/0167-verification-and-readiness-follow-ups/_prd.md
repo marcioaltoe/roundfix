@@ -1,9 +1,12 @@
 ---
 spec: 0167-verification-and-readiness-follow-ups
-status: active
+status: archived
 created: 2026-09-24
 surfaces: [backend, cli]
+archived: "2026-09-25"
+source_slug: 0167-verification-and-readiness-follow-ups
 ---
+
 
 # Verification and readiness follow-ups
 
