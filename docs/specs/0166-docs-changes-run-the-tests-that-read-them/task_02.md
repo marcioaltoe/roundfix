@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0166-docs-changes-run-the-tests-that-read-them
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
