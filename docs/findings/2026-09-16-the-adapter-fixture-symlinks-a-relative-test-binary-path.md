@@ -1,7 +1,7 @@
 ---
 status: pending
 created_at: 2026-09-16
-updated_at: 2026-09-16
+updated_at: 2026-09-25
 ---
 
 # ACPX fixtures — The adapter fixture symlinks a relative test binary path (2026-09-16)
@@ -30,3 +30,7 @@ review of that delivery found a narrower defect the change introduced.
   - Spec 0139 is archived and its gate reported, so this repair belongs to the
     next Spec that touches these fixtures rather than to a Task appended beneath
     a settled terminal gate.
+
+## Addendum — 2026-09-25 — Revalidated in triage
+
+Revalidated against main 7a9b6ec6: still holds: acpx_runner_test.go still symlinks os.Args[0]; a compiled test binary run by relative path fails, by absolute path passes. Ranked in the 2026-09-25 triage priority list.

@@ -1,7 +1,8 @@
 ---
-status: pending
+status: done
 created_at: 2026-09-16
-updated_at: 2026-09-16
+updated_at: 2026-09-25
+absorbed_by: 0141-a-commit-that-carries-the-work-and-nothing-else
 ---
 
 # QA gate — A QA commit can carry files the repository Verification wrote (2026-09-16)
@@ -36,3 +37,12 @@ repaired inside that Spec.
     executables.
   - A repository whose Verification writes tracked or unignored files is the case
     that makes this visible.
+
+## Addendum — 2026-09-25 — Delivered by Spec 0141
+
+Revalidated during the 2026-09-25 triage: `commitQAReport` in
+`internal/daemon/task_engine.go` subtracts the paths the repository Verification
+wrote (`verificationWindowPaths`), delivered by commit `a383d4d6` (Spec 0141-a-commit-that-carries-the-work-and-nothing-else);
+`TestQAReportCommitExcludesVerificationWrites` pins it. One edge remains: a path
+written by both the verifier and the Agent is dropped; only the new-directory
+case is tested.

@@ -1,7 +1,7 @@
 ---
 status: pending
 created_at: 2026-09-16
-updated_at: 2026-09-16
+updated_at: 2026-09-25
 ---
 
 # Run Events — An unobserved Verification is published without its classification (2026-09-16)
@@ -37,3 +37,7 @@ promises nothing about event shape and the gap is recorded here.
     failure.
   - Spec 0139 does not change the publisher, and its QA step therefore claims no
     projected event shape.
+
+## Addendum — 2026-09-25 — Revalidated in triage
+
+Revalidated against main 7a9b6ec6: still holds: publishUnknownFailure publishes with empty verificationFailureMetadata (internal/daemon/engine.go). Ranked in the 2026-09-25 triage priority list.
