@@ -15551,31 +15551,143 @@ func TestEventsValidationErrorsEmitNoStdout(t *testing.T) {
 	}
 }
 
-func TestEventsMalformedRelevantPayloadFailsNoStdout(t *testing.T) {
+func TestEventsMalformedRelevantPayloadWarnsAndContinues(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := withCLIWorkspace(t)
+	run := createEventsRun(t, homeDir, repoDir, store.StateClean)
+	appendEvents(t, homeDir, run.ID,
+		runevent.RunEvent{
+			RunID:   run.ID,
+			Batch:   1,
+			Source:  runevent.SourceDaemon,
+			Kind:    runevent.KindDaemonBatch,
+			Summary: "Batch 001 started.",
+			Payload: []byte(`{"batch":1}`),
+		},
+		runevent.RunEvent{
+			RunID:   run.ID,
+			Source:  runevent.SourceDaemon,
+			Kind:    runevent.KindDaemonOutcome,
+			Summary: "Run reached Clean.",
+			Payload: []byte(`{"state":"Clean","remaining":0}`),
+		},
+	)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"events", run.ID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected malformed payload replay exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	records := decodeEventRecords(t, stdout.String())
+	if len(records) != 1 || records[0]["category"] != "outcome" || records[0]["cursor"] != float64(2) {
+		t.Fatalf("expected the next well-formed record on stdout, got %v", records)
+	}
+	warning := stderr.String()
+	if strings.Count(warning, "roundfix events warning:") != 1 {
+		t.Fatalf("expected one projection warning, got %q", warning)
+	}
+	for _, want := range []string{"warning", "cursor 1", string(runevent.KindDaemonBatch), `missing payload field "phase"`} {
+		if !strings.Contains(warning, want) {
+			t.Fatalf("warning %q does not contain %q", warning, want)
+		}
+	}
+}
+
+func TestEventsFollowWarnsOnAMalformedRecordAndContinues(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := withCLIWorkspace(t)
+	run := createEventsRun(t, homeDir, repoDir, store.StateActive)
+	appended := false
+	withAttachSleep(t, func(context.Context) error {
+		if !appended {
+			appendEvents(t, homeDir, run.ID,
+				runevent.RunEvent{
+					RunID:   run.ID,
+					Batch:   1,
+					Source:  runevent.SourceDaemon,
+					Kind:    runevent.KindDaemonBatch,
+					Summary: "Batch 001 started.",
+					Payload: []byte(`{"batch":1}`),
+				},
+				runevent.RunEvent{
+					RunID:   run.ID,
+					Source:  runevent.SourceDaemon,
+					Kind:    runevent.KindDaemonOutcome,
+					Summary: "Run reached Clean.",
+					Payload: []byte(`{"state":"Clean","remaining":0}`),
+				},
+			)
+			completeEventsRun(t, homeDir, run.ID, store.StateClean)
+			appended = true
+		}
+		return nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"events", run.ID, "--follow"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected malformed followed payload exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	records := decodeEventRecords(t, stdout.String())
+	if len(records) != 1 || records[0]["category"] != "outcome" || records[0]["cursor"] != float64(2) {
+		t.Fatalf("expected the next followed record on stdout, got %v", records)
+	}
+	warning := stderr.String()
+	if strings.Count(warning, "roundfix events warning:") != 1 {
+		t.Fatalf("expected one projection warning, got %q", warning)
+	}
+	for _, want := range []string{"warning", "cursor 1", string(runevent.KindDaemonBatch), `missing payload field "phase"`} {
+		if !strings.Contains(warning, want) {
+			t.Fatalf("warning %q does not contain %q", warning, want)
+		}
+	}
+}
+
+func TestEventsReplaysAVacuousPreWorkEvent(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	run := createEventsRun(t, homeDir, repoDir, store.StateClean)
 	appendEvents(t, homeDir, run.ID, runevent.RunEvent{
-		RunID:   run.ID,
-		Batch:   1,
-		Source:  runevent.SourceDaemon,
-		Kind:    runevent.KindDaemonBatch,
-		Summary: "Batch 001 started.",
-		Payload: []byte(`{"batch":1}`),
+		RunID:       run.ID,
+		Batch:       5,
+		Source:      runevent.SourceDaemon,
+		Kind:        runevent.KindDaemonVerification,
+		ReviewIssue: "task_05",
+		Summary:     "Pre-work Verification refused Task task_05.",
+		Payload: []byte(`{
+			"attempt":1,
+			"phase":"failed",
+			"task":"task_05",
+			"classification":"verification_vacuous",
+			"commands":["test -f first","test -f second"],
+			"probed_commands":[
+				{"command":"test -f first","verdict":"passed","probe_log_path":"/tmp/first.log"},
+				{"command":"test -f second","verdict":"passed","probe_log_path":"/tmp/second.log"}
+			]
+		}`),
 	})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
 	code := runCLIContext(t, context.Background(), []string{"events", run.ID}, &stdout, &stderr)
 
-	if code != exitRunFailed {
-		t.Fatalf("expected malformed payload exit 1, got %d stderr=%q", code, stderr.String())
+	if code != exitOK {
+		t.Fatalf("expected vacuous replay exit 0, got %d stderr=%q", code, stderr.String())
 	}
-	if stdout.Len() != 0 {
-		t.Fatalf("expected no stdout records, got %q", stdout.String())
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no vacuous replay warning, got %q", stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "roundfix events failed") {
-		t.Fatalf("expected events failure diagnostic, got %q", stderr.String())
+	records := decodeEventRecords(t, stdout.String())
+	if len(records) != 1 || records[0]["classification"] != string(runevent.VerificationClassificationVacuous) {
+		t.Fatalf("vacuous replay records = %v", records)
+	}
+	commands, ok := records[0]["commands"].([]any)
+	if !ok || len(commands) != 2 || commands[0] != "test -f first" || commands[1] != "test -f second" {
+		t.Fatalf("vacuous replay commands = %v", records[0]["commands"])
 	}
 }
 

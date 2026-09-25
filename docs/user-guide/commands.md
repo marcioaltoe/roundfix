@@ -1083,6 +1083,12 @@ interrupting `--follow` exits `130`. A terminal Run replays and exits `0`. Use
 `events` for automation, `attach` for the human view, and the Detached Run
 Console Log as a compact text record — not a state API.
 
+If a journal entry cannot be projected,
+the command skips a record it cannot project, writes one warning to stderr with
+its cursor, event kind, and
+projection error, then continues replay or follow. stdout remains JSONL only;
+store and output write errors still exit `1`.
+
 For a Detached Run's stable terminal subscription, use:
 
 ```bash
@@ -1111,6 +1117,10 @@ An Unobserved Verification adds classification `verification_unknown` with
 `command`, `reason`, and `diagnostic_path` on both its `failed` and `verdict`
 records. `reason` carries the runner cause or `reason unavailable`, and
 `diagnostic_path` carries the retained path or `unavailable`.
+
+A Vacuous Verification adds classification `verification_vacuous` and the
+`commands` field containing the commands that passed against the unchanged
+tree.
 
 The outcome record carries the terminal state plus bounded reason and next
 action when non-Clean. When available, it also carries Review Issue knowledge,

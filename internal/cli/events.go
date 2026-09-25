@@ -52,7 +52,7 @@ func runEventsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 
 	encoder := json.NewEncoder(stdout)
-	cursor, err := replayEventStream(ctx, reader, run.ID, 0, req.filter, encoder)
+	cursor, err := replayEventStream(ctx, reader, run.ID, 0, req.filter, encoder, stderr)
 	if err != nil {
 		printEventsFailure(err, stderr)
 		return exitRunFailed
@@ -65,7 +65,7 @@ func runEventsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		source: reader,
 		sleep:  commandDependenciesForContext(ctx).attachSleep,
 		accept: func(entry store.JournalEvent) error {
-			return encodeStreamEntry(entry, req.filter, encoder)
+			return encodeStreamEntry(entry, req.filter, encoder, stderr)
 		},
 	}
 	if _, _, err := follower.follow(ctx, run.ID, cursor); err != nil {
@@ -127,16 +127,19 @@ func parseEventsCommand(args []string) (eventsRequest, error) {
 	return req, nil
 }
 
-func replayEventStream(ctx context.Context, source journalEventSource, runID string, cursor int64, filter runevent.StreamCategoryFilter, encoder *json.Encoder) (int64, error) {
+func replayEventStream(ctx context.Context, source journalEventSource, runID string, cursor int64, filter runevent.StreamCategoryFilter, encoder *json.Encoder, stderr io.Writer) (int64, error) {
 	return replayJournalEvents(ctx, source, runID, cursor, func(entry store.JournalEvent) error {
-		return encodeStreamEntry(entry, filter, encoder)
+		return encodeStreamEntry(entry, filter, encoder, stderr)
 	})
 }
 
-func encodeStreamEntry(entry store.JournalEvent, filter runevent.StreamCategoryFilter, encoder *json.Encoder) error {
+func encodeStreamEntry(entry store.JournalEvent, filter runevent.StreamCategoryFilter, encoder *json.Encoder, stderr io.Writer) error {
 	record, ok, err := runevent.ProjectStreamEvent(entry.Cursor, entry.Event, filter)
 	if err != nil {
-		return err
+		if _, writeErr := fmt.Fprintf(stderr, "roundfix events warning: skips a record it cannot project: cursor %d kind %q: %v\n", entry.Cursor, entry.Event.Kind, err); writeErr != nil {
+			return fmt.Errorf("write Run Event Stream warning: %w", writeErr)
+		}
+		return nil
 	}
 	if !ok {
 		return nil

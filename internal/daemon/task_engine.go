@@ -1312,6 +1312,7 @@ func (engine *Engine) publishPreWorkProbeFindings(ctx context.Context, plan Task
 			"phase":           string(runevent.VerificationPhaseFailed),
 			"task":            task.ID,
 			"classification":  string(runevent.VerificationClassificationVacuous),
+			"commands":        vacuous,
 			"probed_commands": probedCommands,
 		}
 		if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonVerification, summary, payload); err != nil {
