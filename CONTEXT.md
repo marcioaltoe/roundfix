@@ -222,6 +222,10 @@ _Avoid_: Weak test, trivial gate, false green
 The Spec Consistency Check error (`SC-VERIFY-INVERTED-EXIT`) raised when an authored Verification command uses a measured shell form whose exit status reverses or ignores the condition its output appears to assert. The finding names the matched form and a replacement that exits zero when the asserted condition holds.
 _Avoid_: Verification failure, shell lint, non-zero result
 
+**Wrap-Fragile Phrase Check**:
+The Spec Consistency Check error (`SC-VERIFY-WRAP-FRAGILE`) raised when a pending Task uses a line-bound multi-word phrase check against Markdown that can miss text wrapped across lines. The finding names the phrase and file and gives a wrap-tolerant replacement.
+_Avoid_: Line-bound grep, phrase grep, wrapped-text failure
+
 **Non-Hermetic Verification**:
 The Spec Consistency Check error (`SC-VERIFY-NON-HERMETIC`) raised when an authored Verification command depends on an undeclared environment variable or a pre-existing path outside the repository. A command-local variable or a path the Task creates before reading is not an external dependency.
 _Avoid_: External-state Verification, environment guard, temporary-path check

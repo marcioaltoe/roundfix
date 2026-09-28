@@ -119,6 +119,8 @@ complexity: medium # low | medium | high
 
 <!-- A tool piped into grep inside a command substitution hides the tool's status and is refused with `SC-VERIFY-INVERTED-EXIT`. Preserve the status with `out="$(tool 2>&1)" || exit 1; ! printf '%s\n' "$out" | grep -q pattern`. -->
 
+<!-- A multi-word grep pattern against Markdown is line-bound and refused with `SC-VERIFY-WRAP-FRAGILE`. Use the self-reporting wrap-tolerant presence form `tr -s '[:space:]' ' ' < <file> | grep -qF -- "<phrase>" || { printf 'missing phrase in %s: %s\n' <file> "<phrase>" >&2; exit 1; }`. -->
+
 <!-- A red repository gate admits only a Task named in the frozen `_authorization.md` `precondition_repairs` list; the Task or Agent cannot add itself. -->
 
 - `<command>` — expected: ...
