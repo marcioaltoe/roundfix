@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0175-cleanup-after-a-squash-merge
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -43,3 +43,42 @@ Corrective Task from the pre-PR review of 2026-09-28. `ReleaseMergedRuns` in `in
 ## References
 
 - [_techspec.md](_techspec.md) — Build Order
+
+## Result
+
+Implemented merge-evidence validation before automatic release enumerates or
+mutates Runs. The workflow now resolves both recorded values as commits,
+requires the merge commit on the detected default branch, and requires the
+candidate head to be an ancestor of the merge or have the same tree as the
+squash result. Refusals name the recorded value. Automatic release now resolves
+the repository's durable key and uses a new exact `RepositoryRoot` store query;
+the existing `GitRoot` query path is unchanged.
+
+Focused-check evidence:
+
+- Before production changes,
+  `rtk env GOCACHE=/private/tmp/roundfix-task08-gocache go test -count=1 -run 'TestReleaseMergedRunsRefusesAnUnresolvedMergeCommit|TestListRunsScopesByRepositoryRoot' ./internal/cli ./internal/store`
+  failed because unresolved evidence was accepted and `ListRunsQuery` had no
+  `RepositoryRoot` field.
+- `rtk env GOCACHE=/private/tmp/roundfix-task08-gocache go test -count=1 -run 'TestReleaseMergedRuns|TestAutomaticRelease|TestListRunsScopesByRepositoryRoot' ./internal/cli ./internal/store`
+  passed after implementation. This covers each invalid merge-evidence case,
+  a squash-equivalent valid candidate, the second-worktree Run, the
+  other-repository exclusion, and the exact store query.
+- `rtk env GOCACHE=/private/tmp/roundfix-task08-gocache go test -count=1 -run 'TestDeliverRelease|TestReleaseMergedRuns|TestAutomaticRelease' ./internal/cli`
+  passed, preserving the existing delivery-release cases and messages.
+- `rtk env GOCACHE=/private/tmp/roundfix-task08-gocache make verify-incremental` passed
+  after rerunning with macOS process-table access. The sandboxed attempt reached
+  the full test target but two unrelated force-stop integration tests could not
+  enumerate the process table; no product-test failure remained on the
+  permitted rerun.
+
+Acceptance evidence:
+
+- Invalid merge commits, invalid candidate heads, off-default merge commits,
+  and unrelated candidate heads all preserve the Run Worktree and branch;
+  valid squash-equivalent evidence releases them.
+- A terminal Run created from a second linked worktree is released through the
+  shared durable repository key, while an otherwise matching Run from another
+  repository remains present.
+
+The Daemon-owned Verification command was not run in this Agent turn.

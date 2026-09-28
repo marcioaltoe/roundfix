@@ -214,8 +214,9 @@ func (filter RunStateFilter) matches(state string) bool {
 
 // ListRunsQuery scopes a Run listing.
 type ListRunsQuery struct {
-	GitRoot string
-	States  RunStateFilter
+	GitRoot        string
+	RepositoryRoot string
+	States         RunStateFilter
 	// Limit bounds the listing to the newest matching Runs; 0 is unbounded.
 	Limit int
 }
@@ -1292,7 +1293,12 @@ SELECT id, kind, state, head_repository, head_branch, base_repository,
 FROM runs`
 	args := []any{}
 	gitRoot := strings.TrimSpace(query.GitRoot)
-	if gitRoot != "" {
+	repositoryRoot := strings.TrimSpace(query.RepositoryRoot)
+	if repositoryRoot != "" {
+		sqlQuery += `
+WHERE repository_root = ?`
+		args = append(args, repositoryRoot)
+	} else if gitRoot != "" {
 		repositoryRoots, err := roundconfig.RepositoryRoots(gitRoot)
 		if err != nil {
 			return nil, fmt.Errorf("resolve Run listing repository identity: %w", err)

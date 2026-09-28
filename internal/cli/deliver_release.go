@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	roundconfig "roundfix/internal/config"
 	"roundfix/internal/store"
 	runworktree "roundfix/internal/worktree"
 )
@@ -27,10 +28,14 @@ func releaseMergedSpecRuns(
 	if specSlug == "" {
 		return errors.New("release merged Spec Runs: Spec slug is required")
 	}
+	repositoryRoot, err := roundconfig.RepositoryRoot(repository)
+	if err != nil {
+		return fmt.Errorf("release merged Spec %q Runs: resolve repository identity: %w", specSlug, err)
+	}
 
 	runs, err := runStore.ListRuns(ctx, store.ListRunsQuery{
-		GitRoot: repository,
-		States:  store.StatesAll,
+		RepositoryRoot: repositoryRoot,
+		States:         store.StatesAll,
 	})
 	if err != nil {
 		return fmt.Errorf("release merged Spec %q Runs: list Runs: %w", specSlug, err)

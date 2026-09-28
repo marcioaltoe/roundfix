@@ -457,14 +457,123 @@ func (workflow *commandDeliveryWorkflow) ReleaseMergedRuns(
 	if head == "" {
 		return fmt.Errorf("release merged Spec %q Runs: candidate head is required", item.SpecSlug)
 	}
+	resolvedMergeCommit, resolvedHead, err := workflow.resolveMergedReleaseEvidence(
+		ctx,
+		gitRoot,
+		mergeCommit,
+		head,
+	)
+	if err != nil {
+		return fmt.Errorf("release merged Spec %q Runs: %w", item.SpecSlug, err)
+	}
 	merged := runworktree.MergedHead{
 		SpecSlug:     strings.TrimSpace(item.SpecSlug),
 		TargetBranch: strings.TrimSpace(item.Branch),
-		Head:         head,
-		MergeCommit:  mergeCommit,
+		Head:         resolvedHead,
+		MergeCommit:  resolvedMergeCommit,
 		PullRequest:  strings.TrimSpace(item.PullRequestNumber),
 	}
 	return releaseMergedSpecRuns(ctx, workflow.store, gitRoot, merged)
+}
+
+func (workflow *commandDeliveryWorkflow) resolveMergedReleaseEvidence(
+	ctx context.Context,
+	gitRoot string,
+	mergeCommit string,
+	candidateHead string,
+) (string, string, error) {
+	runner := workflow.git
+	if runner == nil {
+		runner = preflight.ExecGitRunner{}
+	}
+	resolveCommit := func(label string, value string) (string, error) {
+		resolved, err := runner.RunGit(
+			ctx,
+			gitRoot,
+			"rev-parse",
+			"--verify",
+			"--end-of-options",
+			value+"^{commit}",
+		)
+		if err != nil {
+			return "", fmt.Errorf("%s %q does not resolve to a commit", label, value)
+		}
+		return strings.TrimSpace(resolved), nil
+	}
+
+	resolvedMergeCommit, err := resolveCommit("merge commit", mergeCommit)
+	if err != nil {
+		return "", "", err
+	}
+	resolvedHead, err := resolveCommit("candidate head", candidateHead)
+	if err != nil {
+		return "", "", err
+	}
+
+	currentBranch, _ := runner.RunGit(ctx, gitRoot, "symbolic-ref", "--quiet", "--short", "HEAD")
+	defaultBranch := preflight.DetectDefaultBranch(ctx, gitRoot, strings.TrimSpace(currentBranch), runner)
+	defaultHead := ""
+	if defaultBranch.Source == preflight.DefaultBranchUndetermined {
+		for _, branch := range []string{"main", "master"} {
+			candidate, candidateErr := resolveCommit(fmt.Sprintf("default branch %q", branch), "refs/heads/"+branch)
+			if candidateErr == nil {
+				defaultBranch = preflight.DefaultBranch{Name: branch, Source: preflight.DefaultBranchFromNameMatch}
+				defaultHead = candidate
+				break
+			}
+		}
+		if defaultHead == "" {
+			return "", "", errors.New("default branch is unknown")
+		}
+	}
+	var defaultErr error
+	if defaultHead == "" {
+		defaultHead, defaultErr = resolveCommit(fmt.Sprintf("default branch %q", defaultBranch.Name), "refs/heads/"+defaultBranch.Name)
+	}
+	if defaultErr != nil && defaultBranch.Source == preflight.DefaultBranchFromOriginHead {
+		defaultHead, defaultErr = resolveCommit(
+			fmt.Sprintf("default branch %q", defaultBranch.Name),
+			"refs/remotes/origin/"+defaultBranch.Name,
+		)
+	}
+	if defaultErr != nil {
+		return "", "", defaultErr
+	}
+	if _, err := runner.RunGit(
+		ctx,
+		gitRoot,
+		"merge-base",
+		"--is-ancestor",
+		resolvedMergeCommit,
+		defaultHead,
+	); err != nil {
+		return "", "", fmt.Errorf(
+			"merge commit %q is not on default branch %q",
+			mergeCommit,
+			defaultBranch.Name,
+		)
+	}
+
+	if _, err := runner.RunGit(
+		ctx,
+		gitRoot,
+		"merge-base",
+		"--is-ancestor",
+		resolvedHead,
+		resolvedMergeCommit,
+	); err != nil {
+		candidateTree, candidateTreeErr := runner.RunGit(ctx, gitRoot, "rev-parse", resolvedHead+"^{tree}")
+		mergeTree, mergeTreeErr := runner.RunGit(ctx, gitRoot, "rev-parse", resolvedMergeCommit+"^{tree}")
+		if candidateTreeErr != nil || mergeTreeErr != nil || strings.TrimSpace(candidateTree) != strings.TrimSpace(mergeTree) {
+			return "", "", fmt.Errorf(
+				"candidate head %q is not represented by merge commit %q",
+				candidateHead,
+				mergeCommit,
+			)
+		}
+	}
+
+	return resolvedMergeCommit, resolvedHead, nil
 }
 
 func (workflow *commandDeliveryWorkflow) RunSpec(ctx context.Context, gitRoot, specSlug string) (delivery.RunResult, error) {
