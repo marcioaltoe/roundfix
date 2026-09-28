@@ -677,8 +677,9 @@ roundfix window clear
 
 The `window` command manages one durable Run Window for the current repository
 in the Run Database. The Run Window bounds when an `implement` Run may start;
-`budget.max_run_duration` bounds how long a Run may run after it starts. The
-window does not apply to `fetch`, `resolve`, or `watch`.
+`budget.max_run_duration` bounds how long a Run may run after it starts, and an
+Implement Run's allowance renews at each Task settlement. The window does not
+apply to `fetch`, `resolve`, or `watch`.
 
 `set` accepts a local `HH:MM` and stores its next occurrence: tomorrow when
 that time has already passed today. It also accepts an absolute local
@@ -778,6 +779,13 @@ implementation-ready work from the Agent, runs the Task's complete
 `## Verification` sequence verbatim, and writes the terminal status. The Agent
 may run focused checks and record their evidence, but it does not run the
 declared Task Verification, edit status, or settle the verdict.
+
+The Implement Run Budget starts with one `budget.max_run_duration` allowance
+from Run creation, then renews at each Task settlement. The renewed allowance
+bounds the next Task or QA gate and the integration, push, and cleanup work
+after the Task cycle. When it expires, Roundfix cancels the Run's Agent
+Sessions, settles `BudgetExceeded`, and keeps the Run Worktree and Run Branch
+for recovery.
 
 A deterministic Verification failure releases Verification Capacity before
 the Daemon sends diagnostics to the same Agent Session. The Agent receives one

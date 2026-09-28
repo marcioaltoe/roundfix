@@ -1716,11 +1716,13 @@ commands gate one commit. By default the Run never pushes; a repository can
 opt in with `implement.auto_push: true`, which pushes only after a Clean
 outcome and never opens pull requests (ADR-0138).
 
-When the Run Budget is enabled, an Implement Run is bounded by the configured
-maximum Run duration. When that maximum expires, the Run settles
+When the Run Budget is enabled, an Implement Run starts with the configured
+maximum Run duration and its allowance renews at each Task settlement. The
+renewed allowance bounds the next Task or QA gate and post-cycle integration,
+push, and cleanup. When the allowance expires, the Run settles
 `BudgetExceeded` with a reason naming both the configured maximum and the
-elapsed time. The bounded Run preserves its Run Worktree and Run Branch for
-inspection and recovery.
+elapsed time since the renewal point. The bounded Run preserves its Run
+Worktree and Run Branch for inspection and recovery.
 
 Before creating a Run, `implement` inspects prior terminal Runs for the same
 Spec in the current repository. When a `BudgetExceeded`, `Stopped`, or

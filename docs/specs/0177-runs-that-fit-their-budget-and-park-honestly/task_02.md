@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0177-runs-that-fit-their-budget-and-park-honestly
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -126,3 +126,56 @@ Run run on forever.
 - `_prd.md` → Goal 2; Core Feature 2; Success Metric 2; Decisions.
 - `_techspec.md` → The renewing Implement Run Budget; API Contracts 2-3;
   Testing Approach 2; ADR-0014; ADR-0057; ADR-0125; ADR-0137; ADR-0158.
+
+## Result
+
+Implemented one mutex-guarded Task-cycle budget whose watchdog follows deadline
+renewals, cancels the shared cycle context at the current deadline, and stops
+before `TaskCycle` returns. Every timely completed or failed Task settlement,
+including the authored QA Task settlement, renews the allowance; a settlement
+observed at or after the deadline remains settled without extending it.
+`TaskCycleResult` now reports the active deadline and its renewing Task so the
+CLI can bound integration, push, cleanup, expiry checks, and the public reason
+from the renewal point while retaining the start-based setup deadline.
+
+Added the rendered-config explanation, accepted ADR-0164, both user-guide
+statements, and the canonical Roundfix skill statement. Ran the sanctioned
+`make skills-sync`; the embedded skill is byte-identical to its canonical
+source. The watch loop and `.roundfixrc.yml` remain unchanged.
+
+Focused checks:
+
+- `go test -race -count=1 -run '^TestTaskBudget' ./internal/daemon` with a
+  task-scoped `GOCACHE`: passed.
+- `go test -count=1 -run '^TestTask(Budget|CycleReports)' ./internal/daemon`
+  with a task-scoped `GOCACHE`: passed.
+- The three new Implement renewal tests in
+  `internal/cli/implement_budget_renewal_test.go`: passed together.
+- `TestBudgetClockCrossesAfterTheSettledTask`,
+  `TestBudgetExceededKeepsWorkSettledBeforeTheBudget`,
+  `TestImplementRunBudgetBoundsSetupAndIntegration`, `TestRenderedConfig`, and
+  the two unchanged watch-budget tests: passed in focused runs.
+- `TestRenderedConfigStatesTheImplementBudgetRenewal`: passed.
+- `make verify-incremental` with a task-scoped `GOCACHE`: the sandboxed run
+  reached the full suite but could not inspect the process table for two
+  existing force-stop integration tests; the permission-enabled rerun passed
+  formatting, vet, every Go package, skill checks, and the build.
+- Phrase/reference inspection found `renews at each Task settlement` in both
+  required command-guide locations, configuration, ADR-0164, and the Roundfix
+  skill; ADR-0164 cites ADR-0158 and ADR-0137. `diff -r
+  .agents/skills/roundfix skills/roundfix` and `git diff --check` passed.
+
+Acceptance evidence:
+
+- A serial graph renews across two 0.9-allowance Task settlements, the QA gate
+  starts and settles under renewed allowances, and the public Implement flow
+  ends Clean after more than one total allowance.
+- A settlement observed at the deadline stays completed, retains the original
+  deadline, ends `BudgetExceeded`, and leaves the next Task pending.
+- A stalled Task is cancelled by the watchdog one allowance after the prior
+  settlement while that earlier Task keeps its commit and `completed` status.
+- A failed Task settlement advances the reported deadline by one allowance.
+- The reported deadline equals the latest settlement plus the maximum, is zero
+  with a disabled budget, and is the deadline observed by integration.
+- The watchdog-stop regression check observes no Task-cycle watchdog goroutine
+  after `TaskCycle` returns.
