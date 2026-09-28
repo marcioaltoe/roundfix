@@ -67,7 +67,8 @@ Tasks name.
 8. MUST verify that the guides and `CONTEXT.md` describe finding identities,
    `roundfix review dispose`, `findings-dismissed`, `archivedSpecs`,
    `corrective-spec-required`, the Review Finding Disposition and the Corrective
-   Spec.
+   Spec, and that ADR-0165 is accepted and states the late-correction policy
+   the maintainer confirmed on 2026-09-28.
 9. MUST verify that this Spec's own artifacts satisfy the promise rule.
 10. MUST verify from Git evidence that the changed files stay inside the Task
     declarations and that the only governed paths changed are the ones
@@ -105,4 +106,4 @@ applied in process by whoever settles the Task.
 evidence; `_techspec.md` → Testing Approach 1-6; API Contracts 1-6; ADR-0014;
 ADR-0057; ADR-0080; ADR-0091; ADR-0093; ADR-0096; ADR-0097; ADR-0104;
 ADR-0110; ADR-0117; ADR-0120; ADR-0130; ADR-0142; ADR-0151; ADR-0153;
-ADR-0154; ADR-0155; ADR-0156.
+ADR-0154; ADR-0155; ADR-0156; ADR-0165.

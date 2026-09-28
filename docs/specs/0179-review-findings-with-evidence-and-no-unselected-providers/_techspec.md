@@ -29,7 +29,7 @@ candidate that archives a Spec as `corrective-spec-required`.
   ADR-0093, ADR-0096, ADR-0097, ADR-0104, ADR-0110, ADR-0117, ADR-0120,
   ADR-0130, ADR-0142, ADR-0151, ADR-0153, ADR-0154, ADR-0155 and ADR-0156
   hold; ADR-0020, ADR-0038, ADR-0056, ADR-0127, ADR-0159 and ADR-0160 do not
-  apply. Source:
+  apply. This Spec adds ADR-0165. Source:
   `docs/agents/domain.md`.
 - Tooling authority: applicable — express maintainer authorization recorded in
   [_authorization.md](_authorization.md); bounded files:
@@ -169,6 +169,20 @@ carry-forward, so the recorded dispositions decide. The delivery sections of
 `docs/user-guide/commands.md` and the Roundfix skill add the blocker and the
 retry rule, and `CONTEXT.md` gains a Corrective Spec entry.
 
+The policy these rules enforce, confirmed by the maintainer on 2026-09-28, is
+recorded as
+`docs/adr/0165-a-blocking-review-after-archive-parks-publication-for-a-corrective-spec.md`
+with `status: accepted`:
+
+- An archived Spec is never edited to absorb a finding.
+- Publication parks as `corrective-spec-required: <slug>`.
+- The correction is a new corrective Spec with its own `_authorization.md` and
+  QA gate.
+- No Run budget, corrective-Task ceiling or queue grant authorizes it, and
+  Roundfix never authors or starts it.
+- How the corrective work reaches the parked candidate is a recorded limit for
+  a future Spec.
+
 ## API Contracts
 
 1. `pre-pr-review.json` gains `findingItems` (`[{id, text}]`) on findings
@@ -266,3 +280,6 @@ retry rule, and `CONTEXT.md` gains a Corrective Spec entry.
   record alone.
 - **A stale skill.** Each guidance change ships in the Task that changes the
   behavior it describes.
+- **Parallel ADR ordinals.** Specs authored in parallel claim the ordinals
+  after 0163 below this one; this Spec claims ADR-0165, and the ordinal check
+  reports a collision once the Specs meet on `main`.

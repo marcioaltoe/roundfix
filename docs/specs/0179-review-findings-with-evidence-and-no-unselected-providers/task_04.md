@@ -21,7 +21,8 @@ verdict on such a candidate parks its item as `corrective-spec-required:
 correction is a new Spec with its own authorization and QA gate. The blocker is
 written by the Delivery Queue owner and read by the operator through `deliver
 status` and `deliver retry`. No queue grant, Run budget or corrective-Task
-ceiling may turn it into permission to author that Spec.
+ceiling may turn it into permission to author that Spec. The maintainer
+confirmed this policy on 2026-09-28, and this Task records it as ADR-0165.
 
 ## Requirements
 
@@ -78,12 +79,29 @@ ceiling may turn it into permission to author that Spec.
 10. MUST keep `TestDeliveryEngineParksDeclaredBlockersAndContinues`,
     `TestRetryRefusesAnArchivedItemWhoseHeadMoved` and
     `TestReviewReadsAnArchivedSpecFromTheCandidate` green and unchanged.
+11. MUST add
+    `docs/adr/0165-a-blocking-review-after-archive-parks-publication-for-a-corrective-spec.md`
+    with the lifecycle front matter of `docs/agents/docs-layout.md` and the
+    front-matter line `status: accepted`. It MUST state the policy the
+    maintainer confirmed on 2026-09-28, exactly:
+    - An archived Spec is never edited to absorb a finding (the phrase `never
+      edited to absorb a finding`).
+    - Publication parks as `corrective-spec-required: <slug>`.
+    - The correction is a new corrective Spec with its own `_authorization.md`
+      and QA gate.
+    - No Run budget, corrective-Task ceiling or queue grant authorizes it.
+    - Roundfix never authors or starts it.
+    - How the corrective work reaches the parked candidate is a recorded limit
+      for a future Spec.
+    It MUST cite ADR-0153 and ADR-0120, which it refines, and supersede
+    neither.
 
 ## Subtasks
 
 - [ ] Record the archived Specs and name the corrective Spec on findings.
 - [ ] Park and refuse in the Delivery Queue.
 - [ ] Document the blocker, the retry row and the glossary term.
+- [ ] Record the late-correction policy as ADR-0165.
 - [ ] Add a test for each acceptance criterion, each negative case separate.
 
 ## Acceptance Criteria
@@ -107,10 +125,11 @@ ceiling may turn it into permission to author that Spec.
 - interface: `CONTEXT.md`
 - creates: `internal/cli/review_archived_spec_test.go`
 - creates: `internal/delivery/corrective_spec_test.go`
+- creates: `docs/adr/0165-a-blocking-review-after-archive-parks-publication-for-a-corrective-spec.md`
 
 ## Verification
 
-- `out="$(go test -count=1 -v -run "^(TestReviewRecordsTheSpecsACandidateArchives|TestReviewRecordsNoArchivedSpecForAnActiveSpec|TestReviewNamesTheCorrectiveSpecForFindingsAfterArchive|TestReviewAfterArchiveWithoutFindingsNamesNoCorrectiveSpec|TestDeliveryReviewResultCarriesArchivedSpecs|TestDeliveryEngineParksFindingsAfterArchiveAsCorrectiveSpecRequired|TestDeliveryEngineParksFindingsWithoutArchiveAsReviewFindings|TestRetryRefusesACorrectiveSpecItemWhoseHeadMoved|TestRetryReturnsAnUnchangedCorrectiveSpecItemToReviewing|TestDeliveryEngineParksDeclaredBlockersAndContinues|TestRetryRefusesAnArchivedItemWhoseHeadMoved|TestReviewReadsAnArchivedSpecFromTheCandidate)$" ./internal/cli ./internal/delivery 2>&1)" || { printf "%s\\n" "$out"; exit 1; }; for name in TestReviewRecordsTheSpecsACandidateArchives TestReviewRecordsNoArchivedSpecForAnActiveSpec TestReviewNamesTheCorrectiveSpecForFindingsAfterArchive TestReviewAfterArchiveWithoutFindingsNamesNoCorrectiveSpec TestDeliveryReviewResultCarriesArchivedSpecs TestDeliveryEngineParksFindingsAfterArchiveAsCorrectiveSpecRequired TestDeliveryEngineParksFindingsWithoutArchiveAsReviewFindings TestRetryRefusesACorrectiveSpecItemWhoseHeadMoved TestRetryReturnsAnUnchangedCorrectiveSpecItemToReviewing TestDeliveryEngineParksDeclaredBlockersAndContinues TestRetryRefusesAnArchivedItemWhoseHeadMoved TestReviewReadsAnArchivedSpecFromTheCandidate; do printf "%s\\n" "$out" | grep -q -- "--- PASS: $name" || exit 1; done && tr -s '[:space:]' ' ' < docs/user-guide/commands.md | grep -qF -- "corrective-spec-required" && tr -s '[:space:]' ' ' < .agents/skills/roundfix/SKILL.md | grep -qF -- "corrective-spec-required" && tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- "**Corrective Spec**" && diff -r .agents/skills/roundfix skills/roundfix >/dev/null` — expected: exit 0; before this Task none of the nine new named tests exists and no guide names `corrective-spec-required`, so the command fails.
+- `out="$(go test -count=1 -v -run "^(TestReviewRecordsTheSpecsACandidateArchives|TestReviewRecordsNoArchivedSpecForAnActiveSpec|TestReviewNamesTheCorrectiveSpecForFindingsAfterArchive|TestReviewAfterArchiveWithoutFindingsNamesNoCorrectiveSpec|TestDeliveryReviewResultCarriesArchivedSpecs|TestDeliveryEngineParksFindingsAfterArchiveAsCorrectiveSpecRequired|TestDeliveryEngineParksFindingsWithoutArchiveAsReviewFindings|TestRetryRefusesACorrectiveSpecItemWhoseHeadMoved|TestRetryReturnsAnUnchangedCorrectiveSpecItemToReviewing|TestDeliveryEngineParksDeclaredBlockersAndContinues|TestRetryRefusesAnArchivedItemWhoseHeadMoved|TestReviewReadsAnArchivedSpecFromTheCandidate)$" ./internal/cli ./internal/delivery 2>&1)" || { printf "%s\\n" "$out"; exit 1; }; for name in TestReviewRecordsTheSpecsACandidateArchives TestReviewRecordsNoArchivedSpecForAnActiveSpec TestReviewNamesTheCorrectiveSpecForFindingsAfterArchive TestReviewAfterArchiveWithoutFindingsNamesNoCorrectiveSpec TestDeliveryReviewResultCarriesArchivedSpecs TestDeliveryEngineParksFindingsAfterArchiveAsCorrectiveSpecRequired TestDeliveryEngineParksFindingsWithoutArchiveAsReviewFindings TestRetryRefusesACorrectiveSpecItemWhoseHeadMoved TestRetryReturnsAnUnchangedCorrectiveSpecItemToReviewing TestDeliveryEngineParksDeclaredBlockersAndContinues TestRetryRefusesAnArchivedItemWhoseHeadMoved TestReviewReadsAnArchivedSpecFromTheCandidate; do printf "%s\\n" "$out" | grep -q -- "--- PASS: $name" || exit 1; done && tr -s '[:space:]' ' ' < docs/user-guide/commands.md | grep -qF -- "corrective-spec-required" && tr -s '[:space:]' ' ' < .agents/skills/roundfix/SKILL.md | grep -qF -- "corrective-spec-required" && tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- "**Corrective Spec**" && grep -q "^status: accepted" docs/adr/0165-a-blocking-review-after-archive-parks-publication-for-a-corrective-spec.md && tr -s '[:space:]' ' ' < docs/adr/0165-a-blocking-review-after-archive-parks-publication-for-a-corrective-spec.md | grep -qF -- "never edited to absorb a finding" && diff -r .agents/skills/roundfix skills/roundfix >/dev/null` — expected: exit 0; before this Task none of the nine new named tests exists, no guide names `corrective-spec-required` and ADR-0165 does not exist, so the command fails.
 
 ## References
 

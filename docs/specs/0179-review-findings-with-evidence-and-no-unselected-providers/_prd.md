@@ -68,7 +68,8 @@ needs. An unselected provider is never asked for anything.
   not touch either. ADR-0120 keeps retired Specs under the one history
   root, which is why a finding on an archived Spec needs a new Spec instead of
   an edit. ADR-0154 keeps an archive, overridden or not, separate from review
-  and publication gates. This Spec's gate is bound by ADR-0080, ADR-0091,
+  and publication gates. This Spec adds ADR-0165, the late-correction
+  policy. This Spec's gate is bound by ADR-0080, ADR-0091,
   ADR-0093, ADR-0096, ADR-0097, ADR-0104, ADR-0110, ADR-0117, ADR-0130,
   ADR-0155 and ADR-0156. All hold. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — the maintainer authorized continuing with
@@ -172,18 +173,23 @@ needs. An unselected provider is never asked for anything.
   candidate archives some Spec before review. The same check covers the
   Supervisor order in `docs/agents/autonomous-work.md`, which archives before
   `roundfix review`.
+- How a corrective Spec's work reaches the parked candidate, on the same item
+  branch or as a new queue item, is left to a future Spec. Until then a parked
+  `corrective-spec-required` item whose head moved stays refused by `roundfix
+  deliver retry`, and ADR-0165 records the limit.
 
 ## Decisions
 
-- **The late-correction default is conservative.** The review policy left the
-  archive-first late correction pending, and this Spec picks the narrowest
-  default. An archived Spec is never reopened or edited to absorb a finding.
-  Publication parks, and the correction is a new corrective Spec with its own
-  `_authorization.md` and QA gate. No remaining Run budget, corrective-Task
-  ceiling or queue-continuation grant authorizes that Spec, and Roundfix
-  never authors or starts it. After the correction, the candidate is reviewed
-  afresh. This is a maintainer authority question and stays a Spec decision,
-  not an ADR, until the maintainer confirms it.
+- **The late-correction policy is conservative, and it is an ADR.** The
+  review policy left the archive-first late correction pending. The maintainer
+  confirmed this policy on 2026-09-28 and asked for it as an ADR, so task_04
+  records it as ADR-0165. An archived Spec is never edited to absorb a
+  finding. Publication parks as `corrective-spec-required: <slug>`, and the
+  correction is a new corrective Spec with its own `_authorization.md` and QA
+  gate. No Run budget, corrective-Task ceiling or queue grant authorizes that
+  Spec, and Roundfix never authors or starts it. After the correction, the
+  candidate is reviewed afresh. How the corrective work reaches the parked
+  candidate is a recorded limit for a future Spec.
 - **A dismissal is the only way a findings verdict clears at its head.** A fix
   changes the candidate, so `--fixed-by` records history and never clears
   anything; the fresh review of the new head does.
