@@ -23,7 +23,7 @@ func TestBaselineApplyCommand(t *testing.T) {
 	repo := newBaselinePlanTestRepository(t)
 	writeBaselinePlanTestFile(t, repo, ".agents/skills/context7/SKILL.md", "# context7\n")
 	writeBaselinePlanTestFile(t, repo, ".agents/skills/exa-web-search/SKILL.md", "# exa\n")
-	writeBaselinePlanTestFile(t, repo, "Makefile", "verify:\n\t@true\n")
+	writeBaselinePlanTestFile(t, repo, "Makefile", "verify:\n\t@true\nverify-incremental:\n\t@true\n")
 	commitBaselinePlanTestRepository(t, repo)
 	plan, planPath := baselineApplyTestPlan(t, repo)
 
@@ -206,7 +206,7 @@ func TestBaselineApplyStdoutStderrAndExitCodes(t *testing.T) {
 	t.Run("stale preimage is exit three", func(t *testing.T) {
 		repo := newBaselineApplyTestRepository(t)
 		plan, planPath := baselineApplyTestPlan(t, repo)
-		writeBaselinePlanTestFile(t, repo, "Makefile", "verify:\n\t@echo stale\n")
+		writeBaselinePlanTestFile(t, repo, "Makefile", "verify:\n\t@echo stale\nverify-incremental:\n\t@true\n")
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 		code := RunContext(context.Background(), []string{
@@ -353,7 +353,7 @@ func newBaselineApplyTestRepository(t *testing.T) string {
 	repo := newBaselinePlanTestRepository(t)
 	writeBaselinePlanTestFile(t, repo, ".agents/skills/context7/SKILL.md", "# context7\n")
 	writeBaselinePlanTestFile(t, repo, ".agents/skills/exa-web-search/SKILL.md", "# exa\n")
-	writeBaselinePlanTestFile(t, repo, "Makefile", "verify:\n\t@true\n")
+	writeBaselinePlanTestFile(t, repo, "Makefile", "verify:\n\t@true\nverify-incremental:\n\t@true\n")
 	commitBaselinePlanTestRepository(t, repo)
 	return repo
 }
@@ -367,6 +367,7 @@ func baselineApplyTestPlan(t *testing.T, repo string) (baseline.PlanDocument, st
 		"--decision", "preservation.mode=greenfield",
 		"--decision", "language.generated=English",
 		"--decision", "verification.gate=make verify",
+		"--decision", "verification.incremental=make verify-incremental",
 		"--decision", "branch.prefix=ma/",
 		"--decision", "spec.scaffold=true",
 		"--decision", "domain.layout=single-context",

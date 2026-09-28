@@ -429,8 +429,8 @@ func TestProjectConstraintDocumentation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("published project Decision Document does not parse: %v", err)
 	}
-	if len(document.Decisions) != 15 {
-		t.Fatalf("published project Decision Document decisions = %d, want 15", len(document.Decisions))
+	if len(document.Decisions) != 16 {
+		t.Fatalf("published project Decision Document decisions = %d, want 16", len(document.Decisions))
 	}
 
 	byID := make(map[string]any, len(document.Decisions))
@@ -505,7 +505,7 @@ func TestBaselineDecisionExamples(t *testing.T) {
 	}
 	if document.SchemaVersion != baseline.DecisionDocumentSchemaVersion ||
 		document.Version != baseline.DecisionDocumentVersion ||
-		len(document.Decisions) != 15 {
+		len(document.Decisions) != 16 {
 		t.Fatalf("published Decision Document parsed unexpectedly: %#v", document)
 	}
 	catalog, err := baseline.LoadEmbeddedCatalog()

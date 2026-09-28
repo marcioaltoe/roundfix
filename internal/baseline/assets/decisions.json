@@ -132,6 +132,25 @@
       ]
     },
     {
+      "id": "verification.incremental",
+      "version": 1,
+      "type": "string",
+      "suggestion": "rtk make verify-incremental",
+      "summary": "The repository incremental verification command named by generated guidance.",
+      "effects": [
+        {
+          "when": {"present": true},
+          "renderBindings": [
+            {
+              "artifact": "guide.agent-instructions",
+              "template": "template.guide.agent-instructions",
+              "token": "verification.incremental"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "branch.prefix",
       "version": 2,
       "type": "string",

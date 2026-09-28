@@ -22,7 +22,7 @@
       "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md",
       "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/typescript-bun.md"
     ],
-    "goldenDigest": "a3956aaa293b5047cd568f1012162538ed019080f3f73b6388a1a8bc9ead0e41",
+    "goldenDigest": "8438bb7f4f541f3a100ddfeb9b84dcee5b5769b755256bf762255ecab1a81367",
     "id": "formatter.oxfmt-markdown",
     "kind": "selected",
     "version": "0.59.0"
@@ -30,6 +30,7 @@
   "entryDecisions": [
     "language.generated",
     "verification.gate",
+    "verification.incremental",
     "branch.prefix",
     "identifier.strategy",
     "http.contract",

@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0176-baseline-follow-ups-and-the-incremental-tier
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -194,3 +194,66 @@ the derived pins the sanctioned regeneration rewrites, and this Task file.
 
 - [_techspec.md](_techspec.md) — The incremental verification decision;
   Regeneration outputs
+
+## Result
+
+Implemented the incremental Verification tier as the required
+`verification.incremental` Baseline decision. Every built-in Profile and the
+core module now require it; generated agent instructions render it; alignment
+projects it as a locally declared repository command and blocks an undeclared
+selection. A same-ID built-in Profile expectation is retained only when the
+decision is absent.
+
+Added package and CLI regression coverage for the catalog contract, projection,
+planning refusals, rendered guide, single-gate update migration, suggestion
+adoption, Setup Manifest projection, and idempotent follow-up update. Updated
+only the complete decision inputs, command declarations, and human prompt
+scripts invalidated by the new required decision. Published the decision and
+migration in the user guide and setup skill, and added the Incremental
+Verification glossary entry.
+
+Focused implementation evidence:
+
+- `make skills-sync`: passed; the canonical and distributed
+  `setup-context-driven` skills are byte-identical.
+- `make baseline-digests`: passed after the skill mirror was synchronized; it
+  regenerated the authorized catalog pins, formatter goldens, and plan
+  characterization goldens.
+- `GOCACHE=/tmp/roundfix-task04-gocache go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --adopt-suggested --format text`:
+  passed with the authorized Git-metadata access; the new decision and three
+  managed postimages were applied.
+- The same refresh without `--adopt-suggested`: passed and reported
+  `File changes: 0`.
+- Focused `internal/baseline` run for the eight incremental-tier and retained
+  independence tests: passed.
+- Focused `internal/cli` run for the four migration tests plus the directly
+  invalidated human, guidance-composition, and generic update tests: passed.
+- `go test -count=1 ./internal/baseline`: passed.
+- `TestBaselineDecisionExamples` and `TestProjectConstraintDocumentation`, run
+  individually with the `docscontract` tag: passed.
+- `git diff --check`: passed. `git diff --quiet --
+  internal/baseline/testdata/parity-corpus docs/references/coverage-record.json`:
+  passed, so the parity corpus and coverage record are unchanged.
+
+Acceptance evidence:
+
+- Every built-in Profile and the core module require the decision; focused
+  package tests prove a missing decision is named and an undeclared command
+  produces the blocking `verification.command.undeclared` divergence with no
+  Plan.
+- `docs/agents/agent-instructions.md` renders
+  `rtk make verify-incremental`; `docs/agents/setup-context.json` records the
+  decision and one role-`incremental`, `repository-command` projection declared
+  in `Makefile`.
+- Focused CLI tests prove a single-gate manifest exits `3` without writes,
+  refuses an undeclared suggestion, adopts a declared suggestion, and reports
+  `current` on the next update. The repository refresh independently converged
+  with `File changes: 0`.
+- The frozen parity corpus and `docs/references/coverage-record.json` have no
+  diff.
+
+Additional check note: the broad `internal/cli` package run reached two
+unrelated force-stop integration tests that require host process-table access;
+both reported `read process table for non-session owner: operation not
+permitted`. No production or test change was made for that environment-only
+failure. The Task-focused CLI selection passed after those diagnostics.

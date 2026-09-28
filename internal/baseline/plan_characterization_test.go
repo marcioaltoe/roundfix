@@ -369,7 +369,7 @@ func newBaselinePlanCharacterizationRepository(
 	if includeFirecrawl {
 		writeInspectionFile(t, repository, ".agents/skills/firecrawl/SKILL.md", "# Firecrawl\n")
 	}
-	writeInspectionFile(t, repository, "Makefile", "verify:\n\t@true\n")
+	writeInspectionFile(t, repository, "Makefile", "verify:\n\t@true\nverify-incremental:\n\t@true\n")
 	commitInspectionRepository(t, repository, "seed Baseline plan characterization")
 	return repository
 }

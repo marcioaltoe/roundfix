@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "core",
-  "version": 9,
+  "version": 10,
   "kind": "core",
   "title": "Universal agent baseline",
   "dependsOn": [],
@@ -123,6 +123,7 @@
   "requiredDecisions": [
     "language.generated",
     "verification.gate",
+    "verification.incremental",
     "branch.prefix"
   ],
   "instructionHierarchy": {
@@ -292,7 +293,7 @@
   "supportingGuides": [
     {
       "id": "guide.agent-instructions",
-      "version": 9,
+      "version": 10,
       "path": "docs/agents/agent-instructions.md",
       "template": "template.guide.agent-instructions",
       "rules": [
@@ -388,7 +389,7 @@
     },
     {
       "id": "rule.core.verification-selected",
-      "version": 5,
+      "version": 6,
       "coverage": [
         "coverage.verification"
       ],
@@ -401,7 +402,7 @@
         {
           "id": "clause.core.verification-two-tiers",
           "enforcement": "mandatory",
-          "guidance": "Use the incremental verification command declared by the active Baseline Profile for fast local checks; it answers whether the current change remains valid while reusing safe local state. CI must run the complete verification command declared by that Profile from a fresh run; it answers whether the complete tree satisfies the repository contract. If the Profile declares no incremental command, this clause is unmet rather than satisfied by omission. Execute authored Verification only on committed provenance: the Spec artifacts that carry its commands must be tracked in the repository and byte-identical to their committed bytes at the resolved revision, comparing the authored projection while excluding Daemon-owned `status` and `## Result` fields. An untrusted source requires an `execution_approvals` entry in that Spec's `<spec-root>/<slug>/_authorization.md` carrying `repository`, `revision` (the approved source revision), `artifact` (the carrying artifact), and `command_digest` (the digest of the approved command text); the approval expires when any of those fields changes. Read-only checking remains available for any source."
+          "guidance": "Use the selected incremental Verification named at the top of this guide for fast local checks; it answers whether the current change remains valid while reusing safe local state. CI must run the selected repository Verification from a fresh run; it answers whether the complete tree satisfies the repository contract. Baseline planning refuses until the repository selects and declares both commands, so neither tier is ever satisfied by omission. Execute authored Verification only on committed provenance: the Spec artifacts that carry its commands must be tracked in the repository and byte-identical to their committed bytes at the resolved revision, comparing the authored projection while excluding Daemon-owned `status` and `## Result` fields. An untrusted source requires an `execution_approvals` entry in that Spec's `<spec-root>/<slug>/_authorization.md` carrying `repository`, `revision` (the approved source revision), `artifact` (the carrying artifact), and `command_digest` (the digest of the approved command text); the approval expires when any of those fields changes. Read-only checking remains available for any source."
         }
       ]
     },

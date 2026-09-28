@@ -349,7 +349,7 @@ func TestBaselinePlanCommandEmitsPortableJSONAndNormalizesDecisionFiles(t *testi
 	repo := newBaselinePlanTestRepository(t)
 	writeBaselinePlanTestFile(t, repo, ".agents/skills/context7/SKILL.md", "# context7\n")
 	writeBaselinePlanTestFile(t, repo, ".agents/skills/exa-web-search/SKILL.md", "# exa\n")
-	writeBaselinePlanTestFile(t, repo, "Makefile", "verify:\n\t@true\n")
+	writeBaselinePlanTestFile(t, repo, "Makefile", "verify:\n\t@true\nverify-incremental:\n\t@true\n")
 	commitBaselinePlanTestRepository(t, repo)
 
 	inline := []string{
@@ -357,6 +357,7 @@ func TestBaselinePlanCommandEmitsPortableJSONAndNormalizesDecisionFiles(t *testi
 		"--decision", "preservation.mode=greenfield",
 		"--decision", "language.generated=English",
 		"--decision", "verification.gate=make verify",
+		"--decision", "verification.incremental=make verify-incremental",
 		"--decision", "branch.prefix=ma/",
 		"--decision", "spec.scaffold=true",
 		"--decision", "domain.layout=single-context",
@@ -426,7 +427,7 @@ func TestBaselinePlanHistoryRelocationTextAndExitStatus(t *testing.T) {
 	repository := newBaselinePlanTestRepository(t)
 	writeBaselinePlanTestFile(t, repository, ".agents/skills/context7/SKILL.md", "# context7\n")
 	writeBaselinePlanTestFile(t, repository, ".agents/skills/exa-web-search/SKILL.md", "# exa\n")
-	writeBaselinePlanTestFile(t, repository, "Makefile", "verify:\n\t@true\n")
+	writeBaselinePlanTestFile(t, repository, "Makefile", "verify:\n\t@true\nverify-incremental:\n\t@true\n")
 	commitBaselinePlanTestRepository(t, repository)
 
 	currentArgs := baselinePlanCharacterizationArgs(repository, "greenfield")
@@ -671,6 +672,7 @@ func baselinePlanCharacterizationDecisions() []baseline.DecisionValue {
 	return []baseline.DecisionValue{
 		{ID: "language.generated", Value: "English"},
 		{ID: "verification.gate", Value: "make verify"},
+		{ID: "verification.incremental", Value: "make verify-incremental"},
 		{ID: "branch.prefix", Value: "ma/"},
 		{ID: "spec.scaffold", Value: true},
 		{ID: "domain.layout", Value: "single-context"},
@@ -734,6 +736,7 @@ func baselinePlanProfileFileFixture(
 	decisions := []baseline.DecisionValue{
 		{ID: "language.generated", Value: "English"},
 		{ID: "verification.gate", Value: "make verify"},
+		{ID: "verification.incremental", Value: "make verify-incremental"},
 		{ID: "branch.prefix", Value: "ma/"},
 		{ID: "identifier.strategy", Value: map[string]any{"kind": "uuid-v7"}},
 		{ID: "http.contract", Value: map[string]any{"mode": "Post-only"}},

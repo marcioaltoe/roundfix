@@ -347,6 +347,10 @@ _Avoid_: Advisory check, best-effort warning, soft gate
 The authoritative command or commands the Daemon runs verbatim in the repository root to decide whether Agent or Settle Command work can be settled and committed. A failure returns only its diagnostics to the Agent Session; for Tasks, a pass is required before status `completed`.
 _Avoid_: CI, smoke test, best-effort check
 
+**Incremental Verification**:
+The selected fast local check recorded by the `verification.incremental` Baseline decision for validating the current change while reusing safe local state. It is distinct from the complete repository Verification selected by `verification.gate`.
+_Avoid_: Complete Verification, CI gate, optional check
+
 **Waiting for Verification**:
 The observable per-Task phase after Agent work is implementation-ready and before the Task acquires Verification Capacity; it is distinct from an Agent that is still working and from a Verification command that has started.
 _Avoid_: Queued Agent, pending Task, blocked Run

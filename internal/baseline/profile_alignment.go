@@ -1361,9 +1361,16 @@ func resolveVerificationProjection(
 ) ([]VerificationProjection, []ProfileDivergence, error) {
 	projections := make([]VerificationProjection, 0)
 	divergences := make([]ProfileDivergence, 0)
+	selectedDecisions := make(map[string]struct{}, len(decisions))
+	for _, decision := range decisions {
+		selectedDecisions[decision.ID] = struct{}{}
+	}
 	if profile.Source == ProfileSourceBuiltIn {
 		for _, raw := range objectsOrEmpty(catalog.profiles[profile.ID]["verification"]) {
 			id, _ := stringValue(raw, "id")
+			if _, selected := selectedDecisions[id]; selected {
+				continue
+			}
 			role, _ := stringValue(raw, "kind")
 			tool, _ := stringValue(raw, "tool")
 			command, _ := stringValue(raw, "command")
@@ -1434,17 +1441,23 @@ func resolveVerificationProjection(
 		}
 	}
 	for _, decision := range decisions {
-		if decision.ID != "verification.gate" {
+		if decision.ID != "verification.gate" && decision.ID != "verification.incremental" {
 			continue
+		}
+		role := "repository-gate"
+		label := "repository"
+		if decision.ID == "verification.incremental" {
+			role = "incremental"
+			label = "incremental"
 		}
 		command, _ := decision.Value.(string)
 		declaration, err := validateLocalCommandDeclaration(root, command)
 		if err != nil {
-			return nil, nil, fmt.Errorf("validate selected repository Verification command: %w", err)
+			return nil, nil, fmt.Errorf("validate selected %s Verification command: %w", label, err)
 		}
 		projections = append(projections, VerificationProjection{
-			ID:                   "verification.gate",
-			Role:                 "repository-gate",
+			ID:                   decision.ID,
+			Role:                 role,
 			Command:              command,
 			Classification:       VerificationRepositoryCommand,
 			RepositoryExecutable: declaration.Path != "",
@@ -1454,10 +1467,10 @@ func resolveVerificationProjection(
 		if declaration.Path == "" {
 			divergences = append(divergences, ProfileDivergence{
 				Code:        "verification.command.undeclared",
-				ID:          "verification.gate",
+				ID:          decision.ID,
 				Requirement: CapabilityRequired,
 				Blocking:    true,
-				Message:     fmt.Sprintf("selected repository Verification command %q has no matching local declaration", command),
+				Message:     fmt.Sprintf("selected %s Verification command %q has no matching local declaration", label, command),
 				NextAction:  "select a command declared by the repository or add its local declaration",
 			})
 		}

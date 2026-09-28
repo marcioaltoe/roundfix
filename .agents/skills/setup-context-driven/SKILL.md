@@ -102,6 +102,13 @@ the maintainer explicitly chooses `--adopt-suggested`. Use `--no-skills` only
 to suppress the Repository Skill Set refresh, and `--skills-source-dir <path>`
 only for a declared offline Git checkout or bare object store.
 
+Repositories select their fast local command through
+`verification.incremental`, separately from the complete
+`verification.gate`. A single-gate Setup Manifest exits `3`, names the missing
+incremental decision, and writes nothing. After the repository declares the
+suggested `rtk make verify-incremental` command locally, rerun update with
+`--adopt-suggested`; later updates use the recorded decision without that flag.
+
 ## Human adoption or profile change
 
 At an interactive terminal, run:
@@ -177,6 +184,10 @@ roundfix baseline skills restore --repo . --profile <built-in-id> --skill <skill
 The CLI owns project-decision collection and rendering. This skill does not
 collect, derive, validate, or render decisions; it explains the public result
 and sends every correction back through `roundfix baseline`.
+
+`verification.incremental` names the selected fast local check that generated
+guidance publishes. It is required independently of `verification.gate`, which
+names the complete repository Verification.
 
 Changing only the HTTP mode retains every exception and the source.
 
