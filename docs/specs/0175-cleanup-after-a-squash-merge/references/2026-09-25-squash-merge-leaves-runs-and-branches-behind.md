@@ -1,7 +1,8 @@
 ---
-status: pending
+status: done
 created_at: 2026-09-25
-updated_at: 2026-09-25
+updated_at: 2026-09-28
+absorbed_by: 0175-cleanup-after-a-squash-merge
 ---
 
 # Delivery — A squash merge leaves the Spec's Runs, branches and worktrees behind (2026-09-25)
@@ -74,3 +75,26 @@ explained each retained item.
 Runs still Active, an Unresolved Run with uncommitted changes, and a Run
 carrying the only QA evidence of an unmerged Spec were retained correctly:
 reconcile refused to release anything it could not prove.
+
+## Addendum — 2026-09-28 — The same failure after Spec 0172
+
+After Spec 0172 was squash-merged (#259) on 2026-09-25, `roundfix reconcile
+run_20260925T200712Z_0929550d586b4ba2` preserved that Run as `unintegrated`
+("48 Run-only files, 42 differing shared files against default branch main";
+"default branch has no superseding QA Report after target branch
+disappeared"). Its Task 01–04 commits were ancestors of the merged item branch.
+Its only unique commits were a Task 05 redone after an authorization change and
+a failed QA Report. The operator removed it by hand. Spec 0171 had meanwhile
+added `internal/worktree/adminlock*.go`, which serializes `git worktree` add,
+remove, prune and move per repository, and the carry-forward staging and the
+Branch Disposition still bypass it.
+
+## Addendum — 2026-09-28 — Implementation owner
+
+[0175-cleanup-after-a-squash-merge](../_prd.md) adopts this Finding and its
+five Backlog Entries. It proves a merged Spec's Runs commit by commit against
+the merged head, releases them after a delivery merge and through `roundfix
+reconcile --apply`, keys legacy Runs from their Run Worktree, and owns and
+sweeps carry-forward staging worktrees. The source moves once into that Spec's
+reference index. Its lifecycle status records adoption, not implementation or
+QA completion.
