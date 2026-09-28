@@ -905,8 +905,8 @@ repository. The report classifies every selected Run into one of six states:
 
 | State | Agent action |
 | --- | --- |
-| `safe` | The Run Branch and recorded target resolve, any present registered Run Worktree is clean, and the Run Branch tip is an ancestor of the target tip. Eligible for cleanup after revalidation. |
-| `superseded` | Git evidence proves a terminal Implement Run contains only QA-report commits and the target branch already carries a newer QA Report for the Spec. Preserve it during dry-run; `--apply` can release it after revalidation. |
+| `safe` | The Run Worktree is clean and the Run Branch is contained in its target or merged head, or its changed content is represented at the merged head. Eligible for cleanup after revalidation. |
+| `superseded` | A newer QA Report or the merged-head proof represents the Run's Task or QA Report commits. Preserve it during dry-run; `--apply` can release it after revalidation. |
 | `unintegrated` | Clean, resolved evidence proves that the Run Branch tip is not an ancestor of the target tip. Preserve the Run Worktree and Run Branch. |
 | `dirty` | A present registered Run Worktree has tracked or untracked changes. Preserve the Run Worktree and Run Branch. |
 | `unknown` | Metadata or Git evidence cannot prove another state. Preserve every identified Run Worktree and Run Branch. |
@@ -915,13 +915,13 @@ repository. The report classifies every selected Run into one of six states:
 The same report can add two debris candidate kinds beside those legacy Run
 Worktree classifications:
 
-When a Run's target branch is an absent target, reconciliation checks the
-default branch for the same content evidence already accepted for a missed
-ancestry: a superseding QA Report for this Spec. A Run is released only on
-positive content evidence. If the default branch is unreachable, the Spec is
-unarchived, or the evidence names another Spec, the Run remains preserved, and
-the preserved reason names the proof that was missing; an absent target alone
-is not proof of release.
+For a Run of a merged Spec, reconciliation proves the Run against the merged
+head. The Delivery Queue merge record is the primary source; when no usable
+record remains, the default branch carrying the archived Spec is the fallback.
+A Run is released only when each Run commit is represented by completed Task
+status, a superseding QA Report, or matching changed content. If neither source
+is usable or a commit is unrepresented, the Run remains preserved and its
+reason names the missing proof; an absent target alone is not proof of release.
 
 - A `process` candidate is proven when a terminal Run with a proven recorded
   owner identity still owns an inspected live process tree. Its report names
@@ -947,7 +947,8 @@ roundfix reconcile <run-id> --carry-forward
 These three mutation switches are mutually exclusive. `--apply` releases
 entries classified `safe` or `superseded`, or proven process and Run Branch
 candidates, after rechecking the applicable metadata, ownership, cleanliness,
-heads, ancestry, and superseding-report evidence. `--discard-superseded`
+heads, ancestry, merged-head records, Task status, content, and superseding
+QA Report evidence. `--discard-superseded`
 records a Branch Disposition before removing a Run Branch proven superseded.
 `--carry-forward` hands settled Tasks from one terminal spec Run back to the
 checkout; it accepts Runs whose outcome is `BudgetExceeded`, `Stopped`, or

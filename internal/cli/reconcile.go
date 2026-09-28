@@ -115,6 +115,7 @@ type reconcileRunSelection struct {
 	all          []store.Run
 	coverage     []daemon.RunTaskCoverage
 	taskEvidence map[string]map[string]reconcileTaskEvidence
+	mergedHeads  []runworktree.MergedHead
 }
 
 type reconcileTaskEvidence struct {
@@ -156,7 +157,7 @@ func runReconcileCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitRunFailed
 	}
 
-	runs, err := loadReconcileRuns(ctx, loaded.HomeDir, repository, opts.runID)
+	runs, err := loadReconcileRuns(ctx, loaded.HomeDir, repository, loaded.GitRoot, opts.runID)
 	if err != nil {
 		var invalid validationError
 		if errors.As(err, &invalid) {
@@ -327,7 +328,13 @@ func parseReconcileOptions(args []string) (reconcileOptions, error) {
 	return opts, nil
 }
 
-func loadReconcileRuns(ctx context.Context, homeDir, repository, runID string) (reconcileRunSelection, error) {
+func loadReconcileRuns(
+	ctx context.Context,
+	homeDir string,
+	repository string,
+	loadedRepository string,
+	runID string,
+) (reconcileRunSelection, error) {
 	reader, err := store.OpenReader(ctx, homeDir)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -341,6 +348,10 @@ func loadReconcileRuns(ctx context.Context, homeDir, repository, runID string) (
 	defer func() {
 		_ = reader.Close()
 	}()
+	mergedHeads, err := loadDeliveryMergedHeads(ctx, reader, loadedRepository)
+	if err != nil {
+		return reconcileRunSelection{}, err
+	}
 
 	if runID != "" {
 		run, found, err := reader.Run(ctx, runID)
@@ -398,7 +409,13 @@ func loadReconcileRuns(ctx context.Context, homeDir, repository, runID string) (
 	if err != nil {
 		return reconcileRunSelection{}, err
 	}
-	return reconcileRunSelection{selected: selected, all: all, coverage: coverage, taskEvidence: taskEvidence}, nil
+	return reconcileRunSelection{
+		selected:     selected,
+		all:          all,
+		coverage:     coverage,
+		taskEvidence: taskEvidence,
+		mergedHeads:  mergedHeads,
+	}, nil
 }
 
 func loadReconcileTaskCoverage(
@@ -569,7 +586,7 @@ func inspectReconcileRuns(
 	}
 	classifications := make(map[string]string, len(runs.selected))
 	for _, run := range runs.selected {
-		inspected, err := runworktree.InspectTerminalRun(ctx, run)
+		inspected, err := runworktree.InspectTerminalRunMerged(ctx, run, runs.mergedHeads)
 		result := newReconcileResult(inspected, opts.apply)
 		if err != nil {
 			result.Classification = string(runworktree.ReconciliationUnknown)
@@ -607,6 +624,9 @@ func applyReconcileBranchDisposition(
 		return
 	}
 	result.disposition = disposition
+	if !opts.discardSuperseded && reconcileResultUsesMergedHeadProof(*result) {
+		return
+	}
 	if dispositionErr != nil {
 		if opts.discardSuperseded {
 			result.Action = "preserve"
@@ -634,6 +654,14 @@ func applyReconcileBranchDisposition(
 	} else {
 		result.Action = "would discard with --discard-superseded"
 	}
+}
+
+func reconcileResultUsesMergedHeadProof(result reconcileResult) bool {
+	if !reconcileClassificationReleasable(result.Classification) {
+		return false
+	}
+	return strings.Contains(result.Evidence, "merged head") ||
+		strings.Contains(result.Evidence, "default branch ")
 }
 
 func inspectReconcileProcesses(
