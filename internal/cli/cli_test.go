@@ -745,6 +745,7 @@ func TestRunReconcileJSONMatchesTextFields(t *testing.T) {
 		"runBranchCandidates",
 		"runs",
 		"schemaVersion",
+		"stagingCandidates",
 		"summary",
 	})
 	if !bytes.Equal(rawReport["runs"], rawReport["results"]) {

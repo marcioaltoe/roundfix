@@ -51,7 +51,9 @@ Fluxus, completed Tasks were redone at a cost of 13 agent-minutes.
 - Authentication and HTTP: not applicable — local files, Git and the Run
   Database only; no credential and no network call. Source:
   `docs/agents/cli.md`.
-- Active ADR obligations: applicable — ADR-0158 settles a budget-expired
+- Active ADR obligations: applicable — ADR-0161 (Spec 0175) releases a merged
+  Spec's Runs on the merged head and holds unchanged, since carry-forward stays
+  proof-based under ADR-0053; ADR-0158 settles a budget-expired
   Implement Run `BudgetExceeded`, cancels its Agent Sessions and keeps it
   recoverable through carry-forward; ADR-0137 says changing where the budget is
   evaluated needs its own evidence, which the three measured Runs now supply;

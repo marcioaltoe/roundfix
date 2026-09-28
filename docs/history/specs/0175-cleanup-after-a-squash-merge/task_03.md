@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0175-cleanup-after-a-squash-merge
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -85,3 +85,54 @@ acts on them.
 - [_techspec.md](_techspec.md) — Reconcile reads the merge record
 - `_prd.md` → Core Feature 3; Success Metric 1
 - `_techspec.md` → API Contracts 1-2
+
+## Result
+
+Implemented the Delivery Queue merge-record path for reconciliation. The
+command reads merged item heads from the Run Database under both the resolved
+repository path and the checkout path as loaded, passes the records to every
+terminal Run inspection, treats queue read failures as operational failures,
+and preserves merged-head `safe` or `superseded` results unless the operator
+explicitly selected `--discard-superseded`. The text and JSON report structs
+are unchanged; merged-head proof remains in `evidence`.
+
+Updated the Reconcile Command guide and the canonical Roundfix skill with the
+Delivery Queue merge record and archived default branch as the two merged-head
+sources, then regenerated the embedded skill with `make skills-sync`.
+
+Acceptance evidence:
+
+- `TestReconcileReleasesARunProvenByTheDeliveryMergeRecord` drives the public
+  runner through a real Git repository and seeded Run Database, observes the
+  Spec 0172-shaped Run as `superseded` with `pull request #259 merged head`
+  evidence, and observes `--apply` remove its Run Worktree and Run Branch.
+- `TestReconcileDryRunLeavesAMergedSpecRunInPlace`,
+  `TestReconcileIgnoresAMergeRecordForAnotherSpec`, and
+  `TestReconcilePreservesARunTheMergeRecordDoesNotRepresent` separately prove
+  dry-run preservation, cross-Spec record rejection, and commit-specific
+  refusal for a Task not completed at the recorded head.
+- `TestReconcileKeepsTheApplyActionForAMergedRunWithASupersededDisposition`
+  seeds a later Clean Run's Task coverage and proves the merged-head result
+  keeps `would release with --apply` instead of becoming a Branch Disposition
+  action.
+- `TestReconcileReleasesAnArchivedSpecRunWithoutARecord` omits the Delivery
+  Queue and observes `--apply` release the Run from the default branch carrying
+  the archived Spec.
+- `TestReconcileReadsMergeRecordFromTheLoadedCheckoutPath` and
+  `TestReconcileFailsWhenDeliveryMergeRecordsCannotBeRead` cover the checkout
+  alias and operational-failure requirements through the public runner.
+
+Focused checks:
+
+- `GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1 -run '^TestReconcile(ReleasesARunProven|DryRunLeaves|IgnoresAMerge|PreservesARunTheMerge|KeepsTheApply|ReleasesAnArchived)' ./internal/cli` — passed.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1 -run '^TestReconcile(ReadsMergeRecordFromTheLoadedCheckoutPath|FailsWhenDeliveryMergeRecordsCannotBeRead)$' ./internal/cli` — passed.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1 ./internal/cli` — passed outside the sandbox in 85.507s. The first sandboxed attempt reached two unrelated force-stop integration tests and was blocked by process-table permission; no Task 03 test failed.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache make verify-incremental` — passed outside the sandbox, including format, vet, all Go packages, skill sync/checks, and build.
+
+The Task's declared `## Verification` command was not run; Daemon Verification
+owns that command and the terminal Task status.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260928T174529Z_c0cad0da5734a85f`
+- Source commit: `cde2b7fbd326947d9fb21f0f81c6a471834b05d5`

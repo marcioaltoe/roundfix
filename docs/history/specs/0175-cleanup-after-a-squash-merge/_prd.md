@@ -1,9 +1,12 @@
 ---
 spec: 0175-cleanup-after-a-squash-merge
-status: active
+status: archived
 created: 2026-09-28
 surfaces: [backend, cli, docs]
+archived: "2026-09-28"
+source_slug: 0175-cleanup-after-a-squash-merge
 ---
+
 
 # Cleanup after a squash merge
 

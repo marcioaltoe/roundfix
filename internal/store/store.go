@@ -214,8 +214,9 @@ func (filter RunStateFilter) matches(state string) bool {
 
 // ListRunsQuery scopes a Run listing.
 type ListRunsQuery struct {
-	GitRoot string
-	States  RunStateFilter
+	GitRoot        string
+	RepositoryRoot string
+	States         RunStateFilter
 	// Limit bounds the listing to the newest matching Runs; 0 is unbounded.
 	Limit int
 }
@@ -339,8 +340,9 @@ func Open(ctx context.Context, homeDir string) (*Store, error) {
 }
 
 // Migrate upgrades an existing Run Database to the schema supported by this
-// binary. It never creates a missing database or its directory, and it leaves
-// current and newer databases unchanged.
+// binary and repairs missing repository keys without changing the current
+// schema version. It never creates a missing database or its directory, and it
+// leaves newer databases unchanged.
 func Migrate(ctx context.Context, homeDir string) (MigrationResult, error) {
 	if strings.TrimSpace(homeDir) == "" {
 		return MigrationResult{}, errors.New("migrate Run Database: home directory is required")
@@ -1291,7 +1293,12 @@ SELECT id, kind, state, head_repository, head_branch, base_repository,
 FROM runs`
 	args := []any{}
 	gitRoot := strings.TrimSpace(query.GitRoot)
-	if gitRoot != "" {
+	repositoryRoot := strings.TrimSpace(query.RepositoryRoot)
+	if repositoryRoot != "" {
+		sqlQuery += `
+WHERE repository_root = ?`
+		args = append(args, repositoryRoot)
+	} else if gitRoot != "" {
 		repositoryRoots, err := roundconfig.RepositoryRoots(gitRoot)
 		if err != nil {
 			return nil, fmt.Errorf("resolve Run listing repository identity: %w", err)
@@ -1547,25 +1554,26 @@ func (store *Store) migrate(ctx context.Context, path string) (MigrationResult, 
 		if version > schemaVersion {
 			return SchemaVersionError{Path: path, Found: version, Supported: schemaVersion}
 		}
-		if version == schemaVersion {
-			return nil
-		}
-
-		statements, err := store.migrationStatements(ctx, tx, version)
-		if err != nil {
-			return err
-		}
-		for _, statement := range statements {
-			if _, err := tx.ExecContext(ctx, statement); err != nil {
-				return fmt.Errorf("apply Run Database migration: %w", err)
-			}
-		}
-		if version != 0 {
-			if err := applyRepositoryRootMigration(ctx, tx); err != nil {
+		if version != schemaVersion {
+			statements, err := store.migrationStatements(ctx, tx, version)
+			if err != nil {
 				return err
 			}
+			for _, statement := range statements {
+				if _, err := tx.ExecContext(ctx, statement); err != nil {
+					return fmt.Errorf("apply Run Database migration: %w", err)
+				}
+			}
 		}
-		result.To = schemaVersion
+		if err := applyRepositoryRootMigration(ctx, tx); err != nil {
+			return err
+		}
+		if version != schemaVersion {
+			if _, err := tx.ExecContext(ctx, fmt.Sprintf(`PRAGMA user_version = %d`, schemaVersion)); err != nil {
+				return fmt.Errorf("record Run Database migration version: %w", err)
+			}
+			result.To = schemaVersion
+		}
 		return nil
 	})
 	return result, err
@@ -1729,6 +1737,7 @@ func applyRepositoryRootMigration(ctx context.Context, tx *sql.Tx) error {
 	type legacyRun struct {
 		id      string
 		gitRoot string
+		workDir sql.NullString
 	}
 
 	var repositoryRootExists int
@@ -1747,7 +1756,7 @@ SELECT EXISTS (
 	}
 
 	rows, err := tx.QueryContext(ctx, `
-SELECT id, git_root
+SELECT id, git_root, work_dir
 FROM runs
 WHERE repository_root = ''`)
 	if err != nil {
@@ -1756,7 +1765,7 @@ WHERE repository_root = ''`)
 	legacyRuns := []legacyRun{}
 	for rows.Next() {
 		var run legacyRun
-		if err := rows.Scan(&run.id, &run.gitRoot); err != nil {
+		if err := rows.Scan(&run.id, &run.gitRoot, &run.workDir); err != nil {
 			_ = rows.Close()
 			return fmt.Errorf("scan Run for repository root backfill: %w", err)
 		}
@@ -1771,21 +1780,35 @@ WHERE repository_root = ''`)
 	}
 
 	for _, run := range legacyRuns {
-		if _, err := os.Stat(filepath.Join(run.gitRoot, ".git")); err != nil {
-			continue
+		repositorySource := run.gitRoot
+		if _, err := os.Stat(filepath.Join(repositorySource, ".git")); err != nil {
+			if !run.workDir.Valid {
+				continue
+			}
+			workDir := filepath.Clean(strings.TrimSpace(run.workDir.String))
+			if workDir == "." || workDir == "" {
+				continue
+			}
+			if _, err := os.Stat(filepath.Join(workDir, ".git")); err != nil {
+				continue
+			}
+			repositoryRoot, err := roundconfig.RepositoryRoot(workDir)
+			if err != nil || filepath.Clean(repositoryRoot) == workDir {
+				continue
+			}
+			repositorySource = workDir
 		}
-		repositoryRoot, err := roundconfig.RepositoryRoot(run.gitRoot)
+		repositoryRoot, err := roundconfig.RepositoryRoot(repositorySource)
 		if err != nil {
 			continue
 		}
 		if _, err := tx.ExecContext(ctx,
-			`UPDATE runs SET repository_root = ? WHERE id = ?`, repositoryRoot, run.id,
+			`UPDATE runs SET repository_root = ? WHERE id = ? AND repository_root = ''`,
+			repositoryRoot,
+			run.id,
 		); err != nil {
 			return fmt.Errorf("backfill Run repository root: %w", err)
 		}
-	}
-	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`PRAGMA user_version = %d`, schemaVersion)); err != nil {
-		return fmt.Errorf("record Run Database migration version: %w", err)
 	}
 	return nil
 }

@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0175-cleanup-after-a-squash-merge
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -117,3 +117,38 @@ preserve.
 - [_techspec.md](_techspec.md) — Decision: when cleanup runs, and what a squash merge proves; The merged-head proof
 - `_prd.md` → Core Feature 1; Success Metrics 1-2
 - `_techspec.md` → API Contracts 1-2
+
+## Result
+
+Implemented the merged-head proof without changing the Task status or Task Graph. `InspectTerminalRunMerged` now selects one locally available Delivery Queue head for the Run's exact Spec slug, otherwise falls back to an archived Spec at the default-branch head. The proof classifies each Run-only commit once as a completed Task, a superseded QA Report, or other changed files; uncertainty preserves the Run. `InspectTerminalRun` delegates with no records, and apply revalidation retains the records plus the private proof head so a changed record or moved fallback head refuses cleanup.
+
+Recorded ADR-0161 with accepted lifecycle metadata and updated the Run Worktree Reconciliation glossary entry to name the merged-head `safe` and `superseded` proofs.
+
+Focused evidence by acceptance criterion:
+
+- Spec 0172 shape and apply release: `TestMergedHeadRecordSupersedesARedoneTaskAndAFailedQAReport`, `TestMergedHeadDefaultBranchSupersedesARedoneTaskAndAFailedQAReport`, `TestMergedHeadRecordReleasesARunContainedInTheMergedHead`, and `TestMergedHeadApplyReleasesTheRunWorktreeAndBranch` passed against real Git fixtures in `go test -count=1 -run '^TestMergedHead' ./internal/worktree`.
+- Spec 0164 shape and changed-file restriction: `TestMergedHeadDefaultBranchReleasesAnArchivedSpecRunAfterMainMoved` and `TestMergedHeadDefaultBranchComparesOnlyTheRunsChangedFiles` passed in the same focused run. The former changes a file after its completed Task was delivered; the latter advances an unrelated default-branch file.
+- Preservation cases: the separate real-Git tests for an unrepresented commit, incomplete Task, another-Spec Task trailer, unsuperseded QA Report, another-Spec record, disagreeing records, a missing record commit, dirty worktree, and no usable source passed. `TestMergedHeadApplyRefusesAChangedRecord` and `TestMergedHeadApplyRefusesAMovedFallbackHead` passed and kept both Git surfaces.
+- Existing behavior: `go test -count=1 ./internal/worktree` passed, and the focused daemon command for `TestSupersededBranchRefusesAnUnreachableCommit` plus `TestSupersededBranchIsClassifiedWhenLaterIntegratedRunCoveredTasks` passed. The focused legacy deleted-target, archived-evidence, QA-supersession, and stale-apply matrix also passed.
+
+Existing tests changed because they pinned the retired whole-tree comparison:
+
+- `TestInspectTerminalRunUnintegratedWhenDeletedTargetContentComparisonFails` now creates one represented ordinary commit so its injected `git diff` failure reaches the new path-restricted comparison.
+- `TestApplyRunBranchCandidateRefusesACandidateWithoutEvidence` retains its name but now expects release: its squash-merged QA-only fixture has positive merged-head evidence where the whole-tree comparison previously returned none. The separate ADR-0115 Branch Disposition proof still runs before cleanup.
+
+Focused commands and outcomes:
+
+- `GOCACHE=/tmp/roundfix-task-0175-01-gocache go test -run '^$' ./internal/worktree` — passed (compile-only). The first attempt without the Task-scoped cache was blocked by sandbox access to the macOS Go build cache.
+- `GOCACHE=/tmp/roundfix-task-0175-01-gocache go test -count=1 -run '^TestMergedHead' ./internal/worktree` — passed.
+- `GOCACHE=/tmp/roundfix-task-0175-01-gocache go test -count=1 ./internal/worktree` — passed.
+- `GOCACHE=/tmp/roundfix-task-0175-01-gocache go test -count=1 -run '^(TestSupersededBranchRefusesAnUnreachableCommit|TestSupersededBranchIsClassifiedWhenLaterIntegratedRunCoveredTasks)$' ./internal/daemon` — passed.
+- `GOCACHE=/tmp/roundfix-task-0175-01-gocache go vet ./internal/worktree` — passed.
+- `GOCACHE=/tmp/roundfix-task-0175-01-gocache make verify-incremental` — passed with process-table permission. The sandboxed attempt reached the full test suite but its two owner-process integration tests were blocked by `operation not permitted`; the permitted rerun passed vet, all Go packages, skill checks, and the build.
+- `git diff --check` — passed.
+
+The authored `## Verification` command was not run; Daemon Verification owns it.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260928T154312Z_63679c6540b34603`
+- Source commit: `8cbd476b715288435afa2803371d3bc139c64daf`
