@@ -1,9 +1,12 @@
 ---
 spec: 0173-a-delivery-queue-that-recovers
-status: active
+status: archived
 created: 2026-09-28
 surfaces: [backend, cli, docs]
+archived: "2026-09-28"
+source_slug: 0173-a-delivery-queue-that-recovers
 ---
+
 
 # A delivery queue that recovers
 
