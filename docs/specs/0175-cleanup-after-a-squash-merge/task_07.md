@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0175-cleanup-after-a-squash-merge
-status: completed
+status: pending
 type: qa
 complexity: medium
 ---
