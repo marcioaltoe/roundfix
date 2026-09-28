@@ -127,7 +127,7 @@ The universal Normative Clause that forbids changes to linter, formatter, and to
 _Avoid_: Tool preference, implicit permission, cleanup authorization
 
 **QA Report**:
-The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict, its Auditing Binary as `auditing_binary`, and `auditor_staleness`, plus `rows_blocked_environment`, `rows_blocked_finding`, and `rows_blocked_declared` counts in its frontmatter. A report recording a Precondition Refusal carries `rows_blocked_precondition` beside those counts, plus the `precondition_check` and `precondition_reason` keys that name the refusal; a gate that reached its matrix writes none of those three. A `pending` verdict is never accepted, and a report that records no QA row is refused; only the newest report in the directory is read by a later run's mechanical stage, so a superseded report blocks nothing.
+The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict, its Auditing Binary as `auditing_binary`, and `auditor_staleness`, plus `rows_blocked_environment`, `rows_blocked_finding`, and `rows_blocked_declared` counts in its frontmatter. A report recording a Precondition Refusal carries `rows_blocked_precondition` beside those counts, plus the `precondition_check` and `precondition_reason` keys that name the refusal; a gate that reached its matrix writes none of those three. A `pending` verdict is never accepted, a report that records no QA row is refused, and a report whose front matter is empty or duplicated is unreadable and refused; only the newest report in the directory is read by a later run's mechanical stage, so a superseded report blocks nothing.
 _Avoid_: Test report, QA log
 
 **Auditing Binary**:
@@ -504,6 +504,10 @@ _Avoid_: Release Command, publish command, cut-release command
 **Doctor Command**:
 The support command that diagnoses a repository and machine's readiness for Roundfix Runs — minimum-supported acpx, Adapter Readiness, Agent Selection Profile Readiness, Repository Skill Set, and codex runtime hygiene. It reports the detected acpx version against the minimum, gives each check a next action, and mutates nothing. It evaluates Repository Skill Set readiness after, and independently from, Agent Selection Profile Readiness; unlike the Doctor Command, the Setup Command prepares the machine.
 _Avoid_: Health check run, setup run, environment wizard
+
+**Migrate Command**:
+The support command that upgrades an older Run Database to the binary's schema version under the machine-wide write lock. It writes nothing when the Run Database is current, absent, or newer than the binary.
+_Avoid_: Automatic migration, database downgrade, schema compatibility mode
 
 **Spec Consistency Check**:
 The read-only, pre-Run support command that compares a Spec's written citations, declarations, and cross-references. It reports consistency findings and never edits artifacts or emits a QA verdict.

@@ -249,7 +249,8 @@ from `REPO_CONTRACT_TESTS`; it also fails when `repo-test` stops passing
 2. The help predicate (depends on: 1).
 3. The QA Report front matter (depends on: 2).
 4. The governed set and the repository gate (depends on: none).
-5. Terminal QA (depends on: 1, 2, 3, 4).
+5. Terminal QA (depends on: 1, 2, 3, 4, 6).
+6. The qa-report accept refusal test (depends on: 3).
 
 ## Risks & Considerations
 

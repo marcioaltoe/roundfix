@@ -1215,6 +1215,12 @@ open/list failures exit `2` with diagnostics on stderr. Outside a Git
 repository, `runs list` without `--all` exits `2` and names `--all` as the
 alternative.
 
+`runs list`, the Run Browser, and Attach refuse a Run Database whose schema
+version differs from the binary's without writing it. Upgrade an older Run
+Database with `roundfix migrate`, then retry discovery or Attach. A newer Run
+Database needs the newer Roundfix binary that wrote it; use that binary or run
+`roundfix upgrade`.
+
 At an interactive terminal, bare `roundfix runs` and `roundfix attach`
 without a Run ID open the Run Browser: machine-wide, every repository's Runs
 newest first, Active Runs only by default, with a header naming the

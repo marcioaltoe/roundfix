@@ -20,6 +20,7 @@ import (
 
 var guardedSpawningPackages = []string{
 	"internal/agent",
+	"internal/authorization",
 	"internal/baseline",
 	"internal/cli",
 	"internal/daemon",
@@ -30,6 +31,7 @@ var guardedSpawningPackages = []string{
 	"internal/speccheck",
 	"internal/store",
 	"internal/suiteguard",
+	"internal/verifyselect",
 	"internal/worktree",
 }
 

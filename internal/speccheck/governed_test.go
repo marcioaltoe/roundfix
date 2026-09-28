@@ -45,3 +45,19 @@ func TestGovernedPath(t *testing.T) {
 		})
 	}
 }
+
+func TestGovernedPathMatchesTheSkillOwnershipDeclaration(t *testing.T) {
+	t.Parallel()
+
+	if !speccheck.GovernedPath("skills/_ownership.yml") {
+		t.Fatal(`GovernedPath("skills/_ownership.yml") = false, want true`)
+	}
+}
+
+func TestGovernedPathKeepsAnotherSkillsRootFileOrdinary(t *testing.T) {
+	t.Parallel()
+
+	if speccheck.GovernedPath("skills/_notes.yml") {
+		t.Fatal(`GovernedPath("skills/_notes.yml") = true, want false`)
+	}
+}

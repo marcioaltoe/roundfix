@@ -3244,8 +3244,8 @@ func TestOpenReaderRejectsMismatchedSchemaVersion(t *testing.T) {
 	}
 	for _, want := range []string{
 		"schema version 9",
-		fmt.Sprintf("supports schema version %d", schemaVersion),
-		"resolve, watch, or implement",
+		fmt.Sprintf("schema version %d this binary supports", schemaVersion),
+		"run 'roundfix migrate'",
 	} {
 		if !strings.Contains(err.Error(), want) {
 			t.Fatalf("schema version error missing %q: %q", want, err.Error())
