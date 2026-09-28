@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-09-28
-spec: null
+spec: 0177-runs-that-fit-their-budget-and-park-honestly
 reason: null
 ---
 
