@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0173-a-delivery-queue-that-recovers
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -45,3 +45,51 @@ complexity: medium
 ## References
 
 - [_techspec.md](_techspec.md) — Carry-forward in integration order
+
+## Result
+
+Implementation:
+
+- `carryForwardTaskCommits` now returns each Task's commits and the Task IDs at
+  their first settlement-commit positions in the Run Worktree's reverse
+  revision walk.
+- Carry-forward builds one settled-completed Task sequence from that Run
+  integration order, appends Tasks without settlement commits in Task Graph
+  order, and reuses the sequence for proof, reporting, staging, and conflict
+  remainder accounting.
+- The Reconcile Command guide states that candidates are proved in the order
+  the Run integrated them and that the `carryForwards` JSON array follows that
+  order.
+
+Focused checks:
+
+- Pre-change signal: `rtk env GOCACHE=/tmp/roundfix-0173-task01-gocache go test -count=1 -run '^TestCarryForwardProvesTasksInTheOrderTheRunIntegratedThem$' ./internal/cli`
+  failed as expected with exit `1`; `task_02` was evaluated after `task_01`
+  and refused because `_prd.md` appeared moved.
+- `rtk env GOCACHE=/tmp/roundfix-0173-task01-gocache go test -count=1 -run '^TestCarryForward(ProvesTasksInTheOrderTheRunIntegratedThem|StillRefusesAnInputMovedOnTheCheckout|UnevaluatedTasksFollowIntegrationOrder)$' ./internal/cli`
+  passed.
+- `rtk env GOCACHE=/tmp/roundfix-0173-task01-gocache go test -count=1 -run '^(TestCarryForwardInputsResolveAgainstStagedCarries|TestInspectSpecCarryForwards)$' ./internal/cli`
+  passed without changing those tests.
+- `rtk env GOCACHE=/tmp/roundfix-0173-task01-gocache go test -count=1 -run '^(TestCarryForward.*|TestInspectSpecCarryForwards)$' ./internal/cli`
+  passed.
+- `rtk git diff --check` passed, and `rtk rg -n -F "in the order the Run integrated them" docs/user-guide/commands.md`
+  found the required phrase beside the `carryForwards` ordering contract.
+
+Acceptance evidence:
+
+- `TestCarryForwardProvesTasksInTheOrderTheRunIntegratedThem` builds Task Graph
+  order `task_01, task_02` and Run integration order `task_02, task_01`; the
+  public reconcile command exits `0`, carries both, reports that order in
+  JSON, and leaves the carried commit trailers in that order.
+- `TestCarryForwardStillRefusesAnInputMovedOnTheCheckout` changes the shared
+  input after the Run; reconcile exits `2`, names the input in its whole-set
+  refusal, leaves HEAD unchanged, and carries neither Task.
+- `TestCarryForwardUnevaluatedTasksFollowIntegrationOrder` makes the first
+  integrated Task conflict; the JSON report and refusal diagnostic list the
+  remaining unevaluated Tasks as `task_03, task_01`, matching Run integration
+  order rather than Task Graph order.
+
+Not run:
+
+- The Task's declared `## Verification` command; the Roundfix Daemon owns that
+  command and the terminal Task verdict.

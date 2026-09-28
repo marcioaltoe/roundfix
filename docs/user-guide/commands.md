@@ -976,11 +976,14 @@ roundfix reconcile <run-id> --carry-forward       # hand a Stopped or Unresolved
 discard that cannot be recorded does not happen. `--carry-forward` accepts a
 terminal Run whose outcome is Stopped or Unresolved. Every other terminal
 outcome is refused by name; the refusal names the actual outcome and says
-which outcomes carry-forward accepts. It compares each candidate's declared inputs
-against the accumulating staged carries—the checkout plus the carries staged
-ahead of it—rather than against the raw checkout. If one candidate refuses, the
-whole set is refused rather than carrying part of it, so a Task whose Spec,
-instruction, or Context moved since settlement is never silently replayed.
+which outcomes carry-forward accepts. It proves the candidates
+in the order the Run integrated them, and the `carryForwards` JSON array
+follows that order. It compares each
+candidate's declared inputs against the accumulating staged carries—the
+checkout plus the carries staged ahead of it—rather than against the raw
+checkout. If one candidate refuses, the whole set is refused rather than
+carrying part of it, so a Task whose Spec, instruction, or Context moved since
+settlement is never silently replayed.
 
 Carry-forward records each carried Task as completed and appends its source Run
 and settlement commit to the Task file. Because the carried Task's own file
