@@ -1,8 +1,8 @@
 ---
 type: feat
-status: open
+status: promoted
 created: 2026-09-28
-spec: null
+spec: 0179-review-findings-with-evidence-and-no-unselected-providers
 reason: null
 ---
 
