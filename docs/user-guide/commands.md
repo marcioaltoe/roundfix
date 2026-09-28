@@ -876,6 +876,8 @@ archive stamps the declarations' `satisfied-by` actions under `unproven` in
 
 A `pending` verdict is never accepted. A `pass` or otherwise-eligible `partial`
 that records no QA row is refused before archive changes the Spec.
+A report whose front matter is empty or duplicated is unreadable and refused;
+archive leaves the Spec and report in place.
 
 Every other refusal is unchanged: a finding-blocked row, an
 environment-blocked row, a declared count not covered by the Spec's
@@ -906,7 +908,8 @@ roundfix qa-report accept <path>
 Reads the selected QA Report and exits zero only when the shared archive and
 settlement eligibility decision accepts it. A `pending` verdict is never
 accepted, and a `pass` or otherwise-eligible `partial` that records no QA row
-is refused. The command writes no files.
+is refused. A report whose front matter is empty or duplicated is unreadable
+and refused. The command writes no files.
 
 ### supersede
 

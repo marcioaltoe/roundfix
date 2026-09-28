@@ -8755,12 +8755,13 @@ func TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport(t *testing.T) {
 		wantVerdict string
 		wantStatus  spec.Status
 		wantReason  string
+		wantCause   string
 	}{
 		{name: "pass with environment-blocked row", report: "---\nverdict: pass\nrows_blocked_environment: 1\n---\n\n# QA Report\n", wantVerdict: spec.VerdictPass, wantStatus: spec.StatusCompleted},
 		{name: "non-qualifying partial", report: qaReportForTest(spec.VerdictPartial), wantVerdict: spec.VerdictPartial, wantStatus: spec.StatusFailed, wantReason: `QA verdict partial not accepted: newest QA Report verdict is "partial"; expected "pass"`},
 		{name: "fail", report: qaReportForTest(spec.VerdictFail), wantVerdict: spec.VerdictFail, wantStatus: spec.StatusFailed, wantReason: "QA verdict fail"},
 		{name: "missing report", report: "", wantVerdict: "missing", wantStatus: spec.StatusFailed, wantReason: "QA verdict missing"},
-		{name: "unreadable verdict", report: "---\nsummary: no verdict field\n---\n\n# QA Report\n", wantVerdict: "unreadable", wantStatus: spec.StatusFailed, wantReason: "QA verdict unreadable"},
+		{name: "unreadable verdict", report: "---\nsummary: no verdict field\n---\n\n# QA Report\n", wantVerdict: "unreadable", wantStatus: spec.StatusFailed, wantReason: "QA verdict unreadable:", wantCause: "frontmatter has no verdict field"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -8809,7 +8810,11 @@ func TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport(t *testing.T) {
 				}
 			}
 			gotReason, _ := settlement["reason"].(string)
-			if settlement == nil || gotReason != tt.wantReason {
+			reasonMatches := gotReason == tt.wantReason
+			if tt.wantCause != "" {
+				reasonMatches = strings.HasPrefix(gotReason, tt.wantReason) && strings.Contains(gotReason, tt.wantCause)
+			}
+			if settlement == nil || !reasonMatches {
 				t.Fatalf("QA settlement payload = %v, want reason %q", settlement, tt.wantReason)
 			}
 			wantReportPath := reportRel

@@ -71,6 +71,27 @@ func TestQAReportAcceptRefusesAHollowPass(t *testing.T) {
 	}
 }
 
+func TestQAReportAcceptRefusesAnEmptyFrontMatter(t *testing.T) {
+	t.Parallel()
+	specDir := t.TempDir()
+	reportPath := filepath.Join(specDir, "qa", "qa-report-2026-09-25.md")
+	content := "---\n---\nverdict: pass\n---\n\n# QA Report\n"
+	writeQAReportTestFile(t, reportPath, content)
+	var stdout, stderr bytes.Buffer
+
+	code := runCLI(t, []string{"qa-report", "accept", reportPath}, &stdout, &stderr)
+
+	if code == exitOK || stdout.Len() != 0 {
+		t.Fatalf("qa-report accept = exit %d stdout %q, want non-zero exit and empty stdout", code, stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "QA Report front matter is empty") {
+		t.Fatalf("qa-report accept stderr = %q, want empty-front-matter refusal", stderr.String())
+	}
+	if got, err := os.ReadFile(reportPath); err != nil || string(got) != content {
+		t.Fatalf("qa-report accept changed or removed report: content=%q err=%v", got, err)
+	}
+}
+
 func TestRunQAReportAcceptCommandFailsClosed(t *testing.T) {
 	tests := []struct {
 		name      string

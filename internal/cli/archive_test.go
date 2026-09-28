@@ -434,6 +434,33 @@ func TestArchiveRefusesAHollowPass(t *testing.T) {
 	assertNoRunDatabase(t, homeDir)
 }
 
+func TestArchiveRefusesAnEmptyFrontMatter(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Build the widget core", status: string(spec.StatusCompleted)},
+	})
+	specDir := filepath.Join(repoDir, "docs", "specs", implementTestSlug)
+	reportPath := filepath.Join(specDir, "qa", "qa-report-2026-07-06.md")
+	content := "---\n---\nverdict: pass\n---\n\n# QA Report\n"
+	mustMkdir(t, filepath.Dir(reportPath))
+	mustWrite(t, reportPath, content)
+	var stdout, stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
+
+	if code == exitOK || stdout.Len() != 0 {
+		t.Fatalf("archive = exit %d stdout %q, want non-zero exit and empty stdout", code, stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "QA Report front matter is empty") {
+		t.Fatalf("archive stderr = %q, want empty-front-matter refusal", stderr.String())
+	}
+	assertPathExists(t, specDir)
+	if got := mustRead(t, reportPath); got != content {
+		t.Fatalf("archive changed QA Report: got %q, want %q", got, content)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
 func TestRunArchiveRefusesMissingOrNonPassingQA(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
