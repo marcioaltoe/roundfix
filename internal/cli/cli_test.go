@@ -1285,6 +1285,33 @@ func TestCommandUsageDocumentsProfileLedAndCompleteSelectionOverrides(t *testing
 	}
 }
 
+func TestMigrateHelpDocumentsTheContract(t *testing.T) {
+	t.Parallel()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLI(t, []string{"migrate", "--help"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("migrate help exit = %d, want 0 stderr=%q", code, stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("migrate help stderr = %q, want empty", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Usage:\n  roundfix migrate") {
+		t.Fatalf("migrate help missing usage: %q", stdout.String())
+	}
+
+	stdout.Reset()
+	code = runCLI(t, []string{"--help"}, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("root help exit = %d, want 0 stderr=%q", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "roundfix migrate") {
+		t.Fatalf("root help does not list roundfix migrate: %q", stdout.String())
+	}
+}
+
 func TestEventsHelpDocumentsAgentSelectionFilter(t *testing.T) {
 	t.Parallel()
 	var stdout bytes.Buffer

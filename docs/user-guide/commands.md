@@ -19,6 +19,10 @@ installing, substitute `go run ./cmd/roundfix`.
   it, `ROUNDFIX_COLOR=never` or `NO_COLOR` disables it.
 - Supported Agent names are `codex`, `claude`, and `opencode`. The supported
   Review Source is `coderabbit`.
+- Commands that read the Run Database refuse another schema version without
+  writing. An older database tells the operator to `run 'roundfix migrate'`;
+  a newer database says that a newer Roundfix wrote it and tells the operator
+  to use that binary or run `roundfix upgrade`.
 
 ## Setup and maintenance
 
@@ -126,6 +130,28 @@ Doctor never runs either command, never deletes skills, and never updates
 `skills-lock.json`. The check is offline and read-only: it reads only local
 embedded artifacts, `.agents/skills`, and `skills-lock.json`. Unrelated extra
 installed skills and lock entries are ignored and are not removed or flagged.
+
+### migrate
+
+```bash
+roundfix migrate
+```
+
+Upgrades an existing older Run Database to this binary's schema version under
+the machine-wide write lock. It needs no Git repository and reports exactly one
+of four outcomes:
+
+- An older database prints `Run Database migrated from schema version <from>
+  to <to>: <path>`.
+- A current database is not written and prints `Run Database is already at
+  schema version <n>: <path>`.
+- An absent database creates neither the database nor its directory and prints
+  `No Run Database at <path>; nothing to migrate`.
+- A newer database is refused without writing and names the newer binary or
+  `roundfix upgrade` as the remedy.
+
+A Run started by an older binary that is still Active meets the same migrated
+database any operational command would leave.
 
 ### review
 

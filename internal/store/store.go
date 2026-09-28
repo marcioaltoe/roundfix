@@ -240,12 +240,29 @@ type SchemaVersionError struct {
 }
 
 func (err SchemaVersionError) Error() string {
+	if err.Found < err.Supported {
+		return fmt.Sprintf(
+			"Run Database %q has schema version %d, older than the schema version %d this binary supports; run 'roundfix migrate' to upgrade it",
+			err.Path,
+			err.Found,
+			err.Supported,
+		)
+	}
 	return fmt.Sprintf(
-		"Run Database %q has schema version %d, but this binary supports schema version %d; run one operational roundfix command (resolve, watch, or implement) to migrate the Run Database",
+		"Run Database %q has schema version %d, newer than the schema version %d this binary supports; a newer roundfix wrote it, so use that binary or run 'roundfix upgrade'",
 		err.Path,
 		err.Found,
 		err.Supported,
 	)
+}
+
+// MigrationResult reports what Migrate observed and changed. Exists is false
+// only when no Run Database was present; in that case From and To are zero.
+type MigrationResult struct {
+	Path   string
+	From   int
+	To     int
+	Exists bool
 }
 
 var ErrTerminalRunStopRequest = errors.New("cannot record Stop Request for terminal Run")
@@ -312,13 +329,57 @@ func Open(ctx context.Context, homeDir string) (*Store, error) {
 		return nil, err
 	}
 	store.writeLockFile = writeLockFile
-	if err := store.migrate(ctx); err != nil {
+	if _, err := store.migrate(ctx, path); err != nil {
 		_ = writeLockFile.Close()
 		_ = db.Close()
 		return nil, err
 	}
 	store.journal = newJournalWriter(store)
 	return store, nil
+}
+
+// Migrate upgrades an existing Run Database to the schema supported by this
+// binary. It never creates a missing database or its directory, and it leaves
+// current and newer databases unchanged.
+func Migrate(ctx context.Context, homeDir string) (MigrationResult, error) {
+	if strings.TrimSpace(homeDir) == "" {
+		return MigrationResult{}, errors.New("migrate Run Database: home directory is required")
+	}
+	path := DatabasePath(homeDir)
+	result := MigrationResult{Path: path}
+	if _, err := os.Stat(path); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return result, nil
+		}
+		return result, fmt.Errorf("stat Run Database %q: %w", path, err)
+	}
+
+	db, err := sql.Open("sqlite", migratorDSN(path))
+	if err != nil {
+		return result, fmt.Errorf("open Run Database %q for migration: %w", path, err)
+	}
+	db.SetMaxOpenConns(1)
+	store := &Store{
+		db:                db,
+		now:               func() time.Time { return time.Now().UTC() },
+		temporaryCapacity: availableTemporaryCapacity,
+	}
+	writeLockFile, err := openWriteLockFile(path)
+	if err != nil {
+		_ = db.Close()
+		return result, err
+	}
+	store.writeLockFile = writeLockFile
+
+	result, migrateErr := store.migrate(ctx, path)
+	closeErr := errors.Join(writeLockFile.Close(), db.Close())
+	if migrateErr != nil {
+		return result, errors.Join(migrateErr, closeErr)
+	}
+	if closeErr != nil {
+		return result, fmt.Errorf("close Run Database %q after migration: %w", path, closeErr)
+	}
+	return result, nil
 }
 
 // OpenReader opens a read-only connection for paging Run Events while the
@@ -385,6 +446,12 @@ func writerDSN(path string) string {
 	return "file:" + path + "?_txlock=immediate" +
 		fmt.Sprintf("&_pragma=busy_timeout(%d)", busyTimeoutMillis) +
 		"&_pragma=journal_mode(WAL)" +
+		"&_pragma=foreign_keys(1)"
+}
+
+func migratorDSN(path string) string {
+	return "file:" + path + "?_txlock=immediate" +
+		fmt.Sprintf("&_pragma=busy_timeout(%d)", busyTimeoutMillis) +
 		"&_pragma=foreign_keys(1)"
 }
 
@@ -1363,12 +1430,21 @@ func (store *Store) RunIDs(ctx context.Context) ([]string, error) {
 	return runIDs, nil
 }
 
-func (store *Store) MigrationVersion(ctx context.Context) (int, error) {
+type migrationQuerier interface {
+	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}
+
+func migrationVersion(ctx context.Context, query migrationQuerier) (int, error) {
 	var version int
-	if err := store.db.QueryRowContext(ctx, `PRAGMA user_version`).Scan(&version); err != nil {
+	if err := query.QueryRowContext(ctx, `PRAGMA user_version`).Scan(&version); err != nil {
 		return 0, fmt.Errorf("read Run Database migration version: %w", err)
 	}
 	return version, nil
+}
+
+func (store *Store) MigrationVersion(ctx context.Context) (int, error) {
+	return migrationVersion(ctx, store.db)
 }
 
 func (store *Store) InteractiveDefaults(ctx context.Context) (InteractiveDefaults, error) {
@@ -1459,47 +1535,81 @@ const activeRunLocksColumns = `(
 	FOREIGN KEY (run_id) REFERENCES runs(id) ON DELETE CASCADE
 )`
 
-func (store *Store) migrate(ctx context.Context) error {
-	if _, err := store.db.ExecContext(ctx, `PRAGMA foreign_keys = ON`); err != nil {
-		return fmt.Errorf("apply Run Database migration: %w", err)
-	}
-	version, err := store.MigrationVersion(ctx)
-	if err != nil {
-		return err
-	}
-	var v15Statements []string
-	if version >= 3 && version < 15 {
-		v15Statements, err = store.deliveryOwnerMigrationStatements(ctx)
+func (store *Store) migrate(ctx context.Context, path string) (MigrationResult, error) {
+	result := MigrationResult{Path: path, Exists: true}
+	err := store.withWriteTx(ctx, "Run Database migration", func(tx *sql.Tx) error {
+		version, err := migrationVersion(ctx, tx)
 		if err != nil {
 			return err
+		}
+		result.From = version
+		result.To = version
+		if version > schemaVersion {
+			return SchemaVersionError{Path: path, Found: version, Supported: schemaVersion}
+		}
+		if version == schemaVersion {
+			return nil
+		}
+
+		statements, err := store.migrationStatements(ctx, tx, version)
+		if err != nil {
+			return err
+		}
+		for _, statement := range statements {
+			if _, err := tx.ExecContext(ctx, statement); err != nil {
+				return fmt.Errorf("apply Run Database migration: %w", err)
+			}
+		}
+		if version != 0 {
+			if err := applyRepositoryRootMigration(ctx, tx); err != nil {
+				return err
+			}
+		}
+		result.To = schemaVersion
+		return nil
+	})
+	return result, err
+}
+
+func (store *Store) migrationStatements(ctx context.Context, tx *sql.Tx, version int) ([]string, error) {
+	var v15Statements []string
+	if version >= 3 && version < 15 {
+		var err error
+		v15Statements, err = store.deliveryOwnerMigrationStatements(ctx, tx)
+		if err != nil {
+			return nil, err
 		}
 	}
 	var v16Statements []string
 	if version >= 3 && version < 16 {
-		v16Statements, err = store.deliveryBranchMigrationStatements(ctx)
+		var err error
+		v16Statements, err = store.deliveryBranchMigrationStatements(ctx, tx)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	var v17Statements []string
 	if version >= 3 && version < 17 {
-		v17Statements, err = store.deliveryStartingBranchMigrationStatements(ctx)
+		var err error
+		v17Statements, err = store.deliveryStartingBranchMigrationStatements(ctx, tx)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	var v19Statements []string
 	if version >= 3 && version < 19 {
-		v19Statements, err = store.deliveryWorktreeMigrationStatements(ctx)
+		var err error
+		v19Statements, err = store.deliveryWorktreeMigrationStatements(ctx, tx)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	var v20Statements []string
 	if version >= 3 && version < 20 {
-		v20Statements, err = store.deliveryWorktreeProvisioningMigrationStatements(ctx)
+		var err error
+		v20Statements, err = store.deliveryWorktreeProvisioningMigrationStatements(ctx, tx)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	deliveryStatements := append(v15Statements, v16Statements...)
@@ -1508,10 +1618,8 @@ func (store *Store) migrate(ctx context.Context) error {
 	deliveryStatements = append(deliveryStatements, v20Statements...)
 	var statements []string
 	switch version {
-	case schemaVersion:
-		return nil
 	case 0:
-		return store.applyMigration(ctx, createSchemaStatements())
+		return createSchemaStatements(), nil
 	case 3:
 		statements = append(migrateV3ToV4Statements(), migrateV4ToV5Statements()...)
 		statements = append(statements, migrateV5ToV6Statements()...)
@@ -1536,8 +1644,12 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = append(statements, migrateV13ToV14Statements()...)
 		statements = append(statements, deliveryStatements...)
 	case 5:
-		if err := store.ensureAgentColumn(ctx); err != nil {
-			return err
+		agentExists, err := runColumnExists(ctx, tx, "agent")
+		if err != nil {
+			return nil, err
+		}
+		if !agentExists {
+			statements = append(statements, `ALTER TABLE runs ADD COLUMN agent TEXT NOT NULL DEFAULT ''`)
 		}
 		statements = append(migrateV5ToV6Statements(), migrateV6ToV7Statements()...)
 		statements = append(statements, migrateV7ToV8Statements()...)
@@ -1608,93 +1720,74 @@ func (store *Store) migrate(ctx context.Context) error {
 	case 19:
 		statements = v20Statements
 	default:
-		return fmt.Errorf("migrate Run Database: schema version %d is not supported", version)
+		return nil, fmt.Errorf("migrate Run Database: schema version %d is not supported", version)
 	}
-	return store.applyRepositoryRootMigration(ctx, statements)
+	return statements, nil
 }
 
-func (store *Store) applyMigration(ctx context.Context, statements []string) error {
-	return store.withWriteTx(ctx, "Run Database migration", func(tx *sql.Tx) error {
-		for _, statement := range statements {
-			if _, err := tx.ExecContext(ctx, statement); err != nil {
-				return fmt.Errorf("apply Run Database migration: %w", err)
-			}
-		}
-		return nil
-	})
-}
-
-func (store *Store) applyRepositoryRootMigration(ctx context.Context, statements []string) error {
+func applyRepositoryRootMigration(ctx context.Context, tx *sql.Tx) error {
 	type legacyRun struct {
 		id      string
 		gitRoot string
 	}
 
-	return store.withWriteTx(ctx, "Run Database migration", func(tx *sql.Tx) error {
-		for _, statement := range statements {
-			if _, err := tx.ExecContext(ctx, statement); err != nil {
-				return fmt.Errorf("apply Run Database migration: %w", err)
-			}
-		}
-
-		var repositoryRootExists int
-		if err := tx.QueryRowContext(ctx, `
+	var repositoryRootExists int
+	if err := tx.QueryRowContext(ctx, `
 SELECT EXISTS (
 	SELECT 1 FROM pragma_table_info('runs') WHERE name = 'repository_root'
 )`).Scan(&repositoryRootExists); err != nil {
-			return fmt.Errorf("inspect Run repository root column: %w", err)
+		return fmt.Errorf("inspect Run repository root column: %w", err)
+	}
+	if repositoryRootExists == 0 {
+		if _, err := tx.ExecContext(ctx,
+			`ALTER TABLE runs ADD COLUMN repository_root TEXT NOT NULL DEFAULT ''`,
+		); err != nil {
+			return fmt.Errorf("add Run repository root column: %w", err)
 		}
-		if repositoryRootExists == 0 {
-			if _, err := tx.ExecContext(ctx,
-				`ALTER TABLE runs ADD COLUMN repository_root TEXT NOT NULL DEFAULT ''`,
-			); err != nil {
-				return fmt.Errorf("add Run repository root column: %w", err)
-			}
-		}
+	}
 
-		rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 SELECT id, git_root
 FROM runs
 WHERE repository_root = ''`)
-		if err != nil {
-			return fmt.Errorf("read Runs for repository root backfill: %w", err)
-		}
-		legacyRuns := []legacyRun{}
-		for rows.Next() {
-			var run legacyRun
-			if err := rows.Scan(&run.id, &run.gitRoot); err != nil {
-				_ = rows.Close()
-				return fmt.Errorf("scan Run for repository root backfill: %w", err)
-			}
-			legacyRuns = append(legacyRuns, run)
-		}
-		if err := rows.Err(); err != nil {
+	if err != nil {
+		return fmt.Errorf("read Runs for repository root backfill: %w", err)
+	}
+	legacyRuns := []legacyRun{}
+	for rows.Next() {
+		var run legacyRun
+		if err := rows.Scan(&run.id, &run.gitRoot); err != nil {
 			_ = rows.Close()
-			return fmt.Errorf("iterate Runs for repository root backfill: %w", err)
+			return fmt.Errorf("scan Run for repository root backfill: %w", err)
 		}
-		if err := rows.Close(); err != nil {
-			return fmt.Errorf("close Runs for repository root backfill: %w", err)
-		}
+		legacyRuns = append(legacyRuns, run)
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return fmt.Errorf("iterate Runs for repository root backfill: %w", err)
+	}
+	if err := rows.Close(); err != nil {
+		return fmt.Errorf("close Runs for repository root backfill: %w", err)
+	}
 
-		for _, run := range legacyRuns {
-			if _, err := os.Stat(filepath.Join(run.gitRoot, ".git")); err != nil {
-				continue
-			}
-			repositoryRoot, err := roundconfig.RepositoryRoot(run.gitRoot)
-			if err != nil {
-				continue
-			}
-			if _, err := tx.ExecContext(ctx,
-				`UPDATE runs SET repository_root = ? WHERE id = ?`, repositoryRoot, run.id,
-			); err != nil {
-				return fmt.Errorf("backfill Run repository root: %w", err)
-			}
+	for _, run := range legacyRuns {
+		if _, err := os.Stat(filepath.Join(run.gitRoot, ".git")); err != nil {
+			continue
 		}
-		if _, err := tx.ExecContext(ctx, `PRAGMA user_version = 20`); err != nil {
-			return fmt.Errorf("record Run Database migration version: %w", err)
+		repositoryRoot, err := roundconfig.RepositoryRoot(run.gitRoot)
+		if err != nil {
+			continue
 		}
-		return nil
-	})
+		if _, err := tx.ExecContext(ctx,
+			`UPDATE runs SET repository_root = ? WHERE id = ?`, repositoryRoot, run.id,
+		); err != nil {
+			return fmt.Errorf("backfill Run repository root: %w", err)
+		}
+	}
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`PRAGMA user_version = %d`, schemaVersion)); err != nil {
+		return fmt.Errorf("record Run Database migration version: %w", err)
+	}
+	return nil
 }
 
 // createSchemaStatements creates the current schema directly on a fresh Run Database.
@@ -1882,10 +1975,10 @@ func migrateV13ToV14Statements() []string {
 	return append(statements, `PRAGMA user_version = 14`)
 }
 
-func (store *Store) deliveryOwnerMigrationStatements(ctx context.Context) ([]string, error) {
+func (store *Store) deliveryOwnerMigrationStatements(ctx context.Context, query migrationQuerier) ([]string, error) {
 	var ownerPIDExists int
 	var ownerIdentityExists int
-	err := store.db.QueryRowContext(ctx, `
+	err := query.QueryRowContext(ctx, `
 SELECT
 	EXISTS (SELECT 1 FROM pragma_table_info('delivery_queues') WHERE name = 'owner_pid'),
 	EXISTS (SELECT 1 FROM pragma_table_info('delivery_queues') WHERE name = 'owner_identity')`).Scan(
@@ -1910,9 +2003,9 @@ func deliveryOwnerColumnStatements(ownerPIDExists bool, ownerIdentityExists bool
 	return statements
 }
 
-func (store *Store) deliveryBranchMigrationStatements(ctx context.Context) ([]string, error) {
+func (store *Store) deliveryBranchMigrationStatements(ctx context.Context, query migrationQuerier) ([]string, error) {
 	var branchExists int
-	if err := store.db.QueryRowContext(ctx, `
+	if err := query.QueryRowContext(ctx, `
 SELECT EXISTS (
 	SELECT 1 FROM pragma_table_info('delivery_queue_items') WHERE name = 'branch'
 )`).Scan(&branchExists); err != nil {
@@ -1925,9 +2018,9 @@ SELECT EXISTS (
 	return append(statements, `PRAGMA user_version = 16`), nil
 }
 
-func (store *Store) deliveryStartingBranchMigrationStatements(ctx context.Context) ([]string, error) {
+func (store *Store) deliveryStartingBranchMigrationStatements(ctx context.Context, query migrationQuerier) ([]string, error) {
 	var startingBranchExists int
-	if err := store.db.QueryRowContext(ctx, `
+	if err := query.QueryRowContext(ctx, `
 SELECT EXISTS (
 	SELECT 1 FROM pragma_table_info('delivery_queue_items') WHERE name = 'starting_branch'
 )`).Scan(&startingBranchExists); err != nil {
@@ -1940,9 +2033,9 @@ SELECT EXISTS (
 	return append(statements, `PRAGMA user_version = 17`), nil
 }
 
-func (store *Store) deliveryWorktreeMigrationStatements(ctx context.Context) ([]string, error) {
+func (store *Store) deliveryWorktreeMigrationStatements(ctx context.Context, query migrationQuerier) ([]string, error) {
 	var worktreeExists int
-	if err := store.db.QueryRowContext(ctx, `
+	if err := query.QueryRowContext(ctx, `
 SELECT EXISTS (
 	SELECT 1 FROM pragma_table_info('delivery_queue_items') WHERE name = 'worktree'
 )`).Scan(&worktreeExists); err != nil {
@@ -1955,9 +2048,9 @@ SELECT EXISTS (
 	return statements, nil
 }
 
-func (store *Store) deliveryWorktreeProvisioningMigrationStatements(ctx context.Context) ([]string, error) {
+func (store *Store) deliveryWorktreeProvisioningMigrationStatements(ctx context.Context, query migrationQuerier) ([]string, error) {
 	var provisionedExists int
-	if err := store.db.QueryRowContext(ctx, `
+	if err := query.QueryRowContext(ctx, `
 SELECT EXISTS (
 	SELECT 1 FROM pragma_table_info('delivery_queue_items') WHERE name = 'worktree_provisioned'
 )`).Scan(&provisionedExists); err != nil {
@@ -2020,22 +2113,8 @@ func deliverySchemaStatements(includeBranch bool) []string {
 	}
 }
 
-func (store *Store) ensureAgentColumn(ctx context.Context) error {
-	exists, err := store.runColumnExists(ctx, "agent")
-	if err != nil {
-		return err
-	}
-	if exists {
-		return nil
-	}
-	return store.applyMigration(ctx, []string{
-		`ALTER TABLE runs ADD COLUMN agent TEXT NOT NULL DEFAULT ''`,
-		`PRAGMA user_version = 5`,
-	})
-}
-
-func (store *Store) runColumnExists(ctx context.Context, name string) (bool, error) {
-	rows, err := store.db.QueryContext(ctx, `PRAGMA table_info(runs)`)
+func runColumnExists(ctx context.Context, query migrationQuerier, name string) (bool, error) {
+	rows, err := query.QueryContext(ctx, `PRAGMA table_info(runs)`)
 	if err != nil {
 		return false, fmt.Errorf("inspect runs columns: %w", err)
 	}

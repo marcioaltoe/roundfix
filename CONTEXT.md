@@ -501,6 +501,10 @@ _Avoid_: Release Command, publish command, cut-release command
 The support command that diagnoses a repository and machine's readiness for Roundfix Runs — minimum-supported acpx, Adapter Readiness, Agent Selection Profile Readiness, Repository Skill Set, and codex runtime hygiene. It reports the detected acpx version against the minimum, gives each check a next action, and mutates nothing. It evaluates Repository Skill Set readiness after, and independently from, Agent Selection Profile Readiness; unlike the Doctor Command, the Setup Command prepares the machine.
 _Avoid_: Health check run, setup run, environment wizard
 
+**Migrate Command**:
+The support command that upgrades an older Run Database to the binary's schema version under the machine-wide write lock. It writes nothing when the Run Database is current, absent, or newer than the binary.
+_Avoid_: Automatic migration, database downgrade, schema compatibility mode
+
 **Spec Consistency Check**:
 The read-only, pre-Run support command that compares a Spec's written citations, declarations, and cross-references. It reports consistency findings and never edits artifacts or emits a QA verdict.
 _Avoid_: QA gate, Spec validator, inference engine
