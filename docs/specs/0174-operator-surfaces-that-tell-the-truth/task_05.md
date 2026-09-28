@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0174-operator-surfaces-that-tell-the-truth
-status: pending
+status: failed
 type: qa
 complexity: medium
 ---
