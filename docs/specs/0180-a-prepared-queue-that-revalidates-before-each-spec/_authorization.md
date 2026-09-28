@@ -23,9 +23,13 @@ The maintainer authorized continuing with the next wave after the v0.18.0
 release in chat on 2026-09-28 ("Após o release, pode continuar com as
 implementações da onda seguinte"); this Spec is part of that wave. The Go test
 file rides the standing grant of 2026-09-21 for governed source a slice
-genuinely needs. The skill files ride the standing grant of 2026-09-18 for
-keeping the shipped skills true to the CLI. The set was measured with
-`GovernedPath` on `b92aefda`.
+genuinely needs. The Roundfix skill files ride the standing grant of
+2026-09-18 for keeping the shipped skills true to the CLI. The maintainer
+expressly authorized the `implement-spec` skill files on 2026-09-28, answering
+"Autorizar" to a structured question: task_05 may rewrite the skill so it only
+prepares the queue and delegates implementation and Verification to Roundfix.
+The 2026-09-18 standing grant does not cover that rewrite. The set was measured
+with `GovernedPath` on `b92aefda`.
 
 ## Why each governed path is unavoidable
 
@@ -42,6 +46,8 @@ keeping the shipped skills true to the CLI. The set was measured with
 - `.agents/skills/implement-spec/SKILL.md`, `skills/implement-spec/SKILL.md` —
   the owned entry point stops carrying its own Task loop and hands
   implementation to `roundfix implement` or `roundfix deliver` (task_05).
+  Express maintainer authorization of 2026-09-28 ("Autorizar") covers this
+  rewrite; `.agents/skills/` is canonical and `skills/` its mirror.
 
 ## What is not governed
 

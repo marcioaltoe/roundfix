@@ -66,9 +66,11 @@ Backlog Entries, and the efficiency waves hit each of them:
   ADR-0156. All hold. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — the maintainer authorized continuing with
   the next wave after the v0.18.0 release in chat on 2026-09-28; the Go test
-  file rides the standing grant of 2026-09-21 for governed source, and the
-  skill files ride the standing grant of 2026-09-18 for keeping the shipped
-  skills true to the CLI, recorded in [_authorization.md](_authorization.md);
+  file rides the standing grant of 2026-09-21 for governed source, the
+  Roundfix skill files ride the standing grant of 2026-09-18 for keeping the
+  shipped skills true to the CLI, and the maintainer expressly authorized the
+  `implement-spec` rewrite on 2026-09-28, all recorded in
+  [_authorization.md](_authorization.md);
   bounded files: `internal/cli/cli_test.go`,
   `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`,
   `.agents/skills/implement-spec/SKILL.md`, `skills/implement-spec/SKILL.md`.
