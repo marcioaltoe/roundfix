@@ -1778,6 +1778,17 @@ func removeUnregisteredItemWorktree(ctx context.Context, runner gitRunner, ref I
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("inspect Git administration directory %q: %w", gitDir, err)
 	}
+	worktrees, err := listRegisteredWorktrees(ctx, runner, ref.UserRoot)
+	if err != nil {
+		return fmt.Errorf("inspect registered worktrees before removal: %w", err)
+	}
+	itemPath := canonicalPath(ref.Path)
+	for _, worktree := range worktrees {
+		nestedPath := canonicalPath(worktree.Path)
+		if pathAtOrBelow(nestedPath, itemPath) {
+			return fmt.Errorf("registered worktree %q is nested under the item path", nestedPath)
+		}
+	}
 
 	if err := makeTreeOwnerWritable(ref.Path); err != nil {
 		return fmt.Errorf("make unregistered item Worktree writable: %w", err)
@@ -3264,6 +3275,14 @@ func samePath(left, right string) bool {
 		return false
 	}
 	return canonicalPath(left) == canonicalPath(right)
+}
+
+func pathAtOrBelow(path, root string) bool {
+	relative, err := filepath.Rel(root, path)
+	return err == nil &&
+		!filepath.IsAbs(relative) &&
+		relative != ".." &&
+		!strings.HasPrefix(relative, ".."+string(filepath.Separator))
 }
 
 func canonicalPath(path string) string {

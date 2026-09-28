@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0175-cleanup-after-a-squash-merge
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
