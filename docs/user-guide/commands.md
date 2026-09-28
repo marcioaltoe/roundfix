@@ -198,6 +198,7 @@ review failures.
 roundfix deliver start <slug>...
 roundfix deliver status
 roundfix deliver resume
+roundfix deliver retry <slug>
 roundfix deliver stop
 ```
 
@@ -225,6 +226,31 @@ authorization record to grant `push`, `pull_request`, and `merge`.
 `deliver status` prints each item's Spec slug, stage, and blocker. `deliver
 stop` ends the detached owner; `deliver resume` restarts it from the persisted
 queue.
+
+`roundfix deliver retry <slug>` returns one parked item to the queue. For an
+active Spec, it first carries the settled Tasks of the item's recorded Run to
+the item branch, so a later Run executes only unfinished Tasks. It then selects
+the re-entry stage from the evidence on that branch:
+
+| Recorded evidence | Re-entry stage |
+| --- | --- |
+| Active Spec with any unfinished Task | `running` |
+| Active Spec with every Task completed | `reviewing` |
+| Archived Spec with no recorded pull request | `gating` |
+| Archived Spec with a recorded pull request | `checking` |
+
+After the retry, a live owner whose identity Roundfix proves keeps the queue
+and stdout reports `Handed <slug> to Delivery Queue owner PID <pid>.`. If the
+recorded owner is dead or its identity is unproven, Roundfix reclaims the owner
+record, writes the same stderr notice as `deliver resume`, and starts a new
+detached owner. With no recorded owner, it starts one directly.
+
+A successful retry exits `0` after stdout reports `Retried <slug>: <blocker>
+-> <stage>` and, when Tasks moved, `Carried forward from Run <run-id>: <task>,
+<task>`. A missing or empty slug, an extra argument, an unknown flag, an item
+that is not parked, a missing item branch, a moved archived head, a refused
+carry-forward, or an owner hand-off failure exits `2` and starts no owner. An
+item-level refusal leaves the stored item unchanged.
 
 ### upgrade
 

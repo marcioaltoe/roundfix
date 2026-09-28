@@ -463,8 +463,16 @@ The support command that inspects terminal spec Run Worktrees and Run Branches a
 _Avoid_: GC Command, Settle Command, automatic integration
 
 **Task Carry-Forward**:
-The explicit act that hands a settled Task from a terminal spec Run's Run Branch back to the user's checkout, so work that already ran and passed its Verification is never executed again to reach the same result. It accepts a Run whose outcome is Stopped or Unresolved and refuses every other terminal outcome. It carries a Task only on proof — a passing Verification verdict, exactly one settlement commit, declared inputs unmoved since settlement, a clean checkout, and a repository-local Specs Root — refuses the whole set rather than carrying part of it, and stamps each carried Task with the Run and commit that established it. Reached through the Reconcile Command's `--carry-forward` switch; it is never automatic, and a carried Task's own file becomes a moved input afterwards, so the act does not repeat itself. The implementation spelling `CarryForward` refers to this same term.
+The explicit act that hands a settled Task from a terminal spec Run's Run Branch back to the user's checkout, so work that already ran and passed its Verification is never executed again to reach the same result. It accepts a Run whose outcome is Stopped or Unresolved and refuses every other terminal outcome. It carries a Task only on proof — a passing Verification verdict, exactly one settlement commit, declared inputs unmoved since settlement, a clean checkout, and a repository-local Specs Root — refuses the whole set rather than carrying part of it, and stamps each carried Task with the Run and commit that established it. Reached through the Reconcile Command's `--carry-forward` switch or through a Delivery Retry; it is never automatic, and a carried Task's own file becomes a moved input afterwards, so the act does not repeat itself. The implementation spelling `CarryForward` refers to this same term.
 _Avoid_: replay, resume, automatic carry, QA row carry-forward
+
+**Delivery Queue**:
+The durable, ordered set of Specs that Roundfix advances from an Implement Run through merge. A blocker parks only its item while later items can continue.
+_Avoid_: Release queue, Batch, Run list
+
+**Delivery Retry**:
+The explicit act that returns one parked Delivery Queue item to the stage supported by its recorded evidence and hands it to a live or newly started queue owner. It may perform Task Carry-Forward first and is never automatic.
+_Avoid_: Resume Command, automatic retry, replay
 
 **Reprocess Command**:
 An explicit future command for revisiting selected Terminal Review Issues.

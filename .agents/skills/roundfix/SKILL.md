@@ -289,6 +289,7 @@ terminal session:
 roundfix deliver start <slug>...
 roundfix deliver status
 roundfix deliver resume
+roundfix deliver retry <slug>
 roundfix deliver stop
 ```
 
@@ -313,6 +314,22 @@ against the observed remote state before retrying that action. This prevents a
 lost acknowledgement from creating a second pull request or merge. Before
 publication, the Spec authorization record must grant all three operations:
 `push`, `pull_request`, and `merge`.
+
+Use `roundfix deliver retry <slug>` to return one parked item to the queue.
+For an active Spec, Roundfix first carries the settled Tasks of the item's Run
+to the item branch. The item then re-enters at `running` when any Task is
+unfinished or at `reviewing` when every Task is completed. An archived Spec
+re-enters at `gating` without a recorded pull request or at `checking` with
+one.
+
+The retry hands the item to the recorded owner only when Roundfix proves that
+process is alive and has the recorded identity. A dead or unproven owner record
+is reclaimed with a stderr notice and replaced; with no owner, Roundfix starts
+a detached owner. Success exits `0` and prints `Retried <slug>: <blocker> ->
+<stage>`, any carry-forward, and the live-owner hand-off or detached-owner
+report. Invalid arguments, an item that is not parked, a missing item branch, a
+moved archived head, refused carry-forward, or owner hand-off failure exits `2`
+and starts no owner; an item-level refusal leaves the item unchanged.
 
 Use `roundfix upgrade [--check]` to resolve the latest Roundfix release through
 the GitHub CLI. Without `--check`, it downloads the platform asset, verifies
