@@ -5884,8 +5884,14 @@ Options:
 }
 
 func commandWantsHelp(args []string) bool {
+	if len(args) > 0 && args[0] == "help" {
+		return true
+	}
 	for _, arg := range args {
-		if arg == "-h" || arg == "--help" || arg == "help" {
+		if arg == "--" {
+			return false
+		}
+		if arg == "-h" || arg == "--help" {
 			return true
 		}
 	}

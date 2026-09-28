@@ -15,6 +15,9 @@ installing, substitute `go run ./cmd/roundfix`.
 - **Exit codes**: `0` Clean, Stopped, Fetched, or an already-complete no-op;
   `1` Unresolved, Failed, or Integration Pending; `2` Preflight Validation
   failure; `3` Clean Unverified (watch only); `130` in-terminal Ctrl-C.
+- A bare `help` requests usage only as a command's first argument. `-h` or
+  `--help` requests usage anywhere before `--`; no token after `--` requests
+  usage.
 - Color is automatic in interactive terminals. `ROUNDFIX_COLOR=always` forces
   it, `ROUNDFIX_COLOR=never` or `NO_COLOR` disables it.
 - Supported Agent names are `codex`, `claude`, and `opencode`. The supported
