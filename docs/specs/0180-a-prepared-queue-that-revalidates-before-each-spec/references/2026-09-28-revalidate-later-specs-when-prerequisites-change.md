@@ -1,8 +1,8 @@
 ---
 type: feat
-status: open
+status: promoted
 created: 2026-09-28
-spec: null
+spec: 0180-a-prepared-queue-that-revalidates-before-each-spec
 reason: null
 ---
 

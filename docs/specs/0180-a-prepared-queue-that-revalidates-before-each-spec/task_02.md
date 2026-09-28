@@ -1,0 +1,58 @@
+---
+task: task_02
+spec: 0180-a-prepared-queue-that-revalidates-before-each-spec
+status: pending
+type: backend
+complexity: high
+---
+
+# Task 02: A Delivery Queue records its limits and enforces them
+
+## Overview
+
+A Delivery Queue in `internal/store/delivery.go` records only its items and its owner, so a detached owner keeps starting Specs for as long as items remain, and `Engine.Retry` in `internal/delivery/engine.go` returns an item to the queue however many times it is asked. This Task records a deadline and a per-item retry limit with the queue, in one new Run Database schema version. The engine enforces both: no queued item starts after the deadline, and no retry passes the limit. The limits are written once when the queue is recorded and read by the detached owner and by every `deliver retry`, in separate processes that share the Run Database.
+
+## Requirements
+
+1. MUST raise `schemaVersion` in `internal/store/store.go` by exactly one from its value on the Task's starting main. A fresh database MUST create `delivery_queues.deadline_unix`, `delivery_queues.max_retries` and `delivery_queue_items.retry_count`, each `INTEGER NOT NULL DEFAULT 0`. Every older schema that already has the delivery tables MUST gain them through idempotent column-existence checks, as `deliveryWorktreeMigrationStatements` does. Tests MUST read `schemaVersion`, never a literal version.
+2. MUST add `DeliveryQueueLimits` and `CreateDeliveryQueueWithLimits` to `internal/store/delivery.go` as the TechSpec states. `CreateDeliveryQueue` keeps its signature and delegates with zero limits. A negative `MaxRetries` is refused. The deadline is stored as UTC Unix seconds, where zero means none, and read back in UTC.
+3. MUST add `Limits DeliveryQueueLimits` to `DeliveryQueue` and `RetryCount int` to `DeliveryQueueItem`, both read by `DeliveryQueue`.
+4. MUST make `RetryDeliveryQueueItem`, keeping its signature, read the queue's `max_retries` and the item's `retry_count` in its write transaction. When the limit is non-zero and reached, it refuses with an error wrapping a new exported `ErrDeliveryRetryLimit` and changes nothing. Otherwise it increments `retry_count` in the same `UPDATE` that moves the item.
+5. MUST add `BlockerQueueDeadline = "queue-deadline"` to `internal/delivery/engine.go`. `Engine.Run` MUST park an item that is still `queued` as `queue-deadline` when the queue has a deadline and `engine.clock.Now()` is not before it, without calling `CreateItemBranch` or the revalidator. An item in any later stage advances as before.
+6. MUST make `Engine.Retry` refuse a `queue-deadline` item before `UseItemBranch`, naming the deadline and `roundfix deliver start`. It MUST refuse an item whose `RetryCount` has reached a non-zero `MaxRetries` before `UseItemBranch` or carry-forward, with an error wrapping `store.ErrDeliveryRetryLimit`. Both refusals leave the stored item unchanged.
+7. MUST change no exported function signature and update only the tests this change invalidates, naming each in the Result; `TestJournalConsumerCorpusReplaysEveryConsumer` and the existing Delivery Queue migration tests stay green.
+8. MUST put the store tests in `internal/store/delivery_limits_test.go` and the engine tests in `internal/delivery/limits_test.go`. The engine tests drive the deadline through the injected `Clock`, with no wall-clock wait.
+
+## Subtasks
+
+- [ ] Implement the requirements above.
+- [ ] Add a test for each acceptance criterion, each negative case separate.
+
+## Acceptance Criteria
+
+- [ ] A queue recorded with limits reads them back after reopening, and a queue recorded without limits reads zero for both.
+- [ ] A negative retry limit is refused and records no queue.
+- [ ] A retry increments the item's retry count; a retry at the limit is refused and leaves the item byte-for-byte unchanged.
+- [ ] A database at the previous schema version with a recorded queue migrates to `schemaVersion`, keeps its rows and gains the three columns with their defaults.
+- [ ] A queued item at the deadline parks as `queue-deadline` without a worktree, a queued item before the deadline starts, and an item past `queued` advances after the deadline.
+- [ ] `Engine.Retry` refuses a `queue-deadline` item and an item at its retry limit before any carry-forward, leaving each unchanged.
+
+## Context
+
+- interface: `internal/store/store.go`
+- interface: `internal/store/delivery.go`
+- creates: `internal/store/delivery_limits_test.go`
+- interface: `internal/delivery/engine.go`
+- creates: `internal/delivery/limits_test.go`
+
+## Verification
+
+- `out="$(go test -count=1 -v -run "^(TestDeliveryQueueRecordsItsLimits|TestDeliveryQueueWithoutLimitsRecordsNone|TestDeliveryQueueRefusesANegativeRetryLimit|TestRetryIncrementsTheItemRetryCount|TestRetryAtTheLimitIsRefusedAndLeavesTheItemUnchanged|TestThePreviousSchemaGainsTheLimitColumns|TestOpenMigratesDeliveryQueueAddingWorktreeProvisioning|TestOpenMigratesV14DeliveryQueueAddingOwnerAndItemBranch|TestRetryDeliveryQueueItemReentersAParkedItem|TestJournalConsumerCorpusReplaysEveryConsumer|TestAQueuedItemParksAtTheDeadlineWithoutAWorktree|TestAQueuedItemStartsBeforeTheDeadline|TestAnItemPastQueuedAdvancesAfterTheDeadline|TestRetryRefusesAQueueDeadlineItem|TestRetryRefusesAnItemAtItsRetryLimitBeforeCarryForward|TestRetryCarriesForwardBeforeReenteringTheRun)$" ./internal/store ./internal/delivery 2>&1)" || { printf "%s\\n" "$out"; exit 1; }; for name in TestDeliveryQueueRecordsItsLimits TestDeliveryQueueWithoutLimitsRecordsNone TestDeliveryQueueRefusesANegativeRetryLimit TestRetryIncrementsTheItemRetryCount TestRetryAtTheLimitIsRefusedAndLeavesTheItemUnchanged TestThePreviousSchemaGainsTheLimitColumns TestOpenMigratesDeliveryQueueAddingWorktreeProvisioning TestOpenMigratesV14DeliveryQueueAddingOwnerAndItemBranch TestRetryDeliveryQueueItemReentersAParkedItem TestJournalConsumerCorpusReplaysEveryConsumer TestAQueuedItemParksAtTheDeadlineWithoutAWorktree TestAQueuedItemStartsBeforeTheDeadline TestAnItemPastQueuedAdvancesAfterTheDeadline TestRetryRefusesAQueueDeadlineItem TestRetryRefusesAnItemAtItsRetryLimitBeforeCarryForward TestRetryCarriesForwardBeforeReenteringTheRun; do printf "%s\\n" "$out" | grep -q -- "--- PASS: $name" || exit 1; done` — expected: exit 0; before this Task none of the eleven new named tests exists, so the command fails.
+
+## References
+
+- [_techspec.md](_techspec.md) — Queue limits in the store and the engine
+- `_prd.md` → Goal 4; Core Feature 4; Success Metric 3
+- `_techspec.md` → API Contract 6; API Contract 8; Testing Approach 2
+
+## Result
