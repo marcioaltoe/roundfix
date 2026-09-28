@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"time"
 
@@ -32,6 +33,8 @@ type commandDeliveryWorkflow struct {
 	git    preflight.GitRunner
 }
 
+var _ delivery.ItemRecovery = (*commandDeliveryWorkflow)(nil)
+
 const deliveryBranchPrefix = "roundfix/deliver-"
 
 func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) deliveryEngine {
@@ -49,7 +52,208 @@ func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) 
 		Authorizer:   workflow,
 		Publication:  workflow,
 		PullRequests: delivery.NewGitHubCLI(loaded.GitRoot),
+		Recovery:     workflow,
 	})
+}
+
+func (workflow *commandDeliveryWorkflow) InspectItem(
+	ctx context.Context,
+	workDir string,
+	specSlug string,
+) (delivery.ItemState, error) {
+	resolvedSpecsRoot, err := roundconfig.ResolveSpecsRoot(workflow.loaded, workDir)
+	if err != nil {
+		return delivery.ItemState{}, fmt.Errorf("resolve item Specs Root: %w", err)
+	}
+	head, err := workflow.git.RunGit(ctx, workDir, "rev-parse", "HEAD")
+	if err != nil {
+		return delivery.ItemState{}, fmt.Errorf("read item head: %w", err)
+	}
+	state := delivery.ItemState{Head: strings.TrimSpace(head)}
+
+	specDir := filepath.Join(resolvedSpecsRoot.Path, specSlug)
+	if _, err := os.Stat(specDir); err == nil {
+		graph, err := spec.Load(resolvedSpecsRoot.Path, specSlug)
+		if err != nil {
+			return delivery.ItemState{}, fmt.Errorf("load item Spec %q: %w", specSlug, err)
+		}
+		for _, task := range graph.Tasks {
+			if task.Status != spec.StatusCompleted {
+				state.UnfinishedTasks = append(state.UnfinishedTasks, task.ID)
+			}
+		}
+		return state, nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return delivery.ItemState{}, fmt.Errorf("inspect item Spec %q: %w", specSlug, err)
+	}
+
+	_, archiveDestination, err := workflow.archivePaths(workDir, specSlug)
+	if err != nil {
+		return delivery.ItemState{}, fmt.Errorf("resolve item archive path: %w", err)
+	}
+	if _, err := os.Stat(filepath.Join(workDir, filepath.FromSlash(archiveDestination))); err == nil {
+		state.Archived = true
+		return state, nil
+	} else if errors.Is(err, os.ErrNotExist) {
+		return delivery.ItemState{}, fmt.Errorf("inspect item Spec %q: active and archived Spec folders are missing", specSlug)
+	} else {
+		return delivery.ItemState{}, fmt.Errorf("inspect archived item Spec %q: %w", specSlug, err)
+	}
+}
+
+type deliveryCarryForwardRefusal struct {
+	runID    string
+	workDir  string
+	specSlug string
+	reason   string
+}
+
+func (err deliveryCarryForwardRefusal) Error() string { return err.reason }
+
+func (err deliveryCarryForwardRefusal) NextAction() string {
+	return fmt.Sprintf(
+		"run `roundfix reconcile %s --carry-forward` in item worktree %q, then run `roundfix deliver retry %s`",
+		err.runID,
+		err.workDir,
+		err.specSlug,
+	)
+}
+
+func (workflow *commandDeliveryWorkflow) CarryForward(
+	ctx context.Context,
+	workDir string,
+	specSlug string,
+	branch string,
+	runID string,
+) (delivery.CarryForwardResult, error) {
+	run, found, err := workflow.deliveryCarryForwardRun(ctx, specSlug, branch, runID)
+	if err != nil {
+		return delivery.CarryForwardResult{}, err
+	}
+	if !found {
+		return delivery.CarryForwardResult{}, nil
+	}
+	result := delivery.CarryForwardResult{RunID: run.ID}
+	if !slices.Contains(runworktree.CarryForwardAcceptedOutcomes(), run.State) {
+		return result, nil
+	}
+
+	_, taskEvidence, err := loadReconcileTaskCoverage(ctx, workflow.store, []store.Run{run})
+	if err != nil {
+		return delivery.CarryForwardResult{}, fmt.Errorf("load Run %q Task coverage: %w", run.ID, err)
+	}
+	settled := taskEvidence[run.ID]
+	settledCompleted := make(map[string]bool, len(settled))
+	for taskID, evidence := range settled {
+		if evidence.settledCompleted {
+			settledCompleted[taskID] = true
+		}
+	}
+	if len(settledCompleted) == 0 {
+		return result, nil
+	}
+
+	repository, err := filepath.EvalSymlinks(workDir)
+	if err != nil {
+		return delivery.CarryForwardResult{}, fmt.Errorf("resolve item worktree %q: %w", workDir, err)
+	}
+	resolvedSpecsRoot, err := roundconfig.ResolveSpecsRoot(workflow.loaded, repository)
+	if err != nil {
+		return delivery.CarryForwardResult{}, fmt.Errorf("resolve item Specs Root: %w", err)
+	}
+	graph, err := spec.Load(resolvedSpecsRoot.Path, specSlug)
+	if err != nil {
+		return delivery.CarryForwardResult{}, fmt.Errorf("load item Spec %q: %w", specSlug, err)
+	}
+	allCompleted := true
+	matchedSettledTasks := 0
+	for _, task := range graph.Tasks {
+		if !settledCompleted[task.ID] {
+			continue
+		}
+		matchedSettledTasks++
+		if task.Status != spec.StatusCompleted {
+			allCompleted = false
+			break
+		}
+	}
+	if allCompleted && matchedSettledTasks == len(settledCompleted) {
+		return result, nil
+	}
+
+	refuse := func(reason string) (delivery.CarryForwardResult, error) {
+		return delivery.CarryForwardResult{}, deliveryCarryForwardRefusal{
+			runID:    run.ID,
+			workDir:  repository,
+			specSlug: specSlug,
+			reason:   reason,
+		}
+	}
+	present, err := carryForwardRunWorktreePresent(run)
+	if err != nil {
+		return delivery.CarryForwardResult{}, err
+	}
+	if !present {
+		return refuse(fmt.Sprintf("carry-forward Run %q Worktree is gone", run.ID))
+	}
+	if resolvedSpecsRoot.External {
+		return refuse(fmt.Sprintf("carry-forward Specs Root %q is external to item worktree %q", resolvedSpecsRoot.Path, repository))
+	}
+
+	candidates, err := inspectCarryForwards(ctx, repository, resolvedSpecsRoot, reconcileRunSelection{
+		selected:     []store.Run{run},
+		taskEvidence: taskEvidence,
+	})
+	if err != nil {
+		return delivery.CarryForwardResult{}, fmt.Errorf("inspect Run %q carry-forward: %w", run.ID, err)
+	}
+	if reason := carryForwardRefusalReason(candidates); reason != "" {
+		return refuse(reason)
+	}
+	if err := applyCarryForwards(ctx, repository, candidates); err != nil {
+		return delivery.CarryForwardResult{}, fmt.Errorf("apply Run %q carry-forward: %w", run.ID, err)
+	}
+	result.Carried = make([]string, 0, len(candidates))
+	for _, candidate := range candidates {
+		result.Carried = append(result.Carried, candidate.TaskID)
+	}
+	return result, nil
+}
+
+func (workflow *commandDeliveryWorkflow) deliveryCarryForwardRun(
+	ctx context.Context,
+	specSlug string,
+	branch string,
+	runID string,
+) (store.Run, bool, error) {
+	runID = strings.TrimSpace(runID)
+	if runID != "" {
+		run, found, err := workflow.store.Run(ctx, runID)
+		if err != nil {
+			return store.Run{}, false, fmt.Errorf("read recorded Run %q: %w", runID, err)
+		}
+		if !found || run.Kind != store.KindImplement || strings.TrimSpace(run.SpecSlug) != strings.TrimSpace(specSlug) {
+			return store.Run{}, false, fmt.Errorf("recorded Run %q is not an Implement Run of Spec %q", runID, specSlug)
+		}
+		return run, true, nil
+	}
+
+	runs, err := workflow.store.ListRuns(ctx, store.ListRunsQuery{
+		GitRoot: workflow.loaded.GitRoot,
+		States:  store.StatesAll,
+	})
+	if err != nil {
+		return store.Run{}, false, fmt.Errorf("list Implement Runs for Spec %q: %w", specSlug, err)
+	}
+	branch = strings.TrimSpace(branch)
+	for _, run := range runs {
+		if run.Kind == store.KindImplement &&
+			strings.TrimSpace(run.SpecSlug) == strings.TrimSpace(specSlug) &&
+			strings.TrimSpace(run.LocalBranch) == branch {
+			return run, true, nil
+		}
+	}
+	return store.Run{}, false, nil
 }
 
 func (workflow *commandDeliveryWorkflow) CreateItemBranch(ctx context.Context, gitRoot, specSlug string) (string, string, error) {

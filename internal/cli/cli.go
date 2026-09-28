@@ -49,7 +49,7 @@ Usage:
   roundfix watch --source coderabbit --pr <number> [--spec <slug>] --until-clean
   roundfix review [--base <ref>]
   roundfix implement --spec <slug>
-  roundfix deliver <start|status|resume|stop> [<slug> ...]
+  roundfix deliver <start|status|resume|retry|stop> [<slug> ...]
   roundfix window <set|show|clear>
   roundfix settle --spec <slug> --task <task_id>
   roundfix reopen --spec <slug>

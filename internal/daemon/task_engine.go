@@ -1925,7 +1925,12 @@ func (engine *Engine) prepareTaskCommit(ctx context.Context, plan TaskPlan, task
 		return taskCommitPreparation{}, err
 	}
 	changed := ensureCommitPath(diffSnapshots(before, after), artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, task.File)))
+	var projectConfigDrops []DroppedStagePath
+	if !authorizationBoundsProjectConfig(plan.Authorization) {
+		changed, projectConfigDrops = dropProjectConfigFromCommit(plan.WorkDir, changed, projectConfigOutsideAuthorizationReason, true)
+	}
 	stageable, dropped := FilterStageablePaths(ctx, plan.WorkDir, changed)
+	dropped = append(projectConfigDrops, dropped...)
 	return taskCommitPreparation{
 		stageable:        stageable,
 		dropped:          dropped,
@@ -2115,9 +2120,50 @@ type DroppedStagePath struct {
 }
 
 const (
-	executableStagePathReason = "executable file"
-	absentStagePathReason     = "absent from worktree and index"
+	executableStagePathReason                 = "executable file"
+	absentStagePathReason                     = "absent from worktree and index"
+	projectConfigPath                         = ".roundfixrc.yml"
+	projectConfigOutsideAuthorizationReason   = "Project Config outside the Spec's authorization"
+	projectConfigNonTaskCommitExclusionReason = "Project Config is never committed by a Batch or QA Report commit"
 )
+
+func authorizationBoundsProjectConfig(resolution spec.AuthorizationResolution) bool {
+	if resolution.Outcome != spec.AuthorizationGranted {
+		return false
+	}
+	for _, path := range resolution.Record.Paths {
+		if path == projectConfigPath {
+			return true
+		}
+	}
+	return false
+}
+
+func dropProjectConfigFromCommit(workDir string, paths []string, reason string, lost bool) ([]string, []DroppedStagePath) {
+	kept, found := pathsWithoutProjectConfig(workDir, paths)
+	if !found {
+		return paths, nil
+	}
+	return kept, []DroppedStagePath{{
+		Path:   projectConfigPath,
+		Reason: reason,
+		Lost:   lost,
+	}}
+}
+
+func pathsWithoutProjectConfig(workDir string, paths []string) ([]string, bool) {
+	kept := make([]string, 0, len(paths))
+	found := false
+	for _, path := range paths {
+		stagePath, inside := stagePathInWorktree(workDir, path)
+		if inside && stagePath == projectConfigPath {
+			found = true
+			continue
+		}
+		kept = append(kept, path)
+	}
+	return kept, found
+}
 
 // FilterStageablePaths keeps only repository-relative paths Git can match
 // without crossing symlinks or staging untracked executable files. It reports
@@ -2259,7 +2305,10 @@ func (engine *Engine) publishDroppedStagePath(ctx context.Context, runID string,
 		"reason":   drop.Reason,
 	}
 	summary := ""
-	if drop.Reason == executableStagePathReason {
+	if drop.Reason == projectConfigOutsideAuthorizationReason || drop.Reason == projectConfigNonTaskCommitExclusionReason {
+		fmt.Fprintf(engine.deps.Progress, "roundfix: Project Config %s omitted from the commit: %s\n", drop.Path, drop.Reason)
+		summary = fmt.Sprintf("Project Config %s omitted from the commit: %s.", drop.Path, drop.Reason)
+	} else if drop.Reason == executableStagePathReason {
 		payload["mode"] = drop.Mode
 		fmt.Fprintf(engine.deps.Progress, "roundfix: refused executable file %s (mode %s); build artifacts and deliberately executable repository files are not valid Work Item output\n", drop.Path, drop.Mode)
 		summary = fmt.Sprintf("Executable file %s refused with mode %s; build artifacts and deliberately executable repository files are not valid Work Item output.", drop.Path, drop.Mode)
@@ -3140,8 +3189,12 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 	if strings.TrimSpace(qaTask.File) != "" {
 		changed = ensureCommitPath(changed, artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, qaTask.File)))
 	}
+	changed, projectConfigDrops := dropProjectConfigFromCommit(plan.WorkDir, changed, projectConfigNonTaskCommitExclusionReason, false)
 	stageable, dropped := FilterStageablePaths(ctx, plan.WorkDir, changed)
-	governedMutation := HasGovernedSnapshotMutation(before, after)
+	dropped = append(projectConfigDrops, dropped...)
+	beforeWithoutProjectConfig, _ := pathsWithoutProjectConfig(plan.WorkDir, before)
+	afterWithoutProjectConfig, _ := pathsWithoutProjectConfig(plan.WorkDir, after)
+	governedMutation := HasGovernedSnapshotMutation(beforeWithoutProjectConfig, afterWithoutProjectConfig)
 	if err := spec.RequireGovernedOperation(plan.Authorization, spec.AuthorizationOperationImplement, governedMutation); err != nil {
 		return fmt.Errorf("refuse QA Task %s governed mutation: %w", qaTask.ID, err)
 	}

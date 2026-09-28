@@ -20,6 +20,7 @@ const deliverUsage = `Usage:
   roundfix deliver start <slug>...
   roundfix deliver status
   roundfix deliver resume
+  roundfix deliver retry <slug>
   roundfix deliver stop
 
 Records and advances an ordered queue of Specs. The detached owner survives the
@@ -30,11 +31,13 @@ Commands:
   start   Validate and record a new queue, then start its detached owner
   status  Print every queued Spec's stage, blocker and item worktree
   resume  Start a detached owner for the persisted queue
+  retry   Return one parked Spec to the queue and reach its owner
   stop    Prove and terminate the persisted queue owner
 `
 
 type deliveryEngine interface {
 	Run(context.Context, string) (delivery.EngineResult, error)
+	Retry(context.Context, string, string) (delivery.RetryResult, error)
 }
 
 func runDeliverCommand(
@@ -61,6 +64,8 @@ func runDeliverCommand(
 			return runDeliveryOwner(ctx, subcommandArgs, stdout, stderr, detachChild, environment)
 		}
 		return runDeliverResume(ctx, subcommandArgs, stdout, stderr, environment)
+	case "retry":
+		return runDeliverRetry(ctx, subcommandArgs, stdout, stderr, environment)
 	case "stop":
 		return runDeliverStop(ctx, subcommandArgs, stdout, stderr, environment)
 	default:
@@ -68,6 +73,104 @@ func runDeliverCommand(
 		fmt.Fprintln(stderr, "Run 'roundfix deliver --help' for usage.")
 		return exitPreflight
 	}
+}
+
+func runDeliverRetry(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
+	specSlug, err := parseDeliverRetry(args)
+	if err != nil {
+		return printDeliverFailure("retry", err, stderr)
+	}
+	loaded, _, err := loadDeliveryCommand(ctx, environment, stderr)
+	if err != nil {
+		return printDeliverFailure("retry", err, stderr)
+	}
+	runStore, err := store.Open(ctx, loaded.HomeDir)
+	if err != nil {
+		return printDeliverFailure("retry", err, stderr)
+	}
+	storeClosed := false
+	defer func() {
+		if !storeClosed {
+			_ = runStore.Close()
+		}
+	}()
+	closeStore := func() error {
+		if err := runStore.Close(); err != nil {
+			return fmt.Errorf("close Run Database after retrying Delivery Queue item: %w", err)
+		}
+		storeClosed = true
+		return nil
+	}
+
+	dependencies := commandDependenciesForContext(ctx)
+	engine := dependencies.newDeliveryEngine(runStore, loaded)
+	if engine == nil {
+		return printDeliverFailure("retry", errors.New("Delivery Engine is required"), stderr)
+	}
+	result, err := engine.Retry(ctx, loaded.GitRoot, specSlug)
+	if err != nil {
+		return printDeliverFailure("retry", err, stderr)
+	}
+
+	if result.OwnerPID > 0 {
+		ownerState := "is not running"
+		if store.ProcessAlive(result.OwnerPID) {
+			if dependencies.ownerProcesses == nil {
+				return printDeliverFailure("retry", errors.New("Delivery Queue owner process controller is required"), stderr)
+			}
+			proofErr := dependencies.ownerProcesses.ProveOwner(ctx, result.OwnerPID, result.OwnerIdentity)
+			switch {
+			case proofErr == nil && store.ProcessAlive(result.OwnerPID):
+				if err := closeStore(); err != nil {
+					return printDeliverFailure("retry", err, stderr)
+				}
+				printDeliverRetryResult(stdout, specSlug, result)
+				fmt.Fprintf(stdout, "Handed %s to Delivery Queue owner PID %d.\n", specSlug, result.OwnerPID)
+				return exitOK
+			case proofErr == nil:
+				// The process exited between the liveness check and identity proof.
+			case errors.Is(proofErr, store.ErrOwnerProcessIdentityUnproven):
+				ownerState = "has a different process identity"
+			default:
+				return printDeliverFailure("retry", proofErr, stderr)
+			}
+		}
+		released, releaseErr := runStore.ReleaseDeliveryQueueOwner(
+			ctx,
+			loaded.GitRoot,
+			result.OwnerPID,
+			result.OwnerIdentity,
+		)
+		if releaseErr != nil {
+			return printDeliverFailure("retry", releaseErr, stderr)
+		}
+		if !released {
+			return printDeliverFailure("retry", errors.New("Delivery Queue owner changed while retry was checking it"), stderr)
+		}
+		fmt.Fprintf(
+			stderr,
+			"roundfix: Delivery Queue owner PID %d %s; reclaimed its owner record.\n",
+			result.OwnerPID,
+			ownerState,
+		)
+	}
+	if err := closeStore(); err != nil {
+		return printDeliverFailure("retry", err, stderr)
+	}
+	printDeliverRetryResult(stdout, specSlug, result)
+	return dependencies.startDeliveryOwner(ctx, loaded, environment, stdout, stderr)
+}
+
+func printDeliverRetryResult(stdout io.Writer, specSlug string, result delivery.RetryResult) {
+	if len(result.CarriedFrom.Carried) > 0 {
+		fmt.Fprintf(
+			stdout,
+			"Carried forward from Run %s: %s\n",
+			result.CarriedFrom.RunID,
+			strings.Join(result.CarriedFrom.Carried, ", "),
+		)
+	}
+	fmt.Fprintf(stdout, "Retried %s: %s -> %s\n", specSlug, result.Blocker, result.Stage)
 }
 
 func runDeliverStart(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
@@ -302,10 +405,18 @@ func runDeliveryOwner(
 	if engine == nil {
 		return printDeliverFailure("resume", errors.New("Delivery Engine is required"), stderr)
 	}
-	if _, err := engine.Run(ctx, loaded.GitRoot); err != nil {
-		return printDeliverFailure("resume", err, stderr)
+	for {
+		if _, err := engine.Run(ctx, loaded.GitRoot); err != nil {
+			return printDeliverFailure("resume", err, stderr)
+		}
+		released, err := runStore.ReleaseIdleDeliveryQueueOwner(ctx, loaded.GitRoot, pid, identity)
+		if err != nil {
+			return printDeliverFailure("resume", err, stderr)
+		}
+		if released {
+			return exitOK
+		}
 	}
-	return exitOK
 }
 
 func startDetachedDeliveryOwner(
@@ -378,6 +489,25 @@ func parseDeliverStart(args []string) ([]string, error) {
 		}
 	}
 	return slugs, nil
+}
+
+func parseDeliverRetry(args []string) (string, error) {
+	fs := flagSet("deliver retry")
+	if err := fs.Parse(hoistCommandFlags(args, nil)); err != nil {
+		return "", validationError{message: err.Error()}
+	}
+	slugs := fs.Args()
+	if len(slugs) == 0 {
+		return "", validationError{message: "missing required Spec slug; pass roundfix deliver retry <slug>"}
+	}
+	if len(slugs) > 1 {
+		return "", validationError{message: fmt.Sprintf("unexpected argument %q", slugs[1])}
+	}
+	specSlug := strings.TrimSpace(slugs[0])
+	if specSlug == "" {
+		return "", validationError{message: "Spec slug cannot be empty"}
+	}
+	return specSlug, nil
 }
 
 func parseDeliverNoArgs(subcommand string, args []string) error {

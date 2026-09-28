@@ -71,6 +71,24 @@ type profileProofError struct {
 	Err            error
 }
 
+type profileProofTimeoutError struct {
+	Err error
+}
+
+func (err *profileProofTimeoutError) Error() string {
+	if err == nil || err.Err == nil {
+		return "profile proof setup timed out twice"
+	}
+	return fmt.Sprintf("profile proof setup timed out twice: %v", err.Err)
+}
+
+func (err *profileProofTimeoutError) Unwrap() error {
+	if err == nil {
+		return nil
+	}
+	return err.Err
+}
+
 func (err profileProofError) Error() string {
 	var builder strings.Builder
 	fmt.Fprintf(&builder, "profile proof failed for runtime %q, model %q, reasoning_effort %q", err.Selection.Runtime, err.Selection.Model, err.Selection.ReasoningEffort)
@@ -192,7 +210,7 @@ func proveProfileSelectionsWithOptions(ctx context.Context, config roundconfig.C
 				Err:            err,
 			}}
 		}
-		proof, err := proveProfileSelection(ctx, runner, agent.ProbeRequest{Runtime: runtime, WorkDir: workDir})
+		proof, err := proveProfileSelectionWithRetry(ctx, runner, agent.ProbeRequest{Runtime: runtime, WorkDir: workDir})
 		if err != nil {
 			applyProfileProofFailure(&proofs[index], err)
 			return profileProofResult{Proofs: proofs, Err: profileProofError{
@@ -220,6 +238,22 @@ func proveProfileSelection(ctx context.Context, runner agent.Runner, request age
 		return agent.SelectionProof{}, err
 	}
 	return agent.SelectionProof{}, nil
+}
+
+func proveProfileSelectionWithRetry(ctx context.Context, runner agent.Runner, request agent.ProbeRequest) (agent.SelectionProof, error) {
+	proof, err := proveProfileSelection(ctx, runner, request)
+	if err == nil || !profileProofSetupTimedOut(ctx, err) {
+		return proof, err
+	}
+	proof, err = proveProfileSelection(ctx, runner, request)
+	if err == nil || !profileProofSetupTimedOut(ctx, err) {
+		return proof, err
+	}
+	return proof, &profileProofTimeoutError{Err: err}
+}
+
+func profileProofSetupTimedOut(ctx context.Context, err error) bool {
+	return errors.Is(err, context.DeadlineExceeded) && ctx.Err() == nil
 }
 
 const (
@@ -259,6 +293,10 @@ func applyProfileProofFailure(report *profileProofReport, err error) {
 }
 
 func profileProofClassification(err error) string {
+	var timeout *profileProofTimeoutError
+	if errors.As(err, &timeout) {
+		return "temporary"
+	}
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		return ""
 	}
@@ -271,6 +309,10 @@ func profileProofClassification(err error) string {
 
 func profileProofNextAction(err error) string {
 	const configureAction = "update the profile with `roundfix profiles configure --scope user|project`"
+	var timeout *profileProofTimeoutError
+	if errors.As(err, &timeout) {
+		return "rerun the command when load drops; the configured profile was not shown to be wrong"
+	}
 	var installer interface{ InstallCommand() string }
 	if errors.As(err, &installer) {
 		if command := strings.TrimSpace(installer.InstallCommand()); command != "" {

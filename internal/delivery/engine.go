@@ -93,6 +93,31 @@ type Publication struct {
 	Body       string
 }
 
+type ItemState struct {
+	Archived        bool
+	UnfinishedTasks []string
+	Head            string
+}
+
+type CarryForwardResult struct {
+	RunID   string
+	Carried []string
+}
+
+type ItemRecovery interface {
+	InspectItem(ctx context.Context, workDir, specSlug string) (ItemState, error)
+	CarryForward(ctx context.Context, workDir, specSlug, branch, runID string) (CarryForwardResult, error)
+}
+
+type RetryResult struct {
+	SpecSlug      string
+	Blocker       string
+	Stage         store.DeliveryStage
+	CarriedFrom   CarryForwardResult
+	OwnerPID      int
+	OwnerIdentity string
+}
+
 type CandidateRunner interface {
 	RunSpec(ctx context.Context, gitRoot, specSlug string) (RunResult, error)
 }
@@ -142,6 +167,7 @@ type EngineDependencies struct {
 	Authorizer    AuthorizationReader
 	Publication   PublicationPlanner
 	PullRequests  PullRequestBoundary
+	Recovery      ItemRecovery
 	Clock         Clock
 	Sleeper       Sleeper
 	CheckTimeout  time.Duration
@@ -158,6 +184,7 @@ type Engine struct {
 	authorizer    AuthorizationReader
 	publication   PublicationPlanner
 	pullRequests  PullRequestBoundary
+	recovery      ItemRecovery
 	clock         Clock
 	sleeper       Sleeper
 	checkTimeout  time.Duration
@@ -195,10 +222,154 @@ func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
 		authorizer:    dependencies.Authorizer,
 		publication:   dependencies.Publication,
 		pullRequests:  dependencies.PullRequests,
+		recovery:      dependencies.Recovery,
 		clock:         clock,
 		sleeper:       sleeper,
 		checkTimeout:  checkTimeout,
 		checkInterval: checkInterval,
+	}
+}
+
+func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (RetryResult, error) {
+	if err := engine.validateRetry(); err != nil {
+		return RetryResult{}, err
+	}
+	gitRoot = strings.TrimSpace(gitRoot)
+	specSlug = strings.TrimSpace(specSlug)
+	if gitRoot == "" {
+		return RetryResult{}, errors.New("retry Delivery Queue item: Git root is required")
+	}
+	if specSlug == "" {
+		return RetryResult{}, errors.New("retry Delivery Queue item: Spec slug is required")
+	}
+
+	queue, found, err := engine.store.DeliveryQueue(ctx, gitRoot)
+	if err != nil {
+		return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: read queue: %w", specSlug, err)
+	}
+	if !found {
+		return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: Delivery Queue for repository %q does not exist", specSlug, gitRoot)
+	}
+	var item store.DeliveryQueueItem
+	itemFound := false
+	for _, candidate := range queue.Items {
+		if candidate.SpecSlug == specSlug {
+			item = candidate
+			itemFound = true
+			break
+		}
+	}
+	if !itemFound {
+		return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: Delivery Queue does not contain the item", specSlug)
+	}
+	if item.Stage != store.DeliveryStageParked {
+		return RetryResult{}, fmt.Errorf(
+			"retry Delivery Queue item %q: item has stage %q and blocker %q; want stage %q",
+			specSlug,
+			item.Stage,
+			item.Blocker,
+			store.DeliveryStageParked,
+		)
+	}
+
+	workDir, err := engine.workspace.UseItemBranch(
+		ctx,
+		gitRoot,
+		item.SpecSlug,
+		item.Branch,
+		item.Worktree,
+		item.WorktreeProvisioned,
+	)
+	if err != nil {
+		if errors.Is(err, ErrItemWorktreeMissing) {
+			return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: item branch %q is missing: %w", specSlug, item.Branch, err)
+		}
+		return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: use item branch %q: %w", specSlug, item.Branch, err)
+	}
+	workDir = strings.TrimSpace(workDir)
+	if workDir == "" {
+		return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: item worktree is empty", specSlug)
+	}
+
+	state, err := engine.recovery.InspectItem(ctx, workDir, item.SpecSlug)
+	if err != nil {
+		return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: inspect item: %w", specSlug, err)
+	}
+	result := RetryResult{SpecSlug: item.SpecSlug, Blocker: item.Blocker}
+	if state.Archived {
+		candidate, err := candidateHead(item)
+		if err != nil {
+			return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: %w", specSlug, err)
+		}
+		head := strings.TrimSpace(state.Head)
+		if head != candidate {
+			return RetryResult{}, fmt.Errorf(
+				"retry Delivery Queue item %q: archived item head %q differs from candidate head %q",
+				specSlug,
+				head,
+				candidate,
+			)
+		}
+		if strings.TrimSpace(item.PullRequestNumber) == "" {
+			item.Stage = store.DeliveryStageGating
+		} else {
+			item.Stage = store.DeliveryStageChecking
+		}
+	} else {
+		carried, err := engine.recovery.CarryForward(
+			ctx,
+			workDir,
+			item.SpecSlug,
+			item.Branch,
+			item.RunID,
+		)
+		if err != nil {
+			return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: carry forward: %w", specSlug, err)
+		}
+		carried.RunID = strings.TrimSpace(carried.RunID)
+		item.RunID = carried.RunID
+		result.CarriedFrom = carried
+
+		state, err = engine.recovery.InspectItem(ctx, workDir, item.SpecSlug)
+		if err != nil {
+			return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: inspect item after carry-forward: %w", specSlug, err)
+		}
+		if len(state.UnfinishedTasks) > 0 {
+			item.Stage = store.DeliveryStageRunning
+		} else {
+			head := strings.TrimSpace(state.Head)
+			if head == "" {
+				return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: current item head is empty", specSlug)
+			}
+			if len(item.CandidateCommits) == 0 || strings.TrimSpace(item.CandidateCommits[len(item.CandidateCommits)-1]) != head {
+				item.CandidateCommits = append(item.CandidateCommits, head)
+			}
+			item.Stage = store.DeliveryStageReviewing
+		}
+	}
+
+	ownerPID, ownerIdentity, err := engine.store.RetryDeliveryQueueItem(ctx, gitRoot, item, result.Blocker)
+	if err != nil {
+		return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: %w", specSlug, err)
+	}
+	result.Stage = item.Stage
+	result.OwnerPID = ownerPID
+	result.OwnerIdentity = ownerIdentity
+	return result, nil
+}
+
+func (engine *Engine) validateRetry() error {
+	switch {
+	case engine == nil:
+		return errors.New("retry Delivery Queue item: engine is required")
+	case engine.store == nil:
+		return errors.New("retry Delivery Queue item: store is required")
+	case engine.workspace == nil:
+		return errors.New("retry Delivery Queue item: item workspace is required")
+	case engine.recovery == nil:
+		return errors.New("retry Delivery Queue item: item recovery is required")
+	default:
+		return nil
 	}
 }
 
@@ -372,6 +543,7 @@ func (engine *Engine) runCandidate(ctx context.Context, gitRoot string, item *st
 	if err != nil {
 		return fmt.Errorf("run Implement executor: %w", err)
 	}
+	item.RunID = strings.TrimSpace(result.RunID)
 	switch result.Outcome {
 	case RunOutcomeUnresolved:
 		return engine.park(ctx, gitRoot, item, BlockerRunUnresolved)
@@ -382,7 +554,6 @@ func (engine *Engine) runCandidate(ctx context.Context, gitRoot string, item *st
 	default:
 		return fmt.Errorf("Implement executor returned invalid outcome %q", result.Outcome)
 	}
-	item.RunID = strings.TrimSpace(result.RunID)
 	item.CandidateCommits = append([]string(nil), result.CandidateCommits...)
 	return engine.setStage(ctx, gitRoot, item, store.DeliveryStageReviewing)
 }

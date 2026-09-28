@@ -136,7 +136,7 @@ func inspectCarryForwards(
 		if err != nil {
 			return nil, fmt.Errorf("load Run %q Spec %q: %w", run.ID, run.SpecSlug, err)
 		}
-		commitsByTask, err := carryForwardTaskCommits(ctx, run)
+		commitsByTask, integrationOrder, err := carryForwardTaskCommits(ctx, run)
 		if err != nil {
 			return nil, err
 		}
@@ -156,6 +156,7 @@ func inspectCarryForwards(
 			run,
 			graph,
 			commitsByTask,
+			integrationOrder,
 			evidence,
 		)
 		cleanupErr := cleanup()
@@ -174,14 +175,37 @@ func inspectCarryForwardsForRun(
 	run store.Run,
 	graph *spec.Graph,
 	commitsByTask map[string][]string,
+	integrationOrder []string,
 	evidence map[string]reconcileTaskEvidence,
 ) ([]spec.CarryForward, error) {
-	carried := make([]spec.CarryForward, 0)
-	for index, task := range graph.Tasks {
-		taskEvidence := evidence[task.ID]
-		if !taskEvidence.settledCompleted {
+	tasksByID := make(map[string]spec.Task, len(graph.Tasks))
+	for _, task := range graph.Tasks {
+		tasksByID[task.ID] = task
+	}
+	orderedTasks := make([]spec.Task, 0, len(graph.Tasks))
+	seen := make(map[string]bool, len(graph.Tasks))
+	for _, taskID := range integrationOrder {
+		task, exists := tasksByID[taskID]
+		if !exists || seen[taskID] || !evidence[taskID].settledCompleted {
 			continue
 		}
+		orderedTasks = append(orderedTasks, task)
+		seen[taskID] = true
+	}
+	// A settled-completed Task without a settlement commit has no position in
+	// the Run's history. Keep its existing refusal after the ordered Tasks,
+	// retaining Task Graph order among all such Tasks.
+	for _, task := range graph.Tasks {
+		if seen[task.ID] || !evidence[task.ID].settledCompleted {
+			continue
+		}
+		orderedTasks = append(orderedTasks, task)
+		seen[task.ID] = true
+	}
+
+	carried := make([]spec.CarryForward, 0)
+	for index, task := range orderedTasks {
+		taskEvidence := evidence[task.ID]
 		candidate := spec.CarryForward{
 			TaskID:      task.ID,
 			RunID:       run.ID,
@@ -236,7 +260,7 @@ func inspectCarryForwardsForRun(
 					candidate.RefusalReason += fmt.Sprintf("; aborting the staged cherry-pick also failed: %v", abortErr)
 				}
 				carried = append(carried, candidate)
-				carried = append(carried, unstagedCarryForwards(repoSpecsRoot, run, graph.Tasks[index+1:], evidence, task.ID)...)
+				carried = append(carried, unstagedCarryForwards(repoSpecsRoot, run, orderedTasks[index+1:], evidence, task.ID)...)
 				return carried, nil
 			}
 		}
@@ -406,19 +430,20 @@ func stageCarryForwardCandidate(ctx context.Context, stagingWorktree string, can
 	return nil
 }
 
-func carryForwardTaskCommits(ctx context.Context, run store.Run) (map[string][]string, error) {
+func carryForwardTaskCommits(ctx context.Context, run store.Run) (map[string][]string, []string, error) {
 	if strings.TrimSpace(run.HeadSHA) == "" {
-		return nil, fmt.Errorf("Run %q has no recorded starting commit", run.ID)
+		return nil, nil, fmt.Errorf("Run %q has no recorded starting commit", run.ID)
 	}
 	output, err := reconcileGitText(ctx, run.WorkDir, "rev-list", "--reverse", run.HeadSHA+"..HEAD")
 	if err != nil {
-		return nil, fmt.Errorf("list settlement commits for Run %q: %w", run.ID, err)
+		return nil, nil, fmt.Errorf("list settlement commits for Run %q: %w", run.ID, err)
 	}
 	commits := make(map[string][]string)
+	integrationOrder := make([]string, 0)
 	for _, commit := range strings.Fields(output) {
 		message, err := reconcileGitText(ctx, run.WorkDir, "show", "-s", "--format=%B", commit)
 		if err != nil {
-			return nil, fmt.Errorf("read Run %q commit %s: %w", run.ID, commit, err)
+			return nil, nil, fmt.Errorf("read Run %q commit %s: %w", run.ID, commit, err)
 		}
 		if gitTrailerValue(message, "Roundfix-Spec") != run.SpecSlug {
 			continue
@@ -427,9 +452,12 @@ func carryForwardTaskCommits(ctx context.Context, run store.Run) (map[string][]s
 		if taskID == "" {
 			continue
 		}
+		if len(commits[taskID]) == 0 {
+			integrationOrder = append(integrationOrder, taskID)
+		}
 		commits[taskID] = append(commits[taskID], commit)
 	}
-	return commits, nil
+	return commits, integrationOrder, nil
 }
 
 func gitTrailerValue(message string, key string) string {

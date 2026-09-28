@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0173-a-delivery-queue-that-recovers
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
