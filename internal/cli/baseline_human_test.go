@@ -113,9 +113,9 @@ func TestBaselineHumanProfileChangeRemainsReachable(t *testing.T) {
 	// answers: change to "Decision area to revisit" (3), select
 	// "Change Baseline Profile" (1), confirm three "1" changes,
 	// decline two "2" re-ask confirmations, then answer "1" to
-	// every remaining prompt (11x) and decline recomputed Plan (2).
+	// every remaining prompt (12x) and decline recomputed Plan (2).
 	changeAnswers := []string{"3", "1", "1", "1", "2", "2"}
-	for range 11 {
+	for range 12 {
 		changeAnswers = append(changeAnswers, "1")
 	}
 	changeAnswers = append(changeAnswers, "2")
@@ -185,6 +185,9 @@ func TestHumanBaselineProfileDigestDriftRemainsUpdate(t *testing.T) {
 	}
 	if got := state.currentDecisions["verification.gate"]; got != "make verify" {
 		t.Fatalf("recovered verification.gate = %#v, want make verify", got)
+	}
+	if got := state.currentDecisions["verification.incremental"]; got != "make verify-incremental" {
+		t.Fatalf("recovered verification.incremental = %#v, want make verify-incremental", got)
 	}
 
 	var review bytes.Buffer
@@ -269,6 +272,7 @@ func TestHumanBaselineFirstAdoptionPromptSequenceCharacterization(t *testing.T) 
 		"Select exactly one Baseline Profile",
 		"The language used for generated repository content.",
 		"The repository verification command named by generated guidance. (verification.gate)",
+		"The repository incremental verification command named by generated guidance. (verification.incremental)",
 		"The required prefix for agent-created branches, named by generated guidance. (branch.prefix)",
 		"Whether the repository uses local docs/specs artifacts as its planning source.",
 		"The CONTEXT.md layout agents must read before naming domain concepts.",
@@ -589,7 +593,7 @@ func TestToolingAuthorityNoPrompt(t *testing.T) {
 			answers, err := promptBaselineDecisions(
 				context.Background(),
 				&baselineHumanPrompt{
-					reader: bufioReader(strings.Repeat("\n", 64)),
+					reader: bufioReader("\n\nmake verify-incremental\n" + strings.Repeat("\n", 64)),
 					writer: &output,
 				},
 				catalog,
@@ -1280,7 +1284,7 @@ func TestBaselineHumanProfileAdaptation(t *testing.T) {
 	t.Parallel()
 	repository, _, _ := baselinePlanProfileFileFixture(t)
 	before := baselinePlanTestTree(t, repository)
-	answers := "\n3\n" +
+	answers := "\n3\n\n\nmake verify-incremental\n" +
 		strings.Repeat("\n", 32) +
 		"2\n" +
 		"1\n" +
@@ -1580,7 +1584,7 @@ func newHumanBaselineRepository(t *testing.T) string {
 	repo := newBaselinePlanTestRepository(t)
 	writeBaselinePlanTestFile(t, repo, ".agents/skills/context7/SKILL.md", "# context7\n")
 	writeBaselinePlanTestFile(t, repo, ".agents/skills/exa-web-search/SKILL.md", "# exa\n")
-	writeBaselinePlanTestFile(t, repo, "Makefile", "verify:\n\t@true\n")
+	writeBaselinePlanTestFile(t, repo, "Makefile", "verify:\n\t@true\nverify-incremental:\n\t@true\n")
 	commitBaselinePlanTestRepository(t, repo)
 	return repo
 }
@@ -1664,6 +1668,7 @@ func standardTypeScriptDivergenceDecisions() []baseline.DecisionValue {
 	return []baseline.DecisionValue{
 		{ID: "language.generated", Value: "English"},
 		{ID: "verification.gate", Value: "make verify"},
+		{ID: "verification.incremental", Value: "make verify-incremental"},
 		{ID: "branch.prefix", Value: "ma/"},
 		{ID: "identifier.strategy", Value: map[string]any{"kind": "uuid-v7"}},
 		{ID: "http.contract", Value: map[string]any{"mode": "Post-only"}},
@@ -1724,7 +1729,7 @@ func newCLIProjectDecisionRepository(t *testing.T) string {
 	writeBaselinePlanTestFile(t, repository, "packages/frontend/package.json", `{"name":"frontend"}`)
 	writeBaselinePlanTestFile(t, repository, "packages/backend/package.json", `{"name":"backend","dependencies":{"postgres":"latest","drizzle-orm":"latest"}}`)
 	writeBaselinePlanTestFile(t, repository, "DATABASE.md", "# Database\n\nPostgreSQL is the repository database contract.\n")
-	writeBaselinePlanTestFile(t, repository, "Makefile", "verify:\n\t@true\n")
+	writeBaselinePlanTestFile(t, repository, "Makefile", "verify:\n\t@true\nverify-incremental:\n\t@true\n")
 	writeBaselinePlanTestFile(t, repository, ".agents/skills/context7/SKILL.md", "# context7\n")
 	writeBaselinePlanTestFile(t, repository, ".agents/skills/exa-web-search/SKILL.md", "# exa\n")
 	commitBaselinePlanTestRepository(t, repository)
@@ -1732,7 +1737,7 @@ func newCLIProjectDecisionRepository(t *testing.T) string {
 }
 
 func projectDecisionHumanAnswers() string {
-	return "\nmake verify\n\n\n\n\n\n\n\n2\n2\n2\n"
+	return "\nmake verify\nmake verify-incremental\n\n\n\n\n\n\n\n2\n2\n2\n"
 }
 
 func archivedFindingHTTPContractDecision() map[string]any {
@@ -1856,6 +1861,7 @@ func humanBaselineFixtureDecisions() []baseline.DecisionValue {
 	return []baseline.DecisionValue{
 		{ID: "language.generated", Value: "English"},
 		{ID: "verification.gate", Value: "make verify"},
+		{ID: "verification.incremental", Value: "make verify-incremental"},
 		{ID: "branch.prefix", Value: "ma/"},
 		{ID: "spec.scaffold", Value: true},
 		{ID: "domain.layout", Value: "single-context"},
@@ -2019,6 +2025,7 @@ func humanBaselineAdoptionAnswers(final string) string {
 		"1",
 		"1",
 		"make verify",
+		"make verify-incremental",
 		"ma/",
 		"1",
 		"1",
@@ -2038,7 +2045,7 @@ func humanBaselineAdoptionAnswers(final string) string {
 func humanBaselinePreservationAnswers() string {
 	answers := strings.Split(strings.TrimSuffix(humanBaselineAdoptionAnswers(""), "\n"), "\n")
 	answers[0] = "2"
-	answers[10] = "1"
+	answers[11] = "1"
 	return strings.Join(answers, "\n") + "\n1\n2\n"
 }
 

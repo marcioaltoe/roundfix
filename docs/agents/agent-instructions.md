@@ -5,6 +5,7 @@
 This setup-owned guide defines the portable baseline. Repository authors own
 project-specific extensions outside setup markers and may add stricter rules.
 The selected repository Verification is `rtk make verify`.
+The selected incremental Verification is `rtk make verify-incremental`.
 The branch-prefix pattern is `<type>/`; `<type>` is replaced by the
 work's purpose, never used literally. Use `<type>/` as the portable decision
 value. Legacy personal-prefix values must be revised through Baseline and do
@@ -27,7 +28,7 @@ branches follow their tool's documented namespace.
 
 - **mandatory**: Run the selected repository Verification before completion claims. Treat every failure as blocking and report the command plus its actionable diagnostic.
 
-- **mandatory**: Use the incremental verification command declared by the active Baseline Profile for fast local checks; it answers whether the current change remains valid while reusing safe local state. CI must run the complete verification command declared by that Profile from a fresh run; it answers whether the complete tree satisfies the repository contract. If the Profile declares no incremental command, this clause is unmet rather than satisfied by omission. Execute authored Verification only on committed provenance: the Spec artifacts that carry its commands must be tracked in the repository and byte-identical to their committed bytes at the resolved revision, comparing the authored projection while excluding Daemon-owned `status` and `## Result` fields. An untrusted source requires an `execution_approvals` entry in that Spec's `<spec-root>/<slug>/_authorization.md` carrying `repository`, `revision` (the approved source revision), `artifact` (the carrying artifact), and `command_digest` (the digest of the approved command text); the approval expires when any of those fields changes. Read-only checking remains available for any source.
+- **mandatory**: Use the selected incremental Verification named at the top of this guide for fast local checks; it answers whether the current change remains valid while reusing safe local state. CI must run the selected repository Verification from a fresh run; it answers whether the complete tree satisfies the repository contract. Baseline planning refuses until the repository selects and declares both commands, so neither tier is ever satisfied by omission. Execute authored Verification only on committed provenance: the Spec artifacts that carry its commands must be tracked in the repository and byte-identical to their committed bytes at the resolved revision, comparing the authored projection while excluding Daemon-owned `status` and `## Result` fields. An untrusted source requires an `execution_approvals` entry in that Spec's `<spec-root>/<slug>/_authorization.md` carrying `repository`, `revision` (the approved source revision), `artifact` (the carrying artifact), and `command_digest` (the digest of the approved command text); the approval expires when any of those fields changes. Read-only checking remains available for any source.
 
 - **stop-and-ask**: Stop and ask for explicit authority before intentionally changing lint, formatter, typecheck, test-runner, architecture, or Verification configuration.
 

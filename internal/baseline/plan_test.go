@@ -363,6 +363,7 @@ func TestFormatterComposition(t *testing.T) {
 		Decisions: []DecisionValue{
 			{ID: "language.generated", Value: "English"},
 			{ID: "verification.gate", Value: "make verify"},
+			{ID: "verification.incremental", Value: "make verify-incremental"},
 			{ID: "branch.prefix", Value: "ma/"},
 			{ID: "identifier.strategy", Value: map[string]any{"kind": "uuid-v7"}},
 			{ID: "http.contract", Value: map[string]any{"mode": "Post-only"}},
@@ -2368,6 +2369,7 @@ func TestToolingAuthorityClause(t *testing.T) {
 			_, artifacts, err := resolveManagedArtifacts(catalog, profile, []DecisionValue{
 				{ID: "language.generated", Value: "English"},
 				{ID: "verification.gate", Value: "rtk make verify"},
+				{ID: "verification.incremental", Value: "rtk make verify-incremental"},
 				{ID: "branch.prefix", Value: "ma/"},
 			}, false)
 			if err != nil {
@@ -4066,7 +4068,7 @@ func backendProfileDraftPlanRequest(t *testing.T, repo string) (PlanRequest, []s
 		CatalogSchema: CatalogSchemaVersion(),
 		ID:            "backend-only",
 		Modules:       []string{"core", "typescript", "bun", "backend"},
-		Decisions:     []string{"language.generated", "verification.gate", "branch.prefix"},
+		Decisions:     []string{"language.generated", "verification.gate", "verification.incremental", "branch.prefix"},
 		Capabilities: []string{
 			"capability.stack.bun",
 			"capability.stack.hono",
@@ -4090,6 +4092,7 @@ func backendProfileDraftPlanRequest(t *testing.T, repo string) (PlanRequest, []s
 		Decisions: []DecisionValue{
 			{ID: "language.generated", Value: "English"},
 			{ID: "verification.gate", Value: "make verify"},
+			{ID: "verification.incremental", Value: "make verify-incremental"},
 			{ID: "branch.prefix", Value: "ma/"},
 		},
 		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
@@ -4103,7 +4106,7 @@ func newBackendProfileRepository(t *testing.T, includeUniversalSkills bool) stri
 		writeInspectionFile(t, repo, ".agents/skills/context7/SKILL.md", "# context7\n")
 		writeInspectionFile(t, repo, ".agents/skills/exa-web-search/SKILL.md", "# exa\n")
 	}
-	writeInspectionFile(t, repo, "Makefile", "verify:\n\t@true\n")
+	writeInspectionFile(t, repo, "Makefile", "verify:\n\t@true\nverify-incremental:\n\t@true\n")
 	writeInspectionFile(t, repo, "package.json", `{
   "packageManager": "bun@1.0.0",
   "dependencies": {
@@ -4159,6 +4162,7 @@ func planTestDecisions() []DecisionValue {
 	return []DecisionValue{
 		{ID: "language.generated", Value: "English"},
 		{ID: "verification.gate", Value: "make verify"},
+		{ID: "verification.incremental", Value: "make verify-incremental"},
 		{ID: "branch.prefix", Value: "ma/"},
 		{ID: "spec.scaffold", Value: true},
 		{ID: "domain.layout", Value: "single-context"},
@@ -4242,7 +4246,7 @@ func newPlanRepository(t *testing.T) string {
 	repo := newInspectionRepository(t)
 	writeInspectionFile(t, repo, ".agents/skills/context7/SKILL.md", "# context7\n")
 	writeInspectionFile(t, repo, ".agents/skills/exa-web-search/SKILL.md", "# exa\n")
-	writeInspectionFile(t, repo, "Makefile", "verify:\n\t@true\n")
+	writeInspectionFile(t, repo, "Makefile", "verify:\n\t@true\nverify-incremental:\n\t@true\n")
 	commitInspectionRepository(t, repo, "seed portable plan")
 	return repo
 }

@@ -435,7 +435,7 @@ func TestBaselineMacroJourneysPublicCLI(t *testing.T) {
 	t.Run("stale plan", func(t *testing.T) {
 		repo := newBaselineReleaseRepository(t, "go-cli-tui")
 		plan, planPath := baselineReleasePlan(t, binary, repo, "go-cli-tui")
-		writeBaselinePlanTestFile(t, repo, "Makefile", "verify:\n\t@echo changed\n")
+		writeBaselinePlanTestFile(t, repo, "Makefile", "verify:\n\t@echo changed\nverify-incremental:\n\t@true\n")
 		before := baselineReleaseVisibleState(t, repo)
 		code, stdout, _ := runBaselineReleaseCLI(
 			t, binary,
@@ -744,6 +744,7 @@ func baselineReleaseDecisionArgs(profile, preservation string) []string {
 		"preservation.mode=" + preservation,
 		"language.generated=English",
 		"verification.gate=make verify",
+		"verification.incremental=make verify-incremental",
 		"branch.prefix=ma/",
 		"spec.scaffold=true",
 		"domain.layout=single-context",
@@ -1141,6 +1142,8 @@ func newBaselineReleaseRepository(t *testing.T, profile string) string {
 	writeBaselinePlanTestFile(t, repo, "Makefile", strings.Join([]string{
 		"verify:",
 		"\t@touch .qa-verification-ran",
+		"verify-incremental:",
+		"\t@true",
 		"",
 	}, "\n"))
 

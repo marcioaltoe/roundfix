@@ -275,10 +275,6 @@ func buildSkillsReconcilePlan(
 			err,
 		)
 	}
-	lock, err := loadSkillsLock(filepath.Join(root, skillsLockPath))
-	if err != nil {
-		return reconcilePlan{}, err
-	}
 	provenance := restoreProvenance{
 		Provider: "github", Repository: request.SourceRepository, Ref: request.Commit,
 	}
@@ -293,6 +289,10 @@ func buildSkillsReconcilePlan(
 			return inspectErr
 		},
 	); err != nil {
+		return reconcilePlan{}, err
+	}
+	lock, err := loadSkillsLock(filepath.Join(root, skillsLockPath))
+	if err != nil {
 		return reconcilePlan{}, err
 	}
 
@@ -352,7 +352,8 @@ func buildSkillsReconcilePlan(
 		Acquisitions: []RestoreAcquisition{{
 			Provider: provenance.Provider, Repository: provenance.Repository, Ref: provenance.Ref,
 		}},
-		Skills: entries,
+		Skills:         entries,
+		PlannedChanges: []RestorePlannedChange{},
 	}
 	if len(requiredRemoved) != 0 {
 		for index := range payload.Skills {
@@ -398,7 +399,7 @@ func buildSkillsReconcilePlan(
 	plan := reconcilePlan{payload: payload, repository: root}
 	if len(plannedChanges) != 0 {
 		plan.document, err = buildSkillsReconcileTransactionDocument(
-			root, identity, digest, lockAfterBytes,
+			root, identity, digest, lock.before, lockAfterBytes,
 		)
 		if err != nil {
 			return reconcilePlan{}, err
@@ -472,6 +473,7 @@ func buildSkillsReconcileTransactionDocument(
 	root string,
 	identity RepositoryIdentity,
 	digest string,
+	lockBefore []byte,
 	lockAfter []byte,
 ) (PlanDocument, error) {
 	anchored, err := os.OpenRoot(root)
@@ -503,6 +505,9 @@ func buildSkillsReconcileTransactionDocument(
 			"Fix repository permissions and rerun the preview.",
 			err,
 		)
+	}
+	if !plannedSkillsLockMatchesState(lockBefore, state) {
+		return PlanDocument{}, skillsLockChangedDuringPlanError()
 	}
 	return PlanDocument{
 		Repository: identity,

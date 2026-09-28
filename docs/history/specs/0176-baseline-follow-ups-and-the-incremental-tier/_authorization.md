@@ -28,6 +28,8 @@ paths:
   - skills/roundfix/SKILL.md
   - .agents/skills/setup-context-driven/SKILL.md
   - skills/setup-context-driven/SKILL.md
+  - internal/docscontract/testdata/corpus-golden.json
+  - internal/spec/archive_layout_characterization_test.go
 operations:
   - implement
   - commit
@@ -54,6 +56,12 @@ The set was measured with `GovernedPath` and by running the sanctioned
 regeneration in a disposable copy of main `0160f70a` on 2026-09-28.
 
 ## Why each governed path is unavoidable
+
+- `internal/docscontract/testdata/corpus-golden.json`,
+  `internal/spec/archive_layout_characterization_test.go` — added 2026-09-28 in
+  the archive step: superseding and archiving Spec 0121 drops the active corpus
+  from three Specs to two, so the golden and its pin move together (standing
+  grant of 2026-09-21 for governed source).
 
 - `internal/baseline/assets/decisions.json` — declares the
   `verification.incremental` decision (task_04).

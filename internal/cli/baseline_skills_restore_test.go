@@ -168,6 +168,23 @@ func TestBaselineSkillsRestoreCommand(t *testing.T) {
 	})
 }
 
+func TestBaselineSkillsRestoreHelpNamesTheLockChangeRefusal(t *testing.T) {
+	t.Parallel()
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := RunContext(context.Background(), []string{
+		"baseline", "skills", "restore", "--help",
+	}, &stdout, &stderr)
+
+	if code != exitOK || stderr.Len() != 0 {
+		t.Fatalf("help exit = %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	if want := "lock.changed-during-plan"; !strings.Contains(stdout.String(), want) {
+		t.Fatalf("help missing %q:\n%s", want, stdout.String())
+	}
+}
+
 func stringPointerForCLI(value string) *string {
 	return &value
 }

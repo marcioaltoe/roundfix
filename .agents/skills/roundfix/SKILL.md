@@ -484,7 +484,15 @@ roundfix baseline assets sync --source-dir <canonical-setups> --check --format j
 `roundfix baseline skills reconcile` removes only lock entries absent at the
 selected immutable commit. It preserves present, moved, unrelated, and
 required entries, and requires the same reviewed Plan Digest confirmation as
-skill restoration before applying a non-empty plan.
+skill restoration before applying a non-empty plan. When a Profile-required
+skill is absent at the selected revision, reconciliation blocks with exit `3`
+and finding `reconcile.required-removed`, prints `plannedChanges: []` and
+`planDigest: null`, and writes nothing.
+
+Skill restoration and reconciliation read `skills-lock.json` after acquiring
+the source. If the lock changes during planning before its transaction
+preimage is captured, the command refuses with `lock.changed-during-plan`,
+exits `3`, and writes nothing.
 
 Editing Roundfix-owned skill content no longer requires a Baseline digest or
 characterization-corpus regeneration step: compatibility readiness depends on
