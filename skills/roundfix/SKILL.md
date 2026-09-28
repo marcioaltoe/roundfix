@@ -308,7 +308,10 @@ A parked item keeps its worktree, and `deliver status` prints that path. On
 resume, Roundfix recreates a missing worktree from its recorded branch; if the
 branch is missing too, it parks the item as `item-worktree-missing` instead of
 replaying the stage. After an item merges, its worktree and local item branch
-are removed.
+are removed. Before that removal, Roundfix releases every terminal Run of the
+merged Spec that it can prove is represented at the recorded merged head. A
+Run it cannot prove stays in place, and `deliver status` names the Run and its
+reason in the item's cleanup warning.
 
 A blocker parks its item with a reason; it does not stop later queued items.
 When a queue resumes, it reconciles every recorded action that lacks a receipt

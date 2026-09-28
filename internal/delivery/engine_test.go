@@ -864,8 +864,11 @@ type fakeDeliveryWorkflow struct {
 	currentBranch   string
 	currentWorktree string
 	recordWorkspace func(branch, worktree string) error
+	releaseErrors   []error
+	releaseCalls    int
 	removeErrors    []error
 	removeCalls     int
+	cleanupEvents   []string
 }
 
 func newFakeDeliveryWorkflow() *fakeDeliveryWorkflow {
@@ -917,8 +920,18 @@ func (fake *fakeDeliveryWorkflow) UseItemBranch(
 
 func (fake *fakeDeliveryWorkflow) RemoveItemBranch(context.Context, string, string, string) error {
 	fake.removeCalls++
+	fake.cleanupEvents = append(fake.cleanupEvents, "remove-item-branch")
 	if fake.removeCalls <= len(fake.removeErrors) {
 		return fake.removeErrors[fake.removeCalls-1]
+	}
+	return nil
+}
+
+func (fake *fakeDeliveryWorkflow) ReleaseMergedRuns(context.Context, string, store.DeliveryQueueItem) error {
+	fake.releaseCalls++
+	fake.cleanupEvents = append(fake.cleanupEvents, "release-merged-runs")
+	if fake.releaseCalls <= len(fake.releaseErrors) {
+		return fake.releaseErrors[fake.releaseCalls-1]
 	}
 	return nil
 }

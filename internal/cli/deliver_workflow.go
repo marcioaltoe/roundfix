@@ -34,6 +34,7 @@ type commandDeliveryWorkflow struct {
 }
 
 var _ delivery.ItemRecovery = (*commandDeliveryWorkflow)(nil)
+var _ delivery.ItemWorkspace = (*commandDeliveryWorkflow)(nil)
 
 const deliveryBranchPrefix = "roundfix/deliver-"
 
@@ -438,6 +439,32 @@ func (workflow *commandDeliveryWorkflow) RemoveItemBranch(ctx context.Context, g
 		return fmt.Errorf("remove item worktree and branch: %w", err)
 	}
 	return nil
+}
+
+func (workflow *commandDeliveryWorkflow) ReleaseMergedRuns(
+	ctx context.Context,
+	gitRoot string,
+	item store.DeliveryQueueItem,
+) error {
+	mergeCommit := strings.TrimSpace(item.MergeCommit)
+	if mergeCommit == "" {
+		return fmt.Errorf("release merged Spec %q Runs: merge commit is required", item.SpecSlug)
+	}
+	if len(item.CandidateCommits) == 0 {
+		return fmt.Errorf("release merged Spec %q Runs: candidate head is required", item.SpecSlug)
+	}
+	head := strings.TrimSpace(item.CandidateCommits[len(item.CandidateCommits)-1])
+	if head == "" {
+		return fmt.Errorf("release merged Spec %q Runs: candidate head is required", item.SpecSlug)
+	}
+	merged := runworktree.MergedHead{
+		SpecSlug:     strings.TrimSpace(item.SpecSlug),
+		TargetBranch: strings.TrimSpace(item.Branch),
+		Head:         head,
+		MergeCommit:  mergeCommit,
+		PullRequest:  strings.TrimSpace(item.PullRequestNumber),
+	}
+	return releaseMergedSpecRuns(ctx, workflow.store, gitRoot, merged)
 }
 
 func (workflow *commandDeliveryWorkflow) RunSpec(ctx context.Context, gitRoot, specSlug string) (delivery.RunResult, error) {
