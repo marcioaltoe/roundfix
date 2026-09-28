@@ -95,6 +95,7 @@ func TestGovernedSetOnlyGrows(t *testing.T) {
 		"internal/speccheck/mechanical_test.go",
 		"internal/suiteguardcontract/regeneration.go",
 		"internal/suiteguardcontract/regeneration_test.go",
+		"skills/_ownership.yml",
 		"skills/write-prd/references/prd-template.md",
 		"skills/write-techspec/references/techspec-template.md",
 	}

@@ -347,7 +347,7 @@ func readQAReport(path string) (QAReport, error) {
 	if err != nil {
 		return QAReport{}, QAReportError{Path: path, Err: err}
 	}
-	frontmatterBytes, body, err := splitFrontmatter(content)
+	frontmatterBytes, body, err := splitQAReportFrontmatter(content)
 	if err != nil {
 		return QAReport{}, QAReportError{Path: path, Err: err}
 	}
@@ -429,6 +429,53 @@ func readQAReport(path string) (QAReport, error) {
 	default:
 		return QAReport{}, QAReportError{Path: path, Err: fmt.Errorf("unsupported verdict %q", report.Verdict)}
 	}
+}
+
+// splitQAReportFrontmatter applies the same line-exact bounds as the awk
+// reader rendered by DerivedQAVerification. The shared splitFrontmatter keeps
+// its existing contract for every non-QA artifact.
+func splitQAReportFrontmatter(content []byte) ([]byte, []byte, error) {
+	lines := strings.Split(string(content), "\n")
+	if lines[0] != "---" {
+		return nil, nil, errors.New(`QA Report front matter must open with a "---" first line`)
+	}
+
+	closing := -1
+	for index := 1; index < len(lines); index++ {
+		if lines[index] == "---" {
+			closing = index
+			break
+		}
+	}
+	if closing < 0 {
+		return nil, nil, errors.New(`QA Report front matter has no closing "---" line`)
+	}
+	if closing == 1 {
+		return nil, nil, errors.New("QA Report front matter is empty")
+	}
+
+	verdictLines := 0
+	verdict := ""
+	for _, line := range lines[1:closing] {
+		if !strings.HasPrefix(line, "verdict:") {
+			continue
+		}
+		verdictLines++
+		verdict = strings.Trim(line[len("verdict:"):], " \t\r\n\f\v")
+	}
+	if verdictLines == 0 {
+		return nil, nil, errors.New("frontmatter has no verdict field")
+	}
+	if verdictLines != 1 {
+		return nil, nil, fmt.Errorf(`QA Report front matter has %d "verdict:" lines; expected exactly 1`, verdictLines)
+	}
+	if verdict == "" {
+		return nil, nil, errors.New("frontmatter has no verdict field")
+	}
+
+	frontmatter := []byte(strings.Join(lines[1:closing], "\n"))
+	body := []byte(strings.Join(lines[closing+1:], "\n"))
+	return frontmatter, body, nil
 }
 
 // qaReportHollow reports whether a QA Report opened a Results section but

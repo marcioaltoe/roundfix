@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0174-operator-surfaces-that-tell-the-truth
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -62,3 +62,56 @@ complexity: high
 - [_techspec.md](_techspec.md) — The schema refusal and the migrate command
 - `_prd.md` → Goals 1-2; Core Feature 1; Success Metric 1
 - `_techspec.md` → API Contracts 1-4; Testing Approach 1
+
+## Result
+
+### Implementation
+
+- Read-only Run Database opens remain read-only and now return the preserved
+  `SchemaVersionError` with an older/migrate or newer/upgrade remedy.
+- Writer opens and `store.Migrate` share one migration path that holds the
+  machine-wide write lock while reading the version, deriving conditional
+  statements, applying them, and recording the supported version.
+- `store.Migrate` reports the database path and before/after versions, creates
+  nothing for an absent database, writes nothing for a current database, and
+  refuses a newer database without changing its bytes.
+- `roundfix migrate` is available without a Git repository, prints one
+  deterministic stdout outcome for migrated/current/absent databases, maps a
+  newer database or invalid argument to exit 2, and maps migration failures to
+  exit 1.
+- The command reference, Roundfix skill, shipped skill mirror, and glossary
+  describe the explicit migration and direction-aware refusal contracts.
+
+### Focused checks
+
+- `GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 -run
+  'Test(OpenReaderRejectsMismatchedSchemaVersion|SchemaReviewSkippedReaderRejectsNewerDatabase|OpenReaderRefusesAnOlderDatabaseNamingMigrate|OpenReaderRefusesANewerDatabaseNamingUpgrade|OpenRefusesANewerDatabaseWithTheTypedError|ConcurrentOpensMigrateAnOlderDatabaseOnce|MigrateUpgradesAnOlderDatabase|MigrateLeavesACurrentDatabaseUnwritten|MigrateCreatesNothingForAnAbsentDatabase|MigrateRefusesANewerDatabaseWithoutWriting|JournalConsumerCorpusReplaysEveryConsumer|WriteTxIsTheOnlyWriterTransaction)$'
+  ./internal/store` — passed.
+- `GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 -run
+  'Test(Migrate|RunsListOnA)' ./internal/cli` — passed.
+- `GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 ./internal/store` —
+  passed.
+- `make skills-sync` — passed; canonical and shipped Roundfix skills were
+  synchronized.
+- `make baseline-digests` — passed and reported no derived changes.
+- `GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 ./internal/cli` — the
+  Task-related tests passed, but the broader package run was blocked by the
+  sandbox denying process-table access in two pre-existing force-stop
+  integration tests. This is recorded as an environment limitation, not Task
+  evidence.
+
+### Acceptance evidence
+
+- Older and newer reader fixtures are refused with `roundfix migrate` and
+  `roundfix upgrade` respectively, and byte comparisons prove the reader did
+  not change either database.
+- The migrate command upgrades an older fixture and the following `runs list`
+  succeeds; current and absent fixtures remain unwritten, while a newer fixture
+  exits 2 and remains byte-identical.
+- Eight writer opens released from one barrier all succeed against one older
+  database, which ends at the supported schema version.
+- The journal consumer corpus compiles and replays every consumer unchanged.
+
+### Follow-ups
+
+- None discovered inside Task 01's slice.
