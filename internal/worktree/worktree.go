@@ -20,6 +20,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	roundconfig "roundfix/internal/config"
 	"roundfix/internal/preflight"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
@@ -2239,6 +2240,10 @@ func PruneTerminalReport(
 	if loadTerminalRun == nil {
 		return nil, errors.New("prune Run Worktrees: terminal Run lookup is required")
 	}
+	repositoryRoot, err := roundconfig.RepositoryRoot(userRoot)
+	if err != nil {
+		return nil, fmt.Errorf("prune Run Worktrees: resolve repository identity: %w", err)
+	}
 
 	runner := execGitRunner{}
 	refs, err := terminalCandidates(ctx, runner, userRoot, location)
@@ -2264,9 +2269,20 @@ func PruneTerminalReport(
 			errs = append(errs, fmt.Errorf("load terminal Run %q: %w", runID, err))
 			continue
 		}
-		if !found || !store.IsTerminalState(run.State) || canonicalPath(run.GitRoot) != canonicalPath(userRoot) {
+		if !found || !store.IsTerminalState(run.State) {
 			continue
 		}
+		runRepositoryRoot := strings.TrimSpace(run.RepositoryRoot)
+		if runRepositoryRoot == "" {
+			runRepositoryRoot, err = roundconfig.RepositoryRoot(run.GitRoot)
+			if err != nil {
+				continue
+			}
+		}
+		if canonicalPath(runRepositoryRoot) != canonicalPath(repositoryRoot) {
+			continue
+		}
+		run.GitRoot = canonicalPath(userRoot)
 
 		result, err := inspectTerminalRun(ctx, runner, run)
 		if err != nil {
