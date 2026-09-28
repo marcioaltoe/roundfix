@@ -352,7 +352,8 @@ func buildSkillsReconcilePlan(
 		Acquisitions: []RestoreAcquisition{{
 			Provider: provenance.Provider, Repository: provenance.Repository, Ref: provenance.Ref,
 		}},
-		Skills: entries,
+		Skills:         entries,
+		PlannedChanges: []RestorePlannedChange{},
 	}
 	if len(requiredRemoved) != 0 {
 		for index := range payload.Skills {

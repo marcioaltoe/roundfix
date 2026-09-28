@@ -5712,7 +5712,9 @@ Exit codes:
   0  no obsolete entries remain, or the confirmed reconciliation was applied
   1  source acquisition, proof, apply, output, rollback, or recovery failure
   2  invalid arguments, profile, lock schema, source, revision, or unsafe target
-  3  confirmation is required or does not match the current Change Plan
+  3  confirmation is required or does not match the current Change Plan, or a
+     Profile-required skill is absent at the selected revision (finding
+     reconcile.required-removed, no Plan Digest)
   130 operation canceled
 
 Options:

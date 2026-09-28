@@ -137,6 +137,77 @@ func TestBaselineSkillsReconcilePreviewThenConfirm(t *testing.T) {
 	}
 }
 
+func TestBaselineSkillsReconcileRequiredRemovedPrintsAnEmptyPlan(t *testing.T) {
+	t.Parallel()
+
+	repository := newBaselineSkillsReconcileGitRepository(t, map[string]string{
+		"README.md": "repository\n",
+	})
+	source := newBaselineSkillsReconcileGitRepository(t, map[string]string{
+		"README.md": "source without the required skill\n",
+	})
+	revision := baselineSkillsReconcileGitOutput(t, source, "rev-parse", "HEAD")
+	lockPath := filepath.Join(repository, "skills-lock.json")
+	writeBaselineSkillsReconcileFile(t, lockPath, `{
+  "version": 1,
+  "skills": {
+    "coding-guidelines": {
+      "source": "example/skills",
+      "skillPath": "skills/coding-guidelines/SKILL.md"
+    }
+  }
+}
+`)
+	before, err := os.ReadFile(lockPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := RunContext(context.Background(), []string{
+		"baseline", "skills", "reconcile",
+		"--profile", "go-cli-tui",
+		"--source", "example/skills",
+		"--revision", revision,
+		"--source-dir", source,
+		"--repo", repository,
+		"--format", "json",
+	}, &stdout, &stderr)
+	if code != exitUnverified {
+		t.Fatalf(
+			"required-removed exit = %d, want %d; stdout=%s stderr=%s",
+			code,
+			exitUnverified,
+			stdout.String(),
+			stderr.String(),
+		)
+	}
+	var payload struct {
+		OK             bool            `json:"ok"`
+		PlannedChanges json.RawMessage `json:"plannedChanges"`
+		PlanDigest     json.RawMessage `json:"planDigest"`
+		Finding        struct {
+			Code string `json:"code"`
+		} `json:"finding"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
+		t.Fatalf("decode blocked JSON: %v\n%s", err, stdout.String())
+	}
+	if payload.OK || string(payload.PlannedChanges) != "[]" ||
+		string(payload.PlanDigest) != "null" ||
+		payload.Finding.Code != "reconcile.required-removed" {
+		t.Fatalf("blocked payload = %s", stdout.String())
+	}
+	after, err := os.ReadFile(lockPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(after, before) {
+		t.Fatalf("skills-lock.json changed:\nbefore:\n%s\nafter:\n%s", before, after)
+	}
+}
+
 func TestBaselineSkillsReconcileRejectsAMutableRevision(t *testing.T) {
 	t.Parallel()
 
@@ -188,6 +259,23 @@ func TestBaselineSkillsReconcileHelpNamesTheConfirmationContract(t *testing.T) {
 		if !strings.Contains(stdout.String(), want) {
 			t.Fatalf("help missing %q:\n%s", want, stdout.String())
 		}
+	}
+}
+
+func TestBaselineSkillsReconcileHelpDocumentsTheRequiredRemovedExit(t *testing.T) {
+	t.Parallel()
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := RunContext(context.Background(), []string{
+		"baseline", "skills", "reconcile", "--help",
+	}, &stdout, &stderr)
+
+	if code != exitOK || stderr.Len() != 0 {
+		t.Fatalf("help exit = %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	if want := "Profile-required skill is absent at the selected revision"; !strings.Contains(stdout.String(), want) {
+		t.Fatalf("help missing %q:\n%s", want, stdout.String())
 	}
 }
 

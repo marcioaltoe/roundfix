@@ -433,8 +433,12 @@ source commit.
 source repository at the exact 40-hex commit passed with `--revision`, and only
 when the selected Profile does not require them. A non-empty preview exits `3`
 with its Plan Digest; `--confirm-plan` applies that exact plan and retains every
-installed skill tree. Mutable revisions are refused before source acquisition.
-Doctor remains offline and read-only; it never reconciles or edits the lock.
+installed skill tree. When a Profile-required skill is absent at the selected
+revision, the command blocks with exit `3` and finding
+`reconcile.required-removed`, prints `plannedChanges: []` and
+`planDigest: null`, and writes nothing. Mutable revisions are refused before
+source acquisition. Doctor remains offline and read-only; it never reconciles
+or edits the lock.
 
 `baseline assets sync` is a maintainer operation over an explicit canonical
 setups directory. `--check` is read-only. Refresh validates the generated

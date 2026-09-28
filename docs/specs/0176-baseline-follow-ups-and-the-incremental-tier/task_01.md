@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0176-baseline-follow-ups-and-the-incremental-tier
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
