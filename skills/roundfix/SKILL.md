@@ -43,9 +43,11 @@ effective Claude command to prove official
 executable presence and a matching name are not proof. The `profiles:` line is
 the selection authority: it exact-proves every distinct Preferred Selection
 and fallback through disposable ACP Sessions and reports affected category
-references plus one deterministic next action. Doctor has no separate legacy
-`agent:` or `model:` authority. Failed checks include `next: <action>` when
-Roundfix knows the remediation.
+references plus one deterministic next action. A proof whose setup times out
+is retried once. A second timeout is classified `temporary`; rerun the command
+when load drops because the configured profile was not shown to be wrong.
+Doctor has no separate legacy `agent:` or `model:` authority. Failed checks
+include `next: <action>` when Roundfix knows the remediation.
 
 The `pre-pr-review:` line reports the resolved pre-Pull-Request review provider
 and the configuration layer that supplied it. An explicit `none` reports that

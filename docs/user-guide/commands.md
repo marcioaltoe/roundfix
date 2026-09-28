@@ -348,6 +348,9 @@ references, proves them through disposable ACP Runtime Sessions, sends no
 Agent prompt, and closes every Session on success or error. JSON schemas are
 `roundfix/profiles/v1`, `roundfix/profiles-configure/v1`, and
 `roundfix/profiles-validate/v1`.
+A proof whose setup times out is retried once. A second timeout is classified
+`temporary`; rerun the command when load drops because the configured profile
+was not shown to be wrong.
 
 ### baseline
 

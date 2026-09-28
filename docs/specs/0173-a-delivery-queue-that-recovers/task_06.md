@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0173-a-delivery-queue-that-recovers
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -48,3 +48,49 @@ complexity: medium
 ## References
 
 - [_techspec.md](_techspec.md) — Proof timeouts
+
+## Result
+
+Implemented a single retry boundary around Exact Agent Selection Proof. A
+proof-owned deadline opens one fresh disposable proof attempt; a second such
+deadline is wrapped as `profileProofTimeoutError`, classified `temporary`, and
+reported with load-sensitive rerun advice that explicitly says the configured
+profile was not shown to be wrong. Command cancellation and non-timeout proof
+errors retain their existing single-attempt behavior, while runtime
+construction and access-policy validation remain outside the retry helper.
+
+Documented the retry and second-timeout classification in the profiles user
+guide and the Roundfix profile Preflight guidance, then regenerated the shipped
+Roundfix skill with `make skills-sync`.
+
+Acceptance evidence:
+
+- Timeout then success: `TestProfileProofRetriesATimedOutSetupOnce` passed via
+  `rtk env GOCACHE=/tmp/roundfix-task06-gocache go test -count=1 -run '^TestProfile' ./internal/cli`; it drives
+  `profiles validate --json` and observes two preferred-tuple attempts and one
+  fallback-tuple attempt with exit `0`.
+- Two timeouts: `TestProfileProofReportsASecondTimeoutAsTemporary` passed in
+  the same focused run; it observes exit `2`, classification `temporary`, two
+  attempts, load-sensitive rerun advice, and no `roundfix profiles configure`
+  advice.
+- Rejection and cancellation: the separate
+  `TestProfileProofDoesNotRetryARejectedSelection` and
+  `TestProfileProofDoesNotRetryACancelledCommand` cases passed in the same
+  focused run; each observes exactly one attempt and preserves the existing
+  classification.
+- Operational Preflight: `rtk env GOCACHE=/tmp/roundfix-task06-gocache go test -count=1 -run '^TestOperationalPreflightPassesAfterAFallbackProofTimesOutOnce$' ./internal/cli`
+  passed; the fallback tuple is attempted twice and the Preflight succeeds.
+
+Additional focused evidence:
+
+- The initial five-test regression run failed only the three missing timeout
+  behaviors before the production change; the rejection and cancellation
+  controls already passed.
+- `rtk env GOCACHE=/tmp/roundfix-task06-gocache go test -count=1 -run '^TestProfilesValidateFailedProofNamesTupleAffectedCategoriesAndRecovery$' ./internal/cli`
+  passed. The `^TestProfile` run also covered
+  `TestProfileOperationalPreflightMatchesProfilesValidateClassifiedFailure`.
+- `rtk make skills-sync-check` passed, and `rtk make baseline-digests` reported
+  `changed:false`.
+- `rtk git diff --check` passed.
+
+The Daemon-owned `## Verification` command was not run in this Agent turn.
