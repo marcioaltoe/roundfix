@@ -973,7 +973,10 @@ func newDerivedRegenerationFixture(t *testing.T) string {
 
 	sourceRoot := filepath.Clean(filepath.Join("..", ".."))
 	fixtureRoot := t.TempDir()
-	for _, directory := range []string{".agents", "docs/specs", "internal", "skills"} {
+	// docs/history/specs carries archived Specs whose authorization records still
+	// sanction regeneration outputs; the real reader includes that root, so the
+	// fixture copies it too.
+	for _, directory := range []string{".agents", "docs/specs", "docs/history/specs", "internal", "skills"} {
 		if err := os.CopyFS(
 			filepath.Join(fixtureRoot, directory),
 			os.DirFS(filepath.Join(sourceRoot, directory)),
