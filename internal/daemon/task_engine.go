@@ -2677,6 +2677,8 @@ func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qa
 	prdPath := filepath.Join(plan.Spec.Dir, "_prd.md")
 	var authorizationPath string
 	var authorizationReference speccheck.MechanicalAuthorizationReference
+	deliveryTargetRevision := plan.HeadSHA
+	taskCommitsFromRunStart := false
 	if strings.TrimSpace(plan.HeadSHA) == "" {
 		var err error
 		authorizationPath, _, err = speccheck.MechanicalAuthorization(plan.WorkDir, prdPath)
@@ -2684,14 +2686,23 @@ func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qa
 			return speccheck.MechanicalRequest{}, err
 		}
 	} else {
-		resolved, _, err := speccheck.ResolveMechanicalAuthorization(ctx, plan.WorkDir, prdPath, plan.HeadSHA)
+		base, resolvedBase, err := qaDeliveryBase(ctx, plan)
+		if err != nil {
+			return speccheck.MechanicalRequest{}, err
+		}
+		if resolvedBase {
+			deliveryTargetRevision = base
+		} else {
+			taskCommitsFromRunStart = true
+		}
+		resolved, _, err := speccheck.ResolveMechanicalAuthorization(ctx, plan.WorkDir, prdPath, deliveryTargetRevision)
 		if err != nil {
 			return speccheck.MechanicalRequest{}, err
 		}
 		authorizationReference = resolved
 		authorizationPath = resolved.Path
 	}
-	taskCommits, err := mechanicalTaskCommits(ctx, plan, authorizationPath)
+	taskCommits, err := mechanicalTaskCommits(ctx, plan, deliveryTargetRevision, authorizationPath)
 	if err != nil {
 		return speccheck.MechanicalRequest{}, err
 	}
@@ -2712,12 +2723,13 @@ func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qa
 		}
 	}
 	return speccheck.MechanicalRequest{
-		RepoRoot:               plan.WorkDir,
-		AuthorizationPath:      authorizationPath,
-		AuthorizationReference: authorizationReference,
-		ConsumingSpec:          plan.Spec.Slug,
-		DeliveryTargetRevision: plan.HeadSHA,
-		TaskCommits:            taskCommits,
+		RepoRoot:                plan.WorkDir,
+		AuthorizationPath:       authorizationPath,
+		AuthorizationReference:  authorizationReference,
+		ConsumingSpec:           plan.Spec.Slug,
+		DeliveryTargetRevision:  deliveryTargetRevision,
+		TaskCommits:             taskCommits,
+		TaskCommitsFromRunStart: taskCommitsFromRunStart,
 		// Consequent-fix declarations are optional authored inputs. Until a
 		// declaration exists, the detector records its presence-aware skip.
 		ConsequentFixes: nil,
@@ -2748,12 +2760,12 @@ func qaGatePrecondition(plan TaskPlan) (speccheck.GatePreconditionResult, error)
 	return speccheck.GatePrecondition(checked), nil
 }
 
-func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, authorizationPath string) ([]speccheck.MechanicalTaskCommit, error) {
-	if strings.TrimSpace(plan.HeadSHA) == "" || strings.TrimSpace(authorizationPath) == "" {
+func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, rangeStart, authorizationPath string) ([]speccheck.MechanicalTaskCommit, error) {
+	if strings.TrimSpace(rangeStart) == "" || strings.TrimSpace(authorizationPath) == "" {
 		return nil, nil
 	}
-	revisionRange := strings.TrimSpace(plan.HeadSHA) + "..HEAD"
-	command := exec.CommandContext(ctx, "git", "-C", plan.WorkDir, "log", "--no-merges",
+	revisionRange := strings.TrimSpace(rangeStart) + "..HEAD"
+	command := exec.CommandContext(ctx, "git", "-C", plan.WorkDir, "log", "--no-merges", "--reverse",
 		"--format=%(trailers:key=Roundfix-Spec,valueonly,unfold)%x1f%(trailers:key=Roundfix-Task,valueonly,unfold)%x1f%H%x1e",
 		revisionRange)
 	output, err := command.Output()
@@ -2766,7 +2778,7 @@ func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, authorizationPath
 			tasks[task.ID] = task
 		}
 	}
-	commitsByTask := make(map[string]string, len(tasks))
+	result := make([]speccheck.MechanicalTaskCommit, 0)
 	for _, record := range bytes.Split(output, []byte{0x1e}) {
 		parts := bytes.SplitN(bytes.TrimSpace(record), []byte{0x1f}, 3)
 		if len(parts) != 3 {
@@ -2778,15 +2790,8 @@ func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, authorizationPath
 		if specSlug != plan.Spec.Slug {
 			continue
 		}
-		if _, known := tasks[taskID]; !known || commitsByTask[taskID] != "" || sha == "" {
-			continue
-		}
-		commitsByTask[taskID] = sha
-	}
-	result := make([]speccheck.MechanicalTaskCommit, 0, len(commitsByTask))
-	for _, task := range plan.Tasks {
-		sha := commitsByTask[task.ID]
-		if sha == "" {
+		task, known := tasks[taskID]
+		if !known || sha == "" {
 			continue
 		}
 		changed, err := mechanicalCommitPaths(ctx, plan.WorkDir, sha)
@@ -2804,7 +2809,7 @@ func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, authorizationPath
 			continue
 		}
 		result = append(result, speccheck.MechanicalTaskCommit{
-			TaskID:   task.ID,
+			TaskID:   taskID,
 			SHA:      sha,
 			TaskFile: artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, task.File)),
 		})

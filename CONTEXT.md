@@ -36,6 +36,10 @@ _Avoid_: Auto-fix, gate edit, remediation
 A repository path the tooling-authority rules bind — the configuration, scripts, ignore files, plugin declarations, and version pins of linters, formatters, typecheckers, test runners, architecture checkers, build tools, package managers, and code generators. The changed-path audit judges a Task commit only against its governed paths; an ordinary source, test, or documentation file is not governed and needs no grant. The declared set is held to the record: every path any authorization has ever bounded stays governed.
 _Avoid_: Protected file, restricted path, tooling file
 
+**Delivery Base**:
+The merge base of the audited head and the repository default branch. The mechanical stage reads a Spec's Task commits and its grant from it.
+_Avoid_: Run start head, audited head, delivery target
+
 **Undeclared Governed Path**:
 A Governed Path named by a pending non-QA Task but omitted from its authorization record or a present Tooling authority row.
 _Avoid_: Unauthorized edit, inferred path, ordinary path

@@ -24,10 +24,11 @@ import (
 )
 
 const (
-	DetectorMechanicalAuthPaths       = "authorization bounded paths"
-	DetectorMechanicalConsequentOrder = "consequent-fix commit order"
-	DetectorMechanicalReportShape     = "QA Report structure"
-	DetectorMechanicalEvidencePath    = "QA evidence paths"
+	DetectorMechanicalAuthPaths         = "authorization bounded paths"
+	DetectorMechanicalConsequentOrder   = "consequent-fix commit order"
+	DetectorMechanicalReportShape       = "QA Report structure"
+	DetectorMechanicalEvidencePath      = "QA evidence paths"
+	MechanicalSkipEarlierRunTaskCommits = "Task commits of earlier Runs"
 
 	CodeMechanicalAuthPaths       = "QA-AUTH-PATHS"
 	CodeMechanicalConsequentOrder = "QA-CONSEQUENT-ORDER"
@@ -42,17 +43,18 @@ const (
 // recorded as MechanicalSkips; unreadable authorization evidence is an
 // unresolved audit input and cannot become a pass.
 type MechanicalRequest struct {
-	RepoRoot               string
-	AuthorizationPath      string
-	AuthorizationReference MechanicalAuthorizationReference
-	ConsumingSpec          string
-	DeliveryTargetRevision string
-	TaskCommits            []MechanicalTaskCommit
-	ConsequentFixes        []ConsequentFixDeclaration
-	ReportPath             string
-	TaskRepairPaths        []string
-	AssignedRepairs        []AssignedRepair
-	Precondition           GatePreconditionResult
+	RepoRoot                string
+	AuthorizationPath       string
+	AuthorizationReference  MechanicalAuthorizationReference
+	ConsumingSpec           string
+	DeliveryTargetRevision  string
+	TaskCommits             []MechanicalTaskCommit
+	TaskCommitsFromRunStart bool
+	ConsequentFixes         []ConsequentFixDeclaration
+	ReportPath              string
+	TaskRepairPaths         []string
+	AssignedRepairs         []AssignedRepair
+	Precondition            GatePreconditionResult
 }
 
 // MechanicalAuthorizationReference is the exact authorization citation the
@@ -725,6 +727,9 @@ func addRepairFailure(result *MechanicalResult, failure RepairFailure) {
 }
 
 func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, repoRoot string, request MechanicalRequest) error {
+	if request.TaskCommitsFromRunStart {
+		addMechanicalSkip(result, DetectorMechanicalAuthPaths, MechanicalSkipEarlierRunTaskCommits)
+	}
 	missing := request.AuthorizationPath
 	authorizationPath := cleanMechanicalPath(request.AuthorizationPath)
 	authorizationRepoRoot := repoRoot

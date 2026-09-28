@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0178-a-qa-audit-across-every-run-of-a-spec
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -128,3 +128,39 @@ maintainer who decides whether the Spec ships.
 ## References
 
 - [_techspec.md](_techspec.md) — The Delivery Base; Every Run's Task commits
+
+## Result
+
+Implemented the Delivery Base resolver and routed its resolved revision through
+grant resolution, delivery-target authorization, and Task commit selection.
+The mechanical request now marks a Run-start fallback explicitly, and the
+authorization detector records that skip while continuing to audit the commits
+it receives. Task commit collection keeps every governed non-QA Task commit in
+oldest-first order. The glossary now defines Delivery Base without linking to
+a Spec artifact.
+
+Added the nine disposable-repository cases in
+`internal/daemon/qa_every_run_audit_test.go` and updated the existing
+two-subtest selection fixture to create its work branch and remote default-branch
+refs explicitly. The attempt-1 diagnostic contained no test output because the
+new implementation and test cases were not yet present; this repair supplies
+both rather than weakening the Verification assertion.
+
+Focused checks run during implementation:
+
+- `rtk go test -count=1 -run '^TestQADeliveryBaseIsTheMergeBaseWithTheDefaultBranch$' ./internal/daemon` could not use the sandboxed default Go build cache. Re-running with `GOCACHE=/private/tmp/roundfix-task01-gocache` passed.
+- `GOCACHE=/private/tmp/roundfix-task01-gocache go test -count=1 -run '^TestQADeliveryBase' ./internal/daemon` passed all three Delivery Base cases.
+- `GOCACHE=/private/tmp/roundfix-task01-gocache go test -count=1 -run '^TestQAMechanicalRequest(Audits|Leaves|Refuses|Accepts|Falls)' ./internal/daemon` passed all six every-Run request and mechanical-stage cases.
+- `GOCACHE=/private/tmp/roundfix-task01-gocache go test -count=1 -run '^TestQAMechanicalRequestSelects' ./internal/daemon` passed the preserved selection test and both subtests.
+- `GOCACHE=/private/tmp/roundfix-task01-gocache go test -count=1 ./internal/speccheck` passed.
+- `rtk git diff --check` passed.
+- `GOCACHE=/private/tmp/roundfix-task01-gocache make verify-incremental` was first stopped by the sandbox when an existing fixture attempted network access; the permission-adjusted rerun passed `go vet`, the repository test suite, skill checks, and the build.
+
+Acceptance evidence from those focused checks:
+
+- Earlier-Run and older same-Task commits reached `QA-AUTH-PATHS` findings in `TestQAMechanicalRequestAuditsATaskCommitFromAnEarlierRun` and `TestQAMechanicalRequestAuditsEveryCommitOfATask`.
+- `TestQAMechanicalRequestRefusesAGrantWidenedOnTheSpecBranch` refused the in-branch widening, while `TestQAMechanicalRequestAcceptsAGrantLandedOnTheDefaultBranch` accepted the landed-and-merged widening.
+- `TestQAMechanicalRequestFallsBackToTheRunStartHeadWithASkip` retained the Run start revision and recorded `Task commits of earlier Runs` while auditing the later commit.
+
+The Task's declared Verification command was not run; Daemon Verification owns
+that command and the terminal Task status.
