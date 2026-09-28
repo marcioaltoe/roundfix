@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0173-a-delivery-queue-that-recovers
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
