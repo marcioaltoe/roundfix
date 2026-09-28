@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0174-operator-surfaces-that-tell-the-truth
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
