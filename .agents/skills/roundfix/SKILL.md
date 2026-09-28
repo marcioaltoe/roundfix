@@ -915,7 +915,7 @@ repository. The report classifies every selected Run into one of six states:
 | `unknown` | Metadata or Git evidence cannot prove another state. Preserve every identified Run Worktree and Run Branch. |
 | `released` | Both the Run Worktree and Run Branch are absent. No cleanup is needed. |
 
-The same report can add two debris candidate kinds beside those legacy Run
+The same report can add three debris candidate kinds beside those legacy Run
 Worktree classifications:
 
 For a Run of a merged Spec, reconciliation proves the Run against the merged
@@ -933,10 +933,22 @@ reason names the missing proof; an absent target alone is not proof of release.
 - A `runBranch` candidate is proven when set classification for one target
   branch and Spec shows that the Run Branch is superseded by a named current
   or target QA Report, and its registered Run Worktree was inspected clean.
+- A `staging` candidate is any registered
+  `roundfix-carry-forward-*/worktree`. Its `owner.json` PID and process identity
+  prove it stale when the PID's `OwnerProcessIdentity` lookup fails or differs
+  from the record. A legacy registration is stale only while it is
+  `locked initializing`; an unlocked legacy staging worktree is preserved.
 
 Ambiguous ownership, identity, Git, active-Run, or cleanliness evidence goes
 to `preservedCandidates` with a refusal reason instead of becoming a cleanup
 candidate.
+
+The `roundfix-reconcile/v1` JSON report exposes every staging entry in
+`stagingCandidates`. `debrisSummary.stagingCandidates` counts those entries and
+`debrisSummary.stagingApplied` counts releases. Dry-run reports staging without
+mutation. `--apply` releases stale staging, and `--carry-forward` releases it
+before creating its own staging worktree. A live matching owner and every
+case without positive stale proof remain in `preservedCandidates`.
 
 After reviewing the dry-run, apply cleanup explicitly:
 
@@ -948,10 +960,10 @@ roundfix reconcile <run-id> --carry-forward
 ```
 
 These three mutation switches are mutually exclusive. `--apply` releases
-entries classified `safe` or `superseded`, or proven process and Run Branch
-candidates, after rechecking the applicable metadata, ownership, cleanliness,
-heads, ancestry, merged-head records, Task status, content, and superseding
-QA Report evidence. `--discard-superseded`
+entries classified `safe` or `superseded`, or proven process, Run Branch, and
+staging candidates, after rechecking the applicable metadata, ownership,
+cleanliness, heads, ancestry, merged-head records, Task status, content, and
+superseding QA Report evidence. `--discard-superseded`
 records a Branch Disposition before removing a Run Branch proven superseded.
 `--carry-forward` hands settled Tasks from one terminal spec Run back to the
 checkout; it accepts Runs whose outcome is `BudgetExceeded`, `Stopped`, or

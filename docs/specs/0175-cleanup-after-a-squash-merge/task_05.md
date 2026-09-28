@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0175-cleanup-after-a-squash-merge
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -108,3 +108,49 @@ age.
 - [_techspec.md](_techspec.md) — Staging worktrees
 - `_prd.md` → Core Feature 5; Success Metric 5
 - `_techspec.md` → API Contracts 4 and 6
+
+## Result
+
+Implemented owned carry-forward staging in `internal/worktree`: creation writes
+the current PID and process identity to `owner.json`, add/remove share the Git
+worktree administration lock, inspection classifies only positive stale proof,
+and release re-proves under one lock before running double-force removal and
+deleting only the staging root. Carry-forward now delegates staging lifecycle
+to that package and accepts a caller-selected parent for isolated tests.
+
+Reconcile now reports `stagingCandidates`, includes staging counts in
+`debrisSummary`, places kept staging in `preservedCandidates`, releases stale
+staging under `--apply`, and releases it before `--carry-forward` creates its
+own staging. The text report, user guide, canonical Roundfix skill, and synced
+skill copy describe the same proof and report fields.
+
+Focused checks:
+
+- `GOCACHE=/tmp/roundfix-task05-gocache go test -count=1 -run '^TestCarryForwardStaging' ./internal/worktree` — passed.
+- `GOCACHE=/tmp/roundfix-task05-gocache go test -count=1 -run '^TestWorktreeAdministration' ./internal/worktree` — passed.
+- `GOCACHE=/tmp/roundfix-task05-gocache go test -count=1 -run '^Test(ReconcileDryRunReportsStaleStagingWithoutRemovingIt|ReconcileApplyReleasesStaleStaging|ReconcileCarryForwardReleasesStaleStagingFirst|ReconcileKeepsALiveStagingAsPreserved|RunReconcileJSONMatchesTextFields|InspectSpecCarryForwards|CarryForwardStagingFailureIsNotClassifiedAsAConflict|CarryForwardOperationalCherryPickFailureIsNotAConflict|CarryForwardAcceptsAnUnresolvedRun)$' ./internal/cli` — passed.
+- `make skills-sync-check` and `git diff --check` — passed.
+- `make skills-sync` regenerated the distributed skill; `make baseline-digests`
+  passed and reported no derived-artifact changes.
+
+Acceptance evidence:
+
+- Owner recording and lock waiting: `TestCarryForwardStagingRecordsItsOwner`
+  exercised a real Git worktree and matched the record to
+  `store.OwnerProcessIdentity`; `TestCarryForwardStagingWaitsForTheAdminLock`
+  proved add did not reach Git while another holder owned the repository lock.
+- Stale proof and negative cases:
+  `TestCarryForwardStagingSweepReleasesADeadOwnersWorktree` and
+  `TestCarryForwardStagingSweepReleasesALockedInitializingLegacyWorktree`
+  released real registrations, while the separate live-owner and unlocked
+  legacy tests preserved their registrations with refusal reasons.
+- Reconcile behavior and schema: the four staging reconcile tests proved
+  dry-run preservation, apply release, carry-forward release-before-use, and
+  live-owner preservation. `TestRunReconcileJSONMatchesTextFields` passed with
+  the additive `stagingCandidates` top-level field while retaining every
+  existing field.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260928T174529Z_c0cad0da5734a85f`
+- Source commit: `4313558f97ea10aa1183f919276f0dff7b123ef9`

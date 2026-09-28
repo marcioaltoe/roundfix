@@ -1019,7 +1019,11 @@ The text report includes the repository, mode, each Run's outcome,
 classification, Run Worktree, Run Branch, target branch, both resolved heads,
 evidence, action, refusal reason, summary counts, and the exact apply command.
 JSON uses the `roundfix-reconcile/v1` envelope with `mode`, `repository`,
-`applyCommand`, `results`, and `summary`.
+`applyCommand`, `results`, and `summary`. Its `stagingCandidates` array reports
+each registered carry-forward staging worktree, its owner PID, proof, action,
+and refusal reason. `debrisSummary.stagingCandidates` counts those entries and
+`debrisSummary.stagingApplied` counts the staging worktrees released in that
+invocation; every existing report field keeps its meaning.
 
 For a Run of a merged Spec, reconciliation proves the Run against the merged
 head. The Delivery Queue merge record is the primary source; when no usable
@@ -1075,6 +1079,16 @@ Run that `implement` names, because it has the largest carriable set and uses
 the newest Run to break ties.
 
 `--apply` remains the only switch that releases Run Worktrees.
+
+Reconcile also sweeps registered carry-forward staging worktrees whose path is
+`roundfix-carry-forward-*/worktree`. Dry-run reports every candidate without
+removing it. A staging worktree is stale only when the recorded PID's
+`OwnerProcessIdentity` lookup fails or differs from `owner.json`, or when a
+legacy registration has no owner record and is still `locked initializing`. A
+live matching owner, an unlocked legacy registration, or an unreadable or
+malformed owner record stays in `preservedCandidates` with the refusal reason.
+`--apply` releases stale staging, and `--carry-forward` releases it before
+creating that mode's own staging worktree.
 
 There is no force flag or user assertion that bypasses the proof. Apply acts
 only on entries classified `safe` or `superseded` during that invocation, then
