@@ -5681,7 +5681,8 @@ Exit codes:
   0  selected skills already match, or the confirmed restoration was applied
   1  source acquisition, proof, apply, output, rollback, or recovery failure
   2  invalid arguments, profile, skill, lock schema, source, or unsafe target
-  3  confirmation is required or does not match the current Change Plan
+  3  confirmation is required or does not match the current Change Plan, or the
+     lock changed during planning (finding lock.changed-during-plan)
   130 operation canceled
 
 Options:
@@ -5714,7 +5715,8 @@ Exit codes:
   2  invalid arguments, profile, lock schema, source, revision, or unsafe target
   3  confirmation is required or does not match the current Change Plan, or a
      Profile-required skill is absent at the selected revision (finding
-     reconcile.required-removed, no Plan Digest)
+     reconcile.required-removed, no Plan Digest), or the lock changed during
+     planning (finding lock.changed-during-plan)
   130 operation canceled
 
 Options:

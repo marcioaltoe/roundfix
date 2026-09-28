@@ -427,7 +427,10 @@ remote executable content.
 Set operation. Its non-empty preview exits `3` with a current Plan Digest;
 `--confirm-plan` applies only that exact preview. `--source-dir` selects an
 offline Git checkout or bare object store containing the declared immutable
-source commit.
+source commit. The command reads `skills-lock.json` after the source is
+acquired. If the lock changes during planning before its transaction preimage
+is captured, the command refuses with `lock.changed-during-plan`, exits `3`,
+and writes nothing.
 
 `baseline skills reconcile` removes only lock entries proven absent from one
 source repository at the exact 40-hex commit passed with `--revision`, and only
@@ -437,8 +440,11 @@ installed skill tree. When a Profile-required skill is absent at the selected
 revision, the command blocks with exit `3` and finding
 `reconcile.required-removed`, prints `plannedChanges: []` and
 `planDigest: null`, and writes nothing. Mutable revisions are refused before
-source acquisition. Doctor remains offline and read-only; it never reconciles
-or edits the lock.
+source acquisition. Reconciliation reads `skills-lock.json` after the source
+is acquired. If the lock changes during planning before its transaction
+preimage is captured, the command refuses with `lock.changed-during-plan`,
+exits `3`, and writes nothing. Doctor remains offline and read-only; it never
+reconciles or edits the lock.
 
 `baseline assets sync` is a maintainer operation over an explicit canonical
 setups directory. `--check` is read-only. Refresh validates the generated

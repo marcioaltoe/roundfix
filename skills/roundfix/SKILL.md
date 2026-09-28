@@ -489,6 +489,11 @@ skill is absent at the selected revision, reconciliation blocks with exit `3`
 and finding `reconcile.required-removed`, prints `plannedChanges: []` and
 `planDigest: null`, and writes nothing.
 
+Skill restoration and reconciliation read `skills-lock.json` after acquiring
+the source. If the lock changes during planning before its transaction
+preimage is captured, the command refuses with `lock.changed-during-plan`,
+exits `3`, and writes nothing.
+
 Editing Roundfix-owned skill content no longer requires a Baseline digest or
 characterization-corpus regeneration step: compatibility readiness depends on
 the declared version comparison, not the skill bytes. Inside the Roundfix
