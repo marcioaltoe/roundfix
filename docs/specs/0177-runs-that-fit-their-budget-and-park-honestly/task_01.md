@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0177-runs-that-fit-their-budget-and-park-honestly
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -78,3 +78,53 @@ or two Tasks editing one file would run in one Wave from a stale base.
 - `_prd.md` → Goal 1; Core Feature 1; Success Metric 1.
 - `_techspec.md` → Instruction paths and Wave collisions; API Contract 1;
   Testing Approach 1; ADR-0025; ADR-0056; ADR-0093; ADR-0117.
+
+## Result
+
+### Implementation
+
+- `declaredTaskTouches` now excludes `instruction:` Context references after
+  collecting Verification operands. `interface:`, `creates:`, Verification and
+  prior-Run touch sources retain their existing paths through the function.
+- Added separate `internal/spec` cases for shared instruction Context, shared
+  interface Context, and an instruction path independently read by both
+  Verifications. Added separate `speccheck.Check` cases for the instruction and
+  interface authoring outcomes.
+- The canonical write-tasks skill now states that an `instruction:` path is
+  read-only and `never makes two Tasks collide`; `make skills-sync` regenerated
+  the shipped skill mirror.
+
+### Focused-check evidence
+
+- Before the production edit,
+  `go test -count=1 ./internal/spec -run '^(TestCollisionsIgnoresASharedInstructionPath|TestCollisionsStillReportsASharedInterfacePath|TestCollisionsReportsAnInstructionPathReadByBothVerifications)$'`
+  failed because the shared instruction path appeared as `declared context`.
+- Before the production edit,
+  `go test -count=1 ./internal/speccheck -run '^(TestWaveCollisionCheckIgnoresASharedInstructionPath|TestWaveCollisionCheckStillReportsASharedInterfacePath)$'`
+  failed because `speccheck.Check` emitted `SC-WAVE-COLLISION` for the shared
+  instruction path.
+- After the edit, `go test -count=1 ./internal/spec -run '^TestCollisions'`
+  exited `0`; this covers the three new collision cases and the existing
+  declared-Context and prior-Run cases.
+- After the edit,
+  `go test -count=1 ./internal/speccheck -run '^TestWaveCollision'` exited `0`;
+  this covers both new `speccheck.Check` cases and the existing authoring case.
+- `make skills-sync` exited `0`, and
+  `diff -r .agents/skills/write-tasks skills/write-tasks` exited `0`.
+- `make verify-incremental` first reached two unrelated force-stop integration
+  tests that could not read the sandboxed process table. Re-running the same
+  repository check with process-table permission exited `0`, including vet,
+  all Go packages, skill contracts and the build.
+
+### Acceptance criteria
+
+- Shared instruction only: the `spec.Collisions` and `speccheck.Check` focused
+  cases both report no collision.
+- Shared interface: the focused `spec.Collisions` case retains
+  `TouchFromContext`, and the `speccheck.Check` case reports one
+  `SC-WAVE-COLLISION`.
+- Instruction plus Verification: the focused `spec.Collisions` case reports
+  the shared path with `TouchFromVerification`.
+
+The Task's declared Verification command was not run; the Daemon owns that
+check and settlement.
