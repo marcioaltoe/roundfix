@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-09-25
-spec: null
+spec: 0176-baseline-follow-ups-and-the-incremental-tier
 reason: null
 ---
 
