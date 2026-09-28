@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0179-review-findings-with-evidence-and-no-unselected-providers
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -116,3 +116,54 @@ change cannot quietly add a request.
 - [_techspec.md](_techspec.md) — Unselected providers receive no request
 - `_prd.md` → Goal 1; Core Feature 1; Success Metric 1
 - `_techspec.md` → API Contract 6; Testing Approach 1
+
+## Result
+
+### Implementation
+
+- Scoped the CodeRabbit request instructions to a `coderabbit` Pre-PR Review
+  Policy or the legacy `fetch`, `watch` and `resolve` workflow. The scoped
+  section preserves every request instruction, states that `codex`, `claude`
+  and `none` are never asked for a CodeRabbit review by the pre-PR workflow,
+  and no longer contains `across these repositories`.
+- Labeled `review_source` in the command, usage and configuration guides and
+  in generated User and Project Config as the legacy PR-feedback source read
+  only by `fetch`, `watch` and `resolve`. Generated config still writes
+  `request_review: false` and no `pre_pr_review` key.
+- Added package-level contract tests for generated config scope and default
+  provider resolution, `roundfix review` under `codex` and `none` beside an
+  incoherent legacy CodeRabbit configuration, and CodeRabbit-free Delivery
+  Queue publication under every policy.
+- Regenerated `skills/roundfix` from the canonical skill with
+  `rtk make skills-sync`. `rtk make baseline-digests` reported that derived
+  artifacts already matched their canonical sources and changed no files.
+
+### Focused checks and acceptance evidence
+
+1. Skill scope: `rtk rg -n 'never asked for a CodeRabbit review'
+   .agents/skills/roundfix/SKILL.md` found the scoped statement;
+   `rtk rg -n 'across these repositories'
+   .agents/skills/roundfix/SKILL.md` returned no match (expected exit 1); and
+   `rtk diff -r .agents/skills/roundfix skills/roundfix` exited 0.
+2. Review and publication scope: `rtk env
+   GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 -run
+   '^(TestReviewUnderCodexIgnoresCodeRabbitConfiguration|TestReviewUnderNoneIgnoresCodeRabbitConfiguration|TestDeliveryPublicationRequestsNoCodeRabbitReview)$'
+   ./internal/cli` exited 0. The `none` case also asserted zero Agent runner
+   probes, prepares, prompts and session closes.
+3. Generated config: `rtk env GOCACHE=/tmp/roundfix-task01-gocache go test
+   -count=1 -run
+   '^(TestDefaultConfigScopesReviewSourceToPullRequestFeedback|TestDefaultConfigSelectsNoPrePRReviewProvider)$'
+   ./internal/config` exited 0. The loading assertion resolved provider
+   `codex` from source `default`.
+4. Legacy mirror: `rtk env GOCACHE=/tmp/roundfix-task01-gocache go test
+   -count=1 -run '^TestRunEnforcesReviewRequestCoherence$'
+   ./internal/preflight` exited 0 without changing the test or legacy
+   coherence code.
+5. Repository incremental check: the first sandboxed `rtk make
+   verify-incremental` exposed the preserved-skill wording contract and two
+   host process-table permission refusals. After restoring the scoped exact
+   request instruction, `TestReviewRequestContract` passed; a fresh
+   `rtk make verify-incremental` with host process-table access exited 0.
+
+The Task's authored `## Verification` command was not run; the Daemon owns
+that command and terminal settlement.

@@ -170,6 +170,7 @@ profiles:
         model: gpt-5.5
         reasoning_effort: xhigh
 
+# Legacy PR-feedback Review Source, read only by fetch, watch and resolve; it never selects or requests a pre-PR reviewer.
 review_source:
   name: coderabbit
   # false excludes CodeRabbit findings whose severity is nitpick.
@@ -261,7 +262,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | Key | Built-in default | Effect |
 | --- | --- | --- |
 | `pre_pr_review.provider` | `codex` | Selects the independent reviewer for a candidate before a Pull Request exists. Supported values are `codex`, `claude`, `coderabbit`, and `none`. Project Config takes precedence over User Config, which takes precedence over this built-in default; an absent key inherits and never means `none`. Declaring a provider invokes nothing by itself; `roundfix review` runs the selected policy over the current candidate. Publication and merge gating remain separate. |
-| `review_source.name` | `coderabbit` | Selects the Review Source. CodeRabbit is the only supported value. |
+| `review_source.name` | `coderabbit` | Selects the legacy PR-feedback Review Source, read only by `fetch`, `watch`, and `resolve`; it never selects or requests a pre-PR reviewer. CodeRabbit is the only supported value. |
 | `review_source.include_nitpicks` | `false` | Excludes CodeRabbit findings whose severity is `nitpick`. Set `true` to include them. |
 | `watch.until_clean` | `true` | Continues the watch cycle until its clean-outcome contract or another bound ends the Run. |
 | `watch.max_rounds` | `6` | Limits the number of review Rounds in one watch Run. |

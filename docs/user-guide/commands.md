@@ -21,7 +21,9 @@ installing, substitute `go run ./cmd/roundfix`.
 - Color is automatic in interactive terminals. `ROUNDFIX_COLOR=always` forces
   it, `ROUNDFIX_COLOR=never` or `NO_COLOR` disables it.
 - Supported Agent names are `codex`, `claude`, and `opencode`. The supported
-  Review Source is `coderabbit`.
+  Review Source is `coderabbit`. It is the legacy PR-feedback source, read only
+  by `fetch`, `watch`, and `resolve`, and never selects or requests a pre-PR
+  reviewer.
 - Commands that read the Run Database refuse another schema version without
   writing. An older database tells the operator to `run 'roundfix migrate'`;
   a newer database says that a newer Roundfix wrote it and tells the operator

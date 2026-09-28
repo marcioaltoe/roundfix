@@ -879,6 +879,7 @@ store:
   # Terminal Run journals older than this duration are eligible for pruning; 0 keeps everything.
   journal_retention: %s
 
+# Legacy PR-feedback Review Source, read only by fetch, watch and resolve; it never selects or requests a pre-PR reviewer.
 review_source:
   name: %s
   # false excludes CodeRabbit findings whose severity is nitpick.

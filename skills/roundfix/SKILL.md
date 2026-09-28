@@ -554,7 +554,13 @@ validation.
 
 ## A review only happens when it is asked for
 
-Automatic CodeRabbit review is **off** across these repositories, by deliberate
+These CodeRabbit request instructions apply only when the repository's Pre-PR
+Review Policy selects `coderabbit`, or when the legacy PR-feedback workflow is
+using `fetch`, `watch`, or `resolve` with CodeRabbit as its Review Source. A
+repository whose Pre-PR Review Policy selects `codex`, `claude`, or `none` is
+never asked for a CodeRabbit review by the pre-PR workflow.
+
+For that scoped case, automatic CodeRabbit review is **off** by deliberate
 configuration: automatic incremental review fires on every push and burns the
 hourly allowance while a review is still being worked. The consequence is the
 rule that is easiest to forget — **a pull request gets no review unless someone
