@@ -252,6 +252,10 @@ against observed state before retrying it, so a lost acknowledgement cannot
 create a duplicate pull request or merge. Publication requires the Spec's
 authorization record to grant `push`, `pull_request`, and `merge`.
 
+When an Implement Run ends `BudgetExceeded`, the queue parks its item as
+`run-budget-exceeded` with that Run's ID. `roundfix deliver retry <slug>` uses
+the recorded Run ID to carry settled Tasks forward before resuming the item.
+
 `deliver status` prints each item's Spec slug, stage, and blocker. `deliver
 stop` ends the detached owner; `deliver resume` restarts it from the persisted
 queue.

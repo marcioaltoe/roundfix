@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0177-runs-that-fit-their-budget-and-park-honestly
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -101,3 +101,60 @@ by an older Run.
 - `_prd.md` → Goal 3; Core Feature 3; Success Metric 3; Decisions.
 - `_techspec.md` → A budget stop parks as a Run outcome; API Contracts 4-5;
   Testing Approach 3; ADR-0020; ADR-0053; ADR-0113; ADR-0158.
+
+## Result
+
+### Implementation
+
+- Added the `budget-exceeded` delivery Run outcome and
+  `run-budget-exceeded` blocker. The Delivery Engine records the trimmed Run ID
+  before parking this outcome and continues with later queue items.
+- Changed the command-backed delivery workflow to read the newest Implement Run
+  before and after invoking `roundfix implement`. A direct decision function
+  maps only exit `1` plus a newly created `Unresolved` or `BudgetExceeded` Run;
+  clean exits retain the candidate head and every other shape remains an
+  executor failure.
+- Kept retry generic: it carries forward from the parked item's recorded Run
+  ID without a production change to `Retry`.
+- Documented the operator-visible blocker and retry behavior in the user guide
+  and canonical Roundfix skill, then regenerated the mirrored skill with
+  `make skills-sync` (exit `0`).
+
+### Focused checks
+
+- Red signal: the new focused delivery and CLI tests initially failed to build
+  because `RunOutcomeBudgetExceeded`, `BlockerRunBudgetExceeded`, and
+  `deliveryRunResult` did not exist.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1
+  ./internal/delivery -run
+  '^(TestDeliveryParksABudgetExceededRunAsARunOutcome|TestDeliveryContinuesAfterABudgetParkedItem|TestDeliveryRetryResumesABudgetParkedItemFromItsRun|TestDeliveryStillParksAnExecutorErrorAsADeliveryError)$'`
+  exited `0`.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1
+  ./internal/cli -run '^TestDeliveryRunResult'` exited `0`.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1
+  ./internal/delivery ./internal/cli` reached a green delivery package; the
+  first CLI run was environment-blocked when two unrelated force-stop tests
+  could not inspect the process table. Rerunning the full CLI package with
+  process-table permission exited `0` in `76.613s`.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache make verify-incremental`
+  exited `0`, including repository-wide `go vet`, `go test`, skill checks, and
+  the build.
+- The Task's declared `## Verification` command was not run; the Daemon owns
+  that gate.
+
+### Acceptance evidence
+
+- Budget parking and queue continuation: focused tests
+  `TestDeliveryParksABudgetExceededRunAsARunOutcome` and
+  `TestDeliveryContinuesAfterABudgetParkedItem` exercised the real queue store
+  and observed the `run-budget-exceeded` blocker, trimmed Run ID, and merged
+  next item.
+- Retry carry-forward: `TestDeliveryRetryResumesABudgetParkedItemFromItsRun`
+  observed `ItemRecovery.CarryForward` receive the parked item's recorded Run
+  ID.
+- Executor-error preservation:
+  `TestDeliveryStillParksAnExecutorErrorAsADeliveryError` observed the blocker
+  prefix `delivery-error: run Implement executor:`.
+- CLI decision boundary: the six `TestDeliveryRunResult...` tests directly
+  exercised clean, new `BudgetExceeded`, new `Unresolved`, failed, no-new-Run,
+  and pre-existing-Run cases without spawning a process.

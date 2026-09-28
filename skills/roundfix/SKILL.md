@@ -317,6 +317,10 @@ lost acknowledgement from creating a second pull request or merge. Before
 publication, the Spec authorization record must grant all three operations:
 `push`, `pull_request`, and `merge`.
 
+When an Implement Run ends `BudgetExceeded`, the queue parks its item as
+`run-budget-exceeded` with that Run's ID. `roundfix deliver retry <slug>` uses
+the recorded Run ID to carry settled Tasks forward before resuming the item.
+
 Use `roundfix deliver retry <slug>` to return one parked item to the queue.
 For an active Spec, Roundfix first carries the settled Tasks of the item's Run
 to the item branch. The item then re-enters at `running` when any Task is
