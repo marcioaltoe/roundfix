@@ -1,7 +1,8 @@
 ---
-status: pending
+status: done
 created_at: 2026-09-14
-updated_at: 2026-09-25
+updated_at: 2026-09-28
+absorbed_by: 0178-a-qa-audit-across-every-run-of-a-spec
 ---
 
 # QA gate — The mechanical stage audits only the current Run's Task commits (2026-09-14)
@@ -51,3 +52,27 @@ the commits the stage never received, and routes the gap here.
 ## Addendum — 2026-09-25 — Revalidated in triage
 
 Revalidated against main 7a9b6ec6: still holds: the audit range is plan.HeadSHA..HEAD and the report has no commit column (internal/daemon/task_engine.go, internal/speccheck/report.go). Ranked in the 2026-09-25 triage priority list.
+
+## Addendum — 2026-09-28 — Adopted by Spec 0178
+
+[0178-a-qa-audit-across-every-run-of-a-spec](../_prd.md) adopts this Finding.
+Fresh evidence from 2026-09-25 to 2026-09-28: Specs 0170 to 0176 each took two
+to four Runs (Task Carry-Forward, fast-forwarded item branches, corrective
+Tasks), so Task commits from earlier Runs are the common case. Spec 0172's
+retained history (`256ad156..ebac7cbe`) shows task_01 to task_04 committed
+before `0532c0fe chore: merge main into 0172`, then a grant widening
+(`c0818081 docs: grant the coverage record to 0172 task_05`) committed on the
+Spec branch inside the consuming pull request, then task_05 and the corrective
+task_07. The 0172 authorization audit (`QA-AUTH-PATHS`) caught its out-of-grant
+file only because that file was in the current Run.
+
+The Spec decides the two questions this Finding routed. The mechanical stage
+reads every Task commit between the Delivery Base (the merge base of the
+audited head and the repository default branch) and the audited head, every
+commit of each Task rather than only the newest, and it reads each grant at the
+Delivery Base. That is the documented rule that a grant must land in the
+delivery target's ancestry before the consuming delivery. The authorization
+audit table gains the commit each row audited, so the gate audits by command
+only what the stage did not. The source moves once into that Spec's reference
+index; its lifecycle status records adoption, not implementation or QA
+completion.
