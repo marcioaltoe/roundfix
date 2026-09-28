@@ -294,6 +294,87 @@ WHERE git_root = ? AND owner_pid = ? AND owner_identity = ?`, gitRoot, pid, iden
 	return released, err
 }
 
+// ReleaseIdleDeliveryQueueOwner clears the caller's owner claim only when no
+// item can advance. The owner check, idle check, and release share one write
+// transaction so a concurrent retry cannot be stranded after the owner exits.
+func (store *Store) ReleaseIdleDeliveryQueueOwner(
+	ctx context.Context,
+	gitRoot string,
+	pid int,
+	identity string,
+) (bool, error) {
+	gitRoot = strings.TrimSpace(gitRoot)
+	identity = strings.TrimSpace(identity)
+	if gitRoot == "" {
+		return false, errors.New("release idle Delivery Queue owner: Git root is required")
+	}
+	if pid < 1 {
+		return false, errors.New("release idle Delivery Queue owner: PID is required")
+	}
+	if identity == "" {
+		return false, errors.New("release idle Delivery Queue owner: process identity is required")
+	}
+
+	released := false
+	err := store.withWriteTx(ctx, "idle Delivery Queue owner release", func(tx *sql.Tx) error {
+		var storedPID sql.NullInt64
+		var storedIdentity string
+		if err := tx.QueryRowContext(ctx, `
+SELECT owner_pid, owner_identity
+FROM delivery_queues
+WHERE git_root = ?`, gitRoot).Scan(&storedPID, &storedIdentity); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf("release idle Delivery Queue owner: queue for repository %q does not exist", gitRoot)
+			}
+			return fmt.Errorf("read Delivery Queue owner: %w", err)
+		}
+		recordedPID := 0
+		if storedPID.Valid {
+			recordedPID = int(storedPID.Int64)
+		}
+		if recordedPID != pid || storedIdentity != identity {
+			return fmt.Errorf(
+				"release idle Delivery Queue owner: recorded owner is PID %d with identity %q",
+				recordedPID,
+				storedIdentity,
+			)
+		}
+
+		var advanceable int
+		if err := tx.QueryRowContext(ctx, `
+SELECT COUNT(*)
+FROM delivery_queue_items
+WHERE git_root = ? AND stage NOT IN (?, ?)`,
+			gitRoot,
+			DeliveryStageMerged,
+			DeliveryStageParked,
+		).Scan(&advanceable); err != nil {
+			return fmt.Errorf("inspect Delivery Queue for advanceable items: %w", err)
+		}
+		if advanceable > 0 {
+			return nil
+		}
+
+		result, err := tx.ExecContext(ctx, `
+UPDATE delivery_queues
+SET owner_pid = NULL, owner_identity = ''
+WHERE git_root = ? AND owner_pid = ? AND owner_identity = ?`, gitRoot, pid, identity)
+		if err != nil {
+			return fmt.Errorf("clear idle Delivery Queue owner: %w", err)
+		}
+		affected, err := result.RowsAffected()
+		if err != nil {
+			return fmt.Errorf("read idle Delivery Queue owner release result: %w", err)
+		}
+		if affected != 1 {
+			return errors.New("clear idle Delivery Queue owner: owner changed during transaction")
+		}
+		released = true
+		return nil
+	})
+	return released, err
+}
+
 // RecordDeliveryQueueItemWorktree records the first item branch and worktree
 // together and returns the durable pair on retries.
 func (store *Store) RecordDeliveryQueueItemWorktree(
@@ -461,6 +542,119 @@ WHERE git_root = ? AND spec_slug = ?`,
 		}
 		return nil
 	})
+}
+
+// RetryDeliveryQueueItem moves one parked item back to an advanceable stage
+// only when its persisted blocker still matches the operator's observation.
+func (store *Store) RetryDeliveryQueueItem(
+	ctx context.Context,
+	gitRoot string,
+	item DeliveryQueueItem,
+	parkedBlocker string,
+) (int, string, error) {
+	gitRoot = strings.TrimSpace(gitRoot)
+	item.SpecSlug = strings.TrimSpace(item.SpecSlug)
+	item.RunID = strings.TrimSpace(item.RunID)
+	parkedBlocker = strings.TrimSpace(parkedBlocker)
+	if gitRoot == "" {
+		return 0, "", errors.New("retry Delivery Queue item: Git root is required")
+	}
+	if item.SpecSlug == "" {
+		return 0, "", errors.New("retry Delivery Queue item: Spec slug is required")
+	}
+	if item.Position < 0 {
+		return 0, "", fmt.Errorf("retry Delivery Queue item %q: position must not be negative", item.SpecSlug)
+	}
+	if !retryDeliveryStage(item.Stage) {
+		return 0, "", fmt.Errorf(
+			"retry Delivery Queue item %q: target stage %q is not retryable",
+			item.SpecSlug,
+			item.Stage,
+		)
+	}
+	commits := item.CandidateCommits
+	if commits == nil {
+		commits = []string{}
+	}
+	encodedCommits, err := json.Marshal(commits)
+	if err != nil {
+		return 0, "", fmt.Errorf("encode candidate commits for Delivery Queue item %q: %w", item.SpecSlug, err)
+	}
+
+	ownerPID := 0
+	ownerIdentity := ""
+	err = store.withWriteTx(ctx, fmt.Sprintf("Delivery Queue item %q retry", item.SpecSlug), func(tx *sql.Tx) error {
+		var storedSpecSlug string
+		var storedStage DeliveryStage
+		var storedBlocker string
+		if err := tx.QueryRowContext(ctx, `
+SELECT spec_slug, stage, blocker
+FROM delivery_queue_items
+WHERE git_root = ? AND position = ?`, gitRoot, item.Position).Scan(
+			&storedSpecSlug,
+			&storedStage,
+			&storedBlocker,
+		); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf(
+					"retry Delivery Queue item %q: item at position %d does not exist",
+					item.SpecSlug,
+					item.Position,
+				)
+			}
+			return fmt.Errorf("read Delivery Queue item %q before retry: %w", item.SpecSlug, err)
+		}
+		if storedSpecSlug != item.SpecSlug {
+			return fmt.Errorf(
+				"retry Delivery Queue item %q: stored item at position %d is %q",
+				item.SpecSlug,
+				item.Position,
+				storedSpecSlug,
+			)
+		}
+		if storedStage != DeliveryStageParked || storedBlocker != parkedBlocker {
+			return fmt.Errorf(
+				"retry Delivery Queue item %q: stored item has stage %q and blocker %q; want stage %q and blocker %q",
+				item.SpecSlug,
+				storedStage,
+				storedBlocker,
+				DeliveryStageParked,
+				parkedBlocker,
+			)
+		}
+
+		if _, err := tx.ExecContext(ctx, `
+UPDATE delivery_queue_items
+SET stage = ?, blocker = '', run_id = ?, candidate_commits = ?
+WHERE git_root = ? AND position = ?`,
+			item.Stage,
+			item.RunID,
+			string(encodedCommits),
+			gitRoot,
+			item.Position,
+		); err != nil {
+			return fmt.Errorf("retry Delivery Queue item %q: %w", item.SpecSlug, err)
+		}
+
+		var storedOwnerPID sql.NullInt64
+		if err := tx.QueryRowContext(ctx, `
+SELECT owner_pid, owner_identity
+FROM delivery_queues
+WHERE git_root = ?`, gitRoot).Scan(&storedOwnerPID, &ownerIdentity); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf("retry Delivery Queue item %q: queue does not exist", item.SpecSlug)
+			}
+			return fmt.Errorf("read Delivery Queue owner after retrying item %q: %w", item.SpecSlug, err)
+		}
+		if storedOwnerPID.Valid {
+			ownerPID = int(storedOwnerPID.Int64)
+		}
+		return nil
+	})
+	if err != nil {
+		return 0, "", err
+	}
+	return ownerPID, ownerIdentity, nil
 }
 
 func (store *Store) RecordDeliveryActionIntent(
@@ -652,6 +846,15 @@ func validDeliveryStage(stage DeliveryStage) bool {
 		DeliveryStageMerging,
 		DeliveryStageMerged,
 		DeliveryStageParked:
+		return true
+	default:
+		return false
+	}
+}
+
+func retryDeliveryStage(stage DeliveryStage) bool {
+	switch stage {
+	case DeliveryStageRunning, DeliveryStageReviewing, DeliveryStageGating, DeliveryStageChecking:
 		return true
 	default:
 		return false
