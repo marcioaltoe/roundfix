@@ -201,6 +201,7 @@ adoption again. Without a stored value, the embedded catalog suggests:
 | --- | --- |
 | Generated language | `English` |
 | Verification gate | `rtk make verify` |
+| Incremental Verification | `rtk make verify-incremental` |
 | Identifier strategy | `{"kind":"uuid-v7"}` |
 | HTTP contract | `Post-only` |
 | Better Auth provider exception | `GET` and `POST` under `/api/auth/*`, owned by Better Auth |
@@ -531,6 +532,10 @@ repository owner's answers:
     {
       "id": "verification.gate",
       "value": "make verify"
+    },
+    {
+      "id": "verification.incremental",
+      "value": "make verify-incremental"
     }
   ]
 }
@@ -544,6 +549,14 @@ decision. Roundfix emits no partial Plan and mutates no repository file.
 Invalid discriminator fields, an empty repository-defined rule, the wrong
 Better Auth owner, unsupported or duplicate methods, or a conflict with
 `http.contract` refuse planning the same way.
+
+`verification.gate` selects the complete repository Verification, while
+`verification.incremental` selects the fast local command generated guidance
+names for Task checks. Updating a Setup Manifest that predates the incremental
+decision exits `3`, names `verification.incremental`, and writes nothing. After
+the repository declares the suggested command locally, rerun with
+`--adopt-suggested` to record `rtk make verify-incremental`; a later update uses
+the recorded decision without that flag.
 
 Preservation adds one `readoption` object containing the current
 `sourceBaseline` identity and an ordered `dispositions` array. Each disposition

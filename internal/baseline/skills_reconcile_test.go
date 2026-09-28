@@ -5,6 +5,7 @@
 package baseline
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -116,6 +117,63 @@ func TestReconcileSkillsLockBlocksARequiredRemovedSkill(t *testing.T) {
 		t.Fatalf("blocked payload contains an applicable plan: %+v", payload)
 	}
 	assertVisibleTree(t, repo, before)
+}
+
+func TestReconcileSkillsLockRequiredRemovedPayloadMarshalsAnEmptyPlan(t *testing.T) {
+	t.Parallel()
+
+	repo, source, revision, _ := newSkillsReconcileFixture(t, map[string]string{
+		"skills/other/SKILL.md": "# other\n",
+	})
+	writeInspectionFile(t, repo, skillsLockPath, `{
+  "version": 1,
+  "skills": {
+    "coding-guidelines": {
+      "source": "example/skills",
+      "skillPath": "skills/coding-guidelines/SKILL.md"
+    },
+    "obsolete": {
+      "source": "example/skills",
+      "skillPath": "skills/obsolete/SKILL.md"
+    }
+  }
+}
+`)
+
+	payload, err := ReconcileSkillsLock(context.Background(), SkillsReconcileRequest{
+		Repository:       repo,
+		ProfileID:        "go-cli-tui",
+		SourceRepository: "example/skills",
+		Commit:           revision,
+		SourceDir:        source,
+	})
+	var restoreErr *SkillsRestoreError
+	if !errors.As(err, &restoreErr) ||
+		restoreErr.Category != SkillsRestoreAction ||
+		restoreErr.Finding.Code != "reconcile.required-removed" {
+		t.Fatalf("error = %v, want action-required reconcile.required-removed", err)
+	}
+	if payload.OK || payload.PlanDigest != nil || payload.PlannedChanges == nil {
+		t.Fatalf("blocked payload = %+v", payload)
+	}
+	for _, skill := range payload.Skills {
+		if skill.LockEdit != nil {
+			t.Fatalf("blocked skill contains a lock edit: %+v", skill)
+		}
+	}
+
+	encoded, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal blocked payload: %v", err)
+	}
+	for _, want := range [][]byte{
+		[]byte(`"plannedChanges":[]`),
+		[]byte(`"planDigest":null`),
+	} {
+		if !bytes.Contains(encoded, want) {
+			t.Fatalf("blocked payload missing %s: %s", want, encoded)
+		}
+	}
 }
 
 func TestReconcileSkillsLockUnreachableSourceRemovesNothing(t *testing.T) {

@@ -2659,6 +2659,8 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	if accepted {
 		qaStatus = spec.StatusCompleted
 		qaReason = ""
+	} else if eligibilityErr != nil && verdict == qaVerdictUnreadable {
+		qaReason = fmt.Sprintf("QA verdict unreadable: %v", eligibilityErr)
 	} else if eligibilityErr != nil && (verdict == spec.VerdictPass || verdict == spec.VerdictPartial) {
 		qaReason = fmt.Sprintf("QA verdict %s not accepted: %v", verdict, eligibilityErr)
 	}
@@ -3140,6 +3142,7 @@ func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string, bool, erro
 	default:
 		fmt.Fprintf(engine.deps.Progress, "QA Report verdict unreadable: %v\n", err)
 		verdict = qaVerdictUnreadable
+		eligibilityErr = err
 	}
 	reportPath := ""
 	if newest, err := spec.NewestQAReport(plan.Spec.Dir); err == nil {

@@ -620,7 +620,7 @@ func TestExecutableVerificationCommandRequiresLocalDeclaration(t *testing.T) {
 		t.Fatalf("selected Verification divergence = %+v, found=%v", divergence, ok)
 	}
 
-	writeProfileAlignmentFile(t, repository, "Makefile", "verify:\n\t@true\n")
+	writeProfileAlignmentFile(t, repository, "Makefile", "verify:\n\t@true\nverify-incremental:\n\t@true\n")
 	resolved, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
 		ProfileID: "standard-typescript-monorepo",
 		Decisions: standardTypeScriptDecisions("make verify"),
@@ -657,6 +657,7 @@ func TestProfileDeclaresBothVerificationTiers(t *testing.T) {
 		{"id": "verification.build", "kind": "build", "tool": "Turborepo", "command": "bun run build"},
 		{"id": "verification.workspace", "kind": "workspace", "tool": "Bun", "command": "bun run verify"},
 	}
+	catalog := loadProfileAlignmentCatalog(t)
 
 	newRepository := func(t *testing.T) string {
 		t.Helper()
@@ -673,55 +674,29 @@ func TestProfileDeclaresBothVerificationTiers(t *testing.T) {
 		}, "\n")+"\n")
 		return repository
 	}
-	resolve := func(t *testing.T, repository, gate string, catalog *Catalog) ProfileAlignment {
+	resolve := func(t *testing.T, repository, gate, incremental string, includeIncremental bool) ProfileAlignment {
 		t.Helper()
+		decisions := standardTypeScriptDecisions(gate)
+		for index := range decisions {
+			if decisions[index].ID == incrementalDecisionID {
+				if includeIncremental {
+					decisions[index].Value = incremental
+				} else {
+					decisions = append(decisions[:index], decisions[index+1:]...)
+				}
+				break
+			}
+		}
 		alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
 			ProfileID: profileID,
-			Decisions: standardTypeScriptDecisions(gate),
+			Decisions: decisions,
 		}, catalog)
 		if err != nil {
 			t.Fatalf("resolve verification tiers: %v", err)
 		}
 		return alignment
 	}
-	cloneCatalog := func(t *testing.T, source *Catalog) *Catalog {
-		t.Helper()
-		cloned := *source
-		cloned.profiles = make(map[string]document, len(source.profiles))
-		for id, profile := range source.profiles {
-			cloned.profiles[id] = profile
-		}
-		profile, ok := source.profiles[profileID]
-		if !ok {
-			t.Fatalf("catalog has no profile %q", profileID)
-		}
-		cloned.profiles[profileID] = document(cloneJSONMap(profile))
-		return &cloned
-	}
-	setIncrementalCommand := func(t *testing.T, catalog *Catalog, command string) {
-		t.Helper()
-		for _, verification := range objectsOrEmpty(catalog.profiles[profileID]["verification"]) {
-			id, _ := stringValue(verification, "id")
-			if id == incrementalDecisionID {
-				verification["command"] = command
-				return
-			}
-		}
-		t.Fatalf("profile %q has no %q decision", profileID, incrementalDecisionID)
-	}
-	removeIncrementalDecision := func(catalog *Catalog) {
-		verification := objectsOrEmpty(catalog.profiles[profileID]["verification"])
-		filtered := make([]any, 0, len(verification)-1)
-		for _, entry := range verification {
-			id, _ := stringValue(entry, "id")
-			if id != incrementalDecisionID {
-				filtered = append(filtered, map[string]any(entry))
-			}
-		}
-		catalog.profiles[profileID]["verification"] = filtered
-	}
 
-	catalog := loadProfileAlignmentCatalog(t)
 	declarations := objectsOrEmpty(catalog.profiles[profileID]["verification"])
 	if len(declarations) != len(wantExisting)+1 {
 		t.Fatalf("verification declarations = %v, want five existing decisions and %q", declarations, incrementalDecisionID)
@@ -739,7 +714,7 @@ func TestProfileDeclaresBothVerificationTiers(t *testing.T) {
 	}
 
 	repository := newRepository(t)
-	baseline := resolve(t, repository, completeCommand, catalog)
+	baseline := resolve(t, repository, completeCommand, incrementalCommand, true)
 	complete, ok := findVerificationProjection(baseline.Verification, "verification.gate")
 	if !ok || complete.Command != completeCommand ||
 		complete.Classification != VerificationRepositoryCommand ||
@@ -749,21 +724,19 @@ func TestProfileDeclaresBothVerificationTiers(t *testing.T) {
 	}
 	incremental, ok := findVerificationProjection(baseline.Verification, incrementalDecisionID)
 	if !ok || incremental.Command != incrementalCommand || incremental.Role != "incremental" ||
-		incremental.Tool != "Make" || incremental.Classification != VerificationProfileExpectation ||
+		incremental.Classification != VerificationRepositoryCommand ||
 		!incremental.RepositoryExecutable || incremental.DeclarationPath != "Makefile" ||
 		!strings.HasPrefix(incremental.DeclarationDigest, "sha256:") {
 		t.Fatalf("incremental verification projection = %+v, found=%v", incremental, ok)
 	}
 
-	changedComplete := resolve(t, repository, alternateComplete, catalog)
+	changedComplete := resolve(t, repository, alternateComplete, incrementalCommand, true)
 	unchangedIncremental, ok := findVerificationProjection(changedComplete.Verification, incrementalDecisionID)
 	if !ok || !reflect.DeepEqual(unchangedIncremental, incremental) {
 		t.Fatalf("incremental projection changed with complete tier: got %+v, want %+v", unchangedIncremental, incremental)
 	}
 
-	changedIncrementalCatalog := cloneCatalog(t, catalog)
-	setIncrementalCommand(t, changedIncrementalCatalog, alternateIncremental)
-	changedIncremental := resolve(t, repository, completeCommand, changedIncrementalCatalog)
+	changedIncremental := resolve(t, repository, completeCommand, alternateIncremental, true)
 	unchangedComplete, ok := findVerificationProjection(changedIncremental.Verification, "verification.gate")
 	if !ok || !reflect.DeepEqual(unchangedComplete, complete) {
 		t.Fatalf("complete projection changed with incremental tier: got %+v, want %+v", unchangedComplete, complete)
@@ -773,20 +746,11 @@ func TestProfileDeclaresBothVerificationTiers(t *testing.T) {
 		t.Fatalf("changed incremental projection = %+v, found=%v", alternate, ok)
 	}
 
-	absentCatalog := cloneCatalog(t, catalog)
-	removeIncrementalDecision(absentCatalog)
-	absent := resolve(t, repository, completeCommand, absentCatalog)
-	if projection, exists := findVerificationProjection(absent.Verification, incrementalDecisionID); exists {
-		t.Fatalf("absent incremental decision produced projection %+v", projection)
-	}
-	wantAbsent := make([]VerificationProjection, 0, len(baseline.Verification)-1)
-	for _, projection := range baseline.Verification {
-		if projection.ID != incrementalDecisionID {
-			wantAbsent = append(wantAbsent, projection)
-		}
-	}
-	if !reflect.DeepEqual(absent.Verification, wantAbsent) {
-		t.Fatalf("verification projections with incremental tier absent = %+v, want %+v", absent.Verification, wantAbsent)
+	absent := resolve(t, repository, completeCommand, "", false)
+	profileExpectation, exists := findVerificationProjection(absent.Verification, incrementalDecisionID)
+	if !exists || profileExpectation.Classification != VerificationProfileExpectation ||
+		profileExpectation.Command != incrementalCommand || profileExpectation.Role != "incremental" {
+		t.Fatalf("incremental Profile expectation without decision = %+v, found=%v", profileExpectation, exists)
 	}
 }
 
@@ -809,7 +773,7 @@ func TestPortableVerificationRoleMapping(t *testing.T) {
 		t.Helper()
 		repository := newAlignedTypeScriptRepository(t)
 		writeProfileAlignmentFile(t, repository, "package.json", typeScriptPackageJSON(true, false))
-		writeProfileAlignmentFile(t, repository, "Makefile", "verify:\n\t@touch "+executionMarker+"\n")
+		writeProfileAlignmentFile(t, repository, "Makefile", "verify:\n\t@touch "+executionMarker+"\nverify-incremental:\n\t@true\n")
 		return repository
 	}
 	resolve := func(t *testing.T, repository string, mappings map[string]string) ProfileAlignment {
@@ -1617,7 +1581,7 @@ func newAlignedTypeScriptRepository(t *testing.T) string {
 	writeProfileAlignmentFile(t, root, "packages/frontend/package.json", `{"name":"frontend"}`)
 	writeProfileAlignmentFile(t, root, "packages/backend/package.json", `{"name":"backend","dependencies":{"postgres":"latest","drizzle-orm":"latest"}}`)
 	writeProfileAlignmentFile(t, root, "DATABASE.md", "# Database\n\nPostgreSQL is the repository database contract.\n")
-	writeProfileAlignmentFile(t, root, "Makefile", "verify:\n\t@true\n")
+	writeProfileAlignmentFile(t, root, "Makefile", "verify:\n\t@true\nverify-incremental:\n\t@true\n")
 	writeProfileAlignmentFile(t, root, ".agents/skills/context7/SKILL.md", "# Context7\n")
 	writeProfileAlignmentFile(t, root, ".agents/skills/exa-web-search/SKILL.md", "# Exa\n")
 	return root
@@ -1656,6 +1620,7 @@ func standardTypeScriptDecisions(verification string) []DecisionValue {
 	return []DecisionValue{
 		{ID: "language.generated", Value: "English"},
 		{ID: "verification.gate", Value: verification},
+		{ID: "verification.incremental", Value: "make verify-incremental"},
 		{ID: "branch.prefix", Value: "ma/"},
 		{ID: "identifier.strategy", Value: map[string]any{"kind": "uuid-v7"}},
 		{ID: "http.contract", Value: map[string]any{"mode": "REST"}},

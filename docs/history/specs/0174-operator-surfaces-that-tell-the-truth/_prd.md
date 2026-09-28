@@ -1,9 +1,12 @@
 ---
 spec: 0174-operator-surfaces-that-tell-the-truth
-status: active
+status: archived
 created: 2026-09-28
 surfaces: [backend, cli, docs]
+archived: "2026-09-28"
+source_slug: 0174-operator-surfaces-that-tell-the-truth
 ---
+
 
 # Operator surfaces that tell the truth
 

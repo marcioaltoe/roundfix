@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0174-operator-surfaces-that-tell-the-truth
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -58,3 +58,64 @@ complexity: high
 - [_techspec.md](_techspec.md) — The QA Report front matter
 - `_prd.md` → Goal 4; Core Feature 3; Success Metric 3
 - `_techspec.md` → API Contract 6; Testing Approach 3
+
+## Result
+
+### Implementation
+
+- `readQAReport` now uses a QA-specific, line-exact front-matter splitter that
+  matches the derived Verification's opening, closing, column-one `verdict:`
+  and non-empty-value rules. It returns the required `QAReportError` causes,
+  preserves YAML decoding and body handling, and leaves the shared
+  `splitFrontmatter` unchanged.
+- QA settlement now carries an unreadable report's read error into the failed
+  Task reason as `QA verdict unreadable: <cause>` while preserving the existing
+  reasons for missing, pending, fail and ineligible pass/partial reports. The QA
+  Report still reaches the dedicated commit path with verdict `unreadable`.
+- Parser, archive-corpus, Daemon seeded-report, `qa-report accept`, and archive
+  regressions cover the accepted and refused shapes. The CLI refusal tests also
+  prove that the report and active Spec remain in place.
+- The QA gate skill, command guide and glossary now state the single seeded
+  front-matter rule and the unreadable/refused behavior. `make skills-sync`
+  regenerated the shipped skill mirror; `make baseline-digests` reported that
+  all derived digests already matched.
+
+### Focused checks
+
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run
+  '^(TestQAReportReaderAgreesWithTheDerivedVerification|TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive|TestReadQAReportRefusesAnEmptyFrontMatter|TestReadQAReportRefusesAMissingOpeningLine|TestReadQAReportRefusesAnUnclosedFrontMatter|TestReadQAReportRefusesADuplicatedVerdictLine|TestReadQAReportReadsAWellFormedFrontMatter|TestArchivedPassCorpusRemainsArchiveEligible)$'
+  ./internal/spec` — passed.
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run
+  '^(TestQASettlementRefusesAnEmptyFrontMatter|TestQASettlementAcceptsAFilledSeededFrontMatter|TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport)$'
+  ./internal/daemon` — passed.
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run
+  '^(TestQAReportAcceptRefusesAnEmptyFrontMatter|TestArchiveRefusesAnEmptyFrontMatter)$'
+  ./internal/cli` — passed.
+- `make skills-sync` — passed; `.agents/skills/qa-gate` and
+  `skills/qa-gate` are byte-identical.
+- `GOCACHE=/tmp/roundfix-task03-gocache make baseline-digests` — passed and
+  reported no derived changes.
+- `git diff --check` and `git diff --exit-code --
+  internal/spec/archive_test.go` — passed; the required archived-pass test file
+  remains byte-identical.
+
+### Acceptance evidence
+
+- The named fixture table and every archived QA Report body produced the same
+  readability result through `readQAReport` and the rendered derived
+  Verification command; the well-formed report retained verdict `pass` and its
+  exact body.
+- A QA Agent that inserted a second opening marker settled the gate `failed`
+  with verdict `unreadable` and a reason naming `QA Report front matter is
+  empty`; both public refusal commands exited non-zero without moving or
+  rewriting their inputs.
+- Filling the Daemon seed in place with `pass` and a Results row settled the QA
+  Task `completed`, and the unchanged archived-pass corpus eligibility test
+  passed.
+
+### Follow-ups
+
+- Six legacy archived QA Report basenames predate the derived Verification's
+  date/sequence filename selector. Their report bytes are included in the
+  front-matter corpus check under a valid sole-report fixture name; reconciling
+  legacy filename selection is outside this Task's front-matter-only slice.

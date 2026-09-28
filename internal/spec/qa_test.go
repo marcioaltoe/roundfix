@@ -743,7 +743,7 @@ func TestQAVerdictReportsUnreadableReports(t *testing.T) {
 		{
 			name:    "no frontmatter",
 			content: "# QA Report — Demo\n",
-			wantMsg: "frontmatter",
+			wantMsg: `front matter must open with a "---" first line`,
 		},
 		{
 			name: "no verdict field",

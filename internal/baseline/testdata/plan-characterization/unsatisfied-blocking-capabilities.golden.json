@@ -27,6 +27,7 @@
       "decisions": [
         "language.generated",
         "verification.gate",
+        "verification.incremental",
         "branch.prefix",
         "spec.scaffold",
         "domain.layout",
@@ -65,7 +66,7 @@
         "template.root.tui-surface"
       ],
       "values": {},
-      "digest": "sha256:74c30a138531e9d9f509cb8c9eeda13984ac4bb348cbb66a27c53f0754246569"
+      "digest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65"
     },
     "decisions": [
       {
@@ -103,6 +104,10 @@
       {
         "id": "verification.gate",
         "value": "make verify"
+      },
+      {
+        "id": "verification.incremental",
+        "value": "make verify-incremental"
       }
     ],
     "capabilities": [
@@ -259,7 +264,16 @@
         "classification": "repository-command",
         "repositoryExecutable": true,
         "declarationPath": "Makefile",
-        "declarationDigest": "sha256:93bad285a2319c6daef756f4c0686fb4cbd749b0f7a2890721d5d475d8142ad3"
+        "declarationDigest": "sha256:107d02ed69b69a37a4cea340713021b8f470e8e39f82192f61c7ca7a64124abd"
+      },
+      {
+        "id": "verification.incremental",
+        "role": "incremental",
+        "command": "make verify-incremental",
+        "classification": "repository-command",
+        "repositoryExecutable": true,
+        "declarationPath": "Makefile",
+        "declarationDigest": "sha256:107d02ed69b69a37a4cea340713021b8f470e8e39f82192f61c7ca7a64124abd"
       }
     ]
   },

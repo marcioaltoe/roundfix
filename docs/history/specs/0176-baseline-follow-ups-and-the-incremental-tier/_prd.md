@@ -1,9 +1,12 @@
 ---
 spec: 0176-baseline-follow-ups-and-the-incremental-tier
-status: active
+status: archived
 created: 2026-09-28
 surfaces: [backend, cli, docs]
+archived: "2026-09-28"
+source_slug: 0176-baseline-follow-ups-and-the-incremental-tier
 ---
+
 
 # Baseline follow-ups and the incremental tier
 

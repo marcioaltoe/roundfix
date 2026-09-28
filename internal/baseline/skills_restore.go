@@ -385,11 +385,6 @@ func buildSkillsRestorePlan(
 			err,
 		)
 	}
-	lock, err := loadSkillsLock(filepath.Join(root, skillsLockPath))
-	if err != nil {
-		return restorePlan{}, err
-	}
-
 	groups := make(map[restoreProvenance][]restoreSkillContract)
 	for _, contract := range selected {
 		key := restoreProvenance{
@@ -446,6 +441,10 @@ func buildSkillsRestorePlan(
 			}
 			acquired[name] = files
 		}
+	}
+	lock, err := loadSkillsLock(filepath.Join(root, skillsLockPath))
+	if err != nil {
+		return restorePlan{}, err
 	}
 
 	lockAfter := lock.clone()
@@ -550,6 +549,7 @@ func buildSkillsRestorePlan(
 		digest,
 		skillPlans,
 		sourceFiles,
+		lock.before,
 		lockAfterBytes,
 	)
 	if err != nil {
@@ -1021,6 +1021,7 @@ func buildRestoreTransactionDocument(
 	digest string,
 	skills []RestoreSkill,
 	sourceFiles map[string][]restoreFile,
+	lockBefore []byte,
 	lockAfter []byte,
 ) (PlanDocument, error) {
 	postimages := make(map[string]Postimage)
@@ -1089,6 +1090,9 @@ func buildRestoreTransactionDocument(
 				err,
 			)
 		}
+		if relative == skillsLockPath && !plannedSkillsLockMatchesState(lockBefore, state) {
+			return PlanDocument{}, skillsLockChangedDuringPlanError()
+		}
 		preimages[index] = preimageFromTransactionState(relative, state)
 	}
 	orderedPostimages := make([]Postimage, len(paths))
@@ -1101,6 +1105,25 @@ func buildRestoreTransactionDocument(
 		Postimages: orderedPostimages,
 		PlanDigest: "sha256:" + digest,
 	}, nil
+}
+
+func plannedSkillsLockMatchesState(planned []byte, state transactionFileState) bool {
+	if planned == nil {
+		return !state.Exists && state.Kind == PreimageMissing
+	}
+	return state.Exists &&
+		state.Kind == PreimageRegular &&
+		state.ContentIdentity == transactionContentIdentity(planned)
+}
+
+func skillsLockChangedDuringPlanError() error {
+	return restoreError(
+		SkillsRestoreAction,
+		"lock.changed-during-plan",
+		"skills-lock.json changed during planning; the plan no longer describes it.",
+		"Rerun the preview and confirm its new Plan Digest.",
+		errors.New("skills lock changed during planning"),
+	)
 }
 
 func preimageFromTransactionState(relative string, state transactionFileState) Preimage {

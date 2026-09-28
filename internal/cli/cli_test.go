@@ -491,6 +491,156 @@ func TestRunCommandHelp(t *testing.T) {
 	}
 }
 
+func TestCommandWantsHelpReadsOnlyArgumentPositions(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name string
+		args []string
+		want bool
+	}{
+		{name: "flag value", args: []string{"--bogus", "help"}, want: false},
+		{name: "spec value", args: []string{"--spec", "help"}, want: false},
+		{name: "trailing positional", args: []string{"some-slug", "help"}, want: false},
+		{name: "help after terminator", args: []string{"--", "--help"}, want: false},
+		{name: "leading help", args: []string{"help"}, want: true},
+		{name: "subcommand handoff", args: []string{"list", "help"}, want: false},
+		{name: "dash help after argument", args: []string{"some-slug", "--help"}, want: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := commandWantsHelp(tt.args); got != tt.want {
+				t.Fatalf("commandWantsHelp(%q) = %t, want %t", tt.args, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHelpTokenAsAFlagValueIsNotHelp(t *testing.T) {
+	t.Parallel()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLI(t, []string{"archive", "--bogus", "help"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("archive flag-value exit = %d, want %d", code, exitPreflight)
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("archive flag-value stdout = %q, want no usage", stdout.String())
+	}
+}
+
+func TestHelpTokenAsASpecValueIsNotHelp(t *testing.T) {
+	t.Parallel()
+	_, _ = newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Seed Task"}})
+	var helpStdout bytes.Buffer
+	var helpStderr bytes.Buffer
+	var missingStdout bytes.Buffer
+	var missingStderr bytes.Buffer
+
+	helpCode := runCLI(t, []string{"implement", "--spec", "help"}, &helpStdout, &helpStderr)
+	missingCode := runCLI(t, []string{"implement", "--spec", "no-such-spec"}, &missingStdout, &missingStderr)
+
+	if helpCode == exitOK {
+		t.Fatalf("implement --spec help exit = %d, want non-zero", helpCode)
+	}
+	if helpCode != missingCode {
+		t.Fatalf("implement --spec help exit = %d, no-such-spec exit = %d", helpCode, missingCode)
+	}
+	if helpStdout.Len() != 0 {
+		t.Fatalf("implement --spec help stdout = %q, want no usage", helpStdout.String())
+	}
+	if missingStdout.Len() != 0 {
+		t.Fatalf("implement --spec no-such-spec stdout = %q, want no usage", missingStdout.String())
+	}
+}
+
+func TestTrailingHelpPositionalIsNotHelp(t *testing.T) {
+	t.Parallel()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLI(t, []string{"archive", "some-slug", "help"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("archive trailing-help exit = %d, want %d", code, exitPreflight)
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("archive trailing-help stdout = %q, want no usage", stdout.String())
+	}
+}
+
+func TestHelpAfterTheTerminatorIsNotHelp(t *testing.T) {
+	t.Parallel()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLI(t, []string{"archive", "--", "--help"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("archive terminated-help exit = %d, want %d", code, exitPreflight)
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("archive terminated-help stdout = %q, want no usage", stdout.String())
+	}
+}
+
+func TestLeadingHelpTokenPrintsUsage(t *testing.T) {
+	t.Parallel()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLI(t, []string{"archive", "help"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("archive leading-help exit = %d, want %d", code, exitOK)
+	}
+	if !strings.Contains(stdout.String(), "Usage:\n  roundfix archive <slug>") {
+		t.Fatalf("archive leading-help stdout = %q, want archive usage", stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("archive leading-help stderr = %q, want empty", stderr.String())
+	}
+}
+
+func TestSubcommandLeadingHelpTokenPrintsUsage(t *testing.T) {
+	t.Parallel()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLI(t, []string{"runs", "list", "help"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("runs list leading-help exit = %d, want %d", code, exitOK)
+	}
+	if !strings.Contains(stdout.String(), "roundfix runs list [--all]") {
+		t.Fatalf("runs list leading-help stdout = %q, want runs usage", stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("runs list leading-help stderr = %q, want empty", stderr.String())
+	}
+}
+
+func TestDashHelpAfterAnArgumentPrintsUsage(t *testing.T) {
+	t.Parallel()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLI(t, []string{"archive", "some-slug", "--help"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("archive trailing --help exit = %d, want %d", code, exitOK)
+	}
+	if !strings.Contains(stdout.String(), "Usage:\n  roundfix archive <slug>") {
+		t.Fatalf("archive trailing --help stdout = %q, want archive usage", stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("archive trailing --help stderr = %q, want empty", stderr.String())
+	}
+}
+
 func TestRunReconcileDryRunReadOnly(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir, location := newReconcileWorkspace(t)
@@ -1282,6 +1432,33 @@ func TestCommandUsageDocumentsProfileLedAndCompleteSelectionOverrides(t *testing
 		if strings.Contains(fetchHelp, forbidden) {
 			t.Fatalf("fetch help changed to include Agent selection term %q:\n%s", forbidden, fetchHelp)
 		}
+	}
+}
+
+func TestMigrateHelpDocumentsTheContract(t *testing.T) {
+	t.Parallel()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLI(t, []string{"migrate", "--help"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("migrate help exit = %d, want 0 stderr=%q", code, stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("migrate help stderr = %q, want empty", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Usage:\n  roundfix migrate") {
+		t.Fatalf("migrate help missing usage: %q", stdout.String())
+	}
+
+	stdout.Reset()
+	code = runCLI(t, []string{"--help"}, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("root help exit = %d, want 0 stderr=%q", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "roundfix migrate") {
+		t.Fatalf("root help does not list roundfix migrate: %q", stdout.String())
 	}
 }
 

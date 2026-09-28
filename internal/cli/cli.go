@@ -76,6 +76,7 @@ Usage:
   roundfix archive <slug>
   roundfix init [--scope <project|user>]
   roundfix setup [--yes] [--no-input]
+  roundfix migrate
   roundfix doctor
   roundfix gc [--dry-run]
   roundfix storage report
@@ -109,6 +110,7 @@ Commands:
   archive    Archive a completed Spec
   stop       Request or force-stop an Active Run
   setup      Verify and prepare this machine for Roundfix Runs
+  migrate    Upgrade the Run Database schema
   doctor     Diagnose this machine's readiness for Roundfix Runs
   gc         Prune old terminal Run journals and run artifacts
   storage    Report measured Run Database and Artifact Root storage
@@ -502,6 +504,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runInitCommand(ctx, args[1:], stdout, stderr, environment)
 	case "setup":
 		return runSetupCommand(ctx, args[1:], stdout, stderr, environment)
+	case "migrate":
+		return runMigrateCommand(ctx, args[1:], stdout, stderr, environment)
 	case "doctor":
 		return runDoctorCommand(ctx, args[1:], stdout, stderr, environment)
 	case "review":
@@ -5207,6 +5211,15 @@ line compares Roundfix-owned artifacts with the running binary and external
 artifacts with skills-lock.json. Each failure reports its next action.
 Doctor is offline, read-only, and mutates nothing.
 `
+	case "migrate":
+		return `Usage:
+  roundfix migrate
+
+Upgrades an existing Run Database to the schema version supported by this
+binary under the machine-wide write lock. It creates nothing when the Run
+Database is absent, writes nothing when it is current, and refuses a database
+written by a newer Roundfix binary.
+`
 	case "review":
 		return `Usage:
   roundfix review [--base <ref>]
@@ -5681,7 +5694,8 @@ Exit codes:
   0  selected skills already match, or the confirmed restoration was applied
   1  source acquisition, proof, apply, output, rollback, or recovery failure
   2  invalid arguments, profile, skill, lock schema, source, or unsafe target
-  3  confirmation is required or does not match the current Change Plan
+  3  confirmation is required or does not match the current Change Plan, or the
+     lock changed during planning (finding lock.changed-during-plan)
   130 operation canceled
 
 Options:
@@ -5712,7 +5726,10 @@ Exit codes:
   0  no obsolete entries remain, or the confirmed reconciliation was applied
   1  source acquisition, proof, apply, output, rollback, or recovery failure
   2  invalid arguments, profile, lock schema, source, revision, or unsafe target
-  3  confirmation is required or does not match the current Change Plan
+  3  confirmation is required or does not match the current Change Plan, or a
+     Profile-required skill is absent at the selected revision (finding
+     reconcile.required-removed, no Plan Digest), or the lock changed during
+     planning (finding lock.changed-during-plan)
   130 operation canceled
 
 Options:
@@ -5871,8 +5888,14 @@ Options:
 }
 
 func commandWantsHelp(args []string) bool {
+	if len(args) > 0 && args[0] == "help" {
+		return true
+	}
 	for _, arg := range args {
-		if arg == "-h" || arg == "--help" || arg == "help" {
+		if arg == "--" {
+			return false
+		}
+		if arg == "-h" || arg == "--help" {
 			return true
 		}
 	}

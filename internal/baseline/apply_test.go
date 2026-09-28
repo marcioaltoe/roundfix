@@ -508,7 +508,7 @@ func TestApplyStalePreimage(t *testing.T) {
 		{
 			name:     "consulted input",
 			path:     "Makefile",
-			content:  "verify:\n\t@echo changed\n",
+			content:  "verify:\n\t@echo changed\nverify-incremental:\n\t@true\n",
 			wantPath: "Makefile",
 		},
 		{
@@ -912,7 +912,7 @@ func newUnrelatedPlanRepository(t *testing.T) string {
 	repo := newInspectionRepository(t)
 	writeInspectionFile(t, repo, ".agents/skills/context7/SKILL.md", "# context7\n")
 	writeInspectionFile(t, repo, ".agents/skills/exa-web-search/SKILL.md", "# exa\n")
-	writeInspectionFile(t, repo, "Makefile", "verify:\n\t@true\n")
+	writeInspectionFile(t, repo, "Makefile", "verify:\n\t@true\nverify-incremental:\n\t@true\n")
 	writeInspectionFile(t, repo, ".unrelated-lineage", "distinct root history\n")
 	commitInspectionRepository(t, repo, "seed unrelated portable plan")
 	return repo

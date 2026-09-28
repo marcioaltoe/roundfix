@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0176-baseline-follow-ups-and-the-incremental-tier
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -136,3 +136,49 @@ commands, and the Baseline transaction writes the plan's postimage back to it.
 ## References
 
 - [_techspec.md](_techspec.md) — The lock read after the fetch
+
+## Result
+
+Implementation:
+
+- Reconcile now acquires the immutable source commit before reading the lock
+  used for classification, lock edits, postimages and the Plan Digest. Restore
+  reads that lock after its final source group acquisition.
+- Both transaction-document builders receive the planned lock bytes and refuse
+  a missing, non-regular or content-identity-mismatched capture with
+  `lock.changed-during-plan`. The restore builder performs this comparison only
+  when the plan edits `skills-lock.json`; apply-time preimage validation is
+  unchanged.
+- Added the eight required lock-read and transaction-document regression tests
+  using a temporary `git` wrapper that rewrites `skills-lock.json` on the first
+  `init --bare` and then delegates to the pre-resolved real Git executable.
+- Both command helps, both user-guide command paragraphs and the canonical
+  Roundfix skill document the post-acquisition read and exit `3`
+  `lock.changed-during-plan` refusal. `make skills-sync` regenerated the
+  distributed Roundfix skill.
+
+Focused checks:
+
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run '<eight new Task 02 baseline tests>' ./internal/baseline`: passed.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run '<six named existing compatibility tests>' ./internal/baseline`: passed.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run '^(TestBaselineSkillsReconcileHelpNamesTheLockChangeRefusal|TestBaselineSkillsRestoreHelpNamesTheLockChangeRefusal)$' ./internal/cli`: passed.
+- `rtk make skills-sync`: passed; canonical and distributed Roundfix skill
+  copies are byte-identical.
+- `rtk git diff --check`: passed.
+
+Acceptance evidence:
+
+- The post-fetch planning tests passed for reconcile and restore; they prove
+  that the rewritten lock drives both obsolete-entry classification and the
+  planned restore lock postimage.
+- Both confirmed-apply tests passed with `plan.confirmation.stale` and exact
+  preservation of the fetch-time rewritten lock bytes.
+- Both transaction builders passed their separate refusal and acceptance
+  tests, including exact `ContentIdentity` comparison to the planned bytes and
+  no document on mismatch.
+- Both public help tests passed, and the user guide plus synchronized Roundfix
+  skill name `lock.changed-during-plan`, the post-acquisition read and exit
+  `3` behavior.
+
+The authored `## Verification` command was not rerun; the Daemon owns that
+verification and Task settlement.

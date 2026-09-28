@@ -7,8 +7,8 @@
     "baseline": "baseline.go-cli-tui-0.0.1"
   },
   "profile": "go-cli-tui",
-  "profileDigest": "sha256:74c30a138531e9d9f509cb8c9eeda13984ac4bb348cbb66a27c53f0754246569",
-  "catalogDigest": "sha256:f2bb4e97367408cf6755ab6fbd5f2bcfe4eb4568a61b12e8c49fef0644ef5e2f",
+  "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
+  "catalogDigest": "sha256:8d09b77dcc2910b3133b4f5ff80d7d10455c896423316d433ce782790994004c",
   "modules": [
     "core",
     "context-workflow",
@@ -53,6 +53,9 @@
     },
     "verification.gate": {
       "value": "rtk make verify"
+    },
+    "verification.incremental": {
+      "value": "rtk make verify-incremental"
     }
   },
   "managedArtifacts": [
@@ -153,7 +156,7 @@
       "module": "core",
       "template": "template.guide.agent-instructions",
       "version": "0.0.1",
-      "digest": "fa50a14da7df5692c0c959e0d7139530b6bd63f7083cfe57f016b116ef7c1c20"
+      "digest": "762c19423dc59702fa0b46879bdfb11109479c63bed83557db2808c3472c8e59"
     },
     {
       "id": "root.cli-surface",
@@ -171,7 +174,7 @@
       "module": "spec-workflow",
       "template": "template.guide.spec-routing",
       "version": "0.0.1",
-      "digest": "35e961e349b40a16d7bfb7b42714dd9c6447ee9fd79945286b300e8420d75d24"
+      "digest": "bbb478218b35e3542a8d5785a21f57ac017493a51c7fbd584a5d7442fbe9889f"
     },
     {
       "id": "guide.issue-tracker",
@@ -189,7 +192,7 @@
       "module": "spec-workflow",
       "template": "template.guide.spec-docs-layout",
       "version": "0.0.1",
-      "digest": "6b2e084d40d194082189a61fc70c272e994da3874b1c14df8a184e51a75d653f"
+      "digest": "29d99addb14af315add7d71b5b9b4f895f25a3b7974dd1ec8e1c58154be80d29"
     },
     {
       "id": "guide.domain",
@@ -252,6 +255,15 @@
       "id": "verification.gate",
       "role": "repository-gate",
       "command": "rtk make verify",
+      "classification": "repository-command",
+      "repositoryExecutable": true,
+      "declarationPath": "Makefile",
+      "declarationDigest": "sha256:6221211d07ede987f02071507a0fd70ede87eab77fb3ecacdc519c78ddd0ae74"
+    },
+    {
+      "id": "verification.incremental",
+      "role": "incremental",
+      "command": "rtk make verify-incremental",
       "classification": "repository-command",
       "repositoryExecutable": true,
       "declarationPath": "Makefile",

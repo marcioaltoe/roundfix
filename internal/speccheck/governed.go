@@ -140,6 +140,7 @@ var governedPathSet = []governedPathSetEntry{
 			"skills/baseline_skill_contract_integration_test.go",
 			"skills/baseline_skill_contract_test.go",
 			"skills/owned_skill_edit_repocontract_test.go",
+			"skills/_ownership.yml",
 			"skills/write-prd/references/prd-template.md",
 			"skills/write-techspec/references/techspec-template.md",
 		),
