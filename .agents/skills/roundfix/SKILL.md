@@ -958,6 +958,7 @@ checkout; it accepts Runs whose outcome is `BudgetExceeded`, `Stopped`, or
 `Unresolved` and refuses every other terminal outcome. Carry-forward keeps its
 existing proof requirements and refuses the whole Task set when any member
 cannot be proved.
+Carry-forward staging commits run without repository hooks because the carried commits already passed Daemon Verification and the repository hooks when the Daemon settled them. The checkout receives those commits only through a fast-forward merge, and carry-forward leaves its Git configuration unchanged.
 There is no force bypass.
 
 Process termination succeeds only when Roundfix proves every reported process

@@ -19,6 +19,8 @@ import (
 
 const carryForwardReadyAction = "would carry forward with --carry-forward"
 
+const carryForwardHooksDirectoryPrefix = "roundfix-carry-forward-hooks-"
+
 // specCarryForward is what one prior Run would hand back to the checkout.
 type specCarryForward struct {
 	Run        store.Run
@@ -315,7 +317,7 @@ func carryForwardConflictingPaths(ctx context.Context, workDir string) ([]string
 // than swallowed, but the caller records it beside the conflict instead of
 // returning it, so a failed abort never outranks the finding.
 func abortCarryForwardStaging(ctx context.Context, stagingWorktree string) error {
-	if _, err := reconcileGitRaw(ctx, stagingWorktree, "cherry-pick", "--abort"); err != nil {
+	if _, err := carryForwardStagingGitRaw(ctx, stagingWorktree, "cherry-pick", "--abort"); err != nil {
 		return fmt.Errorf("abort carry-forward staging cherry-pick: %w", err)
 	}
 	return nil
@@ -394,7 +396,7 @@ func createCarryForwardStaging(
 }
 
 func stageCarryForwardCandidate(ctx context.Context, stagingWorktree string, candidate spec.CarryForward) error {
-	if _, err := reconcileGitRaw(ctx, stagingWorktree, "cherry-pick", candidate.Commit); err != nil {
+	if _, err := carryForwardStagingGitRaw(ctx, stagingWorktree, "cherry-pick", candidate.Commit); err != nil {
 		staged := fmt.Errorf("stage Task %s settlement commit %s: %w", candidate.TaskID, candidate.Commit, err)
 		if ctx.Err() != nil {
 			return staged
@@ -424,10 +426,29 @@ func stageCarryForwardCandidate(ctx context.Context, stagingWorktree string, can
 	if _, err := reconcileGitRaw(ctx, stagingWorktree, "add", "--", candidate.TaskFile); err != nil {
 		return fmt.Errorf("stage Task %s carry-forward provenance: %w", candidate.TaskID, err)
 	}
-	if _, err := reconcileGitRaw(ctx, stagingWorktree, "commit", "--amend", "--no-edit"); err != nil {
+	if _, err := carryForwardStagingGitRaw(ctx, stagingWorktree, "commit", "--amend", "--no-edit"); err != nil {
 		return fmt.Errorf("amend Task %s carry-forward provenance: %w", candidate.TaskID, err)
 	}
 	return nil
+}
+
+func carryForwardStagingGitRaw(
+	ctx context.Context,
+	stagingWorktree string,
+	args ...string,
+) (output []byte, returnErr error) {
+	hooksDirectory, err := os.MkdirTemp("", carryForwardHooksDirectoryPrefix)
+	if err != nil {
+		return nil, fmt.Errorf("create empty carry-forward hooks directory: %w", err)
+	}
+	defer func() {
+		if err := os.RemoveAll(hooksDirectory); err != nil {
+			returnErr = errors.Join(returnErr, fmt.Errorf("remove empty carry-forward hooks directory: %w", err))
+		}
+	}()
+
+	gitArgs := append([]string{"-c", "core.hooksPath=" + hooksDirectory}, args...)
+	return reconcileGitRaw(ctx, stagingWorktree, gitArgs...)
 }
 
 func carryForwardTaskCommits(ctx context.Context, run store.Run) (map[string][]string, []string, error) {

@@ -1076,6 +1076,8 @@ overlapping set is refused as a whole; when several Runs qualify, choose the
 Run that `implement` names, because it has the largest carriable set and uses
 the newest Run to break ties.
 
+Carry-forward staging commits run without repository hooks because the carried commits already passed Daemon Verification and the repository hooks when the Daemon settled them. The checkout still receives the staged commits only through a fast-forward merge, and carry-forward does not change its Git configuration.
+
 `--apply` remains the only switch that releases Run Worktrees.
 
 There is no force flag or user assertion that bypasses the proof. Apply acts
