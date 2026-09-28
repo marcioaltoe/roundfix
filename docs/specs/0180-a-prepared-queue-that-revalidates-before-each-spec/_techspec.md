@@ -38,89 +38,13 @@ implementation to Roundfix. No exported function changes its signature.
   `skills/implement-spec/SKILL.md`. Source:
   `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`.
 
-## Strict consistency and Delivery Revalidation
-
-A new file `internal/cli/deliver_revalidate.go` holds the one helper both the
-revalidation and the plan use:
-
-```go
-func strictSpecFindings(specsRoot, repoRoot, specSlug string) ([]speccheck.Finding, error)
-```
-
-It runs `speccheck.Check(specsRoot, repoRoot, specSlug)`, applies
-`speccheck.PromoteGaps`, and returns `speccheck.GatePrecondition(result).Findings`.
-That is the verdict `roundfix spec check <slug> --strict` and the Daemon's
-`qaGatePrecondition` reach, so the three can never disagree.
-
-`internal/delivery/engine.go` adds:
-
-```go
-const (
-	BlockerRevalidationFailed = "revalidation-failed"
-	BlockerPremiseChanged     = "premise-changed"
-)
-
-type Revalidation struct {
-	Findings        []string // unique, sorted finding codes
-	ChangedPremises []string // unique, sorted repository-relative paths
-}
-
-type ItemRevalidator interface {
-	Revalidate(ctx context.Context, workDir, specSlug string, priorMerges []string) (Revalidation, error)
-}
-```
-
-`EngineDependencies` gains `Revalidator ItemRevalidator`. Both `validate` and
-`validateRetry` refuse an engine without one, so no path can skip the check.
-`Engine.Run` passes each item the merge commits of the items before it that are
-`merged` with a non-empty merge commit, in queue position order. In the
-`queued` branch of `advanceItem`, after `CreateItemBranch` has recorded the
-branch and worktree and before the stage becomes `running`, the engine calls
-`Revalidate` with the item worktree. The outcome decides the next step:
-
-| Revalidation | Next step |
-| --- | --- |
-| at least one finding | park `revalidation-failed: <code>, <code>` |
-| no finding, at least one changed premise | park `premise-changed: <path>, <path>` |
-| neither | stage `running`, as today |
-| an error | returned; `Engine.Run` parks the item as `delivery-error: <error>`, as today |
-
-The Runner is never called for a parked item. The item keeps its branch and
-worktree, so a Delivery Retry can reach it.
-
-`Engine.Retry` gains one step for an active Spec whose item records no Run ID.
-This covers an item parked by revalidation and one whose revalidation errored.
-Before carry-forward, it calls `Revalidate` in the item worktree with no prior
-merges and refuses while `Findings` is non-empty. The refusal names the codes
-and leaves the item unchanged. Changed premises are never re-checked on retry:
-the retry is the operator's acknowledgement.
-
-`commandDeliveryWorkflow` implements `delivery.ItemRevalidator` in
-`deliver_revalidate.go`, and `newCommandDeliveryEngine` in
-`internal/cli/deliver_workflow.go` passes it as `Revalidator`. `Revalidate`
-works as follows:
-
-1. Resolves the Specs Root for the worktree with
-   `roundconfig.ResolveSpecsRoot(workflow.loaded, workDir)`.
-2. Reports the codes of `strictSpecFindings(specsRoot.Path, workDir, specSlug)`.
-3. Loads the graph with `spec.Load`. The declared premises are the
-   `interface:` paths (`spec.ContextKindInterface`) of every non-`qa` Task that
-   end in `.go` and not in `_test.go`.
-4. For each prior merge, reads `git diff --name-only <merge>^ <merge>` in the
-   worktree through `workflow.git`, and reports the declared premises it names.
-
-A merge commit that cannot be read is an error, never an empty change set.
-
-The deliver section of `docs/user-guide/commands.md` and the Delivery queue
-section of the Roundfix skill describe the revalidation, the two blockers and
-the retry rule.
-
-## Queue limits in the store and the engine
+## Queue limits and the item warning in the store and the engine
 
 `internal/store/store.go` raises `schemaVersion` by exactly one from its value
 on the Task's starting main. It adds `delivery_queues.deadline_unix INTEGER NOT
-NULL DEFAULT 0`, `delivery_queues.max_retries INTEGER NOT NULL DEFAULT 0` and
-`delivery_queue_items.retry_count INTEGER NOT NULL DEFAULT 0`. A fresh database
+NULL DEFAULT 0`, `delivery_queues.max_retries INTEGER NOT NULL DEFAULT 0`,
+`delivery_queue_items.retry_count INTEGER NOT NULL DEFAULT 0` and
+`delivery_queue_items.warning TEXT NOT NULL DEFAULT ''`. A fresh database
 creates the columns. Every older schema that already has the delivery tables
 gains them through idempotent column-existence checks, as
 `deliveryWorktreeMigrationStatements` does, so the existing downgrade fixtures
@@ -141,8 +65,10 @@ func (store *Store) CreateDeliveryQueueWithLimits(
 
 `CreateDeliveryQueue` keeps its signature and delegates with zero limits. A
 negative `MaxRetries` is refused. `DeliveryQueue` gains `Limits
-DeliveryQueueLimits` and `DeliveryQueueItem` gains `RetryCount int`, both read
-by `DeliveryQueue`. `RetryDeliveryQueueItem` keeps its signature. In its write
+DeliveryQueueLimits` and `DeliveryQueueItem` gains `RetryCount int` and
+`Warning string`, all read by `DeliveryQueue`. `UpdateDeliveryQueueItem`
+persists `Warning` with the other item fields, so the item carries it through
+every later stage; the Delivery Revalidation is its only writer. `RetryDeliveryQueueItem` keeps its signature. In its write
 transaction it reads the queue's `max_retries` and the item's `retry_count`. It
 refuses with an error wrapping the new sentinel `ErrDeliveryRetryLimit` when
 the limit is non-zero and reached, changing nothing. Otherwise it increments
@@ -162,8 +88,24 @@ the limit is non-zero and reached, changing nothing. Otherwise it increments
 
 ## The Delivery Plan and the start refusal
 
-A new file `internal/cli/deliver_plan.go` implements `roundfix deliver plan
-[--json] [<slug>...]`, dispatched from `runDeliverCommand`. It resolves the
+A new file `internal/cli/deliver_plan.go` holds the two helpers the plan and
+the Delivery Revalidation share:
+
+```go
+func strictSpecFindings(specsRoot, repoRoot, specSlug string) ([]speccheck.Finding, error)
+func productionPremises(graph *spec.Graph) []string
+```
+
+`strictSpecFindings` runs `speccheck.Check(specsRoot, repoRoot, specSlug)`,
+applies `speccheck.PromoteGaps`, and returns
+`speccheck.GatePrecondition(result).Findings`. That is the verdict `roundfix
+spec check <slug> --strict` and the Daemon's `qaGatePrecondition` reach, so the
+three can never disagree. `productionPremises` returns, sorted and unique, the
+`interface:` paths (`spec.ContextKindInterface`) of every non-`qa` Task that
+end in `.go` and not in `_test.go`.
+
+The same file implements `roundfix deliver plan [--json] [<slug>...]`,
+dispatched from `runDeliverCommand`. It resolves the
 configuration and Specs Root with `loadDeliveryCommand`. With no slug, it takes
 every active Spec from `spec.ListActiveDetailed` and reports skipped
 directories through `printSkippedSpecDiagnostics`. A slug `spec.Load` refuses
@@ -181,8 +123,10 @@ exits `2`. For each Spec, in the given order, it computes:
   `authorization lacks <op>, <op>`.
 - `spec check: <code>, <code>` from `strictSpecFindings(specsRoot.Path,
   loaded.GitRoot, slug)`;
-- the shared premises: for each earlier Spec in the order, the production Go
-  `interface:` paths both declare, by the rule the revalidation uses.
+- the shared premises: for each earlier Spec in the order, the paths both
+  Specs' `productionPremises` name. A shared row is information: it tells the
+  operator which later item will carry a `premise-changed` warning once the
+  earlier one merges, and it never blocks a Spec or a start.
 
 A Spec with no reason is `approved`; any other is `blocked`. The plan then
 lists repository intent that is not approved to run:
@@ -229,6 +173,78 @@ plan line. The expectation of `TestTopLevelUsageNamesDeliverRetry` in
 test's name. The tests that start a queue in `internal/cli/deliver_test.go`
 first grant all five operations with `setImplementFixtureAuthorizationOperations`.
 
+## Strict consistency and Delivery Revalidation
+
+`internal/delivery/engine.go` adds:
+
+```go
+const BlockerRevalidationFailed = "revalidation-failed"
+
+const WarningPremiseChanged = "premise-changed"
+
+type Revalidation struct {
+	Findings        []string // unique, sorted finding codes
+	ChangedPremises []string // unique, sorted repository-relative paths
+	ChangedBy       []string // the prior merge commits that changed at least one of them, in queue order
+}
+
+type ItemRevalidator interface {
+	Revalidate(ctx context.Context, workDir, specSlug string, priorMerges []string) (Revalidation, error)
+}
+```
+
+`EngineDependencies` gains `Revalidator ItemRevalidator` and `Log io.Writer`.
+Both `validate` and `validateRetry` refuse an engine without a revalidator, so
+no path can skip the check; a nil `Log` discards. `Engine.Run` passes each item
+the merge commits of the items before it that are `merged` with a non-empty
+merge commit, in queue position order. In the `queued` branch of
+`advanceItem`, after the deadline check and after `CreateItemBranch` has
+recorded the branch and worktree, and before the stage becomes `running`, the
+engine calls `Revalidate` with the item worktree:
+
+| Revalidation | Next step |
+| --- | --- |
+| at least one finding | park `revalidation-failed: <code>, <code>` |
+| no finding | stage `running`, as today |
+| an error | returned; `Engine.Run` parks the item as `delivery-error: <error>`, as today |
+
+Whatever the next step, when `ChangedPremises` is non-empty the engine sets the
+item's `Warning` to `premise-changed: <path>, <path> (merge <sha>, <sha>)` and
+persists it with that step. It also writes `roundfix: warning: Delivery Queue
+item <slug>: <warning>` to `Log`. A changed premise never parks an item and never
+delays its Run. An item with no changed premise keeps an empty `Warning`, and
+nothing is written to `Log`. The Runner is never called for a parked item,
+which keeps its branch and worktree so a Delivery Retry can reach it.
+
+`Engine.Retry` gains one step for an active Spec whose item records no Run ID.
+This covers an item parked by revalidation and one whose revalidation errored.
+Before carry-forward, it calls `Revalidate` in the item worktree with no prior
+merges and refuses while `Findings` is non-empty. The refusal names the codes
+and leaves the item unchanged. A retry never changes the recorded `Warning`.
+
+`commandDeliveryWorkflow` implements `delivery.ItemRevalidator` in a new file
+`internal/cli/deliver_revalidate.go`. `newCommandDeliveryEngine` in
+`internal/cli/deliver_workflow.go` passes it as `Revalidator` and passes
+`os.Stderr` as `Log`, which is the delivery console log of a detached owner.
+`Revalidate` works as follows:
+
+1. Resolves the Specs Root for the worktree with
+   `roundconfig.ResolveSpecsRoot(workflow.loaded, workDir)`.
+2. Reports the codes of `strictSpecFindings(specsRoot.Path, workDir, specSlug)`.
+3. Loads the graph with `spec.Load` and takes its `productionPremises`.
+4. For each prior merge, reads `git diff --name-only <merge>^ <merge>` in the
+   worktree through `workflow.git`. It reports the premises that diff names,
+   and the merge whenever it names at least one.
+
+A merge commit that cannot be read is an error, never an empty change set.
+
+`runDeliverStatus` in `internal/cli/deliver.go` prints the item rows unchanged,
+then one `Warning: <slug> <warning>` line for each item with a non-empty
+`Warning`, in position order. The deliver section of
+`docs/user-guide/commands.md` and the Delivery queue section of the Roundfix
+skill describe the revalidation, the `revalidation-failed` blocker, the
+`premise-changed` warning and the retry rule.
+
 ## Limit flags, status and the Pending Question
 
 `parseDeliverStart` accepts `--max-duration <duration>`, a positive Go
@@ -245,7 +261,7 @@ Limits: deadline <RFC 3339 UTC|none>, retries per item <n|none>, concurrency 1, 
 
 `deliverUsage` keeps the line `roundfix deliver start <slug>...` and gains a
 Flags block naming both flags. `runDeliverStatus` prints the item rows
-unchanged, then the same `Limits:` line. When any item is parked, it prints:
+and the warning lines unchanged, then the same `Limits:` line. When any item is parked, it prints:
 
 ```text
 Pending question: <slug> parked <blocker>
@@ -274,7 +290,6 @@ other parked items. The answer depends on the blocker:
 | Blocker | Answer |
 | --- | --- |
 | `revalidation-failed…` | `amend the Spec on its item branch in <worktree>, then run roundfix deliver retry <slug>` |
-| `premise-changed…` | `check the Spec's Requirements against the changed files on its item branch in <worktree>, amend them there if they no longer hold, then run roundfix deliver retry <slug>` |
 | `queue-deadline` | `record a new queue for the remaining Specs with roundfix deliver start` |
 | any other | `resolve the blocker, then run roundfix deliver retry <slug>` |
 
@@ -319,10 +334,13 @@ edit.
 2. `roundfix deliver start` exits `2` and records no queue when any slug's
    authorization does not grant `implement`, `commit`, `push`, `pull_request`
    and `merge`.
-3. A queued item parks as `revalidation-failed: <codes>` or `premise-changed:
-   <paths>` before its first Run, per the revalidation table.
+3. A queued item parks as `revalidation-failed: <codes>` before its first Run
+   when its strict check fails. An item whose declared production Go file an
+   earlier item's merge changed records the warning `premise-changed: <paths>
+   (merge <shas>)`, which `deliver status` prints as `Warning: <slug>
+   <warning>` and the console log carries, and continues to its Run.
 4. `Engine.Retry` of an active item with no recorded Run refuses while the
-   strict check reports findings, and never re-checks changed premises.
+   strict check reports findings, and never changes the recorded warning.
 5. `roundfix deliver start --max-duration <duration> --max-retries <n>` records
    a deadline and a per-item retry limit, and prints the `Limits:` line; each
    omitted limit is `none`.
@@ -339,14 +357,14 @@ edit.
 - Goal 1 → The Delivery Plan and the start refusal; API Contract 1.
 - Goal 2 → The Delivery Plan and the start refusal; API Contract 2.
 - Goal 3 → Strict consistency and Delivery Revalidation; API Contracts 3-4.
-- Goal 4 → Queue limits in the store and the engine; Limit flags, status and
+- Goal 4 → Queue limits and the item warning in the store and the engine; Limit flags, status and
   the Pending Question; API Contracts 5-6.
 - Goal 5 → Limit flags, status and the Pending Question; API Contract 7.
 - Goal 6 → The implement-spec entry point.
 - Core Feature 1 → The Delivery Plan and the start refusal.
 - Core Feature 2 → The Delivery Plan and the start refusal.
 - Core Feature 3 → Strict consistency and Delivery Revalidation.
-- Core Feature 4 → Queue limits in the store and the engine; Limit flags,
+- Core Feature 4 → Queue limits and the item warning in the store and the engine; Limit flags,
   status and the Pending Question.
 - Core Feature 5 → Limit flags, status and the Pending Question.
 - Core Feature 6 → The implement-spec entry point.
@@ -358,9 +376,11 @@ edit.
 - API Contracts 1-2 → The Delivery Plan and the start refusal.
 - API Contracts 3-4 → Strict consistency and Delivery Revalidation.
 - API Contract 5 → Limit flags, status and the Pending Question.
-- API Contract 6 → Queue limits in the store and the engine.
+- API Contract 6 → Queue limits and the item warning in the store and the
+  engine.
 - API Contract 7 → Limit flags, status and the Pending Question.
-- API Contract 8 → Queue limits in the store and the engine.
+- API Contract 8 → Queue limits and the item warning in the store and the
+  engine.
 
 ## Integration Points
 
@@ -379,13 +399,15 @@ edit.
 ## Testing Approach
 
 1. **Revalidation in the engine.** With a fake revalidator:
-   - a finding parks `revalidation-failed` and a changed premise parks
-     `premise-changed`, before any Run;
+   - a finding parks `revalidation-failed` before any Run;
+   - a changed premise records the `premise-changed` warning, logs it and
+     continues to the Run, while an item with no overlap records and logs no
+     warning;
    - a clean item runs;
    - an error parks `delivery-error`;
    - prior merges arrive in position order, excluding unmerged items;
    - a retry of an item with no Run refuses while findings remain, proceeds when
-     they clear, and ignores changed premises;
+     they clear, and keeps the recorded warning;
    - an engine without a revalidator is refused.
 2. **Limits in the store and the engine.** Covers the limits round trip and
    `none`; a refused negative retry limit; the retry count increment; a refusal
@@ -420,24 +442,29 @@ edit.
 
 ## Build Order
 
-1. Strict consistency and Delivery Revalidation (depends on: none).
-2. Queue limits in the store and the engine (depends on: 1).
-3. The Delivery Plan and the start refusal (depends on: 1).
-4. Limit flags, status and the Pending Question (depends on: 2, 3).
-5. The implement-spec entry point (depends on: 3, 4).
-6. Terminal QA (depends on: 1, 2, 3, 4, 5).
+1. Queue limits and the item warning in the store and the engine, task_02
+   (depends on: none).
+2. The Delivery Plan and the start refusal, task_03 (depends on: none).
+3. Strict consistency and Delivery Revalidation, task_01 (depends on: 1, 2).
+4. Limit flags, status and the Pending Question, task_04 (depends on: 1, 2, 3).
+5. The implement-spec entry point, task_05 (depends on: 2, 4).
+6. Terminal QA, task_06 (depends on: 1, 2, 3, 4, 5).
 
 ## Risks & Considerations
 
-- **Shared files make a chain.** Tasks 1 and 2 both edit
-  `internal/delivery/engine.go`. Tasks 1, 3 and 4 edit
-  `docs/user-guide/commands.md`, the Roundfix skill and
-  `internal/cli/deliver_test.go`, and Tasks 3 and 4 both edit
-  `internal/cli/deliver.go`. Tasks 2 and 3 share no file and run together.
-- **A premise check that parks often.** Two Specs that edit the same
-  production Go file in one queue always stop the second for an acknowledgement.
-  That is the case this Spec exists for. The plan predicts it through its
-  `shared` rows, so the operator can order or split the queue first.
+- **Shared files make a chain.** task_02 and task_01 both edit
+  `internal/delivery/engine.go`, and task_01 writes the item warning column
+  task_02 adds. task_01 reuses the helpers task_03 adds, and task_01, task_03
+  and task_04 edit `internal/cli/deliver.go`, `internal/cli/deliver_test.go`,
+  `docs/user-guide/commands.md` and the Roundfix skill. task_02 and task_03
+  share no file and run together; the Task ids keep their authored numbers, so
+  the graph, not the numbering, gives the order.
+- **A warning nobody reads.** Two Specs that edit the same production Go file
+  are common, so the premise check records a warning instead of stopping the
+  queue. The warning is durable on the item, printed by `deliver status` and
+  written to the console log, and the plan's `shared` rows predict it before
+  the queue starts. The Task's own Verification stays the detector for a real
+  break.
 - **Schema versions that collide.** Another Spec that raises `schemaVersion`
   and merges first moves the starting value. The requirement is relative to
   the Task's starting main, and the idempotent column checks keep either order

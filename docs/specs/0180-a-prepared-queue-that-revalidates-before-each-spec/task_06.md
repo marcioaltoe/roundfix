@@ -36,19 +36,21 @@ an Agent.
 3. MUST verify, by executing the engine and workflow tests against the built
    tree, that:
    - an item whose starting main fails its strict check parks as
-     `revalidation-failed`, and one whose declared production Go file an
-     earlier item's merge changed parks as `premise-changed`, both before any
-     Run;
-   - a clean item runs;
-   - a retry of an item with no Run refuses while findings remain and
-     acknowledges a changed premise.
+     `revalidation-failed` before any Run;
+   - an item whose declared production Go file an earlier item's merge changed
+     records a `premise-changed` warning naming the files and the merge,
+     writes it to the console log and continues to its Run, and an item with
+     no overlap records no warning;
+   - `deliver status` prints a `Warning:` line only for an item with a warning;
+   - a retry of an item with no Run refuses while findings remain and keeps
+     the recorded warning.
 4. MUST verify, against this repository's history, the intersection of `git
    diff --name-only 6fac37ea^ 6fac37ea` with the production Go `interface:`
    paths that Spec 0175's Tasks declare at `b92aefda` (read through `git show
    b92aefda:<path>`). It must be exactly `internal/cli/carryforward.go`,
    `internal/cli/deliver_workflow.go` and `internal/delivery/engine.go`, and the
-   gate MUST record it as evidence this Spec did not author, beside the premise
-   the revalidation names for the same shape. When the history is unavailable,
+   gate MUST record it as evidence this Spec did not author, beside the
+   `premise-changed` warning the revalidation records for the same shape. When the history is unavailable,
    such as in a shallow clone, record the row as blocked with its reason.
 5. MUST verify through the built binary, with the approved Spec:
    - `roundfix deliver start --max-duration 1ns --max-retries 1 <slug>` prints
@@ -72,8 +74,8 @@ an Agent.
    carry no implement-task loop, and that `make skills-sync-check` exits `0`.
 8. MUST verify that `docs/user-guide/commands.md`, the Roundfix skill and its
    mirror, and `CONTEXT.md` describe the Delivery Plan, the start refusal, the
-   Delivery Revalidation and its two blockers, the limit flags and the Pending
-   Question.
+   Delivery Revalidation with its `revalidation-failed` blocker and its
+   `premise-changed` warning, the limit flags and the Pending Question.
 9. MUST verify that this Spec's own artifacts satisfy the promise rule.
 10. MUST verify from the repository history that the changed files stay within
     the paths the Tasks declare and that every governed path is bounded in

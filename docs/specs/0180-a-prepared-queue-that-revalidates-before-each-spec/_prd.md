@@ -107,14 +107,14 @@ Backlog Entries, and the efficiency waves hit each of them:
    starting main.
 3. **Delivery Revalidation before the first Run.** After an item's worktree is
    created from the refreshed default branch, and before its Run starts, the
-   item passes two checks there. The strict Spec Consistency Check must report
-   no error. No production Go file its Tasks declare as `interface:` may have
-   been changed by the merge commit of an earlier item of the same queue. A
-   finding parks the item as `revalidation-failed: <codes>`. A changed premise
-   parks it as `premise-changed: <paths>`. A Delivery Retry of a
-   `revalidation-failed` item re-runs the check and refuses while findings
-   remain. A retry of a `premise-changed` item is the operator's
-   acknowledgement.
+   item passes the strict Spec Consistency Check there. A finding parks the
+   item as `revalidation-failed: <codes>`, and a Delivery Retry of it re-runs
+   the check and refuses while findings remain. The revalidation also compares
+   the production Go files the Spec's Tasks declare as `interface:` with the
+   merge commits of earlier items of the same queue. An overlap never stops the
+   item: it records a `premise-changed` warning on the item, naming the files
+   and the merge, prints it to the delivery console log, and the item continues
+   to its Run. `deliver status` shows the warning.
 4. **Explicit, enforced queue limits.** `deliver start` accepts
    `--max-duration <duration>` and `--max-retries <n>`. They are recorded with
    the queue as a deadline and a per-item retry limit, and every omitted limit
@@ -160,8 +160,9 @@ Backlog Entries, and the efficiency waves hit each of them:
 2. Engine and workflow tests show that an item whose starting main makes its
    strict consistency check fail parks as `revalidation-failed` before any Run.
    An item whose declared production Go file an earlier item's merge commit
-   changed parks as `premise-changed` naming that file. A clean item reaches
-   `running`. Against this repository's history, the paths Spec 0173's merge
+   changed reaches `running` with a `premise-changed` warning naming that file
+   and that merge, and an item with no overlap reaches `running` with no
+   warning. Against this repository's history, the paths Spec 0173's merge
    commit `6fac37ea` changed intersect Spec 0175's declared production Go
    files in exactly `internal/cli/carryforward.go`,
    `internal/cli/deliver_workflow.go` and `internal/delivery/engine.go`.
@@ -187,6 +188,8 @@ Backlog Entries, and the efficiency waves hit each of them:
 - A `revalidation-failed` item is amended on its item branch, in the worktree
   `deliver status` prints, because the item was cut from the main that failed
   the check. An amendment merged to main afterwards does not reach that branch.
+- A `premise-changed` warning is a record, not a question: nothing answers or
+  clears it, and it stays on the item until the queue is replaced.
 - Spending is not measured, so no spending limit exists; `deliver status`
   says so instead of implying zero.
 - The Pending Question orders the operator's decisions. It does not stop the
@@ -205,6 +208,12 @@ Backlog Entries, and the efficiency waves hit each of them:
 - **Revalidate inside the item worktree, after creating it.** The item worktree
   is the only place where the main the item starts from exists. Parking there
   keeps the item branch and worktree, so a Delivery Retry can resume the item.
+- **A changed premise warns; it does not park.** Two queued Specs that edit
+  the same production Go file are common. Spec 0175 queued after Spec 0173 is
+  one such pair, and the overlap did not break it. A park would force a manual
+  `deliver retry` on most multi-Spec queues. The warning keeps the fact durable
+  and visible for the reviewer, while the Task's own Verification remains the
+  detector for a real break.
 - **Production Go only for the premise check.** Guides and tests are shared by
   almost every Spec. A merge that touches them is re-read by the Agent and
   checked by the Task's own Verification. A declared production Go file changed
@@ -215,7 +224,8 @@ Backlog Entries, and the efficiency waves hit each of them:
 - **Limits are recorded with the queue, in one new schema version.** Limits
   enforced by a detached owner have to survive restart. They live next to the
   owner record, and the retry count lives on the item, where the retry
-  transaction already reads.
+  transaction already reads. The same version gives each item a warning field,
+  so a `premise-changed` warning survives restart and every later stage.
 - **Omitted limits are explicit `none`.** Requiring both flags would break
   every existing `deliver start` invocation. The queue therefore records and
   prints `none` and never infers a limit from the Run Window or the Run Budget.
@@ -225,7 +235,8 @@ Backlog Entries, and the efficiency waves hit each of them:
 Each Core Feature requires positive and negative public-contract evidence in
 the Task Graph. The negative cases carry the weight: a plan that writes
 anything, a start that records an unauthorized Spec, a Run started for an item
-whose starting main fails its check, a premise change that goes unnamed, an
+whose starting main fails its check, a premise change that goes unnamed or
+stops the item, an
 item started after the deadline, a retry past its limit, a second question
 presented at once, and a skill that still runs Tasks would each pass a
 happy-path test.
@@ -234,7 +245,8 @@ The outside-evidence row rests on history this Spec did not produce. Spec
 0173's squash merge `6fac37ea` and Spec 0175's Task declarations, as
 committed at `b92aefda`, were written by other sessions. The QA gate measures
 their intersection with `git diff --name-only 6fac37ea^ 6fac37ea` and records
-it beside the premise the revalidation names for the same shape.
+it beside the `premise-changed` warning the revalidation records for the same
+shape.
 
 ## Research basis
 

@@ -18,7 +18,7 @@ task_02 records and enforces queue limits, but the operator has no way to set th
 2. MUST make `runDeliverStart` set the deadline to `time.Now().UTC()` plus the duration, truncated to whole seconds. It records the queue with `CreateDeliveryQueueWithLimits`, then prints to stdout, before the detached owner report, `Limits: deadline <RFC 3339 UTC|none>, retries per item <n|none>, concurrency 1, spend not measured`.
 3. MUST keep the `deliverUsage` line `roundfix deliver start <slug>...` and add a Flags block naming `--max-duration <duration>` and `--max-retries <n>`.
 4. MUST add `internal/delivery/question.go` with `PendingQuestion` and `PendingQuestionFor(queue store.DeliveryQueue) (PendingQuestion, bool)` as the TechSpec states. The question is the parked item with the lowest position, `Waiting` counts the other parked items, and each blocker class receives the answer from the TechSpec's table.
-5. MUST make `runDeliverStatus` print the item rows unchanged, then the `Limits:` line. When an item is parked, it MUST also print `Pending question: <slug> parked <blocker>` and `Answer: <answer>`, and `Waiting behind it: <n> parked item(s)` when `n` is greater than zero.
+5. MUST make `runDeliverStatus` print the item rows and task_01's `Warning:` lines unchanged, then the `Limits:` line. When an item is parked, it MUST also print `Pending question: <slug> parked <blocker>` and `Answer: <answer>`, and `Waiting behind it: <n> parked item(s)` when `n` is greater than zero.
 6. MUST NOT let the engine, the owner loop or any elapsed time change a parked item. Only a Delivery Retry or a new queue answers the question.
 7. MUST update only the tests this change invalidates: the exact status expectations in `TestDeliverStatusPrintsTheItemWorktree` in `internal/cli/deliver_test.go` gain the `Limits:` line and, for its parked item, the question lines.
 8. MUST document in the deliver section of `docs/user-guide/commands.md` and the Delivery queue section of `.agents/skills/roundfix/SKILL.md`:
@@ -28,7 +28,7 @@ task_02 records and enforces queue limits, but the operator has no way to set th
    - the Pending Question, by the string `Pending question:`.
 
    Then MUST regenerate `skills/roundfix/SKILL.md` with `make skills-sync`.
-9. MUST add to `CONTEXT.md` the entries **Delivery Plan**, **Delivery Revalidation**, **Delivery Queue Limit** and **Pending Question**, each with an `_Avoid_` line, and make its **Delivery Queue** entry name the queue's limits.
+9. MUST add to `CONTEXT.md` the entries **Delivery Plan**, **Delivery Revalidation** (naming the `revalidation-failed` park and the `premise-changed` warning), **Delivery Queue Limit** and **Pending Question**, each with an `_Avoid_` line, and make its **Delivery Queue** entry name the queue's limits.
 10. MUST put the question tests in `internal/delivery/question_test.go` and the command tests in `internal/cli/deliver_limits_test.go`. The command tests drive the public CLI with the real Run Database and inject only the owner starter, as the existing deliver tests do. The owner-pass test advances the injected `Clock` with no wall-clock wait.
 
 ## Subtasks

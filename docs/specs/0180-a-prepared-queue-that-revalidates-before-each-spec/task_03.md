@@ -14,13 +14,13 @@ complexity: high
 
 ## Requirements
 
-1. MUST add `internal/cli/deliver_plan.go` implementing `roundfix deliver plan [--json] [<slug>...]` as the TechSpec states, and dispatch `plan` from `runDeliverCommand`. With no slug it reports every active Spec from `spec.ListActiveDetailed`, and a slug `spec.Load` refuses exits `2`.
+1. MUST add `internal/cli/deliver_plan.go` with the helpers `strictSpecFindings(specsRoot, repoRoot, specSlug string) ([]speccheck.Finding, error)`, which composes `speccheck.Check`, `speccheck.PromoteGaps` and `speccheck.GatePrecondition(...).Findings`, and `productionPremises(graph *spec.Graph) []string`, which returns the sorted, unique `interface:` paths of non-`qa` Tasks that end in `.go` and not in `_test.go`. task_01's revalidation reuses both. The same file MUST implement `roundfix deliver plan [--json] [<slug>...]` as the TechSpec states, and dispatch `plan` from `runDeliverCommand`. With no slug it reports every active Spec from `spec.ListActiveDetailed`, and a slug `spec.Load` refuses exits `2`.
 2. MUST compute for each Spec its Task count, its unfinished Task count and its reasons:
    - the authorization reasons from a helper `deliveryAuthorizationReasons(ctx, loaded, specsRoot, slug) []string`, which reads `spec.ReadSpecAuthorization` at the checkout's `HEAD` and yields `authorization <outcome>: <reason code>` or `authorization lacks <op>, <op>` over `implement`, `commit`, `push`, `pull_request` and `merge`;
-   - `spec check: <code>, <code>` from task_01's `strictSpecFindings`.
+   - `spec check: <code>, <code>` from `strictSpecFindings`.
 
    A Spec with no reason is `approved`; any other is `blocked`.
-3. MUST report, for each Spec, the production Go `interface:` paths it shares with each earlier Spec in the given order, by the same rule task_01's revalidation uses.
+3. MUST report, for each Spec, the `productionPremises` it shares with each earlier Spec in the given order. A `shared` row is information only: it names the files for which the later item will carry a `premise-changed` warning once the earlier one merges, and it never makes a Spec `blocked` or refuses a start.
 4. MUST list every `docs/backlog/*.md` and `docs/findings/*.md` with its front-matter `status`, and every regular file under `docs/_inbox/` with status `-`, each sorted by path. A missing directory contributes nothing.
 5. MUST print the tab-separated `spec`, `shared`, `backlog`, `finding` and `inbox` rows the TechSpec shows, or with `--json` one `roundfix-deliver-plan/v1` document carrying the same facts. The plan exits `0` when every reported Spec is approved, `1` when any is blocked and `2` on a usage or preflight error.
 6. MUST make `runDeliverStart` call `deliveryAuthorizationReasons` for every slug after `spec.Load` and before `store.Open`. When any slug has a reason, it fails through `printDeliverFailure` with exit `2`, names every such slug with its reasons and `roundfix deliver plan`, and records no queue. A strict finding MUST NOT refuse a start.
@@ -33,6 +33,7 @@ complexity: high
    - the command, by the string `roundfix deliver plan`;
    - its rows, JSON document, verdicts and exit codes;
    - that it writes nothing and is never implementation authority;
+   - that a `shared` row predicts a warning, never a stop;
    - the start refusal.
 
    Then MUST regenerate `skills/roundfix/SKILL.md` with `make skills-sync`.
@@ -47,7 +48,7 @@ complexity: high
 
 - [ ] A plan over an approved Spec and a Spec whose authorization lacks `merge` exits `1` and reports the first `approved` and the second `blocked` with `authorization lacks merge`. A plan over approved Specs only exits `0`.
 - [ ] `--json` carries the same verdicts, reasons, shared premises and intent as the text rows.
-- [ ] Two Specs declaring the same production Go file yield a `shared` row for the later one. A shared test or guide yields none.
+- [ ] Two Specs declaring the same production Go file yield a `shared` row for the later one, and both stay `approved`. A shared test or guide yields none.
 - [ ] Backlog Entries, Findings and inbox notes appear as intent rows. The plan leaves the checkout's HEAD and status unchanged and creates no Run Database. With no slug, it reports every active Spec, and an unknown slug exits `2`.
 - [ ] `deliver start` with a Spec lacking a delivery operation exits `2` and records no queue, while a Spec granting all five operations starts one.
 - [ ] `roundfix deliver --help` and `roundfix --help` name the plan command.

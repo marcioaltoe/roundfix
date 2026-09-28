@@ -34,7 +34,8 @@ keeping the shipped skills true to the CLI. The set was measured with
   strings it expects. No top-level test is added, renamed or removed there, so
   `docs/references/coverage-record.json` does not change.
 - `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md` — the
-  Delivery queue section documents the revalidation and its blockers (task_01),
+  Delivery queue section documents the revalidation, its blocker and its
+  warning (task_01),
   the Delivery Plan and the start refusal (task_03), and the limit flags and
   the Pending Question (task_04); `.agents/skills/` is canonical and `skills/`
   its mirror.
