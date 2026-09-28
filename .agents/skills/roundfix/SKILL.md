@@ -2390,6 +2390,11 @@ in the same Agent Session. Exit `75` uses the one exclusive retry protocol and
 does not create Agent feedback. Any declared formatter, test, Skill
 synchronization, or build failure blocks settlement.
 
+A Task commit includes Project Config only when the frozen Spec authorization
+bounds `.roundfixrc.yml`; otherwise the Task fails with `Project Config outside
+the Spec's authorization`. Batch and QA Report commits never stage Project
+Config and report the exclusion.
+
 For reload compatibility, the Daemon normalizes documented synonyms:
 `done` becomes `completed`, while hyphen or space variants such as
 `in-progress` and `in progress` become `in_progress`. This normalization does

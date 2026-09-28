@@ -373,6 +373,7 @@ _Avoid_: Workspace, artifact directory
 
 **Project Config**:
 Configuration that applies to Roundfix runs inside one repository.
+A Task commit includes Project Config only when the frozen Spec authorization bounds `.roundfixrc.yml`; otherwise the Task fails with `Project Config outside the Spec's authorization`, while Batch and QA Report commits never stage Project Config and report the exclusion.
 _Avoid_: Local config, repo config
 
 **Artifact Directory**:

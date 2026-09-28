@@ -1193,7 +1193,9 @@ func (engine *Engine) commitBatch(ctx context.Context, plan CyclePlan, batch rou
 		)
 		return false, true, err
 	}
+	changed, projectConfigDrops := dropProjectConfigFromCommit(plan.GitRoot, changed, projectConfigNonTaskCommitExclusionReason, false)
 	stageable, dropped := FilterStageablePaths(ctx, plan.GitRoot, changed)
+	dropped = append(projectConfigDrops, dropped...)
 	for _, drop := range dropped {
 		if err := engine.publishDroppedStagePath(ctx, plan.RunID, batch.Number, "", "Batch path", drop); err != nil {
 			return false, false, err
@@ -1243,9 +1245,9 @@ func (engine *Engine) guardWriteBoundary(ctx context.Context, boundary string) e
 	return nil
 }
 
-// diffSnapshots returns the paths dirty after the Batch that were not
-// already dirty before it, sorted for deterministic staging. Project Config
-// stays excluded as defense in depth.
+// diffSnapshots returns the paths dirty after the work that were not already
+// dirty before it, sorted for deterministic staging. Commit callers own every
+// path-specific staging decision.
 func diffSnapshots(before []string, after []string) []string {
 	seen := make(map[string]bool, len(before))
 	for _, path := range before {
@@ -1253,7 +1255,7 @@ func diffSnapshots(before []string, after []string) []string {
 	}
 	changed := []string{}
 	for _, path := range after {
-		if seen[path] || path == ".roundfixrc.yml" {
+		if seen[path] {
 			continue
 		}
 		seen[path] = true

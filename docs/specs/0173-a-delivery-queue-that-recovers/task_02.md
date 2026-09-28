@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0173-a-delivery-queue-that-recovers
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -50,3 +50,26 @@ complexity: medium
 ## References
 
 - [_techspec.md](_techspec.md) — Project Config in Daemon commits
+
+## Result
+
+Implemented the Daemon commit policy at each commit boundary. Snapshot diffing now reports every newly dirty path; Task commit preparation keeps Project Config only when the frozen authorization grants and bounds `.roundfixrc.yml`, while Batch and QA Report commits remove it from their stageable set and publish the shared exclusion message. The QA governed-mutation check ignores Project Config because QA can never commit that path. A Project Config path already present in the before snapshot remains outside every commit without producing a new exclusion event.
+
+Documented the same rule in the `Project Config` glossary entry and the Roundfix assigned-Task commit contract. Regenerated the distributed Roundfix skill with `make skills-sync`; `make baseline-digests` reported `changed:false`.
+
+Acceptance evidence:
+
+- Authorized Task: `TestTaskCommitCarriesProjectConfigBoundedByTheAuthorization` passed and asserted the completed settlement plus the exact commit path set containing `.roundfixrc.yml`.
+- Unauthorized Task: `TestTaskOutsideTheAuthorizationFailsOnProjectConfig` passed and asserted failed settlement with `Task commit lost output: .roundfixrc.yml (Project Config outside the Spec's authorization)`, no commit, one console line, and the dropped-path and settlement event payloads by value.
+- Batch and QA Report: `TestBatchCommitReportsProjectConfigAsDropped` and `TestQAReportCommitReportsProjectConfigAsDropped` passed and asserted each remaining path set, exact console line, summary, and dropped-path payload by value.
+- Pre-existing change: all Task, Batch, and QA Report subtests in `TestPreexistingProjectConfigChangeStaysOutOfTheTaskCommit` passed and asserted `.roundfixrc.yml` was neither committed nor reported as a new drop.
+
+Focused checks:
+
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run '^TestTaskCommitCarriesProjectConfigBoundedByTheAuthorization$' ./internal/daemon` — failed before the implementation because the commit contained only the Task file; this captured the original omission.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run '^(TestTaskCommitCarriesProjectConfigBoundedByTheAuthorization|TestTaskOutsideTheAuthorizationFailsOnProjectConfig|TestBatchCommitReportsProjectConfigAsDropped|TestQAReportCommitReportsProjectConfigAsDropped|TestPreexistingProjectConfigChangeStaysOutOfTheTaskCommit)$' ./internal/daemon` — passed.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run '^(TestResolveCycleStagesOnlyAgentTouchedPaths|TestResolveCycleDropsExecutableFileAndCommitsRemainingBatchPaths|TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths|TestQACommitDropsExecutableFileAndCommitsRemainingPaths|TestGovernedMutationDetectionUsesTheUnfilteredSnapshot|TestGitCommitterExcludesProjectConfigFromBatchCommit)$' ./internal/daemon` — passed.
+- `rtk make skills-sync-check` and `rtk git diff --check` — passed.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache make verify-incremental` — the sandboxed run reached the package tests but could not read the host process table in two force-stop integration tests; the unchanged rerun with host process-table permission passed, including vet, all package tests, skill checks, and the build.
+
+The Task's authored `## Verification` command was not run; Daemon Verification owns it.
