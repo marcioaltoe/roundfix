@@ -21,3 +21,7 @@ A measured baseline per runtime and Task kind, then an evidence-based decision o
 Run the codex runtime through the gateway in baseline mode without changing the maintainer's personal agent configuration, record counts per Run, and compare with routing on only after the deterministic-test work (D3) removes load flakes. Show the comparison to the maintainer before adopting routing.
 
 Evidence: secondbrain `raw/roundfix/2026-09-25-sequencia-de-eficiencia.md` and `raw/web/2026-09-25-exa-roundfix-eficiencia-e-custo.json`; https://github.com/vinilana/jev-gateway.
+
+## Result — 2026-09-28
+
+Baseline measured over Specs 0170–0172 (1,303 gpt-5.6-sol requests, 0 failures, 97% of input cached, ~540 output tokens and 16.5 s per request). Routing on (`jev-1.13.0`, pinned) during Onda 2: before the outage 8% of requests failed and requests took 46.9 s on average; from 12:30 every request through the gateway failed with `ERR_HTTP2_STREAM_ERROR` (502), including passthrough ones, and Agent sessions died mid-Task (Spec 0173 lost two Runs). Direct codex worked at the same time. Routing was switched off and is not adopted; baseline mode stays available for measurement. Data: secondbrain `raw/roundfix/2026-09-25-jev-gateway-baseline-onda-1.md` and `~/.roundfix/jev-gateway/codex-routed.jsonl`.
