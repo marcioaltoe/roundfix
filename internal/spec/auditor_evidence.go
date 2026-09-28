@@ -24,6 +24,7 @@ type AuditorEvidence struct {
 	Ancestry     app.AncestryResult
 	Binary       app.AuditingBinary
 	DeliveryBase string
+	SelfAudit    bool
 }
 
 // roundfixVersionManifest is the file the Roundfix repository declares its own
@@ -60,7 +61,8 @@ func ResolveAuditorEvidence(ctx context.Context, repoRoot, deliveryBase string, 
 	}
 
 	commit := auditorBuildCommit(binary)
-	if commit != "" && deliveryBase != "" && gitObjectExists(ctx, repoRoot, commit) {
+	evidence.SelfAudit = commit != "" && gitObjectExists(ctx, repoRoot, commit)
+	if evidence.SelfAudit && deliveryBase != "" {
 		evidence.Ancestry = auditorAncestry(ctx, repoRoot, commit, deliveryBase)
 	}
 	if evidence.Ancestry == app.AncestryUnknown {

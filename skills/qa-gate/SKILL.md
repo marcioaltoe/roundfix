@@ -28,6 +28,12 @@ Validate the assembled feature against the promises in its spec by exercising th
    a matching, pre-run Spec declaration as `blocked (declared: <criterion>)`
    and count it in `rows_blocked_declared`. Keep the three causes separate:
    never fold one into another to make the report or verdict look cleaner.
+6. **Binary identities.** The auditor fields are Daemon-owned: keep the seeded
+   `auditing_binary` and `auditor_staleness` lines unchanged. Record the
+   `--version` line of the binary that ran every public-CLI row as
+   `user_flow_binary`. In a Roundfix self-audit, build that binary from the
+   audited Run Worktree with `make build`, run public-CLI rows only with
+   `./bin/roundfix`, and never use a `roundfix` found on PATH.
 
 ### QA settlement
 
@@ -469,6 +475,7 @@ date: YYYY-MM-DD
 build: <audited-commit-or-artifact>
 auditing_binary: "<version-and-build-identity>"
 auditor_staleness: "<state>: <reason>" # state is current|stale|unknown; the reason names the signal that answered, such as commit ancestry or the declared tree version
+user_flow_binary: "<the --version line of the binary that ran public-CLI rows>"
 status: in-progress # in-progress | closed
 verdict: pending # pending | pass | fail | partial
 rows_blocked_environment: 0

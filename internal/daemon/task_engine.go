@@ -2556,7 +2556,23 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	if err != nil {
 		return "", "", false, fmt.Errorf("materialize QA mechanical result for run %q: %w", plan.RunID, err)
 	}
-	if err := engine.publishAuditorStalenessWarning(ctx, plan, ordinal, reportPath); err != nil {
+	seededReportPath := reportPath
+	if !filepath.IsAbs(seededReportPath) {
+		seededReportPath = filepath.Join(plan.WorkDir, seededReportPath)
+	}
+	seededReport, err := spec.ReadQAReportFile(seededReportPath)
+	if err != nil {
+		return "", "", false, fmt.Errorf("read seeded QA Report for run %q: %w", plan.RunID, err)
+	}
+	auditorEvidence, err := engine.resolveQAAuditorEvidence(ctx, plan)
+	if err != nil {
+		return "", "", false, fmt.Errorf("resolve auditor evidence for run %q: %w", plan.RunID, err)
+	}
+	auditedHead, err := qaAuditedHead(ctx, plan.WorkDir)
+	if err != nil {
+		return "", "", false, fmt.Errorf("resolve audited head for run %q: %w", plan.RunID, err)
+	}
+	if err := engine.publishAuditorStalenessWarning(ctx, plan, ordinal, reportPath, auditorEvidence); err != nil {
 		return "", "", false, fmt.Errorf("publish auditor staleness warning for run %q: %w", plan.RunID, err)
 	}
 	mechanicalSummary := fmt.Sprintf("QA mechanical stage seeded %s for Spec %s.", reportPath, plan.Spec.Slug)
@@ -2608,6 +2624,9 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 			return "", "", false, fmt.Errorf("build QA prompt for run %q: %w", plan.RunID, promptErr)
 		}
 		prompt += fmt.Sprintf("\nSeeded QA Report: %s\nComplete this report in place, preserving its materialized mechanical rows and skips; do not create another QA Report.\n", reportPath)
+		if auditorEvidence.SelfAudit {
+			prompt += "Self-audit: build roundfix from this Run Worktree with make build, run every public-CLI row with ./bin/roundfix and never a roundfix found on PATH, and record its --version line as user_flow_binary.\n"
+		}
 		prompt += "\n" + repositoryVerificationPrompt
 		logPath := agentLogPath(plan.AgentLogs, plan.ArtifactDir, plan.RunID, ordinal)
 		fmt.Fprintf(engine.deps.Progress, "QA step (Batch %03d) for Spec %s\n", ordinal, plan.Spec.Slug)
@@ -2649,7 +2668,13 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		}
 	}
 	var eligibilityErr error
-	verdict, reportPath, accepted, eligibilityErr = engine.settleQAVerdict(plan)
+	verdict, reportPath, accepted, eligibilityErr = engine.settleQAVerdict(
+		plan,
+		seededReport.AuditingBinary,
+		seededReport.AuditorStaleness,
+		auditorEvidence,
+		auditedHead,
+	)
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
 		fmt.Sprintf("QA verdict %s for Spec %s.", verdict, plan.Spec.Slug),
 		map[string]any{"phase": "verdict", "verdict": verdict, "report": reportPath},
@@ -2896,11 +2921,7 @@ func (engine *Engine) resolveQAAuditorEvidence(ctx context.Context, plan TaskPla
 	return spec.ResolveAuditorEvidence(ctx, plan.WorkDir, deliveryBase, engine.auditor()), nil
 }
 
-func (engine *Engine) publishAuditorStalenessWarning(ctx context.Context, plan TaskPlan, ordinal int, reportPath string) error {
-	evidence, err := engine.resolveQAAuditorEvidence(ctx, plan)
-	if err != nil {
-		return err
-	}
+func (engine *Engine) publishAuditorStalenessWarning(ctx context.Context, plan TaskPlan, ordinal int, reportPath string, evidence spec.AuditorEvidence) error {
 	auditor := auditorEvidenceBinary(evidence)
 	state, _ := auditor.CompareToTree(evidence.TreeVersion, evidence.Ancestry)
 	if state != app.StalenessStale {
@@ -3202,7 +3223,13 @@ func pullRequestRepository(rawURL string) string {
 // (ADR 0015). The report path comes back relative to the working tree,
 // empty when no report exists. A readable report also returns the shared
 // eligibility error so settlement can name why a pass or partial was refused.
-func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string, bool, error) {
+func (engine *Engine) settleQAVerdict(
+	plan TaskPlan,
+	seededAuditingBinary string,
+	seededAuditorStaleness string,
+	auditorEvidence spec.AuditorEvidence,
+	auditedHead string,
+) (string, string, bool, error) {
 	verdict := ""
 	accepted := false
 	var eligibilityErr error
@@ -3210,6 +3237,15 @@ func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string, bool, erro
 	case err == nil:
 		verdict = report.Verdict
 		eligibilityErr = spec.QAReportEligibility(plan.Spec.Dir, report)
+		if eligibilityErr == nil {
+			eligibilityErr = qaSettlementReportEligibility(
+				report,
+				seededAuditingBinary,
+				seededAuditorStaleness,
+				auditorEvidence,
+				auditedHead,
+			)
+		}
 		accepted = eligibilityErr == nil
 	case errors.Is(err, spec.ErrNoQAReport):
 		// ReadQAReport already searched the report directory. Preserve that
@@ -3228,6 +3264,70 @@ func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string, bool, erro
 		}
 	}
 	return verdict, reportPath, accepted, eligibilityErr
+}
+
+func qaSettlementReportEligibility(
+	report spec.QAReport,
+	seededAuditingBinary string,
+	seededAuditorStaleness string,
+	auditorEvidence spec.AuditorEvidence,
+	auditedHead string,
+) error {
+	if report.AuditingBinary != "" && report.AuditingBinary != seededAuditingBinary {
+		return errors.New("auditor fields are Daemon-owned: auditing_binary differs from the seeded value")
+	}
+	if report.AuditorStaleness != "" && report.AuditorStaleness != seededAuditorStaleness {
+		return errors.New("auditor fields are Daemon-owned: auditor_staleness differs from the seeded value")
+	}
+	if !auditorEvidence.SelfAudit {
+		return nil
+	}
+	if strings.TrimSpace(report.UserFlowBinary) == "" {
+		return errors.New("user_flow_binary is required for a self-audit")
+	}
+	buildCommit, ok := qaUserFlowBuildCommit(report.UserFlowBinary)
+	if !ok {
+		return errors.New("user_flow_binary names no valid build commit")
+	}
+	if !strings.HasPrefix(strings.ToLower(strings.TrimSpace(auditedHead)), strings.ToLower(buildCommit)) {
+		return fmt.Errorf("user_flow_binary build commit %q is not a prefix of audited head %q", buildCommit, strings.TrimSpace(auditedHead))
+	}
+	return nil
+}
+
+func qaUserFlowBuildCommit(binary string) (string, bool) {
+	open := strings.IndexByte(binary, '(')
+	if open < 0 {
+		return "", false
+	}
+	details := binary[open+1:]
+	end := len(details)
+	if comma := strings.IndexByte(details, ','); comma >= 0 && comma < end {
+		end = comma
+	}
+	if close := strings.IndexByte(details, ')'); close >= 0 && close < end {
+		end = close
+	}
+	commit := strings.TrimSpace(details[:end])
+	commit = strings.TrimSpace(strings.TrimSuffix(commit, "-dirty"))
+	if len(commit) < 7 {
+		return "", false
+	}
+	for _, char := range commit {
+		if (char < '0' || char > '9') && (char < 'a' || char > 'f') && (char < 'A' || char > 'F') {
+			return "", false
+		}
+	}
+	return commit, true
+}
+
+func qaAuditedHead(ctx context.Context, workDir string) (string, error) {
+	command := exec.CommandContext(ctx, "git", "-C", workDir, "rev-parse", "HEAD")
+	output, err := command.Output()
+	if err != nil {
+		return "", gitExecStderr(err)
+	}
+	return strings.TrimSpace(string(output)), nil
 }
 
 // commitQAReport creates the QA Report commit from the QA step's snapshot
