@@ -2556,6 +2556,9 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	if err != nil {
 		return "", "", false, fmt.Errorf("materialize QA mechanical result for run %q: %w", plan.RunID, err)
 	}
+	if err := engine.publishAuditorStalenessWarning(ctx, plan, ordinal, reportPath); err != nil {
+		return "", "", false, fmt.Errorf("publish auditor staleness warning for run %q: %w", plan.RunID, err)
+	}
 	mechanicalSummary := fmt.Sprintf("QA mechanical stage seeded %s for Spec %s.", reportPath, plan.Spec.Slug)
 	if mechanicalResult.Blocking {
 		mechanicalSummary = fmt.Sprintf("QA mechanical stage blocked Spec %s with %d finding(s).", plan.Spec.Slug, len(mechanicalResult.Findings))
@@ -2845,7 +2848,10 @@ func mechanicalCommitPaths(ctx context.Context, repoRoot, sha string) ([]string,
 func (engine *Engine) writeMechanicalQAReport(ctx context.Context, plan TaskPlan, result speccheck.MechanicalResult) (string, error) {
 	// The Git subprocesses this resolves through must die with the QA Run;
 	// context.Background() here outlived a cancelled gate.
-	evidence := spec.ResolveAuditorEvidence(ctx, plan.WorkDir, app.Auditor())
+	evidence, err := engine.resolveQAAuditorEvidence(ctx, plan)
+	if err != nil {
+		return "", err
+	}
 	content, err := mechanicalQAReportContent(result, evidence)
 	if err != nil {
 		return "", err
@@ -2874,6 +2880,44 @@ func (engine *Engine) writeMechanicalQAReport(ctx context.Context, plan TaskPlan
 		}
 		return artifactCommitPath(plan, path), nil
 	}
+}
+
+func (engine *Engine) resolveQAAuditorEvidence(ctx context.Context, plan TaskPlan) (spec.AuditorEvidence, error) {
+	deliveryBase := ""
+	if strings.TrimSpace(plan.HeadSHA) != "" {
+		base, resolved, err := qaDeliveryBase(ctx, plan)
+		if err != nil {
+			return spec.AuditorEvidence{}, fmt.Errorf("resolve Delivery Base for auditor evidence: %w", err)
+		}
+		if resolved {
+			deliveryBase = base
+		}
+	}
+	return spec.ResolveAuditorEvidence(ctx, plan.WorkDir, deliveryBase, engine.auditor()), nil
+}
+
+func (engine *Engine) publishAuditorStalenessWarning(ctx context.Context, plan TaskPlan, ordinal int, reportPath string) error {
+	evidence, err := engine.resolveQAAuditorEvidence(ctx, plan)
+	if err != nil {
+		return err
+	}
+	auditor := auditorEvidenceBinary(evidence)
+	state, _ := auditor.CompareToTree(evidence.TreeVersion, evidence.Ancestry)
+	if state != app.StalenessStale {
+		return nil
+	}
+	line := auditor.StalenessLine(evidence.TreeVersion, evidence.Ancestry)
+	action := auditorStalenessAction(evidence.DeliveryBase)
+	return engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
+		fmt.Sprintf("Auditor staleness warning for Spec %s.", plan.Spec.Slug),
+		map[string]any{
+			"phase":             "auditor_staleness",
+			"auditor_staleness": line,
+			"delivery_base":     evidence.DeliveryBase,
+			"action":            action,
+			"report":            reportPath,
+		},
+	)
 }
 
 func nextMechanicalQAReportPath(reportDir, date string) (string, error) {
@@ -2975,6 +3019,7 @@ func mechanicalQAReportContent(result speccheck.MechanicalResult, evidence spec.
 		}
 		content.WriteByte('\n')
 		content.Write(mechanical.Bytes())
+		appendAuditorStalenessWarning(&content, evidence)
 		return content.Bytes(), nil
 	}
 
@@ -3002,7 +3047,7 @@ func mechanicalQAReportContent(result speccheck.MechanicalResult, evidence spec.
 		verdict = spec.VerdictFail
 	}
 	fmt.Fprintf(&content, "verdict: %s\n", verdict)
-	auditor := app.Auditor()
+	auditor := auditorEvidenceBinary(evidence)
 	auditorStaleness := auditor.StalenessLine(evidence.TreeVersion, evidence.Ancestry)
 	fmt.Fprintf(&content, "auditing_binary: %s\n", strconv.Quote(auditor.String()))
 	fmt.Fprintf(&content, "auditor_staleness: %s\n", strconv.Quote(auditorStaleness))
@@ -3011,7 +3056,33 @@ func mechanicalQAReportContent(result speccheck.MechanicalResult, evidence spec.
 	fmt.Fprintf(&content, "rows_blocked_declared: %d\n", mechanicalBlockedRowCount(mechanicalBody, "declared"))
 	content.WriteString("---\n\n# QA Report\n\n")
 	content.Write(mechanicalBody)
+	appendAuditorStalenessWarning(&content, evidence)
 	return content.Bytes(), nil
+}
+
+func auditorEvidenceBinary(evidence spec.AuditorEvidence) app.AuditingBinary {
+	if strings.TrimSpace(evidence.Binary.Version) != "" {
+		return evidence.Binary
+	}
+	return app.Auditor()
+}
+
+func appendAuditorStalenessWarning(content *bytes.Buffer, evidence spec.AuditorEvidence) {
+	auditor := auditorEvidenceBinary(evidence)
+	state, _ := auditor.CompareToTree(evidence.TreeVersion, evidence.Ancestry)
+	if state != app.StalenessStale {
+		return
+	}
+	if content.Len() > 0 && content.Bytes()[content.Len()-1] != '\n' {
+		content.WriteByte('\n')
+	}
+	content.WriteString("\n## Auditor staleness warning\n\n")
+	fmt.Fprintf(content, "- auditor_staleness: %s\n", auditor.StalenessLine(evidence.TreeVersion, evidence.Ancestry))
+	fmt.Fprintf(content, "- action: %s\n", auditorStalenessAction(evidence.DeliveryBase))
+}
+
+func auditorStalenessAction(deliveryBase string) string {
+	return "rebuild roundfix from delivery base " + strings.TrimSpace(deliveryBase) + " and restart it before the next gate"
 }
 
 func mechanicalRefusalCause(result speccheck.MechanicalResult) string {

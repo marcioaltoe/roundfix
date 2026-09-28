@@ -87,7 +87,10 @@ type PreconditionRefusal struct {
 func WritePreconditionRefusalReport(writer io.Writer, refusal PreconditionRefusal, evidence AuditorEvidence) error {
 	check := qaRefusalValue(refusal.CheckName, QAPreconditionCheckUnnamed)
 	reason := qaRefusalValue(refusal.Reason, QAPreconditionReasonUnrecorded)
-	auditor := app.Auditor()
+	auditor := evidence.Binary
+	if strings.TrimSpace(auditor.Version) == "" {
+		auditor = app.Auditor()
+	}
 	auditorStaleness := auditor.StalenessLine(evidence.TreeVersion, evidence.Ancestry)
 
 	var report strings.Builder

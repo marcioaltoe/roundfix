@@ -135,7 +135,7 @@ The qa-gate evidence report written to a Spec's QA directory, carrying a machine
 _Avoid_: Test report, QA log
 
 **Auditing Binary**:
-The Roundfix binary that produced a verdict, distinct from the tree it audited. It carries the version, build commit, and build time (the last two may be empty for a released build), and a QA Report records its formatted identity as `AuditingBinary` / `auditing_binary`; `auditor_staleness` reports `current`, `stale`, or `unknown` with the answering or missing-evidence reason.
+The Daemon's Roundfix binary that runs the mechanical stage, distinct from the tree it audits. It carries the version, build commit, and build time (the last two may be empty for a released build), and a QA Report records its formatted identity as `AuditingBinary` / `auditing_binary`; `auditor_staleness` compares its build commit with the Delivery Base, and a stale Auditing Binary is published as a warning while the gate proceeds.
 _Avoid_: Audited binary, audited tree, ambiguous build
 
 **Precondition Refusal**:

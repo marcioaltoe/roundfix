@@ -62,9 +62,9 @@ func TestResolveAuditorEvidence(t *testing.T) {
 		t.Parallel()
 		root := initEvidenceRepo(t)
 		first := commitEvidenceFile(t, root, "a.txt", "one\n")
-		commitEvidenceFile(t, root, "b.txt", "two\n")
+		head := commitEvidenceFile(t, root, "b.txt", "two\n")
 
-		evidence := ResolveAuditorEvidence(ctx, root, app.AuditingBinary{Commit: first})
+		evidence := ResolveAuditorEvidence(ctx, root, head, app.AuditingBinary{Commit: first})
 
 		if evidence.Ancestry != app.AncestryOlder {
 			t.Fatalf("ancestry = %v, want %v", evidence.Ancestry, app.AncestryOlder)
@@ -76,7 +76,7 @@ func TestResolveAuditorEvidence(t *testing.T) {
 		root := initEvidenceRepo(t)
 		head := commitEvidenceFile(t, root, "a.txt", "one\n")
 
-		evidence := ResolveAuditorEvidence(ctx, root, app.AuditingBinary{Commit: head})
+		evidence := ResolveAuditorEvidence(ctx, root, head, app.AuditingBinary{Commit: head})
 
 		if evidence.Ancestry != app.AncestryNotOlder {
 			t.Fatalf("ancestry = %v, want %v", evidence.Ancestry, app.AncestryNotOlder)
@@ -87,9 +87,9 @@ func TestResolveAuditorEvidence(t *testing.T) {
 		t.Parallel()
 		root := initEvidenceRepo(t)
 		first := commitEvidenceFile(t, root, "a.txt", "one\n")
-		commitEvidenceFile(t, root, "b.txt", "two\n")
+		head := commitEvidenceFile(t, root, "b.txt", "two\n")
 
-		evidence := ResolveAuditorEvidence(ctx, root, app.AuditingBinary{Commit: first + "-dirty"})
+		evidence := ResolveAuditorEvidence(ctx, root, head, app.AuditingBinary{Commit: first + "-dirty"})
 
 		if evidence.Ancestry != app.AncestryOlder {
 			t.Fatalf("dirty-marked ancestry = %v, want %v", evidence.Ancestry, app.AncestryOlder)
@@ -102,9 +102,9 @@ func TestResolveAuditorEvidence(t *testing.T) {
 		// its build commit is not an object there. Comparing it against history
 		// it never belonged to would be worse than reporting unknown.
 		root := initEvidenceRepo(t)
-		commitEvidenceFile(t, root, "a.txt", "one\n")
+		head := commitEvidenceFile(t, root, "a.txt", "one\n")
 
-		evidence := ResolveAuditorEvidence(ctx, root, app.AuditingBinary{Commit: "0123456789abcdef0123456789abcdef01234567"})
+		evidence := ResolveAuditorEvidence(ctx, root, head, app.AuditingBinary{Commit: "0123456789abcdef0123456789abcdef01234567"})
 
 		if evidence.Ancestry != app.AncestryUnknown {
 			t.Fatalf("foreign-commit ancestry = %v, want %v", evidence.Ancestry, app.AncestryUnknown)
@@ -124,9 +124,9 @@ func TestResolveAuditorEvidence(t *testing.T) {
 		if err := os.WriteFile(manifest, []byte(`{"name":"roundfix","version":"9.9.9"}`), 0o644); err != nil {
 			t.Fatalf("write manifest: %v", err)
 		}
-		commitEvidenceFile(t, root, "a.txt", "one\n")
+		head := commitEvidenceFile(t, root, "a.txt", "one\n")
 
-		evidence := ResolveAuditorEvidence(ctx, root, app.AuditingBinary{Version: "0.1.0"})
+		evidence := ResolveAuditorEvidence(ctx, root, head, app.AuditingBinary{Version: "0.1.0"})
 
 		if evidence.Ancestry != app.AncestryUnknown {
 			t.Fatalf("released-build ancestry = %v, want %v", evidence.Ancestry, app.AncestryUnknown)
@@ -149,9 +149,9 @@ func TestResolveAuditorEvidence(t *testing.T) {
 		if err := os.WriteFile(manifest, []byte(`{"name":"some-other-package","version":"9.9.9"}`), 0o644); err != nil {
 			t.Fatalf("write manifest: %v", err)
 		}
-		commitEvidenceFile(t, root, "a.txt", "one\n")
+		head := commitEvidenceFile(t, root, "a.txt", "one\n")
 
-		evidence := ResolveAuditorEvidence(ctx, root, app.AuditingBinary{Version: "0.1.0"})
+		evidence := ResolveAuditorEvidence(ctx, root, head, app.AuditingBinary{Version: "0.1.0"})
 
 		if evidence.TreeVersion != "" {
 			t.Fatalf("foreign-manifest tree version = %q, want empty", evidence.TreeVersion)
@@ -164,9 +164,9 @@ func TestResolveAuditorEvidence(t *testing.T) {
 	t.Run("a repository declaring no Roundfix version answers nothing", func(t *testing.T) {
 		t.Parallel()
 		root := initEvidenceRepo(t)
-		commitEvidenceFile(t, root, "a.txt", "one\n")
+		head := commitEvidenceFile(t, root, "a.txt", "one\n")
 
-		evidence := ResolveAuditorEvidence(ctx, root, app.AuditingBinary{Version: "0.1.0"})
+		evidence := ResolveAuditorEvidence(ctx, root, head, app.AuditingBinary{Version: "0.1.0"})
 
 		if evidence.Ancestry != app.AncestryUnknown || evidence.TreeVersion != "" {
 			t.Fatalf("evidence = %+v, want no signal at all", evidence)
