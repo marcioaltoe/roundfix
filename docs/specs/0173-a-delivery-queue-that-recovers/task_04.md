@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0173-a-delivery-queue-that-recovers
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -48,3 +48,61 @@ An Implement Run that ends Unresolved leaves its settled Task commits on its Run
 ## References
 
 - [_techspec.md](_techspec.md) — Item recovery in the delivery workflow
+
+## Result
+
+Implementation:
+
+- `commandDeliveryWorkflow` now implements `delivery.ItemRecovery`, and the
+  command delivery engine passes that workflow through `Recovery`.
+- Item inspection resolves the item worktree's Specs Root, reports unfinished
+  Tasks in Task Graph order, recognizes the configured archive destination,
+  and reads the item head from Git.
+- Item carry-forward resolves a recorded Run or the newest branch-matching
+  Implement Run, preserves the required no-op cases, reuses the existing
+  coverage, proof, refusal, provenance, and application boundaries, and
+  returns carried Task IDs in integration order.
+- Carry-forward refusals leave the item head unchanged and expose a next action
+  naming both the item-worktree Reconcile Command and the Delivery Retry.
+
+Focused checks:
+
+- Pre-change inspection found no `internal/cli/deliver_recovery_test.go`, no
+  `InspectItem` or `CarryForward` methods on `commandDeliveryWorkflow`, and no
+  `Recovery` dependency in `newCommandDeliveryEngine`.
+- `rtk env GOCACHE=/tmp/roundfix-task-04-gocache go test -count=1 -run '^TestItemRecovery' ./internal/cli`
+  passed after the final implementation edit.
+- `rtk env GOCACHE=/tmp/roundfix-task-04-gocache go test -count=1 -run '^Test(InspectItem|RetriedItem)' ./internal/cli`
+  passed after the final implementation edit.
+- `rtk git diff --check` passed before this Result was written.
+- The first compile-only check could not access the sandboxed user Go build
+  cache; the same check passed with the task-scoped writable `GOCACHE` used by
+  every focused test above.
+
+Acceptance evidence:
+
+- `TestItemRecoveryCarriesAnUnresolvedRunIntoTheItemWorktree` proves that an
+  Unresolved Run carries only `task_01`, records its Run and settlement commit
+  provenance, and leaves `task_02` pending.
+- `TestItemRecoveryFindsTheRunByItemBranchWhenNoneIsRecorded` finds and carries
+  the branch-matching Run without a recorded Run ID;
+  `TestItemRecoveryCarriesNothingWithoutAnImplementRun` proves the empty case
+  leaves the item head unchanged.
+- `TestItemRecoveryCarriesNothingForARunAlreadyCarried` repeats recovery and
+  proves no Task or head is changed. Additional negative tests cover an
+  unaccepted outcome and a Run with no completed Task evidence.
+- `TestItemRecoveryRefusesACarryForwardWithAMovedInput` and
+  `TestItemRecoveryRefusesAGoneRunWorktree` each prove an unchanged item head
+  and a next action naming both required commands. A separate test proves the
+  same refusal contract for an external Specs Root.
+- `TestInspectItemListsUnfinishedTasks` observes pending and failed Tasks in
+  Task Graph order, while `TestInspectItemReportsAnArchivedSpec` observes the
+  archive destination and current Git head.
+- `TestRetriedItemRunsWithItsCompletedTasksCarried` runs `Engine.Retry` and
+  then `Engine.Run`; its fake Implement executor is called in the item
+  worktree and observes `task_01` completed while `task_02` remains pending.
+
+Not run:
+
+- The Task's declared `## Verification` command; the Roundfix Daemon owns that
+  command and the terminal Task verdict.
