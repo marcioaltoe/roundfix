@@ -121,7 +121,7 @@ func TestRunQAReportAcceptCommandFailsClosed(t *testing.T) {
 				writeQAReportTestFile(t, path, "not frontmatter\n")
 				return path
 			},
-			wantError: "frontmatter",
+			wantError: `front matter must open with a "---" first line`,
 		},
 	}
 
