@@ -296,7 +296,7 @@ A recorded terminal reason a Run Branch no longer needs integration and may be d
 _Avoid_: Branch cleanup, forced deletion, reconcile result
 
 **Run Worktree Reconciliation**:
-The proof-based classification of a terminal spec Run's retained Git surfaces: `safe` when the Run Branch and recorded target resolve, any present Run Worktree is registered and clean, and the Run Branch tip is an ancestor of the target tip; `superseded` when a QA-report-only Run Branch is older than the target branch's QA Report for the same Spec; `unintegrated` when the same evidence resolves but ancestry is false; `dirty` when a present Run Worktree has tracked or untracked changes; `unknown` when metadata or Git evidence cannot prove another state; and `released` only when both the Run Worktree and Run Branch are absent. Only freshly revalidated `safe` or `superseded` work can be cleaned up.
+The proof-based classification of a terminal spec Run's retained Git surfaces: `safe` when the Run Branch is contained in its target or its content is represented at the merged head; `superseded` when a newer QA Report or the merged-head proof represents its Task or QA Report commits; `unintegrated` when resolved evidence does not represent the Run; `dirty` when a present Run Worktree has tracked or untracked changes; `unknown` when metadata or Git evidence cannot prove another state; and `released` only when both the Run Worktree and Run Branch are absent. Only freshly revalidated `safe` or `superseded` work can be cleaned up.
 _Avoid_: GC, force cleanup, manual branch deletion
 
 **Integration Pending**:
