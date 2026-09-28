@@ -43,8 +43,12 @@ The maintainer approved Onda 2 of the efficiency sequence in chat on 2026-09-28
 On 2026-09-25 the maintainer expressly authorized
 `internal/cli/baseline_plan_test.go` and
 `internal/cli/baseline_release_gate_test.go` for Spec 0121 Core Feature 6, which
-this Spec takes over. The Baseline assets and the other Go test files ride the
-standing grant of 2026-09-21 for governed source. The skill files ride the
+this Spec takes over. On 2026-09-28 the maintainer expressly authorized, in
+chat, the Baseline assets, formatter goldens and regenerated `docs/agents/*`
+guides this Spec lists, and the governed tests `internal/baseline/plan_test.go`,
+`internal/cli/baseline_human_test.go` and
+`internal/docscontract/publicdocs_test.go` (the standing grant of 2026-09-21
+excludes Baseline modules, so it is not the authority for them). The skill files ride the
 standing grant of 2026-09-18 for keeping the shipped skills true to the CLI.
 The set was measured with `GovernedPath` and by running the sanctioned
 regeneration in a disposable copy of main `0160f70a` on 2026-09-28.

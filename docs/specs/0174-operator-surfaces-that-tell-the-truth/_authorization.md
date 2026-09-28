@@ -24,8 +24,10 @@ operations:
 
 The maintainer approved Onda 2 of the efficiency sequence in chat on 2026-09-28
 ("Siga para onda 2 como sugerido até o release"); this Spec is part of it. The
-Go sources, Go tests and the Makefile ride the standing grant of 2026-09-21 for
-governed source a slice genuinely needs; the skill files ride the standing grant
+Go sources and Go tests ride the standing grant of 2026-09-21 for governed
+source a slice genuinely needs; the `Makefile` change that makes `repo-test` run
+the `repocontract` tests was expressly authorized by the maintainer in chat on
+2026-09-28 (the standing grant excludes Verification configuration); the skill files ride the standing grant
 of 2026-09-18 for keeping the shipped skills true to the CLI. The set was
 measured with `GovernedPath` on `0160f70a`.
 
