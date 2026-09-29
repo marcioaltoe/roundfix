@@ -32,6 +32,9 @@ Corrective Task from the pre-PR review of 2026-09-29. `roundfix review dispose` 
 
 - interface: `internal/cli/review.go`
 - creates: `internal/cli/review_dispose_lock_test.go`
+- creates: `internal/cli/review_dispose_lock.go`
+- creates: `internal/cli/review_dispose_lock_unix.go`
+- creates: `internal/cli/review_dispose_lock_windows.go`
 
 ## Verification
 
