@@ -235,5 +235,5 @@ func writeQACheckoutFacts(builder *strings.Builder, req QAPromptRequest) {
 		builder.WriteString("Pull Request: could not be resolved; Pull Request journeys are environment-blocked and their absence is unproven — do not record a confirmed absence.\n")
 		return
 	}
-	builder.WriteString("Pull Request: none open; Pull Request journeys are environment-blocked.\n")
+	builder.WriteString("Pull Request: none open; record each Pull Request journey as blocked (environment: no open Pull Request) and name the Pull Request row in its provenance. That row alone never prevents a qualifying declared partial.\n")
 }

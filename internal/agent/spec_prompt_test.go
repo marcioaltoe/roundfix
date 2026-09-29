@@ -392,7 +392,7 @@ func TestBuildQAPromptStatesPullRequestJourneysAreEnvironmentBlockedWhenNoneIsOp
 		t.Fatalf("BuildQAPrompt returned error: %v", err)
 	}
 
-	const expected = "Pull Request: none open; Pull Request journeys are environment-blocked.\n"
+	const expected = "Pull Request: none open; record each Pull Request journey as blocked (environment: no open Pull Request) and name the Pull Request row in its provenance. That row alone never prevents a qualifying declared partial.\n"
 	if !strings.Contains(prompt, expected) {
 		t.Fatalf("expected the QA prompt to contain %q, got:\n%s", expected, prompt)
 	}

@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0181-gates-that-refuse-only-what-someone-can-act-on
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -65,3 +65,33 @@ The authored QA gate runs before any Pull Request exists. Every matrix therefore
 - [references/2026-09-29-the-pull-request-row-blocks-every-qualifying-partial.md](references/2026-09-29-the-pull-request-row-blocks-every-qualifying-partial.md)
 
 ## Result
+
+Implemented:
+
+- `readQAReport` now derives `RowsBlockedPrePullRequest` only from unfenced tables inside `## Results` whose trimmed, case-insensitive headers include `Status` and `Provenance`. A row counts only for the exact status and an exact comma- or semicolon-delimited `Pull Request row` provenance item.
+- The declared-`partial` environment check excuses at most the derived count, preserves the existing refusal when none qualify, and reports how many rows remain outside the pre-PR row when one qualifies. The `pass` branch, other partial checks and their order, frontmatter validation, and the mechanical count cross-check remain unchanged.
+- The resolved no-open-PR QA prompt now carries the TechSpec sentence, including the required provenance and qualifying-partial guidance.
+- Added the required parser and eligibility coverage in `internal/spec/qa_prepr_row_test.go`; the existing prompt test pins the new sentence under its original name.
+
+Focused checks:
+
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run '^(TestAPartialQualifiesWhenItsOnlyEnvironmentRowIsThePrePullRequestRow|TestAPartialWithAnotherEnvironmentRowStillRefuses|TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses|TestAResultsTableWithoutProvenanceGainsNoPrePullRequestRow|TestAPassIsUnchangedByThePrePullRequestRow|TestQAReportEligibilityKeepsExistingPartialRefusalPrecedence)$' ./internal/spec`: passed.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run '^TestBuildQAPromptStatesPullRequestJourneysAreEnvironmentBlockedWhenNoneIsOpen$' ./internal/agent`: passed.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 ./internal/spec ./internal/agent`: passed.
+- `rtk make verify-incremental`: passed after rerunning with process-table access; the sandboxed attempt reached the full suite but its two force-stop integration tests could not enumerate the process tree (`operation not permitted`).
+- `rtk git diff --check`: passed.
+
+Acceptance evidence:
+
+- `TestAPartialQualifiesWhenItsOnlyEnvironmentRowIsThePrePullRequestRow` covers the qualifying declared partial and exact-item provenance split across `;` and `,`.
+- `TestAPartialWithAnotherEnvironmentRowStillRefuses` pins `rows_blocked_environment is 2, 1 outside the pre-PR Pull Request row; expected 0 outside it`.
+- `TestANoPullRequestStatusWithoutThePullRequestSourceStillRefuses` separately covers another source, `not a Pull Request row`, status case drift, a matching table outside Results, and a matching fenced table. `TestAResultsTableWithoutProvenanceGainsNoPrePullRequestRow` covers the missing column. All keep the unchanged refusal.
+- `TestAPassIsUnchangedByThePrePullRequestRow` covers the unchanged pass branch and the unchanged missing-declared-row refusal. `TestQAReportEligibilityKeepsExistingPartialRefusalPrecedence` passed without edits.
+- The archived Spec 0179 report was inspected and carries `rows_blocked_environment: 1` plus an exact R11 status and `Pull Request row` provenance item. `internal/cli/qa_report.go` delegates acceptance to the changed `QAReportEligibility`. The built-binary acceptance command remains unexecuted here because the Daemon owns the task-authored `## Verification` command.
+
+Follow-ups: none.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260929T170240Z_b8558d4fb9103028`
+- Source commit: `f21767bb24d9ae113fae9017b26d4d41870fd8dd`
