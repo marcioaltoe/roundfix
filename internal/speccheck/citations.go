@@ -1007,6 +1007,9 @@ func detectADRConsistency(result *Result, repoRoot, specDir string, prdContent [
 		})
 	}
 
+	var horizon adrHorizon
+	horizonLoaded := false
+	horizonApplies := false
 	for _, number := range sortedADRNumbers(corpus) {
 		record := corpus[number]
 		if listed[number] {
@@ -1014,6 +1017,13 @@ func detectADRConsistency(result *Result, repoRoot, specDir string, prdContent [
 		}
 		relatedNumber, related := firstListedCitation(record, listed)
 		if !related {
+			continue
+		}
+		if !horizonLoaded {
+			horizon, horizonApplies = newADRHorizon(repoRoot, filepath.Join(specDir, "_prd.md"))
+			horizonLoaded = true
+		}
+		if horizonApplies && !horizon.predates(record.DisplayPath) {
 			continue
 		}
 		result.Findings = append(result.Findings, Finding{

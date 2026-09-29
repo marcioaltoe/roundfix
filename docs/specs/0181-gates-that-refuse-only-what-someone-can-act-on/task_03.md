@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0181-gates-that-refuse-only-what-someone-can-act-on
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -57,3 +57,59 @@ complexity: medium
 - [references/2026-09-29-a-new-adr-forces-edits-to-every-active-spec.md](references/2026-09-29-a-new-adr-forces-edits-to-every-active-spec.md)
 
 ## Result
+
+Implementation:
+
+- Added a fail-closed related-ADR horizon that reads the PRD's adding commit,
+  reads every ADR adding commit in one log, keeps the newest add per path, and
+  answers ancestry with `merge-base --is-ancestor`. Every Git subprocess uses
+  the mechanical Git environment.
+- Applied the horizon lazily on the first related candidate only. Unlisted and
+  unsupported citation checks, skip behavior, and finding text are unchanged.
+- Added real-Git and plain-directory coverage for later, earlier, same-commit,
+  re-added, uncommitted, different-repository, shallow-history, and unlisted
+  citation behavior.
+
+Focused checks:
+
+- Before implementation,
+  `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run '^TestAnADRCommittedAfterTheSpecOpensNoRelatedGap$' ./internal/speccheck`
+  failed with the existing `SC-ADR-RELATED` finding for ADR-0002.
+- After implementation, the same focused test passed.
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run 'ADRCommitted|UncommittedSpec|UncommittedADR|SpecWithoutGit|SpecInAnotherRepository|ShallowHistory|HorizonLeaves' ./internal/speccheck`
+  passed.
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run '^TestTheHorizonUsesTheNewestAddingCommit$' ./internal/speccheck`
+  passed.
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run '^(TestCheckADRClosureDepthOne|TestCheckReplay0056F001FromReport)$' ./internal/speccheck`
+  passed after the repository-root guard restored the non-Git fixture behavior.
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 ./internal/speccheck`
+  passed.
+- `GOCACHE=/tmp/roundfix-task03-gocache make verify-incremental` passed with
+  host process-table access. The sandboxed attempt could not enumerate child
+  processes in two force-stop integration tests. One permission-enabled run
+  then hit an unrelated 200 ms daemon budget at 211 ms; that test passed alone
+  unchanged, and the unchanged incremental command passed on the next run.
+
+Acceptance evidence:
+
+- `TestAnADRCommittedAfterTheSpecOpensNoRelatedGap` covers a later committed
+  ADR producing no related gap.
+- `TestAnADRCommittedBeforeTheSpecOpensTheRelatedGap` and
+  `TestAnADRCommittedWithTheSpecOpensTheRelatedGap` cover earlier and
+  same-commit ADRs retaining the gap.
+- `TestAnUncommittedSpecKeepsTheFullRelatedCheck`,
+  `TestASpecWithoutGitKeepsTheFullRelatedCheck`, and
+  `TestAShallowHistoryKeepsTheFullRelatedCheck` cover every declared full-check
+  fallback; `TestASpecInAnotherRepositoryKeepsTheFullRelatedCheck` separately
+  covers different Git common directories.
+- `TestAnUncommittedADRIsOutsideACommittedSpecsHorizon` covers an uncommitted
+  ADR producing no related gap.
+- `TestTheHorizonLeavesUnlistedCitationsChecked` covers an outside-horizon ADR
+  still producing `SC-ADR-UNLISTED`.
+
+The Daemon-owned Verification command was not run in this Agent turn.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260929T170240Z_b8558d4fb9103028`
+- Source commit: `0eb554a39e2496cdf482e09fac03607e1025fd9c`
