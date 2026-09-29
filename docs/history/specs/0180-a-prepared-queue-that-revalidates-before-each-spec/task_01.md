@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0180-a-prepared-queue-that-revalidates-before-each-spec
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -87,3 +87,60 @@ complexity: high
 - `_techspec.md` → API Contracts 3-4; Testing Approach 1; Testing Approach 6
 
 ## Result
+
+Implemented Delivery Revalidation at the queued-to-running boundary. The
+engine now requires an item revalidator for Run and Retry, passes earlier
+merged queue commits in position order, records and logs premise warnings, and
+parks strict findings before the Runner. Retry repeats the strict check for an
+active item with no Run while preserving the stored warning. The command
+workflow resolves the item Specs Root, runs the shared strict check, loads
+production premises, and reads each prior merge's first-parent name-only diff
+through the Git boundary. `deliver status`, the user guide, and the canonical
+and generated Roundfix skills carry the warning and retry contracts.
+
+Focused evidence by acceptance criterion:
+
+- Pre-Run parking and revalidation errors:
+  `TestRevalidationParksAnItemWhoseStartingMainFailsTheCheck` passes with the
+  branch and worktree recorded, no Runner call, and the ordered finding codes;
+  `TestARevalidationErrorParksTheItemAsADeliveryError` passes with no Runner
+  call and a `delivery-error` blocker.
+- Premise warnings:
+  `TestAChangedPremiseWarnsAndContinues` passes with the exact stored warning,
+  console log line, and Run path; `TestNoChangedPremiseRecordsNoWarning`
+  passes with an empty warning and log.
+- Earlier merge selection:
+  `TestRevalidationReceivesEarlierMergeCommitsInQueueOrder` passes with only
+  non-empty merge commits from earlier `merged` items, in queue order.
+- Retry behavior:
+  `TestRetryOfAnItemWithoutARunRefusesWhileFindingsRemain` passes with both
+  codes named, no carry-forward, and an unchanged stored item;
+  `TestRetryOfAnItemWithoutARunProceedsOnceTheCheckIsClean` passes with no
+  prior merges and re-entry at `running`; `TestRetryKeepsTheRecordedPremiseWarning`
+  passes with the warning unchanged.
+- Real Git behavior:
+  `TestRevalidateReportsAnUnresolvedDeclarationOnlyAfterTheMergeRemovedIt`,
+  `TestRevalidateNamesADeclaredProductionFileAndTheMergeThatChangedIt`,
+  `TestRevalidateIgnoresChangedTestsGuidesAndUndeclaredFiles`, and
+  `TestRevalidateRefusesAnUnreadableMergeCommit` pass against disposable
+  repositories whose origin `main` receives the earlier commit.
+- Status output:
+  `TestDeliverStatusPrintsAnItemWarning` and
+  `TestDeliverStatusPrintsNoWarningLineWithoutAWarning` pass with unchanged
+  item rows and the conditional `Warning:` line.
+- Required dependency:
+  `TestEngineRefusesToRunWithoutARevalidator` passes for both Run and Retry.
+
+Focused checks:
+
+- `GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 -run '<nine engine revalidation tests>' ./internal/delivery` — passed.
+- `GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 -run '<six workflow and status revalidation tests>' ./internal/cli` — passed.
+- Focused legacy selections covering the delivery engine, retry, deadline,
+  user checkout, parked worktree, carry-forward, and status worktree — passed.
+- `make skills-sync` followed by `diff -r .agents/skills/roundfix skills/roundfix` — generated the shipped copy and found no difference.
+- `git diff --check` and documentation phrase inspection — passed.
+
+The first compile-only check could not access the sandboxed default Go build
+cache. Re-running with the task-scoped cache under `/tmp` passed. The authored
+Verification command was not run; Daemon Verification remains the settlement
+boundary.

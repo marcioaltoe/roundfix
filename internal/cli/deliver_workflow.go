@@ -35,6 +35,7 @@ type commandDeliveryWorkflow struct {
 
 var _ delivery.ItemRecovery = (*commandDeliveryWorkflow)(nil)
 var _ delivery.ItemWorkspace = (*commandDeliveryWorkflow)(nil)
+var _ delivery.ItemRevalidator = (*commandDeliveryWorkflow)(nil)
 
 const deliveryBranchPrefix = "roundfix/deliver-"
 
@@ -54,6 +55,8 @@ func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) 
 		Publication:  workflow,
 		PullRequests: delivery.NewGitHubCLI(loaded.GitRoot),
 		Recovery:     workflow,
+		Revalidator:  workflow,
+		Log:          os.Stderr,
 	})
 }
 

@@ -1,9 +1,12 @@
 ---
 spec: 0180-a-prepared-queue-that-revalidates-before-each-spec
-status: active
+status: archived
 created: 2026-09-28
 surfaces: [backend, cli, docs]
+archived: "2026-09-29"
+source_slug: 0180-a-prepared-queue-that-revalidates-before-each-spec
 ---
+
 
 # A prepared queue that revalidates before each Spec
 

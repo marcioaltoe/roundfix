@@ -288,12 +288,31 @@ Use the durable delivery queue when a sequence of Specs must outlive the
 terminal session:
 
 ```bash
-roundfix deliver start <slug>...
+roundfix deliver plan [--json] [<slug>...]
+roundfix deliver start [--max-duration <duration>] [--max-retries <n>] <slug>...
 roundfix deliver status
 roundfix deliver resume
 roundfix deliver retry <slug>
 roundfix deliver stop
 ```
+
+Run `roundfix deliver plan` before recording a queue. With explicit slugs it
+keeps their order; without slugs it reports every active Spec. Its
+tab-separated output uses `spec` rows for the verdict, unfinished and total
+Task counts, and authorization or strict Spec-check reasons; `shared` rows for
+production Go `interface:` paths a later Spec shares with an earlier one; and
+`backlog`, `finding`, and `inbox` rows for repository intent that is not
+approved to run. Backlog and finding rows carry frontmatter status; inbox rows
+use `-`.
+
+`--json` emits one `roundfix-deliver-plan/v1` document with the same Specs,
+verdicts, reasons, shared premises, Task counts, and intent. Exit `0` means
+every reported Spec is approved, exit `1` means at least one is blocked, and
+exit `2` means usage or preflight failed. The plan opens no Run Database,
+creates no worktree, and writes no file. It reports authority but never grants
+implementation or delivery authority. A `shared` row predicts the later
+item's `premise-changed` warning after the earlier item merges; it never blocks
+the Spec or stops a queue.
 
 For each queued Spec, `roundfix deliver` advances from the Run to merge in
 this order: Run, pre-PR review, archive on the branch, repository gate, push,
@@ -313,6 +332,39 @@ merged Spec that it can prove is represented at the recorded merged head. A
 Run it cannot prove stays in place, and `deliver status` names the Run and its
 reason in the item's cleanup warning.
 
+A start requires every named Spec's committed authorization to grant
+`implement`, `commit`, `push`, `pull_request`, and `merge`. If any Spec lacks
+one of those operations, `deliver start` exits `2`, names every refused Spec
+and its reasons, points to `roundfix deliver plan`, and records no queue. A
+strict Spec-check finding appears in the plan but does not refuse start; the
+queue revalidates that Spec against its own starting main.
+
+Use `--max-duration <duration>` with a positive Go duration to set the queue
+deadline, and use `--max-retries <n>` with an integer of at least `1` to limit
+retries per item. Omitted limits are recorded as `none`. Start and status print
+the recorded values as:
+
+```text
+Limits: deadline <RFC 3339 UTC|none>, retries per item <n|none>, concurrency 1, spend not measured
+```
+
+At or after the deadline, the owner parks each item that has not started as
+`queue-deadline`; an item that has started continues. A `queue-deadline` item
+cannot be retried. Record a new queue for the remaining Specs instead. When an
+item reaches its retry limit, `deliver retry` refuses the next retry and leaves
+the item unchanged.
+
+After the item worktree is created from that main and before the first Run,
+Roundfix runs the strict Spec Consistency Check in the worktree. A finding
+parks the item as `revalidation-failed: <code>, <code>` before any Run starts.
+
+Revalidation also compares the Spec's declared production Go `interface:`
+paths with the merge commits of earlier queue items. An overlap records
+`premise-changed: <path>, <path> (merge <sha>, <sha>)` as a warning and the item
+continues to its Run. `deliver status` prints `Warning: <slug> <warning>` after
+the item rows, and the delivery console log prints `roundfix: warning: Delivery
+Queue item <slug>: <warning>`. No overlap adds no warning or log line.
+
 A blocker parks its item with a reason; it does not stop later queued items.
 When a queue resumes, it reconciles every recorded action that lacks a receipt
 against the observed remote state before retrying that action. This prevents a
@@ -324,12 +376,20 @@ When an Implement Run ends `BudgetExceeded`, the queue parks its item as
 `run-budget-exceeded` with that Run's ID. `roundfix deliver retry <slug>` uses
 the recorded Run ID to carry settled Tasks forward before resuming the item.
 
+`deliver status` prints the item rows, warning rows, and the `Limits:` line.
+When one or more items are parked, it prints exactly one `Pending question:`
+for the lowest-position parked item, the action that answers it, and the count
+waiting behind it. Only `deliver retry` or recording a new queue answers that
+question; owner passes and elapsed time do not.
+
 Use `roundfix deliver retry <slug>` to return one parked item to the queue.
-For an active Spec, Roundfix first carries the settled Tasks of the item's Run
-to the item branch. The item then re-enters at `running` when any Task is
-unfinished or at `reviewing` when every Task is completed. An archived Spec
-re-enters at `gating` without a recorded pull request or at `checking` with
-one.
+For an active Spec that has not run, Roundfix first repeats the strict check in
+the item worktree and refuses while findings remain, leaving the item
+unchanged. It then carries the settled Tasks of any recorded Run to the item
+branch. A retry does not change a recorded `premise-changed` warning. The item
+re-enters at `running` when any Task is unfinished or at `reviewing` when every
+Task is completed. An archived Spec re-enters at `gating` without a recorded
+pull request or at `checking` with one.
 
 The retry hands the item to the recorded owner only when Roundfix proves that
 process is alive and has the recorded identity. A dead or unproven owner record

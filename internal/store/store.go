@@ -1529,7 +1529,7 @@ func terminalStateExclusion() (string, []any) {
 	return "state NOT IN (" + strings.Join(placeholders, ", ") + ")", arguments
 }
 
-const schemaVersion = 20
+const schemaVersion = 21
 
 // activeRunLocksColumns is the schema v4 lock-table shape (ADR 0016): one
 // Active Run per work target, keyed by (target_kind, target_key).
@@ -1620,10 +1620,19 @@ func (store *Store) migrationStatements(ctx context.Context, tx *sql.Tx, version
 			return nil, err
 		}
 	}
+	var v21Statements []string
+	if version >= 3 && version < 21 {
+		var err error
+		v21Statements, err = store.deliveryLimitsMigrationStatements(ctx, tx)
+		if err != nil {
+			return nil, err
+		}
+	}
 	deliveryStatements := append(v15Statements, v16Statements...)
 	deliveryStatements = append(deliveryStatements, v17Statements...)
 	deliveryStatements = append(deliveryStatements, v19Statements...)
 	deliveryStatements = append(deliveryStatements, v20Statements...)
+	deliveryStatements = append(deliveryStatements, v21Statements...)
 	var statements []string
 	switch version {
 	case 0:
@@ -1718,15 +1727,21 @@ func (store *Store) migrationStatements(ctx context.Context, tx *sql.Tx, version
 		statements = append(v16Statements, v17Statements...)
 		statements = append(statements, v19Statements...)
 		statements = append(statements, v20Statements...)
+		statements = append(statements, v21Statements...)
 	case 16:
 		statements = append(v17Statements, v19Statements...)
 		statements = append(statements, v20Statements...)
+		statements = append(statements, v21Statements...)
 	case 17:
 		statements = append(v19Statements, v20Statements...)
+		statements = append(statements, v21Statements...)
 	case 18:
 		statements = append(v19Statements, v20Statements...)
+		statements = append(statements, v21Statements...)
 	case 19:
-		statements = v20Statements
+		statements = append(v20Statements, v21Statements...)
+	case 20:
+		statements = v21Statements
 	default:
 		return nil, fmt.Errorf("migrate Run Database: schema version %d is not supported", version)
 	}
@@ -1875,7 +1890,8 @@ func createSchemaStatements() []string {
 	}
 	statements = append(statements, deliverySchemaStatements(true)...)
 	statements = append(statements, deliveryOwnerColumnStatements(false, false)...)
-	return append(statements, `PRAGMA user_version = 20`)
+	statements = append(statements, deliveryLimitColumnStatements(false, false, false, false)...)
+	return append(statements, fmt.Sprintf(`PRAGMA user_version = %d`, schemaVersion))
 }
 
 const runAgentSelectionsColumns = `(
@@ -2084,6 +2100,55 @@ SELECT EXISTS (
 		statements = append(statements, `ALTER TABLE delivery_queue_items ADD COLUMN worktree_provisioned INTEGER NOT NULL DEFAULT 0`)
 	}
 	return statements, nil
+}
+
+func (store *Store) deliveryLimitsMigrationStatements(ctx context.Context, query migrationQuerier) ([]string, error) {
+	var deadlineExists int
+	var maxRetriesExists int
+	var retryCountExists int
+	var warningExists int
+	err := query.QueryRowContext(ctx, `
+SELECT
+	EXISTS (SELECT 1 FROM pragma_table_info('delivery_queues') WHERE name = 'deadline_unix'),
+	EXISTS (SELECT 1 FROM pragma_table_info('delivery_queues') WHERE name = 'max_retries'),
+	EXISTS (SELECT 1 FROM pragma_table_info('delivery_queue_items') WHERE name = 'retry_count'),
+	EXISTS (SELECT 1 FROM pragma_table_info('delivery_queue_items') WHERE name = 'warning')`).Scan(
+		&deadlineExists,
+		&maxRetriesExists,
+		&retryCountExists,
+		&warningExists,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("inspect Delivery Queue limit columns: %w", err)
+	}
+	return deliveryLimitColumnStatements(
+		deadlineExists != 0,
+		maxRetriesExists != 0,
+		retryCountExists != 0,
+		warningExists != 0,
+	), nil
+}
+
+func deliveryLimitColumnStatements(
+	deadlineExists bool,
+	maxRetriesExists bool,
+	retryCountExists bool,
+	warningExists bool,
+) []string {
+	statements := []string{}
+	if !deadlineExists {
+		statements = append(statements, `ALTER TABLE delivery_queues ADD COLUMN deadline_unix INTEGER NOT NULL DEFAULT 0`)
+	}
+	if !maxRetriesExists {
+		statements = append(statements, `ALTER TABLE delivery_queues ADD COLUMN max_retries INTEGER NOT NULL DEFAULT 0`)
+	}
+	if !retryCountExists {
+		statements = append(statements, `ALTER TABLE delivery_queue_items ADD COLUMN retry_count INTEGER NOT NULL DEFAULT 0`)
+	}
+	if !warningExists {
+		statements = append(statements, `ALTER TABLE delivery_queue_items ADD COLUMN warning TEXT NOT NULL DEFAULT ''`)
+	}
+	return statements
 }
 
 func deliverySchemaStatements(includeBranch bool) []string {

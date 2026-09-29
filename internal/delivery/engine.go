@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"slices"
 	"strings"
 	"time"
@@ -23,7 +24,11 @@ const (
 	BlockerUnauthorized        = "unauthorized"
 	BlockerDeliveryError       = "delivery-error"
 	BlockerItemWorktreeMissing = "item-worktree-missing"
+	BlockerQueueDeadline       = "queue-deadline"
+	BlockerRevalidationFailed  = "revalidation-failed"
 )
+
+const WarningPremiseChanged = "premise-changed"
 
 const cleanupWarningPrefix = "warning: cleanup failed"
 
@@ -106,6 +111,16 @@ type CarryForwardResult struct {
 	Carried []string
 }
 
+type Revalidation struct {
+	Findings        []string // unique, sorted finding codes
+	ChangedPremises []string // unique, sorted repository-relative paths
+	ChangedBy       []string // the prior merge commits that changed at least one of them, in queue order
+}
+
+type ItemRevalidator interface {
+	Revalidate(ctx context.Context, workDir, specSlug string, priorMerges []string) (Revalidation, error)
+}
+
 type ItemRecovery interface {
 	InspectItem(ctx context.Context, workDir, specSlug string) (ItemState, error)
 	CarryForward(ctx context.Context, workDir, specSlug, branch, runID string) (CarryForwardResult, error)
@@ -171,6 +186,8 @@ type EngineDependencies struct {
 	Publication   PublicationPlanner
 	PullRequests  PullRequestBoundary
 	Recovery      ItemRecovery
+	Revalidator   ItemRevalidator
+	Log           io.Writer
 	Clock         Clock
 	Sleeper       Sleeper
 	CheckTimeout  time.Duration
@@ -188,6 +205,8 @@ type Engine struct {
 	publication   PublicationPlanner
 	pullRequests  PullRequestBoundary
 	recovery      ItemRecovery
+	revalidator   ItemRevalidator
+	log           io.Writer
 	clock         Clock
 	sleeper       Sleeper
 	checkTimeout  time.Duration
@@ -199,6 +218,10 @@ type EngineResult struct {
 }
 
 func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
+	log := dependencies.Log
+	if log == nil {
+		log = io.Discard
+	}
 	clock := dependencies.Clock
 	if clock == nil {
 		clock = realClock{}
@@ -226,6 +249,8 @@ func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
 		publication:   dependencies.Publication,
 		pullRequests:  dependencies.PullRequests,
 		recovery:      dependencies.Recovery,
+		revalidator:   dependencies.Revalidator,
+		log:           log,
 		clock:         clock,
 		sleeper:       sleeper,
 		checkTimeout:  checkTimeout,
@@ -274,6 +299,22 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 			store.DeliveryStageParked,
 		)
 	}
+	if item.Blocker == BlockerQueueDeadline {
+		return RetryResult{}, fmt.Errorf(
+			"retry Delivery Queue item %q: queue deadline %s was reached; start a new queue with roundfix deliver start",
+			specSlug,
+			queue.Limits.Deadline.UTC().Format(time.RFC3339),
+		)
+	}
+	if queue.Limits.MaxRetries != 0 && item.RetryCount >= queue.Limits.MaxRetries {
+		return RetryResult{}, fmt.Errorf(
+			"retry Delivery Queue item %q: retry count %d reached queue limit %d: %w",
+			specSlug,
+			item.RetryCount,
+			queue.Limits.MaxRetries,
+			store.ErrDeliveryRetryLimit,
+		)
+	}
 
 	workDir, err := engine.workspace.UseItemBranch(
 		ctx,
@@ -319,6 +360,19 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 			item.Stage = store.DeliveryStageChecking
 		}
 	} else {
+		if strings.TrimSpace(item.RunID) == "" {
+			revalidation, err := engine.revalidator.Revalidate(ctx, workDir, item.SpecSlug, nil)
+			if err != nil {
+				return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: revalidate item: %w", specSlug, err)
+			}
+			if len(revalidation.Findings) > 0 {
+				return RetryResult{}, fmt.Errorf(
+					"retry Delivery Queue item %q: revalidation failed: %s",
+					specSlug,
+					strings.Join(revalidation.Findings, ", "),
+				)
+			}
+		}
 		carried, err := engine.recovery.CarryForward(
 			ctx,
 			workDir,
@@ -371,6 +425,8 @@ func (engine *Engine) validateRetry() error {
 		return errors.New("retry Delivery Queue item: item workspace is required")
 	case engine.recovery == nil:
 		return errors.New("retry Delivery Queue item: item recovery is required")
+	case engine.revalidator == nil:
+		return errors.New("retry Delivery Queue item: item revalidator is required")
 	default:
 		return nil
 	}
@@ -397,8 +453,18 @@ func (engine *Engine) Run(ctx context.Context, gitRoot string) (EngineResult, er
 		if item.Stage == store.DeliveryStageParked {
 			continue
 		}
+		if item.Stage == store.DeliveryStageQueued &&
+			!queue.Limits.Deadline.IsZero() &&
+			!engine.clock.Now().Before(queue.Limits.Deadline) {
+			if err := engine.park(ctx, gitRoot, &item, BlockerQueueDeadline); err != nil {
+				return EngineResult{}, fmt.Errorf("park Spec %q at queue deadline: %w", item.SpecSlug, err)
+			}
+			queue.Items[index] = item
+			continue
+		}
 		if item.Stage != store.DeliveryStageMerged {
-			if err := engine.advanceItem(ctx, gitRoot, &item); err != nil {
+			priorMerges := mergedCommitsBefore(queue.Items, index)
+			if err := engine.advanceItem(ctx, gitRoot, &item, priorMerges); err != nil {
 				if ctx.Err() != nil {
 					return EngineResult{}, fmt.Errorf("deliver Spec %q: %w", item.SpecSlug, err)
 				}
@@ -455,12 +521,19 @@ func (engine *Engine) validate() error {
 		return errors.New("run Delivery Engine: publication planner is required")
 	case engine.pullRequests == nil:
 		return errors.New("run Delivery Engine: pull request boundary is required")
+	case engine.revalidator == nil:
+		return errors.New("run Delivery Engine: item revalidator is required")
 	default:
 		return nil
 	}
 }
 
-func (engine *Engine) advanceItem(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem) error {
+func (engine *Engine) advanceItem(
+	ctx context.Context,
+	gitRoot string,
+	item *store.DeliveryQueueItem,
+	priorMerges []string,
+) error {
 	if item.Stage == store.DeliveryStageQueued {
 		branch, itemWorktree, err := engine.workspace.CreateItemBranch(ctx, gitRoot, item.SpecSlug)
 		if err != nil {
@@ -475,6 +548,27 @@ func (engine *Engine) advanceItem(ctx context.Context, gitRoot string, item *sto
 			return errors.New("create item worktree: path is empty")
 		}
 		item.WorktreeProvisioned = true
+		revalidation, err := engine.revalidator.Revalidate(ctx, item.Worktree, item.SpecSlug, priorMerges)
+		if len(revalidation.ChangedPremises) > 0 {
+			item.Warning = fmt.Sprintf(
+				"%s: %s (merge %s)",
+				WarningPremiseChanged,
+				strings.Join(revalidation.ChangedPremises, ", "),
+				strings.Join(revalidation.ChangedBy, ", "),
+			)
+			fmt.Fprintf(engine.log, "roundfix: warning: Delivery Queue item %s: %s\n", item.SpecSlug, item.Warning)
+		}
+		if err != nil {
+			return fmt.Errorf("revalidate item: %w", err)
+		}
+		if len(revalidation.Findings) > 0 {
+			return engine.park(
+				ctx,
+				gitRoot,
+				item,
+				BlockerRevalidationFailed+": "+strings.Join(revalidation.Findings, ", "),
+			)
+		}
 		if err := engine.setStage(ctx, gitRoot, item, store.DeliveryStageRunning); err != nil {
 			return err
 		}
@@ -537,6 +631,17 @@ func (engine *Engine) advanceItem(ctx context.Context, gitRoot string, item *sto
 		}
 	}
 	return nil
+}
+
+func mergedCommitsBefore(items []store.DeliveryQueueItem, index int) []string {
+	commits := make([]string, 0, index)
+	for _, item := range items[:index] {
+		mergeCommit := strings.TrimSpace(item.MergeCommit)
+		if item.Stage == store.DeliveryStageMerged && mergeCommit != "" {
+			commits = append(commits, mergeCommit)
+		}
+	}
+	return commits
 }
 
 func (engine *Engine) runCandidate(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem) error {

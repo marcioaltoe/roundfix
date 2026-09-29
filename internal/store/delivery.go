@@ -33,10 +33,20 @@ const (
 	DeliveryActionMerge             DeliveryAction = "merge"
 )
 
+// ErrDeliveryRetryLimit reports that a Delivery Queue item has used every
+// retry permitted by its queue.
+var ErrDeliveryRetryLimit = errors.New("Delivery Queue item retry limit reached")
+
+type DeliveryQueueLimits struct {
+	Deadline   time.Time
+	MaxRetries int
+}
+
 type DeliveryQueue struct {
 	GitRoot       string
 	OwnerPID      int
 	OwnerIdentity string
+	Limits        DeliveryQueueLimits
 	Items         []DeliveryQueueItem
 }
 
@@ -52,6 +62,8 @@ type DeliveryQueueItem struct {
 	CandidateCommits    []string
 	PullRequestNumber   string
 	MergeCommit         string
+	RetryCount          int
+	Warning             string
 }
 
 type DeliveryActionIntent struct {
@@ -71,12 +83,31 @@ type DeliveryActionReceipt struct {
 // CreateDeliveryQueue records one ordered Delivery Queue for a repository.
 // The queue is durable until a later command explicitly removes it.
 func (store *Store) CreateDeliveryQueue(ctx context.Context, gitRoot string, specSlugs []string) (DeliveryQueue, error) {
+	return store.CreateDeliveryQueueWithLimits(ctx, gitRoot, specSlugs, DeliveryQueueLimits{})
+}
+
+// CreateDeliveryQueueWithLimits records one ordered Delivery Queue and the
+// limits every process advancing it must enforce.
+func (store *Store) CreateDeliveryQueueWithLimits(
+	ctx context.Context,
+	gitRoot string,
+	specSlugs []string,
+	limits DeliveryQueueLimits,
+) (DeliveryQueue, error) {
 	gitRoot = strings.TrimSpace(gitRoot)
 	if gitRoot == "" {
 		return DeliveryQueue{}, errors.New("create Delivery Queue: Git root is required")
 	}
 	if len(specSlugs) == 0 {
 		return DeliveryQueue{}, errors.New("create Delivery Queue: at least one Spec slug is required")
+	}
+	if limits.MaxRetries < 0 {
+		return DeliveryQueue{}, errors.New("create Delivery Queue: Max retries must not be negative")
+	}
+	deadlineUnix := int64(0)
+	if !limits.Deadline.IsZero() {
+		deadlineUnix = limits.Deadline.UTC().Unix()
+		limits.Deadline = time.Unix(deadlineUnix, 0).UTC()
 	}
 
 	items := make([]DeliveryQueueItem, len(specSlugs))
@@ -100,6 +131,7 @@ func (store *Store) CreateDeliveryQueue(ctx context.Context, gitRoot string, spe
 
 	queue := DeliveryQueue{
 		GitRoot: gitRoot,
+		Limits:  limits,
 		Items:   items,
 	}
 	err := store.withWriteTx(ctx, "Delivery Queue creation", func(tx *sql.Tx) error {
@@ -136,8 +168,8 @@ WHERE git_root = ? AND stage NOT IN (?, ?)`,
 			return fmt.Errorf("inspect existing Delivery Queue: %w", err)
 		}
 		if _, err := tx.ExecContext(ctx, `
-INSERT INTO delivery_queues (git_root)
-VALUES (?)`, gitRoot); err != nil {
+INSERT INTO delivery_queues (git_root, deadline_unix, max_retries)
+VALUES (?, ?, ?)`, gitRoot, deadlineUnix, limits.MaxRetries); err != nil {
 			return fmt.Errorf("insert Delivery Queue for repository %q: %w", gitRoot, err)
 		}
 		for _, item := range items {
@@ -172,10 +204,17 @@ func (store *Store) DeliveryQueue(ctx context.Context, gitRoot string) (Delivery
 
 	var queue DeliveryQueue
 	var ownerPID sql.NullInt64
+	var deadlineUnix int64
 	err := store.db.QueryRowContext(ctx, `
-SELECT git_root, owner_pid, owner_identity
+SELECT git_root, owner_pid, owner_identity, deadline_unix, max_retries
 FROM delivery_queues
-WHERE git_root = ?`, gitRoot).Scan(&queue.GitRoot, &ownerPID, &queue.OwnerIdentity)
+WHERE git_root = ?`, gitRoot).Scan(
+		&queue.GitRoot,
+		&ownerPID,
+		&queue.OwnerIdentity,
+		&deadlineUnix,
+		&queue.Limits.MaxRetries,
+	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return DeliveryQueue{}, false, nil
 	}
@@ -185,9 +224,12 @@ WHERE git_root = ?`, gitRoot).Scan(&queue.GitRoot, &ownerPID, &queue.OwnerIdenti
 	if ownerPID.Valid {
 		queue.OwnerPID = int(ownerPID.Int64)
 	}
+	if deadlineUnix != 0 {
+		queue.Limits.Deadline = time.Unix(deadlineUnix, 0).UTC()
+	}
 	rows, err := store.db.QueryContext(ctx, `
 SELECT spec_slug, position, stage, blocker, branch, worktree, worktree_provisioned, run_id, candidate_commits,
-       pull_request_number, merge_commit
+	   pull_request_number, merge_commit, retry_count, warning
 FROM delivery_queue_items
 WHERE git_root = ?
 ORDER BY position`, gitRoot)
@@ -485,6 +527,7 @@ func (store *Store) UpdateDeliveryQueueItem(ctx context.Context, gitRoot string,
 	item.RunID = strings.TrimSpace(item.RunID)
 	item.PullRequestNumber = strings.TrimSpace(item.PullRequestNumber)
 	item.MergeCommit = strings.TrimSpace(item.MergeCommit)
+	item.Warning = strings.TrimSpace(item.Warning)
 	if gitRoot == "" {
 		return errors.New("update Delivery Queue item: Git root is required")
 	}
@@ -526,7 +569,7 @@ WHERE git_root = ? AND spec_slug = ?`, gitRoot, item.SpecSlug).Scan(&storedPosit
 		if _, err := tx.ExecContext(ctx, `
 UPDATE delivery_queue_items
 SET stage = ?, blocker = ?, branch = ?, run_id = ?, candidate_commits = ?,
-    pull_request_number = ?, merge_commit = ?
+	pull_request_number = ?, merge_commit = ?, warning = ?
 WHERE git_root = ? AND spec_slug = ?`,
 			item.Stage,
 			item.Blocker,
@@ -535,6 +578,7 @@ WHERE git_root = ? AND spec_slug = ?`,
 			string(encodedCommits),
 			item.PullRequestNumber,
 			item.MergeCommit,
+			item.Warning,
 			gitRoot,
 			item.SpecSlug,
 		); err != nil {
@@ -587,13 +631,18 @@ func (store *Store) RetryDeliveryQueueItem(
 		var storedSpecSlug string
 		var storedStage DeliveryStage
 		var storedBlocker string
+		var retryCount int
+		var maxRetries int
 		if err := tx.QueryRowContext(ctx, `
-SELECT spec_slug, stage, blocker
-FROM delivery_queue_items
-WHERE git_root = ? AND position = ?`, gitRoot, item.Position).Scan(
+SELECT item.spec_slug, item.stage, item.blocker, item.retry_count, queue.max_retries
+FROM delivery_queue_items item
+JOIN delivery_queues queue ON queue.git_root = item.git_root
+WHERE item.git_root = ? AND item.position = ?`, gitRoot, item.Position).Scan(
 			&storedSpecSlug,
 			&storedStage,
 			&storedBlocker,
+			&retryCount,
+			&maxRetries,
 		); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return fmt.Errorf(
@@ -622,10 +671,19 @@ WHERE git_root = ? AND position = ?`, gitRoot, item.Position).Scan(
 				parkedBlocker,
 			)
 		}
+		if maxRetries != 0 && retryCount >= maxRetries {
+			return fmt.Errorf(
+				"retry Delivery Queue item %q: retry count %d reached queue limit %d: %w",
+				item.SpecSlug,
+				retryCount,
+				maxRetries,
+				ErrDeliveryRetryLimit,
+			)
+		}
 
 		if _, err := tx.ExecContext(ctx, `
 UPDATE delivery_queue_items
-SET stage = ?, blocker = '', run_id = ?, candidate_commits = ?
+SET stage = ?, blocker = '', run_id = ?, candidate_commits = ?, retry_count = retry_count + 1
 WHERE git_root = ? AND position = ?`,
 			item.Stage,
 			item.RunID,
@@ -808,6 +866,8 @@ func scanDeliveryQueueItem(row deliveryQueueItemScanner) (DeliveryQueueItem, err
 		&candidateCommits,
 		&item.PullRequestNumber,
 		&item.MergeCommit,
+		&item.RetryCount,
+		&item.Warning,
 	); err != nil {
 		return DeliveryQueueItem{}, err
 	}

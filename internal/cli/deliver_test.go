@@ -28,6 +28,7 @@ import (
 func TestDeliverStatusPrintsTheItemWorktree(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	setImplementFixtureAuthorizationOperations(t, repoDir, "implement", "commit", "push", "pull_request", "merge")
 	started := 0
 	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
 		dependencies.startDeliveryOwner = func(
@@ -58,7 +59,8 @@ func TestDeliverStatusPrintsTheItemWorktree(t *testing.T) {
 	if code != exitOK || stderr.Len() != 0 {
 		t.Fatalf("deliver status without worktree exit=%d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
 	}
-	if got, want := stdout.String(), implementTestSlug+"\tqueued\t-\t-\n"; got != want {
+	if got, want := stdout.String(), implementTestSlug+"\tqueued\t-\t-\n"+
+		"Limits: deadline none, retries per item none, concurrency 1, spend not measured\n"; got != want {
 		t.Fatalf("deliver status without worktree = %q, want %q", got, want)
 	}
 	runStore, err := store.Open(context.Background(), homeDir)
@@ -97,7 +99,10 @@ func TestDeliverStatusPrintsTheItemWorktree(t *testing.T) {
 	if code != exitOK || stderr.Len() != 0 {
 		t.Fatalf("deliver status exit=%d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
 	}
-	if got, want := stdout.String(), implementTestSlug+"\tparked\treview-stale\t/worktrees/delivery-item\n"; got != want {
+	if got, want := stdout.String(), implementTestSlug+"\tparked\treview-stale\t/worktrees/delivery-item\n"+
+		"Limits: deadline none, retries per item none, concurrency 1, spend not measured\n"+
+		"Pending question: "+implementTestSlug+" parked review-stale\n"+
+		"Answer: resolve the blocker, then run roundfix deliver retry "+implementTestSlug+"\n"; got != want {
 		t.Fatalf("deliver status = %q, want %q", got, want)
 	}
 }
@@ -261,6 +266,7 @@ func TestResumeReleasesAStaleOwner(t *testing.T) {
 func TestATerminalQueueIsReplacedByANewStart(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	setImplementFixtureAuthorizationOperations(t, repoDir, "implement", "commit", "push", "pull_request", "merge")
 	ctx := context.Background()
 	runStore, err := store.Open(ctx, homeDir)
 	if err != nil {
@@ -509,6 +515,7 @@ func TestDeliverNeverTouchesTheUserCheckout(t *testing.T) {
 		Authorizer:   flow,
 		Publication:  flow,
 		PullRequests: flow,
+		Revalidator:  flow,
 	})
 
 	if _, err := engine.Run(ctx, checkout); err != nil {
@@ -560,6 +567,7 @@ func TestParkLeavesTheItemWorktreeInPlace(t *testing.T) {
 		Authorizer:   flow,
 		Publication:  flow,
 		PullRequests: flow,
+		Revalidator:  flow,
 	})
 
 	if _, err := engine.Run(t.Context(), checkout); err != nil {
@@ -906,6 +914,7 @@ func newDeliveryLifecycleTestEngine(
 		Authorizer:   flow,
 		Publication:  flow,
 		PullRequests: flow,
+		Revalidator:  flow,
 	})
 }
 
@@ -1046,6 +1055,7 @@ func resumeArchivedDelivery(t *testing.T, repository string, reviewedHead string
 		Authorizer:   flow,
 		Publication:  flow,
 		PullRequests: flow,
+		Revalidator:  flow,
 	})
 	if _, err := engine.Run(t.Context(), repository); err != nil {
 		t.Fatalf("resume Delivery Engine after archive commit: %v", err)
@@ -1138,6 +1148,15 @@ type parkTestDeliveryFlow struct {
 	runCalls     int
 	remoteHeads  map[string]string
 	pullRequests map[string]delivery.PullRequest
+}
+
+func (*parkTestDeliveryFlow) Revalidate(
+	context.Context,
+	string,
+	string,
+	[]string,
+) (delivery.Revalidation, error) {
+	return delivery.Revalidation{}, nil
 }
 
 func (flow *parkTestDeliveryFlow) CreateItemBranch(context.Context, string, string) (string, string, error) {

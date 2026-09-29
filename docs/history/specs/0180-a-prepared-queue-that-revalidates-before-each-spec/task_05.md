@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0180-a-prepared-queue-that-revalidates-before-each-spec
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -50,3 +50,39 @@ The owned `implement-spec` skill in `.agents/skills/implement-spec/SKILL.md` sti
 - `_techspec.md` → Testing Approach 5
 
 ## Result
+
+Implementation:
+
+- Rewrote the canonical `implement-spec` skill as a Supervisor-only handoff:
+  it runs the Delivery Plan, delegates to `roundfix implement --spec` or
+  `roundfix deliver start`, monitors the Run or queue, and asks only the
+  Pending Question.
+- Removed the wave-planning, per-Task `implement-task` loop, and Supervisor-run
+  QA instructions. The skill states that the Daemon runs the terminal QA Task
+  and defers command details to the Roundfix skill.
+- Updated both version declarations to `0.1.0` while preserving the skill name,
+  invocation setting, and argument hint.
+- Regenerated `skills/implement-spec/SKILL.md` with `make skills-sync` and ran
+  `make baseline-digests`; the latter reported `ok: true` and `changed: false`.
+
+Focused checks:
+
+- `rtk git diff --check`: exited 0.
+- `rtk cmp -s .agents/skills/implement-spec/SKILL.md skills/implement-spec/SKILL.md`:
+  exited 0; the regenerated mirror matches the canonical skill.
+- Targeted content scan: exited 0 and found the required delegation commands,
+  Pending Question instruction, Supervisor guardrails, and both `0.1.0`
+  declarations.
+- Negative scan for the removed wave heading, per-Task loop instruction, and
+  Supervisor-run QA instruction: exited 1 because none matched, as expected.
+
+Acceptance evidence:
+
+- The canonical skill names `roundfix deliver plan <slug>...`,
+  `roundfix implement --spec <slug>`, and `roundfix deliver start ...`, and
+  instructs the Supervisor to ask only the Pending Question.
+- The canonical skill explicitly prohibits Supervisor code/test authoring,
+  Task execution, the `implement-task` cycle, wave planning, and running the
+  `qa-gate`.
+- The mirror is byte-identical by `cmp`; the Daemon must run the declared
+  `make skills-sync-check` Verification command before settlement.

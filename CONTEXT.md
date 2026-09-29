@@ -479,8 +479,24 @@ The explicit act that hands a settled Task from a terminal spec Run's Run Branch
 _Avoid_: replay, resume, automatic carry, QA row carry-forward
 
 **Delivery Queue**:
-The durable, ordered set of Specs that Roundfix advances from an Implement Run through merge. A blocker parks only its item while later items can continue.
+The durable, ordered set of Specs that Roundfix advances from an Implement Run through merge with a fixed optional deadline and per-item retry limit. A blocker parks only its item while later items can continue.
 _Avoid_: Release queue, Batch, Run list
+
+**Delivery Plan**:
+The read-only account of which Specs have delivery authority, what blocks the others and which production premises ordered Specs share. It reports a prepared queue without recording or running one.
+_Avoid_: Delivery Queue, execution plan, approval grant
+
+**Delivery Revalidation**:
+The check of a queued Spec against the refreshed default branch immediately before its first Run. A strict finding parks it as `revalidation-failed`; a production-premise overlap records a `premise-changed` warning without parking it.
+_Avoid_: Initial validation, retry, approval check
+
+**Delivery Queue Limit**:
+A queue's fixed optional deadline or per-item retry allowance. It bounds new item starts or explicit retries without changing a Run Budget or an item already past `queued`.
+_Avoid_: Run Budget, concurrency, spending limit
+
+**Pending Question**:
+The one operator decision presented for the lowest-position parked Delivery Queue item, with its blocker, answer and number of parked items waiting behind it. Only an explicit Delivery Retry or a new queue answers it.
+_Avoid_: Warning, automatic recommendation, blocker list
 
 **Delivery Retry**:
 The explicit act that returns one parked Delivery Queue item to the stage supported by its recorded evidence and hands it to a live or newly started queue owner. It may perform Task Carry-Forward first and is never automatic.
