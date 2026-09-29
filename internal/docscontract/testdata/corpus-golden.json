@@ -1,6 +1,6 @@
 {
   "schema": "roundfix-speccheck-corpus/v2",
-  "update": "Re-recorded because retiring Specs 0126 and 0127 as superseded left no portfolio Spec in the active corpus. The active corpus reports no findings for SC-METRIC-UNDECLARED or SC-CONTRACT-UNDECLARED and no errors from either detector. After an intentional detector change, run the focused corpus test, inspect its actual active counts, and update this file and the characterization that pins it in the same change.",
+  "update": "Re-recorded because retiring Specs 0126 and 0127 as superseded left no portfolio Spec in the active corpus. The active corpus reports no findings for SC-METRIC-UNDECLARED or SC-CONTRACT-UNDECLARED and no errors from either detector. SC-VERIFY-WRAP-FRAGILE joined the characterized code set at 0. After an intentional detector change, run the focused corpus test, inspect its actual active counts, and update this file and the characterization that pins it in the same change.",
   "active": {
     "SC-ADR-RELATED": 0,
     "SC-ADR-UNLISTED": 0,
@@ -26,6 +26,7 @@
     "SC-VERIFY-INVERTED-EXIT": 0,
     "SC-VERIFY-NON-HERMETIC": 0,
     "SC-VERIFY-VACUOUS-COMMAND": 0,
+    "SC-VERIFY-WRAP-FRAGILE": 0,
     "SC-VERIFY-WORK-INDEPENDENT": 0,
     "SC-VOCABULARY-UNDOCUMENTED": 0
   }

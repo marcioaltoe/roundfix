@@ -241,7 +241,7 @@ type TaskPlan struct {
 	BudgetEnabled           bool
 	MaxRunDuration          time.Duration
 	verificationGate        verificationGate
-	runBudgetDeadline       time.Time
+	runBudget               *taskCycleBudget
 	CopyList                []string
 	Bootstrap               runworktree.BootstrapSpec
 	BootstrapOutput         io.Writer
@@ -298,6 +298,8 @@ type TaskOutcome struct {
 // to the working tree, empty when no report exists. TerminalOutcome and
 // TerminalReason identify a Run-budget end for the command that owns Run
 // settlement; they stay empty for every other Task-cycle result.
+// BudgetDeadline is the deadline in force at return, and BudgetRenewedBy names
+// the Task whose settlement established it. Both are empty when disabled.
 type TaskCycleResult struct {
 	Completed, Failed, Skipped int
 	QAVerdict                  string
@@ -306,6 +308,117 @@ type TaskCycleResult struct {
 	Outcomes                   []TaskOutcome
 	TerminalOutcome            string
 	TerminalReason             string
+	BudgetDeadline             time.Time
+	BudgetRenewedBy            string
+}
+
+type taskCycleBudget struct {
+	mu          sync.Mutex
+	maximum     time.Duration
+	deadline    time.Time
+	renewedAt   time.Time
+	renewedTask string
+	expired     bool
+	changed     chan struct{}
+}
+
+func newTaskCycleBudget(startedAt time.Time, maximum time.Duration, enabled bool) *taskCycleBudget {
+	budget := &taskCycleBudget{changed: make(chan struct{})}
+	if enabled && maximum > 0 {
+		budget.maximum = maximum
+		budget.deadline = startedAt.Add(maximum)
+		budget.renewedAt = startedAt
+	}
+	return budget
+}
+
+func (budget *taskCycleBudget) snapshot() (deadline time.Time, renewedAt time.Time, renewedTask string, expired bool) {
+	if budget == nil {
+		return time.Time{}, time.Time{}, "", false
+	}
+	budget.mu.Lock()
+	defer budget.mu.Unlock()
+	return budget.deadline, budget.renewedAt, budget.renewedTask, budget.expired
+}
+
+func (budget *taskCycleBudget) renew(settledAt time.Time, taskID string) bool {
+	if budget == nil {
+		return false
+	}
+	budget.mu.Lock()
+	defer budget.mu.Unlock()
+	if budget.deadline.IsZero() || budget.expired || !settledAt.Before(budget.deadline) {
+		return false
+	}
+	budget.deadline = settledAt.Add(budget.maximum)
+	budget.renewedAt = settledAt
+	budget.renewedTask = taskID
+	close(budget.changed)
+	budget.changed = make(chan struct{})
+	return true
+}
+
+func (budget *taskCycleBudget) expiredAt(now time.Time) bool {
+	if budget == nil {
+		return false
+	}
+	budget.mu.Lock()
+	defer budget.mu.Unlock()
+	if budget.deadline.IsZero() {
+		return false
+	}
+	if !now.Before(budget.deadline) {
+		budget.expired = true
+	}
+	return budget.expired
+}
+
+func (budget *taskCycleBudget) watch(ctx context.Context, cancel context.CancelCauseFunc) {
+	for {
+		budget.mu.Lock()
+		deadline := budget.deadline
+		changed := budget.changed
+		budget.mu.Unlock()
+		if deadline.IsZero() {
+			select {
+			case <-ctx.Done():
+				return
+			case <-changed:
+				continue
+			}
+		}
+
+		timer := time.NewTimer(time.Until(deadline))
+		select {
+		case <-ctx.Done():
+			stopTaskCycleBudgetTimer(timer)
+			return
+		case <-changed:
+			stopTaskCycleBudgetTimer(timer)
+			continue
+		case <-timer.C:
+			budget.mu.Lock()
+			current := budget.deadline
+			if current.Equal(deadline) {
+				budget.expired = true
+			}
+			budget.mu.Unlock()
+			if current.Equal(deadline) {
+				cancel(context.DeadlineExceeded)
+				return
+			}
+		}
+	}
+}
+
+func stopTaskCycleBudgetTimer(timer *time.Timer) {
+	if timer.Stop() {
+		return
+	}
+	select {
+	case <-timer.C:
+	default:
+	}
 }
 
 // QA verdict settlements the Daemon adds beyond the report-authored
@@ -337,20 +450,27 @@ type runEventJournal interface {
 // cycle continues with independent Tasks (generalizing ADR 0010); only
 // Stop Requests and infrastructure errors halt the cycle. The Pusher and
 // the Review Source resolver are never invoked for spec Runs.
-func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleResult, error) {
+func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (result TaskCycleResult, err error) {
 	if err := validateTaskPlan(plan); err != nil {
 		return TaskCycleResult{}, err
 	}
-	runBudgetDeadline := time.Time{}
-	if plan.BudgetEnabled && plan.MaxRunDuration > 0 {
-		runBudgetDeadline = plan.RunStartedAt.Add(plan.MaxRunDuration)
+	plan.runBudget = newTaskCycleBudget(plan.RunStartedAt, plan.MaxRunDuration, plan.BudgetEnabled)
+	defer func() {
+		result, err = engine.taskCycleResultWithBudgetOutcome(plan, result, err)
+	}()
+	if plan.runBudget.expiredAt(engine.deps.Now()) {
+		return result, context.DeadlineExceeded
 	}
-	plan.runBudgetDeadline = runBudgetDeadline
-	if result, err := engine.taskCycleResultWithBudgetOutcome(plan, TaskCycleResult{}, nil); err != nil {
-		return result, err
-	}
-	cycleCtx, cancelCycle := taskAgentContext(ctx, runBudgetDeadline)
-	defer cancelCycle()
+	cycleCtx, cancelCycle := context.WithCancelCause(ctx)
+	watchdogDone := make(chan struct{})
+	go func() {
+		defer close(watchdogDone)
+		plan.runBudget.watch(cycleCtx, cancelCycle)
+	}()
+	defer func() {
+		cancelCycle(context.Canceled)
+		<-watchdogDone
+	}()
 	taskPlan, qaTask, err := taskPlanWithoutQAGate(plan)
 	if err != nil {
 		return TaskCycleResult{}, err
@@ -385,7 +505,7 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 	statuses := initialTaskRunStatuses(taskPlan.Tasks)
 	result, ordinal, err := engine.runTaskScheduler(cycleCtx, taskPlan, statuses)
 	if err != nil {
-		return engine.taskCycleResultWithBudgetOutcome(plan, result, err)
+		return result, err
 	}
 	// QA step (ADR 0015, ADR 0091): a declared qa Task routes through the
 	// existing gate only after its graph dependencies have all completed.
@@ -393,7 +513,7 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 	// resumable instead of being reported skipped.
 	if qaTask != nil && qaTask.Status != spec.StatusCompleted && taskNeedsCompleted(*qaTask, statuses) {
 		if err := engine.stopTaskCycleIfRequested(cycleCtx, plan, ordinal+1); err != nil {
-			return engine.taskCycleResultWithBudgetOutcome(plan, result, fmt.Errorf("stop run %q before the QA step: %w", plan.RunID, err))
+			return result, fmt.Errorf("stop run %q before the QA step: %w", plan.RunID, err)
 		}
 		ordinal++
 		verdict, reportPath, accepted, err := engine.runQAGate(cycleCtx, plan, *qaTask, ordinal)
@@ -408,37 +528,48 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 			return result, fmt.Errorf("write withheld QA task progress: %w", err)
 		}
 	}
-	if bounded, budgetErr := engine.taskCycleResultWithBudgetOutcome(plan, result, nil); budgetErr != nil {
-		return bounded, budgetErr
+	if plan.runBudget.expiredAt(engine.deps.Now()) {
+		return result, context.DeadlineExceeded
 	}
 	if err := engine.publishDaemonEvent(cycleCtx, plan.RunID, 0, runevent.KindDaemonOutcome,
 		fmt.Sprintf("Task cycle finished: %d completed, %d failed, %d skipped.", result.Completed, result.Failed, result.Skipped),
 		map[string]any{"completed": result.Completed, "failed": result.Failed, "skipped": result.Skipped},
 	); err != nil {
-		return engine.taskCycleResultWithBudgetOutcome(plan, result, err)
+		return result, err
 	}
 	return result, nil
 }
 
 func (engine *Engine) taskCycleResultWithBudgetOutcome(plan TaskPlan, result TaskCycleResult, err error) (TaskCycleResult, error) {
-	if plan.runBudgetDeadline.IsZero() {
+	deadline, renewedAt, renewedTask, expired := plan.runBudget.snapshot()
+	result.BudgetDeadline = deadline
+	result.BudgetRenewedBy = renewedTask
+	if deadline.IsZero() {
 		return result, err
 	}
 	now := engine.deps.Now()
-	if now.Before(plan.runBudgetDeadline) {
+	if !expired && now.Before(deadline) {
 		return result, err
 	}
+	plan.runBudget.expiredAt(now)
 	result.TerminalOutcome = store.StateBudgetExceeded
-	result.TerminalReason = budgetExceededReason(plan.MaxRunDuration, now.Sub(plan.RunStartedAt))
-	if err == nil {
-		err = context.DeadlineExceeded
+	result.TerminalReason = budgetExceededReason(plan.MaxRunDuration, now.Sub(renewedAt), renewedTask)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		err = errors.Join(err, context.DeadlineExceeded)
 	}
 	return result, err
 }
 
-func budgetExceededReason(maximum time.Duration, elapsed time.Duration) string {
+func budgetExceededReason(maximum time.Duration, elapsed time.Duration, renewedTask string) string {
+	if elapsed < 0 {
+		elapsed = 0
+	}
+	reason := fmt.Sprintf("Run Budget exceeded: configured maximum %s; elapsed %s", maximum, elapsed)
+	if renewedTask != "" {
+		reason += fmt.Sprintf(" since Task %s settled", renewedTask)
+	}
 	return publicOutcomeReason(
-		fmt.Sprintf("Run Budget exceeded: configured maximum %s; elapsed %s.", maximum, elapsed),
+		reason+".",
 		"The Run Budget was exhausted.",
 	)
 }
@@ -613,6 +744,7 @@ func (engine *Engine) runTaskScheduler(ctx context.Context, plan TaskPlan, statu
 			Status: string(settled),
 			Reason: reason,
 		})
+		plan.runBudget.renew(engine.deps.Now(), workerResult.task.ID)
 		if stopErr == nil {
 			if err := engine.stopTaskCycleIfRequested(ctx, plan, workerResult.ordinal); err != nil {
 				stopErr = fmt.Errorf("stop run %q after Task %s settlement: %w", plan.RunID, workerResult.task.ID, err)
@@ -833,17 +965,10 @@ func (engine *Engine) stopTaskCycleIfRequested(ctx context.Context, plan TaskPla
 	if err := engine.stopIfRequested(ctx, plan.RunID, ordinal); err != nil {
 		return err
 	}
-	if !plan.runBudgetDeadline.IsZero() && !engine.deps.Now().Before(plan.runBudgetDeadline) {
+	if plan.runBudget.expiredAt(engine.deps.Now()) {
 		return context.DeadlineExceeded
 	}
 	return nil
-}
-
-func taskAgentContext(ctx context.Context, deadline time.Time) (context.Context, context.CancelFunc) {
-	if deadline.IsZero() {
-		return context.WithCancel(ctx)
-	}
-	return context.WithDeadline(ctx, deadline)
 }
 
 func nextReadyTask(tasks []spec.Task, statuses map[string]taskRunStatus) (spec.Task, bool) {
@@ -1453,7 +1578,7 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 		fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
 	}
 
-	agentCtx, cancelAgent := taskAgentContext(ctx, plan.runBudgetDeadline)
+	agentCtx, cancelAgent := context.WithCancel(ctx)
 	runResult, runErr := engine.runAgentSession(agentCtx, owner, agent.ExecuteRequest{
 		Runtime:     plan.Runtime,
 		Session:     plan.Session,
@@ -1480,7 +1605,7 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 	if reloadFailure != "" {
 		return reloadFailure, nil
 	}
-	if !plan.runBudgetDeadline.IsZero() && !engine.deps.Now().Before(plan.runBudgetDeadline) {
+	if plan.runBudget.expiredAt(engine.deps.Now()) {
 		return "", fmt.Errorf("stop run %q after Agent Task %s: %w", plan.RunID, task.ID, context.DeadlineExceeded)
 	}
 	if err := ctx.Err(); err != nil {
@@ -1732,7 +1857,7 @@ func (engine *Engine) acquireVerificationCapacity(ctx context.Context, plan Task
 	if release, acquired := plan.verificationGate.TryAcquire(request.Mode); acquired {
 		return release, nil
 	}
-	waitCtx, cancelWait := taskAgentContext(ctx, plan.runBudgetDeadline)
+	waitCtx, cancelWait := context.WithCancel(ctx)
 	waitCtx, finishWait := engine.watchStopRequest(waitCtx, plan.RunID)
 	release, err := plan.verificationGate.Acquire(waitCtx, request.Mode)
 	stopped := finishWait()
@@ -1826,7 +1951,7 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 	if logPath != "" {
 		fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
 	}
-	agentCtx, cancelAgent := taskAgentContext(ctx, plan.runBudgetDeadline)
+	agentCtx, cancelAgent := context.WithCancel(ctx)
 	runResult, runErr := engine.runAgentSession(agentCtx, owner, agent.ExecuteRequest{
 		Runtime:     plan.Runtime,
 		Session:     plan.Session,
@@ -1851,7 +1976,7 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 	if reloadFailure != "" {
 		return reloadFailure, nil
 	}
-	if !plan.runBudgetDeadline.IsZero() && !engine.deps.Now().Before(plan.runBudgetDeadline) {
+	if plan.runBudget.expiredAt(engine.deps.Now()) {
 		return "", fmt.Errorf("stop run %q after Task %s Verification Feedback: %w", plan.RunID, task.ID, context.DeadlineExceeded)
 	}
 	if err := ctx.Err(); err != nil {
@@ -2642,7 +2767,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 				err = fmt.Errorf("close Agent Session for run %q QA step: %w", plan.RunID, closeErr)
 			}
 		}()
-		agentCtx, cancelAgent := taskAgentContext(ctx, plan.runBudgetDeadline)
+		agentCtx, cancelAgent := context.WithCancel(ctx)
 		_, runErr := engine.runAgentSession(agentCtx, owner, agent.ExecuteRequest{
 			Runtime:     plan.Runtime,
 			Session:     plan.Session,
@@ -2657,7 +2782,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		if runErr != nil {
 			return "", "", false, fmt.Errorf("run Agent for run %q QA step: %w", plan.RunID, runErr)
 		}
-		if !plan.runBudgetDeadline.IsZero() && !engine.deps.Now().Before(plan.runBudgetDeadline) {
+		if plan.runBudget.expiredAt(engine.deps.Now()) {
 			return "", "", false, fmt.Errorf("stop run %q after the QA step Agent: %w", plan.RunID, context.DeadlineExceeded)
 		}
 		if err := ctx.Err(); err != nil {
@@ -2695,6 +2820,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	if err := engine.settleTask(ctx, plan, qaTask, ordinal, qaStatus, qaReason); err != nil {
 		return "", "", false, err
 	}
+	plan.runBudget.renew(engine.deps.Now(), qaTask.ID)
 	if err := engine.commitQAReport(ctx, plan, ordinal, before, verificationWindowPaths, verdict, reportPath, qaTask); err != nil {
 		return "", "", false, err
 	}

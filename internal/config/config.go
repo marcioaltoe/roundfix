@@ -915,6 +915,7 @@ budget:
   max_run_duration: %s
   # Bounds wall-clock time from Run start; evaluated before each review Round and during Review Source waits.
   # Active Work Item resolution is not interrupted when the budget expires.
+  # An Implement Run's allowance renews at each Task settlement.
   # budget.max_run_duration bounds how long a Run may run; the Run Window bounds when one may start.
 
 resolve:

@@ -123,6 +123,9 @@ func declaredTaskTouches(repoRoot string, task Task) (map[string]TouchSource, er
 		addTouchSource(paths, path, TouchFromVerification)
 	}
 	for _, ref := range task.Context {
+		if ref.Kind == ContextKindInstruction {
+			continue
+		}
 		path, exists, err := repositoryFile(repoRoot, ref.Path)
 		if err != nil {
 			return nil, fmt.Errorf("inspect Context path %q: %w", ref.Path, err)

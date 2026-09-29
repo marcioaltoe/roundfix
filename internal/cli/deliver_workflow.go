@@ -577,33 +577,72 @@ func (workflow *commandDeliveryWorkflow) resolveMergedReleaseEvidence(
 }
 
 func (workflow *commandDeliveryWorkflow) RunSpec(ctx context.Context, gitRoot, specSlug string) (delivery.RunResult, error) {
+	beforeRun, beforeFound, err := workflow.latestImplementRun(ctx, workflow.loaded.GitRoot, specSlug)
+	if err != nil {
+		return delivery.RunResult{}, err
+	}
 	result, err := workflow.runRoundfix(ctx, gitRoot, "implement", "--spec", specSlug)
 	if err != nil {
 		return delivery.RunResult{}, fmt.Errorf("start Implement executor: %w", err)
 	}
-	run, found, err := workflow.latestImplementRun(ctx, workflow.loaded.GitRoot, specSlug)
+	afterRun, afterFound, err := workflow.latestImplementRun(ctx, workflow.loaded.GitRoot, specSlug)
 	if err != nil {
 		return delivery.RunResult{}, err
 	}
-	if result.exitCode != exitOK {
-		if found && run.State == store.StateUnresolved {
-			return delivery.RunResult{RunID: run.ID, Outcome: delivery.RunOutcomeUnresolved, Reason: strings.TrimSpace(result.stderr)}, nil
+	candidateHead := ""
+	if result.exitCode == exitOK {
+		head, err := workflow.git.RunGit(ctx, gitRoot, "rev-parse", "HEAD")
+		if err != nil {
+			return delivery.RunResult{}, fmt.Errorf("read Implement candidate head: %w", err)
 		}
-		return delivery.RunResult{}, result.failure("roundfix implement")
+		candidateHead = head
 	}
-	head, err := workflow.git.RunGit(ctx, gitRoot, "rev-parse", "HEAD")
-	if err != nil {
-		return delivery.RunResult{}, fmt.Errorf("read Implement candidate head: %w", err)
+	var before, after *store.Run
+	if beforeFound {
+		before = &beforeRun
 	}
-	runID := ""
-	if found {
-		runID = run.ID
+	if afterFound {
+		after = &afterRun
 	}
-	return delivery.RunResult{
-		RunID:            runID,
-		Outcome:          delivery.RunOutcomeClean,
-		CandidateCommits: []string{strings.TrimSpace(head)},
-	}, nil
+	return deliveryRunResult(result, candidateHead, before, after)
+}
+
+func deliveryRunResult(
+	command roundfixCommandResult,
+	candidateHead string,
+	beforeRun *store.Run,
+	afterRun *store.Run,
+) (delivery.RunResult, error) {
+	if command.exitCode == exitOK {
+		runID := ""
+		if afterRun != nil {
+			runID = afterRun.ID
+		}
+		return delivery.RunResult{
+			RunID:            runID,
+			Outcome:          delivery.RunOutcomeClean,
+			CandidateCommits: []string{strings.TrimSpace(candidateHead)},
+		}, nil
+	}
+
+	createdRun := afterRun != nil && (beforeRun == nil || afterRun.ID != beforeRun.ID)
+	if command.exitCode == exitRunFailed && createdRun {
+		outcome := delivery.RunOutcome("")
+		switch afterRun.State {
+		case store.StateUnresolved:
+			outcome = delivery.RunOutcomeUnresolved
+		case store.StateBudgetExceeded:
+			outcome = delivery.RunOutcomeBudgetExceeded
+		}
+		if outcome != "" {
+			return delivery.RunResult{
+				RunID:   afterRun.ID,
+				Outcome: outcome,
+				Reason:  strings.TrimSpace(command.stderr),
+			}, nil
+		}
+	}
+	return delivery.RunResult{}, command.failure("roundfix implement")
 }
 
 func (workflow *commandDeliveryWorkflow) ReviewPolicy(context.Context, string, string) (delivery.ReviewPolicy, error) {

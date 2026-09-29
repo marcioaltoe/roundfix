@@ -40,7 +40,9 @@ Backlog Entries, and the efficiency waves hit each of them:
   Database only; no credential is read and no network call is added.
   Publication keeps using the existing GitHub CLI boundary. Source:
   `docs/agents/cli.md`.
-- Active ADR obligations: applicable — ADR-0161 (Spec 0175) releases a merged
+- Active ADR obligations: applicable — ADR-0164 (Spec 0177) renews an Implement Run's budget at
+  each Task settlement and holds unchanged for queue limits, which stay
+  separate from the Run budget. ADR-0161 (Spec 0175) releases a merged
   Spec's Runs on the merged head after each queue item merges, and holds
   unchanged for revalidation. ADR-0093 and ADR-0094 make the Spec
   Consistency Check read citations only and run at every stage, which the

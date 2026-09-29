@@ -739,6 +739,29 @@ func TestTaskTemplateStatesTheStatusPreservingVerificationForm(t *testing.T) {
 	}
 }
 
+func TestTaskTemplateStatesTheWrapTolerantPhraseForm(t *testing.T) {
+	t.Parallel()
+	repoRoot := filepath.Clean(filepath.Join(".."))
+	content := string(readBaselineSkillContractFile(
+		t,
+		filepath.Join(repoRoot, ".agents", "skills", "write-tasks", "references", "task-template.md"),
+	))
+	verificationStart := strings.Index(content, "## Verification")
+	if verificationStart == -1 {
+		t.Fatal("Verification section is missing")
+	}
+	verification := content[verificationStart:]
+	for _, required := range []string{
+		"multi-word grep pattern against Markdown is line-bound",
+		"SC-VERIFY-WRAP-FRAGILE",
+		`tr -s '[:space:]' ' ' < <file> | grep -qF -- "<phrase>" || { printf 'missing phrase in %s: %s\n' <file> "<phrase>" >&2; exit 1; }`,
+	} {
+		if !strings.Contains(verification, required) {
+			t.Errorf("Verification guidance missing %q", required)
+		}
+	}
+}
+
 func TestWriteTasksSkillStatesTheDeclaredPathRules(t *testing.T) {
 	t.Parallel()
 	repoRoot := filepath.Clean(filepath.Join(".."))

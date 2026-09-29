@@ -3,7 +3,9 @@ package speccheck
 import (
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
+	"unicode"
 
 	"roundfix/internal/spec"
 )
@@ -13,6 +15,8 @@ const (
 	CodeVerifyWorkIndependent = "SC-VERIFY-WORK-INDEPENDENT"
 	// CodeVerifyInvertedExit identifies a Verification whose shell status reverses or ignores its asserted condition.
 	CodeVerifyInvertedExit = "SC-VERIFY-INVERTED-EXIT"
+	// CodeVerifyWrapFragile identifies a line-bound phrase check against Markdown.
+	CodeVerifyWrapFragile = "SC-VERIFY-WRAP-FRAGILE"
 	// CodeVerifyNonHermetic identifies a Verification that depends on state outside the repository.
 	CodeVerifyNonHermetic = "SC-VERIFY-NON-HERMETIC"
 	// CodeVerifyVacuousCommand identifies one Verification command that already
@@ -143,6 +147,12 @@ type nonHermeticForm struct {
 	fix  string
 }
 
+type wrapFragileGrep struct {
+	pattern string
+	file    string
+	negated bool
+}
+
 // InvertedExitVerification reports authored commands whose effective shell
 // status is a known reversal of the condition their output appears to assert.
 func InvertedExitVerification(task spec.Task) []Finding {
@@ -161,6 +171,194 @@ func InvertedExitVerification(task spec.Task) []Finding {
 		})
 	}
 	return findings
+}
+
+// WrapFragileVerification reports line-bound multi-word grep patterns against
+// Markdown files. The Task-stage caller owns lifecycle filtering and replaces
+// the placeholder location with the declaring Verification line.
+func WrapFragileVerification(task spec.Task) []Finding {
+	var findings []Finding
+	for _, command := range task.Verification {
+		for _, grep := range wrapFragileGreps(command) {
+			phrase := strconv.Quote(grep.pattern)
+			quotedPhrase := shellQuoteWrapPhrase(grep.pattern)
+			quotedFile := shellQuoteWrapFile(grep.file)
+			fix := "tr -s '[:space:]' ' ' < " + quotedFile + " | grep -qF -- " + quotedPhrase
+			if grep.negated {
+				fix = "! { " + fix + "; }"
+			} else {
+				fix += " || { printf 'missing phrase in %s: %s\\n' " + quotedFile + " " + quotedPhrase + " >&2; exit 1; }"
+			}
+			findings = append(findings, Finding{
+				Code:     CodeVerifyWrapFragile,
+				Severity: SeverityError,
+				Summary:  task.File + " declares wrap-fragile phrase " + phrase + " against Markdown file " + grep.file,
+				Where:    []Location{{Path: task.File, Line: 1}},
+				Fix:      fix,
+			})
+		}
+	}
+	return findings
+}
+
+func shellQuoteWrapPhrase(value string) string {
+	for _, char := range value {
+		if unicode.IsLetter(char) || unicode.IsDigit(char) || char == ' ' || strings.ContainsRune("_@%+=:,./-", char) {
+			continue
+		}
+		return shellSingleQuote(value)
+	}
+	return strconv.Quote(value)
+}
+
+func shellQuoteWrapFile(value string) string {
+	for _, char := range value {
+		if unicode.IsLetter(char) || unicode.IsDigit(char) || strings.ContainsRune("_@%+=:,./-", char) {
+			continue
+		}
+		return shellSingleQuote(value)
+	}
+	return value
+}
+
+func shellSingleQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "'\\''") + "'"
+}
+
+func wrapFragileGreps(command string) []wrapFragileGrep {
+	words := shellWords(command)
+	var greps []wrapFragileGrep
+	start := 0
+	for index, word := range words {
+		if !wrapCommandSeparator(word.text) {
+			continue
+		}
+		if grep, ok := wrapFragileGrepCommand(words[start:index]); ok {
+			greps = append(greps, grep)
+		}
+		start = index + 1
+	}
+	if grep, ok := wrapFragileGrepCommand(words[start:]); ok {
+		greps = append(greps, grep)
+	}
+	return greps
+}
+
+func wrapCommandSeparator(word string) bool {
+	switch word {
+	case "&&", "||", ";", "|":
+		return true
+	default:
+		return false
+	}
+}
+
+func wrapFragileGrepCommand(words []shellWord) (wrapFragileGrep, bool) {
+	index := 0
+	negated := false
+	if index < len(words) && words[index].text == "!" {
+		negated = true
+		index++
+	}
+	if index < len(words) && words[index].text == "rtk" {
+		index++
+	}
+	if index >= len(words) || strings.ToLower(filepath.Base(words[index].text)) != "grep" {
+		return wrapFragileGrep{}, false
+	}
+
+	pattern, files, readsStandardInput := grepPatternAndFiles(words[index+1:])
+	if readsStandardInput || !strings.ContainsFunc(pattern, unicode.IsSpace) ||
+		strings.HasPrefix(pattern, "^") || strings.HasPrefix(pattern, "#") ||
+		strings.HasPrefix(pattern, "|") || strings.HasSuffix(pattern, "$") {
+		return wrapFragileGrep{}, false
+	}
+	for _, file := range files {
+		if strings.HasSuffix(file, ".md") {
+			return wrapFragileGrep{pattern: pattern, file: file, negated: negated}, true
+		}
+	}
+	return wrapFragileGrep{}, false
+}
+
+func grepPatternAndFiles(words []shellWord) (string, []string, bool) {
+	var patterns []string
+	var operands []string
+	options := true
+	readsStandardInput := false
+	for index := 0; index < len(words); index++ {
+		word := words[index].text
+		if shellRedirection(word) {
+			if word == "<" {
+				readsStandardInput = true
+			}
+			if index+1 < len(words) {
+				index++
+			}
+			continue
+		}
+		if options && word == "--" {
+			options = false
+			continue
+		}
+		if options && word == "-e" {
+			if index+1 < len(words) {
+				patterns = append(patterns, words[index+1].text)
+				index++
+			}
+			continue
+		}
+		if options && strings.HasPrefix(word, "-e") && len(word) > 2 {
+			patterns = append(patterns, word[2:])
+			continue
+		}
+		if options && grepOptionTakesValue(word) {
+			if index+1 < len(words) {
+				index++
+			}
+			continue
+		}
+		if options && strings.HasPrefix(word, "-") && word != "-" {
+			continue
+		}
+		operands = append(operands, word)
+	}
+
+	pattern := ""
+	files := operands
+	if len(patterns) > 0 {
+		pattern = patterns[0]
+	} else if len(operands) > 0 {
+		pattern = operands[0]
+		files = operands[1:]
+	}
+	if len(files) == 0 {
+		readsStandardInput = true
+	}
+	for _, file := range files {
+		if file == "-" {
+			readsStandardInput = true
+		}
+	}
+	return pattern, files, readsStandardInput
+}
+
+func shellRedirection(word string) bool {
+	switch word {
+	case "<", ">", ">>":
+		return true
+	default:
+		return false
+	}
+}
+
+func grepOptionTakesValue(word string) bool {
+	switch word {
+	case "-A", "-B", "-C", "-D", "-d", "-m", "-f", "--after-context", "--before-context", "--binary-files", "--context", "--devices", "--directories", "--exclude", "--exclude-dir", "--exclude-from", "--include", "--label", "--max-count", "--file":
+		return true
+	default:
+		return false
+	}
 }
 
 func invertedExitVerificationCommand(command string) (invertedExitForm, bool) {

@@ -13,6 +13,7 @@ import (
 
 const (
 	BlockerRunUnresolved       = "run-unresolved"
+	BlockerRunBudgetExceeded   = "run-budget-exceeded"
 	BlockerReviewFindings      = "review-findings"
 	BlockerReviewBlocked       = "review-blocked"
 	BlockerReviewStale         = "review-stale"
@@ -38,8 +39,9 @@ const (
 type RunOutcome string
 
 const (
-	RunOutcomeClean      RunOutcome = "clean"
-	RunOutcomeUnresolved RunOutcome = "unresolved"
+	RunOutcomeClean          RunOutcome = "clean"
+	RunOutcomeUnresolved     RunOutcome = "unresolved"
+	RunOutcomeBudgetExceeded RunOutcome = "budget-exceeded"
 )
 
 type ReviewPolicy string
@@ -550,6 +552,8 @@ func (engine *Engine) runCandidate(ctx context.Context, gitRoot string, item *st
 	switch result.Outcome {
 	case RunOutcomeUnresolved:
 		return engine.park(ctx, gitRoot, item, BlockerRunUnresolved)
+	case RunOutcomeBudgetExceeded:
+		return engine.park(ctx, gitRoot, item, BlockerRunBudgetExceeded)
 	case RunOutcomeClean:
 		if len(result.CandidateCommits) == 0 || strings.TrimSpace(result.CandidateCommits[len(result.CandidateCommits)-1]) == "" {
 			return errors.New("clean Run returned no candidate head")
