@@ -29,8 +29,11 @@ func TestDeliverRetryStartsAnOwnerWhenNoneIsRunning(t *testing.T) {
 			Blocker:  "run-unresolved",
 			Stage:    store.DeliveryStageRunning,
 			CarriedFrom: delivery.CarryForwardResult{
-				RunID:   "run_123",
-				Carried: []string{"task_02", "task_01"},
+				RunID: "run_123",
+				Runs: []delivery.CarriedRun{{
+					RunID:   "run_123",
+					Carried: []string{"task_02", "task_01"},
+				}},
 			},
 		},
 	}

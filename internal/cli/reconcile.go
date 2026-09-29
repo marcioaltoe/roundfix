@@ -238,12 +238,18 @@ func runReconcileCommand(ctx context.Context, args []string, stdout, stderr io.W
 		if carryForwardRefusal == "" {
 			if err := applyCarryForwards(ctx, repository, report.CarryForwards); err != nil {
 				for index := range report.CarryForwards {
+					if report.CarryForwards[index].Action != carryForwardReadyAction {
+						continue
+					}
 					report.CarryForwards[index].Action = "preserve"
 					report.CarryForwards[index].RefusalReason = err.Error()
 				}
 				report.Summary.OperationalFailures++
 			} else {
 				for index := range report.CarryForwards {
+					if report.CarryForwards[index].Action != carryForwardReadyAction {
+						continue
+					}
 					report.CarryForwards[index].Action = "carried forward"
 				}
 			}
@@ -508,6 +514,15 @@ func loadReconcileTaskCoverage(
 }
 
 func applyCarryForwards(ctx context.Context, repository string, candidates []spec.CarryForward) (returnErr error) {
+	ready := make([]spec.CarryForward, 0, len(candidates))
+	for _, candidate := range candidates {
+		if candidate.Action == carryForwardReadyAction {
+			ready = append(ready, candidate)
+		}
+	}
+	if len(ready) == 0 {
+		return nil
+	}
 	status, err := reconcileGitText(ctx, repository, "status", "--porcelain=v1", "--untracked-files=all")
 	if err != nil {
 		return fmt.Errorf("inspect checkout before carry-forward: %w", err)
@@ -527,7 +542,7 @@ func applyCarryForwards(ctx context.Context, repository string, candidates []spe
 		returnErr = errors.Join(returnErr, cleanup())
 	}()
 
-	for _, candidate := range candidates {
+	for _, candidate := range ready {
 		if err := stageCarryForwardCandidate(ctx, stagingWorktree, candidate); err != nil {
 			return err
 		}

@@ -17,7 +17,10 @@ import (
 	runworktree "roundfix/internal/worktree"
 )
 
-const carryForwardReadyAction = "would carry forward with --carry-forward"
+const (
+	carryForwardReadyAction     = "would carry forward with --carry-forward"
+	carryForwardCompletedAction = "already completed; nothing to carry"
+)
 
 const carryForwardHooksDirectoryPrefix = "roundfix-carry-forward-hooks-"
 
@@ -40,7 +43,15 @@ func (result specCarryForward) carriable() int {
 
 // wouldCarry reports whether carry-forward would accept the complete set.
 func (result specCarryForward) wouldCarry() bool {
-	return len(result.Candidates) > 0 && result.carriable() == len(result.Candidates)
+	if result.carriable() == 0 {
+		return false
+	}
+	for _, candidate := range result.Candidates {
+		if strings.TrimSpace(candidate.RefusalReason) != "" {
+			return false
+		}
+	}
+	return true
 }
 
 // inspectSpecCarryForwards reports, per prior terminal Run of one Spec in this
@@ -138,6 +149,10 @@ func inspectCarryForwards(
 		if err != nil {
 			return nil, fmt.Errorf("load Run %q Spec %q: %w", run.ID, run.SpecSlug, err)
 		}
+		completedTasks, err := completedCarryForwardTasks(resolvedSpecsRoot.Path, run.SpecSlug)
+		if err != nil {
+			return nil, fmt.Errorf("load target Spec %q for Run %q carry-forward: %w", run.SpecSlug, run.ID, err)
+		}
 		commitsByTask, integrationOrder, err := carryForwardTaskCommits(ctx, run)
 		if err != nil {
 			return nil, err
@@ -160,6 +175,7 @@ func inspectCarryForwards(
 			commitsByTask,
 			integrationOrder,
 			evidence,
+			completedTasks,
 		)
 		cleanupErr := cleanup()
 		if inspectErr != nil || cleanupErr != nil {
@@ -168,6 +184,27 @@ func inspectCarryForwards(
 		carried = append(carried, runCarried...)
 	}
 	return carried, nil
+}
+
+func completedCarryForwardTasks(specsRoot string, specSlug string) (map[string]bool, error) {
+	completed := make(map[string]bool)
+	specDir := filepath.Join(specsRoot, specSlug)
+	if _, err := os.Stat(specDir); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return completed, nil
+		}
+		return nil, err
+	}
+	graph, err := spec.Load(specsRoot, specSlug)
+	if err != nil {
+		return nil, err
+	}
+	for _, task := range graph.Tasks {
+		if task.Status == spec.StatusCompleted {
+			completed[task.ID] = true
+		}
+	}
+	return completed, nil
 }
 
 func inspectCarryForwardsForRun(
@@ -179,6 +216,7 @@ func inspectCarryForwardsForRun(
 	commitsByTask map[string][]string,
 	integrationOrder []string,
 	evidence map[string]reconcileTaskEvidence,
+	completedTasks map[string]bool,
 ) ([]spec.CarryForward, error) {
 	tasksByID := make(map[string]spec.Task, len(graph.Tasks))
 	for _, task := range graph.Tasks {
@@ -205,8 +243,26 @@ func inspectCarryForwardsForRun(
 		seen[task.ID] = true
 	}
 
-	carried := make([]spec.CarryForward, 0)
-	for index, task := range orderedTasks {
+	carried := make([]spec.CarryForward, 0, len(orderedTasks))
+	remainingTasks := make([]spec.Task, 0, len(orderedTasks))
+	for _, task := range orderedTasks {
+		if !completedTasks[task.ID] {
+			remainingTasks = append(remainingTasks, task)
+			continue
+		}
+		candidate := spec.CarryForward{
+			TaskID:      task.ID,
+			RunID:       run.ID,
+			TaskFile:    filepath.ToSlash(filepath.Join(repoSpecsRoot, task.File)),
+			MovedInputs: []string{},
+			Action:      carryForwardCompletedAction,
+		}
+		if taskCommits := commitsByTask[task.ID]; len(taskCommits) == 1 {
+			candidate.Commit = taskCommits[0]
+		}
+		carried = append(carried, candidate)
+	}
+	for index, task := range remainingTasks {
 		taskEvidence := evidence[task.ID]
 		candidate := spec.CarryForward{
 			TaskID:      task.ID,
@@ -262,7 +318,7 @@ func inspectCarryForwardsForRun(
 					candidate.RefusalReason += fmt.Sprintf("; aborting the staged cherry-pick also failed: %v", abortErr)
 				}
 				carried = append(carried, candidate)
-				carried = append(carried, unstagedCarryForwards(repoSpecsRoot, run, orderedTasks[index+1:], evidence, task.ID)...)
+				carried = append(carried, unstagedCarryForwards(repoSpecsRoot, run, remainingTasks[index+1:], evidence, task.ID)...)
 				return carried, nil
 			}
 		}

@@ -1,9 +1,12 @@
 ---
 spec: 0182-delivery-that-reviews-and-retries-from-where-the-item-stands
-status: active
+status: archived
 created: 2026-09-29
 surfaces: [backend, cli, docs]
+archived: "2026-09-29"
+source_slug: 0182-delivery-that-reviews-and-retries-from-where-the-item-stands
 ---
+
 
 # Delivery that reviews and retries from where the item stands
 

@@ -704,7 +704,7 @@ func selectImplementCarryForward(results []specCarryForward) (specCarryForward, 
 
 func reportImplementNonCarriableCarryForwards(stderr io.Writer, results []specCarryForward) {
 	for _, result := range results {
-		if result.wouldCarry() {
+		if result.wouldCarry() || !carryForwardCandidatesRefuse(result.Candidates) {
 			continue
 		}
 		fmt.Fprintf(
@@ -715,6 +715,15 @@ func reportImplementNonCarriableCarryForwards(stderr io.Writer, results []specCa
 			carryForwardRefusalReason(result.Candidates),
 		)
 	}
+}
+
+func carryForwardCandidatesRefuse(candidates []spec.CarryForward) bool {
+	for _, candidate := range candidates {
+		if strings.TrimSpace(candidate.RefusalReason) != "" {
+			return true
+		}
+	}
+	return false
 }
 
 func printRunOwnerIdentityWarning(stderr io.Writer, run store.Run) {

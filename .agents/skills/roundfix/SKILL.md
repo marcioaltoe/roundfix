@@ -227,11 +227,13 @@ roundfix review dispose <finding-id> --fixed-by <commit>
 ```
 
 `--base` selects the base ref; when omitted, Roundfix uses the repository's
-default branch. The workflow computes the base-to-current-head candidate diff
-and hands that diff to the configured reviewer in a read-only session.
-The review record names the repository, base commit, head commit, effective
-provider, and policy source, so it is bound to the candidate that was
-examined.
+default branch. The workflow computes the candidate diff from the merge base
+of the current head and the selected base, then hands that diff to the
+configured reviewer in a read-only session. The review record names the
+repository, that merge base as `baseCommit`, the resolved base tip as
+`baseTipCommit`, the head commit, effective provider, and policy source, so it
+is bound to the candidate that was examined. A head with no shared history
+with the selected base exits `2` before any reviewer call or readiness probe.
 
 The policy values are `codex`, `claude`, `coderabbit`, and `none`. Explicit
 `none` performs no reviewer call and no readiness probe, records a configured
@@ -275,12 +277,13 @@ unknown identity, invalid or blank form, moved-head dismissal, invalid fixing
 commit, or second disposition exits `2` with
 `roundfix: review dispose refused:` on stderr and appends nothing.
 
-For `codex` and `claude`, a findings verdict stands for its repository, base
-commit, head commit, and provider. When the Artifact Directory already holds a
-matching `findings` or `findings-dismissed` record, Roundfix reuses it before
-preparing, probing, or prompting an Agent session. The reused record sets
-`reused` and carries exact repository, head, finding-identity, and finding-text
-ledger matches in `dispositions`.
+For `codex` and `claude`, a findings verdict stands for its repository,
+`baseCommit`, head commit, and provider while the base branch moves. When the
+Artifact Directory already holds a matching `findings` or
+`findings-dismissed` record, Roundfix reuses it before preparing, probing, or
+prompting an Agent session. The reused record sets `reused` and carries exact
+repository, head, finding-identity, and finding-text ledger matches in
+`dispositions`.
 
 When every finding has one evidence-backed `dismissed` disposition, the reused
 record reports `findings-dismissed` and exits `0`. Otherwise it remains
@@ -427,8 +430,10 @@ budget, corrective-Task ceiling, or queue grant authorizes the new corrective
 Spec, and Roundfix never authors or starts it.
 
 When an Implement Run ends `BudgetExceeded`, the queue parks its item as
-`run-budget-exceeded` with that Run's ID. `roundfix deliver retry <slug>` uses
-the recorded Run ID to carry settled Tasks forward before resuming the item.
+`run-budget-exceeded` with that Run's ID. `roundfix deliver retry <slug>`
+considers every terminal Implement Run of the item's Spec on the item branch,
+newest first, together with the recorded Run, and carries each Run's remaining
+settled Tasks before resuming the item.
 
 `deliver status` prints the item rows, warning rows, and the `Limits:` line.
 When one or more items are parked, it prints exactly one `Pending question:`
@@ -439,11 +444,12 @@ question; owner passes and elapsed time do not.
 Use `roundfix deliver retry <slug>` to return one parked item to the queue.
 For an active Spec that has not run, Roundfix first repeats the strict check in
 the item worktree and refuses while findings remain, leaving the item
-unchanged. It then carries the settled Tasks of any recorded Run to the item
-branch. A retry does not change a recorded `premise-changed` warning. The item
-re-enters at `running` when any Task is unfinished or at `reviewing` when every
-Task is completed. An archived Spec re-enters at `gating` without a recorded
-pull request or at `checking` with one.
+unchanged. It then carries the remaining settled Tasks from every terminal
+Implement Run of the item's Spec on the item branch, newest first. A retry does
+not change a recorded `premise-changed` warning. The item re-enters at
+`running` when any Task is unfinished or at `reviewing` when every Task is
+completed. An archived Spec re-enters at `gating` without a recorded pull
+request or at `checking` with one.
 
 | Recorded evidence | Re-entry stage |
 | --- | --- |
@@ -462,11 +468,12 @@ changes.
 The retry hands the item to the recorded owner only when Roundfix proves that
 process is alive and has the recorded identity. A dead or unproven owner record
 is reclaimed with a stderr notice and replaced; with no owner, Roundfix starts
-a detached owner. Success exits `0` and prints `Retried <slug>: <blocker> ->
-<stage>`, any carry-forward, and the live-owner hand-off or detached-owner
-report. Invalid arguments, an item that is not parked, a missing item branch, a
-moved archived head, refused carry-forward, or owner hand-off failure exits `2`
-and starts no owner; an item-level refusal leaves the item unchanged.
+a detached owner. Success exits `0`, prints one `Carried forward from Run
+<run-id>: <task>, <task>` line per Run carried from, then prints `Retried
+<slug>: <blocker> -> <stage>` and the live-owner hand-off or detached-owner
+report. Invalid arguments, an item that is not parked, a missing item branch,
+a moved archived head, refused carry-forward, or owner hand-off failure exits
+`2` and starts no owner; an item-level refusal leaves the item unchanged.
 
 Use `roundfix upgrade [--check]` to resolve the latest Roundfix release through
 the GitHub CLI. Without `--check`, it downloads the platform asset, verifies
@@ -1107,7 +1114,10 @@ records a Branch Disposition before removing a Run Branch proven superseded.
 checkout; it accepts Runs whose outcome is `BudgetExceeded`, `Stopped`, or
 `Unresolved` and refuses every other terminal outcome. Carry-forward keeps its
 existing proof requirements and refuses the whole Task set when any member
-cannot be proved.
+cannot be proved. A Task already completed on the checkout is reported as
+`already completed; nothing to carry`; it is not staged or proved and never
+refuses the remaining set. When every candidate is already completed, the
+command succeeds without moving `HEAD`.
 Carry-forward staging commits run without repository hooks because the carried commits already passed Daemon Verification and the repository hooks when the Daemon settled them. The checkout receives those commits only through a fast-forward merge, and carry-forward leaves its Git configuration unchanged.
 There is no force bypass.
 
@@ -1888,7 +1898,11 @@ must pass Task Carry-Forward's existing proofs, including a passing
 Verification verdict, exactly one settlement commit, and unmoved declared
 inputs for each candidate. Input proofs use the checkout plus the accumulating
 staged carries, so each later candidate is compared with the state established
-by earlier carries rather than the raw checkout. It exits `2`, leaves stdout
+by earlier carries rather than the raw checkout. A Task already completed on
+the checkout is reported as `already completed; nothing to carry`, never
+refuses the set, and is omitted from the Tasks named by the refusal. A Run
+whose candidates are all already completed produces no not-available note. It
+exits `2`, leaves stdout
 empty, and writes no Git or Run Database state. The refusal names the Run and
 Tasks to recover and gives the exact next action:
 

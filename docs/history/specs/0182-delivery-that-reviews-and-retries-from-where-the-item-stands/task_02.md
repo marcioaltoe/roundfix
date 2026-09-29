@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0182-delivery-that-reviews-and-retries-from-where-the-item-stands
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -63,3 +63,53 @@ Task Carry-Forward proves every settled Task of a Run against its target, includ
 - [_prd.md](_prd.md) — Goal 3; Core Feature 3; Success Metric 3
 - [_techspec.md](_techspec.md) — A completed Task is nothing to carry; API Contracts 2–3; Testing Approach 2; Build Order 2
 - ADR-0170; ADR-0053; ADR-0057; ADR-0026
+
+## Result
+
+Implemented target-completed Task classification in the shared carry-forward
+inspection. Completed candidates are recorded before proof with their Run,
+Task file and sole settlement commit, while only ready candidates enter the
+serial proof and apply paths. Reconcile preserves the completed action in its
+report, an all-completed repeat returns without touching the checkout, and the
+Implement Preflight now reports only actual candidate refusals and names only
+ready Tasks.
+
+Updated the user guide, canonical Roundfix skill and Task Carry-Forward
+glossary entry. `make skills-sync` exited `0` and regenerated the shipped skill
+mirror.
+
+Acceptance evidence:
+
+- `TestReconcileCarryForwardSkipsATaskCompletedOnTheCheckout` passed against a
+  real repository: JSON kept `task_01` as `already completed; nothing to
+  carry`, only `task_02` reached the checkout, and `HEAD` advanced.
+- `TestReconcileCarryForwardOfACarriedRunCarriesNothing` passed: the repeated
+  public reconcile invocation exited `0`, retained the completed action and
+  left `HEAD` unchanged.
+- `TestCarryForwardStillRefusesTheRemainingSetOnAMovedInput` passed: the moved
+  `task_02` input refused the remaining set while the completed `task_01`
+  candidate stayed non-refusing and `HEAD` stayed unchanged.
+- `TestImplementPreflightNamesOnlyTheTasksLeftToCarry` and
+  `TestImplementPreflightIsSilentForARunWithNothingToCarry` passed through the
+  public Implement Preflight with real Run Database and Git fixtures.
+- `TestCarryForwardCompletedTargetIsNotReportedAsUnstagedAfterConflict`
+  passed, proving a completed candidate is recorded before proof and is not
+  converted into an unevaluated refusal when a remaining Task conflicts.
+- A focused phrase scan found `already completed; nothing to carry` in the
+  guide, canonical skill and mirror, found the required glossary sentence,
+  and found no retired `effectively gets one carry-forward for overlapping
+  work` sentence.
+
+Focused checks:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task02-gocache go test -count=1 -run 'CarryForward' ./internal/cli` — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task02-gocache go test -count=1 ./internal/cli` — passed with host process-table access. The first sandboxed run reached only two unrelated force-stop integration failures whose diagnostics were `operation not permitted` while enumerating the process table.
+- `rtk env GOCACHE=/private/tmp/roundfix-task02-gocache make verify-incremental` — passed with host process-table access, including `go vet ./...`, all Go packages, the skills tests, `roundfix skills check`, and the build. The first sandboxed run had the same two process-table permission failures; all other reported packages passed.
+
+The Agent did not run the Task's authored `## Verification` commands; those
+remain Daemon-owned.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260929T174719Z_24238e6aebd23928`
+- Source commit: `070fb8f13185cb758a0ab40702833529d15f3c97`
