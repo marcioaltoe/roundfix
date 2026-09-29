@@ -1,9 +1,12 @@
 ---
 spec: 0181-gates-that-refuse-only-what-someone-can-act-on
-status: active
+status: archived
 created: 2026-09-29
 surfaces: [backend, cli, docs]
+archived: "2026-09-29"
+source_slug: 0181-gates-that-refuse-only-what-someone-can-act-on
 ---
+
 
 # Gates that refuse only what someone can act on
 
