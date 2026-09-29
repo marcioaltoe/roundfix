@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0178-a-qa-audit-across-every-run-of-a-spec
-status: pending
+status: failed
 type: qa
 complexity: high
 ---
