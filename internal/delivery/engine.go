@@ -22,6 +22,7 @@ const (
 	BlockerUnauthorized        = "unauthorized"
 	BlockerDeliveryError       = "delivery-error"
 	BlockerItemWorktreeMissing = "item-worktree-missing"
+	BlockerQueueDeadline       = "queue-deadline"
 )
 
 const cleanupWarningPrefix = "warning: cleanup failed"
@@ -272,6 +273,22 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 			store.DeliveryStageParked,
 		)
 	}
+	if item.Blocker == BlockerQueueDeadline {
+		return RetryResult{}, fmt.Errorf(
+			"retry Delivery Queue item %q: queue deadline %s was reached; start a new queue with roundfix deliver start",
+			specSlug,
+			queue.Limits.Deadline.UTC().Format(time.RFC3339),
+		)
+	}
+	if queue.Limits.MaxRetries != 0 && item.RetryCount >= queue.Limits.MaxRetries {
+		return RetryResult{}, fmt.Errorf(
+			"retry Delivery Queue item %q: retry count %d reached queue limit %d: %w",
+			specSlug,
+			item.RetryCount,
+			queue.Limits.MaxRetries,
+			store.ErrDeliveryRetryLimit,
+		)
+	}
 
 	workDir, err := engine.workspace.UseItemBranch(
 		ctx,
@@ -393,6 +410,15 @@ func (engine *Engine) Run(ctx context.Context, gitRoot string) (EngineResult, er
 	for index := range queue.Items {
 		item := queue.Items[index]
 		if item.Stage == store.DeliveryStageParked {
+			continue
+		}
+		if item.Stage == store.DeliveryStageQueued &&
+			!queue.Limits.Deadline.IsZero() &&
+			!engine.clock.Now().Before(queue.Limits.Deadline) {
+			if err := engine.park(ctx, gitRoot, &item, BlockerQueueDeadline); err != nil {
+				return EngineResult{}, fmt.Errorf("park Spec %q at queue deadline: %w", item.SpecSlug, err)
+			}
+			queue.Items[index] = item
 			continue
 		}
 		if item.Stage != store.DeliveryStageMerged {

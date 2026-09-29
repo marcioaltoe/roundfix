@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0180-a-prepared-queue-that-revalidates-before-each-spec
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -57,3 +57,67 @@ A Delivery Queue in `internal/store/delivery.go` records only its items and its 
 - `_techspec.md` → API Contract 6; API Contract 8; Testing Approach 2
 
 ## Result
+
+Implemented schema version 21 (one version after the starting version 20),
+durable queue limits, item retry counts and warnings, transactional retry-limit
+enforcement, and the Delivery Engine deadline and retry refusals. Existing
+exported function signatures remain unchanged; `CreateDeliveryQueue` delegates
+to the new `CreateDeliveryQueueWithLimits` entry point.
+
+Acceptance evidence:
+
+- `TestDeliveryQueueRecordsItsLimits` and
+  `TestDeliveryQueueWithoutLimitsRecordsNone` reopen the Run Database and read
+  the UTC-second deadline and retry limit, including both zero values.
+- `TestDeliveryQueueRefusesANegativeRetryLimit` observes the validation error
+  and confirms that no queue was recorded.
+- `TestDeliveryQueueItemWarningRoundTrips` reopens before and after retrying,
+  proves the warning survives, and proves an unwarned item remains empty.
+- `TestRetryIncrementsTheItemRetryCount` observes the atomic increment;
+  `TestRetryAtTheLimitIsRefusedAndLeavesTheItemUnchanged` matches
+  `ErrDeliveryRetryLimit` and compares the complete item before and after the
+  refusal.
+- `TestThePreviousSchemaGainsTheLimitColumns` uses `schemaVersion - 1`, keeps
+  the recorded queue row through migration, and observes zero defaults for the
+  deadline, retry limit, retry count and warning at `schemaVersion`.
+- `TestAQueuedItemParksAtTheDeadlineWithoutAWorktree`,
+  `TestAQueuedItemStartsBeforeTheDeadline` and
+  `TestAnItemPastQueuedAdvancesAfterTheDeadline` drive the injected Clock and
+  cover the three deadline boundaries without wall-clock waits.
+- `TestRetryRefusesAQueueDeadlineItem` and
+  `TestRetryRefusesAnItemAtItsRetryLimitBeforeCarryForward` observe no
+  `UseItemBranch` or recovery call, match the required error information and
+  compare the complete stored item before and after each refusal.
+
+Focused checks:
+
+- The initial store test run failed to compile on the missing
+  `CreateDeliveryQueueWithLimits`, `DeliveryQueueLimits` and `Limits` symbols,
+  providing the pre-change signal.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run
+  '^(TestDeliveryQueueRecordsItsLimits|TestDeliveryQueueWithoutLimitsRecordsNone|TestDeliveryQueueRefusesANegativeRetryLimit|TestRetryIncrementsTheItemRetryCount|TestRetryAtTheLimitIsRefusedAndLeavesTheItemUnchanged|TestThePreviousSchemaGainsTheLimitColumns|TestDeliveryQueueItemWarningRoundTrips)$'
+  ./internal/store` passed.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run
+  '^(TestAQueuedItemParksAtTheDeadlineWithoutAWorktree|TestAQueuedItemStartsBeforeTheDeadline|TestAnItemPastQueuedAdvancesAfterTheDeadline|TestRetryRefusesAQueueDeadlineItem|TestRetryRefusesAnItemAtItsRetryLimitBeforeCarryForward)$'
+  ./internal/delivery` passed.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run
+  '^(TestOpenMigratesDeliveryQueueAddingItemWorktree|TestOpenMigratesDeliveryQueueAddingWorktreeProvisioning|TestOpenMigratesV14DeliveryQueueAddingOwnerAndItemBranch)$'
+  ./internal/store` passed.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1
+  ./internal/store` and the corresponding `./internal/delivery` command passed;
+  the store package run includes
+  `TestJournalConsumerCorpusReplaysEveryConsumer`.
+- `rtk make verify-incremental` first encountered the sandbox's denied process
+  table in two force-stop integration tests. The host-access rerun passed
+  `go vet ./...`, `go test -parallel 16 ./...`, the focused skills test, the
+  Roundfix skill check and the build.
+
+The schema increase invalidated only the historical downgrade setup used by
+`TestOpenMigratesDeliveryQueueAddingItemWorktree`,
+`TestOpenMigratesDeliveryQueueAddingWorktreeProvisioning` and
+`TestOpenMigratesV14DeliveryQueueAddingOwnerAndItemBranch`. Their fixtures now
+drop the version-21 columns before declaring their historical schema version;
+their assertions were not weakened or otherwise changed.
+
+The authored `## Verification` command was not run; the Daemon owns that
+verification and settlement step.
