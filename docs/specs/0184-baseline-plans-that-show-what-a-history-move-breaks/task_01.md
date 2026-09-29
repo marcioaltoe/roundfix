@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0184-baseline-plans-that-show-what-a-history-move-breaks
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -138,3 +138,79 @@ content other than path text. This Task does not wire the scan into planning.
 - [_techspec.md](_techspec.md) — Interfaces; The resolution model; What the
   scan reads; Data Models; Testing Approach 1; Build Order 1
 - ADR-0173; ADR-0120; ADR-0071
+
+## Result
+
+Implemented the Relocation Citation scan without wiring it into planning. The
+scan lists and sorts safe Git-index paths, models files and unit directories
+before and after applied moves, resolves repository-path tokens and supported
+Markdown destinations from each citing file's before and after location, and
+emits the capped citation, omitted and unscanned findings. Occupied-destination
+moves named in `refused` leave both the source set and citing-file location
+unchanged.
+
+Tracked files are read from the working tree only after parent and final-path
+`Lstat` checks. The final path is opened read-only with `O_NOFOLLOW` and
+`O_NONBLOCK` on Unix (and the no-follow reparse-point equivalent on Windows),
+then accepted only when the opened file is regular and
+`os.SameFile` matches the checked file. Symlinks, changed file types, FIFOs and
+binary files are skipped; oversized and genuinely unreadable regular files are
+summarized without reading untracked or ignored paths.
+
+Focused-check evidence:
+
+- `GOCACHE=/private/tmp/roundfix-0184-task01-gocache go test -count=1 -run '^TestRelocationCitations' ./internal/baseline` exited 0 after the final implementation edit.
+- `GOCACHE=/private/tmp/roundfix-0184-task01-gocache go test -count=1 ./internal/baseline` exited 0 in 56.796s after the final implementation edit.
+- `GOCACHE=/private/tmp/roundfix-0184-task01-gocache go vet ./internal/baseline` exited 0.
+- `go build ./cmd/roundfix` cross-compilation exited 0 for the five release
+  targets: Darwin arm64/amd64, Linux arm64/amd64 and Windows amd64. A Windows
+  cross-compile of the baseline test binary remains unavailable because the
+  pre-existing `repository_test.go` uses the Unix-only `syscall.Mkfifo`.
+- `make verify-incremental` reached and passed `go vet ./...` and the changed `internal/baseline` package, then the sandbox blocked another package's network access to `cafe.github.com`. An escalated rerun was denied because the broad suite could send unknown test data to that external endpoint. This environment block is not used as acceptance evidence.
+- `git diff --check` exited 0.
+- The Task's declared `## Verification` command was not run; the Daemon owns that gate.
+
+Acceptance evidence:
+
+- `TestRelocationCitationsReportEachCitationForm` covers a repository path,
+  inline link, image, reference definition and root-relative link, each on its
+  reported line.
+- `TestRelocationCitationsReportARelocatedFilesOutwardLink` covers a relocated
+  ADR's relative link to a file that stays, including its changed
+  after-resolution.
+- `TestRelocationCitationsSkipCoRelocatedLinks` covers a link whose citing and
+  cited ADRs move together.
+- `TestRelocationCitationsSkipAlreadyBrokenCitations` covers a target that did
+  not exist before the move.
+- `TestRelocationCitationsSkipCodeFencesAndURLs` covers fenced Markdown and a
+  scheme URL.
+- `TestRelocationCitationsNeverOpenUntrackedOrIgnoredFiles` makes both excluded
+  files unreadable and observes no citation or unscanned finding.
+- `TestRelocationCitationsNeverBlockOnAFIFO` replaces an indexed regular file
+  with a FIFO and returns without a finding.
+- `TestRelocationCitationsNeverFollowSymbolicLinks` covers an indexed symlink
+  and an indexed file beneath a symlinked directory.
+- `TestRelocationCitationsSummarizeUnscannedFiles` skips a binary and reports
+  only the oversized tracked text file.
+- `TestRelocationCitationsCapEachFileAndThePlan` observes three displayed
+  citations plus `and 1 more`, 200 file findings, and one omitted-file summary.
+- `TestRelocationCitationsCountUnitDirectoriesNotFamilyRoots` covers a legacy
+  Spec unit and Review Artifact unit while excluding both family roots.
+- `TestRelocationCitationsDoNothingWithoutMoves` supplies a nonexistent root
+  and observes `(nil, nil)`, proving the zero-move path touches neither Git nor
+  the filesystem.
+- `TestRelocationCitationsAreDeterministic` compares byte-identical JSON from
+  two scans of the same repository.
+- `TestRelocationCitationsNeverPrintAControlCharacter` covers both an indexed
+  path with a control character and a percent-decoded control in a link
+  destination.
+- `TestRelocationCitationsIgnoreAMoveApplyWouldRefuse` covers an occupied
+  destination passed through `refused` and observes no citation finding.
+
+Plan wiring, renderer/digest integration and apply invariance remain outside
+this Task's slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260929T222541Z_a2fa4eeca2973de1`
+- Source commit: `421c5cccd7359be3f1fb31688515d208af7ebad0`
