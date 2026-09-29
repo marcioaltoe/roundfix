@@ -1,8 +1,8 @@
 ---
 type: feat
-status: open
+status: promoted
 created: 2026-09-25
-spec: null
+spec: 0183-run-storage-that-says-what-it-holds
 reason: null
 ---
 

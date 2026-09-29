@@ -1,8 +1,8 @@
 ---
 type: feat
-status: open
+status: promoted
 created: 2026-09-25
-spec: null
+spec: 0184-baseline-plans-that-show-what-a-history-move-breaks
 reason: null
 ---
 
