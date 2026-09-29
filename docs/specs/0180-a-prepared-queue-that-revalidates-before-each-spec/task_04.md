@@ -55,6 +55,7 @@ task_02 records and enforces queue limits, but the operator has no way to set th
 - interface: `.agents/skills/roundfix/SKILL.md`
 - interface: `skills/roundfix/SKILL.md`
 - interface: `CONTEXT.md`
+- interface: `internal/cli/deliver_revalidate_test.go`
 
 ## Verification
 

@@ -45,6 +45,7 @@ A Delivery Queue in `internal/store/delivery.go` records only its items and its 
 - creates: `internal/store/delivery_limits_test.go`
 - interface: `internal/delivery/engine.go`
 - creates: `internal/delivery/limits_test.go`
+- interface: `internal/store/delivery_test.go`
 
 ## Verification
 

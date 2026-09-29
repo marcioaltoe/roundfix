@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0180-a-prepared-queue-that-revalidates-before-each-spec
-status: failed
+status: pending
 type: qa
 complexity: medium
 ---
