@@ -181,11 +181,13 @@ func WrapFragileVerification(task spec.Task) []Finding {
 	for _, command := range task.Verification {
 		for _, grep := range wrapFragileGreps(command) {
 			phrase := strconv.Quote(grep.pattern)
-			fix := "tr -s '[:space:]' ' ' < " + grep.file + " | grep -qF -- " + phrase
+			quotedPhrase := shellQuoteWrapPhrase(grep.pattern)
+			quotedFile := shellQuoteWrapFile(grep.file)
+			fix := "tr -s '[:space:]' ' ' < " + quotedFile + " | grep -qF -- " + quotedPhrase
 			if grep.negated {
 				fix = "! { " + fix + "; }"
 			} else {
-				fix += " || { printf 'missing phrase in %s: %s\\n' " + grep.file + " " + phrase + " >&2; exit 1; }"
+				fix += " || { printf 'missing phrase in %s: %s\\n' " + quotedFile + " " + quotedPhrase + " >&2; exit 1; }"
 			}
 			findings = append(findings, Finding{
 				Code:     CodeVerifyWrapFragile,
@@ -197,6 +199,30 @@ func WrapFragileVerification(task spec.Task) []Finding {
 		}
 	}
 	return findings
+}
+
+func shellQuoteWrapPhrase(value string) string {
+	for _, char := range value {
+		if unicode.IsLetter(char) || unicode.IsDigit(char) || char == ' ' || strings.ContainsRune("_@%+=:,./-", char) {
+			continue
+		}
+		return shellSingleQuote(value)
+	}
+	return strconv.Quote(value)
+}
+
+func shellQuoteWrapFile(value string) string {
+	for _, char := range value {
+		if unicode.IsLetter(char) || unicode.IsDigit(char) || strings.ContainsRune("_@%+=:,./-", char) {
+			continue
+		}
+		return shellSingleQuote(value)
+	}
+	return value
+}
+
+func shellSingleQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "'\\''") + "'"
 }
 
 func wrapFragileGreps(command string) []wrapFragileGrep {

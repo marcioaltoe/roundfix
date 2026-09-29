@@ -523,7 +523,6 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (result Task
 		result.QAVerdict = verdict
 		result.QAAccepted = accepted
 		result.QAReportPath = reportPath
-		plan.runBudget.renew(engine.deps.Now(), qaTask.ID)
 	} else if qaTask != nil && qaTask.Status != spec.StatusCompleted {
 		if _, err := fmt.Fprintf(engine.deps.Progress, "QA Task %s withheld; unmet dependencies: %s\n", qaTask.ID, strings.Join(uncompletedTaskNeeds(*qaTask, statuses), ", ")); err != nil {
 			return result, fmt.Errorf("write withheld QA task progress: %w", err)
@@ -2793,6 +2792,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	if err := engine.settleTask(ctx, plan, qaTask, ordinal, qaStatus, qaReason); err != nil {
 		return "", "", false, err
 	}
+	plan.runBudget.renew(engine.deps.Now(), qaTask.ID)
 	if err := engine.commitQAReport(ctx, plan, ordinal, before, verificationWindowPaths, verdict, reportPath, qaTask); err != nil {
 		return "", "", false, err
 	}

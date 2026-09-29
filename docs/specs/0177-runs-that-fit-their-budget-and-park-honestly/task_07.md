@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0177-runs-that-fit-their-budget-and-park-honestly
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -20,13 +20,13 @@ Corrective Task from the pre-PR review of 2026-09-28. In `internal/daemon/task_e
 
 ## Subtasks
 
-- [ ] Implement the requirements above.
-- [ ] Add a named test for each acceptance criterion, each negative case separate.
+- [x] Implement the requirements above.
+- [x] Add a named test for each acceptance criterion, each negative case separate.
 
 ## Acceptance Criteria
 
-- [ ] A QA settlement near the old deadline renews the budget, and the report commit completes without cancellation.
-- [ ] A phrase containing `$(`, a backtick, `;`, a space and a `'`, and a path with a space, produce a remediation that a shell runs as a literal `grep -qF` of exactly that phrase against exactly that file.
+- [x] A QA settlement near the old deadline renews the budget, and the report commit completes without cancellation.
+- [x] A phrase containing `$(`, a backtick, `;`, a space and a `'`, and a path with a space, produce a remediation that a shell runs as a literal `grep -qF` of exactly that phrase against exactly that file.
 
 ## Context
 
@@ -42,3 +42,19 @@ Corrective Task from the pre-PR review of 2026-09-28. In `internal/daemon/task_e
 ## References
 
 - [_techspec.md](_techspec.md) — Build Order
+
+## Result
+
+The QA path now renews the shared Implement Run Budget immediately after the Daemon settles the QA Task and before it prepares or creates the QA Report commit. Wrap-fragile remediations preserve the existing rendering for the established shell-safe phrase and path while POSIX single-quoting hostile phrases and paths that require quoting; embedded single quotes use the `'''` shell sequence without evaluating command substitutions, backticks, or separators.
+
+Acceptance evidence:
+
+- `TestQASettlementRenewsTheBudgetBeforeTheReportCommit` failed before the implementation with `context deadline exceeded`, then passed after the renewal moved to the settlement boundary. Its fake clock advances past the prior deadline during the QA Report commit and observes the QA settlement's renewed deadline afterwards.
+- `TestWrapFragileRemediationQuotesAHostilePhrase` failed before the implementation after executing the embedded `$()` and backtick substitutions, then passed after the fix. It executes the suggested remediation through `sh`, proves neither marker command ran, and proves a near-match does not satisfy `grep -qF`.
+- `TestWrapFragileRemediationQuotesAPathWithASpace` failed before the implementation because the path was raw, then passed after the fix. It executes the remediation through `sh` against the exact spaced Markdown path.
+
+Focused checks:
+
+- `GOCACHE=/tmp/roundfix-task07-gocache go test -count=1 ./internal/daemon ./internal/speccheck` — passed after the final production changes; existing affected-package tests and messages remain unchanged.
+- `make verify-incremental` — the sandboxed attempt reached the full suite but could not read the process table in two force-stop integration tests; the rerun with process-table access passed `go vet`, the full Go suite, skill checks, and the build.
+- Task 07's authored `## Verification` command was not run; the Daemon owns that check and terminal settlement.
