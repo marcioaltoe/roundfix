@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-09-28
-spec: null
+spec: 0182-delivery-that-reviews-and-retries-from-where-the-item-stands
 reason: null
 ---
 
