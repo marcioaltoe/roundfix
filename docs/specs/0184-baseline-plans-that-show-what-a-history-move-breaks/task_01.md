@@ -122,6 +122,8 @@ content other than path text. This Task does not wire the scan into planning.
 ## Context
 
 - creates: `internal/baseline/history_citations.go`
+- creates: `internal/baseline/history_citations_open_unix.go`
+- creates: `internal/baseline/history_citations_open_windows.go`
 - creates: `internal/baseline/history_citations_test.go`
 - instruction: `internal/baseline/history_layout.go`
 - instruction: `internal/baseline/repository.go`
