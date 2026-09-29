@@ -16,6 +16,7 @@ complexity: medium
 
 1. MUST add `internal/speccheck/adr_horizon.go` with `adrHorizon`, `newADRHorizon` and `predates`, as the TechSpec's "The related-ADR horizon" section states. All Git runs with `mechanicalGitEnvironment()`. `newADRHorizon` returns false, which keeps the full check, in each of these cases:
    - the PRD and the repository resolve to different Git common directories;
+   - `git rev-parse --is-shallow-repository` prints `true`, because a shallow boundary commit appears to add every file it holds;
    - the PRD has no adding commit;
    - any Git command fails.
 2. MUST read every ADR's adding commit with one `git log --diff-filter=A` over `docs/adr`, keeping the newest adding commit per path. `predates` MUST return false for an ADR with no adding commit, the ancestry answer when `git merge-base --is-ancestor` exits `0` or `1`, and true on any other failure.
@@ -33,7 +34,7 @@ complexity: medium
 
 - [ ] An ADR committed after a committed PRD that lists an ADR it cites opens no `SC-ADR-RELATED` finding.
 - [ ] An ADR committed before the PRD, or in the same commit, still opens the finding.
-- [ ] An uncommitted PRD, and a Spec directory without Git, keep the full check.
+- [ ] An uncommitted PRD, a Spec directory without Git, and a shallow clone keep the full check.
 - [ ] An uncommitted ADR against a committed PRD opens no finding.
 - [ ] A Spec that cites an ADR outside its horizon still reports `SC-ADR-UNLISTED`.
 
@@ -46,7 +47,7 @@ complexity: medium
 
 ## Verification
 
-- `out="$(go test -count=1 -v -run "^(TestAnADRCommittedAfterTheSpecOpensNoRelatedGap|TestAnADRCommittedBeforeTheSpecOpensTheRelatedGap|TestAnADRCommittedWithTheSpecOpensTheRelatedGap|TestAnUncommittedSpecKeepsTheFullRelatedCheck|TestAnUncommittedADRIsOutsideACommittedSpecsHorizon|TestASpecWithoutGitKeepsTheFullRelatedCheck|TestTheHorizonLeavesUnlistedCitationsChecked|TestCheckADRClosureDepthOne)$" ./internal/speccheck 2>&1)" || { printf "%s\\n" "$out"; exit 1; }; for name in TestAnADRCommittedAfterTheSpecOpensNoRelatedGap TestAnADRCommittedBeforeTheSpecOpensTheRelatedGap TestAnADRCommittedWithTheSpecOpensTheRelatedGap TestAnUncommittedSpecKeepsTheFullRelatedCheck TestAnUncommittedADRIsOutsideACommittedSpecsHorizon TestASpecWithoutGitKeepsTheFullRelatedCheck TestTheHorizonLeavesUnlistedCitationsChecked TestCheckADRClosureDepthOne; do printf "%s\\n" "$out" | grep -q -- "--- PASS: $name" || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done` — expected: exit 0; before this Task none of the seven new named tests exists, so the command fails.
+- `out="$(go test -count=1 -v -run "^(TestAnADRCommittedAfterTheSpecOpensNoRelatedGap|TestAnADRCommittedBeforeTheSpecOpensTheRelatedGap|TestAnADRCommittedWithTheSpecOpensTheRelatedGap|TestAnUncommittedSpecKeepsTheFullRelatedCheck|TestAnUncommittedADRIsOutsideACommittedSpecsHorizon|TestASpecWithoutGitKeepsTheFullRelatedCheck|TestAShallowHistoryKeepsTheFullRelatedCheck|TestTheHorizonLeavesUnlistedCitationsChecked|TestCheckADRClosureDepthOne)$" ./internal/speccheck 2>&1)" || { printf "%s\\n" "$out"; exit 1; }; for name in TestAnADRCommittedAfterTheSpecOpensNoRelatedGap TestAnADRCommittedBeforeTheSpecOpensTheRelatedGap TestAnADRCommittedWithTheSpecOpensTheRelatedGap TestAnUncommittedSpecKeepsTheFullRelatedCheck TestAnUncommittedADRIsOutsideACommittedSpecsHorizon TestASpecWithoutGitKeepsTheFullRelatedCheck TestAShallowHistoryKeepsTheFullRelatedCheck TestTheHorizonLeavesUnlistedCitationsChecked TestCheckADRClosureDepthOne; do printf "%s\\n" "$out" | grep -q -- "--- PASS: $name" || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done` — expected: exit 0; before this Task none of the seven new named tests exists, so the command fails.
 
 ## References
 

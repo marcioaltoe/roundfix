@@ -202,6 +202,9 @@ when any of the following holds:
 
 - `repoRoot` and the PRD's directory resolve to different
   `git rev-parse --path-format=absolute --git-common-dir`;
+- `git rev-parse --is-shallow-repository` prints `true`: a shallow boundary
+  commit appears to add every file it holds, so adding commits cannot be
+  trusted;
 - `git -C repoRoot log -1 --diff-filter=A --format=%H -- <prd>` prints nothing,
   which means the PRD is uncommitted;
 - any Git command fails.
@@ -336,6 +339,7 @@ so existing characterizations and the corpus golden do not move.
    - an uncommitted PRD keeps the full check;
    - an uncommitted ADR against a committed PRD opens no gap;
    - a directory without Git keeps the full check;
+   - a shallow clone keeps the full check;
    - `SC-ADR-UNLISTED` still fires for a cited ADR outside the horizon.
 4. **Documentation.** Phrase checks on the canonical skills, their mirrors, the
    user guide and `CONTEXT.md`, `make skills-sync-check`, and
