@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0183-run-storage-that-says-what-it-holds
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -54,3 +54,52 @@ complexity: medium
 - [_techspec.md](_techspec.md) — `runs list` ignores a vanished checkout; API Contract 4; Testing Approach 4; Build Order 2
 - [references/2026-09-29-runs-list-warns-for-runs-whose-checkout-is-gone.md](references/2026-09-29-runs-list-warns-for-runs-whose-checkout-is-gone.md)
 - ADR-0023; ADR-0053
+
+## Result
+
+### Implementation
+
+- `countRetainedTerminalRuns` now treats only a recorded-root error matching
+  `fs.ErrNotExist` as an absent checkout and falls back to the Runs' distinct
+  non-empty repository keys. Per-call caches validate each fallback key once
+  and list branches from any resolved repository path at most once.
+- Repository keys keep the recorded-root safety checks. A bare key is accepted
+  only when `git rev-parse --absolute-git-dir` resolves to the key itself;
+  absent keys add no failure, while unsafe or invalid existing keys do.
+- Recorded Run Worktree paths are still checked for every Run. Symlink, file,
+  non-root and Git-failure cases at a recorded root remain failures. No
+  reconciliation, Branch Set or delivery-release path changed.
+
+### Focused checks
+
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run 'TestCountRetainedTerminalRuns' ./internal/worktree`
+  passed after the final implementation edit. This selection includes the new
+  absent-checkout, absent-key, bare-key and validation-failure cases and the
+  unchanged `TestCountRetainedTerminalRunsBatchesGitInspectionByRepository`.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run 'TestRunsListPrintsNoWarningForARunWhoseCheckoutWasDeleted' ./internal/cli`
+  passed against a real repository, removed linked checkout and temporary
+  Roundfix Home.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache make verify-incremental`
+  passed outside the sandbox, including `go vet`, all Go packages, skill
+  checks and the build. The sandboxed attempt had first failed in two
+  force-stop tests because process-table access was denied and in one
+  250-millisecond daemon timing test under concurrent load; the elevated rerun
+  passed those same packages.
+- The Daemon-owned commands under `## Verification` were not run.
+
+### Acceptance evidence
+
+- `TestCountRetainedTerminalRunsListsBranchesThroughTheKeyWhenTheCheckoutIsGone`
+  passed: no failure was returned, the key was listed once and the existing
+  Run Branch counted.
+- `TestCountRetainedTerminalRunsCountsOnlyAnExistingWorktreeWhenTheRepositoryIsGone`
+  passed: absent checkout and key produced no failure or Git call, and only the
+  existing recorded Run Worktree counted.
+- `TestCountRetainedTerminalRunsListsABareRepositoryKey` passed: the bare key's
+  absolute Git directory matched the key and its Run Branch counted.
+- `TestCountRetainedTerminalRunsStillReportsASymlinkedRecordedRoot` passed;
+  separate tests also kept a non-directory root, a non-repository root, a Git
+  validation failure and an invalid existing repository key loud.
+- `TestRunsListPrintsNoWarningForARunWhoseCheckoutWasDeleted` passed: the Run
+  remained visible, retained guidance stayed on stderr and no `warning:` line
+  printed.

@@ -1,9 +1,12 @@
 ---
 spec: 0183-run-storage-that-says-what-it-holds
-status: active
+status: archived
 created: 2026-09-29
 surfaces: [backend, cli, docs]
+archived: "2026-09-29"
+source_slug: 0183-run-storage-that-says-what-it-holds
 ---
+
 
 # Run storage that says what it holds
 

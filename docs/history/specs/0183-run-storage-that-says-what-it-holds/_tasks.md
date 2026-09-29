@@ -18,7 +18,10 @@ graph:
       needs: [task_01]
     - id: task_05
       file: task_05.md
-      needs: [task_01, task_02, task_03, task_04]
+      needs: [task_01, task_02, task_03, task_04, task_06]
+    - id: task_06
+      file: task_06.md
+      needs: [task_02]
 ---
 
 # Task Graph
@@ -30,3 +33,4 @@ graph:
 | task_03 | backend | Doctor reports reclaimable Run storage |
 | task_04 | backend | `gc sanitize` recognizes a pre-key default Artifact Root |
 | task_05 | qa | Run the final QA gate |
+| task_06 | backend | Only a missing checkout counts as vanished |
