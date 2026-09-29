@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0181-gates-that-refuse-only-what-someone-can-act-on
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -71,3 +71,70 @@ A Task's `## Context` names the paths it plans to edit. An Agent that needs a fi
 - [references/2026-09-29-a-file-a-task-creates-fails-the-qa-scope-audit.md](references/2026-09-29-a-file-a-task-creates-fails-the-qa-scope-audit.md)
 
 ## Result
+
+Implemented the Daemon-owned `## Recorded paths` record without changing the
+authored `## Context` or any exported function signature. The spec package now
+derives sorted unique undeclared ordinary paths, atomically replaces or removes
+the terminal record while preserving all other bytes, rejects unrecordable
+paths before writing, and reads the record back. The Daemon computes the record
+from its filtered commit paths, expands an untracked directory with `git
+ls-files --others --exclude-standard -z`, writes the record before the Task
+commit, and adds `recorded_paths` only to a non-empty commit-event payload.
+`roundfix settle` applies the same rule to its staged paths, including deleted
+paths, and stages the Task file again before committing. The commands guide now
+states for both writers that recording discloses a path, reserves nothing, and
+never replaces Governed Path authorization.
+
+Acceptance evidence:
+
+- `TestTaskCommitRecordsAnUndeclaredTestFile` drives `taskFakeRunner` through
+  the real Task cycle and Git repository with the Spec 0180 shape. It proves
+  that only `internal/store/delivery_test.go` appears in both the Task file and
+  `daemon.commit` payload.
+- `TestTaskCommitRecordsTheFilesOfANewUntrackedPackage` proves a new package is
+  recorded as its two files rather than its directory.
+- `TestTaskCommitRecordsNothingWhenEveryPathIsDeclared`,
+  `TestAFailedTaskRecordsNoPaths`, and `TestAQATaskRecordsNoPaths` separately
+  prove the declared-only, failed, and QA negative cases and the absence of the
+  event key. The declared-only case also proves that a record from an earlier
+  attempt is removed.
+- `TestTaskCommitNeverRecordsAGovernedPath` proves an authorized Governed Path
+  remains under its existing authorization and is absent from the record.
+- `TestRecordTaskPathsReplacesAnExistingSectionAndKeepsEveryOtherByte`,
+  `TestRecordTaskPathsWithNoPathsRemovesTheSection`, and
+  `TestRecordTaskPathsRefusesAnUnrecordablePath` prove replacement, exact
+  preservation, removal, file-mode preservation, and refusal without a write.
+- `TestUndeclaredTaskPathsExcludesDeclaredGovernedAndTheTaskFile` and
+  `TestUndeclaredTaskPathsRecordsAnEditedInstructionPath` prove the path
+  classification, uniqueness, sorting, and the instruction-path rule.
+- `TestARecordedSectionLeavesContextAndCarryForwardInputsUnchanged` proves the
+  parser Context and `CarryForwardInputs` are identical with and without the
+  record.
+- `TestSettleRecordsTheUndeclaredPathsOfItsTaskCommit` and
+  `TestSettleRecordsNothingWhenEveryPathIsDeclared` prove Settle records an
+  undeclared committed path, omits declared paths, and removes a stale record.
+  `TestRunSettleCommitsFailedTaskWorktreeWithDaemonMessage` continues to prove
+  the standard commit message and stream contract.
+
+Focused checks run after the last implementation edits:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task01-gocache go test ./internal/spec -run '^(TestUndeclaredTaskPaths|TestRecordTaskPaths|TestARecordedSection)' -count=1` — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task01-gocache go test ./internal/daemon -run '^(TestTaskCommitRecordsAnUndeclaredTestFile|TestTaskCommitRecordsTheFilesOfANewUntrackedPackage|TestTaskCommitRecordsNothingWhenEveryPathIsDeclared|TestTaskCommitNeverRecordsAGovernedPath|TestAFailedTaskRecordsNoPaths|TestAQATaskRecordsNoPaths)$' -count=1 -timeout=60s` — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task01-gocache go test ./internal/cli -run '^(TestSettleRecordsTheUndeclaredPathsOfItsTaskCommit|TestSettleRecordsNothingWhenEveryPathIsDeclared|TestRunSettleCommitsFailedTaskWorktreeWithDaemonMessage)$' -count=1 -timeout=60s` — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task01-gocache go test ./internal/spec ./internal/daemon ./internal/cli -count=1 -timeout=8m` — spec and daemon passed; the first CLI run exposed two invalidated expectations plus sandbox-denied process-table access. After updating only the invalidated expectations, the full CLI package passed with the required process-table permission.
+- `rtk env GOCACHE=/private/tmp/roundfix-task01-gocache make verify-incremental` — passed with process-table permission; formatting, vet, all Go packages, skill checks, and build exited 0.
+
+Existing tests updated because the new record makes the Task file part of an
+older completed-Task recovery commit: `TestSettleAcceptsCompletedTaskWithUncommittedWorkInCheckout`
+and `TestSettleVerificationRunsSurfaceCommandsVerbatim`. No other top-level
+test was renamed or removed.
+
+Daemon Verification attempt 1 ran while only the spec-layer implementation
+existed and stopped at the first missing daemon test. Its diagnostic artifact
+was inspected before this repair. The Agent did not rerun the authored
+`## Verification` command; the Daemon owns the final attempt and settlement.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260929T170240Z_b8558d4fb9103028`
+- Source commit: `8718e1b783fccaa23fde26857059bba1ebbcfc0c`

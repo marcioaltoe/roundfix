@@ -2038,6 +2038,7 @@ func (engine *Engine) settleTask(ctx context.Context, plan TaskPlan, task spec.T
 type taskCommitPreparation struct {
 	stageable        []string
 	dropped          []DroppedStagePath
+	recorded         []string
 	noOpShape        string
 	governedMutation bool
 }
@@ -2056,12 +2057,53 @@ func (engine *Engine) prepareTaskCommit(ctx context.Context, plan TaskPlan, task
 	}
 	stageable, dropped := FilterStageablePaths(ctx, plan.WorkDir, changed)
 	dropped = append(projectConfigDrops, dropped...)
+	var recorded []string
+	if task.Type != spec.TaskTypeQA {
+		committedFiles, err := expandUntrackedCommitDirectories(ctx, plan.WorkDir, stageable)
+		if err != nil {
+			return taskCommitPreparation{}, err
+		}
+		recorded = spec.UndeclaredTaskPaths(
+			task,
+			artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, task.File)),
+			committedFiles,
+			speccheck.GovernedPath,
+		)
+	}
 	return taskCommitPreparation{
 		stageable:        stageable,
 		dropped:          dropped,
+		recorded:         recorded,
 		noOpShape:        taskNoOpCommitShape(plan, stageable),
 		governedMutation: HasGovernedSnapshotMutation(before, after),
 	}, nil
+}
+
+// expandUntrackedCommitDirectories replaces each untracked directory entry
+// from porcelain status with the files Git will stage from that directory.
+// Tracked removals stay as paths even though they no longer exist on disk.
+func expandUntrackedCommitDirectories(ctx context.Context, workDir string, paths []string) ([]string, error) {
+	expanded := make([]string, 0, len(paths))
+	for _, path := range paths {
+		info, err := os.Stat(filepath.Join(workDir, filepath.FromSlash(path)))
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return nil, fmt.Errorf("inspect Task commit path %q: %w", path, err)
+		}
+		if err != nil || !info.IsDir() {
+			expanded = append(expanded, path)
+			continue
+		}
+		output, err := runGitOutput(ctx, workDir, "ls-files", "--others", "--exclude-standard", "-z", "--", path)
+		if err != nil {
+			return nil, fmt.Errorf("expand untracked Task commit directory %q: %w", path, err)
+		}
+		for _, file := range strings.Split(output, "\x00") {
+			if file != "" {
+				expanded = append(expanded, file)
+			}
+		}
+	}
+	return expanded, nil
 }
 
 // HasGovernedSnapshotMutation reports whether a Governed Path appears in only
@@ -2104,6 +2146,10 @@ func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.T
 	if len(preparation.stageable) == 0 {
 		return engine.publishNoOpTaskCommitWarning(ctx, plan, task.ID, ordinal, preparation.noOpShape)
 	}
+	taskPath := filepath.Join(plan.SpecsRoot, task.File)
+	if err := spec.RecordTaskPaths(taskPath, preparation.recorded); err != nil {
+		return fmt.Errorf("record paths for run %q Task %s: %w", plan.RunID, task.ID, err)
+	}
 	message := TaskCommitMessage(plan.Spec.Slug, task)
 	if err := engine.deps.Committer.Commit(ctx, CommitRequest{
 		WorkDir: plan.WorkDir,
@@ -2118,9 +2164,13 @@ func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.T
 	}
 	subject, _, _ := strings.Cut(message, "\n")
 	fmt.Fprintf(engine.deps.Progress, "Task commit created: %s\n", subject)
+	payload := map[string]any{"decision": "created", "task": task.ID, "paths": len(preparation.stageable)}
+	if len(preparation.recorded) > 0 {
+		payload["recorded_paths"] = preparation.recorded
+	}
 	if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonCommit,
 		fmt.Sprintf("Task commit created: %s", subject),
-		map[string]any{"decision": "created", "task": task.ID, "paths": len(preparation.stageable)},
+		payload,
 	); err != nil {
 		return fmt.Errorf("publish commit event for run %q Task %s: %w", plan.RunID, task.ID, err)
 	}

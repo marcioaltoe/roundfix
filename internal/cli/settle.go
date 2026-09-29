@@ -16,6 +16,7 @@ import (
 	"roundfix/internal/daemon"
 	"roundfix/internal/preflight"
 	"roundfix/internal/spec"
+	"roundfix/internal/speccheck"
 	"roundfix/internal/store"
 	runworktree "roundfix/internal/worktree"
 )
@@ -627,6 +628,24 @@ func settleTaskAndCommit(ctx context.Context, plan settlePlan, collaborators eng
 	if err != nil {
 		return settleCommitResult{}, err
 	}
+	recorded := []string(nil)
+	if plan.task.Type != spec.TaskTypeQA {
+		paths := make([]string, 0, len(committedPaths))
+		for _, committed := range committedPaths {
+			paths = append(paths, committed.path)
+		}
+		recorded = spec.UndeclaredTaskPaths(plan.task, settleTaskCommitPath(plan.workDir, taskPath), paths, speccheck.GovernedPath)
+	}
+	if err := spec.RecordTaskPaths(taskPath, recorded); err != nil {
+		return settleCommitResult{}, fmt.Errorf("record paths for settled Task %s: %w", plan.task.ID, err)
+	}
+	if err := stageSettledTaskFile(ctx, plan.workDir, taskPath); err != nil {
+		return settleCommitResult{}, err
+	}
+	committedPaths, err = stagedSettlePaths(ctx, plan.workDir)
+	if err != nil {
+		return settleCommitResult{}, err
+	}
 	if len(committedPaths) > 0 {
 		// The committer stages the surface again before it commits. That
 		// repeats the stage-all above rather than narrowing it, so the commit
@@ -643,6 +662,25 @@ func settleTaskAndCommit(ctx context.Context, plan settlePlan, collaborators eng
 		return settleCommitResult{}, err
 	}
 	return settleCommitResult{shortSHA: shortSHA, paths: committedPaths}, nil
+}
+
+func settleTaskCommitPath(workDir string, taskPath string) string {
+	relative, err := filepath.Rel(workDir, taskPath)
+	if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) || filepath.IsAbs(relative) {
+		return taskPath
+	}
+	return filepath.ToSlash(relative)
+}
+
+func stageSettledTaskFile(ctx context.Context, workDir string, taskPath string) error {
+	relative := settleTaskCommitPath(workDir, taskPath)
+	if filepath.IsAbs(relative) {
+		return nil
+	}
+	if _, err := (preflight.ExecGitRunner{}).RunGit(ctx, workDir, "add", "--", relative); err != nil {
+		return fmt.Errorf("stage settled Task file %q: %w", taskPath, err)
+	}
+	return nil
 }
 
 // addAllChanges stages every change in the settle surface with `git add --all`.

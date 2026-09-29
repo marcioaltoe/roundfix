@@ -545,14 +545,16 @@ func TestSettleAcceptsCompletedTaskWithUncommittedWorkInCheckout(t *testing.T) {
 	}
 	assertOnlySettleSurfaceLine(t, stderr.String(), repoDir)
 	shortSHA := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "--short", "HEAD"))
+	taskFile := filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "task_01.md"))
 	expectedStdout := "verify test -f done.txt — ok\n" +
+		"commit " + taskFile + "\n" +
 		"commit done.txt\n" +
 		"settled task_01 completed — " + shortSHA + "\n"
 	if stdout.String() != expectedStdout {
 		t.Fatalf("expected stdout:\n%q\ngot:\n%q", expectedStdout, stdout.String())
 	}
-	if changed := settleCommitFiles(t, repoDir); strings.Join(changed, "|") != "done.txt" {
-		t.Fatalf("expected only the uncommitted work committed, got %v", changed)
+	if changed := settleCommitFiles(t, repoDir); strings.Join(changed, "|") != taskFile+"|done.txt" {
+		t.Fatalf("expected the recorded Task and uncommitted work committed, got %v", changed)
 	}
 	if content := mustRead(t, implementTaskPath(repoDir, "task_01")); !strings.Contains(content, "status: completed") {
 		t.Fatalf("expected task status to stay completed, got:\n%s", content)
@@ -1251,9 +1253,11 @@ func TestSettleVerificationRunsSurfaceCommandsVerbatim(t *testing.T) {
 	}
 	assertOnlySettleSurfaceLine(t, stderr.String(), repoDir)
 	shortSHA := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "--short", "HEAD"))
+	taskFile := filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "task_01.md"))
 	expectedStdout := "verify " + commands[0] + " — ok\n" +
 		"verify " + commands[1] + " — ok\n" +
 		"verify " + commands[2] + " — ok\n" +
+		"commit " + taskFile + "\n" +
 		"commit done.txt\n" +
 		"settled task_01 completed — " + shortSHA + "\n"
 	if stdout.String() != expectedStdout {
