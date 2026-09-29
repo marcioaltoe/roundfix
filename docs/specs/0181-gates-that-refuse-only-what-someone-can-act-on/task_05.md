@@ -43,7 +43,7 @@ Every behavior row below is exercised through the built binary, or by executing 
    - a directory without Git kept on the full check;
    - `SC-ADR-UNLISTED` still reported for a citation in authored text;
    - no `SC-ADR-UNLISTED` for an unlisted ADR cited only in a Task's `## Result`, in a Daemon-owned section or under `qa/`.
-7. MUST verify that the `qa-gate`, `write-tasks` and Roundfix skills, their mirrors, `docs/user-guide/commands.md`, `docs/user-guide/context-driven-development.md` and `CONTEXT.md` describe the recorded paths, the pre-PR Pull Request row and the horizon, that both skills declare `0.0.3`, and that `make skills-sync-check` exits `0`.
+7. MUST verify that the `qa-gate`, `write-tasks`, `archive-spec` and Roundfix skills, their mirrors, `docs/user-guide/commands.md`, `docs/user-guide/context-driven-development.md` and `CONTEXT.md` describe the recorded paths, the pre-PR Pull Request row and the horizon, that both skills declare `0.0.3`, and that `make skills-sync-check` exits `0`.
 8. MUST verify that this Spec's own artifacts satisfy the promise rule, and check whether the Spec introduced, changed or retired a glossary term that `CONTEXT.md` does not carry.
 9. MUST verify from the repository history that each Task's changed files stay within its declarations, and that every Governed Path is bounded in `_authorization.md`. The following also count as declared, and the scope row MUST name each one it relies on:
    - a path in the Task file's `## Recorded paths`;

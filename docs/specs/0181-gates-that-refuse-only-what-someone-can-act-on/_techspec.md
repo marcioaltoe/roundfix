@@ -380,9 +380,13 @@ TechSpec, Task Graph, a Task's authored sections or `references/` still reports
    (depends on: none).
 3. The related-ADR horizon, task_03 (depends on: none).
 4. Skills, remaining guide text and glossary, task_04 (depends on: 1, 2, 3).
-5. Terminal QA, task_05 (depends on: 1, 2, 3, 4, 6).
+5. Terminal QA, task_05 (depends on: 1, 2, 3, 4, 6, 7).
 6. Citation checks read the authored projection, corrective task_06 (depends
    on: 3).
+7. The `archive-spec` skill's QA settlement table matches `qa-gate` and the
+   Roundfix skill, corrective task_07 (depends on: 4). Added after the second
+   QA gate refused on `TestSettlementGuidanceIsOneTable`, under the widened
+   grant of 2026-09-29.
 
 ## Risks & Considerations
 
