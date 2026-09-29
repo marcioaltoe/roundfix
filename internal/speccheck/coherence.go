@@ -69,6 +69,7 @@ var stagedDetectors = []stagedDetector{
 	{code: CodeReferenceUnresolved, stage: StageTasks},
 	{code: CodeVerifyWorkIndependent, stage: StageTasks},
 	{code: CodeVerifyInvertedExit, stage: StageTasks},
+	{code: CodeVerifyWrapFragile, stage: StageTasks},
 	{code: CodeVerifyNonHermetic, stage: StageTasks},
 	{code: CodeVerifyVacuousCommand, stage: StageTasks},
 	{code: CodeRequirementContradictory, stage: StageTasks},

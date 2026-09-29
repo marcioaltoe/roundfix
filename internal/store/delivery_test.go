@@ -426,6 +426,10 @@ func downgradeDeliveryOwnerSchemaFixture(t *testing.T, ctx context.Context, home
 	}()
 
 	for _, statement := range []string{
+		`ALTER TABLE delivery_queue_items DROP COLUMN warning`,
+		`ALTER TABLE delivery_queue_items DROP COLUMN retry_count`,
+		`ALTER TABLE delivery_queues DROP COLUMN max_retries`,
+		`ALTER TABLE delivery_queues DROP COLUMN deadline_unix`,
 		`ALTER TABLE delivery_queues DROP COLUMN owner_identity`,
 		`ALTER TABLE delivery_queues DROP COLUMN owner_pid`,
 		`PRAGMA user_version = 14`,
@@ -449,6 +453,10 @@ func downgradeDeliveryWorktreeSchemaFixture(t *testing.T, ctx context.Context, h
 	}()
 
 	for _, statement := range []string{
+		`ALTER TABLE delivery_queue_items DROP COLUMN warning`,
+		`ALTER TABLE delivery_queue_items DROP COLUMN retry_count`,
+		`ALTER TABLE delivery_queues DROP COLUMN max_retries`,
+		`ALTER TABLE delivery_queues DROP COLUMN deadline_unix`,
 		`ALTER TABLE delivery_queue_items DROP COLUMN worktree_provisioned`,
 		`ALTER TABLE delivery_queue_items DROP COLUMN worktree`,
 		`PRAGMA user_version = 18`,
@@ -472,6 +480,10 @@ func downgradeDeliveryWorktreeProvisioningSchemaFixture(t *testing.T, ctx contex
 	}()
 
 	for _, statement := range []string{
+		`ALTER TABLE delivery_queue_items DROP COLUMN warning`,
+		`ALTER TABLE delivery_queue_items DROP COLUMN retry_count`,
+		`ALTER TABLE delivery_queues DROP COLUMN max_retries`,
+		`ALTER TABLE delivery_queues DROP COLUMN deadline_unix`,
 		`ALTER TABLE delivery_queue_items DROP COLUMN worktree_provisioned`,
 		`PRAGMA user_version = 19`,
 	} {

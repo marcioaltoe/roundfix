@@ -24,10 +24,11 @@ import (
 )
 
 const (
-	DetectorMechanicalAuthPaths       = "authorization bounded paths"
-	DetectorMechanicalConsequentOrder = "consequent-fix commit order"
-	DetectorMechanicalReportShape     = "QA Report structure"
-	DetectorMechanicalEvidencePath    = "QA evidence paths"
+	DetectorMechanicalAuthPaths         = "authorization bounded paths"
+	DetectorMechanicalConsequentOrder   = "consequent-fix commit order"
+	DetectorMechanicalReportShape       = "QA Report structure"
+	DetectorMechanicalEvidencePath      = "QA evidence paths"
+	MechanicalSkipEarlierRunTaskCommits = "Task commits of earlier Runs"
 
 	CodeMechanicalAuthPaths       = "QA-AUTH-PATHS"
 	CodeMechanicalConsequentOrder = "QA-CONSEQUENT-ORDER"
@@ -42,17 +43,18 @@ const (
 // recorded as MechanicalSkips; unreadable authorization evidence is an
 // unresolved audit input and cannot become a pass.
 type MechanicalRequest struct {
-	RepoRoot               string
-	AuthorizationPath      string
-	AuthorizationReference MechanicalAuthorizationReference
-	ConsumingSpec          string
-	DeliveryTargetRevision string
-	TaskCommits            []MechanicalTaskCommit
-	ConsequentFixes        []ConsequentFixDeclaration
-	ReportPath             string
-	TaskRepairPaths        []string
-	AssignedRepairs        []AssignedRepair
-	Precondition           GatePreconditionResult
+	RepoRoot                string
+	AuthorizationPath       string
+	AuthorizationReference  MechanicalAuthorizationReference
+	ConsumingSpec           string
+	DeliveryTargetRevision  string
+	TaskCommits             []MechanicalTaskCommit
+	TaskCommitsFromRunStart bool
+	ConsequentFixes         []ConsequentFixDeclaration
+	ReportPath              string
+	TaskRepairPaths         []string
+	AssignedRepairs         []AssignedRepair
+	Precondition            GatePreconditionResult
 }
 
 // MechanicalAuthorizationReference is the exact authorization citation the
@@ -725,6 +727,9 @@ func addRepairFailure(result *MechanicalResult, failure RepairFailure) {
 }
 
 func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, repoRoot string, request MechanicalRequest) error {
+	if request.TaskCommitsFromRunStart {
+		addMechanicalSkip(result, DetectorMechanicalAuthPaths, MechanicalSkipEarlierRunTaskCommits)
+	}
 	missing := request.AuthorizationPath
 	authorizationPath := cleanMechanicalPath(request.AuthorizationPath)
 	authorizationRepoRoot := repoRoot
@@ -790,6 +795,7 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 		if !exists {
 			read := unresolvedMechanicalAuthorizationRead(
 				taskCommit.TaskID,
+				taskCommit.SHA,
 				authorizationPath,
 				authorizationRevision,
 				spec.AuthorizationReasonUnavailableRevision,
@@ -812,6 +818,7 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 			}
 			read := unresolvedMechanicalAuthorizationRead(
 				taskCommit.TaskID,
+				taskCommit.SHA,
 				authorizationPath,
 				authorizationRevision,
 				spec.AuthorizationReasonUnavailableRevision,
@@ -831,6 +838,7 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 		if !available {
 			read := unresolvedMechanicalAuthorizationRead(
 				taskCommit.TaskID,
+				taskCommit.SHA,
 				authorizationPath,
 				targetRevision,
 				spec.AuthorizationReasonUnavailableRevision,
@@ -847,7 +855,7 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 		if !sameRepository {
 			readRevision = authorizationRevision
 		}
-		read, authorization := readMechanicalAuthorization(ctx, authorizationRepoRoot, authorizationPath, request.ConsumingSpec, readRevision, taskCommit.TaskID)
+		read, authorization := readMechanicalAuthorization(ctx, authorizationRepoRoot, authorizationPath, request.ConsumingSpec, readRevision, taskCommit.TaskID, taskCommit.SHA)
 		result.AuthorizationReads = append(result.AuthorizationReads, read)
 		projectAuthorizationPath := authorizationPath
 		projectReadPath := cleanMechanicalPath(read.Source.Path)
@@ -1039,6 +1047,7 @@ func readMechanicalAuthorization(
 	consumingSpec string,
 	revision string,
 	taskID string,
+	commit string,
 ) (MechanicalAuthorizationRead, spec.AuthorizationResolution) {
 	recordPath := requestedPath
 	if discovered := discoverMechanicalAuthorizationPaths(ctx, repoRoot, revision, requestedPath); len(discovered) > 0 {
@@ -1057,6 +1066,7 @@ func readMechanicalAuthorization(
 	}
 	return MechanicalAuthorizationRead{
 		TaskID:  taskID,
+		Commit:  commit,
 		Outcome: resolution.Outcome,
 		Source:  resolution.Record.Source,
 		Reason:  resolution.Reason,
@@ -1132,6 +1142,7 @@ func mechanicalSpecAuthorizationIdentity(recordPath string) (slug string, archiv
 
 func unresolvedMechanicalAuthorizationRead(
 	taskID string,
+	commit string,
 	recordPath string,
 	revision string,
 	code spec.AuthorizationReasonCode,
@@ -1141,6 +1152,7 @@ func unresolvedMechanicalAuthorizationRead(
 ) MechanicalAuthorizationRead {
 	return MechanicalAuthorizationRead{
 		TaskID:  taskID,
+		Commit:  commit,
 		Outcome: spec.AuthorizationUnresolved,
 		Source:  spec.AuthorizationSource{Path: recordPath, Revision: revision},
 		Reason:  spec.AuthorizationReason{Code: code, Field: field, Value: value, Detail: detail},

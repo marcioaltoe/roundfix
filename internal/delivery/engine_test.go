@@ -38,6 +38,7 @@ func TestDeliveryEngineMergesAQueueWithoutAnOperator(t *testing.T) {
 		Authorizer:   workflow,
 		Publication:  workflow,
 		PullRequests: boundary,
+		Revalidator:  cleanTestRevalidator{},
 	})
 	if _, err := engine.Run(ctx, gitRoot); err != nil {
 		t.Fatalf("run Delivery Engine: %v", err)
@@ -399,12 +400,13 @@ func TestDeliveryEngineParksDeclaredBlockersAndContinues(t *testing.T) {
 	ctx := context.Background()
 	runStore := openDeliveryEngineStore(t, ctx)
 	const gitRoot = "/repo-blockers"
-	slugs := []string{"run-blocked", "review-findings", "review-blocked", "gate-blocked", "checks-blocked", "checks-cancelled", "after-blockers"}
+	slugs := []string{"run-blocked", "budget-blocked", "review-findings", "review-blocked", "gate-blocked", "checks-blocked", "checks-cancelled", "after-blockers"}
 	if _, err := runStore.CreateDeliveryQueue(ctx, gitRoot, slugs); err != nil {
 		t.Fatalf("create Delivery Queue: %v", err)
 	}
 	workflow := newFakeDeliveryWorkflow()
 	workflow.runs["run-blocked"] = RunResult{Outcome: RunOutcomeUnresolved, Reason: "Run ended Unresolved"}
+	workflow.runs["budget-blocked"] = RunResult{Outcome: RunOutcomeBudgetExceeded, Reason: "Run ended BudgetExceeded"}
 	workflow.reviewResults["review-findings"] = ReviewResult{Outcome: ReviewOutcomeFindings, Head: "reviewed-review-findings", Reason: "finding"}
 	workflow.reviewResults["review-blocked"] = ReviewResult{Outcome: ReviewOutcomeBlocked, Head: "reviewed-review-blocked", Reason: "review unavailable"}
 	workflow.gates["gate-blocked"] = GateResult{Passed: false, Reason: "repository gate failed"}
@@ -417,7 +419,7 @@ func TestDeliveryEngineParksDeclaredBlockersAndContinues(t *testing.T) {
 	}
 
 	queue := readDeliveryQueue(t, ctx, runStore, gitRoot)
-	for index, blocker := range []string{BlockerRunUnresolved, BlockerReviewFindings, BlockerReviewBlocked, BlockerGateFailed, BlockerChecksFailed, BlockerChecksFailed} {
+	for index, blocker := range []string{BlockerRunUnresolved, BlockerRunBudgetExceeded, BlockerReviewFindings, BlockerReviewBlocked, BlockerGateFailed, BlockerChecksFailed, BlockerChecksFailed} {
 		if queue.Items[index].Stage != store.DeliveryStageParked || queue.Items[index].Blocker != blocker {
 			t.Fatalf("item %q = %+v, want parked as %q", queue.Items[index].SpecSlug, queue.Items[index], blocker)
 		}
@@ -782,11 +784,18 @@ func newTestDeliveryEngineWithWait(
 		Authorizer:    workflow,
 		Publication:   workflow,
 		PullRequests:  boundary,
+		Revalidator:   cleanTestRevalidator{},
 		Clock:         clock,
 		Sleeper:       sleeper,
 		CheckTimeout:  10 * time.Minute,
 		CheckInterval: time.Second,
 	})
+}
+
+type cleanTestRevalidator struct{}
+
+func (cleanTestRevalidator) Revalidate(context.Context, string, string, []string) (Revalidation, error) {
+	return Revalidation{}, nil
 }
 
 func openDeliveryEngineStore(t *testing.T, ctx context.Context) *store.Store {
@@ -864,8 +873,11 @@ type fakeDeliveryWorkflow struct {
 	currentBranch   string
 	currentWorktree string
 	recordWorkspace func(branch, worktree string) error
+	releaseErrors   []error
+	releaseCalls    int
 	removeErrors    []error
 	removeCalls     int
+	cleanupEvents   []string
 }
 
 func newFakeDeliveryWorkflow() *fakeDeliveryWorkflow {
@@ -917,8 +929,18 @@ func (fake *fakeDeliveryWorkflow) UseItemBranch(
 
 func (fake *fakeDeliveryWorkflow) RemoveItemBranch(context.Context, string, string, string) error {
 	fake.removeCalls++
+	fake.cleanupEvents = append(fake.cleanupEvents, "remove-item-branch")
 	if fake.removeCalls <= len(fake.removeErrors) {
 		return fake.removeErrors[fake.removeCalls-1]
+	}
+	return nil
+}
+
+func (fake *fakeDeliveryWorkflow) ReleaseMergedRuns(context.Context, string, store.DeliveryQueueItem) error {
+	fake.releaseCalls++
+	fake.cleanupEvents = append(fake.cleanupEvents, "release-merged-runs")
+	if fake.releaseCalls <= len(fake.releaseErrors) {
+		return fake.releaseErrors[fake.releaseCalls-1]
 	}
 	return nil
 }

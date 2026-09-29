@@ -336,7 +336,7 @@ func TestCarryForwardStagingFailureIsNotClassifiedAsAConflict(t *testing.T) {
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01", title: "Build the core"}})
 	ctx := context.Background()
 	head := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD"))
-	stagingWorktree, cleanup, err := createCarryForwardStaging(ctx, fixture.repoDir, head)
+	stagingWorktree, cleanup, err := createCarryForwardStaging(ctx, fixture.repoDir, head, t.TempDir())
 	if err != nil {
 		t.Fatalf("create carry-forward staging: %v", err)
 	}
@@ -376,7 +376,7 @@ func TestCarryForwardOperationalCherryPickFailureIsNotAConflict(t *testing.T) {
 	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01", title: "Build the core"}})
 	ctx := context.Background()
 	head := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD"))
-	stagingWorktree, cleanup, err := createCarryForwardStaging(ctx, fixture.repoDir, head)
+	stagingWorktree, cleanup, err := createCarryForwardStaging(ctx, fixture.repoDir, head, t.TempDir())
 	if err != nil {
 		t.Fatalf("create carry-forward staging: %v", err)
 	}

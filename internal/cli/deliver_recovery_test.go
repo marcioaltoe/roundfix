@@ -209,6 +209,7 @@ func TestRetriedItemRunsWithItsCompletedTasksCarried(t *testing.T) {
 		Publication:  flow,
 		PullRequests: flow,
 		Recovery:     workflow,
+		Revalidator:  flow,
 	})
 
 	retried, err := engine.Retry(t.Context(), fixture.repoDir, implementTestSlug)

@@ -56,6 +56,7 @@ var (
 		CodeReferenceUnresolved,
 		CodeVerifyWorkIndependent,
 		CodeVerifyInvertedExit,
+		CodeVerifyWrapFragile,
 		CodeVerifyNonHermetic,
 		CodeRequirementContradictory,
 		CodeRehearsalUndeclared,
@@ -948,6 +949,7 @@ func detectCitationCoverageAndReferences(
 		addSkip(result, CodeCoverageUntasked, manifestDisplayPath)
 		addSkip(result, CodeReferenceUnresolved, manifestDisplayPath)
 		addSkip(result, CodeVerifyInvertedExit, manifestDisplayPath)
+		addSkip(result, CodeVerifyWrapFragile, manifestDisplayPath)
 		addSkip(result, CodeVerifyNonHermetic, manifestDisplayPath)
 		addSkip(result, CodeOrdinalClaimed, manifestDisplayPath)
 		addSkip(result, CodeWaveCollision, manifestDisplayPath)
@@ -1513,6 +1515,20 @@ func detectTaskCoverageAndContextReferences(
 				}
 				finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
 				result.Findings = append(result.Findings, finding)
+			}
+			if task.Status == spec.StatusPending && task.Type != spec.TaskTypeQA {
+				wrapFindings := WrapFragileVerification(spec.Task{
+					File:         task.File,
+					Verification: []string{command},
+				})
+				for _, finding := range wrapFindings {
+					finding.Where[0] = Location{
+						Path: artifactDisplayPath(repoRoot, taskPath),
+						Line: sectionLineContaining(content, "Verification", command),
+					}
+					finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
+					result.Findings = append(result.Findings, finding)
+				}
 			}
 			if task.Type != spec.TaskTypeQA {
 				form, matched := nonHermeticVerificationCommand(command, createdPaths)

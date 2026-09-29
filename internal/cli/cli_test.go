@@ -430,7 +430,7 @@ func TestRunCommandHelp(t *testing.T) {
 		{
 			name:     "deliver",
 			args:     []string{"deliver", "--help"},
-			contains: []string{"roundfix deliver start <slug>...", "roundfix deliver status", "roundfix deliver resume", "roundfix deliver retry <slug>", "roundfix deliver stop"},
+			contains: []string{"roundfix deliver plan [--json] [<slug>...]", "roundfix deliver start <slug>...", "roundfix deliver status", "roundfix deliver resume", "roundfix deliver retry <slug>", "roundfix deliver stop"},
 		},
 		{
 			name:     "setup",
@@ -745,6 +745,7 @@ func TestRunReconcileJSONMatchesTextFields(t *testing.T) {
 		"runBranchCandidates",
 		"runs",
 		"schemaVersion",
+		"stagingCandidates",
 		"summary",
 	})
 	if !bytes.Equal(rawReport["runs"], rawReport["results"]) {

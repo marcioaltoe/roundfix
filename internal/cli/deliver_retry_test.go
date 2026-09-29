@@ -353,7 +353,7 @@ func TestTopLevelUsageNamesDeliverRetry(t *testing.T) {
 	if code != exitOK || stderr.Len() != 0 {
 		t.Fatalf("top-level help exit=%d stderr=%q", code, stderr.String())
 	}
-	if !strings.Contains(stdout.String(), "roundfix deliver <start|status|resume|retry|stop> [<slug> ...]") {
+	if !strings.Contains(stdout.String(), "roundfix deliver <plan|start|status|resume|retry|stop> [<slug> ...]") {
 		t.Fatalf("top-level help does not name deliver retry:\n%s", stdout.String())
 	}
 }

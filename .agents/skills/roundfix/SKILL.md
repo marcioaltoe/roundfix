@@ -336,12 +336,31 @@ Use the durable delivery queue when a sequence of Specs must outlive the
 terminal session:
 
 ```bash
-roundfix deliver start <slug>...
+roundfix deliver plan [--json] [<slug>...]
+roundfix deliver start [--max-duration <duration>] [--max-retries <n>] <slug>...
 roundfix deliver status
 roundfix deliver resume
 roundfix deliver retry <slug>
 roundfix deliver stop
 ```
+
+Run `roundfix deliver plan` before recording a queue. With explicit slugs it
+keeps their order; without slugs it reports every active Spec. Its
+tab-separated output uses `spec` rows for the verdict, unfinished and total
+Task counts, and authorization or strict Spec-check reasons; `shared` rows for
+production Go `interface:` paths a later Spec shares with an earlier one; and
+`backlog`, `finding`, and `inbox` rows for repository intent that is not
+approved to run. Backlog and finding rows carry frontmatter status; inbox rows
+use `-`.
+
+`--json` emits one `roundfix-deliver-plan/v1` document with the same Specs,
+verdicts, reasons, shared premises, Task counts, and intent. Exit `0` means
+every reported Spec is approved, exit `1` means at least one is blocked, and
+exit `2` means usage or preflight failed. The plan opens no Run Database,
+creates no worktree, and writes no file. It reports authority but never grants
+implementation or delivery authority. A `shared` row predicts the later
+item's `premise-changed` warning after the earlier item merges; it never blocks
+the Spec or stops a queue.
 
 For each queued Spec, `roundfix deliver` advances from the Run to merge in
 this order: Run, pre-PR review, archive on the branch, repository gate, push,
@@ -356,7 +375,43 @@ A parked item keeps its worktree, and `deliver status` prints that path. On
 resume, Roundfix recreates a missing worktree from its recorded branch; if the
 branch is missing too, it parks the item as `item-worktree-missing` instead of
 replaying the stage. After an item merges, its worktree and local item branch
-are removed.
+are removed. Before that removal, Roundfix releases every terminal Run of the
+merged Spec that it can prove is represented at the recorded merged head. A
+Run it cannot prove stays in place, and `deliver status` names the Run and its
+reason in the item's cleanup warning.
+
+A start requires every named Spec's committed authorization to grant
+`implement`, `commit`, `push`, `pull_request`, and `merge`. If any Spec lacks
+one of those operations, `deliver start` exits `2`, names every refused Spec
+and its reasons, points to `roundfix deliver plan`, and records no queue. A
+strict Spec-check finding appears in the plan but does not refuse start; the
+queue revalidates that Spec against its own starting main.
+
+Use `--max-duration <duration>` with a positive Go duration to set the queue
+deadline, and use `--max-retries <n>` with an integer of at least `1` to limit
+retries per item. Omitted limits are recorded as `none`. Start and status print
+the recorded values as:
+
+```text
+Limits: deadline <RFC 3339 UTC|none>, retries per item <n|none>, concurrency 1, spend not measured
+```
+
+At or after the deadline, the owner parks each item that has not started as
+`queue-deadline`; an item that has started continues. A `queue-deadline` item
+cannot be retried. Record a new queue for the remaining Specs instead. When an
+item reaches its retry limit, `deliver retry` refuses the next retry and leaves
+the item unchanged.
+
+After the item worktree is created from that main and before the first Run,
+Roundfix runs the strict Spec Consistency Check in the worktree. A finding
+parks the item as `revalidation-failed: <code>, <code>` before any Run starts.
+
+Revalidation also compares the Spec's declared production Go `interface:`
+paths with the merge commits of earlier queue items. An overlap records
+`premise-changed: <path>, <path> (merge <sha>, <sha>)` as a warning and the item
+continues to its Run. `deliver status` prints `Warning: <slug> <warning>` after
+the item rows, and the delivery console log prints `roundfix: warning: Delivery
+Queue item <slug>: <warning>`. No overlap adds no warning or log line.
 
 A blocker parks its item with a reason; it does not stop later queued items.
 When a queue resumes, it reconciles every recorded action that lacks a receipt
@@ -371,12 +426,24 @@ still park as `review-findings`. `deliver status` prints either blocker. No Run
 budget, corrective-Task ceiling, or queue grant authorizes the new corrective
 Spec, and Roundfix never authors or starts it.
 
+When an Implement Run ends `BudgetExceeded`, the queue parks its item as
+`run-budget-exceeded` with that Run's ID. `roundfix deliver retry <slug>` uses
+the recorded Run ID to carry settled Tasks forward before resuming the item.
+
+`deliver status` prints the item rows, warning rows, and the `Limits:` line.
+When one or more items are parked, it prints exactly one `Pending question:`
+for the lowest-position parked item, the action that answers it, and the count
+waiting behind it. Only `deliver retry` or recording a new queue answers that
+question; owner passes and elapsed time do not.
+
 Use `roundfix deliver retry <slug>` to return one parked item to the queue.
-For an active Spec, Roundfix first carries the settled Tasks of the item's Run
-to the item branch. The item then re-enters at `running` when any Task is
-unfinished or at `reviewing` when every Task is completed. An archived Spec
-re-enters at `gating` without a recorded pull request or at `checking` with
-one.
+For an active Spec that has not run, Roundfix first repeats the strict check in
+the item worktree and refuses while findings remain, leaving the item
+unchanged. It then carries the settled Tasks of any recorded Run to the item
+branch. A retry does not change a recorded `premise-changed` warning. The item
+re-enters at `running` when any Task is unfinished or at `reviewing` when every
+Task is completed. An archived Spec re-enters at `gating` without a recorded
+pull request or at `checking` with one.
 
 | Recorded evidence | Re-entry stage |
 | --- | --- |
@@ -979,23 +1046,23 @@ repository. The report classifies every selected Run into one of six states:
 
 | State | Agent action |
 | --- | --- |
-| `safe` | The Run Branch and recorded target resolve, any present registered Run Worktree is clean, and the Run Branch tip is an ancestor of the target tip. Eligible for cleanup after revalidation. |
-| `superseded` | Git evidence proves a terminal Implement Run contains only QA-report commits and the target branch already carries a newer QA Report for the Spec. Preserve it during dry-run; `--apply` can release it after revalidation. |
+| `safe` | The Run Worktree is clean and the Run Branch is contained in its target or merged head, or its changed content is represented at the merged head. Eligible for cleanup after revalidation. |
+| `superseded` | A newer QA Report or the merged-head proof represents the Run's Task or QA Report commits. Preserve it during dry-run; `--apply` can release it after revalidation. |
 | `unintegrated` | Clean, resolved evidence proves that the Run Branch tip is not an ancestor of the target tip. Preserve the Run Worktree and Run Branch. |
 | `dirty` | A present registered Run Worktree has tracked or untracked changes. Preserve the Run Worktree and Run Branch. |
 | `unknown` | Metadata or Git evidence cannot prove another state. Preserve every identified Run Worktree and Run Branch. |
 | `released` | Both the Run Worktree and Run Branch are absent. No cleanup is needed. |
 
-The same report can add two debris candidate kinds beside those legacy Run
+The same report can add three debris candidate kinds beside those legacy Run
 Worktree classifications:
 
-When a Run's target branch is an absent target, reconciliation checks the
-default branch for the same content evidence already accepted for a missed
-ancestry: a superseding QA Report for this Spec. A Run is released only on
-positive content evidence. If the default branch is unreachable, the Spec is
-unarchived, or the evidence names another Spec, the Run remains preserved, and
-the preserved reason names the proof that was missing; an absent target alone
-is not proof of release.
+For a Run of a merged Spec, reconciliation proves the Run against the merged
+head. The Delivery Queue merge record is the primary source; when no usable
+record remains, the default branch carrying the archived Spec is the fallback.
+A Run is released only when each Run commit is represented by completed Task
+status, a superseding QA Report, or matching changed content. If neither source
+is usable or a commit is unrepresented, the Run remains preserved and its
+reason names the missing proof; an absent target alone is not proof of release.
 
 - A `process` candidate is proven when a terminal Run with a proven recorded
   owner identity still owns an inspected live process tree. Its report names
@@ -1004,10 +1071,22 @@ is not proof of release.
 - A `runBranch` candidate is proven when set classification for one target
   branch and Spec shows that the Run Branch is superseded by a named current
   or target QA Report, and its registered Run Worktree was inspected clean.
+- A `staging` candidate is any registered
+  `roundfix-carry-forward-*/worktree`. Its `owner.json` PID and process identity
+  prove it stale when the PID's `OwnerProcessIdentity` lookup fails or differs
+  from the record. A legacy registration is stale only while it is
+  `locked initializing`; an unlocked legacy staging worktree is preserved.
 
 Ambiguous ownership, identity, Git, active-Run, or cleanliness evidence goes
 to `preservedCandidates` with a refusal reason instead of becoming a cleanup
 candidate.
+
+The `roundfix-reconcile/v1` JSON report exposes every staging entry in
+`stagingCandidates`. `debrisSummary.stagingCandidates` counts those entries and
+`debrisSummary.stagingApplied` counts releases. Dry-run reports staging without
+mutation. `--apply` releases stale staging, and `--carry-forward` releases it
+before creating its own staging worktree. A live matching owner and every
+case without positive stale proof remain in `preservedCandidates`.
 
 After reviewing the dry-run, apply cleanup explicitly:
 
@@ -1019,15 +1098,17 @@ roundfix reconcile <run-id> --carry-forward
 ```
 
 These three mutation switches are mutually exclusive. `--apply` releases
-entries classified `safe` or `superseded`, or proven process and Run Branch
-candidates, after rechecking the applicable metadata, ownership, cleanliness,
-heads, ancestry, and superseding-report evidence. `--discard-superseded`
+entries classified `safe` or `superseded`, or proven process, Run Branch, and
+staging candidates, after rechecking the applicable metadata, ownership,
+cleanliness, heads, ancestry, merged-head records, Task status, content, and
+superseding QA Report evidence. `--discard-superseded`
 records a Branch Disposition before removing a Run Branch proven superseded.
 `--carry-forward` hands settled Tasks from one terminal spec Run back to the
 checkout; it accepts Runs whose outcome is `BudgetExceeded`, `Stopped`, or
 `Unresolved` and refuses every other terminal outcome. Carry-forward keeps its
 existing proof requirements and refuses the whole Task set when any member
 cannot be proved.
+Carry-forward staging commits run without repository hooks because the carried commits already passed Daemon Verification and the repository hooks when the Daemon settled them. The checkout receives those commits only through a fast-forward merge, and carry-forward leaves its Git configuration unchanged.
 There is no force bypass.
 
 Process termination succeeds only when Roundfix proves every reported process
@@ -1790,11 +1871,13 @@ commands gate one commit. By default the Run never pushes; a repository can
 opt in with `implement.auto_push: true`, which pushes only after a Clean
 outcome and never opens pull requests (ADR-0138).
 
-When the Run Budget is enabled, an Implement Run is bounded by the configured
-maximum Run duration. When that maximum expires, the Run settles
+When the Run Budget is enabled, an Implement Run starts with the configured
+maximum Run duration and its allowance renews at each Task settlement. The
+renewed allowance bounds the next Task or QA gate and post-cycle integration,
+push, and cleanup. When the allowance expires, the Run settles
 `BudgetExceeded` with a reason naming both the configured maximum and the
-elapsed time. The bounded Run preserves its Run Worktree and Run Branch for
-inspection and recovery.
+elapsed time since the renewal point. The bounded Run preserves its Run
+Worktree and Run Branch for inspection and recovery.
 
 Before creating a Run, `implement` inspects prior terminal Runs for the same
 Spec in the current repository. When a `BudgetExceeded`, `Stopped`, or

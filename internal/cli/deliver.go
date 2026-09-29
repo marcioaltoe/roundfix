@@ -4,11 +4,14 @@ import (
 	"context"
 	"crypto/sha256"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/delivery"
@@ -17,6 +20,7 @@ import (
 )
 
 const deliverUsage = `Usage:
+  roundfix deliver plan [--json] [<slug>...]
   roundfix deliver start <slug>...
   roundfix deliver status
   roundfix deliver resume
@@ -28,12 +32,28 @@ calling terminal. A blocked item is parked and the owner continues with the
 next item.
 
 Commands:
+  plan    Report which Specs are approved to run
   start   Validate and record a new queue, then start its detached owner
   status  Print every queued Spec's stage, blocker and item worktree
   resume  Start a detached owner for the persisted queue
   retry   Return one parked Spec to the queue and reach its owner
   stop    Prove and terminate the persisted queue owner
+
+Flags:
+  --max-duration <duration>  Set a positive queue duration
+  --max-retries <n>          Set the per-item retry limit to at least 1
 `
+
+var deliverStartValueFlags = map[string]bool{
+	"max-duration": true,
+	"max-retries":  true,
+}
+
+type deliverStartOptions struct {
+	Slugs       []string
+	MaxDuration time.Duration
+	MaxRetries  int
+}
 
 type deliveryEngine interface {
 	Run(context.Context, string) (delivery.EngineResult, error)
@@ -55,6 +75,8 @@ func runDeliverCommand(
 	subcommand := args[0]
 	subcommandArgs := args[1:]
 	switch subcommand {
+	case "plan":
+		return runDeliverPlan(ctx, subcommandArgs, stdout, stderr, environment)
 	case "start":
 		return runDeliverStart(ctx, subcommandArgs, stdout, stderr, environment)
 	case "status":
@@ -174,7 +196,7 @@ func printDeliverRetryResult(stdout io.Writer, specSlug string, result delivery.
 }
 
 func runDeliverStart(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
-	slugs, err := parseDeliverStart(args)
+	options, err := parseDeliverStart(args)
 	if err != nil {
 		return printDeliverFailure("start", err, stderr)
 	}
@@ -182,10 +204,21 @@ func runDeliverStart(ctx context.Context, args []string, stdout, stderr io.Write
 	if err != nil {
 		return printDeliverFailure("start", err, stderr)
 	}
-	for _, slug := range slugs {
+	var authorizationRefusals []string
+	for _, slug := range options.Slugs {
 		if _, err := spec.Load(specsRoot.Path, slug); err != nil {
 			return printDeliverFailure("start", err, stderr)
 		}
+		if reasons := deliveryAuthorizationReasons(ctx, loaded, specsRoot, slug); len(reasons) > 0 {
+			authorizationRefusals = append(authorizationRefusals, fmt.Sprintf("%s: %s", slug, strings.Join(reasons, "; ")))
+		}
+	}
+	if len(authorizationRefusals) > 0 {
+		return printDeliverFailure(
+			"start",
+			fmt.Errorf("Delivery Queue contains Specs without delivery authority:\n  %s\nRun 'roundfix deliver plan %s' to inspect the prepared queue", strings.Join(authorizationRefusals, "\n  "), strings.Join(options.Slugs, " ")),
+			stderr,
+		)
 	}
 
 	runStore, err := store.Open(ctx, loaded.HomeDir)
@@ -205,13 +238,19 @@ func runDeliverStart(ctx context.Context, args []string, stdout, stderr io.Write
 			return printDeliverFailure("start", releaseErr, stderr)
 		}
 	}
-	if _, err := runStore.CreateDeliveryQueue(ctx, loaded.GitRoot, slugs); err != nil {
+	limits := store.DeliveryQueueLimits{MaxRetries: options.MaxRetries}
+	if options.MaxDuration > 0 {
+		limits.Deadline = time.Now().UTC().Add(options.MaxDuration).Truncate(time.Second)
+	}
+	queue, err := runStore.CreateDeliveryQueueWithLimits(ctx, loaded.GitRoot, options.Slugs, limits)
+	if err != nil {
 		_ = runStore.Close()
 		return printDeliverFailure("start", err, stderr)
 	}
 	if err := runStore.Close(); err != nil {
 		return printDeliverFailure("start", fmt.Errorf("close Run Database after recording Delivery Queue: %w", err), stderr)
 	}
+	printDeliveryLimits(stdout, queue.Limits)
 	return commandDependenciesForContext(ctx).startDeliveryOwner(ctx, loaded, environment, stdout, stderr)
 }
 
@@ -248,7 +287,37 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 		}
 		fmt.Fprintf(stdout, "%s\t%s\t%s\t%s\n", item.SpecSlug, item.Stage, blocker, itemWorktree)
 	}
+	for _, item := range queue.Items {
+		if item.Warning != "" {
+			fmt.Fprintf(stdout, "Warning: %s %s\n", item.SpecSlug, item.Warning)
+		}
+	}
+	printDeliveryLimits(stdout, queue.Limits)
+	if question, found := delivery.PendingQuestionFor(queue); found {
+		fmt.Fprintf(stdout, "Pending question: %s parked %s\n", question.SpecSlug, question.Blocker)
+		fmt.Fprintf(stdout, "Answer: %s\n", question.Answer)
+		if question.Waiting > 0 {
+			fmt.Fprintf(stdout, "Waiting behind it: %d parked item(s)\n", question.Waiting)
+		}
+	}
 	return exitOK
+}
+
+func printDeliveryLimits(output io.Writer, limits store.DeliveryQueueLimits) {
+	deadline := "none"
+	if !limits.Deadline.IsZero() {
+		deadline = limits.Deadline.UTC().Format(time.RFC3339)
+	}
+	retries := "none"
+	if limits.MaxRetries > 0 {
+		retries = strconv.Itoa(limits.MaxRetries)
+	}
+	fmt.Fprintf(
+		output,
+		"Limits: deadline %s, retries per item %s, concurrency 1, spend not measured\n",
+		deadline,
+		retries,
+	)
 }
 
 func runDeliverResume(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
@@ -473,22 +542,35 @@ func loadDeliveryCommand(
 	return loaded, specsRoot, nil
 }
 
-func parseDeliverStart(args []string) ([]string, error) {
+func parseDeliverStart(args []string) (deliverStartOptions, error) {
 	fs := flagSet("deliver start")
-	if err := fs.Parse(hoistCommandFlags(args, nil)); err != nil {
-		return nil, validationError{message: err.Error()}
+	var options deliverStartOptions
+	fs.DurationVar(&options.MaxDuration, "max-duration", 0, "maximum queue duration")
+	fs.IntVar(&options.MaxRetries, "max-retries", 0, "maximum retries per item")
+	if err := fs.Parse(hoistCommandFlags(args, deliverStartValueFlags)); err != nil {
+		return deliverStartOptions{}, validationError{message: err.Error()}
 	}
-	slugs := fs.Args()
-	if len(slugs) == 0 {
-		return nil, validationError{message: "missing required Spec slug; pass roundfix deliver start <slug>..."}
+	setFlags := make(map[string]bool, len(deliverStartValueFlags))
+	fs.Visit(func(flag *flag.Flag) {
+		setFlags[flag.Name] = true
+	})
+	if setFlags["max-duration"] && options.MaxDuration <= 0 {
+		return deliverStartOptions{}, validationError{message: "max-duration must be greater than zero"}
 	}
-	for index := range slugs {
-		slugs[index] = strings.TrimSpace(slugs[index])
-		if slugs[index] == "" {
-			return nil, validationError{message: "Spec slug cannot be empty"}
+	if setFlags["max-retries"] && options.MaxRetries < 1 {
+		return deliverStartOptions{}, validationError{message: "max-retries must be at least 1"}
+	}
+	options.Slugs = fs.Args()
+	if len(options.Slugs) == 0 {
+		return deliverStartOptions{}, validationError{message: "missing required Spec slug; pass roundfix deliver start <slug>..."}
+	}
+	for index := range options.Slugs {
+		options.Slugs[index] = strings.TrimSpace(options.Slugs[index])
+		if options.Slugs[index] == "" {
+			return deliverStartOptions{}, validationError{message: "Spec slug cannot be empty"}
 		}
 	}
-	return slugs, nil
+	return options, nil
 }
 
 func parseDeliverRetry(args []string) (string, error) {

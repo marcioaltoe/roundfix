@@ -28,6 +28,12 @@ Validate the assembled feature against the promises in its spec by exercising th
    a matching, pre-run Spec declaration as `blocked (declared: <criterion>)`
    and count it in `rows_blocked_declared`. Keep the three causes separate:
    never fold one into another to make the report or verdict look cleaner.
+6. **Binary identities.** The auditor fields are Daemon-owned: keep the seeded
+   `auditing_binary` and `auditor_staleness` lines unchanged. Record the
+   `--version` line of the binary that ran every public-CLI row as
+   `user_flow_binary`. In a Roundfix self-audit, build that binary from the
+   audited Run Worktree with `make build`, run public-CLI rows only with
+   `./bin/roundfix`, and never use a `roundfix` found on PATH.
 
 ### QA settlement
 
@@ -143,10 +149,15 @@ named checker rule decides them.
 - Keep the commit-dependent tooling audit as matrix rows. Identify every Task
   that actually creates, edits, renames, moves, or deletes repository-tooling
   configuration, scripts, ignore files, plugin declarations, or version pins.
-  Execute each row as commands, not as a judgement over Spec or Result prose:
-  resolve the actual paths from the Daemon-owned Task commit and any current
-  worktree delta, then resolve the authorization, prerequisite-fix, and
-  consequent-fix commits in chronological ancestry. Use
+  The mechanical stage audits every Task commit between the delivery base and
+  the audited head, and its authorization audit table names each audited
+  commit. Audit by command only a Task commit in that range that the table does
+  not list and that changes a repository-tooling path. When the report's
+  mechanical skips name `Task commits of earlier Runs`, audit every Task commit
+  by command. Execute each command row against the actual paths from the
+  Daemon-owned Task commit and any current worktree delta, then resolve the
+  authorization, prerequisite-fix, and consequent-fix commits in chronological
+  ancestry. Use
   `git diff-tree --no-commit-id --name-only -r <commit>` for every committed
   change rather than trusting a reported file list.
 - Report every post-commit authorization-shape problem together in the same
@@ -464,6 +475,7 @@ date: YYYY-MM-DD
 build: <audited-commit-or-artifact>
 auditing_binary: "<version-and-build-identity>"
 auditor_staleness: "<state>: <reason>" # state is current|stale|unknown; the reason names the signal that answered, such as commit ancestry or the declared tree version
+user_flow_binary: "<the --version line of the binary that ran public-CLI rows>"
 status: in-progress # in-progress | closed
 verdict: pending # pending | pass | fail | partial
 rows_blocked_environment: 0

@@ -1864,6 +1864,9 @@ func TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit(t *testing.T) {
 		runGitForTest(t, repoRoot, "add", "-A")
 		runGitForTest(t, repoRoot, "commit", "-q", "-m", "initial")
 		initialHead := strings.TrimSpace(runGitForTest(t, repoRoot, "rev-parse", "HEAD"))
+		runGitForTest(t, repoRoot, "update-ref", "refs/remotes/origin/main", initialHead)
+		runGitForTest(t, repoRoot, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main")
+		runGitForTest(t, repoRoot, "switch", "-q", "-c", "feature/mechanical-audit")
 
 		mustWriteForTest(t, filepath.Join(repoRoot, "internal", "ordinary.go"), "package internal\n\nconst ordinary = true\n")
 		runGitForTest(t, repoRoot, "add", "-A")
@@ -1896,7 +1899,7 @@ func TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit(t *testing.T) {
 			t.Fatalf("qaMechanicalRequest selected Task commits %+v, want only task_02", request.TaskCommits)
 		}
 		if request.DeliveryTargetRevision != initialHead {
-			t.Fatalf("qaMechanicalRequest delivery target = %q, want Run start head %s", request.DeliveryTargetRevision, initialHead)
+			t.Fatalf("qaMechanicalRequest delivery target = %q, want Delivery Base %s", request.DeliveryTargetRevision, initialHead)
 		}
 		result, err := speccheck.RunMechanicalStage(context.Background(), request)
 		if err != nil {

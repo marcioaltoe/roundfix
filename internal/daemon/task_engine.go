@@ -241,7 +241,7 @@ type TaskPlan struct {
 	BudgetEnabled           bool
 	MaxRunDuration          time.Duration
 	verificationGate        verificationGate
-	runBudgetDeadline       time.Time
+	runBudget               *taskCycleBudget
 	CopyList                []string
 	Bootstrap               runworktree.BootstrapSpec
 	BootstrapOutput         io.Writer
@@ -298,6 +298,8 @@ type TaskOutcome struct {
 // to the working tree, empty when no report exists. TerminalOutcome and
 // TerminalReason identify a Run-budget end for the command that owns Run
 // settlement; they stay empty for every other Task-cycle result.
+// BudgetDeadline is the deadline in force at return, and BudgetRenewedBy names
+// the Task whose settlement established it. Both are empty when disabled.
 type TaskCycleResult struct {
 	Completed, Failed, Skipped int
 	QAVerdict                  string
@@ -306,6 +308,117 @@ type TaskCycleResult struct {
 	Outcomes                   []TaskOutcome
 	TerminalOutcome            string
 	TerminalReason             string
+	BudgetDeadline             time.Time
+	BudgetRenewedBy            string
+}
+
+type taskCycleBudget struct {
+	mu          sync.Mutex
+	maximum     time.Duration
+	deadline    time.Time
+	renewedAt   time.Time
+	renewedTask string
+	expired     bool
+	changed     chan struct{}
+}
+
+func newTaskCycleBudget(startedAt time.Time, maximum time.Duration, enabled bool) *taskCycleBudget {
+	budget := &taskCycleBudget{changed: make(chan struct{})}
+	if enabled && maximum > 0 {
+		budget.maximum = maximum
+		budget.deadline = startedAt.Add(maximum)
+		budget.renewedAt = startedAt
+	}
+	return budget
+}
+
+func (budget *taskCycleBudget) snapshot() (deadline time.Time, renewedAt time.Time, renewedTask string, expired bool) {
+	if budget == nil {
+		return time.Time{}, time.Time{}, "", false
+	}
+	budget.mu.Lock()
+	defer budget.mu.Unlock()
+	return budget.deadline, budget.renewedAt, budget.renewedTask, budget.expired
+}
+
+func (budget *taskCycleBudget) renew(settledAt time.Time, taskID string) bool {
+	if budget == nil {
+		return false
+	}
+	budget.mu.Lock()
+	defer budget.mu.Unlock()
+	if budget.deadline.IsZero() || budget.expired || !settledAt.Before(budget.deadline) {
+		return false
+	}
+	budget.deadline = settledAt.Add(budget.maximum)
+	budget.renewedAt = settledAt
+	budget.renewedTask = taskID
+	close(budget.changed)
+	budget.changed = make(chan struct{})
+	return true
+}
+
+func (budget *taskCycleBudget) expiredAt(now time.Time) bool {
+	if budget == nil {
+		return false
+	}
+	budget.mu.Lock()
+	defer budget.mu.Unlock()
+	if budget.deadline.IsZero() {
+		return false
+	}
+	if !now.Before(budget.deadline) {
+		budget.expired = true
+	}
+	return budget.expired
+}
+
+func (budget *taskCycleBudget) watch(ctx context.Context, cancel context.CancelCauseFunc) {
+	for {
+		budget.mu.Lock()
+		deadline := budget.deadline
+		changed := budget.changed
+		budget.mu.Unlock()
+		if deadline.IsZero() {
+			select {
+			case <-ctx.Done():
+				return
+			case <-changed:
+				continue
+			}
+		}
+
+		timer := time.NewTimer(time.Until(deadline))
+		select {
+		case <-ctx.Done():
+			stopTaskCycleBudgetTimer(timer)
+			return
+		case <-changed:
+			stopTaskCycleBudgetTimer(timer)
+			continue
+		case <-timer.C:
+			budget.mu.Lock()
+			current := budget.deadline
+			if current.Equal(deadline) {
+				budget.expired = true
+			}
+			budget.mu.Unlock()
+			if current.Equal(deadline) {
+				cancel(context.DeadlineExceeded)
+				return
+			}
+		}
+	}
+}
+
+func stopTaskCycleBudgetTimer(timer *time.Timer) {
+	if timer.Stop() {
+		return
+	}
+	select {
+	case <-timer.C:
+	default:
+	}
 }
 
 // QA verdict settlements the Daemon adds beyond the report-authored
@@ -337,20 +450,27 @@ type runEventJournal interface {
 // cycle continues with independent Tasks (generalizing ADR 0010); only
 // Stop Requests and infrastructure errors halt the cycle. The Pusher and
 // the Review Source resolver are never invoked for spec Runs.
-func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleResult, error) {
+func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (result TaskCycleResult, err error) {
 	if err := validateTaskPlan(plan); err != nil {
 		return TaskCycleResult{}, err
 	}
-	runBudgetDeadline := time.Time{}
-	if plan.BudgetEnabled && plan.MaxRunDuration > 0 {
-		runBudgetDeadline = plan.RunStartedAt.Add(plan.MaxRunDuration)
+	plan.runBudget = newTaskCycleBudget(plan.RunStartedAt, plan.MaxRunDuration, plan.BudgetEnabled)
+	defer func() {
+		result, err = engine.taskCycleResultWithBudgetOutcome(plan, result, err)
+	}()
+	if plan.runBudget.expiredAt(engine.deps.Now()) {
+		return result, context.DeadlineExceeded
 	}
-	plan.runBudgetDeadline = runBudgetDeadline
-	if result, err := engine.taskCycleResultWithBudgetOutcome(plan, TaskCycleResult{}, nil); err != nil {
-		return result, err
-	}
-	cycleCtx, cancelCycle := taskAgentContext(ctx, runBudgetDeadline)
-	defer cancelCycle()
+	cycleCtx, cancelCycle := context.WithCancelCause(ctx)
+	watchdogDone := make(chan struct{})
+	go func() {
+		defer close(watchdogDone)
+		plan.runBudget.watch(cycleCtx, cancelCycle)
+	}()
+	defer func() {
+		cancelCycle(context.Canceled)
+		<-watchdogDone
+	}()
 	taskPlan, qaTask, err := taskPlanWithoutQAGate(plan)
 	if err != nil {
 		return TaskCycleResult{}, err
@@ -385,7 +505,7 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 	statuses := initialTaskRunStatuses(taskPlan.Tasks)
 	result, ordinal, err := engine.runTaskScheduler(cycleCtx, taskPlan, statuses)
 	if err != nil {
-		return engine.taskCycleResultWithBudgetOutcome(plan, result, err)
+		return result, err
 	}
 	// QA step (ADR 0015, ADR 0091): a declared qa Task routes through the
 	// existing gate only after its graph dependencies have all completed.
@@ -393,7 +513,7 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 	// resumable instead of being reported skipped.
 	if qaTask != nil && qaTask.Status != spec.StatusCompleted && taskNeedsCompleted(*qaTask, statuses) {
 		if err := engine.stopTaskCycleIfRequested(cycleCtx, plan, ordinal+1); err != nil {
-			return engine.taskCycleResultWithBudgetOutcome(plan, result, fmt.Errorf("stop run %q before the QA step: %w", plan.RunID, err))
+			return result, fmt.Errorf("stop run %q before the QA step: %w", plan.RunID, err)
 		}
 		ordinal++
 		verdict, reportPath, accepted, err := engine.runQAGate(cycleCtx, plan, *qaTask, ordinal)
@@ -408,37 +528,48 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 			return result, fmt.Errorf("write withheld QA task progress: %w", err)
 		}
 	}
-	if bounded, budgetErr := engine.taskCycleResultWithBudgetOutcome(plan, result, nil); budgetErr != nil {
-		return bounded, budgetErr
+	if plan.runBudget.expiredAt(engine.deps.Now()) {
+		return result, context.DeadlineExceeded
 	}
 	if err := engine.publishDaemonEvent(cycleCtx, plan.RunID, 0, runevent.KindDaemonOutcome,
 		fmt.Sprintf("Task cycle finished: %d completed, %d failed, %d skipped.", result.Completed, result.Failed, result.Skipped),
 		map[string]any{"completed": result.Completed, "failed": result.Failed, "skipped": result.Skipped},
 	); err != nil {
-		return engine.taskCycleResultWithBudgetOutcome(plan, result, err)
+		return result, err
 	}
 	return result, nil
 }
 
 func (engine *Engine) taskCycleResultWithBudgetOutcome(plan TaskPlan, result TaskCycleResult, err error) (TaskCycleResult, error) {
-	if plan.runBudgetDeadline.IsZero() {
+	deadline, renewedAt, renewedTask, expired := plan.runBudget.snapshot()
+	result.BudgetDeadline = deadline
+	result.BudgetRenewedBy = renewedTask
+	if deadline.IsZero() {
 		return result, err
 	}
 	now := engine.deps.Now()
-	if now.Before(plan.runBudgetDeadline) {
+	if !expired && now.Before(deadline) {
 		return result, err
 	}
+	plan.runBudget.expiredAt(now)
 	result.TerminalOutcome = store.StateBudgetExceeded
-	result.TerminalReason = budgetExceededReason(plan.MaxRunDuration, now.Sub(plan.RunStartedAt))
-	if err == nil {
-		err = context.DeadlineExceeded
+	result.TerminalReason = budgetExceededReason(plan.MaxRunDuration, now.Sub(renewedAt), renewedTask)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		err = errors.Join(err, context.DeadlineExceeded)
 	}
 	return result, err
 }
 
-func budgetExceededReason(maximum time.Duration, elapsed time.Duration) string {
+func budgetExceededReason(maximum time.Duration, elapsed time.Duration, renewedTask string) string {
+	if elapsed < 0 {
+		elapsed = 0
+	}
+	reason := fmt.Sprintf("Run Budget exceeded: configured maximum %s; elapsed %s", maximum, elapsed)
+	if renewedTask != "" {
+		reason += fmt.Sprintf(" since Task %s settled", renewedTask)
+	}
 	return publicOutcomeReason(
-		fmt.Sprintf("Run Budget exceeded: configured maximum %s; elapsed %s.", maximum, elapsed),
+		reason+".",
 		"The Run Budget was exhausted.",
 	)
 }
@@ -613,6 +744,7 @@ func (engine *Engine) runTaskScheduler(ctx context.Context, plan TaskPlan, statu
 			Status: string(settled),
 			Reason: reason,
 		})
+		plan.runBudget.renew(engine.deps.Now(), workerResult.task.ID)
 		if stopErr == nil {
 			if err := engine.stopTaskCycleIfRequested(ctx, plan, workerResult.ordinal); err != nil {
 				stopErr = fmt.Errorf("stop run %q after Task %s settlement: %w", plan.RunID, workerResult.task.ID, err)
@@ -833,17 +965,10 @@ func (engine *Engine) stopTaskCycleIfRequested(ctx context.Context, plan TaskPla
 	if err := engine.stopIfRequested(ctx, plan.RunID, ordinal); err != nil {
 		return err
 	}
-	if !plan.runBudgetDeadline.IsZero() && !engine.deps.Now().Before(plan.runBudgetDeadline) {
+	if plan.runBudget.expiredAt(engine.deps.Now()) {
 		return context.DeadlineExceeded
 	}
 	return nil
-}
-
-func taskAgentContext(ctx context.Context, deadline time.Time) (context.Context, context.CancelFunc) {
-	if deadline.IsZero() {
-		return context.WithCancel(ctx)
-	}
-	return context.WithDeadline(ctx, deadline)
 }
 
 func nextReadyTask(tasks []spec.Task, statuses map[string]taskRunStatus) (spec.Task, bool) {
@@ -1453,7 +1578,7 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 		fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
 	}
 
-	agentCtx, cancelAgent := taskAgentContext(ctx, plan.runBudgetDeadline)
+	agentCtx, cancelAgent := context.WithCancel(ctx)
 	runResult, runErr := engine.runAgentSession(agentCtx, owner, agent.ExecuteRequest{
 		Runtime:     plan.Runtime,
 		Session:     plan.Session,
@@ -1480,7 +1605,7 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 	if reloadFailure != "" {
 		return reloadFailure, nil
 	}
-	if !plan.runBudgetDeadline.IsZero() && !engine.deps.Now().Before(plan.runBudgetDeadline) {
+	if plan.runBudget.expiredAt(engine.deps.Now()) {
 		return "", fmt.Errorf("stop run %q after Agent Task %s: %w", plan.RunID, task.ID, context.DeadlineExceeded)
 	}
 	if err := ctx.Err(); err != nil {
@@ -1732,7 +1857,7 @@ func (engine *Engine) acquireVerificationCapacity(ctx context.Context, plan Task
 	if release, acquired := plan.verificationGate.TryAcquire(request.Mode); acquired {
 		return release, nil
 	}
-	waitCtx, cancelWait := taskAgentContext(ctx, plan.runBudgetDeadline)
+	waitCtx, cancelWait := context.WithCancel(ctx)
 	waitCtx, finishWait := engine.watchStopRequest(waitCtx, plan.RunID)
 	release, err := plan.verificationGate.Acquire(waitCtx, request.Mode)
 	stopped := finishWait()
@@ -1826,7 +1951,7 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 	if logPath != "" {
 		fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
 	}
-	agentCtx, cancelAgent := taskAgentContext(ctx, plan.runBudgetDeadline)
+	agentCtx, cancelAgent := context.WithCancel(ctx)
 	runResult, runErr := engine.runAgentSession(agentCtx, owner, agent.ExecuteRequest{
 		Runtime:     plan.Runtime,
 		Session:     plan.Session,
@@ -1851,7 +1976,7 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 	if reloadFailure != "" {
 		return reloadFailure, nil
 	}
-	if !plan.runBudgetDeadline.IsZero() && !engine.deps.Now().Before(plan.runBudgetDeadline) {
+	if plan.runBudget.expiredAt(engine.deps.Now()) {
 		return "", fmt.Errorf("stop run %q after Task %s Verification Feedback: %w", plan.RunID, task.ID, context.DeadlineExceeded)
 	}
 	if err := ctx.Err(); err != nil {
@@ -2556,6 +2681,25 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	if err != nil {
 		return "", "", false, fmt.Errorf("materialize QA mechanical result for run %q: %w", plan.RunID, err)
 	}
+	seededReportPath := reportPath
+	if !filepath.IsAbs(seededReportPath) {
+		seededReportPath = filepath.Join(plan.WorkDir, seededReportPath)
+	}
+	seededReport, err := spec.ReadQAReportFile(seededReportPath)
+	if err != nil {
+		return "", "", false, fmt.Errorf("read seeded QA Report for run %q: %w", plan.RunID, err)
+	}
+	auditorEvidence, err := engine.resolveQAAuditorEvidence(ctx, plan)
+	if err != nil {
+		return "", "", false, fmt.Errorf("resolve auditor evidence for run %q: %w", plan.RunID, err)
+	}
+	auditedHead, err := qaAuditedHead(ctx, plan.WorkDir)
+	if err != nil {
+		return "", "", false, fmt.Errorf("resolve audited head for run %q: %w", plan.RunID, err)
+	}
+	if err := engine.publishAuditorStalenessWarning(ctx, plan, ordinal, reportPath, auditorEvidence); err != nil {
+		return "", "", false, fmt.Errorf("publish auditor staleness warning for run %q: %w", plan.RunID, err)
+	}
 	mechanicalSummary := fmt.Sprintf("QA mechanical stage seeded %s for Spec %s.", reportPath, plan.Spec.Slug)
 	if mechanicalResult.Blocking {
 		mechanicalSummary = fmt.Sprintf("QA mechanical stage blocked Spec %s with %d finding(s).", plan.Spec.Slug, len(mechanicalResult.Findings))
@@ -2605,6 +2749,9 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 			return "", "", false, fmt.Errorf("build QA prompt for run %q: %w", plan.RunID, promptErr)
 		}
 		prompt += fmt.Sprintf("\nSeeded QA Report: %s\nComplete this report in place, preserving its materialized mechanical rows and skips; do not create another QA Report.\n", reportPath)
+		if auditorEvidence.SelfAudit {
+			prompt += "Self-audit: build roundfix from this Run Worktree with make build, run every public-CLI row with ./bin/roundfix and never a roundfix found on PATH, and record its --version line as user_flow_binary.\n"
+		}
 		prompt += "\n" + repositoryVerificationPrompt
 		logPath := agentLogPath(plan.AgentLogs, plan.ArtifactDir, plan.RunID, ordinal)
 		fmt.Fprintf(engine.deps.Progress, "QA step (Batch %03d) for Spec %s\n", ordinal, plan.Spec.Slug)
@@ -2620,7 +2767,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 				err = fmt.Errorf("close Agent Session for run %q QA step: %w", plan.RunID, closeErr)
 			}
 		}()
-		agentCtx, cancelAgent := taskAgentContext(ctx, plan.runBudgetDeadline)
+		agentCtx, cancelAgent := context.WithCancel(ctx)
 		_, runErr := engine.runAgentSession(agentCtx, owner, agent.ExecuteRequest{
 			Runtime:     plan.Runtime,
 			Session:     plan.Session,
@@ -2635,7 +2782,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		if runErr != nil {
 			return "", "", false, fmt.Errorf("run Agent for run %q QA step: %w", plan.RunID, runErr)
 		}
-		if !plan.runBudgetDeadline.IsZero() && !engine.deps.Now().Before(plan.runBudgetDeadline) {
+		if plan.runBudget.expiredAt(engine.deps.Now()) {
 			return "", "", false, fmt.Errorf("stop run %q after the QA step Agent: %w", plan.RunID, context.DeadlineExceeded)
 		}
 		if err := ctx.Err(); err != nil {
@@ -2646,7 +2793,13 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		}
 	}
 	var eligibilityErr error
-	verdict, reportPath, accepted, eligibilityErr = engine.settleQAVerdict(plan)
+	verdict, reportPath, accepted, eligibilityErr = engine.settleQAVerdict(
+		plan,
+		seededReport.AuditingBinary,
+		seededReport.AuditorStaleness,
+		auditorEvidence,
+		auditedHead,
+	)
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
 		fmt.Sprintf("QA verdict %s for Spec %s.", verdict, plan.Spec.Slug),
 		map[string]any{"phase": "verdict", "verdict": verdict, "report": reportPath},
@@ -2667,6 +2820,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	if err := engine.settleTask(ctx, plan, qaTask, ordinal, qaStatus, qaReason); err != nil {
 		return "", "", false, err
 	}
+	plan.runBudget.renew(engine.deps.Now(), qaTask.ID)
 	if err := engine.commitQAReport(ctx, plan, ordinal, before, verificationWindowPaths, verdict, reportPath, qaTask); err != nil {
 		return "", "", false, err
 	}
@@ -2677,6 +2831,8 @@ func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qa
 	prdPath := filepath.Join(plan.Spec.Dir, "_prd.md")
 	var authorizationPath string
 	var authorizationReference speccheck.MechanicalAuthorizationReference
+	deliveryTargetRevision := plan.HeadSHA
+	taskCommitsFromRunStart := false
 	if strings.TrimSpace(plan.HeadSHA) == "" {
 		var err error
 		authorizationPath, _, err = speccheck.MechanicalAuthorization(plan.WorkDir, prdPath)
@@ -2684,14 +2840,23 @@ func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qa
 			return speccheck.MechanicalRequest{}, err
 		}
 	} else {
-		resolved, _, err := speccheck.ResolveMechanicalAuthorization(ctx, plan.WorkDir, prdPath, plan.HeadSHA)
+		base, resolvedBase, err := qaDeliveryBase(ctx, plan)
+		if err != nil {
+			return speccheck.MechanicalRequest{}, err
+		}
+		if resolvedBase {
+			deliveryTargetRevision = base
+		} else {
+			taskCommitsFromRunStart = true
+		}
+		resolved, _, err := speccheck.ResolveMechanicalAuthorization(ctx, plan.WorkDir, prdPath, deliveryTargetRevision)
 		if err != nil {
 			return speccheck.MechanicalRequest{}, err
 		}
 		authorizationReference = resolved
 		authorizationPath = resolved.Path
 	}
-	taskCommits, err := mechanicalTaskCommits(ctx, plan, authorizationPath)
+	taskCommits, err := mechanicalTaskCommits(ctx, plan, deliveryTargetRevision, authorizationPath)
 	if err != nil {
 		return speccheck.MechanicalRequest{}, err
 	}
@@ -2712,12 +2877,13 @@ func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qa
 		}
 	}
 	return speccheck.MechanicalRequest{
-		RepoRoot:               plan.WorkDir,
-		AuthorizationPath:      authorizationPath,
-		AuthorizationReference: authorizationReference,
-		ConsumingSpec:          plan.Spec.Slug,
-		DeliveryTargetRevision: plan.HeadSHA,
-		TaskCommits:            taskCommits,
+		RepoRoot:                plan.WorkDir,
+		AuthorizationPath:       authorizationPath,
+		AuthorizationReference:  authorizationReference,
+		ConsumingSpec:           plan.Spec.Slug,
+		DeliveryTargetRevision:  deliveryTargetRevision,
+		TaskCommits:             taskCommits,
+		TaskCommitsFromRunStart: taskCommitsFromRunStart,
 		// Consequent-fix declarations are optional authored inputs. Until a
 		// declaration exists, the detector records its presence-aware skip.
 		ConsequentFixes: nil,
@@ -2748,12 +2914,12 @@ func qaGatePrecondition(plan TaskPlan) (speccheck.GatePreconditionResult, error)
 	return speccheck.GatePrecondition(checked), nil
 }
 
-func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, authorizationPath string) ([]speccheck.MechanicalTaskCommit, error) {
-	if strings.TrimSpace(plan.HeadSHA) == "" || strings.TrimSpace(authorizationPath) == "" {
+func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, rangeStart, authorizationPath string) ([]speccheck.MechanicalTaskCommit, error) {
+	if strings.TrimSpace(rangeStart) == "" || strings.TrimSpace(authorizationPath) == "" {
 		return nil, nil
 	}
-	revisionRange := strings.TrimSpace(plan.HeadSHA) + "..HEAD"
-	command := exec.CommandContext(ctx, "git", "-C", plan.WorkDir, "log", "--no-merges",
+	revisionRange := strings.TrimSpace(rangeStart) + "..HEAD"
+	command := exec.CommandContext(ctx, "git", "-C", plan.WorkDir, "log", "--no-merges", "--reverse",
 		"--format=%(trailers:key=Roundfix-Spec,valueonly,unfold)%x1f%(trailers:key=Roundfix-Task,valueonly,unfold)%x1f%H%x1e",
 		revisionRange)
 	output, err := command.Output()
@@ -2766,7 +2932,7 @@ func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, authorizationPath
 			tasks[task.ID] = task
 		}
 	}
-	commitsByTask := make(map[string]string, len(tasks))
+	result := make([]speccheck.MechanicalTaskCommit, 0)
 	for _, record := range bytes.Split(output, []byte{0x1e}) {
 		parts := bytes.SplitN(bytes.TrimSpace(record), []byte{0x1f}, 3)
 		if len(parts) != 3 {
@@ -2778,15 +2944,8 @@ func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, authorizationPath
 		if specSlug != plan.Spec.Slug {
 			continue
 		}
-		if _, known := tasks[taskID]; !known || commitsByTask[taskID] != "" || sha == "" {
-			continue
-		}
-		commitsByTask[taskID] = sha
-	}
-	result := make([]speccheck.MechanicalTaskCommit, 0, len(commitsByTask))
-	for _, task := range plan.Tasks {
-		sha := commitsByTask[task.ID]
-		if sha == "" {
+		task, known := tasks[taskID]
+		if !known || sha == "" {
 			continue
 		}
 		changed, err := mechanicalCommitPaths(ctx, plan.WorkDir, sha)
@@ -2804,7 +2963,7 @@ func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, authorizationPath
 			continue
 		}
 		result = append(result, speccheck.MechanicalTaskCommit{
-			TaskID:   task.ID,
+			TaskID:   taskID,
 			SHA:      sha,
 			TaskFile: artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, task.File)),
 		})
@@ -2840,7 +2999,10 @@ func mechanicalCommitPaths(ctx context.Context, repoRoot, sha string) ([]string,
 func (engine *Engine) writeMechanicalQAReport(ctx context.Context, plan TaskPlan, result speccheck.MechanicalResult) (string, error) {
 	// The Git subprocesses this resolves through must die with the QA Run;
 	// context.Background() here outlived a cancelled gate.
-	evidence := spec.ResolveAuditorEvidence(ctx, plan.WorkDir, app.Auditor())
+	evidence, err := engine.resolveQAAuditorEvidence(ctx, plan)
+	if err != nil {
+		return "", err
+	}
 	content, err := mechanicalQAReportContent(result, evidence)
 	if err != nil {
 		return "", err
@@ -2869,6 +3031,40 @@ func (engine *Engine) writeMechanicalQAReport(ctx context.Context, plan TaskPlan
 		}
 		return artifactCommitPath(plan, path), nil
 	}
+}
+
+func (engine *Engine) resolveQAAuditorEvidence(ctx context.Context, plan TaskPlan) (spec.AuditorEvidence, error) {
+	deliveryBase := ""
+	if strings.TrimSpace(plan.HeadSHA) != "" {
+		base, resolved, err := qaDeliveryBase(ctx, plan)
+		if err != nil {
+			return spec.AuditorEvidence{}, fmt.Errorf("resolve Delivery Base for auditor evidence: %w", err)
+		}
+		if resolved {
+			deliveryBase = base
+		}
+	}
+	return spec.ResolveAuditorEvidence(ctx, plan.WorkDir, deliveryBase, engine.auditor()), nil
+}
+
+func (engine *Engine) publishAuditorStalenessWarning(ctx context.Context, plan TaskPlan, ordinal int, reportPath string, evidence spec.AuditorEvidence) error {
+	auditor := auditorEvidenceBinary(evidence)
+	state, _ := auditor.CompareToTree(evidence.TreeVersion, evidence.Ancestry)
+	if state != app.StalenessStale {
+		return nil
+	}
+	line := auditor.StalenessLine(evidence.TreeVersion, evidence.Ancestry)
+	action := auditorStalenessAction(evidence.DeliveryBase)
+	return engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
+		fmt.Sprintf("Auditor staleness warning for Spec %s.", plan.Spec.Slug),
+		map[string]any{
+			"phase":             "auditor_staleness",
+			"auditor_staleness": line,
+			"delivery_base":     evidence.DeliveryBase,
+			"action":            action,
+			"report":            reportPath,
+		},
+	)
 }
 
 func nextMechanicalQAReportPath(reportDir, date string) (string, error) {
@@ -2970,6 +3166,7 @@ func mechanicalQAReportContent(result speccheck.MechanicalResult, evidence spec.
 		}
 		content.WriteByte('\n')
 		content.Write(mechanical.Bytes())
+		appendAuditorStalenessWarning(&content, evidence)
 		return content.Bytes(), nil
 	}
 
@@ -2997,7 +3194,7 @@ func mechanicalQAReportContent(result speccheck.MechanicalResult, evidence spec.
 		verdict = spec.VerdictFail
 	}
 	fmt.Fprintf(&content, "verdict: %s\n", verdict)
-	auditor := app.Auditor()
+	auditor := auditorEvidenceBinary(evidence)
 	auditorStaleness := auditor.StalenessLine(evidence.TreeVersion, evidence.Ancestry)
 	fmt.Fprintf(&content, "auditing_binary: %s\n", strconv.Quote(auditor.String()))
 	fmt.Fprintf(&content, "auditor_staleness: %s\n", strconv.Quote(auditorStaleness))
@@ -3006,7 +3203,33 @@ func mechanicalQAReportContent(result speccheck.MechanicalResult, evidence spec.
 	fmt.Fprintf(&content, "rows_blocked_declared: %d\n", mechanicalBlockedRowCount(mechanicalBody, "declared"))
 	content.WriteString("---\n\n# QA Report\n\n")
 	content.Write(mechanicalBody)
+	appendAuditorStalenessWarning(&content, evidence)
 	return content.Bytes(), nil
+}
+
+func auditorEvidenceBinary(evidence spec.AuditorEvidence) app.AuditingBinary {
+	if strings.TrimSpace(evidence.Binary.Version) != "" {
+		return evidence.Binary
+	}
+	return app.Auditor()
+}
+
+func appendAuditorStalenessWarning(content *bytes.Buffer, evidence spec.AuditorEvidence) {
+	auditor := auditorEvidenceBinary(evidence)
+	state, _ := auditor.CompareToTree(evidence.TreeVersion, evidence.Ancestry)
+	if state != app.StalenessStale {
+		return
+	}
+	if content.Len() > 0 && content.Bytes()[content.Len()-1] != '\n' {
+		content.WriteByte('\n')
+	}
+	content.WriteString("\n## Auditor staleness warning\n\n")
+	fmt.Fprintf(content, "- auditor_staleness: %s\n", auditor.StalenessLine(evidence.TreeVersion, evidence.Ancestry))
+	fmt.Fprintf(content, "- action: %s\n", auditorStalenessAction(evidence.DeliveryBase))
+}
+
+func auditorStalenessAction(deliveryBase string) string {
+	return "rebuild roundfix from delivery base " + strings.TrimSpace(deliveryBase) + " and restart it before the next gate"
 }
 
 func mechanicalRefusalCause(result speccheck.MechanicalResult) string {
@@ -3126,7 +3349,13 @@ func pullRequestRepository(rawURL string) string {
 // (ADR 0015). The report path comes back relative to the working tree,
 // empty when no report exists. A readable report also returns the shared
 // eligibility error so settlement can name why a pass or partial was refused.
-func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string, bool, error) {
+func (engine *Engine) settleQAVerdict(
+	plan TaskPlan,
+	seededAuditingBinary string,
+	seededAuditorStaleness string,
+	auditorEvidence spec.AuditorEvidence,
+	auditedHead string,
+) (string, string, bool, error) {
 	verdict := ""
 	accepted := false
 	var eligibilityErr error
@@ -3134,6 +3363,15 @@ func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string, bool, erro
 	case err == nil:
 		verdict = report.Verdict
 		eligibilityErr = spec.QAReportEligibility(plan.Spec.Dir, report)
+		if eligibilityErr == nil {
+			eligibilityErr = qaSettlementReportEligibility(
+				report,
+				seededAuditingBinary,
+				seededAuditorStaleness,
+				auditorEvidence,
+				auditedHead,
+			)
+		}
 		accepted = eligibilityErr == nil
 	case errors.Is(err, spec.ErrNoQAReport):
 		// ReadQAReport already searched the report directory. Preserve that
@@ -3152,6 +3390,70 @@ func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string, bool, erro
 		}
 	}
 	return verdict, reportPath, accepted, eligibilityErr
+}
+
+func qaSettlementReportEligibility(
+	report spec.QAReport,
+	seededAuditingBinary string,
+	seededAuditorStaleness string,
+	auditorEvidence spec.AuditorEvidence,
+	auditedHead string,
+) error {
+	if report.AuditingBinary != "" && report.AuditingBinary != seededAuditingBinary {
+		return errors.New("auditor fields are Daemon-owned: auditing_binary differs from the seeded value")
+	}
+	if report.AuditorStaleness != "" && report.AuditorStaleness != seededAuditorStaleness {
+		return errors.New("auditor fields are Daemon-owned: auditor_staleness differs from the seeded value")
+	}
+	if !auditorEvidence.SelfAudit {
+		return nil
+	}
+	if strings.TrimSpace(report.UserFlowBinary) == "" {
+		return errors.New("user_flow_binary is required for a self-audit")
+	}
+	buildCommit, ok := qaUserFlowBuildCommit(report.UserFlowBinary)
+	if !ok {
+		return errors.New("user_flow_binary names no valid build commit")
+	}
+	if !strings.HasPrefix(strings.ToLower(strings.TrimSpace(auditedHead)), strings.ToLower(buildCommit)) {
+		return fmt.Errorf("user_flow_binary build commit %q is not a prefix of audited head %q", buildCommit, strings.TrimSpace(auditedHead))
+	}
+	return nil
+}
+
+func qaUserFlowBuildCommit(binary string) (string, bool) {
+	open := strings.IndexByte(binary, '(')
+	if open < 0 {
+		return "", false
+	}
+	details := binary[open+1:]
+	end := len(details)
+	if comma := strings.IndexByte(details, ','); comma >= 0 && comma < end {
+		end = comma
+	}
+	if close := strings.IndexByte(details, ')'); close >= 0 && close < end {
+		end = close
+	}
+	commit := strings.TrimSpace(details[:end])
+	commit = strings.TrimSpace(strings.TrimSuffix(commit, "-dirty"))
+	if len(commit) < 7 {
+		return "", false
+	}
+	for _, char := range commit {
+		if (char < '0' || char > '9') && (char < 'a' || char > 'f') && (char < 'A' || char > 'F') {
+			return "", false
+		}
+	}
+	return commit, true
+}
+
+func qaAuditedHead(ctx context.Context, workDir string) (string, error) {
+	command := exec.CommandContext(ctx, "git", "-C", workDir, "rev-parse", "HEAD")
+	output, err := command.Output()
+	if err != nil {
+		return "", gitExecStderr(err)
+	}
+	return strings.TrimSpace(string(output)), nil
 }
 
 // commitQAReport creates the QA Report commit from the QA step's snapshot

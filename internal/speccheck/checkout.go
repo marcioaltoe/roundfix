@@ -5,9 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"roundfix/internal/worktree"
 )
 
 // ErrDisposableCheckoutCreate is the named reason returned when Git cannot
@@ -36,7 +37,7 @@ func DisposableCheckout(ctx context.Context, repoRoot string) (dir string, clean
 		return removeDisposableCheckout(repoRoot, tempRoot, dir)
 	}
 
-	if err := runDisposableCheckoutGit(ctx, repoRoot, "worktree", "add", "--detach", dir, "HEAD"); err != nil {
+	if err := worktree.AddDetachedWorktree(ctx, repoRoot, dir, "HEAD"); err != nil {
 		cleanupErr := cleanup()
 		return "", nil, fmt.Errorf("%w: %w", ErrDisposableCheckoutCreate, errors.Join(err, cleanupErr))
 	}
@@ -46,7 +47,7 @@ func DisposableCheckout(ctx context.Context, repoRoot string) (dir string, clean
 func removeDisposableCheckout(repoRoot string, tempRoot string, dir string) error {
 	var cleanupErr error
 	if _, err := os.Lstat(dir); err == nil {
-		if err := runDisposableCheckoutGit(context.Background(), repoRoot, "worktree", "remove", "--force", dir); err != nil {
+		if err := worktree.RemoveWorktreeForce(context.Background(), repoRoot, dir); err != nil {
 			cleanupErr = fmt.Errorf("remove disposable checkout: %w", err)
 		}
 	} else if !errors.Is(err, os.ErrNotExist) {
@@ -56,44 +57,4 @@ func removeDisposableCheckout(repoRoot string, tempRoot string, dir string) erro
 		cleanupErr = errors.Join(cleanupErr, fmt.Errorf("remove disposable checkout directory: %w", err))
 	}
 	return cleanupErr
-}
-
-func runDisposableCheckoutGit(ctx context.Context, repoRoot string, args ...string) error {
-	commandArgs := []string{
-		"-C", repoRoot,
-		"-c", "user.name=Roundfix Test",
-		"-c", "user.email=test@example.com",
-		"-c", "commit.gpgsign=false",
-		"-c", "core.fsmonitor=false",
-	}
-	commandArgs = append(commandArgs, args...)
-	command := exec.CommandContext(ctx, "git", commandArgs...)
-	command.Env = disposableCheckoutGitEnv()
-	output, err := command.CombinedOutput()
-	if err == nil {
-		return nil
-	}
-	diagnostic := strings.TrimSpace(string(output))
-	if diagnostic == "" {
-		return fmt.Errorf("git %s: %w", strings.Join(args, " "), err)
-	}
-	return fmt.Errorf("git %s: %w: %s", strings.Join(args, " "), err, diagnostic)
-}
-
-func disposableCheckoutGitEnv() []string {
-	env := make([]string, 0, len(os.Environ())+5)
-	for _, entry := range os.Environ() {
-		key, _, _ := strings.Cut(entry, "=")
-		if strings.HasPrefix(key, "GIT_CONFIG_") || key == "GIT_TEST_MAINT_AUTO_DETACH" {
-			continue
-		}
-		env = append(env, entry)
-	}
-	return append(env,
-		"GIT_CONFIG_GLOBAL=/dev/null",
-		"GIT_CONFIG_SYSTEM=/dev/null",
-		"GIT_TEST_MAINT_AUTO_DETACH=0",
-		"GIT_OPTIONAL_LOCKS=0",
-		"GIT_TERMINAL_PROMPT=0",
-	)
 }

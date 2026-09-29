@@ -36,6 +36,10 @@ _Avoid_: Auto-fix, gate edit, remediation
 A repository path the tooling-authority rules bind — the configuration, scripts, ignore files, plugin declarations, and version pins of linters, formatters, typecheckers, test runners, architecture checkers, build tools, package managers, and code generators. The changed-path audit judges a Task commit only against its governed paths; an ordinary source, test, or documentation file is not governed and needs no grant. The declared set is held to the record: every path any authorization has ever bounded stays governed.
 _Avoid_: Protected file, restricted path, tooling file
 
+**Delivery Base**:
+The merge base of the audited head and the repository default branch. The mechanical stage reads a Spec's Task commits and its grant from it.
+_Avoid_: Run start head, audited head, delivery target
+
 **Undeclared Governed Path**:
 A Governed Path named by a pending non-QA Task but omitted from its authorization record or a present Tooling authority row.
 _Avoid_: Unauthorized edit, inferred path, ordinary path
@@ -136,11 +140,11 @@ The universal Normative Clause that forbids changes to linter, formatter, and to
 _Avoid_: Tool preference, implicit permission, cleanup authorization
 
 **QA Report**:
-The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict, its Auditing Binary as `auditing_binary`, and `auditor_staleness`, plus `rows_blocked_environment`, `rows_blocked_finding`, and `rows_blocked_declared` counts in its frontmatter. A report recording a Precondition Refusal carries `rows_blocked_precondition` beside those counts, plus the `precondition_check` and `precondition_reason` keys that name the refusal; a gate that reached its matrix writes none of those three. A `pending` verdict is never accepted, a report that records no QA row is refused, and a report whose front matter is empty or duplicated is unreadable and refused; only the newest report in the directory is read by a later run's mechanical stage, so a superseded report blocks nothing.
+The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict, its Auditing Binary as `auditing_binary`, `auditor_staleness`, and the public-row binary's `--version` line as `user_flow_binary`, plus `rows_blocked_environment`, `rows_blocked_finding`, and `rows_blocked_declared` counts in its frontmatter. The auditor fields are Daemon-owned: the gate keeps the seeded `auditing_binary` and `auditor_staleness` values. A report recording a Precondition Refusal carries `rows_blocked_precondition` beside those counts, plus the `precondition_check` and `precondition_reason` keys that name the refusal; a gate that reached its matrix writes none of those three. A `pending` verdict is never accepted, a report that records no QA row is refused, and a report whose front matter is empty or duplicated is unreadable and refused; only the newest report in the directory is read by a later run's mechanical stage, so a superseded report blocks nothing.
 _Avoid_: Test report, QA log
 
 **Auditing Binary**:
-The Roundfix binary that produced a verdict, distinct from the tree it audited. It carries the version, build commit, and build time (the last two may be empty for a released build), and a QA Report records its formatted identity as `AuditingBinary` / `auditing_binary`; `auditor_staleness` reports `current`, `stale`, or `unknown` with the answering or missing-evidence reason.
+The Daemon's Roundfix binary that runs the mechanical stage, distinct from the tree it audits. It carries the version, build commit, and build time (the last two may be empty for a released build), and a QA Report records its formatted identity as `AuditingBinary` / `auditing_binary`; `auditor_staleness` compares its build commit with the Delivery Base, and a stale Auditing Binary is published as a warning while the gate proceeds.
 _Avoid_: Audited binary, audited tree, ambiguous build
 
 **Precondition Refusal**:
@@ -231,6 +235,10 @@ _Avoid_: Weak test, trivial gate, false green
 The Spec Consistency Check error (`SC-VERIFY-INVERTED-EXIT`) raised when an authored Verification command uses a measured shell form whose exit status reverses or ignores the condition its output appears to assert. The finding names the matched form and a replacement that exits zero when the asserted condition holds.
 _Avoid_: Verification failure, shell lint, non-zero result
 
+**Wrap-Fragile Phrase Check**:
+The Spec Consistency Check error (`SC-VERIFY-WRAP-FRAGILE`) raised when a pending Task uses a line-bound multi-word phrase check against Markdown that can miss text wrapped across lines. The finding names the phrase and file and gives a wrap-tolerant replacement.
+_Avoid_: Line-bound grep, phrase grep, wrapped-text failure
+
 **Non-Hermetic Verification**:
 The Spec Consistency Check error (`SC-VERIFY-NON-HERMETIC`) raised when an authored Verification command depends on an undeclared environment variable or a pre-existing path outside the repository. A command-local variable or a path the Task creates before reading is not an external dependency.
 _Avoid_: External-state Verification, environment guard, temporary-path check
@@ -305,7 +313,7 @@ A recorded terminal reason a Run Branch no longer needs integration and may be d
 _Avoid_: Branch cleanup, forced deletion, reconcile result
 
 **Run Worktree Reconciliation**:
-The proof-based classification of a terminal spec Run's retained Git surfaces: `safe` when the Run Branch and recorded target resolve, any present Run Worktree is registered and clean, and the Run Branch tip is an ancestor of the target tip; `superseded` when a QA-report-only Run Branch is older than the target branch's QA Report for the same Spec; `unintegrated` when the same evidence resolves but ancestry is false; `dirty` when a present Run Worktree has tracked or untracked changes; `unknown` when metadata or Git evidence cannot prove another state; and `released` only when both the Run Worktree and Run Branch are absent. Only freshly revalidated `safe` or `superseded` work can be cleaned up.
+The proof-based classification of a terminal spec Run's retained Git surfaces: `safe` when the Run Branch is contained in its target or its content is represented at the merged head; `superseded` when a newer QA Report or the merged-head proof represents its Task or QA Report commits; `unintegrated` when resolved evidence does not represent the Run; `dirty` when a present Run Worktree has tracked or untracked changes; `unknown` when metadata or Git evidence cannot prove another state; and `released` only when both the Run Worktree and Run Branch are absent. Only freshly revalidated `safe` or `superseded` work can be cleaned up.
 _Avoid_: GC, force cleanup, manual branch deletion
 
 **Integration Pending**:
@@ -480,8 +488,24 @@ The explicit act that hands a settled Task from a terminal spec Run's Run Branch
 _Avoid_: replay, resume, automatic carry, QA row carry-forward
 
 **Delivery Queue**:
-The durable, ordered set of Specs that Roundfix advances from an Implement Run through merge. A blocker parks only its item while later items can continue.
+The durable, ordered set of Specs that Roundfix advances from an Implement Run through merge with a fixed optional deadline and per-item retry limit. A blocker parks only its item while later items can continue.
 _Avoid_: Release queue, Batch, Run list
+
+**Delivery Plan**:
+The read-only account of which Specs have delivery authority, what blocks the others and which production premises ordered Specs share. It reports a prepared queue without recording or running one.
+_Avoid_: Delivery Queue, execution plan, approval grant
+
+**Delivery Revalidation**:
+The check of a queued Spec against the refreshed default branch immediately before its first Run. A strict finding parks it as `revalidation-failed`; a production-premise overlap records a `premise-changed` warning without parking it.
+_Avoid_: Initial validation, retry, approval check
+
+**Delivery Queue Limit**:
+A queue's fixed optional deadline or per-item retry allowance. It bounds new item starts or explicit retries without changing a Run Budget or an item already past `queued`.
+_Avoid_: Run Budget, concurrency, spending limit
+
+**Pending Question**:
+The one operator decision presented for the lowest-position parked Delivery Queue item, with its blocker, answer and number of parked items waiting behind it. Only an explicit Delivery Retry or a new queue answers it.
+_Avoid_: Warning, automatic recommendation, blocker list
 
 **Delivery Retry**:
 The explicit act that returns one parked Delivery Queue item to the stage supported by its recorded evidence and hands it to a live or newly started queue owner. It may perform Task Carry-Forward first and is never automatic.
