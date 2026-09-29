@@ -1,9 +1,12 @@
 ---
 spec: 0177-runs-that-fit-their-budget-and-park-honestly
-status: active
+status: archived
 created: 2026-09-28
 surfaces: [backend, cli, docs]
+archived: "2026-09-28"
+source_slug: 0177-runs-that-fit-their-budget-and-park-honestly
 ---
+
 
 # Runs that fit their budget and park honestly
 
