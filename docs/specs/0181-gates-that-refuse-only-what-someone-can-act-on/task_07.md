@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0181-gates-that-refuse-only-what-someone-can-act-on
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -48,3 +48,39 @@ complexity: low
 - `_authorization.md` → the 2026-09-29 archive-spec grant
 
 ## Result
+
+Implemented the canonical QA settlement table in the `archive-spec` and
+Roundfix `.agents` skills. The stale qualifying-`partial` wording was replaced
+with the canonical pre-PR Pull Request exception, and the duplicate Roundfix
+paragraph was removed. No other source-skill lines were changed.
+
+Focused implementation evidence:
+
+- Extracted `### QA settlement` sections from `qa-gate`, `archive-spec`, and
+  Roundfix and compared their bytes: all three comparisons were identical.
+- Confirmed the Roundfix skill still contains `pre-PR Pull Request row`.
+- `git diff --check`: passed.
+- `make skills-sync`: exited `0`; rewrote `skills/archive-spec/SKILL.md` and
+  `skills/roundfix/SKILL.md`.
+- `make baseline-digests`: exited `0`; rewrote no files and reported
+  `changed: false`.
+- Post-regeneration changed paths were limited to the two `.agents` source
+  skills, the two `skills/` mirrors, and this Task file.
+
+Acceptance evidence:
+
+- `TestSettlementGuidanceIsOneTable`: not run because it is part of the
+  Daemon-owned Task Verification; the byte comparison above is the focused
+  implementation check.
+- Mirror regeneration: `make skills-sync` passed and named both rewritten
+  mirror files; `make baseline-digests` passed with no derived rewrites.
+  `make skills-sync-check` remains for the Daemon's declared Verification.
+- The Roundfix phrase `pre-PR Pull Request row` remains present.
+
+The Daemon must run the declared Verification and settle the Task; Task status
+was left unchanged.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260929T200238Z_ca4a5877c9dc9d5c`
+- Source commit: `56c29f7ecec3bf785489f0bce8fbf1593ce7330a`
