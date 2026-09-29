@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0175-cleanup-after-a-squash-merge
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -96,3 +96,62 @@ repository, and `roundfix deliver status` shows the maintainer what stayed.
 - [_techspec.md](_techspec.md) — Automatic release after a delivery merge
 - `_prd.md` → Core Feature 2; Success Metric 3
 - `_techspec.md` → API Contract 3
+
+## Result
+
+Implemented automatic merged-Spec Run release in the delivery owner. Every
+merged item now attempts Run release before item-worktree and item-branch
+cleanup, attempts both operations even when release fails, joins both failures
+under the existing `warning: cleanup failed` blocker, and clears that warning
+after a clean retry. Unmerged items do not enter this cleanup path.
+
+The command workflow now validates the persisted merge commit and last
+candidate head before reading Runs. It builds the merged-head record from the
+Delivery Queue item, selects only Implement Runs of that Spec in the current
+repository, preserves and names Active or unproven Runs, and applies the
+existing revalidated cleanup only to terminal `safe` and `superseded` results.
+Runs of another Spec are excluded before inspection.
+
+Updated the Deliver Command guide and canonical Roundfix skill to describe
+the merged-head release and cleanup warning, then regenerated the shipped
+skill with `make skills-sync`.
+
+Acceptance evidence:
+
+- `TestEngineReleasesMergedRunsBeforeRemovingTheItemBranch` observes release
+  before item-branch removal, while
+  `TestEngineReleasesNothingForAnUnmergedItem` observes no cleanup calls for a
+  parked item.
+- `TestEngineRecordsACleanupWarningWhenAMergedRunIsKept` observes a kept Run
+  and its reason in the blocker while item cleanup is still attempted;
+  `TestEngineClearsTheCleanupWarningAfterACleanRelease` observes a clean retry
+  clear it. `TestEngineJoinsRunReleaseAndItemBranchCleanupFailures` separately
+  observes both failures in one warning.
+- `TestDeliverReleaseRemovesEveryProvenRunOfTheMergedSpec` uses real Git
+  worktrees and the Spec 0172-shaped fixture to release both a contained Run
+  and a superseded Task/QA Run.
+- `TestDeliverReleaseKeepsAnUnrepresentedRun`,
+  `TestDeliverReleaseLeavesAnActiveRunAlone`, and
+  `TestDeliverReleaseNeverTouchesAnotherSpecsRun` separately preserve an
+  unrepresented Run, an Active Run, and another Spec's Run.
+- `TestDeliverReleaseRefusesAnItemWithoutAMergeCommit` and
+  `TestDeliverReleaseRefusesAnItemWithoutACandidateHead` observe validation
+  before either Git surface is mutated.
+
+Focused checks:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task04-gocache go test -count=1 ./internal/delivery` — passed after the last code edit.
+- `rtk env GOCACHE=/private/tmp/roundfix-task04-gocache go test -count=1 -run '^Test(Deliver|Delivery)' ./internal/cli` — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task04-gocache go test -count=1 ./internal/cli` — passed outside the sandbox in 93.921s. The sandboxed attempt reached two unrelated force-stop integration tests and was denied process-table access; no delivery test failed.
+- `rtk make skills-sync` — passed; `rtk cmp -s .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` confirmed byte-identical skill trees.
+- `rtk git diff --check` — passed.
+
+The first focused Go invocations could not write the default macOS Go build
+cache; rerunning them with the task-local `GOCACHE` above passed. The Task's
+declared `## Verification` command was not run; Daemon Verification owns that
+command and the terminal Task status.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260928T174529Z_c0cad0da5734a85f`
+- Source commit: `93c74622427f7e10b7d1cf5726f70c929c49f7e0`

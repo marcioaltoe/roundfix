@@ -127,6 +127,7 @@ type CandidateRunner interface {
 type ItemWorkspace interface {
 	CreateItemBranch(ctx context.Context, gitRoot, specSlug string) (branch, worktree string, err error)
 	UseItemBranch(ctx context.Context, gitRoot, specSlug, branch, worktree string, provisioned bool) (string, error)
+	ReleaseMergedRuns(ctx context.Context, gitRoot string, item store.DeliveryQueueItem) error
 	RemoveItemBranch(ctx context.Context, gitRoot, branch, worktree string) error
 }
 
@@ -408,13 +409,15 @@ func (engine *Engine) Run(ctx context.Context, gitRoot string) (EngineResult, er
 			}
 		}
 		if item.Stage == store.DeliveryStageMerged {
-			if err := engine.workspace.RemoveItemBranch(ctx, gitRoot, item.Branch, item.Worktree); err != nil {
-				item.Blocker = cleanupWarningPrefix + ": " + err.Error()
+			releaseErr := engine.workspace.ReleaseMergedRuns(ctx, gitRoot, item)
+			removeErr := engine.workspace.RemoveItemBranch(ctx, gitRoot, item.Branch, item.Worktree)
+			if cleanupErr := errors.Join(releaseErr, removeErr); cleanupErr != nil {
+				item.Blocker = cleanupWarningPrefix + ": " + cleanupErr.Error()
 				if persistErr := engine.store.UpdateDeliveryQueueItem(ctx, gitRoot, item); persistErr != nil {
 					return EngineResult{}, fmt.Errorf(
 						"record cleanup warning for merged Spec %q after %v: %w",
 						item.SpecSlug,
-						err,
+						cleanupErr,
 						persistErr,
 					)
 				}

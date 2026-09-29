@@ -20,6 +20,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	roundconfig "roundfix/internal/config"
 	"roundfix/internal/preflight"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
@@ -263,7 +264,7 @@ type branchSetClassificationEvidence struct {
 }
 
 func InspectTerminalRun(ctx context.Context, run store.Run) (RunWorktreeReconciliation, error) {
-	return inspectTerminalRun(ctx, execGitRunner{}, run)
+	return InspectTerminalRunMerged(ctx, run, nil)
 }
 
 // CountRetainedTerminalRuns reports terminal spec Runs with an existing
@@ -670,7 +671,9 @@ func ApplyRunBranchCandidate(ctx context.Context, inspected BranchSetClassificat
 	if terminal.State == ReconciliationReleased {
 		return nil
 	}
-	if terminal.State != ReconciliationUnintegrated {
+	if terminal.State != ReconciliationUnintegrated &&
+		terminal.State != ReconciliationSafe &&
+		terminal.State != ReconciliationSuperseded {
 		return fmt.Errorf(
 			"apply Run Branch candidate %q: worktree classification changed to %q and must be preserved",
 			branch,
@@ -863,6 +866,9 @@ type terminalRunReconciliationEvidence struct {
 	snapshot         terminalRunReconciliationSnapshot
 	worktreePresent  bool
 	runBranchPresent bool
+	merged           []MergedHead
+	mergedSnapshot   []MergedHead
+	proofHead        string
 }
 
 type terminalRunReconciliationSnapshot struct {
@@ -879,6 +885,15 @@ type terminalRunReconciliationSnapshot struct {
 }
 
 func inspectTerminalRun(ctx context.Context, runner gitRunner, run store.Run) (RunWorktreeReconciliation, error) {
+	return inspectTerminalRunMerged(ctx, runner, run, nil)
+}
+
+func inspectTerminalRunMerged(
+	ctx context.Context,
+	runner gitRunner,
+	run store.Run,
+	merged []MergedHead,
+) (RunWorktreeReconciliation, error) {
 	result := RunWorktreeReconciliation{
 		RunID:        run.ID,
 		Outcome:      run.State,
@@ -990,6 +1005,7 @@ func inspectTerminalRun(ctx context.Context, runner gitRunner, run store.Run) (R
 			result,
 			worktreePresent,
 			runBranchPresent,
+			merged,
 		), nil
 	}
 	if result.TargetHead == "" {
@@ -1017,6 +1033,20 @@ func inspectTerminalRun(ctx context.Context, runner gitRunner, run store.Run) (R
 					runBranchPresent,
 				)
 				return result, nil
+			}
+			if source, found := chooseMergedHead(ctx, runner, run, gitRoot, merged); found &&
+				(!source.defaultBranch || source.archived) {
+				return inspectRunAtMergedHead(
+					ctx,
+					runner,
+					run,
+					gitRoot,
+					result,
+					worktreePresent,
+					runBranchPresent,
+					merged,
+					source,
+				), nil
 			}
 			result.State = ReconciliationUnintegrated
 			result.Reason = reconciliationReasonUnintegrated
@@ -1077,163 +1107,34 @@ func inspectDeletedTargetRunByContent(
 	result RunWorktreeReconciliation,
 	worktreePresent bool,
 	runBranchPresent bool,
+	merged []MergedHead,
 ) RunWorktreeReconciliation {
-	defaultBranch, defaultHead, resolved := resolveDefaultBranchHead(ctx, runner, gitRoot)
+	source, resolved := chooseMergedHead(ctx, runner, run, gitRoot, merged)
 	if !resolved {
 		result.Reason = reconciliationReasonTargetBranch
 		return result
 	}
-	result.TargetHead = defaultHead
-
-	runOnly, differingShared, retainedRunDeletions, proven := compareRunContentToDefault(
+	result.TargetHead = source.head
+	result = inspectRunAtMergedHead(
 		ctx,
 		runner,
-		gitRoot,
-		result.RunHead,
-		defaultHead,
-	)
-	if !proven {
-		result.State = ReconciliationUnintegrated
-		result.Reason = boundedReconciliationReason(fmt.Sprintf(
-			"Run Branch content comparison could not prove integration against default branch %q",
-			defaultBranch,
-		))
-		return result
-	}
-	if runOnly != 0 || differingShared != 0 || retainedRunDeletions != 0 {
-		var evidence []string
-		if runOnly != 0 {
-			evidence = append(evidence, fmt.Sprintf("%d Run-only file%s", runOnly, pluralSuffix(runOnly)))
-		}
-		if differingShared != 0 {
-			evidence = append(evidence, fmt.Sprintf(
-				"%d differing shared file%s",
-				differingShared,
-				pluralSuffix(differingShared),
-			))
-		}
-		if retainedRunDeletions != 0 {
-			evidence = append(evidence, fmt.Sprintf(
-				"%d Run-deleted file%s retained by default",
-				retainedRunDeletions,
-				pluralSuffix(retainedRunDeletions),
-			))
-		}
-		result.State = ReconciliationUnintegrated
-		result.Reason = boundedReconciliationReason(fmt.Sprintf(
-			"Run Branch content is not fully represented: %s against default branch %q",
-			strings.Join(evidence, ", "),
-			defaultBranch,
-		))
-		return result
-	}
-	if _, err := newestQAReportAtHeadInDirectories(
-		ctx,
-		runner,
-		gitRoot,
-		defaultHead,
-		[]string{archivedQAReportDirectory(run.SpecSlug)},
-	); err != nil {
-		result.State = ReconciliationUnintegrated
-		result.Reason = reconciliationReasonDefaultBranchSpecNotArchived(run.SpecSlug)
-		return result
-	}
-
-	result.State = ReconciliationSafe
-	result.Reason = boundedReconciliationReason(fmt.Sprintf(
-		"Run Branch content is fully represented on default branch %q",
-		defaultBranch,
-	))
-	result.evidence = newTerminalRunReconciliationEvidence(
 		run,
 		gitRoot,
 		result,
 		worktreePresent,
 		runBranchPresent,
+		merged,
+		source,
 	)
+	if source.defaultBranch && !source.archived &&
+		(result.State == ReconciliationSafe || result.State == ReconciliationSuperseded) {
+		result.State = ReconciliationUnintegrated
+		result.Reason = reconciliationReasonDefaultBranchSpecNotArchived(run.SpecSlug)
+		result.SupersedingReport = ""
+		result.evidence = nil
+		return result
+	}
 	return result
-}
-
-func compareRunContentToDefault(
-	ctx context.Context,
-	runner gitRunner,
-	gitRoot string,
-	runHead string,
-	defaultHead string,
-) (runOnly int, differingShared int, retainedRunDeletions int, proven bool) {
-	runOnlyOutput, err := runner.Run(
-		ctx,
-		gitRoot,
-		"diff",
-		"--name-only",
-		"-z",
-		"--no-renames",
-		"--diff-filter=D",
-		runHead,
-		defaultHead,
-		"--",
-	)
-	if err != nil {
-		return 0, 0, 0, false
-	}
-	differingSharedOutput, err := runner.Run(
-		ctx,
-		gitRoot,
-		"diff",
-		"--name-only",
-		"-z",
-		"--no-renames",
-		"--diff-filter=MT",
-		runHead,
-		defaultHead,
-		"--",
-	)
-	if err != nil {
-		return 0, 0, 0, false
-	}
-	mergeBaseOutput, err := runner.Run(ctx, gitRoot, "merge-base", runHead, defaultHead)
-	if err != nil {
-		return 0, 0, 0, false
-	}
-	mergeBase := strings.TrimSpace(mergeBaseOutput)
-	if mergeBase == "" {
-		return 0, 0, 0, false
-	}
-	runDeletedOutput, err := runner.Run(
-		ctx,
-		gitRoot,
-		"diff",
-		"--name-only",
-		"-z",
-		"--no-renames",
-		"--diff-filter=D",
-		mergeBase,
-		runHead,
-		"--",
-	)
-	if err != nil {
-		return 0, 0, 0, false
-	}
-	runDeleted := nonEmptyNULTerms(runDeletedOutput)
-	if len(runDeleted) != 0 {
-		defaultTreeOutput, err := runner.Run(ctx, gitRoot, "ls-tree", "-r", "--name-only", "-z", defaultHead)
-		if err != nil {
-			return 0, 0, 0, false
-		}
-		defaultPaths := make(map[string]struct{})
-		for _, path := range nonEmptyNULTerms(defaultTreeOutput) {
-			defaultPaths[path] = struct{}{}
-		}
-		for _, path := range runDeleted {
-			if _, retained := defaultPaths[path]; retained {
-				retainedRunDeletions++
-			}
-		}
-	}
-	return len(nonEmptyNULTerms(runOnlyOutput)),
-		len(nonEmptyNULTerms(differingSharedOutput)),
-		retainedRunDeletions,
-		true
 }
 
 func pluralSuffix(count int) string {
@@ -1350,6 +1251,17 @@ func supersedingQAReport(
 	if err != nil || !qaOnly {
 		return "", false
 	}
+	return supersedingQAReportAfterQAOnly(ctx, runner, gitRoot, targetHead, runHead, slug)
+}
+
+func supersedingQAReportAfterQAOnly(
+	ctx context.Context,
+	runner gitRunner,
+	gitRoot string,
+	targetHead string,
+	runHead string,
+	slug string,
+) (string, bool) {
 	runReport, err := newestQAReportAtHead(ctx, runner, gitRoot, runHead, slug)
 	if err != nil {
 		return "", false
@@ -1515,13 +1427,16 @@ func revalidateTerminalRunApply(
 	if evidence == nil || terminalRunSnapshot(result) != evidence.snapshot {
 		return RunWorktreeReconciliation{}, false, errors.New("apply terminal Run reconciliation: result was not produced by inspection or recorded metadata changed")
 	}
+	if !mergedHeadRecordsEqual(evidence.merged, evidence.mergedSnapshot) {
+		return RunWorktreeReconciliation{}, false, errors.New("apply terminal Run reconciliation: merged-head record changed after inspection")
+	}
 	if result.State != ReconciliationSafe &&
 		result.State != ReconciliationSuperseded &&
 		result.State != ReconciliationReleased {
 		return RunWorktreeReconciliation{}, false, fmt.Errorf("apply terminal Run reconciliation: classification %q is not safe", result.State)
 	}
 
-	fresh, err := inspectTerminalRun(ctx, runner, evidence.run)
+	fresh, err := inspectTerminalRunMerged(ctx, runner, evidence.run, evidence.merged)
 	if err != nil {
 		return RunWorktreeReconciliation{}, false, fmt.Errorf("revalidate terminal Run before cleanup: %w", err)
 	}
@@ -1530,7 +1445,9 @@ func revalidateTerminalRunApply(
 	}
 	if fresh.State != result.State ||
 		fresh.RunHead != result.RunHead ||
-		fresh.TargetHead != result.TargetHead {
+		fresh.TargetHead != result.TargetHead ||
+		fresh.evidence == nil ||
+		fresh.evidence.proofHead != evidence.proofHead {
 		return RunWorktreeReconciliation{}, false, fmt.Errorf(
 			"apply terminal Run reconciliation: evidence is stale: inspected state=%q Run head=%q target head=%q; current state=%q Run head=%q target head=%q",
 			result.State,
@@ -1860,6 +1777,17 @@ func removeUnregisteredItemWorktree(ctx context.Context, runner gitRunner, ref I
 		return fmt.Errorf("Git directory pointer %q still exists", gitDir)
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("inspect Git administration directory %q: %w", gitDir, err)
+	}
+	worktrees, err := listRegisteredWorktrees(ctx, runner, ref.UserRoot)
+	if err != nil {
+		return fmt.Errorf("inspect registered worktrees before removal: %w", err)
+	}
+	itemPath := canonicalPath(ref.Path)
+	for _, worktree := range worktrees {
+		nestedPath := canonicalPath(worktree.Path)
+		if pathAtOrBelow(nestedPath, itemPath) {
+			return fmt.Errorf("registered worktree %q is nested under the item path", nestedPath)
+		}
 	}
 
 	if err := makeTreeOwnerWritable(ref.Path); err != nil {
@@ -2323,6 +2251,10 @@ func PruneTerminalReport(
 	if loadTerminalRun == nil {
 		return nil, errors.New("prune Run Worktrees: terminal Run lookup is required")
 	}
+	repositoryRoot, err := roundconfig.RepositoryRoot(userRoot)
+	if err != nil {
+		return nil, fmt.Errorf("prune Run Worktrees: resolve repository identity: %w", err)
+	}
 
 	runner := execGitRunner{}
 	refs, err := terminalCandidates(ctx, runner, userRoot, location)
@@ -2348,9 +2280,20 @@ func PruneTerminalReport(
 			errs = append(errs, fmt.Errorf("load terminal Run %q: %w", runID, err))
 			continue
 		}
-		if !found || !store.IsTerminalState(run.State) || canonicalPath(run.GitRoot) != canonicalPath(userRoot) {
+		if !found || !store.IsTerminalState(run.State) {
 			continue
 		}
+		runRepositoryRoot := strings.TrimSpace(run.RepositoryRoot)
+		if runRepositoryRoot == "" {
+			runRepositoryRoot, err = roundconfig.RepositoryRoot(run.GitRoot)
+			if err != nil {
+				continue
+			}
+		}
+		if canonicalPath(runRepositoryRoot) != canonicalPath(repositoryRoot) {
+			continue
+		}
+		run.GitRoot = canonicalPath(userRoot)
 
 		result, err := inspectTerminalRun(ctx, runner, run)
 		if err != nil {
@@ -3332,6 +3275,14 @@ func samePath(left, right string) bool {
 		return false
 	}
 	return canonicalPath(left) == canonicalPath(right)
+}
+
+func pathAtOrBelow(path, root string) bool {
+	relative, err := filepath.Rel(root, path)
+	return err == nil &&
+		!filepath.IsAbs(relative) &&
+		relative != ".." &&
+		!strings.HasPrefix(relative, ".."+string(filepath.Separator))
 }
 
 func canonicalPath(path string) string {

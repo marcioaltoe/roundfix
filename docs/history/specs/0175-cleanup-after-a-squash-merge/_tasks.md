@@ -24,7 +24,10 @@ graph:
       needs: [task_05]
     - id: task_07
       file: task_07.md
-      needs: [task_01, task_02, task_03, task_04, task_05, task_06]
+      needs: [task_01, task_02, task_03, task_04, task_05, task_06, task_08]
+    - id: task_08
+      file: task_08.md
+      needs: [task_06]
 ---
 
 # Task Graph
@@ -37,4 +40,5 @@ graph:
 | task_04 | backend | Release a merged Spec's Runs after a delivery merge |
 | task_05 | backend | Own and sweep carry-forward staging worktrees |
 | task_06 | backend | Protect nested worktrees and lock every worktree administration |
+| task_08 | backend | Automatic release proves its merge evidence and finds every Run of the repository |
 | task_07 | qa | Run the final QA gate |

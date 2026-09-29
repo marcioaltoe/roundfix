@@ -26,21 +26,42 @@ func runWorktreeCommand(
 	runner gitRunner,
 	workDir string,
 	args ...string,
-) (output string, resultErr error) {
+) (string, error) {
 	if len(args) < 2 || args[0] != "worktree" {
 		return "", fmt.Errorf("run Git worktree command: invalid arguments %v", args)
 	}
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	var output string
+	err := withWorktreeAdminLock(ctx, runner, workDir, func() error {
+		var runErr error
+		output, runErr = runner.Run(ctx, workDir, args...)
+		return runErr
+	})
+	return output, err
+}
+
+func withWorktreeAdminLock(
+	ctx context.Context,
+	runner gitRunner,
+	workDir string,
+	action func() error,
+) (resultErr error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if action == nil {
+		return errors.New("run Git worktree administration: action is required")
+	}
 
 	commonDir, err := resolveGitCommonDir(ctx, runner, workDir)
 	if err != nil {
-		return "", err
+		return err
 	}
 	release, err := acquireWorktreeAdminLock(ctx, commonDir)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer func() {
 		if releaseErr := release(); releaseErr != nil {
@@ -53,7 +74,7 @@ func runWorktreeCommand(
 		}
 	}()
 
-	return runner.Run(ctx, workDir, args...)
+	return action()
 }
 
 func resolveGitCommonDir(ctx context.Context, runner gitRunner, workDir string) (string, error) {

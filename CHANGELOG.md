@@ -2,6 +2,73 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.18.0] - 2026-09-28
+
+### Authoring that fails before dispatch
+
+`spec check` now refuses the authoring mistakes that used to cost a whole Run.
+`SC-TOOLING-UNDECLARED` reports a governed path a pending Task declares, or a
+Tooling row bounds, that the authorization record or a `bounded files:` row
+omits. `SC-CLI-UNDOCUMENTED` flags a Task that changes a CLI surface without
+naming its guide. A Verification that pipes a tool into `grep` and hides its
+status, a wrapped `None.` declaration and an adopted Finding or Backlog Entry
+left behind are caught too, and the templates say `bounded files:`.
+
+### A suite that stays deterministic under load
+
+Tests wait on the work they watch, bounded by the test deadline, instead of
+fixed wall-clock timeouts, and never reach the network for the release check.
+Git worktree administration (`add`, `remove`, `prune`, `move`) is serialized per
+repository, in process and across processes, which removes a real race in
+parallel Task worktree creation (`failed to read .git/worktrees/<task>/commondir`).
+
+### A QA gate that tells the truth
+
+The seeded QA Report starts `pending`, and a report whose Results record no row
+never passes. Settlement reads the report exactly as the derived QA
+Verification does, so an empty or duplicated front matter is refused as
+unreadable. The newest report is always the one read, a temporary retry keeps
+the deterministic failure it replaced, an unobserved Verification is published
+as unobserved, and `roundfix events` skips a record it cannot project instead of
+aborting.
+
+### A delivery queue that recovers
+
+`roundfix deliver retry <slug>` returns a parked item to the stage it parked at:
+it carries the item's settled Tasks onto the item branch, re-runs only
+unfinished Tasks, and hands the item to a live owner or starts one.
+Carry-forward proves Tasks in the order the Run integrated them. Project Config
+is committed when the authorization names it and otherwise fails the Task
+aloud, and a timed-out profile proof is retried once and called temporary.
+
+### Cleanup after a squash merge
+
+After a Spec's pull request is squash-merged, its Runs are proven against the
+merged head and released: the delivery owner does it right after the merge, and
+`reconcile --apply` covers merges made outside the queue by reading the queue's
+merge record. Legacy Runs are keyed from their Run Worktree, carry-forward
+staging worktrees are owned and swept, and nested worktrees are protected.
+
+### Operator surfaces that say what is true
+
+Read-only commands refuse a Run Database of another schema with the exact
+remedy, and `roundfix migrate` performs the upgrade serially. A help token
+means help only where it is an argument. `GovernedPath` covers
+`skills/_ownership.yml`, and the repository gate runs the `repocontract`
+contract tests.
+
+### Baseline follow-ups
+
+The incremental verification tier is a published Baseline decision, so adopter
+Specs stop hand-writing a waiver. The generated docs-layout rule names
+`roundfix archive --qa-override`, the skills lock is read after the fetch, and a
+blocked reconcile honours the JSON and exit-code contract.
+
+### Repository
+
+The project Run budget is four hours. The last portfolio Specs were retired and
+their remaining features carried to the backlog.
+
 ## [0.17.0] - 2026-09-25
 
 ### A delivery loop that outlives the session
