@@ -352,6 +352,7 @@ func newRetryDeliveryEngine(
 		Publication:  workflow,
 		PullRequests: boundary,
 		Recovery:     recovery,
+		Revalidator:  cleanTestRevalidator{},
 	})
 }
 

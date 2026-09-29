@@ -278,6 +278,17 @@ and its reasons, points to `roundfix deliver plan`, and records no queue. A
 strict Spec-check finding appears in the plan but does not refuse start; the
 queue revalidates that Spec against its own starting main.
 
+After the item worktree is created from that main and before the first Run,
+Roundfix runs the strict Spec Consistency Check in the worktree. A finding
+parks the item as `revalidation-failed: <code>, <code>` before any Run starts.
+
+Revalidation also compares the Spec's declared production Go `interface:`
+paths with the merge commits of earlier queue items. An overlap records
+`premise-changed: <path>, <path> (merge <sha>, <sha>)` as a warning and the item
+continues to its Run. `deliver status` prints `Warning: <slug> <warning>` after
+the item rows, and the delivery console log prints `roundfix: warning: Delivery
+Queue item <slug>: <warning>`. No overlap adds no warning or log line.
+
 A blocker parks its item with a reason and the queue continues with later
 items. On resume, the owner reconciles every recorded action without a receipt
 against observed state before retrying it, so a lost acknowledgement cannot
@@ -289,9 +300,12 @@ stop` ends the detached owner; `deliver resume` restarts it from the persisted
 queue.
 
 `roundfix deliver retry <slug>` returns one parked item to the queue. For an
-active Spec, it first carries the settled Tasks of the item's recorded Run to
-the item branch, so a later Run executes only unfinished Tasks. It then selects
-the re-entry stage from the evidence on that branch:
+active Spec that has not run, it first repeats the strict check in the item
+worktree and refuses while findings remain, leaving the item unchanged. It
+then carries the settled Tasks of any recorded Run to the item branch, so a
+later Run executes only unfinished Tasks. A retry does not change a recorded
+`premise-changed` warning. It selects the re-entry stage from the evidence on
+that branch:
 
 | Recorded evidence | Re-entry stage |
 | --- | --- |

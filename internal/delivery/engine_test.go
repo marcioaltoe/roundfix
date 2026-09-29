@@ -38,6 +38,7 @@ func TestDeliveryEngineMergesAQueueWithoutAnOperator(t *testing.T) {
 		Authorizer:   workflow,
 		Publication:  workflow,
 		PullRequests: boundary,
+		Revalidator:  cleanTestRevalidator{},
 	})
 	if _, err := engine.Run(ctx, gitRoot); err != nil {
 		t.Fatalf("run Delivery Engine: %v", err)
@@ -782,11 +783,18 @@ func newTestDeliveryEngineWithWait(
 		Authorizer:    workflow,
 		Publication:   workflow,
 		PullRequests:  boundary,
+		Revalidator:   cleanTestRevalidator{},
 		Clock:         clock,
 		Sleeper:       sleeper,
 		CheckTimeout:  10 * time.Minute,
 		CheckInterval: time.Second,
 	})
+}
+
+type cleanTestRevalidator struct{}
+
+func (cleanTestRevalidator) Revalidate(context.Context, string, string, []string) (Revalidation, error) {
+	return Revalidation{}, nil
 }
 
 func openDeliveryEngineStore(t *testing.T, ctx context.Context) *store.Store {

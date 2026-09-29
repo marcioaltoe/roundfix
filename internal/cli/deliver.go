@@ -263,6 +263,11 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 		}
 		fmt.Fprintf(stdout, "%s\t%s\t%s\t%s\n", item.SpecSlug, item.Stage, blocker, itemWorktree)
 	}
+	for _, item := range queue.Items {
+		if item.Warning != "" {
+			fmt.Fprintf(stdout, "Warning: %s %s\n", item.SpecSlug, item.Warning)
+		}
+	}
 	return exitOK
 }
 

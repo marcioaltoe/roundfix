@@ -511,6 +511,7 @@ func TestDeliverNeverTouchesTheUserCheckout(t *testing.T) {
 		Authorizer:   flow,
 		Publication:  flow,
 		PullRequests: flow,
+		Revalidator:  flow,
 	})
 
 	if _, err := engine.Run(ctx, checkout); err != nil {
@@ -562,6 +563,7 @@ func TestParkLeavesTheItemWorktreeInPlace(t *testing.T) {
 		Authorizer:   flow,
 		Publication:  flow,
 		PullRequests: flow,
+		Revalidator:  flow,
 	})
 
 	if _, err := engine.Run(t.Context(), checkout); err != nil {
@@ -908,6 +910,7 @@ func newDeliveryLifecycleTestEngine(
 		Authorizer:   flow,
 		Publication:  flow,
 		PullRequests: flow,
+		Revalidator:  flow,
 	})
 }
 
@@ -1048,6 +1051,7 @@ func resumeArchivedDelivery(t *testing.T, repository string, reviewedHead string
 		Authorizer:   flow,
 		Publication:  flow,
 		PullRequests: flow,
+		Revalidator:  flow,
 	})
 	if _, err := engine.Run(t.Context(), repository); err != nil {
 		t.Fatalf("resume Delivery Engine after archive commit: %v", err)
@@ -1140,6 +1144,15 @@ type parkTestDeliveryFlow struct {
 	runCalls     int
 	remoteHeads  map[string]string
 	pullRequests map[string]delivery.PullRequest
+}
+
+func (*parkTestDeliveryFlow) Revalidate(
+	context.Context,
+	string,
+	string,
+	[]string,
+) (delivery.Revalidation, error) {
+	return delivery.Revalidation{}, nil
 }
 
 func (flow *parkTestDeliveryFlow) CreateItemBranch(context.Context, string, string) (string, string, error) {

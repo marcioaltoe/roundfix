@@ -339,6 +339,17 @@ and its reasons, points to `roundfix deliver plan`, and records no queue. A
 strict Spec-check finding appears in the plan but does not refuse start; the
 queue revalidates that Spec against its own starting main.
 
+After the item worktree is created from that main and before the first Run,
+Roundfix runs the strict Spec Consistency Check in the worktree. A finding
+parks the item as `revalidation-failed: <code>, <code>` before any Run starts.
+
+Revalidation also compares the Spec's declared production Go `interface:`
+paths with the merge commits of earlier queue items. An overlap records
+`premise-changed: <path>, <path> (merge <sha>, <sha>)` as a warning and the item
+continues to its Run. `deliver status` prints `Warning: <slug> <warning>` after
+the item rows, and the delivery console log prints `roundfix: warning: Delivery
+Queue item <slug>: <warning>`. No overlap adds no warning or log line.
+
 A blocker parks its item with a reason; it does not stop later queued items.
 When a queue resumes, it reconciles every recorded action that lacks a receipt
 against the observed remote state before retrying that action. This prevents a
@@ -347,11 +358,13 @@ publication, the Spec authorization record must grant all three operations:
 `push`, `pull_request`, and `merge`.
 
 Use `roundfix deliver retry <slug>` to return one parked item to the queue.
-For an active Spec, Roundfix first carries the settled Tasks of the item's Run
-to the item branch. The item then re-enters at `running` when any Task is
-unfinished or at `reviewing` when every Task is completed. An archived Spec
-re-enters at `gating` without a recorded pull request or at `checking` with
-one.
+For an active Spec that has not run, Roundfix first repeats the strict check in
+the item worktree and refuses while findings remain, leaving the item
+unchanged. It then carries the settled Tasks of any recorded Run to the item
+branch. A retry does not change a recorded `premise-changed` warning. The item
+re-enters at `running` when any Task is unfinished or at `reviewing` when every
+Task is completed. An archived Spec re-enters at `gating` without a recorded
+pull request or at `checking` with one.
 
 The retry hands the item to the recorded owner only when Roundfix proves that
 process is alive and has the recorded identity. A dead or unproven owner record
