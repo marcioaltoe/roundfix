@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0179-review-findings-with-evidence-and-no-unselected-providers
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
