@@ -493,16 +493,27 @@ func (workflow *commandDeliveryWorkflow) Review(ctx context.Context, gitRoot, _ 
 }
 
 func deliveryReviewResult(record reviewRecord, head string) (delivery.ReviewResult, error) {
+	result := delivery.ReviewResult{
+		Head:          record.HeadCommit,
+		ArchivedSpecs: slices.Clone(record.ArchivedSpecs),
+	}
 	if strings.TrimSpace(record.HeadCommit) != strings.TrimSpace(head) {
-		return delivery.ReviewResult{Outcome: delivery.ReviewOutcomeBlocked, Head: record.HeadCommit, Reason: "review record names a different head"}, nil
+		result.Outcome = delivery.ReviewOutcomeBlocked
+		result.Reason = "review record names a different head"
+		return result, nil
 	}
 	switch record.Outcome {
 	case reviewOutcomeReviewed, reviewOutcomeFindingsDismissed:
-		return delivery.ReviewResult{Outcome: delivery.ReviewOutcomeReviewed, Head: record.HeadCommit}, nil
+		result.Outcome = delivery.ReviewOutcomeReviewed
+		return result, nil
 	case reviewOutcomeFindings:
-		return delivery.ReviewResult{Outcome: delivery.ReviewOutcomeFindings, Head: record.HeadCommit, Reason: record.Findings}, nil
+		result.Outcome = delivery.ReviewOutcomeFindings
+		result.Reason = record.Findings
+		return result, nil
 	case reviewOutcomeBlocked:
-		return delivery.ReviewResult{Outcome: delivery.ReviewOutcomeBlocked, Head: record.HeadCommit, Reason: record.Reason}, nil
+		result.Outcome = delivery.ReviewOutcomeBlocked
+		result.Reason = record.Reason
+		return result, nil
 	default:
 		return delivery.ReviewResult{}, fmt.Errorf("review record outcome %q cannot drive delivery", record.Outcome)
 	}

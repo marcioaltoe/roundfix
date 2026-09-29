@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0179-review-findings-with-evidence-and-no-unselected-providers
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -136,3 +136,44 @@ confirmed this policy on 2026-09-28, and this Task records it as ADR-0165.
 - [_techspec.md](_techspec.md) — A blocking review after archive
 - `_prd.md` → Goal 4; Core Feature 4; Success Metric 4
 - `_techspec.md` → API Contracts 1 and 5; Testing Approach 4
+
+## Result
+
+Implementation-ready behavior:
+
+- Review candidate context discovery now records every changed archived Spec
+  slug independently of whether its context is carried or skipped. Review
+  records always encode `archivedSpecs`, preserve it on reused findings, and
+  emit one corrective-Spec stderr line only for findings with archived Specs.
+- Delivery review mapping carries archived Specs. Findings with archived Specs
+  park as sorted `corrective-spec-required: <slug>[, <slug>]`; findings without
+  them retain `review-findings`.
+- Delivery retry handles `corrective-spec-required` before archived and
+  carry-forward paths. It refuses a moved head without changing the stored
+  item and returns an unchanged head to `reviewing` without carry-forward.
+- The command guide, canonical and shipped Roundfix skills, glossary, and
+  accepted ADR-0165 record the operator contract and the maintainer-confirmed
+  authority boundary.
+
+Focused checks:
+
+- `GOCACHE=/tmp/roundfix-task04-gocache go test -count=1 -run '^(TestReviewRecordsTheSpecsACandidateArchives|TestReviewRecordsNoArchivedSpecForAnActiveSpec|TestReviewNamesTheCorrectiveSpecForFindingsAfterArchive|TestReviewAfterArchiveWithoutFindingsNamesNoCorrectiveSpec|TestDeliveryReviewResultCarriesArchivedSpecs)$' ./internal/cli` — passed.
+- `GOCACHE=/tmp/roundfix-task04-gocache go test -count=1 -run '^(TestDeliveryEngineParksFindingsAfterArchiveAsCorrectiveSpecRequired|TestDeliveryEngineParksFindingsWithoutArchiveAsReviewFindings|TestRetryRefusesACorrectiveSpecItemWhoseHeadMoved|TestRetryReturnsAnUnchangedCorrectiveSpecItemToReviewing)$' ./internal/delivery` — passed.
+- `make skills-sync` and `diff -r .agents/skills/roundfix skills/roundfix` — regenerated the shipped copy and confirmed it matches the canonical skill.
+- `GOCACHE=/tmp/roundfix-task04-gocache make baseline-digests` — passed and reported no derived changes.
+- `GOCACHE=/tmp/roundfix-task04-gocache make verify-incremental` — the sandboxed run reached the suite but could not inspect the host process table in two force-stop integration tests; the permission-enabled rerun passed, including `internal/cli`, `internal/delivery`, skill checks, and the build.
+- `git diff --check` — passed.
+
+Acceptance evidence:
+
+- A review record names every Spec its candidate archives: the archived-Spec
+  review tests cover sorted carried and skipped slugs, `[]` for an active Spec,
+  and preservation on reuse.
+- A findings verdict parks with the required blocker split: delivery tests
+  cover sorted `corrective-spec-required` slugs and the unchanged
+  `review-findings` negative case.
+- Retry behavior is head-bound: delivery tests cover moved-head refusal with
+  an unchanged stored item and unchanged-head re-entry at `reviewing` with no
+  carry-forward call.
+
+Follow-ups: none discovered within this Task's slice.

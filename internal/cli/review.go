@@ -72,6 +72,7 @@ type reviewRecord struct {
 	AnswerPath           string                     `json:"answerPath,omitempty"`
 	Specs                []string                   `json:"specs"`
 	SkippedSpecs         []string                   `json:"skippedSpecs"`
+	ArchivedSpecs        []string                   `json:"archivedSpecs"`
 	SpecContextTruncated bool                       `json:"specContextTruncated"`
 }
 
@@ -127,18 +128,22 @@ func newReviewRecord(
 	outcome reviewOutcome,
 ) reviewRecord {
 	return reviewRecord{
-		Repository:   repository,
-		BaseCommit:   baseCommit,
-		HeadCommit:   headCommit,
-		Provider:     policy.Provider,
-		Source:       policy.Source,
-		Outcome:      outcome,
-		Specs:        []string{},
-		SkippedSpecs: []string{},
+		Repository:    repository,
+		BaseCommit:    baseCommit,
+		HeadCommit:    headCommit,
+		Provider:      policy.Provider,
+		Source:        policy.Source,
+		Outcome:       outcome,
+		Specs:         []string{},
+		SkippedSpecs:  []string{},
+		ArchivedSpecs: []string{},
 	}
 }
 
 func writeReviewRecord(writer io.Writer, record reviewRecord) error {
+	if record.ArchivedSpecs == nil {
+		record.ArchivedSpecs = []string{}
+	}
 	if err := validateReviewRecord(record); err != nil {
 		return err
 	}
@@ -162,6 +167,9 @@ func readReviewRecord(path string) (reviewRecord, error) {
 	}
 	if record.Outcome == reviewOutcomeFindings && len(record.FindingItems) == 0 {
 		record.FindingItems = splitReviewFindings(record.Findings)
+	}
+	if record.ArchivedSpecs == nil {
+		record.ArchivedSpecs = []string{}
 	}
 	return record, nil
 }
@@ -322,9 +330,10 @@ type reviewSpecContext struct {
 }
 
 type reviewSpecContextResult struct {
-	contexts  []reviewSpecContext
-	skipped   []string
-	truncated bool
+	contexts      []reviewSpecContext
+	skipped       []string
+	archivedSpecs []string
+	truncated     bool
 }
 
 func appendReviewSpecContexts(prompt string, result reviewSpecContextResult) string {
@@ -472,6 +481,7 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		record.Specs = append(record.Specs, context.slug)
 	}
 	record.SkippedSpecs = append([]string{}, specContext.skipped...)
+	record.ArchivedSpecs = append([]string{}, specContext.archivedSpecs...)
 	record.SpecContextTruncated = specContext.truncated
 	record, code := classifyReviewCommandResult(record, result, runErr)
 	if !promptSent {
@@ -974,6 +984,7 @@ func reviewCandidateSpecContexts(
 	if len(specRoots) == 0 {
 		return reviewSpecContextResult{}, nil
 	}
+	activeRoot := strings.TrimSuffix(filepath.ToSlash(specRoots[0]), "/")
 	roots := append([]string(nil), specRoots...)
 	sort.Slice(roots, func(left, right int) bool {
 		return len(roots[left]) > len(roots[right])
@@ -1031,9 +1042,20 @@ func reviewCandidateSpecContexts(
 	})
 
 	result := reviewSpecContextResult{
-		contexts: make([]reviewSpecContext, 0, len(locations)),
-		skipped:  []string{},
+		contexts:      make([]reviewSpecContext, 0, len(locations)),
+		skipped:       []string{},
+		archivedSpecs: []string{},
 	}
+	archivedSlugs := make(map[string]struct{})
+	for _, location := range locations {
+		if strings.TrimSuffix(filepath.ToSlash(location.root), "/") != activeRoot {
+			archivedSlugs[location.slug] = struct{}{}
+		}
+	}
+	for slug := range archivedSlugs {
+		result.archivedSpecs = append(result.archivedSpecs, slug)
+	}
+	sort.Strings(result.archivedSpecs)
 	seenSlugs := make(map[string]struct{}, len(locations))
 	for _, location := range locations {
 		slug := location.slug
@@ -1441,6 +1463,13 @@ func finishReviewCommand(stdout, stderr io.Writer, artifactDir string, record re
 	}
 	if record.Outcome == reviewOutcomeBlocked {
 		printReviewCommandFailure(errors.New(record.Reason), stderr)
+	}
+	if record.Outcome == reviewOutcomeFindings && len(record.ArchivedSpecs) > 0 {
+		fmt.Fprintf(
+			stderr,
+			"roundfix: review findings name archived Specs %s; an archived Spec is never corrected in place; author a corrective Spec with its own authorization and QA gate\n",
+			strings.Join(record.ArchivedSpecs, ", "),
+		)
 	}
 	return code
 }

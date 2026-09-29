@@ -12,16 +12,17 @@ import (
 )
 
 const (
-	BlockerRunUnresolved       = "run-unresolved"
-	BlockerReviewFindings      = "review-findings"
-	BlockerReviewBlocked       = "review-blocked"
-	BlockerReviewStale         = "review-stale"
-	BlockerGateFailed          = "gate-failed"
-	BlockerChecksFailed        = "checks-failed"
-	BlockerChecksTimeout       = "checks-timeout"
-	BlockerUnauthorized        = "unauthorized"
-	BlockerDeliveryError       = "delivery-error"
-	BlockerItemWorktreeMissing = "item-worktree-missing"
+	BlockerRunUnresolved          = "run-unresolved"
+	BlockerReviewFindings         = "review-findings"
+	BlockerReviewBlocked          = "review-blocked"
+	BlockerReviewStale            = "review-stale"
+	BlockerCorrectiveSpecRequired = "corrective-spec-required"
+	BlockerGateFailed             = "gate-failed"
+	BlockerChecksFailed           = "checks-failed"
+	BlockerChecksTimeout          = "checks-timeout"
+	BlockerUnauthorized           = "unauthorized"
+	BlockerDeliveryError          = "delivery-error"
+	BlockerItemWorktreeMissing    = "item-worktree-missing"
 )
 
 const cleanupWarningPrefix = "warning: cleanup failed"
@@ -65,9 +66,10 @@ type RunResult struct {
 }
 
 type ReviewResult struct {
-	Outcome ReviewOutcome
-	Head    string
-	Reason  string
+	Outcome       ReviewOutcome
+	Head          string
+	Reason        string
+	ArchivedSpecs []string
 }
 
 type ArchiveResult struct {
@@ -296,7 +298,25 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 		return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: inspect item: %w", specSlug, err)
 	}
 	result := RetryResult{SpecSlug: item.SpecSlug, Blocker: item.Blocker}
-	if state.Archived {
+	correctivePrefix := BlockerCorrectiveSpecRequired + ":"
+	if strings.HasPrefix(item.Blocker, correctivePrefix) {
+		archivedSpecs := strings.TrimSpace(strings.TrimPrefix(item.Blocker, correctivePrefix))
+		candidate, err := candidateHead(item)
+		if err != nil {
+			return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: %w", specSlug, err)
+		}
+		head := strings.TrimSpace(state.Head)
+		if head != candidate {
+			return RetryResult{}, fmt.Errorf(
+				"retry Delivery Queue item %q: archived Specs %s were reviewed at parked candidate head %q, but the item head is %q; author a corrective Spec with its own authorization and QA gate",
+				specSlug,
+				archivedSpecs,
+				candidate,
+				head,
+			)
+		}
+		item.Stage = store.DeliveryStageReviewing
+	} else if state.Archived {
 		candidate, err := candidateHead(item)
 		if err != nil {
 			return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: %w", specSlug, err)
@@ -583,6 +603,16 @@ func (engine *Engine) reviewCandidate(ctx context.Context, gitRoot string, item 
 		}
 		switch result.Outcome {
 		case ReviewOutcomeFindings:
+			if len(result.ArchivedSpecs) > 0 {
+				archivedSpecs := slices.Clone(result.ArchivedSpecs)
+				slices.Sort(archivedSpecs)
+				return engine.park(
+					ctx,
+					gitRoot,
+					item,
+					BlockerCorrectiveSpecRequired+": "+strings.Join(archivedSpecs, ", "),
+				)
+			}
 			return engine.park(ctx, gitRoot, item, BlockerReviewFindings)
 		case ReviewOutcomeBlocked:
 			return engine.park(ctx, gitRoot, item, BlockerReviewBlocked)

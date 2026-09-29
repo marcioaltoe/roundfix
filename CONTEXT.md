@@ -99,6 +99,10 @@ _Avoid_: Review Issue resolution, unrecorded operator decision, finding deletion
 One Spec's planning artifact set produced by the spec workflow: PRD, Task Graph, Task files, QA evidence, and adopted sources under `references/` with provenance recorded in `references/_index.md`.
 _Avoid_: Feature folder, epic, project
 
+**Corrective Spec**:
+A new Spec, with its own authorization and QA gate, that corrects a finding on an archived Spec; the archived Spec is never edited in place.
+_Avoid_: Corrective Task, archive edit, inherited authorization
+
 **Supersession**:
 A durable lifecycle record that names the Spec which delivered another Spec's content. The Archive Command accepts it as proof of completion for the superseded Spec when that Spec has no Task Graph.
 _Avoid_: Replacement, duplicate, hand-written disposition

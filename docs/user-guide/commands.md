@@ -244,6 +244,15 @@ section, a PRD, or a TechSpec is skipped, its slug is listed in the record's
 `skippedSpecs`, and the review proceeds with the remaining context. The
 record's `specs` names the Specs whose context was carried.
 
+The record's `archivedSpecs` field always lists the sorted slugs of changed
+Spec folders under the resolved archive root, including folders whose context
+was skipped; it is always present and is `[]` when the candidate archives no
+Spec. When a findings verdict has archived Specs, stderr names those slugs,
+says that an archived Spec is never corrected in place, and tells the operator
+to author a corrective Spec with its own authorization and QA gate. Delivery
+parks that review as `corrective-spec-required`; a no-findings verdict prints
+no corrective-Spec line.
+
 Spec context is bounded at 32 KiB per Spec and 64 KiB in total. When context is
 truncated, the prompt includes `[Spec context truncated]` and the record sets
 `specContextTruncated` to true. The reviewer judges the delivery against the
@@ -296,6 +305,12 @@ against observed state before retrying it, so a lost acknowledgement cannot
 create a duplicate pull request or merge. Publication requires the Spec's
 authorization record to grant `push`, `pull_request`, and `merge`.
 
+A findings verdict with archived Specs parks as
+`corrective-spec-required: <slug>[, <slug>]`; findings without archived Specs
+still park as `review-findings`. `deliver status` prints either blocker. No Run
+budget, corrective-Task ceiling, or queue grant authorizes the new corrective
+Spec, and Roundfix never authors or starts it.
+
 `deliver status` prints each item's Spec slug, stage, and blocker. `deliver
 stop` ends the detached owner; `deliver resume` restarts it from the persisted
 queue.
@@ -316,6 +331,8 @@ changes.
 | Active Spec with every Task completed | `reviewing` |
 | Archived Spec with no recorded pull request | `gating` |
 | Archived Spec with a recorded pull request | `checking` |
+| `corrective-spec-required` with the parked candidate head unchanged | `reviewing`, without Task Carry-Forward |
+| `corrective-spec-required` after the item head moved | Refused with exit `2`; the item stays unchanged and the operator must author a corrective Spec with its own authorization and QA gate |
 
 After the retry, a live owner whose identity Roundfix proves keeps the queue
 and stdout reports `Handed <slug> to Delivery Queue owner PID <pid>.`. If the
