@@ -195,8 +195,9 @@ auditor field accepted would each pass a happy-path test.
 The outside-evidence row rests on history this Spec did not write: Spec 0172's
 retained commits `256ad156..ebac7cbe` and the QA Reports of Specs 0171, 0172 and
 0174. Replayed in a disposable clone, the built tree's commit selection must
-list every Task commit of Spec 0172, including task_01 to task_04 from before
-its `chore: merge main into 0172` commit. The staleness those reports recorded
+list every Task commit of Spec 0172 that changes a governed path (the
+authorization audit selects only those, by design), including task_01, task_02
+and task_04 from before its `chore: merge main into 0172` commit. The staleness those reports recorded
 as `stale` is recomputed against each audited head's Delivery Base: measured on
 2026-09-28, the 0171 heads have Delivery Base `256ad156` and the 0174 head
 `3e6cfe9f` has `f0faa780`, each equal to the Daemon build that audited it, so
