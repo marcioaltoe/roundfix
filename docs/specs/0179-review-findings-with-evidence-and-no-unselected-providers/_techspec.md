@@ -267,7 +267,8 @@ with `status: accepted`:
 2. Finding identity and dispositions (depends on: 1).
 3. The verdict stands for its head (depends on: 2).
 4. A blocking review after archive (depends on: 3).
-5. Terminal QA (depends on: 1, 2, 3, 4, 6).
+5. Terminal QA (depends on: 1, 2, 3, 4, 6, 7).
+7. The revision option guard (depends on: 6).
 6. The atomic disposition reservation (depends on: 4).
 
 ## Risks & Considerations
