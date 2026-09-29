@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0179-review-findings-with-evidence-and-no-unselected-providers
-status: failed
+status: pending
 type: qa
 complexity: medium
 ---
@@ -75,7 +75,11 @@ Tasks name.
 10. MUST verify from Git evidence that the changed files stay inside the Task
     declarations and that the only governed paths changed are the ones
     `_authorization.md` bounds.
-11. MUST NOT accept a row whose only evidence is that a file was read.
+11. MUST record every row an Unreachable Acceptance declaration covers, including
+   the Pull Request row, as `blocked (declared: <criterion>)` citing its
+   declaration, never as an environment block, because a qualifying `partial`
+   requires `rows_blocked_environment: 0`.
+12. MUST NOT accept a row whose only evidence is that a file was read.
 
 ## Subtasks
 
