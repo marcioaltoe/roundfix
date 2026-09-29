@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0177-runs-that-fit-their-budget-and-park-honestly
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
