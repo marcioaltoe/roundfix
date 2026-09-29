@@ -1086,7 +1086,7 @@ A report whose front matter is empty or duplicated is unreadable and refused;
 archive leaves the Spec and report in place.
 
 Every other refusal is unchanged: a finding-blocked row, an
-environment-blocked row, a declared count not covered by the Spec's
+environment-blocked row other than the pre-PR Pull Request row, a declared count not covered by the Spec's
 declarations, or `verdict: fail` exits `2` and names the first unmet condition.
 `qa_override` keeps its existing meaning for explicitly authorized archival
 when the normal QA prerequisite is unmet; declared unreachability does not use
@@ -1112,7 +1112,10 @@ roundfix qa-report accept <path>
 ```
 
 Reads the selected QA Report and exits zero only when the shared archive and
-settlement eligibility decision accepts it. A `pending` verdict is never
+settlement eligibility decision accepts it. The pre-PR Pull Request row,
+recorded as `blocked (environment: no open Pull Request)` with the Pull Request
+row named in its provenance, never decides a qualifying partial and needs no
+Unreachable Acceptance declaration. A `pending` verdict is never
 accepted, and a `pass` or otherwise-eligible `partial` that records no QA row
 is refused. A report whose front matter is empty or duplicated is unreadable
 and refused. The command writes no files.

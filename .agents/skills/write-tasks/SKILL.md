@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.2
+  version: 0.0.3
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.2
+version: 0.0.3
 ---
 
 # Write Tasks
@@ -89,6 +89,11 @@ by each Task file. The preflight never moves either responsibility.
   is refused with `SC-TOOLING-UNDECLARED`. A Task naming a CLI surface names
   its skill or guide itself or through a Task it depends on; otherwise it is
   reported with `SC-CLI-UNDOCUMENTED`.
+
+The Daemon records a path a Task changed without declaring it under
+`## Recorded paths` at commit. The QA scope audit counts that recorded path as
+declared, and recording discloses a change and reserves nothing. Declaring
+every foreseeable path stays the rule.
 
 ## Decomposition rules
 

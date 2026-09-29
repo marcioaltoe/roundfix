@@ -119,6 +119,13 @@ _Avoid_: Specs directory, docs folder, knowledge base
 One implementable unit of work within a Spec. Its task file is the sole owner of its status.
 _Avoid_: Subtask, story, ticket
 
+**Recorded Path**:
+A path the Daemon records under a Task file's `## Recorded paths` section when
+the Task changed it without declaring it. The QA scope audit counts it as
+declared and names it in the scope row; recording discloses a change and
+reserves nothing, while a Governed Path still needs its authorization.
+_Avoid_: Declared path, reserved path, authorized path
+
 **Task Type**:
 The required classification that routes a Task to its Agent Selection Profile. The valid values are `backend`, `frontend`, `data`, `infra`, `docs`, `test`, and `chore`; use the dominant implementation surface when a Task crosses more than one.
 _Avoid_: Task category, work type, inferred type
@@ -140,7 +147,7 @@ The universal Normative Clause that forbids changes to linter, formatter, and to
 _Avoid_: Tool preference, implicit permission, cleanup authorization
 
 **QA Report**:
-The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict, its Auditing Binary as `auditing_binary`, `auditor_staleness`, and the public-row binary's `--version` line as `user_flow_binary`, plus `rows_blocked_environment`, `rows_blocked_finding`, and `rows_blocked_declared` counts in its frontmatter. The auditor fields are Daemon-owned: the gate keeps the seeded `auditing_binary` and `auditor_staleness` values. A report recording a Precondition Refusal carries `rows_blocked_precondition` beside those counts, plus the `precondition_check` and `precondition_reason` keys that name the refusal; a gate that reached its matrix writes none of those three. A `pending` verdict is never accepted, a report that records no QA row is refused, and a report whose front matter is empty or duplicated is unreadable and refused; only the newest report in the directory is read by a later run's mechanical stage, so a superseded report blocks nothing.
+The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict, its Auditing Binary as `auditing_binary`, `auditor_staleness`, and the public-row binary's `--version` line as `user_flow_binary`, plus `rows_blocked_environment`, `rows_blocked_finding`, and `rows_blocked_declared` counts in its frontmatter. The auditor fields are Daemon-owned: the gate keeps the seeded `auditing_binary` and `auditor_staleness` values. A report recording a Precondition Refusal carries `rows_blocked_precondition` beside those counts, plus the `precondition_check` and `precondition_reason` keys that name the refusal; a gate that reached its matrix writes none of those three. The pre-PR Pull Request row, recorded as `blocked (environment: no open Pull Request)` with the Pull Request row named in its provenance, never decides a qualifying partial and needs no Unreachable Acceptance declaration. A `pending` verdict is never accepted, a report that records no QA row is refused, and a report whose front matter is empty or duplicated is unreadable and refused; only the newest report in the directory is read by a later run's mechanical stage, so a superseded report blocks nothing.
 _Avoid_: Test report, QA log
 
 **Auditing Binary**:
@@ -552,7 +559,7 @@ The support command that upgrades an older Run Database to the binary's schema v
 _Avoid_: Automatic migration, database downgrade, schema compatibility mode
 
 **Spec Consistency Check**:
-The read-only, pre-Run support command that compares a Spec's written citations, declarations, and cross-references. It reports consistency findings and never edits artifacts or emits a QA verdict.
+The read-only, pre-Run support command that compares a Spec's written citations, declarations, and cross-references. It uses an ADR horizon: `SC-ADR-RELATED` reports an ADR for a committed Spec only when the commit that added the ADR is an ancestor of the commit that added the Spec's `_prd.md`. It reports consistency findings and never edits artifacts or emits a QA verdict.
 _Avoid_: QA gate, Spec validator, inference engine
 
 **Consistency Finding Severity**:

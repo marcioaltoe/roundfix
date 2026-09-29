@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0181-gates-that-refuse-only-what-someone-can-act-on
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -69,3 +69,65 @@ task_01, task_02 and task_03 change three gates. After them, the owned skills, t
 - `_techspec.md` → Testing Approach 4
 
 ## Result
+
+Implementation evidence:
+
+- `.agents/skills/qa-gate/SKILL.md` now declares version `0.0.3`, documents the
+  pre-PR Pull Request row exception in settlement and Pull Request journeys,
+  and counts `## Recorded paths` as declared for ordinary scope rows while
+  retaining Governed Path authorization.
+- `.agents/skills/write-tasks/SKILL.md` now declares version `0.0.3` and states
+  that the Daemon records undeclared paths under `## Recorded paths`, that the
+  QA scope audit counts them as declared, and that recording discloses a change
+  and reserves nothing.
+- `.agents/skills/roundfix/SKILL.md` now names the pre-PR Pull Request row in
+  settlement and archive eligibility text and names `## Recorded paths` in
+  Task-settlement commit guidance.
+- `docs/user-guide/commands.md`,
+  `docs/user-guide/context-driven-development.md`, and `CONTEXT.md` now carry
+  the pre-PR Pull Request row exception; the latter two carry the ADR horizon,
+  and `CONTEXT.md` defines **Recorded Path**.
+- `make skills-sync` passed and rewrote only the three distributed mirrors:
+  `skills/qa-gate/SKILL.md`, `skills/write-tasks/SKILL.md`, and
+  `skills/roundfix/SKILL.md`. `make baseline-digests` passed with
+  `changed:false` and rewrote no path.
+
+Acceptance-criterion evidence:
+
+- Canonical `qa-gate`: focused phrase/version scan passed for the pre-PR row,
+  `## Recorded paths`, and both `0.0.3` declarations.
+- Canonical `write-tasks`: focused phrase/version scan passed for
+  `## Recorded paths`, `reserves nothing`, and both `0.0.3` declarations.
+- Canonical Roundfix: focused phrase scan passed for the pre-PR row and
+  `## Recorded paths`.
+- Mirrors: `cmp` passed for all three canonical/mirror pairs; `git diff --check`
+  passed. The declared `make skills-sync-check` command was not run because it
+  is part of Daemon-owned Task Verification.
+- Guides and glossary: focused phrase scan passed for the exception, horizon,
+  and `**Recorded Path**` definition.
+
+Focused checks:
+
+- `make skills-sync`: passed.
+- `make baseline-digests`: passed; `changed:false`.
+- `cmp` for all three skill pairs: passed.
+- `git diff --check`: passed.
+- With a task-scoped `GOCACHE`, the focused process-table tests passed with
+  host permission: `TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion`
+  and `TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner`.
+- `make verify-incremental`: failed first on host process-table permission and
+  on `TestSettlementGuidanceIsOneTable`; the process-table failures were
+  cleared by the focused elevated rerun above. The settlement contract still
+  compares the required changed `qa-gate` table with the unchanged
+  upstream-managed `.agents/skills/archive-spec/SKILL.md`. Updating that path
+  is outside this Task's authorization; follow up with a separately authorized
+  alignment of that shared contract.
+- The focused `TestSettlementGuidanceIsOneTable` rerun reproduced that same
+  out-of-slice mismatch. No status field was changed, no other Task file or
+  Task Graph manifest was edited, and no commit, push, or pull request was
+  created.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260929T170240Z_b8558d4fb9103028`
+- Source commit: `65fd04b31ab776f093cd475131545413376c3965`
