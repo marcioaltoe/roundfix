@@ -145,7 +145,7 @@ func inspectCarryForwards(
 		if err != nil {
 			return nil, fmt.Errorf("read checkout HEAD for Run %q carry-forward proof: %w", run.ID, err)
 		}
-		stagingWorktree, cleanup, err := createCarryForwardStaging(ctx, repository, checkoutHead)
+		stagingWorktree, cleanup, err := createCarryForwardStaging(ctx, repository, checkoutHead, "")
 		if err != nil {
 			return nil, err
 		}
@@ -358,39 +358,25 @@ func createCarryForwardStaging(
 	ctx context.Context,
 	repository string,
 	checkoutHead string,
+	parent string,
 ) (string, func() error, error) {
-	tempRoot, err := os.MkdirTemp("", "roundfix-carry-forward-")
+	staging, err := runworktree.AddCarryForwardStaging(ctx, repository, checkoutHead, parent)
 	if err != nil {
-		return "", nil, fmt.Errorf("create carry-forward staging directory: %w", err)
-	}
-	stagingWorktree := filepath.Join(tempRoot, "worktree")
-	if _, err := reconcileGitRaw(ctx, repository, "worktree", "add", "--detach", stagingWorktree, checkoutHead); err != nil {
-		return "", nil, errors.Join(
-			fmt.Errorf("create carry-forward staging Worktree: %w", err),
-			os.RemoveAll(tempRoot),
-		)
+		return "", nil, err
 	}
 	cleanup := func() error {
-		_, worktreeErr := reconcileGitRaw(context.Background(), repository, "worktree", "remove", "--force", stagingWorktree)
-		if worktreeErr != nil {
-			worktreeErr = fmt.Errorf("remove carry-forward staging Worktree: %w", worktreeErr)
-		}
-		removeErr := os.RemoveAll(tempRoot)
-		if removeErr != nil {
-			removeErr = fmt.Errorf("remove carry-forward staging directory: %w", removeErr)
-		}
-		return errors.Join(worktreeErr, removeErr)
+		return staging.Remove(context.Background())
 	}
 	checkoutPatch, err := reconcileGitRaw(ctx, repository, "diff", "--binary", "--full-index", "HEAD", "--")
 	if err != nil {
 		return "", nil, errors.Join(fmt.Errorf("read checkout changes for carry-forward staging: %w", err), cleanup())
 	}
 	if len(checkoutPatch) > 0 {
-		if _, err := reconcileGitRawInput(ctx, stagingWorktree, checkoutPatch, "apply", "--binary", "--whitespace=nowarn", "-"); err != nil {
+		if _, err := reconcileGitRawInput(ctx, staging.Worktree, checkoutPatch, "apply", "--binary", "--whitespace=nowarn", "-"); err != nil {
 			return "", nil, errors.Join(fmt.Errorf("apply checkout changes to carry-forward staging Worktree: %w", err), cleanup())
 		}
 	}
-	return stagingWorktree, cleanup, nil
+	return staging.Worktree, cleanup, nil
 }
 
 func stageCarryForwardCandidate(ctx context.Context, stagingWorktree string, candidate spec.CarryForward) error {

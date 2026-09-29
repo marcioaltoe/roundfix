@@ -244,7 +244,10 @@ A parked item keeps its worktree, and `deliver status` prints that path. On
 resume, Roundfix recreates a missing worktree from its recorded branch; if the
 branch is missing too, it parks the item as `item-worktree-missing` instead of
 replaying the stage. After an item merges, its worktree and local item branch
-are removed.
+are removed. Before that removal, Roundfix releases every terminal Run of the
+merged Spec that it can prove is represented at the recorded merged head. A
+Run it cannot prove stays in place, and `deliver status` names the Run and its
+reason in the item's cleanup warning.
 
 A blocker parks its item with a reason and the queue continues with later
 items. On resume, the owner reconciles every recorded action without a receipt
@@ -1016,13 +1019,24 @@ The text report includes the repository, mode, each Run's outcome,
 classification, Run Worktree, Run Branch, target branch, both resolved heads,
 evidence, action, refusal reason, summary counts, and the exact apply command.
 JSON uses the `roundfix-reconcile/v1` envelope with `mode`, `repository`,
-`applyCommand`, `results`, and `summary`.
+`applyCommand`, `results`, and `summary`. Its `stagingCandidates` array reports
+each registered carry-forward staging worktree, its owner PID, proof, action,
+and refusal reason. `debrisSummary.stagingCandidates` counts those entries and
+`debrisSummary.stagingApplied` counts the staging worktrees released in that
+invocation; every existing report field keeps its meaning.
 
-Run Worktree Reconciliation uses five states:
+For a Run of a merged Spec, reconciliation proves the Run against the merged
+head. The Delivery Queue merge record is the primary source; when no usable
+record remains, the default branch carrying the archived Spec is the fallback.
+The existing `evidence` field names the source and proof without changing the
+text or JSON report shape.
+
+Run Worktree Reconciliation uses six states:
 
 | State | Evidence and behavior |
 | --- | --- |
-| `safe` | The Run Branch and recorded target branch resolve, any present Run Worktree is registered and clean including untracked files, and the Run Branch tip is an ancestor of the current target tip. This is the only state eligible for cleanup. |
+| `safe` | The Run Worktree is clean and the Run Branch is contained in its target or merged head, or its changed content is represented at the merged head. Eligible for cleanup after revalidation. |
+| `superseded` | A newer QA Report or the merged-head proof represents the Run's Task or QA Report commits. Eligible for cleanup after revalidation. |
 | `unintegrated` | The worktree cleanliness and ref evidence resolve, but the Run Branch tip is not an ancestor of the target tip. Roundfix preserves the worktree and branch. |
 | `dirty` | A present registered Run Worktree has tracked or untracked changes. Dirty evidence takes precedence and Roundfix preserves the worktree and branch. |
 | `unknown` | Invalid or missing metadata, an unsafe or unregistered worktree, an ambiguous or missing ref, or a Git inspection failure prevents proof. Roundfix preserves every surface it can identify. |
@@ -1066,15 +1080,26 @@ the newest Run to break ties.
 
 `--apply` remains the only switch that releases Run Worktrees.
 
+Reconcile also sweeps registered carry-forward staging worktrees whose path is
+`roundfix-carry-forward-*/worktree`. Dry-run reports every candidate without
+removing it. A staging worktree is stale only when the recorded PID's
+`OwnerProcessIdentity` lookup fails or differs from `owner.json`, or when a
+legacy registration has no owner record and is still `locked initializing`. A
+live matching owner, an unlocked legacy registration, or an unreadable or
+malformed owner record stays in `preservedCandidates` with the refusal reason.
+`--apply` releases stale staging, and `--carry-forward` releases it before
+creating that mode's own staging worktree.
+
 There is no force flag or user assertion that bypasses the proof. Apply acts
-only on entries classified `safe` during that invocation, then rechecks the
-metadata, worktree cleanliness, Run head, target head, and ancestry before
+only on entries classified `safe` or `superseded` during that invocation, then
+rechecks the metadata, worktree cleanliness, Run head, target or merged head,
+and the applicable ancestry, content, Task, and QA Report evidence before
 mutation. It removes the Run Worktree without force, deletes the Run Branch,
 and reports failures while preserving any remaining path or ref. Dirty,
 unintegrated, unknown, and released entries remain successful preserved
 results unless an operational inspection fails.
 
-Before safe cleanup, Roundfix records the reconciliation evidence. A safe
+Before cleanup, Roundfix records the reconciliation evidence. A safe
 Integration Pending Run moves to Clean through the guarded terminal transition;
 every other terminal outcome remains unchanged. The Reconcile Command never
 integrates unique commits, repairs dirty work, chooses another target branch,

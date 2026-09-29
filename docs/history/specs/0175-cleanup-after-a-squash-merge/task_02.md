@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0175-cleanup-after-a-squash-merge
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -78,3 +78,54 @@ wrong key would let one repository's cleanup act on another repository's Run.
 - [_techspec.md](_techspec.md) — Repository keys for legacy Runs
 - `_prd.md` → Core Feature 4; Success Metric 4
 - `_techspec.md` → API Contract 5
+
+## Result
+
+Implemented a re-runnable repository-key repair inside the existing migration
+write transaction. A write-mode open now examines every still-unkeyed Run,
+prefers surviving `git_root` metadata, falls back to a registered `work_dir`,
+and leaves absent or unproven worktrees untouched. The schema remains version
+20, readers remain read-only, and a repeated open performs no row update.
+
+`PruneTerminalReport` now compares durable repository keys. It inspects a
+matching Run through the current canonical checkout and skips a Run whose
+recorded key belongs to another repository.
+
+Focused evidence by acceptance criterion:
+
+- `TestOpenKeysALegacyRunFromItsRunWorktree` passed and observed the repaired
+  Run through `ListRuns` from the main checkout.
+- `TestOpenLeavesALegacyRunUnkeyedWhenItsWorktreeIsGone`,
+  `TestOpenRejectsAWorktreeKeyWithoutACommonDirectory`, and
+  `TestOpenKeysALegacyRunToItsOwnRepository` passed as separate negative
+  cases. The foreign Run was keyed to its owning repository and excluded from
+  the original repository's listing.
+- `TestOpenRepositoryKeyBackfillIsIdempotent` passed with one row change on
+  the repairing open and zero on the second open.
+  `TestOpenReaderDoesNotBackfillRepositoryKeys` also passed.
+- `TestPruneTerminalReportReleasesARunWhoseCheckoutWasRemoved` and
+  `TestPruneTerminalReportSkipsARunKeyedToAnotherRepository` passed. The
+  neighboring empty-branch, archived-evidence, and unique-change prune tests
+  also passed.
+- `TestReconcileReportsALegacyRunKeyedFromItsRunWorktree` passed through the
+  public reconcile runner. The existing removed-linked-worktree and
+  recorded-key-over-checkout-path reconcile tests also passed.
+- `TestJournalConsumerCorpusReplaysEveryConsumer` passed with the backfill
+  active during `store.Open`.
+
+Focused commands:
+
+- `GOCACHE=/private/tmp/roundfix-task-02-gocache go test -count=1 -run '^(TestOpenKeysALegacyRunFromItsRunWorktree|TestOpenLeavesALegacyRunUnkeyedWhenItsWorktreeIsGone|TestOpenRejectsAWorktreeKeyWithoutACommonDirectory|TestOpenKeysALegacyRunToItsOwnRepository|TestOpenRepositoryKeyBackfillIsIdempotent|TestOpenReaderDoesNotBackfillRepositoryKeys|TestJournalConsumerCorpusReplaysEveryConsumer)$' ./internal/store` — passed.
+- `GOCACHE=/private/tmp/roundfix-task-02-gocache go test -count=1 -run '^(TestPruneTerminalReportReleasesARunWhoseCheckoutWasRemoved|TestPruneTerminalReportSkipsARunKeyedToAnotherRepository|TestPruneTerminalReapsOnlyEmptyTerminalRunAndTaskBranches|TestPruneTerminalReportRequiresArchivedEvidence|TestPruneTerminalReconciliationPreservesUniqueChangedBranch)$' ./internal/worktree` — passed.
+- `GOCACHE=/private/tmp/roundfix-task-02-gocache go test -count=1 -run '^(TestReconcileReportsALegacyRunKeyedFromItsRunWorktree|TestReconcileFromMainAfterALinkedWorktreeIsRemoved|TestReconcileTrustsTheRecordedKeyOverTheCheckoutPath)$' ./internal/cli` — passed.
+- `GOCACHE=/private/tmp/roundfix-task-02-gocache make verify-incremental` —
+  the sandboxed attempt was blocked only when two existing force-stop tests
+  could not read the process table; the unchanged command passed with the
+  required host permission.
+
+The Daemon-owned `## Verification` command was not run in this Agent turn.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260928T154312Z_63679c6540b34603`
+- Source commit: `a2cc95ed6999d84f8d4481ed4def96bff8eefe64`

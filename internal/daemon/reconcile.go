@@ -433,7 +433,7 @@ func discardSupersededBranch(ctx context.Context, disposition BranchDisposition)
 		return fmt.Errorf("discard superseded Run Branch %q: disposition proof is stale", disposition.Branch)
 	}
 	if _, err := os.Stat(fresh.Worktree); err == nil {
-		if _, err := runDispositionGit(ctx, evidence.run.GitRoot, "worktree", "remove", fresh.Worktree); err != nil {
+		if err := runworktree.RemoveRegisteredWorktree(ctx, evidence.run.GitRoot, fresh.Worktree); err != nil {
 			return fmt.Errorf("discard superseded Run Branch %q: remove Run Worktree %q: %w", fresh.Branch, fresh.Worktree, err)
 		}
 	} else if !errors.Is(err, os.ErrNotExist) {

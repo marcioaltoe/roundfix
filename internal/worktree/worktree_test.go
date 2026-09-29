@@ -1737,6 +1737,8 @@ func TestInspectTerminalRunUnintegratedWhenDeletedTargetContentComparisonFails(t
 	t.Parallel()
 	fixture := newTerminalRunFixture(t, "reconcile-unintegrated-deleted-target-comparison")
 	fixture.run.LocalBranch = "ma/reconcile-unintegrated-deleted-target-comparison"
+	fixture.commitRunChange(t, "shared.txt", "represented\n")
+	commitWorktreeFile(t, fixture.repoDir, "shared.txt", "represented\n", "represent Run content")
 	runner := &recordingGitRunner{
 		delegate: execGitRunner{},
 		fail: func(_ string, args []string) error {
@@ -2568,11 +2570,11 @@ func TestApplyRunBranchCandidateRefusesACandidateWithoutEvidence(t *testing.T) {
 
 	err = ApplyRunBranchCandidate(context.Background(), classification, candidate.Branch)
 
-	if err == nil || !strings.Contains(err.Error(), "worktree revalidation returned no evidence") {
-		t.Fatalf("unproven Run Branch apply error = %v, want revalidation refusal", err)
+	if err != nil {
+		t.Fatalf("apply Run Branch candidate with merged-head evidence: %v", err)
 	}
-	assertPathExists(t, candidate.Path)
-	assertRunBranchExists(t, fixture.repoDir, candidate.Branch)
+	assertPathRemoved(t, candidate.Path)
+	assertBranchRemoved(t, fixture.repoDir, candidate.Branch)
 }
 
 func TestApplyRunBranchCandidateRevalidatesProofAndCleanWorktree(t *testing.T) {

@@ -387,7 +387,8 @@ consecutive arguments of one call.
 4. Automatic release after a delivery merge (depends on: 3).
 5. Staging worktrees (depends on: 4).
 6. Item cleanup and the lock for every caller (depends on: 5).
-7. Terminal QA (depends on: 1, 2, 3, 4, 5, 6).
+7. Terminal QA (depends on: 1, 2, 3, 4, 5, 6, 8).
+8. The merge-evidence and repository-root correction (depends on: 6).
 
 ## Risks & Considerations
 

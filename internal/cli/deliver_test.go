@@ -1159,6 +1159,10 @@ func (flow *parkTestDeliveryFlow) RemoveItemBranch(context.Context, string, stri
 	return nil
 }
 
+func (flow *parkTestDeliveryFlow) ReleaseMergedRuns(context.Context, string, store.DeliveryQueueItem) error {
+	return nil
+}
+
 func (flow *parkTestDeliveryFlow) RunSpec(_ context.Context, workDir string, slug string) (delivery.RunResult, error) {
 	flow.runWorkDir = workDir
 	flow.runCalls++
