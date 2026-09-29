@@ -112,6 +112,7 @@ type MechanicalResult struct {
 // used, or the unresolved/refused input that prevented that audit from passing.
 type MechanicalAuthorizationRead struct {
 	TaskID  string
+	Commit  string
 	Outcome spec.AuthorizationOutcome
 	Source  spec.AuthorizationSource
 	Reason  spec.AuthorizationReason
@@ -328,7 +329,7 @@ func WriteMechanicalResult(writer io.Writer, result MechanicalResult) error {
 	if len(result.AuthorizationReads) == 0 {
 		report.WriteString("None.\n\n")
 	} else {
-		report.WriteString("| Task | Outcome | Record | Revision | Detail |\n| --- | --- | --- | --- | --- |\n")
+		report.WriteString("| Task | Commit | Outcome | Record | Revision | Detail |\n| --- | --- | --- | --- | --- | --- |\n")
 		for _, read := range result.AuthorizationReads {
 			detail := strings.TrimSpace(read.Reason.Detail)
 			if detail == "" {
@@ -336,6 +337,8 @@ func WriteMechanicalResult(writer io.Writer, result MechanicalResult) error {
 			}
 			report.WriteString("| ")
 			report.WriteString(markdownCell(read.TaskID))
+			report.WriteString(" | ")
+			report.WriteString(markdownCell(read.Commit))
 			report.WriteString(" | ")
 			report.WriteString(markdownCell(string(read.Outcome)))
 			report.WriteString(" | ")

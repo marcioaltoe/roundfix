@@ -2556,6 +2556,25 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	if err != nil {
 		return "", "", false, fmt.Errorf("materialize QA mechanical result for run %q: %w", plan.RunID, err)
 	}
+	seededReportPath := reportPath
+	if !filepath.IsAbs(seededReportPath) {
+		seededReportPath = filepath.Join(plan.WorkDir, seededReportPath)
+	}
+	seededReport, err := spec.ReadQAReportFile(seededReportPath)
+	if err != nil {
+		return "", "", false, fmt.Errorf("read seeded QA Report for run %q: %w", plan.RunID, err)
+	}
+	auditorEvidence, err := engine.resolveQAAuditorEvidence(ctx, plan)
+	if err != nil {
+		return "", "", false, fmt.Errorf("resolve auditor evidence for run %q: %w", plan.RunID, err)
+	}
+	auditedHead, err := qaAuditedHead(ctx, plan.WorkDir)
+	if err != nil {
+		return "", "", false, fmt.Errorf("resolve audited head for run %q: %w", plan.RunID, err)
+	}
+	if err := engine.publishAuditorStalenessWarning(ctx, plan, ordinal, reportPath, auditorEvidence); err != nil {
+		return "", "", false, fmt.Errorf("publish auditor staleness warning for run %q: %w", plan.RunID, err)
+	}
 	mechanicalSummary := fmt.Sprintf("QA mechanical stage seeded %s for Spec %s.", reportPath, plan.Spec.Slug)
 	if mechanicalResult.Blocking {
 		mechanicalSummary = fmt.Sprintf("QA mechanical stage blocked Spec %s with %d finding(s).", plan.Spec.Slug, len(mechanicalResult.Findings))
@@ -2605,6 +2624,9 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 			return "", "", false, fmt.Errorf("build QA prompt for run %q: %w", plan.RunID, promptErr)
 		}
 		prompt += fmt.Sprintf("\nSeeded QA Report: %s\nComplete this report in place, preserving its materialized mechanical rows and skips; do not create another QA Report.\n", reportPath)
+		if auditorEvidence.SelfAudit {
+			prompt += "Self-audit: build roundfix from this Run Worktree with make build, run every public-CLI row with ./bin/roundfix and never a roundfix found on PATH, and record its --version line as user_flow_binary.\n"
+		}
 		prompt += "\n" + repositoryVerificationPrompt
 		logPath := agentLogPath(plan.AgentLogs, plan.ArtifactDir, plan.RunID, ordinal)
 		fmt.Fprintf(engine.deps.Progress, "QA step (Batch %03d) for Spec %s\n", ordinal, plan.Spec.Slug)
@@ -2646,7 +2668,13 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		}
 	}
 	var eligibilityErr error
-	verdict, reportPath, accepted, eligibilityErr = engine.settleQAVerdict(plan)
+	verdict, reportPath, accepted, eligibilityErr = engine.settleQAVerdict(
+		plan,
+		seededReport.AuditingBinary,
+		seededReport.AuditorStaleness,
+		auditorEvidence,
+		auditedHead,
+	)
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
 		fmt.Sprintf("QA verdict %s for Spec %s.", verdict, plan.Spec.Slug),
 		map[string]any{"phase": "verdict", "verdict": verdict, "report": reportPath},
@@ -2677,6 +2705,8 @@ func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qa
 	prdPath := filepath.Join(plan.Spec.Dir, "_prd.md")
 	var authorizationPath string
 	var authorizationReference speccheck.MechanicalAuthorizationReference
+	deliveryTargetRevision := plan.HeadSHA
+	taskCommitsFromRunStart := false
 	if strings.TrimSpace(plan.HeadSHA) == "" {
 		var err error
 		authorizationPath, _, err = speccheck.MechanicalAuthorization(plan.WorkDir, prdPath)
@@ -2684,14 +2714,23 @@ func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qa
 			return speccheck.MechanicalRequest{}, err
 		}
 	} else {
-		resolved, _, err := speccheck.ResolveMechanicalAuthorization(ctx, plan.WorkDir, prdPath, plan.HeadSHA)
+		base, resolvedBase, err := qaDeliveryBase(ctx, plan)
+		if err != nil {
+			return speccheck.MechanicalRequest{}, err
+		}
+		if resolvedBase {
+			deliveryTargetRevision = base
+		} else {
+			taskCommitsFromRunStart = true
+		}
+		resolved, _, err := speccheck.ResolveMechanicalAuthorization(ctx, plan.WorkDir, prdPath, deliveryTargetRevision)
 		if err != nil {
 			return speccheck.MechanicalRequest{}, err
 		}
 		authorizationReference = resolved
 		authorizationPath = resolved.Path
 	}
-	taskCommits, err := mechanicalTaskCommits(ctx, plan, authorizationPath)
+	taskCommits, err := mechanicalTaskCommits(ctx, plan, deliveryTargetRevision, authorizationPath)
 	if err != nil {
 		return speccheck.MechanicalRequest{}, err
 	}
@@ -2712,12 +2751,13 @@ func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qa
 		}
 	}
 	return speccheck.MechanicalRequest{
-		RepoRoot:               plan.WorkDir,
-		AuthorizationPath:      authorizationPath,
-		AuthorizationReference: authorizationReference,
-		ConsumingSpec:          plan.Spec.Slug,
-		DeliveryTargetRevision: plan.HeadSHA,
-		TaskCommits:            taskCommits,
+		RepoRoot:                plan.WorkDir,
+		AuthorizationPath:       authorizationPath,
+		AuthorizationReference:  authorizationReference,
+		ConsumingSpec:           plan.Spec.Slug,
+		DeliveryTargetRevision:  deliveryTargetRevision,
+		TaskCommits:             taskCommits,
+		TaskCommitsFromRunStart: taskCommitsFromRunStart,
 		// Consequent-fix declarations are optional authored inputs. Until a
 		// declaration exists, the detector records its presence-aware skip.
 		ConsequentFixes: nil,
@@ -2748,12 +2788,12 @@ func qaGatePrecondition(plan TaskPlan) (speccheck.GatePreconditionResult, error)
 	return speccheck.GatePrecondition(checked), nil
 }
 
-func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, authorizationPath string) ([]speccheck.MechanicalTaskCommit, error) {
-	if strings.TrimSpace(plan.HeadSHA) == "" || strings.TrimSpace(authorizationPath) == "" {
+func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, rangeStart, authorizationPath string) ([]speccheck.MechanicalTaskCommit, error) {
+	if strings.TrimSpace(rangeStart) == "" || strings.TrimSpace(authorizationPath) == "" {
 		return nil, nil
 	}
-	revisionRange := strings.TrimSpace(plan.HeadSHA) + "..HEAD"
-	command := exec.CommandContext(ctx, "git", "-C", plan.WorkDir, "log", "--no-merges",
+	revisionRange := strings.TrimSpace(rangeStart) + "..HEAD"
+	command := exec.CommandContext(ctx, "git", "-C", plan.WorkDir, "log", "--no-merges", "--reverse",
 		"--format=%(trailers:key=Roundfix-Spec,valueonly,unfold)%x1f%(trailers:key=Roundfix-Task,valueonly,unfold)%x1f%H%x1e",
 		revisionRange)
 	output, err := command.Output()
@@ -2766,7 +2806,7 @@ func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, authorizationPath
 			tasks[task.ID] = task
 		}
 	}
-	commitsByTask := make(map[string]string, len(tasks))
+	result := make([]speccheck.MechanicalTaskCommit, 0)
 	for _, record := range bytes.Split(output, []byte{0x1e}) {
 		parts := bytes.SplitN(bytes.TrimSpace(record), []byte{0x1f}, 3)
 		if len(parts) != 3 {
@@ -2778,15 +2818,8 @@ func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, authorizationPath
 		if specSlug != plan.Spec.Slug {
 			continue
 		}
-		if _, known := tasks[taskID]; !known || commitsByTask[taskID] != "" || sha == "" {
-			continue
-		}
-		commitsByTask[taskID] = sha
-	}
-	result := make([]speccheck.MechanicalTaskCommit, 0, len(commitsByTask))
-	for _, task := range plan.Tasks {
-		sha := commitsByTask[task.ID]
-		if sha == "" {
+		task, known := tasks[taskID]
+		if !known || sha == "" {
 			continue
 		}
 		changed, err := mechanicalCommitPaths(ctx, plan.WorkDir, sha)
@@ -2804,7 +2837,7 @@ func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, authorizationPath
 			continue
 		}
 		result = append(result, speccheck.MechanicalTaskCommit{
-			TaskID:   task.ID,
+			TaskID:   taskID,
 			SHA:      sha,
 			TaskFile: artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, task.File)),
 		})
@@ -2840,7 +2873,10 @@ func mechanicalCommitPaths(ctx context.Context, repoRoot, sha string) ([]string,
 func (engine *Engine) writeMechanicalQAReport(ctx context.Context, plan TaskPlan, result speccheck.MechanicalResult) (string, error) {
 	// The Git subprocesses this resolves through must die with the QA Run;
 	// context.Background() here outlived a cancelled gate.
-	evidence := spec.ResolveAuditorEvidence(ctx, plan.WorkDir, app.Auditor())
+	evidence, err := engine.resolveQAAuditorEvidence(ctx, plan)
+	if err != nil {
+		return "", err
+	}
 	content, err := mechanicalQAReportContent(result, evidence)
 	if err != nil {
 		return "", err
@@ -2869,6 +2905,40 @@ func (engine *Engine) writeMechanicalQAReport(ctx context.Context, plan TaskPlan
 		}
 		return artifactCommitPath(plan, path), nil
 	}
+}
+
+func (engine *Engine) resolveQAAuditorEvidence(ctx context.Context, plan TaskPlan) (spec.AuditorEvidence, error) {
+	deliveryBase := ""
+	if strings.TrimSpace(plan.HeadSHA) != "" {
+		base, resolved, err := qaDeliveryBase(ctx, plan)
+		if err != nil {
+			return spec.AuditorEvidence{}, fmt.Errorf("resolve Delivery Base for auditor evidence: %w", err)
+		}
+		if resolved {
+			deliveryBase = base
+		}
+	}
+	return spec.ResolveAuditorEvidence(ctx, plan.WorkDir, deliveryBase, engine.auditor()), nil
+}
+
+func (engine *Engine) publishAuditorStalenessWarning(ctx context.Context, plan TaskPlan, ordinal int, reportPath string, evidence spec.AuditorEvidence) error {
+	auditor := auditorEvidenceBinary(evidence)
+	state, _ := auditor.CompareToTree(evidence.TreeVersion, evidence.Ancestry)
+	if state != app.StalenessStale {
+		return nil
+	}
+	line := auditor.StalenessLine(evidence.TreeVersion, evidence.Ancestry)
+	action := auditorStalenessAction(evidence.DeliveryBase)
+	return engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
+		fmt.Sprintf("Auditor staleness warning for Spec %s.", plan.Spec.Slug),
+		map[string]any{
+			"phase":             "auditor_staleness",
+			"auditor_staleness": line,
+			"delivery_base":     evidence.DeliveryBase,
+			"action":            action,
+			"report":            reportPath,
+		},
+	)
 }
 
 func nextMechanicalQAReportPath(reportDir, date string) (string, error) {
@@ -2970,6 +3040,7 @@ func mechanicalQAReportContent(result speccheck.MechanicalResult, evidence spec.
 		}
 		content.WriteByte('\n')
 		content.Write(mechanical.Bytes())
+		appendAuditorStalenessWarning(&content, evidence)
 		return content.Bytes(), nil
 	}
 
@@ -2997,7 +3068,7 @@ func mechanicalQAReportContent(result speccheck.MechanicalResult, evidence spec.
 		verdict = spec.VerdictFail
 	}
 	fmt.Fprintf(&content, "verdict: %s\n", verdict)
-	auditor := app.Auditor()
+	auditor := auditorEvidenceBinary(evidence)
 	auditorStaleness := auditor.StalenessLine(evidence.TreeVersion, evidence.Ancestry)
 	fmt.Fprintf(&content, "auditing_binary: %s\n", strconv.Quote(auditor.String()))
 	fmt.Fprintf(&content, "auditor_staleness: %s\n", strconv.Quote(auditorStaleness))
@@ -3006,7 +3077,33 @@ func mechanicalQAReportContent(result speccheck.MechanicalResult, evidence spec.
 	fmt.Fprintf(&content, "rows_blocked_declared: %d\n", mechanicalBlockedRowCount(mechanicalBody, "declared"))
 	content.WriteString("---\n\n# QA Report\n\n")
 	content.Write(mechanicalBody)
+	appendAuditorStalenessWarning(&content, evidence)
 	return content.Bytes(), nil
+}
+
+func auditorEvidenceBinary(evidence spec.AuditorEvidence) app.AuditingBinary {
+	if strings.TrimSpace(evidence.Binary.Version) != "" {
+		return evidence.Binary
+	}
+	return app.Auditor()
+}
+
+func appendAuditorStalenessWarning(content *bytes.Buffer, evidence spec.AuditorEvidence) {
+	auditor := auditorEvidenceBinary(evidence)
+	state, _ := auditor.CompareToTree(evidence.TreeVersion, evidence.Ancestry)
+	if state != app.StalenessStale {
+		return
+	}
+	if content.Len() > 0 && content.Bytes()[content.Len()-1] != '\n' {
+		content.WriteByte('\n')
+	}
+	content.WriteString("\n## Auditor staleness warning\n\n")
+	fmt.Fprintf(content, "- auditor_staleness: %s\n", auditor.StalenessLine(evidence.TreeVersion, evidence.Ancestry))
+	fmt.Fprintf(content, "- action: %s\n", auditorStalenessAction(evidence.DeliveryBase))
+}
+
+func auditorStalenessAction(deliveryBase string) string {
+	return "rebuild roundfix from delivery base " + strings.TrimSpace(deliveryBase) + " and restart it before the next gate"
 }
 
 func mechanicalRefusalCause(result speccheck.MechanicalResult) string {
@@ -3126,7 +3223,13 @@ func pullRequestRepository(rawURL string) string {
 // (ADR 0015). The report path comes back relative to the working tree,
 // empty when no report exists. A readable report also returns the shared
 // eligibility error so settlement can name why a pass or partial was refused.
-func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string, bool, error) {
+func (engine *Engine) settleQAVerdict(
+	plan TaskPlan,
+	seededAuditingBinary string,
+	seededAuditorStaleness string,
+	auditorEvidence spec.AuditorEvidence,
+	auditedHead string,
+) (string, string, bool, error) {
 	verdict := ""
 	accepted := false
 	var eligibilityErr error
@@ -3134,6 +3237,15 @@ func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string, bool, erro
 	case err == nil:
 		verdict = report.Verdict
 		eligibilityErr = spec.QAReportEligibility(plan.Spec.Dir, report)
+		if eligibilityErr == nil {
+			eligibilityErr = qaSettlementReportEligibility(
+				report,
+				seededAuditingBinary,
+				seededAuditorStaleness,
+				auditorEvidence,
+				auditedHead,
+			)
+		}
 		accepted = eligibilityErr == nil
 	case errors.Is(err, spec.ErrNoQAReport):
 		// ReadQAReport already searched the report directory. Preserve that
@@ -3152,6 +3264,70 @@ func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string, bool, erro
 		}
 	}
 	return verdict, reportPath, accepted, eligibilityErr
+}
+
+func qaSettlementReportEligibility(
+	report spec.QAReport,
+	seededAuditingBinary string,
+	seededAuditorStaleness string,
+	auditorEvidence spec.AuditorEvidence,
+	auditedHead string,
+) error {
+	if report.AuditingBinary != "" && report.AuditingBinary != seededAuditingBinary {
+		return errors.New("auditor fields are Daemon-owned: auditing_binary differs from the seeded value")
+	}
+	if report.AuditorStaleness != "" && report.AuditorStaleness != seededAuditorStaleness {
+		return errors.New("auditor fields are Daemon-owned: auditor_staleness differs from the seeded value")
+	}
+	if !auditorEvidence.SelfAudit {
+		return nil
+	}
+	if strings.TrimSpace(report.UserFlowBinary) == "" {
+		return errors.New("user_flow_binary is required for a self-audit")
+	}
+	buildCommit, ok := qaUserFlowBuildCommit(report.UserFlowBinary)
+	if !ok {
+		return errors.New("user_flow_binary names no valid build commit")
+	}
+	if !strings.HasPrefix(strings.ToLower(strings.TrimSpace(auditedHead)), strings.ToLower(buildCommit)) {
+		return fmt.Errorf("user_flow_binary build commit %q is not a prefix of audited head %q", buildCommit, strings.TrimSpace(auditedHead))
+	}
+	return nil
+}
+
+func qaUserFlowBuildCommit(binary string) (string, bool) {
+	open := strings.IndexByte(binary, '(')
+	if open < 0 {
+		return "", false
+	}
+	details := binary[open+1:]
+	end := len(details)
+	if comma := strings.IndexByte(details, ','); comma >= 0 && comma < end {
+		end = comma
+	}
+	if close := strings.IndexByte(details, ')'); close >= 0 && close < end {
+		end = close
+	}
+	commit := strings.TrimSpace(details[:end])
+	commit = strings.TrimSpace(strings.TrimSuffix(commit, "-dirty"))
+	if len(commit) < 7 {
+		return "", false
+	}
+	for _, char := range commit {
+		if (char < '0' || char > '9') && (char < 'a' || char > 'f') && (char < 'A' || char > 'F') {
+			return "", false
+		}
+	}
+	return commit, true
+}
+
+func qaAuditedHead(ctx context.Context, workDir string) (string, error) {
+	command := exec.CommandContext(ctx, "git", "-C", workDir, "rev-parse", "HEAD")
+	output, err := command.Output()
+	if err != nil {
+		return "", gitExecStderr(err)
+	}
+	return strings.TrimSpace(string(output)), nil
 }
 
 // commitQAReport creates the QA Report commit from the QA step's snapshot

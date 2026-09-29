@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0178-a-qa-audit-across-every-run-of-a-spec
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -141,3 +141,34 @@ after the first.
 ## References
 
 - [_techspec.md](_techspec.md) — Staleness against the Delivery Base
+
+## Result
+
+Implemented Delivery Base-relative auditor evidence and advisory stale-auditor
+handling. `ResolveAuditorEvidence` now carries the binary and Delivery Base,
+leaves ancestry unknown when the base is absent, and compares a stamped build
+with that base. The Daemon receives its Auditing Binary through
+`Dependencies.Auditor`, seeds both report shapes from that evidence, records a
+list-form warning for stale evidence, and publishes one `daemon.qa`
+`auditor_staleness` event without changing the mechanical blocking result.
+Current and unknown evidence keep the prior gate path and report shape. The
+Auditing Binary glossary entry now records the Daemon, Delivery Base, warning,
+and proceed semantics.
+
+Focused checks:
+
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run '^TestAuditorEvidence' ./internal/spec` — passed.
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run '^TestResolveAuditorEvidence$' ./internal/spec` — passed.
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run '^TestCompareToTree$|^TestStalenessLineNeverRepeatsItsState$' ./internal/app` — passed.
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run '^TestWritePreconditionRefusalReport' ./internal/spec` — passed.
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run '^TestWriteMechanicalQAReport|^TestMechanicalQAReport' ./internal/daemon` — passed.
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run '^Test(SelfAuditSeedRecordsACurrentAuditor|StaleAuditorWarnsAndTheGateProceeds|StaleAuditorWarningRidesARefusedGate|CurrentAuditorEmitsNoStalenessWarning|UnknownAuditorEmitsNoStalenessWarning)$' ./internal/daemon` — passed.
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 ./internal/spec ./internal/app ./internal/daemon` — passed.
+
+Acceptance evidence:
+
+- Delivery Base build with two later candidate commits: `TestAuditorEvidenceIsCurrentWhenTheBuildIsTheDeliveryBase`, `TestSelfAuditSeedRecordsACurrentAuditor`, and `TestCurrentAuditorEmitsNoStalenessWarning` passed; the seed records `current` and no warning event or section.
+- Ancestor build: `TestStaleAuditorWarnsAndTheGateProceeds` passed; it observes one warning event and the warning section while repository Verification and the QA Agent each run. `TestStaleAuditorWarningRidesARefusedGate` separately passed against a contradicted Spec and retained the `spec check --strict` refusal.
+- Existing writer bytes: the focused `TestWritePreconditionRefusalReport*`, `TestWriteMechanicalQAReport*`, and `TestMechanicalQAReport*` suites passed with zero-value evidence falling back to `app.Auditor()`.
+
+The Task's declared `## Verification` command was not run; the Daemon owns it.
