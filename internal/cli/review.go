@@ -726,7 +726,7 @@ func reviewFindingByID(findings []reviewFinding, id string) (reviewFinding, bool
 }
 
 func resolveReviewDispositionCommit(ctx context.Context, gitRoot string, commit string, runner preflight.GitRunner) (string, error) {
-	resolved, err := runner.RunGit(ctx, gitRoot, "rev-parse", "--verify", strings.TrimSpace(commit)+"^{commit}")
+	resolved, err := runner.RunGit(ctx, gitRoot, "rev-parse", "--verify", "--end-of-options", strings.TrimSpace(commit)+"^{commit}")
 	if err != nil {
 		return "", fmt.Errorf("fixed-by commit %q does not resolve", commit)
 	}
@@ -834,7 +834,7 @@ func resolveReviewBaseCommit(ctx context.Context, baseRef string, gitState prefl
 			}
 		}
 	}
-	commit, err := runner.RunGit(ctx, gitState.Root, "rev-parse", "--verify", baseRef+"^{commit}")
+	commit, err := runner.RunGit(ctx, gitState.Root, "rev-parse", "--verify", "--end-of-options", baseRef+"^{commit}")
 	if err != nil {
 		return "", fmt.Errorf("resolve review base %q: %w", baseRef, err)
 	}

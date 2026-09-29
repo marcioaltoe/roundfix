@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0179-review-findings-with-evidence-and-no-unselected-providers
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -40,3 +40,44 @@ Corrective Task from the second pre-PR review of 2026-09-29. `roundfix review di
 ## References
 
 - [_techspec.md](_techspec.md) — Build Order
+
+## Result
+
+### Implementation
+
+- `review dispose --fixed-by` now places `--end-of-options` before the
+  operator-supplied revision passed to `git rev-parse --verify`.
+- `review --base` applies the same guard to the other operator-supplied
+  revision forwarded by `roundfix review`; later Git calls receive resolved
+  commit IDs.
+- Added the dedicated `review_dispose_revision_test.go` regression suite. Its
+  Git boundary delegates normal operations to real local Git and models the
+  option side effect deterministically, independent of the installed Git
+  version.
+
+### Focused checks
+
+- Before the implementation change,
+  `rtk env GOCACHE=/private/tmp/roundfix-task07-gocache go test -count=1 -run '^TestDisposeFixedByOptionLikeValueIsRefusedAndWritesNothing$' ./internal/cli`
+  failed because the unguarded revision wrote the requested output path.
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-gocache go test -count=1 -run 'Test(DisposeFixedBy|ReviewBaseOptionLike)' ./internal/cli`
+  exited `0` after the change and exercised both acceptance tests plus the
+  `review --base` companion regression.
+- A sandboxed `rtk env GOCACHE=/private/tmp/roundfix-task07-gocache go test -count=1 ./internal/cli`
+  run reached two unrelated force-stop integration tests and failed because
+  process-table access was denied. The same command rerun with process-table
+  permission exited `0` (`ok roundfix/internal/cli 80.548s`).
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-gocache make verify-incremental`
+  exited `0` with process-table permission, covering formatting, vet, all Go
+  packages, skill checks, and the build.
+- The Task's authored `## Verification` command was not run; Daemon
+  Verification owns that command.
+
+### Acceptance evidence
+
+- `TestDisposeFixedByOptionLikeValueIsRefusedAndWritesNothing` passed: an
+  option-like `--fixed-by` value exits `2` with the existing refusal, creates
+  no requested output file, and leaves the disposition ledger absent.
+- `TestDisposeFixedByValidCommitIsStillRecorded` passed: a valid descendant
+  commit exits `0`, is written as the ledger entry's `fixedBy`, and is emitted
+  as the same JSON line on stdout.
