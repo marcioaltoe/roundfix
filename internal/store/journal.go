@@ -1478,6 +1478,7 @@ type ArtifactRoot struct {
 // ArtifactRootRun is the durable Run evidence that records an Artifact Root.
 type ArtifactRootRun struct {
 	ID          string
+	GitRoot     string
 	Repository  string
 	State       string
 	CompletedAt *time.Time
@@ -1485,7 +1486,7 @@ type ArtifactRootRun struct {
 
 func DiscoverArtifactRoots(ctx context.Context, runStore *Store) ([]ArtifactRoot, error) {
 	rows, err := runStore.db.QueryContext(ctx, `
-SELECT id, COALESCE(NULLIF(repository_root, ''), git_root), state, artifact_dir, completed_at
+SELECT id, git_root, COALESCE(NULLIF(repository_root, ''), git_root), state, artifact_dir, completed_at
 FROM runs
 ORDER BY artifact_dir, id`)
 	if err != nil {
@@ -1501,7 +1502,7 @@ ORDER BY artifact_dir, id`)
 		var run ArtifactRootRun
 		var path string
 		var completedAtRaw string
-		if err := rows.Scan(&run.ID, &run.Repository, &run.State, &path, &completedAtRaw); err != nil {
+		if err := rows.Scan(&run.ID, &run.GitRoot, &run.Repository, &run.State, &path, &completedAtRaw); err != nil {
 			return nil, fmt.Errorf("scan Artifact Root Run metadata: %w", err)
 		}
 		if strings.TrimSpace(completedAtRaw) != "" {

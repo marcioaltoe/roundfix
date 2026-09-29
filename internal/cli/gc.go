@@ -608,19 +608,39 @@ func classifyGCSanitationRoot(root store.ArtifactRoot, homeDir string) gcSanitat
 		return report
 	}
 
-	repositories := gcArtifactRootRepositories(root)
-	for _, repository := range repositories {
-		defaultRoot, err := roundconfig.ResolveArtifactDirectory("", repository, homeDir)
-		if err != nil {
+	checkoutMatches := []string{}
+	for _, run := range root.Runs {
+		keyDefault, keyErr := roundconfig.ResolveArtifactDirectory("", run.Repository, homeDir)
+		checkoutDefault, checkoutErr := roundconfig.DefaultArtifactDirectoryForPath(run.GitRoot, homeDir)
+		if checkoutErr == nil && path == checkoutDefault {
+			checkoutMatches = append(checkoutMatches, fmt.Sprintf("%q (Run %q)", run.GitRoot, run.ID))
+			continue
+		}
+		if keyErr != nil {
 			report.classification = gcSanitationUnsafe
-			report.evidence = fmt.Sprintf("preserved because the default Artifact Root for repository %q cannot be proven: %v", repository, err)
+			report.evidence = fmt.Sprintf("preserved because the repository-key default Artifact Root for Run %q cannot be proven: %v", run.ID, keyErr)
 			return report
 		}
-		if path != defaultRoot {
-			report.classification = gcSanitationOverridden
-			report.evidence = fmt.Sprintf("preserved because recorded Artifact Root overrides default %q for repository %q", defaultRoot, repository)
+		if path == keyDefault {
+			continue
+		}
+		if checkoutErr != nil {
+			report.classification = gcSanitationUnsafe
+			report.evidence = fmt.Sprintf("preserved because the recorded-checkout default Artifact Root for Run %q cannot be proven: %v", run.ID, checkoutErr)
 			return report
 		}
+		report.classification = gcSanitationOverridden
+		report.evidence = fmt.Sprintf(
+			"preserved because recorded Artifact Root overrides default %q derived from the repository key and default %q derived from the recorded checkout for Run %q",
+			keyDefault,
+			checkoutDefault,
+			run.ID,
+		)
+		return report
+	}
+	checkoutEvidence := ""
+	if len(checkoutMatches) > 0 {
+		checkoutEvidence = fmt.Sprintf("; default derived from recorded checkout %s", strings.Join(checkoutMatches, ", "))
 	}
 
 	activeRunIDs := []string{}
@@ -632,12 +652,12 @@ func classifyGCSanitationRoot(root store.ArtifactRoot, homeDir string) gcSanitat
 	if len(activeRunIDs) > 0 {
 		sort.Strings(activeRunIDs)
 		report.classification = gcSanitationActive
-		report.evidence = fmt.Sprintf("Active Runs record this Artifact Root: %s", strings.Join(activeRunIDs, ", "))
+		report.evidence = fmt.Sprintf("Active Runs record this Artifact Root: %s%s", strings.Join(activeRunIDs, ", "), checkoutEvidence)
 		return report
 	}
 
 	report.classification = gcSanitationOrphaned
-	report.evidence = fmt.Sprintf("no Active Run records this Artifact Root; terminal Runs recorded: %d", len(root.Runs))
+	report.evidence = fmt.Sprintf("no Active Run records this Artifact Root; terminal Runs recorded: %d%s", len(root.Runs), checkoutEvidence)
 	return report
 }
 
@@ -647,19 +667,6 @@ func gcPathWithin(root string, path string) (bool, error) {
 		return false, err
 	}
 	return relative == "." || (!filepath.IsAbs(relative) && relative != ".." && !strings.HasPrefix(relative, ".."+string(os.PathSeparator))), nil
-}
-
-func gcArtifactRootRepositories(root store.ArtifactRoot) []string {
-	set := map[string]struct{}{}
-	for _, run := range root.Runs {
-		set[run.Repository] = struct{}{}
-	}
-	repositories := make([]string, 0, len(set))
-	for repository := range set {
-		repositories = append(repositories, repository)
-	}
-	sort.Strings(repositories)
-	return repositories
 }
 
 func gcSanitationArtifactDirs(root store.ArtifactRoot, allRunIDs map[string]string, cutoff time.Time, retention time.Duration) ([]gcSanitationCandidate, []gcSanitationPreservation, error) {
