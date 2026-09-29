@@ -18,7 +18,10 @@ graph:
       needs: [task_03]
     - id: task_05
       file: task_05.md
-      needs: [task_01, task_02, task_03, task_04]
+      needs: [task_01, task_02, task_03, task_04, task_06]
+    - id: task_06
+      file: task_06.md
+      needs: [task_04]
 ---
 
 # Task Graph
@@ -29,4 +32,5 @@ graph:
 | task_02 | backend | Every finding gets a recorded disposition |
 | task_03 | backend | A findings verdict stands for its head |
 | task_04 | backend | A blocking review after archive parks publication |
+| task_06 | backend | A disposition is reserved atomically |
 | task_05 | qa | Run the final QA gate |
