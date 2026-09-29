@@ -279,6 +279,10 @@ func countRetainedTerminalRuns(ctx context.Context, runner gitRunner, runs []sto
 		root string
 		runs []store.Run
 	}
+	type branchInspection struct {
+		branches map[string]bool
+		err      error
+	}
 
 	groupsByRoot := make(map[string]*repositoryRuns)
 	groups := make([]*repositoryRuns, 0)
@@ -297,20 +301,56 @@ func countRetainedTerminalRuns(ctx context.Context, runner gitRunner, runs []sto
 
 	retained := 0
 	var failures []error
+	branchInspections := make(map[string]branchInspection)
+	inspectBranches := func(root string) branchInspection {
+		if inspection, found := branchInspections[root]; found {
+			return inspection
+		}
+		branches, err := listRunBranches(ctx, runner, root)
+		inspection := branchInspection{branches: branches, err: err}
+		branchInspections[root] = inspection
+		return inspection
+	}
+	repositoryKeyInspections := make(map[string]branchInspection)
 	for _, group := range groups {
 		branches := map[string]bool{}
 		gitRoot, err := recordedGitRoot(ctx, runner, group.root)
-		if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			for _, run := range group.runs {
+				key := run.RepositoryRoot
+				if strings.TrimSpace(key) == "" || key == group.root {
+					continue
+				}
+				inspection, found := repositoryKeyInspections[key]
+				if !found {
+					keyRoot, keyErr := recordedRepositoryKeyRoot(ctx, runner, key)
+					if keyErr == nil && keyRoot != "" {
+						inspection = inspectBranches(keyRoot)
+					} else {
+						inspection.err = keyErr
+					}
+					repositoryKeyInspections[key] = inspection
+					if inspection.err != nil {
+						failures = append(
+							failures,
+							fmt.Errorf("inspect retained terminal Runs through repository key %q: %w", key, inspection.err),
+						)
+					}
+				}
+				maps.Copy(branches, inspection.branches)
+			}
+		} else if err != nil {
 			failures = append(
 				failures,
 				fmt.Errorf("inspect retained terminal Runs in repository %q: %w", group.root, err),
 			)
 		} else {
-			branches, err = listRunBranches(ctx, runner, gitRoot)
-			if err != nil {
+			inspection := inspectBranches(gitRoot)
+			branches = inspection.branches
+			if inspection.err != nil {
 				failures = append(
 					failures,
-					fmt.Errorf("inspect retained terminal Runs in repository %q: %w", group.root, err),
+					fmt.Errorf("inspect retained terminal Runs in repository %q: %w", group.root, inspection.err),
 				)
 			}
 		}
@@ -2431,6 +2471,22 @@ const (
 )
 
 func recordedGitRoot(ctx context.Context, runner gitRunner, value string) (string, error) {
+	root, err := recordedGitDirectory(value)
+	if err != nil {
+		return "", err
+	}
+	output, err := runner.Run(ctx, root, "rev-parse", "--show-toplevel")
+	if err != nil {
+		return "", fmt.Errorf("inspect terminal Run: validate recorded Git root %q: %w", root, err)
+	}
+	topLevel := strings.TrimSpace(output)
+	if topLevel == "" || canonicalPath(topLevel) != canonicalPath(root) {
+		return "", fmt.Errorf("inspect terminal Run: recorded Git root %q is not the repository root", root)
+	}
+	return root, nil
+}
+
+func recordedGitDirectory(value string) (string, error) {
 	root := strings.TrimSpace(value)
 	if root == "" {
 		return "", errors.New("inspect terminal Run: recorded Git root is required")
@@ -2455,13 +2511,35 @@ func recordedGitRoot(ctx context.Context, runner gitRunner, value string) (strin
 	if !info.IsDir() {
 		return "", fmt.Errorf("inspect terminal Run: recorded Git root %q is not a real directory", root)
 	}
-	output, err := runner.Run(ctx, root, "rev-parse", "--show-toplevel")
-	if err != nil {
-		return "", fmt.Errorf("inspect terminal Run: validate recorded Git root %q: %w", root, err)
+	return root, nil
+}
+
+func recordedRepositoryKeyRoot(ctx context.Context, runner gitRunner, value string) (string, error) {
+	root, err := recordedGitRoot(ctx, runner, value)
+	if err == nil {
+		return root, nil
 	}
-	topLevel := strings.TrimSpace(output)
-	if topLevel == "" || canonicalPath(topLevel) != canonicalPath(root) {
-		return "", fmt.Errorf("inspect terminal Run: recorded Git root %q is not the repository root", root)
+	if errors.Is(err, fs.ErrNotExist) {
+		return "", nil
+	}
+	recordedRootErr := err
+	root, err = recordedGitDirectory(value)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return "", nil
+		}
+		return "", recordedRootErr
+	}
+	output, err := runner.Run(ctx, root, "rev-parse", "--absolute-git-dir")
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return "", nil
+		}
+		return "", recordedRootErr
+	}
+	gitDir := strings.TrimSpace(output)
+	if gitDir == "" || canonicalPath(gitDir) != canonicalPath(root) {
+		return "", recordedRootErr
 	}
 	return root, nil
 }
