@@ -159,6 +159,32 @@ needs. An unselected provider is never asked for anything.
    replay through the built binary: the two dismissals clear their head, and
    the fix from #257 leaves its head standing until a fresh review.
 
+## Unreachable Acceptance
+
+- criterion: Success Metric 2 — `roundfix review dispose` exercised through the
+  built binary against a findings record a reviewer produced
+  reason: the QA sandbox has no authorized ACP reviewer stand-in that reaches
+  the built CLI, and a findings record may never be written by hand, so the
+  gate cannot create the record the command disposes
+  satisfied-by: the task_02 tests (every ledger field and each refusal)
+  executed against the built tree, and the first `roundfix review dispose`
+  run on a real findings record after this Spec merges
+
+- criterion: Success Metric 3 — the reuse and fresh-review paths of
+  `roundfix review` exercised through the built binary
+  reason: the same missing reviewer stand-in prevents the gate from producing
+  the findings record the reuse path reads
+  satisfied-by: the task_03 tests executed against the built tree, and the
+  first reuse of a real findings record after this Spec merges
+
+- criterion: Success Metric 5 — the #257, #258 and #259 dispositions replayed
+  through the built binary
+  reason: replaying them needs findings records produced by a live reviewer at
+  those heads, which the sandbox cannot create; the pull request bodies are
+  captured locally in `qa/evidence/2026-09-28-pr-bodies-257-259.md`
+  satisfied-by: the captured bodies checked against the dispositions the
+  ledger format can express, and a live replay after this Spec merges
+
 ## Recorded limits
 
 - A finding's identity is ordinal within one head's record. A fresh review of
