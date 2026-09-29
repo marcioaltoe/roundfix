@@ -62,7 +62,9 @@ resolving, and where each citation points before and after the move.
   Task here declares its paths and this Spec's gate aims at `pass`. ADR-0169 and
   ADR-0170 (Spec 0182) govern the pre-PR review base and Task Carry-Forward.
   ADR-0171 and ADR-0172 (Spec 0183) govern Run storage reporting. None of these
-  governs Baseline planning, so they do not apply. All the others hold. Source:
+  governs Baseline planning, so they do not apply. ADR-0176 (Spec 0181) narrows
+  only which Spec text the citation checks read, and this Spec does not depend
+  on it, so it does not apply. All the others hold. Source:
   `docs/agents/domain.md`.
 - Tooling authority: applicable — the maintainer approved this plan in chat on
   2026-09-29. Answering structured questions, they chose "Duas filas" (Onda 5
