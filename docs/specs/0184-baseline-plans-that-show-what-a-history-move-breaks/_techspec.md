@@ -103,8 +103,11 @@ counts when it resolves today to an existing target and would not resolve after
 the plan**. Both sides are computed from sets built once:
 
 - **Files before.** The tracked paths.
-- **Files after.** The files before, minus every move's `From`, plus every
-  move's `To`.
+- **Files after.** The files before, minus every applied move's `From`, plus
+  every applied move's `To`. A move whose `To` is already a file before is not
+  applied: `baseline apply` refuses it and leaves its source in place
+  (`HistoryMoveRefusal` in `internal/baseline/transaction.go`). Such a move
+  changes neither set, and its source keeps its after-location.
 - **Unit directories.** Every directory that contains a move's `From` and lies
   strictly below that move's source root, as `historyMoveSourceRoot` gives it.
   Examples are `docs/specs/_archived/0012-x` or a legacy Review Artifact

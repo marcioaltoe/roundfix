@@ -38,7 +38,9 @@ content other than path text. This Task does not wire the scan into planning.
    failure MUST be returned as an error.
 3. MUST implement the resolution model in `_techspec.md` → Implementation
    Design → The resolution model:
-   - files before and files after;
+   - files before and files after, where a move whose `To` already exists
+     before is left out, because `baseline apply` refuses it and leaves its
+     source in place;
    - unit directories strictly below a move's `historyMoveSourceRoot`, with
      family and legacy roots never targets;
    - the citing file's after-location;
@@ -111,6 +113,8 @@ content other than path text. This Task does not wire the scan into planning.
 - [ ] Two runs return byte-identical findings.
 - [ ] A tracked path and a link destination that contain a control character
       are never printed in any finding.
+- [ ] A move whose destination is already occupied, which `baseline apply`
+      refuses, produces no citation finding.
 
 ## Context
 
@@ -122,7 +126,7 @@ content other than path text. This Task does not wire the scan into planning.
 
 ## Verification
 
-- `out="$(go test -count=1 -v -run "^(TestRelocationCitationsReportEachCitationForm|TestRelocationCitationsReportARelocatedFilesOutwardLink|TestRelocationCitationsSkipCoRelocatedLinks|TestRelocationCitationsSkipAlreadyBrokenCitations|TestRelocationCitationsSkipCodeFencesAndURLs|TestRelocationCitationsNeverOpenUntrackedOrIgnoredFiles|TestRelocationCitationsNeverFollowSymbolicLinks|TestRelocationCitationsSummarizeUnscannedFiles|TestRelocationCitationsCapEachFileAndThePlan|TestRelocationCitationsCountUnitDirectoriesNotFamilyRoots|TestRelocationCitationsDoNothingWithoutMoves|TestRelocationCitationsAreDeterministic|TestRelocationCitationsNeverPrintAControlCharacter)$" ./internal/baseline 2>&1)" || { printf "%s\\n" "$out"; exit 1; }; for name in TestRelocationCitationsReportEachCitationForm TestRelocationCitationsReportARelocatedFilesOutwardLink TestRelocationCitationsSkipCoRelocatedLinks TestRelocationCitationsSkipAlreadyBrokenCitations TestRelocationCitationsSkipCodeFencesAndURLs TestRelocationCitationsNeverOpenUntrackedOrIgnoredFiles TestRelocationCitationsNeverFollowSymbolicLinks TestRelocationCitationsSummarizeUnscannedFiles TestRelocationCitationsCapEachFileAndThePlan TestRelocationCitationsCountUnitDirectoriesNotFamilyRoots TestRelocationCitationsDoNothingWithoutMoves TestRelocationCitationsAreDeterministic TestRelocationCitationsNeverPrintAControlCharacter; do printf "%s\\n" "$out" | grep -q -- "--- PASS: $name" || { printf "missing PASS for %s\\n" "$name" >&2; exit 1; }; done` — expected: exit 0. Before this Task none of the named tests exists, so the command fails.
+- `out="$(go test -count=1 -v -run "^(TestRelocationCitationsReportEachCitationForm|TestRelocationCitationsReportARelocatedFilesOutwardLink|TestRelocationCitationsSkipCoRelocatedLinks|TestRelocationCitationsSkipAlreadyBrokenCitations|TestRelocationCitationsSkipCodeFencesAndURLs|TestRelocationCitationsNeverOpenUntrackedOrIgnoredFiles|TestRelocationCitationsNeverFollowSymbolicLinks|TestRelocationCitationsSummarizeUnscannedFiles|TestRelocationCitationsCapEachFileAndThePlan|TestRelocationCitationsCountUnitDirectoriesNotFamilyRoots|TestRelocationCitationsDoNothingWithoutMoves|TestRelocationCitationsAreDeterministic|TestRelocationCitationsNeverPrintAControlCharacter|TestRelocationCitationsIgnoreAMoveApplyWouldRefuse)$" ./internal/baseline 2>&1)" || { printf "%s\\n" "$out"; exit 1; }; for name in TestRelocationCitationsReportEachCitationForm TestRelocationCitationsReportARelocatedFilesOutwardLink TestRelocationCitationsSkipCoRelocatedLinks TestRelocationCitationsSkipAlreadyBrokenCitations TestRelocationCitationsSkipCodeFencesAndURLs TestRelocationCitationsNeverOpenUntrackedOrIgnoredFiles TestRelocationCitationsNeverFollowSymbolicLinks TestRelocationCitationsSummarizeUnscannedFiles TestRelocationCitationsCapEachFileAndThePlan TestRelocationCitationsCountUnitDirectoriesNotFamilyRoots TestRelocationCitationsDoNothingWithoutMoves TestRelocationCitationsAreDeterministic TestRelocationCitationsNeverPrintAControlCharacter TestRelocationCitationsIgnoreAMoveApplyWouldRefuse; do printf "%s\\n" "$out" | grep -q -- "--- PASS: $name" || { printf "missing PASS for %s\\n" "$name" >&2; exit 1; }; done` — expected: exit 0. Before this Task none of the named tests exists, so the command fails.
 
 ## References
 
