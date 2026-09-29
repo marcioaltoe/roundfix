@@ -91,7 +91,9 @@ func listTrackedPaths(ctx context.Context, root string) ([]string, error)
 `GIT_OPTIONAL_LOCKS=0` and `GIT_TERMINAL_PROMPT=0`, the environment
 `ExecGitRunner` sets. It does not trim the output: it splits on NUL, drops
 empty entries and duplicate stage entries, and keeps only paths for which
-`repositoryPathIsSafe` holds. A Git failure is a planning error, as every other
+`repositoryPathIsSafe` holds and that contain no control character
+(U+0000–U+001F, U+007F–U+009F), so a dropped path is never opened or printed.
+A Git failure is a planning error, as every other
 Git failure in planning is.
 
 ### The resolution model
@@ -128,8 +130,9 @@ relocated, else `C` itself.
   - The destination is unwrapped from `<…>`, loses any title, and loses its
     `#fragment` and `?query`. It is then percent-decoded, and kept raw when
     decoding fails.
-  - A destination with a URL scheme, one starting with `//`, and an empty or
-    fragment-only destination are skipped.
+  - A destination with a URL scheme, one starting with `//`, an empty or
+    fragment-only destination, and one whose raw or decoded form contains a
+    control character are skipped.
   - A destination starting with `/` resolves from the repository root.
     Otherwise it resolves from `path.Dir(C)` before and from `path.Dir(C′)`
     after. A resolution that leaves the root is skipped.
@@ -148,7 +151,10 @@ The scan walks the tracked paths in sorted order.
 
 - **Symbolic links.** It checks each path component with `os.Lstat`, caching
   directories, and skips a path whose final component or any parent is a
-  symbolic link. It also skips a path that is not a regular file.
+  symbolic link. It also skips a path that is not a regular file. It then
+  opens the path with `O_RDONLY|O_NOFOLLOW` and reads it only when
+  `os.SameFile` holds between the opened file's `Stat` and that `os.Lstat`, so
+  a path swapped for a link between the check and the open is never read.
 - **Binary files.** A file whose first 8,000 bytes hold a NUL byte is skipped
   as binary.
 - **Unscanned files.** A regular file larger than 4 MiB, or one that fails to

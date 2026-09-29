@@ -166,7 +166,9 @@ field and no schema version change.
   documents belong to the repository.
 - Reporting citations that are already broken before the plan, citations in
   untracked files, links in non-Markdown syntaxes (HTML anchors, wiki links),
-  and relative paths written as plain prose rather than as a link.
+  and file-relative paths such as `../adr/x.md` written as plain prose rather
+  than as a link. Repository-relative path tokens are reported in every
+  scanned file.
 - A standalone link checker, a new command or flag, or any change to the
   Setup Manifest, the plan schema or the result schema.
 - Scanning when a plan has no History Relocations.

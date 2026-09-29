@@ -32,7 +32,9 @@ content other than path text. This Task does not wire the scan into planning.
    `git -C <root> -c core.fsmonitor=false ls-files -z --cached --full-name`
    with `GIT_OPTIONAL_LOCKS=0` and `GIT_TERMINAL_PROMPT=0`. It splits the
    output on NUL without trimming, drops empty and duplicate entries, keeps
-   only paths for which `repositoryPathIsSafe` holds, and sorts them. A Git
+   only paths for which `repositoryPathIsSafe` holds and that contain no
+   control character (U+0000–U+001F, U+007F–U+009F), and sorts them. A path
+   dropped this way is never opened or printed. A Git
    failure MUST be returned as an error.
 3. MUST implement the resolution model in `_techspec.md` → Implementation
    Design → The resolution model:
@@ -46,10 +48,15 @@ content other than path text. This Task does not wire the scan into planning.
    - one citation per `(line, before-resolution)`.
 
    A citation MUST count only when its before-resolution exists before and its
-   after-resolution does not exist after.
+   after-resolution does not exist after. A link destination whose raw or
+   percent-decoded form contains a control character MUST be skipped, so no
+   finding ever prints one.
 4. MUST read a tracked path only after `os.Lstat` shows that neither the path
    nor any of its parent directories is a symbolic link, and that the path is
-   a regular file. It MUST skip a file whose first 8,000 bytes contain a NUL
+   a regular file. It MUST then open the path with `O_RDONLY|O_NOFOLLOW` and
+   read it only when `os.SameFile` holds between the opened file's `Stat` and
+   that `os.Lstat`; a mismatch skips the file, so a path swapped for a link
+   between the check and the open is never read. It MUST skip a file whose first 8,000 bytes contain a NUL
    byte. A regular file larger than 4 MiB, or one that fails to open or read,
    MUST go into the unscanned summary instead. It MUST NOT stat or open any
    path that is not in the index.
@@ -102,6 +109,8 @@ content other than path text. This Task does not wire the scan into planning.
       a family root is not.
 - [ ] With no moves, nothing is returned and Git is never called.
 - [ ] Two runs return byte-identical findings.
+- [ ] A tracked path and a link destination that contain a control character
+      are never printed in any finding.
 
 ## Context
 
@@ -113,7 +122,7 @@ content other than path text. This Task does not wire the scan into planning.
 
 ## Verification
 
-- `out="$(go test -count=1 -v -run "^(TestRelocationCitationsReportEachCitationForm|TestRelocationCitationsReportARelocatedFilesOutwardLink|TestRelocationCitationsSkipCoRelocatedLinks|TestRelocationCitationsSkipAlreadyBrokenCitations|TestRelocationCitationsSkipCodeFencesAndURLs|TestRelocationCitationsNeverOpenUntrackedOrIgnoredFiles|TestRelocationCitationsNeverFollowSymbolicLinks|TestRelocationCitationsSummarizeUnscannedFiles|TestRelocationCitationsCapEachFileAndThePlan|TestRelocationCitationsCountUnitDirectoriesNotFamilyRoots|TestRelocationCitationsDoNothingWithoutMoves|TestRelocationCitationsAreDeterministic)$" ./internal/baseline 2>&1)" || { printf "%s\\n" "$out"; exit 1; }; for name in TestRelocationCitationsReportEachCitationForm TestRelocationCitationsReportARelocatedFilesOutwardLink TestRelocationCitationsSkipCoRelocatedLinks TestRelocationCitationsSkipAlreadyBrokenCitations TestRelocationCitationsSkipCodeFencesAndURLs TestRelocationCitationsNeverOpenUntrackedOrIgnoredFiles TestRelocationCitationsNeverFollowSymbolicLinks TestRelocationCitationsSummarizeUnscannedFiles TestRelocationCitationsCapEachFileAndThePlan TestRelocationCitationsCountUnitDirectoriesNotFamilyRoots TestRelocationCitationsDoNothingWithoutMoves TestRelocationCitationsAreDeterministic; do printf "%s\\n" "$out" | grep -q -- "--- PASS: $name" || { printf "missing PASS for %s\\n" "$name" >&2; exit 1; }; done` — expected: exit 0. Before this Task none of the named tests exists, so the command fails.
+- `out="$(go test -count=1 -v -run "^(TestRelocationCitationsReportEachCitationForm|TestRelocationCitationsReportARelocatedFilesOutwardLink|TestRelocationCitationsSkipCoRelocatedLinks|TestRelocationCitationsSkipAlreadyBrokenCitations|TestRelocationCitationsSkipCodeFencesAndURLs|TestRelocationCitationsNeverOpenUntrackedOrIgnoredFiles|TestRelocationCitationsNeverFollowSymbolicLinks|TestRelocationCitationsSummarizeUnscannedFiles|TestRelocationCitationsCapEachFileAndThePlan|TestRelocationCitationsCountUnitDirectoriesNotFamilyRoots|TestRelocationCitationsDoNothingWithoutMoves|TestRelocationCitationsAreDeterministic|TestRelocationCitationsNeverPrintAControlCharacter)$" ./internal/baseline 2>&1)" || { printf "%s\\n" "$out"; exit 1; }; for name in TestRelocationCitationsReportEachCitationForm TestRelocationCitationsReportARelocatedFilesOutwardLink TestRelocationCitationsSkipCoRelocatedLinks TestRelocationCitationsSkipAlreadyBrokenCitations TestRelocationCitationsSkipCodeFencesAndURLs TestRelocationCitationsNeverOpenUntrackedOrIgnoredFiles TestRelocationCitationsNeverFollowSymbolicLinks TestRelocationCitationsSummarizeUnscannedFiles TestRelocationCitationsCapEachFileAndThePlan TestRelocationCitationsCountUnitDirectoriesNotFamilyRoots TestRelocationCitationsDoNothingWithoutMoves TestRelocationCitationsAreDeterministic TestRelocationCitationsNeverPrintAControlCharacter; do printf "%s\\n" "$out" | grep -q -- "--- PASS: $name" || { printf "missing PASS for %s\\n" "$name" >&2; exit 1; }; done` — expected: exit 0. Before this Task none of the named tests exists, so the command fails.
 
 ## References
 

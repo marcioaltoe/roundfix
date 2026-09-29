@@ -90,9 +90,12 @@ the existing `git_root` column beside the coalesced repository key.
 It then fills event counts with `countPruneCandidateEvents` on the read
 connection. When no candidate has events, it returns
 `PruneResult{EligibleRunIDs: <all candidates>}` without opening a write
-transaction. Otherwise it deletes the events of the candidates that had them,
-inside `withWriteTx` as today. `RunIDs` names those candidates, and `Events` is
-the number of rows the DELETE removed. `TerminalRunPruneCandidates` is
+transaction. Otherwise, inside one `withWriteTx`, it counts the candidates'
+events again and deletes the events of the candidates that have them at that
+moment. The count and the deletion therefore come from the same transaction;
+the read-connection count only decides whether a write transaction is needed.
+`RunIDs` names those candidates, and `Events` is the number of rows the DELETE
+removed. `TerminalRunPruneCandidates` is
 unchanged.
 
 `retentionReclaimable` returns, in candidate order, every candidate whose
@@ -126,8 +129,9 @@ silence rule, which now holds whenever nothing was reclaimed.
    `now - retention` and applies `retentionReclaimable`. `hasArtifactDir`
    checks `lstat` of `gcRunArtifactPath(<root>, <id>)` under the root that
    `ResolveArtifactDirectory` gives the loaded config, and never walks it.
-   When no root resolves, as outside Git, it answers `false`, and the detail
-   says `artifact directories not inspected outside a Git repository`.
+   Outside a Git repository it answers `false` without resolving any root,
+   even when `artifact_dir` is absolute, and the detail says
+   `artifact directories not inspected outside a Git repository`.
 5. Reports `found` when the reclaimable count is above zero or free bytes reach
    `doctorStorageFreeBytesThreshold` (64 MiB). The detail is
    `Runs reclaimable: <n>; Run Database free bytes: <b>; next: <commands>`,
@@ -263,8 +267,9 @@ opens `~/.roundfix`.
 - **Doctor must never write.** It opens only the read-only reader and checks
   existence first, so a missing database is never created. The test compares
   the database bytes before and after.
-- **Late events on a terminal Run.** An event appended after the count is left
-  for the next prune; nothing is deleted without being counted first.
+- **Late events on a terminal Run.** The deletion and its count happen in one
+  write transaction, so nothing is deleted without being counted. An event
+  appended after that transaction commits is left for the next prune.
 - **A checkout default that is not Roundfix's.** Only a root equal to the
   default derived from the Run's own recorded checkout is accepted, and every
   earlier guard still has to pass.
