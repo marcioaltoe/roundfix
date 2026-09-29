@@ -155,9 +155,12 @@ The scan walks the tracked paths in sorted order.
 - **Symbolic links.** It checks each path component with `os.Lstat`, caching
   directories, and skips a path whose final component or any parent is a
   symbolic link. It also skips a path that is not a regular file. It then
-  opens the path with `O_RDONLY|O_NOFOLLOW` and reads it only when
-  `os.SameFile` holds between the opened file's `Stat` and that `os.Lstat`, so
-  a path swapped for a link between the check and the open is never read.
+  opens the path with `O_RDONLY|O_NOFOLLOW|O_NONBLOCK` and reads it only
+  when `os.SameFile` holds between the opened file's `Stat` and that
+  `os.Lstat` and the opened file is regular. A path swapped for a link, a FIFO
+  or a device between the check and the open is never read and never blocks
+  the planner. A swapped parent directory yields a different file, which
+  `os.SameFile` rejects.
 - **Binary files.** A file whose first 8,000 bytes hold a NUL byte is skipped
   as binary.
 - **Unscanned files.** A regular file larger than 4 MiB, or one that fails to

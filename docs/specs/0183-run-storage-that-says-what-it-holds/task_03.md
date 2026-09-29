@@ -33,7 +33,7 @@ Nothing tells the operator that Run storage is reclaimable until someone runs `r
 
 ## Acceptance Criteria
 
-- [ ] A home with a Run past retention that still has events prints `storage: found` naming `roundfix gc`, and Doctor exits `0` when every other check passes.
+- [ ] A home with a Run past retention that still has events but no artifact directory prints `storage: found` naming `roundfix gc`, and Doctor exits `0` when every other check passes.
 - [ ] Free bytes at the threshold produce `found` naming `roundfix gc compact`.
 - [ ] A home with nothing left to reclaim prints `storage: ok (nothing to reclaim; …)`.
 - [ ] A missing Run Database prints `storage: ok (no Run Database)` and no database file exists afterwards.

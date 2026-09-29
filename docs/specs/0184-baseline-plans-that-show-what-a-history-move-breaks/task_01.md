@@ -55,9 +55,9 @@ content other than path text. This Task does not wire the scan into planning.
    finding ever prints one.
 4. MUST read a tracked path only after `os.Lstat` shows that neither the path
    nor any of its parent directories is a symbolic link, and that the path is
-   a regular file. It MUST then open the path with `O_RDONLY|O_NOFOLLOW` and
+   a regular file. It MUST then open the path with `O_RDONLY|O_NOFOLLOW|O_NONBLOCK`, so a path replaced by a FIFO or device after the check can never block the planner, and
    read it only when `os.SameFile` holds between the opened file's `Stat` and
-   that `os.Lstat`; a mismatch skips the file, so a path swapped for a link
+   that `os.Lstat` and the opened file's mode is regular; a mismatch or a non-regular file skips the file, so a path swapped for a link
    between the check and the open is never read. It MUST skip a file whose first 8,000 bytes contain a NUL
    byte. A regular file larger than 4 MiB, or one that fails to open or read,
    MUST go into the unscanned summary instead. It MUST NOT stat or open any
@@ -102,6 +102,7 @@ content other than path text. This Task does not wire the scan into planning.
       reported as links.
 - [ ] An untracked file and an ignored file that hold citations and are made
       unreadable produce no finding and no unscanned entry.
+- [ ] A tracked path replaced by a FIFO is skipped without blocking the plan.
 - [ ] A tracked symbolic link, and a file under a symlinked directory, are not
       followed.
 - [ ] A binary file is skipped, and an oversized tracked text file appears only
@@ -126,7 +127,7 @@ content other than path text. This Task does not wire the scan into planning.
 
 ## Verification
 
-- `out="$(go test -count=1 -v -run "^(TestRelocationCitationsReportEachCitationForm|TestRelocationCitationsReportARelocatedFilesOutwardLink|TestRelocationCitationsSkipCoRelocatedLinks|TestRelocationCitationsSkipAlreadyBrokenCitations|TestRelocationCitationsSkipCodeFencesAndURLs|TestRelocationCitationsNeverOpenUntrackedOrIgnoredFiles|TestRelocationCitationsNeverFollowSymbolicLinks|TestRelocationCitationsSummarizeUnscannedFiles|TestRelocationCitationsCapEachFileAndThePlan|TestRelocationCitationsCountUnitDirectoriesNotFamilyRoots|TestRelocationCitationsDoNothingWithoutMoves|TestRelocationCitationsAreDeterministic|TestRelocationCitationsNeverPrintAControlCharacter|TestRelocationCitationsIgnoreAMoveApplyWouldRefuse)$" ./internal/baseline 2>&1)" || { printf "%s\\n" "$out"; exit 1; }; for name in TestRelocationCitationsReportEachCitationForm TestRelocationCitationsReportARelocatedFilesOutwardLink TestRelocationCitationsSkipCoRelocatedLinks TestRelocationCitationsSkipAlreadyBrokenCitations TestRelocationCitationsSkipCodeFencesAndURLs TestRelocationCitationsNeverOpenUntrackedOrIgnoredFiles TestRelocationCitationsNeverFollowSymbolicLinks TestRelocationCitationsSummarizeUnscannedFiles TestRelocationCitationsCapEachFileAndThePlan TestRelocationCitationsCountUnitDirectoriesNotFamilyRoots TestRelocationCitationsDoNothingWithoutMoves TestRelocationCitationsAreDeterministic TestRelocationCitationsNeverPrintAControlCharacter TestRelocationCitationsIgnoreAMoveApplyWouldRefuse; do printf "%s\\n" "$out" | grep -q -- "--- PASS: $name" || { printf "missing PASS for %s\\n" "$name" >&2; exit 1; }; done` — expected: exit 0. Before this Task none of the named tests exists, so the command fails.
+- `out="$(go test -count=1 -v -run "^(TestRelocationCitationsReportEachCitationForm|TestRelocationCitationsReportARelocatedFilesOutwardLink|TestRelocationCitationsSkipCoRelocatedLinks|TestRelocationCitationsSkipAlreadyBrokenCitations|TestRelocationCitationsSkipCodeFencesAndURLs|TestRelocationCitationsNeverOpenUntrackedOrIgnoredFiles|TestRelocationCitationsNeverFollowSymbolicLinks|TestRelocationCitationsSummarizeUnscannedFiles|TestRelocationCitationsCapEachFileAndThePlan|TestRelocationCitationsCountUnitDirectoriesNotFamilyRoots|TestRelocationCitationsDoNothingWithoutMoves|TestRelocationCitationsAreDeterministic|TestRelocationCitationsNeverPrintAControlCharacter|TestRelocationCitationsIgnoreAMoveApplyWouldRefuse|TestRelocationCitationsNeverBlockOnAFIFO)$" ./internal/baseline 2>&1)" || { printf "%s\\n" "$out"; exit 1; }; for name in TestRelocationCitationsReportEachCitationForm TestRelocationCitationsReportARelocatedFilesOutwardLink TestRelocationCitationsSkipCoRelocatedLinks TestRelocationCitationsSkipAlreadyBrokenCitations TestRelocationCitationsSkipCodeFencesAndURLs TestRelocationCitationsNeverOpenUntrackedOrIgnoredFiles TestRelocationCitationsNeverFollowSymbolicLinks TestRelocationCitationsSummarizeUnscannedFiles TestRelocationCitationsCapEachFileAndThePlan TestRelocationCitationsCountUnitDirectoriesNotFamilyRoots TestRelocationCitationsDoNothingWithoutMoves TestRelocationCitationsAreDeterministic TestRelocationCitationsNeverPrintAControlCharacter TestRelocationCitationsIgnoreAMoveApplyWouldRefuse TestRelocationCitationsNeverBlockOnAFIFO; do printf "%s\\n" "$out" | grep -q -- "--- PASS: $name" || { printf "missing PASS for %s\\n" "$name" >&2; exit 1; }; done` — expected: exit 0. Before this Task none of the named tests exists, so the command fails.
 
 ## References
 

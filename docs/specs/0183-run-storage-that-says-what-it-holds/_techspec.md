@@ -99,7 +99,11 @@ removed. `TerminalRunPruneCandidates` is
 unchanged.
 
 `retentionReclaimable` returns, in candidate order, every candidate whose
-`Events` is above zero or whose artifact directory exists. `runGC` uses it for
+`Events` is above zero or whose artifact directory exists. It relies on
+`TerminalRunPruneCandidates`, which already fills each candidate's `Events`
+through `countPruneCandidateEvents` on the read connection. A Run that holds
+journal rows but no artifact directory is therefore reclaimable in `gc` and in
+Doctor alike. `runGC` uses it for
 the dry run, with `hasArtifactDir` answering from the directories
 `gcCandidateArtifactDirs` found, so `Runs eligible` and
 `Eligible Runs` list only reclaimable Runs. `pruneRunRetention` keeps its
