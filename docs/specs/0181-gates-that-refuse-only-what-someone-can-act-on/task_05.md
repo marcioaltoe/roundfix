@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0181-gates-that-refuse-only-what-someone-can-act-on
-status: completed
+status: pending
 type: qa
 complexity: medium
 ---
@@ -86,3 +86,9 @@ ADR-0097; ADR-0104; ADR-0116; ADR-0117; ADR-0130; ADR-0155; ADR-0156;
 ADR-0166; ADR-0167; ADR-0168; ADR-0176.
 
 ## Result
+
+## Invalidation
+
+- Date: `2026-09-29`
+- QA Report: `qa/qa-report-2026-09-29.md`
+- Dependencies not completed: `task_08`

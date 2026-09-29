@@ -381,13 +381,18 @@ TechSpec, Task Graph, a Task's authored sections or `references/` still reports
    (depends on: none).
 3. The related-ADR horizon, task_03 (depends on: none).
 4. Skills, remaining guide text and glossary, task_04 (depends on: 1, 2, 3).
-5. Terminal QA, task_05 (depends on: 1, 2, 3, 4, 6, 7).
+5. Terminal QA, task_05 (depends on: 1, 2, 3, 4, 6, 7, 8).
 6. Citation checks read the authored projection, corrective task_06 (depends
    on: 3).
 7. The `archive-spec` skill's QA settlement table matches `qa-gate` and the
    Roundfix skill, corrective task_07 (depends on: 4). Added after the second
    QA gate refused on `TestSettlementGuidanceIsOneTable`, under the widened
    grant of 2026-09-29.
+8. The Task commit stages exactly the expanded files it records, and the
+   Daemon's section is recognized only as an exact, unfenced, final heading,
+   corrective task_08 (depends on: 1). Added after the pre-PR review of the
+   candidate found an ignored file under a new directory could be force-staged
+   unrecorded, and that a heading in authored text could be truncated.
 
 ## Risks & Considerations
 
