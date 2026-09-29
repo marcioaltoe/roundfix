@@ -223,7 +223,9 @@ field and no schema version change.
   not reported. A collision that only appears between planning and apply is
   outside what the plan can see.
 - A citation is recognized only as an exact repository-relative path, or as a
-  Markdown link destination. A partial path in prose, an HTML anchor or a
+  Markdown link destination. A bare path in prose that contains a space or a
+  character outside `letters, digits and ._~/@+-` is not recognized; the same
+  path written as a Markdown link destination is. A partial path in prose, an HTML anchor or a
   generated link is not recognized.
 - When a tracked file has uncommitted edits, the scan reads its working-tree
   bytes, as the rest of planning does.

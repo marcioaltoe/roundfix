@@ -120,7 +120,10 @@ the plan**. Both sides are computed from sets built once:
 A citing file `C` has an after-location `C′`: the move's `To` when `C` is
 relocated, else `C` itself.
 
-- **Repository-path tokens**, in every scanned file. A token is a maximal run
+- **Repository-path tokens**, in every scanned file. A path containing a
+  space or another character outside the token grammar is recognized only as
+  a Markdown link destination (for example `<docs/a b.md>`), never as bare
+  prose; the PRD records this limit. A token is a maximal run
   of letters, digits and `._~/@+-` that contains `/`. It is normalized by
   removing one leading `./` and trailing `.,:;/` characters. A normalized token
   `T` that exists before is a citation. It resolves to `T` both before and
@@ -237,8 +240,8 @@ the unscanned summary. They follow the existing history-layout warnings in
 ## Integration Points
 
 - **History layout discovery.** The scan consumes the ledger that
-  `planHistoryMoves` builds, including occupied-destination collisions, which
-  the ledger lists. It uses `historyMoveSourceRoot` to find unit directories.
+  `planHistoryMoves` builds. The ledger lists occupied-destination collisions
+  too, and the files-after model leaves those out because apply refuses them. It uses `historyMoveSourceRoot` to find unit directories.
   Discovery itself is unchanged.
 - **Plan digest and validation.** `computePlanDigest` and `ValidatePlanDocument`
   are unchanged. Warnings are already part of the hashed payload, and shape
@@ -313,8 +316,10 @@ the unscanned summary. They follow the existing history-layout warnings in
 - **False negatives by design.** Prose relative paths, HTML anchors and wiki
   links are not recognized. The PRD records this limit, and the warning never
   claims completeness.
-- **A collided relocation.** A move that apply later refuses is still counted
-  as moving, because the plan lists it. The PRD records this limit.
+- **A collided relocation.** A move whose destination is already occupied is
+  left out of the files-after set, because apply refuses it and leaves its
+  source in place. A collision that only appears between planning and apply is
+  outside what the plan can see. The PRD records this limit.
 - **Secrets.** Only index paths are read, and only path-shaped text is echoed.
   A secret committed to a tracked file never reaches a message, because a
   message quotes only a token that equals a tracked path or a link destination.
