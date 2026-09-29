@@ -1,9 +1,12 @@
 ---
 spec: 0178-a-qa-audit-across-every-run-of-a-spec
-status: active
+status: archived
 created: 2026-09-28
 surfaces: [backend, docs]
+archived: "2026-09-28"
+source_slug: 0178-a-qa-audit-across-every-run-of-a-spec
 ---
+
 
 # A QA audit across every Run of a Spec
 
