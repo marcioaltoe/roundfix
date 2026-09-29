@@ -59,7 +59,8 @@ func TestDeliverStatusPrintsTheItemWorktree(t *testing.T) {
 	if code != exitOK || stderr.Len() != 0 {
 		t.Fatalf("deliver status without worktree exit=%d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
 	}
-	if got, want := stdout.String(), implementTestSlug+"\tqueued\t-\t-\n"; got != want {
+	if got, want := stdout.String(), implementTestSlug+"\tqueued\t-\t-\n"+
+		"Limits: deadline none, retries per item none, concurrency 1, spend not measured\n"; got != want {
 		t.Fatalf("deliver status without worktree = %q, want %q", got, want)
 	}
 	runStore, err := store.Open(context.Background(), homeDir)
@@ -98,7 +99,10 @@ func TestDeliverStatusPrintsTheItemWorktree(t *testing.T) {
 	if code != exitOK || stderr.Len() != 0 {
 		t.Fatalf("deliver status exit=%d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
 	}
-	if got, want := stdout.String(), implementTestSlug+"\tparked\treview-stale\t/worktrees/delivery-item\n"; got != want {
+	if got, want := stdout.String(), implementTestSlug+"\tparked\treview-stale\t/worktrees/delivery-item\n"+
+		"Limits: deadline none, retries per item none, concurrency 1, spend not measured\n"+
+		"Pending question: "+implementTestSlug+" parked review-stale\n"+
+		"Answer: resolve the blocker, then run roundfix deliver retry "+implementTestSlug+"\n"; got != want {
 		t.Fatalf("deliver status = %q, want %q", got, want)
 	}
 }

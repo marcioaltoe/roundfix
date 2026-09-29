@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0180-a-prepared-queue-that-revalidates-before-each-spec
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -67,3 +67,59 @@ task_02 records and enforces queue limits, but the operator has no way to set th
 - `_techspec.md` → API Contract 5; API Contract 7; Testing Approach 4
 
 ## Result
+
+Implemented the public queue-limit flags, persisted deadline and retry-limit
+reporting, and the single Pending Question derived from persisted parked items.
+`deliver start` now rejects explicit non-positive limits before opening the Run
+Database, records valid limits through `CreateDeliveryQueueWithLimits`, and
+prints the `Limits:` line before the owner report. `deliver status` preserves
+the item and warning rows, then prints limits and at most one question for the
+lowest-position parked item.
+
+Added the Pending Question domain helper and public-CLI coverage. The owner-pass
+case advances an injected Delivery Engine clock beyond the queue deadline and
+proves that the parked item and its question remain unchanged. Existing exact
+status expectations were updated only for the newly required limits/question
+output, including the warning-focused status cases invalidated by the added
+`Limits:` line.
+
+Documented `--max-duration`, `--max-retries`, `Limits:`, `queue-deadline`, retry
+limit refusal, and `Pending question:` in the command guide and canonical
+Roundfix skill. Added the four required glossary terms with `_Avoid_` lines,
+made Delivery Queue name its limits, and regenerated the embedded Roundfix
+skill with `make skills-sync`.
+
+Acceptance evidence:
+
+- Limit recording and `none`: `TestDeliverStartRecordsAndPrintsItsLimits` and
+  `TestDeliverStartRecordsNoneForOmittedLimits` passed in the focused command
+  test run; the former bounded the stored two-hour deadline by timestamps taken
+  around the public CLI call and observed retry limit `2`.
+- Invalid limits and no queue: the zero and negative subtests of
+  `TestDeliverStartRefusesANonPositiveMaxDuration`,
+  `TestDeliverStartRefusesAMalformedMaxDuration`, and the zero and negative
+  subtests of `TestDeliverStartRefusesAMaxRetriesBelowOne` passed and observed
+  no Run Database.
+- One question: `TestDeliverStatusPrintsOnePendingQuestion` passed with two
+  parked items, the lower-position item selected, one waiting item, and one
+  `Pending question:` line. `TestDeliverStatusPrintsNoQuestionWithoutAParkedItem`
+  and `TestNoPendingQuestionWithoutAParkedItem` passed.
+- Answers and persistence: `TestPendingQuestionAnswersEachBlockerClass`,
+  `TestPendingQuestionIsTheLowestPositionParkedItem`, and
+  `TestAPendingQuestionSurvivesOwnerPassesAndTime` passed. The last test moved
+  the injected clock past the deadline before an Engine owner pass and compared
+  the question before and after.
+- Help and documentation: `TestDeliverHelpNamesTheLimitFlags` passed. Focused
+  fixed-string searches found both flags, `Limits:`, `queue-deadline`, and
+  `Pending question:` in the guide and both skill copies, and found all four
+  glossary headings in `CONTEXT.md`. The canonical and embedded Roundfix skill
+  directories have no diff after synchronization.
+
+Focused checks:
+
+- `GOCACHE=/private/tmp/roundfix-task04-gocache go test -count=1 -run 'Test(PendingQuestion|NoPendingQuestion|APendingQuestion|DeliverStartRecords|DeliverStartRefuses|DeliverStatusPrintsOne|DeliverStatusPrintsNo|DeliverHelpNames)' ./internal/delivery ./internal/cli` — passed.
+- `GOCACHE=/private/tmp/roundfix-task04-gocache go test -count=1 ./internal/delivery ./internal/cli` — passed with process-table access. The sandboxed run reached two pre-existing force-stop integration tests and was denied process-table access; rerunning the same command with that permission passed both packages.
+- `GOCACHE=/private/tmp/roundfix-task04-gocache make verify-incremental` — passed with process-table access. The sandboxed attempt had the same two environment-only force-stop failures before the permitted rerun passed.
+- `git diff --check` — passed.
+
+The Task's declared `## Verification` command was not run; the Daemon owns it.

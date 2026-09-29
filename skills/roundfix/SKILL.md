@@ -289,7 +289,7 @@ terminal session:
 
 ```bash
 roundfix deliver plan [--json] [<slug>...]
-roundfix deliver start <slug>...
+roundfix deliver start [--max-duration <duration>] [--max-retries <n>] <slug>...
 roundfix deliver status
 roundfix deliver resume
 roundfix deliver retry <slug>
@@ -339,6 +339,21 @@ and its reasons, points to `roundfix deliver plan`, and records no queue. A
 strict Spec-check finding appears in the plan but does not refuse start; the
 queue revalidates that Spec against its own starting main.
 
+Use `--max-duration <duration>` with a positive Go duration to set the queue
+deadline, and use `--max-retries <n>` with an integer of at least `1` to limit
+retries per item. Omitted limits are recorded as `none`. Start and status print
+the recorded values as:
+
+```text
+Limits: deadline <RFC 3339 UTC|none>, retries per item <n|none>, concurrency 1, spend not measured
+```
+
+At or after the deadline, the owner parks each item that has not started as
+`queue-deadline`; an item that has started continues. A `queue-deadline` item
+cannot be retried. Record a new queue for the remaining Specs instead. When an
+item reaches its retry limit, `deliver retry` refuses the next retry and leaves
+the item unchanged.
+
 After the item worktree is created from that main and before the first Run,
 Roundfix runs the strict Spec Consistency Check in the worktree. A finding
 parks the item as `revalidation-failed: <code>, <code>` before any Run starts.
@@ -356,6 +371,12 @@ against the observed remote state before retrying that action. This prevents a
 lost acknowledgement from creating a second pull request or merge. Before
 publication, the Spec authorization record must grant all three operations:
 `push`, `pull_request`, and `merge`.
+
+`deliver status` prints the item rows, warning rows, and the `Limits:` line.
+When one or more items are parked, it prints exactly one `Pending question:`
+for the lowest-position parked item, the action that answers it, and the count
+waiting behind it. Only `deliver retry` or recording a new queue answers that
+question; owner passes and elapsed time do not.
 
 Use `roundfix deliver retry <slug>` to return one parked item to the queue.
 For an active Spec that has not run, Roundfix first repeats the strict check in
