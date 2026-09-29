@@ -115,7 +115,8 @@ the sealed cap.
   messages and `Message` to them joined with `"\n\n"`. One message therefore
   leaves `Message` exactly as before.
 - **Sealed prompts.** `sealedStreamParser.consumeSessionUpdate` observes
-  message and thought updates. The cap `SealedPromptMaxOutputBytes` applies to
+  message, thought, tool and plan updates, the same boundary set the prompt
+  parser uses. The cap `SealedPromptMaxOutputBytes` applies to
   the log's total message bytes. A tool update still sets `ErrSealedToolUse`.
   `SealedPromptResult.Output` is the bytes of `final()`.
 - **The review.** `classifyReviewCommandResult` classifies `result.Answer()`
