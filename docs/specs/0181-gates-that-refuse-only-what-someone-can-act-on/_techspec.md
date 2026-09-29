@@ -105,9 +105,9 @@ gains `recorded []string`.
   into the files `git ls-files --others --exclude-standard -z -- <dir>` lists
   under it, so a new package records its files, not its directory.
 - `commitTask`, which runs only for a completed Task, calls
-  `spec.RecordTaskPaths` before `Committer.Commit` when `recorded` is not
-  empty. The Task file is already in `stageable`, so the section rides in the
-  same commit.
+  `spec.RecordTaskPaths` with `recorded` before `Committer.Commit` every time.
+  An empty list removes a section an earlier attempt left. The Task file is
+  already in `stageable`, so the section rides in the same commit.
 - The commit event payload gains `"recorded_paths": recorded` only when it is
   not empty.
 - A failed Task is never committed, so it records nothing.
@@ -117,8 +117,10 @@ gains `recorded []string`.
 already stages the surface with `git add --all` and reads the staged files with
 `stagedSettlePaths`.
 
-- After that read, and for a non-QA Task, it computes the recorded paths the
-  same way, reading deleted paths too.
+- After that read, and for a non-QA Task it settles `completed`, it computes
+  the recorded paths the same way, reading deleted paths too. A Task it settles
+  `failed` records nothing: settle calls `spec.RecordTaskPaths` with an empty
+  list, which only removes a section an earlier attempt left.
 - It writes the section with `spec.RecordTaskPaths`, then stages the Task file
   again before `Committer.Commit`.
 - A surface a Hook Refusal left behind already holds the Daemon's section, and
@@ -144,8 +146,11 @@ the body with a new `qaReportPrePullRequestRows(body []byte) int`. The function
 walks the `## Results` section with the same fence, heading and table helpers
 `qaReportHollow` uses. It reads each table whose header has both a `Status` and
 a `Provenance` column, compared trimmed and case-insensitively. It counts a row
-whose trimmed status equals `QANoOpenPullRequestStatus` case-insensitively and
-whose provenance contains `QAPullRequestRowSource` case-insensitively. A table
+whose trimmed status equals `QANoOpenPullRequestStatus` exactly, and one item
+of whose provenance, split on `;` and `,` and trimmed, equals
+`QAPullRequestRowSource` exactly. A provenance that merely contains the words,
+such as `not a Pull Request row`, and a status differing in case excuse
+nothing. A table
 without a `Provenance` column contributes nothing. Frontmatter counts are read
 and validated exactly as before.
 

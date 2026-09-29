@@ -20,8 +20,8 @@ A Task's `## Context` names the paths it plans to edit. An Agent that needs a fi
    - `RecordedTaskPaths` reads the paths back.
 2. MUST keep the Task parser, `CarryForwardInputs`, the fifty-entry Context limit and `RecordCarryForward` unaware of the section. A Task file carrying it MUST parse to the same Context and yield the same `CarryForwardInputs` as without it. The authored `## Context` MUST stay byte-identical.
 3. MUST make `prepareTaskCommit` compute `recorded` for every Task whose type is not `qa`. It uses `spec.UndeclaredTaskPaths` with `speccheck.GovernedPath` over the staged paths, after expanding each untracked directory entry into the files `git ls-files --others --exclude-standard -z -- <dir>` lists under it.
-4. MUST make `commitTask`, which runs only for a completed Task, write the section with `spec.RecordTaskPaths` before `Committer.Commit` when `recorded` is not empty, so the section rides in the same Task commit. The `daemon.commit` event payload MUST carry `recorded_paths` with the same paths only when it is not empty. A failed Task, a QA Task and a Task whose every changed path is declared MUST record nothing and carry no `recorded_paths` key.
-5. MUST make `settleTaskAndCommit` compute the same record for a non-QA Task from the paths `stagedSettlePaths` reports, deleted paths included. It writes the section with `spec.RecordTaskPaths` and stages the Task file again before `Committer.Commit`. Its stdout, stderr and exit codes MUST not change otherwise.
+4. MUST make `commitTask`, which runs only for a completed Task, call `spec.RecordTaskPaths` with `recorded` before `Committer.Commit` every time, even when `recorded` is empty, so the section rides in the same Task commit and an empty list removes a section an earlier attempt left. The `daemon.commit` event payload MUST carry `recorded_paths` with the same paths only when it is not empty. A failed Task, a QA Task and a Task whose every changed path is declared MUST record nothing and carry no `recorded_paths` key.
+5. MUST make `settleTaskAndCommit` compute the same record for a non-QA Task whose settled status is `completed`, from the paths `stagedSettlePaths` reports, deleted paths included. It writes the section with `spec.RecordTaskPaths` and stages the Task file again before `Committer.Commit`. For a Task it settles `failed` it records nothing: it calls `spec.RecordTaskPaths` with an empty list, which only removes a section an earlier attempt left. Its stdout, stderr and exit codes MUST not change otherwise.
 6. MUST never record a Governed Path. A Governed Path stays under its authorization exactly as before.
 7. MUST name the section in `docs/user-guide/commands.md`, both where the Task commit an Implement Run creates is described and in the `roundfix settle` section, including that a recorded path is disclosed and reserves nothing.
 8. MUST change no exported function signature and rename or remove no top-level test. It MUST update only the existing tests this change invalidates and name each in the Result.
@@ -43,7 +43,8 @@ A Task's `## Context` names the paths it plans to edit. An Agent that needs a fi
 - [ ] An authorized Governed Path a Task changes is never recorded.
 - [ ] Replacing a section keeps every other byte of the Task file, an empty list removes the section, and an unrecordable path is refused without a write.
 - [ ] A Task file with the section parses to the same Context and yields the same `CarryForwardInputs`.
-- [ ] `roundfix settle` records the undeclared paths of the Task commit it creates, and records nothing when every path is declared.
+- [ ] `roundfix settle` records the undeclared paths of the Task commit it creates for a completed Task, and records nothing when every path is declared or when it settles the Task `failed`.
+- [ ] A Task file that already carries a section from an earlier attempt loses it when the new commit has no undeclared path.
 
 ## Context
 

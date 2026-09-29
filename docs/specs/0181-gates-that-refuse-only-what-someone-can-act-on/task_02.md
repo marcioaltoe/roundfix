@@ -17,7 +17,7 @@ The authored QA gate runs before any Pull Request exists. Every matrix therefore
 1. MUST add the exported constants `QANoOpenPullRequestStatus` (`blocked (environment: no open Pull Request)`) and `QAPullRequestRowSource` (`Pull Request row`) to `internal/spec/qa.go`, and `RowsBlockedPrePullRequest int` to `QAReport`.
 2. MUST derive `RowsBlockedPrePullRequest` in `readQAReport` from the report body alone, with the same fence, heading and table helpers `qaReportHollow` uses:
    - it reads only tables inside `## Results` whose header has both a `Status` and a `Provenance` column, compared trimmed and case-insensitively;
-   - it counts a row only when its trimmed status equals `QANoOpenPullRequestStatus` case-insensitively and its provenance contains `QAPullRequestRowSource` case-insensitively.
+   - it counts a row only when its trimmed status equals `QANoOpenPullRequestStatus` exactly, and one item of its provenance, split on `;` and `,` and trimmed, equals `QAPullRequestRowSource` exactly. A provenance that merely contains the words, such as `not a Pull Request row`, and a status differing in case excuse nothing.
 
    A table without a `Provenance` column contributes nothing. The frontmatter counts MUST be read and validated exactly as before.
 3. MUST change only the environment check of the `partial` branch of `QAReportEligibility`. Let `excused` be the smaller of `RowsBlockedPrePullRequest` and `RowsBlockedEnvironment`. When environment-blocked rows remain beyond `excused`, it refuses:
@@ -41,7 +41,7 @@ The authored QA gate runs before any Pull Request exists. Every matrix therefore
 
 - [ ] A declared `partial` whose only environment-blocked row is the pre-PR Pull Request row, with the declared rows covered by the PRD's declarations, is eligible.
 - [ ] A `partial` with one pre-PR row and one other environment-blocked row refuses with `rows_blocked_environment is 2, 1 outside the pre-PR Pull Request row; expected 0 outside it`.
-- [ ] A row with the no-PR status whose provenance does not name the Pull Request row, and a Results table without a provenance column, excuse nothing, and the refusal keeps its unchanged message.
+- [ ] A row with the no-PR status whose provenance does not name the Pull Request row as one of its items (including `not a Pull Request row`), a status differing in case, and a Results table without a provenance column excuse nothing, and the refusal keeps its unchanged message.
 - [ ] A `pass` report's eligibility is unchanged, and a `partial` with no declared row still refuses as before.
 - [ ] The built binary's `roundfix qa-report accept` exits `0` on Spec 0179's archived `qa-report-2026-09-29.md`.
 
