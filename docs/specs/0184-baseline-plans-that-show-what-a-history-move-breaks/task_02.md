@@ -22,7 +22,7 @@ changed must no longer apply.
 
 ## Requirements
 
-1. MUST call `relocationCitationFindings(ctx, root, moves)` in
+1. MUST call `relocationCitationFindings(ctx, root, moves, refused)`, with `refused` built from the `historyDestinationOccupied` collisions `discoverHistoryLayout` reported, in
    `planHistoryMoves` in `internal/baseline/plan.go`. The call happens after the
    ledger is sorted and ordinals are assigned, and only when the ledger is
    non-empty. The result MUST be appended after the existing retained-review

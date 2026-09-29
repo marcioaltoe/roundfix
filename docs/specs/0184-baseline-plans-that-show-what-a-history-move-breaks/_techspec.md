@@ -76,9 +76,10 @@ therefore never scans, and it cannot be affected by a citing file.
 // relocationCitationFindings returns one warning per tracked file whose
 // citations resolve before the given History Relocations and not after them,
 // followed by at most one omitted and one unscanned summary. It returns nil
-// without touching Git or the filesystem when moves is empty.
+// without touching Git or the filesystem when moves is empty. refused names,
+// by From, the moves discovery reported as occupied-destination collisions.
 func relocationCitationFindings(
-	ctx context.Context, root string, moves []HistoryMove,
+	ctx context.Context, root string, moves []HistoryMove, refused map[string]bool,
 ) ([]Finding, error)
 
 // listTrackedPaths returns the Git index paths of root, NUL-separated and
@@ -104,10 +105,13 @@ the plan**. Both sides are computed from sets built once:
 
 - **Files before.** The tracked paths.
 - **Files after.** The files before, minus every applied move's `From`, plus
-  every applied move's `To`. A move whose `To` is already a file before is not
-  applied: `baseline apply` refuses it and leaves its source in place
+  every applied move's `To`. A move that history-layout discovery reports as an
+  occupied-destination collision (`historyDestinationOccupied`, which
+  `planHistoryMoves` already computes from the filesystem, tracked or not) is
+  not applied: `baseline apply` refuses it and leaves its source in place
   (`HistoryMoveRefusal` in `internal/baseline/transaction.go`). Such a move
   changes neither set, and its source keeps its after-location.
+  `planHistoryMoves` passes those collisions to the scan with the moves.
 - **Unit directories.** Every directory that contains a move's `From` and lies
   strictly below that move's source root, as `historyMoveSourceRoot` gives it.
   Examples are `docs/specs/_archived/0012-x` or a legacy Review Artifact

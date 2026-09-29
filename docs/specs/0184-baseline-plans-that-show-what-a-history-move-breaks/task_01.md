@@ -25,7 +25,7 @@ content other than path text. This Task does not wire the scan into planning.
 ## Requirements
 
 1. MUST add, in a new `internal/baseline/history_citations.go`,
-   `relocationCitationFindings(ctx context.Context, root string, moves []HistoryMove) ([]Finding, error)`.
+   `relocationCitationFindings(ctx context.Context, root string, moves []HistoryMove, refused map[string]bool) ([]Finding, error)`, where `refused` names by `From` the moves discovery reported as occupied-destination collisions.
    It returns nil with no Git call and no filesystem access when `moves` is
    empty.
 2. MUST list the index with `listTrackedPaths(ctx, root)`. That function runs
@@ -38,9 +38,11 @@ content other than path text. This Task does not wire the scan into planning.
    failure MUST be returned as an error.
 3. MUST implement the resolution model in `_techspec.md` → Implementation
    Design → The resolution model:
-   - files before and files after, where a move whose `To` already exists
-     before is left out, because `baseline apply` refuses it and leaves its
-     source in place;
+   - files before and files after, where a move that history-layout discovery
+     reports as an occupied-destination collision is left out, because
+     `baseline apply` refuses it and leaves its source in place. The scan
+     receives those collisions from `planHistoryMoves`; it never stats an
+     untracked destination itself;
    - unit directories strictly below a move's `historyMoveSourceRoot`, with
      family and legacy roots never targets;
    - the citing file's after-location;
