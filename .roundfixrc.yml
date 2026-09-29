@@ -212,10 +212,11 @@ notify:
   command: ""
 budget:
   enabled: true
-  # Raised from 2h on 2026-09-28 (maintainer approval): serial Task Graphs of
-  # four to six Tasks plus QA stopped four Runs at BudgetExceeded in one day.
-  # Spec 0177 renews the budget at each Task settlement; revisit after it ships.
-  max_run_duration: 4h
+  # Back to 2h on 2026-09-29 (maintainer approval). Spec 0177 renews the budget
+  # at each Task settlement, and no Wave 4 Run exceeded 62 minutes (44, 62 and
+  # 16 minutes measured). It had been raised to 4h on 2026-09-28, after serial
+  # Task Graphs stopped four Runs at BudgetExceeded before that renewal existed.
+  max_run_duration: 2h
 resolve:
   # Review Issues handed to one Agent Batch. Raised from 3 on 2026-08-05: the
   # 0012 review resolved 22 issues and the 0015 review 28, so a batch of 3 spent
