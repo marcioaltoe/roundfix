@@ -34,8 +34,10 @@ Task Worktrees, and QA uses its own Agent Session after Tasks settle.
 Use the Doctor Command, `roundfix doctor`, to diagnose Run readiness without
 installing dependencies, writing config, or changing files. Doctor runs the
 shared Node.js, minimum-supported acpx, effective adapters, configured Agent
-Selection Profiles, Repository Skill Set, and codex runtime hygiene checks and
-prints one line per check with status `ok`, `failed`, or `skipped`. Adapter
+Selection Profiles, Repository Skill Set, process residue, storage check, and
+codex runtime hygiene checks and prints one line per check with status `ok`,
+`failed`, or `skipped`; residue and storage can also report `found` or
+`partial`. Adapter
 Readiness requires the effective Codex command to prove official
 `@agentclientprotocol/codex-acp` lineage at version `1.1.5` or newer and the
 effective Claude command to prove official

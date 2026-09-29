@@ -71,8 +71,9 @@ roundfix doctor
 ```
 
 Read-only readiness report; mutates nothing and exits nonzero when any check
-fails. One stdout line per check with `ok`, `failed`, or `skipped`; failure
-lines include `next: <action>` when a remediation is known. The checks:
+fails. One stdout line per check with `ok`, `failed`, or `skipped`; `residue:`
+and `storage:` also report `found` or `partial`. Failure lines include
+`next: <action>` when a remediation is known. The checks:
 
 - `node:` — Node.js meets the minimum version.
 - `acpx:` — the installed acpx version is at least the minimum supported
@@ -93,6 +94,12 @@ lines include `next: <action>` when a remediation is known. The checks:
   the 14 Roundfix-owned skills, including the Roundfix Skill. Each of the 25
   required external skills must hash to its `computedHash` in
   `skills-lock.json`.
+- `residue:` — live processes from terminal Run lineages, or a partial result
+  when Doctor cannot inspect every lineage.
+- `storage:` — whether Run storage is reclaimable from terminal Runs or free
+  Run Database pages, with the applicable `roundfix gc` next action. It is
+  read-only and never reports failed, so it does not change Doctor's exit
+  code.
 - `codex:` — macOS-only runtime hygiene: inspects `com.apple.quarantine` (the
   real XProtect trigger) and code-signature validity, resolving `CODEX_PATH`
   first and then `codex` on `PATH`. It does not use `spctl --assess`, which
@@ -116,6 +123,8 @@ acpx: ok
 adapter: ok (claude: command="npx -y @agentclientprotocol/claude-agent-acp@0.63.0"; package=@agentclientprotocol/claude-agent-acp; version=0.63.0 | codex: command="npx -y @agentclientprotocol/codex-acp@1.1.5"; package=@agentclientprotocol/codex-acp; version=1.1.5)
 profiles: ok (3 distinct tuples; 10 category references)
 skills: ok (39 required: 14 Roundfix-owned, 25 external)
+residue: ok (no process residue found)
+storage: ok (nothing to reclaim; Runs reclaimable: 0; Run Database free bytes: 0)
 codex: ok
 ```
 
