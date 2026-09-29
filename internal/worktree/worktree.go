@@ -221,8 +221,9 @@ const (
 const qaReportOnlyLogFormat = "%x00%x00%B%x00%x00"
 
 var (
-	errBranchAbsent    = errors.New("branch is absent")
-	errBranchAmbiguous = errors.New("short ref is ambiguous")
+	errBranchAbsent         = errors.New("branch is absent")
+	errBranchAmbiguous      = errors.New("short ref is ambiguous")
+	errRecordedRootVanished = errors.New("recorded Git root does not exist")
 )
 
 type RunWorktreeReconciliation struct {
@@ -315,7 +316,7 @@ func countRetainedTerminalRuns(ctx context.Context, runner gitRunner, runs []sto
 	for _, group := range groups {
 		branches := map[string]bool{}
 		gitRoot, err := recordedGitRoot(ctx, runner, group.root)
-		if errors.Is(err, fs.ErrNotExist) {
+		if errors.Is(err, errRecordedRootVanished) {
 			for _, run := range group.runs {
 				key := run.RepositoryRoot
 				if strings.TrimSpace(key) == "" || key == group.root {
@@ -2497,16 +2498,19 @@ func recordedGitDirectory(value string) (string, error) {
 	if !filepath.IsAbs(root) || filepath.Clean(root) != root {
 		return "", fmt.Errorf("inspect terminal Run: recorded Git root %q must be a clean absolute path", value)
 	}
+	info, err := os.Lstat(root)
+	if errors.Is(err, fs.ErrNotExist) {
+		return "", fmt.Errorf("inspect terminal Run: stat recorded Git root %q: %w", root, errRecordedRootVanished)
+	}
+	if err != nil {
+		return "", fmt.Errorf("inspect terminal Run: stat recorded Git root %q: %w", root, err)
+	}
 	hasSymlink, err := pathContainsSymlink(root)
 	if err != nil {
 		return "", fmt.Errorf("inspect terminal Run: stat recorded Git root %q: %w", root, err)
 	}
 	if hasSymlink {
 		return "", fmt.Errorf("inspect terminal Run: recorded Git root %q contains a symlink", root)
-	}
-	info, err := os.Stat(root)
-	if err != nil {
-		return "", fmt.Errorf("inspect terminal Run: stat recorded Git root %q: %w", root, err)
 	}
 	if !info.IsDir() {
 		return "", fmt.Errorf("inspect terminal Run: recorded Git root %q is not a real directory", root)
@@ -2519,22 +2523,19 @@ func recordedRepositoryKeyRoot(ctx context.Context, runner gitRunner, value stri
 	if err == nil {
 		return root, nil
 	}
-	if errors.Is(err, fs.ErrNotExist) {
+	if errors.Is(err, errRecordedRootVanished) {
 		return "", nil
 	}
 	recordedRootErr := err
 	root, err = recordedGitDirectory(value)
 	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
+		if errors.Is(err, errRecordedRootVanished) {
 			return "", nil
 		}
 		return "", recordedRootErr
 	}
 	output, err := runner.Run(ctx, root, "rev-parse", "--absolute-git-dir")
 	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return "", nil
-		}
 		return "", recordedRootErr
 	}
 	gitDir := strings.TrimSpace(output)

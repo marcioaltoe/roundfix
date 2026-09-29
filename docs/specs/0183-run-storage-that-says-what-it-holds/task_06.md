@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0183-run-storage-that-says-what-it-holds
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -44,3 +44,42 @@ task_02 makes the retained-Run count treat a recorded Git root that no longer ex
 - task_02
 
 ## Result
+
+### Implementation
+
+- Recorded-root validation now emits a private vanished-root sentinel only
+  when `os.Lstat` reports that the recorded path does not exist. The
+  retained-Run count and repository-key fallback match that sentinel instead
+  of the broader `fs.ErrNotExist` chain.
+- Git runner failures remain inspection failures even when they wrap
+  `ENOENT`. Existing missing-checkout, bare-key, symlink and Run Worktree
+  behavior is unchanged.
+- `TestCountRetainedTerminalRunsReportsAGitLaunchFailure` uses an existing
+  recorded root and a runner returning `*exec.Error` with `fs.ErrNotExist`,
+  matching a missing Git executable.
+
+### Focused checks
+
+- Before the production edit,
+  `rtk env GOCACHE=/tmp/roundfix-task06-gocache go test -run '^TestCountRetainedTerminalRunsReportsAGitLaunchFailure$' ./internal/worktree`
+  failed because the count returned no inspection failure.
+- After the production edit, the same focused command passed.
+- `rtk env GOCACHE=/tmp/roundfix-task06-gocache go test -run '^TestCountRetainedTerminalRuns' ./internal/worktree`
+  passed after the final implementation edit, covering the new launch-failure
+  case and all existing retained-count cases.
+- `rtk env GOCACHE=/tmp/roundfix-task06-gocache make verify-incremental`
+  passed outside the sandbox, including `go vet`, all Go packages, skill
+  checks and the build. The sandboxed attempt was blocked when a test tried to
+  access `cafe.github.com`; the approved rerun completed with exit code 0.
+- The Daemon-owned command under `## Verification` was not run.
+
+### Acceptance evidence
+
+- `TestCountRetainedTerminalRunsReportsAGitLaunchFailure` passed: an existing
+  recorded root plus a missing-executable error returned zero retained Runs
+  and one inspection failure containing the Git context.
+- `TestCountRetainedTerminalRunsCountsOnlyAnExistingWorktreeWhenTheRepositoryIsGone`
+  passed in the retained-count selection: a genuinely absent recorded root
+  still produced no warning and only the existing recorded Run Worktree
+  counted. The same selection kept the bare-repository-key and symlinked-root
+  cases green.
