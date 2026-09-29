@@ -1,9 +1,17 @@
 ---
 spec: 0179-review-findings-with-evidence-and-no-unselected-providers
-status: active
+status: archived
 created: 2026-09-28
 surfaces: [backend, cli, docs]
+archived: "2026-09-29"
+source_slug: 0179-review-findings-with-evidence-and-no-unselected-providers
+unproven:
+    - the task_02 tests (every ledger field and each refusal) executed against the built tree, and the first `roundfix review dispose` run on a real findings record after this Spec merges
+    - the task_03 tests executed against the built tree, and the first reuse of a real findings record after this Spec merges
+    - the captured bodies checked against the dispositions the ledger format can express, and a live replay after this Spec merges
+    - the repository checks and the pre-PR review recorded on the pull request at publication, before merge
 ---
+
 
 # Review findings with evidence, and no unselected providers
 
