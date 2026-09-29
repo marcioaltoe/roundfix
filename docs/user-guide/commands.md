@@ -167,10 +167,13 @@ roundfix review dispose <finding-id> --fixed-by <commit>
 ```
 
 Runs the configured pre-Pull-Request reviewer over the current candidate. The
-workflow computes the diff from the selected base to the current head and
-hands that diff to the Codex reviewer in a read-only session; it does not ask
-the reviewer to discover the candidate. The resulting record names the
-repository, base commit, head commit, effective provider, and policy source.
+workflow computes the candidate diff from the merge base of the current head
+and the selected base, then hands that diff to the Codex reviewer in a
+read-only session; it does not ask the reviewer to discover the candidate. The
+resulting record names the repository, that merge base as `baseCommit`, the
+resolved base tip as `baseTipCommit`, the head commit, effective provider, and
+policy source. A head with no shared history with the selected base exits `2`
+before any reviewer call or readiness probe.
 
 `--base <ref>` selects the base Git ref. When omitted, Roundfix uses the
 repository's default branch.
@@ -219,12 +222,13 @@ dismissals, invalid fixing commits, and a second disposition. Every refusal
 exits `2`, starts stderr with `roundfix: review dispose refused:`, and appends
 nothing.
 
-For `codex` and `claude`, a findings verdict stands for its repository, base
-commit, head commit, and provider. When the Artifact Directory already holds a
-matching `findings` or `findings-dismissed` record, Roundfix reuses it before
-preparing, probing, or prompting an Agent session. The reused record sets
-`reused` and carries the ledger entries whose repository, head, finding
-identity, and text match its `findingItems` in `dispositions`.
+For `codex` and `claude`, a findings verdict stands for its repository,
+`baseCommit`, head commit, and provider while the base branch moves. When the
+Artifact Directory already holds a matching `findings` or
+`findings-dismissed` record, Roundfix reuses it before preparing, probing, or
+prompting an Agent session. The reused record sets `reused` and carries the
+ledger entries whose repository, head, finding identity, and text match its
+`findingItems` in `dispositions`.
 
 When every finding has one evidence-backed `dismissed` disposition, the reused
 record reports `findings-dismissed` and exits `0`. Otherwise it remains

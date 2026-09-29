@@ -60,6 +60,7 @@ type reviewFindingDisposition struct {
 type reviewRecord struct {
 	Repository           string                     `json:"repository"`
 	BaseCommit           string                     `json:"baseCommit"`
+	BaseTipCommit        string                     `json:"baseTipCommit,omitempty"`
 	HeadCommit           string                     `json:"headCommit"`
 	Provider             string                     `json:"provider"`
 	Source               string                     `json:"source"`
@@ -397,7 +398,12 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		printReviewCommandFailure(fmt.Errorf("review requires a git repository working tree: %w", err), stderr)
 		return exitPreflight
 	}
-	baseCommit, err := resolveReviewBaseCommit(ctx, req.base, gitState, gitRunner)
+	baseTipCommit, err := resolveReviewBaseCommit(ctx, req.base, gitState, gitRunner)
+	if err != nil {
+		printReviewCommandFailure(err, stderr)
+		return exitPreflight
+	}
+	baseCommit, err := resolveReviewMergeBase(ctx, gitState.Root, baseTipCommit, gitState.HEAD, gitRunner)
 	if err != nil {
 		printReviewCommandFailure(err, stderr)
 		return exitPreflight
@@ -409,6 +415,7 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 
 	record := newReviewRecord(gitState.Root, baseCommit, gitState.HEAD, loaded.Config.PrePRReview, reviewOutcomeBlocked)
+	record.BaseTipCommit = baseTipCommit
 	if record.Provider == "codex" || record.Provider == "claude" {
 		reused, missing, found, err := reusableReviewRecord(artifactDir, record)
 		if err != nil {
@@ -843,6 +850,15 @@ func resolveReviewBaseCommit(ctx context.Context, baseRef string, gitState prefl
 		return "", fmt.Errorf("resolve review base %q: git returned an empty commit", baseRef)
 	}
 	return commit, nil
+}
+
+func resolveReviewMergeBase(ctx context.Context, gitRoot, tip, head string, runner preflight.GitRunner) (string, error) {
+	mergeBase, err := runner.RunGit(ctx, gitRoot, "merge-base", tip, head)
+	mergeBase = strings.TrimSpace(mergeBase)
+	if err != nil || mergeBase == "" {
+		return "", fmt.Errorf("review head shares no history with the base: head %q, base %q; pass --base <ref>", head, tip)
+	}
+	return mergeBase, nil
 }
 
 func runConfiguredReviewSession(

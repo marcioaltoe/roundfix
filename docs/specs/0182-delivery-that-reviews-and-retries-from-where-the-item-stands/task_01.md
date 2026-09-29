@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0182-delivery-that-reviews-and-retries-from-where-the-item-stands
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -24,18 +24,18 @@ complexity: medium
 
 ## Subtasks
 
-- [ ] Resolve the merge base once and thread it through every base consumer.
-- [ ] Record the tip as `baseTipCommit` and keep reuse keyed on the merge base.
-- [ ] Refuse a head with no shared history before any reviewer call.
-- [ ] Update the guide, the skill and its mirror, and the glossary entry.
-- [ ] Add a test for each acceptance criterion, each negative case separate.
+- [x] Resolve the merge base once and thread it through every base consumer.
+- [x] Record the tip as `baseTipCommit` and keep reuse keyed on the merge base.
+- [x] Refuse a head with no shared history before any reviewer call.
+- [x] Update the guide, the skill and its mirror, and the glossary entry.
+- [x] Add a test for each acceptance criterion, each negative case separate.
 
 ## Acceptance Criteria
 
-- [ ] With the default branch advanced after the candidate was cut, the reviewer's diff contains only the candidate's change, `baseCommit` is `git merge-base <tip> HEAD` and `baseTipCommit` is the tip.
-- [ ] A main-side edit of an archived Spec leaves `archivedSpecs` empty, while a candidate's own edit of an archived Spec is listed.
-- [ ] A findings record written before the default branch moved is reused after it moves, with no reviewer call.
-- [ ] A base ref sharing no history with `HEAD` exits `2`, names both commits and makes no reviewer call.
+- [x] With the default branch advanced after the candidate was cut, the reviewer's diff contains only the candidate's change, `baseCommit` is `git merge-base <tip> HEAD` and `baseTipCommit` is the tip.
+- [x] A main-side edit of an archived Spec leaves `archivedSpecs` empty, while a candidate's own edit of an archived Spec is listed.
+- [x] A findings record written before the default branch moved is reused after it moves, with no reviewer call.
+- [x] A base ref sharing no history with `HEAD` exits `2`, names both commits and makes no reviewer call.
 - [ ] The guide, the skill and its mirror, and the glossary state the merge-base rule, and `make skills-sync-check` passes.
 
 ## Context
@@ -59,3 +59,34 @@ complexity: medium
 - [_prd.md](_prd.md) — Goals 1–2; Core Features 1–2; Success Metrics 1–2
 - [_techspec.md](_techspec.md) — The review diffs from the merge base; API Contract 1; Testing Approach 1; Build Order 1
 - ADR-0169; ADR-0153; ADR-0165
+
+## Result
+
+### Implementation
+
+- `runReviewCommand` now resolves `git merge-base <base-tip> <head>` immediately after the selected base ref, before Artifact Directory validation, record construction, reuse, provider selection, or readiness. The merge base feeds the existing record, reuse, diff, changed-Spec, and prompt paths; the resolved tip is recorded separately as optional `baseTipCommit`.
+- A missing merge base returns exit `2` through `printReviewCommandFailure`, names the head and base commits, ends with `pass --base <ref>`, and reaches no reviewer or readiness boundary.
+- The user guide, canonical Roundfix skill, generated skill mirror, and **Delivery Base** glossary entry now state the merge-base contract. `make skills-sync` regenerated the mirror from the authorized canonical skill.
+- `internal/cli/review_merge_base_test.go` exercises the public review command against real Git repositories with the existing fake reviewer runner; each negative case is independent.
+
+### Focused checks
+
+- Red signal: `rtk env GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 ./internal/cli -run '^TestReviewDiffsTheCandidateFromItsMergeBase$'` failed before production changes because `reviewRecord` had no `BaseTipCommit`.
+- Each of `TestReviewDiffsTheCandidateFromItsMergeBase`, `TestReviewListsOnlyTheArchivedSpecsTheCandidateChanged`, `TestReviewReusesAFindingsVerdictAfterTheBaseBranchMoves`, and `TestReviewRefusesABaseThatSharesNoHistory` passed individually after implementation.
+- `rtk env GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 ./internal/cli -run 'Review'` passed, covering the existing review test family without renaming any existing test.
+- `rtk make skills-sync` exited `0`; `rtk cmp -s .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` exited `0`; targeted text inspection found the merge-base, `baseTipCommit`, moving-base findings, no-shared-history, and glossary statements.
+- `rtk env GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 ./internal/cli` reached unrelated Unix force-stop integration tests and failed because the sandbox denied process-table reads (`operation not permitted`). The review-focused family above passed independently.
+- The authored `## Verification` commands, including `make skills-sync-check`, were not run; they remain Daemon-owned.
+
+### Acceptance evidence
+
+1. `TestReviewDiffsTheCandidateFromItsMergeBase` proves the prompt contains only the candidate change and that `baseCommit` is the merge base while `baseTipCommit` is the moved base tip.
+2. `TestReviewListsOnlyTheArchivedSpecsTheCandidateChanged` proves a base-side archived Spec is excluded and a candidate-side archived Spec is listed.
+3. `TestReviewReusesAFindingsVerdictAfterTheBaseBranchMoves` proves the findings record is reused after the base ref advances and the fake reviewer receives only one prompt across both commands.
+4. `TestReviewRefusesABaseThatSharesNoHistory` proves exit `2`, both commit identities, the prescribed suffix, no reviewer/readiness activity, and no review record.
+5. Targeted inspection proves all four documentation surfaces carry the required statements, and the canonical/mirrored skills are byte-identical. The Daemon still owns the declared `make skills-sync-check` evidence, so this acceptance checkbox remains open for settlement.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260929T174719Z_24238e6aebd23928`
+- Source commit: `d4fc39e08b88e56de7551cb3e8182840b3da9a96`

@@ -37,7 +37,7 @@ A repository path the tooling-authority rules bind — the configuration, script
 _Avoid_: Protected file, restricted path, tooling file
 
 **Delivery Base**:
-The merge base of the audited head and the repository default branch. The mechanical stage reads a Spec's Task commits and its grant from it.
+The merge base of the audited head and the repository default branch. The pre-PR review diffs the candidate from it. The mechanical stage reads a Spec's Task commits and its grant from it.
 _Avoid_: Run start head, audited head, delivery target
 
 **Undeclared Governed Path**:

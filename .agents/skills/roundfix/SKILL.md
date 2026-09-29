@@ -227,11 +227,13 @@ roundfix review dispose <finding-id> --fixed-by <commit>
 ```
 
 `--base` selects the base ref; when omitted, Roundfix uses the repository's
-default branch. The workflow computes the base-to-current-head candidate diff
-and hands that diff to the configured reviewer in a read-only session.
-The review record names the repository, base commit, head commit, effective
-provider, and policy source, so it is bound to the candidate that was
-examined.
+default branch. The workflow computes the candidate diff from the merge base
+of the current head and the selected base, then hands that diff to the
+configured reviewer in a read-only session. The review record names the
+repository, that merge base as `baseCommit`, the resolved base tip as
+`baseTipCommit`, the head commit, effective provider, and policy source, so it
+is bound to the candidate that was examined. A head with no shared history
+with the selected base exits `2` before any reviewer call or readiness probe.
 
 The policy values are `codex`, `claude`, `coderabbit`, and `none`. Explicit
 `none` performs no reviewer call and no readiness probe, records a configured
@@ -275,12 +277,13 @@ unknown identity, invalid or blank form, moved-head dismissal, invalid fixing
 commit, or second disposition exits `2` with
 `roundfix: review dispose refused:` on stderr and appends nothing.
 
-For `codex` and `claude`, a findings verdict stands for its repository, base
-commit, head commit, and provider. When the Artifact Directory already holds a
-matching `findings` or `findings-dismissed` record, Roundfix reuses it before
-preparing, probing, or prompting an Agent session. The reused record sets
-`reused` and carries exact repository, head, finding-identity, and finding-text
-ledger matches in `dispositions`.
+For `codex` and `claude`, a findings verdict stands for its repository,
+`baseCommit`, head commit, and provider while the base branch moves. When the
+Artifact Directory already holds a matching `findings` or
+`findings-dismissed` record, Roundfix reuses it before preparing, probing, or
+prompting an Agent session. The reused record sets `reused` and carries exact
+repository, head, finding-identity, and finding-text ledger matches in
+`dispositions`.
 
 When every finding has one evidence-backed `dismissed` disposition, the reused
 record reports `findings-dismissed` and exits `0`. Otherwise it remains
