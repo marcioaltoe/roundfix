@@ -40,7 +40,9 @@ Backlog Entries, and the efficiency waves hit each of them:
   Database only; no credential is read and no network call is added.
   Publication keeps using the existing GitHub CLI boundary. Source:
   `docs/agents/cli.md`.
-- Active ADR obligations: applicable — ADR-0093 and ADR-0094 make the Spec
+- Active ADR obligations: applicable — ADR-0165 (Spec 0179) parks publication for a corrective
+  Spec after a blocking review past archive, and holds unchanged for the
+  queue. ADR-0093 and ADR-0094 make the Spec
   Consistency Check read citations only and run at every stage, which the
   preparation and the revalidation reuse unchanged. ADR-0117 checks a defect
   at the stage that can produce it, and an earlier item's merge is what

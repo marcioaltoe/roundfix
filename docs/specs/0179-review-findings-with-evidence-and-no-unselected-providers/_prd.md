@@ -185,6 +185,12 @@ needs. An unselected provider is never asked for anything.
   satisfied-by: the captured bodies checked against the dispositions the
   ledger format can express, and a live replay after this Spec merges
 
+- criterion: the Pull Request row — publication evidence on the pull request
+  reason: the QA gate runs before any pull request exists for this candidate,
+  so no pull request surface can be observed
+  satisfied-by: the repository checks and the pre-PR review recorded on the
+  pull request at publication, before merge
+
 ## Recorded limits
 
 - A finding's identity is ordinal within one head's record. A fresh review of
