@@ -1110,7 +1110,10 @@ records a Branch Disposition before removing a Run Branch proven superseded.
 checkout; it accepts Runs whose outcome is `BudgetExceeded`, `Stopped`, or
 `Unresolved` and refuses every other terminal outcome. Carry-forward keeps its
 existing proof requirements and refuses the whole Task set when any member
-cannot be proved.
+cannot be proved. A Task already completed on the checkout is reported as
+`already completed; nothing to carry`; it is not staged or proved and never
+refuses the remaining set. When every candidate is already completed, the
+command succeeds without moving `HEAD`.
 Carry-forward staging commits run without repository hooks because the carried commits already passed Daemon Verification and the repository hooks when the Daemon settled them. The checkout receives those commits only through a fast-forward merge, and carry-forward leaves its Git configuration unchanged.
 There is no force bypass.
 
@@ -1891,7 +1894,11 @@ must pass Task Carry-Forward's existing proofs, including a passing
 Verification verdict, exactly one settlement commit, and unmoved declared
 inputs for each candidate. Input proofs use the checkout plus the accumulating
 staged carries, so each later candidate is compared with the state established
-by earlier carries rather than the raw checkout. It exits `2`, leaves stdout
+by earlier carries rather than the raw checkout. A Task already completed on
+the checkout is reported as `already completed; nothing to carry`, never
+refuses the set, and is omitted from the Tasks named by the refusal. A Run
+whose candidates are all already completed produces no not-available note. It
+exits `2`, leaves stdout
 empty, and writes no Git or Run Database state. The refusal names the Run and
 Tasks to recover and gives the exact next action:
 

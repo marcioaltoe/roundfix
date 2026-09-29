@@ -881,7 +881,11 @@ Spec in the current repository. It considers Runs with outcome Stopped or
 Unresolved when their recorded Run Worktree is present. Preflight Validation
 refuses only when a prior Run's complete candidate set would carry: every
 candidate in that set passes Task Carry-Forward's proofs. A set with any
-refusing candidate is reported and implement proceeds. The refusal exits `2`,
+refusing candidate is reported and implement proceeds. A Task already
+completed on the checkout is reported as `already completed; nothing to carry`,
+never refuses the set, and is omitted from the Tasks the Preflight refusal
+names. A Run whose candidates are all already completed produces no
+not-available note. The refusal exits `2`,
 leaves stdout empty, creates no Run or Agent Session, and writes no Git or Run
 Database state. It names the selected Run and the Tasks it would recover, then
 gives the exact recovery command:
@@ -1215,12 +1219,12 @@ carrying part of it, so a Task whose Spec, instruction, or Context moved since
 settlement is never silently replayed.
 
 Carry-forward records each carried Task as completed and appends its source Run
-and settlement commit to the Task file. Because the carried Task's own file
-becomes a moved input afterwards, the caller effectively gets one carry-forward
-for overlapping work. If you carry from the wrong Run first, a later
-overlapping set is refused as a whole; when several Runs qualify, choose the
-Run that `implement` names, because it has the largest carriable set and uses
-the newest Run to break ties.
+and settlement commit to the Task file. A Task already completed on the
+checkout is reported as `already completed; nothing to carry`; it is not
+staged or proved and never refuses the remaining set. Repeating carry-forward
+when every candidate is already completed succeeds without moving `HEAD`.
+When several Runs qualify, choose the Run that `implement` names, because it
+has the largest carriable set and uses the newest Run to break ties.
 
 Carry-forward staging commits run without repository hooks because the carried commits already passed Daemon Verification and the repository hooks when the Daemon settled them. The checkout still receives the staged commits only through a fast-forward merge, and carry-forward does not change its Git configuration.
 
