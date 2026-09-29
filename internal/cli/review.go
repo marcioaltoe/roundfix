@@ -668,7 +668,7 @@ func runReviewDisposeCommand(ctx context.Context, args []string, stdout, stderr 
 		disposition.FixedBy = fixedBy
 	}
 
-	line, err := appendReviewFindingDisposition(ledgerPath, disposition)
+	line, err := reserveReviewFindingDisposition(ctx, ledgerPath, record, finding, disposition)
 	if err != nil {
 		printReviewDisposeRefusal(err, stderr)
 		return exitPreflight

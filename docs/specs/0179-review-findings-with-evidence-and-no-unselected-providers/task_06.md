@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0179-review-findings-with-evidence-and-no-unselected-providers
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -20,13 +20,13 @@ Corrective Task from the pre-PR review of 2026-09-29. `roundfix review dispose` 
 
 ## Subtasks
 
-- [ ] Implement the requirements above.
-- [ ] Add a named test for each acceptance criterion.
+- [x] Implement the requirements above.
+- [x] Add a named test for each acceptance criterion.
 
 ## Acceptance Criteria
 
-- [ ] Many concurrent `review dispose` invocations for the same finding (helper subprocesses) append exactly one ledger entry, and every other invocation exits `2` with the existing refusal.
-- [ ] Concurrent dispositions of two different findings both succeed.
+- [x] Many concurrent `review dispose` invocations for the same finding (helper subprocesses) append exactly one ledger entry, and every other invocation exits `2` with the existing refusal.
+- [x] Concurrent dispositions of two different findings both succeed.
 
 ## Context
 
@@ -40,3 +40,33 @@ Corrective Task from the pre-PR review of 2026-09-29. `roundfix review dispose` 
 ## References
 
 - [_techspec.md](_techspec.md) — Build Order
+
+## Result
+
+Implemented an exclusive advisory lock on a sibling
+`pre-pr-review-dispositions.jsonl.lock` file. The authoritative duplicate
+check and append now run under one lock, and every acquired lock is unlocked
+and closed on success, duplicate refusal, read failure, or append failure.
+Unix uses `flock`; Windows uses `LockFileEx`. The existing ledger format,
+success output, refusal text, and exit codes are unchanged.
+
+Focused-check evidence:
+
+- Acceptance criterion 1: `GOCACHE=/tmp/roundfix-task06-gocache go test
+  -count=1 -run '^TestConcurrentDisposeOfOneFindingAppendsOnce$'
+  ./internal/cli` exited 0. The test starts 32 synchronized helper processes,
+  observes one exit 0, 31 exits 2 with the existing `already has a
+  disposition` refusal, and one ledger entry.
+- Acceptance criterion 2: `GOCACHE=/tmp/roundfix-task06-gocache go test
+  -count=1 -run '^TestConcurrentDisposeOfTwoFindingsBothSucceed$'
+  ./internal/cli` exited 0. Both helper processes exit 0 and the ledger
+  contains one entry for each finding.
+- Regression coverage: `GOCACHE=/tmp/roundfix-task06-gocache go test -count=1
+  -run '^TestReviewDispose' ./internal/cli` exited 0.
+- Platform build: `GOCACHE=/tmp/roundfix-task06-gocache GOOS=windows
+  GOARCH=amd64 go build ./internal/cli` exited 0. A preceding Windows
+  `go test -c` attempt was blocked by pre-existing Unix-only code in
+  `internal/cli/implement_test.go` (`syscall.Mkfifo`, `Setpgid`, and `Kill`).
+- `git diff --check` exited 0.
+
+The Daemon-owned `## Verification` command was not run.
