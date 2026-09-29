@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0179-review-findings-with-evidence-and-no-unselected-providers
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -137,3 +137,61 @@ nothing, and the evidence text is copied verbatim and never executed.
 - [_techspec.md](_techspec.md) — Finding identity and dispositions
 - `_prd.md` → Goal 2; Core Feature 2; Success Metric 2
 - `_techspec.md` → API Contracts 1-3; Testing Approach 2
+
+## Result
+
+### Implementation
+
+- Added `findingItems` with ordinal `F<n>` identities while preserving the
+  existing findings text. The splitter recognizes the declared bullet and
+  numbered markers, keeps unmarked preambles and continuation lines together,
+  drops blank items, and derives items when an older record omits them.
+- Added `roundfix review dispose` with the dismissal and fixing-commit forms,
+  Git-runner ancestry and reachability checks, exact finding lookup, duplicate
+  detection, RFC 3339 UTC timestamps, append-only JSONL persistence, and the
+  declared stdout, stderr and exit-code contract. Evidence remains inert text.
+- Added the two usage forms to top-level and review help. Documented finding
+  identities, the disposition forms, ledger and refusal behavior in the user
+  guide and canonical Roundfix skill, and added the Review Finding Disposition
+  glossary entry.
+- Added the twelve named disposition tests plus focused marker and help
+  coverage. Every refusal snapshots the ledger before the call and proves it
+  remains byte-identical or absent.
+- Regenerated `skills/roundfix` with `rtk make skills-sync`; `rtk make
+  baseline-digests` reported that all derived artifacts already matched their
+  canonical sources and changed no additional files.
+
+### Focused checks and acceptance evidence
+
+1. Finding identity: `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test
+   -count=1 -run
+   '^TestReview(RecordListsEachFindingWithAnIdentity|PromptAsksForOneListItemPerFinding|Dispose)'
+   ./internal/cli` exited 0. The identity test covers marked and unmarked
+   answers plus legacy record derivation; the companion splitter test covers a
+   preamble, both numeric separators, an indented pseudo-marker and a blank
+   item.
+2. Head-bound dismissal and fixing commit: the same focused command exited 0
+   for the two success paths and the moved-head, unresolved, same-head,
+   non-descendant and unreachable fix refusals. Both success tests assert every
+   ledger field and byte equality between stdout and the appended line.
+3. One disposition and refusal immutability: the focused command exited 0 for
+   absent, cross-repository and non-findings records; unknown identity; both,
+   neither and blank forms; and the second-disposition mirror path. Each case
+   asserted exit 2, the required stderr prefix, empty stdout and byte-identical
+   ledger state.
+4. Preserved review behavior: `rtk env
+   GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run
+   '^(TestReviewCommandExitsOneAndRecordsFindings|TestReviewRecordRoundTripsEachOutcome|TestReviewCommandAppearsOnPublicHelp)$'
+   ./internal/cli` exited 0 without modifying those tests.
+5. Documentation and generated copy: `rtk diff -r
+   .agents/skills/roundfix skills/roundfix` and `rtk git diff --check` exited 0;
+   repository searches found `roundfix review dispose` in both required guides
+   and `**Review Finding Disposition**` in `CONTEXT.md`.
+6. Repository incremental check: an initial sandboxed package run reached the
+   new review coverage but two unrelated force-stop tests could not read the
+   host process table. The required elevated rerun of `rtk env
+   GOCACHE=/tmp/roundfix-task02-gocache make verify-incremental` exited 0,
+   including `go vet`, all Go packages, owned-skill checks and the CLI build.
+
+The Task's authored `## Verification` command was not run; the Daemon owns
+that command and terminal settlement.

@@ -45,7 +45,9 @@ Both loops keep the same contract, which is what lets an agent drive them:
 
 Agent Selection Profiles choose the runtime, model, and reasoning effort.
 Complete one-Run overrides can use `codex`, `claude`, or `opencode`. The Review
-Source is `coderabbit`.
+Source is `coderabbit`. It is the legacy PR-feedback source, read only by
+`fetch`, `watch`, and `resolve`, and never selects or requests a pre-PR
+reviewer.
 
 The independent reviewer for work before a Pull Request is selected with
 `pre_pr_review.provider`. Its supported values are `codex`, `claude`,

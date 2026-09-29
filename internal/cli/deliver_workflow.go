@@ -660,18 +660,40 @@ func (workflow *commandDeliveryWorkflow) Review(ctx context.Context, gitRoot, _ 
 	if err != nil {
 		return delivery.ReviewResult{}, err
 	}
+	reviewResult, err := deliveryReviewResult(record, head)
+	if err == nil {
+		return reviewResult, nil
+	}
+	if result.exitCode != exitOK {
+		return delivery.ReviewResult{}, result.failure("roundfix review")
+	}
+	return delivery.ReviewResult{}, err
+}
+
+func deliveryReviewResult(record reviewRecord, head string) (delivery.ReviewResult, error) {
+	result := delivery.ReviewResult{
+		Head:          record.HeadCommit,
+		ArchivedSpecs: slices.Clone(record.ArchivedSpecs),
+	}
 	if strings.TrimSpace(record.HeadCommit) != strings.TrimSpace(head) {
-		return delivery.ReviewResult{Outcome: delivery.ReviewOutcomeBlocked, Head: record.HeadCommit, Reason: "review record names a different head"}, nil
+		result.Outcome = delivery.ReviewOutcomeBlocked
+		result.Reason = "review record names a different head"
+		return result, nil
 	}
 	switch record.Outcome {
-	case reviewOutcomeReviewed:
-		return delivery.ReviewResult{Outcome: delivery.ReviewOutcomeReviewed, Head: record.HeadCommit}, nil
+	case reviewOutcomeReviewed, reviewOutcomeFindingsDismissed:
+		result.Outcome = delivery.ReviewOutcomeReviewed
+		return result, nil
 	case reviewOutcomeFindings:
-		return delivery.ReviewResult{Outcome: delivery.ReviewOutcomeFindings, Head: record.HeadCommit, Reason: record.Findings}, nil
+		result.Outcome = delivery.ReviewOutcomeFindings
+		result.Reason = record.Findings
+		return result, nil
 	case reviewOutcomeBlocked:
-		return delivery.ReviewResult{Outcome: delivery.ReviewOutcomeBlocked, Head: record.HeadCommit, Reason: record.Reason}, nil
+		result.Outcome = delivery.ReviewOutcomeBlocked
+		result.Reason = record.Reason
+		return result, nil
 	default:
-		return delivery.ReviewResult{}, result.failure("roundfix review")
+		return delivery.ReviewResult{}, fmt.Errorf("review record outcome %q cannot drive delivery", record.Outcome)
 	}
 }
 

@@ -1,9 +1,17 @@
 ---
 spec: 0179-review-findings-with-evidence-and-no-unselected-providers
-status: active
+status: archived
 created: 2026-09-28
 surfaces: [backend, cli, docs]
+archived: "2026-09-29"
+source_slug: 0179-review-findings-with-evidence-and-no-unselected-providers
+unproven:
+    - the task_02 tests (every ledger field and each refusal) executed against the built tree, and the first `roundfix review dispose` run on a real findings record after this Spec merges
+    - the task_03 tests executed against the built tree, and the first reuse of a real findings record after this Spec merges
+    - the captured bodies checked against the dispositions the ledger format can express, and a live replay after this Spec merges
+    - the repository checks and the pre-PR review recorded on the pull request at publication, before merge
 ---
+
 
 # Review findings with evidence, and no unselected providers
 
@@ -158,6 +166,38 @@ needs. An unselected provider is never asked for anything.
 5. The dispositions recorded by hand in the bodies of #257, #258 and #259
    replay through the built binary: the two dismissals clear their head, and
    the fix from #257 leaves its head standing until a fresh review.
+
+## Unreachable Acceptance
+
+- criterion: Success Metric 2 — `roundfix review dispose` exercised through the
+  built binary against a findings record a reviewer produced
+  reason: the QA sandbox has no authorized ACP reviewer stand-in that reaches
+  the built CLI, and a findings record may never be written by hand, so the
+  gate cannot create the record the command disposes
+  satisfied-by: the task_02 tests (every ledger field and each refusal)
+  executed against the built tree, and the first `roundfix review dispose`
+  run on a real findings record after this Spec merges
+
+- criterion: Success Metric 3 — the reuse and fresh-review paths of
+  `roundfix review` exercised through the built binary
+  reason: the same missing reviewer stand-in prevents the gate from producing
+  the findings record the reuse path reads
+  satisfied-by: the task_03 tests executed against the built tree, and the
+  first reuse of a real findings record after this Spec merges
+
+- criterion: Success Metric 5 — the #257, #258 and #259 dispositions replayed
+  through the built binary
+  reason: replaying them needs findings records produced by a live reviewer at
+  those heads, which the sandbox cannot create; the pull request bodies are
+  captured locally in `qa/evidence/2026-09-28-pr-bodies-257-259.md`
+  satisfied-by: the captured bodies checked against the dispositions the
+  ledger format can express, and a live replay after this Spec merges
+
+- criterion: the Pull Request row — publication evidence on the pull request
+  reason: the QA gate runs before any pull request exists for this candidate,
+  so no pull request surface can be observed
+  satisfied-by: the repository checks and the pre-PR review recorded on the
+  pull request at publication, before merge
 
 ## Recorded limits
 

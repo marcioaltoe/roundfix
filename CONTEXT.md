@@ -94,9 +94,18 @@ _Avoid_: Review Provider, Agent, ACP Runtime
 A head-bound Review Source classification for one expected commit: `pending` has no usable expected-head signal, `reviewing` is still in progress, and `reviewed` is complete without proving Merge-Ready. `verified` proves the expected head with no unresolved Review Issues, `skipped` explicitly declines that head, and `failed` records an explicit Review Source failure.
 _Avoid_: Check presence, generic approval, inferred clean state
 
+**Review Finding Disposition**:
+A Pre-PR Review finding's recorded fix or evidence-backed dismissal, tied to the head the reviewer examined.
+At the same repository, base, head, and provider, the findings verdict is reused without asking the reviewer; only exact evidence-backed dismissals of every finding produce `findings-dismissed`, while a fix requires a fresh review of its changed head.
+_Avoid_: Review Issue resolution, unrecorded operator decision, finding deletion
+
 **Spec**:
 One Spec's planning artifact set produced by the spec workflow: PRD, Task Graph, Task files, QA evidence, and adopted sources under `references/` with provenance recorded in `references/_index.md`.
 _Avoid_: Feature folder, epic, project
+
+**Corrective Spec**:
+A new Spec, with its own authorization and QA gate, that corrects a finding on an archived Spec; the archived Spec is never edited in place.
+_Avoid_: Corrective Task, archive edit, inherited authorization
 
 **Supersession**:
 A durable lifecycle record that names the Spec which delivered another Spec's content. The Archive Command accepts it as proof of completion for the superseded Spec when that Spec has no Task Graph.

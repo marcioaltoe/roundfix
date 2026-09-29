@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0179-review-findings-with-evidence-and-no-unselected-providers
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -121,3 +121,61 @@ record must therefore never look like a clean review.
 - [_techspec.md](_techspec.md) — The verdict stands for its head
 - `_prd.md` → Goal 3; Core Feature 3; Success Metric 3
 - `_techspec.md` → API Contracts 1 and 4; Testing Approach 3
+
+## Result
+
+Implementation:
+
+- Added the `findings-dismissed` review outcome plus omitted-when-empty
+  `dispositions` and omitted-when-false `reused` record fields. Record
+  validation requires findings text, no reason, at least one finding item, and
+  exactly one matching evidence-backed dismissal per item.
+- Added head-bound reuse before answer cleanup, Agent profile resolution, and
+  readiness. Matching findings records join exact repository, head, identity,
+  and text ledger entries; complete dismissals exit `0`, while standing
+  findings exit `1` and name each undisposed identity without any Agent probe,
+  prepare, or prompt.
+- Kept moved repository/base/head/provider candidates and clean, blocked, or
+  omitted records on the fresh-review path. A `fixed` disposition remains
+  historical evidence and never clears the reviewed head.
+- Allowed `review dispose` to read `findings-dismissed`, and routed Delivery
+  Queue review records through `deliveryReviewResult`; dismissed findings at
+  the expected head map to reviewed while standing findings still park.
+- Documented reuse, `findings-dismissed`, exit codes, and retry behavior in the
+  command guide, canonical Roundfix skill, generated skill copy, and Review
+  Finding Disposition glossary entry. Regenerated the distributed skill with
+  `make skills-sync`.
+
+Focused checks:
+
+- Before implementation, the new focused test failed to compile because
+  `reviewOutcomeFindingsDismissed`, `reviewRecord.Dispositions`, and
+  `reviewRecord.Reused` did not exist.
+- The twelve focused head-bound and validation tests in
+  `internal/cli/review_head_bound_test.go` passed. The eleven required public
+  behavior tests cover every reuse, fresh-review, and delivery-mapping case;
+  the additional validation test rejects malformed `findings-dismissed`
+  records.
+- `TestReviewCommandExitsOneAndRecordsFindings`,
+  `TestReviewRemovesAStaleAnswerFile`, and
+  `TestRetryReReviewsTheCurrentHeadWhenNoTaskIsUnfinished` passed unchanged in
+  focused runs.
+- `diff -r .agents/skills/roundfix skills/roundfix` exited `0` after skill
+  regeneration.
+- `GOCACHE=/tmp/roundfix-task03-gocache make verify-incremental` first reached
+  only the sandbox's process-table permission boundary in two existing
+  force-stop integration tests. The same incremental gate rerun with host
+  process-table access passed vet, all Go packages, skill checks, and build.
+
+Acceptance evidence:
+
+- At an unchanged candidate, the dismissed, standing, text-mismatch, and fixed
+  cases each observed zero Agent probes, prepares, and prompts.
+- Only exact evidence-backed dismissals of every item produced
+  `findings-dismissed`; partial, mismatched, and fixed dispositions remained
+  `findings`, and invalid dismissed records were refused before writing.
+- A moved head, different base, and different provider each observed exactly
+  one Agent prepare and prompt. The delivery mapping advanced
+  `findings-dismissed` and preserved standing findings as a parking result.
+
+Follow-ups: none discovered within this Task's slice.

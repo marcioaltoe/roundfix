@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0179-review-findings-with-evidence-and-no-unselected-providers
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
@@ -62,8 +62,10 @@ Tasks name.
    origin. Dismiss the #258 Windows portability finding and the #259
    stale-build finding with their recorded rationale as evidence, which clears
    their head. Record the #257 round-one fix with `--fixed-by`, which leaves
-   its head standing until a fresh review. Record the row as blocked with its
-   reason when a pull request body cannot be read.
+   its head standing until a fresh review. Read the bodies from
+   `qa/evidence/2026-09-28-pr-bodies-257-259.md`, captured by the operator
+   because the sandbox denies `api.github.com`; record the row as blocked with
+   its reason when a body cannot be read.
 8. MUST verify that the guides and `CONTEXT.md` describe finding identities,
    `roundfix review dispose`, `findings-dismissed`, `archivedSpecs`,
    `corrective-spec-required`, the Review Finding Disposition and the Corrective
@@ -73,7 +75,11 @@ Tasks name.
 10. MUST verify from Git evidence that the changed files stay inside the Task
     declarations and that the only governed paths changed are the ones
     `_authorization.md` bounds.
-11. MUST NOT accept a row whose only evidence is that a file was read.
+11. MUST record every row an Unreachable Acceptance declaration covers, including
+   the Pull Request row, as `blocked (declared: <criterion>)` citing its
+   declaration, never as an environment block, because a qualifying `partial`
+   requires `rows_blocked_environment: 0`.
+12. MUST NOT accept a row whose only evidence is that a file was read.
 
 ## Subtasks
 

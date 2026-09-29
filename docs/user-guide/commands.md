@@ -21,7 +21,9 @@ installing, substitute `go run ./cmd/roundfix`.
 - Color is automatic in interactive terminals. `ROUNDFIX_COLOR=always` forces
   it, `ROUNDFIX_COLOR=never` or `NO_COLOR` disables it.
 - Supported Agent names are `codex`, `claude`, and `opencode`. The supported
-  Review Source is `coderabbit`.
+  Review Source is `coderabbit`. It is the legacy PR-feedback source, read only
+  by `fetch`, `watch`, and `resolve`, and never selects or requests a pre-PR
+  reviewer.
 - Commands that read the Run Database refuse another schema version without
   writing. An older database tells the operator to `run 'roundfix migrate'`;
   a newer database says that a newer Roundfix wrote it and tells the operator
@@ -160,6 +162,8 @@ database any operational command would leave.
 
 ```bash
 roundfix review [--base <ref>]
+roundfix review dispose <finding-id> --dismiss --evidence <text>
+roundfix review dispose <finding-id> --fixed-by <commit>
 ```
 
 Runs the configured pre-Pull-Request reviewer over the current candidate. The
@@ -193,6 +197,44 @@ kept in `pre-pr-review-answer.txt`, and the review record's
 `answerPath` names that file. Roundfix sets `answerPath` only when the prompt
 reached a reviewer; a pre-prompt failure has no answer path or answer file.
 
+A findings record keeps the reviewer's original `findings` text and also lists
+each finding as `F1`, `F2`, and so on in `findingItems`. The reviewer prompt
+asks for one `- ` list item per finding with its file and line. An older record
+without `findingItems` derives the same identities from its findings text when
+Roundfix reads it.
+
+Use `roundfix review dispose` to record one disposition for one finding. A
+dismissal requires non-blank evidence and an unchanged reviewed `HEAD`. A fix
+requires a resolving commit that differs from and descends from the reviewed
+head and is reachable from the current `HEAD`. Evidence is copied as text and
+is never executed.
+
+Successful dispositions append one JSON line to
+`pre-pr-review-dispositions.jsonl` in the Artifact Directory and print that
+same line. The line ties the finding's identity and text to its repository and
+reviewed head, and records either `evidence` or `fixedBy` with an RFC 3339 UTC
+timestamp. The ledger is append-only. Roundfix refuses a missing or mismatched
+findings record, an unknown identity, invalid or blank forms, moved-head
+dismissals, invalid fixing commits, and a second disposition. Every refusal
+exits `2`, starts stderr with `roundfix: review dispose refused:`, and appends
+nothing.
+
+For `codex` and `claude`, a findings verdict stands for its repository, base
+commit, head commit, and provider. When the Artifact Directory already holds a
+matching `findings` or `findings-dismissed` record, Roundfix reuses it before
+preparing, probing, or prompting an Agent session. The reused record sets
+`reused` and carries the ledger entries whose repository, head, finding
+identity, and text match its `findingItems` in `dispositions`.
+
+When every finding has one evidence-backed `dismissed` disposition, the reused
+record reports `findings-dismissed` and exits `0`. Otherwise it remains
+`findings`, exits `1`, and stderr names each finding identity that has no
+disposition. A `fixed` disposition never clears the reviewed head because the
+fix belongs to a changed candidate. A different repository, base, head, or
+provider gets a fresh review, as does an existing `reviewed`, `blocked`, or
+`omitted` record. The `none` and `coderabbit` policies keep their behavior
+described above.
+
 When the candidate adds or changes a Spec folder under the configured Spec
 Root, or under its resolved archive root, Roundfix discovers that folder from
 the candidate diff. Specs archived within the candidate are read from the
@@ -201,6 +243,15 @@ PRD `Decisions` section and TechSpec. A changed Spec without a `## Decisions`
 section, a PRD, or a TechSpec is skipped, its slug is listed in the record's
 `skippedSpecs`, and the review proceeds with the remaining context. The
 record's `specs` names the Specs whose context was carried.
+
+The record's `archivedSpecs` field always lists the sorted slugs of changed
+Spec folders under the resolved archive root, including folders whose context
+was skipped; it is always present and is `[]` when the candidate archives no
+Spec. When a findings verdict has archived Specs, stderr names those slugs,
+says that an archived Spec is never corrected in place, and tells the operator
+to author a corrective Spec with its own authorization and QA gate. Delivery
+parks that review as `corrective-spec-required`; a no-findings verdict prints
+no corrective-Spec line.
 
 Spec context is bounded at 32 KiB per Spec and 64 KiB in total. When context is
 truncated, the prompt includes `[Spec context truncated]` and the record sets
@@ -211,8 +262,10 @@ names the Specs whose context was carried.
 
 Exit codes:
 
-- `0` — one substantive no-findings verdict or configured omission.
-- `1` — the reviewer returned findings; the record carries them.
+- `0` — one substantive no-findings verdict, configured omission, or a reused
+  `findings-dismissed` verdict.
+- `1` — the reviewer returned findings or a reused verdict still has standing
+  findings; the record carries them.
 - `2` — preflight failed or the review was blocked.
 
 Runtime failure, timeout, transport anomaly, empty output, and unclassifiable
@@ -310,6 +363,12 @@ against observed state before retrying it, so a lost acknowledgement cannot
 create a duplicate pull request or merge. Publication requires the Spec's
 authorization record to grant `push`, `pull_request`, and `merge`.
 
+A findings verdict with archived Specs parks as
+`corrective-spec-required: <slug>[, <slug>]`; findings without archived Specs
+still park as `review-findings`. `deliver status` prints either blocker. No Run
+budget, corrective-Task ceiling, or queue grant authorizes the new corrective
+Spec, and Roundfix never authors or starts it.
+
 When an Implement Run ends `BudgetExceeded`, the queue parks its item as
 `run-budget-exceeded` with that Run's ID. `roundfix deliver retry <slug>` uses
 the recorded Run ID to carry settled Tasks forward before resuming the item.
@@ -330,12 +389,19 @@ later Run executes only unfinished Tasks. A retry does not change a recorded
 `premise-changed` warning. It selects the re-entry stage from the evidence on
 that branch:
 
+A retried `review-findings` item at an unchanged head advances once every
+finding is dismissed with evidence. Standing findings park it again without
+asking the reviewer; Roundfix asks the reviewer again only after the head
+changes.
+
 | Recorded evidence | Re-entry stage |
 | --- | --- |
 | Active Spec with any unfinished Task | `running` |
 | Active Spec with every Task completed | `reviewing` |
 | Archived Spec with no recorded pull request | `gating` |
 | Archived Spec with a recorded pull request | `checking` |
+| `corrective-spec-required` with the parked candidate head unchanged | `reviewing`, without Task Carry-Forward |
+| `corrective-spec-required` after the item head moved | Refused with exit `2`; the item stays unchanged and the operator must author a corrective Spec with its own authorization and QA gate |
 
 After the retry, a live owner whose identity Roundfix proves keeps the queue
 and stdout reports `Handed <slug> to Delivery Queue owner PID <pid>.`. If the
