@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0181-gates-that-refuse-only-what-someone-can-act-on
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
