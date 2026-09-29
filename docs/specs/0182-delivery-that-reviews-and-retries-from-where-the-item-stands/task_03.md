@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0182-delivery-that-reviews-and-retries-from-where-the-item-stands
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -64,3 +64,32 @@ A Delivery Retry carries forward only from the Run recorded on the item. That re
 - [_prd.md](_prd.md) — Goal 4; Core Feature 4; Success Metric 4
 - [_techspec.md](_techspec.md) — A Delivery Retry carries from every Run of its item; API Contract 4; Testing Approach 3; Build Order 3
 - ADR-0170; ADR-0090; ADR-0158; ADR-0052; ADR-0044
+
+## Result
+
+Implemented a newest-first, deduplicated Delivery Retry carry-forward across the recorded Run and every terminal Implement Run of the Spec on the item branch. The retry rereads the item Task Graph per eligible Run, skips settled Tasks already completed on the item before requiring the Run Worktree, applies each accepted Run independently, preserves earlier carried commits when an older Run refuses, records the newest selected Run, and reports carried Tasks grouped by Run.
+
+Acceptance evidence:
+
+- Stale recorded Run: `TestItemRecoveryCarriesTheNewestRunWhenTheItemRecordsAnOlderOne` uses two real BudgetExceeded Runs and asserts the selector returns exactly the newer and older Runs once each, the newer Run becomes `RunID`, and only its remaining Task moves.
+- Multiple Runs: `TestItemRecoveryCarriesEveryRunNewestFirst` proves two disjoint Run task sets both move and appear newest first in `Runs`.
+- Gone Worktree: `TestItemRecoverySkipsACompletedRunWithAGoneWorktree` removes the real Run Worktree after completing its Task on the item and proves the retry skips it without refusal.
+- Partial progress and refusal: `TestItemRecoveryRefusalNamesTheRunsAlreadyCarried` proves the newer Run remains on the item, the refusing older Run does not move, the diagnostic names both Runs before its reason, and the next action still names reconcile in the item worktree followed by deliver retry.
+- Engine and output: `TestRetryRecordsTheNewestRunItCarriedFrom` proves `Engine.Retry` persists the newest Run ID and returns the grouped result; `TestDeliverRetryPrintsOneLinePerCarriedRun` proves ordered per-Run lines precede the retried line.
+- Documentation and mirror: the guide and canonical skill contain `every terminal Implement Run of the item's Spec on the item branch, newest first` and per-Run output wording; `CONTEXT.md` contains `from every Run of the item's Spec, newest first`; `rtk make skills-sync` exited 0 and `rtk cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` exited 0.
+
+Focused checks:
+
+- Red signal: `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1 -run '^TestItemRecoveryCarriesTheNewestRunWhenTheItemRecordsAnOlderOne$' ./internal/cli` failed to compile before implementation because `delivery.CarriedRun` and `CarryForwardResult.Runs` did not exist.
+- `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1 -run '^(TestItemRecoveryCarriesTheNewestRunWhenTheItemRecordsAnOlderOne|TestItemRecoveryCarriesEveryRunNewestFirst|TestItemRecoverySkipsACompletedRunWithAGoneWorktree|TestItemRecoveryRefusalNamesTheRunsAlreadyCarried|TestDeliverRetryPrintsOneLinePerCarriedRun)$' ./internal/cli` — passed after the final test edit.
+- `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1 -run '^TestRetryRecordsTheNewestRunItCarriedFrom$' ./internal/delivery` — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1 ./internal/delivery` — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1 ./internal/cli` — passed with process-table permission; the sandboxed attempt reached two unrelated Force Stop integration tests and failed only because macOS process-table access returned `operation not permitted`.
+- `rtk git diff --check` — passed.
+
+Daemon Verification was not run and Task status was not edited, per the Daemon settlement contract.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260929T174719Z_24238e6aebd23928`
+- Source commit: `a5da146dc709d8cc75149f21c8bc6a5d08f52617`

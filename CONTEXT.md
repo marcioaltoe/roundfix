@@ -508,7 +508,7 @@ The one operator decision presented for the lowest-position parked Delivery Queu
 _Avoid_: Warning, automatic recommendation, blocker list
 
 **Delivery Retry**:
-The explicit act that returns one parked Delivery Queue item to the stage supported by its recorded evidence and hands it to a live or newly started queue owner. It may perform Task Carry-Forward first and is never automatic.
+The explicit act that returns one parked Delivery Queue item to the stage supported by its recorded evidence and hands it to a live or newly started queue owner. It may perform Task Carry-Forward from every Run of the item's Spec, newest first, and is never automatic.
 _Avoid_: Resume Command, automatic retry, replay
 
 **Reprocess Command**:

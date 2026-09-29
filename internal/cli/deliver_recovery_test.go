@@ -1,5 +1,5 @@
 // Suite: Delivery Queue item recovery.
-// Invariant: retry carries only proved completed Tasks from the item's prior Implement Run before the next Implement executor starts.
+// Invariant: retry carries only proved completed Tasks from every eligible Implement Run before the next Implement executor starts.
 // Boundary IN: commandDeliveryWorkflow, the real Run Database, and real local Git worktrees.
 // Boundary OUT: the Implement executor and publication services, represented by the delivery engine's existing fake boundaries.
 package cli
@@ -32,7 +32,7 @@ func TestItemRecoveryCarriesAnUnresolvedRunIntoTheItemWorktree(t *testing.T) {
 	if err != nil {
 		t.Fatalf("carry unresolved Run into item worktree: %v", err)
 	}
-	if result.RunID != fixture.run.ID || !slices.Equal(result.Carried, []string{"task_01"}) {
+	if result.RunID != fixture.run.ID || !slices.EqualFunc(result.Runs, []delivery.CarriedRun{{RunID: fixture.run.ID, Carried: []string{"task_01"}}}, equalCarriedRun) {
 		t.Fatalf("carry-forward result = %+v, want Run %q and task_01", result, fixture.run.ID)
 	}
 	completed := mustRead(t, implementTaskPath(fixture.repoDir, "task_01"))
@@ -54,7 +54,7 @@ func TestItemRecoveryFindsTheRunByItemBranchWhenNoneIsRecorded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("find and carry Run by item branch: %v", err)
 	}
-	if result.RunID != fixture.run.ID || !slices.Equal(result.Carried, []string{"task_01"}) {
+	if result.RunID != fixture.run.ID || !slices.EqualFunc(result.Runs, []delivery.CarriedRun{{RunID: fixture.run.ID, Carried: []string{"task_01"}}}, equalCarriedRun) {
 		t.Fatalf("branch-selected carry-forward result = %+v, want Run %q and task_01", result, fixture.run.ID)
 	}
 }
@@ -68,7 +68,7 @@ func TestItemRecoveryCarriesNothingWithoutAnImplementRun(t *testing.T) {
 	if err != nil {
 		t.Fatalf("carry without an Implement Run: %v", err)
 	}
-	if result.RunID != "" || len(result.Carried) != 0 {
+	if result.RunID != "" || len(result.Runs) != 0 {
 		t.Fatalf("carry without an Implement Run = %+v, want empty", result)
 	}
 	if got := itemRecoveryHead(t, repoDir); got != beforeHead {
@@ -88,7 +88,7 @@ func TestItemRecoveryCarriesNothingForARunAlreadyCarried(t *testing.T) {
 	if err != nil {
 		t.Fatalf("repeat carry-forward: %v", err)
 	}
-	if result.RunID != fixture.run.ID || len(result.Carried) != 0 {
+	if result.RunID != fixture.run.ID || len(result.Runs) != 0 {
 		t.Fatalf("repeat carry-forward = %+v, want named Run with no Tasks", result)
 	}
 	if got := itemRecoveryHead(t, fixture.repoDir); got != beforeHead {
@@ -216,7 +216,7 @@ func TestRetriedItemRunsWithItsCompletedTasksCarried(t *testing.T) {
 	if err != nil {
 		t.Fatalf("retry parked item: %v", err)
 	}
-	if retried.Stage != store.DeliveryStageRunning || !slices.Equal(retried.CarriedFrom.Carried, []string{"task_01"}) {
+	if retried.Stage != store.DeliveryStageRunning || !slices.EqualFunc(retried.CarriedFrom.Runs, []delivery.CarriedRun{{RunID: fixture.run.ID, Carried: []string{"task_01"}}}, equalCarriedRun) {
 		t.Fatalf("retry result = %+v, want task_01 carried into running", retried)
 	}
 	if _, err := engine.Run(t.Context(), fixture.repoDir); err != nil {
@@ -246,7 +246,7 @@ func TestItemRecoveryCarriesNothingForAnUnacceptedRunOutcome(t *testing.T) {
 	if err != nil {
 		t.Fatalf("carry clean Run: %v", err)
 	}
-	if result.RunID != fixture.run.ID || len(result.Carried) != 0 || itemRecoveryHead(t, fixture.repoDir) != beforeHead {
+	if result.RunID != fixture.run.ID || len(result.Runs) != 0 || itemRecoveryHead(t, fixture.repoDir) != beforeHead {
 		t.Fatalf("clean Run carry = %+v at head %s, want no carry at %s", result, itemRecoveryHead(t, fixture.repoDir), beforeHead)
 	}
 }
@@ -275,7 +275,7 @@ func TestItemRecoveryCarriesNothingWithoutCompletedTaskEvidence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("carry evidence-free Run: %v", err)
 	}
-	if result.RunID != completed.Run.ID || len(result.Carried) != 0 || itemRecoveryHead(t, repoDir) != head {
+	if result.RunID != completed.Run.ID || len(result.Runs) != 0 || itemRecoveryHead(t, repoDir) != head {
 		t.Fatalf("evidence-free carry = %+v at head %s, want no carry at %s", result, itemRecoveryHead(t, repoDir), head)
 	}
 }

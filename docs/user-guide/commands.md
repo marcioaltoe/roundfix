@@ -374,8 +374,10 @@ budget, corrective-Task ceiling, or queue grant authorizes the new corrective
 Spec, and Roundfix never authors or starts it.
 
 When an Implement Run ends `BudgetExceeded`, the queue parks its item as
-`run-budget-exceeded` with that Run's ID. `roundfix deliver retry <slug>` uses
-the recorded Run ID to carry settled Tasks forward before resuming the item.
+`run-budget-exceeded` with that Run's ID. `roundfix deliver retry <slug>`
+considers every terminal Implement Run of the item's Spec on the item branch,
+newest first, together with the recorded Run, and carries each Run's remaining
+settled Tasks before resuming the item.
 
 `deliver status` prints each item's Spec slug, stage, and blocker, followed by
 the `Limits:` line. When one or more items are parked, it prints exactly one
@@ -388,10 +390,10 @@ persisted queue.
 `roundfix deliver retry <slug>` returns one parked item to the queue. For an
 active Spec that has not run, it first repeats the strict check in the item
 worktree and refuses while findings remain, leaving the item unchanged. It
-then carries the settled Tasks of any recorded Run to the item branch, so a
-later Run executes only unfinished Tasks. A retry does not change a recorded
-`premise-changed` warning. It selects the re-entry stage from the evidence on
-that branch:
+then carries the remaining settled Tasks from every terminal Implement Run of
+the item's Spec on the item branch, newest first, so a later Run executes only
+unfinished Tasks. A retry does not change a recorded `premise-changed` warning.
+It selects the re-entry stage from the evidence on that branch:
 
 A retried `review-findings` item at an unchanged head advances once every
 finding is dismissed with evidence. Standing findings park it again without
@@ -413,12 +415,13 @@ recorded owner is dead or its identity is unproven, Roundfix reclaims the owner
 record, writes the same stderr notice as `deliver resume`, and starts a new
 detached owner. With no recorded owner, it starts one directly.
 
-A successful retry exits `0` after stdout reports `Retried <slug>: <blocker>
--> <stage>` and, when Tasks moved, `Carried forward from Run <run-id>: <task>,
-<task>`. A missing or empty slug, an extra argument, an unknown flag, an item
-that is not parked, a missing item branch, a moved archived head, a refused
-carry-forward, or an owner hand-off failure exits `2` and starts no owner. An
-item-level refusal leaves the stored item unchanged.
+A successful retry exits `0`. When Tasks moved, stdout prints one `Carried
+forward from Run <run-id>: <task>, <task>` line per Run carried from, in
+newest-first order, before `Retried <slug>: <blocker> -> <stage>`. A missing or
+empty slug, an extra argument, an unknown flag, an item that is not parked, a
+missing item branch, a moved archived head, a refused carry-forward, or an
+owner hand-off failure exits `2` and starts no owner. An item-level refusal
+leaves the stored item unchanged.
 
 ### upgrade
 

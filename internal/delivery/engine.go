@@ -108,9 +108,14 @@ type ItemState struct {
 	Head            string
 }
 
-type CarryForwardResult struct {
+type CarriedRun struct {
 	RunID   string
 	Carried []string
+}
+
+type CarryForwardResult struct {
+	RunID string
+	Runs  []CarriedRun
 }
 
 type Revalidation struct {

@@ -430,8 +430,10 @@ budget, corrective-Task ceiling, or queue grant authorizes the new corrective
 Spec, and Roundfix never authors or starts it.
 
 When an Implement Run ends `BudgetExceeded`, the queue parks its item as
-`run-budget-exceeded` with that Run's ID. `roundfix deliver retry <slug>` uses
-the recorded Run ID to carry settled Tasks forward before resuming the item.
+`run-budget-exceeded` with that Run's ID. `roundfix deliver retry <slug>`
+considers every terminal Implement Run of the item's Spec on the item branch,
+newest first, together with the recorded Run, and carries each Run's remaining
+settled Tasks before resuming the item.
 
 `deliver status` prints the item rows, warning rows, and the `Limits:` line.
 When one or more items are parked, it prints exactly one `Pending question:`
@@ -442,11 +444,12 @@ question; owner passes and elapsed time do not.
 Use `roundfix deliver retry <slug>` to return one parked item to the queue.
 For an active Spec that has not run, Roundfix first repeats the strict check in
 the item worktree and refuses while findings remain, leaving the item
-unchanged. It then carries the settled Tasks of any recorded Run to the item
-branch. A retry does not change a recorded `premise-changed` warning. The item
-re-enters at `running` when any Task is unfinished or at `reviewing` when every
-Task is completed. An archived Spec re-enters at `gating` without a recorded
-pull request or at `checking` with one.
+unchanged. It then carries the remaining settled Tasks from every terminal
+Implement Run of the item's Spec on the item branch, newest first. A retry does
+not change a recorded `premise-changed` warning. The item re-enters at
+`running` when any Task is unfinished or at `reviewing` when every Task is
+completed. An archived Spec re-enters at `gating` without a recorded pull
+request or at `checking` with one.
 
 | Recorded evidence | Re-entry stage |
 | --- | --- |
@@ -465,11 +468,12 @@ changes.
 The retry hands the item to the recorded owner only when Roundfix proves that
 process is alive and has the recorded identity. A dead or unproven owner record
 is reclaimed with a stderr notice and replaced; with no owner, Roundfix starts
-a detached owner. Success exits `0` and prints `Retried <slug>: <blocker> ->
-<stage>`, any carry-forward, and the live-owner hand-off or detached-owner
-report. Invalid arguments, an item that is not parked, a missing item branch, a
-moved archived head, refused carry-forward, or owner hand-off failure exits `2`
-and starts no owner; an item-level refusal leaves the item unchanged.
+a detached owner. Success exits `0`, prints one `Carried forward from Run
+<run-id>: <task>, <task>` line per Run carried from, then prints `Retried
+<slug>: <blocker> -> <stage>` and the live-owner hand-off or detached-owner
+report. Invalid arguments, an item that is not parked, a missing item branch,
+a moved archived head, refused carry-forward, or owner hand-off failure exits
+`2` and starts no owner; an item-level refusal leaves the item unchanged.
 
 Use `roundfix upgrade [--check]` to resolve the latest Roundfix release through
 the GitHub CLI. Without `--check`, it downloads the platform asset, verifies

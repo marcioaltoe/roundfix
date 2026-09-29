@@ -76,7 +76,7 @@ func TestDeliveryRetryResumesABudgetParkedItemFromItsRun(t *testing.T) {
 	}
 	recovery := &fakeItemRecovery{
 		states:      []ItemState{{Head: "candidate-original"}, {UnfinishedTasks: []string{"task_02"}, Head: "candidate-original"}},
-		carryResult: CarryForwardResult{RunID: "run-budget-carried", Carried: []string{"task_01"}},
+		carryResult: CarryForwardResult{RunID: "run-budget-carried", Runs: []CarriedRun{{RunID: "run-budget-carried", Carried: []string{"task_01"}}}},
 	}
 	engine := newRetryDeliveryEngine(runStore, newFakeDeliveryWorkflow(), nil, recovery, newFakeDeliveryBoundary())
 

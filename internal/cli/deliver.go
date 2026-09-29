@@ -184,12 +184,12 @@ func runDeliverRetry(ctx context.Context, args []string, stdout, stderr io.Write
 }
 
 func printDeliverRetryResult(stdout io.Writer, specSlug string, result delivery.RetryResult) {
-	if len(result.CarriedFrom.Carried) > 0 {
+	for _, carried := range result.CarriedFrom.Runs {
 		fmt.Fprintf(
 			stdout,
 			"Carried forward from Run %s: %s\n",
-			result.CarriedFrom.RunID,
-			strings.Join(result.CarriedFrom.Carried, ", "),
+			carried.RunID,
+			strings.Join(carried.Carried, ", "),
 		)
 	}
 	fmt.Fprintf(stdout, "Retried %s: %s -> %s\n", specSlug, result.Blocker, result.Stage)

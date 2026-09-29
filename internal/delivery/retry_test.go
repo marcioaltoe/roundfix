@@ -52,7 +52,7 @@ func TestRetryCarriesForwardBeforeReenteringTheRun(t *testing.T) {
 			{Head: "candidate-original"},
 			{UnfinishedTasks: []string{"task_02"}, Head: "candidate-original"},
 		},
-		carryResult: CarryForwardResult{RunID: "run-carried", Carried: []string{"task_01"}},
+		carryResult: CarryForwardResult{RunID: "run-carried", Runs: []CarriedRun{{RunID: "run-carried", Carried: []string{"task_01"}}}},
 	}
 	engine := newRetryDeliveryEngine(runStore, newFakeDeliveryWorkflow(), nil, recovery, newFakeDeliveryBoundary())
 
@@ -67,6 +67,35 @@ func TestRetryCarriesForwardBeforeReenteringTheRun(t *testing.T) {
 	}
 }
 
+func TestRetryRecordsTheNewestRunItCarriedFrom(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runStore := openDeliveryEngineStore(t, ctx)
+	const gitRoot = "/repo-retry-newest-run"
+	item := seedParkedRetryItem(t, ctx, runStore, gitRoot, "retry-newest-run", BlockerRunBudgetExceeded)
+	carried := CarryForwardResult{
+		RunID: "run-newest",
+		Runs: []CarriedRun{
+			{RunID: "run-newest", Carried: []string{"task_02"}},
+			{RunID: item.RunID, Carried: []string{"task_01"}},
+		},
+	}
+	recovery := &fakeItemRecovery{
+		states:      []ItemState{{Head: "candidate-original"}, {UnfinishedTasks: []string{"task_03"}, Head: "candidate-current"}},
+		carryResult: carried,
+	}
+	engine := newRetryDeliveryEngine(runStore, newFakeDeliveryWorkflow(), nil, recovery, newFakeDeliveryBoundary())
+
+	result, err := engine.Retry(ctx, gitRoot, item.SpecSlug)
+	if err != nil {
+		t.Fatalf("retry Delivery Queue item: %v", err)
+	}
+	got := readDeliveryQueue(t, ctx, runStore, gitRoot).Items[0]
+	if got.RunID != carried.RunID || !reflect.DeepEqual(result.CarriedFrom, carried) {
+		t.Fatalf("retried item = result:%+v item:%+v, want newest Run %q recorded", result, got, carried.RunID)
+	}
+}
+
 func TestRetryReentersTheRunWhenATaskIsUnfinished(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -78,7 +107,7 @@ func TestRetryReentersTheRunWhenATaskIsUnfinished(t *testing.T) {
 			{Head: "candidate-original"},
 			{UnfinishedTasks: []string{"task_03"}, Head: "current-head"},
 		},
-		carryResult: CarryForwardResult{RunID: " run-retried ", Carried: []string{"task_01", "task_02"}},
+		carryResult: CarryForwardResult{RunID: " run-retried ", Runs: []CarriedRun{{RunID: "run-retried", Carried: []string{"task_01", "task_02"}}}},
 	}
 	engine := newRetryDeliveryEngine(runStore, newFakeDeliveryWorkflow(), nil, recovery, newFakeDeliveryBoundary())
 
@@ -103,7 +132,7 @@ func TestRetryReReviewsTheCurrentHeadWhenNoTaskIsUnfinished(t *testing.T) {
 	item := seedParkedRetryItem(t, ctx, runStore, gitRoot, "retry-reviewing", BlockerReviewFindings)
 	recovery := &fakeItemRecovery{
 		states:      []ItemState{{Head: "candidate-original"}, {Head: "current-head"}},
-		carryResult: CarryForwardResult{RunID: "run-review", Carried: []string{"task_01"}},
+		carryResult: CarryForwardResult{RunID: "run-review", Runs: []CarriedRun{{RunID: "run-review", Carried: []string{"task_01"}}}},
 	}
 	engine := newRetryDeliveryEngine(runStore, newFakeDeliveryWorkflow(), nil, recovery, newFakeDeliveryBoundary())
 
