@@ -29,6 +29,7 @@ type reviewOutcome string
 const (
 	reviewOutcomeReviewed             reviewOutcome = "reviewed"
 	reviewOutcomeFindings             reviewOutcome = "findings"
+	reviewOutcomeFindingsDismissed    reviewOutcome = "findings-dismissed"
 	reviewOutcomeBlocked              reviewOutcome = "blocked"
 	reviewOutcomeOmitted              reviewOutcome = "omitted"
 	reviewRecordFileName                            = "pre-pr-review.json"
@@ -57,19 +58,21 @@ type reviewFindingDisposition struct {
 }
 
 type reviewRecord struct {
-	Repository           string          `json:"repository"`
-	BaseCommit           string          `json:"baseCommit"`
-	HeadCommit           string          `json:"headCommit"`
-	Provider             string          `json:"provider"`
-	Source               string          `json:"source"`
-	Outcome              reviewOutcome   `json:"outcome"`
-	Findings             string          `json:"findings,omitempty"`
-	FindingItems         []reviewFinding `json:"findingItems,omitempty"`
-	Reason               string          `json:"reason,omitempty"`
-	AnswerPath           string          `json:"answerPath,omitempty"`
-	Specs                []string        `json:"specs"`
-	SkippedSpecs         []string        `json:"skippedSpecs"`
-	SpecContextTruncated bool            `json:"specContextTruncated"`
+	Repository           string                     `json:"repository"`
+	BaseCommit           string                     `json:"baseCommit"`
+	HeadCommit           string                     `json:"headCommit"`
+	Provider             string                     `json:"provider"`
+	Source               string                     `json:"source"`
+	Outcome              reviewOutcome              `json:"outcome"`
+	Findings             string                     `json:"findings,omitempty"`
+	FindingItems         []reviewFinding            `json:"findingItems,omitempty"`
+	Dispositions         []reviewFindingDisposition `json:"dispositions,omitempty"`
+	Reused               bool                       `json:"reused,omitempty"`
+	Reason               string                     `json:"reason,omitempty"`
+	AnswerPath           string                     `json:"answerPath,omitempty"`
+	Specs                []string                   `json:"specs"`
+	SkippedSpecs         []string                   `json:"skippedSpecs"`
+	SpecContextTruncated bool                       `json:"specContextTruncated"`
 }
 
 func splitReviewFindings(findings string) []reviewFinding {
@@ -189,6 +192,10 @@ func validateReviewRecord(record reviewRecord) error {
 		if record.Reason != "" {
 			return errors.New("review record findings outcome cannot carry a reason")
 		}
+	case reviewOutcomeFindingsDismissed:
+		if err := validateDismissedReviewRecord(record); err != nil {
+			return err
+		}
 	case reviewOutcomeBlocked:
 		if strings.TrimSpace(record.Reason) == "" {
 			return errors.New("review record reason is required for blocked outcome")
@@ -200,6 +207,40 @@ func validateReviewRecord(record reviewRecord) error {
 		return fmt.Errorf("review record outcome %q is invalid", record.Outcome)
 	}
 
+	return nil
+}
+
+func validateDismissedReviewRecord(record reviewRecord) error {
+	if strings.TrimSpace(record.Findings) == "" {
+		return errors.New("review record findings are required for findings-dismissed outcome")
+	}
+	if record.Reason != "" {
+		return errors.New("review record findings-dismissed outcome cannot carry a reason")
+	}
+	if len(record.FindingItems) == 0 {
+		return errors.New("review record findings-dismissed outcome requires finding items")
+	}
+	if len(record.Dispositions) != len(record.FindingItems) {
+		return errors.New("review record findings-dismissed outcome requires exactly one dismissed disposition per finding item")
+	}
+	for _, finding := range record.FindingItems {
+		matches := 0
+		for _, disposition := range record.Dispositions {
+			if disposition.Repository != record.Repository ||
+				disposition.HeadCommit != record.HeadCommit ||
+				disposition.Finding != finding.ID ||
+				disposition.Text != finding.Text {
+				continue
+			}
+			matches++
+			if disposition.Disposition != "dismissed" || strings.TrimSpace(disposition.Evidence) == "" || disposition.FixedBy != "" {
+				return fmt.Errorf("review record finding %q requires an evidence-backed dismissed disposition", finding.ID)
+			}
+		}
+		if matches != 1 {
+			return fmt.Errorf("review record finding %q requires exactly one dismissed disposition", finding.ID)
+		}
+	}
 	return nil
 }
 
@@ -357,13 +398,30 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		printReviewCommandFailure(err, stderr)
 		return exitPreflight
 	}
+
+	record := newReviewRecord(gitState.Root, baseCommit, gitState.HEAD, loaded.Config.PrePRReview, reviewOutcomeBlocked)
+	if record.Provider == "codex" || record.Provider == "claude" {
+		reused, missing, found, err := reusableReviewRecord(artifactDir, record)
+		if err != nil {
+			printReviewCommandFailure(err, stderr)
+			return exitPreflight
+		}
+		if found {
+			for _, finding := range missing {
+				fmt.Fprintf(stderr, "roundfix: review finding %s has no disposition\n", finding.ID)
+			}
+			code := exitRunFailed
+			if reused.Outcome == reviewOutcomeFindingsDismissed {
+				code = exitOK
+			}
+			return finishReviewCommand(stdout, stderr, artifactDir, reused, code)
+		}
+	}
 	if err := removeReviewAnswer(artifactDir); err != nil {
 		printReviewCommandFailure(err, stderr)
 		return exitPreflight
 	}
-
-	record := newReviewRecord(gitState.Root, baseCommit, gitState.HEAD, loaded.Config.PrePRReview, reviewOutcomeBlocked)
-	switch loaded.Config.PrePRReview.Provider {
+	switch record.Provider {
 	case "none":
 		record.Outcome = reviewOutcomeOmitted
 		return finishReviewCommand(stdout, stderr, artifactDir, record, exitOK)
@@ -374,7 +432,7 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		// Config loading validates the policy vocabulary. Keep this switch
 		// exhaustive so an invalid in-memory value still fails closed.
 	default:
-		record.Reason = fmt.Sprintf("provider %q is not supported by roundfix review", loaded.Config.PrePRReview.Provider)
+		record.Reason = fmt.Sprintf("provider %q is not supported by roundfix review", record.Provider)
 		return finishReviewCommand(stdout, stderr, artifactDir, record, exitPreflight)
 	}
 
@@ -420,6 +478,78 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return finishReviewCommand(stdout, stderr, artifactDir, record, code)
 	}
 	return finishReviewCommandWithAnswer(stdout, stderr, artifactDir, result.Message, record, code)
+}
+
+func reusableReviewRecord(
+	artifactDir string,
+	candidate reviewRecord,
+) (reviewRecord, []reviewFinding, bool, error) {
+	record, err := readReviewRecord(filepath.Join(artifactDir, reviewRecordFileName))
+	if errors.Is(err, os.ErrNotExist) {
+		return reviewRecord{}, nil, false, nil
+	}
+	if err != nil {
+		return reviewRecord{}, nil, false, fmt.Errorf("read reusable pre-pr review record: %w", err)
+	}
+	if filepath.Clean(record.Repository) != filepath.Clean(candidate.Repository) ||
+		record.BaseCommit != candidate.BaseCommit ||
+		record.HeadCommit != candidate.HeadCommit ||
+		record.Provider != candidate.Provider {
+		return reviewRecord{}, nil, false, nil
+	}
+	if record.Outcome != reviewOutcomeFindings && record.Outcome != reviewOutcomeFindingsDismissed {
+		return reviewRecord{}, nil, false, nil
+	}
+
+	ledger, err := readReviewFindingDispositions(filepath.Join(artifactDir, reviewDispositionLedgerFileName))
+	if err != nil {
+		return reviewRecord{}, nil, false, err
+	}
+	record.Dispositions = matchingReviewFindingDispositions(record, ledger)
+	record.Reused = true
+	record.Outcome = reviewOutcomeFindings
+
+	missing := make([]reviewFinding, 0)
+	dismissed := make(map[string]int, len(record.FindingItems))
+	matched := make(map[string]int, len(record.FindingItems))
+	for _, disposition := range record.Dispositions {
+		matched[disposition.Finding]++
+		if disposition.Disposition == "dismissed" {
+			dismissed[disposition.Finding]++
+		}
+	}
+	allDismissed := len(record.FindingItems) > 0 && len(record.Dispositions) == len(record.FindingItems)
+	for _, finding := range record.FindingItems {
+		if matched[finding.ID] == 0 {
+			missing = append(missing, finding)
+		}
+		if matched[finding.ID] != 1 || dismissed[finding.ID] != 1 {
+			allDismissed = false
+		}
+	}
+	if allDismissed {
+		record.Outcome = reviewOutcomeFindingsDismissed
+	}
+	return record, missing, true, nil
+}
+
+func matchingReviewFindingDispositions(
+	record reviewRecord,
+	ledger []reviewFindingDisposition,
+) []reviewFindingDisposition {
+	dispositions := make([]reviewFindingDisposition, 0)
+	for _, disposition := range ledger {
+		for _, finding := range record.FindingItems {
+			if disposition.Repository == record.Repository &&
+				disposition.HeadCommit == record.HeadCommit &&
+				disposition.Finding == finding.ID &&
+				disposition.Text == finding.Text {
+				dispositions = append(dispositions, disposition)
+				break
+			}
+		}
+	}
+	return dispositions
 }
 
 type reviewDisposeRequest struct {
@@ -472,8 +602,8 @@ func runReviewDisposeCommand(ctx context.Context, args []string, stdout, stderr 
 		printReviewDisposeRefusal(errors.New("pre-pr review record belongs to another repository"), stderr)
 		return exitPreflight
 	}
-	if record.Outcome != reviewOutcomeFindings {
-		printReviewDisposeRefusal(fmt.Errorf("pre-pr review record outcome is %q, not %q", record.Outcome, reviewOutcomeFindings), stderr)
+	if record.Outcome != reviewOutcomeFindings && record.Outcome != reviewOutcomeFindingsDismissed {
+		printReviewDisposeRefusal(fmt.Errorf("pre-pr review record outcome is %q, not findings", record.Outcome), stderr)
 		return exitPreflight
 	}
 	finding, found := reviewFindingByID(record.FindingItems, request.findingID)

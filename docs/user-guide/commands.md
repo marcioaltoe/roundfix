@@ -219,6 +219,22 @@ dismissals, invalid fixing commits, and a second disposition. Every refusal
 exits `2`, starts stderr with `roundfix: review dispose refused:`, and appends
 nothing.
 
+For `codex` and `claude`, a findings verdict stands for its repository, base
+commit, head commit, and provider. When the Artifact Directory already holds a
+matching `findings` or `findings-dismissed` record, Roundfix reuses it before
+preparing, probing, or prompting an Agent session. The reused record sets
+`reused` and carries the ledger entries whose repository, head, finding
+identity, and text match its `findingItems` in `dispositions`.
+
+When every finding has one evidence-backed `dismissed` disposition, the reused
+record reports `findings-dismissed` and exits `0`. Otherwise it remains
+`findings`, exits `1`, and stderr names each finding identity that has no
+disposition. A `fixed` disposition never clears the reviewed head because the
+fix belongs to a changed candidate. A different repository, base, head, or
+provider gets a fresh review, as does an existing `reviewed`, `blocked`, or
+`omitted` record. The `none` and `coderabbit` policies keep their behavior
+described above.
+
 When the candidate adds or changes a Spec folder under the configured Spec
 Root, or under its resolved archive root, Roundfix discovers that folder from
 the candidate diff. Specs archived within the candidate are read from the
@@ -237,8 +253,10 @@ names the Specs whose context was carried.
 
 Exit codes:
 
-- `0` — one substantive no-findings verdict or configured omission.
-- `1` — the reviewer returned findings; the record carries them.
+- `0` — one substantive no-findings verdict, configured omission, or a reused
+  `findings-dismissed` verdict.
+- `1` — the reviewer returned findings or a reused verdict still has standing
+  findings; the record carries them.
 - `2` — preflight failed or the review was blocked.
 
 Runtime failure, timeout, transport anomaly, empty output, and unclassifiable
@@ -286,6 +304,11 @@ queue.
 active Spec, it first carries the settled Tasks of the item's recorded Run to
 the item branch, so a later Run executes only unfinished Tasks. It then selects
 the re-entry stage from the evidence on that branch:
+
+A retried `review-findings` item at an unchanged head advances once every
+finding is dismissed with evidence. Standing findings park it again without
+asking the reviewer; Roundfix asks the reviewer again only after the head
+changes.
 
 | Recorded evidence | Re-entry stage |
 | --- | --- |

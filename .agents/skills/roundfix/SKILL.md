@@ -275,6 +275,21 @@ unknown identity, invalid or blank form, moved-head dismissal, invalid fixing
 commit, or second disposition exits `2` with
 `roundfix: review dispose refused:` on stderr and appends nothing.
 
+For `codex` and `claude`, a findings verdict stands for its repository, base
+commit, head commit, and provider. When the Artifact Directory already holds a
+matching `findings` or `findings-dismissed` record, Roundfix reuses it before
+preparing, probing, or prompting an Agent session. The reused record sets
+`reused` and carries exact repository, head, finding-identity, and finding-text
+ledger matches in `dispositions`.
+
+When every finding has one evidence-backed `dismissed` disposition, the reused
+record reports `findings-dismissed` and exits `0`. Otherwise it remains
+`findings`, exits `1`, and stderr names every finding identity without a
+disposition. A `fixed` disposition never clears that head; the changed
+candidate needs a fresh review. A different repository, base, head, or provider
+also gets a fresh review, and Roundfix never reuses `reviewed`, `blocked`, or
+`omitted`. The `none` and `coderabbit` policies keep their behavior above.
+
 When the candidate adds or changes a Spec folder under the configured Spec
 Root, or under its resolved archive root, Roundfix discovers that folder from
 the candidate diff. Specs archived within the candidate are read from the
@@ -293,9 +308,11 @@ total context bound are named in the record's `skippedSpecs`; the record's
 
 Exit codes are:
 
-- Exit `0` — the reviewer returned one substantive no-findings verdict, or
-  explicit `none` recorded its configured omission.
-- Exit `1` — the reviewer returned findings; the record carries them.
+- Exit `0` — the reviewer returned one substantive no-findings verdict,
+  explicit `none` recorded its configured omission, or a reused verdict is
+  `findings-dismissed`.
+- Exit `1` — the reviewer returned findings or a reused verdict still has
+  standing findings; the record carries them.
 - Exit `2` — preflight failed or the selected review is blocked.
 
 A runtime failure, timeout, transport anomaly, empty output, or
@@ -345,6 +362,11 @@ to the item branch. The item then re-enters at `running` when any Task is
 unfinished or at `reviewing` when every Task is completed. An archived Spec
 re-enters at `gating` without a recorded pull request or at `checking` with
 one.
+
+A retried `review-findings` item at an unchanged head advances once every
+finding is dismissed with evidence. Standing findings park it again without
+asking the reviewer; Roundfix asks the reviewer again only after the head
+changes.
 
 The retry hands the item to the recorded owner only when Roundfix proves that
 process is alive and has the recorded identity. A dead or unproven owner record

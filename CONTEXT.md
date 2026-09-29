@@ -92,6 +92,7 @@ _Avoid_: Check presence, generic approval, inferred clean state
 
 **Review Finding Disposition**:
 A Pre-PR Review finding's recorded fix or evidence-backed dismissal, tied to the head the reviewer examined.
+At the same repository, base, head, and provider, the findings verdict is reused without asking the reviewer; only exact evidence-backed dismissals of every finding produce `findings-dismissed`, while a fix requires a fresh review of its changed head.
 _Avoid_: Review Issue resolution, unrecorded operator decision, finding deletion
 
 **Spec**:
