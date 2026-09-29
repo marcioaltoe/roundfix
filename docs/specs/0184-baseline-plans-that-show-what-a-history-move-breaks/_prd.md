@@ -218,9 +218,10 @@ field and no schema version change.
 
 ## Recorded limits
 
-- A History Relocation that apply later refuses as a collision is still counted
-  as moving, because the plan lists it. Its citations were reported but do not
-  break.
+- A History Relocation whose destination is already occupied, which apply
+  refuses and leaves in place, is not counted as moving, so its citations are
+  not reported. A collision that only appears between planning and apply is
+  outside what the plan can see.
 - A citation is recognized only as an exact repository-relative path, or as a
   Markdown link destination. A partial path in prose, an HTML anchor or a
   generated link is not recognized.
