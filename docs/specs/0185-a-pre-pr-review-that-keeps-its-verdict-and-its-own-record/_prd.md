@@ -68,7 +68,7 @@ and let one checkout's review replace another's.
   Carry-Forward, and ADR-0171, ADR-0172 and ADR-0173 (Specs 0183 and 0184)
   govern retention, Doctor storage and Baseline relocation citations; this
   Spec touches none of them. ADR-0097 cites ADR-0080 but carries a QA row
-  forward, not a review record, so it does not apply. All the others hold. Source: `docs/agents/domain.md`.
+  forward, not a review record, so it does not apply. All the others hold. ADR-0176 (Spec 0181) narrows only which Spec text the citation checks read, and this Spec does not depend on it, so it does not apply. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — the maintainer approved adding this Spec to
   the second queue on 2026-09-29, answering a structured question with "Nova
   Spec na Onda 5"; the Roundfix skill files ride the standing grant of
