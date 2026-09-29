@@ -106,13 +106,43 @@ func RecordedTaskPaths(content []byte) []string {
 }
 
 func recordedPathsSectionOffset(content []byte) (int, bool) {
-	heading := []byte(RecordedPathsHeading + "\n")
-	if bytes.HasPrefix(content, heading) {
-		return 0, true
+	lastHeadingOffset := -1
+	lastHeading := ""
+	inFence := false
+	fence := ""
+	for lineStart := 0; lineStart <= len(content); {
+		lineEnd := bytes.IndexByte(content[lineStart:], '\n')
+		if lineEnd < 0 {
+			lineEnd = len(content)
+		} else {
+			lineEnd += lineStart
+		}
+		line := string(content[lineStart:lineEnd])
+		trimmed := strings.TrimSpace(line)
+		if marker, ok := markdownFenceMarker(trimmed); ok {
+			if !inFence {
+				inFence = true
+				fence = marker
+			} else if marker == fence {
+				inFence = false
+				fence = ""
+			}
+		} else if !inFence {
+			if depth, _, ok := markdownHeading(trimmed); ok && depth == 2 {
+				lastHeadingOffset = lineStart
+				lastHeading = line
+			}
+		}
+		if lineEnd == len(content) {
+			break
+		}
+		lineStart = lineEnd + 1
 	}
-	marker := append([]byte{'\n'}, heading...)
-	if offset := bytes.Index(content, marker); offset >= 0 {
-		return offset, true
+	if lastHeading != RecordedPathsHeading {
+		return 0, false
 	}
-	return 0, false
+	if lastHeadingOffset > 0 && content[lastHeadingOffset-1] == '\n' {
+		return lastHeadingOffset - 1, true
+	}
+	return lastHeadingOffset, true
 }

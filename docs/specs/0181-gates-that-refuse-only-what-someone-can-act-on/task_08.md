@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0181-gates-that-refuse-only-what-someone-can-act-on
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -55,3 +55,55 @@ The pre-PR review of the 0181 candidate found two defects in the recorded-paths 
 - ADR-0166
 
 ## Result
+
+The Task commit now stages the expanded file list used to compute recorded
+paths. An ignored file under a newly created directory therefore stays out of
+both the commit and the Task file record. Recorded-path section discovery now
+accepts only the exact unfenced heading that starts the final level-two
+section, so authored fenced examples and earlier authored sections remain
+byte-identical when the Daemon appends its section.
+
+New tests:
+
+- `TestTaskCommitNeverStagesAnIgnoredFileInANewDirectory`
+- `TestRecordedPathsKeepAFencedHeadingInAuthoredText`
+- `TestRecordedPathsKeepAnAuthoredHeadingFollowedBySections`
+- `TestRecordedPathsReplaceTheTrailingDaemonSection`
+
+Existing top-level tests changed: none. The behavior change invalidated no
+existing assertion. `TestTaskCommitRecordsTheFilesOfANewUntrackedPackage` and
+`TestRecordTaskPathsReplacesAnExistingSectionAndKeepsEveryOtherByte` passed
+unchanged in the focused checks.
+
+Focused implementation evidence:
+
+- Before the production edit,
+  `TestTaskCommitNeverStagesAnIgnoredFileInANewDirectory` failed because the
+  commit contained both `internal/newpkg/ignored.secret` and
+  `internal/newpkg/new.go`.
+- Before the production edit, the section tests showed that
+  `RecordedTaskPaths` read a fenced authored bullet and that writing a record
+  truncated an authored `## Notes` section.
+- `rtk env GOCACHE=/tmp/roundfix-task08-gocache go test -count=1 -run '^(TestTaskCommitNeverStagesAnIgnoredFileInANewDirectory|TestTaskCommitRecordsTheFilesOfANewUntrackedPackage)$' ./internal/daemon`: passed.
+- `rtk env GOCACHE=/tmp/roundfix-task08-gocache go test -count=1 -run '^(TestRecordedPathsKeepAFencedHeadingInAuthoredText|TestRecordedPathsKeepAnAuthoredHeadingFollowedBySections|TestRecordedPathsReplaceTheTrailingDaemonSection|TestRecordTaskPathsReplacesAnExistingSectionAndKeepsEveryOtherByte)$' ./internal/spec`: passed.
+- `rtk env GOCACHE=/tmp/roundfix-task08-gocache go test -count=1 ./internal/daemon ./internal/spec`: passed.
+- `rtk make verify-incremental`: passed after the sandbox-blocked first attempt
+  was rerun with access to its test-time network dependency.
+- `rtk git diff --check`: passed.
+
+Acceptance evidence:
+
+- `TestTaskCommitNeverStagesAnIgnoredFileInANewDirectory` drives the real Git
+  Task-cycle fixture and proves the commit and record contain only the ordinary
+  file.
+- `TestRecordedPathsKeepAFencedHeadingInAuthoredText` proves the reader ignores
+  the fenced heading and the writer preserves every authored byte before
+  appending the Daemon section.
+- `TestRecordedPathsKeepAnAuthoredHeadingFollowedBySections` proves an earlier
+  authored heading is not owned by the Daemon and all later authored sections
+  survive.
+- `TestRecordedPathsReplaceTheTrailingDaemonSection` proves a trailing Daemon
+  section is replaced once, with its preceding authored bytes preserved.
+
+The Daemon must run the declared Verification and settle the Task; Task status
+was left unchanged.

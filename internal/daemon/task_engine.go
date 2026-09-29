@@ -2057,16 +2057,16 @@ func (engine *Engine) prepareTaskCommit(ctx context.Context, plan TaskPlan, task
 	}
 	stageable, dropped := FilterStageablePaths(ctx, plan.WorkDir, changed)
 	dropped = append(projectConfigDrops, dropped...)
+	stageable, err = expandUntrackedCommitDirectories(ctx, plan.WorkDir, stageable)
+	if err != nil {
+		return taskCommitPreparation{}, err
+	}
 	var recorded []string
 	if task.Type != spec.TaskTypeQA {
-		committedFiles, err := expandUntrackedCommitDirectories(ctx, plan.WorkDir, stageable)
-		if err != nil {
-			return taskCommitPreparation{}, err
-		}
 		recorded = spec.UndeclaredTaskPaths(
 			task,
 			artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, task.File)),
-			committedFiles,
+			stageable,
 			speccheck.GovernedPath,
 		)
 	}
