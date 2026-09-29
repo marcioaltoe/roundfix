@@ -310,6 +310,10 @@ against observed state before retrying it, so a lost acknowledgement cannot
 create a duplicate pull request or merge. Publication requires the Spec's
 authorization record to grant `push`, `pull_request`, and `merge`.
 
+When an Implement Run ends `BudgetExceeded`, the queue parks its item as
+`run-budget-exceeded` with that Run's ID. `roundfix deliver retry <slug>` uses
+the recorded Run ID to carry settled Tasks forward before resuming the item.
+
 `deliver status` prints each item's Spec slug, stage, and blocker, followed by
 the `Limits:` line. When one or more items are parked, it prints exactly one
 `Pending question:` for the lowest-position parked item, the action that
@@ -742,8 +746,9 @@ roundfix window clear
 
 The `window` command manages one durable Run Window for the current repository
 in the Run Database. The Run Window bounds when an `implement` Run may start;
-`budget.max_run_duration` bounds how long a Run may run after it starts. The
-window does not apply to `fetch`, `resolve`, or `watch`.
+`budget.max_run_duration` bounds how long a Run may run after it starts, and an
+Implement Run's allowance renews at each Task settlement. The window does not
+apply to `fetch`, `resolve`, or `watch`.
 
 `set` accepts a local `HH:MM` and stores its next occurrence: tomorrow when
 that time has already passed today. It also accepts an absolute local
@@ -843,6 +848,13 @@ implementation-ready work from the Agent, runs the Task's complete
 `## Verification` sequence verbatim, and writes the terminal status. The Agent
 may run focused checks and record their evidence, but it does not run the
 declared Task Verification, edit status, or settle the verdict.
+
+The Implement Run Budget starts with one `budget.max_run_duration` allowance
+from Run creation, then renews at each Task settlement. The renewed allowance
+bounds the next Task or QA gate and the integration, push, and cleanup work
+after the Task cycle. When it expires, Roundfix cancels the Run's Agent
+Sessions, settles `BudgetExceeded`, and keeps the Run Worktree and Run Branch
+for recovery.
 
 A deterministic Verification failure releases Verification Capacity before
 the Daemon sends diagnostics to the same Agent Session. The Agent receives one
@@ -1139,6 +1151,8 @@ for overlapping work. If you carry from the wrong Run first, a later
 overlapping set is refused as a whole; when several Runs qualify, choose the
 Run that `implement` names, because it has the largest carriable set and uses
 the newest Run to break ties.
+
+Carry-forward staging commits run without repository hooks because the carried commits already passed Daemon Verification and the repository hooks when the Daemon settled them. The checkout still receives the staged commits only through a fast-forward merge, and carry-forward does not change its Git configuration.
 
 `--apply` remains the only switch that releases Run Worktrees.
 

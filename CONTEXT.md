@@ -36,6 +36,10 @@ _Avoid_: Auto-fix, gate edit, remediation
 A repository path the tooling-authority rules bind — the configuration, scripts, ignore files, plugin declarations, and version pins of linters, formatters, typecheckers, test runners, architecture checkers, build tools, package managers, and code generators. The changed-path audit judges a Task commit only against its governed paths; an ordinary source, test, or documentation file is not governed and needs no grant. The declared set is held to the record: every path any authorization has ever bounded stays governed.
 _Avoid_: Protected file, restricted path, tooling file
 
+**Delivery Base**:
+The merge base of the audited head and the repository default branch. The mechanical stage reads a Spec's Task commits and its grant from it.
+_Avoid_: Run start head, audited head, delivery target
+
 **Undeclared Governed Path**:
 A Governed Path named by a pending non-QA Task but omitted from its authorization record or a present Tooling authority row.
 _Avoid_: Unauthorized edit, inferred path, ordinary path
@@ -127,11 +131,11 @@ The universal Normative Clause that forbids changes to linter, formatter, and to
 _Avoid_: Tool preference, implicit permission, cleanup authorization
 
 **QA Report**:
-The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict, its Auditing Binary as `auditing_binary`, and `auditor_staleness`, plus `rows_blocked_environment`, `rows_blocked_finding`, and `rows_blocked_declared` counts in its frontmatter. A report recording a Precondition Refusal carries `rows_blocked_precondition` beside those counts, plus the `precondition_check` and `precondition_reason` keys that name the refusal; a gate that reached its matrix writes none of those three. A `pending` verdict is never accepted, a report that records no QA row is refused, and a report whose front matter is empty or duplicated is unreadable and refused; only the newest report in the directory is read by a later run's mechanical stage, so a superseded report blocks nothing.
+The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict, its Auditing Binary as `auditing_binary`, `auditor_staleness`, and the public-row binary's `--version` line as `user_flow_binary`, plus `rows_blocked_environment`, `rows_blocked_finding`, and `rows_blocked_declared` counts in its frontmatter. The auditor fields are Daemon-owned: the gate keeps the seeded `auditing_binary` and `auditor_staleness` values. A report recording a Precondition Refusal carries `rows_blocked_precondition` beside those counts, plus the `precondition_check` and `precondition_reason` keys that name the refusal; a gate that reached its matrix writes none of those three. A `pending` verdict is never accepted, a report that records no QA row is refused, and a report whose front matter is empty or duplicated is unreadable and refused; only the newest report in the directory is read by a later run's mechanical stage, so a superseded report blocks nothing.
 _Avoid_: Test report, QA log
 
 **Auditing Binary**:
-The Roundfix binary that produced a verdict, distinct from the tree it audited. It carries the version, build commit, and build time (the last two may be empty for a released build), and a QA Report records its formatted identity as `AuditingBinary` / `auditing_binary`; `auditor_staleness` reports `current`, `stale`, or `unknown` with the answering or missing-evidence reason.
+The Daemon's Roundfix binary that runs the mechanical stage, distinct from the tree it audits. It carries the version, build commit, and build time (the last two may be empty for a released build), and a QA Report records its formatted identity as `AuditingBinary` / `auditing_binary`; `auditor_staleness` compares its build commit with the Delivery Base, and a stale Auditing Binary is published as a warning while the gate proceeds.
 _Avoid_: Audited binary, audited tree, ambiguous build
 
 **Precondition Refusal**:
@@ -221,6 +225,10 @@ _Avoid_: Weak test, trivial gate, false green
 **Inverted Verification Exit**:
 The Spec Consistency Check error (`SC-VERIFY-INVERTED-EXIT`) raised when an authored Verification command uses a measured shell form whose exit status reverses or ignores the condition its output appears to assert. The finding names the matched form and a replacement that exits zero when the asserted condition holds.
 _Avoid_: Verification failure, shell lint, non-zero result
+
+**Wrap-Fragile Phrase Check**:
+The Spec Consistency Check error (`SC-VERIFY-WRAP-FRAGILE`) raised when a pending Task uses a line-bound multi-word phrase check against Markdown that can miss text wrapped across lines. The finding names the phrase and file and gives a wrap-tolerant replacement.
+_Avoid_: Line-bound grep, phrase grep, wrapped-text failure
 
 **Non-Hermetic Verification**:
 The Spec Consistency Check error (`SC-VERIFY-NON-HERMETIC`) raised when an authored Verification command depends on an undeclared environment variable or a pre-existing path outside the repository. A command-local variable or a path the Task creates before reading is not an external dependency.

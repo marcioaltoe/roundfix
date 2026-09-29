@@ -372,6 +372,10 @@ lost acknowledgement from creating a second pull request or merge. Before
 publication, the Spec authorization record must grant all three operations:
 `push`, `pull_request`, and `merge`.
 
+When an Implement Run ends `BudgetExceeded`, the queue parks its item as
+`run-budget-exceeded` with that Run's ID. `roundfix deliver retry <slug>` uses
+the recorded Run ID to carry settled Tasks forward before resuming the item.
+
 `deliver status` prints the item rows, warning rows, and the `Limits:` line.
 When one or more items are parked, it prints exactly one `Pending question:`
 for the lowest-position parked item, the action that answers it, and the count
@@ -1030,6 +1034,7 @@ checkout; it accepts Runs whose outcome is `BudgetExceeded`, `Stopped`, or
 `Unresolved` and refuses every other terminal outcome. Carry-forward keeps its
 existing proof requirements and refuses the whole Task set when any member
 cannot be proved.
+Carry-forward staging commits run without repository hooks because the carried commits already passed Daemon Verification and the repository hooks when the Daemon settled them. The checkout receives those commits only through a fast-forward merge, and carry-forward leaves its Git configuration unchanged.
 There is no force bypass.
 
 Process termination succeeds only when Roundfix proves every reported process
@@ -1792,11 +1797,13 @@ commands gate one commit. By default the Run never pushes; a repository can
 opt in with `implement.auto_push: true`, which pushes only after a Clean
 outcome and never opens pull requests (ADR-0138).
 
-When the Run Budget is enabled, an Implement Run is bounded by the configured
-maximum Run duration. When that maximum expires, the Run settles
+When the Run Budget is enabled, an Implement Run starts with the configured
+maximum Run duration and its allowance renews at each Task settlement. The
+renewed allowance bounds the next Task or QA gate and post-cycle integration,
+push, and cleanup. When the allowance expires, the Run settles
 `BudgetExceeded` with a reason naming both the configured maximum and the
-elapsed time. The bounded Run preserves its Run Worktree and Run Branch for
-inspection and recovery.
+elapsed time since the renewal point. The bounded Run preserves its Run
+Worktree and Run Branch for inspection and recovery.
 
 Before creating a Run, `implement` inspects prior terminal Runs for the same
 Spec in the current repository. When a `BudgetExceeded`, `Stopped`, or

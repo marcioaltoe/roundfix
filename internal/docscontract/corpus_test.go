@@ -312,6 +312,7 @@ var corpusFindingCodes = []string{
 	speccheck.CodeVocabularyUndocumented,
 	speccheck.CodeVerifyWorkIndependent,
 	speccheck.CodeVerifyInvertedExit,
+	speccheck.CodeVerifyWrapFragile,
 	speccheck.CodeVerifyNonHermetic,
 	speccheck.CodeVerifyVacuousCommand,
 	speccheck.CodeRequirementContradictory,

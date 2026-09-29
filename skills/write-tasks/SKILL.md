@@ -82,7 +82,8 @@ by each Task file. The preflight never moves either responsibility.
   a Task may declare at most 50 unique entries. The Daemon reserves those paths
   before filling the 200-path Spec Context Bundle with prior changed files.
 - **Declared edits and governed paths are explicit.** Every path a Task edits
-  is declared under `interface:` or `creates:`, never `instruction:`. Each
+  is declared under `interface:` or `creates:`, never `instruction:`. An
+  `instruction:` path is read-only and never makes two Tasks collide. Each
   declared or Verification-read Governed Path must appear in the Spec's
   `_authorization.md` `paths:` and in both `bounded files:` rows, or authoring
   is refused with `SC-TOOLING-UNDECLARED`. A Task naming a CLI surface names

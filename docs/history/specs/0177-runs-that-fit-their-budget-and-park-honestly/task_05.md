@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0177-runs-that-fit-their-budget-and-park-honestly
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -112,3 +112,50 @@ line-bound form lets the same Run loss happen again.
 - `_prd.md` → Goal 5; Core Feature 5; Success Metric 5; Decisions.
 - `_techspec.md` → The wrap-fragile phrase check; API Contract 7; Testing
   Approach 5; ADR-0093; ADR-0117; ADR-0133; ADR-0148.
+
+## Result
+
+Implemented the Task-stage `SC-VERIFY-WRAP-FRAGILE` detector. It classifies
+top-level `grep` commands (including `rtk` and leading `!` forms), derives the
+first `-e` or operand pattern, refuses only unanchored multi-word patterns with
+a Markdown file operand, and supplies filled presence or absence repairs. The
+Spec checker now runs it only for pending non-QA Tasks, locates findings at the
+declaring Verification line, and names its skip when `_tasks.md` is absent.
+
+Updated the active-corpus code registry and pinned zero count, the canonical
+write-tasks template and generated mirror, the skill contract, and the project
+glossary. `make skills-sync` regenerated the distributed template from the
+authorized canonical source.
+
+Acceptance evidence:
+
+- The positive, diagnostic, negated, first-`-e`, and command-chain tests pass;
+  findings carry `SeverityError`, name `records no QA row` and
+  `docs/user-guide/commands.md`, and render the filled presence or absence
+  form.
+- Separate negative tests pass for the wrap-tolerant pipeline, start and end
+  anchors, headings, table rows, a single word, piped/explicit/redirected
+  standard input, and a non-Markdown operand.
+- Spec-check fixtures pass for completed and QA Task exclusion, strict error
+  severity, Task-stage registration, missing-graph skip reporting, and the
+  Verification source line.
+- The suggested presence repair was executed through `sh -c`: it exits zero
+  for `records no\nQA row` and exits one for a missing phrase while stderr
+  includes both the phrase and the temporary Markdown path.
+- The docscontract corpus checks pass with `SC-VERIFY-WRAP-FRAGILE: 0`; the
+  archive-layout characterization and both Task-template contract tests pass.
+
+Focused checks:
+
+- `GOCACHE=/tmp/roundfix-task05-gocache go test -count=1 ./internal/speccheck`
+  — passed.
+- Targeted `go test` runs for the write-tasks template contracts,
+  archive-layout characterization, and docscontract corpus checks — passed.
+- `make skills-sync` followed by a canonical/distributed template diff —
+  passed with no difference.
+- `GOCACHE=/tmp/roundfix-task05-gocache make verify-incremental` — the sandboxed
+  run reached two existing force-stop integration tests but could not read the
+  host process table; the permitted rerun passed vet, all Go packages, skill
+  checks, and build.
+
+The Daemon-owned `## Verification` command was not run in this Agent turn.

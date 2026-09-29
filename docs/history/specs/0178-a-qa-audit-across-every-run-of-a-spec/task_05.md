@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0178-a-qa-audit-across-every-run-of-a-spec
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
@@ -67,8 +67,10 @@ Every row is judged against that scope.
 9. MUST replay, in a disposable clone, Spec 0172's retained history
    `256ad156..ebac7cbe` with `origin/main` set to a revision of the default
    branch that contains `fc296df0`: record every Task commit the built tree's
-   selection lists (task_01 to task_05 and task_07, including those before
-   `0532c0fe chore: merge main into 0172`) and every `QA-AUTH-PATHS` finding it
+   selection lists — every Task commit of that history that changes a
+   governed path, which the authorization audit selects by design (task_01,
+   task_02, task_04 and task_05, including those before `0532c0fe chore: merge
+   main into 0172`; task_03 and task_07 change no governed path) and every `QA-AUTH-PATHS` finding it
    produces for the in-PR grant widening `c0818081`. MUST also recompute the
    staleness of the Daemon builds recorded by the QA Reports of Specs 0171,
    0172 and 0174 against each audited head's Delivery Base and record each

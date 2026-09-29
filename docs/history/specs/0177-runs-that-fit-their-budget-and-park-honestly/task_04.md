@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0177-runs-that-fit-their-budget-and-park-honestly
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -96,3 +96,63 @@ inside the staging invocations and never reach the user's Git configuration.
 - `_prd.md` → Goal 4; Core Feature 4; Success Metric 4; Decisions.
 - `_techspec.md` → Carry-forward without repository hooks; API Contract 6;
   Testing Approach 4; ADR-0053; ADR-0125; ADR-0158.
+
+## Result
+
+### Implementation
+
+- Added one staging-only Git helper that creates an empty hooks directory,
+  adds `-c core.hooksPath=<dir>` to the existing `reconcileGitRaw` invocation,
+  and removes the directory on return. The staging cherry-pick, abort, and
+  provenance amend use it; read-only commands, `git add`, and the checkout's
+  fast-forward merge keep their existing paths.
+- Added CLI-runner coverage with hook fixtures written before any Git process.
+  Separate tests cover refusing hooks, proof readiness, all four marker hooks,
+  unchanged checkout configuration, temporary-directory cleanup, conflicts,
+  provenance failures, and operational cherry-pick failures.
+- Documented why carry-forward staging commits run without repository hooks in
+  the user guide and canonical Roundfix skill. `make skills-sync` regenerated
+  the shipped mirror, and `make baseline-digests` reported no derived changes.
+
+### Focused checks
+
+- Red signal: before the production change,
+  `TestCarryForwardAppliesThroughRefusingCommitHooks` failed because
+  `git commit --amend --no-edit` exited `1` through the repository's refusing
+  hook.
+- `rtk env GOCACHE=/tmp/roundfix-task04-gocache go test -count=1 -run
+  '^(TestCarryForwardAppliesThroughRefusingCommitHooks|TestCarryForwardProofIgnoresRefusingCommitHooks|TestCarryForwardStagingRunsNoRepositoryHook|TestCarryForwardLeavesTheCheckoutHooksPathUnchanged|TestCarryForwardRemovesItsEmptyHooksDirectory)$'
+  ./internal/cli` exited `0`.
+- `rtk env GOCACHE=/tmp/roundfix-task04-gocache go test -count=1 -run
+  '^(TestCarryForwardConflictRefusesInsteadOfFailingTheInspection|TestCarryForwardStagingFailureIsNotClassifiedAsAConflict|TestCarryForwardOperationalCherryPickFailureIsNotAConflict)$'
+  ./internal/cli` exited `0`.
+- `rtk rg -n -F 'run without repository hooks'
+  docs/user-guide/commands.md .agents/skills/roundfix/SKILL.md
+  skills/roundfix/SKILL.md` and `rtk cmp .agents/skills/roundfix/SKILL.md
+  skills/roundfix/SKILL.md` exited `0`.
+- The first sandboxed `make verify-incremental` attempt was environment-blocked
+  when a test tried to reach `cafe.github.com`. The network-capable rerun,
+  `rtk env GOCACHE=/tmp/roundfix-task04-gocache make verify-incremental`,
+  exited `0`, including repository-wide vet, tests, skill checks, and build.
+- The Task's declared `## Verification` command was not run; the Daemon owns
+  that gate.
+
+### Acceptance evidence
+
+- Refusing hooks: `TestCarryForwardAppliesThroughRefusingCommitHooks` exercised
+  `roundfix reconcile <run-id> --carry-forward` through the package CLI runner
+  and observed the proved Task in the checkout despite refusing `pre-commit`
+  and `commit-msg` hooks. `TestCarryForwardProofIgnoresRefusingCommitHooks`
+  observed the candidate action `would carry forward with --carry-forward`.
+- No staging hooks: `TestCarryForwardStagingRunsNoRepositoryHook` first proved
+  that `pre-commit`, `prepare-commit-msg`, `commit-msg`, and `post-commit` each
+  wrote its marker for a normal commit, cleared the marker, then observed no
+  marker from carry-forward staging.
+- Configuration and cleanup:
+  `TestCarryForwardLeavesTheCheckoutHooksPathUnchanged` observed the same local
+  `core.hooksPath` before and after carry-forward, and
+  `TestCarryForwardRemovesItsEmptyHooksDirectory` observed an empty temporary
+  root after the command returned.
+- Error classification: the three focused negative tests preserved conflict as
+  a Task refusal and kept provenance and missing-object cherry-pick failures as
+  operational errors rather than conflicts.
