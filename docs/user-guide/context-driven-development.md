@@ -161,6 +161,14 @@ Manifest. Every byte outside managed boundaries remains byte-identical,
 including Repository-Specific Normative Rules, repository-rule blocks, and
 authored prose in touched files.
 
+When a plan includes History Relocations, it will report each tracked file whose
+citations its History Relocations would break. These warnings use
+`baseline.history.citation` for each citing file,
+`baseline.history.citation.omitted` when more citing files exist than the report
+lists, and `baseline.history.citation.unscanned` when a tracked file could not
+be scanned. The Plan Digest covers these warnings. Planning never rewrites a
+citation, and apply writes the same files.
+
 | Option | Contract |
 | --- | --- |
 | `--repo <path>` | Git worktree or a path inside it; defaults to the current directory. |

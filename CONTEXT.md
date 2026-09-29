@@ -586,6 +586,10 @@ _Avoid_: Archive folder, `_archived`, attic, trash
 One retired file that belongs under the History Root and is not there, carried in the Baseline Plan as an ordered ledger entry of source, destination, and content identity rather than file bytes. A relocation whose destination is occupied is a collision: it is refused by name, its siblings still move, and the repository is not current until it is resolved.
 _Avoid_: Archive move, file migration, relocation payload
 
+**Relocation Citation**:
+A citation in a tracked file that resolves before a Baseline Plan's History Relocations and would not resolve after them. It is reported as a warning the Plan Digest binds; planning never rewrites it, and apply writes the same files.
+_Avoid_: Broken link, dangling reference, link check
+
 **GC Command**:
 The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window and removes orphaned run artifact directories, reporting what it freed. Never touches Active Runs, `runs` rows, or active-run locks.
 _Avoid_: Clean command, vacuum, purge
