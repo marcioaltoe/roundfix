@@ -75,14 +75,14 @@ func TestCompareToTree(t *testing.T) {
 			binary:     AuditingBinary{Version: "1.2.3", Commit: "a1b2c3d"},
 			ancestry:   AncestryOlder,
 			want:       StalenessStale,
-			wantReason: "commit ancestry: build commit predates audited tree",
+			wantReason: "commit ancestry: build commit predates the delivery base",
 		},
 		{
 			name:       "current from commit ancestry",
 			binary:     AuditingBinary{Version: "1.2.3", Commit: "a1b2c3d"},
 			ancestry:   AncestryNotOlder,
 			want:       StalenessCurrent,
-			wantReason: "commit ancestry: build commit does not predate audited tree",
+			wantReason: "commit ancestry: build commit does not predate the delivery base",
 		},
 		{
 			name:        "stale released binary from declared tree version",

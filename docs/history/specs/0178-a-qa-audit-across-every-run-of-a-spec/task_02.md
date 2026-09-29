@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0178-a-qa-audit-across-every-run-of-a-spec
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -76,3 +76,37 @@ read by the QA Agent and by the maintainer reviewing the gate.
 ## References
 
 - [_techspec.md](_techspec.md) — The commit column
+
+## Result
+
+Added the audited Task commit to every mechanical authorization read. Resolved
+grants and refusals receive the SHA through `readMechanicalAuthorization`, and
+each unresolved path receives the same SHA through
+`unresolvedMechanicalAuthorizationRead`, including unavailable Task commits,
+delivery targets, and authorizing revisions. The report now renders the full
+SHA in a `Commit` column while preserving `None.` when there are no reads.
+
+Added the four required disposable-repository and report-rendering tests in
+`internal/speccheck/mechanical_commit_column_test.go`. Updated the qa-gate
+commit-dependent tooling audit so command execution covers only an unlisted
+repository-tooling Task commit in the Delivery Base range, with the declared
+all-commit fallback when mechanical skips name `Task commits of earlier Runs`.
+Ran the sanctioned `make skills-sync`; the canonical and distributed qa-gate
+skills have the same SHA-1 digest.
+
+Focused checks run during implementation:
+
+- `GOCACHE=/tmp/roundfix-task02-gocache go test ./internal/speccheck -run '^TestMechanicalAuthorizationReadNamesTheAuditedCommit$' -count=1` initially failed because `MechanicalAuthorizationRead.Commit` did not exist, establishing the pre-change signal.
+- `GOCACHE=/tmp/roundfix-task02-gocache go test ./internal/speccheck -count=1 -run 'TestMechanical(AuthorizationReadNamesTheAuditedCommit|UnresolvedAuthorizationReadNamesTheAuditedCommit|ReportAuditTable)'` passed all four new focused tests.
+- `GOCACHE=/tmp/roundfix-task02-gocache go test ./internal/speccheck -count=1` passed the complete package suite.
+- `make skills-sync` completed successfully; `shasum .agents/skills/qa-gate/SKILL.md skills/qa-gate/SKILL.md` reported the same digest for both files.
+- `git diff --check` passed.
+
+Acceptance evidence from those focused checks:
+
+- `TestMechanicalAuthorizationReadNamesTheAuditedCommit` and `TestMechanicalUnresolvedAuthorizationReadNamesTheAuditedCommit` prove granted and unresolved reads carry the audited full SHA; code inspection confirms all four append paths use those two constructors.
+- `TestMechanicalReportAuditTableHasACommitColumn` proves the new header and full-SHA cell, and `TestMechanicalReportAuditTableListsEachCommitOfATask` proves two commits of one Task render as two distinct rows.
+- The synchronized qa-gate text states the mechanical stage's complete Delivery Base range, the per-commit table identity, the unlisted governed-path command condition, and the `Task commits of earlier Runs` fallback.
+
+The Task's declared Verification command was not run; Daemon Verification owns
+that command and the terminal Task status.

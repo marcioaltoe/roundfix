@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"roundfix/internal/agent"
+	"roundfix/internal/app"
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
@@ -72,6 +73,7 @@ type Dependencies struct {
 	TaskWorktrees   TaskWorktreeManager
 	PriorChanges    PriorChangedResolver
 	MechanicalStage QAMechanicalStage
+	Auditor         func() app.AuditingBinary
 	GH              GHRunner
 	Sink            runevent.Sink
 	Now             func() time.Time
@@ -84,6 +86,13 @@ type Dependencies struct {
 // Push per ADR 0001.
 type Engine struct {
 	deps Dependencies
+}
+
+func (engine *Engine) auditor() app.AuditingBinary {
+	if engine.deps.Auditor != nil {
+		return engine.deps.Auditor()
+	}
+	return app.Auditor()
 }
 
 type TaskWorktreeManager interface {

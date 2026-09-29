@@ -56,8 +56,11 @@ type QAReport struct {
 	// AuditingBinary and AuditorStaleness name the Roundfix that produced the
 	// report and what it established about its age. They are optional so QA
 	// Reports written before this metadata existed remain readable.
-	AuditingBinary          string
-	AuditorStaleness        string
+	AuditingBinary   string
+	AuditorStaleness string
+	// UserFlowBinary names the binary that exercised the public CLI rows. It
+	// is optional so reports written before this field existed stay readable.
+	UserFlowBinary          string
 	RowsBlockedEnvironment  int
 	RowsBlockedFinding      int
 	RowsBlockedDeclared     int
@@ -87,7 +90,10 @@ type PreconditionRefusal struct {
 func WritePreconditionRefusalReport(writer io.Writer, refusal PreconditionRefusal, evidence AuditorEvidence) error {
 	check := qaRefusalValue(refusal.CheckName, QAPreconditionCheckUnnamed)
 	reason := qaRefusalValue(refusal.Reason, QAPreconditionReasonUnrecorded)
-	auditor := app.Auditor()
+	auditor := evidence.Binary
+	if strings.TrimSpace(auditor.Version) == "" {
+		auditor = app.Auditor()
+	}
 	auditorStaleness := auditor.StalenessLine(evidence.TreeVersion, evidence.Ancestry)
 
 	var report strings.Builder
@@ -355,6 +361,7 @@ func readQAReport(path string) (QAReport, error) {
 		Verdict                 string    `yaml:"verdict"`
 		AuditingBinary          string    `yaml:"auditing_binary"`
 		AuditorStaleness        string    `yaml:"auditor_staleness"`
+		UserFlowBinary          string    `yaml:"user_flow_binary"`
 		RowsBlockedEnvironment  yaml.Node `yaml:"rows_blocked_environment"`
 		RowsBlockedFinding      yaml.Node `yaml:"rows_blocked_finding"`
 		RowsBlockedDeclared     yaml.Node `yaml:"rows_blocked_declared"`
@@ -390,6 +397,7 @@ func readQAReport(path string) (QAReport, error) {
 		Hollow:                  qaReportHollow(body),
 		AuditingBinary:          frontmatter.AuditingBinary,
 		AuditorStaleness:        frontmatter.AuditorStaleness,
+		UserFlowBinary:          frontmatter.UserFlowBinary,
 		RowsBlockedEnvironment:  rowsBlockedEnvironment,
 		RowsBlockedFinding:      rowsBlockedFinding,
 		RowsBlockedDeclared:     rowsBlockedDeclared,

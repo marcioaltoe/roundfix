@@ -17,11 +17,14 @@ import (
 )
 
 // AuditorEvidence is what one repository can say about the auditing binary's
-// age. Both fields are optional: an absent signal means the question could not
-// be answered here, never that the binary is current.
+// age at one Delivery Base. An absent signal means the question could not be
+// answered here, never that the binary is current.
 type AuditorEvidence struct {
-	TreeVersion string
-	Ancestry    app.AncestryResult
+	TreeVersion  string
+	Ancestry     app.AncestryResult
+	Binary       app.AuditingBinary
+	DeliveryBase string
+	SelfAudit    bool
 }
 
 // roundfixVersionManifest is the file the Roundfix repository declares its own
@@ -45,16 +48,22 @@ const roundfixManifestName = "roundfix"
 // answers and the caller reports unknown. That is the honest result, not a
 // degraded one: the alternative is comparing a commit against history it never
 // belonged to.
-func ResolveAuditorEvidence(ctx context.Context, repoRoot string, binary app.AuditingBinary) AuditorEvidence {
-	evidence := AuditorEvidence{Ancestry: app.AncestryUnknown}
+func ResolveAuditorEvidence(ctx context.Context, repoRoot, deliveryBase string, binary app.AuditingBinary) AuditorEvidence {
+	deliveryBase = strings.TrimSpace(deliveryBase)
+	evidence := AuditorEvidence{
+		Ancestry:     app.AncestryUnknown,
+		Binary:       binary,
+		DeliveryBase: deliveryBase,
+	}
 	repoRoot = strings.TrimSpace(repoRoot)
 	if repoRoot == "" {
 		return evidence
 	}
 
 	commit := auditorBuildCommit(binary)
-	if commit != "" && gitObjectExists(ctx, repoRoot, commit) {
-		evidence.Ancestry = auditorAncestry(ctx, repoRoot, commit)
+	evidence.SelfAudit = commit != "" && gitObjectExists(ctx, repoRoot, commit)
+	if evidence.SelfAudit && deliveryBase != "" {
+		evidence.Ancestry = auditorAncestry(ctx, repoRoot, commit, deliveryBase)
 	}
 	if evidence.Ancestry == app.AncestryUnknown {
 		// The version signal is the fallback a released build needs: it leaves
@@ -77,8 +86,8 @@ func gitObjectExists(ctx context.Context, repoRoot string, commit string) bool {
 	return command.Run() == nil
 }
 
-func auditorAncestry(ctx context.Context, repoRoot string, commit string) app.AncestryResult {
-	head, err := gitOutput(ctx, repoRoot, "rev-parse", "HEAD")
+func auditorAncestry(ctx context.Context, repoRoot, commit, deliveryBase string) app.AncestryResult {
+	base, err := gitOutput(ctx, repoRoot, "rev-parse", deliveryBase+"^{commit}")
 	if err != nil {
 		return app.AncestryUnknown
 	}
@@ -86,17 +95,17 @@ func auditorAncestry(ctx context.Context, repoRoot string, commit string) app.An
 	if err != nil {
 		return app.AncestryUnknown
 	}
-	if resolved == head {
+	if resolved == base {
 		return app.AncestryNotOlder
 	}
-	command := exec.CommandContext(ctx, "git", "-C", repoRoot, "merge-base", "--is-ancestor", resolved, head)
+	command := exec.CommandContext(ctx, "git", "-C", repoRoot, "merge-base", "--is-ancestor", resolved, base)
 	if err := command.Run(); err == nil {
 		return app.AncestryOlder
 	} else {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
 			// Not an ancestor and not equal: built from divergent history, so
-			// it does not predate this tree even though it differs from it.
+			// it does not predate this base even though it differs from it.
 			return app.AncestryNotOlder
 		}
 	}

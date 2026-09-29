@@ -65,7 +65,7 @@ func (binary AuditingBinary) String() string {
 }
 
 // AncestryResult states what commit ancestry established about whether the
-// auditing binary predates the audited tree.
+// auditing binary predates the Delivery Base.
 type AncestryResult uint8
 
 const (
@@ -83,9 +83,10 @@ const (
 	StalenessUnknown Staleness = "unknown"
 )
 
-// CompareToTree answers whether this binary predates the tree it audits. A
-// stamped build prefers commit ancestry; otherwise the declared tree version
-// is used. Missing evidence always produces StalenessUnknown.
+// CompareToTree answers whether this binary predates the reference tree. A
+// stamped build prefers ancestry against the Delivery Base; otherwise the
+// declared tree version is used. Missing evidence always produces
+// StalenessUnknown.
 //
 // The reason never repeats the state it accompanies. A caller composes the two
 // as "<state>: <reason>", and a reason that prefixed its own state produced
@@ -105,9 +106,9 @@ func (binary AuditingBinary) CompareToTree(treeVersion string, ancestry Ancestry
 	if commit != "" {
 		switch ancestry {
 		case AncestryOlder:
-			return StalenessStale, "commit ancestry: build commit predates audited tree"
+			return StalenessStale, "commit ancestry: build commit predates the delivery base"
 		case AncestryNotOlder:
-			return StalenessCurrent, "commit ancestry: build commit does not predate audited tree"
+			return StalenessCurrent, "commit ancestry: build commit does not predate the delivery base"
 		default:
 			return StalenessUnknown, "commit ancestry could not be resolved for the recorded build commit"
 		}

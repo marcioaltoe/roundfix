@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0178-a-qa-audit-across-every-run-of-a-spec
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -119,3 +119,56 @@ settles the QA Task, and by the maintainer who ships the Spec.
 ## References
 
 - [_techspec.md](_techspec.md) — The user-flow binary
+
+## Result
+
+### Implementation
+
+- `QAReport` now reads the optional `user_flow_binary`, and
+  `AuditorEvidence.SelfAudit` records whether the auditing binary's normalized
+  build commit resolves to a commit object in the audited repository.
+- The QA step retains the seeded auditor fields, auditor evidence, and audited
+  head for its one settlement call. Eligible `pass` and `partial` reports now
+  refuse rewritten daemon-owned fields and, only for self-audits, require a
+  hexadecimal `user_flow_binary` build commit that prefixes the audited head.
+- Self-audit prompts name the worktree build and `./bin/roundfix` contract. The
+  canonical qa-gate skill, its generated mirror, and the QA Report glossary
+  entry document the same ownership and `user_flow_binary` contract.
+- Added the fourteen named spec and daemon tests, with separate cases for each
+  rewritten field, missing/foreign/released-style user-flow identities, the
+  non-self-audit exemption, and both prompt branches.
+
+### Focused checks
+
+- Red signal: the focused daemon run for rewritten auditor metadata, missing
+  self-audit metadata, and the self-audit prompt failed because both reports
+  settled `completed` and the prompt omitted the required line.
+- `GOCACHE=/private/tmp/roundfix-task04-gocache go test -count=1 -run
+  'Test(ReadQAReport.*UserFlowBinary|AuditorEvidence.*SelfAudit)'
+  ./internal/spec` — passed.
+- `GOCACHE=/private/tmp/roundfix-task04-gocache go test -count=1 -run
+  'Test(QASettlement|SelfAuditSettlement|SettlementOutsideASelfAudit|SelfAuditQAPrompt|QAPromptOutsideASelfAudit)'
+  ./internal/daemon` — passed.
+- `GOCACHE=/private/tmp/roundfix-task04-gocache go test -count=1
+  ./internal/spec ./internal/daemon` — passed.
+- `make skills-sync` — passed and regenerated `skills/qa-gate/SKILL.md` from
+  the canonical skill.
+- `GOCACHE=/private/tmp/roundfix-task04-gocache make verify-incremental` — the
+  sandboxed run reached the suite but two Unix force-stop integration tests
+  could not enumerate the process table; the permission-enabled rerun passed,
+  including `go vet`, all Go packages, skill tests, skill checks, and the build.
+- The Task's declared `## Verification` command was not run; the Daemon owns
+  that command and terminal settlement.
+
+### Acceptance evidence
+
+- Seed ownership: `TestQASettlementAcceptsTheSeededAuditorFields`,
+  `TestQASettlementRefusesARewrittenAuditingBinary`, and
+  `TestQASettlementRefusesARewrittenAuditorStaleness` passed in the focused
+  daemon suite.
+- Self-audit binary: the valid-head, missing, foreign-commit, no-build-commit,
+  outside-self-audit, and prompt mirror cases passed in the focused daemon
+  suite.
+- Existing acceptance remains isolated in `QAReportEligibility`, which was not
+  changed; the full `internal/spec` and `internal/daemon` suites and the
+  permission-enabled incremental repository gate passed.
