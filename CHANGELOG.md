@@ -2,6 +2,18 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.19.0] - 2026-09-28
+
+### A QA audit across every Run of a Spec
+
+The terminal QA gate audits every Task commit that changes a governed path
+since the Spec's Delivery Base — the merge base with the default branch — not
+only the current Run's, and reads each grant at that base. The authorization
+audit table names each commit. A stale Auditing Binary is measured against the
+Delivery Base and published as a warning instead of blocking a delivery queue,
+and the report records `user_flow_binary`, the binary the QA Agent's public
+rows actually ran.
+
 ## [0.18.0] - 2026-09-28
 
 ### Authoring that fails before dispatch
