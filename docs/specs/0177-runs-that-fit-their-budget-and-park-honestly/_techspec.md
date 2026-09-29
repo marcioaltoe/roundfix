@@ -289,7 +289,8 @@ names the code, `skills/baseline_skill_contract_test.go` pins that guidance, and
 3. A budget stop parks as a Run outcome (depends on: 2).
 4. Carry-forward without repository hooks (depends on: 3).
 5. The wrap-fragile phrase check (depends on: none).
-6. Terminal QA (depends on: 1, 2, 3, 4, 5).
+6. Terminal QA (depends on: 1, 2, 3, 4, 5, 7).
+7. The review correction (depends on: 2, 5).
 
 ## Risks & Considerations
 

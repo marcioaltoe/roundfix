@@ -21,7 +21,10 @@ graph:
       needs: []
     - id: task_06
       file: task_06.md
-      needs: [task_01, task_02, task_03, task_04, task_05]
+      needs: [task_01, task_02, task_03, task_04, task_05, task_07]
+    - id: task_07
+      file: task_07.md
+      needs: [task_02, task_05]
 ---
 
 # Task Graph
@@ -33,4 +36,5 @@ graph:
 | task_03 | backend | A budget-stopped Run parks as a Run outcome |
 | task_04 | backend | Carry-forward stages commits without repository hooks |
 | task_05 | backend | Phrase checks survive wrapping and name what they missed |
+| task_07 | backend | The QA settlement renews the budget before its report commit, and wrap-fix remediations are shell-safe |
 | task_06 | qa | Run the final QA gate |
