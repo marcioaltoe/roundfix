@@ -1322,7 +1322,7 @@ func classifyReviewCommandResult(record reviewRecord, result agent.ExecuteResult
 		return record, exitPreflight
 	}
 
-	message := result.Message
+	message := result.Answer()
 	if strings.TrimSpace(message) == "" {
 		record.Reason = "empty agent output"
 		return record, exitPreflight

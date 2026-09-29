@@ -119,12 +119,13 @@ func streamUpdateFromSessionUpdate(payload json.RawMessage) (StreamUpdate, error
 	switch header.SessionUpdate {
 	case "agent_message_chunk":
 		var update struct {
-			Content acpContentBlockPayload `json:"content"`
+			MessageID string                 `json:"messageId"`
+			Content   acpContentBlockPayload `json:"content"`
 		}
 		if err := json.Unmarshal(payload, &update); err != nil {
 			return StreamUpdate{}, fmt.Errorf("parse ACP message update: %w", err)
 		}
-		return StreamUpdate{Kind: StreamUpdateMessage, Text: contentBlockText(update.Content)}, nil
+		return StreamUpdate{Kind: StreamUpdateMessage, MessageID: update.MessageID, Text: contentBlockText(update.Content)}, nil
 	case "agent_thought_chunk":
 		var update struct {
 			Content acpContentBlockPayload `json:"content"`
