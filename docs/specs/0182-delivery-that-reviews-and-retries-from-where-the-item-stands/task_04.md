@@ -69,8 +69,9 @@ Roundfix Home, and no command reaches a reviewer, a provider or the network.
 10. MUST verify from the repository history that the changed files stay within
     the paths the Tasks declare and that every governed path is bounded in
     `_authorization.md`.
-11. MUST NOT accept a row whose only evidence is that a file was read.
-12. MUST NOT write to the live Run Database under `~/.roundfix`.
+11. MUST record the non-waivable Pull Request row as `blocked (environment: no open Pull Request)` and support it with the pre-PR equivalent of each control. This gate is a Task of the Spec's own graph and precedes the Pull Request by construction, so the controls a Pull Request would carry are observed as follows. Approval: the maintainer's recorded delivery authority, which is implementation authority and not review approval. Checks and status: the Daemon's repository Verification at the audited head. Unresolved review threads: none, because no Pull Request exists. Merge-Ready acceptance: none yet, because the configured pre-PR review follows archive. Review-artifact ancestry: the audited head named as the claimed candidate. A row with all five recorded this way satisfies the environment policy for `pass`; the delivery queue observes the real controls after the Pull Request opens.
+12. MUST NOT accept a row whose only evidence is that a file was read.
+13. MUST NOT write to the live Run Database under `~/.roundfix`.
 
 ## Subtasks
 

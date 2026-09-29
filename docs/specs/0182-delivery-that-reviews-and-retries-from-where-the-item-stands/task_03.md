@@ -47,6 +47,8 @@ A Delivery Retry carries forward only from the Run recorded on the item. That re
 - interface: `internal/cli/deliver_recovery_test.go`
 - interface: `internal/delivery/retry_test.go`
 - creates: `internal/cli/deliver_retry_runs_test.go`
+- interface: `internal/cli/deliver_retry_test.go`
+- interface: `internal/delivery/budget_park_test.go`
 - interface: `docs/user-guide/commands.md`
 - interface: `.agents/skills/roundfix/SKILL.md`
 - interface: `skills/roundfix/SKILL.md`
