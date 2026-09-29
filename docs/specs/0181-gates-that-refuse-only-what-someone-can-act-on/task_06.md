@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0181-gates-that-refuse-only-what-someone-can-act-on
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -52,3 +52,36 @@ complexity: low
 - ADR-0176
 
 ## Result
+
+Implementation:
+
+- The Spec citation walk now prunes the direct `qa/` subtree before reading files.
+- Task Markdown is projected line by line: Agent- and Daemon-owned sections are ignored through the next second-level heading, while authored lines retain their original indexes.
+- Five top-level regression tests use plain temporary repositories and separate the Result, each Daemon section, QA report/evidence, authored-file, and post-Result authored-section cases.
+
+Focused checks:
+
+- `rtk env GOCACHE=/tmp/roundfix-0181-task06-gocache go test -count=1 ./internal/speccheck -run 'TestASpecCitationInATaskResultIsNotAnObligation|TestASpecCitationInADaemonSectionIsNotAnObligation|TestASpecCitationInAQAReportIsNotAnObligation|TestAnAuthoredSpecCitationStillMustBeListed|TestAnAuthoredSectionAfterAResultIsStillRead'` — failed before the source change because every excluded fixture opened an unlisted-decision finding and the post-Result fixture reported the excluded line; passed after the source change.
+- `rtk git diff --check` — passed after the implementation and tests.
+- `rtk make verify-incremental` — the restricted run could not inspect the host process table and also observed one transient store timing failure; the elevated rerun cleared both and passed `internal/speccheck`, but remained non-zero because `skills/TestSettlementGuidanceIsOneTable` found the committed canonical QA-settlement text differs from `.agents/skills/archive-spec/SKILL.md`.
+
+Acceptance evidence:
+
+- `TestASpecCitationInATaskResultIsNotAnObligation` proves a decision mentioned only in Result evidence opens no finding.
+- `TestASpecCitationInADaemonSectionIsNotAnObligation` separately covers recorded paths and carry-forward provenance; neither opens a finding.
+- `TestASpecCitationInAQAReportIsNotAnObligation` separately covers the report and nested evidence paths under `qa/`; neither opens a finding.
+- `TestAnAuthoredSpecCitationStillMustBeListed` covers Task Requirements, the TechSpec, and an adopted reference, asserting the exact existing summary, fix, path, and original line.
+- `TestAnAuthoredSectionAfterAResultIsStillRead` proves scanning resumes at the next authored section and reports line 9 rather than the excluded line 5.
+
+Not run:
+
+- The Task's declared Verification command is reserved for the Daemon.
+
+Follow-up:
+
+- Reconcile the archive skill's QA-settlement table with its canonical source in the owning Task. That skill is outside this corrective slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260929T185005Z_5bdc71810126cc68`
+- Source commit: `d7a1df1204bcffda87b888939d8ef51545a93537`
