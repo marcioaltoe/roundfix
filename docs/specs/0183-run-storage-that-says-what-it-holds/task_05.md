@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0183-run-storage-that-says-what-it-holds
-status: completed
+status: pending
 type: qa
 complexity: medium
 ---
@@ -105,3 +105,9 @@ applied in process by whoever settles the Task.
 evidence; `_techspec.md` → Testing Approach 1-5; API Contracts 1-4; ADR-0023;
 ADR-0032; ADR-0033; ADR-0053; ADR-0080; ADR-0090; ADR-0091; ADR-0093; ADR-0094;
 ADR-0096; ADR-0104; ADR-0107; ADR-0117; ADR-0155; ADR-0156; ADR-0171; ADR-0172.
+
+## Invalidation
+
+- Date: `2026-09-29`
+- QA Report: `qa/qa-report-2026-09-29.md`
+- Dependencies not completed: `task_06`
