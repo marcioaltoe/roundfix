@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0183-run-storage-that-says-what-it-holds
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
