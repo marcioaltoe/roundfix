@@ -1007,6 +1007,9 @@ func detectADRConsistency(result *Result, repoRoot, specDir string, prdContent [
 		})
 	}
 
+	var horizon adrHorizon
+	horizonLoaded := false
+	horizonApplies := false
 	for _, number := range sortedADRNumbers(corpus) {
 		record := corpus[number]
 		if listed[number] {
@@ -1014,6 +1017,13 @@ func detectADRConsistency(result *Result, repoRoot, specDir string, prdContent [
 		}
 		relatedNumber, related := firstListedCitation(record, listed)
 		if !related {
+			continue
+		}
+		if !horizonLoaded {
+			horizon, horizonApplies = newADRHorizon(repoRoot, filepath.Join(specDir, "_prd.md"))
+			horizonLoaded = true
+		}
+		if horizonApplies && !horizon.predates(record.DisplayPath) {
 			continue
 		}
 		result.Findings = append(result.Findings, Finding{
@@ -1117,11 +1127,19 @@ func firstHeading(content []byte) string {
 
 func readSpecCitations(repoRoot, specDir string) (map[string]Location, error) {
 	citations := make(map[string]Location)
+	specDir = filepath.Clean(specDir)
+	qaDir := filepath.Join(specDir, "qa")
 	err := filepath.WalkDir(specDir, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
-		if entry.IsDir() || filepath.Ext(entry.Name()) != ".md" {
+		if entry.IsDir() {
+			if path == qaDir {
+				return fs.SkipDir
+			}
+			return nil
+		}
+		if filepath.Ext(entry.Name()) != ".md" {
 			return nil
 		}
 		content, err := os.ReadFile(path)
@@ -1129,7 +1147,15 @@ func readSpecCitations(repoRoot, specDir string) (map[string]Location, error) {
 			return err
 		}
 		displayPath := artifactDisplayPath(repoRoot, path)
+		taskFile := strings.HasPrefix(entry.Name(), "task_")
+		skipTaskSection := false
 		for index, line := range strings.Split(string(content), "\n") {
+			if taskFile && strings.HasPrefix(line, "## ") {
+				skipTaskSection = nonAuthorialTaskSection(line)
+			}
+			if skipTaskSection {
+				continue
+			}
 			for _, match := range adrCitationPattern.FindAllStringSubmatch(line, -1) {
 				if _, exists := citations[match[1]]; !exists {
 					citations[match[1]] = Location{Path: displayPath, Line: index + 1}
@@ -1142,6 +1168,15 @@ func readSpecCitations(repoRoot, specDir string) (map[string]Location, error) {
 		return nil, fmt.Errorf("read Spec citations in %q: %w", specDir, err)
 	}
 	return citations, nil
+}
+
+func nonAuthorialTaskSection(heading string) bool {
+	switch heading {
+	case "## Result", "## Recorded paths", "## Carry-forward provenance":
+		return true
+	default:
+		return false
+	}
 }
 
 // obligationCitationNumbers reads decision numbers only after the caller has

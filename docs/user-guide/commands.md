@@ -966,6 +966,13 @@ rewritten; anything else still fails validation. A Task whose commit contains
 no change outside the Spec Root still settles `completed`, with one stderr
 warning and one Run Event marking the no-op.
 
+For every completed non-QA Task commit, the Daemon writes ordinary committed
+paths that the Task did not declare as `interface:` or `creates:` under a
+Daemon-owned `## Recorded paths` section at the end of the Task file. The Task
+commit event carries the same paths as `recorded_paths`. A recorded path is
+disclosed after the change and reserves nothing against another Task; a
+Governed Path remains subject to its authorization and is never recorded.
+
 Daemon Task and QA commits stage only repository paths that do not cross a
 symbolic link; dropped paths are journaled and warned
 (`roundfix: task file <path> kept outside the repository; committed without it`).
@@ -1042,6 +1049,12 @@ unknown` and `<task_id> stays <status> — verification verdict unknown` instead
 with the cause on stderr. Settle has no Verification repair: fix the cause and
 run it again.
 
+The Task commit that `settle` creates applies the same disclosure rule as an
+Implement Run: for a completed non-QA Task, it writes undeclared ordinary
+commit paths under `## Recorded paths` and removes a stale section when the
+commit has none. Recording discloses a path and reserves nothing; it never
+records a Governed Path.
+
 For a QA Task, settle applies the same report eligibility decision as archive
 after Verification passes. A `pending` verdict is never accepted, and a report
 that records no QA row is refused even when it says `pass` or would otherwise
@@ -1073,7 +1086,7 @@ A report whose front matter is empty or duplicated is unreadable and refused;
 archive leaves the Spec and report in place.
 
 Every other refusal is unchanged: a finding-blocked row, an
-environment-blocked row, a declared count not covered by the Spec's
+environment-blocked row other than the pre-PR Pull Request row, a declared count not covered by the Spec's
 declarations, or `verdict: fail` exits `2` and names the first unmet condition.
 `qa_override` keeps its existing meaning for explicitly authorized archival
 when the normal QA prerequisite is unmet; declared unreachability does not use
@@ -1099,7 +1112,10 @@ roundfix qa-report accept <path>
 ```
 
 Reads the selected QA Report and exits zero only when the shared archive and
-settlement eligibility decision accepts it. A `pending` verdict is never
+settlement eligibility decision accepts it. The pre-PR Pull Request row,
+recorded as `blocked (environment: no open Pull Request)` with the Pull Request
+row named in its provenance, never decides a qualifying partial and needs no
+Unreachable Acceptance declaration. A `pending` verdict is never
 accepted, and a `pass` or otherwise-eligible `partial` that records no QA row
 is refused. A report whose front matter is empty or duplicated is unreadable
 and refused. The command writes no files.

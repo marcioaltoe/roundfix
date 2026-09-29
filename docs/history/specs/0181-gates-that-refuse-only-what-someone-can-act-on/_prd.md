@@ -1,9 +1,12 @@
 ---
 spec: 0181-gates-that-refuse-only-what-someone-can-act-on
-status: active
+status: archived
 created: 2026-09-29
 surfaces: [backend, cli, docs]
+archived: "2026-09-29"
+source_slug: 0181-gates-that-refuse-only-what-someone-can-act-on
 ---
+
 
 # Gates that refuse only what someone can act on
 
@@ -72,7 +75,11 @@ edits:
   ADR-0169 and ADR-0170 (Spec 0182) govern the pre-PR review diff and Delivery
   Retry carry-forward, which this Spec does not touch, so they do not apply.
   This Spec's gate is bound by ADR-0080, ADR-0091, ADR-0096, ADR-0104, ADR-0155
-  and ADR-0156. All hold. Source: `docs/agents/domain.md`.
+  and ADR-0156. All hold. ADR-0176 (added 2026-09-29 with the corrective
+  task_06) makes citation checks read only the authored projection. ADR-0002
+  does not apply: task_03's Result names it only as a test fixture's number,
+  and this Spec's own gate runs on the v0.20.0 auditor, which still reads that
+  section. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — the maintainer expressly authorized edits to
   the `qa-gate` and `write-tasks` skills on 2026-09-29, answering "Autorizar"
   to a structured question, only to align them with this Spec's behavior. The
@@ -81,6 +88,7 @@ edits:
   [_authorization.md](_authorization.md);
   bounded files: `.agents/skills/qa-gate/SKILL.md`, `skills/qa-gate/SKILL.md`,
   `.agents/skills/write-tasks/SKILL.md`, `skills/write-tasks/SKILL.md`,
+  `.agents/skills/archive-spec/SKILL.md`, `skills/archive-spec/SKILL.md`,
   `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`.
   Sanctioned regeneration: `make skills-sync`, `make baseline-digests`.
   Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`.
@@ -123,6 +131,14 @@ edits:
    in different repositories, and unreadable history all keep the full check.
    `SC-ADR-UNLISTED` and `SC-CITATION-UNSUPPORTED` are unchanged.
 
+4. **Citation checks read only what the Spec's authors wrote.** The Spec
+   citation walk behind `SC-ADR-UNLISTED` skips `qa/` and, in Task files, the
+   Agent-owned `## Result` and the Daemon-owned `## Recorded paths` and
+   `## Carry-forward provenance` sections (ADR-0176). A citation in authored
+   text is reported exactly as before. Added on 2026-09-29 as corrective
+   task_06, approved by the maintainer after this Spec's first QA gate refused
+   on a fixture number in task_03's Result.
+
 ## Non-Goals / Out of Scope
 
 - Letting the Agent edit its Task's `## Context`, or changing what Task
@@ -132,8 +148,10 @@ edits:
 - Relaxing any other environment-blocked row for a qualifying `partial`, or
   changing the `pass` rule of ADR-0080.
 - Rewriting existing QA Reports or the frontmatter counts they carry.
-- Narrowing `SC-ADR-UNLISTED`, `SC-CITATION-UNSUPPORTED` or any other
-  consistency detector.
+- Narrowing `SC-CITATION-UNSUPPORTED` or any other consistency detector beyond
+  Core Features 3 and 4. `SC-ADR-UNLISTED` was listed here until 2026-09-29.
+  This Spec's own QA gate then refused on a citation in an Agent's Result, and
+  the maintainer approved narrowing its walk to authored text.
 - A mechanical scope detector in the QA mechanical stage.
 
 ## Success Metrics

@@ -4,10 +4,10 @@ description: Execute the self-contained final QA gate as a Spec's authored termi
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.2
+  version: 0.0.3
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.2
+version: 0.0.3
 ---
 
 # QA Gate
@@ -43,7 +43,7 @@ may move:
 | Outcome | Settles | Archives |
 | --- | --- | --- |
 | `pass` | Settles the QA Task as `completed` and makes the Spec archive-eligible when the report has no disallowed blocked rows. | The Spec and its QA report and evidence. |
-| qualifying declared `partial` | Settles the QA Task as `completed` when every unmet row is covered by a matching `## Unreachable Acceptance` declaration; the declaration actions remain `unproven`. | The Spec, its QA report and evidence, and the declarations' `satisfied-by` record. |
+| qualifying declared `partial` | Settles the QA Task as `completed` when every unmet row other than the pre-PR Pull Request row is covered by a matching `## Unreachable Acceptance` declaration; the pre-PR Pull Request row, recorded as `blocked (environment: no open Pull Request)` with the Pull Request row named in its provenance, never decides a qualifying partial and needs no Unreachable Acceptance declaration. | The Spec, its QA report and evidence, and the declarations' `satisfied-by` record. |
 | `environment-blocked` | Leaves the row blocked; the report can still settle as `pass` when equivalent evidence satisfies the environment policy. | Nothing by itself; a qualifying report can archive the Spec. |
 | `failed` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
 | `missing` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
@@ -195,6 +195,10 @@ named checker rule decides them.
 
 The scope is complete when coverage is complete and closed.
 
+When a Requirement audits a Task's changed files against its declarations, a
+path the Task file lists under `## Recorded paths` counts as declared and is
+named in that row. A Governed Path still needs its authorization.
+
 ## 2. Build the QA matrix and open the report
 
 Create a collision-safe report path before execution:
@@ -236,8 +240,10 @@ enumerated control left unanswered is exactly that.
   the Pull Request, resolve threads, commit, or push.
 - When the fact says no Pull Request is open, record every Pull Request journey
   as `blocked (environment: no open Pull Request)` and count it in
-  `rows_blocked_environment`. When the fact says the Pull Request could not be
-  resolved, the absence is unproven: record the cause as
+  `rows_blocked_environment`. The pre-PR Pull Request row never decides a
+  qualifying partial and needs no Unreachable Acceptance declaration; name the
+  Pull Request row in its provenance. When the fact says the Pull Request could
+  not be resolved, the absence is unproven: record the cause as
   `blocked (environment: Pull Request unresolved)` and never write it up as a
   confirmed absence. Do not try to resolve a Pull Request from the Run
   Worktree branch: that per-Run branch is never pushed and has no Pull Request

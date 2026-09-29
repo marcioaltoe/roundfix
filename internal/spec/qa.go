@@ -23,6 +23,13 @@ const (
 	VerdictPending = "pending"
 )
 
+// The exact Results-row values that identify the Pull Request coverage row a
+// QA gate records before any Pull Request exists (ADR-0167).
+const (
+	QANoOpenPullRequestStatus = "blocked (environment: no open Pull Request)"
+	QAPullRequestRowSource    = "Pull Request row"
+)
+
 // The terminal row a gate writes when it refuses at a precondition check. The
 // gate stopped before it built its matrix, so it has no measured requirement
 // to report; row 0 records the refusal itself, which keeps the Results table
@@ -60,11 +67,12 @@ type QAReport struct {
 	AuditorStaleness string
 	// UserFlowBinary names the binary that exercised the public CLI rows. It
 	// is optional so reports written before this field existed stay readable.
-	UserFlowBinary          string
-	RowsBlockedEnvironment  int
-	RowsBlockedFinding      int
-	RowsBlockedDeclared     int
-	RowsBlockedPrecondition int
+	UserFlowBinary            string
+	RowsBlockedEnvironment    int
+	RowsBlockedPrePullRequest int
+	RowsBlockedFinding        int
+	RowsBlockedDeclared       int
+	RowsBlockedPrecondition   int
 	// Precondition is the refusal the report records, zero when the gate
 	// reached its matrix. It is optional metadata: a report that names no
 	// precondition is one that refused for none, not a report that is missing
@@ -318,8 +326,19 @@ func QAReportEligibility(specDir string, report QAReport) error {
 	if report.RowsBlockedFinding > 0 {
 		return fmt.Errorf("rows_blocked_finding is %d; expected 0", report.RowsBlockedFinding)
 	}
-	if report.RowsBlockedEnvironment > 0 {
-		return fmt.Errorf("rows_blocked_environment is %d; expected 0", report.RowsBlockedEnvironment)
+	excused := report.RowsBlockedPrePullRequest
+	if excused > report.RowsBlockedEnvironment {
+		excused = report.RowsBlockedEnvironment
+	}
+	if outside := report.RowsBlockedEnvironment - excused; outside > 0 {
+		if excused == 0 {
+			return fmt.Errorf("rows_blocked_environment is %d; expected 0", report.RowsBlockedEnvironment)
+		}
+		return fmt.Errorf(
+			"rows_blocked_environment is %d, %d outside the pre-PR Pull Request row; expected 0 outside it",
+			report.RowsBlockedEnvironment,
+			outside,
+		)
 	}
 	if report.RowsBlockedDeclared == 0 {
 		return fmt.Errorf("newest QA Report verdict is %q; expected %q", report.Verdict, VerdictPass)
@@ -393,15 +412,16 @@ func readQAReport(path string) (QAReport, error) {
 	// reader can tell a refusal whose cause was unnamed from one that was never
 	// written down.
 	report := QAReport{
-		Verdict:                 frontmatter.Verdict,
-		Hollow:                  qaReportHollow(body),
-		AuditingBinary:          frontmatter.AuditingBinary,
-		AuditorStaleness:        frontmatter.AuditorStaleness,
-		UserFlowBinary:          frontmatter.UserFlowBinary,
-		RowsBlockedEnvironment:  rowsBlockedEnvironment,
-		RowsBlockedFinding:      rowsBlockedFinding,
-		RowsBlockedDeclared:     rowsBlockedDeclared,
-		RowsBlockedPrecondition: rowsBlockedPrecondition,
+		Verdict:                   frontmatter.Verdict,
+		Hollow:                    qaReportHollow(body),
+		AuditingBinary:            frontmatter.AuditingBinary,
+		AuditorStaleness:          frontmatter.AuditorStaleness,
+		UserFlowBinary:            frontmatter.UserFlowBinary,
+		RowsBlockedEnvironment:    rowsBlockedEnvironment,
+		RowsBlockedPrePullRequest: qaReportPrePullRequestRows(body),
+		RowsBlockedFinding:        rowsBlockedFinding,
+		RowsBlockedDeclared:       rowsBlockedDeclared,
+		RowsBlockedPrecondition:   rowsBlockedPrecondition,
 		Precondition: PreconditionRefusal{
 			CheckName: qaRefusalLine(frontmatter.PreconditionCheck),
 			Reason:    qaRefusalLine(frontmatter.PreconditionReason),
@@ -552,6 +572,95 @@ func qaReportHollow(body []byte) bool {
 		}
 	}
 	return hasResults
+}
+
+// qaReportPrePullRequestRows derives the structural environment block that a
+// QA gate records before a Pull Request exists. Only Results tables with both
+// required columns contribute; the frontmatter's environment count retains
+// its existing meaning and validation.
+func qaReportPrePullRequestRows(body []byte) int {
+	lines := strings.Split(string(body), "\n")
+	inResults := false
+	inFence := false
+	fence := ""
+	rows := 0
+
+	for index := 0; index < len(lines); {
+		trimmed := strings.TrimSpace(lines[index])
+		if marker, ok := markdownFenceMarker(trimmed); ok {
+			if !inFence {
+				inFence = true
+				fence = marker
+			} else if marker == fence {
+				inFence = false
+				fence = ""
+			}
+			index++
+			continue
+		}
+		if inFence {
+			index++
+			continue
+		}
+
+		if depth, heading, ok := markdownHeading(trimmed); ok {
+			if depth <= 2 {
+				inResults = depth == 2 && heading == "Results"
+			}
+			index++
+			continue
+		}
+		if !inResults {
+			index++
+			continue
+		}
+
+		header := markdownTableCells(lines[index])
+		if len(header) == 0 || index+1 >= len(lines) || !markdownTableSeparator(markdownTableCells(lines[index+1])) {
+			index++
+			continue
+		}
+
+		statusColumn := -1
+		provenanceColumn := -1
+		for column, cell := range header {
+			switch {
+			case strings.EqualFold(strings.TrimSpace(cell), "Status"):
+				statusColumn = column
+			case strings.EqualFold(strings.TrimSpace(cell), "Provenance"):
+				provenanceColumn = column
+			}
+		}
+
+		index += 2
+		for index < len(lines) {
+			cells := markdownTableCells(lines[index])
+			if len(cells) == 0 {
+				break
+			}
+			if !markdownTableSeparator(cells) &&
+				statusColumn >= 0 && provenanceColumn >= 0 &&
+				statusColumn < len(cells) && provenanceColumn < len(cells) &&
+				strings.TrimSpace(cells[statusColumn]) == QANoOpenPullRequestStatus &&
+				qaReportProvenanceNames(cells[provenanceColumn], QAPullRequestRowSource) {
+				rows++
+			}
+			index++
+		}
+	}
+	return rows
+}
+
+func qaReportProvenanceNames(provenance, source string) bool {
+	items := strings.FieldsFunc(provenance, func(char rune) bool {
+		return char == ';' || char == ','
+	})
+	for _, item := range items {
+		if strings.TrimSpace(item) == source {
+			return true
+		}
+	}
+	return false
 }
 
 func markdownHeading(line string) (int, string, bool) {

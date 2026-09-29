@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0181-gates-that-refuse-only-what-someone-can-act-on
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
@@ -37,12 +37,13 @@ Every behavior row below is exercised through the built binary, or by executing 
    - the candidate binary MUST report no `SC-ADR-RELATED` and exit `0`.
 
    Then copy that Spec folder under a new, uncommitted slug. The candidate binary MUST report `SC-ADR-RELATED` for ADR-0161 on the copy. When the history is unavailable, such as in a shallow clone, record the row as blocked with its reason.
-6. MUST verify, by executing the eligibility, prompt and horizon tests task_02 and task_03 name against the built tree, the remaining negative cases:
+6. MUST verify, by executing the eligibility, prompt, horizon and citation projection tests task_02, task_03 and task_06 name against the built tree, the remaining negative cases:
    - a `pass` unchanged;
    - an ADR committed before or with the PRD still reported;
    - a directory without Git kept on the full check;
-   - `SC-ADR-UNLISTED` unchanged.
-7. MUST verify that the `qa-gate`, `write-tasks` and Roundfix skills, their mirrors, `docs/user-guide/commands.md`, `docs/user-guide/context-driven-development.md` and `CONTEXT.md` describe the recorded paths, the pre-PR Pull Request row and the horizon, that both skills declare `0.0.3`, and that `make skills-sync-check` exits `0`.
+   - `SC-ADR-UNLISTED` still reported for a citation in authored text;
+   - no `SC-ADR-UNLISTED` for an unlisted ADR cited only in a Task's `## Result`, in a Daemon-owned section or under `qa/`.
+7. MUST verify that the `qa-gate`, `write-tasks`, `archive-spec` and Roundfix skills, their mirrors, `docs/user-guide/commands.md`, `docs/user-guide/context-driven-development.md` and `CONTEXT.md` describe the recorded paths, the pre-PR Pull Request row and the horizon, that both skills declare `0.0.3`, and that `make skills-sync-check` exits `0`.
 8. MUST verify that this Spec's own artifacts satisfy the promise rule, and check whether the Spec introduced, changed or retired a glossary term that `CONTEXT.md` does not carry.
 9. MUST verify from the repository history that each Task's changed files stay within its declarations, and that every Governed Path is bounded in `_authorization.md`. The following also count as declared, and the scope row MUST name each one it relies on:
    - a path in the Task file's `## Recorded paths`;
@@ -78,10 +79,16 @@ applied in process by whoever settles the Task.
 
 ## References
 
-`_prd.md` → Goals 1-4; Core Features 1-3; Success Metrics 1-4; Acceptance
-evidence; `_techspec.md` → Testing Approach 1-5; API Contracts 1-5; ADR-0014;
+`_prd.md` → Goals 1-4; Core Features 1-4; Success Metrics 1-4; Acceptance
+evidence; `_techspec.md` → Testing Approach 1-6; API Contracts 1-5; ADR-0014;
 ADR-0057; ADR-0080; ADR-0088; ADR-0091; ADR-0093; ADR-0094; ADR-0096;
 ADR-0097; ADR-0104; ADR-0116; ADR-0117; ADR-0130; ADR-0155; ADR-0156;
-ADR-0166; ADR-0167; ADR-0168.
+ADR-0166; ADR-0167; ADR-0168; ADR-0176.
 
 ## Result
+
+## Invalidation
+
+- Date: `2026-09-29`
+- QA Report: `qa/qa-report-2026-09-29.md`
+- Dependencies not completed: `task_08`

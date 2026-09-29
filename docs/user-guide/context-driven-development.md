@@ -63,7 +63,10 @@ acceptance, and review-artifact ancestry through read-only `gh` and Review
 Source calls. The gate never looks for a Pull Request on the Run Worktree
 branch and never commits, pushes, resolves threads, or otherwise mutates the
 Pull Request. When no Pull Request is open, those journeys are
-environment-blocked.
+environment-blocked. The pre-PR Pull Request row, recorded as `blocked
+(environment: no open Pull Request)` with the Pull Request row named in its
+provenance, never decides a qualifying partial and needs no Unreachable
+Acceptance declaration.
 
 Every blocked row records its cause. A row the environment makes unreachable
 counts in `rows_blocked_environment`; it does not by itself prevent `pass` when
@@ -875,6 +878,10 @@ revalidates that proof before releasing the retained branch and worktree.
 The result is that planning and execution share one artifact contract: the same
 `docs/specs/<slug>/` files a human reads are what the agent implements from and
 what QA checks against.
+
+The Spec Consistency Check uses an ADR horizon: `SC-ADR-RELATED` reports an ADR
+for a committed Spec only when the commit that added the ADR is an ancestor of
+the commit that added the Spec's `_prd.md`.
 
 ## Source and attribution
 
