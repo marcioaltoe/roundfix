@@ -36,10 +36,12 @@ type RunEventHeader struct {
 	Time    time.Time
 }
 
-// PruneResult reports the Run Event Journal rows removed for eligible Runs.
+// PruneResult distinguishes Runs eligible at the cutoff from Runs whose Run
+// Event Journal rows were removed.
 type PruneResult struct {
-	RunIDs []string
-	Events int
+	RunIDs         []string
+	Events         int
+	EligibleRunIDs []string
 }
 
 // PruneCandidate describes one terminal Run eligible for Run Event pruning.
@@ -617,27 +619,39 @@ func (store *Store) AppendRunEvents(ctx context.Context, events []runevent.RunEv
 // PruneTerminalRuns deletes Run Event Journal rows for terminal Runs completed
 // before cutoff. It never deletes Run rows or Active Run locks.
 //
-// The eligibility scan runs outside the write transaction, so the machine-wide
-// write lock is only taken when rows are actually eligible — never to discover
-// that nothing is. The event count reported is the number of rows the DELETE
-// actually removed.
+// The eligibility scan and first event count run outside the write transaction,
+// so the machine-wide write lock is only taken when a candidate still has Run
+// Events. Inside that transaction, the event count is refreshed before deleting
+// only candidates that still have events. The reported event count is the
+// number of rows the DELETE actually removed.
 func (store *Store) PruneTerminalRuns(ctx context.Context, cutoff time.Time) (PruneResult, error) {
 	candidates, err := terminalRunPruneCandidates(ctx, store.db, cutoff)
 	if err != nil {
 		return PruneResult{}, err
 	}
-	runIDs := pruneCandidateRunIDs(candidates)
-	if len(runIDs) == 0 {
-		return PruneResult{}, nil
+	eligibleRunIDs := pruneCandidateRunIDs(candidates)
+	if err := countPruneCandidateEvents(ctx, store.db, candidates); err != nil {
+		return PruneResult{}, err
+	}
+	if len(pruneCandidateRunIDsWithEvents(candidates)) == 0 {
+		return PruneResult{EligibleRunIDs: eligibleRunIDs}, nil
 	}
 
 	var result PruneResult
 	err = store.withWriteTx(ctx, "Run Event prune", func(tx *sql.Tx) error {
+		if err := countPruneCandidateEvents(ctx, tx, candidates); err != nil {
+			return err
+		}
+		runIDs := pruneCandidateRunIDsWithEvents(candidates)
 		deleted, err := deleteRunEventsForRuns(ctx, tx, runIDs)
 		if err != nil {
 			return err
 		}
-		result = PruneResult{RunIDs: runIDs, Events: deleted}
+		result = PruneResult{
+			RunIDs:         runIDs,
+			Events:         deleted,
+			EligibleRunIDs: eligibleRunIDs,
+		}
 		return nil
 	})
 	if err != nil {
@@ -1126,6 +1140,16 @@ func pruneCandidateRunIDs(candidates []PruneCandidate) []string {
 	runIDs := make([]string, 0, len(candidates))
 	for _, candidate := range candidates {
 		runIDs = append(runIDs, candidate.RunID)
+	}
+	return runIDs
+}
+
+func pruneCandidateRunIDsWithEvents(candidates []PruneCandidate) []string {
+	runIDs := make([]string, 0, len(candidates))
+	for _, candidate := range candidates {
+		if candidate.Events > 0 {
+			runIDs = append(runIDs, candidate.RunID)
+		}
 	}
 	return runIDs
 }
