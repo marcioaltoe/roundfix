@@ -42,7 +42,9 @@ untouched.
 - Active ADR obligations: applicable — ADR-0014, ADR-0057, ADR-0080, ADR-0088,
   ADR-0091, ADR-0093, ADR-0094, ADR-0096, ADR-0097, ADR-0104, ADR-0116,
   ADR-0117, ADR-0130, ADR-0155 and ADR-0156 hold; this Spec adds ADR-0166,
-  ADR-0167 and ADR-0168; ADR-0169 and ADR-0170 do not apply. Source:
+  ADR-0167 and ADR-0168, and its corrective task_06 adds ADR-0176; ADR-0169
+  and ADR-0170 do not apply, and ADR-0002 does not apply because only a
+  fixture number in task_03's Result names it. Source:
   `docs/agents/domain.md`.
 - Tooling authority: applicable — express maintainer authorization of
   2026-09-29 for the `qa-gate` and `write-tasks` skills and the standing grant
@@ -225,6 +227,18 @@ Nothing else in the function changes, including `SC-ADR-UNLISTED` and
 `SC-CITATION-UNSUPPORTED`. Temporary fixtures without Git keep the full check,
 so existing characterizations and the corpus golden do not move.
 
+## Citation checks read the authored projection
+
+Added on 2026-09-29 as corrective task_06 (ADR-0176). `readSpecCitations` in
+`internal/speccheck/citations.go` skips every file under the Spec's `qa/`
+directory. In each `task_*.md` file it ignores the lines of a `## Result`,
+`## Recorded paths` or `## Carry-forward provenance` section, from the heading
+up to the next line that starts with `## `. Every other line keeps its line
+number. Nothing else in the walk changes, so an authored citation in the PRD,
+TechSpec, Task Graph, a Task's authored sections or `references/` still reports
+`SC-ADR-UNLISTED` with unchanged text. `SC-ADR-RELATED`, the horizon and
+`SC-CITATION-UNSUPPORTED` are untouched.
+
 ## Skills, guides and glossary
 
 - The `qa-gate` skill (`.agents/skills/qa-gate/SKILL.md`, canonical) makes two
@@ -287,6 +301,8 @@ so existing characterizations and the corpus golden do not move.
 - Core Feature 1 → Recorded paths; Skills, guides and glossary.
 - Core Feature 2 → The pre-PR Pull Request row; Skills, guides and glossary.
 - Core Feature 3 → The related-ADR horizon; Skills, guides and glossary.
+- Core Feature 4 → Citation checks read the authored projection; Testing
+  Approach 6.
 - Success Metric 1 → Testing Approach 1.
 - Success Metric 2 → Testing Approach 2, Testing Approach 5.
 - Success Metric 3 → Testing Approach 3, Testing Approach 5.
@@ -349,6 +365,11 @@ so existing characterizations and the corpus golden do not move.
      `qa-report-2026-09-29.md` and on Oraculum Spec 0027's mirrored report.
    - It replays the ADR-0161 cascade in a disposable clone at `ebeb997f`,
      against a binary built from the starting main.
+6. **Citation projection.** New `internal/speccheck/citation_projection_test.go`
+   over plain temporary directories: an unlisted ADR cited only in a Task's
+   Result, in a Daemon-owned section or under `qa/` opens no `SC-ADR-UNLISTED`;
+   one cited in authored text, including an authored section after a Result,
+   still opens it at its original line.
 
 ## Build Order
 
@@ -359,7 +380,9 @@ so existing characterizations and the corpus golden do not move.
    (depends on: none).
 3. The related-ADR horizon, task_03 (depends on: none).
 4. Skills, remaining guide text and glossary, task_04 (depends on: 1, 2, 3).
-5. Terminal QA, task_05 (depends on: 1, 2, 3, 4).
+5. Terminal QA, task_05 (depends on: 1, 2, 3, 4, 6).
+6. Citation checks read the authored projection, corrective task_06 (depends
+   on: 3).
 
 ## Risks & Considerations
 
