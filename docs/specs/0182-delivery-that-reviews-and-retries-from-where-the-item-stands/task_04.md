@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0182-delivery-that-reviews-and-retries-from-where-the-item-stands
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
