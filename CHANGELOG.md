@@ -2,6 +2,43 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.20.0] - 2026-09-29
+
+### Runs that fit their budget and park honestly
+
+The Implement Run budget renews at each Task settlement, including the QA
+settlement before its report commit, so a serial Task Graph is no longer
+stopped with only its tail left while a stall at the first Task stays bounded.
+A Run that ends `BudgetExceeded` parks its delivery item as
+`run-budget-exceeded` with the Run's ID instead of a delivery error. The shared
+`instruction:` file no longer counts as a wave collision, so independent Tasks
+run in parallel again. `SC-VERIFY-WRAP-FRAGILE` flags a single-line phrase
+check against Markdown and prints a shell-safe wrap-tolerant remediation, and
+carry-forward stages its commits without running repository hooks.
+
+### A prepared queue that revalidates before each Spec
+
+`roundfix deliver plan` shows, without writing anything, which Specs are
+approved to run and what blocks the rest; `deliver start` refuses a Spec whose
+authorization lacks a delivery operation. Each queued Spec is re-checked with
+the strict `spec check` on the main it actually starts from, and a production
+file changed by an earlier item's merge is recorded as a `premise-changed`
+warning. `deliver start --max-duration` and `--max-retries` record explicit
+queue limits, and `deliver status` prints the limits, the warnings and exactly
+one Pending Question with the action that answers it. The `implement-spec`
+skill prepares the queue and hands implementation to Roundfix.
+
+### Review findings with evidence
+
+`roundfix review` no longer asks a provider the repository did not select.
+Findings are numbered, and `roundfix review dispose <id> --dismiss --evidence
+<text>` or `--fixed-by <commit>` records one evidence-backed disposition per
+finding, reserved atomically. A findings verdict stands for its head: an
+unchanged head reuses it without a new reviewer call and reports
+`findings-dismissed` once every finding is dismissed; a new commit, base or
+provider asks again. A blocking review after archive parks publication as
+`corrective-spec-required`, and the correction becomes a new Spec.
+
 ## [0.19.0] - 2026-09-28
 
 ### A QA audit across every Run of a Spec
