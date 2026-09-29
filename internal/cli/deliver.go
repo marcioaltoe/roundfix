@@ -17,6 +17,7 @@ import (
 )
 
 const deliverUsage = `Usage:
+  roundfix deliver plan [--json] [<slug>...]
   roundfix deliver start <slug>...
   roundfix deliver status
   roundfix deliver resume
@@ -28,6 +29,7 @@ calling terminal. A blocked item is parked and the owner continues with the
 next item.
 
 Commands:
+  plan    Report which Specs are approved to run
   start   Validate and record a new queue, then start its detached owner
   status  Print every queued Spec's stage, blocker and item worktree
   resume  Start a detached owner for the persisted queue
@@ -55,6 +57,8 @@ func runDeliverCommand(
 	subcommand := args[0]
 	subcommandArgs := args[1:]
 	switch subcommand {
+	case "plan":
+		return runDeliverPlan(ctx, subcommandArgs, stdout, stderr, environment)
 	case "start":
 		return runDeliverStart(ctx, subcommandArgs, stdout, stderr, environment)
 	case "status":
@@ -182,10 +186,21 @@ func runDeliverStart(ctx context.Context, args []string, stdout, stderr io.Write
 	if err != nil {
 		return printDeliverFailure("start", err, stderr)
 	}
+	var authorizationRefusals []string
 	for _, slug := range slugs {
 		if _, err := spec.Load(specsRoot.Path, slug); err != nil {
 			return printDeliverFailure("start", err, stderr)
 		}
+		if reasons := deliveryAuthorizationReasons(ctx, loaded, specsRoot, slug); len(reasons) > 0 {
+			authorizationRefusals = append(authorizationRefusals, fmt.Sprintf("%s: %s", slug, strings.Join(reasons, "; ")))
+		}
+	}
+	if len(authorizationRefusals) > 0 {
+		return printDeliverFailure(
+			"start",
+			fmt.Errorf("Delivery Queue contains Specs without delivery authority:\n  %s\nRun 'roundfix deliver plan %s' to inspect the prepared queue", strings.Join(authorizationRefusals, "\n  "), strings.Join(slugs, " ")),
+			stderr,
+		)
 	}
 
 	runStore, err := store.Open(ctx, loaded.HomeDir)

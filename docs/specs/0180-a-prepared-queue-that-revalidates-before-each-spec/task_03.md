@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0180-a-prepared-queue-that-revalidates-before-each-spec
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -77,3 +77,56 @@ complexity: high
 - `_techspec.md` → API Contracts 1-2; Testing Approach 3
 
 ## Result
+
+Implemented the read-only Delivery Plan and the queue authorization preflight.
+The plan now reads committed Spec authorization, strict Spec Consistency
+findings, Task state, production premises, and repository intent; renders the
+documented tab-separated or `roundfix-deliver-plan/v1` output; and never opens
+the Run Database. `deliver start` now loads every Spec and refuses every
+missing delivery operation before `store.Open`. Help, the user guide, and the
+canonical/generated Roundfix skills carry the new contract.
+
+Focused evidence by acceptance criterion:
+
+- Approved/blocked verdicts and exit codes: the initial focused test was red
+  because `plan` was unknown. After implementation,
+  `TestDeliverPlanReportsAnApprovedAndABlockedSpec` and
+  `TestDeliverPlanExitsZeroWhenEverySpecIsApproved` pass and assert
+  `authorization lacks merge`, exit `1` for a mixed plan, and exit `0` for an
+  approved-only plan.
+- JSON parity: `TestDeliverPlanJSONCarriesTheSameFacts` passes and decodes the
+  schema, verdicts, reasons, Task counts, shared premises, and intent.
+- Shared premises: `TestDeliverPlanNamesSharedProductionPremises` and
+  `TestDeliverPlanIgnoresSharedTestsAndGuides` pass; the shared production Go
+  path produces an informational row while both Specs remain approved, and
+  shared tests/guides produce no row.
+- Intent and read-only behavior:
+  `TestDeliverPlanListsIntentThatIsNotApprovedToRun`,
+  `TestDeliverPlanWritesNothing`, `TestDeliverPlanDefaultsToEveryActiveSpec`,
+  `TestDeliverPlanRefusesAnUnknownSlug`, and
+  `TestDeliverPlanRefusesAnUnknownFlag` pass. They cover Backlog Entry,
+  Finding, and inbox rows; unchanged HEAD/status; no Run Database; active-Spec
+  discovery; and exit `2` preflight refusals.
+- Start authorization: `TestDeliverStartRefusesASpecWithoutDeliveryAuthority`
+  and `TestDeliverStartAcceptsASpecWithEveryDeliveryOperation` pass. The
+  refusal names the Spec, missing operation, and `roundfix deliver plan`,
+  starts no owner, and creates no Run Database; the full five-operation grant
+  records the queue and starts its owner.
+- Help: `TestDeliverHelpNamesThePlanCommand`, `TestRunCommandHelp`, and
+  `TestTopLevelUsageNamesDeliverRetry` pass with the new command and top-level
+  usage.
+
+Focused checks:
+
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run '^TestDeliver' ./internal/cli` — passed.
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run '^(TestRunCommandHelp|TestTopLevelUsageNamesDeliverRetry|TestATerminalQueueIsReplacedByANewStart)$' ./internal/cli` — passed.
+- `make skills-sync-check` — passed after `make skills-sync` regenerated the
+  distributed Roundfix skill.
+- `make verify-incremental` — the sandboxed run reached the suite and failed
+  only because two force-stop integration tests could not read the host
+  process table; the required-permission rerun passed, including `go vet`, all
+  Go packages, skill checks, and the build.
+- `git diff --check` — passed.
+
+The Task's authored `## Verification` command was not run; Daemon Verification
+remains the settlement authority.

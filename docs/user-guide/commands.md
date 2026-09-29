@@ -224,12 +224,34 @@ review failures.
 ### deliver
 
 ```bash
+roundfix deliver plan [--json] [<slug>...]
 roundfix deliver start <slug>...
 roundfix deliver status
 roundfix deliver resume
 roundfix deliver retry <slug>
 roundfix deliver stop
 ```
+
+Run `roundfix deliver plan` before recording a queue. With explicit slugs it
+keeps their order; without slugs it reports every active Spec. Text output is
+tab-separated:
+
+- `spec` rows give the slug, `approved` or `blocked` verdict, unfinished and
+  total Task counts, and authorization or strict Spec-check reasons.
+- `shared` rows name production Go `interface:` paths a later Spec also shares
+  with an earlier Spec in the plan.
+- `backlog`, `finding`, and `inbox` rows list repository intent that is not
+  approved to run. Backlog and finding rows carry their frontmatter status;
+  inbox rows use `-`.
+
+`--json` emits one `roundfix-deliver-plan/v1` document with the same Specs,
+verdicts, reasons, shared premises, Task counts, and intent. Exit `0` means
+every reported Spec is approved, exit `1` means at least one is blocked, and
+exit `2` means usage or preflight failed. The plan opens no Run Database,
+creates no worktree, and writes no file. It reports authority but never grants
+implementation or delivery authority. A `shared` row predicts the later
+item's `premise-changed` warning after the earlier item merges; it never blocks
+the Spec or stops a queue.
 
 Creates and operates a durable, ordered queue of Specs. Each item advances
 from its Run to merge in this order: Run, pre-PR review, archive on the branch,
@@ -248,6 +270,13 @@ are removed. Before that removal, Roundfix releases every terminal Run of the
 merged Spec that it can prove is represented at the recorded merged head. A
 Run it cannot prove stays in place, and `deliver status` names the Run and its
 reason in the item's cleanup warning.
+
+A start requires every named Spec's committed authorization to grant
+`implement`, `commit`, `push`, `pull_request`, and `merge`. If any Spec lacks
+one of those operations, `deliver start` exits `2`, names every refused Spec
+and its reasons, points to `roundfix deliver plan`, and records no queue. A
+strict Spec-check finding appears in the plan but does not refuse start; the
+queue revalidates that Spec against its own starting main.
 
 A blocker parks its item with a reason and the queue continues with later
 items. On resume, the owner reconciles every recorded action without a receipt

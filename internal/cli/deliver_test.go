@@ -28,6 +28,7 @@ import (
 func TestDeliverStatusPrintsTheItemWorktree(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	setImplementFixtureAuthorizationOperations(t, repoDir, "implement", "commit", "push", "pull_request", "merge")
 	started := 0
 	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
 		dependencies.startDeliveryOwner = func(
@@ -261,6 +262,7 @@ func TestResumeReleasesAStaleOwner(t *testing.T) {
 func TestATerminalQueueIsReplacedByANewStart(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	setImplementFixtureAuthorizationOperations(t, repoDir, "implement", "commit", "push", "pull_request", "merge")
 	ctx := context.Background()
 	runStore, err := store.Open(ctx, homeDir)
 	if err != nil {
