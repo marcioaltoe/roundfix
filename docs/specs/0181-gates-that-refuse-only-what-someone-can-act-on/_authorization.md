@@ -1,13 +1,15 @@
 ---
 status: approved
 granted: 2026-09-29
-action: record the paths a Task changed without declaring them in a Daemon-owned Task file section, stop the pre-PR Pull Request row from deciding a qualifying partial, give SC-ADR-RELATED a commit-ancestry horizon, and align the qa-gate, write-tasks and Roundfix skills with that behavior
+action: record the paths a Task changed without declaring them in a Daemon-owned Task file section, stop the pre-PR Pull Request row from deciding a qualifying partial, give SC-ADR-RELATED a commit-ancestry horizon, and align the qa-gate, write-tasks, archive-spec and Roundfix skills with that behavior
 consuming: 0181-gates-that-refuse-only-what-someone-can-act-on
 paths:
   - .agents/skills/qa-gate/SKILL.md
   - skills/qa-gate/SKILL.md
   - .agents/skills/write-tasks/SKILL.md
   - skills/write-tasks/SKILL.md
+  - .agents/skills/archive-spec/SKILL.md
+  - skills/archive-spec/SKILL.md
   - .agents/skills/roundfix/SKILL.md
   - skills/roundfix/SKILL.md
 operations:
@@ -28,6 +30,14 @@ aligning those skills with the behavior this Spec ships. The Roundfix skill
 files ride the standing grant of 2026-09-18 for keeping the shipped skills true
 to the CLI. The set was measured with `GovernedPath` on `a626494c`.
 
+Later on 2026-09-29 the maintainer also expressly authorized the two
+`archive-spec` skill paths, answering "Autorizar" to a structured question
+naming both paths and the same sanctioned regeneration. That grant only aligns
+the skill's QA settlement table with the one `qa-gate` and the Roundfix skill
+now carry. The second Run's QA gate had refused on
+`TestSettlementGuidanceIsOneTable`, which requires the three tables to be
+identical.
+
 ## Why each governed path is unavoidable
 
 - `.agents/skills/qa-gate/SKILL.md`, `skills/qa-gate/SKILL.md` — the skill
@@ -39,6 +49,10 @@ to the CLI. The set was measured with `GovernedPath` on `a626494c`.
 - `.agents/skills/write-tasks/SKILL.md`, `skills/write-tasks/SKILL.md` — the
   skill states that every path a Task edits is declared, and it must say that
   the Daemon records an undeclared path at commit (task_04).
+- `.agents/skills/archive-spec/SKILL.md`, `skills/archive-spec/SKILL.md` — the
+  skill repeats the QA settlement table, and `TestSettlementGuidanceIsOneTable`
+  requires it to match `qa-gate` and the Roundfix skill byte for byte. After
+  task_04 its qualifying-`partial` row is stale (corrective task_07).
 - `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md` — the Roundfix
   skill states the eligibility policy that `roundfix archive`, `roundfix
   qa-report accept` and QA settlement apply, including that an
