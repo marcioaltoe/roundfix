@@ -52,6 +52,7 @@ untouched.
   [_authorization.md](_authorization.md); bounded files:
   `.agents/skills/qa-gate/SKILL.md`, `skills/qa-gate/SKILL.md`,
   `.agents/skills/write-tasks/SKILL.md`, `skills/write-tasks/SKILL.md`,
+  `.agents/skills/archive-spec/SKILL.md`, `skills/archive-spec/SKILL.md`,
   `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`. Source:
   `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`.
 
