@@ -162,6 +162,8 @@ database any operational command would leave.
 
 ```bash
 roundfix review [--base <ref>]
+roundfix review dispose <finding-id> --dismiss --evidence <text>
+roundfix review dispose <finding-id> --fixed-by <commit>
 ```
 
 Runs the configured pre-Pull-Request reviewer over the current candidate. The
@@ -194,6 +196,28 @@ neither verdict block the review. Every answer that reaches the reviewer is
 kept in `pre-pr-review-answer.txt`, and the review record's
 `answerPath` names that file. Roundfix sets `answerPath` only when the prompt
 reached a reviewer; a pre-prompt failure has no answer path or answer file.
+
+A findings record keeps the reviewer's original `findings` text and also lists
+each finding as `F1`, `F2`, and so on in `findingItems`. The reviewer prompt
+asks for one `- ` list item per finding with its file and line. An older record
+without `findingItems` derives the same identities from its findings text when
+Roundfix reads it.
+
+Use `roundfix review dispose` to record one disposition for one finding. A
+dismissal requires non-blank evidence and an unchanged reviewed `HEAD`. A fix
+requires a resolving commit that differs from and descends from the reviewed
+head and is reachable from the current `HEAD`. Evidence is copied as text and
+is never executed.
+
+Successful dispositions append one JSON line to
+`pre-pr-review-dispositions.jsonl` in the Artifact Directory and print that
+same line. The line ties the finding's identity and text to its repository and
+reviewed head, and records either `evidence` or `fixedBy` with an RFC 3339 UTC
+timestamp. The ledger is append-only. Roundfix refuses a missing or mismatched
+findings record, an unknown identity, invalid or blank forms, moved-head
+dismissals, invalid fixing commits, and a second disposition. Every refusal
+exits `2`, starts stderr with `roundfix: review dispose refused:`, and appends
+nothing.
 
 When the candidate adds or changes a Spec folder under the configured Spec
 Root, or under its resolved archive root, Roundfix discovers that folder from

@@ -222,6 +222,8 @@ Run the configured reviewer over the current candidate with:
 
 ```bash
 roundfix review [--base <ref>]
+roundfix review dispose <finding-id> --dismiss --evidence <text>
+roundfix review dispose <finding-id> --fixed-by <commit>
 ```
 
 `--base` selects the base ref; when omitted, Roundfix uses the repository's
@@ -252,6 +254,26 @@ block the review. Every answer that reaches the reviewer is kept in
 `pre-pr-review-answer.txt`, and the review record's `answerPath` names that
 file. Roundfix sets `answerPath` only after it sends the prompt to a reviewer;
 a pre-prompt failure has no answer path or answer file.
+
+A findings record preserves the original `findings` text and assigns `F1`,
+`F2`, and so on to the entries in `findingItems`. The reviewer prompt requires
+one `- ` list item per finding with its file and line. Roundfix derives the
+same identities when it reads an older findings record without items.
+
+Use `roundfix review dispose` to append one disposition for one finding. Use
+`--dismiss --evidence <text>` only at the reviewed `HEAD`, with non-blank
+evidence. Use `--fixed-by <commit>` only for a resolving commit that differs
+from and descends from the reviewed head and is reachable from the current
+`HEAD`. Evidence is copied verbatim and never executed.
+
+Each success appends one JSON line to
+`pre-pr-review-dispositions.jsonl` in the Artifact Directory and prints the
+same line. The append-only ledger ties the finding identity and text to the
+repository and reviewed head, and records either the evidence or fixing commit
+with an RFC 3339 UTC timestamp. A missing or mismatched findings record,
+unknown identity, invalid or blank form, moved-head dismissal, invalid fixing
+commit, or second disposition exits `2` with
+`roundfix: review dispose refused:` on stderr and appends nothing.
 
 When the candidate adds or changes a Spec folder under the configured Spec
 Root, or under its resolved archive root, Roundfix discovers that folder from

@@ -48,6 +48,8 @@ Usage:
   roundfix resolve --pr <number> [--spec <slug>]
   roundfix watch --source coderabbit --pr <number> [--spec <slug>] --until-clean
   roundfix review [--base <ref>]
+  roundfix review dispose <finding-id> --dismiss --evidence <text>
+  roundfix review dispose <finding-id> --fixed-by <commit>
   roundfix implement --spec <slug>
   roundfix deliver <start|status|resume|retry|stop> [<slug> ...]
   roundfix window <set|show|clear>
@@ -5223,12 +5225,22 @@ written by a newer Roundfix binary.
 	case "review":
 		return `Usage:
   roundfix review [--base <ref>]
+  roundfix review dispose <finding-id> --dismiss --evidence <text>
+  roundfix review dispose <finding-id> --fixed-by <commit>
 
 Runs the configured pre-PR reviewer over the candidate from the base commit to
 the current HEAD and records the result under the configured Artifact Directory.
 
 Options:
   --base  Base Git ref; defaults to the repository's main branch
+`
+	case "review dispose":
+		return `Usage:
+  roundfix review dispose <finding-id> --dismiss --evidence <text>
+  roundfix review dispose <finding-id> --fixed-by <commit>
+
+Records one evidence-backed disposition for a finding in the current
+pre-PR review record. A finding accepts at most one disposition.
 `
 	case "gc":
 		return `Usage:
