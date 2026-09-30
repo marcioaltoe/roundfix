@@ -90,6 +90,7 @@ func TestItemRecoveryRefusalNamesTheRunsAlreadyCarried(t *testing.T) {
 	mustWrite(t, prdPath, mustRead(t, prdPath)+"\nMoved on the item branch.\n")
 	gitImplement(t, repoDir, "add", filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "_prd.md")))
 	gitImplement(t, repoDir, "commit", "-m", "move older Run input")
+	amendment := itemRecoveryHead(t, repoDir)
 	newer := createDeliveryRetryRun(t, workflow, repoDir, "ma/widget-flow", []implementSeed{{id: "task_02"}}, store.StateBudgetExceeded)
 
 	_, err := workflow.CarryForward(t.Context(), repoDir, implementTestSlug, "ma/widget-flow", older.run.ID)
@@ -97,8 +98,8 @@ func TestItemRecoveryRefusalNamesTheRunsAlreadyCarried(t *testing.T) {
 	message := err.Error()
 	newerIndex := strings.Index(message, newer.run.ID)
 	reasonIndex := strings.Index(message, "declared input(s) moved")
-	if newerIndex < 0 || reasonIndex < 0 || newerIndex > reasonIndex || !strings.Contains(message, older.run.ID) {
-		t.Fatalf("partial carry refusal = %q, want newer and refusing Runs named before the reason", message)
+	if newerIndex < 0 || reasonIndex < 0 || newerIndex > reasonIndex || !strings.Contains(message, older.run.ID) || !strings.Contains(message, "; amended by "+amendment) {
+		t.Fatalf("partial carry refusal = %q, want newer and refusing Runs named before the reason and amendment", message)
 	}
 	if got := mustRead(t, filepath.Join(repoDir, "src", "task_02.txt")); got != "task_02 settled\n" {
 		t.Fatalf("newer Run implementation = %q, want carried", got)

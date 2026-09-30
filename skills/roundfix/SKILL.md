@@ -457,6 +457,22 @@ not change a recorded `premise-changed` warning. The item re-enters at
 completed. An archived Spec re-enters at `gating` without a recorded pull
 request or at `checking` with one.
 
+When every refused Task has moved inputs and only non-Task commits after the
+Run started changed those inputs, the reason adds `amended by <sha>, ...` and
+the next action prints these five POSIX-quoted commands in order:
+
+```bash
+git -C '<worktree>' branch 'roundfix-amended-<run-id>' HEAD
+git -C '<worktree>' reset --hard '<first-amendment>^'
+(cd '<worktree>' && roundfix reconcile '<run-id>' --carry-forward)
+git -C '<worktree>' cherry-pick '<amendment>' ...
+roundfix deliver retry '<slug>'
+```
+
+Roundfix prints the recovery and never runs it. A Task commit that changed a
+moved input, or a refusal with another cause, keeps the existing single
+`roundfix reconcile <run-id> --carry-forward` next action.
+
 | Recorded evidence | Re-entry stage |
 | --- | --- |
 | Active Spec with any unfinished Task | `running` |

@@ -647,6 +647,88 @@ func carryForwardRefusalReason(candidates []spec.CarryForward) string {
 	return "carry-forward refused the whole set: " + strings.Join(refusals, "; ")
 }
 
+func carryForwardAmendments(
+	ctx context.Context,
+	repository string,
+	run store.Run,
+	candidates []spec.CarryForward,
+) ([]string, bool, error) {
+	movedInputs := make([]string, 0)
+	seenInputs := make(map[string]bool)
+	refusals := 0
+	for _, candidate := range candidates {
+		if strings.TrimSpace(candidate.RefusalReason) == "" {
+			continue
+		}
+		refusals++
+		if !candidate.InputsMoved || len(candidate.MovedInputs) == 0 {
+			return nil, false, nil
+		}
+		candidateInputs := 0
+		for _, input := range candidate.MovedInputs {
+			input = filepath.ToSlash(strings.TrimSpace(input))
+			if input == "" {
+				continue
+			}
+			candidateInputs++
+			if !seenInputs[input] {
+				seenInputs[input] = true
+				movedInputs = append(movedInputs, input)
+			}
+		}
+		if candidateInputs == 0 {
+			return nil, false, nil
+		}
+	}
+	if refusals == 0 {
+		return nil, false, nil
+	}
+	sort.Strings(movedInputs)
+
+	head := strings.TrimSpace(run.HeadSHA)
+	if head == "" {
+		return nil, false, nil
+	}
+	if _, err := reconcileGitRaw(ctx, repository, "rev-parse", "--verify", "--quiet", head+"^{commit}"); err != nil {
+		if ctx.Err() != nil {
+			return nil, false, ctx.Err()
+		}
+		return nil, false, nil
+	}
+
+	args := []string{
+		"log",
+		"--reverse",
+		"--format=%H%x1f%(trailers:key=Roundfix-Task,valueonly,unfold)",
+		head + "..HEAD",
+		"--",
+	}
+	args = append(args, movedInputs...)
+	output, err := reconcileGitText(ctx, repository, args...)
+	if err != nil {
+		return nil, false, fmt.Errorf("list carry-forward amending commits: %w", err)
+	}
+	if output == "" {
+		return nil, false, nil
+	}
+
+	amendments := make([]string, 0)
+	for _, line := range strings.Split(output, "\n") {
+		commit, taskTrailer, found := strings.Cut(line, "\x1f")
+		if !found || strings.TrimSpace(commit) == "" {
+			return nil, false, fmt.Errorf("parse carry-forward amending commit %q", line)
+		}
+		if strings.TrimSpace(taskTrailer) != "" {
+			return nil, false, nil
+		}
+		amendments = append(amendments, strings.TrimSpace(commit))
+	}
+	if len(amendments) == 0 {
+		return nil, false, nil
+	}
+	return amendments, true, nil
+}
+
 func reconcileGitBlob(ctx context.Context, workDir string, revision string, path string) ([]byte, bool, error) {
 	path = filepath.ToSlash(path)
 	listing, err := reconcileGitRaw(ctx, workDir, "ls-tree", "-z", revision, "--", path)

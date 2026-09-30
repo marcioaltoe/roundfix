@@ -409,6 +409,23 @@ the item's Spec on the item branch, newest first, so a later Run executes only
 unfinished Tasks. A retry does not change a recorded `premise-changed` warning.
 It selects the re-entry stage from the evidence on that branch:
 
+When every refused Task has moved inputs and only non-Task commits after the
+Run started changed those inputs, the refusal adds `amended by <sha>, ...` to
+the reason. Its next action prints these five commands with the item worktree,
+Run ID, amendment commits, and Spec slug filled in and POSIX-quoted:
+
+```bash
+git -C '<worktree>' branch 'roundfix-amended-<run-id>' HEAD
+git -C '<worktree>' reset --hard '<first-amendment>^'
+(cd '<worktree>' && roundfix reconcile '<run-id>' --carry-forward)
+git -C '<worktree>' cherry-pick '<amendment>' ...
+roundfix deliver retry '<slug>'
+```
+
+Roundfix prints these commands and never runs them. If a Task commit changed a
+moved input, or the refusal includes another cause, the existing single
+`roundfix reconcile <run-id> --carry-forward` next action remains unchanged.
+
 A retried `review-findings` item at an unchanged head advances once every
 finding is dismissed with evidence. Standing findings park it again without
 asking the reviewer; Roundfix asks the reviewer again only after the head

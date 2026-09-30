@@ -112,27 +112,65 @@ type deliveryCarryForwardRefusal struct {
 	specSlug    string
 	carriedRuns []string
 	reason      string
+	amendments  []string
 }
 
 func (err deliveryCarryForwardRefusal) Error() string {
-	if len(err.carriedRuns) == 0 {
-		return err.reason
+	message := err.reason
+	if len(err.carriedRuns) != 0 {
+		message = fmt.Sprintf(
+			"carried forward from Run(s) %s before Run %q refused: %s",
+			strings.Join(err.carriedRuns, ", "),
+			err.runID,
+			err.reason,
+		)
 	}
-	return fmt.Sprintf(
-		"carried forward from Run(s) %s before Run %q refused: %s",
-		strings.Join(err.carriedRuns, ", "),
-		err.runID,
-		err.reason,
-	)
+	if len(err.amendments) != 0 {
+		message += "; amended by " + strings.Join(err.amendments, ", ")
+	}
+	return message
 }
 
 func (err deliveryCarryForwardRefusal) NextAction() string {
+	if len(err.amendments) != 0 {
+		quotedAmendments := make([]string, 0, len(err.amendments))
+		for _, amendment := range err.amendments {
+			quotedAmendments = append(quotedAmendments, posixSingleQuote(amendment))
+		}
+		return strings.Join([]string{
+			fmt.Sprintf(
+				"git -C %s branch %s HEAD",
+				posixSingleQuote(err.workDir),
+				posixSingleQuote("roundfix-amended-"+err.runID),
+			),
+			fmt.Sprintf(
+				"git -C %s reset --hard %s",
+				posixSingleQuote(err.workDir),
+				posixSingleQuote(err.amendments[0]+"^"),
+			),
+			fmt.Sprintf(
+				"(cd %s && roundfix reconcile %s --carry-forward)",
+				posixSingleQuote(err.workDir),
+				posixSingleQuote(err.runID),
+			),
+			fmt.Sprintf(
+				"git -C %s cherry-pick %s",
+				posixSingleQuote(err.workDir),
+				strings.Join(quotedAmendments, " "),
+			),
+			fmt.Sprintf("roundfix deliver retry %s", posixSingleQuote(err.specSlug)),
+		}, "\n")
+	}
 	return fmt.Sprintf(
 		"run `roundfix reconcile %s --carry-forward` in item worktree %q, then run `roundfix deliver retry %s`",
 		err.runID,
 		err.workDir,
 		err.specSlug,
 	)
+}
+
+func posixSingleQuote(argument string) string {
+	return "'" + strings.ReplaceAll(argument, "'", "'\"'\"'") + "'"
 }
 
 func (workflow *commandDeliveryWorkflow) CarryForward(
@@ -211,7 +249,7 @@ func (workflow *commandDeliveryWorkflow) CarryForward(
 			continue
 		}
 
-		refuse := func(reason string) (delivery.CarryForwardResult, error) {
+		refuse := func(reason string, amendments []string) (delivery.CarryForwardResult, error) {
 			carriedRuns := make([]string, 0, len(result.Runs))
 			for _, carried := range result.Runs {
 				carriedRuns = append(carriedRuns, carried.RunID)
@@ -222,6 +260,7 @@ func (workflow *commandDeliveryWorkflow) CarryForward(
 				specSlug:    specSlug,
 				carriedRuns: carriedRuns,
 				reason:      reason,
+				amendments:  amendments,
 			}
 		}
 		present, err := carryForwardRunWorktreePresent(run)
@@ -229,10 +268,10 @@ func (workflow *commandDeliveryWorkflow) CarryForward(
 			return delivery.CarryForwardResult{}, err
 		}
 		if !present {
-			return refuse(fmt.Sprintf("carry-forward Run %q Worktree is gone", run.ID))
+			return refuse(fmt.Sprintf("carry-forward Run %q Worktree is gone", run.ID), nil)
 		}
 		if resolvedSpecsRoot.External {
-			return refuse(fmt.Sprintf("carry-forward Specs Root %q is external to item worktree %q", resolvedSpecsRoot.Path, repository))
+			return refuse(fmt.Sprintf("carry-forward Specs Root %q is external to item worktree %q", resolvedSpecsRoot.Path, repository), nil)
 		}
 
 		candidates, err := inspectCarryForwards(ctx, repository, resolvedSpecsRoot, reconcileRunSelection{
@@ -243,7 +282,14 @@ func (workflow *commandDeliveryWorkflow) CarryForward(
 			return delivery.CarryForwardResult{}, fmt.Errorf("inspect Run %q carry-forward: %w", run.ID, err)
 		}
 		if reason := carryForwardRefusalReason(candidates); reason != "" {
-			return refuse(reason)
+			amendments, ok, err := carryForwardAmendments(ctx, repository, run, candidates)
+			if err != nil {
+				return delivery.CarryForwardResult{}, fmt.Errorf("inspect Run %q carry-forward amendments: %w", run.ID, err)
+			}
+			if !ok {
+				amendments = nil
+			}
+			return refuse(reason, amendments)
 		}
 		carriedTasks := make([]string, 0, len(candidates))
 		for _, candidate := range candidates {
