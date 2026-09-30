@@ -856,7 +856,6 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 			readRevision = authorizationRevision
 		}
 		read, authorization := readMechanicalAuthorization(ctx, authorizationRepoRoot, authorizationPath, request.ConsumingSpec, readRevision, taskCommit.TaskID, taskCommit.SHA)
-		result.AuthorizationReads = append(result.AuthorizationReads, read)
 		projectAuthorizationPath := authorizationPath
 		projectReadPath := cleanMechanicalPath(read.Source.Path)
 		if !sameRepository {
@@ -867,6 +866,49 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 		if changedAuthorizationPath != "" {
 			addMechanicalSelfApprovalFinding(result, taskCommit, read.Source.Path, changedAuthorizationPath)
 		}
+		if changedAuthorizationPath == "" && sameRepository {
+			covered, err := mechanicalAuthorizationCoversChangedPaths(
+				projectRepoRoot,
+				read,
+				authorization,
+				changed,
+				cleanMechanicalPath(taskCommit.TaskFile),
+				projectAuthorizationPath,
+				projectReadPath,
+			)
+			if err != nil {
+				return err
+			}
+			if !covered {
+				parentRecordPath := projectReadPath
+				if parentRecordPath == "" {
+					parentRecordPath = projectAuthorizationPath
+				}
+				grantRevision, matches, err := mechanicalGrantRanUnderRevision(
+					ctx,
+					projectRepoRoot,
+					targetRevision,
+					taskCommit.SHA,
+					parentRecordPath,
+				)
+				if err != nil {
+					return err
+				}
+				if matches {
+					read, authorization = readMechanicalAuthorization(
+						ctx,
+						authorizationRepoRoot,
+						parentRecordPath,
+						request.ConsumingSpec,
+						grantRevision,
+						taskCommit.TaskID,
+						taskCommit.SHA,
+					)
+					projectReadPath = cleanMechanicalPath(read.Source.Path)
+				}
+			}
+		}
+		result.AuthorizationReads = append(result.AuthorizationReads, read)
 		if read.Outcome != spec.AuthorizationGranted {
 			if changedAuthorizationPath == "" {
 				addMechanicalAuthorizationReadFinding(result, taskCommit, read)
@@ -914,6 +956,42 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 		}
 	}
 	return nil
+}
+
+func mechanicalAuthorizationCoversChangedPaths(
+	repoRoot string,
+	read MechanicalAuthorizationRead,
+	authorization spec.AuthorizationResolution,
+	changed []string,
+	taskFile string,
+	authorizationPath string,
+	readPath string,
+) (bool, error) {
+	if read.Outcome != spec.AuthorizationGranted {
+		return false, nil
+	}
+	bounded := make(map[string]bool, len(authorization.Record.Paths))
+	for _, declared := range authorization.Record.Paths {
+		if clean := cleanMechanicalPath(declared); clean != "" {
+			bounded[clean] = true
+		}
+	}
+	if len(bounded) == 0 {
+		return false, nil
+	}
+	regenerated, err := mechanicalRegenerationOutputs(repoRoot, authorization.Record.Regenerations)
+	if err != nil {
+		return false, fmt.Errorf("resolve sanctioned regeneration outputs from %q: %w", read.Source.Path, err)
+	}
+	for _, changedPath := range changed {
+		if changedPath == taskFile || changedPath == authorizationPath || changedPath == readPath {
+			continue
+		}
+		if GovernedPath(changedPath) && !bounded[changedPath] && !regenerated[changedPath] {
+			return false, nil
+		}
+	}
+	return true, nil
 }
 
 func mechanicalAuthorizationReferencePresent(reference MechanicalAuthorizationReference) bool {
@@ -969,6 +1047,79 @@ func mechanicalAuthorizingRevision(ctx context.Context, repoRoot, deliveryTarget
 		return "", false, fmt.Errorf("resolve authorizing ancestor for %q: Git returned invalid revision %q", consumingCommit, ancestor)
 	}
 	return ancestor, true, nil
+}
+
+func mechanicalGrantRanUnderRevision(
+	ctx context.Context,
+	repoRoot string,
+	deliveryTarget string,
+	consumingCommit string,
+	recordPath string,
+) (string, bool, error) {
+	if recordPath == "" {
+		return "", false, nil
+	}
+	parent, available, err := mechanicalResolveCommit(ctx, repoRoot, consumingCommit+"^1")
+	if err != nil || !available {
+		return "", false, err
+	}
+	parentBlob, present, err := mechanicalBlobAtPath(ctx, repoRoot, parent, recordPath)
+	if err != nil || !present {
+		return "", false, err
+	}
+	targetBlob, present, err := mechanicalBlobAtPath(ctx, repoRoot, deliveryTarget, recordPath)
+	if err != nil || !present || targetBlob != parentBlob {
+		return "", false, err
+	}
+
+	command := exec.CommandContext(
+		ctx,
+		"git", "-C", repoRoot, "-c", "core.fsmonitor=false",
+		"log", "-1", "--format=%H", deliveryTarget, "--", recordPath,
+	)
+	command.Env = mechanicalGitEnvironment()
+	output, err := command.CombinedOutput()
+	if err != nil {
+		return "", false, fmt.Errorf("find delivery-target authorization revision for %q at %q: %w: %s", recordPath, deliveryTarget, err, strings.TrimSpace(string(output)))
+	}
+	revision := strings.TrimSpace(string(output))
+	if revision == "" {
+		return "", false, nil
+	}
+	if strings.Contains(revision, "\n") {
+		return "", false, fmt.Errorf("find delivery-target authorization revision for %q: Git returned invalid revision %q", recordPath, revision)
+	}
+	revisionBlob, present, err := mechanicalBlobAtPath(ctx, repoRoot, revision, recordPath)
+	if err != nil || !present || revisionBlob != parentBlob {
+		return "", false, err
+	}
+	return revision, true, nil
+}
+
+func mechanicalBlobAtPath(ctx context.Context, repoRoot, revision, path string) (string, bool, error) {
+	command := exec.CommandContext(
+		ctx,
+		"git", "-C", repoRoot, "-c", "core.fsmonitor=false",
+		"ls-tree", "-z", "--full-tree", revision, "--", path,
+	)
+	command.Env = mechanicalGitEnvironment()
+	output, err := command.CombinedOutput()
+	if err != nil {
+		return "", false, fmt.Errorf("read Git object for %q at %q: %w: %s", path, revision, err, strings.TrimSpace(string(output)))
+	}
+	entry := strings.TrimSuffix(string(output), "\x00")
+	if entry == "" {
+		return "", false, nil
+	}
+	if strings.Contains(entry, "\x00") {
+		return "", false, fmt.Errorf("read Git object for %q at %q: Git returned multiple entries", path, revision)
+	}
+	metadata, foundPath, ok := strings.Cut(entry, "\t")
+	fields := strings.Fields(metadata)
+	if !ok || foundPath != path || len(fields) != 3 || fields[1] != "blob" || fields[2] == "" {
+		return "", false, fmt.Errorf("read Git object for %q at %q: Git returned invalid entry %q", path, revision, entry)
+	}
+	return fields[2], true, nil
 }
 
 func mechanicalRepositoryRoot(ctx context.Context, workDir string) (string, error) {

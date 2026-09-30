@@ -982,6 +982,15 @@ Verification Capacity again for its final Daemon attempt. Any formatter, test,
 Skill synchronization, or build failure in the declared gate blocks
 settlement.
 
+During final QA, the mechanical authorization audit reads each governed Task
+commit's grant at its fork point first. When that grant does not cover the
+commit, the audit can use the grant the Task ran under: the record in the Task
+commit's parent, but only while the delivery target carries byte-identical
+content at the same path. The audit reports the latest delivery-target commit
+that established that content as the authorizing revision. A parent-only
+record, an older record that the delivery target later narrowed or revoked,
+and a Task commit that edits its own record remain refusals.
+
 Exit `75` from a project-authored Verification wrapper is the sole Temporary
 Verification Failure signal. Roundfix retains its diagnostics and grants that
 Task one exclusive retry, which waits for all other Verification attempts in

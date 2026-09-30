@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0187-a-queue-that-recovers-without-a-supervisor
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -62,3 +62,57 @@ ADR-0178 keeps the fork-point read first. It also accepts the grant recorded in 
 - ADR-0178; ADR-0081; ADR-0149; ADR-0160
 
 ## Result
+
+Implemented the authorizing-grant fallback in the mechanical authorization
+audit. The audit still reads the fork-point grant first and keeps that read
+when it covers the commit. For an uncovered governed path or a non-granted
+read, it now compares the authorization blob in the Task commit's parent with
+the blob currently held at the same delivery-target path. On an exact match it
+finds the latest delivery-target commit that established those bytes, reads
+the grant through `readMechanicalAuthorization`, and reruns the existing
+bounded-path audit. Self-approval is checked before this fallback, and
+separate-repository authorization keeps its existing path.
+
+Documented the same rule in the command guide and the canonical Roundfix
+skill, including the phrase `the grant the Task ran under`. Ran `make
+skills-sync` successfully to regenerate the distributed skill mirror. The
+repository-required `make baseline-digests` also succeeded and reported that
+the derived artifacts already matched, with no changes.
+
+Focused checks:
+
+- `GOCACHE=/tmp/roundfix-task04-gocache go test -count=1 -run
+  '^TestAuthPathsAcceptTheGrantTheTaskRanUnder$' ./internal/speccheck` — exit 0.
+- `GOCACHE=/tmp/roundfix-task04-gocache go test -count=1
+  ./internal/speccheck` — exit 0 after the final test edit.
+- `GOCACHE=/tmp/roundfix-task04-gocache go vet ./internal/speccheck` — exit 0.
+- `cmp -s .agents/skills/roundfix/SKILL.md
+  skills/roundfix/SKILL.md` — exit 0 after regeneration.
+- `git diff --check` — exit 0.
+
+Acceptance evidence from
+`internal/speccheck/mechanical_grant_ran_under_test.go`:
+
+- `TestAuthPathsRefuseAParentGrantMainNeverHeld/older_main_grant_was_narrowed`
+  proves that an older byte-identical grant is not revived after main narrows
+  the current record; the read keeps the fork-point revision.
+- `TestAuthPathsAcceptTheGrantTheTaskRanUnder` makes the item branch diverge,
+  cherry-picks main's wider grant, advances main with an unrelated commit, and
+  proves the Task commit is granted with the widening commit as its revision.
+- `TestAuthPathsRefuseAParentGrantMainNeverHeld/record_exists_only_on_item_branch`
+  proves that an item-only parent record does not authorize the path. The
+  separate `parent_has_no_record` case also proves that absence keeps the
+  fork-point result.
+- `TestAuthPathsStillRefuseSelfApproval` proves that a Task commit editing the
+  authorization record retains the existing self-approval finding text and
+  does not switch away from the fork-point read.
+- `TestAuthPathsKeepTheForkPointRevisionWhenItCovers` proves that an already
+  covered commit keeps the fork-point revision.
+- The guide, canonical skill, and generated mirror each contain `the grant the
+  Task ran under`; `make skills-sync` and the byte-for-byte mirror comparison
+  succeeded. The Daemon still owns the declared `make skills-sync-check` run.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260930T102010Z_231eaa2e314ed8d8`
+- Source commit: `520d51741ba285843e0d954b387bf6206283584e`
