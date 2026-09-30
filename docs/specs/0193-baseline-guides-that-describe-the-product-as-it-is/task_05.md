@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0193-baseline-guides-that-describe-the-product-as-it-is
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

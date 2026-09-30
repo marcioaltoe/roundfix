@@ -1,0 +1,50 @@
+GOCACHE=/private/tmp/roundfix-0193-qa-gocache go test -count=1 -v -run Test(NoTwoBaselineClauses|ADuplicatedClause|BaselineClauseForce|AMissingBaselineClause|AnUnlistedBaselineClause|AChangedBaselineClause|TheBackendBoundary|FormatterComposition|CatalogCompatibility|BaselinePlanCharacterization|BaselineCompatibilityCorpus) ./internal/baseline
+=== RUN   TestCatalogCompatibility
+=== PAUSE TestCatalogCompatibility
+=== RUN   TestNoTwoBaselineClausesShareText
+--- PASS: TestNoTwoBaselineClausesShareText (0.01s)
+=== RUN   TestADuplicatedClauseTextIsReported
+--- PASS: TestADuplicatedClauseTextIsReported (0.00s)
+=== RUN   TestBaselineClauseForceIsCharacterized
+--- PASS: TestBaselineClauseForceIsCharacterized (0.00s)
+=== RUN   TestAMissingBaselineClauseIsReported
+--- PASS: TestAMissingBaselineClauseIsReported (0.00s)
+=== RUN   TestAnUnlistedBaselineClauseIsReported
+--- PASS: TestAnUnlistedBaselineClauseIsReported (0.00s)
+=== RUN   TestAChangedBaselineClauseForceIsReported
+--- PASS: TestAChangedBaselineClauseForceIsReported (0.00s)
+=== RUN   TestTheBackendBoundaryParagraphRendersOnce
+--- PASS: TestTheBackendBoundaryParagraphRendersOnce (0.00s)
+=== RUN   TestBaselineCompatibilityCorpus
+=== PAUSE TestBaselineCompatibilityCorpus
+=== RUN   TestBaselinePlanCharacterization
+=== PAUSE TestBaselinePlanCharacterization
+=== RUN   TestBaselinePlanCharacterizationDiffNamesShapeAndField
+=== PAUSE TestBaselinePlanCharacterizationDiffNamesShapeAndField
+=== RUN   TestFormatterComposition
+=== PAUSE TestFormatterComposition
+=== CONT  TestCatalogCompatibility
+=== CONT  TestBaselinePlanCharacterizationDiffNamesShapeAndField
+=== CONT  TestFormatterComposition
+=== CONT  TestBaselinePlanCharacterization
+=== CONT  TestBaselineCompatibilityCorpus
+--- PASS: TestBaselinePlanCharacterizationDiffNamesShapeAndField (0.00s)
+--- PASS: TestCatalogCompatibility (0.00s)
+=== RUN   TestBaselinePlanCharacterization/clean-adoption
+--- PASS: TestBaselineCompatibilityCorpus (0.02s)
+=== RUN   TestBaselinePlanCharacterization/idempotent-replan-after-verified-apply
+=== RUN   TestBaselinePlanCharacterization/unsatisfied-blocking-capabilities
+--- PASS: TestFormatterComposition (1.04s)
+=== RUN   TestBaselinePlanCharacterization/advisory-only-divergences
+=== RUN   TestBaselinePlanCharacterization/same-baseline-changed-profile-and-catalog-digests
+--- PASS: TestBaselinePlanCharacterization (1.63s)
+    --- PASS: TestBaselinePlanCharacterization/clean-adoption (0.05s)
+    --- PASS: TestBaselinePlanCharacterization/idempotent-replan-after-verified-apply (0.97s)
+    --- PASS: TestBaselinePlanCharacterization/unsatisfied-blocking-capabilities (0.05s)
+    --- PASS: TestBaselinePlanCharacterization/advisory-only-divergences (0.04s)
+    --- PASS: TestBaselinePlanCharacterization/same-baseline-changed-profile-and-catalog-digests (0.53s)
+PASS
+suiteguard: guard cost: measured 6703 paths; fingerprint took 266.6935ms before and 189.084084ms after
+ok  	roundfix/internal/baseline	2.586s
+
+exit: 0

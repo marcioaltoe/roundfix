@@ -1,0 +1,145 @@
+Exact committed paths from git diff-tree; compare Task Context declarations and Recorded paths.
+
+Task 01; commit c64928e9a4ab09e10d95d2221d72eda64deaa3a7
+declared: docs/agents/setup-context.json
+declared: docs/specs/0193-baseline-guides-that-describe-the-product-as-it-is/task_01.md
+declared: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md
+declared: internal/baseline/assets/modules/backend.json
+declared: internal/baseline/assets/profiles/standard-typescript-monorepo.json
+declared: internal/baseline/clause_characterization_test.go
+declared: internal/baseline/testdata/catalog.diagnostics.golden.json
+declared: internal/baseline/testdata/catalog.digest
+declared: internal/baseline/testdata/catalog.normalized.json
+declared: internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+declared: internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+declared: internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+declared: internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+Operative parent grant b7c735c93c34e521b372288e664de92be94cb6a6: approved, consuming Spec matches; authorization not introduced in Task commit.
+Governed path bounded in parent grant: docs/agents/setup-context.json
+Governed path bounded in parent grant: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md
+Governed path bounded in parent grant: internal/baseline/assets/modules/backend.json
+Governed path bounded in parent grant: internal/baseline/assets/profiles/standard-typescript-monorepo.json
+
+Task 02; commit 762d1eb9e8a9dde125ba85c289670b3d5a51cf2a
+declared: docs/agents/autonomous-work.md
+declared: docs/agents/setup-context.json
+declared: docs/specs/0193-baseline-guides-that-describe-the-product-as-it-is/task_02.md
+declared: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+declared: internal/baseline/assets/modules/autonomous-work.json
+declared: internal/baseline/assets/profiles/standard-typescript-monorepo.json
+declared: internal/baseline/loop_clause_test.go
+declared: internal/baseline/testdata/catalog.diagnostics.golden.json
+declared: internal/baseline/testdata/catalog.digest
+declared: internal/baseline/testdata/catalog.normalized.json
+declared: internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+declared: internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+declared: internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+declared: internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+declared: internal/delivery/loop_clause_order_test.go
+Operative parent grant c64928e9a4ab09e10d95d2221d72eda64deaa3a7: approved, consuming Spec matches; authorization not introduced in Task commit.
+Governed path bounded in parent grant: docs/agents/autonomous-work.md
+Governed path bounded in parent grant: docs/agents/setup-context.json
+Governed path bounded in parent grant: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+Governed path bounded in parent grant: internal/baseline/assets/modules/autonomous-work.json
+Governed path bounded in parent grant: internal/baseline/assets/profiles/standard-typescript-monorepo.json
+
+Task 03; commit 3efcd91926f38aee212a9508565034708fabd955
+declared: docs/agents/agent-instructions.md
+declared: docs/agents/setup-context.json
+declared: docs/agents/spec-routing.md
+declared: docs/specs/0193-baseline-guides-that-describe-the-product-as-it-is/task_03.md
+declared: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md
+declared: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md
+declared: internal/baseline/assets/modules/core.json
+declared: internal/baseline/assets/modules/spec-workflow.json
+declared: internal/baseline/assets/profiles/standard-typescript-monorepo.json
+declared: internal/baseline/authorization_clauses_test.go
+declared: internal/baseline/testdata/catalog.diagnostics.golden.json
+declared: internal/baseline/testdata/catalog.digest
+declared: internal/baseline/testdata/catalog.normalized.json
+declared: internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+declared: internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+declared: internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+declared: internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+Operative parent grant 762d1eb9e8a9dde125ba85c289670b3d5a51cf2a: approved, consuming Spec matches; authorization not introduced in Task commit.
+Governed path bounded in parent grant: docs/agents/agent-instructions.md
+Governed path bounded in parent grant: docs/agents/setup-context.json
+Governed path bounded in parent grant: docs/agents/spec-routing.md
+Governed path bounded in parent grant: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md
+Governed path bounded in parent grant: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md
+Governed path bounded in parent grant: internal/baseline/assets/modules/core.json
+Governed path bounded in parent grant: internal/baseline/assets/modules/spec-workflow.json
+Governed path bounded in parent grant: internal/baseline/assets/profiles/standard-typescript-monorepo.json
+
+Task 04; commit 219d7edaa7cac3db0c948b4a26de1695c1601576
+declared: docs/agents/docs-layout.md
+declared: docs/agents/setup-context.json
+declared: docs/agents/specific-repository.md
+declared: docs/specs/0193-baseline-guides-that-describe-the-product-as-it-is/task_04.md
+declared: internal/baseline/adopter_neutral_clauses_test.go
+declared: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md
+declared: internal/baseline/assets/modules/context-workflow.json
+declared: internal/baseline/assets/profiles/standard-typescript-monorepo.json
+declared: internal/baseline/testdata/catalog.diagnostics.golden.json
+declared: internal/baseline/testdata/catalog.digest
+declared: internal/baseline/testdata/catalog.normalized.json
+declared: internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+declared: internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+declared: internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+declared: internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+declared: internal/spec/retirement.go
+declared: internal/spec/retirement_deferred_test.go
+declared: internal/speccheck/backlog.go
+declared: internal/speccheck/backlog_deferred_test.go
+Operative parent grant 3efcd91926f38aee212a9508565034708fabd955: approved, consuming Spec matches; authorization not introduced in Task commit.
+Governed path bounded in parent grant: docs/agents/docs-layout.md
+Governed path bounded in parent grant: docs/agents/setup-context.json
+Governed path bounded in parent grant: docs/agents/specific-repository.md
+Governed path bounded in parent grant: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md
+Governed path bounded in parent grant: internal/baseline/assets/modules/context-workflow.json
+Governed path bounded in parent grant: internal/baseline/assets/profiles/standard-typescript-monorepo.json
+Governed path bounded in parent grant: internal/speccheck/backlog.go
+
+Task 06; commit 7349184ea41852a570d343ecea8673f8a4f6b748
+declared: docs/agents/setup-context.json
+declared: docs/specs/0193-baseline-guides-that-describe-the-product-as-it-is/task_06.md
+declared: internal/baseline/assets/modules/backend.json
+declared: internal/baseline/catalog_validate.go
+declared: internal/baseline/clause_replacement_test.go
+declared: internal/baseline/plan.go
+declared: internal/baseline/plan_test.go
+declared: internal/baseline/testdata/catalog.digest
+declared: internal/baseline/testdata/catalog.normalized.json
+declared: internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+declared: internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+declared: internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+declared: internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+Operative parent grant 5d744ee99302ebfe8e7795c45553a87f4b00f345: approved, consuming Spec matches; authorization not introduced in Task commit.
+Governed path bounded in parent grant: docs/agents/setup-context.json
+Governed path bounded in parent grant: internal/baseline/assets/modules/backend.json
+Governed path bounded in parent grant: internal/baseline/plan_test.go
+
+Task 07; commit 537aa94b450dcf29e4b8e589b78e1674ab7c9bca
+declared: docs/specs/0193-baseline-guides-that-describe-the-product-as-it-is/task_07.md
+declared: internal/cli/baseline_update_test.go
+Operative parent grant 3c4d7f7af07088acc92309b3c5d5c4e60d7d152a: approved, consuming Spec matches; authorization not introduced in Task commit.
+
+Mechanical stage already lists all five governed Task commits; no repeated authorization detector. Task 07 adds only its Task file and ordinary CLI test fixture.
+Sanctioned command outputs: make baseline-digests owns formatter goldens/profile pins/catalog snapshots/plan goldens; public baseline update owns repository guides and Setup Manifest. Task Results name those commands and the exact outputs; disposable replay is logged in r6-refresh.txt.
+Pre-existing antecedent authorization: b7c735c93c34e521b372288e664de92be94cb6a6 is ancestor of each consuming commit. No prerequisite/consequent fix was declared. Tasks 06 and 07 are separate later corrective commits.
+Unaccounted ordinary paths: []
+Current delta: ?? docs/specs/0193-baseline-guides-that-describe-the-product-as-it-is/qa/evidence/2026-09-30-run-537aa94b/conexus-backend.md.txt
+?? docs/specs/0193-baseline-guides-that-describe-the-product-as-it-is/qa/evidence/2026-09-30-run-537aa94b/identity.txt
+?? docs/specs/0193-baseline-guides-that-describe-the-product-as-it-is/qa/evidence/2026-09-30-run-537aa94b/oraculum-autonomous-work.md.txt
+?? docs/specs/0193-baseline-guides-that-describe-the-product-as-it-is/qa/evidence/2026-09-30-run-537aa94b/precondition.txt
+?? docs/specs/0193-baseline-guides-that-describe-the-product-as-it-is/qa/evidence/2026-09-30-run-537aa94b/r11-pr.txt
+?? docs/specs/0193-baseline-guides-that-describe-the-product-as-it-is/qa/evidence/2026-09-30-run-537aa94b/r2-tests.txt
+?? docs/specs/0193-baseline-guides-that-describe-the-product-as-it-is/qa/evidence/2026-09-30-run-537aa94b/r3-tests.txt
+?? docs/specs/0193-baseline-guides-that-describe-the-product-as-it-is/qa/evidence/2026-09-30-run-537aa94b/r4-tests.txt
+?? docs/specs/0193-baseline-guides-that-describe-the-product-as-it-is/qa/evidence/2026-09-30-run-537aa94b/r5-tests.txt
+?? docs/specs/0193-baseline-guides-that-describe-the-product-as-it-is/qa/evidence/2026-09-30-run-537aa94b/r5a-tests.txt
+?? docs/specs/0193-baseline-guides-that-describe-the-product-as-it-is/qa/evidence/2026-09-30-run-537aa94b/r6-refresh.txt
+?? docs/specs/0193-baseline-guides-that-describe-the-product-as-it-is/qa/evidence/2026-09-30-run-537aa94b/r7-outside.txt
+?? docs/specs/0193-baseline-guides-that-describe-the-product-as-it-is/qa/evidence/2026-09-30-run-537aa94b/scratch-path.txt
+?? docs/specs/0193-baseline-guides-that-describe-the-product-as-it-is/qa/qa-report-2026-09-30.md
+

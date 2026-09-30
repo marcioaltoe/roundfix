@@ -1,0 +1,68 @@
+GOCACHE=/private/tmp/roundfix-0193-qa-gocache go test -count=1 -v -run Test(ShippedGuidance|ARepositoryRecordCitation|ASpecCitation|LifecycleClauses|ADeferredBacklog|AConsumingSpecDoesNotRetire) ./internal/baseline ./internal/speccheck ./internal/spec
+=== RUN   TestShippedGuidanceCitesNoRepositoryRecord
+--- PASS: TestShippedGuidanceCitesNoRepositoryRecord (0.01s)
+=== RUN   TestARepositoryRecordCitationIsReported
+--- PASS: TestARepositoryRecordCitationIsReported (0.00s)
+=== RUN   TestASpecCitationInRuleGuidanceIsReported
+--- PASS: TestASpecCitationInRuleGuidanceIsReported (0.00s)
+=== RUN   TestLifecycleClausesCarryTheScopedWording
+--- PASS: TestLifecycleClausesCarryTheScopedWording (0.00s)
+PASS
+suiteguard: guard cost: measured 6706 paths; fingerprint took 227.385125ms before and 180.107167ms after
+ok  	roundfix/internal/baseline	0.674s
+=== RUN   TestADeferredBacklogEntryIsTerminal
+--- PASS: TestADeferredBacklogEntryIsTerminal (0.00s)
+=== RUN   TestADeferredBacklogEntryLeftActiveIsReported
+--- PASS: TestADeferredBacklogEntryLeftActiveIsReported (0.00s)
+=== RUN   TestASpecCitationInATaskResultIsNotAnObligation
+=== PAUSE TestASpecCitationInATaskResultIsNotAnObligation
+=== RUN   TestASpecCitationInADaemonSectionIsNotAnObligation
+=== PAUSE TestASpecCitationInADaemonSectionIsNotAnObligation
+=== RUN   TestASpecCitationInAQAReportIsNotAnObligation
+=== PAUSE TestASpecCitationInAQAReportIsNotAnObligation
+=== CONT  TestASpecCitationInATaskResultIsNotAnObligation
+=== CONT  TestASpecCitationInAQAReportIsNotAnObligation
+=== CONT  TestASpecCitationInADaemonSectionIsNotAnObligation
+=== RUN   TestASpecCitationInAQAReportIsNotAnObligation/qa/qa-report-2026-09-29.md
+=== PAUSE TestASpecCitationInAQAReportIsNotAnObligation/qa/qa-report-2026-09-29.md
+=== RUN   TestASpecCitationInAQAReportIsNotAnObligation/qa/evidence/user-flow.md
+=== PAUSE TestASpecCitationInAQAReportIsNotAnObligation/qa/evidence/user-flow.md
+=== CONT  TestASpecCitationInAQAReportIsNotAnObligation/qa/qa-report-2026-09-29.md
+=== RUN   TestASpecCitationInADaemonSectionIsNotAnObligation/##_Recorded_paths
+=== PAUSE TestASpecCitationInADaemonSectionIsNotAnObligation/##_Recorded_paths
+=== RUN   TestASpecCitationInADaemonSectionIsNotAnObligation/##_Carry-forward_provenance
+=== PAUSE TestASpecCitationInADaemonSectionIsNotAnObligation/##_Carry-forward_provenance
+=== CONT  TestASpecCitationInADaemonSectionIsNotAnObligation/##_Recorded_paths
+=== CONT  TestASpecCitationInAQAReportIsNotAnObligation/qa/evidence/user-flow.md
+=== CONT  TestASpecCitationInADaemonSectionIsNotAnObligation/##_Carry-forward_provenance
+--- PASS: TestASpecCitationInATaskResultIsNotAnObligation (0.01s)
+--- PASS: TestASpecCitationInADaemonSectionIsNotAnObligation (0.00s)
+    --- PASS: TestASpecCitationInADaemonSectionIsNotAnObligation/##_Recorded_paths (0.01s)
+    --- PASS: TestASpecCitationInADaemonSectionIsNotAnObligation/##_Carry-forward_provenance (0.01s)
+--- PASS: TestASpecCitationInAQAReportIsNotAnObligation (0.00s)
+    --- PASS: TestASpecCitationInAQAReportIsNotAnObligation/qa/qa-report-2026-09-29.md (0.00s)
+    --- PASS: TestASpecCitationInAQAReportIsNotAnObligation/qa/evidence/user-flow.md (0.01s)
+PASS
+suiteguard: guard cost: measured 6706 paths; fingerprint took 232.136375ms before and 206.371625ms after
+ok  	roundfix/internal/speccheck	0.708s
+=== RUN   TestADeferredBacklogEntryWithAReasonIsRetired
+--- PASS: TestADeferredBacklogEntryWithAReasonIsRetired (0.00s)
+=== RUN   TestADeferredBacklogEntryWithoutAReasonStaysLive
+--- PASS: TestADeferredBacklogEntryWithoutAReasonStaysLive (0.00s)
+=== RUN   TestAConsumingSpecDoesNotRetireADeferredEntryWithoutAReason
+--- PASS: TestAConsumingSpecDoesNotRetireADeferredEntryWithoutAReason (0.00s)
+=== RUN   TestADeferredBacklogEntryWithAnEmptyReasonStaysLive
+=== RUN   TestADeferredBacklogEntryWithAnEmptyReasonStaysLive/null
+=== RUN   TestADeferredBacklogEntryWithAnEmptyReasonStaysLive/'__'
+=== RUN   TestADeferredBacklogEntryWithAnEmptyReasonStaysLive/'null'
+=== RUN   TestADeferredBacklogEntryWithAnEmptyReasonStaysLive/''
+--- PASS: TestADeferredBacklogEntryWithAnEmptyReasonStaysLive (0.00s)
+    --- PASS: TestADeferredBacklogEntryWithAnEmptyReasonStaysLive/null (0.00s)
+    --- PASS: TestADeferredBacklogEntryWithAnEmptyReasonStaysLive/'__' (0.00s)
+    --- PASS: TestADeferredBacklogEntryWithAnEmptyReasonStaysLive/'null' (0.00s)
+    --- PASS: TestADeferredBacklogEntryWithAnEmptyReasonStaysLive/'' (0.00s)
+PASS
+suiteguard: guard cost: measured 6706 paths; fingerprint took 255.5785ms before and 223.630667ms after
+ok  	roundfix/internal/spec	0.708s
+
+exit: 0

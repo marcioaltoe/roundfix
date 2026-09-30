@@ -1,0 +1,1 @@
+PASS: one frontmatter; 12 terminal rows; exact typed counts; all linked evidence files exist; unchanged auditor identities; completed dependencies; unchanged pending QA status; git diff --check exit 0.
