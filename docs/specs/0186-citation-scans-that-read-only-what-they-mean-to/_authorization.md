@@ -3,7 +3,11 @@ status: approved
 granted: 2026-09-30
 action: scope the Spec citation projection to the Spec's own Task files and make the Relocation Citation scan read tracked files through an os.Root of the repository
 consuming: 0186-citation-scans-that-read-only-what-they-mean-to
-paths: []
+paths:
+  - internal/speccheck/citations.go
+  - internal/baseline/history_citations.go
+  - internal/baseline/history_citations_open_unix.go
+  - internal/baseline/history_citations_open_windows.go
 operations:
   - implement
   - commit
@@ -44,3 +48,10 @@ None.
 - No new dependency and no `go.mod` edit.
 - No paid API use, release, tag, deployment or branch-policy exception.
 - Verification stays Daemon-owned, and Task status stays Daemon-written.
+
+## Bounded paths
+
+The authorization reader requires at least one exact path. The paths above are
+the production files the two Tasks change; none of them is a Governed Path, so
+listing them bounds the delivery without widening any tooling authority.
+
