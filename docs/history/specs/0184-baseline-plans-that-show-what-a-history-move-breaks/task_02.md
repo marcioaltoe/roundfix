@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0184-baseline-plans-that-show-what-a-history-move-breaks
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -90,3 +90,46 @@ changed must no longer apply.
 - [_techspec.md](_techspec.md) — System Architecture; API Contract 1;
   API Contract 2; Testing Approach 2–3; Build Order 2
 - ADR-0173; ADR-0071; ADR-0073; ADR-0103; ADR-0068
+
+## Result
+
+Implemented the Task 01 scan at the ordered History Relocation ledger seam.
+`planHistoryMoves` now passes occupied-destination collisions as refused moves,
+appends Relocation Citation findings after the existing history warnings, and
+wraps scan failures as Relocation Citation planning errors. Filesystem-only
+history-layout projection remains available outside Baseline planning; every
+Git-backed Baseline Plan with a non-empty relocation ledger runs the scan.
+
+Added the required plan and CLI contract suites without changing existing test
+files. Fresh evidence for each acceptance criterion:
+
+- `TestBaselinePlanReportsRelocationCitations` observed the citing-file warning
+  and no Relocation Citation finding for a current-layout plan. The focused
+  Baseline run also exercised Task 01's empty-ledger no-scan case.
+- `TestRelocationCitationsBindThePlanDigestOnly` observed different Plan
+  Digests after a citation-only edit while preimages, postimages, managed
+  entries, History Relocations and file changes stayed identical. It also
+  proved the citing file entered none of those mutation ledgers.
+- `TestRelocationCitationsLeaveApplyUnchanged` applied both clone-stable plans,
+  preserved each citing file byte-for-byte, and observed identical visible
+  trees after excluding that citing file.
+- `TestBaselinePlanPrintsRelocationCitationWarnings` observed the warning line
+  in text and the same typed warning in the JSON Plan Document.
+- `TestBaselineUpdateRefusesADigestWhoseCitationsChanged` observed the existing
+  approval-mismatch refusal after a citing-file edit and a byte-identical
+  repository across the refused invocation.
+
+Focused checks:
+
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run 'TestHistoryLayoutRelocatesLegacyReviewRootWhateverItsLiveness|Citation' ./internal/baseline` — passed.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run 'Citation' ./internal/cli` — passed.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 ./internal/cli` — passed with host process-table permission required by the existing force-stop integration tests.
+- `rtk env GOCACHE=/tmp/roundfix-task02-gocache make verify-incremental` — passed with the same host process-table permission; `go vet`, all Go packages, the focused skill contract tests, `roundfix skills check`, and the build completed successfully.
+
+The Task-authored `## Verification` commands were not run; the Daemon owns
+those commands and Task settlement.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260929T222541Z_a2fa4eeca2973de1`
+- Source commit: `869e4ea380b58d8bd8f757e9624512371653ebd5`

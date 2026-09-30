@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0184-baseline-plans-that-show-what-a-history-move-breaks
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -75,3 +75,32 @@ a citation, or change what apply writes.
 - [_techspec.md](_techspec.md) — Data Models; API Contract 1; Integration
   Points; Build Order 3
 - ADR-0173
+
+## Result
+
+Implemented the documentation slice for Relocation Citations:
+
+- Added the warning behavior, all three warning codes, Plan Digest binding, and
+  unchanged planning/apply behavior to the canonical Roundfix skill and the
+  managed-refresh guide section.
+- Added the `Relocation Citation` glossary entry immediately after `History
+  Relocation`, including its resolution definition, digest-warning phrase, and
+  avoidance terms.
+
+Focused checks:
+
+- `make skills-sync` completed successfully; `cmp
+  .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` exited `0`.
+- `make baseline-digests` completed successfully with `changed=false`.
+- `git diff --check` exited `0`.
+- Focused `rg` checks found both required phrases and all three warning codes in
+  the canonical skill, shipped skill, and guide. Focused `rg` checks found the
+  glossary heading, digest-warning phrase, and required `_Avoid_` list in
+  `CONTEXT.md`.
+- The task's declared Verification commands were not run; the Daemon retains
+  that verification responsibility.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260929T222541Z_a2fa4eeca2973de1`
+- Source commit: `de92c3203244003c2d0301ba3a71d0db6a741711`

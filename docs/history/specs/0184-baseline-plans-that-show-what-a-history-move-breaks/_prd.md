@@ -1,9 +1,18 @@
 ---
 spec: 0184-baseline-plans-that-show-what-a-history-move-breaks
-status: active
+status: archived
 created: 2026-09-29
 surfaces: [backend, cli, docs]
+archived: "2026-09-29"
+source_slug: 0184-baseline-plans-that-show-what-a-history-move-breaks
+qa_override: true
+qa_override_approval: 'Maintainer standing authorization of 2026-08-09 (agent project memory ''qa_override por ambiente''): archive with override when the gate closes partial only because of environment, never with rows_blocked_finding above zero. Reconfirmed for this cycle on 2026-09-29 (''Autonomia ampla'').'
+qa_override_reason: QA closed partial with rows_blocked_environment 2 and rows_blocked_finding 0. Row 4, the Fluxus outside-evidence replay, cannot run because the exported Fluxus Setup Manifest has no maintained transition to the go-cli-tui profile. Row 9 is the pre-PR Pull Request row, which records equivalent evidence. Every other row passed.
+qa_override_qa_outcome: partial
+qa_override_qa_task_status: failed
+qa_override_revision: 2423efe2af34390f6575e649e90dbcd94500091e
 ---
+
 
 # Baseline plans that show what a History Relocation breaks
 
@@ -62,7 +71,9 @@ resolving, and where each citation points before and after the move.
   Task here declares its paths and this Spec's gate aims at `pass`. ADR-0169 and
   ADR-0170 (Spec 0182) govern the pre-PR review base and Task Carry-Forward.
   ADR-0171 and ADR-0172 (Spec 0183) govern Run storage reporting. None of these
-  governs Baseline planning, so they do not apply. All the others hold. Source:
+  governs Baseline planning, so they do not apply. ADR-0176 (Spec 0181) narrows
+  only which Spec text the citation checks read, and this Spec does not depend
+  on it, so it does not apply. All the others hold. Source:
   `docs/agents/domain.md`.
 - Tooling authority: applicable — the maintainer approved this plan in chat on
   2026-09-29. Answering structured questions, they chose "Duas filas" (Onda 5

@@ -615,6 +615,14 @@ optional `unrecordedManagedRegions` field only when at least one exists. The
 same report remains in the applied result. Managed refresh never invokes
 semantic classification and preserves every non-managed byte exactly.
 
+When a plan includes History Relocations, it will report each tracked file whose
+citations its History Relocations would break. These warnings use
+`baseline.history.citation` for each citing file,
+`baseline.history.citation.omitted` when more citing files exist than the report
+lists, and `baseline.history.citation.unscanned` when a tracked file could not
+be scanned. The Plan Digest covers these warnings. Planning never rewrites a
+citation, and apply writes the same files.
+
 Automation and Agents use the non-interactive plan/apply pair for first
 adoption or a Profile change:
 

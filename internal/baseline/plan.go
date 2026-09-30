@@ -623,10 +623,12 @@ func planHistoryMoves(ctx context.Context, root string) ([]HistoryMove, []Findin
 		return nil, nil, fmt.Errorf("discover history layout for Baseline Plan: %w", err)
 	}
 	candidates := append([]HistoryRelocation(nil), report.relocations...)
+	refused := make(map[string]bool)
 	for _, collision := range report.collisions {
 		if collision.Reason != historyDestinationOccupied {
 			continue
 		}
+		refused[collision.From] = true
 		candidates = append(candidates, HistoryRelocation{
 			From:            collision.From,
 			To:              collision.To,
@@ -652,6 +654,17 @@ func planHistoryMoves(ctx context.Context, root string) ([]HistoryMove, []Findin
 			ContentIdentity: relocation.ContentIdentity,
 		}
 	}
+	// History layout projection also supports filesystem-only inspection. A
+	// Baseline Plan root has already passed Git repository inspection and has
+	// the index evidence required by the Relocation Citation scan.
+	if _, err := os.Lstat(filepath.Join(root, ".git")); errors.Is(err, fs.ErrNotExist) {
+		return moves, warnings, nil
+	}
+	citationFindings, err := relocationCitationFindings(ctx, root, moves, refused)
+	if err != nil {
+		return nil, nil, fmt.Errorf("scan Relocation Citations for Baseline Plan: %w", err)
+	}
+	warnings = append(warnings, citationFindings...)
 	return moves, warnings, nil
 }
 
