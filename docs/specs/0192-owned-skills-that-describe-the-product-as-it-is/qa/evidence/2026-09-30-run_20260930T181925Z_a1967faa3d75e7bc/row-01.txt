@@ -1,0 +1,1 @@
+Requirement 1 / repository Verification: daemon-provided make verify-changed passed, exit 0 at audited head. Diagnostics removed on success. Recorded gate fact, not rerun. User prompt is supervised authority, not Agent execution evidence.

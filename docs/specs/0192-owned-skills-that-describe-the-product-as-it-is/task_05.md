@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0192-owned-skills-that-describe-the-product-as-it-is
-status: pending
+status: failed
 type: qa
 complexity: medium
 ---

@@ -1,0 +1,26 @@
+command: ./bin/roundfix baseline capabilities check --help
+exit: 0
+Usage:
+  roundfix baseline capabilities check [--profile <id>] [--repo <path>] [--format <text|json>]
+
+Re-checks Repository Capability evidence through the same evaluator and
+divergence renderer used by Baseline planning. The command accepts and resolves
+no decisions, never writes repository or journal bytes, never executes a
+candidate or repository command, and never uses the network.
+
+JSON output uses roundfix/baseline-capability-recheck/v1.
+
+When --profile is omitted, the command resolves the current Baseline Profile
+from a valid Setup Manifest. A repository without either source returns a named
+Profile error instead of an empty result.
+
+Exit codes:
+  0  capability evidence evaluated with no blocking divergence
+  1  output failure
+  2  invalid arguments, repository failure, or no resolvable Baseline Profile
+  3  capability evidence evaluated with a blocking divergence
+
+Options:
+  --profile  Built-in or repository-owned Baseline Profile; defaults to the current Setup Manifest
+  --repo     Git worktree or a path inside it (default current directory)
+  --format   Output format: text or json (default text)

@@ -1,0 +1,10 @@
+command: ./bin/roundfix init --help
+exit: 0
+Usage:
+  roundfix init [--scope <project|user>] [--force]
+
+Options:
+  --scope  Config scope. Supported: project, user
+           project writes <repo>/.roundfixrc.yml
+           user writes ~/.roundfix/config.yml
+  --force  Overwrite an existing config file

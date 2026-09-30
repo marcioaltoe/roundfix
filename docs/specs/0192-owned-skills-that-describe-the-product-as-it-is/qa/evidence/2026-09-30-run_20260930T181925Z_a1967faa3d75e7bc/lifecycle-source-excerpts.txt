@@ -1,0 +1,8 @@
+internal/daemon/task_engine.go:2648: 		"Repository Verification: already run by the Daemon outside the Agent sandbox.\n"+
+internal/daemon/task_engine.go:2652: 			"Record this as the static gate result. Do not run the repository Verification again.\n",
+internal/cli/deliver_workflow.go:886: 	if _, err := workflow.git.RunGit(ctx, gitRoot, "commit", "-m", "docs: archive "+specSlug); err != nil {
+docs/agents/docs-layout.md:127: status: pending # pending | partial | deferred | done | deprecated | superseded | closed | cancelled
+internal/baseline/history_citations.go:19: 	relocationCitationCode          = "baseline.history.citation"
+internal/baseline/history_citations.go:20: 	relocationCitationOmittedCode   = "baseline.history.citation.omitted"
+internal/baseline/history_citations.go:21: 	relocationCitationUnscannedCode = "baseline.history.citation.unscanned"
+docs/history/specs/0188-a-grant-that-authorizes-delivery-without-governed-paths/qa/qa-report-2026-09-30.md:61: | # | Status | Provenance |

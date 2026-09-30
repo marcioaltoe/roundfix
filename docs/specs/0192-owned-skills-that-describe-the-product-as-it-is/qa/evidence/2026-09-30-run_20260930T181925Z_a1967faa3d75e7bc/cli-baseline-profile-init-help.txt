@@ -1,0 +1,12 @@
+command: ./bin/roundfix baseline profile init --help
+exit: 0
+Usage:
+  roundfix baseline profile init --id <id> [--from <built-in-id>]
+
+Creates .roundfix/baseline/profiles/<id>.json exclusively. The declaration
+copies allowed embedded entry IDs from the selected built-in source; it does
+not compose profiles, copy assets, or accept executable or remote content.
+
+Options:
+  --id    Required lowercase repository-owned Baseline Profile ID
+  --from  Embedded built-in Baseline Profile (default go-cli-tui)

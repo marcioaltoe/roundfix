@@ -1,0 +1,7 @@
+Structured-question form compared with docs/agents/agent-instructions.md clause.
+write-prd: one concrete question, three options A/B/C, A recommended, no D/Other; custom answer fallback.
+write-idea: single-question form, two/three options, recommended first and labelled, no Other option, custom answer fallback.
+brainstorming: single-question form, two/three options, recommended first and labelled, no Other option, custom answer fallback.
+business-analyst: one concrete question, three options A/B/C, A recommended, no D/Other; custom answer fallback.
+council: single-question form, two/three options, recommended first and labelled, no Other option, custom answer fallback.
+Council shows separate path and risk-trigger questions; second waits for first answer, two/three synthesis-derived choices, recommended A first, both answers recorded verbatim. Checks are bounded to Spec-corrected examples/rules; no live human decision was needed.

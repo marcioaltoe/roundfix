@@ -1,0 +1,8 @@
+command: go test -count=1 -tags docscontract -v -run ^TestUserGuideLinksResolve$ ./internal/docscontract
+exit: 1
+=== RUN   TestUserGuideLinksResolve
+    user_guide_contract_test.go:100: docs/user-guide/commands.md:1623: qa-0192-missing.md
+--- FAIL: TestUserGuideLinksResolve (0.00s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.211s
+FAIL
