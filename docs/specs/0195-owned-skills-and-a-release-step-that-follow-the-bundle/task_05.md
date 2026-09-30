@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0195-owned-skills-and-a-release-step-that-follow-the-bundle
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

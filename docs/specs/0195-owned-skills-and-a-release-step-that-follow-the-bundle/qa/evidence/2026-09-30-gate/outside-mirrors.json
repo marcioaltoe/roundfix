@@ -1,0 +1,19 @@
+[
+  {
+    "source": "/Users/marcio/dev/secondbrain/projects/skills/mirror/setups/go-cli.txt",
+    "sha256": "890bc01dac776bfc8f282dda25e23a26990663e269b3f1bfd21735befea41c26",
+    "roundfix_lines": []
+  },
+  {
+    "source": "/Users/marcio/dev/secondbrain/projects/skills/mirror/setups/rust-cli.txt",
+    "sha256": "b3ade0d25751a3fad5e4130f9ab500c8af71f8eaf73b9f60447f1181f2547c15",
+    "roundfix_lines": []
+  },
+  {
+    "source": "/Users/marcio/dev/secondbrain/projects/skills/mirror/setups/typescript-bun.txt",
+    "sha256": "f8221f79537bacfead85e3cac66d1e93e9442602d3efd79db1117baa16a9e77c",
+    "roundfix_lines": [
+      "107: skills/06-review-repair/roundfix"
+    ]
+  }
+]

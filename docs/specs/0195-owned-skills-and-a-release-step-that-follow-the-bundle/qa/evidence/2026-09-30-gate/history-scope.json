@@ -1,0 +1,193 @@
+[
+  {
+    "task": "task_01.md",
+    "commit": "404ea19e5df23359d8162fc27cba5bc6d5e8f1b6",
+    "changed": [
+      ".agents/skills/roundfix/SKILL.md",
+      "docs/specs/0195-owned-skills-and-a-release-step-that-follow-the-bundle/task_01.md",
+      "docs/user-guide/commands.md",
+      "docs/user-guide/context-driven-development.md",
+      "internal/cli/baseline_update.go",
+      "internal/cli/baseline_update_outdated_skills_test.go",
+      "skills/owned_skill_minimum_test.go",
+      "skills/roundfix/SKILL.md",
+      "skills/skills.go",
+      "skills/skills_test.go"
+    ],
+    "declared_or_recorded": [
+      ".agents/skills/roundfix/SKILL.md",
+      "docs/adr/0189-an-owned-skills-version-names-its-content-and-its-minimum-is-the-bundle.md",
+      "docs/specs/0195-owned-skills-and-a-release-step-that-follow-the-bundle/task_01.md",
+      "docs/user-guide/commands.md",
+      "docs/user-guide/context-driven-development.md",
+      "internal/cli/baseline_update.go",
+      "internal/cli/baseline_update_outdated_skills_test.go",
+      "internal/cli/doctor.go",
+      "skills/owned_skill_minimum_test.go",
+      "skills/repository.go",
+      "skills/roundfix/SKILL.md",
+      "skills/skills.go",
+      "skills/skills_test.go"
+    ],
+    "outside_declarations": [],
+    "authority": {
+      "record": "docs/specs/0195-owned-skills-and-a-release-step-that-follow-the-bundle/_authorization.md",
+      "revision": "18e3d7f2cd74cd38198725c1be03728387571c65",
+      "operative_before_task": true
+    }
+  },
+  {
+    "task": "task_02.md",
+    "commit": "fc814b6bd616dabccb706a63ec81d85af0068bd2",
+    "changed": [
+      "docs/agents/specific-repository.md",
+      "docs/specs/0195-owned-skills-and-a-release-step-that-follow-the-bundle/task_02.md",
+      "skills/owned_skill_versions_test.go",
+      "skills/testdata/owned-skill-versions.json"
+    ],
+    "declared_or_recorded": [
+      "docs/adr/0189-an-owned-skills-version-names-its-content-and-its-minimum-is-the-bundle.md",
+      "docs/agents/specific-repository.md",
+      "docs/specs/0195-owned-skills-and-a-release-step-that-follow-the-bundle/task_02.md",
+      "skills/baseline_skill_contract_test.go",
+      "skills/owned_skill_versions_test.go",
+      "skills/skills.go",
+      "skills/testdata/owned-skill-versions.json"
+    ],
+    "outside_declarations": [],
+    "authority": {
+      "record": "docs/specs/0195-owned-skills-and-a-release-step-that-follow-the-bundle/_authorization.md",
+      "revision": "18e3d7f2cd74cd38198725c1be03728387571c65",
+      "operative_before_task": true
+    }
+  },
+  {
+    "task": "task_03.md",
+    "commit": "fe890c1f445cb1ea21b06fdd9f9f1e5111f2f069",
+    "changed": [
+      "docs/agents/setup-context.json",
+      "docs/agents/skill-dispatch.md",
+      "docs/specs/0195-owned-skills-and-a-release-step-that-follow-the-bundle/task_03.md",
+      "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/skill-dispatch.md",
+      "internal/baseline/assets/modules/autonomous-work.json",
+      "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+      "internal/baseline/assets/setups/go-cli.json",
+      "internal/baseline/assets/setups/rust-cli.json",
+      "internal/baseline/assets_sync.go",
+      "internal/baseline/assets_sync_owned_membership_test.go",
+      "internal/baseline/roundfix_skill_membership_test.go",
+      "internal/baseline/testdata/catalog.diagnostics.golden.json",
+      "internal/baseline/testdata/catalog.digest",
+      "internal/baseline/testdata/catalog.normalized.json",
+      "internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json",
+      "internal/baseline/testdata/parity-corpus/v1/manifest.json",
+      "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+      "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+      "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+      "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json"
+    ],
+    "declared_or_recorded": [
+      "docs/adr/0189-an-owned-skills-version-names-its-content-and-its-minimum-is-the-bundle.md",
+      "docs/agents/setup-context.json",
+      "docs/agents/skill-dispatch.md",
+      "docs/specs/0195-owned-skills-and-a-release-step-that-follow-the-bundle/task_03.md",
+      "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/skill-dispatch.md",
+      "internal/baseline/assets/modules/autonomous-work.json",
+      "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+      "internal/baseline/assets/setups/go-cli.json",
+      "internal/baseline/assets/setups/rust-cli.json",
+      "internal/baseline/assets/setups/typescript-bun.json",
+      "internal/baseline/assets_sync.go",
+      "internal/baseline/assets_sync_owned_membership_test.go",
+      "internal/baseline/assets_sync_test.go",
+      "internal/baseline/roundfix_skill_membership_test.go",
+      "internal/baseline/testdata/catalog.diagnostics.golden.json",
+      "internal/baseline/testdata/catalog.digest",
+      "internal/baseline/testdata/catalog.normalized.json",
+      "internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json",
+      "internal/baseline/testdata/parity-corpus/v1/manifest.json",
+      "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+      "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+      "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+      "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json"
+    ],
+    "outside_declarations": [],
+    "authority": {
+      "record": "docs/specs/0195-owned-skills-and-a-release-step-that-follow-the-bundle/_authorization.md",
+      "revision": "18e3d7f2cd74cd38198725c1be03728387571c65",
+      "operative_before_task": true
+    }
+  },
+  {
+    "task": "task_06.md",
+    "commit": "f8a31a5f93e143b7b6b010edf97a4f8285ea2e31",
+    "changed": [
+      ".agents/skills/roundfix/SKILL.md",
+      "docs/specs/0195-owned-skills-and-a-release-step-that-follow-the-bundle/task_06.md",
+      "skills/roundfix/SKILL.md",
+      "skills/testdata/owned-skill-versions.json"
+    ],
+    "declared_or_recorded": [
+      ".agents/skills/roundfix/SKILL.md",
+      "docs/specs/0195-owned-skills-and-a-release-step-that-follow-the-bundle/task_06.md",
+      "skills/roundfix/SKILL.md",
+      "skills/testdata/owned-skill-versions.json"
+    ],
+    "outside_declarations": [],
+    "authority": {
+      "record": "docs/specs/0195-owned-skills-and-a-release-step-that-follow-the-bundle/_authorization.md",
+      "revision": "18e3d7f2cd74cd38198725c1be03728387571c65",
+      "operative_before_task": true
+    }
+  },
+  {
+    "task": "task_04.md",
+    "commit": "c32b91e0d968c4bd05c162f45a9dbecf5aa1105e",
+    "changed": [
+      "docs/agents/agent-instructions.md",
+      "docs/agents/setup-context.json",
+      "docs/specs/0195-owned-skills-and-a-release-step-that-follow-the-bundle/task_04.md",
+      "docs/user-guide/release-runbook.md",
+      "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md",
+      "internal/baseline/assets/modules/core.json",
+      "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+      "internal/baseline/release_clause_test.go",
+      "internal/baseline/testdata/catalog.diagnostics.golden.json",
+      "internal/baseline/testdata/catalog.digest",
+      "internal/baseline/testdata/catalog.normalized.json",
+      "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+      "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+      "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+      "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json",
+      "internal/docscontract/release_step_test.go"
+    ],
+    "declared_or_recorded": [
+      "docs/adr/0186-baseline-guidance-states-what-the-product-does-in-adopter-neutral-words.md",
+      "docs/adr/0189-an-owned-skills-version-names-its-content-and-its-minimum-is-the-bundle.md",
+      "docs/agents/agent-instructions.md",
+      "docs/agents/setup-context.json",
+      "docs/specs/0195-owned-skills-and-a-release-step-that-follow-the-bundle/task_04.md",
+      "docs/user-guide/release-runbook.md",
+      "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md",
+      "internal/baseline/assets/modules/core.json",
+      "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+      "internal/baseline/release_clause_test.go",
+      "internal/baseline/testdata/catalog.diagnostics.golden.json",
+      "internal/baseline/testdata/catalog.digest",
+      "internal/baseline/testdata/catalog.normalized.json",
+      "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+      "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+      "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+      "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json",
+      "internal/docscontract/publicdocs_test.go",
+      "internal/docscontract/release_step_test.go",
+      "skills/testdata/owned-skill-versions.json"
+    ],
+    "outside_declarations": [],
+    "authority": {
+      "record": "docs/specs/0195-owned-skills-and-a-release-step-that-follow-the-bundle/_authorization.md",
+      "revision": "18e3d7f2cd74cd38198725c1be03728387571c65",
+      "operative_before_task": true
+    }
+  }
+]

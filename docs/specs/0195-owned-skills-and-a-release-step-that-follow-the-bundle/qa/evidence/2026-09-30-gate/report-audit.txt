@@ -1,0 +1,1 @@
+One frontmatter block; daemon auditor fields preserved; 13 terminal rows; 12 pass; 1 environment-blocked with equivalents; finding 0; declared 0; failed 0; skipped 0; all linked evidence files exist; no tracked implementation delta.

@@ -1,0 +1,34 @@
+=== RUN   TestShippedGuidanceCitesNoRepositoryRecord
+--- PASS: TestShippedGuidanceCitesNoRepositoryRecord (0.01s)
+=== RUN   TestAssetSyncKeepsAnOwnedSkillTheUpstreamListOmits
+--- PASS: TestAssetSyncKeepsAnOwnedSkillTheUpstreamListOmits (0.04s)
+=== RUN   TestAssetSyncStillDropsAnExternalSkillTheUpstreamListOmits
+=== RUN   TestAssetSyncStillDropsAnExternalSkillTheUpstreamListOmits/github
+=== RUN   TestAssetSyncStillDropsAnExternalSkillTheUpstreamListOmits/local
+--- PASS: TestAssetSyncStillDropsAnExternalSkillTheUpstreamListOmits (0.07s)
+    --- PASS: TestAssetSyncStillDropsAnExternalSkillTheUpstreamListOmits/github (0.04s)
+    --- PASS: TestAssetSyncStillDropsAnExternalSkillTheUpstreamListOmits/local (0.03s)
+=== RUN   TestNoTwoBaselineClausesShareText
+--- PASS: TestNoTwoBaselineClausesShareText (0.00s)
+=== RUN   TestBaselineClauseForceIsCharacterized
+--- PASS: TestBaselineClauseForceIsCharacterized (0.00s)
+=== RUN   TestTheReleaseClauseNamesTheSkillsAndGuidesCheck
+--- PASS: TestTheReleaseClauseNamesTheSkillsAndGuidesCheck (0.00s)
+=== RUN   TestEverySetupListsTheRoundfixSkill
+--- PASS: TestEverySetupListsTheRoundfixSkill (0.00s)
+=== RUN   TestASetupWithoutTheRoundfixSkillIsReported
+--- PASS: TestASetupWithoutTheRoundfixSkillIsReported (0.00s)
+=== RUN   TestEveryProfileDispatchesTheRoundfixSkill
+=== RUN   TestEveryProfileDispatchesTheRoundfixSkill/go-cli-tui
+=== RUN   TestEveryProfileDispatchesTheRoundfixSkill/rust-cli
+=== RUN   TestEveryProfileDispatchesTheRoundfixSkill/standard-typescript-monorepo
+--- PASS: TestEveryProfileDispatchesTheRoundfixSkill (0.00s)
+    --- PASS: TestEveryProfileDispatchesTheRoundfixSkill/go-cli-tui (0.00s)
+    --- PASS: TestEveryProfileDispatchesTheRoundfixSkill/rust-cli (0.00s)
+    --- PASS: TestEveryProfileDispatchesTheRoundfixSkill/standard-typescript-monorepo (0.00s)
+PASS
+suiteguard: guard cost: measured 6812 paths; fingerprint took 240.83475ms before and 193.246ms after
+suiteguard: repository boundary violated:
+suiteguard: modified: docs/specs/0195-owned-skills-and-a-release-step-that-follow-the-bundle/qa/evidence/2026-09-30-gate/baseline-tests.txt
+FAIL	roundfix/internal/baseline	1.054s
+FAIL

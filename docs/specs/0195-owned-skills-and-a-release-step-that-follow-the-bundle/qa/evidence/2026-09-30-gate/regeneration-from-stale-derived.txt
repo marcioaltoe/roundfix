@@ -1,0 +1,12 @@
+command: make baseline-digests; disposable copy with stale derived outputs
+{"schemaVersion":1,"type":"baseline-digests","ok":false,"changed":false,"errorCode":"regeneration_failed","stage":"./internal/baseline:TestReadoptionCompatibilityMaintainedFixture","retryable":false,"nextSteps":"Read the failing test output above, fix the canonical source it validates, then rerun make baseline-digests."}
+--- FAIL: TestReadoptionCompatibilityMaintainedFixture (0.02s)
+    preservation_test.go:571: load regenerated Baseline assets: validate Baseline catalog: catalog.setup.digest.mismatch: go-cli: got ea8fcba20a8869c345874709a12236da603dc89567da07d0dc37789d570fe0a0, want 651ea62a8d7690be6bd445c288084c0961862f74abebf9dad5abdefb45b7027e; catalog.setup.digest.mismatch: rust-cli: got c32bf0a30afcaa7d127e12311dad04a434dede0a779563871a20c938996bfe2f, want c188e25c412a196a382673ed5d6af3a26dfade9978e0b39167757e695d0f28ac
+FAIL
+suiteguard: guard cost: measured 6802 paths; fingerprint took 205.705291ms before and 182.67575ms after
+FAIL	roundfix/internal/baseline	0.697s
+FAIL
+baseline-digests: regeneration failed at ./internal/baseline:TestReadoptionCompatibilityMaintainedFixture
+make: *** [baseline-digests] Error 1
+
+exit: 2

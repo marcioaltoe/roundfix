@@ -1,0 +1,6 @@
+=== RUN   TestTheLoopClauseOrderMatchesTheDeliveryQueue
+=== PAUSE TestTheLoopClauseOrderMatchesTheDeliveryQueue
+=== CONT  TestTheLoopClauseOrderMatchesTheDeliveryQueue
+--- PASS: TestTheLoopClauseOrderMatchesTheDeliveryQueue (0.01s)
+PASS
+ok  	roundfix/internal/delivery	0.249s

@@ -1,0 +1,18 @@
+command: go test -count=1 -v ./internal/cli -run ^(TestBaselineUpdatePreviewReportsAnOlderOwnedSkill|TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch|TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck|TestDoctorFailsForAnOwnedSkillOlderThanTheBundle)$
+=== RUN   TestBaselineUpdatePreviewReportsAnOlderOwnedSkill
+=== RUN   TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=false
+=== RUN   TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=true
+--- PASS: TestBaselineUpdatePreviewReportsAnOlderOwnedSkill (1.87s)
+    --- PASS: TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=false (0.66s)
+    --- PASS: TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=true (1.21s)
+=== RUN   TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch
+--- PASS: TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch (0.64s)
+=== RUN   TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck
+--- PASS: TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck (0.60s)
+=== RUN   TestDoctorFailsForAnOwnedSkillOlderThanTheBundle
+--- PASS: TestDoctorFailsForAnOwnedSkillOlderThanTheBundle (0.57s)
+PASS
+suiteguard: guard cost: measured 6840 paths; fingerprint took 237.313458ms before and 190.356417ms after
+ok  	roundfix/internal/cli	4.407s
+
+exit: 0

@@ -1,0 +1,27 @@
+{
+  "promise_rule": {
+    "explicit_success_metrics": 6,
+    "explicit_API_contracts": 6,
+    "strict_check": "exit 0, no findings; coverage reaches Task references"
+  },
+  "vocabulary_skip_followup": {
+    "new_identifiers": [
+      "skills.outdated",
+      "skills.status outdated",
+      "trigger.autonomous-work.roundfix"
+    ],
+    "documented_in": "_techspec.md Interfaces, Preview rule, Fixed texts and API Contracts; all are internal fields/status/trigger, not new domain entities"
+  },
+  "glossary": {
+    "existing_terms_checked": [
+      "Roundfix Skill",
+      "Repository Skill Set",
+      "Doctor Command",
+      "Setup Manifest",
+      "Baseline Profile",
+      "Normative Clause"
+    ],
+    "introduced_changed_or_retired_domain_terms": [],
+    "decision": "No glossary edit required; bundle-derived readiness, version/content identity and dispatch refine existing Repository Skill Set/Roundfix Skill behaviors, recorded in ADR-0189."
+  }
+}

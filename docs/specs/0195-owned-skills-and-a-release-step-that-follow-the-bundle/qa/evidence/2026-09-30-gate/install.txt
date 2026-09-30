@@ -1,0 +1,5 @@
+command: ./bin/roundfix skills install --target project
+Installed Roundfix skill for project: /private/tmp/roundfix-0195-qa-d6q3qy5g/repo/.agents/skills (23 file(s))
+Claude skill symlink skipped: /private/tmp/roundfix-0195-qa-d6q3qy5g/repo/.claude/skills/roundfix already exists
+
+exit: 0
