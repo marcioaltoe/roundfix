@@ -27,6 +27,10 @@ Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
 - **HARD RULE — skill ownership**: repo-owned authorial workflow skills may be
   adapted locally; every other skill is upstream-managed and **MUST NOT** be
   modified here.
+- An owned skill's content changes only together with its version. Raise both
+  version fields, then record the version with
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`,
+  and declare `skills/testdata/owned-skill-versions.json` in the Task.
 - **HARD RULE — sanctioned digest regeneration**: after an expressly authorized
   Roundfix-owned Skill or Baseline module edit, run `make baseline-digests`.
   Every derived pin rewritten by that command is deterministic fallout of the

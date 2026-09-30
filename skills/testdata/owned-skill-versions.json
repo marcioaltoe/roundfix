@@ -1,0 +1,89 @@
+{
+  "schemaVersion": "roundfix/owned-skill-versions/v1",
+  "skills": {
+    "archive-spec": [
+      {
+        "version": "0.0.2",
+        "digest": "c854526f940c3c87492d620479b35d43b19d28591fa19f5bdf27e1589defd11d"
+      }
+    ],
+    "brainstorming": [
+      {
+        "version": "0.0.2",
+        "digest": "111d21efa124ab7e41787c82d4e793a281d1df7fe71df70b5aed8652cffae92b"
+      }
+    ],
+    "business-analyst": [
+      {
+        "version": "0.0.2",
+        "digest": "5f13da73f775f02d9b4aae4267e5c8e9db441ff63d51cdd9edfe4e10ef11e786"
+      }
+    ],
+    "council": [
+      {
+        "version": "0.0.2",
+        "digest": "54a4dad89e0b40704c1613a12a8dfa8d2edfd3372db1f15b45f883d13beb04c1"
+      }
+    ],
+    "evidence-gate": [
+      {
+        "version": "0.0.2",
+        "digest": "7eddbc92d97536787c7dc03b3fcc64f1780024a6b2ce63f69eaa6522dd855a8e"
+      }
+    ],
+    "implement-spec": [
+      {
+        "version": "0.1.0",
+        "digest": "1ccc6352d8e18fe86a37cf06853fe955471efe7b8970dc8df52f958fa3ef4a5c"
+      }
+    ],
+    "implement-task": [
+      {
+        "version": "0.0.2",
+        "digest": "6c27aeead5a40348e395e94a73dcc021791b66688a21a0fcfe59980c39f276f4"
+      }
+    ],
+    "qa-gate": [
+      {
+        "version": "0.0.3",
+        "digest": "ebc971086ce4eb4dc769e30414f10db12db44684c4479520d67a53220486ded5"
+      }
+    ],
+    "roundfix": [
+      {
+        "version": "0.0.3",
+        "digest": "e7b89f8adbbea0a9800618f3100ef4833b3180c42eb48399b6f789de05ca93ee"
+      }
+    ],
+    "setup-context-driven": [
+      {
+        "version": "0.0.2",
+        "digest": "3879a0b0fe351b3e2edc454121b82b6159a83073df43d774827d5ad891375c2a"
+      }
+    ],
+    "write-idea": [
+      {
+        "version": "0.0.2",
+        "digest": "d44bdbca416d00966d04f3383eb848bace94a4f77334065551cb811454bcc1d8"
+      }
+    ],
+    "write-prd": [
+      {
+        "version": "0.0.2",
+        "digest": "f4cfd245ea34f5103be328c023191c66e8b4d56fc13827362642b97d570b6898"
+      }
+    ],
+    "write-tasks": [
+      {
+        "version": "0.0.3",
+        "digest": "b6b0af1efb4a777b7c1e0545ab924b6d427c2a909fc6cc3491d83b981be7f27e"
+      }
+    ],
+    "write-techspec": [
+      {
+        "version": "0.0.2",
+        "digest": "590d4401c995a0e16adb483d27ac284a7b4269ef0f9022dd23bf81ca3aec4485"
+      }
+    ]
+  }
+}
