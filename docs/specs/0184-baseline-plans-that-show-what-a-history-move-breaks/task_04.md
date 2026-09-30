@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0184-baseline-plans-that-show-what-a-history-move-breaks
-status: pending
+status: failed
 type: qa
 complexity: medium
 ---
