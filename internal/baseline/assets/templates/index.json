@@ -190,7 +190,7 @@
     },
     {
       "id": "template.guide.typescript-bun",
-      "version": 1,
+      "version": 2,
       "kind": "guide",
       "path": "guides/typescript-bun.md",
       "tokens": ["artifact.rules"]
@@ -271,7 +271,7 @@
     },
     {
       "id": "template.guide.bun",
-      "version": 1,
+      "version": 2,
       "kind": "guide",
       "path": "guides/bun.md",
       "tokens": ["artifact.rules"]

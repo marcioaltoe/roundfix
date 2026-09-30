@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
-  "catalogDigest": "sha256:8d09b77dcc2910b3133b4f5ff80d7d10455c896423316d433ce782790994004c",
+  "catalogDigest": "sha256:36452f1ac9d333330861fbe5a2d0921a2b468e80c44bb569b44650ac01963b72",
   "modules": [
     "core",
     "context-workflow",
@@ -258,7 +258,7 @@
       "classification": "repository-command",
       "repositoryExecutable": true,
       "declarationPath": "Makefile",
-      "declarationDigest": "sha256:6221211d07ede987f02071507a0fd70ede87eab77fb3ecacdc519c78ddd0ae74"
+      "declarationDigest": "sha256:6328f8dd99cb33385e5ff899a390643be29062ac7f99378af7d19e038e95aeea"
     },
     {
       "id": "verification.incremental",
@@ -267,7 +267,7 @@
       "classification": "repository-command",
       "repositoryExecutable": true,
       "declarationPath": "Makefile",
-      "declarationDigest": "sha256:6221211d07ede987f02071507a0fd70ede87eab77fb3ecacdc519c78ddd0ae74"
+      "declarationDigest": "sha256:6328f8dd99cb33385e5ff899a390643be29062ac7f99378af7d19e038e95aeea"
     }
   ]
 }
