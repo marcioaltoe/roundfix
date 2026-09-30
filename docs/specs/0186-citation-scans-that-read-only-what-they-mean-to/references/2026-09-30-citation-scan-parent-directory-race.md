@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-09-30
-spec: null
+spec: 0186-citation-scans-that-read-only-what-they-mean-to
 reason: null
 ---
 
