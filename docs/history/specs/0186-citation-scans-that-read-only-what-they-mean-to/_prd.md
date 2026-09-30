@@ -1,9 +1,12 @@
 ---
 spec: 0186-citation-scans-that-read-only-what-they-mean-to
-status: active
+status: archived
 created: 2026-09-30
 surfaces: [backend]
+archived: "2026-09-30"
+source_slug: 0186-citation-scans-that-read-only-what-they-mean-to
 ---
+
 
 # Citation scans that read only what they mean to
 
