@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "setup-context-driven/module-v2", "id": "backend", "version": 4, "kind": "application-surface", "title": "Backend application guidance",
+  "schemaVersion": "setup-context-driven/module-v2", "id": "backend", "version": 5, "kind": "application-surface", "title": "Backend application guidance",
   "dependsOn": ["typescript"], "conflictsWith": [], "requiredSkills": [
     "ai-sdk",
     "backend-docs",
@@ -188,7 +188,7 @@
   "rootBlocks": [{"id": "root.backend", "version": 2, "template": "template.root.backend", "rules": [], "references": [
     {"id": "reference.root.backend", "token": "reference.backend", "ownership": "setup", "managedId": "guide.backend"}
   ]}],
-  "supportingGuides": [{"id": "guide.backend", "version": 4, "path": "docs/agents/backend.md", "template": "template.guide.backend", "rules": ["rule.backend.boundary-contracts"], "references": []}],
+  "supportingGuides": [{"id": "guide.backend", "version": 5, "path": "docs/agents/backend.md", "template": "template.guide.backend", "rules": ["rule.backend.boundary-contracts"], "references": []}],
   "rules": [{"id": "rule.backend.boundary-contracts", "version": 3, "coverage": ["coverage.backend", "coverage.security-configuration"], "clauses": [
     {"id": "clause.backend.boundary-contracts", "enforcement": "mandatory", "guidance": "Keep blocking, network, process, database, and daemon boundaries explicit about ownership, cancellation, timeouts, and error reporting. Test the lowest real boundary that proves the repository-authored contract; do not invent authentication, database, or transport policy."},
     {"id": "clause.backend.layered-architecture", "enforcement": "mandatory", "guidance": "Organize backend behavior through domain, application, and infrastructure layers. Dependencies point inward toward domain behavior."},

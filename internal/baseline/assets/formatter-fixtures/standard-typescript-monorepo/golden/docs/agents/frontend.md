@@ -6,6 +6,9 @@ This setup-owned guide supplies portable frontend rules. Project-specific
 visual language and interaction decisions belong to the
 repository-owned `DESIGN.md`; setup does not invent architecture or product policy.
 
+These rules govern the repository's web frontend workspace. A terminal
+interface follows its own guide.
+
 - **mandatory**: Inspect significant local UI changes through the available browser when the target is runnable.
 
 - **mandatory**: Organize frontend feature code by domain system. Each system exposes one public boundary while its internal components, hooks, queries, routes, and state import each other directly.
