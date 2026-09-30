@@ -1,9 +1,12 @@
 ---
 spec: 0195-owned-skills-and-a-release-step-that-follow-the-bundle
-status: active
+status: archived
 created: 2026-09-30
 surfaces: [backend, cli, docs]
+archived: "2026-09-30"
+source_slug: 0195-owned-skills-and-a-release-step-that-follow-the-bundle
 ---
+
 
 # Owned skills and a release step that follow the bundle
 
