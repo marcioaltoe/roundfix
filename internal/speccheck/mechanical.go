@@ -150,7 +150,7 @@ func PreconditionRefusal(precondition GatePreconditionResult) (spec.Precondition
 	for _, finding := range precondition.Findings {
 		// Every distinct cause is kept, because the reason is the only record
 		// of why the gate stopped; a repeat of one adds nothing to read.
-		reason := preconditionRefusalReason(finding)
+		reason := RefusalReason(finding)
 		if reason == "" || recorded[reason] {
 			continue
 		}
@@ -163,12 +163,12 @@ func PreconditionRefusal(precondition GatePreconditionResult) (spec.Precondition
 	}, true
 }
 
-// preconditionRefusalReason renders one refusing finding as its durable code
+// RefusalReason renders one refusing finding as its durable code
 // followed by the sentence that explains it. The code leads because it is the
 // name a later reader and detector share; the sentence beside it may be
 // reworded, the code may not. A finding that names only one of the two is
 // recorded by that one alone rather than by an empty label.
-func preconditionRefusalReason(finding Finding) string {
+func RefusalReason(finding Finding) string {
 	code := collapseRefusalText(finding.Code)
 	summary := collapseRefusalText(finding.Summary)
 	switch {

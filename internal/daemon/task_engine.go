@@ -239,6 +239,7 @@ type TaskPlan struct {
 	RepositoryVerification             string
 	RepositoryVerificationAtSettlement bool
 	settlementChecks                   bool
+	specConsistencyBaseline            map[string]struct{}
 	RunStartedAt                       time.Time
 	BudgetEnabled                      bool
 	MaxRunDuration                     time.Duration
@@ -842,6 +843,21 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 			taskPlan:         taskPlan,
 			taskRef:          taskRef,
 			usesTaskWorktree: usesTaskWorktree,
+		}
+	}
+	if taskPlan.settlementChecks {
+		findings, err := engine.deps.SettlementChecker.RefusingFindings(taskPlan.SpecsRoot, taskPlan.WorkDir, taskPlan.Spec.Slug)
+		if err != nil {
+			reason := fmt.Sprintf("spec consistency baseline: %v", err)
+			if settleErr := engine.settleTask(ctx, taskPlan, task, ordinal, spec.StatusFailed, reason); settleErr != nil {
+				return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: settleErr}
+			}
+			fmt.Fprintf(engine.deps.Progress, "Task %s failed: %s\n", task.ID, reason)
+			return taskWorkerResult{task: task, ordinal: ordinal, status: spec.StatusFailed, reason: reason, taskPlan: taskPlan, taskRef: taskRef, usesTaskWorktree: usesTaskWorktree}
+		}
+		taskPlan.specConsistencyBaseline = make(map[string]struct{}, len(findings))
+		for _, finding := range findings {
+			taskPlan.specConsistencyBaseline[speccheck.RefusalReason(finding)] = struct{}{}
 		}
 	}
 	owner, ownerErr := engine.taskAgentSessionOwner(taskPlan, task, ordinal)
@@ -1669,7 +1685,10 @@ func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.T
 		if len(beforeSnapshots) > 0 {
 			before = beforeSnapshots[0]
 		}
-		request.Checks = []verificationCheck{engine.authorizationSettlementCheck(plan, task, before)}
+		request.Checks = []verificationCheck{
+			engine.specConsistencySettlementCheck(plan),
+			engine.authorizationSettlementCheck(plan, task, before),
+		}
 	}
 	verification, err := engine.runTaskVerificationRequest(ctx, plan, task, request)
 	if err != nil || verification.TemporaryFailure == nil || *retryUsed {
