@@ -132,7 +132,11 @@ that gap.
    the user guide, or when a relative link in the user guide or the README
    does not resolve.
 7. **A changed skill declares a higher version.** Each owned skill whose text
-   changes raises both of its version fields by one patch step.
+   changes raises both of its version fields by one patch step, except the
+   Roundfix skill, which stays at `0.0.2`: three existing `./skills` tests read
+   the owned-skill floor through its version line and fail when it moves
+   (measured on 2026-09-30). Spec 0195 makes the floor follow the bundle and
+   raises it.
 
 ## Non-Goals / Out of Scope
 
@@ -161,9 +165,9 @@ that gap.
 4. Success Metric: the existing skill contract tests pass without an edit, the
    `skills/` mirrors are byte-identical to `.agents/skills/`, and
    `make baseline-digests` reports no change.
-5. Success Metric: every owned skill this Spec changes declares, in both
-   version fields, a version one patch step above the one on the starting
-   main.
+5. Success Metric: every owned skill this Spec changes, except the Roundfix
+   skill, declares in both version fields a version one patch step above the
+   one on the starting main; the Roundfix skill keeps `0.0.2` in both.
 
 ## Recorded limits
 
