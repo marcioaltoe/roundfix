@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-09-30
-spec: null
+spec: 0187-a-queue-that-recovers-without-a-supervisor
 reason: null
 ---
 
