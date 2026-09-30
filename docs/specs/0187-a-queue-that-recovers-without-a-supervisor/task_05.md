@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0187-a-queue-that-recovers-without-a-supervisor
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
