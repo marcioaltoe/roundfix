@@ -420,7 +420,9 @@ Each negative case is its own test.
    repository guide, task_04 (depends on: 3).
 5. The declared replacement of the removed backend entry, and the two plan
    contracts this Spec moves, task_06 (depends on: 4).
-6. Terminal QA, task_05 (depends on: 1, 2, 3, 4, 6).
+6. The fleet sweep fixture that still expected the boundary paragraph twice,
+   task_07 (depends on: 5).
+7. Terminal QA, task_05 (depends on: 1, 2, 3, 4, 6, 7).
 
 The chain is serial because every module edit rewrites the same digest pin,
 catalog snapshots and plan goldens.
