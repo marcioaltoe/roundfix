@@ -54,6 +54,10 @@ func ClassifyBacklogEntry(content []byte) Retirement {
 		return Retirement{Retired: true, Reason: status}
 	}
 	switch status {
+	case "deferred":
+		if backlogDispositionValue(document.Reason) {
+			return Retirement{Retired: true, Reason: status}
+		}
 	case "done", "deprecated", "superseded", "closed", "cancelled":
 		if backlogDispositionValue(document.Spec) || backlogDispositionValue(document.Reason) {
 			return Retirement{Retired: true, Reason: status}

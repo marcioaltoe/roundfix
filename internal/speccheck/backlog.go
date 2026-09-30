@@ -211,7 +211,7 @@ func parseBacklogFrontmatter(content []byte) (backlogFrontmatter, error) {
 
 func terminalBacklogStatus(status string) bool {
 	switch status {
-	case "declined", "done", "deprecated", "superseded", "closed", "cancelled":
+	case "declined", "deferred", "done", "deprecated", "superseded", "closed", "cancelled":
 		return true
 	default:
 		return false

@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0193-baseline-guides-that-describe-the-product-as-it-is
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -78,3 +78,92 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - ADR-0092, ADR-0163, ADR-0186
 
 ## Result
+
+Implemented the Task 04 slice; Task status and declared Verification remain
+Daemon-owned. No commit, push, Pull Request, Task Graph edit or other Task-file
+edit was performed.
+
+### Implementation and acceptance evidence
+
+- ADR lifecycle guidance now scopes accepted-only activity to records carrying
+  lifecycle frontmatter; the Backlog template and terminal list include
+  `deferred`. The four specified clauses retain identifiers and enforcement.
+  Module version rose 19 → 20, docs-layout rule 14 → 15 and docs-layout guide
+  13 → 14, using in-place replacements.
+- The citation regression reads every module through the existing embedded
+  catalog helper, including clause-level and rule-level guidance. Its detector
+  matches `ADR-[0-9]+|Spec [0-9]{4}` and reports the owning identifier and
+  citation. Separate negative tests exercise an ADR clause citation and a Spec
+  rule citation. The source, formatter golden and repository guide pass the
+  scoped-wording regression after sanctioned regeneration.
+- `terminalBacklogStatus` recognizes deferred. A deferred entry left active
+  produces `SC-BACKLOG-UNMOVED`, error severity, its status-line location and
+  the history destination. Retirement requires a non-empty reason; missing,
+  null, blank and literal-null reasons remain live, including when a consuming
+  Spec is named. Existing declined behavior remains unchanged, as required by
+  the existing retirement characterization tests.
+- Sanctioned regeneration rewrote only the matching formatter golden, profile
+  digest, catalog snapshots and four plan goldens. The public managed refresh
+  updated only `docs/agents/docs-layout.md` and `docs/agents/setup-context.json`.
+  Its second invocation exited 0, reported `File changes: 0` and verified
+  idempotence.
+- A SHA-256 comparison confirmed all 29 files under `docs/history/backlog/`
+  byte-identical. A comparison against HEAD confirmed the repository-specific
+  guide differs by exactly the requested archive sentence. The changed-path
+  postflight found 19 paths, all in this Task's Context or this Task file.
+  No exported signature or existing top-level test was changed.
+
+### Focused checks
+
+Go commands used `GOCACHE=/tmp/roundfix-task04-gocache` after the default cache
+was denied by the sandbox.
+
+- Before implementation, `go test -count=1 -run
+  'Test.*(Deferred|RepositoryRecord|SpecCitation|LifecycleClauses)'
+  ./internal/baseline ./internal/speccheck ./internal/spec` reproduced both
+  repository ADR citations, missing scoped wording, absent terminal deferred
+  classification, absent active-entry finding and missing deferred retirement.
+- After regeneration and refresh, `go test -count=1 -run
+  'Test.*(Deferred|RepositoryRecord|SpecCitation|LifecycleClauses|ClassifyBacklogEntry)'
+  ./internal/baseline ./internal/speccheck ./internal/spec` exited 0 for all
+  three packages, including the pre-existing retirement characterizations.
+- `make baseline-digests` exited 0 and reported `ok: true`, `changed: true`;
+  its sanctioned regeneration checks passed.
+- `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills
+  --yes --format text` first hit a sandbox denial opening the Git-private
+  transaction lock. The approved elevated retry exited 0 with verified
+  postimages and two file changes. The second normal invocation exited 0
+  with zero changes and verified idempotence. Both reported existing nested
+  instruction-carrier warnings; skills were skipped as requested.
+- `git diff --check` exited 0. History-byte, repository-guide and path-scope
+  assertions passed.
+- `make verify-incremental` exited 2. Formatting and vet passed; the test tier
+  exposed the out-of-scope stale assertions listed below and two sandbox
+  process-table denials. The two denied tests passed on the approved elevated
+  rerun: `go test -count=1 -run
+  '^TestRunForceStop(OwnerProcessIntegrationProvesExitBeforeStoreCompletion|LegacyRunWithoutOwnerIdentityStillStopsOwner)$'
+  ./internal/cli` exited 0. Subsequent incremental targets were not reached.
+- The Task's declared `## Verification` command was not run.
+
+### Follow-up outside this Task's authorized paths
+
+The incremental check requires these expectation updates in a separately
+bounded follow-up; those files were left unchanged:
+
+- `internal/baseline/plan_test.go`, `TestStandardTypeScriptStructuralClauseRetention`:
+  still requires `rule.backend.boundary-contracts`, the duplicate removed by
+  Task 01.
+- `internal/cli/baseline_update_test.go`,
+  `TestBaselineUpdateFleetSweep/structural-clauses-missing`: still expects two
+  backend boundary paragraphs rather than one after Task 01.
+- `internal/baseline/plan_test.go`, `TestADRLifecycleContract`: still requires
+  the old capitalized accepted-only sentence; Task 04's specified scoped
+  replacement changes that sentence.
+
+No terminal Task verdict or passing incremental/Daemon Verification claim is
+made by this handoff.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260930T153457Z_b5736250c995b99a`
+- Source commit: `24da45da4b4a45ba54573db46221a33e184f214e`
