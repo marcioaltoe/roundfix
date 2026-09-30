@@ -1,6 +1,6 @@
 {
   "schemaVersion": "setup-context-driven/skill-activations-v1",
-  "version": 1,
+  "version": 2,
   "bundles": [
     {
       "id": "bundle.debugging",
@@ -121,7 +121,7 @@
     {
       "id": "trigger.testing",
       "owner": "typescript",
-      "when": "Writing or changing tests.",
+      "when": "Writing or changing TypeScript tests.",
       "bundle": "bundle.testing"
     }
   ]
