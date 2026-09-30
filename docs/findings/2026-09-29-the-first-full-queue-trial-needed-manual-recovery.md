@@ -54,3 +54,12 @@ The Wave 5 queue (Specs 0183, 0184 and 0185) started at 17:45 with five retries 
 
 Lesson: build the owner binary from the `main` that holds the latest fixes before `deliver start`. Most Wave 5 parks came from defects already fixed on `main`.
 
+## Addendum — 2026-09-30 — Routing of the remaining observations
+
+- Section 1, grant widened mid-delivery: `docs/backlog/2026-09-30-a-grant-widened-mid-delivery-needs-a-rebase.md`.
+- Section 2, amendment before carry-forward: `docs/backlog/2026-09-30-retry-refusal-does-not-say-carry-forward-first.md`.
+- Wave 5 addendum:
+  - post-merge cleanup: `docs/backlog/2026-09-30-post-merge-cleanup-needs-the-merge-commit-locally.md`;
+  - owner older than its starting main: `docs/backlog/2026-09-30-a-queue-owner-older-than-its-starting-main-runs-silently.md`.
+- Section 4, retry limit: no change. The parks that exhausted it came from defects Specs 0181, 0182 and 0185 now fix, and `--max-retries` already lets an operator raise the limit per queue. A new default would be tuned to defects that no longer exist.
+
