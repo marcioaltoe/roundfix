@@ -15,10 +15,13 @@ graph:
       needs: [task_02]
     - id: task_04
       file: task_04.md
-      needs: [task_03]
+      needs: [task_03, task_06]
     - id: task_05
       file: task_05.md
-      needs: [task_01, task_02, task_03, task_04]
+      needs: [task_01, task_02, task_03, task_04, task_06]
+    - id: task_06
+      file: task_06.md
+      needs: [task_03]
 ---
 
 # Task Graph
@@ -30,3 +33,4 @@ graph:
 | task_03 | backend | The Roundfix skill is in every setup and has a dispatch trigger |
 | task_04 | docs | Every release checks skills and guides first |
 | task_05 | qa | Run the final QA gate |
+| task_06 | chore | The Roundfix skill declares the version its merged content needs |
