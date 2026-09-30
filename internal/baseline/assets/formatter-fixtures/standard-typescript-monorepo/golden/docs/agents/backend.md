@@ -17,8 +17,6 @@ architecture and service contracts remain authoritative.
 
 - **mandatory**: Keep HTTP handlers thin: validate and translate transport input, invoke one application use case, and translate the result into the repository's HTTP Contract.
 
-- **mandatory**: Keep blocking, network, process, database, and daemon boundaries explicit about ownership, cancellation, timeouts, and error reporting. Test the lowest real boundary that proves the repository-authored contract; do not invent authentication, database, or transport policy.
-
 ## HTTP contract
 
 Application HTTP mode: **Post-only**.
