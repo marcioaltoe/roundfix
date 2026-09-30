@@ -141,7 +141,8 @@ type Worktree struct {
 }
 
 type Verification struct {
-	Concurrency int
+	Concurrency            int
+	RepositoryAtSettlement bool
 }
 
 type Budget struct {
@@ -377,7 +378,8 @@ type runsOverlay struct {
 }
 
 type verificationOverlay struct {
-	Concurrency *verificationConcurrencyValue `yaml:"concurrency"`
+	RepositoryAtSettlement *bool                         `yaml:"repository_at_settlement"`
+	Concurrency            *verificationConcurrencyValue `yaml:"concurrency"`
 }
 
 type verificationConcurrencyValue struct {
@@ -404,6 +406,11 @@ func (overlay *verificationOverlay) UnmarshalYAML(node *yaml.Node) error {
 		key := node.Content[index].Value
 		switch key {
 		case "concurrency":
+		case "repository_at_settlement":
+			value := node.Content[index+1]
+			if value.Kind != yaml.ScalarNode || value.Tag != "!!bool" {
+				return errors.New("verification.repository_at_settlement must be boolean")
+			}
 		default:
 			return fmt.Errorf("verification.%s is not a supported config key", key)
 		}
@@ -655,7 +662,8 @@ func Builtin() Config {
 			BootstrapTimeout: defaultWorktreeBootstrapTimeout,
 		},
 		Verification: Verification{
-			Concurrency: defaultVerificationConcurrency,
+			Concurrency:            defaultVerificationConcurrency,
+			RepositoryAtSettlement: true,
 		},
 		Budget: Budget{
 			Enabled:        true,
@@ -874,6 +882,8 @@ worktree:
 verification:
   # Maximum concurrent Task Verification attempts per spec Run; independent from worktree.concurrency.
   concurrency: %d
+  # Append repository Verification when a non-QA Task of a gated graph settles.
+  repository_at_settlement: %t
 
 store:
   # Terminal Run journals older than this duration are eligible for pruning; 0 keeps everything.
@@ -931,6 +941,7 @@ resolve:
 		config.Worktree.Concurrency,
 		formatConfigDuration(config.Worktree.BootstrapTimeout),
 		config.Verification.Concurrency,
+		config.Verification.RepositoryAtSettlement,
 		formatConfigDuration(config.Store.JournalRetention),
 		config.ReviewSource.Name,
 		config.ReviewSource.IncludeNitpicks,
@@ -1698,6 +1709,9 @@ func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
 		}
 	}
 	if overlay.Verification != nil {
+		if overlay.Verification.RepositoryAtSettlement != nil {
+			config.Verification.RepositoryAtSettlement = *overlay.Verification.RepositoryAtSettlement
+		}
 		if overlay.Verification.Concurrency != nil {
 			config.Verification.Concurrency = overlay.Verification.Concurrency.value
 		}

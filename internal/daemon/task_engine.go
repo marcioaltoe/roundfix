@@ -219,32 +219,34 @@ func (gate *fairVerificationGate) notifyLocked() {
 // TargetBranch is that branch — the Spec's target branch as recorded on
 // the Run — and stays empty for a Run that recorded none.
 type TaskPlan struct {
-	RunID                   string
-	Session                 agent.SessionRef
-	WorkDir                 string
-	RunWorktree             runworktree.Ref
-	TargetBranch            string
-	HeadSHA                 string
-	Authorization           spec.AuthorizationResolution
-	SpecsRoot               string
-	ArtifactDir             string
-	AgentLogs               bool
-	Spec                    spec.Spec
-	Tasks                   []spec.Task
-	Runtime                 agent.RuntimeSpec
-	AgentSelections         AgentSelectionProfiles
-	RuntimeFactory          AgentRuntimeFactory
-	Concurrency             int
-	VerificationConcurrency int
-	RepositoryVerification  string
-	RunStartedAt            time.Time
-	BudgetEnabled           bool
-	MaxRunDuration          time.Duration
-	verificationGate        verificationGate
-	runBudget               *taskCycleBudget
-	CopyList                []string
-	Bootstrap               runworktree.BootstrapSpec
-	BootstrapOutput         io.Writer
+	RunID                              string
+	Session                            agent.SessionRef
+	WorkDir                            string
+	RunWorktree                        runworktree.Ref
+	TargetBranch                       string
+	HeadSHA                            string
+	Authorization                      spec.AuthorizationResolution
+	SpecsRoot                          string
+	ArtifactDir                        string
+	AgentLogs                          bool
+	Spec                               spec.Spec
+	Tasks                              []spec.Task
+	Runtime                            agent.RuntimeSpec
+	AgentSelections                    AgentSelectionProfiles
+	RuntimeFactory                     AgentRuntimeFactory
+	Concurrency                        int
+	VerificationConcurrency            int
+	RepositoryVerification             string
+	RepositoryVerificationAtSettlement bool
+	settlementChecks                   bool
+	RunStartedAt                       time.Time
+	BudgetEnabled                      bool
+	MaxRunDuration                     time.Duration
+	verificationGate                   verificationGate
+	runBudget                          *taskCycleBudget
+	CopyList                           []string
+	Bootstrap                          runworktree.BootstrapSpec
+	BootstrapOutput                    io.Writer
 }
 
 // VerificationProbe records how one Task's Verification commands behave
@@ -475,6 +477,7 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (result Task
 	if err != nil {
 		return TaskCycleResult{}, err
 	}
+	taskPlan.settlementChecks = qaTask != nil
 	// A serial plan has no Wave, so it has no collision to refuse. A Task
 	// Worktree is based on the Run Branch tip as it stands when the Task is
 	// created, so at Task Capacity 1 the previous Task has already integrated
@@ -816,7 +819,7 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 		}
 	}
 	requiredRepositoryVerification := ""
-	if enteredOnRedRepository {
+	if enteredOnRedRepository || (plan.settlementChecks && plan.RepositoryVerificationAtSettlement) {
 		requiredRepositoryVerification = strings.TrimSpace(plan.RepositoryVerification)
 	}
 	probe, probeErr := engine.verifyTaskPreWork(ctx, taskPlan, task, ordinal)
