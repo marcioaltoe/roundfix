@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
-  "catalogDigest": "sha256:93ca4f3ae893222236b1b1375d1cd3d3a3f173feb17c6fbe536d574c728b01fd",
+  "catalogDigest": "sha256:eaf1ec5b7a85e6e7f9e1159b595e1f7026d1f95af5a0c5f6128fe0d71a92c6c4",
   "modules": [
     "core",
     "context-workflow",
@@ -219,7 +219,7 @@
       "module": "autonomous-work",
       "template": "template.guide.autonomous-work",
       "version": "0.0.1",
-      "digest": "e03bdb0edcd3f79a280660302681e9fb2baa5c002b49e1350a1c660de97cb984"
+      "digest": "fc0bf725a46c92f8c901d256cf813843b398c340096dba55fcd54894fe128b3a"
     },
     {
       "id": "root.secondbrain",
