@@ -2,6 +2,63 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.21.0] - 2026-09-30
+
+### Gates that refuse only what someone can act on
+
+When a Task commit changes a path its Task did not declare, the Daemon records
+it in a Daemon-owned `## Recorded paths` section of the Task file and in the
+`daemon.commit` event. The QA scope audit then discloses the path instead of
+refusing it. A Governed Path is never recorded. A Task commit stages exactly
+the files it records, so an ignored file inside a new directory is never
+force-added. The pre-PR Pull Request row, recorded as
+`blocked (environment: no open Pull Request)`, no longer decides whether a
+`partial` qualifies. `SC-ADR-RELATED` opens a gap only for ADRs that predate
+the Spec's PRD, and falls back to the full check when history cannot prove
+it. Citation checks read only what a Spec's authors wrote: an Agent's
+`## Result`, Daemon-owned sections and QA reports no longer create ADR
+obligations.
+
+### Delivery that reviews and retries from where the item stands
+
+The pre-PR review diffs the candidate from its merge base with the selected
+base branch. Commits that reached main after the branch was cut no longer read
+as reverted, and the requested tip is kept as `baseTipCommit`. Task
+Carry-Forward treats a Task already completed on its target as nothing to
+carry, in `reconcile --carry-forward`, the implement preflight and delivery
+retry alike. `deliver retry` carries forward from every Run of its item,
+newest first, and names each Run it carried from.
+
+### Run storage that says what it holds
+
+`gc` and `gc --dry-run` count only Runs that still hold journal rows or
+artifacts, so a second `gc` reports nothing left to reclaim. `roundfix doctor`
+adds a `storage` check that reports reclaimable Runs and free Run Database
+pages from cheap reads, never fails and never writes. `gc sanitize` recognizes
+the pre-key default Artifact Root of a bare-repository layout. `runs list` no
+longer warns about Runs whose checkout was deleted, while a Git failure is
+still reported.
+
+### A pre-PR review that keeps its verdict and its own record
+
+Agent messages keep their boundaries, and the pre-PR review classifies the
+final message, so a verdict that follows the Agent's progress text is no
+longer reported as unclassifiable. Sealed prompts return their final message.
+Each checkout keeps its own review record under
+`pre-pr-review/<checkout digest>/` in the Artifact Directory, so a review run
+from another checkout no longer overwrites it.
+
+### Baseline plans that show what a history move breaks
+
+When `baseline update` or `baseline apply` plans History Relocations, the plan
+now reports the citations each relocation would break: repository paths and
+Markdown links in tracked files that resolve today and would not resolve after
+the plan. Each citing file becomes a `baseline.history.citation` warning
+covered by the Plan Digest. A move whose destination is already occupied, and
+that apply would refuse, is left out. The scan reads only tracked files and
+never follows symbolic links, reparse points or FIFOs. Approval, the plan
+schema and what apply mutates are unchanged.
+
 ## [0.20.0] - 2026-09-29
 
 ### Runs that fit their budget and park honestly
