@@ -144,8 +144,8 @@ guidance is, in full:
 
 > Follow one order per Spec: implement the graph including its authored gate,
 > apply the configured pre-PR review policy, archive and commit the candidate,
-> run the repository gate, open the Pull Request, verify required checks for
-> the current head, and merge. The Delivery Queue (`roundfix deliver`) runs
+> run the repository gate, push the candidate, open the Pull Request, verify
+> required checks for the current head, and merge. The Delivery Queue (`roundfix deliver`) runs
 > this order for each queued Spec, and a Supervisor driving the steps by hand
 > follows the same order. For `codex`, `claude`, or `coderabbit`, require the
 > selected provider's current-candidate review. For explicit `none`, skip
@@ -356,9 +356,12 @@ Each negative case is its own test.
    `internal/delivery/loop_clause_order_test.go`:
    - `TestTheLoopClauseOrderMatchesTheDeliveryQueue` reads the order sentence
      from the module file, maps its phrases to the Delivery Queue's actions
-     (`run`, `review`, `archive`, `gate`, `pull-request`, `checks`, `merge`)
-     and compares them with the actions the engine records for a reviewed
-     item in the package's existing fake workflow.
+     (`run`, `review`, `archive`, `gate`, `push`, `pull-request`, `checks`,
+     `merge`) and compares them with the actions the engine records for a
+     reviewed item in the package's existing fake workflow. Every action the
+     engine records must have a phrase in the sentence: an unmapped engine
+     action fails the test, so a declared loop cannot be shorter than the
+     real one.
    - `TestALoopClauseThatArchivesBeforeReviewIsRefused` gives the comparison
      the old order and expects a mismatch.
 3. **Authorization and evidence.** New
