@@ -1,0 +1,396 @@
+{
+  "base": "b7c735c93c34e521b372288e664de92be94cb6a6",
+  "head": "78acc7ea3a9c4123bbd74a95820b3bdf0b4163ea",
+  "authorization_audit": "mechanical audit already granted all three Task commits; not rerun",
+  "task_paths": [
+    {
+      "task": "task_01",
+      "commit": "c23ceb78a81cd8ae9acb05af57c41e0713f4fb46",
+      "command": "git diff-tree --no-commit-id --name-only -r c23ceb78a81cd8ae9acb05af57c41e0713f4fb46",
+      "changed_paths": [
+        "docs/agents/setup-context.json",
+        "docs/specs/0199-stack-rules-that-say-what-they-mean/task_01.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/typescript-bun.md",
+        "internal/baseline/assets/modules/bun.json",
+        "internal/baseline/assets/modules/typescript.json",
+        "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+        "internal/baseline/assets/templates/guides/bun.md",
+        "internal/baseline/assets/templates/guides/typescript-bun.md",
+        "internal/baseline/assets/templates/index.json",
+        "internal/baseline/stack_rule_wording_test.go",
+        "internal/baseline/testdata/catalog.diagnostics.golden.json",
+        "internal/baseline/testdata/catalog.digest",
+        "internal/baseline/testdata/catalog.normalized.json",
+        "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+        "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+        "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+        "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json"
+      ],
+      "declared_paths": [
+        "docs/adr/0190-a-stack-rule-names-the-language-or-workspace-it-governs.md",
+        "docs/agents/setup-context.json",
+        "docs/specs/0199-stack-rules-that-say-what-they-mean/task_01.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/typescript-bun.md",
+        "internal/baseline/assets/modules/bun.json",
+        "internal/baseline/assets/modules/typescript.json",
+        "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+        "internal/baseline/assets/templates/guides/bun.md",
+        "internal/baseline/assets/templates/guides/typescript-bun.md",
+        "internal/baseline/assets/templates/index.json",
+        "internal/baseline/stack_rule_wording_test.go",
+        "internal/baseline/testdata/catalog.diagnostics.golden.json",
+        "internal/baseline/testdata/catalog.digest",
+        "internal/baseline/testdata/catalog.normalized.json",
+        "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+        "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+        "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+        "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json"
+      ],
+      "recorded_paths_present": false,
+      "undeclared": [],
+      "governed_paths": [
+        "docs/agents/setup-context.json",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/typescript-bun.md",
+        "internal/baseline/assets/modules/bun.json",
+        "internal/baseline/assets/modules/typescript.json",
+        "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+        "internal/baseline/assets/templates/guides/bun.md",
+        "internal/baseline/assets/templates/guides/typescript-bun.md",
+        "internal/baseline/assets/templates/index.json"
+      ],
+      "unbounded_governed_paths": []
+    },
+    {
+      "task": "task_02",
+      "commit": "82a8c0877eaaeaa4a0bb7c3b71d7acab41508db9",
+      "command": "git diff-tree --no-commit-id --name-only -r 82a8c0877eaaeaa4a0bb7c3b71d7acab41508db9",
+      "changed_paths": [
+        "docs/agents/agent-instructions.md",
+        "docs/agents/setup-context.json",
+        "docs/agents/skill-dispatch.md",
+        "docs/specs/0199-stack-rules-that-say-what-they-mean/task_02.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/skill-dispatch.md",
+        "internal/baseline/assets/modules/core.json",
+        "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+        "internal/baseline/assets/skill-activations.json",
+        "internal/baseline/stack_core_wording_test.go",
+        "internal/baseline/testdata/catalog.diagnostics.golden.json",
+        "internal/baseline/testdata/catalog.digest",
+        "internal/baseline/testdata/catalog.normalized.json",
+        "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+        "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+        "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+        "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json"
+      ],
+      "declared_paths": [
+        "docs/adr/0190-a-stack-rule-names-the-language-or-workspace-it-governs.md",
+        "docs/agents/agent-instructions.md",
+        "docs/agents/setup-context.json",
+        "docs/agents/skill-dispatch.md",
+        "docs/specs/0199-stack-rules-that-say-what-they-mean/task_02.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/skill-dispatch.md",
+        "internal/baseline/assets/modules/core.json",
+        "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+        "internal/baseline/assets/skill-activations.json",
+        "internal/baseline/stack_core_wording_test.go",
+        "internal/baseline/testdata/catalog.diagnostics.golden.json",
+        "internal/baseline/testdata/catalog.digest",
+        "internal/baseline/testdata/catalog.normalized.json",
+        "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+        "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+        "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+        "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json"
+      ],
+      "recorded_paths_present": false,
+      "undeclared": [],
+      "governed_paths": [
+        "docs/agents/agent-instructions.md",
+        "docs/agents/setup-context.json",
+        "docs/agents/skill-dispatch.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/skill-dispatch.md",
+        "internal/baseline/assets/modules/core.json",
+        "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+        "internal/baseline/assets/skill-activations.json"
+      ],
+      "unbounded_governed_paths": []
+    },
+    {
+      "task": "task_03",
+      "commit": "78acc7ea3a9c4123bbd74a95820b3bdf0b4163ea",
+      "command": "git diff-tree --no-commit-id --name-only -r 78acc7ea3a9c4123bbd74a95820b3bdf0b4163ea",
+      "changed_paths": [
+        "docs/agents/setup-context.json",
+        "docs/specs/0199-stack-rules-that-say-what-they-mean/task_03.md",
+        "docs/user-guide/context-driven-development.md",
+        "internal/baseline/assets/contract-v1.json",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/frontend.md",
+        "internal/baseline/assets/modules/backend.json",
+        "internal/baseline/assets/modules/frontend.json",
+        "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+        "internal/baseline/assets/templates/guides/backend.md",
+        "internal/baseline/assets/templates/guides/frontend.md",
+        "internal/baseline/assets/templates/index.json",
+        "internal/baseline/stack_scope_and_http_default_test.go",
+        "internal/baseline/testdata/catalog.diagnostics.golden.json",
+        "internal/baseline/testdata/catalog.digest",
+        "internal/baseline/testdata/catalog.normalized.json",
+        "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+        "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+        "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+        "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json",
+        "internal/cli/baseline_http_default_statement_test.go"
+      ],
+      "declared_paths": [
+        "docs/adr/0063-repositories-own-their-http-contract.md",
+        "docs/adr/0190-a-stack-rule-names-the-language-or-workspace-it-governs.md",
+        "docs/agents/setup-context.json",
+        "docs/specs/0199-stack-rules-that-say-what-they-mean/task_03.md",
+        "docs/user-guide/context-driven-development.md",
+        "internal/baseline/assets/contract-v1.json",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/frontend.md",
+        "internal/baseline/assets/modules/backend.json",
+        "internal/baseline/assets/modules/frontend.json",
+        "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+        "internal/baseline/assets/templates/guides/backend.md",
+        "internal/baseline/assets/templates/guides/frontend.md",
+        "internal/baseline/assets/templates/index.json",
+        "internal/baseline/stack_scope_and_http_default_test.go",
+        "internal/baseline/testdata/catalog.diagnostics.golden.json",
+        "internal/baseline/testdata/catalog.digest",
+        "internal/baseline/testdata/catalog.normalized.json",
+        "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+        "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+        "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+        "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json",
+        "internal/cli/baseline_http_default_statement_test.go"
+      ],
+      "recorded_paths_present": false,
+      "undeclared": [],
+      "governed_paths": [
+        "docs/agents/setup-context.json",
+        "internal/baseline/assets/contract-v1.json",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/frontend.md",
+        "internal/baseline/assets/modules/backend.json",
+        "internal/baseline/assets/modules/frontend.json",
+        "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+        "internal/baseline/assets/templates/guides/backend.md",
+        "internal/baseline/assets/templates/guides/frontend.md",
+        "internal/baseline/assets/templates/index.json"
+      ],
+      "unbounded_governed_paths": []
+    }
+  ],
+  "worktree_delta": "",
+  "regeneration": "make baseline-digests in disposable HEAD copy: exit 0, changed:false; exact generated content stable. Managed Refresh: two public CLI reads, zero changes and unchanged hashes. Outputs correspond to Makefile target and nearest _ownership.yml records (listed per output); own Task Results name the producing commands.",
+  "sanctioned_outputs": [
+    {
+      "task": "task_01",
+      "path": "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/typescript-bun.md",
+      "ownership_record": "internal/baseline/assets/formatter-fixtures/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_01",
+      "path": "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+      "ownership_record": "internal/baseline/assets/profiles/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_01",
+      "path": "internal/baseline/testdata/catalog.diagnostics.golden.json",
+      "ownership_record": "internal/baseline/testdata/catalog.diagnostics.golden.json_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_01",
+      "path": "internal/baseline/testdata/catalog.digest",
+      "ownership_record": "internal/baseline/testdata/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_01",
+      "path": "internal/baseline/testdata/catalog.normalized.json",
+      "ownership_record": "internal/baseline/testdata/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_01",
+      "path": "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+      "ownership_record": "internal/baseline/testdata/plan-characterization/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_01",
+      "path": "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+      "ownership_record": "internal/baseline/testdata/plan-characterization/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_01",
+      "path": "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+      "ownership_record": "internal/baseline/testdata/plan-characterization/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_01",
+      "path": "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json",
+      "ownership_record": "internal/baseline/testdata/plan-characterization/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_02",
+      "path": "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md",
+      "ownership_record": "internal/baseline/assets/formatter-fixtures/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_02",
+      "path": "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/skill-dispatch.md",
+      "ownership_record": "internal/baseline/assets/formatter-fixtures/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_02",
+      "path": "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+      "ownership_record": "internal/baseline/assets/profiles/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_02",
+      "path": "internal/baseline/testdata/catalog.diagnostics.golden.json",
+      "ownership_record": "internal/baseline/testdata/catalog.diagnostics.golden.json_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_02",
+      "path": "internal/baseline/testdata/catalog.digest",
+      "ownership_record": "internal/baseline/testdata/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_02",
+      "path": "internal/baseline/testdata/catalog.normalized.json",
+      "ownership_record": "internal/baseline/testdata/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_02",
+      "path": "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+      "ownership_record": "internal/baseline/testdata/plan-characterization/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_02",
+      "path": "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+      "ownership_record": "internal/baseline/testdata/plan-characterization/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_02",
+      "path": "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+      "ownership_record": "internal/baseline/testdata/plan-characterization/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_02",
+      "path": "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json",
+      "ownership_record": "internal/baseline/testdata/plan-characterization/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_03",
+      "path": "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md",
+      "ownership_record": "internal/baseline/assets/formatter-fixtures/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_03",
+      "path": "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/frontend.md",
+      "ownership_record": "internal/baseline/assets/formatter-fixtures/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_03",
+      "path": "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+      "ownership_record": "internal/baseline/assets/profiles/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_03",
+      "path": "internal/baseline/testdata/catalog.diagnostics.golden.json",
+      "ownership_record": "internal/baseline/testdata/catalog.diagnostics.golden.json_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_03",
+      "path": "internal/baseline/testdata/catalog.digest",
+      "ownership_record": "internal/baseline/testdata/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_03",
+      "path": "internal/baseline/testdata/catalog.normalized.json",
+      "ownership_record": "internal/baseline/testdata/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_03",
+      "path": "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+      "ownership_record": "internal/baseline/testdata/plan-characterization/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_03",
+      "path": "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+      "ownership_record": "internal/baseline/testdata/plan-characterization/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_03",
+      "path": "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+      "ownership_record": "internal/baseline/testdata/plan-characterization/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    },
+    {
+      "task": "task_03",
+      "path": "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json",
+      "ownership_record": "internal/baseline/testdata/plan-characterization/_ownership.yml",
+      "owner": "sanctioned",
+      "command": "make baseline-digests"
+    }
+  ]
+}

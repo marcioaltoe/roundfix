@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0199-stack-rules-that-say-what-they-mean
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
