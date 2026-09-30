@@ -1147,7 +1147,7 @@ func readSpecCitations(repoRoot, specDir string) (map[string]Location, error) {
 			return err
 		}
 		displayPath := artifactDisplayPath(repoRoot, path)
-		taskFile := strings.HasPrefix(entry.Name(), "task_")
+		taskFile := projectedTaskFile(specDir, path)
 		skipTaskSection := false
 		for index, line := range strings.Split(string(content), "\n") {
 			if taskFile && strings.HasPrefix(line, "## ") {
@@ -1168,6 +1168,14 @@ func readSpecCitations(repoRoot, specDir string) (map[string]Location, error) {
 		return nil, fmt.Errorf("read Spec citations in %q: %w", specDir, err)
 	}
 	return citations, nil
+}
+
+func projectedTaskFile(specDir, path string) bool {
+	if filepath.Dir(filepath.Clean(path)) != filepath.Clean(specDir) {
+		return false
+	}
+	matched, _ := filepath.Match("task_*.md", filepath.Base(path))
+	return matched
 }
 
 func nonAuthorialTaskSection(heading string) bool {
