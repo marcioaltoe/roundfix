@@ -1,7 +1,8 @@
 ---
-status: pending
+status: done
 created_at: 2026-09-30
 updated_at: 2026-09-30
+absorbed_by: 0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own
 ---
 
 # Delivery: the v0.22.0 queue needed twelve manual interventions (2026-09-30)
@@ -42,3 +43,12 @@ The v0.22.0 queue (Specs 0192, 0193, 0195 and 0199) started at 11:41 on the v0.2
 - Symptom / evidence: 0199's pre-PR review raised two findings. F1 said the QA Report audits the implementation head rather than the commit that records it. F2 said a Task was marked `completed` while its Result says the Daemon owns status. Both describe the product's designed order, and both were dismissed with evidence.
 - Root cause: the reviewer is not told that the QA Report commit and the Daemon's settlement writes are expected.
 - Action / suggestion: give the review prompt the delivery's own commit conventions: the QA Report commit, Daemon settlement, archive.
+
+## Addendum (2026-09-30): routing
+
+- Sections 1, 2 and 4 (prerequisites, conflicts on derived paths, the environment-only partial and one re-run of an unrelated failed check) → Spec `0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own`.
+- Section 5 (false-positive review findings) → Spec `0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds`.
+- The full QA re-run after each correction, observed across sections 1 and 3 → Spec `0202-a-qa-gate-that-reruns-only-stale-rows`.
+- The two time-bound tests and the leaked detached child → Backlog Entry `docs/backlog/2026-09-30-time-bound-tests-and-a-leaked-detached-child.md`.
+- The authoring rule of section 3 (name the retention disposition of a removed Baseline clause) is now an operating rule of the authoring briefing; no Spec is needed.
+
