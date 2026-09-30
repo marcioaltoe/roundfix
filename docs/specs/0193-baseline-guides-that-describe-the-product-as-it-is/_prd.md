@@ -72,7 +72,7 @@ clause say what the shipped product does and adds the checks that keep it so.
   `docs/agents/autonomous-work.md`, `docs/agents/agent-instructions.md`,
   `docs/agents/spec-routing.md`, `docs/agents/docs-layout.md`,
   `docs/agents/setup-context.json`, `docs/agents/specific-repository.md`,
-  `internal/speccheck/backlog.go`. Sanctioned regeneration: `make baseline-digests`. Source:
+  `internal/speccheck/backlog.go`, `internal/baseline/plan_test.go` (added for task_06). Sanctioned regeneration: `make baseline-digests`. Source:
   `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`.
 
 ## Goals

@@ -57,7 +57,7 @@ That costs a longer document and buys guidance whose wording was reviewed once.
   `docs/agents/autonomous-work.md`, `docs/agents/agent-instructions.md`,
   `docs/agents/spec-routing.md`, `docs/agents/docs-layout.md`,
   `docs/agents/setup-context.json`, `docs/agents/specific-repository.md`,
-  `internal/speccheck/backlog.go`. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`.
+  `internal/speccheck/backlog.go`, `internal/baseline/plan_test.go` (added for task_06). Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`.
 
 ## System Architecture
 
@@ -133,6 +133,23 @@ byte-identical, and every clause keeps its `enforcement`.
 **`backend.json` — `rule.backend.boundary-contracts`.** Remove the last entry
 of the rule's `clauses`, whose `id` is `rule.backend.boundary-contracts`. The
 entry `clause.backend.boundary-contracts` keeps the same guidance.
+
+**Clause replacement for adopters (task_06).** An adopter whose Setup
+Manifest declares the Standard TypeScript Source Baseline is classified clause
+by clause against that Source Baseline, which records both
+`rule.backend.boundary-contracts` and `clause.backend.boundary-contracts`.
+The first delivery Run showed that removing one entry makes the classifier
+report it `unaccounted`, and a plan with an unaccounted clause is refused, so
+every such adopter's next Baseline update would stop. The surviving clause
+therefore declares `"replaces": ["rule.backend.boundary-contracts"]`. The
+classifier reports a Source Baseline clause that is absent from the selected
+catalog as `replaced`, with the replacing clause as its target, when exactly
+one selected clause lists it in `replaces` and carries the same enforcement.
+Any other absence stays `unaccounted`. Catalog validation refuses a
+`replaces` value that is not a list of unique non-empty clause IDs, an ID that
+is still a clause in the catalog, and an ID that two clauses claim. The
+declaration is never rendered, so no guide changes. The `replaced`
+disposition already exists in the plan contract; only its producer is new.
 
 **`autonomous-work.json` — `clause.autonomous.hook-strictness`.** Replace
 "ADR-0014 makes the Daemon the verification authority, and it commits only
@@ -401,7 +418,9 @@ Each negative case is its own test.
    (depends on: 2).
 4. Lifecycle wording, the `deferred` status, the citation check and the
    repository guide, task_04 (depends on: 3).
-5. Terminal QA, task_05 (depends on: 1, 2, 3, 4).
+5. The declared replacement of the removed backend entry, and the two plan
+   contracts this Spec moves, task_06 (depends on: 4).
+6. Terminal QA, task_05 (depends on: 1, 2, 3, 4, 6).
 
 The chain is serial because every module edit rewrites the same digest pin,
 catalog snapshots and plan goldens.
