@@ -158,7 +158,7 @@ first.
    a named skip, and the summary says how many judgments were not asked. Only
    a usage error, such as an unknown Spec, exits `2`.
 7. **Only Spec artifacts, only English.** A request's state is built only
-   from the Spec's own PRD and TechSpec and this repository's accepted ADRs,
+   from the Spec's own PRD and TechSpec and this repository's accepted ADRs (status `accepted`, or a legacy ADR without lifecycle front matter that the repository treats as active; never `proposed`, `rejected`, `deprecated` or `superseded`),
    read as regular files inside their directories. An artifact that is not
    English is reported as skipped and sent nowhere.
 8. **The key stays in the environment.** The key is read from

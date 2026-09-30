@@ -202,8 +202,12 @@ reason. `Run` returns an error only when the Spec's PRD cannot be read.
   link) of at most 1 MiB.
 - `readADR` accepts only a regular file directly in `<repo>/docs/adr` whose
   name starts with the four-digit number and a hyphen and ends in `.md`, of at
-  most 1 MiB. It is judged only when its front matter status is `accepted` or
-  its front matter carries no status.
+  most 1 MiB. It is judged only when it is an accepted ADR in this
+  repository's sense (`docs/agents/docs-layout.md`): its front matter status
+  is `accepted`, or it is a legacy ADR with no lifecycle front matter whose
+  body does not mark it inactive. An ADR whose status is `proposed`,
+  `rejected`, `deprecated` or `superseded` is never read, so no draft or
+  retired decision is ever sent.
 - A refused PRD or TechSpec is reported as a skipped artifact with reason
   `not a regular file in the Spec directory`; a refused ADR skips the claim.
 - The request code accepts only a pending judgment, and a pending judgment's

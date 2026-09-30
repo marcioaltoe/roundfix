@@ -368,7 +368,7 @@ then run the sync against the pinned upstream commit:
 ```bash
 sha="$(jq -r .source.ref internal/baseline/assets/setups/go-cli.json)"
 src="$HOME/dev/skills"
-git -C "$src" cat-file -e "$sha^{commit}" 2>/dev/null || src=https://github.com/marcioaltoe/skills.git
+git -C "$src" cat-file -e "$sha^{commit}" || { echo "stop: $src lacks $sha; fetch it into the local clone first" >&2; exit 1; }
 tmp="$(mktemp -d)"
 git clone --quiet --no-local "$src" "$tmp/skills"
 git -C "$tmp/skills" checkout --quiet --detach "$sha"
@@ -376,7 +376,10 @@ git -C "$tmp/skills" remote set-url origin https://github.com/marcioaltoe/skills
 go run -buildvcs=false ./cmd/roundfix baseline assets sync --source-dir "$tmp/skills/setups" --format text
 ```
 
-The run must change only the composed file. Then `make baseline-digests` and
+The procedure never reaches a network remote: when the local clone lacks the
+pinned commit, the Task stops and reports it instead of cloning from GitHub.
+The `remote set-url` only records provenance and makes no request. The run
+must change only the composed file. Then `make baseline-digests` and
 the Managed Refresh, twice.
 
 ### API Contracts
