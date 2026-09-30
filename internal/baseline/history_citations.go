@@ -25,6 +25,11 @@ const (
 	relocationCitationBinaryProbe   = 8000
 )
 
+var (
+	citationBeforeOpen func(relative string)
+	citationOpenResult func(relative string, err error)
+)
+
 type relocationCitation struct {
 	line        int
 	text        string
@@ -69,6 +74,11 @@ func relocationCitationFindings(
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
+	repositoryRoot, err := os.OpenRoot(root)
+	if err != nil {
+		return nil, fmt.Errorf("open repository root for relocation citations: %w", err)
+	}
+	defer repositoryRoot.Close()
 
 	tracked, err := listTrackedPaths(ctx, root)
 	if err != nil {
@@ -83,7 +93,7 @@ func relocationCitationFindings(
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		content, result := readTrackedCitationFile(root, relative, directorySafety)
+		content, result := readTrackedCitationFile(repositoryRoot, root, relative, directorySafety)
 		switch result {
 		case trackedReadSkipped:
 			continue
@@ -238,6 +248,7 @@ func markExistingUnitDirectories(
 }
 
 func readTrackedCitationFile(
+	repositoryRoot *os.Root,
 	root string,
 	relative string,
 	directorySafety map[string]bool,
@@ -250,8 +261,13 @@ func readTrackedCitationFile(
 		return nil, trackedReadUnscanned
 	}
 
-	absolute := filepath.Join(root, filepath.FromSlash(relative))
-	file, err := openCitationFileNoFollow(absolute)
+	if citationBeforeOpen != nil {
+		citationBeforeOpen(relative)
+	}
+	file, err := openCitationFileNoFollow(repositoryRoot, relative)
+	if citationOpenResult != nil {
+		citationOpenResult(relative, err)
+	}
 	if err != nil {
 		current, currentSafe := lstatTrackedCitationPath(root, relative, make(map[string]bool))
 		if !currentSafe || current == nil || !current.Mode().IsRegular() || !os.SameFile(info, current) {

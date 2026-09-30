@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0186-citation-scans-that-read-only-what-they-mean-to
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -58,3 +58,30 @@ The Relocation Citation scan in `internal/baseline/history_citations.go` checks 
 - ADR-0177; ADR-0173
 
 ## Result
+
+Implemented one repository-root handle per Relocation Citation scan after the
+no-moves fast path. Each tracked file now opens from its repository-relative
+path through that handle on Unix and Windows; the existing pre-open and
+post-open checks, `os.SameFile` comparisons, scan limits, binary handling and
+Unix non-blocking flag remain in place. Added the two specified package test
+hooks and root-containment tests over real temporary Git repositories.
+
+Focused-check evidence:
+
+- The new race test initially failed to build because the required hooks did
+  not exist, establishing the pre-implementation signal.
+- `rtk env GOCACHE=/private/tmp/roundfix-task02-gocache go test -count=1 -run '^(TestRelocationCitationsNeverReadThroughASwappedDirectory|TestRelocationCitationsReadThroughTheRepositoryRoot)$' ./internal/baseline`
+  passed. The race case observed `path escapes from parent` from the rooted
+  open and no finding from the outside file; the unraced case reported the
+  tracked in-repository citation.
+- `rtk env GOCACHE=/private/tmp/roundfix-task02-gocache go test -count=1 -run '^(TestRelocationCitationsNeverFollowSymbolicLinks|TestRelocationCitationsNeverBlockOnAFIFO|TestRelocationCitationsReportEachCitationForm|TestRelocationCitationsDoNothingWithoutMoves)$' ./internal/baseline`
+  passed, covering unchanged symbolic-link, FIFO, citation-form and no-moves
+  behavior.
+- A Windows package-test compile probe was not usable because the pre-existing
+  Unix-only `syscall.Mkfifo` test does not compile for Windows, as the TechSpec
+  records. The focused non-test check
+  `rtk env GOCACHE=/private/tmp/roundfix-task02-gocache GOOS=windows GOARCH=amd64 go build -buildvcs=false -o /private/tmp/roundfix-task02-windows.exe ./cmd/roundfix`
+  passed.
+
+The Task's declared Verification command was not run; the Daemon owns that
+gate and the terminal Task status.

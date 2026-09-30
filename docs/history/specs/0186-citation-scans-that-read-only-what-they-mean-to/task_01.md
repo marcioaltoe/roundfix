@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0186-citation-scans-that-read-only-what-they-mean-to
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -48,3 +48,39 @@ complexity: low
 - ADR-0176; ADR-0093
 
 ## Result
+
+Implemented `projectedTaskFile(specDir, path string) bool` and made
+`readSpecCitations` use it. The authored projection now applies only when the
+Markdown file's direct parent is the Spec directory and its basename matches
+`task_*.md`; the existing `qa/` skip and finding text remain unchanged.
+
+Added the three scope regressions in
+`internal/speccheck/citation_projection_scope_test.go` over plain temporary
+repository directories.
+
+Focused checks:
+
+- Before the implementation change,
+  `rtk env GOCACHE=/tmp/roundfix-0186-task01-gocache go test -count=1 -run '^(TestAReferenceNamedLikeATaskIsReadInFull|TestANestedFileNamedLikeATaskIsReadInFull)$' ./internal/speccheck`
+  failed because both expected `SC-ADR-UNLISTED` findings were absent.
+- After the implementation change,
+  `rtk env GOCACHE=/tmp/roundfix-0186-task01-gocache go test -count=1 -run '^(TestAReferenceNamedLikeATaskIsReadInFull|TestANestedFileNamedLikeATaskIsReadInFull|TestTheSpecsOwnTaskFileKeepsItsProjection)$' ./internal/speccheck`
+  passed.
+- `rtk env GOCACHE=/tmp/roundfix-0186-task01-gocache go test -count=1 -run '^(TestASpecCitationInATaskResultIsNotAnObligation|TestAnAuthoredSpecCitationStillMustBeListed)$' ./internal/speccheck`
+  passed.
+- `rtk env GOCACHE=/tmp/roundfix-0186-task01-gocache go test -count=1 -run '^TestCheckADRClosureDepthOne$' ./internal/speccheck`
+  passed.
+
+Acceptance evidence:
+
+- `TestAReferenceNamedLikeATaskIsReadInFull` passed, proving that a citation in
+  `references/task_example.md`'s `## Result` reports `SC-ADR-UNLISTED` with
+  its original summary, fix, path and line.
+- `TestANestedFileNamedLikeATaskIsReadInFull` passed, proving that a citation
+  in `notes/task_02.md`'s `## Recorded paths` reports the same finding shape.
+- `TestTheSpecsOwnTaskFileKeepsItsProjection` passed, proving that the same
+  citation in the top-level `task_01.md` `## Result` reports no
+  `SC-ADR-UNLISTED` finding.
+
+The Task's declared `## Verification` command was not run; Daemon Verification
+owns that command and Task settlement.

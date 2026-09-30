@@ -1,7 +1,8 @@
 ---
-status: partial
+status: done
 created_at: 2026-09-29
 updated_at: 2026-09-30
+absorbed_by: 0187-a-queue-that-recovers-without-a-supervisor
 ---
 
 # Delivery — the first full queue trial still needed manual recovery (2026-09-29)
@@ -62,4 +63,16 @@ Lesson: build the owner binary from the `main` that holds the latest fixes befor
   - post-merge cleanup: `docs/backlog/2026-09-30-post-merge-cleanup-needs-the-merge-commit-locally.md`;
   - owner older than its starting main: `docs/backlog/2026-09-30-a-queue-owner-older-than-its-starting-main-runs-silently.md`.
 - Section 4, retry limit: no change. The parks that exhausted it came from defects Specs 0181, 0182 and 0185 now fix, and `--max-retries` already lets an operator raise the limit per queue. A new default would be tuned to defects that no longer exist.
+
+## Addendum — 2026-09-30 — Done: every observation is absorbed by a Spec
+
+The maintainer asked for this finding to leave the active directory with the Specs that resolved it. Its observations are now covered as follows:
+
+- Section 1, the gate frictions: Spec 0181 (`docs/history/specs/0181-gates-that-refuse-only-what-someone-can-act-on`). The mid-delivery grant widening goes to Spec 0187.
+- Section 2, amendment before carry-forward: Spec 0182 (already-completed Tasks are nothing to carry) and Spec 0187 (the refusal names the amendment and the recovery order).
+- Section 3, the unclassifiable verdict: Spec 0185.
+- Section 4, the retry limit: closed without change, with the reason recorded in the routing addendum.
+- Wave 5 addendum: Spec 0187 (post-merge cleanup fetch, owner older than its starting main).
+
+`absorbed_by` names Spec 0187, which absorbs the last open observations.
 
