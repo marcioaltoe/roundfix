@@ -1,9 +1,12 @@
 ---
 spec: 0193-baseline-guides-that-describe-the-product-as-it-is
-status: active
+status: archived
 created: 2026-09-30
 surfaces: [backend, docs]
+archived: "2026-09-30"
+source_slug: 0193-baseline-guides-that-describe-the-product-as-it-is
 ---
+
 
 # Baseline guides that describe the product as it is
 
