@@ -108,8 +108,9 @@ Profile that Spec adds.
    `roundfix profiles configure`. A pinned category is skipped. `--dry-run`
    writes nothing.
 5. **Doctor reports the comparison in one line that never fails.** The line
-   `recommendations:` follows `profiles:` and is `ok` or `found`. It never
-   changes Doctor's exit code.
+   `recommendations:` follows `profiles:` and is `ok`, `found`, or `skipped`
+   with the error text when the comparison itself fails. It never changes
+   Doctor's exit code.
 6. **`roundfix upgrade` ends with the notice.** Every invocation that reports
    a release outcome writes the comparison to standard error. Standard output
    and the exit code do not change. After a release is installed, the notice

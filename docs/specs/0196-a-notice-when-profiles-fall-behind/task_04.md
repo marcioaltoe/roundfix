@@ -43,7 +43,7 @@ The comparison of task_02 is seen only by someone who runs `roundfix profiles ch
 - [ ] After an install, `installedProfilesCheck` receives the installed path, and its output is the notice. It is not called otherwise.
 - [ ] When the comparison fails, `upgrade` exits as it would have and standard error carries one `not checked` line.
 - [ ] Help, a usage error and a failed upgrade write no notice.
-- [ ] Doctor prints `recommendations:` after `profiles:`, `ok` or `found`, and exits `0` when only that line reports a difference.
+- [ ] Doctor prints `recommendations:` after `profiles:`, `ok`, `found` or `skipped`, and exits `0` when only that line reports a difference.
 - [ ] A reference to `CheckRecommendations` from any other file fails the scope test.
 
 ## Context
