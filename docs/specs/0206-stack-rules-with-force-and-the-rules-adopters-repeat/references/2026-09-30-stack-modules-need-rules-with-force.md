@@ -1,8 +1,8 @@
 ---
 type: feat
-status: open
+status: promoted
 created: 2026-09-30
-spec: null
+spec: 0206-stack-rules-with-force-and-the-rules-adopters-repeat
 reason: null
 ---
 
