@@ -22,6 +22,7 @@ paths:
   - docs/agents/setup-context.json
   - docs/agents/specific-repository.md
   - internal/speccheck/backlog.go
+  - internal/baseline/plan_test.go
 operations:
   - implement
   - commit
@@ -65,6 +66,18 @@ when the checker accepts the status it names.
   that named a status the checker reports as unknown would be the drift this
   Spec removes. The edit is one case label; no detector identifier, message
   or severity changes.
+- `internal/baseline/plan_test.go` holds two contracts this Spec changes on
+  purpose. `TestADRLifecycleContract` pins the sentence "Only `accepted` is
+  active.", which task_04 scopes to ADRs with lifecycle frontmatter.
+  `TestStandardTypeScriptStructuralClauseRetention` pins
+  `rule.backend.boundary-contracts` as retained for an adopter moving from the
+  Standard TypeScript Source Baseline; task_01 removed that entry, and the
+  first delivery Run showed the classifier then reports it `unaccounted`,
+  which refuses that adopter's next Baseline update. The corrective task_06
+  makes the removal a declared `replaced` disposition and moves both
+  expectations to the new facts. Added on 2026-09-30 by alignment, after the
+  QA gate of Run `run_20260930T153457Z_b5736250c995b99a` failed on these two
+  tests.
 
 ## What is not governed
 
