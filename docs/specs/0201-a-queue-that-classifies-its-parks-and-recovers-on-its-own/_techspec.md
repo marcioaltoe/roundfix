@@ -243,7 +243,13 @@ worktree:
    `SourcePaths`;
 4. checks out `--theirs` for each conflicted path, runs each matched
    declaration's `regenerate` command once in declaration order through the
-   Verification executor, with its log under the artifact directory;
+   Verification executor, with its log under the artifact directory. The
+   declarations are read from the Project Config at the fetched
+   `<remote>/<default>` commit (`git show <remote>/<default>:.roundfixrc.yml`,
+   with the user scope beneath it), never from the item's tree, so a branch
+   cannot add or change a command the owner runs; an item's own change to
+   `delivery.derived_paths` takes effect only after it merges, and
+   `.roundfixrc.yml` is already a Governed Path that needs a grant;
 5. aborts and returns `regenerated <path> outside delivery.derived_paths` when
    the regeneration changed an undeclared path, and otherwise stages the
    declared paths and commits the merge with the trailer

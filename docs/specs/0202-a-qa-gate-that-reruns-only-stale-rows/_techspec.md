@@ -178,12 +178,20 @@ provenance cell.
 
 ### Importing the failed pass
 
-`findPriorQAPass` lists `git log --all --no-merges --date-order` over the
-Spec's QA directory and keeps the first commit that meets all of these:
+`findPriorQAPass` never trusts a commit for its subject or trailers alone. It
+walks the Runs the Run Database records for this Spec in this repository,
+newest first, and considers only the QA settlement commit the Daemon recorded
+for that Run in its Run Event Journal (the `daemon.commit` event of the `qa`
+Task), read from that Run's Run Branch. A Run whose record or journal is
+missing or pruned is skipped. It keeps the first such commit that also meets
+all of these:
 
 - its subject starts with `docs: qa report for <slug> (`;
 - its trailers name `Roundfix-Spec: <slug>` and no `Roundfix-Task`;
 - it is not an ancestor of `HEAD`.
+
+A commit on any other ref, however well it imitates a QA Report commit, is
+never imported.
 
 The commit's QA paths come from `git diff-tree --no-renames --diff-filter=AM`
 against its first parent, and its report is the newest `qa-report-*.md` among
