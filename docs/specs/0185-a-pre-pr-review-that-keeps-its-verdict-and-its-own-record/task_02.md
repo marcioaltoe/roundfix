@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0185-a-pre-pr-review-that-keeps-its-verdict-and-its-own-record
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -68,3 +68,68 @@ This Task gives each checkout its own record directory under the Artifact Direct
 - [_techspec.md](_techspec.md) — A review record per checkout; Interfaces; API Contract 2; Testing Approach 3; Build Order 2
 - [references/2026-09-29-one-review-record-is-shared-by-every-checkout.md](references/2026-09-29-one-review-record-is-shared-by-every-checkout.md)
 - ADR-0174; ADR-0153; ADR-0165; ADR-0169
+
+## Result
+
+Implemented one checkout-local Pre-PR Review Record directory at
+`pre-pr-review/<checkout key>/` in the Artifact Directory. The checkout key is
+the first 16 lowercase hexadecimal characters of the SHA-256 of the cleaned
+checkout root. Record persistence, answer persistence, stale-answer removal,
+reuse and `roundfix review dispose` now resolve that directory. Both persistence
+paths create it with mode `0755` before creating their temporary files. The
+shared disposition ledger and lock remain at the Artifact Directory root, and
+the repository mismatch guard remains in place.
+
+The four new command tests use one temporary Git repository, a linked checkout
+created with `git worktree add`, one configured Artifact Directory and the fake
+review runner:
+
+- `TestReviewRecordsLiveInTheCheckoutsOwnDirectory` proves the exact key,
+  directory mode, local record and answer paths, distinct checkout directories,
+  and absence of the old shared files.
+- `TestReviewInOneCheckoutLeavesAnotherCheckoutsRecord` proves byte isolation,
+  checkout-local reuse without another runner call, and successful disposition
+  from the first checkout.
+- `TestReviewDisposeReadsOnlyItsCheckoutsRecord` proves the missing-record
+  refusal when only the other checkout has a record and proves no ledger append.
+- `TestReviewIgnoresARecordAtTheSharedLocation` proves a matching legacy record
+  is not reused and both legacy record and answer remain byte-identical.
+
+Existing top-level tests with path-specific setup or assertions were updated
+without renaming them: `TestReviewKeepsTheRawAnswer`,
+`TestReviewKeepsNoAnswerWhenTheReviewerWasNotReached`,
+`TestReviewRemovesAStaleAnswerFile`,
+`TestReviewRecordsEmptySkippedSpecsAsAList`,
+`TestReviewRecordsNoArchivedSpecForAnActiveSpec`, and
+`TestReviewRecordListsEachFindingWithAnIdentity`. The shared review and
+disposition fixtures now use `reviewCheckoutDir`; this preserves the existing
+names and checkout-local behavior exercised by
+`TestReviewRecordsTheSpecsACandidateArchives` and
+`TestReviewDisposeDismissesAFindingWithEvidence`.
+
+The command guide, canonical Roundfix skill and generated skill mirror now say
+that the record and answer live under `pre-pr-review/<checkout key>/` and that
+Roundfix never reads another checkout's record. `CONTEXT.md` now defines the
+**Pre-PR Review Record** as one review's per-checkout record whose verdict comes
+from the reviewer's final message.
+
+Focused-check evidence:
+
+- Before the implementation, the focused new-test build failed because
+  `reviewCheckoutDir` did not exist.
+- `go test -count=1 -run '^TestReview(RecordsLiveInTheCheckoutsOwnDirectory|InOneCheckoutLeavesAnotherCheckoutsRecord|DisposeReadsOnlyItsCheckoutsRecord|IgnoresARecordAtTheSharedLocation)$' ./internal/cli` passed.
+- `go test -count=1 -run '^TestReview(KeepsTheRawAnswer|KeepsNoAnswerWhenTheReviewerWasNotReached|RemovesAStaleAnswerFile|RecordsEmptySkippedSpecsAsAList|RecordsNoArchivedSpecForAnActiveSpec|RecordListsEachFindingWithAnIdentity|DisposeDismissesAFindingWithEvidence|RecordsTheSpecsACandidateArchives)$' ./internal/cli` passed.
+- `make skills-sync` passed and regenerated `skills/roundfix/SKILL.md` from the
+  canonical skill; `cmp` confirmed the two files match.
+- `make baseline-digests` passed with `changed:false`; no derived artifact
+  changed.
+- The first sandboxed `make verify-incremental` run reached the complete suite
+  but two unrelated force-stop integration tests could not read the process
+  table (`operation not permitted`). The rerun with process-tree permission
+  passed `go vet`, every Go package, skill synchronization and checks, and the
+  build.
+- The final phrase search, old-shared-path inspection and `git diff --check`
+  passed. The remaining old shared paths are negative assertions only.
+
+The authored `## Verification` commands were not run; the Daemon owns them and
+Task settlement.

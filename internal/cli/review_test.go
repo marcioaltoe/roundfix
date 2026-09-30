@@ -989,7 +989,7 @@ func TestReviewKeepsTheRawAnswer(t *testing.T) {
 			if record.Outcome != test.wantOutcome {
 				t.Fatalf("review outcome = %q, want %q", record.Outcome, test.wantOutcome)
 			}
-			wantPath := filepath.Join(fixture.artifactDir, reviewAnswerFileName)
+			wantPath := filepath.Join(reviewCheckoutDir(fixture.artifactDir, fixture.repository), reviewAnswerFileName)
 			if record.AnswerPath != wantPath {
 				t.Fatalf("review answer path = %q, want %q", record.AnswerPath, wantPath)
 			}
@@ -1033,7 +1033,7 @@ func TestReviewKeepsNoAnswerWhenTheReviewerWasNotReached(t *testing.T) {
 	if record.AnswerPath != "" {
 		t.Fatalf("review answer path = %q, want empty", record.AnswerPath)
 	}
-	answerPath := filepath.Join(fixture.artifactDir, reviewAnswerFileName)
+	answerPath := filepath.Join(reviewCheckoutDir(fixture.artifactDir, fixture.repository), reviewAnswerFileName)
 	if _, err := os.Stat(answerPath); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("review answer file stat error = %v, want not exist", err)
 	}
@@ -1044,9 +1044,9 @@ func TestReviewRemovesAStaleAnswerFile(t *testing.T) {
 		prepareErrors: []error{errors.New("prepare review session")},
 	}
 	fixture := newReviewCommandFixture(t, "codex", runner)
-	answerPath := filepath.Join(fixture.artifactDir, reviewAnswerFileName)
-	if err := os.MkdirAll(fixture.artifactDir, 0o755); err != nil {
-		t.Fatalf("create Artifact Directory: %v", err)
+	answerPath := filepath.Join(reviewCheckoutDir(fixture.artifactDir, fixture.repository), reviewAnswerFileName)
+	if err := os.MkdirAll(filepath.Dir(answerPath), 0o755); err != nil {
+		t.Fatalf("create review checkout directory: %v", err)
 	}
 	mustWrite(t, answerPath, "stale answer from an earlier review")
 
@@ -1079,7 +1079,7 @@ func TestReviewRecordsEmptySkippedSpecsAsAList(t *testing.T) {
 	if record.SkippedSpecs == nil {
 		t.Fatal("review skipped Specs = nil, want an empty list")
 	}
-	recordBytes, err := os.ReadFile(filepath.Join(fixture.artifactDir, reviewRecordFileName))
+	recordBytes, err := os.ReadFile(filepath.Join(reviewCheckoutDir(fixture.artifactDir, fixture.repository), reviewRecordFileName))
 	if err != nil {
 		t.Fatalf("read review record: %v", err)
 	}
@@ -1566,7 +1566,7 @@ func (fixture reviewCommandFixture) run(t *testing.T) (int, reviewRecord, string
 	if err := json.Unmarshal(stdout.Bytes(), &stdoutRecord); err != nil {
 		t.Fatalf("decode stdout review record %q: %v", stdout.String(), err)
 	}
-	fileBytes, err := os.ReadFile(filepath.Join(fixture.artifactDir, "pre-pr-review.json"))
+	fileBytes, err := os.ReadFile(filepath.Join(reviewCheckoutDir(fixture.artifactDir, fixture.repository), reviewRecordFileName))
 	if err != nil {
 		t.Fatalf("read persisted review record: %v", err)
 	}

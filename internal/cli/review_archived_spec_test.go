@@ -87,7 +87,7 @@ func TestReviewRecordsNoArchivedSpecForAnActiveSpec(t *testing.T) {
 	if record.ArchivedSpecs == nil || len(record.ArchivedSpecs) != 0 {
 		t.Fatalf("active-Spec archived Specs = %#v, want []", record.ArchivedSpecs)
 	}
-	recordBytes, err := os.ReadFile(filepath.Join(fixture.artifactDir, reviewRecordFileName))
+	recordBytes, err := os.ReadFile(filepath.Join(reviewCheckoutDir(fixture.artifactDir, fixture.repository), reviewRecordFileName))
 	if err != nil {
 		t.Fatalf("read persisted review record: %v", err)
 	}
