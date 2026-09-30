@@ -1,9 +1,12 @@
 ---
 spec: 0185-a-pre-pr-review-that-keeps-its-verdict-and-its-own-record
-status: active
+status: archived
 created: 2026-09-29
 surfaces: [backend, cli, docs]
+archived: "2026-09-29"
+source_slug: 0185-a-pre-pr-review-that-keeps-its-verdict-and-its-own-record
 ---
+
 
 # A pre-PR review that keeps its verdict and its own record
 
