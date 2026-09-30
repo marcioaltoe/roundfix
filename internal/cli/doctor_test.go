@@ -238,6 +238,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				"pre-pr-review: ok (provider=codex; source=default)\n" +
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
 				"residue: ok (no process residue found)\n" +
+				"storage: ok (no Run Database)\n" +
 				"codex: ok (/home/roundfix/.local/bin/codex accepted)\n",
 		},
 		{
@@ -255,6 +256,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				"pre-pr-review: ok (provider=codex; source=default)\n" +
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
 				"residue: ok (no process residue found)\n" +
+				"storage: ok (no Run Database)\n" +
 				"codex: failed (/tmp/codex is quarantined; next: " + codex.ReinstallNextAction + ")\n",
 		},
 		{
@@ -272,6 +274,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				"pre-pr-review: ok (provider=codex; source=default)\n" +
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
 				"residue: ok (no process residue found)\n" +
+				"storage: ok (no Run Database)\n" +
 				"codex: skipped (not-applicable on linux)\n",
 		},
 	}
@@ -732,10 +735,10 @@ func TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes(t *testing.T) {
 				t.Fatalf("exit code = %d, want %d; stdout=%q stderr=%q", code, test.wantCode, stdout.String(), stderr.String())
 			}
 			lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
-			if len(lines) != 8 || lines[2] != test.wantLine {
+			if len(lines) != 9 || lines[2] != test.wantLine {
 				t.Fatalf("unexpected Doctor output lines:\n%q\nwant adapter line %q at index 2", lines, test.wantLine)
 			}
-			wantLineNames := []string{"node", "acpx", "adapter", "profiles", HealthCheckPrePRReview, "skills", "residue", "codex"}
+			wantLineNames := []string{"node", "acpx", "adapter", "profiles", HealthCheckPrePRReview, "skills", "residue", "storage", "codex"}
 			for index, name := range wantLineNames {
 				if !strings.HasPrefix(lines[index], name+": ") {
 					t.Fatalf("Doctor line %d = %q, want %q check", index, lines[index], name)
@@ -1174,7 +1177,7 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 				t.Fatalf("exit code = %d, want %d; stderr=%q", code, test.wantCode, stderr.String())
 			}
 			lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
-			if len(lines) != 8 || lines[5] != test.wantLine {
+			if len(lines) != 9 || lines[5] != test.wantLine {
 				t.Fatalf("unexpected Doctor output lines:\n%q\nwant skills line %q at index 5", lines, test.wantLine)
 			}
 			if skillCalls != 1 || checker.nodeCalls != 1 || checker.acpxCalls != 1 || checker.adapterCalls != 2 || checker.codexCalls != 1 {
@@ -1414,6 +1417,7 @@ func TestRunDoctorMissingRepositoryRoot(t *testing.T) {
 		"pre-pr-review: ok (provider=codex; source=default)\n" +
 		"skills: failed (Repository Skill Set readiness requires a Git repository; next: run roundfix doctor from a Git repository)\n" +
 		"residue: ok (no process residue found)\n" +
+		"storage: ok (no Run Database)\n" +
 		"codex: ok\n"
 	if got := stdout.String(); got != wantStdout {
 		t.Fatalf("unexpected stdout:\n got: %q\nwant: %q", got, wantStdout)
@@ -1512,6 +1516,7 @@ func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
 			len(external),
 		) +
 		"residue: ok (no process residue found)\n" +
+		"storage: ok (no Run Database)\n" +
 		"codex: ok\n"
 	if got := stdout.String(); got != wantStdout {
 		t.Fatalf("unexpected stdout:\n got: %q\nwant: %q", got, wantStdout)
@@ -1832,6 +1837,13 @@ func withDoctorFakeLoadedAndReadiness(t *testing.T, checker HealthChecker, loade
 				Detail: "no process residue found",
 			}}
 		},
+		storage: func(context.Context, roundconfig.Loaded) []CheckResult {
+			return []CheckResult{{
+				Name:   HealthCheckStorage,
+				Status: CheckStatusOK,
+				Detail: "no Run Database",
+			}}
+		},
 	}
 	updateCommandDependenciesForTest(t, func(commandDependencies *commandDependencies) {
 		commandDependencies.doctor = dependencies
@@ -1856,6 +1868,13 @@ func withDoctorLiveDeps(t *testing.T, checker HealthChecker) {
 			Name:   HealthCheckResidue,
 			Status: CheckStatusOK,
 			Detail: "no process residue found",
+		}}
+	}
+	dependencies.storage = func(context.Context, roundconfig.Loaded) []CheckResult {
+		return []CheckResult{{
+			Name:   HealthCheckStorage,
+			Status: CheckStatusOK,
+			Detail: "no Run Database",
 		}}
 	}
 	updateCommandDependenciesForTest(t, func(commandDependencies *commandDependencies) {

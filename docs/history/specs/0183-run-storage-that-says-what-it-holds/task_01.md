@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0183-run-storage-that-says-what-it-holds
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -68,3 +68,68 @@ Journal Retention never deletes a `runs` row, so every terminal Run past the cut
 - [_techspec.md](_techspec.md) — A prune reports only what it reclaimed; Interfaces; API Contract 1; Testing Approach 1; Build Order 1
 - [references/2026-09-29-gc-reports-already-emptied-runs-as-pruned.md](references/2026-09-29-gc-reports-already-emptied-runs-as-pruned.md)
 - ADR-0171; ADR-0033; ADR-0090
+
+## Result
+
+### Implementation
+
+- `PruneTerminalRuns` now counts candidate events before requesting the writer,
+  returns every cutoff candidate in `EligibleRunIDs`, and recounts plus deletes
+  only event-bearing candidates inside one write transaction. `RunIDs` and
+  `Events` therefore describe only journal rows that transaction removed.
+- GC dry runs and live prune reports use `retentionReclaimable` to include only
+  Runs that still hold events or an artifact directory. Live cleanup filters
+  directories by `EligibleRunIDs` and reports the candidate-ordered union of
+  journal and directory reclamation.
+- Added real temporary-store regression coverage for empty candidates, held
+  write locks, repeated GC, directory-only reclamation, reclaimable ordering
+  and callback errors, and silent operational sweeps.
+- Updated the user guide, canonical Roundfix skill, generated skill mirror, and
+  GC Command glossary entry. Ran the sanctioned skill sync and confirmed the
+  Baseline digests required no derived update.
+
+### Focused checks
+
+- `rtk env GOCACHE=/tmp/roundfix-task01-gocache go test ./internal/store` —
+  passed, including the existing eligibility/lifecycle tests and the new
+  reclaimable-prune tests.
+- `rtk env GOCACHE=/tmp/roundfix-task01-gocache go test -run 'Test(RunGC|GCSecondRunReportsNothingPruned|GCReclaimsARunWhoseArtifactDirectoryOutlivedItsEvents|RetentionReclaimable|RetentionSweepIsSilentWhenNothingIsReclaimed|RunImplementPreflightRetention)' ./internal/cli`
+  — passed, including existing GC and sweep coverage.
+- `rtk make skills-sync` — passed; the shipped Roundfix skill mirror was
+  regenerated from the canonical skill.
+- `rtk env GOCACHE=/tmp/roundfix-task01-gocache make baseline-digests` —
+  passed with `changed: false`.
+- Canonical/mirror byte comparison and exact-phrase inspections for the guide,
+  both skill paths, and `CONTEXT.md` — passed.
+- `rtk env GOCACHE=/tmp/roundfix-task01-gocache make verify-incremental` —
+  passed on the host-permission rerun: `go vet`, the full package suite, the
+  skill contract tests, `roundfix skills check`, and the build all exited 0.
+
+### Acceptance evidence
+
+1. `TestGCSecondRunReportsNothingPruned` observes `Runs pruned: 0` on the
+   second live GC and `Runs eligible: 0` on the following dry run.
+2. `TestGCReclaimsARunWhoseArtifactDirectoryOutlivedItsEvents` observes the
+   directory-only Run in stdout and confirms its artifact directory is gone.
+3. `TestPruneTerminalRunsNeedsNoWriteLockWhenNoCandidateHasEvents` holds the
+   independent machine-wide write lock while an emptied-candidate prune
+   succeeds and reports no reclamation.
+4. `TestPruneTerminalRunsSkipsCandidatesWithoutEvents` confirms the
+   event-bearing candidate is deleted and reported while `EligibleRunIDs`
+   retains both cutoff candidates.
+5. `TestRetentionSweepIsSilentWhenNothingIsReclaimed` observes empty stderr
+   over an emptied terminal Run.
+6. Exact wording is present in the guide, canonical skill, mirror, and glossary;
+   the skill files compare byte-for-byte after `make skills-sync`. The authored
+   `make skills-sync-check` remains part of Daemon-owned Verification.
+
+### Non-gating environment observation
+
+- An earlier broad `go test ./internal/store ./internal/cli` run passed the
+  store package but the CLI package encountered the sandbox's process-table
+  permission refusal in two unrelated force-stop tests. Its suite guard also
+  observed documentation edits made while that long-running check was active.
+  The stable retention/GC-focused CLI check above was rerun after edits and
+  passed. The first sandboxed incremental gate saw the same process-table
+  refusal; its host-permission rerun passed. The Task's authored Verification
+  commands were not run.

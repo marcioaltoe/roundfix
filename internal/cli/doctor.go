@@ -28,6 +28,7 @@ type doctorDependencies struct {
 	resolveExternal  func(string) ([]string, bool, error)
 	checkSkills      func(context.Context, string, []string) (skills.RepositoryReadiness, error)
 	residue          func(context.Context, string) []CheckResult
+	storage          func(context.Context, roundconfig.Loaded) []CheckResult
 }
 
 func defaultDoctorDependencies() doctorDependencies {
@@ -42,6 +43,7 @@ func defaultDoctorDependencies() doctorDependencies {
 		resolveExternal: resolveExternalSkillRequirement,
 		checkSkills:     skills.CheckRepositoryWithExternal,
 		residue:         defaultDoctorResidueResults,
+		storage:         defaultDoctorStorageResults,
 	}
 }
 
@@ -80,7 +82,7 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 
 	// Keep independent checks eager and ordered.
-	results := make([]CheckResult, 0, 9)
+	results := make([]CheckResult, 0, 10)
 	results = append(results, checker.Node(ctx))
 	results = append(results, checker.ACPX(ctx))
 	runtimes, runtimeErr := doctorAdapterRuntimes(loaded.Config)
@@ -104,6 +106,7 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		}
 	}
 	results = append(results, dependencies.residue(ctx, loaded.HomeDir)...)
+	results = append(results, dependencies.storage(ctx, loaded)...)
 	results = append(results, checker.Codex(ctx))
 
 	failed := false

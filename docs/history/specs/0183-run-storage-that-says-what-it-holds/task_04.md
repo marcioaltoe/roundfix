@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0183-run-storage-that-says-what-it-holds
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -54,3 +54,31 @@ In a bare-repository layout, or a linked worktree of a `--separate-git-dir` repo
 - [_techspec.md](_techspec.md) — `gc sanitize` recognizes a pre-key default root; Interfaces; Data Models; API Contract 3; Testing Approach 3; Build Order 4
 - [references/2026-09-25-bare-layout-artifact-roots-over-preserved.md](references/2026-09-25-bare-layout-artifact-roots-over-preserved.md)
 - ADR-0033
+
+## Result
+
+Implemented:
+
+- Artifact Root discovery now carries each Run's recorded Git root beside its
+  coalesced repository key.
+- Path-derived default Artifact Roots hash the cleaned recorded path without
+  resolving Git identity, and reject an empty path or Roundfix Home.
+- Sanitation checks both defaults per Run after every existing safety guard.
+  Override evidence names both defaults, checkout-derived matches name the
+  recorded checkout, and an unresolved key default remains unsafe unless the
+  checkout-derived default matches.
+
+Focused checks:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task04-gocache go test -count=1 -run 'GCSanitize' ./internal/cli` — passed, including all existing sanitation tests and the new bare-layout, override, key-derived and key-derivation-error cases.
+- `rtk env GOCACHE=/private/tmp/roundfix-task04-gocache go test -count=1 -run 'ArtifactDirectoryForPath|RepositoryIdentity|BareRepository' ./internal/config` — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task04-gocache go test -count=1 -run 'DiscoverArtifactRoots' ./internal/store` — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task04-gocache make verify-incremental` — the sandboxed run reached only the two force-stop integration tests that require process-table access and failed there with `operation not permitted`; the managed escalated rerun passed the full incremental gate.
+- The Task's declared `## Verification` commands were not run; the Daemon owns them.
+
+Acceptance evidence:
+
+1. `TestGCSanitizeReclaimsAPreKeyDefaultRootInABareLayout` creates a real bare clone and linked worktree, records a retention-eligible terminal Run under its checkout-derived default, observes `orphaned`, and observes `--apply` remove the Run directory.
+2. `TestGCSanitizeStillPreservesARootEqualToNeitherDefault` observes `overridden`, both computed default paths in evidence, and the Run directory preserved.
+3. `TestGCSanitizeKeepsAKeyDerivedRootClassification` observes the existing `orphaned` classification for the repository-key-derived root and no mutation during the dry run.
+4. `TestDefaultArtifactDirectoryForPathKeepsTheCheckoutPath` proves the helper hashes the linked checkout while `ResolveArtifactDirectory` hashes the common Git directory, and separately refuses an empty path and empty Roundfix Home.

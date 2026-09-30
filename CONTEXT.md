@@ -551,7 +551,7 @@ The support command that produces a Release Plan without editing release files, 
 _Avoid_: Release Command, publish command, cut-release command
 
 **Doctor Command**:
-The support command that diagnoses a repository and machine's readiness for Roundfix Runs — minimum-supported acpx, Adapter Readiness, Agent Selection Profile Readiness, Repository Skill Set, and codex runtime hygiene. It reports the detected acpx version against the minimum, gives each check a next action, and mutates nothing. It evaluates Repository Skill Set readiness after, and independently from, Agent Selection Profile Readiness; unlike the Doctor Command, the Setup Command prepares the machine.
+The support command that diagnoses a repository and machine's readiness for Roundfix Runs — minimum-supported acpx, Adapter Readiness, Agent Selection Profile Readiness, Repository Skill Set, codex runtime hygiene, and whether Run storage is reclaimable. It reports the detected acpx version against the minimum, gives each check a next action, and mutates nothing. It evaluates Repository Skill Set readiness after, and independently from, Agent Selection Profile Readiness; unlike the Doctor Command, the Setup Command prepares the machine.
 _Avoid_: Health check run, setup run, environment wizard
 
 **Migrate Command**:
@@ -587,7 +587,7 @@ One retired file that belongs under the History Root and is not there, carried i
 _Avoid_: Archive move, file migration, relocation payload
 
 **GC Command**:
-The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window and removes orphaned run artifact directories, reporting what it freed. Never touches Active Runs, `runs` rows, or active-run locks.
+The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window and removes orphaned run artifact directories, reporting what it freed. A Run it already emptied is not counted again. Never touches Active Runs, `runs` rows, or active-run locks.
 _Avoid_: Clean command, vacuum, purge
 
 **Journal Retention**:

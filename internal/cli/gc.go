@@ -133,13 +133,36 @@ func pruneRunRetention(ctx context.Context, runStore *store.Store, artifactRoot 
 	if err != nil {
 		return retentionPruneReport{}, err
 	}
-	runDirs = gcFilterArtifactDirs(runDirs, pruned.RunIDs)
+	runDirs = gcFilterArtifactDirs(runDirs, pruned.EligibleRunIDs)
 	bytes := gcArtifactBytes(runDirs)
 	if err := gcRemoveArtifactDirs(runDirs); err != nil {
 		return retentionPruneReport{}, err
 	}
+	deletedEventRuns := make(map[string]struct{}, len(pruned.RunIDs))
+	for _, runID := range pruned.RunIDs {
+		deletedEventRuns[runID] = struct{}{}
+	}
+	removedArtifactRuns := make(map[string]struct{}, len(runDirs))
+	for _, dir := range runDirs {
+		removedArtifactRuns[dir.runID] = struct{}{}
+	}
+	reclaimedCandidates := make([]store.PruneCandidate, 0, len(pruned.EligibleRunIDs))
+	for _, runID := range pruned.EligibleRunIDs {
+		candidate := store.PruneCandidate{RunID: runID}
+		if _, ok := deletedEventRuns[runID]; ok {
+			candidate.Events = 1
+		}
+		reclaimedCandidates = append(reclaimedCandidates, candidate)
+	}
+	reclaimedRunIDs, err := retentionReclaimable(reclaimedCandidates, func(runID string) (bool, error) {
+		_, ok := removedArtifactRuns[runID]
+		return ok, nil
+	})
+	if err != nil {
+		return retentionPruneReport{}, err
+	}
 	return retentionPruneReport{
-		RunIDs:        pruned.RunIDs,
+		RunIDs:        reclaimedRunIDs,
 		JournalRows:   pruned.Events,
 		ArtifactBytes: bytes,
 	}, nil
@@ -585,19 +608,39 @@ func classifyGCSanitationRoot(root store.ArtifactRoot, homeDir string) gcSanitat
 		return report
 	}
 
-	repositories := gcArtifactRootRepositories(root)
-	for _, repository := range repositories {
-		defaultRoot, err := roundconfig.ResolveArtifactDirectory("", repository, homeDir)
-		if err != nil {
+	checkoutMatches := []string{}
+	for _, run := range root.Runs {
+		keyDefault, keyErr := roundconfig.ResolveArtifactDirectory("", run.Repository, homeDir)
+		checkoutDefault, checkoutErr := roundconfig.DefaultArtifactDirectoryForPath(run.GitRoot, homeDir)
+		if checkoutErr == nil && path == checkoutDefault {
+			checkoutMatches = append(checkoutMatches, fmt.Sprintf("%q (Run %q)", run.GitRoot, run.ID))
+			continue
+		}
+		if keyErr != nil {
 			report.classification = gcSanitationUnsafe
-			report.evidence = fmt.Sprintf("preserved because the default Artifact Root for repository %q cannot be proven: %v", repository, err)
+			report.evidence = fmt.Sprintf("preserved because the repository-key default Artifact Root for Run %q cannot be proven: %v", run.ID, keyErr)
 			return report
 		}
-		if path != defaultRoot {
-			report.classification = gcSanitationOverridden
-			report.evidence = fmt.Sprintf("preserved because recorded Artifact Root overrides default %q for repository %q", defaultRoot, repository)
+		if path == keyDefault {
+			continue
+		}
+		if checkoutErr != nil {
+			report.classification = gcSanitationUnsafe
+			report.evidence = fmt.Sprintf("preserved because the recorded-checkout default Artifact Root for Run %q cannot be proven: %v", run.ID, checkoutErr)
 			return report
 		}
+		report.classification = gcSanitationOverridden
+		report.evidence = fmt.Sprintf(
+			"preserved because recorded Artifact Root overrides default %q derived from the repository key and default %q derived from the recorded checkout for Run %q",
+			keyDefault,
+			checkoutDefault,
+			run.ID,
+		)
+		return report
+	}
+	checkoutEvidence := ""
+	if len(checkoutMatches) > 0 {
+		checkoutEvidence = fmt.Sprintf("; default derived from recorded checkout %s", strings.Join(checkoutMatches, ", "))
 	}
 
 	activeRunIDs := []string{}
@@ -609,12 +652,12 @@ func classifyGCSanitationRoot(root store.ArtifactRoot, homeDir string) gcSanitat
 	if len(activeRunIDs) > 0 {
 		sort.Strings(activeRunIDs)
 		report.classification = gcSanitationActive
-		report.evidence = fmt.Sprintf("Active Runs record this Artifact Root: %s", strings.Join(activeRunIDs, ", "))
+		report.evidence = fmt.Sprintf("Active Runs record this Artifact Root: %s%s", strings.Join(activeRunIDs, ", "), checkoutEvidence)
 		return report
 	}
 
 	report.classification = gcSanitationOrphaned
-	report.evidence = fmt.Sprintf("no Active Run records this Artifact Root; terminal Runs recorded: %d", len(root.Runs))
+	report.evidence = fmt.Sprintf("no Active Run records this Artifact Root; terminal Runs recorded: %d%s", len(root.Runs), checkoutEvidence)
 	return report
 }
 
@@ -624,19 +667,6 @@ func gcPathWithin(root string, path string) (bool, error) {
 		return false, err
 	}
 	return relative == "." || (!filepath.IsAbs(relative) && relative != ".." && !strings.HasPrefix(relative, ".."+string(os.PathSeparator))), nil
-}
-
-func gcArtifactRootRepositories(root store.ArtifactRoot) []string {
-	set := map[string]struct{}{}
-	for _, run := range root.Runs {
-		set[run.Repository] = struct{}{}
-	}
-	repositories := make([]string, 0, len(set))
-	for repository := range set {
-		repositories = append(repositories, repository)
-	}
-	sort.Strings(repositories)
-	return repositories
 }
 
 func gcSanitationArtifactDirs(root store.ArtifactRoot, allRunIDs map[string]string, cutoff time.Time, retention time.Duration) ([]gcSanitationCandidate, []gcSanitationPreservation, error) {
@@ -750,12 +780,22 @@ func runGC(ctx context.Context, opts gcOptions, loaded roundconfig.Loaded) (gcRe
 	if err != nil {
 		return gcReport{}, err
 	}
-	report.RunIDs = gcCandidateRunIDs(candidates)
 	report.OrphanIDs = gcArtifactRunIDs(orphanDirs)
 	report.JournalRows = gcCandidateEventCount(candidates)
 	report.ArtifactBytes = gcArtifactBytes(runDirs) + gcArtifactBytes(orphanDirs)
 
 	if opts.dryRun {
+		artifactRuns := make(map[string]struct{}, len(runDirs))
+		for _, dir := range runDirs {
+			artifactRuns[dir.runID] = struct{}{}
+		}
+		report.RunIDs, err = retentionReclaimable(candidates, func(runID string) (bool, error) {
+			_, ok := artifactRuns[runID]
+			return ok, nil
+		})
+		if err != nil {
+			return gcReport{}, err
+		}
 		return report, nil
 	}
 
@@ -814,6 +854,27 @@ func gcStoreState(ctx context.Context, runStore *store.Store, cutoff time.Time) 
 		runIDSet[runID] = struct{}{}
 	}
 	return candidates, runIDSet, nil
+}
+
+func retentionReclaimable(
+	candidates []store.PruneCandidate,
+	hasArtifactDir func(runID string) (bool, error),
+) ([]string, error) {
+	runIDs := make([]string, 0, len(candidates))
+	for _, candidate := range candidates {
+		if candidate.Events > 0 {
+			runIDs = append(runIDs, candidate.RunID)
+			continue
+		}
+		exists, err := hasArtifactDir(candidate.RunID)
+		if err != nil {
+			return nil, fmt.Errorf("inspect Run %q artifact directory: %w", candidate.RunID, err)
+		}
+		if exists {
+			runIDs = append(runIDs, candidate.RunID)
+		}
+	}
+	return runIDs, nil
 }
 
 func gcCandidateArtifactDirs(artifactRoot string, candidates []store.PruneCandidate) ([]gcArtifactDir, error) {
@@ -946,14 +1007,6 @@ func gcRemoveArtifactDirs(dirs []gcArtifactDir) error {
 		}
 	}
 	return nil
-}
-
-func gcCandidateRunIDs(candidates []store.PruneCandidate) []string {
-	runIDs := make([]string, 0, len(candidates))
-	for _, candidate := range candidates {
-		runIDs = append(runIDs, candidate.RunID)
-	}
-	return runIDs
 }
 
 func gcCandidateEventCount(candidates []store.PruneCandidate) int {
