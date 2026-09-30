@@ -551,7 +551,7 @@ The support command that produces a Release Plan without editing release files, 
 _Avoid_: Release Command, publish command, cut-release command
 
 **Doctor Command**:
-The support command that diagnoses a repository and machine's readiness for Roundfix Runs — minimum-supported acpx, Adapter Readiness, Agent Selection Profile Readiness, Repository Skill Set, and codex runtime hygiene. It reports the detected acpx version against the minimum, gives each check a next action, and mutates nothing. It evaluates Repository Skill Set readiness after, and independently from, Agent Selection Profile Readiness; unlike the Doctor Command, the Setup Command prepares the machine.
+The support command that diagnoses a repository and machine's readiness for Roundfix Runs — minimum-supported acpx, Adapter Readiness, Agent Selection Profile Readiness, Repository Skill Set, codex runtime hygiene, and whether Run storage is reclaimable. It reports the detected acpx version against the minimum, gives each check a next action, and mutates nothing. It evaluates Repository Skill Set readiness after, and independently from, Agent Selection Profile Readiness; unlike the Doctor Command, the Setup Command prepares the machine.
 _Avoid_: Health check run, setup run, environment wizard
 
 **Migrate Command**:
@@ -591,7 +591,7 @@ A citation in a tracked file that resolves before a Baseline Plan's History Relo
 _Avoid_: Broken link, dangling reference, link check
 
 **GC Command**:
-The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window and removes orphaned run artifact directories, reporting what it freed. Never touches Active Runs, `runs` rows, or active-run locks.
+The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window and removes orphaned run artifact directories, reporting what it freed. A Run it already emptied is not counted again. Never touches Active Runs, `runs` rows, or active-run locks.
 _Avoid_: Clean command, vacuum, purge
 
 **Journal Retention**:
@@ -811,6 +811,11 @@ The selected agent or service that performs review under the Pre-PR Review
 Policy. An Agent Selection Profile supplies an agent provider's runtime and
 model; explicit none is a policy choice with no provider.
 _Avoid_: Review Source, Pre-PR Review Policy, reviewer model
+
+**Pre-PR Review Record**:
+The record of one Pre-PR Review, kept per checkout. Its verdict is read from
+the reviewer's final message.
+_Avoid_: Review Source Evidence, shared review state, reviewer transcript
 
 
 **QA Archive Override**:

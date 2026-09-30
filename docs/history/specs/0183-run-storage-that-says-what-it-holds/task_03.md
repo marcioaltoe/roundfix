@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0183-run-storage-that-says-what-it-holds
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -66,3 +66,35 @@ Nothing tells the operator that Run storage is reclaimable until someone runs `r
 - [_techspec.md](_techspec.md) — Doctor reports reclaimable storage; Interfaces; API Contract 2; Testing Approach 2; Build Order 3
 - [references/2026-09-25-storage-reclaim-notice.md](references/2026-09-25-storage-reclaim-notice.md)
 - ADR-0172; ADR-0171; ADR-0032; ADR-0107
+
+## Result
+
+Implemented the read-only Doctor `storage:` check after `residue:` and before
+`codex:`. It reads SQLite `page_size` and `freelist_count`, reuses
+`retentionReclaimable` over terminal prune candidates, performs at most one
+`lstat` for each candidate whose journal is empty, skips Artifact Root
+resolution outside Git, and maps every read or inspection error to `partial`.
+The user guide, domain glossary, canonical Roundfix skill, and generated skill
+mirror now describe the check; `make skills-sync` updated the mirror and
+`make baseline-digests` reported that no derived digest changed.
+
+Focused checks:
+
+- `GOCACHE=/private/tmp/roundfix-task03-gocache go test -run '^$' ./internal/cli ./internal/store` — exited 0; both packages compile with the new files.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache go vet ./internal/cli ./internal/store` — exited 0.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1 -run '^TestDoctorStorage' ./internal/cli` — exited 0; exercised all six acceptance tests plus the zero-retention and outside-Git cases.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1 -run '^TestRunDoctor' ./internal/cli` — exited 0; existing Doctor command tests remain green with the added ordered line.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache make verify-incremental` — the restricted run failed only because two existing force-stop integration tests could not read the host process table; the permission-enabled rerun exited 0, including `go vet ./...`, `go test -parallel 16 ./...`, skill checks, and the build.
+- `cmp -s .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` — exited 0 after `make skills-sync`.
+
+Acceptance evidence:
+
+1. `TestDoctorStorageReportsReclaimableRunsAndNamesGC` uses a real temporary Run Database with an old terminal Run that has one event and no artifact directory; the focused suite observed `storage: found`, `Runs reclaimable: 1`, the `roundfix gc` action, and Doctor exit 0.
+2. `TestDoctorStorageResultNamesCompactAtTheFreeBytesThreshold` exercises the pure result mapper at the task's fixed threshold and observed `found` with only `roundfix gc compact`.
+3. `TestDoctorStorageIsOKWhenNothingIsLeftToReclaim` opens a real empty temporary Run Database and observed the exact `nothing to reclaim` result with zero Runs and zero free bytes.
+4. `TestDoctorStorageDoesNotCreateAMissingRunDatabase` observed `ok (no Run Database)` and verified that neither the database file nor its parent `.roundfix` directory was created.
+5. `TestDoctorStorageIsPartialWhenTheRunDatabaseCannotBeRead` advances a real temporary database to a schema version newer than the running binary and observed `storage: partial` while Doctor still exited 0.
+6. `TestDoctorStorageLeavesTheRunDatabaseBytesUnchanged` compared the real database bytes before and after `runDoctorCommand` and found them identical.
+
+The three authored commands under `## Verification` were not run; Daemon
+Verification and Task settlement remain Daemon-owned.

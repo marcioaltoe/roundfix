@@ -1165,6 +1165,16 @@ func ValidateArtifactDirectory(artifactDir string, gitRoot string, homeDir strin
 	return resolved, nil
 }
 
+func DefaultArtifactDirectoryForPath(path string, homeDir string) (string, error) {
+	if path == "" {
+		return "", errors.New("default Artifact Directory requires a path")
+	}
+	if homeDir == "" {
+		return "", errors.New("default Artifact Directory requires Roundfix Home")
+	}
+	return filepath.Join(homeDir, ".roundfix", "artifacts", repoID(filepath.Clean(path))), nil
+}
+
 func ResolveArtifactDirectory(artifactDir string, gitRoot string, homeDir string) (string, error) {
 	expanded, err := expandHome(artifactDir, homeDir)
 	if err != nil {

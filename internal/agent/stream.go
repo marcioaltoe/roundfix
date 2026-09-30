@@ -19,6 +19,7 @@ const (
 
 type StreamUpdate struct {
 	Kind      StreamUpdateKind
+	MessageID string
 	Title     string
 	Text      string
 	Blocks    []StreamBlock

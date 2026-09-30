@@ -65,7 +65,11 @@ func TestReviewRecordListsEachFindingWithAnIdentity(t *testing.T) {
 		record := dispositionReviewRecord("/tmp/repository", "head", "internal/cli/review.go:10: legacy finding")
 		record.Findings = "internal/cli/review.go:10: legacy finding"
 		record.FindingItems = nil
-		path := filepath.Join(t.TempDir(), reviewRecordFileName)
+		directory := reviewCheckoutDir(t.TempDir(), record.Repository)
+		if err := os.MkdirAll(directory, 0o755); err != nil {
+			t.Fatalf("create review checkout directory: %v", err)
+		}
+		path := filepath.Join(directory, reviewRecordFileName)
 		writeDispositionRecordFile(t, path, record)
 
 		got, err := readReviewRecord(path)
@@ -305,10 +309,11 @@ func writeDispositionFindingsRecord(t *testing.T, fixture reviewCommandFixture, 
 
 func writeDispositionRecord(t *testing.T, fixture reviewCommandFixture, record reviewRecord) {
 	t.Helper()
-	if err := os.MkdirAll(fixture.artifactDir, 0o755); err != nil {
-		t.Fatalf("create Artifact Directory: %v", err)
+	directory := reviewCheckoutDir(fixture.artifactDir, fixture.repository)
+	if err := os.MkdirAll(directory, 0o755); err != nil {
+		t.Fatalf("create review checkout directory: %v", err)
 	}
-	writeDispositionRecordFile(t, filepath.Join(fixture.artifactDir, reviewRecordFileName), record)
+	writeDispositionRecordFile(t, filepath.Join(directory, reviewRecordFileName), record)
 }
 
 func writeDispositionRecordFile(t *testing.T, path string, record reviewRecord) {

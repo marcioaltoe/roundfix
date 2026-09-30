@@ -37,7 +37,7 @@ type SealedPromptRequest struct {
 	Input   []byte
 }
 
-// SealedPromptResult contains only the accumulated Agent message. Raw ACP
+// SealedPromptResult contains only the final non-blank Agent message. Raw ACP
 // protocol output and thought are discarded.
 type SealedPromptResult struct {
 	Output   []byte
@@ -316,7 +316,7 @@ func parseSealedPromptStream(stream []byte) (SealedPromptResult, error) {
 
 type sealedStreamParser struct {
 	line       []byte
-	output     bytes.Buffer
+	messages   agentMessageLog
 	stopReason string
 	sawResult  bool
 	toolUsed   bool
@@ -415,14 +415,14 @@ func (parser *sealedStreamParser) consumeSessionUpdate(line []byte) {
 	if !ok {
 		return
 	}
+	parser.messages.observe(update)
 	switch update.Kind {
 	case StreamUpdateMessage:
-		if parser.output.Len()+len(update.Text) > SealedPromptMaxOutputBytes {
+		if parser.messages.totalBytes() > SealedPromptMaxOutputBytes {
 			parser.err = ErrSealedOutputTooLarge
 			return
 		}
-		_, _ = parser.output.WriteString(update.Text)
-	case StreamUpdateThought:
+	case StreamUpdateThought, StreamUpdatePlan:
 		// Thought remains ephemeral and outside the proposal.
 	case StreamUpdateToolStarted, StreamUpdateToolUpdated:
 		parser.toolUsed = true
@@ -441,7 +441,7 @@ func (parser *sealedStreamParser) Result() (SealedPromptResult, error) {
 		parser.line = parser.line[:0]
 	}
 	result := SealedPromptResult{
-		Output:   append([]byte(nil), parser.output.Bytes()...),
+		Output:   []byte(parser.messages.final()),
 		ToolUsed: parser.toolUsed,
 	}
 	if parser.err != nil {

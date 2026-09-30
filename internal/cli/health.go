@@ -28,6 +28,7 @@ const (
 	HealthCheckPrePRReview = "pre-pr-review"
 	HealthCheckSkills      = "skills"
 	HealthCheckResidue     = "residue"
+	HealthCheckStorage     = "storage"
 	HealthCheckCodex       = "codex"
 )
 

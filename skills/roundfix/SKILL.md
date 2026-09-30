@@ -34,8 +34,10 @@ Task Worktrees, and QA uses its own Agent Session after Tasks settle.
 Use the Doctor Command, `roundfix doctor`, to diagnose Run readiness without
 installing dependencies, writing config, or changing files. Doctor runs the
 shared Node.js, minimum-supported acpx, effective adapters, configured Agent
-Selection Profiles, Repository Skill Set, and codex runtime hygiene checks and
-prints one line per check with status `ok`, `failed`, or `skipped`. Adapter
+Selection Profiles, Repository Skill Set, process residue, storage check, and
+codex runtime hygiene checks and prints one line per check with status `ok`,
+`failed`, or `skipped`; residue and storage can also report `found` or
+`partial`. Adapter
 Readiness requires the effective Codex command to prove official
 `@agentclientprotocol/codex-acp` lineage at version `1.1.5` or newer and the
 effective Claude command to prove official
@@ -252,10 +254,13 @@ blocks as ambiguous. A line that normalizes to `Findings` after an optional
 trailing ASCII or fullwidth colon is removed starts the findings body. A
 verdict-shaped line after that header is findings text and does not create a
 conflict. Exactly one verdict must be present; both verdicts or neither verdict
-block the review. Every answer that reaches the reviewer is kept in
-`pre-pr-review-answer.txt`, and the review record's `answerPath` names that
-file. Roundfix sets `answerPath` only after it sends the prompt to a reviewer;
-a pre-prompt failure has no answer path or answer file.
+block the review. Roundfix reads the verdict from the reviewer's final message.
+The answer file keeps every message, separated by a blank line. The record and
+the answer live under `pre-pr-review/<checkout key>/` in the Artifact
+Directory, and the review record's `answerPath` names the answer file. Roundfix
+never reads another checkout's record. Roundfix sets `answerPath` only after it
+sends the prompt to a reviewer; a pre-prompt failure has no answer path or
+answer file.
 
 A findings record preserves the original `findings` text and assigns `F1`,
 `F2`, and so on to the entries in `findingItems`. The reviewer prompt requires
@@ -983,14 +988,15 @@ older than the retention window eligible for pruning. Retention never deletes
 Active Runs, `runs` rows, or active-run locks, and it does not remove Review
 artifacts under the Spec tree.
 
-Use `roundfix gc [--dry-run]` to inspect or reclaim Run storage. `--dry-run`
-prints the eligible terminal Runs, journal rows, orphaned `runs/<id>`
-directories, and artifact bytes without changing anything. A live `roundfix gc`
-deletes eligible Run Event Journal rows, removes each pruned Run's
-`<artifact_dir>/runs/<run-id>` directory, removes orphaned `runs/<id>`
-directories under the resolved run artifact root, and reports Runs, journal
-rows, and artifact bytes reclaimed on stdout. With `journal_retention: 0`, it
-prints `GC skipped` and performs no pruning.
+Use `roundfix gc [--dry-run]` to inspect or reclaim Run storage. Dry-run and
+live reports count only Runs that still hold Run Event Journal rows or an
+artifact directory. The dry run prints that reclaimable set, journal rows,
+orphaned `runs/<id>` directories, and artifact bytes without changing
+anything. A live `roundfix gc` deletes eligible Run Event Journal rows,
+removes each pruned Run's `<artifact_dir>/runs/<run-id>` directory, removes
+orphaned `runs/<id>` directories under the resolved run artifact root, and
+reports Runs, journal rows, and artifact bytes reclaimed on stdout. With
+`journal_retention: 0`, it prints `GC skipped` and performs no pruning.
 
 Use the three explicit machine-wide storage surfaces separately from that
 per-repository retention sweep:
@@ -1029,8 +1035,8 @@ repository, Run state, and Artifact Root without migrating, opening a writer,
 or creating a missing Run Database.
 
 Operational `implement`, `resolve`, and `watch` startup runs the same Journal
-Retention prune best-effort when retention is non-zero. Successful cleanup
-prints one stderr line shaped like:
+Retention prune best-effort when retention is non-zero. It prints the
+successful cleanup stderr line only when it reclaimed something, shaped like:
 
 ```text
 roundfix: pruned Run storage runs=<n> journal_rows=<n> artifact_bytes=<n>
