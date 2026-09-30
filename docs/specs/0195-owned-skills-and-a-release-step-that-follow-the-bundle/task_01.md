@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0195-owned-skills-and-a-release-step-that-follow-the-bundle
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -70,3 +70,74 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - ADR-0062, ADR-0189
 
 ## Result
+
+Implemented the Task 01 slice for Daemon Verification. Task status and the
+Task Graph remain Daemon-owned; no commit, push or Pull Request was made.
+
+- The owned-skill minimum map is built once from every embedded `SKILL.md`,
+  retaining the base constant only for an absent or invalid declaration. The
+  existing below-minimum subtest reads the same map without changing its
+  assertion or any other existing assertion.
+- The unconfirmed preview checks owned skills with no external requirements,
+  sorts below-minimum entries by skill, and emits the specified `outdated`
+  status, fields, message, next action and text lines. Existing guidance-plan
+  messages remain when guidance changes; confirmed apply paths are unchanged.
+- Added the seven named tests in the two prescribed new files. Each uses a
+  temporary repository. Doctor uses its real repository skill checker with
+  isolated health/profile/storage dependencies and no Run Database read.
+- Applied the four fixed text changes. Both Roundfix skill version fields
+  moved from the Task base's `0.0.2` to `0.0.3`; `make skills-sync` regenerated
+  its mirror. The QA settlement section is byte-identical to the base.
+
+Focused evidence by acceptance criterion:
+
+1. `TestTheOwnedSkillMinimumIsTheEmbeddedVersion` compares all 14 entries;
+   `TestAMinimumThatDiffersFromTheEmbeddedVersionIsReported` identifies a
+   lowered `qa-gate` entry; `TestAnInstalledOwnedSkillOlderThanTheBundleIsBelow`
+   installs the bundle and verifies the below state and both versions.
+2. `TestDoctorFailsForAnOwnedSkillOlderThanTheBundle` verifies the exact
+   `skills: failed` line, versions, install command and failing CLI exit.
+3. `TestBaselineUpdatePreviewReportsAnOlderOwnedSkill` verifies exit `3`,
+   `plan_ready`, `approval`, one `skills.outdated` entry, exact message/action,
+   text placement, unchanged repository bytes, and preservation of the
+   changed-guidance Plan's message/action. The no-skills test verifies
+   `current` and byte-identical output before and after lowering a skill.
+4. `TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch` verifies
+   `current`, omission of `outdated`, and identical JSON bytes for matching
+   and absent owned skills. A shared skill-directory symlink produces a real
+   repository-check error while preserving profile capabilities; its preview
+   also retains identical bytes.
+5. A focused source comparison confirms authorial/mirror byte identity,
+   exactly two version fields raised one patch, and unchanged QA settlement.
+
+Commands and outcomes:
+
+- Initial focused minimum test reproduced the old mismatch for
+  `implement-spec`, `qa-gate` and `write-tasks`. Initial focused preview test
+  reproduced `current` with no outdated entry for the older installed skill.
+- Default-cache test attempts were blocked by sandbox cache access. Subsequent
+  checks use `GOCACHE=/private/tmp/roundfix-task01-go-cache`.
+- `go test ./skills ./internal/cli -run
+  '^(TestTheOwnedSkillMinimumIsTheEmbeddedVersion|TestAMinimumThatDiffersFromTheEmbeddedVersionIsReported|TestAnInstalledOwnedSkillOlderThanTheBundleIsBelow|TestBaselineUpdatePreviewReportsAnOlderOwnedSkill|TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch|TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck|TestDoctorFailsForAnOwnedSkillOlderThanTheBundle)$'
+  -count=1`: exit 0; both packages passed. This is a focused check, not the
+  Task's authored Verification command.
+- `make skills-sync`: exit 0.
+- `make baseline-digests`: exit 0, `changed: false`; no derived pins changed.
+- `git diff --check`: exit 0.
+- Initial `make verify-incremental`: exit 2. Suite guards detected concurrent
+  implementation edits made during that run, its compiled CLI test still used
+  the earlier error fixture, and two force-stop integration tests could not
+  read the process table inside the sandbox. No repository test was weakened.
+- Stable rerun of `make verify-incremental` with process-table permission:
+  exit 0. Formatting, vet, all package tests, skill sync checks, embedded skill
+  readiness and build passed. No implementation edits occurred during it.
+- Changed-file postflight: every new change is in this Task's Context or this
+  Task file; no other skill, setup snapshot, Task or manifest was changed.
+
+No follow-up work identified. Authored Verification was not run and remains
+with the Daemon.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260930T162501Z_8ec6b68021df9cef`
+- Source commit: `2acceef2e5647afa58718be5a5043de49ad21aaa`

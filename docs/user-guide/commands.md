@@ -93,7 +93,9 @@ and `storage:` also report `found` or `partial`. Failure lines include
   authorities. The running binary's embedded artifacts are authoritative for
   the 14 Roundfix-owned skills, including the Roundfix Skill. Each of the 25
   required external skills must hash to its `computedHash` in
-  `skills-lock.json`.
+  `skills-lock.json`. The minimum version of an owned skill is the version
+  of that skill the running binary carries, so a copy installed by an older
+  binary fails this line until it is refreshed.
 - `residue:` — live processes from terminal Run lineages, or a partial result
   when Doctor cannot inspect every lineage.
 - `storage:` — whether Run storage is reclaimable from terminal Runs or free

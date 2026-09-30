@@ -24,6 +24,7 @@ const (
 	baselineUpdateSkillsWarning  = "warning"
 	baselineUpdateSkillsSkipped  = "skipped"
 	baselineUpdateSkillsFailed   = "failed"
+	baselineUpdateSkillsOutdated = "outdated"
 )
 
 type baselineUpdateRequest struct {
@@ -47,12 +48,19 @@ type baselineUpdateSkillDrift struct {
 	Reason string `json:"reason"`
 }
 
+type baselineUpdateSkillOutdated struct {
+	Skill    string `json:"skill"`
+	Found    string `json:"found"`
+	Required string `json:"required"`
+}
+
 type baselineUpdateSkillsResult struct {
-	Status         string                     `json:"status"`
-	InstalledCount int                        `json:"installedCount"`
-	Installed      []string                   `json:"installed"`
-	Restored       []string                   `json:"restored"`
-	Drifted        []baselineUpdateSkillDrift `json:"drifted"`
+	Outdated       []baselineUpdateSkillOutdated `json:"outdated,omitempty"`
+	Status         string                        `json:"status"`
+	InstalledCount int                           `json:"installedCount"`
+	Installed      []string                      `json:"installed"`
+	Restored       []string                      `json:"restored"`
+	Drifted        []baselineUpdateSkillDrift    `json:"drifted"`
 }
 
 type baselineUpdateSkillsStage func(
@@ -243,7 +251,32 @@ func runBaselineUpdateCommandWithSkillsStage(
 	result.Warnings = append(result.Warnings, plan.Warnings...)
 	result.HistoryMoves = append(result.HistoryMoves, plan.HistoryMoves...)
 	if !request.yes && request.confirmation == "" {
+		if !request.skipSkills {
+			readiness, err := roundskills.CheckRepositoryWithExternal(ctx, request.repo, nil)
+			if err == nil {
+				for _, owned := range readiness.Owned {
+					if owned.State == roundskills.ReadinessBelow {
+						result.Skills.Outdated = append(result.Skills.Outdated, baselineUpdateSkillOutdated{
+							Skill: owned.Skill, Found: owned.Found, Required: owned.Minimum,
+						})
+					}
+				}
+				sort.Slice(result.Skills.Outdated, func(i, j int) bool {
+					return result.Skills.Outdated[i].Skill < result.Skills.Outdated[j].Skill
+				})
+				if len(result.Skills.Outdated) != 0 {
+					result.Skills.Status = baselineUpdateSkillsOutdated
+				}
+			}
+		}
 		if len(plan.FileChanges) == 0 && len(plan.HistoryMoves) == 0 {
+			if len(result.Skills.Outdated) != 0 {
+				result.State = "plan_ready"
+				result.Category = "approval"
+				result.Message = fmt.Sprintf("guidance matches the current Baseline catalog; %d Roundfix-owned skill(s) are older than the ones this binary carries", len(result.Skills.Outdated))
+				result.NextAction = "rerun with --yes to refresh the Repository Skill Set, or run roundfix skills install --target project"
+				return writeBaselineUpdateOutcome(result, exitUnverified, jsonOutput, stdout, stderr)
+			}
 			result.State = "current"
 			result.Message = "the repository already matches the current Baseline catalog"
 			return writeBaselineUpdateOutcome(result, exitOK, jsonOutput, stdout, stderr)
@@ -716,6 +749,12 @@ func writeBaselineUpdateResult(result baselineUpdateResult, jsonOutput bool, std
 	fmt.Fprintf(stdout, "Skills drifted: %d\n", len(result.Skills.Drifted))
 	for _, drift := range result.Skills.Drifted {
 		fmt.Fprintf(stdout, "- drifted %s: %s\n", drift.Skill, drift.Reason)
+	}
+	if len(result.Skills.Outdated) != 0 {
+		fmt.Fprintf(stdout, "Skills outdated: %d\n", len(result.Skills.Outdated))
+		for _, outdated := range result.Skills.Outdated {
+			fmt.Fprintf(stdout, "- outdated %s: found %s, requires %s\n", outdated.Skill, outdated.Found, outdated.Required)
+		}
 	}
 	if result.PlanDigest != "" {
 		fmt.Fprintf(stdout, "Plan Digest: %s\n", result.PlanDigest)

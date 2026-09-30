@@ -315,12 +315,13 @@ func TestOwnedSkillContractRejectsSetAndVersionDisagreement(t *testing.T) {
 			name: "owned version below minimum",
 			mutate: func(names []string, files []File) ([]string, []File) {
 				mutated := append([]File(nil), files...)
-				below := skillVersionBelow(t, ownedSkillMinimumVersion)
+				minimum := ownedSkillMinimumVersions["roundfix"]
+				below := skillVersionBelow(t, minimum)
 				for index := range mutated {
 					if mutated[index].Path == "roundfix/SKILL.md" {
 						mutated[index].Data = bytes.Replace(
 							mutated[index].Data,
-							[]byte("\nversion: "+ownedSkillMinimumVersion+"\n---"),
+							[]byte("\nversion: "+minimum+"\n---"),
 							[]byte("\nversion: "+below+"\n---"),
 							1,
 						)

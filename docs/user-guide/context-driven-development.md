@@ -147,8 +147,10 @@ roundfix baseline update --repo . --format json
 ```
 
 Without confirmation, a changed managed-refresh Plan is presented and the
-repository remains unchanged. Approve the Plan Digest computed in the same
-invocation for a fleet sweep:
+repository remains unchanged. The preview also lists each installed
+Roundfix-owned skill older than the version the binary carries, and then
+reports `plan_ready` even when the guidance is unchanged. Approve the Plan
+Digest computed in the same invocation for a fleet sweep:
 
 ```bash
 roundfix baseline update --repo . --yes --format json

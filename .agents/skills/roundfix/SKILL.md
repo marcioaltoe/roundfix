@@ -4,10 +4,10 @@ description: Use Roundfix to plan releases with the read-only Release Plan Comma
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.0.2
+  version: 0.0.3
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.0.2
+version: 0.0.3
 ---
 
 # Roundfix
@@ -79,8 +79,9 @@ value. The Run therefore proves the effort applied. An empty effort remains
 Agent Model opens at its own value.
 
 The blocking `skills:` line runs after, and independently from, `profiles:`.
-For each Roundfix-owned skill, the running binary declares a minimum version
-and compares it with the version declared by the installed `SKILL.md`.
+For each Roundfix-owned skill, the minimum version is the version of that
+skill the running binary carries, and Doctor compares it with the version
+declared by the installed `SKILL.md`.
 Readiness is this version comparison, not a content match. The three states are:
 
 - `satisfies` — the declared version is at or above the declared minimum, so
@@ -635,6 +636,10 @@ roundfix baseline update --repo . --yes --format json
 ```
 
 Without confirmation, a changed Plan is presented and nothing is written.
+The same preview lists, under `skills.outdated`, each installed
+Roundfix-owned skill older than the version the binary carries. With
+unchanged guidance it then reports `plan_ready` instead of `current`, and
+`--yes` refreshes the Repository Skill Set.
 `--yes` approves the Plan Digest computed in that invocation;
 `--confirm-plan <digest>` approves a previously reviewed digest, and the two
 flags are mutually exclusive. `--adopt-suggested` explicitly adopts and reports
