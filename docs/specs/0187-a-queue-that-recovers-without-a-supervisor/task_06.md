@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0187-a-queue-that-recovers-without-a-supervisor
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -45,3 +45,24 @@ task_04 described the grant a Task ran under in the Roundfix skill, and placed t
 - `_authorization.md`
 
 ## Result
+
+Moved the grant paragraph verbatim out of the shared `### QA settlement`
+section in the canonical Roundfix skill and placed it under the directly
+following `### Authorization audit` heading. Ran the sanctioned `rtk make
+skills-sync`, which regenerated the distributed Roundfix mirror.
+
+Focused checks:
+
+- Extracted the shared settlement sections using the repository test's heading
+  boundary and compared the Roundfix section with `qa-gate`: identical.
+- Compared `.agents/skills/roundfix/SKILL.md` with `skills/roundfix/SKILL.md`:
+  byte-identical.
+- Confirmed `### Authorization audit` precedes the sole occurrence of `the
+  grant the Task ran under` and ran `git diff --check`: passed.
+
+Acceptance evidence:
+
+- `TestSettlementGuidanceIsOneTable`: the focused section comparison passed;
+  the Daemon must run the declared test for the authoritative result.
+- The grant wording remains under `### Authorization audit`, and the
+  regenerated mirror is byte-identical as shown by the focused checks above.

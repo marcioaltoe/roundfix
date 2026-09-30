@@ -2518,15 +2518,6 @@ means the amendment was recorded, exit `1` means the write failed, and exit
 The same outcome settles the authored `qa` Task and determines what archive
 may move:
 
-The mechanical authorization audit reads each governed Task commit's grant at
-its fork point first. When that grant does not cover the commit, the audit can
-use the grant the Task ran under: the record in the Task commit's parent, but
-only while the delivery target carries byte-identical content at the same
-path. The audit reports the latest delivery-target commit that established
-that content as the authorizing revision. A parent-only record, an older
-record that the delivery target later narrowed or revoked, and a Task commit
-that edits its own record remain refusals.
-
 | Outcome | Settles | Archives |
 | --- | --- | --- |
 | `pass` | Settles the QA Task as `completed` and makes the Spec archive-eligible when the report has no disallowed blocked rows. | The Spec and its QA report and evidence. |
@@ -2535,6 +2526,17 @@ that edits its own record remain refusals.
 | `failed` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
 | `missing` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
 | `override` | Does not change the QA Task status or report verdict; settles archive as explicitly authorized despite failed or missing QA. | The Spec with `qa_override`, `qa_override_approval`, `qa_override_reason`, `qa_override_qa_outcome`, `qa_override_qa_task_status` when the QA Task is incomplete, and `qa_override_revision`; QA files move byte-identically. |
+
+### Authorization audit
+
+The mechanical authorization audit reads each governed Task commit's grant at
+its fork point first. When that grant does not cover the commit, the audit can
+use the grant the Task ran under: the record in the Task commit's parent, but
+only while the delivery target carries byte-identical content at the same
+path. The audit reports the latest delivery-target commit that established
+that content as the authorizing revision. A parent-only record, an older
+record that the delivery target later narrowed or revoked, and a Task commit
+that edits its own record remain refusals.
 
 ## Archive Command
 
