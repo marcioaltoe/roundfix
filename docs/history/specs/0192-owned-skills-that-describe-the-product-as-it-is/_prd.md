@@ -1,9 +1,18 @@
 ---
 spec: 0192-owned-skills-that-describe-the-product-as-it-is
-status: active
+status: archived
 created: 2026-09-30
 surfaces: [docs]
+archived: "2026-09-30"
+source_slug: 0192-owned-skills-that-describe-the-product-as-it-is
+qa_override: true
+qa_override_approval: 'maintainer standing approval of 2026-09-30 (unattended program): qa_override only for environment-only partials'
+qa_override_reason: 'QA partial with environment rows only. Row 10: the QA sandbox proxy refused GitHub (HTTP 403); the operator fetched git/git@e9019fca t/t0450-txt-doc-vs-help.sh (180 lines, sha256 4fdbfd74...) and recorded it under qa/evidence/2026-09-30-operator/. Row 13: no Pull Request exists before the PR. Eleven rows pass; pre-PR review at 46533f6b reported no findings.'
+qa_override_qa_outcome: partial
+qa_override_qa_task_status: failed
+qa_override_revision: 46533f6bff8bf480425006a5198f800245dff677
 ---
+
 
 # Owned skills that describe the product as it is
 
