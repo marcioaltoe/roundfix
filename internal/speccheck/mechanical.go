@@ -726,10 +726,64 @@ func addRepairFailure(result *MechanicalResult, failure RepairFailure) {
 	result.RepairFailures = append(result.RepairFailures, failure)
 }
 
+// ProspectiveTaskCommit names the exact parent and paths of an uncreated Task commit.
+type ProspectiveTaskCommit struct {
+	TaskID   string
+	TaskFile string
+	Parent   string
+	Changed  []string
+}
+
+func mechanicalTaskCommitSubject(commit MechanicalTaskCommit) string {
+	if commit.SHA == "" {
+		return commit.TaskID + "'s prospective commit"
+	}
+	return commit.TaskID + " commit " + commit.SHA
+}
+
+// AuditProspectiveTaskCommit applies the gate's per-commit authorization audit.
+func AuditProspectiveTaskCommit(ctx context.Context, request MechanicalRequest, commit ProspectiveTaskCommit) ([]MechanicalFinding, error) {
+	result := MechanicalResult{}
+	err := auditMechanicalTaskCommit(ctx, &result, request.RepoRoot, request,
+		MechanicalTaskCommit{TaskID: commit.TaskID, TaskFile: commit.TaskFile}, commit.Parent, commit.Changed, true)
+	return result.Findings, err
+}
+
 func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, repoRoot string, request MechanicalRequest) error {
 	if request.TaskCommitsFromRunStart {
 		addMechanicalSkip(result, DetectorMechanicalAuthPaths, MechanicalSkipEarlierRunTaskCommits)
 	}
+	if !mechanicalAuthorizationReferencePresent(request.AuthorizationReference) && cleanMechanicalPath(request.AuthorizationPath) == "" {
+		addMechanicalSkip(result, DetectorMechanicalAuthPaths, "tooling authorization")
+		return nil
+	}
+	if len(request.TaskCommits) == 0 {
+		return auditMechanicalTaskCommit(ctx, result, repoRoot, request, MechanicalTaskCommit{}, "", nil, false)
+	}
+	projectRepoRoot := repoRoot
+	if mechanicalAuthorizationReferencePresent(request.AuthorizationReference) && strings.TrimSpace(request.AuthorizationReference.Location.ProjectRepoRoot) != "" {
+		projectRepoRoot = request.AuthorizationReference.Location.ProjectRepoRoot
+	}
+	for _, commit := range request.TaskCommits {
+		var changed []string
+		exists, err := mechanicalCommitExists(ctx, projectRepoRoot, commit.SHA)
+		if err != nil {
+			return err
+		}
+		if exists {
+			changed, err = mechanicalChangedPaths(ctx, projectRepoRoot, commit.SHA)
+			if err != nil {
+				return err
+			}
+		}
+		if err := auditMechanicalTaskCommit(ctx, result, repoRoot, request, commit, commit.SHA+"^1", changed, false); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func auditMechanicalTaskCommit(ctx context.Context, result *MechanicalResult, repoRoot string, request MechanicalRequest, taskCommit MechanicalTaskCommit, parent string, changed []string, prospective bool) error {
 	missing := request.AuthorizationPath
 	authorizationPath := cleanMechanicalPath(request.AuthorizationPath)
 	authorizationRepoRoot := repoRoot
@@ -770,10 +824,12 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 		authorizationRevision = strings.TrimSpace(deliveryTarget)
 	}
 	if !resolvedReference && authorizationPath == "" {
-		addMechanicalSkip(result, DetectorMechanicalAuthPaths, missing)
+		if !prospective {
+			addMechanicalSkip(result, DetectorMechanicalAuthPaths, missing)
+		}
 		return nil
 	}
-	if len(request.TaskCommits) == 0 {
+	if !prospective && len(request.TaskCommits) == 0 {
 		addMechanicalSkip(result, DetectorMechanicalAuthPaths, "Task commits")
 		return nil
 	}
@@ -783,11 +839,11 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 		return err
 	}
 
-	for _, taskCommit := range request.TaskCommits {
-		if strings.TrimSpace(taskCommit.SHA) == "" {
-			addMechanicalSkip(result, DetectorMechanicalAuthPaths, "Task commit for "+taskCommit.TaskID)
-			continue
-		}
+	if strings.TrimSpace(taskCommit.SHA) == "" && !prospective {
+		addMechanicalSkip(result, DetectorMechanicalAuthPaths, "Task commit for "+taskCommit.TaskID)
+		return nil
+	}
+	if !prospective {
 		exists, err := mechanicalCommitExists(ctx, projectRepoRoot, taskCommit.SHA)
 		if err != nil {
 			return err
@@ -805,147 +861,143 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 			)
 			result.AuthorizationReads = append(result.AuthorizationReads, read)
 			addMechanicalAuthorizationReadFinding(result, taskCommit, read)
-			continue
+			return nil
 		}
-		changed, err := mechanicalChangedPaths(ctx, projectRepoRoot, taskCommit.SHA)
+	}
+	if !targetAvailable {
+		detail := "delivery target revision is required"
+		if strings.TrimSpace(deliveryTarget) != "" {
+			detail = fmt.Sprintf("delivery target revision %q is unavailable", deliveryTarget)
+		}
+		read := unresolvedMechanicalAuthorizationRead(
+			taskCommit.TaskID,
+			taskCommit.SHA,
+			authorizationPath,
+			authorizationRevision,
+			spec.AuthorizationReasonUnavailableRevision,
+			"delivery_target_revision",
+			deliveryTarget,
+			detail,
+		)
+		result.AuthorizationReads = append(result.AuthorizationReads, read)
+		addMechanicalAuthorizationReadFinding(result, taskCommit, read)
+		return nil
+	}
+
+	authorizingRevision, available, err := mechanicalAuthorizingParentRevision(ctx, projectRepoRoot, targetRevision, parent)
+	if err != nil {
+		return err
+	}
+	if !available {
+		read := unresolvedMechanicalAuthorizationRead(
+			taskCommit.TaskID,
+			taskCommit.SHA,
+			authorizationPath,
+			targetRevision,
+			spec.AuthorizationReasonUnavailableRevision,
+			"authorizing_revision",
+			targetRevision,
+			fmt.Sprintf("Task commit %s has no authorizing ancestor in delivery target %s", taskCommit.SHA, targetRevision),
+		)
+		result.AuthorizationReads = append(result.AuthorizationReads, read)
+		addMechanicalAuthorizationReadFinding(result, taskCommit, read)
+		return nil
+	}
+
+	readRevision := authorizingRevision
+	if !sameRepository {
+		readRevision = authorizationRevision
+	}
+	read, authorization := readMechanicalAuthorization(ctx, authorizationRepoRoot, authorizationPath, request.ConsumingSpec, readRevision, taskCommit.TaskID, taskCommit.SHA)
+	projectAuthorizationPath := authorizationPath
+	projectReadPath := cleanMechanicalPath(read.Source.Path)
+	if !sameRepository {
+		projectAuthorizationPath = ""
+		projectReadPath = ""
+	}
+	changedAuthorizationPath := mechanicalChangedAuthorizationPath(changed, projectAuthorizationPath, projectReadPath)
+	if changedAuthorizationPath != "" {
+		addMechanicalSelfApprovalFinding(result, taskCommit, read.Source.Path, changedAuthorizationPath)
+	}
+	if changedAuthorizationPath == "" && sameRepository {
+		covered, err := mechanicalAuthorizationCoversChangedPaths(
+			projectRepoRoot,
+			read,
+			authorization,
+			changed,
+			cleanMechanicalPath(taskCommit.TaskFile),
+			projectAuthorizationPath,
+			projectReadPath,
+		)
 		if err != nil {
 			return err
 		}
-		if !targetAvailable {
-			detail := "delivery target revision is required"
-			if strings.TrimSpace(deliveryTarget) != "" {
-				detail = fmt.Sprintf("delivery target revision %q is unavailable", deliveryTarget)
+		if !covered {
+			parentRecordPath := projectReadPath
+			if parentRecordPath == "" {
+				parentRecordPath = projectAuthorizationPath
 			}
-			read := unresolvedMechanicalAuthorizationRead(
-				taskCommit.TaskID,
-				taskCommit.SHA,
-				authorizationPath,
-				authorizationRevision,
-				spec.AuthorizationReasonUnavailableRevision,
-				"delivery_target_revision",
-				deliveryTarget,
-				detail,
-			)
-			result.AuthorizationReads = append(result.AuthorizationReads, read)
-			addMechanicalAuthorizationReadFinding(result, taskCommit, read)
-			continue
-		}
-
-		authorizingRevision, available, err := mechanicalAuthorizingRevision(ctx, projectRepoRoot, targetRevision, taskCommit.SHA)
-		if err != nil {
-			return err
-		}
-		if !available {
-			read := unresolvedMechanicalAuthorizationRead(
-				taskCommit.TaskID,
-				taskCommit.SHA,
-				authorizationPath,
-				targetRevision,
-				spec.AuthorizationReasonUnavailableRevision,
-				"authorizing_revision",
-				targetRevision,
-				fmt.Sprintf("Task commit %s has no authorizing ancestor in delivery target %s", taskCommit.SHA, targetRevision),
-			)
-			result.AuthorizationReads = append(result.AuthorizationReads, read)
-			addMechanicalAuthorizationReadFinding(result, taskCommit, read)
-			continue
-		}
-
-		readRevision := authorizingRevision
-		if !sameRepository {
-			readRevision = authorizationRevision
-		}
-		read, authorization := readMechanicalAuthorization(ctx, authorizationRepoRoot, authorizationPath, request.ConsumingSpec, readRevision, taskCommit.TaskID, taskCommit.SHA)
-		projectAuthorizationPath := authorizationPath
-		projectReadPath := cleanMechanicalPath(read.Source.Path)
-		if !sameRepository {
-			projectAuthorizationPath = ""
-			projectReadPath = ""
-		}
-		changedAuthorizationPath := mechanicalChangedAuthorizationPath(changed, projectAuthorizationPath, projectReadPath)
-		if changedAuthorizationPath != "" {
-			addMechanicalSelfApprovalFinding(result, taskCommit, read.Source.Path, changedAuthorizationPath)
-		}
-		if changedAuthorizationPath == "" && sameRepository {
-			covered, err := mechanicalAuthorizationCoversChangedPaths(
+			grantRevision, matches, err := mechanicalGrantRanUnderRevision(
+				ctx,
 				projectRepoRoot,
-				read,
-				authorization,
-				changed,
-				cleanMechanicalPath(taskCommit.TaskFile),
-				projectAuthorizationPath,
-				projectReadPath,
+				targetRevision,
+				parent,
+				parentRecordPath,
 			)
 			if err != nil {
 				return err
 			}
-			if !covered {
-				parentRecordPath := projectReadPath
-				if parentRecordPath == "" {
-					parentRecordPath = projectAuthorizationPath
-				}
-				grantRevision, matches, err := mechanicalGrantRanUnderRevision(
+			if matches {
+				read, authorization = readMechanicalAuthorization(
 					ctx,
-					projectRepoRoot,
-					targetRevision,
-					taskCommit.SHA,
+					authorizationRepoRoot,
 					parentRecordPath,
+					request.ConsumingSpec,
+					grantRevision,
+					taskCommit.TaskID,
+					taskCommit.SHA,
 				)
-				if err != nil {
-					return err
-				}
-				if matches {
-					read, authorization = readMechanicalAuthorization(
-						ctx,
-						authorizationRepoRoot,
-						parentRecordPath,
-						request.ConsumingSpec,
-						grantRevision,
-						taskCommit.TaskID,
-						taskCommit.SHA,
-					)
-					projectReadPath = cleanMechanicalPath(read.Source.Path)
-				}
+				projectReadPath = cleanMechanicalPath(read.Source.Path)
 			}
 		}
-		result.AuthorizationReads = append(result.AuthorizationReads, read)
-		if read.Outcome != spec.AuthorizationGranted {
-			if changedAuthorizationPath == "" {
-				addMechanicalAuthorizationReadFinding(result, taskCommit, read)
-			}
+	}
+	result.AuthorizationReads = append(result.AuthorizationReads, read)
+	if read.Outcome != spec.AuthorizationGranted {
+		if changedAuthorizationPath == "" {
+			addMechanicalAuthorizationReadFinding(result, taskCommit, read)
+		}
+		return nil
+	}
+	bounded := make(map[string]bool, len(authorization.Record.Paths))
+	for _, declared := range authorization.Record.Paths {
+		if clean := cleanMechanicalPath(declared); clean != "" {
+			bounded[clean] = true
+		}
+	}
+	regenerated, err := mechanicalRegenerationOutputs(projectRepoRoot, authorization.Record.Regenerations)
+	if err != nil {
+		return fmt.Errorf("resolve sanctioned regeneration outputs from %q: %w", read.Source.Path, err)
+	}
+	taskFile := cleanMechanicalPath(taskCommit.TaskFile)
+	for _, changedPath := range changed {
+		if changedPath == taskFile {
 			continue
 		}
-		bounded := make(map[string]bool, len(authorization.Record.Paths))
-		for _, declared := range authorization.Record.Paths {
-			if clean := cleanMechanicalPath(declared); clean != "" {
-				bounded[clean] = true
-			}
+		if changedPath == projectAuthorizationPath || changedPath == projectReadPath {
+			continue
 		}
-		regenerated, err := mechanicalRegenerationOutputs(projectRepoRoot, authorization.Record.Regenerations)
-		if err != nil {
-			return fmt.Errorf("resolve sanctioned regeneration outputs from %q: %w", read.Source.Path, err)
+		if !GovernedPath(changedPath) || bounded[changedPath] || regenerated[changedPath] {
+			continue
 		}
-		taskFile := cleanMechanicalPath(taskCommit.TaskFile)
-		for _, changedPath := range changed {
-			if changedPath == taskFile {
-				continue
-			}
-			if changedPath == projectAuthorizationPath || changedPath == projectReadPath {
-				continue
-			}
-			if !GovernedPath(changedPath) || bounded[changedPath] || regenerated[changedPath] {
-				continue
-			}
-			addMechanicalFinding(result, MechanicalFinding{
-				Code: CodeMechanicalAuthPaths, File: read.Source.Path, Line: 1,
-				Detail: fmt.Sprintf(
-					"Task %s commit %s changes %s outside authorization grant %s's exact bounded files",
-					taskCommit.TaskID, taskCommit.SHA, changedPath, read.Source.Path,
-				),
-				Fix:     "Move the path into an expressly authorized Task or narrow the commit to the written authorization and assigned Task file.",
-				RowHint: taskCommit.TaskID,
-			})
-		}
+		addMechanicalFinding(result, MechanicalFinding{
+			Code: CodeMechanicalAuthPaths, File: read.Source.Path, Line: 1,
+			Detail: fmt.Sprintf(
+				"Task %s changes %s outside authorization grant %s's exact bounded files",
+				mechanicalTaskCommitSubject(taskCommit), changedPath, read.Source.Path,
+			),
+			Fix:     "Move the path into an expressly authorized Task or narrow the commit to the written authorization and assigned Task file.",
+			RowHint: taskCommit.TaskID,
+		})
 	}
 	return nil
 }
@@ -1011,16 +1063,16 @@ func addMechanicalSelfApprovalFinding(result *MechanicalResult, taskCommit Mecha
 	addMechanicalFinding(result, MechanicalFinding{
 		Code: CodeMechanicalAuthPaths, File: recordPath, Line: 1,
 		Detail: fmt.Sprintf(
-			"Task %s commit %s changes authorization grant %s in the commit that consumes it",
-			taskCommit.TaskID, taskCommit.SHA, changedPath,
+			"Task %s changes authorization grant %s in the commit that consumes it",
+			mechanicalTaskCommitSubject(taskCommit), changedPath,
 		),
 		Fix:     "Land the authorization record in the delivery target ancestry before the Task commit that consumes it.",
 		RowHint: taskCommit.TaskID,
 	})
 }
 
-func mechanicalAuthorizingRevision(ctx context.Context, repoRoot, deliveryTarget, consumingCommit string) (string, bool, error) {
-	parent, available, err := mechanicalResolveCommit(ctx, repoRoot, consumingCommit+"^1")
+func mechanicalAuthorizingParentRevision(ctx context.Context, repoRoot, deliveryTarget, parent string) (string, bool, error) {
+	parent, available, err := mechanicalResolveCommit(ctx, repoRoot, parent)
 	if err != nil || !available {
 		return "", available, err
 	}
@@ -1032,11 +1084,11 @@ func mechanicalAuthorizingRevision(ctx context.Context, repoRoot, deliveryTarget
 		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
 			return "", false, nil
 		}
-		return "", false, fmt.Errorf("resolve authorizing ancestor for %q against delivery target %q: %w: %s", consumingCommit, deliveryTarget, err, strings.TrimSpace(string(output)))
+		return "", false, fmt.Errorf("resolve authorizing ancestor for %q against delivery target %q: %w: %s", parent, deliveryTarget, err, strings.TrimSpace(string(output)))
 	}
 	ancestor := strings.TrimSpace(string(output))
 	if ancestor == "" || strings.Contains(ancestor, "\n") {
-		return "", false, fmt.Errorf("resolve authorizing ancestor for %q: Git returned invalid revision %q", consumingCommit, ancestor)
+		return "", false, fmt.Errorf("resolve authorizing ancestor for %q: Git returned invalid revision %q", parent, ancestor)
 	}
 	return ancestor, true, nil
 }
@@ -1045,15 +1097,11 @@ func mechanicalGrantRanUnderRevision(
 	ctx context.Context,
 	repoRoot string,
 	deliveryTarget string,
-	consumingCommit string,
+	parent string,
 	recordPath string,
 ) (string, bool, error) {
 	if recordPath == "" {
 		return "", false, nil
-	}
-	parent, available, err := mechanicalResolveCommit(ctx, repoRoot, consumingCommit+"^1")
-	if err != nil || !available {
-		return "", false, err
 	}
 	parentBlob, present, err := mechanicalBlobAtPath(ctx, repoRoot, parent, recordPath)
 	if err != nil || !present {
@@ -1310,9 +1358,8 @@ func addMechanicalAuthorizationReadFinding(result *MechanicalResult, taskCommit 
 	addMechanicalFinding(result, MechanicalFinding{
 		Code: CodeMechanicalAuthPaths, File: read.Source.Path, Line: 1,
 		Detail: fmt.Sprintf(
-			"Task %s commit %s authorization audit is %s for %s at %s: %s",
-			taskCommit.TaskID,
-			taskCommit.SHA,
+			"Task %s authorization audit is %s for %s at %s: %s",
+			mechanicalTaskCommitSubject(taskCommit),
 			read.Outcome,
 			read.Source.Path,
 			read.Source.Revision,
