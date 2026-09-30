@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0185-a-pre-pr-review-that-keeps-its-verdict-and-its-own-record
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
