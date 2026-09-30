@@ -383,10 +383,11 @@ A parked item keeps its worktree, and `deliver status` prints that path. On
 resume, Roundfix recreates a missing worktree from its recorded branch; if the
 branch is missing too, it parks the item as `item-worktree-missing` instead of
 replaying the stage. After an item merges, its worktree and local item branch
-are removed. Before that removal, Roundfix releases every terminal Run of the
-merged Spec that it can prove is represented at the recorded merged head. A
-Run it cannot prove stays in place, and `deliver status` names the Run and its
-reason in the item's cleanup warning.
+are removed. Before that removal, cleanup refreshes the default branch from the delivery remote.
+Roundfix then releases every terminal Run of the merged Spec that it can prove
+is represented at the recorded merged head. A Run it cannot prove stays in
+place, and `deliver status` names the Run and its reason in the item's cleanup
+warning.
 
 A start requires every named Spec's committed authorization to grant
 `implement`, `commit`, `push`, `pull_request`, and `merge`. If any Spec lacks
@@ -424,6 +425,15 @@ continues to its Run. `deliver status` prints `Warning: <slug> <warning>` after
 the item rows, and the delivery console log prints `roundfix: warning: Delivery
 Queue item <slug>: <warning>`. No overlap adds no warning or log line.
 
+At that item-start boundary, Revalidation also compares the queue owner's build
+commit with the starting main. When the owner predates a commit that changed
+Roundfix source under `cmd/`, `internal/`, `go.mod`, or `go.sum`, the item adds
+`owner-older-than-main: owner build <commit> predates starting main <commit>`
+after any `premise-changed` warning. `deliver status` and the delivery console
+log print the combined warning, and the item continues to its Run. A docs-only
+change, a current owner, or a build commit absent from the repository adds no
+owner warning. A retry keeps the recorded warning and does not recompute it.
+
 A blocker parks its item with a reason; it does not stop later queued items.
 When a queue resumes, it reconciles every recorded action that lacks a receipt
 against the observed remote state before retrying that action. This prevents a
@@ -454,10 +464,26 @@ For an active Spec that has not run, Roundfix first repeats the strict check in
 the item worktree and refuses while findings remain, leaving the item
 unchanged. It then carries the remaining settled Tasks from every terminal
 Implement Run of the item's Spec on the item branch, newest first. A retry does
-not change a recorded `premise-changed` warning. The item re-enters at
-`running` when any Task is unfinished or at `reviewing` when every Task is
-completed. An archived Spec re-enters at `gating` without a recorded pull
-request or at `checking` with one.
+not change a recorded `premise-changed` or `owner-older-than-main` warning. The
+item re-enters at `running` when any Task is unfinished or at `reviewing` when
+every Task is completed. An archived Spec re-enters at `gating` without a
+recorded pull request or at `checking` with one.
+
+When every refused Task has moved inputs and only non-Task commits after the
+Run started changed those inputs, the reason adds `amended by <sha>, ...` and
+the next action prints these five POSIX-quoted commands in order:
+
+```bash
+git -C '<worktree>' branch 'roundfix-amended-<run-id>' HEAD
+git -C '<worktree>' reset --hard '<first-amendment>^'
+(cd '<worktree>' && roundfix reconcile '<run-id>' --carry-forward)
+git -C '<worktree>' cherry-pick '<amendment>' ...
+roundfix deliver retry '<slug>'
+```
+
+Roundfix prints the recovery and never runs it. A Task commit that changed a
+moved input, or a refusal with another cause, keeps the existing single
+`roundfix reconcile <run-id> --carry-forward` next action.
 
 | Recorded evidence | Re-entry stage |
 | --- | --- |
@@ -2503,6 +2529,17 @@ may move:
 | `failed` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
 | `missing` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
 | `override` | Does not change the QA Task status or report verdict; settles archive as explicitly authorized despite failed or missing QA. | The Spec with `qa_override`, `qa_override_approval`, `qa_override_reason`, `qa_override_qa_outcome`, `qa_override_qa_task_status` when the QA Task is incomplete, and `qa_override_revision`; QA files move byte-identically. |
+
+### Authorization audit
+
+The mechanical authorization audit reads each governed Task commit's grant at
+its fork point first. When that grant does not cover the commit, the audit can
+use the grant the Task ran under: the record in the Task commit's parent, but
+only while the delivery target carries byte-identical content at the same
+path. The audit reports the latest delivery-target commit that established
+that content as the authorizing revision. A parent-only record, an older
+record that the delivery target later narrowed or revoked, and a Task commit
+that edits its own record remain refusals.
 
 ## Archive Command
 

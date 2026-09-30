@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"roundfix/internal/app"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/delivery"
 	"roundfix/internal/spec"
@@ -25,11 +26,14 @@ func (workflow *commandDeliveryWorkflow) Revalidate(
 	if err != nil {
 		return delivery.Revalidation{}, fmt.Errorf("run strict Spec Consistency Check: %w", err)
 	}
+	result := delivery.Revalidation{Findings: findingCodes(findings)}
+	if priorMerges != nil {
+		result.OwnerWarning = workflow.deliveryOwnerWarning(ctx, workDir)
+	}
 	graph, err := spec.Load(specsRoot.Path, specSlug)
 	if err != nil {
 		return delivery.Revalidation{}, fmt.Errorf("load item Spec %q: %w", specSlug, err)
 	}
-	result := delivery.Revalidation{Findings: findingCodes(findings)}
 	premises := productionPremises(graph)
 	changed := make(map[string]struct{})
 	for _, mergeCommit := range priorMerges {
@@ -56,6 +60,54 @@ func (workflow *commandDeliveryWorkflow) Revalidate(
 	}
 	sort.Strings(result.ChangedPremises)
 	return result, nil
+}
+
+func (workflow *commandDeliveryWorkflow) deliveryOwnerWarning(ctx context.Context, workDir string) string {
+	startingMain, err := workflow.git.RunGit(ctx, workDir, "rev-parse", "HEAD")
+	if err != nil {
+		return ""
+	}
+	startingMain = strings.TrimSpace(startingMain)
+	binary := app.Auditor()
+	evidence := spec.ResolveAuditorEvidence(ctx, workDir, startingMain, binary)
+	if !evidence.SelfAudit || evidence.Ancestry != app.AncestryOlder {
+		return ""
+	}
+
+	buildCommit := strings.TrimSuffix(strings.TrimSpace(binary.Commit), "-dirty")
+	resolvedBuild, err := workflow.git.RunGit(ctx, workDir, "rev-parse", buildCommit+"^{commit}")
+	if err != nil {
+		return ""
+	}
+	changed, err := workflow.git.RunGit(
+		ctx,
+		workDir,
+		"diff",
+		"--name-only",
+		buildCommit,
+		startingMain,
+		"--",
+		"cmd",
+		"internal",
+		"go.mod",
+		"go.sum",
+	)
+	if err != nil || strings.TrimSpace(changed) == "" {
+		return ""
+	}
+	return fmt.Sprintf(
+		"owner-older-than-main: owner build %s predates starting main %s",
+		deliveryCommitName(resolvedBuild),
+		deliveryCommitName(startingMain),
+	)
+}
+
+func deliveryCommitName(commit string) string {
+	commit = strings.TrimSpace(commit)
+	if len(commit) > 12 {
+		return commit[:12]
+	}
+	return commit
 }
 
 func sortedStringsContain(values []string, target string) bool {

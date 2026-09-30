@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0187-a-queue-that-recovers-without-a-supervisor
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -58,3 +58,47 @@ After the Delivery Queue squash-merges an item, `ReleaseMergedRuns` proves the r
 - ADR-0161; ADR-0090
 
 ## Result
+
+Implemented post-merge cleanup so it resolves `Watch.PushRemote`, falling back
+to `origin`, and checks that remote with `git remote get-url`. When the remote
+exists, cleanup fetches its default branch before resolving the recorded merge
+commit or candidate head, proves the merge against
+`refs/remotes/<remote>/<default>`, and returns a `refresh default branch
+"<default>"` error when the fetch fails. When the remote is absent, the
+existing local default-branch resolution remains in use.
+
+Focused implementation evidence:
+
+- Before the production change,
+  `GOCACHE=/tmp/roundfix-0187-task01-gocache go test -count=1 -run '^TestReleaseMergedRuns(FetchesTheMergeCommitBeforeReleasing|ReportsAFailedRefresh|WithoutARemoteResolvesLocally)$' ./internal/cli`
+  failed because the merge commit pushed by the merger clone did not resolve
+  in the stale queue clone; the failed-refresh case also returned that stale
+  resolution error instead of the required refresh error.
+- After the production change,
+  `GOCACHE=/tmp/roundfix-0187-task01-gocache go test -count=1 -run '^TestReleaseMergedRuns' ./internal/cli`
+  passed. This includes the three required named tests, the existing merge
+  evidence tests, and an additional configured-delivery-remote case where an
+  unreachable `origin` is ignored in favor of `Watch.PushRemote`.
+- `make skills-sync` exited 0. A literal phrase search found `refreshes the
+  default branch from the delivery remote` in the user guide, canonical
+  Roundfix skill, and generated mirror; `diff -q` found the canonical skill and
+  mirror identical.
+
+Acceptance evidence:
+
+- A bare `origin` plus separate queue and merger clones proves that a squash
+  merge pushed from the merger clone releases the Run from the stale queue
+  clone without a prior fetch.
+- Pointing the queue clone's existing `origin` at an unreachable path returns
+  the refresh error and leaves its Run Worktree and Run Branch in place.
+- The no-remote test exercises the unchanged local evidence path, while the
+  focused `TestReleaseMergedRuns` run keeps the pre-existing evidence cases
+  green.
+- The guide and both skill copies contain the required phrase, and the
+  sanctioned skill sync completed successfully. The Daemon-owned
+  `make skills-sync-check` Verification remains intentionally unrun.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260930T102010Z_231eaa2e314ed8d8`
+- Source commit: `8bce9e7d4b7627f750808f4a1cd71deb295bd506`

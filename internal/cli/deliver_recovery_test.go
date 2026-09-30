@@ -339,6 +339,10 @@ func assertItemRecoveryRefusal(t *testing.T, err error, runID, workDir string) {
 		workDir,
 		"roundfix deliver retry " + implementTestSlug,
 	} {
+		if strings.Contains(err.Error(), "; amended by ") {
+			want = strings.ReplaceAll(want, runID, "'"+runID+"'")
+			want = strings.ReplaceAll(want, implementTestSlug, "'"+implementTestSlug+"'")
+		}
 		if !strings.Contains(next, want) {
 			t.Fatalf("carry-forward next action = %q, want %q", next, want)
 		}

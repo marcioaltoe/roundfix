@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0187-a-queue-that-recovers-without-a-supervisor
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -66,3 +66,67 @@ A Delivery Retry carries forward the proved Tasks of the item's Runs. When a lat
 - ADR-0170; ADR-0053; ADR-0158
 
 ## Result
+
+Implemented Delivery Retry amendment recovery without changing Task
+Carry-Forward proof or refusal settlement. A moved-input whole-set refusal now
+inspects the moved paths from the Run's recorded head through the item
+worktree's `HEAD`, accepts only an oldest-first non-empty commit list with no
+`Roundfix-Task` trailer, and appends `amended by <sha>, ...` to the existing
+reason. Its next action prints, but never runs, the branch-save, reset,
+worktree-scoped carry-forward, ordered cherry-pick, and retry commands. One
+POSIX single-quote helper quotes every state-derived command argument. Every
+unproved or mixed cause keeps the prior reason and next action byte-identical.
+
+Focused implementation evidence:
+
+- Before the production change,
+  `GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 -run '^TestRetryRefusalNamesTheAmendingCommitAndTheRecovery$' ./internal/cli`
+  failed because the moved-input refusal omitted both non-Task amendment SHAs.
+- After the production change, that focused command passed against a real Git
+  repository under a path containing spaces, an apostrophe, and `$`, plus the
+  package's real Run Database fixture. The test records two amendments and
+  proves their oldest-first reason and five-command recovery.
+- Separate focused runs of
+  `TestRetryRefusalByATaskCommitKeepsTodaysText` and
+  `TestRetryRefusalWithoutMovedInputsKeepsTodaysText` passed, proving the exact
+  legacy reason and next action for both negative cases.
+- `TestItemRecoveryRefusalNamesTheRunsAlreadyCarried` passed after its existing
+  assertion was extended to require the amendment SHA after the already-carried
+  Run prefix.
+- `make skills-sync` exited 0. `diff -r .agents/skills/roundfix
+  skills/roundfix` produced no output, and a literal search found `amended by`
+  in the guide, canonical skill, and mirror.
+- `GOCACHE=/tmp/roundfix-task02-gocache make baseline-digests` exited 0 and
+  reported that the derived artifacts already matched their canonical sources,
+  with no generated changes.
+- `GOCACHE=/tmp/roundfix-task02-gocache make verify-incremental` passed with
+  process-table access: formatting, vet, the full Go suite, skill sync/checks,
+  and the build all exited 0. The first sandboxed attempt reached the existing
+  force-stop integration tests but could not read the process table; rerunning
+  with that environment permission resolved only that environmental block.
+
+Acceptance evidence:
+
+- A settled Task followed by two non-Task `_prd.md` commits refuses with both
+  SHAs after `amended by` and prints the five commands in the required order,
+  with every state-derived argument POSIX-quoted.
+- A `_prd.md` change committed with a `Roundfix-Task` trailer retains today's
+  reason and reconcile-then-retry next action exactly.
+- A missing Run Worktree exercises a refusal unrelated to moved inputs and
+  retains today's reason and next action exactly.
+- The guide and both skill copies describe the refusal and recovery, the
+  sanctioned sync completed, and the incremental repository gate's skill
+  checks passed. The Daemon-owned commands under `## Verification` remain
+  intentionally unrun.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/deliver_recovery_test.go`
+- `internal/cli/deliver_retry_runs_test.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20260930T102010Z_231eaa2e314ed8d8`
+- Source commit: `a491824128a186a5a0c51e5d5a8f89a86670dc11`

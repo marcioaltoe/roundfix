@@ -336,10 +336,11 @@ A parked item keeps its worktree, and `deliver status` prints that path. On
 resume, Roundfix recreates a missing worktree from its recorded branch; if the
 branch is missing too, it parks the item as `item-worktree-missing` instead of
 replaying the stage. After an item merges, its worktree and local item branch
-are removed. Before that removal, Roundfix releases every terminal Run of the
-merged Spec that it can prove is represented at the recorded merged head. A
-Run it cannot prove stays in place, and `deliver status` names the Run and its
-reason in the item's cleanup warning.
+are removed. Before that removal, cleanup refreshes the default branch from the delivery remote.
+Roundfix then releases every terminal Run of the merged Spec that it can prove
+is represented at the recorded merged head. A Run it cannot prove stays in
+place, and `deliver status` names the Run and its reason in the item's cleanup
+warning.
 
 A start requires every named Spec's committed authorization to grant
 `implement`, `commit`, `push`, `pull_request`, and `merge`. If any Spec lacks
@@ -377,6 +378,15 @@ continues to its Run. `deliver status` prints `Warning: <slug> <warning>` after
 the item rows, and the delivery console log prints `roundfix: warning: Delivery
 Queue item <slug>: <warning>`. No overlap adds no warning or log line.
 
+At that item-start boundary, Revalidation also compares the queue owner's build
+commit with the starting main. When the owner predates a commit that changed
+Roundfix source under `cmd/`, `internal/`, `go.mod`, or `go.sum`, the item adds
+`owner-older-than-main: owner build <commit> predates starting main <commit>`
+after any `premise-changed` warning. `deliver status` and the delivery console
+log print the combined warning, and the item continues to its Run. A docs-only
+change, a current owner, or a build commit absent from the repository adds no
+owner warning. A retry keeps the recorded warning and does not recompute it.
+
 A blocker parks its item with a reason and the queue continues with later
 items. On resume, the owner reconciles every recorded action without a receipt
 against observed state before retrying it, so a lost acknowledgement cannot
@@ -409,7 +419,25 @@ worktree and refuses while findings remain, leaving the item unchanged. It
 then carries the remaining settled Tasks from every terminal Implement Run of
 the item's Spec on the item branch, newest first, so a later Run executes only
 unfinished Tasks. A retry does not change a recorded `premise-changed` warning.
+It also does not change or recompute a recorded `owner-older-than-main` warning.
 It selects the re-entry stage from the evidence on that branch:
+
+When every refused Task has moved inputs and only non-Task commits after the
+Run started changed those inputs, the refusal adds `amended by <sha>, ...` to
+the reason. Its next action prints these five commands with the item worktree,
+Run ID, amendment commits, and Spec slug filled in and POSIX-quoted:
+
+```bash
+git -C '<worktree>' branch 'roundfix-amended-<run-id>' HEAD
+git -C '<worktree>' reset --hard '<first-amendment>^'
+(cd '<worktree>' && roundfix reconcile '<run-id>' --carry-forward)
+git -C '<worktree>' cherry-pick '<amendment>' ...
+roundfix deliver retry '<slug>'
+```
+
+Roundfix prints these commands and never runs them. If a Task commit changed a
+moved input, or the refusal includes another cause, the existing single
+`roundfix reconcile <run-id> --carry-forward` next action remains unchanged.
 
 A retried `review-findings` item at an unchanged head advances once every
 finding is dismissed with evidence. Standing findings park it again without
@@ -956,6 +984,15 @@ Verification Feedback repair turn, then the repaired Task queues and acquires
 Verification Capacity again for its final Daemon attempt. Any formatter, test,
 Skill synchronization, or build failure in the declared gate blocks
 settlement.
+
+During final QA, the mechanical authorization audit reads each governed Task
+commit's grant at its fork point first. When that grant does not cover the
+commit, the audit can use the grant the Task ran under: the record in the Task
+commit's parent, but only while the delivery target carries byte-identical
+content at the same path. The audit reports the latest delivery-target commit
+that established that content as the authorizing revision. A parent-only
+record, an older record that the delivery target later narrowed or revoked,
+and a Task commit that edits its own record remain refusals.
 
 Exit `75` from a project-authored Verification wrapper is the sole Temporary
 Verification Failure signal. Roundfix retains its diagnostics and grants that
