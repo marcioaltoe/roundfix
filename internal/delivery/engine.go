@@ -122,9 +122,12 @@ type Revalidation struct {
 	Findings        []string // unique, sorted finding codes
 	ChangedPremises []string // unique, sorted repository-relative paths
 	ChangedBy       []string // the prior merge commits that changed at least one of them, in queue order
+	OwnerWarning    string   // empty or the warning that the queue owner predates the item's starting main
 }
 
 type ItemRevalidator interface {
+	// priorMerges is non-nil at item start and nil when a retry repeats only
+	// the strict check. Owner evidence is collected only at item start.
 	Revalidate(ctx context.Context, workDir, specSlug string, priorMerges []string) (Revalidation, error)
 }
 
@@ -574,13 +577,20 @@ func (engine *Engine) advanceItem(
 		}
 		item.WorktreeProvisioned = true
 		revalidation, err := engine.revalidator.Revalidate(ctx, item.Worktree, item.SpecSlug, priorMerges)
+		warnings := make([]string, 0, 2)
 		if len(revalidation.ChangedPremises) > 0 {
-			item.Warning = fmt.Sprintf(
+			warnings = append(warnings, fmt.Sprintf(
 				"%s: %s (merge %s)",
 				WarningPremiseChanged,
 				strings.Join(revalidation.ChangedPremises, ", "),
 				strings.Join(revalidation.ChangedBy, ", "),
-			)
+			))
+		}
+		if ownerWarning := strings.TrimSpace(revalidation.OwnerWarning); ownerWarning != "" {
+			warnings = append(warnings, ownerWarning)
+		}
+		if len(warnings) > 0 {
+			item.Warning = strings.Join(warnings, "; ")
 			fmt.Fprintf(engine.log, "roundfix: warning: Delivery Queue item %s: %s\n", item.SpecSlug, item.Warning)
 		}
 		if err != nil {

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0187-a-queue-that-recovers-without-a-supervisor
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -64,3 +64,56 @@ A Delivery Queue owner is the `roundfix` binary that ran `deliver start`. On 202
 - [references/2026-09-30-a-queue-owner-older-than-its-starting-main-runs-silently.md](references/2026-09-30-a-queue-owner-older-than-its-starting-main-runs-silently.md)
 
 ## Result
+
+Implemented the item-start owner-age check through Auditor Staleness evidence.
+Revalidation now records `owner-older-than-main` only for an older self-auditing
+build with Roundfix source changes, treats owner-check Git failures as a quiet
+negative result, and skips the check on retry. The delivery engine appends the
+owner warning after `premise-changed`, logs the combined warning, and continues
+into the Run. The command guide and canonical Roundfix skill document the
+status output and retry behavior; `make skills-sync` refreshed the mirror.
+
+Focused evidence by acceptance criterion:
+
+- Retry preservation: `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache go
+  test -count=1 ./internal/cli -run
+  'Test(Revalidate|DeliverStatus)'` and the corresponding focused
+  `internal/delivery` run passed. They include
+  `TestRevalidateDoesNotRecomputeTheOwnerWarningOnRetry` and
+  `TestRetryKeepsTheRecordedOwnerWarning`.
+- Older owner plus source change: the same CLI run passed
+  `TestRevalidateWarnsWhenTheOwnerPredatesSourceOnMain`, using a real temporary
+  Git repository and an abbreviated `app.BuildCommit`; the warning names the
+  resolved build and starting-main commits at 12 characters.
+- Negative cases: that CLI run separately passed
+  `TestRevalidateStaysQuietForDocsOnlyMain`,
+  `TestRevalidateStaysQuietForACurrentOwner`,
+  `TestRevalidateStaysQuietWithoutTheBuildCommit`, and
+  `TestRevalidateStaysQuietWhenTheOwnerSourceDiffFails`.
+- Engine behavior: `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache go test
+  -count=1 ./internal/delivery -run
+  'Test(.*Revalidation|AChangedPremise|NoChangedPremise|.*OwnerWarning|RetryKeeps)'`
+  passed, including `TestAdvanceItemRecordsTheOwnerWarningAndKeepsRunning`; it
+  proves the premise warning precedes the owner warning, the combined text is
+  logged, and the stored item reaches `running` before its Run boundary.
+- Documentation and mirror: `rtk make skills-sync` completed, `rtk diff -r
+  .agents/skills/roundfix skills/roundfix` exited 0 with no output, and the
+  incremental gate below ran the repository's `skills-sync-check` and skill
+  checker successfully. The guide, canonical skill, and mirror contain
+  `owner-older-than-main`.
+
+Additional focused checks:
+
+- `rtk git diff --check` exited 0.
+- `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache make
+  verify-incremental` passed with process-table access. The first sandboxed
+  attempt reached the full suite but its two process-owner integration tests
+  were blocked by macOS process-table permission (`operation not permitted`);
+  the permitted rerun passed those tests and the complete gate.
+
+The Daemon-owned commands in `## Verification` were not run.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260930T102010Z_231eaa2e314ed8d8`
+- Source commit: `058efcc341bb95cf6e0f727b07bbce6d1b45ebea`

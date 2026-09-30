@@ -375,6 +375,15 @@ continues to its Run. `deliver status` prints `Warning: <slug> <warning>` after
 the item rows, and the delivery console log prints `roundfix: warning: Delivery
 Queue item <slug>: <warning>`. No overlap adds no warning or log line.
 
+At that item-start boundary, Revalidation also compares the queue owner's build
+commit with the starting main. When the owner predates a commit that changed
+Roundfix source under `cmd/`, `internal/`, `go.mod`, or `go.sum`, the item adds
+`owner-older-than-main: owner build <commit> predates starting main <commit>`
+after any `premise-changed` warning. `deliver status` and the delivery console
+log print the combined warning, and the item continues to its Run. A docs-only
+change, a current owner, or a build commit absent from the repository adds no
+owner warning. A retry keeps the recorded warning and does not recompute it.
+
 A blocker parks its item with a reason and the queue continues with later
 items. On resume, the owner reconciles every recorded action without a receipt
 against observed state before retrying it, so a lost acknowledgement cannot
@@ -407,6 +416,7 @@ worktree and refuses while findings remain, leaving the item unchanged. It
 then carries the remaining settled Tasks from every terminal Implement Run of
 the item's Spec on the item branch, newest first, so a later Run executes only
 unfinished Tasks. A retry does not change a recorded `premise-changed` warning.
+It also does not change or recompute a recorded `owner-older-than-main` warning.
 It selects the re-entry stage from the evidence on that branch:
 
 When every refused Task has moved inputs and only non-Task commits after the

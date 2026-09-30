@@ -422,6 +422,15 @@ continues to its Run. `deliver status` prints `Warning: <slug> <warning>` after
 the item rows, and the delivery console log prints `roundfix: warning: Delivery
 Queue item <slug>: <warning>`. No overlap adds no warning or log line.
 
+At that item-start boundary, Revalidation also compares the queue owner's build
+commit with the starting main. When the owner predates a commit that changed
+Roundfix source under `cmd/`, `internal/`, `go.mod`, or `go.sum`, the item adds
+`owner-older-than-main: owner build <commit> predates starting main <commit>`
+after any `premise-changed` warning. `deliver status` and the delivery console
+log print the combined warning, and the item continues to its Run. A docs-only
+change, a current owner, or a build commit absent from the repository adds no
+owner warning. A retry keeps the recorded warning and does not recompute it.
+
 A blocker parks its item with a reason; it does not stop later queued items.
 When a queue resumes, it reconciles every recorded action that lacks a receipt
 against the observed remote state before retrying that action. This prevents a
@@ -452,10 +461,10 @@ For an active Spec that has not run, Roundfix first repeats the strict check in
 the item worktree and refuses while findings remain, leaving the item
 unchanged. It then carries the remaining settled Tasks from every terminal
 Implement Run of the item's Spec on the item branch, newest first. A retry does
-not change a recorded `premise-changed` warning. The item re-enters at
-`running` when any Task is unfinished or at `reviewing` when every Task is
-completed. An archived Spec re-enters at `gating` without a recorded pull
-request or at `checking` with one.
+not change a recorded `premise-changed` or `owner-older-than-main` warning. The
+item re-enters at `running` when any Task is unfinished or at `reviewing` when
+every Task is completed. An archived Spec re-enters at `gating` without a
+recorded pull request or at `checking` with one.
 
 When every refused Task has moved inputs and only non-Task commits after the
 Run started changed those inputs, the reason adds `amended by <sha>, ...` and
