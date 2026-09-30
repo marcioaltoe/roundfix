@@ -34,7 +34,7 @@ runtime_hints:
     overrides exit 2 before proof or Run mutation.
   codex_adapter_recovery: >-
     Use roundfix setup to diagnose and, after authorization, migrate a legacy
-    Codex adapter override to @agentclientprotocol/codex-acp 1.1.4.
+    Codex adapter override to @agentclientprotocol/codex-acp 2.0.1.
   owns:
     - assigned Review Issue files during Batch runs
     - assigned task files during Task Batch runs

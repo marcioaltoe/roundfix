@@ -135,18 +135,17 @@ profiles:
         reasoning_effort: xhigh
 ```
 
-The Codex Model Catalog recognizes `gpt-5.6-sol`, `gpt-5.6-terra`, and
-`gpt-5.6-luna` as official identifiers; GPT-5.5/xhigh remains the generated
+The Codex Model Catalog recognizes `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`,
+`gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.6-luna` as official identifiers;
+GPT-5.5/xhigh remains the generated
 fallback for the four Codex-led profiles. A valid identifier and an advisory
 recommendation rank are not readiness claims. Roundfix proves operational
 availability in the effective environment through exact proof of the complete
 runtime/model/reasoning tuple. Custom model values remain forward-compatible:
 Roundfix sends them verbatim for the same proof instead of treating the catalog
 as an allowlist. The Claude Model Catalog recognizes the identifiers the adapter
-advertises: `opus`, `claude-fable-5`, `sonnet`, `haiku`, and `default`. It
-previously listed `claude-opus-5` and `claude-opus-4-8`, which no adapter
-advertises, and omitted three that it does; the catalog now follows the
-adapter.
+advertises: `opus`, `sonnet`, `claude-fable-5-1`, `claude-fable-5`, `haiku`,
+and `default`. The `opus` alias resolves to Opus 5.5.
 
 When an adapter advertises an independent reasoning control, Roundfix treats
 every advertised Agent Model identifier as opaque. Copy bracketed identifiers
@@ -156,20 +155,20 @@ annotation, not a reasoning effort; `reasoning_effort: 1m` is rejected. See
 [ADR-0079](../adr/0079-independent-reasoning-controls-make-model-identifiers-opaque.md).
 
 Adapter Readiness requires the effective Codex command to prove official
-`@agentclientprotocol/codex-acp` lineage at version `1.1.5` or newer and the
+`@agentclientprotocol/codex-acp` lineage at version `2.0.1` or newer and the
 effective Claude command to prove official
-`@agentclientprotocol/claude-agent-acp` lineage at version `0.63.0` or newer.
+`@agentclientprotocol/claude-agent-acp` lineage at version `0.84.0` or newer.
 The deterministic install actions are
-`npm install -g @agentclientprotocol/codex-acp@1.1.5` and
-`npm install -g @agentclientprotocol/claude-agent-acp@0.63.0`.
+`npm install -g @agentclientprotocol/codex-acp@2.0.1` and
+`npm install -g @agentclientprotocol/claude-agent-acp@0.84.0`.
 
 A bare `codex-acp` override can resolve to a package that fails official
 lineage proof; Setup then migrates it, after authorization, to
-`npx -y @agentclientprotocol/codex-acp@1.1.5`. Setup also migrates earlier
+`npx -y @agentclientprotocol/codex-acp@2.0.1`. Setup also migrates earlier
 explicit pins such as `1.1.4`. Any Claude override that fails official lineage proof — including one
 resolving to a differently named or differently scoped package — is migrated
 the same way, to
-`npx -y @agentclientprotocol/claude-agent-acp@0.63.0`.
+`npx -y @agentclientprotocol/claude-agent-acp@0.84.0`.
 
 ### Inspect profiles
 

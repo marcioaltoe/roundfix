@@ -1688,9 +1688,9 @@ func tuiModelCatalog(runtime string) []roundtui.ModelChoice {
 func reasoningEffortChoices(runtime string) []string {
 	switch runtime {
 	case "codex":
-		return []string{"low", "medium", "high", "xhigh"}
+		return []string{"low", "medium", "high", "xhigh", "max"}
 	case "claude":
-		return []string{"default", "high", "maximum"}
+		return []string{"default", "low", "medium", "high", "xhigh", "max"}
 	default:
 		return nil
 	}

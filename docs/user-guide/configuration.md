@@ -328,11 +328,12 @@ Built-in required profiles use these official identifiers:
 - `frontend`: preferred `claude / opus / xhigh`; fallback
   `codex / gpt-5.6-sol / high`.
 
-The Model Catalog recognizes `gpt-5.6-sol`, `gpt-5.6-terra`, and
-`gpt-5.6-luna` as official Codex identifiers, plus `opus`, `claude-fable-5`,
-`sonnet`, `haiku`, and `default` as Claude identifiers. Those are the values the
+The Model Catalog recognizes `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`,
+`gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.6-luna` as official Codex identifiers, plus `opus`, `sonnet`,
+`claude-fable-5-1`, `claude-fable-5`, `haiku`, and `default` as Claude
+identifiers. Those are the values the
 Claude adapter advertises, with the bracketed context suffix removed as the
-capability parser removes it — the adapter advertises Opus 5 as `opus[1m]`.
+capability parser removes it — the adapter advertises Opus 5.5 as `opus[1m]`.
 Identifier validity does not prove operational availability. Recommendations are advisory
 rankings only; the effective adapter in each environment must complete Exact
 Agent Selection Proof before Roundfix can use a tuple. This exact proof is the
@@ -349,14 +350,14 @@ is a context-window annotation, not a reasoning effort. See
 [ADR-0079](../adr/0079-independent-reasoning-controls-make-model-identifiers-opaque.md).
 
 For Codex, Adapter Readiness requires the official
-`@agentclientprotocol/codex-acp` package at version `1.1.5` or newer. For
+`@agentclientprotocol/codex-acp` package at version `2.0.1` or newer. For
 Claude, it requires official `@agentclientprotocol/claude-agent-acp` at
-version `0.63.0` or newer. The deterministic install actions are
-`npm install -g @agentclientprotocol/codex-acp@1.1.5` and
-`npm install -g @agentclientprotocol/claude-agent-acp@0.63.0`.
+version `0.84.0` or newer. The deterministic install actions are
+`npm install -g @agentclientprotocol/codex-acp@2.0.1` and
+`npm install -g @agentclientprotocol/claude-agent-acp@0.84.0`.
 
-Setup writes `npx -y @agentclientprotocol/codex-acp@1.1.5` or
-`npx -y @agentclientprotocol/claude-agent-acp@0.63.0` when an explicit
+Setup writes `npx -y @agentclientprotocol/codex-acp@2.0.1` or
+`npx -y @agentclientprotocol/claude-agent-acp@0.84.0` when an explicit
 override needs migration. Migration follows from failed official lineage proof
 rather than from recognizing any particular superseded package, so it covers a bare
 override that resolves to a differently scoped package as well as an earlier
