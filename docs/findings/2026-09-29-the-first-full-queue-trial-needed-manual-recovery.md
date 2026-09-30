@@ -1,7 +1,7 @@
 ---
 status: partial
 created_at: 2026-09-29
-updated_at: 2026-09-29
+updated_at: 2026-09-30
 ---
 
 # Delivery — the first full queue trial still needed manual recovery (2026-09-29)
@@ -42,3 +42,15 @@ Wave 4 (Specs 0181 and 0182) was the first cycle driven through one `roundfix de
 - Revalidation on each item's starting main, `deliver plan` and one detached owner surviving across both items.
 - `reconcile --carry-forward` in the item worktree, followed by `deliver retry`, recovered proved Tasks every time it was used in the right order.
 - `roundfix reopen --spec` reopened a settled QA gate cleanly after a late corrective Task.
+
+## Addendum — 2026-09-30 — Wave 5 queue
+
+The Wave 5 queue (Specs 0183, 0184 and 0185) started at 17:45 with five retries per item. Its owner binary (`c98b1641`) was built before Spec 0181 merged.
+
+- 0183 merged through the queue by itself (#282), after one corrective Task for a review finding. The post-merge cleanup then warned that the merge commit did not resolve locally, because the owner released Runs before fetching it. Its Runs were left for `reconcile`.
+- 0184 and 0185 first parked at revalidation with `SC-ADR-RELATED`. ADR-0176 had landed with 0181 on their starting main, and the older owner lacked 0181's horizon. Each Spec's PRD listed ADR-0176 as not applicable, and both were retried.
+- 0184's QA gate failed its scope row once, for two undeclared platform files: the friction 0181 removes, which the older owner still had. Its review then found a Windows overlapped-handle defect, fixed by corrective task_05. That Task's first Verification vetted Unix-only tests for Windows and led the Agent into a governed test file, so the Verification was narrowed. The gate closed `partial` on environment only, and the Spec was archived with a QA override (#284).
+- 0185's own pre-PR review was blocked as unclassifiable: "No findings." was glued to progress text, the defect 0185 fixes. A review run with a binary built from the 0185 candidate classified it correctly (#283).
+
+Lesson: build the owner binary from the `main` that holds the latest fixes before `deliver start`. Most Wave 5 parks came from defects already fixed on `main`.
+
