@@ -2,6 +2,79 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.22.0] - 2026-10-01
+
+### Owned skills that describe the product as it is
+
+The Roundfix skill names every command the CLI lists, and a repository test
+fails when a command is missing from it. The user guide and the README name
+only what ships, and their links resolve. The authoring skills teach a Spec
+the Delivery Queue accepts: an operations-only grant, Success Metrics and API
+Contracts as coverage units, and the Daemon as the only writer of a Task's
+status. The QA gate, archive and discovery skills agree with the commands, and
+each skill asks one structured question at a time. Every changed owned skill
+declares a higher version.
+
+### Baseline guides that describe the product as it is
+
+No Baseline clause is rendered twice. The duplicated backend boundary entry is
+removed, and an adopter upgrading from the Standard TypeScript Source Baseline
+sees it recorded as `replaced` by its successor instead of blocking the
+update. A new `replaces` field on a clause declares that successor, and the
+catalog refuses a malformed or ambiguous declaration. The loop clause follows
+the Delivery Queue, with review before archive, `roundfix deliver`,
+`roundfix reopen --spec` and Task Carry-Forward. The authorization and evidence
+clauses state today's refusals. The lifecycle wording scopes "only `accepted`
+is active" to ADRs with lifecycle frontmatter, accepts `deferred` as a terminal
+Backlog status, and shipped guidance cites no Spec or ADR number.
+
+### Stack rules that say what they mean
+
+The Bun and TypeScript rules describe what the profile runs. The core rules
+hold in a repository with several languages. The backend and frontend guides
+name the workspace they govern, and a stack rule governs over a dispatched
+skill's default. The suggested HTTP mode is REST wherever the Baseline states
+one; a repository's recorded HTTP Contract Decision is never changed.
+
+### Owned skills and a release step that follow the bundle
+
+The minimum version of an owned skill is now the version bundled in the
+binary, and `roundfix doctor` reports an installed owned skill older than it.
+A repository test refuses an owned skill whose content changed under the same
+version, against a recorded list of versions and digests. The Roundfix skill
+is at `0.0.4`. The Roundfix
+skill is part of every setup and has a dispatch trigger. The release runbook
+and the release clause add a skills-and-guides check before each release.
+
+### Citation scans that read only what they mean to
+
+The Spec citation check skips Agent- and Daemon-owned sections only in the
+Spec's own top-level Task files. Every file under `references/` is read in
+full. The Relocation Citation scan of a Baseline plan opens each tracked file
+through a handle held on the repository root, with no-follow at every path
+component. A directory swapped for a symbolic link while the scan runs can no
+longer redirect a read outside the repository.
+
+### A queue that recovers without a Supervisor
+
+Post-merge cleanup fetches the default branch before it releases a merged
+Spec's Runs, so the merge commit resolves and no manual `reconcile` is left
+behind. When `deliver retry` refuses because a later commit on the item branch
+amended the Spec, the refusal names those commits and prints the recovery
+commands in order, quoted for the shell. `deliver status` warns once when the
+queue owner's binary is older than Roundfix source on the item's starting
+main. A Task commit is authorized by the grant it ran under: a grant widened
+during delivery covers it when the default branch holds the identical record,
+whether the item merged or rebased main.
+
+### A grant that authorizes delivery without governed paths
+
+An approved Spec `_authorization.md` with an explicit `paths: []` now grants
+its delivery operations and bounds no Governed Path, so a Spec that changes
+only ordinary files can run through `roundfix deliver`. An absent `paths`, a
+listed path that is not governed, and a governed change outside the list are
+still refused.
+
 ## [0.21.0] - 2026-09-30
 
 ### Gates that refuse only what someone can act on
