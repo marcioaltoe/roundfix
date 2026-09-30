@@ -1,9 +1,18 @@
 ---
 spec: 0184-baseline-plans-that-show-what-a-history-move-breaks
-status: active
+status: archived
 created: 2026-09-29
 surfaces: [backend, cli, docs]
+archived: "2026-09-29"
+source_slug: 0184-baseline-plans-that-show-what-a-history-move-breaks
+qa_override: true
+qa_override_approval: 'Maintainer standing authorization of 2026-08-09 (agent project memory ''qa_override por ambiente''): archive with override when the gate closes partial only because of environment, never with rows_blocked_finding above zero. Reconfirmed for this cycle on 2026-09-29 (''Autonomia ampla'').'
+qa_override_reason: QA closed partial with rows_blocked_environment 2 and rows_blocked_finding 0. Row 4, the Fluxus outside-evidence replay, cannot run because the exported Fluxus Setup Manifest has no maintained transition to the go-cli-tui profile. Row 9 is the pre-PR Pull Request row, which records equivalent evidence. Every other row passed.
+qa_override_qa_outcome: partial
+qa_override_qa_task_status: failed
+qa_override_revision: 2423efe2af34390f6575e649e90dbcd94500091e
 ---
+
 
 # Baseline plans that show what a History Relocation breaks
 
