@@ -190,7 +190,7 @@
     },
     {
       "id": "template.guide.typescript-bun",
-      "version": 1,
+      "version": 2,
       "kind": "guide",
       "path": "guides/typescript-bun.md",
       "tokens": ["artifact.rules"]
@@ -204,14 +204,14 @@
     },
     {
       "id": "template.guide.backend",
-      "version": 1,
+      "version": 2,
       "kind": "guide",
       "path": "guides/backend.md",
       "tokens": ["artifact.rules", "http.contract", "auth.provider"]
     },
     {
       "id": "template.guide.frontend",
-      "version": 1,
+      "version": 2,
       "kind": "guide",
       "path": "guides/frontend.md",
       "tokens": ["artifact.rules", "repository.design-contract"]
@@ -271,7 +271,7 @@
     },
     {
       "id": "template.guide.bun",
-      "version": 1,
+      "version": 2,
       "kind": "guide",
       "path": "guides/bun.md",
       "tokens": ["artifact.rules"]

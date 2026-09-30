@@ -6,7 +6,7 @@ This setup-owned guide is generated from the active modules. Activate every
 matching skill before governed work; repository-authored dispatch extensions
 may add stricter triggers.
 
-- **mandatory**: Activate every matching required skill before governed work. When one skill has distinct active-module triggers, retain and follow each trigger.
+- **mandatory**: Activate every matching required skill before governed work. When one skill has distinct active-module triggers, retain and follow each trigger. When a skill's default conflicts with a Baseline rule or a Repository-Specific Normative Rule, follow the rule.
 
 - **mandatory**: Use the governing `conventional-commits` skill before staging changes, writing commit messages, or preparing pull request titles.
 

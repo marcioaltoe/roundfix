@@ -22,7 +22,7 @@
       "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md",
       "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/typescript-bun.md"
     ],
-    "goldenDigest": "8438bb7f4f541f3a100ddfeb9b84dcee5b5769b755256bf762255ecab1a81367",
+    "goldenDigest": "51621fe76d40f7aa4247352a902f741479ea163108e294193c4ab90949fbc80b",
     "id": "formatter.oxfmt-markdown",
     "kind": "selected",
     "version": "0.59.0"
@@ -135,7 +135,7 @@
     "decisionId": "http.contract",
     "ownership": "repository",
     "required": true,
-    "default": "Post-only",
+    "default": "REST",
     "modes": ["REST", "Post-only"],
     "exceptions": {
       "ordered": true,

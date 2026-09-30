@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "frontend",
-  "version": 4,
+  "version": 5,
   "kind": "application-surface",
   "title": "Frontend application guidance",
   "dependsOn": [
@@ -292,7 +292,7 @@
   "supportingGuides": [
     {
       "id": "guide.frontend",
-      "version": 4,
+      "version": 5,
       "path": "docs/agents/frontend.md",
       "template": "template.guide.frontend",
       "rules": [

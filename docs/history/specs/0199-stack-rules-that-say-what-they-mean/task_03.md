@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0199-stack-rules-that-say-what-they-mean
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -81,3 +81,68 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - `_prd.md` → Goal 2; Goal 3; Goal 5; Core Feature 3; Core Feature 4; Success Metric 4; Success Metric 5; Success Metric 6; Success Metric 7; Success Metric 8
 - `_techspec.md` → API Contract 3; API Contract 4
 - ADR-0058, ADR-0059, ADR-0060, ADR-0061, ADR-0063, ADR-0186, ADR-0190
+
+## Result
+
+Implemented the Task 03 slice for Daemon Verification. Each guide template
+now places its exact workspace scope paragraph before the rules. Backend and
+frontend module and guide versions increased from 4 to 5; their template
+versions increased from 1 to 2. A byte comparison against HEAD confirmed that
+each module file changed only at its module and guide version fields, leaving
+every clause and all other formatting unchanged.
+
+The profile's HTTP default, the Baseline contract's suggestion sentence, and
+the public guide's HTTP suggested-value row now state REST. The decision
+catalog, prompt, resolution implementation, authentication decision and other
+public table rows were not edited. Two new test files provide the specified
+five Baseline tests, two CLI tests, and pure checks with negative cases.
+
+Focused evidence by acceptance criterion:
+
+- Scope before rules and clause retention: the new rendered-postimage scope
+  test and unchanged `TestStandardTypeScriptStructuralClauseRetention` passed.
+  The module byte comparison independently proved that only versions changed.
+- Matching HTTP statements and detecting another mode: the profile comparison,
+  profile negative case, catalog-driven statement comparison and statement
+  negative case passed. Before source edits, these checks reported the profile's
+  Post-only default, both stale statements and both absent scope paragraphs.
+- Recorded decisions: the preservation test passed separately for Post-only
+  and REST, comparing the recorded mode, ordered exceptions (including a
+  repository-owned health-check exception), all recorded decisions and unchanged
+  repository files. Neither case reported a new decision.
+- Absent decision: the missing-HTTP test passed with incomplete manifest input,
+  exactly one new `http.contract` suggestion of REST, no resolved HTTP decision
+  and no repository writes.
+- Refresh convergence: sanctioned regeneration succeeded, Managed Refresh
+  applied the Setup Manifest update, and a second refresh exited 0 with
+  `File changes: 0` and `Idempotence: verified`.
+
+Commands and outcomes:
+
+- All Go commands below used
+  `GOCACHE=/private/tmp/roundfix-task03-gocache`.
+- `go test -count=1 -run 'Test(TheBackendAndFrontend|TheProfileHTTP|AProfileHTTP|ARecordedHTTP|AnAbsentHTTP)' ./internal/baseline`:
+  before source edits, reported the expected missing-scope and profile-default
+  failures; preservation and absent-decision cases passed.
+- `go test -count=1 -run 'Test(EveryStatementOfTheHTTP|AStatementThatNamesAnotherHTTP)' ./internal/cli`:
+  before source edits, reported both stale HTTP statements.
+- `make baseline-digests`: exit 0; generated exactly the two formatter goldens,
+  profile digest pin, catalog snapshots and four plan-characterization goldens.
+- `go test -count=1 -v -run 'Test(TheBackendAndFrontend|TheProfileHTTP|AProfileHTTP|ARecordedHTTP|AnAbsentHTTP|StandardTypeScriptStructural)' ./internal/baseline`:
+  exit 0; all six selected tests and both recorded-mode subtests passed.
+- `go test -count=1 -v -run 'Test(EveryStatementOfTheHTTP|AStatementThatNamesAnotherHTTP)' ./internal/cli`:
+  exit 0; both selected tests passed.
+- `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`:
+  initial sandbox attempt could not open the Git-private transaction lock;
+  rerun with authorized sandbox escalation exited 0 and updated only
+  `docs/agents/setup-context.json`. The same command run again exited 0 with
+  zero file changes. Both runs retained the existing nested-carrier warnings
+  for formatter fixtures and the Source Baseline corpus; skills were skipped.
+- `gofmt -d` on both new test files and `git diff --check`: no output, exit 0.
+- Scope postflight: all 21 changed paths, including both new tests, are in
+  this Task's Context or its own Task file. A byte comparison confirmed that
+  the public guide changed only its HTTP suggested-value row.
+
+Declared Verification commands and repository Verification were not run in
+this Agent turn; they remain Daemon-owned. Task status and other Task files
+were not edited. No commit, push or Pull Request was created.

@@ -1,0 +1,7 @@
+Source: Daemon QA assignment, outside Agent sandbox.
+Command: make verify-changed
+Verdict: pass
+Exit: 0
+Diagnostics: removed on success
+Candidate: 78acc7ea3a9c4123bbd74a95820b3bdf0b4163ea
+Not rerun by Agent, as instructed.

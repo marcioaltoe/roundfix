@@ -214,7 +214,7 @@ adoption again. Without a stored value, the embedded catalog suggests:
 | Verification gate | `rtk make verify` |
 | Incremental Verification | `rtk make verify-incremental` |
 | Identifier strategy | `{"kind":"uuid-v7"}` |
-| HTTP contract | `Post-only` |
+| HTTP contract | `REST` |
 | Better Auth provider exception | `GET` and `POST` under `/api/auth/*`, owned by Better Auth |
 | Spec artifacts | Yes |
 | Domain layout | `single-context` |

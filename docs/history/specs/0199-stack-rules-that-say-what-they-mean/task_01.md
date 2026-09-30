@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0199-stack-rules-that-say-what-they-mean
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -72,3 +72,58 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - `_prd.md` → Goal 1; Goal 2; Goal 5; Core Feature 1; Success Metric 1; Success Metric 7; Success Metric 8
 - `_techspec.md` → API Contract 1
 - ADR-0058, ADR-0059, ADR-0060, ADR-0081, ADR-0149, ADR-0186, ADR-0190
+
+## Result
+
+Implemented the Task 01 wording slice. The four clauses use the TechSpec's
+exact replacements, both guide templates carry their scope paragraphs, and
+all nine named module/rule/guide/template versions increased by one. Backend
+and frontend template versions remain unchanged. Source JSON formatting was
+preserved through in-place string and version replacement.
+
+Acceptance evidence:
+
+- Rendered guide wording: `TestTheTypeScriptAndBunGuideSaysWhatItGoverns`
+  passes against a Standard TypeScript Monorepo Plan postimage. It requires
+  the test-script rule, named JavaScript package managers, TypeScript type-error
+  obligation, Verification-based warning condition and both scope paragraphs.
+- Replaced wording: `TestStackWordingCheckReportsTheWordingItReplaced`
+  passes with four independent literal old sentences, asserting seven missing
+  requirements and four replaced-sentence findings. Its absent-guide and
+  wrapped-whitespace cases also pass. The rendered-guide test rejects all four
+  old sentences. Before the source edits, the rendered-guide test failed with
+  precisely those seven missing and four replaced-sentence findings.
+- Clause force: `TestTheRewordedBunAndTypeScriptClausesKeepTheirForce` passes
+  for all four original identifiers and literal enforcement expectations,
+  including absent-identifier checks. A separate comparison with HEAD confirmed
+  unchanged clause sets/enforcement and byte-identical untouched clauses.
+- Managed Refresh: the sanctioned update applied one Setup Manifest change;
+  repeating the same command exited 0 with `File changes: 0`,
+  `Idempotence: verified` and `approved Baseline Plan is already applied`.
+
+Focused checks and regeneration:
+
+- `GOCACHE=/tmp/roundfix-0199-task01-gocache rtk proxy go test -count=1 -v -run '^Test(TheTypeScriptAndBunGuideSaysWhatItGoverns|StackWordingCheckReportsTheWordingItReplaced|TheRewordedBunAndTypeScriptClausesKeepTheirForce)$' ./internal/baseline`
+  — exit 0; all three new tests and their subtests passed.
+- `GOCACHE=/tmp/roundfix-0199-task01-gocache rtk proxy make baseline-digests`
+  — exit 0; sanctioned formatter golden, profile digest, catalog snapshots and
+  four plan-characterization goldens regenerated; strict catalog validation
+  passed. No generated file was hand-edited.
+- `GOCACHE=/tmp/roundfix-0199-task01-gocache rtk proxy go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`
+  — successful apply and zero-change repeat both exited 0. The first sandboxed
+  attempt could not create the Git-private transaction directory; rerunning
+  with the required filesystem access succeeded. The command reports the two
+  nested fixture/source-carrier warnings and skips skills as requested.
+- `GOCACHE=/tmp/roundfix-0199-task01-gocache rtk make verify-incremental`
+  — exit 0 on the sequential rerun with required process-table access;
+  formatting, vet, all package tests, skill checks and build passed. The first
+  run exited 2: owner-process integration tests lacked process-table access,
+  and suite guards detected this Agent's concurrent Managed Refresh and Result
+  writes. The rerun kept the repository unchanged while checking it.
+- Changed-file postflight — all 17 changed paths are in this Task's Context,
+  including this Task file and the new test; status remains `in_progress`.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+
+The Daemon retains ownership of status and declared Verification. No existing
+test file, other Task file, Task Graph or production Go code was edited. No
+commit, push or pull request was made.

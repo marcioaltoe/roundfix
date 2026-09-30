@@ -52,7 +52,7 @@ branches follow their tool's documented namespace.
 
 - **mandatory**: When authoritative documentation cannot answer an external question, use the profile's declared external web-research fallback with varied searches and verify conclusions against primary sources.
 
-- **mandatory**: Use the repository's declared package manager and lockfile workflow. Add or upgrade a dependency only for a named job the existing stack cannot perform, and keep manifest and lockfile changes together.
+- **mandatory**: Use each language's declared package manager and lockfile workflow. Add or upgrade a dependency only for a named job the existing stack cannot perform, and keep manifest and lockfile changes together.
 
 - **mandatory**: Review every new dependency for necessity, provenance, maintenance, and security before delivery.
 

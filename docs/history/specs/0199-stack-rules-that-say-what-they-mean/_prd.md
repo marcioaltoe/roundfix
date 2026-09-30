@@ -1,9 +1,12 @@
 ---
 spec: 0199-stack-rules-that-say-what-they-mean
-status: active
+status: archived
 created: 2026-09-30
 surfaces: [backend, docs]
+archived: "2026-09-30"
+source_slug: 0199-stack-rules-that-say-what-they-mean
 ---
+
 
 # Stack rules that say what they mean
 

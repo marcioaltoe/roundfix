@@ -1,0 +1,20 @@
+=== RUN   TestARecordedHTTPContractDecisionSurvivesAnUpdate
+=== PAUSE TestARecordedHTTPContractDecisionSurvivesAnUpdate
+=== RUN   TestAnAbsentHTTPContractDecisionIsSuggestedAsREST
+=== PAUSE TestAnAbsentHTTPContractDecisionIsSuggestedAsREST
+=== CONT  TestARecordedHTTPContractDecisionSurvivesAnUpdate
+=== CONT  TestAnAbsentHTTPContractDecisionIsSuggestedAsREST
+=== RUN   TestARecordedHTTPContractDecisionSurvivesAnUpdate/Post-only
+--- PASS: TestAnAbsentHTTPContractDecisionIsSuggestedAsREST (0.03s)
+=== RUN   TestARecordedHTTPContractDecisionSurvivesAnUpdate/REST
+--- PASS: TestARecordedHTTPContractDecisionSurvivesAnUpdate (0.04s)
+    --- PASS: TestARecordedHTTPContractDecisionSurvivesAnUpdate/Post-only (0.01s)
+    --- PASS: TestARecordedHTTPContractDecisionSurvivesAnUpdate/REST (0.00s)
+PASS
+suiteguard: guard cost: measured 6700 paths; fingerprint took 311.358708ms before and 302.907375ms after
+suiteguard: repository boundary violated:
+suiteguard: modified: docs/specs/0199-stack-rules-that-say-what-they-mean/qa/evidence/2026-09-30-gate/preservation-tests.txt
+suiteguard: modified: docs/specs/0199-stack-rules-that-say-what-they-mean/qa/evidence/2026-09-30-gate/task01-tests.txt
+suiteguard: modified: docs/specs/0199-stack-rules-that-say-what-they-mean/qa/evidence/2026-09-30-gate/task02-tests.txt
+FAIL	roundfix/internal/baseline	1.283s
+FAIL
