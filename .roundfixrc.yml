@@ -16,59 +16,54 @@ defaults:
   auto_commit: true
 # Model identifiers are the ones each ACP adapter advertises. The catalog in
 # internal/agent/catalog.go is picker metadata that must follow the adapter, and
-# it did drift until 2026-08-07. The claude adapter advertises
-# `opus` (as `opus[1m]`), `claude-fable-5`, `sonnet`, `haiku`, and `default`;
-# reasoning effort is a separate adapter option. Snapshot and rationale:
+# it has drifted twice (2026-08-07 and 2026-09-30). Reasoning effort is a
+# separate adapter option. Snapshot and rationale:
 # docs/references/model-selection.md.
 #
 # ---------------------------------------------------------------------------
-# Revised 2026-08-08. Routing follows measured supply, not guesses. Both figures
-# below were read from the providers on 2026-08-08; neither reverts itself.
+# Revised 2026-09-30 (maintainer decision: adopt the current models directly,
+# fallbacks included, and revert if Runs get worse). Every tuple below was
+# proved through the installed adapters with `roundfix profiles configure`.
 #
-# CODEX — OpenAI Pro. Weekly limit at 100% remaining, resets 2026-08-15 21:03
-# America/Sao_Paulo. Full headroom, but a quota all the same: a long Run spends
-# it, so this is not a licence to buy points with steps. The baseline stays
-# sol/high, 69% in 37 steps, against xhigh's 71% in 44. Two points do not pay
-# for 19% more turns when latency multiplies by turn count in a Run.
+# IMPLEMENTATION (general, backend, data, qa, infra, test): codex
+# `gpt-6.1-sol`/high. OpenAI released it on 2026-09-29 as the Codex workhorse,
+# in the same quota band as `gpt-5.6-sol`. Published evidence is mixed (one
+# index up, one slightly down), so this is measured on the Runs themselves:
+# from 2026-09-15 to 09-30, `gpt-5.6-sol`/high averaged 18.8 minutes per
+# backend session and 15.1 per qa session.
 #
-# CLAUDE — 68% of the week used, 32% left, resets 2026-08-10 14:00
-# America/Sao_Paulo. A +50% weekly-limit promotion runs through 2026-08-19, so
-# the headroom is larger than the percentage suggests. Claude still runs by
-# default in one category only; everywhere else it sits last, where it consumes
-# nothing unless both selections ahead of it fail to start. `frontend` is the
-# deliberate exception: Claude leads there on design judgment that no benchmark
-# on file measures, and the exposure is small — one frontend Task in the whole
-# near queue.
+# FRONTEND: claude `opus`/high. The alias resolves to Opus 5.5 since Claude
+# Code 2.1.280, so this tuple changed model without changing text.
 #
-# WHAT TO REVISIT, AND WHEN. On 2026-08-10 14:00, whether Claude should lead
-# more than `frontend` again. On 2026-08-15 21:03, the codex reset — `review`
-# already carries luna/max one step behind its preferred for exactly the moment
-# price becomes a criterion again.
+# REVIEW, DOCS, CHORE: codex `gpt-5.6-luna`/max, which averaged about 5 minutes
+# per session here. `gpt-6-luna` shows no published gain over it.
+#
+# FALLBACKS. A fallback exists for when a runtime is unavailable, so it
+# changes runtime: claude `opus` behind codex, codex `gpt-6.1-sol`/xhigh
+# behind claude, and claude `sonnet` (Sonnet 5.5) behind the luna categories.
+# `review` is the exception: every selection in it must use the runtime of
+# `pre_pr_review.provider`, so its fallback stays on codex.
+#
+# NOT USED IN RUNS. `gpt-6-astra` and Claude Fable drain quota several times
+# faster and answer more slowly, and in a Run latency multiplies by turn
+# count. No `opencode` tuple is configured: no model it reaches beats the two
+# subscription runtimes on the published boards.
+#
+# NEVER route a `gpt-*-sol` model through OpenRouter. Every one below is
+# `runtime: codex`, which is the GPT subscription. The `opencode` runtime can
+# reach the same models pay-per-use, which is billing for a model this
+# repository already has.
+#
+# Research and sources: the Secondbrain entry
+# `inbox/secondbrain/2026-09-30-modelos-de-codificacao-ago-set-2026-e-runtimes-cursor-grok.md`.
+# docs/references/model-selection.md still holds the 2026-08-07 snapshot until
+# the model catalog is refreshed.
 # ---------------------------------------------------------------------------
-#
-# Claude is last in every Fallback Chain except `frontend`, which it leads. The
-# runtime that leads the other five varies by category: codex on general,
-# backend, and qa; opencode on data and review. Every chain changes runtime at
-# each step, because a fallback exists for when a runtime is unavailable and a
-# second model on the same runtime does not help.
-#
-# NEVER route gpt-5.6-sol through OpenRouter. Every `gpt-5.6-sol` below is
-# `runtime: codex`, which is the GPT subscription. The `opencode` runtime also
-# advertises `openrouter/openai/gpt-5.6-sol`, and
-# docs/references/model-selection.md documents that mapping — it is pay-per-use
-# billing for a model this repository already has, so the mapping is reachable
-# and wrong. The rule is about sol specifically, not about OpenRouter: the
-# `opencode` runtime below deliberately routes an OpenRouter model no
-# subscription here covers.
-#
-# Claude Fable 5 appears nowhere below. It answers in 1.7 minutes — roughly 25x
-# Sol's latency — for a result Sol matches. In a Run, where latency multiplies
-# by turn count, that trade never pays, and no subscription makes time free.
 profiles:
   general:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
+      model: gpt-6.1-sol
       reasoning_effort: high
     fallbacks:
       - runtime: claude
@@ -77,7 +72,7 @@ profiles:
   backend:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
+      model: gpt-6.1-sol
       reasoning_effort: high
     fallbacks:
       - runtime: claude
@@ -90,12 +85,12 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-sol
-        reasoning_effort: high
+        model: gpt-6.1-sol
+        reasoning_effort: xhigh
   data:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
+      model: gpt-6.1-sol
       reasoning_effort: high
     fallbacks:
       - runtime: claude
@@ -104,7 +99,7 @@ profiles:
   qa:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
+      model: gpt-6.1-sol
       reasoning_effort: high
     fallbacks:
       - runtime: claude
@@ -117,12 +112,12 @@ profiles:
       reasoning_effort: max
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-sol
+        model: gpt-6.1-sol
         reasoning_effort: high
   infra:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
+      model: gpt-6.1-sol
       reasoning_effort: high
     fallbacks:
       - runtime: claude
@@ -134,13 +129,13 @@ profiles:
       model: gpt-5.6-luna
       reasoning_effort: max
     fallbacks:
-      - runtime: codex
-        model: gpt-5.6-sol
+      - runtime: claude
+        model: sonnet
         reasoning_effort: high
   test:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
+      model: gpt-6.1-sol
       reasoning_effort: high
     fallbacks:
       - runtime: claude
@@ -152,8 +147,8 @@ profiles:
       model: gpt-5.6-luna
       reasoning_effort: max
     fallbacks:
-      - runtime: codex
-        model: gpt-5.6-sol
+      - runtime: claude
+        model: sonnet
         reasoning_effort: high
 specs:
   # Directory holding Spec folders; relative paths resolve against the repository root.
