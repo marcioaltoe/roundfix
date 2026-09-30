@@ -1,7 +1,8 @@
 ---
-status: pending
+status: done
 created_at: 2026-09-30
 updated_at: 2026-09-30
+absorbed_by: 0205-an-advisory-judge-for-spec-authoring
 ---
 
 # Jev judgments measured against the Spec archive (2026-09-30)
@@ -97,3 +98,10 @@ A second run sent only Baseline clause text (`internal/baseline/assets/modules/*
 ## Where the material lives
 
 The scripts, labelled sets and JSONL logs were produced in a session scratchpad and are not committed. The Spec that adopts the two advisory checks must carry the question texts and the thresholds above as its own reviewable source.
+
+## Addendum (2026-09-30): routing
+
+- Recommendations 1 and 2 (citation support and goal → mechanism as advisory checks) → Spec `0205-an-advisory-judge-for-spec-authoring`, which carries the question texts and thresholds of this finding as its reviewable source, pins `jev-1.13.0` and records the maintainer's data, key and spending decisions in ADR-0200 and ADR-0201.
+- The overlap shortlist and Task Type are not adopted, as recommended; no Backlog Entry is needed.
+- Task lint stays a candidate to re-measure once Runs record Verification attempts per Task → Backlog Entry `docs/backlog/2026-09-30-re-measure-the-task-lint-judgment-on-a-cleaner-label.md`.
+- The clause-consistency scan needs no action: its one confirmed defect was removed by Spec 0193.

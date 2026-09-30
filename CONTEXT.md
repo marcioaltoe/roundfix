@@ -518,6 +518,22 @@ _Avoid_: Warning, automatic recommendation, blocker list
 The explicit act that returns one parked Delivery Queue item to the stage supported by its recorded evidence and hands it to a live or newly started queue owner. It may perform Task Carry-Forward from every Run of the item's Spec, newest first, and is never automatic.
 _Avoid_: Resume Command, automatic retry, replay
 
+**Judge Log**:
+The per-month JSONL record of every advisory judgment call: the question, the answer, probabilities, confidence, latency, input tokens, the model the service reported and the call's cost. Its monthly sum is what the spend ceiling reads (ADR-0201).
+_Avoid_: Run Event Journal, audit log
+
+**Advisory Judgment**:
+A typed semantic judgment about a Spec artifact, such as whether a cited ADR supports the attributed claim, that the authoring model must answer but that never gates, never changes another command's exit code, and fails open (ADR-0200).
+_Avoid_: Gate, check, finding
+
+**Frontend Layout Decision**:
+The repository's recorded choice of frontend layout, `systems` or `repository-defined`. While none is recorded, the Baseline states the suggested `systems` layout; a recorded value is never overwritten (ADR-0205).
+_Avoid_: Frontend architecture rule, mandated layout
+
+**Composed Setup Snapshot**:
+A setup snapshot built by name from upstream setups in a fixed order, with duplicate skills dropped, so a built-in profile can span several toolchains (ADR-0204).
+_Avoid_: Merged setup, custom setup
+
 **Park Class**:
 The named reason a Delivery Queue item is parked — for example a prerequisite not yet merged, a Pull Request conflict, an environment-only QA partial or a check that failed twice outside the item's packages — shown with the next command that answers it (ADR-0192, ADR-0193).
 _Avoid_: Blocker text, error code
