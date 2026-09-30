@@ -21,7 +21,7 @@ A Delivery Retry carries forward the proved Tasks of the item's Runs. When a lat
 2. MUST give `deliveryCarryForwardRefusal` in `internal/cli/deliver_workflow.go` an `amendments` list, filled from that helper when `CarryForward` refuses. With amendments, `Error()` MUST append `; amended by <sha>, <sha>`, and `NextAction()` MUST return these five commands in order, with real values substituted:
    - `git -C <worktree> branch roundfix-amended-<run-id> HEAD`
    - `git -C <worktree> reset --hard <first-amendment>^`
-   - `roundfix reconcile <run-id> --carry-forward` in `<worktree>`
+   - `(cd <worktree> && roundfix reconcile <run-id> --carry-forward)`, an executable line scoped to the worktree
    - `git -C <worktree> cherry-pick <amendment> …`
    - `roundfix deliver retry <slug>`
 3. MUST leave both texts byte-identical to today's without amendments, including when a Task commit touched a moved input.

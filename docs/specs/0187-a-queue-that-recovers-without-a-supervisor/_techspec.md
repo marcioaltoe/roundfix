@@ -119,7 +119,7 @@ The merge-commit and candidate-head checks are otherwise unchanged.
 ```text
 git -C <worktree> branch roundfix-amended-<run-id> HEAD
 git -C <worktree> reset --hard <first-amendment>^
-roundfix reconcile <run-id> --carry-forward   (in <worktree>)
+(cd <worktree> && roundfix reconcile <run-id> --carry-forward)
 git -C <worktree> cherry-pick <amendment> …
 roundfix deliver retry <slug>
 ```
@@ -133,12 +133,12 @@ Without amendments, both texts are unchanged.
 
 ### Owner warning
 
-After the strict findings, `Revalidate` resolves the item's starting main,
-the immutable commit the item branch was created from. That is the commit
-revalidation already checks against. It is never the item's moving `HEAD` after
-the item has commits: on a retry it is
-`git merge-base refs/remotes/<remote>/<default> HEAD`, falling back to the local
-default branch. It then calls
+The owner check runs once, at item start, in the first `Revalidate` before the
+item's first Run. There the item worktree's `HEAD` is exactly the starting
+main the item branch was created from. That commit is the `<starting main>`
+below, and the result is recorded in the item's `Warning`. Later
+revalidations (retries) never recompute it, so a later merge of main into the
+item cannot move the comparison. After the strict findings it calls
 `spec.ResolveAuditorEvidence(ctx, workDir, <starting main>, app.Auditor())`.
 
 - It records a warning only when `SelfAudit` is true and `Ancestry` is
@@ -157,11 +157,12 @@ default branch. It then calls
 In `detectMechanicalAuthPaths`, the fork-point read stays first. When it is
 not `granted`, or when a changed governed path is outside its bounded paths,
 the detector tries the parent's grant. It reads the blob of
-`<authorizationPath>` at `<commit>^1`. It then looks for a commit in
-`git log --format=%H <targetRevision> -- <authorizationPath>` whose blob at
-that path is the same.
+`<authorizationPath>` at `<commit>^1` and compares it with the blob at the
+same path at the delivery target's current tip (`<targetRevision>`) only.
+An identical record anywhere else in history never matches, so a grant that
+was narrowed or revoked on the default branch can never be revived.
 
-- On a match, it reads the grant at that delivery-target commit through
+- On a match, it reads the grant at `<targetRevision>` through
   `readMechanicalAuthorization`. The read's `Revision` is that commit, and the
   bounded-path check reruns against it.
 - With no match, or a missing parent blob, the fork-point result stands.

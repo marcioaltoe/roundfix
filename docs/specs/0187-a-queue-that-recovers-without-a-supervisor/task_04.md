@@ -12,7 +12,7 @@ complexity: high
 
 The QA gate's mechanical authorization audit reads each governed Task commit's grant at `mechanicalAuthorizingRevision`. That is `merge-base <delivery target> <commit>^1` in `internal/speccheck/mechanical.go`, the point where the item branch forked from main. On 2026-09-29, Spec 0181's grant was widened on main (#277) and cherry-picked onto the item branch before task_07 ran. The audit still read the grant at the fork, `6784210b`, and refused. Only a rebase fixed it.
 
-ADR-0178 keeps the fork-point read first. It also accepts the grant recorded in the commit's parent when the delivery target's history holds a byte-identical record at the same path. This Task implements that rule. It also describes the rule in `docs/user-guide/commands.md` and the Roundfix skill.
+ADR-0178 keeps the fork-point read first. It also accepts the grant recorded in the commit's parent when the delivery target's current tip holds a byte-identical record at the same path. An identical record elsewhere in history never matches, so a revoked or narrowed grant is never revived. This Task implements that rule. It also describes the rule in `docs/user-guide/commands.md` and the Roundfix skill.
 
 ## Requirements
 
@@ -32,6 +32,7 @@ ADR-0178 keeps the fork-point read first. It also accepts the grant recorded in 
 - [ ] Add a test for each acceptance criterion, each negative case separate.
 
 ## Acceptance Criteria
+- [ ] A parent grant that matches an older record but not the delivery target's current tip, because the grant was narrowed since, is not accepted.
 
 - [ ] Main widens a grant after the item forked, and the item cherry-picks the widened record before a Task commit changes the newly bounded path. The commit is granted, and the read's revision is main's widening commit.
 - [ ] A parent record that differs from every version on the delivery target refuses the path, as today.

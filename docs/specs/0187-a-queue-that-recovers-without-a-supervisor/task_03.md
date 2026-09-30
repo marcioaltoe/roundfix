@@ -15,7 +15,7 @@ A Delivery Queue owner is the `roundfix` binary that ran `deliver start`. On 202
 ## Requirements
 
 1. MUST add `OwnerWarning string` to `delivery.Revalidation` in `internal/delivery/engine.go`.
-2. MUST make `commandDeliveryWorkflow.Revalidate` in `internal/cli/deliver_revalidate.go` resolve the item's immutable starting main (the commit the item branch was created from; on a retry `git merge-base refs/remotes/<remote>/<default> HEAD`, falling back to the local default branch, never the moving `HEAD`) and call `spec.ResolveAuditorEvidence(ctx, workDir, <starting main>, app.Auditor())` after the strict findings. It sets `OwnerWarning` to `owner-older-than-main: owner build <build[:12]> predates starting main <HEAD[:12]>` only when all of these hold:
+2. MUST make `commandDeliveryWorkflow.Revalidate` in `internal/cli/deliver_revalidate.go` run the owner check only once, at item start, before the item's first Run, when the item worktree's `HEAD` is exactly the starting main the item branch was created from. It records the result in the item's warning and never recomputes it on a retry. It MUST call `spec.ResolveAuditorEvidence(ctx, workDir, <starting main>, app.Auditor())` after the strict findings. It sets `OwnerWarning` to `owner-older-than-main: owner build <build[:12]> predates starting main <HEAD[:12]>` only when all of these hold:
    - `SelfAudit` is true;
    - `Ancestry` is `app.AncestryOlder`;
    - `git diff --name-only <build> <starting main> -- cmd internal go.mod go.sum` in `workDir` lists at least one path.
@@ -33,7 +33,7 @@ A Delivery Queue owner is the `roundfix` binary that ran `deliver start`. On 202
 - [ ] Add a test for each acceptance criterion, each negative case separate.
 
 ## Acceptance Criteria
-- [ ] An item retried after it gained commits compares the owner build with its starting main, not with the item's current `HEAD`.
+- [ ] A retry of an item that already has commits does not recompute the owner check, and the recorded warning stays unchanged.
 
 - [ ] A starting main that changed `internal/` after the build commit yields the warning, with both commits named.
 - [ ] A starting main that changed only `docs/`, a build commit equal to the starting main, and a build commit absent from the repository each yield no warning.

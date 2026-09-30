@@ -21,10 +21,11 @@ into the item afterwards did not change that commit's fork point. Only
 rebasing the item onto main did.
 
 The audit now also accepts the grant recorded in the Task commit's parent,
-when the delivery target's history holds a byte-identical authorization record
-at the same path. That grant existed before the commit, because the commit's
-parent carries it, and it is not a local invention, because the default branch
-holds it. The fork-point read stays the first choice.
+when the delivery target's current tip holds a byte-identical authorization
+record at the same path. That grant existed before the commit, because the
+commit's parent carries it. It is not a local invention, and it has not been
+narrowed or revoked since, because the default branch holds exactly that
+record now. An older identical record in history is never enough. The fork-point read stays the first choice.
 
 ## Consequences
 
