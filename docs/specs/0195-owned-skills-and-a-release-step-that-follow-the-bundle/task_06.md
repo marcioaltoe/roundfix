@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0195-owned-skills-and-a-release-step-that-follow-the-bundle
-status: pending
+status: completed
 type: chore
 complexity: low
 ---
@@ -28,6 +28,22 @@ task_01 raised the Roundfix skill to `0.0.3`, and task_02 recorded that version'
 
 - [ ] `TestEveryOwnedSkillVersionIsRecorded` passes, and `make skills-version-check` passes.
 - [ ] The Task's diff touches only the three files it declares.
+
+## Result
+
+Updated the canonical Roundfix skill's metadata and top-level version from
+`0.0.3` to `0.0.4`, synchronized the embedded copy, and recorded the current
+owned-skill versions and digests while preserving the existing entries.
+
+Focused checks:
+
+- `rtk make skills-sync` — passed.
+- `GOCACHE=/tmp/roundfix-task06-gocache go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed.
+- `git diff --check` — passed.
+- The implementation diff contains only `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`, and `skills/testdata/owned-skill-versions.json`; this Result is the required Task-file evidence.
+
+The declared Verification commands remain for the Daemon; no terminal Task
+status was changed.
 
 ## Context
 

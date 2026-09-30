@@ -5,24 +5,40 @@
       {
         "version": "0.0.2",
         "digest": "c854526f940c3c87492d620479b35d43b19d28591fa19f5bdf27e1589defd11d"
+      },
+      {
+        "version": "0.0.3",
+        "digest": "c75cd5dc6a7fd2ff559c123b25af48a929a3007694fdfacec5290ce1ea9b451d"
       }
     ],
     "brainstorming": [
       {
         "version": "0.0.2",
         "digest": "111d21efa124ab7e41787c82d4e793a281d1df7fe71df70b5aed8652cffae92b"
+      },
+      {
+        "version": "0.0.3",
+        "digest": "364716d2f901608df5b98d04ed55cb7500ff374adf1e9247212ed2817eef5fb9"
       }
     ],
     "business-analyst": [
       {
         "version": "0.0.2",
         "digest": "5f13da73f775f02d9b4aae4267e5c8e9db441ff63d51cdd9edfe4e10ef11e786"
+      },
+      {
+        "version": "0.0.3",
+        "digest": "a9cd63389b87e40b08336c3837f8da3a61a2a4d06e1727ce6c33a72025a87252"
       }
     ],
     "council": [
       {
         "version": "0.0.2",
         "digest": "54a4dad89e0b40704c1613a12a8dfa8d2edfd3372db1f15b45f883d13beb04c1"
+      },
+      {
+        "version": "0.0.3",
+        "digest": "9e671c0c8074bc0737d234ffc444fa1e3a91b8f12df1de2c602ea80ed821c9b0"
       }
     ],
     "evidence-gate": [
@@ -35,6 +51,10 @@
       {
         "version": "0.1.0",
         "digest": "1ccc6352d8e18fe86a37cf06853fe955471efe7b8970dc8df52f958fa3ef4a5c"
+      },
+      {
+        "version": "0.1.1",
+        "digest": "0b86c78d2c2a1c5e1fdd73a8c6fb97a61cd5c9bdda017e36aa47b08eac89c7a1"
       }
     ],
     "implement-task": [
@@ -47,42 +67,70 @@
       {
         "version": "0.0.3",
         "digest": "ebc971086ce4eb4dc769e30414f10db12db44684c4479520d67a53220486ded5"
+      },
+      {
+        "version": "0.0.4",
+        "digest": "4e6ad547f4373a699f6fdacbaec594e2396d9717a2aae843b51ecb3b44fee5cb"
       }
     ],
     "roundfix": [
       {
         "version": "0.0.3",
         "digest": "e7b89f8adbbea0a9800618f3100ef4833b3180c42eb48399b6f789de05ca93ee"
+      },
+      {
+        "version": "0.0.4",
+        "digest": "42d32aff469d5e1e2476794848dfc5a3a14409d4d557a4a368e9319c9d58f2cd"
       }
     ],
     "setup-context-driven": [
       {
         "version": "0.0.2",
         "digest": "3879a0b0fe351b3e2edc454121b82b6159a83073df43d774827d5ad891375c2a"
+      },
+      {
+        "version": "0.0.3",
+        "digest": "64d01187ae21fd55a7031dfcf0b2ea0064cb0c1216d3ab2fd8244d785207bae0"
       }
     ],
     "write-idea": [
       {
         "version": "0.0.2",
         "digest": "d44bdbca416d00966d04f3383eb848bace94a4f77334065551cb811454bcc1d8"
+      },
+      {
+        "version": "0.0.3",
+        "digest": "4074139fb0c7d262e7a8dbc59d08ce467c88d8c040ea74567e161217a2ace6a7"
       }
     ],
     "write-prd": [
       {
         "version": "0.0.2",
         "digest": "f4cfd245ea34f5103be328c023191c66e8b4d56fc13827362642b97d570b6898"
+      },
+      {
+        "version": "0.0.3",
+        "digest": "aa1396faad18e962a2ffde77236bc3de44ea5dbf070d47e5fb1848a15ced8d31"
       }
     ],
     "write-tasks": [
       {
         "version": "0.0.3",
         "digest": "b6b0af1efb4a777b7c1e0545ab924b6d427c2a909fc6cc3491d83b981be7f27e"
+      },
+      {
+        "version": "0.0.4",
+        "digest": "5cbbcfeb91bcf38bc6bb709c7132abf8ae4b2c9ea7e5d8cda1e6f7bc2aeb30a7"
       }
     ],
     "write-techspec": [
       {
         "version": "0.0.2",
         "digest": "590d4401c995a0e16adb483d27ac284a7b4269ef0f9022dd23bf81ca3aec4485"
+      },
+      {
+        "version": "0.0.3",
+        "digest": "2b41b87d8a9066df6e7203054dbae27af311e75eccf6fe0cb1c8d42b4238c249"
       }
     ]
   }
