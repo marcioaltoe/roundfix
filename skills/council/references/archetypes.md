@@ -1,6 +1,6 @@
 # Archetype Catalog
 
-Each archetype is a standalone subagent at `.claude/agents/<name>.md`. The facilitator dispatches them via the Agent tool. Do not summarize or reinvent their priorities — dispatch the actual subagent so its authentic voice is preserved.
+Each archetype is defined in this file. The facilitator builds each advisor's prompt from its definition here; no pre-installed agent file is required. Do not summarize or reinvent their priorities — preserve each definition so its authentic voice is preserved.
 
 ## Standard Tech Council (default)
 

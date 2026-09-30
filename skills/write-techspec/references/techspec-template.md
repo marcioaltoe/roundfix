@@ -34,6 +34,8 @@ created: YYYY-MM-DD
      repository-relative path from its `paths` list into this row. A proposed
      record or a record without a grant date authorizes nothing. -->
 
+<!-- A Spec a Delivery Queue delivers also records its delivery operations in that record and, with no Governed Path to bound, the record carries `paths: []`. -->
+
 ## System Architecture
 
 <!-- Which existing modules the feature extends, which components are new, and how they connect.
@@ -59,8 +61,8 @@ created: YYYY-MM-DD
 
 ## Coverage Map
 
-<!-- One line per PRD goal and user story → the component(s) that satisfy it.
-     Format: `Story 3 → ImportScheduler, ImportStatusView`. An unmapped story is a design hole. -->
+<!-- One line per PRD goal, user story, Core Feature and Success Metric → the component(s) that satisfy it.
+     Format: `Story 3 → ImportScheduler, ImportStatusView`. An unmapped item is a design hole. -->
 
 ## Integration Points
 

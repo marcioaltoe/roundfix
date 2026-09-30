@@ -1,0 +1,5 @@
+Report validation: PASS. Single seeded frontmatter, auditor identity preserved, 13 terminal rows, all declared/non-waivable sources named, counts exact, row evidence links resolve, seed authorization audit and skips preserved, audited head unchanged, no tracked worktree diff.
+command: ./bin/roundfix qa-report accept <disposable Spec copy>/qa/qa-report-2026-09-30.md
+exit: 1
+output: 'roundfix: QA Report eligibility refused: rows_blocked_environment is 2, 1 outside the pre-PR Pull Request row; expected 0 outside it\n'
+Expected refusal for unevidenced environment-blocked Git row: confirms partial does not qualify.

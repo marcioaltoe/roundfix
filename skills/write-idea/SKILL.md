@@ -5,10 +5,10 @@ argument-hint: "<feature idea or problem description>"
 metadata:
   category: discovery
   tags: [product, research, requirements, workflow]
-  version: 0.0.2
+  version: 0.0.3
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.2
+version: 0.0.3
 ---
 
 # Write Idea
@@ -22,7 +22,7 @@ Use it for product-level ideas: greenfield features, ideas with real market/comp
 ## Ground rules
 
 - **Read `CONTEXT.md` first** and keep its vocabulary; new terms this idea coins get sharpened and added to the glossary as they're resolved.
-- **One question per message**, multiple-choice with a suggested default whenever options are enumerable (`D) Other — describe` as the escape). 3–6 questions total; stop early if answers show the idea is already well-defined.
+- **One question per message**, with two or three options whenever options are enumerable; put the recommended option first and label it `(Recommended)`, with no `Other` option. 3–6 questions total; stop early if answers show the idea is already well-defined. The structured question tool supplies the custom answer itself; without such a tool, show the same single question in chat and accept a custom answer.
 - **WHAT, WHY, WHO only.** Databases, APIs, frameworks, and architecture are forbidden topics here — they belong to `write-techspec`.
 - **Research before writing.** Never draft an idea unbacked by codebase findings and (for user-facing ideas) market data.
 - **Reference adopted sources at their owned path.** When a source already

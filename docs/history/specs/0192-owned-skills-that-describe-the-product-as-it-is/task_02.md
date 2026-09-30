@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0192-owned-skills-that-describe-the-product-as-it-is
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -65,3 +65,69 @@ The user guide and the README are what a person reads before running Roundfix. T
 - [_techspec.md](_techspec.md) — Interfaces; The user guide
 - `_prd.md` → Goal 2; Goal 3; Goal 4; Core Feature 2; Core Feature 6; Success Metric 1; Success Metric 2; Success Metric 3
 - `_techspec.md` → Testing Approach 2; Testing Approach 3; Build Order 2
+
+## Result
+
+Implemented the Task 02 documentation contract slice. Task status and the
+authored Verification section remain Daemon-owned and unchanged by this Agent.
+No existing test, skill, agent guide, Task Graph, or other Task file was edited.
+
+Acceptance evidence:
+
+- Command coverage: added `TestEveryCommandIsNamedInTheUserGuide`, using the
+  real root help through `cli.Run` and task_01's helpers. Its first run named
+  `spec audit` and `storage report` as missing; after documenting both from
+  their own help, the focused test passes.
+- Link resolution: added `brokenLinks` and `TestUserGuideLinksResolve`. The
+  first run reported all fifteen broken links. All fifteen targets exist
+  under `docs/history/` and were retargeted; the focused test now passes for
+  every guide file and README.
+- Dead-link detection: `TestABrokenUserGuideLinkIsReported` passes with exactly
+  the missing destination from a fixture containing a dead link, a live link,
+  a URL, and a fenced link. An additional focused fixture proves angle-wrapped
+  and plain destinations with query, fragment and title, paths with spaces,
+  fragment-only links, URL schemes and tilde fences containing backticks.
+- QA flag: the initial check reported four refused-flag mentions. Removed
+  them, retained the archive override, and stated in commands, usage and README
+  that the gate is the Spec's authored terminal `qa` Task and no flag requests
+  it. `TestUserGuideNamesNoRefusedQAFlag` now passes. The usage report retains
+  `qa <verdict> — <report path>`.
+- Archive destinations: the command reference names `docs/history/specs/<slug>/` for the
+  built-in Spec Root and `<specs.root>/_archived/<slug>/` otherwise. The
+  context-driven pipeline row names both destinations and no longer names
+  `docs/specs/_archived/`. Focused Python assertions confirmed these strings.
+- Doctor skills: all three examples use
+  `skills: ok (<required> required: <owned> Roundfix-owned, <external> external)`
+  and explain that the counts come from the repository's Repository Skill
+  Set. Focused Python assertions confirmed the shape and removal of the old
+  `39 required` line. Adapter versions were preserved.
+
+Focused checks (not the authored Daemon Verification):
+
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk proxy go test -count=1 -tags docscontract -run 'TestEveryCommandIsNamedInTheUserGuide|TestUserGuideLinksResolve|TestABrokenUserGuideLinkIsReported|TestBrokenLinksHandles|TestUserGuideNamesNoRefusedQAFlag' ./internal/docscontract`
+  — exit 0 after the final test edit. The initial run reproduced the two
+  missing commands, fifteen broken links and four refused flag mentions.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk proxy go test -count=1 -tags docscontract -run 'TestBaselineDocumentationContract|TestProfilesDocumentationContractMatchesPublicGuidance|TestReleasePlanDocumentationContract' ./internal/docscontract`
+  — exit 0; all three existing documentation contracts were preserved.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk proxy go run ./cmd/roundfix spec audit --help`
+  and the corresponding `storage report --help` call — both exit 0; synopsis,
+  reads, mutation boundaries and stated exit codes were checked against them.
+- Focused Python assertions over commands, usage, README and the pipeline row
+  — exit 0 for authored QA wording, report line, archive destinations, skills
+  shapes and count provenance.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk make verify-incremental`
+  — exit 0 with host process-table access on the rerun; formatting, vet,
+  repository unit/integration tests, skill sync/readiness and build passed.
+  The first sandboxed attempt exited 2 because force-stop tests could not
+  inspect the host process table. Its suite guard also detected this Agent's
+  final fixture edit during execution. The rerun held source files unchanged.
+
+The first focused Go invocation hit the sandbox's denied default build cache;
+the task-scoped cache above allowed it to run. No follow-up scope was added.
+The complete authored Verification is left for the Daemon.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260930T144240Z_33c18e8a522f7217`
+- Source commit: `563ca5aa82b33a35878b8c0f673b06a62615ff03`

@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0192-owned-skills-that-describe-the-product-as-it-is
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -68,3 +68,96 @@ The Roundfix skill is what an Agent reads to drive the CLI, and the binary's emb
 - [_techspec.md](_techspec.md) — Interfaces; The command path rule; The Roundfix skill
 - `_prd.md` → Goal 2; Goal 4; Core Feature 1; Core Feature 6; Core Feature 7; Success Metric 1; Success Metric 4; Success Metric 5
 - `_techspec.md` → Testing Approach 1; Testing Approach 3; Testing Approach 4; Build Order 1
+
+## Result
+
+Implemented the command-name contract against real root help through `cli.Run`,
+with first-seen deduplication, alternative expansion, and literal documentation
+matching. The canonical Roundfix skill now describes the seven missing command
+forms from the built CLI's help and the commands guide. It includes
+`agent-selection`, orders pre-PR review before archive and publication, limits
+Pull Request feedback watching to the applicable Review Source, and explains
+reopening a completed QA gate before a corrective dependency's next Run.
+
+### Focused evidence
+
+All Go commands below used `GOCACHE=/private/tmp/roundfix-task01-go-cache`
+because the sandbox denied the default macOS Go cache. These are implementation
+checks, not the Daemon's declared Verification.
+
+- Built the current CLI with `rtk proxy go build -o
+  /private/tmp/roundfix-task01 ./cmd/roundfix`. Its help for `window set`,
+  `window show`, `window clear`, `qa-report`, `baseline capabilities check`,
+  `baseline profile init`, `init`, and `events` exited `0` and supplied the
+  documented usage, effects, and stated exit codes. No state-changing command
+  was invoked.
+- Before the skill edit, `rtk proxy go test -tags docscontract
+  ./internal/docscontract -run 'Test(CommandPaths|EveryCommand|AnUndocumented)'
+  -count=1` exited `1`, reporting exactly `window set`, `window show`,
+  `window clear`, `qa-report accept`, `baseline capabilities check`,
+  `baseline profile init`, and `init` as missing. After the edit it exited `0`.
+- After the final skill edit, `rtk proxy go test -tags docscontract
+  ./internal/docscontract -run
+  'Test(CommandPaths|EveryCommand|AnUndocumented|BaselineDocumentation|ProfilesDocumentation|ReleasePlanDocumentation)'
+  -count=1` exited `0`, covering the three new tests and the existing related
+  documentation contracts without editing them.
+- A temporary Go overlay outside the repository replaced the help supplied to
+  the coverage test's parser with `roundfix --help` alone. Running that test
+  through the overlay exited `1` with `root help yielded 0 command paths, want
+  at least 40`. The repository test source was unchanged by this probe.
+- A read-only Python check against the built binary and repository files found
+  51 unique advertised command paths and no missing literal names. It also
+  checked lifecycle phrases and step ordering, both version fields, every file
+  in the Roundfix skill mirror, and the settlement section against both HEAD
+  and the two other canonical skills.
+- `rtk proxy make verify-incremental` initially exited `2`. Two force-stop
+  integration tests could not read the process table inside the sandbox. Its
+  suiteguard also detected this Result being written while the suite ran.
+  `TestBaselineExamplesParse` treated the new Baseline help synopses as
+  executable Bash recipes; the synopses now use `text` fences because their
+  optional-argument notation is reference syntax. A focused
+  `rtk proxy go test ./internal/cli -run '^TestBaselineExamplesParse$' -count=1`
+  exited `0`, checking that distinction. The existing example-parser dispatcher does not
+  cover `baseline capabilities check`; extending it is a follow-up outside
+  this Task's prohibition on existing-test edits. The new contract still
+  checks the literal command and real root help, and the command's own help
+  was exercised above.
+- With the worktree held stable and process-table access permitted,
+  `rtk proxy make verify-incremental` exited `0`: formatting, vet, the Go
+  suite (including the force-stop tests), mirror checks, skill readiness,
+  and build passed. The retry log is
+  `/private/tmp/roundfix-task01-incremental-retry.log`. The focused
+  documentation-contract command above also exited `0` again after the final
+  synopsis-fence correction.
+
+### Acceptance evidence
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| Command path rule | `TestCommandPathsReadSubcommandsAndAlternatives` passes with alternatives, positional stops, flag and parenthesis stops, repeated paths, and an ignored line outside the required prefix. |
+| Every root-help path is named | `TestEveryCommandIsNamedInTheRoundfixSkill` passes against `cli.Run`; the independent binary check found all 51 names. |
+| Removing a name reports exactly that path | `TestAnUndocumentedCommandIsReported` passes after removing every `roundfix reopen` literal from an in-memory skill copy. |
+| Fewer than forty paths refuses | The coverage test checks the floor before documentation matching; the temporary flag-only-help overlay produced the expected floor failure. |
+| Event category, review order, and reopen guidance | Read-only checks confirmed `agent-selection`, the required order sentence and step titles, review before archive, and `reopen the settled gate first`; prose also records `none` as omitted and no reopen for failed or pending gates. |
+| Shared QA settlement remains identical | Read-only byte comparison confirmed the Roundfix section is unchanged from HEAD and identical to `qa-gate` and `archive-spec`. |
+| Versions and mirror | Both version fields remain `0.0.2`; read-only comparison confirmed the entire Roundfix mirror matches the canonical directory. |
+
+### Regeneration and scope
+
+`rtk make skills-sync` exited `0` and changed only
+`skills/roundfix/SKILL.md`. After synchronization,
+`rtk proxy make baseline-digests` exited `0` with `changed: false`; no derived
+path changed. Both commands were repeated after the final prose adjustment
+with the same outcome.
+
+Task-owned changed paths are `.agents/skills/roundfix/SKILL.md`,
+`skills/roundfix/SKILL.md`,
+`internal/docscontract/command_documentation_test.go`, and this Task's Result.
+The Task file was already changed on arrival by its Daemon-owned status.
+No other Task, manifest, existing test, CLI source, adapter file, or settlement
+section was edited. Status and declared Verification remain Daemon-owned.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260930T144240Z_33c18e8a522f7217`
+- Source commit: `c5f014945f862a47e1f21270a53f5b0617464c7e`

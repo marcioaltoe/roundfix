@@ -1,0 +1,12 @@
+command: ./bin/roundfix implement --spec 0192-owned-skills-that-describe-the-product-as-it-is --qa
+exit: 2
+Preflight failed
+
+Reason:
+  unknown flag "--qa": the gate is declared in the Spec's Task Graph; author the terminal QA Task there, then re-run implement
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix implement --help' for usage.

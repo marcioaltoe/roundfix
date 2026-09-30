@@ -49,8 +49,10 @@ failures. The independent Repository Skill Set result follows `profiles:`:
 
 ```text
 profiles: ok (3 distinct tuples; 10 category references)
-skills: ok (39 required: 14 Roundfix-owned, 25 external)
+skills: ok (<required> required: <owned> Roundfix-owned, <external> external)
 ```
+
+The numbers come from the repository's Repository Skill Set.
 
 The running binary's embedded bundle is authoritative for Roundfix-owned
 skills, including the Roundfix Skill. Each required external skill must match
@@ -83,8 +85,10 @@ QA gate at the end. Agent selection is profile-led per Task Type; the Daemon
 owns Task status and the complete declared Verification:
 
 ```bash
-roundfix implement --spec <slug> --qa
+roundfix implement --spec <slug>
 ```
+
+The gate is the Spec's authored terminal `qa` Task; no flag requests it.
 
 Task Capacity defaults to `2`; the independent, per-Run Verification Capacity
 defaults to `1`. See

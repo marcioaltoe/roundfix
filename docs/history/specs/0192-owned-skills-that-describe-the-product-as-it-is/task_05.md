@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0192-owned-skills-that-describe-the-product-as-it-is
-status: pending
+status: failed
 type: qa
 complexity: medium
 ---
@@ -27,7 +27,7 @@ The authored terminal gate for this Spec. It declares what the matrix covers and
    - the `implement-spec` argument hint against `roundfix implement --help`.
 7. MUST verify that `write-prd`, `write-idea`, `brainstorming`, `business-analyst` and `council` each show one question with two or three options, the recommended one first and labelled `(Recommended)`, and no `Other` option, as the structured-question clause in `docs/agents/agent-instructions.md` requires, and that `council` asks its two closing questions one at a time.
 8. MUST verify that the existing skill contract tests pass without an edit to any of them, that `git diff` from the Delivery Base shows no change to `skills/baseline_skill_contract_test.go`, `skills/settlement_guidance_repocontract_test.go`, `internal/docscontract/publicdocs_test.go` or any file under `internal/baseline/assets/` and `docs/agents/`, and that `make skills-sync-check` exits `0`.
-9. MUST verify that each of the twelve changed skills declares, in both version fields, a version one patch step above the one on the Delivery Base, and that no unchanged owned skill moved its version.
+9. MUST verify that each of the eleven changed skills other than the Roundfix skill declares, in both version fields, a version one patch step above the one on the Delivery Base; that the Roundfix skill keeps `0.0.2` in both fields, as the PRD's Core Feature 7 states; and that no unchanged owned skill moved its version.
 10. MUST record, as evidence this Spec did not author:
     - the output of the built binary's root help, which lists the command paths the contract reads;
     - Git's own check of the same class, `t/t0450-txt-doc-vs-help.sh` (<https://github.com/git/git/blob/e9019fca/t/t0450-txt-doc-vs-help.sh>), which asserts that each builtin's documented synopsis agrees with its `-h` output.

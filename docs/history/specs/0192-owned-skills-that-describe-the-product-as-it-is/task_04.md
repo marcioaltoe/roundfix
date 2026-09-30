@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0192-owned-skills-that-describe-the-product-as-it-is
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -97,3 +97,54 @@ Eight owned skills each carry a small statement that the Daemon, a command or a 
 - [_techspec.md](_techspec.md) — The gate, lifecycle and discovery skills; The structured question form
 - `_prd.md` → Goal 1; Core Feature 4; Core Feature 5; Core Feature 7; Success Metric 3; Success Metric 4; Success Metric 5
 - `_techspec.md` → Testing Approach 3; Testing Approach 4; Build Order 4
+
+## Result
+
+Implemented the gate, archive, Baseline, implementation, council, idea,
+business-analysis, and brainstorming wording corrections in the canonical
+`.agents/skills/` tree. The protected `### QA settlement` sections in
+`qa-gate`, `archive-spec`, and `roundfix` were left unchanged. The question
+forms now use two or three recommended options without an `Other` option and
+document that the structured question tool supplies custom answers, with the
+same single-question chat fallback accepting a custom answer.
+
+Focused evidence for the acceptance criteria:
+
+- `qa-gate`: contains the Daemon Verification recording rule and standalone
+  selected-Verification rule, the seeded `| # | Status | Provenance |` table
+  header plus below-table row details, and Pull Request preparation on `pass`
+  or qualifying declared `partial`.
+- `archive-spec`: normal archives run through `roundfix archive <slug>`,
+  archive front matter is never hand-edited, and the Delivery Queue subject is
+  `docs: archive <slug>`; the `Unarchive` section and `docs/_inbox/` mentions
+  remain unchanged.
+- `setup-context-driven` lists all eight Finding statuses and reviews
+  `historyMoves` with `baseline.history.citation` warnings when history moves;
+  `implement-spec` has no `--from` argument.
+- `council` captures two sequential questions with synthesis paths and risk
+  triggers, and its archetypes are defined in the catalog without a
+  pre-installed agent file. `write-idea`, `business-analyst`, and
+  `brainstorming` use the required recommended-option form.
+- All eight version pairs were raised as required. The extracted protected QA
+  settlement sections compare byte-identically, and every canonical mirror
+  compares byte-identically.
+
+Focused checks run:
+
+- `rtk make skills-sync`: passed; rewrote these mirror paths:
+  `skills/qa-gate/SKILL.md`, `skills/archive-spec/SKILL.md`,
+  `skills/setup-context-driven/SKILL.md`, `skills/implement-spec/SKILL.md`,
+  `skills/council/SKILL.md`, `skills/council/references/archetypes.md`,
+  `skills/write-idea/SKILL.md`, `skills/write-idea/references/opportunity-scan.md`,
+  `skills/business-analyst/SKILL.md`, and `skills/brainstorming/SKILL.md`.
+- `rtk make baseline-digests`: passed; no tracked digest paths were rewritten.
+- Focused phrase, stale-phrase, version, mirror, protected-settlement, and
+  `git diff --check` inspections: passed.
+
+The Task's declared Verification remains for the Daemon; it was not run in
+this child-agent turn.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260930T144240Z_33c18e8a522f7217`
+- Source commit: `ae33fa0fb2cd35c21b3c8cf80a9b41fa6f21eb79`
