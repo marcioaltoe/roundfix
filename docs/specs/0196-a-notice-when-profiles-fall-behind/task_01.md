@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0196-a-notice-when-profiles-fall-behind
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -69,3 +69,118 @@ A configured Agent Selection Profile accepts exactly two keys, `preferred` and `
 - ADR-0181; ADR-0049
 
 ## Result
+
+Implemented this Task's slice only: a configured profile accepts a dated,
+reasoned Profile Deviation, resolution carries a copied record, and configure
+fragments write, preview and return it in JSON. Whole-profile replacement
+without a deviation removes the old record. Built-in and legacy-derived
+profiles carry none, and invocation overrides clear it. Recommendation
+comparison remains for task_02.
+
+Pre-change inspection found that `decodeProfile` admitted only `preferred` and
+`fallbacks`, and neither new test file existed. No existing top-level test was
+renamed, removed or edited, and no exported function signature changed.
+
+### Focused evidence by acceptance criterion
+
+The focused command was
+`GOCACHE=/tmp/roundfix-0196-task01-cache rtk proxy go test ./internal/config ./internal/cli -run 'Deviation|TestProfilesConfigure' -count=1`.
+It exited 0 after the final implementation edits, including all seven new
+named tests and the existing configure tests.
+
+| Acceptance criterion | Implementation and focused-check evidence |
+| --- | --- |
+| User and Project Config load a valid deviation and resolution carries it | `TestProfileDeviationLoadsFromUserAndProjectConfig` covers both scopes, source attribution, optional-category inheritance, copied resolution records, invocation clearing, and Project Config replacement of a User Config deviation. |
+| Every malformed deviation names its path | `TestProfileDeviationRejectsMalformedValues` separately covers an unknown key, missing `from`, missing `reason`, whitespace-only reason, impossible calendar date and non-mapping value. Additional subtests cover duplicate keys, non-string reason, non-scalar date and a timestamp with a time. Each exercises both config loading and fragment parsing and asserts the offending path. |
+| Profiles without a deviation retain existing behavior | `TestProfileWithoutDeviationLoadsUnchanged` checks selection tuples and absence on configured, built-in and legacy profiles. `TestProfilesConfigureOutputIsUnchangedWithoutADeviation` compares the complete text and JSON bytes against the existing public output contract. |
+| Project configure writes a deviation and later removes it | `TestProfilesFragmentPersistsTheDeviation` checks CategoryChange and proposal copies, persists and reloads the record. `TestReplacingAProfileDropsItsDeviation` checks whole-profile replacement. `TestProfilesConfigurePreviewsAndWritesADeviation` uses the existing fake runner and temporary home/repository to exercise `--scope project --file <fragment> --yes`, preview text, JSON, YAML ordering after `fallbacks`, and removal by a later fragment. No real adapter is used. |
+| Existing configure tests pass unchanged | The focused command includes every `TestProfilesConfigure*` test, including `TestProfilesConfigureChangeSummary` and `TestProfilesConfigureExitCodes`. A byte comparison against HEAD confirmed `internal/cli/profiles_configure_test.go` is unchanged. |
+| Guides, glossary, skill and mirror describe Profile Deviation; sync check passes | The configuration guide includes the example, two validation rules and the older-release refusal sentence; the command guide describes fragment persistence; CONTEXT defines the term. Both Roundfix skills contain the short paragraph under `### Recommendation check`, beside Agent selection. A byte comparison confirms the mirror matches and `### QA settlement` is unchanged. The incremental check ran `skills-sync-check` successfully. |
+
+### Sabotage evidence
+
+- Refusal gate: temporarily replaced the unknown-key refusal in
+  `decodeProfileDeviation` with `continue`. With the task-local cache,
+  `go test ./internal/config -run '^TestProfileDeviationRejectsMalformedValues$/unknown_deviation_key$' -count=1`
+  exited 1. `TestProfileDeviationRejectsMalformedValues/unknown_deviation_key`
+  failed with `expected path refusal, got <nil>`. Restored the decoder.
+- Write gate: temporarily disabled the deviation branch of
+  `profileWithDeviationYAMLNode`. With the same cache,
+  `go test ./internal/config -run '^TestProfilesFragmentPersistsTheDeviation$' -count=1`
+  exited 1. `TestProfilesFragmentPersistsTheDeviation` failed with
+  `written deviation = <nil>, want {From:2026-09-30 Reason:Keep the validated model}`.
+  Restored the writer. The focused command above then exited 0, and was run
+  again successfully after the final edits.
+
+### Skill regeneration and additional path
+
+Raised both Roundfix skill version fields from `0.0.4` to `0.0.5` as required by
+`docs/agents/specific-repository.md`. Additional Task path declared here:
+`skills/testdata/owned-skill-versions.json`, the generated owned-skill version
+record. The command
+`GOCACHE=/tmp/roundfix-0196-task01-cache rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+exited 0 and rewrote that file to record the final skill content.
+
+`rtk make skills-sync` exited 0. It recreates the shipped bundle, so the files
+it copied are named below. Only `skills/roundfix/SKILL.md` gained changed bytes;
+the other copied files remain byte-identical to HEAD.
+
+```text
+skills/archive-spec/SKILL.md
+skills/brainstorming/SKILL.md
+skills/business-analyst/SKILL.md
+skills/council/SKILL.md
+skills/council/assets/synthesis-template.md
+skills/council/references/archetypes.md
+skills/council/references/debate-protocols.md
+skills/evidence-gate/SKILL.md
+skills/implement-spec/SKILL.md
+skills/implement-task/SKILL.md
+skills/qa-gate/SKILL.md
+skills/roundfix/SKILL.md
+skills/roundfix/agents/openai.yaml
+skills/setup-context-driven/SKILL.md
+skills/write-idea/SKILL.md
+skills/write-idea/references/idea-template.md
+skills/write-idea/references/opportunity-scan.md
+skills/write-prd/SKILL.md
+skills/write-prd/references/prd-template.md
+skills/write-tasks/SKILL.md
+skills/write-tasks/references/task-template.md
+skills/write-techspec/SKILL.md
+skills/write-techspec/references/techspec-template.md
+```
+
+`GOCACHE=/tmp/roundfix-0196-task01-cache rtk make baseline-digests` exited 0
+after the final skill edit and synchronization. It reported `changed:false`
+and “derived artifacts already match their canonical sources”; it produced no
+changed derived files.
+
+### Incremental check and handoff boundary
+
+- `GOCACHE=/tmp/roundfix-0196-task01-cache rtk proxy make verify-incremental`
+  exited 0 with host permissions. Formatting, vet, repository tests,
+  `skills-sync-check`, skill validation and build passed. The output is in
+  `/tmp/roundfix-0196-task01-incremental.log` for this session.
+- The first direct Go check could not access the default Go cache; focused
+  checks used the task-local cache thereafter. The first sandboxed incremental
+  attempt was interrupted by a network restriction naming `cafe.github.com`
+  and yielded no usable completion result. The host-permission rerun above
+  supplied the incremental evidence; no repository check was weakened.
+- `git diff --check` exited 0. The only pre-existing Task-file difference was
+  the Daemon's `status: in_progress`; that value remains untouched.
+
+The authored Verification commands were not run. Task status, subtasks and
+acceptance checkboxes remain unchanged for Daemon settlement. No other Task
+file or Task Graph was edited, and no commit, push or Pull Request was made.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `skills/testdata/owned-skill-versions.json`
+
+## Carry-forward provenance
+
+- Source Run: `run_20260930T224533Z_22a572af678fb8c4`
+- Source commit: `2a9207735fe4a0da788c89fcacae44f19da1ecbc`

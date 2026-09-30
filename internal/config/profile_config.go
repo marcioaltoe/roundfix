@@ -24,9 +24,10 @@ const (
 )
 
 type CategoryChange struct {
-	Category WorkCategory
-	Kind     ChangeKind
-	Profile  AgentSelectionProfile
+	Category  WorkCategory
+	Kind      ChangeKind
+	Profile   AgentSelectionProfile
+	Deviation *ProfileDeviation
 }
 
 type EffectiveChangeSet struct {
@@ -102,7 +103,14 @@ func NormalizeProfilesFragment(profiles Profiles) (Profiles, error) {
 		if err := validateAgentSelectionProfile("profiles."+string(category), profile); err != nil {
 			return nil, err
 		}
-		normalized[category] = ProfileEntry{Profile: profile}
+		deviation := cloneProfileDeviation(entry.Deviation)
+		if err := validateProfileDeviation("profiles."+string(category)+".deviation", deviation); err != nil {
+			return nil, err
+		}
+		if deviation != nil {
+			deviation.Reason = strings.TrimSpace(deviation.Reason)
+		}
+		normalized[category] = ProfileEntry{Profile: profile, Deviation: deviation}
 	}
 	for category := range profiles {
 		if _, ok := ParseWorkCategory(string(category)); !ok {
@@ -136,9 +144,10 @@ func DeriveEffectiveChangeSet(existing Profiles, fragment Profiles, removals []W
 				kind = ChangeReplaced
 			}
 			changes = append(changes, CategoryChange{
-				Category: category,
-				Kind:     kind,
-				Profile:  cloneProfile(entry.Profile),
+				Category:  category,
+				Kind:      kind,
+				Profile:   cloneProfile(entry.Profile),
+				Deviation: cloneProfileDeviation(entry.Deviation),
 			})
 			continue
 		}
@@ -626,14 +635,14 @@ func mergeProfilesNode(profilesNode *yaml.Node, changes EffectiveChangeSet) erro
 		}
 		applied[category] = true
 		if change.Kind != ChangeRemoved {
-			merged = append(merged, keyNode, profileYAMLNode(change.Profile))
+			merged = append(merged, keyNode, profileWithDeviationYAMLNode(change.Profile, change.Deviation))
 		}
 	}
 	for _, change := range changes.Changes {
 		if applied[change.Category] || change.Kind == ChangeRemoved {
 			continue
 		}
-		merged = append(merged, yamlStringNode(string(change.Category)), profileYAMLNode(change.Profile))
+		merged = append(merged, yamlStringNode(string(change.Category)), profileWithDeviationYAMLNode(change.Profile, change.Deviation))
 	}
 	profilesNode.Content = merged
 	return nil
@@ -779,7 +788,7 @@ func writeFileAtomic(ctx context.Context, path string, content []byte) error {
 func cloneProfilesForWrite(profiles Profiles) Profiles {
 	cloned := Profiles{}
 	for category, entry := range profiles {
-		cloned[category] = ProfileEntry{Profile: cloneProfile(entry.Profile), Source: entry.Source}
+		cloned[category] = cloneProfileEntry(entry)
 	}
 	return cloned
 }
@@ -789,6 +798,7 @@ func cloneEffectiveChangeSet(changes EffectiveChangeSet) EffectiveChangeSet {
 	for index, change := range changes.Changes {
 		cloned.Changes[index] = change
 		cloned.Changes[index].Profile = cloneProfile(change.Profile)
+		cloned.Changes[index].Deviation = cloneProfileDeviation(change.Deviation)
 	}
 	return cloned
 }
@@ -798,4 +808,15 @@ func scopeForProfileSource(source ProfileSource) string {
 		return InitScopeProject
 	}
 	return InitScopeUser
+}
+
+func profileWithDeviationYAMLNode(profile AgentSelectionProfile, deviation *ProfileDeviation) *yaml.Node {
+	node := profileYAMLNode(profile)
+	if deviation != nil {
+		node.Content = append(node.Content, yamlStringNode("deviation"), &yaml.Node{
+			Kind: yaml.MappingNode, Tag: "!!map",
+			Content: []*yaml.Node{yamlStringNode("from"), yamlStringNode(deviation.From), yamlStringNode("reason"), yamlStringNode(deviation.Reason)},
+		})
+	}
+	return node
 }

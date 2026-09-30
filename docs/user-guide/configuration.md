@@ -407,6 +407,30 @@ these rows in order with `preferred` and `fallback` roles, the selection,
 source date, and rationale. Interactive configure prints the same advisory
 rows. The Recommended Profile never selects, routes, or writes configuration.
 
+A configured Agent Selection Profile can carry a **Profile Deviation**: a
+dated, reasoned record that its difference from the Recommended Profile is
+deliberate for the snapshot it names. Put it after `fallbacks`:
+
+```yaml
+profiles:
+  backend:
+    preferred: {runtime: codex, model: gpt-5.6-sol, reasoning_effort: high}
+    fallbacks:
+      - {runtime: codex, model: gpt-5.5, reasoning_effort: xhigh}
+    deviation:
+      from: 2026-09-30
+      reason: Keep the model validated for this repository
+```
+
+- `deviation` must be a mapping containing exactly `from` and `reason`; both
+  are required.
+- `from` must be a calendar date written `YYYY-MM-DD`, and `reason` must be a
+  non-empty string after trimming.
+
+`profiles configure` writes a deviation its fragment carries. Replacing a
+profile with a fragment without a deviation removes the old record.
+A Roundfix older than this release refuses a configuration that uses it.
+
 Automatic fallback is pre-prompt only. Roundfix records and shows the fallback
 notification before activating the next configured tuple. Once
 `agent_work_started` is recorded, no prompt, tool, verification, cancellation,

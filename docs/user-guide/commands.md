@@ -555,7 +555,9 @@ or writes configuration; interactive configure shows the same advisory rows.
 Official model identifiers and advisory rank
 do not prove that a tuple works in the current environment.
 
-`profiles configure` merges a fragment by Agent Work Category. Every category
+`profiles configure` writes a Profile Deviation its fragment carries, and
+replacing a profile with a fragment without one removes the old deviation.
+It merges a fragment by Agent Work Category. Every category
 named in the fragment replaces that complete profile atomically; every other
 configured category is preserved. Omission does not delete a category.
 `--remove <category>` is the only way to remove a category and may be repeated.

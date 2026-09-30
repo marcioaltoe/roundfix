@@ -4,10 +4,10 @@ description: Use Roundfix to plan releases with the read-only Release Plan Comma
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.0.8
+  version: 0.0.9
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.0.8
+version: 0.0.9
 ---
 
 # Roundfix
@@ -1081,6 +1081,17 @@ Runs and `spec:<slug>` for Spec Runs. Terminal context adds
 `ROUNDFIX_REASON`, `ROUNDFIX_CONSOLE_LOG`, `ROUNDFIX_ATTACH_COMMAND`,
 `ROUNDFIX_REVIEW_ISSUES_KNOWN`, and `ROUNDFIX_NEXT_ACTION`. Set
 `notify.enabled: false` to disable outcome notifications entirely.
+
+### Recommendation check
+
+A configured Agent Selection Profile can carry a Profile Deviation under
+`deviation`, with `from` (the snapshot calendar date, `YYYY-MM-DD`) and `reason`
+(a non-empty string after trimming). It records that the profile's difference
+from the Recommended Profile is deliberate for that snapshot. `profiles
+configure` writes a deviation its fragment carries and removes an old deviation
+when the replacement fragment omits it. A Roundfix older than this release
+refuses a configuration that uses the key.
+
 
 ## Run Window
 

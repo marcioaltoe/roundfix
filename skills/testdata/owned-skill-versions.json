@@ -97,6 +97,10 @@
       {
         "version": "0.0.8",
         "digest": "d82ed9b74d5dbdb5ab1e2107d98486c5c778b73bc63a7053d6289f67b054b5bf"
+      },
+      {
+        "version": "0.0.9",
+        "digest": "18b87cff8e538be625e3b6d25173a2dfcd02ed6527cf1bdf57517a59ce7a9ebc"
       }
     ],
     "setup-context-driven": [
