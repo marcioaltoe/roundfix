@@ -20,7 +20,8 @@ agent driving Roundfix. For flags, outputs, and boundaries per command, see the
 
    Doctor prints Agent Selection Profile Readiness first, then independently
    proves the Repository Skill Set. A ready repository prints
-   `skills: ok (39 required: 14 Roundfix-owned, 25 external)`; a blocking
+   `skills: ok (<required> required: <owned> Roundfix-owned, <external> external)`.
+   The numbers come from the repository's Repository Skill Set. A blocking
    mismatch prints `skills: failed` with the applicable owned or external
    update command and exits `1`. Doctor is offline and read-only: it never
    updates or deletes skills, and it ignores unrelated extra installed skills
@@ -351,8 +352,8 @@ IntegrationPending: 2 completed, 0 failed, 0 skipped, 0 pending; integrate with 
 All 2 Task(s) already completed; no Run was created.
 ```
 
-Add `--qa` to end the Run with the qa-gate step; only a `pass` verdict lets the
-Run end Clean, and the report gains a `qa <verdict> — <report path>` line.
+The gate is the Spec's authored terminal `qa` Task; no flag requests it.
+The report gains a `qa <verdict> — <report path>` line.
 
 When Daemon Verification fails deterministically, the capacity permit is
 released while the same Task Agent Session receives one Verification Feedback
@@ -619,10 +620,10 @@ Review Issues: unknown — fetch did not complete.
 ```
 
 The full evidence and refusal rules trace to
-[ADR-0054](../adr/0054-review-source-evidence-determines-review-outcomes.md),
-[Spec 0039](../specs/_archived/0039-review-source-evidence-and-detached-outcomes/_prd.md),
+[ADR-0054](../history/adr/0054-review-source-evidence-determines-review-outcomes.md),
+[Spec 0039](../history/specs/0039-review-source-evidence-and-detached-outcomes/_prd.md),
 and the
-[detached-watch finding](../findings/_archived/2026-07-16-vortex-pr87-detached-watch-notification.md).
+[detached-watch finding](../history/findings/2026-07-16-vortex-pr87-detached-watch-notification.md).
 
 ### Step by step
 
@@ -724,7 +725,7 @@ outcome. Never kill Agent or acpx processes by hand while a Run is Active.
 For the full failure and replay contract, see the
 [Stop Command reference](commands.md#stop), which traces to
 [ADR-0052](../adr/0052-run-completion-is-compare-and-set.md) and the
-[terminal-outcome Spec](../specs/_archived/0037-terminal-outcome-integrity/_prd.md).
+[terminal-outcome Spec](../history/specs/0037-terminal-outcome-integrity/_prd.md).
 
 ## Command reference
 
