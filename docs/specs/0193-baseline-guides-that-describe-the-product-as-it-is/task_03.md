@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0193-baseline-guides-that-describe-the-product-as-it-is
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -76,3 +76,72 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - ADR-0104, ADR-0130, ADR-0166, ADR-0179, ADR-0186
 
 ## Result
+
+Implemented the five exact TechSpec replacements in the `core` and
+`spec-workflow` module sources, preserving their formatting and all other
+clause text. The committed-provenance obligation remains; the text now names
+the Run's construction and the absence of another check. No provenance check
+or approval record was added. Each changed rule, its guide and its module
+version increased once; all five clauses remain `mandatory`. A focused
+comparison against `HEAD` confirmed the new-or-widened-grant sentence remains
+byte-identical and all unrelated clauses remain unchanged.
+
+Acceptance evidence:
+
+- The two repository guides carry all five prescribed replacements.
+  `go test -count=1 -run '^TestAuthorizationClauses' ./internal/baseline`
+  exited 0 after regeneration and managed refresh. The positive test checks
+  the embedded clauses, their formatter goldens and both repository guides,
+  including mandatory enforcement. Before the source edits, the same focused
+  command exited 1 on every missing replacement.
+- The negative test scans every module, every formatter golden and the
+  repository's rendered agent guides for all four removed phrases. It failed
+  on the old text before editing and passed after refresh in the same focused
+  command.
+- `make baseline-digests` exited 0 and regenerated only the two formatter
+  goldens, profile pin, catalog snapshots and four plan-characterization
+  goldens named in this Task. No derived artifact was hand-edited.
+- `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`
+  exited 0, verified the approved postimages and updated exactly the two guides
+  and Setup Manifest. Repeating that command exited 0 with `File changes: 0`
+  and `Idempotence: verified`. The initial sandboxed attempts were blocked by
+  Go-cache and Git-private transaction-lock permissions; the successful
+  refreshes ran with the required access. Both refreshes reported the existing
+  nested-carrier warnings and skipped skills as requested.
+- Changed-file postflight found all 17 changed or new paths inside this Task's
+  Context plus this Task file. `git diff --check` exited 0. The protected
+  implementation packages and `internal/docscontract/publicdocs_test.go`
+  remain untouched.
+
+Incremental-check limitation and follow-up evidence:
+
+- `rtk make verify-incremental` exited 2 at its test target. Format checking
+  and `go vet ./...` produced no diagnostic. The baseline and CLI structural
+  tests still expect the duplicate `rule.backend.boundary-contracts` entry
+  removed by task_01: `TestStandardTypeScriptStructuralClauseRetention` expects
+  that identifier retained, and `TestBaselineUpdateFleetSweep/structural-clauses-missing`
+  expects two rendered paragraphs. Isolated reruns with
+  `go test -count=1 -run '^TestStandardTypeScriptStructuralClauseRetention$' ./internal/baseline`
+  and `go test -count=1 -run '^TestBaselineUpdateFleetSweep/structural-clauses-missing$' ./internal/cli`
+  both exited 1 with the same diagnostics and no mutation-guard failure.
+  Repairing those expectations belongs to the backend duplicate-removal slice;
+  neither test file was edited by this Task.
+- The broad run also exceeded the 200 ms budget in
+  `TestTaskBudgetReasonNamesTheSettlementThatRenewedIt`. Its isolated rerun,
+  `go test -count=1 -run '^TestTaskBudgetReasonNamesTheSettlementThatRenewedIt$' ./internal/daemon`,
+  exited 0. The initial timing failure remains recorded; no Daemon code or
+  test was changed.
+- The broad run's CLI mutation guard also reported this Task file, because I
+  wrote Result while that check was running. The focused reruns above ran
+  against an unchanged tree and reported no guard violation. The incremental
+  check is not recorded as passing.
+
+Authored `## Verification` was not executed; it remains Daemon-owned. Task
+status, Task Graph and other Task files were not edited. No commit, push or
+Pull Request was made. The provenance-check gap remains owned by the existing
+open Backlog Entry named in this Task's Context.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260930T153457Z_b5736250c995b99a`
+- Source commit: `68669f43bfb69514faf1819bb3c591e40a11b0c4`

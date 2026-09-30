@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
-  "catalogDigest": "sha256:eaf1ec5b7a85e6e7f9e1159b595e1f7026d1f95af5a0c5f6128fe0d71a92c6c4",
+  "catalogDigest": "sha256:97520a0509cb986b9288a8755f5dd5419e0d12436c7b6da427e0637d7391a4d8",
   "modules": [
     "core",
     "context-workflow",
@@ -156,7 +156,7 @@
       "module": "core",
       "template": "template.guide.agent-instructions",
       "version": "0.0.1",
-      "digest": "762c19423dc59702fa0b46879bdfb11109479c63bed83557db2808c3472c8e59"
+      "digest": "df3e931b61af9e3e25f7f2d9cb0d1933e1fdcc6bf58dd092277c353e4fb10f8f"
     },
     {
       "id": "root.cli-surface",
@@ -174,7 +174,7 @@
       "module": "spec-workflow",
       "template": "template.guide.spec-routing",
       "version": "0.0.1",
-      "digest": "bbb478218b35e3542a8d5785a21f57ac017493a51c7fbd584a5d7442fbe9889f"
+      "digest": "418e1ff0fe04288e74716911860b9dea15b801a48c76f1613d5e8cbcde96090f"
     },
     {
       "id": "guide.issue-tracker",
