@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0186-citation-scans-that-read-only-what-they-mean-to
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
