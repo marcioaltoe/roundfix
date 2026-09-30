@@ -32,21 +32,25 @@ var skillNames = []string{
 
 const ownedSkillMinimumVersion = "0.0.2"
 
-var ownedSkillMinimumVersions = map[string]string{
-	"roundfix":             ownedSkillMinimumVersion,
-	"write-idea":           ownedSkillMinimumVersion,
-	"write-prd":            ownedSkillMinimumVersion,
-	"write-techspec":       ownedSkillMinimumVersion,
-	"write-tasks":          ownedSkillMinimumVersion,
-	"setup-context-driven": ownedSkillMinimumVersion,
-	"implement-task":       ownedSkillMinimumVersion,
-	"implement-spec":       ownedSkillMinimumVersion,
-	"brainstorming":        ownedSkillMinimumVersion,
-	"council":              ownedSkillMinimumVersion,
-	"business-analyst":     ownedSkillMinimumVersion,
-	"archive-spec":         ownedSkillMinimumVersion,
-	"qa-gate":              ownedSkillMinimumVersion,
-	"evidence-gate":        ownedSkillMinimumVersion,
+// ownedSkillMinimumVersions follows the versions declared by the embedded
+// bundle. An embedded skill without a valid version keeps the base minimum.
+var ownedSkillMinimumVersions = embeddedOwnedSkillVersions()
+
+func embeddedOwnedSkillVersions() map[string]string {
+	versions := make(map[string]string, len(skillNames))
+	for _, name := range skillNames {
+		versions[name] = ownedSkillMinimumVersion
+		data, err := embedded.ReadFile(name + "/SKILL.md")
+		if err != nil {
+			continue
+		}
+		metadata, ok := parseSkillFrontmatter(string(data))
+		version := strings.TrimSpace(metadata.Version)
+		if ok && ValidVersion(version) {
+			versions[name] = version
+		}
+	}
+	return versions
 }
 
 type File struct {

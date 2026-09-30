@@ -239,6 +239,22 @@ step:
 - `GITHUB_TOKEN` — the workflow's built-in token, used with `contents: write`
   permission to create the GitHub Release and upload assets. No manual setup.
 
+## Checking skills and guides before the release
+
+This is a mandatory release step. Complete it before opening the release Pull
+Request.
+
+1. Run `roundfix doctor` and confirm the `skills:` line is `ok`.
+2. Run `go test -count=1 ./skills -run '^(TestEveryOwnedSkillVersionIsRecorded|TestTheOwnedSkillMinimumIsTheEmbeddedVersion)$'`.
+3. Run `go test -count=1 ./internal/baseline -run '^(TestNoTwoBaselineClausesShareText|TestBaselineClauseForceIsCharacterized|TestShippedGuidanceCitesNoRepositoryRecord)$'`
+   and `go test -count=1 ./internal/delivery -run '^TestTheLoopClauseOrderMatchesTheDeliveryQueue$'`.
+4. Run `go test -count=1 -tags docscontract ./internal/docscontract -run '^(TestEveryCommandIsNamedInTheRoundfixSkill|TestEveryCommandIsNamedInTheUserGuide)$'`.
+5. Run `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --format text` and confirm it reports `current`.
+6. For each user-visible change in the release range, confirm in a reading pass
+   that the Roundfix skill, the user guide and the Baseline clause that describe
+   it say what the release does. Fix a mismatch before the release Pull
+   Request, or record a Backlog Entry when the fix needs a Spec.
+
 ## Cutting a release
 
 1. Run `roundfix release plan` from a clean checkout and satisfy the decision
@@ -249,15 +265,17 @@ step:
    fails. No Spec merges without a passing QA Report in its `qa/` directory —
    `roundfix archive` enforces the same rule later, but the gap must be caught
    at merge time, not at archive time.
-3. Add or finalize the `## [<version>]` section in `CHANGELOG.md`.
-4. Tag and push:
+3. Before the release Pull Request, complete the mandatory
+   [skills and guides check](#checking-skills-and-guides-before-the-release).
+4. Add or finalize the `## [<version>]` section in `CHANGELOG.md`.
+5. Tag and push:
 
    ```bash
    git tag v<version>
    git push origin v<version>
    ```
 
-5. Watch the `release` workflow. In order it: validates the tag, runs
+6. Watch the `release` workflow. In order it: validates the tag, runs
    `make verify`, runs the Publication Preflight, cross-compiles and stages
    every target, publishes the per-platform packages first and then the
    launcher, and creates the GitHub Release with the matching binary assets.

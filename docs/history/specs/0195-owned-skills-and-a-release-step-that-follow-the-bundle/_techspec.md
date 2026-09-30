@@ -431,9 +431,12 @@ they create. None needs a network. Each negative case is its own test.
    1).
 3. The Roundfix skill's setup membership, its trigger and the sync rule,
    task_03 (depends on: 2).
-4. The release step, the release clause sentence and their checks, task_04
-   (depends on: 3).
-5. Terminal QA, task_05 (depends on: 1, 2, 3, 4).
+4. The Roundfix skill's version raised to 0.0.4 after Spec 0192's text
+   landed under 0.0.3, and the version record re-recorded, task_06 (depends
+   on: 3).
+5. The release step, the release clause sentence and their checks, task_04
+   (depends on: 3, 4).
+6. Terminal QA, task_05 (depends on: 1, 2, 3, 4, 5).
 
 task_02 follows task_01 because task_01 raises the Roundfix skill's version
 and the record must start from the versions that ship. task_03 and task_04

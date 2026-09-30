@@ -170,6 +170,8 @@ Individual skill triggers:
   - `trigger.typescript.refactoring-analysis`: Planning a behavior-preserving TypeScript refactor.
 - `review`:
   - `trigger.core.review`: Reviewing a change against repository standards and its originating contract.
+- `roundfix`:
+  - `trigger.autonomous-work.roundfix`: Running, inspecting, recovering or delivering work with the `roundfix` command line, or reading its output.
 - `security-best-practices`:
   - `trigger.backend.security-best-practices`: Reviewing backend implementation against security practices.
 - `security-threat-model`:

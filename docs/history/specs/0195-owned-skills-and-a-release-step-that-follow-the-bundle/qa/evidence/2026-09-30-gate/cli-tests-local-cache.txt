@@ -1,0 +1,20 @@
+=== RUN   TestBaselineUpdatePreviewReportsAnOlderOwnedSkill
+=== RUN   TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=false
+=== RUN   TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=true
+--- PASS: TestBaselineUpdatePreviewReportsAnOlderOwnedSkill (2.08s)
+    --- PASS: TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=false (0.65s)
+    --- PASS: TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=true (1.43s)
+=== RUN   TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch
+--- PASS: TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch (0.59s)
+=== RUN   TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck
+--- PASS: TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck (0.58s)
+=== RUN   TestDoctorFailsForAnOwnedSkillOlderThanTheBundle
+--- PASS: TestDoctorFailsForAnOwnedSkillOlderThanTheBundle (0.53s)
+PASS
+suiteguard: guard cost: measured 6838 paths; fingerprint took 221.667916ms before and 191.677125ms after
+suiteguard: repository boundary violated:
+suiteguard: modified: docs/specs/0195-owned-skills-and-a-release-step-that-follow-the-bundle/qa/evidence/2026-09-30-gate/cli-tests-local-cache.txt
+suiteguard: created: docs/specs/0195-owned-skills-and-a-release-step-that-follow-the-bundle/qa/evidence/2026-09-30-gate/regenerated-output-comparison.json
+suiteguard: created: docs/specs/0195-owned-skills-and-a-release-step-that-follow-the-bundle/qa/evidence/2026-09-30-gate/regeneration-from-stale-derived.txt
+FAIL	roundfix/internal/cli	4.665s
+FAIL

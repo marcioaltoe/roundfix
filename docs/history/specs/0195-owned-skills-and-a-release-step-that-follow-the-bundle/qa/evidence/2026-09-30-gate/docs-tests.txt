@@ -1,0 +1,30 @@
+=== RUN   TestEveryCommandIsNamedInTheRoundfixSkill
+--- PASS: TestEveryCommandIsNamedInTheRoundfixSkill (0.00s)
+=== RUN   TestReleasePlanDocumentationContract
+=== PAUSE TestReleasePlanDocumentationContract
+=== RUN   TestTheReleaseRunbookRequiresTheSkillsAndGuidesCheck
+--- PASS: TestTheReleaseRunbookRequiresTheSkillsAndGuidesCheck (0.00s)
+=== RUN   TestEveryCheckTheReleaseStepNamesExists
+--- PASS: TestEveryCheckTheReleaseStepNamesExists (0.05s)
+=== RUN   TestAReleaseStepThatNamesAMissingCheckIsReported
+--- PASS: TestAReleaseStepThatNamesAMissingCheckIsReported (0.00s)
+=== RUN   TestEveryCommandIsNamedInTheUserGuide
+--- PASS: TestEveryCommandIsNamedInTheUserGuide (0.00s)
+=== CONT  TestReleasePlanDocumentationContract
+=== RUN   TestReleasePlanDocumentationContract/release_runbook
+=== RUN   TestReleasePlanDocumentationContract/usage_command_index
+=== RUN   TestReleasePlanDocumentationContract/root_Agent_pointer
+=== RUN   TestReleasePlanDocumentationContract/canonical_release-planning_rule
+=== RUN   TestReleasePlanDocumentationContract/repository-specific_rules
+=== RUN   TestReleasePlanDocumentationContract/canonical_Roundfix_skill
+=== RUN   TestReleasePlanDocumentationContract/embedded_Roundfix_skill
+--- PASS: TestReleasePlanDocumentationContract (0.00s)
+    --- PASS: TestReleasePlanDocumentationContract/release_runbook (0.00s)
+    --- PASS: TestReleasePlanDocumentationContract/usage_command_index (0.00s)
+    --- PASS: TestReleasePlanDocumentationContract/root_Agent_pointer (0.00s)
+    --- PASS: TestReleasePlanDocumentationContract/canonical_release-planning_rule (0.00s)
+    --- PASS: TestReleasePlanDocumentationContract/repository-specific_rules (0.00s)
+    --- PASS: TestReleasePlanDocumentationContract/canonical_Roundfix_skill (0.00s)
+    --- PASS: TestReleasePlanDocumentationContract/embedded_Roundfix_skill (0.00s)
+PASS
+ok  	roundfix/internal/docscontract	0.346s

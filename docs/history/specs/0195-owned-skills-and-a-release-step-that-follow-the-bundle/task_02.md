@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0195-owned-skills-and-a-release-step-that-follow-the-bundle
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -60,3 +60,59 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - ADR-0189
 
 ## Result
+
+Implemented the version record contract in a new test file. The check reads
+each embedded `SKILL.md` and hashes its embedded folder with the existing
+`skillFolderHash`. Recording has its own `-record-skill-versions` flag,
+validates the entire history before writing, and adds only a new version
+higher than every recorded version. Recorded digests cannot be replaced.
+The repository guide gains exactly the fixed rule from the TechSpec.
+
+Focused evidence (2026-09-30):
+
+- Before recording, `rtk proxy go test ./skills -run
+  '^TestEveryOwnedSkillVersionIsRecorded$' -count=1` exited 1 for the absent
+  record and printed the recording command.
+- The recording command, `GOCACHE=/tmp/roundfix-task02-gocache rtk proxy go
+  test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions`, exited 0 and created the record. An earlier attempt
+  could not access the host Go cache; the task-scoped cache resolved that
+  environment restriction.
+- `GOCACHE=/tmp/roundfix-task02-gocache rtk proxy go test -count=1 -v
+  ./skills -run
+  'Test(EveryOwnedSkillVersion|AChangedOwnedSkill|AnUnrecordedOwnedSkill|RecordingNever)'`
+  exited 0. All four new tests passed. The three negative tests use only
+  in-memory records.
+- The first `GOCACHE=/tmp/roundfix-task02-gocache rtk make
+  verify-incremental` exited 2: two force-stop CLI tests could not enumerate
+  the process table under the sandbox (`operation not permitted`), and the
+  CLI suiteguard detected this Result being written during the test run.
+  `./skills` passed in that run. The same command retried with approved
+  process-table access exited 0: vet, package tests, skill mirror/version
+  checks, `skills check`, and build passed. Unchanged successful packages
+  reused the Go test cache; the previously failing CLI package ran anew.
+  No repository file was edited during the retry.
+
+Acceptance evidence:
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| All 14 owned skills are recorded with shipped version and digest | The recording run wrote one entry for each of the 14 bundle skills. `TestEveryOwnedSkillVersionIsRecorded` passed against their embedded versions and folder hashes. A Python inspection also counted 14 entries and confirmed each version matches both canonical and mirrored `SKILL.md` declarations. |
+| Changed content under a recorded version is refused; recording cannot replace its digest | `TestAChangedOwnedSkillUnderARecordedVersionIsRefused` passed with the required raise-version diagnostic. `TestRecordingNeverReplacesARecordedVersion/changed_digest` passed and checked input history remains byte-identical. Its other subtests cover lower unrecorded versions, descending and duplicate histories, unchanged digests, numeric ordering of a higher version, and a removed skill. |
+| An unrecorded version is refused and names the recording command | `TestAnUnrecordedOwnedSkillVersionIsRefused` passed, asserting both the unrecorded-version diagnostic and the exact command. The pre-recording failure exercised the missing-file path too. |
+| `make baseline-digests` leaves the record byte-identical | Ran `make baseline-digests` with the task-scoped cache inside a Python wrapper that captured the record bytes before and after. The command exited 0, reported `changed:false`, and the byte comparison returned `True`. No derived file changed. |
+
+The initial worktree contained only the Daemon's edit to this Task file.
+The changed-file inspection after implementation showed only this Task file,
+the repository guide, the new test, and the new record. `git diff --check`
+exited 0. No existing test, skill, Makefile, Task Graph, or other Task file
+was edited. The record is read from disk only in test code and is outside the
+binary's embed directive.
+
+Declared Verification and Task settlement remain Daemon-owned. No commit,
+push, or Pull Request was made. No follow-up outside this slice was found.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260930T162501Z_8ec6b68021df9cef`
+- Source commit: `124b25c8212f796803be17ded6335ca840fb7ab1`

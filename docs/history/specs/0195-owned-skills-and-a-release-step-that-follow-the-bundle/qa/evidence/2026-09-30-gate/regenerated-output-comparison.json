@@ -1,0 +1,86 @@
+[
+  {
+    "path": "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md",
+    "byte_identical": false,
+    "expected": "62669ce9f0b1836b6efdc0c7f36ff1d7aae5b8855820b7ce581d07c2d07ae251",
+    "actual": "0da3dfcb50f1888fe0816bc9254f60c27e33e83c34dccbe19b3d8b180d9bc30e"
+  },
+  {
+    "path": "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/skill-dispatch.md",
+    "byte_identical": false,
+    "expected": "7fc6eb139f0d52084dac7e578431ba20a60d141b45113cc932c29a69a9f647dc",
+    "actual": "5dc9f94ae418cb3024200c6ba3ed36ee2da1d1e79d4f50f666d9d989656505eb"
+  },
+  {
+    "path": "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+    "byte_identical": false,
+    "expected": "f3839d1be4437f5099037ad5ac676801eea2eef0d967ea76ac2f69dae91bfe86",
+    "actual": "8a258ffb4c9ebb037a1257f6d65c475db54ad7678b6fc45e8a47c61d5afa4b26"
+  },
+  {
+    "path": "internal/baseline/assets/setups/go-cli.json",
+    "byte_identical": false,
+    "expected": "c39d72b45d602bc2ea7c8be67c1390c5c1e65c6acaab3fe2ac7291ae59da33d2",
+    "actual": "79df63221257ada7b8c0602be563c0b8da94370952d8e02dc7e80e987d5fbb99"
+  },
+  {
+    "path": "internal/baseline/assets/setups/rust-cli.json",
+    "byte_identical": false,
+    "expected": "5f81f4d78be4f6b0564cdb661dc29f1584216b3f89ecb299d58681ab508fb402",
+    "actual": "a3124711da671c7d444cb9d5916bdb3709317d68fb36aa2628746a7d20ddc709"
+  },
+  {
+    "path": "internal/baseline/testdata/catalog.diagnostics.golden.json",
+    "byte_identical": false,
+    "expected": "78ccfe29dffbc27be3dbe966487278b0182a78339363a6d5010b4c93ebc992b3",
+    "actual": "dfad3594740ef799a0a0800fdbf5879dbb4825f38db911fc7ca9daa60240515b"
+  },
+  {
+    "path": "internal/baseline/testdata/catalog.digest",
+    "byte_identical": false,
+    "expected": "84e904d1d00b7e3ec0a7c0f07681abc26f5126a975638cb76fd02a99461a805e",
+    "actual": "f48fff8a7c331c7adfdf1ebd09c8603da537d8686bc26ca14f6bc785713ba85a"
+  },
+  {
+    "path": "internal/baseline/testdata/catalog.normalized.json",
+    "byte_identical": false,
+    "expected": "5e79db2977bca1d5b4af07948e73508a23ba98963b432f02efa42afcd9941dc0",
+    "actual": "580e2c888c89dd8764011494b3c20d1d557b845989ec1b0f6cc4d941e1d785c7"
+  },
+  {
+    "path": "internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json",
+    "byte_identical": true,
+    "expected": "16de456171a486d4410f688d1f24ba537eb3f5a022e5706b2d251ad769850f9a",
+    "actual": "16de456171a486d4410f688d1f24ba537eb3f5a022e5706b2d251ad769850f9a"
+  },
+  {
+    "path": "internal/baseline/testdata/parity-corpus/v1/manifest.json",
+    "byte_identical": false,
+    "expected": "476d5fd9a1281feea4c90451c91bf3c944c6fa698aefcd9e1de561f86dea0d4c",
+    "actual": "04ca976bb743f4bb008e36e21f3beadb694926acef3ea63f264999b8b152cf23"
+  },
+  {
+    "path": "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+    "byte_identical": false,
+    "expected": "68c47c17dc43a77a9da67dc1e2dc0387d3951318abc9c66c54cc284a6be6a66c",
+    "actual": "600e14e4d6737e61e1c2c208ecdf8557906b60f5a199d2809594c3e1690513b5"
+  },
+  {
+    "path": "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+    "byte_identical": false,
+    "expected": "a7b8a1a27940a04af9ea3b45fcafba3786885f56a162a9170d345421ba864b2f",
+    "actual": "ed96bf3cbb16a8659b1faaff60f2dc8f907a66727bd378fd5cd99f32f5af4980"
+  },
+  {
+    "path": "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+    "byte_identical": false,
+    "expected": "985af481609b28f2f860adc94a0dfe3a03577904e98efca8e8deab25ebca2099",
+    "actual": "64bf4b65c26ef1c2a290e0eb51a7a2e34abda770a0a52d3d278037f31a367fcd"
+  },
+  {
+    "path": "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json",
+    "byte_identical": false,
+    "expected": "79d518ae4c60a9efd4dcd424b2638765643a6305d14833aab949c25cb2bbeab9",
+    "actual": "43458c2397ed54643edbd8add2817d8a8016b59d4b2f9b47758e543e904c2812"
+  }
+]

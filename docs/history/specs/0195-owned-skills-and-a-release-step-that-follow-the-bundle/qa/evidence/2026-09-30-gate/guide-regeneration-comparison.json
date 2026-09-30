@@ -1,0 +1,17 @@
+[
+  {
+    "path": "docs/agents/agent-instructions.md",
+    "byte_identical": true,
+    "actual_sha256": "2065fd7c272a63e8c45fb80b0b5c6140c7d74c7cff26dd7da247db0e8fa14c6f"
+  },
+  {
+    "path": "docs/agents/skill-dispatch.md",
+    "byte_identical": true,
+    "actual_sha256": "044195ff8ba75e90bbc9dc5bc78ee57dd7d3a0f0ac2a637f52367bfea13f4c85"
+  },
+  {
+    "path": "docs/agents/setup-context.json",
+    "byte_identical": true,
+    "actual_sha256": "7719a3682a5a3396e0fd5629989cc4bfb22458a1cb995c23fb4d5b7106226240"
+  }
+]

@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0195-owned-skills-and-a-release-step-that-follow-the-bundle
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -27,6 +27,7 @@ This is an authorized tooling Task. It may change only the files in its Context,
 5. MUST add `internal/docscontract/release_step_test.go`, in the package and under the `docscontract` build tag the directory's other tests use, with the three tests the TechSpec's Testing Approach 4 names. `TestEveryCheckTheReleaseStepNamesExists` MUST read the names from the runbook section, not from a list in the test, and MUST fail when the section names fewer than seven tests.
 6. MUST add `internal/baseline/release_clause_test.go` with `TestTheReleaseClauseNamesTheSkillsAndGuidesCheck`, which expects the sentence in the embedded clause and in the formatter golden.
 7. MUST NOT edit `internal/docscontract/publicdocs_test.go`, any skill, the Release Plan Command, or any existing test. The sentence cites no Spec number and no ADR number.
+8. MUST re-record `skills/testdata/owned-skill-versions.json` with the sanctioned command `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`, because Spec 0192 landed after task_02 and raised owned skill versions (for example `archive-spec` to `0.0.3`). The record MUST change only by that command, and no skill may change.
 
 ## Subtasks
 
@@ -60,12 +61,13 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - interface: `internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json`
 - interface: `docs/agents/setup-context.json`
 - interface: `docs/agents/agent-instructions.md`
+- interface: `skills/testdata/owned-skill-versions.json`
 - creates: `internal/docscontract/release_step_test.go`
 - creates: `internal/baseline/release_clause_test.go`
 
 ## Verification
 
-- `out="$(go test -count=1 -tags docscontract -v -run "^(TestTheReleaseRunbookRequiresTheSkillsAndGuidesCheck|TestEveryCheckTheReleaseStepNamesExists|TestAReleaseStepThatNamesAMissingCheckIsReported|TestReleasePlanDocumentationContract|TestTheReleaseClauseNamesTheSkillsAndGuidesCheck|TestFormatterComposition|TestCatalogCompatibility|TestBaselinePlanCharacterization)$" ./internal/docscontract ./internal/baseline 2>&1)" || { printf "%s\\n" "$out"; exit 1; }; for name in TestTheReleaseRunbookRequiresTheSkillsAndGuidesCheck TestEveryCheckTheReleaseStepNamesExists TestAReleaseStepThatNamesAMissingCheckIsReported TestReleasePlanDocumentationContract TestTheReleaseClauseNamesTheSkillsAndGuidesCheck TestFormatterComposition TestCatalogCompatibility TestBaselinePlanCharacterization; do printf "%s\\n" "$out" | grep -q -- "--- PASS: $name" || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done && for pair in "docs/user-guide/release-runbook.md|Checking skills and guides before the release" "docs/user-guide/release-runbook.md|TestEveryOwnedSkillVersionIsRecorded" "docs/agents/agent-instructions.md|describe the behavior being released"; do file="${pair%%|*}"; phrase="${pair#*|}"; tr -s '[:space:]' ' ' < "$file" | grep -qF -- "$phrase" || { printf 'missing phrase in %s: %s\n' "$file" "$phrase" >&2; exit 1; }; done && go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --format json >/dev/null` — expected: exit 0; before this Task none of the four new named tests exists and the runbook has no such section, so the command fails.
+- `out="$(go test -count=1 -tags docscontract -v -run "^(TestTheReleaseRunbookRequiresTheSkillsAndGuidesCheck|TestEveryCheckTheReleaseStepNamesExists|TestAReleaseStepThatNamesAMissingCheckIsReported|TestReleasePlanDocumentationContract|TestTheReleaseClauseNamesTheSkillsAndGuidesCheck|TestFormatterComposition|TestCatalogCompatibility|TestBaselinePlanCharacterization)$" ./internal/docscontract ./internal/baseline 2>&1)" || { printf "%s\\n" "$out"; exit 1; }; for name in TestTheReleaseRunbookRequiresTheSkillsAndGuidesCheck TestEveryCheckTheReleaseStepNamesExists TestAReleaseStepThatNamesAMissingCheckIsReported TestReleasePlanDocumentationContract TestTheReleaseClauseNamesTheSkillsAndGuidesCheck TestFormatterComposition TestCatalogCompatibility TestBaselinePlanCharacterization; do printf "%s\\n" "$out" | grep -q -- "--- PASS: $name" || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done && for pair in "docs/user-guide/release-runbook.md|Checking skills and guides before the release" "docs/user-guide/release-runbook.md|TestEveryOwnedSkillVersionIsRecorded" "docs/agents/agent-instructions.md|describe the behavior being released"; do file="${pair%%|*}"; phrase="${pair#*|}"; tr -s '[:space:]' ' ' < "$file" | grep -qF -- "$phrase" || { printf 'missing phrase in %s: %s\n' "$file" "$phrase" >&2; exit 1; }; done && go test -count=1 -run '^TestEveryOwnedSkillVersionIsRecorded$' ./skills && go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --format json >/dev/null` — expected: exit 0; before this Task the version record lacks the versions Spec 0192 raised, and none of the four new named tests exists and the runbook has no such section, so the command fails.
 
 ## References
 
@@ -76,3 +78,20 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - ADR-0143, ADR-0186, ADR-0189
 
 ## Result
+
+Implemented the mandatory pre-Pull-Request skills-and-guides check in the
+release runbook, including the six fixed-text items and the pointer from
+"Cutting a release" before tagging. Appended the release-clause sentence and
+raised the `core`, `guide.agent-instructions`, and `rule.core.git-delivery`
+versions. Regenerated the managed Baseline artifacts and added the runbook and
+embedded/golden clause contract tests. The sanctioned owned-skill recorder ran
+successfully; the version record was already current, so it produced no diff.
+
+Focused evidence:
+
+- `make baseline-digests` passed.
+- `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text` applied and verified the managed refresh with `File changes: 2`; a second run verified idempotence with `File changes: 0`.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` passed.
+- The three new `docscontract` release-step tests passed, including the missing-test negative case.
+- `go test -count=1 ./internal/baseline -run '^TestTheReleaseClauseNamesTheSkillsAndGuidesCheck$'` passed for the embedded clause and formatter golden.
+- `git diff --check` passed. The task status remains daemon-owned.

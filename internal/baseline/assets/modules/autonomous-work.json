@@ -8,8 +8,18 @@
     "context-workflow"
   ],
   "conflictsWith": [],
-  "requiredSkills": [],
-  "skillDispatch": [],
+  "requiredSkills": ["roundfix"],
+  "skillDispatch": [
+    {
+      "skill": "roundfix",
+      "triggers": [
+        {
+          "id": "trigger.autonomous-work.roundfix",
+          "when": "Running, inspecting, recovering or delivering work with the `roundfix` command line, or reading its output."
+        }
+      ]
+    }
+  ],
   "requiredDecisions": [
     "autonomous.enabled",
     "runtime.backend",

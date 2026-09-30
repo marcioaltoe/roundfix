@@ -8,7 +8,7 @@
     "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
     "path": "setups/go-cli.txt"
   },
-  "digest": "ea8fcba20a8869c345874709a12236da603dc89567da07d0dc37789d570fe0a0",
+  "digest": "651ea62a8d7690be6bd445c288084c0961862f74abebf9dad5abdefb45b7027e",
   "skills": [
     {
       "name": "knowledge-workspace",
@@ -401,6 +401,15 @@
         "path": "skills/07-evidence-delivery/tech-writer"
       },
       "treeDigest": "18efb1105eebbd46e051d643830f1758f089cdf0f0a912a8be5d79fc657fd606"
+    },
+    {
+      "name": "roundfix",
+      "path": "skills/06-review-repair/roundfix",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "minimumVersion": "0.0.2"
     }
   ],
   "activationBundles": [

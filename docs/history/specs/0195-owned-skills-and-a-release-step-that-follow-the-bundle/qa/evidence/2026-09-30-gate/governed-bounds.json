@@ -1,0 +1,104 @@
+[
+  {
+    "task": "task_01.md",
+    "commit": "404ea19e5df23359d8162fc27cba5bc6d5e8f1b6",
+    "path": ".agents/skills/roundfix/SKILL.md",
+    "explicitly_bounded": true
+  },
+  {
+    "task": "task_01.md",
+    "commit": "404ea19e5df23359d8162fc27cba5bc6d5e8f1b6",
+    "path": "skills/roundfix/SKILL.md",
+    "explicitly_bounded": true
+  },
+  {
+    "task": "task_02.md",
+    "commit": "fc814b6bd616dabccb706a63ec81d85af0068bd2",
+    "path": "docs/agents/specific-repository.md",
+    "explicitly_bounded": true
+  },
+  {
+    "task": "task_03.md",
+    "commit": "fe890c1f445cb1ea21b06fdd9f9f1e5111f2f069",
+    "path": "docs/agents/setup-context.json",
+    "explicitly_bounded": true
+  },
+  {
+    "task": "task_03.md",
+    "commit": "fe890c1f445cb1ea21b06fdd9f9f1e5111f2f069",
+    "path": "docs/agents/skill-dispatch.md",
+    "explicitly_bounded": true
+  },
+  {
+    "task": "task_03.md",
+    "commit": "fe890c1f445cb1ea21b06fdd9f9f1e5111f2f069",
+    "path": "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/skill-dispatch.md",
+    "explicitly_bounded": true
+  },
+  {
+    "task": "task_03.md",
+    "commit": "fe890c1f445cb1ea21b06fdd9f9f1e5111f2f069",
+    "path": "internal/baseline/assets/modules/autonomous-work.json",
+    "explicitly_bounded": true
+  },
+  {
+    "task": "task_03.md",
+    "commit": "fe890c1f445cb1ea21b06fdd9f9f1e5111f2f069",
+    "path": "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+    "explicitly_bounded": true
+  },
+  {
+    "task": "task_03.md",
+    "commit": "fe890c1f445cb1ea21b06fdd9f9f1e5111f2f069",
+    "path": "internal/baseline/assets/setups/go-cli.json",
+    "explicitly_bounded": true
+  },
+  {
+    "task": "task_03.md",
+    "commit": "fe890c1f445cb1ea21b06fdd9f9f1e5111f2f069",
+    "path": "internal/baseline/assets/setups/rust-cli.json",
+    "explicitly_bounded": true
+  },
+  {
+    "task": "task_06.md",
+    "commit": "f8a31a5f93e143b7b6b010edf97a4f8285ea2e31",
+    "path": ".agents/skills/roundfix/SKILL.md",
+    "explicitly_bounded": true
+  },
+  {
+    "task": "task_06.md",
+    "commit": "f8a31a5f93e143b7b6b010edf97a4f8285ea2e31",
+    "path": "skills/roundfix/SKILL.md",
+    "explicitly_bounded": true
+  },
+  {
+    "task": "task_04.md",
+    "commit": "c32b91e0d968c4bd05c162f45a9dbecf5aa1105e",
+    "path": "docs/agents/agent-instructions.md",
+    "explicitly_bounded": true
+  },
+  {
+    "task": "task_04.md",
+    "commit": "c32b91e0d968c4bd05c162f45a9dbecf5aa1105e",
+    "path": "docs/agents/setup-context.json",
+    "explicitly_bounded": true
+  },
+  {
+    "task": "task_04.md",
+    "commit": "c32b91e0d968c4bd05c162f45a9dbecf5aa1105e",
+    "path": "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md",
+    "explicitly_bounded": true
+  },
+  {
+    "task": "task_04.md",
+    "commit": "c32b91e0d968c4bd05c162f45a9dbecf5aa1105e",
+    "path": "internal/baseline/assets/modules/core.json",
+    "explicitly_bounded": true
+  },
+  {
+    "task": "task_04.md",
+    "commit": "c32b91e0d968c4bd05c162f45a9dbecf5aa1105e",
+    "path": "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+    "explicitly_bounded": true
+  }
+]
