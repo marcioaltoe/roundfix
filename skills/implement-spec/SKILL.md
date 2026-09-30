@@ -2,14 +2,14 @@
 name: implement-spec
 description: Prepare a spec with Roundfix's Delivery Plan, delegate implementation to Roundfix, monitor the Run or delivery queue, and ask the maintainer only its Pending Question.
 disable-model-invocation: true
-argument-hint: "<spec slug or path under docs/specs/> [--from task_NN]"
+argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: implementation
   tags: [workflow, agents, coding, issues]
-  version: 0.1.0
+  version: 0.1.1
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.1.0
+version: 0.1.1
 ---
 
 # Implement Spec

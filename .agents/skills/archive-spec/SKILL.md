@@ -1,14 +1,14 @@
 ---
 name: archive-spec
 description: Archive a completed spec — verify every task completed, QA passed, and indexed references are self-contained, then stamp the archive metadata and move <spec-root>/<slug>/ to the resolved archive root (<spec-root>/_archived/<slug>/, or docs/history/specs/<slug>/ for the built-in docs/specs root). Runs automatically at the end of the implement-spec loop after a QA pass, or whenever the user asks to archive a spec.
-argument-hint: "<spec slug> [--release <tag or PR URL>]"
+argument-hint: "<spec slug>"
 metadata:
   category: delivery
   tags: [workflow, documentation, process]
-  version: 0.0.2
+  version: 0.0.3
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.2
+version: 0.0.3
 ---
 
 # Archive Spec
@@ -223,7 +223,7 @@ never overrides self-containment: verification can be overridden by the
 maintainer, but self-containment is a property of the artifact and must be
 repaired by finishing adoption.
 
-A merged PR or release tag is **not** a precondition. If the user passes `--release`, or a merged PR/tag is already known, stamp it as metadata — but never block the archive waiting for one.
+A merged PR or release tag is **not** a precondition, and the archive never waits for one.
 
 If any check fails, stop and report the offending Task, report, source, or link
 and the adoption step that fixes a self-containment failure — the Spec stays
@@ -249,38 +249,16 @@ never the machine's absolute path.
 
 For a QA Archive Override, perform the archive only through
 `roundfix archive <slug> --qa-override --approval <source> --reason <text>`.
-Never hand-stamp `qa_override: true`; the command owns its refusals and
-provenance. The manual steps below apply only to a normal archive.
+For a normal archive, run `roundfix archive <slug>`; it verifies the
+preconditions, stamps the archive metadata, and moves the folder. Never
+hand-edit archive front matter; the command owns its refusals, provenance, and
+archive lifecycle. The Delivery Queue writes the commit subject
+`docs: archive <slug>` (Conventional Commits). Do not push unless asked.
 
-1. **Stamp** `_prd.md` frontmatter for a normal archive:
-
-   ```yaml
-   status: archived
-   archived: YYYY-MM-DD
-   release: <tag or PR URL> # only when known — from --release or an already-merged PR/tag
-   ```
-
-2. **Move** with history preserved. Resolve the configured Spec Root and its
-   archive root first: the built-in root `docs/specs` archives to
-   `docs/history/specs`; an external or non-default root `<spec-root>` archives
-   beside the active root at `<spec-root>/_archived`. Then move the slug:
-
-   ```bash
-   spec_root=docs/specs          # or the configured non-default Spec Root
-   if [ "$spec_root" = "docs/specs" ]; then
-     archive_root="docs/history/specs"
-   else
-     archive_root="$spec_root/_archived"
-   fi
-   mkdir -p "$archive_root"
-   git mv "$spec_root/<slug>" "$archive_root/<slug>"
-   ```
-
-3. **Commit** — `chore(specs): archive <slug>` (Conventional Commits). Do not push unless asked.
-
-4. **Report** — the new path, the release reference when one was stamped, and anything carried over (open follow-ups from task `## Result` sections belong in new specs, not in the archive).
-
-5. **Suggest the publish step** — when the work isn't merged yet, close by suggesting the PR (via `github-pr-workflow`). This is where that suggestion lives in the workflow — the implement loop ends at the archive and doesn't offer it. Suggest only: opening the PR is the user's call.
+Report the new path and anything carried over (open follow-ups from task
+`## Result` sections belong in new specs, not in the archive). When the work
+isn't merged yet, suggest opening the PR via `github-pr-workflow`; opening the
+PR is the user's call.
 
 ## Unarchive
 

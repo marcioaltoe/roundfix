@@ -5,10 +5,10 @@ disable-model-invocation: true
 metadata:
   category: setup
   tags: [workflow, prd, issues, planning, triage, repository-context, agents]
-  version: 0.0.2
+  version: 0.0.3
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.2
+version: 0.0.3
 ---
 
 # Setup Context-Driven
@@ -70,7 +70,8 @@ pointer; non-empty accepted residuals retain only their exact rules.
 Generated `docs/agents/docs-layout.md` owns the copyable ADR and Findings
 contracts. Only `accepted` is active for ADRs; legacy ADRs without lifecycle
 frontmatter remain active unless their body marks them inactive. Findings use
-`pending`, `partial`, `deferred`, and `done`, keep the original observation,
+`pending`, `partial`, `deferred`, and `done`, plus the terminal statuses
+`deprecated`, `superseded`, `closed`, and `cancelled`, keep the original observation,
 and append later evidence as dated addenda. Copy those generated templates;
 this skill does not render or replace them.
 
@@ -260,6 +261,8 @@ Review at least:
 - normalized `decisions`;
 - `fileChanges` and the complete canonical `managedEntries` ledger;
 - `retention`, `warnings`, and the proposed `setupManifest`;
+- when the plan relocates history, `historyMoves` and the
+  `baseline.history.citation` warnings;
 - every exact `preimage` and `postimage`;
 - `planDigest`.
 

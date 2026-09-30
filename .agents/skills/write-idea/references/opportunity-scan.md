@@ -1,6 +1,6 @@
 # Opportunity scan
 
-The strategist lens for `write-idea` step 6. The job is not to add features — it is to check, once, whether the idea on the table is the highest-leverage move before it becomes a spec. Think like an owner: what would make users unable to live without this product?
+The strategist lens for `write-idea` step 7. The job is not to add features — it is to check, once, whether the idea on the table is the highest-leverage move before it becomes a spec. Think like an owner: what would make users unable to live without this product?
 
 ## 1. Assess the original idea
 

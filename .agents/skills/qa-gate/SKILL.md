@@ -4,10 +4,10 @@ description: Execute the self-contained final QA gate as a Spec's authored termi
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.3
+  version: 0.0.4
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.3
+version: 0.0.4
 ---
 
 # QA Gate
@@ -360,7 +360,7 @@ pending matrix.
 
 ## 3. Run static gates first
 
-Run the repository's full verification pipeline, `make verify`, and record the exact command and result. Do not substitute build, lint, typecheck, or test equivalents. If `make verify` cannot run at all, record the verification gate as blocked. A formatting, test, or build check that runs and fails is a `fail`, not a block — classify it with the code-caused and environment-caused distinction below before recording anything.
+In a Daemon-assigned gate, the Daemon already ran the repository Verification and gives its result in the prompt; record that result and do not run the repository Verification again. In a standalone gate, run the repository's selected Verification. If the selected Verification cannot run at all, record the verification gate as blocked. A formatting, test, or build check that runs and fails is a `fail`, not a block — classify it with the code-caused and environment-caused distinction below before recording anything.
 
 A timeout or intermittent failure of the repository Verification is recorded as
 a failure, never an environment block. A claimed contention, a
@@ -499,8 +499,11 @@ surfaces: [frontend, backend]
 <!-- Exact commands and results. -->
 
 ## Results
-| # | Story / criterion / sweep | Actor and surface | Status | Evidence |
-| - | --- | --- | --- | --- |
+| # | Status | Provenance |
+| - | --- | --- |
+
+For each row, put the story or criterion, actor, surface, steps, and evidence
+in a block below the table.
 
 ## Findings
 <!-- One block per finding: impact, expected/actual, reproduction, evidence, affected rows. -->
@@ -539,7 +542,7 @@ whose provenance is `precondition`, plus `precondition_check` and
 `precondition_reason`. A gate that reached its matrix writes none of these three
 keys: the refusal is an added shape, not a fourth count every report owes.
 
-The gate permits PR preparation only on `pass`. On `fail` or `partial`, state what must change or be verified before rerunning. In a daemon-assigned Roundfix QA step, write the report but never commit or push; the daemon owns the QA report commit. Daemon-assigned steps may also run sandboxed: when an operation outside the workspace fails with a permission error (writes to `$HOME`, network, nested tool state), classify it immediately as environment-caused, mark the affected row `blocked (environment: <error>)`, and move on — never retry-loop a sandbox denial — noting in the environment record which checks need a full-access session.
+The gate permits Pull Request preparation on `pass`, or on a qualifying declared `partial` as the QA settlement table defines. On other outcomes, state what must change or be verified before rerunning. In a daemon-assigned Roundfix QA step, write the report but never commit or push; the daemon owns the QA report commit. Daemon-assigned steps may also run sandboxed: when an operation outside the workspace fails with a permission error (writes to `$HOME`, network, nested tool state), classify it immediately as environment-caused, mark the affected row `blocked (environment: <error>)`, and move on — never retry-loop a sandbox denial — noting in the environment record which checks need a full-access session.
 
 ## Decision examples
 
