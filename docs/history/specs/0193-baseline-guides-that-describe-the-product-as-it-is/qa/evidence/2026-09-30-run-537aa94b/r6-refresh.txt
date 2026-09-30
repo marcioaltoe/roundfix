@@ -1,0 +1,59 @@
+Disposable independent clone: /private/tmp/roundfix-0193-qa-s1cp97u2/repo
+Source HEAD: 537aa94b450dcf29e4b8e589b78e1674ab7c9bca
+$ ./bin/roundfix --version
+roundfix 0.21.0 (537aa94b-dirty, built 2026-09-30 16:28:34 -0300)
+
+
+exit: 0
+$ ./bin/roundfix baseline update --repo /private/tmp/roundfix-0193-qa-s1cp97u2/repo --no-skills --format text
+Baseline update: current
+Result: the repository already matches the current Baseline catalog
+Prior catalog: sha256:d95ef2c36259fdfe620f5a2ae9cf19e748408764a6f454fbdd1448c3a07b0412
+Current catalog: sha256:d95ef2c36259fdfe620f5a2ae9cf19e748408764a6f454fbdd1448c3a07b0412
+File changes: 0
+Retention evidence: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: not run
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:0a61c19954f26d7189981120e77a7ddca0efd3556db0b4b3d56d0531ea359434
+
+
+exit: 0
+$ make baseline-digests
+{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":false}
+
+ok  	roundfix/internal/baseline	0.793s
+ok  	roundfix/skills	0.274s
+ok  	roundfix/internal/baseline	1.347s
+ok  	roundfix/internal/baseline	0.488s
+ok  	roundfix/internal/baseline	0.638s
+ok  	roundfix/internal/baseline	0.808s
+ok  	roundfix/internal/baseline	1.757s
+ok  	roundfix/internal/baseline	0.543s
+baseline-digests: no changes; derived artifacts already match their canonical sources
+
+exit: 0
+$ ./bin/roundfix baseline update --repo /private/tmp/roundfix-0193-qa-s1cp97u2/repo --no-skills --format text
+Baseline update: current
+Result: the repository already matches the current Baseline catalog
+Prior catalog: sha256:d95ef2c36259fdfe620f5a2ae9cf19e748408764a6f454fbdd1448c3a07b0412
+Current catalog: sha256:d95ef2c36259fdfe620f5a2ae9cf19e748408764a6f454fbdd1448c3a07b0412
+File changes: 0
+Retention evidence: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: not run
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:0a61c19954f26d7189981120e77a7ddca0efd3556db0b4b3d56d0531ea359434
+
+
+exit: 0
+$ git -c core.fsmonitor=false status --porcelain --untracked-files=no
+
+
+exit: 0

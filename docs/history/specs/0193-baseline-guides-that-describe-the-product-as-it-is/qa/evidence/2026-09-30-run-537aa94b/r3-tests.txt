@@ -1,0 +1,40 @@
+GOCACHE=/private/tmp/roundfix-0193-qa-gocache go test -count=1 -v -run Test(LoopClause|TheLoopClauseOrder|ALoopClause|ArchiveBeforeReview|AnUnmappedDeliveryAction) ./internal/baseline ./internal/delivery
+=== RUN   TestLoopClauseNamesTheDeliveryQueueAndItsRecoveryActs
+=== RUN   TestLoopClauseNamesTheDeliveryQueueAndItsRecoveryActs/module
+=== RUN   TestLoopClauseNamesTheDeliveryQueueAndItsRecoveryActs/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+=== RUN   TestLoopClauseNamesTheDeliveryQueueAndItsRecoveryActs/../../docs/agents/autonomous-work.md
+--- PASS: TestLoopClauseNamesTheDeliveryQueueAndItsRecoveryActs (0.02s)
+    --- PASS: TestLoopClauseNamesTheDeliveryQueueAndItsRecoveryActs/module (0.00s)
+    --- PASS: TestLoopClauseNamesTheDeliveryQueueAndItsRecoveryActs/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md (0.00s)
+    --- PASS: TestLoopClauseNamesTheDeliveryQueueAndItsRecoveryActs/../../docs/agents/autonomous-work.md (0.00s)
+=== RUN   TestLoopClauseCitesNoSpecOrDecisionNumber
+=== RUN   TestLoopClauseCitesNoSpecOrDecisionNumber/module
+=== RUN   TestLoopClauseCitesNoSpecOrDecisionNumber/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+=== RUN   TestLoopClauseCitesNoSpecOrDecisionNumber/../../docs/agents/autonomous-work.md
+--- PASS: TestLoopClauseCitesNoSpecOrDecisionNumber (0.00s)
+    --- PASS: TestLoopClauseCitesNoSpecOrDecisionNumber/module (0.00s)
+    --- PASS: TestLoopClauseCitesNoSpecOrDecisionNumber/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md (0.00s)
+    --- PASS: TestLoopClauseCitesNoSpecOrDecisionNumber/../../docs/agents/autonomous-work.md (0.00s)
+PASS
+suiteguard: guard cost: measured 6704 paths; fingerprint took 282.935375ms before and 179.134125ms after
+ok  	roundfix/internal/baseline	0.724s
+=== RUN   TestTheLoopClauseOrderMatchesTheDeliveryQueue
+=== PAUSE TestTheLoopClauseOrderMatchesTheDeliveryQueue
+=== RUN   TestALoopClauseThatArchivesBeforeReviewIsRefused
+=== PAUSE TestALoopClauseThatArchivesBeforeReviewIsRefused
+=== RUN   TestArchiveBeforeReviewWithAllDeliveryActionsIsRefused
+=== PAUSE TestArchiveBeforeReviewWithAllDeliveryActionsIsRefused
+=== RUN   TestAnUnmappedDeliveryActionIsRefused
+=== PAUSE TestAnUnmappedDeliveryActionIsRefused
+=== CONT  TestTheLoopClauseOrderMatchesTheDeliveryQueue
+=== CONT  TestArchiveBeforeReviewWithAllDeliveryActionsIsRefused
+=== CONT  TestAnUnmappedDeliveryActionIsRefused
+=== CONT  TestALoopClauseThatArchivesBeforeReviewIsRefused
+--- PASS: TestAnUnmappedDeliveryActionIsRefused (0.02s)
+--- PASS: TestTheLoopClauseOrderMatchesTheDeliveryQueue (0.02s)
+--- PASS: TestALoopClauseThatArchivesBeforeReviewIsRefused (0.02s)
+--- PASS: TestArchiveBeforeReviewWithAllDeliveryActionsIsRefused (0.02s)
+PASS
+ok  	roundfix/internal/delivery	0.325s
+
+exit: 0

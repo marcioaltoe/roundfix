@@ -633,7 +633,7 @@ func TestADRLifecycleContract(t *testing.T) {
 		"updated_at: YYYY-MM-DDTHH:MM:SSZ",
 		"deprecated_at: null # null or YYYY-MM-DDTHH:MM:SSZ",
 		"superseded_by: null # null or ADR-NNNN",
-		"Only `accepted` is active.",
+		"For an ADR that carries lifecycle frontmatter, only `accepted` is active.",
 		"without lifecycle frontmatter as active unless its body explicitly marks it inactive",
 		"Do not rewrite existing ADRs solely to adopt lifecycle metadata.",
 		"domain-modeling/ADR-FORMAT.md",
@@ -3008,7 +3008,7 @@ func TestStandardTypeScriptStructuralClauseRetention(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load standard TypeScript Source Baseline: %v", err)
 	}
-	_, delta := classifySourceClauseTransition(source, managedArtifacts, catalog, activeModules)
+	evidence, delta := classifySourceClauseTransition(source, managedArtifacts, catalog, activeModules)
 	currentClauses := make(map[string]document)
 	for _, moduleID := range activeModules {
 		for _, rule := range objectsOrEmpty(catalog.modules[moduleID]["rules"]) {
@@ -3039,8 +3039,27 @@ func TestStandardTypeScriptStructuralClauseRetention(t *testing.T) {
 		return raw
 	}
 	for _, clauseID := range restoredClauseIDs {
-		if got := delta.Dispositions[clauseID]; got != ClauseRetained {
-			t.Errorf("structural clause %q disposition = %q, want %q", clauseID, got, ClauseRetained)
+		wantDisposition := ClauseRetained
+		targetID := clauseID
+		if clauseID == "rule.backend.boundary-contracts" {
+			wantDisposition = ClauseReplaced
+			targetID = "clause.backend.boundary-contracts"
+			found := false
+			for _, retained := range evidence {
+				if retained.FromClause != clauseID {
+					continue
+				}
+				found = true
+				if !reflect.DeepEqual(retained.Targets, []string{targetID}) {
+					t.Errorf("structural clause %q targets = %v, want %q", clauseID, retained.Targets, targetID)
+				}
+			}
+			if !found {
+				t.Errorf("structural clause %q has no retention evidence", clauseID)
+			}
+		}
+		if got := delta.Dispositions[clauseID]; got != wantDisposition {
+			t.Errorf("structural clause %q disposition = %q, want %q", clauseID, got, wantDisposition)
 		}
 		previous, ok := sourceEntries[clauseID]
 		if !ok {
@@ -3053,7 +3072,7 @@ func TestStandardTypeScriptStructuralClauseRetention(t *testing.T) {
 			t.Errorf("structural clause %q source asset %q is missing", clauseID, assetPath)
 			continue
 		}
-		current, ok := currentClauses[clauseID]
+		current, ok := currentClauses[targetID]
 		if !ok {
 			t.Errorf("structural clause %q is absent from the selected catalog", clauseID)
 			continue

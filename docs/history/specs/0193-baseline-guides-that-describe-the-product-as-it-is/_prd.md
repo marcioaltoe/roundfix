@@ -1,9 +1,12 @@
 ---
 spec: 0193-baseline-guides-that-describe-the-product-as-it-is
-status: active
+status: archived
 created: 2026-09-30
 surfaces: [backend, docs]
+archived: "2026-09-30"
+source_slug: 0193-baseline-guides-that-describe-the-product-as-it-is
 ---
+
 
 # Baseline guides that describe the product as it is
 
@@ -72,7 +75,7 @@ clause say what the shipped product does and adds the checks that keep it so.
   `docs/agents/autonomous-work.md`, `docs/agents/agent-instructions.md`,
   `docs/agents/spec-routing.md`, `docs/agents/docs-layout.md`,
   `docs/agents/setup-context.json`, `docs/agents/specific-repository.md`,
-  `internal/speccheck/backlog.go`. Sanctioned regeneration: `make baseline-digests`. Source:
+  `internal/speccheck/backlog.go`, `internal/baseline/plan_test.go` (added for task_06). Sanctioned regeneration: `make baseline-digests`. Source:
   `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`.
 
 ## Goals

@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
-  "catalogDigest": "sha256:39ebe2c08e8d91ed27140138e0f191c2eb5a7ca026ac602b6c002e1ea90b581e",
+  "catalogDigest": "sha256:e4c90d3cd831bdfefcb2d4c978798bc037b313243ca59008f55158d1f4430c14",
   "modules": [
     "core",
     "context-workflow",
@@ -84,7 +84,7 @@
       "module": "context-workflow",
       "template": "template.guide.docs-layout",
       "version": "0.0.1",
-      "digest": "ce4abf7cc722e1c4e51ee30f7bbfd552ee582977338d19b7cf12c0507b6eeb74"
+      "digest": "b85e922a630d59d465b36ae534d1c5e8fd1292efb69b8483812e34d981eef2b1"
     },
     {
       "id": "root.context-workflow",
@@ -156,7 +156,7 @@
       "module": "core",
       "template": "template.guide.agent-instructions",
       "version": "0.0.1",
-      "digest": "bad2baa1c766f2818ac4a84e2031efd96cb4432b4fda8ecf7e476a37c1ff26cc"
+      "digest": "e5e131f147bbe6e7fa798929d4116ee3b1409e69389766d13b47bd4bcb09ba52"
     },
     {
       "id": "root.cli-surface",
@@ -174,7 +174,7 @@
       "module": "spec-workflow",
       "template": "template.guide.spec-routing",
       "version": "0.0.1",
-      "digest": "bbb478218b35e3542a8d5785a21f57ac017493a51c7fbd584a5d7442fbe9889f"
+      "digest": "418e1ff0fe04288e74716911860b9dea15b801a48c76f1613d5e8cbcde96090f"
     },
     {
       "id": "guide.issue-tracker",
@@ -219,7 +219,7 @@
       "module": "autonomous-work",
       "template": "template.guide.autonomous-work",
       "version": "0.0.1",
-      "digest": "e03bdb0edcd3f79a280660302681e9fb2baa5c002b49e1350a1c660de97cb984"
+      "digest": "fc0bf725a46c92f8c901d256cf813843b398c340096dba55fcd54894fe128b3a"
     },
     {
       "id": "root.secondbrain",

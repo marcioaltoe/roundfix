@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0193-baseline-guides-that-describe-the-product-as-it-is
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -73,3 +73,83 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - ADR-0186
 
 ## Result
+
+Implemented this Task's slice for Daemon Verification; status remains Daemon-owned.
+
+- Replaced the loop guidance with the exact TechSpec quote, joined with single
+  spaces on one JSON line. The order marker and terminating full stop remain.
+  The hook clause changes only the requested verification-authority wording.
+  Both clauses remain `mandatory`; module and guide versions advance 11 → 12,
+  the loop rule 4 → 5, and the hook rule 1 → 2.
+- Added wording and citation tests across the embedded module, formatter golden
+  and repository guide. Added an order comparison that reads the module file
+  and executes the real Delivery Engine with the existing fake workflow and
+  SQLite store. Known preparation/policy-read events are explicit bookkeeping;
+  unknown workflow events fail. Separate negative tests cover the old sentence,
+  a review/archive swap with every delivery action present, and an unknown action.
+- Ran `rtk make baseline-digests`: exit 0, `ok:true`, `changed:true`.
+  Only sanctioned derived artifacts were rewritten; no pin, golden or generated
+  guide was hand-edited. The required public managed refresh exited 0 and
+  changed only `docs/agents/autonomous-work.md` and `docs/agents/setup-context.json`.
+
+Acceptance evidence:
+
+1. `TestLoopClauseNamesTheDeliveryQueueAndItsRecoveryActs` passes on all three
+   surfaces: review precedes archive, and the Delivery Queue, reopen command,
+   Task Carry-Forward and both carry-forward/retry commands are present.
+2. `TestLoopClauseCitesNoSpecOrDecisionNumber` passes for loop and hook clauses
+   on all three surfaces, rejecting the numbered Spec and ADR citation forms.
+3. `TestTheLoopClauseOrderMatchesTheDeliveryQueue` passes against the engine's
+   recorded order: `run`, `review`, `archive`, `gate`, `push`, `pull-request`,
+   `checks`, `merge`. `TestALoopClauseThatArchivesBeforeReviewIsRefused`,
+   `TestArchiveBeforeReviewWithAllDeliveryActionsIsRefused` and
+   `TestAnUnmappedDeliveryActionIsRefused` pass separately.
+4. Ran the required managed-refresh command twice:
+   `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`.
+   The second invocation exited 0, reported `Idempotence: verified` and
+   `File changes: 0`. Both runs retained the existing nested-carrier warnings
+   for fixture/source-Baseline AGENTS.md files and skipped skills as requested.
+
+Focused checks:
+
+- Before the source edit, the new wording/citation tests failed on all three
+  surfaces, and the order test reported declared
+  `[run archive review pull-request checks merge]` versus observed
+  `[run review archive gate push pull-request checks merge]`.
+- After regeneration,
+  `go test -count=1 -v -run 'TestLoopClause|TestTheLoopClause|TestALoopClause|TestArchiveBeforeReview|TestAnUnmappedDeliveryAction' ./internal/baseline ./internal/delivery`
+  exited 0; all six top-level tests passed.
+- A read-only comparison against HEAD confirmed exact TechSpec text, the
+  hook-only substitution, unchanged enforcement and four version increments.
+- Sandbox attempts at the managed refresh and final focused check encountered
+  Go-cache access errors; both succeeded when rerun with approved filesystem
+  access, including the refresh's Git-private transaction journal.
+- Changed-file inspection found only this Task's source, two new tests,
+  sanctioned derived artifacts, managed guide/manifest and this Task file.
+  No existing test, skill, citation checker or other Task was edited.
+- `rtk make verify-incremental` exited 2 at its test target after formatting
+  and vet. Two existing tests still expect the duplicate backend rule removed
+  by Task 01: `TestStandardTypeScriptStructuralClauseRetention` reports
+  `rule.backend.boundary-contracts` absent/unaccounted, and
+  `TestBaselineUpdateFleetSweep/structural-clauses-missing` expects two backend
+  boundary paragraphs but finds one. These expectations are outside Task 02,
+  which prohibits editing existing tests; follow up in the owning slice.
+  Later incremental targets did not run.
+- The incremental run also detected this Agent's concurrent Result edit via
+  the CLI suite guard. After that run finished, repeated the two affected
+  tests with repository bytes held unchanged:
+  `go test -count=1 -run '^TestStandardTypeScriptStructuralClauseRetention$' ./internal/baseline`
+  and
+  `go test -count=1 -run '^TestBaselineUpdateFleetSweep$/^structural-clauses-missing$' ./internal/cli`.
+  Both exited 1 with only the same backend expectations; neither reported a
+  suite-guard violation. No assertion or guard was weakened.
+- Final changed-file postflight accounts for all 15 paths within the Task
+  interfaces, creates and assigned Task file; `git diff --check` exits 0.
+
+The authored Verification command remains unrun for the Daemon. No commit,
+push or Pull Request was created.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260930T153457Z_b5736250c995b99a`
+- Source commit: `62a15c5ac968affc6b4de5975aef893a4f468375`

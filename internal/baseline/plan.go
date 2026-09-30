@@ -1342,6 +1342,17 @@ func classifySourceClauseTransition(
 		}
 	}
 	current := selectedClauseEnforcement(catalog, activeModules)
+	replacements := make(map[string][]string)
+	for _, moduleID := range activeModules {
+		for _, rule := range objectsOrEmpty(catalog.modules[moduleID]["rules"]) {
+			for _, clause := range objectsOrEmpty(rule["clauses"]) {
+				id, _ := stringValue(clause, "id")
+				for _, replaced := range stringsOrEmpty(clause["replaces"]) {
+					replacements[replaced] = append(replacements[replaced], id)
+				}
+			}
+		}
+	}
 	delta := newClauseDelta()
 	var evidence []RetentionEvidence
 	for _, previous := range source.Entries {
@@ -1358,6 +1369,12 @@ func classifySourceClauseTransition(
 			disposition = ClauseRetained
 			targets = append(targets, previous.ID)
 			reason = "Stable clause identity and enforcement remain in the selected Baseline."
+		} else if _, present := current[previous.ID]; !present {
+			if successors := replacements[previous.ID]; len(successors) == 1 && current[successors[0]] == previous.Enforcement {
+				disposition = ClauseReplaced
+				targets = append(targets, successors[0])
+				reason = "The selected Baseline replaces this clause with " + successors[0] + " with the same enforcement."
+			}
 		}
 		delta.Dispositions[previous.ID] = disposition
 		delta.Counts[disposition]++

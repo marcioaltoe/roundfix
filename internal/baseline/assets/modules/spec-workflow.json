@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "spec-workflow",
-  "version": 12,
+  "version": 13,
   "kind": "workflow",
   "title": "Local Spec workflow",
   "dependsOn": [
@@ -38,7 +38,7 @@
   "supportingGuides": [
     {
       "id": "guide.spec-routing",
-      "version": 8,
+      "version": 9,
       "path": "docs/agents/spec-routing.md",
       "template": "template.guide.spec-routing",
       "rules": [
@@ -134,7 +134,7 @@
     },
     {
       "id": "rule.spec.project-constraints",
-      "version": 3,
+      "version": 4,
       "coverage": [
         "coverage.spec-workflow"
       ],
@@ -147,12 +147,12 @@
         {
           "id": "clause.spec.project-constraints-02-tooling-authorization",
           "enforcement": "mandatory",
-          "guidance": "Refuse a tooling Task unless the active PRD and present TechSpec record express maintainer authorization and the exact bounded repository-relative files; Task assignment, setup approval, or generic implementation approval is not authorization. The operative record lives at `<spec-root>/<slug>/_authorization.md` and carries the approval state (`status`), maintainer decision date (`granted`), permitted actions (`action`), the closed `operations` vocabulary (`implement`, `commit`, `push`, `pull_request`, `merge`, and `release`), exact bounded repository paths (`paths`), the consuming Spec (`consuming`), and any sanctioned regeneration. An absent `operations` list grants no operation."
+          "guidance": "Refuse a tooling Task unless the active PRD and present TechSpec record express maintainer authorization and the exact bounded repository-relative files; Task assignment, setup approval, or generic implementation approval is not authorization. The operative record lives at `<spec-root>/<slug>/_authorization.md` and carries the approval state (`status`), maintainer decision date (`granted`), permitted actions (`action`), the closed `operations` vocabulary (`implement`, `commit`, `push`, `pull_request`, `merge`, and `release`), exact bounded repository paths (`paths`), the consuming Spec (`consuming`), and any sanctioned regeneration. An absent `operations` list grants no operation. A Spec that changes no Governed Path records `paths: []`, which grants its listed operations and bounds no path; a record without a `paths` key is refused."
         },
         {
           "id": "clause.spec.project-constraints-03-bounded-execution",
           "enforcement": "mandatory",
-          "guidance": "An authorized tooling Task may mutate only its bounded repository-relative files and its own Task file; stop before any other mutation and fail the Task if changed-file postflight finds another path. A new or widened grant must land in the delivery target's ancestry before the consuming squash delivery; a separate grant commit inside that consuming pull request is insufficient."
+          "guidance": "An authorized tooling Task may change a Governed Path, that is a protected tooling path, only when its grant bounds that path; stop before any other governed mutation, because the Task fails when its commit changes a Governed Path outside the grant. An ordinary path a Task changes without declaring it is not refused: the Daemon records it in the Task file under `## Recorded paths`, and the QA gate discloses it. A new or widened grant must land in the delivery target's ancestry before the consuming squash delivery; a separate grant commit inside that consuming pull request is insufficient."
         },
         {
           "id": "clause.spec.project-constraints-04-qa-audit",
@@ -167,7 +167,7 @@
         {
           "id": "clause.spec.project-constraints-06-outside-evidence",
           "enforcement": "mandatory",
-          "guidance": "Rest a Spec's acceptance, in at least one named row, on evidence originating outside the Spec's own artifacts: a repository the Spec did not build, a measurement it did not design, or published literature. Record in that row where the evidence came from, so a later reader can tell it apart from a rehearsal of the Spec's own premise. When the outside source cannot be obtained, record the row as blocked with that reason and continue; the row never requires human interaction and never blocks the Spec."
+          "guidance": "Rest a Spec's acceptance, in at least one named row, on evidence originating outside the Spec's own artifacts: a repository the Spec did not build, a measurement it did not design, or published literature. Record in that row where the evidence came from, so a later reader can tell it apart from a rehearsal of the Spec's own premise. When the outside source cannot be obtained during authoring, record the row as blocked with that reason and continue: decomposition never stalls and never asks a person. The QA gate then holds Pull Request preparation until the row is satisfied or carried forward on declared unmoved evidence."
         }
       ]
     },

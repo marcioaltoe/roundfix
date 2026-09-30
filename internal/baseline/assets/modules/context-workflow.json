@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "context-workflow",
-  "version": 19,
+  "version": 20,
   "kind": "workflow",
   "title": "CONTEXT-driven workflow",
   "dependsOn": [
@@ -222,7 +222,7 @@
   "supportingGuides": [
     {
       "id": "guide.docs-layout",
-      "version": 13,
+      "version": 14,
       "path": "docs/agents/docs-layout.md",
       "template": "template.guide.docs-layout",
       "rules": [
@@ -274,7 +274,7 @@
     },
     {
       "id": "rule.context.docs-layout",
-      "version": 14,
+      "version": 15,
       "coverage": [
         "coverage.context-workflow"
       ],
@@ -287,7 +287,7 @@
         {
           "id": "clause.context.adr-02-active-status",
           "enforcement": "mandatory",
-          "guidance": "Only `accepted` is active. Treat `proposed`, `rejected`, `deprecated`, and `superseded` ADRs as inactive."
+          "guidance": "For an ADR that carries lifecycle frontmatter, only `accepted` is active. Treat `proposed`, `rejected`, `deprecated`, and `superseded` ADRs as inactive."
         },
         {
           "id": "clause.context.adr-03-legacy-compatibility",
@@ -297,7 +297,7 @@
         {
           "id": "clause.context.docs-one-job-per-directory",
           "enforcement": "mandatory",
-          "guidance": "Give each documentation directory one job: `docs/_inbox/` for raw notes, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts, `docs/backlog/` for dated, typed intent not yet committed to a Spec, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/references/` for external pointers and durable project reference documents, and `docs/user-guide/` for human documentation. Preserve repository-authored extensions outside setup markers. Each of these directories holds live work only: retired content moves under the single history root `docs/history/`, family by family (`docs/history/adr/`, `docs/history/backlog/`, `docs/history/findings/`, `docs/history/handoffs/`, `docs/history/reviews/`, `docs/history/specs/`). Handoffs archive only on the user's explicit confirmation, and when confirmed, every handoff archives together — the active `docs/handoffs/` directory is the capture door, never a shelf. Disposition is recorded as a dated disposition addendum for Findings and Backlog Entries, lifecycle front matter for ADRs, the archive stamp for Specs, and a byte-identical move for Review Artifacts and handoffs. Rejected, deprecated and superseded ADRs retire to `docs/history/adr/`, while a `proposed` ADR stays in `docs/adr/`. Under ADR-0163, a finished orphan Review Artifact retires to `docs/history/reviews/`; a new Round never writes into history. Findings, Backlog Entries and Rollups with a terminal lifecycle status must leave their active directory for the matching history family; preserve valid provenance and update dependent references as part of that transition. Spec-owned adopted references retain their Spec ownership and archive with the Spec; this rule clears active family directories without dismantling self-contained Specs. Spec-contained authorization records live at `<spec-root>/<slug>/_authorization.md`. The preserved legacy location `docs/workflow/authorizations/` remains readable for historical grants; its old paths are historical references and are not required to exist as worktree files."
+          "guidance": "Give each documentation directory one job: `docs/_inbox/` for raw notes, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts, `docs/backlog/` for dated, typed intent not yet committed to a Spec, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/references/` for external pointers and durable project reference documents, and `docs/user-guide/` for human documentation. Preserve repository-authored extensions outside setup markers. Each of these directories holds live work only: retired content moves under the single history root `docs/history/`, family by family (`docs/history/adr/`, `docs/history/backlog/`, `docs/history/findings/`, `docs/history/handoffs/`, `docs/history/reviews/`, `docs/history/specs/`). Handoffs archive only on the user's explicit confirmation, and when confirmed, every handoff archives together — the active `docs/handoffs/` directory is the capture door, never a shelf. Disposition is recorded as a dated disposition addendum for Findings and Backlog Entries, lifecycle front matter for ADRs, the archive stamp for Specs, and a byte-identical move for Review Artifacts and handoffs. Rejected, deprecated and superseded ADRs retire to `docs/history/adr/`, while a `proposed` ADR stays in `docs/adr/`. A finished orphan Review Artifact retires to `docs/history/reviews/`; a new Round never writes into history. Findings, Backlog Entries and Rollups with a terminal lifecycle status must leave their active directory for the matching history family; preserve valid provenance and update dependent references as part of that transition. Spec-owned adopted references retain their Spec ownership and archive with the Spec; this rule clears active family directories without dismantling self-contained Specs. Spec-contained authorization records live at `<spec-root>/<slug>/_authorization.md`. The preserved legacy location `docs/workflow/authorizations/` remains readable for historical grants; its old paths are historical references and are not required to exist as worktree files."
         },
         {
           "id": "clause.context.docs-upstream-flow",
@@ -307,7 +307,7 @@
         {
           "id": "clause.context.backlog-01-operational-contract",
           "enforcement": "mandatory",
-          "guidance": "Name backlog entries `YYYY-MM-DD-<kebab-slug>.md`. Use this complete copyable Backlog Operational Contract:\n\n```markdown\n---\ntype: feat # feat | fix | perf | refactor\nstatus: open # open | promoted | declined | done | deprecated | superseded | closed | cancelled\ncreated: YYYY-MM-DD\nspec: null # Spec slug when status: promoted\nreason: null # required for terminal closure without a consuming Spec\n---\n```\n\nFor `type: feat`, use:\n\n```markdown\n# <Title — the intent in one line>\n\n## Opportunity\n\n<What could exist and for whom.>\n\n## Value\n\n<Why it would matter; the hypothesis.>\n\n## Shape\n\n<The rough form of a solution, explicitly non-binding.>\n```\n\nFor `type: fix`, use:\n\n```markdown\n# <Title — the defect in one line>\n\n## Symptom\n\n<What misbehaves, as a user or operator sees it.>\n\n## Where\n\n<The surface, command, or package, as known.>\n\n## Expected\n\n<The behavior that should replace it.>\n\n## Evidence\n\n<A finding link when one exists; `none yet` is honest.>\n```\n\nFor `type: perf`, use:\n\n```markdown\n# <Title — the cost in one line>\n\n## Slow\n\n<What is slow, for whom, and in which operation.>\n\n## Measured\n\n<The number that says so and how it was measured.>\n\n## Target\n\n<The number that would settle it.>\n```\n\nFor `type: refactor`, use:\n\n```markdown\n# <Title — the tangle in one line>\n\n## Tangled\n\n<What resists change, and where it is duplicated or coupled.>\n\n## Cost\n\n<What it makes slow, risky, or wrong to touch.>\n\n## Shape\n\n<The structure that would replace it, explicitly non-binding.>\n```\n\nKeep `open` entries in `docs/backlog/`. When a Spec adopts an entry, set `status: promoted` and `spec` to that Spec's slug, then move the entry to `docs/specs/<slug>/references/`; git history remains the discovery trail. Set `status: declined` only with a non-null `reason`. The current type set is open: a new type must be a Conventional Commits type that expresses intent. Adding a type is a contract change that requires a corpus re-record, never an informal addition. Use `refactor` as the canonical token, never an abbreviation.\n\n`docs/backlog/` holds unresolved `open` intent only. A `promoted` entry is adopted source material and moves to its consuming Spec's `references/` under the adoption contract; it is not a terminal implementation verdict. Every terminal Backlog Entry (`declined`, `done`, `deprecated`, `superseded`, `closed`, or `cancelled`) moves to `docs/history/backlog/` in the same operation that records its terminal status. Preserve its original intent, the true disposition, any consuming Spec and the reason for closure. No absorption license is required for a Backlog Entry. An unknown status is a declaration error, never an inferred terminal disposition."
+          "guidance": "Name backlog entries `YYYY-MM-DD-<kebab-slug>.md`. Use this complete copyable Backlog Operational Contract:\n\n```markdown\n---\ntype: feat # feat | fix | perf | refactor\nstatus: open # open | promoted | declined | deferred | done | deprecated | superseded | closed | cancelled\ncreated: YYYY-MM-DD\nspec: null # Spec slug when status: promoted\nreason: null # required for terminal closure without a consuming Spec\n---\n```\n\nFor `type: feat`, use:\n\n```markdown\n# <Title — the intent in one line>\n\n## Opportunity\n\n<What could exist and for whom.>\n\n## Value\n\n<Why it would matter; the hypothesis.>\n\n## Shape\n\n<The rough form of a solution, explicitly non-binding.>\n```\n\nFor `type: fix`, use:\n\n```markdown\n# <Title — the defect in one line>\n\n## Symptom\n\n<What misbehaves, as a user or operator sees it.>\n\n## Where\n\n<The surface, command, or package, as known.>\n\n## Expected\n\n<The behavior that should replace it.>\n\n## Evidence\n\n<A finding link when one exists; `none yet` is honest.>\n```\n\nFor `type: perf`, use:\n\n```markdown\n# <Title — the cost in one line>\n\n## Slow\n\n<What is slow, for whom, and in which operation.>\n\n## Measured\n\n<The number that says so and how it was measured.>\n\n## Target\n\n<The number that would settle it.>\n```\n\nFor `type: refactor`, use:\n\n```markdown\n# <Title — the tangle in one line>\n\n## Tangled\n\n<What resists change, and where it is duplicated or coupled.>\n\n## Cost\n\n<What it makes slow, risky, or wrong to touch.>\n\n## Shape\n\n<The structure that would replace it, explicitly non-binding.>\n```\n\nKeep `open` entries in `docs/backlog/`. When a Spec adopts an entry, set `status: promoted` and `spec` to that Spec's slug, then move the entry to `docs/specs/<slug>/references/`; git history remains the discovery trail. Set `status: declined` or `status: deferred` only with a non-null `reason`. The current type set is open: a new type must be a Conventional Commits type that expresses intent. Adding a type is a contract change that requires a corpus re-record, never an informal addition. Use `refactor` as the canonical token, never an abbreviation.\n\n`docs/backlog/` holds unresolved `open` intent only. A `promoted` entry is adopted source material and moves to its consuming Spec's `references/` under the adoption contract; it is not a terminal implementation verdict. Every terminal Backlog Entry (`declined`, `deferred`, `done`, `deprecated`, `superseded`, `closed`, or `cancelled`) moves to `docs/history/backlog/` in the same operation that records its terminal status. Preserve its original intent, the true disposition, any consuming Spec and the reason for closure. No absorption license is required for a Backlog Entry. An unknown status is a declaration error, never an inferred terminal disposition."
         },
         {
           "id": "clause.context.backlog-02-finding-boundary",
@@ -372,7 +372,7 @@
         {
           "id": "clause.context.inbox-01-triage",
           "enforcement": "mandatory",
-          "guidance": "Triage resolves one pending Inbox Entry into exactly one Finding, one Backlog Entry, or one recorded discard. Preserve the ADR-0092 boundary: evidence never becomes intent without a human choice. A minted Finding or Backlog Entry must cite the Inbox Entry's provenance."
+          "guidance": "Triage resolves one pending Inbox Entry into exactly one Finding, one Backlog Entry, or one recorded discard. Preserve the boundary between evidence and intent: evidence never becomes intent without a human choice. A minted Finding or Backlog Entry must cite the Inbox Entry's provenance."
         },
         {
           "id": "clause.context.inbox-02-fleet-flow",

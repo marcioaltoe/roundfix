@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0193-baseline-guides-that-describe-the-product-as-it-is
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
@@ -19,6 +19,7 @@ The authored terminal gate for this Spec. It declares what the matrix covers and
 3. MUST verify, by executing task_02's tests and reading `docs/agents/autonomous-work.md`, that the loop clause declares review before archive, names `roundfix deliver`, `roundfix reopen --spec <slug>` and Task Carry-Forward, and that an archive-before-review order is reported as a mismatch with the Delivery Queue.
 4. MUST verify, by executing task_03's tests and reading `docs/agents/agent-instructions.md` and `docs/agents/spec-routing.md`, that each of the five clauses carries its new sentence and that none of the four removed phrases remains in any module, golden or rendered guide.
 5. MUST verify, by executing task_04's tests, that no shipped guidance cites a Spec number or an ADR number, that a citation is reported, and that a `deferred` Backlog Entry is terminal.
+5a. MUST verify, by executing task_06's tests, that an adopter on the Standard TypeScript Source Baseline gets a plan that records `rule.backend.boundary-contracts` as `replaced` by `clause.backend.boundary-contracts` and is not refused, and that a removal without a `replaces` declaration stays `unaccounted`.
 6. MUST verify through the built binary, in a disposable copy of this repository, that `roundfix baseline update --repo <copy> --no-skills --format text` reports `File changes: 0`, and that `make baseline-digests` reports `"changed":false`.
 7. MUST record, as evidence this Spec did not author, the adopter guides in the Secondbrain mirrors, read only: `~/dev/secondbrain/projects/conexus/mirror/docs/agents/backend.md` (the boundary paragraph twice), and `~/dev/secondbrain/projects/oraculum/mirror/docs/agents/autonomous-work.md` (archive before review, and `Spec 0078`). The row records what those files held when read and where they came from. It MUST also record Google's documentation best practices, "Update Docs with Code" (<https://github.com/google/styleguide/blob/gh-pages/docguide/best_practices.md>). When a mirror or the page is unavailable, or a mirror already carries the corrected text, it MUST record that fact as the row's evidence or as a blocked row with its reason. The gate MUST NOT write to the Secondbrain.
 8. MUST verify that every clause this Spec rewrote keeps its enforcement level and identifier, and that the clauses the TechSpec lists as deliberately unchanged are byte-identical to `9e439dbb`.

@@ -247,6 +247,36 @@ func (l *catalogLoader) validateModules(catalog *Catalog) {
 			}
 		}
 	}
+	l.validateClauseReplacements(catalog, seenClauses)
+}
+
+func (l *catalogLoader) validateClauseReplacements(catalog *Catalog, clauseIDs map[string]string) {
+	claimed := make(map[string]string)
+	for _, moduleID := range catalog.ModuleIDs() {
+		for _, rule := range objectsOrEmpty(catalog.modules[moduleID]["rules"]) {
+			for _, clause := range objectsOrEmpty(rule["clauses"]) {
+				value, declared := clause["replaces"]
+				if !declared {
+					continue
+				}
+				id, _ := stringValue(clause, "id")
+				targets, ok := stringList(value)
+				if !ok || !uniqueStrings(targets) {
+					l.add("catalog.clause.replaces.invalid", id, "")
+					continue
+				}
+				for _, target := range targets {
+					if _, exists := clauseIDs[target]; exists {
+						l.add("catalog.clause.replaces.present", id, target)
+					}
+					if owner, exists := claimed[target]; exists {
+						l.add("catalog.clause.replaces.duplicate", id, target+": "+owner)
+					}
+					claimed[target] = id
+				}
+			}
+		}
+	}
 }
 
 func (l *catalogLoader) validateArtifacts(

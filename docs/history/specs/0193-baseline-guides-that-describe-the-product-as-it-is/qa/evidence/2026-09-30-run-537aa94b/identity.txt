@@ -1,0 +1,4 @@
+make build: exit 0
+roundfix 0.21.0 (537aa94b-dirty, built 2026-09-30 16:28:34 -0300)
+HEAD: 537aa94b450dcf29e4b8e589b78e1674ab7c9bca
+Repository Verification: make verify-changed; daemon-provided pass, exit 0; diagnostics removed on success; not rerun.
