@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0189-profiles-that-follow-the-current-models
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -83,3 +83,171 @@ complexity: high
 - ADR-0180; ADR-0069; ADR-0037; ADR-0049; ADR-0050; ADR-0107; ADR-0140; ADR-0151
 
 ## Result
+
+Implemented this Task's slice for Daemon Verification. Task status, Subtasks,
+Acceptance Criteria checkboxes and the authored Verification remain unchanged.
+No commit, push or Pull Request was made.
+
+### Implementation and acceptance evidence
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Bare configuration resolves five required Recommended Profiles as built-in; optional categories inherit general | `builtinProfiles` iterates `requiredWorkCategories` and reads `RecommendedProfile`, with source `built-in`. `TestBuiltinProfilesAreTheRecommendedProfile` loads empty User and Project scopes and checks each complete profile and source. `TestBuiltinProfilesDefineNoOptionalCategory` checks the five-entry map and inheritance for every optional category. Both passed. |
+| Generated User and Project Config parse to the same five profiles | `defaultConfigYAML` renders the profiles block from `builtinProfiles` in required-category order. `TestGeneratedConfigRendersTheBuiltinProfiles` checks YAML order, decoded equality and normal scope loading for both generated configurations; passed. |
+| Legacy defaults.agent: codex selects gpt-6.1-sol/high | `Builtin().Runtimes.Codex` reads the general Recommended Profile's model and effort. The two old Codex constants were removed; Claude defaults and `applyLegacyRuntimeProfiles` are unchanged. `TestLegacyCodexDefaultIsTheGeneralCodexSelection` loads that minimal legacy configuration and checks the resolved tuple and runtime defaults; passed. |
+| Built-in review passes the Codex provider check | Review is derived from its own Recommended Profile. `TestBuiltinReviewProfileStaysOnTheReviewProvidersRuntime` resolves the actual built-in review and calls `validateReviewProfileProvider("codex", ...)`; passed. |
+| Both Baseline models are in the Codex catalog | Preferred is `gpt-6.1-sol`, fallback is `gpt-5.6-sol`; `xhigh` and all analysis logic are unchanged. `TestAnalysisModelsAreInTheCodexModelCatalog` passed. ADR-0069 changes only the two model names, the ADR-0180 attribution and the requested updated_at timestamp. |
+| Catalogs equal the final Reference data table | Removed the two transitional entries. `TestModelCatalogOffersNoReplacedModel` checks both forbidden identifiers in both catalogs; `TestModelCatalogsExposeOrderedPickerData` checks the full exact tables; `TestModelCatalogOpensWithTheCurrentModels` checks their current opening order. All passed. |
+| Production code and specified documents contain no replaced identifier | A local Python sweep checked all 226 non-test Go files under internal/cmd and all five specified documents for `gpt-5.5`, and the documents for the exact replaced Claude identifier. No matches. It also checked both mirrored skill files byte-for-byte and proved the QA settlement section equals HEAD. The documentation contract and a temporary overlay test comparing all four documented YAML profiles blocks to Builtin passed. |
+
+The guides and canonical skill now document the same Preferred Selections and
+Fallback Chains as setup generates. The skill was raised from 0.0.6 to 0.0.7 in
+both version fields. The documentation contract removes both GPT-5.5 pins,
+requires `claude-fable-5-1`, and derives its built-in Preferred Selection pin
+from `RecommendedProfile(CategoryGeneral)`.
+
+### Focused checks
+
+All Go checks below used `GOCACHE=/private/tmp/roundfix-task03-cache` and
+`rtk proxy`; the first attempt using the shared cache was refused by the
+sandbox. The task-local cache rerun provided the expected initial red:
+all five built-in equality cases and both replaced-catalog cases failed before
+production changes.
+
+- `go test ./internal/config -count=1` — passed after the final config-test edit.
+- `go test ./internal/config ./internal/agent ./internal/baselineacp -run 'TestBuiltin|TestGeneratedConfig|TestLegacyCodex|TestModelCatalog|TestAnalysisModels' -count=1` — passed.
+- `go test ./internal/cli -run 'TestRunInit|TestRunSetup|TestProfiles|TestRunDoctor|TestInvocation|TestDoctorNamesA|TestCharacterization|TestResolveSelection|TestImplementTaskContent|TestRunImplementDetach' -count=1 -timeout=90s` — passed.
+- `go test ./internal/cli -run 'TestBuiltinReview|TestSetupCommandCompatibility|TestCharacterization|TestResolveSelectionUses' -count=1` — passed.
+- `go test -tags docscontract ./internal/docscontract -run TestProfilesDocumentation -count=1` — passed.
+- `go test -overlay /private/tmp/task03-doc-overlay.json ./internal/config -run TestTask03DocumentedProfiles -count=1` — passed; the overlay adds no repository file and checks both guides and both skill copies against generated profiles.
+- `git -c core.fsmonitor=false diff --check` — passed.
+
+An initial broad diagnostic run of the config/CLI packages was interrupted
+after invalidated config expectations and detached-test startup failures were
+identified; it is not full-suite evidence. The detached test adapter previously
+advertised only the old Codex built-ins. Its helper now derives advertised
+models from Builtin, and installs separate isolated Codex and Claude adapter
+commands/configuration so both runtime lineages are proven. Both affected
+detached flows passed in the focused CLI run. Test-only callers left by the
+earlier failing runs were terminated; the active Task Agent was not touched.
+
+The Task's authored Verification and the repository-wide gate were not run.
+They remain Daemon-owned for this handoff.
+
+### Existing tests updated
+
+Every change below follows an invalidated built-in expectation, generated
+configuration expectation or the declared model/catalog break. Tests meaning
+the built-in value now read RecommendedProfile or Builtin; explicit configured
+decision values remain unchanged.
+
+`internal/config/config_test.go`:
+
+- `TestBuiltinRuntimeDefaults`
+- `TestBuiltinProfilesGeneratedCodexPolicy`
+- `TestDefaultConfigYAMLGeneratedCodexPolicy`
+- `TestAgentSelectionProfileBuiltinsResolveRequiredCategories`
+- `TestProfileLegacyMigrationConvertsRuntimeDefaults`
+- `TestProfileLegacyDefaultCodexKeepsDistinctBuiltInFallback`
+- `TestProfileResolverPreferredOverridePreservesFallbackChain`
+- `TestLoadWarnsAndIgnoresDeprecatedDefaultsModel`
+- `TestInitCreatesUserConfig`
+- `TestProfileGeneratedConfigUsesCompleteProfilesSchema`
+- `TestInitForceOverwritesExistingConfig`
+
+`internal/cli/cli_test.go`:
+
+- `TestRunInitForceOverwritesExistingConfig`
+- `TestProfilesValidateDeduplicatesProofsAndReportsEveryReference`
+- `TestProfilesValidateTextNamesADegradedPolicy`
+- `TestDoctorNamesADegradedPolicy`
+- `TestInvocationProfileOverrideOmittedUsesTaskQAAndReviewProfiles`
+- `TestInvocationProfileOverrideAppliesAcrossCategoriesPreservesFallbacksAndWarns`
+- `TestRunSetupHealthyMachineIsIdempotent` and `TestSetupCommandCompatibility`, through their shared `assertSetupCommandHealthyMachineIsIdempotent` helper
+- `TestRunSetupProfileProofsEveryDistinctTupleOnceBeforePersistence`
+- `TestRunSetupProfilePersistenceMatchesSubsequentValidation`
+- `TestRunSetupNoInputProfileProofCreatesNoTargets`
+- `TestRunSetupProfileProofUsesProposedProfilesAndWorkDir`
+- `TestRunSetupAcceptsConfiguredEmptyReasoningEffort`
+
+Other existing tests:
+
+- `internal/cli/doctor_test.go`: `TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts`, `TestRunDoctorProfileReadinessReportsLegacyAdapterThroughEffectiveProfile`.
+- `internal/cli/doctor_characterization_test.go`: `TestCharacterizationInvariantDoctorCountsAreUnchangedWithoutOptionalCategories` now expects **4 distinct tuples / 10 category references**, including four proof requests; `TestCharacterizationInvariantInheritedCategoryAddsNoTuple` now expects **4 / 10**. The configured optional-category test still expects **5 / 12** and passed unchanged.
+- `internal/cli/implement_test.go`: `TestRunImplementDetachPrintsReportAndCompletesRun`, `TestRunImplementDetachSurvivesCallerProcessGroupKill`, and their `fakeACPXCommand` helper.
+- `internal/cli/selection_test.go`: `TestResolveSelectionUsesBuiltInRuntimeDefaults`.
+- `internal/agent/agent_test.go`: `TestModelCatalogsExposeOrderedPickerData`.
+- `internal/docscontract/publicdocs_test.go`: `TestProfilesDocumentationContractMatchesPublicGuidance`.
+
+The scratch-copy list was used as a starting point; focused checks found the
+additional generated-config and setup/detached expectations named above.
+No Baseline decision fixture or golden file was edited.
+
+### Sabotage evidence
+
+Each sabotage was applied alone, followed by
+`go test <package> -run '^<test-name>$' -count=1` with the task-local cache.
+Each command exited 1 with the named test failure. Each source file was restored
+in a finally block before the next case, and positive focused checks followed.
+
+| Sabotage | Test that failed |
+| --- | --- |
+| Changed general's built-in preferred model to sabotaged after reading its Recommended Profile | `TestBuiltinProfilesAreTheRecommendedProfile/general` |
+| Derived built-in review from general | `TestBuiltinReviewProfileStaysOnTheReviewProvidersRuntime`; Codex provider rejected fallback 1 runtime Claude |
+| Changed only the generated YAML's preferred models to sabotaged | `TestGeneratedConfigRendersTheBuiltinProfiles/user` and `/project` |
+| Changed only the legacy Codex runtime model to sabotaged | `TestLegacyCodexDefaultIsTheGeneralCodexSelection` |
+| Added docs as a built-in entry | `TestBuiltinProfilesDefineNoOptionalCategory` |
+| Set the Baseline preferred model to removed GPT-5.5 | `TestAnalysisModelsAreInTheCodexModelCatalog/gpt-5.5` |
+| Reinserted GPT-5.5 into the Codex catalog | `TestModelCatalogOffersNoReplacedModel/codex/gpt-5.5` |
+
+### Regeneration
+
+`make skills-sync` exited 0. Its only content change was
+`skills/roundfix/SKILL.md`. The target recreates every owned mirror, so it
+also rewrote the following files with unchanged content:
+
+- `skills/archive-spec/SKILL.md`
+- `skills/brainstorming/SKILL.md`
+- `skills/business-analyst/SKILL.md`
+- `skills/council/SKILL.md`
+- `skills/council/assets/synthesis-template.md`
+- `skills/council/references/archetypes.md`
+- `skills/council/references/debate-protocols.md`
+- `skills/evidence-gate/SKILL.md`
+- `skills/implement-spec/SKILL.md`
+- `skills/implement-task/SKILL.md`
+- `skills/qa-gate/SKILL.md`
+- `skills/roundfix/agents/openai.yaml`
+- `skills/setup-context-driven/SKILL.md`
+- `skills/write-idea/SKILL.md`
+- `skills/write-idea/references/idea-template.md`
+- `skills/write-idea/references/opportunity-scan.md`
+- `skills/write-prd/SKILL.md`
+- `skills/write-prd/references/prd-template.md`
+- `skills/write-tasks/SKILL.md`
+- `skills/write-tasks/references/task-template.md`
+- `skills/write-techspec/SKILL.md`
+- `skills/write-techspec/references/techspec-template.md`
+
+`go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+exited 0 and rewrote `skills/testdata/owned-skill-versions.json` with the
+0.0.7 version and digest. This path is declared here as required by the
+repository's owned-skill version rule.
+
+`make baseline-digests` exited 0. Its final result was
+`{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":false}`;
+no derived artifact retained changed bytes. There are no hand-edited digest
+pins or changes to Baseline decision fixtures/goldens.
+
+No follow-up outside this Task's slice was implemented.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `skills/testdata/owned-skill-versions.json`
+
+## Carry-forward provenance
+
+- Source Run: `run_20260930T215154Z_eb58c6882d4f3968`
+- Source commit: `f39f485084a7fe2b4935ea7b8f0572e01eaa09de`

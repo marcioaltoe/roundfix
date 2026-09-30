@@ -4,10 +4,10 @@ description: Use Roundfix to plan releases with the read-only Release Plan Comma
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.0.6
+  version: 0.0.7
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.0.6
+version: 0.0.7
 ---
 
 # Roundfix
@@ -865,17 +865,18 @@ runtime-owned model configuration, credentials, or adapter settings.
 
 Required built-ins:
 
-- `general`, `backend`, `qa`, and `review`: preferred
-  `codex / gpt-5.6-sol / high`, fallback
-  `codex / gpt-5.5 / xhigh`.
-- `frontend`: preferred `claude / opus / xhigh`, fallback
-  `codex / gpt-5.6-sol / high`.
+- `general`, `backend`, and `qa`: preferred
+  `codex / gpt-6.1-sol / high`, fallback `claude / opus / high`.
+- `frontend`: preferred `claude / opus / high`, fallback
+  `codex / gpt-6.1-sol / xhigh`.
+- `review`: preferred `codex / gpt-5.6-luna / max`, fallback
+  `codex / gpt-6.1-sol / high`.
 
 Optional Task Type categories `data`, `infra`, `docs`, `test`, and `chore`
 inherit the effective `general` profile when absent. If configured, they must
 be complete. The Model Catalog recognizes `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`,
 `gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.6-luna` as official Codex identifiers, plus the Claude identifiers the
-adapter advertises: `opus`, `sonnet`, `claude-fable-5-1`, `claude-fable-5`, `haiku`, and `default`.
+adapter advertises: `opus`, `sonnet`, `claude-fable-5-1`, `haiku`, and `default`.
 The adapter advertises Opus 5.5 as `opus[1m]`; the capability parser removes the
 bracketed context suffix, so `opus` is the catalog value. Catalog validity is distinct
 from advisory recommendation rank and from operational availability: exact
@@ -896,24 +897,51 @@ Project Config and User Config use the profile structure:
 
 ```yaml
 profiles:
+  general:
+    preferred:
+      runtime: codex
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
+    fallbacks:
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
   backend:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
     fallbacks:
-      - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
   frontend:
     preferred:
       runtime: claude
       model: opus
-      reasoning_effort: xhigh
+      reasoning_effort: "high"
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-sol
-        reasoning_effort: high
+        model: gpt-6.1-sol
+        reasoning_effort: "xhigh"
+  qa:
+    preferred:
+      runtime: codex
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
+    fallbacks:
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
+  review:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-luna
+      reasoning_effort: "max"
+    fallbacks:
+      - runtime: codex
+        model: gpt-6.1-sol
+        reasoning_effort: "high"
 ```
 
 Use the profile management commands for inspection, writes, and disposable

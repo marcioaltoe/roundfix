@@ -77,11 +77,12 @@ and `review`. Optional Task Type categories `data`, `infra`, `docs`, `test`,
 and `chore` inherit the effective `general` profile when absent; if you define
 one, it must be complete. Built-ins use official model identifiers:
 
-- `general`, `backend`, `qa`, and `review`: preferred
-  `codex / gpt-5.6-sol / high`, fallback
-  `codex / gpt-5.5 / xhigh`.
-- `frontend`: preferred `claude / opus / xhigh`, fallback
-  `codex / gpt-5.6-sol / high`.
+- `general`, `backend`, and `qa`: preferred
+  `codex / gpt-6.1-sol / high`, fallback `claude / opus / high`.
+- `frontend`: preferred `claude / opus / high`, fallback
+  `codex / gpt-6.1-sol / xhigh`.
+- `review`: preferred `codex / gpt-5.6-luna / max`, fallback
+  `codex / gpt-6.1-sol / high`.
 
 Use this complete Project Config or User Config shape when you want explicit
 profiles for every required category:
@@ -91,60 +92,59 @@ profiles:
   general:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
     fallbacks:
-      - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
   backend:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
     fallbacks:
-      - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
   frontend:
     preferred:
       runtime: claude
       model: opus
-      reasoning_effort: xhigh
+      reasoning_effort: "high"
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-sol
-        reasoning_effort: high
+        model: gpt-6.1-sol
+        reasoning_effort: "xhigh"
   qa:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
     fallbacks:
-      - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
   review:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
+      model: gpt-5.6-luna
+      reasoning_effort: "max"
     fallbacks:
       - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
+        model: gpt-6.1-sol
+        reasoning_effort: "high"
 ```
 
 The Codex Model Catalog recognizes `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`,
 `gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.6-luna` as official identifiers;
-GPT-5.5/xhigh remains the generated
-fallback for the four Codex-led profiles. A valid identifier and an advisory
+A valid identifier and an advisory
 recommendation rank are not readiness claims. Roundfix proves operational
 availability in the effective environment through exact proof of the complete
 runtime/model/reasoning tuple. Custom model values remain forward-compatible:
 Roundfix sends them verbatim for the same proof instead of treating the catalog
 as an allowlist. The Claude Model Catalog recognizes the identifiers the adapter
-advertises: `opus`, `sonnet`, `claude-fable-5-1`, `claude-fable-5`, `haiku`,
+advertises: `opus`, `sonnet`, `claude-fable-5-1`, `haiku`,
 and `default`. The `opus` alias resolves to Opus 5.5.
 
 When an adapter advertises an independent reasoning control, Roundfix treats

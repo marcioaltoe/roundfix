@@ -127,48 +127,48 @@ profiles:
   general:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
     fallbacks:
-      - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
   backend:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
     fallbacks:
-      - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
   frontend:
     preferred:
       runtime: claude
       model: opus
-      reasoning_effort: xhigh
+      reasoning_effort: "high"
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-sol
-        reasoning_effort: high
+        model: gpt-6.1-sol
+        reasoning_effort: "xhigh"
   qa:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
     fallbacks:
-      - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
   review:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
+      model: gpt-5.6-luna
+      reasoning_effort: "max"
     fallbacks:
       - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
+        model: gpt-6.1-sol
+        reasoning_effort: "high"
 
 # Legacy PR-feedback Review Source, read only by fetch, watch and resolve; it never selects or requests a pre-PR reviewer.
 review_source:
@@ -323,14 +323,16 @@ config; its Recommended Profile remains specific to the requested category.
 
 Built-in required profiles use these official identifiers:
 
-- `general`, `backend`, `qa`, `review`: preferred `codex / gpt-5.6-sol / high`;
-  fallback `codex / gpt-5.5 / xhigh`.
-- `frontend`: preferred `claude / opus / xhigh`; fallback
-  `codex / gpt-5.6-sol / high`.
+- `general`, `backend`, and `qa`: preferred
+  `codex / gpt-6.1-sol / high`, fallback `claude / opus / high`.
+- `frontend`: preferred `claude / opus / high`, fallback
+  `codex / gpt-6.1-sol / xhigh`.
+- `review`: preferred `codex / gpt-5.6-luna / max`, fallback
+  `codex / gpt-6.1-sol / high`.
 
 The Model Catalog recognizes `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`,
 `gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.6-luna` as official Codex identifiers, plus `opus`, `sonnet`,
-`claude-fable-5-1`, `claude-fable-5`, `haiku`, and `default` as Claude
+`claude-fable-5-1`, `haiku`, and `default` as Claude
 identifiers. Those are the values the
 Claude adapter advertises, with the bracketed context suffix removed as the
 capability parser removes it — the adapter advertises Opus 5.5 as `opus[1m]`.
@@ -338,9 +340,9 @@ Identifier validity does not prove operational availability. Recommendations are
 profiles only; the effective adapter in each environment must complete Exact
 Agent Selection Proof before Roundfix can use a tuple. This exact proof is the
 operational readiness authority. Custom model strings remain accepted verbatim
-for forward-compatible proof and are never added to an allowlist. A dated
-recommendation can differ from the current built-in Preferred Selection and
-never controls routing.
+for forward-compatible proof and are never added to an allowlist. The dated
+Recommended Profile supplies each required built-in Preferred Selection and
+Fallback Chain; User Config and Project Config can replace them.
 
 When an adapter advertises an independent reasoning control, Roundfix treats
 every advertised Agent Model identifier as opaque. A bracketed identifier such

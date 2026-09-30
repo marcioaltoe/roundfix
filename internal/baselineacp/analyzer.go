@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	PreferredModel          = "gpt-5.6-sol"
-	FallbackModel           = "gpt-5.5"
+	PreferredModel          = "gpt-6.1-sol"
+	FallbackModel           = "gpt-5.6-sol"
 	RequiredReasoningEffort = "xhigh"
 )
 

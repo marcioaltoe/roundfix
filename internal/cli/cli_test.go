@@ -391,8 +391,8 @@ func TestRunInitForceOverwritesExistingConfig(t *testing.T) {
 		t.Fatalf("read config: %v", err)
 	}
 	if !strings.Contains(string(content), "profiles:") ||
-		!strings.Contains(string(content), "model: gpt-5.6-sol") ||
-		!strings.Contains(string(content), "model: opus") ||
+		!strings.Contains(string(content), "model: "+roundconfig.Builtin().Profiles[roundconfig.CategoryGeneral].Profile.Preferred.Model) ||
+		!strings.Contains(string(content), "model: "+roundconfig.Builtin().Profiles[roundconfig.CategoryFrontend].Profile.Preferred.Model) ||
 		strings.Contains(string(content), "agent: claude") ||
 		strings.Contains(string(content), "runtimes:") {
 		t.Fatalf("expected generated config to replace old content, got %s", string(content))
@@ -2246,6 +2246,10 @@ func TestProfilesConfigureInteractiveRequiresCompleteFallbackBeforeConfirm(t *te
 
 func TestProfilesValidateDeduplicatesProofsAndReportsEveryReference(t *testing.T) {
 	t.Parallel()
+	profile, _ := roundconfig.RecommendedProfile(roundconfig.CategoryGeneral)
+	frontend, _ := roundconfig.RecommendedProfile(roundconfig.CategoryFrontend)
+	review, _ := roundconfig.RecommendedProfile(roundconfig.CategoryReview)
+
 	homeDir, _ := withCLIWorkspace(t)
 	runner := &fakeAgentRunner{}
 	withAgentRunner(t, runner)
@@ -2264,19 +2268,19 @@ func TestProfilesValidateDeduplicatesProofsAndReportsEveryReference(t *testing.T
 	if response.Schema != "roundfix/profiles-validate/v1" || !response.OK {
 		t.Fatalf("unexpected validate response: %+v", response)
 	}
-	if len(runner.probeRequests) != 3 {
-		t.Fatalf("expected three unique tuple probes, got %#v", runner.probeRequests)
+	if len(runner.probeRequests) != 4 {
+		t.Fatalf("expected four unique tuple probes, got %#v", runner.probeRequests)
 	}
-	wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "opus"}
+	wantModels := []string{profile.Preferred.Model, profile.Fallbacks[0].Model, frontend.Fallbacks[0].Model, review.Preferred.Model}
 	for index, want := range wantModels {
 		if runner.probeRequests[index].Runtime.Model != want {
 			t.Fatalf("probe %d model = %q, want %q", index, runner.probeRequests[index].Runtime.Model, want)
 		}
 	}
-	if len(response.Proofs) != 3 {
-		t.Fatalf("len(proofs) = %d, want 3", len(response.Proofs))
+	if len(response.Proofs) != 4 {
+		t.Fatalf("len(proofs) = %d, want 4", len(response.Proofs))
 	}
-	assertProofReferences(t, response.Proofs[0], []string{"general/preferred", "backend/preferred", "frontend/fallback", "qa/preferred", "review/preferred"})
+	assertProofReferences(t, response.Proofs[0], []string{"general/preferred", "backend/preferred", "qa/preferred", "review/fallback"})
 	if runner.calls != 0 {
 		t.Fatalf("profiles validate must not send Agent prompts, calls=%d", runner.calls)
 	}
@@ -2284,6 +2288,9 @@ func TestProfilesValidateDeduplicatesProofsAndReportsEveryReference(t *testing.T
 }
 
 func TestProfilesValidateTextNamesADegradedPolicy(t *testing.T) {
+	profile, _ := roundconfig.RecommendedProfile(roundconfig.CategoryBackend)
+	preferred := profile.Preferred.Runtime + " / " + profile.Preferred.Model + " / " + profile.Preferred.ReasoningEffort
+	fallback := profile.Fallbacks[0].Runtime + " / " + profile.Fallbacks[0].Model + " / " + profile.Fallbacks[0].ReasoningEffort
 	const degradedPolicy = agent.AccessPolicy("full-access (degraded: sandbox preset unavailable)")
 	tests := []struct {
 		name       string
@@ -2294,27 +2301,27 @@ func TestProfilesValidateTextNamesADegradedPolicy(t *testing.T) {
 			name:   "degraded full access",
 			policy: degradedPolicy,
 			wantStdout: "Profiles validate passed.\n" +
-				"1. codex / gpt-5.6-sol / high — passed (effective access policy: " + string(degradedPolicy) + ")\n" +
+				"1. " + preferred + " — passed (effective access policy: " + string(degradedPolicy) + ")\n" +
 				"   - backend preferred source=built-in\n" +
-				"2. codex / gpt-5.5 / xhigh — passed (effective access policy: " + string(degradedPolicy) + ")\n" +
+				"2. " + fallback + " — passed (effective access policy: " + string(degradedPolicy) + ")\n" +
 				"   - backend fallback[1] source=built-in\n",
 		},
 		{
 			name:   "ordinary full access",
 			policy: agent.AccessPolicyFullAccess,
 			wantStdout: "Profiles validate passed.\n" +
-				"1. codex / gpt-5.6-sol / high — passed\n" +
+				"1. " + preferred + " — passed\n" +
 				"   - backend preferred source=built-in\n" +
-				"2. codex / gpt-5.5 / xhigh — passed\n" +
+				"2. " + fallback + " — passed\n" +
 				"   - backend fallback[1] source=built-in\n",
 		},
 		{
 			name:   "runtime default access",
 			policy: agent.AccessPolicyRuntimeDefault,
 			wantStdout: "Profiles validate passed.\n" +
-				"1. codex / gpt-5.6-sol / high — passed\n" +
+				"1. " + preferred + " — passed\n" +
 				"   - backend preferred source=built-in\n" +
-				"2. codex / gpt-5.5 / xhigh — passed\n" +
+				"2. " + fallback + " — passed\n" +
 				"   - backend fallback[1] source=built-in\n",
 		},
 	}
@@ -2353,17 +2360,17 @@ func TestDoctorNamesADegradedPolicy(t *testing.T) {
 		{
 			name:             "degraded full access",
 			policy:           degradedPolicy,
-			wantProfilesLine: "profiles: ok (3 distinct tuples; 10 category references; effective access policy: " + string(degradedPolicy) + ")",
+			wantProfilesLine: "profiles: ok (4 distinct tuples; 10 category references; effective access policy: " + string(degradedPolicy) + ")",
 		},
 		{
 			name:             "ordinary full access",
 			policy:           agent.AccessPolicyFullAccess,
-			wantProfilesLine: "profiles: ok (3 distinct tuples; 10 category references)",
+			wantProfilesLine: "profiles: ok (4 distinct tuples; 10 category references)",
 		},
 		{
 			name:             "runtime default access",
 			policy:           agent.AccessPolicyRuntimeDefault,
-			wantProfilesLine: "profiles: ok (3 distinct tuples; 10 category references)",
+			wantProfilesLine: "profiles: ok (4 distinct tuples; 10 category references)",
 		},
 	}
 	for _, tt := range tests {
@@ -2652,6 +2659,8 @@ func TestProfileOperationalPreflightMatchesProfilesValidateClassifiedFailure(t *
 
 func TestInvocationProfileOverrideOmittedUsesTaskQAAndReviewProfiles(t *testing.T) {
 	t.Parallel()
+	profile, _ := roundconfig.RecommendedProfile(roundconfig.CategoryGeneral)
+	frontend, _ := roundconfig.RecommendedProfile(roundconfig.CategoryFrontend)
 	runner := &fakeAgentRunner{}
 	var stderr bytes.Buffer
 	graph := &spec.Graph{Tasks: []spec.Task{
@@ -2669,16 +2678,16 @@ func TestInvocationProfileOverrideOmittedUsesTaskQAAndReviewProfiles(t *testing.
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no warning without invocation override, got %q", stderr.String())
 	}
-	wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "opus"}
+	wantModels := []string{profile.Preferred.Model, profile.Fallbacks[0].Model, frontend.Fallbacks[0].Model}
 	if got := probeRequestModels(runner.probeRequests); !reflect.DeepEqual(got, wantModels) {
 		t.Fatalf("probe models = %v, want %v", got, wantModels)
 	}
 	if len(result.Proofs) != 3 {
 		t.Fatalf("len(proofs) = %d, want 3", len(result.Proofs))
 	}
-	assertProofReferences(t, result.Proofs[0], []string{"backend/preferred", "frontend/fallback", "qa/preferred"})
-	assertProofReferences(t, result.Proofs[1], []string{"backend/fallback", "qa/fallback"})
-	assertProofReferences(t, result.Proofs[2], []string{"frontend/preferred"})
+	assertProofReferences(t, result.Proofs[0], []string{"backend/preferred", "qa/preferred"})
+	assertProofReferences(t, result.Proofs[1], []string{"backend/fallback", "frontend/preferred", "qa/fallback"})
+	assertProofReferences(t, result.Proofs[2], []string{"frontend/fallback"})
 	for _, request := range runner.probeRequests {
 		if request.WorkDir != "/workspace" {
 			t.Fatalf("probe WorkDir = %q, want /workspace", request.WorkDir)
@@ -2763,7 +2772,8 @@ func TestInvocationProfileOverrideAppliesAcrossCategoriesPreservesFallbacksAndWa
 	if result.Override == nil || result.Override.Model != "gpt-5.6-sol" || result.Override.ReasoningEffort != "high" {
 		t.Fatalf("unexpected invocation override: %+v", result.Override)
 	}
-	wantModels := []string{"gpt-5.6-sol", "gpt-5.5"}
+	profile, _ := roundconfig.RecommendedProfile(roundconfig.CategoryBackend)
+	wantModels := []string{req.model, profile.Fallbacks[0].Model}
 	if got := probeRequestModels(runner.probeRequests); !reflect.DeepEqual(got, wantModels) {
 		t.Fatalf("probe models = %v, want %v", got, wantModels)
 	}
@@ -3855,8 +3865,8 @@ func assertSetupCommandHealthyMachineIsIdempotent(t *testing.T) {
 	if len(fake.installCalls) != 0 || len(fake.initScopes) != 0 || len(fake.writeCalls) != 0 || len(fake.prompts) != 0 {
 		t.Fatalf("expected idempotent setup to avoid side effects, installs=%v init=%v writes=%v prompts=%v", fake.installCalls, fake.initScopes, fake.writeCalls, fake.prompts)
 	}
-	if len(fake.probeRequests) != 3 {
-		t.Fatalf("expected three distinct exact profile proofs, got %#v", fake.probeRequests)
+	if len(fake.probeRequests) != 4 {
+		t.Fatalf("expected four distinct exact profile proofs, got %#v", fake.probeRequests)
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
@@ -3949,10 +3959,13 @@ func TestRunSetupProfileProofsEveryDistinctTupleOnceBeforePersistence(t *testing
 	if code != exitOK {
 		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
 	}
-	want := map[roundconfig.AgentSelection]int{
-		{Runtime: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"}: 1,
-		{Runtime: "codex", Model: "gpt-5.5", ReasoningEffort: "xhigh"}:    1,
-		{Runtime: "claude", Model: "opus", ReasoningEffort: "xhigh"}:      1,
+	want := map[roundconfig.AgentSelection]int{}
+	for _, category := range roundconfig.RequiredWorkCategories() {
+		profile, _ := roundconfig.RecommendedProfile(category)
+		want[profile.Preferred] = 1
+		for _, selection := range profile.Fallbacks {
+			want[selection] = 1
+		}
 	}
 	got := map[roundconfig.AgentSelection]int{}
 	for _, request := range fake.probeRequests {
@@ -4099,8 +4112,8 @@ func TestRunSetupProfilePersistenceMatchesSubsequentValidation(t *testing.T) {
 	if result.Err != nil {
 		t.Fatalf("subsequent profile validation: %v", result.Err)
 	}
-	if len(result.Proofs) != 3 || len(validationRunner.exactRequests) != 3 {
-		t.Fatalf("subsequent validation proofs=%d requests=%d, want three distinct tuples", len(result.Proofs), len(validationRunner.exactRequests))
+	if len(result.Proofs) != 4 || len(validationRunner.exactRequests) != 4 {
+		t.Fatalf("subsequent validation proofs=%d requests=%d, want four distinct tuples", len(result.Proofs), len(validationRunner.exactRequests))
 	}
 }
 
@@ -4116,7 +4129,7 @@ func TestRunSetupNoInputProfileProofCreatesNoTargets(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
 	}
-	if len(fake.probeRequests) != 3 || len(fake.files) != 0 || len(fake.writeCalls) != 0 || len(fake.prompts) != 0 {
+	if len(fake.probeRequests) != 4 || len(fake.files) != 0 || len(fake.writeCalls) != 0 || len(fake.prompts) != 0 {
 		t.Fatalf("--no-input proof/mutation mismatch: proofs=%d files=%v writes=%v prompts=%v", len(fake.probeRequests), fake.files, fake.writeCalls, fake.prompts)
 	}
 }
@@ -4426,8 +4439,8 @@ func TestRunSetupProfileProofUsesProposedProfilesAndWorkDir(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("expected setup exit 0, got %d (stdout %q stderr %q)", code, stdout.String(), stderr.String())
 	}
-	if len(fake.probeRequests) != 3 {
-		t.Fatalf("expected three generated profile proofs, got %#v", fake.probeRequests)
+	if len(fake.probeRequests) != 4 {
+		t.Fatalf("expected four generated profile proofs, got %#v", fake.probeRequests)
 	}
 	for _, gotProbe := range fake.probeRequests {
 		if gotProbe.WorkDir != fake.gitRoot {
@@ -4439,7 +4452,7 @@ func TestRunSetupProfileProofUsesProposedProfilesAndWorkDir(t *testing.T) {
 func TestRunSetupAcceptsConfiguredEmptyReasoningEffort(t *testing.T) {
 	t.Parallel()
 	fake := newSetupFakeDeps()
-	customConfig := strings.ReplaceAll(roundconfig.DefaultConfigYAML(), "reasoning_effort: high", `reasoning_effort: ""`)
+	customConfig := strings.ReplaceAll(roundconfig.DefaultConfigYAML(), fmt.Sprintf("reasoning_effort: %q", roundconfig.Builtin().Runtimes.Codex.ReasoningEffort), `reasoning_effort: ""`)
 	fake.files[fake.userConfigPath] = customConfig
 	fake.files[fake.projectConfigPath] = customConfig
 	withSetupFakeDeps(t, fake)
@@ -4453,7 +4466,7 @@ func TestRunSetupAcceptsConfiguredEmptyReasoningEffort(t *testing.T) {
 	}
 	found := false
 	for _, gotProbe := range fake.probeRequests {
-		if gotProbe.Runtime.ID == "codex" && gotProbe.Runtime.Model == "gpt-5.6-sol" && gotProbe.Runtime.ReasoningEffort == "" {
+		if gotProbe.Runtime.ID == "codex" && gotProbe.Runtime.Model == roundconfig.Builtin().Runtimes.Codex.Model && gotProbe.Runtime.ReasoningEffort == "" {
 			found = true
 		}
 	}

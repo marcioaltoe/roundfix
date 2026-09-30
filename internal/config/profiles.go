@@ -184,21 +184,12 @@ func isOptionalWorkCategory(category WorkCategory) bool {
 }
 
 func builtinProfiles() Profiles {
-	general := AgentSelectionProfile{
-		Preferred: AgentSelection{Runtime: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"},
-		Fallbacks: []AgentSelection{{Runtime: "codex", Model: "gpt-5.5", ReasoningEffort: "xhigh"}},
+	entries := make(Profiles, len(requiredWorkCategories))
+	for _, category := range requiredWorkCategories {
+		profile, _ := RecommendedProfile(category)
+		entries[category] = ProfileEntry{Profile: profile, Source: ProfileSourceBuiltIn}
 	}
-	frontend := AgentSelectionProfile{
-		Preferred: AgentSelection{Runtime: "claude", Model: "opus", ReasoningEffort: "xhigh"},
-		Fallbacks: []AgentSelection{{Runtime: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"}},
-	}
-	return Profiles{
-		CategoryGeneral:  {Profile: cloneProfile(general), Source: ProfileSourceBuiltIn},
-		CategoryBackend:  {Profile: cloneProfile(general), Source: ProfileSourceBuiltIn},
-		CategoryFrontend: {Profile: cloneProfile(frontend), Source: ProfileSourceBuiltIn},
-		CategoryQA:       {Profile: cloneProfile(general), Source: ProfileSourceBuiltIn},
-		CategoryReview:   {Profile: cloneProfile(general), Source: ProfileSourceBuiltIn},
-	}
+	return entries
 }
 
 type profilesOverlay struct {
