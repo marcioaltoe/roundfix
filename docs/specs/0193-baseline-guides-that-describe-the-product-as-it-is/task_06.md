@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0193-baseline-guides-that-describe-the-product-as-it-is
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -68,3 +68,70 @@ task_01 removed the duplicate entry `rule.backend.boundary-contracts` from `back
 - task_01, task_04
 - `_techspec.md` → Clause texts; Build Order
 - QA Report of Run `run_20260930T153457Z_b5736250c995b99a` (verification log `batch-005-attempt-1.log`)
+
+## Result
+
+Implemented the declared successor for `rule.backend.boundary-contracts`.
+The Source Baseline classifier now emits `replaced` only for an absent clause
+with exactly one selected successor carrying the same enforcement. Its sole
+target and reason name that successor. Retained classifications and the
+existing unaccounted reason remain unchanged.
+
+Catalog validation rejects malformed or duplicate replacement lists with
+`catalog.clause.replaces.invalid`, a target still present anywhere in the
+catalog with `catalog.clause.replaces.present`, and competing claimants with
+`catalog.clause.replaces.duplicate`. The backend clause gained only its
+`replaces` field. The structural-retention contract checks the successor's
+Source Baseline enforcement and guidance, and the ADR contract changed only
+the requested sentence. The four new tests exercise adopter refresh,
+undeclared removal, mismatched enforcement, and all three validation codes.
+
+Focused evidence from this turn (Go commands used
+`GOCACHE=/private/tmp/roundfix-task06-cache` and `rtk proxy`):
+
+- Before implementation, `go test ./internal/baseline -run
+  '^(TestStandardTypeScriptStructuralClauseRetention|TestADRLifecycleContract)$'
+  -count=1` exited 1. The removed clause was `unaccounted` and missing from the
+  selected catalog; the ADR contract required the old sentence.
+- After the final source edits, `go test ./internal/baseline -run
+  '^(TestARemovedSourceClauseIsReplacedByItsDeclaredSuccessor|TestAnUndeclaredRemovalStaysUnaccounted|TestAReplacementWithOtherForceStaysUnaccounted|TestClauseReplacementDeclarationsAreValidated|TestStandardTypeScriptStructuralClauseRetention|TestADRLifecycleContract)$'
+  -count=1` exited 0.
+- `make baseline-digests` regenerated catalog snapshots and plan goldens through
+  the sanctioned update paths. A final second invocation exited 0 with
+  `changed:false`. An intermediate JSON layout edit changed the raw catalog
+  identity; regeneration from the final bytes repaired the stale expectations
+  exposed by the first incremental run. No pin or golden was hand-edited.
+- The authorized `go run -buildvcs=false ./cmd/roundfix baseline update --repo .
+  --no-skills --yes --format text` exited 0 and updated only the Setup Manifest's
+  catalog digest. Its second invocation exited 0 with `File changes: 0` and
+  verified idempotence. The first sandboxed apply attempt could not create its
+  Git-private transaction directory; the authorized retry with host access
+  succeeded. No rendered guide, Source Baseline corpus/index, other task, or
+  Task Graph was changed.
+- `git -c core.fsmonitor=false diff --check` exited 0.
+
+Acceptance evidence:
+
+| Criterion | Evidence and remaining Daemon check |
+| --- | --- |
+| Whole Baseline package, including the two original failures | The final `make verify-incremental` run reported `ok roundfix/internal/baseline` (78.676s). The six focused tests also exited 0. Authored Verification remains Daemon-owned. |
+| Removing the declaration breaks the positive adopter test | `go test -overlay /private/tmp/task06-mutation-overlay.json ./internal/baseline -run '^TestARemovedSourceClauseIsReplacedByItsDeclaredSuccessor$' -count=1` exited 1. The temporary overlay removed `replaces` from the test's catalog copy before planning; the positive assertion reported `action_required` and `1 unaccounted clause(s): rule.backend.boundary-contracts`. Repository source remained unchanged. |
+| Public update exits 0 | The authorized apply and second refresh above both exited 0; the second proposed zero file changes. The exact unconfirmed JSON command in Verification was not run and remains for the Daemon. |
+
+Follow-up outside this slice: the final `make verify-incremental` exited 2
+because `TestBaselineUpdateFleetSweep/structural-clauses-missing` in
+`internal/cli/baseline_update_test.go:686` still expects the backend boundary
+paragraph twice (`occur 1 times ... want 2`). This contradicts task_01's
+intentional duplicate removal. That CLI fixture was not edited. The initial
+incremental run also encountered sandbox process-table refusals in two
+force-stop tests; those failures cleared in the final run with host access.
+The CLI fixture mismatch was the only final incremental failure.
+
+Task status is unchanged. No authored Verification command, commit, push, or
+pull request was performed. This Result records implementation evidence for
+Daemon Verification and settlement, without assigning a terminal Task verdict.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260930T184402Z_6aa3e4970df8def4`
+- Source commit: `981aabafbc705f7c435daa84be36446fa8fe87c6`
