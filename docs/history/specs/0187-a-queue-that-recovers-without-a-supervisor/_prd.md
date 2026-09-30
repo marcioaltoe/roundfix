@@ -1,9 +1,12 @@
 ---
 spec: 0187-a-queue-that-recovers-without-a-supervisor
-status: active
+status: archived
 created: 2026-09-30
 surfaces: [backend, cli, docs]
+archived: "2026-09-30"
+source_slug: 0187-a-queue-that-recovers-without-a-supervisor
 ---
+
 
 # A queue that recovers without a supervisor
 
