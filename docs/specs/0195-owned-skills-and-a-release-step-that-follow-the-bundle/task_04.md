@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0195-owned-skills-and-a-release-step-that-follow-the-bundle
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -78,3 +78,20 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - ADR-0143, ADR-0186, ADR-0189
 
 ## Result
+
+Implemented the mandatory pre-Pull-Request skills-and-guides check in the
+release runbook, including the six fixed-text items and the pointer from
+"Cutting a release" before tagging. Appended the release-clause sentence and
+raised the `core`, `guide.agent-instructions`, and `rule.core.git-delivery`
+versions. Regenerated the managed Baseline artifacts and added the runbook and
+embedded/golden clause contract tests. The sanctioned owned-skill recorder ran
+successfully; the version record was already current, so it produced no diff.
+
+Focused evidence:
+
+- `make baseline-digests` passed.
+- `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text` applied and verified the managed refresh with `File changes: 2`; a second run verified idempotence with `File changes: 0`.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` passed.
+- The three new `docscontract` release-step tests passed, including the missing-test negative case.
+- `go test -count=1 ./internal/baseline -run '^TestTheReleaseClauseNamesTheSkillsAndGuidesCheck$'` passed for the embedded clause and formatter golden.
+- `git diff --check` passed. The task status remains daemon-owned.

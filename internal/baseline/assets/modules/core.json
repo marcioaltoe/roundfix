@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "core",
-  "version": 11,
+  "version": 12,
   "kind": "core",
   "title": "Universal agent baseline",
   "dependsOn": [],
@@ -293,7 +293,7 @@
   "supportingGuides": [
     {
       "id": "guide.agent-instructions",
-      "version": 11,
+      "version": 12,
       "path": "docs/agents/agent-instructions.md",
       "template": "template.guide.agent-instructions",
       "rules": [
@@ -542,7 +542,7 @@
     },
     {
       "id": "rule.core.git-delivery",
-      "version": 6,
+      "version": 7,
       "coverage": [
         "coverage.git-delivery"
       ],
@@ -575,7 +575,7 @@
         {
           "id": "clause.core.plan-the-release-first",
           "enforcement": "mandatory",
-          "guidance": "Release work starts with the read-only release plan before any changelog, version, tag, push, package, asset, or published-release mutation. A generic release request authorizes only a conclusive patch plan; minor, major, version-zero breaking, and manual classification outcomes require the maintainer decisions recorded in the repository's release runbook."
+          "guidance": "Release work starts with the read-only release plan before any changelog, version, tag, push, package, asset, or published-release mutation. A generic release request authorizes only a conclusive patch plan; minor, major, version-zero breaking, and manual classification outcomes require the maintainer decisions recorded in the repository's release runbook. Before the release Pull Request, confirm that the skills and guides the repository ships describe the behavior being released; the repository's release runbook owns that check."
         }
       ]
     },
