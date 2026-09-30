@@ -352,7 +352,10 @@ and the failing test name, then restores the code.
    skill text, task_03 (depends on: 2).
 4. Reference document, its contract test and the `.roundfixrc.yml` comment,
    task_04 (depends on: 2). It shares no file with task_03.
-5. Terminal QA, task_05 (depends on: 1, 2, 3, 4).
+5. An invocation override equal to a fallback swaps places with the
+   configured preferred, and the proof tests use explicit fixtures, task_06
+   (depends on: 3, 4).
+6. Terminal QA, task_05 (depends on: 1, 2, 3, 4, 5).
 
 ## Risks & Considerations
 
