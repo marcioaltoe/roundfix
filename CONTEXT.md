@@ -507,8 +507,8 @@ The check of a queued Spec against the refreshed default branch immediately befo
 _Avoid_: Initial validation, retry, approval check
 
 **Delivery Queue Limit**:
-A queue's fixed optional deadline or per-item retry allowance. It bounds new item starts or explicit retries without changing a Run Budget or an item already past `queued`.
-_Avoid_: Run Budget, concurrency, spending limit
+A queue's fixed optional deadline, per-item retry allowance or Queue Token Ceiling. It bounds new item starts or explicit retries without changing a Run Budget or an item already past `queued`.
+_Avoid_: Run Budget, concurrency
 
 **Pending Question**:
 The one operator decision presented for the lowest-position parked Delivery Queue item, with its blocker, answer and number of parked items waiting behind it. Only an explicit Delivery Retry or a new queue answers it.
@@ -517,6 +517,54 @@ _Avoid_: Warning, automatic recommendation, blocker list
 **Delivery Retry**:
 The explicit act that returns one parked Delivery Queue item to the stage supported by its recorded evidence and hands it to a live or newly started queue owner. It may perform Task Carry-Forward from every Run of the item's Spec, newest first, and is never automatic.
 _Avoid_: Resume Command, automatic retry, replay
+
+**Park Class**:
+The named reason a Delivery Queue item is parked — for example a prerequisite not yet merged, a Pull Request conflict, an environment-only QA partial or a check that failed twice outside the item's packages — shown with the next command that answers it (ADR-0192, ADR-0193).
+_Avoid_: Blocker text, error code
+
+**Prerequisite Spec**:
+A Spec another Spec names in its Task Graph as `requires`; the queue owner does not start the dependent item until each prerequisite is merged into the default branch (ADR-0193).
+_Avoid_: Queue order, dependency Task
+
+**Derived Path Declaration**:
+A Project Config entry naming a path pattern and the sanctioned command that regenerates it; a Pull Request conflict confined to declared derived paths is resolved by regeneration instead of parking (ADR-0192).
+_Avoid_: Generated file list, merge strategy
+
+**Evidence Snapshot**:
+The Daemon's record, written when a QA pass closes, of the inputs each carriable passing row observed at the audited head (ADR-0194).
+_Avoid_: QA cache, Agent-written evidence
+
+**Carried Row**:
+A QA matrix row a later pass keeps from the prior report because its Evidence Snapshot proves its inputs unmoved; it keeps its original provenance. Rows that read the repository Verification, the Pull Request or the commit range are never carried (ADR-0194, ADR-0195).
+_Avoid_: Skipped row, Task Carry-Forward
+
+**Carry Disposition**:
+The fixed-list outcome a QA pass records for every row of the prior report: carried, re-run as stale, re-run as always observed, or re-run because it did not pass (ADR-0195).
+_Avoid_: Row status, verdict
+
+**Delivery Convention**:
+A commit shape the delivery itself produces — the QA Report commit, the Daemon's status writes, the archive commit, an all-pending planning candidate — that the pre-PR reviewer is told about and never raises as a defect (ADR-0196).
+_Avoid_: Review exemption, ignore list
+
+**Reviewer Lineage**:
+The at-most-two review rounds of one delivery candidate, where round 2 reviews only the delta since round 1 with round 1's findings and dispositions, continuing the same Agent Session when the runtime can resume it (ADR-0197).
+_Avoid_: Review cache, third round
+
+**Turn Usage**:
+The token count an ACP adapter reports for one prompt of a Run, recorded per Task and summed per Run; a prompt without a report is recorded as unreported, never as zero (ADR-0198).
+_Avoid_: Cost estimate, spend
+
+**Usage Basis**:
+How a Turn Usage was counted: `turn` when the adapter's end-of-prompt count covers the whole turn, `request-sum` when Roundfix sums the adapter's per-request context readings (ADR-0198).
+_Avoid_: Pricing model
+
+**Reported Cost**:
+The spend an ACP adapter itself reports for a turn; Roundfix prints only reported cost and never prices tokens from a table (ADR-0198).
+_Avoid_: Estimated cost, price table
+
+**Queue Token Ceiling**:
+An optional Delivery Queue Limit: once the queue's recorded Turn Usage reaches it, the next item parks and retries are refused, while a running Task is never stopped (ADR-0199).
+_Avoid_: Run Budget, spending limit
 
 **Reprocess Command**:
 An explicit future command for revisiting selected Terminal Review Issues.
