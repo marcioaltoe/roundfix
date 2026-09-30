@@ -1,9 +1,12 @@
 ---
 spec: 0188-a-grant-that-authorizes-delivery-without-governed-paths
-status: active
+status: archived
 created: 2026-09-30
 surfaces: [backend, cli, docs]
+archived: "2026-09-30"
+source_slug: 0188-a-grant-that-authorizes-delivery-without-governed-paths
 ---
+
 
 # A grant that authorizes delivery without Governed Paths
 

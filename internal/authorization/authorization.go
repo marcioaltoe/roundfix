@@ -386,9 +386,10 @@ func splitAuthorizationFrontmatter(content []byte) ([]byte, []byte, error) {
 }
 
 type authorizationFrontmatterPresence struct {
-	status     bool
-	granted    bool
-	grantedNil bool
+	status             bool
+	granted            bool
+	grantedNil         bool
+	pathsEmptySequence bool
 }
 
 func parseAuthorizationFrontmatter(
@@ -463,7 +464,8 @@ func parseAuthorizationFrontmatter(
 			if err != nil {
 				return record, fieldShapeReason("paths", err)
 			}
-			record.Paths = append([]string(nil), values...)
+			presence.pathsEmptySequence = node.Kind == yaml.SequenceNode && len(node.Content) == 0
+			record.Paths = append([]string{}, values...)
 		}
 	}
 	if node, ok := fields["operations"]; ok && node.Tag != "!!null" {
@@ -598,7 +600,7 @@ func classifyAuthorizationRecord(
 			"consuming must name at least one Spec or direct action",
 		)
 	}
-	if len(record.Paths) == 0 {
+	if len(record.Paths) == 0 && !(record.Role == AuthorizationRoleSpec && presence.pathsEmptySequence) {
 		return record, authorizationReason(
 			AuthorizationReasonPaths,
 			"paths",

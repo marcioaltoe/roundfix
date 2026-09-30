@@ -879,14 +879,6 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 				bounded[clean] = true
 			}
 		}
-		if len(bounded) == 0 {
-			addMechanicalFinding(result, MechanicalFinding{
-				Code: CodeMechanicalAuthPaths, File: read.Source.Path, Line: 1,
-				Detail: "authorization declares no exact bounded files",
-				Fix:    "Declare every authorized repository-relative path in the authorization artifact.",
-			})
-			continue
-		}
 		regenerated, err := mechanicalRegenerationOutputs(projectRepoRoot, authorization.Record.Regenerations)
 		if err != nil {
 			return fmt.Errorf("resolve sanctioned regeneration outputs from %q: %w", read.Source.Path, err)

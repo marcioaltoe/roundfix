@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0188-a-grant-that-authorizes-delivery-without-governed-paths
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -60,3 +60,56 @@ complexity: medium
 - ADR-0179; ADR-0130
 
 ## Result
+
+Implemented presence-aware authorization parsing for an explicit empty YAML
+sequence. The reader records that syntax separately from null and omission,
+returns a non-nil empty `Paths`, and grants it only for a Spec-contained
+record. The existing status, grant date, action, consumer and operations
+validation remains ahead of the narrowed path refusal.
+
+Removed the mechanical audit's obsolete unconditional empty-bounds finding.
+Its existing changed-path loop now treats the empty bounded map normally:
+every Governed Path is outside the grant, while ordinary files do not create
+an authorization finding. No other bounded-path consumer changed.
+
+Added isolated reader, Delivery Plan/start and mechanical-audit regression
+suites over temporary repositories and homes. Added the exact empty-list rule
+to the user guide and canonical Roundfix skill, then ran `make skills-sync` to
+regenerate the mirror.
+
+Focused-check evidence:
+
+- Reader cases for explicit empty, null, absent and legacy records passed with
+  `go test -count=1 -run` against `./internal/authorization`.
+- Delivery Plan approval/refusal and Delivery start acceptance passed with
+  `go test -count=1 -run` against `./internal/cli`.
+- Mechanical governed-path refusal and ordinary-file acceptance passed with
+  `go test -count=1 -run` against `./internal/speccheck`.
+- `make skills-sync` exited zero, the required sentence is present in the
+  guide, canonical skill and mirror, and `cmp` confirms both skill copies are
+  byte-identical.
+- `make verify-incremental` first reached the test suite but its force-stop
+  integration tests could not read the sandboxed process table. The same
+  command rerun with process-table permission exited zero, including format,
+  vet, all Go tests, skill checks and the build.
+
+Acceptance evidence:
+
+- The reader regression asserts a granted explicit empty sequence, a non-nil
+  empty `Paths`, and the listed `implement` operation.
+- Separate negative tests preserve the exact `paths` refusal code, field and
+  message for null, absent and legacy empty-sequence records.
+- The Delivery Plan workspace fixture reports the explicit empty grant as
+  approved, reports the null form as `authorization refused: paths`, and
+  reaches the injected Delivery start owner exactly once for the grant.
+- Real temporary Git histories show a `Makefile` Task commit produces one
+  `QA-AUTH-PATHS` Task finding and an ordinary-file-only commit produces none.
+- The guide and synchronized skills carry the required sentence verbatim.
+
+The Daemon-owned Verification command was not rerun in this Agent turn.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/speccheck/mechanical.go`

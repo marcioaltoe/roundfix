@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0188-a-grant-that-authorizes-delivery-without-governed-paths
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
