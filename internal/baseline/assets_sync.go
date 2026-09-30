@@ -542,6 +542,14 @@ func buildAssetsSyncSnapshot(
 	if len(findings) != 0 {
 		return nil, findings
 	}
+	for _, skill := range current.Skills {
+		if skill.Source.Type != "repo" {
+			continue
+		}
+		if _, yielded := seenNames[skill.Name]; !yielded {
+			skills = append(skills, skill)
+		}
+	}
 	relative, err := filepath.Rel(checkout.root, sourcePath)
 	if err != nil || !safeRelative(filepath.ToSlash(relative)) {
 		return nil, []AssetsSyncFinding{assetsSyncInvalidFinding(

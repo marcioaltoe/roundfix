@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
-  "catalogDigest": "sha256:e4c90d3cd831bdfefcb2d4c978798bc037b313243ca59008f55158d1f4430c14",
+  "catalogDigest": "sha256:77800e2fc96db31805fc701400004e1ad75627fb3883da30e84e36d985145d4a",
   "modules": [
     "core",
     "context-workflow",
@@ -66,7 +66,7 @@
       "module": "core",
       "template": "template.guide.skill-dispatch",
       "version": "0.0.1",
-      "digest": "33440338e9fa5a6733984bd91bcffa8b56774eddffac94a0d56702b82489522f"
+      "digest": "3a344322cf40d95934740e8b99a4b6275c3e22d69121ef3474b62a8510e14cff"
     },
     {
       "id": "root.core",

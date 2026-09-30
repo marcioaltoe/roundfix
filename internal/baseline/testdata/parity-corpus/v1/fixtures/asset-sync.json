@@ -22,11 +22,11 @@
   },
   "managedEntryLedger": [
     {
-      "digest": "c8c532dd040cee997e4c1af94c49982609d7216b8b1ea5bb6626f80b306ee305",
+      "digest": "ed1633038367370f7ba23fa156f79a12a8d72907b4345afb767de547d2e0b71c",
       "id": "go-cli"
     },
     {
-      "digest": "ab3fc21db5bc71c427bff1ccb860fdd3ca6f706e3d739f21a2e90a0a19f4c623",
+      "digest": "a45a7fce0b83e3ff387d4d22725722d36cd95e291e7dd8576ce3773544620da8",
       "id": "rust-cli"
     },
     {
@@ -53,7 +53,7 @@
             ]
           }
         ],
-        "digest": "c8c532dd040cee997e4c1af94c49982609d7216b8b1ea5bb6626f80b306ee305",
+        "digest": "ed1633038367370f7ba23fa156f79a12a8d72907b4345afb767de547d2e0b71c",
         "id": "go-cli",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -448,6 +448,15 @@
               "type": "github"
             },
             "treeDigest": "4dba8fcd6c64a6909be84bec2d8bff3094dd230e8f3f49c738632a3cd1b7b3fe"
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "roundfix",
+            "path": "skills/06-review-repair/roundfix",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
           }
         ],
         "source": {
@@ -475,7 +484,7 @@
             ]
           }
         ],
-        "digest": "ab3fc21db5bc71c427bff1ccb860fdd3ca6f706e3d739f21a2e90a0a19f4c623",
+        "digest": "a45a7fce0b83e3ff387d4d22725722d36cd95e291e7dd8576ce3773544620da8",
         "id": "rust-cli",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -826,6 +835,15 @@
               "type": "github"
             },
             "treeDigest": "9a58217a96d981daad54a185a2a41ebf8b395ee427de650ced275e01a204f60a"
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "roundfix",
+            "path": "skills/06-review-repair/roundfix",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
           }
         ],
         "source": {

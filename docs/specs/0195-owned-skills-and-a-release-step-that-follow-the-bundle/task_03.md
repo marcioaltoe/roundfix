@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0195-owned-skills-and-a-release-step-that-follow-the-bundle
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -80,3 +80,44 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - ADR-0081, ADR-0149, ADR-0189
 
 ## Result
+
+Implemented this Task's slice for Daemon Verification. Task status and the
+declared Verification command remain Daemon-owned; no repository commit,
+push, Pull Request, Task Graph edit or other Task edit was made.
+
+The Go and Rust setups now append the exact Roundfix entry, with the same
+entry appended in the parity fixture's key order. `autonomous-work` moves
+from module version 11 to 12, requires `roundfix` and carries the fixed
+dispatch trigger. Asset sync appends omitted recorded `repo` entries after
+upstream entries in their recorded order, preserving the complete entries;
+omitted entries with other source types still disappear.
+
+### Acceptance evidence
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| All three setups list Roundfix; a missing entry is reported | `TestEverySetupListsTheRoundfixSkill` and `TestASetupWithoutTheRoundfixSkillIsReported` passed. Before the source edits, the membership test reported `go-cli` and `rust-cli`. A structural comparison against HEAD confirmed all previous entries and minimum versions remain unchanged and `typescript-bun.json` is unchanged. |
+| Every profile dispatches Roundfix; this repository's guide carries the trigger | `TestEveryProfileDispatchesTheRoundfixSkill` passed for `go-cli-tui`, `rust-cli` and `standard-typescript-monorepo`, inspecting every embedded profile's selected module dispatch entries. Before the source edits all three lacked the trigger. The public managed refresh generated `trigger.autonomous-work.roundfix` in `docs/agents/skill-dispatch.md` (line 88). |
+| Sync keeps an omitted owned skill and drops an omitted external skill | `TestAssetSyncKeepsAnOwnedSkillTheUpstreamListOmits` passed against a committed temporary upstream list, asserting upstream-first order and unchanged Roundfix and custom-owned entries. Before the sync edit it returned only the upstream entry. `TestAssetSyncStillDropsAnExternalSkillTheUpstreamListOmits` passed independently for omitted `github` and `local` entries. Both tests create their upstream source in temporary directories. |
+| Asset-sync compatibility remains intact | `TestAssetsSyncCompatibilityMatchesMaintainedPythonContract` passed against the regenerated fixture. |
+| Second managed refresh is a no-op | The second confirmed public refresh exited 0, reported `File changes: 0`, `approved Baseline Plan is already applied` and `Idempotence: verified`. |
+
+### Commands and outcomes
+
+All Go commands used `GOCACHE=/tmp/roundfix-task03-gocache`.
+
+- `go test -buildvcs=false ./skills -run '^TestAuthorialSkillSync$' -update -count=1`: exit 0.
+- `make baseline-digests`: exit 0; regenerated setup digests, formatter dispatch golden, Standard TypeScript profile pin, catalog snapshots, plan goldens, parity fixture digests and parity manifest through the sanctioned workflow. No derived value or guide was hand-edited.
+- `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`: first sandbox attempt refused Git-private transaction-directory creation. Retried with filesystem permission: exit 0, two managed files updated. Repeated after apply: exit 0, zero file changes.
+- `go test -buildvcs=false ./internal/baseline -run '^(TestEverySetupListsTheRoundfixSkill|TestASetupWithoutTheRoundfixSkillIsReported|TestEveryProfileDispatchesTheRoundfixSkill|TestAssetSyncKeepsAnOwnedSkillTheUpstreamListOmits|TestAssetSyncStillDropsAnExternalSkillTheUpstreamListOmits|TestAssetsSyncCompatibilityMatchesMaintainedPythonContract)$' -count=1 -v`: exit 0; all six tests passed.
+- `rtk make verify-incremental`: initial attempt failed because the concurrent managed refresh changed repository bytes during suite-guard checks and the sandbox denied process-table access to process-stop tests. Reran with required permission after all source and guide writes stopped: exit 0; formatting, vet, package tests, skill synchronization/checks and CLI build passed.
+- Structural scope checks and `git -c core.fsmonitor=false diff --check`: passed. Module rules, clauses and guide versions remain unchanged. Changed-file postflight found only this Task's Context paths, its two new tests and its own Task file.
+
+The complete declared `## Verification` command was not run. Daemon
+Verification and settlement remain pending; there are no implementation
+follow-ups outside this slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260930T162501Z_8ec6b68021df9cef`
+- Source commit: `e30d995ab648a0e661047ab9295ccd805621a672`

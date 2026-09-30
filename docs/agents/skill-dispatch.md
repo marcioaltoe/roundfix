@@ -84,6 +84,8 @@ Individual skill triggers:
   - `trigger.context-workflow.qa-gate`: Running final Spec QA after implementation Tasks complete.
 - `review`:
   - `trigger.core.review`: Reviewing a change against repository standards and its originating contract.
+- `roundfix`:
+  - `trigger.autonomous-work.roundfix`: Running, inspecting, recovering or delivering work with the `roundfix` command line, or reading its output.
 - `setup-context-driven`:
   - `trigger.context-workflow.setup-context-driven`: Auditing or applying the Context-Driven Baseline for first adoption, or refreshing an adopted repository with `roundfix baseline update`.
 - `systematic-debugging`:
