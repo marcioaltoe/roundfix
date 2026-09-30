@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0189-profiles-that-follow-the-current-models
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -57,3 +57,34 @@ complexity: medium
 - ADR-0180
 
 ## Result
+
+- Refreshed the reference with the 2026-09-30 current snapshot: all ten Agent
+  Work Categories list their Preferred Selection and Fallback Chain in
+  `runtime / model / effort` form with the TechSpec rationales. The current
+  catalog, picker efforts, adapter floors, published evidence, retirements,
+  and local session measurement are recorded from the TechSpec Reference data;
+  published figures include source links and the unavailable figures say `not
+  found`. The prior document body remains below `Historical sections — not
+  current selection advice`.
+- Added the `docscontract` test
+  `TestModelSelectionReferenceStatesTheShippedSnapshot`. It reads
+  `config.ModelRecommendationSnapshotVersion`, iterates
+  `config.AllWorkCategories()`, and reads each profile from
+  `config.RecommendedProfile` before checking the reference selections.
+- Updated only the `.roundfixrc.yml` comment sentence that described the
+  reference as an old snapshot.
+- Focused evidence:
+  - `gofmt -w internal/docscontract/model_selection_test.go` completed.
+  - `GOCACHE=/tmp/roundfix-task04-gocache go test -count=1 -tags docscontract -run '^TestModelSelectionReferenceStatesTheShippedSnapshot$' ./internal/docscontract` passed after restoration.
+  - Negative proof: changing the reference marker to `Updated 2026-09-29.`
+    made the same focused test exit 1 with `reference missing snapshot marker
+    "Updated 2026-09-30."`; the document was restored and the focused test
+    passed again.
+  - `git diff --check` exited 0.
+- The authored Verification command and Task status were left for the Daemon;
+  no commit, push, or pull request was performed.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260930T215154Z_eb58c6882d4f3968`
+- Source commit: `1abd52516e1991bd5447d374d46e9598571ead85`
