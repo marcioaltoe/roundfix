@@ -348,6 +348,9 @@ and its reasons, points to `roundfix deliver plan`, and records no queue. A
 strict Spec-check finding appears in the plan but does not refuse start; the
 queue revalidates that Spec against its own starting main.
 
+A Spec that changes no Governed Path records `paths: []`; that explicit empty
+list grants the listed operations and bounds no Governed Path.
+
 Use `--max-duration <duration>` with a positive Go duration to set the queue
 deadline, and use `--max-retries <n>` with an integer of at least `1` to limit
 retries per item. Omitted limits are recorded as `none`. Start and status print
