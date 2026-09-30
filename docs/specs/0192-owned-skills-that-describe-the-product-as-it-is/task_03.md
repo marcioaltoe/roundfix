@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0192-owned-skills-that-describe-the-product-as-it-is
-status: pending
+status: completed
 type: docs
 complexity: high
 ---
@@ -82,3 +82,39 @@ complexity: high
 - [_techspec.md](_techspec.md) — The authoring skills; The structured question form
 - `_prd.md` → Goal 1; Core Feature 3; Core Feature 5; Core Feature 7; Success Metric 3; Success Metric 4; Success Metric 5
 - `_techspec.md` → Testing Approach 3; Testing Approach 4; Build Order 3
+
+## Result
+
+Implemented the authoring contract for the canonical `write-prd`, `write-techspec`, and `write-tasks` skills and their templates. Delivered Specs now have the approved authorization record language, required delivery operations, `paths: []` rule, backend-guide fallback, coverage and unreachable-acceptance guidance, structured question example, delivery lifecycle, citation check, gate reopening rule, foreign-OS build rule, Daemon-owned status wording, and requested version increments.
+
+Focused checks run:
+
+- Required phrase scan passed for every acceptance phrase named by the task.
+- Template placeholder scan passed: each PRD and TechSpec template has exactly four `<applicable | not applicable>` and four `Source: \`docs/agents/` placeholders, and retains `express maintainer authorization`, `bounded files`, and `no protected tooling mutation`.
+- Version scan passed for `write-prd` and `write-techspec` at `0.0.3` and `write-tasks` at `0.0.4`.
+- Stale `D) Other` scan passed; canonical/mirror comparisons passed for all three skills; `git diff --check` passed.
+- `rtk make skills-sync` completed and rewrote the distributed paths: `skills/write-prd/SKILL.md`, `skills/write-prd/references/prd-template.md`, `skills/write-techspec/SKILL.md`, `skills/write-techspec/references/techspec-template.md`, `skills/write-tasks/SKILL.md`, and `skills/write-tasks/references/task-template.md`.
+- `rtk make baseline-digests` completed with `changed: false`; no digest path was rewritten.
+
+Acceptance evidence:
+
+- Authorization and `paths: []`: phrase scan passed in both authoring skills and both templates.
+- Unreachable Acceptance: PRD template contains the optional section with `criterion`, `reason`, and `satisfied-by`.
+- Coverage Map: TechSpec template requires one line per PRD goal, user story, Core Feature, and Success Metric.
+- Delivery order, citation support, reopen rule, operations preflight, and foreign-OS verification: required phrase scan passed in `write-tasks`.
+- Daemon-owned status: task-template phrase scan passed.
+- No owned authoring skill shows `D) Other`; mirror comparisons passed.
+
+The Daemon still owns the task status and must run the declared Verification section before settlement.
+
+Verification Feedback repair:
+
+- Attempt 1 reported `mirror differs: skills/write-tasks` from the diagnostic artifact. The canonical `write-tasks` skill had been adjusted after the prior sync.
+- Re-ran `rtk make skills-sync`; all three canonical/mirror directory comparisons now pass.
+- Re-ran `rtk make baseline-digests`; it completed with `changed: false`.
+- Ran `git diff --check`; it passed. The declared Verification command was not rerun, per the daemon feedback contract.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260930T144240Z_33c18e8a522f7217`
+- Source commit: `091249f0dae9bccba2749319f31713f82c00561d`

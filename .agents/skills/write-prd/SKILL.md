@@ -5,10 +5,10 @@ argument-hint: "<feature description, or nothing after a grilling/brainstorm ses
 metadata:
   category: planning
   tags: [prd, product, requirements, workflow, documentation]
-  version: 0.0.2
+  version: 0.0.3
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.2
+version: 0.0.3
 ---
 
 # Write PRD
@@ -55,6 +55,7 @@ guides before clarification:
 - `docs/agents/domain.md` owns identifier guidance and routes active ADR
   discovery.
 - `docs/agents/backend.md` owns authentication and HTTP policy.
+- A repository without that guide cites the guide that owns the policy for its surfaces.
 - `docs/agents/agent-instructions.md` owns universal Normative Clauses,
   including tooling authority.
 - `docs/agents/spec-routing.md` owns the Spec workflow contract.
@@ -73,13 +74,12 @@ Ask **one question per message**, multiple-choice whenever the options are enume
 ```text
 Which failure behavior should an expired import have?
 
-A) Retry automatically up to 3 times  ← suggested: matches the sync retry ADR
-B) Fail fast and notify the user
-C) Park it for manual review
-D) Other — describe
+A) Retry automatically up to 3 times (Recommended) — preserves the sync retry behavior.
+B) Fail fast and notify the user — surfaces the failure immediately without another attempt.
+C) Park it for manual review — keeps the import available for an operator to resolve.
 ```
 
-Always state a suggested default and the one-line reason. Cover, in order of importance: goals and success criteria, functional scope, non-goals, constraints, risks. Stop asking when the remaining unknowns don't change what gets built.
+Ask through the structured question tool the session exposes. Without one, show the same single question in chat and accept a custom answer. Always state a suggested default and the one-line reason. Cover, in order of importance: goals and success criteria, functional scope, non-goals, constraints, risks. Stop asking when the remaining unknowns don't change what gets built.
 
 ### 4. Record decisions
 
@@ -189,6 +189,8 @@ all four rows state applicable or not applicable with a reason; every row cites
 an operative `docs/agents/` source; and any protected tooling mutation records
 express maintainer authorization plus bounded files. Keep authorization out of
 frontmatter.
+
+Every Spec a Delivery Queue delivers carries an approved `_authorization.md`, with or without protected tooling. The record's `operations` list names `implement`, `commit`, `push`, `pull_request` and `merge`; a Spec that changes no Governed Path records `paths: []`.
 
 Then run the checker against the stage that produced the artifact:
 
