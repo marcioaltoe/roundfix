@@ -548,7 +548,11 @@ roundfix profiles validate [--category <category>] [--json]
 ```
 
 `profiles show` renders the effective Preferred Selection, Fallback Chain, and
-dated advisory recommendations. Official model identifiers and advisory rank
+dated advisory Recommended Profile: a Preferred Selection followed by its
+Fallback Chain, with roles, source date, and rationales. Each of the ten
+categories has its own profile. The Recommended Profile never selects, routes,
+or writes configuration; interactive configure shows the same advisory rows.
+Official model identifiers and advisory rank
 do not prove that a tuple works in the current environment.
 
 `profiles configure` merges a fragment by Agent Work Category. Every category
@@ -578,7 +582,7 @@ preserves the target bytes.
 `profiles validate` is read-only, deduplicates exact tuples across category
 references, proves them through disposable ACP Runtime Sessions, sends no
 Agent prompt, and closes every Session on success or error. JSON schemas are
-`roundfix/profiles/v1`, `roundfix/profiles-configure/v1`, and
+`roundfix/profiles/v2`, `roundfix/profiles-configure/v1`, and
 `roundfix/profiles-validate/v1`.
 A proof whose setup times out is retried once. A second timeout is classified
 `temporary`; rerun the command when load drops because the configured profile

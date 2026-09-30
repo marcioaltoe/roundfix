@@ -85,6 +85,10 @@
       {
         "version": "0.0.5",
         "digest": "9c61c29cc4aa46ff526e33988e65f8d5e46c3fd72a38b73603e0fa251d13db4d"
+      },
+      {
+        "version": "0.0.6",
+        "digest": "b12f406d81069f92001022514caf85b70373c7088606b5b9a6f7e38eb1354e89"
       }
     ],
     "setup-context-driven": [

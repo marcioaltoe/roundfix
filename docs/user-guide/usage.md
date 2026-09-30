@@ -173,7 +173,7 @@ the same way, to
 ### Inspect profiles
 
 `profiles show` is read-only and prints the effective source, inherited source,
-Preferred Selection, fallback order, and five advisory recommendations:
+Preferred Selection, fallback order, and the advisory Recommended Profile:
 
 ```bash
 roundfix profiles show
@@ -181,11 +181,12 @@ roundfix profiles show --category backend
 roundfix profiles show --category backend --json
 ```
 
-JSON uses schema `roundfix/profiles/v1`. Recommendations come from a
-2026-08-07 five-entry snapshot. Each row includes benchmark, result, average
-cost, source date, rationale, and `category_specific: false`. They are advisory
-only: the list is not category-specific proof, not automatic routing input, and
-never mutates User Config or Project Config.
+JSON uses schema `roundfix/profiles/v2`. Each Agent Work Category has a
+Recommended Profile dated 2026-09-30: its Preferred Selection at rank 1 with
+role `preferred`, followed by its Fallback Chain with role `fallback`.
+Each row includes the selection, source date, and rationale. The Recommended
+Profile never selects, routes, or writes User Config or Project Config.
+Interactive configure shows the same rows as advisory guidance.
 
 ### Configure profiles
 

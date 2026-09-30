@@ -318,8 +318,8 @@ policy and performs no additional access-mode proof.
 Required profiles are `general`, `backend`, `frontend`, `qa`, and `review`.
 Optional Task Type profiles `data`, `infra`, `docs`, `test`, and `chore`
 inherit the effective `general` profile when absent. `roundfix profiles show`
-labels that inherited recommendation source instead of duplicating stored
-config.
+labels that inherited effective profile source instead of duplicating stored
+config; its Recommended Profile remains specific to the requested category.
 
 Built-in required profiles use these official identifiers:
 
@@ -335,7 +335,7 @@ identifiers. Those are the values the
 Claude adapter advertises, with the bracketed context suffix removed as the
 capability parser removes it — the adapter advertises Opus 5.5 as `opus[1m]`.
 Identifier validity does not prove operational availability. Recommendations are advisory
-rankings only; the effective adapter in each environment must complete Exact
+profiles only; the effective adapter in each environment must complete Exact
 Agent Selection Proof before Roundfix can use a tuple. This exact proof is the
 operational readiness authority. Custom model strings remain accepted verbatim
 for forward-compatible proof and are never added to an allowlist. A dated
@@ -398,10 +398,12 @@ load, proof, Session creation, or Run mutation. An explicitly empty
 multiple Task or QA categories, text and JSON output include a cross-category
 warning.
 
-Recommendations shown by `profiles show` are a dated advisory snapshot
-(`2026-08-07`) with five entries per category, benchmark/result/cost evidence,
-rationale, and `category_specific: false`. Recommendation rank never changes
-configuration, proof order, Preferred Selection, Fallback Chain, or routing.
+The Recommended Profile shown by `profiles show` is dated `2026-09-30`.
+Each of the ten categories has a Preferred Selection and Fallback Chain with
+a rationale for each selection. JSON schema `roundfix/profiles/v2` lists
+these rows in order with `preferred` and `fallback` roles, the selection,
+source date, and rationale. Interactive configure prints the same advisory
+rows. The Recommended Profile never selects, routes, or writes configuration.
 
 Automatic fallback is pre-prompt only. Roundfix records and shows the fallback
 notification before activating the next configured tuple. Once

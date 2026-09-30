@@ -1519,13 +1519,12 @@ type profilesShowTestResponse struct {
 }
 
 type profilesShowTestProfile struct {
-	Category             string                           `json:"category"`
-	Source               string                           `json:"source"`
-	InheritedFrom        string                           `json:"inherited_from"`
-	RecommendationSource string                           `json:"recommendation_source"`
-	Preferred            profilesShowTestSelection        `json:"preferred"`
-	Fallbacks            []profilesShowTestSelection      `json:"fallbacks"`
-	Recommendations      []profilesShowTestRecommendation `json:"recommendations"`
+	Category        string                           `json:"category"`
+	Source          string                           `json:"source"`
+	InheritedFrom   string                           `json:"inherited_from"`
+	Preferred       profilesShowTestSelection        `json:"preferred"`
+	Fallbacks       []profilesShowTestSelection      `json:"fallbacks"`
+	Recommendations []profilesShowTestRecommendation `json:"recommendations"`
 }
 
 type profilesShowTestSelection struct {
@@ -1536,14 +1535,11 @@ type profilesShowTestSelection struct {
 
 type profilesShowTestRecommendation struct {
 	Category          string                    `json:"category"`
+	Role              string                    `json:"role"`
 	Rank              int                       `json:"rank"`
 	Selection         profilesShowTestSelection `json:"selection"`
-	Benchmark         string                    `json:"benchmark"`
-	ResultPercent     float64                   `json:"result_percent"`
-	AverageCostUSD    float64                   `json:"average_cost_usd"`
 	SourceAsOf        string                    `json:"source_as_of"`
 	Rationale         string                    `json:"rationale"`
-	CategorySpecific  bool                      `json:"category_specific"`
 	UnavailableReason string                    `json:"unavailable_reason,omitempty"`
 }
 
@@ -1574,8 +1570,8 @@ profiles:
 		t.Fatalf("expected no diagnostics on stderr, got %q", stderr.String())
 	}
 	response := decodeProfilesShowResponse(t, stdout.String())
-	if response.Schema != "roundfix/profiles/v1" {
-		t.Fatalf("schema = %q, want roundfix/profiles/v1", response.Schema)
+	if response.Schema != "roundfix/profiles/v2" {
+		t.Fatalf("schema = %q, want roundfix/profiles/v2", response.Schema)
 	}
 	if len(response.Profiles) != 1 {
 		t.Fatalf("len(profiles) = %d, want 1", len(response.Profiles))
@@ -1592,33 +1588,25 @@ profiles:
 	if len(profile.Fallbacks) != 1 || profile.Fallbacks[0] != wantFallback {
 		t.Fatalf("fallbacks = %+v, want [%+v]", profile.Fallbacks, wantFallback)
 	}
-	if profile.RecommendationSource != "backend" {
-		t.Fatalf("recommendation_source = %q, want backend", profile.RecommendationSource)
-	}
-	if len(profile.Recommendations) != 5 {
-		t.Fatalf("len(recommendations) = %d, want 5", len(profile.Recommendations))
+	if len(profile.Recommendations) != 2 {
+		t.Fatalf("len(recommendations) = %d, want 2", len(profile.Recommendations))
 	}
 	first := profile.Recommendations[0]
 	if first.Rank != 1 || first.Category != "backend" {
 		t.Fatalf("first recommendation identity = %+v, want backend rank 1", first)
 	}
-	if first.Selection != (profilesShowTestSelection{Runtime: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"}) {
+	if first.Selection != (profilesShowTestSelection{Runtime: "codex", Model: "gpt-6.1-sol", ReasoningEffort: "high"}) {
 		t.Fatalf("first recommendation selection = %+v", first.Selection)
 	}
-	if first.Benchmark != "DeepSWE v1.1" || first.ResultPercent != 69 || first.AverageCostUSD != 3.47 || first.SourceAsOf != roundconfig.ModelRecommendationSnapshotDate {
+	if first.Role != "preferred" || first.SourceAsOf != roundconfig.ModelRecommendationSnapshotVersion || first.Rationale == "" {
 		t.Fatalf("first recommendation evidence = %+v", first)
-	}
-	if first.CategorySpecific {
-		t.Fatalf("category_specific = true, want false")
-	}
-	if !strings.Contains(first.Rationale, "complex repository changes") {
-		t.Fatalf("first recommendation rationale missing backend context: %q", first.Rationale)
 	}
 	if profile.Preferred.Model == first.Selection.Model {
 		t.Fatalf("configured preferred must remain primary; recommendation rank one replaced it")
 	}
 }
 
+// Keep the recorded test identity; optional categories now have their own recommendations.
 func TestProfilesShowOptionalCategoryReportsGeneralRecommendationSource(t *testing.T) {
 	t.Parallel()
 	withCLIWorkspace(t)
@@ -1641,14 +1629,11 @@ func TestProfilesShowOptionalCategoryReportsGeneralRecommendationSource(t *testi
 	if profile.InheritedFrom != "general" {
 		t.Fatalf("inherited_from = %q, want general", profile.InheritedFrom)
 	}
-	if profile.RecommendationSource != "general" {
-		t.Fatalf("recommendation_source = %q, want general", profile.RecommendationSource)
+	if len(profile.Recommendations) != 2 {
+		t.Fatalf("len(recommendations) = %d, want 2", len(profile.Recommendations))
 	}
-	if len(profile.Recommendations) != 5 {
-		t.Fatalf("len(recommendations) = %d, want 5", len(profile.Recommendations))
-	}
-	if profile.Recommendations[0].Category != "data" || profile.Recommendations[0].Selection.Model != "gpt-5.6-sol" {
-		t.Fatalf("optional recommendation should label data while reusing general order, got %+v", profile.Recommendations[0])
+	if profile.Recommendations[0].Category != "data" || profile.Recommendations[0].Selection.Model != "gpt-6.1-sol" {
+		t.Fatalf("optional recommendation should label data with its own profile, got %+v", profile.Recommendations[0])
 	}
 }
 
@@ -2808,9 +2793,9 @@ func TestInvocationProfileOverrideAppliesAcrossCategoriesPreservesFallbacksAndWa
 func TestProfilesShowReportsUnavailableRecommendationWithoutReordering(t *testing.T) {
 	t.Parallel()
 	unavailableSelection := roundconfig.AgentSelection{
-		Runtime:         "codex",
-		Model:           "gpt-5.6-terra",
-		ReasoningEffort: "max",
+		Runtime:         "claude",
+		Model:           "opus",
+		ReasoningEffort: "high",
 	}
 	response, err := buildProfilesShowResponseWithAvailability(roundconfig.Builtin(), []roundconfig.WorkCategory{roundconfig.CategoryBackend}, map[roundconfig.AgentSelection]string{
 		unavailableSelection: "adapter proof rejected tuple",
@@ -2822,21 +2807,21 @@ func TestProfilesShowReportsUnavailableRecommendationWithoutReordering(t *testin
 		t.Fatalf("len(profiles) = %d, want 1", len(response.Profiles))
 	}
 	recommendations := response.Profiles[0].Recommendations
-	if len(recommendations) != 5 {
-		t.Fatalf("len(recommendations) = %d, want 5", len(recommendations))
+	if len(recommendations) != 2 {
+		t.Fatalf("len(recommendations) = %d, want 2", len(recommendations))
 	}
 	for index, recommendation := range recommendations {
 		if recommendation.Rank != index+1 {
 			t.Fatalf("rank at index %d = %d, want %d", index, recommendation.Rank, index+1)
 		}
 	}
-	if recommendations[0].Selection.Model != "gpt-5.6-sol" || recommendations[1].Selection.Model != "opus" || recommendations[2].Selection.Model != "gpt-5.6-terra" {
+	if recommendations[0].Selection.Model != "gpt-6.1-sol" || recommendations[1].Selection.Model != "opus" {
 		t.Fatalf("recommendation order changed: %+v", recommendations)
 	}
-	if recommendations[2].UnavailableReason != "adapter proof rejected tuple" {
-		t.Fatalf("unavailable_reason = %q, want proof rejection", recommendations[2].UnavailableReason)
+	if recommendations[1].UnavailableReason != "adapter proof rejected tuple" {
+		t.Fatalf("unavailable_reason = %q, want proof rejection", recommendations[1].UnavailableReason)
 	}
-	if recommendations[0].UnavailableReason != "" || recommendations[1].UnavailableReason != "" {
+	if recommendations[0].UnavailableReason != "" {
 		t.Fatalf("unexpected unavailable marker outside rejected tuple: %+v", recommendations)
 	}
 }
@@ -2845,15 +2830,12 @@ func TestModelRecommendationsUseOfficialCatalogModels(t *testing.T) {
 	t.Parallel()
 	for _, category := range roundconfig.AllWorkCategories() {
 		t.Run(string(category), func(t *testing.T) {
-			recommendations, source, ok := roundconfig.ModelRecommendations(category)
+			recommendations, ok := roundconfig.ModelRecommendations(category)
 			if !ok {
 				t.Fatalf("ModelRecommendations(%q) missing", category)
 			}
-			if len(recommendations) != 5 {
-				t.Fatalf("len(recommendations) = %d, want 5", len(recommendations))
-			}
-			if source == "" {
-				t.Fatal("recommendation source is empty")
+			if len(recommendations) != 2 {
+				t.Fatalf("len(recommendations) = %d, want 2", len(recommendations))
 			}
 			seenModels := map[string]bool{}
 			for index, recommendation := range recommendations {
@@ -2870,14 +2852,11 @@ func TestModelRecommendationsUseOfficialCatalogModels(t *testing.T) {
 				if !modelCatalogContainsSelection(recommendation.Selection) {
 					t.Fatalf("recommendation uses non-catalog official model: %+v", recommendation.Selection)
 				}
-				if recommendation.Benchmark == "" || recommendation.SourceAsOf != roundconfig.ModelRecommendationSnapshotDate {
+				if recommendation.SourceAsOf != roundconfig.ModelRecommendationSnapshotVersion {
 					t.Fatalf("recommendation has incomplete source evidence: %+v", recommendation)
 				}
 				if recommendation.Rationale == "" {
 					t.Fatalf("recommendation rationale is empty: %+v", recommendation)
-				}
-				if recommendation.CategorySpecific {
-					t.Fatalf("category_specific = true, want false for initial snapshot")
 				}
 			}
 		})
@@ -2976,7 +2955,7 @@ func assertProfilesShowTextContainsProfile(t *testing.T, output string, profile 
 		"Profile source: " + profile.Source,
 		"Profile inherited from: " + emptyDashForTest(profile.InheritedFrom),
 		"Preferred Selection: " + selectionStringForTest(profile.Preferred),
-		"Recommendation source: " + profile.RecommendationSource,
+		"Recommended profile (snapshot " + roundconfig.ModelRecommendationSnapshotVersion + "):",
 	} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("profiles text missing %q in:\n%s", want, output)
@@ -2989,7 +2968,7 @@ func assertProfilesShowTextContainsProfile(t *testing.T, output string, profile 
 		}
 	}
 	for _, recommendation := range profile.Recommendations {
-		want := fmt.Sprintf("%d. %s — %s %s, average cost $%.2f, source %s, category_specific=%t", recommendation.Rank, selectionStringForTest(recommendation.Selection), recommendation.Benchmark, formatPercentForTest(recommendation.ResultPercent), recommendation.AverageCostUSD, recommendation.SourceAsOf, recommendation.CategorySpecific)
+		want := fmt.Sprintf("%d. %s %s", recommendation.Rank, recommendation.Role, selectionStringForTest(recommendation.Selection))
 		if !strings.Contains(output, want) {
 			t.Fatalf("profiles text missing recommendation %q in:\n%s", want, output)
 		}
@@ -3005,13 +2984,6 @@ func emptyDashForTest(value string) string {
 		return "—"
 	}
 	return value
-}
-
-func formatPercentForTest(value float64) string {
-	if value == float64(int(value)) {
-		return fmt.Sprintf("%d%%", int(value))
-	}
-	return fmt.Sprintf("%.1f%%", value)
 }
 
 func modelCatalogContainsSelection(selection roundconfig.AgentSelection) bool {

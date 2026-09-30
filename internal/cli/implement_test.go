@@ -7617,8 +7617,8 @@ func assertMacroFrontendProfileShow(t *testing.T, response macroProfilesShowResp
 	if len(profile.Fallbacks) != 1 || profile.Fallbacks[0].Runtime != "claude" || profile.Fallbacks[0].Model != "claude-fable-5" || profile.Fallbacks[0].ReasoningEffort != "xhigh" {
 		t.Fatalf("unexpected frontend fallback chain: %#v", profile.Fallbacks)
 	}
-	if len(profile.Recommendations) != 5 {
-		t.Fatalf("expected exactly five recommendations, got %#v", profile.Recommendations)
+	if len(profile.Recommendations) != 2 {
+		t.Fatalf("expected exactly two recommendations, got %#v", profile.Recommendations)
 	}
 	seen := map[string]bool{}
 	for index, recommendation := range profile.Recommendations {

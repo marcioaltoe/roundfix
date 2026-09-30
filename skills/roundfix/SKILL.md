@@ -4,10 +4,10 @@ description: Use Roundfix to plan releases with the read-only Release Plan Comma
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.0.5
+  version: 0.0.6
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.0.5
+version: 0.0.6
 ---
 
 # Roundfix
@@ -925,11 +925,13 @@ roundfix profiles configure --scope project --file profiles.yml --dry-run --json
 roundfix profiles validate --json
 ```
 
-`profiles show` is read-only and returns `roundfix/profiles/v1` JSON with the
+`profiles show` is read-only and returns `roundfix/profiles/v2` JSON with the
 effective source, inherited source, Preferred Selection, ordered fallbacks, and
-five recommendations. Recommendations are dated `2026-08-07`, include
-benchmark/result/cost/rationale evidence, set `category_specific: false`, and
-are advisory only. They never route, prove availability, or mutate config.
+the Recommended Profile. Each of the ten Agent Work Categories has one dated
+`2026-09-30`: its Preferred Selection at rank 1 with role `preferred`, then its
+Fallback Chain with role `fallback`. Rows include the selection, source date,
+and rationale. Interactive configure prints the same advisory rows. The
+Recommended Profile never selects, routes, proves availability, or writes config.
 
 `profiles configure` prepares the candidate in memory, validates it, and
 exact-proves each distinct Preferred Selection and fallback before

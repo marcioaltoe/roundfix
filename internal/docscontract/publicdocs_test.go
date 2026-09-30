@@ -25,6 +25,7 @@ import (
 	"roundfix/internal/agent"
 	"roundfix/internal/baseline"
 	"roundfix/internal/cli"
+	"roundfix/internal/config"
 	"roundfix/internal/spec"
 )
 
@@ -561,8 +562,8 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 			"gpt-5.6-terra",
 			"sonnet",
 			"claude-fable-5",
-			"2026-08-07",
-			"category_specific: false",
+			config.ModelRecommendationSnapshotVersion,
+			"Recommended Profile",
 			"agent_work_started",
 			"defaults.agent",
 			"runtimes",
@@ -649,7 +650,7 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 	}
 
 	for _, want := range []string{
-		"roundfix/profiles/v1",
+		"roundfix/profiles/v2",
 		"roundfix/profiles-configure/v1",
 		"roundfix/profiles-validate/v1",
 		"notification-first",
