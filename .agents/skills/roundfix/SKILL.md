@@ -2755,6 +2755,29 @@ in the same Agent Session. Exit `75` uses the one exclusive retry protocol and
 does not create Agent feedback. Any declared formatter, test, Skill
 synchronization, or build failure blocks settlement.
 
+### Settlement Checks
+
+Settlement Checks apply to every non-QA Task in a Task Graph that has an
+authored QA gate Task. They run in this order when the Daemon settles the Task:
+
+1. `settlement check: spec consistency` checks for new Spec Consistency
+   findings in the Task's tree.
+2. The repository Verification runs at settlement when
+   `verification.repository_at_settlement` is enabled.
+3. `settlement check: authorization` checks the prospective Task commit
+   against the frozen authorization record.
+
+A failed check returns its diagnostics as Verification Feedback for the one
+repair turn. If the final attempt still fails, the Task settles `failed`. The
+`verification.repository_at_settlement` switch turns off only the repository
+Verification at settlement; it does not turn off either in-process check.
+
+The checks inspect one Task's tree. In a parallel Wave, they do not include
+changes from sibling Tasks that have not been integrated into that tree. A
+repository that was already red on entry keeps the existing precondition-repair
+limit: only the Tasks named by the frozen authorization record may proceed with
+the required repository Verification.
+
 A Task commit includes Project Config only when the frozen Spec authorization
 bounds `.roundfixrc.yml`; otherwise the Task fails with `Project Config outside
 the Spec's authorization`. Batch and QA Report commits never stage Project

@@ -387,6 +387,10 @@ _Avoid_: Flaky test, generic non-zero exit, log-matched infrastructure error
 The failure diagnostics returned to an Agent Session after the Daemon runs Verification. Passing Verification produces no Agent feedback.
 _Avoid_: Full verification output, test log, progress stream
 
+**Settlement Check**:
+A gate fact the Daemon checks for a non-QA Task before it settles in a Task Graph with an authored QA gate. The checks cover Spec Consistency, the repository Verification at settlement, and authorization of the prospective Task commit.
+_Avoid_: QA settlement, archive check, post-Run check
+
 **Repeated Failure**:
 A Verification failure whose normalised diagnostic signature matches an earlier failure of the same Work Item. The signal names the earlier Run and attempt in the Run record, Run Event Stream, and Verification Feedback.
 _Avoid_: New failure, duplicate error, retried failure

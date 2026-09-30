@@ -1001,6 +1001,30 @@ Verification Capacity again for its final Daemon attempt. Any formatter, test,
 Skill synchronization, or build failure in the declared gate blocks
 settlement.
 
+#### Settlement Checks
+
+For every non-QA Task in a Task Graph with an authored QA gate, the Daemon runs
+three checks as part of the Task's settlement attempt, in this order:
+
+1. `settlement check: spec consistency` checks for Spec Consistency findings
+   introduced by the Task.
+2. The repository Verification runs at settlement.
+3. `settlement check: authorization` checks the prospective Task commit against
+   the frozen authorization record.
+
+A failed check returns as Verification Feedback for the single repair turn. A
+final failure settles the Task `failed`. An in-process failure uses the reason
+`Settlement check failed: <label>: <first diagnostic line>; diagnostics: <path>`;
+a failure from the repository Verification keeps the existing Verification
+failure reason.
+
+The `verification.repository_at_settlement` User Config or Project Config
+switch turns off only the repository Verification at settlement. It does not
+turn off the Spec Consistency or authorization checks. Settlement Checks inspect
+the Task's own tree, so a parallel Wave is not checked as one integrated tree;
+the existing precondition-repair limit also applies when the repository is red
+on entry.
+
 During final QA, the mechanical authorization audit reads each governed Task
 commit's grant at its fork point first. When that grant does not cover the
 commit, the audit can use the grant the Task ran under: the record in the Task
