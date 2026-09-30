@@ -25,7 +25,7 @@ A Delivery Retry carries forward the proved Tasks of the item's Runs. When a lat
    - `git -C <worktree> cherry-pick <amendment> …`
    - `roundfix deliver retry <slug>`
 3. MUST leave both texts byte-identical to today's without amendments, including when a Task commit touched a moved input.
-4. MUST NOT run any of the printed commands, change what carry-forward proves, or change the exit code of a refused retry.
+4. MUST POSIX single-quote every printed argument that comes from state (the worktree path, the Run ID, commit IDs and the slug) through one helper, so a path with spaces or shell metacharacters stays one literal argument. It MUST NOT run any of the printed commands, change what carry-forward proves, or change the exit code of a refused retry.
 5. MUST rename or remove no top-level test, change no exported function signature, and put the new tests in `internal/cli/deliver_retry_amendment_test.go` over real Git repositories and the package's Run Database fixtures.
 6. MUST describe the Delivery Retry refusal and its recovery commands in `docs/user-guide/commands.md` and the Delivery queue section of `.agents/skills/roundfix/SKILL.md` with the phrase `amended by`, then run `make skills-sync`.
 

@@ -124,18 +124,28 @@ git -C <worktree> cherry-pick <amendment> …
 roundfix deliver retry <slug>
 ```
 
+Every printed argument that comes from state (the worktree path, the Run ID,
+commit IDs and the slug) is POSIX single-quoted through one helper, so a path
+with spaces or shell metacharacters is copied as one literal argument. Roundfix
+only prints these commands and never runs them.
+
 Without amendments, both texts are unchanged.
 
 ### Owner warning
 
-After the strict findings, `Revalidate` calls
-`spec.ResolveAuditorEvidence(ctx, workDir, "HEAD", app.Auditor())`.
+After the strict findings, `Revalidate` resolves the item's starting main,
+the immutable commit the item branch was created from. That is the commit
+revalidation already checks against. It is never the item's moving `HEAD` after
+the item has commits: on a retry it is
+`git merge-base refs/remotes/<remote>/<default> HEAD`, falling back to the local
+default branch. It then calls
+`spec.ResolveAuditorEvidence(ctx, workDir, <starting main>, app.Auditor())`.
 
 - It records a warning only when `SelfAudit` is true and `Ancestry` is
-  `app.AncestryOlder`, and `git diff --name-only <build> HEAD -- cmd internal
+  `app.AncestryOlder`, and `git diff --name-only <build> <starting main> -- cmd internal
   go.mod go.sum` in `workDir` lists at least one path.
 - It then sets `OwnerWarning` to `owner-older-than-main: owner build
-  <build[:12]> predates starting main <HEAD[:12]>`.
+  <build[:12]> predates starting main <starting main[:12]>`.
 - A Git error in the diff leaves the warning empty and never fails
   revalidation.
 

@@ -119,11 +119,16 @@ version (`go 1.26` in `go.mod`), so no dependency changes.
 2. **Root containment.** New `internal/baseline/history_citations_root_test.go`
    over a real temporary Git repository. A package-level test hook,
    `citationBeforeOpen func(relative string)`, is nil in production and called
-   after the pre-open check and before the open.
+   after the pre-open check and before the open. A second hook,
+   `citationOpenResult func(relative string, err error)`, is also nil in
+   production and is called with the result of every `openCitationFileNoFollow`.
    - The race test sets the hook to replace a tracked directory with a
      symbolic link to an outside directory that holds a file citing a
      relocated path under the same relative name. It asserts that no finding
-     names that citation and that the outside file was never opened.
+     names that citation and that the outside file was never opened: the
+     open result the second hook observes for that path is an error from the
+     `os.Root` refusing the escape, never a successful open that a later check
+     discards.
    - A second test proves that an unraced repository still reports its
      citations.
 

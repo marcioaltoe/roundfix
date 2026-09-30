@@ -15,10 +15,10 @@ A Delivery Queue owner is the `roundfix` binary that ran `deliver start`. On 202
 ## Requirements
 
 1. MUST add `OwnerWarning string` to `delivery.Revalidation` in `internal/delivery/engine.go`.
-2. MUST make `commandDeliveryWorkflow.Revalidate` in `internal/cli/deliver_revalidate.go` call `spec.ResolveAuditorEvidence(ctx, workDir, "HEAD", app.Auditor())` after the strict findings. It sets `OwnerWarning` to `owner-older-than-main: owner build <build[:12]> predates starting main <HEAD[:12]>` only when all of these hold:
+2. MUST make `commandDeliveryWorkflow.Revalidate` in `internal/cli/deliver_revalidate.go` resolve the item's immutable starting main (the commit the item branch was created from; on a retry `git merge-base refs/remotes/<remote>/<default> HEAD`, falling back to the local default branch, never the moving `HEAD`) and call `spec.ResolveAuditorEvidence(ctx, workDir, <starting main>, app.Auditor())` after the strict findings. It sets `OwnerWarning` to `owner-older-than-main: owner build <build[:12]> predates starting main <HEAD[:12]>` only when all of these hold:
    - `SelfAudit` is true;
    - `Ancestry` is `app.AncestryOlder`;
-   - `git diff --name-only <build> HEAD -- cmd internal go.mod go.sum` in `workDir` lists at least one path.
+   - `git diff --name-only <build> <starting main> -- cmd internal go.mod go.sum` in `workDir` lists at least one path.
 
    A Git error in that diff MUST leave the warning empty and never fail revalidation.
 3. MUST make `advanceItem` join a non-empty `OwnerWarning` into `item.Warning`, after any `premise-changed` text and separated by `; `. It MUST log it the way `premise-changed` is logged and never park or stop for it.
@@ -33,6 +33,7 @@ A Delivery Queue owner is the `roundfix` binary that ran `deliver start`. On 202
 - [ ] Add a test for each acceptance criterion, each negative case separate.
 
 ## Acceptance Criteria
+- [ ] An item retried after it gained commits compares the owner build with its starting main, not with the item's current `HEAD`.
 
 - [ ] A starting main that changed `internal/` after the build commit yields the warning, with both commits named.
 - [ ] A starting main that changed only `docs/`, a build commit equal to the starting main, and a build commit absent from the repository each yield no warning.

@@ -23,7 +23,7 @@ The Relocation Citation scan in `internal/baseline/history_citations.go` checks 
 3. MUST keep the pre-open `lstatTrackedCitationPath` check, the post-open uncached re-check, the `os.SameFile` comparisons, the binary, oversize and FIFO handling, and every finding unchanged.
 4. MUST declare a package-level test hook `citationBeforeOpen func(relative string)` in `history_citations.go`. It is nil in production, called after the pre-open check and immediately before the open, and assigned only by tests.
 5. MUST NOT edit `go.mod`, any governed file or any existing test file, and MUST NOT add a dependency. It MUST rename or remove no top-level test and change no exported function signature.
-6. MUST put the new tests in `internal/baseline/history_citations_root_test.go`, over real temporary Git repositories. The race test sets the hook to replace a tracked directory with a symbolic link to a directory outside the repository. That outside directory holds a file under the same relative name citing a relocated path the in-repository file does not cite.
+6. MUST put the new tests in `internal/baseline/history_citations_root_test.go`, over real temporary Git repositories. The race test sets `citationBeforeOpen` to replace a tracked directory with a symbolic link to a directory outside the repository, and uses `citationOpenResult` (nil in production) to assert that the open of that path failed with the root's escape error instead of succeeding and being discarded later. That outside directory holds a file under the same relative name citing a relocated path the in-repository file does not cite.
 
 ## Subtasks
 
@@ -33,7 +33,7 @@ The Relocation Citation scan in `internal/baseline/history_citations.go` checks 
 
 ## Acceptance Criteria
 
-- [ ] A tracked directory swapped for a symbolic link to an outside directory between the check and the open yields no finding from the outside file's content.
+- [ ] A tracked directory swapped for a symbolic link to an outside directory between the check and the open yields no finding from the outside file's content, and the observed open of that path returns the root's escape error rather than succeeding.
 - [ ] An unraced repository still reports its citations, and the existing `TestRelocationCitations*` tests, including the FIFO and symbolic-link cases, pass unchanged.
 - [ ] The non-test code builds for `GOOS=windows`.
 
