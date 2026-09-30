@@ -23,7 +23,7 @@ This is an authorized tooling Task. It may change only the files in its Context,
    A second refresh MUST report `File changes: 0`. MUST NOT hand-edit a pin, a
    golden or a generated guide, and MUST keep the module file's existing
    formatting by replacing strings and version numbers in place.
-4. MUST make `deferred` a terminal Backlog status in `internal/speccheck/backlog.go`, and make `internal/spec/retirement.go` treat a `deferred` entry that carries a reason or a consuming Spec as retired. An active entry with `status: deferred` MUST be reported the way an active `declined` entry is, not as an unknown status.
+4. MUST make `deferred` a terminal Backlog status in `internal/speccheck/backlog.go`, and make `internal/spec/retirement.go` treat a `deferred` entry as retired only when it carries a non-empty reason, exactly as a `declined` entry. A consuming Spec without a reason does not retire it. An active entry with `status: deferred` MUST be reported the way an active `declined` entry is, not as an unknown status.
 5. MUST replace, in `docs/agents/specific-repository.md`, "Nothing under a `_archived` tree is ever validated." with "Nothing under `docs/history/` is ever validated as live work." and change nothing else in that file.
 6. MUST add `internal/baseline/adopter_neutral_clauses_test.go`, `internal/speccheck/backlog_deferred_test.go` and `internal/spec/retirement_deferred_test.go` with the tests the TechSpec's Testing Approach 4 names. The citation check MUST read every clause-level and rule-level guidance string of every module, and MUST match `ADR-` followed by a digit and `Spec ` followed by four digits.
 7. MUST leave every entry under `docs/history/backlog/` byte-identical, change no exported function signature, and rename or remove no top-level test.
@@ -40,7 +40,7 @@ This is an authorized tooling Task. It may change only the files in its Context,
 
 - [ ] `docs/agents/docs-layout.md` scopes "only `accepted` is active" to ADRs with lifecycle frontmatter and lists `deferred` in the Backlog contract.
 - [ ] No module guidance cites a Spec number or an ADR number, and a guidance string that cites one is reported.
-- [ ] A `deferred` Backlog Entry is terminal: with a reason it is retired, and left in `docs/backlog/` it is reported.
+- [ ] A `deferred` Backlog Entry is terminal: with a reason it is retired, without one it is not, even when it names a consuming Spec, and left in `docs/backlog/` it is reported.
 - [ ] A second managed refresh is a no-op.
 
 ## Context
