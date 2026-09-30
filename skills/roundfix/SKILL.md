@@ -383,10 +383,11 @@ A parked item keeps its worktree, and `deliver status` prints that path. On
 resume, Roundfix recreates a missing worktree from its recorded branch; if the
 branch is missing too, it parks the item as `item-worktree-missing` instead of
 replaying the stage. After an item merges, its worktree and local item branch
-are removed. Before that removal, Roundfix releases every terminal Run of the
-merged Spec that it can prove is represented at the recorded merged head. A
-Run it cannot prove stays in place, and `deliver status` names the Run and its
-reason in the item's cleanup warning.
+are removed. Before that removal, cleanup refreshes the default branch from the delivery remote.
+Roundfix then releases every terminal Run of the merged Spec that it can prove
+is represented at the recorded merged head. A Run it cannot prove stays in
+place, and `deliver status` names the Run and its reason in the item's cleanup
+warning.
 
 A start requires every named Spec's committed authorization to grant
 `implement`, `commit`, `push`, `pull_request`, and `merge`. If any Spec lacks

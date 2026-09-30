@@ -557,6 +557,38 @@ func (workflow *commandDeliveryWorkflow) resolveMergedReleaseEvidence(
 		}
 		return strings.TrimSpace(resolved), nil
 	}
+	remote := strings.TrimSpace(workflow.loaded.Config.Watch.PushRemote)
+	if remote == "" {
+		remote = "origin"
+	}
+	remoteExists := false
+	defaultBranch := preflight.DefaultBranch{}
+	if _, err := runner.RunGit(ctx, gitRoot, "remote", "get-url", remote); err == nil {
+		remoteExists = true
+		currentBranch, _ := runner.RunGit(ctx, gitRoot, "symbolic-ref", "--quiet", "--short", "HEAD")
+		defaultBranch = preflight.DetectDefaultBranch(ctx, gitRoot, strings.TrimSpace(currentBranch), runner)
+		if defaultBranch.Source == preflight.DefaultBranchUndetermined {
+			for _, branch := range []string{"main", "master"} {
+				if _, branchErr := runner.RunGit(
+					ctx,
+					gitRoot,
+					"show-ref",
+					"--verify",
+					"--quiet",
+					"refs/heads/"+branch,
+				); branchErr == nil {
+					defaultBranch = preflight.DefaultBranch{Name: branch, Source: preflight.DefaultBranchFromNameMatch}
+					break
+				}
+			}
+			if defaultBranch.Source == preflight.DefaultBranchUndetermined {
+				return "", "", errors.New("default branch is unknown")
+			}
+		}
+		if _, err := runner.RunGit(ctx, gitRoot, "fetch", remote, defaultBranch.Name); err != nil {
+			return "", "", fmt.Errorf("refresh default branch %q: %w", defaultBranch.Name, err)
+		}
+	}
 
 	resolvedMergeCommit, err := resolveCommit("merge commit", mergeCommit)
 	if err != nil {
@@ -567,34 +599,44 @@ func (workflow *commandDeliveryWorkflow) resolveMergedReleaseEvidence(
 		return "", "", err
 	}
 
-	currentBranch, _ := runner.RunGit(ctx, gitRoot, "symbolic-ref", "--quiet", "--short", "HEAD")
-	defaultBranch := preflight.DetectDefaultBranch(ctx, gitRoot, strings.TrimSpace(currentBranch), runner)
 	defaultHead := ""
-	if defaultBranch.Source == preflight.DefaultBranchUndetermined {
-		for _, branch := range []string{"main", "master"} {
-			candidate, candidateErr := resolveCommit(fmt.Sprintf("default branch %q", branch), "refs/heads/"+branch)
-			if candidateErr == nil {
-				defaultBranch = preflight.DefaultBranch{Name: branch, Source: preflight.DefaultBranchFromNameMatch}
-				defaultHead = candidate
-				break
+	if remoteExists {
+		defaultHead, err = resolveCommit(
+			fmt.Sprintf("default branch %q", defaultBranch.Name),
+			"refs/remotes/"+remote+"/"+defaultBranch.Name,
+		)
+		if err != nil {
+			return "", "", err
+		}
+	} else {
+		currentBranch, _ := runner.RunGit(ctx, gitRoot, "symbolic-ref", "--quiet", "--short", "HEAD")
+		defaultBranch = preflight.DetectDefaultBranch(ctx, gitRoot, strings.TrimSpace(currentBranch), runner)
+		if defaultBranch.Source == preflight.DefaultBranchUndetermined {
+			for _, branch := range []string{"main", "master"} {
+				candidate, candidateErr := resolveCommit(fmt.Sprintf("default branch %q", branch), "refs/heads/"+branch)
+				if candidateErr == nil {
+					defaultBranch = preflight.DefaultBranch{Name: branch, Source: preflight.DefaultBranchFromNameMatch}
+					defaultHead = candidate
+					break
+				}
+			}
+			if defaultHead == "" {
+				return "", "", errors.New("default branch is unknown")
 			}
 		}
+		var defaultErr error
 		if defaultHead == "" {
-			return "", "", errors.New("default branch is unknown")
+			defaultHead, defaultErr = resolveCommit(fmt.Sprintf("default branch %q", defaultBranch.Name), "refs/heads/"+defaultBranch.Name)
 		}
-	}
-	var defaultErr error
-	if defaultHead == "" {
-		defaultHead, defaultErr = resolveCommit(fmt.Sprintf("default branch %q", defaultBranch.Name), "refs/heads/"+defaultBranch.Name)
-	}
-	if defaultErr != nil && defaultBranch.Source == preflight.DefaultBranchFromOriginHead {
-		defaultHead, defaultErr = resolveCommit(
-			fmt.Sprintf("default branch %q", defaultBranch.Name),
-			"refs/remotes/origin/"+defaultBranch.Name,
-		)
-	}
-	if defaultErr != nil {
-		return "", "", defaultErr
+		if defaultErr != nil && defaultBranch.Source == preflight.DefaultBranchFromOriginHead {
+			defaultHead, defaultErr = resolveCommit(
+				fmt.Sprintf("default branch %q", defaultBranch.Name),
+				"refs/remotes/origin/"+defaultBranch.Name,
+			)
+		}
+		if defaultErr != nil {
+			return "", "", defaultErr
+		}
 	}
 	if _, err := runner.RunGit(
 		ctx,
