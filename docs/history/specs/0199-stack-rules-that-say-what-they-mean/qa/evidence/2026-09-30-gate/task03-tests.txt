@@ -1,0 +1,32 @@
+Command: ['go', 'test', '-count=1', '-v', '-run', '^(TestTheBackendAndFrontendGuidesSayWhatTheyGovern|TestTheProfileHTTPDefaultMatchesTheDecisionCatalog|TestAProfileHTTPDefaultThatDisagreesIsReported|TestStandardTypeScriptStructuralClauseRetention|TestEveryStatementOfTheHTTPDefaultNamesTheCatalogDefault|TestAStatementThatNamesAnotherHTTPDefaultIsReported)$', './internal/baseline', './internal/cli']
+Exit: 0
+=== RUN   TestStandardTypeScriptStructuralClauseRetention
+=== PAUSE TestStandardTypeScriptStructuralClauseRetention
+=== RUN   TestTheBackendAndFrontendGuidesSayWhatTheyGovern
+=== PAUSE TestTheBackendAndFrontendGuidesSayWhatTheyGovern
+=== RUN   TestTheProfileHTTPDefaultMatchesTheDecisionCatalog
+=== PAUSE TestTheProfileHTTPDefaultMatchesTheDecisionCatalog
+=== RUN   TestAProfileHTTPDefaultThatDisagreesIsReported
+=== PAUSE TestAProfileHTTPDefaultThatDisagreesIsReported
+=== CONT  TestStandardTypeScriptStructuralClauseRetention
+=== CONT  TestTheProfileHTTPDefaultMatchesTheDecisionCatalog
+=== CONT  TestTheBackendAndFrontendGuidesSayWhatTheyGovern
+=== CONT  TestAProfileHTTPDefaultThatDisagreesIsReported
+--- PASS: TestAProfileHTTPDefaultThatDisagreesIsReported (0.00s)
+--- PASS: TestTheProfileHTTPDefaultMatchesTheDecisionCatalog (0.01s)
+--- PASS: TestStandardTypeScriptStructuralClauseRetention (0.02s)
+--- PASS: TestTheBackendAndFrontendGuidesSayWhatTheyGovern (0.08s)
+PASS
+suiteguard: guard cost: measured 6702 paths; fingerprint took 235.741ms before and 204.892542ms after
+ok  	roundfix/internal/baseline	0.653s
+=== RUN   TestEveryStatementOfTheHTTPDefaultNamesTheCatalogDefault
+=== PAUSE TestEveryStatementOfTheHTTPDefaultNamesTheCatalogDefault
+=== RUN   TestAStatementThatNamesAnotherHTTPDefaultIsReported
+=== PAUSE TestAStatementThatNamesAnotherHTTPDefaultIsReported
+=== CONT  TestEveryStatementOfTheHTTPDefaultNamesTheCatalogDefault
+=== CONT  TestAStatementThatNamesAnotherHTTPDefaultIsReported
+--- PASS: TestAStatementThatNamesAnotherHTTPDefaultIsReported (0.00s)
+--- PASS: TestEveryStatementOfTheHTTPDefaultNamesTheCatalogDefault (0.01s)
+PASS
+suiteguard: guard cost: measured 6702 paths; fingerprint took 242.642208ms before and 185.486292ms after
+ok  	roundfix/internal/cli	0.616s

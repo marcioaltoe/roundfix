@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "typescript",
-  "version": 3,
+  "version": 4,
   "kind": "language-runtime",
   "title": "TypeScript repository guidance",
   "dependsOn": [
@@ -262,7 +262,7 @@
   "supportingGuides": [
     {
       "id": "guide.typescript-bun",
-      "version": 3,
+      "version": 4,
       "path": "docs/agents/typescript-bun.md",
       "template": "template.guide.typescript-bun",
       "rules": [
@@ -275,7 +275,7 @@
   "rules": [
     {
       "id": "rule.typescript.current-docs",
-      "version": 3,
+      "version": 4,
       "coverage": [
         "coverage.typescript",
         "coverage.research",
@@ -290,7 +290,7 @@
         {
           "id": "clause.typescript.keep-type-errors-visible",
           "enforcement": "mandatory",
-          "guidance": "Keep type errors visible and preserve the repository's package and lockfile workflow."
+          "guidance": "Keep TypeScript type errors visible; never hide one to make Verification pass."
         }
       ]
     },

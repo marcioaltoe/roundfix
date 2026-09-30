@@ -5,6 +5,9 @@
 This setup-owned guide defines portable backend rules. Repository-authored
 architecture and service contracts remain authoritative.
 
+These rules govern the repository's TypeScript backend workspace. A service or
+command written in another language follows its own guide.
+
 - **mandatory**: Keep blocking, network, process, database, and daemon boundaries explicit about ownership, cancellation, timeouts, and error reporting. Test the lowest real boundary that proves the repository-authored contract; do not invent authentication, database, or transport policy.
 
 - **mandatory**: Keep application use cases independent of HTTP request, response, router, and middleware types.

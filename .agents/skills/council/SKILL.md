@@ -4,10 +4,10 @@ description: Orchestrates multi-advisor council debates on high-impact architect
 metadata:
   category: discovery
   tags: [architecture, product, research, agents]
-  version: 0.0.2
+  version: 0.0.3
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.2
+version: 0.0.3
 ---
 
 # Council Facilitator
@@ -73,8 +73,24 @@ Facilitate a multi-advisor roundtable by dispatching archetype subagents, surfac
 
 **Step 7: Capture Decision (Standard Mode Only)**
 
-1. Ask the user: "Which path are you taking, and what triggers would cause you to revisit this decision?"
-2. Record the user's answer verbatim at the end of the output under `## Decision Captured`.
+Ask two questions, one at a time. First ask which path the user takes, using the
+two or three paths named by the synthesis as options:
+
+- `A) <recommended path from the synthesis> (Recommended)`
+- `B) <second path from the synthesis>`
+- `C) <third path from the synthesis>` when the synthesis names one
+
+After the first answer, ask which trigger reopens the decision, using two or
+three triggers drawn from the synthesis risks:
+
+- `A) <recommended trigger from the synthesis risks> (Recommended)`
+- `B) <second trigger from the synthesis risks>`
+- `C) <third trigger from the synthesis risks>` when the synthesis names one
+
+Add no `Other` option. Record both answers verbatim under `## Decision Captured`.
+
+The structured question tool supplies the custom answer itself; without such a
+tool, show the same single question in chat and accept a custom answer.
 
 ## Debate Protocols (enforced throughout)
 

@@ -4,10 +4,10 @@ description: "Turns exploration into decision-ready analysis: scores feature ide
 metadata:
   category: discovery
   tags: [product, research, requirements]
-  version: 0.0.2
+  version: 0.0.3
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.2
+version: 0.0.3
 ---
 
 # Business Analyst
@@ -40,15 +40,14 @@ When a discovery conversation hits an open decision, convert it into a decision-
 ```text
 Which retention lever should V1 optimize for?
 
-A) Weekly digest email  ← suggested: cheapest to ship, measurable in one cycle
+A) Weekly digest email (Recommended)  ← suggested: cheapest to ship, measurable in one cycle
 B) In-app streak mechanics
 C) Usage-based notifications
-D) Other — describe
 
 Assumptions to confirm: users check email weekly; digest infra exists.
 ```
 
-Rules: 2–4 options per decision; the suggestion always carries a one-line rationale; assumptions that would invalidate the suggestion are listed, not hidden. One decision per block — batching decisions produces rubber-stamping.
+Rules: 2–3 options per decision; the suggestion always carries a one-line rationale; assumptions that would invalidate the suggestion are listed, not hidden. One decision per block — batching decisions produces rubber-stamping. The structured question tool supplies the custom answer itself; without such a tool, show the same single question in chat and accept a custom answer.
 
 ## Mode 3 — Executive deliverables
 

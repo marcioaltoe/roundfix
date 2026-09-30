@@ -1,0 +1,28 @@
+command: ./bin/roundfix archive --help
+exit: 0
+Usage:
+  roundfix archive <slug>
+  roundfix archive <slug> --qa-override --approval <source> --reason <text>
+
+Archives a Spec after verifying either every Task is completed and the newest
+QA Report has verdict: pass (or a partial verdict covered only by declared
+Unreachable Acceptance), or a recorded supersession exists for a Spec without
+a Task Graph. Stamps archive metadata on the Task Graph path; a superseded Spec
+moves unchanged. The destination is the repository's default
+docs/history/specs/<slug>/ when the Spec Root is the built-in docs/specs,
+otherwise <spec-root>/_archived/<slug>/ beside the configured Spec Root.
+archive creates no Run and never pushes.
+
+The QA override requires an approval source and reason, still requires every
+non-QA Task completed, preserves the QA Task and Reports unchanged, and records
+the observed QA outcome and archived HEAD. It is refused when QA already
+qualifies for normal archive.
+
+Options:
+  --qa-override  Archive despite failed, missing, or unreadable QA evidence
+  --approval     Source of the maintainer authority for the override
+  --reason       Reason the unmet QA prerequisite is being waived
+
+Exit codes:
+  0  archived
+  2  Preflight Validation failed

@@ -218,6 +218,17 @@ skills: ok (<total> required: <owned> Roundfix-owned, <external> external)
 codex: ok
 ```
 
+## Config initialization
+
+```bash
+roundfix init [--scope <project|user>] [--force]
+```
+
+Creates Project Config at `<repo>/.roundfixrc.yml` or, with `--scope user`,
+User Config at `~/.roundfix/config.yml`. With no scope, the command asks and
+defaults to Project Config. It checks whether the destination already exists;
+`--force` permits overwriting it.
+
 ## Pre-PR review
 
 Run the configured reviewer over the current candidate with:
@@ -674,6 +685,34 @@ never executes them. It also never installs dependencies, connects to live
 infrastructure, follows unsafe links, mutates nested instruction carriers, or
 lets ACP proposals authorize writes.
 
+Re-check Repository Capability evidence without changing the repository:
+
+```text
+roundfix baseline capabilities check [--profile <id>] [--repo <path>] [--format <text|json>]
+```
+
+This reads local Repository Capability evidence through the evaluator and
+divergence renderer Baseline planning uses. With no `--profile`, it resolves
+the current Baseline Profile from a valid Setup Manifest; no resolvable Profile
+is a named error. `--repo` defaults to the current directory and `--format`
+defaults to `text`; JSON uses `roundfix/baseline-capability-recheck/v1`.
+It resolves no decisions, writes no repository or journal bytes, executes no
+candidate or repository command, and uses no network. Exit `0` means no
+blocking divergence, `1` means output failure, `2` means invalid arguments,
+repository failure, or no resolvable Baseline Profile, and `3` means a blocking
+divergence.
+
+To create a repository-owned Baseline Profile from an embedded built-in source:
+
+```text
+roundfix baseline profile init --id <id> [--from <built-in-id>]
+```
+
+This reads allowed embedded entry IDs from the selected built-in Profile
+(`go-cli-tui` by default) and exclusively creates
+`.roundfix/baseline/profiles/<id>.json`. The required ID is lowercase. It
+does not compose profiles, copy assets, or accept executable or remote content.
+
 Use explicit maintenance operations only when the user placed them in scope:
 
 ```bash
@@ -1007,6 +1046,29 @@ Runs and `spec:<slug>` for Spec Runs. Terminal context adds
 `ROUNDFIX_REASON`, `ROUNDFIX_CONSOLE_LOG`, `ROUNDFIX_ATTACH_COMMAND`,
 `ROUNDFIX_REVIEW_ISSUES_KNOWN`, and `ROUNDFIX_NEXT_ACTION`. Set
 `notify.enabled: false` to disable outcome notifications entirely.
+
+## Run Window
+
+```bash
+roundfix window set <HH:MM|YYYY-MM-DDTHH:MM> [--force]
+roundfix window show
+roundfix window clear
+```
+
+These commands read the current repository's durable Run Window in the Run
+Database. The window bounds when an Implement Run may start;
+`budget.max_run_duration` bounds how long it may run after starting, with its
+allowance renewed at each Task settlement. The window does not apply to
+`fetch`, `resolve`, or `watch`.
+
+`roundfix window set` stores the next occurrence of a local `HH:MM` (tomorrow
+if it has passed today), or an absolute local `YYYY-MM-DDTHH:MM` cutoff. A
+past absolute instant is refused with exit `2`. An existing window is reported
+and preserved unless `--force` replaces it. `roundfix window show` writes
+nothing and prints the repository, cutoff, current time, and remaining duration,
+or reports that no window is set; either state exits `0`.
+`roundfix window clear` removes the stored window and reports whether one was
+set.
 
 ## Run storage retention
 
@@ -1495,8 +1557,8 @@ starts without duplicating the boundary event; terminal Runs replay and exit
 immediately with `0`.
 
 Default replay emits these public categories in journal cursor order:
-`task-status`, `batch`, `verification`, and `outcome`. `--filter` accepts a
-comma-separated subset of only those category names. Internal Run Event kinds,
+`task-status`, `batch`, `verification`, `outcome`, and `agent-selection`.
+`--filter` accepts a comma-separated subset of only those category names. Internal Run Event kinds,
 raw Agent payloads, command strings, and diagnostic paths are not filters.
 Internal Run Event kinds and raw Agent payloads are not projected.
 
@@ -2178,7 +2240,9 @@ archived Spec without owning the Run's terminal in the foreground. It composes
 the Implement, Attach, Settle, Stop, and Archive commands documented above.
 
 Follow one order per Spec: implement the graph including its authored gate,
-archive, open the Pull Request, watch until Clean, and merge.
+run the configured pre-PR review, archive on the branch, pass the repository
+gate, open the Pull Request, verify current-head checks, and merge. With
+pre-PR review set to `none`, the review is recorded as omitted.
 
 ADR-0091 keeps the authored QA gate before any Pull Request exists, while
 ADR-0080 lets environment-blocked rows pass with equivalent evidence. Spec
@@ -2305,32 +2369,43 @@ Per Spec, in order:
    roundfix implement --spec <slug> --detach
    ```
 
-   Appending a Task after the gate has reported invalidates that result at
-   the next load — the insertion is named, never silent. When a gate returns
-   several findings, close them together and let the gate re-run once. More
+   When a corrective Task is added as a dependency of a QA gate that already
+   settled `completed`, reopen the settled gate first with
+   `roundfix reopen --spec <slug>` before the next Run. A failed or pending
+   gate needs no reopen. When a gate returns several findings, close them
+   together and let the gate re-run once. More
    than two corrective Tasks generated by QA findings means the
    decomposition needs re-examining, not a third patch.
 
-5. **Archive and publish.** When every Task is completed and the newest QA
+5. **Review the candidate.** Run `roundfix review` under the configured
+   pre-PR review policy. With review enabled, require the selected provider's
+   complete current-candidate review and use `roundfix review dispose` to
+   record finding dispositions. With explicit `none`, record that review was
+   omitted; this does not waive QA or required checks.
+
+6. **Archive and publish.** When every Task is completed and the newest QA
    Report is acceptable under the one declared-acceptance eligibility policy —
    either `verdict: pass` with no disallowed blocked rows, or `partial` with
    only declared-unreachable unmet rows fully covered by the Spec's
    declarations —
-   run `roundfix archive <slug>` on the branch, then push and open the Pull
-   Request. An archive-eligible `partial` Report now settles the
-   terminal `qa` Task completed, because settlement applies the same
+   run `roundfix archive <slug>` on the branch, pass the repository gate,
+   then push and open the Pull Request. An archive-eligible `partial` Report
+   now settles the terminal `qa` Task completed, because settlement applies the same
    declared-acceptance policy archive applies. The declared-only case
    records the declarations' satisfying actions under `unproven`.
 
-6. **Resolve review.** `roundfix watch --source <review-source> --pr <n>
-   --until-clean`. Only a terminal Clean with no unresolved Review Issues
+7. **Resolve Pull Request feedback.** This applies only when the repository's
+   Review Source gives feedback on the Pull Request. Run
+   `roundfix watch --source <review-source> --pr <n> --until-clean`.
+   Only a terminal Clean with no unresolved Review Issues
    clears the Pull Request for merge. Reaching the configured round cap is not
    that signal: the cap can be exhausted while findings remain, so treat it as
    a stop and escalate with what is still open.
 
-7. **Merge and continue.** Before merging, confirm the exact commit that will
-   land: required checks pass on the current head, and the clean review result
-   covers that same commit rather than an earlier one. Review fixes move the
+8. **Merge and continue.** Before merging, confirm the exact commit that will
+   land: required checks pass on the current head and, when review is enabled,
+   its result covers that same commit rather than an earlier one. Require Clean
+   Pull Request feedback when the Review Source applies. Review fixes move the
    head, so a result from before them proves nothing about what merges. Then
    squash merge, delete the branch, sync the default branch,
    `roundfix reconcile`, rebuild any local binary, and start the next Spec.
@@ -2498,6 +2573,25 @@ integration pending — git merge --ff-only roundfix/run-<id>
 ```
 
 Review the Run Worktree before running it.
+
+## QA Report acceptance
+
+```bash
+roundfix qa-report accept <path>
+```
+
+Reads the selected QA Report and its Spec directory's declared-acceptance
+declarations, applying the shared archive and settlement eligibility policy.
+It writes no files and produces no stdout; exit status is the machine-readable
+result. Exit `0` means acceptable, `1` means missing, unreadable, or
+unacceptable, and `2` means a usage error. Read its usage through
+`roundfix qa-report --help`; `accept` has no `--help`.
+
+A `pending` verdict, a report with no QA row, and empty or duplicated front
+matter are refused. The pre-PR Pull Request row recorded as
+`blocked (environment: no open Pull Request)` with that row named in its
+provenance never decides a qualifying partial and needs no Unreachable
+Acceptance declaration.
 
 ## Supersede Command
 

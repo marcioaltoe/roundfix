@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "bun",
-  "version": 3,
+  "version": 4,
   "kind": "language-runtime",
   "title": "Bun runtime guidance",
   "dependsOn": [
@@ -35,7 +35,7 @@
   "supportingGuides": [
     {
       "id": "guide.bun",
-      "version": 2,
+      "version": 3,
       "path": "docs/agents/typescript-bun.md",
       "template": "template.guide.bun",
       "rules": [
@@ -48,7 +48,7 @@
   "rules": [
     {
       "id": "rule.bun.package-manager",
-      "version": 3,
+      "version": 4,
       "coverage": [
         "coverage.bun",
         "coverage.dependencies"
@@ -57,7 +57,7 @@
         {
           "id": "clause.bun.use-bun-owned-commands",
           "enforcement": "mandatory",
-          "guidance": "Use Bun-owned commands for dependency installation, scripts, tests, and lockfile updates."
+          "guidance": "Inside the Bun workspace, use Bun-owned commands for dependency installation, scripts, and lockfile updates, and run tests through the package's `test` script (`bun run test`), never through a bare runner such as `bun test`."
         },
         {
           "id": "clause.bun.verify-dependency-before-add",
@@ -72,13 +72,13 @@
         {
           "id": "clause.bun.prohibit-other-package-managers",
           "enforcement": "prohibited",
-          "guidance": "Do not substitute another package manager or hand-edit the lockfile."
+          "guidance": "Inside the Bun workspace, do not substitute another JavaScript package manager or runner (npm, pnpm, yarn, npx) or hand-edit the lockfile. A toolchain for another language in the same repository keeps its own package manager."
         }
       ]
     },
     {
       "id": "rule.bun.warning-free-verification",
-      "version": 1,
+      "version": 2,
       "coverage": [
         "coverage.bun",
         "coverage.verification"
@@ -87,7 +87,7 @@
         {
           "id": "clause.bun.block-warnings-when-profile-treats-them-as-errors",
           "enforcement": "mandatory",
-          "guidance": "When the selected TypeScript/Bun profile treats warnings as errors, every warning reported by Verification blocks completion."
+          "guidance": "When the repository's Verification treats warnings as errors, every warning it reports blocks completion."
         }
       ]
     }

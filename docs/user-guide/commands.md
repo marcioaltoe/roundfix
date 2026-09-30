@@ -122,11 +122,13 @@ node: ok
 acpx: ok
 adapter: ok (claude: command="npx -y @agentclientprotocol/claude-agent-acp@0.63.0"; package=@agentclientprotocol/claude-agent-acp; version=0.63.0 | codex: command="npx -y @agentclientprotocol/codex-acp@1.1.5"; package=@agentclientprotocol/codex-acp; version=1.1.5)
 profiles: ok (3 distinct tuples; 10 category references)
-skills: ok (39 required: 14 Roundfix-owned, 25 external)
+skills: ok (<required> required: <owned> Roundfix-owned, <external> external)
 residue: ok (no process residue found)
 storage: ok (nothing to reclaim; Runs reclaimable: 0; Run Database free bytes: 0)
 codex: ok
 ```
+
+The skills counts come from the repository's Repository Skill Set.
 
 A missing or outdated required skill, or an invalid required lock declaration,
 prints one sorted blocking line and makes Doctor exit `1`. Doctor still prints
@@ -505,6 +507,18 @@ Live and dry-run reports count only Runs that still hold Run Event Journal rows
 or an artifact directory. `--dry-run` lists that reclaimable set without
 deleting. Retention never deletes Active Runs, `runs` rows, active-run locks,
 or Review artifacts under the Spec Root.
+
+### storage report
+
+```bash
+roundfix storage report
+```
+
+Measures bytes and row counts by repository, state, table, and Artifact Root.
+It reads the machine-wide Run Database and recorded Artifact Roots from
+Roundfix Home. The report is read-only, accepts no flags, and needs no Git
+repository. It never migrates the database, locks for writes, or changes any
+byte.
 
 ### skills
 
@@ -907,7 +921,7 @@ the cutoff continues to its own terminal outcome.
 ### implement
 
 ```bash
-roundfix implement --spec <slug> [--qa] [--detach]
+roundfix implement --spec <slug> [--detach]
 ```
 
 Executes a Spec's Task Graph in a Run Worktree as one Run — spec Runs keep
@@ -919,8 +933,8 @@ Worktrees, and each completed Task creates one commit on the Run Branch. Both
 capacities apply only within this Implement Run; they do not coordinate other
 Runs, CI, or external processes. It resolves `specs.root` once from the user's
 checkout.
-`--qa` ends the Run with the qa-gate step; only a `pass` verdict lets the Run
-end Clean. `implement.auto_push: true` makes a Clean Run push its branch
+The gate is the Spec's authored terminal `qa` Task; no flag requests it.
+`implement.auto_push: true` makes a Clean Run push its branch
 upstream. Integration Pending, Unresolved, Failed, Stopped, and failing-QA
 Runs never push.
 
@@ -1119,6 +1133,24 @@ names them: their work may be swept into this commit. Settle creates no Run,
 writes no Run Event Journal entries, and never pushes; Task Worktree
 settlements integrate onto the Run Branch before the Run-level integration.
 
+### spec audit
+
+```bash
+roundfix spec audit <slug> [--format <text|json>]
+```
+
+Audits one active or archived Spec, reading its delivery state and surviving
+Git branches and worktrees. The report lists every surviving branch and
+worktree with its classification evidence and gives residue an exact reclaim
+command. It never changes Git state, the Run Database, or Spec artifacts.
+`--format` selects text (the default) or JSON output.
+
+Exit codes:
+
+- `0` — no residue or undelivered work.
+- `1` — residue or undelivered work found, or the audit could not run.
+- `2` — usage error or unknown Spec slug.
+
 ### archive
 
 ```bash
@@ -1132,7 +1164,8 @@ verdict. Declared-only means every unmet row is declared unreachable and fully
 covered by the Spec's `## Unreachable Acceptance` declarations. For that case,
 archive stamps the declarations' `satisfied-by` actions under `unproven` in
 `_prd.md`, so the archived record names what was never verified. It then moves
-`<specs.root>/<slug>/` to `<specs.root>/_archived/<slug>/`.
+`<specs.root>/<slug>/` to `docs/history/specs/<slug>/` for the built-in Spec
+Root, or to `<specs.root>/_archived/<slug>/` for any other configured root.
 
 A `pending` verdict is never accepted. A `pass` or otherwise-eligible `partial`
 that records no QA row is refused before archive changes the Spec.
@@ -1331,10 +1364,10 @@ or treats a missing path as proof.
 The contract uses the [Roundfix glossary](../../CONTEXT.md#language) and follows
 [ADR-0053](../adr/0053-terminal-run-worktree-reconciliation-is-proof-based.md)
 and
-[Spec 0038](../specs/_archived/0038-terminal-run-worktree-reconciliation/_prd.md).
+[Spec 0038](../history/specs/0038-terminal-run-worktree-reconciliation/_prd.md).
 Adjacent terminal-cleanup diagnostics remain traced through the
 [Stop Command](#stop) to the
-[detached-watch finding](../findings/_archived/2026-07-16-vortex-pr87-detached-watch-notification.md#4-cleanup-noise-appeared-before-the-actionable-failure).
+[detached-watch finding](../history/findings/2026-07-16-vortex-pr87-detached-watch-notification.md#4-cleanup-noise-appeared-before-the-actionable-failure).
 
 ## Run discovery and monitoring
 
@@ -1530,8 +1563,8 @@ authorizes owner reclamation.
 The terminology and behavior trace to the
 [Roundfix glossary](../../CONTEXT.md#language),
 [ADR-0052](../adr/0052-run-completion-is-compare-and-set.md),
-[Spec 0037](../specs/_archived/0037-terminal-outcome-integrity/_prd.md), and the
-[detached-watch finding](../findings/_archived/2026-07-16-vortex-pr87-detached-watch-notification.md#4-cleanup-noise-appeared-before-the-actionable-failure).
+[Spec 0037](../history/specs/0037-terminal-outcome-integrity/_prd.md), and the
+[detached-watch finding](../history/findings/2026-07-16-vortex-pr87-detached-watch-notification.md#4-cleanup-noise-appeared-before-the-actionable-failure).
 
 ## Detached Runs
 
@@ -1575,10 +1608,10 @@ saw it. The original `notify.command` variables remain available:
 
 The review Evidence, artifact inheritance, Detached outcome, and notification
 contracts trace to the [Roundfix glossary](../../CONTEXT.md#language),
-[ADR-0054](../adr/0054-review-source-evidence-determines-review-outcomes.md),
-[Spec 0039](../specs/_archived/0039-review-source-evidence-and-detached-outcomes/_prd.md),
+[ADR-0054](../history/adr/0054-review-source-evidence-determines-review-outcomes.md),
+[Spec 0039](../history/specs/0039-review-source-evidence-and-detached-outcomes/_prd.md),
 and the
-[detached-watch finding](../findings/_archived/2026-07-16-vortex-pr87-detached-watch-notification.md).
+[detached-watch finding](../history/findings/2026-07-16-vortex-pr87-detached-watch-notification.md).
 
 ## Agent boundaries
 

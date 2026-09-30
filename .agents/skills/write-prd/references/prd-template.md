@@ -33,6 +33,8 @@ surfaces: [backend] # every surface touched: frontend | backend | cli | data | i
      repository-relative path from its `paths` list into this row. A proposed
      record or a record without a grant date authorizes nothing. -->
 
+<!-- A Spec a Delivery Queue delivers also records its delivery operations in that record and, with no Governed Path to bound, the record carries `paths: []`. -->
+
 ## Goals
 
 <!-- 2-5 bullets. Each goal is an observable outcome, not an activity. -->
@@ -66,6 +68,14 @@ surfaces: [backend] # every surface touched: frontend | backend | cli | data | i
      items, or the single entry `None.` followed by the reason none applies. -->
 
 1. Success Metric: ...
+
+## Unreachable Acceptance
+
+<!-- Optional. Declare one unreachable criterion with these fields:
+     - criterion: <criterion>
+       reason: <why it is unreachable>
+       satisfied-by: <evidence or follow-up that satisfies it>
+     Omit this section when every criterion is reachable. -->
 
 ## Decisions
 

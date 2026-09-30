@@ -2,7 +2,10 @@
 
 # TypeScript and Bun
 
-- **mandatory**: Keep type errors visible and preserve the repository's package and lockfile workflow.
+These rules govern the repository's TypeScript sources and tests. Code in
+another language follows its own guide.
+
+- **mandatory**: Keep TypeScript type errors visible; never hide one to make Verification pass.
 
 - **mandatory**: Use current authoritative documentation before changing TypeScript library APIs, framework configuration, runtime behavior, or dependencies.
 
@@ -17,14 +20,18 @@
 
 # Bun
 
+These rules govern the Bun workspace: the packages under the root
+`package.json`. A toolchain for another language in the same repository keeps
+its own commands.
+
 - **mandatory**: Run `bun add` from the workspace package that owns the dependency.
 
-- **prohibited**: Do not substitute another package manager or hand-edit the lockfile.
+- **prohibited**: Inside the Bun workspace, do not substitute another JavaScript package manager or runner (npm, pnpm, yarn, npx) or hand-edit the lockfile. A toolchain for another language in the same repository keeps its own package manager.
 
-- **mandatory**: Use Bun-owned commands for dependency installation, scripts, tests, and lockfile updates.
+- **mandatory**: Inside the Bun workspace, use Bun-owned commands for dependency installation, scripts, and lockfile updates, and run tests through the package's `test` script (`bun run test`), never through a bare runner such as `bun test`.
 
 - **mandatory**: Verify that a dependency exists and inspect its current version before adding it.
 
-- **mandatory**: When the selected TypeScript/Bun profile treats warnings as errors, every warning reported by Verification blocks completion.
+- **mandatory**: When the repository's Verification treats warnings as errors, every warning it reports blocks completion.
 
 <!-- setup-context-driven:end id=guide.bun -->

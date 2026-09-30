@@ -1,0 +1,9 @@
+Pull Request row, equivalent pre-PR evidence
+Environment fact from Daemon assignment: no open Pull Request on Spec target branch roundfix/deliver-0199-stack-rules-that-say-what-they-mean-eec46a34d2f70548. No lookup on unpushed Run Worktree branch.
+Approval: maintainer granted bounded stack-rule implementation and delivery authority on 2026-09-30, status approved, action and consuming Spec named in _authorization.md at b7c735c93c34e521b372288e664de92be94cb6a6. Operations implement, commit, push, pull_request and merge are recorded. No candidate review acceptance has been obtained yet; this QA session is expressly forbidden to commit/push/open PR.
+Checks and status: supplied Daemon make verify-changed passed exit 0 at 78acc7ea3a9c4123bbd74a95820b3bdf0b4163ea; diagnostics removed on success. Fresh focused QA selections, build, and strict Spec check also exited 0. Public Managed Refresh and sanctioned regeneration converge. make verify-docs is a separate pre-publication obligation, not claimed here; this gate does not authorize PR preparation by itself.
+Unresolved review threads: none because no Pull Request exists, as supplied by Daemon.
+Merge-Ready acceptance: none yet; current-candidate pre-PR review has not occurred at this gate stage. This row records absence explicitly and claims no review approval.
+Review-artifact ancestry: no review-artifact commit exists for this candidate yet. Claimed audited candidate is 78acc7ea3a9c4123bbd74a95820b3bdf0b4163ea; its parent chain is task_03 ← task_02 ← task_01 ← b7c735c93c34e521b372288e664de92be94cb6a6. Seeded authorization audit ties each Task to the grant revision.
+Unblocking action: delivery owner completes archive/current-candidate review and opens the Spec target Pull Request, then checks live PR controls; QA Agent performs no delivery mutation.
+Equivalent evidence is complete for all five authored pre-PR controls. No live approval or Merge-Ready claim is fabricated.

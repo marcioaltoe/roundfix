@@ -314,7 +314,7 @@
     },
     {
       "id": "guide.skill-dispatch",
-      "version": 2,
+      "version": 3,
       "path": "docs/agents/skill-dispatch.md",
       "template": "template.guide.skill-dispatch",
       "rules": [
@@ -456,7 +456,7 @@
     },
     {
       "id": "rule.core.skill-dispatch",
-      "version": 3,
+      "version": 4,
       "coverage": [
         "coverage.skill-dispatch"
       ],
@@ -464,7 +464,7 @@
         {
           "id": "clause.core.activate-matching-skills",
           "enforcement": "mandatory",
-          "guidance": "Activate every matching required skill before governed work. When one skill has distinct active-module triggers, retain and follow each trigger."
+          "guidance": "Activate every matching required skill before governed work. When one skill has distinct active-module triggers, retain and follow each trigger. When a skill's default conflicts with a Baseline rule or a Repository-Specific Normative Rule, follow the rule."
         },
         {
           "id": "clause.core.use-conventional-commits",
@@ -523,7 +523,7 @@
     },
     {
       "id": "rule.core.dependency-discipline",
-      "version": 3,
+      "version": 4,
       "coverage": [
         "coverage.dependencies"
       ],
@@ -531,7 +531,7 @@
         {
           "id": "clause.core.follow-dependency-workflow",
           "enforcement": "mandatory",
-          "guidance": "Use the repository's declared package manager and lockfile workflow. Add or upgrade a dependency only for a named job the existing stack cannot perform, and keep manifest and lockfile changes together."
+          "guidance": "Use each language's declared package manager and lockfile workflow. Add or upgrade a dependency only for a named job the existing stack cannot perform, and keep manifest and lockfile changes together."
         },
         {
           "id": "clause.core.review-new-dependencies",

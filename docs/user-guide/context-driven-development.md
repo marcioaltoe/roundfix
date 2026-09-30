@@ -44,7 +44,7 @@ Each stage reads and writes `docs/specs/<slug>/` and produces one artifact:
 | `write-tasks` | `_tasks.md` + `task_NN.md` — a dependency-ordered Task Graph | Work units |
 | `implement` | Completed Tasks, each with verification evidence | Execution |
 | `qa-gate` | `qa/` report validating the feature against the PRD | Verdict |
-| `roundfix archive` | The Spec stamped and moved to `docs/specs/_archived/` | Record |
+| `roundfix archive` | The Spec stamped and moved to `docs/history/specs/` for the built-in Spec Root, or `<specs.root>/_archived/<slug>/` for any other root | Record |
 
 Not every change runs the full pipeline. The entry point depends on the change —
 a large initiative starts at `write-idea`, a standard feature at `write-prd`, a
@@ -214,7 +214,7 @@ adoption again. Without a stored value, the embedded catalog suggests:
 | Verification gate | `rtk make verify` |
 | Incremental Verification | `rtk make verify-incremental` |
 | Identifier strategy | `{"kind":"uuid-v7"}` |
-| HTTP contract | `Post-only` |
+| HTTP contract | `REST` |
 | Better Auth provider exception | `GET` and `POST` under `/api/auth/*`, owned by Better Auth |
 | Spec artifacts | Yes |
 | Domain layout | `single-context` |

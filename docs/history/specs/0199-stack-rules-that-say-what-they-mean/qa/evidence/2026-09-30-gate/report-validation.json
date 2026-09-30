@@ -1,0 +1,13 @@
+{
+  "verdict": "pass",
+  "rows": 11,
+  "passed": 10,
+  "environment_blocked": 1,
+  "finding_blocked": 0,
+  "declared_blocked": 0,
+  "pending": 0,
+  "top_level_test_passes": 21,
+  "evidence_links_resolve": true,
+  "seeded_auditor_and_skips_preserved": true,
+  "task_files_unchanged": true
+}

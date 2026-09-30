@@ -1,0 +1,13 @@
+command: ./bin/roundfix qa-report --help
+exit: 0
+Usage:
+  roundfix qa-report accept <path>
+
+Applies the declared-acceptance policy to the selected QA Report. The report's
+Spec directory supplies its declarations. Produces no stdout; exit status is
+the machine-readable result.
+
+Exit codes:
+  0  the report is acceptable
+  1  the report is missing, unreadable, or unacceptable
+  2  usage error

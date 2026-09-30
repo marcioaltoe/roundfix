@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.3
+  version: 0.0.4
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.3
+version: 0.0.4
 ---
 
 # Write Tasks
@@ -55,9 +55,15 @@ Run this preflight before deriving or approving a breakdown:
 6. Copy the bounded file list into each authorized tooling Task's scope and
    acceptance criteria. The Task may change only those paths plus its own Task
    file; split any work that needs a different boundary.
+7. The record's `operations` list must grant every delivery operation the Spec
+   will use. `roundfix deliver start` refuses a record lacking `implement`,
+   `commit`, `push`, `pull_request` or `merge`; a Spec with no Governed Path
+   records `paths: []`.
 
 Dependencies remain owned only by `_tasks.md`; Task status remains owned only
 by each Task file. The preflight never moves either responsibility.
+
+Code for another operating system is verified by building its non-test code for that system, with an example such as `GOOS=windows go build -buildvcs=false ./<package>`, and never with `go vet`, which also compiles tests written for the host.
 
 ## Ownership rules (what lives where, and why)
 
@@ -96,6 +102,8 @@ declared, and recording discloses a change and reserves nothing. Declaring
 every foreseeable path stays the rule.
 
 ## Decomposition rules
+
+Code for another operating system is verified by building its non-test code for that system, with an example such as `GOOS=windows go build -buildvcs=false ./<package>`, and never with `go vet`, which also compiles tests written for the host.
 
 - **Vertical slices.** Each task delivers a narrow but complete path through every layer it touches, demoable or verifiable on its own — a tracer bullet, not a layer ("all the schemas" is a wrong task; "expired imports retry and surface their status" is a right one).
 - **Prefactoring first.** When a slice needs the ground prepared, make that its own leading task: make the change easy, then make the easy change.
@@ -158,8 +166,7 @@ every foreseeable path stays the rule.
 
 ### Author the QA gate decision
 
-Follow one order per Spec: implement the graph including its authored gate,
-archive, open the Pull Request, watch until Clean, and merge.
+Follow one order per Spec: implement the graph including its authored gate, run the configured pre-PR review, archive on the branch, pass the repository gate, open the Pull Request, verify current-head checks, and merge.
 
 ADR-0091 keeps the authored QA gate before any Pull Request exists, while
 ADR-0080 lets environment-blocked rows pass with equivalent evidence. Spec
@@ -194,7 +201,10 @@ happens, and nothing in it waits for a human.
 
 The corrective-work ceiling remains two Tasks. When QA findings would require
 more than two corrective Tasks, do not author a third patch or stop for a policy
-decision. Choose one sanctioned exit:
+decision. A corrective Task added after the gate settled `completed` becomes a
+dependency of the gate, and the author must reopen the settled gate first with
+`roundfix reopen --spec <slug>`, never by editing the QA Task file. Choose one
+sanctioned exit:
 
 - Amend the TechSpec and recut the Task Graph from it.
 - Promote the excess corrective work to its own Spec and leave the gate failing
@@ -277,8 +287,8 @@ checks are informational.
 This is not a substitute for the list below, which covers what the checker does
 not: it catches unlisted and unaccounted ADRs, incomplete Project Constraints,
 unmapped coverage, contradictory requirements, undeclared rehearsals,
-work-independent Verification, and an undocumented Vocabulary Contract. It does
-not yet verify that a cited ADR says what the artifact claims it says.
+work-independent Verification, and an undocumented Vocabulary Contract.
+`SC-CITATION-UNSUPPORTED` reports a claim the ADR's text does not support.
 
 Then confirm by reading:
 

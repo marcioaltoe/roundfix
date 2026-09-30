@@ -1,0 +1,18 @@
+command: ./bin/roundfix window set --help
+exit: 0
+Usage:
+  roundfix window <set|show|clear>
+  roundfix window set <HH:MM|YYYY-MM-DDTHH:MM> [--force]
+  roundfix window show
+  roundfix window clear
+
+The Run Window bounds when a Run may start. budget.max_run_duration bounds
+how long one may run after it starts.
+
+Commands:
+  set    Set the cutoff if no Run Window stands; use --force to replace it
+  show   Print the cutoff, current time, and remaining duration
+  clear  Remove the Run Window and report whether one was set
+
+Options:
+  --force  Replace an existing Run Window
