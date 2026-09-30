@@ -228,7 +228,10 @@ ADR-0116: "reads the cited record when an artifact makes a claim"
 - `ADR-NNNN` resolves to the one file named `NNNN-*.md` under `docs/adr/`,
   then under `docs/history/adr/`. The whole file is read, whatever its status.
 - A path resolves when it is clean, relative, stays under `repoRoot` and
-  names a regular file.
+  names a regular file reached without following a symbolic link: every
+  component from `repoRoot` down is checked with `lstat`, and a symbolic link
+  at any component makes the path unresolved. A receipt can therefore never
+  make the check read a file outside the repository.
 - Normalization replaces every run of whitespace with one space and trims
   both ends. It is applied to the quote and to the source text.
 - A quote with fewer than three words after normalization is refused before
@@ -269,12 +272,15 @@ Numbered lines inside a fenced block are not items.
    line.
 
 The first `stderr:` line after `stdout:` ends the standard output. Two
-conventions keep a transcript exact without pinning what varies, and the
-check does not interpret either:
+conventions keep a transcript exact without pinning what varies. The
+consistency check only validates the block's shape and does not interpret
+either; the QA gate applies them when it compares a reproduced run:
 
-- a line that is exactly `...` stands for any number of lines;
-- text in angle brackets, such as `<line>`, stands for a value that differs
-  between runs.
+- a line that is exactly `...` matches zero or more consecutive lines;
+- text in angle brackets, such as `<line>`, matches one or more characters
+  within the same line;
+- every other character, and the exit code, must match exactly, compared
+  separately for standard output and standard error.
 
 **Findings.**
 
