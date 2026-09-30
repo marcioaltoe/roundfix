@@ -795,7 +795,7 @@ type fleetStructuralClause struct {
 var fleetStructuralClauses = []fleetStructuralClause{
 	{
 		path: "docs/agents/backend.md",
-		ids:  []string{"clause.backend.boundary-contracts", "rule.backend.boundary-contracts"},
+		ids:  []string{"clause.backend.boundary-contracts"},
 		line: "- **mandatory**: Keep blocking, network, process, database, and daemon boundaries explicit about ownership, cancellation, timeouts, and error reporting. Test the lowest real boundary that proves the repository-authored contract; do not invent authentication, database, or transport policy.",
 	},
 	{
@@ -902,8 +902,8 @@ func newFleetStructuralClauseRepository(t *testing.T) string {
 		removed += len(clause.ids)
 		touched[clause.path] = struct{}{}
 	}
-	if removed != 14 {
-		t.Fatalf("removed structural clauses = %d, want 14", removed)
+	if removed != 13 {
+		t.Fatalf("removed structural clauses = %d, want 13", removed)
 	}
 	for path := range touched {
 		updateFleetManifestArtifactDigest(t, repository, &manifest, path)
