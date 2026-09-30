@@ -808,6 +808,11 @@ Policy. An Agent Selection Profile supplies an agent provider's runtime and
 model; explicit none is a policy choice with no provider.
 _Avoid_: Review Source, Pre-PR Review Policy, reviewer model
 
+**Pre-PR Review Record**:
+The record of one Pre-PR Review, kept per checkout. Its verdict is read from
+the reviewer's final message.
+_Avoid_: Review Source Evidence, shared review state, reviewer transcript
+
 
 **QA Archive Override**:
 An explicit user request or applicable prior authorization to archive a covered

@@ -204,10 +204,14 @@ headerless answer blocks as ambiguous. A line that normalizes to `Findings`
 after an optional trailing ASCII or fullwidth colon is removed starts the
 findings body. A verdict-shaped line after that header is findings text and does
 not create a conflict. Exactly one verdict must be present; both verdicts or
-neither verdict block the review. Every answer that reaches the reviewer is
-kept in `pre-pr-review-answer.txt`, and the review record's
-`answerPath` names that file. Roundfix sets `answerPath` only when the prompt
-reached a reviewer; a pre-prompt failure has no answer path or answer file.
+neither verdict block the review. Roundfix reads the verdict from the
+reviewer's final message. The answer file keeps every message, separated by a
+blank line. The record `pre-pr-review.json` and answer
+`pre-pr-review-answer.txt` live under `pre-pr-review/<checkout key>/` in the
+Artifact Directory, and the review record's `answerPath` names that answer
+file. Roundfix never reads another checkout's record. Roundfix sets
+`answerPath` only when the prompt reached a reviewer; a pre-prompt failure has
+no answer path or answer file.
 
 A findings record keeps the reviewer's original `findings` text and also lists
 each finding as `F1`, `F2`, and so on in `findingItems`. The reviewer prompt

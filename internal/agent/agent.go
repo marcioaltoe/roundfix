@@ -195,8 +195,21 @@ type ExecuteResult struct {
 	LogPath          string
 	Output           string
 	Message          string
+	Messages         []string
 	StopReason       string
 	TransportAnomaly string
+}
+
+func (result ExecuteResult) Answer() string {
+	if len(result.Messages) == 0 {
+		return result.Message
+	}
+	for index := len(result.Messages) - 1; index >= 0; index-- {
+		if strings.TrimSpace(result.Messages[index]) != "" {
+			return result.Messages[index]
+		}
+	}
+	return ""
 }
 
 type ProbeRequest struct {

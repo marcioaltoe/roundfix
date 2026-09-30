@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0185-a-pre-pr-review-that-keeps-its-verdict-and-its-own-record
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -77,3 +77,68 @@ This Task keeps message boundaries where the runner reads the ACP stream, report
 - [_techspec.md](_techspec.md) — Agent messages keep their boundaries; Interfaces; API Contract 1; Testing Approach 1–2; Build Order 1
 - [references/2026-09-29-a-review-verdict-after-progress-text-is-unclassifiable.md](references/2026-09-29-a-review-verdict-after-progress-text-is-unclassifiable.md)
 - ADR-0174; ADR-0017; ADR-0020; ADR-0153
+
+## Result
+
+Implemented the Agent message boundary at the ACP stream boundary. Message
+chunks now retain optional `messageId` values, one shared log applies the
+identifier and intervening-update rules, `ExecuteResult` exposes both the
+ordered messages and its final non-blank answer, and prompt and sealed parsers
+use the same log. The review classifies that final answer while persisting the
+blank-line-separated transcript. The user guide and canonical Roundfix skill
+state both behaviors, and `make skills-sync` regenerated the mirror.
+
+Acceptance evidence:
+
+- `TestAgentMessagesSplitAtAThoughtOrToolCallWithoutMessageIDs` covers thought,
+  tool-call, tool-update and plan boundaries. `TestAgentMessageChunksWithoutABoundaryStayOneMessage`
+  covers consecutive chunks plus status and raw updates. Both passed in the
+  focused Agent check.
+- `TestAgentMessagesFollowTheirMessageIDs` covers changed identifiers without
+  an intervening update and one identifier across a tool call.
+  `TestACPMessageChunkReadsOptionalMessageID` separately covers present,
+  absent and null identifiers and proves another update kind does not receive
+  one.
+- `TestExecuteResultAnswerIsTheLastNonBlankMessage` covers a trailing blank
+  message, the no-`Messages` compatibility fallback and an all-blank message
+  list.
+- `TestACPXRunPromptReportsEachAgentMessage` uses `runFakeACPXPrompt` to prove
+  a tool boundary yields two `Messages` joined by one blank line and that one
+  message remains byte-identical.
+- `TestSealedPromptOutputIsTheFinalMessage` uses `parseSealedPromptStream` for
+  both thought and plan boundaries. `TestSealedPromptRejectsTotalMessageBytesOverLimit`
+  and `TestSealedPromptRejectsToolUpdate` separately cover the total-message
+  cap and tool-update refusal.
+- `TestReviewClassifiesTheFinalMessageAfterProgressText` records one finding as
+  `F1`, and `TestReviewAcceptsNoFindingsAsTheFinalMessage` records `reviewed`.
+  Both use `newReviewCommandFixture` with a fake runner.
+- `TestReviewStillBlocksBothVerdictsInTheFinalMessage` preserves the strict
+  conflicting-verdict rule. `TestReviewAnswerFileKeepsEveryMessage` proves the
+  persisted bytes contain both messages separated by one blank line.
+- `cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` exited 0 after
+  `make skills-sync`; the canonical skill, mirror and command guide contain the
+  required final-message and complete-answer wording.
+
+Focused checks:
+
+- The initial focused Agent test failed to compile because `agentMessageLog`,
+  `StreamUpdate.MessageID` and `ExecuteResult.Messages` did not exist, providing
+  the pre-change reproduction.
+- `go test -count=1 -run '^(TestAgentMessages|TestACPMessageChunk|TestExecuteResultAnswer|TestACPXRunPromptReportsEachAgentMessage|TestSealedPromptOutput|TestSealedPromptRejects)' ./internal/agent`
+  passed with a task-scoped `GOCACHE`.
+- `go test -count=1 -run '^(TestReviewClassifiesTheFinalMessageAfterProgressText|TestReviewAcceptsNoFindingsAsTheFinalMessage|TestReviewStillBlocksBothVerdictsInTheFinalMessage|TestReviewAnswerFileKeepsEveryMessage)$' ./internal/cli`
+  passed with a task-scoped `GOCACHE`.
+- `go test -count=1 ./internal/agent` passed. `go test -count=1 ./internal/cli`
+  first hit the sandbox's process-table denial in two unrelated force-stop
+  tests, then passed with host process visibility (`ok roundfix/internal/cli 95.707s`).
+- `make verify-incremental` first hit the same two sandbox process-table
+  denials, then passed with host process visibility, including `go vet ./...`,
+  all Go packages, the skill package checks, `roundfix skills check`, and the
+  build.
+- `make baseline-digests` passed and reported that derived artifacts already
+  matched their canonical sources, so it changed no additional path.
+- `git diff --check` passed.
+
+The Daemon-owned commands under `## Verification` were not run in this Agent
+turn. Task status remains Daemon-owned, and no commit, push or pull request was
+created.
