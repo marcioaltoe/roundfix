@@ -49,7 +49,7 @@ This is an authorized tooling Task. It may change only the files in its Context 
 - interface: `skills-lock.json`
 - interface: `skills/recommended.txt`
 - interface: `skills/baseline_skill_contract_test.go`
-- interface: `.agents/skills/context7/SKILL.md`
+- creates: `.agents/skills/context7/SKILL.md`
 - creates: `.agents/skills/context7-cli/SKILL.md`
 - creates: `.agents/skills/context7-cli/references/docs.md`
 - creates: `.agents/skills/context7-cli/references/setup.md`
