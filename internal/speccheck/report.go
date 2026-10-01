@@ -161,6 +161,13 @@ const (
 	EvidenceExternalRepository EvidenceInputKind = "external_repository"
 	EvidenceLiveService        EvidenceInputKind = "live_service"
 	EvidenceElapsedTime        EvidenceInputKind = "elapsed_time"
+	EvidenceCommitRange        EvidenceInputKind = "commit_range"
+)
+
+const (
+	CarryReasonRepositoryVerification = "always observed: repository Verification"
+	CarryReasonPullRequestRow         = "always observed: Pull Request row"
+	CarryReasonCommitRangeInput       = "always observed: commit_range input"
 )
 
 // EvidenceInput names one observation boundary. Only repository paths can be

@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0202-a-qa-gate-that-reruns-only-stale-rows
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -107,3 +107,63 @@ gets no key, and an Agent-written key never survives.
 - [_prd.md](_prd.md) — Goal 4; User Story 1; Core Feature 1; Core Feature 4; Success Metric 4; Success Metric 5
 - [_techspec.md](_techspec.md) — Interfaces; Data Models; Recording the snapshot; Always-observed rows; API Contract 1; API Contract 2; API Contract 4; Testing Approach 1; Build Order 1
 - ADR-0194; ADR-0195; ADR-0097; ADR-0096; ADR-0080; ADR-0057
+
+## Result
+
+Implemented the Evidence Snapshot recorder and its QA-stage integration. The
+recorder reuses the mechanical report parser and Git snapshot builder, replaces
+Agent-written frontmatter, and preserves all bytes outside that key. It records
+only qualifying `pass` rows, in Results order, with inputs in declaration order
+and sorted Git-blob digests at the audited head. `AlwaysObserved` names the
+three fixed refusal reasons, including the new `commit_range` input kind.
+
+The QA stage records after verdict settlement and before Task settlement and
+the QA Report commit. It publishes `recorded`, `none`, `skipped`, or `error`
+with the audited head, row count, report, and error. Report file errors have a
+distinct error type so Git process/read errors can be published without
+preventing settlement; cancellation publishes the stop. The existing event-count
+assertion in `task_engine_test.go` now expects the additional snapshot event.
+The two byte-exact seeded-report tests, `mechanical_test.go`, `Carriable`, and
+`resolveCarriedRows` were left unchanged.
+
+Acceptance evidence:
+
+| Criterion | Implementation and exercised evidence |
+| --- | --- |
+| Qualifying rows use the audited head's digests | `TestEvidenceRecordSnapshotsEveryQualifyingPassRow` checks two rows in Results order, two inputs in declaration order, sorted files, exact SHA-256 digests, and a dirty worktree whose content must not be hashed. |
+| Ineligible rows are excluded | Separate subtests of `TestEvidenceRecordSkipsRowsThatCannotCarry` cover fail, blocked, skipped, no inputs, each non-repository kind, commit range, both always-observed provenance sources, absent inputs, and uncovered evidence. |
+| Agent-written keys are replaced or removed | `TestEvidenceRecordReplacesAnAgentWrittenKey` exercises both outcomes. `TestEvidenceRecordStripsTheKeyOnGitReadError` also proves removal when Git cannot read the head. |
+| Other bytes and report semantics are preserved | `TestEvidenceRecordKeepsEveryOtherByte` compares every outside byte under LF and CRLF. For LF, it also compares the complete public report-reader result, including verdict and typed counts. The existing public reader rejects CRLF before and after; its behavior was not changed. |
+| Writer and mechanical reader agree | `TestEvidenceRecordRoundTripsThroughTheMechanicalStage` records a report and observes its row carried at the same head through `RunMechanicalStage`. |
+| Always-observed reasons are exact | `TestAlwaysObservedNamesItsReason` checks all three reason constants, delimiter-separated provenance, and negative exact-name and repository-only cases. |
+| The QA Report commit holds the audited snapshot and event | `TestQAGateCommitsTheEvidenceSnapshotAtTheAuditedHead` uses the existing task-cycle fixture with real Git settlement and reads the committed report and `recorded` event payload. |
+| An ineligible report commits without the Agent's key | `TestQAGateStripsAnAgentWrittenSnapshotWhenNoRowQualifies` reads the committed report and checks the `none` event and zero row count. |
+
+Additional focused tests cover the `error` event without a settlement-blocking
+return, external-report `skipped` behavior without a write, report write errors
+as infrastructure errors, and cancellation's stop event.
+
+Checks run:
+
+- `GOCACHE=/private/tmp/roundfix-task01-cache rtk proxy go test ./internal/speccheck -run 'TestEvidenceRecord|TestAlwaysObserved' -count=1` — initial fixture failures exposed a directory declaration without a glob and the existing reader's CRLF limitation; corrected the test fixtures without changing either contract.
+- `GOCACHE=/private/tmp/roundfix-task01-cache rtk proxy go test ./internal/speccheck ./internal/daemon -run 'TestEvidenceRecord|TestAlwaysObserved|TestQAGate(CommitsTheEvidence|StripsAnAgentWritten)' -count=1` — passed.
+- `GOCACHE=/private/tmp/roundfix-task01-cache rtk proxy go test ./internal/daemon -run 'TestQAEvidenceSnapshot' -count=1` — passed after creating the fixture's QA directory explicitly.
+- `GOCACHE=/private/tmp/roundfix-task01-cache rtk proxy go test ./internal/speccheck ./internal/daemon -run 'TestEvidenceRecord|TestAlwaysObserved|TestQAEvidenceSnapshot|TestQAGate(CommitsTheEvidence|StripsAnAgentWritten)|TestTaskCycleQAVerdictMatrix' -count=1` — passed.
+- `GOCACHE=/private/tmp/roundfix-task01-cache rtk make verify-incremental` — the first run was invalidated by concurrent implementation edits and also hit sandbox process-table restrictions. After freezing implementation edits, reran `GOCACHE=/private/tmp/roundfix-task01-cache rtk proxy make verify-incremental` with host access: exit 0, full tests, vet, skill checks, and build passed. Raw output: `/private/tmp/roundfix-task01-incremental.log`. This final run includes the final error-type change.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+
+The authored Verification commands were not run. Task status remains
+Daemon-owned; no commit, push, PR, Task Graph edit, or other Task edit was made.
+Carry resolver changes, prior-pass import, and gate guidance remain with their
+assigned follow-up Tasks.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/daemon/task_engine_test.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T114323Z_551200526baffade`
+- Source commit: `cf167a4a37848ac167c0cec9d1a97fffe94dbde3`

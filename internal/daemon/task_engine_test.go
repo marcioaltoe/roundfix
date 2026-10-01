@@ -8846,8 +8846,8 @@ func TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport(t *testing.T) {
 				t.Fatalf("expected no repo .roundfix directory after QA step, got err=%v", err)
 			}
 			qaEvents := taskEventsOfKind(fixture.sink, runevent.KindDaemonQA)
-			if len(qaEvents) != 2 || qaEvents[0].Batch != 2 || qaEvents[1].Batch != 2 {
-				t.Fatalf("expected mechanical and verdict daemon.qa events on the QA Batch, got %+v", qaEvents)
+			if len(qaEvents) != 3 || qaEvents[0].Batch != 2 || qaEvents[1].Batch != 2 || qaEvents[2].Batch != 2 {
+				t.Fatalf("expected mechanical, verdict and evidence snapshots daemon.qa events on the QA Batch, got %+v", qaEvents)
 			}
 			payload := string(qaEvents[1].Payload)
 			if !strings.Contains(payload, fmt.Sprintf("%q", tt.wantVerdict)) || !strings.Contains(payload, wantReportPath) {

@@ -2896,6 +2896,9 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	} else if eligibilityErr != nil && (verdict == spec.VerdictPass || verdict == spec.VerdictPartial) {
 		qaReason = fmt.Sprintf("QA verdict %s not accepted: %v", verdict, eligibilityErr)
 	}
+	if err := engine.recordQAEvidenceSnapshots(ctx, plan, ordinal, reportPath, auditedHead); err != nil {
+		return "", "", false, err
+	}
 	if err := engine.settleTask(ctx, plan, qaTask, ordinal, qaStatus, qaReason); err != nil {
 		return "", "", false, err
 	}
@@ -3695,6 +3698,51 @@ func validateTaskPlan(plan TaskPlan) error {
 				return fmt.Errorf("task cycle: %s is required when concurrency is greater than 1", label)
 			}
 		}
+	}
+	return nil
+}
+
+// recordQAEvidenceSnapshots records local reports before QA settlement commits.
+func (engine *Engine) recordQAEvidenceSnapshots(ctx context.Context, plan TaskPlan, ordinal int, reportPath, head string) error {
+	outcome := "skipped"
+	rows := 0
+	var recordErr error
+	absolute := reportPath
+	if !filepath.IsAbs(absolute) {
+		absolute = filepath.Join(plan.WorkDir, absolute)
+	}
+	relative, relErr := filepath.Rel(plan.WorkDir, absolute)
+	if reportPath != "" && relErr == nil && relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		record, err := speccheck.RecordEvidenceSnapshots(ctx, plan.WorkDir, absolute, head)
+		recordErr = err
+		rows = len(record.Rows)
+		outcome = "none"
+		if rows > 0 {
+			outcome = "recorded"
+		}
+		if err != nil {
+			outcome = "error"
+		}
+	}
+	if ctx.Err() != nil {
+		if err := engine.publishStop(ctx, plan.RunID, ordinal); err != nil {
+			return fmt.Errorf("publish stop during QA evidence snapshots: %w", errors.Join(ctx.Err(), err))
+		}
+		return fmt.Errorf("stop during QA evidence snapshots: %w", ctx.Err())
+	}
+	errorText := ""
+	if recordErr != nil {
+		errorText = terminalReasonLine(recordErr.Error())
+	}
+	if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
+		fmt.Sprintf("QA evidence snapshots %s for Spec %s.", outcome, plan.Spec.Slug),
+		map[string]any{"phase": "evidence_snapshots", "outcome": outcome, "head": head, "rows": rows, "report": reportPath, "error": errorText},
+	); err != nil {
+		return fmt.Errorf("publish QA evidence snapshots: %w", err)
+	}
+	var fileErr *speccheck.EvidenceReportFileError
+	if errors.As(recordErr, &fileErr) {
+		return fmt.Errorf("record QA evidence snapshots: %w", recordErr)
 	}
 	return nil
 }
