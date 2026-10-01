@@ -22,7 +22,6 @@ grilling
 handoff
 knowledge-workspace
 no-workarounds
-review
 systematic-debugging
 tech-writer
 testing-boss

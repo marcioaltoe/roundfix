@@ -83,7 +83,7 @@ func checkThisRepositorySkillSet(t *testing.T, root string, wantReady bool) skil
 	if err := json.Unmarshal(lockBytes, &lock); err != nil {
 		t.Fatalf("decode skills lock: %v", err)
 	}
-	for _, name := range []string{"context7", "feature-systems-pattern", "rust"} {
+	for _, name := range []string{"context7", "feature-systems-pattern", "rust", "review", "triage"} {
 		if _, exists := lock.Skills[name]; exists {
 			t.Errorf("obsolete skill remains in skills-lock.json: %s", name)
 		}

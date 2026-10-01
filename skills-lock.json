@@ -132,13 +132,6 @@
       "skillPath": "skills/05-implementation-loop/no-workarounds/SKILL.md",
       "computedHash": "c53eb07ae5e73781f2efe819f25f00fadbbd1d2ef18ab9983a31cf06b08ca7aa"
     },
-    "review": {
-      "source": "marcioaltoe/skills",
-      "ref": "main",
-      "sourceType": "github",
-      "skillPath": "skills/06-review-repair/review/SKILL.md",
-      "computedHash": "4a2b10bb81e568516c52018e73b8255a02066024257d7c907fa65826d62bc8dd"
-    },
     "systematic-debugging": {
       "source": "marcioaltoe/skills",
       "ref": "main",

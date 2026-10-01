@@ -28,7 +28,7 @@ const baselineDigestRegenerationHint = "run 'make baseline-digests'"
 // declared in skills-lock.json. It moves only when that declared set changes on
 // purpose; three tests read this one constant so a legitimate change edits one
 // line instead of three.
-const upstreamManagedSkillTreeDigest = "d7de33abe09def95e2a8d4b1e9e7ef3c21c30a9667fa2ed5fd5ec18fc594faaf"
+const upstreamManagedSkillTreeDigest = "8832b7acd7fb65ec196f7108900b95f0b1bdc9065a707e70ff4b80b1f605ec1c"
 
 type baselineDigestTargetResult struct {
 	SchemaVersion *int    `json:"schemaVersion"`
