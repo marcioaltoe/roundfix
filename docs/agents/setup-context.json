@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
-  "catalogDigest": "sha256:e5d5feda6d9c780bfb40fee53b5da07945361c3c66ef1a01a95a2143b2d7cc82",
+  "catalogDigest": "sha256:89598e00e017c2ca7de19d6f61be8234cb19159850c0b5d24c7fbaba52130cdc",
   "modules": [
     "core",
     "context-workflow",

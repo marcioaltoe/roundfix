@@ -940,14 +940,102 @@
       "digest": "0ca27ba21e171c5bb60c0bf91ea1618cb4a80f891d16d7f88afacd5ee15c5857"
     },
     {
+      "id": "clause.external-triage.classify-before-labelling",
+      "path": "corpus/docs/agents/external-triage.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/external-triage.md",
+      "structure": null,
+      "start": 81,
+      "end": 244,
+      "digest": "dcf0d07ecc19391024b9fb563f42472519fff4a65e8dddfac45c0729bda5decb"
+    },
+    {
+      "id": "clause.external-triage.move-through-mapped-states",
+      "path": "corpus/docs/agents/external-triage.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/external-triage.md",
+      "structure": null,
+      "start": 409,
+      "end": 546,
+      "digest": "8a358b0009bea72b339d567104556abbd87863d175d6b59fe95b247285108712"
+    },
+    {
+      "id": "clause.external-triage.ask-for-an-unmapped-label",
+      "path": "corpus/docs/agents/external-triage.md",
+      "kind": "normative-clause",
+      "enforcement": "stop-and-ask",
+      "carrier": "docs/agents/external-triage.md",
+      "structure": null,
+      "start": 711,
+      "end": 817,
+      "digest": "a81ffc6159025df2a4b8e05bc237414456c9b528c5018e56e4916e32f47e842b"
+    },
+    {
+      "id": "clause.external-triage.needs-info-asks-and-stops",
+      "path": "corpus/docs/agents/external-triage.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/external-triage.md",
+      "structure": null,
+      "start": 981,
+      "end": 1087,
+      "digest": "2644befbbe44f570a9ccc9c3807098706f7b506fe705e790a9b19e6a6eac0a1e"
+    },
+    {
+      "id": "clause.external-triage.disclose-ai-authorship",
+      "path": "corpus/docs/agents/external-triage.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/external-triage.md",
+      "structure": null,
+      "start": 1248,
+      "end": 1336,
+      "digest": "d11368edf564d5ec0e7ed3a9a646e63fa81dc76fc0ba081dcfd54b2d7341699a"
+    },
+    {
+      "id": "clause.external-triage.record-wontfix-decisions",
+      "path": "corpus/docs/agents/external-triage.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/external-triage.md",
+      "structure": null,
+      "start": 1496,
+      "end": 1599,
+      "digest": "18269b0f1e3436c35b7f989b12e8feca8eeacc78ff9e7ae4ba1bfac0ecb75482"
+    },
+    {
+      "id": "clause.external-triage.pull-request-is-an-issue-with-code",
+      "path": "corpus/docs/agents/external-triage.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/external-triage.md",
+      "structure": null,
+      "start": 1771,
+      "end": 1867,
+      "digest": "05493e7a6804c8ae52e1d56bd311181567caa5fb8d30bd8836650d91037f38cc"
+    },
+    {
+      "id": "clause.external-triage.route-accepted-work-to-specs",
+      "path": "corpus/docs/agents/external-triage.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/external-triage.md",
+      "structure": null,
+      "start": 2043,
+      "end": 2161,
+      "digest": "d23c2e7ead0953d7755dbbf3d4a4264195ae8c419128d9215c087f268a7493df"
+    },
+    {
       "id": "rule.external-triage",
       "path": "corpus/docs/agents/external-triage.md",
       "kind": "normative-clause",
       "enforcement": "mandatory",
       "carrier": "docs/agents/external-triage.md",
       "structure": null,
-      "start": 53,
-      "end": 281,
+      "start": 2300,
+      "end": 2528,
       "digest": "096aa5b903ccafca0e9d215eaab8ead211de40769c03b12e5ae3f719aaccbda0"
     },
     {

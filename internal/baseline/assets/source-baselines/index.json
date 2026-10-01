@@ -92,6 +92,14 @@
         "clause.domain.canonical-language",
         "clause.domain.layout-decision",
         "clause.domain.glossary-currency",
+        "clause.external-triage.classify-before-labelling",
+        "clause.external-triage.move-through-mapped-states",
+        "clause.external-triage.ask-for-an-unmapped-label",
+        "clause.external-triage.needs-info-asks-and-stops",
+        "clause.external-triage.disclose-ai-authorship",
+        "clause.external-triage.record-wontfix-decisions",
+        "clause.external-triage.pull-request-is-an-issue-with-code",
+        "clause.external-triage.route-accepted-work-to-specs",
         "rule.external-triage",
         "clause.frontend.read-design-contract-before-ui-work",
         "clause.frontend.organize-by-system",
@@ -146,9 +154,9 @@
         "clause.secondbrain.prohibit-external-local-discovery",
         "clause.secondbrain.record-decision-sources"
       ],
-      "entryCount": 138,
-      "corpusDigest": "bb8c29c964ec0c08e964fd3b2d51356f490a2019c7ed793ebde5bc7439b99c89",
-      "manifestDigest": "e420cabd77d140bd57454edd4d02f2f7dbf82a0d026f5bcdb8f962d999f39e5a"
+      "entryCount": 146,
+      "corpusDigest": "f52943e1745456eb325d8aa38e5618e44a895a6ab8bbf9b29e5c89dfa8d4c18d",
+      "manifestDigest": "b80354a1aaef24922e4fc536b25fadff232b3b29ca9bbeb19813db80dc6c0a7e"
     }
   ]
 }
