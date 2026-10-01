@@ -188,6 +188,8 @@ Each row includes the selection, source date, and rationale. The Recommended
 Profile never selects, routes, or writes User Config or Project Config.
 Interactive configure shows the same rows as advisory guidance.
 
+Run `roundfix profiles check --apply --scope project` to adopt differing Recommended Profiles after exact proof and confirmation; `--dry-run` previews and `--yes` skips confirmation.
+
 Run `roundfix profiles check` to compare configured categories with the
 recommendation in the binary, offline and without opening an Agent Session or
 writing a file. It reports `current` for an exact match, `differs` for a

@@ -543,6 +543,7 @@ never shipped. By default `skills install` writes to `<repo>/.agents/skills`;
 
 ```bash
 roundfix profiles check [--json]
+roundfix profiles check --apply --scope user|project [--dry-run] [--yes] [--json]
 roundfix profiles show [--category <category>] [--json]
 roundfix profiles configure --scope user|project [--file <path>] [--remove <category>] [--dry-run] [--yes] [--json]
 roundfix profiles validate [--category <category>] [--json]
@@ -567,6 +568,25 @@ and `recommended` (each with `preferred` and `fallbacks`), plus `deviation`
 (`from`, `reason`) when declared. Rows follow Agent Work Category order.
 The command exits `0` after a comparison, including one with differences,
 and `2` for an unknown flag, an extra argument, or a configuration load error.
+
+`roundfix profiles check --apply --scope user|project [--dry-run] [--yes]
+[--json]` adopts only differing categories, replacing each complete profile
+with the Recommended Profile and removing its old deviation. Current and
+pinned categories stay unchanged. `--scope` is required; `--scope`, `--dry-run`
+and `--yes` require `--apply`. Invalid flag combinations exit `2` without writing.
+With `--scope user`, categories whose effective profile comes from Project
+Config are skipped and named on standard error with advice to use
+`--scope project`.
+
+Adoption opens disposable Agent Sessions to prove every exact selection tuple
+before confirmation or writing, using the same preview, confirmation, output
+and exit codes as `profiles configure`. `--dry-run` proves and previews without
+writing; `--yes` skips confirmation. Failed proof and declined confirmation
+leave configuration bytes unchanged. `--json` uses
+`roundfix/profiles-configure/v1`. With nothing to adopt, nothing is prepared,
+proved or written: text prints `Profile configuration unchanged: nothing to
+adopt`, JSON has `changed: false` with empty `profiles` and `changes`, and the
+command exits `0`.
 
 `profiles show` prints `Recommendation status: <status>` before each
 Recommended profile block, with `inherited` for an undefined optional category.

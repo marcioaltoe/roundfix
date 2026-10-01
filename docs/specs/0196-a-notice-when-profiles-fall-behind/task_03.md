@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0196-a-notice-when-profiles-fall-behind
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -73,3 +73,114 @@ After task_02 a maintainer can see which categories differ, and still has to wri
 - ADR-0181; ADR-0049; ADR-0140
 
 ## Result
+
+Implemented the adoption slice for Daemon Verification; status remains
+Daemon-owned. No commit, push, Pull Request, other Task edit or Task Graph edit
+was performed. At entry, only this Task file was modified (`in_progress`).
+The new adoption file and its eight named tests were absent.
+
+### Implementation and acceptance evidence
+
+- Extracted `writeProfilesConfiguration` mechanically from
+  `runProfilesConfigureCommand`, from preparation through final output and
+  rollback. Both configure and adoption call it. Existing configure tests were
+  unchanged. `rtk proxy go test -count=1 ./internal/cli -run
+  '^TestProfilesConfigure'` exited 0 before extraction (0.834s) and after
+  extraction (2.423s). An intermediate compile attempt while the dispatcher
+  referenced the not-yet-created adoption function failed with an undefined
+  function; creating that function resolved it.
+- `TestProfilesCheckApplyWritesTheRecommendedProfileOfEachDifferingCategory`
+  checks project adoption of backend, docs and qa; all complete written
+  profiles equal the recommendation and carry no deviation. The fake runner's
+  exact proof tuples equal all selected preferred/fallback tuples. User Config
+  stays byte-identical, and the following read-only check reports `0 differ,
+  1 pinned`.
+- `TestProfilesCheckApplyLeavesAPinnedCategoryUntouched` compares the pinned
+  review block's bytes and rejects selected pinned/current categories. The
+  original assertion included a newly appended docs block after review; it
+  was corrected to compare the pinned block itself, after inspecting output
+  showing its bytes were preserved.
+- `TestProfilesCheckApplyProvesBeforeItWrites` reads every fixture file from
+  inside each proof callback and the confirmation callback, requiring the
+  original bytes. It requires actual runner calls and a later successful
+  write. Its failed-proof case requires exit 2, a proof diagnostic and every
+  original file byte unchanged.
+- `TestProfilesCheckApplyDryRunWritesNothing` requires proof calls, preview,
+  dry-run output, no confirmation and unchanged bytes.
+  `TestProfilesCheckApplyDeclinedConfirmationWritesNothing` exercises the real
+  confirmation reader with `n`, requires proof first, exit 1, JSON refusal,
+  a decline diagnostic and unchanged bytes.
+- `TestProfilesCheckApplyUserScopeNamesProjectDefinedCategories` requires
+  backend and qa on stderr with `--scope project` advice, selects only docs,
+  verifies its Recommended Profile, and compares Project Config bytes.
+- `TestProfilesCheckApplyWithNothingToAdoptChangesNothing` covers built-ins,
+  a pinned-only configuration and a project-defined difference excluded by
+  user scope. The forbidden runner and confirmation callback reject any proof
+  or prompt. Text is the exact nothing-to-adopt outcome; JSON has schema
+  `roundfix/profiles-configure/v1`, `changed: false` and empty arrays. Every
+  file stays byte-identical and the command exits 0.
+- `TestProfilesCheckApplyFlagRules` covers missing/invalid scope, write flags
+  without apply, false apply, unknown flags, invalid boolean input and extra
+  arguments. Each case requires exit 2, no stdout, a diagnostic, no runner
+  call and unchanged bytes. The read-only implementation is unchanged.
+- Added flags to top-level, profiles and profiles-check help, retaining the
+  existing read-only usage line and help strings. Documented adoption flags,
+  scope precedence, proof Sessions and no-write outcomes in the commands guide;
+  added the requested usage sentence.
+
+### Focused checks
+
+- `rtk proxy go test -count=1 ./internal/cli -run
+  '^TestProfiles(CheckApply|Configure|Check)'`: exit 0, after correcting the new
+  test's runner field name and pinned-block boundary.
+- After both sabotages were restored, `rtk proxy go test -count=1
+  ./internal/cli -run
+  '^TestProfiles(CheckApply|Configure|Check)|^TestRunCommandHelp$'`: exit 0
+  (0.729s). This includes all new adoption tests, unchanged configure tests,
+  read-only check tests and help characterization.
+- `rtk proxy go test ./skills -run
+  '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`: exit 0.
+- `rtk proxy go test -count=1 ./skills`: exit 0 (1.347s).
+- `rtk git diff --check`: exit 0.
+- Initial `rtk make verify-incremental`: exit 2. Process-owner integration
+  tests could not read the host process table in the sandbox. Baseline and CLI
+  suite guards also detected my concurrent Result edit. The rerun uses the
+  required process permission and keeps all repository files unchanged while
+  the check runs.
+- `rtk make verify-incremental` rerun with required process permission:
+  exit 0. Formatting, vet, repository tests (CLI 159.809s), skill sync/check
+  and build passed. No repository edits occurred while the rerun was active.
+- Python inspection confirmed the skill mirror equals its canonical source,
+  `### QA settlement` is byte-identical to HEAD, and status is `in_progress`.
+- Authored `## Verification` commands were not run; they remain Daemon-owned.
+
+### Sabotage evidence
+
+1. Changed the selector to skip only current categories, deliberately selecting
+   pinned categories. `rtk proxy go test -count=1 ./internal/cli -run
+   '^TestProfilesCheckApplyLeavesAPinnedCategoryUntouched$'` exited 1:
+   `selected pinned/current category` identified review. Restored the original
+   selector from a task-scoped temporary copy.
+2. Inserted `PersistProfilesConfig` immediately before proof in the shared
+   flow. `rtk proxy go test -count=1 ./internal/cli -run
+   '^TestProfilesCheckApplyProvesBeforeItWrites$'` exited 1 in both `success`
+   and `failed proof`: the proof callback found changed file bytes. Restored
+   the shared flow from its temporary copy. The subsequent focused check
+   above passed with both sabotages removed.
+
+### Skill regeneration and scope
+
+Adoption text lives only under `### Recommendation check`; the skill's
+`### QA settlement` section is untouched. Both version fields rose from
+0.0.10 to 0.0.11. The protected source write used the Spec's explicit
+`_authorization.md` grant through sandbox escalation.
+
+- `rtk proxy make skills-sync`: exit 0; rewrote
+  `skills/roundfix/SKILL.md` from `.agents/skills/roundfix/SKILL.md`.
+- `rtk proxy make baseline-digests`: exit 0; reported no changes and rewrote
+  no files (derived artifacts already matched their canonical sources).
+- The version-recording command rewrote
+  `skills/testdata/owned-skill-versions.json`, adding version 0.0.11 and its
+  canonical digest.
+
+No follow-up implementation was added to this slice.

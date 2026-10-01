@@ -66,6 +66,11 @@ func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, std
 	if err != nil {
 		return printProfilesConfigureError(req, roundconfig.ProfileConfigResult{Scope: req.scope}, err, stdout, stderr)
 	}
+	return writeProfilesConfiguration(ctx, req, profiles, loadOptions, stdout, stderr, environment)
+}
+
+// writeProfilesConfiguration owns preparation, exact proof, confirmation and persistence.
+func writeProfilesConfiguration(ctx context.Context, req profilesConfigureRequest, profiles roundconfig.Profiles, loadOptions roundconfig.LoadOptions, stdout, stderr io.Writer, environment commandEnvironment) int {
 	proposal, err := roundconfig.PrepareProfilesConfig(ctx, roundconfig.ProfileConfigOptions{
 		Scope:    req.scope,
 		HomeDir:  loadOptions.HomeDir,

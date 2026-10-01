@@ -73,6 +73,7 @@ Usage:
   roundfix baseline skills reconcile --profile <id> --source <owner/repo> --revision <commit> [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
   roundfix baseline assets sync --source-dir <path> [--check] [--format <text|json>]
   roundfix profiles check [--json]
+  roundfix profiles check --apply --scope user|project [--dry-run] [--yes] [--json]
   roundfix profiles show [--category <category>] [--json]
   roundfix profiles configure --scope user|project [--file <path>] [--remove <category>] [--dry-run] [--yes] [--json]
   roundfix profiles validate [--category <category>] [--json]
@@ -5785,6 +5786,7 @@ Options:
 	case "profiles":
 		return `Usage:
   roundfix profiles check [--json]
+  roundfix profiles check --apply --scope user|project [--dry-run] [--yes] [--json]
   roundfix profiles show [--category <category>] [--json]
   roundfix profiles configure --scope user|project [--file <path>] [--remove <category>] [--dry-run] [--yes] [--json]
   roundfix profiles validate [--category <category>] [--json]
@@ -5801,6 +5803,7 @@ configuration. Show JSON uses roundfix/profiles/v2.
 	case "profiles check":
 		return `Usage:
   roundfix profiles check [--json]
+  roundfix profiles check --apply --scope user|project [--dry-run] [--yes] [--json]
 
 Compares every configured category with the shipped Recommended Profile.
 Reports current, differs, or pinned; undefined optional categories are omitted.
@@ -5808,7 +5811,15 @@ Read-only and offline: opens no Agent Session and writes nothing.
 Exit 0 even with differences; exit 2 for usage or configuration errors.
 
 Options:
-  --json  Print roundfix/profiles-check/v1 JSON
+  --apply    Adopt only differing profiles; requires --scope
+  --scope    Write User Config or Project Config (user|project); requires --apply
+  --dry-run  Prove and preview without writing; requires --apply
+  --yes      Write without confirmation after proof; requires --apply
+  --json     Print roundfix/profiles-check/v1 JSON, or roundfix/profiles-configure/v1 with --apply
+
+With --apply, opens disposable Agent Sessions for exact proof before confirmation
+and writing. Current and pinned categories are skipped. User scope skips Project
+Config categories with advice to use --scope project. Nothing to adopt exits 0.
 `
 	case "profiles show":
 		return `Usage:

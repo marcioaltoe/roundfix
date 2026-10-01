@@ -51,6 +51,11 @@ func runProfilesCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 	}
 	switch args[0] {
 	case "check":
+		for _, arg := range args[1:] {
+			if arg == "--apply" || arg == "-apply" || strings.HasPrefix(arg, "--apply=") || strings.HasPrefix(arg, "-apply=") {
+				return runProfilesCheckApplyCommand(ctx, args[1:], stdout, stderr, environment)
+			}
+		}
 		return runProfilesCheckCommand(args[1:], stdout, stderr, environment)
 	case "show":
 		return runProfilesShowCommand(args[1:], stdout, stderr, environment)

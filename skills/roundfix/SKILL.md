@@ -4,10 +4,10 @@ description: Use Roundfix to plan releases with the read-only Release Plan Comma
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.0.10
+  version: 0.0.11
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.0.10
+version: 0.0.11
 ---
 
 # Roundfix
@@ -1102,6 +1102,21 @@ load errors. `profiles show` adds `Recommendation status` and any declared
 `Deviation`, plus JSON fields `recommendation_status` and `deviation`, under
 its existing `roundfix/profiles/v2` schema; an undefined optional category's
 status is `inherited`.
+
+`roundfix profiles check --apply --scope user|project [--dry-run] [--yes]
+[--json]` adopts only differing categories, writing each complete Recommended
+Profile without a deviation. Current and pinned categories stay unchanged.
+`--scope` is required; `--scope`, `--dry-run` and `--yes` require `--apply`.
+With `--scope user`, categories supplied by Project Config are skipped and
+named on standard error with advice to use `--scope project`. Adoption opens
+disposable Agent Sessions to prove every exact tuple before confirmation or
+writing, using the same preview, output and exit codes as `profiles configure`.
+`--dry-run` proves and previews without writing; `--yes` skips confirmation.
+Failed proof and declined confirmation leave all configuration bytes unchanged.
+`--json` uses `roundfix/profiles-configure/v1`. With nothing to adopt, nothing
+is prepared, proved or written: text prints `Profile configuration unchanged:
+nothing to adopt`, JSON has `changed: false` and empty `profiles` and `changes`,
+and the command exits `0`.
 
 A configured Agent Selection Profile can carry a Profile Deviation under
 `deviation`, with `from` (the snapshot calendar date, `YYYY-MM-DD`) and `reason`
