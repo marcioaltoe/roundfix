@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.4
+  version: 0.0.5
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.4
+version: 0.0.5
 ---
 
 # Write Tasks

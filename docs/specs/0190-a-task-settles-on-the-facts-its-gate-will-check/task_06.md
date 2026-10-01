@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0190-a-task-settles-on-the-facts-its-gate-will-check
-status: pending
+status: completed
 type: chore
 complexity: low
 ---
@@ -43,3 +43,24 @@ task_04 added text to the Roundfix skill and the write-tasks skill but left both
 ## References
 
 - task_04
+
+## Result
+
+- Raised both `metadata.version` and top-level `version` from `0.0.4` to
+  `0.0.5` in the canonical Roundfix and write-tasks skills.
+- Ran `make skills-sync` successfully; the generated `skills/` copies contain
+  the same version-only changes.
+- Ran `GOCACHE=/private/tmp/roundfix-0190-task06-gocache go test ./skills -run
+  '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` successfully
+  after the default shared cache was inaccessible; the recorder added the
+  `0.0.5` digests to `skills/testdata/owned-skill-versions.json`.
+- Focused checks: `git diff --check` passed; the scoped diff contains only the
+  four requested version-line updates, the recorder output, this Result
+  section, and the existing Daemon-owned status change in this Task file.
+- Acceptance criterion evidence is prepared for Daemon Verification. The
+  declared Verification commands were not run in this Daemon-assigned turn.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T024730Z_a33946bbe6ed3a5d`
+- Source commit: `312fa7c07582ce49a3194c9b55425e84bd543ef4`
