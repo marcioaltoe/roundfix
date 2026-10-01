@@ -198,6 +198,10 @@ _Avoid_: Effort mode, reasoning strategy, assignment style
 The atomic policy for one Agent Work Category, containing one Preferred Selection and a non-empty ordered Fallback Chain. A higher-precedence profile replaces the complete lower-precedence profile rather than merging individual fields.
 _Avoid_: Runtime defaults, model preset, partial override
 
+**Profile Deviation**:
+The dated, reasoned record on a configured Agent Selection Profile that its difference from the Recommended Profile is deliberate, which holds for the snapshot it names.
+_Avoid_: Permanent pin, recommendation waiver
+
 **Agent Selection Profile Readiness**:
 The command-scoped result that resolves effective Agent Selection Profiles, deduplicates their Preferred Selections and Fallback Chains, and requires Exact Agent Selection Proof for every distinct tuple before a Run or configuration mutation.
 _Avoid_: Single-model check, configured Agent probe, cached readiness
@@ -222,9 +226,9 @@ _Avoid_: Local Agent reasoning, automatic reasoning, reasoning hint
 The ordered set of known Agent Models Roundfix offers for one ACP Runtime during Interactive Input. Its Default label resolves to the Default Agent Model, while non-interactive interfaces may supply a custom value.
 _Avoid_: Global model list, model allowlist
 
-**Model Recommendation Ranking**:
-The versioned, advisory top-five Agent Selection list Roundfix shows for an Agent Work Category to help configure a profile. It never selects, routes, or changes an Agent Selection automatically.
-_Avoid_: Model router, benchmark policy, automatic selection
+**Recommended Profile**:
+The dated Agent Selection Profile Roundfix recommends for one Agent Work Category, from which built-in profiles derive. It never selects, routes, or changes a configuration by itself.
+_Avoid_: Model Recommendation Ranking, model router, benchmark policy, automatic selection
 
 **Fallback Selection**:
 The next configured Agent Selection in a profile's Fallback Chain. Roundfix proves it before the Run, emits a notification before activation, and may switch ACP Runtime automatically only while Agent work has not begun.
@@ -623,8 +627,16 @@ The support command that upgrades an older Run Database to the binary's schema v
 _Avoid_: Automatic migration, database downgrade, schema compatibility mode
 
 **Spec Consistency Check**:
-The read-only, pre-Run support command that compares a Spec's written citations, declarations, and cross-references. It uses an ADR horizon: `SC-ADR-RELATED` reports an ADR for a committed Spec only when the commit that added the ADR is an ancestor of the commit that added the Spec's `_prd.md`. It reports consistency findings and never edits artifacts or emits a QA verdict.
+The read-only, pre-Run support command that compares a Spec's written citations, declarations, and cross-references. It uses an ADR horizon: `SC-ADR-RELATED` reports an ADR for a committed Spec only when the commit that added the ADR is an ancestor of the commit that added the Spec's `_prd.md`. Its Claim Receipt and Surface Transcript declaration gaps begin at the contract horizon, the commit that added the concrete-contract guide to the write-techspec skill. It reports consistency findings and never edits artifacts or emits a QA verdict.
 _Avoid_: QA gate, Spec validator, inference engine
+
+**Claim Receipt**:
+A source-and-quote pair in the same paragraph as an attribution to a decision record. The Spec Consistency Check proves that the verbatim quote occurs in the named source after whitespace normalization; it does not judge whether the quote supports the claim.
+_Avoid_: Citation proof, supported claim
+
+**Surface Transcript**:
+A numbered TechSpec declaration of one command surface containing its command, standard output, standard error, and exit code. The QA gate reproduces it through the built product and compares the streams using the transcript's exact-match and controlled-variation conventions.
+_Avoid_: CLI example, expected output prose
 
 **Consistency Finding Severity**:
 Each Spec Consistency Check finding is an `error` when the check locates both sides of a contradiction, or a `gap` when it surfaces a candidate it cannot settle. The `SC-*` diagnostic codes are stable and never renumbered once shipped.

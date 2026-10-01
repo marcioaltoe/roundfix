@@ -25,6 +25,7 @@ import (
 	"roundfix/internal/agent"
 	"roundfix/internal/baseline"
 	"roundfix/internal/cli"
+	"roundfix/internal/config"
 	"roundfix/internal/spec"
 
 	"roundfix/internal/mdtree"
@@ -538,6 +539,11 @@ func TestBaselineDecisionExamples(t *testing.T) {
 
 func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 	t.Parallel()
+	preferred, ok := config.RecommendedProfile(config.CategoryGeneral)
+	if !ok {
+		t.Fatal("missing general Recommended Profile")
+	}
+	preferredText := preferred.Preferred.Runtime + " / " + preferred.Preferred.Model + " / " + preferred.Preferred.ReasoningEffort
 	repoRoot := baselineDocumentationRepoRoot()
 	readme := mustRead(t, filepath.Join(repoRoot, "README.md"))
 	commands := readContractDocument(t, filepath.Join(repoRoot, "docs/user-guide/commands.md"))
@@ -562,13 +568,13 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 			"gpt-5.6-sol",
 			"gpt-5.6-terra",
 			"sonnet",
-			"claude-fable-5",
-			"2026-08-07",
-			"category_specific: false",
+			"claude-fable-5-1",
+			config.ModelRecommendationSnapshotVersion,
+			"Recommended Profile",
+			preferredText,
 			"agent_work_started",
 			"defaults.agent",
 			"runtimes",
-			"gpt-5.5",
 			"xhigh",
 		} {
 			if !strings.Contains(doc.content, want) {
@@ -628,7 +634,6 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 	for _, want := range []string{
 		"Required profiles are `general`, `backend`, `frontend`, `qa`, and `review`.",
 		"gpt-5.6-sol",
-		"gpt-5.5",
 		"Fallback Chain",
 	} {
 		if !strings.Contains(configuration, want) {
@@ -651,7 +656,7 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 	}
 
 	for _, want := range []string{
-		"roundfix/profiles/v1",
+		"roundfix/profiles/v2",
 		"roundfix/profiles-configure/v1",
 		"roundfix/profiles-validate/v1",
 		"notification-first",

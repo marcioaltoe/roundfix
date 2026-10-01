@@ -59,6 +59,11 @@ var stagedDetectors = []stagedDetector{
 	{code: CodeToolingUnbounded, stage: StagePRD},
 	{code: CodeToolingUntyped, stage: StagePRD},
 	{code: CodeCitationUnsupported, stage: StagePRD},
+	{code: CodeReceiptUnproven, stage: StagePRD},
+	{code: CodeReceiptMissing, stage: StagePRD},
+	{code: CodeTranscriptUndeclared, stage: StageTechSpec},
+	{code: CodeTranscriptMalformed, stage: StageTechSpec},
+	{code: CodeTranscriptUngated, stage: StageTasks},
 	{code: CodeMetricUndeclared, stage: StagePRD},
 	{code: CodeCoverageUnmapped, stage: StageTechSpec},
 	{code: CodeContractUndeclared, stage: StageTechSpec},
@@ -135,8 +140,12 @@ func checkAuthoringStage(specsRoot, repoRoot, slug string, stage Stage) (Result,
 		if stage == StageTechSpec {
 			addSkip(&result, CodeCoverageUnmapped, artifactDisplayPath(repoRoot, prdPath))
 		}
+		addSkip(&result, CodeReceiptUnproven, artifactDisplayPath(repoRoot, prdPath))
+		addSkip(&result, CodeReceiptMissing, artifactDisplayPath(repoRoot, prdPath))
 		addSkip(&result, CodeMetricUndeclared, artifactDisplayPath(repoRoot, prdPath))
 		if stage == StageTechSpec {
+			addSkip(&result, CodeTranscriptUndeclared, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_techspec.md")))
+			addSkip(&result, CodeTranscriptMalformed, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_techspec.md")))
 			addSkip(&result, CodeContractUndeclared, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_techspec.md")))
 		}
 		addStageSkips(&result, stage)
@@ -154,6 +163,7 @@ func checkAuthoringStage(specsRoot, repoRoot, slug string, stage Stage) (Result,
 		CodeMetricUndeclared,
 	)
 
+	horizon := newContractHorizon(repoRoot, prdPath)
 	artifacts := []constraintArtifact{prd}
 	techSpecPath := filepath.Join(specDir, "_techspec.md")
 	techSpecPresent := false
@@ -171,6 +181,7 @@ func checkAuthoringStage(specsRoot, repoRoot, slug string, stage Stage) (Result,
 			if err != nil {
 				return result, fmt.Errorf("read Spec artifact %q: %w", techSpecPath, err)
 			}
+			detectTranscripts(&result, horizon, techSpecContent, artifactDisplayPath(repoRoot, techSpecPath))
 			detectPromiseDeclaration(
 				&result,
 				parsePromiseSection(techSpecContent, "API Contracts", coverageContract),
@@ -182,6 +193,8 @@ func checkAuthoringStage(specsRoot, repoRoot, slug string, stage Stage) (Result,
 			for _, code := range detectorCodes {
 				addSkip(&result, code, artifactDisplayPath(repoRoot, techSpecPath))
 			}
+			addSkip(&result, CodeTranscriptUndeclared, artifactDisplayPath(repoRoot, techSpecPath))
+			addSkip(&result, CodeTranscriptMalformed, artifactDisplayPath(repoRoot, techSpecPath))
 			addSkip(&result, CodeContractUndeclared, artifactDisplayPath(repoRoot, techSpecPath))
 		}
 		if err := detectVocabularyContract(&result, repoRoot, techSpecPath, found); err != nil {
@@ -189,6 +202,10 @@ func checkAuthoringStage(specsRoot, repoRoot, slug string, stage Stage) (Result,
 		}
 	}
 	if err := detectAuthoringStageUnsupportedCitations(&result, repoRoot, citationArtifactPaths); err != nil {
+		return result, err
+	}
+
+	if err := detectReceipts(&result, repoRoot, horizon, citationArtifactPaths); err != nil {
 		return result, err
 	}
 

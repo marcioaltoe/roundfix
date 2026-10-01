@@ -392,8 +392,8 @@ func TestRunInitForceOverwritesExistingConfig(t *testing.T) {
 		t.Fatalf("read config: %v", err)
 	}
 	if !strings.Contains(string(content), "profiles:") ||
-		!strings.Contains(string(content), "model: gpt-5.6-sol") ||
-		!strings.Contains(string(content), "model: opus") ||
+		!strings.Contains(string(content), "model: "+roundconfig.Builtin().Profiles[roundconfig.CategoryGeneral].Profile.Preferred.Model) ||
+		!strings.Contains(string(content), "model: "+roundconfig.Builtin().Profiles[roundconfig.CategoryFrontend].Profile.Preferred.Model) ||
 		strings.Contains(string(content), "agent: claude") ||
 		strings.Contains(string(content), "runtimes:") {
 		t.Fatalf("expected generated config to replace old content, got %s", string(content))
@@ -1523,13 +1523,12 @@ type profilesShowTestResponse struct {
 }
 
 type profilesShowTestProfile struct {
-	Category             string                           `json:"category"`
-	Source               string                           `json:"source"`
-	InheritedFrom        string                           `json:"inherited_from"`
-	RecommendationSource string                           `json:"recommendation_source"`
-	Preferred            profilesShowTestSelection        `json:"preferred"`
-	Fallbacks            []profilesShowTestSelection      `json:"fallbacks"`
-	Recommendations      []profilesShowTestRecommendation `json:"recommendations"`
+	Category        string                           `json:"category"`
+	Source          string                           `json:"source"`
+	InheritedFrom   string                           `json:"inherited_from"`
+	Preferred       profilesShowTestSelection        `json:"preferred"`
+	Fallbacks       []profilesShowTestSelection      `json:"fallbacks"`
+	Recommendations []profilesShowTestRecommendation `json:"recommendations"`
 }
 
 type profilesShowTestSelection struct {
@@ -1540,14 +1539,11 @@ type profilesShowTestSelection struct {
 
 type profilesShowTestRecommendation struct {
 	Category          string                    `json:"category"`
+	Role              string                    `json:"role"`
 	Rank              int                       `json:"rank"`
 	Selection         profilesShowTestSelection `json:"selection"`
-	Benchmark         string                    `json:"benchmark"`
-	ResultPercent     float64                   `json:"result_percent"`
-	AverageCostUSD    float64                   `json:"average_cost_usd"`
 	SourceAsOf        string                    `json:"source_as_of"`
 	Rationale         string                    `json:"rationale"`
-	CategorySpecific  bool                      `json:"category_specific"`
 	UnavailableReason string                    `json:"unavailable_reason,omitempty"`
 }
 
@@ -1578,8 +1574,8 @@ profiles:
 		t.Fatalf("expected no diagnostics on stderr, got %q", stderr.String())
 	}
 	response := decodeProfilesShowResponse(t, stdout.String())
-	if response.Schema != "roundfix/profiles/v1" {
-		t.Fatalf("schema = %q, want roundfix/profiles/v1", response.Schema)
+	if response.Schema != "roundfix/profiles/v2" {
+		t.Fatalf("schema = %q, want roundfix/profiles/v2", response.Schema)
 	}
 	if len(response.Profiles) != 1 {
 		t.Fatalf("len(profiles) = %d, want 1", len(response.Profiles))
@@ -1596,33 +1592,25 @@ profiles:
 	if len(profile.Fallbacks) != 1 || profile.Fallbacks[0] != wantFallback {
 		t.Fatalf("fallbacks = %+v, want [%+v]", profile.Fallbacks, wantFallback)
 	}
-	if profile.RecommendationSource != "backend" {
-		t.Fatalf("recommendation_source = %q, want backend", profile.RecommendationSource)
-	}
-	if len(profile.Recommendations) != 5 {
-		t.Fatalf("len(recommendations) = %d, want 5", len(profile.Recommendations))
+	if len(profile.Recommendations) != 2 {
+		t.Fatalf("len(recommendations) = %d, want 2", len(profile.Recommendations))
 	}
 	first := profile.Recommendations[0]
 	if first.Rank != 1 || first.Category != "backend" {
 		t.Fatalf("first recommendation identity = %+v, want backend rank 1", first)
 	}
-	if first.Selection != (profilesShowTestSelection{Runtime: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"}) {
+	if first.Selection != (profilesShowTestSelection{Runtime: "codex", Model: "gpt-6.1-sol", ReasoningEffort: "high"}) {
 		t.Fatalf("first recommendation selection = %+v", first.Selection)
 	}
-	if first.Benchmark != "DeepSWE v1.1" || first.ResultPercent != 69 || first.AverageCostUSD != 3.47 || first.SourceAsOf != roundconfig.ModelRecommendationSnapshotDate {
+	if first.Role != "preferred" || first.SourceAsOf != roundconfig.ModelRecommendationSnapshotVersion || first.Rationale == "" {
 		t.Fatalf("first recommendation evidence = %+v", first)
-	}
-	if first.CategorySpecific {
-		t.Fatalf("category_specific = true, want false")
-	}
-	if !strings.Contains(first.Rationale, "complex repository changes") {
-		t.Fatalf("first recommendation rationale missing backend context: %q", first.Rationale)
 	}
 	if profile.Preferred.Model == first.Selection.Model {
 		t.Fatalf("configured preferred must remain primary; recommendation rank one replaced it")
 	}
 }
 
+// Keep the recorded test identity; optional categories now have their own recommendations.
 func TestProfilesShowOptionalCategoryReportsGeneralRecommendationSource(t *testing.T) {
 	t.Parallel()
 	withCLIWorkspace(t)
@@ -1645,14 +1633,11 @@ func TestProfilesShowOptionalCategoryReportsGeneralRecommendationSource(t *testi
 	if profile.InheritedFrom != "general" {
 		t.Fatalf("inherited_from = %q, want general", profile.InheritedFrom)
 	}
-	if profile.RecommendationSource != "general" {
-		t.Fatalf("recommendation_source = %q, want general", profile.RecommendationSource)
+	if len(profile.Recommendations) != 2 {
+		t.Fatalf("len(recommendations) = %d, want 2", len(profile.Recommendations))
 	}
-	if len(profile.Recommendations) != 5 {
-		t.Fatalf("len(recommendations) = %d, want 5", len(profile.Recommendations))
-	}
-	if profile.Recommendations[0].Category != "data" || profile.Recommendations[0].Selection.Model != "gpt-5.6-sol" {
-		t.Fatalf("optional recommendation should label data while reusing general order, got %+v", profile.Recommendations[0])
+	if profile.Recommendations[0].Category != "data" || profile.Recommendations[0].Selection.Model != "gpt-6.1-sol" {
+		t.Fatalf("optional recommendation should label data with its own profile, got %+v", profile.Recommendations[0])
 	}
 }
 
@@ -2265,6 +2250,10 @@ func TestProfilesConfigureInteractiveRequiresCompleteFallbackBeforeConfirm(t *te
 
 func TestProfilesValidateDeduplicatesProofsAndReportsEveryReference(t *testing.T) {
 	t.Parallel()
+	profile, _ := roundconfig.RecommendedProfile(roundconfig.CategoryGeneral)
+	frontend, _ := roundconfig.RecommendedProfile(roundconfig.CategoryFrontend)
+	review, _ := roundconfig.RecommendedProfile(roundconfig.CategoryReview)
+
 	homeDir, _ := withCLIWorkspace(t)
 	runner := &fakeAgentRunner{}
 	withAgentRunner(t, runner)
@@ -2283,19 +2272,19 @@ func TestProfilesValidateDeduplicatesProofsAndReportsEveryReference(t *testing.T
 	if response.Schema != "roundfix/profiles-validate/v1" || !response.OK {
 		t.Fatalf("unexpected validate response: %+v", response)
 	}
-	if len(runner.probeRequests) != 3 {
-		t.Fatalf("expected three unique tuple probes, got %#v", runner.probeRequests)
+	if len(runner.probeRequests) != 4 {
+		t.Fatalf("expected four unique tuple probes, got %#v", runner.probeRequests)
 	}
-	wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "opus"}
+	wantModels := []string{profile.Preferred.Model, profile.Fallbacks[0].Model, frontend.Fallbacks[0].Model, review.Preferred.Model}
 	for index, want := range wantModels {
 		if runner.probeRequests[index].Runtime.Model != want {
 			t.Fatalf("probe %d model = %q, want %q", index, runner.probeRequests[index].Runtime.Model, want)
 		}
 	}
-	if len(response.Proofs) != 3 {
-		t.Fatalf("len(proofs) = %d, want 3", len(response.Proofs))
+	if len(response.Proofs) != 4 {
+		t.Fatalf("len(proofs) = %d, want 4", len(response.Proofs))
 	}
-	assertProofReferences(t, response.Proofs[0], []string{"general/preferred", "backend/preferred", "frontend/fallback", "qa/preferred", "review/preferred"})
+	assertProofReferences(t, response.Proofs[0], []string{"general/preferred", "backend/preferred", "qa/preferred", "review/fallback"})
 	if runner.calls != 0 {
 		t.Fatalf("profiles validate must not send Agent prompts, calls=%d", runner.calls)
 	}
@@ -2303,6 +2292,9 @@ func TestProfilesValidateDeduplicatesProofsAndReportsEveryReference(t *testing.T
 }
 
 func TestProfilesValidateTextNamesADegradedPolicy(t *testing.T) {
+	profile, _ := roundconfig.RecommendedProfile(roundconfig.CategoryBackend)
+	preferred := profile.Preferred.Runtime + " / " + profile.Preferred.Model + " / " + profile.Preferred.ReasoningEffort
+	fallback := profile.Fallbacks[0].Runtime + " / " + profile.Fallbacks[0].Model + " / " + profile.Fallbacks[0].ReasoningEffort
 	const degradedPolicy = agent.AccessPolicy("full-access (degraded: sandbox preset unavailable)")
 	tests := []struct {
 		name       string
@@ -2313,27 +2305,27 @@ func TestProfilesValidateTextNamesADegradedPolicy(t *testing.T) {
 			name:   "degraded full access",
 			policy: degradedPolicy,
 			wantStdout: "Profiles validate passed.\n" +
-				"1. codex / gpt-5.6-sol / high — passed (effective access policy: " + string(degradedPolicy) + ")\n" +
+				"1. " + preferred + " — passed (effective access policy: " + string(degradedPolicy) + ")\n" +
 				"   - backend preferred source=built-in\n" +
-				"2. codex / gpt-5.5 / xhigh — passed (effective access policy: " + string(degradedPolicy) + ")\n" +
+				"2. " + fallback + " — passed (effective access policy: " + string(degradedPolicy) + ")\n" +
 				"   - backend fallback[1] source=built-in\n",
 		},
 		{
 			name:   "ordinary full access",
 			policy: agent.AccessPolicyFullAccess,
 			wantStdout: "Profiles validate passed.\n" +
-				"1. codex / gpt-5.6-sol / high — passed\n" +
+				"1. " + preferred + " — passed\n" +
 				"   - backend preferred source=built-in\n" +
-				"2. codex / gpt-5.5 / xhigh — passed\n" +
+				"2. " + fallback + " — passed\n" +
 				"   - backend fallback[1] source=built-in\n",
 		},
 		{
 			name:   "runtime default access",
 			policy: agent.AccessPolicyRuntimeDefault,
 			wantStdout: "Profiles validate passed.\n" +
-				"1. codex / gpt-5.6-sol / high — passed\n" +
+				"1. " + preferred + " — passed\n" +
 				"   - backend preferred source=built-in\n" +
-				"2. codex / gpt-5.5 / xhigh — passed\n" +
+				"2. " + fallback + " — passed\n" +
 				"   - backend fallback[1] source=built-in\n",
 		},
 	}
@@ -2372,17 +2364,17 @@ func TestDoctorNamesADegradedPolicy(t *testing.T) {
 		{
 			name:             "degraded full access",
 			policy:           degradedPolicy,
-			wantProfilesLine: "profiles: ok (3 distinct tuples; 10 category references; effective access policy: " + string(degradedPolicy) + ")",
+			wantProfilesLine: "profiles: ok (4 distinct tuples; 10 category references; effective access policy: " + string(degradedPolicy) + ")",
 		},
 		{
 			name:             "ordinary full access",
 			policy:           agent.AccessPolicyFullAccess,
-			wantProfilesLine: "profiles: ok (3 distinct tuples; 10 category references)",
+			wantProfilesLine: "profiles: ok (4 distinct tuples; 10 category references)",
 		},
 		{
 			name:             "runtime default access",
 			policy:           agent.AccessPolicyRuntimeDefault,
-			wantProfilesLine: "profiles: ok (3 distinct tuples; 10 category references)",
+			wantProfilesLine: "profiles: ok (4 distinct tuples; 10 category references)",
 		},
 	}
 	for _, tt := range tests {
@@ -2539,10 +2531,21 @@ func TestProveProfileSelectionsDeduplicatesReferencesAndStartsFreshProofPass(t *
 			}, nil
 		},
 	}
+	preferred := roundconfig.AgentSelection{Runtime: "codex", Model: "shared-preferred", ReasoningEffort: "high"}
+	fallback := roundconfig.AgentSelection{Runtime: "claude", Model: "shared-fallback", ReasoningEffort: "high"}
+	frontendPreferred := roundconfig.AgentSelection{Runtime: "claude", Model: "frontend-preferred", ReasoningEffort: "xhigh"}
+	config := roundconfig.Config{Profiles: roundconfig.Profiles{}}
 	categories := roundconfig.RequiredWorkCategories()
+	for _, category := range categories {
+		profile := roundconfig.AgentSelectionProfile{Preferred: preferred, Fallbacks: []roundconfig.AgentSelection{fallback}}
+		if category == roundconfig.CategoryFrontend {
+			profile = roundconfig.AgentSelectionProfile{Preferred: frontendPreferred, Fallbacks: []roundconfig.AgentSelection{preferred}}
+		}
+		config.Profiles[category] = roundconfig.ProfileEntry{Profile: profile, Source: roundconfig.ProfileSourceBuiltIn}
+	}
 
-	first := proveProfileSelections(context.Background(), roundconfig.Builtin(), categories, "/workspace", runner)
-	second := proveProfileSelections(context.Background(), roundconfig.Builtin(), categories, "/workspace", runner)
+	first := proveProfileSelections(context.Background(), config, categories, "/workspace", runner)
+	second := proveProfileSelections(context.Background(), config, categories, "/workspace", runner)
 
 	if first.Err != nil || second.Err != nil {
 		t.Fatalf("profile readiness errors: first=%v second=%v", first.Err, second.Err)
@@ -2565,14 +2568,26 @@ func TestProveProfileSelectionsDeduplicatesReferencesAndStartsFreshProofPass(t *
 
 func TestProveProfileSelectionsRetainsStableFallbackPositions(t *testing.T) {
 	t.Parallel()
-	config := roundconfig.Builtin()
-	shared := config.Profiles[roundconfig.CategoryBackend].Profile.Fallbacks[0]
-	frontend := config.Profiles[roundconfig.CategoryFrontend]
-	frontend.Profile.Fallbacks = []roundconfig.AgentSelection{
-		{Runtime: "claude", Model: "frontend-first-fallback", ReasoningEffort: ""},
-		shared,
-	}
-	config.Profiles[roundconfig.CategoryFrontend] = frontend
+	shared := roundconfig.AgentSelection{Runtime: "claude", Model: "shared-fallback", ReasoningEffort: "high"}
+	config := roundconfig.Config{Profiles: roundconfig.Profiles{
+		roundconfig.CategoryBackend: {
+			Source: roundconfig.ProfileSourceBuiltIn,
+			Profile: roundconfig.AgentSelectionProfile{
+				Preferred: roundconfig.AgentSelection{Runtime: "codex", Model: "backend-preferred", ReasoningEffort: "high"},
+				Fallbacks: []roundconfig.AgentSelection{shared},
+			},
+		},
+		roundconfig.CategoryFrontend: {
+			Source: roundconfig.ProfileSourceBuiltIn,
+			Profile: roundconfig.AgentSelectionProfile{
+				Preferred: roundconfig.AgentSelection{Runtime: "claude", Model: "frontend-preferred", ReasoningEffort: "xhigh"},
+				Fallbacks: []roundconfig.AgentSelection{
+					{Runtime: "claude", Model: "frontend-first-fallback", ReasoningEffort: ""},
+					shared,
+				},
+			},
+		},
+	}}
 	runner := &profileReadinessExactRunner{
 		prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
 			return agent.SelectionProof{Runtime: req.Runtime.ID, Model: req.Runtime.Model, ReasoningEffort: req.Runtime.ReasoningEffort}, nil
@@ -2599,6 +2614,48 @@ func TestProveProfileSelectionsRetainsStableFallbackPositions(t *testing.T) {
 	}
 	if got := sharedProof.References[1]; got.Category != roundconfig.CategoryFrontend || got.Role != "fallback" || got.FallbackIndex != 2 || got.Source != roundconfig.ProfileSourceBuiltIn {
 		t.Fatalf("frontend fallback reference = %+v", got)
+	}
+}
+
+func TestBuiltInProfilesProveOncePerUniqueTuple(t *testing.T) {
+	t.Parallel()
+	config := roundconfig.Builtin()
+	categories := roundconfig.RequiredWorkCategories()
+	unique := map[roundconfig.AgentSelection]bool{}
+	for _, category := range categories {
+		profile := config.Profiles[category].Profile
+		unique[profile.Preferred] = true
+		for _, fallback := range profile.Fallbacks {
+			unique[fallback] = true
+		}
+	}
+	runner := &profileReadinessExactRunner{
+		prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
+			return agent.SelectionProof{Runtime: req.Runtime.ID, Model: req.Runtime.Model, ReasoningEffort: req.Runtime.ReasoningEffort}, nil
+		},
+	}
+	result := proveProfileSelections(context.Background(), config, categories, "/workspace", runner)
+	if result.Err != nil {
+		t.Fatalf("profile readiness error = %v", result.Err)
+	}
+	if len(result.Proofs) != len(unique) || len(runner.exactRequests) != len(unique) {
+		t.Fatalf("proofs = %d, exact requests = %d, want %d unique tuples", len(result.Proofs), len(runner.exactRequests), len(unique))
+	}
+	if runner.probeCalls != 0 {
+		t.Fatalf("legacy error-only probes = %d, want exact proof results", runner.probeCalls)
+	}
+	counts := map[roundconfig.AgentSelection]int{}
+	for _, req := range runner.exactRequests {
+		selection := roundconfig.AgentSelection{Runtime: req.Runtime.ID, Model: req.Runtime.Model, ReasoningEffort: req.Runtime.ReasoningEffort}
+		if !unique[selection] {
+			t.Fatalf("unexpected proof request for %+v", selection)
+		}
+		counts[selection]++
+	}
+	for selection := range unique {
+		if counts[selection] != 1 {
+			t.Errorf("exact proof requests for %+v = %d, want 1", selection, counts[selection])
+		}
 	}
 }
 
@@ -2671,6 +2728,8 @@ func TestProfileOperationalPreflightMatchesProfilesValidateClassifiedFailure(t *
 
 func TestInvocationProfileOverrideOmittedUsesTaskQAAndReviewProfiles(t *testing.T) {
 	t.Parallel()
+	profile, _ := roundconfig.RecommendedProfile(roundconfig.CategoryGeneral)
+	frontend, _ := roundconfig.RecommendedProfile(roundconfig.CategoryFrontend)
 	runner := &fakeAgentRunner{}
 	var stderr bytes.Buffer
 	graph := &spec.Graph{Tasks: []spec.Task{
@@ -2688,16 +2747,16 @@ func TestInvocationProfileOverrideOmittedUsesTaskQAAndReviewProfiles(t *testing.
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no warning without invocation override, got %q", stderr.String())
 	}
-	wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "opus"}
+	wantModels := []string{profile.Preferred.Model, profile.Fallbacks[0].Model, frontend.Fallbacks[0].Model}
 	if got := probeRequestModels(runner.probeRequests); !reflect.DeepEqual(got, wantModels) {
 		t.Fatalf("probe models = %v, want %v", got, wantModels)
 	}
 	if len(result.Proofs) != 3 {
 		t.Fatalf("len(proofs) = %d, want 3", len(result.Proofs))
 	}
-	assertProofReferences(t, result.Proofs[0], []string{"backend/preferred", "frontend/fallback", "qa/preferred"})
-	assertProofReferences(t, result.Proofs[1], []string{"backend/fallback", "qa/fallback"})
-	assertProofReferences(t, result.Proofs[2], []string{"frontend/preferred"})
+	assertProofReferences(t, result.Proofs[0], []string{"backend/preferred", "qa/preferred"})
+	assertProofReferences(t, result.Proofs[1], []string{"backend/fallback", "frontend/preferred", "qa/fallback"})
+	assertProofReferences(t, result.Proofs[2], []string{"frontend/fallback"})
 	for _, request := range runner.probeRequests {
 		if request.WorkDir != "/workspace" {
 			t.Fatalf("probe WorkDir = %q, want /workspace", request.WorkDir)
@@ -2782,7 +2841,8 @@ func TestInvocationProfileOverrideAppliesAcrossCategoriesPreservesFallbacksAndWa
 	if result.Override == nil || result.Override.Model != "gpt-5.6-sol" || result.Override.ReasoningEffort != "high" {
 		t.Fatalf("unexpected invocation override: %+v", result.Override)
 	}
-	wantModels := []string{"gpt-5.6-sol", "gpt-5.5"}
+	profile, _ := roundconfig.RecommendedProfile(roundconfig.CategoryBackend)
+	wantModels := []string{req.model, profile.Fallbacks[0].Model}
 	if got := probeRequestModels(runner.probeRequests); !reflect.DeepEqual(got, wantModels) {
 		t.Fatalf("probe models = %v, want %v", got, wantModels)
 	}
@@ -2812,9 +2872,9 @@ func TestInvocationProfileOverrideAppliesAcrossCategoriesPreservesFallbacksAndWa
 func TestProfilesShowReportsUnavailableRecommendationWithoutReordering(t *testing.T) {
 	t.Parallel()
 	unavailableSelection := roundconfig.AgentSelection{
-		Runtime:         "codex",
-		Model:           "gpt-5.6-terra",
-		ReasoningEffort: "max",
+		Runtime:         "claude",
+		Model:           "opus",
+		ReasoningEffort: "high",
 	}
 	response, err := buildProfilesShowResponseWithAvailability(roundconfig.Builtin(), []roundconfig.WorkCategory{roundconfig.CategoryBackend}, map[roundconfig.AgentSelection]string{
 		unavailableSelection: "adapter proof rejected tuple",
@@ -2826,21 +2886,21 @@ func TestProfilesShowReportsUnavailableRecommendationWithoutReordering(t *testin
 		t.Fatalf("len(profiles) = %d, want 1", len(response.Profiles))
 	}
 	recommendations := response.Profiles[0].Recommendations
-	if len(recommendations) != 5 {
-		t.Fatalf("len(recommendations) = %d, want 5", len(recommendations))
+	if len(recommendations) != 2 {
+		t.Fatalf("len(recommendations) = %d, want 2", len(recommendations))
 	}
 	for index, recommendation := range recommendations {
 		if recommendation.Rank != index+1 {
 			t.Fatalf("rank at index %d = %d, want %d", index, recommendation.Rank, index+1)
 		}
 	}
-	if recommendations[0].Selection.Model != "gpt-5.6-sol" || recommendations[1].Selection.Model != "opus" || recommendations[2].Selection.Model != "gpt-5.6-terra" {
+	if recommendations[0].Selection.Model != "gpt-6.1-sol" || recommendations[1].Selection.Model != "opus" {
 		t.Fatalf("recommendation order changed: %+v", recommendations)
 	}
-	if recommendations[2].UnavailableReason != "adapter proof rejected tuple" {
-		t.Fatalf("unavailable_reason = %q, want proof rejection", recommendations[2].UnavailableReason)
+	if recommendations[1].UnavailableReason != "adapter proof rejected tuple" {
+		t.Fatalf("unavailable_reason = %q, want proof rejection", recommendations[1].UnavailableReason)
 	}
-	if recommendations[0].UnavailableReason != "" || recommendations[1].UnavailableReason != "" {
+	if recommendations[0].UnavailableReason != "" {
 		t.Fatalf("unexpected unavailable marker outside rejected tuple: %+v", recommendations)
 	}
 }
@@ -2849,15 +2909,12 @@ func TestModelRecommendationsUseOfficialCatalogModels(t *testing.T) {
 	t.Parallel()
 	for _, category := range roundconfig.AllWorkCategories() {
 		t.Run(string(category), func(t *testing.T) {
-			recommendations, source, ok := roundconfig.ModelRecommendations(category)
+			recommendations, ok := roundconfig.ModelRecommendations(category)
 			if !ok {
 				t.Fatalf("ModelRecommendations(%q) missing", category)
 			}
-			if len(recommendations) != 5 {
-				t.Fatalf("len(recommendations) = %d, want 5", len(recommendations))
-			}
-			if source == "" {
-				t.Fatal("recommendation source is empty")
+			if len(recommendations) != 2 {
+				t.Fatalf("len(recommendations) = %d, want 2", len(recommendations))
 			}
 			seenModels := map[string]bool{}
 			for index, recommendation := range recommendations {
@@ -2874,14 +2931,11 @@ func TestModelRecommendationsUseOfficialCatalogModels(t *testing.T) {
 				if !modelCatalogContainsSelection(recommendation.Selection) {
 					t.Fatalf("recommendation uses non-catalog official model: %+v", recommendation.Selection)
 				}
-				if recommendation.Benchmark == "" || recommendation.SourceAsOf != roundconfig.ModelRecommendationSnapshotDate {
+				if recommendation.SourceAsOf != roundconfig.ModelRecommendationSnapshotVersion {
 					t.Fatalf("recommendation has incomplete source evidence: %+v", recommendation)
 				}
 				if recommendation.Rationale == "" {
 					t.Fatalf("recommendation rationale is empty: %+v", recommendation)
-				}
-				if recommendation.CategorySpecific {
-					t.Fatalf("category_specific = true, want false for initial snapshot")
 				}
 			}
 		})
@@ -2980,7 +3034,7 @@ func assertProfilesShowTextContainsProfile(t *testing.T, output string, profile 
 		"Profile source: " + profile.Source,
 		"Profile inherited from: " + emptyDashForTest(profile.InheritedFrom),
 		"Preferred Selection: " + selectionStringForTest(profile.Preferred),
-		"Recommendation source: " + profile.RecommendationSource,
+		"Recommended profile (snapshot " + roundconfig.ModelRecommendationSnapshotVersion + "):",
 	} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("profiles text missing %q in:\n%s", want, output)
@@ -2993,7 +3047,7 @@ func assertProfilesShowTextContainsProfile(t *testing.T, output string, profile 
 		}
 	}
 	for _, recommendation := range profile.Recommendations {
-		want := fmt.Sprintf("%d. %s — %s %s, average cost $%.2f, source %s, category_specific=%t", recommendation.Rank, selectionStringForTest(recommendation.Selection), recommendation.Benchmark, formatPercentForTest(recommendation.ResultPercent), recommendation.AverageCostUSD, recommendation.SourceAsOf, recommendation.CategorySpecific)
+		want := fmt.Sprintf("%d. %s %s", recommendation.Rank, recommendation.Role, selectionStringForTest(recommendation.Selection))
 		if !strings.Contains(output, want) {
 			t.Fatalf("profiles text missing recommendation %q in:\n%s", want, output)
 		}
@@ -3009,13 +3063,6 @@ func emptyDashForTest(value string) string {
 		return "—"
 	}
 	return value
-}
-
-func formatPercentForTest(value float64) string {
-	if value == float64(int(value)) {
-		return fmt.Sprintf("%d%%", int(value))
-	}
-	return fmt.Sprintf("%.1f%%", value)
 }
 
 func modelCatalogContainsSelection(selection roundconfig.AgentSelection) bool {
@@ -3887,8 +3934,8 @@ func assertSetupCommandHealthyMachineIsIdempotent(t *testing.T) {
 	if len(fake.installCalls) != 0 || len(fake.initScopes) != 0 || len(fake.writeCalls) != 0 || len(fake.prompts) != 0 {
 		t.Fatalf("expected idempotent setup to avoid side effects, installs=%v init=%v writes=%v prompts=%v", fake.installCalls, fake.initScopes, fake.writeCalls, fake.prompts)
 	}
-	if len(fake.probeRequests) != 3 {
-		t.Fatalf("expected three distinct exact profile proofs, got %#v", fake.probeRequests)
+	if len(fake.probeRequests) != 4 {
+		t.Fatalf("expected four distinct exact profile proofs, got %#v", fake.probeRequests)
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
@@ -3981,10 +4028,13 @@ func TestRunSetupProfileProofsEveryDistinctTupleOnceBeforePersistence(t *testing
 	if code != exitOK {
 		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
 	}
-	want := map[roundconfig.AgentSelection]int{
-		{Runtime: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"}: 1,
-		{Runtime: "codex", Model: "gpt-5.5", ReasoningEffort: "xhigh"}:    1,
-		{Runtime: "claude", Model: "opus", ReasoningEffort: "xhigh"}:      1,
+	want := map[roundconfig.AgentSelection]int{}
+	for _, category := range roundconfig.RequiredWorkCategories() {
+		profile, _ := roundconfig.RecommendedProfile(category)
+		want[profile.Preferred] = 1
+		for _, selection := range profile.Fallbacks {
+			want[selection] = 1
+		}
 	}
 	got := map[roundconfig.AgentSelection]int{}
 	for _, request := range fake.probeRequests {
@@ -4131,8 +4181,8 @@ func TestRunSetupProfilePersistenceMatchesSubsequentValidation(t *testing.T) {
 	if result.Err != nil {
 		t.Fatalf("subsequent profile validation: %v", result.Err)
 	}
-	if len(result.Proofs) != 3 || len(validationRunner.exactRequests) != 3 {
-		t.Fatalf("subsequent validation proofs=%d requests=%d, want three distinct tuples", len(result.Proofs), len(validationRunner.exactRequests))
+	if len(result.Proofs) != 4 || len(validationRunner.exactRequests) != 4 {
+		t.Fatalf("subsequent validation proofs=%d requests=%d, want four distinct tuples", len(result.Proofs), len(validationRunner.exactRequests))
 	}
 }
 
@@ -4148,7 +4198,7 @@ func TestRunSetupNoInputProfileProofCreatesNoTargets(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
 	}
-	if len(fake.probeRequests) != 3 || len(fake.files) != 0 || len(fake.writeCalls) != 0 || len(fake.prompts) != 0 {
+	if len(fake.probeRequests) != 4 || len(fake.files) != 0 || len(fake.writeCalls) != 0 || len(fake.prompts) != 0 {
 		t.Fatalf("--no-input proof/mutation mismatch: proofs=%d files=%v writes=%v prompts=%v", len(fake.probeRequests), fake.files, fake.writeCalls, fake.prompts)
 	}
 }
@@ -4458,8 +4508,8 @@ func TestRunSetupProfileProofUsesProposedProfilesAndWorkDir(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("expected setup exit 0, got %d (stdout %q stderr %q)", code, stdout.String(), stderr.String())
 	}
-	if len(fake.probeRequests) != 3 {
-		t.Fatalf("expected three generated profile proofs, got %#v", fake.probeRequests)
+	if len(fake.probeRequests) != 4 {
+		t.Fatalf("expected four generated profile proofs, got %#v", fake.probeRequests)
 	}
 	for _, gotProbe := range fake.probeRequests {
 		if gotProbe.WorkDir != fake.gitRoot {
@@ -4471,7 +4521,7 @@ func TestRunSetupProfileProofUsesProposedProfilesAndWorkDir(t *testing.T) {
 func TestRunSetupAcceptsConfiguredEmptyReasoningEffort(t *testing.T) {
 	t.Parallel()
 	fake := newSetupFakeDeps()
-	customConfig := strings.ReplaceAll(roundconfig.DefaultConfigYAML(), "reasoning_effort: high", `reasoning_effort: ""`)
+	customConfig := strings.ReplaceAll(roundconfig.DefaultConfigYAML(), fmt.Sprintf("reasoning_effort: %q", roundconfig.Builtin().Runtimes.Codex.ReasoningEffort), `reasoning_effort: ""`)
 	fake.files[fake.userConfigPath] = customConfig
 	fake.files[fake.projectConfigPath] = customConfig
 	withSetupFakeDeps(t, fake)
@@ -4485,7 +4535,7 @@ func TestRunSetupAcceptsConfiguredEmptyReasoningEffort(t *testing.T) {
 	}
 	found := false
 	for _, gotProbe := range fake.probeRequests {
-		if gotProbe.Runtime.ID == "codex" && gotProbe.Runtime.Model == "gpt-5.6-sol" && gotProbe.Runtime.ReasoningEffort == "" {
+		if gotProbe.Runtime.ID == "codex" && gotProbe.Runtime.Model == roundconfig.Builtin().Runtimes.Codex.Model && gotProbe.Runtime.ReasoningEffort == "" {
 			found = true
 		}
 	}

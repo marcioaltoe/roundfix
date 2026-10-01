@@ -893,6 +893,18 @@ The Spec Consistency Check uses an ADR horizon: `SC-ADR-RELATED` reports an ADR
 for a committed Spec only when the commit that added the ADR is an ancestor of
 the commit that added the Spec's `_prd.md`.
 
+When a Spec attributes behavior to a decision record, its paragraph carries a
+Claim Receipt: the source and a verbatim quote. The Spec Consistency Check
+proves the quote against the source after normalizing whitespace, which makes
+the written claim traceable without asking the check to decide whether the
+quote supports it.
+
+When a TechSpec changes a command surface, it declares a Surface Transcript
+with the command, standard output, standard error, and exit code. The QA gate
+reproduces each transcript through the built product; `...` matches zero or
+more consecutive lines, angle-bracket text matches one or more characters in
+the same line, and all other text and the exit code match exactly.
+
 ## Source and attribution
 
 This method is adapted from **Matt Pocock's skills** —

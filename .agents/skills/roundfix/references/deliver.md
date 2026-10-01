@@ -193,6 +193,66 @@ roundfix 1.0.0 is behind latest 1.1.0; run roundfix upgrade
 Freshness failures and offline checks stay silent and do not change the Run
 outcome.
 
+### Recommendation check
+
+Doctor prints `recommendations:` immediately after `profiles:` from the
+configuration it already loaded. It reports `ok` when no category differs,
+`found` with counts and `run roundfix profiles check` otherwise, or `skipped`
+with the reason when comparison cannot run. This line opens no Agent Session
+and never fails Doctor.
+
+`roundfix upgrade [--check]` writes a recommendation notice to standard error
+after every successful release outcome, leaving standard output and the exit
+code unchanged. After an install, the installed executable runs `profiles
+check` in the process working directory under a ten-second timeout; otherwise
+the running executable compares in process. A failed comparison prints only
+`roundfix: recommendations not checked: <reason>`. Help, usage errors and
+failed upgrades print no notice. An upgrade performed by an older executable
+prints none; the notice starts with a subsequent upgrade.
+
+`roundfix profiles check [--json]` compares every configured Agent Work
+Category with the Recommended Profile in the shipped snapshot, including the
+Preferred Selection and the full ordered Fallback Chain. It is read-only and
+offline, opens no Agent Session, and writes nothing. Undefined optional
+categories are omitted. The three statuses are `current` (the profile equals
+the recommendation, even with a deviation), `differs` (a difference without a
+deviation for the shipped snapshot), and `pinned` (a difference whose deviation
+names that snapshot). An older deviation remains visible as `differs`, with
+its original date. Text prints differences and pins, then the counts; a fully
+current configuration prints only the summary. `--json` uses
+`roundfix/profiles-check/v1`, with `snapshot`, `current`, `differ`, `pinned`
+and every configured category in order. Each row carries `category`, `status`,
+`source`, `configured`, `recommended`, and an optional `deviation`.
+The command exits `0` even with differences and `2` for usage or configuration
+load errors. `profiles show` adds `Recommendation status` and any declared
+`Deviation`, plus JSON fields `recommendation_status` and `deviation`, under
+its existing `roundfix/profiles/v2` schema; an undefined optional category's
+status is `inherited`.
+
+`roundfix profiles check --apply --scope user|project [--dry-run] [--yes]
+[--json]` adopts only differing categories, writing each complete Recommended
+Profile without a deviation. Current and pinned categories stay unchanged.
+`--scope` is required; `--scope`, `--dry-run` and `--yes` require `--apply`.
+With `--scope user`, categories supplied by Project Config are skipped and
+named on standard error with advice to use `--scope project`. Adoption opens
+disposable Agent Sessions to prove every exact tuple before confirmation or
+writing, using the same preview, output and exit codes as `profiles configure`.
+`--dry-run` proves and previews without writing; `--yes` skips confirmation.
+Failed proof and declined confirmation leave all configuration bytes unchanged.
+`--json` uses `roundfix/profiles-configure/v1`. With nothing to adopt, nothing
+is prepared, proved or written: text prints `Profile configuration unchanged:
+nothing to adopt`, JSON has `changed: false` and empty `profiles` and `changes`,
+and the command exits `0`.
+
+A configured Agent Selection Profile can carry a Profile Deviation under
+`deviation`, with `from` (the snapshot calendar date, `YYYY-MM-DD`) and `reason`
+(a non-empty string after trimming). It records that the profile's difference
+from the Recommended Profile is deliberate for that snapshot. `profiles
+configure` writes a deviation its fragment carries and removes an old deviation
+when the replacement fragment omits it. A Roundfix older than this release
+refuses a configuration that uses the key.
+
+
 ## Run Window
 
 ```bash

@@ -1,9 +1,73 @@
 # Model selection reference
 
-Updated 2026-09-08. This is advisory evidence for choosing a model; configured
+Updated 2026-09-30. This is advisory evidence for choosing a model; configured
 Agent Selection Profiles determine execution. No profile was changed by this
 refresh. API prices, subscription quota, runtime advertisement, and a successful
 ACP selection are different facts.
+
+## Current shipped snapshot
+
+The binary's Recommended Profile is dated 2026-09-30. Each selection is shown
+as `runtime / model / effort`; the rationale is recorded beside it.
+
+| Agent Work Category | Preferred Selection | Preferred rationale | Fallback Selection | Fallback rationale |
+| --- | --- | --- | --- | --- |
+| `general` | `codex / gpt-6.1-sol / high` | The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer. | `claude / opus / high` | Changes runtime; `opus` resolves to Opus 5.5. |
+| `backend` | `codex / gpt-6.1-sol / high` | The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer. | `claude / opus / high` | Changes runtime; `opus` resolves to Opus 5.5. |
+| `frontend` | `claude / opus / high` | Design judgment; `opus` resolves to Opus 5.5. | `codex / gpt-6.1-sol / xhigh` | Changes runtime; the provider places connected visual work at extra-high effort. |
+| `data` | `codex / gpt-6.1-sol / high` | The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer. | `claude / opus / high` | Changes runtime; `opus` resolves to Opus 5.5. |
+| `infra` | `codex / gpt-6.1-sol / high` | The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer. | `claude / opus / high` | Changes runtime; `opus` resolves to Opus 5.5. |
+| `docs` | `codex / gpt-5.6-luna / max` | Bounded work that blocks no other Task; about five minutes per session at a fraction of the price. | `claude / sonnet / high` | Changes runtime; Sonnet 5.5 is the efficient Claude model. |
+| `test` | `codex / gpt-6.1-sol / high` | The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer. | `claude / opus / high` | Changes runtime; `opus` resolves to Opus 5.5. |
+| `chore` | `codex / gpt-5.6-luna / max` | Bounded work that blocks no other Task; about five minutes per session at a fraction of the price. | `claude / sonnet / high` | Changes runtime; Sonnet 5.5 is the efficient Claude model. |
+| `qa` | `codex / gpt-6.1-sol / high` | The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer. | `claude / opus / high` | Changes runtime; `opus` resolves to Opus 5.5. |
+| `review` | `codex / gpt-5.6-luna / max` | Bounded work that blocks no other Task; about five minutes per session at a fraction of the price. | `codex / gpt-6.1-sol / high` | Stays on Codex, because every review selection must use the pre-PR review provider's runtime. |
+
+### Model Catalog and picker efforts
+
+The catalog and picker values were read from `codex-acp` 2.0.1 and
+`claude-agent-acp` 0.84.0 on 2026-09-30. The Codex catalog, in order, is
+`gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`, `gpt-6-luna`, `gpt-5.6-sol`,
+`gpt-5.6-terra`, and `gpt-5.6-luna`. The Claude catalog, in order, is `opus`,
+`sonnet`, `claude-fable-5-1`, `haiku`, and `default`.
+
+The picker reasoning efforts are `low`, `medium`, `high`, `xhigh`, and `max`
+for Codex; Claude also offers `default`.
+
+The adapter floors are `codex-acp` 2.0.1 and `claude-agent-acp` 0.84.0.
+Baseline semantic analysis uses `gpt-6.1-sol` and then `gpt-5.6-sol`, both at
+`xhigh`.
+
+### Published evidence
+
+These figures were read on 2026-09-30 by the model research and were not
+re-measured here. “Not found” means no published figure was found.
+
+| Model | Released | Published evidence | Source |
+| --- | --- | --- | --- |
+| `gpt-6.1-sol` | 2026-09-29 | Artificial Analysis Index 52; LiveBench agentic 54.5; DeepSWE and Terminal-Bench 4.0 not found | [OpenAI](https://openai.com/index/introducing-gpt-6-1-sol/), [LiveBench](https://livebench.ai/) |
+| `gpt-6-astra` | 2026-09-03 | DeepSWE 74.1% at `xhigh`; Terminal-Bench 4.0 59.6 | [DeepSWE](https://deepswe.datacurve.ai/), [Artificial Analysis](https://artificialanalysis.ai/evaluations/terminalbench-4-0) |
+| `gpt-6-sol` | 2026-09-22 | DeepSWE 68.8% at `max`; Terminal-Bench 4.0 43.9 | [DeepSWE](https://deepswe.datacurve.ai/), [Artificial Analysis](https://artificialanalysis.ai/evaluations/terminalbench-4-0) |
+| `gpt-6-luna` | 2026-09-22 | DeepSWE 66.6% at `max`; Terminal-Bench 4.0 12.6 | [DeepSWE](https://deepswe.datacurve.ai/), [Artificial Analysis](https://artificialanalysis.ai/evaluations/terminalbench-4-0) |
+| `gpt-5.6-sol` | 2026-07-09 | DeepSWE 72.7% at `max`, 69% at `high`; Terminal-Bench 4.0 39.9 | [DeepSWE](https://deepswe.datacurve.ai/), [Artificial Analysis](https://artificialanalysis.ai/evaluations/terminalbench-4-0) |
+| `gpt-5.6-luna` | 2026-07-09 | DeepSWE 67.2% at `max` | [DeepSWE](https://deepswe.datacurve.ai/) |
+| Opus 5.5 (`opus`) | 2026-09-22 | Terminal-Bench 4.0 59.6; LiveBench 71.7; DeepSWE not found | [Anthropic](https://www.anthropic.com/claude-opus-5-5), [LiveBench](https://livebench.ai/) |
+| Sonnet 5.5 (`sonnet`) | 2026-09-28 | LiveBench 39.3; Terminal-Bench 4.0 63.6, unconfirmed on the primary page | [Anthropic](https://www.anthropic.com/claude-sonnet-5-5) |
+| Fable 5.1 (`claude-fable-5-1`) | 2026-09-01 | Terminal-Bench 4.0 55.1; LiveBench 66.1 | [Artificial Analysis](https://artificialanalysis.ai/evaluations/terminalbench-4-0) |
+
+### Retirements and local session measurement
+
+The [ChatGPT and Codex model documentation](https://learn.chatgpt.com/docs/models)
+says `gpt-5.5` leaves Codex with ChatGPT sign-in on 2026-10-14, and `gpt-5.4`
+and `gpt-5.4-mini` left on 2026-08-31. The [Claude model configuration
+documentation](https://code.claude.com/docs/en/model-config) says the alias
+`opus` resolves to Opus 5.5 since Claude Code 2.1.280.
+
+Local measurement from 2026-09-15 to 2026-09-30 found that
+`gpt-5.6-sol`/`high` averaged 18.8 minutes per `backend` session and 15.1 per
+`qa` session; `gpt-5.6-luna`/`max` averaged about 5 minutes per `docs` session.
+
+## Historical sections — not current selection advice
 
 ## Current models, versions, and token prices
 

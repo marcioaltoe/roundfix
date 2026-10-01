@@ -158,6 +158,22 @@ func withEnvValue(env []string, key string, value string) []string {
 func fakeACPXCommand(t *testing.T) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "acpx")
+	builtin := roundconfig.Builtin()
+	options := []map[string]string{}
+	seen := map[string]bool{}
+	for _, category := range roundconfig.RequiredWorkCategories() {
+		profile := builtin.Profiles[category].Profile
+		for _, selection := range append([]roundconfig.AgentSelection{profile.Preferred}, profile.Fallbacks...) {
+			if !seen[selection.Model] {
+				seen[selection.Model] = true
+				options = append(options, map[string]string{"value": selection.Model})
+			}
+		}
+	}
+	modelsJSON, err := json.Marshal(options)
+	if err != nil {
+		t.Fatal(err)
+	}
 	body := fmt.Sprintf(`#!/bin/sh
 if [ "$1" = "--version" ]; then
   printf '%%s\n' '%s'
@@ -186,9 +202,9 @@ case " $* " in
     done
     model=$(cat "$0.$session.model")
     if [ -z "$model" ]; then
-      model="gpt-5.6-sol"
+      model="%s"
     fi
-    printf '{"schema":"acpx.session.v1","acpx":{"current_model_id":"%%s","config_options":[{"id":"model","category":"model","type":"select","currentValue":"%%s","options":[{"value":"gpt-5.6-sol"},{"value":"gpt-5.5"}]},{"id":"reasoning_effort","type":"select","currentValue":"medium","options":[{"value":"low"},{"value":"medium"},{"value":"high"},{"value":"xhigh"},{"value":"max"},{"value":"maximum"},{"value":"ultra"}]}]}}\n' "$model" "$model"
+    printf '{"schema":"acpx.session.v1","acpx":{"current_model_id":"%%s","config_options":[{"id":"model","category":"model","type":"select","currentValue":"%%s","options":%s},{"id":"reasoning_effort","type":"select","currentValue":"medium","options":[{"value":"low"},{"value":"medium"},{"value":"high"},{"value":"xhigh"},{"value":"max"},{"value":"maximum"},{"value":"ultra"}]}]}}\n' "$model" "$model"
     exit 0
     ;;
   *" set model "*|*" set reasoning_effort "*|*" set effort "*)
@@ -215,7 +231,7 @@ case " $* " in
       model=$(cat "$state_path")
       current_reasoning="$config_value"
     fi
-    printf '{"action":"config_set","configId":"%%s","value":"%%s","configOptions":[{"id":"model","category":"model","type":"select","currentValue":"%%s","options":[{"value":"gpt-5.6-sol"},{"value":"gpt-5.5"}]},{"id":"reasoning_effort","type":"select","currentValue":"%%s","options":[{"value":"low"},{"value":"medium"},{"value":"high"},{"value":"xhigh"},{"value":"max"},{"value":"maximum"},{"value":"ultra"}]}]}\n' "$config_id" "$config_value" "$model" "$current_reasoning"
+    printf '{"action":"config_set","configId":"%%s","value":"%%s","configOptions":[{"id":"model","category":"model","type":"select","currentValue":"%%s","options":%s},{"id":"reasoning_effort","type":"select","currentValue":"%%s","options":[{"value":"low"},{"value":"medium"},{"value":"high"},{"value":"xhigh"},{"value":"max"},{"value":"maximum"},{"value":"ultra"}]}]}\n' "$config_id" "$config_value" "$model" "$current_reasoning"
     exit 0
     ;;
   *" sessions close "*)
@@ -242,7 +258,7 @@ case " $* " in
     ;;
 esac
 exit 0
-`, agent.MinimumACPXVersion, implementFixtureAgentMarkerPrefix)
+`, agent.MinimumACPXVersion, builtin.Runtimes.Codex.Model, modelsJSON, modelsJSON, implementFixtureAgentMarkerPrefix)
 	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
 		t.Fatalf("write fake acpx: %v", err)
 	}
@@ -253,6 +269,15 @@ exit 0
 	if err := os.WriteFile(adapterPath, []byte("#!/bin/sh\nprintf '%s\\n' '@agentclientprotocol/codex-acp "+agent.PinnedCodexAdapterVersion+"'\n"), 0o755); err != nil {
 		t.Fatalf("write fake codex-acp: %v", err)
 	}
+	claudeAdapterPath := filepath.Join(filepath.Dir(path), "claude-agent-acp")
+	if err := os.WriteFile(claudeAdapterPath, []byte("#!/bin/sh\nprintf '%s\\n' '@agentclientprotocol/claude-agent-acp "+agent.PinnedClaudeAdapterVersion+"'\n"), 0o755); err != nil {
+		t.Fatalf("write fake claude-agent-acp: %v", err)
+	}
+	// Bind each runtime to its own isolated adapter; one command override cannot
+	// prove the lineage of both runtimes in the built-in Fallback Chain.
+	configPath := filepath.Join(commandEnvironmentForTest(t).homeDir, ".acpx", "config.json")
+	mustMkdir(t, filepath.Dir(configPath))
+	mustWrite(t, configPath, `{"agents":{"codex":{"command":"codex-acp"},"claude":{"command":"claude-agent-acp"}}}`)
 	return path
 }
 
@@ -1761,7 +1786,7 @@ func TestRunImplementDetachPrintsReportAndCompletesRun(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	fakeACPX := fakeACPXCommand(t)
 	stdout, stderr, code := runCLIHelper(t, repoDir, fakeACPX, nil,
-		"implement", "--spec", implementTestSlug, "--agent-command", "codex-acp --stdio", "--detach")
+		"implement", "--spec", implementTestSlug, "--detach")
 
 	if code != exitOK {
 		t.Fatalf("expected detach caller exit 0, got %d stderr=%q stdout=%q", code, stderr, stdout)
@@ -1832,7 +1857,7 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 		_ = os.WriteFile(releasePrompt, []byte("release\n"), 0o644)
 	})
 	fakeACPX := fakeACPXCommand(t)
-	cmd := exec.Command(os.Args[0], "implement", "--spec", implementTestSlug, "--agent-command", "codex-acp --stdio", "--detach")
+	cmd := exec.Command(os.Args[0], "implement", "--spec", implementTestSlug, "--detach")
 	cmd.Dir = repoDir
 	cmd.Env = cliHelperEnv(t, fakeACPX, map[string]string{
 		"ROUNDFIX_FAKE_ACPX_PROMPT_STARTED": promptStarted,
@@ -7617,8 +7642,8 @@ func assertMacroFrontendProfileShow(t *testing.T, response macroProfilesShowResp
 	if len(profile.Fallbacks) != 1 || profile.Fallbacks[0].Runtime != "claude" || profile.Fallbacks[0].Model != "claude-fable-5" || profile.Fallbacks[0].ReasoningEffort != "xhigh" {
 		t.Fatalf("unexpected frontend fallback chain: %#v", profile.Fallbacks)
 	}
-	if len(profile.Recommendations) != 5 {
-		t.Fatalf("expected exactly five recommendations, got %#v", profile.Recommendations)
+	if len(profile.Recommendations) != 2 {
+		t.Fatalf("expected exactly two recommendations, got %#v", profile.Recommendations)
 	}
 	seen := map[string]bool{}
 	for index, recommendation := range profile.Recommendations {

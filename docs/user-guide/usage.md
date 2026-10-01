@@ -8,6 +8,9 @@ agent driving Roundfix. For flags, outputs, and boundaries per command, see the
 [configuration](configuration.md); for install, see the
 [README](../../README.md#install).
 
+`roundfix upgrade` writes a recommendation notice to standard error after each
+successful release outcome, without changing standard output or the exit code.
+
 ## Before you start
 
 1. Install Roundfix (npm launcher or `make build`) and put it on `PATH`.
@@ -77,11 +80,12 @@ and `review`. Optional Task Type categories `data`, `infra`, `docs`, `test`,
 and `chore` inherit the effective `general` profile when absent; if you define
 one, it must be complete. Built-ins use official model identifiers:
 
-- `general`, `backend`, `qa`, and `review`: preferred
-  `codex / gpt-5.6-sol / high`, fallback
-  `codex / gpt-5.5 / xhigh`.
-- `frontend`: preferred `claude / opus / xhigh`, fallback
-  `codex / gpt-5.6-sol / high`.
+- `general`, `backend`, and `qa`: preferred
+  `codex / gpt-6.1-sol / high`, fallback `claude / opus / high`.
+- `frontend`: preferred `claude / opus / high`, fallback
+  `codex / gpt-6.1-sol / xhigh`.
+- `review`: preferred `codex / gpt-5.6-luna / max`, fallback
+  `codex / gpt-6.1-sol / high`.
 
 Use this complete Project Config or User Config shape when you want explicit
 profiles for every required category:
@@ -91,62 +95,60 @@ profiles:
   general:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
     fallbacks:
-      - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
   backend:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
     fallbacks:
-      - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
   frontend:
     preferred:
       runtime: claude
       model: opus
-      reasoning_effort: xhigh
+      reasoning_effort: "high"
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-sol
-        reasoning_effort: high
+        model: gpt-6.1-sol
+        reasoning_effort: "xhigh"
   qa:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
     fallbacks:
-      - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
   review:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
+      model: gpt-5.6-luna
+      reasoning_effort: "max"
     fallbacks:
       - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
+        model: gpt-6.1-sol
+        reasoning_effort: "high"
 ```
 
-The Codex Model Catalog recognizes `gpt-5.6-sol`, `gpt-5.6-terra`, and
-`gpt-5.6-luna` as official identifiers; GPT-5.5/xhigh remains the generated
-fallback for the four Codex-led profiles. A valid identifier and an advisory
+The Codex Model Catalog recognizes `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`,
+`gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.6-luna` as official identifiers;
+A valid identifier and an advisory
 recommendation rank are not readiness claims. Roundfix proves operational
 availability in the effective environment through exact proof of the complete
 runtime/model/reasoning tuple. Custom model values remain forward-compatible:
 Roundfix sends them verbatim for the same proof instead of treating the catalog
 as an allowlist. The Claude Model Catalog recognizes the identifiers the adapter
-advertises: `opus`, `claude-fable-5`, `sonnet`, `haiku`, and `default`. It
-previously listed `claude-opus-5` and `claude-opus-4-8`, which no adapter
-advertises, and omitted three that it does; the catalog now follows the
-adapter.
+advertises: `opus`, `sonnet`, `claude-fable-5-1`, `haiku`,
+and `default`. The `opus` alias resolves to Opus 5.5.
 
 When an adapter advertises an independent reasoning control, Roundfix treats
 every advertised Agent Model identifier as opaque. Copy bracketed identifiers
@@ -156,25 +158,25 @@ annotation, not a reasoning effort; `reasoning_effort: 1m` is rejected. See
 [ADR-0079](../adr/0079-independent-reasoning-controls-make-model-identifiers-opaque.md).
 
 Adapter Readiness requires the effective Codex command to prove official
-`@agentclientprotocol/codex-acp` lineage at version `1.1.5` or newer and the
+`@agentclientprotocol/codex-acp` lineage at version `2.0.1` or newer and the
 effective Claude command to prove official
-`@agentclientprotocol/claude-agent-acp` lineage at version `0.63.0` or newer.
+`@agentclientprotocol/claude-agent-acp` lineage at version `0.84.0` or newer.
 The deterministic install actions are
-`npm install -g @agentclientprotocol/codex-acp@1.1.5` and
-`npm install -g @agentclientprotocol/claude-agent-acp@0.63.0`.
+`npm install -g @agentclientprotocol/codex-acp@2.0.1` and
+`npm install -g @agentclientprotocol/claude-agent-acp@0.84.0`.
 
 A bare `codex-acp` override can resolve to a package that fails official
 lineage proof; Setup then migrates it, after authorization, to
-`npx -y @agentclientprotocol/codex-acp@1.1.5`. Setup also migrates earlier
+`npx -y @agentclientprotocol/codex-acp@2.0.1`. Setup also migrates earlier
 explicit pins such as `1.1.4`. Any Claude override that fails official lineage proof — including one
 resolving to a differently named or differently scoped package — is migrated
 the same way, to
-`npx -y @agentclientprotocol/claude-agent-acp@0.63.0`.
+`npx -y @agentclientprotocol/claude-agent-acp@0.84.0`.
 
 ### Inspect profiles
 
 `profiles show` is read-only and prints the effective source, inherited source,
-Preferred Selection, fallback order, and five advisory recommendations:
+Preferred Selection, fallback order, and the advisory Recommended Profile:
 
 ```bash
 roundfix profiles show
@@ -182,11 +184,24 @@ roundfix profiles show --category backend
 roundfix profiles show --category backend --json
 ```
 
-JSON uses schema `roundfix/profiles/v1`. Recommendations come from a
-2026-08-07 five-entry snapshot. Each row includes benchmark, result, average
-cost, source date, rationale, and `category_specific: false`. They are advisory
-only: the list is not category-specific proof, not automatic routing input, and
-never mutates User Config or Project Config.
+JSON uses schema `roundfix/profiles/v2`. Each Agent Work Category has a
+Recommended Profile dated 2026-09-30: its Preferred Selection at rank 1 with
+role `preferred`, followed by its Fallback Chain with role `fallback`.
+Each row includes the selection, source date, and rationale. The Recommended
+Profile never selects, routes, or writes User Config or Project Config.
+Interactive configure shows the same rows as advisory guidance.
+
+Run `roundfix profiles check --apply --scope project` to adopt differing Recommended Profiles after exact proof and confirmation; `--dry-run` previews and `--yes` skips confirmation.
+
+Run `roundfix profiles check` to compare configured categories with the
+recommendation in the binary, offline and without opening an Agent Session or
+writing a file. It reports `current` for an exact match, `differs` for a
+difference, and `pinned` for a difference whose deviation names the shipped
+snapshot; an older deviation leaves the category `differs`. Undefined optional
+categories are omitted. Differences exit `0`; usage and configuration errors
+exit `2`. Add `--json` for schema `roundfix/profiles-check/v1`. `profiles show`
+also prints each category's `Recommendation status`, using `inherited` for an
+undefined optional category, and includes its deviation when declared.
 
 ### Configure profiles
 
@@ -249,8 +264,10 @@ artifact creation, or Run persistence. An explicit empty
 `--reasoning-effort ""` counts as present and requests model-managed reasoning;
 Roundfix never substitutes it for a rejected explicit `high` request. A
 complete override replaces only the Preferred Selection for each relevant
-category and keeps its configured Fallback Chain. If one override applies
-across multiple Task or QA categories, Roundfix emits a warning in text output
+category and keeps its configured Fallback Chain; when the override equals one
+of those fallbacks, that fallback's position takes the configured Preferred
+Selection, so the chain never holds the same selection twice. If one override
+applies across multiple Task or QA categories, Roundfix emits a warning in text output
 and JSON metadata.
 
 Operational Runs prove every relevant preferred and fallback tuple before Run

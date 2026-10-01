@@ -1,0 +1,14 @@
+{
+  "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0191-qa-lishbkph/candidate",
+  "command": [
+    "./bin/roundfix",
+    "spec",
+    "check",
+    "0191-claims-with-receipts-and-contracts-as-they-ship",
+    "--strict"
+  ],
+  "exit": 0,
+  "stdout": "Spec 0191-claims-with-receipts-and-contracts-as-they-ship\nNo findings. Authored Verification commands were not executed.\nSkipped:\n  SC-FINDING-LIFECYCLE: missing docs/findings Finding\n  SC-ROLLUP-MEMBER: missing docs/findings rollup\n  SC-TRANSCRIPT-UNDECLARED: missing a PRD committed at or after .agents/skills/write-techspec/references/concrete-contracts.md\n  SC-RECEIPT-MISSING: missing a PRD committed at or after .agents/skills/write-techspec/references/concrete-contracts.md\n  SC-REF-UNRESOLVED: missing docs/specs/0191-claims-with-receipts-and-contracts-as-they-ship/references/_index.md\n",
+  "stderr": "",
+  "candidate": "c5340e8e061c021513ec32c33254e31317ff81b0"
+}

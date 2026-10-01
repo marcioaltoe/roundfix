@@ -18,9 +18,9 @@ codex runtime hygiene checks and prints one line per check with status `ok`,
 `failed`, or `skipped`; residue and storage can also report `found` or
 `partial`. Adapter
 Readiness requires the effective Codex command to prove official
-`@agentclientprotocol/codex-acp` lineage at version `1.1.5` or newer and the
+`@agentclientprotocol/codex-acp` lineage at version `2.0.1` or newer and the
 effective Claude command to prove official
-`@agentclientprotocol/claude-agent-acp` lineage at version `0.63.0` or newer;
+`@agentclientprotocol/claude-agent-acp` lineage at version `0.84.0` or newer;
 executable presence and a matching name are not proof. The `profiles:` line is
 the selection authority: it exact-proves every distinct Preferred Selection
 and fallback through disposable ACP Sessions and reports affected category

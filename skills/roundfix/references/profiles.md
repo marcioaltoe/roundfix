@@ -8,18 +8,19 @@ runtime-owned model configuration, credentials, or adapter settings.
 
 Required built-ins:
 
-- `general`, `backend`, `qa`, and `review`: preferred
-  `codex / gpt-5.6-sol / high`, fallback
-  `codex / gpt-5.5 / xhigh`.
-- `frontend`: preferred `claude / opus / xhigh`, fallback
-  `codex / gpt-5.6-sol / high`.
+- `general`, `backend`, and `qa`: preferred
+  `codex / gpt-6.1-sol / high`, fallback `claude / opus / high`.
+- `frontend`: preferred `claude / opus / high`, fallback
+  `codex / gpt-6.1-sol / xhigh`.
+- `review`: preferred `codex / gpt-5.6-luna / max`, fallback
+  `codex / gpt-6.1-sol / high`.
 
 Optional Task Type categories `data`, `infra`, `docs`, `test`, and `chore`
 inherit the effective `general` profile when absent. If configured, they must
-be complete. The Model Catalog recognizes `gpt-5.6-sol`, `gpt-5.6-terra`, and
-`gpt-5.6-luna` as official Codex identifiers, plus the Claude identifiers the
-adapter advertises: `opus`, `claude-fable-5`, `sonnet`, `haiku`, and `default`.
-The adapter advertises Opus 5 as `opus[1m]`; the capability parser removes the
+be complete. The Model Catalog recognizes `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`,
+`gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.6-luna` as official Codex identifiers, plus the Claude identifiers the
+adapter advertises: `opus`, `sonnet`, `claude-fable-5-1`, `haiku`, and `default`.
+The adapter advertises Opus 5.5 as `opus[1m]`; the capability parser removes the
 bracketed context suffix, so `opus` is the catalog value. Catalog validity is distinct
 from advisory recommendation rank and from operational availability: exact
 proof in the effective environment is the only readiness authority. Explicit
@@ -39,24 +40,51 @@ Project Config and User Config use the profile structure:
 
 ```yaml
 profiles:
+  general:
+    preferred:
+      runtime: codex
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
+    fallbacks:
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
   backend:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
     fallbacks:
-      - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
   frontend:
     preferred:
       runtime: claude
       model: opus
-      reasoning_effort: xhigh
+      reasoning_effort: "high"
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-sol
-        reasoning_effort: high
+        model: gpt-6.1-sol
+        reasoning_effort: "xhigh"
+  qa:
+    preferred:
+      runtime: codex
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
+    fallbacks:
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
+  review:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-luna
+      reasoning_effort: "max"
+    fallbacks:
+      - runtime: codex
+        model: gpt-6.1-sol
+        reasoning_effort: "high"
 ```
 
 Use the profile management commands for inspection, writes, and disposable
@@ -68,11 +96,13 @@ roundfix profiles configure --scope project --file profiles.yml --dry-run --json
 roundfix profiles validate --json
 ```
 
-`profiles show` is read-only and returns `roundfix/profiles/v1` JSON with the
+`profiles show` is read-only and returns `roundfix/profiles/v2` JSON with the
 effective source, inherited source, Preferred Selection, ordered fallbacks, and
-five recommendations. Recommendations are dated `2026-08-07`, include
-benchmark/result/cost/rationale evidence, set `category_specific: false`, and
-are advisory only. They never route, prove availability, or mutate config.
+the Recommended Profile. Each of the ten Agent Work Categories has one dated
+`2026-09-30`: its Preferred Selection at rank 1 with role `preferred`, then its
+Fallback Chain with role `fallback`. Rows include the selection, source date,
+and rationale. Interactive configure prints the same advisory rows. The
+Recommended Profile never selects, routes, proves availability, or writes config.
 
 `profiles configure` prepares the candidate in memory, validates it, and
 exact-proves each distinct Preferred Selection and fallback before

@@ -217,6 +217,10 @@ func TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest(t *testing.T)
 
 func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *testing.T) {
 	t.Parallel()
+	profile, _ := roundconfig.RecommendedProfile(roundconfig.CategoryGeneral)
+	frontend, _ := roundconfig.RecommendedProfile(roundconfig.CategoryFrontend)
+	review, _ := roundconfig.RecommendedProfile(roundconfig.CategoryReview)
+
 	tests := []struct {
 		name       string
 		checker    *doctorFakeHealthChecker
@@ -234,7 +238,8 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 			wantStdout: "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
 				"acpx: ok (" + agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion + ")\n" +
 				doctorReadyAdapterLine +
-				"profiles: ok (3 distinct tuples; 10 category references)\n" +
+				"profiles: ok (4 distinct tuples; 10 category references)\n" +
+				doctorBuiltinRecommendationsLine() +
 				"pre-pr-review: ok (provider=codex; source=default)\n" +
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
 				"residue: ok (no process residue found)\n" +
@@ -252,7 +257,8 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 			wantStdout: "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
 				"acpx: ok (" + agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion + ")\n" +
 				doctorReadyAdapterLine +
-				"profiles: ok (3 distinct tuples; 10 category references)\n" +
+				"profiles: ok (4 distinct tuples; 10 category references)\n" +
+				doctorBuiltinRecommendationsLine() +
 				"pre-pr-review: ok (provider=codex; source=default)\n" +
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
 				"residue: ok (no process residue found)\n" +
@@ -270,7 +276,8 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 			wantStdout: "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
 				"acpx: ok (" + agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion + ")\n" +
 				doctorReadyAdapterLine +
-				"profiles: ok (3 distinct tuples; 10 category references)\n" +
+				"profiles: ok (4 distinct tuples; 10 category references)\n" +
+				doctorBuiltinRecommendationsLine() +
 				"pre-pr-review: ok (provider=codex; source=default)\n" +
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
 				"residue: ok (no process residue found)\n" +
@@ -299,10 +306,10 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 			if stderr.Len() != 0 {
 				t.Fatalf("expected no stderr, got %q", stderr.String())
 			}
-			if len(runner.exactRequests) != 3 {
-				t.Fatalf("expected three distinct profile proofs, got %#v", runner.exactRequests)
+			if len(runner.exactRequests) != 4 {
+				t.Fatalf("expected four distinct profile proofs, got %#v", runner.exactRequests)
 			}
-			wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "opus"}
+			wantModels := []string{profile.Preferred.Model, profile.Fallbacks[0].Model, frontend.Fallbacks[0].Model, review.Preferred.Model}
 			for index, wantModel := range wantModels {
 				if request := runner.exactRequests[index]; request.WorkDir != "/repo/project" || request.Runtime.Model != wantModel {
 					t.Fatalf("profile proof %d = %#v, want model %q in repository", index, request, wantModel)
@@ -735,10 +742,10 @@ func TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes(t *testing.T) {
 				t.Fatalf("exit code = %d, want %d; stdout=%q stderr=%q", code, test.wantCode, stdout.String(), stderr.String())
 			}
 			lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
-			if len(lines) != 9 || lines[2] != test.wantLine {
+			if len(lines) != 10 || lines[2] != test.wantLine {
 				t.Fatalf("unexpected Doctor output lines:\n%q\nwant adapter line %q at index 2", lines, test.wantLine)
 			}
-			wantLineNames := []string{"node", "acpx", "adapter", "profiles", HealthCheckPrePRReview, "skills", "residue", "storage", "codex"}
+			wantLineNames := []string{"node", "acpx", "adapter", "profiles", HealthCheckRecommendations, HealthCheckPrePRReview, "skills", "residue", "storage", "codex"}
 			for index, name := range wantLineNames {
 				if !strings.HasPrefix(lines[index], name+": ") {
 					t.Fatalf("Doctor line %d = %q, want %q check", index, lines[index], name)
@@ -847,6 +854,8 @@ func TestRunDoctorAdapterReadinessIncludesFallbackOnlyRuntime(t *testing.T) {
 func TestRunDoctorProfileReadinessReportsLegacyAdapterThroughEffectiveProfile(t *testing.T) {
 	t.Parallel()
 	config := roundconfig.Builtin()
+	general, _ := roundconfig.RecommendedProfile(roundconfig.CategoryGeneral)
+	frontend, _ := roundconfig.RecommendedProfile(roundconfig.CategoryFrontend)
 	config.Defaults.Agent = "codex"
 	config.Runtimes.Codex.Model = "legacy-model-default"
 	proofs, err := buildProfileProofReports(config, roundconfig.RequiredWorkCategories())
@@ -901,8 +910,8 @@ func TestRunDoctorProfileReadinessReportsLegacyAdapterThroughEffectiveProfile(t 
 	for _, want := range []string{
 		"adapter: ok (claude: claude-agent-acp | codex: command=\"codex-acp\"; package=@zed-industries/codex-acp; version=0.16.0)",
 		"profiles: failed",
-		`runtime="codex", model="gpt-5.6-sol", reasoning_effort="high"`,
-		"affected categories: general preferred source=built-in, backend preferred source=built-in, frontend fallback[1] source=built-in, qa preferred source=built-in, review preferred source=built-in",
+		fmt.Sprintf(`runtime=%q, model=%q, reasoning_effort=%q`, general.Preferred.Runtime, general.Preferred.Model, general.Preferred.ReasoningEffort),
+		"affected categories: general preferred source=built-in, backend preferred source=built-in, qa preferred source=built-in, review fallback[1] source=built-in",
 		"classification: adapter_lineage_unknown",
 		"adapter evidence: command=\"codex-acp\", version=\"0.16.0\"",
 		"next: run `" + agent.CodexAdapterInstallCommand() + "`",
@@ -915,8 +924,8 @@ func TestRunDoctorProfileReadinessReportsLegacyAdapterThroughEffectiveProfile(t 
 		t.Fatalf("Doctor reported legacy configured-runtime readiness: %q", stdout.String())
 	}
 	if len(checker.adapterRuntimes) != 2 ||
-		checker.adapterRuntimes[0].ID != "claude" || checker.adapterRuntimes[0].Model != "opus" || checker.adapterRuntimes[0].ReasoningEffort != "xhigh" ||
-		checker.adapterRuntimes[1].ID != "codex" || checker.adapterRuntimes[1].Model != "gpt-5.6-sol" || checker.adapterRuntimes[1].ReasoningEffort != "high" {
+		checker.adapterRuntimes[0].ID != "claude" || checker.adapterRuntimes[0].Model != frontend.Preferred.Model || checker.adapterRuntimes[0].ReasoningEffort != frontend.Preferred.ReasoningEffort ||
+		checker.adapterRuntimes[1].ID != "codex" || checker.adapterRuntimes[1].Model != general.Preferred.Model || checker.adapterRuntimes[1].ReasoningEffort != general.Preferred.ReasoningEffort {
 		t.Fatalf("adapter checks did not use the effective required profiles in runtime order: %#v", checker.adapterRuntimes)
 	}
 	if stderr.Len() != 0 {
@@ -1177,8 +1186,8 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 				t.Fatalf("exit code = %d, want %d; stderr=%q", code, test.wantCode, stderr.String())
 			}
 			lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
-			if len(lines) != 9 || lines[5] != test.wantLine {
-				t.Fatalf("unexpected Doctor output lines:\n%q\nwant skills line %q at index 5", lines, test.wantLine)
+			if len(lines) != 10 || lines[6] != test.wantLine {
+				t.Fatalf("unexpected Doctor output lines:\n%q\nwant skills line %q at index 6", lines, test.wantLine)
 			}
 			if skillCalls != 1 || checker.nodeCalls != 1 || checker.acpxCalls != 1 || checker.adapterCalls != 2 || checker.codexCalls != 1 {
 				t.Fatalf("independent check calls skills=%d node=%d acpx=%d adapter=%d codex=%d",
@@ -1414,6 +1423,7 @@ func TestRunDoctorMissingRepositoryRoot(t *testing.T) {
 		"acpx: ok\n" +
 		doctorReadyAdapterLine +
 		"profiles: ok (0 distinct tuples; 0 category references)\n" +
+		doctorBuiltinRecommendationsLine() +
 		"pre-pr-review: ok (provider=codex; source=default)\n" +
 		"skills: failed (Repository Skill Set readiness requires a Git repository; next: run roundfix doctor from a Git repository)\n" +
 		"residue: ok (no process residue found)\n" +
@@ -1508,6 +1518,7 @@ func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
 		"acpx: ok\n" +
 		doctorReadyAdapterLine +
 		"profiles: ok (0 distinct tuples; 0 category references)\n" +
+		doctorBuiltinRecommendationsLine() +
 		"pre-pr-review: ok (provider=codex; source=default)\n" +
 		fmt.Sprintf(
 			"skills: ok (%d required: %d Roundfix-owned, %d external)\n",

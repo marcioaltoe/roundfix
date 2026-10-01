@@ -1,0 +1,18 @@
+{
+  "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0191-qa-lishbkph/candidate",
+  "command": [
+    "./bin/roundfix",
+    "spec",
+    "check",
+    "0200-example",
+    "--stage",
+    "prd",
+    "--strict",
+    "--format",
+    "json"
+  ],
+  "exit": 0,
+  "stdout": "{\"schema\":\"roundfix-speccheck/v1\",\"slug\":\"0200-example\",\"findings\":[],\"repairInputs\":[],\"skipped\":[{\"code\":\"SC-FINDING-LIFECYCLE\",\"missing\":\"docs/findings Finding\"},{\"code\":\"SC-ROLLUP-MEMBER\",\"missing\":\"docs/findings rollup\"},{\"code\":\"SC-TRANSCRIPT-UNDECLARED\",\"missing\":\"stage prd\"},{\"code\":\"SC-TRANSCRIPT-MALFORMED\",\"missing\":\"stage prd\"},{\"code\":\"SC-TRANSCRIPT-UNGATED\",\"missing\":\"stage prd\"},{\"code\":\"SC-COVERAGE-UNMAPPED\",\"missing\":\"stage prd\"},{\"code\":\"SC-CONTRACT-UNDECLARED\",\"missing\":\"stage prd\"},{\"code\":\"SC-VOCABULARY-UNDOCUMENTED\",\"missing\":\"stage prd\"},{\"code\":\"SC-ADR-UNLISTED\",\"missing\":\"stage prd\"},{\"code\":\"SC-ADR-RELATED\",\"missing\":\"stage prd\"},{\"code\":\"SC-COVERAGE-UNTASKED\",\"missing\":\"stage prd\"},{\"code\":\"SC-REF-UNRESOLVED\",\"missing\":\"stage prd\"},{\"code\":\"SC-VERIFY-WORK-INDEPENDENT\",\"missing\":\"stage prd\"},{\"code\":\"SC-VERIFY-INVERTED-EXIT\",\"missing\":\"stage prd\"},{\"code\":\"SC-VERIFY-WRAP-FRAGILE\",\"missing\":\"stage prd\"},{\"code\":\"SC-VERIFY-NON-HERMETIC\",\"missing\":\"stage prd\"},{\"code\":\"SC-VERIFY-VACUOUS-COMMAND\",\"missing\":\"stage prd\"},{\"code\":\"SC-REQUIREMENT-CONTRADICTORY\",\"missing\":\"stage prd\"},{\"code\":\"SC-REHEARSAL-UNDECLARED\",\"missing\":\"stage prd\"},{\"code\":\"SC-QA-VERIFICATION-AUTHORED\",\"missing\":\"stage prd\"},{\"code\":\"SC-ORDINAL-CLAIMED\",\"missing\":\"stage prd\"},{\"code\":\"SC-WAVE-COLLISION\",\"missing\":\"stage prd\"},{\"code\":\"SC-TOOLING-UNDECLARED\",\"missing\":\"stage prd\"},{\"code\":\"SC-CLI-UNDOCUMENTED\",\"missing\":\"stage prd\"}],\"verification\":{\"executed\":false,\"commands\":[]}}\n",
+  "stderr": "",
+  "candidate": "10c3295297a23b76a7b6975edf1caded7948ca1f"
+}

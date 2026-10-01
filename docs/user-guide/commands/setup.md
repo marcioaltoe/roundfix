@@ -7,16 +7,16 @@ roundfix setup [--yes] [--no-input]
 Verifies Node.js, the minimum supported acpx version, the effective adapters,
 generated Agent Selection Profiles, acpx local adapter overrides, User Config,
 and Project Config. Adapter Readiness requires official
-`@agentclientprotocol/codex-acp` lineage at version `1.1.5` or newer and
-official `@agentclientprotocol/claude-agent-acp` lineage at version `0.63.0`
+`@agentclientprotocol/codex-acp` lineage at version `2.0.1` or newer and
+official `@agentclientprotocol/claude-agent-acp` lineage at version `0.84.0`
 or newer. The deterministic install actions are
-`npm install -g @agentclientprotocol/codex-acp@1.1.5` and
-`npm install -g @agentclientprotocol/claude-agent-acp@0.63.0`.
+`npm install -g @agentclientprotocol/codex-acp@2.0.1` and
+`npm install -g @agentclientprotocol/claude-agent-acp@0.84.0`.
 
 A stale or bare Codex override that fails official lineage proof produces one
-migration offer to `npx -y @agentclientprotocol/codex-acp@1.1.5`, and a Claude
+migration offer to `npx -y @agentclientprotocol/codex-acp@2.0.1`, and a Claude
 override that fails the same proof produces one migration offer to
-`npx -y @agentclientprotocol/claude-agent-acp@0.63.0`. The offer follows from
+`npx -y @agentclientprotocol/claude-agent-acp@0.84.0`. The offer follows from
 the failed proof, so it covers a differently named or differently scoped
 package without naming any superseded one. Setup proves each proposal before
 asking; declining preserves the acpx configuration bytes.
