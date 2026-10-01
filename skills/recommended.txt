@@ -4,6 +4,7 @@ bubbletea
 coding-guidelines
 context7-cli
 conventional-commits
+crafting-effective-readmes
 domain-modeling
 exa-web-search
 github-pr-workflow
@@ -21,9 +22,9 @@ grilling
 handoff
 knowledge-workspace
 no-workarounds
-review
 systematic-debugging
 tech-writer
 testing-boss
 the-fool
 tui-design
+typesafe-ai

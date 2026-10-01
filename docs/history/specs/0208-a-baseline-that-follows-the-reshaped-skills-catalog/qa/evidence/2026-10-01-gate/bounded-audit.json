@@ -1,0 +1,621 @@
+{
+  "setup_ids": [
+    "go",
+    "rust",
+    "typescript"
+  ],
+  "minimum_versions": {
+    "go": {
+      "current": {
+        "setup-context-driven": "0.0.2",
+        "brainstorming": "0.0.2",
+        "business-analyst": "0.0.2",
+        "council": "0.0.2",
+        "write-idea": "0.0.2",
+        "write-prd": "0.0.2",
+        "write-techspec": "0.0.2",
+        "write-tasks": "0.0.2",
+        "implement-spec": "0.0.2",
+        "implement-task": "0.0.2",
+        "evidence-gate": "0.0.2",
+        "qa-gate": "0.0.2",
+        "roundfix": "0.0.2",
+        "archive-spec": "0.0.2"
+      },
+      "base": {
+        "setup-context-driven": "0.0.2",
+        "brainstorming": "0.0.2",
+        "business-analyst": "0.0.2",
+        "council": "0.0.2",
+        "write-idea": "0.0.2",
+        "write-prd": "0.0.2",
+        "write-techspec": "0.0.2",
+        "write-tasks": "0.0.2",
+        "implement-spec": "0.0.2",
+        "implement-task": "0.0.2",
+        "evidence-gate": "0.0.2",
+        "qa-gate": "0.0.2",
+        "archive-spec": "0.0.2",
+        "roundfix": "0.0.2"
+      },
+      "equal": true,
+      "skill_count": 43
+    },
+    "rust": {
+      "current": {
+        "setup-context-driven": "0.0.2",
+        "brainstorming": "0.0.2",
+        "business-analyst": "0.0.2",
+        "council": "0.0.2",
+        "write-idea": "0.0.2",
+        "write-prd": "0.0.2",
+        "write-techspec": "0.0.2",
+        "write-tasks": "0.0.2",
+        "implement-spec": "0.0.2",
+        "implement-task": "0.0.2",
+        "evidence-gate": "0.0.2",
+        "qa-gate": "0.0.2",
+        "roundfix": "0.0.2",
+        "archive-spec": "0.0.2"
+      },
+      "base": {
+        "setup-context-driven": "0.0.2",
+        "brainstorming": "0.0.2",
+        "business-analyst": "0.0.2",
+        "council": "0.0.2",
+        "write-idea": "0.0.2",
+        "write-prd": "0.0.2",
+        "write-techspec": "0.0.2",
+        "write-tasks": "0.0.2",
+        "implement-spec": "0.0.2",
+        "implement-task": "0.0.2",
+        "evidence-gate": "0.0.2",
+        "qa-gate": "0.0.2",
+        "archive-spec": "0.0.2",
+        "roundfix": "0.0.2"
+      },
+      "equal": true,
+      "skill_count": 36
+    },
+    "typescript": {
+      "current": {
+        "setup-context-driven": "0.0.2",
+        "write-prd": "0.0.2",
+        "write-techspec": "0.0.2",
+        "write-tasks": "0.0.2",
+        "implement-spec": "0.0.2",
+        "implement-task": "0.0.2",
+        "qa-gate": "0.0.2",
+        "evidence-gate": "0.0.2",
+        "archive-spec": "0.0.2",
+        "brainstorming": "0.0.2",
+        "business-analyst": "0.0.2",
+        "council": "0.0.2",
+        "roundfix": "0.0.2",
+        "write-idea": "0.0.2"
+      },
+      "base": {
+        "setup-context-driven": "0.0.2",
+        "write-prd": "0.0.2",
+        "write-techspec": "0.0.2",
+        "write-tasks": "0.0.2",
+        "implement-spec": "0.0.2",
+        "implement-task": "0.0.2",
+        "qa-gate": "0.0.2",
+        "evidence-gate": "0.0.2",
+        "archive-spec": "0.0.2",
+        "brainstorming": "0.0.2",
+        "business-analyst": "0.0.2",
+        "council": "0.0.2",
+        "roundfix": "0.0.2",
+        "write-idea": "0.0.2"
+      },
+      "equal": true,
+      "skill_count": 101
+    }
+  },
+  "frozen_files": {
+    "internal/baseline/assets/lock-hash-compatibility-v1.json": "6a83f5c12ea6fe0a0aa2e2c710ef44b4cc922d2965240376bcd0f12254d765d0",
+    "internal/baseline/assets/retention/transition.legacy-typescript-bun-to-portable-v3.json": "b0638780d3f20e0c3f0f9292a0ecb3e331310863ef949c3da63a792d32c65d69",
+    "internal/baseline/assets/retention/transition.managed-v2-to-portable-v3.json": "3d0429a926b2c092a1bf83b067a1050bc6caf559bf8c7c613359f318769082c6",
+    "internal/baseline/testdata/parity-corpus/v1/fixtures/atomic-rollback.json": "a37970b894d7165a27c45ba8794f4bcb42c2677c49bf1250988bfc73f33536b4",
+    "internal/baseline/testdata/parity-corpus/v1/fixtures/formatter-composition.json": "ebcd40f1e8f8a3f8b5f34d95d38a7e5a14edc89cfabf8217331ceda0176e1a20",
+    "internal/baseline/testdata/parity-corpus/v1/fixtures/greenfield-go-cli-tui.json": "e0f0cc08053e8d3d61d86f8c212152ed28a5e33c8492a4d8bffaf478fddff1e7",
+    "internal/baseline/testdata/parity-corpus/v1/fixtures/greenfield-rust-cli.json": "d7c67bdd4b81eb1d291170853c07f04718e398d11c607536ad5f1f654d7cdedb",
+    "internal/baseline/testdata/parity-corpus/v1/fixtures/greenfield-standard-typescript-monorepo.json": "0d6394d63f37e241f71f9e97443cecd7c7763d40ee081a2c69a689b58c3289c1",
+    "internal/baseline/testdata/parity-corpus/v1/fixtures/missing-capability-refusal.json": "6576315f0beac667d3de44824944b9e7faba42449ff45f877a2bc664add19249",
+    "internal/baseline/testdata/parity-corpus/v1/fixtures/profile-change-rust-to-go-cli-tui.json": "323fbc239a16800aa22848f85bf6046a0fbed9708dfc19008391ea97c36fa7b2",
+    "internal/baseline/testdata/parity-corpus/v1/fixtures/readoption-preservation.json": "29e4dbc0264132beeea229981e1c1d9a4e25e857330ab5e461d2b92a29de2052",
+    "internal/baseline/testdata/parity-corpus/v1/fixtures/skill-restoration-rollback.json": "55109a01d6a6f1022f1968d00db08d266faa073bee2779261299dc7bb6a7f943",
+    "internal/baseline/testdata/parity-corpus/v1/fixtures/skill-restoration.json": "6234ed30050c8c89ca0f50972050fb68da701d082d5d0a475fd381fcf25e085c",
+    "internal/baseline/testdata/parity-corpus/v1/fixtures/stale-plan-refusal.json": "c9b7b28f48b72f1743b110981be84b7ecafa3bdf3eeb02047f35e0a3371bedc8",
+    "internal/baseline/testdata/parity-corpus/v1/fixtures/unsafe-carrier-refusal.json": "005e6f308daf072623297a5c10785c48eb6771a3489379b6930e44a48f6021b7",
+    "internal/baseline/testdata/parity-corpus/v1/fixtures/update-rust-cli.json": "8bae2c5b7dd3f9138789ad4ba0b4af37d9022f85b39b9aa6c21f4188c537dc38"
+  },
+  "frozen_differences": [],
+  "changed_existing_clauses": [],
+  "added_clauses": [
+    "clause.external-triage.classify-before-labelling",
+    "clause.external-triage.move-through-mapped-states",
+    "clause.external-triage.ask-for-an-unmapped-label",
+    "clause.external-triage.needs-info-asks-and-stops",
+    "clause.external-triage.disclose-ai-authorship",
+    "clause.external-triage.record-wontfix-decisions",
+    "clause.external-triage.pull-request-is-an-issue-with-code",
+    "clause.external-triage.route-accepted-work-to-specs"
+  ],
+  "old_rule_retained": true,
+  "skill_paths_outside_grant": [],
+  "owned_registry": {
+    "schemaVersion": "roundfix/owned-skill-versions/v1",
+    "skills": {
+      "archive-spec": [
+        {
+          "version": "0.0.2",
+          "digest": "c854526f940c3c87492d620479b35d43b19d28591fa19f5bdf27e1589defd11d"
+        },
+        {
+          "version": "0.0.3",
+          "digest": "c75cd5dc6a7fd2ff559c123b25af48a929a3007694fdfacec5290ce1ea9b451d"
+        }
+      ],
+      "brainstorming": [
+        {
+          "version": "0.0.2",
+          "digest": "111d21efa124ab7e41787c82d4e793a281d1df7fe71df70b5aed8652cffae92b"
+        },
+        {
+          "version": "0.0.3",
+          "digest": "364716d2f901608df5b98d04ed55cb7500ff374adf1e9247212ed2817eef5fb9"
+        }
+      ],
+      "business-analyst": [
+        {
+          "version": "0.0.2",
+          "digest": "5f13da73f775f02d9b4aae4267e5c8e9db441ff63d51cdd9edfe4e10ef11e786"
+        },
+        {
+          "version": "0.0.3",
+          "digest": "a9cd63389b87e40b08336c3837f8da3a61a2a4d06e1727ce6c33a72025a87252"
+        }
+      ],
+      "council": [
+        {
+          "version": "0.0.2",
+          "digest": "54a4dad89e0b40704c1613a12a8dfa8d2edfd3372db1f15b45f883d13beb04c1"
+        },
+        {
+          "version": "0.0.3",
+          "digest": "9e671c0c8074bc0737d234ffc444fa1e3a91b8f12df1de2c602ea80ed821c9b0"
+        }
+      ],
+      "evidence-gate": [
+        {
+          "version": "0.0.2",
+          "digest": "7eddbc92d97536787c7dc03b3fcc64f1780024a6b2ce63f69eaa6522dd855a8e"
+        }
+      ],
+      "implement-spec": [
+        {
+          "version": "0.1.0",
+          "digest": "1ccc6352d8e18fe86a37cf06853fe955471efe7b8970dc8df52f958fa3ef4a5c"
+        },
+        {
+          "version": "0.1.1",
+          "digest": "0b86c78d2c2a1c5e1fdd73a8c6fb97a61cd5c9bdda017e36aa47b08eac89c7a1"
+        }
+      ],
+      "implement-task": [
+        {
+          "version": "0.0.2",
+          "digest": "6c27aeead5a40348e395e94a73dcc021791b66688a21a0fcfe59980c39f276f4"
+        }
+      ],
+      "qa-gate": [
+        {
+          "version": "0.0.3",
+          "digest": "ebc971086ce4eb4dc769e30414f10db12db44684c4479520d67a53220486ded5"
+        },
+        {
+          "version": "0.0.4",
+          "digest": "4e6ad547f4373a699f6fdacbaec594e2396d9717a2aae843b51ecb3b44fee5cb"
+        },
+        {
+          "version": "0.0.5",
+          "digest": "1f22aff749528aa7eee4600493ba8f8f29bc8f896a3a67548cc13e764f75fd3c"
+        },
+        {
+          "version": "0.0.6",
+          "digest": "414726ae349251db8a493a47c62b32d8687cd1f7ee69bc13205ea5da4a264bcb"
+        }
+      ],
+      "roundfix": [
+        {
+          "version": "0.0.3",
+          "digest": "e7b89f8adbbea0a9800618f3100ef4833b3180c42eb48399b6f789de05ca93ee"
+        },
+        {
+          "version": "0.0.4",
+          "digest": "42d32aff469d5e1e2476794848dfc5a3a14409d4d557a4a368e9319c9d58f2cd"
+        },
+        {
+          "version": "0.0.5",
+          "digest": "9c61c29cc4aa46ff526e33988e65f8d5e46c3fd72a38b73603e0fa251d13db4d"
+        },
+        {
+          "version": "0.0.6",
+          "digest": "b12f406d81069f92001022514caf85b70373c7088606b5b9a6f7e38eb1354e89"
+        },
+        {
+          "version": "0.0.7",
+          "digest": "a5e86d7120a25c3aaecfaae8717b67d509ef5c5b4ff0fb276e932841e5f0caa2"
+        },
+        {
+          "version": "0.0.8",
+          "digest": "d82ed9b74d5dbdb5ab1e2107d98486c5c778b73bc63a7053d6289f67b054b5bf"
+        },
+        {
+          "version": "0.0.9",
+          "digest": "840cdf62d15bdf81cd3ef4d496641411a79b5bfb6d6bed9fa9defa7c5e0be493"
+        },
+        {
+          "version": "0.0.13",
+          "digest": "a44a6c21c83555cc2ae9d5c15a6f35624b3ecf3b9fef77ada7c644c640e69044"
+        },
+        {
+          "version": "0.1.2",
+          "digest": "b4bf716d51762e1719420651174379648b3b4206b8fb5ba8e1986c232973f38a"
+        },
+        {
+          "version": "0.1.3",
+          "digest": "7e0dfdbd530fe77d8465b350dc1876ba7eb2fe9a8fb2bdd3982bfad6c561bbae"
+        },
+        {
+          "version": "0.1.4",
+          "digest": "23240c92a6fccb3988d182119bda3fcee30216d84189ca3dc0716da0a849181f"
+        },
+        {
+          "version": "0.1.5",
+          "digest": "db9ea531eb266da99886cb72b8003451a8ec945e78d96889f790d9cb9e80d236"
+        },
+        {
+          "version": "0.1.6",
+          "digest": "8c06ca138f9f8c7bd67ef54a686fb67ad7e2f053188fc35ec6cc74c7cbdbde55"
+        },
+        {
+          "version": "0.1.7",
+          "digest": "39cf23d9c90135dbcbc972202919953c668b0c68c8f2ab4d23739425bb8af3ab"
+        }
+      ],
+      "setup-context-driven": [
+        {
+          "version": "0.0.2",
+          "digest": "3879a0b0fe351b3e2edc454121b82b6159a83073df43d774827d5ad891375c2a"
+        },
+        {
+          "version": "0.0.3",
+          "digest": "64d01187ae21fd55a7031dfcf0b2ea0064cb0c1216d3ab2fd8244d785207bae0"
+        }
+      ],
+      "write-idea": [
+        {
+          "version": "0.0.2",
+          "digest": "d44bdbca416d00966d04f3383eb848bace94a4f77334065551cb811454bcc1d8"
+        },
+        {
+          "version": "0.0.3",
+          "digest": "4074139fb0c7d262e7a8dbc59d08ce467c88d8c040ea74567e161217a2ace6a7"
+        }
+      ],
+      "write-prd": [
+        {
+          "version": "0.0.2",
+          "digest": "f4cfd245ea34f5103be328c023191c66e8b4d56fc13827362642b97d570b6898"
+        },
+        {
+          "version": "0.0.3",
+          "digest": "aa1396faad18e962a2ffde77236bc3de44ea5dbf070d47e5fb1848a15ced8d31"
+        },
+        {
+          "version": "0.0.4",
+          "digest": "65e9417cf082fd4b931d7b33b6234a613433c0294a94e6e73c55b8907c1eba8d"
+        }
+      ],
+      "write-tasks": [
+        {
+          "version": "0.0.3",
+          "digest": "b6b0af1efb4a777b7c1e0545ab924b6d427c2a909fc6cc3491d83b981be7f27e"
+        },
+        {
+          "version": "0.0.4",
+          "digest": "5cbbcfeb91bcf38bc6bb709c7132abf8ae4b2c9ea7e5d8cda1e6f7bc2aeb30a7"
+        },
+        {
+          "version": "0.0.5",
+          "digest": "10c038ce8a63a532fec7e6793e25a9b822e86ff46ecc01efef7e402a5fcb4f57"
+        },
+        {
+          "version": "0.0.6",
+          "digest": "3a63300d64453f46830d205463e3d4d7bf93a9e0296ee70318d863c23a47ea84"
+        },
+        {
+          "version": "0.0.7",
+          "digest": "cef0bbd6a4fd80a547987e6df4a6459fe2c33eb12d4662487ce786efb66ac47a"
+        }
+      ],
+      "write-techspec": [
+        {
+          "version": "0.0.2",
+          "digest": "590d4401c995a0e16adb483d27ac284a7b4269ef0f9022dd23bf81ca3aec4485"
+        },
+        {
+          "version": "0.0.3",
+          "digest": "2b41b87d8a9066df6e7203054dbae27af311e75eccf6fe0cb1c8d42b4238c249"
+        },
+        {
+          "version": "0.0.4",
+          "digest": "7d44593860ba2c8384785efaa65987e55bf7d4c4ffc2e0aec6601cd75039ece8"
+        }
+      ]
+    }
+  },
+  "canonical_skill_changes": [],
+  "task_scope": [
+    {
+      "task": "task_01",
+      "commit": "b79b7d46bc051a81c0a279762e4ebaf488aa7ad4",
+      "actual_paths": [
+        "docs/agents/setup-context.json",
+        "docs/agents/skill-dispatch.md",
+        "docs/specs/0208-a-baseline-that-follows-the-reshaped-skills-catalog/task_01.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/skill-dispatch.md",
+        "internal/baseline/assets/modules/core.json",
+        "internal/baseline/assets/modules/typescript.json",
+        "internal/baseline/assets/profiles/go-cli-tui.json",
+        "internal/baseline/assets/profiles/rust-cli.json",
+        "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+        "internal/baseline/assets/setups/go-cli.json",
+        "internal/baseline/assets/setups/go-tui.json",
+        "internal/baseline/assets/setups/go.json",
+        "internal/baseline/assets/setups/rust-cli.json",
+        "internal/baseline/assets/setups/rust.json",
+        "internal/baseline/assets/setups/typescript-bun.json",
+        "internal/baseline/assets/setups/typescript.json",
+        "internal/baseline/assets_sync_test.go",
+        "internal/baseline/catalog_dispatch_outside_setup_test.go",
+        "internal/baseline/catalog_test.go",
+        "internal/baseline/derived_ownership_test.go",
+        "internal/baseline/testdata/catalog.diagnostics.golden.json",
+        "internal/baseline/testdata/catalog.digest",
+        "internal/baseline/testdata/catalog.normalized.json",
+        "internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json",
+        "internal/baseline/testdata/parity-corpus/v1/manifest.json",
+        "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+        "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+        "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+        "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json",
+        "internal/baseline/upstream_removed_skills_test.go",
+        "internal/baseline/upstream_skill_names_test.go",
+        "internal/cli/baseline_assets_sync_test.go"
+      ],
+      "declared_paths": [
+        "docs/adr/0072-baseline-go-cutover-preserves-python-contracts.md",
+        "docs/adr/0191-a-setup-snapshot-follows-its-upstream-by-name.md",
+        "docs/adr/0206-the-baseline-takes-upstream-setup-names-and-drops-a-removed-skill.md",
+        "docs/agents/setup-context.json",
+        "docs/agents/skill-dispatch.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/skill-dispatch.md",
+        "internal/baseline/assets/modules/core.json",
+        "internal/baseline/assets/modules/typescript.json",
+        "internal/baseline/assets/profiles/go-cli-tui.json",
+        "internal/baseline/assets/profiles/rust-cli.json",
+        "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+        "internal/baseline/assets/setups/go.json",
+        "internal/baseline/assets/setups/rust.json",
+        "internal/baseline/assets/setups/typescript.json",
+        "internal/baseline/assets_sync.go",
+        "internal/baseline/assets_sync_test.go",
+        "internal/baseline/catalog_dispatch_outside_setup_test.go",
+        "internal/baseline/catalog_test.go",
+        "internal/baseline/derived_ownership_test.go",
+        "internal/baseline/testdata/catalog.diagnostics.golden.json",
+        "internal/baseline/testdata/catalog.digest",
+        "internal/baseline/testdata/catalog.normalized.json",
+        "internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json",
+        "internal/baseline/testdata/parity-corpus/v1/manifest.json",
+        "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+        "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+        "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+        "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json",
+        "internal/baseline/upstream_removed_skills_test.go",
+        "internal/baseline/upstream_skill_names_test.go",
+        "internal/cli/baseline_assets_sync_test.go"
+      ],
+      "needs_manual_resolution": [],
+      "grant_ancestor": true,
+      "explicit_deleted_paths": []
+    },
+    {
+      "task": "task_02",
+      "commit": "a3ce48752aa804f242a9981d5f33fbf71ce8c8d4",
+      "actual_paths": [
+        "docs/agents/setup-context.json",
+        "docs/specs/0208-a-baseline-that-follows-the-reshaped-skills-catalog/task_02.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/external-triage.md",
+        "internal/baseline/assets/modules/external-triage.json",
+        "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+        "internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/baseline.json",
+        "internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/external-triage.md",
+        "internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/manifest.json",
+        "internal/baseline/assets/source-baselines/index.json",
+        "internal/baseline/clause_characterization_test.go",
+        "internal/baseline/external_triage_clauses_test.go",
+        "internal/baseline/preservation_test.go",
+        "internal/baseline/testdata/catalog.diagnostics.golden.json",
+        "internal/baseline/testdata/catalog.digest",
+        "internal/baseline/testdata/catalog.normalized.json",
+        "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+        "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+        "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+        "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json"
+      ],
+      "declared_paths": [
+        "docs/adr/0058-baseline-upgrades-fail-closed-on-unaccounted-rule-removal.md",
+        "docs/adr/0060-source-baselines-are-exhaustive-and-project-agnostic.md",
+        "docs/adr/0186-baseline-guidance-states-what-the-product-does-in-adopter-neutral-words.md",
+        "docs/adr/0202-a-stack-rule-carries-force-and-a-preference-names-what-licenses-the-exception.md",
+        "docs/adr/0206-the-baseline-takes-upstream-setup-names-and-drops-a-removed-skill.md",
+        "docs/agents/setup-context.json",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/external-triage.md",
+        "internal/baseline/assets/modules/bun.json",
+        "internal/baseline/assets/modules/external-triage.json",
+        "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+        "internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/baseline.json",
+        "internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/external-triage.md",
+        "internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/manifest.json",
+        "internal/baseline/assets/source-baselines/index.json",
+        "internal/baseline/clause_characterization_test.go",
+        "internal/baseline/clause_replacement_test.go",
+        "internal/baseline/external_triage_clauses_test.go",
+        "internal/baseline/plan.go",
+        "internal/baseline/preservation_test.go",
+        "internal/baseline/testdata/catalog.diagnostics.golden.json",
+        "internal/baseline/testdata/catalog.digest",
+        "internal/baseline/testdata/catalog.normalized.json",
+        "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+        "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+        "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+        "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json"
+      ],
+      "needs_manual_resolution": [],
+      "grant_ancestor": true,
+      "explicit_deleted_paths": []
+    },
+    {
+      "task": "task_03",
+      "commit": "b090fba1af39912a0bf8462024355181afba43a7",
+      "actual_paths": [
+        ".agents/skills/crafting-effective-readmes/README.md",
+        ".agents/skills/crafting-effective-readmes/SKILL.md",
+        ".agents/skills/crafting-effective-readmes/references/art-of-readme.md",
+        ".agents/skills/crafting-effective-readmes/references/make-a-readme.md",
+        ".agents/skills/crafting-effective-readmes/references/standard-readme-example-maximal.md",
+        ".agents/skills/crafting-effective-readmes/references/standard-readme-example-minimal.md",
+        ".agents/skills/crafting-effective-readmes/references/standard-readme-spec.md",
+        ".agents/skills/crafting-effective-readmes/section-checklist.md",
+        ".agents/skills/crafting-effective-readmes/style-guide.md",
+        ".agents/skills/crafting-effective-readmes/templates/internal.md",
+        ".agents/skills/crafting-effective-readmes/templates/oss.md",
+        ".agents/skills/crafting-effective-readmes/templates/personal.md",
+        ".agents/skills/crafting-effective-readmes/templates/xdg-config.md",
+        ".agents/skills/crafting-effective-readmes/using-references.md",
+        ".agents/skills/typesafe-ai/LICENSE",
+        ".agents/skills/typesafe-ai/SKILL.md",
+        "README.md",
+        "docs/agents/setup-context.json",
+        "docs/agents/skill-dispatch.md",
+        "docs/specs/0208-a-baseline-that-follows-the-reshaped-skills-catalog/task_03.md",
+        "docs/user-guide/usage.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/skill-dispatch.md",
+        "internal/baseline/assets/modules/core.json",
+        "internal/baseline/assets/modules/typescript.json",
+        "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+        "internal/baseline/core_skill_requirements_test.go",
+        "internal/baseline/testdata/catalog.diagnostics.golden.json",
+        "internal/baseline/testdata/catalog.digest",
+        "internal/baseline/testdata/catalog.normalized.json",
+        "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+        "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+        "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+        "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json",
+        "skills-lock.json",
+        "skills/baseline_skill_contract_test.go",
+        "skills/recommended.txt"
+      ],
+      "declared_paths": [
+        ".agents/skills/crafting-effective-readmes/README.md",
+        ".agents/skills/crafting-effective-readmes/SKILL.md",
+        ".agents/skills/crafting-effective-readmes/references/art-of-readme.md",
+        ".agents/skills/crafting-effective-readmes/references/make-a-readme.md",
+        ".agents/skills/crafting-effective-readmes/references/standard-readme-example-maximal.md",
+        ".agents/skills/crafting-effective-readmes/references/standard-readme-example-minimal.md",
+        ".agents/skills/crafting-effective-readmes/references/standard-readme-spec.md",
+        ".agents/skills/crafting-effective-readmes/section-checklist.md",
+        ".agents/skills/crafting-effective-readmes/style-guide.md",
+        ".agents/skills/crafting-effective-readmes/templates/internal.md",
+        ".agents/skills/crafting-effective-readmes/templates/oss.md",
+        ".agents/skills/crafting-effective-readmes/templates/personal.md",
+        ".agents/skills/crafting-effective-readmes/templates/xdg-config.md",
+        ".agents/skills/crafting-effective-readmes/using-references.md",
+        ".agents/skills/typesafe-ai/LICENSE",
+        ".agents/skills/typesafe-ai/SKILL.md",
+        "README.md",
+        "docs/adr/0191-a-setup-snapshot-follows-its-upstream-by-name.md",
+        "docs/adr/0206-the-baseline-takes-upstream-setup-names-and-drops-a-removed-skill.md",
+        "docs/agents/setup-context.json",
+        "docs/agents/skill-dispatch.md",
+        "docs/user-guide/usage.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/skill-dispatch.md",
+        "internal/baseline/assets/modules/core.json",
+        "internal/baseline/assets/modules/typescript.json",
+        "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+        "internal/baseline/core_skill_requirements_test.go",
+        "internal/baseline/testdata/catalog.diagnostics.golden.json",
+        "internal/baseline/testdata/catalog.digest",
+        "internal/baseline/testdata/catalog.normalized.json",
+        "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+        "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+        "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+        "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json",
+        "skills-lock.json",
+        "skills/baseline_skill_contract_test.go",
+        "skills/recommended.txt"
+      ],
+      "needs_manual_resolution": [],
+      "grant_ancestor": true,
+      "explicit_deleted_paths": []
+    },
+    {
+      "task": "task_04",
+      "commit": "0f52b1163b0b3969e803db639754d361cb47f578",
+      "actual_paths": [
+        ".agents/skills/review/SKILL.md",
+        "docs/specs/0208-a-baseline-that-follows-the-reshaped-skills-catalog/task_04.md",
+        "internal/cli/this_repository_skill_set_test.go",
+        "skills-lock.json",
+        "skills/baseline_skill_contract_test.go",
+        "skills/recommended.txt"
+      ],
+      "declared_paths": [
+        "docs/adr/0191-a-setup-snapshot-follows-its-upstream-by-name.md",
+        "docs/adr/0206-the-baseline-takes-upstream-setup-names-and-drops-a-removed-skill.md",
+        "internal/cli/this_repository_skill_set_test.go",
+        "skills-lock.json",
+        "skills/baseline_skill_contract_test.go",
+        "skills/recommended.txt"
+      ],
+      "needs_manual_resolution": [],
+      "grant_ancestor": true,
+      "explicit_deleted_paths": [
+        ".agents/skills/review/SKILL.md"
+      ]
+    }
+  ],
+  "installed_owned_skill_changes": [],
+  "promise_audit": {
+    "spec_is_downstream": true,
+    "durable_decision": "docs/adr/0206-the-baseline-takes-upstream-setup-names-and-drops-a-removed-skill.md",
+    "new_domain_concepts": [],
+    "existing_terms": [
+      "Baseline Profile",
+      "Composed Setup Snapshot",
+      "Normative Clause",
+      "Source Baseline",
+      "Source Baseline Entry",
+      "Skill Activation",
+      "Repository Skill Set",
+      "Backlog Entry"
+    ],
+    "renamed_catalog_entries_are_not_new_domain_terms": true
+  }
+}

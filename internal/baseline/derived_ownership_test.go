@@ -70,8 +70,20 @@ func TestOutputsForCommand(t *testing.T) {
 		if want == nil {
 			t.Fatal("2026-08-06 authorization has no make baseline-digests enumeration")
 		}
-		// ADR-0191 adds the upstream Go TUI snapshot to the frozen enumeration.
-		want = append(want, "internal/baseline/assets/setups/go-tui.json")
+		// ADR-0206 retires go-cli and follows the renamed upstream snapshots.
+		var renamed []string
+		for _, output := range want {
+			switch output {
+			case "internal/baseline/assets/setups/go-cli.json":
+				continue
+			case "internal/baseline/assets/setups/rust-cli.json":
+				output = "internal/baseline/assets/setups/rust.json"
+			case "internal/baseline/assets/setups/typescript-bun.json":
+				output = "internal/baseline/assets/setups/typescript.json"
+			}
+			renamed = append(renamed, output)
+		}
+		want = append(renamed, "internal/baseline/assets/setups/go.json")
 		sort.Strings(want)
 		if !reflect.DeepEqual(got, want) {
 			t.Fatalf("make baseline-digests outputs = %v, want enumerated %v", got, want)
@@ -623,7 +635,7 @@ func TestDerivedOwnershipRemediationDiagnostics(t *testing.T) {
 		{
 			name:       "sanctioned setup",
 			scanRoot:   "assets/setups",
-			artifact:   "assets/setups/go-cli.json",
+			artifact:   "assets/setups/go.json",
 			recordPath: "assets/setups/_ownership.yml",
 			owner:      derivedOwnerSanctioned,
 		},
@@ -1150,7 +1162,7 @@ func declaredSanctionedProbes(
 
 	probes := map[string]derivedArtifactProbe{
 		"assets/setups/_ownership.yml": {
-			path: "assets/setups/go-cli.json", owner: "sanctioned",
+			path: "assets/setups/go.json", owner: "sanctioned",
 		},
 		"assets/source-baselines/_ownership.yml": {
 			path:  "assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/manifest.json",

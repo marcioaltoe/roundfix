@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "markerVersion": "0.0.1",
   "title": "Standard TypeScript Monorepo",
-  "setup": "typescript-bun",
+  "setup": "typescript",
   "formatter": {
     "fixturePaths": [
       "formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md",
@@ -22,7 +22,7 @@
       "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md",
       "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/typescript-bun.md"
     ],
-    "goldenDigest": "4f135d633676e297a8f66a815a4b8de7a0010e559dd8300cc97182b34cdc5539",
+    "goldenDigest": "4a42cd99b29da81162d7254c48d99269b9d680a371aff08c231a9ccf4fd0bf56",
     "id": "formatter.oxfmt-markdown",
     "kind": "selected",
     "version": "0.59.0"

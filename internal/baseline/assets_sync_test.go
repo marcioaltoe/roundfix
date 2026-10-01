@@ -216,7 +216,7 @@ func TestAssetsSyncCheckIsReadOnlyAndReportsDrift(t *testing.T) {
 	if !errors.As(err, &syncErr) || syncErr.Category != AssetsSyncExecution {
 		t.Fatalf("check error = %T %v, want execution drift", err, err)
 	}
-	if payload.OK || payload.Summary.Errors != 4 {
+	if payload.OK || payload.Summary.Errors != 3 {
 		t.Fatalf("check payload = %+v", payload)
 	}
 	for _, finding := range payload.Findings {
@@ -234,7 +234,7 @@ func TestBaselineAssetsSyncRefreshProducesCanonicalTreeAndIsIdempotent(t *testin
 
 	targetRepo, assetRoot := newAssetsSyncTarget(t)
 	sourceDir, revision := newAssetsSyncSource(t, assetRoot)
-	beforeOwnedMinimum := assetsSyncOwnedMinimum(t, filepath.Join(assetRoot, "setups", "go-cli.json"))
+	beforeOwnedMinimum := assetsSyncOwnedMinimum(t, filepath.Join(assetRoot, "setups", "go.json"))
 
 	payload, err := syncAssets(context.Background(), AssetsSyncRequest{
 		SourceDir: sourceDir,
@@ -245,20 +245,20 @@ func TestBaselineAssetsSyncRefreshProducesCanonicalTreeAndIsIdempotent(t *testin
 	if err != nil {
 		t.Fatalf("refresh: %v payload=%+v", err, payload)
 	}
-	if !payload.OK || payload.Summary.Info != 4 {
+	if !payload.OK || payload.Summary.Info != 3 {
 		t.Fatalf("refresh payload = %+v", payload)
 	}
 	catalog, err := LoadCatalog(os.DirFS(assetRoot))
 	if err != nil {
 		t.Fatalf("load refreshed catalog: %v", err)
 	}
-	if len(catalog.SetupIDs()) != 4 {
+	if len(catalog.SetupIDs()) != 3 {
 		t.Fatalf("refreshed setup IDs = %v", catalog.SetupIDs())
 	}
-	assertAssetsSyncOwnedSkillHasNoContentPin(t, filepath.Join(assetRoot, "setups", "go-cli.json"))
+	assertAssetsSyncOwnedSkillHasNoContentPin(t, filepath.Join(assetRoot, "setups", "go.json"))
 	if afterOwnedMinimum := assetsSyncOwnedMinimum(
 		t,
-		filepath.Join(assetRoot, "setups", "go-cli.json"),
+		filepath.Join(assetRoot, "setups", "go.json"),
 	); afterOwnedMinimum != beforeOwnedMinimum {
 		t.Fatalf(
 			"Roundfix-owned minimum = %q, want preserved declaration %q",
@@ -335,11 +335,11 @@ func TestAssetsSyncProvenanceAndPreMutationRefusals(t *testing.T) {
 			name: "mutable declared ref",
 			mutate: func(t *testing.T, sourceDir string) {
 				t.Helper()
-				path := filepath.Join(sourceDir, "rust-cli.json")
+				path := filepath.Join(sourceDir, "rust.json")
 				var snapshot struct {
 					Skills []map[string]any `json:"skills"`
 				}
-				target := filepath.Join(sourceDir, "rust-cli.txt")
+				target := filepath.Join(sourceDir, "rust.txt")
 				lines, err := os.ReadFile(target)
 				if err != nil {
 					t.Fatal(err)
@@ -365,7 +365,7 @@ func TestAssetsSyncProvenanceAndPreMutationRefusals(t *testing.T) {
 			name: "non portable skill path",
 			mutate: func(t *testing.T, sourceDir string) {
 				t.Helper()
-				writeAssetsSyncJSON(t, filepath.Join(sourceDir, "go-cli.json"), map[string]any{
+				writeAssetsSyncJSON(t, filepath.Join(sourceDir, "go.json"), map[string]any{
 					"skills": []any{map[string]any{"path": "/tmp/unsafe"}},
 				})
 				runAssetsSyncGit(t, filepath.Dir(sourceDir), "add", ".")
@@ -377,7 +377,7 @@ func TestAssetsSyncProvenanceAndPreMutationRefusals(t *testing.T) {
 			name: "incompatible empty setup",
 			mutate: func(t *testing.T, sourceDir string) {
 				t.Helper()
-				writeAssetsSyncJSON(t, filepath.Join(sourceDir, "typescript-bun.json"), map[string]any{
+				writeAssetsSyncJSON(t, filepath.Join(sourceDir, "typescript.json"), map[string]any{
 					"skills": []any{},
 				})
 				runAssetsSyncGit(t, filepath.Dir(sourceDir), "add", ".")
@@ -471,7 +471,7 @@ func TestAssetsSyncCompatibilityMatchesMaintainedPythonContract(t *testing.T) {
 		t.Fatal(err)
 	}
 	if payload.SchemaVersion != AssetsSyncSchemaVersion ||
-		payload.Summary != (AssetsSyncSummary{Info: 4}) ||
+		payload.Summary != (AssetsSyncSummary{Info: 3}) ||
 		len(payload.PlannedChanges) != 0 {
 		t.Fatalf("maintained result shape = %+v", payload)
 	}

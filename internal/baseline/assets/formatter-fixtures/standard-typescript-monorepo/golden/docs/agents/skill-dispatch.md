@@ -80,7 +80,7 @@ Individual skill triggers:
 - `council`:
   - `trigger.context-workflow.council`: Debating a high-impact product or architecture decision through multiple advisors.
 - `crafting-effective-readmes`:
-  - `trigger.typescript.crafting-effective-readmes`: Writing or revising the TypeScript repository README.
+  - `trigger.core.crafting-effective-readmes`: Writing or revising the repository README.
 - `data-sync-workflows`:
   - `trigger.backend.data-sync-workflows`: Designing backend data synchronization and reconciliation workflows.
 - `design-patterns`:
@@ -170,8 +170,6 @@ Individual skill triggers:
   - `trigger.frontend.react-hook-form-zod`: Building validated React forms with React Hook Form and Zod.
 - `refactoring-analysis`:
   - `trigger.typescript.refactoring-analysis`: Planning a behavior-preserving TypeScript refactor.
-- `review`:
-  - `trigger.core.review`: Reviewing a change against repository standards and its originating contract.
 - `roundfix`:
   - `trigger.autonomous-work.roundfix`: Running, inspecting, recovering or delivering work with the `roundfix` command line, or reading its output.
 - `security-best-practices`:
@@ -206,10 +204,10 @@ Individual skill triggers:
   - `trigger.context-workflow.the-fool`: Challenging a proposal through a pre-mortem, red-team, or evidence audit.
 - `to-prompt`:
   - `trigger.typescript.to-prompt`: Converting TypeScript repository context into a bounded implementation prompt.
-- `triage`:
-  - `trigger.typescript.triage`: Triaging TypeScript repository work or external feedback.
 - `turborepo`:
   - `trigger.monorepo.turborepo`: Changing Turborepo tasks, caching, package boundaries, or workspace orchestration.
+- `typesafe-ai`:
+  - `trigger.core.typesafe-ai`: Adding programmable semantic judgment (routing, ranking, extraction, verification) or touching TypeSafe/Jev.
 - `typescript-advanced`:
   - `trigger.typescript.typescript-advanced`: Using advanced TypeScript types or language features.
 - `ui-ux-pro-max`:

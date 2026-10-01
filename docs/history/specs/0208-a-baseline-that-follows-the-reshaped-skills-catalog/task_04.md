@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0208-a-baseline-that-follows-the-reshaped-skills-catalog
-status: pending
+status: completed
 type: chore
 complexity: low
 ---
@@ -43,7 +43,6 @@ This is an authorized tooling Task. It may change only the files in its Context 
 - interface: `skills-lock.json`
 - interface: `skills/recommended.txt`
 - interface: `skills/baseline_skill_contract_test.go`
-- interface: `.agents/skills/review/SKILL.md`
 - interface: `internal/cli/this_repository_skill_set_test.go`
 
 ## Verification
@@ -55,3 +54,25 @@ This is an authorized tooling Task. It may change only the files in its Context 
 - `_prd.md` → Goal 5; Core Feature 5; Success Metric 5; Decisions (dogfood the adopter path)
 - `_techspec.md` → The repository procedure; API Contract 5; Testing Approach 4; Build Order 4
 - ADR-0191, ADR-0206
+
+## Result
+
+Implementation evidence:
+
+- The reconcile preview against upstream `b3c45a45f1bccd3b33aaecaaa22947d942f2fc02` planned exactly one change: `remove-lock-entry skills-lock.json [review]`, with Plan Digest `b073841f12d4b77b40f9e158f810a49c9cf2542feb58f013d55a5acb2174df61`.
+- The confirmed reconcile applied that single lock change and retained installed trees; `git rm -r .agents/skills/review` then removed the obsolete tree.
+- `skills/recommended.txt` now matches the sorted lock keys, and `upstreamManagedSkillTreeDigest` is pinned to `8832b7acd7fb65ec196f7108900b95f0b1bdc9065a707e70ff4b80b1f605ec1c`, computed from the remaining managed trees.
+- `checkThisRepositorySkillSet` now checks `review` and `triage` alongside the existing obsolete names, with no other test logic changed.
+
+Focused checks:
+
+- `git -c core.fsmonitor=false diff --check` — passed.
+- `GOCACHE=/private/tmp/roundfix-gocache-task04 go test -count=1 -run '^$' ./internal/cli` — passed (compile-only).
+- `GOCACHE=/private/tmp/roundfix-gocache-task04 go test -count=1 -run '^$' ./skills` — passed (compile-only).
+- A lock/list structural check confirmed the recommended list equals the sorted lock keys and both `review` and `triage` are absent from the lock and skill directories.
+
+Daemon verification remains to run the task’s declared second reconcile, update-current check, and verification test commands.
+
+Consistency repair:
+
+- Settlement diagnostic `SC-REF-UNRESOLVED` identified the deleted `.agents/skills/review/SKILL.md` as a stale Context entry. Removed that entry from `## Context`; the deletion remains required by the implementation procedure and is recorded above.

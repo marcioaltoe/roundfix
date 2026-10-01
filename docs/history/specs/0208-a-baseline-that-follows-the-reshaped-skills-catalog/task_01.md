@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0208-a-baseline-that-follows-the-reshaped-skills-catalog
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -46,10 +46,6 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - instruction: `docs/adr/0191-a-setup-snapshot-follows-its-upstream-by-name.md`
 - instruction: `docs/adr/0072-baseline-go-cutover-preserves-python-contracts.md`
 - instruction: `internal/baseline/assets_sync.go`
-- interface: `internal/baseline/assets/setups/go-cli.json`
-- interface: `internal/baseline/assets/setups/go-tui.json`
-- interface: `internal/baseline/assets/setups/rust-cli.json`
-- interface: `internal/baseline/assets/setups/typescript-bun.json`
 - creates: `internal/baseline/assets/setups/go.json`
 - creates: `internal/baseline/assets/setups/rust.json`
 - creates: `internal/baseline/assets/setups/typescript.json`
@@ -87,3 +83,74 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - `_prd.md` → Goals 1-2; User Stories 1-2; Core Features 1-2; Success Metrics 1-2; Declared breaks
 - `_techspec.md` → Measured facts; Data Models; Fixed texts (task_01); The refresh procedure; Existing tests that change; API Contracts 1, 2 and 4; Testing Approach 1 and 5; Build Order 1
 - ADR-0206, ADR-0191, ADR-0072, ADR-0081, ADR-0149
+
+
+## Result
+
+Implemented task_01's catalog slice. The three profiles retain their identifiers
+and select `go`, `rust` and `typescript`; the four retired snapshots are gone.
+`core` version 15 drops `review`, and `typescript` version 6 drops `triage`,
+including their dispatch entries. All other module fields and clauses are
+unchanged. The asset sync refreshed the seeded snapshots from a disposable
+local clone of `~/dev/skills` at
+`b3c45a45f1bccd3b33aaecaaa22947d942f2fc02`; the source checkout was not written
+and no network clone was used.
+
+The prescribed existing-test edits and four new tests are in place.
+`removedSkillFindings` sweeps the seventeen removed names;
+`setupNameFindings` checks only the three named profiles and four retired
+names, source-path consistency and the Roundfix-owned entry. Negative cases
+assert exact findings for all seventeen names in all five fields, the retired
+setups, a wrong profile setup, a wrong source path, a missing owned entry and
+an externally sourced `roundfix`. A later composed setup is accepted.
+
+Focused evidence (all Go commands used
+`GOCACHE=/tmp/roundfix-0208-task01-gocache`):
+
+| Acceptance criterion | Implementation and current-turn evidence |
+| --- | --- |
+| Three renamed setups and profile selection | `go test ./internal/baseline -count=1 -run 'Test(NoCatalogEntryNamesASkillRemovedUpstream\|ARemovedSkillNameInTheCatalogIsReported\|EveryBuiltInProfileTakesItsRenamedUpstreamSetup\|ARetiredOrUnownedSetupIsReported)$'` exited 0. Before the edits, the two positive tests failed on the old profiles, retired setups and removed names. |
+| Removed names absent and planted names reported | The same focused run passed both removed-skill tests, including 85 planted-name cases. No replacement review skill was added. |
+| Retired names, wrong source paths and missing ownership reported | The same focused run passed both setup tests and their negative cases. A separate JSON comparison against each predecessor at HEAD confirmed every owned `minimumVersion` was preserved; all three retain the Roundfix-owned `roundfix` entry. |
+| Asset sync, parity and frozen enumeration with three setups | Asset sync wrote three snapshots (43, 36 and 101 skills); its rerun with `--check --format text` exited 0 and printed `setup-context-driven audit: ok`. `make baseline-digests` exited 0, including its strict catalog check and sanctioned parity regeneration. The TechSpec's exact jq transform changed only `asset-sync.json`; a byte comparison confirmed all other parity fixtures unchanged and its `plannedByteSequence` and `fileIdentities` preserved. The stable-tree `make verify-incremental` rerun exited 0, including the Baseline and CLI suites; details are recorded below. |
+| Repository dispatch and refresh convergence | The required `baseline update --repo . --no-skills --yes --format text` ran twice, both exiting 0. The first changed only the dispatch guide and Setup Manifest; the second reported `File changes: 0` and verified idempotence. Inspection confirms the dispatch guide omits `trigger.core.review`. |
+
+The sync initially encountered sandbox denial while creating its Git-private
+transaction directory. The authorized rerun with the required access exited 0;
+the first managed refresh used the same access. The refresh reports the existing
+nested-carrier warnings for the formatter golden and Source Baseline corpus;
+those carriers were preserved.
+
+Scope postflight compared tracked and untracked changes with this Task's original Context:
+all 32 changed or new paths are allowed. Source Baselines, retention transitions,
+`.agents/skills/`, `skills-lock.json` and the frozen lock compatibility fixture
+were not changed. No Task Graph or other Task was edited, and no commit, push
+or Pull Request was created. Task status and the authored Verification command
+remain Daemon-owned; the declared Verification command was not run.
+
+Repository-required incremental check: the first
+`rtk proxy make verify-incremental` exited 2. Baseline, CLI, Daemon and Spec-check
+tests reported `PASS`, but their repository guards correctly rejected my
+concurrent edit of this Result section. The diagnostic named only this Task
+file. The stable-tree rerun exited 0: formatting, vet, all package tests (including
+Baseline sync, parity, frozen enumeration and CLI tests), skill checks and the
+build passed. This Result evidence was updated only after the rerun exited. Logs:
+`/tmp/roundfix-0208-task01-incremental.log` and
+`/tmp/roundfix-0208-task01-incremental-rerun.log`.
+
+
+### Verification Feedback repair
+
+The settlement consistency diagnostic identified four Context interfaces that
+still pointed to snapshots this Task intentionally deleted. Removed those stale
+interface entries; the three replacement snapshot declarations remain, and the
+Requirements still document the four deletions. No catalog, test, Task status,
+Task Graph or other Task changed in this repair.
+
+Focused repair check:
+`GOCACHE=/tmp/roundfix-0208-task01-gocache go run -buildvcs=false ./cmd/roundfix spec check 0208-a-baseline-that-follows-the-reshaped-skills-catalog --format json`
+exited 0 with no findings or repair inputs and `verification.executed: false`.
+The JSON retains skips for optional absent artifacts; no unresolved Context
+finding remains. `git diff --check` also exited 0. This repair changed only this
+Task file's Context and Result; the retired files remain absent. The Daemon's
+authored Verification was not rerun by the Agent.

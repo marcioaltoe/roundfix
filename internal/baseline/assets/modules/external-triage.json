@@ -1,11 +1,21 @@
 {
-  "schemaVersion": "setup-context-driven/module-v2", "id": "external-triage", "version": 2, "kind": "workflow", "title": "External issue triage",
+  "schemaVersion": "setup-context-driven/module-v3", "id": "external-triage", "version": 3, "kind": "workflow", "title": "External issue triage",
   "dependsOn": ["context-workflow"], "conflictsWith": [], "requiredSkills": [],
   "skillDispatch": [],
   "requiredDecisions": ["triage.external"],
   "rootBlocks": [{"id": "root.external-triage", "version": 2, "template": "template.root.external-triage", "rules": [], "references": [
     {"id": "reference.root.external-triage", "token": "reference.external-triage", "ownership": "setup", "managedId": "guide.external-triage"}
   ]}],
-  "supportingGuides": [{"id": "guide.external-triage", "version": 2, "path": "docs/agents/external-triage.md", "template": "template.guide.external-triage", "rules": ["rule.external-triage"], "references": []}],
-  "rules": [{"id": "rule.external-triage", "version": 2, "coverage": ["coverage.external-triage", "coverage.language"], "guidance": "Use this workflow only for issues managed in an external forge. Classify the user-visible problem and next action in English before changing labels or status, and route implementation through the repository's local Spec policy."}]
+  "supportingGuides": [{"id": "guide.external-triage", "version": 3, "path": "docs/agents/external-triage.md", "template": "template.guide.external-triage", "rules": ["rule.external-triage"], "references": []}],
+  "rules": [{"id": "rule.external-triage", "version": 3, "coverage": ["coverage.external-triage", "coverage.language"], "clauses": [
+    {"id": "clause.external-triage.classify-before-labelling", "enforcement": "mandatory", "replaces": ["rule.external-triage"], "guidance": "Use this workflow only for issues and pull requests managed in an external forge. Classify each item as a bug or an enhancement, and state its user-visible problem and next action in English, before changing its labels or status."},
+    {"id": "clause.external-triage.move-through-mapped-states", "enforcement": "mandatory", "guidance": "Move each item through the triage states needs-triage, needs-info, ready, and wontfix, applying the forge label the repository maps to each state. The repository records that mapping in this guide, outside its setup markers, when it enables external triage."},
+    {"id": "clause.external-triage.ask-for-an-unmapped-label", "enforcement": "stop-and-ask", "guidance": "Stop and ask the maintainer for the forge label of a triage state the repository has not mapped; never invent a label."},
+    {"id": "clause.external-triage.needs-info-asks-and-stops", "enforcement": "mandatory", "guidance": "When an item lacks what triage needs, mark it needs-info, ask the reporter specific questions that name each missing fact, and stop triaging it until the reporter answers."},
+    {"id": "clause.external-triage.disclose-ai-authorship", "enforcement": "mandatory", "guidance": "Start every comment posted on the forge with a sentence stating that an AI agent generated it."},
+    {"id": "clause.external-triage.record-wontfix-decisions", "enforcement": "mandatory", "guidance": "Record each wontfix decision as a declined Backlog Entry whose reason cites the forge item, and answer a repeated request with that recorded decision instead of deciding it again."},
+    {"id": "clause.external-triage.pull-request-is-an-issue-with-code", "enforcement": "mandatory", "guidance": "Triage an external pull request as an issue with code attached: classify it and move it through the same states before reviewing or merging its code."},
+    {"id": "clause.external-triage.route-accepted-work-to-specs", "enforcement": "mandatory", "guidance": "Route accepted work into the repository's local Spec workflow; a forge label or status never stands in for a Task's status."}
+  ]}],
+  "repositoryExtensions": []
 }
