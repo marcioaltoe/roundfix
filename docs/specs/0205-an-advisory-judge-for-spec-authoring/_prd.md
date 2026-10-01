@@ -40,7 +40,7 @@ disposto a seguir por esse caminho", with a key of Roundfix's own: "Gosto de
 ter chaves separadas para determinar o real custo de cada trabalho/projeto no
 openrouter". The command calls Jev through OpenRouter's System One API when
 `ROUNDFIX_JEV_OPENROUTER_API_KEY` is set, and calls TypeSafe directly only
-when that key is absent and `TYPESAFE_API_KEY` is set.
+when that key is absent and `ROUNDFIX_TYPESAFE_API_KEY` is set.
 
 ## Prerequisites
 
@@ -60,7 +60,7 @@ first.
 - Authentication and HTTP: applicable — the command sends HTTPS requests with
   a bearer key to OpenRouter's System One endpoint when
   `ROUNDFIX_JEV_OPENROUTER_API_KEY` is set, or else to the TypeSafe endpoint
-  when `TYPESAFE_API_KEY` is set. Each key is read only from the command's
+  when `ROUNDFIX_TYPESAFE_API_KEY` is set. Each key is read only from the command's
   environment, sent only in the authorization header of its own endpoint, and
   never printed, logged or stored; the generic `OPENROUTER_API_KEY` is never
   read; without either key the command sends nothing. The request and
@@ -184,7 +184,7 @@ first.
 8. **OpenRouter first, on a key of its own.** When
    `ROUNDFIX_JEV_OPENROUTER_API_KEY` is set, every request of the run goes to
    OpenRouter's System One API with that key; otherwise, when
-   `TYPESAFE_API_KEY` is set, to TypeSafe directly with that key; otherwise
+   `ROUNDFIX_TYPESAFE_API_KEY` is set, to TypeSafe directly with that key; otherwise
    the run is skipped with a reason that names
    `ROUNDFIX_JEV_OPENROUTER_API_KEY`. The generic `OPENROUTER_API_KEY` is
    never read. No key appears in any output, log or file.
@@ -258,7 +258,7 @@ asked, one summary line says why. The JSON form lists every judgment.
    PRDs, TechSpecs and accepted ADRs is English, and on a Portuguese Spec it is
    not.
 7. Success Metric: with both keys set every request goes to OpenRouter and
-   carries only the OpenRouter key; with only `TYPESAFE_API_KEY` every request
+   carries only the OpenRouter key; with only `ROUNDFIX_TYPESAFE_API_KEY` every request
    goes to TypeSafe; with only the generic `OPENROUTER_API_KEY` nothing is
    sent.
 

@@ -34,8 +34,8 @@ whose rules live in the question file beside the thresholds they serve.
   `Authorization: Bearer <key>` and `Content-Type: application/json` and no
   other header. The key comes only from that transport's variable in the
   command's environment, `ROUNDFIX_JEV_OPENROUTER_API_KEY` for OpenRouter or
-  `TYPESAFE_API_KEY` for TypeSafe, is sent only to that transport's endpoint
-  and is written nowhere. The generic `OPENROUTER_API_KEY` is never read. The
+  `ROUNDFIX_TYPESAFE_API_KEY` for TypeSafe, is sent only to that transport's endpoint
+  and is written nowhere. The generic `OPENROUTER_API_KEY` and `TYPESAFE_API_KEY` are never read. The
   HTTP client honors the standard proxy environment variables. Request and
   response fields are those of TypeSafe's published API reference, which
   OpenRouter's System One API implements, plus OpenRouter's `id`, `provider`
@@ -92,7 +92,7 @@ datasets were built with.
   "accepted_model_pattern": "^(?:jev-1\\.13\\.\\d+|typesafe/jev-1\\.13(?:-\\d{8})?)$",
   "transports": [
     {"name": "openrouter", "key_variable": "ROUNDFIX_JEV_OPENROUTER_API_KEY", "endpoint": "https://openrouter.ai/api/v1/systemone", "request_model": "jev-1.13"},
-    {"name": "typesafe", "key_variable": "TYPESAFE_API_KEY", "endpoint": "https://api.typesafe.ai/v1/systemone", "request_model": "jev-1.13.0"}
+    {"name": "typesafe", "key_variable": "ROUNDFIX_TYPESAFE_API_KEY", "endpoint": "https://api.typesafe.ai/v1/systemone", "request_model": "jev-1.13.0"}
   ],
   "usd_per_million_input_tokens": 0.042,
   "monthly_ceiling_usd": 5.0,
@@ -328,10 +328,10 @@ planned. The goals come from the PRD, so a non-English PRD plans no goal pair.
    request, from the command's environment: when
    `ROUNDFIX_JEV_OPENROUTER_API_KEY` is non-empty, `openrouter`, which sends
    that key to `https://openrouter.ai/api/v1/systemone`; otherwise, when
-   `TYPESAFE_API_KEY` is non-empty, `typesafe`, which sends that key to
+   `ROUNDFIX_TYPESAFE_API_KEY` is non-empty, `typesafe`, which sends that key to
    `https://api.typesafe.ai/v1/systemone`; otherwise the run is skipped and
-   sends nothing. The generic `OPENROUTER_API_KEY` is never read, so
-   Roundfix's Jev spend stays on its own OpenRouter key. A key is sent only to
+   sends nothing. The generic `OPENROUTER_API_KEY` and `TYPESAFE_API_KEY` are never
+   read, so Roundfix's Jev spend stays on its own keys. A key is sent only to
    its own transport's endpoint, and a run never switches transport, even
    after a failure.
 3. **The spend.** A call's cost is the response's `usage.cost` in US dollars
@@ -345,7 +345,7 @@ planned. The goals come from the PRD, so a non-English PRD plans no goal pair.
 For each pending judgment in plan order, with identical states asked once:
 
 1. **Before any request.** No key (Invariant 2): the run is skipped with
-   `ROUNDFIX_JEV_OPENROUTER_API_KEY is not set (nor TYPESAFE_API_KEY)`. An
+   `ROUNDFIX_JEV_OPENROUTER_API_KEY is not set (nor ROUNDFIX_TYPESAFE_API_KEY)`. An
    unreadable Judge Log: skipped with
    `judge log unreadable: <error>`. The month's cost at or above the ceiling:
    skipped with `monthly ceiling reached (US$<spent> of US$5.00)`. A skipped
@@ -411,7 +411,7 @@ Transcripts 1 and 4 the command's environment holds only
 `ROUNDFIX_JEV_OPENROUTER_API_KEY`, and the fake transport answers as
 OpenRouter does: `model` `typesafe/jev-1.13-20260917` for the requested
 `jev-1.13`, an `id`, `provider` `TypeSafe` and `usage.cost` 0.000035364. In
-Transcripts 3 and 5 it holds only `TYPESAFE_API_KEY`, and the fake transport
+Transcripts 3 and 5 it holds only `ROUNDFIX_TYPESAFE_API_KEY`, and the fake transport
 answers as the direct API does: `model` `jev-1.13.0` and no `usage.cost`.
 
 1. Surface Transcript: two raised judgments at the TechSpec stage.
@@ -432,7 +432,7 @@ answers as the direct API does: `model` `jev-1.13.0` and no `usage.cost`.
    ```transcript
    $ roundfix spec judge 0300-example
    stdout:
-   Judge: skipped: ROUNDFIX_JEV_OPENROUTER_API_KEY is not set (nor TYPESAFE_API_KEY); 5 judgment(s) not asked
+   Judge: skipped: ROUNDFIX_JEV_OPENROUTER_API_KEY is not set (nor ROUNDFIX_TYPESAFE_API_KEY); 5 judgment(s) not asked
    stderr:
    exit: 0
    ```
@@ -512,7 +512,7 @@ prints nothing in text form.
 5. API Contract: help — `roundfix spec --help` and the top-level help name
    `roundfix spec judge <slug> [--stage <prd|techspec>] [--format <text|json>]`,
    and `roundfix spec judge --help` names `ROUNDFIX_JEV_OPENROUTER_API_KEY`
-   as the key to set, `TYPESAFE_API_KEY` as the direct alternative, the
+   as the key to set, `ROUNDFIX_TYPESAFE_API_KEY` as the direct alternative, the
    monthly ceiling, the Judge Log and that the command never fails for a
    judgment.
 
@@ -557,7 +557,7 @@ prints nothing in text form.
   account of `ROUNDFIX_JEV_OPENROUTER_API_KEY`.
 - **TypeSafe, the direct transport.** `POST
   https://api.typesafe.ai/v1/systemone`, requesting `jev-1.13.0`, used only
-  when the OpenRouter key is absent and `TYPESAFE_API_KEY` is set.
+  when the OpenRouter key is absent and `ROUNDFIX_TYPESAFE_API_KEY` is set.
 - **Neither in tests.** Tests and the QA gate never reach either endpoint:
   package and command tests inject an `http.RoundTripper` through the existing
   command dependencies, and the QA gate runs the binary only where nothing may
