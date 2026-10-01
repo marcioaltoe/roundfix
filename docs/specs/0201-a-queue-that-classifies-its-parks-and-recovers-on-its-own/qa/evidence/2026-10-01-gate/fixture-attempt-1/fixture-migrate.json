@@ -1,0 +1,11 @@
+{
+  "argv": [
+    "./bin/roundfix",
+    "migrate"
+  ],
+  "cwd": "/private/tmp/roundfix-0201-qa-yf1t_n5j/repo",
+  "HOME": "/private/tmp/roundfix-0201-qa-yf1t_n5j/home",
+  "stdout": "No Run Database at /private/tmp/roundfix-0201-qa-yf1t_n5j/home/.roundfix/roundfix.db; nothing to migrate\n",
+  "stderr": "",
+  "exit": 0
+}

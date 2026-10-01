@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "./bin/roundfix",
+    "deliver",
+    "status"
+  ],
+  "cwd": "/private/tmp/roundfix-0201-qa-ymg2cr7y/repo",
+  "HOME": "/private/tmp/roundfix-0201-qa-ymg2cr7y/home",
+  "stdout": "",
+  "stderr": "Preflight failed\n\nReason:\n  delivery.derived_paths[0] has unsafe path \"../generated\"\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix deliver status --help' for usage.\n",
+  "exit": 2
+}

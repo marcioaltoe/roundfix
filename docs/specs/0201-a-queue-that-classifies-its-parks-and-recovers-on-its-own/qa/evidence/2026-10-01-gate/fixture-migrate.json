@@ -1,0 +1,11 @@
+{
+  "argv": [
+    "./bin/roundfix",
+    "migrate"
+  ],
+  "cwd": "/private/tmp/roundfix-0201-qa-ymg2cr7y/repo",
+  "HOME": "/private/tmp/roundfix-0201-qa-ymg2cr7y/home",
+  "stdout": "Run Database migrated from schema version 0 to 21: /private/tmp/roundfix-0201-qa-ymg2cr7y/home/.roundfix/roundfix.db\n",
+  "stderr": "",
+  "exit": 0
+}

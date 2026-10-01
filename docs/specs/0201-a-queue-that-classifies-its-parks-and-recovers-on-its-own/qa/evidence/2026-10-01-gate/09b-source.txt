@@ -1,0 +1,3 @@
+command: rtk proxy curl-cffi get 'https://docs.github.com/en/graphql/reference/enums#mergeablestate' --impersonate chrome --timeout 30 --body
+Tool refusal: Network access to docs.github.com was blocked: domain is not on the allowlist for the current sandbox mode.
+No page content read. Requires a full-access source observation.

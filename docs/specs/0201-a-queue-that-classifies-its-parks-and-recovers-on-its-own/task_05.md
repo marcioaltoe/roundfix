@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
