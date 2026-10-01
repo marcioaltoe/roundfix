@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0205-an-advisory-judge-for-spec-authoring
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -70,3 +70,79 @@ ceiling is reached.
 - [_prd.md](_prd.md) — Goals 2, 3 and 4; User Stories 3, 4, 5 and 6; Core Features 5, 6, 8, 9 and 10; Success Metrics 2, 3, 4 and 7; Recorded limits
 - [_techspec.md](_techspec.md) — Interfaces; Invariants; Asking; Data Models; API Contract 3; API Contract 4; Testing Approach 3; Testing Approach 4; Build Order 2
 - ADR-0200; ADR-0201; ADR-0089
+
+## Result
+
+Implemented task_02's transport client, Judge Log, and fail-open `Run` in the
+six declared Go files. Transport selection uses only the injected Roundfix
+keys, once per run; redirects cannot carry a key to another endpoint. The
+question file supplies each endpoint, request model, model pin, threshold,
+price, and ceiling. Each HTTP attempt gets a 30-second context, is recorded
+before any retry or later judgment, and counts toward calls and spend. The
+current UTC month's log is reread before each attempt, including retries;
+therefore recorded spend from either transport and another caller is included.
+The report retains planning skips, unasked judgments, answers, and stop reasons.
+No CLI, skill, tooling, Task Graph, or other Task changes belong to this diff.
+
+Starting evidence: `client.go`, `log.go`, and `judge.go` did not exist (`ls`
+exited 1). The initial worktree already had the Daemon's task_02 status edit;
+that edit was preserved. No Task status or authored Verification was changed.
+
+Focused checks on restored implementation:
+
+- `GOCACHE=/private/tmp/roundfix-0205-task02-go-cache rtk proxy go test ./internal/judge -count=1 -run 'Test(Ask|Run|ModelPin|JudgeLog|Requests|Retry)'`
+  — exit 0 after correcting null-field preservation in log redaction.
+- `GOCACHE=/private/tmp/roundfix-0205-task02-go-cache rtk proxy go test ./internal/judge -count=1 -race -run 'Test(Ask|Run|ModelPin|JudgeLog|Requests|Retry)'`
+  — exit 0 on the restored code and final tests, `ok roundfix/internal/judge`.
+- `rtk proxy gofmt -l` on the six declared Go files — no output.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+
+Acceptance evidence from those focused checks:
+
+| Criterion | Implemented behavior and test evidence |
+| --- | --- |
+| Exact confidence/probability boundaries | `TestRunRaisesAtTheMeasuredThresholds` observes advisory at confidence 0.8 and noul 0.29, clear at confidence 0.79 and noul 0.3. |
+| Answering model pin | `TestRunNeverComparesAnotherModelsAnswer` compares both accepted model forms, skips Jev 1.14 with the exact required reason, and checks every logged model. `TestModelPinAcceptsOnlyJev113` covers all seven required accepted/refused IDs, including the empty model. |
+| Endpoint-specific request models | `TestAskSendsEachTransportsOwnModelID` captures `jev-1.13` on OpenRouter and `jev-1.13.0` on TypeSafe. `TestAskSendsTheMeasuredRequest` checks the POST, endpoint, state, one question, two headers, and deadline. |
+| Key selection and isolation | `TestRunSelectsTheTransportByKey` checks each dedicated key alone and both together, including absence of the direct key in OpenRouter requests. `TestRunIgnoresTheGenericOpenRouterKey` checks only the generic OpenRouter key, only the generic TypeSafe key, and both generic keys: the exact named skip and no request. `TestRunAsksIdenticalStatesOnceAndKeepsTheSelectedTransport` verifies deduplication and selection persistence. `TestRunNeverFollowsARedirectWithAKey` verifies no redirected request. |
+| Reported/computed cost and combined ceiling | `TestRunRecordsTheReportedCost` captures OpenRouter's snapshot, response ID, provider, and reported cost; then appends a direct response with computed token cost to the same file and verifies the combined ceiling prevents another request. `TestJudgeLogUsesTheUTCMonthAndRejectsBadCosts` checks UTC month selection and fallback for null, negative, or nonnumeric reported cost. |
+| No requests without budget evidence | `TestRunSendsNothingWithoutAKey`, `TestRunSendsNothingWithAnUnreadableLog`, and `TestRunStopsAtTheMonthlyCeiling` verify zero requests for the named conditions and stop after a call reaches the ceiling. `TestRunRechecksSpendBeforeRetryAndHonorsCancellation` also verifies spend rechecks before retries. |
+| Stop/continue/retry rules | `TestRunStopsWhenTheServiceFails` checks exact reasons and no later judgment for 503, 401, 402, 403, exhausted 429, and exhausted 529. `TestRunSkipsARefusedRequestAndContinues` checks 422 followed by an answered judgment. `TestAskRetriesARateLimitThenAnswers` observes three attempts after two 429 responses with `Retry-After: 0`, one advisory answer, and three log lines. Cancellation, capped waits, default waits, and per-attempt timeout are covered by `TestRetryWaitsAndAttemptsHonorCancellation` and `TestRunRechecksSpendBeforeRetryAndHonorsCancellation`. |
+| Complete private Judge Log | `TestJudgeLogRecordsEveryCall` checks all 29 fields, one line per attempt, directory 0700, file 0600, answer nullability, state hash length, and absence of the fake key. `TestRunHandlesMalformedAnswersAndWriteFailures` checks unreadable answers, the sole caller error for an unreadable PRD, a failed append preserving the answer in hand while stopping later calls, and credential redaction from transport errors and logs. |
+
+`TestRequestsCarryOnlySpecArtifactText` exercises both transports with a real
+temporary fixture repository holding a Go source sentinel and a findings
+sentinel. Every state string, split at `the cited decision`, is asserted to
+occur in its PRD, TechSpec, or accepted ADR; neither sentinel nor the fake key
+appears in any body, and only Authorization and Content-Type are set. All new
+tests inject their RoundTripper, keys, fixed Request clock, and temporary Home;
+they open no socket and do not consult process credential variables.
+`TestAskIgnoresUnknownFieldsAndRejectsMalformedValues` additionally protects
+HTTP metadata from unknown response fields and rejects missing or mistyped
+answers and negative token counts.
+`TestRunReportsSkippedArtifactPathsWithoutSendingText` verifies that a
+non-English PRD is reported with its repository-relative path and sends nothing.
+
+Sabotage evidence (each mutation tested alone, each restored byte-for-byte):
+
+| Gate sabotaged | Mutation and focused command | Observed failure |
+| --- | --- | --- |
+| Ceiling | Changed both `>= q.MonthlyCeilingUSD` guards to `>`. `GOCACHE=/private/tmp/roundfix-0205-task02-go-cache go test ./internal/judge -count=1 -run '^TestRunStopsAtTheMonthlyCeiling$'` | Exit 1: `already_exactly_at_ceiling` reported `unexpected request`; `run_reaches_ceiling` observed two calls and US$10 instead of one call and a stop. |
+| Model pin | Accepted any `typesafe/` prefix in addition to the measured pattern. `GOCACHE=/private/tmp/roundfix-0205-task02-go-cache go test ./internal/judge -count=1 -run '^TestModelPinAcceptsOnlyJev113$'` | Exit 1: `typesafe/jev-1.14-20261101` reported `pin accepted=true want=false`. |
+| Transport selection | Fell back to `OPENROUTER_API_KEY` for OpenRouter. `GOCACHE=/private/tmp/roundfix-0205-task02-go-cache go test ./internal/judge -count=1 -run '^TestRunIgnoresTheGenericOpenRouterKey$'` | Exit 1: `only_OPENROUTER_API_KEY` and `both_generic_keys` reported `unexpected request`. |
+
+The subsequent race-enabled focused check ran after all three restorations.
+The Task's declared Verification command and repository settlement gate were
+not run; they remain Daemon-owned. No commit, push, or PR was made.
+
+Environment limits: the first focused check with the default Go cache reported
+standard-library packages as missing although their source directories existed;
+the task-scoped GOCACHE allowed compilation and test execution. Fetching
+`https://docs.typesafe.ai/api.md` through `rtk curl-cffi` was blocked by the
+sandbox domain allowlist. Implementation follows this Spec's API Contract 3
+and its maintainer-recorded endpoint measurements; no live API call was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T205638Z_5e1457a22648dd9b`
+- Source commit: `8e90c5863d62e54c1bb8cc04aa02f1db880bb402`
