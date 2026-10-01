@@ -101,8 +101,24 @@ retries per item. Omitted limits are recorded as `none`. Start and status print
 the recorded values as:
 
 ```text
-Limits: deadline <RFC 3339 UTC|none>, retries per item <n|none>, concurrency 1, spend not measured
+Limits: deadline <RFC 3339 UTC|none>, retries per item <n|none>, concurrency 1, tokens <n|none>
 ```
+
+`deliver start` prints only the limits line. `deliver status` prints usage
+immediately after it, summing every Run recorded for queue items, including
+Runs from earlier retries:
+
+```text
+Limits: deadline none, retries per item none, concurrency 1, tokens none
+Usage: 5639755 tokens from 1 of 1 prompt(s) across 1 Run(s); cost not reported
+```
+
+With unreported prompts the line is `Usage: none reported by <n> prompt(s)
+across <k> Run(s); cost not reported`. A queue with no linked Runs prints
+`Usage: no Runs recorded`. Linked Runs with no usage rows print `no prompts
+recorded` across their Run count. A Run in progress contributes once the queue
+records it at Run end. Reported cost is grouped by currency; Roundfix computes
+no prices. See [Token usage](../usage.md#token-usage).
 
 At or after the deadline, the owner parks each item that has not started as
 `queue-deadline`; an item that has started continues. A `queue-deadline` item

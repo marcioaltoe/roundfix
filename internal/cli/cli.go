@@ -87,6 +87,7 @@ Usage:
   roundfix upgrade [--check]
   roundfix runs
   roundfix runs list [--all] [--state <active|terminal|all>] [--limit N]
+  roundfix runs show <run-id> [--json]
   roundfix stop [<run-id>|--run-id <id>|--pr <number>|--spec <slug>]
   roundfix attach [<run-id>] [--no-input]
   roundfix events <run-id> [--follow] [--filter <categories>]
@@ -5292,10 +5293,22 @@ comes from the installed executable.
 Options:
   --check  Report the latest release outcome without installing it
 `
+	case "runs show":
+		return `Usage:
+  roundfix runs show <run-id> [--json]
+
+Prints recorded token usage per Work Item scope and in total, read-only.
+
+Options:
+  --json  Print schema roundfix/runs-show/v1 with null unreported counts
+
+Exit codes: 0 when the Run exists; 2 for usage errors or an unknown Run.
+`
 	case "runs":
 		return `Usage:
   roundfix runs
   roundfix runs list [--all] [--state <active|terminal|all>] [--limit N]
+  roundfix runs show <run-id> [--json]
 
 Lists Runs from the Run Database newest first. By default the listing is
 scoped to the current repository and shows the 20 newest Active Runs. When
@@ -5305,6 +5318,7 @@ terminal, runs opens the Run Browser; non-interactive contexts must use
 'roundfix runs list'.
 
 Commands:
+  show  Print recorded token usage per scope and in total (read-only)
   list  Print run id, state, kind, target, agent, start time (UTC), duration,
         and local branch columns
 

@@ -46,7 +46,8 @@ func TestDeliverStatusPrintsAParkLinePerParkedItem(t *testing.T) {
 		"Warning: first premise-changed: internal/example.go\n" +
 		"Park: first environment: resolve the blocker, then run roundfix deliver retry first\n" +
 		"Park: last review: resolve the blocker, then run roundfix deliver retry last\n" +
-		"Limits: deadline none, retries per item none, concurrency 1, spend not measured\n" +
+		"Limits: deadline none, retries per item none, concurrency 1, tokens none\n" +
+		"Usage: no Runs recorded\n" +
 		"Pending question: first parked checks-timeout\nAnswer: resolve the blocker, then run roundfix deliver retry first\nWaiting behind it: 1 parked item(s)\n"
 	if code != exitOK || stderr.Len() != 0 || stdout.String() != want {
 		t.Fatalf("exit=%d stderr=%q stdout=%q want=%q", code, stderr.String(), stdout.String(), want)
@@ -90,7 +91,8 @@ func TestDeliverStatusReproducesSurfaceTranscriptOne(t *testing.T) {
 		"0205-second\tparked\tprerequisite-unmerged: 0204-first\t-\n" +
 		"Park: 0204-first conflict: " + next + "\n" +
 		"Park: 0205-second dependency: run roundfix deliver retry 0204-first; 0205-second returns to the queue once 0204-first is merged\n" +
-		"Limits: deadline none, retries per item none, concurrency 1, spend not measured\n" +
+		"Limits: deadline none, retries per item none, concurrency 1, tokens none\n" +
+		"Usage: no Runs recorded\n" +
 		"Pending question: 0204-first parked pull-request-conflict: " + path + "\n" +
 		"Answer: " + next + "\nWaiting behind it: 1 parked item(s)\n"
 	if code != exitOK || stderr.Len() != 0 || stdout.String() != want {

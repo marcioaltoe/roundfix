@@ -45,7 +45,7 @@ func TestDeliverStartRecordsAndPrintsItsLimits(t *testing.T) {
 	if queue.Limits.Deadline.Before(wantEarliest) || queue.Limits.Deadline.After(wantLatest) || queue.Limits.MaxRetries != 2 {
 		t.Fatalf("recorded limits = %+v, want deadline in [%s, %s] and retries 2", queue.Limits, wantEarliest, wantLatest)
 	}
-	want := "Limits: deadline " + queue.Limits.Deadline.Format(time.RFC3339) + ", retries per item 2, concurrency 1, spend not measured\n"
+	want := "Limits: deadline " + queue.Limits.Deadline.Format(time.RFC3339) + ", retries per item 2, concurrency 1, tokens none\n"
 	if stdout.String() != want {
 		t.Fatalf("deliver start stdout = %q, want %q", stdout.String(), want)
 	}
@@ -72,7 +72,7 @@ func TestDeliverStartRecordsNoneForOmittedLimits(t *testing.T) {
 	if !queue.Limits.Deadline.IsZero() || queue.Limits.MaxRetries != 0 {
 		t.Fatalf("recorded omitted limits = %+v, want zero values", queue.Limits)
 	}
-	want := "Limits: deadline none, retries per item none, concurrency 1, spend not measured\n"
+	want := "Limits: deadline none, retries per item none, concurrency 1, tokens none\n"
 	if stdout.String() != want {
 		t.Fatalf("deliver start stdout = %q, want %q", stdout.String(), want)
 	}

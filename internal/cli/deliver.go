@@ -306,7 +306,12 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 			fmt.Fprintf(stdout, "Park: %s %s: %s\n", item.SpecSlug, park.Class, park.Next)
 		}
 	}
+	report, err := runStore.DeliveryQueueTokenUsage(ctx, loaded.GitRoot)
+	if err != nil {
+		return printDeliverFailure("status", err, stderr)
+	}
 	printDeliveryLimits(stdout, queue.Limits)
+	printDeliveryUsage(stdout, report.Total)
 	if question, found := delivery.PendingQuestionFor(queue); found {
 		fmt.Fprintf(stdout, "Pending question: %s parked %s\n", question.SpecSlug, question.Blocker)
 		fmt.Fprintf(stdout, "Answer: %s\n", question.Answer)
@@ -326,11 +331,16 @@ func printDeliveryLimits(output io.Writer, limits store.DeliveryQueueLimits) {
 	if limits.MaxRetries > 0 {
 		retries = strconv.Itoa(limits.MaxRetries)
 	}
+	tokens := "none"
+	if limits.MaxTokens > 0 {
+		tokens = strconv.FormatInt(limits.MaxTokens, 10)
+	}
 	fmt.Fprintf(
 		output,
-		"Limits: deadline %s, retries per item %s, concurrency 1, spend not measured\n",
+		"Limits: deadline %s, retries per item %s, concurrency 1, tokens %s\n",
 		deadline,
 		retries,
+		tokens,
 	)
 }
 
