@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0202-a-qa-gate-that-reruns-only-stale-rows
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -47,3 +47,49 @@ The QA gate of Run `run_20261001T133454Z_7983d7d312c8ec5c` blocked row 5 with fi
 
 - task_01, task_02, task_03
 - QA Report of Run `run_20261001T133454Z_7983d7d312c8ec5c`, finding F1
+
+## Result
+
+Added both requested tests in `internal/daemon/qa_two_pass_carry_test.go`.
+Each drives two real `TaskCycle` QA passes over the existing disposable Git
+fixture, using the real snapshot recorder, carry resolver, Git committer and
+Run Event Journal. The first Agent declares inputs for a passing row and a
+failing row without writing a snapshot. The second Agent preserves seeded
+carried rows and records fresh results only for the remaining rows.
+
+- Unmoved-row evidence: the first failed QA commit remains on its Run Branch;
+  the correction changes only `repair-input.txt`. The second committed report
+  is read with `git show <commit>:<path>` and must retain row 1's establishing
+  report, head and provenance, list it as carried, and record row 2's fresh
+  result and `re-run: not pass` disposition. The imported first report must
+  remain byte-identical.
+- Moved-input evidence: the mirror also changes `carry-input.txt`. The second
+  report must replace row 1's old provenance with a fresh observation and
+  record `re-run: input moved: carry-input.txt`; both rows are re-run.
+- Both passes assert the ordered `prior_report`, `mechanical`, `verdict` and
+  `evidence_snapshots` events, including the prior commit/report, carry/re-run
+  counts, audited heads and recorded-row counts. Independent YAML decoding
+  checks the committed snapshots' row IDs, input paths and SHA-256 digests,
+  including the corrected row in the second pass.
+
+Focused checks:
+
+- `GOCACHE=/private/tmp/roundfix-task06-gocache rtk proxy go test ./internal/daemon -run '^TestTwoGatePasses' -count=1`
+  exited 0; both new tests ran.
+- Mutation check:
+  `GOCACHE=/private/tmp/roundfix-task06-gocache rtk proxy go test -overlay=/private/tmp/roundfix-task06-overlay.json ./internal/daemon -run '^TestTwoGatePassesCarry' -count=1`
+  exited 1 with `committed report lost carried row or provenance`. The
+  temporary overlay omits carried Results rows from the seed renderer while
+  retaining the carry disposition. It changes no repository production file
+  and demonstrates that a dropped carried row is detected in the committed
+  report, even when the Agent re-runs it to a passing result.
+- `rtk proxy git diff --check` exited 0.
+- `GOCACHE=/private/tmp/roundfix-task06-gocache rtk make verify-incremental`
+  exited 0 with expanded sandbox permissions: formatting, vet, package tests
+  (including `internal/daemon`), skill checks and build passed. The initial
+  sandboxed attempt was blocked by network access to `cafe.github.com`; the
+  expanded-permission rerun supplied the conclusive incremental evidence.
+
+No production code or existing test was edited. Task status and declared
+Verification remain Daemon-owned; the declared Verification command was not
+run. No follow-up work was identified.
