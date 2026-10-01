@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0205-an-advisory-judge-for-spec-authoring
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -54,3 +54,35 @@ its phrases, and each skill's raised version is recorded.
 - [_prd.md](_prd.md) — User Stories 1 and 2; Core Feature 11
 - [_techspec.md](_techspec.md) — Testing Approach 6; Build Order 4
 - ADR-0200; ADR-0189
+
+## Result
+
+Implemented the authoring workflow guidance in both canonical skills. Each now
+has one `## Advisory judgment` section after its checker/report guidance and
+before `## Anti-patterns`, with the stage-specific judge command, instructions
+to answer raised judgments, advisory and skipped-result handling, and the two
+Jev key names explicitly excluded from printing, storing, or asking.
+
+Focused checks and regeneration evidence:
+
+- `make skills-sync` passed and rewrote `skills/write-prd/SKILL.md` and
+  `skills/write-techspec/SKILL.md` from their canonical copies.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  passed and rewrote `skills/testdata/owned-skill-versions.json`, recording
+  version `0.0.5` for both skills.
+- `make baseline-digests` passed with `changed:false`; it rewrote no files.
+- A focused phrase, placement, mirror-identity, QA-boundary, and
+  `git diff --check` probe passed. The mirrors are byte-identical to their
+  canonical skills.
+
+Acceptance evidence:
+
+- Both skills contain the required stage command and advisory judgment phrases;
+  their front matter and metadata versions are `0.0.5`.
+- Both mirrored skill directories match their canonical files byte-for-byte.
+- The version-recording test passed with both new `0.0.5` entries present.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T215854Z_cdd052c5b8440585`
+- Source commit: `e5e15c7ceb9996eb1cf472462323af621e1bbe87`
