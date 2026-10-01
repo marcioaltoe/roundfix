@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.4
+  version: 0.0.5
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.4
+version: 0.0.5
 ---
 
 # Write Tasks
@@ -90,6 +90,13 @@ Code for another operating system is verified by building its non-test code for 
 - **Declared edits and governed paths are explicit.** Every path a Task edits
   is declared under `interface:` or `creates:`, never `instruction:`. An
   `instruction:` path is read-only and never makes two Tasks collide. Each
+  Task that changes a command declares the one command file it changes:
+  `.agents/skills/roundfix/references/<command>.md` with its mirror, and
+  `docs/user-guide/commands/<command>.md`, never the skill's `SKILL.md` or
+  `commands.md` unless it changes the entry file itself. Two Tasks that
+  declare the same file cannot share a Wave, so Tasks that change different
+  commands can run together and Tasks that change the same command need an
+  edge between them.
   declared or Verification-read Governed Path must appear in the Spec's
   `_authorization.md` `paths:` and in both `bounded files:` rows, or authoring
   is refused with `SC-TOOLING-UNDECLARED`. A Task naming a CLI surface names

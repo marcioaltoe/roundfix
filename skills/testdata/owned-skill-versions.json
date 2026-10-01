@@ -125,6 +125,10 @@
       {
         "version": "0.0.4",
         "digest": "5cbbcfeb91bcf38bc6bb709c7132abf8ae4b2c9ea7e5d8cda1e6f7bc2aeb30a7"
+      },
+      {
+        "version": "0.0.5",
+        "digest": "5a3aecf6cf6e2b8eab4b4d855347464d96c01fc874bf0b7a95fa32cf52478687"
       }
     ],
     "write-techspec": [
