@@ -39,7 +39,7 @@ transport to OpenRouter: "Podemos consumir através do openrouter. Estou muito
 disposto a seguir por esse caminho", with a key of Roundfix's own: "Gosto de
 ter chaves separadas para determinar o real custo de cada trabalho/projeto no
 openrouter". The command calls Jev through OpenRouter's System One API when
-`ROUNDFIX_JEV_OPENROUTER_API_KEY` is set, and calls TypeSafe directly only
+`ROUNDFIX_OPENROUTER_API_KEY` is set, and calls TypeSafe directly only
 when that key is absent and `ROUNDFIX_TYPESAFE_API_KEY` is set.
 
 ## Prerequisites
@@ -59,7 +59,7 @@ first.
   Source: `docs/agents/domain.md`.
 - Authentication and HTTP: applicable — the command sends HTTPS requests with
   a bearer key to OpenRouter's System One endpoint when
-  `ROUNDFIX_JEV_OPENROUTER_API_KEY` is set, or else to the TypeSafe endpoint
+  `ROUNDFIX_OPENROUTER_API_KEY` is set, or else to the TypeSafe endpoint
   when `ROUNDFIX_TYPESAFE_API_KEY` is set. Each key is read only from the command's
   environment, sent only in the authorization header of its own endpoint, and
   never printed, logged or stored; the generic `OPENROUTER_API_KEY` is never
@@ -182,11 +182,11 @@ first.
    read as regular files inside their directories. An artifact that is not
    English is reported as skipped and sent nowhere.
 8. **OpenRouter first, on a key of its own.** When
-   `ROUNDFIX_JEV_OPENROUTER_API_KEY` is set, every request of the run goes to
+   `ROUNDFIX_OPENROUTER_API_KEY` is set, every request of the run goes to
    OpenRouter's System One API with that key; otherwise, when
    `ROUNDFIX_TYPESAFE_API_KEY` is set, to TypeSafe directly with that key; otherwise
    the run is skipped with a reason that names
-   `ROUNDFIX_JEV_OPENROUTER_API_KEY`. The generic `OPENROUTER_API_KEY` is
+   `ROUNDFIX_OPENROUTER_API_KEY`. The generic `OPENROUTER_API_KEY` is
    never read. No key appears in any output, log or file.
 9. **Every call is logged.** Each request appends one line to the Judge Log
    in Roundfix Home, one file per UTC month: the time, repository, Spec,
