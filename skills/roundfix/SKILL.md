@@ -4,10 +4,10 @@ description: Use Roundfix to plan releases with the read-only Release Plan Comma
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.0
+  version: 0.1.1
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.0
+version: 0.1.1
 ---
 
 # Roundfix
@@ -21,8 +21,9 @@ Supervisor or script needs JSONL progress for one explicit Run.
 
 <!-- roundfix:reference-index:begin -->
 
-Read the reference for the command family you need. A change to a command edits
-that command's reference file.
+Read the reference for the command family you need. Each command has exactly one
+reference file, and a change to a command edits that file; a row marked `—`
+covers a topic that spans commands and owns none.
 
 | Reference | Commands covered | When to read |
 | --- | --- | --- |
@@ -37,11 +38,11 @@ that command's reference file.
 | [review](references/review.md) | `review` | Applying the pre-PR review policy. |
 | [review-runs](references/review-runs.md) | `fetch`, `resolve`, `watch` | Starting a review Run or inspecting its artifacts and isolation. |
 | [runs](references/runs.md) | `runs`, `attach` | Discovering, attaching to, or viewing detached Runs. |
-| [runtime](references/runtime.md) | `setup`, `doctor`, `upgrade` | Checking or configuring the ACP Runtime dependency. |
+| [runtime](references/runtime.md) | — (the Node.js and acpx prerequisite that `setup`, `doctor` and `upgrade` check; those commands live in setup) | Checking or configuring the ACP Runtime dependency. |
 | [settle](references/settle.md) | `settle`, `reopen`, `qa-report` | Reopening or settling a Task, or accepting a QA Report. |
 | [setup](references/setup.md) | `init`, `setup`, `migrate`, `doctor`, `upgrade`, `skills` | Initializing config, checking readiness, upgrading, or installing skills. |
 | [spec](references/spec.md) | `spec` | Checking a Spec or auditing its closure. |
-| [spec-delivery](references/spec-delivery.md) | `implement`, `deliver` | Driving the implementation loop and autonomous Spec delivery. |
+| [spec-delivery](references/spec-delivery.md) | — (the loop across `implement` and `deliver`; each command lives in its own reference) | Driving the implementation loop and autonomous Spec delivery. |
 | [stop](references/stop.md) | `stop` | Stopping a Run. |
 | [storage](references/storage.md) | `gc`, `storage` | Inspecting or reclaiming Run storage. |
 
