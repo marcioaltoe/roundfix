@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0204-a-run-that-reports-the-tokens-and-spend-it-used
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -65,3 +65,90 @@ prompt, it carries the reported turn total, its split and the reported cost.
 - [_prd.md](_prd.md) — Goals 1 and 4; Core Features 1, 2 and 3; Success Metric 1; Recorded limits
 - [_techspec.md](_techspec.md) — Interfaces; Reading the reports; The counting rule; Testing Approach 1; Build Order 1
 - ADR-0198; ADR-0017; ADR-0020
+
+
+## Result
+
+Implemented the Task 01 slice: each prompt collects `usage_update` readings
+and the last successfully parsed non-null result `usage`, counts them using
+`adapterLineageContract.LastRequestOnly` (true only for Codex), and returns
+`ExecuteResult.Usage`. The zero value remains unreported. Turn reports retain
+optional split fields, including explicit zero; request sums omit the split.
+The last reported cumulative cost is retained without pricing or calculating
+a session delta. Usage notifications publish no Agent Run Event and do not
+mark Agent work started. Malformed usage metadata is ignored without changing
+the prompt outcome. Usage is attached on both stream-return branches before
+normal, stopped, failure and transport-anomaly outcomes are classified.
+
+Added both JSON-RPC fixtures with `sess_fixture` session IDs and all new tests
+in `internal/agent/usage_test.go`. Stream tests use the existing fake-acpx
+helpers; `internal/agent/acpx_runner_test.go` is unchanged. No live acpx or
+adapter is started. The committed baseline has no usage types, new tests or
+fixtures (`git ls-tree HEAD` for these paths returned no entries).
+
+### Acceptance evidence
+
+The focused usage selection and the fresh complete agent-package run below
+exercise these criteria:
+
+| Criterion | Evidence |
+| --- | --- |
+| Codex fixture: request sum, no split, three readings | `TestRunPromptReturnsTheCodexFixtureUsage` returns 214009 = 26830 + 36330 + 150849, basis `request-sum`, three readings and nil split fields; it also requires no messages or Run Events. `TestCountTurnUsageSumsReadingsForALastRequestLineage` covers absent, equal and smaller reported totals. |
+| Claude fixture: turn total, split and cost | `TestRunPromptReturnsTheClaudeFixtureUsageAndCost` returns 4019995, basis `turn`, input 19000, output 995, cached read 3900000, cached write 100000, thought 0 and cost 3.5526034999999996 USD. It also requires no Run Events. |
+| Last-request report grows beyond its last reading | `TestCountTurnUsageCountsAGrownLastRequestReportAsTurn` requires `turn` and the reported split when total 200 exceeds the last reading 100; it also covers a report without readings. |
+| No report stays unreported; malformed usage does not fail | `TestCountTurnUsageLeavesANoReportPromptUnreported` checks the zero value for both counting modes and an actual fake prompt. `TestRunPromptIgnoresAMalformedUsagePayload` checks invalid field types, invalid result usage shapes, malformed costs and preservation of earlier valid metadata. `TestRunPromptKeepsUsageWhenALaterResultHasNone` covers absent and null later usage. |
+| Stopped prompt retains earlier usage | `TestRunPromptReturnsUsageForAStoppedPrompt` checks exit 130 with and without a parsed result: 42 request-sum tokens, one reading and cost 1.5 USD survive the StopError. Both context-cancellation and normal stream-return branches assign the collected usage before returning. |
+
+Additional guards: `TestOnlyTheCodexLineageReportsItsLastRequestOnly` checks the
+contract map and drives both Claude and an unknown lineage with the Codex
+fixture; both retain the reported turn rather than sum readings.
+`TestRunPromptPreservesUsageAfterTransportAnomaly` checks parsed-result success
+with nonzero exit. `TestRunPromptUsageDoesNotChangeNoOutputClassification`
+requires a usage-only stream without a result to remain a Selection Failure
+without Agent work-started status.
+
+### Focused checks
+
+- `GOCACHE=/tmp/roundfix-task01-gocache rtk proxy go test -count=1 ./internal/agent -run 'TestCountTurnUsage|TestRunPrompt.*Usage|TestOnlyTheCodexLineage'` — exit 0.
+- `GOCACHE=/tmp/roundfix-task01-gocache rtk proxy go test -count=1 ./internal/agent` — exit 0 after restoring both sabotages; existing tests were not changed.
+- `GOCACHE=/tmp/roundfix-task01-gocache rtk make verify-incremental` — initial sandbox run exited 2. Two CLI force-stop tests could not read the process table (`operation not permitted`). `TestTaskBudgetReasonNamesTheSettlementThatRenewedIt` also missed its 200 ms deadline before reaching its expected step (233.681541 ms elapsed).
+- `GOCACHE=/tmp/roundfix-task01-gocache rtk proxy go test -count=1 -run '^TestRunForceStop(LegacyRunWithoutOwnerIdentityStillStopsOwner|OwnerProcessIntegrationProvesExitBeforeStoreCompletion)$' ./internal/cli` — exit 0 with process-table access outside the sandbox.
+- `GOCACHE=/tmp/roundfix-task01-gocache rtk proxy go test -count=1 -run '^TestTaskBudgetReasonNamesTheSettlementThatRenewedIt$' ./internal/daemon` — exit 0 in isolation without code or timing changes. The initial timing failure remains recorded here rather than being treated as a fix.
+- `GOCACHE=/tmp/roundfix-task01-gocache rtk make verify-incremental` — rerun with process-table access exited 0: formatting, vet, package tests, skill checks and build. The incremental tier reused successful package caches; CLI and daemon suites reran successfully.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+
+### Sabotage evidence
+
+1. Counting: temporarily removed `lastRequestOnly` from the summation
+   condition, making every lineage eligible for a request sum. The initial
+   test with a large Claude report did not catch this because the growth
+   guard still selected `turn`. Added the required contrasting case of a
+   non-Codex reported total below its last context reading, checked it with
+   restored code (exit 0), then repeated the same sabotage.
+   `go test -count=1 -run '^TestCountTurnUsageTakesTheReportedTurnForOtherLineages$' ./internal/agent`
+   exited 1: got `request-sum` 1100, expected `turn` 100 with its output
+   split. Restored the production file byte-for-byte.
+2. Stream reading: temporarily allowed an absent or null later result usage
+   to overwrite the collector's earlier report.
+   `go test -count=1 -run '^TestRunPromptKeepsUsageWhenALaterResultHasNone$' ./internal/agent`
+   exited 1: got unreported zero usage, expected `turn` 42 with explicit
+   output zero. Restored the production file byte-for-byte.
+
+Both sabotage commands used `rtk proxy` and the same task-scoped GOCACHE.
+The complete agent-package check and incremental check passed after restoration.
+
+### Ownership and follow-ups
+
+The existing `status: in_progress` is Daemon-owned and was preserved. No
+command from this Task's Verification section was run. No Task Graph, other
+Task file, existing test, tooling configuration, commit or publication was
+changed. Usage persistence, session cost deltas, usage Run Events and public
+surfaces belong to later Tasks. The unrelated 200 ms budget-test failure under
+the initial full-suite load is a follow-up observation; this diff does not
+change that test or its deadline. Task settlement and authored Verification
+remain with the Daemon.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T094428Z_f4d3047c47b08ac0`
+- Source commit: `dc413ede29c38b83890b08d36d4efee5ed35f841`

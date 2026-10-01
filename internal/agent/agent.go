@@ -192,6 +192,7 @@ type ExecuteRequest struct {
 }
 
 type ExecuteResult struct {
+	Usage            TurnUsage
 	LogPath          string
 	Output           string
 	Message          string

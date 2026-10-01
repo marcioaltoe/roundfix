@@ -1,0 +1,4 @@
+{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"sess_fixture","update":{"sessionUpdate":"usage_update","used":100000,"size":200000}}}
+{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"sess_fixture","update":{"sessionUpdate":"usage_update","used":110000,"size":200000}}}
+{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"sess_fixture","update":{"sessionUpdate":"usage_update","used":120000,"size":200000,"cost":{"amount":3.5526034999999996,"currency":"USD"}}}}
+{"jsonrpc":"2.0","id":1,"result":{"stopReason":"end_turn","usage":{"totalTokens":4019995,"inputTokens":19000,"outputTokens":995,"cachedReadTokens":3900000,"cachedWriteTokens":100000,"thoughtTokens":0}}}
