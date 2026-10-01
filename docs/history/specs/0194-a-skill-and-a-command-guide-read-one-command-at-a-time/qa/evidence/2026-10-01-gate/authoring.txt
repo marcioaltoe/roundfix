@@ -1,0 +1,10 @@
+.agents/skills/write-tasks/SKILL.md: all applicable exact phrases present
+skills/write-tasks/SKILL.md: all applicable exact phrases present
+.agents/skills/write-tasks/references/task-template.md: all applicable exact phrases present
+skills/write-tasks/references/task-template.md: all applicable exact phrases present
+$ make skills-sync-check
+cwd: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0194-a-skill-and-a-command-guide-read-one-command-at-a-time-1336c7de9a07c54a-7b92b617-7503cf20/run_20261001T032402Z_e4152d0721cc09f1
+go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+ok  	roundfix/skills	0.237s
+
+exit: 0

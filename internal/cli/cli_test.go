@@ -28,6 +28,7 @@ import (
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/daemon"
 	"roundfix/internal/gittest"
+	"roundfix/internal/mdtree"
 	roundnotify "roundfix/internal/notify"
 	"roundfix/internal/preflight"
 	"roundfix/internal/reviewsource"
@@ -1489,7 +1490,10 @@ func TestEventsHelpDocumentsAgentSelectionFilter(t *testing.T) {
 		t.Fatalf("parsed filter excludes %q: %#v", runevent.StreamCategorySelection, req.filter)
 	}
 
-	guide := mustRead(t, filepath.Join(cliTestRepoRoot(t), "docs", "user-guide", "commands.md"))
+	guide, err := mdtree.Text(os.DirFS(cliTestRepoRoot(t)), "docs/user-guide/commands.md", "docs/user-guide/commands")
+	if err != nil {
+		t.Fatalf("read command reference: %v", err)
+	}
 	if !strings.Contains(guide, wantCategories) || !strings.Contains(guide, "`agent-selection`") {
 		t.Fatalf("user guide does not document agent-selection filter")
 	}

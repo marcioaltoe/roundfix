@@ -28,7 +28,7 @@ successful release outcome, without changing standard output or the exit code.
    mismatch prints `skills: failed` with the applicable owned or external
    update command and exits `1`. Doctor is offline and read-only: it never
    updates or deletes skills, and it ignores unrelated extra installed skills
-   and lock entries. See the [Doctor Command reference](commands.md#doctor)
+   and lock entries. See the [Doctor Command reference](commands/doctor.md)
    for the ownership authorities and exact remediation commands.
 
 3. Authenticate the GitHub CLI for the repository (`gh auth status`). Review
@@ -511,7 +511,7 @@ revalidates cleanliness and both heads, then releases only entries that remain
 recorded before cleanup. Other terminal outcomes remain unchanged, and a
 second run reports `released` without another mutation.
 
-See the [Reconcile Command reference](commands.md#reconcile) for the full
+See the [Reconcile Command reference](commands/reconcile.md) for the full
 state table, stdout and stderr contract, JSON fields, refusal behavior, and
 links to the glossary, ADR, Spec, and finding trail.
 
@@ -740,7 +740,7 @@ different terminal outcome, Roundfix rejects the conflict and preserves that
 outcome. Never kill Agent or acpx processes by hand while a Run is Active.
 
 For the full failure and replay contract, see the
-[Stop Command reference](commands.md#stop), which traces to
+[Stop Command reference](commands/stop.md), which traces to
 [ADR-0052](../adr/0052-run-completion-is-compare-and-set.md) and the
 [terminal-outcome Spec](../history/specs/0037-terminal-outcome-integrity/_prd.md).
 

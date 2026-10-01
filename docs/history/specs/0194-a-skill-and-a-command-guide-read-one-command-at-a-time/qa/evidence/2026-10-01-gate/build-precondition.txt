@@ -1,0 +1,11 @@
+Run worktree: current checkout of roundfix/run-run_20261001T032402Z_e4152d0721cc09f1
+$ rtk make build
+go build -buildvcs=false -ldflags "-X roundfix/internal/app.BuildCommit=0d0fc16f-dirty -X roundfix/internal/app.BuildTime=2026-10-01 00:31:12 -0300" -o bin/roundfix ./cmd/roundfix
+exit: 0
+$ rtk proxy ./bin/roundfix --version
+roundfix 0.22.0 (0d0fc16f-dirty, built 2026-10-01 00:31:12 -0300)
+exit: 0
+$ rtk proxy ./bin/roundfix spec check 0194-a-skill-and-a-command-guide-read-one-command-at-a-time --strict
+No findings. Authored Verification commands were not executed.
+exit: 0
+Skipped: SC-FINDING-LIFECYCLE (missing Finding); SC-ROLLUP-MEMBER (missing Rollup); vocabulary documentation detector (missing Vocabulary Contract); SC-REF-UNRESOLVED (missing references/_index.md).

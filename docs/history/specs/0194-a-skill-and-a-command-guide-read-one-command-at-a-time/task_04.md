@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0194-a-skill-and-a-command-guide-read-one-command-at-a-time
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -57,3 +57,33 @@ After the split, a Task that changes one command edits one reference file of the
 - ADR-0187
 
 ## Result
+
+Implemented the command-file declaration rule and its Wave consequence in the
+canonical `write-tasks` skill, regenerated its mirror, and added the two
+temporary-fixture Wave collision tests. The template now shows both command
+reference paths as `interface:` examples. The skill version advanced from
+`0.0.4` to `0.0.5` in both front-matter fields.
+
+Focused evidence:
+
+- `GOCACHE=/tmp/roundfix-task04-gocache go test -count=1 -run '^(TestWaveCollisionAllowsDifferentCommandFiles|TestWaveCollisionRefusesTheSameCommandFile)$' ./internal/speccheck` passed. This proves different declared command files produce no collision and the same declared command file produces one `SC-WAVE-COLLISION` finding.
+- `GOCACHE=/tmp/roundfix-task04-gocache go test -count=1 -run '^TestWriteTasksSkillStatesTheDeclaredPathRules$' ./skills` passed.
+- `GOCACHE=/tmp/roundfix-task04-gocache go test -count=1 -run '^TestTaskAuthoringGuidanceNamesDeclarations$' ./skills` passed.
+- The direct phrase check for both required paths and both exact rule phrases passed.
+- `make skills-sync` completed and rewrote `skills/write-tasks/SKILL.md` and `skills/write-tasks/references/task-template.md` from their canonical counterparts.
+- `make baseline-digests` passed and reported no derived files changed.
+- The sanctioned version-record check passed and updated `skills/testdata/owned-skill-versions.json` with version `0.0.5`.
+
+Acceptance evidence: the first three criteria have focused evidence above. The
+declared `make skills-sync-check` gate remains for Daemon Verification.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `skills/testdata/owned-skill-versions.json`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T010622Z_8bfe4bebad66f971`
+- Source commit: `f76829404646c9ffcca4f0e583ccbb72c5e4c7c3`

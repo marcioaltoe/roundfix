@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0194-a-skill-and-a-command-guide-read-one-command-at-a-time
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -101,3 +101,116 @@ complexity: high
 - ADR-0187
 
 ## Result
+
+Split the starting commit's skill with `/tmp/roundfix-task02-split.py`, a
+throwaway line-copying script outside the repository. The entry keeps the
+introduction, index, unchanged QA settlement block, and five shared Batch
+sections in the specified order. Eighteen reference files retain every moved
+section's bytes and original order within each file. Both version fields move
+from `0.0.4` to `0.1.0`; both `agents/openai.yaml` files remain unchanged.
+
+Placements decided by the three-step rule:
+
+- `Config initialization` → `references/setup.md`, from its first shown
+  command, `roundfix init`.
+- `Run Window` → `references/deliver.md`, from the heading's `window` command.
+- `QA Report acceptance` → `references/settle.md`, from its first shown
+  command, `roundfix qa-report`.
+
+Added `skills/roundfix_layout_test.go`. Its four named layout tests exercise
+both the canonical tree and embedded bundle, require eighteen indexed
+references with exactly one row each, resolve every indexed link, read the
+20,000-byte budget from `roundfixSkillEntryByteBudget`, and compare the real
+installer's temporary output to canonical bytes.
+
+The two version-mutation tests,
+`TestOwnedSkillContractRejectsSetAndVersionDisagreement` and
+`TestOwnedSkillBundleReadinessKeepsStatesDistinct`, already locate the version
+by the declared bundle version on this starting commit. Their shared
+`skillVersionBelow` helper in `skills/skills_test.go` assumed a nonzero patch;
+it now finds a lower valid version when a minor-step version resets the patch
+to zero. The sanctioned version-recording test adds `0.1.0` to
+`skills/testdata/owned-skill-versions.json`; this ordinary file is declared as
+additional version-rule fallout of this Task.
+
+Regeneration:
+
+- `make skills-sync` exited 0. Its byte-changed outputs are
+  `skills/roundfix/SKILL.md` and these eighteen files under
+  `skills/roundfix/references/`: `archive.md`, `baseline.md`, `deliver.md`,
+  `events.md`, `implement.md`, `profiles.md`, `reconcile.md`, `release.md`,
+  `review.md`, `review-runs.md`, `runs.md`, `runtime.md`, `settle.md`,
+  `setup.md`, `spec.md`, `spec-delivery.md`, `stop.md`, and `storage.md`.
+  The command also recopies other owned skill mirrors; their bytes did not
+  change.
+- `GOCACHE=/tmp/roundfix-task02-gocache make baseline-digests` exited 0,
+  reported `changed:false`, and rewrote no derived pin.
+- `GOCACHE=/tmp/roundfix-task02-gocache go test ./skills -run
+  '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` exited 0
+  and updated only the owned-skill version ledger named above.
+
+Acceptance evidence from focused implementation checks:
+
+| Criterion | Evidence |
+| --- | --- |
+| Original nonblank body lines retain their counts | The split script and a separate Python audit compared line Counters against `HEAD` with front matter and the new index excluded; both comparisons matched. Whole sections and the extracted QA block were copied directly. |
+| Index covers every reference and links resolve | All four new layout tests failed before the split. `TestRoundfixSkillIndexNamesEveryReference` and `TestRoundfixSkillIndexLinksResolve` now pass for canonical and embedded sources. |
+| Entry budget and identical QA settlement | Entry is 12,629 bytes. `TestRoundfixSkillEntryFileStaysWithinItsBudget` and `TestSettlementGuidanceIsOneTable` pass; the script also compared the untrimmed QA block byte for byte with the other two canonical skills. |
+| Shipped check and installation | `go run ./cmd/roundfix skills check` exits 0 with no diagnostic. `TestCheckValidatesRoundfixSkillArtifacts` and `TestInstallWritesEveryRoundfixReference` pass; the latter installs to `t.TempDir()` and compares every reference and entry with canonical bytes. |
+| Text-pinning contracts | Focused settlement, wording, version, and documentation contracts pass. The broader skills run exposes the out-of-slice reader omission described below; this criterion is not fully evidenced. |
+| Canonical and mirror match | An independent recursive Python audit compared both file sets and every file's bytes, including references and the unchanged manifests; all match. |
+
+Focused commands (RTK proxy was used to preserve output):
+
+- `GOCACHE=/tmp/roundfix-task02-gocache go test ./skills -run
+  'TestRoundfixSkill|TestInstallWritesEveryRoundfixReference' -count=1`:
+  initial red signal, all four new tests failed on missing references/index
+  and the 148,315-byte entry.
+- `GOCACHE=/tmp/roundfix-task02-gocache go test ./skills -run
+  'TestRoundfixSkill|TestInstallWritesEveryRoundfixReference|TestSettlementGuidance|TestCheckValidatesRoundfix|TestOwnedSkillContract|TestOwnedSkillBundle|TestEveryOwnedSkillVersion'
+  -count=1 -v`: exited 0, all selected tests passed.
+- `GOCACHE=/tmp/roundfix-task02-gocache go test -tags docscontract
+  ./internal/docscontract -run
+  'Test(BaselineDocumentation|ProfilesDocumentation|ReleasePlanDocumentation)'
+  -count=1`: exited 0.
+- `GOCACHE=/tmp/roundfix-task02-gocache go run ./cmd/roundfix skills check`:
+  exited 0.
+- `git diff --check`: exited 0.
+- `GOCACHE=/tmp/roundfix-task02-gocache go test ./skills -count=1`:
+  exited 1 on `TestReviewRequestContract`.
+- `GOCACHE=/tmp/roundfix-task02-gocache make verify-incremental`:
+  exited 2. `go vet` passed. The test phase reported the reader omission
+  below, two process-owner stop tests denied process-table access by the
+  sandbox, and a suiteguard diagnostic because the Agent edited this Result
+  while the CLI tests were running. The log is
+  `/tmp/roundfix-task02-incremental.log`. No test or guard was weakened.
+- `GOCACHE=/tmp/roundfix-task02-gocache go test ./internal/cli -run
+  '^TestRunForceStop(LegacyRunWithoutOwnerIdentityStillStopsOwner|OwnerProcessIntegrationProvesExitBeforeStoreCompletion)$'
+  -count=1`, with process-table access and no concurrent edits: exited 0.
+  This focused rerun clears those two environment failures and produces no
+  suiteguard diagnostic; it does not turn the earlier incremental run into
+  a passing gate.
+
+Follow-up for the reader Task: `TestReviewRequestContract` calls
+`testWorkflowProjectConstraintContract` in
+`skills/baseline_skill_contract_test.go:1338`, which still reads only the
+canonical and mirror entry files. Seven required phrases moved unchanged to
+`references/review-runs.md`, so the broader skills run fails. That helper
+needs to read the entry together with references, as the reader Task specifies.
+This governed file is outside this Task's permitted edit set and was left
+unchanged. No wording was restored or duplicated to hide the diagnostic.
+
+The authored Verification commands were not run. Task status, checkboxes,
+the Task Graph, and other Task files were left to their owners; no commit,
+push, or Pull Request was created.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `skills/testdata/owned-skill-versions.json`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T010622Z_8bfe4bebad66f971`
+- Source commit: `7f2133f5eb425f5a0b335457f43ecf70d33001c4`

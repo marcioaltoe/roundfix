@@ -1,0 +1,8 @@
+Promise crosswalk (asserted across TechSpec Coverage Map and authored Task References):
+Goal 1 / Core Feature 1 / Metric 1 / API 2 → task_02
+Goal 2 / Core Feature 2 → task_03; Core Feature 4 / Metric 4 → task_04
+Goal 3 / Metric 2 → task_02 and task_03 move proofs
+Goal 4 / Core Feature 3 / Metric 3 / API 1 → task_01, task_02, task_03; corrective task_06
+All four Goals, four Core Features, four Metrics and two API Contracts named in both map and Task declarations. Positive and negative evidence is required by terminal task_05 and executed in rows 2–7.
+Spec local paths, status and QA dependency closure checked; no frontend, reference index, Finding, Rollup or Unreachable Acceptance is authored. Strict checker has no findings.
+Glossary check: Roundfix Skill, Task Graph, Wave, Recorded Path and QA Report already defined. New mdtree is an internal reader; splitting existing documents introduces no new domain term, command, flag, output or status. No glossary update needed.

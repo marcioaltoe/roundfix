@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0194-a-skill-and-a-command-guide-read-one-command-at-a-time
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -84,3 +84,38 @@ complexity: medium
 - ADR-0187
 
 ## Result
+
+Implemented the command-reference split from the task-start `HEAD` with a
+throwaway line-copying script. `commands.md` now retains its introduction,
+global contract, group headings, agent boundaries, and a marked index; moved
+sections are stored under `docs/user-guide/commands/`. Relative links in moved
+sections gain the required directory prefix, and the three command-section
+links in `usage.md` now point to command files. The two command files created
+from earlier-wave sections that were not declared in this Task are
+`spec-audit.md` and `storage-report.md`.
+
+Added `internal/docscontract/commands_index_test.go` under the `docscontract`
+build tag. It checks that the index and command directory have the same file
+set and that relative links targeting the user guide resolve from
+`commands.md`, every command file, and `usage.md`.
+
+Focused evidence after the final edit:
+
+- `GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1 -tags docscontract ./internal/docscontract -run '^$'` passed; the docscontract package compiles with the new tests.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache go test -count=1 -tags docscontract ./internal/docscontract -run '^(TestUserGuideLinksResolve|TestEveryCommandIsNamedInTheUserGuide)$'` passed.
+- `python3 /private/tmp/command_move_check.py` passed; the non-blank line multiset matches `HEAD` after link-target normalization and index removal.
+- `git diff --check` passed.
+
+The daemon must run the declared Verification commands and settle the Task.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `docs/user-guide/commands/spec-audit.md`
+- `docs/user-guide/commands/storage-report.md`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T010622Z_8bfe4bebad66f971`
+- Source commit: `ecc91734e754867e8c37e847845d3e6e05f636c8`
