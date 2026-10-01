@@ -40,7 +40,7 @@ command reaches GitHub, a provider or a live remote.
    failed pass committed only on a side branch is imported byte for byte, that
    each refusal leaves nothing behind, and that the second pass carries the
    unmoved row end to end.
-5. MUST verify, by executing task_03's end-to-end test and the event tests of
+5. MUST verify, by executing task_06's two-pass tests, task_03's end-to-end test and the event tests of
    task_01 and task_02 against the built tree, that two consecutive gate
    passes publish the `prior_report`, `mechanical` and `evidence_snapshots`
    phases with their payloads. It MUST also verify that the second pass's

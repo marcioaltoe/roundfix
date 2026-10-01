@@ -18,7 +18,10 @@ graph:
       needs: [task_01, task_02, task_03]
     - id: task_05
       file: task_05.md
-      needs: [task_01, task_02, task_03, task_04]
+      needs: [task_01, task_02, task_03, task_04, task_06]
+    - id: task_06
+      file: task_06.md
+      needs: [task_04]
 ---
 
 # Task Graph
@@ -30,5 +33,6 @@ graph:
 | task_03 | backend | The next pass reads a failed pass's QA Report from its Run Branch |
 | task_04 | docs | The qa-gate skill, the QA prompt and the guide teach the carry |
 | task_05 | qa | Run the final QA gate |
+| task_06 | test | Two real gate passes carry a row into the committed report |
 
 Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05
