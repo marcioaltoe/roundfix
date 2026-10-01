@@ -105,9 +105,10 @@ starting commit; the clauses of the two Specs do not overlap.
   or ADR-0093 but decide how the Spec Consistency Check reads citations,
   ADR-0168 cites ADR-0093 but narrows the related-ADR check, ADR-0194 and
   ADR-0195 cite ADR-0097 but decide how the Daemon records and observes QA
-  rows again, and ADR-0192 cites ADR-0149 but decides how the queue owner
+  rows again, ADR-0210 cites ADR-0097 but decides how an evidence snapshot
+  digests its inputs, and ADR-0192 cites ADR-0149 but decides how the queue owner
   resolves a merge conflict on declared derived paths. This Spec changes none
-  of these eight, so none of them applies. Source: `docs/agents/domain.md`.
+  of these nine, so none of them applies. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — express maintainer authorization of
   2026-09-30 for the Baseline source and its guides ("Autorizar os dois") and
   for the skills ("considere autorizado a ajustar todas as skills se
