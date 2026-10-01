@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "typescript",
-  "version": 4,
+  "version": 5,
   "kind": "language-runtime",
   "title": "TypeScript repository guidance",
   "dependsOn": [
@@ -16,7 +16,7 @@
     "crafting-effective-readmes",
     "diagnosing-bugs",
     "docker",
-    "feature-systems-pattern",
+    "app-renderer-systems",
     "find-rules",
     "find-skills",
     "game-changing-features",
@@ -98,10 +98,10 @@
       ]
     },
     {
-      "skill": "feature-systems-pattern",
+      "skill": "app-renderer-systems",
       "triggers": [
         {
-          "id": "trigger.typescript.feature-systems-pattern",
+          "id": "trigger.typescript.app-renderer-systems",
           "when": "Designing a feature system within the TypeScript application."
         }
       ]

@@ -1,16 +1,17 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "core",
-  "version": 12,
+  "version": 14,
   "kind": "core",
   "title": "Universal agent baseline",
   "dependsOn": [],
   "conflictsWith": [],
   "requiredSkills": [
     "coding-guidelines",
-    "context7",
+    "context7-cli",
     "conventional-commits",
     "evidence-gate",
+    "exa-web-search",
     "github-pr-workflow",
     "handoff",
     "no-workarounds",
@@ -30,10 +31,10 @@
       ]
     },
     {
-      "skill": "context7",
+      "skill": "context7-cli",
       "triggers": [
         {
-          "id": "trigger.core.context7",
+          "id": "trigger.core.context7-cli",
           "when": "Consulting authoritative current documentation for a library, framework, runtime, or toolchain."
         }
       ]
@@ -53,6 +54,15 @@
         {
           "id": "trigger.core.evidence-gate",
           "when": "Making any completion, readiness, or handoff claim."
+        }
+      ]
+    },
+    {
+      "skill": "exa-web-search",
+      "triggers": [
+        {
+          "id": "trigger.core.exa-web-search",
+          "when": "Searching the web broadly when local sources and current documentation do not answer the question."
         }
       ]
     },

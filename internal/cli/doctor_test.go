@@ -49,8 +49,11 @@ func TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest(t *testing.T)
 		"golang-cli",
 		"golang-concurrency",
 		"golang-context",
+		"golang-dependency-management",
 		"golang-error-handling",
 		"golang-lint",
+		"golang-safety",
+		"golang-structs-interfaces",
 		"golang-testing",
 		"tui-design",
 	}
@@ -103,9 +106,10 @@ func TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest(t *testing.T)
 			},
 			wantCode: exitOK,
 			wantOutput: []string{fmt.Sprintf(
-				"skills: ok (%d required: %d Roundfix-owned, 9 external)",
+				"skills: ok (%d required: %d Roundfix-owned, %d external)",
 				ownedCount+len(goTUISkills),
 				ownedCount,
+				len(goTUISkills),
 			)},
 			wantSkillCalls: 1,
 		},

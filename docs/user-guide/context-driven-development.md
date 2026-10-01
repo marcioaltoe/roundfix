@@ -444,15 +444,17 @@ Universal required capabilities cannot be removed or waived. Follow the exact
 remediation reported by alignment. For example, preview a missing Context7
 skill restoration:
 
+An installed `context7` skill, the name earlier snapshots used, still satisfies the Context7 capability.
+
 ```bash
-roundfix baseline skills restore --repo . --profile standard-typescript-monorepo --skill context7 --format json
+roundfix baseline skills restore --repo . --profile standard-typescript-monorepo --skill context7-cli --format json
 ```
 
 Review the returned restoration Plan Digest, then confirm the same current
 preview:
 
 ```bash
-roundfix baseline skills restore --repo . --profile standard-typescript-monorepo --skill context7 --confirm-plan <digest> --format json
+roundfix baseline skills restore --repo . --profile standard-typescript-monorepo --skill context7-cli --confirm-plan <digest> --format json
 ```
 
 Rerun the interactive workflow after remediation. Profile alignment must be
@@ -789,6 +791,11 @@ repository, commit, source tree, complete-tree digest, target safety,
 `skills-lock.json` compatibility, and the complete preimage. It updates only
 the selected skill trees and lock records through the recoverable transaction.
 
+#### When an upstream skill is renamed
+
+The next `roundfix baseline update --yes` installs the new name. Then
+`roundfix baseline skills reconcile --profile <id> --source <owner/repo> --revision <commit>` removes the old lock entry. The old directory under `.agents/skills/` is the repository's to delete, because Roundfix never deletes an installed skill tree. A second update reports `current`.
+
 ### Canonical asset synchronization
 
 Asset synchronization is a maintainer operation, not part of repository
@@ -800,8 +807,10 @@ roundfix baseline assets sync --source-dir <canonical-setups> --check --format j
 
 Without `--check`, Roundfix validates the generated catalog in memory and
 updates only `internal/baseline/assets/setups` through the recoverable
-transaction. It never installs skills, writes to the canonical source, or reads
-an installed setup skill as runtime authority.
+transaction. Both modes validate the catalog as the refresh would leave it, so a
+module edit that names a skill only the refreshed snapshots list lands together
+with the refresh. It never installs skills, writes to the canonical source, or
+reads an installed setup skill as runtime authority.
 
 ### Recovery and troubleshooting
 

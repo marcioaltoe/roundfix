@@ -2,7 +2,7 @@ agentic-cli-design
 autoresearch
 bubbletea
 coding-guidelines
-context7
+context7-cli
 conventional-commits
 domain-modeling
 exa-web-search
@@ -10,8 +10,11 @@ github-pr-workflow
 golang-cli
 golang-concurrency
 golang-context
+golang-dependency-management
 golang-error-handling
 golang-lint
+golang-safety
+golang-structs-interfaces
 golang-testing
 grill-with-docs
 grilling

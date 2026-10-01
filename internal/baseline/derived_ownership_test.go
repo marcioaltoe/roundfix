@@ -70,6 +70,9 @@ func TestOutputsForCommand(t *testing.T) {
 		if want == nil {
 			t.Fatal("2026-08-06 authorization has no make baseline-digests enumeration")
 		}
+		// ADR-0191 adds the upstream Go TUI snapshot to the frozen enumeration.
+		want = append(want, "internal/baseline/assets/setups/go-tui.json")
+		sort.Strings(want)
 		if !reflect.DeepEqual(got, want) {
 			t.Fatalf("make baseline-digests outputs = %v, want enumerated %v", got, want)
 		}

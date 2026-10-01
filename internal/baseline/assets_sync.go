@@ -266,18 +266,6 @@ func syncAssets(
 	if resolved, resolveErr := filepath.EvalSymlinks(dependencies.assetRoot); resolveErr == nil {
 		dependencies.assetRoot = resolved
 	}
-	if _, err := LoadCatalog(os.DirFS(dependencies.assetRoot)); err != nil {
-		return failedAssetsSyncPayload(assetsSyncError(
-			AssetsSyncInvalid,
-			"skills.setup-snapshot.drift",
-			"error",
-			"internal/baseline/assets",
-			"setups",
-			fmt.Sprintf("Go-owned canonical Baseline assets are invalid: %v.", err),
-			"Fix the canonical Baseline catalog before synchronizing.",
-			err,
-		))
-	}
 
 	current, err := loadAssetsSyncSnapshots(dependencies.assetRoot)
 	if err != nil {
@@ -340,18 +328,28 @@ func syncAssets(
 	if hasAssetsSyncErrors(findings) {
 		return failedAssetsSyncFindings(findings, AssetsSyncInvalid)
 	}
-	if len(overrides) != 0 {
-		if _, err := LoadCatalog(assetsOverlayFS{
-			base:      os.DirFS(dependencies.assetRoot),
-			overrides: overrides,
-		}); err != nil {
-			finding := assetsSyncInvalidFinding(
-				dependencies.assetRoot,
+	if _, err := LoadCatalog(assetsOverlayFS{
+		base:      os.DirFS(dependencies.assetRoot),
+		overrides: overrides,
+	}); err != nil {
+		if len(overrides) == 0 {
+			return failedAssetsSyncPayload(assetsSyncError(
+				AssetsSyncInvalid,
+				"skills.setup-snapshot.drift",
+				"error",
+				"internal/baseline/assets",
 				"setups",
-				fmt.Sprintf("Generated setup snapshots are incompatible with the Baseline catalog: %v.", err),
-			)
-			return failedAssetsSyncFindings([]AssetsSyncFinding{finding}, AssetsSyncInvalid)
+				fmt.Sprintf("Go-owned canonical Baseline assets are invalid: %v.", err),
+				"Fix the canonical Baseline catalog before synchronizing.",
+				err,
+			))
 		}
+		finding := assetsSyncInvalidFinding(
+			dependencies.assetRoot,
+			"setups",
+			fmt.Sprintf("Generated setup snapshots are incompatible with the Baseline catalog: %v.", err),
+		)
+		return failedAssetsSyncFindings([]AssetsSyncFinding{finding}, AssetsSyncInvalid)
 	}
 	if request.Check {
 		for _, plan := range plans {

@@ -216,7 +216,7 @@ func TestAssetsSyncCheckIsReadOnlyAndReportsDrift(t *testing.T) {
 	if !errors.As(err, &syncErr) || syncErr.Category != AssetsSyncExecution {
 		t.Fatalf("check error = %T %v, want execution drift", err, err)
 	}
-	if payload.OK || payload.Summary.Errors != 3 {
+	if payload.OK || payload.Summary.Errors != 4 {
 		t.Fatalf("check payload = %+v", payload)
 	}
 	for _, finding := range payload.Findings {
@@ -245,14 +245,14 @@ func TestBaselineAssetsSyncRefreshProducesCanonicalTreeAndIsIdempotent(t *testin
 	if err != nil {
 		t.Fatalf("refresh: %v payload=%+v", err, payload)
 	}
-	if !payload.OK || payload.Summary.Info != 3 {
+	if !payload.OK || payload.Summary.Info != 4 {
 		t.Fatalf("refresh payload = %+v", payload)
 	}
 	catalog, err := LoadCatalog(os.DirFS(assetRoot))
 	if err != nil {
 		t.Fatalf("load refreshed catalog: %v", err)
 	}
-	if len(catalog.SetupIDs()) != 3 {
+	if len(catalog.SetupIDs()) != 4 {
 		t.Fatalf("refreshed setup IDs = %v", catalog.SetupIDs())
 	}
 	assertAssetsSyncOwnedSkillHasNoContentPin(t, filepath.Join(assetRoot, "setups", "go-cli.json"))
@@ -471,7 +471,7 @@ func TestAssetsSyncCompatibilityMatchesMaintainedPythonContract(t *testing.T) {
 		t.Fatal(err)
 	}
 	if payload.SchemaVersion != AssetsSyncSchemaVersion ||
-		payload.Summary != (AssetsSyncSummary{Info: 3}) ||
+		payload.Summary != (AssetsSyncSummary{Info: 4}) ||
 		len(payload.PlannedChanges) != 0 {
 		t.Fatalf("maintained result shape = %+v", payload)
 	}
@@ -679,7 +679,7 @@ func buildAssetsSyncSource(t *testing.T, checkout string, assetRoot string) stri
 		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(target, []byte("# "+filepath.Base(filepath.Dir(target))+"\n"), 0o644); err != nil {
+		if err := os.WriteFile(target, assetsSyncSyntheticSkillFile(skillPath), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}

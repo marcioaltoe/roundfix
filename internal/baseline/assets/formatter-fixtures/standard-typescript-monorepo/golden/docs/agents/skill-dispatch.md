@@ -41,6 +41,8 @@ Individual skill triggers:
   - `trigger.frontend.agent-browser`: Exercising frontend behavior in a real browser.
 - `ai-sdk`:
   - `trigger.backend.ai-sdk`: Building backend AI flows with the selected AI SDK.
+- `app-renderer-systems`:
+  - `trigger.typescript.app-renderer-systems`: Designing a feature system within the TypeScript application.
 - `architectural-analysis`:
   - `trigger.typescript.architectural-analysis`: Analyzing TypeScript repository architecture and dependency boundaries.
 - `archive-spec`:
@@ -69,8 +71,8 @@ Individual skill triggers:
   - `trigger.typescript.codebase-design`: Designing TypeScript codebase structure and component boundaries.
 - `coding-guidelines`:
   - `trigger.core.coding-guidelines`: Writing, modifying, refactoring, or reviewing implementation code.
-- `context7`:
-  - `trigger.core.context7`: Consulting authoritative current documentation for a library, framework, runtime, or toolchain.
+- `context7-cli`:
+  - `trigger.core.context7-cli`: Consulting authoritative current documentation for a library, framework, runtime, or toolchain.
 - `conventional-commits`:
   - `trigger.core.conventional-commits`: Staging changes, writing commit messages, or preparing pull request titles.
 - `core-web-vitals`:
@@ -93,10 +95,10 @@ Individual skill triggers:
   - `trigger.backend.drizzle-orm`: Changing Drizzle schemas, queries, or migrations.
 - `evidence-gate`:
   - `trigger.core.evidence-gate`: Making any completion, readiness, or handoff claim.
+- `exa-web-search`:
+  - `trigger.core.exa-web-search`: Searching the web broadly when local sources and current documentation do not answer the question.
 - `external-api-adapters`:
   - `trigger.backend.external-api-adapters`: Building or changing external API adapter boundaries.
-- `feature-systems-pattern`:
-  - `trigger.typescript.feature-systems-pattern`: Designing a feature system within the TypeScript application.
 - `find-rules`:
   - `trigger.typescript.find-rules`: Discovering repository rules before TypeScript implementation work.
 - `find-skills`:

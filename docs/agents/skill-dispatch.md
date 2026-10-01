@@ -33,8 +33,8 @@ Individual skill triggers:
   - `trigger.context-workflow.business-analyst`: Evaluating product viability, options, KPIs, or business trade-offs.
 - `coding-guidelines`:
   - `trigger.core.coding-guidelines`: Writing, modifying, refactoring, or reviewing implementation code.
-- `context7`:
-  - `trigger.core.context7`: Consulting authoritative current documentation for a library, framework, runtime, or toolchain.
+- `context7-cli`:
+  - `trigger.core.context7-cli`: Consulting authoritative current documentation for a library, framework, runtime, or toolchain.
 - `conventional-commits`:
   - `trigger.core.conventional-commits`: Staging changes, writing commit messages, or preparing pull request titles.
 - `council`:
@@ -43,6 +43,8 @@ Individual skill triggers:
   - `trigger.context-workflow.domain-modeling`: Defining or changing domain vocabulary, ownership, or bounded-context relationships.
 - `evidence-gate`:
   - `trigger.core.evidence-gate`: Making any completion, readiness, or handoff claim.
+- `exa-web-search`:
+  - `trigger.core.exa-web-search`: Searching the web broadly when local sources and current documentation do not answer the question.
 - `github-pr-workflow`:
   - `trigger.core.github-pr-workflow`: Preparing, opening, updating, or handing off a pull request.
 - `golang-cli`:

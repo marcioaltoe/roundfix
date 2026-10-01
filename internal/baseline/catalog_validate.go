@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"path"
 	"regexp"
+	"sort"
 	"strings"
 
 	roundskills "roundfix/skills"
@@ -444,9 +445,53 @@ func (l *catalogLoader) validateProfiles(catalog *Catalog) {
 					}
 				}
 			}
+			for _, skill := range profileNamedSkills(catalog, l.documents["skill-activations.json"], selected) {
+				if _, exists := setupSkills[skill]; !exists {
+					l.add("catalog.profile.skill.dispatch-outside-setup", profileID, skill)
+				}
+			}
 		}
 		l.validateProfileCapabilities(profileID, profile)
 	}
+}
+
+func profileNamedSkills(catalog *Catalog, activations document, selected []string) []string {
+	names := make(map[string]struct{})
+	for _, moduleID := range selected {
+		for _, dispatch := range objectsOrEmpty(catalog.modules[moduleID]["skillDispatch"]) {
+			name, ok := stringValue(dispatch, "skill")
+			if !ok {
+				name, _ = stringValue(dispatch, "id")
+			}
+			if name == "" {
+				// catalog.skill.dispatch.id.missing already reports it.
+				continue
+			}
+			names[name] = struct{}{}
+		}
+	}
+	bundles := make(map[string][]string)
+	for _, bundle := range objectsOrEmpty(activations["bundles"]) {
+		id, _ := stringValue(bundle, "id")
+		bundles[id] = stringsOrEmpty(bundle["skills"])
+	}
+	selectedSet := stringSet(selected)
+	for _, activation := range objectsOrEmpty(activations["activations"]) {
+		owner, _ := stringValue(activation, "owner")
+		if _, active := selectedSet[owner]; !active {
+			continue
+		}
+		bundle, _ := stringValue(activation, "bundle")
+		for _, name := range bundles[bundle] {
+			names[name] = struct{}{}
+		}
+	}
+	result := make([]string, 0, len(names))
+	for name := range names {
+		result = append(result, name)
+	}
+	sort.Strings(result)
+	return result
 }
 
 func (l *catalogLoader) validateProfileCapabilities(profileID string, profile document) {

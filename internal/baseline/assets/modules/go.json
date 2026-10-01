@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v2",
   "id": "go",
-  "version": 2,
+  "version": 3,
   "kind": "language-runtime",
   "title": "Go repository guidance",
   "dependsOn": [
@@ -12,8 +12,11 @@
     "golang-cli",
     "golang-concurrency",
     "golang-context",
+    "golang-dependency-management",
     "golang-error-handling",
     "golang-lint",
+    "golang-safety",
+    "golang-structs-interfaces",
     "golang-testing"
   ],
   "skillDispatch": [

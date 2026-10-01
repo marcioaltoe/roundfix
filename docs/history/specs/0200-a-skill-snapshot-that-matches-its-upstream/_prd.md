@@ -1,9 +1,12 @@
 ---
 spec: 0200-a-skill-snapshot-that-matches-its-upstream
-status: active
+status: archived
 created: 2026-09-30
 surfaces: [backend, cli, docs]
+archived: "2026-10-01"
+source_slug: 0200-a-skill-snapshot-that-matches-its-upstream
 ---
+
 
 # A skill snapshot that matches its upstream
 

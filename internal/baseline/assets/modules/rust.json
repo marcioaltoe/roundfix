@@ -1,9 +1,9 @@
 {
-  "schemaVersion": "setup-context-driven/module-v2", "id": "rust", "version": 2, "kind": "language-runtime", "title": "Rust repository guidance",
+  "schemaVersion": "setup-context-driven/module-v2", "id": "rust", "version": 3, "kind": "language-runtime", "title": "Rust repository guidance",
   "dependsOn": ["core"], "conflictsWith": [], "requiredSkills": [
     "clap-rust",
     "cut-release",
-    "rust",
+    "rust-expert",
     "rust-cli"
   ],
   "skillDispatch": [
@@ -26,10 +26,10 @@
       ]
     },
     {
-      "skill": "rust",
+      "skill": "rust-expert",
       "triggers": [
         {
-          "id": "trigger.rust.rust",
+          "id": "trigger.rust.rust-expert",
           "when": "Writing or reviewing general Rust implementation and Cargo behavior."
         }
       ]
