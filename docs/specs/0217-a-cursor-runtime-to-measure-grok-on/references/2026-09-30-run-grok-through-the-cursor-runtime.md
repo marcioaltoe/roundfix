@@ -1,8 +1,8 @@
 ---
 type: feat
-status: open
+status: promoted
 created: 2026-09-30
-spec: null
+spec: 0217-a-cursor-runtime-to-measure-grok-on
 reason: null
 ---
 
