@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0209-sources-that-share-a-context-share-a-spec
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -85,3 +85,61 @@ file.
 - [_prd.md](_prd.md) — Goals 1, 2, 3 and 4; User Stories 1, 2, 3 and 6; Core Features 1, 2, 3 and 4; Success Metrics 1 and 2; Declared breaks
 - [_techspec.md](_techspec.md) — Exact clause texts; Source Baseline rows; Version changes; Existing tests that change; API Contract 6; API Contract 7; Testing Approach 1; Build Order 1
 - ADR-0208; ADR-0186; ADR-0058; ADR-0060; ADR-0081; ADR-0149
+
+## Result
+
+Implemented this Task's Baseline slice for Daemon Verification. Task status,
+Task Graph, other Tasks, skills and judge implementation were left untouched.
+The only pre-existing change was this Task's Daemon-owned `in_progress` status.
+
+The Spec workflow now carries the two exact mandatory grouping clauses, and
+CONTEXT workflow carries the exact mandatory extend-before-minting clause.
+They have no `replaces` field. All existing clause objects were compared to
+`HEAD` and remain byte-identical. The six versions rose from 13/5/9 to
+14/6/10 (Spec module/rule/guide) and from 20/15/14 to 21/16/15
+(CONTEXT module/rule/guide). Source Baseline corpus entries, manifest rows and
+index identifiers follow the authored anchors; existing row content is
+preserved, with shifted offsets derived by regeneration. The force record
+adds only the three mandatory entries; the maintained entry count rises from
+146 to 149. No other existing test line changes.
+
+Four new tests lock literal clause text and force, rendered mandatory bullets,
+Source Baseline identity/force/carrier, and an actual Source Baseline adopter's
+Managed Refresh plan. The adopter uses an isolated temporary Git repository,
+requires `ready`, asserts all three dispositions and retention evidence are
+`retained`, and rejects every `unaccounted` disposition. No network or model
+call is involved.
+
+Focused evidence by acceptance criterion:
+
+| Criterion | Evidence |
+| --- | --- |
+| Repository guides state the three mandatory clauses | Sanctioned Managed Refresh rewrote the two guides and Setup Manifest; exact-text inspection found each mandatory bullet in its guide. |
+| Standard TypeScript Monorepo goldens state the clauses | `TestTheGroupingClausesRenderInTheGuides` passed for all three exact mandatory bullets after sanctioned regeneration. |
+| Adopter plan is ready and retains the clauses | `TestAnAdopterRetainsTheGroupingClauses` passed for all three clauses, requiring a ready Managed Refresh and no unaccounted clause. |
+| Force, duplicate text, record citations, catalog and no-op refresh | Focused checks below passed; second Managed Refresh exited 0 with `File changes: 0` and `Idempotence: verified`. |
+
+Commands and outcomes (Go commands used `GOCACHE=/tmp/roundfix-0209-gocache`):
+
+- Initial `go test -count=1 -run '^TestTheGroupingClausesCarryTheirForceAndText$' ./internal/baseline`: exit 1, named all three missing clauses before source edits.
+- `make baseline-digests`: exit 0; sanctioned generation refreshed the goldens, Source Baseline identities/offsets/digests, profile pin, catalog snapshots and four plan-characterization goldens. No generated file or pin was hand-edited.
+- `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`: first sandboxed attempt exited 1 because its Git-private transaction directory was outside the writable root. The authorized rerun with filesystem escalation exited 0, `Baseline update: verified`, three file changes. Second refresh exited 0, `File changes: 0`. Existing nested fixture-carrier warnings leave those carriers unchanged.
+- `go test -count=1 -v -run '^(TestTheGroupingClauses.*|TestAnAdopterRetainsTheGroupingClauses|TestBaselineClauseForceIsCharacterized|TestNoTwoBaselineClausesShareText|TestShippedGuidanceCitesNoRepositoryRecord|TestReadoptionCompatibilityMaintainedFixture|TestCatalogCompatibility)$' ./internal/baseline`: exit 0, all nine selected tests passed, including every new clause subtest.
+- Source/scope inspection compared existing clause bytes and all six versions with `HEAD`, checked the repository guides and goldens for exact mandatory text, and checked tracked plus untracked changed paths against this Task's Context: 24 paths, all authorized. `git diff --check`: exit 0.
+
+Negative evidence, with sources restored:
+
+1. Removed the last sentence of `clause.spec.sources-01-group-by-shared-context` from the module. `go test -count=1 -run '^TestTheGroupingClausesCarryTheirForceAndText$' ./internal/baseline` exited 1 with `force/text differs` for that clause. Restored the module byte-for-byte.
+2. Removed that clause's manifest row. `go test -count=1 -run '^(TestTheGroupingClausesHaveSourceBaselineRows|TestAnAdopterRetainsTheGroupingClauses)$' ./internal/baseline` exited 1 for both tests with `catalog.sourceBaseline.integrity.invalid` (counts or digests disagree). Restored the manifest byte-for-byte.
+3. Removed the same sentence from the module again and ran `make baseline-digests` to derive the sabotaged guide, without editing a golden. `go test -count=1 -run '^TestTheGroupingClausesRenderInTheGuides$' ./internal/baseline` exited 1 with `guide lacks exactly one forced clause`. Restored the module byte-for-byte and ran `make baseline-digests` again, exit 0, restoring its derived outputs.
+
+The focused checks and exact-text/scope inspection were repeated after the
+sabotages were restored. The Task's declared Verification command and broader
+repository Verification were not run in this child turn; settlement remains
+Daemon-owned. No commit, push or Pull Request was made. No follow-up was
+required within this slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T233647Z_36941fe094803f4f`
+- Source commit: `8b3138f5b29c6f42c270f4de85a8ea178f0ef3a3`

@@ -274,6 +274,10 @@ Triage resolves one pending Inbox Entry into exactly one Finding, one Backlog En
 - MUST mint each typed Backlog Entry a closed Finding's recorded actions call for, preserving the boundary between evidence and intent. Where a fleet observation is captured before it reaches this repository is the Secondbrain guidance's concern.
 <!-- /source-baseline-entry: clause.context.inbox-02-fleet-flow -->
 
+<!-- source-baseline-entry: clause.context.inbox-03-extend-before-minting -->
+- MUST revise a fitting open Backlog Entry in place, or append a dated addendum to a fitting unresolved Finding, before minting a new Finding or Backlog Entry.
+<!-- /source-baseline-entry: clause.context.inbox-03-extend-before-minting -->
+
 <!-- source-baseline-entry: clause.spec.keep-artifacts-in-spec-folder -->
 Keep `_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, Task files, and `qa/` evidence under the Spec folder. Archive only completed Specs with a passing QA verdict under `docs/history/specs/`.
 <!-- /source-baseline-entry: clause.spec.keep-artifacts-in-spec-folder -->
