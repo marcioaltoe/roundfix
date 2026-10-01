@@ -26,7 +26,7 @@ content: a dedicated command that the `write-prd` and `write-techspec` skills
 call, advisory only and never a gate; the pinned model `jev-1.13.0`; a JSONL
 record of every call; a spending ceiling of US$5 per calendar month that stops
 calling and fails open; requests carrying only this repository's Spec
-artifacts; the key read only from `TYPESAFE_API_KEY`; and English artifacts
+artifacts; the key read only from `ROUNDFIX_TYPESAFE_API_KEY`; and English artifacts
 only. The same day the maintainer expressly authorized the skill files:
 "considere autorizado a ajustar todas as skills se necessário".
 
@@ -37,7 +37,7 @@ through OpenRouter, and "Gosto de ter chaves separadas para determinar o real
 custo de cada trabalho/projeto no openrouter", which gives the OpenRouter
 transport its own key, `ROUNDFIX_JEV_OPENROUTER_API_KEY`. The command calls
 OpenRouter's System One API when that key is set and TypeSafe directly only
-when it is absent and `TYPESAFE_API_KEY` is set; the generic
+when it is absent and `ROUNDFIX_TYPESAFE_API_KEY` is set; the generic
 `OPENROUTER_API_KEY` is never read. The pinned version stays Jev 1.13,
 requested as `jev-1.13` on OpenRouter and `jev-1.13.0` on TypeSafe. The
 amendment adds no Governed Path.
@@ -94,7 +94,7 @@ command: make baseline-digests
 - No change to archived Specs, existing QA Reports, `skills/_ownership.yml`,
   `CONTEXT.md` or the `### QA settlement` section of any skill.
 - No test, Verification command or QA row reaches OpenRouter, TypeSafe or the
-  network, reads a real `ROUNDFIX_JEV_OPENROUTER_API_KEY`, `TYPESAFE_API_KEY`
+  network, reads a real `ROUNDFIX_JEV_OPENROUTER_API_KEY`, `ROUNDFIX_TYPESAFE_API_KEY`
   or `OPENROUTER_API_KEY`, or writes under the real `~/.roundfix`.
 - No data leaves the machine except, when the command runs with a Jev key, the
   Spec artifacts ADR-0201 names, sent to OpenRouter or to TypeSafe.

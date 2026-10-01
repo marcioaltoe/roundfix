@@ -28,7 +28,7 @@ convenient exception, so the command keeps it by construction:
 - **Who receives it.** Two recipients, chosen once per run. When
   `ROUNDFIX_JEV_OPENROUTER_API_KEY` is set, every request goes to OpenRouter's
   System One API (`https://openrouter.ai/api/v1/systemone`), which forwards it
-  to TypeSafe; otherwise, when `TYPESAFE_API_KEY` is set, to TypeSafe directly
+  to TypeSafe; otherwise, when `ROUNDFIX_TYPESAFE_API_KEY` is set, to TypeSafe directly
   (`https://api.typesafe.ai/v1/systemone`). No other service receives a
   request, and a run never switches recipient.
 - **The keys.** Each is read from its variable in the environment and
