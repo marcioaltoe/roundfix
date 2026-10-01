@@ -375,7 +375,9 @@ transcript 4. `0200-example` is a Spec committed after the guide.
    ```
 
 4. Surface Transcript: a repository that does not hold the guide. The same
-   Spec reports no declaration gap and names the guide in its skips.
+   Spec reports no declaration gap and names the guide in its skips. Skips are listed in
+   the order the detectors run, which puts the transcript declaration before
+   the receipt check.
 
    ```transcript
    $ roundfix spec check 0200-example --stage techspec
@@ -384,9 +386,9 @@ transcript 4. `0200-example` is a Spec committed after the guide.
    No findings. Authored Verification commands were not executed.
    Skipped:
    ...
-     SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md
-   ...
      SC-TRANSCRIPT-UNDECLARED: missing .agents/skills/write-techspec/references/concrete-contracts.md
+   ...
+     SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md
    ...
    stderr:
    exit: 0
