@@ -33,8 +33,8 @@ Individual skill triggers:
   - `trigger.context-workflow.business-analyst`: Evaluating product viability, options, KPIs, or business trade-offs.
 - `coding-guidelines`:
   - `trigger.core.coding-guidelines`: Writing, modifying, refactoring, or reviewing implementation code.
-- `context7`:
-  - `trigger.core.context7`: Consulting authoritative current documentation for a library, framework, runtime, or toolchain.
+- `context7-cli`:
+  - `trigger.core.context7-cli`: Consulting authoritative current documentation for a library, framework, runtime, or toolchain.
 - `conventional-commits`:
   - `trigger.core.conventional-commits`: Staging changes, writing commit messages, or preparing pull request titles.
 - `council`:

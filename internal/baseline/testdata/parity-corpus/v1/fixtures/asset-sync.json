@@ -22,15 +22,19 @@
   },
   "managedEntryLedger": [
     {
-      "digest": "ed1633038367370f7ba23fa156f79a12a8d72907b4345afb767de547d2e0b71c",
+      "digest": "1ebd44306ddad563ba16e6dd79c6cb1c99c482de59118d494b2d06ac62da9e60",
       "id": "go-cli"
     },
     {
-      "digest": "a45a7fce0b83e3ff387d4d22725722d36cd95e291e7dd8576ce3773544620da8",
+      "digest": "3a8ee481e744e02ecff05473d18e6ded0ac2cbc9f199403a3d54d11300347149",
+      "id": "go-tui"
+    },
+    {
+      "digest": "717dcaac02136850cf57da90b05465410b36884bf633294763a686c27e817d6a",
       "id": "rust-cli"
     },
     {
-      "digest": "862deb19dd1d60335f5358edc3b5e269c6c1442cd6f260230239663ceb1af186",
+      "digest": "91bc437a5fceaf434dc1e0874617b3c8bc6d680c50861dabd99b888d0739b32c",
       "id": "typescript-bun"
     }
   ],
@@ -53,7 +57,7 @@
             ]
           }
         ],
-        "digest": "ed1633038367370f7ba23fa156f79a12a8d72907b4345afb767de547d2e0b71c",
+        "digest": "1ebd44306ddad563ba16e6dd79c6cb1c99c482de59118d494b2d06ac62da9e60",
         "id": "go-cli",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -96,15 +100,534 @@
             }
           },
           {
-            "name": "context7",
-            "path": "skills/01-discovery/context7",
+            "name": "context7-cli",
+            "path": "skills/01-discovery/context7-cli",
             "source": {
-              "path": "skills/01-discovery/context7",
+              "path": "skills/01-discovery/context7-cli",
               "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
               "repository": "example/skills",
               "type": "github"
             },
-            "treeDigest": "12f550a726aecc1b0332b3170875138111ecd100fde2c1969b0e19793e7140f0"
+            "treeDigest": "2df0c7a73c9f2c0b69f72d1ec23d83be955ddaddffbd9aa6f56d18b878ab4551"
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "council",
+            "path": "skills/01-discovery/council",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "name": "exa-web-search",
+            "path": "skills/01-discovery/exa-web-search",
+            "source": {
+              "path": "skills/01-discovery/exa-web-search",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "01aff779d5fc2e994692d2de6410375e81d4365cd9f65cce2d105d7f405d28ea"
+          },
+          {
+            "name": "grill-with-docs",
+            "path": "skills/01-discovery/grill-with-docs",
+            "source": {
+              "path": "skills/01-discovery/grill-with-docs",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "0850cb2964af7590ea2c4d9ee66c514c8a8c9ae8876b22506e9b240731891303"
+          },
+          {
+            "name": "grilling",
+            "path": "skills/01-discovery/grilling",
+            "source": {
+              "path": "skills/01-discovery/grilling",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "58116986bd1354f902ab3f9862030c43f9f8a5dbe9814aca1ff24c1243299cca"
+          },
+          {
+            "name": "the-fool",
+            "path": "skills/01-discovery/the-fool",
+            "source": {
+              "path": "skills/01-discovery/the-fool",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "53fba8dad40988c3c79bd57c56feead8ffdf059a9871402b8a638d9c4b4f7609"
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "write-idea",
+            "path": "skills/01-discovery/write-idea",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "write-prd",
+            "path": "skills/02-planning/write-prd",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "name": "agentic-cli-design",
+            "path": "skills/03-engineering-design/agentic-cli-design",
+            "source": {
+              "path": "skills/03-engineering-design/agentic-cli-design",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "bde43699f7cacc3c63f825c8f3005761a1a84484fda4c7c37de5c79960ef9521"
+          },
+          {
+            "name": "domain-modeling",
+            "path": "skills/03-engineering-design/domain-modeling",
+            "source": {
+              "path": "skills/03-engineering-design/domain-modeling",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "59c40b93c4b52cf5cc13beeca2038100f4cbc4aa9e2c7482385c4d1b6a0ffa8e"
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "write-techspec",
+            "path": "skills/03-engineering-design/write-techspec",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "write-tasks",
+            "path": "skills/04-issue-decomposition/write-tasks",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "name": "coding-guidelines",
+            "path": "skills/05-implementation-loop/coding-guidelines",
+            "source": {
+              "path": "skills/05-implementation-loop/coding-guidelines",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "ce68273f3d33f3398f3a4cddea556be06ce9a2313a34dcc80f9964305072ab08"
+          },
+          {
+            "name": "golang-benchmark",
+            "path": "skills/05-implementation-loop/golang-benchmark",
+            "source": {
+              "path": "skills/05-implementation-loop/golang-benchmark",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "218d4f029d33eb9ae7631d36bc1eb1361589ac3b400556e0dd571e55c8e64ff3"
+          },
+          {
+            "name": "golang-cli",
+            "path": "skills/05-implementation-loop/golang-cli",
+            "source": {
+              "path": "skills/05-implementation-loop/golang-cli",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "a89cbbc20f703b85112435434a48ea27d4f898bc0e5442bda9ed3960480b21e9"
+          },
+          {
+            "name": "golang-concurrency",
+            "path": "skills/05-implementation-loop/golang-concurrency",
+            "source": {
+              "path": "skills/05-implementation-loop/golang-concurrency",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "5bbbd536a401f5144ca697156b35b5b79f3035c0edac08857034668445f5258e"
+          },
+          {
+            "name": "golang-context",
+            "path": "skills/05-implementation-loop/golang-context",
+            "source": {
+              "path": "skills/05-implementation-loop/golang-context",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "021b1e41032fd50e17bf3aa3d58a961757878730d20cc70de14fff41980cf9da"
+          },
+          {
+            "name": "golang-database",
+            "path": "skills/05-implementation-loop/golang-database",
+            "source": {
+              "path": "skills/05-implementation-loop/golang-database",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "fad2406e53b2a1dca39bcffe546c59d25e905bace63c5fdbad34a09ad82d55b8"
+          },
+          {
+            "name": "golang-dependency-management",
+            "path": "skills/05-implementation-loop/golang-dependency-management",
+            "source": {
+              "path": "skills/05-implementation-loop/golang-dependency-management",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "0757f50417ff18f3d082425a26779ca63190caae2bf4066ab59aac0f60b6072f"
+          },
+          {
+            "name": "golang-error-handling",
+            "path": "skills/05-implementation-loop/golang-error-handling",
+            "source": {
+              "path": "skills/05-implementation-loop/golang-error-handling",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "ea3bb439214c23ff8ce94cffeb783c6530c6a0fa1827ee68a92257fd917be141"
+          },
+          {
+            "name": "golang-lint",
+            "path": "skills/05-implementation-loop/golang-lint",
+            "source": {
+              "path": "skills/05-implementation-loop/golang-lint",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "9b054625067af7342c40153ea2edc78166413358ca14a347379ceea0b464878f"
+          },
+          {
+            "name": "golang-modernize",
+            "path": "skills/05-implementation-loop/golang-modernize",
+            "source": {
+              "path": "skills/05-implementation-loop/golang-modernize",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "a3e76cdceea203ed257c8f0e465cab293664d8578a4062000a6538cb6d334d7e"
+          },
+          {
+            "name": "golang-performance",
+            "path": "skills/05-implementation-loop/golang-performance",
+            "source": {
+              "path": "skills/05-implementation-loop/golang-performance",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "50af865f66b9c4ad691ffe64450d40b3d77caa5ce436c54c9a9f9aa9432468e0"
+          },
+          {
+            "name": "golang-safety",
+            "path": "skills/05-implementation-loop/golang-safety",
+            "source": {
+              "path": "skills/05-implementation-loop/golang-safety",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "d2f795f3ca43f68dada271ac41d665a85e6abc92b6cf431c85ce334a3794ec64"
+          },
+          {
+            "name": "golang-structs-interfaces",
+            "path": "skills/05-implementation-loop/golang-structs-interfaces",
+            "source": {
+              "path": "skills/05-implementation-loop/golang-structs-interfaces",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "d2b5fddd64e5905322ad9f6f7c2dbcfed4bab10b410109f6819fb27fb49c7657"
+          },
+          {
+            "name": "golang-testing",
+            "path": "skills/05-implementation-loop/golang-testing",
+            "source": {
+              "path": "skills/05-implementation-loop/golang-testing",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "c326a0270a29fa38d9371d79870ef8a52abfedf0b0ce0782e4588ede7649f98e"
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "implement-spec",
+            "path": "skills/05-implementation-loop/implement-spec",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "implement-task",
+            "path": "skills/05-implementation-loop/implement-task",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "name": "no-workarounds",
+            "path": "skills/05-implementation-loop/no-workarounds",
+            "source": {
+              "path": "skills/05-implementation-loop/no-workarounds",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "31cb2535a21fad90108ea78071b5656037f074f338603bd8cf617ff277ddc34e"
+          },
+          {
+            "name": "testing-boss",
+            "path": "skills/05-implementation-loop/testing-boss",
+            "source": {
+              "path": "skills/05-implementation-loop/testing-boss",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "e9298579b8effa7ee3902a541d9282560a4662b81266dee39a231afdfa016164"
+          },
+          {
+            "name": "typesafe-ai",
+            "path": "skills/05-implementation-loop/typesafe-ai",
+            "source": {
+              "path": "skills/05-implementation-loop/typesafe-ai",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "8f5afa9495cb0eb5fa4a579bc7cb99813169562aed234239aa4d86d32d54758e"
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "evidence-gate",
+            "path": "skills/06-review-repair/evidence-gate",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "qa-gate",
+            "path": "skills/06-review-repair/qa-gate",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "name": "review",
+            "path": "skills/06-review-repair/review",
+            "source": {
+              "path": "skills/06-review-repair/review",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "bc4cb4a0b118dd1cf8850369a99e6528b3de14ffb4ec7e9acf736020e073db1c"
+          },
+          {
+            "name": "systematic-debugging",
+            "path": "skills/06-review-repair/systematic-debugging",
+            "source": {
+              "path": "skills/06-review-repair/systematic-debugging",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "e2e46f2af6860be4e09df1deae4b322f4f3a77d1a0db406b60c7893a654bc3c6"
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "archive-spec",
+            "path": "skills/07-evidence-delivery/archive-spec",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "name": "conventional-commits",
+            "path": "skills/07-evidence-delivery/conventional-commits",
+            "source": {
+              "path": "skills/07-evidence-delivery/conventional-commits",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "d63d7583306d335531efe68a3f4bb763870be5c1e86be07787d2a25857fffd0d"
+          },
+          {
+            "name": "github-pr-workflow",
+            "path": "skills/07-evidence-delivery/github-pr-workflow",
+            "source": {
+              "path": "skills/07-evidence-delivery/github-pr-workflow",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "e28949f5140f9d58c78b7c0c134412470dbd1f9b31ec42fe0277c47fcb7566b6"
+          },
+          {
+            "name": "handoff",
+            "path": "skills/07-evidence-delivery/handoff",
+            "source": {
+              "path": "skills/07-evidence-delivery/handoff",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "c861864560d15be4462375740429ddfd7a755e5834c81c7097a5041495dd8730"
+          },
+          {
+            "name": "tech-writer",
+            "path": "skills/07-evidence-delivery/tech-writer",
+            "source": {
+              "path": "skills/07-evidence-delivery/tech-writer",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "4dba8fcd6c64a6909be84bec2d8bff3094dd230e8f3f49c738632a3cd1b7b3fe"
+          },
+          {
+            "name": "golang-continuous-integration",
+            "path": "skills/08-release/golang-continuous-integration",
+            "source": {
+              "path": "skills/08-release/golang-continuous-integration",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "d398f8adfeb584be8e6ac04114368cfa58ecf5eba9b6c24ddea87983aea84e48"
+          },
+          {
+            "name": "golang-observability",
+            "path": "skills/08-release/golang-observability",
+            "source": {
+              "path": "skills/08-release/golang-observability",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "75cdf59d16e1989d0d423d0f9c668ce0d9591541a31ff4689f1de6533d828c22"
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "roundfix",
+            "path": "skills/06-review-repair/roundfix",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          }
+        ],
+        "source": {
+          "path": "setups/go-cli.txt",
+          "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+          "repository": "example/skills",
+          "type": "github"
+        },
+        "version": "0.0.1"
+      },
+      {
+        "activationBundles": [
+          {
+            "id": "bundle.delivery",
+            "skills": [
+              "conventional-commits",
+              "github-pr-workflow"
+            ]
+          },
+          {
+            "id": "bundle.qa",
+            "skills": [
+              "qa-gate",
+              "evidence-gate"
+            ]
+          }
+        ],
+        "digest": "3a8ee481e744e02ecff05473d18e6ded0ac2cbc9f199403a3d54d11300347149",
+        "id": "go-tui",
+        "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
+        "skills": [
+          {
+            "name": "knowledge-workspace",
+            "path": "skills/00-setup/knowledge-workspace",
+            "source": {
+              "path": "skills/00-setup/knowledge-workspace",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "dc442587c49ec61d556dfa335bd310ef88852ac1cc7aff7fd5b5774d457c8ea7"
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "setup-context-driven",
+            "path": "skills/00-setup/setup-context-driven",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "brainstorming",
+            "path": "skills/01-discovery/brainstorming",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "minimumVersion": "0.0.2",
+            "name": "business-analyst",
+            "path": "skills/01-discovery/business-analyst",
+            "source": {
+              "name": "roundfix",
+              "type": "repo"
+            }
+          },
+          {
+            "name": "context7-cli",
+            "path": "skills/01-discovery/context7-cli",
+            "source": {
+              "path": "skills/01-discovery/context7-cli",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "2df0c7a73c9f2c0b69f72d1ec23d83be955ddaddffbd9aa6f56d18b878ab4551"
           },
           {
             "minimumVersion": "0.0.2",
@@ -251,6 +774,17 @@
             "treeDigest": "ce68273f3d33f3398f3a4cddea556be06ce9a2313a34dcc80f9964305072ab08"
           },
           {
+            "name": "golang-benchmark",
+            "path": "skills/05-implementation-loop/golang-benchmark",
+            "source": {
+              "path": "skills/05-implementation-loop/golang-benchmark",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "218d4f029d33eb9ae7631d36bc1eb1361589ac3b400556e0dd571e55c8e64ff3"
+          },
+          {
             "name": "golang-cli",
             "path": "skills/05-implementation-loop/golang-cli",
             "source": {
@@ -284,6 +818,28 @@
             "treeDigest": "021b1e41032fd50e17bf3aa3d58a961757878730d20cc70de14fff41980cf9da"
           },
           {
+            "name": "golang-database",
+            "path": "skills/05-implementation-loop/golang-database",
+            "source": {
+              "path": "skills/05-implementation-loop/golang-database",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "fad2406e53b2a1dca39bcffe546c59d25e905bace63c5fdbad34a09ad82d55b8"
+          },
+          {
+            "name": "golang-dependency-management",
+            "path": "skills/05-implementation-loop/golang-dependency-management",
+            "source": {
+              "path": "skills/05-implementation-loop/golang-dependency-management",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "0757f50417ff18f3d082425a26779ca63190caae2bf4066ab59aac0f60b6072f"
+          },
+          {
             "name": "golang-error-handling",
             "path": "skills/05-implementation-loop/golang-error-handling",
             "source": {
@@ -304,6 +860,50 @@
               "type": "github"
             },
             "treeDigest": "9b054625067af7342c40153ea2edc78166413358ca14a347379ceea0b464878f"
+          },
+          {
+            "name": "golang-modernize",
+            "path": "skills/05-implementation-loop/golang-modernize",
+            "source": {
+              "path": "skills/05-implementation-loop/golang-modernize",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "a3e76cdceea203ed257c8f0e465cab293664d8578a4062000a6538cb6d334d7e"
+          },
+          {
+            "name": "golang-performance",
+            "path": "skills/05-implementation-loop/golang-performance",
+            "source": {
+              "path": "skills/05-implementation-loop/golang-performance",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "50af865f66b9c4ad691ffe64450d40b3d77caa5ce436c54c9a9f9aa9432468e0"
+          },
+          {
+            "name": "golang-safety",
+            "path": "skills/05-implementation-loop/golang-safety",
+            "source": {
+              "path": "skills/05-implementation-loop/golang-safety",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "d2f795f3ca43f68dada271ac41d665a85e6abc92b6cf431c85ce334a3794ec64"
+          },
+          {
+            "name": "golang-structs-interfaces",
+            "path": "skills/05-implementation-loop/golang-structs-interfaces",
+            "source": {
+              "path": "skills/05-implementation-loop/golang-structs-interfaces",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "d2b5fddd64e5905322ad9f6f7c2dbcfed4bab10b410109f6819fb27fb49c7657"
           },
           {
             "name": "golang-testing",
@@ -355,6 +955,17 @@
               "type": "github"
             },
             "treeDigest": "e9298579b8effa7ee3902a541d9282560a4662b81266dee39a231afdfa016164"
+          },
+          {
+            "name": "typesafe-ai",
+            "path": "skills/05-implementation-loop/typesafe-ai",
+            "source": {
+              "path": "skills/05-implementation-loop/typesafe-ai",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "8f5afa9495cb0eb5fa4a579bc7cb99813169562aed234239aa4d86d32d54758e"
           },
           {
             "minimumVersion": "0.0.2",
@@ -450,6 +1061,28 @@
             "treeDigest": "4dba8fcd6c64a6909be84bec2d8bff3094dd230e8f3f49c738632a3cd1b7b3fe"
           },
           {
+            "name": "golang-continuous-integration",
+            "path": "skills/08-release/golang-continuous-integration",
+            "source": {
+              "path": "skills/08-release/golang-continuous-integration",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "d398f8adfeb584be8e6ac04114368cfa58ecf5eba9b6c24ddea87983aea84e48"
+          },
+          {
+            "name": "golang-observability",
+            "path": "skills/08-release/golang-observability",
+            "source": {
+              "path": "skills/08-release/golang-observability",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "75cdf59d16e1989d0d423d0f9c668ce0d9591541a31ff4689f1de6533d828c22"
+          },
+          {
             "minimumVersion": "0.0.2",
             "name": "roundfix",
             "path": "skills/06-review-repair/roundfix",
@@ -460,7 +1093,7 @@
           }
         ],
         "source": {
-          "path": "setups/go-cli.txt",
+          "path": "setups/go-tui.txt",
           "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
           "repository": "example/skills",
           "type": "github"
@@ -484,7 +1117,7 @@
             ]
           }
         ],
-        "digest": "a45a7fce0b83e3ff387d4d22725722d36cd95e291e7dd8576ce3773544620da8",
+        "digest": "717dcaac02136850cf57da90b05465410b36884bf633294763a686c27e817d6a",
         "id": "rust-cli",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -527,15 +1160,15 @@
             }
           },
           {
-            "name": "context7",
-            "path": "skills/01-discovery/context7",
+            "name": "context7-cli",
+            "path": "skills/01-discovery/context7-cli",
             "source": {
-              "path": "skills/01-discovery/context7",
+              "path": "skills/01-discovery/context7-cli",
               "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
               "repository": "example/skills",
               "type": "github"
             },
-            "treeDigest": "12f550a726aecc1b0332b3170875138111ecd100fde2c1969b0e19793e7140f0"
+            "treeDigest": "2df0c7a73c9f2c0b69f72d1ec23d83be955ddaddffbd9aa6f56d18b878ab4551"
           },
           {
             "minimumVersion": "0.0.2",
@@ -700,17 +1333,6 @@
             "treeDigest": "31cb2535a21fad90108ea78071b5656037f074f338603bd8cf617ff277ddc34e"
           },
           {
-            "name": "rust",
-            "path": "skills/05-implementation-loop/rust",
-            "source": {
-              "path": "skills/05-implementation-loop/rust",
-              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
-              "repository": "example/skills",
-              "type": "github"
-            },
-            "treeDigest": "8ec3f17a5036e6862a22c1756f7f82838ef56bacdd32c5dbc59442850aaca9b4"
-          },
-          {
             "name": "rust-cli",
             "path": "skills/05-implementation-loop/rust-cli",
             "source": {
@@ -722,6 +1344,17 @@
             "treeDigest": "3f7ef67c80326e898b43a50ce7b50e952dfa866a438adafeb7b42b1cf466dd34"
           },
           {
+            "name": "rust-expert",
+            "path": "skills/05-implementation-loop/rust-expert",
+            "source": {
+              "path": "skills/05-implementation-loop/rust-expert",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "3185234ed4ce4606bb69880d8bdb8ca9d41957b616d017504260cb6e2b8e5ab0"
+          },
+          {
             "name": "testing-boss",
             "path": "skills/05-implementation-loop/testing-boss",
             "source": {
@@ -731,6 +1364,17 @@
               "type": "github"
             },
             "treeDigest": "e9298579b8effa7ee3902a541d9282560a4662b81266dee39a231afdfa016164"
+          },
+          {
+            "name": "typesafe-ai",
+            "path": "skills/05-implementation-loop/typesafe-ai",
+            "source": {
+              "path": "skills/05-implementation-loop/typesafe-ai",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "8f5afa9495cb0eb5fa4a579bc7cb99813169562aed234239aa4d86d32d54758e"
           },
           {
             "minimumVersion": "0.0.2",
@@ -938,7 +1582,7 @@
             ]
           }
         ],
-        "digest": "862deb19dd1d60335f5358edc3b5e269c6c1442cd6f260230239663ceb1af186",
+        "digest": "91bc437a5fceaf434dc1e0874617b3c8bc6d680c50861dabd99b888d0739b32c",
         "id": "typescript-bun",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -996,15 +1640,15 @@
             "treeDigest": "2fcfc1517a067c608d42bf0e4b1e07008993e8d50ea7167133a566e41878eac3"
           },
           {
-            "name": "context7",
-            "path": "skills/01-discovery/context7",
+            "name": "context7-cli",
+            "path": "skills/01-discovery/context7-cli",
             "source": {
-              "path": "skills/01-discovery/context7",
+              "path": "skills/01-discovery/context7-cli",
               "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
               "repository": "example/skills",
               "type": "github"
             },
-            "treeDigest": "12f550a726aecc1b0332b3170875138111ecd100fde2c1969b0e19793e7140f0"
+            "treeDigest": "2df0c7a73c9f2c0b69f72d1ec23d83be955ddaddffbd9aa6f56d18b878ab4551"
           },
           {
             "name": "grill-with-docs",
@@ -1036,6 +1680,17 @@
               "name": "roundfix",
               "type": "repo"
             }
+          },
+          {
+            "name": "agentic-cli-design",
+            "path": "skills/03-engineering-design/agentic-cli-design",
+            "source": {
+              "path": "skills/03-engineering-design/agentic-cli-design",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "bde43699f7cacc3c63f825c8f3005761a1a84484fda4c7c37de5c79960ef9521"
           },
           {
             "name": "architectural-analysis",
@@ -1547,6 +2202,17 @@
             "treeDigest": "e9298579b8effa7ee3902a541d9282560a4662b81266dee39a231afdfa016164"
           },
           {
+            "name": "typesafe-ai",
+            "path": "skills/05-implementation-loop/typesafe-ai",
+            "source": {
+              "path": "skills/05-implementation-loop/typesafe-ai",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "8f5afa9495cb0eb5fa4a579bc7cb99813169562aed234239aa4d86d32d54758e"
+          },
+          {
             "name": "typescript-advanced",
             "path": "skills/05-implementation-loop/typescript-advanced",
             "source": {
@@ -1602,6 +2268,17 @@
             "treeDigest": "afc9bcd1c025e8781e3da8bb790e54710be8ec046ba09df3492b3b4550fa24a2"
           },
           {
+            "name": "accessibility",
+            "path": "skills/06-review-repair/accessibility",
+            "source": {
+              "path": "skills/06-review-repair/accessibility",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "d6743573f14be7f946f5000f541d22e2d5f2c2427a237074d900d65ad4970ee6"
+          },
+          {
             "name": "agent-browser",
             "path": "skills/06-review-repair/agent-browser",
             "source": {
@@ -1611,6 +2288,17 @@
               "type": "github"
             },
             "treeDigest": "b244b89104bba7c3a8b733d8c3f12f8122df82d67767beb45014464c5acac198"
+          },
+          {
+            "name": "best-practices",
+            "path": "skills/06-review-repair/best-practices",
+            "source": {
+              "path": "skills/06-review-repair/best-practices",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "b01f7750131899d4b77e6b8acc0ed733b2c3604af657d5c2fcda0c47f8062183"
           },
           {
             "name": "clean-code",
@@ -1633,6 +2321,17 @@
               "type": "github"
             },
             "treeDigest": "de5f4717439a9282dda26d1c3e8337068bc9ca0a4ad194578da456b85520113b"
+          },
+          {
+            "name": "performance",
+            "path": "skills/06-review-repair/performance",
+            "source": {
+              "path": "skills/06-review-repair/performance",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "6fdc2454ddf73a1de1abfe1579a7947452578b3149d8163914481a43cc1aff26"
           },
           {
             "name": "diagnosing-bugs",
@@ -1774,6 +2473,17 @@
             "treeDigest": "b7176c4a52069f9f30acea9c509fe9e235b6af88d048f866684006e0986bf0f8"
           },
           {
+            "name": "web-quality-audit",
+            "path": "skills/06-review-repair/web-quality-audit",
+            "source": {
+              "path": "skills/06-review-repair/web-quality-audit",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "0a2e01d69f9925d5333a54bf3e29fdfb5988b0d284eb3a296699ded9be3279d9"
+          },
+          {
             "minimumVersion": "0.0.2",
             "name": "archive-spec",
             "path": "skills/07-evidence-delivery/archive-spec",
@@ -1898,15 +2608,15 @@
             "treeDigest": "01aff779d5fc2e994692d2de6410375e81d4365cd9f65cce2d105d7f405d28ea"
           },
           {
-            "name": "feature-systems-pattern",
-            "path": "skills/03-engineering-design/feature-systems-pattern",
+            "name": "app-renderer-systems",
+            "path": "skills/03-engineering-design/app-renderer-systems",
             "source": {
-              "path": "skills/03-engineering-design/feature-systems-pattern",
+              "path": "skills/03-engineering-design/app-renderer-systems",
               "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
               "repository": "example/skills",
               "type": "github"
             },
-            "treeDigest": "4df87afe7d8ff071b92a9656a11c8fc51155722b9e9f6bb353c7ae0382854994"
+            "treeDigest": "96a79191cdb3e2b55559b9c7cef6c5fdb55683ebf8851f23367a9fc7f61be9f4"
           },
           {
             "name": "firecrawl",
@@ -1918,6 +2628,50 @@
               "type": "github"
             },
             "treeDigest": "d47c0c5f2a8f4ff480490112d6176e6cfa4f1b58f04369514662ea2c84169e56"
+          },
+          {
+            "name": "firecrawl-developer-index",
+            "path": "skills/01-discovery/firecrawl-developer-index",
+            "source": {
+              "path": "skills/01-discovery/firecrawl-developer-index",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "82a722fbd0b06b4f20d2945c1f7c7e53f7e67a04b25e9841d03e42bf102d2f48"
+          },
+          {
+            "name": "firecrawl-monitor",
+            "path": "skills/01-discovery/firecrawl-monitor",
+            "source": {
+              "path": "skills/01-discovery/firecrawl-monitor",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "d530423d01fa206f6c716745de7646f70e67ccfac239eaf4d3a02ed9d212deb3"
+          },
+          {
+            "name": "firecrawl-research-index",
+            "path": "skills/01-discovery/firecrawl-research-index",
+            "source": {
+              "path": "skills/01-discovery/firecrawl-research-index",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "cfc01013189f7c33d4c2982090737de72450b2fbdb07ec4c38aec54f3db56ec5"
+          },
+          {
+            "name": "firecrawl-search",
+            "path": "skills/01-discovery/firecrawl-search",
+            "source": {
+              "path": "skills/01-discovery/firecrawl-search",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "c6a0946e90b5048edfb1abbd48301f7fa461449ff8d7f010937cf242fba16920"
           },
           {
             "name": "game-changing-features",
@@ -2040,6 +2794,14 @@
         {
           "action": "Review the snapshot diff and run asset validation.",
           "code": "skills.setup-snapshot.updated",
+          "managedId": "setup.go-tui",
+          "message": "Setup snapshot was synchronized from the canonical source.",
+          "path": "assets/setups/go-tui.json",
+          "severity": "info"
+        },
+        {
+          "action": "Review the snapshot diff and run asset validation.",
+          "code": "skills.setup-snapshot.updated",
           "managedId": "setup.rust-cli",
           "message": "Setup snapshot was synchronized from the canonical source.",
           "path": "assets/setups/rust-cli.json",
@@ -2060,7 +2822,7 @@
       "summary": {
         "decisions": 0,
         "errors": 0,
-        "info": 3,
+        "info": 4,
         "warnings": 0
       }
     }
