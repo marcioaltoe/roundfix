@@ -8,7 +8,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -259,12 +258,17 @@ func downgradeDeliveryLimitsSchemaFixture(t *testing.T, ctx context.Context, hom
 		}
 	}()
 
+	// These limits landed in schema 21; this fixture represents schema 20,
+	// regardless of the current schema version.
 	statements := []string{
+		`DROP TABLE delivery_queue_runs`,
+		`DROP TABLE run_token_usage`,
+		`ALTER TABLE delivery_queues DROP COLUMN max_tokens`,
 		`ALTER TABLE delivery_queue_items DROP COLUMN warning`,
 		`ALTER TABLE delivery_queue_items DROP COLUMN retry_count`,
 		`ALTER TABLE delivery_queues DROP COLUMN max_retries`,
 		`ALTER TABLE delivery_queues DROP COLUMN deadline_unix`,
-		fmt.Sprintf(`PRAGMA user_version = %d`, schemaVersion-1),
+		`PRAGMA user_version = 20`,
 	}
 	for _, statement := range statements {
 		if _, err := db.ExecContext(ctx, statement); err != nil {

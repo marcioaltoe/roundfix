@@ -5161,7 +5161,7 @@ terminal state or the command is interrupted.
 
 Options:
   --follow  Continue after replay and exit after the terminal event drains
-  --filter  Comma-separated categories: task-status,batch,verification,outcome,agent-selection
+  --filter  Comma-separated categories: task-status,batch,verification,outcome,agent-selection,usage
 `
 	case "attach":
 		return `Usage:

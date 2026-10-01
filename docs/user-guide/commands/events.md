@@ -1,12 +1,12 @@
 ### events
 
 ```bash
-roundfix events <run-id> [--follow] [--filter task-status,batch,verification,outcome,agent-selection]
+roundfix events <run-id> [--follow] [--filter task-status,batch,verification,outcome,agent-selection,usage]
 ```
 
 Writes only `roundfix-events/v1` JSONL records to stdout; diagnostics go to
 stderr. The public Supervisor categories, in journal cursor order, are
-`task-status`, `batch`, `verification`, `outcome`, and `agent-selection`;
+`task-status`, `batch`, `verification`, `outcome`, `agent-selection`, and `usage`;
 `--filter` accepts a comma-separated subset of those names only. Missing or
 unknown Run IDs and invalid filters exit `2`; stream/store errors exit `1`;
 interrupting `--follow` exits `130`. A terminal Run replays and exits `0`. Use
@@ -57,3 +57,29 @@ action when non-Clean. When available, it also carries Review Issue knowledge,
 Console Log, Attach command, accepted Evidence kind and head, and the verified
 parent head used by artifact-only inheritance.
 
+
+Usage records are on by default. Select only prompt usage with `--filter usage`.
+Each `daemon.token_usage` event projects to category `usage`, with `scope_kind`,
+`scope_id`, `runtime`, `model`, `reasoning_effort`, and `token_basis`. A reported
+prompt carries `tokens`; an unreported prompt carries `token_basis: unreported`
+and omits `tokens`. Optional `input_tokens`, `output_tokens`,
+`cached_read_tokens`, `cached_write_tokens`, `thought_tokens`, `cost_amount`,
+and `cost_currency` appear only when recorded. Reported zero values are kept.
+Tokens describe the prompt; cost is the adapter's cumulative Agent Session
+reading. The schema stays `roundfix-events/v1`.
+
+Surface Transcript 7 shows one prompt counted with basis `request-sum`:
+
+```transcript
+$ roundfix events run_20261001T120000Z_0123456789abcdef --filter usage
+stdout:
+{"schema":"roundfix-events/v1","run_id":"run_20261001T120000Z_0123456789abcdef","category":"usage","time":"2026-10-01T12:04:00Z","cursor":41,"work_item":"task_01","summary":"task_01 used 5639755 tokens (request-sum)","scope_kind":"task","scope_id":"task_01","runtime":"codex","model":"gpt-6.1-sol","reasoning_effort":"high","token_basis":"request-sum","tokens":5639755}
+stderr:
+exit: 0
+```
+
+An unreported prompt's summary is `<scope_id> reported no usage`. A failed or
+stopped prompt still records whatever usage it returned. If persistence fails,
+the Run's progress output carries `roundfix: warning: token usage not recorded
+for <scope_kind> <scope_id>: <error>`; that warning does not change the prompt or
+Run outcome.

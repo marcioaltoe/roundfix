@@ -1529,7 +1529,7 @@ func terminalStateExclusion() (string, []any) {
 	return "state NOT IN (" + strings.Join(placeholders, ", ") + ")", arguments
 }
 
-const schemaVersion = 21
+const schemaVersion = 22
 
 // activeRunLocksColumns is the schema v4 lock-table shape (ADR 0016): one
 // Active Run per work target, keyed by (target_kind, target_key).
@@ -1742,9 +1742,16 @@ func (store *Store) migrationStatements(ctx context.Context, tx *sql.Tx, version
 		statements = append(v20Statements, v21Statements...)
 	case 20:
 		statements = v21Statements
+	case 21:
+		// Token usage is the only change from the previous schema.
 	default:
 		return nil, fmt.Errorf("migrate Run Database: schema version %d is not supported", version)
 	}
+	usageStatements, err := tokenUsageMigrationStatements(ctx, tx)
+	if err != nil {
+		return nil, err
+	}
+	statements = append(statements, usageStatements...)
 	return statements, nil
 }
 
@@ -1891,6 +1898,7 @@ func createSchemaStatements() []string {
 	statements = append(statements, deliverySchemaStatements(true)...)
 	statements = append(statements, deliveryOwnerColumnStatements(false, false)...)
 	statements = append(statements, deliveryLimitColumnStatements(false, false, false, false)...)
+	statements = append(statements, tokenUsageSchemaStatements(false)...)
 	return append(statements, fmt.Sprintf(`PRAGMA user_version = %d`, schemaVersion))
 }
 

@@ -400,6 +400,8 @@ func downgradeDeliverySchemaFixture(t *testing.T, ctx context.Context, homeDir s
 	}()
 
 	statements := []string{
+		`DROP TABLE delivery_queue_runs`,
+		`DROP TABLE run_token_usage`,
 		`DROP TABLE delivery_action_receipts`,
 		`DROP TABLE delivery_action_intents`,
 		`DROP TABLE delivery_queue_items`,
@@ -426,6 +428,9 @@ func downgradeDeliveryOwnerSchemaFixture(t *testing.T, ctx context.Context, home
 	}()
 
 	for _, statement := range []string{
+		`DROP TABLE delivery_queue_runs`,
+		`DROP TABLE run_token_usage`,
+		`ALTER TABLE delivery_queues DROP COLUMN max_tokens`,
 		`ALTER TABLE delivery_queue_items DROP COLUMN warning`,
 		`ALTER TABLE delivery_queue_items DROP COLUMN retry_count`,
 		`ALTER TABLE delivery_queues DROP COLUMN max_retries`,
@@ -453,6 +458,9 @@ func downgradeDeliveryWorktreeSchemaFixture(t *testing.T, ctx context.Context, h
 	}()
 
 	for _, statement := range []string{
+		`DROP TABLE delivery_queue_runs`,
+		`DROP TABLE run_token_usage`,
+		`ALTER TABLE delivery_queues DROP COLUMN max_tokens`,
 		`ALTER TABLE delivery_queue_items DROP COLUMN warning`,
 		`ALTER TABLE delivery_queue_items DROP COLUMN retry_count`,
 		`ALTER TABLE delivery_queues DROP COLUMN max_retries`,
@@ -480,6 +488,9 @@ func downgradeDeliveryWorktreeProvisioningSchemaFixture(t *testing.T, ctx contex
 	}()
 
 	for _, statement := range []string{
+		`DROP TABLE delivery_queue_runs`,
+		`DROP TABLE run_token_usage`,
+		`ALTER TABLE delivery_queues DROP COLUMN max_tokens`,
 		`ALTER TABLE delivery_queue_items DROP COLUMN warning`,
 		`ALTER TABLE delivery_queue_items DROP COLUMN retry_count`,
 		`ALTER TABLE delivery_queues DROP COLUMN max_retries`,

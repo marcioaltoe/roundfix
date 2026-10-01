@@ -13,9 +13,11 @@ decision.
 | `active_run_locks` | Active Run lifecycle | Keep while the owning Run is Active and release when that Run reaches a terminal outcome. Journal Retention never deletes these locks. |
 | `interactive_defaults` | Interactive Input | Keep one current value per key, replacing it when Interactive Input records a newer value. No age-based retention applies. |
 | `run_events` | Run Event Journal | Journal Retention may delete events only for terminal Runs older than its configured window. Active Run events are never eligible, and a zero window keeps everything. |
+| `run_token_usage` | Run lifecycle | Keep prompt usage with its owning Run, deleting only through that Run's foreign-key lifecycle. Journal Retention never deletes these rows. |
 | `run_agent_selections` | Agent Selection lifecycle | Keep as evidence with the owning Run. Delete only with that Run through the existing foreign-key lifecycle, unless a future explicit evidence-retention rule records measured justification. Journal Retention never deletes these rows. |
 | `run_windows` | Run Window lifecycle | Keep one current window per repository. Replace it only through an explicit forced set and delete it only through an explicit clear. No age-based retention applies. |
 | `delivery_queues` | Delivery Queue lifecycle | Keep one current queue per repository until an explicit Delivery Queue operation removes it. No age-based retention applies. |
+| `delivery_queue_runs` | Delivery Queue lifecycle | Keep every Run link, including retries, with the owning queue and delete only through its foreign-key lifecycle. Journal Retention never deletes these rows. |
 | `delivery_queue_items` | Delivery Queue lifecycle | Keep ordered items with their owning Delivery Queue and delete them only through that queue's foreign-key lifecycle. |
 | `delivery_action_intents` | Delivery Queue lifecycle | Keep every external-action intent with its owning Delivery Queue item so an intent without a receipt remains observable. |
 | `delivery_action_receipts` | Delivery Queue lifecycle | Keep each receipt with its intent and delete it only through that intent's foreign-key lifecycle. |
@@ -24,7 +26,8 @@ decision.
 The policy keeps the existing deletion boundary unchanged: the GC Command can
 delete eligible `run_events` and matching Artifact Directory content, but it
 does not delete `runs`, `active_run_locks`, `interactive_defaults`, or
-`run_agent_selections`, `run_windows`, or Delivery Queue rows. Active Run locks
+`run_agent_selections`, `run_token_usage`, `run_windows`, or Delivery Queue rows
+(including `delivery_queue_runs`). Active Run locks
 leave the table only through the Run lifecycle's terminal transition, not
 because they aged past a retention window.
 

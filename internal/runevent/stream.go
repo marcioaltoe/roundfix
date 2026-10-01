@@ -20,6 +20,7 @@ const (
 	StreamCategoryVerification StreamCategory = "verification"
 	StreamCategoryOutcome      StreamCategory = "outcome"
 	StreamCategorySelection    StreamCategory = "agent-selection"
+	StreamCategoryUsage        StreamCategory = "usage"
 )
 
 // StreamRecord is one JSONL record in the Supervisor Run Event Stream.
@@ -67,6 +68,15 @@ type StreamRecord struct {
 	EvidenceKind        string         `json:"evidence_kind,omitempty"`
 	EvidenceHeadSHA     string         `json:"evidence_head_sha,omitempty"`
 	VerifiedHeadSHA     string         `json:"verified_head_sha,omitempty"`
+	TokenBasis          string         `json:"token_basis,omitempty"`
+	Tokens              *int64         `json:"tokens,omitempty"`
+	InputTokens         *int64         `json:"input_tokens,omitempty"`
+	OutputTokens        *int64         `json:"output_tokens,omitempty"`
+	CachedReadTokens    *int64         `json:"cached_read_tokens,omitempty"`
+	CachedWriteTokens   *int64         `json:"cached_write_tokens,omitempty"`
+	ThoughtTokens       *int64         `json:"thought_tokens,omitempty"`
+	CostAmount          *float64       `json:"cost_amount,omitempty"`
+	CostCurrency        string         `json:"cost_currency,omitempty"`
 }
 
 // StreamCategoryFilter selects public Run Event Stream categories.
@@ -80,6 +90,7 @@ func AllStreamCategories() StreamCategoryFilter {
 		StreamCategoryVerification: {},
 		StreamCategoryOutcome:      {},
 		StreamCategorySelection:    {},
+		StreamCategoryUsage:        {},
 	}
 }
 
@@ -135,6 +146,10 @@ func ProjectStreamEvent(cursor int64, event RunEvent, filter StreamCategoryFilte
 		WorkItem: event.ReviewIssue,
 	}
 	switch category {
+	case StreamCategoryUsage:
+		if err := projectUsageRecord(&record, event); err != nil {
+			return StreamRecord{}, false, err
+		}
 	case StreamCategoryTaskStatus:
 		if record.WorkItem == "" {
 			record.WorkItem, err = firstPayloadString(fields, "work_item", "task")
@@ -374,7 +389,7 @@ func projectOutcomeRecord(record *StreamRecord, fields map[string]json.RawMessag
 
 func isStreamCategory(category StreamCategory) bool {
 	switch category {
-	case StreamCategoryTaskStatus, StreamCategoryBatch, StreamCategoryVerification, StreamCategoryOutcome, StreamCategorySelection:
+	case StreamCategoryTaskStatus, StreamCategoryBatch, StreamCategoryVerification, StreamCategoryOutcome, StreamCategorySelection, StreamCategoryUsage:
 		return true
 	default:
 		return false
@@ -389,6 +404,8 @@ func streamCategoryForEvent(event RunEvent) (StreamCategory, bool) {
 		return "", false
 	}
 	switch event.Kind {
+	case KindDaemonTokenUsage:
+		return StreamCategoryUsage, true
 	case KindDaemonTask:
 		return StreamCategoryTaskStatus, true
 	case KindDaemonBatch:
@@ -594,4 +611,68 @@ func outcomeStreamSummary(outcome string) string {
 		return fmt.Sprintf("Run reached %s.", outcome)
 	}
 	return "Run outcome recorded."
+}
+
+func projectUsageRecord(record *StreamRecord, event RunEvent) error {
+	var payload struct {
+		ScopeKind         string `json:"scope_kind"`
+		ScopeID           string `json:"scope_id"`
+		Runtime           string `json:"runtime"`
+		Model             string `json:"model"`
+		ReasoningEffort   string `json:"reasoning_effort"`
+		Basis             string `json:"basis"`
+		TotalTokens       *int64 `json:"total_tokens"`
+		InputTokens       *int64 `json:"input_tokens"`
+		OutputTokens      *int64 `json:"output_tokens"`
+		CachedReadTokens  *int64 `json:"cached_read_tokens"`
+		CachedWriteTokens *int64 `json:"cached_write_tokens"`
+		ThoughtTokens     *int64 `json:"thought_tokens"`
+		Cost              *struct {
+			Amount   *float64 `json:"amount"`
+			Currency string   `json:"currency"`
+		} `json:"cost"`
+	}
+	if err := json.Unmarshal(event.Payload, &payload); err != nil {
+		return fmt.Errorf("project token usage: %w", err)
+	}
+	if payload.ScopeKind == "" || payload.ScopeID == "" {
+		return streamMissingField(event, "scope_kind/scope_id")
+	}
+	switch payload.Basis {
+	case "unreported":
+		if payload.TotalTokens != nil {
+			return fmt.Errorf("unreported token usage carries total_tokens")
+		}
+	case "turn", "request-sum":
+		if payload.TotalTokens == nil {
+			return streamMissingField(event, "total_tokens")
+		}
+	default:
+		return fmt.Errorf("invalid token usage basis %q", payload.Basis)
+	}
+	record.ScopeKind = payload.ScopeKind
+	record.ScopeID = payload.ScopeID
+	record.Runtime = payload.Runtime
+	record.Model = payload.Model
+	record.ReasoningEffort = payload.ReasoningEffort
+	record.TokenBasis = payload.Basis
+	record.Tokens = payload.TotalTokens
+	record.InputTokens = payload.InputTokens
+	record.OutputTokens = payload.OutputTokens
+	record.CachedReadTokens = payload.CachedReadTokens
+	record.CachedWriteTokens = payload.CachedWriteTokens
+	record.ThoughtTokens = payload.ThoughtTokens
+	if payload.Cost != nil {
+		if payload.Cost.Amount == nil || payload.Cost.Currency == "" {
+			return streamMissingField(event, "cost.amount/currency")
+		}
+		record.CostAmount = payload.Cost.Amount
+		record.CostCurrency = payload.Cost.Currency
+	}
+	if record.Tokens == nil {
+		record.Summary = payload.ScopeID + " reported no usage"
+	} else {
+		record.Summary = fmt.Sprintf("%s used %d tokens (%s)", payload.ScopeID, *record.Tokens, payload.Basis)
+	}
+	return nil
 }
