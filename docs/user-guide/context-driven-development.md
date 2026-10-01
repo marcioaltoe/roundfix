@@ -103,6 +103,38 @@ read by nothing, so a refusal one run recorded cannot block the run that
 supersedes it, and unblocking a Spec never requires deleting the evidence of why
 it was blocked.
 
+### Evidence snapshots and row carry-forward
+
+An **Evidence Snapshot** is the Daemon's record of the repository inputs a
+passing row observed at the audited head. When a failed pass is not integrated,
+the next pass imports its newest QA Report and its evidence byte for byte before
+building the matrix. The import is reported by the `prior_report` phase with
+outcome `imported`, `none`, or `refused`, and its payload names `commit`,
+`report`, `files`, and `reason`.
+
+The mechanical stage proves a carry by checking the establishing report and
+head, then comparing every declared input by content. A **Carried Row** keeps
+its identifier, status, original provenance, and the report and head that
+established it; it counts as passed and is not executed again. The seeded
+`## Row carry-forward` section records a **Carry Disposition** for every prior
+row: `carried` or `re-run: <reason>`. Reasons include `re-run: not pass`, `no inputs`,
+`non-repository input`, `always observed: repository Verification`, `always observed: Pull Request row`, `always observed: commit_range input`, `no evidence
+snapshot`, `establishing report unavailable`, `establishing head unproven`,
+`input moved: <paths>`, and `evidence differs`.
+
+Rows naming the repository Verification or the Pull Request row are always
+observed. A row declaring the `commit_range` input kind is also always observed;
+it covers a row that reads Task commits, their authorization, or their
+changed-file scope. Every executed row declares its inputs, including all
+sources a built binary compiles from and the module manifest. The Agent never
+writes `evidence_snapshots`; the Daemon records them after the turn.
+
+After the Agent turn, the `evidence_snapshots` phase reports outcome `recorded`,
+`none`, `skipped`, or `error`, with payload fields `head`, `rows`, `report`, and
+`error` as applicable. The mechanical event reports `carried_rows` and
+`rerun_rows`, so the report and event stream show which rows were retained and
+which were executed again.
+
 ## Adopt or update the Context-Driven Baseline
 
 The Baseline Command is the sole public authority for adopting, updating, and

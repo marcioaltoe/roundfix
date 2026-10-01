@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0202-a-qa-gate-that-reruns-only-stale-rows
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -96,3 +96,45 @@ Context-Driven Development guide.
 - [_prd.md](_prd.md) — Goal 1; User Story 4; Core Feature 6
 - [_techspec.md](_techspec.md) — System Architecture; Vocabulary Contract; API Contract 2; API Contract 3; API Contract 4; Testing Approach 4; Build Order 4
 - ADR-0194; ADR-0195; ADR-0097; ADR-0155
+
+## Result
+
+Implemented the QA carry guidance and prompt contract for this Task. The
+canonical and mirrored `qa-gate` skills now teach carried rows as passed and
+not re-executed, require conservative `inputs:` declarations including
+`commit_range`, identify always-observed rows, and reserve
+`evidence_snapshots` for the Daemon. Both skill version fields are `0.0.6`.
+The Context-Driven Development guide documents Evidence Snapshot, failed-pass
+import, carry proof, Carry Disposition reasons, always-observed rows, and the
+`daemon.qa` event vocabulary. Added the focused prompt contract test
+`TestQAContractKeepsCarriedRowsAndDeclaresInputs`.
+
+Focused implementation evidence:
+
+- `make skills-sync` succeeded and rewrote `skills/qa-gate/SKILL.md` from the
+  canonical `.agents/skills/qa-gate/SKILL.md`.
+- `make baseline-digests` succeeded and reported no changed derived paths.
+- `rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions` passed and recorded `0.0.6` in
+  `skills/testdata/owned-skill-versions.json`.
+- With `GOCACHE="$PWD/.gocache"`,
+  `rtk proxy go test -count=1 -v ./internal/agent -run
+  '^TestQAContractKeepsCarriedRowsAndDeclaresInputs$'` passed.
+- Exact comparison confirms `.agents/skills/qa-gate/SKILL.md` and
+  `skills/qa-gate/SKILL.md` are byte-identical. The SHA-256 of the
+  `### QA settlement` section through the section before `## 1.` remains
+  `7f3a75e01068656ed3b840b011106b35305a55ee8b308bbdd104d8ea2e76128d` in
+  both files.
+- The guide contains every declared carry vocabulary token, including
+  `evidence_snapshots`, `commit_range`, `## Row carry-forward`, all closed
+  `re-run:` reasons, `prior_report`, `carried_rows`, and `rerun_rows`.
+
+The initial focused Agent test attempt used the host Go cache and was blocked by
+cache permissions; rerunning with the task-scoped `.gocache` passed. The
+Daemon-owned `status: in_progress` field was left unchanged. The Task's
+declared Verification remains for the Daemon.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T133454Z_7983d7d312c8ec5c`
+- Source commit: `a5924f26eb040b981c285bb624b7e6151060b1d1`

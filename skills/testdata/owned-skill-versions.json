@@ -75,6 +75,10 @@
       {
         "version": "0.0.5",
         "digest": "1f22aff749528aa7eee4600493ba8f8f29bc8f896a3a67548cc13e764f75fd3c"
+      },
+      {
+        "version": "0.0.6",
+        "digest": "414726ae349251db8a493a47c62b32d8687cd1f7ee69bc13205ea5da4a264bcb"
       }
     ],
     "roundfix": [
