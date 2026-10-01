@@ -1,0 +1,273 @@
+=== RUN   TestRunCommandHelp
+=== PAUSE TestRunCommandHelp
+=== RUN   TestProfilesConfigureFileWritesProjectProfileJSON
+=== PAUSE TestProfilesConfigureFileWritesProjectProfileJSON
+=== RUN   TestProfilesConfigureYesSkipsConfirmation
+=== PAUSE TestProfilesConfigureYesSkipsConfirmation
+=== RUN   TestProfilesConfigureDryRunAndFailedConfigurationLeaveBytesUnchanged
+=== PAUSE TestProfilesConfigureDryRunAndFailedConfigurationLeaveBytesUnchanged
+=== RUN   TestProfilesConfigureProofRunsBeforeConfirmationAndWrite
+=== PAUSE TestProfilesConfigureProofRunsBeforeConfirmationAndWrite
+=== RUN   TestProfilesConfigureInteractiveProofKeepsRecommendationsAdvisory
+=== PAUSE TestProfilesConfigureInteractiveProofKeepsRecommendationsAdvisory
+=== RUN   TestProfilesConfigureFallbackFailurePrecedesProofAndPreservesBytes
+=== PAUSE TestProfilesConfigureFallbackFailurePrecedesProofAndPreservesBytes
+=== RUN   TestProfilesConfigureProofFailureYesJSONPreservesBytes
+=== PAUSE TestProfilesConfigureProofFailureYesJSONPreservesBytes
+=== RUN   TestProfilesConfigureProofCleanupFailureAndDeclinePreserveBytes
+=== PAUSE TestProfilesConfigureProofCleanupFailureAndDeclinePreserveBytes
+=== RUN   TestProfilesConfigureJSONOutputFailureDoesNotMutateConfig
+=== PAUSE TestProfilesConfigureJSONOutputFailureDoesNotMutateConfig
+=== RUN   TestProfilesConfigureInteractiveRequiresCompleteFallbackBeforeConfirm
+=== PAUSE TestProfilesConfigureInteractiveRequiresCompleteFallbackBeforeConfirm
+=== RUN   TestDoctorReportsRecommendationsAfterProfiles
+=== PAUSE TestDoctorReportsRecommendationsAfterProfiles
+=== RUN   TestDoctorRecommendationsNeverFailDoctor
+=== PAUSE TestDoctorRecommendationsNeverFailDoctor
+=== RUN   TestProfilesCheckApplyWritesTheRecommendedProfileOfEachDifferingCategory
+=== PAUSE TestProfilesCheckApplyWritesTheRecommendedProfileOfEachDifferingCategory
+=== RUN   TestProfilesCheckApplyLeavesAPinnedCategoryUntouched
+=== PAUSE TestProfilesCheckApplyLeavesAPinnedCategoryUntouched
+=== RUN   TestProfilesCheckApplyProvesBeforeItWrites
+=== PAUSE TestProfilesCheckApplyProvesBeforeItWrites
+=== RUN   TestProfilesCheckApplyDryRunWritesNothing
+=== PAUSE TestProfilesCheckApplyDryRunWritesNothing
+=== RUN   TestProfilesCheckApplyDeclinedConfirmationWritesNothing
+=== PAUSE TestProfilesCheckApplyDeclinedConfirmationWritesNothing
+=== RUN   TestProfilesCheckApplyUserScopeNamesProjectDefinedCategories
+=== PAUSE TestProfilesCheckApplyUserScopeNamesProjectDefinedCategories
+=== RUN   TestProfilesCheckApplyWithNothingToAdoptChangesNothing
+=== PAUSE TestProfilesCheckApplyWithNothingToAdoptChangesNothing
+=== RUN   TestProfilesCheckApplyFlagRules
+=== PAUSE TestProfilesCheckApplyFlagRules
+=== RUN   TestProfilesConfigureExitCodes
+=== PAUSE TestProfilesConfigureExitCodes
+=== RUN   TestProfilesConfigureChangeSummary
+=== PAUSE TestProfilesConfigureChangeSummary
+=== RUN   TestProfilesConfigureProofScope
+=== PAUSE TestProfilesConfigureProofScope
+=== RUN   TestProfilesConfigurePreviewsAndWritesADeviation
+=== PAUSE TestProfilesConfigurePreviewsAndWritesADeviation
+=== RUN   TestProfilesConfigureOutputIsUnchangedWithoutADeviation
+=== PAUSE TestProfilesConfigureOutputIsUnchangedWithoutADeviation
+=== RUN   TestRecommendationCheckIsReachedOnlyFromItsCommands
+=== PAUSE TestRecommendationCheckIsReachedOnlyFromItsCommands
+=== RUN   TestUpgradeStdoutAndExitCodesAreCharacterized
+=== PAUSE TestUpgradeStdoutAndExitCodesAreCharacterized
+=== RUN   TestUpgradeWritesTheNoticeOnEveryReleaseOutcome
+=== PAUSE TestUpgradeWritesTheNoticeOnEveryReleaseOutcome
+=== RUN   TestUpgradeAsksTheInstalledExecutableAfterAnInstall
+=== PAUSE TestUpgradeAsksTheInstalledExecutableAfterAnInstall
+=== RUN   TestUpgradeKeepsItsExitCodeWhenTheCheckFails
+=== PAUSE TestUpgradeKeepsItsExitCodeWhenTheCheckFails
+=== RUN   TestUpgradeWritesNoNoticeOnHelpUsageErrorOrFailure
+=== PAUSE TestUpgradeWritesNoNoticeOnHelpUsageErrorOrFailure
+=== CONT  TestRunCommandHelp
+=== CONT  TestProfilesCheckApplyDryRunWritesNothing
+=== CONT  TestProfilesConfigureProofCleanupFailureAndDeclinePreserveBytes
+=== RUN   TestRunCommandHelp/fetch
+=== RUN   TestProfilesConfigureProofCleanupFailureAndDeclinePreserveBytes/cleanup_failure
+=== CONT  TestProfilesConfigurePreviewsAndWritesADeviation
+=== CONT  TestUpgradeWritesTheNoticeOnEveryReleaseOutcome
+=== CONT  TestDoctorRecommendationsNeverFailDoctor
+=== CONT  TestUpgradeKeepsItsExitCodeWhenTheCheckFails
+=== CONT  TestUpgradeWritesNoNoticeOnHelpUsageErrorOrFailure
+=== CONT  TestUpgradeAsksTheInstalledExecutableAfterAnInstall
+=== CONT  TestProfilesCheckApplyFlagRules
+=== RUN   TestUpgradeWritesTheNoticeOnEveryReleaseOutcome/no_release
+=== RUN   TestProfilesCheckApplyFlagRules/--apply
+=== RUN   TestUpgradeKeepsItsExitCodeWhenTheCheckFails/child
+=== RUN   TestUpgradeAsksTheInstalledExecutableAfterAnInstall/no_release
+=== RUN   TestUpgradeWritesNoNoticeOnHelpUsageErrorOrFailure/help
+--- PASS: TestDoctorRecommendationsNeverFailDoctor (0.00s)
+=== CONT  TestProfilesConfigureProofScope
+=== RUN   TestRunCommandHelp/resolve
+=== RUN   TestRunCommandHelp/watch
+=== RUN   TestRunCommandHelp/deliver
+=== RUN   TestRunCommandHelp/setup
+=== RUN   TestRunCommandHelp/doctor
+=== RUN   TestRunCommandHelp/upgrade
+=== RUN   TestRunCommandHelp/runs
+=== RUN   TestRunCommandHelp/reconcile
+=== RUN   TestRunCommandHelp/profiles
+=== RUN   TestRunCommandHelp/profiles_show
+--- PASS: TestRunCommandHelp (0.00s)
+    --- PASS: TestRunCommandHelp/fetch (0.00s)
+    --- PASS: TestRunCommandHelp/resolve (0.00s)
+    --- PASS: TestRunCommandHelp/watch (0.00s)
+    --- PASS: TestRunCommandHelp/deliver (0.00s)
+    --- PASS: TestRunCommandHelp/setup (0.00s)
+    --- PASS: TestRunCommandHelp/doctor (0.00s)
+    --- PASS: TestRunCommandHelp/upgrade (0.00s)
+    --- PASS: TestRunCommandHelp/runs (0.00s)
+    --- PASS: TestRunCommandHelp/reconcile (0.00s)
+    --- PASS: TestRunCommandHelp/profiles (0.00s)
+    --- PASS: TestRunCommandHelp/profiles_show (0.00s)
+=== CONT  TestProfilesConfigureChangeSummary
+=== RUN   TestProfilesConfigureChangeSummary/added_category_agrees_in_text_and_machine_output
+=== RUN   TestUpgradeAsksTheInstalledExecutableAfterAnInstall/current
+=== RUN   TestUpgradeWritesNoNoticeOnHelpUsageErrorOrFailure/usage
+=== RUN   TestUpgradeWritesTheNoticeOnEveryReleaseOutcome/current
+=== RUN   TestProfilesConfigureProofCleanupFailureAndDeclinePreserveBytes/decline
+--- PASS: TestProfilesConfigureProofScope (0.01s)
+=== CONT  TestProfilesConfigureExitCodes
+=== RUN   TestProfilesConfigureExitCodes/declined_confirmation
+=== RUN   TestProfilesConfigureChangeSummary/replacement_excludes_untouched_categories
+=== RUN   TestUpgradeKeepsItsExitCodeWhenTheCheckFails/timeout
+=== RUN   TestUpgradeWritesNoNoticeOnHelpUsageErrorOrFailure/failure
+=== RUN   TestProfilesCheckApplyFlagRules/--scope_project
+--- PASS: TestProfilesCheckApplyDryRunWritesNothing (0.01s)
+=== CONT  TestProfilesCheckApplyLeavesAPinnedCategoryUntouched
+--- PASS: TestProfilesConfigurePreviewsAndWritesADeviation (0.01s)
+=== CONT  TestProfilesCheckApplyProvesBeforeItWrites
+=== RUN   TestProfilesCheckApplyProvesBeforeItWrites/success
+=== RUN   TestUpgradeWritesTheNoticeOnEveryReleaseOutcome/available
+=== RUN   TestUpgradeAsksTheInstalledExecutableAfterAnInstall/available
+--- PASS: TestProfilesConfigureProofCleanupFailureAndDeclinePreserveBytes (0.02s)
+    --- PASS: TestProfilesConfigureProofCleanupFailureAndDeclinePreserveBytes/cleanup_failure (0.01s)
+    --- PASS: TestProfilesConfigureProofCleanupFailureAndDeclinePreserveBytes/decline (0.01s)
+=== CONT  TestProfilesConfigureInteractiveRequiresCompleteFallbackBeforeConfirm
+=== RUN   TestProfilesConfigureExitCodes/non-interactive_confirmation_EOF
+--- PASS: TestUpgradeWritesNoNoticeOnHelpUsageErrorOrFailure (0.02s)
+    --- PASS: TestUpgradeWritesNoNoticeOnHelpUsageErrorOrFailure/help (0.00s)
+    --- PASS: TestUpgradeWritesNoNoticeOnHelpUsageErrorOrFailure/usage (0.01s)
+    --- PASS: TestUpgradeWritesNoNoticeOnHelpUsageErrorOrFailure/failure (0.01s)
+=== CONT  TestDoctorReportsRecommendationsAfterProfiles
+=== RUN   TestDoctorReportsRecommendationsAfterProfiles/ok
+=== RUN   TestDoctorReportsRecommendationsAfterProfiles/found
+=== RUN   TestDoctorReportsRecommendationsAfterProfiles/pinned
+=== RUN   TestDoctorReportsRecommendationsAfterProfiles/skipped
+--- PASS: TestDoctorReportsRecommendationsAfterProfiles (0.00s)
+    --- PASS: TestDoctorReportsRecommendationsAfterProfiles/ok (0.00s)
+    --- PASS: TestDoctorReportsRecommendationsAfterProfiles/found (0.00s)
+    --- PASS: TestDoctorReportsRecommendationsAfterProfiles/pinned (0.00s)
+    --- PASS: TestDoctorReportsRecommendationsAfterProfiles/skipped (0.00s)
+=== CONT  TestProfilesCheckApplyWritesTheRecommendedProfileOfEachDifferingCategory
+=== RUN   TestProfilesConfigureChangeSummary/declared_removals_include_present_and_absent_categories
+=== RUN   TestUpgradeKeepsItsExitCodeWhenTheCheckFails/configuration
+=== RUN   TestUpgradeAsksTheInstalledExecutableAfterAnInstall/installed
+=== RUN   TestUpgradeWritesTheNoticeOnEveryReleaseOutcome/installed
+=== RUN   TestProfilesConfigureExitCodes/validation_failures
+=== RUN   TestProfilesConfigureExitCodes/validation_failures/invalid_flags
+=== RUN   TestProfilesConfigureExitCodes/validation_failures/configured_and_removed_category
+--- PASS: TestProfilesConfigureInteractiveRequiresCompleteFallbackBeforeConfirm (0.01s)
+=== CONT  TestProfilesCheckApplyUserScopeNamesProjectDefinedCategories
+=== RUN   TestProfilesCheckApplyFlagRules/--dry-run
+--- PASS: TestProfilesCheckApplyLeavesAPinnedCategoryUntouched (0.01s)
+=== CONT  TestProfilesCheckApplyWithNothingToAdoptChangesNothing
+=== RUN   TestProfilesCheckApplyWithNothingToAdoptChangesNothing/builtins
+=== RUN   TestUpgradeKeepsItsExitCodeWhenTheCheckFails/work_directory
+=== RUN   TestProfilesConfigureChangeSummary/dry_run_reports_the_same_change_and_preserves_bytes
+=== RUN   TestProfilesCheckApplyWithNothingToAdoptChangesNothing/pinned
+--- PASS: TestUpgradeAsksTheInstalledExecutableAfterAnInstall (0.03s)
+    --- PASS: TestUpgradeAsksTheInstalledExecutableAfterAnInstall/no_release (0.00s)
+    --- PASS: TestUpgradeAsksTheInstalledExecutableAfterAnInstall/current (0.01s)
+    --- PASS: TestUpgradeAsksTheInstalledExecutableAfterAnInstall/available (0.01s)
+    --- PASS: TestUpgradeAsksTheInstalledExecutableAfterAnInstall/installed (0.01s)
+=== CONT  TestProfilesConfigureJSONOutputFailureDoesNotMutateConfig
+=== RUN   TestUpgradeKeepsItsExitCodeWhenTheCheckFails/malformed_local_config
+=== RUN   TestProfilesConfigureExitCodes/validation_failures/failed_proof
+--- PASS: TestProfilesCheckApplyWritesTheRecommendedProfileOfEachDifferingCategory (0.01s)
+=== CONT  TestRecommendationCheckIsReachedOnlyFromItsCommands
+=== RUN   TestUpgradeWritesTheNoticeOnEveryReleaseOutcome/in_process_differences_use_the_shared_renderer
+=== RUN   TestProfilesCheckApplyProvesBeforeItWrites/failed_proof
+=== RUN   TestProfilesCheckApplyFlagRules/--yes
+--- PASS: TestProfilesCheckApplyUserScopeNamesProjectDefinedCategories (0.01s)
+=== CONT  TestUpgradeStdoutAndExitCodesAreCharacterized
+=== RUN   TestUpgradeStdoutAndExitCodesAreCharacterized/no_release
+--- PASS: TestUpgradeKeepsItsExitCodeWhenTheCheckFails (0.04s)
+    --- PASS: TestUpgradeKeepsItsExitCodeWhenTheCheckFails/child (0.01s)
+    --- PASS: TestUpgradeKeepsItsExitCodeWhenTheCheckFails/timeout (0.01s)
+    --- PASS: TestUpgradeKeepsItsExitCodeWhenTheCheckFails/configuration (0.00s)
+    --- PASS: TestUpgradeKeepsItsExitCodeWhenTheCheckFails/work_directory (0.01s)
+    --- PASS: TestUpgradeKeepsItsExitCodeWhenTheCheckFails/malformed_local_config (0.01s)
+=== CONT  TestProfilesCheckApplyDeclinedConfirmationWritesNothing
+--- PASS: TestProfilesConfigureChangeSummary (0.04s)
+    --- PASS: TestProfilesConfigureChangeSummary/added_category_agrees_in_text_and_machine_output (0.01s)
+    --- PASS: TestProfilesConfigureChangeSummary/replacement_excludes_untouched_categories (0.01s)
+    --- PASS: TestProfilesConfigureChangeSummary/declared_removals_include_present_and_absent_categories (0.01s)
+    --- PASS: TestProfilesConfigureChangeSummary/dry_run_reports_the_same_change_and_preserves_bytes (0.01s)
+=== CONT  TestProfilesConfigureProofRunsBeforeConfirmationAndWrite
+=== RUN   TestProfilesConfigureExitCodes/applied_write
+=== RUN   TestUpgradeStdoutAndExitCodesAreCharacterized/current
+--- PASS: TestProfilesConfigureJSONOutputFailureDoesNotMutateConfig (0.01s)
+=== CONT  TestProfilesConfigureProofFailureYesJSONPreservesBytes
+=== RUN   TestProfilesCheckApplyWithNothingToAdoptChangesNothing/project_excluded
+=== RUN   TestUpgradeStdoutAndExitCodesAreCharacterized/check_newer
+=== RUN   TestProfilesCheckApplyFlagRules/--apply_--scope_invalid
+--- PASS: TestProfilesConfigureProofRunsBeforeConfirmationAndWrite (0.01s)
+=== CONT  TestProfilesConfigureFallbackFailurePrecedesProofAndPreservesBytes
+=== RUN   TestProfilesConfigureExitCodes/already-satisfied_no-op
+--- PASS: TestUpgradeWritesTheNoticeOnEveryReleaseOutcome (0.05s)
+    --- PASS: TestUpgradeWritesTheNoticeOnEveryReleaseOutcome/no_release (0.00s)
+    --- PASS: TestUpgradeWritesTheNoticeOnEveryReleaseOutcome/current (0.01s)
+    --- PASS: TestUpgradeWritesTheNoticeOnEveryReleaseOutcome/available (0.01s)
+    --- PASS: TestUpgradeWritesTheNoticeOnEveryReleaseOutcome/installed (0.01s)
+    --- PASS: TestUpgradeWritesTheNoticeOnEveryReleaseOutcome/in_process_differences_use_the_shared_renderer (0.01s)
+=== CONT  TestProfilesConfigureInteractiveProofKeepsRecommendationsAdvisory
+=== RUN   TestProfilesConfigureFallbackFailurePrecedesProofAndPreservesBytes/missing_fallback
+--- PASS: TestProfilesCheckApplyProvesBeforeItWrites (0.03s)
+    --- PASS: TestProfilesCheckApplyProvesBeforeItWrites/success (0.02s)
+    --- PASS: TestProfilesCheckApplyProvesBeforeItWrites/failed_proof (0.01s)
+=== CONT  TestProfilesConfigureYesSkipsConfirmation
+--- PASS: TestProfilesCheckApplyDeclinedConfirmationWritesNothing (0.01s)
+=== CONT  TestProfilesConfigureDryRunAndFailedConfigurationLeaveBytesUnchanged
+--- PASS: TestProfilesConfigureProofFailureYesJSONPreservesBytes (0.01s)
+=== CONT  TestProfilesConfigureFileWritesProjectProfileJSON
+=== RUN   TestProfilesConfigureFallbackFailurePrecedesProofAndPreservesBytes/fallback_duplicates_preferred
+=== RUN   TestUpgradeStdoutAndExitCodesAreCharacterized/check_current
+--- PASS: TestProfilesConfigureInteractiveProofKeepsRecommendationsAdvisory (0.00s)
+=== CONT  TestProfilesConfigureOutputIsUnchangedWithoutADeviation
+=== RUN   TestProfilesConfigureExitCodes/dry_run
+--- PASS: TestProfilesConfigureFallbackFailurePrecedesProofAndPreservesBytes (0.01s)
+    --- PASS: TestProfilesConfigureFallbackFailurePrecedesProofAndPreservesBytes/missing_fallback (0.00s)
+    --- PASS: TestProfilesConfigureFallbackFailurePrecedesProofAndPreservesBytes/fallback_duplicates_preferred (0.00s)
+--- PASS: TestProfilesConfigureDryRunAndFailedConfigurationLeaveBytesUnchanged (0.01s)
+=== RUN   TestProfilesCheckApplyFlagRules/--apply_--scope_project_extra
+=== RUN   TestUpgradeStdoutAndExitCodesAreCharacterized/installed
+--- PASS: TestProfilesConfigureFileWritesProjectProfileJSON (0.01s)
+--- PASS: TestProfilesConfigureYesSkipsConfirmation (0.01s)
+--- PASS: TestProfilesConfigureOutputIsUnchangedWithoutADeviation (0.00s)
+--- PASS: TestProfilesConfigureExitCodes (0.05s)
+    --- PASS: TestProfilesConfigureExitCodes/declined_confirmation (0.01s)
+    --- PASS: TestProfilesConfigureExitCodes/non-interactive_confirmation_EOF (0.01s)
+    --- PASS: TestProfilesConfigureExitCodes/validation_failures (0.02s)
+        --- PASS: TestProfilesConfigureExitCodes/validation_failures/invalid_flags (0.00s)
+        --- PASS: TestProfilesConfigureExitCodes/validation_failures/configured_and_removed_category (0.01s)
+        --- PASS: TestProfilesConfigureExitCodes/validation_failures/failed_proof (0.01s)
+    --- PASS: TestProfilesConfigureExitCodes/applied_write (0.01s)
+    --- PASS: TestProfilesConfigureExitCodes/already-satisfied_no-op (0.01s)
+    --- PASS: TestProfilesConfigureExitCodes/dry_run (0.00s)
+--- PASS: TestProfilesCheckApplyWithNothingToAdoptChangesNothing (0.03s)
+    --- PASS: TestProfilesCheckApplyWithNothingToAdoptChangesNothing/builtins (0.01s)
+    --- PASS: TestProfilesCheckApplyWithNothingToAdoptChangesNothing/pinned (0.01s)
+    --- PASS: TestProfilesCheckApplyWithNothingToAdoptChangesNothing/project_excluded (0.01s)
+=== RUN   TestUpgradeStdoutAndExitCodesAreCharacterized/download_failed
+=== RUN   TestProfilesCheckApplyFlagRules/--apply_--scope_project_--unknown
+=== RUN   TestUpgradeStdoutAndExitCodesAreCharacterized/unknown_flag
+=== RUN   TestUpgradeStdoutAndExitCodesAreCharacterized/help
+--- PASS: TestUpgradeStdoutAndExitCodesAreCharacterized (0.02s)
+    --- PASS: TestUpgradeStdoutAndExitCodesAreCharacterized/no_release (0.00s)
+    --- PASS: TestUpgradeStdoutAndExitCodesAreCharacterized/current (0.00s)
+    --- PASS: TestUpgradeStdoutAndExitCodesAreCharacterized/check_newer (0.00s)
+    --- PASS: TestUpgradeStdoutAndExitCodesAreCharacterized/check_current (0.00s)
+    --- PASS: TestUpgradeStdoutAndExitCodesAreCharacterized/installed (0.00s)
+    --- PASS: TestUpgradeStdoutAndExitCodesAreCharacterized/download_failed (0.00s)
+    --- PASS: TestUpgradeStdoutAndExitCodesAreCharacterized/unknown_flag (0.00s)
+    --- PASS: TestUpgradeStdoutAndExitCodesAreCharacterized/help (0.00s)
+=== RUN   TestProfilesCheckApplyFlagRules/--apply=false_--scope_project_--yes
+=== RUN   TestProfilesCheckApplyFlagRules/--apply_--scope_project_--yes=invalid
+--- PASS: TestProfilesCheckApplyFlagRules (0.06s)
+    --- PASS: TestProfilesCheckApplyFlagRules/--apply (0.01s)
+    --- PASS: TestProfilesCheckApplyFlagRules/--scope_project (0.01s)
+    --- PASS: TestProfilesCheckApplyFlagRules/--dry-run (0.01s)
+    --- PASS: TestProfilesCheckApplyFlagRules/--yes (0.01s)
+    --- PASS: TestProfilesCheckApplyFlagRules/--apply_--scope_invalid (0.01s)
+    --- PASS: TestProfilesCheckApplyFlagRules/--apply_--scope_project_extra (0.00s)
+    --- PASS: TestProfilesCheckApplyFlagRules/--apply_--scope_project_--unknown (0.00s)
+    --- PASS: TestProfilesCheckApplyFlagRules/--apply=false_--scope_project_--yes (0.00s)
+    --- PASS: TestProfilesCheckApplyFlagRules/--apply_--scope_project_--yes=invalid (0.00s)
+--- PASS: TestRecommendationCheckIsReachedOnlyFromItsCommands (0.09s)
+PASS
+suiteguard: guard cost: measured 7043 paths; fingerprint took 232.376458ms before and 195.624166ms after
+ok  	roundfix/internal/cli	0.882s

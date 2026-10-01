@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0196-a-notice-when-profiles-fall-behind
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
