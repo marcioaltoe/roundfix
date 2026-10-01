@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-const pullRequestJSONFields = "number,url,state,headRefName,headRefOid,mergedAt,mergeCommit"
+const pullRequestJSONFields = "number,url,state,headRefName,headRefOid,mergedAt,mergeCommit,mergeable"
 
 // PullRequestBoundary is the external publication surface used by the
 // delivery engine. Implementations must observe remote state before retrying
@@ -39,6 +39,7 @@ type PullRequestRequest struct {
 }
 
 type PullRequest struct {
+	Mergeable   string
 	Number      string
 	URL         string
 	State       string
@@ -54,8 +55,9 @@ type PullRequestResult struct {
 }
 
 type CheckReport struct {
-	HeadSHA string
-	Checks  []PullRequestCheck
+	Mergeable string
+	HeadSHA   string
+	Checks    []PullRequestCheck
 }
 
 type PullRequestCheck struct {
@@ -265,6 +267,9 @@ func (client GitHubCLI) CurrentHeadChecks(ctx context.Context, number string) (C
 		return CheckReport{}, errors.New("read pull request checks: gh returned an empty PR Head Branch revision")
 	}
 
+	if before.Mergeable == "CONFLICTING" {
+		return CheckReport{HeadSHA: before.HeadSHA, Mergeable: before.Mergeable}, nil
+	}
 	result, err := client.run(
 		ctx,
 		"gh",
@@ -304,7 +309,7 @@ func (client GitHubCLI) CurrentHeadChecks(ctx context.Context, number string) (C
 			after.HeadSHA,
 		)
 	}
-	return CheckReport{HeadSHA: before.HeadSHA, Checks: checks}, nil
+	return CheckReport{HeadSHA: before.HeadSHA, Mergeable: after.Mergeable, Checks: checks}, nil
 }
 
 func (client GitHubCLI) MergePullRequest(ctx context.Context, number, expectedHead string) (MergeResult, error) {
@@ -420,6 +425,7 @@ type pullRequestPayload struct {
 	State       string `json:"state"`
 	HeadRefName string `json:"headRefName"`
 	HeadRefOID  string `json:"headRefOid"`
+	Mergeable   string `json:"mergeable"`
 	MergedAt    string `json:"mergedAt"`
 	MergeCommit *struct {
 		OID string `json:"oid"`
@@ -455,6 +461,7 @@ func pullRequestFromPayload(payload pullRequestPayload) (PullRequest, error) {
 		return PullRequest{}, errors.New("gh pull request metadata is missing number")
 	}
 	pullRequest := PullRequest{
+		Mergeable:  payload.Mergeable,
 		Number:     strconv.Itoa(payload.Number),
 		URL:        strings.TrimSpace(payload.URL),
 		State:      strings.TrimSpace(payload.State),

@@ -1,0 +1,13 @@
+{
+  "argv": [
+    "./bin/roundfix",
+    "deliver",
+    "start",
+    "0204-first"
+  ],
+  "cwd": "/private/tmp/roundfix-0201-qa-yf1t_n5j/repo",
+  "HOME": "/private/tmp/roundfix-0201-qa-yf1t_n5j/home",
+  "stdout": "",
+  "stderr": "Preflight failed\n\nReason:\n  Task \"task_01\" has no Verification commands: add a backticked command bullet to the ## Verification section in \"/private/tmp/roundfix-0201-qa-yf1t_n5j/repo/docs/specs/0204-first/task_01.md\"\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix deliver start --help' for usage.\n",
+  "exit": 2
+}

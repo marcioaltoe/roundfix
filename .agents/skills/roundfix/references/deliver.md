@@ -36,6 +36,17 @@ pull request, current-head checks, and squash merge. With pre-PR review set to
 `none`, the queue records the configured omission and proceeds to archive after
 the Run's QA gate.
 
+A Spec's optional `_tasks.md` frontmatter `requires` lists prerequisite Specs.
+Start refuses unknown slugs, self-references, duplicates and queued cycles
+before recording a queue. Before creating a worktree, the owner reads the
+manifest from the fetched default branch and requires each prerequisite's
+archived `_prd.md` there. Unmerged local archives do not count. If every unmet
+prerequisite is queued and neither parked nor merged, the item waits at
+`queued`; otherwise it parks `prerequisite-unmerged: <slug>, …` without a
+worktree. Each owner pass and each merge returns satisfied dependency parks to
+`queued` without increasing retries. Retrying a dependency park also targets
+`queued`, without worktree recovery or Task Carry-Forward.
+
 Each queued Spec runs in its own linked worktree under `worktree.location`,
 created from the refreshed default branch.
 `roundfix deliver` never switches, resets or cleans your checkout, and it does not need the checkout to be clean.
@@ -101,6 +112,51 @@ lost acknowledgement from creating a second pull request or merge. Before
 publication, the Spec authorization record must grant all three operations:
 `push`, `pull_request`, and `merge`.
 
+GitHub's `CONFLICTING` mergeable state stops the check wait on its first read;
+`UNKNOWN` stays pending. The owner starts from a clean item worktree at the
+candidate head, fetches the default branch, and merges it without rebasing or
+force-pushing. If a conflicted path is outside `delivery.derived_paths`, it
+aborts the merge and parks `pull-request-conflict: <path>, …`, naming only the
+undeclared conflict paths.
+
+For a conflict confined to declared derived paths, the owner takes the default
+branch's version of each conflicted file, then runs each matched regeneration
+command once in declaration order. Declarations come from Project Config at
+the fetched default-branch commit, with User Config beneath it; item-only
+command changes are never run. A command that changes an undeclared path
+aborts the merge and parks with `regenerated <path> outside
+delivery.derived_paths`. Otherwise the owner commits the merge with the
+`Roundfix-Delivery: derived-merge` trailer and returns the item to `gating`.
+The repository gate, push and current-head checks run again. An existing Pull
+Request still reporting an earlier candidate is read again at each check
+interval up to the check timeout.
+
+A conflict park has class `conflict`. Its next action is to merge the default
+branch into the item branch in the printed worktree, resolve the named paths,
+commit, then run `roundfix deliver retry <slug>`. Retry accepts a head descended
+from the candidate, records it, and resumes at `reviewing`.
+
+
+When a required Actions check fails on attempt one, the owner reads its Go
+package summaries and compares them with the item's change against the
+refreshed default branch. A failure entirely outside that change re-runs the
+failed jobs once and restarts the timeout once. A pass records
+`flaky-check: <check> passed on re-run` in Warning; a second failure outside the
+change parks `flaky-check: <package>, …`. Failures in changed packages,
+build/setup failures, unattributable logs, and attempts past one park
+`checks-failed` without a re-run.
+
+An unresolved Run parks `qa-environment-partial` when its newest Run-Branch QA
+Report is partial, has no finding-blocked rows, and has environment-blocked
+rows beyond the pre-PR Pull Request row. Otherwise it keeps `run-unresolved`.
+Status gives the carry-forward, environment repair, authorized archive override
+and retry sequence. Retry of an operator-archived item requires
+`qa_override: true` and a head descended from the last candidate, or the Run's
+starting head when no candidate exists. It records that head and targets
+`reviewing`. Archive recognizes an already archived reviewed Spec and advances
+to `gating` without a new commit. The override preserves QA and Task state;
+review, gate, authorization and checks still apply.
+
 A findings verdict with archived Specs parks as
 `corrective-spec-required: <slug>[, <slug>]`; findings without archived Specs
 still park as `review-findings`. `deliver status` prints either blocker. No Run
@@ -113,11 +169,28 @@ considers every terminal Implement Run of the item's Spec on the item branch,
 newest first, together with the recorded Run, and carries each Run's remaining
 settled Tasks before resuming the item.
 
-`deliver status` prints the item rows, warning rows, and the `Limits:` line.
+`deliver status` prints item rows and Warning lines, then one
+`Park: <slug> <class>: <next command>` line per parked item in queue order,
+before `Limits:`. Status and the Pending Question use the same Park Classes:
+
+| Class | Blockers or action |
+| --- | --- |
+| `dependency` | `prerequisite-unmerged`; retry a parked prerequisite, or deliver/merge an external prerequisite and retry the dependent item |
+| `conflict` | `pull-request-conflict`; merge, resolve, commit, then retry |
+| `environment` | `qa-environment-partial`, `checks-timeout`, `item-worktree-missing`, `delivery-error`; the QA partial prints carry-forward, repair, authorized override and retry |
+| `flaky-check` | `flaky-check`; fix or re-run the failing packages, then retry |
+| `finding` | `run-unresolved`, `review-findings`, `corrective-spec-required`, `gate-failed`, `checks-failed`, `revalidation-failed` |
+| `budget` | `run-budget-exceeded`, `queue-deadline` |
+| `review` | `review-blocked`, `review-stale` |
+| `authorization` | `unauthorized` |
+| `unclassified` | unknown blockers; resolve the blocker, then retry |
+
+Existing blockers keep their next actions. A queue without parked items adds
+no Park line.
 When one or more items are parked, it prints exactly one `Pending question:`
 for the lowest-position parked item, the action that answers it, and the count
-waiting behind it. Only `deliver retry` or recording a new queue answers that
-question; owner passes and elapsed time do not.
+waiting behind it. A dependency park can clear after its prerequisites merge. Other parks need
+`deliver retry` or a new queue; elapsed time alone does not resolve them.
 
 Use `roundfix deliver retry <slug>` to return one parked item to the queue.
 For an active Spec that has not run, Roundfix first repeats the strict check in
@@ -149,6 +222,8 @@ moved input, or a refusal with another cause, keeps the existing single
 | --- | --- |
 | Active Spec with any unfinished Task | `running` |
 | Active Spec with every Task completed | `reviewing` |
+| Operator-archived `qa-environment-partial` with override and proven ancestry | `reviewing` |
+| Resolved `pull-request-conflict` with proven candidate ancestry | `reviewing` |
 | Archived Spec with no recorded pull request | `gating` |
 | Archived Spec with a recorded pull request | `checking` |
 | `corrective-spec-required` with the parked candidate head unchanged | `reviewing`, without Task Carry-Forward |
@@ -166,7 +241,8 @@ a detached owner. Success exits `0`, prints one `Carried forward from Run
 <run-id>: <task>, <task>` line per Run carried from, then prints `Retried
 <slug>: <blocker> -> <stage>` and the live-owner hand-off or detached-owner
 report. Invalid arguments, an item that is not parked, a missing item branch,
-a moved archived head, refused carry-forward, or owner hand-off failure exits
+a moved archived head without accepted recovery evidence, refused carry-forward,
+or owner hand-off failure exits
 `2` and starts no owner; an item-level refusal leaves the item unchanged.
 
 Use `roundfix upgrade [--check]` to resolve the latest Roundfix release through

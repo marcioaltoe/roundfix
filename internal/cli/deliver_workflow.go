@@ -34,6 +34,8 @@ type commandDeliveryWorkflow struct {
 	git    preflight.GitRunner
 }
 
+var _ delivery.PrerequisiteReader = (*commandDeliveryWorkflow)(nil)
+var _ delivery.ItemHistory = (*commandDeliveryWorkflow)(nil)
 var _ delivery.ItemRecovery = (*commandDeliveryWorkflow)(nil)
 var _ delivery.ItemWorkspace = (*commandDeliveryWorkflow)(nil)
 var _ delivery.ItemRevalidator = (*commandDeliveryWorkflow)(nil)
@@ -47,17 +49,21 @@ func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) 
 		git:    preflight.ExecGitRunner{},
 	}
 	return delivery.NewEngine(runStore, delivery.EngineDependencies{
-		Workspace:    workflow,
-		Runner:       workflow,
-		Reviewer:     workflow,
-		Archiver:     workflow,
-		Gate:         workflow,
-		Authorizer:   workflow,
-		Publication:  workflow,
-		PullRequests: delivery.NewGitHubCLI(loaded.GitRoot),
-		Recovery:     workflow,
-		Revalidator:  workflow,
-		Log:          os.Stderr,
+		Conflicts:     workflow,
+		Workspace:     workflow,
+		Runner:        workflow,
+		Reviewer:      workflow,
+		Archiver:      workflow,
+		Gate:          workflow,
+		Authorizer:    workflow,
+		Publication:   workflow,
+		PullRequests:  delivery.NewGitHubCLI(loaded.GitRoot),
+		Checks:        delivery.NewGitHubCLI(loaded.GitRoot),
+		Recovery:      workflow,
+		History:       workflow,
+		Revalidator:   workflow,
+		Prerequisites: workflow,
+		Log:           os.Stderr,
 	})
 }
 
@@ -97,7 +103,22 @@ func (workflow *commandDeliveryWorkflow) InspectItem(
 		return delivery.ItemState{}, fmt.Errorf("resolve item archive path: %w", err)
 	}
 	if _, err := os.Stat(filepath.Join(workDir, filepath.FromSlash(archiveDestination))); err == nil {
+		content, err := os.ReadFile(filepath.Join(workDir, filepath.FromSlash(archiveDestination), "_prd.md"))
+		if err != nil {
+			return delivery.ItemState{}, fmt.Errorf("read archived item PRD: %w", err)
+		}
+		frontmatter, _, ok := splitArchivePRD(content)
+		if !ok {
+			return delivery.ItemState{}, errors.New("read archived item PRD: invalid frontmatter")
+		}
+		var metadata struct {
+			QAOverride bool `yaml:"qa_override"`
+		}
+		if err := yaml.Unmarshal(frontmatter, &metadata); err != nil {
+			return delivery.ItemState{}, fmt.Errorf("read archived item QA override: %w", err)
+		}
 		state.Archived = true
+		state.QAOverride = metadata.QAOverride
 		return state, nil
 	} else if errors.Is(err, os.ErrNotExist) {
 		return delivery.ItemState{}, fmt.Errorf("inspect item Spec %q: active and archived Spec folders are missing", specSlug)
@@ -749,7 +770,81 @@ func (workflow *commandDeliveryWorkflow) RunSpec(ctx context.Context, gitRoot, s
 	if afterFound {
 		after = &afterRun
 	}
-	return deliveryRunResult(result, candidateHead, before, after)
+	return workflow.runResult(ctx, gitRoot, specSlug, result, candidateHead, before, after)
+}
+
+// runResult reads QA evidence from the Run Branch, which need not have integrated
+// into the item worktree after an unresolved Run.
+func (workflow *commandDeliveryWorkflow) runResult(ctx context.Context, gitRoot, specSlug string, command roundfixCommandResult, candidateHead string, before, after *store.Run) (delivery.RunResult, error) {
+	result, err := deliveryRunResult(command, candidateHead, before, after)
+	if err == nil && result.Outcome == delivery.RunOutcomeUnresolved {
+		result.QAEnvironmentPartial = workflow.qaEnvironmentPartial(ctx, gitRoot, specSlug, store.RunBranchPrefix+result.RunID)
+	}
+	return result, err
+}
+
+func (workflow *commandDeliveryWorkflow) qaEnvironmentPartial(ctx context.Context, gitRoot, specSlug, branch string) bool {
+	source, _, err := workflow.archivePaths(gitRoot, specSlug)
+	if err != nil {
+		return false
+	}
+	qaDir := source + "/qa/"
+	paths, err := workflow.git.RunGit(ctx, gitRoot, "ls-tree", "-r", "--name-only", "-z", branch, "--", qaDir)
+	if err != nil {
+		return false
+	}
+	var reports []string
+	for _, path := range strings.Split(paths, "\x00") {
+		name := filepath.Base(path)
+		if strings.HasPrefix(path, qaDir) && strings.HasPrefix(name, "qa-report-") && strings.HasSuffix(name, ".md") {
+			reports = append(reports, path)
+		}
+	}
+	newest, err := spec.NewestQAReportFromPaths(reports)
+	if err != nil {
+		return false
+	}
+	content, err := workflow.git.RunGit(ctx, gitRoot, "show", branch+":"+newest)
+	if err != nil {
+		return false
+	}
+	// Use the shared report reader so row counts, verdicts and pre-PR rows
+	// retain exactly the QA Report contract.
+	temporary, err := os.CreateTemp("", "roundfix-delivery-qa-*.md")
+	if err != nil {
+		return false
+	}
+	defer os.Remove(temporary.Name())
+	_, writeErr := temporary.WriteString(content)
+	closeErr := temporary.Close()
+	if writeErr != nil || closeErr != nil {
+		return false
+	}
+	report, err := spec.ReadQAReportFile(temporary.Name())
+	return err == nil && report.Verdict == spec.VerdictPartial && report.RowsBlockedFinding == 0 && report.RowsBlockedEnvironment > report.RowsBlockedPrePullRequest
+}
+
+func (workflow *commandDeliveryWorkflow) Descends(ctx context.Context, workDir, ancestor, head string) (bool, error) {
+	_, err := workflow.git.RunGit(ctx, workDir, "merge-base", "--is-ancestor", ancestor, head)
+	if err == nil {
+		return true, nil
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+		return false, nil
+	}
+	return false, fmt.Errorf("inspect archived head ancestry: %w", err)
+}
+
+func (workflow *commandDeliveryWorkflow) RunStart(ctx context.Context, gitRoot, runID string) (string, error) {
+	run, found, err := workflow.store.Run(ctx, runID)
+	if err != nil {
+		return "", fmt.Errorf("read Run %q: %w", runID, err)
+	}
+	if !found || run.Kind != store.KindImplement || run.GitRoot != gitRoot || strings.TrimSpace(run.HeadSHA) == "" {
+		return "", fmt.Errorf("Run %q has no Implement start head for repository %q", runID, gitRoot)
+	}
+	return strings.TrimSpace(run.HeadSHA), nil
 }
 
 func deliveryRunResult(
@@ -864,6 +959,21 @@ func (workflow *commandDeliveryWorkflow) Archive(ctx context.Context, gitRoot, s
 	if before.HEAD != strings.TrimSpace(reviewedHead) {
 		return workflow.reconcileArchiveCommit(ctx, gitRoot, specSlug, strings.TrimSpace(reviewedHead), before.HEAD)
 	}
+	sourcePath, destinationPath, err := workflow.archivePaths(gitRoot, specSlug)
+	if err != nil {
+		return delivery.ArchiveResult{}, err
+	}
+	active, err := workflow.git.RunGit(ctx, gitRoot, "ls-tree", "--name-only", reviewedHead, "--", sourcePath+"/_prd.md")
+	if err != nil {
+		return delivery.ArchiveResult{}, fmt.Errorf("inspect active Spec at reviewed head: %w", err)
+	}
+	archived, err := workflow.git.RunGit(ctx, gitRoot, "ls-tree", "--name-only", reviewedHead, "--", destinationPath+"/_prd.md")
+	if err != nil {
+		return delivery.ArchiveResult{}, fmt.Errorf("inspect archived Spec at reviewed head: %w", err)
+	}
+	if strings.TrimSpace(active) == "" && strings.TrimSpace(archived) != "" {
+		return delivery.ArchiveResult{Head: before.HEAD, AlreadyArchived: true}, nil
+	}
 	result, err := workflow.runRoundfix(ctx, gitRoot, "archive", specSlug)
 	if err != nil {
 		return delivery.ArchiveResult{}, fmt.Errorf("start Archive Command: %w", err)
@@ -943,17 +1053,28 @@ func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, spec
 }
 
 func (workflow *commandDeliveryWorkflow) Authorization(ctx context.Context, gitRoot, specSlug string) (delivery.Authorization, error) {
-	// The archive commit has moved the authorization record out of the active
-	// Spec Root. Read the reviewed parent: the archive transition has already
-	// proved that HEAD is its one exact Spec move.
-	authorizationHead, err := workflow.git.RunGit(ctx, gitRoot, "rev-parse", "HEAD^")
-	if err != nil {
-		return delivery.Authorization{}, fmt.Errorf("read pre-archive authorization head: %w", err)
-	}
 	specsRoot, err := roundconfig.ResolveSpecsRoot(workflow.loaded, gitRoot)
 	if err != nil {
 		return delivery.Authorization{}, err
 	}
+	source, _, err := workflow.archivePaths(gitRoot, specSlug)
+	if err != nil {
+		return delivery.Authorization{}, err
+	}
+	// Locate the actual archive transition even when later commits follow it.
+	archiveHead, err := workflow.git.RunGit(ctx, gitRoot, "log", "--first-parent", "--diff-filter=D", "--format=%H", "-1", "HEAD", "--", source+"/_prd.md")
+	if err != nil {
+		return delivery.Authorization{}, fmt.Errorf("find archive authorization transition: %w", err)
+	}
+	archiveHead = strings.TrimSpace(archiveHead)
+	if archiveHead == "" {
+		return delivery.Authorization{}, errors.New("read pre-archive authorization head: active PRD deletion not found")
+	}
+	authorizationHead, err := workflow.git.RunGit(ctx, gitRoot, "rev-parse", archiveHead+"^")
+	if err != nil {
+		return delivery.Authorization{}, fmt.Errorf("read pre-archive authorization head: %w", err)
+	}
+
 	resolution := spec.ReadSpecAuthorization(ctx, gitRoot, specsRoot.Path, specSlug, strings.TrimSpace(authorizationHead))
 	operations := make([]string, 0, 3)
 	for _, operation := range []spec.AuthorizationOperation{
@@ -1281,4 +1402,244 @@ func deliveryCommandEnvironment(environment []string, homeDir string) []string {
 		result = append(result, entry)
 	}
 	return append(result, "HOME="+homeDir)
+}
+
+// UnmetPrerequisites reads merge evidence from the refreshed delivery default,
+// never from the owner's checkout or an unmerged item branch.
+func (workflow *commandDeliveryWorkflow) UnmetPrerequisites(ctx context.Context, gitRoot, specSlug string) ([]string, error) {
+	root, err := roundconfig.ResolveSpecsRoot(workflow.loaded, gitRoot)
+	if err != nil {
+		return nil, fmt.Errorf("resolve prerequisite Specs Root: %w", err)
+	}
+	if root.External {
+		return nil, errors.New("read prerequisites: Specs Root is outside the delivery repository")
+	}
+	defaultBranch := preflight.DetectDefaultBranch(ctx, gitRoot, "", workflow.git)
+	if defaultBranch.Source == preflight.DefaultBranchUndetermined {
+		return nil, errors.New("read prerequisites: repository default branch is unknown")
+	}
+	remote := strings.TrimSpace(workflow.loaded.Config.Watch.PushRemote)
+	if remote == "" {
+		remote = "origin"
+	}
+	if _, err := workflow.git.RunGit(ctx, gitRoot, "fetch", remote, defaultBranch.Name); err != nil {
+		return nil, fmt.Errorf("refresh prerequisite default branch %q: %w", defaultBranch.Name, err)
+	}
+	ref := "refs/remotes/" + remote + "/" + defaultBranch.Name
+	manifestPath, err := filepath.Rel(gitRoot, filepath.Join(root.Path, specSlug, "_tasks.md"))
+	if err != nil {
+		return nil, fmt.Errorf("resolve prerequisite manifest path: %w", err)
+	}
+	content, err := workflow.git.RunGit(ctx, gitRoot, "show", ref+":"+filepath.ToSlash(manifestPath))
+	if err != nil {
+		return nil, fmt.Errorf("read prerequisite _tasks.md at %s: %w", ref, err)
+	}
+	requires, err := spec.ParseRequiredSpecs([]byte(content), specSlug)
+	if err != nil {
+		return nil, err
+	}
+	if len(requires) == 0 {
+		return nil, nil
+	}
+	archiveRoot, err := filepath.Rel(gitRoot, spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot))
+	if err != nil {
+		return nil, fmt.Errorf("resolve prerequisite archive root: %w", err)
+	}
+	// One immutable-tree read checks every prerequisite, without a subprocess
+	// per slug or treating a failed Git read as proof of absence.
+	paths, err := workflow.git.RunGit(ctx, gitRoot, "ls-tree", "-r", "--name-only", ref, "--", filepath.ToSlash(archiveRoot))
+	if err != nil {
+		return nil, fmt.Errorf("read prerequisite archives at %s: %w", ref, err)
+	}
+	present := make(map[string]bool)
+	for _, path := range strings.Split(paths, "\n") {
+		present[path] = true
+	}
+	var unmet []string
+	for _, slug := range requires {
+		if !present[filepath.ToSlash(filepath.Join(archiveRoot, slug, "_prd.md"))] {
+			unmet = append(unmet, slug)
+		}
+	}
+	return unmet, nil
+}
+
+var _ delivery.ConflictResolver = (*commandDeliveryWorkflow)(nil)
+
+// ResolveConflict trusts only declarations committed on the refreshed default.
+func (workflow *commandDeliveryWorkflow) ResolveConflict(ctx context.Context, workDir, specSlug, head string) (resolution delivery.ConflictResolution, resultErr error) {
+	state, err := preflight.InspectGit(ctx, workDir, workflow.git)
+	if err != nil {
+		return resolution, fmt.Errorf("inspect conflict worktree: %w", err)
+	}
+	if len(state.Dirty) != 0 || state.HEAD != head {
+		return resolution, errors.New("resolve conflict requires a clean worktree at the candidate head")
+	}
+	branch := preflight.DetectDefaultBranch(ctx, workDir, state.Branch, workflow.git)
+	if branch.Source == preflight.DefaultBranchUndetermined {
+		return resolution, errors.New("resolve conflict: default branch is unknown")
+	}
+	remote := strings.TrimSpace(workflow.loaded.Config.Watch.PushRemote)
+	if remote == "" {
+		remote = "origin"
+	}
+	ref := "refs/remotes/" + remote + "/" + branch.Name
+	if _, err := workflow.git.RunGit(ctx, workDir, "fetch", remote, "+refs/heads/"+branch.Name+":"+ref); err != nil {
+		return resolution, fmt.Errorf("fetch conflict default: %w", err)
+	}
+	defaultHead, err := workflow.git.RunGit(ctx, workDir, "rev-parse", ref+"^{commit}")
+	if err != nil {
+		return resolution, fmt.Errorf("resolve conflict default commit: %w", err)
+	}
+	defaultHead = strings.TrimSpace(defaultHead)
+	config, err := roundconfig.DeliveryConfigAtCommit(ctx, workflow.git, workDir, workflow.loaded.UserConfigPath, defaultHead)
+	if err != nil {
+		return resolution, err
+	}
+	declarations := config.Delivery.DerivedPaths
+	matches := func(name string) bool {
+		for _, declaration := range declarations {
+			if declaration.Matches(name) {
+				return true
+			}
+		}
+		return false
+	}
+	initialUntracked, err := workflow.git.RunGit(ctx, workDir, "ls-files", "--others", "-z")
+	if err != nil {
+		return resolution, fmt.Errorf("inspect initial untracked paths: %w", err)
+	}
+	existingUntracked := make(map[string]bool)
+	for _, name := range nulPaths(initialUntracked) {
+		existingUntracked[name] = true
+	}
+	_, mergeErr := workflow.git.RunGit(ctx, workDir, "merge", "--no-ff", "--no-commit", defaultHead)
+	merging, err := workflow.gitObjectExists(ctx, workDir, "MERGE_HEAD")
+	if err != nil {
+		return resolution, fmt.Errorf("inspect conflict merge: %w", err)
+	}
+	if !merging {
+		if mergeErr != nil {
+			return resolution, fmt.Errorf("merge conflict default: %w", mergeErr)
+		}
+		return resolution, nil
+	}
+	committed := false
+	// The worktree was clean. Restore tracked files and remove only newly
+	// created untracked files before aborting an unsuccessful regeneration.
+	defer func() {
+		if committed {
+			return
+		}
+		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+		defer cancel()
+		untracked, readErr := workflow.git.RunGit(cleanupCtx, workDir, "ls-files", "--others", "-z")
+		var cleanupErr error
+		if readErr != nil {
+			cleanupErr = readErr
+		} else {
+			for _, name := range nulPaths(untracked) {
+				if existingUntracked[name] {
+					continue
+				}
+				cleanupErr = errors.Join(cleanupErr, os.Remove(filepath.Join(workDir, filepath.FromSlash(name))))
+			}
+		}
+		_, restoreErr := workflow.git.RunGit(cleanupCtx, workDir, "restore", "--source=HEAD", "--staged", "--worktree", "--", ".")
+		_, abortErr := workflow.git.RunGit(cleanupCtx, workDir, "merge", "--abort")
+		resultErr = errors.Join(resultErr, cleanupErr, restoreErr, abortErr)
+	}()
+	conflicts, err := workflow.git.RunGit(ctx, workDir, "diff", "--name-only", "--diff-filter=U", "-z")
+	if err != nil {
+		return resolution, fmt.Errorf("list conflict paths: %w", err)
+	}
+	paths := nulPaths(conflicts)
+	matched := make([]bool, len(declarations))
+	for _, name := range paths {
+		if !matches(name) {
+			resolution.SourcePaths = append(resolution.SourcePaths, name)
+			continue
+		}
+		for index, declaration := range declarations {
+			if declaration.Matches(name) {
+				matched[index] = true
+			}
+		}
+	}
+	if len(resolution.SourcePaths) != 0 {
+		return resolution, nil
+	}
+	if mergeErr != nil && len(paths) == 0 {
+		return resolution, fmt.Errorf("merge conflict default: %w", mergeErr)
+	}
+	for _, name := range paths {
+		if _, err := workflow.git.RunGit(ctx, workDir, "checkout", "--theirs", "--", name); err != nil {
+			return resolution, fmt.Errorf("take default derived path: %w", err)
+		}
+		if _, err := workflow.git.RunGit(ctx, workDir, "add", "--", name); err != nil {
+			return resolution, fmt.Errorf("stage default derived path: %w", err)
+		}
+	}
+	baseline, err := workflow.git.RunGit(ctx, workDir, "write-tree")
+	if err != nil {
+		return resolution, fmt.Errorf("snapshot merge before regeneration: %w", err)
+	}
+	artifactDir, err := roundconfig.ValidateArtifactDirectory(workflow.loaded.Config.Defaults.ArtifactDir, workflow.loaded.GitRoot, workflow.loaded.HomeDir)
+	if err != nil {
+		return resolution, err
+	}
+	for index, declaration := range declarations {
+		if !matched[index] {
+			continue
+		}
+		_, err := (daemon.ExecVerifier{}).Verify(ctx, daemon.VerifyRequest{WorkDir: workDir, Command: declaration.Regenerate, OutputPath: filepath.Join(artifactDir, "delivery", specSlug, fmt.Sprintf("derived-regeneration-%d.log", index+1))})
+		if err != nil {
+			return resolution, fmt.Errorf("regenerate derived paths: %w", err)
+		}
+		resolution.Regenerated = append(resolution.Regenerated, declaration.Regenerate)
+	}
+	changed, err := workflow.git.RunGit(ctx, workDir, "diff", "--name-only", "-z", strings.TrimSpace(baseline), "--")
+	if err != nil {
+		return resolution, fmt.Errorf("inspect regeneration changes: %w", err)
+	}
+	untracked, err := workflow.git.RunGit(ctx, workDir, "ls-files", "--others", "-z")
+	if err != nil {
+		return resolution, fmt.Errorf("inspect regeneration new paths: %w", err)
+	}
+	changedPaths := nulPaths(changed)
+	for _, name := range nulPaths(untracked) {
+		if !existingUntracked[name] {
+			changedPaths = append(changedPaths, name)
+		}
+	}
+	for _, name := range changedPaths {
+		if !matches(name) {
+			resolution.SourcePaths = append(resolution.SourcePaths, "regenerated "+name+" outside delivery.derived_paths")
+		}
+	}
+	if len(resolution.SourcePaths) > 0 {
+		return resolution, nil
+	}
+	for _, name := range changedPaths {
+		if _, err := workflow.git.RunGit(ctx, workDir, "add", "-A", "--", name); err != nil {
+			return resolution, fmt.Errorf("stage regenerated path: %w", err)
+		}
+	}
+	if _, err := workflow.git.RunGit(ctx, workDir, "commit", "-m", "chore: merge default branch and regenerate derived paths\n\nRoundfix-Delivery: derived-merge"); err != nil {
+		return resolution, fmt.Errorf("commit derived merge: %w", err)
+	}
+	committed = true
+	newHead, err := workflow.git.RunGit(ctx, workDir, "rev-parse", "HEAD")
+	if err != nil {
+		return resolution, fmt.Errorf("read derived merge head: %w", err)
+	}
+	resolution.Head = strings.TrimSpace(newHead)
+	return resolution, nil
+}
+
+func nulPaths(output string) []string {
+	if output == "" {
+		return nil
+	}
+	return strings.Split(strings.TrimSuffix(output, "\x00"), "\x00")
 }

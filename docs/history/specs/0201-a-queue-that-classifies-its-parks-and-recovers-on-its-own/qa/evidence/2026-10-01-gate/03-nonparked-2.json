@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "./bin/roundfix",
+    "deliver",
+    "status"
+  ],
+  "cwd": "/private/tmp/roundfix-0201-qa-ymg2cr7y/repo",
+  "HOME": "/private/tmp/roundfix-0201-qa-ymg2cr7y/home",
+  "stdout": "0204-first\tqueued\t-\t-\n0205-second\tqueued\t-\t-\nLimits: deadline none, retries per item none, concurrency 1, spend not measured\n",
+  "stderr": "",
+  "exit": 0
+}

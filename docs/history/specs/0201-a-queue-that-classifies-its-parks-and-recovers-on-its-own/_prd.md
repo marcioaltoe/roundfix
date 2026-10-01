@@ -1,9 +1,12 @@
 ---
 spec: 0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own
-status: active
+status: archived
 created: 2026-09-30
 surfaces: [backend, cli, docs]
+archived: "2026-10-01"
+source_slug: 0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own
 ---
+
 
 # A queue that classifies its parks and recovers on its own
 

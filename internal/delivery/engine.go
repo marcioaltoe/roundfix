@@ -14,6 +14,7 @@ import (
 
 const (
 	BlockerRunUnresolved          = "run-unresolved"
+	BlockerQAEnvironmentPartial   = "qa-environment-partial"
 	BlockerReviewFindings         = "review-findings"
 	BlockerReviewBlocked          = "review-blocked"
 	BlockerReviewStale            = "review-stale"
@@ -27,6 +28,9 @@ const (
 	BlockerRunBudgetExceeded      = "run-budget-exceeded"
 	BlockerQueueDeadline          = "queue-deadline"
 	BlockerRevalidationFailed     = "revalidation-failed"
+	BlockerFlakyCheck             = "flaky-check"
+	BlockerPullRequestConflict    = "pull-request-conflict"
+	BlockerPrerequisiteUnmerged   = "prerequisite-unmerged"
 )
 
 const WarningPremiseChanged = "premise-changed"
@@ -66,10 +70,11 @@ const (
 )
 
 type RunResult struct {
-	RunID            string
-	Outcome          RunOutcome
-	CandidateCommits []string
-	Reason           string
+	QAEnvironmentPartial bool
+	RunID                string
+	Outcome              RunOutcome
+	CandidateCommits     []string
+	Reason               string
 }
 
 type ReviewResult struct {
@@ -80,9 +85,10 @@ type ReviewResult struct {
 }
 
 type ArchiveResult struct {
-	Parent        string
-	Head          string
-	ExactSpecMove bool
+	AlreadyArchived bool
+	Parent          string
+	Head            string
+	ExactSpecMove   bool
 }
 
 type GateResult struct {
@@ -103,6 +109,7 @@ type Publication struct {
 }
 
 type ItemState struct {
+	QAOverride      bool
 	Archived        bool
 	UnfinishedTasks []string
 	Head            string
@@ -134,6 +141,11 @@ type ItemRevalidator interface {
 type ItemRecovery interface {
 	InspectItem(ctx context.Context, workDir, specSlug string) (ItemState, error)
 	CarryForward(ctx context.Context, workDir, specSlug, branch, runID string) (CarryForwardResult, error)
+}
+
+type ItemHistory interface {
+	Descends(ctx context.Context, workDir, ancestor, head string) (bool, error)
+	RunStart(ctx context.Context, gitRoot, runID string) (string, error)
 }
 
 type RetryResult struct {
@@ -186,7 +198,22 @@ type Sleeper interface {
 	Sleep(context.Context, time.Duration) error
 }
 
+type PrerequisiteReader interface {
+	UnmetPrerequisites(ctx context.Context, gitRoot, specSlug string) ([]string, error)
+}
+
+type ConflictResolver interface {
+	ResolveConflict(ctx context.Context, workDir, specSlug, head string) (ConflictResolution, error)
+}
+
+type ConflictResolution struct {
+	Head                     string
+	SourcePaths, Regenerated []string
+}
+
 type EngineDependencies struct {
+	Conflicts     ConflictResolver
+	Prerequisites PrerequisiteReader
 	Workspace     ItemWorkspace
 	Runner        CandidateRunner
 	Reviewer      PrePRReviewer
@@ -196,7 +223,9 @@ type EngineDependencies struct {
 	Publication   PublicationPlanner
 	PullRequests  PullRequestBoundary
 	Recovery      ItemRecovery
+	History       ItemHistory
 	Revalidator   ItemRevalidator
+	Checks        CheckRecovery
 	Log           io.Writer
 	Clock         Clock
 	Sleeper       Sleeper
@@ -205,6 +234,8 @@ type EngineDependencies struct {
 }
 
 type Engine struct {
+	conflicts     ConflictResolver
+	prerequisites PrerequisiteReader
 	store         *store.Store
 	workspace     ItemWorkspace
 	runner        CandidateRunner
@@ -215,7 +246,9 @@ type Engine struct {
 	publication   PublicationPlanner
 	pullRequests  PullRequestBoundary
 	recovery      ItemRecovery
+	history       ItemHistory
 	revalidator   ItemRevalidator
+	checks        CheckRecovery
 	log           io.Writer
 	clock         Clock
 	sleeper       Sleeper
@@ -249,7 +282,9 @@ func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
 		checkInterval = defaultCheckInterval
 	}
 	return &Engine{
+		conflicts:     dependencies.Conflicts,
 		store:         runStore,
+		prerequisites: dependencies.Prerequisites,
 		workspace:     dependencies.Workspace,
 		runner:        dependencies.Runner,
 		reviewer:      dependencies.Reviewer,
@@ -259,7 +294,9 @@ func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
 		publication:   dependencies.Publication,
 		pullRequests:  dependencies.PullRequests,
 		recovery:      dependencies.Recovery,
+		history:       dependencies.History,
 		revalidator:   dependencies.Revalidator,
+		checks:        dependencies.Checks,
 		log:           log,
 		clock:         clock,
 		sleeper:       sleeper,
@@ -269,8 +306,9 @@ func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
 }
 
 func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (RetryResult, error) {
-	if err := engine.validateRetry(); err != nil {
-		return RetryResult{}, err
+	validationErr := engine.validateRetry()
+	if engine == nil || engine.store == nil {
+		return RetryResult{}, validationErr
 	}
 	gitRoot = strings.TrimSpace(gitRoot)
 	specSlug = strings.TrimSpace(specSlug)
@@ -286,6 +324,9 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 		return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: read queue: %w", specSlug, err)
 	}
 	if !found {
+		if validationErr != nil {
+			return RetryResult{}, validationErr
+		}
 		return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: Delivery Queue for repository %q does not exist", specSlug, gitRoot)
 	}
 	var item store.DeliveryQueueItem
@@ -299,6 +340,9 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 	}
 	if !itemFound {
 		return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: Delivery Queue does not contain the item", specSlug)
+	}
+	if !prerequisitePark(item.Blocker) && validationErr != nil {
+		return RetryResult{}, validationErr
 	}
 	if item.Stage != store.DeliveryStageParked {
 		return RetryResult{}, fmt.Errorf(
@@ -324,6 +368,16 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 			queue.Limits.MaxRetries,
 			store.ErrDeliveryRetryLimit,
 		)
+	}
+
+	if prerequisitePark(item.Blocker) {
+		blocker := item.Blocker
+		item.Stage = store.DeliveryStageQueued
+		pid, identity, err := engine.store.RetryDeliveryQueueItem(ctx, gitRoot, item, blocker)
+		if err != nil {
+			return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: %w", specSlug, err)
+		}
+		return RetryResult{SpecSlug: specSlug, Blocker: blocker, Stage: item.Stage, OwnerPID: pid, OwnerIdentity: identity}, nil
 	}
 
 	workDir, err := engine.workspace.UseItemBranch(
@@ -368,21 +422,58 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 			)
 		}
 		item.Stage = store.DeliveryStageReviewing
-	} else if state.Archived {
+	} else if blockerMatches(item.Blocker, BlockerPullRequestConflict) {
 		candidate, err := candidateHead(item)
 		if err != nil {
-			return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: %w", specSlug, err)
+			return RetryResult{}, fmt.Errorf("retry conflict candidate: %w", err)
 		}
 		head := strings.TrimSpace(state.Head)
 		if head != candidate {
+			if engine.history == nil {
+				return RetryResult{}, errors.New("retry conflict: item history is required for a moved head")
+			}
+			accepted, err := engine.history.Descends(ctx, workDir, candidate, head)
+			if err != nil {
+				return RetryResult{}, fmt.Errorf("prove resolved conflict ancestry: %w", err)
+			}
+			if head == "" || !accepted {
+				return RetryResult{}, fmt.Errorf("retry conflict: item head %q does not descend from candidate %q", head, candidate)
+			}
+			item.CandidateCommits = append(item.CandidateCommits, head)
+		}
+		item.Stage = store.DeliveryStageReviewing
+	} else if state.Archived {
+		candidate, candidateErr := candidateHead(item)
+		operatorArchive := item.Blocker == BlockerQAEnvironmentPartial && state.QAOverride && engine.history != nil
+		if candidateErr != nil && !operatorArchive {
+			return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: %w", specSlug, candidateErr)
+		}
+		head := strings.TrimSpace(state.Head)
+		accepted := false
+		if head != candidate && operatorArchive {
+			anchor := candidate
+			if len(item.CandidateCommits) == 0 {
+				anchor, err = engine.history.RunStart(ctx, gitRoot, item.RunID)
+			}
+			anchor = strings.TrimSpace(anchor)
+			if err == nil && anchor != "" && head != "" {
+				accepted, err = engine.history.Descends(ctx, workDir, anchor, head)
+			}
+			if err != nil {
+				accepted = false
+				fmt.Fprintf(engine.log, "roundfix: archived retry proof: Delivery Queue item %s: %v\n", specSlug, err)
+			}
+		}
+		if (head != candidate || candidateErr != nil) && !accepted {
 			return RetryResult{}, fmt.Errorf(
 				"retry Delivery Queue item %q: archived item head %q differs from candidate head %q",
-				specSlug,
-				head,
-				candidate,
+				specSlug, head, candidate,
 			)
 		}
-		if strings.TrimSpace(item.PullRequestNumber) == "" {
+		if accepted {
+			item.CandidateCommits = append(item.CandidateCommits, head)
+			item.Stage = store.DeliveryStageReviewing
+		} else if strings.TrimSpace(item.PullRequestNumber) == "" {
 			item.Stage = store.DeliveryStageGating
 		} else {
 			item.Stage = store.DeliveryStageChecking
@@ -476,6 +567,9 @@ func (engine *Engine) Run(ctx context.Context, gitRoot string) (EngineResult, er
 		return EngineResult{}, fmt.Errorf("run Delivery Engine: Delivery Queue for repository %q does not exist", gitRoot)
 	}
 
+	if err := engine.releasePrerequisites(ctx, gitRoot, &queue); err != nil {
+		return EngineResult{}, err
+	}
 	for index := range queue.Items {
 		item := queue.Items[index]
 		if item.Stage == store.DeliveryStageParked {
@@ -523,6 +617,11 @@ func (engine *Engine) Run(ctx context.Context, gitRoot string) (EngineResult, er
 			}
 		}
 		queue.Items[index] = item
+		if item.Stage == store.DeliveryStageMerged {
+			if err := engine.releasePrerequisites(ctx, gitRoot, &queue); err != nil {
+				return EngineResult{}, err
+			}
+		}
 	}
 	return EngineResult{Items: queue.Items}, nil
 }
@@ -563,6 +662,34 @@ func (engine *Engine) advanceItem(
 	priorMerges []string,
 ) error {
 	if item.Stage == store.DeliveryStageQueued {
+		if engine.prerequisites != nil {
+			unmet, err := engine.prerequisites.UnmetPrerequisites(ctx, gitRoot, item.SpecSlug)
+			if err != nil {
+				return fmt.Errorf("read prerequisites: %w", err)
+			}
+			if len(unmet) > 0 {
+				queue, _, err := engine.store.DeliveryQueue(ctx, gitRoot)
+				if err != nil {
+					return fmt.Errorf("read prerequisite queue: %w", err)
+				}
+				waiting := true
+				for _, slug := range unmet {
+					found := false
+					for _, other := range queue.Items {
+						if other.SpecSlug == slug && other.Stage != store.DeliveryStageParked && other.Stage != store.DeliveryStageMerged {
+							found = true
+							break
+						}
+					}
+					waiting = waiting && found
+				}
+				if waiting {
+					fmt.Fprintf(engine.log, "roundfix: prerequisite wait: Delivery Queue item %s: %s\n", item.SpecSlug, strings.Join(unmet, ", "))
+					return nil
+				}
+				return engine.park(ctx, gitRoot, item, BlockerPrerequisiteUnmerged+": "+strings.Join(unmet, ", "))
+			}
+		}
 		branch, itemWorktree, err := engine.workspace.CreateItemBranch(ctx, gitRoot, item.SpecSlug)
 		if err != nil {
 			return fmt.Errorf("create item worktree: %w", err)
@@ -691,6 +818,9 @@ func (engine *Engine) runCandidate(ctx context.Context, gitRoot string, item *st
 	item.RunID = strings.TrimSpace(result.RunID)
 	switch result.Outcome {
 	case RunOutcomeUnresolved:
+		if result.QAEnvironmentPartial {
+			return engine.park(ctx, gitRoot, item, BlockerQAEnvironmentPartial)
+		}
 		return engine.park(ctx, gitRoot, item, BlockerRunUnresolved)
 	case RunOutcomeBudgetExceeded:
 		return engine.park(ctx, gitRoot, item, BlockerRunBudgetExceeded)
@@ -768,6 +898,9 @@ func (engine *Engine) archiveCandidate(ctx context.Context, gitRoot string, item
 	result, err := engine.archiver.Archive(ctx, workDir, item.SpecSlug, reviewedHead)
 	if err != nil {
 		return fmt.Errorf("archive Spec: %w", err)
+	}
+	if result.AlreadyArchived && strings.TrimSpace(result.Head) == reviewedHead {
+		return engine.setStage(ctx, gitRoot, item, store.DeliveryStageGating)
 	}
 	result.Parent = strings.TrimSpace(result.Parent)
 	result.Head = strings.TrimSpace(result.Head)
@@ -905,6 +1038,34 @@ func (engine *Engine) createPullRequest(
 			publication.HeadBranch,
 		)
 	}
+	queue, _, err := engine.store.DeliveryQueue(ctx, gitRoot)
+	if err != nil {
+		return PullRequest{}, fmt.Errorf("read candidate history: %w", err)
+	}
+	var commits []string
+	for _, item := range queue.Items {
+		if item.SpecSlug == specSlug {
+			commits = item.CandidateCommits
+		}
+	}
+	expectedNumber := result.PullRequest.Number
+	deadline := engine.clock.Now().Add(engine.checkTimeout)
+	for result.PullRequest.HeadSHA != expectedHead && !result.Created && slices.Contains(commits, result.PullRequest.HeadSHA) {
+		remaining := deadline.Sub(engine.clock.Now())
+		if remaining <= 0 {
+			break
+		}
+		if err := engine.sleeper.Sleep(ctx, min(engine.checkInterval, remaining)); err != nil {
+			return PullRequest{}, fmt.Errorf("wait for pull request head: %w", err)
+		}
+		result, err = pullRequests.FindOrCreatePullRequest(ctx, PullRequestRequest{HeadBranch: publication.HeadBranch, BaseBranch: publication.BaseBranch, Title: publication.Title, Body: publication.Body})
+		if err != nil {
+			return PullRequest{}, fmt.Errorf("re-read pull request head: %w", err)
+		}
+		if result.PullRequest.HeadBranch != publication.HeadBranch || result.PullRequest.Number != expectedNumber {
+			return PullRequest{}, errors.New("re-read pull request: identity changed")
+		}
+	}
 	if result.PullRequest.HeadSHA != expectedHead {
 		return PullRequest{}, fmt.Errorf("find or create pull request: PR Head Branch is at %q, expected %q", result.PullRequest.HeadSHA, expectedHead)
 	}
@@ -932,17 +1093,105 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 		return err
 	}
 	deadline := engine.clock.Now().Add(engine.checkTimeout)
+	rerunRuns := make(map[string]bool)
+	rerunChecks := make(map[string]bool)
+	timeoutRestarted := false
 	for {
 		report, err := pullRequests.CurrentHeadChecks(ctx, item.PullRequestNumber)
 		if err == nil {
 			if report.HeadSHA != head {
 				return engine.park(ctx, gitRoot, item, BlockerReviewStale)
 			}
-			pending := len(report.Checks) == 0
+			if report.Mergeable == "CONFLICTING" {
+				fmt.Fprintf(engine.log, "roundfix: conflict: Delivery Queue item %s: candidate %s\n", item.SpecSlug, head)
+				if engine.conflicts == nil {
+					return engine.park(ctx, gitRoot, item, BlockerPullRequestConflict)
+				}
+				resolution, err := engine.conflicts.ResolveConflict(ctx, workDir, item.SpecSlug, head)
+				if err != nil {
+					return fmt.Errorf("resolve pull request conflict: %w", err)
+				}
+				if len(resolution.SourcePaths) > 0 {
+					return engine.park(ctx, gitRoot, item, BlockerPullRequestConflict+": "+strings.Join(resolution.SourcePaths, ", "))
+				}
+				if resolution.Head == "" || resolution.Head == head {
+					return engine.park(ctx, gitRoot, item, BlockerPullRequestConflict)
+				}
+				fmt.Fprintf(engine.log, "roundfix: derived merge: Delivery Queue item %s: %s\n", item.SpecSlug, strings.Join(resolution.Regenerated, ", "))
+				item.CandidateCommits = append(item.CandidateCommits, resolution.Head)
+				return engine.setStage(ctx, gitRoot, item, store.DeliveryStageGating)
+			}
+			pending := len(report.Checks) == 0 || report.Mergeable == "UNKNOWN"
 			for _, check := range report.Checks {
 				switch strings.ToLower(strings.TrimSpace(check.Bucket)) {
-				case "pass", "skipping":
-				case "fail", "cancel", "cancelled":
+				case "pass":
+					key := check.Workflow + ":" + check.Name
+					if rerunChecks[key] {
+						warning := BlockerFlakyCheck + ": " + check.Name + " passed on re-run"
+						if item.Warning == "" {
+							item.Warning = warning
+						} else {
+							item.Warning += "; " + warning
+						}
+						if err := engine.store.UpdateDeliveryQueueItem(ctx, gitRoot, *item); err != nil {
+							return fmt.Errorf("record check re-run warning: %w", err)
+						}
+						delete(rerunChecks, key)
+					}
+				case "skipping":
+				case "fail":
+					if engine.checks == nil {
+						return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+					}
+					remote := "origin"
+					if engine.publication != nil {
+						if publication, pubErr := engine.publication.Publication(ctx, workDir, item.SpecSlug, item.Branch); pubErr == nil && strings.TrimSpace(publication.Remote) != "" {
+							remote = publication.Remote
+						}
+					}
+					failure, inspectErr := engine.checks.InspectFailedCheck(ctx, workDir, remote, head, check)
+					if inspectErr != nil {
+						if ctx.Err() != nil {
+							return fmt.Errorf("inspect failed check: %w", inspectErr)
+						}
+						fmt.Fprintf(engine.log, "roundfix: check recovery: Delivery Queue item %s: %s\n", item.SpecSlug, inspectErr)
+						return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+					}
+					if rerunRuns[failure.RunID] {
+						// GitHub can still report the first attempt while the re-run is queued.
+						if failure.Attempt == 1 {
+							pending = true
+							continue
+						}
+						if failure.OutsideChange && failure.Attempt > 1 {
+							return engine.park(ctx, gitRoot, item, BlockerFlakyCheck+": "+strings.Join(failure.Packages, ", "))
+						}
+						return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+					}
+					if !failure.OutsideChange || failure.Attempt != 1 || failure.RunID == "" {
+						return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+					}
+					if err := engine.checks.RerunFailedCheck(ctx, workDir, failure); err != nil {
+						if ctx.Err() != nil {
+							return fmt.Errorf("re-run failed check: %w", err)
+						}
+						fmt.Fprintf(engine.log, "roundfix: check recovery: Delivery Queue item %s: %s\n", item.SpecSlug, err)
+						return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+					}
+					rerunRuns[failure.RunID] = true
+					for _, failed := range report.Checks {
+						if failed.Bucket == "fail" && checkRunID(failed.Link) == failure.RunID {
+							rerunChecks[failed.Workflow+":"+failed.Name] = true
+						}
+					}
+					rerunChecks[check.Workflow+":"+check.Name] = true
+					if !timeoutRestarted {
+						deadline = engine.clock.Now().Add(engine.checkTimeout)
+						timeoutRestarted = true
+					}
+					fmt.Fprintf(engine.log, "roundfix: check re-run: Delivery Queue item %s: %s (run %s)\n", item.SpecSlug, check.Name, failure.RunID)
+					pending = true
+				case "cancel", "cancelled":
 					return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
 				default:
 					pending = true
@@ -1155,4 +1404,36 @@ func (realSleeper) Sleep(ctx context.Context, duration time.Duration) error {
 	case <-timer.C:
 		return nil
 	}
+}
+
+func prerequisitePark(blocker string) bool {
+	name, _, _ := strings.Cut(blocker, ":")
+	return name == BlockerPrerequisiteUnmerged
+}
+
+func (engine *Engine) releasePrerequisites(ctx context.Context, gitRoot string, queue *store.DeliveryQueue) error {
+	if engine.prerequisites == nil {
+		return nil
+	}
+	for index := range queue.Items {
+		item := &queue.Items[index]
+		if item.Stage != store.DeliveryStageParked || !prerequisitePark(item.Blocker) {
+			continue
+		}
+		unmet, err := engine.prerequisites.UnmetPrerequisites(ctx, gitRoot, item.SpecSlug)
+		if err != nil {
+			return fmt.Errorf("read prerequisites for %q: %w", item.SpecSlug, err)
+		}
+		if len(unmet) == 0 {
+			if err := engine.setStage(ctx, gitRoot, item, store.DeliveryStageQueued); err != nil {
+				return err
+			}
+			fmt.Fprintf(engine.log, "roundfix: prerequisite release: Delivery Queue item %s: all prerequisites merged\n", item.SpecSlug)
+		}
+	}
+	return nil
+}
+
+func blockerMatches(blocker, name string) bool {
+	return blocker == name || strings.HasPrefix(blocker, name+":")
 }

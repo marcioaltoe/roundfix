@@ -1,0 +1,32 @@
+{
+  "cause": "no open Pull Request (Daemon assignment; never resolved from Run branch)",
+  "approval": {
+    "maintainer": "recorded 2026-09-30 Wave 8 scope/skill approval",
+    "source": "docs/specs/0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own/_authorization.md",
+    "revision": "a75efcad26499ffcf64ca19f7a9c18583edb31fb",
+    "operations": [
+      "implement",
+      "commit",
+      "push",
+      "pull_request",
+      "merge"
+    ],
+    "current_candidate_review_acceptance": "none obtained yet"
+  },
+  "checks_and_status": {
+    "command": "make verify-changed",
+    "authority": "Daemon outside Agent sandbox",
+    "result": "pass (exit 0)",
+    "head": "f7aa4f5348466653afd1f3a79a4e5b865d14910a",
+    "required_PR_checks": "not started; pre-PR stage"
+  },
+  "unresolved_threads": "none because no open Pull Request exists",
+  "merge_ready_acceptance": "none yet; required pre-PR review follows archive; QA does not claim it happened",
+  "review_artifact_ancestry": {
+    "claimed_head": "f7aa4f5348466653afd1f3a79a4e5b865d14910a",
+    "review_artifact": "none yet",
+    "authority_revision": "a75efcad26499ffcf64ca19f7a9c18583edb31fb",
+    "authority_is_ancestor": true
+  },
+  "row_satisfied_by": "explicit pre-PR equivalents required by task_05 Requirement 13; future review/publication/required checks remain separate delivery gates"
+}

@@ -1,8 +1,6 @@
 package delivery
 
 import (
-	"strings"
-
 	"roundfix/internal/store"
 )
 
@@ -31,18 +29,10 @@ func PendingQuestionFor(queue store.DeliveryQueue) (PendingQuestion, bool) {
 		return PendingQuestion{}, false
 	}
 
-	answer := "resolve the blocker, then run roundfix deliver retry " + selected.SpecSlug
-	switch {
-	case strings.HasPrefix(selected.Blocker, BlockerRevalidationFailed):
-		answer = "amend the Spec on its item branch in " + selected.Worktree +
-			", then run roundfix deliver retry " + selected.SpecSlug
-	case selected.Blocker == BlockerQueueDeadline:
-		answer = "record a new queue for the remaining Specs with roundfix deliver start"
-	}
 	return PendingQuestion{
 		SpecSlug: selected.SpecSlug,
 		Blocker:  selected.Blocker,
-		Answer:   answer,
+		Answer:   ClassifyPark(queue, selected).Next,
 		Waiting:  parked - 1,
 	}, true
 }

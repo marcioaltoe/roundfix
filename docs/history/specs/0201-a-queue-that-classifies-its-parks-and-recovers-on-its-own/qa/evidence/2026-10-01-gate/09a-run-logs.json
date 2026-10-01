@@ -1,0 +1,106 @@
+[
+  {
+    "source": "/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20260930T162501Z_8ec6b68021df9cef/verification/batch-004-attempt-1.log",
+    "sha256": "f6ba1dd76615bf90714267b65b79844505b033e233c63f1fbbad5321f8ffd29c",
+    "excerpt": [
+      {
+        "line": 5,
+        "text": "=== RUN   TestEveryCheckTheReleaseStepNamesExists"
+      },
+      {
+        "line": 6,
+        "text": "    release_step_test.go:65: release step names test \"TestBaselineClauseForceIsCharacterized\", but no top-level test function exists in the repository"
+      },
+      {
+        "line": 7,
+        "text": "    release_step_test.go:65: release step names test \"TestEveryCommandIsNamedInTheRoundfixSkill\", but no top-level test function exists in the repository"
+      },
+      {
+        "line": 8,
+        "text": "    release_step_test.go:65: release step names test \"TestEveryCommandIsNamedInTheUserGuide\", but no top-level test function exists in the repository"
+      },
+      {
+        "line": 9,
+        "text": "    release_step_test.go:65: release step names test \"TestNoTwoBaselineClausesShareText\", but no top-level test function exists in the repository"
+      },
+      {
+        "line": 10,
+        "text": "    release_step_test.go:65: release step names test \"TestShippedGuidanceCitesNoRepositoryRecord\", but no top-level test function exists in the repository"
+      },
+      {
+        "line": 11,
+        "text": "    release_step_test.go:65: release step names test \"TestTheLoopClauseOrderMatchesTheDeliveryQueue\", but no top-level test function exists in the repository"
+      },
+      {
+        "line": 12,
+        "text": "--- FAIL: TestEveryCheckTheReleaseStepNamesExists (0.15s)"
+      }
+    ]
+  },
+  {
+    "source": "/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20260930T162501Z_8ec6b68021df9cef/verification/batch-004-attempt-2.log",
+    "sha256": "078228e292f9c8d46a0839788eca286a6aeeb596886f748fc197ef8866325d66",
+    "excerpt": [
+      {
+        "line": 5,
+        "text": "=== RUN   TestEveryCheckTheReleaseStepNamesExists"
+      },
+      {
+        "line": 6,
+        "text": "    release_step_test.go:65: release step names test \"TestBaselineClauseForceIsCharacterized\", but no top-level test function exists in the repository"
+      },
+      {
+        "line": 7,
+        "text": "    release_step_test.go:65: release step names test \"TestEveryCommandIsNamedInTheRoundfixSkill\", but no top-level test function exists in the repository"
+      },
+      {
+        "line": 8,
+        "text": "    release_step_test.go:65: release step names test \"TestEveryCommandIsNamedInTheUserGuide\", but no top-level test function exists in the repository"
+      },
+      {
+        "line": 9,
+        "text": "    release_step_test.go:65: release step names test \"TestNoTwoBaselineClausesShareText\", but no top-level test function exists in the repository"
+      },
+      {
+        "line": 10,
+        "text": "    release_step_test.go:65: release step names test \"TestShippedGuidanceCitesNoRepositoryRecord\", but no top-level test function exists in the repository"
+      },
+      {
+        "line": 11,
+        "text": "    release_step_test.go:65: release step names test \"TestTheLoopClauseOrderMatchesTheDeliveryQueue\", but no top-level test function exists in the repository"
+      },
+      {
+        "line": 12,
+        "text": "--- FAIL: TestEveryCheckTheReleaseStepNamesExists (0.16s)"
+      }
+    ]
+  },
+  {
+    "source": "/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20260930T203751Z_2b4c20bff8fbb572/verification/batch-001-attempt-1.log",
+    "sha256": "c416563df9d4a1513d98abd0077e2e7fa2b95bd5d9da83474c366c2dcfd6b2f6",
+    "excerpt": [
+      {
+        "line": 1,
+        "text": "--- FAIL: TestEveryOwnedSkillVersionIsRecorded (0.00s)"
+      },
+      {
+        "line": 2,
+        "text": "    owned_skill_versions_test.go:123: archive-spec: version 0.0.3 is not recorded; run go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions"
+      }
+    ]
+  },
+  {
+    "source": "/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20260930T203751Z_2b4c20bff8fbb572/verification/batch-001-attempt-2.log",
+    "sha256": "791526c0ece02aa9663720366a519af25db36c78757bd192a2e814a3ba4a7df2",
+    "excerpt": [
+      {
+        "line": 1,
+        "text": "--- FAIL: TestEveryOwnedSkillVersionIsRecorded (0.00s)"
+      },
+      {
+        "line": 2,
+        "text": "    owned_skill_versions_test.go:123: archive-spec: version 0.0.3 is not recorded; run go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions"
+      }
+    ]
+  }
+]

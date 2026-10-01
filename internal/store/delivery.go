@@ -914,7 +914,7 @@ func validDeliveryStage(stage DeliveryStage) bool {
 
 func retryDeliveryStage(stage DeliveryStage) bool {
 	switch stage {
-	case DeliveryStageRunning, DeliveryStageReviewing, DeliveryStageGating, DeliveryStageChecking:
+	case DeliveryStageQueued, DeliveryStageRunning, DeliveryStageReviewing, DeliveryStageGating, DeliveryStageChecking:
 		return true
 	default:
 		return false

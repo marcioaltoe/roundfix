@@ -1,0 +1,151 @@
+[
+  {
+    "task": "task_01",
+    "commit": "db0ffb3cd288abe2b84e96c87a2b71fade3652c8",
+    "actual": [
+      "docs/specs/0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own/task_01.md",
+      "docs/user-guide/commands/deliver.md",
+      "internal/cli/deliver.go",
+      "internal/cli/deliver_park_status_test.go",
+      "internal/cli/deliver_test.go",
+      "internal/cli/deliver_workflow.go",
+      "internal/delivery/check_rerun.go",
+      "internal/delivery/check_rerun_test.go",
+      "internal/delivery/engine.go",
+      "internal/delivery/park_class.go",
+      "internal/delivery/park_class_test.go",
+      "internal/delivery/question.go"
+    ],
+    "declared": [
+      "docs/specs/0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own/task_01.md",
+      "docs/user-guide/commands/deliver.md",
+      "internal/cli/deliver.go",
+      "internal/cli/deliver_park_status_test.go",
+      "internal/cli/deliver_test.go",
+      "internal/cli/deliver_workflow.go",
+      "internal/delivery/check_rerun.go",
+      "internal/delivery/check_rerun_test.go",
+      "internal/delivery/engine.go",
+      "internal/delivery/github.go",
+      "internal/delivery/park_class.go",
+      "internal/delivery/park_class_test.go",
+      "internal/delivery/question.go"
+    ],
+    "recorded_paths": [],
+    "outside": []
+  },
+  {
+    "task": "task_02",
+    "commit": "fb54c572f9160e5092f97a46501d7e99eecb95a2",
+    "actual": [
+      "docs/specs/0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own/task_02.md",
+      "docs/user-guide/commands/deliver.md",
+      "internal/cli/deliver.go",
+      "internal/cli/deliver_prerequisite_test.go",
+      "internal/cli/deliver_workflow.go",
+      "internal/delivery/engine.go",
+      "internal/delivery/park_class.go",
+      "internal/delivery/prerequisite_test.go",
+      "internal/spec/requires.go",
+      "internal/spec/requires_test.go",
+      "internal/spec/spec.go",
+      "internal/spec/spec_test.go",
+      "internal/store/delivery.go"
+    ],
+    "declared": [
+      "docs/specs/0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own/task_02.md",
+      "docs/user-guide/commands/deliver.md",
+      "internal/cli/deliver.go",
+      "internal/cli/deliver_prerequisite_test.go",
+      "internal/cli/deliver_workflow.go",
+      "internal/delivery/engine.go",
+      "internal/delivery/park_class.go",
+      "internal/delivery/prerequisite_test.go",
+      "internal/spec/requires.go",
+      "internal/spec/requires_test.go",
+      "internal/spec/spec.go",
+      "internal/spec/spec_test.go",
+      "internal/store/delivery.go"
+    ],
+    "recorded_paths": [
+      "internal/spec/requires.go",
+      "internal/spec/spec_test.go"
+    ],
+    "outside": []
+  },
+  {
+    "task": "task_03",
+    "commit": "50e963858b0e2449ce6c4c6458d413b6ec850554",
+    "actual": [
+      "docs/specs/0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own/task_03.md",
+      "docs/user-guide/commands/deliver.md",
+      "internal/cli/deliver_operator_archive_test.go",
+      "internal/cli/deliver_workflow.go",
+      "internal/delivery/engine.go",
+      "internal/delivery/operator_archive_retry_test.go",
+      "internal/delivery/park_class.go"
+    ],
+    "declared": [
+      "docs/specs/0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own/task_03.md",
+      "docs/user-guide/commands/deliver.md",
+      "internal/cli/deliver_operator_archive_test.go",
+      "internal/cli/deliver_workflow.go",
+      "internal/delivery/engine.go",
+      "internal/delivery/operator_archive_retry_test.go",
+      "internal/delivery/park_class.go"
+    ],
+    "recorded_paths": [],
+    "outside": []
+  },
+  {
+    "task": "task_04",
+    "commit": "f7aa4f5348466653afd1f3a79a4e5b865d14910a",
+    "actual": [
+      ".agents/skills/roundfix/SKILL.md",
+      ".agents/skills/roundfix/references/deliver.md",
+      "docs/specs/0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own/task_04.md",
+      "docs/user-guide/commands/deliver.md",
+      "docs/user-guide/configuration.md",
+      "internal/cli/deliver_conflict_test.go",
+      "internal/cli/deliver_park_status_test.go",
+      "internal/cli/deliver_workflow.go",
+      "internal/config/config.go",
+      "internal/config/delivery.go",
+      "internal/config/delivery_default_config_test.go",
+      "internal/config/delivery_derived_paths_test.go",
+      "internal/delivery/conflict_test.go",
+      "internal/delivery/engine.go",
+      "internal/delivery/github.go",
+      "internal/delivery/park_class.go",
+      "skills/roundfix/SKILL.md",
+      "skills/roundfix/references/deliver.md",
+      "skills/testdata/owned-skill-versions.json"
+    ],
+    "declared": [
+      ".agents/skills/roundfix/SKILL.md",
+      ".agents/skills/roundfix/references/deliver.md",
+      "docs/specs/0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own/task_04.md",
+      "docs/user-guide/commands/deliver.md",
+      "docs/user-guide/configuration.md",
+      "internal/cli/deliver_conflict_test.go",
+      "internal/cli/deliver_park_status_test.go",
+      "internal/cli/deliver_workflow.go",
+      "internal/config/config.go",
+      "internal/config/delivery.go",
+      "internal/config/delivery_default_config_test.go",
+      "internal/config/delivery_derived_paths_test.go",
+      "internal/delivery/conflict_test.go",
+      "internal/delivery/engine.go",
+      "internal/delivery/github.go",
+      "internal/delivery/park_class.go",
+      "skills/roundfix/SKILL.md",
+      "skills/roundfix/references/deliver.md",
+      "skills/testdata/owned-skill-versions.json"
+    ],
+    "recorded_paths": [
+      "internal/config/delivery.go",
+      "internal/config/delivery_default_config_test.go"
+    ],
+    "outside": []
+  }
+]

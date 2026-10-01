@@ -1763,7 +1763,7 @@ func TestQAGateLegacyArchivedManifestsLoadUnchanged(t *testing.T) {
 			t.Fatalf("read archived manifest %q: %v", entry.Name(), err)
 		}
 		manifestCount++
-		nodes, _, _, _, err := loadManifestNodes(manifestPath)
+		nodes, _, _, _, _, err := loadManifestNodes(manifestPath)
 		if err != nil {
 			t.Fatalf("parse archived manifest %q: %v", entry.Name(), err)
 		}
@@ -1912,7 +1912,7 @@ func loadSpecCorpus(activeRoot, archivedRoot, loadRoot string) (int, error) {
 		if err != nil {
 			return 0, fmt.Errorf("read archived manifest %q: %w", entry.Name(), err)
 		}
-		nodes, _, _, _, err := loadManifestNodes(manifestPath)
+		nodes, _, _, _, _, err := loadManifestNodes(manifestPath)
 		if err != nil {
 			return 0, fmt.Errorf("parse archived manifest %q: %w", entry.Name(), err)
 		}
