@@ -24,6 +24,10 @@ const (
 	CodeADRRelated = "SC-ADR-RELATED"
 	// CodeCitationUnsupported identifies a claim whose cited ADR does not carry the claimed subject.
 	CodeCitationUnsupported = "SC-CITATION-UNSUPPORTED"
+	// CodeReceiptUnproven identifies a written receipt that cannot be proved against its source.
+	CodeReceiptUnproven = "SC-RECEIPT-UNPROVEN"
+	// CodeReceiptMissing identifies a held attribution without a receipt in its paragraph.
+	CodeReceiptMissing = "SC-RECEIPT-MISSING"
 	// CodeCoverageUnmapped identifies a PRD unit absent from the TechSpec Coverage Map.
 	CodeCoverageUnmapped = "SC-COVERAGE-UNMAPPED"
 	// CodeCoverageUntasked identifies a declared unit absent from every Task References section.
@@ -49,6 +53,8 @@ var (
 		CodeADRUnlisted,
 		CodeADRRelated,
 		CodeCitationUnsupported,
+		CodeReceiptUnproven,
+		CodeReceiptMissing,
 		CodeCoverageUnmapped,
 		CodeCoverageUntasked,
 		CodeMetricUndeclared,
@@ -597,6 +603,14 @@ type resolvedCitationClaim struct {
 // ADR token is not a claim because it has no attribution verb or subject.
 func CitationClaims(artifact string, content []byte) []Claim {
 	var claims []Claim
+	walkCitationParagraphs(content, func(line int, paragraph string) {
+		claims = append(claims, citationClaimsInParagraph(artifact, line, paragraph)...)
+	})
+	return claims
+}
+
+// walkCitationParagraphs preserves the attribution parser's paragraph boundaries.
+func walkCitationParagraphs(content []byte, visit func(int, string)) {
 	var paragraph []string
 	paragraphLine := 0
 	inFence := false
@@ -605,7 +619,7 @@ func CitationClaims(artifact string, content []byte) []Claim {
 		if len(paragraph) == 0 {
 			return
 		}
-		claims = append(claims, citationClaimsInParagraph(artifact, paragraphLine, strings.Join(paragraph, "\n"))...)
+		visit(paragraphLine, strings.Join(paragraph, "\n"))
 		paragraph = nil
 		paragraphLine = 0
 	}
@@ -633,7 +647,6 @@ func CitationClaims(artifact string, content []byte) []Claim {
 		paragraph = append(paragraph, line)
 	}
 	flush()
-	return claims
 }
 
 func citationClaimsInParagraph(artifact string, firstLine int, paragraph string) []Claim {
@@ -904,6 +917,7 @@ func detectCitationCoverageAndReferences(
 		return err
 	}
 	claims := CitationClaims(prdDisplayPath, prdContent)
+	receiptArtifacts := []string{prdPath}
 
 	units := coverageUnitsDeclaredIn(parsePRDCoverageUnits(prdContent), prdDisplayPath)
 	units = append(units, coverageUnitsDeclaredIn(metricDeclaration.units, prdDisplayPath)...)
@@ -913,6 +927,7 @@ func detectCitationCoverageAndReferences(
 		if err != nil {
 			return fmt.Errorf("read Spec artifact %q: %w", techSpecPath, err)
 		}
+		receiptArtifacts = append(receiptArtifacts, techSpecPath)
 		techSpecDisplayPath := artifactDisplayPath(repoRoot, techSpecPath)
 		contractDeclaration := parsePromiseSection(techSpecContent, "API Contracts", coverageContract)
 		detectPromiseDeclaration(
@@ -931,6 +946,10 @@ func detectCitationCoverageAndReferences(
 	}
 	if err := detectUnsupportedCitations(result, repoRoot, claims); err != nil {
 		return fmt.Errorf("detect unsupported citations: %w", err)
+	}
+
+	if err := detectReceipts(result, repoRoot, newContractHorizon(repoRoot, prdPath), receiptArtifacts); err != nil {
+		return err
 	}
 
 	graph, graphPresent, err := loadOptionalTaskGraph(specsRoot, slug, specDir)

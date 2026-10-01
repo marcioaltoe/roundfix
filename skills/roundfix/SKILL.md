@@ -4,10 +4,10 @@ description: Use Roundfix to plan releases with the read-only Release Plan Comma
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.0.4
+  version: 0.0.5
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.0.4
+version: 0.0.5
 ---
 
 # Roundfix
@@ -1253,7 +1253,10 @@ roundfix spec check [<slug> ...] [--format <text|json>] [--strict]
 With no slug, the command checks every active Spec in the Spec Root. Findings
 are `error` when the check locates both sides of a contradiction and `gap` when
 it surfaces a candidate it cannot settle; `--strict` promotes gaps to errors.
-The authoring-honesty contract includes these stable error identifiers:
+The authoring-honesty contract includes these stable identifiers:
+
+- `SC-RECEIPT-UNPROVEN`: a written Claim Receipt has an unresolved source, fewer than three words, or a quote absent from its source.
+- `SC-RECEIPT-MISSING`: a held Spec attributes a claim to an accepted ADR without a receipt for that record in the same paragraph.
 
 - `SC-VERIFY-WORK-INDEPENDENT` — a Task's Verification contains only
   repository-wide gates and working-tree cleanliness checks, so it cannot
@@ -1269,6 +1272,13 @@ The authoring-honesty contract includes these stable error identifiers:
   naming a guide in that Task or its transitive dependencies.
 - `SC-LOOP-ORDER-DIVERGENT` — the shipped clause, repository guide, and
   Baseline module asset declare different Spec loop orders.
+
+The missing-receipt gap starts at the oldest commit that added
+`.agents/skills/write-techspec/references/concrete-contracts.md`. A PRD
+committed before that guide, or a repository with no committed guide, lists
+`SC-RECEIPT-MISSING` as skipped with the horizon reason. An uncommitted PRD
+or unreadable history is held once the guide exists. Every written receipt
+is proved regardless of the horizon.
 
 Exit `0` means no errors, including a non-strict gaps-only result. Exit `1`
 means at least one error, and exit `2` means a usage error or unreadable Spec
