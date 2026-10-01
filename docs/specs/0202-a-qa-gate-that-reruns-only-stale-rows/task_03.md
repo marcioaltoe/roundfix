@@ -45,7 +45,11 @@ carries every unmoved row of the failed pass.
    errors are infrastructure errors of the QA step, and a cancelled context
    publishes the stop.
 7. MUST NOT change Task Carry-Forward, the Reconcile Command, Delivery Retry,
-   Run integration, report naming or any existing test.
+   Run integration, report naming or any existing test, with one exception:
+   `TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport` in
+   `internal/daemon/task_engine_test.go` MUST be updated to expect the new
+   `prior_report` `daemon.qa` event of Requirement 6 in its QA event list and
+   positions, changing nothing else in that test. Its five subtests MUST pass.
 8. MUST put the new tests in the two test files this Task creates, over
    temporary Git repositories with a side branch named like a Run Branch. The
    end-to-end test drives `TaskCycle` through the existing task-cycle fixture.
@@ -83,6 +87,7 @@ carries every unmoved row of the failed pass.
 - interface: `internal/daemon/task_engine.go`
 - interface: `internal/daemon/task_context.go`
 - interface: `internal/speccheck/mechanical.go`
+- interface: `internal/daemon/task_engine_test.go`
 - creates: `internal/daemon/qa_prior_pass.go`
 - creates: `internal/daemon/qa_prior_pass_test.go`
 - creates: `internal/speccheck/report_shape_findings_test.go`
