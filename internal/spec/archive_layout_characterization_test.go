@@ -93,7 +93,7 @@ func TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095(t *testing.T
 
 	want := archiveLayoutCorpusGolden{
 		Schema: "roundfix-speccheck-corpus/v2",
-		Update: "Re-recorded because retiring Specs 0126 and 0127 as superseded left no portfolio Spec in the active corpus. The active corpus reports no findings for SC-METRIC-UNDECLARED or SC-CONTRACT-UNDECLARED and no errors from either detector. SC-VERIFY-WRAP-FRAGILE joined the characterized code set at 0. After an intentional detector change, run the focused corpus test, inspect its actual active counts, and update this file and the characterization that pins it in the same change. Spec 0191 Task 01 adds proved Claim Receipts and the contract horizon; SC-RECEIPT-UNPROVEN and SC-RECEIPT-MISSING join the characterized code set at 0, with every earlier count unchanged.",
+		Update: "Re-recorded because retiring Specs 0126 and 0127 as superseded left no portfolio Spec in the active corpus. The active corpus reports no findings for SC-METRIC-UNDECLARED or SC-CONTRACT-UNDECLARED and no errors from either detector. SC-VERIFY-WRAP-FRAGILE joined the characterized code set at 0. After an intentional detector change, run the focused corpus test, inspect its actual active counts, and update this file and the characterization that pins it in the same change. Spec 0191 Task 01 adds proved Claim Receipts and the contract horizon; SC-RECEIPT-UNPROVEN and SC-RECEIPT-MISSING join the characterized code set at 0, with every earlier count unchanged. Spec 0191 Task 02 adds declared, well-formed and traced Surface Transcripts; SC-TRANSCRIPT-UNDECLARED, SC-TRANSCRIPT-MALFORMED and SC-TRANSCRIPT-UNGATED join at 0, with every earlier count unchanged.",
 		Active: map[string]int{
 			"SC-ADR-RELATED":               0,
 			"SC-ADR-UNLISTED":              0,
@@ -110,6 +110,9 @@ func TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095(t *testing.T
 			"SC-LOOP-ORDER-DIVERGENT":      0,
 			"SC-METRIC-UNDECLARED":         0,
 			"SC-RECEIPT-UNPROVEN":          0,
+			"SC-TRANSCRIPT-UNDECLARED":     0,
+			"SC-TRANSCRIPT-MALFORMED":      0,
+			"SC-TRANSCRIPT-UNGATED":        0,
 			"SC-RECEIPT-MISSING":           0,
 			"SC-REF-UNRESOLVED":            0,
 			"SC-REHEARSAL-UNDECLARED":      0,

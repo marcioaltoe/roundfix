@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0191-claims-with-receipts-and-contracts-as-they-ship
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -70,3 +70,92 @@ A TechSpec describes a command's new output in prose, and the Task author, the Q
 - ADR-0184; ADR-0156; ADR-0094
 
 ## Result
+
+### Implementation
+
+Added the exported `Transcript` reader and the three transcript diagnostics.
+The full sweep and authoring-stage check share Task 01's single contract
+horizon computation. Only the declaration gap depends on that horizon;
+malformed declarations are checked in every Spec. Transcript blocks are read
+as text and their commands are never executed.
+
+Surface Transcripts join coverage References, including plural and ranged
+references, and require no Coverage Map entry. Their implementation coverage
+excludes the QA gate without changing other coverage units' behavior or text.
+The pending gate must name each transcript in a Requirement; a declined gate
+and completed QA Task raise no ungated error.
+
+The corpus code list, golden and its characterization pin name all three
+codes at zero. The golden's update sentence identifies Task 02, and all older
+counts are unchanged. The canonical Roundfix skill and its mirror list each
+code and explain the declaration horizon. Both skill version fields advance
+from `0.0.5` to `0.0.6`.
+
+### Focused evidence
+
+All Go checks below used `GOCACHE=/tmp/roundfix-task02-gocache` after the
+default cache was refused by the sandbox.
+
+- Starting signal: `go test ./internal/speccheck -run '^TestAWellFormedSurfaceTranscriptReportsNothing$'`
+  failed to compile because `SurfaceTranscripts` and the transcript codes did
+  not exist.
+- `go test ./internal/speccheck -count=1` — exit 0; existing tests and the new
+  transcript tests passed before the final test-only expansions.
+- `go test ./internal/speccheck -run 'Transcript|SurfaceTranscripts' -count=1`
+  — exit 0 on the final implementation and tests, including both held and
+  unheld cases for every malformed reason.
+- `go test -tags docscontract ./internal/docscontract -run 'Corpus' -count=1`
+  — exit 0; actual corpus counts match the golden, and the active corpus has
+  no errors.
+- `go test ./internal/spec -run 'ArchiveLayoutCharacterization' -count=1`
+  — exit 0; the updated corpus golden matches its characterization pin.
+- `make skills-sync` — exit 0; `cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md`
+  — exit 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  — exit 0; recorded Roundfix `0.0.6` with its canonical content digest.
+- `make baseline-digests` — exit 0, `changed: false`; sanctioned regeneration
+  found that derived artifacts already match their sources.
+- `git -c core.fsmonitor=false diff --check` — exit 0.
+- `rtk make verify-incremental` — initial sandbox run exited 2: two
+  process-owner integration tests could not read the host process table, and
+  the suite guard detected my test-file edits during the run. Repeated with
+  required sandbox escalation and an unchanged worktree; exit 0. Formatting,
+  vet, the entire package suite, skill sync/version checks, skill contracts
+  and CLI build passed. No repository files changed while the successful
+  rerun was running.
+
+
+| Acceptance criterion | Evidence |
+| --- | --- |
+| Held declaration gap, reasoned None and unheld skip | `TestAHeldTechSpecWithoutSurfaceTranscriptsIsAGap`, `TestSurfaceTranscriptsNoneWithAReasonIsAccepted`, `TestASpecThatIsNotHeldSkipsTheTranscriptDeclarationGap`; the last uses a disposable `gittest` history with a PRD committed before the guide. `TestTranscriptDeclarationRejectsMissingReasonsAndWrongShapes` rejects missing reasons, wrong heading levels and fenced examples. |
+| Well-formed blocks and all seven malformed reasons, including unheld Specs | `TestAWellFormedSurfaceTranscriptReportsNothing`, `TestEachMalformedSurfaceTranscriptNamesItsReason` (each reason under held=true and held=false), `TestAMalformedTranscriptIsReportedInASpecThatIsNotHeld`. `TestTranscriptBlockBoundariesAndExactStreams` covers empty streams, first stderr, indentation, fence length and type, info strings, ordering and exit boundaries. |
+| Numbered output is not a declaration | `TestNumberedOutputInsideATranscriptIsNotAnItem` includes both a numbered transcript-like output line and a heading in the block. |
+| Implementation coverage excludes QA-only References | `TestASurfaceTranscriptNamedOnlyByTheQATaskIsUntasked` plants a QA-only reference and checks the specific summary; `TestASurfaceTranscriptNamedByANonQATaskIsTasked` clears it with a ranged implementation reference. `TestSurfaceTranscriptsNeedNoCoverageMap` checks map exemption. Existing promise-coverage tests passed in the package check. |
+| Pending QA Requirements trace transcripts; declined gate raises nothing | `TestASurfaceTranscriptTheQATaskDoesNotNameIsUngated`, `TestASurfaceTranscriptNamedInAQARequirementIsGated`, `TestADeclinedGateRaisesNoUngatedTranscript`. `TestCompletedQATaskIsHistoricalTranscriptEvidence` checks the completed-gate exception at the detector seam using a graph loaded from temporary artifacts. |
+| Finding lines and skip lines match Surface Transcripts 3 and 4 | `TestTranscriptFindingsRenderSurfaceTranscriptsThreeAndFour` asserts full malformed and ungated finding blocks, source locations, fix text and the exact absent-guide skip line. `TestTranscriptDetectorStagesAndMissingArtifacts` checks stage ownership and absent-artifact skips. |
+| Corpus zeros, prior counts, own transcripts and skill mirror | Focused corpus and archive-layout checks passed. `TestThisSpecsSurfaceTranscriptsAreWellFormed` checks all four authored blocks. `TestThisSpecsTranscriptsHaveImplementationAndGateReferences` copies the Spec bundle into a temporary directory and checks shape, implementation references and QA Requirements. Skill sync, version recording and byte comparison passed. |
+
+### Scope and settlement
+
+The initial worktree change was the Daemon's `status: in_progress` in this Task;
+that field remains untouched. No other Task or Task Graph was edited,
+`internal/speccheck/constraints.go` is unchanged, and no existing top-level test
+or exported signature was renamed or removed. No commit, push or Pull Request
+was made. The authored `## Verification` commands were not executed; their
+execution and terminal Task status remain Daemon-owned.
+
+Additional ordinary path declared for the repository's owned-skill version
+contract: `skills/testdata/owned-skill-versions.json`. Its only addition is
+Roundfix `0.0.6` and its recorded digest. Sanctioned digest regeneration changed
+no derived paths. No follow-up implementation was added to this slice.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `skills/testdata/owned-skill-versions.json`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T000219Z_0e911d72b0d72d2f`
+- Source commit: `2cc943fc260e9ba5165997d21604dc27e5d1178f`

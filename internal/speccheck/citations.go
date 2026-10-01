@@ -18,6 +18,12 @@ import (
 )
 
 const (
+	// CodeTranscriptUndeclared identifies a held TechSpec without a transcript declaration.
+	CodeTranscriptUndeclared = "SC-TRANSCRIPT-UNDECLARED"
+	// CodeTranscriptMalformed identifies a declared transcript with an invalid block.
+	CodeTranscriptMalformed = "SC-TRANSCRIPT-MALFORMED"
+	// CodeTranscriptUngated identifies a transcript absent from pending QA Requirements.
+	CodeTranscriptUngated = "SC-TRANSCRIPT-UNGATED"
 	// CodeADRUnlisted identifies a Spec citation absent from its Active ADR obligations row.
 	CodeADRUnlisted = "SC-ADR-UNLISTED"
 	// CodeADRRelated identifies an unlisted accepted ADR one citation edge from a listed ADR.
@@ -50,6 +56,9 @@ const (
 
 var (
 	citationCoverageDetectorCodes = []string{
+		CodeTranscriptUndeclared,
+		CodeTranscriptMalformed,
+		CodeTranscriptUngated,
 		CodeADRUnlisted,
 		CodeADRRelated,
 		CodeCitationUnsupported,
@@ -861,10 +870,11 @@ var citationStopWords = map[string]bool{
 type coverageKind string
 
 const (
-	coverageFeature  coverageKind = "Core Feature"
-	coverageStory    coverageKind = "User Story"
-	coverageMetric   coverageKind = "Success Metric"
-	coverageContract coverageKind = "API Contract"
+	coverageFeature    coverageKind = "Core Feature"
+	coverageStory      coverageKind = "User Story"
+	coverageMetric     coverageKind = "Success Metric"
+	coverageContract   coverageKind = "API Contract"
+	coverageTranscript coverageKind = "Surface Transcript"
 )
 
 type promiseDeclarationState uint8
@@ -918,6 +928,7 @@ func detectCitationCoverageAndReferences(
 	}
 	claims := CitationClaims(prdDisplayPath, prdContent)
 	receiptArtifacts := []string{prdPath}
+	horizon := newContractHorizon(repoRoot, prdPath)
 
 	units := coverageUnitsDeclaredIn(parsePRDCoverageUnits(prdContent), prdDisplayPath)
 	units = append(units, coverageUnitsDeclaredIn(metricDeclaration.units, prdDisplayPath)...)
@@ -939,8 +950,11 @@ func detectCitationCoverageAndReferences(
 		)
 		claims = append(claims, CitationClaims(techSpecDisplayPath, techSpecContent)...)
 		units = append(units, coverageUnitsDeclaredIn(contractDeclaration.units, techSpecDisplayPath)...)
+		units = append(units, detectTranscripts(result, horizon, techSpecContent, techSpecDisplayPath)...)
 		detectCoverageMap(result, units, techSpecContent, techSpecDisplayPath)
 	} else {
+		addSkip(result, CodeTranscriptUndeclared, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_techspec.md")))
+		addSkip(result, CodeTranscriptMalformed, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_techspec.md")))
 		addSkip(result, CodeCoverageUnmapped, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_techspec.md")))
 		addSkip(result, CodeContractUndeclared, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_techspec.md")))
 	}
@@ -948,7 +962,7 @@ func detectCitationCoverageAndReferences(
 		return fmt.Errorf("detect unsupported citations: %w", err)
 	}
 
-	if err := detectReceipts(result, repoRoot, newContractHorizon(repoRoot, prdPath), receiptArtifacts); err != nil {
+	if err := detectReceipts(result, repoRoot, horizon, receiptArtifacts); err != nil {
 		return err
 	}
 
@@ -957,6 +971,7 @@ func detectCitationCoverageAndReferences(
 		return err
 	}
 	if graphPresent {
+		detectTranscriptGate(result, repoRoot, graph, units)
 		if err := detectWaveCollisions(result, repoRoot, graph); err != nil {
 			return err
 		}
@@ -965,6 +980,7 @@ func detectCitationCoverageAndReferences(
 		}
 	} else {
 		manifestDisplayPath := artifactDisplayPath(repoRoot, filepath.Join(specDir, "_tasks.md"))
+		addSkip(result, CodeTranscriptUngated, manifestDisplayPath)
 		addSkip(result, CodeCoverageUntasked, manifestDisplayPath)
 		addSkip(result, CodeReferenceUnresolved, manifestDisplayPath)
 		addSkip(result, CodeVerifyInvertedExit, manifestDisplayPath)
@@ -1465,7 +1481,7 @@ func detectCoverageMap(result *Result, units []coverageUnit, content []byte, tec
 		sectionLine = 1
 	}
 	for _, unit := range units {
-		if unit.Kind == coverageContract {
+		if unit.Kind == coverageContract || unit.Kind == coverageTranscript {
 			continue
 		}
 		if references[unit.Kind][unit.Number] {
@@ -1533,6 +1549,7 @@ func detectTaskCoverageAndContextReferences(
 	units []coverageUnit,
 ) error {
 	references := newReferenceSet()
+	transcriptReferences := newReferenceSet()
 	for _, task := range graph.Tasks {
 		taskPath := filepath.Join(filepath.Clean(specsRoot), task.File)
 		content, err := os.ReadFile(taskPath)
@@ -1540,6 +1557,9 @@ func detectTaskCoverageAndContextReferences(
 			return fmt.Errorf("read Task %q: %w", taskPath, err)
 		}
 		for _, line := range markdownSectionLines(content, "References") {
+			if task.ID != graph.QATaskID {
+				addDeclaredReferences(transcriptReferences, line)
+			}
 			addDeclaredReferences(references, line)
 		}
 		detectTaskContextReferences(result, repoRoot, taskPath, content, task.Context)
@@ -1634,14 +1654,22 @@ func detectTaskCoverageAndContextReferences(
 
 	manifestDisplayPath := artifactDisplayPath(repoRoot, filepath.Join(graph.Spec.Dir, "_tasks.md"))
 	for _, unit := range units {
-		if references[unit.Kind][unit.Number] {
+		covered := references[unit.Kind][unit.Number]
+		if unit.Kind == coverageTranscript {
+			covered = transcriptReferences[unit.Kind][unit.Number]
+		}
+		if covered {
 			continue
 		}
 		name := coverageUnitName(unit)
+		summary := unit.DeclaredIn + " declares " + name + ", but no Task in " + manifestDisplayPath + " references it"
+		if unit.Kind == coverageTranscript {
+			summary = unit.DeclaredIn + " declares " + name + ", but no Task other than the QA gate in " + manifestDisplayPath + " references it"
+		}
 		result.Findings = append(result.Findings, Finding{
 			Code:     CodeCoverageUntasked,
 			Severity: SeverityError,
-			Summary:  unit.DeclaredIn + " declares " + name + ", but no Task in " + manifestDisplayPath + " references it",
+			Summary:  summary,
 			Where: []Location{
 				{Path: unit.DeclaredIn, Line: unit.Line},
 				{Path: manifestDisplayPath, Line: 1},
@@ -1903,14 +1931,18 @@ func sectionLineContaining(content []byte, heading, needle string) int {
 
 func newReferenceSet() referenceSet {
 	return referenceSet{
-		coverageFeature:  {},
-		coverageStory:    {},
-		coverageMetric:   {},
-		coverageContract: {},
+		coverageFeature:    {},
+		coverageStory:      {},
+		coverageMetric:     {},
+		coverageContract:   {},
+		coverageTranscript: {},
 	}
 }
 
 func addDeclaredReferences(references referenceSet, line string) {
+	for _, number := range referenceNumbers(line, transcriptRefPattern) {
+		references[coverageTranscript][number] = true
+	}
 	for _, number := range referenceNumbers(line, featureRefPattern) {
 		references[coverageFeature][number] = true
 	}
