@@ -8,7 +8,7 @@ roundfix review dispose <finding-id> --fixed-by <commit>
 
 Runs the configured pre-Pull-Request reviewer over the current candidate. The
 workflow computes the candidate diff from the merge base of the current head
-and the selected base, then hands that diff to the Codex reviewer in a
+and the selected base, then hands that diff to the configured reviewer in a
 read-only session; it does not ask the reviewer to discover the candidate. The
 resulting record names the repository, that merge base as `baseCommit`, the
 resolved base tip as `baseTipCommit`, the head commit, effective provider, and
@@ -74,9 +74,25 @@ pure deletion. Deleted files and files changed without a hunk, such as binary
 or rename-only files, hold every line. A range counts when any line overlaps
 a held line. A missing or out-of-diff anchor records
 `dismissed-by-validation`, rule `unanchored`, with its reason, and prints a
-diagnostic on stderr. Anchored findings stand. The record's `validation`
-identifies the conventions version and `validator: not-needed`; convention
-judgment is separate from this anchor check.
+diagnostic on stderr.
+
+Validation has three dismissal rules. `unanchored` is the mechanical anchor
+check above. `convention:C1` through `convention:C4` requires the whole anchor
+to lie in that convention's mechanically computed region and a sealed
+validator judgment that the finding merely restates it. `no-failure` requires
+that the finding has no `Failure:` clause and the validator judges that it
+states no failure. A finding with a failure clause cannot receive that rule.
+Other anchored findings stand. Each item's validation records `stands` or
+`dismissed-by-validation`, with the dismissal's rule and reason.
+
+Only anchored findings inside a convention region or lacking a failure clause
+are sent to the validator. It uses the review's selected runtime in a sealed
+session and may use no tools. The validator fails closed: an unavailable
+runner, timeout, tool use, malformed answer, missing or duplicate finding ID,
+ineligible rule or blank reason leaves every asked finding standing. The
+record's `validation` identifies the conventions version and reports
+`validator` as `not-needed`, `ran` or `unavailable`, with the unavailable
+reason. Each validation dismissal prints its ID, rule and reason on stderr.
 
 If every finding is dismissed by validation, the outcome is
 `findings-dismissed` with exit `0`, without writing a ledger disposition. If
@@ -110,14 +126,50 @@ prompting an Agent session. The reused record sets `reused` and carries the
 ledger entries whose repository, head, finding identity, and text match its
 `findingItems` in `dispositions`.
 
-When every finding is dismissed by validation or has exactly one
-evidence-backed `dismissed` disposition, the reused record reports `findings-dismissed` and exits `0`. Otherwise it remains
-`findings`, exits `1`, and stderr names each standing finding identity that
-has no disposition. A `fixed` disposition never clears the reviewed head because the
-fix belongs to a changed candidate. A different repository, base, head, or
-provider gets a fresh review, as does an existing `reviewed`, `blocked`, or
-`omitted` record. The `none` and `coderabbit` policies keep their behavior
-described above.
+When every finding is dismissed by validation or has one evidence-backed
+`dismissed` disposition, the reused record reports `findings-dismissed` and
+exits `0`. Otherwise it remains `findings`, exits `1`, and stderr names every
+standing finding identity without a disposition. A `fixed` disposition never
+clears that head; the fix belongs to a changed candidate. The `none` and
+`coderabbit` policies keep their behavior above.
+
+Reviews in one checkout form a **Reviewer Lineage** when the provider and
+merge base stay the same and each reviewed head descends from the last.
+Round 1 reviews the full candidate diff. Round 2 reviews only the delta from
+the round-1 head to the current head; its prompt always includes every round-1
+finding with its validation and operator disposition. A fixed or dismissed
+finding is raised again only if the delta reintroduces it. Anchors are still
+validated against the full merge-base candidate diff in either round.
+A rebase, changed provider or merge base, or a head that does not descend
+starts a new lineage at round 1. A blocked review retries its own round with
+its recorded previous data.
+
+When round 1 leaves standing findings, its reviewer session stays open. The
+checkout record stores the random session name, the selection index into the
+review profile's preferred selection and fallbacks, and `sessionOpen: true`.
+Round 2 prepares that name on that selection through acpx. If preparation
+fails, Roundfix ends that name and tries the normal selection loop with fresh
+random names. The round-2 prompt carries the recorded findings even when
+resume is unavailable.
+
+Every round records the ACP session ID reported by its prompt stream in
+`lineage.acpSessionIds`, or an empty string when absent. `continued` is true
+only when the recorded session was prepared and both rounds report the same
+non-empty ID. Reusing a name alone does not prove continuation. Round 2 always
+ends its session, including on a blocked or findings verdict. Every other
+round-1 outcome ends its session; a lineage change ends the prior open session
+before the new review, and a same-head reuse that resolves to
+`findings-dismissed` closes it too. A removed checkout may leave an open
+session record; Roundfix does not clean up another checkout's session.
+
+A third review in a lineage never calls the reviewer. It closes as
+`ceiling-closed`, with exit `0`, only when every standing round-2 finding has
+exactly one operator disposition: dismissed with evidence, or fixed by a
+commit the current head contains. Otherwise it prints a blocked result with
+exit `2` naming the findings to dispose. That blocked result is not persisted,
+so `roundfix review dispose` can still read the round-2 record. The closed
+record names the round-2 head as `lineage.reviewedHead`, and Delivery advances
+on `ceiling-closed`.
 
 When the candidate adds or changes a Spec folder under the configured Spec
 Root, or under its resolved archive root, Roundfix discovers that folder from
@@ -147,7 +199,7 @@ names the Specs whose context was carried.
 Exit codes:
 
 - `0` — one substantive no-findings verdict, configured omission, or a
-  `findings-dismissed` verdict.
+  `findings-dismissed` or `ceiling-closed` verdict.
 - `1` — the validated reviewer verdict or a reused verdict still has standing
   findings; the record carries them.
 - `2` — preflight failed or the review was blocked.

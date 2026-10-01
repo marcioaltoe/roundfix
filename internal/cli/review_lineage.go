@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"roundfix/internal/agent"
 	"roundfix/internal/preflight"
 )
 
@@ -16,6 +17,11 @@ type reviewLineage struct {
 	PreviousFindings     []reviewFinding            `json:"previousFindings,omitempty"`
 	PreviousDispositions []reviewFindingDisposition `json:"previousDispositions,omitempty"`
 	ReviewedHead         string                     `json:"reviewedHead,omitempty"`
+	Session              string                     `json:"session,omitempty"`
+	Selection            int                        `json:"selection"`
+	SessionOpen          bool                       `json:"sessionOpen"`
+	ACPSessionIDs        []string                   `json:"acpSessionIds,omitempty"`
+	Continued            bool                       `json:"continued"`
 }
 
 type reviewLineagePlan struct {
@@ -58,6 +64,9 @@ func decideReviewLineage(ctx context.Context, prior *reviewRecord, candidate rev
 		return plan, nil
 	}
 	plan.Lineage = reviewLineage{Round: 2, PreviousHead: prior.HeadCommit, PreviousFindings: prior.FindingItems}
+	if prior.Lineage != nil {
+		plan.Lineage.ACPSessionIDs = append([]string(nil), prior.Lineage.ACPSessionIDs...)
+	}
 	return plan, nil
 }
 
@@ -187,4 +196,17 @@ func validateCeilingClosedReviewRecord(record reviewRecord) error {
 		return errors.New("ceiling-closed review record requires exactly one disposition per standing finding")
 	}
 	return nil
+}
+
+// End only the session owned by this checkout's record. Closing needs no
+// readiness probe or prompt, including when the configured provider changed.
+func endOpenReviewSession(ctx context.Context, prior *reviewRecord, runner agent.Runner) error {
+	if prior == nil || prior.Lineage == nil || !prior.Lineage.SessionOpen {
+		return nil
+	}
+	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{Agent: prior.Provider})
+	if err != nil {
+		return err
+	}
+	return runner.EndSession(context.WithoutCancel(ctx), runtime, agent.SessionRef{Name: prior.Lineage.Session, WorkDir: prior.Repository})
 }

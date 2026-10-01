@@ -171,7 +171,7 @@ func TestReviewRoundTwoPromptCarriesTheDeltaAndRoundOneFindings(t *testing.T) {
 	if second.Lineage == nil || second.Lineage.Round != 2 || second.Lineage.PreviousHead != first.HeadCommit || !reflect.DeepEqual(second.Lineage.PreviousFindings, first.FindingItems) || len(second.Lineage.PreviousDispositions) != 2 {
 		t.Fatalf("second lineage=%+v", second.Lineage)
 	}
-	if runner.preparedCalls != 2 || runner.endCalls != 2 {
+	if runner.preparedCalls != 2 || runner.endCalls != 1 {
 		t.Fatalf("session counts: %+v", runner)
 	}
 }

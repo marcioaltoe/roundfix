@@ -133,6 +133,10 @@
       {
         "version": "0.1.6",
         "digest": "8c06ca138f9f8c7bd67ef54a686fb67ad7e2f053188fc35ec6cc74c7cbdbde55"
+      },
+      {
+        "version": "0.1.7",
+        "digest": "39cf23d9c90135dbcbc972202919953c668b0c68c8f2ab4d23739425bb8af3ab"
       }
     ],
     "setup-context-driven": [

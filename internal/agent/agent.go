@@ -192,6 +192,7 @@ type ExecuteRequest struct {
 }
 
 type ExecuteResult struct {
+	ACPSessionID     string
 	Usage            TurnUsage
 	LogPath          string
 	Output           string

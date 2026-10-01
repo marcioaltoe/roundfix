@@ -377,6 +377,9 @@ type reviewSpecContext struct {
 type reviewSpecContextResult struct {
 	candidateDiff string
 	runtime       agent.RuntimeSpec
+	session       agent.SessionRef
+	selection     int
+	resumed       bool
 	contexts      []reviewSpecContext
 	skipped       []string
 	archivedSpecs []string
@@ -477,6 +480,12 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 			printReviewCommandFailure(err, stderr)
 			return exitPreflight
 		}
+		if prior != nil && filepath.Clean(prior.Repository) == filepath.Clean(record.Repository) && plan.prior == nil {
+			if err := endOpenReviewSession(ctx, prior, commandDependenciesForContext(ctx).newEngineCollaborators().runner); err != nil {
+				printReviewCommandFailure(err, stderr)
+				return exitPreflight
+			}
+		}
 		record.Lineage = &plan.Lineage
 		if plan.Ceiling {
 			ledger, ledgerErr := readReviewFindingDispositions(filepath.Join(artifactDir, reviewDispositionLedgerFileName))
@@ -517,9 +526,28 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 			}
 			code := exitRunFailed
 			if reused.Outcome == reviewOutcomeFindingsDismissed {
+				if err := endOpenReviewSession(ctx, &reused, commandDependenciesForContext(ctx).newEngineCollaborators().runner); err != nil {
+					printReviewCommandFailure(err, stderr)
+					return exitPreflight
+				}
+				if reused.Lineage != nil {
+					reused.Lineage.SessionOpen = false
+				}
 				code = exitOK
 			}
 			return finishReviewCommand(stdout, stderr, artifactDir, reused, code)
+		}
+	}
+	if record.Provider != "codex" && record.Provider != "claude" {
+		prior, readErr := readReviewRecord(filepath.Join(reviewCheckoutDir(artifactDir, record.Repository), reviewRecordFileName))
+		if readErr == nil && filepath.Clean(prior.Repository) == filepath.Clean(record.Repository) {
+			if err := endOpenReviewSession(ctx, &prior, commandDependenciesForContext(ctx).newEngineCollaborators().runner); err != nil {
+				printReviewCommandFailure(err, stderr)
+				return exitPreflight
+			}
+		} else if readErr != nil && !errors.Is(readErr, os.ErrNotExist) {
+			printReviewCommandFailure(readErr, stderr)
+			return exitPreflight
 		}
 	}
 	if err := removeReviewAnswer(artifactDir, gitState.Root); err != nil {
@@ -586,6 +614,17 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 	if record.Outcome == reviewOutcomeFindings {
 		record, code = validateReviewConventions(ctx, reviewRepository{Root: gitState.Root, Head: gitState.HEAD, Base: baseCommit, SpecRoots: specRoots, Git: gitRunner}, record, runner, specContext.runtime)
+	}
+	if promptSent {
+		record.Lineage.Session = specContext.session.Name
+		record.Lineage.Selection = specContext.selection
+		record.Lineage.ACPSessionIDs = append(record.Lineage.ACPSessionIDs, result.ACPSessionID)
+		ids := record.Lineage.ACPSessionIDs
+		record.Lineage.Continued = specContext.resumed && len(ids) == 2 && ids[0] != "" && ids[0] == ids[1]
+		record.Lineage.SessionOpen = record.Lineage.Round == 1 && record.Outcome == reviewOutcomeFindings
+		if !record.Lineage.SessionOpen {
+			_ = runner.EndSession(context.WithoutCancel(ctx), specContext.runtime, specContext.session)
+		}
 	}
 	if !promptSent {
 		return finishReviewCommand(stdout, stderr, artifactDir, record, code)
@@ -1011,6 +1050,7 @@ func runConfiguredReviewSession(
 		request.Runtime = runtime
 		specContext.runtime = runtime
 		request.Session = reviewSessionRef(headCommit, gitRoot, 0)
+		specContext.session = request.Session
 		result, runErr := runner.Run(ctx, request, runevent.Discard)
 		return result, specContext, true, runErr
 	}
@@ -1018,6 +1058,26 @@ func runConfiguredReviewSession(
 	selections := make([]roundconfig.AgentSelection, 0, len(profile.Profile.Fallbacks)+1)
 	selections = append(selections, profile.Profile.Preferred)
 	selections = append(selections, profile.Profile.Fallbacks...)
+	if plan.Lineage.Round == 2 && plan.prior != nil && plan.prior.Lineage != nil && plan.prior.Lineage.SessionOpen {
+		prior := plan.prior.Lineage
+		if prior.Selection >= 0 && prior.Selection < len(selections) {
+			runtime, runtimeErr := runtimeForProfileSelection(selections[prior.Selection])
+			if runtimeErr != nil {
+				return agent.ExecuteResult{}, specContext, false, runtimeErr
+			}
+			request.Runtime = runtime
+			request.Session = agent.SessionRef{Name: prior.Session, WorkDir: gitRoot}
+			if prepareErr := preparer.PrepareSession(ctx, request, runevent.Discard); prepareErr == nil {
+				specContext.runtime, specContext.session, specContext.selection = runtime, request.Session, prior.Selection
+				specContext.resumed = true
+				result, runErr := preparedRunner.RunPrepared(ctx, request, runevent.Discard)
+				return result, specContext, true, runErr
+			}
+		}
+		if err := endOpenReviewSession(ctx, plan.prior, runner); err != nil {
+			return agent.ExecuteResult{}, specContext, false, err
+		}
+	}
 	for index, selection := range selections {
 		runtime, runtimeErr := runtimeForProfileSelection(selection)
 		if runtimeErr != nil {
@@ -1034,8 +1094,8 @@ func runConfiguredReviewSession(
 			}
 			return agent.ExecuteResult{}, specContext, false, prepareErr
 		}
+		specContext.session, specContext.selection = request.Session, index
 		result, runErr := preparedRunner.RunPrepared(ctx, request, runevent.Discard)
-		_ = runner.EndSession(context.WithoutCancel(ctx), runtime, request.Session)
 		// Once RunPrepared is called, the prompt has been sent. Every failure
 		// from that boundary belongs to this review and cannot activate fallback.
 		return result, specContext, true, runErr
