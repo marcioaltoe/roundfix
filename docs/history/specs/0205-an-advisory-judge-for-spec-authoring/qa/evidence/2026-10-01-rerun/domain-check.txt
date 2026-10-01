@@ -1,0 +1,7 @@
+Judge Log: The per-month JSONL record of every advisory judgment call: the question, the transport that carried it (OpenRouter or TypeSafe), the answer, probabilities, confidence, latency, input tokens, the model the service reported and the call's cost. Its monthly sum is what the spend ceiling reads (ADR-0201).
+_Avoid_: Run Event Journal, audit log
+
+Advisory Judgment: A typed semantic judgment about a Spec artifact, such as whether a cited ADR supports the attributed claim, that the authoring model must answer but that never gates, never changes another command's exit code, and fails open (ADR-0200).
+_Avoid_: Gate, check, finding
+
+Canonical terms confirmed through public built help and the exact advisory transcript assertion exercised by the freshly passing CLI test. Both glossary entries cite accepted ADR-0200/0201, retain avoid terms, and need no update. No new or competing term found; QA changes no glossary.

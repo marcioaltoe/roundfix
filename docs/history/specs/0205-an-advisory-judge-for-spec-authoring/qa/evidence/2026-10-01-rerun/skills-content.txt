@@ -1,0 +1,8 @@
+docs/user-guide/commands/spec.md required phrases passed
+.agents/skills/roundfix/references/spec.md required phrases passed
+.agents/skills/write-prd/SKILL.md required phrases passed
+.agents/skills/write-techspec/SKILL.md required phrases passed
+roundfix complete mirror byte comparison passed
+write-prd complete mirror byte comparison passed
+write-techspec complete mirror byte comparison passed
+6 existing canonical/mirror QA settlement sections unchanged from 280030e174f9b46dea70cb4d974c44f69c8a0435

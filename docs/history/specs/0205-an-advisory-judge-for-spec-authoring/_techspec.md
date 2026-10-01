@@ -300,8 +300,12 @@ For stage `techspec` or both, when `_techspec.md` exists:
 
 ### The language gate
 
-`isEnglish(text)` splits the text after its front matter into maximal runs
-of Unicode letters, lowercased. It is true when the share of words in
+`isEnglish(text)` takes the text after its front matter, drops every line
+whose first non-space character is `>` and every passage of at most 1,000
+characters inside straight or curly double quotation marks, and splits the
+rest into maximal runs of Unicode letters, lowercased. A quotation keeps its
+speaker's language: an English ADR that quotes the maintainer's Portuguese
+request is still English (QA finding F-01, 2026-10-01). It is true when the share of words in
 `english_words` is at least `min_english_share` and the share in
 `portuguese_words` is below `max_portuguese_share`. A PRD or TechSpec that
 fails is a skipped artifact with reason `not English`, and nothing from it is

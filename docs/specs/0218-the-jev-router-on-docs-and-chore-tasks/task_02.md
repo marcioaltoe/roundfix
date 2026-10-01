@@ -66,7 +66,7 @@ package in the tree.
 - creates: `internal/jevrouter/key_test.go`
 - creates: `internal/jevrouter/spend_test.go`
 - creates: `internal/jevrouter/ledger_test.go`
-- instruction: `docs/specs/0205-an-advisory-judge-for-spec-authoring/_techspec.md`
+- instruction: `docs/history/specs/0205-an-advisory-judge-for-spec-authoring/_techspec.md`
 - instruction: `docs/adr/0201-the-judge-sends-only-spec-artifacts-and-spends-under-a-monthly-ceiling.md`
 
 ## Verification

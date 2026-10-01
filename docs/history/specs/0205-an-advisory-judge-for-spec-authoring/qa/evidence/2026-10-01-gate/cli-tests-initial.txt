@@ -1,0 +1,5 @@
+Initial command: GOCACHE=/private/tmp/roundfix-0205-qa-cache go test -count=1 -v ./internal/cli -run ^TestSpecJudge, output redirected into the repository evidence directory. Exit 1. All behavior tests printed PASS. Preserved failure excerpt (full initial output was replaced by the later stable run):
+suiteguard: repository boundary violated:
+suiteguard: modified: docs/specs/0205-an-advisory-judge-for-spec-authoring/qa/evidence/2026-10-01-gate/cli-tests.txt
+FAIL roundfix/internal/cli
+The second command redirected to /private/tmp/0205-qa-cli-tests.txt while the tree was stable, exited 0, and was copied into cli-tests.txt only after completion.

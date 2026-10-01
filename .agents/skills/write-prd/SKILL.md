@@ -5,10 +5,10 @@ argument-hint: "<feature description, or nothing after a grilling/brainstorm ses
 metadata:
   category: planning
   tags: [prd, product, requirements, workflow, documentation]
-  version: 0.0.4
+  version: 0.0.5
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.4
+version: 0.0.5
 ---
 
 # Write PRD
@@ -220,6 +220,17 @@ retain those classes. Treat the checker's named skipped detectors as omitted,
 not as clean findings.
 
 Reply with the file path, any open questions that survived clarification, and the next step: `write-techspec` for features with architectural decisions to make, `write-tasks` directly when the technical approach is already obvious.
+
+## Advisory judgment
+
+Once `roundfix spec check <slug> --stage prd --run-verification` is clean and
+before reporting, run `roundfix spec judge <slug> --stage prd`. For every
+raised judgment, answer each raised judgment by correcting the artifact and
+re-running the checker, or by keeping the text and stating in the report why it
+stands. The judge is advisory and never a gate. a skipped result is neither a
+failure nor a clean result, so report the skip reason and continue. Never print,
+store or ask for either Jev key (`ROUNDFIX_OPENROUTER_API_KEY` or
+`ROUNDFIX_TYPESAFE_API_KEY`).
 
 ## Anti-patterns
 

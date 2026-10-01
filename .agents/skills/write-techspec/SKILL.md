@@ -5,10 +5,10 @@ argument-hint: "<spec slug, path to docs/specs/<slug>/_prd.md, or a refactor/bug
 metadata:
   category: engineering-design
   tags: [architecture, documentation, workflow]
-  version: 0.0.4
+  version: 0.0.5
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.4
+version: 0.0.5
 ---
 
 # Write TechSpec
@@ -130,6 +130,17 @@ those classes. Treat the checker's named skipped detectors as omitted, not as
 clean findings.
 
 Reply with the file path, the ADRs created, any decisions still open, and the next step: `write-tasks`.
+
+## Advisory judgment
+
+Once `roundfix spec check <slug> --stage techspec --run-verification` is clean
+and before reporting, run `roundfix spec judge <slug> --stage techspec`. For
+every raised judgment, answer each raised judgment by correcting the artifact
+and re-running the checker, or by keeping the text and stating in the report
+why it stands. The judge is advisory and never a gate. a skipped result is
+neither a failure nor a clean result, so report the skip reason and continue.
+Never print, store or ask for either Jev key
+(`ROUNDFIX_OPENROUTER_API_KEY` or `ROUNDFIX_TYPESAFE_API_KEY`).
 
 ## Anti-patterns
 

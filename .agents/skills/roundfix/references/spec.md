@@ -46,6 +46,30 @@ Exit `0` means no errors, including a non-strict gaps-only result. Exit `1`
 means at least one error, and exit `2` means a usage error or unreadable Spec
 Root. Text is the default output; JSON uses the `roundfix-speccheck/v1` schema.
 
+### Advisory judge
+
+```bash
+roundfix spec judge <slug> --stage prd
+roundfix spec judge <slug> --stage techspec
+roundfix spec judge <slug> [--stage <prd|techspec>] [--format <text|json>]
+```
+
+The Advisory Judge reads one active Spec from the configured Spec Root. With
+no stage it judges both artifacts. It never gates and never changes another
+command's exit code: advisory, skipped, and stopped runs exit `0`.
+
+Answer each `advisory` line by correcting the artifact or stating why the
+text stands. A `skipped` result is neither a failure nor a clean result;
+record the reason instead of claiming the artifact was judged clean.
+
+Set `ROUNDFIX_OPENROUTER_API_KEY` for OpenRouter first, or
+`ROUNDFIX_TYPESAFE_API_KEY` for TypeSafe directly when the first key is
+absent. The generic `OPENROUTER_API_KEY` is not read. Every request is
+recorded in `<home>/.roundfix/judge/<YYYY-MM>.jsonl` (UTC month); the monthly
+ceiling is US$5.00 across both transports. Missing keys, non-English
+artifacts, source or answer skips, and stopped service or log failures remain
+advisory information. JSON includes clear judgments and the chosen transport.
+
 ## Spec close audit
 
 Use the read-only Spec Audit Command after merge and sync to inspect one active
@@ -78,4 +102,3 @@ action, not an action the audit performs.
 Exit `0` means no residue or undelivered work was found. Exit `1` means residue
 or undelivered work was found, or the audit could not run. Exit `2` means a
 usage error or an unknown Spec slug.
-

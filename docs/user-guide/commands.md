@@ -34,6 +34,7 @@ installing, substitute `go run ./cmd/roundfix`.
 | `settle` | [command guide](commands/settle.md) |
 | `setup` | [command guide](commands/setup.md) |
 | `skills` | [command guide](commands/skills.md) |
+| `spec` | [command guide](commands/spec.md) |
 | `spec-audit` | [command guide](commands/spec-audit.md) |
 | `stop` | [command guide](commands/stop.md) |
 | `storage-report` | [command guide](commands/storage-report.md) |

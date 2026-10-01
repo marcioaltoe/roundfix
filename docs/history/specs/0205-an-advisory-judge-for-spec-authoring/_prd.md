@@ -1,9 +1,12 @@
 ---
 spec: 0205-an-advisory-judge-for-spec-authoring
-status: active
+status: archived
 created: 2026-09-30
 surfaces: [backend, cli, docs]
+archived: "2026-10-01"
+source_slug: 0205-an-advisory-judge-for-spec-authoring
 ---
+
 
 # An advisory judge for Spec authoring
 
@@ -46,10 +49,11 @@ when that key is absent and `ROUNDFIX_TYPESAFE_API_KEY` is set.
 
 This Spec is delivered after Spec 0194, which splits the Roundfix Skill and
 the command reference into one file per command. Its third Task edits the
-`spec` files that Spec 0194 creates, `.agents/skills/roundfix/references/spec.md`
-and `docs/user-guide/commands/spec.md`, and its Verification reads them. The
-Delivery Queue does not enforce this order, so the operator queues Spec 0194
-first.
+`spec` Skill reference that Spec 0194 creates, `.agents/skills/roundfix/references/spec.md`,
+and creates the `spec` user-guide command guide, `docs/user-guide/commands/spec.md`,
+which Spec 0194 did not create, with its row in the command index. Its
+Verification reads them. The Delivery Queue does not enforce this order, so
+the operator queues Spec 0194 first.
 
 ## Project Constraints
 

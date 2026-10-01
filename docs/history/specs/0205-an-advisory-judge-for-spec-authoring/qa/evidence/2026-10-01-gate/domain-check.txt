@@ -1,0 +1,2 @@
+Canonical Judge Log and Advisory Judgment entries exist in CONTEXT.md, citing ADR-0201 and ADR-0200.
+Public judge help names Judge Log; exact advisory transcript assertions pass. No new or competing glossary term is missing. No glossary edit required.

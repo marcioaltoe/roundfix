@@ -1,0 +1,10 @@
+{
+  "packages": 43,
+  "net_http_importers": [
+    "internal/cli/cli.go",
+    "internal/judge/client.go",
+    "internal/judge/judge.go"
+  ],
+  "violations": [],
+  "speccheck_judge_imports": []
+}

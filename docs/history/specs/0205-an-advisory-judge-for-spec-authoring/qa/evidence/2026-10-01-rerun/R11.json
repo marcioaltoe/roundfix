@@ -1,0 +1,28 @@
+[
+  {
+    "command": "./bin/roundfix spec judge 0999-missing",
+    "cwd": "/private/tmp/0205-rerun-cli-cxisgy83/repo",
+    "home": "/private/tmp/0205-rerun-cli-cxisgy83/R11",
+    "attempt": 1,
+    "exit": 2,
+    "stdout": "",
+    "stderr": "roundfix: spec judge failed: unknown active Spec slug \"0999-missing\"\nRun 'roundfix spec judge --help' for usage.\n",
+    "log_lines_before": 0,
+    "log_lines_after": 0,
+    "log_unchanged": true,
+    "matches": true
+  },
+  {
+    "command": "./bin/roundfix spec judge 0999-missing",
+    "cwd": "/private/tmp/0205-rerun-cli-cxisgy83/repo",
+    "home": "/private/tmp/0205-rerun-cli-cxisgy83/R11",
+    "attempt": 2,
+    "exit": 2,
+    "stdout": "",
+    "stderr": "roundfix: spec judge failed: unknown active Spec slug \"0999-missing\"\nRun 'roundfix spec judge --help' for usage.\n",
+    "log_lines_before": 0,
+    "log_lines_after": 0,
+    "log_unchanged": true,
+    "matches": true
+  }
+]

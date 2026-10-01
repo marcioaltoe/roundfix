@@ -1,0 +1,3 @@
+write-prd stage and mirror match
+write-techspec stage and mirror match
+All canonical skill QA settlement sections byte-identical to delivery base; Roundfix mirror matches
