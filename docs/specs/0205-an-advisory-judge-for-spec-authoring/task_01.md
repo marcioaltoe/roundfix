@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0205-an-advisory-judge-for-spec-authoring
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -66,3 +66,68 @@ TechSpec's block byte for byte.
 - [_prd.md](_prd.md) — Goals 3 and 5; User Stories 1, 2 and 5; Core Features 2, 3, 4 and 7; Success Metrics 5 and 6; Recorded limits
 - [_techspec.md](_techspec.md) — Questions and thresholds; Interfaces; The only readers; Citation claims; Goal pairs; The language gate; Testing Approach 1; Testing Approach 2; Testing Approach 3; Build Order 1
 - ADR-0200; ADR-0201; ADR-0176
+
+## Result
+
+Implemented the Task 01 local planning slice. `Load` embeds the exact authored
+question block and compiles its four patterns. The two bounded readers are the
+only constructors of `Source`; they reject links, non-regular files, oversized
+files and inactive ADRs. The planner applies the measured extraction and language
+rules, retains original line numbers, builds JSON without HTML escaping and
+deduplicates identical states. No network or credential-reading code was added.
+
+### Acceptance evidence
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| Authored settings, model pin and ordered transports | `TestQuestionFileLoads` compares the embedded bytes with the TechSpec block, checks loaded transport order and fields against that block, and exercises all four compiled patterns. The block retains the authored model IDs, key-variable names, thresholds, price and ceiling; no Go file repeats those values. |
+| Measured citation extraction | `TestCitationClaimsFollowTheMeasuredExtraction` covers paragraph boundaries, fences, tables, headings, list markers, sentence splitting, multiple tokens, attribution verbs, proposed and non-English ADRs, transformation, character boundaries, ADR truncation, front matter, line attribution, stage selection and state deduplication. Its exact-state case checks the replacement and removal against the resulting claim, including JSON escaping. |
+| Measured goal selection | `TestGoalPairsFollowTheMeasuredSelection` covers PRD item continuation, numbered items, Coverage Map continuation and ranges, table mappings, section boundaries, normalized titles, longest-title selection, generic and short exclusions, Unicode character limits, exact goal states, line numbers, absent goals, unnamed sections, stage selection and deduplication. |
+| Non-English and symbolic-link artifact skips | `TestPlanSkipsANonEnglishArtifact` checks Portuguese PRD and TechSpec skips and that a non-English PRD yields no goal pairs. `TestPlanSkipsASymbolicLinkArtifact` checks both artifact names and the required refusal reason. `TestReadersAcceptOnlySpecArtifactsAndADRs` and `TestLanguageGateSeparatesEnglishFromPortuguese` exercise the underlying gates and measured language boundaries. |
+
+Every generated Spec, ADR and source fixture lives in `t.TempDir()`. The
+question-file test reads the existing authored TechSpec to check its byte contract.
+No live documentation fetch or API call was made, in accordance with this Task's
+no-network requirement.
+
+### Focused checks
+
+- Before implementation, `rtk proxy ls internal/judge` exited 1: the package
+  did not exist. The only pre-existing tracked change was the Daemon's
+  `status: in_progress` in this Task file.
+- `GOCACHE=/tmp/roundfix-task01-gocache GOPROXY=off GOSUMDB=off rtk proxy go test -count=1 ./internal/judge`
+  exited 0 after the final implementation and restored sabotages.
+- `GOOS=windows GOARCH=amd64 GOCACHE=/tmp/roundfix-task01-gocache GOPROXY=off GOSUMDB=off rtk proxy go build ./internal/judge`
+  exited 0. The reader uses portable file APIs and checks the descriptor's
+  regular-file type and identity before reading.
+- The first `GOCACHE=/tmp/roundfix-task01-gocache GOPROXY=off GOSUMDB=off rtk make verify-incremental`
+  exited 2. Two existing CLI Force Stop integration tests could not enumerate
+  the process table (`operation not permitted`), and suiteguard caught an Agent
+  edit to `internal/judge/source.go` while that check was running. No existing
+  assertions or Verification configuration were changed.
+- The same incremental command rerun with process-table access and a stable
+  worktree exited 0: formatting, vet, package tests, skill checks and the CLI
+  build passed. The Force Stop integration tests and suiteguard passed on
+  this rerun.
+
+### Sabotage evidence
+
+- Claim extraction: temporarily removed the `(Spec NNNN)` stripping operation.
+  `go test -count=1 -run TestCitationClaimsFollowTheMeasuredExtraction/rules_4_and_5_exact_state_and_Unicode_ADR_cut ./internal/judge`
+  exited 1. The test reported a claim that still contained `(Spec 0123)`.
+  Restored the stripping operation; the focused package check then exited 0.
+- Reader: temporarily replaced `os.Lstat` with `os.Stat` to follow file links.
+  `go test -count=1 -run TestReadersAcceptOnlySpecArtifactsAndADRs/spec_symlink ./internal/judge`
+  exited 1 with `accepted=true error=<nil>`. Restored `os.Lstat`; the focused
+  package check then exited 0. This sabotage was repeated after making the
+  reader portable, with the same failure and restoration.
+
+The sabotage commands used the same task-scoped cache and offline Go settings
+as the focused package check. Task status, authored Verification, the Task Graph
+and other Task files remain Daemon-owned. No commit, push or Pull Request was
+made. Network transport, spending and CLI behavior belong to subsequent Tasks.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T205638Z_5e1457a22648dd9b`
+- Source commit: `5d53223a3476aa62bee1734fca2622145a5d719d`
