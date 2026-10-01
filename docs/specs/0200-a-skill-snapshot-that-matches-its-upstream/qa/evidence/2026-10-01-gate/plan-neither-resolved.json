@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "roundfix/baseline-result/v1",
+  "operation": "plan",
+  "state": "action_required",
+  "category": "decision",
+  "message": "required profile alignment is unresolved: capability.context7",
+  "nextAction": "Run roundfix baseline skills restore --profile go-cli-tui --skill context7-cli, review its exact restoration Plan Digest, rerun with --confirm-plan <digest>, then rerun profile alignment.",
+  "verifiedPostimages": [],
+  "warnings": [
+    {
+      "code": "baseline.inventory.nested-carrier-conflict",
+      "path": "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md",
+      "message": "nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review"
+    },
+    {
+      "code": "baseline.inventory.nested-carrier-conflict",
+      "path": "internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md",
+      "message": "nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review"
+    }
+  ],
+  "recommendations": []
+}

@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0200-a-skill-snapshot-that-matches-its-upstream
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
