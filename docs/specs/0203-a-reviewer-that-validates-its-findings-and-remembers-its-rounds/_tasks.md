@@ -18,7 +18,10 @@ graph:
       needs: [task_03]
     - id: task_05
       file: task_05.md
-      needs: [task_01, task_02, task_03, task_04]
+      needs: [task_01, task_02, task_03, task_04, task_06]
+    - id: task_06
+      file: task_06.md
+      needs: [task_04]
 ---
 
 # Task Graph
@@ -30,5 +33,6 @@ graph:
 | task_03 | backend | A second review reads the delta, and a third closes only on dispositions |
 | task_04 | backend | Round 2 continues the round-1 session, and the skill describes the reviewer |
 | task_05 | qa | Run the final QA gate |
+| task_06 | backend | A ceiling record names no reviewer selection |
 
-Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05
+Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_06 · 6 → task_05

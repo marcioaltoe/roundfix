@@ -401,12 +401,13 @@ Placeholders in angle brackets stand for commit identifiers, paths and
 reasons.
 
 1. Surface Transcript: a Daemon settlement restated as a finding, dismissed as
-   `C2`.
+   `C2`. The fixture Spec holds a Task file and no PRD, so the existing
+   Spec-context rule lists it in `skippedSpecs`.
 
    ```transcript
    $ roundfix review
    stdout:
-   {"repository":"<repository>","baseCommit":"<merge base>","baseTipCommit":"<base tip>","headCommit":"<head>","provider":"codex","source":"project","outcome":"findings-dismissed","findings":"- `docs/specs/0001-example/task_01.md:4` — The Task is `completed` while its Result says status is Daemon-owned. Failure: an invalid Task state transition.","findingItems":[{"id":"F1","text":"`docs/specs/0001-example/task_01.md:4` — The Task is `completed` while its Result says status is Daemon-owned. Failure: an invalid Task state transition.","anchor":{"path":"docs/specs/0001-example/task_01.md","startLine":4,"endLine":4},"validation":{"status":"dismissed-by-validation","rule":"convention:C2","reason":"<validator reason>"}}],"answerPath":"<answer path>","specs":[],"skippedSpecs":[],"archivedSpecs":[],"specContextTruncated":false,"validation":{"conventions":"roundfix/delivery-conventions/v1","validator":"ran"},"lineage":{"round":1,"session":"<session>","selection":0,"sessionOpen":false,"acpSessionIds":["<acp session id>"],"continued":false}}
+   {"repository":"<repository>","baseCommit":"<merge base>","baseTipCommit":"<base tip>","headCommit":"<head>","provider":"codex","source":"project","outcome":"findings-dismissed","findings":"- `docs/specs/0001-example/task_01.md:4` — The Task is `completed` while its Result says status is Daemon-owned. Failure: an invalid Task state transition.","findingItems":[{"id":"F1","text":"`docs/specs/0001-example/task_01.md:4` — The Task is `completed` while its Result says status is Daemon-owned. Failure: an invalid Task state transition.","anchor":{"path":"docs/specs/0001-example/task_01.md","startLine":4,"endLine":4},"validation":{"status":"dismissed-by-validation","rule":"convention:C2","reason":"<validator reason>"}}],"answerPath":"<answer path>","specs":[],"skippedSpecs":["0001-example"],"archivedSpecs":[],"specContextTruncated":false,"validation":{"conventions":"roundfix/delivery-conventions/v1","validator":"ran"},"lineage":{"round":1,"session":"<session>","selection":0,"sessionOpen":false,"acpSessionIds":["<acp session id>"],"continued":false}}
    stderr:
    roundfix: review finding F1 dismissed by validation (convention:C2): <validator reason>
    exit: 0
