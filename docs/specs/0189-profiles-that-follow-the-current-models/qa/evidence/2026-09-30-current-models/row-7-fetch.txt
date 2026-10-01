@@ -1,0 +1,2 @@
+rtk curl-cffi get https://learn.chatgpt.com/docs/models --impersonate chrome --timeout 30 --body
+Tool refusal: Network access to learn.chatgpt.com was blocked: domain is not on the allowlist for the current sandbox mode. No retry.
