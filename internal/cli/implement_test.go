@@ -2419,7 +2419,8 @@ func TestRunImplementExecutesSpecEndToEnd(t *testing.T) {
 	}
 	expected := "task_01 completed — Write the widget guide\n" +
 		"task_02 completed — Build the widget backend\n" +
-		"Clean: all 2 Task(s) completed.\n"
+		"Clean: all 2 Task(s) completed.\n" +
+		"Tokens: none reported by 2 prompt(s); cost not reported\n"
 	if stdout.String() != expected {
 		t.Fatalf("expected deterministic stdout report:\n%q\ngot:\n%q", expected, stdout.String())
 	}
@@ -2727,7 +2728,8 @@ func TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow(t *testin
 	}
 	wantStdout := "task_01 completed — Build the first capacity slice\n" +
 		"task_02 completed — Build the second capacity slice\n" +
-		"Clean: all 2 Task(s) completed.\n"
+		"Clean: all 2 Task(s) completed.\n" +
+		"Tokens: none reported by 2 prompt(s); cost not reported\n"
 	if result.stdout != wantStdout {
 		t.Fatalf("normal Implement stdout changed\nwant: %q\n got: %q", wantStdout, result.stdout)
 	}
@@ -2822,7 +2824,8 @@ func TestRunImplementTemporaryVerificationFlowRetriesOnceWithoutAgentRepair(t *t
 		t.Fatalf("expected Clean exit %d, got %d stderr=%q stdout=%q", exitOK, code, stderr.String(), stdout.String())
 	}
 	wantStdout := "task_01 completed — Recover one temporary gate\n" +
-		"Clean: all 1 Task(s) completed.\n"
+		"Clean: all 1 Task(s) completed.\n" +
+		"Tokens: none reported by 1 prompt(s); cost not reported\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("temporary retry changed normal stdout\nwant: %q\n got: %q", wantStdout, stdout.String())
 	}
@@ -2957,7 +2960,7 @@ func TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWork
 	}
 	if !strings.Contains(stdout.String(), "task_01 failed — Exhaust one temporary gate\n") ||
 		!strings.Contains(stdout.String(), "task_02 completed — Complete an independent Task\n") ||
-		!strings.HasSuffix(stdout.String(), "Unresolved: 1 completed, 1 failed, 0 skipped, 0 pending.\n") {
+		!strings.HasSuffix(stdout.String(), "Unresolved: 1 completed, 1 failed, 0 skipped, 0 pending.\nTokens: none reported by 2 prompt(s); cost not reported\n") {
 		t.Fatalf("expected bounded Unresolved stdout, got %q", stdout.String())
 	}
 	taskRef := taskRefForImplementRun(t, run, repoDir, "task_01")
@@ -3017,7 +3020,8 @@ func TestRunImplementTemporaryVerificationFlowPreservesDeterministicRepair(t *te
 		t.Fatalf("expected repaired Clean exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
 	}
 	wantStdout := "task_01 completed — Repair one deterministic gate\n" +
-		"Clean: all 1 Task(s) completed.\n"
+		"Clean: all 1 Task(s) completed.\n" +
+		"Tokens: none reported by 2 prompt(s); cost not reported\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("deterministic repair changed normal stdout\nwant: %q\n got: %q", wantStdout, stdout.String())
 	}
@@ -3140,7 +3144,8 @@ func TestRunImplementQueuedCancellationStartsNoChildAndKeepsResumableTasks(t *te
 	}
 	wantStdout := "task_01 pending — Queue the first cancellation gate\n" +
 		"task_02 pending — Queue the second cancellation gate\n" +
-		"Stopped: 0 completed, 0 failed, 0 skipped, 2 pending.\n"
+		"Stopped: 0 completed, 0 failed, 0 skipped, 2 pending.\n" +
+		"Tokens: none reported by 2 prompt(s); cost not reported\n"
 	if result.stdout != wantStdout {
 		t.Fatalf("queued cancellation stdout changed\nwant: %q\n got: %q", wantStdout, result.stdout)
 	}
@@ -3215,8 +3220,9 @@ func TestRunImplementBootstrapFailureEndsFailedBeforeAgentWork(t *testing.T) {
 	if code != exitRunFailed {
 		t.Fatalf("expected bootstrap failure exit %d, got %d (stderr %q)", exitRunFailed, code, stderr.String())
 	}
-	if stdout.Len() != 0 {
-		t.Fatalf("expected no stdout before any Task settles, got %q", stdout.String())
+	wantStdout := "Failed: 0 completed, 0 failed, 0 skipped, 1 pending.\nTokens: no prompts recorded\n"
+	if stdout.String() != wantStdout {
+		t.Fatalf("terminal failure stdout = %q, want %q", stdout.String(), wantStdout)
 	}
 	if runner.calls != 0 {
 		t.Fatalf("expected bootstrap failure before Agent work, got %d Agent call(s)", runner.calls)
@@ -3935,8 +3941,9 @@ func TestRunImplementAutoPushFailureEndsFailedAndJournalsPush(t *testing.T) {
 	if pusher.calls != 1 {
 		t.Fatalf("expected one push attempt, got %d", pusher.calls)
 	}
-	if stdout.Len() != 0 {
-		t.Fatalf("expected no stdout on push failure, got %q", stdout.String())
+	wantStdout := "Failed: 1 completed, 0 failed, 0 skipped, 0 pending.\nTokens: none reported by 1 prompt(s); cost not reported\n"
+	if stdout.String() != wantStdout {
+		t.Fatalf("terminal failure stdout = %q, want %q", stdout.String(), wantStdout)
 	}
 	if !strings.Contains(stderr.String(), "push Clean spec Run: push failed") {
 		t.Fatalf("expected push failure diagnostic, got %q", stderr.String())
@@ -5983,7 +5990,8 @@ func TestRunImplementStopRequestEndsStoppedWithInterruptMapping(t *testing.T) {
 	}
 	expected := "task_01 pending — Build the widget core\n" +
 		"task_02 pending — Wire the widget API\n" +
-		"Stopped: 0 completed, 0 failed, 0 skipped, 2 pending.\n"
+		"Stopped: 0 completed, 0 failed, 0 skipped, 2 pending.\n" +
+		"Tokens: none reported by 1 prompt(s); cost not reported\n"
 	if stdout.String() != expected {
 		t.Fatalf("expected Stopped report:\n%q\ngot:\n%q", expected, stdout.String())
 	}
@@ -6417,7 +6425,8 @@ func TestRunImplementDatabaseStopRequestAfterTaskCommitEndsStoppedAndReleasesLoc
 	}
 	expected := "task_01 completed — Build the widget core\n" +
 		"task_02 pending — Wire the widget API\n" +
-		"Stopped: 1 completed, 0 failed, 0 skipped, 1 pending.\n"
+		"Stopped: 1 completed, 0 failed, 0 skipped, 1 pending.\n" +
+		"Tokens: none reported by 1 prompt(s); cost not reported\n"
 	if stdout.String() != expected {
 		t.Fatalf("expected Stopped report:\n%q\ngot:\n%q", expected, stdout.String())
 	}
@@ -6539,7 +6548,7 @@ func TestRunImplementQAVerdictMatrix(t *testing.T) {
 			expected := "task_01 completed — Build the widget core\n" +
 				gateLine +
 				"qa " + tt.wantVerdict + " — " + wantDetail + "\n" +
-				outcomeLine
+				outcomeLine + "Tokens: none reported by 2 prompt(s); cost not reported\n"
 			if stdout.String() != expected {
 				t.Fatalf("expected QA report on stdout:\n%q\ngot:\n%q", expected, stdout.String())
 			}
@@ -6660,7 +6669,7 @@ func TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict(t *testing.T) {
 				"task_02 completed — Build the widget backend\n" +
 				gateLine +
 				"qa " + tt.verdict + " — " + implementQAReportPathForTest(t, runner) + "\n" +
-				outcomeLine
+				outcomeLine + "Tokens: none reported by 1 prompt(s); cost not reported\n"
 			if stdout.String() != expected {
 				t.Fatalf("expected QA-only report:\n%q\ngot:\n%q", expected, stdout.String())
 			}
@@ -6802,8 +6811,9 @@ func TestRunImplementInfrastructureFailureEndsFailed(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("expected exit code 1, got %d (stderr %q)", code, stderr.String())
 	}
-	if stdout.Len() != 0 {
-		t.Fatalf("expected no stdout on infrastructure failure, got %q", stdout.String())
+	wantStdout := "Failed: 1 completed, 0 failed, 0 skipped, 0 pending.\nTokens: none reported by 1 prompt(s); cost not reported\n"
+	if stdout.String() != wantStdout {
+		t.Fatalf("terminal failure stdout = %q, want %q", stdout.String(), wantStdout)
 	}
 	if !strings.Contains(stderr.String(), "implement failed after Run start") {
 		t.Fatalf("expected Run failure diagnostics, got %q", stderr.String())

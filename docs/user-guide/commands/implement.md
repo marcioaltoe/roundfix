@@ -127,13 +127,14 @@ ports, package names, or framework messages.
 stdout is one line per Task in Task Graph order — failed and skipped Tasks are
 followed by one indented `  reason: <one line>` naming the failed step (for
 Verification failures: the command, exit status, and diagnostics path) — then
-the QA line when requested and one outcome line:
+the QA line when requested, one outcome line, and the recorded token total:
 
 ```text
 task_01 completed — first task
 task_02 failed — second task
   reason: verification failed: make verify (exit status 2); see <path>
 Unresolved: 1 completed, 1 failed, 0 skipped, 0 pending.
+Tokens: none reported by 2 prompt(s); cost not reported
 ```
 
 Task status vocabulary is normalized on reload: `done` and hyphen/space
@@ -153,3 +154,12 @@ Daemon Task and QA commits stage only repository paths that do not cross a
 symbolic link; dropped paths are journaled and warned
 (`roundfix: task file <path> kept outside the repository; committed without it`).
 
+
+The `Tokens:` line follows the outcome on every terminal Implement Run,
+before any `pushed` line. It reads the Run's recorded sums after the Run ends,
+using the same phrases as `runs show`: `<tokens> from <reported> of <n>
+prompt(s)`, or `none reported by <n> prompt(s)`, followed by the reported
+cost. With no usage rows it prints `Tokens: no prompts recorded`. Preflight
+refusals and an already-completed Spec create no Run and have no token total.
+Usage output does not change exit codes. See
+[Token usage](../usage.md#token-usage) for the measurement's limits.

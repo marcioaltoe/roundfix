@@ -255,3 +255,14 @@ the largest carriable Task set, breaking ties with the newest Run.
    only after that proof. A failed proof leaves the Run Active with its Agent
    Sessions unchanged and its lock retained.
 
+
+### Token usage
+
+The Implement Run's terminal summary prints a `Tokens:` line after its outcome
+on every outcome. It reports recorded tokens and how many prompts reported,
+plus adapter-reported cost by currency and Agent Session coverage. Entirely
+unreported usage says `none reported`, never `0 tokens`; no usage rows says
+`no prompts recorded`. Roundfix sums increases in cumulative Agent Session
+cost readings and starts a new count when a reading decreases. It computes
+no price from tokens. Prompts outside a Run, including the pre-PR review,
+do not count. Use `roundfix runs show <run-id>` for per-scope details.

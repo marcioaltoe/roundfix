@@ -38,6 +38,7 @@ const (
 	// Daemon kinds cover the orchestration loop: every user-meaningful
 	// state transition appends one of these with a small payload of IDs
 	// and counts. Large output stays in agent-source events.
+	KindDaemonTokenUsage              Kind = "daemon.token_usage"
 	KindDaemonStatus                  Kind = "daemon.status"
 	KindDaemonReviewStatus            Kind = "daemon.review_status"
 	KindDaemonQuietPeriod             Kind = "daemon.quiet_period"

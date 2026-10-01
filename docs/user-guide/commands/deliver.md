@@ -2,7 +2,7 @@
 
 ```bash
 roundfix deliver plan [--json] [<slug>...]
-roundfix deliver start [--max-duration <duration>] [--max-retries <n>] <slug>...
+roundfix deliver start [--max-duration <duration>] [--max-retries <n>] [--max-tokens <n>] <slug>...
 roundfix deliver status
 roundfix deliver resume
 roundfix deliver retry <slug>
@@ -101,8 +101,24 @@ retries per item. Omitted limits are recorded as `none`. Start and status print
 the recorded values as:
 
 ```text
-Limits: deadline <RFC 3339 UTC|none>, retries per item <n|none>, concurrency 1, spend not measured
+Limits: deadline <RFC 3339 UTC|none>, retries per item <n|none>, concurrency 1, tokens <n|none>
 ```
+
+`deliver start` prints only the limits line. `deliver status` prints usage
+immediately after it, summing every Run recorded for queue items, including
+Runs from earlier retries:
+
+```text
+Limits: deadline none, retries per item none, concurrency 1, tokens none
+Usage: 5639755 tokens from 1 of 1 prompt(s) across 1 Run(s); cost not reported
+```
+
+With unreported prompts the line is `Usage: none reported by <n> prompt(s)
+across <k> Run(s); cost not reported`. A queue with no linked Runs prints
+`Usage: no Runs recorded`. Linked Runs with no usage rows print `no prompts
+recorded` across their Run count. A Run in progress contributes once the queue
+records it at Run end. Reported cost is grouped by currency; Roundfix computes
+no prices. See [Token usage](../usage.md#token-usage).
 
 At or after the deadline, the owner parks each item that has not started as
 `queue-deadline`; an item that has started continues. A `queue-deadline` item
@@ -201,7 +217,7 @@ from the candidate, records it, and resumes at `reviewing`.
 
 `deliver status` prints each item's Spec slug, stage, blocker and worktree.
 After any `Warning:` lines and before `Limits:`, it prints one line per parked
-item in queue order:
+item in queue order, except `queue-token-ceiling` (see Token usage below):
 
 ```text
 Park: <slug> <class>: <next command>
@@ -301,3 +317,37 @@ empty slug, an extra argument, an unknown flag, an item that is not parked, a
 missing item branch, a moved archived head without accepted recovery evidence,
 a refused carry-forward, or an owner hand-off failure exits `2` and starts no owner. An item-level refusal
 leaves the stored item unchanged.
+
+### Token usage
+
+`deliver start --max-tokens 5000000 <slug>...` records an optional queue token
+ceiling. The value must be an integer of at least 1; an invalid value exits
+`2` before recording a queue or creating a Run Database. The limits line ends
+with `tokens 5000000`, or `tokens none` when the flag is omitted.
+
+`deliver status` prints a `Usage:` line with the tokens and adapter-reported
+cost of every Run linked to the queue, including earlier retries. Totals say
+how many prompts reported usage; unreported prompts add nothing. Cost is
+reported by currency and is never calculated from token prices.
+
+At or above the ceiling, each item still in `queued` parks as
+`queue-token-ceiling` before creating a branch or worktree. Its Pending
+Question answer is:
+
+```text
+record a new queue for the remaining Specs with roundfix deliver start and a higher --max-tokens
+```
+
+This blocker is presented in the item row and Pending Question without a
+separate `Park:` line. Any parked item's retry is refused while the queue's
+recorded tokens remain at or above its ceiling, with exit `2`, no workspace
+action and no item change. For example, the retry reason is:
+
+```text
+retry Delivery Queue item "0301-example": queue token ceiling 5000000 was reached with 5639755 tokens; start a new queue with roundfix deliver start
+```
+
+Record a new queue for the remaining Specs with a higher ceiling or omit the
+flag. Items already past `queued`, including a running item, continue; no Run
+is signalled, stopped or cancelled. The queue can exceed its ceiling by an
+item's Run. Tokens outside Runs, such as the pre-PR review, do not count.

@@ -187,6 +187,7 @@ func finishImplementBudgetExceededAfterCycle(
 	report, counts := renderImplementTaskLinesWithOutcomes(specsRoot, graph, false, cycleResult.Outcomes)
 	fmt.Fprint(stdout, report)
 	printImplementOutcomeLine(stdout, completed.State, counts)
+	printImplementTokenUsage(ctx, runStore, completed.ID, stdout, stderr)
 	return exitRunFailed
 }
 
@@ -426,6 +427,25 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
+	summaryPrinted := false
+	_, failureCounts := renderImplementTaskLines(graphSpecsRoot, graph, false)
+	// Setup, integration, and push errors also end a Run. Their existing
+	// failure diagnostics and exit codes remain authoritative.
+	defer func() {
+		if summaryPrinted {
+			return
+		}
+		terminal, found, readErr := runStore.Run(context.WithoutCancel(ctx), run.ID)
+		if readErr != nil {
+			fmt.Fprintf(stderr, "%s: warning: read Implement Run outcome: %v\n", app.Name, readErr)
+			return
+		}
+		if !found || !store.IsTerminalState(terminal.State) {
+			return
+		}
+		printImplementOutcomeLine(stdout, terminal.State, failureCounts)
+		printImplementTokenUsage(ctx, runStore, run.ID, stdout, stderr)
+	}()
 	printRunOwnerIdentityWarning(stderr, run)
 	setupBudgetDeadline := implementRunBudgetDeadline(run.CreatedAt, loadedConfig.Config.Budget)
 	runCtx, cancelRun := implementRunContext(ctx, run.CreatedAt, loadedConfig.Config.Budget)
@@ -471,6 +491,8 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 			printKeptRunWorktree(stderr, runRef.Path)
 			counts := printImplementTaskLines(stdout, graphSpecsRoot, graph, false)
 			printImplementOutcomeLine(stdout, completed.State, counts)
+			printImplementTokenUsage(ctx, runStore, run.ID, stdout, stderr)
+			summaryPrinted = true
 			return exitRunFailed
 		}
 		markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
@@ -493,6 +515,8 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printKeptRunWorktree(stderr, runRef.Path)
 		counts := printImplementTaskLines(stdout, graphSpecsRoot, graph, false)
 		printImplementOutcomeLine(stdout, completed.State, counts)
+		printImplementTokenUsage(ctx, runStore, run.ID, stdout, stderr)
+		summaryPrinted = true
 		return exitRunFailed
 	}
 	executionSpecsRoot := specsRootForWorkDir(resolvedSpecsRoot, gitState.Root, runRef.Path)
@@ -534,6 +558,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		task:         loadedConfig.Config.Worktree.Concurrency,
 		verification: loadedConfig.Config.Verification.Concurrency,
 	}, budgetNow, run.CreatedAt, loadedConfig.Config.Budget, loadedConfig.Config.Defaults.Verification, loadedConfig.Config.Verification.RepositoryAtSettlement, loadedConfig.Config.Worktree.Copy, worktreeBootstrapSpec(loadedConfig.Config), newBootstrapOutputWriter(ctx, run.ID, runStore, ui.progress), authorization, runtime, agentSelections, operationalRuntimeFactory(req), collaborators, runStore, ui)
+	_, failureCounts = renderImplementTaskLinesWithOutcomes(executionSpecsRoot, executionGraph, false, cycleResult.Outcomes)
 	postCycleCtx, cancelPostCycle := implementBudgetContext(ctx, cycleResult.BudgetDeadline)
 	defer cancelPostCycle()
 	if cycleResult.TerminalOutcome == store.StateBudgetExceeded || implementRunBudgetExpired(cycleResult.BudgetDeadline, budgetNow) {
@@ -557,6 +582,8 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		report, counts := renderImplementTaskLinesWithOutcomes(executionSpecsRoot, executionGraph, false, cycleResult.Outcomes)
 		fmt.Fprint(stdout, report)
 		printImplementOutcomeLine(stdout, completed.State, counts)
+		printImplementTokenUsage(ctx, runStore, run.ID, stdout, stderr)
+		summaryPrinted = true
 		return exitRunFailed
 	}
 	if err != nil {
@@ -574,6 +601,8 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 			report, counts := renderImplementTaskLinesWithOutcomes(executionSpecsRoot, executionGraph, false, cycleResult.Outcomes)
 			fmt.Fprint(stdout, report)
 			printImplementOutcomeLine(stdout, store.StateStopped, counts)
+			printImplementTokenUsage(ctx, runStore, run.ID, stdout, stderr)
+			summaryPrinted = true
 			return exitOK
 		}
 		closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
@@ -599,6 +628,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		integration, err := integrateCleanImplementRun(postCycleCtx, runRef, gitState.Branch)
 		if err != nil {
 			if implementRunBudgetExpired(cycleResult.BudgetDeadline, budgetNow) {
+				summaryPrinted = true
 				return finishImplementBudgetExceededAfterCycle(ctx, runStore, outcomeNotifier, stderr, stdout, ui, collaborators.runner, runtime, sessionForClose, run, runRef, executionSpecsRoot, executionGraph, cycleResult, loadedConfig.Config.Budget, budgetNow)
 			}
 			closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
@@ -614,6 +644,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		}
 	}
 	if implementRunBudgetExpired(cycleResult.BudgetDeadline, budgetNow) {
+		summaryPrinted = true
 		return finishImplementBudgetExceededAfterCycle(ctx, runStore, outcomeNotifier, stderr, stdout, ui, collaborators.runner, runtime, sessionForClose, run, runRef, executionSpecsRoot, executionGraph, cycleResult, loadedConfig.Config.Budget, budgetNow)
 	}
 	pushResult := implementPushResult{}
@@ -621,6 +652,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		pushResult, err = maybeRunImplementAutoPush(postCycleCtx, gitState, loadedConfig.Config, collaborators, runStore, ui, run.ID, authorization, stderr)
 		if err != nil {
 			if implementRunBudgetExpired(cycleResult.BudgetDeadline, budgetNow) {
+				summaryPrinted = true
 				return finishImplementBudgetExceededAfterCycle(ctx, runStore, outcomeNotifier, stderr, stdout, ui, collaborators.runner, runtime, sessionForClose, run, runRef, executionSpecsRoot, executionGraph, cycleResult, loadedConfig.Config.Budget, budgetNow)
 			}
 			closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
@@ -632,17 +664,20 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		}
 	}
 	if implementRunBudgetExpired(cycleResult.BudgetDeadline, budgetNow) {
+		summaryPrinted = true
 		return finishImplementBudgetExceededAfterCycle(ctx, runStore, outcomeNotifier, stderr, stdout, ui, collaborators.runner, runtime, sessionForClose, run, runRef, executionSpecsRoot, executionGraph, cycleResult, loadedConfig.Config.Budget, budgetNow)
 	}
 	if outcome == store.StateClean {
 		if err := commandDependenciesForContext(ctx).cleanupCleanRunWorktree(postCycleCtx, runRef); err != nil {
 			if implementRunBudgetExpired(cycleResult.BudgetDeadline, budgetNow) {
+				summaryPrinted = true
 				return finishImplementBudgetExceededAfterCycle(ctx, runStore, outcomeNotifier, stderr, stdout, ui, collaborators.runner, runtime, sessionForClose, run, runRef, executionSpecsRoot, executionGraph, cycleResult, loadedConfig.Config.Budget, budgetNow)
 			}
 			warnCleanRunWorktreeCleanupFailed(ctx, runStore, run.ID, runRef.Path, err, stderr)
 		}
 	}
 	if implementRunBudgetExpired(cycleResult.BudgetDeadline, budgetNow) {
+		summaryPrinted = true
 		return finishImplementBudgetExceededAfterCycle(ctx, runStore, outcomeNotifier, stderr, stdout, ui, collaborators.runner, runtime, sessionForClose, run, runRef, executionSpecsRoot, executionGraph, cycleResult, loadedConfig.Config.Budget, budgetNow)
 	}
 	completed, err := runStore.CompleteRun(ctx, run.ID, outcome)
@@ -667,6 +702,8 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	fmt.Fprint(stdout, report)
 	printImplementQAVerdictLine(stdout, cycleResult)
 	printImplementOutcomeLineWithCommand(stdout, completed.State, counts, integrationCommand)
+	printImplementTokenUsage(ctx, runStore, run.ID, stdout, stderr)
+	summaryPrinted = true
 	if pushResult.pushed {
 		fmt.Fprintf(stdout, "pushed %s/%s\n", pushResult.remote, pushResult.branch)
 	}

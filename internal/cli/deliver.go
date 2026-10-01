@@ -42,17 +42,20 @@ Commands:
 Flags:
   --max-duration <duration>  Set a positive queue duration
   --max-retries <n>          Set the per-item retry limit to at least 1
+  --max-tokens <n>           Set the queue token ceiling to at least 1
 `
 
 var deliverStartValueFlags = map[string]bool{
 	"max-duration": true,
 	"max-retries":  true,
+	"max-tokens":   true,
 }
 
 type deliverStartOptions struct {
 	Slugs       []string
 	MaxDuration time.Duration
 	MaxRetries  int
+	MaxTokens   int64
 }
 
 type deliveryEngine interface {
@@ -246,7 +249,7 @@ func runDeliverStart(ctx context.Context, args []string, stdout, stderr io.Write
 			return printDeliverFailure("start", releaseErr, stderr)
 		}
 	}
-	limits := store.DeliveryQueueLimits{MaxRetries: options.MaxRetries}
+	limits := store.DeliveryQueueLimits{MaxRetries: options.MaxRetries, MaxTokens: options.MaxTokens}
 	if options.MaxDuration > 0 {
 		limits.Deadline = time.Now().UTC().Add(options.MaxDuration).Truncate(time.Second)
 	}
@@ -301,12 +304,17 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 		}
 	}
 	for _, item := range queue.Items {
-		if item.Stage == store.DeliveryStageParked {
+		if item.Stage == store.DeliveryStageParked && item.Blocker != delivery.BlockerQueueTokenCeiling {
 			park := delivery.ClassifyPark(queue, item)
 			fmt.Fprintf(stdout, "Park: %s %s: %s\n", item.SpecSlug, park.Class, park.Next)
 		}
 	}
+	report, err := runStore.DeliveryQueueTokenUsage(ctx, loaded.GitRoot)
+	if err != nil {
+		return printDeliverFailure("status", err, stderr)
+	}
 	printDeliveryLimits(stdout, queue.Limits)
+	printDeliveryUsage(stdout, report.Total)
 	if question, found := delivery.PendingQuestionFor(queue); found {
 		fmt.Fprintf(stdout, "Pending question: %s parked %s\n", question.SpecSlug, question.Blocker)
 		fmt.Fprintf(stdout, "Answer: %s\n", question.Answer)
@@ -326,11 +334,16 @@ func printDeliveryLimits(output io.Writer, limits store.DeliveryQueueLimits) {
 	if limits.MaxRetries > 0 {
 		retries = strconv.Itoa(limits.MaxRetries)
 	}
+	tokens := "none"
+	if limits.MaxTokens > 0 {
+		tokens = strconv.FormatInt(limits.MaxTokens, 10)
+	}
 	fmt.Fprintf(
 		output,
-		"Limits: deadline %s, retries per item %s, concurrency 1, spend not measured\n",
+		"Limits: deadline %s, retries per item %s, concurrency 1, tokens %s\n",
 		deadline,
 		retries,
+		tokens,
 	)
 }
 
@@ -561,6 +574,7 @@ func parseDeliverStart(args []string) (deliverStartOptions, error) {
 	var options deliverStartOptions
 	fs.DurationVar(&options.MaxDuration, "max-duration", 0, "maximum queue duration")
 	fs.IntVar(&options.MaxRetries, "max-retries", 0, "maximum retries per item")
+	fs.Int64Var(&options.MaxTokens, "max-tokens", 0, "maximum queue tokens")
 	if err := fs.Parse(hoistCommandFlags(args, deliverStartValueFlags)); err != nil {
 		return deliverStartOptions{}, validationError{message: err.Error()}
 	}
@@ -573,6 +587,9 @@ func parseDeliverStart(args []string) (deliverStartOptions, error) {
 	}
 	if setFlags["max-retries"] && options.MaxRetries < 1 {
 		return deliverStartOptions{}, validationError{message: "max-retries must be at least 1"}
+	}
+	if setFlags["max-tokens"] && options.MaxTokens < 1 {
+		return deliverStartOptions{}, validationError{message: "max-tokens must be at least 1"}
 	}
 	options.Slugs = fs.Args()
 	if len(options.Slugs) == 0 {

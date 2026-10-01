@@ -1,9 +1,18 @@
 ---
 spec: 0204-a-run-that-reports-the-tokens-and-spend-it-used
-status: active
+status: archived
 created: 2026-09-30
 surfaces: [backend, cli, data, docs]
+archived: "2026-10-01"
+source_slug: 0204-a-run-that-reports-the-tokens-and-spend-it-used
+qa_override: true
+qa_override_approval: 'maintainer standing approval of 2026-09-30 (unattended program): qa_override only for environment-only partials'
+qa_override_reason: 'QA partial with environment rows only: rows 04, 06, 07, 09 and 10 need the built binary under a disposable Home with a seeded Run Database, which the QA Agent''s instructions forbid; their in-process equivalents pass exact text, schema, totals and read-only checks (binary-equivalents.log), and the operator ran the unseeded journeys with the built binary (qa/evidence/2026-10-01-operator/binary-journeys.txt). Row 15 is the pre-PR Pull Request row.'
+qa_override_qa_outcome: missing
+qa_override_qa_task_status: pending
+qa_override_revision: 9000a443d784f279493e5946052213f6b53f0f56
 ---
+
 
 # A Run that reports the tokens and spend it used
 

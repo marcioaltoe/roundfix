@@ -744,6 +744,60 @@ For the full failure and replay contract, see the
 [ADR-0052](../adr/0052-run-completion-is-compare-and-set.md) and the
 [terminal-outcome Spec](../history/specs/0037-terminal-outcome-integrity/_prd.md).
 
+## Token usage
+
+Read a Run's tokens and adapter-reported spend with `roundfix runs show
+<run-id> [--json]`. The Implement Run summary prints the same `Tokens:` total;
+`deliver status` prints `Usage:` across all Runs recorded for its queue,
+including earlier retries. Usage records outlive Run Event Journal retention.
+
+Codex uses basis `request-sum`: the sum of the prompt's context readings,
+without an input/output/cache split because its adapter normally reports
+that split only for the last request. If its reported total exceeds its last
+reading, Roundfix counts it as `turn` instead. Claude and other adapter
+lineages use basis `turn`: the prompt response's total and any split it
+reported. The Codex measurement covered 92.5% to 100% of the gateway's wire
+count; adapter reporting can miss requests.
+
+Unreported prompts are never zero. Totals state how many prompts reported,
+and an entirely unreported Run says `none reported`. No rows means `no
+prompts recorded`. Spend is only what an adapter reported, grouped by
+currency: Roundfix sums increases in cumulative Agent Session cost readings,
+counting a lower reading as a new count. It computes no price from tokens.
+Prompts outside a Run, including the pre-PR review, are not counted.
+
+`roundfix deliver start --max-tokens <n>` sets a queue ceiling of at least
+1 token. At or above the recorded total, queued items park as
+`queue-token-ceiling` before a branch or worktree exists, and any parked
+item's retry is refused. Record a new queue with a higher ceiling or none.
+An item already past `queued` continues and no Run is stopped, so a queue
+can exceed its ceiling by one item's Run; unreported prompts and tokens
+outside Runs do not count.
+
+### Route Codex through an operator-owned metering gateway
+
+An operator who needs per-request wire figures can start a metering gateway
+separately and point Codex's upstream endpoint at its local listener using
+Codex's endpoint configuration. Configure the gateway's real upstream and
+credentials in the gateway, then launch the Codex adapter with that endpoint
+configuration. Roundfix neither starts nor reads the gateway; its totals
+continue to come from ACP adapter reports. Check the operator's gateway logs
+separately for per-request measurements.
+
+The local gateway measurement recorded on 2026-09-29 found 500 server errors
+among 5,426 requests from 2026-09-25 through 2026-09-29; it interrupted Agent
+Sessions and was removed from the Run path. Of those errors, 499 were the
+gateway's own `502` responses when it could not reach upstream. This is a
+recorded observation, not proof that HTTP/2 caused every failure. The counting
+rules and measurement are recorded in
+[ADR-0198](../adr/0198-a-run-counts-the-tokens-its-adapters-report-by-each-reports-own-scope.md).
+
+[Node.js 26 bundles Undici 8](https://nodejs.org/en/blog/release/v26.0.0/),
+which [offers HTTP/2 by default](https://github.com/nodejs/undici/pull/4828).
+Forcing HTTP/1.1 takes an `allowH2: false` dispatcher in the gateway itself;
+see [Undici's connector options](https://undici.nodejs.org/api/Connector).
+Roundfix has no gateway transport setting.
+
 ## Command reference
 
 | Command | Purpose |
@@ -760,6 +814,7 @@ For the full failure and replay contract, see the
 | `watch` | Fetch and resolve in a watched loop |
 | `runs` | Browse Runs in the read-only Run Browser (interactive terminal) |
 | `runs list` | List Runs from the Run Database, bounded and plain-text |
+| `runs show` | Read a Run’s usage per scope and in total, as text or JSON |
 | `reconcile` | Classify retained terminal Run work and explicitly release proven safe or superseded entries |
 | `attach` | Browse or replay a Run's timeline, read-only |
 | `stop` | Request or force-stop an Active Run |

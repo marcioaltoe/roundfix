@@ -168,7 +168,9 @@ func (engine *Engine) agentSessionOwner(config agentSelectionOwnerConfig, scope 
 
 func (engine *Engine) runAgentSession(ctx context.Context, owner *agentSessionOwner, req agent.ExecuteRequest) (agent.ExecuteResult, error) {
 	if owner == nil {
-		return engine.deps.Runner.Run(ctx, req, engine.deps.Sink)
+		result, err := engine.deps.Runner.Run(ctx, req, engine.deps.Sink)
+		engine.recordPromptUsage(ctx, req, result, "session", req.Session.Name, 0)
+		return result, err
 	}
 	return owner.Run(ctx, req)
 }
@@ -342,10 +344,15 @@ func (owner *agentSessionOwner) prepareSession(ctx context.Context, req agent.Ex
 
 func (owner *agentSessionOwner) runPrepared(ctx context.Context, req agent.ExecuteRequest) (agent.ExecuteResult, error) {
 	sink := &agentSessionEventSink{owner: owner, req: req, next: owner.engine.deps.Sink}
+	var result agent.ExecuteResult
+	var err error
 	if runner, ok := owner.engine.deps.Runner.(agent.PreparedPromptRunner); ok {
-		return runner.RunPrepared(ctx, req, sink)
+		result, err = runner.RunPrepared(ctx, req, sink)
+	} else {
+		result, err = owner.engine.deps.Runner.Run(ctx, req, sink)
 	}
-	return owner.engine.deps.Runner.Run(ctx, req, sink)
+	owner.engine.recordPromptUsage(ctx, req, result, owner.scope.Kind, owner.scope.ID, owner.attemptNumber)
+	return result, err
 }
 
 func (owner *agentSessionOwner) fallbackAfterSelectionFailure(ctx context.Context, req agent.ExecuteRequest, cause error) error {
@@ -784,4 +791,35 @@ func agentSelectionRecoveryAction(category roundconfig.WorkCategory) string {
 type agentSelectionOwnerConfig struct {
 	Profiles       AgentSelectionProfiles
 	RuntimeFactory AgentRuntimeFactory
+}
+
+type tokenUsageAppender interface {
+	AppendTokenUsage(context.Context, store.TokenUsageRecord) error
+}
+
+func (engine *Engine) recordPromptUsage(ctx context.Context, req agent.ExecuteRequest, result agent.ExecuteResult, scopeKind, scopeID string, attempt int) {
+	appender, ok := engine.deps.Runs.(tokenUsageAppender)
+	if !ok {
+		return
+	}
+	usage := result.Usage
+	record := store.TokenUsageRecord{
+		RunID: req.RunID, ScopeKind: scopeKind, ScopeID: scopeID, Session: req.Session.Name, Attempt: attempt,
+		Runtime: req.Runtime.ID, Model: req.Runtime.Model, ReasoningEffort: req.Runtime.ReasoningEffort,
+		Basis: string(usage.Basis), InputTokens: usage.InputTokens, OutputTokens: usage.OutputTokens,
+		CachedReadTokens: usage.CachedReadTokens, CachedWriteTokens: usage.CachedWriteTokens,
+		ThoughtTokens: usage.ThoughtTokens, Readings: usage.Readings, Time: engine.deps.Now(),
+	}
+	if usage.Basis == "" {
+		record.Basis = "unreported"
+	} else {
+		record.TotalTokens = &usage.TotalTokens
+	}
+	if usage.Cost != nil {
+		record.CostAmount = &usage.Cost.Amount
+		record.CostCurrency = usage.Cost.Currency
+	}
+	if err := appender.AppendTokenUsage(context.WithoutCancel(ctx), record); err != nil && engine.deps.Progress != nil {
+		fmt.Fprintf(engine.deps.Progress, "roundfix: warning: token usage not recorded for %s %s: %v\n", scopeKind, scopeID, err)
+	}
 }

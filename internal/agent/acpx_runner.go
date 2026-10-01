@@ -72,17 +72,19 @@ var adapterInstallCommands = map[string]string{
 }
 
 type adapterLineageContract struct {
-	RuntimeID     string
-	Package       string
-	PinnedVersion string
-	VersionOnly   bool
+	RuntimeID       string
+	Package         string
+	PinnedVersion   string
+	VersionOnly     bool
+	LastRequestOnly bool
 }
 
 var adapterLineageContracts = map[string]adapterLineageContract{
 	"codex": {
-		RuntimeID:     "codex",
-		Package:       CodexAdapterPackage,
-		PinnedVersion: PinnedCodexAdapterVersion,
+		RuntimeID:       "codex",
+		Package:         CodexAdapterPackage,
+		PinnedVersion:   PinnedCodexAdapterVersion,
+		LastRequestOnly: true,
 	},
 	"claude": {
 		RuntimeID:     "claude",
@@ -539,6 +541,7 @@ type acpxJSONRPCError struct {
 }
 
 type acpxStreamResult struct {
+	usage              TurnUsage
 	output             string
 	message            string
 	messages           []string
@@ -1445,6 +1448,7 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 		result.Message = stream.message
 		result.Messages = stream.messages
 		result.StopReason = stream.stopReason
+		result.Usage = stream.usage
 		_ = runner.publishStatus(context.WithoutCancel(ctx), req.ExecuteRequest, sink, "stopped")
 		return result, StopError{LogPath: req.LogPath, Output: result.Output, Killed: forceClosed, Err: ctx.Err()}
 	}
@@ -1453,6 +1457,7 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 	result.Message = stream.message
 	result.Messages = stream.messages
 	result.StopReason = stream.stopReason
+	result.Usage = stream.usage
 	if waitErr != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return result, StopError{LogPath: req.LogPath, Output: result.Output, Err: ctxErr}
@@ -1484,6 +1489,7 @@ func (runner *ACPXRunner) readPromptStream(ctx context.Context, req ExecuteReque
 	var messages agentMessageLog
 	var stopReason string
 	var promptResultParsed bool
+	var usage promptUsageCollector
 	var agentOutput bool
 	var streamErr error
 	reader := bufio.NewReader(stdout)
@@ -1496,7 +1502,7 @@ func (runner *ACPXRunner) readPromptStream(ctx context.Context, req ExecuteReque
 			if _, err := output.Write(line); err != nil && streamErr == nil {
 				streamErr = fmt.Errorf("capture acpx stdout: %w", err)
 			}
-			lineOutput, err := runner.handleStdoutLine(ctx, req, sink, line, &messages, &stopReason, &promptResultParsed, publishWorkStarted)
+			lineOutput, err := runner.handleStdoutLine(ctx, req, sink, line, &messages, &stopReason, &promptResultParsed, &usage, publishWorkStarted)
 			agentOutput = agentOutput || lineOutput
 			if err != nil && streamErr == nil {
 				streamErr = err
@@ -1510,7 +1516,8 @@ func (runner *ACPXRunner) readPromptStream(ctx context.Context, req ExecuteReque
 		}
 	}
 	messageList := messages.messages()
-	return acpxStreamResult{output: output.String(), message: strings.Join(messageList, "\n\n"), messages: messageList, stopReason: stopReason, promptResultParsed: promptResultParsed, agentOutput: agentOutput, err: streamErr}
+	contract := adapterLineageContracts[strings.TrimSpace(req.Runtime.ID)]
+	return acpxStreamResult{usage: countTurnUsage(contract.LastRequestOnly, usage.reported, usage.readings, usage.cost), output: output.String(), message: strings.Join(messageList, "\n\n"), messages: messageList, stopReason: stopReason, promptResultParsed: promptResultParsed, agentOutput: agentOutput, err: streamErr}
 }
 
 func validateACPXPromptRequest(req ACPXPromptRequest) error {
@@ -1820,7 +1827,7 @@ func acpxReasoningEffortConfigKey(runtime RuntimeSpec) (string, error) {
 	}
 }
 
-func (runner *ACPXRunner) handleStdoutLine(ctx context.Context, req ExecuteRequest, sink runevent.Sink, line []byte, agentMessages *agentMessageLog, stopReason *string, promptResultParsed *bool, publishWorkStarted bool) (bool, error) {
+func (runner *ACPXRunner) handleStdoutLine(ctx context.Context, req ExecuteRequest, sink runevent.Sink, line []byte, agentMessages *agentMessageLog, stopReason *string, promptResultParsed *bool, usage *promptUsageCollector, publishWorkStarted bool) (bool, error) {
 	var message acpxJSONRPCMessage
 	if err := json.Unmarshal(line, &message); err != nil {
 		return false, fmt.Errorf("parse acpx stdout JSON-RPC line: %w", err)
@@ -1829,6 +1836,9 @@ func (runner *ACPXRunner) handleStdoutLine(ctx context.Context, req ExecuteReque
 		return false, fmt.Errorf("acpx JSON-RPC error %d: %s", message.Error.Code, message.Error.Message)
 	}
 	if message.Method == acpMethodSessionUpdate {
+		if usage.observeUpdate(message.Params) {
+			return false, nil
+		}
 		update, ok, err := streamUpdateFromSessionUpdatePayload(line)
 		if err != nil {
 			return false, err
@@ -1852,11 +1862,13 @@ func (runner *ACPXRunner) handleStdoutLine(ctx context.Context, req ExecuteReque
 		return false, nil
 	}
 	var response struct {
-		StopReason string `json:"stopReason"`
+		StopReason string          `json:"stopReason"`
+		Usage      json.RawMessage `json:"usage"`
 	}
 	if err := json.Unmarshal(message.Result, &response); err != nil {
 		return false, fmt.Errorf("parse acpx session/prompt response: %w", err)
 	}
+	usage.observeResult(response.Usage)
 	if response.StopReason != "" {
 		*stopReason = response.StopReason
 		*promptResultParsed = true

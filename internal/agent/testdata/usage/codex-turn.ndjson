@@ -1,0 +1,5 @@
+{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"sess_fixture","update":{"sessionUpdate":"usage_update","used":26830,"size":200000}}}
+{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"sess_fixture","update":{"sessionUpdate":"usage_update","used":36330,"size":200000}}}
+{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"sess_fixture","update":{"sessionUpdate":"usage_update","used":150849,"size":200000}}}
+{"jsonrpc":"2.0","id":1,"result":{"stopReason":"end_turn","usage":{"totalTokens":150849,"inputTokens":150000,"outputTokens":849}}}
+{"jsonrpc":"2.0","id":1,"result":{"stopReason":"end_turn"}}

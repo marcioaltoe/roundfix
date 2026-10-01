@@ -40,6 +40,7 @@ var ErrDeliveryRetryLimit = errors.New("Delivery Queue item retry limit reached"
 type DeliveryQueueLimits struct {
 	Deadline   time.Time
 	MaxRetries int
+	MaxTokens  int64
 }
 
 type DeliveryQueue struct {
@@ -103,6 +104,9 @@ func (store *Store) CreateDeliveryQueueWithLimits(
 	}
 	if limits.MaxRetries < 0 {
 		return DeliveryQueue{}, errors.New("create Delivery Queue: Max retries must not be negative")
+	}
+	if limits.MaxTokens < 0 {
+		return DeliveryQueue{}, errors.New("create Delivery Queue: Max tokens must not be negative")
 	}
 	deadlineUnix := int64(0)
 	if !limits.Deadline.IsZero() {
@@ -168,8 +172,8 @@ WHERE git_root = ? AND stage NOT IN (?, ?)`,
 			return fmt.Errorf("inspect existing Delivery Queue: %w", err)
 		}
 		if _, err := tx.ExecContext(ctx, `
-INSERT INTO delivery_queues (git_root, deadline_unix, max_retries)
-VALUES (?, ?, ?)`, gitRoot, deadlineUnix, limits.MaxRetries); err != nil {
+INSERT INTO delivery_queues (git_root, deadline_unix, max_retries, max_tokens)
+VALUES (?, ?, ?, ?)`, gitRoot, deadlineUnix, limits.MaxRetries, limits.MaxTokens); err != nil {
 			return fmt.Errorf("insert Delivery Queue for repository %q: %w", gitRoot, err)
 		}
 		for _, item := range items {
@@ -206,7 +210,7 @@ func (store *Store) DeliveryQueue(ctx context.Context, gitRoot string) (Delivery
 	var ownerPID sql.NullInt64
 	var deadlineUnix int64
 	err := store.db.QueryRowContext(ctx, `
-SELECT git_root, owner_pid, owner_identity, deadline_unix, max_retries
+SELECT git_root, owner_pid, owner_identity, deadline_unix, max_retries, max_tokens
 FROM delivery_queues
 WHERE git_root = ?`, gitRoot).Scan(
 		&queue.GitRoot,
@@ -214,6 +218,7 @@ WHERE git_root = ?`, gitRoot).Scan(
 		&queue.OwnerIdentity,
 		&deadlineUnix,
 		&queue.Limits.MaxRetries,
+		&queue.Limits.MaxTokens,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return DeliveryQueue{}, false, nil
@@ -584,7 +589,7 @@ WHERE git_root = ? AND spec_slug = ?`,
 		); err != nil {
 			return fmt.Errorf("update Delivery Queue item %q: %w", item.SpecSlug, err)
 		}
-		return nil
+		return linkDeliveryQueueRun(ctx, tx, gitRoot, item)
 	})
 }
 
@@ -694,6 +699,9 @@ WHERE git_root = ? AND position = ?`,
 			return fmt.Errorf("retry Delivery Queue item %q: %w", item.SpecSlug, err)
 		}
 
+		if err := linkDeliveryQueueRun(ctx, tx, gitRoot, item); err != nil {
+			return err
+		}
 		var storedOwnerPID sql.NullInt64
 		if err := tx.QueryRowContext(ctx, `
 SELECT owner_pid, owner_identity
