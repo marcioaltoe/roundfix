@@ -45,6 +45,11 @@ func ClassifyPark(queue store.DeliveryQueue, item store.DeliveryQueueItem) ParkC
 			}
 		}
 		classification.Next = "deliver or merge " + strings.TrimSpace(detail) + ", then run roundfix deliver retry " + item.SpecSlug
+	case BlockerQAEnvironmentPartial:
+		classification.Class = ParkClassEnvironment
+		classification.Next = "(cd " + item.Worktree + " && roundfix reconcile " + item.RunID +
+			" --carry-forward), satisfy the environment-blocked QA rows, run roundfix archive " + item.SpecSlug +
+			" --qa-override --approval <source> --reason <text>, then run roundfix deliver retry " + item.SpecSlug
 	case BlockerChecksTimeout, BlockerItemWorktreeMissing, BlockerDeliveryError:
 		classification.Class = ParkClassEnvironment
 	case BlockerFlakyCheck:

@@ -148,6 +148,32 @@ considers every terminal Implement Run of the item's Spec on the item branch,
 newest first, together with the recorded Run, and carries each Run's remaining
 settled Tasks before resuming the item.
 
+When an unresolved Run's newest QA Report on its Run Branch is `partial`, has
+no finding-blocked rows, and has environment-blocked rows beyond those blocked
+only because no Pull Request is open yet, the item parks as
+`qa-environment-partial`. A missing or unreadable report, a finding-blocked
+partial, or a partial blocked only by the pre-PR row keeps `run-unresolved`.
+
+For this environment park, status gives the recovery sequence:
+
+```text
+(cd <worktree> && roundfix reconcile <run-id> --carry-forward), satisfy the environment-blocked QA rows, run roundfix archive <slug> --qa-override --approval <source> --reason <text>, then run roundfix deliver retry <slug>
+```
+
+The archive override needs explicit user authority and preserves the actual QA
+verdict and Task state. After an operator archives with `qa_override: true`,
+retry accepts the moved item head only if it descends from the last candidate
+commit, or from the recorded Run's starting head when no candidate exists. It
+records that head as the candidate and resumes at `reviewing` without Task
+Carry-Forward. The archive stage recognizes the reviewed Spec already in the
+archive and proceeds to `gating` without another commit. Review, repository
+gating, delivery authorization and required checks still apply.
+
+Delivery authorization is read from the parent of the newest first-parent
+commit that deleted the active Spec's `_prd.md`. A later operator commit does
+not hide that pre-archive grant. Other archived items whose heads moved remain
+refused.
+
 `deliver status` prints each item's Spec slug, stage, blocker and worktree.
 After any `Warning:` lines and before `Limits:`, it prints one line per parked
 item in queue order:
@@ -160,7 +186,7 @@ The Park Class identifies the reason and the next action:
 
 | Class | Blockers |
 | --- | --- |
-| `environment` | `checks-timeout`, `item-worktree-missing`, `delivery-error` |
+| `environment` | `qa-environment-partial`, `checks-timeout`, `item-worktree-missing`, `delivery-error` |
 | `flaky-check` | a check that failed again outside the item's changed packages |
 | `finding` | `run-unresolved`, `review-findings`, `corrective-spec-required`, `gate-failed`, `checks-failed`, `revalidation-failed` |
 | `budget` | `run-budget-exceeded`, `queue-deadline` |
@@ -228,8 +254,9 @@ changes.
 | --- | --- |
 | Active Spec with any unfinished Task | `running` |
 | Active Spec with every Task completed | `reviewing` |
-| Archived Spec with no recorded pull request | `gating` |
-| Archived Spec with a recorded pull request | `checking` |
+| Operator-archived `qa-environment-partial` with a QA override and head descended from its candidate or Run start | `reviewing` |
+| Archived Spec with unchanged candidate and no recorded pull request | `gating` |
+| Archived Spec with unchanged candidate and a recorded pull request | `checking` |
 | `corrective-spec-required` with the parked candidate head unchanged | `reviewing`, without Task Carry-Forward |
 | `corrective-spec-required` after the item head moved | Refused with exit `2`; the item stays unchanged and the operator must author a corrective Spec with its own authorization and QA gate |
 

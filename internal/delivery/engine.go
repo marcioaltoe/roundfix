@@ -14,6 +14,7 @@ import (
 
 const (
 	BlockerRunUnresolved          = "run-unresolved"
+	BlockerQAEnvironmentPartial   = "qa-environment-partial"
 	BlockerReviewFindings         = "review-findings"
 	BlockerReviewBlocked          = "review-blocked"
 	BlockerReviewStale            = "review-stale"
@@ -68,10 +69,11 @@ const (
 )
 
 type RunResult struct {
-	RunID            string
-	Outcome          RunOutcome
-	CandidateCommits []string
-	Reason           string
+	QAEnvironmentPartial bool
+	RunID                string
+	Outcome              RunOutcome
+	CandidateCommits     []string
+	Reason               string
 }
 
 type ReviewResult struct {
@@ -82,9 +84,10 @@ type ReviewResult struct {
 }
 
 type ArchiveResult struct {
-	Parent        string
-	Head          string
-	ExactSpecMove bool
+	AlreadyArchived bool
+	Parent          string
+	Head            string
+	ExactSpecMove   bool
 }
 
 type GateResult struct {
@@ -105,6 +108,7 @@ type Publication struct {
 }
 
 type ItemState struct {
+	QAOverride      bool
 	Archived        bool
 	UnfinishedTasks []string
 	Head            string
@@ -136,6 +140,11 @@ type ItemRevalidator interface {
 type ItemRecovery interface {
 	InspectItem(ctx context.Context, workDir, specSlug string) (ItemState, error)
 	CarryForward(ctx context.Context, workDir, specSlug, branch, runID string) (CarryForwardResult, error)
+}
+
+type ItemHistory interface {
+	Descends(ctx context.Context, workDir, ancestor, head string) (bool, error)
+	RunStart(ctx context.Context, gitRoot, runID string) (string, error)
 }
 
 type RetryResult struct {
@@ -203,6 +212,7 @@ type EngineDependencies struct {
 	Publication   PublicationPlanner
 	PullRequests  PullRequestBoundary
 	Recovery      ItemRecovery
+	History       ItemHistory
 	Revalidator   ItemRevalidator
 	Checks        CheckRecovery
 	Log           io.Writer
@@ -224,6 +234,7 @@ type Engine struct {
 	publication   PublicationPlanner
 	pullRequests  PullRequestBoundary
 	recovery      ItemRecovery
+	history       ItemHistory
 	revalidator   ItemRevalidator
 	checks        CheckRecovery
 	log           io.Writer
@@ -270,6 +281,7 @@ func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
 		publication:   dependencies.Publication,
 		pullRequests:  dependencies.PullRequests,
 		recovery:      dependencies.Recovery,
+		history:       dependencies.History,
 		revalidator:   dependencies.Revalidator,
 		checks:        dependencies.Checks,
 		log:           log,
@@ -398,20 +410,37 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 		}
 		item.Stage = store.DeliveryStageReviewing
 	} else if state.Archived {
-		candidate, err := candidateHead(item)
-		if err != nil {
-			return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: %w", specSlug, err)
+		candidate, candidateErr := candidateHead(item)
+		operatorArchive := item.Blocker == BlockerQAEnvironmentPartial && state.QAOverride && engine.history != nil
+		if candidateErr != nil && !operatorArchive {
+			return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: %w", specSlug, candidateErr)
 		}
 		head := strings.TrimSpace(state.Head)
-		if head != candidate {
+		accepted := false
+		if head != candidate && operatorArchive {
+			anchor := candidate
+			if len(item.CandidateCommits) == 0 {
+				anchor, err = engine.history.RunStart(ctx, gitRoot, item.RunID)
+			}
+			anchor = strings.TrimSpace(anchor)
+			if err == nil && anchor != "" && head != "" {
+				accepted, err = engine.history.Descends(ctx, workDir, anchor, head)
+			}
+			if err != nil {
+				accepted = false
+				fmt.Fprintf(engine.log, "roundfix: archived retry proof: Delivery Queue item %s: %v\n", specSlug, err)
+			}
+		}
+		if (head != candidate || candidateErr != nil) && !accepted {
 			return RetryResult{}, fmt.Errorf(
 				"retry Delivery Queue item %q: archived item head %q differs from candidate head %q",
-				specSlug,
-				head,
-				candidate,
+				specSlug, head, candidate,
 			)
 		}
-		if strings.TrimSpace(item.PullRequestNumber) == "" {
+		if accepted {
+			item.CandidateCommits = append(item.CandidateCommits, head)
+			item.Stage = store.DeliveryStageReviewing
+		} else if strings.TrimSpace(item.PullRequestNumber) == "" {
 			item.Stage = store.DeliveryStageGating
 		} else {
 			item.Stage = store.DeliveryStageChecking
@@ -756,6 +785,9 @@ func (engine *Engine) runCandidate(ctx context.Context, gitRoot string, item *st
 	item.RunID = strings.TrimSpace(result.RunID)
 	switch result.Outcome {
 	case RunOutcomeUnresolved:
+		if result.QAEnvironmentPartial {
+			return engine.park(ctx, gitRoot, item, BlockerQAEnvironmentPartial)
+		}
 		return engine.park(ctx, gitRoot, item, BlockerRunUnresolved)
 	case RunOutcomeBudgetExceeded:
 		return engine.park(ctx, gitRoot, item, BlockerRunBudgetExceeded)
@@ -833,6 +865,9 @@ func (engine *Engine) archiveCandidate(ctx context.Context, gitRoot string, item
 	result, err := engine.archiver.Archive(ctx, workDir, item.SpecSlug, reviewedHead)
 	if err != nil {
 		return fmt.Errorf("archive Spec: %w", err)
+	}
+	if result.AlreadyArchived && strings.TrimSpace(result.Head) == reviewedHead {
+		return engine.setStage(ctx, gitRoot, item, store.DeliveryStageGating)
 	}
 	result.Parent = strings.TrimSpace(result.Parent)
 	result.Head = strings.TrimSpace(result.Head)

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -63,3 +63,50 @@ On 2026-09-30 Spec 0192's QA gate ended `partial` only because the QA sandbox co
 - `_prd.md` → Goal 3; User Story 4; Core Feature 3; Success Metric 3; Declared breaks
 - `_techspec.md` → Environment-only partial and the operator-archived retry; API Contract 3; Testing Approach 3; Build Order 3
 - ADR-0154; ADR-0170; ADR-0053; ADR-0158
+
+## Result
+
+Implemented this Task's recovery slice; settlement and declared Verification
+remain owned by the Daemon. The incoming `in_progress` status was preserved.
+The baseline had only the Daemon's status change in this Task file.
+
+An unresolved Run now reads its newest QA Report from the Run Branch through
+the shared QA reader. Only a partial with zero finding-blocked rows and more
+environment-blocked rows than pre-PR Pull Request rows sets
+`QAEnvironmentPartial`. The engine parks it as `qa-environment-partial`, with
+the TechSpec's environment recovery action. Missing or unreadable evidence
+retains `run-unresolved`.
+
+Archived item inspection reads `qa_override` from PRD frontmatter. The optional
+`ItemHistory` dependency proves ancestry and reads the recorded Implement Run's
+starting head. A moved operator-archived candidate is accepted only for the
+new park, with the override and ancestry proof; it appends the head and resumes
+review. Already-archived reviewed Specs pass through archival to gating without
+adding a commit. Authorization now reads the parent of the newest first-parent
+active-PRD deletion, preserving the grant across later operator commits.
+
+The delivery command guide documents the park, recovery sequence, ancestry
+anchors, review/gating re-entry, and pre-archive authorization. QA Archive
+Override recording, Task Carry-Forward proof, and active-Spec retry behavior
+were not changed. No other Task or Task Graph file was edited; no commit, push,
+or Pull Request was made.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused-check evidence |
+| --- | --- |
+| Environment-only Run Branch partial parks under the new blocker; finding-blocked or missing QA retains the old blocker | `TestAnEnvironmentOnlyPartialParksAsQAEnvironmentPartial` exercises both engine outcomes and the environment action. `TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch` exercises the outcome/QA-read boundary with real isolated Run Branches: qualifying partial, finding-blocked, missing, malformed, pass, pre-PR-only, and environment beyond pre-PR. It selects the newest report while the item checkout stays at its earlier head. No Agent executor is launched by this focused test. |
+| Operator-archived retry resumes review, adds no archive commit, and reaches gating | `TestRetryResumesAnOperatorArchivedItemAtReview` covers candidate and Run-start anchors, records the operator head, avoids carry-forward, then advances through review and archive to gating without appending another candidate. `TestTheArchiveStagePassesAnAlreadyArchivedSpec` checks persisted gating and unchanged candidate history. `TestArchiveReportsASpecAlreadyArchivedAtTheReviewedHead` uses a real archived repository and proves unchanged HEAD and a clean worktree. `TestInspectItemReadsTheQAOverrideOfTheArchivedSpec` covers true and absent override metadata. |
+| Missing override or non-descending head retains the archived-head refusal | `TestRetryRefusesAnOperatorArchiveWithoutAQAOverride` and `TestRetryRefusesAnArchivedHeadThatDoesNotDescendFromTheAnchor` assert the existing refusal text and unchanged persisted item. Additional tests refuse missing/unreadable history with the same archived-head text; ancestry-read diagnostics are logged without mutating the item. `TestOperatorArchiveHistoryReadsTheRunStartAndAncestry` exercises real ancestry, reversed ancestry, unrelated histories, and a missing revision. The existing `TestRetryRefusesAnArchivedItemWhoseHeadMoved` was left byte-identical and passed in the focused delivery package check. |
+| Operator commit after archival does not hide delivery authorization | `TestTheDeliveryAuthorizationIsReadBeforeTheArchiveCommit` checks both archive-at-HEAD and a later commit that changes the archived grant, proving the active pre-archive grant remains the source. Its repository includes two archive transitions to check selection of the newest deletion. |
+
+### Focused checks
+
+- Red starting signal: `GOCACHE=/tmp/roundfix-task03-gocache rtk proxy go test ./internal/delivery -run TestOperatorArchiveRetryRequiresHistory -count=1` exited 1 before implementation: the new result fields, blocker and history dependency were absent.
+- Final `GOCACHE=/tmp/roundfix-task03-gocache rtk proxy go test ./internal/delivery -count=1` exited 0 (`ok`, 1.110s), including the unchanged archived-head refusal regression.
+- Final `GOCACHE=/tmp/roundfix-task03-gocache rtk proxy go test ./internal/cli -run 'Test(RunSpecReports|InspectItemReads|TheDeliveryAuthorization|ArchiveReports|OperatorArchiveHistory|InspectItemReports|ResumeAccepts|ResumeRefuses|DeliveryRunResult)' -count=1` exited 0 (`ok`, 2.615s).
+- The first incremental attempt was interrupted by sandbox network policy for `cafe.github.com` and returned no check output. The same required `rtk make verify-incremental GOCACHE=/tmp/roundfix-task03-gocache` ran with elevated execution permission and exited 0: formatting, vet, package tests, skill sync/check and build passed. The elevated check was repeated after the final refusal-text adjustment and again exited 0. Output: `/tmp/roundfix-task03-incremental-elevated.log`.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+The Task's declared Verification commands were not run. No follow-up slice was
+added; the conflict-recovery and shipped-skill changes remain with Task 04.

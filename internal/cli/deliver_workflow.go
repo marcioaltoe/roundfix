@@ -35,6 +35,7 @@ type commandDeliveryWorkflow struct {
 }
 
 var _ delivery.PrerequisiteReader = (*commandDeliveryWorkflow)(nil)
+var _ delivery.ItemHistory = (*commandDeliveryWorkflow)(nil)
 var _ delivery.ItemRecovery = (*commandDeliveryWorkflow)(nil)
 var _ delivery.ItemWorkspace = (*commandDeliveryWorkflow)(nil)
 var _ delivery.ItemRevalidator = (*commandDeliveryWorkflow)(nil)
@@ -58,6 +59,7 @@ func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) 
 		PullRequests:  delivery.NewGitHubCLI(loaded.GitRoot),
 		Checks:        delivery.NewGitHubCLI(loaded.GitRoot),
 		Recovery:      workflow,
+		History:       workflow,
 		Revalidator:   workflow,
 		Prerequisites: workflow,
 		Log:           os.Stderr,
@@ -100,7 +102,22 @@ func (workflow *commandDeliveryWorkflow) InspectItem(
 		return delivery.ItemState{}, fmt.Errorf("resolve item archive path: %w", err)
 	}
 	if _, err := os.Stat(filepath.Join(workDir, filepath.FromSlash(archiveDestination))); err == nil {
+		content, err := os.ReadFile(filepath.Join(workDir, filepath.FromSlash(archiveDestination), "_prd.md"))
+		if err != nil {
+			return delivery.ItemState{}, fmt.Errorf("read archived item PRD: %w", err)
+		}
+		frontmatter, _, ok := splitArchivePRD(content)
+		if !ok {
+			return delivery.ItemState{}, errors.New("read archived item PRD: invalid frontmatter")
+		}
+		var metadata struct {
+			QAOverride bool `yaml:"qa_override"`
+		}
+		if err := yaml.Unmarshal(frontmatter, &metadata); err != nil {
+			return delivery.ItemState{}, fmt.Errorf("read archived item QA override: %w", err)
+		}
 		state.Archived = true
+		state.QAOverride = metadata.QAOverride
 		return state, nil
 	} else if errors.Is(err, os.ErrNotExist) {
 		return delivery.ItemState{}, fmt.Errorf("inspect item Spec %q: active and archived Spec folders are missing", specSlug)
@@ -752,7 +769,81 @@ func (workflow *commandDeliveryWorkflow) RunSpec(ctx context.Context, gitRoot, s
 	if afterFound {
 		after = &afterRun
 	}
-	return deliveryRunResult(result, candidateHead, before, after)
+	return workflow.runResult(ctx, gitRoot, specSlug, result, candidateHead, before, after)
+}
+
+// runResult reads QA evidence from the Run Branch, which need not have integrated
+// into the item worktree after an unresolved Run.
+func (workflow *commandDeliveryWorkflow) runResult(ctx context.Context, gitRoot, specSlug string, command roundfixCommandResult, candidateHead string, before, after *store.Run) (delivery.RunResult, error) {
+	result, err := deliveryRunResult(command, candidateHead, before, after)
+	if err == nil && result.Outcome == delivery.RunOutcomeUnresolved {
+		result.QAEnvironmentPartial = workflow.qaEnvironmentPartial(ctx, gitRoot, specSlug, store.RunBranchPrefix+result.RunID)
+	}
+	return result, err
+}
+
+func (workflow *commandDeliveryWorkflow) qaEnvironmentPartial(ctx context.Context, gitRoot, specSlug, branch string) bool {
+	source, _, err := workflow.archivePaths(gitRoot, specSlug)
+	if err != nil {
+		return false
+	}
+	qaDir := source + "/qa/"
+	paths, err := workflow.git.RunGit(ctx, gitRoot, "ls-tree", "-r", "--name-only", "-z", branch, "--", qaDir)
+	if err != nil {
+		return false
+	}
+	var reports []string
+	for _, path := range strings.Split(paths, "\x00") {
+		name := filepath.Base(path)
+		if strings.HasPrefix(path, qaDir) && strings.HasPrefix(name, "qa-report-") && strings.HasSuffix(name, ".md") {
+			reports = append(reports, path)
+		}
+	}
+	newest, err := spec.NewestQAReportFromPaths(reports)
+	if err != nil {
+		return false
+	}
+	content, err := workflow.git.RunGit(ctx, gitRoot, "show", branch+":"+newest)
+	if err != nil {
+		return false
+	}
+	// Use the shared report reader so row counts, verdicts and pre-PR rows
+	// retain exactly the QA Report contract.
+	temporary, err := os.CreateTemp("", "roundfix-delivery-qa-*.md")
+	if err != nil {
+		return false
+	}
+	defer os.Remove(temporary.Name())
+	_, writeErr := temporary.WriteString(content)
+	closeErr := temporary.Close()
+	if writeErr != nil || closeErr != nil {
+		return false
+	}
+	report, err := spec.ReadQAReportFile(temporary.Name())
+	return err == nil && report.Verdict == spec.VerdictPartial && report.RowsBlockedFinding == 0 && report.RowsBlockedEnvironment > report.RowsBlockedPrePullRequest
+}
+
+func (workflow *commandDeliveryWorkflow) Descends(ctx context.Context, workDir, ancestor, head string) (bool, error) {
+	_, err := workflow.git.RunGit(ctx, workDir, "merge-base", "--is-ancestor", ancestor, head)
+	if err == nil {
+		return true, nil
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+		return false, nil
+	}
+	return false, fmt.Errorf("inspect archived head ancestry: %w", err)
+}
+
+func (workflow *commandDeliveryWorkflow) RunStart(ctx context.Context, gitRoot, runID string) (string, error) {
+	run, found, err := workflow.store.Run(ctx, runID)
+	if err != nil {
+		return "", fmt.Errorf("read Run %q: %w", runID, err)
+	}
+	if !found || run.Kind != store.KindImplement || run.GitRoot != gitRoot || strings.TrimSpace(run.HeadSHA) == "" {
+		return "", fmt.Errorf("Run %q has no Implement start head for repository %q", runID, gitRoot)
+	}
+	return strings.TrimSpace(run.HeadSHA), nil
 }
 
 func deliveryRunResult(
@@ -867,6 +958,21 @@ func (workflow *commandDeliveryWorkflow) Archive(ctx context.Context, gitRoot, s
 	if before.HEAD != strings.TrimSpace(reviewedHead) {
 		return workflow.reconcileArchiveCommit(ctx, gitRoot, specSlug, strings.TrimSpace(reviewedHead), before.HEAD)
 	}
+	sourcePath, destinationPath, err := workflow.archivePaths(gitRoot, specSlug)
+	if err != nil {
+		return delivery.ArchiveResult{}, err
+	}
+	active, err := workflow.git.RunGit(ctx, gitRoot, "ls-tree", "--name-only", reviewedHead, "--", sourcePath+"/_prd.md")
+	if err != nil {
+		return delivery.ArchiveResult{}, fmt.Errorf("inspect active Spec at reviewed head: %w", err)
+	}
+	archived, err := workflow.git.RunGit(ctx, gitRoot, "ls-tree", "--name-only", reviewedHead, "--", destinationPath+"/_prd.md")
+	if err != nil {
+		return delivery.ArchiveResult{}, fmt.Errorf("inspect archived Spec at reviewed head: %w", err)
+	}
+	if strings.TrimSpace(active) == "" && strings.TrimSpace(archived) != "" {
+		return delivery.ArchiveResult{Head: before.HEAD, AlreadyArchived: true}, nil
+	}
 	result, err := workflow.runRoundfix(ctx, gitRoot, "archive", specSlug)
 	if err != nil {
 		return delivery.ArchiveResult{}, fmt.Errorf("start Archive Command: %w", err)
@@ -946,17 +1052,28 @@ func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, spec
 }
 
 func (workflow *commandDeliveryWorkflow) Authorization(ctx context.Context, gitRoot, specSlug string) (delivery.Authorization, error) {
-	// The archive commit has moved the authorization record out of the active
-	// Spec Root. Read the reviewed parent: the archive transition has already
-	// proved that HEAD is its one exact Spec move.
-	authorizationHead, err := workflow.git.RunGit(ctx, gitRoot, "rev-parse", "HEAD^")
-	if err != nil {
-		return delivery.Authorization{}, fmt.Errorf("read pre-archive authorization head: %w", err)
-	}
 	specsRoot, err := roundconfig.ResolveSpecsRoot(workflow.loaded, gitRoot)
 	if err != nil {
 		return delivery.Authorization{}, err
 	}
+	source, _, err := workflow.archivePaths(gitRoot, specSlug)
+	if err != nil {
+		return delivery.Authorization{}, err
+	}
+	// Locate the actual archive transition even when later commits follow it.
+	archiveHead, err := workflow.git.RunGit(ctx, gitRoot, "log", "--first-parent", "--diff-filter=D", "--format=%H", "-1", "HEAD", "--", source+"/_prd.md")
+	if err != nil {
+		return delivery.Authorization{}, fmt.Errorf("find archive authorization transition: %w", err)
+	}
+	archiveHead = strings.TrimSpace(archiveHead)
+	if archiveHead == "" {
+		return delivery.Authorization{}, errors.New("read pre-archive authorization head: active PRD deletion not found")
+	}
+	authorizationHead, err := workflow.git.RunGit(ctx, gitRoot, "rev-parse", archiveHead+"^")
+	if err != nil {
+		return delivery.Authorization{}, fmt.Errorf("read pre-archive authorization head: %w", err)
+	}
+
 	resolution := spec.ReadSpecAuthorization(ctx, gitRoot, specsRoot.Path, specSlug, strings.TrimSpace(authorizationHead))
 	operations := make([]string, 0, 3)
 	for _, operation := range []spec.AuthorizationOperation{
