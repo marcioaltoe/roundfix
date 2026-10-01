@@ -113,6 +113,11 @@ landed, and against the upstream lists at `a4e18e4` in `~/dev/skills`.
   upstream file of the same name; a snapshot with no upstream file fails with
   "Canonical setup source file is missing." Activation bundles are carried
   over from the current snapshot, not from upstream.
+- Re-measured on 2026-10-01 against `b3c45a4`, after the upstream renames
+  Spec 0208 follows: `go` lists 43 skills and `typescript` 101, their union is
+  112, the 11 `go` entries not in `typescript` are Go skills, `bubbletea` and
+  `tui-design`, the 32 common entries have equal paths, and both lists include
+  `roundfix`. The measurement below predates the renames.
 - Upstream at `a4e18e4`: `go-cli` lists 46 skills, `typescript-bun` 110, and
   their union 125; the 15 `go-cli` entries not in `typescript-bun` are Go
   skills. No upstream list combines them. `go-cli` omits `roundfix`, which
@@ -273,7 +278,7 @@ ProfileDivergence{Code: "verification.gate.part.missing", ID: <entry id>,
     `{"id": "verification.go", "kind": "go", "tool": "Go", "command": "make verify-go", "partOfGate": true}`;
     and the `incremental` entry.
 - **Composed setup** `go-cli-typescript-bun`: `source`
-  `{"type": "composed", "setups": ["go-cli", "typescript-bun"]}`; the rest is
+  `{"type": "composed", "setups": ["go", "typescript"]}`; the rest is
   written by the asset sync.
 
 ### Fixed texts
@@ -362,11 +367,11 @@ tests. Code in another language follows its own guide.
 ### The composed setup procedure (task_02)
 
 After the code change, create the seed
-`{"schemaVersion": "setup-context-driven/setup-snapshot/0.0.1", "id": "go-cli-typescript-bun", "version": "0.0.1", "source": {"type": "composed", "setups": ["go-cli", "typescript-bun"]}, "digest": "", "skills": []}`,
+`{"schemaVersion": "setup-context-driven/setup-snapshot/0.0.1", "id": "go-cli-typescript-bun", "version": "0.0.1", "source": {"type": "composed", "setups": ["go", "typescript"]}, "digest": "", "skills": []}`,
 then run the sync against the pinned upstream commit:
 
 ```bash
-sha="$(jq -r .source.ref internal/baseline/assets/setups/go-cli.json)"
+sha="$(jq -r .source.ref internal/baseline/assets/setups/go.json)"
 src="$HOME/dev/skills"
 git -C "$src" cat-file -e "$sha^{commit}" || { echo "stop: $src lacks $sha; fetch it into the local clone first" >&2; exit 1; }
 tmp="$(mktemp -d)"
@@ -446,13 +451,13 @@ the Managed Refresh, twice.
 
 ## Integration Points
 
-- **Spec 0200.** Its refreshed `go-cli` and `typescript-bun` snapshots are the
-  components; its asset sync, which validates the catalog it produces, is the
-  code task_02 extends; its dispatch check must pass for the composed profile.
-  Its Go CLI/TUI profile moves to `go-tui`, and `go-cli` stays for this
-  composition.
-- **Spec 0195.** Its sync rule keeps the owned `roundfix` entry in `go-cli`,
-  which the composition carries.
+- **Spec 0200.** Its asset sync, which validates the catalog it produces, is
+  the code task_02 extends; its dispatch check must pass for the composed
+  profile.
+- **Spec 0208.** Its `go` and `typescript` snapshots are the components. It
+  retires `go-cli`, which upstream merged into `go`.
+- **Spec 0195.** Its sync rule keeps the owned `roundfix` entry in every
+  setup, which the composition carries.
 - **Adopters.** A Standard TypeScript Monorepo adopter's next update adds the
   suggestion sentence to its frontend guide and changes no clause. A Go
   CLI/TUI adopter's Go guide gains its scope sentence. Repository-owned
@@ -527,6 +532,9 @@ No test uses the network. Each negative case is its own test.
 4. The root gate's parts (depends on: 3).
 5. QA (depends on: 1, 2, 3, 4).
 
+Step 2 also needs Spec 0208 on the default branch: its `go` and `typescript`
+snapshots are the components, and the queue does not enforce that order.
+
 ## Risks & Considerations
 
 - **The gate check is textual.** It reads one Makefile; an `include`d file, a
@@ -535,7 +543,7 @@ No test uses the network. Each negative case is its own test.
 - **The layout sentence lives in Go code**, as the HTTP contract's does; a
   second optional decision needs its own render case.
 - **Union order.** Skills and bundles follow component order, so the composed
-  file's bundle order differs from `typescript-bun`'s. Nothing reads bundle
+  file's bundle order differs from `typescript`'s. Nothing reads bundle
   order.
 - **Spec 0200 moves the sync and its tests.** task_02 builds on the code as
   Spec 0200 leaves it; the counts in `assets_sync_test.go` are whatever that
@@ -556,7 +564,9 @@ No test uses the network. Each negative case is its own test.
 - **Materialized composition written by the sync.** See ADR-0204.
 - **Component order union with equality de-duplication.** A conflict is an
   error, never a choice.
-- **`go-cli`, not `go-tui`.** The planned repository has a CLI and no TUI.
+- **`go`, the only upstream Go setup.** Upstream merged `go-cli` into `go`.
+  The composed setup therefore lists `bubbletea` and `tui-design`; no module
+  the profile selects requires them, so they are never installed.
 - **Formatter `none`.** No fixture set proves a formatter for the composed
   profile.
 - **Parts in the profile, reach in the Makefile.** The profile states what the

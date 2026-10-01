@@ -204,7 +204,7 @@ adopters stop re-deriving them and Agents read them with force.
 - Scope sentences for the CLI and TUI guides. They govern a command or
   terminal surface in any language, so a language scope would be wrong.
 - Clause force for the external-triage module, which the adopted entry does
-  not name.
+  not name. Spec 0208 gives that module its clauses.
 - Rendering workspace paths into guides, the owner of the production-code and
   debugging Skill Activations, the wording of the generic-layers prohibition,
   the auth owner name in the backend guide, and the TypeScript setup's unused
@@ -297,10 +297,12 @@ update, recorded here and not applied:
 
 ## Prerequisites
 
-- Deliver after Specs 0200 and 0207. Both edit Baseline modules, profiles and
-  derived files this Spec also edits: 0200 the Go, Rust, core and TypeScript
-  module skills, 0207 the Go module versions and the Go guide's scope
-  sentence. This Spec's Verification reads none of their artifacts; the order
+- Deliver after Specs 0200, 0207 and 0208. They edit Baseline modules,
+  profiles and derived files this Spec also edits: 0200 the Go, Rust, core and
+  TypeScript module skills, 0207 the Go module versions and the Go guide's
+  scope sentence, 0208 the `core` and `typescript` skills, the setup names, the
+  external-triage clauses, the force record and the Source Baseline entry
+  count. This Spec's Verification reads none of their artifacts; the order
   avoids source conflicts in module files. Each Task raises versions from the
   value on its starting main.
 
@@ -314,7 +316,7 @@ update, recorded here and not applied:
   database statement.
 - The promotion rule is applied by reading adopter repositories on
   2026-09-30. A rule an adopter adds later waits for the next promotion.
-- The external-triage module keeps one unlabelled rule.
+- This Spec adds no external-triage clause; Spec 0208 owns them.
 
 ## Decisions
 

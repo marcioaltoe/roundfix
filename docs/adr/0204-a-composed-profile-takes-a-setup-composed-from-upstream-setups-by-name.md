@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-09-30T00:00:00Z
-updated_at: 2026-09-30T00:00:00Z
+updated_at: 2026-10-01T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -23,7 +23,7 @@ catalog refuses a composed snapshot that differs from that union, names an
 unknown or composed component, or would merge two different entries under one
 skill name or one bundle. The first built-in composed profile is
 `go-cli-typescript-monorepo`, on the composed setup `go-cli-typescript-bun`
-(`go-cli` then `typescript-bun`). Its guides keep each stack rule scoped to the
+(`go` then `typescript`, the upstream lists' names since 2026-10-01). Its guides keep each stack rule scoped to the
 language or workspace it governs, as ADR-0190 requires; the Go guide gains the
 scope sentence it lacked. The profile declares which toolchain Verification its
 root gate runs, and profile alignment reports, without blocking, a root Make

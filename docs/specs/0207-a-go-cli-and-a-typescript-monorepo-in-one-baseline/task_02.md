@@ -21,7 +21,7 @@ This is an authorized tooling Task. It may change only the files in its Context,
 3. MUST extend the asset sync so that it skips a composed snapshot when it builds snapshots from upstream files, then composes each composed snapshot from the built or unchanged components and plans, checks or writes it like any other snapshot. `assetsSyncSource` gains `Setups`. A composition error MUST fail the run with the invalid-assets finding and write nothing.
 4. MUST update the existing tests in `internal/baseline/assets_sync_test.go` whose counts include every setup, and MUST make the parity comparison skip composed snapshots with a comment that names the designed delta ADR-0072 requires. `internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json` MUST stay byte-identical.
 5. MUST create `internal/baseline/setup_composition_test.go` with the six tests the TechSpec's Testing Approach 2 names. The sync tests MUST use temporary asset roots and temporary Git sources only.
-6. MUST create `internal/baseline/assets/setups/go-cli-typescript-bun.json` by the TechSpec's "The composed setup procedure": the seed, then the asset sync against the commit the `go-cli` snapshot pins. The run MUST change no other setup file. MUST add the new file to the sanctioned outputs `internal/baseline/derived_ownership_test.go` enumerates, and change no other line of that test.
+6. MUST create `internal/baseline/assets/setups/go-cli-typescript-bun.json` by the TechSpec's "The composed setup procedure": the seed, then the asset sync against the commit the `go` snapshot pins. The run MUST change no other setup file. MUST add the new file to the sanctioned outputs `internal/baseline/derived_ownership_test.go` enumerates, and change no other line of that test.
 7. MUST run `make baseline-digests`, then `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text` twice; the second MUST report `File changes: 0`. MUST NOT hand-edit a pin, a golden or the composed snapshot's skills.
 8. MUST NOT change any profile, module, decision or other setup snapshot, and MUST NOT rename or remove a top-level test or an exported function.
 
@@ -34,7 +34,7 @@ This is an authorized tooling Task. It may change only the files in its Context,
 
 ## Acceptance Criteria
 
-- [ ] The embedded `go-cli-typescript-bun` snapshot equals the union of `go-cli` and `typescript-bun` in that order, and the catalog loads.
+- [ ] The embedded `go-cli-typescript-bun` snapshot equals the union of `go` and `typescript` in that order, and the catalog loads.
 - [ ] A drifted composed snapshot, one with an unknown or composed component, and components that disagree on one skill are each refused with their own code.
 - [ ] A sync whose source changes a component rewrites the composed snapshot in the same run; a sync with no source change leaves it byte-identical; `--check` reports its drift.
 - [ ] The parity fixture is byte-identical and the parity comparison still passes.
