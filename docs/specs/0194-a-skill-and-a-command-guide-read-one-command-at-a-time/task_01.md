@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0194-a-skill-and-a-command-guide-read-one-command-at-a-time
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -66,3 +66,109 @@ The Roundfix skill and the command reference are about to be split into an entry
 - ADR-0187
 
 ## Result
+
+Implemented the Task slice without splitting or editing either source document.
+Task status and the declared Verification commands remain Daemon-owned; no
+commit, push or pull request was made.
+
+### Implementation and acceptance evidence
+
+- `internal/mdtree/mdtree.go` adds `Text(fs.FS, entry, companion)`: it preserves
+  entry bytes, adds one newline before each direct `.md` companion in lexical
+  order, ignores nested directories and other suffixes, treats a missing
+  companion directory as the entry alone, and wraps other read errors.
+  `internal/mdtree/mdtree_test.go` exercises all four required reader cases
+  with `fstest.MapFS`, including preservation of existing trailing newlines
+  and matching the missing-entry error with `errors.Is`.
+- `skills/skills.go` delegates operational wording checks to the unexported
+  `checkRoundfixWording(fs.FS)`. Required wording and branding cover the entry
+  and `roundfix/references`; diagnostic messages and the
+  `roundfix/SKILL.md` diagnostic path are preserved. The manifest still reads
+  only `roundfix/agents/openai.yaml` and uses the existing manifest checks.
+  `skills/roundfix_wording_test.go` uses self-contained `fstest.MapFS` bundles
+  to prove reference-only required wording, exact missing-phrase diagnostics,
+  and both banned-branding spellings in a reference.
+- Migrated every wording reader in the four authorized governed test files:
+  `internal/docscontract/publicdocs_test.go`, `internal/cli/cli_test.go`,
+  `internal/cli/baseline_documentation_contract_test.go` and
+  `skills/baseline_skill_contract_test.go`. Their expected phrases and
+  top-level test names are unchanged.
+- Also migrated `internal/docscontract/command_documentation_test.go`
+  (including its deliberately removed-command check) and
+  `internal/docscontract/user_guide_contract_test.go`. Command coverage reads
+  the command entry with companions alongside the other top-level guides;
+  link and forbidden-flag checks enumerate companion files separately so
+  source-relative links and file/line diagnostics retain their meaning.
+- The shipped bundle remains accepted: `go run ./cmd/roundfix skills check`
+  exited 0 and reported the skill check passed, with no diagnostics.
+
+### Focused checks
+
+All Go commands below used
+`GOCACHE=/private/tmp/roundfix-0194-task01-gocache`; the initial attempts using
+Go's default cache were refused by the sandbox before compilation.
+
+- Pre-change `rtk proxy go test ./internal/mdtree`: exit 1, package directory
+  absent, establishing the missing reader before implementation.
+- `rtk proxy go test -count=1 ./internal/mdtree ./skills -run
+  'TestText|TestRoundfixWording|TestCheckValidatesRoundfixSkillArtifacts|TestNoPythonBaselineRuntime'`:
+  exit 0 for both packages.
+- `rtk proxy go test -count=1 -tags docscontract ./internal/docscontract -run
+  'TestEveryCommandIsNamed|TestAnUndocumentedCommand|TestBaselineDocumentationContract|TestProfilesDocumentationContractMatchesPublicGuidance|TestReleasePlanDocumentationContract|TestUserGuide'`:
+  exit 0.
+- `rtk proxy go test -count=1 ./internal/cli -run
+  'TestEventsHelpDocumentsAgentSelectionFilter|TestBaselineExamplesParse'`:
+  exit 0.
+- After the final fixture and path cleanup, `rtk proxy go test -count=1
+  ./skills -run 'TestRoundfixWording|TestNoPythonBaselineRuntime'`: exit 0.
+- `rtk proxy go run ./cmd/roundfix skills check`: exit 0.
+- `rtk proxy git -c core.fsmonitor=false diff --check`: exit 0.
+
+- `rtk proxy go test -count=1 ./internal/spec -run
+  '^TestRepositorySpecCorpusStillLoads$'`: exit 0 after restoring the Task's
+  authored projection.
+- `rtk make verify-incremental`: final exit 0 with process-table permission;
+  formatting, vet, package tests, skill mirror checks, shipped skill checks
+  and the CLI build passed. Earlier attempts exposed edits made while the
+  mutation guard was active, sandbox-denied process-table access, and a
+  Result-writer error that temporarily truncated the Task after an earlier
+  mention of its Result heading. The authored sections were restored from
+  HEAD with the current status preserved, and the final run held the tree
+  stable throughout. No check or assertion was suppressed.
+
+### Sweep and scope
+
+Ran the TechSpec sweep before and after migration:
+`grep -rn --include='*.go' -e 'commands\.md' -e '"roundfix", "SKILL.md"'
+-e 'roundfix/SKILL\.md' .`.
+
+Every additional wording reader found was migrated in the two newer
+`internal/docscontract` files listed above. No additional governed wording
+reader required an out-of-grant edit. Left
+`skills/settlement_guidance_repocontract_test.go` and
+`skills/owned_skill_edit_repocontract_test.go` byte-identical as required.
+Other remaining hits in `skills/skills_test.go`, `skills/repository_test.go`,
+`internal/baseline/derived_ownership_test.go`, `internal/cli/doctor_test.go`,
+`internal/speccheck/{mechanical,surface,verification_wrap}_test.go`,
+`internal/verifyselect/verifyselect_test.go` and
+`internal/releaseplan/classifier_test.go` are artifact existence checks,
+entry/version mutations or path/classification fixtures, rather than
+whole-document wording contracts, and remain unchanged.
+
+The implementation adds the two `internal/mdtree` files and
+`skills/roundfix_wording_test.go`, changes `skills/skills.go` and the six test
+files named above, and records this Result in this Task file. No other Task,
+Task Graph, skill Markdown, command-reference Markdown, build configuration,
+manifest or derived artifact was edited.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/docscontract/command_documentation_test.go`
+- `internal/docscontract/user_guide_contract_test.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T010622Z_8bfe4bebad66f971`
+- Source commit: `c084d62af1ad6e760a41166558c2a209d0f93d3f`

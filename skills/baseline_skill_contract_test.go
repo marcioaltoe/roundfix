@@ -16,6 +16,8 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	"roundfix/internal/mdtree"
 )
 
 var updateDerivedDigests = flag.Bool("update", false, "regenerate derived digest artifacts")
@@ -144,12 +146,26 @@ func TestNoPythonBaselineRuntime(t *testing.T) {
 
 	for _, relative := range []string{
 		"README.md",
-		filepath.Join("docs", "user-guide", "commands.md"),
+		"docs/user-guide/commands.md",
 		filepath.Join("docs", "user-guide", "context-driven-development.md"),
 		filepath.Join(".agents", "skills", "setup-context-driven", "SKILL.md"),
-		filepath.Join(".agents", "skills", "roundfix", "SKILL.md"),
+		".agents/skills/roundfix/SKILL.md",
 	} {
-		content := string(readBaselineSkillContractFile(t, filepath.Join(repoRoot, relative)))
+		var content string
+		switch relative {
+		case "docs/user-guide/commands.md", ".agents/skills/roundfix/SKILL.md":
+			companion := "docs/user-guide/commands"
+			if relative == ".agents/skills/roundfix/SKILL.md" {
+				companion = ".agents/skills/roundfix/references"
+			}
+			var err error
+			content, err = mdtree.Text(os.DirFS(repoRoot), relative, companion)
+			if err != nil {
+				t.Fatalf("read %s: %v", relative, err)
+			}
+		default:
+			content = string(readBaselineSkillContractFile(t, filepath.Join(repoRoot, relative)))
+		}
 		for _, forbidden := range []string{
 			"context_" + "setup.py",
 			"context_" + "baseline.py",
