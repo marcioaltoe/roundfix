@@ -171,8 +171,33 @@ gating, delivery authorization and required checks still apply.
 
 Delivery authorization is read from the parent of the newest first-parent
 commit that deleted the active Spec's `_prd.md`. A later operator commit does
-not hide that pre-archive grant. Other archived items whose heads moved remain
-refused.
+not hide that pre-archive grant. Other moved archived heads remain refused
+unless the item is a resolved
+`pull-request-conflict` as described below.
+
+GitHub's `CONFLICTING` mergeable state stops the check wait on its first read;
+`UNKNOWN` stays pending. The owner starts from a clean item worktree at the
+candidate head, fetches the default branch, and merges it without rebasing or
+force-pushing. If a conflicted path is outside `delivery.derived_paths`, it
+aborts the merge and parks `pull-request-conflict: <path>, …`, naming only the
+undeclared conflict paths.
+
+For a conflict confined to declared derived paths, the owner takes the default
+branch's version of each conflicted file, then runs each matched regeneration
+command once in declaration order. Declarations come from Project Config at
+the fetched default-branch commit, with User Config beneath it; item-only
+command changes are never run. A command that changes an undeclared path
+aborts the merge and parks with `regenerated <path> outside
+delivery.derived_paths`. Otherwise the owner commits the merge with the
+`Roundfix-Delivery: derived-merge` trailer and returns the item to `gating`.
+The repository gate, push and current-head checks run again. An existing Pull
+Request still reporting an earlier candidate is read again at each check
+interval up to the check timeout.
+
+A conflict park has class `conflict`. Its next action is to merge the default
+branch into the item branch in the printed worktree, resolve the named paths,
+commit, then run `roundfix deliver retry <slug>`. Retry accepts a head descended
+from the candidate, records it, and resumes at `reviewing`.
 
 `deliver status` prints each item's Spec slug, stage, blocker and worktree.
 After any `Warning:` lines and before `Limits:`, it prints one line per parked
@@ -186,6 +211,8 @@ The Park Class identifies the reason and the next action:
 
 | Class | Blockers |
 | --- | --- |
+| `dependency` | `prerequisite-unmerged` |
+| `conflict` | `pull-request-conflict` |
 | `environment` | `qa-environment-partial`, `checks-timeout`, `item-worktree-missing`, `delivery-error` |
 | `flaky-check` | a check that failed again outside the item's changed packages |
 | `finding` | `run-unresolved`, `review-findings`, `corrective-spec-required`, `gate-failed`, `checks-failed`, `revalidation-failed` |
@@ -194,9 +221,8 @@ The Park Class identifies the reason and the next action:
 | `authorization` | `unauthorized` |
 | `unclassified` | an unknown blocker |
 
-The class vocabulary also reserves `dependency` and `conflict` for prerequisite
-and Pull Request conflict parks. Each existing blocker keeps its previous next
-action. A queue without parked items adds no `Park:` line.
+Each existing blocker keeps its previous next action. A queue without parked
+items adds no `Park:` line.
 
 When a required GitHub Actions check fails on its first attempt, the owner
 reads its failed log and compares the failing Go package directories with the
@@ -214,8 +240,9 @@ packages, a non-Actions check, or a run already past attempt one parks as
 
 When one or more items are parked, status prints exactly one
 `Pending question:` for the lowest-position parked item, the action that
-answers it from the same Park Class table, and the count waiting behind it. Only `deliver retry` or recording
-a new queue answers that question; owner passes and elapsed time do not.
+answers it from the same Park Class table, and the count waiting behind it.
+A dependency park can clear after its prerequisites merge. Other parks need
+`deliver retry` or a new queue; elapsed time alone does not resolve them.
 `deliver stop` ends the detached owner; `deliver resume` restarts it from the
 persisted queue.
 
@@ -255,6 +282,7 @@ changes.
 | Active Spec with any unfinished Task | `running` |
 | Active Spec with every Task completed | `reviewing` |
 | Operator-archived `qa-environment-partial` with a QA override and head descended from its candidate or Run start | `reviewing` |
+| Resolved `pull-request-conflict` with a head descended from the candidate | `reviewing` |
 | Archived Spec with unchanged candidate and no recorded pull request | `gating` |
 | Archived Spec with unchanged candidate and a recorded pull request | `checking` |
 | `corrective-spec-required` with the parked candidate head unchanged | `reviewing`, without Task Carry-Forward |
@@ -270,6 +298,6 @@ A successful retry exits `0`. When Tasks moved, stdout prints one `Carried
 forward from Run <run-id>: <task>, <task>` line per Run carried from, in
 newest-first order, before `Retried <slug>: <blocker> -> <stage>`. A missing or
 empty slug, an extra argument, an unknown flag, an item that is not parked, a
-missing item branch, a moved archived head, a refused carry-forward, or an
-owner hand-off failure exits `2` and starts no owner. An item-level refusal
+missing item branch, a moved archived head without accepted recovery evidence,
+a refused carry-forward, or an owner hand-off failure exits `2` and starts no owner. An item-level refusal
 leaves the stored item unchanged.

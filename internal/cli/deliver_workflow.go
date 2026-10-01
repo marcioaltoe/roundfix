@@ -49,6 +49,7 @@ func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) 
 		git:    preflight.ExecGitRunner{},
 	}
 	return delivery.NewEngine(runStore, delivery.EngineDependencies{
+		Conflicts:     workflow,
 		Workspace:     workflow,
 		Runner:        workflow,
 		Reviewer:      workflow,
@@ -1461,4 +1462,184 @@ func (workflow *commandDeliveryWorkflow) UnmetPrerequisites(ctx context.Context,
 		}
 	}
 	return unmet, nil
+}
+
+var _ delivery.ConflictResolver = (*commandDeliveryWorkflow)(nil)
+
+// ResolveConflict trusts only declarations committed on the refreshed default.
+func (workflow *commandDeliveryWorkflow) ResolveConflict(ctx context.Context, workDir, specSlug, head string) (resolution delivery.ConflictResolution, resultErr error) {
+	state, err := preflight.InspectGit(ctx, workDir, workflow.git)
+	if err != nil {
+		return resolution, fmt.Errorf("inspect conflict worktree: %w", err)
+	}
+	if len(state.Dirty) != 0 || state.HEAD != head {
+		return resolution, errors.New("resolve conflict requires a clean worktree at the candidate head")
+	}
+	branch := preflight.DetectDefaultBranch(ctx, workDir, state.Branch, workflow.git)
+	if branch.Source == preflight.DefaultBranchUndetermined {
+		return resolution, errors.New("resolve conflict: default branch is unknown")
+	}
+	remote := strings.TrimSpace(workflow.loaded.Config.Watch.PushRemote)
+	if remote == "" {
+		remote = "origin"
+	}
+	ref := "refs/remotes/" + remote + "/" + branch.Name
+	if _, err := workflow.git.RunGit(ctx, workDir, "fetch", remote, "+refs/heads/"+branch.Name+":"+ref); err != nil {
+		return resolution, fmt.Errorf("fetch conflict default: %w", err)
+	}
+	defaultHead, err := workflow.git.RunGit(ctx, workDir, "rev-parse", ref+"^{commit}")
+	if err != nil {
+		return resolution, fmt.Errorf("resolve conflict default commit: %w", err)
+	}
+	defaultHead = strings.TrimSpace(defaultHead)
+	config, err := roundconfig.DeliveryConfigAtCommit(ctx, workflow.git, workDir, workflow.loaded.UserConfigPath, defaultHead)
+	if err != nil {
+		return resolution, err
+	}
+	declarations := config.Delivery.DerivedPaths
+	matches := func(name string) bool {
+		for _, declaration := range declarations {
+			if declaration.Matches(name) {
+				return true
+			}
+		}
+		return false
+	}
+	initialUntracked, err := workflow.git.RunGit(ctx, workDir, "ls-files", "--others", "-z")
+	if err != nil {
+		return resolution, fmt.Errorf("inspect initial untracked paths: %w", err)
+	}
+	existingUntracked := make(map[string]bool)
+	for _, name := range nulPaths(initialUntracked) {
+		existingUntracked[name] = true
+	}
+	_, mergeErr := workflow.git.RunGit(ctx, workDir, "merge", "--no-ff", "--no-commit", defaultHead)
+	merging, err := workflow.gitObjectExists(ctx, workDir, "MERGE_HEAD")
+	if err != nil {
+		return resolution, fmt.Errorf("inspect conflict merge: %w", err)
+	}
+	if !merging {
+		if mergeErr != nil {
+			return resolution, fmt.Errorf("merge conflict default: %w", mergeErr)
+		}
+		return resolution, nil
+	}
+	committed := false
+	// The worktree was clean. Restore tracked files and remove only newly
+	// created untracked files before aborting an unsuccessful regeneration.
+	defer func() {
+		if committed {
+			return
+		}
+		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+		defer cancel()
+		untracked, readErr := workflow.git.RunGit(cleanupCtx, workDir, "ls-files", "--others", "-z")
+		var cleanupErr error
+		if readErr != nil {
+			cleanupErr = readErr
+		} else {
+			for _, name := range nulPaths(untracked) {
+				if existingUntracked[name] {
+					continue
+				}
+				cleanupErr = errors.Join(cleanupErr, os.Remove(filepath.Join(workDir, filepath.FromSlash(name))))
+			}
+		}
+		_, restoreErr := workflow.git.RunGit(cleanupCtx, workDir, "restore", "--source=HEAD", "--staged", "--worktree", "--", ".")
+		_, abortErr := workflow.git.RunGit(cleanupCtx, workDir, "merge", "--abort")
+		resultErr = errors.Join(resultErr, cleanupErr, restoreErr, abortErr)
+	}()
+	conflicts, err := workflow.git.RunGit(ctx, workDir, "diff", "--name-only", "--diff-filter=U", "-z")
+	if err != nil {
+		return resolution, fmt.Errorf("list conflict paths: %w", err)
+	}
+	paths := nulPaths(conflicts)
+	matched := make([]bool, len(declarations))
+	for _, name := range paths {
+		if !matches(name) {
+			resolution.SourcePaths = append(resolution.SourcePaths, name)
+			continue
+		}
+		for index, declaration := range declarations {
+			if declaration.Matches(name) {
+				matched[index] = true
+			}
+		}
+	}
+	if len(resolution.SourcePaths) != 0 {
+		return resolution, nil
+	}
+	if mergeErr != nil && len(paths) == 0 {
+		return resolution, fmt.Errorf("merge conflict default: %w", mergeErr)
+	}
+	for _, name := range paths {
+		if _, err := workflow.git.RunGit(ctx, workDir, "checkout", "--theirs", "--", name); err != nil {
+			return resolution, fmt.Errorf("take default derived path: %w", err)
+		}
+		if _, err := workflow.git.RunGit(ctx, workDir, "add", "--", name); err != nil {
+			return resolution, fmt.Errorf("stage default derived path: %w", err)
+		}
+	}
+	baseline, err := workflow.git.RunGit(ctx, workDir, "write-tree")
+	if err != nil {
+		return resolution, fmt.Errorf("snapshot merge before regeneration: %w", err)
+	}
+	artifactDir, err := roundconfig.ValidateArtifactDirectory(workflow.loaded.Config.Defaults.ArtifactDir, workflow.loaded.GitRoot, workflow.loaded.HomeDir)
+	if err != nil {
+		return resolution, err
+	}
+	for index, declaration := range declarations {
+		if !matched[index] {
+			continue
+		}
+		_, err := (daemon.ExecVerifier{}).Verify(ctx, daemon.VerifyRequest{WorkDir: workDir, Command: declaration.Regenerate, OutputPath: filepath.Join(artifactDir, "delivery", specSlug, fmt.Sprintf("derived-regeneration-%d.log", index+1))})
+		if err != nil {
+			return resolution, fmt.Errorf("regenerate derived paths: %w", err)
+		}
+		resolution.Regenerated = append(resolution.Regenerated, declaration.Regenerate)
+	}
+	changed, err := workflow.git.RunGit(ctx, workDir, "diff", "--name-only", "-z", strings.TrimSpace(baseline), "--")
+	if err != nil {
+		return resolution, fmt.Errorf("inspect regeneration changes: %w", err)
+	}
+	untracked, err := workflow.git.RunGit(ctx, workDir, "ls-files", "--others", "-z")
+	if err != nil {
+		return resolution, fmt.Errorf("inspect regeneration new paths: %w", err)
+	}
+	changedPaths := nulPaths(changed)
+	for _, name := range nulPaths(untracked) {
+		if !existingUntracked[name] {
+			changedPaths = append(changedPaths, name)
+		}
+	}
+	for _, name := range changedPaths {
+		if !matches(name) {
+			resolution.SourcePaths = append(resolution.SourcePaths, "regenerated "+name+" outside delivery.derived_paths")
+		}
+	}
+	if len(resolution.SourcePaths) > 0 {
+		return resolution, nil
+	}
+	for _, name := range changedPaths {
+		if _, err := workflow.git.RunGit(ctx, workDir, "add", "-A", "--", name); err != nil {
+			return resolution, fmt.Errorf("stage regenerated path: %w", err)
+		}
+	}
+	if _, err := workflow.git.RunGit(ctx, workDir, "commit", "-m", "chore: merge default branch and regenerate derived paths\n\nRoundfix-Delivery: derived-merge"); err != nil {
+		return resolution, fmt.Errorf("commit derived merge: %w", err)
+	}
+	committed = true
+	newHead, err := workflow.git.RunGit(ctx, workDir, "rev-parse", "HEAD")
+	if err != nil {
+		return resolution, fmt.Errorf("read derived merge head: %w", err)
+	}
+	resolution.Head = strings.TrimSpace(newHead)
+	return resolution, nil
+}
+
+func nulPaths(output string) []string {
+	if output == "" {
+		return nil
+	}
+	return strings.Split(strings.TrimSuffix(output, "\x00"), "\x00")
 }

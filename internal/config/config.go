@@ -51,6 +51,7 @@ type Config struct {
 	Profiles     Profiles
 	ReviewSource ReviewSource
 	PrePRReview  PrePRReview
+	Delivery     Delivery
 	Watch        Watch
 	Implement    Implement
 	Notify       Notify
@@ -107,6 +108,15 @@ type ReviewSource struct {
 type PrePRReview struct {
 	Provider string
 	Source   string
+}
+
+type Delivery struct {
+	DerivedPaths []DerivedPathDeclaration
+}
+
+type DerivedPathDeclaration struct {
+	Paths      []string `yaml:"paths"`
+	Regenerate string   `yaml:"regenerate"`
 }
 
 type Watch struct {
@@ -228,6 +238,7 @@ type configOverlay struct {
 	Profiles     *profilesOverlay     `yaml:"profiles"`
 	ReviewSource *reviewSourceOverlay `yaml:"review_source"`
 	PrePRReview  *prePRReviewOverlay  `yaml:"pre_pr_review"`
+	Delivery     *deliveryOverlay     `yaml:"delivery"`
 	Watch        *watchOverlay        `yaml:"watch"`
 	Implement    *implementOverlay    `yaml:"implement"`
 	Notify       *notifyOverlay       `yaml:"notify"`
@@ -304,6 +315,10 @@ func (value *requestReviewValue) UnmarshalYAML(node *yaml.Node) error {
 	}
 	value.value = raw
 	return nil
+}
+
+type deliveryOverlay struct {
+	DerivedPaths *[]DerivedPathDeclaration `yaml:"derived_paths"`
 }
 
 type watchOverlay struct {
@@ -935,6 +950,9 @@ resolve:
 }
 
 func Validate(config Config) error {
+	if err := validateDerivedPaths(config.Delivery.DerivedPaths); err != nil {
+		return err
+	}
 	if config.Defaults.Agent != "" && !isSupportedAgent(config.Defaults.Agent) {
 		return fmt.Errorf("defaults.agent %q is invalid; supported values: codex, claude, opencode", config.Defaults.Agent)
 	}
@@ -1574,6 +1592,9 @@ func encodeYAMLNode(node *yaml.Node) ([]byte, error) {
 }
 
 func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
+	if overlay.Delivery != nil && overlay.Delivery.DerivedPaths != nil {
+		config.Delivery.DerivedPaths = *overlay.Delivery.DerivedPaths
+	}
 	if overlay.Defaults != nil {
 		if overlay.Defaults.Agent != nil {
 			config.Defaults.Agent = *overlay.Defaults.Agent

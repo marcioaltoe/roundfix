@@ -29,6 +29,7 @@ const (
 	BlockerQueueDeadline          = "queue-deadline"
 	BlockerRevalidationFailed     = "revalidation-failed"
 	BlockerFlakyCheck             = "flaky-check"
+	BlockerPullRequestConflict    = "pull-request-conflict"
 	BlockerPrerequisiteUnmerged   = "prerequisite-unmerged"
 )
 
@@ -201,7 +202,17 @@ type PrerequisiteReader interface {
 	UnmetPrerequisites(ctx context.Context, gitRoot, specSlug string) ([]string, error)
 }
 
+type ConflictResolver interface {
+	ResolveConflict(ctx context.Context, workDir, specSlug, head string) (ConflictResolution, error)
+}
+
+type ConflictResolution struct {
+	Head                     string
+	SourcePaths, Regenerated []string
+}
+
 type EngineDependencies struct {
+	Conflicts     ConflictResolver
 	Prerequisites PrerequisiteReader
 	Workspace     ItemWorkspace
 	Runner        CandidateRunner
@@ -223,6 +234,7 @@ type EngineDependencies struct {
 }
 
 type Engine struct {
+	conflicts     ConflictResolver
 	prerequisites PrerequisiteReader
 	store         *store.Store
 	workspace     ItemWorkspace
@@ -270,6 +282,7 @@ func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
 		checkInterval = defaultCheckInterval
 	}
 	return &Engine{
+		conflicts:     dependencies.Conflicts,
 		store:         runStore,
 		prerequisites: dependencies.Prerequisites,
 		workspace:     dependencies.Workspace,
@@ -407,6 +420,26 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 				candidate,
 				head,
 			)
+		}
+		item.Stage = store.DeliveryStageReviewing
+	} else if blockerMatches(item.Blocker, BlockerPullRequestConflict) {
+		candidate, err := candidateHead(item)
+		if err != nil {
+			return RetryResult{}, fmt.Errorf("retry conflict candidate: %w", err)
+		}
+		head := strings.TrimSpace(state.Head)
+		if head != candidate {
+			if engine.history == nil {
+				return RetryResult{}, errors.New("retry conflict: item history is required for a moved head")
+			}
+			accepted, err := engine.history.Descends(ctx, workDir, candidate, head)
+			if err != nil {
+				return RetryResult{}, fmt.Errorf("prove resolved conflict ancestry: %w", err)
+			}
+			if head == "" || !accepted {
+				return RetryResult{}, fmt.Errorf("retry conflict: item head %q does not descend from candidate %q", head, candidate)
+			}
+			item.CandidateCommits = append(item.CandidateCommits, head)
 		}
 		item.Stage = store.DeliveryStageReviewing
 	} else if state.Archived {
@@ -1005,6 +1038,34 @@ func (engine *Engine) createPullRequest(
 			publication.HeadBranch,
 		)
 	}
+	queue, _, err := engine.store.DeliveryQueue(ctx, gitRoot)
+	if err != nil {
+		return PullRequest{}, fmt.Errorf("read candidate history: %w", err)
+	}
+	var commits []string
+	for _, item := range queue.Items {
+		if item.SpecSlug == specSlug {
+			commits = item.CandidateCommits
+		}
+	}
+	expectedNumber := result.PullRequest.Number
+	deadline := engine.clock.Now().Add(engine.checkTimeout)
+	for result.PullRequest.HeadSHA != expectedHead && !result.Created && slices.Contains(commits, result.PullRequest.HeadSHA) {
+		remaining := deadline.Sub(engine.clock.Now())
+		if remaining <= 0 {
+			break
+		}
+		if err := engine.sleeper.Sleep(ctx, min(engine.checkInterval, remaining)); err != nil {
+			return PullRequest{}, fmt.Errorf("wait for pull request head: %w", err)
+		}
+		result, err = pullRequests.FindOrCreatePullRequest(ctx, PullRequestRequest{HeadBranch: publication.HeadBranch, BaseBranch: publication.BaseBranch, Title: publication.Title, Body: publication.Body})
+		if err != nil {
+			return PullRequest{}, fmt.Errorf("re-read pull request head: %w", err)
+		}
+		if result.PullRequest.HeadBranch != publication.HeadBranch || result.PullRequest.Number != expectedNumber {
+			return PullRequest{}, errors.New("re-read pull request: identity changed")
+		}
+	}
 	if result.PullRequest.HeadSHA != expectedHead {
 		return PullRequest{}, fmt.Errorf("find or create pull request: PR Head Branch is at %q, expected %q", result.PullRequest.HeadSHA, expectedHead)
 	}
@@ -1041,7 +1102,26 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 			if report.HeadSHA != head {
 				return engine.park(ctx, gitRoot, item, BlockerReviewStale)
 			}
-			pending := len(report.Checks) == 0
+			if report.Mergeable == "CONFLICTING" {
+				fmt.Fprintf(engine.log, "roundfix: conflict: Delivery Queue item %s: candidate %s\n", item.SpecSlug, head)
+				if engine.conflicts == nil {
+					return engine.park(ctx, gitRoot, item, BlockerPullRequestConflict)
+				}
+				resolution, err := engine.conflicts.ResolveConflict(ctx, workDir, item.SpecSlug, head)
+				if err != nil {
+					return fmt.Errorf("resolve pull request conflict: %w", err)
+				}
+				if len(resolution.SourcePaths) > 0 {
+					return engine.park(ctx, gitRoot, item, BlockerPullRequestConflict+": "+strings.Join(resolution.SourcePaths, ", "))
+				}
+				if resolution.Head == "" || resolution.Head == head {
+					return engine.park(ctx, gitRoot, item, BlockerPullRequestConflict)
+				}
+				fmt.Fprintf(engine.log, "roundfix: derived merge: Delivery Queue item %s: %s\n", item.SpecSlug, strings.Join(resolution.Regenerated, ", "))
+				item.CandidateCommits = append(item.CandidateCommits, resolution.Head)
+				return engine.setStage(ctx, gitRoot, item, store.DeliveryStageGating)
+			}
+			pending := len(report.Checks) == 0 || report.Mergeable == "UNKNOWN"
 			for _, check := range report.Checks {
 				switch strings.ToLower(strings.TrimSpace(check.Bucket)) {
 				case "pass":
@@ -1346,4 +1426,8 @@ func (engine *Engine) releasePrerequisites(ctx context.Context, gitRoot string, 
 		}
 	}
 	return nil
+}
+
+func blockerMatches(blocker, name string) bool {
+	return blocker == name || strings.HasPrefix(blocker, name+":")
 }

@@ -45,6 +45,9 @@ func ClassifyPark(queue store.DeliveryQueue, item store.DeliveryQueueItem) ParkC
 			}
 		}
 		classification.Next = "deliver or merge " + strings.TrimSpace(detail) + ", then run roundfix deliver retry " + item.SpecSlug
+	case BlockerPullRequestConflict:
+		classification.Class = ParkClassConflict
+		classification.Next = "merge the default branch into the item branch in " + item.Worktree + ", resolve " + strings.TrimSpace(detail) + ", commit, then run roundfix deliver retry " + item.SpecSlug
 	case BlockerQAEnvironmentPartial:
 		classification.Class = ParkClassEnvironment
 		classification.Next = "(cd " + item.Worktree + " && roundfix reconcile " + item.RunID +

@@ -586,3 +586,30 @@ verification when acpx delivered a parsed prompt result before that exit
 with the Settle Command. For latency-sensitive setups, configure direct
 adapter binaries in acpx config so default adapters do not launch through
 `npx -y` on first use.
+
+## Delivery conflict recovery
+
+`delivery.derived_paths` declares generated paths and the command that rebuilds
+each group. It defaults to `[]`. Project Config replaces the User Config list;
+an explicit empty list disables those declarations.
+
+```yaml
+delivery:
+  derived_paths:
+    - paths: [generated/catalog.json, generated/cache/]
+      regenerate: make generate
+```
+
+Each entry needs a non-empty `paths` list and a non-empty `regenerate` command.
+Paths must be clean repository-relative files, directories ending in `/`, or
+Go `path.Match` patterns over the whole path. Absolute paths and `..` segments
+are refused with a `delivery.derived_paths` config error.
+
+The Delivery Queue reads these declarations from the fetched default-branch
+commit, with User Config beneath it. A declaration added or changed only on an
+item branch takes effect after that branch merges. During a derived conflict,
+the owner takes the default branch's conflicted files and runs each matched
+command once in declaration order through the Verification executor. Logs are
+under the artifact directory's `delivery/<slug>/derived-regeneration-<n>.log`.
+Declare only files that can be regenerated; a regeneration that changes an
+undeclared path aborts the merge and parks the item.
