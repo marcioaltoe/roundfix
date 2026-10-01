@@ -200,8 +200,10 @@ The existing operation check in `executeTask`
    publishes `verification` events with phase `started` and then
    `command-passed` or `failed`. They carry the Task, the attempt and a
    `command` that is the label `settlement check: spec consistency` or
-   `settlement check: authorization`. The appended repository Verification
-   publishes the events any Verification command publishes.
+   `settlement check: authorization`. Only these two Roundfix-defined labels
+   are projected into the public stream; the appended repository Verification
+   publishes the events any Verification command publishes, whose command
+   stays redacted as today.
 3. API Contract: Task failure reason — a Task failed by an in-process
    Settlement Check settles with
    `Settlement check failed: <label>: <first diagnostic line>; diagnostics: <path>`.
