@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -62,6 +63,7 @@ Usage:
   roundfix qa-report accept <path>
   roundfix spec check [<slug> ...] [--format <text|json>] [--strict] [--run-verification]
   roundfix spec audit <slug> [--format <text|json>]
+  roundfix spec judge <slug> [--stage <prd|techspec>] [--format <text|json>]
   roundfix baseline update [--repo <path>] [--format <text|json>] [--yes | --confirm-plan <digest>] [--adopt-suggested] [--no-skills] [--skills-source-dir <path>]
   roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
   roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
@@ -233,6 +235,8 @@ type commandEnvironment struct {
 }
 
 type commandDependencies struct {
+	judgeTransport                  http.RoundTripper
+	judgeNow                        func() time.Time
 	runCommandPreflight             func(context.Context, commandRequest, roundconfig.Loaded) (preflight.Result, error)
 	fetchReviewItems                func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error)
 	newOutcomeNotifier              func(roundconfig.Config) roundnotify.Notifier
@@ -298,6 +302,8 @@ type commandDependenciesContextKey struct{}
 
 func defaultCommandDependencies() commandDependencies {
 	return commandDependencies{
+		judgeTransport:                  http.DefaultTransport,
+		judgeNow:                        time.Now,
 		runCommandPreflight:             runCommandPreflight,
 		fetchReviewItems:                fetchReviewItems,
 		newOutcomeNotifier:              newOutcomeNotifier,

@@ -21,10 +21,12 @@ import (
 const specUsage = `Usage:
   roundfix spec check [<slug> ...] [--stage <prd|techspec|tasks>] [--format <text|json>] [--strict] [--run-verification]
   roundfix spec audit <slug> [--format <text|json>]
+  roundfix spec judge <slug> [--stage <prd|techspec>] [--format <text|json>]
 
 Commands:
   check  Check Spec artifact consistency
   audit  Audit Spec delivery and surviving Git state
+  judge  Raise advisory Spec judgments
 `
 
 const specCheckUsage = `Usage:
@@ -141,6 +143,8 @@ func runSpecCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 	switch args[0] {
 	case "check":
 		return runSpecCheckCommand(ctx, args[1:], stdout, stderr, environment)
+	case "judge":
+		return runSpecJudgeCommand(ctx, args[1:], stdout, stderr, environment)
 	case "audit":
 		return runSpecAuditCommand(ctx, args[1:], stdout, stderr, environment)
 	default:

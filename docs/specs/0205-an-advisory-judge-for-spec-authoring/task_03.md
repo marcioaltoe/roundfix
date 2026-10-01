@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0205-an-advisory-judge-for-spec-authoring
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -78,3 +78,122 @@ Spec 0194 created `.agents/skills/roundfix/references/spec.md` and its mirror, b
 - [_prd.md](_prd.md) — Goals 1 and 2; User Stories 1, 2 and 3; Core Features 1, 6, 8 and 11; Success Metrics 1 and 2; Declared breaks
 - [_techspec.md](_techspec.md) — Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Surface Transcript 4; Surface Transcript 5; Surface Transcript 6; API Contract 1; API Contract 2; API Contract 5; Testing Approach 5; Testing Approach 6; Build Order 3
 - ADR-0200; ADR-0201; ADR-0089; ADR-0184; ADR-0187; ADR-0189
+
+## Result
+
+Implemented the Task 03 command slice for Daemon Verification. Task status,
+the Task Graph, and other Task files were not edited. The starting worktree
+already held the Daemon's `pending` → `in_progress` status change in this
+file; no implementation files for this Task existed and `runSpecCommand`
+had no `judge` case.
+
+### Implementation and acceptance evidence
+
+- Surface Transcripts 1–6: the six transcript tests assert stdout, stderr,
+  and exit code byte for byte through `runWithContext`, using real temporary
+  repositories, temporary Roundfix Homes, fixed UTC clocks, and injected
+  fake transports. `TestSpecJudgeReportsAdvisoryJudgments`,
+  `TestSpecJudgeSkipsWithoutAKey`, `TestSpecJudgeSkipsAtTheMonthlyCeiling`,
+  `TestSpecJudgeSkipsANonEnglishSpec`, `TestSpecJudgeStopsWhenTheServiceFails`,
+  and `TestSpecJudgeRefusesAnUnknownSpec` passed in the focused check.
+- JSON: `TestSpecJudgePrintsJSON` passed, asserting schema
+  `roundfix/spec-judge/v1`, every document field including `transport`, every
+  judgment field, five judgments including clear results, and applicable
+  nulls. `TestSpecJudgeJSONSkipHasNullTransport` additionally passed for the
+  no-key JSON document, null transport/stopped fields, and an empty artifact
+  skip array. JSON encodes `judge.Report` directly rather than duplicating
+  its schema.
+- Exit codes and validation: advisory, run-level skips, and service stops
+  exit `0` in the transcript tests. `TestSpecJudgeRefusesAnUnknownStageOrFormat`
+  passed for `--stage qa`, `--format yaml`, unknown flags, missing slug,
+  missing flag value, and extra slug (exit `2`). Unknown Spec exits `2` with
+  Transcript 6's diagnostic. `TestSpecJudgeRequiresStageArtifacts` passed
+  for a missing PRD and a missing TechSpec at `--stage techspec`.
+- Environment isolation: `TestSpecJudgeReadsTheKeyFromItsOwnEnvironment`
+  passed with both Roundfix keys set to fake values in the process and only
+  `OPENROUTER_API_KEY` in the command environment. It asserts Transcript 2
+  and its fake transport fails on any request. Production builds
+  `Request.Keys` solely from the two Roundfix names in `environment.environ`.
+  New dependencies `judgeTransport` and `judgeNow` default to
+  `http.DefaultTransport` and `time.Now`, and the command passes them and its
+  Roundfix Home to `judge.Run`.
+- Transport and cost: Transcript 1's fake validates the OpenRouter host and
+  command key, returns `typesafe/jev-1.13-20260917` with reported cost, and
+  asserts five log lines under the temporary Home with that model ID.
+  Transcript 5's fake validates the TypeSafe host and command key, returns
+  `jev-1.13.0`, and asserts exactly two calls before stopping. Their summaries
+  name `openrouter` and `typesafe` respectively. Costs have four decimal
+  places; confidence and delivery probability have two.
+- Spec Root, individual skips, and help: `TestSpecJudgeUsesConfiguredSpecRoot`
+  passed with an external configured root.
+  `TestSpecJudgePrintsIndividualSkip` passed for a missing cited ADR.
+  `TestSpecJudgeHelp`, `TestRunSpecAuditHelpAppearsInUsageAndCommandList`,
+  and `TestRunCommandHelp` passed. The new synopsis is present in top-level,
+  Spec, and judge help, and existing audit help strings remain intact.
+- Documentation and skill: created `docs/user-guide/commands/spec.md` with
+  `### spec judge` and inserted its command index row between `skills` and
+  `spec-audit`. Added `### Advisory judge` in the Roundfix skill's Spec
+  reference. The guide covers stages, key order and generic-key exclusion,
+  the Judge Log, ceiling, skip/stop reasons, and advisory exit behavior. The
+  skill tells authors to correct or defend every advisory and distinguish
+  skips from clean judgments. Neither QA settlement section changed.
+  Both Roundfix version fields rose one patch step from starting commit
+  `0.1.7` to `0.1.8`; version recording added its content digest.
+
+### Focused checks
+
+- `GOCACHE=/tmp/roundfix-task03-gocache go test ./internal/cli -run '^TestSpecJudge' -count=1`
+  — exit `0` after fixing the fake's goal question ID to read the embedded
+  question configuration. Before that fixture correction, Transcript 1
+  failed with two `unreadable answer` skips; the expected transcript was
+  preserved.
+- After both sabotages were restored and the additional boundary tests added:
+  `GOCACHE=/tmp/roundfix-task03-gocache go test ./internal/cli -run 'TestSpecJudge|TestRunSpecAuditHelpAppearsInUsageAndCommandList|TestRunCommandHelp' -count=1`
+  — exit `0` (`roundfix/internal/cli`, 1.120s).
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -tags docscontract ./internal/docscontract -run '^TestCommand' -count=1`
+  — exit `0` (`roundfix/internal/docscontract`, 0.694s), exercising command
+  index and reference contracts as focused documentation checks.
+- A Python inspection asserted all required guide/reference phrases, both
+  `0.1.8` version fields, and byte equality of every canonical Roundfix skill
+  file against its shipped mirror — passed.
+- `git -c core.fsmonitor=false diff --check` — exit `0`.
+
+### Regeneration
+
+- `make skills-sync` — exit `0`; rewrote `skills/roundfix/SKILL.md` and
+  `skills/roundfix/references/spec.md`.
+- `GOCACHE=/tmp/roundfix-task03-gocache go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  — exit `0`; rewrote `skills/testdata/owned-skill-versions.json` with
+  Roundfix `0.1.8` and its digest.
+- `make baseline-digests` — exit `0`; reported `changed: false`, derived
+  artifacts already matched their sources, and rewrote no files.
+
+### Sabotage evidence
+
+1. Exit-code gate: temporarily changed `runSpecJudgeCommand` to return
+   `exitRunFailed` when `report.Stopped != nil`.
+   `GOCACHE=/tmp/roundfix-task03-gocache go test ./internal/cli -run '^TestSpecJudgeStopsWhenTheServiceFails$' -count=1`
+   exited `1`; the test failed with `exit=1 want=0` while its stdout matched
+   Transcript 5. Restored the production source immediately afterward.
+2. Key-source gate: temporarily changed the key loop from
+   `environment.environ` to `os.Environ()`.
+   `GOCACHE=/tmp/roundfix-task03-gocache go test ./internal/cli -run '^TestSpecJudgeReadsTheKeyFromItsOwnEnvironment$' -count=1`
+   exited `1`; its fake transport failed with `unexpected request`.
+   Restored the production source immediately afterward. The final focused
+   command suite passed with both sabotages removed.
+
+### Scope and limitations
+
+No Task Verification command was run; authored Verification and settlement
+remain Daemon-owned. No commit, push, PR, or live inference request was made.
+The TypeSafe skill's live index at `https://docs.typesafe.ai/llms.txt` was
+read through the web tool after the shell HTTP fetch was blocked; its linked
+`https://docs.typesafe.ai/api.md` returned an internal fetch error. This
+slice uses task_02's existing request/report contract and changes no service
+protocol or judgment threshold. There are no follow-up implementation changes
+in this diff.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T215854Z_cdd052c5b8440585`
+- Source commit: `e846a775c0c1e14572c9ef57d087196776ce3e6e`
