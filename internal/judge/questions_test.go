@@ -8,6 +8,7 @@ package judge
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -23,7 +24,11 @@ func loadQuestions(t *testing.T) Questions {
 }
 
 func TestQuestionFileLoads(t *testing.T) {
+	// The Spec is active until it is archived into docs/history/specs.
 	tech, err := os.ReadFile("../../docs/specs/0205-an-advisory-judge-for-spec-authoring/_techspec.md")
+	if errors.Is(err, os.ErrNotExist) {
+		tech, err = os.ReadFile("../../docs/history/specs/0205-an-advisory-judge-for-spec-authoring/_techspec.md")
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
