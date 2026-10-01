@@ -1,9 +1,12 @@
 ---
 spec: 0202-a-qa-gate-that-reruns-only-stale-rows
-status: active
+status: archived
 created: 2026-09-30
 surfaces: [backend, docs]
+archived: "2026-10-01"
+source_slug: 0202-a-qa-gate-that-reruns-only-stale-rows
 ---
+
 
 # A QA gate that reruns only stale rows
 
