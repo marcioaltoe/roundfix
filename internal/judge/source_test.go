@@ -145,6 +145,10 @@ func TestLanguageGateSeparatesEnglishFromPortuguese(t *testing.T) {
 		{"case and punctuation", "THE,OF!AND?TO-IN;IS", true},
 		{"empty", "1234 -", false},
 		{"front matter excluded", "---\ntext: de que não uma para com os das dos\n---\nThe gate is the rule for the author.", true},
+		{"quoted Portuguese excluded", "The maintainer asked for this rule: \"podemos ter em uma mesma spec um ou mais findings, não é obrigatório e nem desejável uma spec para cada um, o cuidado é não ter specs grandes\". The rule is that it is grouped.", true},
+		{"curly-quoted Portuguese excluded", "The maintainer asked: \u201cpodemos alterar e atualizar um finding que ainda não foi implementado para que não seja necessário criar outro\u201d. It is the rule.", true},
+		{"blockquoted Portuguese excluded", "The maintainer asked for it.\n> podemos ter em uma mesma spec um ou mais findings, não é obrigatório para os autores\nThe rule is that it is grouped.", true},
+		{"quoted English in Portuguese stays Portuguese", "A decisão é uma regra para os autores e não está na documentação, como \"the rule is that it is the gate for the author\" diz.", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := q.Language.isEnglish(tc.text); got != tc.want {
