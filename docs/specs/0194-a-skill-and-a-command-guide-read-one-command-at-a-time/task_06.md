@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0194-a-skill-and-a-command-guide-read-one-command-at-a-time
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -38,3 +38,35 @@ task_01 taught the documentation contracts to read an entry file together with i
 ## References
 
 - task_01, task_02
+
+## Result
+
+The helper now reads the canonical entry and its `references/` companion
+directory through `mdtree.Text`. Both the required-phrase check and the
+removal-mutation check use that combined text. When the companion directory
+is absent, the reader returns only the entry text. The canonical-versus-
+distributed entry equality check, required phrases, test names and existing
+assertion messages are unchanged. No skill was edited.
+
+Focused acceptance evidence:
+
+- Before the change,
+  `GOCACHE=/private/tmp/roundfix-0194-task06-gocache rtk proxy go test -count=1 -run '^TestReviewRequestContract$' ./skills`
+  exited 1 with all seven reported missing review phrases.
+- After the change,
+  `GOCACHE=/private/tmp/roundfix-0194-task06-gocache rtk proxy go test -count=1 -v -run '^(TestReviewRequestContract|TestProjectConstraint.*Gate|TestArchiveSpecContract|TestToolingAuthorizationJourney|TestLegacySpecConstraintExemption)$' ./skills`
+  exited 0. All nine tests that call the helper passed, covering the review
+  contract, all five Project Constraint gates, archive guidance, tooling
+  authorization and legacy exemptions, including their removal mutations.
+- `GOCACHE=/private/tmp/roundfix-0194-task06-gocache rtk proxy go test -count=1 -v ./internal/mdtree`
+  exited 0. Its four tests cover entry-only reading without companions,
+  lexical companion ordering, ignored nested/non-Markdown files and missing
+  entry errors.
+- `rtk proxy gofmt -l skills/baseline_skill_contract_test.go` exited 0 with
+  no output.
+
+The pre-existing Task status was `in_progress` and remains Daemon-owned.
+Only the helper file and this Result were edited. The prescribed Verification
+command, including the full `./skills` package check, was not run; it remains
+for the Daemon. No commit, push or pull request was made. No follow-up work
+was identified.

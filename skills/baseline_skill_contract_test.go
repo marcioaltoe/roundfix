@@ -1346,10 +1346,19 @@ func testWorkflowProjectConstraintContract(t *testing.T, skillName string, requi
 		t.Fatalf("%s canonical and distributed guidance differ; run make skills-sync", skillName)
 	}
 
-	for _, missing := range missingWorkflowContractClauses(string(canonical), required) {
+	content, err := mdtree.Text(
+		os.DirFS(repoRoot),
+		filepath.Join(".agents", "skills", skillName, "SKILL.md"),
+		filepath.Join(".agents", "skills", skillName, "references"),
+	)
+	if err != nil {
+		t.Fatalf("read %s: %v", canonicalPath, err)
+	}
+
+	for _, missing := range missingWorkflowContractClauses(content, required) {
 		t.Errorf("%s skill missing %q", skillName, missing)
 	}
-	normalized := normalizeWorkflowContract(string(canonical))
+	normalized := normalizeWorkflowContract(content)
 	for _, clause := range required {
 		mutated := strings.ReplaceAll(normalized, normalizeWorkflowContract(clause), "")
 		if missing := missingWorkflowContractClauses(mutated, required); !slicesContain(missing, clause) {
