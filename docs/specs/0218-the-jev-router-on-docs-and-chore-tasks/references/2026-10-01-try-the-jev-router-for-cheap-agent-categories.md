@@ -1,8 +1,8 @@
 ---
 type: feat
-status: open
+status: promoted
 created: 2026-10-01
-spec: null
+spec: 0218-the-jev-router-on-docs-and-chore-tasks
 reason: null
 ---
 
