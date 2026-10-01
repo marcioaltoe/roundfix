@@ -2735,3 +2735,18 @@ func mechanicalResultBlocksMatrix(result MechanicalResult, matrix []mechanicalRe
 	}
 	return true
 }
+
+// ReportShapeFindings applies only the existing report and evidence path checks.
+func ReportShapeFindings(repoRoot, reportPath string) ([]MechanicalFinding, error) {
+	report, present, err := loadMechanicalReport(repoRoot, reportPath)
+	if err != nil {
+		return nil, err
+	}
+	if !present {
+		return nil, fmt.Errorf("QA Report %q is absent", reportPath)
+	}
+	var result MechanicalResult
+	detectMechanicalReportShape(&result, report)
+	detectMechanicalEvidencePaths(&result, repoRoot, report)
+	return result.Findings, nil
+}

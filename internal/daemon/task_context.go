@@ -37,7 +37,7 @@ type qaPromptContext struct {
 	PreviousReportHead string
 }
 
-func (engine *Engine) buildQAPromptContext(ctx context.Context, plan TaskPlan, task spec.Task) (qaPromptContext, error) {
+func (engine *Engine) buildQAPromptContext(ctx context.Context, plan TaskPlan, task spec.Task, imported ...priorQAPass) (qaPromptContext, error) {
 	bundle, err := engine.buildTaskContextBundle(ctx, plan, task)
 	if err != nil {
 		return qaPromptContext{}, err
@@ -51,8 +51,12 @@ func (engine *Engine) buildQAPromptContext(ctx context.Context, plan TaskPlan, t
 	}
 	// The Run starts from HeadSHA, so any report already visible in this fresh
 	// Run Worktree was the report available at that head. The shared prior-file
-	// resolver uses the same head as its changed-path base.
+	// resolver uses the same head as its changed-path base. An imported pass
+	// instead names the audited head proven by its QA settlement commit.
 	previousReportHead := strings.TrimSpace(plan.HeadSHA)
+	if len(imported) > 0 && imported[0].Commit != "" {
+		previousReportHead = imported[0].Head
+	}
 	if previousReportHead == "" {
 		return qaPromptContext{}, fmt.Errorf("resolve previous QA Report for Spec %s: Run start head is required", plan.Spec.Slug)
 	}
