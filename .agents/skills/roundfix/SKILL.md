@@ -4,10 +4,10 @@ description: Use Roundfix to plan releases with the read-only Release Plan Comma
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.0.7
+  version: 0.0.8
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.0.7
+version: 0.0.8
 ---
 
 # Roundfix
@@ -214,7 +214,7 @@ nothing.
 node: ok
 acpx: ok
 adapter: ok (claude: command="npx -y @agentclientprotocol/claude-agent-acp@0.84.0"; package=@agentclientprotocol/claude-agent-acp; version=0.84.0 | codex: command="npx -y @agentclientprotocol/codex-acp@2.0.1"; package=@agentclientprotocol/codex-acp; version=2.0.1)
-profiles: ok (3 distinct tuples; 10 category references)
+profiles: ok (4 distinct tuples; 10 category references)
 skills: ok (<total> required: <owned> Roundfix-owned, <external> external)
 codex: ok
 ```

@@ -123,7 +123,7 @@ run-from-Git next action.
 node: ok
 acpx: ok
 adapter: ok (claude: command="npx -y @agentclientprotocol/claude-agent-acp@0.84.0"; package=@agentclientprotocol/claude-agent-acp; version=0.84.0 | codex: command="npx -y @agentclientprotocol/codex-acp@2.0.1"; package=@agentclientprotocol/codex-acp; version=2.0.1)
-profiles: ok (3 distinct tuples; 10 category references)
+profiles: ok (4 distinct tuples; 10 category references)
 skills: ok (<required> required: <owned> Roundfix-owned, <external> external)
 residue: ok (no process residue found)
 storage: ok (nothing to reclaim; Runs reclaimable: 0; Run Database free bytes: 0)

@@ -93,6 +93,10 @@
       {
         "version": "0.0.7",
         "digest": "a5e86d7120a25c3aaecfaae8717b67d509ef5c5b4ff0fb276e932841e5f0caa2"
+      },
+      {
+        "version": "0.0.8",
+        "digest": "d82ed9b74d5dbdb5ab1e2107d98486c5c778b73bc63a7053d6289f67b054b5bf"
       }
     ],
     "setup-context-driven": [

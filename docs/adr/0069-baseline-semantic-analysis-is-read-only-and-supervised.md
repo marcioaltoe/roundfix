@@ -13,7 +13,7 @@ Codex `gpt-6.1-sol` with `xhigh` reasoning after Exact Agent Selection Proof.
 If it is unavailable or returns an invalid or incomplete result, Roundfix
 discards the output and restarts analysis from the same immutable snapshot with
 Codex `gpt-5.6-sol` and `xhigh`; if both attempts fail, the maintainer classifies
-the content manually. ADR-0180 sets these two models. ACP output is always a proposal that requires
+the content manually. ACP output is always a proposal that requires
 deterministic validation, consolidated human review, and Change Plan
 confirmation, so this read-only retry does not continue Agent work over
 possibly modified state and does not weaken ADR-0050. Each attempt receives the
