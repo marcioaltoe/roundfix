@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0205-an-advisory-judge-for-spec-authoring
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

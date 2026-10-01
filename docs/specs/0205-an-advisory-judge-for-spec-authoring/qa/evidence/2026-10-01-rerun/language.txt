@@ -1,0 +1,5 @@
+=== RUN   TestQA0205ArchiveLanguage
+    qa0205_language_test.go:25: English artifacts: 558; accepted ADRs: 181; lowest English share: 0.103750000 at /Users/marcio/.roundfix/worktrees/roundfix-deliver-0205-an-advisory-judge-for-spec-authoring-6b17199be79e22b7-7a95b5e5-ba42b54d/run_20261001T230649Z_5935ee8be4b8930e/docs/history/specs/0003-dogfood-polish/_techspec.md
+--- PASS: TestQA0205ArchiveLanguage (0.34s)
+PASS
+ok  	roundfix/internal/judge	0.734s

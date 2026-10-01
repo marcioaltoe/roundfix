@@ -1,0 +1,109 @@
+[
+  {
+    "commit": "24db5258990e8ea130f11335d19c25f74afe42c4",
+    "task": "task_01",
+    "paths": [
+      "docs/specs/0205-an-advisory-judge-for-spec-authoring/task_01.md",
+      "internal/judge/language.go",
+      "internal/judge/pairs.go",
+      "internal/judge/pairs_test.go",
+      "internal/judge/questions.go",
+      "internal/judge/questions.json",
+      "internal/judge/questions_test.go",
+      "internal/judge/source.go",
+      "internal/judge/source_test.go"
+    ],
+    "undeclared": []
+  },
+  {
+    "commit": "4b24a4194705184939a7f9b23ced03c7823c5566",
+    "task": "task_02",
+    "paths": [
+      "docs/specs/0205-an-advisory-judge-for-spec-authoring/task_02.md",
+      "internal/judge/client.go",
+      "internal/judge/client_test.go",
+      "internal/judge/judge.go",
+      "internal/judge/judge_test.go",
+      "internal/judge/log.go",
+      "internal/judge/log_test.go"
+    ],
+    "undeclared": []
+  },
+  {
+    "commit": "75d4d09c16750dac124caa9523fd2d1e9bec568e",
+    "task": null,
+    "paths": [
+      "docs/specs/0205-an-advisory-judge-for-spec-authoring/_prd.md",
+      "docs/specs/0205-an-advisory-judge-for-spec-authoring/task_03.md"
+    ],
+    "undeclared": []
+  },
+  {
+    "commit": "4882a2854f409d31272dc3fba3a126db09b34ad5",
+    "task": null,
+    "paths": [
+      "docs/specs/0205-an-advisory-judge-for-spec-authoring/task_03.md"
+    ],
+    "undeclared": []
+  },
+  {
+    "commit": "6c89e111502237eaa2fabccd129477dd0eb2145e",
+    "task": null,
+    "paths": [
+      "docs/specs/0205-an-advisory-judge-for-spec-authoring/task_03.md"
+    ],
+    "undeclared": []
+  },
+  {
+    "commit": "39460e879d457143862fb45f9624c02539d389c8",
+    "task": "task_03",
+    "paths": [
+      ".agents/skills/roundfix/SKILL.md",
+      ".agents/skills/roundfix/references/spec.md",
+      "docs/specs/0205-an-advisory-judge-for-spec-authoring/task_03.md",
+      "docs/user-guide/commands.md",
+      "docs/user-guide/commands/spec.md",
+      "internal/cli/cli.go",
+      "internal/cli/spec_check.go",
+      "internal/cli/spec_judge.go",
+      "internal/cli/spec_judge_test.go",
+      "skills/roundfix/SKILL.md",
+      "skills/roundfix/references/spec.md",
+      "skills/testdata/owned-skill-versions.json"
+    ],
+    "undeclared": []
+  },
+  {
+    "commit": "43afeb34a46ed803d7ca4738b516a47be50bfb66",
+    "task": "task_04",
+    "paths": [
+      ".agents/skills/write-prd/SKILL.md",
+      ".agents/skills/write-techspec/SKILL.md",
+      "docs/specs/0205-an-advisory-judge-for-spec-authoring/task_04.md",
+      "skills/testdata/owned-skill-versions.json",
+      "skills/write-prd/SKILL.md",
+      "skills/write-techspec/SKILL.md"
+    ],
+    "undeclared": []
+  },
+  {
+    "commit": "cca7f09a66a8be3793ff2b465f17938dceefd7a2",
+    "task": null,
+    "paths": [
+      "docs/specs/0205-an-advisory-judge-for-spec-authoring/_techspec.md",
+      "docs/specs/0205-an-advisory-judge-for-spec-authoring/task_05.md",
+      "internal/judge/language.go",
+      "internal/judge/source_test.go"
+    ],
+    "undeclared": []
+  },
+  {
+    "commit": "9d78c67b311df131f8d9de5a66d6d54107eefa7d",
+    "task": null,
+    "paths": [
+      "docs/specs/0205-an-advisory-judge-for-spec-authoring/qa/evidence/2026-10-01-advisory-judge/qa0205_language_test.go",
+      "docs/specs/0205-an-advisory-judge-for-spec-authoring/qa/evidence/2026-10-01-advisory-judge/qa0205_language_test.go.txt"
+    ],
+    "undeclared": []
+  }
+]

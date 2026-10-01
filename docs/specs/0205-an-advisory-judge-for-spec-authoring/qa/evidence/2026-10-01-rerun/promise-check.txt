@@ -1,0 +1,13 @@
+Core Feature 1: fresh executable successes TestSpecJudgeReportsAdvisoryJudgments, TestSpecJudgePrintsJSON
+Core Feature 2: fresh executable successes TestCitationClaimsFollowTheMeasuredExtraction, TestRunRaisesAtTheMeasuredThresholds
+Core Feature 3: fresh executable successes TestGoalPairsFollowTheMeasuredSelection, TestRunRaisesAtTheMeasuredThresholds
+Core Feature 4: fresh executable successes TestQuestionFileLoads
+Core Feature 5: fresh executable successes TestModelPinAcceptsOnlyJev113, TestRunNeverComparesAnotherModelsAnswer
+Core Feature 6: fresh executable successes TestRunSendsNothingWithoutAKey, TestRunStopsWhenTheServiceFails, TestRunSendsNothingWithAnUnreadableLog, TestSpecJudgeRefusesAnUnknownSpec
+Core Feature 7: fresh executable successes TestReadersAcceptOnlySpecArtifactsAndADRs, TestRequestsCarryOnlySpecArtifactText, TestPlanSkipsANonEnglishArtifact
+Core Feature 8: fresh executable successes TestRunSelectsTheTransportByKey, TestRunIgnoresTheGenericOpenRouterKey
+Core Feature 9: fresh executable successes TestJudgeLogRecordsEveryCall, TestRunRecordsTheReportedCost
+Core Feature 10: fresh executable successes TestRunStopsAtTheMonthlyCeiling
+Core Feature 11: both canonical stage workflows contain checker prerequisite, command, answer/correct-or-explain and skip handling; mirror byte comparison and make skills-sync-check execute the published artifact contract.
+Promise rule interpretation: supplied guides require observable acceptance with fresh evidence; no supplied rule is literally titled promise rule. Spec Goals/User Stories/Core Features are bounded by named measured extraction rules, fail-open policy and Recorded limits. No English coverage is claimed for nested QA rehearsals; amended Requirement 8 names the real archived artifacts. No live calibration, additional judge type, agent/skill or gate enforcement is claimed.
+Non-Goals and limits: two judgments only, Spec/ADR state constructors only, fixed transports, generic keys ignored and speccheck network isolation independently checked by module import scan. Thresholds, concurrent ceiling overrun and modest recall remain explicitly disclosed. Authored strict spec check exits 0 with no findings; missing Vocabulary Contract separately accounted through the domain check.

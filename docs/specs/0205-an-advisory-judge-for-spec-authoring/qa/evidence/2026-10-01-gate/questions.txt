@@ -1,0 +1,125 @@
+Byte identity SHA256: f5ad806b34d39891ac79248475aefd2d6cc98444c4f419f1277c0f8ef4d7ce1c
+Pinned model, transport ordering, request models, accepted pattern and thresholds checked against TechSpec and adopted finding.
+{
+  "schema": "roundfix/judge-questions/v1",
+  "pinned_model": "jev-1.13",
+  "accepted_model_pattern": "^(?:jev-1\\.13\\.\\d+|typesafe/jev-1\\.13(?:-\\d{8})?)$",
+  "transports": [
+    {
+      "name": "openrouter",
+      "key_variable": "ROUNDFIX_OPENROUTER_API_KEY",
+      "endpoint": "https://openrouter.ai/api/v1/systemone",
+      "request_model": "jev-1.13"
+    },
+    {
+      "name": "typesafe",
+      "key_variable": "ROUNDFIX_TYPESAFE_API_KEY",
+      "endpoint": "https://api.typesafe.ai/v1/systemone",
+      "request_model": "jev-1.13.0"
+    }
+  ],
+  "usd_per_million_input_tokens": 0.042,
+  "monthly_ceiling_usd": 5.0,
+  "language": {
+    "english_words": [
+      "the",
+      "of",
+      "and",
+      "to",
+      "in",
+      "is",
+      "that",
+      "it",
+      "for",
+      "with",
+      "are",
+      "be",
+      "by",
+      "this",
+      "which",
+      "when",
+      "not",
+      "from",
+      "or",
+      "an",
+      "on",
+      "as",
+      "at",
+      "was",
+      "were",
+      "has",
+      "have",
+      "will",
+      "must"
+    ],
+    "portuguese_words": [
+      "de",
+      "que",
+      "n\u00e3o",
+      "uma",
+      "para",
+      "com",
+      "os",
+      "das",
+      "dos",
+      "em",
+      "\u00e9",
+      "se",
+      "por",
+      "mais",
+      "na",
+      "no",
+      "ao",
+      "pela",
+      "pelo",
+      "como",
+      "mas",
+      "s\u00e3o",
+      "est\u00e1",
+      "foi",
+      "ser",
+      "tamb\u00e9m",
+      "sua",
+      "seu"
+    ],
+    "min_english_share": 0.08,
+    "max_portuguese_share": 0.04
+  },
+  "judgments": {
+    "citation-support": {
+      "question_id": "relation",
+      "question": {
+        "type": "choice",
+        "instructions": "`claim` is a sentence from a specification. It says what 'the cited decision' does, keeps or requires. `decision_record` is the full text of one architecture decision record. How does `decision_record` relate to what `claim` attributes to the cited decision?",
+        "criteria": {
+          "supports": "The decision record states what the claim attributes to the cited decision, or directly implies it",
+          "contradicts": "The decision record states the opposite of what the claim attributes to the cited decision",
+          "says_nothing": "The decision record is about something else or does not address what the claim attributes to the cited decision"
+        }
+      },
+      "raise_when_choice_is_not": "supports",
+      "raise_min_confidence": 0.8,
+      "attribution_pattern": "\\bADR-(\\d{4})\\s+(?:already\\s+)?(?:keeps?|makes?|applies|apply|owns?|checks?|requires?|accepts?|places?|has|preserves?|gives?|surfaces?|separates?|sanctions?|lets?|allows?|governs?|protects?|establish(?:es|ed)?|puts?|says?|records?|defines?|forbids?|binds?|treats?|moves?|reads?|runs?|refuses?|limits?|sets?)\\b",
+      "claim_min_chars": 60,
+      "claim_max_chars": 500,
+      "decision_record_max_chars": 7000
+    },
+    "goal-mechanism": {
+      "question_id": "delivers_goal",
+      "question": {
+        "type": "noul",
+        "instructions": "`goal` is one goal of a product requirements document. `section` is one section of the technical specification written for it, titled `section_title`. Does `section` describe a mechanism that would deliver `goal`?",
+        "criteria": {
+          "true": "The section describes concrete behavior, components or steps whose effect is the goal",
+          "false": "The section is about a different goal, or only restates the goal without a mechanism"
+        }
+      },
+      "raise_when_noul_below": 0.3,
+      "coverage_line_pattern": "^(?:- |\\| )(?:PRD )?Goals? (\\d+)(?:\\s*[\u2013-]\\s*(\\d+))?[^\u2192|>]*(?:\u2192|->|\\|)\\s*(.+)$",
+      "generic_section_title_pattern": "(?i)^(coverage map|api contracts?|testing approach|build order|project constraints|executive summary|risks?( &| and)? considerations?|risks?|integration points|data models?|references?|research basis|system architecture|implementation design|open questions?|decisions?|overview|vocabulary contract)$",
+      "section_title_min_chars": 8,
+      "section_min_chars": 200,
+      "section_max_chars": 3500
+    }
+  }
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "command": "./bin/roundfix spec judge 0301-exemplo --stage prd",
+    "exit": 0,
+    "stdout": "skipped docs/specs/0301-exemplo/_prd.md: not English\nJudge: 0 advisory, 0 clear, 0 skipped; 0 call(s), 0 input tokens, US$0.0000; month US$0.0000 of US$5.00; model jev-1.13 via openrouter\n",
+    "stderr": "",
+    "log_lines_before": 0,
+    "log_lines_after": 0,
+    "matches": true
+  },
+  {
+    "command": "./bin/roundfix spec judge 0301-exemplo --stage prd",
+    "exit": 0,
+    "stdout": "skipped docs/specs/0301-exemplo/_prd.md: not English\nJudge: 0 advisory, 0 clear, 0 skipped; 0 call(s), 0 input tokens, US$0.0000; month US$0.0000 of US$5.00; model jev-1.13 via openrouter\n",
+    "stderr": "",
+    "log_lines_before": 0,
+    "log_lines_after": 0,
+    "matches": true
+  }
+]

@@ -1,0 +1,86 @@
+[
+  {
+    "i": 0,
+    "url": "https://docs.typesafe.ai/llms.txt",
+    "exit": 1,
+    "bytes": 0,
+    "error": "Error: Failed to perform, curl: (7) CONNECT tunnel failed, response 403. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.\n"
+  },
+  {
+    "i": 1,
+    "url": "https://openrouter.ai/docs/guides/community/typesafe-sdk",
+    "exit": 1,
+    "bytes": 0,
+    "error": "Error: Failed to perform, curl: (7) CONNECT tunnel failed, response 403. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.\n"
+  },
+  {
+    "i": 2,
+    "url": "https://openrouter.ai/docs/guides/community/jev",
+    "exit": 1,
+    "bytes": 0,
+    "error": "Error: Failed to perform, curl: (7) CONNECT tunnel failed, response 403. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.\n"
+  },
+  {
+    "i": 3,
+    "url": "https://openrouter.ai/docs/guides/community/jev-tutorial",
+    "exit": 1,
+    "bytes": 0,
+    "error": "Error: Failed to perform, curl: (7) CONNECT tunnel failed, response 403. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.\n"
+  },
+  {
+    "i": 4,
+    "url": "https://openrouter.ai/typesafe/jev-1.13",
+    "exit": 1,
+    "bytes": 0,
+    "error": "Error: Failed to perform, curl: (7) CONNECT tunnel failed, response 403. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.\n"
+  },
+  {
+    "i": 5,
+    "url": "https://openrouter.ai/docs/api/reference/errors-and-debugging",
+    "exit": 1,
+    "bytes": 0,
+    "error": "Error: Failed to perform, curl: (7) CONNECT tunnel failed, response 403. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.\n"
+  },
+  {
+    "i": 6,
+    "url": "https://docs.typesafe.ai/api.md",
+    "exit": 1,
+    "bytes": 0,
+    "error": "Error: Failed to perform, curl: (7) CONNECT tunnel failed, response 403. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.\n"
+  },
+  {
+    "i": 7,
+    "url": "https://docs.typesafe.ai/models.md",
+    "exit": 1,
+    "bytes": 0,
+    "error": "Error: Failed to perform, curl: (7) CONNECT tunnel failed, response 403. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.\n"
+  },
+  {
+    "i": 8,
+    "url": "https://docs.typesafe.ai/confidence.md",
+    "exit": 1,
+    "bytes": 0,
+    "error": "Error: Failed to perform, curl: (7) CONNECT tunnel failed, response 403. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.\n"
+  },
+  {
+    "i": 9,
+    "url": "https://docs.typesafe.ai/cookbooks/citation_check.md",
+    "exit": 1,
+    "bytes": 0,
+    "error": "Error: Failed to perform, curl: (7) CONNECT tunnel failed, response 403. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.\n"
+  },
+  {
+    "i": 10,
+    "url": "https://agentskills.io/specification",
+    "exit": 1,
+    "bytes": 0,
+    "error": "Error: Failed to perform, curl: (7) CONNECT tunnel failed, response 403. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.\n"
+  },
+  {
+    "i": 11,
+    "url": "https://code.claude.com/docs/en/sub-agents",
+    "exit": 1,
+    "bytes": 0,
+    "error": "Error: Failed to perform, curl: (7) CONNECT tunnel failed, response 403. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.\n"
+  }
+]

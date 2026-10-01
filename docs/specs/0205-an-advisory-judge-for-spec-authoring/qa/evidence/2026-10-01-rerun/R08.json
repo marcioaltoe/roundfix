@@ -1,0 +1,28 @@
+[
+  {
+    "command": "./bin/roundfix spec judge 0300-example",
+    "cwd": "/private/tmp/0205-rerun-cli-cxisgy83/repo",
+    "home": "/private/tmp/0205-rerun-cli-cxisgy83/R08",
+    "attempt": 1,
+    "exit": 0,
+    "stdout": "Judge: skipped: ROUNDFIX_OPENROUTER_API_KEY is not set (nor ROUNDFIX_TYPESAFE_API_KEY); 5 judgment(s) not asked\n",
+    "stderr": "",
+    "log_lines_before": 0,
+    "log_lines_after": 0,
+    "log_unchanged": true,
+    "matches": true
+  },
+  {
+    "command": "./bin/roundfix spec judge 0300-example",
+    "cwd": "/private/tmp/0205-rerun-cli-cxisgy83/repo",
+    "home": "/private/tmp/0205-rerun-cli-cxisgy83/R08",
+    "attempt": 2,
+    "exit": 0,
+    "stdout": "Judge: skipped: ROUNDFIX_OPENROUTER_API_KEY is not set (nor ROUNDFIX_TYPESAFE_API_KEY); 5 judgment(s) not asked\n",
+    "stderr": "",
+    "log_lines_before": 0,
+    "log_lines_after": 0,
+    "log_unchanged": true,
+    "matches": true
+  }
+]
