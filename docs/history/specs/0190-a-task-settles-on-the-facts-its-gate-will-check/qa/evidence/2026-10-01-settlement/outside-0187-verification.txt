@@ -1,0 +1,11 @@
+SOURCE: /Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20260930T102010Z_231eaa2e314ed8d8/verification/batch-005-attempt-1.log
+SHA256: b63810d5b97c93f3b056be28bfbdf31f8b011d31cf7c123a34f479c37108033a
+Focused failure excerpt (read-only):
+ok  	roundfix/internal/baselineacp	0.234s
+--- FAIL: TestSettlementGuidanceIsOneTable (0.00s)
+    settlement_guidance_repocontract_test.go:43: QA settlement section differs in ../.agents/skills/roundfix/SKILL.md
+        want:
+        ### QA settlement
+        
+        The same outcome settles the authored `qa` Task and determines what archive
+        may move:

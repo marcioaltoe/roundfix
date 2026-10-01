@@ -66,10 +66,10 @@ func TestProfilesShowJSONIsSchemaV2WithoutBenchmarkFields(t *testing.T) {
 		t.Fatalf("response %+v", response)
 	}
 	profile := response.Profiles[0]
-	if len(profile) != 6 {
+	if len(profile) != 7 {
 		t.Fatalf("profile fields: %v", profile)
 	}
-	for _, field := range []string{"category", "source", "inherited_from", "preferred", "fallbacks", "recommendations"} {
+	for _, field := range []string{"category", "source", "inherited_from", "preferred", "fallbacks", "recommendations", "recommendation_status"} {
 		if _, ok := profile[field]; !ok {
 			t.Fatalf("missing %s", field)
 		}

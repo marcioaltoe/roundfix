@@ -198,6 +198,10 @@ _Avoid_: Effort mode, reasoning strategy, assignment style
 The atomic policy for one Agent Work Category, containing one Preferred Selection and a non-empty ordered Fallback Chain. A higher-precedence profile replaces the complete lower-precedence profile rather than merging individual fields.
 _Avoid_: Runtime defaults, model preset, partial override
 
+**Profile Deviation**:
+The dated, reasoned record on a configured Agent Selection Profile that its difference from the Recommended Profile is deliberate, which holds for the snapshot it names.
+_Avoid_: Permanent pin, recommendation waiver
+
 **Agent Selection Profile Readiness**:
 The command-scoped result that resolves effective Agent Selection Profiles, deduplicates their Preferred Selections and Fallback Chains, and requires Exact Agent Selection Proof for every distinct tuple before a Run or configuration mutation.
 _Avoid_: Single-model check, configured Agent probe, cached readiness
@@ -386,6 +390,10 @@ _Avoid_: Flaky test, generic non-zero exit, log-matched infrastructure error
 **Verification Feedback**:
 The failure diagnostics returned to an Agent Session after the Daemon runs Verification. Passing Verification produces no Agent feedback.
 _Avoid_: Full verification output, test log, progress stream
+
+**Settlement Check**:
+A gate fact the Daemon checks for a non-QA Task before it settles in a Task Graph with an authored QA gate. The checks cover Spec Consistency, the repository Verification at settlement, and authorization of the prospective Task commit.
+_Avoid_: QA settlement, archive check, post-Run check
 
 **Repeated Failure**:
 A Verification failure whose normalised diagnostic signature matches an earlier failure of the same Work Item. The signal names the earlier Run and attempt in the Run record, Run Event Stream, and Verification Feedback.

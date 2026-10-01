@@ -42,9 +42,10 @@ type profilesConfigureChange struct {
 }
 
 type profilesConfigureProfile struct {
-	Category  roundconfig.WorkCategory     `json:"category"`
-	Preferred roundconfig.AgentSelection   `json:"preferred"`
-	Fallbacks []roundconfig.AgentSelection `json:"fallbacks"`
+	Category  roundconfig.WorkCategory      `json:"category"`
+	Preferred roundconfig.AgentSelection    `json:"preferred"`
+	Fallbacks []roundconfig.AgentSelection  `json:"fallbacks"`
+	Deviation *roundconfig.ProfileDeviation `json:"deviation,omitempty"`
 }
 
 func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
@@ -65,6 +66,11 @@ func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, std
 	if err != nil {
 		return printProfilesConfigureError(req, roundconfig.ProfileConfigResult{Scope: req.scope}, err, stdout, stderr)
 	}
+	return writeProfilesConfiguration(ctx, req, profiles, loadOptions, stdout, stderr, environment)
+}
+
+// writeProfilesConfiguration owns preparation, exact proof, confirmation and persistence.
+func writeProfilesConfiguration(ctx context.Context, req profilesConfigureRequest, profiles roundconfig.Profiles, loadOptions roundconfig.LoadOptions, stdout, stderr io.Writer, environment commandEnvironment) int {
 	proposal, err := roundconfig.PrepareProfilesConfig(ctx, roundconfig.ProfileConfigOptions{
 		Scope:    req.scope,
 		HomeDir:  loadOptions.HomeDir,
@@ -139,7 +145,7 @@ func profilesConfigureProofScope(changes roundconfig.EffectiveChangeSet) (roundc
 		if change.Kind == roundconfig.ChangeRemoved {
 			continue
 		}
-		profiles[change.Category] = roundconfig.ProfileEntry{Profile: change.Profile}
+		profiles[change.Category] = roundconfig.ProfileEntry{Profile: change.Profile, Deviation: change.Deviation}
 		categories = append(categories, change.Category)
 	}
 	return profiles, categories
@@ -354,6 +360,9 @@ func profilesConfigurePreview(result roundconfig.ProfileConfigResult) string {
 		for index, fallback := range profile.Fallbacks {
 			fmt.Fprintf(&builder, "  %d. %s\n", index+1, formatProfileSelection(fallback))
 		}
+		if profile.Deviation != nil {
+			fmt.Fprintf(&builder, "Deviation: from %s — %s\n", profile.Deviation.From, profile.Deviation.Reason)
+		}
 	}
 	return builder.String()
 }
@@ -436,6 +445,7 @@ func profilesConfigureProfiles(profiles roundconfig.Profiles) []profilesConfigur
 		}
 		output = append(output, profilesConfigureProfile{
 			Category:  category,
+			Deviation: entry.Deviation,
 			Preferred: entry.Profile.Preferred,
 			Fallbacks: append([]roundconfig.AgentSelection(nil), entry.Profile.Fallbacks...),
 		})

@@ -88,7 +88,7 @@ func TestEveryCommandIsNamedInTheRoundfixSkill(t *testing.T) {
 			t.Fatalf("root help did not yield anchor command %q: %v", anchor, paths)
 		}
 	}
-	text := mustRead(t, filepath.Join(baselineDocumentationRepoRoot(), ".agents", "skills", "roundfix", "SKILL.md"))
+	text := readContractDocument(t, filepath.Join(baselineDocumentationRepoRoot(), ".agents/skills/roundfix/SKILL.md"))
 	if missing := undocumentedCommands(paths, text); len(missing) > 0 {
 		t.Fatalf("Roundfix skill does not name command paths: %v", missing)
 	}
@@ -99,7 +99,7 @@ func TestAnUndocumentedCommandIsReported(t *testing.T) {
 	if code := cli.Run([]string{"--help"}, &stdout, &stderr); code != 0 {
 		t.Fatalf("root help exited %d: %s", code, stderr.String())
 	}
-	text := mustRead(t, filepath.Join(baselineDocumentationRepoRoot(), ".agents", "skills", "roundfix", "SKILL.md"))
+	text := readContractDocument(t, filepath.Join(baselineDocumentationRepoRoot(), ".agents/skills/roundfix/SKILL.md"))
 	text = strings.ReplaceAll(text, "roundfix reopen", "")
 	if got, want := undocumentedCommands(commandPaths(stdout.String()), text), []string{"reopen"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("undocumentedCommands() = %v, want %v", got, want)

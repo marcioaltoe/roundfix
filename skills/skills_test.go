@@ -416,10 +416,17 @@ func TestOwnedSkillBundleReadinessKeepsStatesDistinct(t *testing.T) {
 func skillVersionBelow(t *testing.T, minimum string) string {
 	t.Helper()
 	parsed, ok := parseSkillVersion(minimum)
-	if !ok || parsed[2] == 0 {
-		t.Fatalf("test minimum %q has no lower patch version", minimum)
+	if !ok {
+		t.Fatalf("invalid test minimum %q", minimum)
 	}
-	return fmt.Sprintf("%d.%d.%d", parsed[0], parsed[1], parsed[2]-1)
+	for index := len(parsed) - 1; index >= 0; index-- {
+		if parsed[index] > 0 {
+			parsed[index]--
+			return fmt.Sprintf("%d.%d.%d", parsed[0], parsed[1], parsed[2])
+		}
+	}
+	t.Fatalf("test minimum %q has no lower version", minimum)
+	return ""
 }
 
 func skillVersionAbove(t *testing.T, minimum string) string {

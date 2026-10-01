@@ -62,22 +62,23 @@ var ErrStopRequested = errors.New("stop requested")
 // Dependencies are the engine's explicit collaborators, replacing the CLI
 // package globals that previously wired orchestration.
 type Dependencies struct {
-	Runner          agent.Runner
-	Verifier        Verifier
-	Committer       Committer
-	Pusher          Pusher
-	Source          ReviewSourceResolver
-	Runs            RunStateStore
-	WriteGuard      WriteBoundaryGuard
-	Worktree        WorktreeSnapshotter
-	TaskWorktrees   TaskWorktreeManager
-	PriorChanges    PriorChangedResolver
-	MechanicalStage QAMechanicalStage
-	Auditor         func() app.AuditingBinary
-	GH              GHRunner
-	Sink            runevent.Sink
-	Now             func() time.Time
-	Progress        io.Writer
+	Runner            agent.Runner
+	Verifier          Verifier
+	Committer         Committer
+	Pusher            Pusher
+	Source            ReviewSourceResolver
+	Runs              RunStateStore
+	WriteGuard        WriteBoundaryGuard
+	Worktree          WorktreeSnapshotter
+	TaskWorktrees     TaskWorktreeManager
+	PriorChanges      PriorChangedResolver
+	MechanicalStage   QAMechanicalStage
+	SettlementChecker SettlementChecker
+	Auditor           func() app.AuditingBinary
+	GH                GHRunner
+	Sink              runevent.Sink
+	Now               func() time.Time
+	Progress          io.Writer
 }
 
 // Engine executes one resolve cycle over a validated plan and exposes Final
@@ -177,6 +178,11 @@ func agentLogPath(enabled bool, artifactDir string, runID string, batchNumber in
 	return agent.LogPath(artifactDir, runID, batchNumber)
 }
 
+type verificationCheck struct {
+	Label string
+	Run   func(context.Context, string) (string, error)
+}
+
 type verificationAttemptRequest struct {
 	RunID       string
 	WorkDir     string
@@ -194,6 +200,7 @@ type verificationAttemptRequest struct {
 	// moment this request classifies a temporary command failure.
 	TemporaryRetryAvailable bool
 	Commands                []string
+	Checks                  []verificationCheck
 	Independent             bool
 	FailureClassification   runevent.VerificationClassification
 	FailureReason           runevent.VerificationReason
@@ -274,6 +281,10 @@ func verificationTerminalReason(commandErr *VerificationCommandError) string {
 	diagnostics := strings.TrimSpace(commandErr.OutputPath)
 	if diagnostics == "" {
 		diagnostics = "unavailable"
+	}
+	if strings.HasPrefix(command, "settlement check: ") {
+		first, _, _ := strings.Cut(commandErr.Err.Error(), "\n")
+		return terminalReasonLine(fmt.Sprintf("Settlement check failed: %s: %s; diagnostics: %s", command, first, diagnostics))
 	}
 	return terminalReasonLine(fmt.Sprintf("Verification failed: command %q exited with %s; diagnostics: %s", command, verificationExitStatus(commandErr), diagnostics))
 }
@@ -376,6 +387,8 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 		return verificationAttemptOutcome{}, fmt.Errorf("run verification attempt %d: event publisher is required", req.Attempt)
 	}
 	var failures []verificationAttemptFailure
+	var temporaryFailure *TemporaryVerificationFailureError
+	var temporaryMetadata verificationFailureMetadata
 	reachedCommands := make([]string, 0, len(req.Commands))
 	for commandIndex, command := range req.Commands {
 		reachedCommands = append(reachedCommands, command)
@@ -411,25 +424,11 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 				}
 				fmt.Fprintf(engine.deps.Progress, "Verification failed (%s); diagnostics: %s\n", req.identity(), commandErr.OutputPath)
 				failure := verificationAttemptFailure{CommandFailure: commandErr, Metadata: metadata}
-				if req.Independent {
-					failures = append(failures, failure)
-				}
+				failures = append(failures, failure)
 				if temporary || !req.Independent {
-					if publishErr := req.publishVerdict(ctx, runevent.VerificationVerdictFailed, commandErr.OutputPath, "", temporary, metadata); publishErr != nil {
-						return verificationAttemptOutcome{}, publishErr
-					}
-					if !req.Independent {
-						failures = []verificationAttemptFailure{failure}
-					}
-					first := failures[0]
-					return verificationAttemptOutcome{
-						Failure:          verificationAttemptFailureReason(failures, nil),
-						CommandFailure:   first.CommandFailure,
-						CommandFailures:  failures,
-						ReachedCommands:  reachedCommands,
-						TemporaryFailure: temporaryErr,
-						Repeated:         first.Metadata.Repeated,
-					}, nil
+					temporaryFailure = temporaryErr
+					temporaryMetadata = metadata
+					break
 				}
 				continue
 			}
@@ -465,17 +464,59 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 			return verificationAttemptOutcome{}, err
 		}
 	}
+	for _, check := range req.Checks {
+		if err := ctx.Err(); err != nil {
+			return verificationAttemptOutcome{}, err
+		}
+		reachedCommands = append(reachedCommands, check.Label)
+		if err := req.Publish(ctx, req.summary(runevent.VerificationPhaseStarted, check.Label), req.payload(runevent.VerificationPhaseStarted, check.Label)); err != nil {
+			return verificationAttemptOutcome{}, err
+		}
+		diagnosticPath := settlementDiagnosticPath(req, check.Label)
+		failure, err := check.Run(ctx, diagnosticPath)
+		if ctx.Err() != nil {
+			return verificationAttemptOutcome{}, ctx.Err()
+		}
+		if verificationStopRequested(ctx, err) {
+			return verificationAttemptOutcome{}, err
+		}
+		if err != nil {
+			failure = err.Error()
+			if failure == "" {
+				failure = "settlement checker returned an error without diagnostics"
+			}
+		}
+		if err := writeSettlementDiagnostics(diagnosticPath, failure); err != nil {
+			return verificationAttemptOutcome{}, err
+		}
+		if failure != "" {
+			commandErr := &VerificationCommandError{Command: check.Label, OutputPath: diagnosticPath, Err: errors.New(failure)}
+			metadata, err := req.publishFailedCommand(ctx, check.Label, commandErr, false)
+			if err != nil {
+				return verificationAttemptOutcome{}, err
+			}
+			failures = append(failures, verificationAttemptFailure{CommandFailure: commandErr, Metadata: metadata})
+		} else if err := req.Publish(ctx, req.summary(runevent.VerificationPhaseCommandPassed, check.Label), req.payload(runevent.VerificationPhaseCommandPassed, check.Label)); err != nil {
+			return verificationAttemptOutcome{}, err
+		}
+	}
+
 	if len(failures) > 0 {
 		first := failures[0]
-		if err := req.publishVerdict(ctx, runevent.VerificationVerdictFailed, first.CommandFailure.OutputPath, "", false, first.Metadata); err != nil {
+		verdictMetadata := first.Metadata
+		if temporaryFailure != nil {
+			verdictMetadata = temporaryMetadata
+		}
+		if err := req.publishVerdict(ctx, runevent.VerificationVerdictFailed, first.CommandFailure.OutputPath, "", temporaryFailure != nil, verdictMetadata); err != nil {
 			return verificationAttemptOutcome{}, err
 		}
 		return verificationAttemptOutcome{
-			Failure:         verificationAttemptFailureReason(failures, nil),
-			CommandFailure:  first.CommandFailure,
-			CommandFailures: failures,
-			ReachedCommands: reachedCommands,
-			Repeated:        first.Metadata.Repeated,
+			Failure:          verificationAttemptFailureReason(failures, nil),
+			CommandFailure:   first.CommandFailure,
+			CommandFailures:  failures,
+			TemporaryFailure: temporaryFailure,
+			ReachedCommands:  reachedCommands,
+			Repeated:         first.Metadata.Repeated,
 		}, nil
 	}
 	if err := req.publishVerdict(ctx, runevent.VerificationVerdictPassed, "", "", false, verificationFailureMetadata{}); err != nil {
@@ -719,6 +760,9 @@ func NewEngine(deps Dependencies) (*Engine, error) {
 	}
 	if deps.PriorChanges == nil {
 		deps.PriorChanges = GitPriorChangedResolver{}
+	}
+	if deps.SettlementChecker == nil {
+		deps.SettlementChecker = SpecCheckSettlementChecker{}
 	}
 	if deps.MechanicalStage == nil {
 		deps.MechanicalStage = SpecCheckQAMechanicalStage{}

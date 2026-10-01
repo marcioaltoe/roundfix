@@ -1,0 +1,87 @@
+[
+  {
+    "task": "task_01",
+    "commit": "0446c95a5cdd6af365b66b031d56e40d6efa41ae",
+    "paths": [
+      "docs/specs/0190-a-task-settles-on-the-facts-its-gate-will-check/task_01.md",
+      "docs/user-guide/configuration.md",
+      "internal/cli/implement.go",
+      "internal/cli/implement_settlement_checks_test.go",
+      "internal/config/config.go",
+      "internal/config/settlement_config_test.go",
+      "internal/daemon/settlement_repository_verification_test.go",
+      "internal/daemon/task_engine.go"
+    ],
+    "undeclared": [],
+    "recorded_paths": "none; changed ordinary paths are explicitly named in Task requirements/context"
+  },
+  {
+    "task": "task_02",
+    "commit": "0ef7217ccf1920fe0ab0ea7680591b9f91b2ffeb",
+    "paths": [
+      "docs/specs/0190-a-task-settles-on-the-facts-its-gate-will-check/task_02.md",
+      "internal/daemon/engine.go",
+      "internal/daemon/settlement_checks.go",
+      "internal/daemon/settlement_checks_test.go",
+      "internal/daemon/task_engine.go",
+      "internal/speccheck/mechanical.go",
+      "internal/speccheck/prospective_commit_audit_test.go"
+    ],
+    "undeclared": [],
+    "recorded_paths": "none; changed ordinary paths are explicitly named in Task requirements/context"
+  },
+  {
+    "task": "task_03",
+    "commit": "4f17be31b4086de5a2cc280535ee082f59f22067",
+    "paths": [
+      "docs/specs/0190-a-task-settles-on-the-facts-its-gate-will-check/task_03.md",
+      "internal/daemon/settlement_spec_consistency.go",
+      "internal/daemon/settlement_spec_consistency_test.go",
+      "internal/daemon/task_engine.go",
+      "internal/speccheck/mechanical.go",
+      "internal/speccheck/refusal_reason_test.go"
+    ],
+    "undeclared": [],
+    "recorded_paths": "none; changed ordinary paths are explicitly named in Task requirements/context"
+  },
+  {
+    "task": "task_04",
+    "commit": "1cda2ac519bff75f05f3777e9fedcae962a55a19",
+    "paths": [
+      ".agents/skills/roundfix/SKILL.md",
+      ".agents/skills/write-tasks/SKILL.md",
+      "CONTEXT.md",
+      "docs/specs/0190-a-task-settles-on-the-facts-its-gate-will-check/task_04.md",
+      "docs/user-guide/commands.md",
+      "skills/roundfix/SKILL.md",
+      "skills/write-tasks/SKILL.md"
+    ],
+    "undeclared": [],
+    "recorded_paths": "none; changed ordinary paths are explicitly named in Task requirements/context"
+  },
+  {
+    "task": "task_06",
+    "commit": "5a489ed5397f535bb627abb593d32753a58bf680",
+    "paths": [
+      ".agents/skills/roundfix/SKILL.md",
+      ".agents/skills/write-tasks/SKILL.md",
+      "docs/specs/0190-a-task-settles-on-the-facts-its-gate-will-check/task_06.md",
+      "skills/roundfix/SKILL.md",
+      "skills/testdata/owned-skill-versions.json",
+      "skills/write-tasks/SKILL.md"
+    ],
+    "undeclared": [],
+    "recorded_paths": "none; changed ordinary paths are explicitly named in Task requirements/context"
+  },
+  {
+    "task": "task_07",
+    "commit": "6b4b9ece6a456ff62b43f59e01001bbf923eeeec",
+    "paths": [
+      "docs/specs/0190-a-task-settles-on-the-facts-its-gate-will-check/task_07.md",
+      "internal/runevent/settlement_label_projection_test.go",
+      "internal/runevent/stream.go"
+    ],
+    "undeclared": [],
+    "recorded_paths": "none; changed ordinary paths are explicitly named in Task requirements/context"
+  }
+]

@@ -1,0 +1,2 @@
+Report self-audit: passed
+One frontmatter; seeded auditor identities preserved; 12 terminal rows; 11 pass; environment=1/finding=0/declared=0; no pending/skipped/fail; every declared and non-waivable source has named row provenance; every report evidence link exists; exactly one QA report.

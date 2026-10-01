@@ -1,0 +1,6 @@
+Spec 0190-a-task-settles-on-the-facts-its-gate-will-check
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  vocabulary documentation detector: missing docs/specs/0190-a-task-settles-on-the-facts-its-gate-will-check/_techspec.md Vocabulary Contract
+  SC-REF-UNRESOLVED: missing docs/specs/0190-a-task-settles-on-the-facts-its-gate-will-check/references/_index.md

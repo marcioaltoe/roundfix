@@ -32,12 +32,13 @@ var upgradeDeps = defaultUpgradeDependencies()
 var versionFreshnessDeps = defaultVersionFreshnessDependencies()
 
 type upgradeDependencies struct {
-	latestRelease  func(context.Context) (string, []app.ReleaseAsset, error)
-	downloadAsset  func(context.Context, app.ReleaseAsset) ([]byte, error)
-	executablePath func() (string, error)
-	currentVersion func() string
-	goos           string
-	goarch         string
+	installedProfilesCheck func(context.Context, string, string) ([]byte, error)
+	latestRelease          func(context.Context) (string, []app.ReleaseAsset, error)
+	downloadAsset          func(context.Context, app.ReleaseAsset) ([]byte, error)
+	executablePath         func() (string, error)
+	currentVersion         func() string
+	goos                   string
+	goarch                 string
 }
 
 type versionFreshnessDependencies struct {
@@ -57,12 +58,13 @@ type versionFreshnessCache struct {
 
 func defaultUpgradeDependencies() upgradeDependencies {
 	return upgradeDependencies{
-		latestRelease:  app.LatestRelease,
-		downloadAsset:  defaultDownloadReleaseAsset,
-		executablePath: os.Executable,
-		currentVersion: func() string { return app.Version },
-		goos:           runtime.GOOS,
-		goarch:         runtime.GOARCH,
+		installedProfilesCheck: defaultInstalledProfilesCheck,
+		latestRelease:          app.LatestRelease,
+		downloadAsset:          defaultDownloadReleaseAsset,
+		executablePath:         os.Executable,
+		currentVersion:         func() string { return app.Version },
+		goos:                   runtime.GOOS,
+		goarch:                 runtime.GOARCH,
 	}
 }
 
@@ -74,7 +76,7 @@ func defaultVersionFreshnessDependencies() versionFreshnessDependencies {
 	}
 }
 
-func runUpgradeCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runUpgradeCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("upgrade"))
 		return exitOK
@@ -84,13 +86,61 @@ func runUpgradeCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		printUpgradeFailure(err, stderr)
 		return exitPreflight
 	}
-	outcome, err := performUpgrade(ctx, req, commandDependenciesForContext(ctx).upgrade)
+	deps := commandDependenciesForContext(ctx).upgrade
+	outcome, err := performUpgrade(ctx, req, deps)
 	if err != nil {
 		fmt.Fprintf(stderr, "%s: upgrade failed: %v\n", app.Name, err)
 		return exitRunFailed
 	}
-	fmt.Fprintln(stdout, outcome)
+	fmt.Fprintln(stdout, outcome.message)
+	printUpgradeRecommendationNotice(ctx, outcome.installedPath, deps, environment, stderr)
 	return exitOK
+}
+
+// defaultInstalledProfilesCheck uses the newly installed snapshot, not this binary's.
+func defaultInstalledProfilesCheck(ctx context.Context, executablePath, workDir string) ([]byte, error) {
+	cmd := exec.CommandContext(ctx, executablePath, "profiles", "check")
+	cmd.Dir = workDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("installed profiles check: %w: %s", err, boundedCommandTail(output))
+	}
+	return output, nil
+}
+
+func printUpgradeRecommendationNotice(ctx context.Context, installedPath string, deps upgradeDependencies, environment commandEnvironment, stderr io.Writer) {
+	var err error
+	if installedPath != "" {
+		var workDir string
+		workDir, err = environment.resolveWorkDir("resolve process working directory")
+		if err == nil {
+			checkCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+			check := deps.installedProfilesCheck
+			if check == nil {
+				check = defaultInstalledProfilesCheck
+			}
+			var output []byte
+			output, err = check(checkCtx, installedPath, workDir)
+			cancel()
+			if err == nil {
+				_, _ = stderr.Write(output)
+			}
+		}
+	} else {
+		var loaded roundconfig.Loaded
+		// Loading diagnostics must not leak extra lines when the comparison fails.
+		loaded, err = loadCommandConfig(environment, io.Discard)
+		if err == nil {
+			var check roundconfig.RecommendationCheck
+			check, err = roundconfig.CheckRecommendations(loaded.Config)
+			if err == nil {
+				printRecommendationCheckText(check, stderr)
+			}
+		}
+	}
+	if err != nil {
+		fmt.Fprintf(stderr, "roundfix: recommendations not checked: %s\n", strings.Join(strings.Fields(err.Error()), " "))
+	}
 }
 
 func parseUpgradeCommand(args []string) (upgradeRequest, error) {
@@ -107,38 +157,43 @@ func parseUpgradeCommand(args []string) (upgradeRequest, error) {
 	return req, nil
 }
 
-func performUpgrade(ctx context.Context, req upgradeRequest, deps upgradeDependencies) (string, error) {
+type upgradeOutcome struct {
+	message       string
+	installedPath string
+}
+
+func performUpgrade(ctx context.Context, req upgradeRequest, deps upgradeDependencies) (upgradeOutcome, error) {
 	tag, assets, err := deps.latestRelease(ctx)
 	if err != nil {
 		if errors.Is(err, app.ErrNoReleases) {
-			return "no releases published", nil
+			return upgradeOutcome{message: "no releases published"}, nil
 		}
-		return "", err
+		return upgradeOutcome{}, err
 	}
 
 	current := app.NormalizeVersion(deps.currentVersion())
 	latest := app.NormalizeVersion(tag)
 	if app.CompareVersions(latest, current) <= 0 {
-		return fmt.Sprintf("already current %s", current), nil
+		return upgradeOutcome{message: fmt.Sprintf("already current %s", current)}, nil
 	}
 	if req.check {
-		return fmt.Sprintf("upgrade available %s → %s", current, latest), nil
+		return upgradeOutcome{message: fmt.Sprintf("upgrade available %s → %s", current, latest)}, nil
 	}
 
 	asset, ok := selectPlatformAsset(assets, deps.goos, deps.goarch)
 	if !ok {
-		return "", upgradeManualError{
+		return upgradeOutcome{}, upgradeManualError{
 			err: fmt.Errorf("release %s has no asset for %s/%s", latest, deps.goos, deps.goarch),
 		}
 	}
 	executablePath, err := deps.executablePath()
 	if err != nil {
-		return "", upgradeManualError{err: fmt.Errorf("resolve current executable: %w", err), asset: asset}
+		return upgradeOutcome{}, upgradeManualError{err: fmt.Errorf("resolve current executable: %w", err), asset: asset}
 	}
 	if err := installReleaseAsset(ctx, deps, asset, assets, executablePath); err != nil {
-		return "", upgradeManualError{err: err, asset: asset, executablePath: executablePath}
+		return upgradeOutcome{}, upgradeManualError{err: err, asset: asset, executablePath: executablePath}
 	}
-	return fmt.Sprintf("upgraded %s → %s", current, latest), nil
+	return upgradeOutcome{message: fmt.Sprintf("upgraded %s → %s", current, latest), installedPath: executablePath}, nil
 }
 
 type upgradeManualError struct {

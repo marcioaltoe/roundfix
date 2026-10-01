@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"roundfix/internal/mdtree"
 )
 
 // Suite: Baseline public documentation contract
@@ -21,7 +23,7 @@ func TestBaselineExamplesParse(t *testing.T) {
 		filepath.Join(root, "README.md"),
 		filepath.Join(root, "docs", "user-guide", "context-driven-development.md"),
 		filepath.Join(root, ".agents", "skills", "setup-context-driven", "SKILL.md"),
-		filepath.Join(root, ".agents", "skills", "roundfix", "SKILL.md"),
+		filepath.Join(root, ".agents/skills/roundfix/SKILL.md"),
 	}
 
 	temporaryRepo := t.TempDir()
@@ -151,6 +153,13 @@ func baselineDocumentationRepoRoot() string {
 
 func readBaselineDocumentation(t *testing.T, path string) string {
 	t.Helper()
+	if filepath.Base(path) == "SKILL.md" && filepath.Base(filepath.Dir(path)) == "roundfix" {
+		text, err := mdtree.Text(os.DirFS(filepath.Dir(path)), "SKILL.md", "references")
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		return text
+	}
 	content, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read %s: %v", path, err)

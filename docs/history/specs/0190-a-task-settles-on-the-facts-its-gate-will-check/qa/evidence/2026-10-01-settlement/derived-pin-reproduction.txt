@@ -1,0 +1,8 @@
+Source revision: 5a489ed5397f535bb627abb593d32753a58bf680
+Reproduction in a disposable git-archive checkout.
+Command: go test ./skills -run ^TestEveryOwnedSkillVersionIsRecorded$ -record-skill-versions
+EXIT: 0
+ok  	roundfix/skills	0.296s
+
+Byte-identical recorder output: True
+SHA256: e6bef111b010f40ee35f30d6b63cfdcae5231c466b17c51a268e59a333323daa
