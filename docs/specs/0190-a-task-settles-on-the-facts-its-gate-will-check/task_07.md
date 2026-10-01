@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0190-a-task-settles-on-the-facts-its-gate-will-check
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -41,3 +41,38 @@ The QA gate of Run `run_20261001T024730Z_a33946bbe6ed3a5d` found F-01. `roundfix
 
 - task_02
 - `_techspec.md` → API Contracts (API Contract 2)
+
+## Result
+
+The public verification projection now retains `command` for exactly
+`settlement check: spec consistency` and `settlement check: authorization`
+in ordinary verification events. Repository commands remain redacted, and
+the existing vacuous and unknown classification projections are unchanged.
+
+Acceptance evidence:
+
+- `TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot` exercises
+  both labels across `started`, `command-passed`, and `failed` through the
+  verification filter and checks the serialized public `command` field.
+  It also requires the field to be absent for `make verify`, a label with an
+  appended shell command, and a label with leading whitespace in all three
+  phases. Before the production edit, all six exact-label cases failed
+  because the field was absent.
+- `GOCACHE=/private/tmp/roundfix-task07-go-cache rtk proxy go test -count=1 -run 'TestASettlementCheck|TestProjectStreamEvent|TestEventsReplay' ./internal/runevent ./internal/cli`
+  exited 0. This focused selection includes the new regression and both
+  required existing redaction tests, which remain byte-identical.
+- The initial focused check using the shared Go cache could not set up the
+  CLI package because sandbox access to a cache entry was denied. The
+  task-scoped cache rerun above passed.
+- `GOCACHE=/private/tmp/roundfix-task07-go-cache rtk make verify-incremental`
+  exited 0 on the rerun with process-table access and no concurrent repository
+  edits. Formatting, vet, package tests, skill checks, and build passed.
+  The first incremental attempt exited 2: CLI process-stop tests lacked
+  process-table access, and the suite guard detected this Agent's concurrent
+  Result edit. Both conditions were removed for the successful rerun.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+The declared Verification commands were not run. No live Run was replayed;
+the focused evidence covers the projection and existing CLI replay boundary.
+Task status remains Daemon-owned. No other task or graph file was edited,
+and no commit, push, or pull request was made.

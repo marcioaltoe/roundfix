@@ -264,6 +264,13 @@ func projectVerificationRecord(record *StreamRecord, fields map[string]json.RawM
 		if err == nil {
 			record.DiagnosticPath, err = requiredPayloadString(fields, event, "diagnostic_path")
 		}
+	default:
+		var command string
+		command, err = readOptionalString(fields, event, "command")
+		switch command {
+		case "settlement check: spec consistency", "settlement check: authorization":
+			record.Command = command
+		}
 	}
 	if err != nil {
 		return err
