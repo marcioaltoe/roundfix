@@ -35,4 +35,4 @@ graph:
 | task_05 | qa | Run the final QA gate |
 | task_06 | test | Two real gate passes carry a row into the committed report |
 
-Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05
+Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_06 · 6 → task_05
