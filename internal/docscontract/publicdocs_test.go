@@ -25,7 +25,10 @@ import (
 	"roundfix/internal/agent"
 	"roundfix/internal/baseline"
 	"roundfix/internal/cli"
+	"roundfix/internal/config"
 	"roundfix/internal/spec"
+
+	"roundfix/internal/mdtree"
 )
 
 func TestBaselineDocumentationContract(t *testing.T) {
@@ -189,7 +192,7 @@ func TestBaselineDocumentationContract(t *testing.T) {
 		},
 		{
 			name: "command reference",
-			path: filepath.Join(root, "docs", "user-guide", "commands.md"),
+			path: filepath.Join(root, "docs/user-guide/commands.md"),
 			snippets: []string{
 				"### baseline",
 				"roundfix baseline plan --profile <id>",
@@ -223,7 +226,7 @@ func TestBaselineDocumentationContract(t *testing.T) {
 		},
 		{
 			name: "canonical Roundfix skill",
-			path: filepath.Join(root, ".agents", "skills", "roundfix", "SKILL.md"),
+			path: filepath.Join(root, ".agents/skills/roundfix/SKILL.md"),
 			snippets: []string{
 				"## Context-Driven Baseline",
 				"roundfix baseline update --repo . --yes --format json",
@@ -536,13 +539,18 @@ func TestBaselineDecisionExamples(t *testing.T) {
 
 func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 	t.Parallel()
+	preferred, ok := config.RecommendedProfile(config.CategoryGeneral)
+	if !ok {
+		t.Fatal("missing general Recommended Profile")
+	}
+	preferredText := preferred.Preferred.Runtime + " / " + preferred.Preferred.Model + " / " + preferred.Preferred.ReasoningEffort
 	repoRoot := baselineDocumentationRepoRoot()
 	readme := mustRead(t, filepath.Join(repoRoot, "README.md"))
-	commands := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "commands.md"))
+	commands := readContractDocument(t, filepath.Join(repoRoot, "docs/user-guide/commands.md"))
 	usage := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "usage.md"))
 	configuration := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "configuration.md"))
 	releaseRunbook := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "release-runbook.md"))
-	roundfixSkill := mustRead(t, filepath.Join(repoRoot, ".agents", "skills", "roundfix", "SKILL.md"))
+	roundfixSkill := readContractDocument(t, filepath.Join(repoRoot, ".agents/skills/roundfix/SKILL.md"))
 	roundfixManifest := mustRead(t, filepath.Join(repoRoot, ".agents", "skills", "roundfix", "agents", "openai.yaml"))
 
 	for _, doc := range []struct {
@@ -560,13 +568,13 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 			"gpt-5.6-sol",
 			"gpt-5.6-terra",
 			"sonnet",
-			"claude-fable-5",
-			"2026-08-07",
-			"category_specific: false",
+			"claude-fable-5-1",
+			config.ModelRecommendationSnapshotVersion,
+			"Recommended Profile",
+			preferredText,
 			"agent_work_started",
 			"defaults.agent",
 			"runtimes",
-			"gpt-5.5",
 			"xhigh",
 		} {
 			if !strings.Contains(doc.content, want) {
@@ -626,7 +634,6 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 	for _, want := range []string{
 		"Required profiles are `general`, `backend`, `frontend`, `qa`, and `review`.",
 		"gpt-5.6-sol",
-		"gpt-5.5",
 		"Fallback Chain",
 	} {
 		if !strings.Contains(configuration, want) {
@@ -649,7 +656,7 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 	}
 
 	for _, want := range []string{
-		"roundfix/profiles/v1",
+		"roundfix/profiles/v2",
 		"roundfix/profiles-configure/v1",
 		"roundfix/profiles-validate/v1",
 		"notification-first",
@@ -1081,7 +1088,7 @@ func TestReleasePlanDocumentationContract(t *testing.T) {
 		},
 		{
 			name: "canonical Roundfix skill",
-			path: filepath.Join(repoRoot, ".agents", "skills", "roundfix", "SKILL.md"),
+			path: filepath.Join(repoRoot, ".agents/skills/roundfix/SKILL.md"),
 			snippets: []string{
 				"## Release planning",
 				"roundfix release plan",
@@ -1097,7 +1104,7 @@ func TestReleasePlanDocumentationContract(t *testing.T) {
 		},
 		{
 			name: "embedded Roundfix skill",
-			path: filepath.Join(repoRoot, "skills", "roundfix", "SKILL.md"),
+			path: filepath.Join(repoRoot, "skills/roundfix/SKILL.md"),
 			snippets: []string{
 				"## Release planning",
 				"roundfix release plan",
@@ -1113,8 +1120,8 @@ func TestReleasePlanDocumentationContract(t *testing.T) {
 		})
 	}
 
-	canonical := readReleasePlanDocumentation(t, filepath.Join(repoRoot, ".agents", "skills", "roundfix", "SKILL.md"))
-	embedded := readReleasePlanDocumentation(t, filepath.Join(repoRoot, "skills", "roundfix", "SKILL.md"))
+	canonical := readReleasePlanDocumentation(t, filepath.Join(repoRoot, ".agents/skills/roundfix/SKILL.md"))
+	embedded := readReleasePlanDocumentation(t, filepath.Join(repoRoot, "skills/roundfix/SKILL.md"))
 	if canonical != embedded {
 		t.Fatal("embedded Roundfix skill differs from canonical .agents/skills/roundfix/SKILL.md; run make skills-sync")
 	}
@@ -1126,11 +1133,7 @@ func releasePlanDocumentationRepoRoot() string {
 
 func readReleasePlanDocumentation(t *testing.T, path string) string {
 	t.Helper()
-	content, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read %s: %v", path, err)
-	}
-	return string(content)
+	return readContractDocument(t, path)
 }
 
 func assertReleasePlanDocumentationContains(t *testing.T, label string, content string, snippets []string) {
@@ -1152,11 +1155,7 @@ func baselineDocumentationRepoRoot() string {
 
 func readBaselineDocumentation(t *testing.T, path string) string {
 	t.Helper()
-	content, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read %s: %v", path, err)
-	}
-	return string(content)
+	return readContractDocument(t, path)
 }
 
 func assertBaselineDocumentationContains(t *testing.T, label string, content string, snippets []string) {
@@ -1225,4 +1224,22 @@ func mustRead(t *testing.T, path string) string {
 		t.Fatalf("read %s: %v", path, err)
 	}
 	return string(content)
+}
+
+func readContractDocument(t *testing.T, file string) string {
+	t.Helper()
+	companion := ""
+	if filepath.Base(file) == "commands.md" && filepath.Base(filepath.Dir(file)) == "user-guide" {
+		companion = "commands"
+	} else if filepath.Base(file) == "SKILL.md" && filepath.Base(filepath.Dir(file)) == "roundfix" {
+		companion = "references"
+	}
+	if companion == "" {
+		return mustRead(t, file)
+	}
+	text, err := mdtree.Text(os.DirFS(filepath.Dir(file)), filepath.Base(file), companion)
+	if err != nil {
+		t.Fatalf("read %s: %v", file, err)
+	}
+	return text
 }

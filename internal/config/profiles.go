@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -43,9 +44,15 @@ const (
 	ProfileSourceInvocation ProfileSource = "invocation"
 )
 
+type ProfileDeviation struct {
+	From   string `json:"from"`
+	Reason string `json:"reason"`
+}
+
 type ProfileEntry struct {
-	Profile AgentSelectionProfile
-	Source  ProfileSource
+	Profile   AgentSelectionProfile
+	Source    ProfileSource
+	Deviation *ProfileDeviation
 }
 
 type Profiles map[WorkCategory]ProfileEntry
@@ -55,6 +62,7 @@ type ResolvedProfile struct {
 	Source        ProfileSource
 	InheritedFrom WorkCategory
 	Profile       AgentSelectionProfile
+	Deviation     *ProfileDeviation
 }
 
 var requiredWorkCategories = []WorkCategory{
@@ -143,19 +151,32 @@ func ResolveProfile(config Config, category WorkCategory, preferredOverride *Age
 
 	profile := cloneProfile(entry.Profile)
 	source := entry.Source
+	deviation := cloneProfileDeviation(entry.Deviation)
 	if preferredOverride != nil {
 		selection, err := normalizeSelection("invocation preferred", *preferredOverride)
 		if err != nil {
 			return ResolvedProfile{}, err
+		}
+		if err := validateAgentSelectionProfile("profiles."+string(category), profile); err != nil {
+			return ResolvedProfile{}, err
+		}
+		for index, fallback := range profile.Fallbacks {
+			normalized, _ := normalizeSelection("invocation fallback", fallback)
+			if normalized == selection {
+				profile.Fallbacks[index] = profile.Preferred
+				break
+			}
 		}
 		profile.Preferred = selection
 		if err := validateAgentSelectionProfile("invocation profile", profile); err != nil {
 			return ResolvedProfile{}, err
 		}
 		source = ProfileSourceInvocation
+		deviation = nil
 	}
 
 	return ResolvedProfile{
+		Deviation:     deviation,
 		Category:      category,
 		Source:        source,
 		InheritedFrom: inheritedFrom,
@@ -184,21 +205,12 @@ func isOptionalWorkCategory(category WorkCategory) bool {
 }
 
 func builtinProfiles() Profiles {
-	general := AgentSelectionProfile{
-		Preferred: AgentSelection{Runtime: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"},
-		Fallbacks: []AgentSelection{{Runtime: "codex", Model: "gpt-5.5", ReasoningEffort: "xhigh"}},
+	entries := make(Profiles, len(requiredWorkCategories))
+	for _, category := range requiredWorkCategories {
+		profile, _ := RecommendedProfile(category)
+		entries[category] = ProfileEntry{Profile: profile, Source: ProfileSourceBuiltIn}
 	}
-	frontend := AgentSelectionProfile{
-		Preferred: AgentSelection{Runtime: "claude", Model: "opus", ReasoningEffort: "xhigh"},
-		Fallbacks: []AgentSelection{{Runtime: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"}},
-	}
-	return Profiles{
-		CategoryGeneral:  {Profile: cloneProfile(general), Source: ProfileSourceBuiltIn},
-		CategoryBackend:  {Profile: cloneProfile(general), Source: ProfileSourceBuiltIn},
-		CategoryFrontend: {Profile: cloneProfile(frontend), Source: ProfileSourceBuiltIn},
-		CategoryQA:       {Profile: cloneProfile(general), Source: ProfileSourceBuiltIn},
-		CategoryReview:   {Profile: cloneProfile(general), Source: ProfileSourceBuiltIn},
-	}
+	return entries
 }
 
 type profilesOverlay struct {
@@ -223,11 +235,11 @@ func (overlay *profilesOverlay) UnmarshalYAML(node *yaml.Node) error {
 		if _, duplicate := entries[category]; duplicate {
 			return fmt.Errorf("profiles.%s is defined more than once", category)
 		}
-		profile, err := decodeProfile("profiles."+string(category), node.Content[index+1])
+		entry, err := decodeProfile("profiles."+string(category), node.Content[index+1])
 		if err != nil {
 			return err
 		}
-		entries[category] = ProfileEntry{Profile: profile}
+		entries[category] = entry
 	}
 	overlay.entries = entries
 	return nil
@@ -242,8 +254,9 @@ func applyProfilesOverlay(config *Config, overlay *profilesOverlay, source Profi
 	}
 	for category, entry := range overlay.entries {
 		config.Profiles[category] = ProfileEntry{
-			Profile: cloneProfile(entry.Profile),
-			Source:  source,
+			Profile:   cloneProfile(entry.Profile),
+			Source:    source,
+			Deviation: cloneProfileDeviation(entry.Deviation),
 		}
 	}
 }
@@ -295,52 +308,62 @@ func validateProfiles(entries Profiles) error {
 	return nil
 }
 
-func decodeProfile(path string, node *yaml.Node) (AgentSelectionProfile, error) {
+func decodeProfile(path string, node *yaml.Node) (ProfileEntry, error) {
 	if node.Kind != yaml.MappingNode {
-		return AgentSelectionProfile{}, fmt.Errorf("%s must be a mapping", path)
+		return ProfileEntry{}, fmt.Errorf("%s must be a mapping", path)
 	}
 	if len(node.Content) == 0 {
-		return AgentSelectionProfile{}, fmt.Errorf("%s must define preferred and fallbacks", path)
+		return ProfileEntry{}, fmt.Errorf("%s must define preferred and fallbacks", path)
 	}
 
 	var preferredNode *yaml.Node
 	var fallbacksNode *yaml.Node
+	var deviationNode *yaml.Node
 	seen := map[string]bool{}
 	for index := 0; index < len(node.Content); index += 2 {
 		key := strings.TrimSpace(node.Content[index].Value)
 		if seen[key] {
-			return AgentSelectionProfile{}, fmt.Errorf("%s.%s is defined more than once", path, key)
+			return ProfileEntry{}, fmt.Errorf("%s.%s is defined more than once", path, key)
 		}
 		seen[key] = true
 		switch key {
 		case "preferred":
 			preferredNode = node.Content[index+1]
+		case "deviation":
+			deviationNode = node.Content[index+1]
 		case "fallbacks":
 			fallbacksNode = node.Content[index+1]
 		default:
-			return AgentSelectionProfile{}, fmt.Errorf("%s.%s is not a supported profile key", path, key)
+			return ProfileEntry{}, fmt.Errorf("%s.%s is not a supported profile key", path, key)
 		}
 	}
 	if preferredNode == nil {
-		return AgentSelectionProfile{}, fmt.Errorf("%s.preferred is required", path)
+		return ProfileEntry{}, fmt.Errorf("%s.preferred is required", path)
 	}
 	if fallbacksNode == nil {
-		return AgentSelectionProfile{}, fmt.Errorf("%s.fallbacks is required; one additional distinct authorized and proven Agent Selection is required", path)
+		return ProfileEntry{}, fmt.Errorf("%s.fallbacks is required; one additional distinct authorized and proven Agent Selection is required", path)
 	}
 
 	preferred, err := decodeSelection(path+".preferred", preferredNode)
 	if err != nil {
-		return AgentSelectionProfile{}, err
+		return ProfileEntry{}, err
 	}
 	fallbacks, err := decodeFallbacks(path+".fallbacks", fallbacksNode)
 	if err != nil {
-		return AgentSelectionProfile{}, err
+		return ProfileEntry{}, err
 	}
 	profile := AgentSelectionProfile{Preferred: preferred, Fallbacks: fallbacks}
 	if err := validateAgentSelectionProfile(path, profile); err != nil {
-		return AgentSelectionProfile{}, err
+		return ProfileEntry{}, err
 	}
-	return profile, nil
+	var deviation *ProfileDeviation
+	if deviationNode != nil {
+		deviation, err = decodeProfileDeviation(path+".deviation", deviationNode)
+		if err != nil {
+			return ProfileEntry{}, err
+		}
+	}
+	return ProfileEntry{Profile: profile, Deviation: deviation}, nil
 }
 
 func decodeFallbacks(path string, node *yaml.Node) ([]AgentSelection, error) {
@@ -515,7 +538,7 @@ func profileSchemaConflictError(source ProfileSource) error {
 }
 
 func cloneProfileEntry(entry ProfileEntry) ProfileEntry {
-	return ProfileEntry{Profile: cloneProfile(entry.Profile), Source: entry.Source}
+	return ProfileEntry{Profile: cloneProfile(entry.Profile), Source: entry.Source, Deviation: cloneProfileDeviation(entry.Deviation)}
 }
 
 func cloneProfile(profile AgentSelectionProfile) AgentSelectionProfile {
@@ -535,4 +558,64 @@ func supportedWorkCategoryList() string {
 		values = append(values, string(category))
 	}
 	return strings.Join(values, ", ")
+}
+
+func cloneProfileDeviation(deviation *ProfileDeviation) *ProfileDeviation {
+	if deviation == nil {
+		return nil
+	}
+	copied := *deviation
+	return &copied
+}
+
+func decodeProfileDeviation(path string, node *yaml.Node) (*ProfileDeviation, error) {
+	if node.Kind != yaml.MappingNode {
+		return nil, fmt.Errorf("%s must be a mapping", path)
+	}
+	values := map[string]string{}
+	for index := 0; index < len(node.Content); index += 2 {
+		key := strings.TrimSpace(node.Content[index].Value)
+		if _, duplicate := values[key]; duplicate {
+			return nil, fmt.Errorf("%s.%s is defined more than once", path, key)
+		}
+		value := node.Content[index+1]
+		switch key {
+		case "from":
+			// YAML tags an unquoted calendar date as a timestamp.
+			if value.Kind != yaml.ScalarNode || (value.Tag != "!!str" && value.Tag != "!!timestamp") {
+				return nil, fmt.Errorf("%s.from must be a calendar date written YYYY-MM-DD", path)
+			}
+			values[key] = value.Value
+		case "reason":
+			if value.Kind != yaml.ScalarNode || value.Tag != "!!str" {
+				return nil, fmt.Errorf("%s.reason must be a string", path)
+			}
+			values[key] = strings.TrimSpace(value.Value)
+		default:
+			return nil, fmt.Errorf("%s.%s is not a supported deviation key", path, key)
+		}
+	}
+	for _, key := range []string{"from", "reason"} {
+		if _, present := values[key]; !present {
+			return nil, fmt.Errorf("%s.%s is required", path, key)
+		}
+	}
+	deviation := &ProfileDeviation{From: values["from"], Reason: values["reason"]}
+	if err := validateProfileDeviation(path, deviation); err != nil {
+		return nil, err
+	}
+	return deviation, nil
+}
+
+func validateProfileDeviation(path string, deviation *ProfileDeviation) error {
+	if deviation == nil {
+		return nil
+	}
+	if _, err := time.Parse("2006-01-02", deviation.From); err != nil {
+		return fmt.Errorf("%s.from must be a calendar date written YYYY-MM-DD", path)
+	}
+	if strings.TrimSpace(deviation.Reason) == "" {
+		return fmt.Errorf("%s.reason must not be empty", path)
+	}
+	return nil
 }

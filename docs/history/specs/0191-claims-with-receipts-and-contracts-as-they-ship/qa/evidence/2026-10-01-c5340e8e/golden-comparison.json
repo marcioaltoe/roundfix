@@ -1,0 +1,18 @@
+{
+  "delivery_base": "c49a01285601d009531ab4bd4a60d35398fdcc40",
+  "new_codes": [
+    "SC-RECEIPT-MISSING",
+    "SC-RECEIPT-UNPROVEN",
+    "SC-TRANSCRIPT-MALFORMED",
+    "SC-TRANSCRIPT-UNDECLARED",
+    "SC-TRANSCRIPT-UNGATED"
+  ],
+  "new_counts": {
+    "SC-RECEIPT-UNPROVEN": 0,
+    "SC-RECEIPT-MISSING": 0,
+    "SC-TRANSCRIPT-UNGATED": 0,
+    "SC-TRANSCRIPT-UNDECLARED": 0,
+    "SC-TRANSCRIPT-MALFORMED": 0
+  },
+  "prior_codes_unchanged": 27
+}

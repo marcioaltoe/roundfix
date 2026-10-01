@@ -1,0 +1,76 @@
+Deleted nonblank runtime heading: move proof rejected; missing {'## acpx dependency': 1}
+Copied entire runtime section to setup: move proof rejected; duplicated lines 122
+$ go test -count=1 -run ^TestRoundfixSkillIndexNamesEveryReference$ ./skills
+cwd: /private/tmp/roundfix-0194-qa-h1y7r7wc/copy
+--- FAIL: TestRoundfixSkillIndexNamesEveryReference (0.00s)
+    --- FAIL: TestRoundfixSkillIndexNamesEveryReference/canonical (0.00s)
+        roundfix_layout_test.go:71: index rows for references/archive.md = 0, want 1
+FAIL
+FAIL	roundfix/skills	0.540s
+FAIL
+
+exit: 1
+$ go build -buildvcs=false -o bin/roundfix ./cmd/roundfix
+cwd: /private/tmp/roundfix-0194-qa-h1y7r7wc/copy
+
+exit: 0
+$ ./bin/roundfix skills check
+cwd: /private/tmp/roundfix-0194-qa-h1y7r7wc/copy
+roundfix: Roundfix skill check failed:
+  roundfix/SKILL.md: missing required wording "Prefer `roundfix` commands over manual GitHub scraping."
+
+exit: 1
+$ go test -count=1 -run ^TestSettlementGuidanceIsOneTable$ ./skills
+cwd: /private/tmp/roundfix-0194-qa-h1y7r7wc/copy
+--- FAIL: TestSettlementGuidanceIsOneTable (0.00s)
+    settlement_guidance_repocontract_test.go:43: QA settlement section differs in ../.agents/skills/roundfix/SKILL.md
+        want:
+        ### QA settlement
+        
+        The same outcome settles the authored `qa` Task and determines what archive
+        may move:
+        
+        | Outcome | Settles | Archives |
+        | --- | --- | --- |
+        | `pass` | Settles the QA Task as `completed` and makes the Spec archive-eligible when the report has no disallowed blocked rows. | The Spec and its QA report and evidence. |
+        | qualifying declared `partial` | Settles the QA Task as `completed` when every unmet row other than the pre-PR Pull Request row is covered by a matching `## Unreachable Acceptance` declaration; the pre-PR Pull Request row, recorded as `blocked (environment: no open Pull Request)` with the Pull Request row named in its provenance, never decides a qualifying partial and needs no Unreachable Acceptance declaration. | The Spec, its QA report and evidence, and the declarations' `satisfied-by` record. |
+        | `environment-blocked` | Leaves the row blocked; the report can still settle as `pass` when equivalent evidence satisfies the environment policy. | Nothing by itself; a qualifying report can archive the Spec. |
+        | `failed` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
+        | `missing` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
+        | `override` | Does not change the QA Task status or report verdict; settles archive as explicitly authorized despite failed or missing QA. | The Spec with `qa_override`, `qa_override_approval`, `qa_override_reason`, `qa_override_qa_outcome`, `qa_override_qa_task_status` when the QA Task is incomplete, and `qa_override_revision`; QA files move byte-identically. |
+        
+        
+         got:
+        ### QA settlement
+        
+        Sabotage
+        
+        The same outcome settles the authored `qa` Task and determines what archive
+        may move:
+        
+        | Outcome | Settles | Archives |
+        | --- | --- | --- |
+        | `pass` | Settles the QA Task as `completed` and makes the Spec archive-eligible when the report has no disallowed blocked rows. | The Spec and its QA report and evidence. |
+        | qualifying declared `partial` | Settles the QA Task as `completed` when every unmet row other than the pre-PR Pull Request row is covered by a matching `## Unreachable Acceptance` declaration; the pre-PR Pull Request row, recorded as `blocked (environment: no open Pull Request)` with the Pull Request row named in its provenance, never decides a qualifying partial and needs no Unreachable Acceptance declaration. | The Spec, its QA report and evidence, and the declarations' `satisfied-by` record. |
+        | `environment-blocked` | Leaves the row blocked; the report can still settle as `pass` when equivalent evidence satisfies the environment policy. | Nothing by itself; a qualifying report can archive the Spec. |
+        | `failed` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
+        | `missing` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
+        | `override` | Does not change the QA Task status or report verdict; settles archive as explicitly authorized despite failed or missing QA. | The Spec with `qa_override`, `qa_override_approval`, `qa_override_reason`, `qa_override_qa_outcome`, `qa_override_qa_task_status` when the QA Task is incomplete, and `qa_override_revision`; QA files move byte-identically. |
+        
+FAIL
+FAIL	roundfix/skills	0.229s
+FAIL
+
+exit: 1
+$ go build -buildvcs=false -o bin/roundfix ./cmd/roundfix
+
+exit: 0
+$ ./bin/roundfix --version
+roundfix 0.22.0
+
+exit: 0
+$ ./bin/roundfix skills check
+roundfix: Roundfix skill check failed:
+  roundfix/SKILL.md: missing required wording "Prefer `roundfix` commands over manual GitHub scraping."
+
+exit: 1

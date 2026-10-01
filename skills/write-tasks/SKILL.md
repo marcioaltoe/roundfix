@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.5
+  version: 0.0.7
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.5
+version: 0.0.7
 ---
 
 # Write Tasks
@@ -90,6 +90,13 @@ Code for another operating system is verified by building its non-test code for 
 - **Declared edits and governed paths are explicit.** Every path a Task edits
   is declared under `interface:` or `creates:`, never `instruction:`. An
   `instruction:` path is read-only and never makes two Tasks collide. Each
+  Task that changes a command declares the one command file it changes:
+  `.agents/skills/roundfix/references/<command>.md` with its mirror, and
+  `docs/user-guide/commands/<command>.md`, never the skill's `SKILL.md` or
+  `commands.md` unless it changes the entry file itself. Two Tasks that
+  declare the same file cannot share a Wave, so Tasks that change different
+  commands can run together and Tasks that change the same command need an
+  edge between them.
   declared or Verification-read Governed Path must appear in the Spec's
   `_authorization.md` `paths:` and in both `bounded files:` rows, or authoring
   is refused with `SC-TOOLING-UNDECLARED`. A Task naming a CLI surface names
@@ -234,6 +241,15 @@ When a vertical slice crosses types, use the type of its primary user-visible or
 operational outcome. If two outcomes are independently valuable or the dominant
 outcome remains ambiguous, split the Task so each slice has one dominant outcome;
 do not encode multiple values and do not defer the classification.
+
+## Surface Transcripts in Tasks
+
+The implementing Task names each Surface Transcript it covers in its
+References and asserts the transcript's command, output, and exit text in a
+test. The QA Task names every transcript in a Requirement so the gate can
+reproduce it through the built product. A transcript is a coverage unit: keep
+its name traceable from the TechSpec to the implementing test and then to the
+gate.
 
 ## Process
 

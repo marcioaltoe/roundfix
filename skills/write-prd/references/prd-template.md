@@ -25,6 +25,8 @@ surfaces: [backend] # every surface touched: frontend | backend | cli | data | i
 - Active ADR obligations: <applicable | not applicable> — <active obligations and reason they apply, or reason none apply>. Source: `docs/agents/<path>.md`.
 - Tooling authority: <applicable | not applicable> — <effective constraint and reason it applies, or reason it does not apply>. Source: `docs/agents/<path>.md`; Spec-contained authorization record: `<spec-root>/<slug>/_authorization.md`; bounded files: <copy every exact repository-relative path from the record's `paths` list>.
 
+<!-- When a paragraph attributes behavior to a decision record, add a Claim Receipt in that paragraph: its source and a verbatim quote. -->
+
 <!-- With no protected tooling mutation, record: `applicable — no protected tooling mutation proposed or authorized`.
      When protected tooling mutation is proposed, do not finish without
      `express maintainer authorization: <approval>; bounded files: <exact repository paths>`.

@@ -18,6 +18,7 @@ import (
 
 func TestRunUpgradeFixtureMatrix(t *testing.T) {
 	t.Parallel()
+	withCLIWorkspace(t)
 	t.Run("newer release replaces binary", func(t *testing.T) {
 		fake := newUpgradeFake(t)
 		newBinary := []byte("#!/bin/sh\necho upgraded\n")
@@ -45,8 +46,8 @@ func TestRunUpgradeFixtureMatrix(t *testing.T) {
 		if string(content) != string(newBinary) {
 			t.Fatalf("expected binary replacement, got %q", string(content))
 		}
-		if stderr.Len() != 0 {
-			t.Fatalf("expected no stderr, got %q", stderr.String())
+		if stderr.String() != upgradeFixtureNotice() {
+			t.Fatalf("unexpected notice %q", stderr.String())
 		}
 	})
 
@@ -70,8 +71,8 @@ func TestRunUpgradeFixtureMatrix(t *testing.T) {
 		if fake.downloads != 0 {
 			t.Fatalf("expected no downloads for current version, got %d", fake.downloads)
 		}
-		if stderr.Len() != 0 {
-			t.Fatalf("expected no stderr, got %q", stderr.String())
+		if stderr.String() != upgradeFixtureNotice() {
+			t.Fatalf("unexpected notice %q", stderr.String())
 		}
 	})
 
@@ -91,8 +92,8 @@ func TestRunUpgradeFixtureMatrix(t *testing.T) {
 			t.Fatalf("unexpected stdout %q", got)
 		}
 		assertFileContent(t, fake.executablePath, "old binary\n")
-		if stderr.Len() != 0 {
-			t.Fatalf("expected no stderr, got %q", stderr.String())
+		if stderr.String() != upgradeFixtureNotice() {
+			t.Fatalf("unexpected notice %q", stderr.String())
 		}
 	})
 
@@ -126,6 +127,7 @@ func TestRunUpgradeFixtureMatrix(t *testing.T) {
 
 func TestRunUpgradeCheckReportsAvailableWithoutInstalling(t *testing.T) {
 	t.Parallel()
+	withCLIWorkspace(t)
 	fake := newUpgradeFake(t)
 	newBinary := []byte("#!/bin/sh\necho upgraded\n")
 	fake.releaseTag = "v1.1.0"
@@ -146,8 +148,8 @@ func TestRunUpgradeCheckReportsAvailableWithoutInstalling(t *testing.T) {
 	if fake.downloads != 0 {
 		t.Fatalf("expected --check to avoid downloads, got %d", fake.downloads)
 	}
-	if stderr.Len() != 0 {
-		t.Fatalf("expected no stderr, got %q", stderr.String())
+	if stderr.String() != upgradeFixtureNotice() {
+		t.Fatalf("unexpected notice %q", stderr.String())
 	}
 }
 
@@ -331,6 +333,9 @@ func withUpgradeFakeDeps(t *testing.T, fake *upgradeFake) {
 		},
 		currentVersion: func() string {
 			return fake.currentVersion
+		},
+		installedProfilesCheck: func(context.Context, string, string) ([]byte, error) {
+			return []byte(upgradeFixtureNotice()), nil
 		},
 		goos:   fake.goos,
 		goarch: fake.goarch,

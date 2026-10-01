@@ -1,0 +1,23 @@
+$ go test -count=1 -v -run ^(TestWaveCollisionAllowsDifferentCommandFiles|TestWaveCollisionRefusesTheSameCommandFile|TestWriteTasksSkillStatesTheDeclaredPathRules|TestTaskAuthoringGuidanceNamesDeclarations)$ ./internal/speccheck ./skills
+cwd: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0194-a-skill-and-a-command-guide-read-one-command-at-a-time-1336c7de9a07c54a-7b92b617-7503cf20/run_20261001T032402Z_e4152d0721cc09f1
+=== RUN   TestWaveCollisionAllowsDifferentCommandFiles
+=== PAUSE TestWaveCollisionAllowsDifferentCommandFiles
+=== RUN   TestWaveCollisionRefusesTheSameCommandFile
+=== PAUSE TestWaveCollisionRefusesTheSameCommandFile
+=== CONT  TestWaveCollisionAllowsDifferentCommandFiles
+=== CONT  TestWaveCollisionRefusesTheSameCommandFile
+--- PASS: TestWaveCollisionRefusesTheSameCommandFile (0.01s)
+--- PASS: TestWaveCollisionAllowsDifferentCommandFiles (0.01s)
+PASS
+suiteguard: guard cost: measured 7088 paths; fingerprint took 241.574625ms before and 203.670167ms after
+ok  	roundfix/internal/speccheck	0.724s
+=== RUN   TestWriteTasksSkillStatesTheDeclaredPathRules
+=== PAUSE TestWriteTasksSkillStatesTheDeclaredPathRules
+=== RUN   TestTaskAuthoringGuidanceNamesDeclarations
+--- PASS: TestTaskAuthoringGuidanceNamesDeclarations (0.00s)
+=== CONT  TestWriteTasksSkillStatesTheDeclaredPathRules
+--- PASS: TestWriteTasksSkillStatesTheDeclaredPathRules (0.00s)
+PASS
+ok  	roundfix/skills	0.547s
+
+exit: 0

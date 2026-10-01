@@ -56,8 +56,7 @@ defaults:
 #
 # Research and sources: the Secondbrain entry
 # `inbox/secondbrain/2026-09-30-modelos-de-codificacao-ago-set-2026-e-runtimes-cursor-grok.md`.
-# docs/references/model-selection.md still holds the 2026-08-07 snapshot until
-# the model catalog is refreshed.
+# docs/references/model-selection.md states the same snapshot as the binary.
 # ---------------------------------------------------------------------------
 profiles:
   general:

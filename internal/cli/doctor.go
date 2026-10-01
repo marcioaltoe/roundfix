@@ -89,6 +89,7 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	results = append(results, doctorAdapterCheck(ctx, checker, runtimes, runtimeErr))
 	profileReadiness := dependencies.profileReadiness(ctx, loaded.Config, roundconfig.ConfiguredWorkCategories(loaded.Config), profileWorkDir)
 	results = append(results, doctorProfileReadinessResult(profileReadiness))
+	results = append(results, doctorRecommendationsResult(loaded.Config))
 	results = append(results, doctorPrePRReviewResult(loaded.Config.PrePRReview))
 	if repositoryRoot == "" {
 		results = append(results, doctorMissingRepositoryRootResult())
@@ -120,6 +121,21 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitRunFailed
 	}
 	return exitOK
+}
+
+func doctorRecommendationsResult(config roundconfig.Config) CheckResult {
+	check, err := roundconfig.CheckRecommendations(config)
+	if err != nil {
+		return CheckResult{Name: HealthCheckRecommendations, Status: CheckStatusSkipped, Detail: err.Error()}
+	}
+	current, differ, pinned := recommendationCounts(check)
+	result := CheckResult{Name: HealthCheckRecommendations, Status: CheckStatusOK,
+		Detail: fmt.Sprintf("snapshot %s; %d current, %d differ, %d pinned", check.Snapshot, current, differ, pinned)}
+	if differ > 0 {
+		result.Status = CheckStatusFound
+		result.Detail += "; run roundfix profiles check"
+	}
+	return result
 }
 
 func doctorPrePRReviewResult(policy roundconfig.PrePRReview) CheckResult {

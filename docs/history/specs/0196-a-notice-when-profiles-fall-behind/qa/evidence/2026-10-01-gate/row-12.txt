@@ -1,0 +1,82 @@
+Task 01, commit bc73c71f630916eab73986f081670bb6af425a2f
+git diff-tree --no-commit-id --name-only -r bc73c71f630916eab73986f081670bb6af425a2f
+.agents/skills/roundfix/SKILL.md
+CONTEXT.md
+docs/specs/0196-a-notice-when-profiles-fall-behind/task_01.md
+docs/user-guide/commands.md
+docs/user-guide/configuration.md
+internal/cli/profiles_configure.go
+internal/cli/profiles_deviation_test.go
+internal/config/profile_config.go
+internal/config/profile_deviation_test.go
+internal/config/profiles.go
+skills/roundfix/SKILL.md
+skills/testdata/owned-skill-versions.json
+Outside declarations + Recorded paths + assigned Task: []
+
+Governed skill sources bounded by _authorization.md: .agents/skills/roundfix/SKILL.md, skills/roundfix/SKILL.md. Version ledger is sanctioned regeneration; Task Results record owned-version command and no baseline digest output changes. Actual related paths: ['.agents/skills/roundfix/SKILL.md', 'skills/roundfix/SKILL.md', 'skills/testdata/owned-skill-versions.json']
+
+Task 02, commit f2b03498b27b74f0132845e42c687bf497f9d4eb
+git diff-tree --no-commit-id --name-only -r f2b03498b27b74f0132845e42c687bf497f9d4eb
+.agents/skills/roundfix/SKILL.md
+docs/specs/0196-a-notice-when-profiles-fall-behind/task_02.md
+docs/user-guide/commands.md
+docs/user-guide/usage.md
+internal/cli/cli.go
+internal/cli/profiles.go
+internal/cli/profiles_check.go
+internal/cli/profiles_check_test.go
+internal/cli/profiles_show_recommended_test.go
+internal/cli/profiles_show_status_test.go
+internal/config/recommendation_check.go
+internal/config/recommendation_check_test.go
+skills/roundfix/SKILL.md
+skills/testdata/owned-skill-versions.json
+Outside declarations + Recorded paths + assigned Task: []
+
+Governed skill sources bounded by _authorization.md: .agents/skills/roundfix/SKILL.md, skills/roundfix/SKILL.md. Version ledger is sanctioned regeneration; Task Results record owned-version command and no baseline digest output changes. Actual related paths: ['.agents/skills/roundfix/SKILL.md', 'skills/roundfix/SKILL.md', 'skills/testdata/owned-skill-versions.json']
+
+Task 03, commit 7a0577dd967c9edacd1fdd9d673d8ce5677ec704
+git diff-tree --no-commit-id --name-only -r 7a0577dd967c9edacd1fdd9d673d8ce5677ec704
+.agents/skills/roundfix/SKILL.md
+docs/specs/0196-a-notice-when-profiles-fall-behind/task_03.md
+docs/user-guide/commands.md
+docs/user-guide/usage.md
+internal/cli/cli.go
+internal/cli/profiles.go
+internal/cli/profiles_check_apply.go
+internal/cli/profiles_check_apply_test.go
+internal/cli/profiles_configure.go
+skills/roundfix/SKILL.md
+skills/testdata/owned-skill-versions.json
+Outside declarations + Recorded paths + assigned Task: []
+
+Governed skill sources bounded by _authorization.md: .agents/skills/roundfix/SKILL.md, skills/roundfix/SKILL.md. Version ledger is sanctioned regeneration; Task Results record owned-version command and no baseline digest output changes. Actual related paths: ['.agents/skills/roundfix/SKILL.md', 'skills/roundfix/SKILL.md', 'skills/testdata/owned-skill-versions.json']
+
+Task 04, commit dd0a1de44a2d206af28877f250f73dde97288a12
+git diff-tree --no-commit-id --name-only -r dd0a1de44a2d206af28877f250f73dde97288a12
+.agents/skills/roundfix/SKILL.md
+docs/specs/0196-a-notice-when-profiles-fall-behind/task_04.md
+docs/user-guide/commands.md
+docs/user-guide/usage.md
+internal/cli/cli.go
+internal/cli/doctor.go
+internal/cli/doctor_recommendations_test.go
+internal/cli/doctor_test.go
+internal/cli/health.go
+internal/cli/recommendation_check_scope_test.go
+internal/cli/upgrade.go
+internal/cli/upgrade_characterization_test.go
+internal/cli/upgrade_notice_test.go
+internal/cli/upgrade_test.go
+skills/roundfix/SKILL.md
+skills/testdata/owned-skill-versions.json
+Outside declarations + Recorded paths + assigned Task: []
+
+Governed skill sources bounded by _authorization.md: .agents/skills/roundfix/SKILL.md, skills/roundfix/SKILL.md. Version ledger is sanctioned regeneration; Task Results record owned-version command and no baseline digest output changes. Actual related paths: ['.agents/skills/roundfix/SKILL.md', 'skills/roundfix/SKILL.md', 'skills/testdata/owned-skill-versions.json']
+
+internal/cli/cli_test.go: unchanged versus delivery base; original configure tests therefore unchanged.
+
+.roundfixrc.yml: unchanged versus delivery base; original configure tests therefore unchanged.
+
+All four commit audits already listed in seeded authorization audit; no unlisted tooling commit needs a duplicate mechanical authorization audit. Grant revision is a separate ancestor of each Task. No consequent-fix declaration; seeded skip retained. Working-tree delta before QA was only seeded untracked report; final QA changes confined to qa/.

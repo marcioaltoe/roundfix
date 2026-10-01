@@ -132,48 +132,48 @@ profiles:
   general:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
     fallbacks:
-      - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
   backend:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
     fallbacks:
-      - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
   frontend:
     preferred:
       runtime: claude
       model: opus
-      reasoning_effort: xhigh
+      reasoning_effort: "high"
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-sol
-        reasoning_effort: high
+        model: gpt-6.1-sol
+        reasoning_effort: "xhigh"
   qa:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
     fallbacks:
-      - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
   review:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
+      model: gpt-5.6-luna
+      reasoning_effort: "max"
     fallbacks:
       - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
+        model: gpt-6.1-sol
+        reasoning_effort: "high"
 
 # Legacy PR-feedback Review Source, read only by fetch, watch and resolve; it never selects or requests a pre-PR reviewer.
 review_source:
@@ -326,28 +326,31 @@ policy and performs no additional access-mode proof.
 Required profiles are `general`, `backend`, `frontend`, `qa`, and `review`.
 Optional Task Type profiles `data`, `infra`, `docs`, `test`, and `chore`
 inherit the effective `general` profile when absent. `roundfix profiles show`
-labels that inherited recommendation source instead of duplicating stored
-config.
+labels that inherited effective profile source instead of duplicating stored
+config; its Recommended Profile remains specific to the requested category.
 
 Built-in required profiles use these official identifiers:
 
-- `general`, `backend`, `qa`, `review`: preferred `codex / gpt-5.6-sol / high`;
-  fallback `codex / gpt-5.5 / xhigh`.
-- `frontend`: preferred `claude / opus / xhigh`; fallback
-  `codex / gpt-5.6-sol / high`.
+- `general`, `backend`, and `qa`: preferred
+  `codex / gpt-6.1-sol / high`, fallback `claude / opus / high`.
+- `frontend`: preferred `claude / opus / high`, fallback
+  `codex / gpt-6.1-sol / xhigh`.
+- `review`: preferred `codex / gpt-5.6-luna / max`, fallback
+  `codex / gpt-6.1-sol / high`.
 
-The Model Catalog recognizes `gpt-5.6-sol`, `gpt-5.6-terra`, and
-`gpt-5.6-luna` as official Codex identifiers, plus `opus`, `claude-fable-5`,
-`sonnet`, `haiku`, and `default` as Claude identifiers. Those are the values the
+The Model Catalog recognizes `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`,
+`gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.6-luna` as official Codex identifiers, plus `opus`, `sonnet`,
+`claude-fable-5-1`, `haiku`, and `default` as Claude
+identifiers. Those are the values the
 Claude adapter advertises, with the bracketed context suffix removed as the
-capability parser removes it — the adapter advertises Opus 5 as `opus[1m]`.
+capability parser removes it — the adapter advertises Opus 5.5 as `opus[1m]`.
 Identifier validity does not prove operational availability. Recommendations are advisory
-rankings only; the effective adapter in each environment must complete Exact
+profiles only; the effective adapter in each environment must complete Exact
 Agent Selection Proof before Roundfix can use a tuple. This exact proof is the
 operational readiness authority. Custom model strings remain accepted verbatim
-for forward-compatible proof and are never added to an allowlist. A dated
-recommendation can differ from the current built-in Preferred Selection and
-never controls routing.
+for forward-compatible proof and are never added to an allowlist. The dated
+Recommended Profile supplies each required built-in Preferred Selection and
+Fallback Chain; User Config and Project Config can replace them.
 
 When an adapter advertises an independent reasoning control, Roundfix treats
 every advertised Agent Model identifier as opaque. A bracketed identifier such
@@ -357,14 +360,14 @@ is a context-window annotation, not a reasoning effort. See
 [ADR-0079](../adr/0079-independent-reasoning-controls-make-model-identifiers-opaque.md).
 
 For Codex, Adapter Readiness requires the official
-`@agentclientprotocol/codex-acp` package at version `1.1.5` or newer. For
+`@agentclientprotocol/codex-acp` package at version `2.0.1` or newer. For
 Claude, it requires official `@agentclientprotocol/claude-agent-acp` at
-version `0.63.0` or newer. The deterministic install actions are
-`npm install -g @agentclientprotocol/codex-acp@1.1.5` and
-`npm install -g @agentclientprotocol/claude-agent-acp@0.63.0`.
+version `0.84.0` or newer. The deterministic install actions are
+`npm install -g @agentclientprotocol/codex-acp@2.0.1` and
+`npm install -g @agentclientprotocol/claude-agent-acp@0.84.0`.
 
-Setup writes `npx -y @agentclientprotocol/codex-acp@1.1.5` or
-`npx -y @agentclientprotocol/claude-agent-acp@0.63.0` when an explicit
+Setup writes `npx -y @agentclientprotocol/codex-acp@2.0.1` or
+`npx -y @agentclientprotocol/claude-agent-acp@0.84.0` when an explicit
 override needs migration. Migration follows from failed official lineage proof
 rather than from recognizing any particular superseded package, so it covers a bare
 override that resolves to a differently scoped package as well as an earlier
@@ -405,10 +408,36 @@ load, proof, Session creation, or Run mutation. An explicitly empty
 multiple Task or QA categories, text and JSON output include a cross-category
 warning.
 
-Recommendations shown by `profiles show` are a dated advisory snapshot
-(`2026-08-07`) with five entries per category, benchmark/result/cost evidence,
-rationale, and `category_specific: false`. Recommendation rank never changes
-configuration, proof order, Preferred Selection, Fallback Chain, or routing.
+The Recommended Profile shown by `profiles show` is dated `2026-09-30`.
+Each of the ten categories has a Preferred Selection and Fallback Chain with
+a rationale for each selection. JSON schema `roundfix/profiles/v2` lists
+these rows in order with `preferred` and `fallback` roles, the selection,
+source date, and rationale. Interactive configure prints the same advisory
+rows. The Recommended Profile never selects, routes, or writes configuration.
+
+A configured Agent Selection Profile can carry a **Profile Deviation**: a
+dated, reasoned record that its difference from the Recommended Profile is
+deliberate for the snapshot it names. Put it after `fallbacks`:
+
+```yaml
+profiles:
+  backend:
+    preferred: {runtime: codex, model: gpt-5.6-sol, reasoning_effort: high}
+    fallbacks:
+      - {runtime: codex, model: gpt-5.5, reasoning_effort: xhigh}
+    deviation:
+      from: 2026-09-30
+      reason: Keep the model validated for this repository
+```
+
+- `deviation` must be a mapping containing exactly `from` and `reason`; both
+  are required.
+- `from` must be a calendar date written `YYYY-MM-DD`, and `reason` must be a
+  non-empty string after trimming.
+
+`profiles configure` writes a deviation its fragment carries. Replacing a
+profile with a fragment without a deviation removes the old record.
+A Roundfix older than this release refuses a configuration that uses it.
 
 Automatic fallback is pre-prompt only. Roundfix records and shows the fallback
 notification before activating the next configured tuple. Once

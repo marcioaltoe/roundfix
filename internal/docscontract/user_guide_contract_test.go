@@ -68,7 +68,12 @@ func userGuideFiles(t *testing.T, includeREADME bool) []string {
 	if len(files) == 0 {
 		t.Fatal("no user guide files found")
 	}
+	companions, err := filepath.Glob(filepath.Join(root, "docs", "user-guide", "commands", "*.md"))
+	if err != nil {
+		t.Fatalf("list command guides: %v", err)
+	}
 	if includeREADME {
+		files = append(files, companions...)
 		files = append(files, filepath.Join(root, "README.md"))
 	}
 	return files
@@ -81,7 +86,7 @@ func TestEveryCommandIsNamedInTheUserGuide(t *testing.T) {
 	}
 	var text strings.Builder
 	for _, file := range userGuideFiles(t, false) {
-		text.WriteString(mustRead(t, file))
+		text.WriteString(readContractDocument(t, file))
 		text.WriteByte('\n')
 	}
 	if missing := undocumentedCommands(commandPaths(stdout.String()), text.String()); len(missing) > 0 {

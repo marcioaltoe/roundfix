@@ -1,0 +1,73 @@
+Initial commands exited 1 because live in-repository log writes triggered suiteguard, although assertions passed. Corrected output destination to /private/tmp, reran combined selection with -count=1, exit 0. Full assertions: tests-final.txt
+
+TestRecommendationCheckIsReachedOnlyFromItsCommands passed; AST traverses all production Go under internal/ and cmd/ and permits references only in config/recommendation_check.go and cli/{profiles_check,profiles_check_apply,profiles,doctor,upgrade}.go. Dispatch inspected:
+500: 	switch args[0] {
+501: 	case "-h", "--help", "help":
+502: 		fmt.Fprint(stdout, usage)
+503: 		return exitOK
+504: 	case "-v", "--version", "version":
+505: 		fmt.Fprintf(stdout, "%s %s\n", app.Name, app.VersionLine())
+506: 		return exitOK
+507: 	case "init":
+508: 		return runInitCommand(ctx, args[1:], stdout, stderr, environment)
+509: 	case "setup":
+510: 		return runSetupCommand(ctx, args[1:], stdout, stderr, environment)
+511: 	case "migrate":
+512: 		return runMigrateCommand(ctx, args[1:], stdout, stderr, environment)
+513: 	case "doctor":
+514: 		return runDoctorCommand(ctx, args[1:], stdout, stderr, environment)
+515: 	case "review":
+516: 		return runReviewCommand(ctx, args[1:], stdout, stderr, environment)
+517: 	case "gc":
+518: 		return runGCCommand(ctx, args[1:], stdout, stderr, environment)
+519: 	case "storage":
+520: 		return runStorageCommand(ctx, args[1:], stdout, stderr, environment)
+521: 	case "upgrade":
+522: 		return runUpgradeCommand(ctx, args[1:], stdout, stderr, environment)
+523: 	case "runs":
+524: 		return runRunsCommand(ctx, args[1:], stdout, stderr, environment)
+525: 	case "stop":
+526: 		return runStopCommand(ctx, args[1:], stdout, stderr, environment)
+527: 	case "attach":
+528: 		return runAttachCommand(ctx, args[1:], stdout, stderr, environment)
+529: 	case "events":
+530: 		return runEventsCommand(ctx, args[1:], stdout, stderr, environment)
+531: 	case "skills":
+532: 		return runSkillsCommand(ctx, args[1:], stdout, stderr, environment)
+533: 	case "fetch", "resolve", "watch":
+534: 		return runOperationalCommand(ctx, args[0], args[1:], stdout, stderr, detachChild, environment)
+535: 	case "implement":
+536: 		return runImplementCommand(ctx, args[1:], stdout, stderr, detachChild, environment)
+537: 	case "deliver":
+538: 		return runDeliverCommand(ctx, args[1:], stdout, stderr, detachChild, environment)
+539: 	case "window":
+540: 		return runWindowCommand(ctx, args[1:], stdout, stderr, environment)
+541: 	case "settle":
+542: 		return runSettleCommand(ctx, args[1:], stdout, stderr, environment)
+543: 	case "reopen":
+544: 		return runReopenCommand(ctx, args[1:], stdout, stderr, environment)
+545: 	case "supersede":
+546: 		return runSupersedeCommand(ctx, args[1:], stdout, stderr, environment)
+547: 	case "reconcile":
+548: 		return runReconcileCommand(ctx, args[1:], stdout, stderr, environment)
+549: 	case "release":
+550: 		return runReleaseCommand(ctx, args[1:], stdout, stderr, environment)
+551: 	case "qa-report":
+552: 		return runQAReportCommand(ctx, args[1:], stdout, stderr)
+553: 	case "spec":
+554: 		return runSpecCommand(ctx, args[1:], stdout, stderr, environment)
+555: 	case "baseline":
+556: 		return runBaselineCommand(ctx, args[1:], stdout, stderr, environment)
+557: 	case "profiles":
+558: 		return runProfilesCommand(ctx, args[1:], stdout, stderr, environment)
+559: 	case "archive":
+560: 		return runArchiveCommand(ctx, args[1:], stdout, stderr, environment)
+561: 	default:
+562: 		fmt.Fprintf(stderr, "%s: unknown command %q\n", app.Name, args[0])
+563: 		fmt.Fprintf(stderr, "Run '%s --help' for usage.\n", app.Name)
+564: 		return exitPreflight
+565: 	}
+Run starters dispatch to runOperationalCommand, runImplementCommand, runDeliverCommand; none calls comparison. AST sweep independently confirms no hidden reference elsewhere.
+
+Final command: go test -count=1 -v ./internal/cli -run '^(TestProfilesCheckApply|TestProfilesConfigure|TestRunCommandHelp|TestUpgrade|TestDoctorRecommendations|TestDoctorReportsRecommendations|TestRecommendationCheck)'
+Output redirected to /private/tmp/roundfix-0196-qa-tests.txt during execution, then copied to tests-final.txt. Exit 0.

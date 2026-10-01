@@ -109,7 +109,8 @@ complexity: medium # low | medium | high
      The Daemon includes these paths in the 200-path Spec Context Bundle before prior changed files. -->
 
 - instruction: `<path>`
-- interface: `<path>`
+- interface: `.agents/skills/roundfix/references/<command>.md`
+- interface: `docs/user-guide/commands/<command>.md`
 
 ## Verification
 

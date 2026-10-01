@@ -13,6 +13,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"roundfix/internal/mdtree"
 	"roundfix/internal/skillhash"
 )
 
@@ -238,79 +239,7 @@ func CheckReadiness() BundleReadiness {
 		diagnostics = append(diagnostics, checkThinSetupSkill(files)...)
 	}
 
-	// The operational roundfix skill carries a strict contract: required
-	// wording, Roundfix branding, and a valid OpenAI manifest.
-	roundfixRequired := map[string][]string{
-		"roundfix/SKILL.md": {
-			"Prefer `roundfix` commands over manual GitHub scraping.",
-			"Report the Run ID",
-			"state whenever you summarize progress.",
-			"Review Runs (`fetch`, `resolve`, and `watch`) execute in the user's checkout",
-			"Branch Integrity Preflight runs before any fetch, Agent Session",
-			"`--skip-branch-integrity` is the only bypass",
-			"watch ends CleanUnverified, exits `3`",
-			"Roundfix publishes Outcome Comments",
-			"adapter: ok",
-			"profiles: ok",
-			"@agentclientprotocol/codex-acp",
-			"`--agent`, `--model`, and `--reasoning-effort` are all-or-none",
-			"no liveness signal",
-			"commit <path>",
-			"Settle surface: <path>",
-			"not advertised by runtime",
-			"two spaces followed by `reason: <one line>`",
-			"owner PID is provably dead",
-			"`done` becomes `completed`",
-			"This Verification Feedback retry never consumes a Round",
-			"Do not manually resolve CodeRabbit threads",
-			"Read every assigned Review Issue file completely",
-			"Update only assigned Review Issue statuses",
-			"Do not create commits inside an assigned Batch run.",
-			"Do not push inside an assigned Batch run.",
-			"Do not call GitHub, CodeRabbit, or other Review Source mutation APIs",
-			"Do not edit unassigned Review Issue files.",
-			"Do not mark any issue as `duplicated`",
-			"rtk bun run --cwd <package-dir> <script> [args...]",
-		},
-		"roundfix/agents/openai.yaml": {
-			"name: roundfix",
-			"entrypoint: SKILL.md",
-			"command: roundfix watch --source coderabbit --pr <number> --until-clean",
-			"complete_override_command: roundfix implement --spec <slug> --agent <agent> --model <model> --reasoning-effort <effort>",
-			"profile_readiness_command: roundfix profiles validate --json",
-			"agent_selection_contract:",
-			"review_run_contract:",
-			"watch_outcome_contract:",
-			"CleanUnverified with exit code",
-			"review_source_contract:",
-			"assigned Review Issue files during Batch runs",
-			"Run state",
-		},
-	}
-	for path, phrases := range roundfixRequired {
-		data, err := embedded.ReadFile(path)
-		if err != nil {
-			diagnostics = append(diagnostics, Diagnostic{Path: path, Message: "missing required skill artifact"})
-			continue
-		}
-		text := string(data)
-		if !strings.Contains(text, "Roundfix") && strings.HasSuffix(path, "SKILL.md") {
-			diagnostics = append(diagnostics, Diagnostic{Path: path, Message: "skill must use Roundfix branding"})
-		}
-		for _, phrase := range phrases {
-			if !strings.Contains(text, phrase) {
-				diagnostics = append(diagnostics, Diagnostic{Path: path, Message: fmt.Sprintf("missing required wording %q", phrase)})
-			}
-		}
-		for _, phrase := range banned {
-			if strings.Contains(text, phrase) {
-				diagnostics = append(diagnostics, Diagnostic{Path: path, Message: fmt.Sprintf("contains banned reference branding %q", phrase)})
-			}
-		}
-		if path == "roundfix/agents/openai.yaml" {
-			diagnostics = append(diagnostics, checkOpenAIManifest(path, data)...)
-		}
-	}
+	diagnostics = append(diagnostics, checkRoundfixWording(embedded)...)
 
 	// Authorial workflow skills also keep their generic language and branding
 	// checks after the owned-set and minimum-version contract above.
@@ -638,4 +567,91 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func checkRoundfixWording(fsys fs.FS) []Diagnostic {
+	banned := []string{"reference project", "Reference Project"}
+	var diagnostics []Diagnostic
+	// The operational roundfix skill carries a strict contract: required
+	// wording, Roundfix branding, and a valid OpenAI manifest.
+	roundfixRequired := map[string][]string{
+		"roundfix/SKILL.md": {
+			"Prefer `roundfix` commands over manual GitHub scraping.",
+			"Report the Run ID",
+			"state whenever you summarize progress.",
+			"Review Runs (`fetch`, `resolve`, and `watch`) execute in the user's checkout",
+			"Branch Integrity Preflight runs before any fetch, Agent Session",
+			"`--skip-branch-integrity` is the only bypass",
+			"watch ends CleanUnverified, exits `3`",
+			"Roundfix publishes Outcome Comments",
+			"adapter: ok",
+			"profiles: ok",
+			"@agentclientprotocol/codex-acp",
+			"`--agent`, `--model`, and `--reasoning-effort` are all-or-none",
+			"no liveness signal",
+			"commit <path>",
+			"Settle surface: <path>",
+			"not advertised by runtime",
+			"two spaces followed by `reason: <one line>`",
+			"owner PID is provably dead",
+			"`done` becomes `completed`",
+			"This Verification Feedback retry never consumes a Round",
+			"Do not manually resolve CodeRabbit threads",
+			"Read every assigned Review Issue file completely",
+			"Update only assigned Review Issue statuses",
+			"Do not create commits inside an assigned Batch run.",
+			"Do not push inside an assigned Batch run.",
+			"Do not call GitHub, CodeRabbit, or other Review Source mutation APIs",
+			"Do not edit unassigned Review Issue files.",
+			"Do not mark any issue as `duplicated`",
+			"rtk bun run --cwd <package-dir> <script> [args...]",
+		},
+		"roundfix/agents/openai.yaml": {
+			"name: roundfix",
+			"entrypoint: SKILL.md",
+			"command: roundfix watch --source coderabbit --pr <number> --until-clean",
+			"complete_override_command: roundfix implement --spec <slug> --agent <agent> --model <model> --reasoning-effort <effort>",
+			"profile_readiness_command: roundfix profiles validate --json",
+			"agent_selection_contract:",
+			"review_run_contract:",
+			"watch_outcome_contract:",
+			"CleanUnverified with exit code",
+			"review_source_contract:",
+			"assigned Review Issue files during Batch runs",
+			"Run state",
+		},
+	}
+	for path, phrases := range roundfixRequired {
+		var data []byte
+		var text string
+		var err error
+		if path == "roundfix/SKILL.md" {
+			text, err = mdtree.Text(fsys, path, "roundfix/references")
+		} else {
+			data, err = fs.ReadFile(fsys, path)
+			text = string(data)
+		}
+		if err != nil {
+			diagnostics = append(diagnostics, Diagnostic{Path: path, Message: "missing required skill artifact"})
+			continue
+		}
+		if !strings.Contains(text, "Roundfix") && strings.HasSuffix(path, "SKILL.md") {
+			diagnostics = append(diagnostics, Diagnostic{Path: path, Message: "skill must use Roundfix branding"})
+		}
+		for _, phrase := range phrases {
+			if !strings.Contains(text, phrase) {
+				diagnostics = append(diagnostics, Diagnostic{Path: path, Message: fmt.Sprintf("missing required wording %q", phrase)})
+			}
+		}
+		for _, phrase := range banned {
+			if strings.Contains(text, phrase) {
+				diagnostics = append(diagnostics, Diagnostic{Path: path, Message: fmt.Sprintf("contains banned reference branding %q", phrase)})
+			}
+		}
+		if path == "roundfix/agents/openai.yaml" {
+			diagnostics = append(diagnostics, checkOpenAIManifest(path, data)...)
+		}
+	}
+
+	return diagnostics
 }
