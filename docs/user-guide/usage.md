@@ -249,8 +249,10 @@ artifact creation, or Run persistence. An explicit empty
 `--reasoning-effort ""` counts as present and requests model-managed reasoning;
 Roundfix never substitutes it for a rejected explicit `high` request. A
 complete override replaces only the Preferred Selection for each relevant
-category and keeps its configured Fallback Chain. If one override applies
-across multiple Task or QA categories, Roundfix emits a warning in text output
+category and keeps its configured Fallback Chain; when the override equals one
+of those fallbacks, that fallback's position takes the configured Preferred
+Selection, so the chain never holds the same selection twice. If one override
+applies across multiple Task or QA categories, Roundfix emits a warning in text output
 and JSON metadata.
 
 Operational Runs prove every relevant preferred and fallback tuple before Run

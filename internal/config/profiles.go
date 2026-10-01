@@ -148,6 +148,16 @@ func ResolveProfile(config Config, category WorkCategory, preferredOverride *Age
 		if err != nil {
 			return ResolvedProfile{}, err
 		}
+		if err := validateAgentSelectionProfile("profiles."+string(category), profile); err != nil {
+			return ResolvedProfile{}, err
+		}
+		for index, fallback := range profile.Fallbacks {
+			normalized, _ := normalizeSelection("invocation fallback", fallback)
+			if normalized == selection {
+				profile.Fallbacks[index] = profile.Preferred
+				break
+			}
+		}
 		profile.Preferred = selection
 		if err := validateAgentSelectionProfile("invocation profile", profile); err != nil {
 			return ResolvedProfile{}, err

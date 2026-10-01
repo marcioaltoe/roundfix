@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0189-profiles-that-follow-the-current-models
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -53,3 +53,47 @@ The first delivery Run's QA gate failed on three `internal/cli` tests after task
 - task_03, task_04
 - `_techspec.md` → Build Order
 - Run `run_20260930T215154Z_eb58c6882d4f3968` (QA precondition refusal)
+
+## Result
+
+Implemented the invocation override swap on a cloned resolved profile. The
+configured profile is validated before substitution, so an override cannot hide
+an existing duplicate. A matching fallback receives the configured Preferred
+Selection at the same index; distinct overrides retain every fallback.
+
+- Requirements 1–2: `override_swap_test.go` exercises first, middle and last
+  fallback positions, inherited-category metadata, unchanged configuration,
+  distinct overrides and refusal of configured duplicates. Before the repair,
+  all three swap cases failed with duplicate-selection errors, and a distinct
+  override incorrectly hid a configured duplicate.
+- Requirement 3: the two proof tests now use explicit configurations matching
+  their three-tuple sharing and stable fallback-position contracts. Their
+  existing assertions remain unchanged.
+- Requirement 4: the new built-in proof test derives the unique tuple set from
+  all required built-in categories and checks exactly one exact proof request
+  for each tuple, with no extra tuple or legacy probe.
+- Requirement 5: the guide contains the requested sentence; a Python check
+  normalized whitespace and confirmed the complete sentence matches.
+- Requirement 6: the interactive-input collector test was left unchanged.
+
+Focused acceptance evidence:
+
+- `GOCACHE="$PWD/.gocache" rtk proxy go test -count=1 -run 'TestAnOverride|TestResolveProfile|TestProfiles' ./internal/config`
+  exited 0 after the final test edit.
+- `GOCACHE="$PWD/.gocache" rtk proxy go test -count=1 -run 'TestProveProfileSelections|TestBuiltInProfilesProve|TestRunImplementInteractiveInputPicksSpecThroughCollector' ./internal/cli`
+  exited 0, covering the three previously failing CLI tests and the new built-in
+  proof test.
+- The initial config check could not access the host Go cache under the
+  sandbox. Re-running with the repository-local cache produced the recorded
+  red reproduction, then the green focused check.
+- `rtk make verify-incremental` exited 0 on the rerun with process-table
+  access and edits paused. This included all `internal/config` tests, the
+  repository test suite, formatting, vet, skill checks and build.
+  The initial incremental run exited 2: final Agent edits during the run
+  triggered repository boundary guards, and two process-stop integration
+  tests could not enumerate processes under the sandbox. The stable rerun
+  resolved both without changing tests or verification configuration.
+
+Declared Verification and Task settlement remain Daemon-owned. No commit,
+push, Pull Request, Task status, Task Graph or other Task file was changed by
+this Agent. No follow-up implementation was added.

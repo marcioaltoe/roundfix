@@ -2527,10 +2527,21 @@ func TestProveProfileSelectionsDeduplicatesReferencesAndStartsFreshProofPass(t *
 			}, nil
 		},
 	}
+	preferred := roundconfig.AgentSelection{Runtime: "codex", Model: "shared-preferred", ReasoningEffort: "high"}
+	fallback := roundconfig.AgentSelection{Runtime: "claude", Model: "shared-fallback", ReasoningEffort: "high"}
+	frontendPreferred := roundconfig.AgentSelection{Runtime: "claude", Model: "frontend-preferred", ReasoningEffort: "xhigh"}
+	config := roundconfig.Config{Profiles: roundconfig.Profiles{}}
 	categories := roundconfig.RequiredWorkCategories()
+	for _, category := range categories {
+		profile := roundconfig.AgentSelectionProfile{Preferred: preferred, Fallbacks: []roundconfig.AgentSelection{fallback}}
+		if category == roundconfig.CategoryFrontend {
+			profile = roundconfig.AgentSelectionProfile{Preferred: frontendPreferred, Fallbacks: []roundconfig.AgentSelection{preferred}}
+		}
+		config.Profiles[category] = roundconfig.ProfileEntry{Profile: profile, Source: roundconfig.ProfileSourceBuiltIn}
+	}
 
-	first := proveProfileSelections(context.Background(), roundconfig.Builtin(), categories, "/workspace", runner)
-	second := proveProfileSelections(context.Background(), roundconfig.Builtin(), categories, "/workspace", runner)
+	first := proveProfileSelections(context.Background(), config, categories, "/workspace", runner)
+	second := proveProfileSelections(context.Background(), config, categories, "/workspace", runner)
 
 	if first.Err != nil || second.Err != nil {
 		t.Fatalf("profile readiness errors: first=%v second=%v", first.Err, second.Err)
@@ -2553,14 +2564,26 @@ func TestProveProfileSelectionsDeduplicatesReferencesAndStartsFreshProofPass(t *
 
 func TestProveProfileSelectionsRetainsStableFallbackPositions(t *testing.T) {
 	t.Parallel()
-	config := roundconfig.Builtin()
-	shared := config.Profiles[roundconfig.CategoryBackend].Profile.Fallbacks[0]
-	frontend := config.Profiles[roundconfig.CategoryFrontend]
-	frontend.Profile.Fallbacks = []roundconfig.AgentSelection{
-		{Runtime: "claude", Model: "frontend-first-fallback", ReasoningEffort: ""},
-		shared,
-	}
-	config.Profiles[roundconfig.CategoryFrontend] = frontend
+	shared := roundconfig.AgentSelection{Runtime: "claude", Model: "shared-fallback", ReasoningEffort: "high"}
+	config := roundconfig.Config{Profiles: roundconfig.Profiles{
+		roundconfig.CategoryBackend: {
+			Source: roundconfig.ProfileSourceBuiltIn,
+			Profile: roundconfig.AgentSelectionProfile{
+				Preferred: roundconfig.AgentSelection{Runtime: "codex", Model: "backend-preferred", ReasoningEffort: "high"},
+				Fallbacks: []roundconfig.AgentSelection{shared},
+			},
+		},
+		roundconfig.CategoryFrontend: {
+			Source: roundconfig.ProfileSourceBuiltIn,
+			Profile: roundconfig.AgentSelectionProfile{
+				Preferred: roundconfig.AgentSelection{Runtime: "claude", Model: "frontend-preferred", ReasoningEffort: "xhigh"},
+				Fallbacks: []roundconfig.AgentSelection{
+					{Runtime: "claude", Model: "frontend-first-fallback", ReasoningEffort: ""},
+					shared,
+				},
+			},
+		},
+	}}
 	runner := &profileReadinessExactRunner{
 		prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
 			return agent.SelectionProof{Runtime: req.Runtime.ID, Model: req.Runtime.Model, ReasoningEffort: req.Runtime.ReasoningEffort}, nil
@@ -2587,6 +2610,48 @@ func TestProveProfileSelectionsRetainsStableFallbackPositions(t *testing.T) {
 	}
 	if got := sharedProof.References[1]; got.Category != roundconfig.CategoryFrontend || got.Role != "fallback" || got.FallbackIndex != 2 || got.Source != roundconfig.ProfileSourceBuiltIn {
 		t.Fatalf("frontend fallback reference = %+v", got)
+	}
+}
+
+func TestBuiltInProfilesProveOncePerUniqueTuple(t *testing.T) {
+	t.Parallel()
+	config := roundconfig.Builtin()
+	categories := roundconfig.RequiredWorkCategories()
+	unique := map[roundconfig.AgentSelection]bool{}
+	for _, category := range categories {
+		profile := config.Profiles[category].Profile
+		unique[profile.Preferred] = true
+		for _, fallback := range profile.Fallbacks {
+			unique[fallback] = true
+		}
+	}
+	runner := &profileReadinessExactRunner{
+		prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
+			return agent.SelectionProof{Runtime: req.Runtime.ID, Model: req.Runtime.Model, ReasoningEffort: req.Runtime.ReasoningEffort}, nil
+		},
+	}
+	result := proveProfileSelections(context.Background(), config, categories, "/workspace", runner)
+	if result.Err != nil {
+		t.Fatalf("profile readiness error = %v", result.Err)
+	}
+	if len(result.Proofs) != len(unique) || len(runner.exactRequests) != len(unique) {
+		t.Fatalf("proofs = %d, exact requests = %d, want %d unique tuples", len(result.Proofs), len(runner.exactRequests), len(unique))
+	}
+	if runner.probeCalls != 0 {
+		t.Fatalf("legacy error-only probes = %d, want exact proof results", runner.probeCalls)
+	}
+	counts := map[roundconfig.AgentSelection]int{}
+	for _, req := range runner.exactRequests {
+		selection := roundconfig.AgentSelection{Runtime: req.Runtime.ID, Model: req.Runtime.Model, ReasoningEffort: req.Runtime.ReasoningEffort}
+		if !unique[selection] {
+			t.Fatalf("unexpected proof request for %+v", selection)
+		}
+		counts[selection]++
+	}
+	for selection := range unique {
+		if counts[selection] != 1 {
+			t.Errorf("exact proof requests for %+v = %d, want 1", selection, counts[selection])
+		}
 	}
 }
 
