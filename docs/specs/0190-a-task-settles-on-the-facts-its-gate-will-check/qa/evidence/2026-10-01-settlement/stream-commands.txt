@@ -1,0 +1,7 @@
+Disposable gated graph; existing implementFakeRunner and fake collaborators drive actual Task engine.
+Public binary: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0190-a-task-settles-on-the-facts-its-gate-will-check-cadfb1e2e3c06afd-155130db-16abb505/run_20261001T035640Z_f7cf1b9d014c1c3e/bin/roundfix
+Run: run_20261001T041522Z_0da120e1fb36c211
+./bin/roundfix events run_20261001T041522Z_0da120e1fb36c211 --filter verification (twice in fresh processes)
+./bin/roundfix events run_20261001T041522Z_0da120e1fb36c211
+All exits 0, stderr empty. Settlement labels started/command-passed; repository command is present in raw journal and intentionally redacted publicly.
+Parity: fixture setup uses the in-process CLI with fake runner/verifier/committer/worktree/source; public stream uses the unmodified built binary.

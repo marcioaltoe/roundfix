@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0190-a-task-settles-on-the-facts-its-gate-will-check
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

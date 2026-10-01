@@ -1,0 +1,4 @@
+Grant revision: 5f18275768f80aeb243cfabc10ba60bbd961e266
+Every actual Task commit descends from this revision (git merge-base --is-ancestor: exit 0 for each). No Task commit changes the grant.
+Four source/mirror skill paths match the closed grant. Task 06 adds only the declared derived skills/testdata/owned-skill-versions.json pin beyond those four. The sanctioned owned-skill recorder reproduces it byte-identically in a disposable checkout; see derived-pin-reproduction.txt.
+Seeded mechanical audit independently accepts task_04 1cda2ac5 and task_06 5a489ed5 under the grant revision above; neither is re-audited here. Every changed file was measured with git diff-tree, not inferred from Task Results.
