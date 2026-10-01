@@ -1,9 +1,12 @@
 ---
 spec: 0194-a-skill-and-a-command-guide-read-one-command-at-a-time
-status: active
+status: archived
 created: 2026-09-30
 surfaces: [backend, docs]
+archived: "2026-10-01"
+source_slug: 0194-a-skill-and-a-command-guide-read-one-command-at-a-time
 ---
+
 
 # A skill and a command guide read one command at a time
 
