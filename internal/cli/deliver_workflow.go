@@ -34,6 +34,7 @@ type commandDeliveryWorkflow struct {
 	git    preflight.GitRunner
 }
 
+var _ delivery.PrerequisiteReader = (*commandDeliveryWorkflow)(nil)
 var _ delivery.ItemRecovery = (*commandDeliveryWorkflow)(nil)
 var _ delivery.ItemWorkspace = (*commandDeliveryWorkflow)(nil)
 var _ delivery.ItemRevalidator = (*commandDeliveryWorkflow)(nil)
@@ -47,18 +48,19 @@ func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) 
 		git:    preflight.ExecGitRunner{},
 	}
 	return delivery.NewEngine(runStore, delivery.EngineDependencies{
-		Workspace:    workflow,
-		Runner:       workflow,
-		Reviewer:     workflow,
-		Archiver:     workflow,
-		Gate:         workflow,
-		Authorizer:   workflow,
-		Publication:  workflow,
-		PullRequests: delivery.NewGitHubCLI(loaded.GitRoot),
-		Checks:       delivery.NewGitHubCLI(loaded.GitRoot),
-		Recovery:     workflow,
-		Revalidator:  workflow,
-		Log:          os.Stderr,
+		Workspace:     workflow,
+		Runner:        workflow,
+		Reviewer:      workflow,
+		Archiver:      workflow,
+		Gate:          workflow,
+		Authorizer:    workflow,
+		Publication:   workflow,
+		PullRequests:  delivery.NewGitHubCLI(loaded.GitRoot),
+		Checks:        delivery.NewGitHubCLI(loaded.GitRoot),
+		Recovery:      workflow,
+		Revalidator:   workflow,
+		Prerequisites: workflow,
+		Log:           os.Stderr,
 	})
 }
 
@@ -1282,4 +1284,64 @@ func deliveryCommandEnvironment(environment []string, homeDir string) []string {
 		result = append(result, entry)
 	}
 	return append(result, "HOME="+homeDir)
+}
+
+// UnmetPrerequisites reads merge evidence from the refreshed delivery default,
+// never from the owner's checkout or an unmerged item branch.
+func (workflow *commandDeliveryWorkflow) UnmetPrerequisites(ctx context.Context, gitRoot, specSlug string) ([]string, error) {
+	root, err := roundconfig.ResolveSpecsRoot(workflow.loaded, gitRoot)
+	if err != nil {
+		return nil, fmt.Errorf("resolve prerequisite Specs Root: %w", err)
+	}
+	if root.External {
+		return nil, errors.New("read prerequisites: Specs Root is outside the delivery repository")
+	}
+	defaultBranch := preflight.DetectDefaultBranch(ctx, gitRoot, "", workflow.git)
+	if defaultBranch.Source == preflight.DefaultBranchUndetermined {
+		return nil, errors.New("read prerequisites: repository default branch is unknown")
+	}
+	remote := strings.TrimSpace(workflow.loaded.Config.Watch.PushRemote)
+	if remote == "" {
+		remote = "origin"
+	}
+	if _, err := workflow.git.RunGit(ctx, gitRoot, "fetch", remote, defaultBranch.Name); err != nil {
+		return nil, fmt.Errorf("refresh prerequisite default branch %q: %w", defaultBranch.Name, err)
+	}
+	ref := "refs/remotes/" + remote + "/" + defaultBranch.Name
+	manifestPath, err := filepath.Rel(gitRoot, filepath.Join(root.Path, specSlug, "_tasks.md"))
+	if err != nil {
+		return nil, fmt.Errorf("resolve prerequisite manifest path: %w", err)
+	}
+	content, err := workflow.git.RunGit(ctx, gitRoot, "show", ref+":"+filepath.ToSlash(manifestPath))
+	if err != nil {
+		return nil, fmt.Errorf("read prerequisite _tasks.md at %s: %w", ref, err)
+	}
+	requires, err := spec.ParseRequiredSpecs([]byte(content), specSlug)
+	if err != nil {
+		return nil, err
+	}
+	if len(requires) == 0 {
+		return nil, nil
+	}
+	archiveRoot, err := filepath.Rel(gitRoot, spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot))
+	if err != nil {
+		return nil, fmt.Errorf("resolve prerequisite archive root: %w", err)
+	}
+	// One immutable-tree read checks every prerequisite, without a subprocess
+	// per slug or treating a failed Git read as proof of absence.
+	paths, err := workflow.git.RunGit(ctx, gitRoot, "ls-tree", "-r", "--name-only", ref, "--", filepath.ToSlash(archiveRoot))
+	if err != nil {
+		return nil, fmt.Errorf("read prerequisite archives at %s: %w", ref, err)
+	}
+	present := make(map[string]bool)
+	for _, path := range strings.Split(paths, "\n") {
+		present[path] = true
+	}
+	var unmet []string
+	for _, slug := range requires {
+		if !present[filepath.ToSlash(filepath.Join(archiveRoot, slug, "_prd.md"))] {
+			unmet = append(unmet, slug)
+		}
+	}
+	return unmet, nil
 }

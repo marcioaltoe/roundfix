@@ -28,6 +28,7 @@ const (
 	BlockerQueueDeadline          = "queue-deadline"
 	BlockerRevalidationFailed     = "revalidation-failed"
 	BlockerFlakyCheck             = "flaky-check"
+	BlockerPrerequisiteUnmerged   = "prerequisite-unmerged"
 )
 
 const WarningPremiseChanged = "premise-changed"
@@ -187,7 +188,12 @@ type Sleeper interface {
 	Sleep(context.Context, time.Duration) error
 }
 
+type PrerequisiteReader interface {
+	UnmetPrerequisites(ctx context.Context, gitRoot, specSlug string) ([]string, error)
+}
+
 type EngineDependencies struct {
+	Prerequisites PrerequisiteReader
 	Workspace     ItemWorkspace
 	Runner        CandidateRunner
 	Reviewer      PrePRReviewer
@@ -207,6 +213,7 @@ type EngineDependencies struct {
 }
 
 type Engine struct {
+	prerequisites PrerequisiteReader
 	store         *store.Store
 	workspace     ItemWorkspace
 	runner        CandidateRunner
@@ -253,6 +260,7 @@ func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
 	}
 	return &Engine{
 		store:         runStore,
+		prerequisites: dependencies.Prerequisites,
 		workspace:     dependencies.Workspace,
 		runner:        dependencies.Runner,
 		reviewer:      dependencies.Reviewer,
@@ -273,8 +281,9 @@ func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
 }
 
 func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (RetryResult, error) {
-	if err := engine.validateRetry(); err != nil {
-		return RetryResult{}, err
+	validationErr := engine.validateRetry()
+	if engine == nil || engine.store == nil {
+		return RetryResult{}, validationErr
 	}
 	gitRoot = strings.TrimSpace(gitRoot)
 	specSlug = strings.TrimSpace(specSlug)
@@ -290,6 +299,9 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 		return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: read queue: %w", specSlug, err)
 	}
 	if !found {
+		if validationErr != nil {
+			return RetryResult{}, validationErr
+		}
 		return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: Delivery Queue for repository %q does not exist", specSlug, gitRoot)
 	}
 	var item store.DeliveryQueueItem
@@ -303,6 +315,9 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 	}
 	if !itemFound {
 		return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: Delivery Queue does not contain the item", specSlug)
+	}
+	if !prerequisitePark(item.Blocker) && validationErr != nil {
+		return RetryResult{}, validationErr
 	}
 	if item.Stage != store.DeliveryStageParked {
 		return RetryResult{}, fmt.Errorf(
@@ -328,6 +343,16 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 			queue.Limits.MaxRetries,
 			store.ErrDeliveryRetryLimit,
 		)
+	}
+
+	if prerequisitePark(item.Blocker) {
+		blocker := item.Blocker
+		item.Stage = store.DeliveryStageQueued
+		pid, identity, err := engine.store.RetryDeliveryQueueItem(ctx, gitRoot, item, blocker)
+		if err != nil {
+			return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: %w", specSlug, err)
+		}
+		return RetryResult{SpecSlug: specSlug, Blocker: blocker, Stage: item.Stage, OwnerPID: pid, OwnerIdentity: identity}, nil
 	}
 
 	workDir, err := engine.workspace.UseItemBranch(
@@ -480,6 +505,9 @@ func (engine *Engine) Run(ctx context.Context, gitRoot string) (EngineResult, er
 		return EngineResult{}, fmt.Errorf("run Delivery Engine: Delivery Queue for repository %q does not exist", gitRoot)
 	}
 
+	if err := engine.releasePrerequisites(ctx, gitRoot, &queue); err != nil {
+		return EngineResult{}, err
+	}
 	for index := range queue.Items {
 		item := queue.Items[index]
 		if item.Stage == store.DeliveryStageParked {
@@ -527,6 +555,11 @@ func (engine *Engine) Run(ctx context.Context, gitRoot string) (EngineResult, er
 			}
 		}
 		queue.Items[index] = item
+		if item.Stage == store.DeliveryStageMerged {
+			if err := engine.releasePrerequisites(ctx, gitRoot, &queue); err != nil {
+				return EngineResult{}, err
+			}
+		}
 	}
 	return EngineResult{Items: queue.Items}, nil
 }
@@ -567,6 +600,34 @@ func (engine *Engine) advanceItem(
 	priorMerges []string,
 ) error {
 	if item.Stage == store.DeliveryStageQueued {
+		if engine.prerequisites != nil {
+			unmet, err := engine.prerequisites.UnmetPrerequisites(ctx, gitRoot, item.SpecSlug)
+			if err != nil {
+				return fmt.Errorf("read prerequisites: %w", err)
+			}
+			if len(unmet) > 0 {
+				queue, _, err := engine.store.DeliveryQueue(ctx, gitRoot)
+				if err != nil {
+					return fmt.Errorf("read prerequisite queue: %w", err)
+				}
+				waiting := true
+				for _, slug := range unmet {
+					found := false
+					for _, other := range queue.Items {
+						if other.SpecSlug == slug && other.Stage != store.DeliveryStageParked && other.Stage != store.DeliveryStageMerged {
+							found = true
+							break
+						}
+					}
+					waiting = waiting && found
+				}
+				if waiting {
+					fmt.Fprintf(engine.log, "roundfix: prerequisite wait: Delivery Queue item %s: %s\n", item.SpecSlug, strings.Join(unmet, ", "))
+					return nil
+				}
+				return engine.park(ctx, gitRoot, item, BlockerPrerequisiteUnmerged+": "+strings.Join(unmet, ", "))
+			}
+		}
 		branch, itemWorktree, err := engine.workspace.CreateItemBranch(ctx, gitRoot, item.SpecSlug)
 		if err != nil {
 			return fmt.Errorf("create item worktree: %w", err)
@@ -1222,4 +1283,32 @@ func (realSleeper) Sleep(ctx context.Context, duration time.Duration) error {
 	case <-timer.C:
 		return nil
 	}
+}
+
+func prerequisitePark(blocker string) bool {
+	name, _, _ := strings.Cut(blocker, ":")
+	return name == BlockerPrerequisiteUnmerged
+}
+
+func (engine *Engine) releasePrerequisites(ctx context.Context, gitRoot string, queue *store.DeliveryQueue) error {
+	if engine.prerequisites == nil {
+		return nil
+	}
+	for index := range queue.Items {
+		item := &queue.Items[index]
+		if item.Stage != store.DeliveryStageParked || !prerequisitePark(item.Blocker) {
+			continue
+		}
+		unmet, err := engine.prerequisites.UnmetPrerequisites(ctx, gitRoot, item.SpecSlug)
+		if err != nil {
+			return fmt.Errorf("read prerequisites for %q: %w", item.SpecSlug, err)
+		}
+		if len(unmet) == 0 {
+			if err := engine.setStage(ctx, gitRoot, item, store.DeliveryStageQueued); err != nil {
+				return err
+			}
+			fmt.Fprintf(engine.log, "roundfix: prerequisite release: Delivery Queue item %s: all prerequisites merged\n", item.SpecSlug)
+		}
+	}
+	return nil
 }

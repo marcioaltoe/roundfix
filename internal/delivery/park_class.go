@@ -26,13 +26,25 @@ type ParkClassification struct {
 }
 
 // ClassifyPark supplies the same operator action to status and the Pending Question.
-func ClassifyPark(_ store.DeliveryQueue, item store.DeliveryQueueItem) ParkClassification {
+func ClassifyPark(queue store.DeliveryQueue, item store.DeliveryQueueItem) ParkClassification {
 	classification := ParkClassification{
 		Class: ParkClassUnclassified,
 		Next:  "resolve the blocker, then run roundfix deliver retry " + item.SpecSlug,
 	}
 	blocker, detail, _ := strings.Cut(item.Blocker, ":")
 	switch blocker {
+	case BlockerPrerequisiteUnmerged:
+		classification.Class = ParkClassDependency
+		prerequisites := strings.Split(strings.TrimSpace(detail), ", ")
+		for _, slug := range prerequisites {
+			for _, prerequisite := range queue.Items {
+				if prerequisite.SpecSlug == slug && prerequisite.Stage == store.DeliveryStageParked {
+					classification.Next = "run roundfix deliver retry " + slug + "; " + item.SpecSlug + " returns to the queue once " + slug + " is merged"
+					return classification
+				}
+			}
+		}
+		classification.Next = "deliver or merge " + strings.TrimSpace(detail) + ", then run roundfix deliver retry " + item.SpecSlug
 	case BlockerChecksTimeout, BlockerItemWorktreeMissing, BlockerDeliveryError:
 		classification.Class = ParkClassEnvironment
 	case BlockerFlakyCheck:

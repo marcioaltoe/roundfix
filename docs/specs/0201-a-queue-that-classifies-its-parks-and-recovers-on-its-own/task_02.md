@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -64,3 +64,64 @@ Queue order is the only order the Delivery Queue knows, and a parked item never 
 - `_prd.md` → Goal 1; User Story 1; Core Feature 1; Success Metric 1
 - `_techspec.md` → Prerequisites; Park Classes; API Contracts 2-3; Surface Transcript 2; Testing Approach 2; Build Order 2
 - ADR-0193; ADR-0090
+
+## Result
+
+Implemented the Task 02 prerequisite slice for Daemon Verification. Task
+status remains Daemon-owned; no authored Verification command was run and no
+commit, push or Pull Request was made. The starting worktree contained only
+the Daemon's pre-existing edit to this Task file. Baseline `HEAD` inspection
+confirmed that `Graph.Requires`, `PrerequisiteReader` and
+`UnmetPrerequisites` were absent before this slice.
+
+The manifest parser reads and validates `requires`; delivery start loads all
+queued Specs before resolving prerequisite names and detecting deterministic
+cycles, then checks authorization. The optional reader fetches the configured
+delivery remote (or `origin`) and reads the manifest and archive evidence at
+its refreshed remote-tracking default branch. Archive presence uses one
+immutable-tree listing for every prerequisite, as ADR-0090 requires; Git
+errors remain errors rather than evidence of absence.
+
+The engine waits or parks before creating a worktree, releases dependency
+parks at pass start and after merges without counting a retry, and accepts an
+operator retry to `queued` without workspace recovery, revalidation or
+carry-forward. Ordinary retry counting and limits remain in the store's
+retry transition. Dependency Park Classes provide the TechSpec's operator
+commands. The delivery guide documents declaration, refusal, waiting,
+parking, release and retry.
+
+| Acceptance criterion | Implementation and focused-check evidence |
+| --- | --- |
+| Valid and malformed manifests | `TestTaskGraphReadsRequiredSpecs` covers a valid list, an empty list and an omitted declaration; `TestTaskGraphRefusesAMalformedRequiresList` covers scalar, map, non-string entries, empty/whitespace entries, duplicate/trimmed duplicate entries and self-reference, with `_tasks.md` in every refusal. |
+| Cycle and unknown prerequisite refusal | `TestDeliverStartRefusesAPrerequisiteCycle` and `TestDeliverStartRefusesAnUnknownPrerequisite` assert exit 2, empty stdout, the complete preflight stderr, no owner launch and no persisted queue. Fixtures lack delivery grants, proving prerequisite refusal precedes authorization. Additional tests cover longer cycles and active/archive resolution for built-in and configured roots. |
+| Archive only on refreshed remote default | `TestAPrerequisiteIsMetByItsArchiveOnTheRefreshedDefaultBranch` advances a disposable local remote after cloning, proves the tracking ref was stale, and checks both `origin` and a configured delivery remote. The refreshed archive counts as met; absent and checkout-only archives remain unmet. A checkout-only manifest amendment is ignored. Git fetch, manifest and archive-read errors are separately covered. |
+| Wait, park without worktree, release with unchanged retry count | `TestAnItemWaitsForAPrerequisiteAheadInTheQueue` checks the wait log, queued state and absence of dependent actions while the prerequisite proceeds. `TestAnItemParksWhenItsPrerequisiteIsParked` covers parked, missing and merged-but-unarchived prerequisites. `TestTheOwnerReleasesADependencyParkWhenThePrerequisiteMerges` covers pass-start and after-merge release, cleared blockers, release logs and three existing retries remaining unchanged; after-merge release starts on the next pass. `TestDependencyParkRemainsUntilEveryPrerequisiteIsMet` covers partial satisfaction and a nil reader. |
+| No prerequisites preserves normal start | `TestAnItemWithoutPrerequisitesStartsAsBefore` exercises nil and empty readers through merge. `TestPrerequisiteReaderWithoutRequiresSkipsArchiveRead` checks that an omitted declaration needs no archive lookup. Existing delivery regression tests also pass. |
+
+Additional checks: `TestRetryReturnsADependencyParkToTheQueue` uses nil
+workspace, recovery and revalidator dependencies to prove the retry bypass;
+`TestPrerequisiteParkGuidesTheOperator` asserts both exact next commands.
+All new tests use fakes or disposable filesystem remotes; none reaches a
+network remote.
+
+Focused checks run in this turn:
+
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk proxy go test ./internal/spec ./internal/delivery ./internal/store ./internal/cli -run 'TaskGraph|Prerequisite|DependencyPark|WithoutPrerequisites|Deliver|Delivery|WithoutARevalidator' -count=1` — exit 0; all four packages passed after the final code/test edits.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk proxy go test ./internal/delivery -count=1` — exit 0 after restoring the existing missing-revalidator retry diagnostic.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk proxy go test ./internal/delivery ./internal/store -count=1` — the store passed; the initial delivery run exposed that diagnostic regression, subsequently repaired and covered by the final focused run above.
+- Initial focused delivery check using the default Go cache could not access a sandbox-restricted cache file. Subsequent checks used the writable task-scoped cache above.
+- The initial release fixture tried to seed `RetryCount` through an ordinary update, which deliberately does not write it. The fixture now seeds three real retry transitions and verifies release preserves that persisted count.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+- Python inspection of the delivery guide confirmed the documented `requires`, wait, `prerequisite-unmerged`, release and retry behavior.
+
+Not run: the Task's declared Verification commands, the repository gate and
+final Spec QA; the Daemon owns authored Verification and settlement.
+The Task Graph and other Task files are unchanged. No follow-up feature work
+was added to this diff; remaining Spec slices retain their existing owners.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/spec/requires.go`
+- `internal/spec/spec_test.go`

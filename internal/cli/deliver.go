@@ -204,11 +204,19 @@ func runDeliverStart(ctx context.Context, args []string, stdout, stderr io.Write
 	if err != nil {
 		return printDeliverFailure("start", err, stderr)
 	}
-	var authorizationRefusals []string
+	graphs := make([]*spec.Graph, 0, len(options.Slugs))
 	for _, slug := range options.Slugs {
-		if _, err := spec.Load(specsRoot.Path, slug); err != nil {
+		graph, err := spec.Load(specsRoot.Path, slug)
+		if err != nil {
 			return printDeliverFailure("start", err, stderr)
 		}
+		graphs = append(graphs, graph)
+	}
+	if err := validateDeliveryPrerequisites(specsRoot, graphs); err != nil {
+		return printDeliverFailure("start", err, stderr)
+	}
+	var authorizationRefusals []string
+	for _, slug := range options.Slugs {
 		if reasons := deliveryAuthorizationReasons(ctx, loaded, specsRoot, slug); len(reasons) > 0 {
 			authorizationRefusals = append(authorizationRefusals, fmt.Sprintf("%s: %s", slug, strings.Join(reasons, "; ")))
 		}
@@ -612,4 +620,58 @@ func parseDeliverNoArgs(subcommand string, args []string) error {
 func printDeliverFailure(subcommand string, err error, stderr io.Writer) int {
 	printPreflightFailure("deliver "+subcommand, err, stderr)
 	return exitPreflight
+}
+
+func validateDeliveryPrerequisites(root roundconfig.SpecsRoot, graphs []*spec.Graph) error {
+	bySlug := make(map[string]*spec.Graph, len(graphs))
+	archiveRoot := spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot)
+	for _, graph := range graphs {
+		bySlug[graph.Spec.Slug] = graph
+		for _, required := range graph.Requires {
+			found := false
+			for _, directory := range []string{root.Path, archiveRoot} {
+				info, err := os.Stat(filepath.Join(directory, required, "_prd.md"))
+				if err == nil && !info.IsDir() {
+					found = true
+					break
+				}
+				if err != nil && !errors.Is(err, os.ErrNotExist) {
+					return fmt.Errorf("resolve prerequisite %q: %w", required, err)
+				}
+			}
+			if !found {
+				return fmt.Errorf("Delivery Queue Spec %s requires unknown Spec %s", graph.Spec.Slug, required)
+			}
+		}
+	}
+	visited := make(map[string]bool)
+	active := make(map[string]int)
+	var path []string
+	var visit func(string) error
+	visit = func(slug string) error {
+		if index, ok := active[slug]; ok {
+			cycle := append(append([]string(nil), path[index:]...), slug)
+			return fmt.Errorf("Delivery Queue Specs require each other in a cycle: %s", strings.Join(cycle, " -> "))
+		}
+		if visited[slug] || bySlug[slug] == nil {
+			return nil
+		}
+		active[slug] = len(path)
+		path = append(path, slug)
+		for _, required := range bySlug[slug].Requires {
+			if err := visit(required); err != nil {
+				return err
+			}
+		}
+		path = path[:len(path)-1]
+		delete(active, slug)
+		visited[slug] = true
+		return nil
+	}
+	for _, graph := range graphs {
+		if err := visit(graph.Spec.Slug); err != nil {
+			return err
+		}
+	}
+	return nil
 }

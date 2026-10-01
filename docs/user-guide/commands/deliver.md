@@ -36,6 +36,42 @@ repository gate, push, pull request, current-head checks, and squash merge.
 When the configured pre-PR review is `none`, the queue records that omission
 and archives after the Run's QA gate.
 
+A Spec can name prerequisite Specs in its Task Graph manifest (`_tasks.md`):
+
+```yaml
+requires:
+  - 0192-first-prerequisite
+  - 0193-second-prerequisite
+```
+
+`requires` is optional. It must be a list of distinct, non-empty strings and
+cannot name the Spec itself. `deliver start` loads every queued Spec, then
+refuses unknown prerequisites or cycles among queued Specs with exit `2`
+before checking delivery authorization or recording a queue. A prerequisite
+must exist in the Specs Root or its resolved archive root; it need not be in
+the queue.
+
+Before creating an item's worktree, the owner fetches the delivery remote's
+default branch and reads `requires` from that refreshed branch. A prerequisite
+is met only when its archived `_prd.md` exists there. An archive present only
+in your checkout or an unmerged branch does not count. With no unmet
+prerequisites, the item starts as usual.
+
+When every unmet prerequisite is an item in the queue that is neither parked
+nor merged, the dependent item waits at `queued`; the owner logs the wait and
+moves on. Otherwise it parks as `prerequisite-unmerged: <slug>, …` without
+creating a worktree. `deliver status` classifies this park as `dependency` and
+points to the prerequisite's retry when that prerequisite is parked, or asks
+you to deliver or merge it when it is outside the queue.
+
+At the start of every owner pass and after any item merges, the owner returns
+a dependency park to `queued` when all its prerequisites are met, clears the
+blocker and leaves the retry count unchanged. When every item is parked, the
+owner exits; retrying a prerequisite restarts it. You can also run
+`roundfix deliver retry <slug>` on the dependent item to return it to `queued`
+without a worktree, revalidation or carry-forward. The owner checks its
+prerequisites again before starting it.
+
 Each queued Spec runs in its own linked worktree under `worktree.location`,
 created from the refreshed default branch.
 `roundfix deliver` never switches, resets or cleans your checkout, and it does not need the checkout to be clean.
