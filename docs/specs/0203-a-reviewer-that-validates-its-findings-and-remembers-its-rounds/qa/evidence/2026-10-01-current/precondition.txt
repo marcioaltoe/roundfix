@@ -1,0 +1,11 @@
+COMMAND: ./bin/roundfix spec check 0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds --strict
+Spec 0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  vocabulary documentation detector: missing docs/specs/0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds/_techspec.md Vocabulary Contract
+  SC-TRANSCRIPT-UNDECLARED: missing a PRD committed at or after .agents/skills/write-techspec/references/concrete-contracts.md
+  SC-RECEIPT-MISSING: missing a PRD committed at or after .agents/skills/write-techspec/references/concrete-contracts.md
+  SC-REF-UNRESOLVED: missing docs/specs/0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds/references/_index.md
+EXIT: 0

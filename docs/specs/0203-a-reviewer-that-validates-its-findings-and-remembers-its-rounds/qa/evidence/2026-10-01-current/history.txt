@@ -1,0 +1,59 @@
+base=22631b4bb74066b37c0388c9f483d4f95aa6974a head=e157b7f73f6828e9fee3f37a0e593436ad5239c0
+Task 01 commit=15e7f9ef553984e4f9217dcee1beb7846b20ab81
+docs/specs/0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds/task_01.md
+docs/user-guide/commands/review.md
+internal/cli/review.go
+internal/cli/review_archived_spec_test.go
+internal/cli/review_conventions.go
+internal/cli/review_final_message_test.go
+internal/cli/review_head_bound_test.go
+internal/cli/review_record_checkout_test.go
+internal/cli/review_test.go
+internal/cli/review_validation.go
+internal/cli/review_validation_test.go
+OUTSIDE=[]
+Task 02 commit=5a49bdfde26475c25c3328885f04df0d7d678040
+docs/specs/0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds/task_02.md
+internal/cli/review.go
+internal/cli/review_convention_validator.go
+internal/cli/review_convention_validator_test.go
+internal/cli/review_conventions.go
+OUTSIDE=[]
+Task 03 commit=9e82768c8d1cc150d858a2245c7e119149cd05bf
+docs/specs/0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds/task_03.md
+internal/cli/deliver_workflow.go
+internal/cli/review.go
+internal/cli/review_lineage.go
+internal/cli/review_lineage_test.go
+OUTSIDE=[]
+Task 04 commit=0e6db49f29548f7ab98ffd95b898437983e9accd
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/review.md
+docs/specs/0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds/task_04.md
+docs/user-guide/commands/review.md
+internal/agent/acpx_runner.go
+internal/agent/agent.go
+internal/agent/agent_session_id_test.go
+internal/cli/review.go
+internal/cli/review_lineage.go
+internal/cli/review_lineage_test.go
+internal/cli/review_session_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/review.md
+skills/testdata/owned-skill-versions.json
+OUTSIDE=[]
+Task 06 commit=bea5cb76520d17750ab4b25fd5a41335046f5f8a
+docs/specs/0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds/task_06.md
+internal/cli/review.go
+internal/cli/review_lineage.go
+internal/cli/review_lineage_selection_test.go
+internal/cli/review_session_test.go
+OUTSIDE=[]
+protected internal/cli/cli_test.go unchanged=True
+protected .roundfixrc.yml unchanged=True
+ancestor 9456ee24d6b173903635f38c0598a56e91994d52 exit=0
+ancestor eafb1f4cad728d1b5a89a813c542ef55a41a65f1 exit=0
+ancestor 22631b4bb74066b37c0388c9f483d4f95aa6974a exit=0
+QA settlement .agents/skills/roundfix/SKILL.md unchanged=True
+QA settlement skills/roundfix/SKILL.md unchanged=True
+grant 22631b4bb74066b37c0388c9f483d4f95aa6974a before Task 04 exit=0

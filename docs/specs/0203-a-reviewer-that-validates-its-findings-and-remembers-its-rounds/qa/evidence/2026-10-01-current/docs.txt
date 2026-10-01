@@ -1,0 +1,6 @@
+.agents/skills/roundfix/references/review.md: missing=[]
+skills/roundfix/references/review.md: missing=[]
+docs/user-guide/commands/review.md: missing=[]
+Entry and review reference mirrors byte-identical.
+Version recorded and skills-sync-check exit 0: versions.txt and sync.txt.
+QA settlement unchanged in every changed skill: history.txt; all other skills have no diff.
