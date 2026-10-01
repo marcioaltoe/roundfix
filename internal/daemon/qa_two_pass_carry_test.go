@@ -201,11 +201,9 @@ func assertTwoPassSnapshot(t *testing.T, report, head string, rows, contents map
 		Snapshots map[string]struct {
 			Head   string `yaml:"head"`
 			Inputs []struct {
-				Ref   string `yaml:"ref"`
-				Files []struct {
-					Path   string `yaml:"path"`
-					SHA256 string `yaml:"sha256"`
-				} `yaml:"files"`
+				Ref    string `yaml:"ref"`
+				Count  int    `yaml:"count"`
+				SHA256 string `yaml:"sha256"`
 			} `yaml:"inputs"`
 		} `yaml:"evidence_snapshots"`
 	}
@@ -221,12 +219,12 @@ func assertTwoPassSnapshot(t *testing.T, report, head string, rows, contents map
 	}
 	for id, path := range rows {
 		snapshot, ok := frontmatter.Snapshots[id]
-		if !ok || snapshot.Head != head || len(snapshot.Inputs) != 1 || snapshot.Inputs[0].Ref != path || len(snapshot.Inputs[0].Files) != 1 {
+		if !ok || snapshot.Head != head || len(snapshot.Inputs) != 1 || snapshot.Inputs[0].Ref != path || snapshot.Inputs[0].Count != 1 {
 			t.Fatalf("snapshot %s = %+v", id, snapshot)
 		}
-		file := snapshot.Inputs[0].Files[0]
-		if file.Path != path || file.SHA256 != fmt.Sprintf("%x", sha256.Sum256([]byte(contents[path]))) {
-			t.Fatalf("snapshot file %s = %+v", id, file)
+		input := snapshot.Inputs[0]
+		if input.SHA256 != fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%x  %s\n", sha256.Sum256([]byte(contents[path])), path)))) {
+			t.Fatalf("snapshot file %s = %+v", id, input)
 		}
 	}
 }

@@ -379,7 +379,7 @@ func carryRefusal(prior ReportRow, head string, changed []string, established, c
 		return CarryReasonNoInputs
 	}
 	seenRefs := make(map[string]bool, len(prior.Inputs))
-	moved := make(map[string]bool)
+	var moved []string
 	for _, input := range prior.Inputs {
 		ref := cleanMechanicalPath(input.Ref)
 		if input.Kind != EvidenceRepositoryPath {
@@ -393,28 +393,29 @@ func carryRefusal(prior ReportRow, head string, changed []string, established, c
 		for _, path := range changed {
 			clean := cleanMechanicalPath(path)
 			if clean == "" || clean != path || matcher(clean) {
-				moved[path] = true
+				moved = append(moved, input.Ref)
+				break
 			}
 		}
 	}
 	if len(moved) > 0 {
-		paths := make([]string, 0, len(moved))
-		for path := range moved {
-			paths = append(paths, path)
-		}
-		sort.Strings(paths)
-		return CarryReasonInputMoved + strings.Join(paths, ", ")
+		return CarryReasonInputMoved + strings.Join(moved, ", ")
 	}
 	if len(established) != len(prior.Inputs) || len(current) != len(prior.Inputs) {
 		return CarryReasonNoEvidenceSnapshot
 	}
 	for index, input := range prior.Inputs {
-		if !validEvidenceSnapshot(established[index], input.Ref) || !validEvidenceSnapshot(current[index], input.Ref) {
+		establishedCount, establishedDigest, establishedOK := evidenceSnapshotPair(established[index], input.Ref)
+		currentCount, currentDigest, currentOK := evidenceSnapshotPair(current[index], input.Ref)
+		if !establishedOK || !currentOK {
 			return CarryReasonNoEvidenceSnapshot
 		}
-		if !sameEvidenceFiles(established[index].Files, current[index].Files) {
-			return CarryReasonEvidenceDiffers
+		if establishedCount != currentCount || establishedDigest != currentDigest {
+			moved = append(moved, input.Ref)
 		}
+	}
+	if len(moved) > 0 {
+		return CarryReasonInputMoved + strings.Join(moved, ", ")
 	}
 	matchers := make([]func(string) bool, len(prior.Inputs))
 	for index := range prior.Inputs {
@@ -427,7 +428,7 @@ func carryRefusal(prior ReportRow, head string, changed []string, established, c
 		}
 		covered := false
 		for index := range prior.Inputs {
-			if matchers[index](clean) && evidenceSnapshotContains(established[index], clean) && evidenceSnapshotContains(current[index], clean) {
+			if matchers[index](clean) && evidenceSnapshotContains(current[index], clean) {
 				covered = true
 				break
 			}
@@ -456,16 +457,32 @@ func validEvidenceSnapshot(snapshot EvidenceSnapshot, ref string) bool {
 	return true
 }
 
-func sameEvidenceFiles(established, current []EvidenceFile) bool {
-	if len(established) != len(current) {
-		return false
-	}
-	for index := range established {
-		if established[index] != current[index] {
-			return false
+// evidenceInputDigest hashes the sorted h1 summary without changing the caller's files.
+func evidenceInputDigest(files []EvidenceFile) (string, bool) {
+	ordered := append([]EvidenceFile(nil), files...)
+	sort.Slice(ordered, func(i, j int) bool { return ordered[i].Path < ordered[j].Path })
+	summary := sha256.New()
+	for _, file := range ordered {
+		if strings.Contains(file.Path, "\n") {
+			return "", false
 		}
+		fmt.Fprintf(summary, "%s  %s\n", file.SHA256, file.Path)
 	}
-	return true
+	return fmt.Sprintf("%x", summary.Sum(nil)), true
+}
+
+func evidenceSnapshotPair(snapshot EvidenceSnapshot, ref string) (count int, digest string, ok bool) {
+	if snapshot.Ref != ref {
+		return 0, "", false
+	}
+	if len(snapshot.Files) > 0 {
+		if snapshot.Count != 0 || snapshot.SHA256 != "" || !validEvidenceSnapshot(snapshot, ref) {
+			return 0, "", false
+		}
+		digest, ok = evidenceInputDigest(snapshot.Files)
+		return len(snapshot.Files), digest, ok
+	}
+	return snapshot.Count, snapshot.SHA256, snapshot.Count >= 1 && sha256DigestPattern.MatchString(snapshot.SHA256)
 }
 
 func evidenceSnapshotContains(snapshot EvidenceSnapshot, path string) bool {
@@ -483,7 +500,7 @@ func evidencePathMatcher(ref string) func(string) bool {
 	if !strings.ContainsAny(ref, "*?") {
 		return func(candidate string) bool { return ref == candidate }
 	}
-	compiled := regexp.MustCompile(evidenceGlobPattern(ref))
+	compiled := regexp.MustCompile("(?s)" + evidenceGlobPattern(ref))
 	return compiled.MatchString
 }
 
@@ -1734,8 +1751,10 @@ func mechanicalEvidenceSnapshots(document yaml.Node) (map[string]mechanicalEvide
 		var raw map[string]struct {
 			Head   string `yaml:"head"`
 			Inputs []struct {
-				Ref   string `yaml:"ref"`
-				Files []struct {
+				Ref    string  `yaml:"ref"`
+				Count  *int    `yaml:"count"`
+				SHA256 *string `yaml:"sha256"`
+				Files  []struct {
 					Path   string `yaml:"path"`
 					SHA256 string `yaml:"sha256"`
 				} `yaml:"files"`
@@ -1751,7 +1770,17 @@ func mechanicalEvidenceSnapshots(document yaml.Node) (map[string]mechanicalEvide
 				for _, file := range input.Files {
 					files = append(files, EvidenceFile{Path: strings.TrimSpace(file.Path), SHA256: strings.TrimSpace(file.SHA256)})
 				}
-				record.snapshots = append(record.snapshots, EvidenceSnapshot{Ref: strings.TrimSpace(input.Ref), Files: files})
+				entry := EvidenceSnapshot{Ref: strings.TrimSpace(input.Ref), Files: files}
+				if input.Count != nil {
+					entry.Count = *input.Count
+				}
+				if input.SHA256 != nil {
+					entry.SHA256 = *input.SHA256
+				}
+				if input.Files != nil && (input.Count != nil || input.SHA256 != nil) {
+					entry.Count = -1 // presence of either recorded field makes a mixed shape invalid
+				}
+				record.snapshots = append(record.snapshots, entry)
 			}
 			records[strings.TrimSpace(rowID)] = record
 		}
@@ -2073,6 +2102,9 @@ func buildEvidenceSnapshots(ctx context.Context, repoRoot, head string, inputs [
 		var matches []string
 		for _, candidate := range paths {
 			if matcher(candidate) {
+				if strings.Contains(candidate, "\n") {
+					return nil, false, nil
+				}
 				matches = append(matches, candidate)
 			}
 		}
@@ -2232,10 +2264,10 @@ func mechanicalBlobPaths(ctx context.Context, repoRoot, head string) ([]string, 
 		}
 		path := string(parts[1])
 		clean := cleanMechanicalPath(path)
-		if clean == "" || clean != path {
+		if !strings.Contains(path, "\n") && (clean == "" || clean != path) {
 			return nil, fmt.Errorf("list tracked blobs at Git head %q: invalid path %q", head, path)
 		}
-		paths = append(paths, clean)
+		paths = append(paths, path)
 	}
 	sort.Strings(paths)
 	return paths, nil

@@ -6,6 +6,7 @@ package daemon
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"os"
@@ -53,7 +54,7 @@ func testQAEvidenceSnapshot(t *testing.T, qualifies bool) {
 	if qualifies {
 		outcome = "recorded"
 		rows = 1
-		if !strings.Contains(committed, "evidence_snapshots:") || !strings.Contains(committed, "head: "+head) || !strings.Contains(committed, "path: snapshot-input.txt") {
+		if !strings.Contains(committed, "evidence_snapshots:") || !strings.Contains(committed, "head: "+head) || !strings.Contains(committed, fmt.Sprintf("{ref: snapshot-input.txt, count: 1, sha256: %x}", sha256.Sum256([]byte(fmt.Sprintf("%x  snapshot-input.txt\n", sha256.Sum256([]byte("audited input\n"))))))) {
 			t.Fatalf("committed snapshot missing: %s", committed)
 		}
 	} else if strings.Contains(committed, "evidence_snapshots:") {

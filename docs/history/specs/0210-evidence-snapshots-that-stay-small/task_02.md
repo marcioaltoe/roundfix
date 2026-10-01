@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0210-evidence-snapshots-that-stay-small
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -45,6 +45,22 @@ in line, and changes nothing else.
       `input moved: <refs>`, and no longer contains `input moved: <paths>`.
 - [ ] Every reason, phase and payload word Spec 0202 documented in that
       section is still present.
+
+## Result
+
+Implemented the guide update for the per-input Evidence Snapshot record. The
+Evidence Snapshot paragraph now documents `one line per declared input`, the
+matched-file count, the SHA-256 digest over sorted paths and content digests,
+bounded size, and compatibility with the earlier per-file form. The carry
+reason now uses `input moved: <refs>` and explains that it names declared inputs
+whose matched files changed.
+
+Focused checks after the edit:
+
+- `rg` confirms the new phrases and all required phase, reason, and payload
+  vocabulary remain in `docs/user-guide/context-driven-development.md`.
+- `rg` confirms `input moved: <paths>` is absent from the guide.
+- `git diff --check` passes.
 
 ## Context
 

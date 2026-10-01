@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0210-evidence-snapshots-that-stay-small
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

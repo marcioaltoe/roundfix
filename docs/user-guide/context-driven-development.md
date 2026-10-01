@@ -112,6 +112,11 @@ building the matrix. The import is reported by the `prior_report` phase with
 outcome `imported`, `none`, or `refused`, and its payload names `commit`,
 `report`, `files`, and `reason`.
 
+Each snapshot holds one line per declared input: its ref, the number of files it
+matched, and one SHA-256 digest over their sorted paths and content digests. Its
+size therefore depends on rows and inputs, never on how many files a glob
+matches; a report recorded in the earlier per-file form is still read.
+
 The mechanical stage proves a carry by checking the establishing report and
 head, then comparing every declared input by content. A **Carried Row** keeps
 its identifier, status, original provenance, and the report and head that
@@ -120,7 +125,8 @@ established it; it counts as passed and is not executed again. The seeded
 row: `carried` or `re-run: <reason>`. Reasons include `re-run: not pass`, `no inputs`,
 `non-repository input`, `always observed: repository Verification`, `always observed: Pull Request row`, `always observed: commit_range input`, `no evidence
 snapshot`, `establishing report unavailable`, `establishing head unproven`,
-`input moved: <paths>`, and `evidence differs`.
+`input moved: <refs>`, which names the declared inputs whose matched files
+changed, and `evidence differs`.
 
 Rows naming the repository Verification or the Pull Request row are always
 observed. A row declaring the `commit_range` input kind is also always observed;

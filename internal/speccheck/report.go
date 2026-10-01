@@ -205,10 +205,13 @@ type EvidenceFile struct {
 }
 
 // EvidenceSnapshot is the canonical expansion of one repository_path input at
-// one Git head. Files must be sorted by path and contain no duplicates.
+// one Git head, or its recorded count and digest. Files, when present, must be
+// sorted by path and contain no duplicates; the recorded pair stays unset.
 type EvidenceSnapshot struct {
-	Ref   string
-	Files []EvidenceFile
+	Ref    string
+	Files  []EvidenceFile
+	Count  int
+	SHA256 string
 }
 
 // ReportRow contains the carry-forward facts for one prior QA Report row.

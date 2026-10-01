@@ -121,11 +121,10 @@ func RecordEvidenceSnapshots(ctx context.Context, repoRoot, reportPath, head str
 			// Keep declaration and Results ordering while letting YAML quote scalars.
 			inputs := &yaml.Node{Kind: yaml.SequenceNode}
 			for _, snapshot := range snapshots {
-				files := &yaml.Node{Kind: yaml.SequenceNode}
-				for _, file := range snapshot.Files {
-					files.Content = append(files.Content, evidenceMapping("path", evidenceScalar(file.Path), evidenceScalar("sha256"), evidenceScalar(file.SHA256)))
-				}
-				inputs.Content = append(inputs.Content, evidenceMapping("ref", evidenceScalar(snapshot.Ref), evidenceScalar("files"), files))
+				digest, _ := evidenceInputDigest(snapshot.Files) // resolved inputs contain no newline paths
+				entry := evidenceMapping("ref", evidenceScalar(snapshot.Ref), evidenceScalar("count"), &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!int", Value: fmt.Sprint(len(snapshot.Files))}, evidenceScalar("sha256"), evidenceScalar(digest))
+				entry.Style = yaml.FlowStyle
+				inputs.Content = append(inputs.Content, entry)
 			}
 			mapping.Content = append(mapping.Content, &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Style: yaml.DoubleQuotedStyle, Value: row.id}, evidenceMapping("head", evidenceScalar(head), evidenceScalar("inputs"), inputs))
 			record.Rows = append(record.Rows, row.id)
