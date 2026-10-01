@@ -2,6 +2,32 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.24.0] - 2026-10-01
+
+### A queue that classifies its parks and recovers on its own
+
+`roundfix deliver status` names a Park Class for each parked item: dependency, conflict, environment, flaky check, finding, budget, review, authorization or unclassified. The queue reruns a failed check once, waits for an unmerged prerequisite named by the Task Graph's `requires`, and resolves merge conflicts limited to the paths declared in `delivery.derived_paths`. A QA partial blocked only by its environment parks as `qa-environment-partial`, separate from real failures.
+
+### A QA gate that reruns only stale rows
+
+The QA gate records an evidence snapshot of each passing row's declared inputs. A later pass carries a row forward when its inputs have not moved since the head that established it, and reruns only the rows whose inputs changed. A failed pass hands its report to the next one. Rows that read the repository Verification, the Pull Request or the Task commits are observed on every pass.
+
+### Evidence snapshots that stay small
+
+An evidence snapshot records one digest and file count per declared input, not one entry per matched file, so a QA report stays bounded by rows times inputs. A row whose input moved is reported as `input moved: <ref>`. Reports written in the earlier per-file form are still read.
+
+### A reviewer that validates its findings and remembers its rounds
+
+The pre-PR review checks each finding against the candidate diff and the Delivery Conventions before parking on it, and drops findings the diff does not support. A Reviewer Lineage keeps the review to two rounds per candidate and records what each round saw.
+
+### A Run that reports the tokens and spend it used
+
+Each Run records the tokens its prompts used, and the spend when the runtime reports it. `roundfix runs`, `roundfix deliver status` and the Run Event Stream show the totals. `roundfix deliver start --max-tokens` stops the queue at a token ceiling.
+
+### A Baseline that follows the reshaped skills catalog
+
+The Baseline setups take their upstream names: `go`, `rust` and `typescript`. `go-cli` is retired and folded into `go`. The removed `review` and `triage` skills leave the setups and modules. The external-triage guide now states the rules the triage skill carried, as clauses with force. The `core` module requires `typesafe-ai` and `crafting-effective-readmes`. Adopters keep any skill tree they already installed until they remove it.
+
 ## [0.23.0] - 2026-10-01
 
 ### Profiles that follow the current models
