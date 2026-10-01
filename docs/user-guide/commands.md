@@ -1006,11 +1006,15 @@ settlement.
 For every non-QA Task in a Task Graph with an authored QA gate, the Daemon runs
 three checks as part of the Task's settlement attempt, in this order:
 
-1. `settlement check: spec consistency` checks for Spec Consistency findings
+1. The repository Verification runs at settlement as the attempt's last
+   command.
+2. `settlement check: spec consistency` checks for Spec Consistency findings
    introduced by the Task.
-2. The repository Verification runs at settlement.
 3. `settlement check: authorization` checks the prospective Task commit against
    the frozen authorization record.
+
+Both in-process checks run after the attempt's commands, whatever their result,
+and before the attempt's verdict.
 
 A failed check returns as Verification Feedback for the single repair turn. A
 final failure settles the Task `failed`. An in-process failure uses the reason
