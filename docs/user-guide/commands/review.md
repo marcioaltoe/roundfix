@@ -1,0 +1,124 @@
+### review
+
+```bash
+roundfix review [--base <ref>]
+roundfix review dispose <finding-id> --dismiss --evidence <text>
+roundfix review dispose <finding-id> --fixed-by <commit>
+```
+
+Runs the configured pre-Pull-Request reviewer over the current candidate. The
+workflow computes the candidate diff from the merge base of the current head
+and the selected base, then hands that diff to the Codex reviewer in a
+read-only session; it does not ask the reviewer to discover the candidate. The
+resulting record names the repository, that merge base as `baseCommit`, the
+resolved base tip as `baseTipCommit`, the head commit, effective provider, and
+policy source. A head with no shared history with the selected base exits `2`
+before any reviewer call or readiness probe.
+
+`--base <ref>` selects the base Git ref. When omitted, Roundfix uses the
+repository's default branch.
+
+The configured policy accepts `codex`, `claude`, `coderabbit`, and `none`.
+Explicit `none` performs no reviewer call and no readiness probe, records a
+configured omission, and exits `0`. `claude` runs through the same read-only
+review path as `codex`. `coderabbit` remains refused because no supported local
+CodeRabbit review surface is installed or specified; it exits `2` as blocked
+instead of being treated as an omission.
+
+Roundfix classifies the reviewer's answer by substance rather than exact
+formatting. It recognizes a `No findings` verdict after case folding,
+surrounding Markdown emphasis, and trailing punctuation are normalized, or a
+`Findings:` verdict with its findings text. A pass must be the whole answer:
+after normalization, the answer is `No findings`, or its only content line is
+`Findings:` with only `none`, `n/a`, or `no findings` after the colon. Any other
+headerless answer blocks as ambiguous. A line that normalizes to `Findings`
+after an optional trailing ASCII or fullwidth colon is removed starts the
+findings body. A verdict-shaped line after that header is findings text and does
+not create a conflict. Exactly one verdict must be present; both verdicts or
+neither verdict block the review. Roundfix reads the verdict from the
+reviewer's final message. The answer file keeps every message, separated by a
+blank line. The record `pre-pr-review.json` and answer
+`pre-pr-review-answer.txt` live under `pre-pr-review/<checkout key>/` in the
+Artifact Directory, and the review record's `answerPath` names that answer
+file. Roundfix never reads another checkout's record. Roundfix sets
+`answerPath` only when the prompt reached a reviewer; a pre-prompt failure has
+no answer path or answer file.
+
+A findings record keeps the reviewer's original `findings` text and also lists
+each finding as `F1`, `F2`, and so on in `findingItems`. The reviewer prompt
+asks for one `- ` list item per finding with its file and line. An older record
+without `findingItems` derives the same identities from its findings text when
+Roundfix reads it.
+
+Use `roundfix review dispose` to record one disposition for one finding. A
+dismissal requires non-blank evidence and an unchanged reviewed `HEAD`. A fix
+requires a resolving commit that differs from and descends from the reviewed
+head and is reachable from the current `HEAD`. Evidence is copied as text and
+is never executed.
+
+Successful dispositions append one JSON line to
+`pre-pr-review-dispositions.jsonl` in the Artifact Directory and print that
+same line. The line ties the finding's identity and text to its repository and
+reviewed head, and records either `evidence` or `fixedBy` with an RFC 3339 UTC
+timestamp. The ledger is append-only. Roundfix refuses a missing or mismatched
+findings record, an unknown identity, invalid or blank forms, moved-head
+dismissals, invalid fixing commits, and a second disposition. Every refusal
+exits `2`, starts stderr with `roundfix: review dispose refused:`, and appends
+nothing.
+
+For `codex` and `claude`, a findings verdict stands for its repository,
+`baseCommit`, head commit, and provider while the base branch moves. When the
+Artifact Directory already holds a matching `findings` or
+`findings-dismissed` record, Roundfix reuses it before preparing, probing, or
+prompting an Agent session. The reused record sets `reused` and carries the
+ledger entries whose repository, head, finding identity, and text match its
+`findingItems` in `dispositions`.
+
+When every finding has one evidence-backed `dismissed` disposition, the reused
+record reports `findings-dismissed` and exits `0`. Otherwise it remains
+`findings`, exits `1`, and stderr names each finding identity that has no
+disposition. A `fixed` disposition never clears the reviewed head because the
+fix belongs to a changed candidate. A different repository, base, head, or
+provider gets a fresh review, as does an existing `reviewed`, `blocked`, or
+`omitted` record. The `none` and `coderabbit` policies keep their behavior
+described above.
+
+When the candidate adds or changes a Spec folder under the configured Spec
+Root, or under its resolved archive root, Roundfix discovers that folder from
+the candidate diff. Specs archived within the candidate are read from the
+archive root at `HEAD`. For each usable Spec, the review prompt carries the
+PRD `Decisions` section and TechSpec. A changed Spec without a `## Decisions`
+section, a PRD, or a TechSpec is skipped, its slug is listed in the record's
+`skippedSpecs`, and the review proceeds with the remaining context. The
+record's `specs` names the Specs whose context was carried.
+
+The record's `archivedSpecs` field always lists the sorted slugs of changed
+Spec folders under the resolved archive root, including folders whose context
+was skipped; it is always present and is `[]` when the candidate archives no
+Spec. When a findings verdict has archived Specs, stderr names those slugs,
+says that an archived Spec is never corrected in place, and tells the operator
+to author a corrective Spec with its own authorization and QA gate. Delivery
+parks that review as `corrective-spec-required`; a no-findings verdict prints
+no corrective-Spec line.
+
+Spec context is bounded at 32 KiB per Spec and 64 KiB in total. When context is
+truncated, the prompt includes `[Spec context truncated]` and the record sets
+`specContextTruncated` to true. The reviewer judges the delivery against the
+carried decisions and the alternatives they reject. Specs dropped by the total
+context bound are named in the record's `skippedSpecs`; the record's `specs`
+names the Specs whose context was carried.
+
+Exit codes:
+
+- `0` — one substantive no-findings verdict, configured omission, or a reused
+  `findings-dismissed` verdict.
+- `1` — the reviewer returned findings or a reused verdict still has standing
+  findings; the record carries them.
+- `2` — preflight failed or the review was blocked.
+
+Runtime failure, timeout, transport anomaly, empty output, and unclassifiable
+output each block the selected mode, with a reason in the record. None can
+become a pass or an omission. A configured selection fallback is eligible only
+when selection fails before the prompt is sent; failures after the prompt are
+review failures.
+
