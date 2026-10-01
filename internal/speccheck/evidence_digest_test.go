@@ -95,7 +95,18 @@ func TestEvidenceInputDigestFollowsTheSortedSummary(t *testing.T) {
 		if len(record.Rows) != 0 {
 			t.Fatalf("newline input recorded: %+v", record)
 		}
+		assertDigestStage(t, root, speccheck.CarryReasonNoEvidenceSnapshot)
 	})
+}
+
+func TestCarryRefusesANewlinePathAddedAfterTheSnapshotAsMoved(t *testing.T) {
+	contents := map[string]string{"src/a.txt": "a\n", "src/z.txt": "z\n"}
+	root, head, report := digestFixture(t, contents)
+	recordRun(t, root, head, report)
+	assertDigestStage(t, root, "")
+	writeMechanicalFile(t, root, "src/new\nline.txt", "ambiguous")
+	commitMechanicalFiles(t, root, "newline path", "src")
+	assertDigestStage(t, root, speccheck.CarryReasonInputMoved+"src/**")
 }
 
 func TestCarryComparesTheRecordedDigestPerInput(t *testing.T) {

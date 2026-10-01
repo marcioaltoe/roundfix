@@ -84,7 +84,9 @@ is the lowercase hexadecimal SHA-256 of that summary, and the count is the
 number of files. This is the summary of Go's `h1:` hash (PRD Acceptance
 evidence), hex-encoded rather than base64. A path containing `\n` cannot be
 summarized: `buildEvidenceSnapshots` reports the input unresolved, so the
-recorder skips the row and the resolver refuses it with `evidence differs`.
+recorder skips the row and a later pass refuses to carry it with `no evidence
+snapshot`. Such a path added after a recorded snapshot is a change to the
+input, refused as `input moved: <ref>`.
 
 `evidenceSnapshotPair` accepts exactly one of two shapes:
 
