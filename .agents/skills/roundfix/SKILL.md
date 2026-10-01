@@ -4,10 +4,10 @@ description: Use Roundfix to plan releases with the read-only Release Plan Comma
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.2
+  version: 0.1.3
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.2
+version: 0.1.3
 ---
 
 # Roundfix
@@ -153,6 +153,32 @@ releases Verification Capacity before one Verification Feedback repair turn
 in the same Agent Session. Exit `75` uses the one exclusive retry protocol and
 does not create Agent feedback. Any declared formatter, test, Skill
 synchronization, or build failure blocks settlement.
+
+### Settlement Checks
+
+Settlement Checks apply to every non-QA Task in a Task Graph that has an
+authored QA gate Task. They run in this order when the Daemon settles the Task:
+
+1. The repository Verification runs at settlement as the attempt's last
+   command when `verification.repository_at_settlement` is enabled.
+2. `settlement check: spec consistency` checks for new Spec Consistency
+   findings in the Task's tree.
+3. `settlement check: authorization` checks the prospective Task commit
+   against the frozen authorization record.
+
+Both in-process checks run after the attempt's commands, whatever their
+result, and before the attempt's verdict.
+
+A failed check returns its diagnostics as Verification Feedback for the one
+repair turn. If the final attempt still fails, the Task settles `failed`. The
+`verification.repository_at_settlement` switch turns off only the repository
+Verification at settlement; it does not turn off either in-process check.
+
+The checks inspect one Task's tree. In a parallel Wave, they do not include
+changes from sibling Tasks that have not been integrated into that tree. A
+repository that was already red on entry keeps the existing precondition-repair
+limit: only the Tasks named by the frozen authorization record may proceed with
+the required repository Verification.
 
 A Task commit includes Project Config only when the frozen Spec authorization
 bounds `.roundfixrc.yml`; otherwise the Task fails with `Project Config outside

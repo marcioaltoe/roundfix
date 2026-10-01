@@ -1,0 +1,5 @@
+Source: https://www.chromium.org/developers/how-tos/depottools/presubmit-scripts/
+Retrieved 2026-10-01 using web.open after curl-cffi was refused by proxy (CONNECT 403).
+Observation 1 (Overview, line 39): deferring slow upload checks until commit can discover failures late, requiring changes after apparent readiness.
+Observation 2 (Design, lines 61-62): two independently passing changes may combine into a failing tree; presubmit success does not establish a global invariant.
+Independent source sections corroborate PRD early-failure motivation and recorded parallel-Wave limit.

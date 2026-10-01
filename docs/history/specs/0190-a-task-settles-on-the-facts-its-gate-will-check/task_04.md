@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0190-a-task-settles-on-the-facts-its-gate-will-check
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -97,3 +97,37 @@ the stage where operators and authors read it, and adds the glossary term
 - ADR-0182; ADR-0014; ADR-0038
 
 ## Result
+
+Implemented the Settlement Checks documentation slice. The Roundfix skill now
+describes the gated non-QA settlement stage, ordered checks, repair/failure
+behavior, repository switch, parallel-Wave tree boundary, and red-on-entry
+precondition limit. The write-tasks skill now requires every Task in a gated
+graph to leave repository Verification green and identifies the switch as
+operator-owned. The commands guide documents the labels, failure reason, and
+switch, and the glossary defines Settlement Check next to Verification
+Feedback. The mirror files carry the same authored guidance.
+
+Focused implementation checks (run before Daemon Verification):
+
+- `git diff --check` — passed.
+- A repository-local phrase and mirror comparison check confirmed the required
+  section, labels, switch, authoring rule, API failure reason, glossary term,
+  and byte-identical source/mirror skill content.
+
+Acceptance evidence:
+
+- [x] Roundfix skill and mirror carry `### Settlement Checks`, both labels, and
+  `verification.repository_at_settlement`.
+- [x] write-tasks skill and mirror carry `leaves the repository Verification
+  green` and identify the operator switch.
+- [x] Commands guide carries `Settlement Checks`, both labels, the failure
+  reason, and the switch.
+- [x] `CONTEXT.md` carries `**Settlement Check**:` beside `Verification
+  Feedback`.
+- [ ] The Daemon must run the declared `make skills-sync-check`, digest,
+  phrase, and skill contract Verification commands.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260930T230750Z_197aa9aff15490a9`
+- Source commit: `d37a1af926ab45ef062aa49e464e2d840b423359`

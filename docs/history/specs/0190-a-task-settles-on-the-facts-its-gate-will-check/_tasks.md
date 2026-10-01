@@ -18,7 +18,13 @@ graph:
       needs: [task_01, task_02, task_03]
     - id: task_05
       file: task_05.md
-      needs: [task_01, task_02, task_03, task_04]
+      needs: [task_01, task_02, task_03, task_04, task_06, task_07]
+    - id: task_07
+      file: task_07.md
+      needs: [task_06]
+    - id: task_06
+      file: task_06.md
+      needs: [task_04]
 ---
 
 # Task Graph
@@ -30,3 +36,5 @@ graph:
 | task_03 | backend | A Task is refused the Spec Consistency findings it introduced |
 | task_04 | docs | The skills, the commands guide and the glossary describe Settlement Checks |
 | task_05 | qa | Run the final QA gate |
+| task_06 | chore | The two skills task_04 changed declare new versions |
+| task_07 | backend | The public event stream names the two Settlement Checks |

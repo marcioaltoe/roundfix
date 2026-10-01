@@ -1,0 +1,5 @@
+{
+  "Replace": {
+    "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0190-a-task-settles-on-the-facts-its-gate-will-check-cadfb1e2e3c06afd-155130db-16abb505/run_20261001T035640Z_f7cf1b9d014c1c3e/internal/cli/qa_gate_fixture_test.go": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0190-a-task-settles-on-the-facts-its-gate-will-check-cadfb1e2e3c06afd-155130db-16abb505/run_20261001T035640Z_f7cf1b9d014c1c3e/docs/specs/0190-a-task-settles-on-the-facts-its-gate-will-check/qa/evidence/2026-10-01-settlement/public-stream-fixture.go.txt"
+  }
+}

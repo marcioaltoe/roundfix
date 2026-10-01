@@ -219,32 +219,35 @@ func (gate *fairVerificationGate) notifyLocked() {
 // TargetBranch is that branch — the Spec's target branch as recorded on
 // the Run — and stays empty for a Run that recorded none.
 type TaskPlan struct {
-	RunID                   string
-	Session                 agent.SessionRef
-	WorkDir                 string
-	RunWorktree             runworktree.Ref
-	TargetBranch            string
-	HeadSHA                 string
-	Authorization           spec.AuthorizationResolution
-	SpecsRoot               string
-	ArtifactDir             string
-	AgentLogs               bool
-	Spec                    spec.Spec
-	Tasks                   []spec.Task
-	Runtime                 agent.RuntimeSpec
-	AgentSelections         AgentSelectionProfiles
-	RuntimeFactory          AgentRuntimeFactory
-	Concurrency             int
-	VerificationConcurrency int
-	RepositoryVerification  string
-	RunStartedAt            time.Time
-	BudgetEnabled           bool
-	MaxRunDuration          time.Duration
-	verificationGate        verificationGate
-	runBudget               *taskCycleBudget
-	CopyList                []string
-	Bootstrap               runworktree.BootstrapSpec
-	BootstrapOutput         io.Writer
+	RunID                              string
+	Session                            agent.SessionRef
+	WorkDir                            string
+	RunWorktree                        runworktree.Ref
+	TargetBranch                       string
+	HeadSHA                            string
+	Authorization                      spec.AuthorizationResolution
+	SpecsRoot                          string
+	ArtifactDir                        string
+	AgentLogs                          bool
+	Spec                               spec.Spec
+	Tasks                              []spec.Task
+	Runtime                            agent.RuntimeSpec
+	AgentSelections                    AgentSelectionProfiles
+	RuntimeFactory                     AgentRuntimeFactory
+	Concurrency                        int
+	VerificationConcurrency            int
+	RepositoryVerification             string
+	RepositoryVerificationAtSettlement bool
+	settlementChecks                   bool
+	specConsistencyBaseline            map[string]struct{}
+	RunStartedAt                       time.Time
+	BudgetEnabled                      bool
+	MaxRunDuration                     time.Duration
+	verificationGate                   verificationGate
+	runBudget                          *taskCycleBudget
+	CopyList                           []string
+	Bootstrap                          runworktree.BootstrapSpec
+	BootstrapOutput                    io.Writer
 }
 
 // VerificationProbe records how one Task's Verification commands behave
@@ -475,6 +478,7 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (result Task
 	if err != nil {
 		return TaskCycleResult{}, err
 	}
+	taskPlan.settlementChecks = qaTask != nil
 	// A serial plan has no Wave, so it has no collision to refuse. A Task
 	// Worktree is based on the Run Branch tip as it stands when the Task is
 	// created, so at Task Capacity 1 the previous Task has already integrated
@@ -816,7 +820,7 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 		}
 	}
 	requiredRepositoryVerification := ""
-	if enteredOnRedRepository {
+	if enteredOnRedRepository || (plan.settlementChecks && plan.RepositoryVerificationAtSettlement) {
 		requiredRepositoryVerification = strings.TrimSpace(plan.RepositoryVerification)
 	}
 	probe, probeErr := engine.verifyTaskPreWork(ctx, taskPlan, task, ordinal)
@@ -839,6 +843,21 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 			taskPlan:         taskPlan,
 			taskRef:          taskRef,
 			usesTaskWorktree: usesTaskWorktree,
+		}
+	}
+	if taskPlan.settlementChecks {
+		findings, err := engine.deps.SettlementChecker.RefusingFindings(taskPlan.SpecsRoot, taskPlan.WorkDir, taskPlan.Spec.Slug)
+		if err != nil {
+			reason := fmt.Sprintf("spec consistency baseline: %v", err)
+			if settleErr := engine.settleTask(ctx, taskPlan, task, ordinal, spec.StatusFailed, reason); settleErr != nil {
+				return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: settleErr}
+			}
+			fmt.Fprintf(engine.deps.Progress, "Task %s failed: %s\n", task.ID, reason)
+			return taskWorkerResult{task: task, ordinal: ordinal, status: spec.StatusFailed, reason: reason, taskPlan: taskPlan, taskRef: taskRef, usesTaskWorktree: usesTaskWorktree}
+		}
+		taskPlan.specConsistencyBaseline = make(map[string]struct{}, len(findings))
+		for _, finding := range findings {
+			taskPlan.specConsistencyBaseline[speccheck.RefusalReason(finding)] = struct{}{}
 		}
 	}
 	owner, ownerErr := engine.taskAgentSessionOwner(taskPlan, task, ordinal)
@@ -1128,7 +1147,7 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 	if failure == "" {
 		retryUsed := false
 		verificationTask := taskWithRequiredRepositoryVerification(task, requiredRepositoryVerification)
-		verification, verifyErr := engine.verifyTask(ctx, plan, verificationTask, ordinal, 1, &retryUsed)
+		verification, verifyErr := engine.verifyTask(ctx, plan, verificationTask, ordinal, 1, &retryUsed, before)
 		if verifyErr != nil {
 			return "", "", verifyErr
 		}
@@ -1142,7 +1161,7 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 				}
 				if failure == "" {
 					verificationTask = taskWithRequiredRepositoryVerification(task, requiredRepositoryVerification)
-					final, verifyErr := engine.verifyTask(ctx, plan, verificationTask, ordinal, 2, &retryUsed)
+					final, verifyErr := engine.verifyTask(ctx, plan, verificationTask, ordinal, 2, &retryUsed, before)
 					if verifyErr != nil {
 						return "", "", verifyErr
 					}
@@ -1628,11 +1647,11 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 // verifyTask runs one Verification attempt for every Task command
 // sequentially and verbatim through the Verifier, in WorkDir. An undeclared
 // Task stops at its first failure; an independent Task collects deterministic
-// failures from every command. defaults.verification is never appended:
-// the Daemon gate runs only the Task's own Verification commands (ADR 0014).
+// failures from every command. A gated graph also runs its Settlement Checks;
+// executeTask supplies any required repository Verification command.
 // Command failures return a typed outcome for the repair loop; the returned
 // error is reserved for Stop Requests and infrastructure failures.
-func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, attempt int, retryUsed *bool) (verificationAttemptOutcome, error) {
+func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, attempt int, retryUsed *bool, beforeSnapshots ...[]string) (verificationAttemptOutcome, error) {
 	if retryUsed == nil {
 		return verificationAttemptOutcome{}, fmt.Errorf("verify run %q Task %s: temporary retry state is required", plan.RunID, task.ID)
 	}
@@ -1660,6 +1679,16 @@ func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.T
 			}
 			return nil
 		},
+	}
+	if plan.settlementChecks {
+		var before []string
+		if len(beforeSnapshots) > 0 {
+			before = beforeSnapshots[0]
+		}
+		request.Checks = []verificationCheck{
+			engine.specConsistencySettlementCheck(plan),
+			engine.authorizationSettlementCheck(plan, task, before),
+		}
 	}
 	verification, err := engine.runTaskVerificationRequest(ctx, plan, task, request)
 	if err != nil || verification.TemporaryFailure == nil || *retryUsed {
@@ -2878,34 +2907,14 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 }
 
 func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qaTask spec.Task, previousReportPath string) (speccheck.MechanicalRequest, error) {
-	prdPath := filepath.Join(plan.Spec.Dir, "_prd.md")
-	var authorizationPath string
-	var authorizationReference speccheck.MechanicalAuthorizationReference
-	deliveryTargetRevision := plan.HeadSHA
-	taskCommitsFromRunStart := false
-	if strings.TrimSpace(plan.HeadSHA) == "" {
-		var err error
-		authorizationPath, _, err = speccheck.MechanicalAuthorization(plan.WorkDir, prdPath)
-		if err != nil {
-			return speccheck.MechanicalRequest{}, err
-		}
-	} else {
-		base, resolvedBase, err := qaDeliveryBase(ctx, plan)
-		if err != nil {
-			return speccheck.MechanicalRequest{}, err
-		}
-		if resolvedBase {
-			deliveryTargetRevision = base
-		} else {
-			taskCommitsFromRunStart = true
-		}
-		resolved, _, err := speccheck.ResolveMechanicalAuthorization(ctx, plan.WorkDir, prdPath, deliveryTargetRevision)
-		if err != nil {
-			return speccheck.MechanicalRequest{}, err
-		}
-		authorizationReference = resolved
-		authorizationPath = resolved.Path
+	authorizationRequest, err := settlementMechanicalRequest(ctx, plan)
+	if err != nil {
+		return speccheck.MechanicalRequest{}, err
 	}
+	authorizationPath := authorizationRequest.AuthorizationPath
+	authorizationReference := authorizationRequest.AuthorizationReference
+	deliveryTargetRevision := authorizationRequest.DeliveryTargetRevision
+	taskCommitsFromRunStart := authorizationRequest.TaskCommitsFromRunStart
 	taskCommits, err := mechanicalTaskCommits(ctx, plan, deliveryTargetRevision, authorizationPath)
 	if err != nil {
 		return speccheck.MechanicalRequest{}, err
@@ -2956,9 +2965,13 @@ func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qa
 // report is written from and every other detector still has an observation to
 // contribute to that report.
 func qaGatePrecondition(plan TaskPlan) (speccheck.GatePreconditionResult, error) {
-	checked, err := speccheck.Check(plan.SpecsRoot, plan.WorkDir, plan.Spec.Slug)
+	return specGatePrecondition(plan.SpecsRoot, plan.WorkDir, plan.Spec.Slug)
+}
+
+func specGatePrecondition(specsRoot, workDir, slug string) (speccheck.GatePreconditionResult, error) {
+	checked, err := speccheck.Check(specsRoot, workDir, slug)
 	if err != nil {
-		return speccheck.GatePreconditionResult{}, fmt.Errorf("run %q for Spec %s: %w", speccheck.GatePreconditionCheck, plan.Spec.Slug, err)
+		return speccheck.GatePreconditionResult{}, fmt.Errorf("run %q for Spec %s: %w", speccheck.GatePreconditionCheck, slug, err)
 	}
 	speccheck.PromoteGaps(&checked)
 	return speccheck.GatePrecondition(checked), nil

@@ -46,6 +46,11 @@ source. Empty values are valid only where this page defines their behavior:
 Do not use a bare YAML value such as `command:` to mean an empty string. Use
 the explicit value shown above or omit the key to inherit it.
 
+Setting `verification.repository_at_settlement: false` turns off only the
+repository Verification appended at settlement for non-QA Tasks of a graph
+with a QA gate Task; declared Task commands, entry preconditions, and the QA
+gate keep their existing Verification.
+
 ## Task and Verification capacities
 
 Task Capacity and Verification Capacity are independent, config-only limits
@@ -224,6 +229,8 @@ worktree:
 verification:
   # Maximum concurrent Task Verification attempts within one Implement Run.
   concurrency: 1
+  # Append repository Verification when a non-QA Task of a gated graph settles.
+  repository_at_settlement: true
 
 store:
   # Terminal Run journals older than this duration are eligible for pruning; 0 keeps everything.
@@ -289,6 +296,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `worktree.location` | `~/.roundfix/worktrees` | Sets the parent directory for Run and Task Worktrees. |
 | `worktree.concurrency` | `2` | Limits concurrent Task Worktrees. `1` keeps Task execution sequential. |
 | `verification.concurrency` | `1` | Limits concurrent Task Verification attempts within one Implement Run, independently from Task Capacity. |
+| `verification.repository_at_settlement` | `true` | Appends `defaults.verification` after declared Verification for non-QA Tasks of a graph with a QA gate Task. `false` turns off only this appended command. |
 | `worktree.copy` | `[]` | Copies no ignored files. Entries must be repository-relative and already ignored by Git. |
 | `worktree.bootstrap` | `""` | Disables Worktree Bootstrap. A non-empty command runs after copy and before Agent work. |
 | `worktree.bootstrap_timeout` | `10m` | Bounds each Worktree Bootstrap command. |

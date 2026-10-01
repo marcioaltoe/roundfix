@@ -1,9 +1,12 @@
 ---
 spec: 0190-a-task-settles-on-the-facts-its-gate-will-check
-status: active
+status: archived
 created: 2026-09-30
 surfaces: [backend, cli, docs]
+archived: "2026-10-01"
+source_slug: 0190-a-task-settles-on-the-facts-its-gate-will-check
 ---
+
 
 # A Task settles on the facts its gate will check
 

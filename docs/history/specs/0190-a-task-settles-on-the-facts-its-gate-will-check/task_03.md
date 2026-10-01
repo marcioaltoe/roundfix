@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0190-a-task-settles-on-the-facts-its-gate-will-check
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -74,3 +74,64 @@ attributed to the Task.
 - ADR-0182; ADR-0093; ADR-0094; ADR-0096; ADR-0176
 
 ## Result
+
+Implemented the Task-start Spec Consistency baseline and the in-process check
+`settlement check: spec consistency`. The worker reads refusing findings after
+the pre-work probe and before creating the Agent Session owner, only for a
+plan with Settlement Checks. It stores their `RefusalReason` values in the
+worker's local Task plan; repair and temporary retry attempts use that same
+baseline. A baseline read error settles the Task failed with the error in its
+reason before Agent work.
+
+The check reads refusing findings inside each Verification attempt, reports
+new reasons with every location and fix line, and uses the existing diagnostic
+artifact and Verification Feedback path. Checker errors fail the check.
+`PreconditionRefusal` now calls the exported `RefusalReason`; the existing
+formatting and deduplication behavior remain unchanged.
+
+Focused evidence for each acceptance criterion:
+
+| Criterion | Evidence |
+| --- | --- |
+| New refusing finding fails and Feedback names its code | `TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced` passed: both attempts refuse the finding, the repair prompt includes `SC-TEST`, the sentence, both locations and fix, final diagnostics contain the code, the fixture Task settles failed and no commit is requested. |
+| Finding present at Task start does not fail | `TestSettlementIgnoresASpecConsistencyFindingPresentAtStart` passed: changing locations and fix text preserves the baseline identity, with one Agent request and one commit request. |
+| Baseline error fails before Agent work | `TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork` passed: one checker read, no Agent request or commit request, and the fixture's failed status/reason records `cannot read baseline`. |
+| Checker error inside attempt fails | `TestSpecConsistencyCheckerErrorFailsTheCheck` passed: both attempts fail, Feedback names the check and `cannot read attempt findings`, and no commit is requested. |
+| RefusalReason is the gate's recorded code and sentence | `TestRefusalReasonIsTheReasonTheGateRecords` passed for code and sentence, whitespace normalization, code only, sentence only and unnamed findings, including duplicate gate findings. |
+
+`TestSpecConsistencyRepairKeepsTheTaskStartBaseline` also passed: a finding on
+the first attempt triggers repair; removing it allows the second attempt to
+settle, with exactly three checker reads across the cycle.
+
+Focused checks:
+
+- Before implementation, `GOCACHE=/tmp/roundfix-task03-gocache go test
+  ./internal/daemon ./internal/speccheck -run
+  'Test(SpecConsistency|SettlementRefusesA|SettlementIgnoresA|RefusalReason)'
+  -count=1` exited 1: `RefusalReason` was undefined and the Daemon tests
+  observed no refusing-finding reads.
+- After implementation, `GOCACHE=/tmp/roundfix-task03-gocache go test
+  ./internal/daemon ./internal/speccheck -run
+  'Test(SpecConsistency|SettlementRefusesA|SettlementIgnoresA|RefusalReason|PreconditionRefusal|SettlementChecks|GatelessGraph)'
+  -count=1` exited 0 for both packages.
+- A fresh focused rerun after import formatting, `GOCACHE=/tmp/roundfix-task03-gocache
+  go test ./internal/daemon ./internal/speccheck -run
+  'Test(SpecConsistency|SettlementRefusesA|SettlementIgnoresA|RefusalReason|GateRefusal|MechanicalStageStoresThePrecondition)'
+  -count=1`, exited 0 for both packages, including the existing gate-refusal
+  and mechanical-report regression tests.
+- The first `rtk make verify-incremental` exited 2. Process-owner integration
+  tests could not read the sandboxed process table (`operation not permitted`).
+  Suiteguard also detected this session's Result/import edits made while the
+  suite was running. The retry uses the required process access and keeps the
+  worktree unchanged throughout the command. The retry of `rtk make
+  verify-incremental` exited 0: formatting, vet, package tests, skill sync/check
+  and CLI build passed.
+
+The authored Verification commands were not run. Task status, the Task Graph,
+other Task files, `mechanical_test.go`, and files created by task_02 were not
+edited. No commit, push or Pull Request was performed. No follow-up was found.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260930T230750Z_197aa9aff15490a9`
+- Source commit: `3a2ddff9ffd9ea55afb9ba31d9dcb0bdf5a87598`
