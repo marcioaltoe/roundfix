@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0201-a-queue-that-classifies-its-parks-and-recovers-on-its-own
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -66,3 +66,60 @@ A parked Delivery Queue item carries only a blocker string, and the Pending Ques
 - `_prd.md` → Goal 4; User Stories 5-6; Core Features 4-5; Success Metrics 4-5; Declared breaks
 - `_techspec.md` → Park Classes; Failed check re-run; API Contract 1; Surface Transcript 1; Testing Approach 1; Build Order 1
 - ADR-0153; ADR-0165
+
+## Result
+
+Implemented this Task's slice; Task status and declared Verification remain
+owned by the Daemon.
+
+- Added the nine Park Class values and exact/colon-prefix classification for
+  every existing blocker plus `flaky-check`. Pending Questions use the same
+  next action, preserving the existing generic, revalidation and deadline
+  answers.
+- Status prints parked items' `Park:` lines in queue order, after warnings and
+  before limits. Updated the intentionally changed parked-worktree transcript;
+  the existing no-park transcript remains byte-identical.
+- Added optional `CheckRecovery` and `CheckFailure`, implemented through
+  `GitHubCLI`'s injected command runner and wired into the command engine.
+  Inspection reads the run attempt and failed log, attributes Go summaries
+  through the item's module, refreshes the remote default branch and compares
+  paths against the merge base. NUL-delimited paths and disabled rename
+  detection preserve unusual and renamed/deleted source paths.
+- Recovery re-runs failed jobs once per run, renews the timeout once, logs the
+  action, preserves existing warnings and records a passing re-run. An old
+  attempt still visible while the re-run queues only keeps polling. A second
+  attributable failure parks as `flaky-check`; ineligible or unavailable
+  evidence retains `checks-failed`. Cancellation and skipped checks do not
+  trigger re-runs or successful-re-run warnings.
+- Documented the status line, class vocabulary and bounded recovery in the
+  delivery command guide. Prerequisite, conflict and environment-only QA
+  blockers remain for their owning later Tasks.
+
+Focused evidence:
+
+| Acceptance criterion | Implementation and current-turn evidence |
+| --- | --- |
+| Every exported blocker is classified; an unknown new constant fails | `TestEveryBlockerHasAParkClass` parses delivery Go files and tests both exact and colon forms. It also injects an unknown exported constant into the parsed corpus and proves rejection. `TestParkClassesAndNextActions` checks class policy, and `TestExistingGenericParkAnswersAreUnchanged` plus the unchanged `TestPendingQuestionAnswersEachBlockerClass` cover existing answers. |
+| Ordered Park lines; unchanged no-park output | `TestDeliverStatusPrintsAParkLinePerParkedItem` pins two parked items with an active item between them, warning placement, limits and Pending Question output. The updated `TestDeliverStatusPrintsTheItemWorktree` and existing `TestDeliverStatusPrintsNoWarningLineWithoutAWarning` pass in the focused status selection. |
+| One re-run, warning on pass, flaky park on second failure | `TestAFailedCheckOutsideTheChangeIsRerunOnce`, `TestARerunCheckThatPassesRecordsAWarning`, and `TestARerunCheckThatFailsAgainParksAsFlakyCheck` exercise the real queue store and engine. Additional tests cover old attempts, timeout renewal, shared-run jobs, skipped results and preserved warnings. |
+| Changed packages, build/setup failures, absent packages and later attempts never re-run | Separate engine and GitHubCLI tests cover each exclusion, external modules, non-Actions links, root-package overlap and command errors. `TestGitHubCLIAttributesAFailedCheckToGoPackages` covers timestamp-prefixed logs, deduplication and directory boundaries. `TestGitHubCLIAttributionUsesTheRefreshedMergeBaseWithRealGit` uses disposable local repositories to prove refresh, merge-base comparison and renamed-source overlap. All gh calls use scripted runners; no GitHub or real gh is reached. |
+
+Commands run:
+
+- `GOCACHE=/tmp/roundfix-task01-gocache rtk proxy go test -count=1 ./internal/delivery`
+  — exit 0 on the final implementation and recovery/classification tests,
+  including the local Git attribution cases.
+- `GOCACHE=/tmp/roundfix-task01-gocache rtk proxy go test -count=1 -run 'TestDeliverStatus' ./internal/cli`
+  — exit 0; existing and new public status transcripts pass.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+- Initial `GOCACHE=/tmp/roundfix-task01-gocache rtk make verify-incremental`
+  — exit 2. Existing stop-owner integration tests could not read the process
+  table in the sandbox; repository guards also detected test-file edits made
+  while that check ran. No assertion or guard was weakened.
+- Stable-tree `GOCACHE=/tmp/roundfix-task01-gocache rtk make verify-incremental`
+  rerun with process access — exit 0. Formatting, vet, repository tests,
+  skill synchronization/checks and the CLI build passed. The source and test
+  tree was unchanged throughout this rerun.
+
+The authored Verification commands were not run. No commit, push, PR, Task
+Graph edit, other Task edit or tooling configuration change was made.

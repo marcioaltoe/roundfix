@@ -55,6 +55,7 @@ func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) 
 		Authorizer:   workflow,
 		Publication:  workflow,
 		PullRequests: delivery.NewGitHubCLI(loaded.GitRoot),
+		Checks:       delivery.NewGitHubCLI(loaded.GitRoot),
 		Recovery:     workflow,
 		Revalidator:  workflow,
 		Log:          os.Stderr,

@@ -112,10 +112,47 @@ considers every terminal Implement Run of the item's Spec on the item branch,
 newest first, together with the recorded Run, and carries each Run's remaining
 settled Tasks before resuming the item.
 
-`deliver status` prints each item's Spec slug, stage, and blocker, followed by
-the `Limits:` line. When one or more items are parked, it prints exactly one
+`deliver status` prints each item's Spec slug, stage, blocker and worktree.
+After any `Warning:` lines and before `Limits:`, it prints one line per parked
+item in queue order:
+
+```text
+Park: <slug> <class>: <next command>
+```
+
+The Park Class identifies the reason and the next action:
+
+| Class | Blockers |
+| --- | --- |
+| `environment` | `checks-timeout`, `item-worktree-missing`, `delivery-error` |
+| `flaky-check` | a check that failed again outside the item's changed packages |
+| `finding` | `run-unresolved`, `review-findings`, `corrective-spec-required`, `gate-failed`, `checks-failed`, `revalidation-failed` |
+| `budget` | `run-budget-exceeded`, `queue-deadline` |
+| `review` | `review-blocked`, `review-stale` |
+| `authorization` | `unauthorized` |
+| `unclassified` | an unknown blocker |
+
+The class vocabulary also reserves `dependency` and `conflict` for prerequisite
+and Pull Request conflict parks. Each existing blocker keeps its previous next
+action. A queue without parked items adds no `Park:` line.
+
+When a required GitHub Actions check fails on its first attempt, the owner
+reads its failed log and compares the failing Go package directories with the
+item's changed paths against the refreshed remote default branch. If every
+failing package lies outside that change, it re-runs the failed jobs once,
+logs the action, restarts the check timeout once and keeps polling. A pass adds
+`flaky-check: <check> passed on re-run` to the item's Warning. A second failure
+outside the change parks as `flaky-check: <package>, …`, with an action to fix
+or re-run the check and then run `roundfix deliver retry <slug>`.
+
+A failure in a changed package, a build or setup failure, a log without Go
+packages, a non-Actions check, or a run already past attempt one parks as
+`checks-failed` without a re-run. An inspection or re-run error also parks as
+`checks-failed` and is recorded in the owner log.
+
+When one or more items are parked, status prints exactly one
 `Pending question:` for the lowest-position parked item, the action that
-answers it, and the count waiting behind it. Only `deliver retry` or recording
+answers it from the same Park Class table, and the count waiting behind it. Only `deliver retry` or recording
 a new queue answers that question; owner passes and elapsed time do not.
 `deliver stop` ends the detached owner; `deliver resume` restarts it from the
 persisted queue.
@@ -173,4 +210,3 @@ empty slug, an extra argument, an unknown flag, an item that is not parked, a
 missing item branch, a moved archived head, a refused carry-forward, or an
 owner hand-off failure exits `2` and starts no owner. An item-level refusal
 leaves the stored item unchanged.
-

@@ -27,6 +27,7 @@ const (
 	BlockerRunBudgetExceeded      = "run-budget-exceeded"
 	BlockerQueueDeadline          = "queue-deadline"
 	BlockerRevalidationFailed     = "revalidation-failed"
+	BlockerFlakyCheck             = "flaky-check"
 )
 
 const WarningPremiseChanged = "premise-changed"
@@ -197,6 +198,7 @@ type EngineDependencies struct {
 	PullRequests  PullRequestBoundary
 	Recovery      ItemRecovery
 	Revalidator   ItemRevalidator
+	Checks        CheckRecovery
 	Log           io.Writer
 	Clock         Clock
 	Sleeper       Sleeper
@@ -216,6 +218,7 @@ type Engine struct {
 	pullRequests  PullRequestBoundary
 	recovery      ItemRecovery
 	revalidator   ItemRevalidator
+	checks        CheckRecovery
 	log           io.Writer
 	clock         Clock
 	sleeper       Sleeper
@@ -260,6 +263,7 @@ func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
 		pullRequests:  dependencies.PullRequests,
 		recovery:      dependencies.Recovery,
 		revalidator:   dependencies.Revalidator,
+		checks:        dependencies.Checks,
 		log:           log,
 		clock:         clock,
 		sleeper:       sleeper,
@@ -932,6 +936,9 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 		return err
 	}
 	deadline := engine.clock.Now().Add(engine.checkTimeout)
+	rerunRuns := make(map[string]bool)
+	rerunChecks := make(map[string]bool)
+	timeoutRestarted := false
 	for {
 		report, err := pullRequests.CurrentHeadChecks(ctx, item.PullRequestNumber)
 		if err == nil {
@@ -941,8 +948,68 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 			pending := len(report.Checks) == 0
 			for _, check := range report.Checks {
 				switch strings.ToLower(strings.TrimSpace(check.Bucket)) {
-				case "pass", "skipping":
-				case "fail", "cancel", "cancelled":
+				case "pass":
+					key := check.Workflow + ":" + check.Name
+					if rerunChecks[key] {
+						warning := BlockerFlakyCheck + ": " + check.Name + " passed on re-run"
+						if item.Warning == "" {
+							item.Warning = warning
+						} else {
+							item.Warning += "; " + warning
+						}
+						if err := engine.store.UpdateDeliveryQueueItem(ctx, gitRoot, *item); err != nil {
+							return fmt.Errorf("record check re-run warning: %w", err)
+						}
+						delete(rerunChecks, key)
+					}
+				case "skipping":
+				case "fail":
+					if engine.checks == nil {
+						return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+					}
+					failure, inspectErr := engine.checks.InspectFailedCheck(ctx, workDir, head, check)
+					if inspectErr != nil {
+						if ctx.Err() != nil {
+							return fmt.Errorf("inspect failed check: %w", inspectErr)
+						}
+						fmt.Fprintf(engine.log, "roundfix: check recovery: Delivery Queue item %s: %s\n", item.SpecSlug, inspectErr)
+						return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+					}
+					if rerunRuns[failure.RunID] {
+						// GitHub can still report the first attempt while the re-run is queued.
+						if failure.Attempt == 1 {
+							pending = true
+							continue
+						}
+						if failure.OutsideChange && failure.Attempt > 1 {
+							return engine.park(ctx, gitRoot, item, BlockerFlakyCheck+": "+strings.Join(failure.Packages, ", "))
+						}
+						return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+					}
+					if !failure.OutsideChange || failure.Attempt != 1 || failure.RunID == "" {
+						return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+					}
+					if err := engine.checks.RerunFailedCheck(ctx, workDir, failure); err != nil {
+						if ctx.Err() != nil {
+							return fmt.Errorf("re-run failed check: %w", err)
+						}
+						fmt.Fprintf(engine.log, "roundfix: check recovery: Delivery Queue item %s: %s\n", item.SpecSlug, err)
+						return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+					}
+					rerunRuns[failure.RunID] = true
+					for _, failed := range report.Checks {
+						if failed.Bucket == "fail" && checkRunID(failed.Link) == failure.RunID {
+							rerunChecks[failed.Workflow+":"+failed.Name] = true
+						}
+					}
+					rerunChecks[check.Workflow+":"+check.Name] = true
+					if !timeoutRestarted {
+						deadline = engine.clock.Now().Add(engine.checkTimeout)
+						timeoutRestarted = true
+					}
+					fmt.Fprintf(engine.log, "roundfix: check re-run: Delivery Queue item %s: %s (run %s)\n", item.SpecSlug, check.Name, failure.RunID)
+					pending = true
+				case "cancel", "cancelled":
 					return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
 				default:
 					pending = true

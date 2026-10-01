@@ -292,6 +292,12 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 			fmt.Fprintf(stdout, "Warning: %s %s\n", item.SpecSlug, item.Warning)
 		}
 	}
+	for _, item := range queue.Items {
+		if item.Stage == store.DeliveryStageParked {
+			park := delivery.ClassifyPark(queue, item)
+			fmt.Fprintf(stdout, "Park: %s %s: %s\n", item.SpecSlug, park.Class, park.Next)
+		}
+	}
 	printDeliveryLimits(stdout, queue.Limits)
 	if question, found := delivery.PendingQuestionFor(queue); found {
 		fmt.Fprintf(stdout, "Pending question: %s parked %s\n", question.SpecSlug, question.Blocker)
