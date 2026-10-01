@@ -1,0 +1,11 @@
+{
+  "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0191-qa-lishbkph/candidate",
+  "command": [
+    "./bin/roundfix",
+    "--version"
+  ],
+  "exit": 0,
+  "stdout": "roundfix 0.22.0 (c5340e8e-dirty, built 2026-10-01 00:11:28 -0300)\n",
+  "stderr": "",
+  "candidate": "c5340e8e061c021513ec32c33254e31317ff81b0"
+}

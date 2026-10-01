@@ -5,10 +5,10 @@ argument-hint: "<spec slug, path to docs/specs/<slug>/_prd.md, or a refactor/bug
 metadata:
   category: engineering-design
   tags: [architecture, documentation, workflow]
-  version: 0.0.3
+  version: 0.0.4
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.3
+version: 0.0.4
 ---
 
 # Write TechSpec
@@ -75,6 +75,14 @@ Write `_techspec.md` from the template in [references/techspec-template.md](refe
 Write API Contracts as numbered API Contract items, or as the single entry
 `None.` followed by the reason none applies. Each numbered contract must be
 addressable by its name and number in downstream Task References.
+
+## Concrete contracts
+
+Use the [concrete-contracts guide](references/concrete-contracts.md) when a
+claim attributes behavior to a decision record or when a TechSpec changes a
+command surface. It defines Claim Receipts, Surface Transcript blocks, the
+matching conventions used by the QA gate, code-signature interfaces, and
+numbered invariants.
 
 `Project Constraints` is body content, never frontmatter. When the design
 proposes creating, editing, renaming, moving, or deleting protected tooling

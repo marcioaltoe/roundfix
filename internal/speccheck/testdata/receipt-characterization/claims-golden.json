@@ -1,0 +1,80 @@
+[
+  {
+    "Artifact": "docs/history/specs/0181-gates-that-refuse-only-what-someone-can-act-on/_prd.md",
+    "Line": 51,
+    "Target": "ADR-0057",
+    "Subject": "the Daemon the writer of a Task's settled status in the Task file it commits"
+  },
+  {
+    "Artifact": "docs/history/specs/0181-gates-that-refuse-only-what-someone-can-act-on/_prd.md",
+    "Line": 53,
+    "Target": "ADR-0130",
+    "Subject": "a Governed Path under its authorization"
+  },
+  {
+    "Artifact": "docs/history/specs/0181-gates-that-refuse-only-what-someone-can-act-on/_prd.md",
+    "Line": 56,
+    "Target": "ADR-0091",
+    "Subject": "the QA gate a Task node of its own type"
+  },
+  {
+    "Artifact": "docs/history/specs/0181-gates-that-refuse-only-what-someone-can-act-on/_prd.md",
+    "Line": 59,
+    "Target": "ADR-0155",
+    "Subject": "the Pull Request row a coverage source every matrix carries"
+  },
+  {
+    "Artifact": "docs/history/specs/0181-gates-that-refuse-only-what-someone-can-act-on/_prd.md",
+    "Line": 63,
+    "Target": "ADR-0116",
+    "Subject": "`SC-CITATION-UNSUPPORTED` reading every cited record"
+  },
+  {
+    "Artifact": "docs/history/specs/0182-delivery-that-reviews-and-retries-from-where-the-item-stands/_prd.md",
+    "Line": 45,
+    "Target": "ADR-0153",
+    "Subject": "the pre-PR review an explicit provider policy that must review the current candidate"
+  },
+  {
+    "Artifact": "docs/history/specs/0182-delivery-that-reviews-and-retries-from-where-the-item-stands/_prd.md",
+    "Line": 46,
+    "Target": "ADR-0151",
+    "Subject": "the configured review profile as the reviewer"
+  },
+  {
+    "Artifact": "docs/history/specs/0182-delivery-that-reviews-and-retries-from-where-the-item-stands/_prd.md",
+    "Line": 50,
+    "Target": "ADR-0014",
+    "Subject": "Task status and Verification Daemon-owned"
+  },
+  {
+    "Artifact": "docs/history/specs/0182-delivery-that-reviews-and-retries-from-where-the-item-stands/_prd.md",
+    "Line": 51,
+    "Target": "ADR-0053",
+    "Subject": "reconciliation proof-based"
+  },
+  {
+    "Artifact": "docs/history/specs/0182-delivery-that-reviews-and-retries-from-where-the-item-stands/_prd.md",
+    "Line": 53,
+    "Target": "ADR-0158",
+    "Subject": "a BudgetExceeded Run recoverable through carry-forward"
+  },
+  {
+    "Artifact": "docs/history/specs/0182-delivery-that-reviews-and-retries-from-where-the-item-stands/_prd.md",
+    "Line": 57,
+    "Target": "ADR-0052",
+    "Subject": "completion compare-and-set"
+  },
+  {
+    "Artifact": "docs/history/specs/0182-delivery-that-reviews-and-retries-from-where-the-item-stands/_prd.md",
+    "Line": 60,
+    "Target": "ADR-0139",
+    "Subject": "one Active Run per work target"
+  },
+  {
+    "Artifact": "docs/history/specs/0182-delivery-that-reviews-and-retries-from-where-the-item-stands/_prd.md",
+    "Line": 63,
+    "Target": "ADR-0094",
+    "Subject": "that consistency check artifact-presence-aware"
+  }
+]

@@ -1,0 +1,10 @@
+=== RUN   TestEveryOwnedSkillVersionIsRecorded
+--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.00s)
+=== RUN   TestSettlementGuidanceIsOneTable
+--- PASS: TestSettlementGuidanceIsOneTable (0.00s)
+=== RUN   TestTheConcreteContractGuideShipsAtTheHorizonPath
+--- PASS: TestTheConcreteContractGuideShipsAtTheHorizonPath (0.00s)
+=== RUN   TestTheGuideExamplesAreReadByTheCheck
+--- PASS: TestTheGuideExamplesAreReadByTheCheck (0.00s)
+PASS
+ok  	roundfix/skills	0.601s

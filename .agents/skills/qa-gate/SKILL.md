@@ -4,10 +4,10 @@ description: Execute the self-contained final QA gate as a Spec's authored termi
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.4
+  version: 0.0.5
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.4
+version: 0.0.5
 ---
 
 # QA Gate
@@ -56,6 +56,17 @@ Resolve `docs/specs/<slug>/`, then read `_tasks.md`, `_prd.md`, every
 field names the current `type: qa` Task and that this node is terminal and
 depends on every non-QA leaf. A missing or mismatched authored node is a graph
 defect; do not run the gate outside that node.
+
+## Surface Transcripts at the gate
+
+For every Surface Transcript named by the TechSpec, add one QA matrix row. The
+row reproduces the transcript's command through the built product and compares
+standard output, standard error, and exit code using the TechSpec matching
+rules: a line `...` matches zero or more consecutive lines, text in angle
+brackets matches one or more characters within the same line, and everything
+else matches exactly. Compare standard output and standard error separately;
+the exit code always matches exactly. Name the transcript in the row's
+provenance and preserve the observed output as evidence.
 
 - A clean authoring check is a precondition of the gate, not a substitute for
   it. For every active, non-legacy Spec, run:
