@@ -148,6 +148,16 @@ func ResolveProfile(config Config, category WorkCategory, preferredOverride *Age
 		if err != nil {
 			return ResolvedProfile{}, err
 		}
+		if err := validateAgentSelectionProfile("profiles."+string(category), profile); err != nil {
+			return ResolvedProfile{}, err
+		}
+		for index, fallback := range profile.Fallbacks {
+			normalized, _ := normalizeSelection("invocation fallback", fallback)
+			if normalized == selection {
+				profile.Fallbacks[index] = profile.Preferred
+				break
+			}
+		}
 		profile.Preferred = selection
 		if err := validateAgentSelectionProfile("invocation profile", profile); err != nil {
 			return ResolvedProfile{}, err
@@ -184,21 +194,12 @@ func isOptionalWorkCategory(category WorkCategory) bool {
 }
 
 func builtinProfiles() Profiles {
-	general := AgentSelectionProfile{
-		Preferred: AgentSelection{Runtime: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"},
-		Fallbacks: []AgentSelection{{Runtime: "codex", Model: "gpt-5.5", ReasoningEffort: "xhigh"}},
+	entries := make(Profiles, len(requiredWorkCategories))
+	for _, category := range requiredWorkCategories {
+		profile, _ := RecommendedProfile(category)
+		entries[category] = ProfileEntry{Profile: profile, Source: ProfileSourceBuiltIn}
 	}
-	frontend := AgentSelectionProfile{
-		Preferred: AgentSelection{Runtime: "claude", Model: "opus", ReasoningEffort: "xhigh"},
-		Fallbacks: []AgentSelection{{Runtime: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"}},
-	}
-	return Profiles{
-		CategoryGeneral:  {Profile: cloneProfile(general), Source: ProfileSourceBuiltIn},
-		CategoryBackend:  {Profile: cloneProfile(general), Source: ProfileSourceBuiltIn},
-		CategoryFrontend: {Profile: cloneProfile(frontend), Source: ProfileSourceBuiltIn},
-		CategoryQA:       {Profile: cloneProfile(general), Source: ProfileSourceBuiltIn},
-		CategoryReview:   {Profile: cloneProfile(general), Source: ProfileSourceBuiltIn},
-	}
+	return entries
 }
 
 type profilesOverlay struct {

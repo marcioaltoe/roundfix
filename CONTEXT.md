@@ -222,9 +222,9 @@ _Avoid_: Local Agent reasoning, automatic reasoning, reasoning hint
 The ordered set of known Agent Models Roundfix offers for one ACP Runtime during Interactive Input. Its Default label resolves to the Default Agent Model, while non-interactive interfaces may supply a custom value.
 _Avoid_: Global model list, model allowlist
 
-**Model Recommendation Ranking**:
-The versioned, advisory top-five Agent Selection list Roundfix shows for an Agent Work Category to help configure a profile. It never selects, routes, or changes an Agent Selection automatically.
-_Avoid_: Model router, benchmark policy, automatic selection
+**Recommended Profile**:
+The dated Agent Selection Profile Roundfix recommends for one Agent Work Category, from which built-in profiles derive. It never selects, routes, or changes a configuration by itself.
+_Avoid_: Model Recommendation Ranking, model router, benchmark policy, automatic selection
 
 **Fallback Selection**:
 The next configured Agent Selection in a profile's Fallback Chain. Roundfix proves it before the Run, emits a notification before activation, and may switch ACP Runtime automatically only while Agent work has not begun.

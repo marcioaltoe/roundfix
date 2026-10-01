@@ -40,16 +40,16 @@ roundfix setup [--yes] [--no-input]
 Verifies Node.js, the minimum supported acpx version, the effective adapters,
 generated Agent Selection Profiles, acpx local adapter overrides, User Config,
 and Project Config. Adapter Readiness requires official
-`@agentclientprotocol/codex-acp` lineage at version `1.1.5` or newer and
-official `@agentclientprotocol/claude-agent-acp` lineage at version `0.63.0`
+`@agentclientprotocol/codex-acp` lineage at version `2.0.1` or newer and
+official `@agentclientprotocol/claude-agent-acp` lineage at version `0.84.0`
 or newer. The deterministic install actions are
-`npm install -g @agentclientprotocol/codex-acp@1.1.5` and
-`npm install -g @agentclientprotocol/claude-agent-acp@0.63.0`.
+`npm install -g @agentclientprotocol/codex-acp@2.0.1` and
+`npm install -g @agentclientprotocol/claude-agent-acp@0.84.0`.
 
 A stale or bare Codex override that fails official lineage proof produces one
-migration offer to `npx -y @agentclientprotocol/codex-acp@1.1.5`, and a Claude
+migration offer to `npx -y @agentclientprotocol/codex-acp@2.0.1`, and a Claude
 override that fails the same proof produces one migration offer to
-`npx -y @agentclientprotocol/claude-agent-acp@0.63.0`. The offer follows from
+`npx -y @agentclientprotocol/claude-agent-acp@0.84.0`. The offer follows from
 the failed proof, so it covers a differently named or differently scoped
 package without naming any superseded one. Setup proves each proposal before
 asking; declining preserves the acpx configuration bytes.
@@ -122,8 +122,8 @@ run-from-Git next action.
 ```text
 node: ok
 acpx: ok
-adapter: ok (claude: command="npx -y @agentclientprotocol/claude-agent-acp@0.63.0"; package=@agentclientprotocol/claude-agent-acp; version=0.63.0 | codex: command="npx -y @agentclientprotocol/codex-acp@1.1.5"; package=@agentclientprotocol/codex-acp; version=1.1.5)
-profiles: ok (3 distinct tuples; 10 category references)
+adapter: ok (claude: command="npx -y @agentclientprotocol/claude-agent-acp@0.84.0"; package=@agentclientprotocol/claude-agent-acp; version=0.84.0 | codex: command="npx -y @agentclientprotocol/codex-acp@2.0.1"; package=@agentclientprotocol/codex-acp; version=2.0.1)
+profiles: ok (4 distinct tuples; 10 category references)
 skills: ok (<required> required: <owned> Roundfix-owned, <external> external)
 residue: ok (no process residue found)
 storage: ok (nothing to reclaim; Runs reclaimable: 0; Run Database free bytes: 0)
@@ -548,7 +548,11 @@ roundfix profiles validate [--category <category>] [--json]
 ```
 
 `profiles show` renders the effective Preferred Selection, Fallback Chain, and
-dated advisory recommendations. Official model identifiers and advisory rank
+dated advisory Recommended Profile: a Preferred Selection followed by its
+Fallback Chain, with roles, source date, and rationales. Each of the ten
+categories has its own profile. The Recommended Profile never selects, routes,
+or writes configuration; interactive configure shows the same advisory rows.
+Official model identifiers and advisory rank
 do not prove that a tuple works in the current environment.
 
 `profiles configure` merges a fragment by Agent Work Category. Every category
@@ -578,7 +582,7 @@ preserves the target bytes.
 `profiles validate` is read-only, deduplicates exact tuples across category
 references, proves them through disposable ACP Runtime Sessions, sends no
 Agent prompt, and closes every Session on success or error. JSON schemas are
-`roundfix/profiles/v1`, `roundfix/profiles-configure/v1`, and
+`roundfix/profiles/v2`, `roundfix/profiles-configure/v1`, and
 `roundfix/profiles-validate/v1`.
 A proof whose setup times out is retried once. A second timeout is classified
 `temporary`; rerun the command when load drops because the configured profile

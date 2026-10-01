@@ -88,11 +88,23 @@
       },
       {
         "version": "0.0.5",
-        "digest": "9756ff7090a0da2c98c5f4595e5c05c9792c93ed44f60def776b8f884339135b"
+        "digest": "9c61c29cc4aa46ff526e33988e65f8d5e46c3fd72a38b73603e0fa251d13db4d"
       },
       {
         "version": "0.0.6",
-        "digest": "b3a43a69b9cc02c831ae26de7f79a66ac2176540e723f0639249b25d3f1beb60"
+        "digest": "b12f406d81069f92001022514caf85b70373c7088606b5b9a6f7e38eb1354e89"
+      },
+      {
+        "version": "0.0.7",
+        "digest": "a5e86d7120a25c3aaecfaae8717b67d509ef5c5b4ff0fb276e932841e5f0caa2"
+      },
+      {
+        "version": "0.0.8",
+        "digest": "d82ed9b74d5dbdb5ab1e2107d98486c5c778b73bc63a7053d6289f67b054b5bf"
+      },
+      {
+        "version": "0.0.9",
+        "digest": "840cdf62d15bdf81cd3ef4d496641411a79b5bfb6d6bed9fa9defa7c5e0be493"
       }
     ],
     "setup-context-driven": [

@@ -304,13 +304,14 @@ func readProfilesLine(ctx context.Context, reader *bufio.Reader) (string, error)
 }
 
 func printProfilesConfigureRecommendations(output io.Writer, category roundconfig.WorkCategory) {
-	recommendations, source, ok := roundconfig.ModelRecommendations(category)
+	recommendations, ok := roundconfig.ModelRecommendations(category)
 	if !ok {
 		return
 	}
-	fmt.Fprintf(output, "Recommendations for %s (source: %s, advisory only):\n", category, source)
+	fmt.Fprintf(output, "Recommended profile for %s (snapshot %s, advisory only):\n", category, roundconfig.ModelRecommendationSnapshotVersion)
 	for _, recommendation := range recommendations {
-		fmt.Fprintf(output, "  %d. %s\n", recommendation.Rank, formatProfileSelection(recommendation.Selection))
+		fmt.Fprintf(output, "  %d. %s %s\n", recommendation.Rank, recommendation.Role, formatProfileSelection(recommendation.Selection))
+		fmt.Fprintf(output, "     rationale: %s\n", recommendation.Rationale)
 	}
 }
 

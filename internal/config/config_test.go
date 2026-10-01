@@ -307,9 +307,10 @@ pre_pr_review:
 func TestBuiltinRuntimeDefaults(t *testing.T) {
 	t.Parallel()
 	config := Builtin()
+	general, _ := RecommendedProfile(CategoryGeneral)
 
-	if config.Runtimes.Codex.Model != "gpt-5.5" || config.Runtimes.Codex.ReasoningEffort != "xhigh" {
-		t.Fatalf("expected built-in Codex gpt-5.5/xhigh, got %#v", config.Runtimes.Codex)
+	if config.Runtimes.Codex.Model != general.Preferred.Model || config.Runtimes.Codex.ReasoningEffort != general.Preferred.ReasoningEffort {
+		t.Fatalf("expected general Recommended Profile Codex selection, got %#v", config.Runtimes.Codex)
 	}
 	if config.Runtimes.Claude.Model != "opus" || config.Runtimes.Claude.ReasoningEffort != "" {
 		t.Fatalf("expected built-in Claude opus with model-managed reasoning, got %#v", config.Runtimes.Claude)
@@ -422,9 +423,9 @@ func TestProjectInitThenLoadWarnsNothing(t *testing.T) {
 func TestBuiltinProfilesGeneratedCodexPolicy(t *testing.T) {
 	t.Parallel()
 	config := Builtin()
-	wantPreferred := selectionForTest("codex", "gpt-5.6-sol", "high")
-	wantFallback := selectionForTest("codex", "gpt-5.5", "xhigh")
 	for _, category := range []WorkCategory{CategoryGeneral, CategoryBackend, CategoryQA, CategoryReview} {
+		want, _ := RecommendedProfile(category)
+		wantPreferred, wantFallback := want.Preferred, want.Fallbacks[0]
 		resolved, err := ResolveProfile(config, category, nil)
 		if err != nil {
 			t.Fatalf("ResolveProfile(%q) error = %v", category, err)
@@ -441,15 +442,16 @@ func TestBuiltinProfilesGeneratedCodexPolicy(t *testing.T) {
 func TestDefaultConfigYAMLGeneratedCodexPolicy(t *testing.T) {
 	t.Parallel()
 	content := DefaultConfigYAML()
-	if got := strings.Count(content, "model: gpt-5.6-sol"); got != 5 {
-		t.Fatalf("Sol occurrence count = %d, want 5:\n%s", got, content)
+	modelCounts := map[string]int{}
+	for _, category := range RequiredWorkCategories() {
+		want, _ := RecommendedProfile(category)
+		for _, selection := range append([]AgentSelection{want.Preferred}, want.Fallbacks...) {
+			modelCounts[selection.Model]++
+		}
 	}
-	if got := strings.Count(content, "model: gpt-5.5"); got != 4 {
-		t.Fatalf("GPT-5.5 occurrence count = %d, want 4:\n%s", got, content)
-	}
-	for _, forbidden := range []string{"model: gpt-5.6-terra", "model: gpt-5.6-luna", "reasoning_effort: max"} {
-		if strings.Contains(content, forbidden) {
-			t.Fatalf("generated config contains operational default %q:\n%s", forbidden, content)
+	for model, want := range modelCounts {
+		if got := strings.Count(content, "model: "+model+"\n"); got != want {
+			t.Fatalf("%s occurrence count = %d, want %d:\n%s", model, got, want, content)
 		}
 	}
 }
@@ -538,47 +540,28 @@ func TestAgentSelectionProfileBuiltinsResolveRequiredCategories(t *testing.T) {
 		{
 			name:     "general",
 			category: CategoryGeneral,
-			want: profileForTest(
-				selectionForTest("codex", "gpt-5.6-sol", "high"),
-				selectionForTest("codex", "gpt-5.5", "xhigh"),
-			),
 		},
 		{
 			name:     "backend",
 			category: CategoryBackend,
-			want: profileForTest(
-				selectionForTest("codex", "gpt-5.6-sol", "high"),
-				selectionForTest("codex", "gpt-5.5", "xhigh"),
-			),
 		},
 		{
 			name:     "frontend",
 			category: CategoryFrontend,
-			want: profileForTest(
-				selectionForTest("claude", "opus", "xhigh"),
-				selectionForTest("codex", "gpt-5.6-sol", "high"),
-			),
 		},
 		{
 			name:     "qa",
 			category: CategoryQA,
-			want: profileForTest(
-				selectionForTest("codex", "gpt-5.6-sol", "high"),
-				selectionForTest("codex", "gpt-5.5", "xhigh"),
-			),
 		},
 		{
 			name:     "review",
 			category: CategoryReview,
-			want: profileForTest(
-				selectionForTest("codex", "gpt-5.6-sol", "high"),
-				selectionForTest("codex", "gpt-5.5", "xhigh"),
-			),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt.want, _ = RecommendedProfile(tt.category)
 			got, err := ResolveProfile(config, tt.category, nil)
 			if err != nil {
 				t.Fatalf("ResolveProfile(%q) error = %v", tt.category, err)
@@ -878,7 +861,7 @@ runtimes:
 
 	want := profileForTest(
 		selectionForTest("claude", "fable", ""),
-		selectionForTest("codex", "gpt-5.5", "xhigh"),
+		Builtin().Profiles[CategoryBackend].Profile.Fallbacks[0],
 	)
 	if got.Source != ProfileSourceUser {
 		t.Fatalf("expected user source, got %q", got.Source)
@@ -907,10 +890,7 @@ runtimes:
 	if err != nil {
 		t.Fatalf("ResolveProfile(general): %v", err)
 	}
-	want := profileForTest(
-		selectionForTest("codex", "gpt-5.5", "xhigh"),
-		selectionForTest("codex", "gpt-5.6-sol", "high"),
-	)
+	want, _ := RecommendedProfile(CategoryGeneral)
 	if !profilesEqual(resolved.Profile, want) {
 		t.Fatalf("legacy default Codex profile mismatch\nwant: %#v\n got: %#v", want, resolved.Profile)
 	}
@@ -1708,7 +1688,7 @@ func TestProfileResolverPreferredOverridePreservesFallbackChain(t *testing.T) {
 	if got.Profile.Preferred != override {
 		t.Fatalf("expected preferred override %#v, got %#v", override, got.Profile.Preferred)
 	}
-	wantFallbacks := []AgentSelection{selectionForTest("codex", "gpt-5.5", "xhigh")}
+	wantFallbacks := Builtin().Profiles[CategoryBackend].Profile.Fallbacks
 	if !selectionsEqual(got.Profile.Fallbacks, wantFallbacks) {
 		t.Fatalf("expected configured fallbacks to survive override\nwant: %#v\ngot:  %#v", wantFallbacks, got.Profile.Fallbacks)
 	}
@@ -2729,7 +2709,7 @@ defaults:
 	if loaded.Config.Defaults.Model != "" {
 		t.Fatalf("expected defaults.model to be ignored, got %q", loaded.Config.Defaults.Model)
 	}
-	if loaded.Config.Runtimes.Codex.Model != "gpt-5.5" {
+	if loaded.Config.Runtimes.Codex.Model != Builtin().Runtimes.Codex.Model {
 		t.Fatalf("expected Codex runtime model to keep built-in value, got %q", loaded.Config.Runtimes.Codex.Model)
 	}
 }
@@ -3165,8 +3145,8 @@ func TestInitCreatesUserConfig(t *testing.T) {
 	content := mustRead(t, expectedPath)
 	if !strings.Contains(content, "agent_full_access: false") ||
 		!strings.Contains(content, `artifact_dir: ""`) || !strings.Contains(content, "Roundfix Home artifacts/<repo-id>") ||
-		!strings.Contains(content, "profiles:") || !strings.Contains(content, "model: gpt-5.6-sol") ||
-		!strings.Contains(content, "model: gpt-5.5") || !strings.Contains(content, "model: opus") ||
+		!strings.Contains(content, "profiles:") || !strings.Contains(content, "model: "+Builtin().Profiles[CategoryGeneral].Profile.Preferred.Model) ||
+		!strings.Contains(content, "model: "+Builtin().Profiles[CategoryReview].Profile.Preferred.Model) || !strings.Contains(content, "model: "+Builtin().Profiles[CategoryFrontend].Profile.Preferred.Model) ||
 		!strings.Contains(content, "fallbacks:") ||
 		!strings.Contains(content, "specs:") || !strings.Contains(content, `root: "docs/specs"`) ||
 		!strings.Contains(content, "worktree:") || !strings.Contains(content, `location: "~/.roundfix/worktrees"`) ||
@@ -3212,17 +3192,9 @@ func TestProfileGeneratedConfigUsesCompleteProfilesSchema(t *testing.T) {
 		"backend:",
 		"qa:",
 		"review:",
-		"model: gpt-5.6-sol",
-		"model: gpt-5.5",
-		"  frontend:\n" +
-			"    preferred:\n" +
-			"      runtime: claude\n" +
-			"      model: opus\n" +
-			"      reasoning_effort: xhigh\n" +
-			"    fallbacks:\n" +
-			"      - runtime: codex\n" +
-			"        model: gpt-5.6-sol\n" +
-			"        reasoning_effort: high\n",
+		"model: " + Builtin().Profiles[CategoryGeneral].Profile.Preferred.Model,
+		"model: " + Builtin().Profiles[CategoryReview].Profile.Preferred.Model,
+		"model: " + Builtin().Profiles[CategoryFrontend].Profile.Preferred.Model,
 		"fallbacks:",
 	} {
 		if !strings.Contains(content, want) {
@@ -3245,6 +3217,10 @@ func TestProfileGeneratedConfigUsesCompleteProfilesSchema(t *testing.T) {
 		}
 		if resolved.Source != ProfileSourceProject {
 			t.Fatalf("%s source = %q, want project", category, resolved.Source)
+		}
+		want, _ := RecommendedProfile(category)
+		if !profilesEqual(resolved.Profile, want) {
+			t.Fatalf("%s generated profile = %#v, want %#v", category, resolved.Profile, want)
 		}
 		if len(resolved.Profile.Fallbacks) == 0 {
 			t.Fatalf("%s generated profile has no fallback: %#v", category, resolved.Profile)
@@ -3335,8 +3311,8 @@ func TestInitForceOverwritesExistingConfig(t *testing.T) {
 		t.Fatalf("expected overwritten result, got %#v", result)
 	}
 	if content := mustRead(t, path); !strings.Contains(content, "profiles:") ||
-		!strings.Contains(content, "model: gpt-5.6-sol") ||
-		!strings.Contains(content, "model: opus") ||
+		!strings.Contains(content, "model: "+Builtin().Profiles[CategoryGeneral].Profile.Preferred.Model) ||
+		!strings.Contains(content, "model: "+Builtin().Profiles[CategoryFrontend].Profile.Preferred.Model) ||
 		strings.Contains(content, "agent: claude") ||
 		strings.Contains(content, "runtimes:") {
 		t.Fatalf("expected default config to replace old content, got %s", content)

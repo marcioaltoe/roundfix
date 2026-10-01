@@ -15,8 +15,8 @@ func TestResolveSelectionUsesBuiltInRuntimeDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected Codex selection, got %v", err)
 	}
-	if codex.Model != "gpt-5.5" || codex.ReasoningEffort != "xhigh" {
-		t.Fatalf("expected Codex gpt-5.5/xhigh, got %#v", codex)
+	if codex.Model != config.Runtimes.Codex.Model || codex.ReasoningEffort != config.Runtimes.Codex.ReasoningEffort {
+		t.Fatalf("expected built-in Codex selection, got %#v", codex)
 	}
 
 	claude, err := ResolveSelection("claude", config.Runtimes.Claude, InvocationSelection{})

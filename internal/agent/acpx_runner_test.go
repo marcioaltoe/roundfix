@@ -481,7 +481,7 @@ func TestCheckAdapterClassifiesUnreadyCodexAdapters(t *testing.T) {
 		},
 		{
 			name:           "unknown same-named executable",
-			output:         "codex-acp 1.1.5 SECRET_TOKEN=must-not-leak",
+			output:         "codex-acp " + PinnedCodexAdapterVersion + " SECRET_TOKEN=must-not-leak",
 			wantPackage:    "",
 			wantVersion:    "",
 			wantLineageErr: true,
@@ -567,7 +567,7 @@ func TestCheckAdapterProvesOfficialClaudePackageAndVersion(t *testing.T) {
 			name: "newer version",
 			runtime: func(t *testing.T) RuntimeSpec {
 				t.Helper()
-				const newerVersion = "0.64.0"
+				const newerVersion = "0.85.0"
 				command := installFakeNamedVersionAdapter(t, "npx", newerVersion)
 				return RuntimeSpec{
 					ID:       "claude-custom",
@@ -575,7 +575,7 @@ func TestCheckAdapterProvesOfficialClaudePackageAndVersion(t *testing.T) {
 					Command:  command + " -y " + ClaudeAdapterPackage + "@" + newerVersion,
 				}
 			},
-			wantVersion: "0.64.0",
+			wantVersion: "0.85.0",
 		},
 		{
 			name: "version only with resolved path package identity",

@@ -1688,9 +1688,9 @@ func tuiModelCatalog(runtime string) []roundtui.ModelChoice {
 func reasoningEffortChoices(runtime string) []string {
 	switch runtime {
 	case "codex":
-		return []string{"low", "medium", "high", "xhigh"}
+		return []string{"low", "medium", "high", "xhigh", "max"}
 	case "claude":
-		return []string{"default", "high", "maximum"}
+		return []string{"default", "low", "medium", "high", "xhigh", "max"}
 	default:
 		return nil
 	}
@@ -5792,20 +5792,20 @@ Commands:
   configure  Write complete Agent Selection Profiles after validation and confirmation.
   validate   Prove effective Agent Selection Profiles through disposable sessions.
 
-Profile recommendations are advisory. They never route selections or mutate
-configuration unless configure is explicitly invoked and confirmed.
+The Recommended Profile is advisory. It never selects, routes, or writes
+configuration. Show JSON uses roundfix/profiles/v2.
 `
 	case "profiles show":
 		return `Usage:
   roundfix profiles show [--category <category>] [--json]
 
 Renders the effective Agent Selection Profile source, Preferred Selection,
-Fallback Chain, and advisory top-five recommendations for one category or all
+Fallback Chain, and advisory Recommended Profile for one category or all
 categories. Recommendations are read-only guidance and never change routing.
 
 Options:
   --category  Agent Work Category: general, backend, frontend, data, infra, docs, test, chore, qa, or review
-  --json      Print roundfix/profiles/v1 JSON
+  --json      Print roundfix/profiles/v2 JSON
 `
 	case "profiles configure":
 		return `Usage:
