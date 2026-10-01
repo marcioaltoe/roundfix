@@ -26,7 +26,7 @@ TechSpec's block byte for byte.
 3. MUST implement the language gate of `_techspec.md` → The language gate, over maximal runs of Unicode letters, lowercased.
 4. MUST implement `PlanSpec` with every rule of `_techspec.md` → Citation claims and Goal pairs, for the stages `prd`, `techspec` and both, including each skip reason those sections name, the artifact skip `not English`, the artifact skip `not a regular file in the Spec directory`, and one pending judgment per distinct state. A pending judgment's state MUST be built only from `Source` text and the fixed phrase `the cited decision`, and MUST encode as the JSON objects those sections name, without HTML escaping.
 5. MUST put the tests in `internal/judge/questions_test.go`, `internal/judge/source_test.go` and `internal/judge/pairs_test.go`, building every fixture Spec, ADR and file in `t.TempDir()`. They MUST cover each numbered rule of Citation claims and Goal pairs with a case that would pass if the rule were removed, an English and a Portuguese fixture for the language gate, and each refusal of The only readers.
-6. MUST NOT open a network connection, read `ROUNDFIX_JEV_OPENROUTER_API_KEY`, `ROUNDFIX_TYPESAFE_API_KEY` or `OPENROUTER_API_KEY`, or write outside `t.TempDir()`.
+6. MUST NOT open a network connection, read `ROUNDFIX_OPENROUTER_API_KEY`, `ROUNDFIX_TYPESAFE_API_KEY` or `OPENROUTER_API_KEY`, or write outside `t.TempDir()`.
 7. MUST prove each new gate can fail. The Result MUST record one sabotage of the claim extraction (for example dropping the `(Spec NNNN)` removal) and one of a reader (for example following symbolic links), each with the test that failed, and that the code was restored.
 
 ## Subtasks
@@ -39,7 +39,7 @@ TechSpec's block byte for byte.
 
 ## Acceptance Criteria
 
-- [ ] `internal/judge/questions.json` equals the TechSpec block byte for byte, loads, pins `jev-1.13`, compiles `accepted_model_pattern`, and lists the `openrouter` transport (`ROUNDFIX_JEV_OPENROUTER_API_KEY`, requesting `jev-1.13`) before the `typesafe` one (`ROUNDFIX_TYPESAFE_API_KEY`, requesting `jev-1.13.0`).
+- [ ] `internal/judge/questions.json` equals the TechSpec block byte for byte, loads, pins `jev-1.13`, compiles `accepted_model_pattern`, and lists the `openrouter` transport (`ROUNDFIX_OPENROUTER_API_KEY`, requesting `jev-1.13`) before the `typesafe` one (`ROUNDFIX_TYPESAFE_API_KEY`, requesting `jev-1.13.0`).
 - [ ] A fixture sentence `ADR-NNNN keeps ... (Spec 0123).` with one accepted ADR becomes a claim with the token replaced and the Spec reference removed; a sentence with two ADR tokens, one inside a fence, one in a table row, one with a verb outside the pattern and one naming a proposed ADR plan nothing.
 - [ ] A Coverage Map line `- Goals 1-2 → <title>.` pairs each goal with the longest qualifying named section, cut at 3500 characters, and a generic or short section is never named.
 - [ ] A Portuguese PRD is skipped as `not English` and plans nothing; a symbolic-link PRD is skipped as `not a regular file in the Spec directory`.
