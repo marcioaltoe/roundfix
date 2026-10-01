@@ -617,7 +617,7 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 	if promptSent {
 		record.Lineage.Session = specContext.session.Name
-		record.Lineage.Selection = specContext.selection
+		record.Lineage.Selection = &specContext.selection
 		record.Lineage.ACPSessionIDs = append(record.Lineage.ACPSessionIDs, result.ACPSessionID)
 		ids := record.Lineage.ACPSessionIDs
 		record.Lineage.Continued = specContext.resumed && len(ids) == 2 && ids[0] != "" && ids[0] == ids[1]
@@ -1060,15 +1060,19 @@ func runConfiguredReviewSession(
 	selections = append(selections, profile.Profile.Fallbacks...)
 	if plan.Lineage.Round == 2 && plan.prior != nil && plan.prior.Lineage != nil && plan.prior.Lineage.SessionOpen {
 		prior := plan.prior.Lineage
-		if prior.Selection >= 0 && prior.Selection < len(selections) {
-			runtime, runtimeErr := runtimeForProfileSelection(selections[prior.Selection])
+		selection := 0
+		if prior.Selection != nil {
+			selection = *prior.Selection
+		}
+		if selection >= 0 && selection < len(selections) {
+			runtime, runtimeErr := runtimeForProfileSelection(selections[selection])
 			if runtimeErr != nil {
 				return agent.ExecuteResult{}, specContext, false, runtimeErr
 			}
 			request.Runtime = runtime
 			request.Session = agent.SessionRef{Name: prior.Session, WorkDir: gitRoot}
 			if prepareErr := preparer.PrepareSession(ctx, request, runevent.Discard); prepareErr == nil {
-				specContext.runtime, specContext.session, specContext.selection = runtime, request.Session, prior.Selection
+				specContext.runtime, specContext.session, specContext.selection = runtime, request.Session, selection
 				specContext.resumed = true
 				result, runErr := preparedRunner.RunPrepared(ctx, request, runevent.Discard)
 				return result, specContext, true, runErr

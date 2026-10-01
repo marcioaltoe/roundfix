@@ -54,7 +54,7 @@ func TestReviewRoundOneWithFindingsLeavesItsSessionOpen(t *testing.T) {
 	if code != exitRunFailed || record.Outcome != reviewOutcomeFindings {
 		t.Fatalf("exit=%d record=%+v stderr=%q", code, record, stderr)
 	}
-	if len(r.ends) != 0 || record.Lineage.Session != r.prepares[0].Session.Name || record.Lineage.Selection != 0 || !record.Lineage.SessionOpen {
+	if len(r.ends) != 0 || record.Lineage.Session != r.prepares[0].Session.Name || record.Lineage.Selection == nil || *record.Lineage.Selection != 0 || !record.Lineage.SessionOpen {
 		t.Fatalf("lineage=%+v ended=%+v", record.Lineage, r.ends)
 	}
 	persisted, err := readReviewRecord(reviewCheckoutDir(fixture.artifactDir, fixture.repository) + "/" + reviewRecordFileName)
@@ -204,12 +204,12 @@ func TestReviewRoundTwoContinuesTheRecordedFallbackSelection(t *testing.T) {
 	r.prepareErrors = []error{&agent.SelectionFailureError{Runtime: "codex", Reason: "adapter startup"}, nil, nil}
 	fixture := newReviewCommandFixture(t, "codex", r)
 	_, first, _ := runLineageReview(t, fixture)
-	if first.Lineage.Selection != 1 {
-		t.Fatalf("first selection=%d", first.Lineage.Selection)
+	if first.Lineage.Selection == nil || *first.Lineage.Selection != 1 {
+		t.Fatalf("first lineage=%+v", first.Lineage)
 	}
 	commitLineageFile(t, fixture, "delta.txt", "fix\n")
 	_, second, _ := runLineageReview(t, fixture)
-	if second.Lineage.Selection != 1 || !second.Lineage.Continued || r.prepares[2].Runtime != r.prepares[1].Runtime || r.prepares[2].Session != r.prepares[1].Session || len(r.ends) != 2 || r.ends[1] != r.prepares[1].Session {
+	if second.Lineage.Selection == nil || *second.Lineage.Selection != 1 || !second.Lineage.Continued || r.prepares[2].Runtime != r.prepares[1].Runtime || r.prepares[2].Session != r.prepares[1].Session || len(r.ends) != 2 || r.ends[1] != r.prepares[1].Session {
 		t.Fatalf("lineage=%+v prepares=%+v ends=%+v", second.Lineage, r.prepares, r.ends)
 	}
 }

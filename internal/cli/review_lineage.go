@@ -18,7 +18,7 @@ type reviewLineage struct {
 	PreviousDispositions []reviewFindingDisposition `json:"previousDispositions,omitempty"`
 	ReviewedHead         string                     `json:"reviewedHead,omitempty"`
 	Session              string                     `json:"session,omitempty"`
-	Selection            int                        `json:"selection"`
+	Selection            *int                       `json:"selection,omitempty"`
 	SessionOpen          bool                       `json:"sessionOpen"`
 	ACPSessionIDs        []string                   `json:"acpSessionIds,omitempty"`
 	Continued            bool                       `json:"continued"`
