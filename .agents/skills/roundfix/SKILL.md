@@ -4,10 +4,10 @@ description: Use Roundfix to plan releases with the read-only Release Plan Comma
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.0.4
+  version: 0.0.8
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.0.4
+version: 0.0.8
 ---
 
 # Roundfix
@@ -39,9 +39,9 @@ codex runtime hygiene checks and prints one line per check with status `ok`,
 `failed`, or `skipped`; residue and storage can also report `found` or
 `partial`. Adapter
 Readiness requires the effective Codex command to prove official
-`@agentclientprotocol/codex-acp` lineage at version `1.1.5` or newer and the
+`@agentclientprotocol/codex-acp` lineage at version `2.0.1` or newer and the
 effective Claude command to prove official
-`@agentclientprotocol/claude-agent-acp` lineage at version `0.63.0` or newer;
+`@agentclientprotocol/claude-agent-acp` lineage at version `0.84.0` or newer;
 executable presence and a matching name are not proof. The `profiles:` line is
 the selection authority: it exact-proves every distinct Preferred Selection
 and fallback through disposable ACP Sessions and reports affected category
@@ -169,7 +169,7 @@ deterministic report line with status `ok`, `installed`, `skipped`,
 ```text
 node: ok
 acpx: installed
-adapter: ok (claude: command="npx -y @agentclientprotocol/claude-agent-acp@0.63.0"; package=@agentclientprotocol/claude-agent-acp; version=0.63.0 | codex: command="npx -y @agentclientprotocol/codex-acp@1.1.5"; package=@agentclientprotocol/codex-acp; version=1.1.5)
+adapter: ok (claude: command="npx -y @agentclientprotocol/claude-agent-acp@0.84.0"; package=@agentclientprotocol/claude-agent-acp; version=0.84.0 | codex: command="npx -y @agentclientprotocol/codex-acp@2.0.1"; package=@agentclientprotocol/codex-acp; version=2.0.1)
 profile readiness: passed
 acpx agents override: installed
 User Config: installed
@@ -182,17 +182,17 @@ than `0.12.0`, setup offers `npm install -g acpx@0.12.0`. Version `0.12.0` and
 newer versions are accepted; Setup never downgrades a newer installation.
 
 The supported adapters are official `@agentclientprotocol/codex-acp` version
-`1.1.5` or newer and official
-`@agentclientprotocol/claude-agent-acp` version `0.63.0` or newer. When Setup
+`2.0.1` or newer and official
+`@agentclientprotocol/claude-agent-acp` version `0.84.0` or newer. When Setup
 needs explicit commands, it proposes
-`npx -y @agentclientprotocol/codex-acp@1.1.5` and
-`npx -y @agentclientprotocol/claude-agent-acp@0.63.0`. A bare or stale
+`npx -y @agentclientprotocol/codex-acp@2.0.1` and
+`npx -y @agentclientprotocol/claude-agent-acp@0.84.0`. A bare or stale
 override can resolve to a package outside the official lineage. Setup proposes
 migration from the failed lineage proof rather than from recognizing a
 superseded package by name, proves the replacement, and asks before writing. The
 official install actions are
-`npm install -g @agentclientprotocol/codex-acp@1.1.5` and
-`npm install -g @agentclientprotocol/claude-agent-acp@0.63.0`. Decline,
+`npm install -g @agentclientprotocol/codex-acp@2.0.1` and
+`npm install -g @agentclientprotocol/claude-agent-acp@0.84.0`. Decline,
 `--no-input`, failed exact proof, or a later write failure preserves every
 unauthorized target. A rejected Sol/high proof never becomes an offer to use
 model-managed reasoning.
@@ -213,8 +213,8 @@ nothing.
 ```text
 node: ok
 acpx: ok
-adapter: ok (claude: command="npx -y @agentclientprotocol/claude-agent-acp@0.63.0"; package=@agentclientprotocol/claude-agent-acp; version=0.63.0 | codex: command="npx -y @agentclientprotocol/codex-acp@1.1.5"; package=@agentclientprotocol/codex-acp; version=1.1.5)
-profiles: ok (3 distinct tuples; 10 category references)
+adapter: ok (claude: command="npx -y @agentclientprotocol/claude-agent-acp@0.84.0"; package=@agentclientprotocol/claude-agent-acp; version=0.84.0 | codex: command="npx -y @agentclientprotocol/codex-acp@2.0.1"; package=@agentclientprotocol/codex-acp; version=2.0.1)
+profiles: ok (4 distinct tuples; 10 category references)
 skills: ok (<total> required: <owned> Roundfix-owned, <external> external)
 codex: ok
 ```
@@ -865,18 +865,19 @@ runtime-owned model configuration, credentials, or adapter settings.
 
 Required built-ins:
 
-- `general`, `backend`, `qa`, and `review`: preferred
-  `codex / gpt-5.6-sol / high`, fallback
-  `codex / gpt-5.5 / xhigh`.
-- `frontend`: preferred `claude / opus / xhigh`, fallback
-  `codex / gpt-5.6-sol / high`.
+- `general`, `backend`, and `qa`: preferred
+  `codex / gpt-6.1-sol / high`, fallback `claude / opus / high`.
+- `frontend`: preferred `claude / opus / high`, fallback
+  `codex / gpt-6.1-sol / xhigh`.
+- `review`: preferred `codex / gpt-5.6-luna / max`, fallback
+  `codex / gpt-6.1-sol / high`.
 
 Optional Task Type categories `data`, `infra`, `docs`, `test`, and `chore`
 inherit the effective `general` profile when absent. If configured, they must
-be complete. The Model Catalog recognizes `gpt-5.6-sol`, `gpt-5.6-terra`, and
-`gpt-5.6-luna` as official Codex identifiers, plus the Claude identifiers the
-adapter advertises: `opus`, `claude-fable-5`, `sonnet`, `haiku`, and `default`.
-The adapter advertises Opus 5 as `opus[1m]`; the capability parser removes the
+be complete. The Model Catalog recognizes `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`,
+`gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.6-luna` as official Codex identifiers, plus the Claude identifiers the
+adapter advertises: `opus`, `sonnet`, `claude-fable-5-1`, `haiku`, and `default`.
+The adapter advertises Opus 5.5 as `opus[1m]`; the capability parser removes the
 bracketed context suffix, so `opus` is the catalog value. Catalog validity is distinct
 from advisory recommendation rank and from operational availability: exact
 proof in the effective environment is the only readiness authority. Explicit
@@ -896,24 +897,51 @@ Project Config and User Config use the profile structure:
 
 ```yaml
 profiles:
+  general:
+    preferred:
+      runtime: codex
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
+    fallbacks:
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
   backend:
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
     fallbacks:
-      - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
   frontend:
     preferred:
       runtime: claude
       model: opus
-      reasoning_effort: xhigh
+      reasoning_effort: "high"
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-sol
-        reasoning_effort: high
+        model: gpt-6.1-sol
+        reasoning_effort: "xhigh"
+  qa:
+    preferred:
+      runtime: codex
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
+    fallbacks:
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
+  review:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-luna
+      reasoning_effort: "max"
+    fallbacks:
+      - runtime: codex
+        model: gpt-6.1-sol
+        reasoning_effort: "high"
 ```
 
 Use the profile management commands for inspection, writes, and disposable
@@ -925,11 +953,13 @@ roundfix profiles configure --scope project --file profiles.yml --dry-run --json
 roundfix profiles validate --json
 ```
 
-`profiles show` is read-only and returns `roundfix/profiles/v1` JSON with the
+`profiles show` is read-only and returns `roundfix/profiles/v2` JSON with the
 effective source, inherited source, Preferred Selection, ordered fallbacks, and
-five recommendations. Recommendations are dated `2026-08-07`, include
-benchmark/result/cost/rationale evidence, set `category_specific: false`, and
-are advisory only. They never route, prove availability, or mutate config.
+the Recommended Profile. Each of the ten Agent Work Categories has one dated
+`2026-09-30`: its Preferred Selection at rank 1 with role `preferred`, then its
+Fallback Chain with role `fallback`. Rows include the selection, source date,
+and rationale. Interactive configure prints the same advisory rows. The
+Recommended Profile never selects, routes, proves availability, or writes config.
 
 `profiles configure` prepares the candidate in memory, validates it, and
 exact-proves each distinct Preferred Selection and fallback before

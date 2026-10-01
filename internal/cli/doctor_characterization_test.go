@@ -44,15 +44,16 @@ func TestCharacterizationDeclaredBreakDoctorProvesConfiguredOptionalCategory(t *
 }
 
 // TestCharacterizationInvariantDoctorCountsAreUnchangedWithoutOptionalCategories
-// keeps the widened scope from inventing proofs: a configuration defining no
-// optional Agent Work Category reports exactly what it reported before.
+// Originally pinned three distinct tuples before Spec 0189. Its declared break
+// derives the five required profiles from RecommendedProfile: four distinct
+// tuples and ten references, with no optional category added.
 func TestCharacterizationInvariantDoctorCountsAreUnchangedWithoutOptionalCategories(t *testing.T) {
 	stdout, runner := runDoctorWithConfig(t, roundconfig.Builtin())
 
-	if len(runner.exactRequests) != 3 {
-		t.Fatalf("expected three distinct profile proofs, got %#v", runner.exactRequests)
+	if len(runner.exactRequests) != 4 {
+		t.Fatalf("expected four distinct profile proofs, got %#v", runner.exactRequests)
 	}
-	if !strings.Contains(stdout, "profiles: ok (3 distinct tuples; 10 category references)") {
+	if !strings.Contains(stdout, "profiles: ok (4 distinct tuples; 10 category references)") {
 		t.Fatalf("profiles line changed for a configuration with no optional category: %q", stdout)
 	}
 	if strings.Contains(stdout, "opencode:") {
@@ -78,7 +79,7 @@ func TestCharacterizationInvariantInheritedCategoryAddsNoTuple(t *testing.T) {
 	}
 
 	stdout, _ := runDoctorWithConfig(t, config)
-	if !strings.Contains(stdout, "profiles: ok (3 distinct tuples; 10 category references)") {
+	if !strings.Contains(stdout, "profiles: ok (4 distinct tuples; 10 category references)") {
 		t.Fatalf("an inherited category must add no reference: %q", stdout)
 	}
 }

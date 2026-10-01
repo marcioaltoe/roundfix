@@ -1,0 +1,14 @@
+Pull Request row: environment blocked — no open Pull Request, supplied by Daemon.
+Target: roundfix/deliver-0189-profiles-that-follow-the-current-models-109afd21dab8e187
+Run branch is never the PR head.
+Approval equivalent: approved _authorization.md explicitly grants implement,
+commit, push, pull_request and merge. All five operation assertions passed.
+Checks/status equivalent: Daemon make verify-changed passed exit 0 at audited head.
+Unresolved threads: none because no Pull Request exists; no GitHub fetch claimed.
+Merge-Ready acceptance: none yet; pre-PR review follows archive. No approval or
+review verdict invented. This is the authored pre-PR staging equivalent.
+Review-artifact ancestry: claimed candidate 59c0ace48449a5ed4d70846c3d4aaa8aa9949d2a; the history audit proves
+consuming task commits descend from the grant. No completed review artifact exists
+at this stage and no later review result is claimed.
+Unblock actual PR controls: delivery owner performs pre-PR review, archives,
+publishes the target branch, opens its PR, then observes checks and review there.

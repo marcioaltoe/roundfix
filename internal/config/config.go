@@ -23,8 +23,6 @@ const (
 	defaultReviewRequestCommand     = "@coderabbitai review"
 	defaultPrePRReviewProvider      = "codex"
 	defaultAgent                    = "codex"
-	defaultCodexModel               = "gpt-5.5"
-	defaultCodexReasoningEffort     = "xhigh"
 	defaultClaudeModel              = "opus"
 	defaultClaudeReasoningEffort    = ""
 	defaultVerification             = "make verify"
@@ -607,6 +605,7 @@ func (warnings *configWarnings) warnIgnoredProjectSetting(name string) {
 }
 
 func Builtin() Config {
+	general, _ := RecommendedProfile(CategoryGeneral)
 	return Config{
 		Defaults: Defaults{
 			Agent:        defaultAgent,
@@ -615,8 +614,8 @@ func Builtin() Config {
 		},
 		Runtimes: Runtimes{
 			Codex: RuntimeDefaults{
-				Model:           defaultCodexModel,
-				ReasoningEffort: defaultCodexReasoningEffort,
+				Model:           general.Preferred.Model,
+				ReasoningEffort: general.Preferred.ReasoningEffort,
 			},
 			Claude: RuntimeDefaults{
 				Model:           defaultClaudeModel,
@@ -784,6 +783,22 @@ func DefaultProjectConfigYAML() string {
 	return defaultConfigYAML(InitScopeProject)
 }
 
+func renderBuiltinProfilesYAML() string {
+	var block strings.Builder
+	block.WriteString("profiles:\n")
+	profiles := builtinProfiles()
+	for _, category := range requiredWorkCategories {
+		profile := profiles[category].Profile
+		fmt.Fprintf(&block, "  %s:\n    preferred:\n      runtime: %s\n      model: %s\n      reasoning_effort: %q\n    fallbacks:\n",
+			category, profile.Preferred.Runtime, profile.Preferred.Model, profile.Preferred.ReasoningEffort)
+		for _, fallback := range profile.Fallbacks {
+			fmt.Fprintf(&block, "      - runtime: %s\n        model: %s\n        reasoning_effort: %q\n",
+				fallback.Runtime, fallback.Model, fallback.ReasoningEffort)
+		}
+	}
+	return strings.TrimSuffix(block.String(), "\n")
+}
+
 func defaultConfigYAML(scope string) string {
 	config := Builtin()
 	runsConfig := ""
@@ -806,52 +821,7 @@ defaults:
   artifact_dir: ""
   auto_commit: %t
 
-profiles:
-  general:
-    preferred:
-      runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
-    fallbacks:
-      - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
-  backend:
-    preferred:
-      runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
-    fallbacks:
-      - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
-  frontend:
-    preferred:
-      runtime: claude
-      model: opus
-      reasoning_effort: xhigh
-    fallbacks:
-      - runtime: codex
-        model: gpt-5.6-sol
-        reasoning_effort: high
-  qa:
-    preferred:
-      runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
-    fallbacks:
-      - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
-  review:
-    preferred:
-      runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
-    fallbacks:
-      - runtime: codex
-        model: gpt-5.5
-        reasoning_effort: xhigh
+%s
 
 specs:
   # Directory holding Spec folders; relative paths resolve against the repository root.
@@ -925,6 +895,7 @@ resolve:
 		config.Defaults.AgentFullAccess,
 		config.Defaults.Verification,
 		config.Defaults.AutoCommit,
+		renderBuiltinProfilesYAML(),
 		config.Specs.Root,
 		runsConfig,
 		config.Worktree.Location,

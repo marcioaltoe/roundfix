@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0189-profiles-that-follow-the-current-models
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

@@ -12,7 +12,7 @@ import (
 	roundconfig "roundfix/internal/config"
 )
 
-const profilesShowSchema = "roundfix/profiles/v1"
+const profilesShowSchema = "roundfix/profiles/v2"
 
 type profilesShowRequest struct {
 	category string
@@ -25,13 +25,12 @@ type profilesShowResponse struct {
 }
 
 type profilesShowProfile struct {
-	Category             roundconfig.WorkCategory           `json:"category"`
-	Source               roundconfig.ProfileSource          `json:"source"`
-	InheritedFrom        roundconfig.WorkCategory           `json:"inherited_from"`
-	RecommendationSource roundconfig.WorkCategory           `json:"recommendation_source"`
-	Preferred            roundconfig.AgentSelection         `json:"preferred"`
-	Fallbacks            []roundconfig.AgentSelection       `json:"fallbacks"`
-	Recommendations      []profilesShowRecommendationOutput `json:"recommendations"`
+	Category        roundconfig.WorkCategory           `json:"category"`
+	Source          roundconfig.ProfileSource          `json:"source"`
+	InheritedFrom   roundconfig.WorkCategory           `json:"inherited_from"`
+	Preferred       roundconfig.AgentSelection         `json:"preferred"`
+	Fallbacks       []roundconfig.AgentSelection       `json:"fallbacks"`
+	Recommendations []profilesShowRecommendationOutput `json:"recommendations"`
 }
 
 type profilesShowRecommendationOutput struct {
@@ -104,7 +103,7 @@ func parseProfilesShowCommand(args []string) (profilesShowRequest, error) {
 	fs := flag.NewFlagSet("profiles show", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	fs.StringVar(&req.category, "category", "", "Agent Work Category to show")
-	fs.BoolVar(&req.json, "json", false, "Print roundfix/profiles/v1 JSON")
+	fs.BoolVar(&req.json, "json", false, "Print roundfix/profiles/v2 JSON")
 	if err := fs.Parse(args); err != nil {
 		return req, validationError{message: err.Error()}
 	}
@@ -140,7 +139,7 @@ func buildProfilesShowResponseWithAvailability(config roundconfig.Config, catego
 		if err != nil {
 			return profilesShowResponse{}, err
 		}
-		recommendations, recommendationSource, ok := roundconfig.ModelRecommendations(category)
+		recommendations, ok := roundconfig.ModelRecommendations(category)
 		if !ok {
 			return profilesShowResponse{}, fmt.Errorf("recommendations for Agent Work Category %q are not configured", category)
 		}
@@ -152,13 +151,12 @@ func buildProfilesShowResponseWithAvailability(config roundconfig.Config, catego
 			})
 		}
 		response.Profiles = append(response.Profiles, profilesShowProfile{
-			Category:             category,
-			Source:               profile.Source,
-			InheritedFrom:        profile.InheritedFrom,
-			RecommendationSource: recommendationSource,
-			Preferred:            profile.Profile.Preferred,
-			Fallbacks:            append([]roundconfig.AgentSelection(nil), profile.Profile.Fallbacks...),
-			Recommendations:      outputRecommendations,
+			Category:        category,
+			Source:          profile.Source,
+			InheritedFrom:   profile.InheritedFrom,
+			Preferred:       profile.Profile.Preferred,
+			Fallbacks:       append([]roundconfig.AgentSelection(nil), profile.Profile.Fallbacks...),
+			Recommendations: outputRecommendations,
 		})
 	}
 	return response, nil
@@ -177,19 +175,9 @@ func printProfilesShowText(response profilesShowResponse, stdout io.Writer) {
 		for fallbackIndex, fallback := range profile.Fallbacks {
 			fmt.Fprintf(stdout, "  %d. %s\n", fallbackIndex+1, formatProfileSelection(fallback))
 		}
-		fmt.Fprintf(stdout, "Recommendation source: %s\n", profile.RecommendationSource)
-		fmt.Fprintf(stdout, "Recommendations snapshot: %s\n", roundconfig.ModelRecommendationSnapshotVersion)
-		fmt.Fprintln(stdout, "Recommendations:")
+		fmt.Fprintf(stdout, "Recommended profile (snapshot %s):\n", roundconfig.ModelRecommendationSnapshotVersion)
 		for _, recommendation := range profile.Recommendations {
-			fmt.Fprintf(stdout, "  %d. %s — %s %s, average cost $%.2f, source %s, category_specific=%t\n",
-				recommendation.Rank,
-				formatProfileSelection(recommendation.Selection),
-				recommendation.Benchmark,
-				formatRecommendationPercent(recommendation.ResultPercent),
-				recommendation.AverageCostUSD,
-				recommendation.SourceAsOf,
-				recommendation.CategorySpecific,
-			)
+			fmt.Fprintf(stdout, "  %d. %s %s\n", recommendation.Rank, recommendation.Role, formatProfileSelection(recommendation.Selection))
 			if recommendation.UnavailableReason != "" {
 				fmt.Fprintf(stdout, "     unavailable: %s\n", recommendation.UnavailableReason)
 			}
@@ -216,13 +204,6 @@ func formatProfileSelection(selection roundconfig.AgentSelection) string {
 		reasoning = "model-managed"
 	}
 	return strings.TrimSpace(selection.Runtime) + " / " + strings.TrimSpace(selection.Model) + " / " + reasoning
-}
-
-func formatRecommendationPercent(value float64) string {
-	if value == float64(int(value)) {
-		return fmt.Sprintf("%d%%", int(value))
-	}
-	return fmt.Sprintf("%.1f%%", value)
 }
 
 func profilesCategoryList() string {

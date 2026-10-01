@@ -25,9 +25,9 @@ const (
 	defaultACPXCommand              = "acpx"
 	MinimumACPXVersion              = "0.12.0"
 	CodexAdapterPackage             = "@agentclientprotocol/codex-acp"
-	PinnedCodexAdapterVersion       = "1.1.5"
+	PinnedCodexAdapterVersion       = "2.0.1"
 	ClaudeAdapterPackage            = "@agentclientprotocol/claude-agent-acp"
-	PinnedClaudeAdapterVersion      = "0.63.0"
+	PinnedClaudeAdapterVersion      = "0.84.0"
 	defaultCodexAdapterCommand      = "npx -y " + CodexAdapterPackage
 	defaultClaudeAdapterCommand     = "npx -y " + ClaudeAdapterPackage + "@" + PinnedClaudeAdapterVersion
 	adapterProbeOutputLimit         = 512

@@ -1,9 +1,12 @@
 ---
 spec: 0189-profiles-that-follow-the-current-models
-status: active
+status: archived
 created: 2026-09-30
 surfaces: [backend, cli, docs]
+archived: "2026-10-01"
+source_slug: 0189-profiles-that-follow-the-current-models
 ---
+
 
 # Profiles that follow the current models
 
