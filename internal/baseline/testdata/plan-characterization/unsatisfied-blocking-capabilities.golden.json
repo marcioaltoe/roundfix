@@ -130,7 +130,7 @@
         "diagnostic": {
           "code": "capability.required.missing",
           "message": "Context7 has no compatible local evidence.",
-          "nextAction": "Run roundfix baseline skills restore --profile go-cli-tui --skill context7, review its exact restoration Plan Digest, rerun with --confirm-plan \u003cdigest\u003e, then rerun profile alignment."
+          "nextAction": "Run roundfix baseline skills restore --profile go-cli-tui --skill context7-cli, review its exact restoration Plan Digest, rerun with --confirm-plan \u003cdigest\u003e, then rerun profile alignment."
         },
         "explanation": "Context7 provides current authoritative library and API documentation."
       },
@@ -237,9 +237,12 @@
         "group": "blocking",
         "blocking": true,
         "message": "Context7 has no compatible local evidence.",
-        "nextAction": "Run roundfix baseline skills restore --profile go-cli-tui --skill context7, review its exact restoration Plan Digest, rerun with --confirm-plan \u003cdigest\u003e, then rerun profile alignment.",
+        "nextAction": "Run roundfix baseline skills restore --profile go-cli-tui --skill context7-cli, review its exact restoration Plan Digest, rerun with --confirm-plan \u003cdigest\u003e, then rerun profile alignment.",
         "probe": {
-          "skill": "context7"
+          "priorSkills": [
+            "context7"
+          ],
+          "skill": "context7-cli"
         },
         "evidence": [
           {
@@ -285,7 +288,7 @@
       "state": "action_required",
       "category": "decision",
       "message": "required profile alignment is unresolved: capability.context7",
-      "nextAction": "Run roundfix baseline skills restore --profile go-cli-tui --skill context7, review its exact restoration Plan Digest, rerun with --confirm-plan \u003cdigest\u003e, then rerun profile alignment.",
+      "nextAction": "Run roundfix baseline skills restore --profile go-cli-tui --skill context7-cli, review its exact restoration Plan Digest, rerun with --confirm-plan \u003cdigest\u003e, then rerun profile alignment.",
       "verifiedPostimages": [],
       "warnings": [],
       "recommendations": []

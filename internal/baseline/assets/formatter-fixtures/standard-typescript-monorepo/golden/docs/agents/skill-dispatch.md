@@ -95,6 +95,8 @@ Individual skill triggers:
   - `trigger.backend.drizzle-orm`: Changing Drizzle schemas, queries, or migrations.
 - `evidence-gate`:
   - `trigger.core.evidence-gate`: Making any completion, readiness, or handoff claim.
+- `exa-web-search`:
+  - `trigger.core.exa-web-search`: Searching the web broadly when local sources and current documentation do not answer the question.
 - `external-api-adapters`:
   - `trigger.backend.external-api-adapters`: Building or changing external API adapter boundaries.
 - `find-rules`:

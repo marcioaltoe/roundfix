@@ -43,6 +43,8 @@ Individual skill triggers:
   - `trigger.context-workflow.domain-modeling`: Defining or changing domain vocabulary, ownership, or bounded-context relationships.
 - `evidence-gate`:
   - `trigger.core.evidence-gate`: Making any completion, readiness, or handoff claim.
+- `exa-web-search`:
+  - `trigger.core.exa-web-search`: Searching the web broadly when local sources and current documentation do not answer the question.
 - `github-pr-workflow`:
   - `trigger.core.github-pr-workflow`: Preparing, opening, updating, or handing off a pull request.
 - `golang-cli`:

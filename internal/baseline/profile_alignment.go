@@ -282,9 +282,9 @@ var universalCapabilities = []RepositoryCapability{
 		Requirement:     CapabilityRequired,
 		EvidenceKind:    CapabilityEvidenceInstalledSkill,
 		MinimumEvidence: CapabilityEvidenceVerified,
-		Probe:           map[string]any{"skill": "context7"},
+		Probe:           map[string]any{"skill": "context7-cli", "priorSkills": []string{"context7"}},
 		Explanation:     "Context7 provides current authoritative library and API documentation.",
-		NextAction:      "Add the context7 skill to the Repository Skill Set, then rerun capability evaluation.",
+		NextAction:      "Add the context7-cli skill to the Repository Skill Set, then rerun capability evaluation.",
 	},
 	{
 		ID:              "capability.exa",
@@ -583,16 +583,17 @@ func evaluateProfileCapabilities(
 	}, nil
 }
 
+var universalCapabilityRestoreSkills = map[string]string{
+	"capability.context7": "context7-cli",
+	"capability.exa":      "exa-web-search",
+}
+
 func applyUniversalCapabilityRemediation(
 	outcomes []CapabilityOutcome,
 	profileID string,
 ) {
-	skills := map[string]string{
-		"capability.context7": "context7",
-		"capability.exa":      "exa-web-search",
-	}
 	for index := range outcomes {
-		skill, universal := skills[outcomes[index].ID]
+		skill, universal := universalCapabilityRestoreSkills[outcomes[index].ID]
 		if !universal || outcomes[index].Status == CapabilitySatisfied {
 			continue
 		}
@@ -905,22 +906,31 @@ func collectInstalledSkillEvidence(root *os.Root, capability RepositoryCapabilit
 	if !ok || !identifierIsSafe(skill) {
 		return invalidCapabilityEvidence(capability.EvidenceKind, "installed skill probe is invalid")
 	}
-	relative := ".agents/skills/" + skill + "/SKILL.md"
-	data, state, detail := readBoundedRegularFile(root, relative, maxCapabilityFileBytes)
-	if state == CapabilityEvidenceInvalid {
-		return invalidCapabilityEvidence(capability.EvidenceKind, detail)
+	names := append([]string{skill}, stringsFromAny(capability.Probe["priorSkills"])...)
+	for _, name := range names {
+		if !identifierIsSafe(name) {
+			return invalidCapabilityEvidence(capability.EvidenceKind, "installed skill probe is invalid")
+		}
 	}
-	if state != CapabilityEvidencePresent {
-		return absentCapabilityEvidence(capability.EvidenceKind)
+	for _, name := range names {
+		relative := ".agents/skills/" + name + "/SKILL.md"
+		data, state, detail := readBoundedRegularFile(root, relative, maxCapabilityFileBytes)
+		if state == CapabilityEvidenceInvalid {
+			return invalidCapabilityEvidence(capability.EvidenceKind, detail)
+		}
+		if state != CapabilityEvidencePresent {
+			continue
+		}
+		return CapabilityEvidence{
+			Status:         CapabilityEvidencePresent,
+			Kind:           capability.EvidenceKind,
+			Strength:       CapabilityEvidenceVerified,
+			Classification: EvidenceProfileRequirement,
+			SourcePath:     relative,
+			SourceDigest:   contentIdentity(data),
+		}
 	}
-	return CapabilityEvidence{
-		Status:         CapabilityEvidencePresent,
-		Kind:           capability.EvidenceKind,
-		Strength:       CapabilityEvidenceVerified,
-		Classification: EvidenceProfileRequirement,
-		SourcePath:     relative,
-		SourceDigest:   contentIdentity(data),
-	}
+	return absentCapabilityEvidence(capability.EvidenceKind)
 }
 
 func collectExecutableEvidence(

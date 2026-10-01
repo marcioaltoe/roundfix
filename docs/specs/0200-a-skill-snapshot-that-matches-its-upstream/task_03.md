@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0200-a-skill-snapshot-that-matches-its-upstream
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -73,3 +73,72 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - ADR-0081, ADR-0103, ADR-0149, ADR-0191
 
 ## Result
+
+Implemented the assigned slice:
+
+- Profile validation now reports `catalog.profile.skill.dispatch-outside-setup`
+  with the profile ID and missing skill. `profileNamedSkills` returns sorted,
+  unique selected-module dispatch names (`skill`, otherwise `id`) and the
+  skills of activation bundles owned by selected modules.
+- `core` version increased from 13 to 14, requires `exa-web-search`, and
+  dispatches it with the authored trigger and text.
+- `capability.context7` probes `context7-cli`, accepts the prior `context7`
+  name, preserves its identifier, Title and Explanation, and restores the
+  current name through `universalCapabilityRestoreSkills`. Evidence checks
+  current then prior names, records the first present file, and rejects
+  unsafe prior names.
+- The user guide's two restoration commands use `context7-cli` and the
+  compatibility sentence follows their introductory paragraph.
+
+Focused evidence per acceptance criterion:
+
+1. Embedded catalog and dispatch membership: the four new dispatch tests
+   pass, including removal of `golang-testing` from the cloned `go-tui`
+   setup, an unknown `bundle.qa` skill reported for every affected profile,
+   and no check of the unselected TypeScript `vitest` bundle for `go-cli-tui`.
+2. Context7 compatibility and remediation: the current-name and prior-name
+   tests pass through capability evaluation, current evidence takes precedence
+   when both exist, an unsafe prior name is invalid, and the missing-skill
+   alignment test reports a blocking divergence naming `--skill context7-cli`.
+3. Restorable capability membership: the new membership test passes using the
+   production restore map; each restorable skill equals its capability probe,
+   is required by `core`, and is a GitHub member of every built-in profile's
+   setup.
+4. Managed guide and convergence: the public refresh updated only
+   `docs/agents/skill-dispatch.md` and `docs/agents/setup-context.json`;
+   the guide carries `trigger.core.exa-web-search`. The second refresh exited
+   0 with `File changes: 0` and `Idempotence: verified`.
+
+Commands and outcomes:
+
+- Initial focused test compilation exposed the two missing production seams:
+  `profileNamedSkills` and `universalCapabilityRestoreSkills` were undefined.
+- `rtk make baseline-digests`: exit 0; sanctioned regeneration rewrote the
+  formatter golden, its profile pin, the catalog snapshots and five plan
+  characterization goldens. No derived artifact was hand-edited.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache rtk proxy go test -count=1 -run 'Test(EveryBuiltInProfileSetup|ADispatchedSkillOutside|ABundledSkillOutside|AModuleTheProfileDoesNot|TheContext7Capability|AMissingContext7Skill|EveryRestorableCapability)' ./internal/baseline`:
+  exit 0 after the final test edits; all eight new tests selected.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache rtk proxy go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`:
+  exit 0 for apply and the second refresh. The first sandbox attempt could
+  not open the Git-worktree transaction lock; the authorized apply succeeded
+  with elevated filesystem access. Skills were skipped as requested.
+- The user-wide Go cache was inaccessible in the sandbox; the focused tests
+  succeeded with the task-local cache.
+
+- `rtk make verify-incremental`: the first sandbox run exited 2 because
+  owner-process tests could not inspect the process table and my test edits
+  during the run triggered the suite mutation guard. The rerun with elevated
+  process access and no concurrent tree changes exited 0: formatting, vet,
+  repository tests, skill synchronization/readiness checks and build passed.
+- `rtk proxy git -c core.fsmonitor=false diff --check`: exit 0.
+- Changed-file postflight: all 19 modified/untracked paths are within this
+  Task's Context plus its own Task file. The initial status change was
+  Daemon-provided and was preserved.
+
+The Daemon retains Task status and declared Verification. No existing test,
+other Task, Task Graph, skill tree, commit, push or pull request was changed.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T013631Z_c59b100cbb9f7af1`
+- Source commit: `0d517ad62b49c2d5f5743fc7490fe79af99bb65e`

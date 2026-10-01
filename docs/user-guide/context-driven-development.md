@@ -444,15 +444,17 @@ Universal required capabilities cannot be removed or waived. Follow the exact
 remediation reported by alignment. For example, preview a missing Context7
 skill restoration:
 
+An installed `context7` skill, the name earlier snapshots used, still satisfies the Context7 capability.
+
 ```bash
-roundfix baseline skills restore --repo . --profile standard-typescript-monorepo --skill context7 --format json
+roundfix baseline skills restore --repo . --profile standard-typescript-monorepo --skill context7-cli --format json
 ```
 
 Review the returned restoration Plan Digest, then confirm the same current
 preview:
 
 ```bash
-roundfix baseline skills restore --repo . --profile standard-typescript-monorepo --skill context7 --confirm-plan <digest> --format json
+roundfix baseline skills restore --repo . --profile standard-typescript-monorepo --skill context7-cli --confirm-plan <digest> --format json
 ```
 
 Rerun the interactive workflow after remediation. Profile alignment must be
