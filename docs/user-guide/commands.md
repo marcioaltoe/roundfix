@@ -542,10 +542,37 @@ never shipped. By default `skills install` writes to `<repo>/.agents/skills`;
 ### profiles
 
 ```bash
+roundfix profiles check [--json]
 roundfix profiles show [--category <category>] [--json]
 roundfix profiles configure --scope user|project [--file <path>] [--remove <category>] [--dry-run] [--yes] [--json]
 roundfix profiles validate [--category <category>] [--json]
 ```
+
+`roundfix profiles check` compares every configured category with the shipped
+Recommended Profile, including the full fallback order. It is read-only and
+offline: it opens no Agent Session, reaches no network, and writes no file.
+Undefined optional categories are omitted. Each configured category is:
+
+- `current` when its profile equals the recommendation, even with a deviation.
+- `differs` when it differs without a deviation for the shipped snapshot. An
+  older deviation stays visible with the date it was declared against.
+- `pinned` when it differs and its deviation names the shipped snapshot.
+
+Text names each difference with the configured profile, its source, and the
+recommended profile, then counts current, differing, and pinned categories.
+When everything is current, it prints only the summary. `--json` uses schema
+`roundfix/profiles-check/v1`, with `snapshot`, `current`, `differ`, `pinned`,
+and `categories`. Each row has `category`, `status`, `source`, `configured`
+and `recommended` (each with `preferred` and `fallbacks`), plus `deviation`
+(`from`, `reason`) when declared. Rows follow Agent Work Category order.
+The command exits `0` after a comparison, including one with differences,
+and `2` for an unknown flag, an extra argument, or a configuration load error.
+
+`profiles show` prints `Recommendation status: <status>` before each
+Recommended profile block, with `inherited` for an undefined optional category.
+A declared deviation follows that block as `Deviation: from <date> — <reason>`.
+Its JSON adds `recommendation_status` and, when present, `deviation`; its schema
+remains `roundfix/profiles/v2`, and its flags and exit codes are unchanged.
 
 `profiles show` renders the effective Preferred Selection, Fallback Chain, and
 dated advisory Recommended Profile: a Preferred Selection followed by its

@@ -188,6 +188,16 @@ Each row includes the selection, source date, and rationale. The Recommended
 Profile never selects, routes, or writes User Config or Project Config.
 Interactive configure shows the same rows as advisory guidance.
 
+Run `roundfix profiles check` to compare configured categories with the
+recommendation in the binary, offline and without opening an Agent Session or
+writing a file. It reports `current` for an exact match, `differs` for a
+difference, and `pinned` for a difference whose deviation names the shipped
+snapshot; an older deviation leaves the category `differs`. Undefined optional
+categories are omitted. Differences exit `0`; usage and configuration errors
+exit `2`. Add `--json` for schema `roundfix/profiles-check/v1`. `profiles show`
+also prints each category's `Recommendation status`, using `inherited` for an
+undefined optional category, and includes its deviation when declared.
+
 ### Configure profiles
 
 `profiles configure` prepares the candidate in memory, validates it, proves

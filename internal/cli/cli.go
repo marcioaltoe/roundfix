@@ -72,6 +72,7 @@ Usage:
   roundfix baseline skills restore --profile <id> [--skill <name> ...] [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
   roundfix baseline skills reconcile --profile <id> --source <owner/repo> --revision <commit> [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
   roundfix baseline assets sync --source-dir <path> [--check] [--format <text|json>]
+  roundfix profiles check [--json]
   roundfix profiles show [--category <category>] [--json]
   roundfix profiles configure --scope user|project [--file <path>] [--remove <category>] [--dry-run] [--yes] [--json]
   roundfix profiles validate [--category <category>] [--json]
@@ -5783,17 +5784,31 @@ Options:
 `
 	case "profiles":
 		return `Usage:
+  roundfix profiles check [--json]
   roundfix profiles show [--category <category>] [--json]
   roundfix profiles configure --scope user|project [--file <path>] [--remove <category>] [--dry-run] [--yes] [--json]
   roundfix profiles validate [--category <category>] [--json]
 
 Commands:
+  check      Compare configured profiles with the shipped recommendation, offline.
   show       Render effective Agent Selection Profiles and advisory recommendations.
   configure  Write complete Agent Selection Profiles after validation and confirmation.
   validate   Prove effective Agent Selection Profiles through disposable sessions.
 
 The Recommended Profile is advisory. It never selects, routes, or writes
 configuration. Show JSON uses roundfix/profiles/v2.
+`
+	case "profiles check":
+		return `Usage:
+  roundfix profiles check [--json]
+
+Compares every configured category with the shipped Recommended Profile.
+Reports current, differs, or pinned; undefined optional categories are omitted.
+Read-only and offline: opens no Agent Session and writes nothing.
+Exit 0 even with differences; exit 2 for usage or configuration errors.
+
+Options:
+  --json  Print roundfix/profiles-check/v1 JSON
 `
 	case "profiles show":
 		return `Usage:

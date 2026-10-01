@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0196-a-notice-when-profiles-fall-behind
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -74,3 +74,93 @@ Nothing compares a configured profile with the Recommended Profile. This Task ad
 - ADR-0181; ADR-0180; ADR-0107
 
 ## Result
+
+Implemented the Task 02 slice: a pure `CheckRecommendations` comparison,
+read-only `profiles check` with shared text renderer and schema-v1 JSON,
+recommendation status and deviation in `profiles show`, help, user guides,
+and the Roundfix skill. Adoption flags remain refused for task_03; Doctor and
+upgrade remain for task_04.
+
+### Acceptance evidence
+
+Focused checks use `GOCACHE=/tmp/roundfix-task02-cache` to keep build output
+inside the writable temporary directory. The pre-change signal was a compile
+failure from `go test ./internal/config -run '^TestCheckRecommendations'
+-count=1`: `CheckRecommendations` and its types did not exist.
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Built-in required categories are current; text is one summary line | `TestCheckRecommendationsReportsBuiltinsAsCurrent` and `TestProfilesCheckBuiltinsPrintOnlyTheSummary` exercise default configuration and exact summary output. |
+| Differences print configured/source/recommended profiles and counts | `TestProfilesCheckPrintsEachDifferenceAndTheSummary` checks the complete transcript with project backend, user docs, expired QA deviation, review pin, counts, and hint. `TestCheckRecommendationsComparesTheWholeOrderedFallbackChain` checks preferred and fallback changes, extra fallback, and selection order. |
+| A shipped-snapshot deviation pins; another snapshot differs and stays visible | `TestCheckRecommendationsReportsCurrentDiffersAndPinned` proves current takes precedence over a deviation and that rows carry their profiles, sources, and deviations. `TestCheckRecommendationsEndsADeviationOfAnotherSnapshot` proves expiry; the transcript and JSON tests preserve its original date. |
+| JSON is schema v1 and includes every configured category | `TestProfilesCheckJSONIsSchemaV1` independently decodes `roundfix/profiles-check/v1`, checks snapshot, counts, category order, every status, source, configured/recommended tuple and deviation. `TestCheckRecommendationsLeavesOutUndefinedOptionalCategories` proves optional omissions. |
+| Differences exit 0; usage and load errors exit 2 | `TestProfilesCheckExitsZeroWithDifferences` and `TestProfilesCheckRefusesUnknownFlagsAndArguments` cover differences, unknown flag, extra argument, malformed configuration, and refusal of `--apply`, `--scope`, `--dry-run`, and `--yes`. |
+| No runner call or file write | `TestProfilesCheckOpensNoAgentSessionAndWritesNothing` installs a runner that fails on Probe, Run, EndSession, or exact proof; runs text and JSON; compares all file paths and bytes in the temporary home and repository before/after, including both configuration files. Production flow only loads configuration and calls the pure comparison. |
+| Show states every category's status | `TestProfilesShowStatesTheRecommendationStatus` checks all ten text/JSON statuses, inherited optional categories, current/differs/pinned, both deviations, placement, schema v2, and the existing category filter. |
+
+### Focused checks
+
+- `go test -count=1 ./internal/config ./internal/cli -run
+  'TestCheckRecommendations|TestProfilesCheck|TestProfilesShow|TestRunCommandHelp'`
+  — exit 0 after restoring both sabotages. Includes existing Show and command
+  help tests. `internal/cli/cli_test.go` is unchanged.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions` — exit 0; recorded Roundfix 0.0.10.
+- `go test -count=1 ./skills` — exit 0.
+- Exact byte inspection — canonical Roundfix skill equals its shipped mirror;
+  the `### QA settlement` section equals HEAD byte-for-byte.
+- `git -c core.fsmonitor=false diff --check` — exit 0.
+- `make verify-incremental` — first exited 2 in the sandbox: only
+  `TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner` and
+  `TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion`
+  failed because reading the host process table was denied. Reran the same
+  command with the required process access: exit 0, including formatting,
+  vet, package tests, skill sync/readiness checks and CLI build. Logs:
+  `/tmp/roundfix-task02-incremental.log` and
+  `/tmp/roundfix-task02-incremental-unrestricted.log`.
+
+### Sabotage evidence
+
+- Status rule: temporarily removed the `From ==
+  ModelRecommendationSnapshotVersion` condition, treating every differing
+  profile with a deviation as pinned. `go test -count=1 ./internal/config
+  -run '^TestCheckRecommendationsEndsADeviationOfAnotherSnapshot$'` exited 1,
+  with that test reporting the expired backend deviation as `pinned`.
+  Restored the original source in a `finally` block; the focused checks above
+  then exited 0.
+- Read-only rule: temporarily inserted a call to the injected runner's `Probe`
+  in `runProfilesCheckCommand`. `go test -count=1 ./internal/cli -run
+  '^TestProfilesCheckOpensNoAgentSessionAndWritesNothing$'` exited 1, with that
+  test reporting `profiles check called runner Probe`. Restored the original
+  source in a `finally` block; the focused checks above then exited 0.
+
+### Documentation and sanctioned regeneration
+
+Documented statuses, streams, offline/read-only behavior, exit codes, JSON
+schema and row fields in the commands guide, usage guide and skill, under
+`### Recommendation check`. Raised both skill version fields from 0.0.9 to
+0.0.10. `make skills-sync` rewrote only `skills/roundfix/SKILL.md`;
+`make baseline-digests` exited 0 and rewrote no files (`changed: false`). The
+version-recording command rewrote `skills/testdata/owned-skill-versions.json`.
+The skill's QA settlement section was preserved.
+
+The existing `TestProfilesShowJSONIsSchemaV2WithoutBenchmarkFields` asserted
+exactly six profile fields; its expectation now requires seven, including
+`recommendation_status`. This ordinary test change is necessary to validate
+this Task's authored additive API contract. All new tests are in the three
+specified new test files.
+
+Task status, Task Graph and other Tasks remain untouched. The Task's authored
+Verification commands were not run; settlement and that Verification remain
+Daemon-owned. No commit, push or Pull Request was performed.
+
+Initial Git status contained only the Daemon's pre-existing change to this
+Task file. The incoming `status: in_progress` is preserved. Final scope adds
+only this Task's implementation, tests, guides, canonical skill, generated
+skill mirror and version record; no other Task or manifest is changed.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/profiles_show_recommended_test.go`

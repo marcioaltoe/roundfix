@@ -25,12 +25,14 @@ type profilesShowResponse struct {
 }
 
 type profilesShowProfile struct {
-	Category        roundconfig.WorkCategory           `json:"category"`
-	Source          roundconfig.ProfileSource          `json:"source"`
-	InheritedFrom   roundconfig.WorkCategory           `json:"inherited_from"`
-	Preferred       roundconfig.AgentSelection         `json:"preferred"`
-	Fallbacks       []roundconfig.AgentSelection       `json:"fallbacks"`
-	Recommendations []profilesShowRecommendationOutput `json:"recommendations"`
+	RecommendationStatus roundconfig.RecommendationStatus   `json:"recommendation_status"`
+	Deviation            *roundconfig.ProfileDeviation      `json:"deviation,omitempty"`
+	Category             roundconfig.WorkCategory           `json:"category"`
+	Source               roundconfig.ProfileSource          `json:"source"`
+	InheritedFrom        roundconfig.WorkCategory           `json:"inherited_from"`
+	Preferred            roundconfig.AgentSelection         `json:"preferred"`
+	Fallbacks            []roundconfig.AgentSelection       `json:"fallbacks"`
+	Recommendations      []profilesShowRecommendationOutput `json:"recommendations"`
 }
 
 type profilesShowRecommendationOutput struct {
@@ -48,6 +50,8 @@ func runProfilesCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		return exitOK
 	}
 	switch args[0] {
+	case "check":
+		return runProfilesCheckCommand(args[1:], stdout, stderr, environment)
 	case "show":
 		return runProfilesShowCommand(args[1:], stdout, stderr, environment)
 	case "configure":
@@ -134,7 +138,19 @@ func buildProfilesShowResponseWithAvailability(config roundconfig.Config, catego
 		Schema:   profilesShowSchema,
 		Profiles: make([]profilesShowProfile, 0, len(categories)),
 	}
+	check, err := roundconfig.CheckRecommendations(config)
+	if err != nil {
+		return profilesShowResponse{}, err
+	}
+	statuses := make(map[roundconfig.WorkCategory]roundconfig.RecommendationStatus, len(check.Categories))
+	for _, row := range check.Categories {
+		statuses[row.Category] = row.Status
+	}
 	for _, category := range categories {
+		status, defined := statuses[category]
+		if !defined {
+			status = "inherited"
+		}
 		profile, err := roundconfig.ResolveProfile(config, category, nil)
 		if err != nil {
 			return profilesShowResponse{}, err
@@ -151,12 +167,14 @@ func buildProfilesShowResponseWithAvailability(config roundconfig.Config, catego
 			})
 		}
 		response.Profiles = append(response.Profiles, profilesShowProfile{
-			Category:        category,
-			Source:          profile.Source,
-			InheritedFrom:   profile.InheritedFrom,
-			Preferred:       profile.Profile.Preferred,
-			Fallbacks:       append([]roundconfig.AgentSelection(nil), profile.Profile.Fallbacks...),
-			Recommendations: outputRecommendations,
+			RecommendationStatus: status,
+			Deviation:            profile.Deviation,
+			Category:             category,
+			Source:               profile.Source,
+			InheritedFrom:        profile.InheritedFrom,
+			Preferred:            profile.Profile.Preferred,
+			Fallbacks:            append([]roundconfig.AgentSelection(nil), profile.Profile.Fallbacks...),
+			Recommendations:      outputRecommendations,
 		})
 	}
 	return response, nil
@@ -175,6 +193,7 @@ func printProfilesShowText(response profilesShowResponse, stdout io.Writer) {
 		for fallbackIndex, fallback := range profile.Fallbacks {
 			fmt.Fprintf(stdout, "  %d. %s\n", fallbackIndex+1, formatProfileSelection(fallback))
 		}
+		fmt.Fprintf(stdout, "Recommendation status: %s\n", profile.RecommendationStatus)
 		fmt.Fprintf(stdout, "Recommended profile (snapshot %s):\n", roundconfig.ModelRecommendationSnapshotVersion)
 		for _, recommendation := range profile.Recommendations {
 			fmt.Fprintf(stdout, "  %d. %s %s\n", recommendation.Rank, recommendation.Role, formatProfileSelection(recommendation.Selection))
@@ -182,6 +201,9 @@ func printProfilesShowText(response profilesShowResponse, stdout io.Writer) {
 				fmt.Fprintf(stdout, "     unavailable: %s\n", recommendation.UnavailableReason)
 			}
 			fmt.Fprintf(stdout, "     rationale: %s\n", recommendation.Rationale)
+		}
+		if profile.Deviation != nil {
+			fmt.Fprintf(stdout, "Deviation: from %s — %s\n", profile.Deviation.From, profile.Deviation.Reason)
 		}
 	}
 }

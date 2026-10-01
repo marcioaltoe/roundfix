@@ -101,6 +101,10 @@
       {
         "version": "0.0.9",
         "digest": "18b87cff8e538be625e3b6d25173a2dfcd02ed6527cf1bdf57517a59ce7a9ebc"
+      },
+      {
+        "version": "0.0.10",
+        "digest": "687ccbfabb3807d8f161ca44f6eb91ec21ae408ddfdb7f3808bb0dc379b4c620"
       }
     ],
     "setup-context-driven": [

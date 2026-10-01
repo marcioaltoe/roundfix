@@ -4,10 +4,10 @@ description: Use Roundfix to plan releases with the read-only Release Plan Comma
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.0.9
+  version: 0.0.10
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.0.9
+version: 0.0.10
 ---
 
 # Roundfix
@@ -1083,6 +1083,25 @@ Runs and `spec:<slug>` for Spec Runs. Terminal context adds
 `notify.enabled: false` to disable outcome notifications entirely.
 
 ### Recommendation check
+
+`roundfix profiles check [--json]` compares every configured Agent Work
+Category with the Recommended Profile in the shipped snapshot, including the
+Preferred Selection and the full ordered Fallback Chain. It is read-only and
+offline, opens no Agent Session, and writes nothing. Undefined optional
+categories are omitted. The three statuses are `current` (the profile equals
+the recommendation, even with a deviation), `differs` (a difference without a
+deviation for the shipped snapshot), and `pinned` (a difference whose deviation
+names that snapshot). An older deviation remains visible as `differs`, with
+its original date. Text prints differences and pins, then the counts; a fully
+current configuration prints only the summary. `--json` uses
+`roundfix/profiles-check/v1`, with `snapshot`, `current`, `differ`, `pinned`
+and every configured category in order. Each row carries `category`, `status`,
+`source`, `configured`, `recommended`, and an optional `deviation`.
+The command exits `0` even with differences and `2` for usage or configuration
+load errors. `profiles show` adds `Recommendation status` and any declared
+`Deviation`, plus JSON fields `recommendation_status` and `deviation`, under
+its existing `roundfix/profiles/v2` schema; an undefined optional category's
+status is `inherited`.
 
 A configured Agent Selection Profile can carry a Profile Deviation under
 `deviation`, with `from` (the snapshot calendar date, `YYYY-MM-DD`) and `reason`
