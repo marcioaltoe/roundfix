@@ -20,16 +20,17 @@ const (
 	CheckStatusFound       CheckStatus = "found"
 	CheckStatusPartial     CheckStatus = "partial"
 
-	HealthCheckNode        = "node"
-	HealthCheckACPX        = "acpx"
-	HealthCheckAdapter     = "adapter"
-	HealthCheckAgent       = "agent"
-	HealthCheckProfiles    = "profiles"
-	HealthCheckPrePRReview = "pre-pr-review"
-	HealthCheckSkills      = "skills"
-	HealthCheckResidue     = "residue"
-	HealthCheckStorage     = "storage"
-	HealthCheckCodex       = "codex"
+	HealthCheckNode            = "node"
+	HealthCheckACPX            = "acpx"
+	HealthCheckAdapter         = "adapter"
+	HealthCheckAgent           = "agent"
+	HealthCheckRecommendations = "recommendations"
+	HealthCheckProfiles        = "profiles"
+	HealthCheckPrePRReview     = "pre-pr-review"
+	HealthCheckSkills          = "skills"
+	HealthCheckResidue         = "residue"
+	HealthCheckStorage         = "storage"
+	HealthCheckCodex           = "codex"
 )
 
 type CheckResult struct {

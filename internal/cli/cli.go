@@ -72,6 +72,8 @@ Usage:
   roundfix baseline skills restore --profile <id> [--skill <name> ...] [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
   roundfix baseline skills reconcile --profile <id> --source <owner/repo> --revision <commit> [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
   roundfix baseline assets sync --source-dir <path> [--check] [--format <text|json>]
+  roundfix profiles check [--json]
+  roundfix profiles check --apply --scope user|project [--dry-run] [--yes] [--json]
   roundfix profiles show [--category <category>] [--json]
   roundfix profiles configure --scope user|project [--file <path>] [--remove <category>] [--dry-run] [--yes] [--json]
   roundfix profiles validate [--category <category>] [--json]
@@ -517,7 +519,7 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 	case "storage":
 		return runStorageCommand(ctx, args[1:], stdout, stderr, environment)
 	case "upgrade":
-		return runUpgradeCommand(ctx, args[1:], stdout, stderr)
+		return runUpgradeCommand(ctx, args[1:], stdout, stderr, environment)
 	case "runs":
 		return runRunsCommand(ctx, args[1:], stdout, stderr, environment)
 	case "stop":
@@ -5211,7 +5213,8 @@ Agent Selection Profiles, the Repository Skill Set, and codex runtime hygiene.
 The aggregate profiles: line exact-proves every distinct tuple. The skills:
 line compares Roundfix-owned artifacts with the running binary and external
 artifacts with skills-lock.json. Each failure reports its next action.
-Doctor is offline, read-only, and mutates nothing.
+The recommendations: line reports ok, found, or skipped after profiles: and
+never fails Doctor. Doctor is offline, read-only, and mutates nothing.
 `
 	case "migrate":
 		return `Usage:
@@ -5282,6 +5285,9 @@ Home without migrating, locking for writes, or changing any byte.
 Resolves the latest Roundfix release for this platform through the GitHub CLI.
 Without --check, downloads the matching asset, verifies it, and atomically
 replaces the current executable. If no releases exist, reports that cleanly.
+After each release outcome, writes a recommendation notice to standard error
+without changing standard output or the exit code. After an install, the notice
+comes from the installed executable.
 
 Options:
   --check  Report the latest release outcome without installing it
@@ -5783,17 +5789,41 @@ Options:
 `
 	case "profiles":
 		return `Usage:
+  roundfix profiles check [--json]
+  roundfix profiles check --apply --scope user|project [--dry-run] [--yes] [--json]
   roundfix profiles show [--category <category>] [--json]
   roundfix profiles configure --scope user|project [--file <path>] [--remove <category>] [--dry-run] [--yes] [--json]
   roundfix profiles validate [--category <category>] [--json]
 
 Commands:
+  check      Compare configured profiles with the shipped recommendation, offline.
   show       Render effective Agent Selection Profiles and advisory recommendations.
   configure  Write complete Agent Selection Profiles after validation and confirmation.
   validate   Prove effective Agent Selection Profiles through disposable sessions.
 
 The Recommended Profile is advisory. It never selects, routes, or writes
 configuration. Show JSON uses roundfix/profiles/v2.
+`
+	case "profiles check":
+		return `Usage:
+  roundfix profiles check [--json]
+  roundfix profiles check --apply --scope user|project [--dry-run] [--yes] [--json]
+
+Compares every configured category with the shipped Recommended Profile.
+Reports current, differs, or pinned; undefined optional categories are omitted.
+Read-only and offline: opens no Agent Session and writes nothing.
+Exit 0 even with differences; exit 2 for usage or configuration errors.
+
+Options:
+  --apply    Adopt only differing profiles; requires --scope
+  --scope    Write User Config or Project Config (user|project); requires --apply
+  --dry-run  Prove and preview without writing; requires --apply
+  --yes      Write without confirmation after proof; requires --apply
+  --json     Print roundfix/profiles-check/v1 JSON, or roundfix/profiles-configure/v1 with --apply
+
+With --apply, opens disposable Agent Sessions for exact proof before confirmation
+and writing. Current and pinned categories are skipped. User scope skips Project
+Config categories with advice to use --scope project. Nothing to adopt exits 0.
 `
 	case "profiles show":
 		return `Usage:

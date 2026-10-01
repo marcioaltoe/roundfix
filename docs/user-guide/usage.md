@@ -8,6 +8,9 @@ agent driving Roundfix. For flags, outputs, and boundaries per command, see the
 [configuration](configuration.md); for install, see the
 [README](../../README.md#install).
 
+`roundfix upgrade` writes a recommendation notice to standard error after each
+successful release outcome, without changing standard output or the exit code.
+
 ## Before you start
 
 1. Install Roundfix (npm launcher or `make build`) and put it on `PATH`.
@@ -187,6 +190,18 @@ role `preferred`, followed by its Fallback Chain with role `fallback`.
 Each row includes the selection, source date, and rationale. The Recommended
 Profile never selects, routes, or writes User Config or Project Config.
 Interactive configure shows the same rows as advisory guidance.
+
+Run `roundfix profiles check --apply --scope project` to adopt differing Recommended Profiles after exact proof and confirmation; `--dry-run` previews and `--yes` skips confirmation.
+
+Run `roundfix profiles check` to compare configured categories with the
+recommendation in the binary, offline and without opening an Agent Session or
+writing a file. It reports `current` for an exact match, `differs` for a
+difference, and `pinned` for a difference whose deviation names the shipped
+snapshot; an older deviation leaves the category `differs`. Undefined optional
+categories are omitted. Differences exit `0`; usage and configuration errors
+exit `2`. Add `--json` for schema `roundfix/profiles-check/v1`. `profiles show`
+also prints each category's `Recommendation status`, using `inherited` for an
+undefined optional category, and includes its deviation when declared.
 
 ### Configure profiles
 

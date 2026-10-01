@@ -89,6 +89,11 @@ and `storage:` also report `found` or `partial`. Failure lines include
   classification, bounded adapter evidence, and the next
   `roundfix profiles configure` or `roundfix profiles validate` action. A
   rejected explicit `high` does not recommend model-managed reasoning.
+- `recommendations:` — immediately after `profiles:`, compares the loaded
+  configuration with the shipped snapshot. `ok` means no category differs
+  (current and pinned profiles both qualify); `found` names the counts and
+  suggests `roundfix profiles check`. If comparison cannot run, `skipped`
+  carries the reason. This line opens no Agent Session and never fails Doctor.
 - `skills:` — the required Repository Skill Set matches its local
   authorities. The running binary's embedded artifacts are authoritative for
   the 14 Roundfix-owned skills, including the Roundfix Skill. Each of the 25
@@ -124,6 +129,7 @@ node: ok
 acpx: ok
 adapter: ok (claude: command="npx -y @agentclientprotocol/claude-agent-acp@0.84.0"; package=@agentclientprotocol/claude-agent-acp; version=0.84.0 | codex: command="npx -y @agentclientprotocol/codex-acp@2.0.1"; package=@agentclientprotocol/codex-acp; version=2.0.1)
 profiles: ok (4 distinct tuples; 10 category references)
+recommendations: ok (snapshot 2026-09-30; 5 current, 0 differ, 0 pinned)
 skills: ok (<required> required: <owned> Roundfix-owned, <external> external)
 residue: ok (no process residue found)
 storage: ok (nothing to reclaim; Runs reclaimable: 0; Run Database free bytes: 0)
@@ -484,6 +490,15 @@ current binary untouched and print a manual fallback on stderr. Operational
 commands run a best-effort daily freshness check that prints one stderr line
 when the binary is behind.
 
+After every successful release outcome, including `--check`, a recommendation
+notice is written to standard error. It never changes standard output or the
+exit code. After an install, the installed executable runs `profiles check`
+in the process working directory under a ten-second timeout; otherwise the
+running executable compares in process. A check that cannot run prints one
+line, `roundfix: recommendations not checked: <reason>`. Help, usage errors
+and failed upgrades print no notice. An upgrade performed by an older
+executable prints none; the notice starts with a subsequent upgrade.
+
 ### init
 
 ```bash
@@ -542,10 +557,57 @@ never shipped. By default `skills install` writes to `<repo>/.agents/skills`;
 ### profiles
 
 ```bash
+roundfix profiles check [--json]
+roundfix profiles check --apply --scope user|project [--dry-run] [--yes] [--json]
 roundfix profiles show [--category <category>] [--json]
 roundfix profiles configure --scope user|project [--file <path>] [--remove <category>] [--dry-run] [--yes] [--json]
 roundfix profiles validate [--category <category>] [--json]
 ```
+
+`roundfix profiles check` compares every configured category with the shipped
+Recommended Profile, including the full fallback order. It is read-only and
+offline: it opens no Agent Session, reaches no network, and writes no file.
+Undefined optional categories are omitted. Each configured category is:
+
+- `current` when its profile equals the recommendation, even with a deviation.
+- `differs` when it differs without a deviation for the shipped snapshot. An
+  older deviation stays visible with the date it was declared against.
+- `pinned` when it differs and its deviation names the shipped snapshot.
+
+Text names each difference with the configured profile, its source, and the
+recommended profile, then counts current, differing, and pinned categories.
+When everything is current, it prints only the summary. `--json` uses schema
+`roundfix/profiles-check/v1`, with `snapshot`, `current`, `differ`, `pinned`,
+and `categories`. Each row has `category`, `status`, `source`, `configured`
+and `recommended` (each with `preferred` and `fallbacks`), plus `deviation`
+(`from`, `reason`) when declared. Rows follow Agent Work Category order.
+The command exits `0` after a comparison, including one with differences,
+and `2` for an unknown flag, an extra argument, or a configuration load error.
+
+`roundfix profiles check --apply --scope user|project [--dry-run] [--yes]
+[--json]` adopts only differing categories, replacing each complete profile
+with the Recommended Profile and removing its old deviation. Current and
+pinned categories stay unchanged. `--scope` is required; `--scope`, `--dry-run`
+and `--yes` require `--apply`. Invalid flag combinations exit `2` without writing.
+With `--scope user`, categories whose effective profile comes from Project
+Config are skipped and named on standard error with advice to use
+`--scope project`.
+
+Adoption opens disposable Agent Sessions to prove every exact selection tuple
+before confirmation or writing, using the same preview, confirmation, output
+and exit codes as `profiles configure`. `--dry-run` proves and previews without
+writing; `--yes` skips confirmation. Failed proof and declined confirmation
+leave configuration bytes unchanged. `--json` uses
+`roundfix/profiles-configure/v1`. With nothing to adopt, nothing is prepared,
+proved or written: text prints `Profile configuration unchanged: nothing to
+adopt`, JSON has `changed: false` with empty `profiles` and `changes`, and the
+command exits `0`.
+
+`profiles show` prints `Recommendation status: <status>` before each
+Recommended profile block, with `inherited` for an undefined optional category.
+A declared deviation follows that block as `Deviation: from <date> — <reason>`.
+Its JSON adds `recommendation_status` and, when present, `deviation`; its schema
+remains `roundfix/profiles/v2`, and its flags and exit codes are unchanged.
 
 `profiles show` renders the effective Preferred Selection, Fallback Chain, and
 dated advisory Recommended Profile: a Preferred Selection followed by its
@@ -555,7 +617,9 @@ or writes configuration; interactive configure shows the same advisory rows.
 Official model identifiers and advisory rank
 do not prove that a tuple works in the current environment.
 
-`profiles configure` merges a fragment by Agent Work Category. Every category
+`profiles configure` writes a Profile Deviation its fragment carries, and
+replacing a profile with a fragment without one removes the old deviation.
+It merges a fragment by Agent Work Category. Every category
 named in the fragment replaces that complete profile atomically; every other
 configured category is preserved. Omission does not delete a category.
 `--remove <category>` is the only way to remove a category and may be repeated.
