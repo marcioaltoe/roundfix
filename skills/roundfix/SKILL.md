@@ -4,10 +4,10 @@ description: Use Roundfix to plan releases with the read-only Release Plan Comma
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.0.5
+  version: 0.0.6
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.0.5
+version: 0.0.6
 ---
 
 # Roundfix
@@ -2760,12 +2760,15 @@ synchronization, or build failure blocks settlement.
 Settlement Checks apply to every non-QA Task in a Task Graph that has an
 authored QA gate Task. They run in this order when the Daemon settles the Task:
 
-1. `settlement check: spec consistency` checks for new Spec Consistency
+1. The repository Verification runs at settlement as the attempt's last
+   command when `verification.repository_at_settlement` is enabled.
+2. `settlement check: spec consistency` checks for new Spec Consistency
    findings in the Task's tree.
-2. The repository Verification runs at settlement when
-   `verification.repository_at_settlement` is enabled.
 3. `settlement check: authorization` checks the prospective Task commit
    against the frozen authorization record.
+
+Both in-process checks run after the attempt's commands, whatever their
+result, and before the attempt's verdict.
 
 A failed check returns its diagnostics as Verification Feedback for the one
 repair turn. If the final attempt still fails, the Task settles `failed`. The

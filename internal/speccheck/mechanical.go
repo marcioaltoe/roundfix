@@ -758,7 +758,8 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 		return nil
 	}
 	if len(request.TaskCommits) == 0 {
-		return auditMechanicalTaskCommit(ctx, result, repoRoot, request, MechanicalTaskCommit{}, "", nil, false)
+		addMechanicalSkip(result, DetectorMechanicalAuthPaths, "Task commits")
+		return nil
 	}
 	projectRepoRoot := repoRoot
 	if mechanicalAuthorizationReferencePresent(request.AuthorizationReference) && strings.TrimSpace(request.AuthorizationReference.Location.ProjectRepoRoot) != "" {
