@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "core",
-  "version": 15,
+  "version": 16,
   "kind": "core",
   "title": "Universal agent baseline",
   "dependsOn": [],
@@ -10,6 +10,7 @@
     "coding-guidelines",
     "context7-cli",
     "conventional-commits",
+    "crafting-effective-readmes",
     "evidence-gate",
     "exa-web-search",
     "github-pr-workflow",
@@ -17,7 +18,8 @@
     "no-workarounds",
     "systematic-debugging",
     "tech-writer",
-    "testing-boss"
+    "testing-boss",
+    "typesafe-ai"
   ],
   "skillDispatch": [
     {
@@ -44,6 +46,15 @@
         {
           "id": "trigger.core.conventional-commits",
           "when": "Staging changes, writing commit messages, or preparing pull request titles."
+        }
+      ]
+    },
+    {
+      "skill": "crafting-effective-readmes",
+      "triggers": [
+        {
+          "id": "trigger.core.crafting-effective-readmes",
+          "when": "Writing or revising the repository README."
         }
       ]
     },
@@ -116,6 +127,15 @@
         {
           "id": "trigger.core.testing-boss",
           "when": "Writing, changing, or reviewing tests and fixtures."
+        }
+      ]
+    },
+    {
+      "skill": "typesafe-ai",
+      "triggers": [
+        {
+          "id": "trigger.core.typesafe-ai",
+          "when": "Adding programmable semantic judgment (routing, ranking, extraction, verification) or touching TypeSafe/Jev."
         }
       ]
     }

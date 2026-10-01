@@ -39,6 +39,8 @@ Individual skill triggers:
   - `trigger.core.conventional-commits`: Staging changes, writing commit messages, or preparing pull request titles.
 - `council`:
   - `trigger.context-workflow.council`: Debating a high-impact product or architecture decision through multiple advisors.
+- `crafting-effective-readmes`:
+  - `trigger.core.crafting-effective-readmes`: Writing or revising the repository README.
 - `domain-modeling`:
   - `trigger.context-workflow.domain-modeling`: Defining or changing domain vocabulary, ownership, or bounded-context relationships.
 - `evidence-gate`:
@@ -98,6 +100,8 @@ Individual skill triggers:
   - `trigger.context-workflow.the-fool`: Challenging a proposal through a pre-mortem, red-team, or evidence audit.
 - `tui-design`:
   - `trigger.tui-surface.tui-design`: Designing terminal layout, navigation, keyboard, mouse, color, or accessibility behavior.
+- `typesafe-ai`:
+  - `trigger.core.typesafe-ai`: Adding programmable semantic judgment (routing, ranking, extraction, verification) or touching TypeSafe/Jev.
 - `write-idea`:
   - `trigger.context-workflow.write-idea`: Expanding a product-level idea into a researched opportunity artifact.
 - `write-prd`:

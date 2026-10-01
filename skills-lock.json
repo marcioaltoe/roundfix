@@ -201,6 +201,20 @@
       "sourceType": "github",
       "skillPath": "skills/05-implementation-loop/golang-structs-interfaces/SKILL.md",
       "computedHash": "150bb7cdb43e1efab246e90d17bde6a871c2fdbbc81eb7260b9914f7d45f52ac"
+    },
+    "crafting-effective-readmes": {
+      "source": "marcioaltoe/skills",
+      "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
+      "sourceType": "github",
+      "skillPath": "skills/07-evidence-delivery/crafting-effective-readmes/SKILL.md",
+      "computedHash": "c931a8c22160e8925400778fcb2266b5d1df762f3052edba65f72479f79f2d6c"
+    },
+    "typesafe-ai": {
+      "source": "marcioaltoe/skills",
+      "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
+      "sourceType": "github",
+      "skillPath": "skills/05-implementation-loop/typesafe-ai/SKILL.md",
+      "computedHash": "9cd84c5e535dec8dec59917c110f9c00b4a61faadb86b432ec7e41051170af12"
     }
   }
 }

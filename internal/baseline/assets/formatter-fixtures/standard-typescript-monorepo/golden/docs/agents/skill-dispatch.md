@@ -80,7 +80,7 @@ Individual skill triggers:
 - `council`:
   - `trigger.context-workflow.council`: Debating a high-impact product or architecture decision through multiple advisors.
 - `crafting-effective-readmes`:
-  - `trigger.typescript.crafting-effective-readmes`: Writing or revising the TypeScript repository README.
+  - `trigger.core.crafting-effective-readmes`: Writing or revising the repository README.
 - `data-sync-workflows`:
   - `trigger.backend.data-sync-workflows`: Designing backend data synchronization and reconciliation workflows.
 - `design-patterns`:
@@ -206,6 +206,8 @@ Individual skill triggers:
   - `trigger.typescript.to-prompt`: Converting TypeScript repository context into a bounded implementation prompt.
 - `turborepo`:
   - `trigger.monorepo.turborepo`: Changing Turborepo tasks, caching, package boundaries, or workspace orchestration.
+- `typesafe-ai`:
+  - `trigger.core.typesafe-ai`: Adding programmable semantic judgment (routing, ranking, extraction, verification) or touching TypeSafe/Jev.
 - `typescript-advanced`:
   - `trigger.typescript.typescript-advanced`: Using advanced TypeScript types or language features.
 - `ui-ux-pro-max`:

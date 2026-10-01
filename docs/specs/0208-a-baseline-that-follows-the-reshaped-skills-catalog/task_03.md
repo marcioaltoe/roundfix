@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0208-a-baseline-that-follows-the-reshaped-skills-catalog
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -88,3 +88,83 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - `_prd.md` → Goals 4-5; User Story 4; Core Features 4-5; Success Metrics 4-5
 - `_techspec.md` → Fixed texts (task_03); The repository procedure; API Contracts 4 and 5; Testing Approach 3, 4 and 5; Build Order 3
 - ADR-0206, ADR-0191, ADR-0073, ADR-0103
+
+## Result
+
+Implemented the task_03 slice. Task status and declared Verification remain
+Daemon-owned; no commit, push, Task Graph edit, or other Task edit was made.
+
+### Implementation and acceptance evidence
+
+1. Core now requires and dispatches `crafting-effective-readmes` and
+   `typesafe-ai` with the exact Fixed texts. Its version rose from 15 to 16;
+   TypeScript's version rose from 6 to 7 and every README skill requirement
+   and trigger was removed from that module. The new
+   `coreSkillFindings` helper checks requirements, exact trigger identifiers
+   and text, TypeScript remnants, and complete rendered trigger lines.
+2. Both the Standard TypeScript Monorepo golden and this repository's guide
+   contain the two Core triggers. The positive test initially failed with
+   the missing requirements/triggers and TypeScript remnants. After the
+   module edits, sanctioned regeneration and managed refresh, the focused
+   command `go test ./internal/baseline -run
+   'Test(CoreRequiresAndDispatches|AMissingCoreSkillTrigger|EveryBuiltInProfileSetupLists)'
+   -count=1` exited 0. The negative test feeds literal documents and checks
+   the exact missing module and guide findings for each new skill.
+3. The same focused command exercised the existing built-in profile setup
+   membership check, covering every setup's dispatched skill requirements.
+   `make baseline-digests` exited 0 and regenerated only the declared golden,
+   profile pin, catalog snapshots and four plan goldens. The public
+   `baseline update --repo . --no-skills --yes --format text` applied two
+   guide/manifest changes; its second successful run exited 0 and reported
+   `File changes: 0` and `Idempotence: verified`.
+4. The local upstream checkout contained commit
+   `b3c45a45f1bccd3b33aaecaaa22947d942f2fc02`. A temporary `--no-local` clone
+   was detached at that commit; no network clone or upstream write occurred.
+   The public `baseline update --repo . --yes --skills-source-dir <clone>
+   --format text` exited 0, restored the two skills and reported zero drifted
+   skills. Byte comparisons confirmed the two TypeSafe files and fourteen
+   README files exactly match that clone. Only those sixteen installed skill
+   paths changed. The lock gained their pinned entries; the recommended list
+   is the sorted lock keys. `TestAuthorialSkillSync` reported digest
+   `d7de33abe09def95e2a8d4b1e9e7ef3c21c30a9667fa2ed5fd5ec18fc594faaf`,
+   which replaced only the digest constant's line. Focused checks
+   `go test ./skills -run 'Test(AuthorialSkillSync|RecommendedSkillsMatchLock)$'
+   -count=1` and `go test ./internal/cli -run
+   'Test(ThisRepositoryHolds|ARepositoryMissingARequiredExternalSkill)'
+   -count=1` both exited 0.
+5. `go run -buildvcs=false ./cmd/roundfix doctor` printed
+   `skills: ok (43 required: 14 Roundfix-owned, 29 external)`. Both user guides
+   now print that exact line. Doctor's overall exit was 1 because sandboxed
+   ACP session readiness reported `O_RESOLVE_BENEATH: Operation not permitted`;
+   its independent skill check passed. No runtime configuration was changed.
+
+### Environment and scope
+
+Go commands used `GOCACHE=/tmp/roundfix-task03-gocache` after the host cache
+refused access. The first managed apply also hit the sandbox restriction on
+its Git-private transaction lock; rerunning with the required access applied
+the public transaction successfully. Baseline retained its two existing
+nested-carrier warnings without changing those carriers.
+
+The changed-path postflight found 36 paths, all listed in this Task's Context,
+including exactly the sixteen permitted installed skill files.
+`git diff --check` exited 0. The obsolete `review` tree and lock entry remain
+for task_04, as the Spec assigns.
+
+### Incremental check
+
+`GOCACHE=/tmp/roundfix-task03-gocache rtk make verify-incremental` exited 0
+when rerun with host process-table access and an unchanged worktree during
+the run. Formatting, vet, Go tests, skill synchronization/checks and the CLI
+build passed. The CLI package reran in 121.291 seconds; unaffected package
+results reused the incremental cache.
+
+The first sandboxed attempt exited 2: two force-stop integration tests could
+not read the process table, and the suite guard detected this Agent's Result
+edit while tests were running. The rerun followed that edit and made no
+repository changes during execution. Its output is retained at
+`/tmp/roundfix-task03-incremental-elevated.log`; the initial diagnostics are
+at `/tmp/roundfix-task03-incremental.log`.
+
+The Task's declared Verification command was not run; the Daemon owns that
+check and settlement.

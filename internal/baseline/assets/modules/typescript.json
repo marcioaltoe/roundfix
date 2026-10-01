@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "typescript",
-  "version": 6,
+  "version": 7,
   "kind": "language-runtime",
   "title": "TypeScript repository guidance",
   "dependsOn": [
@@ -13,7 +13,6 @@
     "business-storyteller",
     "clean-code",
     "codebase-design",
-    "crafting-effective-readmes",
     "diagnosing-bugs",
     "docker",
     "app-renderer-systems",
@@ -66,15 +65,6 @@
         {
           "id": "trigger.typescript.codebase-design",
           "when": "Designing TypeScript codebase structure and component boundaries."
-        }
-      ]
-    },
-    {
-      "skill": "crafting-effective-readmes",
-      "triggers": [
-        {
-          "id": "trigger.typescript.crafting-effective-readmes",
-          "when": "Writing or revising the TypeScript repository README."
         }
       ]
     },
