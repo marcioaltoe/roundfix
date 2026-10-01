@@ -1,0 +1,2258 @@
+{
+  "reports": [
+    {
+      "report": "docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-28.md",
+      "head": "042f644935d9eb7e7f15f0efe51a4edef4f0ae57",
+      "passing": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R9",
+        "R10"
+      ],
+      "snapshot": false,
+      "inputs": {
+        "R1": [
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_05.md"
+        ],
+        "R2": [
+          "internal/cli/review_provider_scope_test.go",
+          "internal/config/review_source_scope_test.go",
+          "internal/preflight/preflight_test.go",
+          "internal/config/config.go"
+        ],
+        "R3": [
+          ".agents/skills/roundfix/SKILL.md",
+          "skills/roundfix/SKILL.md",
+          "docs/user-guide/commands.md",
+          "docs/user-guide/usage.md",
+          "docs/user-guide/configuration.md",
+          "internal/cli/deliver_publication_scope_test.go",
+          "internal/cli/review_provider_scope_test.go",
+          "internal/config/review_source_scope_test.go"
+        ],
+        "R4": [
+          "internal/cli/review_disposition_test.go",
+          "internal/cli/review.go"
+        ],
+        "R5": [
+          "internal/cli/review_head_bound_test.go",
+          "internal/cli/review.go"
+        ],
+        "R6": [
+          "internal/cli/review_head_bound_test.go",
+          "internal/cli/review_archived_spec_test.go",
+          "internal/delivery/corrective_spec_test.go",
+          "internal/delivery/engine.go"
+        ],
+        "R7": [
+          "GitHub pull requests 257, 258, and 259 in marcioaltoe/roundfix",
+          "internal/cli/review_disposition_test.go"
+        ],
+        "R8": [
+          "docs/user-guide/commands.md",
+          "docs/user-guide/usage.md",
+          "docs/user-guide/configuration.md",
+          ".agents/skills/roundfix/SKILL.md",
+          "skills/roundfix/SKILL.md",
+          "CONTEXT.md",
+          "docs/adr/0165-a-blocking-review-after-archive-parks-publication-for-a-corrective-spec.md"
+        ],
+        "R9": [
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/**"
+        ],
+        "R10": [
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/_authorization.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_01.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_02.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_03.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_04.md",
+          ".agents/skills/roundfix/SKILL.md",
+          "skills/roundfix/SKILL.md"
+        ],
+        "R11": [
+          "Pull Request state for feat/review-findings-with-evidence",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_05.md"
+        ]
+      },
+      "typed_inputs": {
+        "R1": [
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_05.md"
+          ]
+        ],
+        "R2": [
+          [
+            "repository_path",
+            "internal/cli/review_provider_scope_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/config/review_source_scope_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/preflight/preflight_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/config/config.go"
+          ]
+        ],
+        "R3": [
+          [
+            "repository_path",
+            ".agents/skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/commands.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/usage.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/configuration.md"
+          ],
+          [
+            "repository_path",
+            "internal/cli/deliver_publication_scope_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_provider_scope_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/config/review_source_scope_test.go"
+          ]
+        ],
+        "R4": [
+          [
+            "repository_path",
+            "internal/cli/review_disposition_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review.go"
+          ]
+        ],
+        "R5": [
+          [
+            "repository_path",
+            "internal/cli/review_head_bound_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review.go"
+          ]
+        ],
+        "R6": [
+          [
+            "repository_path",
+            "internal/cli/review_head_bound_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_archived_spec_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/delivery/corrective_spec_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/delivery/engine.go"
+          ]
+        ],
+        "R7": [
+          [
+            "external_repository",
+            "GitHub pull requests 257, 258, and 259 in marcioaltoe/roundfix"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_disposition_test.go"
+          ]
+        ],
+        "R8": [
+          [
+            "repository_path",
+            "docs/user-guide/commands.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/usage.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/configuration.md"
+          ],
+          [
+            "repository_path",
+            ".agents/skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "CONTEXT.md"
+          ],
+          [
+            "repository_path",
+            "docs/adr/0165-a-blocking-review-after-archive-parks-publication-for-a-corrective-spec.md"
+          ]
+        ],
+        "R9": [
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/**"
+          ]
+        ],
+        "R10": [
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/_authorization.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_01.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_02.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_03.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_04.md"
+          ],
+          [
+            "repository_path",
+            ".agents/skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "skills/roundfix/SKILL.md"
+          ]
+        ],
+        "R11": [
+          [
+            "live_service",
+            "Pull Request state for feat/review-findings-with-evidence"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_05.md"
+          ]
+        ]
+      }
+    },
+    {
+      "report": "docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-28-01.md",
+      "head": "dad5a360d83d329e275d9fe10a6bb14dadb92e6a",
+      "passing": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R9",
+        "R10"
+      ],
+      "snapshot": false,
+      "inputs": {
+        "R1": [
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_05.md"
+        ],
+        "R2": [
+          "internal/cli/review_provider_scope_test.go",
+          "internal/config/review_source_scope_test.go",
+          "internal/preflight/preflight_test.go",
+          "internal/config/config.go"
+        ],
+        "R3": [
+          ".agents/skills/roundfix/SKILL.md",
+          "skills/roundfix/SKILL.md",
+          "docs/user-guide/commands.md",
+          "docs/user-guide/usage.md",
+          "docs/user-guide/configuration.md",
+          "internal/cli/deliver_publication_scope_test.go",
+          "internal/cli/review_provider_scope_test.go",
+          "internal/config/review_source_scope_test.go"
+        ],
+        "R4": [
+          "internal/cli/review_disposition_test.go",
+          "internal/cli/review.go"
+        ],
+        "R5": [
+          "internal/cli/review_head_bound_test.go",
+          "internal/cli/review.go"
+        ],
+        "R6": [
+          "internal/cli/review_head_bound_test.go",
+          "internal/cli/review_archived_spec_test.go",
+          "internal/delivery/corrective_spec_test.go",
+          "internal/delivery/engine.go"
+        ],
+        "R7": [
+          "https://github.com/marcioaltoe/roundfix/pull/257",
+          "https://github.com/marcioaltoe/roundfix/pull/258",
+          "https://github.com/marcioaltoe/roundfix/pull/259",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/evidence/2026-09-28-pr-bodies-257-259.md",
+          "internal/cli/review_disposition_test.go"
+        ],
+        "R8": [
+          "docs/user-guide/commands.md",
+          "docs/user-guide/usage.md",
+          "docs/user-guide/configuration.md",
+          ".agents/skills/roundfix/SKILL.md",
+          "skills/roundfix/SKILL.md",
+          "CONTEXT.md",
+          "docs/adr/0165-a-blocking-review-after-archive-parks-publication-for-a-corrective-spec.md"
+        ],
+        "R9": [
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/**"
+        ],
+        "R10": [
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/_authorization.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_01.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_02.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_03.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_04.md",
+          ".agents/skills/roundfix/SKILL.md",
+          "skills/roundfix/SKILL.md"
+        ],
+        "R11": [
+          "Pull Request state for feat/review-findings-with-evidence",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_05.md"
+        ]
+      },
+      "changed": [
+        "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/_prd.md",
+        "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/evidence/2026-09-28-pr-bodies-257-259.md",
+        "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-28.md",
+        "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_05.md"
+      ],
+      "ancestor_exit": 0,
+      "reexecuted_passes": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R9",
+        "R10"
+      ],
+      "unmoved": [
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R10"
+      ],
+      "typed_inputs": {
+        "R1": [
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_05.md"
+          ]
+        ],
+        "R2": [
+          [
+            "repository_path",
+            "internal/cli/review_provider_scope_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/config/review_source_scope_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/preflight/preflight_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/config/config.go"
+          ]
+        ],
+        "R3": [
+          [
+            "repository_path",
+            ".agents/skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/commands.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/usage.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/configuration.md"
+          ],
+          [
+            "repository_path",
+            "internal/cli/deliver_publication_scope_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_provider_scope_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/config/review_source_scope_test.go"
+          ]
+        ],
+        "R4": [
+          [
+            "repository_path",
+            "internal/cli/review_disposition_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review.go"
+          ]
+        ],
+        "R5": [
+          [
+            "repository_path",
+            "internal/cli/review_head_bound_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review.go"
+          ]
+        ],
+        "R6": [
+          [
+            "repository_path",
+            "internal/cli/review_head_bound_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_archived_spec_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/delivery/corrective_spec_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/delivery/engine.go"
+          ]
+        ],
+        "R7": [
+          [
+            "external_repository",
+            "https://github.com/marcioaltoe/roundfix/pull/257"
+          ],
+          [
+            "external_repository",
+            "https://github.com/marcioaltoe/roundfix/pull/258"
+          ],
+          [
+            "external_repository",
+            "https://github.com/marcioaltoe/roundfix/pull/259"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/evidence/2026-09-28-pr-bodies-257-259.md"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_disposition_test.go"
+          ]
+        ],
+        "R8": [
+          [
+            "repository_path",
+            "docs/user-guide/commands.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/usage.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/configuration.md"
+          ],
+          [
+            "repository_path",
+            ".agents/skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "CONTEXT.md"
+          ],
+          [
+            "repository_path",
+            "docs/adr/0165-a-blocking-review-after-archive-parks-publication-for-a-corrective-spec.md"
+          ]
+        ],
+        "R9": [
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/**"
+          ]
+        ],
+        "R10": [
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/_authorization.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_01.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_02.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_03.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_04.md"
+          ],
+          [
+            "repository_path",
+            ".agents/skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "skills/roundfix/SKILL.md"
+          ]
+        ],
+        "R11": [
+          [
+            "live_service",
+            "Pull Request state for feat/review-findings-with-evidence"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_05.md"
+          ]
+        ]
+      },
+      "all_reexecuted_passes": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R9",
+        "R10"
+      ],
+      "repository_inputs_unmoved": [
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R10"
+      ]
+    },
+    {
+      "report": "docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-29.md",
+      "head": "ef53459372ad37934b9d0bd3a6c15b5b99575905",
+      "passing": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R9",
+        "R10"
+      ],
+      "snapshot": false,
+      "inputs": {
+        "R1": [
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_05.md"
+        ],
+        "R2": [
+          "internal/cli/review_provider_scope_test.go",
+          "internal/config/review_source_scope_test.go",
+          "internal/preflight/preflight_test.go",
+          "internal/config/config.go"
+        ],
+        "R3": [
+          ".agents/skills/roundfix/SKILL.md",
+          "skills/roundfix/SKILL.md",
+          "docs/user-guide/commands.md",
+          "docs/user-guide/usage.md",
+          "docs/user-guide/configuration.md",
+          "internal/cli/deliver_publication_scope_test.go",
+          "internal/cli/review_provider_scope_test.go",
+          "internal/config/review_source_scope_test.go"
+        ],
+        "R4": [
+          "internal/cli/review_disposition_test.go",
+          "internal/cli/review.go"
+        ],
+        "R5": [
+          "internal/cli/review_head_bound_test.go",
+          "internal/cli/review.go"
+        ],
+        "R6": [
+          "internal/cli/review_head_bound_test.go",
+          "internal/cli/review_archived_spec_test.go",
+          "internal/delivery/corrective_spec_test.go",
+          "internal/delivery/engine.go"
+        ],
+        "R7": [
+          "https://github.com/marcioaltoe/roundfix/pull/257",
+          "https://github.com/marcioaltoe/roundfix/pull/258",
+          "https://github.com/marcioaltoe/roundfix/pull/259",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/evidence/2026-09-28-pr-bodies-257-259.md",
+          "internal/cli/review_disposition_test.go"
+        ],
+        "R8": [
+          "docs/user-guide/commands.md",
+          "docs/user-guide/usage.md",
+          "docs/user-guide/configuration.md",
+          ".agents/skills/roundfix/SKILL.md",
+          "skills/roundfix/SKILL.md",
+          "CONTEXT.md",
+          "docs/adr/0165-a-blocking-review-after-archive-parks-publication-for-a-corrective-spec.md"
+        ],
+        "R9": [
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/**"
+        ],
+        "R10": [
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/_authorization.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_01.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_02.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_03.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_04.md",
+          ".agents/skills/roundfix/SKILL.md",
+          "skills/roundfix/SKILL.md"
+        ],
+        "R11": [
+          "Pull Request state for feat/review-findings-with-evidence",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_05.md"
+        ]
+      },
+      "changed": [
+        "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/_prd.md",
+        "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-28-01.md",
+        "docs/specs/0180-a-prepared-queue-that-revalidates-before-each-spec/_prd.md"
+      ],
+      "ancestor_exit": 0,
+      "reexecuted_passes": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R9",
+        "R10"
+      ],
+      "unmoved": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R10"
+      ],
+      "typed_inputs": {
+        "R1": [
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_05.md"
+          ]
+        ],
+        "R2": [
+          [
+            "repository_path",
+            "internal/cli/review_provider_scope_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/config/review_source_scope_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/preflight/preflight_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/config/config.go"
+          ]
+        ],
+        "R3": [
+          [
+            "repository_path",
+            ".agents/skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/commands.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/usage.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/configuration.md"
+          ],
+          [
+            "repository_path",
+            "internal/cli/deliver_publication_scope_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_provider_scope_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/config/review_source_scope_test.go"
+          ]
+        ],
+        "R4": [
+          [
+            "repository_path",
+            "internal/cli/review_disposition_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review.go"
+          ]
+        ],
+        "R5": [
+          [
+            "repository_path",
+            "internal/cli/review_head_bound_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review.go"
+          ]
+        ],
+        "R6": [
+          [
+            "repository_path",
+            "internal/cli/review_head_bound_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_archived_spec_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/delivery/corrective_spec_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/delivery/engine.go"
+          ]
+        ],
+        "R7": [
+          [
+            "external_repository",
+            "https://github.com/marcioaltoe/roundfix/pull/257"
+          ],
+          [
+            "external_repository",
+            "https://github.com/marcioaltoe/roundfix/pull/258"
+          ],
+          [
+            "external_repository",
+            "https://github.com/marcioaltoe/roundfix/pull/259"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/evidence/2026-09-28-pr-bodies-257-259.md"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_disposition_test.go"
+          ]
+        ],
+        "R8": [
+          [
+            "repository_path",
+            "docs/user-guide/commands.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/usage.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/configuration.md"
+          ],
+          [
+            "repository_path",
+            ".agents/skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "CONTEXT.md"
+          ],
+          [
+            "repository_path",
+            "docs/adr/0165-a-blocking-review-after-archive-parks-publication-for-a-corrective-spec.md"
+          ]
+        ],
+        "R9": [
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/**"
+          ]
+        ],
+        "R10": [
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/_authorization.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_01.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_02.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_03.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_04.md"
+          ],
+          [
+            "repository_path",
+            ".agents/skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "skills/roundfix/SKILL.md"
+          ]
+        ],
+        "R11": [
+          [
+            "live_service",
+            "Pull Request state for feat/review-findings-with-evidence"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_05.md"
+          ]
+        ]
+      },
+      "all_reexecuted_passes": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R9",
+        "R10"
+      ],
+      "repository_inputs_unmoved": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R10"
+      ]
+    },
+    {
+      "report": "docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-29-01.md",
+      "head": "0adeec1d051c7b315ce3b4fd8ce9b687a1634cd9",
+      "passing": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R9",
+        "R10"
+      ],
+      "snapshot": false,
+      "inputs": {
+        "R1": [
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_05.md"
+        ],
+        "R2": [
+          "internal/cli/review_provider_scope_test.go",
+          "internal/config/review_source_scope_test.go",
+          "internal/preflight/preflight_test.go",
+          "internal/config/config.go"
+        ],
+        "R3": [
+          ".agents/skills/roundfix/SKILL.md",
+          "skills/roundfix/SKILL.md",
+          "docs/user-guide/commands.md",
+          "docs/user-guide/usage.md",
+          "docs/user-guide/configuration.md",
+          "internal/cli/deliver_publication_scope_test.go"
+        ],
+        "R4": [
+          "internal/cli/review_disposition_test.go",
+          "internal/cli/review.go"
+        ],
+        "R5": [
+          "internal/cli/review_head_bound_test.go",
+          "internal/cli/review.go"
+        ],
+        "R6": [
+          "internal/cli/review_head_bound_test.go",
+          "internal/cli/review_archived_spec_test.go",
+          "internal/delivery/corrective_spec_test.go",
+          "internal/delivery/engine.go"
+        ],
+        "R7": [
+          "https://github.com/marcioaltoe/roundfix/pull/257",
+          "https://github.com/marcioaltoe/roundfix/pull/258",
+          "https://github.com/marcioaltoe/roundfix/pull/259",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/evidence/2026-09-28-pr-bodies-257-259.md"
+        ],
+        "R8": [
+          "docs/user-guide/commands.md",
+          "docs/user-guide/usage.md",
+          "docs/user-guide/configuration.md",
+          ".agents/skills/roundfix/SKILL.md",
+          "skills/roundfix/SKILL.md",
+          "CONTEXT.md",
+          "docs/adr/0165-a-blocking-review-after-archive-parks-publication-for-a-corrective-spec.md"
+        ],
+        "R9": [
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/**"
+        ],
+        "R10": [
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/_authorization.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_01.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_02.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_03.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_04.md",
+          ".agents/skills/roundfix/SKILL.md",
+          "skills/roundfix/SKILL.md"
+        ],
+        "R11": [
+          "Pull Request state for feat/review-findings-with-evidence",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_05.md"
+        ]
+      },
+      "changed": [
+        "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-29.md",
+        "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_05.md"
+      ],
+      "ancestor_exit": 0,
+      "reexecuted_passes": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R9",
+        "R10"
+      ],
+      "unmoved": [
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R10"
+      ],
+      "typed_inputs": {
+        "R1": [
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_05.md"
+          ]
+        ],
+        "R2": [
+          [
+            "repository_path",
+            "internal/cli/review_provider_scope_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/config/review_source_scope_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/preflight/preflight_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/config/config.go"
+          ]
+        ],
+        "R3": [
+          [
+            "repository_path",
+            ".agents/skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/commands.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/usage.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/configuration.md"
+          ],
+          [
+            "repository_path",
+            "internal/cli/deliver_publication_scope_test.go"
+          ]
+        ],
+        "R4": [
+          [
+            "repository_path",
+            "internal/cli/review_disposition_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review.go"
+          ]
+        ],
+        "R5": [
+          [
+            "repository_path",
+            "internal/cli/review_head_bound_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review.go"
+          ]
+        ],
+        "R6": [
+          [
+            "repository_path",
+            "internal/cli/review_head_bound_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_archived_spec_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/delivery/corrective_spec_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/delivery/engine.go"
+          ]
+        ],
+        "R7": [
+          [
+            "external_repository",
+            "https://github.com/marcioaltoe/roundfix/pull/257"
+          ],
+          [
+            "external_repository",
+            "https://github.com/marcioaltoe/roundfix/pull/258"
+          ],
+          [
+            "external_repository",
+            "https://github.com/marcioaltoe/roundfix/pull/259"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/evidence/2026-09-28-pr-bodies-257-259.md"
+          ]
+        ],
+        "R8": [
+          [
+            "repository_path",
+            "docs/user-guide/commands.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/usage.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/configuration.md"
+          ],
+          [
+            "repository_path",
+            ".agents/skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "CONTEXT.md"
+          ],
+          [
+            "repository_path",
+            "docs/adr/0165-a-blocking-review-after-archive-parks-publication-for-a-corrective-spec.md"
+          ]
+        ],
+        "R9": [
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/**"
+          ]
+        ],
+        "R10": [
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/_authorization.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_01.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_02.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_03.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_04.md"
+          ],
+          [
+            "repository_path",
+            ".agents/skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "skills/roundfix/SKILL.md"
+          ]
+        ],
+        "R11": [
+          [
+            "live_service",
+            "Pull Request state for feat/review-findings-with-evidence"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_05.md"
+          ]
+        ]
+      },
+      "all_reexecuted_passes": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R9",
+        "R10"
+      ],
+      "repository_inputs_unmoved": [
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R10"
+      ]
+    },
+    {
+      "report": "docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-29-02.md",
+      "head": "1b56b1dc77001d6d01343c21e5ccca1fd9440f92",
+      "passing": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R9"
+      ],
+      "snapshot": false,
+      "inputs": {
+        "R1": [
+          "Daemon repository Verification for audited head 1b56b1dc77001d6d01343c21e5ccca1fd9440f92"
+        ],
+        "R2": [
+          "internal/cli/review_provider_scope_test.go",
+          "internal/preflight/preflight_test.go",
+          "internal/config/config.go"
+        ],
+        "R3": [
+          ".agents/skills/roundfix/SKILL.md",
+          "skills/roundfix/SKILL.md",
+          "docs/user-guide/commands.md",
+          "docs/user-guide/usage.md",
+          "docs/user-guide/configuration.md"
+        ],
+        "R4": [
+          "internal/cli/review_disposition_test.go",
+          "internal/cli/review_dispose_lock_test.go",
+          "internal/cli/review.go",
+          "internal/cli/review_dispose_lock.go"
+        ],
+        "R5": [
+          "internal/cli/review_head_bound_test.go",
+          "internal/cli/review.go"
+        ],
+        "R6": [
+          "internal/cli/review_head_bound_test.go",
+          "internal/cli/review_archived_spec_test.go",
+          "internal/delivery/corrective_spec_test.go"
+        ],
+        "R7": [
+          "https://github.com/marcioaltoe/roundfix/pull/257",
+          "https://github.com/marcioaltoe/roundfix/pull/258",
+          "https://github.com/marcioaltoe/roundfix/pull/259",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/evidence/2026-09-28-pr-bodies-257-259.md"
+        ],
+        "R8": [
+          "docs/user-guide/commands.md",
+          "docs/user-guide/usage.md",
+          "docs/user-guide/configuration.md",
+          ".agents/skills/roundfix/SKILL.md",
+          "skills/roundfix/SKILL.md",
+          "CONTEXT.md",
+          "docs/adr/0165-a-blocking-review-after-archive-parks-publication-for-a-corrective-spec.md"
+        ],
+        "R9": [
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/**"
+        ],
+        "R10": [
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/_authorization.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_01.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_02.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_03.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_04.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_06.md",
+          "internal/cli/review_dispose_lock*.go"
+        ],
+        "R11": [
+          "Pull Request state for feat/review-findings-with-evidence"
+        ]
+      },
+      "changed": [
+        ".agents/skills/implement-spec/SKILL.md",
+        ".agents/skills/qa-gate/SKILL.md",
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/write-tasks/SKILL.md",
+        ".agents/skills/write-tasks/references/task-template.md",
+        "CHANGELOG.md",
+        "CONTEXT.md",
+        "dist/npm/roundfix/package.json",
+        "docs/adr/0161-a-merged-spec-releases-its-runs-on-the-merged-head.md",
+        "docs/adr/0164-an-implement-run-budget-renews-at-each-task-settlement.md",
+        "docs/backlog/2026-09-28-delivery-review-diffs-against-a-moved-main.md",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/_authorization.md",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/_prd.md",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/_tasks.md",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/_techspec.md",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/qa/evidence/2026-09-28-spec-0175/fixture/main.go",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/qa/qa-report-2026-09-28-01.md",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/qa/qa-report-2026-09-28.md",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/references/2026-09-25-carry-forward-staging-worktree-leaks.md",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/references/2026-09-25-half-removed-item-cleanup-ignores-nested-worktrees.md",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/references/2026-09-25-legacy-run-repository-key-from-its-worktree.md",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/references/2026-09-25-post-merge-cleanup-of-runs-and-branches.md",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/references/2026-09-25-reconcile-apply-ignores-superseded-runs.md",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/references/2026-09-25-reconcile-proves-archived-deleted-target-runs.md",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/references/2026-09-25-squash-merge-leaves-runs-and-branches-behind.md",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/references/_index.md",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/task_01.md",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/task_02.md",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/task_03.md",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/task_04.md",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/task_05.md",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/task_06.md",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/task_07.md",
+        "docs/history/specs/0175-cleanup-after-a-squash-merge/task_08.md",
+        "docs/history/specs/0177-runs-that-fit-their-budget-and-park-honestly/_authorization.md",
+        "docs/history/specs/0177-runs-that-fit-their-budget-and-park-honestly/_prd.md",
+        "docs/history/specs/0177-runs-that-fit-their-budget-and-park-honestly/_tasks.md",
+        "docs/history/specs/0177-runs-that-fit-their-budget-and-park-honestly/_techspec.md",
+        "docs/history/specs/0177-runs-that-fit-their-budget-and-park-honestly/qa/qa-report-2026-09-28-01.md",
+        "docs/history/specs/0177-runs-that-fit-their-budget-and-park-honestly/qa/qa-report-2026-09-28.md",
+        "docs/history/specs/0177-runs-that-fit-their-budget-and-park-honestly/references/2026-09-25-carry-forward-fails-on-commit-hooks.md",
+        "docs/history/specs/0177-runs-that-fit-their-budget-and-park-honestly/references/2026-09-28-phrase-checks-break-on-wrapped-markdown.md",
+        "docs/history/specs/0177-runs-that-fit-their-budget-and-park-honestly/references/2026-09-28-the-run-budget-stops-long-serial-graphs.md",
+        "docs/history/specs/0177-runs-that-fit-their-budget-and-park-honestly/references/_index.md",
+        "docs/history/specs/0177-runs-that-fit-their-budget-and-park-honestly/task_01.md",
+        "docs/history/specs/0177-runs-that-fit-their-budget-and-park-honestly/task_02.md",
+        "docs/history/specs/0177-runs-that-fit-their-budget-and-park-honestly/task_03.md",
+        "docs/history/specs/0177-runs-that-fit-their-budget-and-park-honestly/task_04.md",
+        "docs/history/specs/0177-runs-that-fit-their-budget-and-park-honestly/task_05.md",
+        "docs/history/specs/0177-runs-that-fit-their-budget-and-park-honestly/task_06.md",
+        "docs/history/specs/0177-runs-that-fit-their-budget-and-park-honestly/task_07.md",
+        "docs/history/specs/0178-a-qa-audit-across-every-run-of-a-spec/_authorization.md",
+        "docs/history/specs/0178-a-qa-audit-across-every-run-of-a-spec/_prd.md",
+        "docs/history/specs/0178-a-qa-audit-across-every-run-of-a-spec/_tasks.md",
+        "docs/history/specs/0178-a-qa-audit-across-every-run-of-a-spec/_techspec.md",
+        "docs/history/specs/0178-a-qa-audit-across-every-run-of-a-spec/qa/qa-report-2026-09-28-01.md",
+        "docs/history/specs/0178-a-qa-audit-across-every-run-of-a-spec/qa/qa-report-2026-09-28.md",
+        "docs/history/specs/0178-a-qa-audit-across-every-run-of-a-spec/references/2026-09-14-the-mechanical-stage-audits-only-the-current-runs-task-commits.md",
+        "docs/history/specs/0178-a-qa-audit-across-every-run-of-a-spec/references/2026-09-25-the-auditor-staleness-signal-is-recorded-but-never-acted-on.md",
+        "docs/history/specs/0178-a-qa-audit-across-every-run-of-a-spec/references/_index.md",
+        "docs/history/specs/0178-a-qa-audit-across-every-run-of-a-spec/task_01.md",
+        "docs/history/specs/0178-a-qa-audit-across-every-run-of-a-spec/task_02.md",
+        "docs/history/specs/0178-a-qa-audit-across-every-run-of-a-spec/task_03.md",
+        "docs/history/specs/0178-a-qa-audit-across-every-run-of-a-spec/task_04.md",
+        "docs/history/specs/0178-a-qa-audit-across-every-run-of-a-spec/task_05.md",
+        "docs/history/specs/0180-a-prepared-queue-that-revalidates-before-each-spec/_authorization.md",
+        "docs/history/specs/0180-a-prepared-queue-that-revalidates-before-each-spec/_prd.md",
+        "docs/history/specs/0180-a-prepared-queue-that-revalidates-before-each-spec/_tasks.md",
+        "docs/history/specs/0180-a-prepared-queue-that-revalidates-before-each-spec/_techspec.md",
+        "docs/history/specs/0180-a-prepared-queue-that-revalidates-before-each-spec/qa/qa-report-2026-09-28.md",
+        "docs/history/specs/0180-a-prepared-queue-that-revalidates-before-each-spec/qa/qa-report-2026-09-29.md",
+        "docs/history/specs/0180-a-prepared-queue-that-revalidates-before-each-spec/references/2026-09-28-implement-spec-skill-delegates-to-roundfix.md",
+        "docs/history/specs/0180-a-prepared-queue-that-revalidates-before-each-spec/references/2026-09-28-queue-preparation-inventory.md",
+        "docs/history/specs/0180-a-prepared-queue-that-revalidates-before-each-spec/references/2026-09-28-queue-wide-limits-and-one-pending-question.md",
+        "docs/history/specs/0180-a-prepared-queue-that-revalidates-before-each-spec/references/2026-09-28-revalidate-later-specs-when-prerequisites-change.md",
+        "docs/history/specs/0180-a-prepared-queue-that-revalidates-before-each-spec/references/_index.md",
+        "docs/history/specs/0180-a-prepared-queue-that-revalidates-before-each-spec/task_01.md",
+        "docs/history/specs/0180-a-prepared-queue-that-revalidates-before-each-spec/task_02.md",
+        "docs/history/specs/0180-a-prepared-queue-that-revalidates-before-each-spec/task_03.md",
+        "docs/history/specs/0180-a-prepared-queue-that-revalidates-before-each-spec/task_04.md",
+        "docs/history/specs/0180-a-prepared-queue-that-revalidates-before-each-spec/task_05.md",
+        "docs/history/specs/0180-a-prepared-queue-that-revalidates-before-each-spec/task_06.md",
+        "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/_tasks.md",
+        "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/_techspec.md",
+        "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-29-01.md",
+        "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_06.md",
+        "docs/user-guide/commands.md",
+        "docs/user-guide/configuration.md",
+        "internal/app/version.go",
+        "internal/app/version_test.go",
+        "internal/cli/carryforward.go",
+        "internal/cli/carryforward_hooks_test.go",
+        "internal/cli/carryforward_test.go",
+        "internal/cli/cli.go",
+        "internal/cli/cli_test.go",
+        "internal/cli/deliver.go",
+        "internal/cli/deliver_budget_park_test.go",
+        "internal/cli/deliver_limits_test.go",
+        "internal/cli/deliver_merged_release_test.go",
+        "internal/cli/deliver_plan.go",
+        "internal/cli/deliver_plan_test.go",
+        "internal/cli/deliver_recovery_test.go",
+        "internal/cli/deliver_release.go",
+        "internal/cli/deliver_release_evidence_test.go",
+        "internal/cli/deliver_retry_test.go",
+        "internal/cli/deliver_revalidate.go",
+        "internal/cli/deliver_revalidate_test.go",
+        "internal/cli/deliver_test.go",
+        "internal/cli/deliver_workflow.go",
+        "internal/cli/implement.go",
+        "internal/cli/implement_budget_renewal_test.go",
+        "internal/cli/merged_release.go",
+        "internal/cli/reconcile.go",
+        "internal/cli/reconcile_legacy_key_test.go",
+        "internal/cli/reconcile_merged_test.go",
+        "internal/cli/reconcile_staging_test.go",
+        "internal/cli/review.go",
+        "internal/cli/review_dispose_lock.go",
+        "internal/cli/review_dispose_lock_test.go",
+        "internal/cli/review_dispose_lock_unix.go",
+        "internal/cli/review_dispose_lock_windows.go",
+        "internal/config/budget_renewal_config_test.go",
+        "internal/config/config.go",
+        "internal/daemon/engine.go",
+        "internal/daemon/qa_auditor_staleness_test.go",
+        "internal/daemon/qa_budget_renewal_test.go",
+        "internal/daemon/qa_delivery_base.go",
+        "internal/daemon/qa_every_run_audit_test.go",
+        "internal/daemon/qa_user_flow_binary_test.go",
+        "internal/daemon/reconcile.go",
+        "internal/daemon/task_budget_renewal_test.go",
+        "internal/daemon/task_engine.go",
+        "internal/daemon/task_engine_test.go",
+        "internal/delivery/budget_park_test.go",
+        "internal/delivery/engine.go",
+        "internal/delivery/engine_test.go",
+        "internal/delivery/limits_test.go",
+        "internal/delivery/merged_release_test.go",
+        "internal/delivery/question.go",
+        "internal/delivery/question_test.go",
+        "internal/delivery/retry_test.go",
+        "internal/delivery/revalidate_test.go",
+        "internal/docscontract/corpus_test.go",
+        "internal/docscontract/testdata/corpus-golden.json",
+        "internal/spec/archive_layout_characterization_test.go",
+        "internal/spec/auditor_delivery_base_test.go",
+        "internal/spec/auditor_evidence.go",
+        "internal/spec/auditor_evidence_test.go",
+        "internal/spec/collision.go",
+        "internal/spec/collision_instruction_test.go",
+        "internal/spec/qa.go",
+        "internal/spec/qa_user_flow_binary_test.go",
+        "internal/speccheck/checkout.go",
+        "internal/speccheck/citations.go",
+        "internal/speccheck/coherence.go",
+        "internal/speccheck/mechanical.go",
+        "internal/speccheck/mechanical_commit_column_test.go",
+        "internal/speccheck/report.go",
+        "internal/speccheck/verification.go",
+        "internal/speccheck/verification_wrap_test.go",
+        "internal/speccheck/wave_instruction_test.go",
+        "internal/speccheck/wrap_fix_quoting_test.go",
+        "internal/store/delivery.go",
+        "internal/store/delivery_limits_test.go",
+        "internal/store/delivery_test.go",
+        "internal/store/list_runs_repository_root_test.go",
+        "internal/store/repository_key_backfill_test.go",
+        "internal/store/store.go",
+        "internal/worktree/adminlock.go",
+        "internal/worktree/adminlock_guard_test.go",
+        "internal/worktree/disposal.go",
+        "internal/worktree/disposal_test.go",
+        "internal/worktree/item_nested_cleanup_test.go",
+        "internal/worktree/merged_head.go",
+        "internal/worktree/merged_head_test.go",
+        "internal/worktree/prune_repository_key_test.go",
+        "internal/worktree/staging.go",
+        "internal/worktree/staging_test.go",
+        "internal/worktree/worktree.go",
+        "internal/worktree/worktree_test.go",
+        "skills/baseline_skill_contract_test.go",
+        "skills/implement-spec/SKILL.md",
+        "skills/qa-gate/SKILL.md",
+        "skills/roundfix/SKILL.md",
+        "skills/write-tasks/SKILL.md",
+        "skills/write-tasks/references/task-template.md"
+      ],
+      "ancestor_exit": 0,
+      "reexecuted_passes": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R9"
+      ],
+      "unmoved": [
+        "R1",
+        "R6"
+      ],
+      "typed_inputs": {
+        "R1": [
+          [
+            "live_service",
+            "Daemon repository Verification for audited head 1b56b1dc77001d6d01343c21e5ccca1fd9440f92"
+          ]
+        ],
+        "R2": [
+          [
+            "repository_path",
+            "internal/cli/review_provider_scope_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/preflight/preflight_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/config/config.go"
+          ]
+        ],
+        "R3": [
+          [
+            "repository_path",
+            ".agents/skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/commands.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/usage.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/configuration.md"
+          ]
+        ],
+        "R4": [
+          [
+            "repository_path",
+            "internal/cli/review_disposition_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_dispose_lock_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_dispose_lock.go"
+          ]
+        ],
+        "R5": [
+          [
+            "repository_path",
+            "internal/cli/review_head_bound_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review.go"
+          ]
+        ],
+        "R6": [
+          [
+            "repository_path",
+            "internal/cli/review_head_bound_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_archived_spec_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/delivery/corrective_spec_test.go"
+          ]
+        ],
+        "R7": [
+          [
+            "external_repository",
+            "https://github.com/marcioaltoe/roundfix/pull/257"
+          ],
+          [
+            "external_repository",
+            "https://github.com/marcioaltoe/roundfix/pull/258"
+          ],
+          [
+            "external_repository",
+            "https://github.com/marcioaltoe/roundfix/pull/259"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/evidence/2026-09-28-pr-bodies-257-259.md"
+          ]
+        ],
+        "R8": [
+          [
+            "repository_path",
+            "docs/user-guide/commands.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/usage.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/configuration.md"
+          ],
+          [
+            "repository_path",
+            ".agents/skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "CONTEXT.md"
+          ],
+          [
+            "repository_path",
+            "docs/adr/0165-a-blocking-review-after-archive-parks-publication-for-a-corrective-spec.md"
+          ]
+        ],
+        "R9": [
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/**"
+          ]
+        ],
+        "R10": [
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/_authorization.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_01.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_02.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_03.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_04.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_06.md"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_dispose_lock*.go"
+          ]
+        ],
+        "R11": [
+          [
+            "live_service",
+            "Pull Request state for feat/review-findings-with-evidence"
+          ]
+        ]
+      },
+      "all_reexecuted_passes": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R9"
+      ],
+      "repository_inputs_unmoved": [
+        "R6"
+      ]
+    },
+    {
+      "report": "docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-29-03.md",
+      "head": "93723a6b5cf921ebb2a915a271b7ca7df320e738",
+      "passing": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R9",
+        "R10"
+      ],
+      "snapshot": false,
+      "inputs": {
+        "R1": [
+          "Daemon repository Verification for audited head 93723a6b5cf921ebb2a915a271b7ca7df320e738"
+        ],
+        "R2": [
+          "internal/cli/review_provider_scope_test.go",
+          "internal/preflight/preflight_test.go",
+          "internal/config/config.go"
+        ],
+        "R3": [
+          ".agents/skills/roundfix/SKILL.md",
+          "skills/roundfix/SKILL.md",
+          "docs/user-guide/commands.md",
+          "docs/user-guide/usage.md",
+          "docs/user-guide/configuration.md"
+        ],
+        "R4": [
+          "internal/cli/review_disposition_test.go",
+          "internal/cli/review_dispose_lock_test.go",
+          "internal/cli/review.go",
+          "internal/cli/review_dispose_lock*.go"
+        ],
+        "R5": [
+          "internal/cli/review_head_bound_test.go",
+          "internal/cli/review.go"
+        ],
+        "R6": [
+          "internal/cli/review_head_bound_test.go",
+          "internal/cli/review_archived_spec_test.go",
+          "internal/delivery/corrective_spec_test.go"
+        ],
+        "R7": [
+          "https://github.com/marcioaltoe/roundfix/pull/257",
+          "https://github.com/marcioaltoe/roundfix/pull/258",
+          "https://github.com/marcioaltoe/roundfix/pull/259",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/evidence/2026-09-28-pr-bodies-257-259.md"
+        ],
+        "R8": [
+          "docs/user-guide/commands.md",
+          "docs/user-guide/usage.md",
+          "docs/user-guide/configuration.md",
+          ".agents/skills/roundfix/SKILL.md",
+          "skills/roundfix/SKILL.md",
+          "CONTEXT.md",
+          "docs/adr/0165-a-blocking-review-after-archive-parks-publication-for-a-corrective-spec.md"
+        ],
+        "R9": [
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/**"
+        ],
+        "R10": [
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/_authorization.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_01.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_02.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_03.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_04.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_06.md",
+          "internal/cli/review_dispose_lock*.go"
+        ],
+        "R11": [
+          "Pull Request state for feat/review-findings-with-evidence"
+        ]
+      },
+      "changed": [
+        "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-29-02.md",
+        "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_06.md"
+      ],
+      "ancestor_exit": 0,
+      "reexecuted_passes": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R9"
+      ],
+      "unmoved": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8"
+      ],
+      "typed_inputs": {
+        "R1": [
+          [
+            "live_service",
+            "Daemon repository Verification for audited head 93723a6b5cf921ebb2a915a271b7ca7df320e738"
+          ]
+        ],
+        "R2": [
+          [
+            "repository_path",
+            "internal/cli/review_provider_scope_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/preflight/preflight_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/config/config.go"
+          ]
+        ],
+        "R3": [
+          [
+            "repository_path",
+            ".agents/skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/commands.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/usage.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/configuration.md"
+          ]
+        ],
+        "R4": [
+          [
+            "repository_path",
+            "internal/cli/review_disposition_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_dispose_lock_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_dispose_lock*.go"
+          ]
+        ],
+        "R5": [
+          [
+            "repository_path",
+            "internal/cli/review_head_bound_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review.go"
+          ]
+        ],
+        "R6": [
+          [
+            "repository_path",
+            "internal/cli/review_head_bound_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_archived_spec_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/delivery/corrective_spec_test.go"
+          ]
+        ],
+        "R7": [
+          [
+            "external_repository",
+            "https://github.com/marcioaltoe/roundfix/pull/257"
+          ],
+          [
+            "external_repository",
+            "https://github.com/marcioaltoe/roundfix/pull/258"
+          ],
+          [
+            "external_repository",
+            "https://github.com/marcioaltoe/roundfix/pull/259"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/evidence/2026-09-28-pr-bodies-257-259.md"
+          ]
+        ],
+        "R8": [
+          [
+            "repository_path",
+            "docs/user-guide/commands.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/usage.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/configuration.md"
+          ],
+          [
+            "repository_path",
+            ".agents/skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "CONTEXT.md"
+          ],
+          [
+            "repository_path",
+            "docs/adr/0165-a-blocking-review-after-archive-parks-publication-for-a-corrective-spec.md"
+          ]
+        ],
+        "R9": [
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/**"
+          ]
+        ],
+        "R10": [
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/_authorization.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_01.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_02.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_03.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_04.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_06.md"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_dispose_lock*.go"
+          ]
+        ],
+        "R11": [
+          [
+            "live_service",
+            "Pull Request state for feat/review-findings-with-evidence"
+          ]
+        ]
+      },
+      "all_reexecuted_passes": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R9",
+        "R10"
+      ],
+      "repository_inputs_unmoved": [
+        "R2",
+        "R3",
+        "R6",
+        "R8"
+      ]
+    },
+    {
+      "report": "docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-29-04.md",
+      "head": "e7830b7990024834501b5fccefa8eed171d04ba2",
+      "passing": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R9",
+        "R10"
+      ],
+      "snapshot": false,
+      "inputs": {
+        "R1": [
+          "Daemon repository Verification for audited head e7830b7990024834501b5fccefa8eed171d04ba2"
+        ],
+        "R2": [
+          "internal/cli/review_provider_scope_test.go",
+          "internal/preflight/preflight_test.go",
+          "internal/config/config.go"
+        ],
+        "R3": [
+          ".agents/skills/roundfix/SKILL.md",
+          "skills/roundfix/SKILL.md",
+          "docs/user-guide/commands.md",
+          "docs/user-guide/usage.md",
+          "docs/user-guide/configuration.md"
+        ],
+        "R4": [
+          "internal/cli/review_disposition_test.go",
+          "internal/cli/review_dispose_lock_test.go",
+          "internal/cli/review_dispose_revision_test.go",
+          "internal/cli/review.go",
+          "internal/cli/review_dispose_lock*.go"
+        ],
+        "R5": [
+          "internal/cli/review_head_bound_test.go",
+          "internal/cli/review.go"
+        ],
+        "R6": [
+          "internal/cli/review_head_bound_test.go",
+          "internal/cli/review_archived_spec_test.go",
+          "internal/delivery/corrective_spec_test.go"
+        ],
+        "R7": [
+          "https://github.com/marcioaltoe/roundfix/pull/257",
+          "https://github.com/marcioaltoe/roundfix/pull/258",
+          "https://github.com/marcioaltoe/roundfix/pull/259",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/evidence/2026-09-28-pr-bodies-257-259.md"
+        ],
+        "R8": [
+          "docs/user-guide/commands.md",
+          "docs/user-guide/usage.md",
+          "docs/user-guide/configuration.md",
+          ".agents/skills/roundfix/SKILL.md",
+          "skills/roundfix/SKILL.md",
+          "CONTEXT.md",
+          "docs/adr/0165-a-blocking-review-after-archive-parks-publication-for-a-corrective-spec.md"
+        ],
+        "R9": [
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/**"
+        ],
+        "R10": [
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/_authorization.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_01.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_02.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_03.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_04.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_06.md",
+          "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_07.md",
+          "internal/cli/review_dispose_lock*.go",
+          "internal/cli/review_dispose_revision_test.go"
+        ],
+        "R11": [
+          "Pull Request state for feat/review-findings-with-evidence"
+        ]
+      },
+      "changed": [
+        "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/_tasks.md",
+        "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/_techspec.md",
+        "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-29-03.md",
+        "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_07.md",
+        "internal/cli/review.go",
+        "internal/cli/review_dispose_revision_test.go"
+      ],
+      "ancestor_exit": 0,
+      "reexecuted_passes": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R9",
+        "R10"
+      ],
+      "unmoved": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8"
+      ],
+      "typed_inputs": {
+        "R1": [
+          [
+            "live_service",
+            "Daemon repository Verification for audited head e7830b7990024834501b5fccefa8eed171d04ba2"
+          ]
+        ],
+        "R2": [
+          [
+            "repository_path",
+            "internal/cli/review_provider_scope_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/preflight/preflight_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/config/config.go"
+          ]
+        ],
+        "R3": [
+          [
+            "repository_path",
+            ".agents/skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/commands.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/usage.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/configuration.md"
+          ]
+        ],
+        "R4": [
+          [
+            "repository_path",
+            "internal/cli/review_disposition_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_dispose_lock_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_dispose_revision_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_dispose_lock*.go"
+          ]
+        ],
+        "R5": [
+          [
+            "repository_path",
+            "internal/cli/review_head_bound_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review.go"
+          ]
+        ],
+        "R6": [
+          [
+            "repository_path",
+            "internal/cli/review_head_bound_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_archived_spec_test.go"
+          ],
+          [
+            "repository_path",
+            "internal/delivery/corrective_spec_test.go"
+          ]
+        ],
+        "R7": [
+          [
+            "external_repository",
+            "https://github.com/marcioaltoe/roundfix/pull/257"
+          ],
+          [
+            "external_repository",
+            "https://github.com/marcioaltoe/roundfix/pull/258"
+          ],
+          [
+            "external_repository",
+            "https://github.com/marcioaltoe/roundfix/pull/259"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/evidence/2026-09-28-pr-bodies-257-259.md"
+          ]
+        ],
+        "R8": [
+          [
+            "repository_path",
+            "docs/user-guide/commands.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/usage.md"
+          ],
+          [
+            "repository_path",
+            "docs/user-guide/configuration.md"
+          ],
+          [
+            "repository_path",
+            ".agents/skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "skills/roundfix/SKILL.md"
+          ],
+          [
+            "repository_path",
+            "CONTEXT.md"
+          ],
+          [
+            "repository_path",
+            "docs/adr/0165-a-blocking-review-after-archive-parks-publication-for-a-corrective-spec.md"
+          ]
+        ],
+        "R9": [
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/**"
+          ]
+        ],
+        "R10": [
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/_authorization.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_01.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_02.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_03.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_04.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_06.md"
+          ],
+          [
+            "repository_path",
+            "docs/specs/0179-review-findings-with-evidence-and-no-unselected-providers/task_07.md"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_dispose_lock*.go"
+          ],
+          [
+            "repository_path",
+            "internal/cli/review_dispose_revision_test.go"
+          ]
+        ],
+        "R11": [
+          [
+            "live_service",
+            "Pull Request state for feat/review-findings-with-evidence"
+          ]
+        ]
+      },
+      "all_reexecuted_passes": [
+        "R1",
+        "R2",
+        "R3",
+        "R6",
+        "R8",
+        "R9",
+        "R10"
+      ],
+      "repository_inputs_unmoved": [
+        "R2",
+        "R3",
+        "R6",
+        "R8"
+      ]
+    }
+  ],
+  "reexecuted_passing_rows": 41,
+  "unmoved_rows": 25,
+  "carriable_unmoved_rows": 24
+}

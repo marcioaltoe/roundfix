@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0202-a-qa-gate-that-reruns-only-stale-rows
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
