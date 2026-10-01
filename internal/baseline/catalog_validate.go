@@ -463,6 +463,10 @@ func profileNamedSkills(catalog *Catalog, activations document, selected []strin
 			if !ok {
 				name, _ = stringValue(dispatch, "id")
 			}
+			if name == "" {
+				// catalog.skill.dispatch.id.missing already reports it.
+				continue
+			}
 			names[name] = struct{}{}
 		}
 	}
