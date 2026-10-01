@@ -519,7 +519,7 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 	case "storage":
 		return runStorageCommand(ctx, args[1:], stdout, stderr, environment)
 	case "upgrade":
-		return runUpgradeCommand(ctx, args[1:], stdout, stderr)
+		return runUpgradeCommand(ctx, args[1:], stdout, stderr, environment)
 	case "runs":
 		return runRunsCommand(ctx, args[1:], stdout, stderr, environment)
 	case "stop":
@@ -5213,7 +5213,8 @@ Agent Selection Profiles, the Repository Skill Set, and codex runtime hygiene.
 The aggregate profiles: line exact-proves every distinct tuple. The skills:
 line compares Roundfix-owned artifacts with the running binary and external
 artifacts with skills-lock.json. Each failure reports its next action.
-Doctor is offline, read-only, and mutates nothing.
+The recommendations: line reports ok, found, or skipped after profiles: and
+never fails Doctor. Doctor is offline, read-only, and mutates nothing.
 `
 	case "migrate":
 		return `Usage:
@@ -5284,6 +5285,9 @@ Home without migrating, locking for writes, or changing any byte.
 Resolves the latest Roundfix release for this platform through the GitHub CLI.
 Without --check, downloads the matching asset, verifies it, and atomically
 replaces the current executable. If no releases exist, reports that cleanly.
+After each release outcome, writes a recommendation notice to standard error
+without changing standard output or the exit code. After an install, the notice
+comes from the installed executable.
 
 Options:
   --check  Report the latest release outcome without installing it

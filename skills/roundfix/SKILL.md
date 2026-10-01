@@ -4,10 +4,10 @@ description: Use Roundfix to plan releases with the read-only Release Plan Comma
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.0.11
+  version: 0.0.12
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.0.11
+version: 0.0.12
 ---
 
 # Roundfix
@@ -1083,6 +1083,21 @@ Runs and `spec:<slug>` for Spec Runs. Terminal context adds
 `notify.enabled: false` to disable outcome notifications entirely.
 
 ### Recommendation check
+
+Doctor prints `recommendations:` immediately after `profiles:` from the
+configuration it already loaded. It reports `ok` when no category differs,
+`found` with counts and `run roundfix profiles check` otherwise, or `skipped`
+with the reason when comparison cannot run. This line opens no Agent Session
+and never fails Doctor.
+
+`roundfix upgrade [--check]` writes a recommendation notice to standard error
+after every successful release outcome, leaving standard output and the exit
+code unchanged. After an install, the installed executable runs `profiles
+check` in the process working directory under a ten-second timeout; otherwise
+the running executable compares in process. A failed comparison prints only
+`roundfix: recommendations not checked: <reason>`. Help, usage errors and
+failed upgrades print no notice. An upgrade performed by an older executable
+prints none; the notice starts with a subsequent upgrade.
 
 `roundfix profiles check [--json]` compares every configured Agent Work
 Category with the Recommended Profile in the shipped snapshot, including the

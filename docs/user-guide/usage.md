@@ -8,6 +8,9 @@ agent driving Roundfix. For flags, outputs, and boundaries per command, see the
 [configuration](configuration.md); for install, see the
 [README](../../README.md#install).
 
+`roundfix upgrade` writes a recommendation notice to standard error after each
+successful release outcome, without changing standard output or the exit code.
+
 ## Before you start
 
 1. Install Roundfix (npm launcher or `make build`) and put it on `PATH`.

@@ -89,6 +89,11 @@ and `storage:` also report `found` or `partial`. Failure lines include
   classification, bounded adapter evidence, and the next
   `roundfix profiles configure` or `roundfix profiles validate` action. A
   rejected explicit `high` does not recommend model-managed reasoning.
+- `recommendations:` — immediately after `profiles:`, compares the loaded
+  configuration with the shipped snapshot. `ok` means no category differs
+  (current and pinned profiles both qualify); `found` names the counts and
+  suggests `roundfix profiles check`. If comparison cannot run, `skipped`
+  carries the reason. This line opens no Agent Session and never fails Doctor.
 - `skills:` — the required Repository Skill Set matches its local
   authorities. The running binary's embedded artifacts are authoritative for
   the 14 Roundfix-owned skills, including the Roundfix Skill. Each of the 25
@@ -124,6 +129,7 @@ node: ok
 acpx: ok
 adapter: ok (claude: command="npx -y @agentclientprotocol/claude-agent-acp@0.84.0"; package=@agentclientprotocol/claude-agent-acp; version=0.84.0 | codex: command="npx -y @agentclientprotocol/codex-acp@2.0.1"; package=@agentclientprotocol/codex-acp; version=2.0.1)
 profiles: ok (4 distinct tuples; 10 category references)
+recommendations: ok (snapshot 2026-09-30; 5 current, 0 differ, 0 pinned)
 skills: ok (<required> required: <owned> Roundfix-owned, <external> external)
 residue: ok (no process residue found)
 storage: ok (nothing to reclaim; Runs reclaimable: 0; Run Database free bytes: 0)
@@ -483,6 +489,15 @@ and, with `--check`, `upgrade available 1.0.0 → 1.1.0`. Failures leave the
 current binary untouched and print a manual fallback on stderr. Operational
 commands run a best-effort daily freshness check that prints one stderr line
 when the binary is behind.
+
+After every successful release outcome, including `--check`, a recommendation
+notice is written to standard error. It never changes standard output or the
+exit code. After an install, the installed executable runs `profiles check`
+in the process working directory under a ten-second timeout; otherwise the
+running executable compares in process. A check that cannot run prints one
+line, `roundfix: recommendations not checked: <reason>`. Help, usage errors
+and failed upgrades print no notice. An upgrade performed by an older
+executable prints none; the notice starts with a subsequent upgrade.
 
 ### init
 

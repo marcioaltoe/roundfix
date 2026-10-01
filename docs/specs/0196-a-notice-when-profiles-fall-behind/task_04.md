@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0196-a-notice-when-profiles-fall-behind
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -78,3 +78,132 @@ The comparison of task_02 is seen only by someone who runs `roundfix profiles ch
 - ADR-0181
 
 ## Result
+
+Implemented this Task's slice for Daemon Verification; status, Subtasks,
+Acceptance Criteria, and authored Verification remain Daemon-owned. The only
+pre-existing working-tree change was the Daemon's `task_04.md` status update.
+No commit, push, Pull Request, Task Graph edit, or other Task edit was made.
+
+### Implementation and acceptance evidence
+
+- Characterization was written first. Before any production change,
+  `GOCACHE=/private/tmp/roundfix-task04-cache rtk proxy go test ./internal/cli -run '^TestUpgradeStdoutAndExitCodesAreCharacterized$' -count=1`
+  passed (exit 0). It fixes stdout and exit codes for no release, current,
+  newer/current `--check`, installation, download failure, unknown flag and
+  help, with no release-outcome stderr assertions. Help is compared byte for
+  byte with `commandUsage("upgrade")`, whose text this Task expressly extends.
+  The release-outcome stdout literals and all exit codes remain unchanged.
+  The characterization also passed after implementation and sabotage restoration.
+- `runUpgradeCommand` now receives the dispatcher's environment. Its outcome
+  carries the installed path; the path is empty when nothing was installed.
+  The outcome is printed before the notice. `TestUpgradeWritesTheNoticeOnEveryReleaseOutcome`
+  covers all four release outcomes and compares in-process differences with
+  the shared `profiles check` renderer, including pinned/expired deviations.
+- `installedProfilesCheck` is a dependency, defaulting to the installed path
+  with exactly `profiles check`, using the process working directory and a
+  ten-second child context. `TestUpgradeAsksTheInstalledExecutableAfterAnInstall`
+  records the path and directory, checks the deadline and that stdout already
+  holds the outcome, requires the child's exact output on stderr, and forbids
+  child calls on the other outcomes. Release lookup/download and child execution
+  use the existing fixtures and injected fakes; no new test starts a child or
+  reaches the network.
+- `TestUpgradeKeepsItsExitCodeWhenTheCheckFails` covers child failure, timeout,
+  unavailable config home, unavailable working directory, and malformed YAML.
+  Each keeps successful upgrade stdout/exit behavior and writes exactly one
+  `roundfix: recommendations not checked: <reason>` line, discarding failed
+  child output and normalizing multiline reasons. `TestUpgradeWritesNoNoticeOnHelpUsageErrorOrFailure`
+  requires no notice or child call for help, an unknown flag, or failed download.
+- Doctor computes the comparison from its already loaded Config, directly
+  after `profiles`. `TestDoctorReportsRecommendationsAfterProfiles` covers
+  exact position/details for current, differing, pinned and uncheckable configs;
+  a difference and a pin exit 0 with otherwise healthy checks. Uncheckable
+  required profiles retain the independent adapter-readiness failure while
+  recommendations reports `skipped`. `TestDoctorRecommendationsNeverFailDoctor`
+  requires `found` for a difference and `skipped` for an uncheckable comparison.
+  The recommendation result invokes no runner and cannot report `failed`.
+- `TestRecommendationCheckIsReachedOnlyFromItsCommands` parses every non-test
+  Go file under `internal` and `cmd`, restricts references to all six TechSpec
+  paths, and fails if there are zero references (a declaration alone does not
+  count as a caller). The restored tree passed this gate.
+
+### Focused checks
+
+- After restoring all sabotages,
+  `GOCACHE=/private/tmp/roundfix-task04-cache rtk proxy go test ./internal/cli -run 'TestUpgrade|TestRunUpgrade|TestDoctorRecommendations|TestDoctorReportsRecommendations|TestRecommendationCheck|TestRunDoctor|TestRunCommandHelp' -count=1 -v`
+  passed (exit 0). All eight new named tests ran, along with the invalidated
+  existing Doctor/upgrade tests and unchanged help contracts.
+- `GOCACHE=/private/tmp/roundfix-task04-cache rtk proxy go test -count=1 ./skills`
+  passed (exit 0).
+- `rtk proxy git -c core.fsmonitor=false diff --check` passed. Source/diff
+  inspection confirms only the Task's declared slice changed, existing
+  top-level test names are preserved, and `internal/cli/cli_test.go` is untouched.
+- The first `GOCACHE=/private/tmp/roundfix-task04-cache rtk make verify-incremental`
+  reached the test suite but exited 2: two existing force-stop integration
+  tests could not enumerate the process table (`operation not permitted`).
+  No test or production code was altered to mask those environment failures.
+  The same command rerun with process-table access passed (exit 0), including
+  formatting, vet, the full Go suite (CLI freshly rerun), skill sync/readiness
+  checks, and the binary build. Other unchanged packages reused their safe
+  test cache, as intended by the incremental tier.
+
+### Existing tests updated
+
+Only the five invalidated Doctor tests gained the recommendation line or its
+line-count/index shift:
+
+- `TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts`
+- `TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes`
+- `TestRunDoctorRepositorySkillReadiness`
+- `TestRunDoctorMissingRepositoryRoot`
+- `TestRunDoctorRealRepositoryCheckDoesNotMutateState`
+
+Only the two invalidated upgrade tests changed their empty-stderr expectations:
+`TestRunUpgradeFixtureMatrix` and
+`TestRunUpgradeCheckReportsAvailableWithoutInstalling`. They now use isolated
+configuration workspaces, and the shared existing fixture dependency supplies
+an inert installed-check fake. No top-level test was renamed or removed.
+
+### Sabotages and restoration
+
+Each probe ran alone with
+`GOCACHE=/private/tmp/roundfix-task04-cache rtk proxy go test ./internal/cli -run '^<test>$' -count=1`.
+All three exited 1 with the named test reporting `FAIL`; each original file
+was restored immediately afterward, then the focused suite above passed.
+
+- Exit-code sabotage: temporarily returned `exitRunFailed` after a successful
+  outcome and notice. `TestUpgradeKeepsItsExitCodeWhenTheCheckFails` failed on
+  all five failure cases because exit 1 replaced exit 0. Restored `upgrade.go`.
+- Scope sabotage: temporarily appended a function-value reference to
+  `roundconfig.CheckRecommendations` in `internal/cli/cli.go`, outside the
+  six allowed paths. `TestRecommendationCheckIsReachedOnlyFromItsCommands`
+  failed with that file and source position. Restored `cli.go`; no other
+  Task's file was touched.
+- Doctor sabotage: temporarily assigned `CheckStatusFailed` to a difference.
+  `TestDoctorRecommendationsNeverFailDoctor` failed with
+  `difference status="failed" want found`. Restored `doctor.go`.
+
+### Documentation and generated artifacts
+
+Help names the new Doctor line and upgrade notice while retaining the strings
+required by `TestRunCommandHelp`. `commands.md` includes the Doctor sample line,
+`ok`/`found` semantics and `skipped` fallback, stderr placement, preserved
+upgrade stdout/exit codes, and the older-executable limitation. `usage.md`
+adds the requested recommendation-notice sentence.
+
+The Roundfix skill text is under `### Recommendation check`; both version
+fields rose from `0.0.11` to `0.0.12`. The `### QA settlement` section and all
+later bytes were compared against HEAD and are unchanged.
+
+- `rtk make skills-sync` passed. Its only byte-changed output was
+  `skills/roundfix/SKILL.md`; all other owned mirrors remained byte-identical.
+  The canonical source change is `.agents/skills/roundfix/SKILL.md`.
+- `GOCACHE=/private/tmp/roundfix-task04-cache rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  passed and rewrote only `skills/testdata/owned-skill-versions.json`, recording
+  Roundfix `0.0.12` with its content digest.
+- `GOCACHE=/private/tmp/roundfix-task04-cache rtk make baseline-digests`
+  passed with `changed:false`; it changed no derived file. Canonical and
+  mirrored Roundfix skill bytes match.
+
+The two authored `## Verification` commands were not run. Their execution and
+Task settlement remain with the Daemon. No follow-up implementation outside
+this slice was added.
