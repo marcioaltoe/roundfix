@@ -15,7 +15,7 @@ import (
 )
 
 type CheckRecovery interface {
-	InspectFailedCheck(ctx context.Context, workDir, head string, check PullRequestCheck) (CheckFailure, error)
+	InspectFailedCheck(ctx context.Context, workDir, remote, head string, check PullRequestCheck) (CheckFailure, error)
 	RerunFailedCheck(ctx context.Context, workDir string, failure CheckFailure) error
 }
 
@@ -46,8 +46,12 @@ func checkRunID(link string) string {
 	return parts[4]
 }
 
-func (client GitHubCLI) InspectFailedCheck(ctx context.Context, workDir, head string, check PullRequestCheck) (CheckFailure, error) {
+func (client GitHubCLI) InspectFailedCheck(ctx context.Context, workDir, remote, head string, check PullRequestCheck) (CheckFailure, error) {
 	failure := CheckFailure{RunID: checkRunID(check.Link)}
+	remote = strings.TrimSpace(remote)
+	if remote == "" || strings.HasPrefix(remote, "-") || strings.ContainsAny(remote, "/ ") {
+		return failure, fmt.Errorf("inspect failed check: invalid delivery remote %q", remote)
+	}
 	if failure.RunID == "" {
 		return failure, nil
 	}
@@ -107,17 +111,17 @@ func (client GitHubCLI) InspectFailedCheck(ctx context.Context, workDir, head st
 		}
 		directories = append(directories, dir)
 	}
-	// origin/HEAD is the repository's existing authoritative default-branch reference.
-	defaultRef, err := client.recoveryCommand(ctx, "git", "symbolic-ref", "refs/remotes/origin/HEAD")
+	// <remote>/HEAD is the delivery remote's authoritative default-branch reference.
+	defaultRef, err := client.recoveryCommand(ctx, "git", "symbolic-ref", "refs/remotes/"+remote+"/HEAD")
 	if err != nil {
 		return failure, err
 	}
-	branch, ok := strings.CutPrefix(strings.TrimSpace(defaultRef), "refs/remotes/origin/")
+	branch, ok := strings.CutPrefix(strings.TrimSpace(defaultRef), "refs/remotes/"+remote+"/")
 	if !ok || branch == "" || strings.HasPrefix(branch, "-") {
 		return failure, fmt.Errorf("inspect failed check: invalid remote default branch %q", defaultRef)
 	}
-	remoteRef := "refs/remotes/origin/" + branch
-	if _, err := client.recoveryCommand(ctx, "git", "fetch", "origin", "+refs/heads/"+branch+":"+remoteRef); err != nil {
+	remoteRef := "refs/remotes/" + remote + "/" + branch
+	if _, err := client.recoveryCommand(ctx, "git", "fetch", remote, "+refs/heads/"+branch+":"+remoteRef); err != nil {
 		return failure, err
 	}
 	base, err := client.recoveryCommand(ctx, "git", "merge-base", remoteRef, head)

@@ -40,6 +40,9 @@ func parseRequiredSpecs(node yaml.Node, slug string) ([]string, error) {
 		if name == "" || seen[name] || name == slug {
 			return nil, fmt.Errorf("_tasks.md: requires entry %q is empty, duplicated, or names its own Spec", name)
 		}
+		if name == "." || name == ".." || strings.ContainsAny(name, "/\\") {
+			return nil, fmt.Errorf("_tasks.md: requires entry %q must name a Spec directory, not a path", name)
+		}
 		seen[name] = true
 		requires = append(requires, name)
 	}

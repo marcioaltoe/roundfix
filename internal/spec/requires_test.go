@@ -42,3 +42,18 @@ func TestTaskGraphRefusesAMalformedRequiresList(t *testing.T) {
 		})
 	}
 }
+
+func TestTaskGraphRefusesARequiresEntryThatIsAPath(t *testing.T) {
+	for _, value := range []string{"['../../outside']", "['nested/spec']", "['..']", "['.']", "['back\\\\slash']"} {
+		t.Run(value, func(t *testing.T) {
+			root := t.TempDir()
+			files := diamondSpecFiles()
+			files["_tasks.md"] = strings.Replace(files["_tasks.md"], "schema:", "requires: "+value+"\nschema:", 1)
+			writeSpecDir(t, root, "demo", files)
+			_, err := Load(root, "demo")
+			if err == nil || !strings.Contains(err.Error(), "must name a Spec directory") {
+				t.Fatalf("Load error = %v", err)
+			}
+		})
+	}
+}

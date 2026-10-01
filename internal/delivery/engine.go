@@ -1143,7 +1143,13 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 					if engine.checks == nil {
 						return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
 					}
-					failure, inspectErr := engine.checks.InspectFailedCheck(ctx, workDir, head, check)
+					remote := "origin"
+					if engine.publication != nil {
+						if publication, pubErr := engine.publication.Publication(ctx, workDir, item.SpecSlug, item.Branch); pubErr == nil && strings.TrimSpace(publication.Remote) != "" {
+							remote = publication.Remote
+						}
+					}
+					failure, inspectErr := engine.checks.InspectFailedCheck(ctx, workDir, remote, head, check)
 					if inspectErr != nil {
 						if ctx.Err() != nil {
 							return fmt.Errorf("inspect failed check: %w", inspectErr)

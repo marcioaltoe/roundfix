@@ -33,7 +33,7 @@ type fakeCheckRecovery struct {
 	inspections int
 }
 
-func (fake *fakeCheckRecovery) InspectFailedCheck(_ context.Context, workDir, head string, _ PullRequestCheck) (CheckFailure, error) {
+func (fake *fakeCheckRecovery) InspectFailedCheck(_ context.Context, workDir, _ string, head string, _ PullRequestCheck) (CheckFailure, error) {
 	if workDir != "/worktrees/example" || head != "candidate" {
 		return CheckFailure{}, errors.New("incorrect recovery worktree or head")
 	}
@@ -200,7 +200,7 @@ func inspectRecoveryFixture(t *testing.T, log, changes string, attempt int, gitE
 	}
 	script := newScriptedCommandRunner(t, steps...)
 	client := GitHubCLI{WorkDir: "/wrong", Runner: recoveryCommandRunner{dir, script}}
-	failure, err := client.InspectFailedCheck(t.Context(), dir, "candidate", PullRequestCheck{Link: recoveryLink})
+	failure, err := client.InspectFailedCheck(t.Context(), dir, "origin", "candidate", PullRequestCheck{Link: recoveryLink})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -251,7 +251,7 @@ func TestGitHubCLIRootPackageOverlapsEveryChangedPath(t *testing.T) {
 }
 func TestGitHubCLINonActionsCheckIsUnattributable(t *testing.T) {
 	script := newScriptedCommandRunner(t)
-	failure, err := (GitHubCLI{Runner: script}).InspectFailedCheck(t.Context(), "/repo", "candidate", PullRequestCheck{Link: "https://ci.test/build/42"})
+	failure, err := (GitHubCLI{Runner: script}).InspectFailedCheck(t.Context(), "/repo", "origin", "candidate", PullRequestCheck{Link: "https://ci.test/build/42"})
 	if err != nil || failure.RunID != "" || failure.OutsideChange {
 		t.Fatalf("failure=%+v err=%v", failure, err)
 	}
@@ -306,7 +306,7 @@ func TestSkippedRerunDoesNotRecordAPassWarning(t *testing.T) {
 
 func TestGitHubCLIRejectsMalformedAttemptResponses(t *testing.T) {
 	script := newScriptedCommandRunner(t, commandStep{name: "gh", args: []string{"run", "view", "42", "--json", "attempt"}, result: CommandResult{Stdout: "invalid"}})
-	_, err := (GitHubCLI{Runner: script}).InspectFailedCheck(t.Context(), "/repo", "candidate", PullRequestCheck{Link: recoveryLink})
+	_, err := (GitHubCLI{Runner: script}).InspectFailedCheck(t.Context(), "/repo", "origin", "candidate", PullRequestCheck{Link: recoveryLink})
 	if err == nil || !strings.Contains(err.Error(), "parse failed check attempt") {
 		t.Fatalf("err=%v", err)
 	}
@@ -317,7 +317,7 @@ func TestGitHubCLIReportsFailedLogReadErrors(t *testing.T) {
 		commandStep{name: "gh", args: []string{"run", "view", "42", "--json", "attempt"}, result: CommandResult{Stdout: `{"attempt":1}`}},
 		commandStep{name: "gh", args: []string{"run", "view", "42", "--log-failed"}, result: CommandResult{ExitCode: 1, Stderr: "log not available"}},
 	)
-	failure, err := (GitHubCLI{Runner: script}).InspectFailedCheck(t.Context(), "/repo", "candidate", PullRequestCheck{Link: recoveryLink})
+	failure, err := (GitHubCLI{Runner: script}).InspectFailedCheck(t.Context(), "/repo", "origin", "candidate", PullRequestCheck{Link: recoveryLink})
 	if err == nil || failure.OutsideChange || !strings.Contains(err.Error(), "log not available") {
 		t.Fatalf("failure=%+v err=%v", failure, err)
 	}
@@ -388,7 +388,7 @@ func TestGitHubCLIAttributionUsesTheRefreshedMergeBaseWithRealGit(t *testing.T) 
 				commandStep{name: "gh", args: []string{"run", "view", "42", "--log-failed"}, result: CommandResult{Stdout: "FAIL\texample.test/repo/internal/other\t1s"}},
 			)
 			client := GitHubCLI{Runner: localGitRecoveryRunner{t, script}}
-			failure, err := client.InspectFailedCheck(t.Context(), repo, head, PullRequestCheck{Link: recoveryLink})
+			failure, err := client.InspectFailedCheck(t.Context(), repo, "origin", head, PullRequestCheck{Link: recoveryLink})
 			if err != nil || failure.OutsideChange == renamed {
 				t.Fatalf("failure=%+v err=%v renamed=%t", failure, err, renamed)
 			}
