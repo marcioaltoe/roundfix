@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0208-a-baseline-that-follows-the-reshaped-skills-catalog
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
