@@ -46,9 +46,43 @@ no answer path or answer file.
 
 A findings record keeps the reviewer's original `findings` text and also lists
 each finding as `F1`, `F2`, and so on in `findingItems`. The reviewer prompt
-asks for one `- ` list item per finding with its file and line. An older record
-without `findingItems` derives the same identities from its findings text when
+asks for one `- ` list item per finding. Start each item with `path:line` or
+`path:start-end`, optionally backticked, naming a line of the candidate diff.
+For a comma-listed anchor, only the first range counts. Describe what breaks
+in a clause beginning with `Failure:`. An older record without `findingItems` derives the same identities from its findings text when
 Roundfix reads it.
+
+The prompt carries Delivery Conventions version
+`roundfix/delivery-conventions/v1`. These describe what a delivery writes by
+design:
+
+- C1. A Spec's QA Report records the head it audited and is committed after
+  that head, so it never names the commit that records it.
+- C2. The Daemon writes a Task file's status and its `## Result`,
+  `## Recorded paths` and `## Carry-forward provenance` sections after the
+  Task's Verification passes; a Result that calls status Daemon-owned agrees
+  with a `completed` status.
+- C3. The archive commit moves a completed Spec's directory to the archive
+  root and stamps its archive front matter.
+- C4. A planning candidate authors a Spec whose Tasks are all pending and
+  which has no QA Report; that Spec's own delivery implements it and is
+  reviewed then.
+
+Roundfix checks each anchor against the same candidate diff supplied in the
+prompt. Context and added lines count, as does the new-side start line of a
+pure deletion. Deleted files and files changed without a hunk, such as binary
+or rename-only files, hold every line. A range counts when any line overlaps
+a held line. A missing or out-of-diff anchor records
+`dismissed-by-validation`, rule `unanchored`, with its reason, and prints a
+diagnostic on stderr. Anchored findings stand. The record's `validation`
+identifies the conventions version and `validator: not-needed`; convention
+judgment is separate from this anchor check.
+
+If every finding is dismissed by validation, the outcome is
+`findings-dismissed` with exit `0`, without writing a ledger disposition. If
+none carries a readable anchor, the review blocks with exit `2` and reason
+`findings name no file and line`. Records without validation fields remain
+readable and their findings count as standing.
 
 Use `roundfix review dispose` to record one disposition for one finding. A
 dismissal requires non-blank evidence and an unchanged reviewed `HEAD`. A fix
@@ -62,7 +96,9 @@ same line. The line ties the finding's identity and text to its repository and
 reviewed head, and records either `evidence` or `fixedBy` with an RFC 3339 UTC
 timestamp. The ledger is append-only. Roundfix refuses a missing or mismatched
 findings record, an unknown identity, invalid or blank forms, moved-head
-dismissals, invalid fixing commits, and a second disposition. Every refusal
+dismissals, invalid fixing commits, and a second disposition. It also refuses
+a finding already `dismissed-by-validation` with
+`finding "<ID>" was dismissed by validation (<rule>)`. Every refusal
 exits `2`, starts stderr with `roundfix: review dispose refused:`, and appends
 nothing.
 
@@ -74,10 +110,10 @@ prompting an Agent session. The reused record sets `reused` and carries the
 ledger entries whose repository, head, finding identity, and text match its
 `findingItems` in `dispositions`.
 
-When every finding has one evidence-backed `dismissed` disposition, the reused
-record reports `findings-dismissed` and exits `0`. Otherwise it remains
-`findings`, exits `1`, and stderr names each finding identity that has no
-disposition. A `fixed` disposition never clears the reviewed head because the
+When every finding is dismissed by validation or has exactly one
+evidence-backed `dismissed` disposition, the reused record reports `findings-dismissed` and exits `0`. Otherwise it remains
+`findings`, exits `1`, and stderr names each standing finding identity that
+has no disposition. A `fixed` disposition never clears the reviewed head because the
 fix belongs to a changed candidate. A different repository, base, head, or
 provider gets a fresh review, as does an existing `reviewed`, `blocked`, or
 `omitted` record. The `none` and `coderabbit` policies keep their behavior
@@ -110,9 +146,9 @@ names the Specs whose context was carried.
 
 Exit codes:
 
-- `0` — one substantive no-findings verdict, configured omission, or a reused
+- `0` — one substantive no-findings verdict, configured omission, or a
   `findings-dismissed` verdict.
-- `1` — the reviewer returned findings or a reused verdict still has standing
+- `1` — the validated reviewer verdict or a reused verdict still has standing
   findings; the record carries them.
 - `2` — preflight failed or the review was blocked.
 

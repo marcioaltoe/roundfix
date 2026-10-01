@@ -67,7 +67,7 @@ func TestReviewRecordsLiveInTheCheckoutsOwnDirectory(t *testing.T) {
 
 func TestReviewInOneCheckoutLeavesAnotherCheckoutsRecord(t *testing.T) {
 	runner := &reviewCommandRunner{results: []reviewCommandRunResult{
-		{result: agent.ExecuteResult{Message: "Findings:\n- internal/cli/review.go:1: checkout-local finding", StopReason: "end_turn"}},
+		{result: agent.ExecuteResult{Message: "Findings:\n- review.txt:2: checkout-local finding", StopReason: "end_turn"}},
 		{result: agent.ExecuteResult{Message: "No findings.", StopReason: "end_turn"}},
 	}}
 	fixture := newReviewCheckoutFixture(t, runner)
@@ -107,7 +107,7 @@ func TestReviewInOneCheckoutLeavesAnotherCheckoutsRecord(t *testing.T) {
 
 func TestReviewDisposeReadsOnlyItsCheckoutsRecord(t *testing.T) {
 	runner := &reviewCommandRunner{results: []reviewCommandRunResult{{
-		result: agent.ExecuteResult{Message: "Findings:\n- internal/cli/review.go:1: checkout-local finding", StopReason: "end_turn"},
+		result: agent.ExecuteResult{Message: "Findings:\n- review.txt:2: checkout-local finding", StopReason: "end_turn"},
 	}}}
 	fixture := newReviewCheckoutFixture(t, runner)
 

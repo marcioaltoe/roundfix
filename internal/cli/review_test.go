@@ -585,7 +585,7 @@ func TestReviewCommandDefaultsBaseToMain(t *testing.T) {
 }
 
 func TestReviewCommandExitsOneAndRecordsFindings(t *testing.T) {
-	const findings = "internal/cli/review.go:42: blocked result can be lost"
+	const findings = "review.txt:2: blocked result can be lost"
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
 			result: agent.ExecuteResult{Message: "Findings:\n" + findings, StopReason: "end_turn"},
@@ -638,10 +638,10 @@ func TestReviewClassifiesVerdictVariants(t *testing.T) {
 		},
 		{
 			name:         "preamble before emphasized lowercase findings verdict",
-			answer:       "I reviewed the candidate.\n**findings:**\ninternal/cli/review.go:42: first finding\ninternal/cli/review_test.go:42: second finding",
+			answer:       "I reviewed the candidate.\n**findings:**\nreview.txt:2: first finding\nreview.txt:2: second finding",
 			wantCode:     exitRunFailed,
 			wantOutcome:  reviewOutcomeFindings,
-			wantFindings: "internal/cli/review.go:42: first finding\ninternal/cli/review_test.go:42: second finding",
+			wantFindings: "review.txt:2: first finding\nreview.txt:2: second finding",
 		},
 	}
 
@@ -754,7 +754,7 @@ func TestReviewBlocksEveryPreambleBesideNoFindings(t *testing.T) {
 }
 
 func TestReviewRecognisesAColonlessFindingsHeader(t *testing.T) {
-	const finding = "internal/cli/review.go:42: classifier accepts a hidden finding"
+	const finding = "review.txt:2: classifier accepts a hidden finding"
 	tests := []struct {
 		name   string
 		answer string
@@ -790,13 +790,13 @@ func TestReviewRecognisesEmphasizedFindingsHeader(t *testing.T) {
 	}{
 		{
 			name:         "bold",
-			answer:       "**Findings**:\ninternal/cli/review.go:42: bold header",
-			wantFindings: "internal/cli/review.go:42: bold header",
+			answer:       "**Findings**:\nreview.txt:2: bold header",
+			wantFindings: "review.txt:2: bold header",
 		},
 		{
 			name:         "italic",
-			answer:       "_Findings_:\ninternal/cli/review.go:42: italic header",
-			wantFindings: "internal/cli/review.go:42: italic header",
+			answer:       "_Findings_:\nreview.txt:2: italic header",
+			wantFindings: "review.txt:2: italic header",
 		},
 	}
 
@@ -924,7 +924,7 @@ func TestReviewReadsFindingsNoneAsNoFindings(t *testing.T) {
 		{name: "no findings", answer: "Findings: no findings", wantCode: exitOK, wantOutcome: reviewOutcomeReviewed},
 		{name: "plain preamble before none", answer: "I reviewed the candidate.\nFindings: none", wantCode: exitPreflight, wantOutcome: reviewOutcomeBlocked},
 		{name: "structured content before none", answer: "## Correctness\n1. internal/cli/review.go:42: finding\nFindings: none", wantCode: exitPreflight, wantOutcome: reviewOutcomeBlocked},
-		{name: "text follows none", answer: "Findings: none\ninternal/cli/review.go:42: finding follows", wantCode: exitRunFailed, wantOutcome: reviewOutcomeFindings},
+		{name: "text follows none", answer: "Findings: none\n- review.txt:2: finding follows", wantCode: exitRunFailed, wantOutcome: reviewOutcomeFindings},
 	}
 
 	for _, test := range tests {
@@ -946,7 +946,7 @@ func TestReviewReadsFindingsNoneAsNoFindings(t *testing.T) {
 }
 
 func TestReviewIgnoresAQuotedVerdictInsideFindings(t *testing.T) {
-	const answer = "Findings:\nNo findings\ninternal/cli/review.go:42: the findings body quoted the clean verdict"
+	const answer = "Findings:\nreview.txt:2: the findings body quoted the clean verdict\nNo findings"
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
 			result: agent.ExecuteResult{Message: answer, StopReason: "end_turn"},
@@ -959,7 +959,7 @@ func TestReviewIgnoresAQuotedVerdictInsideFindings(t *testing.T) {
 	if code != exitRunFailed || record.Outcome != reviewOutcomeFindings {
 		t.Fatalf("quoted verdict review exit=%d record=%+v stderr=%q, want findings", code, record, stderr)
 	}
-	if record.Findings != "No findings\ninternal/cli/review.go:42: the findings body quoted the clean verdict" {
+	if record.Findings != "review.txt:2: the findings body quoted the clean verdict\nNo findings" {
 		t.Fatalf("review findings = %q, want quoted verdict preserved", record.Findings)
 	}
 }
@@ -971,7 +971,7 @@ func TestReviewKeepsTheRawAnswer(t *testing.T) {
 		wantOutcome reviewOutcome
 	}{
 		{name: "reviewed", answer: "  **No findings.**\n", wantOutcome: reviewOutcomeReviewed},
-		{name: "findings", answer: "Findings:\ninternal/cli/review.go:42: keep this finding\n", wantOutcome: reviewOutcomeFindings},
+		{name: "findings", answer: "Findings:\nreview.txt:2: keep this finding\n", wantOutcome: reviewOutcomeFindings},
 		{name: "blocked", answer: "Review complete, but no verdict was stated.\n", wantOutcome: reviewOutcomeBlocked},
 	}
 

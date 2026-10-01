@@ -25,7 +25,7 @@ func TestReviewRecordsTheSpecsACandidateArchives(t *testing.T) {
 	)
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
-			result: agent.ExecuteResult{Message: "Findings:\n- internal/example.go:1: correction needed", StopReason: "end_turn"},
+			result: agent.ExecuteResult{Message: "Findings:\n- review.txt:2: correction needed", StopReason: "end_turn"},
 		}},
 	}
 	fixture := newReviewCommandFixture(t, "codex", runner)
@@ -104,7 +104,7 @@ func TestReviewNamesTheCorrectiveSpecForFindingsAfterArchive(t *testing.T) {
 	const slug = "0176-corrective-source"
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
-			result: agent.ExecuteResult{Message: "Findings:\n- internal/example.go:1: correction needed", StopReason: "end_turn"},
+			result: agent.ExecuteResult{Message: "Findings:\n- review.txt:2: correction needed", StopReason: "end_turn"},
 		}},
 	}
 	fixture := newReviewCommandFixture(t, "codex", runner)

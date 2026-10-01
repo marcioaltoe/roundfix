@@ -16,7 +16,7 @@ import (
 )
 
 func TestReviewReportsFindingsDismissedWithoutAskingTheReviewer(t *testing.T) {
-	const findings = "- internal/cli/review.go:10: first\n- internal/cli/review.go:20: second"
+	const findings = "- review.txt:2: first\n- review.txt:2: second"
 	fixture, runner := recordHeadBoundFindings(t, "codex", findings)
 	for _, findingID := range []string{"F1", "F2"} {
 		code, _, stderr := runReviewDispose(t, findingID, "--dismiss", "--evidence", "verified by the candidate contract")
@@ -48,7 +48,7 @@ func TestReviewReportsFindingsDismissedWithoutAskingTheReviewer(t *testing.T) {
 }
 
 func TestReviewKeepsStandingFindingsWithoutAskingTheReviewer(t *testing.T) {
-	const findings = "- internal/cli/review.go:10: dismissed\n- internal/cli/review.go:20: standing"
+	const findings = "- review.txt:2: dismissed\n- review.txt:2: standing"
 	fixture, runner := recordHeadBoundFindings(t, "codex", findings)
 	code, _, stderr := runReviewDispose(t, "F1", "--dismiss", "--evidence", "not reachable")
 	if code != exitOK || stderr != "" {
@@ -71,12 +71,12 @@ func TestReviewKeepsStandingFindingsWithoutAskingTheReviewer(t *testing.T) {
 }
 
 func TestReviewIgnoresADismissalOfDifferentText(t *testing.T) {
-	fixture, runner := recordHeadBoundFindings(t, "codex", "- internal/cli/review.go:10: original text")
+	fixture, runner := recordHeadBoundFindings(t, "codex", "- review.txt:2: original text")
 	code, _, stderr := runReviewDispose(t, "F1", "--dismiss", "--evidence", "applies only to the original text")
 	if code != exitOK || stderr != "" {
 		t.Fatalf("dismiss original finding exit=%d stderr=%q, want exit=0", code, stderr)
 	}
-	record := dispositionReviewRecord(fixture.repository, fixture.headCommit, "- internal/cli/review.go:10: changed text")
+	record := dispositionReviewRecord(fixture.repository, fixture.headCommit, "- review.txt:2: changed text")
 	record.BaseCommit = fixture.baseCommit
 	writeDispositionRecord(t, fixture, record)
 	resetReviewCommandRunner(runner, agent.ExecuteResult{})
@@ -93,7 +93,7 @@ func TestReviewIgnoresADismissalOfDifferentText(t *testing.T) {
 }
 
 func TestReviewIgnoresAFixWhenClearingAHead(t *testing.T) {
-	fixture, runner := recordHeadBoundFindings(t, "codex", "- internal/cli/review.go:10: fixed later")
+	fixture, runner := recordHeadBoundFindings(t, "codex", "- review.txt:2: fixed later")
 	mustWrite(t, fixture.repository+"/fix.txt", "fix\n")
 	gittest.Run(t, fixture.repository, "add", "fix.txt")
 	gittest.Run(t, fixture.repository, "commit", "-m", "fix review finding")
@@ -117,7 +117,7 @@ func TestReviewIgnoresAFixWhenClearingAHead(t *testing.T) {
 }
 
 func TestReviewAsksAgainAfterTheHeadMoves(t *testing.T) {
-	fixture, runner := recordHeadBoundFindings(t, "codex", "- internal/cli/review.go:10: original head")
+	fixture, runner := recordHeadBoundFindings(t, "codex", "- review.txt:2: original head")
 	mustWrite(t, fixture.repository+"/moved.txt", "moved\n")
 	gittest.Run(t, fixture.repository, "add", "moved.txt")
 	gittest.Run(t, fixture.repository, "commit", "-m", "move review head")
@@ -130,7 +130,7 @@ func TestReviewAsksAgainAfterTheHeadMoves(t *testing.T) {
 }
 
 func TestReviewAsksAgainForADifferentBase(t *testing.T) {
-	fixture, runner := recordHeadBoundFindings(t, "codex", "- internal/cli/review.go:10: original base")
+	fixture, runner := recordHeadBoundFindings(t, "codex", "- review.txt:2: original base")
 	fixture.baseCommit = fixture.headCommit
 	resetReviewCommandRunner(runner, agent.ExecuteResult{Message: "No findings", StopReason: "end_turn"})
 
@@ -140,7 +140,7 @@ func TestReviewAsksAgainForADifferentBase(t *testing.T) {
 }
 
 func TestReviewAsksAgainForADifferentProvider(t *testing.T) {
-	fixture, runner := recordHeadBoundFindings(t, "codex", "- internal/cli/review.go:10: original provider")
+	fixture, runner := recordHeadBoundFindings(t, "codex", "- review.txt:2: original provider")
 	fixture.provider = "claude"
 	writeReviewCommandProfileConfig(t, fixture.repository, "claude", fixture.artifactDir, "claude", "claude")
 	resetReviewCommandRunner(runner, agent.ExecuteResult{Message: "No findings", StopReason: "end_turn"})

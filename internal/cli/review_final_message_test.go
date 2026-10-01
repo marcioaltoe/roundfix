@@ -14,7 +14,7 @@ import (
 
 func TestReviewClassifiesTheFinalMessageAfterProgressText(t *testing.T) {
 	const progress = "I am checking the candidate."
-	const answer = "Findings:\n- internal/cli/review.go:42: preserve the final message"
+	const answer = "Findings:\n- review.txt:2: preserve the final message"
 	runner := &reviewCommandRunner{
 		results: []reviewCommandRunResult{{
 			result: agent.ExecuteResult{
@@ -31,10 +31,10 @@ func TestReviewClassifiesTheFinalMessageAfterProgressText(t *testing.T) {
 	if code != exitRunFailed {
 		t.Fatalf("review exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr)
 	}
-	if record.Outcome != reviewOutcomeFindings || record.Findings != "- internal/cli/review.go:42: preserve the final message" {
+	if record.Outcome != reviewOutcomeFindings || record.Findings != "- review.txt:2: preserve the final message" {
 		t.Fatalf("review record = %+v, want one findings verdict", record)
 	}
-	if len(record.FindingItems) != 1 || record.FindingItems[0].ID != "F1" || record.FindingItems[0].Text != "internal/cli/review.go:42: preserve the final message" {
+	if len(record.FindingItems) != 1 || record.FindingItems[0].ID != "F1" || record.FindingItems[0].Text != "review.txt:2: preserve the final message" {
 		t.Fatalf("finding items = %+v, want F1", record.FindingItems)
 	}
 }
