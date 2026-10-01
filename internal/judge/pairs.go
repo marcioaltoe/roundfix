@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -66,6 +67,27 @@ func PlanSpec(q Questions, repoRoot, specDir string, stage Stage) (Plan, error) 
 			planClaims(q, repoRoot, tech, &plan, seen)
 			if prdOK {
 				planGoals(q, prd, tech, &plan, seen)
+			}
+		}
+	}
+	anchors, skipped, err := adoptedSources(q, specDir)
+	if err != nil {
+		plan.SkippedArtifacts = append(plan.SkippedArtifacts, SkippedArtifact{filepath.Join(specDir, "references", "_index.md"), "not a regular file in its directory"})
+	}
+	plan.SkippedArtifacts = append(plan.SkippedArtifacts, skipped...)
+	if len(anchors) > 0 {
+		candidates, skipped, err := openSources(q, repoRoot)
+		if err != nil {
+			plan.SkippedArtifacts = append(plan.SkippedArtifacts, SkippedArtifact{repoRoot, "grouping sources unreadable: " + err.Error()})
+		}
+		plan.SkippedArtifacts = append(plan.SkippedArtifacts, skipped...)
+		for _, anchor := range anchors {
+			for _, candidate := range candidates {
+				state := struct {
+					First  string `json:"first"`
+					Second string `json:"second"`
+				}{prepareSource(q, anchor), prepareSource(q, candidate)}
+				addPending(&plan, seen, PendingJudgment{Kind: "source-grouping", Artifact: anchor.path, Target: candidate.path}, state)
 			}
 		}
 	}

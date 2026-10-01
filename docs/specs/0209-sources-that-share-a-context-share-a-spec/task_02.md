@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0209-sources-that-share-a-context-share-a-spec
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -73,3 +73,90 @@ Spec 0205 creates `internal/judge/questions.json`, `questions.go`, `pairs.go`, `
 - [_prd.md](_prd.md) — Goal 5; User Stories 4 and 5; Core Features 6, 7 and 8; Success Metrics 3, 4 and 5; Recorded limits
 - [_techspec.md](_techspec.md) — The grouping question; Interfaces; The grouping reader; Preparing a source; Grouping pairs; Asking and outcomes; API Contract 3; API Contract 4; Testing Approach 2; Testing Approach 3; Testing Approach 4; Build Order 2
 - ADR-0209; ADR-0200; ADR-0201; ADR-0089
+
+
+## Result
+
+Implemented the source-grouping slice for Daemon Verification. The initial
+worktree change was the Daemon's `pending` → `in_progress` status update;
+this turn preserves that status and every authored section above this Result.
+The starting package lacked `sources.go`, `grouping_test.go` and the grouping
+question member. All named Spec 0205 interfaces and regression tests were
+present, so its prerequisite stop condition did not apply.
+
+The question member is copied directly from the TechSpec block. `Load` exposes
+its settings through `Questions.Grouping` and compiles the fifth pattern.
+The new reader admits adoption-table Findings and Backlog Entries and eligible
+open records, rejects unsafe files and directory links, and applies the existing
+language gate. Preparation removes front matter, scrubs identifiers and cuts
+Unicode code points without trimming. Planning appends adopted-to-open pairs
+at every stage, preserves ordering and deduplicates prepared states.
+
+Grouping uses the existing transport, retry, stop, model pin, cost and log
+paths. A small necessary extension in `client.go` selects the grouping question
+and evaluates its Noul; this is part of this Task's asking/outcome slice.
+Grouping report and log JSON use null line/excerpt fields and repository-relative
+anchor/candidate paths. Source/log failures remain artifact skips rather than
+introducing new fatal Run errors. `source.go` and `judge_test.go` were not changed.
+
+Focused checks, all with `GOCACHE=/private/tmp/roundfix-task02-gocache`,
+`GOPROXY=off` and `GOSUMDB=off`:
+
+- `rtk proxy go test ./internal/judge -run '^TestGrouping' -count=1` — exit 0.
+- `rtk proxy go test ./internal/judge -count=1 -v` after restoring all sabotages
+  and the final test edits — exit 0; all nine required grouping tests, the
+  additional failure/spend test and all existing judge regressions passed.
+- `rtk proxy go test ./internal/cli -run '^TestSpecJudge' -count=1` — exit 0;
+  existing command integration remains compatible.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+
+Acceptance evidence:
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| Exact measured question and loading | `TestGroupingQuestionIsTheMeasuredOne` compares the full member bytes against the TechSpec and compares every parsed setting. `TestQuestionFileLoads` removes only that exact new member and comma and still requires the original question file's remaining bytes to equal Spec 0205's block. |
+| Two pairs at PRD, TechSpec and default stages; none without index | `TestGroupingIsPlannedAtEveryStage` exercises all three stages and removes the index for each. `TestGroupingPairsEveryAdoptedSourceWithEveryOpenSource` additionally checks anchor-major order, Backlog Entries before Findings and deduplication. The additional failure/spend test checks grouping follows citation and goal judgments. |
+| Suggested at 0.30, clear at 0.29; unpinned skipped and logged | `TestGroupingSuggestsAtTheMeasuredThreshold` checks those explicit values through Run and fake HTTP. `TestGroupingNeverComparesAnotherModelsAnswer` checks `jev-1.14.0`, the existing skip reason and both log records. `TestGroupingJudgeLogLine` checks schema, null fields, question, target, outcome, fixed timestamp and monthly cost accounting. |
+| Measured source preparation | `TestGroupingSourcesArePreparedAsMeasured` checks front matter removal, Spec/ADR scrubbing, preserved leading whitespace, empty front matter and the cut at 1,500 Unicode code points using multibyte text. |
+| Excluded records never reach requests | `TestGroupingRequestsCarryOnlySourceText` runs for both transports, holds Inbox, declined, done, symlink, Portuguese and Go sentinels, and rejects every sentinel and injected key in captured bodies. It requires exactly the prepared accepted anchor/candidate texts and grouping question, checks unescaped HTML and validates skip paths. The reader test also refuses oversized files, `_index.md`, traversal, a wrong table header and a linked adopted-source directory. |
+
+Gate sabotages, each run separately with
+`go test ./internal/judge -run '^<test-name>$' -count=1` under the same offline
+cache environment; each mutation was restored in a `finally` block:
+
+- Reader: allowed `declined` in the status filter.
+  `TestGroupingReaderAcceptsOnlyFindingsAndBacklogEntries` exited 1 with
+  `declined.md: ok=true reason=""`. Restored the status filter.
+- Preparation: replaced scrubbed text with the original text before cutting.
+  `TestGroupingSourcesArePreparedAsMeasured` exited 1 because the prepared text
+  still held `0123` and `ADR-0456`. Restored the scrub.
+- Threshold: changed `>=` to `>`.
+  `TestGroupingSuggestsAtTheMeasuredThreshold/suggested` exited 1 because
+  0.30 became `clear`. Restored the inclusive comparison.
+
+The first focused grouping run also caught a fixture using OpenRouter's request
+alias as its reported model. The existing pin correctly skipped it; the fake
+response now reports an accepted version, without weakening the pin.
+
+All new fixtures and Judge Logs are written in `t.TempDir()`. Every new test
+uses an injected HTTP RoundTripper and fixed clock. No real network connection
+or process credential read was made. Live TypeSafe documentation was not
+fetched because requirement 7 prohibits network access; the pinned local
+TechSpec, ADRs and shipped client provide this Task's contract.
+
+The authored Verification commands and repository-wide delivery gates were
+not run in this Daemon-assigned turn. The Task Graph, other Task files,
+status, commits, pushes and pull requests remain outside this handoff.
+CLI grouping presentation remains task_03's slice. No additional follow-up
+implementation is included.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/judge/client.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T233647Z_36941fe094803f4f`
+- Source commit: `7c607c7e645043131fb7408dc3d90b0e6618bab9`

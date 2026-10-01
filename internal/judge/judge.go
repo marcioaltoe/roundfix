@@ -3,6 +3,7 @@ package judge
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -84,7 +85,7 @@ func Run(ctx context.Context, q Questions, req Request) (Report, error) {
 		return report, err
 	}
 	for _, a := range plan.SkippedArtifacts {
-		report.ArtifactsSkipped = append(report.ArtifactsSkipped, ArtifactSkip{relativeArtifact(req.RepoRoot, filepath.Join(req.SpecDir, a.Artifact)), a.Reason})
+		report.ArtifactsSkipped = append(report.ArtifactsSkipped, ArtifactSkip{relativeArtifact(req.RepoRoot, artifactSkipPath(req.SpecDir, a.Artifact)), a.Reason})
 	}
 	for _, s := range plan.Skipped {
 		report.Judgments = append(report.Judgments, Judgment{Kind: s.Kind, Artifact: relativeArtifact(req.RepoRoot, s.Artifact), Line: s.Line, Target: s.Target, Outcome: "skipped", Reason: reasonPointer(s.Reason)})
@@ -131,7 +132,7 @@ func Run(ctx context.Context, q Questions, req Request) (Report, error) {
 	c := client{http: httpClient, transport: t, key: key, q: q}
 	seen := map[string]Judgment{}
 	for _, p := range plan.Pending {
-		j := Judgment{Kind: p.Kind, Artifact: relativeArtifact(req.RepoRoot, p.Artifact), Line: p.Line, Target: p.Target, Text: p.Text, Outcome: "skipped"}
+		j := Judgment{Kind: p.Kind, Artifact: relativeArtifact(req.RepoRoot, p.Artifact), Line: p.Line, Target: relativeArtifact(req.RepoRoot, p.Target), Text: p.Text, Outcome: "skipped"}
 		if p.Kind == "goal-mechanism" {
 			_, title, _ := strings.Cut(p.Target, " → ")
 			j.SectionTitle = reasonPointer(title)
@@ -197,12 +198,15 @@ func Run(ctx context.Context, q Questions, req Request) (Report, error) {
 			if p.Kind == "goal-mechanism" {
 				id = q.Goal.QuestionID
 			}
+			if p.Kind == "source-grouping" {
+				id = q.Grouping.QuestionID
+			}
 			hash := sha256.Sum256(p.state)
 			recordError := result.Error
 			if recordError == "" && outcome == "skipped" {
 				recordError = reason
 			}
-			row := logLine{Schema: "roundfix/judge-log/v1", Time: callTime, Repository: req.RepoRoot, Spec: req.Spec, Judgment: p.Kind, Artifact: j.Artifact, Line: p.Line, Target: p.Target, StateHash: fmt.Sprintf("%x", hash)[:16], QuestionID: id, Transport: t.Name, ResponseID: result.ResponseID, Provider: result.Provider, RequestedModel: t.RequestModel, Model: result.Model, Answer: a.Choice, Probabilities: a.Probabilities, Confidence: a.Confidence, Noul: a.Noul, LatencyMS: result.LatencyMS, InputTokens: result.Usage.InputTokens, OutputTokens: result.Usage.OutputTokens, CostUSD: cost, CostSource: costSource, Status: result.Status, Attempts: attempt, Error: recordError, Outcome: outcome}
+			row := logLine{Schema: "roundfix/judge-log/v1", Time: callTime, Repository: req.RepoRoot, Spec: req.Spec, Judgment: p.Kind, Artifact: j.Artifact, Line: p.Line, Target: j.Target, StateHash: fmt.Sprintf("%x", hash)[:16], QuestionID: id, Transport: t.Name, ResponseID: result.ResponseID, Provider: result.Provider, RequestedModel: t.RequestModel, Model: result.Model, Answer: a.Choice, Probabilities: a.Probabilities, Confidence: a.Confidence, Noul: a.Noul, LatencyMS: result.LatencyMS, InputTokens: result.Usage.InputTokens, OutputTokens: result.Usage.OutputTokens, CostUSD: cost, CostSource: costSource, Status: result.Status, Attempts: attempt, Error: recordError, Outcome: outcome}
 			for _, field := range []*string{&row.Schema, &row.Repository, &row.Spec, &row.Judgment, &row.Artifact, &row.Target, &row.StateHash, &row.QuestionID, &row.Transport, &row.RequestedModel, &row.CostSource, &row.Outcome} {
 				*field = redact(*field)
 			}
@@ -227,4 +231,24 @@ func Run(ctx context.Context, q Questions, req Request) (Report, error) {
 		report.Judgments = append(report.Judgments, j)
 	}
 	return report, nil
+}
+
+func artifactSkipPath(specDir, artifact string) string {
+	if filepath.IsAbs(artifact) {
+		return artifact
+	}
+	return filepath.Join(specDir, artifact)
+}
+
+// Grouping has no line or excerpt; retain existing Go fields for callers.
+func (j Judgment) MarshalJSON() ([]byte, error) {
+	type plain Judgment
+	if j.Kind != "source-grouping" {
+		return json.Marshal(plain(j))
+	}
+	return json.Marshal(struct {
+		plain
+		Line *int    `json:"line"`
+		Text *string `json:"text"`
+	}{plain: plain(j)})
 }

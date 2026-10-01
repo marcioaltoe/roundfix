@@ -49,6 +49,19 @@
       "section_title_min_chars": 8,
       "section_min_chars": 200,
       "section_max_chars": 3500
+    },
+    "source-grouping": {
+      "question_id": "same_spec",
+      "question": {
+        "type": "noul",
+        "instructions": "Two work items from one software repository are given as `first` and `second` (findings or backlog entries). Should both be resolved by the same specification, delivered together? Answer yes when they change the same component or contract, share a root cause, or one item's fix depends on or completes the other's. Answer no when they are independent concerns that only share vocabulary or a date."
+      },
+      "suggest_when_noul_at_least": 0.3,
+      "adopted_source_types": ["finding", "backlog"],
+      "open_backlog_statuses": ["open"],
+      "unresolved_finding_statuses": ["pending", "partial"],
+      "source_scrub_pattern": "\\b0\\d{3}\\b|ADR-\\d{4}",
+      "source_max_chars": 1500
     }
   }
 }

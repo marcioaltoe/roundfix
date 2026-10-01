@@ -33,9 +33,12 @@ func TestQuestionFileLoads(t *testing.T) {
 		t.Fatal(err)
 	}
 	block := strings.SplitN(strings.SplitN(strings.SplitN(string(tech), "### Questions and thresholds", 2)[1], "```json\n", 2)[1], "```", 2)[0]
-	if !bytes.Equal(questionFile, []byte(block)) {
-		t.Fatal("embedded settings differ from the TechSpec block")
+	// Remove only the exact new member and its separating comma.
+	original := strings.Replace(string(questionFile), ",\n"+strings.TrimSuffix(groupingBlock(t), "\n"), "", 1)
+	if !bytes.Equal([]byte(original), []byte(block)) {
+		t.Fatal("original embedded settings differ from the TechSpec block")
 	}
+
 	q := loadQuestions(t)
 	var file struct {
 		Pinned     string       `json:"pinned_model"`
@@ -57,6 +60,9 @@ func TestQuestionFileLoads(t *testing.T) {
 	}
 	if !q.AcceptedModel.MatchString(q.Transports[1].RequestModel) || !q.AcceptedModel.MatchString(q.Transports[1].Name+"/"+q.PinnedModel+"-20260917") || q.AcceptedModel.MatchString("unmeasured") {
 		t.Fatal("accepted model pattern not compiled faithfully")
+	}
+	if q.Grouping.SourceScrub == nil {
+		t.Fatal("source scrub not compiled")
 	}
 	if !q.Citation.Attribution.MatchString("ADR-0123 keeps the gate") || !q.Goal.CoverageLine.MatchString("- Goals 1-2 → Reliable reader.") || !q.Goal.GenericSectionTitle.MatchString("Coverage Map") {
 		t.Fatal("extraction patterns not compiled")

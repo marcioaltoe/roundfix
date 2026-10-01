@@ -90,3 +90,14 @@ func (l judgeLog) append(row logLine) error {
 	err = json.NewEncoder(f).Encode(row)
 	return errors.Join(err, f.Close())
 }
+
+func (row logLine) MarshalJSON() ([]byte, error) {
+	type plain logLine
+	if row.Judgment != "source-grouping" {
+		return json.Marshal(plain(row))
+	}
+	return json.Marshal(struct {
+		plain
+		Line *int `json:"line"`
+	}{plain: plain(row)})
+}
