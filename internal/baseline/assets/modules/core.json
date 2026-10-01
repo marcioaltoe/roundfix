@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "core",
-  "version": 14,
+  "version": 15,
   "kind": "core",
   "title": "Universal agent baseline",
   "dependsOn": [],
@@ -15,7 +15,6 @@
     "github-pr-workflow",
     "handoff",
     "no-workarounds",
-    "review",
     "systematic-debugging",
     "tech-writer",
     "testing-boss"
@@ -90,15 +89,6 @@
         {
           "id": "trigger.core.no-workarounds",
           "when": "Fixing defects, regressions, or verification failures at their root cause."
-        }
-      ]
-    },
-    {
-      "skill": "review",
-      "triggers": [
-        {
-          "id": "trigger.core.review",
-          "when": "Reviewing a change against repository standards and its originating contract."
         }
       ]
     },

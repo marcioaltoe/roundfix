@@ -157,13 +157,13 @@ func TestARenamedSkillNameInTheCatalogIsReported(t *testing.T) {
 	}
 }
 
-func TestTheGoCLITUIProfileTakesTheGoTUISetup(t *testing.T) {
+func TestTheGoCLITUIProfileTakesTheGoSetup(t *testing.T) {
 	t.Parallel()
 	profile := readUpstreamSkillDocument(t, "profiles/go-cli-tui.json")
-	if got, _ := stringValue(profile, "setup"); got != "go-tui" {
-		t.Fatalf("profile setup = %s, want go-tui", got)
+	if got, _ := stringValue(profile, "setup"); got != "go" {
+		t.Fatalf("profile setup = %s, want go", got)
 	}
-	setup := readUpstreamSkillDocument(t, "setups/go-tui.json")
+	setup := readUpstreamSkillDocument(t, "setups/go.json")
 	names := map[string]bool{}
 	for _, skill := range objectsOrEmpty(setup["skills"]) {
 		name, _ := stringValue(skill, "name")
@@ -171,7 +171,7 @@ func TestTheGoCLITUIProfileTakesTheGoTUISetup(t *testing.T) {
 	}
 	for _, name := range []string{"bubbletea", "tui-design"} {
 		if !names[name] {
-			t.Errorf("go-tui omits %s", name)
+			t.Errorf("go omits %s", name)
 		}
 	}
 }

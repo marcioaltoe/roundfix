@@ -38,7 +38,7 @@ func TestADispatchedSkillOutsideTheProfileSetupIsReported(t *testing.T) {
 	assets := cloneEmbeddedAssets(t)
 	const skill = "golang-testing"
 	var setup document
-	if err := json.Unmarshal(assets["setups/go-tui.json"].Data, &setup); err != nil {
+	if err := json.Unmarshal(assets["setups/go.json"].Data, &setup); err != nil {
 		t.Fatal(err)
 	}
 	var retained []any
@@ -59,7 +59,7 @@ func TestADispatchedSkillOutsideTheProfileSetupIsReported(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assets["setups/go-tui.json"].Data = data
+	assets["setups/go.json"].Data = data
 	_, err = LoadCatalog(assets)
 	diagnostic := catalogDiagnosticByCode(t, err, "catalog.profile.skill.dispatch-outside-setup")
 	if diagnostic.Path != "go-cli-tui" || diagnostic.Info != skill {

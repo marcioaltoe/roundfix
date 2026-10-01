@@ -1,14 +1,14 @@
 {
   "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
-  "id": "rust-cli",
+  "id": "go",
   "version": "0.0.1",
   "source": {
     "type": "github",
     "repository": "marcioaltoe/skills",
-    "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
-    "path": "setups/rust-cli.txt"
+    "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
+    "path": "setups/go.txt"
   },
-  "digest": "03d14182831c00ed145754fdf950626ce9501aff8cb373ad2528c73b1723cb4e",
+  "digest": "07eb452b72908ed778ecfd464f226d3d096c8ccfdcc7330ed9faeba2eb41acff",
   "skills": [
     {
       "name": "knowledge-workspace",
@@ -16,7 +16,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
         "path": "skills/00-setup/knowledge-workspace"
       },
       "treeDigest": "9571bdfa23f46ec75bb0c820deaee3d3f5513ab203911f3e72dbae4b5760d346"
@@ -54,7 +54,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
         "path": "skills/01-discovery/context7-cli"
       },
       "treeDigest": "e4ea7cfa3ce50f64245bd09959316b1653fa171051651a7771471dcf0119ca19"
@@ -74,7 +74,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
         "path": "skills/01-discovery/exa-web-search"
       },
       "treeDigest": "9e9f47943ae5d0bf3438013d31e2d02610fd3b8d4b40cf6bd2db17a695b3e7ae"
@@ -85,7 +85,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
         "path": "skills/01-discovery/grill-with-docs"
       },
       "treeDigest": "04ba6a6139df57e6a011eb79311212fa5f3dc47ec6177845d1defea19c68bb60"
@@ -96,7 +96,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
         "path": "skills/01-discovery/grilling"
       },
       "treeDigest": "b0af4cb93507011cab704853dc540ae142dec2a1256d374a38f4f196a04f7b50"
@@ -107,7 +107,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
         "path": "skills/01-discovery/the-fool"
       },
       "treeDigest": "1b4f41804f0c288993b0a5a295d90d538d7dd1bf7d6971f8af13d7ee47cfabb1"
@@ -136,7 +136,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
         "path": "skills/03-engineering-design/agentic-cli-design"
       },
       "treeDigest": "d261b7713dc1baa3136895904659bffffededfb9926d94f7c7ba030608a4ff79"
@@ -147,10 +147,21 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
         "path": "skills/03-engineering-design/domain-modeling"
       },
-      "treeDigest": "731ecd11825453ec3d813ac26e7a082bb458bc332781c6dba18d7004468139d7"
+      "treeDigest": "c0bd13ce078a3c8eb5507fc9067165dad89b10f11b33b26e29a5c62f9c840bd2"
+    },
+    {
+      "name": "tui-design",
+      "path": "skills/03-engineering-design/tui-design",
+      "source": {
+        "type": "github",
+        "repository": "marcioaltoe/skills",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
+        "path": "skills/03-engineering-design/tui-design"
+      },
+      "treeDigest": "1ec0cd0743492e6613975c41139fc33bec7703505a19212e2ef875ba68271a8d"
     },
     {
       "name": "write-techspec",
@@ -171,15 +182,15 @@
       "minimumVersion": "0.0.2"
     },
     {
-      "name": "clap-rust",
-      "path": "skills/05-implementation-loop/clap-rust",
+      "name": "bubbletea",
+      "path": "skills/05-implementation-loop/bubbletea",
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
-        "path": "skills/05-implementation-loop/clap-rust"
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
+        "path": "skills/05-implementation-loop/bubbletea"
       },
-      "treeDigest": "da206d7c6ea85dba8b2d53479a5bf0ac0347d500c599c3fefedfa1d2f8e68ff0"
+      "treeDigest": "4c5a37b1f57f0af819ae8f6c916b91a83b1f1b0673cdf4f84d21e934053c6c29"
     },
     {
       "name": "coding-guidelines",
@@ -187,10 +198,109 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
         "path": "skills/05-implementation-loop/coding-guidelines"
       },
       "treeDigest": "1ed1e711b511f8ea14e0e4f83949d3395e7b202e8344c52e586256c7959ce0a8"
+    },
+    {
+      "name": "golang-cli",
+      "path": "skills/05-implementation-loop/golang-cli",
+      "source": {
+        "type": "github",
+        "repository": "marcioaltoe/skills",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
+        "path": "skills/05-implementation-loop/golang-cli"
+      },
+      "treeDigest": "68ef41ff5295e6e94841144edad06ce09e51860ab486720cdbb7b00f188cbe7b"
+    },
+    {
+      "name": "golang-concurrency",
+      "path": "skills/05-implementation-loop/golang-concurrency",
+      "source": {
+        "type": "github",
+        "repository": "marcioaltoe/skills",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
+        "path": "skills/05-implementation-loop/golang-concurrency"
+      },
+      "treeDigest": "540f4ffae6d90a39ab3f6cc3624925f68281a80a6c74f627a4f96c9bc3985752"
+    },
+    {
+      "name": "golang-context",
+      "path": "skills/05-implementation-loop/golang-context",
+      "source": {
+        "type": "github",
+        "repository": "marcioaltoe/skills",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
+        "path": "skills/05-implementation-loop/golang-context"
+      },
+      "treeDigest": "b75ea181b1ce1982e72201603f85f7bbf2798e28f22e83dc9bdb6c15b978d67d"
+    },
+    {
+      "name": "golang-dependency-management",
+      "path": "skills/05-implementation-loop/golang-dependency-management",
+      "source": {
+        "type": "github",
+        "repository": "marcioaltoe/skills",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
+        "path": "skills/05-implementation-loop/golang-dependency-management"
+      },
+      "treeDigest": "67cc5583c4286bfa1d9236895f7bb2b29d8d4f12eccbeee89d300411e0ff9011"
+    },
+    {
+      "name": "golang-error-handling",
+      "path": "skills/05-implementation-loop/golang-error-handling",
+      "source": {
+        "type": "github",
+        "repository": "marcioaltoe/skills",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
+        "path": "skills/05-implementation-loop/golang-error-handling"
+      },
+      "treeDigest": "aea1d43e29a7b12521429e9c0668c798b016e8a53b15e7a2ed74d40bf53cfb01"
+    },
+    {
+      "name": "golang-lint",
+      "path": "skills/05-implementation-loop/golang-lint",
+      "source": {
+        "type": "github",
+        "repository": "marcioaltoe/skills",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
+        "path": "skills/05-implementation-loop/golang-lint"
+      },
+      "treeDigest": "99e38fcd5c2ba0705ba4ec4f629151896cc8dc593bbfb793be54ff762df6c57f"
+    },
+    {
+      "name": "golang-safety",
+      "path": "skills/05-implementation-loop/golang-safety",
+      "source": {
+        "type": "github",
+        "repository": "marcioaltoe/skills",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
+        "path": "skills/05-implementation-loop/golang-safety"
+      },
+      "treeDigest": "e3ad218a70f8f0ce2e3a67331d0e17c398db1a9c624b381397abd23c85ad3fce"
+    },
+    {
+      "name": "golang-structs-interfaces",
+      "path": "skills/05-implementation-loop/golang-structs-interfaces",
+      "source": {
+        "type": "github",
+        "repository": "marcioaltoe/skills",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
+        "path": "skills/05-implementation-loop/golang-structs-interfaces"
+      },
+      "treeDigest": "f6133a44d7a7560b56f0f5f4e71de60610c3cf00449ebe54b85558d65e15f34b"
+    },
+    {
+      "name": "golang-testing",
+      "path": "skills/05-implementation-loop/golang-testing",
+      "source": {
+        "type": "github",
+        "repository": "marcioaltoe/skills",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
+        "path": "skills/05-implementation-loop/golang-testing"
+      },
+      "treeDigest": "4d4f4c3c64f4055a81e59a4f371ff295f9326475ad950278f1e1ff52f9656e46"
     },
     {
       "name": "implement-spec",
@@ -216,32 +326,10 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
         "path": "skills/05-implementation-loop/no-workarounds"
       },
       "treeDigest": "573cf5b80f28193816c79ee8b79ab9b7fe7f72f5acac061f424ac05993ede766"
-    },
-    {
-      "name": "rust-cli",
-      "path": "skills/05-implementation-loop/rust-cli",
-      "source": {
-        "type": "github",
-        "repository": "marcioaltoe/skills",
-        "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
-        "path": "skills/05-implementation-loop/rust-cli"
-      },
-      "treeDigest": "67e04140a6cf5e6de0aa2a9a7f7423971b02c7953716e331ce23fb85c20da3b2"
-    },
-    {
-      "name": "rust-expert",
-      "path": "skills/05-implementation-loop/rust-expert",
-      "source": {
-        "type": "github",
-        "repository": "marcioaltoe/skills",
-        "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
-        "path": "skills/05-implementation-loop/rust-expert"
-      },
-      "treeDigest": "13a6428287f2d050d32cdebbe9f7e885b225b6731d30eb920af3244528ef5f72"
     },
     {
       "name": "testing-boss",
@@ -249,7 +337,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
         "path": "skills/05-implementation-loop/testing-boss"
       },
       "treeDigest": "f92c876c59ba91e4ca806a3c4321ecb14ce5b8b24aaf713ebd07dc2113acc3c1"
@@ -260,7 +348,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
         "path": "skills/05-implementation-loop/typesafe-ai"
       },
       "treeDigest": "5266f2a9acfb6ae5fd58717bdf366f38e224cb57a55824e2aa81a0922d5e6964"
@@ -284,26 +372,24 @@
       "minimumVersion": "0.0.2"
     },
     {
-      "name": "review",
-      "path": "skills/06-review-repair/review",
-      "source": {
-        "type": "github",
-        "repository": "marcioaltoe/skills",
-        "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
-        "path": "skills/06-review-repair/review"
-      },
-      "treeDigest": "5d27c3aeaed9505e21ee22e03367f2874db2969699dd5cfca621b2981b524174"
-    },
-    {
       "name": "systematic-debugging",
       "path": "skills/06-review-repair/systematic-debugging",
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
         "path": "skills/06-review-repair/systematic-debugging"
       },
       "treeDigest": "e0c4602fa3f6315e4841088b176bd797d3ce526de538c00d97cd8fa8234d023d"
+    },
+    {
+      "name": "roundfix",
+      "path": "skills/06-review-repair/roundfix",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "minimumVersion": "0.0.2"
     },
     {
       "name": "archive-spec",
@@ -320,10 +406,21 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
         "path": "skills/07-evidence-delivery/conventional-commits"
       },
       "treeDigest": "ef7a6718684adba3919e3211d470d95351f5e4949e9d3a9b290e4f2c77a8739c"
+    },
+    {
+      "name": "crafting-effective-readmes",
+      "path": "skills/07-evidence-delivery/crafting-effective-readmes",
+      "source": {
+        "type": "github",
+        "repository": "marcioaltoe/skills",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
+        "path": "skills/07-evidence-delivery/crafting-effective-readmes"
+      },
+      "treeDigest": "b78ea092608753c2aac4266a1daa1e80a55b29c3b9f746c373681cd9c0cd8705"
     },
     {
       "name": "github-pr-workflow",
@@ -331,7 +428,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
         "path": "skills/07-evidence-delivery/github-pr-workflow"
       },
       "treeDigest": "082906ba30c577d2ddb4fda1ef0c75bea42fb1ff139c898e377d7f9caba57d4a"
@@ -342,7 +439,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
         "path": "skills/07-evidence-delivery/handoff"
       },
       "treeDigest": "c8646a846de8896217189af07caee05204df6aa15601dcf4a4edb791043f20e2"
@@ -353,30 +450,10 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
+        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
         "path": "skills/07-evidence-delivery/tech-writer"
       },
       "treeDigest": "18efb1105eebbd46e051d643830f1758f089cdf0f0a912a8be5d79fc657fd606"
-    },
-    {
-      "name": "cut-release",
-      "path": "skills/08-release/cut-release",
-      "source": {
-        "type": "github",
-        "repository": "marcioaltoe/skills",
-        "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
-        "path": "skills/08-release/cut-release"
-      },
-      "treeDigest": "0320252020ae5b3fdcb4ccff9b122f1f2366c8b2e4ff7e0aab64e8b665300825"
-    },
-    {
-      "name": "roundfix",
-      "path": "skills/06-review-repair/roundfix",
-      "source": {
-        "type": "repo",
-        "name": "roundfix"
-      },
-      "minimumVersion": "0.0.2"
     }
   ],
   "activationBundles": [

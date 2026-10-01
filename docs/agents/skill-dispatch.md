@@ -84,8 +84,6 @@ Individual skill triggers:
   - `trigger.core.no-workarounds`: Fixing defects, regressions, or verification failures at their root cause.
 - `qa-gate`:
   - `trigger.context-workflow.qa-gate`: Running final Spec QA after implementation Tasks complete.
-- `review`:
-  - `trigger.core.review`: Reviewing a change against repository standards and its originating contract.
 - `roundfix`:
   - `trigger.autonomous-work.roundfix`: Running, inspecting, recovering or delivering work with the `roundfix` command line, or reading its output.
 - `setup-context-driven`:

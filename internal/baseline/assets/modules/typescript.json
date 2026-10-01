@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "typescript",
-  "version": 5,
+  "version": 6,
   "kind": "language-runtime",
   "title": "TypeScript repository guidance",
   "dependsOn": [
@@ -26,7 +26,6 @@
     "refactoring-analysis",
     "tdd",
     "to-prompt",
-    "triage",
     "typescript-advanced",
     "vite",
     "vitest",
@@ -184,15 +183,6 @@
         {
           "id": "trigger.typescript.to-prompt",
           "when": "Converting TypeScript repository context into a bounded implementation prompt."
-        }
-      ]
-    },
-    {
-      "skill": "triage",
-      "triggers": [
-        {
-          "id": "trigger.typescript.triage",
-          "when": "Triaging TypeScript repository work or external feedback."
         }
       ]
     },

@@ -51,7 +51,7 @@ func TestBaselineAssetsSyncCommand(t *testing.T) {
 			finding := baseline.AssetsSyncFinding{
 				Code:      "skills.setup-snapshot.drift",
 				Severity:  "error",
-				Path:      "assets/setups/go-cli.json",
+				Path:      "assets/setups/go.json",
 				ManagedID: "setup.go-cli",
 				Message:   "Bundled setup snapshot differs from the canonical source.",
 				Action:    "Run roundfix baseline assets sync without --check.",
@@ -112,7 +112,7 @@ func TestBaselineAssetsSyncCommand(t *testing.T) {
 				Findings: []baseline.AssetsSyncFinding{{
 					Code:      "skills.setup-snapshot.updated",
 					Severity:  "info",
-					Path:      "assets/setups/go-cli.json",
+					Path:      "assets/setups/go.json",
 					ManagedID: "setup.go-cli",
 					Message:   "Setup snapshot was synchronized from the canonical source.",
 					Action:    "Review the snapshot diff and run asset validation.",

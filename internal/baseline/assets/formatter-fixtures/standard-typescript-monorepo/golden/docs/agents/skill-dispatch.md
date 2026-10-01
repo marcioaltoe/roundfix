@@ -170,8 +170,6 @@ Individual skill triggers:
   - `trigger.frontend.react-hook-form-zod`: Building validated React forms with React Hook Form and Zod.
 - `refactoring-analysis`:
   - `trigger.typescript.refactoring-analysis`: Planning a behavior-preserving TypeScript refactor.
-- `review`:
-  - `trigger.core.review`: Reviewing a change against repository standards and its originating contract.
 - `roundfix`:
   - `trigger.autonomous-work.roundfix`: Running, inspecting, recovering or delivering work with the `roundfix` command line, or reading its output.
 - `security-best-practices`:
@@ -206,8 +204,6 @@ Individual skill triggers:
   - `trigger.context-workflow.the-fool`: Challenging a proposal through a pre-mortem, red-team, or evidence audit.
 - `to-prompt`:
   - `trigger.typescript.to-prompt`: Converting TypeScript repository context into a bounded implementation prompt.
-- `triage`:
-  - `trigger.typescript.triage`: Triaging TypeScript repository work or external feedback.
 - `turborepo`:
   - `trigger.monorepo.turborepo`: Changing Turborepo tasks, caching, package boundaries, or workspace orchestration.
 - `typescript-advanced`:

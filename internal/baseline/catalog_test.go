@@ -81,7 +81,7 @@ func TestEmbeddedCatalog(t *testing.T) {
 		"decisions.json",
 		"templates/index.json",
 		"retention/transition.managed-v2-to-portable-v3.json",
-		"setups/go-cli.json",
+		"setups/go.json",
 	} {
 		if _, ok := catalog.Asset(path); !ok {
 			t.Errorf("Asset(%q) missing", path)
@@ -169,7 +169,7 @@ func TestReadinessComparesDeclaredVersionToMinimum(t *testing.T) {
 func TestCatalogRejectsMissingOwnedSkillMinimum(t *testing.T) {
 	t.Parallel()
 
-	const assetPath = "setups/go-cli.json"
+	const assetPath = "setups/go.json"
 	assets := cloneEmbeddedAssets(t)
 	asset := assets[assetPath]
 	var setup map[string]any
@@ -248,8 +248,8 @@ func TestCatalogRegenerationMode(t *testing.T) {
 			t,
 			assets,
 			"profiles/rust-cli.json",
-			`"rust",`,
-			`"rust", "missing-module",`,
+			`"context-workflow", "rust",`,
+			`"context-workflow", "rust", "missing-module",`,
 		)
 
 		_, err := loadCatalog(assets, true)
@@ -1193,7 +1193,7 @@ func catalogMutationTests() []catalogMutationTest {
 			code: "catalog.profile.module.unknown",
 			edit: func(t *testing.T, assets fstest.MapFS) {
 				t.Helper()
-				replaceAsset(t, assets, "profiles/rust-cli.json", `"rust",`, `"rust", "missing-module",`)
+				replaceAsset(t, assets, "profiles/rust-cli.json", `"context-workflow", "rust",`, `"context-workflow", "rust", "missing-module",`)
 			},
 		},
 		{
@@ -1201,7 +1201,7 @@ func catalogMutationTests() []catalogMutationTest {
 			code: "catalog.profile.setup.unknown",
 			edit: func(t *testing.T, assets fstest.MapFS) {
 				t.Helper()
-				replaceAsset(t, assets, "profiles/rust-cli.json", `"setup": "rust-cli"`, `"setup": "missing-setup"`)
+				replaceAsset(t, assets, "profiles/rust-cli.json", `"setup": "rust"`, `"setup": "missing-setup"`)
 			},
 		},
 		{
@@ -1344,7 +1344,7 @@ func catalogMutationTests() []catalogMutationTest {
 			code: "catalog.setup.digest.mismatch",
 			edit: func(t *testing.T, assets fstest.MapFS) {
 				t.Helper()
-				replaceAsset(t, assets, "setups/rust-cli.json", `"digest": "`, `"digest": "0`)
+				replaceAsset(t, assets, "setups/rust.json", `"digest": "`, `"digest": "0`)
 			},
 		},
 		{
@@ -1610,7 +1610,7 @@ func replaceSetupSkillDigest(
 ) {
 	t.Helper()
 
-	const assetPath = "setups/go-cli.json"
+	const assetPath = "setups/go.json"
 	asset := assets[assetPath]
 	var setup map[string]any
 	if err := json.Unmarshal(asset.Data, &setup); err != nil {
