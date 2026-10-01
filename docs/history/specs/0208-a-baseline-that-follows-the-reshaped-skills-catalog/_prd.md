@@ -1,9 +1,12 @@
 ---
 spec: 0208-a-baseline-that-follows-the-reshaped-skills-catalog
-status: active
+status: archived
 created: 2026-10-01
 surfaces: [backend, docs]
+archived: "2026-10-01"
+source_slug: 0208-a-baseline-that-follows-the-reshaped-skills-catalog
 ---
+
 
 # A Baseline that follows the reshaped skills catalog
 
