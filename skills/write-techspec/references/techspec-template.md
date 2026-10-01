@@ -59,6 +59,10 @@ created: YYYY-MM-DD
 
 1. API Contract: ...
 
+### Surface Transcripts
+
+<!-- Follow the concrete-contracts guide in [references/concrete-contracts.md](concrete-contracts.md). Number each changed command surface and include its transcript block, or write `None.` with the reason. Do not nest a fenced block in this template guidance. -->
+
 ## Coverage Map
 
 <!-- One line per PRD goal, user story, Core Feature and Success Metric → the component(s) that satisfy it.

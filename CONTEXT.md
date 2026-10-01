@@ -623,8 +623,16 @@ The support command that upgrades an older Run Database to the binary's schema v
 _Avoid_: Automatic migration, database downgrade, schema compatibility mode
 
 **Spec Consistency Check**:
-The read-only, pre-Run support command that compares a Spec's written citations, declarations, and cross-references. It uses an ADR horizon: `SC-ADR-RELATED` reports an ADR for a committed Spec only when the commit that added the ADR is an ancestor of the commit that added the Spec's `_prd.md`. It reports consistency findings and never edits artifacts or emits a QA verdict.
+The read-only, pre-Run support command that compares a Spec's written citations, declarations, and cross-references. It uses an ADR horizon: `SC-ADR-RELATED` reports an ADR for a committed Spec only when the commit that added the ADR is an ancestor of the commit that added the Spec's `_prd.md`. Its Claim Receipt and Surface Transcript declaration gaps begin at the contract horizon, the commit that added the concrete-contract guide to the write-techspec skill. It reports consistency findings and never edits artifacts or emits a QA verdict.
 _Avoid_: QA gate, Spec validator, inference engine
+
+**Claim Receipt**:
+A source-and-quote pair in the same paragraph as an attribution to a decision record. The Spec Consistency Check proves that the verbatim quote occurs in the named source after whitespace normalization; it does not judge whether the quote supports the claim.
+_Avoid_: Citation proof, supported claim
+
+**Surface Transcript**:
+A numbered TechSpec declaration of one command surface containing its command, standard output, standard error, and exit code. The QA gate reproduces it through the built product and compares the streams using the transcript's exact-match and controlled-variation conventions.
+_Avoid_: CLI example, expected output prose
 
 **Consistency Finding Severity**:
 Each Spec Consistency Check finding is an `error` when the check locates both sides of a contradiction, or a `gap` when it surfaces a candidate it cannot settle. The `SC-*` diagnostic codes are stable and never renumbered once shipped.

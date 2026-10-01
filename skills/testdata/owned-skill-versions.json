@@ -71,6 +71,10 @@
       {
         "version": "0.0.4",
         "digest": "4e6ad547f4373a699f6fdacbaec594e2396d9717a2aae843b51ecb3b44fee5cb"
+      },
+      {
+        "version": "0.0.5",
+        "digest": "1f22aff749528aa7eee4600493ba8f8f29bc8f896a3a67548cc13e764f75fd3c"
       }
     ],
     "roundfix": [
@@ -119,6 +123,10 @@
       {
         "version": "0.0.3",
         "digest": "aa1396faad18e962a2ffde77236bc3de44ea5dbf070d47e5fb1848a15ced8d31"
+      },
+      {
+        "version": "0.0.4",
+        "digest": "65e9417cf082fd4b931d7b33b6234a613433c0294a94e6e73c55b8907c1eba8d"
       }
     ],
     "write-tasks": [
@@ -129,6 +137,10 @@
       {
         "version": "0.0.4",
         "digest": "5cbbcfeb91bcf38bc6bb709c7132abf8ae4b2c9ea7e5d8cda1e6f7bc2aeb30a7"
+      },
+      {
+        "version": "0.0.5",
+        "digest": "10c038ce8a63a532fec7e6793e25a9b822e86ff46ecc01efef7e402a5fcb4f57"
       }
     ],
     "write-techspec": [
@@ -139,6 +151,10 @@
       {
         "version": "0.0.3",
         "digest": "2b41b87d8a9066df6e7203054dbae27af311e75eccf6fe0cb1c8d42b4238c249"
+      },
+      {
+        "version": "0.0.4",
+        "digest": "7d44593860ba2c8384785efaa65987e55bf7d4c4ffc2e0aec6601cd75039ece8"
       }
     ]
   }
