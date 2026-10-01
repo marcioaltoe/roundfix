@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0200-a-skill-snapshot-that-matches-its-upstream
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -60,3 +60,66 @@ complexity: medium
 - ADR-0072, ADR-0191
 
 ## Result
+
+Implemented the Task's slice for Daemon Verification. `syncAssets` now validates
+its produced overlay after building snapshots, including an empty overlay. It
+preserves the two refusal messages, finding codes, categories and actions,
+and validates before either check-mode drift reporting or refresh writes.
+
+The synthetic source builder and fixture regeneration share the skill-file
+content and portable tree digest helpers. Regeneration derives every GitHub
+skill's tree digest before computing its setup digest. The user guide now
+contains the required sentence about validating the catalog as the refresh
+would leave it. No existing assertion was changed.
+
+Focused evidence by acceptance criterion:
+
+- Refresh and check after an upstream rename: the new
+  `TestAssetSyncFollowsASkillRenamedUpstream` and
+  `TestAssetSyncCheckReportsDriftForARenameTheRefreshRepairs` pass. Before the
+  production edit, both failed with the current-catalog `handoff-next`
+  outside-setup refusal. The tests rename the target core requirements and
+  dispatch entry, and the temporary source directory and all setup lists.
+- Invalid produced catalog and invalid catalog without drift:
+  `TestAssetSyncRefusesARenameNoSetupProvides` and
+  `TestAssetSyncStillRefusesAnInvalidCatalogWithoutDrift` pass in both refresh
+  and check subtests. They assert the refusal category, code, severity,
+  message prefix and action, and compare the complete asset tree preimage.
+  The no-drift case first refreshes successfully, then breaks the target core.
+- Synthetic derivation and altered digest:
+  `TestTheParityFixtureDigestsFollowTheSyntheticSource` and
+  `TestASyntheticDigestThatDiffersIsReported` pass. The latter uses a literal
+  fixture with one altered GitHub digest and requires a finding naming it.
+- No regeneration changes: `GOCACHE=/tmp/roundfix-task01-gocache rtk proxy make
+  baseline-digests` exited 0 and reported
+  `{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":false}`.
+
+Focused check command (exit 0):
+
+```sh
+GOCACHE=/tmp/roundfix-task01-gocache rtk proxy go test -count=1 ./internal/baseline -run 'TestAssetSync(Follows|CheckReports|Refuses|StillRefuses)|TestTheParityFixtureDigests|TestASyntheticDigest|TestAssetsSync(CheckIsReadOnly|Provenance|CompatibilityMatches)'
+```
+
+This also exercises existing read-only, pre-mutation refusal and maintained
+Python compatibility assertions. `git diff --check` exited 0. A direct byte
+comparison against `git show HEAD:<fixture>` confirmed the parity fixture is
+unchanged; `git diff --name-only HEAD -- internal/baseline/assets <fixture>`
+was empty. Whitespace-normalized guide inspection confirmed the entire
+required sentence.
+
+Repository incremental check: `GOCACHE=/tmp/roundfix-task01-gocache rtk make
+verify-incremental` exited 0 on a stable-tree rerun with the process-table
+access required by CLI force-stop integration tests. It covered formatting,
+vet, package tests, skill synchronization checks, skill checks and the build.
+The first sandboxed attempt exited 2: the CLI process-table probe was denied,
+and suiteguard detected the final helper/guide/Result edits made during that
+attempt. No edits were made during the successful rerun.
+
+The declared `## Verification` command was not run; the Daemon owns it and
+Task status. No commit, push or pull request was made. No follow-up scope was
+implemented.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T013631Z_c59b100cbb9f7af1`
+- Source commit: `cdae752d7c5b0dc8b65ad0ddd50f16cdeb1e2090`

@@ -309,6 +309,13 @@ func regenerateBaselineCompatibilitySetups(
 				t.Fatalf("asset-sync fixture setup %q skill is not an object", setupID)
 			}
 			source, ok := skill["source"].(map[string]any)
+			if ok && source["type"] == "github" {
+				skillPath, ok := skill["path"].(string)
+				if !ok || skillPath == "" {
+					t.Fatalf("asset-sync fixture setup %q github skill has no path", setupID)
+				}
+				skill["treeDigest"] = assetsSyncSyntheticTreeDigest(skillPath)
+			}
 			if !ok || source["type"] != "repo" {
 				continue
 			}

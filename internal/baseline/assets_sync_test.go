@@ -679,7 +679,7 @@ func buildAssetsSyncSource(t *testing.T, checkout string, assetRoot string) stri
 		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(target, []byte("# "+filepath.Base(filepath.Dir(target))+"\n"), 0o644); err != nil {
+		if err := os.WriteFile(target, assetsSyncSyntheticSkillFile(skillPath), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}

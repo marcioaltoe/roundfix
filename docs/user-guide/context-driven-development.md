@@ -800,8 +800,10 @@ roundfix baseline assets sync --source-dir <canonical-setups> --check --format j
 
 Without `--check`, Roundfix validates the generated catalog in memory and
 updates only `internal/baseline/assets/setups` through the recoverable
-transaction. It never installs skills, writes to the canonical source, or reads
-an installed setup skill as runtime authority.
+transaction. Both modes validate the catalog as the refresh would leave it, so a
+module edit that names a skill only the refreshed snapshots list lands together
+with the refresh. It never installs skills, writes to the canonical source, or
+reads an installed setup skill as runtime authority.
 
 ### Recovery and troubleshooting
 
