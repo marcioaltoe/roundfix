@@ -527,7 +527,7 @@ The explicit act that returns one parked Delivery Queue item to the stage suppor
 _Avoid_: Resume Command, automatic retry, replay
 
 **Judge Log**:
-The per-month JSONL record of every advisory judgment call: the question, the answer, probabilities, confidence, latency, input tokens, the model the service reported and the call's cost. Its monthly sum is what the spend ceiling reads (ADR-0201).
+The per-month JSONL record of every advisory judgment call: the question, the transport that carried it (OpenRouter or TypeSafe), the answer, probabilities, confidence, latency, input tokens, the model the service reported and the call's cost. Its monthly sum is what the spend ceiling reads (ADR-0201).
 _Avoid_: Run Event Journal, audit log
 
 **Advisory Judgment**:

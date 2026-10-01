@@ -12,27 +12,28 @@ complexity: medium
 
 The authored terminal gate for this Spec. It declares what the matrix covers
 and settles the Spec on evidence. This Spec adds `roundfix spec judge`, an
-advisory command that asks TypeSafe's Jev two measured questions about a
-Spec's citations and Coverage Map, logs every call, stops at a monthly
-ceiling and fails open, and has the `write-prd` and `write-techspec` skills
+advisory command that asks TypeSafe's Jev, through OpenRouter's System One
+API or else TypeSafe directly, two measured questions about a Spec's
+citations and Coverage Map, logs every call, stops at a monthly ceiling and
+fails open, and has the `write-prd` and `write-techspec` skills
 run it. Every behavior row is exercised through the built binary or by
 executing the named tests against the built tree, in a disposable repository
 with a disposable Roundfix Home. No command reaches TypeSafe or any other
-network service, except the reads of published pages the outside-evidence row
-names.
+network service, OpenRouter and TypeSafe included, except the reads of
+published pages the outside-evidence row names.
 
 ## Requirements
 
 1. MUST run the repository Verification and record its result as a gate fact.
-2. MUST verify that `internal/judge/questions.json` is byte-identical to the block under `_techspec.md` → Questions and thresholds, that it pins `jev-1.13.0`, and that its two thresholds equal the operating points of the adopted finding (`docs/history/findings/2026-09-30-jev-judgments-measured-against-the-spec-archive.md`): confidence 0.8 for citation support and probability 0.3 for goal to mechanism.
+2. MUST verify that `internal/judge/questions.json` is byte-identical to the block under `_techspec.md` → Questions and thresholds, that it pins `jev-1.13`, that its `accepted_model_pattern` admits exactly the shapes of Invariant 1, that it lists `openrouter` (`ROUNDFIX_JEV_OPENROUTER_API_KEY`, requesting `jev-1.13`) before `typesafe` (`TYPESAFE_API_KEY`, requesting `jev-1.13.0`), and that its two thresholds equal the operating points of the adopted finding (`docs/history/findings/2026-09-30-jev-judgments-measured-against-the-spec-archive.md`): confidence 0.8 for citation support and probability 0.3 for goal to mechanism.
 3. MUST verify, by executing task_01's tests against the built tree, every rule of Citation claims, Goal pairs, The language gate and The only readers, including the refusal of a symbolic-link PRD.
-4. MUST verify, by executing task_02's tests against the built tree, each threshold on both sides of its boundary, that an answer from another model is never raised or cleared, each stop and skip reason of Asking, that no request follows a stop, an empty key, an unreadable Judge Log or a reached ceiling, one Judge Log line per request, and `TestRequestsCarryOnlySpecArtifactText`.
+4. MUST verify, by executing task_02's tests against the built tree, the transport selection of Invariant 2, including that the generic `OPENROUTER_API_KEY` alone sends nothing, that each transport sends its own model ID, the model pin of Invariant 1 on both reported shapes and on a mismatching one, the reported and computed cost of Invariant 3, each threshold on both sides of its boundary, that an answer from another model is never raised or cleared, each stop and skip reason of Asking, that no request follows a stop, a missing Jev key, an unreadable Judge Log or a reached ceiling, one Judge Log line per request, and `TestRequestsCarryOnlySpecArtifactText`.
 5. MUST verify, by executing task_03's tests against the built tree, Surface Transcripts 1 and 5 and the JSON document of API Contract 2.
-6. MUST verify through the built binary, in a disposable repository holding an English fixture Spec and a Portuguese one, with `HOME` set to a disposable directory, `HTTPS_PROXY` and `HTTP_PROXY` pointed at a closed local port and `TYPESAFE_API_KEY` removed, that `roundfix spec judge` reproduces Surface Transcript 2; with a dummy key and a seeded Judge Log of US$5.0003 for the current month, Surface Transcript 3; with a dummy key, Surface Transcript 4 for the Portuguese Spec; and Surface Transcript 6 for an unknown Spec. After each run it MUST record that the disposable Judge Log gained no line.
-7. MUST verify through the built binary that `roundfix spec --help` and `roundfix --help` name the command as API Contract 5 states, and that `roundfix spec judge --help` names `TYPESAFE_API_KEY`, the monthly ceiling and the Judge Log.
+6. MUST verify through the built binary, in a disposable repository holding an English fixture Spec and a Portuguese one, with `HOME` set to a disposable directory, `HTTPS_PROXY` and `HTTP_PROXY` pointed at a closed local port, and `ROUNDFIX_JEV_OPENROUTER_API_KEY` and `TYPESAFE_API_KEY` removed, that `roundfix spec judge` reproduces Surface Transcript 2 with only a dummy `OPENROUTER_API_KEY` set; with a dummy `TYPESAFE_API_KEY` and a seeded Judge Log of US$5.0003 for the current month, Surface Transcript 3; with a dummy `ROUNDFIX_JEV_OPENROUTER_API_KEY`, Surface Transcript 4 for the Portuguese Spec; and Surface Transcript 6 for an unknown Spec. After each run it MUST record that the disposable Judge Log gained no line.
+7. MUST verify through the built binary that `roundfix spec --help` and `roundfix --help` name the command as API Contract 5 states, and that `roundfix spec judge --help` names `ROUNDFIX_JEV_OPENROUTER_API_KEY`, `TYPESAFE_API_KEY`, the monthly ceiling and the Judge Log.
 8. MUST verify, through a read-only probe that writes nothing to the repository (for example a `go test -overlay` test), that the language gate of the built tree classifies as English every `_prd.md` and `_techspec.md` under `docs/history/specs/` and every accepted ADR under `docs/adr/`, and record the lowest English share it saw.
 9. MUST verify that no non-test Go file outside `internal/judge`, `internal/cli/spec_judge.go` and `internal/cli/cli.go` imports `net/http`, so the command is Roundfix's only network client, and that `internal/speccheck` does not import `internal/judge`.
-10. MUST record, as evidence this Spec did not author, the sources quoted in `_prd.md` → Acceptance evidence: the TypeSafe API reference, models page, confidence page and citation-check cookbook, the Agent Skills specification and the Claude Code subagent reference. For each page it reaches, it MUST record what it read, and whether the request and response fields, the price and the version-pinning advice still match `_techspec.md`; for each it cannot reach, it MUST record the row as blocked with the reason. It MUST record the measurement figures of the adopted finding that this Spec relies on.
+10. MUST record, as evidence this Spec did not author, the sources quoted in `_prd.md` → Acceptance evidence: OpenRouter's TypeSafe SDK guide, Jev hub, Jev tutorial, Jev 1.13 model page and errors reference, the TypeSafe API reference, models page, confidence page and citation-check cookbook, the Agent Skills specification and the Claude Code subagent reference. For each page it reaches, it MUST record what it read, and whether the endpoints, the request and response fields (including OpenRouter's `id`, `provider` and `usage.cost`), the model ID mapping, the price and the version-pinning advice still match `_techspec.md`; for each it cannot reach, it MUST record the row as blocked with the reason. It MUST record the measurement figures of the adopted finding that this Spec relies on, and the 2026-10-01 endpoint probes of `_techspec.md` → Measured outside evidence as evidence this Spec did not produce.
 11. MUST verify that `docs/user-guide/commands/spec.md` carries `### spec judge`, that `.agents/skills/roundfix/references/spec.md` carries `### Advisory judge`, that `write-prd` and `write-techspec` carry `## Advisory judgment` with the command of their own stage, that each mirror equals its canonical copy, that the `### QA settlement` section of every skill is unchanged, and that `make skills-sync-check` exits `0`.
 12. MUST verify that this Spec's own artifacts satisfy the promise rule.
 13. MUST verify from the repository history that each Task's changed files stay within its declarations or its `## Recorded paths`, that every Governed Path is bounded in `_authorization.md`, and that `internal/cli/cli_test.go`, `.roundfixrc.yml` and `go.mod` did not change.
@@ -44,7 +45,7 @@ names.
     - Merge-Ready acceptance: none yet, because the pre-PR review follows archive;
     - review-artifact ancestry: the audited head named as the claimed candidate.
 16. MUST NOT accept a row whose only evidence is that a file was read.
-17. MUST NOT send any request to TypeSafe, read the real `TYPESAFE_API_KEY`, or write under the real `~/.roundfix`.
+17. MUST NOT send any request to OpenRouter or TypeSafe, read the real `ROUNDFIX_JEV_OPENROUTER_API_KEY`, `TYPESAFE_API_KEY` or `OPENROUTER_API_KEY`, or write under the real `~/.roundfix`.
 
 ## Subtasks
 
