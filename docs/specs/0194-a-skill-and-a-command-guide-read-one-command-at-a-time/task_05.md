@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0194-a-skill-and-a-command-guide-read-one-command-at-a-time
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
