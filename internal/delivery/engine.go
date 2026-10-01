@@ -27,6 +27,7 @@ const (
 	BlockerItemWorktreeMissing    = "item-worktree-missing"
 	BlockerRunBudgetExceeded      = "run-budget-exceeded"
 	BlockerQueueDeadline          = "queue-deadline"
+	BlockerQueueTokenCeiling      = "queue-token-ceiling"
 	BlockerRevalidationFailed     = "revalidation-failed"
 	BlockerFlakyCheck             = "flaky-check"
 	BlockerPullRequestConflict    = "pull-request-conflict"
@@ -353,6 +354,18 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 			store.DeliveryStageParked,
 		)
 	}
+	if queue.Limits.MaxTokens > 0 {
+		usage, err := engine.store.DeliveryQueueTokenUsage(ctx, gitRoot)
+		if err != nil {
+			return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: read queue token usage: %w", specSlug, err)
+		}
+		if usage.Total.Tokens != nil && *usage.Total.Tokens >= queue.Limits.MaxTokens {
+			return RetryResult{}, fmt.Errorf(
+				"retry Delivery Queue item %q: queue token ceiling %d was reached with %d tokens; start a new queue with roundfix deliver start",
+				specSlug, queue.Limits.MaxTokens, *usage.Total.Tokens,
+			)
+		}
+	}
 	if item.Blocker == BlockerQueueDeadline {
 		return RetryResult{}, fmt.Errorf(
 			"retry Delivery Queue item %q: queue deadline %s was reached; start a new queue with roundfix deliver start",
@@ -583,6 +596,19 @@ func (engine *Engine) Run(ctx context.Context, gitRoot string) (EngineResult, er
 			}
 			queue.Items[index] = item
 			continue
+		}
+		if item.Stage == store.DeliveryStageQueued && queue.Limits.MaxTokens > 0 {
+			usage, err := engine.store.DeliveryQueueTokenUsage(ctx, gitRoot)
+			if err != nil {
+				return EngineResult{}, fmt.Errorf("start Spec %q: read queue token usage: %w", item.SpecSlug, err)
+			}
+			if usage.Total.Tokens != nil && *usage.Total.Tokens >= queue.Limits.MaxTokens {
+				if err := engine.park(ctx, gitRoot, &item, BlockerQueueTokenCeiling); err != nil {
+					return EngineResult{}, fmt.Errorf("park Spec %q at queue token ceiling: %w", item.SpecSlug, err)
+				}
+				queue.Items[index] = item
+				continue
+			}
 		}
 		if item.Stage != store.DeliveryStageMerged {
 			priorMerges := mergedCommitsBefore(queue.Items, index)

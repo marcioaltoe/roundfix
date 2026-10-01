@@ -352,3 +352,26 @@ or reports that no window is set; either state exits `0`.
 `roundfix window clear` removes the stored window and reports whether one was
 set.
 
+
+### Token usage
+
+`roundfix deliver status` prints `Usage:` across every Run linked to the queue,
+including earlier retries: tokens, reporting prompt count, Run count and
+adapter-reported cost by currency. Unreported prompts add nothing and remain
+visible in the coverage count. Roundfix computes no spend from token prices.
+
+`roundfix deliver start --max-tokens <n> <slug>...` accepts an integer of at
+least 1 and stores the queue ceiling. Invalid values exit `2` before any
+queue or Run Database is created. The limits line prints `tokens <n>` or
+`tokens none`. At or above the recorded total, each queued item parks as
+`queue-token-ceiling` before branch or worktree creation; any parked item's
+retry is refused before workspace actions. Its Pending Question answer is
+`record a new queue for the remaining Specs with roundfix deliver start and a
+higher --max-tokens`. Status presents this blocker without a separate `Park:`
+line. A retry refusal names the ceiling and recorded tokens and tells the
+operator to start a new queue with `roundfix deliver start`.
+
+Record a new queue for the remaining Specs with a higher ceiling or no flag.
+Items already past `queued` continue, including running items; no Run is
+signalled, stopped or cancelled. A queue may exceed its ceiling by an item's
+Run. Unreported prompts and tokens outside Runs do not count.

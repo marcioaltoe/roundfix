@@ -125,6 +125,10 @@
       {
         "version": "0.1.5",
         "digest": "db9ea531eb266da99886cb72b8003451a8ec945e78d96889f790d9cb9e80d236"
+      },
+      {
+        "version": "0.1.6",
+        "digest": "8c06ca138f9f8c7bd67ef54a686fb67ad7e2f053188fc35ec6cc74c7cbdbde55"
       }
     ],
     "setup-context-driven": [

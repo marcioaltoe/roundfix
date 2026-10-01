@@ -167,3 +167,21 @@ Journal and then follows new Run Events without mutating or stopping the Run.
 - Below the two-pane width, the cockpit collapses to `SESSION.TIMELINE` with a
   one-line Work Queue summary and a footer hint to widen the terminal.
 
+
+### Token usage
+
+`roundfix runs show <run-id> [--json]` reads durable token usage without writing
+the Run Database. Text output lists each Work Item scope's Agent selections,
+tokens and counting basis, prompt coverage and adapter-reported cost, followed
+by a `Tokens:` total. Unreported prompts stay visible and never become zero;
+no usage rows says `no prompts recorded`. Cost is grouped by currency, with
+Agent Session coverage, and is never priced from tokens. Usage survives Run
+Event Journal retention. An unknown Run or invalid arguments exit `2`.
+
+`--json` emits schema `roundfix/runs-show/v1` with `run_id`, `kind`, `spec_slug`,
+`state`, `scopes` and `total`. Each scope carries `scope_kind`, `scope_id`,
+`selections`, `prompts`, `reported_prompts`, nullable `tokens`, `bases`, nullable
+`input_tokens`, `output_tokens`, `cached_read_tokens`, `cached_write_tokens`
+and `thought_tokens`, `costs` (currency/amount), `sessions` and `cost_sessions`.
+A split is null unless every reported prompt supplied it. The total has the
+same usage fields without scope identity and selections.

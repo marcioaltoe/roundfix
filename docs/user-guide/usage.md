@@ -766,6 +766,14 @@ currency: Roundfix sums increases in cumulative Agent Session cost readings,
 counting a lower reading as a new count. It computes no price from tokens.
 Prompts outside a Run, including the pre-PR review, are not counted.
 
+`roundfix deliver start --max-tokens <n>` sets a queue ceiling of at least
+1 token. At or above the recorded total, queued items park as
+`queue-token-ceiling` before a branch or worktree exists, and any parked
+item's retry is refused. Record a new queue with a higher ceiling or none.
+An item already past `queued` continues and no Run is stopped, so a queue
+can exceed its ceiling by one item's Run; unreported prompts and tokens
+outside Runs do not count.
+
 ### Route Codex through an operator-owned metering gateway
 
 An operator who needs per-request wire figures can start a metering gateway

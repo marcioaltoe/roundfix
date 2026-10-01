@@ -70,6 +70,9 @@ func ClassifyPark(queue store.DeliveryQueue, item store.DeliveryQueueItem) ParkC
 		if blocker == BlockerQueueDeadline {
 			classification.Next = "record a new queue for the remaining Specs with roundfix deliver start"
 		}
+	case BlockerQueueTokenCeiling:
+		classification.Class = ParkClassBudget
+		classification.Next = "record a new queue for the remaining Specs with roundfix deliver start and a higher --max-tokens"
 	case BlockerReviewBlocked, BlockerReviewStale:
 		classification.Class = ParkClassReview
 	case BlockerUnauthorized:
