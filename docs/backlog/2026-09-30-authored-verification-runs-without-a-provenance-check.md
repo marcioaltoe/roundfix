@@ -29,3 +29,9 @@ A command that executes authored Verification outside a Run compares the carryin
 ## Evidence
 
 `git grep -l "execution_approvals\|SOURCE-UNTRUSTED" -- '*.go'` on `9e439dbb` returns nothing. On 2026-09-29 and 2026-09-30 this session ran `spec check --strict --run-verification` on more than ten uncommitted Specs, and each run executed their commands. Spec 0193 rewrites the clause to say what is and is not enforced.
+
+## Addendum 2026-10-01: a malformed command passes the honesty probe
+
+During Spec 0205's delivery, an amended Verification command contained escaped backticks inside its inline-code span. The span ended at the first backtick, and the extracted command `grep -qF '| \` was a shell syntax error (`unexpected EOF while looking for matching`). It failed before the work, so `spec check --run-verification` reported it `honest`. It also failed after the work, so task_03 failed twice even though the implementation was complete (Run artifacts `run_20261001T214123Z_1a226c6ee6abc317/verification/batch-001-attempt-*.log`).
+
+Expected, in the same command family: a Verification command that the shell cannot parse, or that `sh -n` rejects, is reported as malformed, not as honest. `spec check --strict` refuses an inline-code Verification whose span contains a backslash-escaped backtick.
