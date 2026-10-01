@@ -1,0 +1,144 @@
+package /opt/homebrew/lib/node_modules/@agentclientprotocol/codex-acp/package.json: version 2.1.1
+
+/opt/homebrew/lib/node_modules/@agentclientprotocol/codex-acp/dist/index.js:37427
+const sessionCapabilities = {
+      resume: {},
+      list: {},
+      close: {},
+      delete: {},
+      fork: {},
+      additionalDirectories: {},
+      subagents: {}
+    };
+    return {
+      protocolVersion: PROTOCOL_VERSION,
+      agentInfo: {
+        name: package_default.name,
+        title: "Codex",
+        version: package_default.version
+      },
+      agentCapabilities: {
+        auth: {
+          logout: {}
+        },
+        providers: {},
+        loadSession: true,
+        promptCapabilities: {
+          embeddedContext: true,
+          image: true
+        },
+        sessionCapabilities,
+        mcpCapabilities: {
+          acp: false,
+          http: true,
+          sse: false
+        },
+        _meta: {
+          // Presence 
+
+/opt/homebrew/lib/node_modules/@agentclientprotocol/codex-acp/dist/index.js:37448
+loadSession: true,
+        promptCapabilities: {
+          embeddedContext: true,
+          image: true
+        },
+        sessionCapabilities,
+        mcpCapabilities: {
+          acp: false,
+          http: true,
+          sse: false
+        },
+        _meta: {
+          // Presence means "this agent pushes `_auth/status_update`". It
+          // never carries a payload, and the client never asks for one.
+          [AUTH_STATUS_META_KEY]: authStatusCapability()
+        }
+      },
+      authMethods: getCodexAuthMethods(_params.clientCapabilities),
+      _meta: {
+        steering: {
+          supported: true
+        },
+        // Only AIR gets the AIR extension, see `docs/air-extensions.md`.
+        ...this.capabilities.airClient ? {
+      
+
+package /opt/homebrew/lib/node_modules/@agentclientprotocol/claude-agent-acp/package.json: version 0.85.0
+
+/opt/homebrew/lib/node_modules/@agentclientprotocol/claude-agent-acp/dist/acp-agent.js:1271
+const sessionCapabilities = {
+            additionalDirectories: {},
+            close: {},
+            delete: {},
+            fork: {},
+            list: {},
+            resume: {},
+            subagents: {},
+        };
+        return {
+            protocolVersion: 1,
+            agentCapabilities: {
+                _meta: {
+                    claudeCode: {
+                        promptQueueing: true,
+                    },
+                    // Capability marker for the `authStatus` extension: presence means
+                    // "this agent pushes its identity" and the object stays empty — it is
+                    // never a status payload. The state itself travels on
+                    // `_auth/status_update`; there is nothing f
+
+/opt/homebrew/lib/node_modules/@agentclientprotocol/claude-agent-acp/dist/acp-agent.js:1308
+loadSession: true,
+                sessionCapabilities,
+            },
+            agentInfo: {
+                name: packageJson.name,
+                title: "Claude Agent",
+                version: packageJson.version,
+            },
+            authMethods: [
+                ...terminalAuthMethods,
+                ...(supportsGatewayAuth ? [gatewayAuthMethod, gatewayBedrockAuthMethod] : []),
+            ],
+            // Top-level `_meta` (sibling of `agentCapabilities`), per the existing ACP
+            // steering extension contract: advertises the `_session/steering` request
+            // so clients know they may inject a follow-up into a running turn.
+            // Only AIR gets the AIR capabilities and the goal capability, under
+ 
+
+package /opt/homebrew/lib/node_modules/acpx/package.json: version 0.19.4
+
+/opt/homebrew/lib/node_modules/acpx/dist/queue-owner-runtime-C0wIYowh.js:5151
+if (params.client.supportsResumeSession()) return await loadRuntimeSession(params, true);
+	if (params.client.supportsLoadSession()) return await loadRuntimeSession(params, false);
+	if (params.sameSessionOnly) throw makeSessionResumeRequiredError({
+		record: params.record,
+		reason: "agent does not support session/resume or session/load"
+	});
+	return await createFreshRuntimeSession(params.client, params.record, params.timeoutMs, params.authority);
+}
+async function loadRuntimeSession(params, resume) {
+	try {
+		const loadResult = await withTimeout(resume ? params.client.resumeSession(params.record.acpSessionId, params.record.cwd, params.authority) : params.client.loadSessionWithOptions(params.record.acpSessionId, params.record.cwd, {
+			suppre
+
+/opt/homebrew/lib/node_modules/acpx/dist/queue-owner-runtime-C0wIYowh.js:5185
+async function recoverRuntimeSessionLoadFailure(params, error) {
+	const loadError = formatErrorMessage(error);
+	if (params.sameSessionOnly) throw makeSessionResumeRequiredError({
+		record: params.record,
+		reason: loadError,
+		cause: error
+	});
+	if (!shouldFallbackToNewSession(error, params.record)) throw error;
+	return {
+		...await createFreshRuntimeSession(params.client, params.record, params.timeoutMs, params.authority),
+		loadError
+	};
+}
+async function createFreshRuntimeSession(client, record, timeoutMs, authority) {
+	const createdSession = await withTimeout(client.createSession(record.cwd, authority), timeoutMs);
+	applyConfigOptionsToRecord(record, createdSession);
+	return {
+		sessionId: createdSession.sessionId,
+		pendingAgentSessionI

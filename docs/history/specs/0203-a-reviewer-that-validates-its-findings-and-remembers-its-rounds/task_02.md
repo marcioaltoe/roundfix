@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -116,3 +116,8 @@ Roundfix reads its answer.
 - [_prd.md](_prd.md) — Goals 1–3; User Stories 1 and 3; Core Features 1, 4 and 5; Success Metrics 1 and 3
 - [_techspec.md](_techspec.md) — Regions; Validation; Invariants 1 and 2; API Contracts 2–4; Surface Transcripts 1 and 7; Testing Approach 2; Build Order 2
 - ADR-0196; ADR-0151; ADR-0153
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T145917Z_95f0b38476c6ebcc`
+- Source commit: `03f23feaf72f8fc28cb193140b11065e6437f56d`

@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -142,3 +142,118 @@ checkout.
 - [_prd.md](_prd.md) — Goal 4; User Story 4; Core Features 7 and 9; Success Metric 5; Recorded limits; Declared breaks
 - [_techspec.md](_techspec.md) — The continued session; Data Models; Invariants 7 and 8; API Contracts 1–5; Surface Transcript 4; Integration Points; Testing Approach 4; Build Order 4
 - ADR-0197; ADR-0017; ADR-0018; ADR-0051; ADR-0189
+
+## Result
+
+Implemented this Task's session lifecycle and documentation slice. Task status
+and the authored Verification commands remain Daemon-owned. No commit, push,
+Pull Request, Task Graph edit, or other Task-file edit was performed.
+
+### Implementation and acceptance evidence
+
+- `ExecuteResult.ACPSessionID` captures the first `session/update`
+  notification's `sessionId`, including on stopped/error prompt returns. All
+  prior result assignments, raw protocol output, message collection, usage,
+  event publication and stop reason remain unchanged.
+  `TestACPXRunPromptReportsTheACPSessionID` covers `s-1`, missing IDs, no
+  notifications, and later notifications not replacing the first ID.
+- `TestReviewRoundOneWithFindingsLeavesItsSessionOpen` checks both the printed
+  and persisted session name, selection and open flag, with no closure.
+  Separate reviewed, blocked and validation-dismissed tests check closure.
+- `TestReviewRoundTwoContinuesTheRecordedSession` exercises Surface Transcript
+  4 through temporary Git commits and an operator fixing disposition. It
+  checks the same prepared name and runtime, the delta prompt and recorded
+  conversation, two matching ACP IDs, `continued: true`, and closure.
+  Separate different-ID and empty-ID tests require `continued: false`.
+  `TestReviewRoundTwoContinuesTheRecordedFallbackSelection` checks selection
+  index 1 rather than assuming the preferred selection.
+- `TestReviewRoundTwoFallsBackToAFreshSessionWhenPreparationFails` checks that
+  the recorded name is closed and a fresh random name receives the prompt,
+  with `continued: false`. A separate post-prompt failure test checks closure
+  without activating fallback; round-2 findings also close their session.
+- `TestReviewLineageChangeEndsTheOpenSession` rebases the candidate and checks
+  that the prior name closes before the new round-1 preparation, with a fresh
+  ACP-ID history. A separate provider-omission test checks closure when the
+  policy changes to `none`, without another reviewer prompt.
+- `TestReviewDismissedReuseEndsTheOpenSession` records an evidence-backed
+  operator dismissal and checks exit 0, the closed flag, no new prompt, and no
+  repeated closure on later reuse. A separate standing-reuse test keeps the
+  session open.
+- The review reference, shipped mirror and command guide describe Delivery
+  Conventions, finding grammar, the three validation rules and fail-closed
+  validator, Reviewer Lineage/delta, measured continuation, ceiling closure,
+  and dispose refusal. A focused Python inspection confirmed all four required
+  phrases in each file, identical skill mirrors, and that only the two version
+  fields changed in `SKILL.md`; `### QA settlement` is byte-identical to HEAD.
+- The four existing Requirement 7 test names were included in focused checks
+  and passed without edits. The existing
+  `TestReviewRoundTwoPromptCarriesTheDeltaAndRoundOneFindings` was updated,
+  without renaming, to expect one closure after round 2 rather than one per
+  round. Its prompt and finding/disposition assertions remain intact.
+
+### Focused checks and regeneration
+
+- Starting evidence: the two required new test files were absent, and the
+  existing configured session loop unconditionally ended a prepared session.
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/cli ./internal/agent -run
+  'TestReview(RoundOne|RoundTwo|LineageChange|DismissedReuse|StandingReuse|ProviderOmission|Session|CommandUsesFallback)|TestACPXRunPrompt'
+  -count=1`: exit 0; 32 tests passed across both packages. This focused selection
+  differs from the Task's authored Verification and also covers the existing
+  ACP update/stop-reason test and the three existing review-session tests.
+- A test invocation using the default macOS Go cache was blocked by cache
+  filesystem permissions; the repository-local cache rerun above passed.
+- `rtk make skills-sync`: exit 0; regenerated
+  `skills/roundfix/SKILL.md` and `skills/roundfix/references/review.md`.
+- `rtk go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions`: exit 0; recorded the patch step `0.1.6` to `0.1.7`
+  in `skills/testdata/owned-skill-versions.json`.
+- `rtk make baseline-digests`: exit 0, `changed: false`; no derived file changed.
+- `rtk proxy git diff --check`: exit 0; no whitespace diagnostic. Git also
+  printed its sandbox fsmonitor IPC warning; it did not prevent inspection.
+
+- Initial `rtk make verify-incremental`: exit 2. Its suite guard detected
+  Agent edits made while the command was running; two CLI process-owner tests
+  also could not read the sandboxed process table, and the unrelated
+  `TestTaskBudgetReasonNamesTheSettlementThatRenewedIt` exceeded its 200 ms
+  budget under concurrent checks. No assertions or timing were changed. A
+  rerun uses process access and a stationary tree.
+- Final `rtk make verify-incremental` with process access and no concurrent
+  edits: exit 0. Formatting, `go vet ./...`, `go test -parallel 16 ./...`,
+  `skills-sync-check`, skill checks and the binary build passed. The process
+  tests and the daemon budget test passed without source/assertion changes.
+  This is incremental implementation evidence, not the Daemon's authored
+  Verification or terminal Task settlement.
+
+### Changed paths
+
+- `internal/agent/agent.go`
+- `internal/agent/acpx_runner.go`
+- `internal/agent/agent_session_id_test.go`
+- `internal/cli/review.go`
+- `internal/cli/review_lineage.go`
+- `internal/cli/review_lineage_test.go`
+- `internal/cli/review_session_test.go`
+- `.agents/skills/roundfix/SKILL.md`
+- `.agents/skills/roundfix/references/review.md`
+- `skills/roundfix/SKILL.md`
+- `skills/roundfix/references/review.md`
+- `skills/testdata/owned-skill-versions.json`
+- `docs/user-guide/commands/review.md`
+- This Task file's `## Result` only; its `in_progress` status was set by the
+  Daemon, not this Agent.
+
+Tests use only fake prepared-session runners and the existing fake ACP stream
+helper, temporary repositories and temporary Artifact Directories. No real
+adapter, reviewer, network, `~/.acpx` or live ledger was accessed. Actual
+adapter resumption remains measured by the recorded IDs during real use.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/review_lineage_test.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T145917Z_95f0b38476c6ebcc`
+- Source commit: `380fb6a28a82b717b9bef22db638fccf1920626c`

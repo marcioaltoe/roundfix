@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -160,3 +160,96 @@ Task leaves every anchored finding standing.
 - [_prd.md](_prd.md) — Goals 1–3; User Stories 1–3; Core Features 1, 2, 3 and 5; Success Metric 2; Declared breaks
 - [_techspec.md](_techspec.md) — The finding grammar and the prompt; Validation; Data Models; Invariants 1, 3, 6 and 9; API Contracts 1–4; Surface Transcripts 2 and 3; Testing Approach 1 and 5; Build Order 1
 - ADR-0196; ADR-0153; ADR-0169; ADR-0174
+
+## Result
+
+Implemented this Task's anchor-validation slice. The prompt retains its
+existing verdict grammar and carries the exact finding-grammar sentence and
+C1–C4 Delivery Conventions. Each finding records its parsed anchor and
+validation. The validator consumes the exact candidate diff used in the
+prompt, without fetching a second diff. Anchored findings stand;
+missing/out-of-diff anchors are dismissed as `unanchored`. The outcome,
+reuse, missing-disposition diagnostics and dispose refusal now respect
+validation dismissals. No convention judgment, lineage or session changes
+belong to this diff; those remain with task_02–task_04.
+
+The three new Go files are absent from committed HEAD (confirmed with
+`rtk proxy git -c core.fsmonitor=false ls-tree --name-only HEAD --
+internal/cli/review_conventions.go internal/cli/review_validation.go
+internal/cli/review_validation_test.go`, which returned no paths). The
+Daemon-provided `status: in_progress` was preserved. No Task Graph or other
+Task file was edited, and no commit, push or Pull Request was made.
+
+Focused implementation evidence:
+
+- `GOCACHE=/tmp/roundfix-task01-cache rtk proxy go test ./internal/cli -run
+  '(Review|SplitReview|DeliveryReview)' -count=1`: exit 0, final run
+  `ok roundfix/internal/cli 15.511s`. This includes all existing review tests,
+  the eight new acceptance tests and the additional parser/reuse negatives.
+- `GOCACHE=/tmp/roundfix-task01-cache rtk make verify-incremental`: final
+  frozen-tree run with required process-table access exited 0. Formatting,
+  vet, repository tests, skill sync/checks and CLI build passed. The prior
+  sandboxed attempt hit stop-command process-table restrictions and detected
+  edits made while its suite guard was running. The first frozen rerun
+  passed the CLI package but hit the unrelated Daemon test
+  `TestTaskBudgetReasonNamesTheSettlementThatRenewedIt` (its 200 ms budget
+  expired before the second Task began). That unchanged test passed in an
+  isolated run, and the subsequent incremental run passed with the successful
+  package caches. No unrelated test, budget or verification configuration
+  was changed.
+- `rtk proxy git -c core.fsmonitor=false diff --check`: exit 0.
+- A Python read/assert inspection of the review command guide confirmed
+  `roundfix/delivery-conventions/v1`, `dismissed-by-validation`, `Failure:`
+  and `was dismissed by validation` are present.
+
+Acceptance evidence:
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| Anchor forms and refusal cases | `TestReviewFindingAnchorParsesEachForm` covers bare/backticked, ranged, comma-listed, end/colon/parenthesis boundaries and Unicode whitespace; missing lines, trailing letters, a non-leading anchor, reversed ranges, whitespace inside paths and numeric overflow are refused. |
+| Hunk lines and whole files | `TestReviewDiffIndexHoldsHunkLinesAndWholeFiles` covers context/added lines, multiple hunks, out-of-hunk lines, overlapping ranges, pure deletions, deleted/binary/rename-only/mode-only files and absent files. Separate negative tests prove hunk content cannot overwrite file headers, and Git-quoted paths, including a trailing backslash, retain their identity. |
+| Prompt grammar and conventions | `TestReviewPromptCarriesTheDeliveryConventionsAndTheFindingGrammar` checks the added sentence, the existing sentence byte for byte, the versioned block, the Cn lines and placement after the head. `TestReviewPromptAsksForOneListItemPerFinding` and `TestReviewPromptWithoutSpecIsUnchanged` remain unedited and pass. |
+| Mixed dismissed/standing findings | `TestReviewDismissesAnUnanchoredFindingAndKeepsTheAnchoredOne` reproduces Transcript 2 without lineage: exit 1, findings outcome, exact stderr, both anchors/validation reasons and persisted validation metadata. A separate missing-anchor case checks its distinct dismissal reason. |
+| All findings outside the diff | `TestReviewFindingsAllDismissedByValidationExitZero` proves exit 0, findings-dismissed, two dismissal diagnostics, no ledger and no dispositions; it also proves a findings record with no standing finding is refused. |
+| No readable anchors | `TestReviewBlocksFindingsThatNameNoFileAndLine` reproduces Transcript 3 without lineage: exit 2, exact reason/stderr, no finding items/text, retained answer path and validator not-needed. |
+| Same-head reuse | `TestReviewReuseCountsValidationDismissalsAsDismissed` proves a validation dismissal plus one evidence-backed operator dismissal reuses as findings-dismissed without Agent activity. `TestReviewReuseListsOnlyStandingFindingsAsMissing` separately proves only the standing F2 gets a missing-disposition diagnostic. |
+| Dispose refusal | `TestReviewDisposeRefusesAFindingDismissedByValidation` proves exit 2, exact refusal text, empty stdout and byte-identical existing ledger. |
+| Existing contracts | The focused review selection passes all existing review tests, including `TestReviewRecordRoundTripsEachOutcome`, `TestReviewRecordRefusesInvalidFindingsDismissed` and `TestReviewClassifiesVerdictVariants`. Legacy records retain their field names/order, optional new fields and standing findings. |
+| Command guide | The existing guide describes C1–C4 and their version, anchor grammar/indexing, outcomes, validation status, reuse and dispose refusal; the phrase inspection above confirms the required public terms. |
+
+Existing tests updated only to supply a finding anchored in their fixture diff,
+with every top-level name and existing behavioral assertion retained:
+
+- `TestReviewCommandExitsOneAndRecordsFindings`
+- `TestReviewClassifiesVerdictVariants`
+- `TestReviewRecognisesAColonlessFindingsHeader`
+- `TestReviewRecognisesEmphasizedFindingsHeader`
+- `TestReviewReadsFindingsNoneAsNoFindings`
+- `TestReviewIgnoresAQuotedVerdictInsideFindings`
+- `TestReviewKeepsTheRawAnswer`
+- `TestReviewReportsFindingsDismissedWithoutAskingTheReviewer`
+- `TestReviewKeepsStandingFindingsWithoutAskingTheReviewer`
+- `TestReviewIgnoresADismissalOfDifferentText`
+- `TestReviewIgnoresAFixWhenClearingAHead`
+- `TestReviewAsksAgainAfterTheHeadMoves`
+- `TestReviewAsksAgainForADifferentBase`
+- `TestReviewAsksAgainForADifferentProvider`
+- `TestReviewRecordsTheSpecsACandidateArchives`
+- `TestReviewNamesTheCorrectiveSpecForFindingsAfterArchive`
+- `TestReviewInOneCheckoutLeavesAnotherCheckoutsRecord`
+- `TestReviewDisposeReadsOnlyItsCheckoutsRecord`
+- `TestReviewClassifiesTheFinalMessageAfterProgressText`
+
+The quoted-verdict fixture keeps the quoted clean verdict within an anchored
+finding; the inline-none fixture marks its following anchored finding as a
+separate item. Both retain their previous verdict and text-preservation
+assertions. Disposition-only and merge-base fixtures that this change did not
+invalidate were left unedited.
+
+Declared Verification commands were not run. Task status and settlement remain
+Daemon-owned. The Roundfix skill reference/version change remains task_04.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T145917Z_95f0b38476c6ebcc`
+- Source commit: `b645d2999344e5decbf55f98a2d105e6e7e99a26`

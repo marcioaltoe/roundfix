@@ -1,9 +1,12 @@
 ---
 spec: 0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds
-status: active
+status: archived
 created: 2026-09-30
 surfaces: [backend, cli, docs]
+archived: "2026-10-01"
+source_slug: 0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds
 ---
+
 
 # A reviewer that validates its findings and remembers its rounds
 

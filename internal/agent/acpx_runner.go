@@ -541,6 +541,7 @@ type acpxJSONRPCError struct {
 }
 
 type acpxStreamResult struct {
+	acpSessionID       string
 	usage              TurnUsage
 	output             string
 	message            string
@@ -1449,6 +1450,7 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 		result.Messages = stream.messages
 		result.StopReason = stream.stopReason
 		result.Usage = stream.usage
+		result.ACPSessionID = stream.acpSessionID
 		_ = runner.publishStatus(context.WithoutCancel(ctx), req.ExecuteRequest, sink, "stopped")
 		return result, StopError{LogPath: req.LogPath, Output: result.Output, Killed: forceClosed, Err: ctx.Err()}
 	}
@@ -1458,6 +1460,7 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 	result.Messages = stream.messages
 	result.StopReason = stream.stopReason
 	result.Usage = stream.usage
+	result.ACPSessionID = stream.acpSessionID
 	if waitErr != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return result, StopError{LogPath: req.LogPath, Output: result.Output, Err: ctxErr}
@@ -1488,6 +1491,8 @@ func (runner *ACPXRunner) readPromptStream(ctx context.Context, req ExecuteReque
 	var output bytes.Buffer
 	var messages agentMessageLog
 	var stopReason string
+	var acpSessionID string
+	var sessionUpdateSeen bool
 	var promptResultParsed bool
 	var usage promptUsageCollector
 	var agentOutput bool
@@ -1501,6 +1506,16 @@ func (runner *ACPXRunner) readPromptStream(ctx context.Context, req ExecuteReque
 			}
 			if _, err := output.Write(line); err != nil && streamErr == nil {
 				streamErr = fmt.Errorf("capture acpx stdout: %w", err)
+			}
+			if !sessionUpdateSeen {
+				var notification acpxJSONRPCMessage
+				if json.Unmarshal(line, &notification) == nil && notification.Method == acpMethodSessionUpdate {
+					sessionUpdateSeen = true
+					var params acpSessionNotificationPayload
+					if json.Unmarshal(notification.Params, &params) == nil {
+						acpSessionID = params.SessionID
+					}
+				}
 			}
 			lineOutput, err := runner.handleStdoutLine(ctx, req, sink, line, &messages, &stopReason, &promptResultParsed, &usage, publishWorkStarted)
 			agentOutput = agentOutput || lineOutput
@@ -1517,7 +1532,7 @@ func (runner *ACPXRunner) readPromptStream(ctx context.Context, req ExecuteReque
 	}
 	messageList := messages.messages()
 	contract := adapterLineageContracts[strings.TrimSpace(req.Runtime.ID)]
-	return acpxStreamResult{usage: countTurnUsage(contract.LastRequestOnly, usage.reported, usage.readings, usage.cost), output: output.String(), message: strings.Join(messageList, "\n\n"), messages: messageList, stopReason: stopReason, promptResultParsed: promptResultParsed, agentOutput: agentOutput, err: streamErr}
+	return acpxStreamResult{acpSessionID: acpSessionID, usage: countTurnUsage(contract.LastRequestOnly, usage.reported, usage.readings, usage.cost), output: output.String(), message: strings.Join(messageList, "\n\n"), messages: messageList, stopReason: stopReason, promptResultParsed: promptResultParsed, agentOutput: agentOutput, err: streamErr}
 }
 
 func validateACPXPromptRequest(req ACPXPromptRequest) error {
