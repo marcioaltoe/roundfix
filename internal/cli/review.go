@@ -370,6 +370,7 @@ type reviewSpecContext struct {
 
 type reviewSpecContextResult struct {
 	candidateDiff string
+	runtime       agent.RuntimeSpec
 	contexts      []reviewSpecContext
 	skipped       []string
 	archivedSpecs []string
@@ -532,6 +533,9 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	record, code := classifyReviewCommandResult(record, result, runErr)
 	if record.Outcome == reviewOutcomeFindings || record.Outcome == reviewOutcomeReviewed {
 		record, code = validateReviewFindingAnchors(record, specContext.candidateDiff)
+	}
+	if record.Outcome == reviewOutcomeFindings {
+		record, code = validateReviewConventions(ctx, reviewRepository{Root: gitState.Root, Head: gitState.HEAD, Base: baseCommit, SpecRoots: specRoots, Git: gitRunner}, record, runner, specContext.runtime)
 	}
 	if !promptSent {
 		return finishReviewCommand(stdout, stderr, artifactDir, record, code)
@@ -946,6 +950,7 @@ func runConfiguredReviewSession(
 			return agent.ExecuteResult{}, specContext, false, runtimeErr
 		}
 		request.Runtime = runtime
+		specContext.runtime = runtime
 		request.Session = reviewSessionRef(headCommit, gitRoot, 0)
 		result, runErr := runner.Run(ctx, request, runevent.Discard)
 		return result, specContext, true, runErr
@@ -960,6 +965,7 @@ func runConfiguredReviewSession(
 			return agent.ExecuteResult{}, specContext, false, runtimeErr
 		}
 		request.Runtime = runtime
+		specContext.runtime = runtime
 		request.Session = reviewSessionRef(headCommit, gitRoot, index)
 		if prepareErr := preparer.PrepareSession(ctx, request, runevent.Discard); prepareErr != nil {
 			_ = runner.EndSession(context.WithoutCancel(ctx), runtime, request.Session)
