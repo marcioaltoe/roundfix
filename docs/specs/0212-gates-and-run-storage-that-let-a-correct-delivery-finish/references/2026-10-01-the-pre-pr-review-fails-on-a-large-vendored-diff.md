@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-01
-spec: null
+spec: 0212-gates-and-run-storage-that-let-a-correct-delivery-finish
 reason: null
 ---
 
