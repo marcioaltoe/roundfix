@@ -1,9 +1,12 @@
 ---
 spec: 0191-claims-with-receipts-and-contracts-as-they-ship
-status: active
+status: archived
 created: 2026-09-30
 surfaces: [backend, cli, docs]
+archived: "2026-10-01"
+source_slug: 0191-claims-with-receipts-and-contracts-as-they-ship
 ---
+
 
 # Claims with receipts and contracts as they ship
 
