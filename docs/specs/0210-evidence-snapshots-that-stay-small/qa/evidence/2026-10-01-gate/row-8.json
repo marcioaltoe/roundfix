@@ -1,0 +1,71 @@
+{
+  "range": "fb78db9f6a9db5dd10f67e40cb0830ee33a6bd0e..cc961b46f352b55daf3f0777a1a882b1c27b8eb9",
+  "protected_unchanged": [
+    "internal/speccheck/mechanical_test.go",
+    "internal/speccheck/qa_row_carry_test.go",
+    "internal/daemon/qa_prior_pass_test.go"
+  ],
+  "authorization": "approved; paths: []; ancestor before Task commits",
+  "audit": [
+    {
+      "commit": "109edaba44d4cf24b5b0cadb7007728f8fa61815",
+      "path": "docs/specs/0210-evidence-snapshots-that-stay-small/task_01.md",
+      "declared_by": "assigned Task file",
+      "governed": false
+    },
+    {
+      "commit": "109edaba44d4cf24b5b0cadb7007728f8fa61815",
+      "path": "internal/daemon/qa_evidence_snapshot_test.go",
+      "declared_by": "Context",
+      "governed": false
+    },
+    {
+      "commit": "109edaba44d4cf24b5b0cadb7007728f8fa61815",
+      "path": "internal/daemon/qa_two_pass_carry_test.go",
+      "declared_by": "Context",
+      "governed": false
+    },
+    {
+      "commit": "109edaba44d4cf24b5b0cadb7007728f8fa61815",
+      "path": "internal/speccheck/evidence_digest_test.go",
+      "declared_by": "Context",
+      "governed": false
+    },
+    {
+      "commit": "109edaba44d4cf24b5b0cadb7007728f8fa61815",
+      "path": "internal/speccheck/evidence_record.go",
+      "declared_by": "Context",
+      "governed": false
+    },
+    {
+      "commit": "109edaba44d4cf24b5b0cadb7007728f8fa61815",
+      "path": "internal/speccheck/evidence_record_test.go",
+      "declared_by": "Context",
+      "governed": false
+    },
+    {
+      "commit": "109edaba44d4cf24b5b0cadb7007728f8fa61815",
+      "path": "internal/speccheck/mechanical.go",
+      "declared_by": "Context",
+      "governed": false
+    },
+    {
+      "commit": "109edaba44d4cf24b5b0cadb7007728f8fa61815",
+      "path": "internal/speccheck/report.go",
+      "declared_by": "Context",
+      "governed": false
+    },
+    {
+      "commit": "cc961b46f352b55daf3f0777a1a882b1c27b8eb9",
+      "path": "docs/specs/0210-evidence-snapshots-that-stay-small/task_02.md",
+      "declared_by": "assigned Task file",
+      "governed": false
+    },
+    {
+      "commit": "cc961b46f352b55daf3f0777a1a882b1c27b8eb9",
+      "path": "docs/user-guide/context-driven-development.md",
+      "declared_by": "Context",
+      "governed": false
+    }
+  ]
+}

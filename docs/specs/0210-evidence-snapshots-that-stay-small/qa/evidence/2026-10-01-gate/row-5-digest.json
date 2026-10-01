@@ -1,0 +1,11 @@
+{
+  "head": "e157b7f73f6828e9fee3f37a0e593436ad5239c0",
+  "input": "go.mod",
+  "git_ls_tree_paths": [
+    "go.mod"
+  ],
+  "matched_count": 1,
+  "legacy_content_sha256": "9ae330c6ab73f9c1e345755c00dfa9daa037f4431e37634780f7103acb6bee1e",
+  "independent_summary_sha256": "8b2062642147363c11fc9feed21c99308387506aa6e3b67769ace9851990f612",
+  "legacy_digest_matches_git_blob": true
+}

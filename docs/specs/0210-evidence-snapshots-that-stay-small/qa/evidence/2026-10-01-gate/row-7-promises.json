@@ -1,0 +1,9 @@
+{
+  "PRD covers Goals 1-3 and Core Features 1-5": true,
+  "All Success Metrics mapped": true,
+  "Task references name metrics and APIs": true,
+  "No new vocabulary is declared": true,
+  "Glossary shape remains neutral": true,
+  "Intentional wording break documented": true,
+  "Both non-QA dependencies completed": true
+}
