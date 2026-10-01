@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -111,3 +111,59 @@ disposition ledger, and it writes nothing to the ledger.
 - [_prd.md](_prd.md) — Goals 4–5; User Stories 4–5; Core Features 6 and 8; Success Metrics 4 and 6; Declared breaks
 - [_techspec.md](_techspec.md) — The Reviewer Lineage; Data Models; Invariants 4–6; API Contracts 1, 2 and 5; Surface Transcripts 5 and 6; Testing Approach 3; Build Order 3
 - ADR-0197; ADR-0153; ADR-0165; ADR-0169; ADR-0174
+
+
+## Result
+
+Implemented the Reviewer Lineage using only the current checkout's record and
+read-only access to the disposition ledger. Round 2 prompts carry the delta,
+round-1 findings, validation and dispositions; anchor validation still uses the
+full merge-base candidate diff. A blocked review repeats its recorded round
+with its previous data. Descendants after round 2 close only with qualifying
+operator dispositions, without preparing or calling a reviewer or changing the
+answer file. Blocked ceiling calls print their result without replacing the
+round-2 record. `ceiling-closed` advances the Delivery Queue as Reviewed.
+Session continuation remains task_04's slice.
+
+Focused-check evidence:
+
+- Red starting point: `GOCACHE=/tmp/roundfix-task03-cache rtk proxy go test ./internal/cli -run '^TestReviewLineageDecidesEachRound$' -count=1`
+  exited 1 because the lineage types, record field and decision function did
+  not exist. The same focused check exited 0 after implementation.
+- `GOCACHE=/tmp/roundfix-task03-cache rtk proxy go test ./internal/cli -count=1 -run 'TestReview(Lineage|RoundTwo|Ceiling)|TestDeliveryReviewResultAdvancesACeiling'`
+  exited 0 with the six authored acceptance tests present.
+- After the final source changes,
+  `GOCACHE=/tmp/roundfix-task03-cache rtk proxy go test ./internal/cli -count=1 -run 'TestReview|TestDeliveryReviewResult'`
+  exited 0, including existing task_01/task_02 review tests, record outcome
+  round trips and findings-dismissed delivery mapping.
+- `GOCACHE=/tmp/roundfix-task03-cache rtk make verify-incremental` initially
+  exited 2: sandbox process-table access was denied, and suite guards caught
+  source edits made while the check was running. With source files frozen,
+  the same command rerun with process inspection allowed exited 0: formatting,
+  vet, package tests, skill synchronization/checks and build all passed.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+Acceptance evidence:
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| Lineage table | `TestReviewLineageDecidesEachRound` covers absence, provider/checkout changes, an actual rebase moving the merge base, a non-descendant head, same-head reuse, blocked round retries, legacy records, round-1 outcomes, round 2 and an already closed ceiling. |
+| Round-2 prompt | `TestReviewRoundTwoPromptCarriesTheDeltaAndRoundOneFindings` checks an added delta line, absence of the original-only diff line, previous head, standing and validation-dismissed findings, fixed/dismissed/missing dispositions, copied record data and separate session closure after each round. |
+| Full-diff anchoring | `TestReviewRoundTwoAnchorsAgainstTheFullCandidateDiff` keeps a finding standing on the original round-1 line although that line is absent from the round-2 prompt's delta. |
+| Blocked ceiling | `TestReviewCeilingBlocksWithoutCallingTheReviewer` checks exit 2, the exact reason and diagnostic, zero probe/preparation/prompt calls, and byte-identical round-2 record and answer. |
+| Disposition closure | `TestReviewCeilingClosesOnDispositions` has separate contained-fix, evidence-dismissal and uncontained-fix cases. It uses the public dispose command, checks persisted closure, preserves answer and ledger bytes, makes zero reviewer calls, and checks another descendant still refers to the original round-2 head. |
+| Delivery mapping | `TestDeliveryReviewResultAdvancesACeilingClosedRecord` checks Reviewed for ceiling closure and preserves Blocked and its reason. |
+| Prior behavior | The broader focused selection passes task_01/task_02's tests, `TestReviewRecordRoundTripsEachOutcome` and `TestDeliveryReviewResultAdvancesDismissedFindings`. |
+
+Additional checks cover a blocked round-2 retry's original delta and rejection
+of malformed ceiling records, including missing evidence, wrong head/text and
+duplicate dispositions.
+
+The declared Verification command was not run. Task status and settlement
+remain Daemon-owned; no other Task file or Task Graph manifest was edited, and
+no commit, push or Pull Request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T145917Z_95f0b38476c6ebcc`
+- Source commit: `f7104e5a5ee5509aff6f39467d7c46b56fe1cbe5`

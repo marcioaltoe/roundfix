@@ -918,7 +918,7 @@ func deliveryReviewResult(record reviewRecord, head string) (delivery.ReviewResu
 		return result, nil
 	}
 	switch record.Outcome {
-	case reviewOutcomeReviewed, reviewOutcomeFindingsDismissed:
+	case reviewOutcomeReviewed, reviewOutcomeFindingsDismissed, reviewOutcomeCeilingClosed:
 		result.Outcome = delivery.ReviewOutcomeReviewed
 		return result, nil
 	case reviewOutcomeFindings:

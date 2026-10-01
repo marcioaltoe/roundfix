@@ -30,6 +30,7 @@ type reviewOutcome string
 
 const (
 	reviewOutcomeReviewed             reviewOutcome = "reviewed"
+	reviewOutcomeCeilingClosed        reviewOutcome = "ceiling-closed"
 	reviewOutcomeFindings             reviewOutcome = "findings"
 	reviewOutcomeFindingsDismissed    reviewOutcome = "findings-dismissed"
 	reviewOutcomeBlocked              reviewOutcome = "blocked"
@@ -86,6 +87,7 @@ type reviewRecord struct {
 	ArchivedSpecs        []string                   `json:"archivedSpecs"`
 	SpecContextTruncated bool                       `json:"specContextTruncated"`
 	Validation           *reviewValidation          `json:"validation,omitempty"`
+	Lineage              *reviewLineage             `json:"lineage,omitempty"`
 }
 
 func splitReviewFindings(findings string) []reviewFinding {
@@ -224,6 +226,10 @@ func validateReviewRecord(record reviewRecord) error {
 		}
 		if !standing {
 			return errors.New("review record findings outcome requires a standing finding")
+		}
+	case reviewOutcomeCeilingClosed:
+		if err := validateCeilingClosedReviewRecord(record); err != nil {
+			return err
 		}
 	case reviewOutcomeFindingsDismissed:
 		if err := validateDismissedReviewRecord(record); err != nil {
@@ -456,7 +462,50 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 
 	record := newReviewRecord(gitState.Root, baseCommit, gitState.HEAD, loaded.Config.PrePRReview, reviewOutcomeBlocked)
 	record.BaseTipCommit = baseTipCommit
+	plan := reviewLineagePlan{Lineage: reviewLineage{Round: 1}, candidate: record, ctx: ctx}
 	if record.Provider == "codex" || record.Provider == "claude" {
+		var prior *reviewRecord
+		previous, readErr := readReviewRecord(filepath.Join(reviewCheckoutDir(artifactDir, record.Repository), reviewRecordFileName))
+		if readErr == nil {
+			prior = &previous
+		} else if !errors.Is(readErr, os.ErrNotExist) {
+			printReviewCommandFailure(readErr, stderr)
+			return exitPreflight
+		}
+		plan, err = decideReviewLineage(ctx, prior, record, gitRunner)
+		if err != nil {
+			printReviewCommandFailure(err, stderr)
+			return exitPreflight
+		}
+		record.Lineage = &plan.Lineage
+		if plan.Ceiling {
+			ledger, ledgerErr := readReviewFindingDispositions(filepath.Join(artifactDir, reviewDispositionLedgerFileName))
+			if ledgerErr != nil {
+				printReviewCommandFailure(ledgerErr, stderr)
+				return exitPreflight
+			}
+			closed, code := closeAtCeiling(plan, ledger, gitRunner)
+			if code == exitOK {
+				return finishReviewCommand(stdout, stderr, artifactDir, closed, code)
+			}
+			if err := writeReviewRecord(stdout, closed); err != nil {
+				printReviewCommandFailure(err, stderr)
+				return exitRunFailed
+			}
+			printReviewCommandFailure(errors.New(closed.Reason), stderr)
+			return code
+		}
+		if plan.Reuse && prior.Outcome == reviewOutcomeCeilingClosed {
+			return finishReviewCommand(stdout, stderr, artifactDir, *prior, exitOK)
+		}
+		if plan.Lineage.Round == 2 && plan.prior != nil && plan.prior.Outcome != reviewOutcomeBlocked {
+			ledger, ledgerErr := readReviewFindingDispositions(filepath.Join(artifactDir, reviewDispositionLedgerFileName))
+			if ledgerErr != nil {
+				printReviewCommandFailure(ledgerErr, stderr)
+				return exitPreflight
+			}
+			plan.Lineage.PreviousDispositions = reviewDispositionsAtHead(ledger, prior.Repository, prior.HeadCommit)
+		}
 		reused, missing, found, err := reusableReviewRecord(artifactDir, record)
 		if err != nil {
 			printReviewCommandFailure(err, stderr)
@@ -522,6 +571,7 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		gitRunner,
 		runner,
 		stderr,
+		plan,
 	)
 	record.Specs = make([]string, 0, len(specContext.contexts))
 	for _, context := range specContext.contexts {
@@ -924,6 +974,7 @@ func runConfiguredReviewSession(
 	gitRunner preflight.GitRunner,
 	runner agent.Runner,
 	stderr io.Writer,
+	plan reviewLineagePlan,
 ) (agent.ExecuteResult, reviewSpecContextResult, bool, error) {
 	if runner == nil {
 		return agent.ExecuteResult{}, reviewSpecContextResult{}, false, errors.New("review Agent runner is required")
@@ -937,9 +988,17 @@ func runConfiguredReviewSession(
 		return agent.ExecuteResult{}, reviewSpecContextResult{}, false, reviewSpecReadError{err: err}
 	}
 	specContext.candidateDiff = diff
+	prompt := buildReviewPrompt(baseCommit, headCommit, diff)
+	if plan.Lineage.Round == 2 {
+		delta, deltaErr := reviewCandidateDiff(ctx, gitRoot, plan.Lineage.PreviousHead, headCommit, gitRunner)
+		if deltaErr != nil {
+			return agent.ExecuteResult{}, specContext, false, deltaErr
+		}
+		prompt = buildRoundTwoPrompt(plan, delta, plan.Lineage.PreviousFindings, plan.Lineage.PreviousDispositions)
+	}
 	request := agent.ExecuteRequest{
 		Access:  agent.SessionAccessReadOnly,
-		Prompt:  appendReviewSpecContexts(buildReviewPrompt(baseCommit, headCommit, diff), specContext),
+		Prompt:  appendReviewSpecContexts(prompt, specContext),
 		GitRoot: gitRoot,
 	}
 	preparer, canPrepare := runner.(agent.SessionPreparer)
@@ -1534,7 +1593,7 @@ func finishReviewCommand(stdout, stderr io.Writer, artifactDir string, record re
 		return exitRunFailed
 	}
 	for _, finding := range record.FindingItems {
-		if reviewFindingDismissedByValidation(finding) {
+		if record.Outcome != reviewOutcomeCeilingClosed && reviewFindingDismissedByValidation(finding) {
 			fmt.Fprintf(stderr, "roundfix: review finding %s dismissed by validation (%s): %s\n", finding.ID, finding.Validation.Rule, finding.Validation.Reason)
 		}
 	}
