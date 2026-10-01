@@ -2733,12 +2733,20 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	}
 	mechanicalStarted := time.Now()
 	mechanicalResult, err := engine.deps.MechanicalStage.Run(ctx, mechanicalRequest)
+	rerunRows := 0
+	for _, disposition := range mechanicalResult.Dispositions {
+		if !disposition.Carried {
+			rerunRows++
+		}
+	}
 	if err != nil {
 		payload := map[string]any{
-			"phase":       "mechanical",
-			"outcome":     "error",
-			"duration_ms": time.Since(mechanicalStarted).Milliseconds(),
-			"error":       terminalReasonLine(err.Error()),
+			"phase":        "mechanical",
+			"carried_rows": len(mechanicalResult.Carried),
+			"rerun_rows":   rerunRows,
+			"outcome":      "error",
+			"duration_ms":  time.Since(mechanicalStarted).Milliseconds(),
+			"error":        terminalReasonLine(err.Error()),
 		}
 		if publishErr := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
 			fmt.Sprintf("QA mechanical stage errored for Spec %s.", plan.Spec.Slug), payload,
@@ -2790,6 +2798,8 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 			"blocking":     mechanicalResult.Blocking,
 			"findings":     len(mechanicalResult.Findings),
 			"blocked_rows": len(mechanicalResult.Blocked),
+			"carried_rows": len(mechanicalResult.Carried),
+			"rerun_rows":   rerunRows,
 			"skips":        len(mechanicalResult.Skips),
 			"duration_ms":  time.Since(mechanicalStarted).Milliseconds(),
 			"report":       reportPath,

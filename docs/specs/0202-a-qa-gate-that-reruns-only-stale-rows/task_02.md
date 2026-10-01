@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0202-a-qa-gate-that-reruns-only-stale-rows
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -105,3 +105,80 @@ seeded report, and keeps a carried row's establishing provenance.
 - [_prd.md](_prd.md) — Goal 1; Goal 3; Goal 4; User Story 1; User Story 3; Core Feature 3; Core Feature 4; Core Feature 5; Success Metric 1; Success Metric 2; Success Metric 5
 - [_techspec.md](_techspec.md) — Interfaces; Carrying across an unintegrated pass; Always-observed rows; The seeded report; API Contract 3; API Contract 4; Vocabulary Contract; Testing Approach 2; Build Order 2
 - ADR-0194; ADR-0195; ADR-0097; ADR-0080; ADR-0096
+
+
+## Result
+
+Implemented this Task's carry-forward slice. The resolver accepts either
+ancestry or a reachable QA recording commit that changed the establishing
+report, has the establishing head as its first parent, names the report's Spec
+in its trailer, has no Task trailer, and contains the exact report blob. The
+changed-input comparison still compares trees across the two heads.
+
+Every prior Results row receives one ordered disposition. Always-observed
+rows are refused even with snapshots; failed rows, absent declarations,
+unavailable establishing reports, unproven heads, absent snapshots, changed
+inputs and differing evidence retain explicit refusal reasons. Moved inputs,
+including deletions, name their paths. `Carriable` keeps its public signature
+and existing refusal behavior through `carryRefusal`.
+
+Carried rows retain establishing provenance and the original report/head
+citation. The renderer preserves its previous bytes when dispositions are
+absent, including the empty-provenance fallback; otherwise it appends the
+separate Row carry-forward table. Mechanical events expose carried and re-run
+counts, including the error payload.
+
+### Focused implementation evidence
+
+- Red starting check: `rtk proxy go test ./internal/speccheck -run
+  '^TestRowCarry' -count=1` exited 1 because the new disposition fields,
+  provenance field and reason constants did not yet exist.
+- Final focused check: `GOCACHE=/private/tmp/roundfix-0202-task02-gocache rtk
+  proxy go test ./internal/speccheck ./internal/daemon -run
+  '^(TestRowCarry|TestQAMechanicalEvent|TestCarriable|TestMaterializeMechanicalResult|TestMechanicalStageCarriable|TestWriteMechanicalQAReport)'
+  -count=1` exited 0 for both packages. The scoped cache avoids a shared
+  Go-cache access restriction encountered by an earlier rerun.
+- Incremental repository check: `GOCACHE=/private/tmp/roundfix-0202-task02-gocache
+  rtk make verify-incremental` exited 0 after rerunning on a stable tree with
+  elevated process access for the existing CLI force-stop tests. Vet, the Go
+  suite, skill checks and build passed. Full output is retained at
+  `/private/tmp/roundfix-0202-task02-incremental.log`. Earlier sandbox runs
+  exited 2 because process-table reads were denied; the first also detected
+  concurrent source edits, and the second detected the Result edit, through
+  the repository mutation guard. The clean rerun had no concurrent edits.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+- Acceptance 1: `TestRowCarryAcceptsAHeadItsQAReportCommitRecorded` checks
+  unchanged input bytes across separate branches and retained report/head.
+- Acceptance 2: `TestRowCarryRefusesAHeadOnlyATaskCommitRecorded` and
+  `TestRowCarryRefusesAnUnprovenHead` each check the rendered unproven-head
+  reason. Separate negative tests cover another Spec's trailer, different
+  recorded bytes, a different first parent and an unreachable recording commit.
+- Acceptance 3: `TestRowCarryNeverCarriesAlwaysObservedRows` separately checks
+  repository Verification, Pull Request row and commit-range declarations,
+  each with an existing snapshot.
+- Acceptance 4: `TestRowCarryNamesTheMovedInput` and
+  `TestRowCarryNamesADeletedInput` check the moved path and rendered reason.
+- Acceptance 5: `TestRowCarryKeepsTheEstablishingProvenance` resolves a prior
+  carried citation and checks the original provenance in the new report cell.
+- Acceptance 6: `TestRowCarryRecordsOneDispositionPerPriorRow` checks Results
+  order and one disposition each for a carried, failed and undeclared row,
+  including `not pass` for the failed row. Separate tests check missing
+  snapshots, unavailable establishing reports and non-repository inputs.
+- Acceptance 7: `TestRowCarryWithoutDispositionsRendersTodaysBytes` checks
+  exact pre-change renderer bytes and empty-provenance fallback. Existing
+  `TestCarriable`, `TestMaterializeMechanicalResult`, the four
+  `TestMechanicalStageCarriable…` tests and the `TestWriteMechanicalQAReport…`
+  tests pass unchanged in the focused check. `mechanical_test.go` was not edited.
+- Acceptance 8: `TestQAMechanicalEventCountsCarriedAndRerunRows` uses the
+  existing task-cycle fixture and checks one carried and two re-run rows in
+  the emitted mechanical event.
+
+Task status remains Daemon-owned (`in_progress` was present on arrival).
+No authored Verification command, other Task, Task Graph, commit, push or
+Pull Request operation was performed. Prior-pass import remains task_03's
+slice; no follow-up implementation was added here.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T114323Z_551200526baffade`
+- Source commit: `ff72c059ab96d3ce244b3456a514b725d1a667b3`
