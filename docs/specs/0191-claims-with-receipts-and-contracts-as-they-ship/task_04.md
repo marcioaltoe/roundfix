@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0191-claims-with-receipts-and-contracts-as-they-ship
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
