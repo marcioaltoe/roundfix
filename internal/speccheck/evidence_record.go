@@ -53,6 +53,15 @@ func RecordEvidenceSnapshots(ctx context.Context, repoRoot, reportPath, head str
 	if !filepath.IsAbs(reportPath) {
 		reportPath = filepath.Join(repoRoot, reportPath)
 	}
+	// The report path comes from the Agent's tree: refuse a symbolic link at any
+	// component, or a path outside the repository, before reading or writing it.
+	if rel, relErr := filepath.Rel(repoRoot, reportPath); relErr != nil {
+		return record, &EvidenceReportFileError{Err: fmt.Errorf("resolve evidence report path: %w", relErr)}
+	} else if info, ok, infoErr := receiptPathInfo(repoRoot, filepath.ToSlash(rel)); infoErr != nil {
+		return record, &EvidenceReportFileError{Err: infoErr}
+	} else if !ok || !info.Mode().IsRegular() {
+		return record, &EvidenceReportFileError{Err: fmt.Errorf("evidence report %q is not a regular file inside the repository", filepath.ToSlash(rel))}
+	}
 	content, err := os.ReadFile(reportPath)
 	if err != nil {
 		return record, &EvidenceReportFileError{Err: fmt.Errorf("read evidence report: %w", err)}
