@@ -4,10 +4,10 @@ description: Execute the self-contained final QA gate as a Spec's authored termi
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.5
+  version: 0.0.6
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.5
+version: 0.0.6
 ---
 
 # QA Gate
@@ -202,7 +202,7 @@ named checker rule decides them.
   pass. An unrelated static failure does not invalidate that evidence. Spend
   live QA effort on assembled user journeys, cross-task seams, persistence,
   failure behavior, and scope creep.
-- On a rerun, start with previously failed or blocked rows, then run the remaining matrix against the current build.
+- On a rerun, keep every row the Daemon seeded as `carried (established by: …; head: …)`: it counts as passed and is not executed again. Execute every other row, starting with the rows the seeded `## Row carry-forward` section lists as `re-run`.
 
 The scope is complete when coverage is complete and closed.
 
@@ -312,13 +312,12 @@ Use the `qa` Task's own identifiers in provenance, such as "Requirement 3",
 
 ### Row input declaration
 
-The row's inputs are fixed when the row is planned as `pending`, bounded to what
-the row reads. A row opts into future evidence-scoped carry-forward by adding a
-non-empty, typed `inputs:` declaration to its detailed evidence block. Place the block
-under a `### <row-id>` heading whose row identifier matches the row's `#` cell
-in the Results table, and use one fenced `yaml` block per row; a block under
-any other heading is ignored and the row is never carried. Each entry has a
-`kind` and a `ref`:
+Every row the Agent executes declares a non-empty, typed `inputs:` list in its
+detailed evidence block. The row's inputs are fixed when it is planned as
+`pending`, bounded to what the row reads. Place the block under a `### <row-id>`
+heading whose row identifier matches the row's `#` cell in the Results table,
+and use one fenced `yaml` block per row; a block under any other heading is
+ignored and the row is never carried. Each entry has a `kind` and a `ref`:
 
 ```yaml
 inputs:
@@ -334,11 +333,14 @@ Use one entry for every input the row's truth depends on:
 | `external_repository` | The evidence depends on content or state in another repository. The row is never carriable. |
 | `live_service` | The evidence depends on state observed from a live service. The row is never carriable. |
 | `elapsed_time` | The evidence depends on elapsed time, age, duration, or a time window. The row is never carriable. |
+| `commit_range` | The row reads Task commits, their authorization, or their changed-file scope. The row is never carriable. |
 
-Declare every applicable kind. A mixed list containing any non-repository
-input is never carriable. A row with no `inputs:` declaration or an empty list
-is also never carriable and must be re-observed, so carry-forward remains
-opt-in and fail-closed.
+Declare conservatively: include every source the row reads, including every
+source a built binary compiles from and the module manifest. Declare every
+applicable kind. A mixed list containing any non-repository input is never
+carriable. A row with no `inputs:` declaration or an empty list is invalid for
+execution and must be re-observed, so carry-forward remains opt-in and
+fail-closed.
 
 A report without `inputs:` behaves exactly as it does today; existing rows,
 counts, statuses, verdict rules, and report naming do not change. When a future
@@ -349,6 +351,10 @@ is not re-observed.
 
 A row whose inputs grow after it ran is not carriable. Do not add inputs after
 execution to make carry-forward eligible.
+
+The Agent never writes `evidence_snapshots`; the Daemon records them after the
+turn. Rows naming the repository Verification or the Pull Request row are
+always observed, and a row declaring `commit_range` is always observed.
 
 One row is the Spec's outside-evidence row: the acceptance row that rests on
 evidence originating outside the Spec's own artifacts — a repository the Spec

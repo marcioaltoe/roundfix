@@ -2723,7 +2723,11 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	if err != nil {
 		return "", "", false, err
 	}
-	promptContext, err := engine.buildQAPromptContext(ctx, plan, qaTask)
+	prior, _, err := engine.importPriorQAPass(ctx, plan, ordinal)
+	if err != nil {
+		return "", "", false, err
+	}
+	promptContext, err := engine.buildQAPromptContext(ctx, plan, qaTask, prior)
 	if err != nil {
 		return "", "", false, fmt.Errorf("build QA prompt context for run %q: %w", plan.RunID, err)
 	}
@@ -2733,12 +2737,20 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	}
 	mechanicalStarted := time.Now()
 	mechanicalResult, err := engine.deps.MechanicalStage.Run(ctx, mechanicalRequest)
+	rerunRows := 0
+	for _, disposition := range mechanicalResult.Dispositions {
+		if !disposition.Carried {
+			rerunRows++
+		}
+	}
 	if err != nil {
 		payload := map[string]any{
-			"phase":       "mechanical",
-			"outcome":     "error",
-			"duration_ms": time.Since(mechanicalStarted).Milliseconds(),
-			"error":       terminalReasonLine(err.Error()),
+			"phase":        "mechanical",
+			"carried_rows": len(mechanicalResult.Carried),
+			"rerun_rows":   rerunRows,
+			"outcome":      "error",
+			"duration_ms":  time.Since(mechanicalStarted).Milliseconds(),
+			"error":        terminalReasonLine(err.Error()),
 		}
 		if publishErr := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
 			fmt.Sprintf("QA mechanical stage errored for Spec %s.", plan.Spec.Slug), payload,
@@ -2790,6 +2802,8 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 			"blocking":     mechanicalResult.Blocking,
 			"findings":     len(mechanicalResult.Findings),
 			"blocked_rows": len(mechanicalResult.Blocked),
+			"carried_rows": len(mechanicalResult.Carried),
+			"rerun_rows":   rerunRows,
 			"skips":        len(mechanicalResult.Skips),
 			"duration_ms":  time.Since(mechanicalStarted).Milliseconds(),
 			"report":       reportPath,
@@ -2896,11 +2910,14 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	} else if eligibilityErr != nil && (verdict == spec.VerdictPass || verdict == spec.VerdictPartial) {
 		qaReason = fmt.Sprintf("QA verdict %s not accepted: %v", verdict, eligibilityErr)
 	}
+	if err := engine.recordQAEvidenceSnapshots(ctx, plan, ordinal, reportPath, auditedHead); err != nil {
+		return "", "", false, err
+	}
 	if err := engine.settleTask(ctx, plan, qaTask, ordinal, qaStatus, qaReason); err != nil {
 		return "", "", false, err
 	}
 	plan.runBudget.renew(engine.deps.Now(), qaTask.ID)
-	if err := engine.commitQAReport(ctx, plan, ordinal, before, verificationWindowPaths, verdict, reportPath, qaTask); err != nil {
+	if err := engine.commitQAReport(ctx, plan, ordinal, before, verificationWindowPaths, verdict, reportPath, qaTask, prior.Files...); err != nil {
 		return "", "", false, err
 	}
 	return verdict, reportPath, accepted, nil
@@ -3523,7 +3540,7 @@ func qaAuditedHead(ctx context.Context, workDir string) (string, error) {
 // diff with the report and qa Task file ensured, so the report, its evidence,
 // and gate settlement always ride in their own commit, separate from every
 // implementation Task commit (ADR 0015, ADR 0091).
-func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal int, before []string, verificationWindowPaths []string, verdict string, reportPath string, qaTask spec.Task) error {
+func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal int, before []string, verificationWindowPaths []string, verdict string, reportPath string, qaTask spec.Task, importedPaths ...string) error {
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
 			return fmt.Errorf("publish stop event for run %q before the QA Report commit: %w", plan.RunID, errors.Join(err, publishErr))
@@ -3550,6 +3567,9 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 	}
 	if strings.TrimSpace(reportPath) != "" {
 		changed = ensureCommitPath(changed, reportPath)
+	}
+	for _, path := range importedPaths {
+		changed = ensureCommitPath(changed, path)
 	}
 	if strings.TrimSpace(qaTask.File) != "" {
 		changed = ensureCommitPath(changed, artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, qaTask.File)))
@@ -3582,11 +3602,15 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 	}); err != nil {
 		return err
 	}
+	commit, err := qaAuditedHead(ctx, plan.WorkDir)
+	if err != nil {
+		return err
+	}
 	subject, _, _ := strings.Cut(message, "\n")
 	fmt.Fprintf(engine.deps.Progress, "QA Report commit created: %s\n", subject)
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonCommit,
 		fmt.Sprintf("QA Report commit created: %s", subject),
-		map[string]any{"decision": "created", "report": reportPath, "paths": len(stageable)},
+		map[string]any{"decision": "created", "task": qaTask.ID, "commit": commit, "report": reportPath, "paths": len(stageable)},
 	); err != nil {
 		return fmt.Errorf("publish QA commit event for run %q: %w", plan.RunID, err)
 	}
@@ -3695,6 +3719,51 @@ func validateTaskPlan(plan TaskPlan) error {
 				return fmt.Errorf("task cycle: %s is required when concurrency is greater than 1", label)
 			}
 		}
+	}
+	return nil
+}
+
+// recordQAEvidenceSnapshots records local reports before QA settlement commits.
+func (engine *Engine) recordQAEvidenceSnapshots(ctx context.Context, plan TaskPlan, ordinal int, reportPath, head string) error {
+	outcome := "skipped"
+	rows := 0
+	var recordErr error
+	absolute := reportPath
+	if !filepath.IsAbs(absolute) {
+		absolute = filepath.Join(plan.WorkDir, absolute)
+	}
+	relative, relErr := filepath.Rel(plan.WorkDir, absolute)
+	if reportPath != "" && relErr == nil && relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		record, err := speccheck.RecordEvidenceSnapshots(ctx, plan.WorkDir, absolute, head)
+		recordErr = err
+		rows = len(record.Rows)
+		outcome = "none"
+		if rows > 0 {
+			outcome = "recorded"
+		}
+		if err != nil {
+			outcome = "error"
+		}
+	}
+	if ctx.Err() != nil {
+		if err := engine.publishStop(ctx, plan.RunID, ordinal); err != nil {
+			return fmt.Errorf("publish stop during QA evidence snapshots: %w", errors.Join(ctx.Err(), err))
+		}
+		return fmt.Errorf("stop during QA evidence snapshots: %w", ctx.Err())
+	}
+	errorText := ""
+	if recordErr != nil {
+		errorText = terminalReasonLine(recordErr.Error())
+	}
+	if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
+		fmt.Sprintf("QA evidence snapshots %s for Spec %s.", outcome, plan.Spec.Slug),
+		map[string]any{"phase": "evidence_snapshots", "outcome": outcome, "head": head, "rows": rows, "report": reportPath, "error": errorText},
+	); err != nil {
+		return fmt.Errorf("publish QA evidence snapshots: %w", err)
+	}
+	var fileErr *speccheck.EvidenceReportFileError
+	if errors.As(recordErr, &fileErr) {
+		return fmt.Errorf("record QA evidence snapshots: %w", recordErr)
 	}
 	return nil
 }

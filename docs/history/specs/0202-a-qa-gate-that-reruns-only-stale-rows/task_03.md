@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0202-a-qa-gate-that-reruns-only-stale-rows
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -45,7 +45,11 @@ carries every unmoved row of the failed pass.
    errors are infrastructure errors of the QA step, and a cancelled context
    publishes the stop.
 7. MUST NOT change Task Carry-Forward, the Reconcile Command, Delivery Retry,
-   Run integration, report naming or any existing test.
+   Run integration, report naming or any existing test, with one exception:
+   `TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport` in
+   `internal/daemon/task_engine_test.go` MUST be updated to expect the new
+   `prior_report` `daemon.qa` event of Requirement 6 in its QA event list and
+   positions, changing nothing else in that test. Its five subtests MUST pass.
 8. MUST put the new tests in the two test files this Task creates, over
    temporary Git repositories with a side branch named like a Run Branch. The
    end-to-end test drives `TaskCycle` through the existing task-cycle fixture.
@@ -83,6 +87,7 @@ carries every unmoved row of the failed pass.
 - interface: `internal/daemon/task_engine.go`
 - interface: `internal/daemon/task_context.go`
 - interface: `internal/speccheck/mechanical.go`
+- interface: `internal/daemon/task_engine_test.go`
 - creates: `internal/daemon/qa_prior_pass.go`
 - creates: `internal/daemon/qa_prior_pass_test.go`
 - creates: `internal/speccheck/report_shape_findings_test.go`
@@ -99,3 +104,63 @@ carries every unmoved row of the failed pass.
 - [_prd.md](_prd.md) — Goal 2; User Story 2; Core Feature 2; Success Metric 3
 - [_techspec.md](_techspec.md) — Interfaces; Importing the failed pass; API Contract 4; API Contract 5; Integration Points; Testing Approach 3; Build Order 3
 - ADR-0194; ADR-0170; ADR-0053; ADR-0096
+
+## Result
+
+Implemented the prior-pass import in the QA stage, between the before snapshot
+and prompt context. Selection checks the recorded Run and its journal's exact
+QA settlement SHA on its Run Branch, then orders qualifying commits across
+refs by commit date. QA settlement events now record the SHA and QA Task ID
+needed by that selection. Older journal entries without this provenance are
+skipped. The import preserves blob bytes, creates files with mode `0644`, keeps
+identical existing files, refuses conflicts, old/future reports and existing
+shape/evidence-path findings, and rolls back newly created files and directories
+on refusal or error. Imported paths are explicitly included in the next QA
+Report commit, and prompt context uses the imported commit's first parent.
+
+Focused evidence for the acceptance criteria:
+
+| Criterion | Implementation and focused-check evidence |
+| --- | --- |
+| Newest unintegrated report and evidence imported byte for byte | `TestPriorQAPassImportsTheNewestUnintegratedReportByteForByte` checks selection, blob bytes, mode and the `imported` event; `TestPriorQAPassKeepsIdenticalExistingEvidence` checks preservation of an existing identical file. |
+| Report already in HEAD imports nothing | `TestPriorQAPassIgnoresReportsAlreadyInHistory` checks the `none` event. |
+| Task and other-Spec commits ignored | `TestPriorQAPassIgnoresTaskCommitsAndOtherSpecs` exercises both exclusions; `TestAPriorPassIsImportedOnlyFromARecordedRunCommit` rejects an imitating commit on another ref without journal provenance. `TestPriorQAPassSkipsAPrunedRunBranch` proves a surviving derived ref cannot replace the recorded Run Branch. |
+| Conflicting, old and malformed reports refused without residual files | `TestPriorQAPassRefusesADifferingPath`, `TestPriorQAPassRefusesAReportOlderThanTheTreesNewest` and `TestPriorQAPassRefusesAReportTheShapeDetectorRefuses` check reasons and preserved/absent files. `TestPriorQAPassRefusesAReportDatedAfterToday` covers the fourth refusal. |
+| Existing shape detectors distinguish pending and closed reports | `TestReportShapeFindingsNamesAPendingRow` and `TestReportShapeFindingsAcceptsAClosedReport` exercise the exported loader/detector wrapper. |
+| Next TaskCycle carries passing row from a failed side-branch pass | `TestQAGateCarriesARowFromAnUnintegratedFailedPass` uses a recorded failed Run, a distinct later Run and a re-committed Task; checks the seeded carried row, `re-run: not pass`, and imported report/evidence blobs in the new QA commit. |
+| Prompt names imported report and audited head | `TestQAPromptNamesTheImportedPassHead` checks context; the TaskCycle test checks the Agent prompt. |
+
+Focused command (exit 0 after the final implementation edits):
+
+```text
+GOCACHE=/private/tmp/roundfix-task03-gocache rtk proxy go test ./internal/daemon ./internal/speccheck -run 'TestPriorQAPass|TestAPriorPass|TestQAPromptNames|TestQAGateCarriesARow|TestReportShapeFindings|TestTaskCycleQAVerdictMatrix' -count=1
+```
+
+Both packages passed, including all five existing QA verdict-matrix subtests.
+`TestPriorQAPassCancellationPublishesStop` and
+`TestPriorQAPassGitErrorIsInfrastructure` also passed in that focused run.
+`git -c core.fsmonitor=false diff --check` exited 0.
+
+The first incremental check was invalidated by concurrent edits; it also
+encountered sandbox process-table restrictions in CLI force-stop tests and a
+budget-test timing failure under concurrent test load. The stable-tree rerun passed
+with process-table access, as recorded below. The initial default-cache check was blocked by
+sandbox access to the host Go cache; subsequent checks use the task-scoped cache.
+
+Task status and the Task Graph were left under Daemon ownership. The declared
+Verification commands were not run. No commit, push or Pull Request was made.
+
+Incremental check (exit 0 on the stable implementation tree):
+
+```text
+GOCACHE=/private/tmp/roundfix-task03-gocache rtk make verify-incremental
+```
+
+This rerun used sandbox escalation for the CLI force-stop fixtures' process-table
+access. Formatting, vet, the repository test suite, skill sync/checks and build
+passed. The CLI force-stop tests and the budget test passed on this rerun.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T124541Z_e71bc4409b20b125`
+- Source commit: `b18eeacac35c32d619e513812f413b18768433ca`

@@ -335,6 +335,7 @@ type mechanicalEvidenceRecord struct {
 
 type mechanicalReport struct {
 	path                    string
+	content                 []byte
 	rows                    []mechanicalReportRow
 	rowsBlockedEnvironment  int
 	rowsBlockedFinding      int
@@ -355,7 +356,7 @@ var (
 )
 
 // Carriable reports whether a passing row has only repository inputs, proven
-// ancestry, no intersecting changed path, complete snapshots, and byte-identical
+// head provenance, no intersecting changed path, complete snapshots, and byte-identical
 // evidence at the current head. It never computes a QA verdict.
 func Carriable(
 	prior ReportRow,
@@ -364,60 +365,78 @@ func Carriable(
 	established []EvidenceSnapshot,
 	current []EvidenceSnapshot,
 ) bool {
-	if prior.Status != "pass" || strings.TrimSpace(prior.EstablishedBy) == "" ||
-		strings.TrimSpace(prior.EstablishedHead) == "" || strings.TrimSpace(head) == "" ||
-		!prior.AncestryVerified || len(prior.Inputs) == 0 {
-		return false
-	}
+	return carryRefusal(prior, head, changed, established, current) == ""
+}
 
+func carryRefusal(prior ReportRow, head string, changed []string, established, current []EvidenceSnapshot) string {
+	if prior.Status != "pass" {
+		return CarryReasonNotPass
+	}
+	if strings.TrimSpace(prior.EstablishedBy) == "" || strings.TrimSpace(prior.EstablishedHead) == "" || strings.TrimSpace(head) == "" || !prior.AncestryVerified {
+		return CarryReasonEstablishingHeadUnproven
+	}
+	if len(prior.Inputs) == 0 {
+		return CarryReasonNoInputs
+	}
 	seenRefs := make(map[string]bool, len(prior.Inputs))
+	moved := make(map[string]bool)
 	for _, input := range prior.Inputs {
 		ref := cleanMechanicalPath(input.Ref)
-		if input.Kind != EvidenceRepositoryPath || ref == "" || ref != input.Ref || seenRefs[ref] {
-			return false
+		if input.Kind != EvidenceRepositoryPath {
+			return CarryReasonNonRepositoryInput
+		}
+		if ref == "" || ref != input.Ref || seenRefs[ref] {
+			return CarryReasonNoEvidenceSnapshot
 		}
 		seenRefs[ref] = true
 		matcher := evidencePathMatcher(ref)
-		for _, changedPath := range changed {
-			clean := cleanMechanicalPath(changedPath)
-			if clean == "" || clean != changedPath || matcher(clean) {
-				return false
+		for _, path := range changed {
+			clean := cleanMechanicalPath(path)
+			if clean == "" || clean != path || matcher(clean) {
+				moved[path] = true
 			}
 		}
 	}
-
+	if len(moved) > 0 {
+		paths := make([]string, 0, len(moved))
+		for path := range moved {
+			paths = append(paths, path)
+		}
+		sort.Strings(paths)
+		return CarryReasonInputMoved + strings.Join(paths, ", ")
+	}
 	if len(established) != len(prior.Inputs) || len(current) != len(prior.Inputs) {
-		return false
+		return CarryReasonNoEvidenceSnapshot
 	}
 	for index, input := range prior.Inputs {
-		if !validEvidenceSnapshot(established[index], input.Ref) ||
-			!validEvidenceSnapshot(current[index], input.Ref) ||
-			!sameEvidenceFiles(established[index].Files, current[index].Files) {
-			return false
+		if !validEvidenceSnapshot(established[index], input.Ref) || !validEvidenceSnapshot(current[index], input.Ref) {
+			return CarryReasonNoEvidenceSnapshot
+		}
+		if !sameEvidenceFiles(established[index].Files, current[index].Files) {
+			return CarryReasonEvidenceDiffers
 		}
 	}
 	matchers := make([]func(string) bool, len(prior.Inputs))
 	for index := range prior.Inputs {
 		matchers[index] = evidencePathMatcher(prior.Inputs[index].Ref)
 	}
-	for _, evidencePath := range prior.EvidencePaths {
-		clean := cleanMechanicalPath(evidencePath)
-		if clean == "" || clean != evidencePath {
-			return false
+	for _, path := range prior.EvidencePaths {
+		clean := cleanMechanicalPath(path)
+		if clean == "" || clean != path {
+			return CarryReasonEvidenceDiffers
 		}
 		covered := false
 		for index := range prior.Inputs {
-			if matchers[index](clean) && evidenceSnapshotContains(established[index], clean) &&
-				evidenceSnapshotContains(current[index], clean) {
+			if matchers[index](clean) && evidenceSnapshotContains(established[index], clean) && evidenceSnapshotContains(current[index], clean) {
 				covered = true
 				break
 			}
 		}
 		if !covered {
-			return false
+			return CarryReasonEvidenceDiffers
 		}
 	}
-	return true
+	return ""
 }
 
 func validEvidenceSnapshot(snapshot EvidenceSnapshot, ref string) bool {
@@ -556,7 +575,7 @@ func RunMechanicalStage(ctx context.Context, request MechanicalRequest) (Mechani
 		if headErr != nil {
 			return result, headErr
 		}
-		result.Carried, err = resolveCarriedRows(ctx, repoRoot, report, currentHead)
+		result.Carried, result.Dispositions, err = resolveCarriedRows(ctx, repoRoot, report, currentHead)
 		if err != nil {
 			return result, err
 		}
@@ -1604,6 +1623,7 @@ func loadMechanicalReport(repoRoot, reportPath string) (mechanicalReport, bool, 
 
 func parseMechanicalReport(path string, content []byte) mechanicalReport {
 	report := mechanicalReport{
+		content:           append([]byte(nil), content...),
 		path:              path,
 		countLines:        make(map[string]int),
 		evidenceSnapshots: make(map[string]mechanicalEvidenceRecord),
@@ -1799,94 +1819,157 @@ func parseMechanicalRowInputs(lines []string, rows []mechanicalReportRow) {
 	}
 }
 
-func resolveCarriedRows(ctx context.Context, repoRoot string, priorReport mechanicalReport, currentHead string) ([]CarriedRow, error) {
+func resolveCarriedRows(ctx context.Context, repoRoot string, priorReport mechanicalReport, currentHead string) ([]CarriedRow, []CarryDisposition, error) {
 	carried := make([]CarriedRow, 0)
+	dispositions := make([]CarryDisposition, 0, len(priorReport.rows))
 	for _, priorRow := range priorReport.rows {
-		establishingReport := priorReport
-		establishingRow := priorRow
-		establishedBy := priorReport.path
-		requiredHead := ""
-
-		if reportPath, head, ok := carriedRowCitation(priorRow.status); ok {
-			if reportPath == priorReport.path {
-				continue
-			}
-			loaded, present, err := loadMechanicalReport(repoRoot, reportPath)
-			if err != nil {
-				return nil, err
-			}
-			if !present {
-				continue
-			}
-			row, found := mechanicalReportRowByID(loaded.rows, priorRow.id)
-			if !found {
-				continue
-			}
-			establishingReport = loaded
-			establishingRow = row
-			establishedBy = reportPath
-			requiredHead = head
-		}
-
-		if establishingRow.status != "pass" || len(establishingRow.inputs) == 0 {
-			continue
-		}
-		if !mechanicalSnapshotKeysNamePassingRows(establishingReport) {
-			continue
-		}
-		record, ok := establishingReport.evidenceSnapshots[priorRow.id]
-		if !ok || strings.TrimSpace(record.head) == "" || requiredHead != "" && requiredHead != record.head {
-			continue
-		}
-		exists, err := mechanicalCommitExists(ctx, repoRoot, record.head)
+		row, reason, err := resolveCarriedRow(ctx, repoRoot, priorReport, priorRow, currentHead)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		if !exists {
-			continue
+		dispositions = append(dispositions, CarryDisposition{ID: priorRow.id, Carried: reason == "", Reason: reason})
+		if reason == "" {
+			carried = append(carried, row)
 		}
-		ancestor, err := mechanicalIsAncestor(ctx, repoRoot, record.head, currentHead)
-		if err != nil {
-			return nil, err
-		}
-		if !ancestor {
-			continue
-		}
-		changed, err := worktree.PriorChangedFiles(ctx, repoRoot, record.head)
-		if err != nil {
-			return nil, fmt.Errorf("resolve carry-forward changed paths from %q: %w", record.head, err)
-		}
-		currentSnapshots, resolved, err := buildEvidenceSnapshots(ctx, repoRoot, currentHead, establishingRow.inputs)
-		if err != nil {
-			return nil, err
-		}
-		if !resolved {
-			continue
-		}
-		row := ReportRow{
-			ID:               priorRow.id,
-			Status:           establishingRow.status,
-			EstablishedBy:    establishedBy,
-			EstablishedHead:  record.head,
-			AncestryVerified: true,
-			Inputs:           append([]EvidenceInput(nil), establishingRow.inputs...),
-		}
-		evidencePaths, resolved := mechanicalEvidenceRepositoryPaths(repoRoot, establishingReport.path, establishingRow.evidence)
-		if !resolved {
-			continue
-		}
-		row.EvidencePaths = evidencePaths
-		if !Carriable(row, currentHead, changed, record.snapshots, currentSnapshots) {
-			continue
-		}
-		carried = append(carried, CarriedRow{
-			ID:              priorRow.id,
-			EstablishedBy:   establishedBy,
-			EstablishedHead: record.head,
-			Inputs:          append([]EvidenceInput(nil), establishingRow.inputs...),
-		})
 	}
-	return carried, nil
+	return carried, dispositions, nil
+}
+
+func resolveCarriedRow(ctx context.Context, repoRoot string, priorReport mechanicalReport, priorRow mechanicalReportRow, currentHead string) (CarriedRow, string, error) {
+	refuse := func(reason string) (CarriedRow, string, error) { return CarriedRow{}, reason, nil }
+	establishingReport, establishingRow := priorReport, priorRow
+	establishedBy, requiredHead := priorReport.path, ""
+	if reportPath, head, ok := carriedRowCitation(priorRow.status); ok {
+		if reportPath == priorReport.path {
+			return refuse(CarryReasonEstablishingReportUnavailable)
+		}
+		loaded, present, err := loadMechanicalReport(repoRoot, reportPath)
+		if err != nil {
+			return CarriedRow{}, "", err
+		}
+		if !present {
+			return refuse(CarryReasonEstablishingReportUnavailable)
+		}
+		row, found := mechanicalReportRowByID(loaded.rows, priorRow.id)
+		if !found {
+			return refuse(CarryReasonEstablishingReportUnavailable)
+		}
+		establishingReport, establishingRow, establishedBy, requiredHead = loaded, row, reportPath, head
+	}
+	if establishingRow.status != "pass" {
+		return refuse(CarryReasonNotPass)
+	}
+	if len(establishingRow.inputs) == 0 {
+		return refuse(CarryReasonNoInputs)
+	}
+	if reason, observed := AlwaysObserved(priorRow.provenance, priorRow.inputs); observed {
+		return refuse(reason)
+	}
+	if reason, observed := AlwaysObserved(establishingRow.provenance, establishingRow.inputs); observed {
+		return refuse(reason)
+	}
+	for _, input := range establishingRow.inputs {
+		if input.Kind != EvidenceRepositoryPath {
+			return refuse(CarryReasonNonRepositoryInput)
+		}
+	}
+	if !mechanicalSnapshotKeysNamePassingRows(establishingReport) {
+		return refuse(CarryReasonNoEvidenceSnapshot)
+	}
+	record, ok := establishingReport.evidenceSnapshots[priorRow.id]
+	if !ok || strings.TrimSpace(record.head) == "" || requiredHead != "" && requiredHead != record.head {
+		return refuse(CarryReasonNoEvidenceSnapshot)
+	}
+	exists, err := mechanicalCommitExists(ctx, repoRoot, record.head)
+	if err != nil {
+		return CarriedRow{}, "", err
+	}
+	if !exists {
+		return refuse(CarryReasonEstablishingHeadUnproven)
+	}
+	proven, err := mechanicalIsAncestor(ctx, repoRoot, record.head, currentHead)
+	if err != nil {
+		return CarriedRow{}, "", err
+	}
+	if !proven {
+		proven, err = mechanicalReportRecordedAt(ctx, repoRoot, establishingReport, record.head)
+		if err != nil {
+			return CarriedRow{}, "", err
+		}
+	}
+	if !proven {
+		return refuse(CarryReasonEstablishingHeadUnproven)
+	}
+	changed, err := worktree.PriorChangedFiles(ctx, repoRoot, record.head)
+	if err != nil {
+		return CarriedRow{}, "", fmt.Errorf("resolve carry-forward changed paths from %q: %w", record.head, err)
+	}
+	currentSnapshots, resolved, err := buildEvidenceSnapshots(ctx, repoRoot, currentHead, establishingRow.inputs)
+	if err != nil {
+		return CarriedRow{}, "", err
+	}
+	// Test movement before missing current blobs so deletion still names its path.
+	row := ReportRow{ID: priorRow.id, Status: establishingRow.status, EstablishedBy: establishedBy, EstablishedHead: record.head, AncestryVerified: true, Inputs: establishingRow.inputs}
+	evidencePaths, pathsResolved := mechanicalEvidenceRepositoryPaths(repoRoot, establishingReport.path, establishingRow.evidence)
+	row.EvidencePaths = evidencePaths
+	if reason := carryRefusal(row, currentHead, changed, record.snapshots, currentSnapshots); reason != "" {
+		return refuse(reason)
+	}
+	if !resolved || !pathsResolved {
+		return refuse(CarryReasonEvidenceDiffers)
+	}
+	return CarriedRow{ID: priorRow.id, EstablishedBy: establishedBy, EstablishedHead: record.head, Inputs: append([]EvidenceInput(nil), establishingRow.inputs...), Provenance: establishingRow.provenance}, "", nil
+}
+
+// mechanicalReportRecordedAt proves an unintegrated audited head using the
+// exact report object in a reachable, Spec-owned QA recording commit.
+func mechanicalReportRecordedAt(ctx context.Context, repoRoot string, report mechanicalReport, head string) (bool, error) {
+	hash := exec.CommandContext(ctx, "git", "-C", repoRoot, "hash-object", "--stdin")
+	hash.Stdin = bytes.NewReader(report.content)
+	blob, err := hash.Output()
+	if err != nil {
+		return false, fmt.Errorf("hash establishing report %q: %w", report.path, err)
+	}
+	candidates := exec.CommandContext(ctx, "git", "-C", repoRoot, "log", "--all", "--full-history", "-m", "--format=%H", "--no-renames", "--", report.path)
+	output, err := candidates.Output()
+	if err != nil {
+		return false, fmt.Errorf("find recording commits for %q: %w", report.path, err)
+	}
+	slug := filepath.Base(filepath.Dir(filepath.Dir(filepath.FromSlash(report.path))))
+	for _, commit := range strings.Fields(string(output)) {
+		info := exec.CommandContext(ctx, "git", "-C", repoRoot, "show", "-s", "--format=%P%n%(trailers:key=Roundfix-Spec,valueonly)%n%(trailers:key=Roundfix-Task)", commit)
+		raw, err := info.Output()
+		if err != nil {
+			return false, fmt.Errorf("read recording commit %q: %w", commit, err)
+		}
+		lines := strings.Split(strings.TrimSpace(string(raw)), "\n")
+		if len(lines) != 2 {
+			continue
+		}
+		parents := strings.Fields(lines[0])
+		if len(parents) == 0 || parents[0] != head || strings.TrimSpace(lines[1]) != slug {
+			continue
+		}
+		touched := exec.CommandContext(ctx, "git", "-C", repoRoot, "diff", "--quiet", "--no-renames", head, commit, "--", report.path)
+		if err := touched.Run(); err == nil {
+			continue
+		} else {
+			var exitErr *exec.ExitError
+			if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
+				return false, fmt.Errorf("inspect recorded report change: %w", err)
+			}
+		}
+		object := exec.CommandContext(ctx, "git", "-C", repoRoot, "ls-tree", "--format=%(objectname)", commit, "--", report.path)
+		recorded, err := object.Output()
+		if err != nil {
+			return false, fmt.Errorf("read recorded report object: %w", err)
+		}
+
+		if bytes.Equal(bytes.TrimSpace(recorded), bytes.TrimSpace(blob)) {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func mechanicalEvidenceRepositoryPaths(repoRoot, reportPath, evidence string) ([]string, bool) {
@@ -2651,4 +2734,19 @@ func mechanicalResultBlocksMatrix(result MechanicalResult, matrix []mechanicalRe
 		}
 	}
 	return true
+}
+
+// ReportShapeFindings applies only the existing report and evidence path checks.
+func ReportShapeFindings(repoRoot, reportPath string) ([]MechanicalFinding, error) {
+	report, present, err := loadMechanicalReport(repoRoot, reportPath)
+	if err != nil {
+		return nil, err
+	}
+	if !present {
+		return nil, fmt.Errorf("QA Report %q is absent", reportPath)
+	}
+	var result MechanicalResult
+	detectMechanicalReportShape(&result, report)
+	detectMechanicalEvidencePaths(&result, repoRoot, report)
+	return result.Findings, nil
 }

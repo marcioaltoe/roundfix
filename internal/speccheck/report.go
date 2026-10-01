@@ -94,6 +94,7 @@ type MechanicalResult struct {
 	Performed          []PerformedRepair
 	RepairFailures     []RepairFailure
 	Carried            []CarriedRow
+	Dispositions       []CarryDisposition
 	Blocked            []BlockedRow
 	Skips              []MechanicalSkip
 	Blocking           bool
@@ -137,6 +138,14 @@ type CarriedRow struct {
 	EstablishedBy   string
 	EstablishedHead string
 	Inputs          []EvidenceInput
+	Provenance      string
+}
+
+// CarryDisposition records one prior row's fate in Results order.
+type CarryDisposition struct {
+	ID      string
+	Carried bool
+	Reason  string // empty when carried
 }
 
 // BlockedRow ties one report row to the mechanical Finding that stops it.
@@ -161,6 +170,24 @@ const (
 	EvidenceExternalRepository EvidenceInputKind = "external_repository"
 	EvidenceLiveService        EvidenceInputKind = "live_service"
 	EvidenceElapsedTime        EvidenceInputKind = "elapsed_time"
+	EvidenceCommitRange        EvidenceInputKind = "commit_range"
+)
+
+const (
+	CarryReasonNotPass                       = "not pass"
+	CarryReasonNoInputs                      = "no inputs"
+	CarryReasonNonRepositoryInput            = "non-repository input"
+	CarryReasonNoEvidenceSnapshot            = "no evidence snapshot"
+	CarryReasonEstablishingReportUnavailable = "establishing report unavailable"
+	CarryReasonEstablishingHeadUnproven      = "establishing head unproven"
+	CarryReasonInputMoved                    = "input moved: "
+	CarryReasonEvidenceDiffers               = "evidence differs"
+	CarryDispositionCarried                  = "carried"
+	CarryDispositionRerun                    = "re-run: "
+	RowCarryForwardHeading                   = "## Row carry-forward\n\n"
+	CarryReasonRepositoryVerification        = "always observed: repository Verification"
+	CarryReasonPullRequestRow                = "always observed: Pull Request row"
+	CarryReasonCommitRangeInput              = "always observed: commit_range input"
 )
 
 // EvidenceInput names one observation boundary. Only repository paths can be
@@ -186,7 +213,8 @@ type EvidenceSnapshot struct {
 
 // ReportRow contains the carry-forward facts for one prior QA Report row.
 // AncestryVerified is set only by the repository resolver after Git proves
-// EstablishedHead is an ancestor of the current head.
+// EstablishedHead is an ancestor of the current head or a reachable QA Report
+// commit recorded the exact establishing report with that head as first parent.
 type ReportRow struct {
 	ID               string
 	Status           string
@@ -382,7 +410,11 @@ func WriteMechanicalResult(writer io.Writer, result MechanicalResult) error {
 		report.WriteString(markdownCell(row.ID))
 		report.WriteString(" | ")
 		report.WriteString(markdownCell(status))
-		report.WriteString(" | report and head retained |\n")
+		provenance := row.Provenance
+		if provenance == "" {
+			provenance = "report and head retained"
+		}
+		report.WriteString(" | " + markdownCell(provenance) + " |\n")
 	}
 	for _, row := range result.Blocked {
 		status := "blocked (finding: " + row.FindingCode + " — waits on " + row.WaitingOn + ")"
@@ -407,6 +439,18 @@ func WriteMechanicalResult(writer io.Writer, result MechanicalResult) error {
 		}
 	}
 
+	if len(result.Dispositions) > 0 {
+		report.WriteByte('\n')
+		report.WriteString(RowCarryForwardHeading)
+		report.WriteString("| Prior row | Disposition |\n| --- | --- |\n")
+		for _, row := range result.Dispositions {
+			disposition := CarryDispositionCarried
+			if !row.Carried {
+				disposition = CarryDispositionRerun + row.Reason
+			}
+			fmt.Fprintf(&report, "| %s | %s |\n", markdownCell(row.ID), markdownCell(disposition))
+		}
+	}
 	if _, err := io.WriteString(writer, report.String()); err != nil {
 		return fmt.Errorf("write mechanical QA Report sections: %w", err)
 	}

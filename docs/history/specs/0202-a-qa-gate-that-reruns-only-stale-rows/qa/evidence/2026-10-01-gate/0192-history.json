@@ -1,0 +1,22 @@
+{
+  "commits": [
+    "20db691cbaf5754991c919f5fe47f278fca9ae40\n563ca5aa82b33a35878b8c0f673b06a62615ff03\ndocs: qa report for 0192-owned-skills-that-describe-the-product-as-it-is (fail)\n\nRoundfix-Spec: 0192-owned-skills-that-describe-the-product-as-it-is\n\n",
+    "3327baa1ccfbf90fda48158184f46b5a0412d940\nf7e540b3fbf9562911d840516cf1e26384b0de9c\ndocs: qa report for 0192-owned-skills-that-describe-the-product-as-it-is (partial)\n\nRoundfix-Spec: 0192-owned-skills-that-describe-the-product-as-it-is\n\n"
+  ],
+  "heads": [
+    "563ca5aa82b33a35878b8c0f673b06a62615ff03",
+    "f7e540b3fbf9562911d840516cf1e26384b0de9c"
+  ],
+  "ancestor_exits": [
+    1,
+    1
+  ],
+  "changed": [
+    "docs/specs/0192-owned-skills-that-describe-the-product-as-it-is/_prd.md",
+    "docs/specs/0192-owned-skills-that-describe-the-product-as-it-is/task_01.md",
+    "docs/specs/0192-owned-skills-that-describe-the-product-as-it-is/task_02.md",
+    "docs/specs/0192-owned-skills-that-describe-the-product-as-it-is/task_03.md",
+    "docs/specs/0192-owned-skills-that-describe-the-product-as-it-is/task_04.md",
+    "docs/specs/0192-owned-skills-that-describe-the-product-as-it-is/task_05.md"
+  ]
+}

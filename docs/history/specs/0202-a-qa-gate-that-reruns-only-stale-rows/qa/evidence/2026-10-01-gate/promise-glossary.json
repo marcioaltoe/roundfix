@@ -1,0 +1,29 @@
+{
+  "all_named_tasks_resolve": true,
+  "terms_present": [
+    "Evidence Snapshot",
+    "Carried Row",
+    "Carry Disposition"
+  ],
+  "consumers": {
+    "recording": [
+      "task_01"
+    ],
+    "carry": [
+      "task_02"
+    ],
+    "import": [
+      "task_03"
+    ],
+    "guidance": [
+      "task_04"
+    ],
+    "two_pass_proof": [
+      "task_06"
+    ],
+    "final_gate": [
+      "task_05"
+    ]
+  },
+  "missing_terms": []
+}
