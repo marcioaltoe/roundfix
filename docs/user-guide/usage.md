@@ -20,7 +20,7 @@ agent driving Roundfix. For flags, outputs, and boundaries per command, see the
 
    Doctor prints Agent Selection Profile Readiness first, then independently
    proves the Repository Skill Set. A ready repository prints
-   `skills: ok (<required> required: <owned> Roundfix-owned, <external> external)`.
+   `skills: ok (42 required: 14 Roundfix-owned, 28 external)` for this repository.
    The numbers come from the repository's Repository Skill Set. A blocking
    mismatch prints `skills: failed` with the applicable owned or external
    update command and exits `1`. Doctor is offline and read-only: it never

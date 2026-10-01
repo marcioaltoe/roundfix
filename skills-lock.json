@@ -28,13 +28,6 @@
       "skillPath": "skills/05-implementation-loop/coding-guidelines/SKILL.md",
       "computedHash": "28a414c715d3c41aae28a25e2f109813ec3f246f76b5567c1e7d6a128cd289ff"
     },
-    "context7": {
-      "source": "marcioaltoe/skills",
-      "ref": "main",
-      "sourceType": "github",
-      "skillPath": "skills/01-discovery/context7/SKILL.md",
-      "computedHash": "23f0178420043f01cd0f00745eb06eaac6f3eee4ef58f87f1ae353c2a408f79c"
-    },
     "conventional-commits": {
       "source": "marcioaltoe/skills",
       "ref": "main",
@@ -180,6 +173,34 @@
       "sourceType": "github",
       "skillPath": "skills/03-engineering-design/tui-design/SKILL.md",
       "computedHash": "1f1029297ae042457a3e2e353b442414f061f584ed1a56429ddbfeb39a7efba0"
+    },
+    "context7-cli": {
+      "source": "marcioaltoe/skills",
+      "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
+      "sourceType": "github",
+      "skillPath": "skills/01-discovery/context7-cli/SKILL.md",
+      "computedHash": "f22d21491528a0aaaf21a2a7c546428ffd208852473d6afbaf5e2d4845388639"
+    },
+    "golang-dependency-management": {
+      "source": "marcioaltoe/skills",
+      "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
+      "sourceType": "github",
+      "skillPath": "skills/05-implementation-loop/golang-dependency-management/SKILL.md",
+      "computedHash": "263a39654c000a9406725901d482be83bedb5c87322edfe18a09a9c2bb19e7d8"
+    },
+    "golang-safety": {
+      "source": "marcioaltoe/skills",
+      "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
+      "sourceType": "github",
+      "skillPath": "skills/05-implementation-loop/golang-safety/SKILL.md",
+      "computedHash": "f0f2ae4454460c1df68085aac47a0ff13043d8546703ad627a703e55ace85705"
+    },
+    "golang-structs-interfaces": {
+      "source": "marcioaltoe/skills",
+      "ref": "a4e18e4fa223196b51d0fd8224e5a33b84f97717",
+      "sourceType": "github",
+      "skillPath": "skills/05-implementation-loop/golang-structs-interfaces/SKILL.md",
+      "computedHash": "150bb7cdb43e1efab246e90d17bde6a871c2fdbbc81eb7260b9914f7d45f52ac"
     }
   }
 }

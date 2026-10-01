@@ -791,6 +791,11 @@ repository, commit, source tree, complete-tree digest, target safety,
 `skills-lock.json` compatibility, and the complete preimage. It updates only
 the selected skill trees and lock records through the recoverable transaction.
 
+#### When an upstream skill is renamed
+
+The next `roundfix baseline update --yes` installs the new name. Then
+`roundfix baseline skills reconcile --profile <id> --source <owner/repo> --revision <commit>` removes the old lock entry. The old directory under `.agents/skills/` is the repository's to delete, because Roundfix never deletes an installed skill tree. A second update reports `current`.
+
 ### Canonical asset synchronization
 
 Asset synchronization is a maintainer operation, not part of repository
