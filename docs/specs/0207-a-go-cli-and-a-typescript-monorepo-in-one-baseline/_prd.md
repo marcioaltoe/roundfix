@@ -33,8 +33,8 @@ the stated suggestion. See ADR-0204 and ADR-0205.
 - Identifier strategy: applicable — new identifiers follow the catalog's
   existing forms: one built-in Baseline Profile identifier
   (`go-cli-typescript-monorepo`, the language and surface first, as in
-  `go-cli-tui`), one Setup Snapshot identifier (`go-cli-typescript-bun`, its
-  two components joined), one decision identifier (`frontend.layout`, as
+  `go-cli-tui`), one Setup Snapshot identifier (`go-cli-typescript-bun`, named
+  for the Go CLI and the TypeScript Bun workspace it serves), one decision identifier (`frontend.layout`, as
   `domain.layout`), one clause and rule identifier in the `frontend` module
   (`clause.frontend.follow-recorded-layout`, `rule.frontend.recorded-layout`),
   one Repository Capability (`capability.stack.go`), two Verification
@@ -294,9 +294,13 @@ lists both as reasoned rejections.
   asset sync this Spec extends. The composed snapshot is built from its
   refreshed components, and the composed profile must pass its check.
 - Spec 0195 is delivered first. Its sync rule keeps the Roundfix-owned entry
-  the upstream Go CLI list omits, so the composed snapshot inherits it.
+  in every setup, so the composed snapshot inherits it.
+- Spec 0208 is delivered first. It follows the upstream setup renames of
+  2026-10-01: `go-cli` retires into `go` and `typescript-bun` becomes
+  `typescript`. The composed snapshot is built from the `go` and `typescript`
+  snapshots it creates.
 
-The evidence owner for both is the default branch. task_03's Verification
+The evidence owner for each is the default branch. task_03's Verification
 requires Spec 0200's check that every built-in profile's setup lists every
 skill its guides name to pass by name for the composed profile; on a tree
 without Spec 0200 that test does not exist and the Verification fails.

@@ -470,6 +470,10 @@ three rules; `cli-surface`, `guide.cli-surface` and its two rules;
   neither the skills lists nor the Go template. Delivered after both, each
   Task raises versions from what they leave; a conflict confined to derived
   files is resolved by regeneration.
+- **Spec 0208.** It renames the setup snapshots, edits the `core` and
+  `typescript` skill lists, and adds eight external-triage clauses to the force
+  record, the Source Baseline and its entry count. This Spec's counts and
+  versions rise from the values 0208 leaves.
 - **Adopters.** A Managed Refresh reports each changed guide. A Standard
   TypeScript Monorepo adopter's retention lists the Bun clause as `replaced`.
   Go and Rust adopters have no Source Baseline, so their update renders the

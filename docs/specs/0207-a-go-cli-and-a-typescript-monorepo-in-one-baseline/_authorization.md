@@ -99,7 +99,7 @@ command: make baseline-digests
 
 The composed snapshot's skills and activation bundles are written by
 `go run -buildvcs=false ./cmd/roundfix baseline assets sync --source-dir <checkout>/setups --format text`
-against the commit the `go-cli` snapshot pins, never by hand. This repository's
+against the commit the `go` snapshot pins, never by hand. This repository's
 managed guides and Setup Manifest are rendered by the public Baseline update,
 `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`.
 A second refresh must report `File changes: 0`.
