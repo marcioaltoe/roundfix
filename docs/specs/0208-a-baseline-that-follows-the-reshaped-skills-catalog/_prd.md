@@ -85,10 +85,13 @@ ser feito antes do próximo release"). See ADR-0206. The adopted Finding is
   ADR-0189 hold because no owned skill changes. ADR-0180, ADR-0181, ADR-0183,
   ADR-0184, ADR-0196, ADR-0197, ADR-0198, ADR-0199, ADR-0200 and ADR-0201
   govern model selection, receipts, transcripts, review, token accounting and
-  the authoring judge, none of which this Spec changes. Five ADRs cite a
+  the authoring judge, none of which this Spec changes. Eight ADRs cite a
   listed ADR and do not apply, because this Spec touches none of their
   behaviors: ADR-0074 cites ADR-0067, ADR-0097 cites ADR-0080, ADR-0168 and
-  ADR-0176 cite ADR-0093, and ADR-0173 cites ADR-0073. ADR-0177 is reached
+  ADR-0176 cite ADR-0093, ADR-0173 cites ADR-0073, ADR-0209 (the judge's
+  grouping suggestion) cites ADR-0200, ADR-0208 (grouping sources into one
+  Spec) cites ADR-0209, and ADR-0210 (evidence snapshot digests) cites
+  ADR-0097. ADR-0177 is reached
   only through ADR-0173 and is equally untouched. All hold. Source:
   `docs/agents/domain.md`.
 - Tooling authority: applicable — express maintainer authorization recorded

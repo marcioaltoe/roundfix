@@ -46,7 +46,9 @@ skills state.
   ADR-0099, ADR-0203, ADR-0189, ADR-0193, ADR-0081, ADR-0149, ADR-0089,
   ADR-0184, ADR-0187, ADR-0182, ADR-0178, ADR-0166 and ADR-0167 hold as the
   PRD states, and ADR-0097, ADR-0116, ADR-0168, ADR-0176, ADR-0183,
-  ADR-0192, ADR-0194 and ADR-0195 do not apply, for the reasons the PRD records.
+  ADR-0192, ADR-0194 and ADR-0195 do not apply, for the reasons the PRD records;
+  ADR-0210, which cites ADR-0097, governs evidence snapshot digests, which this
+  Spec does not touch.
   The gate is bound by ADR-0080, ADR-0088, ADR-0091, ADR-0096, ADR-0104,
   ADR-0117, ADR-0155 and ADR-0156, and by ADR-0093 and ADR-0094. Source:
   `docs/agents/domain.md`.
