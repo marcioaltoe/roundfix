@@ -2,6 +2,32 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.23.0] - 2026-10-01
+
+### Profiles that follow the current models
+
+The Model Catalog, the picker's reasoning efforts and the adapter readiness floors follow today's adapters. Roundfix ships one dated Recommended Profile, and the built-in Agent Selection Profiles are that profile, fallbacks included. The Baseline semantic analysis uses the current models. When a complete invocation override equals one of the configured fallbacks, that fallback's position takes the configured Preferred Selection, so the chain never holds the same selection twice.
+
+### A notice when profiles fall behind
+
+A configured profile can carry a Profile Deviation with its reason. `roundfix profiles check` compares the configuration with the Recommended Profile, and `--apply` adopts the recommendation through the same proof, preview and confirmation as `profiles configure`. `roundfix profiles show` states each category's status. Doctor adds a `recommendations:` line that never changes its exit code. `roundfix upgrade` ends with the notice on standard error.
+
+### A Task settles on the facts its gate will check
+
+Every non-QA Task in a Task Graph with an authored QA gate runs Settlement Checks when it settles. The repository Verification runs as the attempt's last command. Then two in-process checks run: one for Spec Consistency findings the Task introduced, and one for the prospective Task commit against the frozen authorization record. A failed check returns as Verification Feedback for the one repair turn. The public event stream names the two checks and still omits repository commands.
+
+### Claims with receipts and contracts as they ship
+
+An attribution to a decision record can carry a Claim Receipt, a verbatim quote that `roundfix spec check` proves against its source. In a Spec committed with or after the concrete-contract guide, an attribution without a receipt is a gap. A receipt never follows a symbolic link. A TechSpec declares its command surfaces as Surface Transcripts. The checker validates their shape and traces each one to an implementing Task and to the QA gate, which reproduces it.
+
+### A skill and a command guide read one command at a time
+
+The Roundfix skill is now an entry file plus one reference per command family, and each command has exactly one reference. The command reference in the user guide is an index plus one file per command. Documentation contracts read an entry file with its companion files, and a Task declares the one command file it changes.
+
+### A skill snapshot that matches its upstream
+
+The Baseline setup snapshots follow the upstream skills commit by name, including the `context7-cli`, `app-renderer-systems` and `rust-expert` renames and a `go-tui` setup for the Go CLI and TUI profile. The asset sync validates the catalog it produces. A profile's guides name only skills its setup lists. The Context7 capability accepts `context7-cli` or an installed `context7`.
+
 ## [0.22.0] - 2026-10-01
 
 ### Owned skills that describe the product as it is
