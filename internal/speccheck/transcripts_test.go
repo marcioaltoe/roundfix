@@ -189,7 +189,7 @@ func TestCompletedQATaskIsHistoricalTranscriptEvidence(t *testing.T) {
 	assertTranscriptCount(t, result, CodeTranscriptUngated, 0)
 }
 func TestThisSpecsSurfaceTranscriptsAreWellFormed(t *testing.T) {
-	content, err := os.ReadFile("../../docs/specs/0191-claims-with-receipts-and-contracts-as-they-ship/_techspec.md")
+	content, err := os.ReadFile(filepath.Join(thisSpecDir(t), "_techspec.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -288,11 +288,16 @@ func TestThisSpecsTranscriptsHaveImplementationAndGateReferences(t *testing.T) {
 	slug := "0191-claims-with-receipts-and-contracts-as-they-ship"
 	for _, name := range []string{"_prd.md", "_techspec.md", "_tasks.md", "task_01.md", "task_02.md", "task_03.md", "task_04.md"} {
 		path := filepath.Join("docs/specs", slug, name)
-		content, err := os.ReadFile(filepath.Join("../..", path))
+		content, err := os.ReadFile(filepath.Join(thisSpecDir(t), name))
 		if err != nil {
 			t.Fatal(err)
 		}
-		writeReceiptFixture(t, root, path, string(content))
+		text := string(content)
+		if name == "_prd.md" {
+			// The fixture replays the Spec as active, even after its archive.
+			text = strings.Replace(text, "status: archived", "status: active", 1)
+		}
+		writeReceiptFixture(t, root, path, text)
 	}
 	result, err := CheckStage(filepath.Join(root, "docs/specs"), root, slug, StageTasks)
 	if err != nil {
@@ -306,4 +311,19 @@ func TestThisSpecsTranscriptsHaveImplementationAndGateReferences(t *testing.T) {
 			t.Fatal(finding)
 		}
 	}
+}
+
+// thisSpecDir finds Spec 0191 where it lives: active under docs/specs, or
+// archived under docs/history/specs once its delivery archives it.
+func thisSpecDir(t *testing.T) string {
+	t.Helper()
+	const slug = "0191-claims-with-receipts-and-contracts-as-they-ship"
+	for _, root := range []string{"../../docs/specs", "../../docs/history/specs"} {
+		dir := filepath.Join(root, slug)
+		if info, err := os.Stat(dir); err == nil && info.IsDir() {
+			return dir
+		}
+	}
+	t.Fatalf("Spec %s is neither active nor archived", slug)
+	return ""
 }
