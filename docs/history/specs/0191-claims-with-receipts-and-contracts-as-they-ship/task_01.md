@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0191-claims-with-receipts-and-contracts-as-they-ship
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -84,3 +84,72 @@ complexity: high
 - ADR-0183; ADR-0116; ADR-0168; ADR-0093; ADR-0094
 
 ## Result
+
+Implemented the Task 01 slice: Claim Receipt parsing and proof, paragraph-local
+claim pairing, the guide commit horizon, both receipt findings and their stage
+registration, corpus characterization, and the Roundfix skill identifiers.
+The Daemon retains status and declared Verification ownership. No commit,
+push, Pull Request, Task Graph edit, other Task edit, or constraints.go edit
+was performed.
+
+### Characterization recorded before parser changes
+
+The four archived artifacts were copied byte-identically, and the unchanged
+`CitationClaims` parser recorded 13 claims (artifact, line, target and subject)
+in `claims-golden.json`. The fixed-golden characterization test passed before
+extracting the shared paragraph walker. The initial recording run wrote the
+golden and therefore triggered suiteguard's repository-write refusal; the
+recording branch was removed, and the read-only comparison exited 0 on the
+unchanged parser. The final test contains no regeneration path and continues
+to compare both fixture bytes and every parsed claim.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Claims remain identical | `TestReceiptCharacterizationKeepsEveryParsedClaim` passes before and after the shared-walker extraction; the four fixture files still match their archived sources byte for byte. Existing citation characterization and the unchanged existing speccheck tests pass. |
+| Exact and wrapped quotes; changed words, missing sources, short quotes | `TestAVerbatimReceiptIsProven` and `TestAReceiptThatWrapsAcrossLinesIsProven` prove normalized contiguous presence. The separate changed-word, unresolved-source and shorter-than-three-words tests assert the error finding and its reason. Additional tests prove case sensitivity, literal markup and refusal before reading a short receipt's source. |
+| File receipts and fenced examples | `TestAFileReceiptIsProvedAgainstTheFile` proves the backticked path form. `TestAReceiptInsideAFencedBlockIsNotRead` asserts that neither receipts nor claims are read from a fenced block. Source-token tests reject backticked fields, backticked ADR identifiers and whitespace inside paths; Unicode whitespace after the colon is accepted. |
+| Held claims require same-record, same-paragraph receipts | `TestAHeldAttributionWithoutAReceiptIsAGap`, `TestAReceiptForAnotherRecordDoesNotCoverTheClaim`, and `TestAReceiptInAnotherParagraphDoesNotCoverTheClaim` report the gap. `TestAHeldAttributionWithItsReceiptHasNoGap` reports neither new finding. Only claims resolving to accepted active records are held; unresolved and inactive claims are separately tested. |
+| Horizon and skips | The seven required horizon tests cover older PRDs, same-commit and later PRDs, uncommitted PRDs, absent guides, uncommitted guides and unreadable history, including the rendered skip reason. Tests use only gittest repositories or temporary directories. Additional cases cover shallow history, nested roots, external PRDs, revised old PRDs, divergent ancestry, readoption of the guide, non-file guides and filesystem inspection failure. The PRD adding-commit helper is shared with newADRHorizon; its earlier behavior is preserved. |
+| Unheld Specs still prove receipts | `TestASpecThatIsNotHeldStillProvesItsReceipts` reports the unproven error while the missing-receipt detector is skipped. Symlinks to files inside and outside the repository, at the leaf and at a directory component, report an unproven error ending `does not resolve to a file`. ADR directory links, ambiguous records, traversal, absolute paths and non-regular sources are also tested. |
+| Finding text matches Surface Transcripts 1 and 2 | `TestReceiptFindingsRenderSurfaceTranscriptsOneAndTwo` asserts each complete finding block, including severity, summary, both locations and fix text. Stage tests prove PRD-only input at prd and PRD plus TechSpec input at later stages, and both receipt skips when the PRD is absent. |
+| Corpus and skill mirrors | Both codes join corpusFindingCodes and the corpus golden at 0; every earlier count is unchanged. The archive-layout pin matches the updated golden. The canonical Roundfix skill and mirror name both codes and explain the horizon, and their bytes are identical. Roundfix skill version 0.0.5 is recorded. |
+
+### Focused checks
+
+All Go checks below used `GOCACHE=/tmp/roundfix-0191-gocache`.
+
+- `go test ./internal/speccheck -run '^TestReceiptCharacterizationKeepsEveryParsedClaim$' -count=1` — exit 0 before parser changes.
+- `go test ./internal/speccheck -count=1` — exit 0 after the final receipt grammar changes; existing tests remain unchanged.
+- `go test ./internal/speccheck ./internal/spec ./skills -count=1` — exit 0; includes the archive-layout corpus pin and owned skill version checks.
+- `go test -tags docscontract ./internal/docscontract -run 'TestCheck' -count=1` — exit 0 after the final changes; includes actual active corpus counts and absence of active corpus errors.
+- Temporary Go overlay disabling detectReceipts, with the changed-word and missing-receipt tests — expected exit 1; both planted-defect tests failed because findings were absent. The overlay remained under /tmp and did not modify repository sources.
+- The three final grammar regression tests first failed on the prior implementation, then passed with the strict path-token and Unicode-whitespace fixes.
+- `make skills-sync` — exit 0. `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — exit 0, generated only the new Roundfix version entry.
+- `make baseline-digests` — exit 0, `changed: false`; no Baseline pin changes.
+- Read-only corpus/scope audit — only the two new codes are added, both at 0; every previous count is retained, the skill mirror is byte-identical, and excluded task paths are unchanged.
+- `make verify-incremental` — first sandboxed run exited 2 because two existing force-stop integration tests could not read the host process table. Both host-permission reruns exited 0, including the final rerun after the grammar fixes; formatting, vet, tests, skill checks and build passed.
+- `git -c core.fsmonitor=false diff --check` — exit 0.
+
+### Additional declared generated path
+
+- `skills/testdata/owned-skill-versions.json` — generated by the owned-skill
+  recording command required by docs/agents/specific-repository.md after
+  raising both Roundfix skill version fields. Only the 0.0.5 version/digest
+  entry was added; no digest was edited by hand.
+
+The Task's two declared Verification commands were not run. This Result
+records implementation and focused evidence for Daemon Verification and
+settlement, without a terminal Task verdict.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `skills/testdata/owned-skill-versions.json`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T000219Z_0e911d72b0d72d2f`
+- Source commit: `5d2dd2bc5927347a6469ca616c4d44050c2ce11c`

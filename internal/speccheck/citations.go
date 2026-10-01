@@ -18,12 +18,22 @@ import (
 )
 
 const (
+	// CodeTranscriptUndeclared identifies a held TechSpec without a transcript declaration.
+	CodeTranscriptUndeclared = "SC-TRANSCRIPT-UNDECLARED"
+	// CodeTranscriptMalformed identifies a declared transcript with an invalid block.
+	CodeTranscriptMalformed = "SC-TRANSCRIPT-MALFORMED"
+	// CodeTranscriptUngated identifies a transcript absent from pending QA Requirements.
+	CodeTranscriptUngated = "SC-TRANSCRIPT-UNGATED"
 	// CodeADRUnlisted identifies a Spec citation absent from its Active ADR obligations row.
 	CodeADRUnlisted = "SC-ADR-UNLISTED"
 	// CodeADRRelated identifies an unlisted accepted ADR one citation edge from a listed ADR.
 	CodeADRRelated = "SC-ADR-RELATED"
 	// CodeCitationUnsupported identifies a claim whose cited ADR does not carry the claimed subject.
 	CodeCitationUnsupported = "SC-CITATION-UNSUPPORTED"
+	// CodeReceiptUnproven identifies a written receipt that cannot be proved against its source.
+	CodeReceiptUnproven = "SC-RECEIPT-UNPROVEN"
+	// CodeReceiptMissing identifies a held attribution without a receipt in its paragraph.
+	CodeReceiptMissing = "SC-RECEIPT-MISSING"
 	// CodeCoverageUnmapped identifies a PRD unit absent from the TechSpec Coverage Map.
 	CodeCoverageUnmapped = "SC-COVERAGE-UNMAPPED"
 	// CodeCoverageUntasked identifies a declared unit absent from every Task References section.
@@ -46,9 +56,14 @@ const (
 
 var (
 	citationCoverageDetectorCodes = []string{
+		CodeTranscriptUndeclared,
+		CodeTranscriptMalformed,
+		CodeTranscriptUngated,
 		CodeADRUnlisted,
 		CodeADRRelated,
 		CodeCitationUnsupported,
+		CodeReceiptUnproven,
+		CodeReceiptMissing,
 		CodeCoverageUnmapped,
 		CodeCoverageUntasked,
 		CodeMetricUndeclared,
@@ -597,6 +612,14 @@ type resolvedCitationClaim struct {
 // ADR token is not a claim because it has no attribution verb or subject.
 func CitationClaims(artifact string, content []byte) []Claim {
 	var claims []Claim
+	walkCitationParagraphs(content, func(line int, paragraph string) {
+		claims = append(claims, citationClaimsInParagraph(artifact, line, paragraph)...)
+	})
+	return claims
+}
+
+// walkCitationParagraphs preserves the attribution parser's paragraph boundaries.
+func walkCitationParagraphs(content []byte, visit func(int, string)) {
 	var paragraph []string
 	paragraphLine := 0
 	inFence := false
@@ -605,7 +628,7 @@ func CitationClaims(artifact string, content []byte) []Claim {
 		if len(paragraph) == 0 {
 			return
 		}
-		claims = append(claims, citationClaimsInParagraph(artifact, paragraphLine, strings.Join(paragraph, "\n"))...)
+		visit(paragraphLine, strings.Join(paragraph, "\n"))
 		paragraph = nil
 		paragraphLine = 0
 	}
@@ -633,7 +656,6 @@ func CitationClaims(artifact string, content []byte) []Claim {
 		paragraph = append(paragraph, line)
 	}
 	flush()
-	return claims
 }
 
 func citationClaimsInParagraph(artifact string, firstLine int, paragraph string) []Claim {
@@ -848,10 +870,11 @@ var citationStopWords = map[string]bool{
 type coverageKind string
 
 const (
-	coverageFeature  coverageKind = "Core Feature"
-	coverageStory    coverageKind = "User Story"
-	coverageMetric   coverageKind = "Success Metric"
-	coverageContract coverageKind = "API Contract"
+	coverageFeature    coverageKind = "Core Feature"
+	coverageStory      coverageKind = "User Story"
+	coverageMetric     coverageKind = "Success Metric"
+	coverageContract   coverageKind = "API Contract"
+	coverageTranscript coverageKind = "Surface Transcript"
 )
 
 type promiseDeclarationState uint8
@@ -904,6 +927,8 @@ func detectCitationCoverageAndReferences(
 		return err
 	}
 	claims := CitationClaims(prdDisplayPath, prdContent)
+	receiptArtifacts := []string{prdPath}
+	horizon := newContractHorizon(repoRoot, prdPath)
 
 	units := coverageUnitsDeclaredIn(parsePRDCoverageUnits(prdContent), prdDisplayPath)
 	units = append(units, coverageUnitsDeclaredIn(metricDeclaration.units, prdDisplayPath)...)
@@ -913,6 +938,7 @@ func detectCitationCoverageAndReferences(
 		if err != nil {
 			return fmt.Errorf("read Spec artifact %q: %w", techSpecPath, err)
 		}
+		receiptArtifacts = append(receiptArtifacts, techSpecPath)
 		techSpecDisplayPath := artifactDisplayPath(repoRoot, techSpecPath)
 		contractDeclaration := parsePromiseSection(techSpecContent, "API Contracts", coverageContract)
 		detectPromiseDeclaration(
@@ -924,8 +950,11 @@ func detectCitationCoverageAndReferences(
 		)
 		claims = append(claims, CitationClaims(techSpecDisplayPath, techSpecContent)...)
 		units = append(units, coverageUnitsDeclaredIn(contractDeclaration.units, techSpecDisplayPath)...)
+		units = append(units, detectTranscripts(result, horizon, techSpecContent, techSpecDisplayPath)...)
 		detectCoverageMap(result, units, techSpecContent, techSpecDisplayPath)
 	} else {
+		addSkip(result, CodeTranscriptUndeclared, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_techspec.md")))
+		addSkip(result, CodeTranscriptMalformed, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_techspec.md")))
 		addSkip(result, CodeCoverageUnmapped, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_techspec.md")))
 		addSkip(result, CodeContractUndeclared, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_techspec.md")))
 	}
@@ -933,11 +962,16 @@ func detectCitationCoverageAndReferences(
 		return fmt.Errorf("detect unsupported citations: %w", err)
 	}
 
+	if err := detectReceipts(result, repoRoot, horizon, receiptArtifacts); err != nil {
+		return err
+	}
+
 	graph, graphPresent, err := loadOptionalTaskGraph(specsRoot, slug, specDir)
 	if err != nil {
 		return err
 	}
 	if graphPresent {
+		detectTranscriptGate(result, repoRoot, graph, units)
 		if err := detectWaveCollisions(result, repoRoot, graph); err != nil {
 			return err
 		}
@@ -946,6 +980,7 @@ func detectCitationCoverageAndReferences(
 		}
 	} else {
 		manifestDisplayPath := artifactDisplayPath(repoRoot, filepath.Join(specDir, "_tasks.md"))
+		addSkip(result, CodeTranscriptUngated, manifestDisplayPath)
 		addSkip(result, CodeCoverageUntasked, manifestDisplayPath)
 		addSkip(result, CodeReferenceUnresolved, manifestDisplayPath)
 		addSkip(result, CodeVerifyInvertedExit, manifestDisplayPath)
@@ -1446,7 +1481,7 @@ func detectCoverageMap(result *Result, units []coverageUnit, content []byte, tec
 		sectionLine = 1
 	}
 	for _, unit := range units {
-		if unit.Kind == coverageContract {
+		if unit.Kind == coverageContract || unit.Kind == coverageTranscript {
 			continue
 		}
 		if references[unit.Kind][unit.Number] {
@@ -1514,6 +1549,7 @@ func detectTaskCoverageAndContextReferences(
 	units []coverageUnit,
 ) error {
 	references := newReferenceSet()
+	transcriptReferences := newReferenceSet()
 	for _, task := range graph.Tasks {
 		taskPath := filepath.Join(filepath.Clean(specsRoot), task.File)
 		content, err := os.ReadFile(taskPath)
@@ -1521,6 +1557,9 @@ func detectTaskCoverageAndContextReferences(
 			return fmt.Errorf("read Task %q: %w", taskPath, err)
 		}
 		for _, line := range markdownSectionLines(content, "References") {
+			if task.ID != graph.QATaskID {
+				addDeclaredReferences(transcriptReferences, line)
+			}
 			addDeclaredReferences(references, line)
 		}
 		detectTaskContextReferences(result, repoRoot, taskPath, content, task.Context)
@@ -1615,14 +1654,22 @@ func detectTaskCoverageAndContextReferences(
 
 	manifestDisplayPath := artifactDisplayPath(repoRoot, filepath.Join(graph.Spec.Dir, "_tasks.md"))
 	for _, unit := range units {
-		if references[unit.Kind][unit.Number] {
+		covered := references[unit.Kind][unit.Number]
+		if unit.Kind == coverageTranscript {
+			covered = transcriptReferences[unit.Kind][unit.Number]
+		}
+		if covered {
 			continue
 		}
 		name := coverageUnitName(unit)
+		summary := unit.DeclaredIn + " declares " + name + ", but no Task in " + manifestDisplayPath + " references it"
+		if unit.Kind == coverageTranscript {
+			summary = unit.DeclaredIn + " declares " + name + ", but no Task other than the QA gate in " + manifestDisplayPath + " references it"
+		}
 		result.Findings = append(result.Findings, Finding{
 			Code:     CodeCoverageUntasked,
 			Severity: SeverityError,
-			Summary:  unit.DeclaredIn + " declares " + name + ", but no Task in " + manifestDisplayPath + " references it",
+			Summary:  summary,
 			Where: []Location{
 				{Path: unit.DeclaredIn, Line: unit.Line},
 				{Path: manifestDisplayPath, Line: 1},
@@ -1884,14 +1931,18 @@ func sectionLineContaining(content []byte, heading, needle string) int {
 
 func newReferenceSet() referenceSet {
 	return referenceSet{
-		coverageFeature:  {},
-		coverageStory:    {},
-		coverageMetric:   {},
-		coverageContract: {},
+		coverageFeature:    {},
+		coverageStory:      {},
+		coverageMetric:     {},
+		coverageContract:   {},
+		coverageTranscript: {},
 	}
 }
 
 func addDeclaredReferences(references referenceSet, line string) {
+	for _, number := range referenceNumbers(line, transcriptRefPattern) {
+		references[coverageTranscript][number] = true
+	}
 	for _, number := range referenceNumbers(line, featureRefPattern) {
 		references[coverageFeature][number] = true
 	}

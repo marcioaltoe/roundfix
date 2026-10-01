@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.4
+  version: 0.0.5
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.4
+version: 0.0.5
 ---
 
 # Write Tasks
@@ -233,6 +233,15 @@ When a vertical slice crosses types, use the type of its primary user-visible or
 operational outcome. If two outcomes are independently valuable or the dominant
 outcome remains ambiguous, split the Task so each slice has one dominant outcome;
 do not encode multiple values and do not defer the classification.
+
+## Surface Transcripts in Tasks
+
+The implementing Task names each Surface Transcript it covers in its
+References and asserts the transcript's command, output, and exit text in a
+test. The QA Task names every transcript in a Requirement so the gate can
+reproduce it through the built product. A transcript is a coverage unit: keep
+its name traceable from the TechSpec to the implementing test and then to the
+gate.
 
 ## Process
 

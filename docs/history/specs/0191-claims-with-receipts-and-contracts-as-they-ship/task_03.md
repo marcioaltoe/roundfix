@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0191-claims-with-receipts-and-contracts-as-they-ship
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -81,3 +81,40 @@ task_01 and task_02 made the Spec Consistency Check prove Claim Receipts and rea
 - ADR-0183; ADR-0184
 
 ## Result
+
+Implemented the authoring contract slice. The concrete-contract guide now
+teaches Claim Receipts, Surface Transcript matching, code-signature interfaces,
+numbered invariants, and one parseable worked TechSpec fragment. The four
+authoring skills, their templates, the glossary, and the user guide now point
+authors to the same forms. The new external-package test reads the horizon path
+constant, checks the embedded guide bytes, proves its one receipt against the
+shipped write-techspec skill file, and validates its one transcript.
+
+Focused evidence:
+
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 ./skills -run '^TestTheConcreteContractGuideShipsAtTheHorizonPath$|^TestTheGuideExamplesAreReadByTheCheck$|^TestSettlementGuidanceIsOneTable$|^TestEveryOwnedSkillVersionIsRecorded$'` — passed.
+- `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 ./internal/speccheck -run '^TestThisSpecsSurfaceTranscriptsAreWellFormed$|^TestAWellFormedSurfaceTranscriptReportsNothing$'` — passed.
+- `git diff --check` and per-skill recursive mirror comparisons — passed; all four canonical skills match their distributed mirrors.
+- `make skills-sync` rewrote these distributed files: `skills/write-techspec/references/concrete-contracts.md`, `skills/write-techspec/SKILL.md`, `skills/write-techspec/references/techspec-template.md`, `skills/write-prd/SKILL.md`, `skills/write-prd/references/prd-template.md`, `skills/write-tasks/SKILL.md`, and `skills/qa-gate/SKILL.md`.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` recorded the four new skill versions in `skills/testdata/owned-skill-versions.json`.
+- `make baseline-digests` passed and reported `changed:false`; no baseline digest file was rewritten.
+
+Acceptance evidence:
+
+1. The embedded guide path, exactly one receipt, receipt proof, exactly one transcript, and transcript shape are covered by the focused skills and speccheck tests above.
+2. Required headings and terms are present in the edited canonical artifacts; mirror identity is proven by the recursive comparisons above.
+3. `TestSettlementGuidanceIsOneTable` passed, and no line inside `### QA settlement` was edited.
+4. The authoring guidance and versioned shipped bundle are in place; the Daemon's declared Verification remains responsible for the final Spec Consistency Check findings.
+
+The task status remains Daemon-owned and unchanged; no commit, push, or pull request was performed.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `skills/testdata/owned-skill-versions.json`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T000219Z_0e911d72b0d72d2f`
+- Source commit: `7345f98c23e339485170b33b63bbc9df3ecdb2ba`

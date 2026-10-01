@@ -17,42 +17,8 @@ type adrHorizon struct {
 // newADRHorizon returns false when the full related-ADR check must apply.
 func newADRHorizon(repoRoot, prdPath string) (adrHorizon, bool) {
 	repoRoot = filepath.Clean(repoRoot)
-	ctx := context.Background()
-	gitRoot, err := mechanicalRepositoryRoot(ctx, repoRoot)
-	if err != nil || !adrHorizonSamePath(repoRoot, gitRoot) {
-		return adrHorizon{}, false
-	}
-	repoCommonDir, err := mechanicalRepositoryCommonDir(ctx, repoRoot)
-	if err != nil {
-		return adrHorizon{}, false
-	}
-	prdCommonDir, err := mechanicalRepositoryCommonDir(ctx, filepath.Dir(prdPath))
-	if err != nil || repoCommonDir != prdCommonDir {
-		return adrHorizon{}, false
-	}
-
-	shallow, err := adrHorizonGitOutput(repoRoot, "rev-parse", "--is-shallow-repository")
-	if err != nil || strings.TrimSpace(string(shallow)) != "false" {
-		return adrHorizon{}, false
-	}
-
-	prdRelativePath, err := filepath.Rel(repoRoot, prdPath)
-	if err != nil {
-		return adrHorizon{}, false
-	}
-	prdRelativePath = filepath.ToSlash(filepath.Clean(prdRelativePath))
-	if prdRelativePath == ".." || strings.HasPrefix(prdRelativePath, "../") {
-		return adrHorizon{}, false
-	}
-	prdCommitOutput, err := adrHorizonGitOutput(
-		repoRoot,
-		"log", "-1", "--diff-filter=A", "--format=%H", "--", prdRelativePath,
-	)
-	if err != nil {
-		return adrHorizon{}, false
-	}
-	prdCommit := strings.TrimSpace(string(prdCommitOutput))
-	if prdCommit == "" || strings.ContainsAny(prdCommit, "\r\n") {
+	prdCommit, readable := prdAddingCommit(repoRoot, prdPath)
+	if !readable || prdCommit == "" {
 		return adrHorizon{}, false
 	}
 
@@ -68,6 +34,51 @@ func newADRHorizon(repoRoot, prdPath string) (adrHorizon, bool) {
 		prdCommit: prdCommit,
 		addedBy:   adrAddingCommits(adrLog),
 	}, true
+}
+
+// prdAddingCommit distinguishes unreadable history from an uncommitted PRD.
+func prdAddingCommit(repoRoot, prdPath string) (string, bool) {
+	repoRoot = filepath.Clean(repoRoot)
+	ctx := context.Background()
+	gitRoot, err := mechanicalRepositoryRoot(ctx, repoRoot)
+	if err != nil || !adrHorizonSamePath(repoRoot, gitRoot) {
+		return "", false
+	}
+	repoCommonDir, err := mechanicalRepositoryCommonDir(ctx, repoRoot)
+	if err != nil {
+		return "", false
+	}
+	prdCommonDir, err := mechanicalRepositoryCommonDir(ctx, filepath.Dir(prdPath))
+	if err != nil || repoCommonDir != prdCommonDir {
+		return "", false
+	}
+
+	shallow, err := adrHorizonGitOutput(repoRoot, "rev-parse", "--is-shallow-repository")
+	if err != nil || strings.TrimSpace(string(shallow)) != "false" {
+		return "", false
+	}
+
+	prdRelativePath, err := filepath.Rel(repoRoot, prdPath)
+	if err != nil {
+		return "", false
+	}
+	prdRelativePath = filepath.ToSlash(filepath.Clean(prdRelativePath))
+	if prdRelativePath == ".." || strings.HasPrefix(prdRelativePath, "../") {
+		return "", false
+	}
+	prdCommitOutput, err := adrHorizonGitOutput(
+		repoRoot,
+		"log", "-1", "--diff-filter=A", "--format=%H", "--", prdRelativePath,
+	)
+	if err != nil {
+		return "", false
+	}
+	prdCommit := strings.TrimSpace(string(prdCommitOutput))
+	if strings.ContainsAny(prdCommit, "\r\n") {
+		return "", false
+	}
+
+	return prdCommit, true
 }
 
 func adrHorizonSamePath(first, second string) bool {

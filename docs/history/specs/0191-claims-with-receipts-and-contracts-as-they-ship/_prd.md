@@ -1,9 +1,12 @@
 ---
 spec: 0191-claims-with-receipts-and-contracts-as-they-ship
-status: active
+status: archived
 created: 2026-09-30
 surfaces: [backend, cli, docs]
+archived: "2026-10-01"
+source_slug: 0191-claims-with-receipts-and-contracts-as-they-ship
 ---
+
 
 # Claims with receipts and contracts as they ship
 
@@ -49,9 +52,9 @@ prove:
   ADR-0094 requires a detector to skip an absent artifact (ADR-0094: "Each
   detector declares the artifacts it reads and is skipped"), which is how a
   repository without the guide is read.
-  ADR-0168 keeps a revised PRD on the horizon of its first commit (ADR-0168:
-  "A PRD revised after a later ADR landed keeps the horizon of its first
-  commit"), and the guide horizon reuses that rule.
+  ADR-0168 keeps a revised PRD on the horizon of its first commit
+  (ADR-0168: "A PRD revised after a later ADR landed keeps the horizon of its
+  first commit"), and the guide horizon reuses that rule.
   ADR-0156 makes a declared promise a coverage unit (ADR-0156: "Each numbered
   item is a coverage unit that some Task names in its References"), and a
   Surface Transcript is one more such promise.

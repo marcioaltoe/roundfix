@@ -5,10 +5,10 @@ argument-hint: "<feature description, or nothing after a grilling/brainstorm ses
 metadata:
   category: planning
   tags: [prd, product, requirements, workflow, documentation]
-  version: 0.0.3
+  version: 0.0.4
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.3
+version: 0.0.4
 ---
 
 # Write PRD
@@ -30,6 +30,14 @@ Not every change earns a PRD — it pays for itself when there are product decis
 - **Read `CONTEXT.md` and `docs/adr/` before anything else.** Use the glossary's vocabulary throughout — titles, user stories, feature names — and never drift to synonyms the glossary lists under `_Avoid_`. If a concept has no term yet, sharpen one with the user and add it to the glossary right then; a PRD written in fuzzy language produces fuzzy tasks. If either file is missing, proceed silently.
 - **Decide, then write.** Once research and clarifications are done, write the file directly and let the user react to the finished artifact. Do not present outline drafts for approval — reviewing a real PRD is faster than reviewing a promise of one.
 - **Durability.** No file paths, no code snippets, no line numbers, except the mandatory `docs/agents/` Project Constraint sources and exact files covered by tooling authorization. The PRD may sit in a queue for weeks while the codebase moves; describe behavior and interfaces, which survive refactors.
+
+## Claim receipts
+
+When a paragraph attributes behavior to a decision record, add a Claim Receipt
+in that paragraph: the record identifier or repository path, a colon, and a
+verbatim quote in straight double quotes. The Spec Consistency Check proves the
+quote against the source, so copy it exactly; it checks presence and leaves
+support for the reader.
 
 ## Process
 
