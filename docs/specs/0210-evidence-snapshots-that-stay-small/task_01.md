@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0210-evidence-snapshots-that-stay-small
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -120,3 +120,66 @@ per-file form by converting its list into the same pair.
 - [_prd.md](_prd.md) — Goals 1-3; Core Features 1-4; Success Metrics 1-4
 - [_techspec.md](_techspec.md) — Interfaces; The input digest; Data Models; Recording the snapshot; Carrying by digest; API Contract 1; API Contract 2; Integration Points; Testing Approach 1; Testing Approach 2; Build Order 1
 - ADR-0210; ADR-0194; ADR-0195; ADR-0097
+
+## Result
+
+Implemented the task_01 slice for Daemon Verification. The recorder now writes
+one flow-style `ref`, `count`, `sha256` entry per declared input while retaining
+matched files in memory for citation coverage. Carry compares validated pairs,
+converts legacy sorted per-file lists, and names moved refs in declaration
+order. Mixed shapes are refused even when the recorded count is explicitly
+zero or the digest explicitly empty. Newline paths matched by a glob make the
+input unresolved before Git's line-based blob reader is used.
+
+Starting evidence: inspection found the recorder emitting `files` and one
+mapping per matched file, and carry comparing per-file lists. The six authored
+digest tests were absent. The newline regression initially recorded the row:
+`**` used regexp dot matching that excluded newlines. Dot matching now includes
+newlines so the builder can refuse that input. The subsequent focused run
+passed the regression.
+
+Focused checks (not the authored Verification commands):
+
+- `GOCACHE=/private/tmp/roundfix-task01-gocache rtk proxy go test ./internal/speccheck -run 'TestEvidence|TestCarry|TestCarriable|TestMechanicalStageCarriable|TestRowCarry' -count=1`
+  — exit 0, final run `ok roundfix/internal/speccheck 8.735s`.
+- `GOCACHE=/private/tmp/roundfix-task01-gocache rtk proxy go test ./internal/daemon -run 'TestQAGate.*Snapshot|TestTwoGatePasses|TestQAGateCarriesARow|TestPriorQAPass' -count=1`
+  — exit 0, `ok roundfix/internal/daemon 5.995s`.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+
+Acceptance evidence:
+
+1. `TestEvidenceRecordWritesOneLinePerInputWhateverItMatches` commits 2,500
+   matched files, asserts `count: 2500`, the independently computed digest,
+   and exactly `1 + 3 * recorded rows + declared inputs` block lines.
+2. `TestEvidenceInputDigestFollowsTheSortedSummary` commits paths in z, a, m
+   order and compares the record with a content-based, independently sorted
+   SHA-256 summary. Its newline-path subtest asserts no row is recorded.
+3. `TestCarryNamesTheMovedRefNotItsFiles` carries the new-form report at the
+   unchanged head, then changes two files, adds one and removes one and asserts
+   exactly `input moved: src/**` through the mechanical stage. Its additional
+   subtest asserts `input moved: src/z.txt, src/**` in declaration order.
+4. `TestCarryComparesTheRecordedDigestPerInput` checks unchanged pairs and
+   separately mismatching recorded counts and digests; both mismatches yield
+   `input moved: src/**` without findings.
+5. `TestCarryReadsAPerFileSnapshotAsItsDigest` exercises valid two-file,
+   missing-file, unsorted and mixed-shape reports through the mechanical stage;
+   valid evidence carries, missing evidence names the ref, and malformed
+   evidence yields `no evidence snapshot`, with no errors or findings.
+6. `TestCarriableAcceptsARecordedDigestAgainstTheCurrentFiles` accepts a
+   recorded pair against current files and refuses a differing digest and an
+   uncovered citation.
+7. The focused speccheck selection includes the unedited governed
+   `TestCarriable`, `TestMechanicalStageCarriable…`, `TestRowCarry…` and other
+   `TestEvidenceRecord…` tests. The focused Daemon selection includes unedited
+   `TestQAGateCarriesARowFromAnUnintegratedFailedPass` and `TestPriorQAPass…`.
+8. The updated committed-report assertion checks a one-line count/digest
+   entry. Both two-pass tests compare recorded counts and independent digests;
+   the second pass imports the first new-form report and carries its unmoved
+   row. The moved-input two-pass flow also passes.
+
+Scope inspection: only the declared implementation files, the new digest
+suite and this Result were changed. The existing Daemon-written
+`status: in_progress` was preserved. The Task Graph, other Task files, governed
+tests, prior-pass import and QA stage were left untouched. No commit, push or
+Pull Request was made. Authored Verification and Task settlement remain with
+the Daemon. No follow-up work was identified within this slice.

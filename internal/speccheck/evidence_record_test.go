@@ -50,11 +50,9 @@ func recordRun(t *testing.T, root, head, report string) (speccheck.EvidenceRecor
 func recordedRows(t *testing.T, content string) map[string]struct {
 	Head   string `yaml:"head"`
 	Inputs []struct {
-		Ref   string `yaml:"ref"`
-		Files []struct {
-			Path   string `yaml:"path"`
-			SHA256 string `yaml:"sha256"`
-		} `yaml:"files"`
+		Ref    string `yaml:"ref"`
+		Count  int    `yaml:"count"`
+		SHA256 string `yaml:"sha256"`
 	} `yaml:"inputs"`
 } {
 	t.Helper()
@@ -62,11 +60,9 @@ func recordedRows(t *testing.T, content string) map[string]struct {
 		Rows map[string]struct {
 			Head   string `yaml:"head"`
 			Inputs []struct {
-				Ref   string `yaml:"ref"`
-				Files []struct {
-					Path   string `yaml:"path"`
-					SHA256 string `yaml:"sha256"`
-				} `yaml:"files"`
+				Ref    string `yaml:"ref"`
+				Count  int    `yaml:"count"`
+				SHA256 string `yaml:"sha256"`
 			} `yaml:"inputs"`
 		} `yaml:"evidence_snapshots"`
 	}
@@ -98,15 +94,15 @@ func TestEvidenceRecordSnapshotsEveryQualifyingPassRow(t *testing.T) {
 	if len(inputs) != 2 || inputs[0].Ref != "src/**" || inputs[1].Ref != "evidence.txt" {
 		t.Fatalf("input order = %+v", inputs)
 	}
-	for i, path := range []string{"src/a.txt", "src/z.txt"} {
-		file := inputs[0].Files[i]
-		expected := fmt.Sprintf("%x", sha256.Sum256([]byte(strings.TrimPrefix(strings.TrimSuffix(path, ".txt"), "src/")+"\n")))
-		if file.Path != path || file.SHA256 != expected {
-			t.Fatalf("file = %+v", file)
-		}
+	var summary strings.Builder
+	for _, path := range []string{"src/a.txt", "src/z.txt"} {
+		fmt.Fprintf(&summary, "%x  %s\n", sha256.Sum256([]byte(strings.TrimPrefix(strings.TrimSuffix(path, ".txt"), "src/")+"\n")), path)
 	}
-	expected := fmt.Sprintf("%x", sha256.Sum256([]byte("stable evidence\n")))
-	if inputs[1].Files[0].SHA256 != expected {
+	if inputs[0].Count != 2 || inputs[0].SHA256 != fmt.Sprintf("%x", sha256.Sum256([]byte(summary.String()))) {
+		t.Fatalf("glob pair = %+v", inputs[0])
+	}
+	expected := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%x  evidence.txt\n", sha256.Sum256([]byte("stable evidence\n"))))))
+	if inputs[1].Count != 1 || inputs[1].SHA256 != expected {
 		t.Fatalf("hashed worktree instead of Git: %+v", inputs[1])
 	}
 }
