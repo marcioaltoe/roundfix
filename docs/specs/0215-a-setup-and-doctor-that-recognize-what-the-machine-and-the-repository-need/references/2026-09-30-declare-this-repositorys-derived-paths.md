@@ -1,8 +1,8 @@
 ---
 type: chore
-status: open
+status: promoted
 created: 2026-09-30
-spec: null
+spec: 0215-a-setup-and-doctor-that-recognize-what-the-machine-and-the-repository-need
 reason: null
 ---
 
