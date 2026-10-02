@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0213-a-test-suite-that-does-not-flake
-status: pending
+status: completed
 type: test
 complexity: high
 ---
@@ -91,3 +91,78 @@ inner test binary (ADR-0213).
 - [_techspec.md](_techspec.md) — The owner watch and reaping; Testing Approach 3; Build Order 3
 - [references/2026-09-30-time-bound-tests-and-a-leaked-detached-child.md](references/2026-09-30-time-bound-tests-and-a-leaked-detached-child.md)
 - ADR-0213; ADR-0028; ADR-0126
+
+## Result
+
+Implemented this Task's fixture lifetime contract without production changes.
+`cliHelperEnv` passes the test binary's PID as
+`ROUNDFIX_FAKE_ACPX_OWNER_PID`; the fake ACPX checks it with `kill -0` on
+every release-loop pass and exits 1 when it is gone. Both detach survivor
+loops check their owning test binary through `store.ProcessAlive` and return
+`exitRunFailed` on owner death. The sentinel-ignoring child still ignores its
+sentinel, records its PID, and runs in its own session so killing the inner
+test binary's process group cannot directly kill that child.
+
+The Implement survival test reads `OwnerPID` from the Run Database after the
+Run ID is printed. Cleanup registrations follow the workspace, prompt and
+adapter temporary directories, kill only the recorded Owner PID's process
+group (accepting `ESRCH`), and prove PID and group absence through
+`testwait.Poll`. A caller cleanup also covers failures before the explicit
+caller kill. The original survival, Attach, Clean and journal assertions
+remain unchanged.
+
+The two new death tests re-execute the compiled test binary with their own
+process groups, private `TMPDIR` directories and PID records. A test-only
+record rendezvous keeps each inner binary alive with its fixture waiting;
+the outer test sends `SIGKILL` to the inner binary's process group, confirms
+that signal in its wait status, then proves both the fixture PID and its
+process group absent before sending any cleanup signal to the fixture. Group
+absence includes the Implement fake ACPX and its shell children. Every wait
+uses the enclosing test deadline. Logs go into the outer temporary directory,
+not inherited pipes that detached processes could hold open.
+
+Focused evidence, with host process observation permitted:
+
+- Acceptance criterion 1: `GOCACHE=/tmp/roundfix-task03-gocache rtk proxy go test -count=1 -timeout=90s -v -run '^Test(ImplementDetachChild|DetachSurvivor)EndsWhenItsTestBinaryDies$' ./internal/cli`
+  exited 0. `TestImplementDetachChildEndsWhenItsTestBinaryDies` passed in
+  1.82s, proving the detached Owner PID and complete process group absent
+  after its inner test binary was killed.
+- Acceptance criterion 2: the same focused command reported
+  `TestDetachSurvivorEndsWhenItsTestBinaryDies` passing in 0.29s. Its survivor
+  was alive before the inner binary's kill, in a separate session, and its
+  PID and group were absent afterward.
+- Acceptance criterion 3: `GOCACHE=/tmp/roundfix-task03-gocache rtk proxy go test -count=1 -timeout=120s -v -run '^(TestRunDetachedCommand.*|TestRunDetachedReviewRefusalLeavesArtifactDirectoryAbsent|TestDetachedChildIsTerminatedAtTeardown|TestRunImplementDetachSurvivesCallerProcessGroupKill)$' ./internal/cli`
+  exited 0. Both original survival tests passed, along with the adjacent
+  liveness, Run-creation, handshake and refusal tests. The Implement survival
+  test passed in 3.55s; the sentinel-ignoring teardown test passed in 0.01s.
+- Old-wait failure proof: before adding either owner check, compiled the new
+  death-test and rendezvous infrastructure with
+  `GOCACHE=/tmp/roundfix-task03-gocache rtk proxy go test -c -o /tmp/roundfix-task03.test ./internal/cli`.
+  From `internal/cli`, ran
+  `rtk proxy /tmp/roundfix-task03.test -test.run='^Test(ImplementDetachChild|DetachSurvivor)EndsWhenItsTestBinaryDies$' -test.timeout=25s -test.v`.
+  Both death tests failed at the deadline margin, at 24.01s and 24.03s,
+  with `PID alive=true; process group alive=true`. The old release-file loop
+  and hour-sleep loop were still in place for this probe. Outer cleanup
+  reclaimed only the recorded fixture groups. The probe output is in
+  `/tmp/roundfix-task03-red.log`.
+- `GOCACHE=/tmp/roundfix-task03-gocache rtk make verify-incremental` exited 0:
+  formatting, vet, the full Go test suite, skill checks and build passed.
+  `internal/cli` took 205.234s. Output is in
+  `/tmp/roundfix-task03-incremental.log`.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+The initial compiled-binary probe was launched from the repository root,
+which gave the suite guard the wrong relative scan root; its known test
+processes were stopped, and the evidence above comes from the correctly
+located probe. Restricted process-table access required sandbox escalation
+for the process checks.
+
+Task status, Subtask and Acceptance Criteria checkboxes remain unchanged.
+Authored Verification was not run; the Daemon owns Verification and
+settlement. No other Task, Task Graph or production file was edited, and no
+commit, push or pull request was made. No follow-up implementation was added.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261002T064202Z_a22e1dd4644c4dc6`
+- Source commit: `5ffe5e0ff1201df10f6916238a2118c3046916c8`

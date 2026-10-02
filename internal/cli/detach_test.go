@@ -26,6 +26,7 @@ const (
 	detachTestChildExitOneSilently     = "exit-one-silently"
 	detachTestChildIgnoreSentinel      = "ignore-sentinel"
 	detachTestRunID                    = "run-detach-test"
+	detachTestOwnerPIDEnv              = "ROUNDFIX_DETACH_TEST_OWNER_PID"
 	detachTestPIDPathEnv               = "ROUNDFIX_DETACH_TEST_PID_PATH"
 	detachTestSentinelPathEnv          = "ROUNDFIX_DETACH_TEST_SENTINEL_PATH"
 )
@@ -233,6 +234,9 @@ func TestDetachedChildIsTerminatedAtTeardown(t *testing.T) {
 	command := exec.Command(os.Args[0], "-test.run=^$")
 	command.Env = withEnvValue(os.Environ(), detachTestChildModeEnv, detachTestChildIgnoreSentinel)
 	command.Env = withEnvValue(command.Env, detachTestSentinelPathEnv, survivor.sentinelPath)
+	command.Env = withEnvValue(command.Env, detachTestPIDPathEnv, survivor.pidPath)
+	command.Env = withEnvValue(command.Env, detachTestOwnerPIDEnv, strconv.Itoa(os.Getpid()))
+	configureDetachedSysProcAttr(command)
 	if err := command.Start(); err != nil {
 		t.Fatalf("start detached child that ignores its sentinel: %v", err)
 	}
@@ -247,8 +251,12 @@ func TestDetachedChildIsTerminatedAtTeardown(t *testing.T) {
 			t.Errorf("detached child %d remains alive after teardown", survivor.pid)
 		}
 	})
+	waitForFile(t, survivor.pidPath, nil)
 	if !store.ProcessAlive(survivor.pid) {
 		t.Fatalf("detached child %d exited before teardown", survivor.pid)
+	}
+	if record := os.Getenv(detachTestOwnerRecordEnv); record != "" {
+		waitForDetachDeathTestKill(t, record)
 	}
 }
 
@@ -265,6 +273,7 @@ func runDetachParentForTest(t *testing.T, childMode string, livenessTimeout time
 	var stderr bytes.Buffer
 	environment := commandEnvironmentForTest(t)
 	childEnvironment := withEnvValue(environment.environ, detachTestChildModeEnv, childMode)
+	childEnvironment = withEnvValue(childEnvironment, detachTestOwnerPIDEnv, strconv.Itoa(os.Getpid()))
 	var survivor *detachTestSurvivor
 	if childMode == detachTestChildRunCreated {
 		survivor = newDetachTestSurvivor(t)
@@ -360,8 +369,20 @@ func runDetachTestChild(mode string) int {
 	case detachTestChildExitOneSilently:
 		return exitRunFailed
 	case detachTestChildIgnoreSentinel:
+		ownerPID, err := strconv.Atoi(os.Getenv(detachTestOwnerPIDEnv))
+		if err != nil || ownerPID <= 0 {
+			return exitRunFailed
+		}
+		if !recordDetachTestSurvivor() {
+			return exitRunFailed
+		}
+		ticker := time.NewTicker(10 * time.Millisecond)
+		defer ticker.Stop()
 		for {
-			time.Sleep(time.Hour)
+			if !store.ProcessAlive(ownerPID) {
+				return exitRunFailed
+			}
+			<-ticker.C
 		}
 	default:
 		fmt.Fprintf(os.Stderr, "unknown detach test child mode %q\n", mode)
@@ -409,6 +430,10 @@ func readDetachTestSurvivorPID(t *testing.T, pidPath string) int {
 }
 
 func waitForDetachTestSentinel() int {
+	ownerPID, err := strconv.Atoi(os.Getenv(detachTestOwnerPIDEnv))
+	if err != nil || ownerPID <= 0 {
+		return exitRunFailed
+	}
 	sentinelPath := strings.TrimSpace(os.Getenv(detachTestSentinelPathEnv))
 	if sentinelPath == "" {
 		fmt.Fprintln(os.Stderr, "detached test child sentinel path is empty")
@@ -417,6 +442,9 @@ func waitForDetachTestSentinel() int {
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
 	for {
+		if !store.ProcessAlive(ownerPID) {
+			return exitRunFailed
+		}
 		if _, err := os.Stat(sentinelPath); err == nil {
 			return exitOK
 		} else if !errors.Is(err, os.ErrNotExist) {
