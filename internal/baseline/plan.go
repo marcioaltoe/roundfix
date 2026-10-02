@@ -1834,6 +1834,7 @@ func resolveManagedArtifacts(
 		}
 	}
 	orderedIDs = orderRootArtifacts(catalog, orderedIDs)
+	workspaceLocations := profileWorkspaceLocations(catalog.profiles[profile.ID])
 	var artifacts []plannedArtifact
 	for _, id := range orderedIDs {
 		declaration := declarations[id]
@@ -1856,6 +1857,9 @@ func resolveManagedArtifacts(
 		)
 		for token, rendered := range renderValues {
 			valuesForArtifact[token] = rendered
+		}
+		if location, ok := workspaceLocations[id]; ok {
+			valuesForArtifact["workspace.location"] = location
 		}
 		body, err := renderTemplate(template.Data, valuesForArtifact)
 		if err != nil {
@@ -1979,6 +1983,28 @@ func managedArtifactPaths(catalog *Catalog) map[string]string {
 	return paths
 }
 
+func profileWorkspaceLocations(profile document) map[string]string {
+	pathsByGuide := make(map[string][]string)
+	for _, workspace := range objectsOrEmpty(profile["workspaces"]) {
+		guide, _ := stringValue(workspace, "guide")
+		location, _ := stringValue(workspace, "path")
+		if guide == "" || !safeRelative(location) {
+			continue
+		}
+		pathsByGuide[guide] = append(pathsByGuide[guide], "`"+location+"`")
+	}
+	locations := make(map[string]string, len(pathsByGuide))
+	for guide, paths := range pathsByGuide {
+		sort.Strings(paths)
+		joined := paths[0]
+		if len(paths) > 1 {
+			joined = strings.Join(paths[:len(paths)-1], ", ") + " and " + paths[len(paths)-1]
+		}
+		locations[guide] = " at " + joined
+	}
+	return locations
+}
+
 func artifactRenderValues(
 	catalog *Catalog,
 	artifact document,
@@ -1992,8 +2018,11 @@ func artifactRenderValues(
 	case "guide.domain":
 		values["identifier.strategy"] = ""
 	case "guide.backend":
+		values["workspace.location"] = ""
 		values["http.contract"] = ""
 		values["auth.provider"] = ""
+	case "guide.frontend":
+		values["workspace.location"] = ""
 	}
 	var rules []string
 	moduleID := ""

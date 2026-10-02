@@ -204,17 +204,17 @@
     },
     {
       "id": "template.guide.backend",
-      "version": 2,
+      "version": 3,
       "kind": "guide",
       "path": "guides/backend.md",
-      "tokens": ["artifact.rules", "http.contract", "auth.provider"]
+      "tokens": ["artifact.rules", "http.contract", "auth.provider", "workspace.location"]
     },
     {
       "id": "template.guide.frontend",
-      "version": 3,
+      "version": 4,
       "kind": "guide",
       "path": "guides/frontend.md",
-      "tokens": ["artifact.rules", "repository.design-contract", "frontend.layout"]
+      "tokens": ["artifact.rules", "repository.design-contract", "frontend.layout", "workspace.location"]
     },
     {
       "id": "template.guide.go",

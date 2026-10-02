@@ -26,8 +26,8 @@ func TestTheBackendAndFrontendGuidesSayWhatTheyGovern(t *testing.T) {
 	t.Parallel()
 	plan := buildProjectDecisionPlan(t, newProjectDecisionPlanRepository(t), standardTypeScriptDecisions("make verify"))
 	rules := []stackWordingRule{
-		{guide: "docs/agents/backend.md", must: []string{"These rules govern the repository's TypeScript backend workspace. A service or command written in another language follows its own guide."}},
-		{guide: "docs/agents/frontend.md", must: []string{"These rules govern the repository's web frontend workspace. A terminal interface follows its own guide."}},
+		{guide: "docs/agents/backend.md", must: []string{"These rules govern the repository's TypeScript backend workspace at `packages/backend`. A service or command written in another language follows its own guide."}},
+		{guide: "docs/agents/frontend.md", must: []string{"These rules govern the repository's web frontend workspace at `packages/frontend`. A terminal interface follows its own guide."}},
 	}
 	rendered := make(map[string]string)
 	for _, rule := range rules {
