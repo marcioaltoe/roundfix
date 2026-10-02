@@ -1,9 +1,18 @@
 ---
 spec: 0215-a-setup-and-doctor-that-recognize-what-the-machine-and-the-repository-need
-status: active
+status: archived
 created: 2026-10-02
 surfaces: [backend, cli, docs]
+archived: "2026-10-02"
+source_slug: 0215-a-setup-and-doctor-that-recognize-what-the-machine-and-the-repository-need
+qa_override: true
+qa_override_approval: 'maintainer standing authorization 2026-09-30 (unattended program): qa_override only for environment-only partials'
+qa_override_reason: QA partial with zero findings; the only blocked row is the Pull Request row (11), which needs an open Pull Request
+qa_override_qa_outcome: partial
+qa_override_qa_task_status: failed
+qa_override_revision: 97539097ce4062aaa7f71d778e3e088f14887aa9
 ---
+
 
 # A setup and doctor that recognize what the machine and the repository need
 
