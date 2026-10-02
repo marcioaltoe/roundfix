@@ -7,7 +7,7 @@
   "requiredRules": [
     "rule.core.compact-root", "rule.core.root-cause-only", "rule.core.evidence-before-complete", "rule.core.verification-selected", "rule.core.verification-integrity", "rule.core.tooling-authority", "rule.core.skill-dispatch", "rule.core.english-guidance", "rule.core.research-authority", "rule.core.dependency-discipline", "rule.core.git-delivery", "rule.core.decision-authority", "rule.core.security-configuration",
     "rule.context.domain-docs", "rule.context.docs-layout",
-    "rule.rust.current-docs", "rule.rust.cargo-gates",
+    "rule.rust.current-docs", "rule.rust.cargo-gates", "rule.rust.library-and-entry-point",
     "rule.cli.output-contract", "rule.cli.non-interactive",
     "rule.autonomous.supervisor-delegates", "rule.autonomous.verification-gate",
     "rule.autonomous.loop",

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0206-stack-rules-with-force-and-the-rules-adopters-repeat
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -66,3 +66,68 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - `_prd.md` → Goal 1; Goal 3; Story 3; Core Feature 2; Success Metric 1; Success Metric 3
 - `_techspec.md` → Candidate rules; Exact texts (task_03); Version changes; API Contract 3; Testing Approach 3; Testing Approach 5; Build Order 3
 - ADR-0059, ADR-0081, ADR-0149, ADR-0186, ADR-0190, ADR-0202
+
+## Result
+
+The first handoff stopped over the nine-clause count discrepancy. After the
+same-session Verification Feedback requested repair, implementation followed
+all eight clauses explicitly defined in the TechSpec's Exact texts, plus its
+separate scope sentence. No ninth obligation was invented. Requirement 4 and
+Testing Approach 3 still say nine; the Spec owner can correct that wording as
+a follow-up outside this Task's implementation diff.
+
+The inspected diagnostic artifact was
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261002T051041Z_3b0b74eb6eaab110/verification/batch-003-attempt-1.log`.
+It identified the missing Rust test, consistent with the first handoff having
+made no source changes. Its body is not embedded here.
+
+### Implementation and acceptance evidence
+
+- No Rust rule carries rule-level guidance: the module now uses module-v3,
+  empty `repositoryExtensions`, and clauses for both retained rule identities
+  and the new error rule. `TestEveryRustRuleCarriesForce` passes.
+- A temporary Rust CLI plan renders the scope sentence and all eight exact
+  clause texts with force, including typed library errors, thin binaries,
+  entry-point-only type-erased reports and the prohibition of panics on
+  user-reachable paths. It excludes the replaced manifest paragraph and has
+  no unlabelled rule bullet. `TestTheRustGuideStatesTheErrorPolicy` passes.
+- The force record gains the eight defined Rust clauses with their specified
+  enforcement. `TestTheRustClausesCarryTheirForce` passes using the existing
+  clause-force helper; the rule-level and wording helpers are reused too.
+- The guide and Rust CLI profile both list
+  `rule.rust.library-and-entry-point`. Its version starts at 1;
+  `TestTheRustProfileRequiresTheErrorRule` passes. Rust module version rises
+  3 to 4, guide and existing rules 2 to 3, and Rust template 1 to 2.
+- The second Managed Refresh reports `File changes: 0`, identical current and
+  prior catalog digests, and verified idempotence. The first successful
+  refresh changed only the Setup Manifest; this repository selects no Rust
+  guide.
+
+### Focused checks and regeneration
+
+- The four new Rust tests were written before the asset changes. A focused
+  run failed for both old guidance paragraphs, all eight missing clauses,
+  the absent scope sentence, the retained manifest paragraph and the missing
+  profile requirement. After the asset changes the same focused run exited 0.
+- `rtk make baseline-digests` exited 0 with `ok:true` and `changed:true`.
+  It rewrote only the catalog digest, normalized catalog and four declared
+  plan-characterization goldens. No generated artifact was hand-edited.
+- `GOCACHE=/private/tmp/roundfix-task03-go-cache rtk proxy go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`
+  exited 0 for both successful refreshes, first with one file change, then
+  zero. The initial default-cache attempt was sandbox-denied; the first
+  task-cache attempt could not write the Git-private transaction lock.
+  Elevated execution allowed the authorized refresh, and the no-op refresh
+  then succeeded without elevation. Both successful refreshes reported
+  nested-carrier warnings for the existing formatter fixture and Source
+  Baseline corpus, whose bytes were preserved.
+- `GOCACHE=/private/tmp/roundfix-task03-go-cache rtk proxy go test -count=1 -v -run '^Test(EveryRustRuleCarriesForce|TheRustGuideStatesTheErrorPolicy|TheRustClausesCarryTheirForce|TheRustProfileRequiresTheErrorRule)$' ./internal/baseline`
+  exited 0 after regeneration and both refreshes, with all four named tests
+  reporting PASS. A preceding default-cache invocation was sandbox-denied.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0. Changed-path
+  inspection found only this Task's declared sources, test, force record,
+  sanctioned derived files and Task Result. Initial status already listed
+  this Task file as modified; status remains Daemon-owned.
+
+The declared Verification sequence was not rerun. No Task status or checkbox,
+Task Graph, other Task file, skill, exported signature or existing top-level
+test name was changed. No commit, push or pull request was created.
