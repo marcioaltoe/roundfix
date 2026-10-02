@@ -134,7 +134,7 @@ func runDeliverRetry(ctx context.Context, args []string, stdout, stderr io.Write
 	}
 	result, err := engine.Retry(ctx, loaded.GitRoot, specSlug)
 	if err != nil {
-		return printDeliverFailure("retry", err, stderr)
+		return printDeliverRetryRefusal(ctx, runStore, loaded.GitRoot, specSlug, err, stderr)
 	}
 
 	if result.OwnerPID > 0 {
@@ -184,6 +184,21 @@ func runDeliverRetry(ctx context.Context, args []string, stdout, stderr io.Write
 	}
 	printDeliverRetryResult(stdout, specSlug, result)
 	return dependencies.startDeliveryOwner(ctx, loaded, environment, stdout, stderr)
+}
+
+func printDeliverRetryRefusal(ctx context.Context, runStore *store.Store, gitRoot, specSlug string, err error, stderr io.Writer) int {
+	fmt.Fprintf(stderr, "Retry refused\n\nReason:\n  %s\n", err)
+	queue, found, readErr := runStore.DeliveryQueue(ctx, gitRoot)
+	if readErr == nil && found {
+		for _, item := range queue.Items {
+			if item.SpecSlug == specSlug {
+				fmt.Fprintf(stderr, "\nItem:\n  stage: %s; blocker: %s\n", item.Stage, item.Blocker)
+				break
+			}
+		}
+	}
+	fmt.Fprint(stderr, "\nNo side effects:\n  Roundfix did not change the Delivery Queue item, start a queue owner, commit, or push.\n")
+	return exitPreflight
 }
 
 func printDeliverRetryResult(stdout io.Writer, specSlug string, result delivery.RetryResult) {

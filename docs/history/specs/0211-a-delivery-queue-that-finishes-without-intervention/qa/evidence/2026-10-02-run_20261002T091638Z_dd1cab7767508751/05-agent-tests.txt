@@ -1,0 +1,102 @@
+command: ['go', 'test', '-count=1', '-v', './internal/agent', '-run', 'NodeOptions|MissingPreload|ACPXCommandEnv|CommandEnvDefaults']
+exit: 0
+stdout:
+=== RUN   TestACPXCommandEnvStripsGuardAndHygieneVariables
+=== PAUSE TestACPXCommandEnvStripsGuardAndHygieneVariables
+=== RUN   TestACPXCommandEnvStripsGuardWithoutOverrides
+=== PAUSE TestACPXCommandEnvStripsGuardWithoutOverrides
+=== RUN   TestACPXRunnerCommandEnvDefaultsToProcessEnvironment
+--- PASS: TestACPXRunnerCommandEnvDefaultsToProcessEnvironment (0.00s)
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload
+=== PAUSE TestAgentNodeOptionsDropsAMissingPreload
+=== RUN   TestAgentNodeOptionsKeepsWhatItCannotSplit
+=== PAUSE TestAgentNodeOptionsKeepsWhatItCannotSplit
+=== RUN   TestACPXRunnerDropsAMissingPreloadWithOneNotice
+=== PAUSE TestACPXRunnerDropsAMissingPreloadWithOneNotice
+=== RUN   TestACPXRunnerNodeOptionsEnvironment
+=== PAUSE TestACPXRunnerNodeOptionsEnvironment
+=== RUN   TestACPXRunnerNodeOptionsProcessEnvironment
+--- PASS: TestACPXRunnerNodeOptionsProcessEnvironment (0.00s)
+=== RUN   TestACPXRunnerNodeOptionsConcurrentNotices
+=== PAUSE TestACPXRunnerNodeOptionsConcurrentNotices
+=== RUN   TestACPXEnvironmentDropsAMissingPreloadForAnyProcess
+--- PASS: TestACPXEnvironmentDropsAMissingPreloadForAnyProcess (0.00s)
+=== CONT  TestACPXCommandEnvStripsGuardAndHygieneVariables
+--- PASS: TestACPXCommandEnvStripsGuardAndHygieneVariables (0.00s)
+=== CONT  TestACPXRunnerNodeOptionsConcurrentNotices
+=== CONT  TestAgentNodeOptionsKeepsWhatItCannotSplit
+=== RUN   TestAgentNodeOptionsKeepsWhatItCannotSplit/--require_"/missing.cjs
+=== RUN   TestAgentNodeOptionsKeepsWhatItCannotSplit/--require=/missing.cjs_--title="unfinished
+=== RUN   TestAgentNodeOptionsKeepsWhatItCannotSplit/"trailing\
+--- PASS: TestAgentNodeOptionsKeepsWhatItCannotSplit (0.00s)
+    --- PASS: TestAgentNodeOptionsKeepsWhatItCannotSplit/--require_"/missing.cjs (0.00s)
+    --- PASS: TestAgentNodeOptionsKeepsWhatItCannotSplit/--require=/missing.cjs_--title="unfinished (0.00s)
+    --- PASS: TestAgentNodeOptionsKeepsWhatItCannotSplit/"trailing\ (0.00s)
+=== CONT  TestACPXRunnerNodeOptionsEnvironment
+=== CONT  TestAgentNodeOptionsDropsAMissingPreload
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/require_equals
+=== CONT  TestACPXCommandEnvStripsGuardWithoutOverrides
+--- PASS: TestACPXCommandEnvStripsGuardWithoutOverrides (0.00s)
+=== CONT  TestACPXRunnerDropsAMissingPreloadWithOneNotice
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/require_space
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/short_require
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/import_URL
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/import_equals_URL
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/import_path
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/quoted_missing_path
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/encoded_URL
+=== RUN   TestACPXRunnerNodeOptionsEnvironment/last_entry_wins
+=== RUN   TestACPXRunnerNodeOptionsEnvironment/all_removed_including_shadowed_entry
+=== RUN   TestACPXRunnerNodeOptionsEnvironment/existing_quoted_path
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/all_removed
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/kept_order
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/existing
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/existing_URL
+=== RUN   TestACPXRunnerNodeOptionsEnvironment/unbalanced_untouched
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/relative
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/package
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/relative_file_URL
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/other_URL
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/quoted_kept_path
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/escaped_quotes
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/escaped_backslash
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/spaces_normalized
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/unknown_option
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/missing_argument
+=== RUN   TestAgentNodeOptionsDropsAMissingPreload/empty_word
+--- PASS: TestAgentNodeOptionsDropsAMissingPreload (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/require_equals (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/require_space (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/short_require (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/import_URL (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/import_equals_URL (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/import_path (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/quoted_missing_path (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/encoded_URL (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/all_removed (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/kept_order (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/existing (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/existing_URL (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/relative (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/package (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/relative_file_URL (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/other_URL (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/quoted_kept_path (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/escaped_quotes (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/escaped_backslash (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/spaces_normalized (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/unknown_option (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/missing_argument (0.00s)
+    --- PASS: TestAgentNodeOptionsDropsAMissingPreload/empty_word (0.00s)
+--- PASS: TestACPXRunnerNodeOptionsConcurrentNotices (0.00s)
+--- PASS: TestACPXRunnerNodeOptionsEnvironment (0.00s)
+    --- PASS: TestACPXRunnerNodeOptionsEnvironment/last_entry_wins (0.00s)
+    --- PASS: TestACPXRunnerNodeOptionsEnvironment/all_removed_including_shadowed_entry (0.00s)
+    --- PASS: TestACPXRunnerNodeOptionsEnvironment/existing_quoted_path (0.00s)
+    --- PASS: TestACPXRunnerNodeOptionsEnvironment/unbalanced_untouched (0.00s)
+--- PASS: TestACPXRunnerDropsAMissingPreloadWithOneNotice (0.42s)
+PASS
+suiteguard: guard cost: measured 8040 paths; fingerprint took 1.0490055s before and 299.491916ms after
+ok  	roundfix/internal/agent	2.145s
+
+stderr:

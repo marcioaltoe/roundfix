@@ -1,0 +1,76 @@
+{
+  "audits": [
+    {
+      "task": "task_01",
+      "commit": "95bbcdd6b62012728392b5d1db5b1afd675c491d",
+      "paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        ".agents/skills/roundfix/references/runtime.md",
+        "docs/specs/0211-a-delivery-queue-that-finishes-without-intervention/task_01.md",
+        "docs/user-guide/commands/deliver.md",
+        "docs/user-guide/commands/doctor.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/deliver.md",
+        "skills/roundfix/references/runtime.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "undeclared": []
+    },
+    {
+      "task": "task_02",
+      "commit": "c2ca0ac8a2a44fe2befb73620300d823b38affc3",
+      "paths": [
+        "docs/specs/0211-a-delivery-queue-that-finishes-without-intervention/task_02.md",
+        "internal/cli/deliver_archived_retry_test.go",
+        "internal/cli/deliver_workflow.go"
+      ],
+      "undeclared": []
+    },
+    {
+      "task": "task_03",
+      "commit": "001bbb0b48bda4d3af016f95623e47b3abf5156c",
+      "paths": [
+        "docs/specs/0211-a-delivery-queue-that-finishes-without-intervention/task_03.md",
+        "internal/cli/deliver.go",
+        "internal/cli/deliver_retry_test.go",
+        "internal/cli/deliver_token_ceiling_test.go",
+        "internal/delivery/engine.go",
+        "internal/delivery/github.go",
+        "internal/delivery/merge_state_test.go"
+      ],
+      "undeclared": []
+    },
+    {
+      "task": "task_04",
+      "commit": "594fd8ca942223edbf4de751154f945b8dff4f04",
+      "paths": [
+        "docs/specs/0211-a-delivery-queue-that-finishes-without-intervention/task_04.md",
+        "internal/agent/acpx_runner.go",
+        "internal/agent/codex_spawn.go",
+        "internal/agent/node_options.go",
+        "internal/agent/node_options_test.go"
+      ],
+      "undeclared": []
+    }
+  ],
+  "governed": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/deliver.md",
+    ".agents/skills/roundfix/references/runtime.md",
+    "skills/roundfix/SKILL.md"
+  ],
+  "grant_revision": "6364d3c9192a03ab8e6c505c71fea4baf6fa8810",
+  "protected_changed": "",
+  "existing_unchanged": {
+    "internal/cli/deliver_operator_archive_test.go": true,
+    "internal/delivery/operator_archive_retry_test.go": true,
+    "internal/agent/codex_spawn_test.go": true
+  },
+  "standalone_correction": [
+    "internal/agent/node_options.go",
+    "internal/agent/node_options_test.go",
+    "internal/cli/setup.go"
+  ],
+  "correction_message": "fix: the doctor's acpx and node probes drop a dead preload too\n\nQA finding QA-0211-01: defaultSetupACPXVersion started acpx with the raw\nenvironment, so a NODE_OPTIONS preload whose file was removed still stopped\nthe first probe. The version probes now use the same filtered environment as\nthe ACPX runner. The QA reproduction exits 1 before this change and 0 after.\n\nClaude-Session: https://claude.ai/code/session_01FNqGuwAceoFQ33P4d72Syc\n\n"
+}

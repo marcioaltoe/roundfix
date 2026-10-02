@@ -1,0 +1,16 @@
+$ ["go", "test", "-count=1", "-v", "-run", "TestDeliverRetry(PrintsARefusalWithoutUsage|KeepsUsageForAnArgumentError|RefusalOmitsAnUnreadableItem)", "./internal/cli"]
+exit: 0
+stdout:
+=== RUN   TestDeliverRetryPrintsARefusalWithoutUsage
+--- PASS: TestDeliverRetryPrintsARefusalWithoutUsage (0.05s)
+=== RUN   TestDeliverRetryKeepsUsageForAnArgumentError
+--- PASS: TestDeliverRetryKeepsUsageForAnArgumentError (0.04s)
+=== RUN   TestDeliverRetryRefusalOmitsAnUnreadableItem
+=== PAUSE TestDeliverRetryRefusalOmitsAnUnreadableItem
+=== CONT  TestDeliverRetryRefusalOmitsAnUnreadableItem
+--- PASS: TestDeliverRetryRefusalOmitsAnUnreadableItem (0.00s)
+PASS
+suiteguard: guard cost: measured 8011 paths; fingerprint took 286.408125ms before and 229.630292ms after
+ok  	roundfix/internal/cli	0.880s
+
+stderr:

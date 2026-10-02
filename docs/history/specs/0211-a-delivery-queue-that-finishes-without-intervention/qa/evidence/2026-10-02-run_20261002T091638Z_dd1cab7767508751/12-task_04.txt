@@ -1,0 +1,5 @@
+M	docs/specs/0211-a-delivery-queue-that-finishes-without-intervention/task_04.md
+M	internal/agent/acpx_runner.go
+M	internal/agent/codex_spawn.go
+A	internal/agent/node_options.go
+A	internal/agent/node_options_test.go

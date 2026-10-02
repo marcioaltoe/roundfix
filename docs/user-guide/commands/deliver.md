@@ -185,6 +185,14 @@ Carry-Forward. The archive stage recognizes the reviewed Spec already in the
 archive and proceeds to `gating` without another commit. Review, repository
 gating, delivery authorization and required checks still apply.
 
+An archived retry of an operator-archived `qa-environment-partial` item finds
+the Implement start head of the Run the queue started by the repository the Run
+belongs to. When no candidate exists, the retry accepts an item head descended
+from that start head, records it as the candidate and resumes at `reviewing`.
+An archived item with an unchanged candidate head and a recorded Pull Request
+resumes at `checking`; this includes a `delivery-error` park, so a green Pull
+Request can continue to merge without manual intervention.
+
 Delivery authorization is read from the parent of the newest first-parent
 commit that deleted the active Spec's `_prd.md`. A later operator commit does
 not hide that pre-archive grant. Other moved archived heads remain refused
@@ -209,6 +217,13 @@ delivery.derived_paths`. Otherwise the owner commits the merge with the
 The repository gate, push and current-head checks run again. An existing Pull
 Request still reporting an earlier candidate is read again at each check
 interval up to the check timeout.
+
+During `checking`, Roundfix waits while GitHub reports the Pull Request merge
+state as `BLOCKED` or `UNKNOWN`, even when the listed checks pass. The existing
+checks timeout parks the item as `checks-timeout`; only a mergeable state with
+passing checks proceeds to merge. If GitHub refuses that merge because
+`base branch policy prohibits the merge`, Roundfix returns to `checking` once
+for that head. A second refusal for the same head parks `delivery-error`.
 
 A conflict park has class `conflict`. Its next action is to merge the default
 branch into the item branch in the printed worktree, resolve the named paths,
@@ -317,6 +332,29 @@ empty slug, an extra argument, an unknown flag, an item that is not parked, a
 missing item branch, a moved archived head without accepted recovery evidence,
 a refused carry-forward, or an owner hand-off failure exits `2` and starts no owner. An item-level refusal
 leaves the stored item unchanged.
+
+An item-level refusal exits `2` and prints `Retry refused`, followed by
+`Reason:`, the refused retry reason, `Item:` with its stage and blocker, and
+`No side effects:` with the statement that Roundfix did not change the Delivery
+Queue item, start a queue owner, commit, or push. It does not print a `Usage:`
+block. For example:
+
+```text
+$ roundfix deliver retry 0300-example
+stdout:
+stderr:
+Retry refused
+
+Reason:
+  retry Delivery Queue item "0300-example": archived item head "2222222222222222222222222222222222222222" differs from candidate head "1111111111111111111111111111111111111111"
+
+Item:
+  stage: parked; blocker: delivery-error: merge pull request: read pull request before merge: gh failed
+
+No side effects:
+  Roundfix did not change the Delivery Queue item, start a queue owner, commit, or push.
+exit: 2
+```
 
 ### Token usage
 

@@ -131,6 +131,13 @@ The repository gate, push and current-head checks run again. An existing Pull
 Request still reporting an earlier candidate is read again at each check
 interval up to the check timeout.
 
+During `checking`, Roundfix waits while GitHub reports the Pull Request merge
+state as `BLOCKED` or `UNKNOWN`, even when the listed checks pass. The existing
+checks timeout parks the item as `checks-timeout`; only a mergeable state with
+passing checks proceeds to merge. If GitHub refuses that merge because
+`base branch policy prohibits the merge`, Roundfix returns to `checking` once
+for that head. A second refusal for the same head parks `delivery-error`.
+
 A conflict park has class `conflict`. Its next action is to merge the default
 branch into the item branch in the printed worktree, resolve the named paths,
 commit, then run `roundfix deliver retry <slug>`. Retry accepts a head descended
@@ -202,6 +209,14 @@ item re-enters at `running` when any Task is unfinished or at `reviewing` when
 every Task is completed. An archived Spec re-enters at `gating` without a
 recorded pull request or at `checking` with one.
 
+An archived retry of an operator-archived `qa-environment-partial` item finds
+the Implement start head of the Run the queue started by the repository the Run
+belongs to. When no candidate exists, the retry accepts an item head descended
+from that start head, records it as the candidate and resumes at `reviewing`.
+An archived item with an unchanged candidate head and a recorded Pull Request
+resumes at `checking`; this includes a `delivery-error` park, so a green Pull
+Request can continue to merge without manual intervention.
+
 When every refused Task has moved inputs and only non-Task commits after the
 Run started changed those inputs, the reason adds `amended by <sha>, ...` and
 the next action prints these five POSIX-quoted commands in order:
@@ -244,6 +259,29 @@ report. Invalid arguments, an item that is not parked, a missing item branch,
 a moved archived head without accepted recovery evidence, refused carry-forward,
 or owner hand-off failure exits
 `2` and starts no owner; an item-level refusal leaves the item unchanged.
+
+An item-level refusal exits `2` and prints `Retry refused`, followed by
+`Reason:`, the refused retry reason, `Item:` with its stage and blocker, and
+`No side effects:` with the statement that Roundfix did not change the Delivery
+Queue item, start a queue owner, commit, or push. It does not print a `Usage:`
+block. For example:
+
+```text
+$ roundfix deliver retry 0300-example
+stdout:
+stderr:
+Retry refused
+
+Reason:
+  retry Delivery Queue item "0300-example": archived item head "2222222222222222222222222222222222222222" differs from candidate head "1111111111111111111111111111111111111111"
+
+Item:
+  stage: parked; blocker: delivery-error: merge pull request: read pull request before merge: gh failed
+
+No side effects:
+  Roundfix did not change the Delivery Queue item, start a queue owner, commit, or push.
+exit: 2
+```
 
 Use `roundfix upgrade [--check]` to resolve the latest Roundfix release through
 the GitHub CLI. Without `--check`, it downloads the platform asset, verifies

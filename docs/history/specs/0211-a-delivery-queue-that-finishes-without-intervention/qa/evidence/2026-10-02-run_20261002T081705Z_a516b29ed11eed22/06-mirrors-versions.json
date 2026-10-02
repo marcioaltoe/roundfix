@@ -1,0 +1,16 @@
+{
+  "mirrors": {
+    ".agents/skills/roundfix/SKILL.md": true,
+    ".agents/skills/roundfix/references/deliver.md": true,
+    ".agents/skills/roundfix/references/runtime.md": true
+  },
+  "old_versions": [
+    "0.1.9",
+    "0.1.9"
+  ],
+  "new_versions": [
+    "0.1.10",
+    "0.1.10"
+  ],
+  "settlement_changes": []
+}

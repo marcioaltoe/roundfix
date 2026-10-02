@@ -1,0 +1,7 @@
+M	docs/specs/0211-a-delivery-queue-that-finishes-without-intervention/task_03.md
+M	internal/cli/deliver.go
+M	internal/cli/deliver_retry_test.go
+M	internal/cli/deliver_token_ceiling_test.go
+M	internal/delivery/engine.go
+M	internal/delivery/github.go
+A	internal/delivery/merge_state_test.go

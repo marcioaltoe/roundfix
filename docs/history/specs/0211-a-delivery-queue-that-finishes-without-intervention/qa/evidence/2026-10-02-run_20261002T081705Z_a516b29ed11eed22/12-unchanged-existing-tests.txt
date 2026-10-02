@@ -1,0 +1,5 @@
+$ ["git", "-c", "core.fsmonitor=false", "diff", "--name-only", "6364d3c9192a03ab8e6c505c71fea4baf6fa8810..HEAD", "--", "internal/cli/deliver_operator_archive_test.go", "internal/cli/deliver_recovery_test.go", "internal/delivery/github_test.go", "internal/delivery/check_rerun_test.go", "internal/delivery/retry_test.go", "internal/delivery/engine_test.go"]
+exit: 0
+stdout:
+
+stderr:

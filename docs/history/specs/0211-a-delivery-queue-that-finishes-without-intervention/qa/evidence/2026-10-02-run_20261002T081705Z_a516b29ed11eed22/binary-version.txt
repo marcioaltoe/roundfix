@@ -1,0 +1,6 @@
+$ ["./bin/roundfix", "--version"]
+exit: 0
+stdout:
+roundfix 0.26.0 (89953dc6-dirty, built 2026-10-02 05:54:47 -0300)
+
+stderr:

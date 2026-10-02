@@ -148,10 +148,43 @@ func (runner *ACPXRunner) commandEnv(overrides []string) []string {
 }
 
 func (runner *ACPXRunner) baseEnv() []string {
+	var environment []string
 	if runner.Environment == nil {
-		return os.Environ()
+		environment = os.Environ()
+	} else {
+		environment = append([]string(nil), runner.Environment...)
 	}
-	return append([]string(nil), runner.Environment...)
+	for index := len(environment) - 1; index >= 0; index-- {
+		key, value, found := strings.Cut(environment[index], "=")
+		if !found || key != "NODE_OPTIONS" {
+			continue
+		}
+		kept, dropped, ok := agentNodeOptions(value, func(path string) bool {
+			_, err := os.Stat(path)
+			// Only confirmed absence authorizes removing a preload. Permission
+			// and other inspection failures do not prove that the path is gone.
+			return !os.IsNotExist(err)
+		})
+		if !ok {
+			return environment
+		}
+		runner.noticeNodePreloads(dropped)
+		if kept != "" {
+			environment[index] = "NODE_OPTIONS=" + kept
+			return environment
+		}
+		// Remove shadowed entries too, so an older value cannot become active
+		// after removing the last entry.
+		filtered := environment[:0]
+		for _, entry := range environment {
+			entryKey, _, _ := strings.Cut(entry, "=")
+			if entryKey != "NODE_OPTIONS" {
+				filtered = append(filtered, entry)
+			}
+		}
+		return filtered
+	}
+	return environment
 }
 
 func environmentValue(environment []string, key string) string {

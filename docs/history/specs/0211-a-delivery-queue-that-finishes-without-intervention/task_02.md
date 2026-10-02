@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0211-a-delivery-queue-that-finishes-without-intervention
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -84,3 +84,52 @@ item to `reviewing`.
 - `_prd.md` → User Story 1; Core Feature 1; Success Metric 1; Acceptance evidence
 - `_techspec.md` → The Run start lookup; Testing Approach 1; Build Order 2
 - ADR-0154; ADR-0170
+
+## Result
+
+Implemented the Task 02 slice for Daemon Verification. `RunStart` now compares
+`run.RepositoryRoot` with `roundconfig.RepositoryRoot` of the queue checkout.
+For legacy rows with no stored repository root, it derives identity from the
+Run's working root. The existing refusal text remains for absent Runs,
+non-Implement Runs, empty start heads and another repository. `Engine.Retry`,
+the ancestry proof and QA Archive Override rules are unchanged.
+
+Added the three required tests in `internal/cli/deliver_archived_retry_test.go`.
+All three failed against the original lookup before the production edit:
+linked item Runs were refused with `has no Implement start head`, and archived
+retry refused the moved head against an empty candidate. The other-repository
+test first asserts the exact refusal, then checks a same-repository linked
+Run as a control; that control failed against the original lookup.
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Linked item worktree yields its start head | `TestRunStartFindsAQueueStartedRunByItsRepository` passes for both a stored repository root and an empty legacy root in a disposable Run Database. |
+| Another repository retains the refusal | `TestRunStartRefusesARunOfAnotherRepository` passes over two repositories with linked worktrees and asserts the exact unchanged message and an empty returned head. |
+| Archived retry resumes reviewing with the descended head appended | `TestArchivedRetryOfAQueueStartedRunReturnsToReview` seeds a parked `qa-environment-partial` item with no candidate, commits operator evidence, invokes the in-process archive command with `--qa-override`, and drives a real `delivery.NewEngine` with command-workflow Workspace, Recovery and History plus a fake Pull Request boundary. It asserts the returned and persisted `reviewing` stage, candidate list containing the archived item head, cleared blocker and unchanged Git head. |
+| Existing operator-archive tests pass unedited | The focused CLI check includes `TestOperatorArchiveHistoryReadsTheRunStartAndAncestry`; the focused delivery check includes the operator-archive retry tests. Neither existing test file was edited. |
+
+Checks run:
+
+- `rtk proxy go test -count=1 ./internal/cli -run 'Test(RunStart|ArchivedRetry)'`
+  before the lookup edit: exit 1; all three required new tests failed at the
+  intended lookup/retry boundary.
+- `rtk proxy go test -count=1 ./internal/cli -run 'Test(RunStart|ArchivedRetry|OperatorArchiveHistory)'`
+  after the lookup edit: exit 0.
+- `rtk proxy go test -count=1 ./internal/delivery -run 'Test.*(OperatorArchive|ArchivedHead|EnvironmentOnlyPartial)'`:
+  exit 0.
+- `rtk make verify-incremental`: the sandboxed attempt exited 2 because three
+  existing process-lifecycle tests could not enumerate or signal their fixture
+  process groups. The permission-adjusted rerun exited 0, including Go vet,
+  the full Go suite, skill checks and build. No assertions or configuration
+  were changed to accommodate the sandbox.
+- `rtk proxy git -c core.fsmonitor=false diff --check`: exit 0.
+
+The Task status was already `in_progress` on entry and remains Daemon-owned.
+The authored Verification commands were not run. No other Task or Task Graph
+was edited; no commit, push or Pull Request was made. No follow-up was needed
+within this slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261002T081705Z_a516b29ed11eed22`
+- Source commit: `89953dc64cd707e59ee4bae6b92a927394142294`

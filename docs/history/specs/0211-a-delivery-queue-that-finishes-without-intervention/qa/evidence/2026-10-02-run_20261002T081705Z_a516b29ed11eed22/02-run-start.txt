@@ -1,0 +1,20 @@
+$ ["go", "test", "-count=1", "-v", "-run", "Test(RunStart|ArchivedRetry|OperatorArchiveHistory)", "./internal/cli"]
+exit: 0
+stdout:
+=== RUN   TestRunStartFindsAQueueStartedRunByItsRepository
+=== RUN   TestRunStartFindsAQueueStartedRunByItsRepository/legacy_repository_root=false
+=== RUN   TestRunStartFindsAQueueStartedRunByItsRepository/legacy_repository_root=true
+--- PASS: TestRunStartFindsAQueueStartedRunByItsRepository (0.14s)
+    --- PASS: TestRunStartFindsAQueueStartedRunByItsRepository/legacy_repository_root=false (0.07s)
+    --- PASS: TestRunStartFindsAQueueStartedRunByItsRepository/legacy_repository_root=true (0.07s)
+=== RUN   TestRunStartRefusesARunOfAnotherRepository
+--- PASS: TestRunStartRefusesARunOfAnotherRepository (0.10s)
+=== RUN   TestArchivedRetryOfAQueueStartedRunReturnsToReview
+--- PASS: TestArchivedRetryOfAQueueStartedRunReturnsToReview (0.14s)
+=== RUN   TestOperatorArchiveHistoryReadsTheRunStartAndAncestry
+--- PASS: TestOperatorArchiveHistoryReadsTheRunStartAndAncestry (0.10s)
+PASS
+suiteguard: guard cost: measured 8001 paths; fingerprint took 702.958292ms before and 229.962834ms after
+ok  	roundfix/internal/cli	1.906s
+
+stderr:

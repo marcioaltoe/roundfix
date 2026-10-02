@@ -30,6 +30,15 @@ when load drops because the configured profile was not shown to be wrong.
 Doctor has no separate legacy `agent:` or `model:` authority. Failed checks
 include `next: <action>` when Roundfix knows the remediation.
 
+When `NODE_OPTIONS` names a preload whose file no longer exists, Roundfix drops
+that preload from the environment it gives an agent process. It checks absolute
+preload paths from the last `NODE_OPTIONS` entry, keeps existing paths and
+package names, and reports each dropped path once per process on standard error:
+
+```text
+roundfix: notice: NODE_OPTIONS preload "<path>" does not exist; Roundfix left it out of the agent environment
+```
+
 The `pre-pr-review:` line reports the resolved pre-Pull-Request review provider
 and the configuration layer that supplied it. An explicit `none` reports that
 review is disabled by configuration. This check reads policy only: it invokes
@@ -133,4 +142,3 @@ stderr, Roundfix reports the terminal reason as
 in Work Item reasons, Run Events, and final report reason lines instead of a
 generic `agent/protocol error`. Verification remains the only gate for settling
 and committing.
-

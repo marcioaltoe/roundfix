@@ -133,6 +133,7 @@ func ClaudeAdapterCommand() string {
 type ACPXRunner struct {
 	Command             string
 	Environment         []string
+	Notices             io.Writer // nil writes notices to os.Stderr
 	Now                 func() time.Time
 	warnf               func(string, ...any)
 	cancelClock         cancellationClock
@@ -936,7 +937,7 @@ func (runner *ACPXRunner) probeACPX(ctx context.Context) error {
 		return err
 	}
 	cmd := exec.CommandContext(ctx, command, "--version")
-	cmd.Env = runner.baseEnv()
+	cmd.Env = runner.commandEnv(nil)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {

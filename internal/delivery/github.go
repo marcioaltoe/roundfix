@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-const pullRequestJSONFields = "number,url,state,headRefName,headRefOid,mergedAt,mergeCommit,mergeable"
+const pullRequestJSONFields = "number,url,state,headRefName,headRefOid,mergedAt,mergeCommit,mergeable,mergeStateStatus"
 
 // PullRequestBoundary is the external publication surface used by the
 // delivery engine. Implementations must observe remote state before retrying
@@ -39,6 +39,7 @@ type PullRequestRequest struct {
 }
 
 type PullRequest struct {
+	MergeState  string
 	Mergeable   string
 	Number      string
 	URL         string
@@ -55,9 +56,10 @@ type PullRequestResult struct {
 }
 
 type CheckReport struct {
-	Mergeable string
-	HeadSHA   string
-	Checks    []PullRequestCheck
+	MergeState string
+	Mergeable  string
+	HeadSHA    string
+	Checks     []PullRequestCheck
 }
 
 type PullRequestCheck struct {
@@ -71,6 +73,13 @@ type PullRequestCheck struct {
 type MergeResult struct {
 	PullRequest   PullRequest
 	AlreadyMerged bool
+}
+
+// MergePolicyRefusalError reports a merge blocked by the base branch policy.
+type MergePolicyRefusalError struct{ Stderr string }
+
+func (err MergePolicyRefusalError) Error() string {
+	return "merge pull request: " + strings.TrimSpace(err.Stderr)
 }
 
 type PullRequestHeadMismatchError struct {
@@ -268,7 +277,7 @@ func (client GitHubCLI) CurrentHeadChecks(ctx context.Context, number string) (C
 	}
 
 	if before.Mergeable == "CONFLICTING" {
-		return CheckReport{HeadSHA: before.HeadSHA, Mergeable: before.Mergeable}, nil
+		return CheckReport{HeadSHA: before.HeadSHA, Mergeable: before.Mergeable, MergeState: before.MergeState}, nil
 	}
 	result, err := client.run(
 		ctx,
@@ -309,7 +318,7 @@ func (client GitHubCLI) CurrentHeadChecks(ctx context.Context, number string) (C
 			after.HeadSHA,
 		)
 	}
-	return CheckReport{HeadSHA: before.HeadSHA, Mergeable: after.Mergeable, Checks: checks}, nil
+	return CheckReport{HeadSHA: before.HeadSHA, Mergeable: after.Mergeable, MergeState: after.MergeState, Checks: checks}, nil
 }
 
 func (client GitHubCLI) MergePullRequest(ctx context.Context, number, expectedHead string) (MergeResult, error) {
@@ -351,6 +360,9 @@ func (client GitHubCLI) MergePullRequest(ctx context.Context, number, expectedHe
 		return MergeResult{}, fmt.Errorf("merge pull request: %w", err)
 	}
 	if result.ExitCode != 0 {
+		if strings.Contains(strings.ToLower(result.Stderr), "base branch policy prohibits the merge") {
+			return MergeResult{}, MergePolicyRefusalError{Stderr: result.Stderr}
+		}
 		return MergeResult{}, commandFailure("merge pull request", result)
 	}
 
@@ -420,6 +432,7 @@ func parseRemoteHead(output, expectedRef string) (string, error) {
 }
 
 type pullRequestPayload struct {
+	MergeState  string `json:"mergeStateStatus"`
 	Number      int    `json:"number"`
 	URL         string `json:"url"`
 	State       string `json:"state"`
@@ -461,6 +474,7 @@ func pullRequestFromPayload(payload pullRequestPayload) (PullRequest, error) {
 		return PullRequest{}, errors.New("gh pull request metadata is missing number")
 	}
 	pullRequest := PullRequest{
+		MergeState: strings.ToUpper(strings.TrimSpace(payload.MergeState)),
 		Mergeable:  payload.Mergeable,
 		Number:     strconv.Itoa(payload.Number),
 		URL:        strings.TrimSpace(payload.URL),
