@@ -235,6 +235,8 @@ type EngineDependencies struct {
 }
 
 type Engine struct {
+	policyRefusals map[string]bool
+
 	conflicts     ConflictResolver
 	prerequisites PrerequisiteReader
 	store         *store.Store
@@ -1122,11 +1124,16 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 	rerunRuns := make(map[string]bool)
 	rerunChecks := make(map[string]bool)
 	timeoutRestarted := false
+	lastMergeState := ""
 	for {
 		report, err := pullRequests.CurrentHeadChecks(ctx, item.PullRequestNumber)
 		if err == nil {
 			if report.HeadSHA != head {
 				return engine.park(ctx, gitRoot, item, BlockerReviewStale)
+			}
+			if report.MergeState != lastMergeState {
+				fmt.Fprintf(engine.log, "roundfix: checks: Delivery Queue item %s: merge state %s\n", item.SpecSlug, report.MergeState)
+				lastMergeState = report.MergeState
 			}
 			if report.Mergeable == "CONFLICTING" {
 				fmt.Fprintf(engine.log, "roundfix: conflict: Delivery Queue item %s: candidate %s\n", item.SpecSlug, head)
@@ -1223,6 +1230,9 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 					pending = true
 				}
 			}
+			if report.MergeState == "BLOCKED" || report.MergeState == "UNKNOWN" {
+				pending = true
+			}
 			if !pending {
 				return engine.setStage(ctx, gitRoot, item, store.DeliveryStageMerging)
 			}
@@ -1268,6 +1278,18 @@ func (engine *Engine) mergeCandidate(ctx context.Context, gitRoot string, item *
 	}
 	result, err := engine.pullRequests.WithWorkDir(workDir).MergePullRequest(ctx, item.PullRequestNumber, head)
 	if err != nil {
+		var refusal MergePolicyRefusalError
+		if errors.As(err, &refusal) {
+			key := item.SpecSlug + "@" + head
+			if !engine.policyRefusals[key] {
+				if engine.policyRefusals == nil {
+					engine.policyRefusals = make(map[string]bool)
+				}
+				engine.policyRefusals[key] = true
+				fmt.Fprintf(engine.log, "roundfix: merge refused by branch policy: Delivery Queue item %s; checking again\n", item.SpecSlug)
+				return engine.setStage(ctx, gitRoot, item, store.DeliveryStageChecking)
+			}
+		}
 		var mismatch PullRequestHeadMismatchError
 		if errors.As(err, &mismatch) {
 			return engine.park(ctx, gitRoot, item, BlockerReviewStale)

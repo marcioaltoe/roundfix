@@ -124,8 +124,8 @@ func TestDeliverRetryIsRefusedAtTheTokenCeiling(t *testing.T) {
 	})
 	var out, diag bytes.Buffer
 	code := runCLI(t, []string{"deliver", "retry", "0301-example"}, &out, &diag)
-	want := "Preflight failed\n\nReason:\n  retry Delivery Queue item \"0301-example\": queue token ceiling 5000000 was reached with 5639755 tokens; start a new queue with roundfix deliver start\n"
-	if code != exitPreflight || out.Len() != 0 || !strings.HasPrefix(diag.String(), want) || started != 0 {
+	want := "Retry refused\n\nReason:\n  retry Delivery Queue item \"0301-example\": queue token ceiling 5000000 was reached with 5639755 tokens; start a new queue with roundfix deliver start\n"
+	if code != exitPreflight || out.Len() != 0 || !strings.HasPrefix(diag.String(), want) || strings.Contains(diag.String(), "Usage:") || started != 0 {
 		t.Fatalf("exit=%d starts=%d stdout=%q stderr=%q", code, started, out.String(), diag.String())
 	}
 	if after := openDeliveryQueueForCLI(t, home, repo); !reflect.DeepEqual(before, after) {

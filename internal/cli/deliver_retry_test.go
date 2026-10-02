@@ -200,7 +200,7 @@ func TestDeliverRetryRefusalStartsNoOwner(t *testing.T) {
 	if code != exitPreflight || started != 0 || stdout.Len() != 0 {
 		t.Fatalf("refused retry exit=%d starts=%d stdout=%q stderr=%q", code, started, stdout.String(), stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "Preflight failed") || !strings.Contains(stderr.String(), "item is not parked") {
+	if !strings.Contains(stderr.String(), "Retry refused") || strings.Contains(stderr.String(), "Usage:") || !strings.Contains(stderr.String(), "item is not parked") {
 		t.Fatalf("refused retry diagnostic = %q", stderr.String())
 	}
 }
@@ -460,4 +460,70 @@ func (engine *retryCommandDeliveryEngine) Retry(_ context.Context, gitRoot, spec
 	engine.gitRoot = gitRoot
 	engine.specSlug = specSlug
 	return engine.retryResult, engine.retryErr
+}
+
+func TestDeliverRetryPrintsARefusalWithoutUsage(t *testing.T) {
+	homeDir, repoDir := newParkedDeliveryQueueForRetry(t, 0, "")
+	runStore, err := store.Open(t.Context(), homeDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	queue, _, err := runStore.DeliveryQueue(t.Context(), repoDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	item := queue.Items[0]
+	item.Blocker = "delivery-error: merge pull request: read pull request before merge: gh failed"
+	if err := runStore.UpdateDeliveryQueueItem(t.Context(), repoDir, item); err != nil {
+		t.Fatal(err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatal(err)
+	}
+	reason := fmt.Sprintf("retry Delivery Queue item %q: archived item head %q differs from candidate head %q", implementTestSlug, strings.Repeat("2", 40), strings.Repeat("1", 40))
+	engine := &retryCommandDeliveryEngine{retryErr: errors.New(reason)}
+	started := 0
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.newDeliveryEngine = func(*store.Store, roundconfig.Loaded) deliveryEngine { return engine }
+		dependencies.startDeliveryOwner = func(context.Context, roundconfig.Loaded, commandEnvironment, io.Writer, io.Writer) int {
+			started++
+			return exitOK
+		}
+	})
+	var stdout, stderr bytes.Buffer
+	code := runCLI(t, []string{"deliver", "retry", implementTestSlug}, &stdout, &stderr)
+	want := "Retry refused\n\nReason:\n  " + reason + "\n\nItem:\n  stage: parked; blocker: " + item.Blocker + "\n\nNo side effects:\n  Roundfix did not change the Delivery Queue item, start a queue owner, commit, or push.\n"
+	if code != exitPreflight || stdout.Len() != 0 || stderr.String() != want || started != 0 || engine.retryCalls != 1 {
+		t.Fatalf("exit=%d stdout=%q stderr=%q started=%d retries=%d", code, stdout.String(), stderr.String(), started, engine.retryCalls)
+	}
+	got := openDeliveryQueueForCLI(t, homeDir, repoDir).Items[0]
+	if got.Stage != item.Stage || got.Blocker != item.Blocker || got.RetryCount != item.RetryCount {
+		t.Fatalf("refused retry changed item: %+v", got)
+	}
+}
+
+func TestDeliverRetryKeepsUsageForAnArgumentError(t *testing.T) {
+	_, _ = newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	var stdout, stderr bytes.Buffer
+	code := runCLI(t, []string{"deliver", "retry", implementTestSlug, "extra"}, &stdout, &stderr)
+	if code != exitPreflight || stdout.Len() != 0 || !strings.Contains(stderr.String(), "Preflight failed") || !strings.Contains(stderr.String(), "Usage:") || !strings.Contains(stderr.String(), `unexpected argument "extra"`) {
+		t.Fatalf("exit=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+}
+
+func TestDeliverRetryRefusalOmitsAnUnreadableItem(t *testing.T) {
+	t.Parallel()
+	runStore, err := store.Open(t.Context(), t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatal(err)
+	}
+	var stderr bytes.Buffer
+	code := printDeliverRetryRefusal(t.Context(), runStore, "/repo", "example", errors.New("queue could not be read"), &stderr)
+	want := "Retry refused\n\nReason:\n  queue could not be read\n\nNo side effects:\n  Roundfix did not change the Delivery Queue item, start a queue owner, commit, or push.\n"
+	if code != exitPreflight || stderr.String() != want {
+		t.Fatalf("exit=%d stderr=%q", code, stderr.String())
+	}
 }
