@@ -324,6 +324,36 @@ plus a non-empty ordered Fallback Chain. Project Config replaces User Config,
 User Config replaces built-ins, and no tuple field or fallback entry merges
 across scopes.
 
+### Jev Router
+
+The Jev Router is an experimental OpenCode selection that only Project Config
+may select. Set its effort to `""`: the router chooses the model and effort.
+User Config and a one-Run override cannot name it. For example, opt in for
+`docs` in your Project Config, with the current default as its fallback:
+
+```yaml
+profiles:
+  docs:
+    preferred:
+      runtime: opencode
+      model: roundfix-openrouter/typesafe/jev-router
+      reasoning_effort: ""
+    fallbacks:
+      - runtime: codex
+        model: gpt-6.1-sol
+        reasoning_effort: high
+```
+
+Export `ROUNDFIX_OPENROUTER_API_KEY` in the environment that starts Roundfix.
+Roundfix uses this key name and never `OPENROUTER_API_KEY`; without the key,
+the selection is refused with `jev_router_key_missing`. The key value stays
+in the environment. Roundfix gives OpenCode the provider through
+`OPENCODE_CONFIG_CONTENT`, with `{env:ROUNDFIX_OPENROUTER_API_KEY}` as its key
+placeholder, replacing an inherited value for routed sessions only.
+
+Every routed prompt runs under the US$5 monthly Jev ceiling shared with
+`roundfix spec judge`. The router changes no built-in or Recommended Profile.
+
 ### Access policy readiness
 
 When `defaults.agent_full_access: true`, profile readiness applies the

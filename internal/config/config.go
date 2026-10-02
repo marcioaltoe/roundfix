@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+
+	"roundfix/internal/agent"
 )
 
 const (
@@ -1544,8 +1546,17 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 	}
 	applyOverlay(config, overlay, source)
 	if overlay.Profiles != nil {
+		for category, entry := range overlay.Profiles.entries {
+			entry.Source = source
+			if err := validateJevRouterProfileSource("profiles."+string(category), entry); err != nil {
+				return fmt.Errorf("parse config %q: %w", label, err)
+			}
+		}
 		applyProfilesOverlay(config, overlay.Profiles, source)
 	} else if hasLegacyRuntimeDefaults {
+		if agent.IsJevRouterSelection("opencode", config.Runtimes.OpenCode.Model) {
+			return fmt.Errorf("parse config %q: the Jev Router cannot be selected through legacy runtimes; name it in Project Config profiles", label)
+		}
 		applyLegacyRuntimeProfiles(config, source)
 	}
 	return nil

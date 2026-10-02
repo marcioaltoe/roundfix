@@ -1567,6 +1567,12 @@ func (runner *ACPXRunner) command() string {
 }
 
 func (runner *ACPXRunner) codexEnvForSession(ctx context.Context, runtime RuntimeSpec, sessionName string) ([]string, error) {
+	if IsJevRouterSelection(runtime.ID, runtime.Model) {
+		if environmentValue(runner.baseEnv(), JevRouterKeyEnv) == "" {
+			return nil, &SelectionFailureError{Runtime: "opencode", Reason: JevRouterKeyMissing + ": " + JevRouterKeyEnv + " is not set"}
+		}
+		return []string{"OPENCODE_CONFIG_CONTENT=" + jevRouterProviderConfig}, nil
+	}
 	if strings.TrimSpace(runtime.ID) != "codex" || runtime.Protocol == ProtocolStdio {
 		return nil, nil
 	}
