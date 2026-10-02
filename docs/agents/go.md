@@ -2,6 +2,9 @@
 
 # Go
 
+These rules govern the repository's Go module: its commands, packages and
+tests. Code in another language follows its own guide.
+
 - Keep Go command entry points thin and behavior in cohesive packages. Prefer the standard library; add a dependency only for a named job it cannot perform, and change `go.mod` and `go.sum` through Go tooling rather than hand edits.
 
 - Use context-first signatures for blocking and IO work. Give every goroutine an owner and cancellation path. Wrap errors with the failed operation using `%w`, and preserve `errors.Is` or `errors.As` matching where callers need it.

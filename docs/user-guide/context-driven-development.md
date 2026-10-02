@@ -694,9 +694,11 @@ roundfix baseline plan --repo . --profile-file team-backend.json --decision-file
 
 `--profile-file` and `--profile` are mutually exclusive. The draft must use the
 strict `roundfix/custom-baseline-profile/v1` schema, bind the embedded catalog,
-and be a valid adaptation of one built-in Profile. Roundfix resolves it in
-memory and includes its canonical repository path and exact bytes in the
-portable Plan; it does not write the Profile file during planning.
+and be a valid adaptation of a built-in Profile. A draft that adapts several
+built-in Profiles binds to the closest one: the one whose modules it removes
+fewest of, then whose capabilities it removes fewest of. Equally close Profiles
+are refused as ambiguous. Roundfix resolves it in memory and includes its
+canonical repository path and exact bytes in the portable Plan; it does not write the Profile file during planning.
 
 Write its stdout to `baseline-plan.json` using the calling shell or process.
 Exit `0` emits one complete `roundfix/baseline-plan/v1` document. Exit `3`
@@ -780,9 +782,10 @@ the Baseline contract.
 
 ### Profiles
 
-Roundfix ships `go-cli-tui`, `rust-cli`, and
-`standard-typescript-monorepo`. Inspect a built-in or repository-owned Baseline
-Profile before selecting it:
+Roundfix ships `go-cli-tui`, `go-cli-typescript-monorepo`, `rust-cli`, and
+`standard-typescript-monorepo`. The `go-cli-typescript-monorepo` Profile combines
+the Go CLI and Standard TypeScript Monorepo modules on a composed setup.
+Inspect a built-in or repository-owned Baseline Profile before selecting it:
 
 ```bash
 roundfix baseline profile show go-cli-tui --format json

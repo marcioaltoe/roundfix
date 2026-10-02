@@ -114,7 +114,7 @@ func TestBaselineHumanProfileChangeRemainsReachable(t *testing.T) {
 	// "Change Baseline Profile" (1), confirm three "1" changes,
 	// decline two "2" re-ask confirmations, then answer "1" to
 	// every remaining prompt (12x) and decline recomputed Plan (2).
-	changeAnswers := []string{"3", "1", "1", "1", "2", "2"}
+	changeAnswers := []string{"3", "1", "1", "1", "2", "3"}
 	for range 12 {
 		changeAnswers = append(changeAnswers, "1")
 	}
@@ -1285,7 +1285,7 @@ func TestBaselineHumanProfileAdaptation(t *testing.T) {
 	t.Parallel()
 	repository, _, _ := baselinePlanProfileFileFixture(t)
 	before := baselinePlanTestTree(t, repository)
-	answers := "\n3\n\n\nmake verify-incremental\n" +
+	answers := "\n4\n\n\nmake verify-incremental\n" +
 		strings.Repeat("\n", 32) +
 		"2\n" +
 		"1\n" +

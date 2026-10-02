@@ -48,6 +48,7 @@ func TestEmbeddedCatalog(t *testing.T) {
 
 	wantProfiles := []string{
 		"go-cli-tui",
+		"go-cli-typescript-monorepo",
 		"rust-cli",
 		"standard-typescript-monorepo",
 	}
@@ -500,7 +501,7 @@ func TestProjectDecisionAssets(t *testing.T) {
 		hasIdentifier := slices.Contains(profile.Decisions, "identifier.strategy")
 		hasAuthProvider := slices.Contains(profile.Decisions, "auth.provider")
 		switch profileID {
-		case "standard-typescript-monorepo":
+		case "standard-typescript-monorepo", "go-cli-typescript-monorepo":
 			if !hasIdentifier || !hasAuthProvider {
 				t.Errorf(
 					"Profile %q decisions = %v, want identifier.strategy and auth.provider",

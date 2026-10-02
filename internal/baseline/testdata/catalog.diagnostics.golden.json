@@ -49,8 +49,23 @@
         },
         {
           "code": "catalog.profile.module.unknown",
+          "subject": "go-cli-typescript-monorepo",
+          "detail": "bun"
+        },
+        {
+          "code": "catalog.profile.module.unknown",
           "subject": "standard-typescript-monorepo",
           "detail": "bun"
+        },
+        {
+          "code": "catalog.profile.rule.unknown",
+          "subject": "go-cli-typescript-monorepo",
+          "detail": "rule.bun.package-manager"
+        },
+        {
+          "code": "catalog.profile.rule.unknown",
+          "subject": "go-cli-typescript-monorepo",
+          "detail": "rule.bun.warning-free-verification"
         },
         {
           "code": "catalog.profile.rule.unknown",
@@ -180,6 +195,11 @@
         {
           "code": "catalog.profile.dependency.order",
           "subject": "go-cli-tui",
+          "detail": "core -\u003e context-workflow"
+        },
+        {
+          "code": "catalog.profile.dependency.order",
+          "subject": "go-cli-typescript-monorepo",
           "detail": "core -\u003e context-workflow"
         },
         {
