@@ -13,6 +13,7 @@ paths:
   - internal/baseline/assets/modules/spec-workflow.json
   - internal/baseline/assets/modules/typescript.json
   - internal/baseline/assets/profiles/standard-typescript-monorepo.json
+  - internal/baseline/assets/profiles/go-cli-typescript-monorepo.json
   - internal/baseline/assets/profiles/rust-cli.json
   - internal/baseline/assets/retention/transition.legacy-typescript-bun-to-portable-v3.json
   - internal/baseline/assets/templates/index.json
@@ -60,6 +61,14 @@ onioncry is validated by reading only. The governed set was measured with
 repository, against the files a disposable-clone rehearsal of the four Tasks
 changed.
 
+On 2026-10-02 the scope was amended after Spec 0207 merged. A rehearsal of
+task_01 at `18ef15eb`, in a disposable clone, showed the composed profile's
+reference to the removed rule as the only blocker outside the grant; the same
+"Autorizar os dois" answer named `internal/baseline/assets/` as a whole, and
+the composed profile path, measured with the same write-free `GovernedPath`
+overlay at `18ef15eb`, is governed, so it joins `paths` under that
+authorization. No other newly declared path is governed.
+
 ## Why each governed path is unavoidable
 
 - The eight modules carry the clauses this Spec adds, splits or removes
@@ -70,6 +79,12 @@ changed.
   rule (task_01), and its digest pin is rewritten by the sanctioned
   regeneration in task_01 and task_04. `profiles/rust-cli.json` requires the
   new Rust rule (task_03).
+- `profiles/go-cli-typescript-monorepo.json`, the composed profile Spec 0207
+  shipped after this Spec was authored, also requires the removed Bun rule;
+  the catalog refuses to load while it does
+  (`catalog.profile.rule.unknown`), so task_01 removes the rule from its
+  `requiredRules` exactly as from the Standard TypeScript Monorepo profile.
+  No other field of that profile changes, and its setup snapshot is untouched.
 - The legacy retention transition names the removed Bun clause as a target;
   it is retargeted to the core clause that replaces it (task_01).
 - `templates/guides/rust.md` gains its scope sentence and

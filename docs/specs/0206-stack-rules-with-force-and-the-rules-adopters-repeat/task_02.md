@@ -19,7 +19,7 @@ This is an authorized tooling Task. It may change only the files in its Context,
 1. MUST replace the rules of `internal/baseline/assets/modules/go.json`, `cli-surface.json` and `tui-surface.json` with the clauses the TechSpec's "Exact texts" gives for task_02, keeping every rule identifier, and MUST move each module's `schemaVersion` to `setup-context-driven/module-v3` with `"repositoryExtensions": []`.
 2. MUST NOT write a Go clause that forbids a named library, and MUST NOT edit any skill, the Go guide template or this repository's Repository-Specific Normative Rules.
 3. MUST raise by one, from the value on the starting main, the versions the TechSpec's "Version changes" lists for task_02, leaving the modules' skill lists as they are.
-4. MUST add the task_02 clauses to the force record, and MUST add `docs/agents/go.md`, `docs/agents/cli.md` and `docs/agents/tui.md` to the list of guides that grew past the frozen parity record in `internal/baseline/plan_test.go`, changing no other line of that file.
+4. MUST add the task_02 clauses to the force record, and MUST add `docs/agents/cli.md` and `docs/agents/tui.md` to the list of guides that grew past the frozen parity record in `internal/baseline/plan_test.go`, changing no other line of that file. Spec 0207 already lists `docs/agents/go.md` there; MUST NOT add it a second time.
 5. MUST create `internal/baseline/stack_force_go_cli_tui_test.go` with `ruleLevelGuidanceFindings`, `namedLibraryBanFindings` and the six tests the TechSpec's Testing Approach 2 names; each negative test feeds its check a literal.
 6. MUST run `make baseline-digests`, then
    `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`;
@@ -60,6 +60,10 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - interface: `docs/agents/tui.md`
 - interface: `docs/agents/setup-context.json`
 - creates: `internal/baseline/stack_force_go_cli_tui_test.go`
+
+## Scope after Spec 0207
+
+The composed profile `go-cli-typescript-monorepo` that Spec 0207 shipped selects the Go and CLI modules, so the clauses this Task writes also render in its `go.md` and `cli.md`, which already open with the Go scope sentence. No file of that profile changes: it has no formatter golden and no Source Baseline. A rehearsal on 2026-10-02, on top of task_01 at `18ef15eb`, applied this Task's module, force-record and parity-list changes, regenerated, converged on a second Managed Refresh, and passed the Baseline and skills tests, including the composed profile's repeated-clause and convergence tests.
 
 ## Verification
 

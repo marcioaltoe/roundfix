@@ -20,7 +20,9 @@ bought with the evidence that at least two adopters, or one adopter's measured
 rework, already needed it. Every text below was applied in a disposable clone
 of `5f182757` on 2026-09-30, one commit per Task, and the Baseline, CLI,
 skills and Spec-check test packages passed after each commit, with a second
-Managed Refresh reporting `File changes: 0`.
+Managed Refresh reporting `File changes: 0`. After Spec 0207 merged, the
+rehearsal was repeated on 2026-10-02 at `18ef15eb` (see "Scope after Spec
+0207"), with the same result once the two repairs below were applied.
 
 ## Project Constraints
 
@@ -46,9 +48,12 @@ Managed Refresh reporting `File changes: 0`.
   shipped, so the Build Order states the prerequisites. ADR-0080, ADR-0088,
   ADR-0091, ADR-0093, ADR-0094, ADR-0096, ADR-0104, ADR-0117, ADR-0155,
   ADR-0156, ADR-0166, ADR-0167, ADR-0182, ADR-0194 and ADR-0195 bind the gate
-  and the checker. ADR-0187, ADR-0189, ADR-0191, ADR-0204 and ADR-0205 are
-  active and do not apply: this Spec edits no skill, no setup snapshot, no
-  composed profile and no frontend clause. ADR-0180, ADR-0181, ADR-0183,
+  and the checker. ADR-0187, ADR-0189, ADR-0191 and ADR-0205 are active and do
+  not apply: this Spec edits no skill, no setup snapshot and no frontend
+  clause. ADR-0204 holds: the composed profile loses only the removed Bun
+  rule from its `requiredRules`, and keeps its composed setup and modules.
+  ADR-0219 holds: the Standard TypeScript Monorepo and composed profiles drop
+  the same rule and keep their module lists, so no draft's distance changes. ADR-0180, ADR-0181, ADR-0183,
   ADR-0184, ADR-0196, ADR-0197, ADR-0198, ADR-0199, ADR-0200 and ADR-0201 do
   not apply; the PRD's row gives the reason. All hold. Source:
   `docs/agents/domain.md`.
@@ -63,6 +68,7 @@ Managed Refresh reporting `File changes: 0`.
   `internal/baseline/assets/modules/spec-workflow.json`,
   `internal/baseline/assets/modules/typescript.json`,
   `internal/baseline/assets/profiles/standard-typescript-monorepo.json`,
+  `internal/baseline/assets/profiles/go-cli-typescript-monorepo.json`,
   `internal/baseline/assets/profiles/rust-cli.json`,
   `internal/baseline/assets/retention/transition.legacy-typescript-bun-to-portable-v3.json`,
   `internal/baseline/assets/templates/index.json`,
@@ -173,6 +179,38 @@ Outputs measured in the rehearsal:
   repository guides are `docs-layout.md`, `spec-routing.md` and
   `setup-context.json`.
 
+### Scope after Spec 0207
+
+A Run of task_01 on 2026-10-02 stopped at `catalog.profile.rule.unknown`:
+the composed profile `go-cli-typescript-monorepo`, which Spec 0207 shipped
+after this Spec was authored, lists `rule.bun.warning-free-verification` in
+its `requiredRules`, and its path was outside the grant. The Run also left
+the force record unformatted, because removing its longest key makes `gofmt`
+realign the map and task_01 forbade changing other test lines.
+
+The repair was measured the same day in a disposable clone of `18ef15eb`
+with the stopped Run's change applied, the rule removed from the composed
+profile and `gofmt -w` run on the force record. `make baseline-digests`
+regenerated the task_01 outputs listed above (the composed profile adds
+none) and reported `"changed":false` on its second run; the Managed Refresh
+wrote `agent-instructions.md`, `skill-dispatch.md` and `setup-context.json`,
+and its second run reported `File changes: 0`; task_01's Verification
+exited 0; and `make verify` exited 0 with no other failure. No other change
+was needed.
+
+Tasks 02 to 04 were then rehearsed on top of that state with their module,
+profile, template, Source Baseline, force-record, count and parity-list
+changes (not their new test files): each regeneration converged, each
+second Managed Refresh reported `File changes: 0`, the Baseline and skills
+tests passed after tasks 02 and 03, and `make verify` exited 0 after task_04,
+including the composed profile's repeated-clause and convergence tests,
+which now exercise the Go, CLI, core, Spec-workflow and TypeScript clauses as
+well. The only other conflict with Spec 0207 is that `docs/agents/go.md` is
+already in the parity list task_02 extends; without the `cli.md` entry
+`TestPlanDeterminismMatchesMaintainedManagedEntryFixture` fails, so the
+other two entries stay. The Go guide's scope sentence and the composed setup are
+untouched by every Task.
+
 ## Implementation Design
 
 ### Interfaces
@@ -246,8 +284,10 @@ seed, or test to avoid that authorization. The repository's committed migrate
 and seed commands run against a disposable local database are exempt."
 
 **task_01, `bun` and retention.** Remove `rule.bun.warning-free-verification`
-and its one clause, remove the rule from `guide.bun` and from the Standard
-TypeScript Monorepo profile's `requiredRules`. In the legacy transition, the
+and its one clause, remove the rule from `guide.bun`, from the Standard
+TypeScript Monorepo profile's `requiredRules` and from the composed
+`go-cli-typescript-monorepo` profile's `requiredRules`; no other line of
+either profile is hand-edited. In the legacy transition, the
 mapping of `clause.legacy.block-warnings` keeps `replaced` and changes its
 target to `clause.core.lint-warnings-block` and its reason to "The portable
 core clause makes every lint warning fail Verification."
@@ -399,16 +439,20 @@ three rules; `cli-surface`, `guide.cli-surface` and its two rules;
 
 - `internal/baseline/clause_characterization_test.go` (every Task): the force
   record gains each new clause with its force; task_01 removes the Bun
-  clause.
+  clause. That clause's key is the longest in the map, so `gofmt` realigns
+  the map's other rows in task_01; that whitespace-only realignment is the
+  formatter's, not an edit. The keys tasks 02 to 04 add are shorter than the
+  longest key left, so they realign nothing.
 - `internal/baseline/preservation_test.go` (task_01, task_04): the maintained
   Source Baseline entry count rises by eight, then by four, from its value on
   the starting main.
 - `internal/baseline/stack_rule_wording_test.go` (task_01): the conditional
   warnings sentence leaves the TypeScript and Bun guide's required list, and
   the Bun warnings row leaves the force table.
-- `internal/baseline/plan_test.go` (task_02): `docs/agents/go.md`,
-  `docs/agents/cli.md` and `docs/agents/tui.md` join the guides that grew past
-  the frozen parity record. No other line changes.
+- `internal/baseline/plan_test.go` (task_02): `docs/agents/cli.md` and
+  `docs/agents/tui.md` join the guides that grew past the frozen parity
+  record. Spec 0207 already added `docs/agents/go.md`, so it is not added
+  again. No other line changes.
 
 ### API Contracts
 
@@ -467,9 +511,17 @@ three rules; `cli-surface`, `guide.cli-surface` and its two rules;
 - **Specs 0200 and 0207.** Both edit `go.json`, and 0200 also edits
   `core.json`, `rust.json`, `typescript.json` and the profiles; 0207 adds the
   Go guide's scope sentence and raises `template.guide.go`. This Spec touches
-  neither the skills lists nor the Go template. Delivered after both, each
-  Task raises versions from what they leave; a conflict confined to derived
-  files is resolved by regeneration.
+  neither the skills lists nor the Go template. Both are on main; each Task
+  raises versions from what they leave, and a conflict confined to derived
+  files is resolved by regeneration. Spec 0207 also shipped the composed
+  profile `go-cli-typescript-monorepo` on the composed setup
+  `go-cli-typescript-bun`. It selects core, Go, CLI, TypeScript, Bun,
+  Spec-workflow and the other Standard TypeScript Monorepo modules, so every
+  clause tasks 01, 02 and 04 add renders in its guides, and its tests
+  `TestTheComposedProfileRendersEveryGuideWithNoRepeatedClause` and
+  `TestTheComposedProfilePlanConverges` run in the repository Verification.
+  It has no formatter golden and no Source Baseline, so it adds no derived
+  output and no Source Baseline row to any Task.
 - **Spec 0208.** It renames the setup snapshots, edits the `core` and
   `typescript` skill lists, and adds eight external-triage clauses to the force
   record, the Source Baseline and its entry count. This Spec's counts and
@@ -558,7 +610,7 @@ The chain is serial: every Task edits the clause force record and rewrites the
 catalog snapshots, plan goldens and Setup Manifest, and task_01 and task_04
 both edit the Source Baseline files and the maintained count. task_02 must
 follow task_01 so the Go test-hook ban is never absent. Prerequisites outside
-the graph: deliver after Specs 0200 and 0207.
+the graph: Specs 0200, 0207 and 0208, all on main since 2026-10-02.
 
 ## Risks & Considerations
 
