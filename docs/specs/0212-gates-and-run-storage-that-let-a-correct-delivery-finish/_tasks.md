@@ -17,9 +17,12 @@ graph:
     - id: task_04
       file: task_04.md
       needs: [task_03]
+    - id: task_06
+      file: task_06.md
+      needs: [task_04]
     - id: task_05
       file: task_05.md
-      needs: [task_01, task_02, task_03, task_04]
+      needs: [task_01, task_02, task_03, task_04, task_06]
 ---
 
 # Task Graph
@@ -30,9 +33,10 @@ graph:
 | task_02 | backend | The failed-pass QA import leaves compiled source behind |
 | task_03 | backend | A Task declares a path it deletes |
 | task_04 | backend | Reconcile releases the Runs a merged Spec superseded |
+| task_06 | backend | Apply releases a merged Run whose target branch is gone |
 | task_05 | qa | Run the final QA gate |
 
-Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05
+Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_06 · 6 → task_05
 
 Every implementation Task raises an owned skill's version and re-records
 `skills/testdata/owned-skill-versions.json`, so the four run in series;
