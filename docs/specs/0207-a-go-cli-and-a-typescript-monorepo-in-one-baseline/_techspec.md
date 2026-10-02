@@ -50,8 +50,10 @@ or a Make evaluator, and both leave a gap the Risks section names.
   without the new decision.
   ADR-0072's words "recorded explicitly as a designed delta" govern the
   composed snapshot in the parity comparison. ADR-0186 governs every new
-  sentence. ADR-0193 governs the Prerequisites, ADR-0192 a conflict confined to
-  derived paths, ADR-0081, ADR-0149 and ADR-0130 the regeneration and the
+  sentence. ADR-0219 (this Spec) decides which built-in profile a
+  `--profile-file` draft binds to when several admit it, which refines how
+  ADR-0075's automation input finds its source. ADR-0193 governs the
+  Prerequisites, ADR-0192 a conflict confined to derived paths, ADR-0081, ADR-0149 and ADR-0130 the regeneration and the
   audit, and ADR-0073 and ADR-0103 the Managed Refresh. ADR-0080, ADR-0088,
   ADR-0091, ADR-0093, ADR-0094, ADR-0096, ADR-0104, ADR-0117, ADR-0155,
   ADR-0156, ADR-0166, ADR-0167, ADR-0178 and ADR-0179 bind the gate and the
@@ -76,7 +78,9 @@ or a Make evaluator, and both leave a gap the Risks section names.
   `internal/baseline/assets/setups/go-cli-typescript-bun.json`,
   `internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/frontend.md`,
   `internal/baseline/derived_ownership_test.go`,
+  `internal/baseline/plan_test.go`,
   `internal/cli/baseline_human_test.go`,
+  `internal/cli/baseline_release_gate_test.go`,
   `docs/agents/setup-context.json`. Sanctioned regeneration:
   `make baseline-digests`. Source: `docs/agents/agent-instructions.md`,
   `docs/agents/spec-routing.md`.
@@ -152,6 +156,22 @@ landed, and against the upstream lists at `a4e18e4` in `~/dev/skills`.
 - `catalog_test.go` pins the built-in profile list, and
   `internal/baseline/derived_ownership_test.go` pins the sanctioned outputs,
   which include every setup file.
+- Measured on 2026-10-02 on the delivery branch after task_02, with task_03's
+  first attempt applied and `make verify` run. `ProfileDraftInputFromDocument`
+  binds a `--profile-file` draft only when exactly one built-in profile admits
+  it, and the composed profile admits every draft cut from the Standard
+  TypeScript Monorepo Profile and every draft cut from the Go CLI/TUI profile
+  without `tui-surface`, so both are refused as
+  `custom.profile.draft.source.ambiguous`; that fails
+  `TestBaselineHumanProfileAdaptation`, `TestBaselinePlanProfileFile` and
+  `TestProfileAdaptationJourney`. The new profile is also a
+  `make baseline-digests` output, which `TestOutputsForCommand` enumerates;
+  `TestGuidanceCompositionJourney` pins the maintained profile list; the Go
+  guide's new bytes leave the frozen parity identity that
+  `TestPlanDeterminismMatchesMaintainedManagedEntryFixture` compares; and
+  `TestBaselineHumanProfileChangeRemainsReachable` selects rust-cli by its
+  position. The two `internal/daemon` task-budget timing tests fail on the
+  unchanged branch as well and are not this Spec's.
 
 ## Implementation Design
 
@@ -202,6 +222,19 @@ func composeSetupSnapshot(id string, components []document) (document, error)
 // syncAssets skips a snapshot whose source.type is "composed" when it builds
 // from upstream files, then composes each composed snapshot from the built
 // (or unchanged) component snapshots and plans it like any other snapshot.
+```
+
+```go
+// internal/baseline/custom_profile.go (task_03, ADR-0219)
+// closestProfileDraftSources returns, in the order of compatible, the
+// identifiers of the compatible built-in profiles the draft departs from
+// least: the fewest source modules the draft does not select, then the fewest
+// source capabilities it does not select. A tie returns every tied source.
+func closestProfileDraftSources(draft ResolvedProfile, compatible []ResolvedProfile) []string
+// ProfileDraftInputFromDocument keeps its signature and error codes: no
+// compatible source is ".unresolved"; one closest source binds the draft;
+// several equally close sources are ".ambiguous" and the message names only
+// those sources.
 ```
 
 ```go
@@ -360,6 +393,12 @@ tests. Code in another language follows its own guide.
 - task_03, `docs/user-guide/context-driven-development.md`: the Profiles
   paragraph names `go-cli-typescript-monorepo` and states that it combines the
   Go CLI and the Standard TypeScript Monorepo modules on a composed setup.
+- task_03, the same guide, the `--profile-file` paragraph: "be a valid
+  adaptation of one built-in Profile." becomes "be a valid adaptation of a
+  built-in Profile. A draft that adapts several built-in Profiles binds to the
+  closest one: the one whose modules it removes fewest of, then whose
+  capabilities it removes fewest of. Equally close Profiles are refused as
+  ambiguous."
 - task_04, the same guide: one paragraph under Profiles states that the
   composed profile's root gate is expected to run `make verify-go` and
   `bun run verify`, and that alignment reports
@@ -507,6 +546,21 @@ No test uses the network. Each negative case is its own test.
    `TestTheComposedProfilePlanConverges`. Spec 0200's
    `TestEveryBuiltInProfileSetupListsEverySkillItsGuidesName` must pass for
    the new profile by name. `catalog_test.go` names the new profile.
+   `internal/baseline/custom_profile_test.go` gains
+   `TestADraftThatAdaptsSeveralBuiltInProfilesBindsToTheClosest` (drafts cut
+   from the Standard TypeScript Monorepo, Go CLI/TUI and composed profiles each
+   bind to their own source) and
+   `TestEquallyCloseProfileDraftSourcesStayAmbiguous` (two sources at equal
+   distance are both returned, a farther one is not). Pins the new profile
+   reaches move, and nothing else in them: `docs/agents/go.md` joins
+   `evolvedPastFrozenCorpus` in `plan_test.go`; the composed profile joins the
+   additions to the 2026-08-06 enumeration in `derived_ownership_test.go`;
+   `TestGuidanceCompositionJourney` in `internal/cli/baseline_release_gate_test.go`
+   lists the composed profile and runs its journey on the TypeScript fixture
+   plus `go.mod` and `main.go`; and the two positional profile answers in
+   `baseline_human_test.go` keep their profiles. Existing tests that must then
+   pass unchanged: `TestBaselineHumanProfileAdaptation`,
+   `TestBaselinePlanProfileFile` and `TestProfileAdaptationJourney`.
 4. **Gate parts (task_04).** New
    `internal/baseline/verification_gate_parts_test.go`:
    `TestAGateThatReachesBothPartsReportsNoDivergence`,
@@ -529,7 +583,9 @@ No test uses the network. Each negative case is its own test.
 2. The composed Setup Snapshot: composition, validation, the asset sync and
    the `go-cli-typescript-bun` snapshot (depends on: 1, because both change
    `catalog_validate.go` and the catalog snapshots).
-3. The composed profile and the Go guide's scope sentence (depends on: 1, 2).
+3. The composed profile, the Go guide's scope sentence, the closest-source
+   rule for Profile drafts, and the test pins the new profile reaches
+   (depends on: 1, 2).
 4. The root gate's parts (depends on: 3).
 5. QA (depends on: 1, 2, 3, 4).
 
@@ -570,5 +626,11 @@ snapshots are the components, and the queue does not enforce that order.
   the profile selects requires them, so they are never installed.
 - **Formatter `none`.** No fixture set proves a formatter for the composed
   profile.
+- **A draft binds to the closest built-in profile it adapts.** See ADR-0219.
+  Excluding composed profiles unless the draft names a Go module, or dropping
+  every candidate whose modules contain another's, was rejected: the first
+  hard-codes today's catalog, and the second leaves a Go CLI/TUI draft without
+  `tui-surface` ambiguous, because the composed profile does not contain that
+  module.
 - **Parts in the profile, reach in the Makefile.** The profile states what the
   gate must run; alignment reads the one Makefile it already reads.
