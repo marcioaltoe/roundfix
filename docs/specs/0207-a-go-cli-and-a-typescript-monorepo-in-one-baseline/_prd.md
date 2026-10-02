@@ -64,6 +64,9 @@ the stated suggestion. See ADR-0204 and ADR-0205.
   rejection. Under ADR-0060 Source Baselines are exhaustive and
   project-agnostic, so the systems clauses keep their identifiers, enforcement
   and bytes. Under ADR-0099 retention accounting is mechanical.
+  ADR-0219 (this Spec) binds a `--profile-file` draft that several built-in
+  profiles admit to the closest one, which refines how ADR-0075's automation
+  input finds its source profile.
   ADR-0059 is why the composed profile declares no formatter instead of an
   unproven one. Under ADR-0067 custom Baseline Profiles are
   repository-owned, and a repository-owned profile that does not select the
@@ -116,7 +119,9 @@ the stated suggestion. See ADR-0204 and ADR-0205.
   `internal/baseline/assets/setups/go-cli-typescript-bun.json`,
   `internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/frontend.md`,
   `internal/baseline/derived_ownership_test.go`,
+  `internal/baseline/plan_test.go`,
   `internal/cli/baseline_human_test.go`,
+  `internal/cli/baseline_release_gate_test.go`,
   `docs/agents/setup-context.json`. Sanctioned regeneration:
   `make baseline-digests`. Source: `docs/agents/agent-instructions.md`,
   `docs/agents/spec-routing.md`.
@@ -285,6 +290,12 @@ lists both as reasoned rejections.
   sentence on its next update. No rule changes.
 - **Break — catalog.** The catalog lists one more built-in profile and one
   more Setup Snapshot, and the interactive profile list gains one entry.
+- **Break — Profile draft source.** A `--profile-file` draft that more than
+  one built-in profile admits now binds to the closest one instead of being
+  refused as ambiguous; a draft that one profile admits binds as before, and
+  equally close profiles are still refused. Without this, every draft cut from
+  the Standard TypeScript Monorepo Profile, and every Go CLI/TUI draft without
+  the TUI surface, would be refused once the composed profile ships.
 
 ## Prerequisites
 
@@ -324,6 +335,9 @@ without Spec 0200 that test does not exist and the Verification fails.
   2026-09-30: the layout is recorded, `systems` is the suggestion, a recorded
   value is never overwritten, and existing adopters keep their behavior. An
   optional decision satisfies all four with no migration. See ADR-0205.
+- **The closest source wins.** A draft binds to the built-in profile it
+  removes the fewest modules from, then the fewest capabilities; a tie stays
+  ambiguous. See ADR-0219.
 - **Gate clauses, do not move them.** The systems clauses stay in the frontend
   module and apply under a decision value, so their bytes, identifiers and
   carrier stay put.
