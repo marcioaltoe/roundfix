@@ -37,6 +37,7 @@ func InspectTerminalRunMerged(
 
 type mergedHeadSource struct {
 	head          string
+	ref           string
 	label         string
 	defaultBranch bool
 	archived      bool
@@ -77,6 +78,7 @@ func chooseMergedHead(
 			if _, err := runner.Run(ctx, gitRoot, "cat-file", "-e", head+"^{commit}"); err == nil {
 				return mergedHeadSource{
 					head:  head,
+					ref:   head,
 					label: mergedHeadRecordLabel(matching, head),
 				}, true
 			}
@@ -96,6 +98,7 @@ func chooseMergedHead(
 	)
 	return mergedHeadSource{
 		head:          defaultHead,
+		ref:           defaultBranch,
 		label:         fmt.Sprintf("default branch %q", defaultBranch),
 		defaultBranch: true,
 		archived:      archiveErr == nil,
@@ -176,7 +179,7 @@ func inspectRunAtMergedHead(
 			worktreePresent,
 			runBranchPresent,
 			merged,
-			source.head,
+			source,
 		)
 		return result
 	}
@@ -319,7 +322,7 @@ func inspectRunAtMergedHead(
 		worktreePresent,
 		runBranchPresent,
 		merged,
-		source.head,
+		source,
 	)
 	return result
 }
@@ -598,7 +601,7 @@ func newMergedHeadReconciliationEvidence(
 	worktreePresent bool,
 	runBranchPresent bool,
 	merged []MergedHead,
-	proofHead string,
+	source mergedHeadSource,
 ) *terminalRunReconciliationEvidence {
 	evidence := newTerminalRunReconciliationEvidence(
 		run,
@@ -609,7 +612,8 @@ func newMergedHeadReconciliationEvidence(
 	)
 	evidence.merged = slices.Clone(merged)
 	evidence.mergedSnapshot = slices.Clone(merged)
-	evidence.proofHead = proofHead
+	evidence.proofHead = source.head
+	evidence.proofRef = source.ref
 	return evidence
 }
 

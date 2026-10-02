@@ -929,6 +929,7 @@ type terminalRunReconciliationEvidence struct {
 	merged           []MergedHead
 	mergedSnapshot   []MergedHead
 	proofHead        string
+	proofRef         string
 	dirtyPaths       []string
 }
 
@@ -1467,7 +1468,7 @@ func applyTerminalRunWithStore(
 	if runStore == nil {
 		return errors.New("apply terminal Run reconciliation: Run Store is required before cleanup")
 	}
-	if _, err := runStore.ReconcileIntegration(ctx, store.IntegrationReconciliation{
+	req := store.IntegrationReconciliation{
 		RunID:           fresh.RunID,
 		PreviousOutcome: fresh.Outcome,
 		Classification:  string(fresh.State),
@@ -1479,7 +1480,19 @@ func applyTerminalRunWithStore(
 		Reason:          fresh.Reason,
 		Action:          "cleanup",
 		Time:            time.Now().UTC(),
-	}); err != nil {
+	}
+	if fresh.evidence.proofHead != "" {
+		present, err := localBranchExists(ctx, runner, fresh.evidence.gitRoot, fresh.TargetBranch)
+		if err != nil {
+			return fmt.Errorf("inspect target branch before terminal Run reconciliation: %w", err)
+		}
+		if !present {
+			req.RecordedTargetBranch = fresh.TargetBranch
+			req.TargetHead = fresh.evidence.proofHead
+			req.TargetBranch = fresh.evidence.proofRef
+		}
+	}
+	if _, err := runStore.ReconcileIntegration(ctx, req); err != nil {
 		return fmt.Errorf("persist terminal Run %q reconciliation before cleanup: %w", fresh.RunID, err)
 	}
 	return cleanupTerminalRun(ctx, runner, fresh)
@@ -1523,6 +1536,7 @@ func revalidateTerminalRunApply(
 		fresh.TargetHead != result.TargetHead ||
 		fresh.evidence == nil ||
 		fresh.evidence.proofHead != evidence.proofHead ||
+		fresh.evidence.proofRef != evidence.proofRef ||
 		!slices.Equal(fresh.evidence.dirtyPaths, evidence.dirtyPaths) {
 		return RunWorktreeReconciliation{}, false, fmt.Errorf(
 			"apply terminal Run reconciliation: evidence is stale: inspected state=%q Run head=%q target head=%q; current state=%q Run head=%q target head=%q",

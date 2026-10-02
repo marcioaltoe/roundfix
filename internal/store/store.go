@@ -161,6 +161,9 @@ type IntegrationReconciliation struct {
 	Reason          string
 	Action          string
 	Time            time.Time
+	// RecordedTargetBranch identifies the Run's original target when TargetBranch
+	// is the ref of a merged-head proof for a deleted target. Empty uses TargetBranch.
+	RecordedTargetBranch string
 }
 
 type InteractiveDefaults struct {
@@ -735,6 +738,7 @@ func (store *Store) ReconcileIntegration(ctx context.Context, req IntegrationRec
 	req.RunBranch = strings.TrimSpace(req.RunBranch)
 	req.RunHead = strings.TrimSpace(req.RunHead)
 	req.TargetBranch = strings.TrimSpace(req.TargetBranch)
+	req.RecordedTargetBranch = strings.TrimSpace(req.RecordedTargetBranch)
 	req.TargetHead = strings.TrimSpace(req.TargetHead)
 	req.Worktree = strings.TrimSpace(req.Worktree)
 	req.Reason = strings.TrimSpace(req.Reason)
@@ -757,11 +761,15 @@ func (store *Store) ReconcileIntegration(ctx context.Context, req IntegrationRec
 				KindImplement,
 			)
 		}
-		if strings.TrimSpace(run.LocalBranch) != req.TargetBranch {
+		recordedTarget := req.TargetBranch
+		if req.RecordedTargetBranch != "" {
+			recordedTarget = req.RecordedTargetBranch
+		}
+		if strings.TrimSpace(run.LocalBranch) != recordedTarget {
 			return fmt.Errorf(
 				"reconcile terminal Run %q: target branch %q does not match recorded target branch %q",
 				req.RunID,
-				req.TargetBranch,
+				recordedTarget,
 				run.LocalBranch,
 			)
 		}
