@@ -1,0 +1,13 @@
+Promise-rule evidence: ADR-0156 requires numbered Success Metrics and API Contracts, consuming Task References, and metric mappings. The clean strict Spec precondition already measured SC-COVERAGE-UNMAPPED / SC-COVERAGE-UNTASKED and citation consistency; no duplicate matrix detector is executed here. PRD has eight numbered metrics, TechSpec five numbered API Contracts and their Coverage Map; the precondition found no uncovered promises.
+
+Glossary comparison:
+Normative Clause: An identified repository instruction whose enforcement is mandatory, prohibited, or stop-and-ask.
+_Avoid_: Hard rule, guideline, free-form prose
+Repository-Specific Normative Rules: Project-authored Normative Clauses that are not portable across the Context-Driven Baseline and cannot be represented by a typed project decision or managed semantic guide. Baseline assigns every representable rule to its semantic owner; only non-empty residual rules live outside setup markers in `docs/agents/specific-repository.md` and remain byte-preserved after confirmed adoption.
+_Avoid_: Repository-Owned Extension, duplicate managed rule, baseline rule
+
+The promoted rules remain identified instructions with mandatory/prohibited/stop-and-ask force. The source rules were repository-authored residual clauses; recurrence makes these selected obligations portable and moves their instruction owner into an existing Baseline module. This changes membership, not either defined term’s meaning. Neither term is introduced or retired; CONTEXT.md needs no new term. clause.<module>.<name>, rule.<module>.<name>, Source Baseline and Upgrade Retention Contract are existing vocabulary. No production stream field or command vocabulary changed; the only new emitted material is named clauses in the existing guide/retention formats.
+
+Known authoring count discrepancy: task_03 Requirement 4 and TechSpec Testing Approach 3 say nine Rust clauses; Exact texts define eight. Task 03 Result explicitly records this and the daemon-directed implementation of those eight; the force record and the four required Rust tests cover the eight exact obligations. Requirement 4 of this QA gate asks for those named tests, not a ninth invented clause. This discrepancy does not violate ADR-0156’s consuming-Task traceability rule or leave an exact-text/API promise unmapped. Record the stale count for the Spec owner, without changing Task artifacts during QA.
+
+Skipped authoring detectors: no adopted Finding or Rollup makes lifecycle/member probes applicable; the explicit Vocabulary Contract is absent, so the glossary/emitted-material comparison above is observed by the gate. Transcript/receipt detectors identify this as a pre-contract PRD; there are no authored Surface Transcripts to replay.

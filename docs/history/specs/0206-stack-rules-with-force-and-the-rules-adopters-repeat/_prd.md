@@ -1,9 +1,12 @@
 ---
 spec: 0206-stack-rules-with-force-and-the-rules-adopters-repeat
-status: active
+status: archived
 created: 2026-09-30
 surfaces: [backend, docs]
+archived: "2026-10-02"
+source_slug: 0206-stack-rules-with-force-and-the-rules-adopters-repeat
 ---
+
 
 # Stack rules with force, and the rules adopters repeat
 

@@ -42,6 +42,14 @@ Trivial one-line fix, typo, or configuration tweak: implement directly without a
 Use `brainstorming` before creative or feature work, start with the smaller sufficient route when two routes fit, and execute implementation from the Task Graph.
 <!-- /source-baseline-entry: clause.spec.routing-05-task-graph -->
 
+<!-- source-baseline-entry: clause.spec.name-the-finding-a-task-answers -->
+- MUST name, in one of a Task's requirements, the recorded finding and its date when the Task answers that finding.
+<!-- /source-baseline-entry: clause.spec.name-the-finding-a-task-answers -->
+
+<!-- source-baseline-entry: clause.spec.verification-fails-before-the-change -->
+- MUST author each Task's Verification so every command fails on the tree before the Task's change.
+<!-- /source-baseline-entry: clause.spec.verification-fails-before-the-change -->
+
 <!-- source-baseline-entry: clause.spec.verification-two-tiers -->
 - MUST use the active Baseline Profile's declared incremental verification command for each Task to answer whether the current slice remains valid before handoff. CI MUST use the Profile's declared complete verification command from a fresh run to answer whether the assembled tree satisfies the repository contract. A missing incremental command leaves the Profile's two-tier contract unmet and never authorizes skipping the local tier.
 <!-- /source-baseline-entry: clause.spec.verification-two-tiers -->

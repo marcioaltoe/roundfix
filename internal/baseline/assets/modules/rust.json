@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "setup-context-driven/module-v2", "id": "rust", "version": 3, "kind": "language-runtime", "title": "Rust repository guidance",
+  "schemaVersion": "setup-context-driven/module-v3", "id": "rust", "version": 4, "kind": "language-runtime", "title": "Rust repository guidance",
   "dependsOn": ["core"], "conflictsWith": [], "requiredSkills": [
     "clap-rust",
     "cut-release",
@@ -48,9 +48,22 @@
   "rootBlocks": [{"id": "root.rust", "version": 2, "template": "template.root.rust", "rules": [], "references": [
     {"id": "reference.root.rust", "token": "reference.rust", "ownership": "setup", "managedId": "guide.rust"}
   ]}],
-  "supportingGuides": [{"id": "guide.rust", "version": 2, "path": "docs/agents/rust.md", "template": "template.guide.rust", "rules": ["rule.rust.current-docs", "rule.rust.cargo-gates"], "references": []}],
+  "supportingGuides": [{"id": "guide.rust", "version": 3, "path": "docs/agents/rust.md", "template": "template.guide.rust", "rules": ["rule.rust.current-docs", "rule.rust.cargo-gates", "rule.rust.library-and-entry-point"], "references": []}],
+  "repositoryExtensions": [],
   "rules": [
-    {"id": "rule.rust.current-docs", "version": 2, "coverage": ["coverage.rust", "coverage.research", "coverage.dependencies"], "guidance": "Use current authoritative crate and toolchain documentation before changing Rust APIs, configuration, or dependencies. Preserve Cargo manifest and lockfile discipline."},
-    {"id": "rule.rust.cargo-gates", "version": 2, "coverage": ["coverage.rust", "coverage.cli", "coverage.verification-integrity"], "guidance": "Use focused `cargo check`, `cargo test`, and lint commands while iterating, then run the selected repository Verification. Treat CLI flags, streams, JSON fields, and exit codes as public behavior and test them through observable command execution."}
+    {"id": "rule.rust.current-docs", "version": 3, "coverage": ["coverage.rust", "coverage.research", "coverage.dependencies"], "clauses": [
+      {"id": "clause.rust.change-manifests-through-cargo", "enforcement": "mandatory", "guidance": "Change dependencies through Cargo commands such as `cargo add`, `cargo remove`, and `cargo update`, and commit `Cargo.toml` and `Cargo.lock` together."},
+      {"id": "clause.rust.read-current-docs", "enforcement": "mandatory", "guidance": "Use current authoritative crate and toolchain documentation before changing Rust APIs, configuration, or dependencies."}
+    ]},
+    {"id": "rule.rust.cargo-gates", "version": 3, "coverage": ["coverage.rust", "coverage.cli", "coverage.verification-integrity"], "clauses": [
+      {"id": "clause.rust.iterate-with-focused-cargo-commands", "enforcement": "mandatory", "guidance": "Use focused `cargo check`, `cargo test`, and lint commands while iterating, then run the selected repository Verification."},
+      {"id": "clause.rust.test-the-command-through-execution", "enforcement": "mandatory", "guidance": "Treat CLI flags, streams, JSON fields, and exit codes as public behavior and test them through observable command execution."}
+    ]},
+    {"id": "rule.rust.library-and-entry-point", "version": 1, "coverage": ["coverage.rust", "coverage.cli"], "clauses": [
+      {"id": "clause.rust.keep-the-binary-thin", "enforcement": "mandatory", "guidance": "Keep each binary target's `main` thin: it parses arguments and calls behavior that lives in the library crate."},
+      {"id": "clause.rust.keep-type-erased-errors-at-the-entry-point", "enforcement": "prohibited", "guidance": "Do not use `anyhow` or another type-erased error type outside a binary's entry point. Only `main` and the command dispatch it calls may turn typed errors into a type-erased report."},
+      {"id": "clause.rust.prohibit-panics-on-user-paths", "enforcement": "prohibited", "guidance": "Do not call `unwrap`, `expect`, or `panic!` on a path that user input, the environment, a file, or an IO result can reach; return a typed error instead. Test code is not such a path."},
+      {"id": "clause.rust.return-typed-errors", "enforcement": "mandatory", "guidance": "Return typed errors from library and domain code: an error enum per boundary that implements `std::error::Error`, for example through `thiserror`, so a caller can match its variants."}
+    ]}
   ]
 }

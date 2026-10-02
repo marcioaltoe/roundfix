@@ -18,6 +18,8 @@ branches follow their tool's documented namespace.
 
 - **prohibited**: Do not suppress diagnostics, weaken assertions, swallow errors, add timing hacks, or bypass a required check to produce a passing result.
 
+- **prohibited**: Do not hand-edit a generated file, such as a schema migration, a client generated from an API description, or a derived digest; change its source and run the generator that owns it.
+
 - **mandatory**: Keep follow-up work outside the current slice; record it for later instead of expanding the active change.
 
 - **mandatory**: Record the commands and outcomes that provide fresh evidence for every acceptance criterion.
@@ -34,7 +36,13 @@ branches follow their tool's documented namespace.
 
 - **mandatory**: An assertion reads the constant it means. A test that copies a pinned version, digest, or identifier as a literal stops testing the day a legitimate change moves it, sometimes silently. Reference the exported or package constant; when a value must be duplicated, search for every occurrence and change them in the same commit.
 
+- **mandatory**: A flaky test is a blocking failure: find and fix the cause of its nondeterminism before completion, and never rerun Verification until it happens to pass.
+
+- **mandatory**: A lint warning fails Verification. Every linter the repository Verification runs uses its option that turns a warning into a failure, such as `oxlint --deny-warnings`, `biome check --error-on-warnings`, `eslint --max-warnings 0`, or `cargo clippy -- -D warnings`, and every warning Verification reports blocks completion.
+
 - **mandatory**: Never let a pipe hide a gate's exit status. A pipeline exits with its last command's status, so piping Verification into a pager or filter reports that filter's success and lets `&&` proceed over a red gate. Run the gate on its own, capture its status, or redirect it to a file and read the file.
+
+- **prohibited**: Do not add a production hook, flag, branch, or exported symbol that exists only for tests; test through the public entry points.
 
 - **prohibited**: Do not edit verification configuration, tests, fixtures, golden files, or generated expectations merely to make a failure disappear. Change them only when the repository contract intentionally changes, and prove the new contract.
 
@@ -70,6 +78,12 @@ branches follow their tool's documented namespace.
 
 - **stop-and-ask**: Never guess a decision the user can answer cheaply. Use the structured user-interaction tool actually exposed and permitted in the current session: `AskUserQuestion` in Claude Code, `request_user_input` in Codex, or `question` in OpenCode; Codex runtimes that expose `request_user_input_async` may use that equivalent. Interpret skill references to `AskUserQuestion` as this interaction contract across runtimes. Respect the tool's advertised schema and mode restrictions; do not invent tool calls or switch session modes merely to ask a question. Ask exactly one question per call or message and keep only one question pending, even when the tool accepts an array of questions. Wait for the user's response before asking the next question or doing work that depends on the answer; an asynchronous request may leave independent work running. Make the question answerable without rereading the session: state what was found and why it forces a choice, provide 2-3 concise, mutually exclusive options with the consequence of each choice, and put the recommended option first with `(Recommended)` in its label. Preserve custom text input; do not add an `Other` option when the interface already supplies one. If no permitted structured tool is available, present the same single question with numbered or lettered options in chat and accept a custom answer. Never bundle questions, replace the options with an open-prose question, or treat a recommendation, preselection, dismissal, timeout, or missing answer as the user's choice.
 
+- **stop-and-ask**: Stop and ask for express authorization before any statement that changes data or schema in a database other than a disposable local one. Name the exact statement and database; an authorization covers only that statement.
+
+- **prohibited**: Do not route a database change through a migration, script, seed, or test to avoid that authorization. The repository's committed migrate and seed commands run against a disposable local database are exempt.
+
 - **prohibited**: Never read, print, commit, or generate secrets. Keep credentials and environment-specific values in the repository's existing secure configuration boundary, and do not invent authentication, authorization, database, transport, or deployment policy.
+
+- **mandatory**: Before an authorized database write, run a read with the same predicate and report its row count, then run the write inside an explicit transaction and confirm the affected row count before committing.
 
 <!-- setup-context-driven:end id=guide.agent-instructions -->

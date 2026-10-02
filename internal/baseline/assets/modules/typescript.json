@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "typescript",
-  "version": 7,
+  "version": 8,
   "kind": "language-runtime",
   "title": "TypeScript repository guidance",
   "dependsOn": [
@@ -242,7 +242,7 @@
   "supportingGuides": [
     {
       "id": "guide.typescript-bun",
-      "version": 4,
+      "version": 5,
       "path": "docs/agents/typescript-bun.md",
       "template": "template.guide.typescript-bun",
       "rules": [
@@ -276,7 +276,7 @@
     },
     {
       "id": "rule.typescript.behavior-tests",
-      "version": 3,
+      "version": 4,
       "coverage": [
         "coverage.typescript",
         "coverage.verification-integrity"
@@ -296,6 +296,11 @@
           "id": "clause.typescript.prohibit-incidental-test-oracles",
           "enforcement": "prohibited",
           "guidance": "Do not make mocks, snapshots of incidental output, private structure, or type assertions the source of correctness."
+        },
+        {
+          "id": "clause.typescript.type-fixtures-from-the-schema",
+          "enforcement": "mandatory",
+          "guidance": "Type a test fixture that stands for a stored row from the schema's inferred row type, with a complete base row and partial overrides, never from an untyped record."
         }
       ]
     }

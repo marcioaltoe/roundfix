@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "bun",
-  "version": 4,
+  "version": 5,
   "kind": "language-runtime",
   "title": "Bun runtime guidance",
   "dependsOn": [
@@ -35,12 +35,11 @@
   "supportingGuides": [
     {
       "id": "guide.bun",
-      "version": 3,
+      "version": 4,
       "path": "docs/agents/typescript-bun.md",
       "template": "template.guide.bun",
       "rules": [
-        "rule.bun.package-manager",
-        "rule.bun.warning-free-verification"
+        "rule.bun.package-manager"
       ],
       "references": []
     }
@@ -73,21 +72,6 @@
           "id": "clause.bun.prohibit-other-package-managers",
           "enforcement": "prohibited",
           "guidance": "Inside the Bun workspace, do not substitute another JavaScript package manager or runner (npm, pnpm, yarn, npx) or hand-edit the lockfile. A toolchain for another language in the same repository keeps its own package manager."
-        }
-      ]
-    },
-    {
-      "id": "rule.bun.warning-free-verification",
-      "version": 2,
-      "coverage": [
-        "coverage.bun",
-        "coverage.verification"
-      ],
-      "clauses": [
-        {
-          "id": "clause.bun.block-warnings-when-profile-treats-them-as-errors",
-          "enforcement": "mandatory",
-          "guidance": "When the repository's Verification treats warnings as errors, every warning it reports blocks completion."
         }
       ]
     }

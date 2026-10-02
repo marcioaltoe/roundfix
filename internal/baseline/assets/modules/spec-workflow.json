@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "spec-workflow",
-  "version": 14,
+  "version": 15,
   "kind": "workflow",
   "title": "Local Spec workflow",
   "dependsOn": [
@@ -38,7 +38,7 @@
   "supportingGuides": [
     {
       "id": "guide.spec-routing",
-      "version": 10,
+      "version": 11,
       "path": "docs/agents/spec-routing.md",
       "template": "template.guide.spec-routing",
       "rules": [
@@ -59,7 +59,7 @@
     },
     {
       "id": "guide.spec-docs-layout",
-      "version": 7,
+      "version": 8,
       "path": "docs/agents/docs-layout.md",
       "template": "template.guide.spec-docs-layout",
       "rules": [
@@ -71,7 +71,7 @@
   "rules": [
     {
       "id": "rule.spec.routing",
-      "version": 6,
+      "version": 7,
       "coverage": [
         "coverage.spec-workflow"
       ],
@@ -115,6 +115,16 @@
           "id": "clause.spec.sources-02-bound-the-group",
           "enforcement": "mandatory",
           "guidance": "Group sources into one Spec only while the Spec fits four implementation Tasks plus its QA gate. When the grouped scope needs more, split it into Specs that each fit and give each source exactly one owning Spec; never add a source that shares no context with the Spec only to save a Spec."
+        },
+        {
+          "id": "clause.spec.name-the-finding-a-task-answers",
+          "enforcement": "mandatory",
+          "guidance": "When a Task answers a recorded finding, name that finding and its date in one of the Task's requirements."
+        },
+        {
+          "id": "clause.spec.verification-fails-before-the-change",
+          "enforcement": "mandatory",
+          "guidance": "Author each Task's Verification so every command fails on the tree before the Task's change, and run `roundfix spec check <slug> --run-verification` before a Run starts: the Daemon refuses a Task whose command already exits zero on the unchanged tree."
         }
       ]
     },
@@ -183,7 +193,7 @@
     },
     {
       "id": "rule.spec.docs-layout",
-      "version": 7,
+      "version": 8,
       "coverage": [
         "coverage.spec-workflow"
       ],
@@ -197,6 +207,11 @@
           "id": "clause.spec.specs-are-downstream-artifacts",
           "enforcement": "mandatory",
           "guidance": "Specs are downstream results of the CONTEXT-driven workflow, never sources it depends on: an archived Spec may be deleted at any time, so durable knowledge a Spec produced must move upstream to its semantic owner — the project glossary, an accepted ADR, an agent guide, or `docs/references/` — before or at archive. The glossary and the agent guides must never reference a Spec."
+        },
+        {
+          "id": "clause.spec.prohibit-tests-that-read-specs",
+          "enforcement": "prohibited",
+          "guidance": "Do not make a test, fixture, or build step read a file under the Spec root or assume that a Spec is still active; Specs archive and may be deleted. A check whose subject is the Spec artifacts themselves is exempt."
         }
       ]
     }

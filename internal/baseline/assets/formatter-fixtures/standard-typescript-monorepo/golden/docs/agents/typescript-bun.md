@@ -15,6 +15,8 @@ another language follows its own guide.
 
 - **mandatory**: Test observable behavior and explicit failure modes.
 
+- **mandatory**: Type a test fixture that stands for a stored row from the schema's inferred row type, with a complete base row and partial overrides, never from an untyped record.
+
 <!-- setup-context-driven:end id=guide.typescript-bun -->
 <!-- setup-context-driven:begin id=guide.bun version=0.0.1 -->
 
@@ -31,7 +33,5 @@ its own commands.
 - **mandatory**: Inside the Bun workspace, use Bun-owned commands for dependency installation, scripts, and lockfile updates, and run tests through the package's `test` script (`bun run test`), never through a bare runner such as `bun test`.
 
 - **mandatory**: Verify that a dependency exists and inspect its current version before adding it.
-
-- **mandatory**: When the repository's Verification treats warnings as errors, every warning it reports blocks completion.
 
 <!-- setup-context-driven:end id=guide.bun -->

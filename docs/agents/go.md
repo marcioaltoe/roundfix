@@ -5,10 +5,22 @@
 These rules govern the repository's Go module: its commands, packages and
 tests. Code in another language follows its own guide.
 
-- Keep Go command entry points thin and behavior in cohesive packages. Prefer the standard library; add a dependency only for a named job it cannot perform, and change `go.mod` and `go.sum` through Go tooling rather than hand edits.
+- **prohibited**: Do not hand-edit `go.mod` or `go.sum`; change them through the `go` command.
 
-- Use context-first signatures for blocking and IO work. Give every goroutine an owner and cancellation path. Wrap errors with the failed operation using `%w`, and preserve `errors.Is` or `errors.As` matching where callers need it.
+- **mandatory**: Keep each Go `main` package thin: it parses input, wires dependencies, and calls behavior that lives in cohesive packages.
 
-- Use stdlib `testing`. Test observable package and CLI behavior through public runners, including stdout, stderr, files, exit codes, cancellation, and failure paths; do not add production-only test hooks.
+- **mandatory**: Prefer the Go standard library. Add a third-party module only for a named job that the standard library and the modules already required cannot do, and record that reason in an ADR or another recorded repository decision in the change that adds it.
+
+- **mandatory**: Give every goroutine an owner that waits for it and a cancellation path that stops it.
+
+- **mandatory**: Pass a `context.Context` as the first parameter of blocking and IO work, and stop that work when the context is cancelled.
+
+- **mandatory**: Wrap a returned error with the operation that failed using `%w`, and keep `errors.Is` and `errors.As` matching wherever a caller branches on the error.
+
+- **mandatory**: When a change touches a file with a build constraint, build the affected non-test packages for every operating system its constraints name, for example with `GOOS=windows go build ./...`; a build or test run on the host compiles only the host's files.
+
+- **mandatory**: Test observable package and command behavior through public entry points: stdout, stderr, files, exit codes, cancellation, and failure paths.
+
+- **mandatory**: Run Go tests through `go test` with the standard `testing` package as the harness. An assertion or mocking library is a third-party module and needs its recorded reason.
 
 <!-- setup-context-driven:end id=guide.go -->

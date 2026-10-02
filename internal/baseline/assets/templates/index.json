@@ -239,7 +239,7 @@
     },
     {
       "id": "template.guide.rust",
-      "version": 1,
+      "version": 2,
       "kind": "guide",
       "path": "guides/rust.md",
       "tokens": ["artifact.rules"]

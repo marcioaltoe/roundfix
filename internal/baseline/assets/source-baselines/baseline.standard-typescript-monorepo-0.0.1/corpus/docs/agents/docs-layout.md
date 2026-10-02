@@ -285,3 +285,7 @@ Keep `_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, Task files, and `qa/` e
 <!-- source-baseline-entry: clause.spec.specs-are-downstream-artifacts -->
 Specs are downstream results of the CONTEXT-driven workflow, never sources it depends on: an archived Spec may be deleted at any time, so durable knowledge a Spec produced must move upstream to its semantic owner — the project glossary, an accepted ADR, an agent guide, or `docs/references/` — before or at archive. The glossary and the agent guides must never reference a Spec.
 <!-- /source-baseline-entry: clause.spec.specs-are-downstream-artifacts -->
+
+<!-- source-baseline-entry: clause.spec.prohibit-tests-that-read-specs -->
+- MUST NOT make a test, fixture, or build step read a file under the Spec root or assume that a Spec is still active.
+<!-- /source-baseline-entry: clause.spec.prohibit-tests-that-read-specs -->
