@@ -1,0 +1,18 @@
+{
+  "schema": "roundfix/task-acceptance-question/v1",
+  "judgment": "task-acceptance",
+  "question_id": "acceptance_observable",
+  "question": {
+    "type": "noul",
+    "instructions": "`acceptance_criteria` is the acceptance-criteria list of one implementation Task from a software specification, and `task_title` is the Task's title. Could a reviewer who did not write the Task decide every criterion as met or not met by running a command or reading a named file or output, without judging intent or quality?",
+    "criteria": {
+      "true": "Every criterion names an observable result: a command outcome, an exit code, a file, a field, an output line, or a test that passes or fails",
+      "false": "At least one criterion depends on judgment, intent or quality, or names no result an observer could check"
+    }
+  },
+  "task_title_max_chars": 200,
+  "acceptance_criteria_max_chars": 4000,
+  "flag_when_noul_below": 0.5,
+  "bootstrap": {"resamples": 2000, "seed": 214, "cluster": "spec", "max_discarded_share": 0.05},
+  "random_baseline_seed": 214
+}

@@ -1,0 +1,94 @@
+{
+  "schema": "roundfix/runs-causes/v1",
+  "window": {
+    "since": null,
+    "until": null
+  },
+  "signatures_sha256": "",
+  "runs": 0,
+  "items": null,
+  "tasks": [
+    {
+      "spec": "0300-example",
+      "task": "task_01",
+      "qa": false,
+      "corrective": null,
+      "verdicts_passed": 1,
+      "verdicts_failed": 1,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0300-example",
+      "task": "task_02",
+      "qa": false,
+      "corrective": null,
+      "verdicts_passed": 1,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0301-example",
+      "task": "task_01",
+      "qa": false,
+      "corrective": null,
+      "verdicts_passed": 1,
+      "verdicts_failed": 1,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0301-example",
+      "task": "task_02",
+      "qa": false,
+      "corrective": null,
+      "verdicts_passed": 1,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0302-example",
+      "task": "task_01",
+      "qa": false,
+      "corrective": null,
+      "verdicts_passed": 1,
+      "verdicts_failed": 1,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0302-example",
+      "task": "task_02",
+      "qa": false,
+      "corrective": null,
+      "verdicts_passed": 1,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0303-example",
+      "task": "task_01",
+      "qa": false,
+      "corrective": null,
+      "verdicts_passed": 1,
+      "verdicts_failed": 1,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0303-example",
+      "task": "task_02",
+      "qa": false,
+      "corrective": null,
+      "verdicts_passed": 1,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    }
+  ],
+  "summary": null,
+  "specs_not_found": null
+}
