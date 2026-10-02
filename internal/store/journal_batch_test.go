@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"roundfix/internal/runevent"
+	"roundfix/internal/testwait"
 )
 
 // batchTestWriter builds a test Store whose journal batch size and linger are
@@ -129,18 +130,13 @@ func TestBatchClosesOnCountLingerAndImmediate(t *testing.T) {
 		if err := w.sink.Publish(context.Background(), batchAgentEvent(runID, "event")); err != nil {
 			t.Fatalf("publish event: %v", err)
 		}
-		deadline := time.Now().Add(2 * time.Second)
-		for {
-			if w.store.journal.pendingCount() == 0 {
-				break
-			}
-			if time.Now().After(deadline) {
-				t.Fatal("linger deadline did not close the batch")
-			}
-			time.Sleep(10 * time.Millisecond)
-		}
-		if got := countPublishableEvents(t, context.Background(), w.store, runID); got != 1 {
-			t.Fatalf("expected 1 committed event after linger, got %d", got)
+		var noEnd <-chan struct{}
+		testwait.Poll(t, "linger to commit the published event", noEnd, func() (bool, string) {
+			got := countPublishableEvents(t, context.Background(), w.store, runID)
+			return got == 1, fmt.Sprintf("committed events = %d, want 1", got)
+		})
+		if got := w.store.journal.pendingCount(); got != 0 {
+			t.Fatalf("expected linger flush to empty pending, got %d pending", got)
 		}
 	})
 

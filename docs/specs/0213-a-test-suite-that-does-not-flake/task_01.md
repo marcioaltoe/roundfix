@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0213-a-test-suite-that-does-not-flake
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -76,3 +76,61 @@ changes only these two test files.
 - [_techspec.md](_techspec.md) — The linger wait; The Run Budget tests; Testing Approach 1; Build Order 1
 - [references/2026-09-30-time-bound-tests-and-a-leaked-detached-child.md](references/2026-09-30-time-bound-tests-and-a-leaked-detached-child.md)
 - ADR-0098; ADR-0158; ADR-0164
+
+## Result
+
+Implemented this Task's test slice for Daemon Verification. Task status and
+the declared Verification commands remain Daemon-owned.
+
+- The linger subtest now uses deadline-bounded `testwait.Poll` to read the
+  committed event through `RunEventsAfter` (via `countPublishableEvents`),
+  then asserts an empty pending batch. Batch size 100 and linger 50 ms remain;
+  no explicit flush, sleep, or independent 2-second deadline was added.
+- Both budget tests now schedule independent Tasks at concurrency 2, using
+  the existing fake Task Worktree manager for the parallel scheduler.
+  `budgetTestClock` starts at `RunStartedAt`, and each maximum is one hour.
+  The shared runner waits for the stalled Task's start before setting the
+  clock to the real present minus that maximum and returning the first Task's
+  settlement. The production watchdog still performs cancellation.
+- Existing DeadlineExceeded, renewing-Task reason, completed-count, and
+  on-disk completion assertions remain. Every other test function in both
+  files is unchanged; no production file or deadline configuration changed.
+
+Focused checks, using `GOCACHE=/private/tmp/roundfix-0213-task01-go-cache`:
+
+- `rtk proxy go test -count=10 -cpu 1,4 -run '^(TestBatch.*|TestCommitJournalBatchClassifiesAmbiguousCommit)$' ./internal/store`
+  — exit 0, 3.817 s; exercises every test in the store file, including the
+  linger subtest, 10 times at each CPU setting.
+- `rtk proxy go test -count=10 -cpu 1,4 -run '^(TestTaskBudget.*|TestTaskCycleReportsTheRenewedBudgetDeadline|TestTaskCycleReportsNoBudgetDeadlineWhenTheBudgetIsDisabled)$' ./internal/daemon`
+  — exit 0, 27.692 s; exercises all nine tests in the budget file, 10 times
+  at each CPU setting.
+- Source inspection against `HEAD` confirmed every other test function is
+  unchanged, the store file contains none of the removed unsafe wait patterns,
+  and the budget file contains no numeric millisecond budget.
+- `rtk proxy go test -race -count=1 -cpu 1,4 -run '^(TestBatchClosesOnCountLingerAndImmediate|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement|TestTaskBudgetReasonNamesTheSettlementThatRenewedIt)$' ./internal/store ./internal/daemon`
+  — exit 0; store 9.058 s, daemon 20.314 s, no race diagnostics.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+- `rtk proxy make verify-incremental` — exit 0 with host process access;
+  formatting, vet, repository tests, skill checks, and build passed. The
+  worktree stayed unchanged throughout this successful run.
+
+The initial checks could not access the shared Go build cache under the
+sandbox; the task-scoped cache resolved that limitation. The first concurrent
+fixture attempt ended before either runner started because it retained the
+serial fixture's default Git Task Worktree manager. Using the existing
+parallel fixture resolved that setup error. The earlier incremental check was
+stopped because its test binary predated this correction.
+The next incremental run's CLI and daemon tests reported PASS, but their
+repository guards rejected the concurrent addition of this Result section.
+The successful final run above corrected that check ordering by holding the
+worktree unchanged and recording its outcome only after the process exited.
+
+Acceptance evidence: the structural requirements for the linger and budget
+criteria are present, and both files' edited and unedited tests have focused
+repetition evidence. The declared 100-run linger and 50-run budget gates are
+reserved for the Daemon; those exact acceptance counts are not claimed here.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261002T064202Z_a22e1dd4644c4dc6`
+- Source commit: `572600e5355e0fe97b9a744a2f960ba967cd3a60`
