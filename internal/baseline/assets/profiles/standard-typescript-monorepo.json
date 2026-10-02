@@ -22,7 +22,7 @@
       "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md",
       "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/typescript-bun.md"
     ],
-    "goldenDigest": "0fa9eeb374aaee1668499b9638206d1ed81b9fc09eb13a8ec138e2813c532314",
+    "goldenDigest": "02ac386cf102253e49bf4b0253b1de73475f02aab0cfe55fe54372f3fdd7fce1",
     "id": "formatter.oxfmt-markdown",
     "kind": "selected",
     "version": "0.59.0"
@@ -113,8 +113,8 @@
     "Vitest"
   ],
   "workspaces": [
-    {"path": "packages/frontend", "strength": "required"},
-    {"path": "packages/backend", "strength": "required"}
+    {"path": "packages/frontend", "strength": "required", "guide": "guide.frontend"},
+    {"path": "packages/backend", "strength": "required", "guide": "guide.backend"}
   ],
   "optionalModules": ["Inngest", "Docker"],
   "architecture": {

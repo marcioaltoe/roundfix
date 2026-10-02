@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "core",
-  "version": 17,
+  "version": 18,
   "kind": "core",
   "title": "Universal agent baseline",
   "dependsOn": [],
@@ -334,7 +334,7 @@
     },
     {
       "id": "guide.skill-dispatch",
-      "version": 4,
+      "version": 5,
       "path": "docs/agents/skill-dispatch.md",
       "template": "template.guide.skill-dispatch",
       "rules": [
@@ -499,7 +499,7 @@
     },
     {
       "id": "rule.core.skill-dispatch",
-      "version": 5,
+      "version": 6,
       "coverage": [
         "coverage.skill-dispatch"
       ],
@@ -523,6 +523,11 @@
           "id": "clause.core.prohibit-editing-vendored-skills",
           "enforcement": "prohibited",
           "guidance": "Do not edit a skill the repository installs from an upstream source; its upstream owns its text. State a correction as a Repository-Specific Normative Rule, which governs over the skill's default."
+        },
+        {
+          "id": "clause.core.ask-the-person-to-start-a-person-only-skill",
+          "enforcement": "mandatory",
+          "guidance": "When a matching skill can be started only by a person, because its metadata turns off model invocation, ask the person to run it instead of activating it or carrying out its workflow yourself."
         }
       ]
     },

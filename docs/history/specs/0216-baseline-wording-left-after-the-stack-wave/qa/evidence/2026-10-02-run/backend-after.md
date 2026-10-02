@@ -22,14 +22,14 @@ command written in another language follows its own guide.
 
 ## HTTP contract
 
-Application HTTP mode: **Post-only**.
+Application HTTP mode: **REST**.
 
 Confirmed ordered exceptions:
 
-1. **Better Auth** owns `GET` and `POST` for `/api/auth/*`: Session, OAuth redirect, callback, and related provider protocol routes require provider-owned GET and POST semantics.
+1. **Better Auth** owns `GET` and `POST` for `/api/auth/*`: Provider protocol routes require GET and POST semantics.
 
 ### Better Auth
 
-Better Auth owns the authentication protocol for `/api/auth/*`. Its confirmed `GET` and `POST` exception preserves this provider contract: Session, OAuth redirect, callback, and related provider protocol routes require provider-owned GET and POST semantics.
+Better Auth owns the authentication protocol for `/api/auth/*`. Its confirmed `GET` and `POST` exception preserves this provider contract: Provider protocol routes require GET and POST semantics.
 
 <!-- setup-context-driven:end id=guide.backend -->

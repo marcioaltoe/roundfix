@@ -100,8 +100,8 @@
     "Vitest"
   ],
   "workspaces": [
-    {"path": "packages/frontend", "strength": "required"},
-    {"path": "packages/backend", "strength": "required"}
+    {"path": "packages/frontend", "strength": "required", "guide": "guide.frontend"},
+    {"path": "packages/backend", "strength": "required", "guide": "guide.backend"}
   ],
   "optionalModules": ["Inngest", "Docker"],
   "architecture": {

@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0216-baseline-wording-left-after-the-stack-wave
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -70,3 +70,71 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - `_prd.md` → Goal 2; Core Feature 1; Success Metric 2; Success Metric 4; Declared breaks
 - `_techspec.md` → Exact texts; Source Baseline rows; Version changes; Existing tests that change; API Contract 1; API Contract 4; Testing Approach 1; Build Order 1
 - ADR-0058, ADR-0060, ADR-0099, ADR-0190, ADR-0202, ADR-0222
+
+## Result
+
+Implemented the task_01 slice for Daemon Verification. Task status remains
+Daemon-owned; no declared Verification command was run, and no commit, push,
+or Pull Request was created.
+
+- Replaced the bucket clause in place with
+  `clause.backend.prohibit-generic-buckets`, force `prohibited`, and the
+  declared `replaces` identity. The text forbids generic buckets in place of
+  domain, application, and infrastructure layers and explicitly permits a
+  domain service in the domain layer.
+- Kept the old Source Baseline row and added the successor immediately after
+  it in the corpus, manifest, and index. Sanctioned regeneration supplied all
+  offsets and digests. The maintained entry count is now 162.
+- Raised `backend` and `guide.backend` from 5 to 6 and
+  `rule.backend.boundary-contracts` from 4 to 5. Updated the force record,
+  structural-retention test through one replacement map, maintained entry
+  count, and fleet structural fixture. Added both authored regression tests.
+
+### Acceptance evidence
+
+1. **Scoped rendered prohibition:**
+   `GOCACHE=/private/tmp/roundfix-0216-task01-cache rtk proxy go test ./internal/baseline -run 'TestThe(BackendGuideScopes|BucketClauseReplaces)|TestStandardTypeScriptStructuralClauseRetention' -count=1 -v`
+   exited 0. `TestTheBackendGuideScopesTheBucketProhibition` checks the complete
+   rendered prohibited line and absence of the old sentence. Before the source
+   edits, both new tests failed against the original catalog.
+2. **Source Baseline transition:** the same focused check passed
+   `TestTheBucketClauseReplacesTheClauseAdoptersHold` and
+   `TestStandardTypeScriptStructuralClauseRetention`. The old identity is
+   `replaced` with the successor as its sole target; the successor is
+   `retained`. The negative subtest removes `replaces` from a fresh in-memory
+   catalog and requires the old identity to become `unaccounted`.
+3. **Convergence:**
+   `GOCACHE=/private/tmp/roundfix-0216-task01-cache rtk proxy make baseline-digests`
+   ran twice and exited 0 each time; the second reported `"changed":false`.
+   `GOCACHE=/private/tmp/roundfix-0216-task01-cache rtk proxy go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`
+   applied the Setup Manifest catalog digest on the first successful refresh
+   and reported `File changes: 0` and verified idempotence on the second.
+   The initial sandboxed apply could not create the Git-private transaction
+   journal and changed no planned file; the authorized retry with expanded
+   filesystem access succeeded. Both successful refreshes skipped skills and
+   preserved nested instruction carriers, reported as inventory warnings.
+
+### Additional focused checks
+
+- Compared the backend module with `HEAD`: only the bucket clause changed;
+  other module content and Skill Activations are identical, and the three
+  versions each rose by one.
+- `git -c core.fsmonitor=false diff --check` exited 0. Changed-path inspection
+  found all 21 changed paths inside task_01's Context or this Task file; no
+  Task Graph or other Task file changed.
+- The initial incremental check exited 2: process-owner tests lacked sandbox
+  process-table access, and suite guards detected concurrent edits made during
+  the check. It also exposed shared-catalog mutation by the new negative test.
+  That test now clones the cached catalog before removing `replaces`.
+- After isolating the negative test, an expanded focused check exited 0:
+  `GOCACHE=/private/tmp/roundfix-0216-task01-cache rtk proxy go test ./internal/baseline -run 'TestThe(BackendGuideScopes|BucketClauseReplaces)|TestStandardTypeScriptStructuralClauseRetention|TestARemovedSourceClauseIsReplacedByItsDeclaredSuccessor|TestTheWarningsClauseIsReplacedByTheLintClause|TestTheExternalTriageRuleIsReplacedForSourceBaselineAdopters|TestAnUndeclaredExternalTriageReplacementIsRefused' -count=1 -v`.
+  All seven tests passed together, including the four affected by the shared
+  mutation in the initial incremental run.
+- `GOCACHE=/private/tmp/roundfix-0216-task01-cache rtk make verify-incremental`
+  reran with required process-table access and no concurrent repository edits,
+  and exited 0: formatting, vet, Go tests, skill synchronization and checks,
+  and build passed. The local output is retained at
+  `/private/tmp/roundfix-0216-task01-incremental-rerun.log`.
+
+No follow-up implementation was added to this slice. Declared Verification
+and Task settlement remain with the Daemon.

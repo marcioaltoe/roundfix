@@ -1,0 +1,62 @@
+import pathlib, subprocess, os, json, shutil
+root=pathlib.Path.cwd(); scratch=pathlib.Path(__file__).parent; env=dict(os.environ,GOCACHE='/private/tmp/roundfix-0216-qa-cache')
+log=scratch/'flows.log'
+def run(args,cwd=None,name=None):
+ p=subprocess.run(args,cwd=cwd or root,env=env,capture_output=True,text=True)
+ with log.open('a') as f:f.write('COMMAND '+repr(args)+'\nCWD '+str(cwd or root)+'\nEXIT '+str(p.returncode)+'\nSTDOUT\n'+p.stdout+'\nSTDERR\n'+p.stderr+'\n')
+ if name:(scratch/(name+'.stdout')).write_text(p.stdout);(scratch/(name+'.stderr')).write_text(p.stderr)
+ print(name or args[:2],p.returncode,flush=True)
+ return p
+def need(p):
+ if p.returncode:raise RuntimeError('Command failed; see flows.log')
+ return p
+# Historical binary already built successfully.
+# Historical baseline binary is only for constructing the base adoption; all audited flows use root/bin/roundfix.
+adopter=scratch/'adopter'
+# Seed the declared standard-stack evidence from the maintained CLI fixture; no package install or command execution.
+def write(path,text):
+ f=adopter/path;f.parent.mkdir(parents=True,exist_ok=True);f.write_text(text)
+packages=['@logtape/logtape','@tanstack/react-query','@tanstack/react-router','drizzle-orm','hono','oxfmt','oxlint','postgres','react','shadcn','tailwindcss','turbo','typescript','vite','vitest','zod','better-auth']
+write('package.json',json.dumps({'name':'qa-adopter','packageManager':'bun@1.3.0','scripts':{'format':'oxfmt .','lint':'oxlint','test':'vitest','build':'turbo build','verify':'bun run lint'},'dependencies':{n:'latest' for n in packages}}))
+write('packages/frontend/package.json','{"name":"frontend"}')
+write('packages/backend/package.json','{"name":"backend","dependencies":{"postgres":"latest","drizzle-orm":"latest"}}')
+write('DATABASE.md','# Database\n\nPostgreSQL is the repository database contract.\n')
+write('Makefile','verify:\n\t@true\nverify-incremental:\n\t@true\n')
+write('.agents/skills/context7/SKILL.md','# Context7\n');write('.agents/skills/exa-web-search/SKILL.md','# Exa\n')
+args=[str(scratch/'base/bin/roundfix'),'baseline','plan','--repo',str(adopter),'--profile','standard-typescript-monorepo','--format','json']
+for d in ['preservation.mode=greenfield','language.generated=English','verification.gate=make verify','verification.incremental=make verify-incremental','branch.prefix=feat/','spec.scaffold=true','domain.layout=single-context','triage.external=false','autonomous.enabled=false','secondbrain.enabled=false','repository.extension.enabled=false','identifier.strategy={"kind":"uuid-v7"}','http.contract={"mode":"REST"}','auth.provider={"kind":"better-auth","routeException":{"scope":"/api/auth/*","methods":["GET","POST"],"owner":"Better Auth","reason":"Provider protocol routes require GET and POST semantics."}}']:
+ args += ['--decision',d]
+plan=need(run(args,name='base-plan'));obj=json.loads(plan.stdout)
+(scratch/'adoption-plan.json').write_text(plan.stdout)
+print('plan keys',list(obj),flush=True)
+need(run([str(scratch/'base/bin/roundfix'),'baseline','apply','--repo',str(adopter),'--plan',str(scratch/'adoption-plan.json'),'--confirm-plan',obj['planDigest'],'--format','json'],name='base-apply'))
+old=(adopter/'docs/agents/backend.md').read_text();assert 'Do not introduce generic' in old and 'at `packages/backend`' not in old
+(scratch/'backend-before.md').write_text(old)
+# All current public-CLI rows call exactly the built ./bin/roundfix in the audited worktree.
+update=need(run(['./bin/roundfix','baseline','update','--repo',str(adopter),'--yes','--no-skills','--format','text'],name='adopter-update'))
+assert 'clause.backend.prohibit-generic-layers' in update.stdout and 'replaced' in update.stdout
+backend=(adopter/'docs/agents/backend.md').read_text(); frontend=(adopter/'docs/agents/frontend.md').read_text()
+assert 'at `packages/backend`' in backend and 'at `packages/frontend`' in frontend
+assert '**prohibited**: Do not organize backend code into generic' in backend and 'A domain service that lives' in backend and 'Do not introduce generic' not in backend
+(scratch/'backend-after.md').write_text(backend);(scratch/'frontend-after.md').write_text(frontend)
+repeat=need(run(['./bin/roundfix','baseline','update','--repo',str(adopter),'--yes','--no-skills','--format','text'],name='adopter-repeat'))
+assert 'File changes: 0' in repeat.stdout
+assert (adopter/'docs/agents/backend.md').read_text()==backend
+preview=need(run(['./bin/roundfix','baseline','update','--repo',str(scratch/'current'),'--no-skills','--format','text'],name='current-preview'))
+assert 'File changes: 0' in preview.stdout
+regen=need(run(['make','baseline-digests'],scratch/'current','current-digests'))
+assert '"changed":false' in regen.stdout
+assert not need(run(['git','-c','core.fsmonitor=false','diff','--name-only'],scratch/'current','current-diff')).stdout.strip()
+# Perturb one owner at a time only in the disposable source tree, then ask catalog tests for observable diagnostics.
+f=scratch/'current/internal/baseline/assets/skill-activations.json';original=f.read_text()
+for trigger in ['trigger.production-code','trigger.debugging']:
+ obj=json.loads(original)
+ for a in obj['activations']:
+  if a['id']==trigger:assert a['owner']=='typescript';a['owner']='core'
+ f.write_text(json.dumps(obj,indent=2)+'\n')
+ result=run(['go','test','./internal/baseline','-run','^TestCatalogCompatibility$','-count=1','-v'],scratch/'current',trigger)
+ assert result.returncode!=0
+ assert 'catalog.profile.skill.dispatch-outside-setup' in result.stdout
+ assert 'go-cli-tui' in result.stdout and 'rust-cli' in result.stdout
+ f.write_text(original)
+print('ALL FLOWS PASSED',flush=True)

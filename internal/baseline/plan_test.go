@@ -2975,6 +2975,7 @@ func TestStandardTypeScriptStructuralClauseRetention(t *testing.T) {
 		"clause.backend.layered-architecture",
 		"clause.backend.persistence-owner",
 		"clause.backend.prohibit-generic-layers",
+		"clause.backend.prohibit-generic-buckets",
 		"clause.backend.thin-http-handlers",
 		"clause.domain.canonical-language",
 		"clause.domain.layout-decision",
@@ -3041,12 +3042,16 @@ func TestStandardTypeScriptStructuralClauseRetention(t *testing.T) {
 		}
 		return raw
 	}
+	replacements := map[string]string{
+		"rule.backend.boundary-contracts":        "clause.backend.boundary-contracts",
+		"clause.backend.prohibit-generic-layers": "clause.backend.prohibit-generic-buckets",
+	}
 	for _, clauseID := range restoredClauseIDs {
 		wantDisposition := ClauseRetained
 		targetID := clauseID
-		if clauseID == "rule.backend.boundary-contracts" {
+		if replacement, ok := replacements[clauseID]; ok {
 			wantDisposition = ClauseReplaced
-			targetID = "clause.backend.boundary-contracts"
+			targetID = replacement
 			found := false
 			for _, retained := range evidence {
 				if retained.FromClause != clauseID {
@@ -3064,7 +3069,10 @@ func TestStandardTypeScriptStructuralClauseRetention(t *testing.T) {
 		if got := delta.Dispositions[clauseID]; got != wantDisposition {
 			t.Errorf("structural clause %q disposition = %q, want %q", clauseID, got, wantDisposition)
 		}
-		previous, ok := sourceEntries[clauseID]
+		previous, ok := sourceEntries[targetID]
+		if !ok {
+			previous, ok = sourceEntries[clauseID]
+		}
 		if !ok {
 			t.Errorf("structural clause %q is absent from the Source Baseline", clauseID)
 			continue

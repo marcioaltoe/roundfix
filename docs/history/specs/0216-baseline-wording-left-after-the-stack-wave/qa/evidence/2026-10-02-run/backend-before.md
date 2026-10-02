@@ -5,7 +5,7 @@
 This setup-owned guide defines portable backend rules. Repository-authored
 architecture and service contracts remain authoritative.
 
-These rules govern the repository's TypeScript backend workspace at `packages/backend`. A service or
+These rules govern the repository's TypeScript backend workspace. A service or
 command written in another language follows its own guide.
 
 - **mandatory**: Keep blocking, network, process, database, and daemon boundaries explicit about ownership, cancellation, timeouts, and error reporting. Test the lowest real boundary that proves the repository-authored contract; do not invent authentication, database, or transport policy.
@@ -16,20 +16,20 @@ command written in another language follows its own guide.
 
 - **mandatory**: Keep persistence implementation in infrastructure and behind application-owned boundaries; schema and query definitions belong to the selected persistence capability.
 
-- **prohibited**: Do not organize backend code into generic `modules` or `services` buckets in place of the domain, application, and infrastructure layers. A domain service that lives in the domain layer is not such a bucket.
+- **prohibited**: Do not introduce generic `modules` or `services` buckets as the normative backend architecture.
 
 - **mandatory**: Keep HTTP handlers thin: validate and translate transport input, invoke one application use case, and translate the result into the repository's HTTP Contract.
 
 ## HTTP contract
 
-Application HTTP mode: **Post-only**.
+Application HTTP mode: **REST**.
 
 Confirmed ordered exceptions:
 
-1. **Better Auth** owns `GET` and `POST` for `/api/auth/*`: Session, OAuth redirect, callback, and related provider protocol routes require provider-owned GET and POST semantics.
+1. **Better Auth** owns `GET` and `POST` for `/api/auth/*`: Provider protocol routes require GET and POST semantics.
 
 ### Better Auth
 
-Better Auth owns the authentication protocol for `/api/auth/*`. Its confirmed `GET` and `POST` exception preserves this provider contract: Session, OAuth redirect, callback, and related provider protocol routes require provider-owned GET and POST semantics.
+Better Auth owns the authentication protocol for `/api/auth/*`. Its confirmed `GET` and `POST` exception preserves this provider contract: Provider protocol routes require GET and POST semantics.
 
 <!-- setup-context-driven:end id=guide.backend -->
