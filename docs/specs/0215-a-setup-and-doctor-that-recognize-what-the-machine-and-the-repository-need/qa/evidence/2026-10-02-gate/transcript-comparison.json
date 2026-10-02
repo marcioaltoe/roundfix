@@ -1,0 +1,46 @@
+{
+  "matching_rules": "ellipsis lines match zero or more complete lines; angle placeholders match one or more characters; all other bytes exact; stdout/stderr separate; exit exact",
+  "transcripts": [
+    {
+      "transcript": 1,
+      "checks": {
+        "stdout": true,
+        "stderr": true,
+        "exit": true,
+        "readonly": true
+      }
+    },
+    {
+      "transcript": 2,
+      "checks": {
+        "stdout": true,
+        "stderr": true,
+        "exit": true,
+        "readonly": true
+      }
+    },
+    {
+      "transcript": 3,
+      "checks": {
+        "stdout": true,
+        "stderr": true,
+        "exit": true,
+        "readonly": true
+      }
+    },
+    {
+      "transcript": 4,
+      "checks": {
+        "stdout": true,
+        "stderr": true,
+        "exit": true,
+        "readonly": true
+      }
+    }
+  ],
+  "key_sentinel_non_disclosure": true,
+  "no_show_token": true,
+  "no_git_fetch_push": true,
+  "no_queue_database": true,
+  "baseline_preview_readonly_twice": true
+}

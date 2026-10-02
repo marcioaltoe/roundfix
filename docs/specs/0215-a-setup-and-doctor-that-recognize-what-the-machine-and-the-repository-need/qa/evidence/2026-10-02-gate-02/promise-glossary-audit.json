@@ -1,0 +1,66 @@
+{
+  "promise_coverage": {
+    "User Story": {
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true,
+      "5": true,
+      "6": true,
+      "7": true
+    },
+    "Core Feature": {
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true,
+      "5": true,
+      "6": true,
+      "7": true,
+      "8": true,
+      "9": true
+    },
+    "Success Metric": {
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true,
+      "5": true,
+      "6": true
+    },
+    "API Contract": {
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true,
+      "5": true
+    }
+  },
+  "finding_codes_documented": [
+    "DR-GH-MISSING",
+    "DR-GH-PERMISSION",
+    "DR-GH-PERMISSION-UNVERIFIED",
+    "DR-GH-TOKEN-REJECTED",
+    "DR-GH-UNAUTHENTICATED",
+    "DR-GH-UNREACHABLE",
+    "DR-GH-VERSION",
+    "DR-GIT-IDENTITY",
+    "DR-GIT-MISSING",
+    "DR-GIT-VERSION",
+    "DR-NODE-PRELOAD-MISSING",
+    "DR-REMOTE-FORGE",
+    "DR-REMOTE-MISSING",
+    "DR-REMOTE-UNREACHABLE",
+    "DR-SKILL-TRAILS-SNAPSHOT",
+    "DR-TOOL-MISSING",
+    "DR-TOOL-UNREAD"
+  ],
+  "techspec_metric_map": true,
+  "glossary_check": {
+    "readiness_line": "existing Doctor output concept",
+    "finding_code": "diagnostic identifier distinct from Review Source Issue",
+    "trailing_skill": "existing Repository Skill Set condition compared with Setup Snapshot"
+  },
+  "new_glossary_term_required": false,
+  "verification": "clean strict Spec check plus fresh public transcript/preview matches and named Task tests"
+}

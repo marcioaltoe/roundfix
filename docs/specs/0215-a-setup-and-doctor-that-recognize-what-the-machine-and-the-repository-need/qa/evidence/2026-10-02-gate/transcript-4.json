@@ -1,0 +1,11 @@
+{
+  "command": "./bin/roundfix doctor",
+  "cwd": "/private/tmp/roundfix-0215-qa-t3phetie/repo",
+  "HOME": "/private/tmp/roundfix-0215-qa-t3phetie/home",
+  "mode": "ready",
+  "exit": 0,
+  "stdout": "node: ok (v24.0.0 >= 22.13.0)\nacpx: ok (0.19.4 >= 0.12.0)\nadapter: ok (codex: command=\"npx -y @agentclientprotocol/codex-acp\"; package=@agentclientprotocol/codex-acp; version=2.0.1)\nprofiles: ok (2 distinct tuples; 20 category references)\nrecommendations: found (snapshot 2026-09-30; 0 current, 10 differ, 0 pinned; run roundfix profiles check)\npre-pr-review: ok (provider=codex; source=default)\ngh: ok (gh 2.102.0; github.com login=qa; qa/fixture permission=WRITE)\ngit: ok (2.45.0 >= 2.23.0)\nremote: ok (origin: github.com/qa/fixture; reachable)\ntoolchain: ok (make, rtk found)\nenvironment: ok (spec judge keys: ROUNDFIX_OPENROUTER_API_KEY not set, ROUNDFIX_TYPESAFE_API_KEY not set)\nskills: warn (15 required: 14 Roundfix-owned, 1 external; DR-SKILL-TRAILS-SNAPSHOT: trails the Setup Snapshot: agentic-cli-design; next: roundfix baseline update)\nresidue: partial (could not read Run Database: open Run Database reader \"/private/tmp/roundfix-0215-qa-t3phetie/home/.roundfix/roundfix.db\": stat /private/tmp/roundfix-0215-qa-t3phetie/home/.roundfix/roundfix.db: no such file or directory)\nstorage: ok (no Run Database)\ncodex: ok (/Users/marcio/.local/bin/codex has a valid code signature and no com.apple.quarantine attribute)\n",
+  "stderr": "",
+  "repository_digest_before": "515ac31af02c1c7f04fc0f1118cdc7a749156ca1244aec550beea7992adde302",
+  "repository_digest_after": "515ac31af02c1c7f04fc0f1118cdc7a749156ca1244aec550beea7992adde302"
+}

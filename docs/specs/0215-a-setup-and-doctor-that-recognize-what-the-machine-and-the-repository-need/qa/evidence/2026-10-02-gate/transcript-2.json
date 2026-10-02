@@ -1,0 +1,11 @@
+{
+  "command": "./bin/roundfix doctor",
+  "cwd": "/private/tmp/roundfix-0215-qa-t3phetie/repo",
+  "HOME": "/private/tmp/roundfix-0215-qa-t3phetie/home",
+  "mode": "offline",
+  "exit": 0,
+  "stdout": "node: ok (v24.0.0 >= 22.13.0)\nacpx: ok (0.19.4 >= 0.12.0)\nadapter: ok (codex: command=\"npx -y @agentclientprotocol/codex-acp\"; package=@agentclientprotocol/codex-acp; version=2.0.1)\nprofiles: ok (2 distinct tuples; 20 category references)\nrecommendations: found (snapshot 2026-09-30; 0 current, 10 differ, 0 pinned; run roundfix profiles check)\npre-pr-review: ok (provider=codex; source=default)\ngh: warn (gh 2.102.0; DR-GH-UNREACHABLE: could not confirm the github.com login: read did not answer; next: re-run roundfix doctor when github.com is reachable)\ngit: ok (2.45.0 >= 2.23.0)\nremote: warn (origin: github.com/qa/fixture; DR-REMOTE-UNREACHABLE: git ls-remote origin failed: read did not answer; next: re-run roundfix doctor when github.com is reachable)\ntoolchain: ok (make, rtk found)\nenvironment: ok (spec judge keys: ROUNDFIX_OPENROUTER_API_KEY not set, ROUNDFIX_TYPESAFE_API_KEY not set)\nskills: ok (14 required: 14 Roundfix-owned, 0 external)\nresidue: partial (could not read Run Database: open Run Database reader \"/private/tmp/roundfix-0215-qa-t3phetie/home/.roundfix/roundfix.db\": stat /private/tmp/roundfix-0215-qa-t3phetie/home/.roundfix/roundfix.db: no such file or directory)\nstorage: ok (no Run Database)\ncodex: ok (/Users/marcio/.local/bin/codex has a valid code signature and no com.apple.quarantine attribute)\n",
+  "stderr": "",
+  "repository_digest_before": "fd057a8955fab8bd02057a4353420a422e47a2bbecfd8e86be8d63cad22e0d9a",
+  "repository_digest_after": "fd057a8955fab8bd02057a4353420a422e47a2bbecfd8e86be8d63cad22e0d9a"
+}
