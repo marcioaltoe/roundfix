@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0213-a-test-suite-that-does-not-flake
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -70,3 +70,46 @@ own temporary directory.
 - [_prd.md](_prd.md) — Goal 4; Core Feature 5; Success Metric 5; Acceptance evidence
 - [_techspec.md](_techspec.md) — The Assets Sync template; Testing Approach 4; Build Order 4
 - ADR-0126
+
+## Result
+
+The Assets Sync template now stores both repository trees in memory, including
+`.git`, directory modes and file modes. `buildAssetsSyncTemplate` takes no
+`testing.T`, returns errors, and removes its recorded build directory before
+returning, including on error. The existing `sync.Once` stores the build error
+for every caller to report as `build Assets Sync template: <error>`. Git uses
+the same configuration flags and fixture identity through an error-returning
+runner.
+
+Each target and source helper restores entries into its caller's `t.TempDir()`;
+their signatures and recorded source revision are preserved. The shared
+directory cleanup function and its `TestMain` call are removed. The suite guard
+installation, production code and existing test assertions are unchanged.
+
+Focused-check evidence:
+
+- Before changing the helpers,
+  `GOCACHE=/private/tmp/roundfix-task04-gocache rtk proxy go test -count=1 -run 'TestAssetsSyncTemplateLeaves' ./internal/baseline`
+  exited 1: the new regression test found that the template build directory
+  remained after construction.
+- After implementation,
+  `GOCACHE=/private/tmp/roundfix-task04-gocache rtk proxy go test -count=3 -cpu=1,4 -run 'AssetsSync' ./internal/baseline`
+  exited 0 (`ok roundfix/internal/baseline 113.266s`). This focused selection
+  includes every Assets Sync test and the new regression test.
+- Acceptance criterion 1: the regression test asserts the recorded build
+  directory is absent before creating copies, runs target `git fsck` and
+  `git rev-parse HEAD`, and compares source `HEAD` with the recorded revision.
+  It passed in the focused repeated check.
+- Acceptance criterion 2: the focused selection passed three repetitions at
+  each of CPU settings 1 and 4, including the provenance refusal subtests.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0 after the code
+  changes; diff review found only this test helper slice and the assigned Task
+  file changed.
+
+The declared Verification commands were not run. Status remains Daemon-owned;
+no commit, push or pull request was created. No follow-up work was identified.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261002T064202Z_a22e1dd4644c4dc6`
+- Source commit: `b022095fae3d3e54fcecd27f6b0e3a424fb2262b`
