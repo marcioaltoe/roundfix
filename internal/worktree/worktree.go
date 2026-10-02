@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -490,6 +491,10 @@ func classifyRunBranchSet(
 		return result, fmt.Errorf("classify Run Branch set: %w", err)
 	}
 	if targetAbsent {
+		repositoryRoot, rootErr := roundconfig.RepositoryRoot(root)
+		if rootErr != nil {
+			return result, fmt.Errorf("classify Run Branch set repository: %w", rootErr)
+		}
 		seen := make(map[string]struct{})
 		_, defaultHead, defaultResolved := resolveDefaultBranchHead(ctx, runner, root)
 		reason := reconciliationReasonDefaultBranchUnresolved(specSlug)
@@ -500,7 +505,7 @@ func classifyRunBranchSet(
 			if run.Kind != store.KindImplement ||
 				strings.TrimSpace(run.LocalBranch) != targetBranch ||
 				strings.TrimSpace(run.SpecSlug) != specSlug ||
-				!samePath(run.GitRoot, root) {
+				!runBelongsToRepository(run, repositoryRoot) {
 				continue
 			}
 			branch := BranchName(run.ID)
@@ -520,6 +525,20 @@ func classifyRunBranchSet(
 						} else {
 							preserve(branch, reconciliationReasonDefaultBranchSpecNotArchived(specSlug))
 						}
+						continue
+					}
+				}
+			}
+			if store.IsTerminalState(run.State) {
+				if source, found := chooseMergedHead(ctx, runner, run, root, nil); found && (!source.defaultBranch || source.archived) {
+					head, resolveErr := resolveUnambiguousLocalBranch(ctx, runner, root, branch)
+					if resolveErr == nil && head != "" {
+						proof := inspectRunAtMergedHead(ctx, runner, run, root, RunWorktreeReconciliation{RunHead: head}, false, true, nil, source)
+						if proof.State == ReconciliationSafe || proof.State == ReconciliationSuperseded {
+							release(branch, proof.Reason)
+							continue
+						}
+						preserve(branch, proof.Reason)
 						continue
 					}
 				}
@@ -910,6 +929,7 @@ type terminalRunReconciliationEvidence struct {
 	merged           []MergedHead
 	mergedSnapshot   []MergedHead
 	proofHead        string
+	dirtyPaths       []string
 }
 
 type terminalRunReconciliationSnapshot struct {
@@ -1013,12 +1033,26 @@ func inspectTerminalRunMerged(
 			result.Reason = reconciliationReasonWorktreeUnregistered
 			return result, nil
 		}
-		status, err := runner.Run(ctx, worktree.Path, "status", "--porcelain=v1", "--untracked-files=all")
+		status, err := runner.Run(ctx, worktree.Path, "status", "--porcelain=v1", "-z", "--untracked-files=all")
 		if err != nil {
 			result.Reason = reconciliationReasonWorktreeInspection
 			return result, nil
 		}
-		if strings.TrimSpace(status) != "" {
+		if status != "" {
+			dirtyPaths, parsed := terminalRunDirtyPaths(status)
+			if parsed && runHeadErr == nil && result.RunHead != "" && targetMetadataValid && targetHeadErr == nil {
+				if source, found := chooseMergedHead(ctx, runner, run, gitRoot, merged); found && specArchivedAtMergedHead(ctx, runner, gitRoot, source.head, run.SpecSlug) {
+					proof := inspectRunAtMergedHead(ctx, runner, run, gitRoot, result, worktreePresent, runBranchPresent, merged, source)
+					if (proof.State == ReconciliationSafe || proof.State == ReconciliationSuperseded) && dirtyPathsInArchivedSpec(ctx, runner, gitRoot, source.head, run.SpecSlug, dirtyPaths) {
+						proof.State = ReconciliationSuperseded
+						suffix := fmt.Sprintf("; %d uncommitted path(s) superseded by the archived Spec", len(dirtyPaths))
+						proof.Reason = boundedReconciliationReasonWithSuffix(proof.Reason, suffix)
+						proof.evidence.snapshot = terminalRunSnapshot(proof)
+						proof.evidence.dirtyPaths = slices.Clone(dirtyPaths)
+						return proof, nil
+					}
+				}
+			}
 			result.State = ReconciliationDirty
 			result.Reason = reconciliationReasonDirty
 			return result, nil
@@ -1488,7 +1522,8 @@ func revalidateTerminalRunApply(
 		fresh.RunHead != result.RunHead ||
 		fresh.TargetHead != result.TargetHead ||
 		fresh.evidence == nil ||
-		fresh.evidence.proofHead != evidence.proofHead {
+		fresh.evidence.proofHead != evidence.proofHead ||
+		!slices.Equal(fresh.evidence.dirtyPaths, evidence.dirtyPaths) {
 		return RunWorktreeReconciliation{}, false, fmt.Errorf(
 			"apply terminal Run reconciliation: evidence is stale: inspected state=%q Run head=%q target head=%q; current state=%q Run head=%q target head=%q",
 			result.State,
@@ -1503,9 +1538,23 @@ func revalidateTerminalRunApply(
 }
 
 func cleanupTerminalRun(ctx context.Context, runner gitRunner, fresh RunWorktreeReconciliation) error {
+	// Branch-candidate cleanup also reaches this function. Re-prove dirty
+	// evidence here so every forced removal obeys the same stale-set guard.
+	if fresh.evidence != nil && len(fresh.evidence.dirtyPaths) != 0 {
+		revalidated, released, err := revalidateTerminalRunApply(ctx, runner, fresh)
+		if err != nil || released {
+			return err
+		}
+		fresh = revalidated
+	}
 	evidence := fresh.evidence
 	if fresh.evidence.worktreePresent {
-		if _, err := runWorktreeCommand(ctx, runner, evidence.gitRoot, "worktree", "remove", fresh.Path); err != nil {
+		args := []string{"worktree", "remove"}
+		if fresh.State == ReconciliationSuperseded && len(evidence.dirtyPaths) != 0 {
+			args = append(args, "--force")
+		}
+		args = append(args, fresh.Path)
+		if _, err := runWorktreeCommand(ctx, runner, evidence.gitRoot, args...); err != nil {
 			return terminalRunApplyFailure(
 				ctx,
 				runner,
@@ -3371,4 +3420,22 @@ func canonicalPath(path string) string {
 		return clean
 	}
 	return filepath.Clean(resolved)
+}
+
+func runBelongsToRepository(run store.Run, repositoryRoot string) bool {
+	root, err := roundconfig.RepositoryRoot(run.GitRoot)
+	return err == nil && samePath(root, repositoryRoot)
+}
+
+func boundedReconciliationReasonWithSuffix(reason, suffix string) string {
+	// Preserve the full dirty-path proof clause within the existing reason bound.
+	available := reconciliationReasonMaxBytes - len(suffix)
+	if len(reason) > available {
+		prefix := reason[:available-3]
+		for !utf8.ValidString(prefix) {
+			prefix = prefix[:len(prefix)-1]
+		}
+		reason = prefix + "..."
+	}
+	return reason + suffix
 }

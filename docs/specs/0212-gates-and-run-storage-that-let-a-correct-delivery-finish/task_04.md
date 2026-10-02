@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0212-gates-and-run-storage-that-let-a-correct-delivery-finish
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -104,3 +104,118 @@ the Roundfix Skill's `reconcile` reference and the `reconcile` command guide.
 - `_prd.md` → User Story 5; Core Features 7-8; Success Metric 5; Acceptance evidence
 - `_techspec.md` → The merged Spec's Runs; API Contract 5; Testing Approach 4; Build Order 4
 - ADR-0212; ADR-0053; ADR-0161; ADR-0115; ADR-0052
+
+
+## Result
+
+Implemented the assigned reconciliation slice under ADR-0212. An archived PRD
+at the merged head represents non-Task, non-QA paths in the Spec's active and
+archive directories. Other paths still undergo content comparison, and Task
+commits still require a completed Task at that head. The superseded reason
+counts unique Spec-directory paths; its count clause survives the existing
+reason bound even with a Delivery Queue merge-record label.
+
+Dirty inspection reads literal NUL-delimited porcelain paths, including both
+sides of renames/copies, and runs the merged-head proof. It supersedes leftovers
+only inside the Spec directories or archived Tasks' interface, creates,
+deletes, or recorded scope. Instruction-only paths grant no scope. Evidence
+holds the sorted unique dirty path set and merged proof head. Apply compares
+fresh state, Run head, target/proof heads and the exact set; cleanup revalidates
+dirty evidence again so branch-candidate cleanup obeys the same force-removal
+rule. Clean removal keeps its existing arguments.
+
+Absent-target Branch Set classification retains the existing QA proof first,
+then tries merged-head representation for terminal Runs. Repository-root
+normalization includes linked working checkouts. Every proof reads local Git;
+no provider, GitHub or network call was added or exercised.
+
+### Acceptance evidence
+
+All named tests below are in the new
+`internal/worktree/merged_spec_leftovers_test.go` and were exercised by the
+focused package check `go test ./internal/worktree -count=1` (exit 0).
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Spec-directory commits become superseded with their count | `TestMergedSpecRunWithSpecDirectoryCommitsIsSuperseded` checks fallback and explicit merged-record reasons, including the bounded count clause. |
+| Declared and Spec-directory dirty work is superseded and removable | `TestMergedSpecRunWithDeclaredLeftoversIsSuperseded` checks the appended two-path reason; `TestApplyRemovesASupersededLeftoverWorktree` checks actual worktree and branch absence after apply. |
+| Unrelated dirty work and unrepresented Task commits remain preserved | `TestMergedSpecRunWithAnUndeclaredLeftoverStaysDirty` checks unrelated and instruction-only paths, refuses apply and keeps both surfaces. `TestMergedSpecRunWithAnUnrepresentedTaskCommitStaysUnintegrated` also checks dirty precedence when declared leftovers coexist with the unrepresented Task. |
+| Changed dirty path set refuses apply as stale | `TestApplyRefusesWhenTheLeftoverSetChanged` adds a recorded, still-scoped path after inspection; the heads and superseded state can remain unchanged while apply refuses and retains both surfaces. |
+| Absent target gets merged-head release proof | `TestAbsentTargetBranchIsReleasedOnTheMergedHead` checks classification and actual candidate apply from a distinct linked working checkout with local default-branch metadata. |
+| Existing merged-head and inspection tests remain unedited | The full worktree package check passed; byte comparisons against HEAD confirm `merged_head_test.go` and `worktree_test.go` are unchanged. |
+| Documentation, mirrors and version agree | Both references contain the exact reason words. Canonical/mirror byte checks passed. Roundfix's two frontmatter versions moved from base 0.1.11 to 0.1.12; the generated version record contains 0.1.12. |
+
+Additional regressions cover creates/deletes/recorded scope, a missing archived
+PRD, a rename with an outside source, literal quotes/newlines in filenames,
+and mixed Spec-directory/outside committed paths.
+
+### Focused checks and regeneration
+
+- Red signal: new Spec-directory and declared-leftover regressions, run using
+  a temporary Go overlay of the two production files from HEAD, failed with
+  the original `unintegrated` and `dirty` classifications respectively.
+- `go test ./internal/worktree -count=1`: exit 0 after the final code/test edits.
+- `make skills-sync`: exit 0; sanctioned mirrors regenerated.
+- `GOCACHE=/tmp/roundfix-task04-go-cache go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`:
+  exit 0; generated Roundfix 0.1.12 record. The first attempt with the default
+  cache was denied by the sandbox; the task-scoped cache resolved that access.
+- `make baseline-digests`: exit 0; no derived artifact changed.
+- `GOCACHE=/tmp/roundfix-task04-go-cache rtk make verify-incremental`:
+  elevated rerun exited 0 for format, vet, repository tests, skill validation
+  and build. The first sandboxed run failed at process-table access in the
+  force-stop tests, and its suite guards detected code edits made while it
+  ran. The rerun had process-table access and held repository files steady.
+- Read-only scope checks confirmed that every changed/untracked path belongs
+  to task_04, the existing tests are byte-identical to HEAD, canonical/mirror
+  files match, and both reason phrases and recorded 0.1.12 are present.
+- `git -c core.fsmonitor=false diff --check`: exit 0.
+
+### Follow-up outside this slice
+
+An exploratory fixture with its recorded `GitRoot` equal to its own Run
+`WorkDir` exposed existing cleanup behavior: removing that directory leaves
+no working root for the subsequent branch deletion. This unusual metadata
+case is left for a separate stable-root cleanup change. The assigned linked
+working-checkout behavior is covered with a distinct linked checkout root,
+matching normal Run metadata.
+
+Task status, the authored Verification section, the Task Graph and all other
+Task files remain untouched by this Agent. Declared Verification and settlement
+are pending with the Daemon. No commit, push or Pull Request was performed.
+
+
+### Verification Feedback — attempt 1
+
+Inspected the Daemon diagnostic at
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261002T100707Z_cbb39973a4b07b9b/verification/batch-004-attempt-1.log`.
+The configured `make verify-changed` run recorded the worktree package as
+passing. Its failure was in the existing CLI detach-fixture process tests:
+`TestImplementDetachChildEndsWhenItsTestBinaryDies` and
+`TestRunImplementDetachSurvivesCallerProcessGroupKill` received host
+permission denials while probing or killing their recorded process groups.
+This is Daemon-provided evidence, not a rerun of the configured gate.
+
+Read the failing tests and their `killDetachFixtureGroup` and
+`waitForDetachFixtureExit` helpers. Their failing operations call
+`syscall.Kill` for disposable fixture process groups; they do not exercise the
+archived-Spec reconciliation changes. Those CLI files belong outside this
+Task's slice and remain unchanged.
+
+Focused check:
+`GOCACHE=/tmp/roundfix-task04-go-cache go test ./internal/cli -run '^(TestImplementDetachChildEndsWhenItsTestBinaryDies|TestRunImplementDetachSurvivesCallerProcessGroupKill)$' -count=1`,
+run with elevated permission, exited 1. The survival test still received
+`operation not permitted` for its fixture process-group probe and kill.
+Escalation did not resolve this host permission restriction. No Task-scoped
+code repair is supported by these diagnostics; no assertion, signal handling,
+fixture, or verification configuration was weakened or changed.
+
+Only this Result addendum changed during the feedback turn. The host
+process-group permission blocker remains for the Daemon's next configured
+Verification attempt. Task status and declared Verification remain
+Daemon-owned; neither the configured gate nor the authored Verification
+commands were rerun by this Agent. No commit, push or Pull Request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261002T100707Z_cbb39973a4b07b9b`
+- Source commit: `1044751b65852d415cb246be2475bf8cdd763b54`

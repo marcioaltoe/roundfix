@@ -44,21 +44,39 @@ record remains, the default branch carrying the archived Spec is the fallback.
 The existing `evidence` field names the source and proof without changing the
 text or JSON report shape.
 
+When the merged head contains `<archive root>/<slug>/_prd.md`, the archived
+Spec represents non-Task, non-QA paths under its active and archive directories.
+The superseded reason counts `Spec-directory path(s) archived` alongside
+completed Task commits and superseded QA Report commits. Other committed paths
+still require content comparison; an unrepresented Task commit preserves the Run.
+
+A dirty Run Worktree is `superseded` only when the merged-head proof is `safe`
+or `superseded` and every uncommitted path belongs to those Spec directories
+or a Task's `interface`, `creates`, `deletes`, or `## Recorded paths` at the
+archived head. The reason appends
+`uncommitted path(s) superseded by the archived Spec`, with the path count.
+An unrelated dirty path keeps the Run `dirty`. Apply re-proves the state,
+Run head, merged head and exact dirty path set before forced removal; clean
+worktrees are removed without force. A changed path set refuses apply as stale.
+An absent target branch also uses the merged-head proof before preserving a
+terminal Run Branch, including Runs recorded from linked repository worktrees.
+All proof comes from local Git; reconciliation does not read GitHub.
+
 Run Worktree Reconciliation uses six states:
 
 | State | Evidence and behavior |
 | --- | --- |
 | `safe` | The Run Worktree is clean and the Run Branch is contained in its target or merged head, or its changed content is represented at the merged head. Eligible for cleanup after revalidation. |
-| `superseded` | A newer QA Report or the merged-head proof represents the Run's Task or QA Report commits. Eligible for cleanup after revalidation. |
+| `superseded` | A newer QA Report or the merged-head proof represents the Run's Task or QA Report commits, archived Spec-directory work, or scoped uncommitted leftovers. Eligible for cleanup after revalidation. |
 | `unintegrated` | The worktree cleanliness and ref evidence resolve, but the Run Branch tip is not an ancestor of the target tip. Roundfix preserves the worktree and branch. |
-| `dirty` | A present registered Run Worktree has tracked or untracked changes. Dirty evidence takes precedence and Roundfix preserves the worktree and branch. |
+| `dirty` | Tracked or untracked changes lack archived-Spec supersession proof. Roundfix preserves the worktree and branch. |
 | `unknown` | Invalid or missing metadata, an unsafe or unregistered worktree, an ambiguous or missing ref, or a Git inspection failure prevents proof. Roundfix preserves every surface it can identify. |
 | `released` | Both the Run Worktree and Run Branch are absent. Repeated dry-run or apply is an idempotent no-op. |
 
 A missing worktree alone is not `released` and never authorizes deletion. When
 the Run Branch remains, Roundfix still requires an unambiguous Run Branch tip,
-the recorded target tip, and ancestry proof. Age and terminal outcome are also
-not cleanup evidence.
+and either target ancestry, QA supersession, or merged-head representation
+proof. Age and terminal outcome are also not cleanup evidence.
 
 Three switches mutate; every other invocation is a report. Each acts on a
 different disposition, and none of them bypasses the proof above:
@@ -109,7 +127,8 @@ There is no force flag or user assertion that bypasses the proof. Apply acts
 only on entries classified `safe` or `superseded` during that invocation, then
 rechecks the metadata, worktree cleanliness, Run head, target or merged head,
 and the applicable ancestry, content, Task, and QA Report evidence before
-mutation. It removes the Run Worktree without force, deletes the Run Branch,
+mutation. It removes a clean Run Worktree without force, or uses force only for the
+re-proved superseded dirty path set, deletes the Run Branch,
 and reports failures while preserving any remaining path or ref. Dirty,
 unintegrated, unknown, and released entries remain successful preserved
 results unless an operational inspection fails.
