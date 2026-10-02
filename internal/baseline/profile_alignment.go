@@ -709,6 +709,9 @@ func normalizeAlignmentDecisions(
 	for _, id := range profile.Decisions {
 		value, ok := values[id]
 		if !ok {
+			if decisionOptional(catalog.decisions[id]) {
+				continue
+			}
 			divergences = append(divergences, ProfileDivergence{
 				Code:        "profile.decision.required",
 				ID:          id,

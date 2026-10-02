@@ -157,6 +157,7 @@ func (l *catalogLoader) validateSchemaFields(catalog *Catalog) {
 			"version",
 			"type",
 			"default",
+			"optional",
 			"summary",
 			"effects",
 			"values",

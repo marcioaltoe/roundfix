@@ -9,6 +9,8 @@ repository-owned `DESIGN.md`; setup does not invent architecture or product poli
 These rules govern the repository's web frontend workspace. A terminal
 interface follows its own guide.
 
+No frontend layout is recorded. The suggested `systems` layout applies until the repository records one.
+
 - **mandatory**: Inspect significant local UI changes through the available browser when the target is runnable.
 
 - **mandatory**: Organize frontend feature code by domain system. Each system exposes one public boundary while its internal components, hooks, queries, routes, and state import each other directly.

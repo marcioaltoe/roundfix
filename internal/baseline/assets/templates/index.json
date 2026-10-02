@@ -211,10 +211,10 @@
     },
     {
       "id": "template.guide.frontend",
-      "version": 2,
+      "version": 3,
       "kind": "guide",
       "path": "guides/frontend.md",
-      "tokens": ["artifact.rules", "repository.design-contract"]
+      "tokens": ["artifact.rules", "repository.design-contract", "frontend.layout"]
     },
     {
       "id": "template.guide.go",

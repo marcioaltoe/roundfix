@@ -255,6 +255,7 @@ adoption again. Without a stored value, the embedded catalog suggests:
 | Incremental Verification | `rtk make verify-incremental` |
 | Identifier strategy | `{"kind":"uuid-v7"}` |
 | HTTP contract | `REST` |
+| Frontend layout | `systems` (applies while none is recorded) |
 | Better Auth provider exception | `GET` and `POST` under `/api/auth/*`, owned by Better Auth |
 | Spec artifacts | Yes |
 | Domain layout | `single-context` |
@@ -264,6 +265,10 @@ adoption again. Without a stored value, the embedded catalog suggests:
 | Design runtime | `claude opus 5 xhigh` |
 | Secondbrain | Yes |
 | Repository-Specific Normative Rules carrier | Permitted when non-empty |
+
+The frontend layout is optional. While none is recorded, the suggested
+`systems` layout applies. Recording `repository-defined` binds the layout
+stated in the repository's own rules. A recorded value is kept.
 
 UUID version 7 is a visible suggestion for `identifier.strategy`, not an
 inferred answer. It applies only to new project-owned Internal Identifiers;

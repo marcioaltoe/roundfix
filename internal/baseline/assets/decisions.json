@@ -209,6 +209,23 @@
       ]
     },
     {
+      "id": "frontend.layout",
+      "version": 1,
+      "type": "enum",
+      "values": ["systems", "repository-defined"],
+      "default": "systems",
+      "optional": true,
+      "summary": "The frontend layout the repository records. The systems layout is suggested and applies until one is recorded.",
+      "effects": [
+        {
+          "when": {"present": true},
+          "renderBindings": [
+            {"artifact": "guide.frontend", "template": "template.guide.frontend", "token": "frontend.layout"}
+          ]
+        }
+      ]
+    },
+    {
       "id": "auth.provider",
       "version": 1,
       "type": "auth-provider",

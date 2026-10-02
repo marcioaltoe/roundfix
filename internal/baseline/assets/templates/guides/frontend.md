@@ -7,4 +7,6 @@ repository-owned {{repository.design-contract}}; setup does not invent architect
 These rules govern the repository's web frontend workspace. A terminal
 interface follows its own guide.
 
+{{frontend.layout}}
+
 {{artifact.rules}}

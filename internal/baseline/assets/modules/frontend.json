@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "frontend",
-  "version": 5,
+  "version": 6,
   "kind": "application-surface",
   "title": "Frontend application guidance",
   "dependsOn": [
@@ -292,11 +292,12 @@
   "supportingGuides": [
     {
       "id": "guide.frontend",
-      "version": 5,
+      "version": 6,
       "path": "docs/agents/frontend.md",
       "template": "template.guide.frontend",
       "rules": [
-        "rule.frontend.user-visible-behavior"
+        "rule.frontend.user-visible-behavior",
+        "rule.frontend.recorded-layout"
       ],
       "references": [
         {
@@ -311,7 +312,7 @@
   "rules": [
     {
       "id": "rule.frontend.user-visible-behavior",
-      "version": 4,
+      "version": 5,
       "coverage": [
         "coverage.frontend",
         "coverage.verification-integrity"
@@ -320,11 +321,13 @@
         {
           "id": "clause.frontend.organize-by-system",
           "enforcement": "mandatory",
+          "appliesWhen": {"decision": "frontend.layout", "equals": "systems"},
           "guidance": "Organize frontend feature code by domain system. Each system exposes one public boundary while its internal components, hooks, queries, routes, and state import each other directly."
         },
         {
           "id": "clause.frontend.public-system-boundary",
           "enforcement": "mandatory",
+          "appliesWhen": {"decision": "frontend.layout", "equals": "systems"},
           "guidance": "Import another system through that system's public boundary instead of reaching into its internal modules."
         },
         {
@@ -346,6 +349,19 @@
           "id": "clause.frontend.inspect-runnable-ui",
           "enforcement": "mandatory",
           "guidance": "Inspect significant local UI changes through the available browser when the target is runnable."
+        }
+      ]
+    },
+    {
+      "id": "rule.frontend.recorded-layout",
+      "version": 1,
+      "coverage": ["coverage.frontend"],
+      "clauses": [
+        {
+          "id": "clause.frontend.follow-recorded-layout",
+          "enforcement": "mandatory",
+          "appliesWhen": {"decision": "frontend.layout", "equals": "repository-defined"},
+          "guidance": "Organize frontend feature code by the layout the repository's own rules state, and update those rules in the same change that alters the layout."
         }
       ]
     }

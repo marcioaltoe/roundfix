@@ -342,6 +342,7 @@ func TestHumanBaselineDecisionDefaults(t *testing.T) {
 		},
 		{name: "language", id: "language.generated", want: "English"},
 		{name: "verification", id: "verification.gate", want: "rtk make verify"},
+		{name: "frontend layout", id: "frontend.layout", want: "systems"},
 		{name: "HTTP contract", id: "http.contract", want: map[string]any{"mode": "REST"}},
 		{name: "spec scaffold", id: "spec.scaffold", want: true},
 		{name: "domain layout", id: "domain.layout", want: "single-context"},
@@ -1737,7 +1738,7 @@ func newCLIProjectDecisionRepository(t *testing.T) string {
 }
 
 func projectDecisionHumanAnswers() string {
-	return "\nmake verify\nmake verify-incremental\n\n\n\n\n\n\n\n2\n2\n2\n"
+	return "\nmake verify\nmake verify-incremental\n\n\n\n\n\n\n\n\n2\n2\n2\n"
 }
 
 func archivedFindingHTTPContractDecision() map[string]any {
