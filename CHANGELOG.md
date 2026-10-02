@@ -2,6 +2,28 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.28.0] - 2026-10-02
+
+### A setup and doctor that recognize what the machine and the repository need
+
+`roundfix doctor` and `roundfix setup` report coded readiness lines for:
+
+- `gh`: installed, authenticated and allowed on the repository;
+- Git;
+- the repository remote: present and reachable;
+- the Verification toolchain: the tools named by the new `verification.tools` key;
+- the environment: a `NODE_OPTIONS` preload whose file is missing, and the presence of the `ROUNDFIX_*` keys, never their values.
+
+Forge reads are bounded and degrade to a warning when offline. An upstream skill that matches its lock but trails the Setup Snapshot is reported as `DR-SKILL-TRAILS-SNAPSHOT`, and the managed refresh restores it. `roundfix deliver start` refuses when `gh` or the remote check fails.
+
+### Baseline wording left after the stack wave
+
+The backend guide's generic-layers clause is replaced by one that prohibits generic buckets. A profile's workspace binds to its guide through a `workspace.location` token, so the guide names `packages/backend` and `packages/frontend`. A core clause tells the agent to ask the person to run a skill that only the person can start.
+
+### Fixed
+
+- The detached-child teardown test skips, naming the denial, where the environment denies its process-group signal; the Linux CI gate still runs it.
+
 ## [0.27.0] - 2026-10-02
 
 ### A test suite that does not flake
