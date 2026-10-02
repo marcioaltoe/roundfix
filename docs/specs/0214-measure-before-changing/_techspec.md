@@ -480,8 +480,12 @@ and "Corrective Task from the QA gate", which the trigger table encodes.
    an unmatched item. `report_test.go` writes a fixture Run Database through
    `store.Open` in a temporary home and requires the items, tasks and
    summary of Surface Transcript 1, a symbolic-link log treated as absent, a
-   Spec missing from both roots, and that the Run Database file and the home
-   are byte-identical afterwards.
+   Spec missing from both roots, and that the Run Database file, its lock and
+   every artifact log are byte-identical afterwards. The home may gain only
+   the `roundfix.db-wal` and `roundfix.db-shm` sidecars, which SQLite creates
+   when `store.OpenReader` opens a WAL database read-only (measured during
+   delivery, 2026-10-02); an immutable open would skip a live writer's
+   committed WAL frames, so the report keeps `OpenReader`.
 3. **The command.** `internal/cli/runs_causes_test.go` reproduces Surface
    Transcripts 1 to 4 and API Contracts 2 and 3 with a temporary repository
    and home.

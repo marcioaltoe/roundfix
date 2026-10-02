@@ -17,7 +17,7 @@ table, and the `roundfix runs causes` command that prints the items, the
 per-Task attempt counts as JSON, and a summary by class. It documents the
 command in the command reference and the Roundfix Skill. It is verifiable on
 its own: against a fixture Run Database in a temporary home, the command
-reproduces Surface Transcripts 1 to 4 and leaves the home byte-identical.
+reproduces Surface Transcripts 1 to 4 and leaves the home byte-identical, except for the `roundfix.db-wal` and `roundfix.db-shm` sidecars SQLite creates when `store.OpenReader` opens a WAL database read-only; the database file, its lock and every artifact log stay byte-identical.
 
 ## Requirements
 
