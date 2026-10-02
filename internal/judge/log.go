@@ -2,6 +2,7 @@ package judge
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,30 +17,63 @@ func newJudgeLog(home string, now time.Time) judgeLog {
 	return judgeLog{filepath.Join(home, ".roundfix", "judge", now.UTC().Format("2006-01")+".jsonl")}
 }
 func (l judgeLog) monthCost() (float64, error) {
-	f, err := os.Open(l.path)
-	if errors.Is(err, os.ErrNotExist) {
-		return 0, nil
-	}
+	rows, err := l.read(context.Background())
 	if err != nil {
 		return 0, err
+	}
+	var total float64
+	for _, row := range rows {
+		total += row.CostUSD
+	}
+	return total, nil
+}
+
+// LogLine is the shared Judge Log record, including router prompts.
+type LogLine = logLine
+
+// ReadMonth reads the UTC month's Judge Log; a missing file is empty.
+func ReadMonth(ctx context.Context, home string, now time.Time) ([]LogLine, error) {
+	return newJudgeLog(home, now).read(ctx)
+}
+
+// AppendLogLine appends a record using the Judge Log's private file modes.
+func AppendLogLine(home string, now time.Time, row LogLine) error {
+	return newJudgeLog(home, now).append(row)
+}
+
+func (l judgeLog) read(ctx context.Context) ([]LogLine, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	f, err := os.Open(l.path)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
 	}
 	defer f.Close()
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 4096), 1<<20)
-	var total float64
+	var rows []LogLine
 	for scanner.Scan() {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		var row struct {
+			LogLine
 			Cost *float64 `json:"cost_usd"`
 		}
 		if err := json.Unmarshal(scanner.Bytes(), &row); err != nil {
-			return 0, fmt.Errorf("parse judge log: %w", err)
+			return nil, fmt.Errorf("parse judge log: %w", err)
 		}
 		if row.Cost == nil || *row.Cost < 0 {
-			return 0, errors.New("invalid judge log cost")
+			return nil, errors.New("invalid judge log cost")
 		}
-		total += *row.Cost
+		row.LogLine.CostUSD = *row.Cost
+		rows = append(rows, row.LogLine)
 	}
-	return total, scanner.Err()
+	return rows, scanner.Err()
 }
 
 type logLine struct {
