@@ -24,6 +24,7 @@ func TestDeliverStartRecordsAndPrintsTheTokenCeiling(t *testing.T) {
 	setImplementFixtureAuthorizationOperations(t, repo, allDeliveryOperations...)
 	started := 0
 	updateCommandDependenciesForTest(t, func(deps *commandDependencies) {
+		deps.deliveryReadiness = readyDeliveryReadiness
 		deps.startDeliveryOwner = func(context.Context, roundconfig.Loaded, commandEnvironment, io.Writer, io.Writer) int {
 			started++
 			return exitOK

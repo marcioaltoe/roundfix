@@ -22,6 +22,7 @@ func TestDeliverStartPrintsTokensNone(t *testing.T) {
 	_, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	setImplementFixtureAuthorizationOperations(t, repo, allDeliveryOperations...)
 	updateCommandDependenciesForTest(t, func(deps *commandDependencies) {
+		deps.deliveryReadiness = readyDeliveryReadiness
 		deps.startDeliveryOwner = func(context.Context, roundconfig.Loaded, commandEnvironment, io.Writer, io.Writer) int { return exitOK }
 	})
 	var out, diag bytes.Buffer

@@ -235,6 +235,7 @@ type commandEnvironment struct {
 }
 
 type commandDependencies struct {
+	deliveryReadiness               func(context.Context, roundconfig.Loaded) []CheckResult
 	judgeTransport                  http.RoundTripper
 	judgeNow                        func() time.Time
 	runCommandPreflight             func(context.Context, commandRequest, roundconfig.Loaded) (preflight.Result, error)
@@ -302,6 +303,9 @@ type commandDependenciesContextKey struct{}
 
 func defaultCommandDependencies() commandDependencies {
 	return commandDependencies{
+		deliveryReadiness: func(ctx context.Context, loaded roundconfig.Loaded) []CheckResult {
+			return forgeReadiness(ctx, defaultReadinessDependencies(), loaded)
+		},
 		judgeTransport:                  http.DefaultTransport,
 		judgeNow:                        time.Now,
 		runCommandPreflight:             runCommandPreflight,

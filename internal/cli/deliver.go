@@ -247,6 +247,24 @@ func runDeliverStart(ctx context.Context, args []string, stdout, stderr io.Write
 		)
 	}
 
+	var readinessRefusals []string
+	for _, result := range commandDependenciesForContext(ctx).deliveryReadiness(ctx, loaded) {
+		if result.Status != CheckStatusFailed {
+			continue
+		}
+		detail := result.Detail
+		if codeAt := strings.Index(detail, "DR-"); codeAt >= 0 {
+			detail = detail[codeAt:]
+		}
+		if result.NextAction != "" {
+			detail += "; next: " + result.NextAction
+		}
+		readinessRefusals = append(readinessRefusals, result.Name+": "+detail)
+	}
+	if len(readinessRefusals) > 0 {
+		return printDeliverFailure("start", fmt.Errorf("Delivery Queue cannot publish from this machine:\n  %s", strings.Join(readinessRefusals, "\n  ")), stderr)
+	}
+
 	runStore, err := store.Open(ctx, loaded.HomeDir)
 	if err != nil {
 		return printDeliverFailure("start", err, stderr)
