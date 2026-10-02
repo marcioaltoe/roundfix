@@ -2,6 +2,16 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.25.0] - 2026-10-02
+
+### An advisory judge for Spec authoring
+
+`roundfix spec judge <slug>` asks TypeSafe's Jev typed questions about a Spec's PRD and TechSpec. For example, it asks whether a cited ADR supports the claim attributed to it, and whether a goal has a mechanism in the TechSpec. It prints each raised judgment as an `advisory` line, and the `write-prd` and `write-techspec` skills answer each one. The judge never gates and never changes another command's exit code. It reads its key only from `ROUNDFIX_OPENROUTER_API_KEY`, through OpenRouter, or from `ROUNDFIX_TYPESAFE_API_KEY`, through TypeSafe directly. It records every call in a monthly Judge Log and stops at a US$5 monthly ceiling. Only English Spec artifacts and accepted ADRs are sent.
+
+### Sources that share a context share a Spec
+
+The Baseline states that one Spec may adopt several Inbox Entries, Backlog Entries and Findings whose context is similar or complementary, within four implementation Tasks plus the QA gate. It also states that an open Backlog Entry is revised, or an unresolved Finding extended with a dated addendum, before a new one is minted. `roundfix spec judge` suggests which open sources share an adopted source's Spec. The authoring skills teach the rule.
+
 ## [0.24.0] - 2026-10-01
 
 ### A queue that classifies its parks and recovers on its own
