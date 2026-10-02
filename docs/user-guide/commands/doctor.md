@@ -115,6 +115,23 @@ codex: ok
 
 The skills counts come from the repository's Repository Skill Set.
 
+Doctor also compares each installed required external skill that matches its
+lock with the `treeDigest` pinned by the Setup Snapshot for the Setup Manifest's
+profile. This offline comparison uses the restore command's portable tree
+digest. A difference adds `DR-SKILL-TRAILS-SNAPSHOT` and the sorted skill names:
+
+```text
+skills: warn (<counts>; DR-SKILL-TRAILS-SNAPSHOT: trails the Setup Snapshot: <names>; next: roundfix baseline update)
+```
+
+Trailing alone leaves Doctor's exit code at `0`. If skill readiness already
+fails, the finding is appended to the `failed` line with the managed refresh
+next action. Missing and outdated skills are excluded from this comparison.
+When the manifest's profile cannot resolve, the line says
+`snapshot comparison unavailable` and keeps its readiness status. With no
+trailing skills, Repository Skill Set readiness and its existing text stay
+unchanged.
+
 A missing or outdated required skill, or an invalid required lock declaration,
 prints one sorted blocking line and makes Doctor exit `1`. Doctor still prints
 every other readiness result:

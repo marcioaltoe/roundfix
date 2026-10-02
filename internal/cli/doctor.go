@@ -28,6 +28,7 @@ type doctorDependencies struct {
 	profileReadiness func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult
 	resolveExternal  func(string) ([]string, bool, error)
 	checkSkills      func(context.Context, string, []string) (skills.RepositoryReadiness, error)
+	trailingSkills   func(string, []string) ([]string, error)
 	residue          func(context.Context, string) []CheckResult
 	storage          func(context.Context, roundconfig.Loaded) []CheckResult
 }
@@ -46,6 +47,7 @@ func defaultDoctorDependencies() doctorDependencies {
 		},
 		resolveExternal: resolveExternalSkillRequirement,
 		checkSkills:     skills.CheckRepositoryWithExternal,
+		trailingSkills:  trailingManifestSkills,
 		residue:         defaultDoctorResidueResults,
 		storage:         defaultDoctorStorageResults,
 	}
@@ -107,7 +109,23 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		} else {
 			skillReadiness, skillErr := dependencies.checkSkills(ctx, repositoryRoot, external)
 			if manifestOK {
-				results = append(results, doctorSkillReadinessResult(skillReadiness, skillErr))
+				result := doctorSkillReadinessResult(skillReadiness, skillErr)
+				if dependencies.trailingSkills != nil {
+					names, comparisonErr := dependencies.trailingSkills(repositoryRoot, snapshotComparableSkills(external, skillReadiness, skillErr))
+					if comparisonErr != nil {
+						result.Detail += "; snapshot comparison unavailable: " + comparisonErr.Error()
+					} else if len(names) != 0 {
+						if result.Status != CheckStatusFailed {
+							result.Status = CheckStatusWarn
+						}
+						result.Detail += "; DR-SKILL-TRAILS-SNAPSHOT: trails the Setup Snapshot: " + strings.Join(names, ", ")
+						if result.NextAction != "" {
+							result.NextAction += " && "
+						}
+						result.NextAction += "roundfix baseline update"
+					}
+				}
+				results = append(results, result)
 			} else {
 				results = append(results, doctorMissingSetupManifestResult(skillReadiness, skillErr))
 			}
@@ -316,6 +334,43 @@ func formatResidueDuration(duration time.Duration) string {
 }
 
 const doctorSetupManifestPath = "docs/agents/setup-context.json"
+
+// trailingManifestSkills uses the same Profile the restore command selects.
+func trailingManifestSkills(root string, required []string) ([]string, error) {
+	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(doctorSetupManifestPath)))
+	if err != nil {
+		return nil, fmt.Errorf("read Setup Manifest profile: %w", err)
+	}
+	var manifest struct {
+		Profile string `json:"profile"`
+	}
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		return nil, fmt.Errorf("read Setup Manifest profile: %w", err)
+	}
+	return baseline.TrailingSetupSkills(root, manifest.Profile, required)
+}
+
+func snapshotComparableSkills(required []string, readiness skills.RepositoryReadiness, checkErr error) []string {
+	// A read failure can leave inspection incomplete, so the lock has not
+	// established which installed trees are intact enough to compare.
+	if checkErr != nil {
+		return nil
+	}
+	excluded := make(map[string]bool)
+	for _, name := range readiness.MissingExternal {
+		excluded[name] = true
+	}
+	for _, name := range readiness.OutdatedExternal {
+		excluded[name] = true
+	}
+	var comparable []string
+	for _, name := range required {
+		if !excluded[name] {
+			comparable = append(comparable, name)
+		}
+	}
+	return comparable
+}
 
 func resolveExternalSkillRequirement(root string) ([]string, bool, error) {
 	root = strings.TrimSpace(root)
