@@ -5,10 +5,10 @@ argument-hint: "<feature idea or problem description>"
 metadata:
   category: discovery
   tags: [product, research, requirements, workflow]
-  version: 0.0.3
+  version: 0.0.4
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.3
+version: 0.0.4
 ---
 
 # Write Idea
@@ -31,6 +31,18 @@ Use it for product-level ideas: greenfield features, ideas with real market/comp
   path retained as provenance. A secondary Spec links that owner's copy and
   adopts nothing.
 - **Do not write the file until the user approves the draft** — unlike `write-prd`, this stage is inherently interactive: its whole product is shared judgment.
+
+## Sources that share a context
+
+A Spec may adopt several Inbox Entries, Backlog Entries and Findings whose
+context is similar or complementary; one Spec per source is neither required
+nor preferred. Before minting a Spec, look among the open Backlog Entries and
+unresolved Findings for sources that share the context. Group only while the
+scope fits four implementation Tasks plus its QA gate; past that bound, split
+the scope and give each source one owning Spec.
+
+Before minting a new Finding or Backlog Entry, extend one that fits: revise an
+open Backlog Entry in place, or give an unresolved Finding a dated addendum.
 
 ## Process
 

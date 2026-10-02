@@ -5,10 +5,10 @@ argument-hint: "<spec slug, path to docs/specs/<slug>/_prd.md, or a refactor/bug
 metadata:
   category: engineering-design
   tags: [architecture, documentation, workflow]
-  version: 0.0.5
+  version: 0.0.6
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.5
+version: 0.0.6
 ---
 
 # Write TechSpec
@@ -32,6 +32,25 @@ Produce `docs/specs/<slug>/_techspec.md` — the technical answer to the spec's 
   post-adoption path in the owning Spec with a destination relative to `_techspec.md`,
   never at the pre-adoption path kept in the reference index. A secondary Spec
   links the primary owner's copy and adopts nothing.
+
+## Sources that share a context
+
+A Spec may adopt several Inbox Entries, Backlog Entries and Findings whose
+context is similar or complementary; one Spec per source is neither required
+nor preferred. Before minting a Spec, look among the open Backlog Entries and
+unresolved Findings for sources that share the context. Group only while the
+scope fits four implementation Tasks plus its QA gate; past that bound, split
+the scope and give each source one owning Spec.
+
+Before minting a new Finding or Backlog Entry, extend one that fits: revise an
+open Backlog Entry in place, or give an unresolved Finding a dated addendum.
+
+When `roundfix spec judge` prints a suggested pair, answer each suggested pair
+by adopting the open source within the bound or by stating in the report why it
+stays apart. A suggestion never gates, and no suggestion does not mean that
+nothing fits; still inspect the open sources that share the context. A refactor
+or bug fix answering a Finding or Backlog Entry looks for the others that share
+its context before it mints its minimal PRD.
 
 ## Process
 

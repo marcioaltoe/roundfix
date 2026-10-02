@@ -165,6 +165,10 @@
       {
         "version": "0.0.3",
         "digest": "4074139fb0c7d262e7a8dbc59d08ce467c88d8c040ea74567e161217a2ace6a7"
+      },
+      {
+        "version": "0.0.4",
+        "digest": "c55e30bb784fe9a6cc14fe7d4f38951621773669cc125ed05544552c06184d33"
       }
     ],
     "write-prd": [
@@ -183,6 +187,10 @@
       {
         "version": "0.0.5",
         "digest": "5f6450b33705d868e090d54bdaad1612b18ffb4e8df06f65dd811fa91873e781"
+      },
+      {
+        "version": "0.0.6",
+        "digest": "e42fe9c807087a91a74b7dd044d3fc0018a2f427ea86d0813e70aa88f5506e99"
       }
     ],
     "write-tasks": [
@@ -223,6 +231,10 @@
       {
         "version": "0.0.5",
         "digest": "b8993caca075651698767fe2ab9d94a7fc7751e490e1b4c7ec3140f97b7e7d19"
+      },
+      {
+        "version": "0.0.6",
+        "digest": "e150220e1c331a593c9b4700ceff140287bf8afe6747b32f19c26b8299b9856c"
       }
     ]
   }

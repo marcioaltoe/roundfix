@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0209-sources-that-share-a-context-share-a-spec
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -60,3 +60,44 @@ version is recorded.
 - [_prd.md](_prd.md) — Goals 1, 2 and 3; User Stories 1, 2, 3 and 4; Core Feature 5; Success Metric 6
 - [_techspec.md](_techspec.md) — Exact clause texts; Integration Points; Testing Approach 5; Build Order 4
 - ADR-0208; ADR-0209; ADR-0189
+
+## Result
+
+Implemented the authoring guidance in the three canonical skills, immediately
+before `## Process`, including shared-context grouping, the four implementation
+Tasks plus QA gate bound, and extending fitting open records before minting new
+ones. The PRD and TechSpec sections also explain how to answer each suggested
+pair, that suggestions never gate, and that no suggestion does not mean that
+nothing fits; TechSpec additionally covers refactors and bug fixes that answer
+a Finding or Backlog Entry. Both front-matter version fields were raised one
+patch step: write-idea `0.0.3` → `0.0.4`, write-prd `0.0.5` → `0.0.6`, and
+write-techspec `0.0.5` → `0.0.6`.
+
+Focused evidence:
+
+- Pre-change check confirmed the section was absent from all three canonical
+  skills.
+- `make skills-sync` rewrote `skills/write-idea/SKILL.md`,
+  `skills/write-prd/SKILL.md`, and `skills/write-techspec/SKILL.md`.
+- `GOCACHE="$PWD/.task-gocache" go test ./skills -run
+  '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` passed and
+  rewrote `skills/testdata/owned-skill-versions.json`, recording the three new
+  versions and digests. The first run against the shared cache was blocked by
+  its filesystem permissions; the task-scoped rerun passed.
+- `make baseline-digests` passed and reported no baseline files rewritten.
+- `git diff --check` passed, and each canonical skill is byte-identical to its
+  mirror.
+
+Acceptance evidence:
+
+- The three canonical skills and their mirrors carry the required section and
+  phrases; the section is immediately before `## Process`.
+- `write-prd` and `write-techspec` contain the required suggested-pair answer
+  instructions and the TechSpec refactor/bug-fix instruction.
+- The three mirror pairs compare byte-identically, and the version-recording
+  test passed for `0.0.4`, `0.0.6`, and `0.0.6`.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T233647Z_36941fe094803f4f`
+- Source commit: `33c34579197044995123efa0d252629dcbed6180`

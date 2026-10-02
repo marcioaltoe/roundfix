@@ -5,10 +5,10 @@ argument-hint: "<feature description, or nothing after a grilling/brainstorm ses
 metadata:
   category: planning
   tags: [prd, product, requirements, workflow, documentation]
-  version: 0.0.5
+  version: 0.0.6
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.5
+version: 0.0.6
 ---
 
 # Write PRD
@@ -38,6 +38,23 @@ in that paragraph: the record identifier or repository path, a colon, and a
 verbatim quote in straight double quotes. The Spec Consistency Check proves the
 quote against the source, so copy it exactly; it checks presence and leaves
 support for the reader.
+
+## Sources that share a context
+
+A Spec may adopt several Inbox Entries, Backlog Entries and Findings whose
+context is similar or complementary; one Spec per source is neither required
+nor preferred. Before minting a Spec, look among the open Backlog Entries and
+unresolved Findings for sources that share the context. Group only while the
+scope fits four implementation Tasks plus its QA gate; past that bound, split
+the scope and give each source one owning Spec.
+
+Before minting a new Finding or Backlog Entry, extend one that fits: revise an
+open Backlog Entry in place, or give an unresolved Finding a dated addendum.
+
+When `roundfix spec judge` prints a suggested pair, answer each suggested pair
+by adopting the open source within the bound or by stating in the report why it
+stays apart. A suggestion never gates, and no suggestion does not mean that
+nothing fits; still inspect the open sources that share the context.
 
 ## Process
 
