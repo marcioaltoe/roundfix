@@ -5221,7 +5221,9 @@ The aggregate profiles: line exact-proves every distinct tuple. The skills:
 line compares Roundfix-owned artifacts with the running binary and external
 artifacts with skills-lock.json. Each failure reports its next action.
 The recommendations: line reports ok, found, or skipped after profiles: and
-never fails Doctor. Doctor is offline, read-only, and mutates nothing.
+never fails Doctor. Doctor is read-only and mutates nothing. Only the gh and
+remote lines contact the repository's forge; each read is bounded by a
+ten-second limit. Every other check stays offline.
 `
 	case "migrate":
 		return `Usage:

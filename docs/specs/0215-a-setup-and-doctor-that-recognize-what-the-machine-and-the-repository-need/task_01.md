@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0215-a-setup-and-doctor-that-recognize-what-the-machine-and-the-repository-need
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -108,3 +108,94 @@ verifiable alone through Doctor with scripted runners and fake executables.
 - `_prd.md` → User Stories 1-2; Core Features 1-3; Success Metrics 1-2
 - `_techspec.md` → Interfaces; Invariants 1-4; The forge lines; Finding codes; API Contract 1; Surface Transcript 2; Testing Approach 1-3; Build Order 1
 - ADR-0220
+
+
+## Result
+
+Implemented the Task 01 slice: coded readiness findings and worst-status
+folding, `warn` printing with next actions, and the `gh`, `git` and `remote`
+checks after `pre-pr-review`. Doctor still exits `1` only for `failed`.
+The delivery remote follows `watch.push_remote` with `origin` as fallback.
+Authentication JSON, repository permission, Git versions and identity keys
+are read through the injected runner. Each child has empty stdin, terminal
+prompts disabled and a cancelling ten-second deadline. Permission reads set
+`GH_HOST` to the resolved forge. Child diagnostics, tokens, scopes and Git
+identity values are not rendered. Help and the Doctor guide describe the
+new lines, codes and bounded reads.
+
+The pre-change tree had no readiness implementation or forge readiness tests.
+The only pre-existing modified path was this Task file (daemon-owned status).
+No status, Task Graph, other Task, `internal/cli/cli_test.go`, Run Database,
+Setup implementation or Delivery implementation was changed. The existing
+Doctor helpers inject five ready lines; the real Task 01 component implements
+only the three forge/Git lines. Toolchain and environment implementation,
+and the shared executable-discovery wrapper, remain Task 02 work.
+
+Acceptance-criterion evidence:
+
+- All ten definite failure codes are exercised by
+  `TestForgeReadinessReportsEachDefiniteFailure`, using a scripted runner and
+  `runCLI`. Each asserts a failed line, a printed next action and exit `1`.
+  `TestGitReadinessReportsVersionAndIdentity` also covers both identity keys,
+  newer Git and withholding identity values.
+- `TestForgeReadinessWarnsWhenTheForgeDoesNotAnswer` covers authentication
+  deadline, refusal, timeout/error JSON and malformed JSON; permission
+  deadline/refusal; and remote deadline/refusal. It asserts all three warning
+  codes, their printed retry actions and Doctor exit `0`.
+  `TestDoctorPrintsForgeWarningsAndExitsZero` asserts Surface Transcript 2
+  through `runCLI`, including line order. The fold test proves failure takes
+  precedence over warning in either order and joins actions with ` && `.
+- `TestForgeProbesAreBoundedAndNeverPromptOrPrintAToken` puts fake `gh` and
+  `git` first on `PATH` through the existing compiled-script fixture helper.
+  It records eight child invocations with empty stdin and
+  `GIT_TERMINAL_PROMPT=0`, verifies no `--show-token`, and checks that token,
+  scope and identity sentinels never appear in rendered results. A shortened
+  250ms deadline cancels a sleeping child; a PID liveness probe confirms it
+  is gone. Remote tests cover all three URL forms, the configured delivery
+  remote, Enterprise-host targeting, unknown hosts and outside-Git skipping.
+- Existing Doctor expectations gain exactly five ready fixture lines. The
+  compatibility run covered profile counts, adapters, recommendations,
+  repository skills, read-only behavior, residue and storage. The unchanged
+  command-help tests also pass with the bounded-forge wording and the
+  remaining offline checks documented.
+
+Focused checks (all using `GOCACHE=/tmp/roundfix-task01-cache`):
+
+- `rtk go test ./internal/cli ./internal/testfixture -run
+  'Doctor|CharacterizationInvariantDoctor|Test(Readiness|Forge|GitReadiness|RunCommandHelp|NoTestWritesAnExecutableOutsideTheResidue)'
+  -count=1`: exit `0`, 127 passed across two packages after the final code and
+  test edits. This includes every new test named by the authored Verification.
+- `rtk make skills-sync-check skills-check build`: exit `0`; shipped skills
+  remain synchronized and valid, and the CLI builds.
+- `rtk proxy git -c core.fsmonitor=false diff --check`: exit `0`.
+
+Incremental gate evidence and follow-up:
+
+- The initial `rtk make verify-incremental` run exposed old line-count/index
+  expectations, executable fixture writes, restricted process-table access,
+  and concurrent source edits detected by the suite guard. Expectations and
+  fixture construction were corrected; subsequent checks ran with a fixed
+  source tree.
+- `rtk make verify-incremental` with requested host access: exit `2`.
+  Formatting and `go vet ./...` passed; every tested package except
+  `internal/cli` passed. Two existing tests,
+  `TestDetachSurvivorEndsWhenItsTestBinaryDies` and
+  `TestImplementDetachChildEndsWhenItsTestBinaryDies`, failed with
+  `operation not permitted` while probing/signalling their fixture process
+  groups. There were no source-mutation or written-executable violations on
+  this run. These failures are outside this Task's forge readiness slice.
+- `rtk proxy go test -count=1 -run
+  '^(TestDetachSurvivorEndsWhenItsTestBinaryDies|TestImplementDetachChildEndsWhenItsTestBinaryDies)$'
+  ./internal/cli` with host access: exit `0` in isolation. This does not
+  establish a passing incremental gate; the full-suite process-group
+  failures remain an unresolved follow-up. No process-control tests or
+  implementation were altered or weakened.
+
+The authored `## Verification` commands were not run. Task settlement,
+Verification and commits remain the Daemon's responsibility. No commit,
+push or Pull Request was performed.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261002T124121Z_c56fb26225ec8dc1`
+- Source commit: `63a5489e5be8630e73a699ed26ae1d798ac58edc`

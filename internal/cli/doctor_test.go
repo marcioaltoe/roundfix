@@ -245,6 +245,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				"profiles: ok (4 distinct tuples; 10 category references)\n" +
 				doctorBuiltinRecommendationsLine() +
 				"pre-pr-review: ok (provider=codex; source=default)\n" +
+				doctorReadyReadinessLines +
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
 				"residue: ok (no process residue found)\n" +
 				"storage: ok (no Run Database)\n" +
@@ -264,6 +265,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				"profiles: ok (4 distinct tuples; 10 category references)\n" +
 				doctorBuiltinRecommendationsLine() +
 				"pre-pr-review: ok (provider=codex; source=default)\n" +
+				doctorReadyReadinessLines +
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
 				"residue: ok (no process residue found)\n" +
 				"storage: ok (no Run Database)\n" +
@@ -283,6 +285,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				"profiles: ok (4 distinct tuples; 10 category references)\n" +
 				doctorBuiltinRecommendationsLine() +
 				"pre-pr-review: ok (provider=codex; source=default)\n" +
+				doctorReadyReadinessLines +
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
 				"residue: ok (no process residue found)\n" +
 				"storage: ok (no Run Database)\n" +
@@ -746,10 +749,10 @@ func TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes(t *testing.T) {
 				t.Fatalf("exit code = %d, want %d; stdout=%q stderr=%q", code, test.wantCode, stdout.String(), stderr.String())
 			}
 			lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
-			if len(lines) != 10 || lines[2] != test.wantLine {
+			if len(lines) != 15 || lines[2] != test.wantLine {
 				t.Fatalf("unexpected Doctor output lines:\n%q\nwant adapter line %q at index 2", lines, test.wantLine)
 			}
-			wantLineNames := []string{"node", "acpx", "adapter", "profiles", HealthCheckRecommendations, HealthCheckPrePRReview, "skills", "residue", "storage", "codex"}
+			wantLineNames := []string{"node", "acpx", "adapter", "profiles", HealthCheckRecommendations, HealthCheckPrePRReview, HealthCheckGH, HealthCheckGit, HealthCheckRemote, HealthCheckToolchain, HealthCheckEnvironment, "skills", "residue", "storage", "codex"}
 			for index, name := range wantLineNames {
 				if !strings.HasPrefix(lines[index], name+": ") {
 					t.Fatalf("Doctor line %d = %q, want %q check", index, lines[index], name)
@@ -1190,8 +1193,8 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 				t.Fatalf("exit code = %d, want %d; stderr=%q", code, test.wantCode, stderr.String())
 			}
 			lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
-			if len(lines) != 10 || lines[6] != test.wantLine {
-				t.Fatalf("unexpected Doctor output lines:\n%q\nwant skills line %q at index 6", lines, test.wantLine)
+			if len(lines) != 15 || lines[11] != test.wantLine {
+				t.Fatalf("unexpected Doctor output lines:\n%q\nwant skills line %q at index 11", lines, test.wantLine)
 			}
 			if skillCalls != 1 || checker.nodeCalls != 1 || checker.acpxCalls != 1 || checker.adapterCalls != 2 || checker.codexCalls != 1 {
 				t.Fatalf("independent check calls skills=%d node=%d acpx=%d adapter=%d codex=%d",
@@ -1429,6 +1432,7 @@ func TestRunDoctorMissingRepositoryRoot(t *testing.T) {
 		"profiles: ok (0 distinct tuples; 0 category references)\n" +
 		doctorBuiltinRecommendationsLine() +
 		"pre-pr-review: ok (provider=codex; source=default)\n" +
+		doctorReadyReadinessLines +
 		"skills: failed (Repository Skill Set readiness requires a Git repository; next: run roundfix doctor from a Git repository)\n" +
 		"residue: ok (no process residue found)\n" +
 		"storage: ok (no Run Database)\n" +
@@ -1524,6 +1528,7 @@ func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
 		"profiles: ok (0 distinct tuples; 0 category references)\n" +
 		doctorBuiltinRecommendationsLine() +
 		"pre-pr-review: ok (provider=codex; source=default)\n" +
+		doctorReadyReadinessLines +
 		fmt.Sprintf(
 			"skills: ok (%d required: %d Roundfix-owned, %d external)\n",
 			len(skills.Names())+len(external),
@@ -1829,6 +1834,7 @@ func withDoctorFakeLoaded(t *testing.T, checker HealthChecker, loaded roundconfi
 func withDoctorFakeLoadedAndReadiness(t *testing.T, checker HealthChecker, loaded roundconfig.Loaded, readiness func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult) {
 	t.Helper()
 	dependencies := doctorDependencies{
+		readiness: doctorReadyReadiness,
 		loadConfig: func(roundconfig.LoadOptions) (roundconfig.Loaded, error) {
 			return loaded, nil
 		},
@@ -1868,6 +1874,7 @@ func withDoctorFakeLoadedAndReadiness(t *testing.T, checker HealthChecker, loade
 func withDoctorLiveDeps(t *testing.T, checker HealthChecker) {
 	t.Helper()
 	dependencies := defaultDoctorDependencies()
+	dependencies.readiness = doctorReadyReadiness
 	dependencies.healthChecker = func(roundconfig.Loaded, string) HealthChecker { return checker }
 	dependencies.resolveExternal = func(string) ([]string, bool, error) {
 		return skills.Recommended(), true, nil
@@ -1902,4 +1909,16 @@ func assertDoctorPathMissing(t *testing.T, path string) {
 	if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("expected %s to be absent, got error %v", path, err)
 	}
+}
+
+// Include the two subsequent Task's line names in ready fixtures, so existing
+// Doctor tests remain offline as the Spec's readiness component grows.
+const doctorReadyReadinessLines = "gh: ok\ngit: ok\nremote: ok\ntoolchain: ok\nenvironment: ok\n"
+
+func doctorReadyReadiness(context.Context, roundconfig.Loaded) []CheckResult {
+	var results []CheckResult
+	for _, name := range []string{HealthCheckGH, HealthCheckGit, HealthCheckRemote, HealthCheckToolchain, HealthCheckEnvironment} {
+		results = append(results, CheckResult{Name: name, Status: CheckStatusOK})
+	}
+	return results
 }

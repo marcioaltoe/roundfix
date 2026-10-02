@@ -22,6 +22,7 @@ import (
 )
 
 type doctorDependencies struct {
+	readiness        func(context.Context, roundconfig.Loaded) []CheckResult
 	loadConfig       func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
 	healthChecker    func(roundconfig.Loaded, string) HealthChecker
 	profileReadiness func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult
@@ -34,6 +35,9 @@ type doctorDependencies struct {
 func defaultDoctorDependencies() doctorDependencies {
 	return doctorDependencies{
 		loadConfig: roundconfig.Load,
+		readiness: func(ctx context.Context, loaded roundconfig.Loaded) []CheckResult {
+			return machineReadiness(ctx, defaultReadinessDependencies(), loaded)
+		},
 		healthChecker: func(_ roundconfig.Loaded, codexPath string) HealthChecker {
 			return defaultSetupDependencies().healthChecker(codexPath)
 		},
@@ -91,6 +95,9 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	results = append(results, doctorProfileReadinessResult(profileReadiness))
 	results = append(results, doctorRecommendationsResult(loaded.Config))
 	results = append(results, doctorPrePRReviewResult(loaded.Config.PrePRReview))
+	if dependencies.readiness != nil {
+		results = append(results, dependencies.readiness(ctx, loaded)...)
+	}
 	if repositoryRoot == "" {
 		results = append(results, doctorMissingRepositoryRootResult())
 	} else {
@@ -742,7 +749,7 @@ func doctorProfileAdapterEvidence(proof profileProofReport) string {
 
 func printDoctorResult(stdout io.Writer, result CheckResult) {
 	detail := strings.TrimSpace(result.Detail)
-	if result.Status == CheckStatusFailed {
+	if result.Status == CheckStatusFailed || result.Status == CheckStatusWarn {
 		nextAction := strings.TrimSpace(result.NextAction)
 		if nextAction != "" {
 			if detail == "" {
