@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
-  "catalogDigest": "sha256:7820594294c1dbbefb50b7ac4840b4cb97d6cb3d6acae69b9257af7fc2625cc5",
+  "catalogDigest": "sha256:ab2fdea620bcb5bcf737b396490f72e324f4cab82251fa9fb79b4e41d11cb2e7",
   "modules": [
     "core",
     "context-workflow",
@@ -174,7 +174,7 @@
       "module": "spec-workflow",
       "template": "template.guide.spec-routing",
       "version": "0.0.1",
-      "digest": "c26798af752bede16e9ae8ea26c765280c2b023b9933cf34825a59fd67cc7ea2"
+      "digest": "0051cd4e6d02005986876eaef52220eafb3d3f7df3ef906ed3bd0b9ca592e2ec"
     },
     {
       "id": "guide.issue-tracker",
@@ -192,7 +192,7 @@
       "module": "spec-workflow",
       "template": "template.guide.spec-docs-layout",
       "version": "0.0.1",
-      "digest": "29d99addb14af315add7d71b5b9b4f895f25a3b7974dd1ec8e1c58154be80d29"
+      "digest": "da17c167b2b415755cfce9f87a588235ec80d4b8dd8d3b4b6dbe4894d7123411"
     },
     {
       "id": "guide.domain",

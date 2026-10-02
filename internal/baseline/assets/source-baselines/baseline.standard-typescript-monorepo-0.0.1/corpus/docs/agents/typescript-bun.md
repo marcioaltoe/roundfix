@@ -18,6 +18,10 @@
 - MUST NOT make mocks, snapshots of incidental output, private structure, or type assertions the source of correctness.
 <!-- /source-baseline-entry: clause.typescript.prohibit-incidental-test-oracles -->
 
+<!-- source-baseline-entry: clause.typescript.type-fixtures-from-the-schema -->
+- MUST type a test fixture that stands for a stored row from the schema's inferred row type, never from an untyped record.
+<!-- /source-baseline-entry: clause.typescript.type-fixtures-from-the-schema -->
+
 <!-- source-baseline-entry: clause.bun.use-bun-owned-commands -->
 - MUST use Bun-owned commands for dependency installation, scripts, tests, and lockfile updates.
 <!-- /source-baseline-entry: clause.bun.use-bun-owned-commands -->

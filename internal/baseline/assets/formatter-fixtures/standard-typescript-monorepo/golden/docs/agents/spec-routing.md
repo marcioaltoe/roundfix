@@ -2,6 +2,8 @@
 
 # Spec routing
 
+- **mandatory**: When a Task answers a recorded finding, name that finding and its date in one of the Task's requirements.
+
 - **mandatory**: Large or fuzzy product initiative: run `write-idea` → `write-prd` → `write-techspec` → `write-tasks`.
 
 - **mandatory**: Standard feature that changes product behavior: run `write-prd` → `write-techspec` → `write-tasks`; skip the TechSpec only when the feature has no architectural surface.
@@ -15,6 +17,8 @@
 - **mandatory**: One Spec may adopt several Inbox Entries, Backlog Entries, and Findings whose context is similar or complementary: they change the same component or contract, share a root cause, or one completes the other. One Spec per source is neither required nor preferred, so before minting a Spec for a source, look among the open Backlog Entries and unresolved Findings for others that share its context. A grouping suggestion from `roundfix spec judge` is advisory: adopt the suggested source or state why it stays apart.
 
 - **mandatory**: Group sources into one Spec only while the Spec fits four implementation Tasks plus its QA gate. When the grouped scope needs more, split it into Specs that each fit and give each source exactly one owning Spec; never add a source that shares no context with the Spec only to save a Spec.
+
+- **mandatory**: Author each Task's Verification so every command fails on the tree before the Task's change, and run `roundfix spec check <slug> --run-verification` before a Run starts: the Daemon refuses a Task whose command already exits zero on the unchanged tree.
 
 - **mandatory**: For each Task, run the selected incremental Verification named in `docs/agents/agent-instructions.md` to answer whether the current slice remains valid before handoff. CI must run the selected repository Verification from a fresh run to answer whether the assembled tree satisfies the repository contract. A missing incremental selection is a Baseline decision to answer, never a license to skip the local tier or a waiver to repeat in each Spec.
 

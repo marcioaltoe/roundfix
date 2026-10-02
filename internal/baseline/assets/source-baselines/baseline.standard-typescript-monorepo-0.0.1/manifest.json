@@ -995,6 +995,17 @@
       "digest": "437de61f4c3b444f6509517f1d8994432bb99adaf8edaf17394e611ec04e0dbc"
     },
     {
+      "id": "clause.spec.prohibit-tests-that-read-specs",
+      "path": "corpus/docs/agents/docs-layout.md",
+      "kind": "normative-clause",
+      "enforcement": "prohibited",
+      "carrier": "docs/agents/docs-layout.md",
+      "structure": null,
+      "start": 14237,
+      "end": 14355,
+      "digest": "4ea79dbb2cfe39c03ec90d445ccc81b7d75cc4573f187f75b88b08dd9cff4e18"
+    },
+    {
       "id": "clause.context.read-domain-contract",
       "path": "corpus/docs/agents/domain.md",
       "kind": "normative-clause",
@@ -1534,14 +1545,36 @@
       "digest": "8633487060f2243dd17056b0b52415882c48bb108258366e336a0a24d3c19879"
     },
     {
+      "id": "clause.spec.name-the-finding-a-task-answers",
+      "path": "corpus/docs/agents/spec-routing.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/spec-routing.md",
+      "structure": null,
+      "start": 3169,
+      "end": 3285,
+      "digest": "227d24ea8f2976737a73a530772046937dc60e02e640e60104d9b5d2579b23d3"
+    },
+    {
+      "id": "clause.spec.verification-fails-before-the-change",
+      "path": "corpus/docs/agents/spec-routing.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/spec-routing.md",
+      "structure": null,
+      "start": 3444,
+      "end": 3544,
+      "digest": "5b7403d724d34fbe245460274ff7a77d66bd190f6419dcdfb255ff75ff5bdffe"
+    },
+    {
       "id": "clause.spec.verification-two-tiers",
       "path": "corpus/docs/agents/spec-routing.md",
       "kind": "normative-clause",
       "enforcement": "mandatory",
       "carrier": "docs/agents/spec-routing.md",
       "structure": null,
-      "start": 3160,
-      "end": 3598,
+      "start": 3694,
+      "end": 4132,
       "digest": "4997374227082fa4f1768cf09b62831f0c21e2cce2cf7fc77dadb2762e4bc35b"
     },
     {
@@ -1551,8 +1584,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/spec-routing.md",
       "structure": null,
-      "start": 3746,
-      "end": 3963,
+      "start": 4280,
+      "end": 4497,
       "digest": "e6072a87b8ba4099a3b6d9696151573b7b0ba22703e22ce897b5cede343bfbc4"
     },
     {
@@ -1562,8 +1595,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/spec-routing.md",
       "structure": null,
-      "start": 4115,
-      "end": 4278,
+      "start": 4649,
+      "end": 4812,
       "digest": "43fbad5a285e02d2e0f6896be65115ce5567919fb4cc505edc6244b8fb1f4e8f"
     },
     {
@@ -1573,8 +1606,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/spec-routing.md",
       "structure": null,
-      "start": 4435,
-      "end": 4856,
+      "start": 4969,
+      "end": 5390,
       "digest": "aa3aa853f82b6cdce783e0f74f1270c62eaa0c32d34b141f1c8f4a19ceef9afb"
     },
     {
@@ -1633,14 +1666,25 @@
       "digest": "3a7b873c3b87ba131bde404c02ad57c46be2f09cfae8cca86372faa9ea074345"
     },
     {
+      "id": "clause.typescript.type-fixtures-from-the-schema",
+      "path": "corpus/docs/agents/typescript-bun.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/typescript-bun.md",
+      "structure": null,
+      "start": 1430,
+      "end": 1553,
+      "digest": "f9cf244c53d6982af795ed9cb9ab3554c5794bb598cf02ab958f7a8c7788a3e6"
+    },
+    {
       "id": "clause.bun.use-bun-owned-commands",
       "path": "corpus/docs/agents/typescript-bun.md",
       "kind": "normative-clause",
       "enforcement": "mandatory",
       "carrier": "docs/agents/typescript-bun.md",
       "structure": null,
-      "start": 1416,
-      "end": 1513,
+      "start": 1701,
+      "end": 1798,
       "digest": "13501e5d16201a2f4c5c2a8eb40a72dac97be123b57913abd7938673480e893d"
     },
     {
@@ -1650,8 +1694,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/typescript-bun.md",
       "structure": null,
-      "start": 1653,
-      "end": 1742,
+      "start": 1938,
+      "end": 2027,
       "digest": "0a229bf84dbf988bda6d587621f9619812b22c3481b3a04c661edc8694af89ae"
     },
     {
@@ -1661,8 +1705,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/typescript-bun.md",
       "structure": null,
-      "start": 1885,
-      "end": 1959,
+      "start": 2170,
+      "end": 2244,
       "digest": "7e4e72165d2c9eee8b66a14c64c46f531f3657da2cf156f2971845febb002242"
     },
     {
@@ -1672,8 +1716,8 @@
       "enforcement": "prohibited",
       "carrier": "docs/agents/typescript-bun.md",
       "structure": null,
-      "start": 2105,
-      "end": 2178,
+      "start": 2390,
+      "end": 2463,
       "digest": "a6a1e9824f3496ec409bdc4e817b9c47b655df5ef50f99783f59771582c1c24b"
     },
     {
@@ -1683,8 +1727,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/typescript-bun.md",
       "structure": null,
-      "start": 2348,
-      "end": 2467,
+      "start": 2633,
+      "end": 2752,
       "digest": "6b69aed9edfd555561f350967eec615bb14ac27de595ead8f7cfc6d759fc857a"
     },
     {

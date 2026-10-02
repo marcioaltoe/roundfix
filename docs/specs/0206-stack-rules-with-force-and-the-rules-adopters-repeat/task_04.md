@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0206-stack-rules-with-force-and-the-rules-adopters-repeat
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -77,3 +77,79 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - `_prd.md` → Goal 4; Story 4; Core Feature 4; Success Metric 6; Success Metric 7
 - `_techspec.md` → Candidate rules; Exact texts (task_04); Source Baseline rows; Version changes; Existing tests that change; API Contract 4; Testing Approach 4; Testing Approach 5; Build Order 4
 - ADR-0058, ADR-0059, ADR-0060, ADR-0081, ADR-0099, ADR-0149, ADR-0186, ADR-0203
+
+
+## Result
+
+Implemented only Task 04's Spec-workflow and TypeScript promotion slice. Added
+three Spec-workflow clauses and the typed row-fixture clause with the exact
+TechSpec text and force; incremented the eight named module, rule and guide
+versions by one. Existing clauses retain their identifiers, force and text.
+Added the four Source Baseline corpus, manifest and index rows after their
+specified anchors, preserving existing corpus entries byte-for-byte and their
+row order. The maintained entry count rises from 157 to 161; accounting stays
+at 51. The force record gains all four clauses.
+
+Added `promoted_spec_and_typescript_clauses_test.go` with the four named tests
+and test-only `sourceBaselineRowFindings`. The row check covers all twelve
+promotions from Tasks 01 and 04. Its negative cases independently exercise a
+missing row, incorrect force and incorrect row kind. Tests read embedded
+catalog data and temporary adopter plans, not Spec artifacts.
+
+### Focused evidence by acceptance criterion
+
+1. Rendered guides and composed profile: the focused command below exited 0.
+   `TestTheSpecAndTypeScriptGuidesStateThePromotedRules` passed for Standard
+   TypeScript Monorepo (all four force-labelled sentences) and Go CLI/TUI
+   (the three Spec-workflow sentences). The composed profile's setup selection,
+   repeated-clause and convergence tests also passed.
+2. Source Baseline coverage: `TestEveryPromotedClauseHasItsSourceBaselineRow`
+   passed for all twelve promoted clauses and their force;
+   `TestAMissingSourceBaselineRowIsReported` passed all three negative cases.
+   `TestThePromotedSpecAndTypeScriptClausesCarryTheirForce` passed. A local
+   comparison against HEAD confirmed all existing module clause objects and
+   corpus entries unchanged and the existing manifest row order preserved.
+3. Count, force record, catalog and refresh: `rtk make baseline-digests`
+   exited 0 after correcting an initial insertion into coverage arrays; its
+   maintained-fixture and strict catalog validation passed. It generated all
+   goldens, digests, identity records and snapshots, without hand edits to
+   generated output. Managed Refresh applied the expected three files; its
+   second invocation exited 0 with `File changes: 0` and `Idempotence: verified`.
+
+### Commands and outcomes
+
+- Before source edits, `rtk proxy go test -count=1 -run
+  'Test(TheSpecAndTypeScriptGuides|ThePromotedSpecAndTypeScript|EveryPromotedClause|AMissingSourceBaseline)'
+  ./internal/baseline` exited 1: the three positive tests named all four
+  absent clauses, rendered sentences and Source Baseline rows.
+- After regeneration, `GOCACHE=/tmp/roundfix-task04-gocache rtk proxy go test
+  -count=1 -v -run
+  'Test(TheSpecAndTypeScriptGuides|ThePromotedSpecAndTypeScript|EveryPromotedClause|AMissingSourceBaseline|TheComposedProfile)'
+  ./internal/baseline` exited 0; all four new tests and the three composed
+  profile tests passed.
+- `rtk make baseline-digests` exited 0, reporting `ok: true, changed: true`.
+  The initial failed attempt reported invalid rule coverage; moving the new
+  objects to the clauses arrays repaired the authored sources.
+- `GOCACHE=/tmp/roundfix-task04-gocache rtk proxy go run -buildvcs=false
+  ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`
+  exited 0 twice: first `File changes: 3`, then `File changes: 0`.
+  The first successful apply required permission to create its transaction lock
+  in the Run worktree's external Git metadata. Earlier attempts were blocked
+  by default Go-cache and transaction-lock sandbox permissions. The existing
+  nested-carrier warnings identified the fixture and corpus AGENTS carriers;
+  refresh left them unchanged and reported no blocking finding.
+- `GOCACHE=/tmp/roundfix-task04-gocache rtk make verify-incremental` initially
+  exited 2: two CLI process-owner integration tests could not read the host
+  process table. Baseline tests passed. The first permission-enabled rerun
+  also exited 2: its tests passed, but suiteguard detected this Agent writing
+  the Result during the run. A final rerun keeps the worktree untouched until
+  the command exits. That final permission-enabled rerun exited 0: formatting,
+  vet, package tests, skill sync/check and build passed (cached package results
+  were reused where the incremental command permits; CLI ran freshly in 123s).
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0. Changed-file
+  postflight found all 26 changed paths within Task 04's Context or this Task
+  file. No exported function signature or existing top-level test changed.
+
+Declared Task Verification was not run; it remains Daemon-owned. Task status
+is unchanged. No other Task file or Task Graph was edited, and no commit,
+push or pull request was made.

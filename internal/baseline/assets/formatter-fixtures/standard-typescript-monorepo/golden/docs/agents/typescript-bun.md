@@ -15,6 +15,8 @@ another language follows its own guide.
 
 - **mandatory**: Test observable behavior and explicit failure modes.
 
+- **mandatory**: Type a test fixture that stands for a stored row from the schema's inferred row type, with a complete base row and partial overrides, never from an untyped record.
+
 <!-- setup-context-driven:end id=guide.typescript-bun -->
 <!-- setup-context-driven:begin id=guide.bun version=0.0.1 -->
 
