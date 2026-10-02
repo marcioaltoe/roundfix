@@ -1,0 +1,9 @@
+$ go test -count=1 -v -run ^TestTaskAcceptanceRecordIsConsistent$ ./internal/judge -args -task-acceptance-record=/Users/marcio/.roundfix/worktrees/roundfix-deliver-0214-measure-before-changing-a3fd10460126ae26-6ac32240-f7cea6c5/run_20261002T183004Z_22f6fde79439dbfd/docs/references/task-acceptance-remeasurement.json -task-acceptance-document=/Users/marcio/.roundfix/worktrees/roundfix-deliver-0214-measure-before-changing-a3fd10460126ae26-6ac32240-f7cea6c5/run_20261002T183004Z_22f6fde79439dbfd/docs/references/task-acceptance-measurement.md -task-acceptance-labels=/Users/marcio/.roundfix/worktrees/roundfix-deliver-0214-measure-before-changing-a3fd10460126ae26-6ac32240-f7cea6c5/run_20261002T183004Z_22f6fde79439dbfd/docs/references/corrective-causes.json
+=== RUN   TestTaskAcceptanceRecordIsConsistent
+--- PASS: TestTaskAcceptanceRecordIsConsistent (0.08s)
+PASS
+ok  	roundfix/internal/judge	0.241s
+
+STDERR:
+
+EXIT: 0

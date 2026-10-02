@@ -1,0 +1,3 @@
+Observed 2026-10-02 through web reader.
+Source: https://git-scm.com/book/en/v2/Git-Internals-Maintenance-and-Data-Recovery
+Removing Objects section: a large version remains reachable and downloaded by clones even when deleted in a subsequent commit. Independently compared to the archive proposal: ordinary deletion does not reclaim reachable Git history. PRD claim supported.

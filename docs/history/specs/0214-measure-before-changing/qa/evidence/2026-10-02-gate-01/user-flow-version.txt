@@ -1,0 +1,6 @@
+$ ./bin/roundfix --version
+roundfix 0.27.0 (f59ebc42-dirty, built 2026-10-02 15:36:09 -0300)
+
+STDERR:
+
+EXIT: 0

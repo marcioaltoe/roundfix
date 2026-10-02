@@ -1,0 +1,3 @@
+Read 2026-10-02 through web tool. Direct curl-cffi attempt blocked by sandbox domain allowlist, not retried.
+Source: https://arxiv.org/html/2605.29442v2
+Sections and comparison: Abstract, section 3.3 and Table 3: 20,574 sessions; systematic false positives in single-stage extraction; second evidence validation pass; cannot-determine causes 26.85%. PRD claim supported.

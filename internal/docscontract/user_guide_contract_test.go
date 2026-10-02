@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -89,7 +90,11 @@ func TestEveryCommandIsNamedInTheUserGuide(t *testing.T) {
 		text.WriteString(readContractDocument(t, file))
 		text.WriteByte('\n')
 	}
-	if missing := undocumentedCommands(commandPaths(stdout.String()), text.String()); len(missing) > 0 {
+	paths := commandPaths(stdout.String())
+	if !slices.Contains(paths, "runs causes") {
+		t.Fatal("root help omitted runs causes")
+	}
+	if missing := undocumentedCommands(paths, text.String()); len(missing) > 0 {
 		t.Fatalf("user guide does not name command paths: %v", missing)
 	}
 }

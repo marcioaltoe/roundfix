@@ -1,0 +1,23 @@
+[
+  {
+    "reference": "corrective-causes-measurement.md",
+    "value": "inconclusive",
+    "fired": false,
+    "entries": [],
+    "valid": true
+  },
+  {
+    "reference": "task-acceptance-measurement.md",
+    "value": "do not adopt",
+    "fired": false,
+    "entries": [],
+    "valid": true
+  },
+  {
+    "reference": "archived-evidence-measurement.md",
+    "value": "none",
+    "fired": false,
+    "entries": [],
+    "valid": true
+  }
+]

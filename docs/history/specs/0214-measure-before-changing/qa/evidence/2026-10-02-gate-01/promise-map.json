@@ -1,0 +1,34 @@
+{
+  "Success Metric 1": [
+    "task_01"
+  ],
+  "Success Metric 2": [
+    "task_01",
+    "task_04"
+  ],
+  "Success Metric 3": [
+    "task_02",
+    "task_04"
+  ],
+  "Success Metric 4": [
+    "task_03"
+  ],
+  "Success Metric 5": [
+    "task_03",
+    "task_04"
+  ],
+  "API Contract 1": [
+    "task_01"
+  ],
+  "API Contract 2": [
+    "task_01"
+  ],
+  "API Contract 3": [
+    "task_01"
+  ],
+  "API Contract 4": [
+    "task_01",
+    "task_02",
+    "task_04"
+  ]
+}

@@ -83,7 +83,7 @@ func TestEveryCommandIsNamedInTheRoundfixSkill(t *testing.T) {
 	if len(paths) < 40 {
 		t.Fatalf("root help yielded %d command paths, want at least 40: %v", len(paths), paths)
 	}
-	for _, anchor := range []string{"deliver retry", "window clear", "baseline capabilities check"} {
+	for _, anchor := range []string{"deliver retry", "window clear", "baseline capabilities check", "runs causes"} {
 		if !slices.Contains(paths, anchor) {
 			t.Fatalf("root help did not yield anchor command %q: %v", anchor, paths)
 		}

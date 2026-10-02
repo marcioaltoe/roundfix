@@ -1,0 +1,9 @@
+$ go test -count=1 -v -run ^TestCausesRecordIsConsistent$ ./internal/runcause -args -causes-record=/Users/marcio/.roundfix/worktrees/roundfix-deliver-0214-measure-before-changing-a3fd10460126ae26-6ac32240-f7cea6c5/run_20261002T171516Z_94169d908e48d811/docs/references/corrective-causes.json -causes-document=/Users/marcio/.roundfix/worktrees/roundfix-deliver-0214-measure-before-changing-a3fd10460126ae26-6ac32240-f7cea6c5/run_20261002T171516Z_94169d908e48d811/docs/references/corrective-causes-measurement.md
+=== RUN   TestCausesRecordIsConsistent
+--- PASS: TestCausesRecordIsConsistent (0.00s)
+PASS
+ok  	roundfix/internal/runcause	0.148s
+
+STDERR:
+
+EXIT: 0

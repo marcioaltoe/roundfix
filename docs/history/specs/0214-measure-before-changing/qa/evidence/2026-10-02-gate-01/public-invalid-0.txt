@@ -1,0 +1,7 @@
+$ ./bin/roundfix runs causes --format yaml
+
+STDERR:
+roundfix: runs causes failed: unknown --format "yaml"; use text or json
+Run 'roundfix runs causes --help' for usage.
+
+EXIT: 2

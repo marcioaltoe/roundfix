@@ -185,3 +185,28 @@ Event Journal retention. An unknown Run or invalid arguments exit `2`.
 and `thought_tokens`, `costs` (currency/amount), `sessions` and `cost_sessions`.
 A split is null unless every reported prompt supplied it. The total has the
 same usage fields without scope identity and selections.
+
+### Why Verification failed
+
+```bash
+roundfix runs causes [--since <YYYY-MM-DD>] [--until <YYYY-MM-DD>] [--format <text|json>]
+```
+
+Read-only: explains failed Verification attempts and corrective Tasks in this
+repository's terminal Spec Runs, without writes or network requests. Dates
+bound Run creation times at UTC midnight, since inclusive and until exclusive;
+omitting an end leaves it open. SQLite may create WAL sidecars while opening
+the database read-only; database, lock and artifact logs stay unchanged.
+
+The first embedded signature that matches determines one of five classes:
+`scope-or-authorization`, `shared-section-contract`, `repository-convention`,
+`implementation-defect`, or `environment`. The first three count as repository
+knowledge. An `unclassified` item is not a class and carries no signature.
+
+Corrective Tasks are graph nodes numbered after the QA Task. The active graph
+is read first, then the archive; a missing graph makes corrective null and
+names the Spec in `specs_not_found`. Triggers are `pre-pr-review`, `qa-gate`,
+`verification`, then `unknown`. JSON includes per-Task verdicts, feedback and
+Run counts, and the table digest. Exit `0` includes empty results and an absent
+database, `2` means invalid usage or no Git repository, and `1` means an
+unreadable database.

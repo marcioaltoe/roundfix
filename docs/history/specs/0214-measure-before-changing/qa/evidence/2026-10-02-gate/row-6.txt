@@ -1,0 +1,7 @@
+$ ./bin/roundfix runs causes --since 2026-13-01
+
+STDERR:
+roundfix: runs causes failed: --since must be a date in YYYY-MM-DD form, got "2026-13-01"
+Run 'roundfix runs causes --help' for usage.
+
+EXIT: 2

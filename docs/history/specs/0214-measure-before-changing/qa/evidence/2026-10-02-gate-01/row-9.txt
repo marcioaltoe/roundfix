@@ -1,0 +1,169 @@
+$ go test -count=1 -v -run Test(TaskAcceptance|AUROC|ClusterBootstrap|MeasureTaskAcceptance) ./internal/judge
+=== RUN   TestMeasureTaskAcceptance
+    task_acceptance_measure_test.go:386: requires -measure-task-acceptance; no keys, files or home read
+--- SKIP: TestMeasureTaskAcceptance (0.00s)
+=== RUN   TestTaskAcceptanceQuestionFileLoads
+--- PASS: TestTaskAcceptanceQuestionFileLoads (0.00s)
+=== RUN   TestTaskAcceptanceStateCarriesOnlyTitleAndCriteria
+=== RUN   TestTaskAcceptanceStateCarriesOnlyTitleAndCriteria/rune_limits_and_section_boundaries
+--- PASS: TestTaskAcceptanceStateCarriesOnlyTitleAndCriteria (0.00s)
+    --- PASS: TestTaskAcceptanceStateCarriesOnlyTitleAndCriteria/rune_limits_and_section_boundaries (0.00s)
+=== RUN   TestTaskAcceptanceRequestsCarryNoResultOrSourceText
+--- PASS: TestTaskAcceptanceRequestsCarryNoResultOrSourceText (0.00s)
+=== RUN   TestTaskAcceptanceSendsEachKeyOnlyToItsEndpoint
+=== RUN   TestTaskAcceptanceSendsEachKeyOnlyToItsEndpoint/both
+=== RUN   TestTaskAcceptanceSendsEachKeyOnlyToItsEndpoint/TypeSafe_only
+--- PASS: TestTaskAcceptanceSendsEachKeyOnlyToItsEndpoint (0.00s)
+    --- PASS: TestTaskAcceptanceSendsEachKeyOnlyToItsEndpoint/both (0.00s)
+    --- PASS: TestTaskAcceptanceSendsEachKeyOnlyToItsEndpoint/TypeSafe_only (0.00s)
+=== RUN   TestTaskAcceptanceWithoutARoundfixKeyIsBlocked
+=== RUN   TestTaskAcceptanceWithoutARoundfixKeyIsBlocked/no_keys
+=== RUN   TestTaskAcceptanceWithoutARoundfixKeyIsBlocked/generic_keys_only
+--- PASS: TestTaskAcceptanceWithoutARoundfixKeyIsBlocked (0.00s)
+    --- PASS: TestTaskAcceptanceWithoutARoundfixKeyIsBlocked/no_keys (0.00s)
+    --- PASS: TestTaskAcceptanceWithoutARoundfixKeyIsBlocked/generic_keys_only (0.00s)
+=== RUN   TestTaskAcceptanceSkipsAnUnpinnedModel
+--- PASS: TestTaskAcceptanceSkipsAnUnpinnedModel (0.00s)
+=== RUN   TestTaskAcceptanceLogsEveryRequest
+--- PASS: TestTaskAcceptanceLogsEveryRequest (0.00s)
+=== RUN   TestTaskAcceptanceStopsAtTheCeiling
+=== RUN   TestTaskAcceptanceStopsAtTheCeiling/already_reached
+=== RUN   TestTaskAcceptanceStopsAtTheCeiling/reached_by_first_request
+=== RUN   TestTaskAcceptanceStopsAtTheCeiling/unreadable_log
+--- PASS: TestTaskAcceptanceStopsAtTheCeiling (0.01s)
+    --- PASS: TestTaskAcceptanceStopsAtTheCeiling/already_reached (0.00s)
+    --- PASS: TestTaskAcceptanceStopsAtTheCeiling/reached_by_first_request (0.00s)
+    --- PASS: TestTaskAcceptanceStopsAtTheCeiling/unreadable_log (0.00s)
+=== RUN   TestTaskAcceptanceExcludesUnsafeAndMissingStates
+=== RUN   TestTaskAcceptanceExcludesUnsafeAndMissingStates/missing_file
+=== RUN   TestTaskAcceptanceExcludesUnsafeAndMissingStates/missing_criteria
+=== RUN   TestTaskAcceptanceExcludesUnsafeAndMissingStates/Portuguese
+=== RUN   TestTaskAcceptanceExcludesUnsafeAndMissingStates/Task_symlink
+=== RUN   TestTaskAcceptanceExcludesUnsafeAndMissingStates/Spec_symlink
+=== RUN   TestTaskAcceptanceExcludesUnsafeAndMissingStates/root_symlink
+=== RUN   TestTaskAcceptanceExcludesUnsafeAndMissingStates/nested_Task
+=== RUN   TestTaskAcceptanceExcludesUnsafeAndMissingStates/directory_Task
+=== RUN   TestTaskAcceptanceExcludesUnsafeAndMissingStates/archived_Task
+--- PASS: TestTaskAcceptanceExcludesUnsafeAndMissingStates (0.01s)
+    --- PASS: TestTaskAcceptanceExcludesUnsafeAndMissingStates/missing_file (0.00s)
+    --- PASS: TestTaskAcceptanceExcludesUnsafeAndMissingStates/missing_criteria (0.00s)
+    --- PASS: TestTaskAcceptanceExcludesUnsafeAndMissingStates/Portuguese (0.00s)
+    --- PASS: TestTaskAcceptanceExcludesUnsafeAndMissingStates/Task_symlink (0.00s)
+    --- PASS: TestTaskAcceptanceExcludesUnsafeAndMissingStates/Spec_symlink (0.00s)
+    --- PASS: TestTaskAcceptanceExcludesUnsafeAndMissingStates/root_symlink (0.00s)
+    --- PASS: TestTaskAcceptanceExcludesUnsafeAndMissingStates/nested_Task (0.00s)
+    --- PASS: TestTaskAcceptanceExcludesUnsafeAndMissingStates/directory_Task (0.00s)
+    --- PASS: TestTaskAcceptanceExcludesUnsafeAndMissingStates/archived_Task (0.00s)
+=== RUN   TestTaskAcceptanceUsesOnlyEligibleLabels
+--- PASS: TestTaskAcceptanceUsesOnlyEligibleLabels (0.00s)
+=== RUN   TestTaskAcceptanceResolvesConfiguredAndArchivedRoot
+=== RUN   TestTaskAcceptanceResolvesConfiguredAndArchivedRoot/active
+=== RUN   TestTaskAcceptanceResolvesConfiguredAndArchivedRoot/archived
+--- PASS: TestTaskAcceptanceResolvesConfiguredAndArchivedRoot (0.01s)
+    --- PASS: TestTaskAcceptanceResolvesConfiguredAndArchivedRoot/active (0.00s)
+    --- PASS: TestTaskAcceptanceResolvesConfiguredAndArchivedRoot/archived (0.00s)
+=== RUN   TestTaskAcceptanceStopsOnRefusalAndRedactsErrors
+=== RUN   TestTaskAcceptanceStopsOnRefusalAndRedactsErrors/refused
+=== RUN   TestTaskAcceptanceStopsOnRefusalAndRedactsErrors/transport_failure
+2026/10/02 15:38:05 RoundTripper returned a response & error; ignoring response
+--- PASS: TestTaskAcceptanceStopsOnRefusalAndRedactsErrors (0.00s)
+    --- PASS: TestTaskAcceptanceStopsOnRefusalAndRedactsErrors/refused (0.00s)
+    --- PASS: TestTaskAcceptanceStopsOnRefusalAndRedactsErrors/transport_failure (0.00s)
+=== RUN   TestTaskAcceptanceRecordIsConsistent
+--- PASS: TestTaskAcceptanceRecordIsConsistent (0.00s)
+=== RUN   TestTaskAcceptanceRecordRejectsASabotagedFixture
+--- PASS: TestTaskAcceptanceRecordRejectsASabotagedFixture (0.00s)
+=== RUN   TestAUROCCountsTiesAsHalf
+=== RUN   TestAUROCCountsTiesAsHalf/all_ties
+=== RUN   TestAUROCCountsTiesAsHalf/mixed_ties
+=== RUN   TestAUROCCountsTiesAsHalf/reversed
+=== RUN   TestAUROCCountsTiesAsHalf/one_class
+--- PASS: TestAUROCCountsTiesAsHalf (0.00s)
+    --- PASS: TestAUROCCountsTiesAsHalf/all_ties (0.00s)
+    --- PASS: TestAUROCCountsTiesAsHalf/mixed_ties (0.00s)
+    --- PASS: TestAUROCCountsTiesAsHalf/reversed (0.00s)
+    --- PASS: TestAUROCCountsTiesAsHalf/one_class (0.00s)
+=== RUN   TestClusterBootstrapIsDeterministic
+--- PASS: TestClusterBootstrapIsDeterministic (0.00s)
+=== RUN   TestTaskAcceptanceVerdictRules
+=== RUN   TestTaskAcceptanceVerdictRules/adopt_boundary
+=== RUN   TestTaskAcceptanceVerdictRules/blocked
+=== RUN   TestTaskAcceptanceVerdictRules/few_Tasks
+=== RUN   TestTaskAcceptanceVerdictRules/few_repaired
+=== RUN   TestTaskAcceptanceVerdictRules/too_many_discarded
+=== RUN   TestTaskAcceptanceVerdictRules/discard_boundary
+=== RUN   TestTaskAcceptanceVerdictRules/weak_interval
+=== RUN   TestTaskAcceptanceVerdictRules/few_flagged
+=== RUN   TestTaskAcceptanceVerdictRules/weak_precision
+=== RUN   TestTaskAcceptanceVerdictRules/precision_boundary
+--- PASS: TestTaskAcceptanceVerdictRules (0.00s)
+    --- PASS: TestTaskAcceptanceVerdictRules/adopt_boundary (0.00s)
+    --- PASS: TestTaskAcceptanceVerdictRules/blocked (0.00s)
+    --- PASS: TestTaskAcceptanceVerdictRules/few_Tasks (0.00s)
+    --- PASS: TestTaskAcceptanceVerdictRules/few_repaired (0.00s)
+    --- PASS: TestTaskAcceptanceVerdictRules/too_many_discarded (0.00s)
+    --- PASS: TestTaskAcceptanceVerdictRules/discard_boundary (0.00s)
+    --- PASS: TestTaskAcceptanceVerdictRules/weak_interval (0.00s)
+    --- PASS: TestTaskAcceptanceVerdictRules/few_flagged (0.00s)
+    --- PASS: TestTaskAcceptanceVerdictRules/weak_precision (0.00s)
+    --- PASS: TestTaskAcceptanceVerdictRules/precision_boundary (0.00s)
+=== RUN   TestTaskAcceptanceStatisticsBaselinesAndThreshold
+--- PASS: TestTaskAcceptanceStatisticsBaselinesAndThreshold (0.00s)
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/labels_digest
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/question_digest
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/answer_model
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/state_hash
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/criteria_length
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/repair_label
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/missing_Task
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/verdict
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_answered
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_auroc
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_base_rate
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_bootstrap_discarded
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_bootstrap_draws
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_ci_lower
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_ci_upper
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_criteria_chars_auroc
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_discarded_share
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_flagged
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_precision
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_random_auroc
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_recall
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_repaired
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/missing_zero_statistic
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/duplicate_verdict_line
+=== RUN   TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/current_Task_differs
+--- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure (0.03s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/labels_digest (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/question_digest (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/answer_model (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/state_hash (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/criteria_length (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/repair_label (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/missing_Task (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/verdict (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_answered (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_auroc (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_base_rate (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_bootstrap_discarded (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_bootstrap_draws (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_ci_lower (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_ci_upper (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_criteria_chars_auroc (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_discarded_share (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_flagged (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_precision (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_random_auroc (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_recall (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/figure_repaired (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/missing_zero_statistic (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/duplicate_verdict_line (0.00s)
+    --- PASS: TestTaskAcceptanceRecordChecksProvenanceAndEveryFigure/current_Task_differs (0.00s)
+PASS
+ok  	roundfix/internal/judge	0.416s
+
+STDERR:
+
+EXIT: 0

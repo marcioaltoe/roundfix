@@ -105,7 +105,19 @@ _Avoid_: Feature folder, epic, project
 
 **Corrective Spec**:
 A new Spec, with its own authorization and QA gate, that corrects a finding on an archived Spec; the archived Spec is never edited in place.
-_Avoid_: Corrective Task, archive edit, inherited authorization
+_Avoid_: archive edit, inherited authorization; a Corrective Task fixes an active Spec, not an archived one
+
+**Corrective Task**:
+A Task appended to an active Spec's Task Graph, before its QA gate, to fix a finding on that Spec before it is archived; an archived Spec gets a Corrective Spec instead.
+_Avoid_: Corrective Spec, follow-up Task
+
+**Cause Class**:
+The one class from a closed list that `roundfix runs causes` assigns to a failed Verification attempt or a Corrective Task: `scope-or-authorization`, `shared-section-contract`, `repository-convention`, `implementation-defect` or `environment`, or `unclassified` when no signature matches. It is assigned by signature, never by a model judgment (ADR-0214).
+_Avoid_: failure category, root cause, model verdict
+
+**Classification Signature**:
+An ordered entry of the embedded signature table, with an identifier, a Cause Class, the one evidence source it reads and a regular expression; the first entry that matches classifies the item (ADR-0214).
+_Avoid_: heuristic, rule, pattern
 
 **Supersession**:
 A durable lifecycle record that names the Spec which delivered another Spec's content. The Archive Command accepts it as proof of completion for the superseded Spec when that Spec has no Task Graph.

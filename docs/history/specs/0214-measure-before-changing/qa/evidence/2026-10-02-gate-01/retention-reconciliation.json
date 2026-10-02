@@ -1,0 +1,65 @@
+{
+  "record_summary": {
+    "classified": 32,
+    "environment": 0,
+    "implementation-defect": 9,
+    "items": 132,
+    "repository-convention": 15,
+    "repository_knowledge": 23,
+    "scope-or-authorization": 3,
+    "shared-section-contract": 5,
+    "unclassified": 100
+  },
+  "observed_summary": {
+    "classified": 32,
+    "environment": 0,
+    "implementation-defect": 9,
+    "items": 130,
+    "repository-convention": 15,
+    "repository_knowledge": 23,
+    "scope-or-authorization": 3,
+    "shared-section-contract": 5,
+    "unclassified": 98
+  },
+  "missing_items": [
+    {
+      "kind": "verification",
+      "spec": "0146-a-gate-that-runs-the-analyzer",
+      "task": "task_01",
+      "run_id": "run_20260918T181756Z_b533e0483a758b5f",
+      "attempt": 1,
+      "check": "fixture=\"$(git ls-files \"internal/**/testdata/**\" | grep \"analyzer\")\"; test -n \"$fixture\" && { go vet ./... > [path] 2>&1; test ! -s [path]; }",
+      "class": "unclassified",
+      "signature": null,
+      "evidence": null
+    },
+    {
+      "kind": "verification",
+      "spec": "0146-a-gate-that-runs-the-analyzer",
+      "task": "task_01",
+      "run_id": "run_20260918T181756Z_b533e0483a758b5f",
+      "attempt": 2,
+      "check": "out=\"$(go test -count=1 -tags repocontract -run \"^TestRepositoryGateRunsTheAnalyzer$\" ./... 2>&1)\"; printf \"%s\\n\" \"$out\" | grep -q \"no tests to run\" && { printf \"%s\\n\" \"$out\"; exit 1; }; printf \"%s\\n\" \"$out\" | grep -q \"FAIL\"",
+      "class": "unclassified",
+      "signature": null,
+      "evidence": null
+    }
+  ],
+  "runs": [
+    {
+      "run_id": "run_20260918T181756Z_b533e0483a758b5f",
+      "run": [
+        "run_20260918T181756Z_b533e0483a758b5f",
+        "Unresolved",
+        "0146-a-gate-that-runs-the-analyzer",
+        "2026-09-18T18:17:56.909416Z",
+        "2026-09-18T18:25:20.854147Z"
+      ],
+      "remaining_journal_events": 0
+    }
+  ],
+  "added_items": [],
+  "changed_items": [],
+  "observed_at": "2026-10-02T18:43:10.609081+00:00",
+  "cause": "Journal Retention removes terminal Run events but preserves Run summaries; default 336h. Retained Run has zero events, and its two previously recorded attempts account exactly for the difference. Pruning invocation not observed."
+}
