@@ -163,3 +163,12 @@ a refusal after work begins fails the Work Item. Each routed prompt that
 runs appends one `router-prompt` Judge Log line with the change in key usage.
 An append failure is reported in Run progress and preserves the prompt's
 result. Non-routed prompts make no key endpoint call.
+
+Before a routed prompt starts, the key must also report a numeric `limit`
+no greater than the ceiling and `limit_reset: monthly`. Set a monthly credit
+limit of at most US$5 on the key at OpenRouter; an unlimited key, a lifetime
+limit, or a monthly limit above the ceiling is refused with
+`jev_router_key_unbounded`. OpenRouter enforces this limit while a prompt is
+running. A numeric `limit_remaining` at or below zero is refused with
+`jev_ceiling_reached`. These refusals activate the configured fallback before
+Agent work begins and fail the Work Item after work begins.

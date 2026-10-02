@@ -25,10 +25,24 @@ func (e keyError) Error() string {
 }
 func (e keyError) Unwrap() error { return e.cause }
 
-// KeyUsage makes one bounded request for the key's monthly usage.
+// KeyUsage reads monthly usage for prompt cost accounting.
 func KeyUsage(ctx context.Context, client *http.Client, endpoint, key string) (float64, error) {
-	failure := func(err error) (float64, error) {
-		return 0, fmt.Errorf("read key usage: %w", keyError{cause: err, key: key})
+	status, err := ReadKey(ctx, client, endpoint, key)
+	return status.UsageMonthly, err
+}
+
+// KeyStatus carries usage and the nullable server-side credit limit.
+type KeyStatus struct {
+	UsageMonthly   float64
+	Limit          *float64
+	LimitRemaining *float64
+	LimitReset     *string
+}
+
+// ReadKey makes one bounded request for the key's usage and credit limit.
+func ReadKey(ctx context.Context, client *http.Client, endpoint, key string) (KeyStatus, error) {
+	failure := func(err error) (KeyStatus, error) {
+		return KeyStatus{}, fmt.Errorf("read key usage: %w", keyError{cause: err, key: key})
 	}
 	if key == "" {
 		return failure(errors.New("ROUNDFIX_OPENROUTER_API_KEY is not set"))
@@ -72,11 +86,14 @@ func KeyUsage(ctx context.Context, client *http.Client, endpoint, key string) (f
 	}
 	var answer struct {
 		Data struct {
-			UsageMonthly *float64 `json:"usage_monthly"`
+			UsageMonthly   *float64 `json:"usage_monthly"`
+			Limit          *float64 `json:"limit"`
+			LimitRemaining *float64 `json:"limit_remaining"`
+			LimitReset     *string  `json:"limit_reset"`
 		} `json:"data"`
 	}
 	if len(body) > 1<<20 || json.Unmarshal(body, &answer) != nil || answer.Data.UsageMonthly == nil || *answer.Data.UsageMonthly < 0 {
 		return failure(errors.New("invalid data.usage_monthly"))
 	}
-	return *answer.Data.UsageMonthly, nil
+	return KeyStatus{UsageMonthly: *answer.Data.UsageMonthly, Limit: answer.Data.Limit, LimitRemaining: answer.Data.LimitRemaining, LimitReset: answer.Data.LimitReset}, nil
 }

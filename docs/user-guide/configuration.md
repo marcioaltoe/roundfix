@@ -354,6 +354,15 @@ placeholder, replacing an inherited value for routed sessions only.
 Every routed prompt runs under the US$5 monthly Jev ceiling shared with
 `roundfix spec judge`. The router changes no built-in or Recommended Profile.
 
+Before a routed prompt starts, the key must also report a numeric `limit`
+no greater than the ceiling and `limit_reset: monthly`. Set a monthly credit
+limit of at most US$5 on the key at OpenRouter; an unlimited key, a lifetime
+limit, or a monthly limit above the ceiling is refused with
+`jev_router_key_unbounded`. OpenRouter enforces this limit while a prompt is
+running. A numeric `limit_remaining` at or below zero is refused with
+`jev_ceiling_reached`. These refusals activate the configured fallback before
+Agent work begins and fail the Work Item after work begins.
+
 ### Access policy readiness
 
 When `defaults.agent_full_access: true`, profile readiness applies the

@@ -79,6 +79,9 @@ func (gate *jevRouterGate) Before(ctx context.Context) (float64, error) {
 	if err != nil {
 		return 0, &agent.SelectionFailureError{Runtime: "opencode", Reason: "jev_spend_unreadable: " + err.Error()}
 	}
+	if err := spend.CheckKeyLimit(); err != nil {
+		return 0, &agent.SelectionFailureError{Runtime: "opencode", Reason: err.Error()}
+	}
 	if spend.Total >= spend.Ceiling {
 		return 0, &agent.SelectionFailureError{Runtime: "opencode", Reason: fmt.Sprintf("jev_ceiling_reached: month's Jev spend US$%.4f of US$%.4f", spend.Total, spend.Ceiling)}
 	}

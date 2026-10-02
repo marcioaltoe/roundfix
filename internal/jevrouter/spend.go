@@ -23,6 +23,7 @@ type Deps struct {
 
 type Spend struct {
 	TypeSafeLogged, OpenRouterLogged, KeyUsageMonthly, Total, Ceiling float64
+	Key                                                               KeyStatus
 }
 
 func environmentKey(env []string) string {
@@ -64,10 +65,22 @@ func MonthSpend(ctx context.Context, deps Deps, now time.Time) (Spend, error) {
 	if endpoint == "" {
 		endpoint = "https://openrouter.ai/api/v1"
 	}
-	spend.KeyUsageMonthly, err = KeyUsage(ctx, deps.Client, endpoint, environmentKey(deps.Env))
+	spend.Key, err = ReadKey(ctx, deps.Client, endpoint, environmentKey(deps.Env))
 	if err != nil {
 		return Spend{}, fmt.Errorf("read Jev spend: %w", err)
 	}
+	spend.KeyUsageMonthly = spend.Key.UsageMonthly
 	spend.Total = spend.TypeSafeLogged + max(spend.OpenRouterLogged, spend.KeyUsageMonthly)
 	return spend, nil
+}
+
+// CheckKeyLimit requires OpenRouter to cap a running prompt's monthly spend.
+func (spend Spend) CheckKeyLimit() error {
+	if spend.Key.LimitReset == nil || *spend.Key.LimitReset != "monthly" || spend.Key.Limit == nil || *spend.Key.Limit < 0 || *spend.Key.Limit > spend.Ceiling {
+		return fmt.Errorf("jev_router_key_unbounded: set a monthly credit limit of at most US$%.4f on the key at OpenRouter", spend.Ceiling)
+	}
+	if spend.Key.LimitRemaining != nil && *spend.Key.LimitRemaining <= 0 {
+		return errors.New("jev_ceiling_reached: OpenRouter key credit limit is exhausted")
+	}
+	return nil
 }

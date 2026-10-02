@@ -8,7 +8,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"math"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -377,5 +380,80 @@ func TestJevRouterDefaultGateUsesProcessHomeAndJudgeCeiling(t *testing.T) {
 	}
 	if !reflect.DeepEqual(gate.deps.Env, os.Environ()) {
 		t.Fatal("default gate does not use process environment")
+	}
+}
+
+func TestJevRouterUnboundedKeyFallsBackBeforeWork(t *testing.T) {
+	reason := "jev_router_key_unbounded: set a monthly credit limit of at most US$5.0000 on the key at OpenRouter"
+	gate := &fakeJevRouterGate{beforeErrors: []error{routerRefusal(reason)}}
+	fixture, runner, result := routerTaskFixture(t, gate, false)
+	if result.Completed != 1 || result.Failed != 0 {
+		t.Fatalf("fallback result: %+v", result)
+	}
+	requests := runner.runRequests()
+	if len(requests) != 1 || requests[0].Runtime.Model != "good-model" {
+		t.Fatalf("refused prompt ran: %+v", requests)
+	}
+	payload := eventPayloadMap(t, singleEventOfKind(t, fixture.sink, runevent.KindDaemonAgentSelectionFallback))
+	if payload["reason_code"] != "jev_router_key_unbounded" {
+		t.Fatalf("classification: %+v", payload)
+	}
+}
+
+func TestJevRouterUnboundedKeyFailsAfterWork(t *testing.T) {
+	gate := &fakeJevRouterGate{beforeErrors: []error{nil, routerRefusal("jev_router_key_unbounded: set a monthly credit limit")}}
+	fixture, runner, result := routerTaskFixture(t, gate, true)
+	if result.Failed != 1 || result.Completed != 0 {
+		t.Fatalf("post-work result: %+v", result)
+	}
+	if len(runner.runRequests()) != 1 || len(runner.prepareRequests()) != 1 {
+		t.Fatal("refused prompt ran or fallback prepared")
+	}
+	if len(eventsOfKind(fixture.sink, runevent.KindDaemonAgentSelectionFallback)) != 0 {
+		t.Fatal("fallback after work")
+	}
+	if len(result.Outcomes) != 1 || !strings.Contains(result.Outcomes[0].Reason, "jev_router_key_unbounded") {
+		t.Fatalf("outcomes: %+v", result.Outcomes)
+	}
+}
+
+func TestJevRouterGateChecksTheReportedKeyLimit(t *testing.T) {
+	questions, err := judge.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct{ name, fields, reason string }{
+		{"unlimited", `"limit":null,"limit_reset":null`, "jev_router_key_unbounded"},
+		{"lifetime", `"limit":1,"limit_reset":null`, "jev_router_key_unbounded"},
+		{"over ceiling", fmt.Sprintf(`"limit":%v,"limit_reset":"monthly"`, questions.MonthlyCeilingUSD+1), "jev_router_key_unbounded"},
+		{"bounded", fmt.Sprintf(`"limit":%v,"limit_reset":"monthly","limit_remaining":1`, questions.MonthlyCeilingUSD), ""},
+		{"exhausted", `"limit":1,"limit_reset":"monthly","limit_remaining":0`, "jev_ceiling_reached"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			calls := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				calls++
+				if r.Header.Get("Authorization") != "Bearer "+routerSentinelKey {
+					t.Error("missing bearer key")
+				}
+				fmt.Fprintf(w, `{"data":{"usage_monthly":0.5,%s}}`, tc.fields)
+			}))
+			defer server.Close()
+			gate := &jevRouterGate{deps: jevrouter.Deps{HomeDir: t.TempDir(), Env: []string{agent.JevRouterKeyEnv + "=" + routerSentinelKey}, Client: server.Client(), Endpoint: server.URL}, now: time.Now}
+			usage, err := gate.Before(context.Background())
+			if calls != 1 {
+				t.Fatalf("key calls=%d", calls)
+			}
+			if tc.reason == "" {
+				if err != nil || usage != 0.5 {
+					t.Fatalf("usage=%v err=%v", usage, err)
+				}
+				return
+			}
+			var refusal *agent.SelectionFailureError
+			if usage != 0 || !errors.As(err, &refusal) || !strings.HasPrefix(refusal.Reason, tc.reason+":") || selectionReasonCode(err) != tc.reason {
+				t.Fatalf("usage=%v err=%v", usage, err)
+			}
+		})
 	}
 }
