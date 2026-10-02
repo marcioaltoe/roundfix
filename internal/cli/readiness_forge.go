@@ -9,10 +9,12 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
+	"roundfix/internal/baseline"
 	roundconfig "roundfix/internal/config"
 )
 
@@ -24,7 +26,13 @@ const (
 
 func defaultReadinessDependencies() readinessDependencies {
 	return readinessDependencies{
-		run: execReadinessRunner, resolve: exec.LookPath, environ: os.Environ(),
+		run: execReadinessRunner, resolve: func(name string) (string, error) {
+			path, reason := baseline.ResolveExecutable(name, filepath.SplitList(os.Getenv("PATH")))
+			if reason != "" {
+				return "", errors.New(reason)
+			}
+			return path, nil
+		}, environ: os.Environ(),
 		exists:  func(path string) bool { _, err := os.Stat(path); return err == nil },
 		timeout: readinessProbeTimeout,
 	}
@@ -84,7 +92,7 @@ func (deps readinessDependencies) probe(ctx context.Context, dir, host, name str
 
 func machineReadiness(ctx context.Context, deps readinessDependencies, loaded roundconfig.Loaded) []CheckResult {
 	forge := forgeReadiness(ctx, deps, loaded)
-	return []CheckResult{forge[0], gitReadiness(ctx, deps, loaded), forge[1]}
+	return []CheckResult{forge[0], gitReadiness(ctx, deps, loaded), forge[1], toolchainReadiness(deps, loaded), environmentReadiness(deps)}
 }
 
 type readinessRemote struct {

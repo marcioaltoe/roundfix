@@ -47,6 +47,24 @@ roundfix: notice: NODE_OPTIONS preload "<path>" does not exist; Roundfix left it
   answers `git ls-remote <remote> HEAD`. The remote is `watch.push_remote`, or
   `origin` when unset. Outside Git, it is `skipped` with
   `requires a Git repository`.
+- `toolchain:` — after `remote:`, finds the tools required by
+  `defaults.verification`, `worktree.bootstrap`, each
+  `delivery.derived_paths[].regenerate`, the Setup Manifest's
+  `verification.gate` and `verification.incremental` decisions, and
+  `verification.tools`. Discovery checks executable files and symlink targets
+  on `PATH` without running tools. `DR-TOOL-MISSING` fails the line and names
+  every source requiring the missing tool. Only the first word after leading
+  `NAME=value` words is read; a shell keyword, builtin or non-bare name yields
+  `DR-TOOL-UNREAD` (`warn`) with the command. List its tools under
+  `verification.tools` to make their requirements explicit.
+- `environment:` — after `toolchain:`, reports one
+  `DR-NODE-PRELOAD-MISSING` (`warn`) per missing absolute preload path in the
+  last `NODE_OPTIONS` value, using the agent environment's parser. Existing
+  paths and package names produce no finding. It reports each `ROUNDFIX_` key
+  variable named by the spec judge transports as `set` or `not set`, never a
+  key value. Generic provider key variables are not read. Remove a missing
+  preload where your shell sets `NODE_OPTIONS`; unset optional judge keys do
+  not fail the line.
 - `skills:` — the required Repository Skill Set matches its local
   authorities. The running binary's embedded artifacts are authoritative for
   the 14 Roundfix-owned skills, including the Roundfix Skill. Each of the 25
@@ -87,6 +105,8 @@ pre-pr-review: ok (provider=codex; source=default)
 gh: ok (gh <version>; github.com login=<login>; <owner/repo> permission=WRITE)
 git: ok (<version> >= 2.23.0)
 remote: ok (origin: github.com/<owner/repo>; reachable)
+toolchain: ok (<tools> found)
+environment: ok (spec judge keys: ROUNDFIX_OPENROUTER_API_KEY not set, ROUNDFIX_TYPESAFE_API_KEY not set)
 skills: ok (<required> required: <owned> Roundfix-owned, <external> external)
 residue: ok (no process residue found)
 storage: ok (nothing to reclaim; Runs reclaimable: 0; Run Database free bytes: 0)
