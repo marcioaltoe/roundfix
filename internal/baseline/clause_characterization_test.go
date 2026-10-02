@@ -152,6 +152,23 @@ func baselineClauseForceDifferences(clauses []characterizedBaselineClause, want 
 // entry. Wording may change without changing identifiers or enforcement.
 func characterizedBaselineForce() map[string]string {
 	return map[string]string{
+		"clause.go.change-module-files-through-go":                    "prohibited",
+		"clause.go.keep-entry-points-thin":                            "mandatory",
+		"clause.go.record-the-reason-for-a-module":                    "mandatory",
+		"clause.go.own-every-goroutine":                               "mandatory",
+		"clause.go.pass-context-first":                                "mandatory",
+		"clause.go.wrap-errors-with-the-operation":                    "mandatory",
+		"clause.go.build-every-constrained-platform":                  "mandatory",
+		"clause.go.test-observable-behavior":                          "mandatory",
+		"clause.go.test-through-go-test":                              "mandatory",
+		"clause.cli.public-command-contract":                          "mandatory",
+		"clause.cli.separate-output-streams":                          "mandatory",
+		"clause.cli.ship-the-skill-with-the-behavior":                 "mandatory",
+		"clause.cli.deterministic-non-interactive":                    "mandatory",
+		"clause.cli.explicit-safe-writes":                             "mandatory",
+		"clause.tui.drive-models-synchronously":                       "mandatory",
+		"clause.tui.emulate-the-terminal-last":                        "mandatory",
+		"clause.tui.keep-design-policy-in-repository-guidance":        "mandatory",
 		"clause.core.regenerate-generated-files":                      "prohibited",
 		"clause.core.flaky-tests-block":                               "mandatory",
 		"clause.core.lint-warnings-block":                             "mandatory",

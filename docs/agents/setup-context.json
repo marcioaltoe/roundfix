@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
-  "catalogDigest": "sha256:fd0caaa3645e49b64dfd0a61f4e4129a059b886c6d7fc1e8570c7c8d92ae39c9",
+  "catalogDigest": "sha256:ea9f37fbf3fc5de1a3dbd8f1e2b8cca3487e19160e2ea4008a1e1b9525890940",
   "modules": [
     "core",
     "context-workflow",
@@ -102,7 +102,7 @@
       "module": "go",
       "template": "template.guide.go",
       "version": "0.0.1",
-      "digest": "da1f21f31f2109a6fcc8d74091272470a03e3264864282fc07ed8e17c31b5032"
+      "digest": "d5d81461a83e545124bcb6f2ae58b1dd6afddae52f4cb34011db6d07910b73d6"
     },
     {
       "id": "root.spec-workflow",
@@ -120,7 +120,7 @@
       "module": "cli-surface",
       "template": "template.guide.cli-surface",
       "version": "0.0.1",
-      "digest": "eccd16c4b04dd206395f030f64115b5cd1a91450ba745867ef164e2197f73a7a"
+      "digest": "34467966b14696fddd9a83c802acbcca2785b210505692a95989964f453648c1"
     },
     {
       "id": "root.autonomous-work",
@@ -138,7 +138,7 @@
       "module": "tui-surface",
       "template": "template.guide.tui-surface",
       "version": "0.0.1",
-      "digest": "487cb07b110df86651c7ef4a45d10799cb64b5dab07afd378fef343f03f69d2a"
+      "digest": "7e5a76f12057f18ba95a4f77738566ce4ead00c07f1b4d9c0d1c6b9b59150773"
     },
     {
       "id": "root.go",

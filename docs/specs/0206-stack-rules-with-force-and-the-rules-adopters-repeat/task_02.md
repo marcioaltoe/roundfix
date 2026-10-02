@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0206-stack-rules-with-force-and-the-rules-adopters-repeat
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -74,3 +74,59 @@ The composed profile `go-cli-typescript-monorepo` that Spec 0207 shipped selects
 - `_prd.md` → Goal 1; Goal 2; Story 1; Story 2; Core Feature 1; Success Metric 1; Success Metric 2
 - `_techspec.md` → Candidate rules; Exact texts (task_02); Version changes; Existing tests that change; API Contract 2; Testing Approach 2; Testing Approach 5; Build Order 2
 - ADR-0059, ADR-0081, ADR-0149, ADR-0186, ADR-0190, ADR-0202
+
+## Result
+
+Implemented the task_02 slice for Daemon Verification. The Go, CLI and TUI
+modules now carry the TechSpec's exact 17 clauses (nine Go, five CLI, three
+TUI), use module-v3 with empty repository extensions, and retain every rule
+identifier and skill list. Module, guide and rule versions each rose by one:
+Go module 4 → 5, Go guide 3 → 4, and all other affected versions 2 → 3.
+The force record gained all 17 clauses. Only the CLI and TUI paths were added
+to the frozen-parity exception list; the existing Go entry was retained.
+
+The six new tests exercise embedded modules and rendered temporary-adopter
+plans. Both negative tests feed literal input to their pure check. No skill,
+Go guide template, repository-specific rule, production signature, existing
+top-level test, Task Graph or other Task file was changed.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| No rule-level guidance; a literal rule is reported | `TestEveryGoCLIAndTUIRuleCarriesForce` and `TestARuleWithoutForceIsReported` passed. Before changing the modules, the first test failed and identified all six original rule-level paragraphs. |
+| Rendered guides label every rule and state the three obligations | `TestTheGoCLIAndTUIGuidesStateTheirClauses` passed against all 17 exact texts, rejecting the old Go sentences and any unlabelled rule line. `TestTheGoCLIAndTUIClausesCarryTheirForce` passed against the literal force table. The Managed Refresh rendered the recorded-reason preference, constrained-platform build and skill-ships-with-behavior obligation into this repository's guides. |
+| Go guide bans no named library; literal Cobra ban is reported | `TestTheGoGuideBansNoLibraryByName` passed for Cobra, testify and Viper; `TestALibraryBanInTheGoGuideIsReported` passed with the literal `Do not use Cobra.`. The repository's own library prohibition remains unchanged. |
+| Second Managed Refresh is a no-op | First confirmed refresh exited 0 with four file changes: Go, CLI and TUI guides plus Setup Manifest. The second exited 0 with `File changes: 0`, `approved Baseline Plan is already applied`, and `Idempotence: verified`. |
+
+### Checks run
+
+- `go test ./internal/baseline -run '^Test(EveryGoCLIAndTUIRuleCarriesForce|ARuleWithoutForceIsReported|ALibraryBanInTheGoGuideIsReported)$' -count=1`
+  — expected red before the module changes: all three modules reported their
+  rule-level guidance.
+- `GOCACHE=/private/tmp/roundfix-task02-go-cache go test ./internal/baseline -count=1 -v -run '^Test(EveryGoCLIAndTUIRuleCarriesForce|ARuleWithoutForceIsReported|TheGoCLIAndTUIGuidesStateTheirClauses|TheGoGuideBansNoLibraryByName|ALibraryBanInTheGoGuideIsReported|TheGoCLIAndTUIClausesCarryTheirForce)$'`
+  — exit 0; all six tests reported PASS on the regenerated tree.
+- `rtk make baseline-digests` — exit 0, `ok: true`, `changed: true`;
+  regenerated only the catalog digest, normalized catalog and four declared
+  plan-characterization goldens. No generated artifact was hand-edited.
+- `GOCACHE=/private/tmp/roundfix-task02-go-cache go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`
+  — run twice with sandbox escalation for the Git-private transaction lock;
+  both exited 0, with four then zero file changes. Skills were skipped.
+- `GOCACHE=/private/tmp/roundfix-task02-go-cache rtk make verify-incremental`
+  — sandboxed attempt exited 2 because two CLI force-stop tests could not
+  read the process table. The rerun with sandbox escalation exited 0,
+  including format checks, vet, package tests, skill checks and build.
+- Source-contract inspection — confirmed exact authored texts, schema,
+  version increments, retained rule IDs and unchanged skills/root blocks.
+- Scope postflight and `git diff --check` — all 17 changed/untracked paths
+  belong to task_02's Context or assigned Task file; no whitespace errors.
+
+The first unscoped-cache refresh attempt could not read the host Go cache;
+the task-scoped cache resolved that restriction. The next sandboxed refresh
+could not open the Git-private transaction lock; escalation resolved it.
+Both successful refreshes retained the reported nested-carrier warnings for
+the formatter fixture and Source Baseline corpus; those carriers were not
+changed. No implementation follow-up was needed.
+
+Task status remains Daemon-owned. The authored Verification command was not
+run; no terminal Task verdict, commit, push or pull request is claimed.

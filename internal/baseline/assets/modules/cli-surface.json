@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "setup-context-driven/module-v2", "id": "cli-surface", "version": 2, "kind": "application-surface", "title": "Agentic CLI surface guidance",
+  "schemaVersion": "setup-context-driven/module-v3", "id": "cli-surface", "version": 3, "kind": "application-surface", "title": "Agentic CLI surface guidance",
   "dependsOn": ["core"], "conflictsWith": [], "requiredSkills": [
     "agentic-cli-design"
   ],
@@ -18,9 +18,17 @@
   "rootBlocks": [{"id": "root.cli-surface", "version": 2, "template": "template.root.cli-surface", "rules": [], "references": [
     {"id": "reference.root.cli", "token": "reference.cli", "ownership": "setup", "managedId": "guide.cli-surface"}
   ]}],
-  "supportingGuides": [{"id": "guide.cli-surface", "version": 2, "path": "docs/agents/cli.md", "template": "template.guide.cli-surface", "rules": ["rule.cli.output-contract", "rule.cli.non-interactive"], "references": []}],
+  "supportingGuides": [{"id": "guide.cli-surface", "version": 3, "path": "docs/agents/cli.md", "template": "template.guide.cli-surface", "rules": ["rule.cli.output-contract", "rule.cli.non-interactive"], "references": []}],
+  "repositoryExtensions": [],
   "rules": [
-    {"id": "rule.cli.output-contract", "version": 2, "coverage": ["coverage.cli"], "guidance": "Treat command names, flags, stdout and stderr placement, machine-readable fields, and exit codes as public API. Keep stdout for requested output and stderr for diagnostics, progress, and warnings."},
-    {"id": "rule.cli.non-interactive", "version": 2, "coverage": ["coverage.cli", "coverage.universal-safety"], "guidance": "Make automation deterministic and non-interactive. Write operations must be explicit, replayable, safe by default, and observable; use dry-run, confirmation, or idempotency contracts where the repository requires them."}
+    {"id": "rule.cli.output-contract", "version": 3, "coverage": ["coverage.cli"], "clauses": [
+      {"id": "clause.cli.public-command-contract", "enforcement": "mandatory", "guidance": "Treat command names, flags, stdout and stderr placement, machine-readable fields, and exit codes as public API."},
+      {"id": "clause.cli.separate-output-streams", "enforcement": "mandatory", "guidance": "Keep stdout for requested output and stderr for diagnostics, progress, and warnings."},
+      {"id": "clause.cli.ship-the-skill-with-the-behavior", "enforcement": "mandatory", "guidance": "When the repository ships a skill or a command reference that describes its commands, a change to command behavior updates that skill or reference in the same pull request."}
+    ]},
+    {"id": "rule.cli.non-interactive", "version": 3, "coverage": ["coverage.cli", "coverage.universal-safety"], "clauses": [
+      {"id": "clause.cli.deterministic-non-interactive", "enforcement": "mandatory", "guidance": "Make automation deterministic and non-interactive."},
+      {"id": "clause.cli.explicit-safe-writes", "enforcement": "mandatory", "guidance": "Make write operations explicit, replayable, safe by default, and observable; use dry-run, confirmation, or idempotency contracts where the repository requires them."}
+    ]}
   ]
 }
