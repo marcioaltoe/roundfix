@@ -1,0 +1,7 @@
+{
+  "approval": "Maintainer authority _authorization.md granted 2026-09-30; no provider acceptance obtained",
+  "checks": "Daemon make verify-changed exit 0 at f495ec3a2d08bd59aef353b366048eab0c693cb5",
+  "threads": "None: no open PR",
+  "merge_ready": "None yet: review follows archive",
+  "review_artifact_ancestry": "No artifact yet; candidate f495ec3a2d08bd59aef353b366048eab0c693cb5"
+}

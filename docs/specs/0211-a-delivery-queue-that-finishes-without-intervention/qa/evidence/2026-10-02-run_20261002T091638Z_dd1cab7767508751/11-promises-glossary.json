@@ -1,0 +1,42 @@
+{
+  "Goal": [
+    true,
+    true,
+    true
+  ],
+  "User Story": [
+    true,
+    true,
+    true,
+    true,
+    true
+  ],
+  "Core Feature": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+  ],
+  "Success Metric": [
+    true,
+    true,
+    true,
+    true,
+    true
+  ],
+  "glossary": {
+    "Delivery Retry": "The explicit act that returns one parked Delivery Queue item to the stage supported by its recorded evidence and hands it to a live or newly started queue owner. It may perform Task Carry-Forward from every Run of the item's Spec, newest first, and is never automatic.\n_Avoid_: Resume Command, automatic retry, replay",
+    "Park Class": "The named reason a Delivery Queue item is parked \u2014 for example a prerequisite not yet merged, a Pull Request conflict, an environment-only QA partial or a check that failed twice outside the item's packages \u2014 shown with the next command that answers it (ADR-0192, ADR-0193).\n_Avoid_: Blocker text, error code"
+  },
+  "notice_needs_term": false,
+  "vocabulary": {
+    "Retry refused": "deliver heading and example",
+    "Item:": "deliver stage/blocker block",
+    "merge state": "deliver checking explanation",
+    "merge refused by branch policy": "deliver explanation names base branch policy prohibits the merge, once per head then park (semantic documentation, not exact log line)",
+    "NODE_OPTIONS preload": "doctor exact notice"
+  }
+}

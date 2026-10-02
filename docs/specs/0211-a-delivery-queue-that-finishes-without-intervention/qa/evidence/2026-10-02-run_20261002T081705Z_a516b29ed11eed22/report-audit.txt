@@ -1,0 +1,2 @@
+Closed report audit: {"pass": 9, "fail": 1, "environment": 3, "finding": 0, "declared": 0, "pending": 0, "skipped": 0}
+13 input blocks; all declared Requirements and non-waivable sources covered; 25 evidence links resolve; seeded auditor and mechanical content preserved.

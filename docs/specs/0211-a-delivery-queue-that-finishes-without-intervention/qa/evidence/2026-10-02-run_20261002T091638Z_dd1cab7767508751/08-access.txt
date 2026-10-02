@@ -1,0 +1,5 @@
+gh pr view 317 --repo marcioaltoe/roundfix --json number,state,headRefOid,mergedAt,mergeCommit,statusCheckRollup
+exit 1: Post https://api.github.com/graphql: Forbidden
+gh api repos/marcioaltoe/roundfix/actions/runs?head_sha=d46674d16d4a0bf2a3f280f9cd32ebd061a21b94
+tool refusal: Network access to api.github.com was blocked: domain is not on the allowlist for the current sandbox mode.
+No GitHub mutation or retry.

@@ -1,0 +1,15 @@
+$ ["/Users/marcio/.roundfix/worktrees/roundfix-deliver-0211-a-delivery-queue-that-finishes-without-intervention-b7cc207f1d746d51-cd9deec5-71cb9f93/run_20261002T081705Z_a516b29ed11eed22/bin/roundfix", "deliver", "retry", "0300-example", "unexpected"]
+exit: 2
+stdout:
+
+stderr:
+Preflight failed
+
+Reason:
+  unexpected argument "unexpected"
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix deliver retry --help' for usage.

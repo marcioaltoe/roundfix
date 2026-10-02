@@ -1,0 +1,40 @@
+$ ["sed", "-n", "630,664p", "internal/cli/setup.go"]
+exit: 0
+stdout:
+		return fmt.Errorf("write temporary setup file for %q: %w", path, err)
+	}
+	if err := temp.Close(); err != nil {
+		return fmt.Errorf("close temporary setup file for %q: %w", path, err)
+	}
+	if err := os.Rename(tempPath, path); err != nil {
+		return fmt.Errorf("replace setup file %q atomically: %w", path, err)
+	}
+	committed = true
+	return nil
+}
+
+func defaultSetupNodeVersion(ctx context.Context) (string, error) {
+	if _, err := exec.LookPath("node"); err != nil {
+		return "", err
+	}
+	cmd := exec.CommandContext(ctx, "node", "--version")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", commandOutputError(err, output)
+	}
+	return strings.TrimSpace(string(output)), nil
+}
+
+func defaultSetupACPXVersion(ctx context.Context) (string, error) {
+	if _, err := exec.LookPath("acpx"); err != nil {
+		return "", err
+	}
+	cmd := exec.CommandContext(ctx, "acpx", "--version")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", commandOutputError(err, output)
+	}
+	return strings.TrimSpace(string(output)), nil
+}
+
+stderr:

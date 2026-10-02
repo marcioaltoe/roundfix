@@ -1,0 +1,3 @@
+M	docs/specs/0211-a-delivery-queue-that-finishes-without-intervention/task_02.md
+A	internal/cli/deliver_archived_retry_test.go
+M	internal/cli/deliver_workflow.go

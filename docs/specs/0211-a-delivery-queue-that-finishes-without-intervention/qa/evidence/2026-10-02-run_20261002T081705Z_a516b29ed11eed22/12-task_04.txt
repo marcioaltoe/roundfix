@@ -1,0 +1,10 @@
+$ ["git", "-c", "core.fsmonitor=false", "diff-tree", "--no-commit-id", "--name-only", "-r", "594fd8ca942223edbf4de751154f945b8dff4f04"]
+exit: 0
+stdout:
+docs/specs/0211-a-delivery-queue-that-finishes-without-intervention/task_04.md
+internal/agent/acpx_runner.go
+internal/agent/codex_spawn.go
+internal/agent/node_options.go
+internal/agent/node_options_test.go
+
+stderr:

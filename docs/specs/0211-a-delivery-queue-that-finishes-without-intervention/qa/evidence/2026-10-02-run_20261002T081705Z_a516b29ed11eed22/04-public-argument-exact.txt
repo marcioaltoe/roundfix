@@ -1,0 +1,15 @@
+$ ["./bin/roundfix", "deliver", "retry", "0300-example", "unexpected"]
+exit: 2
+stdout:
+
+stderr:
+Preflight failed
+
+Reason:
+  unexpected argument "unexpected"
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix deliver retry --help' for usage.

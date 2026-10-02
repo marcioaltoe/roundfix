@@ -1,0 +1,12 @@
+$ ["git", "-c", "core.fsmonitor=false", "diff-tree", "--no-commit-id", "--name-only", "-r", "88c0100660eb1ea755f091fcce4a4740fde5cfa4"]
+exit: 0
+stdout:
+docs/specs/0211-a-delivery-queue-that-finishes-without-intervention/task_03.md
+internal/cli/deliver.go
+internal/cli/deliver_retry_test.go
+internal/cli/deliver_token_ceiling_test.go
+internal/delivery/engine.go
+internal/delivery/github.go
+internal/delivery/merge_state_test.go
+
+stderr:

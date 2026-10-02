@@ -1,0 +1,5 @@
+$ ["git", "-c", "core.fsmonitor=false", "diff", "--name-only", "6364d3c9192a03ab8e6c505c71fea4baf6fa8810..HEAD", "--", "Makefile", ".roundfixrc.yml", "go.mod", ".github/workflows"]
+exit: 0
+stdout:
+
+stderr:

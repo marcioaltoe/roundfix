@@ -1,0 +1,42 @@
+{
+  "mirrors": {
+    ".agents/skills/roundfix/SKILL.md": true,
+    ".agents/skills/roundfix/references/deliver.md": true,
+    ".agents/skills/roundfix/references/runtime.md": true
+  },
+  "before": [
+    "0.1.9",
+    "0.1.9"
+  ],
+  "after": [
+    "0.1.10",
+    "0.1.10"
+  ],
+  "changed_settlement": [],
+  "phrases": {
+    ".agents/skills/roundfix/references/deliver.md": [
+      "Retry refused",
+      "merge state",
+      "BLOCKED",
+      "UNKNOWN",
+      "base branch policy prohibits the merge",
+      "delivery-error"
+    ],
+    "docs/user-guide/commands/deliver.md": [
+      "Retry refused",
+      "merge state",
+      "BLOCKED",
+      "UNKNOWN",
+      "base branch policy prohibits the merge",
+      "delivery-error"
+    ],
+    ".agents/skills/roundfix/references/runtime.md": [
+      "NODE_OPTIONS",
+      "left it out of the agent environment"
+    ],
+    "docs/user-guide/commands/doctor.md": [
+      "NODE_OPTIONS",
+      "left it out of the agent environment"
+    ]
+  }
+}

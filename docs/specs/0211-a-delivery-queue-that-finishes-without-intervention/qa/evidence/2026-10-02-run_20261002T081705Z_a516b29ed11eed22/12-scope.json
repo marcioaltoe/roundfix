@@ -1,0 +1,78 @@
+{
+  "audits": [
+    {
+      "task": "task_01",
+      "commit": "c0192aeb199ef9c338c00055201caf043164a7fd",
+      "paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        ".agents/skills/roundfix/references/runtime.md",
+        "docs/specs/0211-a-delivery-queue-that-finishes-without-intervention/task_01.md",
+        "docs/user-guide/commands/deliver.md",
+        "docs/user-guide/commands/doctor.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/deliver.md",
+        "skills/roundfix/references/runtime.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "recorded_paths": [],
+      "undeclared": []
+    },
+    {
+      "task": "task_02",
+      "commit": "89953dc64cd707e59ee4bae6b92a927394142294",
+      "paths": [
+        "docs/specs/0211-a-delivery-queue-that-finishes-without-intervention/task_02.md",
+        "internal/cli/deliver_archived_retry_test.go",
+        "internal/cli/deliver_workflow.go"
+      ],
+      "recorded_paths": [],
+      "undeclared": []
+    },
+    {
+      "task": "task_03",
+      "commit": "88c0100660eb1ea755f091fcce4a4740fde5cfa4",
+      "paths": [
+        "docs/specs/0211-a-delivery-queue-that-finishes-without-intervention/task_03.md",
+        "internal/cli/deliver.go",
+        "internal/cli/deliver_retry_test.go",
+        "internal/cli/deliver_token_ceiling_test.go",
+        "internal/delivery/engine.go",
+        "internal/delivery/github.go",
+        "internal/delivery/merge_state_test.go"
+      ],
+      "recorded_paths": [
+        "## Context",
+        "internal/cli/deliver_token_ceiling_test.go"
+      ],
+      "undeclared": []
+    },
+    {
+      "task": "task_04",
+      "commit": "594fd8ca942223edbf4de751154f945b8dff4f04",
+      "paths": [
+        "docs/specs/0211-a-delivery-queue-that-finishes-without-intervention/task_04.md",
+        "internal/agent/acpx_runner.go",
+        "internal/agent/codex_spawn.go",
+        "internal/agent/node_options.go",
+        "internal/agent/node_options_test.go"
+      ],
+      "recorded_paths": [],
+      "undeclared": []
+    }
+  ],
+  "governed": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/deliver.md",
+    ".agents/skills/roundfix/references/runtime.md",
+    "skills/roundfix/SKILL.md"
+  ],
+  "bounded_paths": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/deliver.md",
+    ".agents/skills/roundfix/references/runtime.md",
+    "skills/roundfix/SKILL.md"
+  ],
+  "errors": [],
+  "mechanical_grant_revision": "6364d3c9192a03ab8e6c505c71fea4baf6fa8810"
+}

@@ -1,0 +1,9 @@
+$ ["go", "test", "-count=1", "-v", "./skills", "-run", "TestEveryOwnedSkillVersionIsRecorded"]
+exit: 0
+stdout:
+=== RUN   TestEveryOwnedSkillVersionIsRecorded
+--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.00s)
+PASS
+ok  	roundfix/skills	0.400s
+
+stderr:

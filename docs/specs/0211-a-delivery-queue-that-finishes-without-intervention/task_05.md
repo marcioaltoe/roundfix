@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0211-a-delivery-queue-that-finishes-without-intervention
-status: pending
+status: failed
 type: qa
 complexity: medium
 ---
