@@ -2,6 +2,20 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.26.0] - 2026-10-02
+
+### A Go CLI and a TypeScript monorepo in one Baseline
+
+The built-in `go-cli-typescript-monorepo` profile is for a repository that holds a Go command-line tool next to a Bun workspace with a Hono backend and a React frontend. Its setup, `go-cli-typescript-bun`, is composed from the upstream `go` and `typescript` setups by name. Its guides repeat no clause, and its root gate runs both the Go and the Bun Verification. Profile alignment reports a root Make gate that does not reach one of them. A repository can record its frontend layout. While none is recorded, the systems layout is stated as the suggestion, and a recorded layout is never overwritten. A custom profile draft binds to the closest built-in profile it adapts, and a tie is still refused.
+
+### Stack rules with force and the rules adopters repeat
+
+Every rule of the Go, Rust, CLI and TUI modules reaches an adopter as a clause with its force stated, one obligation per clause. A Go adopter may add a third-party module when it records why. A Rust adopter reads a typed-error policy: typed errors in library and domain code, a type-erased error only at a binary's entry point, and no panic on a path a user can reach. Hand-written rules repeated across adopter repositories now ship as clauses with force. An adopter whose Source Baseline carries the retired Bun warning rule takes its next update without an unaccounted clause.
+
+### Fixed
+
+- `roundfix spec judge` no longer sends a question without criteria as `"criteria": null`. OpenRouter refused it with HTTP 400, so every source-grouping suggestion in 0.25.0 was skipped.
+
 ## [0.25.0] - 2026-10-02
 
 ### An advisory judge for Spec authoring
