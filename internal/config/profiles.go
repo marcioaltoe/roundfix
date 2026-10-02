@@ -463,10 +463,13 @@ func normalizeSelection(path string, selection AgentSelection) (AgentSelection, 
 		return AgentSelection{}, fmt.Errorf("%s.runtime must not be empty", path)
 	}
 	if !isSupportedAgent(normalized.Runtime) {
-		return AgentSelection{}, fmt.Errorf("%s.runtime %q is invalid; supported values: codex, claude, opencode", path, normalized.Runtime)
+		return AgentSelection{}, fmt.Errorf("%s.runtime %q is invalid; supported values: %s", path, normalized.Runtime, strings.Join(SupportedRuntimes(), ", "))
 	}
 	if normalized.Model == "" {
 		return AgentSelection{}, fmt.Errorf("%s.model must not be empty", path)
+	}
+	if normalized.Runtime == "cursor" && normalized.ReasoningEffort != "" {
+		return AgentSelection{}, fmt.Errorf("%s.reasoning_effort must be \"\" for runtime cursor; Cursor states effort, thinking, context and speed inside the model value, for example \"grok-4-20[thinking=true]\"", path)
 	}
 	return normalized, nil
 }

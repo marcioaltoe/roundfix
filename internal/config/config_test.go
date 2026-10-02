@@ -16,7 +16,6 @@ import (
 	"testing"
 	"time"
 
-	"roundfix/internal/agent"
 	"roundfix/internal/gittest"
 )
 
@@ -512,23 +511,6 @@ func TestRenderedConfig(t *testing.T) {
 	})
 }
 
-func TestModelCatalogRetainsOfficialCodexIdentifiers(t *testing.T) {
-	t.Parallel()
-	catalog := agent.ModelCatalog("codex")
-	for _, identifier := range []string{"gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"} {
-		found := false
-		for _, choice := range catalog {
-			if choice.Value == identifier {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Fatalf("Codex Model Catalog is missing official identifier %q: %#v", identifier, catalog)
-		}
-	}
-}
-
 func TestAgentSelectionProfileBuiltinsResolveRequiredCategories(t *testing.T) {
 	t.Parallel()
 	config := Builtin()
@@ -742,7 +724,7 @@ profiles:
         model: fallback
         reasoning_effort: high
 `,
-			contains: `profiles.backend.preferred.runtime "local" is invalid; supported values: codex, claude, opencode`,
+			contains: `profiles.backend.preferred.runtime "local" is invalid; supported values: codex, claude, cursor, opencode`,
 		},
 		{
 			name: "empty model",

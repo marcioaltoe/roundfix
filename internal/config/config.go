@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -498,12 +499,11 @@ func (overlay *runtimesOverlay) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind == yaml.MappingNode {
 		for index := 0; index < len(node.Content); index += 2 {
 			key := node.Content[index].Value
-			switch key {
-			case "codex", "claude", "opencode":
+			if slices.Contains(legacyRuntimes, key) {
 				if err := validateRuntimeDefaultsOverlay("runtimes."+key, node.Content[index+1]); err != nil {
 					return err
 				}
-			default:
+			} else {
 				return fmt.Errorf("runtimes.%s is not a supported config key", key)
 			}
 		}
@@ -991,8 +991,12 @@ func Validate(config Config) error {
 	if err := validateDerivedPaths(config.Delivery.DerivedPaths); err != nil {
 		return err
 	}
-	if config.Defaults.Agent != "" && !isSupportedAgent(config.Defaults.Agent) {
-		return fmt.Errorf("defaults.agent %q is invalid; supported values: codex, claude, opencode", config.Defaults.Agent)
+	if config.Defaults.Agent != "" && !slices.Contains(legacyRuntimes, config.Defaults.Agent) {
+		message := fmt.Sprintf("defaults.agent %q is invalid; supported values: %s", config.Defaults.Agent, strings.Join(legacyRuntimes, ", "))
+		if config.Defaults.Agent == "cursor" {
+			message += "; name cursor in profiles"
+		}
+		return errors.New(message)
 	}
 	if err := validateProfiles(config.Profiles); err != nil {
 		return err
@@ -1887,13 +1891,16 @@ func repoID(gitRoot string) string {
 	return hex.EncodeToString(sum[:])[:16]
 }
 
+var legacyRuntimes = []string{"codex", "claude", "opencode"}
+
+// SupportedRuntimes returns the ordered ACP Runtime names. The returned slice
+// belongs to the caller so a mutation cannot change validation or diagnostics.
+func SupportedRuntimes() []string {
+	return []string{"codex", "claude", "cursor", "opencode"}
+}
+
 func isSupportedAgent(agent string) bool {
-	switch agent {
-	case "codex", "claude", "opencode":
-		return true
-	default:
-		return false
-	}
+	return slices.Contains(SupportedRuntimes(), agent)
 }
 
 func isSupportedPrePRReviewProvider(provider string) bool {

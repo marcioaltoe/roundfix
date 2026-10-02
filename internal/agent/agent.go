@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"roundfix/internal/config"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
 )
@@ -355,6 +356,7 @@ func RuntimeFor(opts RuntimeOptions) (RuntimeSpec, error) {
 			DisplayName: "Claude Code",
 			Protocol:    ProtocolACP,
 		},
+		"cursor": {ID: "cursor", DisplayName: "Cursor", Protocol: ProtocolACP},
 		"opencode": {
 			ID:          "opencode",
 			DisplayName: "OpenCode",
@@ -363,7 +365,7 @@ func RuntimeFor(opts RuntimeOptions) (RuntimeSpec, error) {
 	}
 	spec, ok := specs[opts.Agent]
 	if !ok {
-		return RuntimeSpec{}, fmt.Errorf("unsupported Agent %q; supported values: codex, claude, opencode", opts.Agent)
+		return RuntimeSpec{}, fmt.Errorf("unsupported Agent %q; supported values: %s", opts.Agent, strings.Join(config.SupportedRuntimes(), ", "))
 	}
 	if opts.CommandOverride != "" {
 		spec.ID = spec.ID + "-custom"
