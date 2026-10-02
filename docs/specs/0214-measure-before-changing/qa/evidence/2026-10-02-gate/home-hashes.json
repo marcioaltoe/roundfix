@@ -1,0 +1,239 @@
+[
+  {
+    "command": [
+      "runs",
+      "causes",
+      "--since",
+      "2026-10-01"
+    ],
+    "before": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    },
+    "after": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    }
+  },
+  {
+    "command": [
+      "runs",
+      "causes",
+      "--until",
+      "2026-09-01"
+    ],
+    "before": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    },
+    "after": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    }
+  },
+  {
+    "command": [
+      "runs",
+      "causes",
+      "--since",
+      "2026-13-01"
+    ],
+    "before": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    },
+    "after": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    }
+  },
+  {
+    "command": [
+      "runs",
+      "causes"
+    ],
+    "before": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    },
+    "after": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    }
+  },
+  {
+    "command": [
+      "runs",
+      "causes",
+      "--since",
+      "2026-10-01",
+      "--until",
+      "2026-10-02",
+      "--format",
+      "json"
+    ],
+    "before": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    },
+    "after": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    }
+  },
+  {
+    "command": [
+      "runs",
+      "causes",
+      "--help"
+    ],
+    "before": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    },
+    "after": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    }
+  },
+  {
+    "command": [
+      "runs",
+      "--help"
+    ],
+    "before": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    },
+    "after": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    }
+  },
+  {
+    "command": [
+      "--help"
+    ],
+    "before": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    },
+    "after": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    }
+  },
+  {
+    "command": [
+      "runs",
+      "causes",
+      "--format",
+      "yaml"
+    ],
+    "before": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    },
+    "after": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    }
+  },
+  {
+    "command": [
+      "runs",
+      "causes",
+      "--unknown"
+    ],
+    "before": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    },
+    "after": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    }
+  },
+  {
+    "command": [
+      "runs",
+      "causes",
+      "--since",
+      "2026-10-01",
+      "--until",
+      "2026-10-01"
+    ],
+    "before": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    },
+    "after": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    }
+  },
+  {
+    "command": [
+      "runs",
+      "causes",
+      "--since",
+      "2026-10-01"
+    ],
+    "before": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    },
+    "after": {
+      ".roundfix/roundfix.db": "71ea8ec1d440a65bca64724ec3e44ccde785ff3b13f8ee4d0602a3e1b661afa3",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/2.log": "33437b4886302c02c344ba8cfb03187485c8d07d3ba466c2f24f4485b01f9a35",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/1.log": "ff4c4a76ffafb5e2b1d30d75213be09029c231e5a878d1bcea0823a65f978dfc",
+      "artifacts/runs/run_20261001T120000Z_0000000000000001/verification/0.log": "c9f12cbac88605d425a8c342931e771ee351f5232f2c5bd5e233ebdaf222daba"
+    }
+  }
+]

@@ -1,0 +1,32 @@
+$ git diff-tree --no-commit-id --name-only -r 424ad384a3fb762d5ea13402d371a84f950c7830
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/runs.md
+docs/specs/0214-measure-before-changing/task_01.md
+docs/user-guide/commands/runs.md
+internal/cli/cli.go
+internal/cli/runs.go
+internal/cli/runs_causes.go
+internal/cli/runs_causes_test.go
+internal/docscontract/command_documentation_test.go
+internal/docscontract/user_guide_contract_test.go
+internal/runcause/classify.go
+internal/runcause/classify_test.go
+internal/runcause/record_test.go
+internal/runcause/report.go
+internal/runcause/report_test.go
+internal/runcause/signatures.go
+internal/runcause/signatures.json
+internal/runcause/testdata/causes-measurement.md
+internal/runcause/testdata/causes-record-sabotaged.json
+internal/runcause/testdata/causes-record.json
+internal/spec/cause_graph.go
+internal/store/run_events_of_kinds.go
+internal/store/run_events_of_kinds_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/runs.md
+skills/testdata/owned-skill-versions.json
+
+STDERR:
+error: fsmonitor_ipc__send_query: unspecified error on '/Users/marcio/dev/roundfix/.git/worktrees/run_20261002T171516Z_94169d908e48d811/fsmonitor--daemon.ipc'
+
+EXIT: 0

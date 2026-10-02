@@ -1,0 +1,6 @@
+ADR-0156 consuming Task map:
+Success Metrics 1,2: task_01; 3: task_02,task_04; 4: task_03; 5: task_03,task_04.
+API Contracts 1,2,3: task_01; 4: task_01,task_02,task_04.
+User Stories 1,2: task_01; 3: task_02,task_04; 4,5: task_03.
+Core Features 1–5: task_01; 6,7: task_02; 8: task_04; 9,10: task_03; 11: task_03,task_04.
+Every metric has a TechSpec Coverage Map entry. Strict Spec check: no findings.

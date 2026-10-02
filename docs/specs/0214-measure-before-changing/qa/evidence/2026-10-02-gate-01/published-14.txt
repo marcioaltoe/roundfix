@@ -1,0 +1,3 @@
+Observed 2026-10-02 through web reader.
+Source: https://arxiv.org/pdf/2607.09510
+Table II (page 6), Results RQ2. Independent check: 1,184 failed trajectories; nine types; epistemic 57.9%, competence 32.8%, environment 9.4%. Other is 0.6% within the environment family. PRD figures agree.

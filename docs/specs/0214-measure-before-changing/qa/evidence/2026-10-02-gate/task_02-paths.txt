@@ -1,0 +1,22 @@
+$ git diff-tree --no-commit-id --name-only -r 9c31e773fb6313dd42a51198d4bec219e8947661
+docs/specs/0214-measure-before-changing/task_02.md
+internal/judge/task_acceptance_measure_test.go
+internal/judge/task_acceptance_stats_test.go
+internal/judge/testdata/task-acceptance-question.json
+internal/judge/testdata/task-acceptance/labels.json
+internal/judge/testdata/task-acceptance/measurement.md
+internal/judge/testdata/task-acceptance/record-sabotaged.json
+internal/judge/testdata/task-acceptance/record.json
+internal/judge/testdata/task-acceptance/repo/docs/specs/0300-example/task_01.md
+internal/judge/testdata/task-acceptance/repo/docs/specs/0300-example/task_02.md
+internal/judge/testdata/task-acceptance/repo/docs/specs/0301-example/task_01.md
+internal/judge/testdata/task-acceptance/repo/docs/specs/0301-example/task_02.md
+internal/judge/testdata/task-acceptance/repo/docs/specs/0302-example/task_01.md
+internal/judge/testdata/task-acceptance/repo/docs/specs/0302-example/task_02.md
+internal/judge/testdata/task-acceptance/repo/docs/specs/0303-example/task_01.md
+internal/judge/testdata/task-acceptance/repo/docs/specs/0303-example/task_02.md
+
+STDERR:
+error: fsmonitor_ipc__send_query: unspecified error on '/Users/marcio/dev/roundfix/.git/worktrees/run_20261002T171516Z_94169d908e48d811/fsmonitor--daemon.ipc'
+
+EXIT: 0

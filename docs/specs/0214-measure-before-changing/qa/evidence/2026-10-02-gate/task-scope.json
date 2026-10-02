@@ -1,0 +1,139 @@
+[
+  {
+    "task": "task_01",
+    "commit": "424ad384a3fb762d5ea13402d371a84f950c7830",
+    "paths": [
+      ".agents/skills/roundfix/SKILL.md",
+      ".agents/skills/roundfix/references/runs.md",
+      "docs/specs/0214-measure-before-changing/task_01.md",
+      "docs/user-guide/commands/runs.md",
+      "internal/cli/cli.go",
+      "internal/cli/runs.go",
+      "internal/cli/runs_causes.go",
+      "internal/cli/runs_causes_test.go",
+      "internal/docscontract/command_documentation_test.go",
+      "internal/docscontract/user_guide_contract_test.go",
+      "internal/runcause/classify.go",
+      "internal/runcause/classify_test.go",
+      "internal/runcause/record_test.go",
+      "internal/runcause/report.go",
+      "internal/runcause/report_test.go",
+      "internal/runcause/signatures.go",
+      "internal/runcause/signatures.json",
+      "internal/runcause/testdata/causes-measurement.md",
+      "internal/runcause/testdata/causes-record-sabotaged.json",
+      "internal/runcause/testdata/causes-record.json",
+      "internal/spec/cause_graph.go",
+      "internal/store/run_events_of_kinds.go",
+      "internal/store/run_events_of_kinds_test.go",
+      "skills/roundfix/SKILL.md",
+      "skills/roundfix/references/runs.md",
+      "skills/testdata/owned-skill-versions.json"
+    ],
+    "context": [
+      ".agents/skills/roundfix/SKILL.md",
+      ".agents/skills/roundfix/references/runs.md",
+      "docs/user-guide/commands/runs.md",
+      "internal/cli/cli.go",
+      "internal/cli/runs.go",
+      "internal/cli/runs_causes.go",
+      "internal/cli/runs_causes_test.go",
+      "internal/runcause/classify.go",
+      "internal/runcause/classify_test.go",
+      "internal/runcause/record_test.go",
+      "internal/runcause/report.go",
+      "internal/runcause/report_test.go",
+      "internal/runcause/signatures.go",
+      "internal/runcause/signatures.json",
+      "internal/runcause/testdata/causes-measurement.md",
+      "internal/runcause/testdata/causes-record-sabotaged.json",
+      "internal/runcause/testdata/causes-record.json",
+      "internal/store/run_events_of_kinds.go",
+      "internal/store/run_events_of_kinds_test.go",
+      "skills/roundfix/SKILL.md",
+      "skills/roundfix/references/runs.md",
+      "skills/testdata/owned-skill-versions.json"
+    ],
+    "recorded_paths": [
+      "internal/docscontract/command_documentation_test.go",
+      "internal/docscontract/user_guide_contract_test.go",
+      "internal/spec/cause_graph.go"
+    ],
+    "outside": []
+  },
+  {
+    "task": "task_02",
+    "commit": "9c31e773fb6313dd42a51198d4bec219e8947661",
+    "paths": [
+      "docs/specs/0214-measure-before-changing/task_02.md",
+      "internal/judge/task_acceptance_measure_test.go",
+      "internal/judge/task_acceptance_stats_test.go",
+      "internal/judge/testdata/task-acceptance-question.json",
+      "internal/judge/testdata/task-acceptance/labels.json",
+      "internal/judge/testdata/task-acceptance/measurement.md",
+      "internal/judge/testdata/task-acceptance/record-sabotaged.json",
+      "internal/judge/testdata/task-acceptance/record.json",
+      "internal/judge/testdata/task-acceptance/repo/docs/specs/0300-example/task_01.md",
+      "internal/judge/testdata/task-acceptance/repo/docs/specs/0300-example/task_02.md",
+      "internal/judge/testdata/task-acceptance/repo/docs/specs/0301-example/task_01.md",
+      "internal/judge/testdata/task-acceptance/repo/docs/specs/0301-example/task_02.md",
+      "internal/judge/testdata/task-acceptance/repo/docs/specs/0302-example/task_01.md",
+      "internal/judge/testdata/task-acceptance/repo/docs/specs/0302-example/task_02.md",
+      "internal/judge/testdata/task-acceptance/repo/docs/specs/0303-example/task_01.md",
+      "internal/judge/testdata/task-acceptance/repo/docs/specs/0303-example/task_02.md"
+    ],
+    "context": [
+      "internal/judge/measure.go",
+      "internal/judge/task_acceptance_measure_test.go",
+      "internal/judge/task_acceptance_stats_test.go",
+      "internal/judge/testdata/task-acceptance-question.json",
+      "internal/judge/testdata/task-acceptance/labels.json",
+      "internal/judge/testdata/task-acceptance/measurement.md",
+      "internal/judge/testdata/task-acceptance/record-sabotaged.json",
+      "internal/judge/testdata/task-acceptance/record.json"
+    ],
+    "recorded_paths": [
+      "internal/judge/testdata/task-acceptance/repo/docs/specs/0300-example/task_01.md",
+      "internal/judge/testdata/task-acceptance/repo/docs/specs/0300-example/task_02.md",
+      "internal/judge/testdata/task-acceptance/repo/docs/specs/0301-example/task_01.md",
+      "internal/judge/testdata/task-acceptance/repo/docs/specs/0301-example/task_02.md",
+      "internal/judge/testdata/task-acceptance/repo/docs/specs/0302-example/task_01.md",
+      "internal/judge/testdata/task-acceptance/repo/docs/specs/0302-example/task_02.md",
+      "internal/judge/testdata/task-acceptance/repo/docs/specs/0303-example/task_01.md",
+      "internal/judge/testdata/task-acceptance/repo/docs/specs/0303-example/task_02.md"
+    ],
+    "outside": []
+  },
+  {
+    "task": "task_03",
+    "commit": "fd1d94f6aee4ec70befb371910b9f3d58608f439",
+    "paths": [
+      "docs/references/archived-evidence-measurement.md",
+      "docs/specs/0214-measure-before-changing/task_03.md"
+    ],
+    "context": [
+      "docs/references/archived-evidence-measurement.md"
+    ],
+    "recorded_paths": [],
+    "outside": []
+  },
+  {
+    "task": "task_04",
+    "commit": "41942907d4ca9640549a8831ebfd693f44e3fdd6",
+    "paths": [
+      "docs/references/corrective-causes-measurement.md",
+      "docs/references/corrective-causes.json",
+      "docs/references/task-acceptance-measurement.md",
+      "docs/references/task-acceptance-remeasurement.json",
+      "docs/specs/0214-measure-before-changing/task_04.md"
+    ],
+    "context": [
+      "docs/references/corrective-causes-measurement.md",
+      "docs/references/corrective-causes.json",
+      "docs/references/task-acceptance-measurement.md",
+      "docs/references/task-acceptance-remeasurement.json"
+    ],
+    "recorded_paths": [],
+    "outside": []
+  }
+]

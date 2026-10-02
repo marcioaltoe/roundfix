@@ -1,0 +1,11 @@
+$ go test -count=1 -v -tags docscontract -run ^(TestEveryCommandIsNamedInTheRoundfixSkill|TestEveryCommandIsNamedInTheUserGuide)$ ./internal/docscontract
+=== RUN   TestEveryCommandIsNamedInTheRoundfixSkill
+--- PASS: TestEveryCommandIsNamedInTheRoundfixSkill (0.01s)
+=== RUN   TestEveryCommandIsNamedInTheUserGuide
+--- PASS: TestEveryCommandIsNamedInTheUserGuide (0.00s)
+PASS
+ok  	roundfix/internal/docscontract	0.396s
+
+STDERR:
+
+EXIT: 0

@@ -1,0 +1,3 @@
+Read 2026-10-02 through web tool. Direct curl-cffi attempt blocked by sandbox domain allowlist, not retried.
+Source: https://git-scm.com/book/en/v2/Git-Internals-Maintenance-and-Data-Recovery
+Sections and comparison: Removing Objects section: ordinary clone downloads reachable versions, so removing a large file in a later commit leaves it in reachable history. PRD retention claim supported; no history rewrite performed.

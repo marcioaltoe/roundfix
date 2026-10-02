@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0214-measure-before-changing
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

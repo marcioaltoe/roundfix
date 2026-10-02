@@ -1,0 +1,10 @@
+{
+  "internal/runcause/signatures.json": {
+    "equal": true,
+    "sha256": "53e5e5a764109b92806c6efe4d88603c13e5de2c6d21816755406deb11b6dd5f"
+  },
+  "internal/judge/testdata/task-acceptance-question.json": {
+    "equal": true,
+    "sha256": "e4036f5ac07d8aff112ea299d15e42aedc7a2000f133edeb5c2f520908774bd1"
+  }
+}

@@ -1,0 +1,3 @@
+Observed 2026-10-02 through web reader.
+Source: https://pmc.ncbi.nlm.nih.gov/articles/PMC10728486/
+Simulation results section 3.2, Tables 2 and 3, Discussion: traditional bootstrap coverage falls as low as 55.2% under strong within-subject correlation; cluster coverage remains around 94%. PRD claim supported. Applying the clustering rationale to Specs is a design inference, not a direct study of Tasks.

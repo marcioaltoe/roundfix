@@ -1,0 +1,13 @@
+{
+  "guide_heading": true,
+  "skill_heading": true,
+  "mirrors": true,
+  "settlements": {
+    ".agents/skills/archive-spec/SKILL.md": true,
+    ".agents/skills/qa-gate/SKILL.md": true,
+    ".agents/skills/roundfix/SKILL.md": true,
+    "skills/archive-spec/SKILL.md": true,
+    "skills/qa-gate/SKILL.md": true,
+    "skills/roundfix/SKILL.md": true
+  }
+}

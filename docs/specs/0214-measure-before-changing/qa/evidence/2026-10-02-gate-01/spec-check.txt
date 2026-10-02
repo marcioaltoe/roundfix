@@ -1,0 +1,11 @@
+$ ./bin/roundfix spec check 0214-measure-before-changing --strict
+Spec 0214-measure-before-changing
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  vocabulary documentation detector: missing docs/specs/0214-measure-before-changing/_techspec.md Vocabulary Contract
+
+STDERR:
+
+EXIT: 0

@@ -1,0 +1,130 @@
+=== RUN   TestRunEventsOfKindsReturnsOnlyTheNamedKindsInCursorOrder
+=== PAUSE TestRunEventsOfKindsReturnsOnlyTheNamedKindsInCursorOrder
+=== CONT  TestRunEventsOfKindsReturnsOnlyTheNamedKindsInCursorOrder
+--- PASS: TestRunEventsOfKindsReturnsOnlyTheNamedKindsInCursorOrder (0.01s)
+PASS
+suiteguard: guard cost: measured 8352 paths; fingerprint took 309.177666ms before and 277.364916ms after
+ok  	roundfix/internal/store	0.783s
+=== RUN   TestLoadRefusesABrokenTable
+=== PAUSE TestLoadRefusesABrokenTable
+=== RUN   TestClassifyAppliesEachSignatureInOrder
+=== PAUSE TestClassifyAppliesEachSignatureInOrder
+=== RUN   TestTriggerNamesWhatAddedTheCorrectiveTask
+=== PAUSE TestTriggerNamesWhatAddedTheCorrectiveTask
+=== RUN   TestBuildReportsAttemptsTasksAndCorrectives
+=== PAUSE TestBuildReportsAttemptsTasksAndCorrectives
+=== RUN   TestBuildIgnoresALogOutsideTheArtifactDirectory
+=== PAUSE TestBuildIgnoresALogOutsideTheArtifactDirectory
+=== RUN   TestBuildLeavesTheRunDatabaseUnchanged
+=== PAUSE TestBuildLeavesTheRunDatabaseUnchanged
+=== RUN   TestBuildWindowAndMultipleRuns
+=== PAUSE TestBuildWindowAndMultipleRuns
+=== RUN   TestBuildBoundsEvidenceAndExportsNoPrivateCommandText
+=== PAUSE TestBuildBoundsEvidenceAndExportsNoPrivateCommandText
+=== CONT  TestLoadRefusesABrokenTable
+=== RUN   TestLoadRefusesABrokenTable/class
+=== CONT  TestBuildIgnoresALogOutsideTheArtifactDirectory
+=== CONT  TestBuildLeavesTheRunDatabaseUnchanged
+=== RUN   TestBuildIgnoresALogOutsideTheArtifactDirectory/leaf_symlink
+=== CONT  TestTriggerNamesWhatAddedTheCorrectiveTask
+=== CONT  TestBuildReportsAttemptsTasksAndCorrectives
+=== CONT  TestClassifyAppliesEachSignatureInOrder
+=== RUN   TestLoadRefusesABrokenTable/duplicate_signature
+=== CONT  TestBuildWindowAndMultipleRuns
+=== RUN   TestLoadRefusesABrokenTable/duplicate_trigger
+=== CONT  TestBuildBoundsEvidenceAndExportsNoPrivateCommandText
+--- PASS: TestTriggerNamesWhatAddedTheCorrectiveTask (0.00s)
+=== RUN   TestClassifyAppliesEachSignatureInOrder/database-locked
+=== RUN   TestLoadRefusesABrokenTable/source
+=== RUN   TestClassifyAppliesEachSignatureInOrder/disk-full
+=== RUN   TestClassifyAppliesEachSignatureInOrder/network-unreachable
+=== RUN   TestClassifyAppliesEachSignatureInOrder/killed-or-timed-out
+=== RUN   TestClassifyAppliesEachSignatureInOrder/governed-path
+=== RUN   TestClassifyAppliesEachSignatureInOrder/authorization-or-scope
+=== RUN   TestClassifyAppliesEachSignatureInOrder/shared-section
+=== RUN   TestLoadRefusesABrokenTable/signature_regexp
+=== RUN   TestClassifyAppliesEachSignatureInOrder/record-or-golden
+=== RUN   TestClassifyAppliesEachSignatureInOrder/lint-or-format
+=== RUN   TestLoadRefusesABrokenTable/trigger_regexp
+=== RUN   TestClassifyAppliesEachSignatureInOrder/help-or-guide
+=== RUN   TestClassifyAppliesEachSignatureInOrder/go-test-failure
+=== RUN   TestClassifyAppliesEachSignatureInOrder/review-defect
+--- PASS: TestClassifyAppliesEachSignatureInOrder (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/database-locked (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/disk-full (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/network-unreachable (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/killed-or-timed-out (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/governed-path (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/authorization-or-scope (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/shared-section (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/record-or-golden (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/lint-or-format (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/help-or-guide (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/go-test-failure (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/review-defect (0.00s)
+--- PASS: TestLoadRefusesABrokenTable (0.00s)
+    --- PASS: TestLoadRefusesABrokenTable/class (0.00s)
+    --- PASS: TestLoadRefusesABrokenTable/duplicate_signature (0.00s)
+    --- PASS: TestLoadRefusesABrokenTable/duplicate_trigger (0.00s)
+    --- PASS: TestLoadRefusesABrokenTable/source (0.00s)
+    --- PASS: TestLoadRefusesABrokenTable/signature_regexp (0.00s)
+    --- PASS: TestLoadRefusesABrokenTable/trigger_regexp (0.00s)
+--- PASS: TestBuildLeavesTheRunDatabaseUnchanged (0.03s)
+--- PASS: TestBuildReportsAttemptsTasksAndCorrectives (0.03s)
+=== RUN   TestBuildIgnoresALogOutsideTheArtifactDirectory/parent_symlink
+--- PASS: TestBuildWindowAndMultipleRuns (0.03s)
+=== RUN   TestBuildIgnoresALogOutsideTheArtifactDirectory/outside
+=== RUN   TestBuildIgnoresALogOutsideTheArtifactDirectory/other_run
+=== RUN   TestBuildIgnoresALogOutsideTheArtifactDirectory/directory
+=== RUN   TestBuildIgnoresALogOutsideTheArtifactDirectory/missing
+--- PASS: TestBuildBoundsEvidenceAndExportsNoPrivateCommandText (0.06s)
+--- PASS: TestBuildIgnoresALogOutsideTheArtifactDirectory (0.07s)
+    --- PASS: TestBuildIgnoresALogOutsideTheArtifactDirectory/leaf_symlink (0.03s)
+    --- PASS: TestBuildIgnoresALogOutsideTheArtifactDirectory/parent_symlink (0.01s)
+    --- PASS: TestBuildIgnoresALogOutsideTheArtifactDirectory/outside (0.01s)
+    --- PASS: TestBuildIgnoresALogOutsideTheArtifactDirectory/other_run (0.01s)
+    --- PASS: TestBuildIgnoresALogOutsideTheArtifactDirectory/directory (0.01s)
+    --- PASS: TestBuildIgnoresALogOutsideTheArtifactDirectory/missing (0.01s)
+PASS
+ok  	roundfix/internal/runcause	0.250s
+=== RUN   TestRunsCausesPrintsAClassifiedWindow
+=== PAUSE TestRunsCausesPrintsAClassifiedWindow
+=== RUN   TestRunsCausesPrintsAnEmptyWindow
+=== PAUSE TestRunsCausesPrintsAnEmptyWindow
+=== RUN   TestRunsCausesRefusesAMalformedDate
+=== PAUSE TestRunsCausesRefusesAMalformedDate
+=== RUN   TestRunsCausesRequiresAGitRepository
+=== PAUSE TestRunsCausesRequiresAGitRepository
+=== RUN   TestRunsCausesPrintsJSON
+=== PAUSE TestRunsCausesPrintsJSON
+=== RUN   TestRunsCausesHelp
+=== PAUSE TestRunsCausesHelp
+=== RUN   TestRunsCausesRejectsInvalidOptionsAndUnreadableDatabase
+=== PAUSE TestRunsCausesRejectsInvalidOptionsAndUnreadableDatabase
+=== RUN   TestBuildLeavesTheRunDatabaseUnchanged
+=== PAUSE TestBuildLeavesTheRunDatabaseUnchanged
+=== CONT  TestRunsCausesPrintsAClassifiedWindow
+=== CONT  TestRunsCausesPrintsJSON
+=== CONT  TestRunsCausesRejectsInvalidOptionsAndUnreadableDatabase
+=== CONT  TestBuildLeavesTheRunDatabaseUnchanged
+=== CONT  TestRunsCausesRefusesAMalformedDate
+=== CONT  TestRunsCausesRequiresAGitRepository
+=== CONT  TestRunsCausesHelp
+=== CONT  TestRunsCausesPrintsAnEmptyWindow
+=== RUN   TestRunsCausesPrintsAnEmptyWindow/false
+--- PASS: TestRunsCausesRequiresAGitRepository (0.03s)
+--- PASS: TestRunsCausesRejectsInvalidOptionsAndUnreadableDatabase (0.03s)
+--- PASS: TestRunsCausesRefusesAMalformedDate (0.03s)
+--- PASS: TestRunsCausesHelp (0.03s)
+=== RUN   TestRunsCausesPrintsAnEmptyWindow/true
+--- PASS: TestRunsCausesPrintsAClassifiedWindow (0.05s)
+--- PASS: TestRunsCausesPrintsJSON (0.05s)
+--- PASS: TestBuildLeavesTheRunDatabaseUnchanged (0.05s)
+--- PASS: TestRunsCausesPrintsAnEmptyWindow (0.07s)
+    --- PASS: TestRunsCausesPrintsAnEmptyWindow/false (0.03s)
+    --- PASS: TestRunsCausesPrintsAnEmptyWindow/true (0.03s)
+PASS
+suiteguard: guard cost: measured 8352 paths; fingerprint took 313.452083ms before and 237.188ms after
+ok  	roundfix/internal/cli	0.849s
+
+EXIT: 0
