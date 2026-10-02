@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0216-baseline-wording-left-after-the-stack-wave
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

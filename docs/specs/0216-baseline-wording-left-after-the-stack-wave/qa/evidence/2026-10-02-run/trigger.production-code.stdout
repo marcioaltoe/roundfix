@@ -1,0 +1,9 @@
+=== RUN   TestCatalogCompatibility
+=== PAUSE TestCatalogCompatibility
+=== CONT  TestCatalogCompatibility
+    catalog_test.go:633: LoadEmbeddedCatalog() error = load embedded Baseline catalog: validate Baseline catalog: catalog.profile.skill.dispatch-outside-setup: go-cli-tui: clean-code; catalog.profile.skill.dispatch-outside-setup: go-cli-tui: solid; catalog.profile.skill.dispatch-outside-setup: rust-cli: clean-code; catalog.profile.skill.dispatch-outside-setup: rust-cli: solid; run 'make baseline-digests' to regenerate stale derived artifacts
+--- FAIL: TestCatalogCompatibility (0.01s)
+FAIL
+suiteguard: guard cost: measured 8199 paths; fingerprint took 261.005291ms before and 170.834833ms after
+FAIL	roundfix/internal/baseline	0.748s
+FAIL

@@ -1,0 +1,3 @@
+package main
+import("encoding/json";"fmt";"os";"roundfix/internal/speccheck")
+func main(){var paths,grant []string;b,_:=os.ReadFile("../changed-paths.json");if err:=json.Unmarshal(b,&paths);err!=nil{panic(err)};b,_=os.ReadFile("../granted-paths.json");if err:=json.Unmarshal(b,&grant);err!=nil{panic(err)};allowed:=map[string]bool{};for _,p:=range grant{allowed[p]=true};count:=0;for _,p:=range paths{if speccheck.GovernedPath(p){count++;fmt.Printf("governed %s bounded=%t\n",p,allowed[p]);if !allowed[p]{os.Exit(1)}}};fmt.Printf("PASS: %d governed changed paths bounded by grant\n",count)}

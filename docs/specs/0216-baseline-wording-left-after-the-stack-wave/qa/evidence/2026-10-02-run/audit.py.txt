@@ -1,0 +1,53 @@
+from pathlib import Path
+import json,subprocess,re
+base='dd0e5de917072b4cf1173697ba0218527654db7c';head='088861350490d307c219715de5dd68dc6bd2c5d8';log=[]
+def git(*args):return subprocess.run(['git','-c','core.fsmonitor=false',*args],check=True,capture_output=True,text=True).stdout
+def before(path):return json.loads(git('show',base+':'+path))
+def now(path):return json.loads(Path(path).read_text())
+removed=[];retained=0
+for p in sorted(Path('internal/baseline/assets/modules').glob('*.json')):
+ path=str(p);a=before(path);b=now(path)
+ ca={c['id']:c for r in a.get('rules',[]) for c in r.get('clauses',[])};cb={c['id']:c for r in b.get('rules',[]) for c in r.get('clauses',[])}
+ removed+=sorted(ca.keys()-cb.keys())
+ for k in ca.keys()&cb.keys():
+  for field in ['id','enforcement','guidance']:assert ca[k].get(field)==cb[k].get(field),(path,k,field)
+  retained+=1
+ for f in ['requiredSkills','skillDispatch']:assert a.get(f)==b.get(f),(path,f)
+assert removed==['clause.backend.prohibit-generic-layers'];log.append(f'Only removed clause: {removed}; {retained} other clauses preserved identifier, force and guidance across every module. All module requiredSkills and skillDispatch unchanged.')
+f='internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/manifest.json'
+a=before(f);b=now(f);aa={x['id']:x for x in a['entries']};bb={x['id']:x for x in b['entries']};assert aa.keys()<=bb.keys()
+log.append(f'Source Baseline rows retained {len(aa)}/{len(aa)}; new rows {sorted(bb.keys()-aa.keys())}.')
+for file in ['backend.md','agent-instructions.md']:
+ p='internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/'+file
+ def entries(t):return dict(re.findall(r'<!-- source-baseline-entry: (.*?) -->\n(.*?)\n<!-- /source-baseline-entry: .*? -->',t,re.S))
+ old=entries(git('show',base+':'+p));new=entries(Path(p).read_text());assert old
+ for k,v in old.items():assert new[k]==v,(k,'changed source text')
+ log.append(file+': all prior corpus entries byte-identical')
+changed=git('diff','--name-only',base,head).splitlines()
+for p in changed:assert not (p=='internal/baseline/assets/skill-activations.json' or p.startswith('internal/baseline/assets/setups/') or p.startswith('skills/') or p.startswith('.agents/skills/')),p
+log.append('Skill Activation catalog, every setup snapshot and every canonical/distributed skill file unchanged in Git diff.')
+p='internal/baseline/assets/profiles/go-cli-typescript-monorepo.json';a=before(p);b=now(p)
+assert a['workspaces']!=b['workspaces'];aa=a.pop('workspaces');bb=b.pop('workspaces');assert a==b
+for old,new in zip(aa,bb):
+ expected=dict(old,guide='guide.backend' if old['path']=='packages/backend' else 'guide.frontend');assert new==expected
+log.append('Composed profile differs only by guide fields in its two workspaces.')
+act=now('internal/baseline/assets/skill-activations.json')
+for a in act['activations']:
+ if a['id'] in ['trigger.debugging','trigger.production-code']:assert a['owner']=='typescript';log.append(a['id']+' owner='+a['owner'])
+print('ROW 07 / 08 POSITIVE AUDIT\n'+'\n'.join(log))
+# Exact per-Task history inventory and declaration checks.
+spec='docs/specs/0216-baseline-wording-left-after-the-stack-wave/'
+auth=Path(spec+'_authorization.md').read_text();grantpaths=re.findall(r'^  - (.+)$',auth.split('paths:')[1].split('operations:')[0],re.M)
+assert git('show',base+':'+spec+'_authorization.md')==auth
+assert not git('diff',base,head,'--',spec+'_authorization.md').strip()
+paths=[]
+for task,commit in [('task_01','648c8b8c1ca311d072d4ad80b68b4c32a2e9da93'),('task_02','a11fe5842cede1e5d939a9b2d1c5921d6993e351'),('task_03',head)]:
+ text=git('show',commit+':'+spec+task+'.md');context=text.split('## Context')[1].split('## Verification')[0];declared=set(re.findall(r'`([^`]+)`',context));declared.add(spec+task+'.md')
+ if '## Recorded paths' in text:declared.update(re.findall(r'`([^`]+)`',text.split('## Recorded paths')[1].split('\n## ')[0]))
+ actual=git('diff-tree','--no-commit-id','--name-only','-r',commit).splitlines();missing=set(actual)-declared;assert not missing,(task,missing)
+ subprocess.run(['git','merge-base','--is-ancestor',base,commit],check=True)
+ assert spec+'_authorization.md' not in actual
+ print('TASK '+task+' COMMIT '+commit+' ALL '+str(len(actual))+' PATHS DECLARED\n'+'\n'.join(actual));paths+=actual
+Path('/private/tmp/roundfix-0216-qa-d6a1wga5/changed-paths.json').write_text(json.dumps(sorted(set(paths))))
+Path('/private/tmp/roundfix-0216-qa-d6a1wga5/granted-paths.json').write_text(json.dumps(grantpaths))
+print('Grant byte-identical at base and audited head; seeded mechanical audits already name every Task commit; no absent commit requires additional authorization-order re-audit.')
