@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0206-stack-rules-with-force-and-the-rules-adopters-repeat
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

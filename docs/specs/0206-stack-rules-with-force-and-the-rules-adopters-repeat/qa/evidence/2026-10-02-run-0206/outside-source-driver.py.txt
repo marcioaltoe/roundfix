@@ -1,0 +1,46 @@
+from pathlib import Path
+import re,runpy,json
+q=runpy.run_path('/private/tmp/qa0206-report.py');E=q['E']
+brain=Path('/Users/marcio/dev/secondbrain/projects');onion=Path('/Users/marcio/dev/onioncry')
+requests=[('oraculum','docs/agents/specific-repository.md',[(162,177),(260,317)]),('conexus','docs/agents/specific-repository.md',[(105,116),(140,167)]),('vortex','docs/agents/specific-repository.md',[(88,95),(356,380),(434,447)]),('fluxus','docs/agents/specific-repository.md',[(8,12),(65,77)]),('gss','docs/agents/specific-repository.md',[(88,98),(118,130)]),('pantheon','docs/agents/specific-repository.md',[(100,102)]),('conexus','docs/agents/typescript-bun.md',[(30,38)]),('vortex','docs/history/specs/0075-a-classificacao-de-produtos-sai-do-espelho/task_04.md',[(35,46)])]
+log=[]
+for project,rel,spans in requests:
+ p=brain/project/'mirror'/rel
+ log.append(str(p))
+ if not p.exists():log.append('UNAVAILABLE');continue
+ lines=p.read_text().splitlines()
+ for a,b in spans:log += [f'{i}: {lines[i-1]}' for i in range(a,min(b,len(lines))+1)]
+# Onion guide safe bounded windows
+p=onion/'AGENTS.md';log.append(str(p))
+if p.exists():
+ lines=p.read_text().splitlines()
+ for a,b in [(19,28),(120,151),(175,176),(220,227)]:log += [f'{i}: {lines[i-1]}' for i in range(a,min(b,len(lines))+1)]
+else:log.append('UNAVAILABLE')
+for project in ['oraculum','vortex']:
+ root=brain/project/'mirror'
+ for rel in ['package.json','Makefile']:
+  p=root/rel
+  if not p.exists():p=Path('/Users/marcio/dev')/project/rel
+  log.append(str(p))
+  if not p.exists():log.append('UNAVAILABLE');continue
+  txt=p.read_text()
+  if rel=='package.json':log.append(json.dumps(json.loads(txt).get('scripts',{}),indent=2))
+  else:
+   lines=txt.splitlines()
+   for i,line in enumerate(lines):
+    if re.search(r'(^verify|lint|deny-warnings|oxlint)',line): log.extend(f'{j+1}: {lines[j]}' for j in range(max(0,i-1),min(len(lines),i+4)))
+counts={k:0 for k in ['.unwrap()', '.expect(', 'panic!(', 'anyhow']};matches=[];excluded=[]
+if (onion/'src').exists():
+ for p in sorted((onion/'src').rglob('*.rs')):
+  text=p.read_text();lines=text.splitlines();in_test=False;depth=0
+  for n,line in enumerate(lines,1):
+   if re.match(r'\s*#\[cfg\(test\)\]',line):in_test=True;excluded.append(f'{p}:{n} onwards cfg(test) test section');continue
+   if in_test:continue
+   if p.name.endswith('_test.rs') or 'tests' in p.parts:continue
+   for token in counts:
+    c=line.count(token);counts[token]+=c
+    if c:matches.append(f'{p}:{n}: {line}')
+ log += ['Non-test src literal counts (exclude *_test.rs/tests paths and trailing #[cfg(test)] sections):',json.dumps(counts),*matches,'Exclusions:',*excluded]
+else:log.append('onioncry/src UNAVAILABLE')
+(E/'row-9-local-sources.txt').write_text('\n'.join(log)+'\n')
+print('\n'.join(log))

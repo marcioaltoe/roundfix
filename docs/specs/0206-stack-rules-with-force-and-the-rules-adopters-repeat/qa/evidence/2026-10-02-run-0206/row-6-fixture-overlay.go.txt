@@ -1,0 +1,9 @@
+package baseline
+import("context";"os";"os/exec";"testing")
+func TestQACreateBaseAdopter(t *testing.T) {
+ repo:=newProjectDecisionPlanRepository(t)
+ plan:=buildProjectDecisionPlan(t,repo,standardTypeScriptDecisions("make verify"))
+ if _,err:=applyPlanWithCatalog(context.Background(),repo,plan,plan.PlanDigest,mustEmbeddedCatalog(t));err!=nil {t.Fatal(err)}
+ commitInspectionRepository(t,repo,"seed base adoption")
+ cmd:=exec.Command("cp","-R",repo+"/.",os.Getenv("QA0206_ADOPTER"));if out,err:=cmd.CombinedOutput();err!=nil {t.Fatalf("copy: %v %s",err,out)}
+}

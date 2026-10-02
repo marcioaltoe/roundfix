@@ -1,0 +1,11 @@
+# Published outside evidence observed 2026-10-02
+
+These public pages were opened and their relevant sections read through the web tool. Observations are source summaries, not a test of adopter compliance.
+
+- [Canonical Rust error/panic discipline](https://canonical.github.io/rust-best-practices/error-and-panic-discipline.html): Error types and Panic calmly sections reject type erasure in maintained library crates and panics caused by user input; they prefer concrete errors and safer alternatives to unchecked unwrap.
+- [Apollo Rust best practices, chapter 4](https://github.com/apollographql/rust-best-practices/blob/main/book/chapter_04.md): section 4.4 reserves anyhow for binaries and advises against it in libraries, where precise error information matters.
+- [thiserror README](https://github.com/dtolnay/thiserror): Comparison to anyhow explains that dedicated error types commonly suit library-like code; anyhow commonly suits application-like code. This source supports a distinction, not the Spec’s exact entry-point-only prohibition by itself.
+- [ESLint CLI reference](https://eslint.org/docs/latest/use/command-line-interface): --max-warnings and Exit Codes sections document a nonzero exit when warning count exceeds the selected threshold; zero permits no warning.
+- [Clippy configuration](https://doc.rust-lang.org/stable/clippy/configuration.html): Allowing/Denying Lints states that deny turns a triggered lint into an error and makes Clippy exit with an error code; command-line flags can select lint levels. The displayed command examples show allow/warn rather than the exact -D warnings invocation.
+- [oxc issue 1958](https://github.com/oxc-project/oxc/issues/1958): the currently retrieved body documents --max-warnings=0 refusing two warnings. No --deny-warnings text appears in the retrieved body/activity; GitHub’s page reports an activity loading limitation. The PRD’s exact --deny-warnings attribution was not reconfirmed from this source. Recorded as the permitted no-longer-available-text observation, not invented support. Other local adopter evidence supplies --deny-warnings.
+- [Go Proverbs](https://go-proverbs.github.io/): the dependency proverb favors copying over taking a dependency. It supports a preference; the Spec’s recorded-reason policy is a maintainer decision.
