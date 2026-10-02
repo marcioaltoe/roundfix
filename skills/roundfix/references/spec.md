@@ -62,6 +62,14 @@ Answer each `advisory` line by correcting the artifact or stating why the
 text stands. A `skipped` result is neither a failure nor a clean result;
 record the reason instead of claiming the artifact was judged clean.
 
+At every stage, the `source-grouping` question pairs each Finding or Backlog
+Entry the Spec adopted with every open Backlog Entry or unresolved Finding.
+A `suggested` line at `P(same Spec)` of 0.3 or more is answered by adopting
+the open source within the grouping bound or by stating why it stays apart.
+The grouping bound is four implementation Tasks plus its QA gate. A
+suggestion never gates. Only Findings and Backlog Entries are sent for this
+question; its recall is low, so no suggestion does not prove no source fits.
+
 Set `ROUNDFIX_OPENROUTER_API_KEY` for OpenRouter first, or
 `ROUNDFIX_TYPESAFE_API_KEY` for TypeSafe directly when the first key is
 absent. The generic `OPENROUTER_API_KEY` is not read. Every request is
