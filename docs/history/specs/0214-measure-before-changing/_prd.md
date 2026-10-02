@@ -1,9 +1,12 @@
 ---
 spec: 0214-measure-before-changing
-status: active
+status: archived
 created: 2026-10-01
 surfaces: [backend, cli, docs]
+archived: "2026-10-02"
+source_slug: 0214-measure-before-changing
 ---
+
 
 # Measure before changing
 
