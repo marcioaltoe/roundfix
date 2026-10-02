@@ -2,6 +2,20 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.29.0] - 2026-10-02
+
+### Measure before changing
+
+`roundfix runs causes` reports, read-only, why Verification attempts failed and why corrective Tasks were added. Each item gets one Cause Class from a closed list, assigned by the first matching Classification Signature in an embedded table and never by a model. Three measurements are recorded under `docs/references/`:
+
+- **Corrective causes:** inconclusive. 132 items, of which 76% match no signature, so the table needs more signatures before it can guide a decision.
+- **Task acceptance judgment:** re-measured through the advisory judge. AUROC 0.47 is below a random baseline (0.54) and below acceptance-criteria length alone (0.64), so it is not adopted.
+- **Archived evidence:** nothing to remove. QA evidence has readers, and removing it fails both `make verify` and `make verify-docs`. Any later removal waits for the maintainer's approval.
+
+### Fixed
+
+- `runs causes` reads a Task's title and Overview only from a plain file in its Spec directory, and reads at most 64 KiB of it.
+
 ## [0.28.0] - 2026-10-02
 
 ### A setup and doctor that recognize what the machine and the repository need
