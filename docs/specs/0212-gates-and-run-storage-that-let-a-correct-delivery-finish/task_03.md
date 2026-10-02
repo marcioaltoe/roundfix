@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0212-gates-and-run-storage-that-let-a-correct-delivery-finish
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -104,3 +104,91 @@ template teach it.
 - `_prd.md` → User Story 4; Core Feature 6; Success Metric 4; Acceptance evidence
 - `_techspec.md` → The `deletes` Context kind; Interfaces; API Contract 4; Testing Approach 3; Build Order 3
 - ADR-0166; ADR-0178
+
+
+## Result
+
+Implemented `ContextKindDeletes`, its parser and consumer support, the
+pre-Verification deletion settlement check, and write-tasks guidance. Task
+status and authored Verification remain Daemon-owned and unchanged.
+
+### Acceptance evidence
+
+1. `TestContextAcceptsADeletesEntry` accepts `old/file.txt` and rejects invalid
+   paths. `TestContextRefusesAPathUnderTwoKinds` covers interface/deletes and
+   creates/deletes in both orders, plus repeated deletes; diagnostics name
+   both kinds. Before implementation, the focused parser test failed with
+   `expected "instruction", "interface", or "creates" label`.
+2. `TestDeletesPathIsNotAnUnresolvedReference` checks an absent deletion
+   through the public Spec Consistency Check without `SC-REF-UNRESOLVED`.
+   No finding code was added and `internal/speccheck/coherence.go` is untouched.
+3. `TestUndeclaredTaskPathsCountsADeletesPath` excludes the declared deletion
+   from paths eligible for `## Recorded paths`.
+   `TestDeletingAGovernedPathNeedsItsGrant` refuses an ungranted deletion and
+   accepts the matching grant and bounded rows.
+   `TestWaveCollisionCountsADeletesPath` reports an edit/delete collision and
+   accepts an explicit dependency. `deletes` entries join the Daemon bundle's
+   interfaces. `TestDeletesCLISurfaceNeedsAGuideAndDeletionIsNotAGuide` proves
+   a CLI deletion needs a guide and a deleted guide cannot satisfy that need.
+4. `TestATaskThatLeavesItsDeletesPathDoesNotSettle` exercises the task-cycle
+   fixture: both attempts fail with `deletes: old/file.txt still exists`,
+   no authored Verification command runs, and no settlement commit occurs.
+   `TestATaskThatRemovesItsDeletesPathSettles` removes the path during the
+   bounded repair in the same Agent Session, then runs Verification and
+   settles the fixture Task completed. The new `undeletedTaskPaths` uses
+   `Lstat`; `TestUndeletedTaskPathsCountsDanglingSymlinksAndDirectories`
+   covers directories, dangling symlinks and absent paths.
+5. Canonical write-tasks skill and template teach `- deletes: <path>` and
+   the `still exists` settlement diagnostic. Both skill version fields are
+   `0.0.8`; `make skills-sync` regenerated the mirrors and the owned version
+   record was regenerated. A Python byte comparison confirmed both canonical
+   files equal their mirrors. Sanctioned digest regeneration reported no
+   derived changes.
+
+### Focused checks
+
+- `GOCACHE=/tmp/roundfix-task03-go-cache rtk proxy go test ./internal/spec ./internal/speccheck ./internal/daemon ./skills -run 'Deletes|DeletingAGoverned|Undeleted|Context|ReferenceUnresolved|InstructionContextPath|RecordedPaths|Collisions|EveryOwnedSkillVersion|SettlementGuidance|TaskAuthoringGuidance' -count=1`
+  — exit 0 in all four packages, including existing reference, declaration
+  and recorded-path tests without edits.
+- `rtk make skills-sync` — exit 0.
+- `GOCACHE=/tmp/roundfix-task03-go-cache rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  — exit 0; recorded write-tasks `0.0.8`.
+- `GOCACHE=/tmp/roundfix-task03-go-cache rtk make baseline-digests`
+  — exit 0, `changed: false`.
+- `GOCACHE=/tmp/roundfix-task03-go-cache rtk make verify-incremental`
+  — exit 0 with process-table permission. The sandboxed attempt passed the
+  changed packages but failed two existing CLI force-stop tests because
+  process-table reads were denied; the permission-enabled rerun passed.
+- `git diff --check` — exit 0.
+
+The Task's declared Verification commands were not run. No other Task or
+Task Graph file was edited, and no commit, push or Pull Request was made.
+No follow-up outside this slice was identified.
+
+### Verification Feedback — attempt 1
+
+Inspected the Daemon diagnostic artifact at
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261002T100707Z_cbb39973a4b07b9b/verification/batch-003-attempt-1.log`
+and the related `internal/cli/implement_detach_teardown_test.go` test. The
+Daemon-recorded `make verify-changed` failure was an environment limitation:
+`TestImplementDetachChildEndsWhenItsTestBinaryDies` could not probe or kill
+its disposable fixture's process group. The Daemon diagnostic recorded the
+Task's spec, speccheck and daemon packages passing; those are recorded
+Daemon observations, not an Agent rerun of configured Verification.
+
+Focused check:
+`GOCACHE=/tmp/roundfix-task03-go-cache rtk proxy go test ./internal/cli -run '^TestImplementDetachChildEndsWhenItsTestBinaryDies$' -count=1 -v`
+— exit 0 with process-control permission; the named test passed and the
+suite guard reported no repository mutation.
+
+No implementation repair was indicated by this feedback, so Task code and
+existing CLI tests remain unchanged. The Daemon retry needs permission to
+probe and stop test-owned process groups. Changing CLI teardown behavior,
+Verification configuration or sandbox policy is outside task_03's slice.
+The Agent did not rerun `make verify-changed` or any declared Verification
+command. Task status is unchanged; no commit, push or Pull Request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261002T100707Z_cbb39973a4b07b9b`
+- Source commit: `d43995132a7c73feabc8b9076fcf710ddffee035`

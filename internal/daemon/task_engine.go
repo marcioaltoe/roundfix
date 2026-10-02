@@ -1690,6 +1690,23 @@ func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.T
 			engine.authorizationSettlementCheck(plan, task, before),
 		}
 	}
+	remaining, deleteErr := undeletedTaskPaths(plan.WorkDir, task)
+	if deleteErr != nil || len(remaining) > 0 {
+		request.Commands = nil
+		request.Checks = []verificationCheck{{
+			Label: "settlement check: deletes",
+			Run: func(context.Context, string) (string, error) {
+				if deleteErr != nil {
+					return "", deleteErr
+				}
+				var diagnostics []string
+				for _, path := range remaining {
+					diagnostics = append(diagnostics, "deletes: "+path+" still exists")
+				}
+				return strings.Join(diagnostics, "\n"), nil
+			},
+		}}
+	}
 	verification, err := engine.runTaskVerificationRequest(ctx, plan, task, request)
 	if err != nil || verification.TemporaryFailure == nil || *retryUsed {
 		return verification, err

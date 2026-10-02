@@ -225,6 +225,10 @@
       {
         "version": "0.0.7",
         "digest": "cef0bbd6a4fd80a547987e6df4a6459fe2c33eb12d4662487ce786efb66ac47a"
+      },
+      {
+        "version": "0.0.8",
+        "digest": "cbaf9f290c1614cad822558a7281160a761622e38d216518f52ceebdeb939ce7"
       }
     ],
     "write-techspec": [

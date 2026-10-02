@@ -106,6 +106,11 @@ complexity: medium # low | medium | high
      Use at most 50 unique clean repository-relative paths, labeled exactly as:
      - instruction: `.agents/skills/<skill>/SKILL.md`
      - interface: `internal/package/file.go`
+     - creates: <path>
+     - deletes: <path>
+     A deletes path must be absent before the Daemon runs Verification;
+     otherwise the attempt fails with deletes: <path> still exists.
+     Deletions count in scope, Governed Path and Wave collision audits.
      The Daemon includes these paths in the 200-path Spec Context Bundle before prior changed files. -->
 
 - instruction: `<path>`

@@ -53,7 +53,7 @@ func detectUndocumentedCLISurfaces(result *Result, specsRoot, repoRoot string, g
 
 func firstCLISurface(refs []spec.TaskContextRef) (string, bool) {
 	for _, ref := range refs {
-		if (ref.Kind == spec.ContextKindInterface || ref.Kind == spec.ContextKindCreates) && isCLISurface(ref.Path) {
+		if (ref.Kind == spec.ContextKindInterface || ref.Kind == spec.ContextKindCreates || ref.Kind == spec.ContextKindDeletes) && isCLISurface(ref.Path) {
 			return ref.Path, true
 		}
 	}
