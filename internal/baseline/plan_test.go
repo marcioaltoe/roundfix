@@ -2250,6 +2250,7 @@ func TestPlanDeterminismMatchesMaintainedManagedEntryFixture(t *testing.T) {
 	// maintained golden instead. Add a path here only when its module
 	// legitimately grew past the frozen record.
 	evolvedPastFrozenCorpus := map[string]bool{
+		"docs/agents/go.md":                 true,
 		manifestPath:                        true,
 		"AGENTS.md":                         true,
 		"docs/agents/agent-instructions.md": true,

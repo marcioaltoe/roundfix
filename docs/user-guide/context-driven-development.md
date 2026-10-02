@@ -255,6 +255,7 @@ adoption again. Without a stored value, the embedded catalog suggests:
 | Incremental Verification | `rtk make verify-incremental` |
 | Identifier strategy | `{"kind":"uuid-v7"}` |
 | HTTP contract | `REST` |
+| Frontend layout | `systems` (applies while none is recorded) |
 | Better Auth provider exception | `GET` and `POST` under `/api/auth/*`, owned by Better Auth |
 | Spec artifacts | Yes |
 | Domain layout | `single-context` |
@@ -264,6 +265,10 @@ adoption again. Without a stored value, the embedded catalog suggests:
 | Design runtime | `claude opus 5 xhigh` |
 | Secondbrain | Yes |
 | Repository-Specific Normative Rules carrier | Permitted when non-empty |
+
+The frontend layout is optional. While none is recorded, the suggested
+`systems` layout applies. Recording `repository-defined` binds the layout
+stated in the repository's own rules. A recorded value is kept.
 
 UUID version 7 is a visible suggestion for `identifier.strategy`, not an
 inferred answer. It applies only to new project-owned Internal Identifiers;
@@ -689,9 +694,11 @@ roundfix baseline plan --repo . --profile-file team-backend.json --decision-file
 
 `--profile-file` and `--profile` are mutually exclusive. The draft must use the
 strict `roundfix/custom-baseline-profile/v1` schema, bind the embedded catalog,
-and be a valid adaptation of one built-in Profile. Roundfix resolves it in
-memory and includes its canonical repository path and exact bytes in the
-portable Plan; it does not write the Profile file during planning.
+and be a valid adaptation of a built-in Profile. A draft that adapts several
+built-in Profiles binds to the closest one: the one whose modules it removes
+fewest of, then whose capabilities it removes fewest of. Equally close Profiles
+are refused as ambiguous. Roundfix resolves it in memory and includes its
+canonical repository path and exact bytes in the portable Plan; it does not write the Profile file during planning.
 
 Write its stdout to `baseline-plan.json` using the calling shell or process.
 Exit `0` emits one complete `roundfix/baseline-plan/v1` document. Exit `3`
@@ -775,9 +782,16 @@ the Baseline contract.
 
 ### Profiles
 
-Roundfix ships `go-cli-tui`, `rust-cli`, and
-`standard-typescript-monorepo`. Inspect a built-in or repository-owned Baseline
-Profile before selecting it:
+Roundfix ships `go-cli-tui`, `go-cli-typescript-monorepo`, `rust-cli`, and
+`standard-typescript-monorepo`. The `go-cli-typescript-monorepo` Profile combines
+the Go CLI and Standard TypeScript Monorepo modules on a composed setup.
+
+The composed profile's root gate is expected to run `make verify-go` and
+`bun run verify`. Alignment reports a non-blocking
+`verification.gate.part.missing` divergence for each part a declared root Make
+gate does not reach through its prerequisites or recipes.
+
+Inspect a built-in or repository-owned Baseline Profile before selecting it:
 
 ```bash
 roundfix baseline profile show go-cli-tui --format json

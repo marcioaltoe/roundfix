@@ -709,6 +709,9 @@ func normalizeAlignmentDecisions(
 	for _, id := range profile.Decisions {
 		value, ok := values[id]
 		if !ok {
+			if decisionOptional(catalog.decisions[id]) {
+				continue
+			}
 			divergences = append(divergences, ProfileDivergence{
 				Code:        "profile.decision.required",
 				ID:          id,
@@ -1483,6 +1486,39 @@ func resolveVerificationProjection(
 				Message:     fmt.Sprintf("selected %s Verification command %q has no matching local declaration", label, command),
 				NextAction:  "select a command declared by the repository or add its local declaration",
 			})
+		}
+	}
+	if profile.Source == ProfileSourceBuiltIn {
+		for _, gate := range projections {
+			fields := strings.Fields(strings.TrimPrefix(strings.TrimSpace(gate.Command), "rtk "))
+			if gate.ID != "verification.gate" || !gate.RepositoryExecutable ||
+				len(fields) != 2 || fields[0] != "make" || !makeTargetName.MatchString(fields[1]) {
+				continue
+			}
+			data, state, detail := readBoundedRegularFile(root, gate.DeclarationPath, maxCapabilityFileBytes)
+			if state != CapabilityEvidencePresent {
+				return nil, nil, fmt.Errorf("read repository gate Makefile: %s", detail)
+			}
+			targets, recipes := makeTargetReach(data, fields[1])
+			for _, entry := range objectsOrEmpty(catalog.profiles[profile.ID]["verification"]) {
+				if part, _ := entry["partOfGate"].(bool); !part {
+					continue
+				}
+				id, _ := stringValue(entry, "id")
+				for _, projection := range projections {
+					if projection.ID != id || gatePartReached(projection.Command, targets, recipes) {
+						continue
+					}
+					divergences = append(divergences, ProfileDivergence{
+						Code:        "verification.gate.part.missing",
+						ID:          id,
+						Requirement: CapabilityRecommended,
+						Blocking:    false,
+						Message:     fmt.Sprintf("the repository gate %q does not run %q", gate.Command, projection.Command),
+						NextAction:  "make the repository gate run the named Verification, or map its role to a command the gate runs",
+					})
+				}
+			}
 		}
 	}
 	sort.Slice(projections, func(i, j int) bool { return projections[i].ID < projections[j].ID })

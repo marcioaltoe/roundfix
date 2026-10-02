@@ -22,7 +22,7 @@
       "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md",
       "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/typescript-bun.md"
     ],
-    "goldenDigest": "81fb42d08c191e92751cc10998d2c18374d193c650aeca855ffecd92d84bed53",
+    "goldenDigest": "495dabac80846a2e2ef7daa1993f728f5e667a6ef2bf42fd3c5f45951836dd9c",
     "id": "formatter.oxfmt-markdown",
     "kind": "selected",
     "version": "0.59.0"
@@ -34,6 +34,7 @@
     "branch.prefix",
     "identifier.strategy",
     "http.contract",
+    "frontend.layout",
     "auth.provider",
     "spec.scaffold",
     "domain.layout",
@@ -119,9 +120,12 @@
   "optionalModules": ["Inngest", "Docker"],
   "architecture": {
     "frontend": {
-      "organization": "systems",
-      "publicBoundary": "public system boundary",
-      "internalImports": "direct"
+      "layoutDecision": "frontend.layout",
+      "suggested": {
+        "organization": "systems",
+        "publicBoundary": "public system boundary",
+        "internalImports": "direct"
+      }
     },
     "backend": {
       "layers": ["domain", "application", "infrastructure"],

@@ -114,7 +114,7 @@ type profileDigestPayload struct {
 }
 
 // ProfileDraftInputFromDocument binds one strict custom Profile document to
-// its only compatible built-in source Profile.
+// its closest compatible built-in source Profile.
 func ProfileDraftInputFromDocument(document []byte, catalog *Catalog) (ProfileDraftInput, error) {
 	if catalog == nil {
 		return ProfileDraftInput{}, errors.New("resolve custom Profile draft source: catalog is required")
@@ -123,16 +123,17 @@ func ProfileDraftInputFromDocument(document []byte, catalog *Catalog) (ProfileDr
 	if err != nil {
 		return ProfileDraftInput{}, err
 	}
-	var sources []string
+	var compatible []ResolvedProfile
 	for _, sourceID := range catalog.ProfileIDs() {
 		source, resolveErr := resolveBuiltInProfile(sourceID, catalog)
 		if resolveErr != nil {
 			return ProfileDraftInput{}, resolveErr
 		}
 		if validateProfileAdaptation(source, draft, catalog) == nil {
-			sources = append(sources, sourceID)
+			compatible = append(compatible, source)
 		}
 	}
+	sources := closestProfileDraftSources(draft, compatible)
 	switch len(sources) {
 	case 0:
 		return ProfileDraftInput{}, errors.New(
@@ -149,6 +150,37 @@ func ProfileDraftInputFromDocument(document []byte, catalog *Catalog) (ProfileDr
 			strings.Join(sources, ", "),
 		)
 	}
+}
+
+// closestProfileDraftSources keeps all sources at the minimum module distance,
+// using removed capabilities to break module ties and preserving source order.
+func closestProfileDraftSources(draft ResolvedProfile, compatible []ResolvedProfile) []string {
+	removed := func(source, selected []string) int {
+		selectedSet := make(map[string]bool, len(selected))
+		for _, id := range selected {
+			selectedSet[id] = true
+		}
+		count := 0
+		for _, id := range source {
+			if !selectedSet[id] {
+				count++
+			}
+		}
+		return count
+	}
+	var closest []string
+	bestModules, bestCapabilities := 0, 0
+	for _, source := range compatible {
+		modules := removed(source.Modules, draft.Modules)
+		capabilities := removed(source.Capabilities, draft.Capabilities)
+		if len(closest) == 0 || modules < bestModules || modules == bestModules && capabilities < bestCapabilities {
+			closest = []string{source.ID}
+			bestModules, bestCapabilities = modules, capabilities
+		} else if modules == bestModules && capabilities == bestCapabilities {
+			closest = append(closest, source.ID)
+		}
+	}
+	return closest
 }
 
 // NewProfileAdaptationDraft creates a strict draft by removing only reviewed

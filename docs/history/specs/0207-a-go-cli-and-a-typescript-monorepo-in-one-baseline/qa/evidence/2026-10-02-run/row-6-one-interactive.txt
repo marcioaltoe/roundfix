@@ -1,0 +1,66 @@
+COMMAND: ['./bin/roundfix', 'baseline', '--repo', '/private/tmp/roundfix-0207-qa-polyglot']
+Baseline workflow: update
+Current Baseline Profile: go-cli-typescript-monorepo
+
+Baseline Profile alignment: ready
+Profile: go-cli-typescript-monorepo
+Advisory divergences:
+- capability.firecrawl (capability.recommended.missing): Firecrawl has no compatible local evidence.
+  Installed-skill probe: firecrawl
+  Evidence state: absent
+  This advisory does not block readiness or apply.
+  Next action: Add the firecrawl skill if structured web extraction is useful.
+- verification.workspace (verification.gate.part.missing): the repository gate "make verify" does not run "bun run verify"
+  This advisory does not block readiness or apply.
+  Next action: make the repository gate run the named Verification, or map its role to a command the gate runs
+
+Informational divergences:
+- capability.optional.inngest (capability.optional.missing): Inngest has no compatible local evidence.
+  Inspected path: package.json: present (expected content not found); expected content: "inngest"
+  Inspected path: packages/backend/package.json: present (expected content not found); expected content: "inngest"
+  Inspected path: packages/frontend/package.json: present (expected content not found); expected content: "inngest"
+  Next action: Add compatible local Inngest evidence and rerun profile alignment.
+
+Consolidated Change Plan review
+File changes:
+Complete managed-entry ledger:
+0. unchanged AGENTS.md root.core
+1. unchanged AGENTS.md root.context-workflow
+2. unchanged AGENTS.md root.spec-workflow
+3. unchanged AGENTS.md root.typescript
+4. unchanged AGENTS.md root.bun
+5. unchanged AGENTS.md root.monorepo
+6. unchanged AGENTS.md root.backend
+7. unchanged AGENTS.md root.frontend
+8. unchanged AGENTS.md root.go
+9. unchanged AGENTS.md root.cli-surface
+10. unchanged docs/agents/agent-instructions.md guide.agent-instructions
+11. unchanged docs/agents/backend.md guide.backend
+12. unchanged docs/agents/cli.md guide.cli-surface
+13. unchanged docs/agents/docs-layout.md guide.docs-layout
+14. unchanged docs/agents/docs-layout.md guide.spec-docs-layout
+15. unchanged docs/agents/domain.md guide.domain
+16. unchanged docs/agents/frontend.md guide.frontend
+17. unchanged docs/agents/go.md guide.go
+18. unchanged docs/agents/issue-tracker.md guide.issue-tracker
+19. unchanged docs/agents/monorepo.md guide.monorepo
+20. unchanged docs/agents/setup-context.json manifest
+21. unchanged docs/agents/skill-dispatch.md guide.skill-dispatch
+22. unchanged docs/agents/spec-routing.md guide.spec-routing
+23. unchanged docs/agents/typescript-bun.md guide.typescript-bun
+24. unchanged docs/agents/typescript-bun.md guide.bun
+Complete Upgrade Retention Contract ledger:
+0 entries
+Plan Digest: sha256:a5033e3ffa96c5027126499f7969ef43009ce67c32b80edb916c67bbbac8490c
+
+Prompt 1: Final confirmation for Plan Digest sha256:a5033e3ffa96c5027126499f7969ef43009ce67c32b80edb916c67bbbac8490c
+  1. Apply this exact Plan Digest
+  2. Decline without writing
+  3. Reject and revise one decision area
+2
+Baseline plan: action required
+Category: approval
+Result: Baseline Plan was declined; no repository bytes were written
+Next action: rerun roundfix baseline to revise or approve a new Plan Digest
+
+EXIT: 3

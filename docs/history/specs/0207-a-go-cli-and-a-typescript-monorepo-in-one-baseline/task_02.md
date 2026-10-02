@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0207-a-go-cli-and-a-typescript-monorepo-in-one-baseline
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -75,3 +75,78 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - `_prd.md` → Goal 2; Story 2; Core Feature 1; Success Metric 1; Success Metric 2; Success Metric 7
 - `_techspec.md` → API Contract 4; API Contract 5
 - ADR-0072, ADR-0081, ADR-0149, ADR-0191, ADR-0192, ADR-0204
+
+## Result
+
+Implemented the composed Setup Snapshot slice for Daemon Verification. Task
+status remains Daemon-owned; the authored Verification command was not run,
+and no commit, push or Pull Request was made.
+
+### Implementation
+
+- Composition preserves component order, drops equal entries sharing a skill
+  name or activation bundle identifier, and refuses unequal entries.
+- Catalog validation reports composition invalidity, conflict and drift
+  separately, retaining the existing skill checks and digest rule.
+- Asset sync builds upstream snapshots first, composes from those results,
+  validates the resulting catalog, then writes through its existing atomic
+  transaction. Plans are sorted by file path: the new composed filename sorts
+  before `go.json`, even though its identifier sorts after `go`.
+- Both sync and skill-regeneration source types preserve `source.setups`.
+  The catalog digest fixture helper keeps shared component entries equal and
+  recomposes after changing a component; its owned/external digest assertions
+  are unchanged.
+- Added the six named composition tests, using private temporary asset roots
+  and Git sources for sync. Existing sync counts include four snapshots.
+  The parity comparison names the ADR-0072 designed delta.
+- Seeded the new snapshot, then generated its skills and digest only through
+  asset sync from a temporary local clone at the Go snapshot's pinned commit,
+  `b3c45a45f1bccd3b33aaecaaa22947d942f2fc02`. Sync reported exactly one update:
+  `go-cli-typescript-bun`. The snapshot has 112 skills and 10 bundles. Added its
+  sanctioned output by changing only the enumeration line in
+  `derived_ownership_test.go`.
+
+### Acceptance evidence
+
+| Criterion | Implementation and focused-check evidence |
+| --- | --- |
+| Ordered union and loadable catalog | `TestTheComposedSetupIsTheUnionOfItsComponents` checks the embedded union independently, including full entries and their order, plus explicit equal-entry deduplication. It passed in the focused run; the Baseline package also passed incremental verification. |
+| Distinct refusal codes | The drift, unknown/composed component and conflicting component tests passed. Cases cover skill and bundle drift, unknown and composed components, insufficient/duplicate/malformed component lists, and unequal shared skill and bundle entries. They assert `.drift`, `.invalid` and `.conflict` respectively. |
+| Same-run refresh, unchanged bytes and check drift | Both new sync tests passed. A committed source skill change rewrites its component and composition in one run. Repeated unchanged sync leaves the entire asset tree byte-identical. Check mode reports composed drift without writing, including composed-only drift. A composition conflict returns `AssetsSyncInvalid` with the existing invalid-assets finding and preserves the complete asset preimage. |
+| Frozen parity | `TestAssetsSyncCompatibilityMatchesMaintainedPythonContract` passed in the focused run. Byte comparison against `HEAD` confirms the parity corpus and `asset-sync.json` are unchanged; the fixture SHA-256 is `5e89fa3377d4a41bdc45a5a4a0e92de10857289ecf6ed4ef3e7e81f5b7d2e233`. |
+
+### Commands and outcomes
+
+All Go commands used `GOCACHE=/tmp/roundfix-task02-gocache`.
+
+- `go test -count=1 ./internal/baseline -run 'ComposedSetup|ComponentsThat|AssetSync|CatalogDigestExcludesOwnedSkillContent'`
+  — exit 0 after repairing the path-ordering defect exposed by the first
+  focused run and correcting the conflict fixtures to mutate shared entries.
+- `go run -buildvcs=false ./cmd/roundfix baseline assets sync --source-dir /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-task02-upstream-vmezhgaz/skills/setups --format text`
+  — exit 0, one composed-snapshot update. The initial sandbox attempt could
+  not create the Git-private transaction directory; the approved retry
+  succeeded. No network source was used and no existing setup changed.
+- `rtk make baseline-digests` — exit 0; generated the catalog digest,
+  normalized catalog and four plan-characterization goldens. No pin, golden
+  or composed skill list was hand-edited.
+- `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`
+  — executed twice with Git transaction access, both exit 0. The first
+  updated only `docs/agents/setup-context.json`; the second reported
+  `File changes: 0` and verified idempotence.
+- `rtk make verify-incremental` — exit 0 on the approved rerun. The initial
+  sandbox run passed the Baseline package but failed two existing CLI
+  process-owner tests with `read process table ... operation not permitted`.
+  The rerun passed those tests, analyzer, package tests, skill checks and build.
+- Changed-file inspection and byte comparisons against `HEAD` confirm no
+  profile, module, decision, existing setup, parity corpus, Source Baseline
+  corpus or transition changed. Every new changed path belongs to this Task's
+  Context or its assigned Task file.
+- `git -c core.fsmonitor=false diff --check` — exit 0.
+
+No follow-up implementation was added. Daemon Verification and settlement
+remain pending.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261002T024113Z_8885f5993a89b1e3`
+- Source commit: `eefcf28a88e47c369c76397d492e0b57457ffecc`

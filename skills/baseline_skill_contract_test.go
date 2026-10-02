@@ -1549,11 +1549,12 @@ type baselineSetupSnapshot struct {
 }
 
 type baselineSetupSource struct {
-	Type       string `json:"type"`
-	Repository string `json:"repository,omitempty"`
-	Ref        string `json:"ref,omitempty"`
-	Path       string `json:"path,omitempty"`
-	Name       string `json:"name,omitempty"`
+	Setups     []string `json:"setups,omitempty"`
+	Type       string   `json:"type"`
+	Repository string   `json:"repository,omitempty"`
+	Ref        string   `json:"ref,omitempty"`
+	Path       string   `json:"path,omitempty"`
+	Name       string   `json:"name,omitempty"`
 }
 
 type baselineSetupSkill struct {

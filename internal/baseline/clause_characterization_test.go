@@ -241,6 +241,7 @@ func characterizedBaselineForce() map[string]string {
 		"clause.external-triage.pull-request-is-an-issue-with-code":    "mandatory",
 		"clause.external-triage.route-accepted-work-to-specs":          "mandatory",
 		"clause.frontend.inspect-runnable-ui":                          "mandatory",
+		"clause.frontend.follow-recorded-layout":                       "mandatory",
 		"clause.frontend.organize-by-system":                           "mandatory",
 		"clause.frontend.prohibit-incidental-ui-assertions":            "prohibited",
 		"clause.frontend.public-system-boundary":                       "mandatory",

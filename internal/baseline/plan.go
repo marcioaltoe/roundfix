@@ -1244,6 +1244,7 @@ func resolvePlanRetention(
 				existing.ManagedArtifacts,
 				catalog,
 				activeModules,
+				manifestDecisionValues(targetManifest.Decisions),
 			)
 			retention = append(retention, evidence...)
 			if unaccounted := clauseDeltaIDs(delta, ClauseUnaccounted); len(unaccounted) != 0 {
@@ -1334,6 +1335,7 @@ func classifySourceClauseTransition(
 	managedArtifacts []ManifestArtifact,
 	catalog *Catalog,
 	activeModules []string,
+	recordedValues ...map[string]any,
 ) ([]RetentionEvidence, ClauseDelta) {
 	managedCarriers := make(map[string]struct{}, len(managedArtifacts))
 	for _, artifact := range managedArtifacts {
@@ -1341,7 +1343,11 @@ func classifySourceClauseTransition(
 			managedCarriers[artifact.Path] = struct{}{}
 		}
 	}
-	current := selectedClauseEnforcement(catalog, activeModules)
+	var recorded map[string]any
+	if len(recordedValues) != 0 {
+		recorded = recordedValues[0]
+	}
+	current := selectedClauseEnforcement(catalog, activeModules, recorded)
 	replacements := make(map[string][]string)
 	for _, moduleID := range activeModules {
 		for _, rule := range objectsOrEmpty(catalog.modules[moduleID]["rules"]) {
@@ -1370,6 +1376,22 @@ func classifySourceClauseTransition(
 			targets = append(targets, previous.ID)
 			reason = "Stable clause identity and enforcement remain in the selected Baseline."
 		} else if _, present := current[previous.ID]; !present {
+			for _, moduleID := range activeModules {
+				for _, rule := range objectsOrEmpty(catalog.modules[moduleID]["rules"]) {
+					for _, clause := range objectsOrEmpty(rule["clauses"]) {
+						if clause["id"] != previous.ID || clause["enforcement"] != previous.Enforcement || clauseApplies(catalog, clause, recorded) {
+							continue
+						}
+						gate, _ := objectValue(clause["appliesWhen"])
+						decisionID, _ := stringValue(gate, "decision")
+						if value, answered := recorded[decisionID]; answered {
+							disposition = ClauseReasonedRejection
+							targets = []string{decisionID}
+							reason = fmt.Sprintf("The repository recorded %s = %s; this clause applies only when it is %s.", decisionID, renderDecisionValue(value), renderDecisionValue(gate["equals"]))
+						}
+					}
+				}
+			}
 			if successors := replacements[previous.ID]; len(successors) == 1 && current[successors[0]] == previous.Enforcement {
 				disposition = ClauseReplaced
 				targets = append(targets, successors[0])
@@ -1389,12 +1411,15 @@ func classifySourceClauseTransition(
 	return evidence, delta
 }
 
-func selectedClauseEnforcement(catalog *Catalog, activeModules []string) map[string]string {
+func selectedClauseEnforcement(catalog *Catalog, activeModules []string, recorded map[string]any) map[string]string {
 	result := make(map[string]string)
 	for _, moduleID := range activeModules {
 		module := catalog.modules[moduleID]
 		for _, rule := range objectsOrEmpty(module["rules"]) {
 			for _, clause := range objectsOrEmpty(rule["clauses"]) {
+				if !clauseApplies(catalog, clause, recorded) {
+					continue
+				}
 				id, idOK := stringValue(clause, "id")
 				enforcement, enforcementOK := stringValue(clause, "enforcement")
 				if idOK && enforcementOK {
@@ -1573,6 +1598,9 @@ func normalizePlanDecisions(
 	for id := range required {
 		value, ok := values[id]
 		if !ok {
+			if decisionOptional(catalog.decisions[id]) {
+				continue
+			}
 			missing = append(missing, id)
 			continue
 		}
@@ -1660,10 +1688,31 @@ func resolveManagedArtifacts(
 				}
 			}
 			for _, field := range []string{"selectTemplates", "renderBindings"} {
+				if field == "renderBindings" && decisionOptional(declaration) {
+					continue
+				}
 				for _, item := range objectsOrEmpty(effect[field]) {
 					id, _ := stringValue(item, "artifact")
 					controlledArtifacts[id] = struct{}{}
 				}
+			}
+		}
+	}
+	for id, declaration := range catalog.decisions {
+		if !decisionOptional(declaration) {
+			continue
+		}
+		if _, answered := values[id]; answered {
+			continue
+		}
+		for _, effect := range objectsOrEmpty(declaration["effects"]) {
+			for _, binding := range objectsOrEmpty(effect["renderBindings"]) {
+				token, _ := stringValue(binding, "token")
+				rendered, err := renderUnrecordedProjectDecision(id, declaration)
+				if err != nil {
+					return nil, nil, fmt.Errorf("render unrecorded project decision %q: %w", id, err)
+				}
+				renderValues[token] = rendered
 			}
 		}
 	}
@@ -1803,6 +1852,7 @@ func resolveManagedArtifacts(
 			activeModules,
 			orderedIDs,
 			paths,
+			values,
 		)
 		for token, rendered := range renderValues {
 			valuesForArtifact[token] = rendered
@@ -1935,6 +1985,7 @@ func artifactRenderValues(
 	activeModules []string,
 	activeArtifacts []string,
 	artifactPaths map[string]string,
+	recorded map[string]any,
 ) map[string]string {
 	values := make(map[string]string)
 	switch artifact["id"] {
@@ -1975,6 +2026,9 @@ func artifactRenderValues(
 				return left < right
 			})
 			for _, clause := range clauses {
+				if !clauseApplies(catalog, clause, recorded) {
+					continue
+				}
 				enforcement, _ := stringValue(clause, "enforcement")
 				guidance, _ := stringValue(clause, "guidance")
 				rules = append(rules, fmt.Sprintf("- **%s**: %s", enforcement, strings.TrimSpace(guidance)))
@@ -3197,4 +3251,30 @@ func cloneFindings(findings []Finding) []Finding {
 		return []Finding{}
 	}
 	return append([]Finding{}, findings...)
+}
+
+func decisionOptional(declaration document) bool {
+	optional, _ := declaration["optional"].(bool)
+	return optional
+}
+
+func clauseApplies(catalog *Catalog, clause document, recorded map[string]any) bool {
+	gate, gated := objectValue(clause["appliesWhen"])
+	if !gated {
+		return true
+	}
+	id, _ := stringValue(gate, "decision")
+	value, answered := recorded[id]
+	if !answered && decisionOptional(catalog.decisions[id]) {
+		value = catalog.decisions[id]["default"]
+	}
+	return reflectJSONEqual(value, gate["equals"])
+}
+
+func manifestDecisionValues(decisions map[string]ManifestDecision) map[string]any {
+	values := make(map[string]any, len(decisions))
+	for id, decision := range decisions {
+		values[id] = decision.Value
+	}
+	return values
 }

@@ -114,7 +114,7 @@ func TestBaselineHumanProfileChangeRemainsReachable(t *testing.T) {
 	// "Change Baseline Profile" (1), confirm three "1" changes,
 	// decline two "2" re-ask confirmations, then answer "1" to
 	// every remaining prompt (12x) and decline recomputed Plan (2).
-	changeAnswers := []string{"3", "1", "1", "1", "2", "2"}
+	changeAnswers := []string{"3", "1", "1", "1", "2", "3"}
 	for range 12 {
 		changeAnswers = append(changeAnswers, "1")
 	}
@@ -342,6 +342,7 @@ func TestHumanBaselineDecisionDefaults(t *testing.T) {
 		},
 		{name: "language", id: "language.generated", want: "English"},
 		{name: "verification", id: "verification.gate", want: "rtk make verify"},
+		{name: "frontend layout", id: "frontend.layout", want: "systems"},
 		{name: "HTTP contract", id: "http.contract", want: map[string]any{"mode": "REST"}},
 		{name: "spec scaffold", id: "spec.scaffold", want: true},
 		{name: "domain layout", id: "domain.layout", want: "single-context"},
@@ -1284,7 +1285,7 @@ func TestBaselineHumanProfileAdaptation(t *testing.T) {
 	t.Parallel()
 	repository, _, _ := baselinePlanProfileFileFixture(t)
 	before := baselinePlanTestTree(t, repository)
-	answers := "\n3\n\n\nmake verify-incremental\n" +
+	answers := "\n4\n\n\nmake verify-incremental\n" +
 		strings.Repeat("\n", 32) +
 		"2\n" +
 		"1\n" +
@@ -1737,7 +1738,7 @@ func newCLIProjectDecisionRepository(t *testing.T) string {
 }
 
 func projectDecisionHumanAnswers() string {
-	return "\nmake verify\nmake verify-incremental\n\n\n\n\n\n\n\n2\n2\n2\n"
+	return "\nmake verify\nmake verify-incremental\n\n\n\n\n\n\n\n\n2\n2\n2\n"
 }
 
 func archivedFindingHTTPContractDecision() map[string]any {

@@ -1,9 +1,12 @@
 ---
 spec: 0207-a-go-cli-and-a-typescript-monorepo-in-one-baseline
-status: active
+status: archived
 created: 2026-09-30
 surfaces: [backend, cli, docs]
+archived: "2026-10-02"
+source_slug: 0207-a-go-cli-and-a-typescript-monorepo-in-one-baseline
 ---
+
 
 # A Go CLI and a TypeScript monorepo in one Baseline
 

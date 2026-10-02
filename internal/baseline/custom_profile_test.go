@@ -314,3 +314,45 @@ func TestCustomProfileRejectsUnsafePathsAndNonRepositorySources(t *testing.T) {
 		t.Fatalf("LoadCustomProfilePath(symlink) error = %v, want ErrUnsafeCustomProfilePath", err)
 	}
 }
+
+func TestADraftThatAdaptsSeveralBuiltInProfilesBindsToTheClosest(t *testing.T) {
+	t.Parallel()
+	catalog := mustEmbeddedCatalog(t)
+	for _, tc := range []struct {
+		source       string
+		modules      []string
+		capabilities []string
+	}{
+		{"standard-typescript-monorepo", []string{"frontend", "autonomous-work"}, []string{"capability.workspace.frontend"}},
+		{"go-cli-tui", []string{"tui-surface", "autonomous-work"}, nil},
+		{"go-cli-typescript-monorepo", []string{"cli-surface", "autonomous-work"}, nil},
+	} {
+		t.Run(tc.source, func(t *testing.T) {
+			draft, err := NewProfileAdaptationDraft(tc.source, "closest-source-draft", tc.modules, tc.capabilities, catalog)
+			if err != nil {
+				t.Fatal(err)
+			}
+			bound, err := ProfileDraftInputFromDocument(draft.Document, catalog)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if bound.SourceProfileID != tc.source {
+				t.Fatalf("bound source = %q, want %q", bound.SourceProfileID, tc.source)
+			}
+		})
+	}
+}
+
+func TestEquallyCloseProfileDraftSourcesStayAmbiguous(t *testing.T) {
+	t.Parallel()
+	draft := ResolvedProfile{Modules: []string{"core"}, Capabilities: []string{"universal"}}
+	sources := []ResolvedProfile{
+		{ID: "first", Modules: []string{"core", "go"}, Capabilities: []string{"universal", "go"}},
+		{ID: "farther", Modules: []string{"core", "go", "cli"}, Capabilities: []string{"universal"}},
+		{ID: "second", Modules: []string{"core", "typescript"}, Capabilities: []string{"universal", "typescript"}},
+		{ID: "more-capabilities", Modules: []string{"core", "go"}, Capabilities: []string{"universal", "go", "cli"}},
+	}
+	if got := closestProfileDraftSources(draft, sources); !slices.Equal(got, []string{"first", "second"}) {
+		t.Fatalf("closest sources = %v, want first and second", got)
+	}
+}

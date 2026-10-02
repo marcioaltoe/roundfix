@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"reflect"
 	"regexp"
 	"sort"
 	"strings"
@@ -192,6 +193,7 @@ func (l *catalogLoader) validateModules(catalog *Catalog) {
 			}
 			for _, clause := range clauses {
 				clauseID := validateOwnedID(l, "clause", ruleID, clause, seenClauses)
+				l.validateClauseGate(catalog, clauseID, clause)
 				enforcement, _ := stringValue(clause, "enforcement")
 				if !containsString([]string{"mandatory", "prohibited", "stop-and-ask"}, enforcement) {
 					l.add("catalog.clause.enforcement.invalid", clauseID, enforcement)
@@ -368,6 +370,14 @@ func (l *catalogLoader) validateProfiles(catalog *Catalog) {
 
 	for profileID, profile := range catalog.profiles {
 		requireFields(l, "profile", profileID, profile, "id", "version", "setup", "entryDecisions", "modules")
+		for _, entry := range objectsOrEmpty(profile["verification"]) {
+			if marker, present := entry["partOfGate"]; present {
+				if _, ok := marker.(bool); !ok {
+					id, _ := stringValue(entry, "id")
+					l.add("catalog.profile.verification.invalid", profileID, id+": partOfGate must be a boolean")
+				}
+			}
+		}
 		setupID, _ := stringValue(profile, "setup")
 		setup, setupExists := catalog.setups[setupID]
 		if !setupExists {
@@ -947,6 +957,7 @@ func (l *catalogLoader) validateDecisionEffects(catalog *Catalog) {
 	})
 	for decisionID, decision := range catalog.decisions {
 		decisionType, _ := stringValue(decision, "type")
+		l.validateOptionalDecision(decisionID, decision)
 		structuredRenderer := containsString(
 			[]string{"auth-provider", "http-contract", "identifier-strategy"},
 			decisionType,
@@ -1312,6 +1323,17 @@ func (l *catalogLoader) validateDecisionCycles(graph map[string][]string) {
 func (l *catalogLoader) validateSetups(catalog *Catalog) {
 	for setupID, setup := range catalog.setups {
 		requireFields(l, "setup", setupID, setup, "id", "version", "source", "digest", "skills")
+		if source, _ := objectValue(setup["source"]); source["type"] == "composed" {
+			components, err := setupCompositionComponents(setup, catalog.setups)
+			if err != nil {
+				l.add("catalog.setup.composition.invalid", setupID, err.Error())
+			} else if expected, err := composeSetupSnapshot(setupID, components); err != nil {
+				l.add("catalog.setup.composition.conflict", setupID, err.Error())
+			} else if !reflect.DeepEqual(setup["skills"], expected["skills"]) ||
+				!reflect.DeepEqual(setup["activationBundles"], expected["activationBundles"]) {
+				l.add("catalog.setup.composition.drift", setupID, "skills or activation bundles differ from the component union")
+			}
+		}
 		skills, ok := objectList(setup["skills"])
 		if !ok {
 			l.add("catalog.setup.skills.invalid", setupID, "")
@@ -1705,4 +1727,56 @@ func toAnySlice(values []document) []any {
 		result[index] = values[index]
 	}
 	return result
+}
+
+func (l *catalogLoader) validateOptionalDecision(id string, decision document) {
+	if raw, declared := decision["optional"]; declared {
+		if _, ok := raw.(bool); !ok {
+			l.add("catalog.decision.optional.invalid", id, "optional must be a boolean")
+			return
+		}
+	}
+	if !decisionOptional(decision) {
+		return
+	}
+	value, declared := decision["default"]
+	if !declared || validateDecisionValue(decision, value) != nil {
+		l.add("catalog.decision.optional.invalid", id, "an optional decision requires a valid default")
+	}
+	for _, effect := range objectsOrEmpty(decision["effects"]) {
+		when, ok := objectValue(effect["when"])
+		if !ok || len(when) != 1 || when["present"] != true {
+			l.add("catalog.decision.optional.invalid", id, "optional effects require when present true")
+		}
+		for field := range effect {
+			if field != "when" && field != "renderBindings" {
+				l.add("catalog.decision.optional.invalid", id, "optional effects may only declare renderBindings")
+			}
+		}
+	}
+}
+
+func (l *catalogLoader) validateClauseGate(catalog *Catalog, id string, clause document) {
+	raw, declared := clause["appliesWhen"]
+	if !declared {
+		return
+	}
+	gate, ok := objectValue(raw)
+	if !ok || len(gate) != 2 {
+		l.add("catalog.clause.applies-when.invalid", id, "appliesWhen must contain only decision and equals")
+		return
+	}
+	decisionID, ok := stringValue(gate, "decision")
+	decision, known := catalog.decisions[decisionID]
+	if !ok || !known {
+		l.add("catalog.clause.applies-when.invalid", id, "gate decision is unknown")
+		return
+	}
+	if decision["type"] != "enum" || !decisionOptional(decision) {
+		l.add("catalog.clause.applies-when.invalid", id, "gate decision must be an optional enum")
+		return
+	}
+	if _, exists := gate["equals"]; !exists || validateDecisionValue(decision, gate["equals"]) != nil {
+		l.add("catalog.clause.applies-when.invalid", id, "gate equals must be a declared decision value")
+	}
 }

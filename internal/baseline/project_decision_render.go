@@ -8,12 +8,22 @@ import (
 	"unicode/utf8"
 )
 
+const frontendLayoutDecisionID = "frontend.layout"
+
 func renderProjectDecision(
 	decisionID string,
 	value any,
 	declaration document,
 ) (string, error) {
 	switch decisionID {
+	case frontendLayoutDecisionID:
+		if err := validateDecisionValue(declaration, value); err != nil {
+			return "", err
+		}
+		if value == "repository-defined" {
+			return "The repository records its own frontend layout, stated in its repository-owned rules.", nil
+		}
+		return "The repository records the `systems` frontend layout.", nil
 	case "identifier.strategy":
 		return renderIdentifierStrategy(value)
 	case httpContractDecisionID:
@@ -212,4 +222,13 @@ func markdownCode(value string) string {
 		padding = " "
 	}
 	return delimiter + padding + value + padding + delimiter
+}
+
+func renderUnrecordedProjectDecision(decisionID string, declaration document) (string, error) {
+	switch decisionID {
+	case frontendLayoutDecisionID:
+		return fmt.Sprintf("No frontend layout is recorded. The suggested `%s` layout applies until the repository records one.", renderDecisionValue(declaration["default"])), nil
+	default:
+		return "", fmt.Errorf("unrecorded project decision %q has no renderer", decisionID)
+	}
 }

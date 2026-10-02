@@ -1,0 +1,78 @@
+=== RUN   TestBaselineHumanProfileChangeRemainsReachable
+=== PAUSE TestBaselineHumanProfileChangeRemainsReachable
+=== RUN   TestHumanBaselineDecisionDefaults
+=== PAUSE TestHumanBaselineDecisionDefaults
+=== RUN   TestBaselineHumanProfileAdaptation
+=== PAUSE TestBaselineHumanProfileAdaptation
+=== RUN   TestBaselinePlanProfileFile
+=== PAUSE TestBaselinePlanProfileFile
+=== RUN   TestGuidanceCompositionJourney
+=== PAUSE TestGuidanceCompositionJourney
+=== RUN   TestProfileAdaptationJourney
+=== PAUSE TestProfileAdaptationJourney
+=== CONT  TestBaselineHumanProfileChangeRemainsReachable
+=== CONT  TestBaselinePlanProfileFile
+=== CONT  TestBaselineHumanProfileAdaptation
+=== CONT  TestHumanBaselineDecisionDefaults
+=== CONT  TestProfileAdaptationJourney
+=== CONT  TestGuidanceCompositionJourney
+=== RUN   TestHumanBaselineDecisionDefaults/existing_manifest_value_wins
+=== RUN   TestHumanBaselineDecisionDefaults/invalid_manifest_value_falls_back_to_catalog
+=== RUN   TestHumanBaselineDecisionDefaults/language
+=== RUN   TestHumanBaselineDecisionDefaults/verification
+=== RUN   TestHumanBaselineDecisionDefaults/frontend_layout
+=== RUN   TestHumanBaselineDecisionDefaults/HTTP_contract
+=== RUN   TestHumanBaselineDecisionDefaults/spec_scaffold
+=== RUN   TestHumanBaselineDecisionDefaults/domain_layout
+=== RUN   TestHumanBaselineDecisionDefaults/external_triage
+=== RUN   TestHumanBaselineDecisionDefaults/autonomous_work
+=== RUN   TestHumanBaselineDecisionDefaults/Secondbrain
+=== RUN   TestHumanBaselineDecisionDefaults/repository_extension
+=== RUN   TestHumanBaselineDecisionDefaults/backend_runtime
+=== RUN   TestHumanBaselineDecisionDefaults/design_runtime
+--- PASS: TestHumanBaselineDecisionDefaults (0.03s)
+    --- PASS: TestHumanBaselineDecisionDefaults/existing_manifest_value_wins (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/invalid_manifest_value_falls_back_to_catalog (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/language (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/verification (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/frontend_layout (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/HTTP_contract (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/spec_scaffold (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/domain_layout (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/external_triage (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/autonomous_work (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/Secondbrain (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/repository_extension (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/backend_runtime (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/design_runtime (0.00s)
+=== RUN   TestBaselinePlanProfileFile/mutually_exclusive_Profile_inputs
+=== RUN   TestBaselinePlanProfileFile/invalid_draft
+=== RUN   TestBaselinePlanProfileFile/stale_draft
+=== RUN   TestBaselinePlanProfileFile/output_failure
+=== RUN   TestBaselineHumanProfileAdaptation/decline_writes_nothing
+=== RUN   TestBaselineHumanProfileAdaptation/review_output_failure_writes_nothing
+--- PASS: TestBaselinePlanProfileFile (0.25s)
+    --- PASS: TestBaselinePlanProfileFile/mutually_exclusive_Profile_inputs (0.00s)
+    --- PASS: TestBaselinePlanProfileFile/invalid_draft (0.01s)
+    --- PASS: TestBaselinePlanProfileFile/stale_draft (0.01s)
+    --- PASS: TestBaselinePlanProfileFile/output_failure (0.02s)
+--- PASS: TestBaselineHumanProfileAdaptation (0.26s)
+    --- PASS: TestBaselineHumanProfileAdaptation/decline_writes_nothing (0.00s)
+    --- PASS: TestBaselineHumanProfileAdaptation/review_output_failure_writes_nothing (0.03s)
+--- PASS: TestBaselineHumanProfileChangeRemainsReachable (0.69s)
+=== RUN   TestGuidanceCompositionJourney/go-cli-tui
+=== RUN   TestGuidanceCompositionJourney/go-cli-typescript-monorepo
+--- PASS: TestProfileAdaptationJourney (2.63s)
+=== RUN   TestGuidanceCompositionJourney/rust-cli
+=== RUN   TestGuidanceCompositionJourney/standard-typescript-monorepo
+--- PASS: TestGuidanceCompositionJourney (5.46s)
+    --- PASS: TestGuidanceCompositionJourney/go-cli-tui (1.56s)
+    --- PASS: TestGuidanceCompositionJourney/go-cli-typescript-monorepo (0.84s)
+    --- PASS: TestGuidanceCompositionJourney/rust-cli (0.85s)
+    --- PASS: TestGuidanceCompositionJourney/standard-typescript-monorepo (1.16s)
+PASS
+suiteguard: guard cost: measured 7800 paths; fingerprint took 276.924333ms before and 220.7245ms after
+suiteguard: repository boundary violated:
+suiteguard: modified: docs/specs/0207-a-go-cli-and-a-typescript-monorepo-in-one-baseline/qa/evidence/2026-10-02-run/rows-2-5-cli-tests.txt
+FAIL	roundfix/internal/cli	6.692s
+FAIL
