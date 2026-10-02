@@ -1,9 +1,12 @@
 ---
 spec: 0216-baseline-wording-left-after-the-stack-wave
-status: active
+status: archived
 created: 2026-10-02
 surfaces: [backend, docs]
+archived: "2026-10-02"
+source_slug: 0216-baseline-wording-left-after-the-stack-wave
 ---
+
 
 # Baseline wording left after the stack wave
 
