@@ -17,6 +17,7 @@ paths:
   - internal/baseline/derived_ownership_test.go
   - internal/cli/baseline_human_test.go
   - docs/agents/setup-context.json
+  - skills/baseline_skill_contract_test.go
 operations:
   - implement
   - commit
@@ -120,3 +121,11 @@ A second refresh must report `File changes: 0`.
   changes.
 - No paid API use, release, tag, deployment or branch-policy exception.
 - Verification stays Daemon-owned, and Task status stays Daemon-written.
+
+On 2026-10-02 the operator added `skills/baseline_skill_contract_test.go` to the
+paths. During delivery, task_02 found that the skill sync step behind `make
+baseline-digests` decodes every setup through `baselineSetupSource`, which has
+no `setups` field, so the regeneration dropped the composed setup's components.
+The one-field addition belongs to the Baseline source the maintainer authorized
+("Autorizar os dois"), and it changes no skill.
+

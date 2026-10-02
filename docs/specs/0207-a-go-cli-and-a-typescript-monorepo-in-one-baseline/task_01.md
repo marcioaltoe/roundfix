@@ -25,7 +25,8 @@ This is an authorized tooling Task. It may change only the files in its Context,
 7. MUST add `clause.frontend.follow-recorded-layout` as `mandatory` to the table in `internal/baseline/clause_characterization_test.go`, and the row `{name: "frontend layout", id: "frontend.layout", want: "systems"}` to `TestHumanBaselineDecisionDefaults`. An existing scripted interview in `internal/cli/baseline_human_test.go` that adopts a profile with the frontend module gains one answer for the new question and nothing else.
 8. MUST update `docs/user-guide/context-driven-development.md` as Fixed texts gives for task_01.
 9. MUST run `make baseline-digests`, then `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text` twice; the second MUST report `File changes: 0`. MUST NOT hand-edit a pin, golden or generated guide, and MUST keep each asset's formatting by replacing strings and numbers in place.
-10. MUST NOT rename or remove a clause, a top-level test or an exported function, and MUST NOT change the Source Baseline corpus, the retention transitions or the parity corpus. If an existing test outside the Context fails, the Task stops and reports it.
+10. MUST NOT rename or remove a clause, a top-level test or an exported function, and MUST NOT change the Source Baseline corpus, the retention transitions or the parity corpus. If an existing test outside the Context fails, the Task stops and reports it, unless the same test also fails on this Task's starting commit in the same environment (for example the process-table tests in `internal/cli/orphan_unix_test.go`, which a sandboxed Agent cannot run): such a test is recorded in the Result with that proof and does not stop the Task.
+11. MUST make `normalizeAlignmentDecisions` in `internal/baseline/profile_alignment.go` skip an unanswered decision that the catalog marks optional, so an unrecorded `frontend.layout` raises no `profile.decision.required` divergence; a required decision without an answer still does. `TestProjectDecisionRendering` and `TestBaselinePlanCharacterization` pass unedited.
 
 ## Subtasks
 
@@ -48,6 +49,7 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - instruction: `docs/adr/0205-a-repository-records-its-frontend-layout-and-an-unrecorded-layout-follows-the-suggestion.md`
 - instruction: `docs/adr/0058-baseline-upgrades-fail-closed-on-unaccounted-rule-removal.md`
 - interface: `internal/baseline/assets/decisions.json`
+- interface: `internal/baseline/profile_alignment.go`
 - interface: `internal/baseline/assets/modules/frontend.json`
 - interface: `internal/baseline/assets/templates/guides/frontend.md`
 - interface: `internal/baseline/assets/templates/index.json`
