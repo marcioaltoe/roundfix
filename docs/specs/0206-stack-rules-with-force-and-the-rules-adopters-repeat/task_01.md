@@ -17,10 +17,10 @@ This is an authorized tooling Task. It may change only the files in its Context,
 ## Requirements
 
 1. MUST add, in `internal/baseline/assets/modules/core.json`, the eight clauses the TechSpec's "Exact texts" gives for task_01, each with its exact identifier, force and guidance, the lint clause with its `replaces` list, and MUST keep every existing clause byte-identical.
-2. MUST remove `rule.bun.warning-free-verification` and its one clause from the `bun` module, from `guide.bun` and from the Standard TypeScript Monorepo profile's `requiredRules`, and MUST retarget the legacy retention transition's `clause.legacy.block-warnings` mapping as the TechSpec states, keeping its `replaced` disposition.
+2. MUST remove `rule.bun.warning-free-verification` and its one clause from the `bun` module, from `guide.bun`, from the Standard TypeScript Monorepo profile's `requiredRules` and from the composed `go-cli-typescript-monorepo` profile's `requiredRules`, changing no other line of either profile by hand, and MUST retarget the legacy retention transition's `clause.legacy.block-warnings` mapping as the TechSpec states, keeping its `replaced` disposition.
 3. MUST add the eight task_01 Source Baseline rows the TechSpec's "Source Baseline rows" table gives: corpus entry, manifest row and `entryIds` identifier, each after its named anchor. MUST NOT change or remove any existing row, including the Bun clause's row.
 4. MUST raise by one, from the value on the starting main, the versions the TechSpec's "Version changes" lists for task_01, keeping each module's existing formatting.
-5. MUST update the existing tests the TechSpec's "Existing tests that change" names for task_01: the force record gains the eight clauses and loses the Bun clause; the maintained Source Baseline entry count rises by eight; the TypeScript and Bun wording test drops the conditional warnings sentence from its required list and the Bun warnings row from its force table. No other existing test line changes.
+5. MUST update the existing tests the TechSpec's "Existing tests that change" names for task_01: the force record gains the eight clauses and loses the Bun clause; the maintained Source Baseline entry count rises by eight; the TypeScript and Bun wording test drops the conditional warnings sentence from its required list and the Bun warnings row from its force table. No other existing test line changes, except the whitespace `gofmt` realigns in the force record's map once its longest key, the Bun clause, is gone; run `gofmt -w` on that file and change nothing else in it by hand.
 6. MUST create `internal/baseline/promoted_core_clauses_test.go` with `expectedClause`, `promotedCoreClauses`, `clauseForceFindings` and the five tests the TechSpec's Testing Approach 1 names. The replacement test MUST assert a ready plan, the `replaced` disposition and the single target; the undeclared-replacement test MUST assert `action_required` and `unaccounted`.
 7. MUST run `make baseline-digests`, then
    `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`;
@@ -30,7 +30,7 @@ This is an authorized tooling Task. It may change only the files in its Context,
 ## Subtasks
 
 - [ ] Add the eight core clauses and remove the conditional Bun clause with its rule.
-- [ ] Retarget the legacy transition and remove the rule from the profile.
+- [ ] Retarget the legacy transition and remove the rule from both profiles.
 - [ ] Add the eight Source Baseline rows.
 - [ ] Update the three existing tests and create the new test file.
 - [ ] Regenerate and refresh twice.
@@ -40,6 +40,7 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - [ ] The rendered instruction guide of the Standard TypeScript Monorepo and Go CLI/TUI profiles states the seven instruction clauses with their force, and the skill guide states the vendored-skill clause.
 - [ ] The rendered TypeScript and Bun guide no longer states the conditional warnings clause.
 - [ ] A Source Baseline adopter's Managed Refresh plan is ready and records the Bun clause `replaced` by `clause.core.lint-warnings-block`; without `replaces` the plan is refused with the clause `unaccounted`.
+- [ ] No built-in profile requires the removed rule: the catalog loads, and the composed profile's other fields are unchanged.
 - [ ] The force record, the duplicate-text check, the adopter-neutral check and the catalog validation pass, and a second Managed Refresh is a no-op.
 
 ## Context
@@ -49,6 +50,7 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - interface: `internal/baseline/assets/modules/core.json`
 - interface: `internal/baseline/assets/modules/bun.json`
 - interface: `internal/baseline/assets/profiles/standard-typescript-monorepo.json`
+- interface: `internal/baseline/assets/profiles/go-cli-typescript-monorepo.json`
 - interface: `internal/baseline/assets/retention/transition.legacy-typescript-bun-to-portable-v3.json`
 - interface: `internal/baseline/assets/source-baselines/index.json`
 - interface: `internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/baseline.json`
@@ -71,6 +73,10 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - interface: `docs/agents/skill-dispatch.md`
 - interface: `docs/agents/setup-context.json`
 - creates: `internal/baseline/promoted_core_clauses_test.go`
+
+## Scope after Spec 0207
+
+Spec 0207 merged after this Task was authored and shipped the composed profile `go-cli-typescript-monorepo`, which also lists `rule.bun.warning-free-verification`. A Run stopped at `catalog.profile.rule.unknown` because that path was outside this Task. A rehearsal on 2026-10-02 at `18ef15eb`, with that Run's change plus the one-line profile edit and `gofmt` on the force record, regenerated once, converged on the second `make baseline-digests` and the second Managed Refresh, passed this Task's Verification and passed `make verify`. The partial work in the stopped Run's worktree remains usable: only the composed profile line and the formatter pass were missing.
 
 ## Verification
 

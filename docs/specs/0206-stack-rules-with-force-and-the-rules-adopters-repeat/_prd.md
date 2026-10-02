@@ -59,8 +59,13 @@ adopters stop re-deriving them and Agents read them with force.
   ADR-0195, and ADR-0093 and ADR-0094 check its consistency. ADR-0187 and
   ADR-0189 are active and do not apply: this Spec edits no skill, no skill
   version and no command reference. ADR-0191 (a setup snapshot follows its
-  upstream by name) and ADR-0204 (a composed profile's setup) govern setup
-  snapshots this Spec does not touch. ADR-0205 (a recorded frontend layout)
+  upstream by name) governs setup snapshots this Spec does not touch.
+  ADR-0204 (a composed profile takes a composed setup) holds: this Spec
+  removes the Bun rule from the composed profile's `requiredRules`, as from
+  the Standard TypeScript Monorepo profile, and changes neither its setup nor
+  its modules. ADR-0219 (a profile draft binds to the closest built-in profile)
+  holds, because both profiles drop the same rule and their module lists, by
+  which a draft's distance is measured, do not change. ADR-0205 (a recorded frontend layout)
   governs frontend clauses this Spec does not touch. ADR-0180, ADR-0181,
   ADR-0183, ADR-0184, ADR-0196, ADR-0197, ADR-0198, ADR-0199, ADR-0200 and
   ADR-0201 govern model selection, receipts, command transcripts, review,
@@ -86,6 +91,7 @@ adopters stop re-deriving them and Agents read them with force.
   `internal/baseline/assets/modules/spec-workflow.json`,
   `internal/baseline/assets/modules/typescript.json`,
   `internal/baseline/assets/profiles/standard-typescript-monorepo.json`,
+  `internal/baseline/assets/profiles/go-cli-typescript-monorepo.json`,
   `internal/baseline/assets/profiles/rust-cli.json`,
   `internal/baseline/assets/retention/transition.legacy-typescript-bun-to-portable-v3.json`,
   `internal/baseline/assets/templates/index.json`,
@@ -196,7 +202,9 @@ adopters stop re-deriving them and Agents read them with force.
 ## Non-Goals / Out of Scope
 
 - A built-in profile that composes several stacks, the frontend layout
-  decision, and the Go guide's scope sentence. Spec 0207 owns them.
+  decision, and the Go guide's scope sentence. Spec 0207 owns them; this Spec
+  changes only the composed profile's `requiredRules` entry for the removed
+  Bun rule.
 - The Setup snapshots, upstream skill renames and skill membership. Spec 0200
   owns them. Editing any vendored skill, including the Go skills that
   recommend Cobra and testify and the Rust skill that prescribes `anyhow`.
@@ -253,7 +261,11 @@ Baseline change; none changes a command or a recorded decision.
   must run its linters with their deny-warnings option. The conditional Bun
   clause `clause.bun.block-warnings-when-profile-treats-them-as-errors` is
   removed, with its rule, and the core lint clause declares that it replaces
-  it, so its Source Baseline retention disposition is `replaced`.
+  it, so its Source Baseline retention disposition is `replaced`. The
+  Standard TypeScript Monorepo and the composed Go CLI with TypeScript
+  Monorepo profiles both stop requiring the rule; the composed profile has no
+  Source Baseline, so its adopters' update renders the core clause without
+  retention accounting.
 - **Break — new obligations.** The promoted core, Spec-workflow and
   TypeScript clauses are new obligations for every adopter whose profile
   selects their module. Each is already written by hand in at least two
@@ -304,7 +316,12 @@ update, recorded here and not applied:
   external-triage clauses, the force record and the Source Baseline entry
   count. This Spec's Verification reads none of their artifacts; the order
   avoids source conflicts in module files. Each Task raises versions from the
-  value on its starting main.
+  value on its starting main. All three are on main since 2026-10-02
+  (`18ef15eb`). Spec 0207 also shipped the composed profile
+  `go-cli-typescript-monorepo`, which requires the Bun rule this Spec removes
+  and selects the core, Go, CLI, TypeScript, Bun and Spec-workflow modules
+  this Spec changes; task_01 owns its one-line `requiredRules` change, and
+  Spec 0207 already added the Go guide to the parity list task_02 extends.
 
 ## Recorded limits
 

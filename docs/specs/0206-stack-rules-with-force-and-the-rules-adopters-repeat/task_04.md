@@ -35,7 +35,7 @@ This is an authorized tooling Task. It may change only the files in its Context,
 
 ## Acceptance Criteria
 
-- [ ] The rendered Spec-routing, docs-layout and TypeScript guides state the four clauses with their force, for both built-in profiles that select those modules.
+- [ ] The rendered Spec-routing, docs-layout and TypeScript guides state the four clauses with their force in the Standard TypeScript Monorepo plan, and the Spec-routing and docs-layout clauses in the Go CLI/TUI plan. The composed profile Spec 0207 shipped selects the same modules; its repeated-clause and convergence tests pass in the repository Verification.
 - [ ] Every promoted clause of a Standard TypeScript Monorepo module has a Source Baseline row with its force, and a baseline missing one is reported.
 - [ ] The maintained Source Baseline count, the force record and the catalog validation pass, and a second Managed Refresh is a no-op.
 
