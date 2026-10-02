@@ -202,3 +202,17 @@ func TestACPXRunnerNodeOptionsConcurrentNotices(t *testing.T) {
 		t.Fatalf("concurrent repeated notices: %q", notices.String())
 	}
 }
+
+func TestACPXEnvironmentDropsAMissingPreloadForAnyProcess(t *testing.T) {
+	dir := t.TempDir()
+	missing := filepath.Join(dir, "gone.cjs")
+	var notices bytes.Buffer
+	got := ACPXEnvironment([]string{"KEEP=1", "NODE_OPTIONS=--require=" + missing + " --max-old-space-size=4096"}, &notices)
+	want := []string{"KEEP=1", "NODE_OPTIONS=--max-old-space-size=4096"}
+	if strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("environment = %q, want %q", got, want)
+	}
+	if !strings.Contains(notices.String(), missing) {
+		t.Fatalf("notice = %q, want it to name %s", notices.String(), missing)
+	}
+}

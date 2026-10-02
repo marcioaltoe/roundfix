@@ -644,6 +644,7 @@ func defaultSetupNodeVersion(ctx context.Context) (string, error) {
 		return "", err
 	}
 	cmd := exec.CommandContext(ctx, "node", "--version")
+	cmd.Env = agent.ACPXEnvironment(os.Environ(), os.Stderr)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", commandOutputError(err, output)
@@ -656,6 +657,7 @@ func defaultSetupACPXVersion(ctx context.Context) (string, error) {
 		return "", err
 	}
 	cmd := exec.CommandContext(ctx, "acpx", "--version")
+	cmd.Env = agent.ACPXEnvironment(os.Environ(), os.Stderr)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", commandOutputError(err, output)

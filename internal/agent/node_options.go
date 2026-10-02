@@ -143,3 +143,15 @@ func writeNodePreloadNotice(writer io.Writer, path string) {
 		log.Printf("write NODE_OPTIONS preload notice: %v", err)
 	}
 }
+
+// ACPXEnvironment returns environment with every NODE_OPTIONS preload whose
+// file is missing left out, writing one notice per dropped path to notices.
+// Processes Roundfix starts outside an ACPXRunner, such as the acpx and node
+// version probes, use it so a dead preload cannot stop them either.
+func ACPXEnvironment(environment []string, notices io.Writer) []string {
+	if environment == nil {
+		environment = []string{}
+	}
+	runner := &ACPXRunner{Environment: environment, Notices: notices}
+	return runner.baseEnv()
+}
