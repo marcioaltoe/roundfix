@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0211-a-delivery-queue-that-finishes-without-intervention
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -78,3 +78,35 @@ policy-refused merge to checking, the `delivery-error` retry resumption, the
 - `_prd.md` → Core Feature 7; User Stories 1-5
 - `_techspec.md` → Vocabulary Contract; API Contract 1; API Contract 4; Surface Transcript 1; Build Order 1
 - ADR-0187; ADR-0189; ADR-0211
+
+## Result
+
+Updated the canonical Roundfix Skill references and the `deliver` and `doctor`
+command guides with the archived retry, GitHub merge-state wait, policy-refusal
+retry, `delivery-error` resumption, `Retry refused` transcript, and missing
+`NODE_OPTIONS` preload notice. Raised both canonical skill front-matter version
+fields from `0.1.9` to `0.1.10`; the mirror and owned-version digest were
+regenerated through the repository commands.
+
+Focused checks:
+
+- Confirmed before editing that the required behavior phrases were absent from
+  the four target documents.
+- `make skills-sync` completed successfully and synchronized the Roundfix Skill
+  mirror and references.
+- The required version-recording test initially hit the sandbox's default Go
+  cache permission error; rerunning the same test with
+  `GOCACHE=/tmp/roundfix-task01-gocache` passed and recorded the new `roundfix`
+  version digest.
+- Confirmed after editing that the canonical and mirror skill files compare
+  equal, `git diff --check` passes, the required phrases are present, and the
+  changed paths are limited to this Task's bounded documentation, skill,
+  version-record and Result files.
+
+The Daemon still owns Task status and declared Verification; this handoff does
+not claim terminal Task completion.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261002T081705Z_a516b29ed11eed22`
+- Source commit: `c0192aeb199ef9c338c00055201caf043164a7fd`

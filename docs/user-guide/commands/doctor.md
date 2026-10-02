@@ -9,6 +9,15 @@ fails. One stdout line per check with `ok`, `failed`, or `skipped`; `residue:`
 and `storage:` also report `found` or `partial`. Failure lines include
 `next: <action>` when a remediation is known. The checks:
 
+When `NODE_OPTIONS` names a preload whose file no longer exists, Roundfix drops
+that preload from the environment it gives an agent process. It checks absolute
+preload paths from the last `NODE_OPTIONS` entry, keeps existing paths and
+package names, and reports each dropped path once per process on standard error:
+
+```text
+roundfix: notice: NODE_OPTIONS preload "<path>" does not exist; Roundfix left it out of the agent environment
+```
+
 - `node:` — Node.js meets the minimum version.
 - `acpx:` — the installed acpx version is at least the minimum supported
   version. Newer versions are accepted and are not downgraded.
@@ -88,4 +97,3 @@ Doctor never runs either command, never deletes skills, and never updates
 `skills-lock.json`. The check is offline and read-only: it reads only local
 embedded artifacts, `.agents/skills`, and `skills-lock.json`. Unrelated extra
 installed skills and lock entries are ignored and are not removed or flagged.
-
