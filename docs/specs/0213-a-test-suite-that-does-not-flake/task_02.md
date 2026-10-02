@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0213-a-test-suite-that-does-not-flake
-status: pending
+status: completed
 type: test
 complexity: high
 ---
@@ -99,3 +99,82 @@ executable outside the named residual inventory.
 - [_prd.md](_prd.md) — Goals 1-2; Core Feature 3; Success Metric 3; Acceptance evidence
 - [_techspec.md](_techspec.md) — Interfaces; The script fixture and its call sites; The residual inventory; Testing Approach 2; Build Order 2
 - ADR-0125; ADR-0126
+
+## Result
+
+Implemented this Task's test-only slice. `TestMain` records the absolute compiled
+binary path and dispatches sidecars before either environment-selected helper
+mode. The nine executable-write sites now create symlinks to that binary and
+mode-`0o600` sidecars. The macro ACPX sidecar launches its existing Python body
+through `python3 -c`, preserving arguments and prompt stdin. The Darwin Codex
+fixture remains separately compiled for its existing signature check.
+
+The new fixture test exercises the adapter-version helper, fake ACPX and both
+adapters, macro ACPX and all four adapters, all four carry-forward hooks, and
+the extracted settle-hook helper. It checks symlink targets and sidecar modes,
+then checks output and exit status by absolute path, relative path, and shell
+PATH lookup. It also proves that arguments with spaces, environment values,
+and inherited CLI/detach helper-mode variables survive dispatch. The settle
+fixture refuses a real staged 501-line file; the carry-forward hooks record
+execution and preserve their refusing exits.
+
+The AST guard scans literal integer modes in `os.WriteFile` and `os.OpenFile`
+calls under `internal/**/*_test.go`, including aliased imports, and freezes the
+TechSpec's ten residual sites across nine files. Its sabotage cases assert a
+seeded `0o755` write reports `internal/seeded/fixture_test.go:3`, both one-too-high
+and one-too-low inventory counts fail, and exact counts pass. Its header names
+constants, computed modes, and `os.Chmod` as outside the boundary.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| No new executable writes outside the residue; seeded executable and wrong counts fail | The guard's repository, seeded-site, count-mismatch, and literal-boundary subtests all passed. The converted files no longer contain literal executable file writes. `cli_test.go` and `upgrade_test.go` are unchanged. |
+| Each helper produces the compiled-binary symlink and private sidecar, with absolute and PATH execution | `TestScriptFixtureIsTheCompiledTestBinary` passed three repetitions at each of `-cpu 1,4`, also covering relative invocation. On Darwin, the separately compiled macro Codex is explicitly outside the script-fixture assertion; the non-Darwin branch uses the shared fixture and its assertion. Linux cross-compilation passed; Linux execution was not performed here. |
+| Doctor, carry-forward, settle-hook and macro behavior remains intact | Both Doctor floor tests passed three repetitions at each CPU setting. The focused integration selection passed, including all carry-forward hook tests, measured settle-hook recovery, macro profiles and detached Implement completion. The authored 20-repeat selection remains for Daemon Verification. |
+
+### Focused checks
+
+All successful local commands below used
+`GOCACHE=/tmp/roundfix-task02-gocache` after sandbox access to the host Go cache
+was denied:
+
+- `rtk proxy go test -count=1 -v -run 'TestNoTestWritesAnExecutableOutsideTheResidue/' ./internal/testfixture` — exit 0; all four guard subtests passed.
+- `rtk proxy go test -count=3 -cpu 1,4 -run 'TestScriptFixtureIsTheCompiledTestBinary/|TestDoctor.*AnAdapter' ./internal/cli` — exit 0 after the final fixture-test edit.
+- `rtk proxy go test -count=1 -run 'TestCarryForward.*Hook|TestSettleRecoversMeasuredHookRefusedWork|TestAgentSelectionProfilesMacro|TestRunImplementDetachPrintsReportAndCompletesRun' ./internal/cli` — exit 0, 103.803s, with the files held unchanged.
+- `GOOS=linux GOCACHE=/tmp/roundfix-task02-gocache rtk proxy go test -c -o /tmp/roundfix-task02-linux-cli.test ./internal/cli` — exit 0.
+- `rtk proxy go test -count=1 -run '^TestRunForceStop(OwnerProcessIntegrationProvesExitBeforeStoreCompletion|LegacyRunWithoutOwnerIdentityStillStopsOwner)$' ./internal/cli` — exit 0 with sandbox escalation for process-table access.
+- `rtk make skills-sync-check skills-check build` — exit 0.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+
+### Incremental check and limitations
+
+`GOCACHE=/tmp/roundfix-task02-gocache rtk make verify-incremental` exited 2.
+Formatting and vet passed, but the test stage failed. This is not a passing
+incremental gate:
+
+- Several package guards detected my edit to `script_fixture_test.go` while
+  that check was running. The overlapping focused integration selection also
+  reported this guard violation after its assertions passed. I stopped editing
+  and reran the affected focused selection successfully.
+- Two owner-stop integration tests could not enumerate the process table in
+  the sandbox. Both passed in the focused escalated check recorded above.
+- `internal/daemon/TestTaskBudgetReasonNamesTheSettlementThatRenewedIt`
+  exhausted its existing 200ms Run Budget before the stalled Task started
+  (`elapsed 299.612541ms`). This is the pre-existing flake assigned to
+  `task_01`; no daemon code or other Task file was changed here. The full
+  incremental gate was not retried over that unresolved out-of-slice flake.
+- The first fixture check lacked the fake ACPX helper's isolated home and
+  attempted its config write under the host home; the sandbox refused it.
+  The fixture test now sets a temporary command home, and the later focused
+  fixture checks pass.
+
+The pre-change inspection found all nine executable-write sites and neither
+new test file. No production code, Task Graph, other Task file, protected CLI
+test, or upgrade test was edited. Status remains Daemon-owned. No authored
+Verification command, commit, push, or pull-request operation was performed.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261002T064202Z_a22e1dd4644c4dc6`
+- Source commit: `09973cf2e449af6bfbe063ee07fdeb9c702551eb`

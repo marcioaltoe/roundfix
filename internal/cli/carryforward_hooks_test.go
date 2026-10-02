@@ -176,9 +176,7 @@ func writeCarryForwardHookFixtures(t *testing.T, refuseCommits bool) carryForwar
 		content := "#!/bin/sh\n" +
 			"printf '%s\\n' " + name + " >> \"$" + carryForwardHookMarkerEnv + "\"\n" +
 			exit
-		if err := os.WriteFile(filepath.Join(directory, name), []byte(content), 0o755); err != nil {
-			t.Fatalf("write %s hook fixture: %v", name, err)
-		}
+		writeScriptFixture(t, filepath.Join(directory, name), content)
 	}
 	return carryForwardHookFixtures{directory: directory, marker: marker}
 }

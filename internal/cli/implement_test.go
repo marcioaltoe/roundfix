@@ -43,6 +43,13 @@ const cliTestHoldAfterRunEnv = "ROUNDFIX_CLI_TEST_HOLD_AFTER_RUN"
 const detachTestChildModeEnv = "ROUNDFIX_DETACH_TEST_CHILD"
 
 func TestMain(m *testing.M) {
+	resolvedTestBinary, err := filepath.Abs(os.Args[0])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "resolve compiled test binary: %v\n", err)
+		os.Exit(2)
+	}
+	scriptFixtureBinaryPath = resolvedTestBinary
+	runScriptFixture()
 	if mode := os.Getenv(detachTestChildModeEnv); mode != "" {
 		os.Exit(runDetachTestChild(mode))
 	}
@@ -259,20 +266,14 @@ case " $* " in
 esac
 exit 0
 `, agent.MinimumACPXVersion, builtin.Runtimes.Codex.Model, modelsJSON, modelsJSON, implementFixtureAgentMarkerPrefix)
-	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
-		t.Fatalf("write fake acpx: %v", err)
-	}
+	writeScriptFixture(t, path, body)
 	// The adapter preflight probe LookPaths the agent-command binary; ship a
 	// fake codex-acp next to the fake acpx so detach children pass preflight
 	// on machines without the real adapter installed (CI runners).
 	adapterPath := filepath.Join(filepath.Dir(path), "codex-acp")
-	if err := os.WriteFile(adapterPath, []byte("#!/bin/sh\nprintf '%s\\n' '@agentclientprotocol/codex-acp "+agent.PinnedCodexAdapterVersion+"'\n"), 0o755); err != nil {
-		t.Fatalf("write fake codex-acp: %v", err)
-	}
+	writeScriptFixture(t, adapterPath, "#!/bin/sh\nprintf '%s\\n' '@agentclientprotocol/codex-acp "+agent.PinnedCodexAdapterVersion+"'\n")
 	claudeAdapterPath := filepath.Join(filepath.Dir(path), "claude-agent-acp")
-	if err := os.WriteFile(claudeAdapterPath, []byte("#!/bin/sh\nprintf '%s\\n' '@agentclientprotocol/claude-agent-acp "+agent.PinnedClaudeAdapterVersion+"'\n"), 0o755); err != nil {
-		t.Fatalf("write fake claude-agent-acp: %v", err)
-	}
+	writeScriptFixture(t, claudeAdapterPath, "#!/bin/sh\nprintf '%s\\n' '@agentclientprotocol/claude-agent-acp "+agent.PinnedClaudeAdapterVersion+"'\n")
 	// Bind each runtime to its own isolated adapter; one command override cannot
 	// prove the lineage of both runtimes in the built-in Fallback Chain.
 	configPath := filepath.Join(commandEnvironmentForTest(t).homeDir, ".acpx", "config.json")
@@ -7166,17 +7167,14 @@ func newMacroFakeACPX(t *testing.T) macroFakeACPX {
 	script := strings.ReplaceAll(macroFakeACPXScript, "__PINNED_ACPX_VERSION__", agent.MinimumACPXVersion)
 	script = strings.ReplaceAll(script, "__AGENT_MARKER_PREFIX__", implementFixtureAgentMarkerPrefix)
 	acpxPath := filepath.Join(binDir, "acpx")
-	if err := os.WriteFile(acpxPath, []byte(script), 0o755); err != nil {
-		t.Fatalf("write fake acpx: %v", err)
-	}
+	// Keep Python's stdin available for prompts; the shell only launches it.
+	writeScriptFixture(t, acpxPath, "exec python3 -c '"+strings.ReplaceAll(script, "'", "'\"'\"'")+"' \"$@\"\n")
 	for _, adapter := range []string{"codex-acp", "claude-agent-acp", "opencode", "npx"} {
 		content := "#!/bin/sh\nexit 0\n"
 		if adapter == "npx" {
 			content = "#!/bin/sh\ncase \"$*\" in\n  *claude-agent-acp*) printf '%s\\n' '" + agent.PinnedClaudeAdapterVersion + "' ;;\n  *) printf '%s\\n' '@agentclientprotocol/codex-acp " + agent.PinnedCodexAdapterVersion + "' ;;\nesac\n"
 		}
-		if err := os.WriteFile(filepath.Join(binDir, adapter), []byte(content), 0o755); err != nil {
-			t.Fatalf("write fake adapter %s: %v", adapter, err)
-		}
+		writeScriptFixture(t, filepath.Join(binDir, adapter), content)
 	}
 	codexPath := filepath.Join(binDir, "codex")
 	buildMacroCodexExecutable(t, codexPath)
@@ -7194,9 +7192,7 @@ func (fake macroFakeACPX) env() map[string]string {
 func buildMacroCodexExecutable(t *testing.T, destination string) {
 	t.Helper()
 	if runtime.GOOS != "darwin" {
-		if err := os.WriteFile(destination, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
-			t.Fatalf("write fake codex executable: %v", err)
-		}
+		writeScriptFixture(t, destination, "#!/bin/sh\nexit 0\n")
 		return
 	}
 	sourceDir := t.TempDir()
