@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0211-a-delivery-queue-that-finishes-without-intervention
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -84,3 +84,91 @@ option, and prints one notice per removed path (ADR-0211).
 - `_prd.md` → User Story 5; Core Feature 6; Success Metric 5; Acceptance evidence
 - `_techspec.md` → The agent environment; Interfaces; API Contract 4; Testing Approach 4; Build Order 4
 - ADR-0211; ADR-0140
+
+## Result
+
+Implemented the Task 04 environment filter. `agentNodeOptions` removes only
+missing absolute preload paths and absolute `file://` URL paths, preserves
+option order, and writes kept words with the quotes and escapes needed to
+round-trip. An unsplittable value passes through unchanged.
+
+`ACPXRunner.baseEnv` filters the last `NODE_OPTIONS` entry in a copied explicit
+environment or a fresh process-environment snapshot. It removes all entries
+for that variable when no option remains, so a shadowed entry cannot become
+active. An `os.Stat` failure removes a preload only when it proves absence.
+Notices use `Notices` or standard error and are serialized and deduplicated
+by path across runners in the same Roundfix process. The version probe now
+uses the existing `commandEnv` hygiene policy; `acpxCommandEnv` itself and
+its existing tests are unchanged.
+
+Acceptance evidence from focused checks:
+
+1. `TestAgentNodeOptionsDropsAMissingPreload` covers equals and space forms,
+   `-r`, `--import`, file URLs, percent-encoded paths, quoted missing paths,
+   and preservation of other options in order. Each removal returns the
+   expected absolute path and kept value.
+2. The same test keeps existing paths, existing file URLs, relative paths,
+   package names, quoted spaces, escaped quotes and backslashes, and unrelated
+   options. `TestAgentNodeOptionsKeepsWhatItCannotSplit` checks unchanged
+   malformed input without any existence checks. Runner environment tests
+   use a real existing file, check last-entry precedence and complete variable
+   removal, and prove that the process environment stays unchanged.
+3. `TestACPXRunnerDropsAMissingPreloadWithOneNotice` runs a fake `acpx` script
+   twice. Both invocations record only `--max-old-space-size=4096`, stripped
+   `CODEX_PATH` and `CLAUDECODE`, and the retained unrelated variable. The
+   notice matches API Contract 4 exactly once; a second runner does not repeat
+   it, and the supplied environment remains unchanged. The concurrent-notice
+   test exercises repeated occurrences of one path across eight callers.
+
+Focused commands and observed outcomes:
+
+- Before implementation:
+  `GOCACHE=/private/tmp/roundfix-task04-gocache rtk proxy go test -count=1 -run 'NodeOptions|MissingPreload' ./internal/agent`
+  exited 1 because `agentNodeOptions` and `ACPXRunner.Notices` did not exist.
+- After implementation:
+  `GOCACHE=/private/tmp/roundfix-task04-gocache rtk proxy go test -count=1 -v -run 'NodeOptions|MissingPreload|ACPXCommandEnv|CommandEnvDefaults' ./internal/agent`
+  exited 0; all selected tests and subtests passed, including the unedited
+  environment hygiene tests.
+- `GOCACHE=/private/tmp/roundfix-task04-gocache rtk proxy go test -race -count=1 -run 'NodeOptions|MissingPreload|ACPXCommandEnv|CommandEnvDefaults' ./internal/agent`
+  exited 0 with no race report.
+- `GOCACHE=/private/tmp/roundfix-task04-gocache rtk proxy go test -count=1 -run '^(TestACPXProbe|TestACPXConfigPathUsesOnlyTheExplicitEnvironment)' ./internal/agent`
+  exited 0; existing probe and explicit-environment regression checks passed.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+The authored Verification commands and repository-wide Verification were not
+run in this Agent turn. Task status remains `in_progress` as supplied by the
+Daemon. No other Task, Task Graph, tooling, commit, push, or Pull Request was
+changed or created. No follow-up work was identified.
+
+### Verification Feedback repair — attempt 1
+
+Inspected the Daemon diagnostic at
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261002T075527Z_5bea04bbe00b3ea6/verification/batch-002-attempt-1.log`.
+The configured `make verify-changed` rejected the fake `acpx` test fixture's
+direct executable write under the repository's frozen executable inventory.
+A focused run of the repository inventory subtest reproduced the rejection.
+
+Repaired only `internal/agent/node_options_test.go`: the fake shell script is
+now non-executable data with mode `0o600`, invoked by a launcher compiled
+through the existing `testfixture.FixtureBinary` helper. The Go tool owns the
+executable output. The script still observes both real probe environments,
+and all kept-option, notice, hygiene, and environment-preservation assertions
+remain in place. The executable inventory and its guard were not changed.
+
+Fresh focused evidence after repair:
+
+- `GOCACHE=/private/tmp/roundfix-task04-gocache rtk proxy go test -count=1 -run '^TestNoTestWritesAnExecutableOutsideTheResidue$' ./internal/testfixture`
+  exited 0; the unchanged inventory guard and its seeded detector cases passed.
+- `GOCACHE=/private/tmp/roundfix-task04-gocache rtk proxy go test -race -count=1 -run 'NodeOptions|MissingPreload|ACPXCommandEnv|CommandEnvDefaults' ./internal/agent`
+  exited 0 with no race report; all acceptance-related focused checks passed
+  with the repaired compiled launcher and fake shell script.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+The configured Verification sequence and authored Verification commands were
+not rerun. Task status remains Daemon-owned and unchanged. No commit, push,
+Pull Request, other Task, or Task Graph change was made during this repair.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261002T075527Z_5bea04bbe00b3ea6`
+- Source commit: `e6d482d5ef1129ef137431d9ab22395fac316afe`
