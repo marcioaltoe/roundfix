@@ -24,6 +24,8 @@ This is an authorized tooling Task. It may change only the files in its Context,
 6. MUST create `internal/baseline/assets/setups/go-cli-typescript-bun.json` by the TechSpec's "The composed setup procedure": the seed, then the asset sync against the commit the `go` snapshot pins. The run MUST change no other setup file. MUST add the new file to the sanctioned outputs `internal/baseline/derived_ownership_test.go` enumerates, and change no other line of that test.
 7. MUST run `make baseline-digests`, then `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text` twice; the second MUST report `File changes: 0`. MUST NOT hand-edit a pin, a golden or the composed snapshot's skills.
 8. MUST NOT change any profile, module, decision or other setup snapshot, and MUST NOT rename or remove a top-level test or an exported function.
+9. MUST add `Setups []string` with the JSON tag `setups,omitempty` to `baselineSetupSource` in `skills/baseline_skill_contract_test.go`, so the skill sync step of `make baseline-digests` keeps a composed setup's `source.setups` and the regeneration no longer fails with `catalog.setup.composition.invalid`.
+10. MUST make the `replaceSetupSkillDigest` helper in `internal/baseline/catalog_test.go` recompute the composed setup when it edits a component setup, so `TestCatalogDigestExcludesOwnedSkillContent` keeps its owned and external digest assertions unchanged.
 
 ## Subtasks
 
@@ -58,6 +60,8 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - interface: `internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json`
 - interface: `internal/baseline/testdata/plan-characterization/unsatisfied-blocking-capabilities.golden.json`
 - interface: `docs/agents/setup-context.json`
+- interface: `skills/baseline_skill_contract_test.go`
+- interface: `internal/baseline/catalog_test.go`
 - creates: `internal/baseline/setup_composition.go`
 - creates: `internal/baseline/setup_composition_test.go`
 
