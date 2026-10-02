@@ -1,0 +1,41 @@
+{
+  "command": [
+    "/private/tmp/roundfix-0213-qa/cli.test",
+    "-test.run=^TestRunImplementDetachSurvivesCallerProcessGroupKill$",
+    "-test.timeout=180s",
+    "-test.v"
+  ],
+  "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/cli",
+  "binary_pid": 60080,
+  "TMPDIR": "/private/tmp/roundfix-0213-qa/interrupt-tmp",
+  "owner_pid": 60712,
+  "prompt_started": [
+    "/private/tmp/roundfix-0213-qa/interrupt-tmp/TestRunImplementDetachSurvivesCallerProcessGroupKill3132101994/003/prompt-started"
+  ],
+  "before_kill": [
+    "60080 60062 60080 /private/tmp/roundfix-0213-qa/cli.test -test.run=^TestRunImplementDetachSurvivesCallerProcessGroupKill$ -test.timeout=180s -test.v",
+    "60712     1 60712 /private/tmp/roundfix-0213-qa/cli.test implement --spec 0001-widget-flow"
+  ],
+  "binary_exit": -9,
+  "observations": [
+    {
+      "seconds": 0.062,
+      "processes": [
+        "60712     1 60712 /private/tmp/roundfix-0213-qa/cli.test implement --spec 0001-widget-flow"
+      ]
+    },
+    {
+      "seconds": 0.197,
+      "processes": [
+        "60712     1 60712 /private/tmp/roundfix-0213-qa/cli.test implement --spec 0001-widget-flow"
+      ]
+    },
+    {
+      "seconds": 0.335,
+      "processes": []
+    }
+  ],
+  "remaining": [],
+  "pass": true,
+  "cleanup_pids": []
+}

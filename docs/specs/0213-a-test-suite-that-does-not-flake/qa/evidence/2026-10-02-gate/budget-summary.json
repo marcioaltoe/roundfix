@@ -1,0 +1,786 @@
+[
+  [
+    {
+      "label": "daemon-w0-r0",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.436,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w0-r1",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 22.926,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w0-r2",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.557,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w0-r3",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.113,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w0-r4",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.006,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w0-r5",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.216,
+      "passes": 80,
+      "failures": 0
+    }
+  ],
+  [
+    {
+      "label": "daemon-w1-r0",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.629,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w1-r1",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.008,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w1-r2",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 22.798,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w1-r3",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.093,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w1-r4",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 22.986,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w1-r5",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.418,
+      "passes": 80,
+      "failures": 0
+    }
+  ],
+  [
+    {
+      "label": "daemon-w2-r0",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 24.325,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w2-r1",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 22.888,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w2-r2",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.31,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w2-r3",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.65,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w2-r4",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 22.982,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w2-r5",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.429,
+      "passes": 80,
+      "failures": 0
+    }
+  ],
+  [
+    {
+      "label": "daemon-w3-r0",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 24.107,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w3-r1",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 22.931,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w3-r2",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.892,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w3-r3",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.05,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w3-r4",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.567,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w3-r5",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.312,
+      "passes": 80,
+      "failures": 0
+    }
+  ],
+  [
+    {
+      "label": "daemon-w4-r0",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.384,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w4-r1",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 22.625,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w4-r2",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.142,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w4-r3",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.058,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w4-r4",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.393,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w4-r5",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.352,
+      "passes": 80,
+      "failures": 0
+    }
+  ],
+  [
+    {
+      "label": "daemon-w5-r0",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.376,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w5-r1",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 22.893,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w5-r2",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 22.938,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w5-r3",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 22.911,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w5-r4",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.023,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w5-r5",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.676,
+      "passes": 80,
+      "failures": 0
+    }
+  ],
+  [
+    {
+      "label": "daemon-w6-r0",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.432,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w6-r1",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.484,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w6-r2",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.734,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w6-r3",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.418,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w6-r4",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.376,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w6-r5",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.399,
+      "passes": 80,
+      "failures": 0
+    }
+  ],
+  [
+    {
+      "label": "daemon-w7-r0",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.075,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w7-r1",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 22.572,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w7-r2",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.255,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w7-r3",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.736,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w7-r4",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 22.891,
+      "passes": 80,
+      "failures": 0
+    },
+    {
+      "label": "daemon-w7-r5",
+      "command": [
+        "/private/tmp/roundfix-0213-qa/daemon.test",
+        "-test.run=^(TestTaskBudgetReasonNamesTheSettlementThatRenewedIt|TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement)$",
+        "-test.count=20",
+        "-test.cpu=1,4",
+        "-test.timeout=600s",
+        "-test.v"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6/internal/daemon",
+      "exit": 0,
+      "seconds": 23.697,
+      "passes": 80,
+      "failures": 0
+    }
+  ]
+]

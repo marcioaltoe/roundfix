@@ -1,0 +1,12 @@
+{
+  "target": "roundfix/deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8",
+  "candidate": "5ffe5e0ff1201df10f6916238a2118c3046916c8",
+  "approval": "maintainer delivery authority recorded in approved _authorization.md",
+  "approval_commit": "8f5916b067e86835d51600c70df90de8deb2ce90",
+  "approval_ancestor_exit": 0,
+  "checks": "Daemon make verify-changed pass exit 0; successful diagnostics removed",
+  "unresolved_threads": "none because no open Pull Request (assignment fact)",
+  "merge_ready_acceptance": "none yet; pre-PR review follows QA/archive as task_05 Requirement 9 records",
+  "review_artifact_ancestry": "no review artifact exists yet; claimed candidate is the audited head",
+  "linux_verification": "no PR exists, therefore no Spec PR Linux CI evidence; Darwin structural fixture tests do not prove Linux execution"
+}

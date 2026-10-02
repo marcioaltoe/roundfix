@@ -1,0 +1,16 @@
+{
+  "report": "docs/specs/0213-a-test-suite-that-does-not-flake/qa/qa-report-2026-10-02.md",
+  "rows": 13,
+  "pass": 11,
+  "environment_blocked": 2,
+  "fail": 0,
+  "pending": 0,
+  "finding_blocked": 0,
+  "declared_blocked": 0,
+  "provenance_requirements": "1-9 plus all applicable non-waivable sources",
+  "inputs": "all 13 rows have typed nonempty declarations",
+  "auditor_fields": "unchanged",
+  "report_count": 1,
+  "evidence": "all cited named evidence exists",
+  "no_evidence_snapshots_written": true
+}

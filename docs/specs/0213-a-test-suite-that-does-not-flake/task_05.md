@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0213-a-test-suite-that-does-not-flake
-status: pending
+status: failed
 type: qa
 complexity: high
 ---
