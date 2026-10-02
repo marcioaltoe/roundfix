@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0207-a-go-cli-and-a-typescript-monorepo-in-one-baseline
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

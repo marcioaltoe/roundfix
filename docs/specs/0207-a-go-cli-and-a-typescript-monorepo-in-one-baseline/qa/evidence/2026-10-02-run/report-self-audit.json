@@ -1,0 +1,13 @@
+{
+  "rows": 12,
+  "passed": 11,
+  "rows_blocked_environment": 1,
+  "rows_blocked_finding": 0,
+  "rows_blocked_declared": 0,
+  "pending": 0,
+  "evidence_links_resolve": true,
+  "daemon_auditor_identity_preserved": true,
+  "worktree_scope": "qa/ only",
+  "verification_rerun": false,
+  "commit_push_pr": false
+}

@@ -1,0 +1,60 @@
+COMMAND: ['go', 'test', '-count=1', '-v', '-run', '^(TestTheComposedSetupIsTheUnionOfItsComponents|TestAComposedSetupThatDriftsFromItsComponentsIsRefused|TestAComposedSetupWithAnUnknownOrComposedComponentIsRefused|TestComponentsThatDisagreeOnASkillAreAConflict|TestAnAssetSyncRewritesTheComposedSetupWithItsComponents|TestAnAssetSyncWithNoSourceChangeLeavesTheComposedSetup|TestCatalogCompatibility|TestBaselineCompatibilityCorpus)$', './internal/baseline']
+=== RUN   TestCatalogCompatibility
+=== PAUSE TestCatalogCompatibility
+=== RUN   TestBaselineCompatibilityCorpus
+=== PAUSE TestBaselineCompatibilityCorpus
+=== RUN   TestTheComposedSetupIsTheUnionOfItsComponents
+=== PAUSE TestTheComposedSetupIsTheUnionOfItsComponents
+=== RUN   TestAComposedSetupThatDriftsFromItsComponentsIsRefused
+=== PAUSE TestAComposedSetupThatDriftsFromItsComponentsIsRefused
+=== RUN   TestAComposedSetupWithAnUnknownOrComposedComponentIsRefused
+=== PAUSE TestAComposedSetupWithAnUnknownOrComposedComponentIsRefused
+=== RUN   TestComponentsThatDisagreeOnASkillAreAConflict
+=== PAUSE TestComponentsThatDisagreeOnASkillAreAConflict
+=== RUN   TestAnAssetSyncRewritesTheComposedSetupWithItsComponents
+=== PAUSE TestAnAssetSyncRewritesTheComposedSetupWithItsComponents
+=== RUN   TestAnAssetSyncWithNoSourceChangeLeavesTheComposedSetup
+=== PAUSE TestAnAssetSyncWithNoSourceChangeLeavesTheComposedSetup
+=== CONT  TestCatalogCompatibility
+=== CONT  TestAComposedSetupWithAnUnknownOrComposedComponentIsRefused
+=== RUN   TestAComposedSetupWithAnUnknownOrComposedComponentIsRefused/unknown
+=== CONT  TestAnAssetSyncRewritesTheComposedSetupWithItsComponents
+=== CONT  TestAComposedSetupThatDriftsFromItsComponentsIsRefused
+=== CONT  TestAnAssetSyncWithNoSourceChangeLeavesTheComposedSetup
+=== RUN   TestAComposedSetupThatDriftsFromItsComponentsIsRefused/skills
+=== CONT  TestComponentsThatDisagreeOnASkillAreAConflict
+=== CONT  TestBaselineCompatibilityCorpus
+=== RUN   TestComponentsThatDisagreeOnASkillAreAConflict/skills
+=== CONT  TestTheComposedSetupIsTheUnionOfItsComponents
+=== RUN   TestAComposedSetupThatDriftsFromItsComponentsIsRefused/activationBundles
+=== RUN   TestComponentsThatDisagreeOnASkillAreAConflict/activationBundles
+=== RUN   TestAComposedSetupWithAnUnknownOrComposedComponentIsRefused/composed
+--- PASS: TestBaselineCompatibilityCorpus (0.02s)
+--- PASS: TestCatalogCompatibility (0.03s)
+--- PASS: TestTheComposedSetupIsTheUnionOfItsComponents (0.03s)
+=== RUN   TestAComposedSetupWithAnUnknownOrComposedComponentIsRefused/one_component
+--- PASS: TestAComposedSetupThatDriftsFromItsComponentsIsRefused (0.04s)
+    --- PASS: TestAComposedSetupThatDriftsFromItsComponentsIsRefused/skills (0.02s)
+    --- PASS: TestAComposedSetupThatDriftsFromItsComponentsIsRefused/activationBundles (0.02s)
+=== RUN   TestComponentsThatDisagreeOnASkillAreAConflict/sync_conflict_writes_nothing
+=== RUN   TestAComposedSetupWithAnUnknownOrComposedComponentIsRefused/duplicate
+=== RUN   TestAComposedSetupWithAnUnknownOrComposedComponentIsRefused/malformed_list
+=== RUN   TestAComposedSetupWithAnUnknownOrComposedComponentIsRefused/malformed_identifier
+--- PASS: TestAComposedSetupWithAnUnknownOrComposedComponentIsRefused (0.09s)
+    --- PASS: TestAComposedSetupWithAnUnknownOrComposedComponentIsRefused/unknown (0.02s)
+    --- PASS: TestAComposedSetupWithAnUnknownOrComposedComponentIsRefused/composed (0.02s)
+    --- PASS: TestAComposedSetupWithAnUnknownOrComposedComponentIsRefused/one_component (0.01s)
+    --- PASS: TestAComposedSetupWithAnUnknownOrComposedComponentIsRefused/duplicate (0.01s)
+    --- PASS: TestAComposedSetupWithAnUnknownOrComposedComponentIsRefused/malformed_list (0.01s)
+    --- PASS: TestAComposedSetupWithAnUnknownOrComposedComponentIsRefused/malformed_identifier (0.01s)
+--- PASS: TestComponentsThatDisagreeOnASkillAreAConflict (1.98s)
+    --- PASS: TestComponentsThatDisagreeOnASkillAreAConflict/skills (0.02s)
+    --- PASS: TestComponentsThatDisagreeOnASkillAreAConflict/activationBundles (0.02s)
+    --- PASS: TestComponentsThatDisagreeOnASkillAreAConflict/sync_conflict_writes_nothing (1.94s)
+--- PASS: TestAnAssetSyncRewritesTheComposedSetupWithItsComponents (5.35s)
+--- PASS: TestAnAssetSyncWithNoSourceChangeLeavesTheComposedSetup (6.60s)
+PASS
+suiteguard: guard cost: measured 7764 paths; fingerprint took 274.8255ms before and 222.4875ms after
+ok  	roundfix/internal/baseline	7.323s
+
+EXIT: 0

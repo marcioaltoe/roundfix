@@ -1,0 +1,62 @@
+[
+  {
+    "task": "task_01",
+    "commit": "725dada9eed0fd05b4fdfb773e7baf18cbaa3222",
+    "operative_authorization_revision": "d4a0a0da",
+    "strict_ancestor": true,
+    "governed_changed": [
+      "docs/agents/setup-context.json",
+      "internal/baseline/assets/decisions.json",
+      "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/frontend.md",
+      "internal/baseline/assets/modules/frontend.json",
+      "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+      "internal/baseline/assets/templates/guides/frontend.md",
+      "internal/baseline/assets/templates/index.json",
+      "internal/cli/baseline_human_test.go"
+    ],
+    "unbounded": [],
+    "authorization_in_task_commit": false
+  },
+  {
+    "task": "task_02",
+    "commit": "b87e3c9c0a2867571ad05bfac164214859c3e8bf",
+    "operative_authorization_revision": "db54c46d",
+    "strict_ancestor": true,
+    "governed_changed": [
+      "docs/agents/setup-context.json",
+      "internal/baseline/assets/setups/go-cli-typescript-bun.json",
+      "internal/baseline/derived_ownership_test.go",
+      "skills/baseline_skill_contract_test.go"
+    ],
+    "unbounded": [],
+    "authorization_in_task_commit": false
+  },
+  {
+    "task": "task_03",
+    "commit": "1f90f62485e4b7dcb4cfa6be5d754db43352626d",
+    "operative_authorization_revision": "33c36a13",
+    "strict_ancestor": true,
+    "governed_changed": [
+      "docs/agents/setup-context.json",
+      "internal/baseline/assets/modules/go.json",
+      "internal/baseline/assets/profiles/go-cli-typescript-monorepo.json",
+      "internal/baseline/assets/templates/guides/go.md",
+      "internal/baseline/assets/templates/index.json",
+      "internal/baseline/derived_ownership_test.go",
+      "internal/baseline/plan_test.go",
+      "internal/cli/baseline_human_test.go",
+      "internal/cli/baseline_release_gate_test.go"
+    ],
+    "unbounded": [],
+    "authorization_in_task_commit": false
+  },
+  {
+    "task": "task_04",
+    "commit": "70fd5dcc9ebc37715c3bc5d1b33e89f8962a17ee",
+    "operative_authorization_revision": "33c36a13",
+    "strict_ancestor": true,
+    "governed_changed": [],
+    "unbounded": [],
+    "authorization_in_task_commit": false
+  }
+]

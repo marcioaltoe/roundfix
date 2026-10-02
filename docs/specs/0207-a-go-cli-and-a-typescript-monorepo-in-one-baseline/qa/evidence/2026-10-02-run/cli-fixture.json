@@ -1,0 +1,33 @@
+{
+  "repo": "/private/tmp/roundfix-0207-qa-standard",
+  "args": [
+    "--decision",
+    "language.generated=English",
+    "--decision",
+    "verification.gate=make verify",
+    "--decision",
+    "verification.incremental=make verify-incremental",
+    "--decision",
+    "branch.prefix=feat/",
+    "--decision",
+    "identifier.strategy={\"kind\":\"uuid-v7\"}",
+    "--decision",
+    "http.contract={\"mode\":\"REST\"}",
+    "--decision",
+    "auth.provider={\"kind\":\"better-auth\",\"routeException\":{\"scope\":\"/api/auth/*\",\"methods\":[\"GET\",\"POST\"],\"owner\":\"Better Auth\",\"reason\":\"Provider protocol owns session and OAuth routes.\"}}",
+    "--decision",
+    "spec.scaffold=true",
+    "--decision",
+    "domain.layout=single-context",
+    "--decision",
+    "triage.external=false",
+    "--decision",
+    "autonomous.enabled=false",
+    "--decision",
+    "secondbrain.enabled=false",
+    "--decision",
+    "repository.extension.enabled=false",
+    "--decision",
+    "preservation.mode=greenfield"
+  ]
+}

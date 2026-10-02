@@ -1,0 +1,15 @@
+Baseline update: current
+Result: the repository already matches the current Baseline catalog
+Prior catalog: sha256:73fd845d7bbc3b4d8a845aed916759bf60bbb58056a2bae71401c3e013a67426
+Current catalog: sha256:73fd845d7bbc3b4d8a845aed916759bf60bbb58056a2bae71401c3e013a67426
+File changes: 0
+Retention evidence: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: not run
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:e8d145db50b052f8b6caa87616e0f582553a5e941baa8f1f371ec7efdd97a4f7
+
+EXIT: 0

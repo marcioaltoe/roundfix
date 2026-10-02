@@ -1,0 +1,34 @@
+{
+  "base": "d4a0a0daf9e4b79070721227031340206d5a5cec",
+  "head": "70fd5dcc9ebc37715c3bc5d1b33e89f8962a17ee",
+  "checks": [
+    {
+      "path": "internal/baseline/assets/source-baselines",
+      "exit": 0,
+      "diff": ""
+    },
+    {
+      "path": "internal/baseline/assets/retention",
+      "exit": 0,
+      "diff": ""
+    },
+    {
+      "path": "internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json",
+      "exit": 0,
+      "diff": ""
+    },
+    {
+      "setup_changes": [
+        "internal/baseline/assets/setups/go-cli-typescript-bun.json"
+      ]
+    }
+  ],
+  "frontend_clauses_preserved": [
+    "clause.frontend.organize-by-system",
+    "clause.frontend.public-system-boundary",
+    "clause.frontend.read-design-contract-before-ui-work",
+    "clause.frontend.test-user-visible-behavior",
+    "clause.frontend.prohibit-incidental-ui-assertions",
+    "clause.frontend.inspect-runnable-ui"
+  ]
+}
