@@ -1,9 +1,18 @@
 ---
 spec: 0213-a-test-suite-that-does-not-flake
-status: active
+status: archived
 created: 2026-10-01
 surfaces: [backend]
+archived: "2026-10-02"
+source_slug: 0213-a-test-suite-that-does-not-flake
+qa_override: true
+qa_override_approval: 'maintainer standing authorization 2026-09-30 (unattended program): qa_override only for environment-only partials'
+qa_override_reason: QA partial with zero findings; the only blocked rows (10, 13) need an open Pull Request, and row 10 proves the ETXTBSY fixture change on Linux, which the PR's CI Verification gate runs
+qa_override_qa_outcome: partial
+qa_override_qa_task_status: failed
+qa_override_revision: 4bd6116ffa23b780f7faa5b93aaa81f4d24f5e62
 ---
+
 
 # A test suite that does not flake
 
