@@ -32,6 +32,4 @@ its own commands.
 
 - **mandatory**: Verify that a dependency exists and inspect its current version before adding it.
 
-- **mandatory**: When the repository's Verification treats warnings as errors, every warning it reports blocks completion.
-
 <!-- setup-context-driven:end id=guide.bun -->

@@ -22,7 +22,7 @@
       "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md",
       "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/typescript-bun.md"
     ],
-    "goldenDigest": "495dabac80846a2e2ef7daa1993f728f5e667a6ef2bf42fd3c5f45951836dd9c",
+    "goldenDigest": "e4234744babeece416f467e87cdb9ec2c415dcb11817af66e590526f100f0855",
     "id": "formatter.oxfmt-markdown",
     "kind": "selected",
     "version": "0.59.0"
@@ -76,7 +76,6 @@
     "rule.typescript.current-docs",
     "rule.typescript.behavior-tests",
     "rule.bun.package-manager",
-    "rule.bun.warning-free-verification",
     "rule.monorepo.context-boundaries",
     "rule.backend.boundary-contracts",
     "rule.frontend.user-visible-behavior",

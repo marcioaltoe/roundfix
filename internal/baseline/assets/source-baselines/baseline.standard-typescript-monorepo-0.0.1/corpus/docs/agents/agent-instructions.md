@@ -10,6 +10,10 @@
 - MUST NOT suppress diagnostics, weaken assertions, swallow errors, add timing hacks, or bypass a required check to produce a passing result.
 <!-- /source-baseline-entry: clause.core.prohibit-verification-workarounds -->
 
+<!-- source-baseline-entry: clause.core.regenerate-generated-files -->
+- MUST NOT hand-edit a generated file; change its source and run the generator that owns it.
+<!-- /source-baseline-entry: clause.core.regenerate-generated-files -->
+
 <!-- source-baseline-entry: clause.core.keep-follow-ups-outside-slice -->
 - MUST keep follow-up work outside the current slice; record it for later instead of expanding the active change.
 <!-- /source-baseline-entry: clause.core.keep-follow-ups-outside-slice -->
@@ -46,6 +50,18 @@
 - MUST make an assertion read the constant it means. A test that copies a pinned version, digest, or identifier as a literal stops testing the day a legitimate change moves it, sometimes silently. Reference the exported or package constant; when a value must be duplicated, search for every occurrence and change them in the same commit.
 <!-- /source-baseline-entry: clause.core.assertion-reads-the-constant -->
 
+<!-- source-baseline-entry: clause.core.flaky-tests-block -->
+- MUST treat a flaky test as a blocking failure and fix the cause of its nondeterminism before completion.
+<!-- /source-baseline-entry: clause.core.flaky-tests-block -->
+
+<!-- source-baseline-entry: clause.core.lint-warnings-block -->
+- MUST fail Verification on a lint warning, and every warning Verification reports blocks completion.
+<!-- /source-baseline-entry: clause.core.lint-warnings-block -->
+
+<!-- source-baseline-entry: clause.core.prohibit-test-only-production-hooks -->
+- MUST NOT add a production hook, flag, branch, or exported symbol that exists only for tests.
+<!-- /source-baseline-entry: clause.core.prohibit-test-only-production-hooks -->
+
 <!-- source-baseline-entry: clause.core.require-tooling-authorization -->
 - MUST NOT create, edit, rename, move, or delete any linter, formatter, typechecker, test-runner, architecture-checker, build-tool, package-manager, code-generator, or other repository-tooling configuration, script, ignore file, plugin declaration, or version pin without express maintainer authorization. Setup completion, a Profile, a narrower guide, or a generic implementation request does not grant that authorization.
 <!-- /source-baseline-entry: clause.core.require-tooling-authorization -->
@@ -65,6 +81,10 @@
 <!-- source-baseline-entry: clause.core.use-github-pr-workflow -->
 - MUST use the governing pull request workflow before preparing, opening, updating, or handing off a pull request.
 <!-- /source-baseline-entry: clause.core.use-github-pr-workflow -->
+
+<!-- source-baseline-entry: clause.core.prohibit-editing-vendored-skills -->
+- MUST NOT edit a skill installed from an upstream source; a correction is stated as a Repository-Specific Normative Rule.
+<!-- /source-baseline-entry: clause.core.prohibit-editing-vendored-skills -->
 
 <!-- source-baseline-entry: clause.core.request-pull-request-review -->
 - MUST ask a hand-opened pull request for its own review when it changes code: automatic review is off by configuration, so a pull request opened directly gets none and its review check reports that automatic review is disabled, which reads like a pass. Put the review marker in the pull request description when the pull request is opened rather than adding it afterwards; a one-shot review comment is invalidated by any later push while the check still reads green. Before merging, read the review's own result against the head that will land and treat an absent or stale result as a block.
@@ -122,6 +142,18 @@
 <!-- source-baseline-entry: clause.core.prohibit-secret-exposure -->
 - MUST NOT read, print, commit, or generate secrets. Keep credentials and environment-specific values in the repository's existing secure configuration boundary, and do not invent authentication, authorization, database, transport, or deployment policy.
 <!-- /source-baseline-entry: clause.core.prohibit-secret-exposure -->
+
+<!-- source-baseline-entry: clause.core.ask-before-database-mutation -->
+- MUST stop and ask for express authorization before a statement that changes data or schema in a database other than a disposable local one.
+<!-- /source-baseline-entry: clause.core.ask-before-database-mutation -->
+
+<!-- source-baseline-entry: clause.core.prove-the-mutation-predicate -->
+- MUST run a read with the same predicate and report its row count before an authorized database write, and run the write in an explicit transaction.
+<!-- /source-baseline-entry: clause.core.prove-the-mutation-predicate -->
+
+<!-- source-baseline-entry: clause.core.prohibit-disguised-database-mutation -->
+- MUST NOT route a database change through a migration, script, seed, or test to avoid that authorization.
+<!-- /source-baseline-entry: clause.core.prohibit-disguised-database-mutation -->
 
 <!-- source-baseline-entry: recommendation.capability.firecrawl -->
 - RECOMMENDED: provide a structured web-content extraction capability for research that authoritative documentation and broad search cannot complete.

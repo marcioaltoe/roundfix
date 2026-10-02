@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
-  "catalogDigest": "sha256:73fd845d7bbc3b4d8a845aed916759bf60bbb58056a2bae71401c3e013a67426",
+  "catalogDigest": "sha256:fd0caaa3645e49b64dfd0a61f4e4129a059b886c6d7fc1e8570c7c8d92ae39c9",
   "modules": [
     "core",
     "context-workflow",
@@ -66,7 +66,7 @@
       "module": "core",
       "template": "template.guide.skill-dispatch",
       "version": "0.0.1",
-      "digest": "897af6a2c8cb6da3d6e2238fa796b82f01e8660b13c20bc458f908edc202ac50"
+      "digest": "519b8633e22da3b86a309cfb0bb397619949c40003656fd4325b4b222185b9cf"
     },
     {
       "id": "root.core",
@@ -156,7 +156,7 @@
       "module": "core",
       "template": "template.guide.agent-instructions",
       "version": "0.0.1",
-      "digest": "e2761241b3f537dad86dc214f7b0b6f3f7bdde9455cb96aba4680c7c1e37dc2d"
+      "digest": "cdcb04e7d10c0a433dd966f96e6d0ef03b1ef400ae04c159fb8c6856f328e26d"
     },
     {
       "id": "root.cli-surface",

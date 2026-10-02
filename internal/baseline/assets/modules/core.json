@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "core",
-  "version": 16,
+  "version": 17,
   "kind": "core",
   "title": "Universal agent baseline",
   "dependsOn": [],
@@ -313,7 +313,7 @@
   "supportingGuides": [
     {
       "id": "guide.agent-instructions",
-      "version": 12,
+      "version": 13,
       "path": "docs/agents/agent-instructions.md",
       "template": "template.guide.agent-instructions",
       "rules": [
@@ -334,7 +334,7 @@
     },
     {
       "id": "guide.skill-dispatch",
-      "version": 3,
+      "version": 4,
       "path": "docs/agents/skill-dispatch.md",
       "template": "template.guide.skill-dispatch",
       "rules": [
@@ -360,7 +360,7 @@
     },
     {
       "id": "rule.core.root-cause-only",
-      "version": 3,
+      "version": 4,
       "coverage": [
         "coverage.universal-safety",
         "coverage.verification-integrity"
@@ -375,6 +375,11 @@
           "id": "clause.core.prohibit-verification-workarounds",
           "enforcement": "prohibited",
           "guidance": "Do not suppress diagnostics, weaken assertions, swallow errors, add timing hacks, or bypass a required check to produce a passing result."
+        },
+        {
+          "id": "clause.core.regenerate-generated-files",
+          "enforcement": "prohibited",
+          "guidance": "Do not hand-edit a generated file, such as a schema migration, a client generated from an API description, or a derived digest; change its source and run the generator that owns it."
         }
       ]
     },
@@ -428,7 +433,7 @@
     },
     {
       "id": "rule.core.verification-integrity",
-      "version": 3,
+      "version": 4,
       "coverage": [
         "coverage.verification-integrity"
       ],
@@ -452,6 +457,24 @@
           "id": "clause.core.assertion-reads-the-constant",
           "enforcement": "mandatory",
           "guidance": "An assertion reads the constant it means. A test that copies a pinned version, digest, or identifier as a literal stops testing the day a legitimate change moves it, sometimes silently. Reference the exported or package constant; when a value must be duplicated, search for every occurrence and change them in the same commit."
+        },
+        {
+          "id": "clause.core.flaky-tests-block",
+          "enforcement": "mandatory",
+          "guidance": "A flaky test is a blocking failure: find and fix the cause of its nondeterminism before completion, and never rerun Verification until it happens to pass."
+        },
+        {
+          "id": "clause.core.lint-warnings-block",
+          "enforcement": "mandatory",
+          "replaces": [
+            "clause.bun.block-warnings-when-profile-treats-them-as-errors"
+          ],
+          "guidance": "A lint warning fails Verification. Every linter the repository Verification runs uses its option that turns a warning into a failure, such as `oxlint --deny-warnings`, `biome check --error-on-warnings`, `eslint --max-warnings 0`, or `cargo clippy -- -D warnings`, and every warning Verification reports blocks completion."
+        },
+        {
+          "id": "clause.core.prohibit-test-only-production-hooks",
+          "enforcement": "prohibited",
+          "guidance": "Do not add a production hook, flag, branch, or exported symbol that exists only for tests; test through the public entry points."
         }
       ]
     },
@@ -476,7 +499,7 @@
     },
     {
       "id": "rule.core.skill-dispatch",
-      "version": 4,
+      "version": 5,
       "coverage": [
         "coverage.skill-dispatch"
       ],
@@ -495,6 +518,11 @@
           "id": "clause.core.use-github-pr-workflow",
           "enforcement": "mandatory",
           "guidance": "Use the governing `github-pr-workflow` skill before preparing, opening, updating, or handing off a pull request."
+        },
+        {
+          "id": "clause.core.prohibit-editing-vendored-skills",
+          "enforcement": "prohibited",
+          "guidance": "Do not edit a skill the repository installs from an upstream source; its upstream owns its text. State a correction as a Repository-Specific Normative Rule, which governs over the skill's default."
         }
       ]
     },
@@ -615,7 +643,7 @@
     },
     {
       "id": "rule.core.security-configuration",
-      "version": 3,
+      "version": 4,
       "coverage": [
         "coverage.security-configuration"
       ],
@@ -624,6 +652,21 @@
           "id": "clause.core.prohibit-secret-exposure",
           "enforcement": "prohibited",
           "guidance": "Never read, print, commit, or generate secrets. Keep credentials and environment-specific values in the repository's existing secure configuration boundary, and do not invent authentication, authorization, database, transport, or deployment policy."
+        },
+        {
+          "id": "clause.core.ask-before-database-mutation",
+          "enforcement": "stop-and-ask",
+          "guidance": "Stop and ask for express authorization before any statement that changes data or schema in a database other than a disposable local one. Name the exact statement and database; an authorization covers only that statement."
+        },
+        {
+          "id": "clause.core.prove-the-mutation-predicate",
+          "enforcement": "mandatory",
+          "guidance": "Before an authorized database write, run a read with the same predicate and report its row count, then run the write inside an explicit transaction and confirm the affected row count before committing."
+        },
+        {
+          "id": "clause.core.prohibit-disguised-database-mutation",
+          "enforcement": "prohibited",
+          "guidance": "Do not route a database change through a migration, script, seed, or test to avoid that authorization. The repository's committed migrate and seed commands run against a disposable local database are exempt."
         }
       ]
     }

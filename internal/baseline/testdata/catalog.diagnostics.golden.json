@@ -64,18 +64,8 @@
         },
         {
           "code": "catalog.profile.rule.unknown",
-          "subject": "go-cli-typescript-monorepo",
-          "detail": "rule.bun.warning-free-verification"
-        },
-        {
-          "code": "catalog.profile.rule.unknown",
           "subject": "standard-typescript-monorepo",
           "detail": "rule.bun.package-manager"
-        },
-        {
-          "code": "catalog.profile.rule.unknown",
-          "subject": "standard-typescript-monorepo",
-          "detail": "rule.bun.warning-free-verification"
         },
         {
           "code": "catalog.semantic-owner.destination.unknown",
@@ -88,19 +78,9 @@
           "detail": "rule.bun.package-manager; the regenerator maintains manifest rows but never creates them, so add this row first"
         },
         {
-          "code": "catalog.sourceBaseline.required-rule.missing",
-          "subject": "baseline.standard-typescript-monorepo-0.0.1",
-          "detail": "rule.bun.warning-free-verification; the regenerator maintains manifest rows but never creates them, so add this row first"
-        },
-        {
           "code": "catalog.transition.target.unknown",
           "subject": "transition.legacy-typescript-bun-to-portable-v3",
           "detail": "clause.bun.add-from-owning-workspace"
-        },
-        {
-          "code": "catalog.transition.target.unknown",
-          "subject": "transition.legacy-typescript-bun-to-portable-v3",
-          "detail": "clause.bun.block-warnings-when-profile-treats-them-as-errors"
         },
         {
           "code": "catalog.transition.target.unknown",
@@ -135,7 +115,7 @@
         {
           "code": "catalog.profile.formatter.goldenDigest.mismatch",
           "subject": "standard-typescript-monorepo",
-          "detail": "got 495dabac80846a2e2ef7daa1993f728f5e667a6ef2bf42fd3c5f45951836dd9c, want 1176389455f5ff53148e387143cd94fa117d120ea0cb728493aa4cfe94ddae27"
+          "detail": "got e4234744babeece416f467e87cdb9ec2c415dcb11817af66e590526f100f0855, want c86e0578534545d5a76e3cb443eaa8794afda61d2e461e83e2899a10ee85899a"
         }
       ]
     },

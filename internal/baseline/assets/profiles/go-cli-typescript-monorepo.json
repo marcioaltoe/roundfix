@@ -62,7 +62,6 @@
     "rule.typescript.current-docs",
     "rule.typescript.behavior-tests",
     "rule.bun.package-manager",
-    "rule.bun.warning-free-verification",
     "rule.monorepo.context-boundaries",
     "rule.backend.boundary-contracts",
     "rule.frontend.user-visible-behavior",

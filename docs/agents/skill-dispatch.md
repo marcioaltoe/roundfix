@@ -8,6 +8,8 @@ may add stricter triggers.
 
 - **mandatory**: Activate every matching required skill before governed work. When one skill has distinct active-module triggers, retain and follow each trigger. When a skill's default conflicts with a Baseline rule or a Repository-Specific Normative Rule, follow the rule.
 
+- **prohibited**: Do not edit a skill the repository installs from an upstream source; its upstream owns its text. State a correction as a Repository-Specific Normative Rule, which governs over the skill's default.
+
 - **mandatory**: Use the governing `conventional-commits` skill before staging changes, writing commit messages, or preparing pull request titles.
 
 - **mandatory**: Use the governing `github-pr-workflow` skill before preparing, opening, updating, or handing off a pull request.

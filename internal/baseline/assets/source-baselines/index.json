@@ -11,6 +11,7 @@
         "clause.core.keep-root-compact",
         "clause.core.fix-root-causes",
         "clause.core.prohibit-verification-workarounds",
+        "clause.core.regenerate-generated-files",
         "clause.core.keep-follow-ups-outside-slice",
         "clause.core.record-acceptance-evidence",
         "clause.core.require-fresh-evidence",
@@ -20,11 +21,15 @@
         "clause.core.ask-before-verification-configuration-change",
         "clause.core.never-let-a-pipe-hide-a-gate",
         "clause.core.assertion-reads-the-constant",
+        "clause.core.flaky-tests-block",
+        "clause.core.lint-warnings-block",
+        "clause.core.prohibit-test-only-production-hooks",
         "clause.core.require-tooling-authorization",
         "clause.core.tooling-commit-choreography",
         "clause.core.activate-matching-skills",
         "clause.core.use-conventional-commits",
         "clause.core.use-github-pr-workflow",
+        "clause.core.prohibit-editing-vendored-skills",
         "clause.core.request-pull-request-review",
         "clause.core.write-generated-guidance-in-english",
         "contract.research.sequence",
@@ -38,6 +43,9 @@
         "clause.core.plan-the-release-first",
         "clause.core.ask-user-answerable-decisions",
         "clause.core.prohibit-secret-exposure",
+        "clause.core.ask-before-database-mutation",
+        "clause.core.prove-the-mutation-predicate",
+        "clause.core.prohibit-disguised-database-mutation",
         "recommendation.capability.firecrawl",
         "recommendation.tool.rtk",
         "recommendation.tool.rg",
@@ -157,9 +165,9 @@
         "clause.secondbrain.prohibit-external-local-discovery",
         "clause.secondbrain.record-decision-sources"
       ],
-      "entryCount": 149,
-      "corpusDigest": "d9c8a756415e95820b57be72fde0c8143ff853c8bf7b258d4080e189fb9878a2",
-      "manifestDigest": "f2ad9a3e5d5775fa72fb7c900a0b8361c863acdc2988c0a960c4e448d9660fd7"
+      "entryCount": 157,
+      "corpusDigest": "8f1c16e963078c38213107725e549badfad0b2e63b036099f347d3f15ac4a307",
+      "manifestDigest": "d1814d0a3737eff7b1495fbfa8ee78e8560c87100c167613557ecaf84f45f9ed"
     }
   ]
 }

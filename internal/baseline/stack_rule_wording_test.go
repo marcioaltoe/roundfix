@@ -69,7 +69,6 @@ func typeScriptAndBunWordingRule() stackWordingRule {
 			"Inside the Bun workspace, do not substitute another JavaScript package manager or runner (npm, pnpm, yarn, npx) or hand-edit the lockfile.",
 			"A toolchain for another language in the same repository keeps its own package manager.",
 			"Keep TypeScript type errors visible; never hide one to make Verification pass.",
-			"When the repository's Verification treats warnings as errors, every warning it reports blocks completion.",
 		},
 		mustNot: []string{
 			"Use Bun-owned commands for dependency installation, scripts, tests, and lockfile updates.",
@@ -131,7 +130,6 @@ func TestTheRewordedBunAndTypeScriptClausesKeepTheirForce(t *testing.T) {
 	for _, test := range []struct{ module, clause, force string }{
 		{"bun", "clause.bun.use-bun-owned-commands", "mandatory"},
 		{"bun", "clause.bun.prohibit-other-package-managers", "prohibited"},
-		{"bun", "clause.bun.block-warnings-when-profile-treats-them-as-errors", "mandatory"},
 		{"typescript", "clause.typescript.keep-type-errors-visible", "mandatory"},
 	} {
 		t.Run(test.clause, func(t *testing.T) {
