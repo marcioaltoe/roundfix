@@ -1,9 +1,18 @@
 ---
 spec: 0211-a-delivery-queue-that-finishes-without-intervention
-status: active
+status: archived
 created: 2026-10-01
 surfaces: [backend, cli, docs]
+archived: "2026-10-02"
+source_slug: 0211-a-delivery-queue-that-finishes-without-intervention
+qa_override: true
+qa_override_approval: 'maintainer standing authorization 2026-09-30 (unattended program): qa_override only for environment-only partials'
+qa_override_reason: QA partial with zero findings after the QA-0211-01 fix; blocked rows need the operator's intervention log outside the repository (07), GitHub API access the sandbox denies (08) and an open Pull Request (13)
+qa_override_qa_outcome: partial
+qa_override_qa_task_status: failed
+qa_override_revision: 649bfeedc6de4cfad3740f25ff3eb9159e3084d3
 ---
+
 
 # A delivery queue that finishes without intervention
 
