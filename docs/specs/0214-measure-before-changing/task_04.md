@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0214-measure-before-changing
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -43,6 +43,31 @@ from the committed records and documents.
 - [ ] A reopen or adopt Backlog Entry exists exactly when its verdict says so.
 - [ ] No code, test, fixture or signature file changed.
 
+## Result
+
+The read-only causes measurement was built with `env -u NODE_OPTIONS make build`
+and run for `2026-09-17..2026-10-02`, producing 177 Runs and 132 items. The
+record reports 23 repository-knowledge items and 100 unclassified items; the
+cause document applies Decision rule 1 and records `Verdict: inconclusive`.
+
+The acceptance harness ran with the required live flag and saved a measured
+record: OpenRouter, `jev-1.13`, 237 calls, 237 answered, 31 repaired, 7
+excluded, AUROC 0.466881 with interval [0.358034, 0.574594], and no discarded
+bootstrap draws. The acceptance document applies Decision rule 2 and records
+`Verdict: do not adopt`.
+
+No rule fired a Backlog Entry. The only changed implementation-scope paths are
+the two JSON records, the two measurement documents, and this Result section;
+no code, test, fixture, or signature file was changed. The Daemon still owns
+the declared Verification commands and Task status.
+
+Focused checks passed: `go test -count=1 -run
+'^TestCausesRecordDecisionBoundaries$' ./internal/runcause`,
+`go test -count=1 -run '^TestTaskAcceptanceVerdictRules$' ./internal/judge`,
+and independent `jq` arithmetic checks over both saved records. The two
+declared record-consistency tests were not run because they are Daemon-owned
+Verification commands; their fresh outcomes remain pending for settlement.
+
 ## Context
 
 - creates: `docs/references/corrective-causes.json`
@@ -63,3 +88,8 @@ from the committed records and documents.
 - [references/2026-09-30-measure-why-corrective-tasks-happen.md](references/2026-09-30-measure-why-corrective-tasks-happen.md)
 - [references/2026-09-30-re-measure-the-task-lint-judgment-on-a-cleaner-label.md](references/2026-09-30-re-measure-the-task-lint-judgment-on-a-cleaner-label.md)
 - ADR-0214; ADR-0215; ADR-0200; ADR-0201
+
+## Carry-forward provenance
+
+- Source Run: `run_20261002T171516Z_94169d908e48d811`
+- Source commit: `41942907d4ca9640549a8831ebfd693f44e3fdd6`
