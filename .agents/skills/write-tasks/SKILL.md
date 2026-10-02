@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.7
+  version: 0.0.8
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.7
+version: 0.0.8
 ---
 
 # Write Tasks
@@ -83,12 +83,16 @@ Code for another operating system is verified by building its non-test code for 
 - **Context entries are labeled paths.** Add `## Context` only when the Task
   needs specific instruction or interface paths beyond the standard Spec
   bundle. Use bullets shaped as `- instruction: <path>`,
-  `- interface: <path>`, or `- creates: <path>`. Paths must be clean,
+  `- interface: <path>`, `- creates: <path>`, or `- deletes: <path>`. Paths must be clean,
   repository-relative, and unique;
   a Task may declare at most 50 unique entries. The Daemon reserves those paths
   before filling the 200-path Spec Context Bundle with prior changed files.
 - **Declared edits and governed paths are explicit.** Every path a Task edits
-  is declared under `interface:` or `creates:`, never `instruction:`. An
+  is declared under `interface:` or `creates:`; every path it removes is
+  declared under `deletes:`, never `instruction:`. A deletion is skipped by
+  unresolved-reference checks and counts in scope, Governed Path and Wave
+  collision audits. The Daemon refuses settlement before Verification when
+  a declared deletion still exists, with `deletes: <path> still exists`. An
   `instruction:` path is read-only and never makes two Tasks collide. Each
   Task that changes a command declares the one command file it changes:
   `.agents/skills/roundfix/references/<command>.md` with its mirror, and

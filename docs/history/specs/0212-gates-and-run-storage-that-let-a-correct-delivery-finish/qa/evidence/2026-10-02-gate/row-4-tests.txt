@@ -1,0 +1,215 @@
+=== RUN   TestCollisionsIgnoresASharedInstructionPath
+=== PAUSE TestCollisionsIgnoresASharedInstructionPath
+=== RUN   TestCollisionsStillReportsASharedInterfacePath
+=== PAUSE TestCollisionsStillReportsASharedInterfacePath
+=== RUN   TestCollisionsReportsAnInstructionPathReadByBothVerifications
+=== PAUSE TestCollisionsReportsAnInstructionPathReadByBothVerifications
+=== RUN   TestCollisionsFindsTheMeasuredShape
+=== PAUSE TestCollisionsFindsTheMeasuredShape
+=== RUN   TestCollisionsReturnsEveryPairAndSharedPath
+=== PAUSE TestCollisionsReturnsEveryPairAndSharedPath
+=== RUN   TestCollisionsExcludesTransitivelyOrderedTasks
+=== PAUSE TestCollisionsExcludesTransitivelyOrderedTasks
+=== RUN   TestCollisionsRejectsPackageSelectorsFlagsAndTestNames
+=== PAUSE TestCollisionsRejectsPackageSelectorsFlagsAndTestNames
+=== RUN   TestCollisionsLearnsPathFromDeclaredContext
+=== PAUSE TestCollisionsLearnsPathFromDeclaredContext
+=== RUN   TestCollisionsLearnsPathFromPackedPriorRunSettlementCommits
+--- PASS: TestCollisionsLearnsPathFromPackedPriorRunSettlementCommits (0.43s)
+=== RUN   TestCollisionsRequiresGraphAndRepositoryRoot
+=== PAUSE TestCollisionsRequiresGraphAndRepositoryRoot
+=== RUN   TestCollisionsUsesOnlyTheNewestSettlementPerTask
+--- PASS: TestCollisionsUsesOnlyTheNewestSettlementPerTask (0.26s)
+=== RUN   TestCollisionsReadsTrailersNotTheMessageBody
+--- PASS: TestCollisionsReadsTrailersNotTheMessageBody (0.17s)
+=== RUN   TestCollisionsIgnoresPathsHistoryNamesButTheTreeNoLongerCarries
+--- PASS: TestCollisionsIgnoresPathsHistoryNamesButTheTreeNoLongerCarries (0.25s)
+=== RUN   TestCollisionsReadsSettlementsOnRunBranchesNotOnlyHead
+--- PASS: TestCollisionsReadsSettlementsOnRunBranchesNotOnlyHead (0.26s)
+=== RUN   TestCollisionsReadsHistoricalPathsGitReportsVerbatim
+--- PASS: TestCollisionsReadsHistoricalPathsGitReportsVerbatim (0.19s)
+=== RUN   TestCollisionsTreatsAnAbsentRepositoryAsAbsentEvidence
+=== PAUSE TestCollisionsTreatsAnAbsentRepositoryAsAbsentEvidence
+=== RUN   TestCollisionsReportsAnInspectionFailureOnAPriorRunPath
+--- PASS: TestCollisionsReportsAnInspectionFailureOnAPriorRunPath (0.18s)
+=== RUN   TestContextAcceptsADeletesEntry
+=== RUN   TestContextAcceptsADeletesEntry/../old.txt
+=== RUN   TestContextAcceptsADeletesEntry//old.txt
+=== RUN   TestContextAcceptsADeletesEntry/old/../file.txt
+=== RUN   TestContextAcceptsADeletesEntry/#00
+--- PASS: TestContextAcceptsADeletesEntry (0.00s)
+    --- PASS: TestContextAcceptsADeletesEntry/../old.txt (0.00s)
+    --- PASS: TestContextAcceptsADeletesEntry//old.txt (0.00s)
+    --- PASS: TestContextAcceptsADeletesEntry/old/../file.txt (0.00s)
+    --- PASS: TestContextAcceptsADeletesEntry/#00 (0.00s)
+=== RUN   TestContextRefusesAPathUnderTwoKinds
+=== RUN   TestContextRefusesAPathUnderTwoKinds/interface/deletes
+=== RUN   TestContextRefusesAPathUnderTwoKinds/deletes/interface
+=== RUN   TestContextRefusesAPathUnderTwoKinds/creates/deletes
+=== RUN   TestContextRefusesAPathUnderTwoKinds/deletes/creates
+=== RUN   TestContextRefusesAPathUnderTwoKinds/deletes/deletes
+--- PASS: TestContextRefusesAPathUnderTwoKinds (0.00s)
+    --- PASS: TestContextRefusesAPathUnderTwoKinds/interface/deletes (0.00s)
+    --- PASS: TestContextRefusesAPathUnderTwoKinds/deletes/interface (0.00s)
+    --- PASS: TestContextRefusesAPathUnderTwoKinds/creates/deletes (0.00s)
+    --- PASS: TestContextRefusesAPathUnderTwoKinds/deletes/creates (0.00s)
+    --- PASS: TestContextRefusesAPathUnderTwoKinds/deletes/deletes (0.00s)
+=== RUN   TestUndeclaredTaskPathsCountsADeletesPath
+--- PASS: TestUndeclaredTaskPathsCountsADeletesPath (0.00s)
+=== RUN   TestWaveCollisionCountsADeletesPath
+--- PASS: TestWaveCollisionCountsADeletesPath (0.00s)
+=== RUN   TestRecordedPathsKeepAFencedHeadingInAuthoredText
+=== PAUSE TestRecordedPathsKeepAFencedHeadingInAuthoredText
+=== RUN   TestRecordedPathsKeepAnAuthoredHeadingFollowedBySections
+=== PAUSE TestRecordedPathsKeepAnAuthoredHeadingFollowedBySections
+=== RUN   TestRecordedPathsReplaceTheTrailingDaemonSection
+=== PAUSE TestRecordedPathsReplaceTheTrailingDaemonSection
+=== RUN   TestARecordedSectionLeavesContextAndCarryForwardInputsUnchanged
+=== PAUSE TestARecordedSectionLeavesContextAndCarryForwardInputsUnchanged
+=== RUN   TestLoadParsesOptionalTaskContext
+=== PAUSE TestLoadParsesOptionalTaskContext
+=== RUN   TestContextDeclaredOutput
+=== PAUSE TestContextDeclaredOutput
+=== RUN   TestLoadRejectsInvalidTaskContext
+=== PAUSE TestLoadRejectsInvalidTaskContext
+=== RUN   TestCarryForwardInputsIncludesSpecContractsAndTaskContext
+=== PAUSE TestCarryForwardInputsIncludesSpecContractsAndTaskContext
+=== RUN   TestCarryForwardInputsRejectsEscapingContextPaths
+=== PAUSE TestCarryForwardInputsRejectsEscapingContextPaths
+=== CONT  TestCollisionsIgnoresASharedInstructionPath
+=== CONT  TestRecordedPathsKeepAFencedHeadingInAuthoredText
+=== CONT  TestContextDeclaredOutput
+=== RUN   TestContextDeclaredOutput/accepts_a_clean_repository-relative_output
+=== CONT  TestARecordedSectionLeavesContextAndCarryForwardInputsUnchanged
+=== CONT  TestRecordedPathsReplaceTheTrailingDaemonSection
+=== CONT  TestCollisionsTreatsAnAbsentRepositoryAsAbsentEvidence
+--- PASS: TestARecordedSectionLeavesContextAndCarryForwardInputsUnchanged (0.00s)
+=== CONT  TestLoadParsesOptionalTaskContext
+=== CONT  TestCarryForwardInputsRejectsEscapingContextPaths
+--- PASS: TestCarryForwardInputsRejectsEscapingContextPaths (0.00s)
+=== CONT  TestCarryForwardInputsIncludesSpecContractsAndTaskContext
+--- PASS: TestCarryForwardInputsIncludesSpecContractsAndTaskContext (0.00s)
+=== CONT  TestLoadRejectsInvalidTaskContext
+=== RUN   TestLoadRejectsInvalidTaskContext/unknown_label
+=== RUN   TestCollisionsTreatsAnAbsentRepositoryAsAbsentEvidence/outside_any_repository
+=== PAUSE TestCollisionsTreatsAnAbsentRepositoryAsAbsentEvidence/outside_any_repository
+=== RUN   TestCollisionsTreatsAnAbsentRepositoryAsAbsentEvidence/repository_with_no_commits
+=== PAUSE TestCollisionsTreatsAnAbsentRepositoryAsAbsentEvidence/repository_with_no_commits
+=== CONT  TestCollisionsTreatsAnAbsentRepositoryAsAbsentEvidence/outside_any_repository
+=== CONT  TestCollisionsReturnsEveryPairAndSharedPath
+=== CONT  TestCollisionsLearnsPathFromDeclaredContext
+=== CONT  TestCollisionsRejectsPackageSelectorsFlagsAndTestNames
+--- PASS: TestRecordedPathsKeepAFencedHeadingInAuthoredText (0.01s)
+=== CONT  TestRecordedPathsKeepAnAuthoredHeadingFollowedBySections
+--- PASS: TestRecordedPathsReplaceTheTrailingDaemonSection (0.00s)
+=== CONT  TestCollisionsExcludesTransitivelyOrderedTasks
+--- PASS: TestCollisionsRejectsPackageSelectorsFlagsAndTestNames (0.00s)
+=== CONT  TestCollisionsRequiresGraphAndRepositoryRoot
+=== RUN   TestCollisionsRequiresGraphAndRepositoryRoot/missing_graph
+=== PAUSE TestCollisionsRequiresGraphAndRepositoryRoot/missing_graph
+=== RUN   TestCollisionsRequiresGraphAndRepositoryRoot/missing_repository_root
+=== PAUSE TestCollisionsRequiresGraphAndRepositoryRoot/missing_repository_root
+=== RUN   TestContextDeclaredOutput/refuses_an_absolute_output
+=== CONT  TestCollisionsReportsAnInstructionPathReadByBothVerifications
+--- PASS: TestLoadParsesOptionalTaskContext (0.01s)
+=== CONT  TestCollisionsFindsTheMeasuredShape
+--- PASS: TestCollisionsExcludesTransitivelyOrderedTasks (0.00s)
+=== CONT  TestCollisionsStillReportsASharedInterfacePath
+--- PASS: TestCollisionsLearnsPathFromDeclaredContext (0.00s)
+=== CONT  TestCollisionsTreatsAnAbsentRepositoryAsAbsentEvidence/repository_with_no_commits
+--- PASS: TestCollisionsIgnoresASharedInstructionPath (0.01s)
+=== CONT  TestCollisionsRequiresGraphAndRepositoryRoot/missing_graph
+=== CONT  TestCollisionsRequiresGraphAndRepositoryRoot/missing_repository_root
+=== RUN   TestLoadRejectsInvalidTaskContext/absolute_path
+--- PASS: TestCollisionsReportsAnInstructionPathReadByBothVerifications (0.00s)
+--- PASS: TestCollisionsReturnsEveryPairAndSharedPath (0.01s)
+--- PASS: TestRecordedPathsKeepAnAuthoredHeadingFollowedBySections (0.01s)
+--- PASS: TestCollisionsStillReportsASharedInterfacePath (0.01s)
+--- PASS: TestCollisionsRequiresGraphAndRepositoryRoot (0.00s)
+    --- PASS: TestCollisionsRequiresGraphAndRepositoryRoot/missing_graph (0.00s)
+    --- PASS: TestCollisionsRequiresGraphAndRepositoryRoot/missing_repository_root (0.00s)
+=== RUN   TestContextDeclaredOutput/refuses_an_unclean_output
+--- PASS: TestCollisionsFindsTheMeasuredShape (0.01s)
+=== RUN   TestLoadRejectsInvalidTaskContext/escaping_path
+=== RUN   TestContextDeclaredOutput/refuses_a_duplicate_output
+=== RUN   TestLoadRejectsInvalidTaskContext/unclean_path
+=== RUN   TestLoadRejectsInvalidTaskContext/too_many_unique_entries
+=== RUN   TestContextDeclaredOutput/counts_the_output_in_the_entry_ceiling
+--- PASS: TestContextDeclaredOutput (0.02s)
+    --- PASS: TestContextDeclaredOutput/accepts_a_clean_repository-relative_output (0.01s)
+    --- PASS: TestContextDeclaredOutput/refuses_an_absolute_output (0.01s)
+    --- PASS: TestContextDeclaredOutput/refuses_an_unclean_output (0.00s)
+    --- PASS: TestContextDeclaredOutput/refuses_a_duplicate_output (0.00s)
+    --- PASS: TestContextDeclaredOutput/counts_the_output_in_the_entry_ceiling (0.00s)
+--- PASS: TestLoadRejectsInvalidTaskContext (0.02s)
+    --- PASS: TestLoadRejectsInvalidTaskContext/unknown_label (0.01s)
+    --- PASS: TestLoadRejectsInvalidTaskContext/absolute_path (0.00s)
+    --- PASS: TestLoadRejectsInvalidTaskContext/escaping_path (0.00s)
+    --- PASS: TestLoadRejectsInvalidTaskContext/unclean_path (0.00s)
+    --- PASS: TestLoadRejectsInvalidTaskContext/too_many_unique_entries (0.01s)
+--- PASS: TestCollisionsTreatsAnAbsentRepositoryAsAbsentEvidence (0.00s)
+    --- PASS: TestCollisionsTreatsAnAbsentRepositoryAsAbsentEvidence/outside_any_repository (0.02s)
+    --- PASS: TestCollisionsTreatsAnAbsentRepositoryAsAbsentEvidence/repository_with_no_commits (0.04s)
+PASS
+suiteguard: guard cost: measured 8087 paths; fingerprint took 516.441291ms before and 952.78975ms after
+ok  	roundfix/internal/spec	3.556s
+=== RUN   TestCheckReferenceUnresolved
+=== PAUSE TestCheckReferenceUnresolved
+=== RUN   TestContextDeclaredOutput
+=== PAUSE TestContextDeclaredOutput
+=== RUN   TestDeletesPathIsNotAnUnresolvedReference
+=== PAUSE TestDeletesPathIsNotAnUnresolvedReference
+=== RUN   TestDeletingAGovernedPathNeedsItsGrant
+=== PAUSE TestDeletingAGovernedPathNeedsItsGrant
+=== RUN   TestDeletesCLISurfaceNeedsAGuideAndDeletionIsNotAGuide
+=== PAUSE TestDeletesCLISurfaceNeedsAGuideAndDeletionIsNotAGuide
+=== RUN   TestUndeclaredGovernedContextPathIsRefused
+=== PAUSE TestUndeclaredGovernedContextPathIsRefused
+=== RUN   TestInstructionContextPathIsNotAudited
+=== PAUSE TestInstructionContextPathIsNotAudited
+=== CONT  TestCheckReferenceUnresolved
+=== CONT  TestDeletesCLISurfaceNeedsAGuideAndDeletionIsNotAGuide
+=== CONT  TestDeletingAGovernedPathNeedsItsGrant
+=== CONT  TestDeletesPathIsNotAnUnresolvedReference
+--- PASS: TestDeletesPathIsNotAnUnresolvedReference (0.00s)
+=== CONT  TestContextDeclaredOutput
+=== CONT  TestUndeclaredGovernedContextPathIsRefused
+=== CONT  TestInstructionContextPathIsNotAudited
+--- PASS: TestUndeclaredGovernedContextPathIsRefused (0.03s)
+--- PASS: TestDeletesCLISurfaceNeedsAGuideAndDeletionIsNotAGuide (0.05s)
+--- PASS: TestInstructionContextPathIsNotAudited (0.04s)
+--- PASS: TestDeletingAGovernedPathNeedsItsGrant (0.06s)
+--- PASS: TestCheckReferenceUnresolved (0.08s)
+--- PASS: TestContextDeclaredOutput (0.08s)
+PASS
+suiteguard: guard cost: measured 8087 paths; fingerprint took 550.158416ms before and 1.020675125s after
+ok  	roundfix/internal/speccheck	2.086s
+=== RUN   TestAssembleTaskContextBundleReservesExplicitPathsAndCountsOmittedPriorFiles
+=== PAUSE TestAssembleTaskContextBundleReservesExplicitPathsAndCountsOmittedPriorFiles
+=== RUN   TestAssembleTaskContextBundleSupportsExternalSpecRoot
+=== PAUSE TestAssembleTaskContextBundleSupportsExternalSpecRoot
+=== RUN   TestQAGatePromptUsesTaskContextBuilderAndPreviousReportIdentity
+=== PAUSE TestQAGatePromptUsesTaskContextBuilderAndPreviousReportIdentity
+=== RUN   TestTaskCycleParallelTaskPromptUsesTaskWorktreeContextBase
+=== PAUSE TestTaskCycleParallelTaskPromptUsesTaskWorktreeContextBase
+=== RUN   TestAssembleTaskContextBundleIsDeterministic
+=== PAUSE TestAssembleTaskContextBundleIsDeterministic
+=== RUN   TestATaskThatLeavesItsDeletesPathDoesNotSettle
+--- PASS: TestATaskThatLeavesItsDeletesPathDoesNotSettle (0.40s)
+=== RUN   TestATaskThatRemovesItsDeletesPathSettles
+--- PASS: TestATaskThatRemovesItsDeletesPathSettles (0.24s)
+=== RUN   TestUndeletedTaskPathsCountsDanglingSymlinksAndDirectories
+--- PASS: TestUndeletedTaskPathsCountsDanglingSymlinksAndDirectories (0.00s)
+=== CONT  TestAssembleTaskContextBundleReservesExplicitPathsAndCountsOmittedPriorFiles
+=== CONT  TestTaskCycleParallelTaskPromptUsesTaskWorktreeContextBase
+=== CONT  TestAssembleTaskContextBundleIsDeterministic
+=== CONT  TestQAGatePromptUsesTaskContextBuilderAndPreviousReportIdentity
+=== CONT  TestAssembleTaskContextBundleSupportsExternalSpecRoot
+--- PASS: TestAssembleTaskContextBundleReservesExplicitPathsAndCountsOmittedPriorFiles (0.00s)
+--- PASS: TestAssembleTaskContextBundleSupportsExternalSpecRoot (0.01s)
+--- PASS: TestAssembleTaskContextBundleIsDeterministic (0.01s)
+--- PASS: TestTaskCycleParallelTaskPromptUsesTaskWorktreeContextBase (0.43s)
+--- PASS: TestQAGatePromptUsesTaskContextBuilderAndPreviousReportIdentity (0.84s)
+PASS
+suiteguard: guard cost: measured 8087 paths; fingerprint took 477.485458ms before and 1.008049917s after
+ok  	roundfix/internal/daemon	3.172s

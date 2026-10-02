@@ -37,6 +37,7 @@ func InspectTerminalRunMerged(
 
 type mergedHeadSource struct {
 	head          string
+	ref           string
 	label         string
 	defaultBranch bool
 	archived      bool
@@ -77,6 +78,7 @@ func chooseMergedHead(
 			if _, err := runner.Run(ctx, gitRoot, "cat-file", "-e", head+"^{commit}"); err == nil {
 				return mergedHeadSource{
 					head:  head,
+					ref:   head,
 					label: mergedHeadRecordLabel(matching, head),
 				}, true
 			}
@@ -96,6 +98,7 @@ func chooseMergedHead(
 	)
 	return mergedHeadSource{
 		head:          defaultHead,
+		ref:           defaultBranch,
 		label:         fmt.Sprintf("default branch %q", defaultBranch),
 		defaultBranch: true,
 		archived:      archiveErr == nil,
@@ -176,11 +179,13 @@ func inspectRunAtMergedHead(
 			worktreePresent,
 			runBranchPresent,
 			merged,
-			source.head,
+			source,
 		)
 		return result
 	}
 
+	archived := specArchivedAtMergedHead(ctx, runner, gitRoot, source.head, run.SpecSlug)
+	specPaths := make(map[string]struct{})
 	taskCommits := 0
 	qaCommits := 0
 	otherPaths := make(map[string]struct{})
@@ -250,6 +255,10 @@ func inspectRunAtMergedHead(
 			continue
 		}
 		for _, changedPath := range paths {
+			if archived && pathUnderAnyGitDirectory(changedPath, mergedSpecDirectories(run.SpecSlug)) {
+				specPaths[changedPath] = struct{}{}
+				continue
+			}
 			otherPaths[changedPath] = struct{}{}
 		}
 	}
@@ -286,16 +295,20 @@ func inspectRunAtMergedHead(
 		return result
 	}
 
-	if taskCommits != 0 || qaCommits != 0 {
+	if taskCommits != 0 || qaCommits != 0 || len(specPaths) != 0 {
 		result.State = ReconciliationSuperseded
-		result.Reason = boundedReconciliationReason(fmt.Sprintf(
+		reason := fmt.Sprintf(
 			"Run work is superseded at %s: %d Task commit%s completed, %d QA Report commit%s superseded",
 			source.label,
 			taskCommits,
 			pluralSuffix(taskCommits),
 			qaCommits,
 			pluralSuffix(qaCommits),
-		))
+		)
+		if len(specPaths) != 0 {
+			reason = boundedReconciliationReasonWithSuffix(reason, fmt.Sprintf(", %d Spec-directory path(s) archived", len(specPaths)))
+		}
+		result.Reason = boundedReconciliationReason(reason)
 	} else {
 		result.State = ReconciliationSafe
 		result.Reason = boundedReconciliationReason(
@@ -309,7 +322,7 @@ func inspectRunAtMergedHead(
 		worktreePresent,
 		runBranchPresent,
 		merged,
-		source.head,
+		source,
 	)
 	return result
 }
@@ -588,7 +601,7 @@ func newMergedHeadReconciliationEvidence(
 	worktreePresent bool,
 	runBranchPresent bool,
 	merged []MergedHead,
-	proofHead string,
+	source mergedHeadSource,
 ) *terminalRunReconciliationEvidence {
 	evidence := newTerminalRunReconciliationEvidence(
 		run,
@@ -599,10 +612,134 @@ func newMergedHeadReconciliationEvidence(
 	)
 	evidence.merged = slices.Clone(merged)
 	evidence.mergedSnapshot = slices.Clone(merged)
-	evidence.proofHead = proofHead
+	evidence.proofHead = source.head
+	evidence.proofRef = source.ref
 	return evidence
 }
 
 func mergedHeadRecordsEqual(left []MergedHead, right []MergedHead) bool {
 	return slices.Equal(left, right)
+}
+
+// The archived PRD is positive proof that the Spec directory was delivered.
+func specArchivedAtMergedHead(ctx context.Context, runner gitRunner, root, head, slug string) bool {
+	clean, err := cleanPathSegment(slug)
+	if err != nil || clean != slug {
+		return false
+	}
+	_, err = runner.Run(ctx, root, "cat-file", "-e", head+":"+path.Join(spec.ArchiveDir(spec.ArchiveKindSpec), slug, "_prd.md"))
+	return err == nil
+}
+
+func dirtyPathsInArchivedSpec(ctx context.Context, runner gitRunner, root, head, slug string, dirty []string) bool {
+	directories := mergedSpecDirectories(slug)
+	if pathsUnderGitDirectories(dirty, directories) {
+		return true
+	}
+	archive := path.Join(spec.ArchiveDir(spec.ArchiveKindSpec), slug)
+	content, err := gitBlobAtHead(ctx, runner, root, head, path.Join(archive, "_tasks.md"))
+	if err != nil {
+		return false
+	}
+	frontmatter, ok := markdownFrontmatter(content)
+	if !ok {
+		return false
+	}
+	var manifest mergedHeadManifest
+	if err := yaml.Unmarshal(frontmatter, &manifest); err != nil {
+		return false
+	}
+	scoped := make(map[string]bool)
+	for _, node := range manifest.Graph.Nodes {
+		file, ok := mergedHeadTaskFile(content, node.ID)
+		if !ok {
+			return false
+		}
+		taskContent, err := gitBlobAtHead(ctx, runner, root, head, path.Join(archive, file))
+		if err != nil {
+			return false
+		}
+		// Validate the Task with the shared parser before reading its declarations.
+		if _, err := spec.CarryForwardStatus(file, taskContent); err != nil {
+			return false
+		}
+		inContext := false
+		for _, line := range strings.Split(string(taskContent), "\n") {
+			line = strings.TrimSpace(line)
+			if strings.HasPrefix(line, "# ") {
+				inContext = false
+			}
+			if strings.HasPrefix(line, "## ") {
+				inContext = line == "## Context"
+				continue
+			}
+			if !inContext || !strings.HasPrefix(line, "- ") {
+				continue
+			}
+			kind, value, ok := strings.Cut(strings.TrimPrefix(line, "- "), ":")
+			if !ok || (strings.TrimSpace(kind) != "interface" && strings.TrimSpace(kind) != "creates" && strings.TrimSpace(kind) != "deletes") {
+				continue
+			}
+			value = strings.TrimSpace(value)
+			if start := strings.IndexByte(value, '`'); start >= 0 {
+				if end := strings.IndexByte(value[start+1:], '`'); end >= 0 {
+					value = value[start+1 : start+1+end]
+				}
+			}
+			if validScopedGitPath(value) {
+				scoped[value] = true
+			}
+		}
+		for _, recorded := range spec.RecordedTaskPaths(taskContent) {
+			if validScopedGitPath(recorded) {
+				scoped[recorded] = true
+			}
+		}
+	}
+	for _, file := range dirty {
+		if !pathUnderAnyGitDirectory(file, directories) && !scoped[file] {
+			return false
+		}
+	}
+	return true
+}
+
+func validScopedGitPath(file string) bool {
+	return file != "" && file != "." && file != ".." && !path.IsAbs(file) && path.Clean(file) == file && !strings.HasPrefix(file, "../") && !strings.ContainsAny(file, "\\\x00")
+}
+
+// Porcelain -z keeps filenames literal; renames/copies carry both paths.
+func terminalRunDirtyPaths(status string) ([]string, bool) {
+	if status == "" {
+		return nil, true
+	}
+	if !strings.HasSuffix(status, "\x00") {
+		return nil, false
+	}
+	entries := strings.Split(strings.TrimSuffix(status, "\x00"), "\x00")
+	paths := make([]string, 0, len(entries))
+	for i := 0; i < len(entries); i++ {
+		entry := entries[i]
+		if len(entry) < 4 || entry[2] != ' ' {
+			return nil, false
+		}
+		paths = append(paths, entry[3:])
+		if strings.ContainsAny(entry[:2], "RC") {
+			i++
+			if i >= len(entries) || entries[i] == "" {
+				return nil, false
+			}
+			paths = append(paths, entries[i])
+		}
+	}
+	slices.Sort(paths)
+	return slices.Compact(paths), true
+}
+
+func mergedSpecDirectories(slug string) []string {
+	directories := qaReportDirectories(slug)
+	for i := range directories {
+		directories[i] = path.Dir(directories[i])
+	}
+	return directories
 }

@@ -15,12 +15,12 @@ const RecordedPathsHeading = "## Recorded paths"
 const recordedPathsExplanation = "The Daemon recorded these paths, which this Task changed without declaring them in `## Context`."
 
 // UndeclaredTaskPaths returns, sorted and unique, the committed paths that are
-// not taskFile, not declared as interface: or creates: in task.Context, and
+// not taskFile, not declared as interface:, creates:, or deletes: in task.Context, and
 // not reported true by governed.
 func UndeclaredTaskPaths(task Task, taskFile string, committed []string, governed func(string) bool) []string {
 	excluded := map[string]bool{filepath.ToSlash(filepath.Clean(taskFile)): true}
 	for _, ref := range task.Context {
-		if ref.Kind == ContextKindInterface || ref.Kind == ContextKindCreates {
+		if ref.Kind == ContextKindInterface || ref.Kind == ContextKindCreates || ref.Kind == ContextKindDeletes {
 			excluded[filepath.ToSlash(filepath.Clean(ref.Path))] = true
 		}
 	}

@@ -16,9 +16,9 @@ repository. The report classifies every selected Run into one of six states:
 | State | Agent action |
 | --- | --- |
 | `safe` | The Run Worktree is clean and the Run Branch is contained in its target or merged head, or its changed content is represented at the merged head. Eligible for cleanup after revalidation. |
-| `superseded` | A newer QA Report or the merged-head proof represents the Run's Task or QA Report commits. Preserve it during dry-run; `--apply` can release it after revalidation. |
+| `superseded` | A newer QA Report or the merged-head proof represents the Run's Task or QA Report commits, archived Spec-directory work, or scoped uncommitted leftovers. Preserve it during dry-run; `--apply` can release it after revalidation. |
 | `unintegrated` | Clean, resolved evidence proves that the Run Branch tip is not an ancestor of the target tip. Preserve the Run Worktree and Run Branch. |
-| `dirty` | A present registered Run Worktree has tracked or untracked changes. Preserve the Run Worktree and Run Branch. |
+| `dirty` | Tracked or untracked changes lack archived-Spec supersession proof. Preserve the Run Worktree and Run Branch. |
 | `unknown` | Metadata or Git evidence cannot prove another state. Preserve every identified Run Worktree and Run Branch. |
 | `released` | Both the Run Worktree and Run Branch are absent. No cleanup is needed. |
 
@@ -32,6 +32,24 @@ A Run is released only when each Run commit is represented by completed Task
 status, a superseding QA Report, or matching changed content. If neither source
 is usable or a commit is unrepresented, the Run remains preserved and its
 reason names the missing proof; an absent target alone is not proof of release.
+
+When the merged head contains `<archive root>/<slug>/_prd.md`, the archived
+Spec represents non-Task, non-QA paths under its active and archive directories.
+The superseded reason counts `Spec-directory path(s) archived` alongside
+completed Task commits and superseded QA Report commits. Other committed paths
+still require content comparison; an unrepresented Task commit preserves the Run.
+
+A dirty Run Worktree is `superseded` only when the merged-head proof is `safe`
+or `superseded` and every uncommitted path belongs to those Spec directories
+or a Task's `interface`, `creates`, `deletes`, or `## Recorded paths` at the
+archived head. The reason appends
+`uncommitted path(s) superseded by the archived Spec`, with the path count.
+An unrelated dirty path keeps the Run `dirty`. Apply re-proves the state,
+Run head, merged head and exact dirty path set before forced removal; clean
+worktrees are removed without force. A changed path set refuses apply as stale.
+An absent target branch also uses the merged-head proof before preserving a
+terminal Run Branch, including Runs recorded from linked repository worktrees.
+All proof comes from local Git; reconciliation does not read GitHub.
 
 - A `process` candidate is proven when a terminal Run with a proven recorded
   owner identity still owns an inspected live process tree. Its report names

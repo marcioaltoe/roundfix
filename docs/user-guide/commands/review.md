@@ -15,6 +15,32 @@ resolved base tip as `baseTipCommit`, the head commit, effective provider, and
 policy source. A head with no shared history with the selected base exits `2`
 before any reviewer call or readiness probe.
 
+Every reviewed diff omits changed paths under a Spec's `qa/evidence/` in
+both the resolved Specs Root and its archive root, with reason `qa-evidence`.
+The QA Report stays in the diff. It also omits `.agents/skills/<name>/` for
+names in the `skills` map of `skills-lock.json` at either end of the diff,
+with reason `upstream-skill`; a skill dropped from the head lock remains
+omitted. A missing lock omits no skills for that revision. An unreadable or
+malformed lock blocks with `review scope: read skills-lock.json: <error>`.
+These rules apply to round one's candidate and round two's delta.
+
+After the diff block, the prompt lists the sorted omitted paths and their
+reasons, introduced by `Omitted from this diff (not reviewed): <n> path(s) of
+QA evidence, <m> of upstream-managed skills.` The record's `omittedPaths`
+is the same sorted array of `{path, reason}`, always present as `[]` when
+empty. `diffBytes` measures the diff text sent in that round, or the measured
+diff when the bound blocks it. Older records without these fields remain
+readable.
+
+A diff above 917504 bytes blocks with exit `2` before any provider call or
+Agent Session preparation, without trying a configured fallback. Its reason
+is `review diff too large: <bytes> bytes after omitting <n> path(s) exceeds the review bound of 917504 bytes`.
+This bound is below Spec 0194's successfully reviewed 919,745-byte candidate;
+Spec 0200's 1,295,055-byte candidate failed three times. On a runtime failure
+carrying `agent.BatchFailureError` stderr, `runtimeStderrTail` records its
+last 10 lines capped at the last 1,024 bytes. The reason text is unchanged;
+the tail field is omitted when empty.
+
 `--base <ref>` selects the base Git ref. When omitted, Roundfix uses the
 repository's default branch.
 

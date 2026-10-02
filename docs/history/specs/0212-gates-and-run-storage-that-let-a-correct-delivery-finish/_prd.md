@@ -1,9 +1,12 @@
 ---
 spec: 0212-gates-and-run-storage-that-let-a-correct-delivery-finish
-status: active
+status: archived
 created: 2026-10-01
 surfaces: [backend, cli, docs]
+archived: "2026-10-02"
+source_slug: 0212-gates-and-run-storage-that-let-a-correct-delivery-finish
 ---
+
 
 # Gates and Run storage that let a correct delivery finish
 

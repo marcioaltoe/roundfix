@@ -1,0 +1,53 @@
+import pathlib,tempfile,subprocess,os,json,sqlite3
+ROOT=pathlib.Path.cwd(); BIN=ROOT/'bin/roundfix'; E=ROOT/'docs/specs/0212-gates-and-run-storage-that-let-a-correct-delivery-finish/qa/evidence/2026-10-02-gate-01'
+TMP=pathlib.Path(tempfile.mkdtemp(prefix='qa0212-',dir='/private/tmp')); REPO=TMP/'repo'; REPO.mkdir(); QA_HOME=TMP/'home'; QA_HOME.mkdir()
+env=dict(os.environ); env['HOME']=str(QA_HOME)
+def cmd(args,cwd=REPO):
+ r=subprocess.run([str(x) for x in args],cwd=cwd,env=env,capture_output=True,text=True); return r
+G=['git','-c','core.fsmonitor=false'];
+def git(*args,cwd=REPO):
+ r=cmd(G+list(args),cwd); assert r.returncode==0,(args,r.stderr);return r.stdout.strip()
+def write(root,path,text):
+ p=root/path;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text)
+def commit(root,msg):git('add','.',cwd=root);git('commit','-m',msg,cwd=root)
+logs=[]
+def cli(*args):
+ # Same checkout-built artifact, no PATH resolution.
+ r=cmd([BIN,*args]); logs.append({'command':'./bin/roundfix '+' '.join(args),'cwd':str(REPO),'disposable_home':str(QA_HOME),'exit':r.returncode,'stdout':r.stdout,'stderr':r.stderr});return r
+slug='qa-probe';git('init','-b','main');git('config','user.name','QA Fixture');git('config','user.email','qa@example.invalid');write(REPO,'base.txt','base\n');commit(REPO,'chore: fixture')
+s='docs/specs/'+slug
+write(REPO,s+'/_tasks.md','---\nschema: spec-tasks/v1\nspec: '+slug+'\ngraph:\n  nodes:\n    - id: task_01\n      file: task_01.md\n      needs: []\n---\n')
+write(REPO,s+'/task_01.md','---\ntask: task_01\nspec: '+slug+'\nstatus: pending\ntype: backend\n---\n# Task\n## Context\n- deletes: `removed.txt`\n## Verification\n- `test ! -e removed.txt`\n')
+write(REPO,s+'/_prd.md','---\nspec: '+slug+'\nstatus: active\n---\n# Fixture\n');write(REPO,s+'/_techspec.md','# Fixture\n')
+constraints='\n## Project Constraints\n'+''.join('- '+k+': not applicable — disposable authoring fixture changes only a removed ordinary file. Source: `docs/agents/spec-routing.md`.\n' for k in ['Identifier strategy','Authentication and HTTP','Active ADR obligations','Tooling authority'])
+for path in ['_prd.md','_techspec.md']:
+ p=REPO/s/path;p.write_text(p.read_text()+constraints+('\n## Success Metrics\nNone. This is a bounded deletion parser fixture.\n' if path=='_prd.md' else '\n## API Contracts\nNone. No public API changes in this parser fixture.\n'))
+write(REPO,'docs/agents/spec-routing.md','# Fixture operative constraints\n');write(REPO,s+'/references/_index.md','# References\n')
+r=cli('spec','check',slug,'--strict');print(r.stdout,r.stderr);assert 'SC-REF-UNRESOLVED' not in r.stdout+r.stderr;print('deletes check',r.returncode,r.stdout,r.stderr)
+assert r.returncode==0,(r.stdout,r.stderr)
+# Clear authoring fixture, then initialize only the disposable database.
+git('add','.');git('commit','-m','docs: author deletion fixture');base=git('rev-parse','HEAD');git('symbolic-ref','refs/remotes/origin/HEAD','refs/remotes/origin/main')
+r=cli('reconcile','--format','json');assert r.returncode==0,r.stderr
+(QA_HOME/'.roundfix').mkdir(exist_ok=True);sqlite3.connect(QA_HOME/'.roundfix/roundfix.db').close()
+r=cli('migrate');assert r.returncode==0,r.stderr
+runids=[]
+for ident,dirty in [('declared-run','declared.txt'),('undeclared-run','outside.txt')]:
+ wd=TMP/ident;branch='roundfix/run-'+ident;git('worktree','add','-b',branch,str(wd),base)
+ write(wd,s+'/_prd.md','planning\n');commit(wd,'docs: plan Spec')
+ write(wd,dirty,'leftover\n');write(wd,s+'/_prd.md','unfinished planning\n')
+ runids.append((ident,wd,branch))
+arch='docs/history/specs/'+slug
+write(REPO,arch+'/_prd.md','archived\n');write(REPO,arch+'/_tasks.md','---\nschema: spec-tasks/v1\nspec: '+slug+'\ngraph:\n  nodes:\n    - id: task_01\n      file: task_01.md\n      needs: []\n---\n');write(REPO,arch+'/task_01.md','---\ntask: task_01\nspec: '+slug+'\nstatus: completed\ntype: backend\n---\n# Task\n## Context\n- interface: `declared.txt`\n## Verification\n- `true`\n');commit(REPO,'docs: archive merged Spec')
+git('branch','delivery/present','main')
+db=sqlite3.connect(QA_HOME/'.roundfix/roundfix.db')
+for ident,wd,branch in runids:
+ db.execute("insert into runs(id,kind,state,git_root,repository_root,local_branch,head_sha,work_dir,spec_slug,created_at,updated_at,completed_at) values(?,?,?,?,?,?,?,?,?,?,?,?)",(ident,'implement','Stopped',str(REPO),str(REPO),'delivery/present',base,str(wd),slug,'2026-10-02T00:00:00Z','2026-10-02T00:01:00Z','2026-10-02T00:01:00Z'))
+db.commit();db.close()
+try:
+ r=cli('reconcile','--format','json');assert r.returncode==0,r.stderr;d=json.loads(r.stdout);states={x['runId']:x['classification'] for x in d['results']};assert states['declared-run']=='superseded',d;assert states['undeclared-run']=='dirty',d
+ assert all(wd.exists() for _,wd,_ in runids)
+ r=cli('reconcile','--apply','--format','json');assert r.returncode==0,r.stderr
+ assert not runids[0][1].exists();assert runids[1][1].exists();assert cmd(G+['show-ref','--verify','refs/heads/'+runids[0][2]]).returncode!=0;assert cmd(G+['show-ref','--verify','refs/heads/'+runids[1][2]]).returncode==0
+ r=cli('reconcile','--format','json');assert r.returncode==0;print('reconcile independent read',r.stdout)
+finally:(E/'cli-probes-present-target.json').write_text(json.dumps(logs,indent=2))
+print('PASS disposable CLI flows',TMP)

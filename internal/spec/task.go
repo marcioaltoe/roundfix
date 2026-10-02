@@ -513,11 +513,12 @@ func parseTaskContextRefs(body []byte) ([]TaskContextRef, error) {
 			return nil, err
 		}
 		if previousKind, ok := pathKinds[ref.Path]; ok &&
-			(ref.Kind == ContextKindCreates || previousKind == ContextKindCreates) {
+			(ref.Kind == ContextKindCreates || previousKind == ContextKindCreates ||
+				ref.Kind == ContextKindDeletes || previousKind == ContextKindDeletes) {
 			return nil, TaskContextError{
 				Kind:   string(ref.Kind),
 				Path:   ref.Path,
-				Reason: "path must be unique within Task Context",
+				Reason: fmt.Sprintf("path must be unique within Task Context: %s and %s", previousKind, ref.Kind),
 			}
 		}
 		key := string(ref.Kind) + "\x00" + ref.Path
@@ -538,13 +539,13 @@ func parseTaskContextLine(line string) (TaskContextRef, error) {
 	entry := strings.TrimSpace(strings.TrimPrefix(line, "- "))
 	label, rest, ok := strings.Cut(entry, ":")
 	if !ok {
-		return TaskContextRef{}, TaskContextError{Kind: entry, Reason: `expected "instruction", "interface", or "creates" label`}
+		return TaskContextRef{}, TaskContextError{Kind: entry, Reason: `expected "instruction", "interface", "creates", or "deletes" label`}
 	}
 	kind := ContextKind(strings.TrimSpace(label))
 	switch kind {
-	case ContextKindInstruction, ContextKindInterface, ContextKindCreates:
+	case ContextKindInstruction, ContextKindInterface, ContextKindCreates, ContextKindDeletes:
 	default:
-		return TaskContextRef{}, TaskContextError{Kind: strings.TrimSpace(label), Reason: `expected "instruction", "interface", or "creates" label`}
+		return TaskContextRef{}, TaskContextError{Kind: strings.TrimSpace(label), Reason: `expected "instruction", "interface", "creates", or "deletes" label`}
 	}
 	path := strings.TrimSpace(rest)
 	if span, ok := firstBacktickSpan(path); ok {

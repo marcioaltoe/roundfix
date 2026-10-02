@@ -1,0 +1,37 @@
+Spec qa-probe
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json
+  SC-FINDING-LIFECYCLE: missing docs/findings
+  SC-ROLLUP-MEMBER: missing docs/findings
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  vocabulary documentation detector: missing docs/specs/qa-probe/_techspec.md Vocabulary Contract
+  SC-ADR-UNLISTED: missing docs/adr
+  SC-ADR-RELATED: missing docs/adr
+  SC-CITATION-UNSUPPORTED: missing docs/adr
+  SC-TRANSCRIPT-UNDECLARED: missing .agents/skills/write-techspec/references/concrete-contracts.md
+  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md
+ 
+deletes check 0 Spec qa-probe
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json
+  SC-FINDING-LIFECYCLE: missing docs/findings
+  SC-ROLLUP-MEMBER: missing docs/findings
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  vocabulary documentation detector: missing docs/specs/qa-probe/_techspec.md Vocabulary Contract
+  SC-ADR-UNLISTED: missing docs/adr
+  SC-ADR-RELATED: missing docs/adr
+  SC-CITATION-UNSUPPORTED: missing docs/adr
+  SC-TRANSCRIPT-UNDECLARED: missing .agents/skills/write-techspec/references/concrete-contracts.md
+  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md
+ 
+reconcile independent read {"schemaVersion":"roundfix-reconcile/v1","mode":"dry-run","repository":"/private/tmp/qa0212-ncz9841t/repo","applyCommand":"roundfix reconcile --apply","results":[{"runId":"undeclared-run","outcome":"Stopped","classification":"dirty","runBranch":"roundfix/run-undeclared-run","runHead":"d844fbc4b589e62c2ae4491d664ebea2834db1a5","targetBranch":"delivery/absent","targetHead":"","worktree":"/private/tmp/qa0212-ncz9841t/undeclared-run","supersedingReport":"","evidence":"Run Worktree has tracked or untracked changes","action":"preserve","refusalReason":"Run Worktree has tracked or untracked changes"},{"runId":"declared-run","outcome":"Stopped","classification":"released","runBranch":"roundfix/run-declared-run","runHead":"","targetBranch":"delivery/absent","targetHead":"","worktree":"/private/tmp/qa0212-ncz9841t/declared-run","supersedingReport":"","evidence":"Run Worktree and Run Branch are absent","action":"none","refusalReason":""}],"runs":[{"runId":"undeclared-run","outcome":"Stopped","classification":"dirty","runBranch":"roundfix/run-undeclared-run","runHead":"d844fbc4b589e62c2ae4491d664ebea2834db1a5","targetBranch":"delivery/absent","targetHead":"","worktree":"/private/tmp/qa0212-ncz9841t/undeclared-run","supersedingReport":"","evidence":"Run Worktree has tracked or untracked changes","action":"preserve","refusalReason":"Run Worktree has tracked or untracked changes"},{"runId":"declared-run","outcome":"Stopped","classification":"released","runBranch":"roundfix/run-declared-run","runHead":"","targetBranch":"delivery/absent","targetHead":"","worktree":"/private/tmp/qa0212-ncz9841t/declared-run","supersedingReport":"","evidence":"Run Worktree and Run Branch are absent","action":"none","refusalReason":""}],"summary":{"total":2,"safe":0,"superseded":0,"unintegrated":0,"dirty":1,"unknown":0,"released":1,"applied":0,"preserved":1,"operationalFailures":0},"processCandidates":[],"runBranchCandidates":[],"stagingCandidates":[],"preservedCandidates":[{"kind":"runBranch","runId":"undeclared-run","outcome":"Stopped","ownerPid":0,"processIds":null,"runBranch":"roundfix/run-undeclared-run","targetBranch":"delivery/absent","worktree":"/private/tmp/qa0212-ncz9841t/undeclared-run","specSlug":"qa-probe","supersedingReport":"","proof":"","action":"preserve","refusalReason":"Spec \"qa-probe\": default branch has no superseding QA Report after target branch disappeared"}],"debrisSummary":{"processCandidates":0,"runBranchCandidates":0,"stagingCandidates":0,"preserved":1,"processesApplied":0,"runBranchesApplied":0,"stagingApplied":0},"carryForwards":null}
+
+PASS disposable CLI flows /private/tmp/qa0212-ncz9841t

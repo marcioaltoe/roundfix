@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0212-gates-and-run-storage-that-let-a-correct-delivery-finish
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

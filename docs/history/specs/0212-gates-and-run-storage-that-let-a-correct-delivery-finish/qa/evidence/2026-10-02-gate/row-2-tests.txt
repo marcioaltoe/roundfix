@@ -1,0 +1,811 @@
+=== RUN   TestReviewCleanTreeRefusalPrecedesAutoIntegration
+=== PAUSE TestReviewCleanTreeRefusalPrecedesAutoIntegration
+=== RUN   TestReviewCommandAppearsOnPublicHelp
+=== PAUSE TestReviewCommandAppearsOnPublicHelp
+=== RUN   TestReviewSpecSlugAssociation
+=== PAUSE TestReviewSpecSlugAssociation
+=== RUN   TestReviewArtifactUsesDefaultSpecsRootMatchesConfigString
+=== PAUSE TestReviewArtifactUsesDefaultSpecsRootMatchesConfigString
+=== RUN   TestReviewProfilePreflightResolveAndWatchUseOnlyReviewProfile
+=== PAUSE TestReviewProfilePreflightResolveAndWatchUseOnlyReviewProfile
+=== RUN   TestReviewProfilePreflightFetchCreatesNoAgentSession
+=== PAUSE TestReviewProfilePreflightFetchCreatesNoAgentSession
+=== RUN   TestReviewIssueReportDataMarksCumulativeUnavailableOnLoadFailure
+=== PAUSE TestReviewIssueReportDataMarksCumulativeUnavailableOnLoadFailure
+=== RUN   TestReviewArtifactEvidenceMixedParentEmptyUserRootRefused
+=== PAUSE TestReviewArtifactEvidenceMixedParentEmptyUserRootRefused
+=== RUN   TestReviewCommandsRefuseTargetMismatchWithoutSideEffects
+=== RUN   TestReviewCommandsRefuseTargetMismatchWithoutSideEffects/fetch
+=== RUN   TestReviewCommandsRefuseTargetMismatchWithoutSideEffects/resolve
+=== RUN   TestReviewCommandsRefuseTargetMismatchWithoutSideEffects/watch
+--- PASS: TestReviewCommandsRefuseTargetMismatchWithoutSideEffects (0.79s)
+    --- PASS: TestReviewCommandsRefuseTargetMismatchWithoutSideEffects/fetch (0.26s)
+    --- PASS: TestReviewCommandsRefuseTargetMismatchWithoutSideEffects/resolve (0.30s)
+    --- PASS: TestReviewCommandsRefuseTargetMismatchWithoutSideEffects/watch (0.23s)
+=== RUN   TestReviewCommandsRefuseWithoutCreatingArtifactDirectory
+=== RUN   TestReviewCommandsRefuseWithoutCreatingArtifactDirectory/fetch_shared_Preflight
+=== RUN   TestReviewCommandsRefuseWithoutCreatingArtifactDirectory/resolve_shared_Preflight
+=== RUN   TestReviewCommandsRefuseWithoutCreatingArtifactDirectory/watch_shared_Preflight
+=== RUN   TestReviewCommandsRefuseWithoutCreatingArtifactDirectory/fetch_Branch_Integrity_Preflight
+=== RUN   TestReviewCommandsRefuseWithoutCreatingArtifactDirectory/resolve_missing_Compatible_Artifacts
+=== RUN   TestReviewCommandsRefuseWithoutCreatingArtifactDirectory/resolve_Agent_Selection_Preflight
+=== RUN   TestReviewCommandsRefuseWithoutCreatingArtifactDirectory/watch_Agent_Selection_Preflight
+--- PASS: TestReviewCommandsRefuseWithoutCreatingArtifactDirectory (0.05s)
+    --- PASS: TestReviewCommandsRefuseWithoutCreatingArtifactDirectory/fetch_shared_Preflight (0.01s)
+    --- PASS: TestReviewCommandsRefuseWithoutCreatingArtifactDirectory/resolve_shared_Preflight (0.00s)
+    --- PASS: TestReviewCommandsRefuseWithoutCreatingArtifactDirectory/watch_shared_Preflight (0.00s)
+    --- PASS: TestReviewCommandsRefuseWithoutCreatingArtifactDirectory/fetch_Branch_Integrity_Preflight (0.01s)
+    --- PASS: TestReviewCommandsRefuseWithoutCreatingArtifactDirectory/resolve_missing_Compatible_Artifacts (0.01s)
+    --- PASS: TestReviewCommandsRefuseWithoutCreatingArtifactDirectory/resolve_Agent_Selection_Preflight (0.01s)
+    --- PASS: TestReviewCommandsRefuseWithoutCreatingArtifactDirectory/watch_Agent_Selection_Preflight (0.01s)
+=== RUN   TestReviewCommandsCreateArtifactDirectoryAfterPreflightPasses
+=== RUN   TestReviewCommandsCreateArtifactDirectoryAfterPreflightPasses/fetch
+=== RUN   TestReviewCommandsCreateArtifactDirectoryAfterPreflightPasses/resolve
+=== RUN   TestReviewCommandsCreateArtifactDirectoryAfterPreflightPasses/watch
+--- PASS: TestReviewCommandsCreateArtifactDirectoryAfterPreflightPasses (0.12s)
+    --- PASS: TestReviewCommandsCreateArtifactDirectoryAfterPreflightPasses/fetch (0.02s)
+    --- PASS: TestReviewCommandsCreateArtifactDirectoryAfterPreflightPasses/resolve (0.06s)
+    --- PASS: TestReviewCommandsCreateArtifactDirectoryAfterPreflightPasses/watch (0.04s)
+=== RUN   TestReviewCommandHelpDocumentsSkipBranchIntegrity
+=== PAUSE TestReviewCommandHelpDocumentsSkipBranchIntegrity
+=== RUN   TestReviewFetchReclaimsDeadOwnerActiveRun
+=== PAUSE TestReviewFetchReclaimsDeadOwnerActiveRun
+=== RUN   TestReviewFetchBlocksOlderLiveRunAfterReclaimingNewerOrphan
+=== PAUSE TestReviewFetchBlocksOlderLiveRunAfterReclaimingNewerOrphan
+=== RUN   TestReviewRecordsTheSpecsACandidateArchives
+--- PASS: TestReviewRecordsTheSpecsACandidateArchives (0.46s)
+=== RUN   TestReviewRecordsNoArchivedSpecForAnActiveSpec
+--- PASS: TestReviewRecordsNoArchivedSpecForAnActiveSpec (0.36s)
+=== RUN   TestReviewNamesTheCorrectiveSpecForFindingsAfterArchive
+--- PASS: TestReviewNamesTheCorrectiveSpecForFindingsAfterArchive (0.35s)
+=== RUN   TestReviewAfterArchiveWithoutFindingsNamesNoCorrectiveSpec
+--- PASS: TestReviewAfterArchiveWithoutFindingsNamesNoCorrectiveSpec (0.34s)
+=== RUN   TestReviewValidatorDismissesADaemonSettlementAsC2
+--- PASS: TestReviewValidatorDismissesADaemonSettlementAsC2 (0.34s)
+=== RUN   TestReviewValidatorCannotDismissOutsideTheConventionRegion
+=== RUN   TestReviewValidatorCannotDismissOutsideTheConventionRegion/requirements_with_failure_never_asked
+=== RUN   TestReviewValidatorCannotDismissOutsideTheConventionRegion/requirements_asked_only_for_no-failure
+=== RUN   TestReviewValidatorCannotDismissOutsideTheConventionRegion/answer_injects_an_unasked_requirements_finding
+--- PASS: TestReviewValidatorCannotDismissOutsideTheConventionRegion (0.60s)
+    --- PASS: TestReviewValidatorCannotDismissOutsideTheConventionRegion/requirements_with_failure_never_asked (0.22s)
+    --- PASS: TestReviewValidatorCannotDismissOutsideTheConventionRegion/requirements_asked_only_for_no-failure (0.19s)
+    --- PASS: TestReviewValidatorCannotDismissOutsideTheConventionRegion/answer_injects_an_unasked_requirements_finding (0.18s)
+=== RUN   TestReviewValidatorNeverAsksNoFailureForAFindingWithAFailureClause
+--- PASS: TestReviewValidatorNeverAsksNoFailureForAFindingWithAFailureClause (0.17s)
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding/missing_sealed_runner
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding/runner_error
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding/timeout
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding/tool_used
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding/prose
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding/code_fence
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding/extra_object
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding/missing_ID
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding/duplicate_ID
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding/ineligible_rule
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding/blank_reason
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding/unknown_ID
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding/case-insensitive_top-level_fields
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding/JSON_array
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding/JSON_null
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding/wrong_schema
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding/unknown_field
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding/missing_rule
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding/null_rule
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding/duplicate_JSON_key
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding/invalid_verdict
+=== RUN   TestReviewValidatorFailureLeavesEveryAskedFindingStanding/oversized_output
+--- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding (4.17s)
+    --- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding/missing_sealed_runner (0.20s)
+    --- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding/runner_error (0.20s)
+    --- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding/timeout (0.19s)
+    --- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding/tool_used (0.19s)
+    --- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding/prose (0.19s)
+    --- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding/code_fence (0.19s)
+    --- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding/extra_object (0.19s)
+    --- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding/missing_ID (0.19s)
+    --- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding/duplicate_ID (0.19s)
+    --- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding/ineligible_rule (0.19s)
+    --- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding/blank_reason (0.19s)
+    --- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding/unknown_ID (0.19s)
+    --- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding/case-insensitive_top-level_fields (0.19s)
+    --- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding/JSON_array (0.19s)
+    --- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding/JSON_null (0.19s)
+    --- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding/wrong_schema (0.19s)
+    --- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding/unknown_field (0.19s)
+    --- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding/missing_rule (0.19s)
+    --- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding/null_rule (0.19s)
+    --- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding/duplicate_JSON_key (0.19s)
+    --- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding/invalid_verdict (0.19s)
+    --- PASS: TestReviewValidatorFailureLeavesEveryAskedFindingStanding/oversized_output (0.19s)
+=== RUN   TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges
+=== RUN   TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/active_QA
+=== RUN   TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/archived_QA
+=== RUN   TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/PRD_excluded
+=== RUN   TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/front_matter
+=== RUN   TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/front_matter_edge
+=== RUN   TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/result
+=== RUN   TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/result_crosses_next
+=== RUN   TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/requirements
+=== RUN   TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/archive_root
+=== RUN   TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/active_not_archive
+=== RUN   TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/outside_archive_prefix
+=== RUN   TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/planning_manifest
+=== RUN   TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/planning_without_Task_files
+=== RUN   TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/planning_task
+=== RUN   TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/planning_requirements
+=== RUN   TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/completed
+=== RUN   TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/QA_report
+--- PASS: TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges (0.40s)
+    --- PASS: TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/active_QA (0.00s)
+    --- PASS: TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/archived_QA (0.00s)
+    --- PASS: TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/PRD_excluded (0.00s)
+    --- PASS: TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/front_matter (0.01s)
+    --- PASS: TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/front_matter_edge (0.01s)
+    --- PASS: TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/result (0.01s)
+    --- PASS: TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/result_crosses_next (0.01s)
+    --- PASS: TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/requirements (0.01s)
+    --- PASS: TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/archive_root (0.00s)
+    --- PASS: TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/active_not_archive (0.01s)
+    --- PASS: TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/outside_archive_prefix (0.00s)
+    --- PASS: TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/planning_manifest (0.02s)
+    --- PASS: TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/planning_without_Task_files (0.00s)
+    --- PASS: TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/planning_task (0.02s)
+    --- PASS: TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/planning_requirements (0.02s)
+    --- PASS: TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/completed (0.09s)
+    --- PASS: TestReviewConventionRegionsAdmitAndRefuseAtTheirEdges/QA_report (0.07s)
+=== RUN   TestReviewDisposeRefusesAConventionDismissal
+--- PASS: TestReviewDisposeRefusesAConventionDismissal (0.19s)
+=== RUN   TestReviewValidatorUsesTheSuccessfulFallbackSelection
+--- PASS: TestReviewValidatorUsesTheSuccessfulFallbackSelection (0.17s)
+=== RUN   TestReviewValidatorNeverRunsForReviewedOrBlockedAnswers
+=== RUN   TestReviewValidatorNeverRunsForReviewedOrBlockedAnswers/No_findings.
+=== RUN   TestReviewValidatorNeverRunsForReviewedOrBlockedAnswers/Findings:_-_no_anchor
+=== RUN   TestReviewValidatorNeverRunsForReviewedOrBlockedAnswers/malformed_verdict
+--- PASS: TestReviewValidatorNeverRunsForReviewedOrBlockedAnswers (0.44s)
+    --- PASS: TestReviewValidatorNeverRunsForReviewedOrBlockedAnswers/No_findings. (0.15s)
+    --- PASS: TestReviewValidatorNeverRunsForReviewedOrBlockedAnswers/Findings:_-_no_anchor (0.15s)
+    --- PASS: TestReviewValidatorNeverRunsForReviewedOrBlockedAnswers/malformed_verdict (0.15s)
+=== RUN   TestReviewValidatorExcerptsAreBoundedAndUseTheMergeBaseForDeletedFiles
+=== RUN   TestReviewValidatorExcerptsAreBoundedAndUseTheMergeBaseForDeletedFiles/five_lines_of_context
+=== RUN   TestReviewValidatorExcerptsAreBoundedAndUseTheMergeBaseForDeletedFiles/sixty_line_cap
+=== RUN   TestReviewValidatorExcerptsAreBoundedAndUseTheMergeBaseForDeletedFiles/file_start
+=== RUN   TestReviewValidatorExcerptsAreBoundedAndUseTheMergeBaseForDeletedFiles/file_end
+--- PASS: TestReviewValidatorExcerptsAreBoundedAndUseTheMergeBaseForDeletedFiles (0.15s)
+    --- PASS: TestReviewValidatorExcerptsAreBoundedAndUseTheMergeBaseForDeletedFiles/five_lines_of_context (0.01s)
+    --- PASS: TestReviewValidatorExcerptsAreBoundedAndUseTheMergeBaseForDeletedFiles/sixty_line_cap (0.01s)
+    --- PASS: TestReviewValidatorExcerptsAreBoundedAndUseTheMergeBaseForDeletedFiles/file_start (0.01s)
+    --- PASS: TestReviewValidatorExcerptsAreBoundedAndUseTheMergeBaseForDeletedFiles/file_end (0.01s)
+=== RUN   TestReviewConventionC2IncludesEverySettlementSection
+=== RUN   TestReviewConventionC2IncludesEverySettlementSection/recorded_paths
+=== RUN   TestReviewConventionC2IncludesEverySettlementSection/carry-forward
+=== RUN   TestReviewConventionC2IncludesEverySettlementSection/adjacent_settlement_sections
+=== RUN   TestReviewConventionC2IncludesEverySettlementSection/crosses_requirement
+=== RUN   TestReviewConventionC2IncludesEverySettlementSection/invalid_zero
+=== RUN   TestReviewConventionC2IncludesEverySettlementSection/past_end
+--- PASS: TestReviewConventionC2IncludesEverySettlementSection (0.19s)
+    --- PASS: TestReviewConventionC2IncludesEverySettlementSection/recorded_paths (0.02s)
+    --- PASS: TestReviewConventionC2IncludesEverySettlementSection/carry-forward (0.02s)
+    --- PASS: TestReviewConventionC2IncludesEverySettlementSection/adjacent_settlement_sections (0.02s)
+    --- PASS: TestReviewConventionC2IncludesEverySettlementSection/crosses_requirement (0.02s)
+    --- PASS: TestReviewConventionC2IncludesEverySettlementSection/invalid_zero (0.00s)
+    --- PASS: TestReviewConventionC2IncludesEverySettlementSection/past_end (0.02s)
+=== RUN   TestReviewValidatorCanDismissNoFailureOnlyWhenEligible
+--- PASS: TestReviewValidatorCanDismissNoFailureOnlyWhenEligible (0.15s)
+=== RUN   TestReviewValidatorRejectsOversizedInputBeforeCallingTheRunner
+--- PASS: TestReviewValidatorRejectsOversizedInputBeforeCallingTheRunner (0.08s)
+=== RUN   TestReviewBaseOptionLikeValueIsRefusedAndWritesNothing
+--- PASS: TestReviewBaseOptionLikeValueIsRefusedAndWritesNothing (0.08s)
+=== RUN   TestReviewRecordListsEachFindingWithAnIdentity
+=== PAUSE TestReviewRecordListsEachFindingWithAnIdentity
+=== RUN   TestReviewPromptAsksForOneListItemPerFinding
+=== PAUSE TestReviewPromptAsksForOneListItemPerFinding
+=== RUN   TestReviewDisposeHelpPrintsUsage
+--- PASS: TestReviewDisposeHelpPrintsUsage (0.00s)
+=== RUN   TestReviewDisposeDismissesAFindingWithEvidence
+--- PASS: TestReviewDisposeDismissesAFindingWithEvidence (0.08s)
+=== RUN   TestReviewDisposeRecordsAFixingCommit
+--- PASS: TestReviewDisposeRecordsAFixingCommit (0.11s)
+=== RUN   TestReviewDisposeRefusesWithoutAFindingsRecord
+=== RUN   TestReviewDisposeRefusesWithoutAFindingsRecord/record_is_absent
+=== RUN   TestReviewDisposeRefusesWithoutAFindingsRecord/record_belongs_to_another_repository
+=== RUN   TestReviewDisposeRefusesWithoutAFindingsRecord/record_has_another_outcome
+--- PASS: TestReviewDisposeRefusesWithoutAFindingsRecord (0.24s)
+    --- PASS: TestReviewDisposeRefusesWithoutAFindingsRecord/record_is_absent (0.08s)
+    --- PASS: TestReviewDisposeRefusesWithoutAFindingsRecord/record_belongs_to_another_repository (0.08s)
+    --- PASS: TestReviewDisposeRefusesWithoutAFindingsRecord/record_has_another_outcome (0.08s)
+=== RUN   TestReviewDisposeRefusesAnUnknownFinding
+--- PASS: TestReviewDisposeRefusesAnUnknownFinding (0.08s)
+=== RUN   TestReviewDisposeRefusesBothForms
+--- PASS: TestReviewDisposeRefusesBothForms (0.06s)
+=== RUN   TestReviewDisposeRefusesNeitherForm
+--- PASS: TestReviewDisposeRefusesNeitherForm (0.06s)
+=== RUN   TestReviewDisposeRefusesBlankEvidence
+--- PASS: TestReviewDisposeRefusesBlankEvidence (0.06s)
+=== RUN   TestReviewDisposeRefusesADismissalAtAMovedHead
+--- PASS: TestReviewDisposeRefusesADismissalAtAMovedHead (0.09s)
+=== RUN   TestReviewDisposeRefusesAFixThatDoesNotDescendFromTheReviewedHead
+=== RUN   TestReviewDisposeRefusesAFixThatDoesNotDescendFromTheReviewedHead/commit_does_not_resolve
+=== RUN   TestReviewDisposeRefusesAFixThatDoesNotDescendFromTheReviewedHead/commit_is_the_reviewed_head
+=== RUN   TestReviewDisposeRefusesAFixThatDoesNotDescendFromTheReviewedHead/commit_predates_the_reviewed_head
+=== RUN   TestReviewDisposeRefusesAFixThatDoesNotDescendFromTheReviewedHead/commit_is_not_reachable_from_current_head
+--- PASS: TestReviewDisposeRefusesAFixThatDoesNotDescendFromTheReviewedHead (0.39s)
+    --- PASS: TestReviewDisposeRefusesAFixThatDoesNotDescendFromTheReviewedHead/commit_does_not_resolve (0.09s)
+    --- PASS: TestReviewDisposeRefusesAFixThatDoesNotDescendFromTheReviewedHead/commit_is_the_reviewed_head (0.09s)
+    --- PASS: TestReviewDisposeRefusesAFixThatDoesNotDescendFromTheReviewedHead/commit_predates_the_reviewed_head (0.09s)
+    --- PASS: TestReviewDisposeRefusesAFixThatDoesNotDescendFromTheReviewedHead/commit_is_not_reachable_from_current_head (0.13s)
+=== RUN   TestReviewDisposeRefusesASecondDisposition
+--- PASS: TestReviewDisposeRefusesASecondDisposition (0.12s)
+=== RUN   TestReviewClassifiesTheFinalMessageAfterProgressText
+--- PASS: TestReviewClassifiesTheFinalMessageAfterProgressText (0.12s)
+=== RUN   TestReviewAcceptsNoFindingsAsTheFinalMessage
+--- PASS: TestReviewAcceptsNoFindingsAsTheFinalMessage (0.11s)
+=== RUN   TestReviewStillBlocksBothVerdictsInTheFinalMessage
+--- PASS: TestReviewStillBlocksBothVerdictsInTheFinalMessage (0.11s)
+=== RUN   TestReviewAnswerFileKeepsEveryMessage
+--- PASS: TestReviewAnswerFileKeepsEveryMessage (0.11s)
+=== RUN   TestReviewReportsFindingsDismissedWithoutAskingTheReviewer
+--- PASS: TestReviewReportsFindingsDismissedWithoutAskingTheReviewer (0.23s)
+=== RUN   TestReviewKeepsStandingFindingsWithoutAskingTheReviewer
+--- PASS: TestReviewKeepsStandingFindingsWithoutAskingTheReviewer (0.18s)
+=== RUN   TestReviewIgnoresADismissalOfDifferentText
+--- PASS: TestReviewIgnoresADismissalOfDifferentText (0.17s)
+=== RUN   TestReviewIgnoresAFixWhenClearingAHead
+--- PASS: TestReviewIgnoresAFixWhenClearingAHead (0.21s)
+=== RUN   TestReviewAsksAgainAfterTheHeadMoves
+--- PASS: TestReviewAsksAgainAfterTheHeadMoves (0.22s)
+=== RUN   TestReviewAsksAgainForADifferentBase
+--- PASS: TestReviewAsksAgainForADifferentBase (0.18s)
+=== RUN   TestReviewAsksAgainForADifferentProvider
+--- PASS: TestReviewAsksAgainForADifferentProvider (0.18s)
+=== RUN   TestReviewNeverReusesACleanVerdict
+--- PASS: TestReviewNeverReusesACleanVerdict (0.17s)
+=== RUN   TestReviewNeverReusesABlockedVerdict
+--- PASS: TestReviewNeverReusesABlockedVerdict (0.17s)
+=== RUN   TestReviewRecordRefusesInvalidFindingsDismissed
+=== RUN   TestReviewRecordRefusesInvalidFindingsDismissed/blank_findings
+=== RUN   TestReviewRecordRefusesInvalidFindingsDismissed/reason
+=== RUN   TestReviewRecordRefusesInvalidFindingsDismissed/no_items
+=== RUN   TestReviewRecordRefusesInvalidFindingsDismissed/missing_disposition
+=== RUN   TestReviewRecordRefusesInvalidFindingsDismissed/fixed_disposition
+=== RUN   TestReviewRecordRefusesInvalidFindingsDismissed/dismissal_with_fixed_commit
+=== RUN   TestReviewRecordRefusesInvalidFindingsDismissed/duplicate_disposition
+--- PASS: TestReviewRecordRefusesInvalidFindingsDismissed (0.00s)
+    --- PASS: TestReviewRecordRefusesInvalidFindingsDismissed/blank_findings (0.00s)
+    --- PASS: TestReviewRecordRefusesInvalidFindingsDismissed/reason (0.00s)
+    --- PASS: TestReviewRecordRefusesInvalidFindingsDismissed/no_items (0.00s)
+    --- PASS: TestReviewRecordRefusesInvalidFindingsDismissed/missing_disposition (0.00s)
+    --- PASS: TestReviewRecordRefusesInvalidFindingsDismissed/fixed_disposition (0.00s)
+    --- PASS: TestReviewRecordRefusesInvalidFindingsDismissed/dismissal_with_fixed_commit (0.00s)
+    --- PASS: TestReviewRecordRefusesInvalidFindingsDismissed/duplicate_disposition (0.00s)
+=== RUN   TestReviewLineageDecidesEachRound
+=== RUN   TestReviewLineageDecidesEachRound/absent
+=== RUN   TestReviewLineageDecidesEachRound/another_provider
+=== RUN   TestReviewLineageDecidesEachRound/moved_merge_base_after_rebase
+=== RUN   TestReviewLineageDecidesEachRound/head_does_not_descend
+=== RUN   TestReviewLineageDecidesEachRound/same_head_reuse
+=== RUN   TestReviewLineageDecidesEachRound/same_head_blocked_repeats
+=== RUN   TestReviewLineageDecidesEachRound/ancestor_blocked_legacy_repeats
+=== RUN   TestReviewLineageDecidesEachRound/ancestor_blocked_round_two_repeats
+=== RUN   TestReviewLineageDecidesEachRound/legacy_reviewed
+=== RUN   TestReviewLineageDecidesEachRound/round_one_reviewed
+=== RUN   TestReviewLineageDecidesEachRound/another_checkout
+=== RUN   TestReviewLineageDecidesEachRound/same_head_closed_reuse
+=== RUN   TestReviewLineageDecidesEachRound/round_one_findings
+=== RUN   TestReviewLineageDecidesEachRound/round_one_findings_dismissed
+=== RUN   TestReviewLineageDecidesEachRound/round_two_ceiling
+=== RUN   TestReviewLineageDecidesEachRound/closed_ceiling
+--- PASS: TestReviewLineageDecidesEachRound (0.18s)
+    --- PASS: TestReviewLineageDecidesEachRound/absent (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/another_provider (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/moved_merge_base_after_rebase (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/head_does_not_descend (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/same_head_reuse (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/same_head_blocked_repeats (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/ancestor_blocked_legacy_repeats (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/ancestor_blocked_round_two_repeats (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/legacy_reviewed (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/round_one_reviewed (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/another_checkout (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/same_head_closed_reuse (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/round_one_findings (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/round_one_findings_dismissed (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/round_two_ceiling (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/closed_ceiling (0.00s)
+=== RUN   TestReviewRoundTwoPromptCarriesTheDeltaAndRoundOneFindings
+--- PASS: TestReviewRoundTwoPromptCarriesTheDeltaAndRoundOneFindings (0.29s)
+=== RUN   TestReviewRoundTwoAnchorsAgainstTheFullCandidateDiff
+--- PASS: TestReviewRoundTwoAnchorsAgainstTheFullCandidateDiff (0.21s)
+=== RUN   TestReviewCeilingBlocksWithoutCallingTheReviewer
+--- PASS: TestReviewCeilingBlocksWithoutCallingTheReviewer (0.27s)
+=== RUN   TestReviewCeilingClosesOnDispositions
+=== RUN   TestReviewCeilingClosesOnDispositions/fixed_by_contained_commit
+=== RUN   TestReviewCeilingClosesOnDispositions/dismissed_with_evidence
+=== RUN   TestReviewCeilingClosesOnDispositions/fixed_by_commit_outside_current_head
+--- PASS: TestReviewCeilingClosesOnDispositions (1.07s)
+    --- PASS: TestReviewCeilingClosesOnDispositions/fixed_by_contained_commit (0.37s)
+    --- PASS: TestReviewCeilingClosesOnDispositions/dismissed_with_evidence (0.35s)
+    --- PASS: TestReviewCeilingClosesOnDispositions/fixed_by_commit_outside_current_head (0.35s)
+=== RUN   TestReviewBlockedRoundTwoRepeatsItsOriginalDelta
+--- PASS: TestReviewBlockedRoundTwoRepeatsItsOriginalDelta (0.31s)
+=== RUN   TestReviewCeilingClosedRecordRequiresDispositionEvidence
+=== RUN   TestReviewCeilingClosedRecordRequiresDispositionEvidence/missing_lineage
+=== RUN   TestReviewCeilingClosedRecordRequiresDispositionEvidence/wrong_round
+=== RUN   TestReviewCeilingClosedRecordRequiresDispositionEvidence/same_reviewed_head
+=== RUN   TestReviewCeilingClosedRecordRequiresDispositionEvidence/missing_disposition
+=== RUN   TestReviewCeilingClosedRecordRequiresDispositionEvidence/missing_fixed_commit
+=== RUN   TestReviewCeilingClosedRecordRequiresDispositionEvidence/dismissal_without_evidence
+=== RUN   TestReviewCeilingClosedRecordRequiresDispositionEvidence/disposition_wrong_head
+=== RUN   TestReviewCeilingClosedRecordRequiresDispositionEvidence/disposition_wrong_text
+=== RUN   TestReviewCeilingClosedRecordRequiresDispositionEvidence/duplicate_disposition
+=== RUN   TestReviewCeilingClosedRecordRequiresDispositionEvidence/findings_without_items
+--- PASS: TestReviewCeilingClosedRecordRequiresDispositionEvidence (0.07s)
+    --- PASS: TestReviewCeilingClosedRecordRequiresDispositionEvidence/missing_lineage (0.00s)
+    --- PASS: TestReviewCeilingClosedRecordRequiresDispositionEvidence/wrong_round (0.00s)
+    --- PASS: TestReviewCeilingClosedRecordRequiresDispositionEvidence/same_reviewed_head (0.00s)
+    --- PASS: TestReviewCeilingClosedRecordRequiresDispositionEvidence/missing_disposition (0.00s)
+    --- PASS: TestReviewCeilingClosedRecordRequiresDispositionEvidence/missing_fixed_commit (0.00s)
+    --- PASS: TestReviewCeilingClosedRecordRequiresDispositionEvidence/dismissal_without_evidence (0.00s)
+    --- PASS: TestReviewCeilingClosedRecordRequiresDispositionEvidence/disposition_wrong_head (0.00s)
+    --- PASS: TestReviewCeilingClosedRecordRequiresDispositionEvidence/disposition_wrong_text (0.00s)
+    --- PASS: TestReviewCeilingClosedRecordRequiresDispositionEvidence/duplicate_disposition (0.00s)
+    --- PASS: TestReviewCeilingClosedRecordRequiresDispositionEvidence/findings_without_items (0.00s)
+=== RUN   TestReviewDiffsTheCandidateFromItsMergeBase
+--- PASS: TestReviewDiffsTheCandidateFromItsMergeBase (0.14s)
+=== RUN   TestReviewListsOnlyTheArchivedSpecsTheCandidateChanged
+--- PASS: TestReviewListsOnlyTheArchivedSpecsTheCandidateChanged (0.18s)
+=== RUN   TestReviewReusesAFindingsVerdictAfterTheBaseBranchMoves
+--- PASS: TestReviewReusesAFindingsVerdictAfterTheBaseBranchMoves (0.18s)
+=== RUN   TestReviewRefusesABaseThatSharesNoHistory
+--- PASS: TestReviewRefusesABaseThatSharesNoHistory (0.10s)
+=== RUN   TestReviewUnderCodexIgnoresCodeRabbitConfiguration
+--- PASS: TestReviewUnderCodexIgnoresCodeRabbitConfiguration (0.11s)
+=== RUN   TestReviewUnderNoneIgnoresCodeRabbitConfiguration
+--- PASS: TestReviewUnderNoneIgnoresCodeRabbitConfiguration (0.09s)
+=== RUN   TestReviewRecordsLiveInTheCheckoutsOwnDirectory
+--- PASS: TestReviewRecordsLiveInTheCheckoutsOwnDirectory (0.20s)
+=== RUN   TestReviewInOneCheckoutLeavesAnotherCheckoutsRecord
+--- PASS: TestReviewInOneCheckoutLeavesAnotherCheckoutsRecord (0.25s)
+=== RUN   TestReviewDisposeReadsOnlyItsCheckoutsRecord
+--- PASS: TestReviewDisposeReadsOnlyItsCheckoutsRecord (0.16s)
+=== RUN   TestReviewIgnoresARecordAtTheSharedLocation
+--- PASS: TestReviewIgnoresARecordAtTheSharedLocation (0.13s)
+=== RUN   TestReviewOmitsQAEvidenceAndUpstreamSkills
+--- PASS: TestReviewOmitsQAEvidenceAndUpstreamSkills (0.26s)
+=== RUN   TestReviewOmitsASkillTheLockDroppedAtTheHead
+--- PASS: TestReviewOmitsASkillTheLockDroppedAtTheHead (0.19s)
+=== RUN   TestReviewKeepsTheQAReportInTheDiff
+--- PASS: TestReviewKeepsTheQAReportInTheDiff (0.19s)
+=== RUN   TestReviewBlocksOnAMalformedSkillsLock
+=== RUN   TestReviewBlocksOnAMalformedSkillsLock/{
+=== RUN   TestReviewBlocksOnAMalformedSkillsLock/{"skills":[]}
+=== RUN   TestReviewBlocksOnAMalformedSkillsLock/{"skills":null}
+=== RUN   TestReviewBlocksOnAMalformedSkillsLock/null
+--- PASS: TestReviewBlocksOnAMalformedSkillsLock (0.51s)
+    --- PASS: TestReviewBlocksOnAMalformedSkillsLock/{ (0.12s)
+    --- PASS: TestReviewBlocksOnAMalformedSkillsLock/{"skills":[]} (0.12s)
+    --- PASS: TestReviewBlocksOnAMalformedSkillsLock/{"skills":null} (0.12s)
+    --- PASS: TestReviewBlocksOnAMalformedSkillsLock/null (0.14s)
+=== RUN   TestReviewBlocksAboveTheBoundWithoutAProviderCall
+=== RUN   TestReviewBlocksAboveTheBoundWithoutAProviderCall/1
+=== RUN   TestReviewBlocksAboveTheBoundWithoutAProviderCall/2
+--- PASS: TestReviewBlocksAboveTheBoundWithoutAProviderCall (0.36s)
+    --- PASS: TestReviewBlocksAboveTheBoundWithoutAProviderCall/1 (0.14s)
+    --- PASS: TestReviewBlocksAboveTheBoundWithoutAProviderCall/2 (0.22s)
+=== RUN   TestReviewRecordsTheRuntimeStderrTail
+=== RUN   TestReviewRecordsTheRuntimeStderrTail/10
+=== RUN   TestReviewRecordsTheRuntimeStderrTail/200
+--- PASS: TestReviewRecordsTheRuntimeStderrTail (0.23s)
+    --- PASS: TestReviewRecordsTheRuntimeStderrTail/10 (0.12s)
+    --- PASS: TestReviewRecordsTheRuntimeStderrTail/200 (0.12s)
+=== RUN   TestReviewReadsARecordWithoutTheNewFields
+--- PASS: TestReviewReadsARecordWithoutTheNewFields (0.00s)
+=== RUN   TestReviewScopesRoundTwoDelta
+--- PASS: TestReviewScopesRoundTwoDelta (0.29s)
+=== RUN   TestReviewScopesConfiguredSpecRoots
+--- PASS: TestReviewScopesConfiguredSpecRoots (0.19s)
+=== RUN   TestReviewBlocksOnAMalformedBaseLock
+--- PASS: TestReviewBlocksOnAMalformedBaseLock (0.15s)
+=== RUN   TestReviewBlocksOnAnUnreadableSkillsLock
+--- PASS: TestReviewBlocksOnAnUnreadableSkillsLock (0.12s)
+=== RUN   TestReviewAdmitsADiffExactlyAtTheBound
+--- PASS: TestReviewAdmitsADiffExactlyAtTheBound (0.16s)
+=== RUN   TestReviewRoundOneWithFindingsLeavesItsSessionOpen
+--- PASS: TestReviewRoundOneWithFindingsLeavesItsSessionOpen (0.11s)
+=== RUN   TestReviewRoundOneReviewedEndsItsSession
+--- PASS: TestReviewRoundOneReviewedEndsItsSession (0.12s)
+=== RUN   TestReviewRoundOneBlockedEndsItsSession
+--- PASS: TestReviewRoundOneBlockedEndsItsSession (0.12s)
+=== RUN   TestReviewRoundOneValidationDismissedEndsItsSession
+--- PASS: TestReviewRoundOneValidationDismissedEndsItsSession (0.11s)
+=== RUN   TestReviewRoundTwoContinuesTheRecordedSession
+--- PASS: TestReviewRoundTwoContinuesTheRecordedSession (0.25s)
+=== RUN   TestReviewRoundTwoDifferentIDsDoesNotReportContinued
+--- PASS: TestReviewRoundTwoDifferentIDsDoesNotReportContinued (0.21s)
+=== RUN   TestReviewRoundTwoEmptyIDsDoesNotReportContinued
+--- PASS: TestReviewRoundTwoEmptyIDsDoesNotReportContinued (0.21s)
+=== RUN   TestReviewRoundTwoFallsBackToAFreshSessionWhenPreparationFails
+--- PASS: TestReviewRoundTwoFallsBackToAFreshSessionWhenPreparationFails (0.21s)
+=== RUN   TestReviewLineageChangeEndsTheOpenSession
+--- PASS: TestReviewLineageChangeEndsTheOpenSession (0.23s)
+=== RUN   TestReviewDismissedReuseEndsTheOpenSession
+--- PASS: TestReviewDismissedReuseEndsTheOpenSession (0.20s)
+=== RUN   TestReviewStandingReuseKeepsTheOpenSession
+--- PASS: TestReviewStandingReuseKeepsTheOpenSession (0.15s)
+=== RUN   TestReviewRoundTwoFindingsEndsItsSession
+--- PASS: TestReviewRoundTwoFindingsEndsItsSession (0.21s)
+=== RUN   TestReviewRoundTwoContinuesTheRecordedFallbackSelection
+--- PASS: TestReviewRoundTwoContinuesTheRecordedFallbackSelection (0.21s)
+=== RUN   TestReviewRoundTwoPromptFailureEndsWithoutFallback
+--- PASS: TestReviewRoundTwoPromptFailureEndsWithoutFallback (0.21s)
+=== RUN   TestReviewProviderOmissionEndsTheOpenSession
+--- PASS: TestReviewProviderOmissionEndsTheOpenSession (0.15s)
+=== RUN   TestReviewRecordRoundTripsEachOutcome
+=== PAUSE TestReviewRecordRoundTripsEachOutcome
+=== RUN   TestReviewRecordWithoutHeadIsRefusedBeforeWriting
+=== PAUSE TestReviewRecordWithoutHeadIsRefusedBeforeWriting
+=== RUN   TestReviewRecordRefusesInvalidOutcomeDetails
+=== PAUSE TestReviewRecordRefusesInvalidOutcomeDetails
+=== RUN   TestReviewPromptCarriesTheCandidateDiff
+=== PAUSE TestReviewPromptCarriesTheCandidateDiff
+=== RUN   TestReviewPromptCarriesSpecDecisions
+--- PASS: TestReviewPromptCarriesSpecDecisions (0.15s)
+=== RUN   TestReviewSkipsASpecWithoutDecisions
+--- PASS: TestReviewSkipsASpecWithoutDecisions (0.15s)
+=== RUN   TestReviewReadsAnArchivedSpecFromTheCandidate
+--- PASS: TestReviewReadsAnArchivedSpecFromTheCandidate (0.15s)
+=== RUN   TestReviewBoundsSpecContext
+--- PASS: TestReviewBoundsSpecContext (0.15s)
+=== RUN   TestReviewRecordsDroppedSpecs
+--- PASS: TestReviewRecordsDroppedSpecs (0.20s)
+=== RUN   TestReviewReportsSpecReadingFailureDistinctly
+--- PASS: TestReviewReportsSpecReadingFailureDistinctly (0.14s)
+=== RUN   TestReviewPromptWithoutSpecIsUnchanged
+--- PASS: TestReviewPromptWithoutSpecIsUnchanged (0.13s)
+=== RUN   TestReviewSessionReadsWithoutWriting
+=== PAUSE TestReviewSessionReadsWithoutWriting
+=== RUN   TestReviewSessionRefIsUniquePerInvocation
+=== PAUSE TestReviewSessionRefIsUniquePerInvocation
+=== RUN   TestReviewCommandExitsZeroOnExplicitClean
+--- PASS: TestReviewCommandExitsZeroOnExplicitClean (0.12s)
+=== RUN   TestReviewCommandDefaultsBaseToMain
+--- PASS: TestReviewCommandDefaultsBaseToMain (0.12s)
+=== RUN   TestReviewCommandExitsOneAndRecordsFindings
+--- PASS: TestReviewCommandExitsOneAndRecordsFindings (0.12s)
+=== RUN   TestReviewClassifiesVerdictVariants
+=== RUN   TestReviewClassifiesVerdictVariants/punctuated_clean_verdict
+=== RUN   TestReviewClassifiesVerdictVariants/emphasized_clean_verdict
+=== RUN   TestReviewClassifiesVerdictVariants/lowercase_clean_verdict
+=== RUN   TestReviewClassifiesVerdictVariants/plain_preamble_before_clean_verdict
+=== RUN   TestReviewClassifiesVerdictVariants/preamble_before_emphasized_lowercase_findings_verdict
+--- PASS: TestReviewClassifiesVerdictVariants (0.58s)
+    --- PASS: TestReviewClassifiesVerdictVariants/punctuated_clean_verdict (0.12s)
+    --- PASS: TestReviewClassifiesVerdictVariants/emphasized_clean_verdict (0.12s)
+    --- PASS: TestReviewClassifiesVerdictVariants/lowercase_clean_verdict (0.12s)
+    --- PASS: TestReviewClassifiesVerdictVariants/plain_preamble_before_clean_verdict (0.12s)
+    --- PASS: TestReviewClassifiesVerdictVariants/preamble_before_emphasized_lowercase_findings_verdict (0.12s)
+=== RUN   TestReviewPassesOnlyAWholeAnswerVerdict
+=== RUN   TestReviewPassesOnlyAWholeAnswerVerdict/punctuated_no_findings
+=== RUN   TestReviewPassesOnlyAWholeAnswerVerdict/emphasized_no_findings
+=== RUN   TestReviewPassesOnlyAWholeAnswerVerdict/findings_none
+--- PASS: TestReviewPassesOnlyAWholeAnswerVerdict (0.35s)
+    --- PASS: TestReviewPassesOnlyAWholeAnswerVerdict/punctuated_no_findings (0.12s)
+    --- PASS: TestReviewPassesOnlyAWholeAnswerVerdict/emphasized_no_findings (0.11s)
+    --- PASS: TestReviewPassesOnlyAWholeAnswerVerdict/findings_none (0.11s)
+=== RUN   TestReviewBlocksEveryPreambleBesideNoFindings
+=== RUN   TestReviewBlocksEveryPreambleBesideNoFindings/blockquoted_list
+=== RUN   TestReviewBlocksEveryPreambleBesideNoFindings/table
+=== RUN   TestReviewBlocksEveryPreambleBesideNoFindings/setext_heading
+=== RUN   TestReviewBlocksEveryPreambleBesideNoFindings/linked_path_line
+=== RUN   TestReviewBlocksEveryPreambleBesideNoFindings/line_range
+=== RUN   TestReviewBlocksEveryPreambleBesideNoFindings/unicode_bullet
+=== RUN   TestReviewBlocksEveryPreambleBesideNoFindings/html
+=== RUN   TestReviewBlocksEveryPreambleBesideNoFindings/fenced_code
+=== RUN   TestReviewBlocksEveryPreambleBesideNoFindings/plain_prose
+--- PASS: TestReviewBlocksEveryPreambleBesideNoFindings (1.04s)
+    --- PASS: TestReviewBlocksEveryPreambleBesideNoFindings/blockquoted_list (0.12s)
+    --- PASS: TestReviewBlocksEveryPreambleBesideNoFindings/table (0.11s)
+    --- PASS: TestReviewBlocksEveryPreambleBesideNoFindings/setext_heading (0.12s)
+    --- PASS: TestReviewBlocksEveryPreambleBesideNoFindings/linked_path_line (0.11s)
+    --- PASS: TestReviewBlocksEveryPreambleBesideNoFindings/line_range (0.12s)
+    --- PASS: TestReviewBlocksEveryPreambleBesideNoFindings/unicode_bullet (0.12s)
+    --- PASS: TestReviewBlocksEveryPreambleBesideNoFindings/html (0.11s)
+    --- PASS: TestReviewBlocksEveryPreambleBesideNoFindings/fenced_code (0.12s)
+    --- PASS: TestReviewBlocksEveryPreambleBesideNoFindings/plain_prose (0.12s)
+=== RUN   TestReviewRecognisesAColonlessFindingsHeader
+=== RUN   TestReviewRecognisesAColonlessFindingsHeader/plain
+=== RUN   TestReviewRecognisesAColonlessFindingsHeader/emphasized
+=== RUN   TestReviewRecognisesAColonlessFindingsHeader/fullwidth_colon
+--- PASS: TestReviewRecognisesAColonlessFindingsHeader (0.36s)
+    --- PASS: TestReviewRecognisesAColonlessFindingsHeader/plain (0.12s)
+    --- PASS: TestReviewRecognisesAColonlessFindingsHeader/emphasized (0.12s)
+    --- PASS: TestReviewRecognisesAColonlessFindingsHeader/fullwidth_colon (0.12s)
+=== RUN   TestReviewRecognisesEmphasizedFindingsHeader
+=== RUN   TestReviewRecognisesEmphasizedFindingsHeader/bold
+=== RUN   TestReviewRecognisesEmphasizedFindingsHeader/italic
+--- PASS: TestReviewRecognisesEmphasizedFindingsHeader (0.24s)
+    --- PASS: TestReviewRecognisesEmphasizedFindingsHeader/bold (0.12s)
+    --- PASS: TestReviewRecognisesEmphasizedFindingsHeader/italic (0.12s)
+=== RUN   TestReviewBlocksEmphasizedFindingsBesideNoFindings
+=== RUN   TestReviewBlocksEmphasizedFindingsBesideNoFindings/bold
+=== RUN   TestReviewBlocksEmphasizedFindingsBesideNoFindings/italic
+--- PASS: TestReviewBlocksEmphasizedFindingsBesideNoFindings (0.23s)
+    --- PASS: TestReviewBlocksEmphasizedFindingsBesideNoFindings/bold (0.12s)
+    --- PASS: TestReviewBlocksEmphasizedFindingsBesideNoFindings/italic (0.12s)
+=== RUN   TestReviewBlocksAmbiguousVerdict
+=== RUN   TestReviewBlocksAmbiguousVerdict/both_verdicts
+=== RUN   TestReviewBlocksAmbiguousVerdict/neither_verdict
+--- PASS: TestReviewBlocksAmbiguousVerdict (0.23s)
+    --- PASS: TestReviewBlocksAmbiguousVerdict/both_verdicts (0.11s)
+    --- PASS: TestReviewBlocksAmbiguousVerdict/neither_verdict (0.11s)
+=== RUN   TestReviewBlocksContentBesideANoFindingsVerdict
+=== RUN   TestReviewBlocksContentBesideANoFindingsVerdict/findings_under_a_Findings_heading
+=== RUN   TestReviewBlocksContentBesideANoFindingsVerdict/findings_under_a_topic_heading
+=== RUN   TestReviewBlocksContentBesideANoFindingsVerdict/finding_after_the_verdict
+--- PASS: TestReviewBlocksContentBesideANoFindingsVerdict (0.35s)
+    --- PASS: TestReviewBlocksContentBesideANoFindingsVerdict/findings_under_a_Findings_heading (0.11s)
+    --- PASS: TestReviewBlocksContentBesideANoFindingsVerdict/findings_under_a_topic_heading (0.12s)
+    --- PASS: TestReviewBlocksContentBesideANoFindingsVerdict/finding_after_the_verdict (0.12s)
+=== RUN   TestReviewReadsFindingsNoneAsNoFindings
+=== RUN   TestReviewReadsFindingsNoneAsNoFindings/none
+=== RUN   TestReviewReadsFindingsNoneAsNoFindings/not_applicable
+=== RUN   TestReviewReadsFindingsNoneAsNoFindings/no_findings
+=== RUN   TestReviewReadsFindingsNoneAsNoFindings/plain_preamble_before_none
+=== RUN   TestReviewReadsFindingsNoneAsNoFindings/structured_content_before_none
+=== RUN   TestReviewReadsFindingsNoneAsNoFindings/text_follows_none
+--- PASS: TestReviewReadsFindingsNoneAsNoFindings (0.69s)
+    --- PASS: TestReviewReadsFindingsNoneAsNoFindings/none (0.11s)
+    --- PASS: TestReviewReadsFindingsNoneAsNoFindings/not_applicable (0.11s)
+    --- PASS: TestReviewReadsFindingsNoneAsNoFindings/no_findings (0.11s)
+    --- PASS: TestReviewReadsFindingsNoneAsNoFindings/plain_preamble_before_none (0.11s)
+    --- PASS: TestReviewReadsFindingsNoneAsNoFindings/structured_content_before_none (0.12s)
+    --- PASS: TestReviewReadsFindingsNoneAsNoFindings/text_follows_none (0.12s)
+=== RUN   TestReviewIgnoresAQuotedVerdictInsideFindings
+--- PASS: TestReviewIgnoresAQuotedVerdictInsideFindings (0.12s)
+=== RUN   TestReviewKeepsTheRawAnswer
+=== RUN   TestReviewKeepsTheRawAnswer/reviewed
+=== RUN   TestReviewKeepsTheRawAnswer/findings
+=== RUN   TestReviewKeepsTheRawAnswer/blocked
+--- PASS: TestReviewKeepsTheRawAnswer (0.35s)
+    --- PASS: TestReviewKeepsTheRawAnswer/reviewed (0.11s)
+    --- PASS: TestReviewKeepsTheRawAnswer/findings (0.12s)
+    --- PASS: TestReviewKeepsTheRawAnswer/blocked (0.11s)
+=== RUN   TestReviewCommandBlocksOnRuntimeFailure
+--- PASS: TestReviewCommandBlocksOnRuntimeFailure (0.12s)
+=== RUN   TestReviewKeepsNoAnswerWhenTheReviewerWasNotReached
+--- PASS: TestReviewKeepsNoAnswerWhenTheReviewerWasNotReached (0.11s)
+=== RUN   TestReviewRemovesAStaleAnswerFile
+--- PASS: TestReviewRemovesAStaleAnswerFile (0.12s)
+=== RUN   TestReviewRecordsEmptySkippedSpecsAsAList
+--- PASS: TestReviewRecordsEmptySkippedSpecsAsAList (0.15s)
+=== RUN   TestReviewCommandDoesNotFallbackAfterPromptFailure
+--- PASS: TestReviewCommandDoesNotFallbackAfterPromptFailure (0.12s)
+=== RUN   TestReviewCommandKeepsATimeoutBlocked
+--- PASS: TestReviewCommandKeepsATimeoutBlocked (0.12s)
+=== RUN   TestReviewCommandBlocksOnTransportAnomaly
+--- PASS: TestReviewCommandBlocksOnTransportAnomaly (0.12s)
+=== RUN   TestReviewCommandBlocksOnEmptyAgentOutput
+--- PASS: TestReviewCommandBlocksOnEmptyAgentOutput (0.12s)
+=== RUN   TestReviewCommandClassifiesAgentMessageNotProtocolStream
+--- PASS: TestReviewCommandClassifiesAgentMessageNotProtocolStream (0.12s)
+=== RUN   TestReviewCommandNoneRecordsOmissionWithoutAgentActivity
+--- PASS: TestReviewCommandNoneRecordsOmissionWithoutAgentActivity (0.10s)
+=== RUN   TestReviewRunsTheClaudeProvider
+--- PASS: TestReviewRunsTheClaudeProvider (0.12s)
+=== RUN   TestReviewRefusesCodeRabbitNamingTheMissingSurface
+--- PASS: TestReviewRefusesCodeRabbitNamingTheMissingSurface (0.10s)
+=== RUN   TestReviewCommandRefusesProviderProfileMismatch
+=== RUN   TestReviewCommandRefusesProviderProfileMismatch/preferred_runtime
+=== RUN   TestReviewCommandRefusesProviderProfileMismatch/fallback_runtime
+=== RUN   TestReviewCommandRefusesProviderProfileMismatch/Claude_provider
+--- PASS: TestReviewCommandRefusesProviderProfileMismatch (0.29s)
+    --- PASS: TestReviewCommandRefusesProviderProfileMismatch/preferred_runtime (0.10s)
+    --- PASS: TestReviewCommandRefusesProviderProfileMismatch/fallback_runtime (0.10s)
+    --- PASS: TestReviewCommandRefusesProviderProfileMismatch/Claude_provider (0.10s)
+=== RUN   TestReviewCommandUsesFallbackOnlyWhenSelectionFailsBeforePrompt
+--- PASS: TestReviewCommandUsesFallbackOnlyWhenSelectionFailsBeforePrompt (0.12s)
+=== RUN   TestReviewCommandProvesArtifactDirectoryWritableBeforeAgentActivity
+--- PASS: TestReviewCommandProvesArtifactDirectoryWritableBeforeAgentActivity (0.10s)
+=== RUN   TestReviewCommandRefusesUnknownFlags
+--- PASS: TestReviewCommandRefusesUnknownFlags (0.06s)
+=== RUN   TestReviewFindingAnchorParsesEachForm
+=== RUN   TestReviewFindingAnchorParsesEachForm/`path.go:2`_Failure:_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:2:_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/`path.go:2-4`_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:2-4,8-9_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:2)
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:2
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:2_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/bad_path.go:2_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:2a_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:2-4a_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/finding_path.go:2_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/_path.go:2_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:4-2_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:9999999999999999999999999999_broken
+--- PASS: TestReviewFindingAnchorParsesEachForm (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/`path.go:2`_Failure:_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:2:_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/`path.go:2-4`_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:2-4,8-9_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:2) (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:2 (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:2_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/bad_path.go:2_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:2a_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:2-4a_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/finding_path.go:2_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/_path.go:2_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:4-2_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:9999999999999999999999999999_broken (0.00s)
+=== RUN   TestReviewDiffIndexHoldsHunkLinesAndWholeFiles
+=== RUN   TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/hunk.go:10
+=== RUN   TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/hunk.go:11
+=== RUN   TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/hunk.go:12
+=== RUN   TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/hunk.go:9
+=== RUN   TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/hunk.go:13
+=== RUN   TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/hunk.go:31
+=== RUN   TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/hunk.go:9#01
+=== RUN   TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/delete.go:5
+=== RUN   TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/delete.go:6
+=== RUN   TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/gone.go:80
+=== RUN   TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/binary:80
+=== RUN   TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/renamed.go:80
+=== RUN   TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/mode.go:80
+=== RUN   TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/missing:1
+--- PASS: TestReviewDiffIndexHoldsHunkLinesAndWholeFiles (0.00s)
+    --- PASS: TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/hunk.go:10 (0.00s)
+    --- PASS: TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/hunk.go:11 (0.00s)
+    --- PASS: TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/hunk.go:12 (0.00s)
+    --- PASS: TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/hunk.go:9 (0.00s)
+    --- PASS: TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/hunk.go:13 (0.00s)
+    --- PASS: TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/hunk.go:31 (0.00s)
+    --- PASS: TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/hunk.go:9#01 (0.00s)
+    --- PASS: TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/delete.go:5 (0.00s)
+    --- PASS: TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/delete.go:6 (0.00s)
+    --- PASS: TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/gone.go:80 (0.00s)
+    --- PASS: TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/binary:80 (0.00s)
+    --- PASS: TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/renamed.go:80 (0.00s)
+    --- PASS: TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/mode.go:80 (0.00s)
+    --- PASS: TestReviewDiffIndexHoldsHunkLinesAndWholeFiles/missing:1 (0.00s)
+=== RUN   TestReviewPromptCarriesTheDeliveryConventionsAndTheFindingGrammar
+--- PASS: TestReviewPromptCarriesTheDeliveryConventionsAndTheFindingGrammar (0.00s)
+=== RUN   TestReviewDismissesAnUnanchoredFindingAndKeepsTheAnchoredOne
+--- PASS: TestReviewDismissesAnUnanchoredFindingAndKeepsTheAnchoredOne (0.13s)
+=== RUN   TestReviewFindingsAllDismissedByValidationExitZero
+--- PASS: TestReviewFindingsAllDismissedByValidationExitZero (0.12s)
+=== RUN   TestReviewBlocksFindingsThatNameNoFileAndLine
+--- PASS: TestReviewBlocksFindingsThatNameNoFileAndLine (0.12s)
+=== RUN   TestReviewReuseCountsValidationDismissalsAsDismissed
+--- PASS: TestReviewReuseCountsValidationDismissalsAsDismissed (0.18s)
+=== RUN   TestReviewDisposeRefusesAFindingDismissedByValidation
+--- PASS: TestReviewDisposeRefusesAFindingDismissedByValidation (0.17s)
+=== RUN   TestReviewFindingFailureClauseRequiresContent
+=== RUN   TestReviewFindingFailureClauseRequiresContent/Failure:_breaks
+=== RUN   TestReviewFindingFailureClauseRequiresContent/fAiLuRe:_breaks
+=== RUN   TestReviewFindingFailureClauseRequiresContent/Failure:___
+=== RUN   TestReviewFindingFailureClauseRequiresContent/no_clause
+--- PASS: TestReviewFindingFailureClauseRequiresContent (0.00s)
+    --- PASS: TestReviewFindingFailureClauseRequiresContent/Failure:_breaks (0.00s)
+    --- PASS: TestReviewFindingFailureClauseRequiresContent/fAiLuRe:_breaks (0.00s)
+    --- PASS: TestReviewFindingFailureClauseRequiresContent/Failure:___ (0.00s)
+    --- PASS: TestReviewFindingFailureClauseRequiresContent/no_clause (0.00s)
+=== RUN   TestReviewMissingAnchorIsRecordedWhenAnotherAnchorIsReadable
+--- PASS: TestReviewMissingAnchorIsRecordedWhenAnotherAnchorIsReadable (0.13s)
+=== RUN   TestReviewDiffIndexDoesNotReadHunkContentAsFileHeaders
+--- PASS: TestReviewDiffIndexDoesNotReadHunkContentAsFileHeaders (0.00s)
+=== RUN   TestReviewDiffIndexReadsGitQuotedPaths
+--- PASS: TestReviewDiffIndexReadsGitQuotedPaths (0.00s)
+=== RUN   TestReviewReuseListsOnlyStandingFindingsAsMissing
+--- PASS: TestReviewReuseListsOnlyStandingFindingsAsMissing (0.16s)
+=== RUN   TestReviewDiffIndexReadsAQuotedPathEndingInBackslash
+--- PASS: TestReviewDiffIndexReadsAQuotedPathEndingInBackslash (0.00s)
+=== CONT  TestReviewCleanTreeRefusalPrecedesAutoIntegration
+=== CONT  TestReviewFetchBlocksOlderLiveRunAfterReclaimingNewerOrphan
+=== CONT  TestReviewRecordRefusesInvalidOutcomeDetails
+=== RUN   TestReviewRecordRefusesInvalidOutcomeDetails/unknown_outcome
+=== PAUSE TestReviewRecordRefusesInvalidOutcomeDetails/unknown_outcome
+=== RUN   TestReviewRecordRefusesInvalidOutcomeDetails/findings_outcome_without_findings
+=== CONT  TestReviewSessionRefIsUniquePerInvocation
+=== CONT  TestReviewSessionReadsWithoutWriting
+=== CONT  TestReviewPromptCarriesTheCandidateDiff
+=== CONT  TestReviewRecordRoundTripsEachOutcome
+=== RUN   TestReviewRecordRoundTripsEachOutcome/reviewed
+=== CONT  TestReviewRecordWithoutHeadIsRefusedBeforeWriting
+=== CONT  TestReviewPromptAsksForOneListItemPerFinding
+=== CONT  TestReviewProfilePreflightFetchCreatesNoAgentSession
+=== PAUSE TestReviewRecordRefusesInvalidOutcomeDetails/findings_outcome_without_findings
+=== CONT  TestReviewArtifactEvidenceMixedParentEmptyUserRootRefused
+--- PASS: TestReviewSessionRefIsUniquePerInvocation (0.00s)
+--- PASS: TestReviewRecordWithoutHeadIsRefusedBeforeWriting (0.00s)
+--- PASS: TestReviewPromptAsksForOneListItemPerFinding (0.00s)
+=== CONT  TestReviewFetchReclaimsDeadOwnerActiveRun
+=== PAUSE TestReviewRecordRoundTripsEachOutcome/reviewed
+=== RUN   TestReviewRecordRoundTripsEachOutcome/findings
+=== CONT  TestReviewCommandHelpDocumentsSkipBranchIntegrity
+=== PAUSE TestReviewRecordRoundTripsEachOutcome/findings
+=== RUN   TestReviewRecordRoundTripsEachOutcome/blocked
+=== RUN   TestReviewCommandHelpDocumentsSkipBranchIntegrity/fetch
+=== PAUSE TestReviewRecordRoundTripsEachOutcome/blocked
+=== RUN   TestReviewArtifactEvidenceMixedParentEmptyUserRootRefused/Mixed
+=== RUN   TestReviewRecordRefusesInvalidOutcomeDetails/blocked_outcome_without_reason
+=== RUN   TestReviewRecordRoundTripsEachOutcome/omitted
+=== PAUSE TestReviewRecordRefusesInvalidOutcomeDetails/blocked_outcome_without_reason
+=== CONT  TestReviewIssueReportDataMarksCumulativeUnavailableOnLoadFailure
+=== PAUSE TestReviewRecordRoundTripsEachOutcome/omitted
+=== CONT  TestReviewArtifactUsesDefaultSpecsRootMatchesConfigString
+--- PASS: TestReviewArtifactUsesDefaultSpecsRootMatchesConfigString (0.00s)
+--- PASS: TestReviewIssueReportDataMarksCumulativeUnavailableOnLoadFailure (0.00s)
+=== CONT  TestReviewSpecSlugAssociation
+=== CONT  TestReviewProfilePreflightResolveAndWatchUseOnlyReviewProfile
+=== RUN   TestReviewProfilePreflightResolveAndWatchUseOnlyReviewProfile/resolve
+=== RUN   TestReviewCommandHelpDocumentsSkipBranchIntegrity/resolve
+=== RUN   TestReviewCommandHelpDocumentsSkipBranchIntegrity/watch
+=== RUN   TestReviewSpecSlugAssociation/explicit_selector_wins_without_reading_git
+--- PASS: TestReviewCommandHelpDocumentsSkipBranchIntegrity (0.00s)
+    --- PASS: TestReviewCommandHelpDocumentsSkipBranchIntegrity/fetch (0.00s)
+    --- PASS: TestReviewCommandHelpDocumentsSkipBranchIntegrity/resolve (0.00s)
+    --- PASS: TestReviewCommandHelpDocumentsSkipBranchIntegrity/watch (0.00s)
+=== RUN   TestReviewSpecSlugAssociation/newest_trailer_wins
+=== CONT  TestReviewRecordListsEachFindingWithAnIdentity
+=== RUN   TestReviewSpecSlugAssociation/unknown_trailer_slug_is_no_association
+=== RUN   TestReviewRecordListsEachFindingWithAnIdentity/marked_answer
+=== PAUSE TestReviewRecordListsEachFindingWithAnIdentity/marked_answer
+=== RUN   TestReviewRecordListsEachFindingWithAnIdentity/unmarked_answer
+=== PAUSE TestReviewRecordListsEachFindingWithAnIdentity/unmarked_answer
+=== RUN   TestReviewSpecSlugAssociation/missing_trailer_is_no_association
+=== RUN   TestReviewRecordListsEachFindingWithAnIdentity/legacy_disk_record_derives_items
+=== CONT  TestReviewCommandAppearsOnPublicHelp
+--- PASS: TestReviewSpecSlugAssociation (0.00s)
+    --- PASS: TestReviewSpecSlugAssociation/explicit_selector_wins_without_reading_git (0.00s)
+    --- PASS: TestReviewSpecSlugAssociation/newest_trailer_wins (0.00s)
+    --- PASS: TestReviewSpecSlugAssociation/unknown_trailer_slug_is_no_association (0.00s)
+    --- PASS: TestReviewSpecSlugAssociation/missing_trailer_is_no_association (0.00s)
+=== CONT  TestReviewRecordRefusesInvalidOutcomeDetails/unknown_outcome
+=== CONT  TestReviewRecordRefusesInvalidOutcomeDetails/blocked_outcome_without_reason
+=== CONT  TestReviewRecordRefusesInvalidOutcomeDetails/findings_outcome_without_findings
+--- PASS: TestReviewRecordRefusesInvalidOutcomeDetails (0.00s)
+    --- PASS: TestReviewRecordRefusesInvalidOutcomeDetails/unknown_outcome (0.00s)
+    --- PASS: TestReviewRecordRefusesInvalidOutcomeDetails/blocked_outcome_without_reason (0.00s)
+    --- PASS: TestReviewRecordRefusesInvalidOutcomeDetails/findings_outcome_without_findings (0.00s)
+=== CONT  TestReviewRecordRoundTripsEachOutcome/reviewed
+=== CONT  TestReviewRecordRoundTripsEachOutcome/omitted
+=== CONT  TestReviewRecordRoundTripsEachOutcome/blocked
+=== CONT  TestReviewRecordRoundTripsEachOutcome/findings
+--- PASS: TestReviewRecordRoundTripsEachOutcome (0.00s)
+    --- PASS: TestReviewRecordRoundTripsEachOutcome/reviewed (0.00s)
+    --- PASS: TestReviewRecordRoundTripsEachOutcome/omitted (0.00s)
+    --- PASS: TestReviewRecordRoundTripsEachOutcome/blocked (0.00s)
+    --- PASS: TestReviewRecordRoundTripsEachOutcome/findings (0.00s)
+=== CONT  TestReviewRecordListsEachFindingWithAnIdentity/marked_answer
+=== CONT  TestReviewRecordListsEachFindingWithAnIdentity/unmarked_answer
+--- PASS: TestReviewRecordListsEachFindingWithAnIdentity (0.00s)
+    --- PASS: TestReviewRecordListsEachFindingWithAnIdentity/legacy_disk_record_derives_items (0.00s)
+    --- PASS: TestReviewRecordListsEachFindingWithAnIdentity/marked_answer (0.00s)
+    --- PASS: TestReviewRecordListsEachFindingWithAnIdentity/unmarked_answer (0.00s)
+--- PASS: TestReviewCommandAppearsOnPublicHelp (0.00s)
+--- PASS: TestReviewProfilePreflightFetchCreatesNoAgentSession (0.02s)
+--- PASS: TestReviewFetchBlocksOlderLiveRunAfterReclaimingNewerOrphan (0.04s)
+--- PASS: TestReviewFetchReclaimsDeadOwnerActiveRun (0.04s)
+=== RUN   TestReviewProfilePreflightResolveAndWatchUseOnlyReviewProfile/watch
+--- PASS: TestReviewProfilePreflightResolveAndWatchUseOnlyReviewProfile (0.07s)
+    --- PASS: TestReviewProfilePreflightResolveAndWatchUseOnlyReviewProfile/resolve (0.05s)
+    --- PASS: TestReviewProfilePreflightResolveAndWatchUseOnlyReviewProfile/watch (0.02s)
+--- PASS: TestReviewSessionReadsWithoutWriting (0.10s)
+--- PASS: TestReviewPromptCarriesTheCandidateDiff (0.10s)
+=== RUN   TestReviewArtifactEvidenceMixedParentEmptyUserRootRefused/Parent
+--- PASS: TestReviewCleanTreeRefusalPrecedesAutoIntegration (0.12s)
+=== RUN   TestReviewArtifactEvidenceMixedParentEmptyUserRootRefused/Empty
+=== RUN   TestReviewArtifactEvidenceMixedParentEmptyUserRootRefused/User
+=== RUN   TestReviewArtifactEvidenceMixedParentEmptyUserRootRefused/Root
+--- PASS: TestReviewArtifactEvidenceMixedParentEmptyUserRootRefused (0.40s)
+    --- PASS: TestReviewArtifactEvidenceMixedParentEmptyUserRootRefused/Mixed (0.12s)
+    --- PASS: TestReviewArtifactEvidenceMixedParentEmptyUserRootRefused/Parent (0.07s)
+    --- PASS: TestReviewArtifactEvidenceMixedParentEmptyUserRootRefused/Empty (0.07s)
+    --- PASS: TestReviewArtifactEvidenceMixedParentEmptyUserRootRefused/User (0.07s)
+    --- PASS: TestReviewArtifactEvidenceMixedParentEmptyUserRootRefused/Root (0.08s)
+PASS
+suiteguard: guard cost: measured 8087 paths; fingerprint took 1.375658125s before and 252.237125ms after
+ok  	roundfix/internal/cli	33.595s

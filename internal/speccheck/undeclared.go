@@ -174,7 +174,7 @@ func presentToolingRows(artifacts []constraintArtifact) []constraintArtifact {
 func declaredGovernedTouches(repoRoot string, task spec.Task, content []byte) ([]declaredGovernedTouch, error) {
 	byPath := make(map[string]declaredGovernedTouch)
 	for _, ref := range task.Context {
-		if ref.Kind != spec.ContextKindInterface && ref.Kind != spec.ContextKindCreates {
+		if ref.Kind != spec.ContextKindInterface && ref.Kind != spec.ContextKindCreates && ref.Kind != spec.ContextKindDeletes {
 			continue
 		}
 		byPath[ref.Path] = declaredGovernedTouch{

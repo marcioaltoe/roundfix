@@ -1,0 +1,79 @@
+=== RUN   TestContextAcceptsADeletesEntry
+=== RUN   TestContextAcceptsADeletesEntry/../old.txt
+=== RUN   TestContextAcceptsADeletesEntry//old.txt
+=== RUN   TestContextAcceptsADeletesEntry/old/../file.txt
+=== RUN   TestContextAcceptsADeletesEntry/#00
+--- PASS: TestContextAcceptsADeletesEntry (0.00s)
+    --- PASS: TestContextAcceptsADeletesEntry/../old.txt (0.00s)
+    --- PASS: TestContextAcceptsADeletesEntry//old.txt (0.00s)
+    --- PASS: TestContextAcceptsADeletesEntry/old/../file.txt (0.00s)
+    --- PASS: TestContextAcceptsADeletesEntry/#00 (0.00s)
+=== RUN   TestContextRefusesAPathUnderTwoKinds
+=== RUN   TestContextRefusesAPathUnderTwoKinds/interface/deletes
+=== RUN   TestContextRefusesAPathUnderTwoKinds/deletes/interface
+=== RUN   TestContextRefusesAPathUnderTwoKinds/creates/deletes
+=== RUN   TestContextRefusesAPathUnderTwoKinds/deletes/creates
+=== RUN   TestContextRefusesAPathUnderTwoKinds/deletes/deletes
+--- PASS: TestContextRefusesAPathUnderTwoKinds (0.00s)
+    --- PASS: TestContextRefusesAPathUnderTwoKinds/interface/deletes (0.00s)
+    --- PASS: TestContextRefusesAPathUnderTwoKinds/deletes/interface (0.00s)
+    --- PASS: TestContextRefusesAPathUnderTwoKinds/creates/deletes (0.00s)
+    --- PASS: TestContextRefusesAPathUnderTwoKinds/deletes/creates (0.00s)
+    --- PASS: TestContextRefusesAPathUnderTwoKinds/deletes/deletes (0.00s)
+=== RUN   TestUndeclaredTaskPathsCountsADeletesPath
+--- PASS: TestUndeclaredTaskPathsCountsADeletesPath (0.00s)
+=== RUN   TestWaveCollisionCountsADeletesPath
+--- PASS: TestWaveCollisionCountsADeletesPath (0.00s)
+=== RUN   TestContextDeclaredOutput
+=== PAUSE TestContextDeclaredOutput
+=== CONT  TestContextDeclaredOutput
+=== RUN   TestContextDeclaredOutput/accepts_a_clean_repository-relative_output
+=== RUN   TestContextDeclaredOutput/refuses_an_absolute_output
+=== RUN   TestContextDeclaredOutput/refuses_an_unclean_output
+=== RUN   TestContextDeclaredOutput/refuses_a_duplicate_output
+=== RUN   TestContextDeclaredOutput/counts_the_output_in_the_entry_ceiling
+--- PASS: TestContextDeclaredOutput (0.01s)
+    --- PASS: TestContextDeclaredOutput/accepts_a_clean_repository-relative_output (0.00s)
+    --- PASS: TestContextDeclaredOutput/refuses_an_absolute_output (0.00s)
+    --- PASS: TestContextDeclaredOutput/refuses_an_unclean_output (0.00s)
+    --- PASS: TestContextDeclaredOutput/refuses_a_duplicate_output (0.00s)
+    --- PASS: TestContextDeclaredOutput/counts_the_output_in_the_entry_ceiling (0.00s)
+PASS
+suiteguard: guard cost: measured 8102 paths; fingerprint took 1.274225833s before and 710.301959ms after
+ok  	roundfix/internal/spec	2.205s
+=== RUN   TestCheckReferenceUnresolved
+=== PAUSE TestCheckReferenceUnresolved
+=== RUN   TestContextDeclaredOutput
+=== PAUSE TestContextDeclaredOutput
+=== RUN   TestDeletesPathIsNotAnUnresolvedReference
+=== PAUSE TestDeletesPathIsNotAnUnresolvedReference
+=== RUN   TestDeletingAGovernedPathNeedsItsGrant
+=== PAUSE TestDeletingAGovernedPathNeedsItsGrant
+=== RUN   TestDeletesCLISurfaceNeedsAGuideAndDeletionIsNotAGuide
+=== PAUSE TestDeletesCLISurfaceNeedsAGuideAndDeletionIsNotAGuide
+=== RUN   TestInstructionContextPathIsNotAudited
+=== PAUSE TestInstructionContextPathIsNotAudited
+=== CONT  TestCheckReferenceUnresolved
+=== CONT  TestDeletingAGovernedPathNeedsItsGrant
+=== CONT  TestDeletesPathIsNotAnUnresolvedReference
+=== CONT  TestContextDeclaredOutput
+=== CONT  TestInstructionContextPathIsNotAudited
+=== CONT  TestDeletesCLISurfaceNeedsAGuideAndDeletionIsNotAGuide
+--- PASS: TestDeletesPathIsNotAnUnresolvedReference (0.01s)
+--- PASS: TestInstructionContextPathIsNotAudited (0.03s)
+--- PASS: TestDeletesCLISurfaceNeedsAGuideAndDeletionIsNotAGuide (0.04s)
+--- PASS: TestCheckReferenceUnresolved (0.05s)
+--- PASS: TestDeletingAGovernedPathNeedsItsGrant (0.06s)
+--- PASS: TestContextDeclaredOutput (0.16s)
+PASS
+suiteguard: guard cost: measured 8102 paths; fingerprint took 854.521084ms before and 1.133170708s after
+ok  	roundfix/internal/speccheck	2.453s
+=== RUN   TestATaskThatLeavesItsDeletesPathDoesNotSettle
+--- PASS: TestATaskThatLeavesItsDeletesPathDoesNotSettle (0.38s)
+=== RUN   TestATaskThatRemovesItsDeletesPathSettles
+--- PASS: TestATaskThatRemovesItsDeletesPathSettles (0.24s)
+=== RUN   TestUndeletedTaskPathsCountsDanglingSymlinksAndDirectories
+--- PASS: TestUndeletedTaskPathsCountsDanglingSymlinksAndDirectories (0.00s)
+PASS
+suiteguard: guard cost: measured 8102 paths; fingerprint took 843.93075ms before and 1.118336209s after
+ok  	roundfix/internal/daemon	2.835s
