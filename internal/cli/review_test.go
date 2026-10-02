@@ -354,7 +354,7 @@ func TestReviewBoundsSpecContext(t *testing.T) {
 	if err := os.MkdirAll(specDir, 0o755); err != nil {
 		t.Fatalf("create Spec directory: %v", err)
 	}
-	oversized := strings.Repeat("candidate context ", reviewSpecContextPerSpecLimit)
+	oversized := strings.Repeat("candidate context ", reviewSpecContextPerSpecLimit/8)
 	mustWrite(t, filepath.Join(specDir, "_prd.md"), "# Oversized Spec\n\n## Decisions\n\n"+oversized+"\n")
 	mustWrite(t, filepath.Join(specDir, "_techspec.md"), "# Oversized technical design\n\n"+oversized+"\n")
 	gittest.Run(t, fixture.repository, "add", specsRoot)

@@ -68,7 +68,25 @@ type reviewFindingDisposition struct {
 	RecordedAt  string `json:"recordedAt"`
 }
 
+// Below Spec 0194's reviewed 919,745-byte candidate; Spec 0200's
+// 1,295,055-byte candidate failed three times with agent/protocol error.
+const reviewDiffBound = 917504
+
+type reviewOmittedPath struct {
+	Path   string `json:"path"`
+	Reason string `json:"reason"`
+}
+
+// Admission failures carry their public reason without a runtime-failure prefix.
+type reviewPrePromptError struct{ err error }
+
+func (err reviewPrePromptError) Error() string { return err.err.Error() }
+func (err reviewPrePromptError) Unwrap() error { return err.err }
+
 type reviewRecord struct {
+	DiffBytes            int                        `json:"diffBytes"`
+	OmittedPaths         []reviewOmittedPath        `json:"omittedPaths"`
+	RuntimeStderrTail    string                     `json:"runtimeStderrTail,omitempty"`
 	Repository           string                     `json:"repository"`
 	BaseCommit           string                     `json:"baseCommit"`
 	BaseTipCommit        string                     `json:"baseTipCommit,omitempty"`
@@ -151,10 +169,14 @@ func newReviewRecord(
 		Specs:         []string{},
 		SkippedSpecs:  []string{},
 		ArchivedSpecs: []string{},
+		OmittedPaths:  []reviewOmittedPath{},
 	}
 }
 
 func writeReviewRecord(writer io.Writer, record reviewRecord) error {
+	if record.OmittedPaths == nil {
+		record.OmittedPaths = []reviewOmittedPath{}
+	}
 	if record.ArchivedSpecs == nil {
 		record.ArchivedSpecs = []string{}
 	}
@@ -178,6 +200,9 @@ func readReviewRecord(path string) (reviewRecord, error) {
 	}
 	if err := validateReviewRecord(record); err != nil {
 		return reviewRecord{}, err
+	}
+	if record.OmittedPaths == nil {
+		record.OmittedPaths = []reviewOmittedPath{}
 	}
 	if record.Outcome == reviewOutcomeFindings && len(record.FindingItems) == 0 {
 		record.FindingItems = splitReviewFindings(record.Findings)
@@ -301,11 +326,14 @@ func runReviewSession(
 	agentRunner agent.Runner,
 	sink runevent.Sink,
 ) (agent.ExecuteResult, error) {
-	diff, err := reviewCandidateDiff(ctx, request.GitRoot, baseCommit, headCommit, gitRunner)
+	diff, omitted, err := reviewScopedDiff(ctx, request.GitRoot, baseCommit, headCommit, []string{"docs/specs", "docs/history/specs"}, gitRunner)
 	if err != nil {
 		return agent.ExecuteResult{}, err
 	}
-	request.Prompt = buildReviewPrompt(baseCommit, headCommit, diff)
+	if err := checkReviewDiffBound(len(diff), omitted); err != nil {
+		return agent.ExecuteResult{}, err
+	}
+	request.Prompt = buildReviewPrompt(baseCommit, headCommit, diff, omitted)
 	request.Access = agent.SessionAccessReadOnly
 	return agentRunner.Run(ctx, request, sink)
 }
@@ -317,35 +345,115 @@ func reviewCandidateDiff(
 	headCommit string,
 	runner preflight.GitRunner,
 ) (string, error) {
-	gitRoot = strings.TrimSpace(gitRoot)
-	baseCommit = strings.TrimSpace(baseCommit)
-	headCommit = strings.TrimSpace(headCommit)
-	switch {
-	case gitRoot == "":
-		return "", errors.New("review repository is required")
-	case baseCommit == "":
-		return "", errors.New("review base commit is required")
-	case headCommit == "":
-		return "", errors.New("review head commit is required")
-	}
-	diff, err := runner.RunGit(
-		ctx,
-		gitRoot,
-		"diff",
-		"--no-ext-diff",
-		"--no-textconv",
-		"--no-color",
-		baseCommit,
-		headCommit,
-		"--",
-	)
-	if err != nil {
-		return "", fmt.Errorf("compute review candidate diff: %w", err)
-	}
-	return diff, nil
+	diff, _, err := reviewScopedDiff(ctx, gitRoot, baseCommit, headCommit, []string{"docs/specs", "docs/history/specs"}, runner)
+	return diff, err
 }
 
-func buildReviewPrompt(baseCommit string, headCommit string, diff string) string {
+func reviewScopedDiff(ctx context.Context, gitRoot, baseCommit, headCommit string, specRoots []string, runner preflight.GitRunner) (string, []reviewOmittedPath, error) {
+	gitRoot, baseCommit, headCommit = strings.TrimSpace(gitRoot), strings.TrimSpace(baseCommit), strings.TrimSpace(headCommit)
+	switch {
+	case gitRoot == "":
+		return "", nil, errors.New("review repository is required")
+	case baseCommit == "":
+		return "", nil, errors.New("review base commit is required")
+	case headCommit == "":
+		return "", nil, errors.New("review head commit is required")
+	}
+	skills := make(map[string]struct{})
+	for _, commit := range []string{baseCommit, headCommit} {
+		// Listing the tree distinguishes an absent lock from a failed object read.
+		entry, err := runner.RunGit(ctx, gitRoot, "ls-tree", "--name-only", commit, "--", "skills-lock.json")
+		if err != nil {
+			return "", nil, reviewPrePromptError{fmt.Errorf("review scope: read skills-lock.json: %w", err)}
+		}
+		if strings.TrimSpace(entry) == "" {
+			continue
+		}
+		content, err := runner.RunGit(ctx, gitRoot, "show", commit+":skills-lock.json")
+		if err != nil {
+			return "", nil, reviewPrePromptError{fmt.Errorf("review scope: read skills-lock.json: %w", err)}
+		}
+		var lock struct {
+			Skills map[string]json.RawMessage `json:"skills"`
+		}
+		if err := json.Unmarshal([]byte(content), &lock); err != nil {
+			return "", nil, reviewPrePromptError{fmt.Errorf("review scope: read skills-lock.json: %w", err)}
+		}
+		if lock.Skills == nil {
+			return "", nil, reviewPrePromptError{errors.New("review scope: read skills-lock.json: skills must be an object")}
+		}
+		for name := range lock.Skills {
+			skills[name] = struct{}{}
+		}
+	}
+	changed, err := runner.RunGit(ctx, gitRoot, "diff", "--no-renames", "--name-only", "-z", baseCommit, headCommit, "--")
+	if err != nil {
+		return "", nil, fmt.Errorf("collect review scope paths: %w", err)
+	}
+	omitted := make([]reviewOmittedPath, 0)
+	for _, path := range strings.Split(changed, "\x00") {
+		reason := ""
+		for _, root := range specRoots {
+			prefix := strings.TrimSuffix(root, "/") + "/"
+			if !strings.HasPrefix(path, prefix) {
+				continue
+			}
+			parts := strings.SplitN(strings.TrimPrefix(path, prefix), "/", 4)
+			if len(parts) == 4 && parts[0] != "" && parts[1] == "qa" && parts[2] == "evidence" {
+				reason = "qa-evidence"
+				break
+			}
+		}
+		if reason == "" && strings.HasPrefix(path, ".agents/skills/") {
+			parts := strings.SplitN(strings.TrimPrefix(path, ".agents/skills/"), "/", 2)
+			if len(parts) == 2 {
+				if _, found := skills[parts[0]]; found {
+					reason = "upstream-skill"
+				}
+			}
+		}
+		if reason != "" {
+			omitted = append(omitted, reviewOmittedPath{Path: path, Reason: reason})
+		}
+	}
+	sort.Slice(omitted, func(i, j int) bool { return omitted[i].Path < omitted[j].Path })
+	args := []string{"diff", "--no-ext-diff", "--no-textconv", "--no-color", baseCommit, headCommit, "--"}
+	for _, path := range omitted {
+		args = append(args, ":(exclude,literal)"+path.Path)
+	}
+	diff, err := runner.RunGit(ctx, gitRoot, args...)
+	if err != nil {
+		return "", omitted, fmt.Errorf("compute review candidate diff: %w", err)
+	}
+	return diff, omitted, nil
+}
+
+func checkReviewDiffBound(diffBytes int, omitted []reviewOmittedPath) error {
+	if diffBytes > reviewDiffBound {
+		return reviewPrePromptError{fmt.Errorf("review diff too large: %d bytes after omitting %d path(s) exceeds the review bound of %d bytes", diffBytes, len(omitted), reviewDiffBound)}
+	}
+	return nil
+}
+
+func appendReviewOmissions(prompt string, omitted []reviewOmittedPath) string {
+	qa, skills := 0, 0
+	for _, path := range omitted {
+		if path.Reason == "qa-evidence" {
+			qa++
+		} else {
+			skills++
+		}
+	}
+	var out strings.Builder
+	out.WriteString(prompt)
+	fmt.Fprintf(&out, "Omitted from this diff (not reviewed): %d path(s) of QA evidence, %d of upstream-managed skills.\n", qa, skills)
+	for _, path := range omitted {
+		fmt.Fprintf(&out, "%s (%s)\n", path.Path, path.Reason)
+	}
+	return out.String()
+}
+
+func buildReviewPrompt(baseCommit string, headCommit string, diff string, omissions ...[]reviewOmittedPath) string {
 	var prompt strings.Builder
 	prompt.WriteString("Review the candidate for correctness, regressions, and security defects.\n\n")
 	prompt.WriteString("The candidate diff is included below. Judge this content; do not run Git, a shell, or another diff-producing tool to obtain it.\n")
@@ -366,7 +474,11 @@ func buildReviewPrompt(baseCommit string, headCommit string, diff string) string
 		prompt.WriteByte('\n')
 	}
 	prompt.WriteString("--- END CANDIDATE DIFF ---\n")
-	return prompt.String()
+	var omitted []reviewOmittedPath
+	if len(omissions) > 0 {
+		omitted = omissions[0]
+	}
+	return appendReviewOmissions(prompt.String(), omitted)
 }
 
 type reviewSpecContext struct {
@@ -376,6 +488,8 @@ type reviewSpecContext struct {
 
 type reviewSpecContextResult struct {
 	candidateDiff string
+	diffBytes     int
+	omittedPaths  []reviewOmittedPath
 	runtime       agent.RuntimeSpec
 	session       agent.SessionRef
 	selection     int
@@ -579,11 +693,6 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return finishReviewCommand(stdout, stderr, artifactDir, record, exitPreflight)
 	}
 	runner := commandDependenciesForContext(ctx).newEngineCollaborators().runner
-	readiness := proveProfileSelections(ctx, loaded.Config, reviewProfileCategories(), gitState.Root, runner)
-	if readiness.Err != nil {
-		record.Reason = "runtime failure: " + readiness.Err.Error()
-		return finishReviewCommand(stdout, stderr, artifactDir, record, exitPreflight)
-	}
 	specRoots, err := reviewCandidateSpecRoots(loaded.Config.Specs.Root, gitState.Root)
 	if err != nil {
 		record.Reason = "prepare Spec-aware review: " + err.Error()
@@ -595,12 +704,15 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		baseCommit,
 		gitState.HEAD,
 		specRoots,
+		loaded.Config,
 		profile,
 		gitRunner,
 		runner,
 		stderr,
 		plan,
 	)
+	record.DiffBytes = specContext.diffBytes
+	record.OmittedPaths = specContext.omittedPaths
 	record.Specs = make([]string, 0, len(specContext.contexts))
 	for _, context := range specContext.contexts {
 		record.Specs = append(record.Specs, context.slug)
@@ -1009,6 +1121,7 @@ func runConfiguredReviewSession(
 	baseCommit string,
 	headCommit string,
 	specRoots []string,
+	config roundconfig.Config,
 	profile roundconfig.ResolvedProfile,
 	gitRunner preflight.GitRunner,
 	runner agent.Runner,
@@ -1018,23 +1131,33 @@ func runConfiguredReviewSession(
 	if runner == nil {
 		return agent.ExecuteResult{}, reviewSpecContextResult{}, false, errors.New("review Agent runner is required")
 	}
-	diff, err := reviewCandidateDiff(ctx, gitRoot, baseCommit, headCommit, gitRunner)
+	diff, omitted, err := reviewScopedDiff(ctx, gitRoot, baseCommit, headCommit, specRoots, gitRunner)
 	if err != nil {
 		return agent.ExecuteResult{}, reviewSpecContextResult{}, false, err
 	}
+	scope := reviewSpecContextResult{candidateDiff: diff, diffBytes: len(diff), omittedPaths: omitted}
+	prompt := buildReviewPrompt(baseCommit, headCommit, diff, omitted)
+	if plan.Lineage.Round == 2 {
+		delta, deltaOmitted, deltaErr := reviewScopedDiff(ctx, gitRoot, plan.Lineage.PreviousHead, headCommit, specRoots, gitRunner)
+		if deltaErr != nil {
+			return agent.ExecuteResult{}, scope, false, deltaErr
+		}
+		scope.diffBytes, scope.omittedPaths = len(delta), deltaOmitted
+		prompt = appendReviewOmissions(buildRoundTwoPrompt(plan, delta, plan.Lineage.PreviousFindings, plan.Lineage.PreviousDispositions), deltaOmitted)
+	}
+	if err := checkReviewDiffBound(scope.diffBytes, scope.omittedPaths); err != nil {
+		return agent.ExecuteResult{}, scope, false, err
+	}
+	readiness := proveProfileSelections(ctx, config, reviewProfileCategories(), gitRoot, runner)
+	if readiness.Err != nil {
+		return agent.ExecuteResult{}, scope, false, reviewPrePromptError{fmt.Errorf("runtime failure: %w", readiness.Err)}
+	}
 	specContext, err := reviewCandidateSpecContexts(ctx, gitRoot, baseCommit, headCommit, specRoots, gitRunner)
 	if err != nil {
-		return agent.ExecuteResult{}, reviewSpecContextResult{}, false, reviewSpecReadError{err: err}
+		return agent.ExecuteResult{}, scope, false, reviewSpecReadError{err: err}
 	}
-	specContext.candidateDiff = diff
-	prompt := buildReviewPrompt(baseCommit, headCommit, diff)
-	if plan.Lineage.Round == 2 {
-		delta, deltaErr := reviewCandidateDiff(ctx, gitRoot, plan.Lineage.PreviousHead, headCommit, gitRunner)
-		if deltaErr != nil {
-			return agent.ExecuteResult{}, specContext, false, deltaErr
-		}
-		prompt = buildRoundTwoPrompt(plan, delta, plan.Lineage.PreviousFindings, plan.Lineage.PreviousDispositions)
-	}
+	specContext.candidateDiff, specContext.diffBytes, specContext.omittedPaths = scope.candidateDiff, scope.diffBytes, scope.omittedPaths
+
 	request := agent.ExecuteRequest{
 		Access:  agent.SessionAccessReadOnly,
 		Prompt:  appendReviewSpecContexts(prompt, specContext),
@@ -1486,7 +1609,27 @@ func reviewSelectionCanFallback(err error) bool {
 
 func classifyReviewCommandResult(record reviewRecord, result agent.ExecuteResult, runErr error) (reviewRecord, int) {
 	var specReadErr reviewSpecReadError
+	var scopeErr reviewPrePromptError
+	var batchErr *agent.BatchFailureError
+	if errors.As(runErr, &batchErr) && batchErr != nil {
+		lines := strings.Split(strings.TrimSuffix(batchErr.Stderr, "\n"), "\n")
+		if len(lines) > 10 {
+			lines = lines[len(lines)-10:]
+		}
+		tail := strings.Join(lines, "\n")
+		if len(tail) > 1024 {
+			tail = tail[len(tail)-1024:]
+		}
+		// Do not split a UTF-8 rune at the byte cap when encoding the record.
+		for len(tail) > 0 && !utf8.ValidString(tail) {
+			tail = tail[1:]
+		}
+		record.RuntimeStderrTail = tail
+	}
 	switch {
+	case errors.As(runErr, &scopeErr):
+		record.Reason = scopeErr.Error()
+		return record, exitPreflight
 	case errors.Is(runErr, context.DeadlineExceeded):
 		record.Reason = "review timeout: " + runErr.Error()
 		return record, exitPreflight
