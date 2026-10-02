@@ -2,6 +2,20 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.27.0] - 2026-10-02
+
+### A test suite that does not flake
+
+The tests that failed intermittently now wait on events instead of elapsed time: the store linger, the Run Budget reason and the cancellation. Script fixtures are the compiled test binary, which avoids `ETXTBSY` on Linux, and a guard refuses any new test that writes an executable. A fixture process ends with the test binary that started it. The Assets Sync template is held in memory.
+
+### A delivery queue that finishes without intervention
+
+An archived Delivery Retry finds the start head of the Run the queue recorded. The queue merges only when GitHub reports the pull request mergeable. A merge that branch policy refuses returns to checking once per head, and a retry of a `delivery-error` park resumes at checking. A refused retry prints `Retry refused` with its reason. The agent environment and the Doctor's `acpx` and `node` probes leave out a `NODE_OPTIONS` preload whose file is missing, and print one notice.
+
+### Gates and Run storage that let a correct delivery finish
+
+The pre-PR review leaves QA evidence and upstream-managed skills out of the diff it sends. It records what it left out, blocks above a measured diff bound and records the runtime's stderr tail on failure. The failed-pass QA import leaves compiled source evidence behind. A Task can declare `- deletes: <path>`, and the Daemon checks it at settlement. `roundfix reconcile` releases the Runs of a squash-merged Spec, including Spec-directory work and declared leftovers, even when the target branch is gone. In this repository it released 45 Runs and 26 GB.
+
 ## [0.26.0] - 2026-10-02
 
 ### A Go CLI and a TypeScript monorepo in one Baseline
