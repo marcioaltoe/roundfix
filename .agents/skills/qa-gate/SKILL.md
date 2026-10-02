@@ -4,10 +4,10 @@ description: Execute the self-contained final QA gate as a Spec's authored termi
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.6
+  version: 0.0.7
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.6
+version: 0.0.7
 ---
 
 # QA Gate
@@ -34,6 +34,12 @@ Validate the assembled feature against the promises in its spec by exercising th
    `user_flow_binary`. In a Roundfix self-audit, build that binary from the
    audited Run Worktree with `make build`, run public-CLI rows only with
    `./bin/roundfix`, and never use a `roundfix` found on PATH.
+
+### Runnable evidence
+
+Store runnable evidence under a non-compiled extension such as `.go.txt`,
+never as a source file the repository gate compiles or formats. A later
+pass's import skips compiled source and records each skipped path.
 
 ### QA settlement
 

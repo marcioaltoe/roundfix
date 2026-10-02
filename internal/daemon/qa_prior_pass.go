@@ -20,10 +20,16 @@ import (
 )
 
 type priorQAPass struct {
-	Commit string
-	Head   string
-	Report string
-	Files  []string
+	Commit  string
+	Head    string
+	Report  string
+	Files   []string
+	Skipped []priorQASkippedFile
+}
+
+type priorQASkippedFile struct {
+	Path   string `json:"path"`
+	Reason string `json:"reason"`
 }
 
 // findPriorQAPass reads the installed Run Database without creating or migrating it.
@@ -244,7 +250,7 @@ func (engine *Engine) importPriorQAPass(ctx context.Context, plan TaskPlan, ordi
 				return pass, false, err
 			}
 			if found {
-				reason, err = engine.copyPriorQAPass(ctx, plan, pass)
+				reason, err = engine.copyPriorQAPass(ctx, plan, &pass)
 				if err != nil {
 					return pass, false, err
 				}
@@ -255,16 +261,23 @@ func (engine *Engine) importPriorQAPass(ctx context.Context, plan TaskPlan, ordi
 			}
 		}
 	}
+	var files []string
+	if imported {
+		files = pass.Files
+	}
+	if pass.Skipped == nil {
+		pass.Skipped = []priorQASkippedFile{}
+	}
 	err = engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
 		fmt.Sprintf("Prior QA Report %s for Spec %s.", outcome, plan.Spec.Slug),
-		map[string]any{"phase": "prior_report", "outcome": outcome, "commit": pass.Commit, "report": pass.Report, "files": pass.Files, "reason": reason})
+		map[string]any{"phase": "prior_report", "outcome": outcome, "commit": pass.Commit, "report": pass.Report, "files": files, "skipped": pass.Skipped, "reason": reason})
 	if !imported {
 		pass = priorQAPass{}
 	}
 	return pass, imported, err
 }
 
-func (engine *Engine) copyPriorQAPass(ctx context.Context, plan TaskPlan, pass priorQAPass) (reason string, err error) {
+func (engine *Engine) copyPriorQAPass(ctx context.Context, plan TaskPlan, pass *priorQAPass) (reason string, err error) {
 	root := filepath.Clean(plan.WorkDir)
 	newest, err := spec.NewestQAReport(plan.Spec.Dir)
 	if err != nil && !errors.Is(err, spec.ErrNoQAReport) {
@@ -283,6 +296,17 @@ func (engine *Engine) copyPriorQAPass(ctx context.Context, plan TaskPlan, pass p
 	if len(name) >= 10 && name[:10] > engine.deps.Now().Format("2006-01-02") {
 		return "dated after today", nil
 	}
+	files := make([]string, 0, len(pass.Files))
+	pass.Skipped = []priorQASkippedFile{}
+	for _, path := range pass.Files {
+		switch filepath.Ext(filepath.Base(path)) {
+		case ".go", ".rs", ".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs":
+			pass.Skipped = append(pass.Skipped, priorQASkippedFile{Path: path, Reason: "compiled source"})
+		default:
+			files = append(files, path)
+		}
+	}
+	pass.Files = files
 	blobs := map[string][]byte{}
 	var created []string
 	// Refusals never overwrite a pre-existing file, including symlink targets.
