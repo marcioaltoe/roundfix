@@ -1,0 +1,199 @@
+[
+  {
+    "label": "User Config transcript",
+    "command": [
+      "./bin/roundfix",
+      "profiles",
+      "show",
+      "--category",
+      "docs",
+      "--repo",
+      "/tmp/roundfix-0218-qa-pdurop_h/repo"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "roundfix: profiles failed: flag provided but not defined: -repo\nRun 'roundfix profiles --help' for usage.\n"
+  },
+  {
+    "label": "Project Config show",
+    "command": [
+      "./bin/roundfix",
+      "profiles",
+      "show",
+      "--category",
+      "docs",
+      "--repo",
+      "/tmp/roundfix-0218-qa-pdurop_h/repo"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "roundfix: profiles failed: flag provided but not defined: -repo\nRun 'roundfix profiles --help' for usage.\n"
+  },
+  {
+    "label": "Project Config fresh JSON read",
+    "command": [
+      "./bin/roundfix",
+      "profiles",
+      "show",
+      "--category",
+      "docs",
+      "--json",
+      "--repo",
+      "/tmp/roundfix-0218-qa-pdurop_h/repo"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "roundfix: profiles failed: flag provided but not defined: -repo\nRun 'roundfix profiles --help' for usage.\n"
+  },
+  {
+    "label": "Non-empty router effort",
+    "command": [
+      "./bin/roundfix",
+      "profiles",
+      "show",
+      "--category",
+      "docs",
+      "--repo",
+      "/tmp/roundfix-0218-qa-pdurop_h/repo"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "roundfix: profiles failed: flag provided but not defined: -repo\nRun 'roundfix profiles --help' for usage.\n"
+  },
+  {
+    "label": "One-Run override",
+    "command": [
+      "./bin/roundfix",
+      "implement",
+      "--spec",
+      "0218-the-jev-router-on-docs-and-chore-tasks",
+      "--agent",
+      "opencode",
+      "--model",
+      "roundfix-openrouter/typesafe/jev-router",
+      "--no-input",
+      "--repo",
+      "/tmp/roundfix-0218-qa-pdurop_h/repo"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "Preflight failed\n\nReason:\n  --agent, --model, and --reasoning-effort must be provided together for a one-Run Agent Selection override; omit all three to use Agent Selection Profiles\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix implement --help' for usage.\n"
+  },
+  {
+    "label": "User Config transcript corrected fixture",
+    "cwd": "/tmp/roundfix-0218-qa-pdurop_h/repo",
+    "command": [
+      "./bin/roundfix",
+      "profiles",
+      "show",
+      "--category",
+      "docs"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "roundfix: profiles failed: parse config \"/tmp/roundfix-0218-qa-pdurop_h/home/.roundfix/config.yml\": profiles.docs.preferred names the Jev Router (roundfix-openrouter/typesafe/jev-router), which only Project Config may select\nRun 'roundfix profiles --help' for usage.\n"
+  },
+  {
+    "label": "Project Config show corrected fixture",
+    "cwd": "/tmp/roundfix-0218-qa-pdurop_h/repo",
+    "command": [
+      "./bin/roundfix",
+      "profiles",
+      "show",
+      "--category",
+      "docs"
+    ],
+    "exit": 0,
+    "stdout": "Category: docs\nProfile source: project\nProfile inherited from: \u2014\nPreferred Selection: opencode / roundfix-openrouter/typesafe/jev-router / model-managed\nFallback Chain:\n  1. codex / gpt-6.1-sol / high\nRecommendation status: differs\nRecommended profile (snapshot 2026-09-30):\n  1. preferred codex / gpt-5.6-luna / max\n     rationale: Bounded work that blocks no other Task; about five minutes per session at a fraction of the price.\n  2. fallback claude / sonnet / high\n     rationale: Changes runtime; Sonnet 5.5 is the efficient Claude model.\n",
+    "stderr": ""
+  },
+  {
+    "label": "Project fresh JSON corrected fixture",
+    "cwd": "/tmp/roundfix-0218-qa-pdurop_h/repo",
+    "command": [
+      "./bin/roundfix",
+      "profiles",
+      "show",
+      "--category",
+      "docs",
+      "--json"
+    ],
+    "exit": 0,
+    "stdout": "{\n  \"schema\": \"roundfix/profiles/v2\",\n  \"profiles\": [\n    {\n      \"recommendation_status\": \"differs\",\n      \"category\": \"docs\",\n      \"source\": \"project\",\n      \"inherited_from\": \"\",\n      \"preferred\": {\n        \"runtime\": \"opencode\",\n        \"model\": \"roundfix-openrouter/typesafe/jev-router\",\n        \"reasoning_effort\": \"\"\n      },\n      \"fallbacks\": [\n        {\n          \"runtime\": \"codex\",\n          \"model\": \"gpt-6.1-sol\",\n          \"reasoning_effort\": \"high\"\n        }\n      ],\n      \"recommendations\": [\n        {\n          \"category\": \"docs\",\n          \"rank\": 1,\n          \"role\": \"preferred\",\n          \"selection\": {\n            \"runtime\": \"codex\",\n            \"model\": \"gpt-5.6-luna\",\n            \"reasoning_effort\": \"max\"\n          },\n          \"source_as_of\": \"2026-09-30\",\n          \"rationale\": \"Bounded work that blocks no other Task; about five minutes per session at a fraction of the price.\"\n        },\n        {\n          \"category\": \"docs\",\n          \"rank\": 2,\n          \"role\": \"fallback\",\n          \"selection\": {\n            \"runtime\": \"claude\",\n            \"model\": \"sonnet\",\n            \"reasoning_effort\": \"high\"\n          },\n          \"source_as_of\": \"2026-09-30\",\n          \"rationale\": \"Changes runtime; Sonnet 5.5 is the efficient Claude model.\"\n        }\n      ]\n    }\n  ]\n}\n",
+    "stderr": ""
+  },
+  {
+    "label": "Non-empty effort corrected fixture",
+    "cwd": "/tmp/roundfix-0218-qa-pdurop_h/repo",
+    "command": [
+      "./bin/roundfix",
+      "profiles",
+      "show",
+      "--category",
+      "docs"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "roundfix: profiles failed: parse config \"/private/tmp/roundfix-0218-qa-pdurop_h/repo/.roundfixrc.yml\": profiles.docs.preferred.reasoning_effort must be \"\" for the Jev Router; the router chooses the effort\nRun 'roundfix profiles --help' for usage.\n"
+  },
+  {
+    "label": "One-Run override all flags",
+    "cwd": "/tmp/roundfix-0218-qa-pdurop_h/repo",
+    "command": [
+      "./bin/roundfix",
+      "implement",
+      "--spec",
+      "0218-the-jev-router-on-docs-and-chore-tasks",
+      "--agent",
+      "opencode",
+      "--model",
+      "roundfix-openrouter/typesafe/jev-router",
+      "--reasoning-effort",
+      "",
+      "--no-input"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "Preflight failed\n\nReason:\n  implement requires a git repository working tree: detect current HEAD: git rev-parse HEAD: fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.\nUse '--' to separate paths from revisions, like this:\n'git <command> [<revision>...] -- [<file>...]': exit status 128\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix implement --help' for usage.\n"
+  },
+  {
+    "label": "Override in scratch clone with existing HEAD",
+    "cwd": "/tmp/roundfix-0218-qa-head-re3eyahr/repo",
+    "command": [
+      "./bin/roundfix",
+      "implement",
+      "--spec",
+      "0218-the-jev-router-on-docs-and-chore-tasks",
+      "--agent",
+      "opencode",
+      "--model",
+      "roundfix-openrouter/typesafe/jev-router",
+      "--reasoning-effort",
+      "",
+      "--no-input"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "Preflight failed\n\nReason:\n  current branch \"roundfix/run-run_20261002T194325Z_56cb22f8a792bdff\" is the repository default branch \"roundfix/run-run_20261002T194325Z_56cb22f8a792bdff\" (detected via origin/HEAD); spec Runs commit per Task, so switch to a work branch (git switch -c <branch>) and re-run implement\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix implement --help' for usage.\n"
+  },
+  {
+    "label": "Override on disposable test branch",
+    "cwd": "/tmp/roundfix-0218-qa-head-re3eyahr/repo",
+    "command": [
+      "./bin/roundfix",
+      "implement",
+      "--spec",
+      "0218-the-jev-router-on-docs-and-chore-tasks",
+      "--agent",
+      "opencode",
+      "--model",
+      "roundfix-openrouter/typesafe/jev-router",
+      "--reasoning-effort",
+      "",
+      "--no-input"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "Preflight failed\n\nReason:\n  the Jev Router cannot be a one-Run override; name it in Project Config\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix implement --help' for usage.\n"
+  }
+]

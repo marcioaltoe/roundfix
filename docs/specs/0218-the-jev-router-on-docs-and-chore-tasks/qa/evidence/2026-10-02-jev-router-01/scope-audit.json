@@ -1,0 +1,210 @@
+{
+  "task_commits": [
+    {
+      "task": "task_01",
+      "commit": "9f4216ffbf39f6141e2e81fe6b3d2b7420c1b43b",
+      "paths": [
+        "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/task_01.md",
+        "docs/user-guide/configuration.md",
+        "internal/agent/acpx_runner.go",
+        "internal/agent/acpx_runner_test.go",
+        "internal/agent/jev_router.go",
+        "internal/agent/jev_router_test.go",
+        "internal/config/config.go",
+        "internal/config/jev_router_test.go",
+        "internal/config/profiles.go"
+      ],
+      "recorded_paths": [
+        "## Context",
+        "internal/agent/acpx_runner_test.go",
+        "internal/config/config.go"
+      ],
+      "undeclared": [],
+      "base_is_ancestor": true
+    },
+    {
+      "task": "task_02",
+      "commit": "4c1c1ec8457b2f45866f1ad87d9d7c82a7d008b0",
+      "paths": [
+        "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/task_02.md",
+        "internal/jevrouter/key.go",
+        "internal/jevrouter/key_test.go",
+        "internal/jevrouter/ledger.go",
+        "internal/jevrouter/ledger_test.go",
+        "internal/jevrouter/spend.go",
+        "internal/jevrouter/spend_test.go",
+        "internal/judge/log.go"
+      ],
+      "recorded_paths": [
+        "## Context",
+        "internal/judge/log.go"
+      ],
+      "undeclared": [],
+      "base_is_ancestor": true
+    },
+    {
+      "task": "task_03",
+      "commit": "73697450cbb4b422f40bc0284b0c46c73cad0de3",
+      "paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/runtime.md",
+        "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/task_03.md",
+        "internal/daemon/agent_session_owner.go",
+        "internal/daemon/engine.go",
+        "internal/daemon/jev_router_gate_test.go",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/runtime.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "recorded_paths": [],
+      "undeclared": [],
+      "base_is_ancestor": true
+    },
+    {
+      "task": "task_04",
+      "commit": "8301b9104f5a60c3e673ab2ad2c7dd94e1ccdcf7",
+      "paths": [
+        "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/measurement/jev-router.md",
+        "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/task_04.md"
+      ],
+      "recorded_paths": [],
+      "undeclared": [],
+      "base_is_ancestor": true
+    },
+    {
+      "task": "task_07",
+      "commit": "261a2164f3a271f7c67ed443c1e172632adf094a",
+      "paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/runtime.md",
+        "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/task_07.md",
+        "docs/user-guide/configuration.md",
+        "internal/daemon/agent_session_owner.go",
+        "internal/daemon/engine.go",
+        "internal/daemon/jev_router_gate_test.go",
+        "internal/jevrouter/key.go",
+        "internal/jevrouter/key_limit_test.go",
+        "internal/jevrouter/spend.go",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/runtime.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "recorded_paths": [
+        "## Context",
+        "internal/daemon/agent_session_owner.go",
+        "internal/daemon/engine.go",
+        "internal/daemon/jev_router_gate_test.go"
+      ],
+      "undeclared": [],
+      "base_is_ancestor": true
+    }
+  ],
+  "all_commit_paths": {
+    "9f4216ffbf39f6141e2e81fe6b3d2b7420c1b43b": [
+      "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/task_01.md",
+      "docs/user-guide/configuration.md",
+      "internal/agent/acpx_runner.go",
+      "internal/agent/acpx_runner_test.go",
+      "internal/agent/jev_router.go",
+      "internal/agent/jev_router_test.go",
+      "internal/config/config.go",
+      "internal/config/jev_router_test.go",
+      "internal/config/profiles.go"
+    ],
+    "4c1c1ec8457b2f45866f1ad87d9d7c82a7d008b0": [
+      "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/task_02.md",
+      "internal/jevrouter/key.go",
+      "internal/jevrouter/key_test.go",
+      "internal/jevrouter/ledger.go",
+      "internal/jevrouter/ledger_test.go",
+      "internal/jevrouter/spend.go",
+      "internal/jevrouter/spend_test.go",
+      "internal/judge/log.go"
+    ],
+    "73697450cbb4b422f40bc0284b0c46c73cad0de3": [
+      ".agents/skills/roundfix/SKILL.md",
+      ".agents/skills/roundfix/references/runtime.md",
+      "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/task_03.md",
+      "internal/daemon/agent_session_owner.go",
+      "internal/daemon/engine.go",
+      "internal/daemon/jev_router_gate_test.go",
+      "skills/roundfix/SKILL.md",
+      "skills/roundfix/references/runtime.md",
+      "skills/testdata/owned-skill-versions.json"
+    ],
+    "8301b9104f5a60c3e673ab2ad2c7dd94e1ccdcf7": [
+      "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/measurement/jev-router.md",
+      "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/task_04.md"
+    ],
+    "139e488faf88c60d160f8d3bb7f41eed942f068b": [
+      "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/_tasks.md",
+      "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/task_06.md"
+    ],
+    "f7a0c22a8e1a12662a40cb5958943fadf4a38e0e": [
+      "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/measurement/jev-router.md"
+    ],
+    "61ebaa521de3d3473ad29baf529f98464e0b2af2": [
+      "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/_tasks.md",
+      "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/task_06.md",
+      "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/task_07.md"
+    ],
+    "261a2164f3a271f7c67ed443c1e172632adf094a": [
+      ".agents/skills/roundfix/SKILL.md",
+      ".agents/skills/roundfix/references/runtime.md",
+      "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/task_07.md",
+      "docs/user-guide/configuration.md",
+      "internal/daemon/agent_session_owner.go",
+      "internal/daemon/engine.go",
+      "internal/daemon/jev_router_gate_test.go",
+      "internal/jevrouter/key.go",
+      "internal/jevrouter/key_limit_test.go",
+      "internal/jevrouter/spend.go",
+      "skills/roundfix/SKILL.md",
+      "skills/roundfix/references/runtime.md",
+      "skills/testdata/owned-skill-versions.json"
+    ]
+  },
+  "changed_paths": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/runtime.md",
+    "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/_tasks.md",
+    "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/measurement/jev-router.md",
+    "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/task_01.md",
+    "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/task_02.md",
+    "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/task_03.md",
+    "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/task_04.md",
+    "docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/task_07.md",
+    "docs/user-guide/configuration.md",
+    "internal/agent/acpx_runner.go",
+    "internal/agent/acpx_runner_test.go",
+    "internal/agent/jev_router.go",
+    "internal/agent/jev_router_test.go",
+    "internal/config/config.go",
+    "internal/config/jev_router_test.go",
+    "internal/config/profiles.go",
+    "internal/daemon/agent_session_owner.go",
+    "internal/daemon/engine.go",
+    "internal/daemon/jev_router_gate_test.go",
+    "internal/jevrouter/key.go",
+    "internal/jevrouter/key_limit_test.go",
+    "internal/jevrouter/key_test.go",
+    "internal/jevrouter/ledger.go",
+    "internal/jevrouter/ledger_test.go",
+    "internal/jevrouter/spend.go",
+    "internal/jevrouter/spend_test.go",
+    "internal/judge/log.go",
+    "skills/roundfix/SKILL.md",
+    "skills/roundfix/references/runtime.md",
+    "skills/testdata/owned-skill-versions.json"
+  ],
+  "governed_bounds": [
+    ".agents/skills/roundfix/SKILL.md",
+    "skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/runtime.md"
+  ],
+  "grant_at_base_identical": true,
+  "builtinProfiles_unchanged": true,
+  "recommendation_changes": [],
+  "project_config_manifests_makefile_unchanged": true,
+  "skill_mirrors_identical": true
+}

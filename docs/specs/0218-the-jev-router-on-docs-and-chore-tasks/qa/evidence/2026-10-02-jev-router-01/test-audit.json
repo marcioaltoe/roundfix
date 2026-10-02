@@ -1,0 +1,35 @@
+{
+  "selection_passes": [
+    "TestJevRouterLoadsFromProjectConfig",
+    "TestJevRouterRefusedFromUserConfig",
+    "TestJevRouterRefusesAReasoningEffort",
+    "TestJevRouterRefusedAsOneRunOverride",
+    "TestJevRouterSessionCarriesThePlaceholderConfig",
+    "TestJevRouterRefusedWithoutTheKey",
+    "TestOtherOpenCodeModelsGetNoInlineConfig"
+  ],
+  "spend_gate_passes": [
+    "TestMonthSpendAddsTypeSafeToTheLargerOpenRouterFigure",
+    "TestMonthSpendFailsOnAnUnreadableKeyEndpoint",
+    "TestKeyUsageSendsOnlyTheBearerHeader",
+    "TestKeyUsageRefusesAMalformedAnswer",
+    "TestRouterLineIsReadByTheJudgeLog",
+    "TestJevRouterCeilingFallsBackBeforeWork",
+    "TestJevRouterCeilingFailsTheTaskAfterWork",
+    "TestJevRouterUnreadableSpendFallsBack",
+    "TestJevRouterPromptAppendsOneLine",
+    "TestNonRoutedPromptCallsNoGate",
+    "TestARoutedPromptNeedsAMonthlyKeyLimit",
+    "TestALifetimeKeyLimitIsRefused",
+    "TestAMonthlyKeyLimitAboveTheCeilingIsRefused",
+    "TestAMonthlyKeyLimitWithinTheCeilingIsAccepted",
+    "TestAnExhaustedKeyLimitIsRefused",
+    "TestJevRouterGateChecksTheReportedKeyLimit",
+    "TestJevRouterUnboundedKeyFallsBackBeforeWork",
+    "TestJevRouterUnboundedKeyFailsAfterWork"
+  ],
+  "production_generic_key_hits": [],
+  "selected_test_failures": [],
+  "selection_exit": 0,
+  "spend_gate_exit": 0
+}

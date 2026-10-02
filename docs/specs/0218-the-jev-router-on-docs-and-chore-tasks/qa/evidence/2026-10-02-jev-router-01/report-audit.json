@@ -1,0 +1,14 @@
+{
+  "verdict": "partial",
+  "pass": 7,
+  "blocked_environment": 4,
+  "blocked_finding": 0,
+  "blocked_declared": 0,
+  "failed": 0,
+  "pending": 0,
+  "skipped": 0,
+  "input_blocks": 11,
+  "linked_evidence_paths_checked": 11,
+  "seed_auditor_fields_preserved": true,
+  "tracked_worktree_changes": []
+}
