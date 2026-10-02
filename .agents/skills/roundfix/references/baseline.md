@@ -30,6 +30,13 @@ The same preview lists, under `skills.outdated`, each installed
 Roundfix-owned skill older than the version the binary carries. With
 unchanged guidance it then reports `plan_ready` instead of `current`, and
 `--yes` refreshes the Repository Skill Set.
+Doctor reports `DR-SKILL-TRAILS-SNAPSHOT` with status `warn` when a required
+upstream skill is present and matches its lock but differs from the embedded
+Setup Snapshot. The managed refresh lists those trailing skills under
+`skills.drifted` and, after confirmation, restores them to the snapshot
+commit through the existing restore path. Use `roundfix baseline update` to
+preview that restore; `--no-skills` skips it.
+
 `--yes` approves the Plan Digest computed in that invocation;
 `--confirm-plan <digest>` approves a previously reviewed digest, and the two
 flags are mutually exclusive. `--adopt-suggested` explicitly adopts and reports

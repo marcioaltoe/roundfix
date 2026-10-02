@@ -1,0 +1,11 @@
+{
+  "command": "./bin/roundfix doctor",
+  "cwd": "/private/tmp/roundfix-0215-qa-t3phetie/repo",
+  "HOME": "/private/tmp/roundfix-0215-qa-t3phetie/home",
+  "mode": "unauth",
+  "exit": 1,
+  "stdout": "node: ok (v24.0.0 >= 22.13.0)\nacpx: ok (0.19.4 >= 0.12.0)\nadapter: ok (codex: command=\"npx -y @agentclientprotocol/codex-acp\"; package=@agentclientprotocol/codex-acp; version=2.0.1)\nprofiles: ok (2 distinct tuples; 20 category references)\nrecommendations: found (snapshot 2026-09-30; 0 current, 10 differ, 0 pinned; run roundfix profiles check)\npre-pr-review: ok (provider=codex; source=default)\ngh: failed (gh 2.102.0; DR-GH-UNAUTHENTICATED: gh has no account for github.com; next: gh auth login --hostname github.com)\ngit: failed (2.45.0 >= 2.23.0; DR-GIT-IDENTITY: user.email is not set for this repository; next: git config user.email <address>)\nremote: ok (origin: github.com/qa/fixture; reachable)\ntoolchain: failed (make found; DR-TOOL-MISSING: rtk is not on PATH, needed by Setup Manifest verification.gate; next: install rtk, or change the command that names it)\nenvironment: warn (DR-NODE-PRELOAD-MISSING: NODE_OPTIONS preload \"/private/tmp/roundfix-0215-qa-t3phetie/missing.cjs\" does not exist; spec judge keys: ROUNDFIX_OPENROUTER_API_KEY not set, ROUNDFIX_TYPESAFE_API_KEY not set; next: remove the preload from NODE_OPTIONS where your shell sets it)\nskills: ok (14 required: 14 Roundfix-owned, 0 external)\nresidue: partial (could not read Run Database: open Run Database reader \"/private/tmp/roundfix-0215-qa-t3phetie/home/.roundfix/roundfix.db\": stat /private/tmp/roundfix-0215-qa-t3phetie/home/.roundfix/roundfix.db: no such file or directory)\nstorage: ok (no Run Database)\ncodex: ok (/Users/marcio/.local/bin/codex has a valid code signature and no com.apple.quarantine attribute)\n",
+  "stderr": "roundfix: notice: NODE_OPTIONS preload \"/private/tmp/roundfix-0215-qa-t3phetie/missing.cjs\" does not exist; Roundfix left it out of the agent environment\n",
+  "repository_digest_before": "fd057a8955fab8bd02057a4353420a422e47a2bbecfd8e86be8d63cad22e0d9a",
+  "repository_digest_after": "fd057a8955fab8bd02057a4353420a422e47a2bbecfd8e86be8d63cad22e0d9a"
+}

@@ -14,6 +14,7 @@ type CheckStatus string
 
 const (
 	CheckStatusOK          CheckStatus = "ok"
+	CheckStatusWarn        CheckStatus = "warn"
 	CheckStatusSkipped     CheckStatus = "skipped"
 	CheckStatusFailed      CheckStatus = "failed"
 	CheckStatusUnversioned CheckStatus = "unversioned"
@@ -27,6 +28,11 @@ const (
 	HealthCheckRecommendations = "recommendations"
 	HealthCheckProfiles        = "profiles"
 	HealthCheckPrePRReview     = "pre-pr-review"
+	HealthCheckGH              = "gh"
+	HealthCheckGit             = "git"
+	HealthCheckRemote          = "remote"
+	HealthCheckToolchain       = "toolchain"
+	HealthCheckEnvironment     = "environment"
 	HealthCheckSkills          = "skills"
 	HealthCheckResidue         = "residue"
 	HealthCheckStorage         = "storage"

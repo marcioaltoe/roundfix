@@ -22,11 +22,13 @@ import (
 )
 
 type doctorDependencies struct {
+	readiness        func(context.Context, roundconfig.Loaded) []CheckResult
 	loadConfig       func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
 	healthChecker    func(roundconfig.Loaded, string) HealthChecker
 	profileReadiness func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult
 	resolveExternal  func(string) ([]string, bool, error)
 	checkSkills      func(context.Context, string, []string) (skills.RepositoryReadiness, error)
+	trailingSkills   func(string, []string) ([]string, error)
 	residue          func(context.Context, string) []CheckResult
 	storage          func(context.Context, roundconfig.Loaded) []CheckResult
 }
@@ -34,6 +36,9 @@ type doctorDependencies struct {
 func defaultDoctorDependencies() doctorDependencies {
 	return doctorDependencies{
 		loadConfig: roundconfig.Load,
+		readiness: func(ctx context.Context, loaded roundconfig.Loaded) []CheckResult {
+			return machineReadiness(ctx, defaultReadinessDependencies(), loaded)
+		},
 		healthChecker: func(_ roundconfig.Loaded, codexPath string) HealthChecker {
 			return defaultSetupDependencies().healthChecker(codexPath)
 		},
@@ -42,6 +47,7 @@ func defaultDoctorDependencies() doctorDependencies {
 		},
 		resolveExternal: resolveExternalSkillRequirement,
 		checkSkills:     skills.CheckRepositoryWithExternal,
+		trailingSkills:  trailingManifestSkills,
 		residue:         defaultDoctorResidueResults,
 		storage:         defaultDoctorStorageResults,
 	}
@@ -91,6 +97,9 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	results = append(results, doctorProfileReadinessResult(profileReadiness))
 	results = append(results, doctorRecommendationsResult(loaded.Config))
 	results = append(results, doctorPrePRReviewResult(loaded.Config.PrePRReview))
+	if dependencies.readiness != nil {
+		results = append(results, dependencies.readiness(ctx, loaded)...)
+	}
 	if repositoryRoot == "" {
 		results = append(results, doctorMissingRepositoryRootResult())
 	} else {
@@ -100,7 +109,23 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		} else {
 			skillReadiness, skillErr := dependencies.checkSkills(ctx, repositoryRoot, external)
 			if manifestOK {
-				results = append(results, doctorSkillReadinessResult(skillReadiness, skillErr))
+				result := doctorSkillReadinessResult(skillReadiness, skillErr)
+				if dependencies.trailingSkills != nil {
+					names, comparisonErr := dependencies.trailingSkills(repositoryRoot, snapshotComparableSkills(external, skillReadiness, skillErr))
+					if comparisonErr != nil {
+						result.Detail += "; snapshot comparison unavailable: " + comparisonErr.Error()
+					} else if len(names) != 0 {
+						if result.Status != CheckStatusFailed {
+							result.Status = CheckStatusWarn
+						}
+						result.Detail += "; DR-SKILL-TRAILS-SNAPSHOT: trails the Setup Snapshot: " + strings.Join(names, ", ")
+						if result.NextAction != "" {
+							result.NextAction += " && "
+						}
+						result.NextAction += "roundfix baseline update"
+					}
+				}
+				results = append(results, result)
 			} else {
 				results = append(results, doctorMissingSetupManifestResult(skillReadiness, skillErr))
 			}
@@ -309,6 +334,43 @@ func formatResidueDuration(duration time.Duration) string {
 }
 
 const doctorSetupManifestPath = "docs/agents/setup-context.json"
+
+// trailingManifestSkills uses the same Profile the restore command selects.
+func trailingManifestSkills(root string, required []string) ([]string, error) {
+	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(doctorSetupManifestPath)))
+	if err != nil {
+		return nil, fmt.Errorf("read Setup Manifest profile: %w", err)
+	}
+	var manifest struct {
+		Profile string `json:"profile"`
+	}
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		return nil, fmt.Errorf("read Setup Manifest profile: %w", err)
+	}
+	return baseline.TrailingSetupSkills(root, manifest.Profile, required)
+}
+
+func snapshotComparableSkills(required []string, readiness skills.RepositoryReadiness, checkErr error) []string {
+	// A read failure can leave inspection incomplete, so the lock has not
+	// established which installed trees are intact enough to compare.
+	if checkErr != nil {
+		return nil
+	}
+	excluded := make(map[string]bool)
+	for _, name := range readiness.MissingExternal {
+		excluded[name] = true
+	}
+	for _, name := range readiness.OutdatedExternal {
+		excluded[name] = true
+	}
+	var comparable []string
+	for _, name := range required {
+		if !excluded[name] {
+			comparable = append(comparable, name)
+		}
+	}
+	return comparable
+}
 
 func resolveExternalSkillRequirement(root string) ([]string, bool, error) {
 	root = strings.TrimSpace(root)
@@ -742,7 +804,7 @@ func doctorProfileAdapterEvidence(proof profileProofReport) string {
 
 func printDoctorResult(stdout io.Writer, result CheckResult) {
 	detail := strings.TrimSpace(result.Detail)
-	if result.Status == CheckStatusFailed {
+	if result.Status == CheckStatusFailed || result.Status == CheckStatusWarn {
 		nextAction := strings.TrimSpace(result.NextAction)
 		if nextAction != "" {
 			if detail == "" {

@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -149,8 +150,25 @@ type Worktree struct {
 }
 
 type Verification struct {
+	Tools                  []string
 	Concurrency            int
 	RepositoryAtSettlement bool
+}
+
+var verificationToolPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._+-]*$`)
+
+func validateVerificationTools(tools []string) error {
+	seen := make(map[string]bool, len(tools))
+	for _, tool := range tools {
+		if !verificationToolPattern.MatchString(tool) {
+			return fmt.Errorf("verification.tools entry %q must be a bare executable name", tool)
+		}
+		if seen[tool] {
+			return fmt.Errorf("verification.tools has duplicate entry %q", tool)
+		}
+		seen[tool] = true
+	}
+	return nil
 }
 
 type Budget struct {
@@ -391,6 +409,7 @@ type runsOverlay struct {
 }
 
 type verificationOverlay struct {
+	Tools                  *[]string                     `yaml:"tools"`
 	RepositoryAtSettlement *bool                         `yaml:"repository_at_settlement"`
 	Concurrency            *verificationConcurrencyValue `yaml:"concurrency"`
 }
@@ -418,6 +437,23 @@ func (overlay *verificationOverlay) UnmarshalYAML(node *yaml.Node) error {
 	for index := 0; index < len(node.Content); index += 2 {
 		key := node.Content[index].Value
 		switch key {
+		case "tools":
+			var tools []string
+			value := node.Content[index+1]
+			if value.Kind != yaml.SequenceNode {
+				return errors.New("verification.tools must be a list of bare executable names")
+			}
+			for _, entry := range value.Content {
+				if entry.Tag != "!!str" {
+					return errors.New("verification.tools entries must be bare executable names")
+				}
+			}
+			if err := value.Decode(&tools); err != nil {
+				return fmt.Errorf("read verification.tools: %w", err)
+			}
+			if err := validateVerificationTools(tools); err != nil {
+				return err
+			}
 		case "concurrency":
 		case "repository_at_settlement":
 			value := node.Content[index+1]
@@ -869,6 +905,8 @@ verification:
   concurrency: %d
   # Append repository Verification when a non-QA Task of a gated graph settles.
   repository_at_settlement: %t
+  # Additional bare executable names Doctor must find on PATH without running.
+  tools: []
 
 store:
   # Terminal Run journals older than this duration are eligible for pruning; 0 keeps everything.
@@ -1006,6 +1044,9 @@ func Validate(config Config) error {
 	}
 	if config.Verification.Concurrency < 1 {
 		return errors.New("verification.concurrency must be greater than 0")
+	}
+	if err := validateVerificationTools(config.Verification.Tools); err != nil {
+		return err
 	}
 	if strings.TrimSpace(config.Worktree.Location) == "" {
 		return errors.New("worktree.location must not be empty")
@@ -1701,6 +1742,9 @@ func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
 		}
 	}
 	if overlay.Verification != nil {
+		if overlay.Verification.Tools != nil {
+			config.Verification.Tools = append([]string{}, (*overlay.Verification.Tools)...)
+		}
 		if overlay.Verification.RepositoryAtSettlement != nil {
 			config.Verification.RepositoryAtSettlement = *overlay.Verification.RepositoryAtSettlement
 		}

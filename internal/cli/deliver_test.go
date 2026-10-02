@@ -31,6 +31,7 @@ func TestDeliverStatusPrintsTheItemWorktree(t *testing.T) {
 	setImplementFixtureAuthorizationOperations(t, repoDir, "implement", "commit", "push", "pull_request", "merge")
 	started := 0
 	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.deliveryReadiness = readyDeliveryReadiness
 		dependencies.startDeliveryOwner = func(
 			context.Context,
 			roundconfig.Loaded,
@@ -290,6 +291,7 @@ func TestATerminalQueueIsReplacedByANewStart(t *testing.T) {
 	}
 	started := 0
 	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.deliveryReadiness = readyDeliveryReadiness
 		dependencies.startDeliveryOwner = func(context.Context, roundconfig.Loaded, commandEnvironment, io.Writer, io.Writer) int {
 			started++
 			return exitOK

@@ -74,6 +74,7 @@ type baselineUpdateSkillsDependencies struct {
 	ownedNames         func() []string
 	resolveExternal    func(string) ([]string, bool, error)
 	checkRepository    func(context.Context, string, []string) (roundskills.RepositoryReadiness, error)
+	trailingSkills     func(string, string, []string) ([]string, error)
 	restore            func(context.Context, baseline.SkillsRestoreRequest) (baseline.SkillsRestorePayload, error)
 }
 
@@ -269,7 +270,30 @@ func runBaselineUpdateCommandWithSkillsStage(
 				}
 			}
 		}
+		if !request.skipSkills {
+			external, manifestOK, err := resolveExternalSkillRequirement(request.repo)
+			if err != nil {
+				return writeBaselineUpdateFailure(result, err, "execution", "repair the Setup Manifest and rerun roundfix baseline update", exitRunFailed, jsonOutput, stdout, stderr)
+			}
+			if manifestOK && len(external) != 0 {
+				readiness, checkErr := roundskills.CheckRepositoryWithExternal(ctx, request.repo, external)
+				trailing, err := baseline.TrailingSetupSkills(request.repo, input.Manifest.Profile, snapshotComparableSkills(external, readiness, checkErr))
+				if err != nil {
+					return writeBaselineUpdateFailure(result, err, "execution", "repair snapshot comparison and rerun roundfix baseline update", exitRunFailed, jsonOutput, stdout, stderr)
+				}
+				for _, name := range trailing {
+					result.Skills.Drifted = append(result.Skills.Drifted, baselineUpdateSkillDrift{Skill: name, Reason: "trails its Setup Snapshot; restore with roundfix baseline update --yes"})
+				}
+			}
+		}
 		if len(plan.FileChanges) == 0 && len(plan.HistoryMoves) == 0 {
+			if len(result.Skills.Drifted) != 0 {
+				result.State = "plan_ready"
+				result.Category = "approval"
+				result.Message = "guidance matches the current Baseline catalog; external skills trail their Setup Snapshot"
+				result.NextAction = "rerun with --yes to refresh the Repository Skill Set"
+				return writeBaselineUpdateOutcome(result, exitUnverified, jsonOutput, stdout, stderr)
+			}
 			if len(result.Skills.Outdated) != 0 {
 				result.State = "plan_ready"
 				result.Category = "approval"
@@ -405,6 +429,7 @@ func runBaselineUpdateSkillsStage(
 		ownedNames:         roundskills.Names,
 		resolveExternal:    resolveExternalSkillRequirement,
 		checkRepository:    roundskills.CheckRepositoryWithExternal,
+		trailingSkills:     baseline.TrailingSetupSkills,
 		restore:            baseline.RestoreSkills,
 	})
 }
@@ -451,7 +476,15 @@ func runBaselineUpdateSkillsStageWith(
 	}
 
 	readiness, checkErr := dependencies.checkRepository(ctx, root, external)
-	drifted, err := baselineUpdateExternalDrift(readiness, checkErr)
+	var trailing []string
+	if dependencies.trailingSkills != nil {
+		trailing, err = dependencies.trailingSkills(root, request.ProfileID, snapshotComparableSkills(external, readiness, checkErr))
+		if err != nil {
+			result.Status = baselineUpdateSkillsFailed
+			return result, fmt.Errorf("compare external skills with Setup Snapshot: %w", err)
+		}
+	}
+	drifted, err := baselineUpdateExternalDrift(readiness, checkErr, trailing)
 	if err != nil {
 		result.Status = baselineUpdateSkillsFailed
 		return result, err
@@ -491,8 +524,12 @@ func runBaselineUpdateSkillsStageWith(
 func baselineUpdateExternalDrift(
 	readiness roundskills.RepositoryReadiness,
 	checkErr error,
+	trailing []string,
 ) ([]string, error) {
 	names := make(map[string]struct{})
+	for _, name := range trailing {
+		names[name] = struct{}{}
+	}
 	for _, name := range readiness.MissingExternal {
 		names[name] = struct{}{}
 	}

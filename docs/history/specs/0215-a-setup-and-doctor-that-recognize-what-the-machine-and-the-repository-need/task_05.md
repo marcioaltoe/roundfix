@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0215-a-setup-and-doctor-that-recognize-what-the-machine-and-the-repository-need
-status: pending
+status: failed
 type: qa
 complexity: medium
 ---

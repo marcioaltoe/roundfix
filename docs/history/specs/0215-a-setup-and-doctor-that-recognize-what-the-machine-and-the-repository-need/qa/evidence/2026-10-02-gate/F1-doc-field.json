@@ -1,0 +1,15 @@
+{
+  "canonical": ".agents/skills/roundfix/references/baseline.md",
+  "mirror": "skills/roundfix/references/baseline.md",
+  "new_claim": "skills.outdated",
+  "observed_skills_fields": [
+    "status",
+    "installedCount",
+    "installed",
+    "restored",
+    "drifted"
+  ],
+  "trailing_agentic_in_drifted": true,
+  "public_command": "./bin/roundfix baseline update --repo /private/tmp/roundfix-0215-qa-t3phetie/repo --format json",
+  "exit": 3
+}

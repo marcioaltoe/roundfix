@@ -1,0 +1,265 @@
+{
+  "mirrors": [
+    {
+      "path": ".agents/skills/implement-task/SKILL.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/qa-gate/SKILL.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/write-idea/SKILL.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/council/SKILL.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/evidence-gate/SKILL.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/setup-context-driven/SKILL.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/roundfix/SKILL.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/brainstorming/SKILL.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/business-analyst/SKILL.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/write-tasks/SKILL.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/implement-spec/SKILL.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/archive-spec/SKILL.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/write-techspec/SKILL.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/write-prd/SKILL.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/write-prd/references/prd-template.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/write-techspec/references/concrete-contracts.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/write-techspec/references/techspec-template.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/write-tasks/references/task-template.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/storage.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/spec-delivery.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/implement.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/archive.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/setup.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/profiles.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/deliver.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/reconcile.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/runs.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/review-runs.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/release.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/baseline.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/spec.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/runtime.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/review.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/events.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/settle.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/stop.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/roundfix/agents/openai.yaml",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/council/references/archetypes.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/council/references/debate-protocols.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/council/assets/synthesis-template.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/write-idea/references/idea-template.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/write-idea/references/opportunity-scan.md",
+      "equal": true
+    }
+  ],
+  "qa_settlement": [
+    {
+      "path": ".agents/skills/qa-gate/SKILL.md",
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/roundfix/SKILL.md",
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/archive-spec/SKILL.md",
+      "unchanged": true
+    }
+  ],
+  "versions": [
+    "0.1.14",
+    "0.1.14"
+  ],
+  "registered": true,
+  "prior_version": [
+    "0.1.12",
+    "0.1.12"
+  ],
+  "preview_drifted": [
+    {
+      "skill": "agentic-cli-design",
+      "reason": "trails its Setup Snapshot; restore with roundfix baseline update --yes"
+    },
+    {
+      "skill": "bubbletea",
+      "reason": "trails its Setup Snapshot; restore with roundfix baseline update --yes"
+    },
+    {
+      "skill": "domain-modeling",
+      "reason": "trails its Setup Snapshot; restore with roundfix baseline update --yes"
+    },
+    {
+      "skill": "golang-concurrency",
+      "reason": "trails its Setup Snapshot; restore with roundfix baseline update --yes"
+    },
+    {
+      "skill": "golang-context",
+      "reason": "trails its Setup Snapshot; restore with roundfix baseline update --yes"
+    },
+    {
+      "skill": "golang-error-handling",
+      "reason": "trails its Setup Snapshot; restore with roundfix baseline update --yes"
+    },
+    {
+      "skill": "golang-lint",
+      "reason": "trails its Setup Snapshot; restore with roundfix baseline update --yes"
+    },
+    {
+      "skill": "golang-testing",
+      "reason": "trails its Setup Snapshot; restore with roundfix baseline update --yes"
+    },
+    {
+      "skill": "no-workarounds",
+      "reason": "trails its Setup Snapshot; restore with roundfix baseline update --yes"
+    },
+    {
+      "skill": "systematic-debugging",
+      "reason": "trails its Setup Snapshot; restore with roundfix baseline update --yes"
+    },
+    {
+      "skill": "testing-boss",
+      "reason": "trails its Setup Snapshot; restore with roundfix baseline update --yes"
+    },
+    {
+      "skill": "tui-design",
+      "reason": "trails its Setup Snapshot; restore with roundfix baseline update --yes"
+    }
+  ],
+  "guide_checks": {
+    "doctor.md": [
+      "DR-SKILL-TRAILS-SNAPSHOT",
+      "DR-GH-UNAUTHENTICATED",
+      "DR-NODE-PRELOAD-MISSING",
+      "warn"
+    ],
+    "setup.md": [
+      "DR-GH-UNAUTHENTICATED",
+      "DR-TOOL-MISSING",
+      "warn"
+    ],
+    "deliver.md": [
+      "cannot publish from this machine",
+      "warn"
+    ],
+    "baseline.md": [
+      "trails its Setup Snapshot"
+    ]
+  }
+}

@@ -67,6 +67,30 @@ and its reasons, points to `roundfix deliver plan`, and records no queue. A
 strict Spec-check finding appears in the plan but does not refuse start; the
 queue revalidates that Spec against its own starting main.
 
+After checking delivery authorization, `deliver start` checks the `gh` and
+`remote` readiness lines before opening the Run Database. Any `failed` finding
+refuses with exit `2`: the `Preflight failed` block says `Delivery Queue
+cannot publish from this machine:` and lists one reason per finding, including
+its `DR-` code and next action. It creates no Delivery Queue and starts no
+owner. A `warn`, such as `DR-GH-UNREACHABLE` on an offline machine, is silent
+and does not refuse start.
+
+For example, a missing GitHub login produces:
+
+```text
+Preflight failed
+
+Reason:
+  Delivery Queue cannot publish from this machine:
+  gh: DR-GH-UNAUTHENTICATED: gh has no account for github.com; next: gh auth login --hostname github.com
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix deliver start --help' for usage.
+```
+
 A Spec that changes no Governed Path records `paths: []`; that explicit empty
 list grants the listed operations and bounds no Governed Path.
 

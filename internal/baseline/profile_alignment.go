@@ -969,6 +969,14 @@ func collectExecutableEvidence(
 	}
 }
 
+// ResolveExecutable inspects PATH candidates using capability discovery's
+// symlink and permission rules, without executing them. A non-empty reason
+// explains why no executable candidate was accepted.
+func ResolveExecutable(name string, executableDirectories []string) (path string, reason string) {
+	result := resolveExecutableCandidate(name, executableDirectories)
+	return result.Candidate, result.Reason
+}
+
 // resolveExecutableCandidate inspects PATH candidates without executing them.
 func resolveExecutableCandidate(name string, executableDirectories []string) executableProbeResult {
 	var firstFailure executableProbeResult

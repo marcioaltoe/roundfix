@@ -1,0 +1,122 @@
+from pathlib import Path
+import os, sys, subprocess, tempfile, shutil, json, hashlib
+root = Path.cwd()
+evidence = root / 'docs/specs/0215-a-setup-and-doctor-that-recognize-what-the-machine-and-the-repository-need/qa/evidence/2026-10-02-gate'
+scratch = Path(tempfile.mkdtemp(prefix='roundfix-0215-qa-', dir='/private/tmp'))
+home, repo, fake = [scratch / x for x in ['home', 'repo', 'fake']]
+for p in [home, fake]: p.mkdir()
+realgit = shutil.which('git')
+subprocess.run([realgit, '-c', 'core.fsmonitor=false', 'clone', '--local', '--no-hardlinks', '--quiet', str(root), str(repo)], check=True)
+(repo / 'bin').mkdir()
+(repo / 'bin/roundfix').symlink_to(root / 'bin/roundfix')
+for rel in ['.agents/skills', 'skills-lock.json', 'docs/agents', 'AGENTS.md', 'CONTEXT.md']:
+    src, dst = root / rel, repo / rel
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    if src.is_dir(): shutil.copytree(src, dst, dirs_exist_ok=True)
+    else: shutil.copy2(src, dst)
+(repo / '.roundfixrc.yml').write_text('defaults:\n  verification: make verify\nprofiles:\n  general:\n    preferred:\n      runtime: codex\n      model: gpt-5.6-sol\n      reasoning_effort: high\n    fallbacks:\n      - runtime: codex\n        model: gpt-5.6-sol\n        reasoning_effort: xhigh\n')
+with (repo / '.roundfixrc.yml').open('a') as f:
+    for category in ['backend','frontend','data','infra','docs','test','chore','qa','review']:
+        f.write('  '+category+':\n    preferred:\n      runtime: codex\n      model: gpt-5.6-sol\n      reasoning_effort: high\n    fallbacks:\n      - runtime: codex\n        model: gpt-5.6-sol\n        reasoning_effort: xhigh\n')
+manifest = json.loads((repo / 'docs/agents/setup-context.json').read_text())
+manifest['modules'] = []
+manifest['decisions']['verification.gate']['value'] = 'rtk make verify'
+manifest['decisions']['verification.incremental']['value'] = 'make verify-incremental'
+(repo / 'docs/agents/setup-context.json').write_text(json.dumps(manifest))
+def script(name, body):
+    p = fake / name
+    p.write_text('#!' + sys.executable + '\n' + body)
+    p.chmod(0o755)
+script('git', r'''import os,sys,json
+a=sys.argv[1:]
+with open(os.environ['QA_CALLS'],'a') as f:f.write(json.dumps({'tool':'git','args':a,'prompt':os.getenv('GIT_TERMINAL_PROMPT')})+'\n')
+if a==['--version']: print('git version 2.45.0');sys.exit()
+if a[:2]==['remote','get-url']: print('https://github.com/qa/fixture.git');sys.exit()
+if a[:2]==['config','--get'] and a[2] in ['user.name','user.email']:
+ if a[2]=='user.email' and os.getenv('QA_MODE')=='unauth':sys.exit(1)
+ print('QA Fixture' if a[2]=='user.name' else 'qa-fixture@example.invalid');sys.exit()
+if a and a[0]=='ls-remote':
+ if os.getenv('QA_MODE')=='offline': print('connection refused',file=sys.stderr);sys.exit(1)
+ print('0'*40+'\tHEAD');sys.exit()
+if a and a[0] in ['fetch','push']: print('fixture forbids network',file=sys.stderr);sys.exit(99)
+os.execv(os.environ['QA_REAL_GIT'],[os.environ['QA_REAL_GIT']]+a)
+''')
+script('gh', r'''import os,sys,json
+a=sys.argv[1:]
+with open(os.environ['QA_CALLS'],'a') as f:f.write(json.dumps({'tool':'gh','args':a,'prompt':os.getenv('GIT_TERMINAL_PROMPT')})+'\n')
+if a==['--version']:print('gh version 2.102.0 (2026-10-02)');sys.exit()
+if a[:2]==['auth','status']:
+ m=os.getenv('QA_MODE')
+ entries=[{'state':'timeout','error':'connection refused','active':True}] if m=='offline' else [{'state':'success','login':'qa','active':True}]
+ print(json.dumps({'hosts':{} if m=='unauth' else {'github.com':entries}}));sys.exit()
+if a[:2]==['repo','view']:print('{"viewerPermission":"WRITE"}');sys.exit()
+print('unexpected fake gh command',file=sys.stderr);sys.exit(99)
+''')
+script('node', "print('v24.0.0')\n")
+script('npx', "print('@agentclientprotocol/codex-acp 2.0.1')\n")
+script('codex', "print('codex 1.0.0')\n")
+script('acpx', r'''import os,sys,json
+from pathlib import Path
+a=sys.argv[1:]
+with open(os.environ['QA_CALLS'],'a') as f:f.write(json.dumps({'tool':'acpx','args':a})+'\n')
+if a==['--version']:print('0.19.4');sys.exit()
+state=Path(os.environ['QA_CALLS']+'.selection.json')
+selection=json.loads(state.read_text()) if state.exists() else {'model':'gpt-5.6-sol','reasoning_effort':'high'}
+if 'ensure' in a:selection={'model':'gpt-5.6-sol','reasoning_effort':'high'}
+if '--model' in a:selection['model']=a[a.index('--model')+1]
+if 'set' in a:
+ i=a.index('set');selection[a[i+1]]=a[i+2]
+state.write_text(json.dumps(selection))
+model=selection['model'];effort=selection['reasoning_effort']
+opts=[{'id':'model','category':'model','type':'select','currentValue':model,'options':[{'value':v} for v in sorted(set(['gpt-5.6-sol','gpt-6.1-sol','gpt-5.6-luna','opus',model]))]},{'id':'reasoning_effort','type':'select','currentValue':effort,'options':[{'value':'high'},{'value':'xhigh'},{'value':'max'}]}]
+if 'show' in a: print(json.dumps({'schema':'acpx.session.v1','acpx':{'current_model_id':model,'config_options':opts}}))
+elif 'set' in a:
+ i=a.index('set');print(json.dumps({'action':'config_set','configId':a[i+1],'value':a[i+2],'configOptions':opts}))
+else: print('{}')
+''')
+env = {'HOME':str(home), 'PATH':str(fake)+':/usr/bin:/bin', 'QA_REAL_GIT':realgit, 'QA_CALLS':str(scratch/'calls.jsonl'), 'QA_MODE':'unauth', 'GIT_CONFIG_NOSYSTEM':'1', 'CODEX_PATH':shutil.which('codex')}
+for name in ['make']: (fake/name).symlink_to(shutil.which(name))
+def run(label, args, cwd=repo, changes=None):
+    ee=dict(env); ee.update(changes or {})
+    def fingerprint():
+        digest=hashlib.sha256()
+        for p in sorted(repo.rglob('*')):
+            if '.git' in p.relative_to(repo).parts or p.is_symlink() or not p.is_file():continue
+            digest.update(p.relative_to(repo).as_posix().encode());digest.update(p.read_bytes())
+        return digest.hexdigest()
+    before=fingerprint()
+    p=subprocess.run(['./bin/roundfix']+args, cwd=cwd, env=ee, text=True, capture_output=True, timeout=60)
+    result={'command':'./bin/roundfix '+' '.join(args), 'cwd':str(cwd), 'HOME':str(home), 'mode':ee.get('QA_MODE'), 'exit':p.returncode, 'stdout':p.stdout, 'stderr':p.stderr,'repository_digest_before':before,'repository_digest_after':fingerprint()}
+    (evidence/(label+'.json')).write_text(json.dumps(result,indent=2))
+    print(label,'exit',p.returncode);print(p.stdout);print(p.stderr)
+    return result
+(evidence/'fixture-location.json').write_text(json.dumps({'scratch':str(scratch),'repo':str(repo),'fake':str(fake),'home':str(home)},indent=2))
+run('transcript-1',['doctor'],changes={'NODE_OPTIONS':'--require='+str(scratch/'missing.cjs')})
+script('rtk', 'import os,sys\nos.execvp(sys.argv[1],sys.argv[1:])\n')
+run('transcript-2',['doctor'],changes={'QA_MODE':'offline'})
+run('ready-doctor',['doctor'],changes={'QA_MODE':'ready'})
+run('key-sentinel',['doctor'],changes={'QA_MODE':'ready','ROUNDFIX_OPENROUTER_API_KEY':'QA_PUBLIC_SENTINEL','OPENROUTER_API_KEY':'QA_GENERIC_SENTINEL'})
+for tool in ['go','gofmt']: (fake/tool).symlink_to(shutil.which(tool))
+run('repository-toolchain',['doctor'],cwd=root,changes={'QA_MODE':'ready'})
+manifest['modules']=['cli-surface']
+skillroot=repo/'.agents/skills/agentic-cli-design'
+with (skillroot/'SKILL.md').open('a') as f:f.write('\nQA older snapshot fixture.\n')
+digest=hashlib.sha256()
+for p in sorted(skillroot.rglob('*'),key=lambda p:p.relative_to(skillroot).as_posix().casefold()):
+    if p.is_file():digest.update(p.relative_to(skillroot).as_posix().encode());digest.update(p.read_bytes())
+lock=json.loads((repo/'skills-lock.json').read_text())
+lock['skills']['agentic-cli-design']['computedHash']=digest.hexdigest()
+(repo/'skills-lock.json').write_text(json.dumps(lock))
+(repo/'docs/agents/setup-context.json').write_text(json.dumps(manifest))
+run('transcript-4',['doctor'],changes={'QA_MODE':'ready'})
+(repo/'docs/agents/setup-context.json').write_bytes((root/'docs/agents/setup-context.json').read_bytes())
+run('baseline-preview',['baseline','update','--repo',str(repo),'--format','json'],changes={'QA_MODE':'ready'})
+run('baseline-preview-repeat',['baseline','update','--repo',str(repo),'--format','text'],changes={'QA_MODE':'ready'})
+slug='0215-a-setup-and-doctor-that-recognize-what-the-machine-and-the-repository-need'
+shutil.copytree(root/'docs/specs'/slug,repo/'docs/specs'/slug,ignore=shutil.ignore_patterns('qa'),dirs_exist_ok=True)
+run('transcript-3',['deliver','start',slug],changes={'QA_MODE':'unauth'})
+run('queue-status',['deliver','status'],changes={'QA_MODE':'unauth'})
+(evidence/'no-queue.json').write_text(json.dumps({'database_exists':(home/'.roundfix/roundfix.db').exists(),'home_files':[str(p.relative_to(home)) for p in home.rglob('*') if p.is_file()]},indent=2))
+(evidence/'fake-calls.jsonl').write_text((scratch/'calls.jsonl').read_text())
+assert '--show-token' not in (scratch/'calls.jsonl').read_text()
+print('scratch',scratch)

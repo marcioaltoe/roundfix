@@ -107,6 +107,14 @@ acquired. If the lock changes during planning before its transaction preimage
 is captured, the command refuses with `lock.changed-during-plan`, exits `3`,
 and writes nothing.
 
+The managed refresh (`roundfix baseline update`) also restores a required
+external skill that matches its lock but trails its Setup Snapshot. Its
+read-only preview lists the skill under `Skills drifted` with a restore action,
+even when managed guidance is current. Rerun with `--yes` or the preview's
+`--confirm-plan` digest to restore it through the existing immutable snapshot
+restore path. `--skills-source-dir` supplies an offline source commit as for
+other external restorations; `--no-skills` skips the comparison and restore.
+
 `baseline skills reconcile` removes only lock entries proven absent from one
 source repository at the exact 40-hex commit passed with `--revision`, and only
 when the selected Profile does not require them. A non-empty preview exits `3`

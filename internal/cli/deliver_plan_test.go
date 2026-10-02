@@ -311,6 +311,7 @@ func TestDeliverStartAcceptsASpecWithEveryDeliveryOperation(t *testing.T) {
 	_, _ = newDeliverPlanWorkspace(t, deliverPlanFixtureSpec{slug: implementTestSlug, operations: allDeliveryOperations})
 	started := 0
 	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.deliveryReadiness = readyDeliveryReadiness
 		dependencies.startDeliveryOwner = func(context.Context, roundconfig.Loaded, commandEnvironment, io.Writer, io.Writer) int {
 			started++
 			return exitOK

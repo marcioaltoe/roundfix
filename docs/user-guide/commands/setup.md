@@ -13,6 +13,29 @@ or newer. The deterministic install actions are
 `npm install -g @agentclientprotocol/codex-acp@2.0.1` and
 `npm install -g @agentclientprotocol/claude-agent-acp@0.84.0`.
 
+After `acpx` and before adapter work, Setup prints Doctor's five readiness
+lines in order: `gh`, `git`, `remote`, `toolchain`, and `environment`. They
+also appear when acpx is unavailable. Each uses `<name>: <status> (<detail>)`;
+`failed` and `warn` findings include a stable `DR-` code and `; next: <action>`.
+Setup offers no install or change for these lines, including with `--yes`.
+Only `failed` makes Setup exit `1` at the end; `warn` alone does not.
+
+- `gh` checks GitHub CLI version, login for the repository's forge, and write
+  permission. `DR-GH-UNAUTHENTICATED` points to `gh auth login --hostname <host>`.
+- `git` checks Git version and repository `user.name` and `user.email`.
+- `remote` checks the delivery remote (`watch.push_remote`, otherwise `origin`)
+  and whether it is a reachable GitHub forge remote.
+- `toolchain` finds executables named by configured Verification, bootstrap,
+  regeneration commands, and `verification.tools`, without running them.
+  `DR-TOOL-MISSING` names the missing executable and the command that needs it.
+- `environment` names missing `NODE_OPTIONS` preload files and reports optional
+  `ROUNDFIX_` key variables as set or not set, never their values.
+
+Forge reads use the user's `gh` and Git credentials, no standard input, disabled
+Git terminal prompts, and a ten-second cancellation limit per read. A timeout
+or unreachable forge reports `warn`; Roundfix does not log in or change Git or
+shell configuration. Run `roundfix doctor` again after taking the next action.
+
 A stale or bare Codex override that fails official lineage proof produces one
 migration offer to `npx -y @agentclientprotocol/codex-acp@2.0.1`, and a Claude
 override that fails the same proof produces one migration offer to

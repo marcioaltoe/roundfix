@@ -25,6 +25,7 @@ const (
 )
 
 type setupDependencies struct {
+	readiness     func(context.Context, roundconfig.Loaded) []CheckResult
 	loadConfig    func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
 	nodeVersion   func(context.Context) (string, error)
 	acpxVersion   func(context.Context) (string, error)
@@ -121,6 +122,14 @@ func runSetupCommand(ctx context.Context, args []string, stdout, stderr io.Write
 	}
 	runner.checkNode(ctx)
 	runner.checkACPX(ctx)
+	if dependencies.readiness != nil {
+		for _, result := range dependencies.readiness(ctx, loaded) {
+			printDoctorResult(stdout, result)
+			if result.Status == CheckStatusFailed {
+				runner.failed = true
+			}
+		}
+	}
 	if !runner.acpxReady {
 		runner.reportHealthResult(CheckResult{Name: HealthCheckAdapter, Status: CheckStatusSkipped, Detail: "acpx does not meet the minimum supported version"})
 		runner.report("profile readiness", "skipped", "acpx does not meet the minimum supported version")
@@ -580,6 +589,9 @@ func (deps setupDependencies) healthChecker(codexPath string) HealthChecker {
 
 func defaultSetupDependencies() setupDependencies {
 	return setupDependencies{
+		readiness: func(ctx context.Context, loaded roundconfig.Loaded) []CheckResult {
+			return machineReadiness(ctx, defaultReadinessDependencies(), loaded)
+		},
 		loadConfig:    roundconfig.Load,
 		nodeVersion:   defaultSetupNodeVersion,
 		acpxVersion:   defaultSetupACPXVersion,

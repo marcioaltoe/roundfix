@@ -51,6 +51,16 @@ repository Verification appended at settlement for non-QA Tasks of a graph
 with a QA gate Task; declared Task commands, entry preconditions, and the QA
 gate keep their existing Verification.
 
+`verification.tools` lists additional tools Doctor checks on `PATH` without
+running them, such as tools used inside a Makefile. It defaults to `[]` and is
+accepted in both User and Project Config; a Project Config list replaces the
+User Config list, including an explicit empty list. Each entry must be a bare
+executable name matching `^[A-Za-z0-9][A-Za-z0-9._+-]*$`, for example `go` or
+`gofmt`. Paths, arguments, empty names and duplicate entries are config errors
+naming `verification.tools`. Doctor also checks the tools named at the start
+of the effective Verification, bootstrap and regeneration commands and the
+Setup Manifest's Verification decisions.
+
 ## Task and Verification capacities
 
 Task Capacity and Verification Capacity are independent, config-only limits
@@ -229,6 +239,8 @@ worktree:
 verification:
   # Maximum concurrent Task Verification attempts within one Implement Run.
   concurrency: 1
+  # Tools Doctor checks on PATH without running them.
+  tools: [go, gofmt, git, make]
   # Append repository Verification when a non-QA Task of a gated graph settles.
   repository_at_settlement: true
 
@@ -296,6 +308,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `worktree.location` | `~/.roundfix/worktrees` | Sets the parent directory for Run and Task Worktrees. |
 | `worktree.concurrency` | `2` | Limits concurrent Task Worktrees. `1` keeps Task execution sequential. |
 | `verification.concurrency` | `1` | Limits concurrent Task Verification attempts within one Implement Run, independently from Task Capacity. |
+| `verification.tools` | `[]` | Declares tools Doctor must find on `PATH` without executing them. Project Config replaces the User Config list. |
 | `verification.repository_at_settlement` | `true` | Appends `defaults.verification` after declared Verification for non-QA Tasks of a graph with a QA gate Task. `false` turns off only this appended command. |
 | `worktree.copy` | `[]` | Copies no ignored files. Entries must be repository-relative and already ignored by Git. |
 | `worktree.bootstrap` | `""` | Disables Worktree Bootstrap. A non-empty command runs after copy and before Agent work. |

@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0215-a-setup-and-doctor-that-recognize-what-the-machine-and-the-repository-need
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -122,3 +122,107 @@ Project Config.
 - `_prd.md` → User Stories 4, 6, 7; Core Features 4, 5, 8; Success Metrics 1, 4, 6
 - `_techspec.md` → Interfaces; Invariant 3; The toolchain and environment lines; Finding codes; Data Models; API Contract 1; API Contract 5; Surface Transcript 1; Testing Approach 1, 3, 6; Build Order 2
 - ADR-0220; ADR-0087; ADR-0211; ADR-0192
+
+## Result
+
+Implemented this Task's slice for Daemon Verification. Status remains
+Daemon-owned; no declared Verification command was run, and no commit, push
+or Pull Request was created.
+
+- `verification.tools` defaults empty, validates bare names and duplicates
+  with a key-specific error in both config scopes, and replaces rather than
+  appends the User Config list. Generated config examples expose the empty
+  list. The configuration guide describes the rule and precedence.
+- Toolchain discovery uses the exported Baseline resolver, retaining its
+  existing symlink, permission and bounded-chain behavior without executing
+  candidates. It combines all configured command sources and explicit tools,
+  reports one missing-tool finding per executable with every source, and
+  warns on unreadable first words. Doctor now appends `toolchain` and
+  `environment` after `remote`; the command guide documents their codes.
+- Environment diagnosis reuses `agentNodeOptions` through
+  `MissingNodePreloads`, reports unique missing preload paths, and uses only
+  presence booleans for transport-declared `ROUNDFIX_` keys. Generic provider
+  keys and undeclared keys are never selected for inspection or reporting.
+- `.roundfixrc.yml` adds exactly the four tools and three derived-path
+  declarations from this Task. All previously present keys are unchanged;
+  no derived artifact was regenerated.
+
+### Acceptance evidence
+
+| Criterion | Implementation and focused-check evidence |
+| --- | --- |
+| Missing tools name every source; `cd` warns | `TestToolchainReadinessNamesEachMissingToolAndItsSource` checks aggregation from effective Verification, regeneration, both Setup Manifest decisions and explicit tools, one resolution per tool, and the complete authored builtin list. `cd` yields `DR-TOOL-UNREAD` and the line remains a warning when no tool is missing. |
+| Missing preload is named; existing paths and packages yield nothing | `TestEnvironmentReadinessNamesAMissingPreloadAndNeverAKeyValue` checks the missing path, last `NODE_OPTIONS` entry, accepted existing path and package, and unique findings for repeated missing paths. `TestMissingNodePreloadsReusesTheAgentSplitter` compares the wrapper with the agent parser for quotes, file URLs, duplicates, relative paths and an unbalanced quote, plus independently asserts expected missing paths. |
+| Sentinel key is reported only as set; generic key is absent | `TestEnvironmentReadinessNamesAMissingPreloadAndNeverAKeyValue` exercises Doctor through `runCLI`, checks the transport-declared key states, and rejects sentinel values, generic key names and undeclared key names from output. It also checks that a final empty key entry overrides an earlier non-empty one. |
+| This Project Config loads with four tools and three declarations | `TestThisRepositoryDeclaresItsToolsAndDerivedPaths` loads the actual `.roundfixrc.yml` through `ResolveConfigProposal` and compares the full tool list, derived path lists and regeneration commands. `TestVerificationToolsAreBareExecutableNames` checks invalid entries, duplicates, replacement and explicit empty replacement. |
+
+`TestDoctorPrintsTheFiveReadinessLines` exercises Surface Transcript 1 through
+`runCLI`, with no GitHub account, missing Git email, missing `rtk` and a dead
+preload. It checks all five lines in order, coded findings, next actions,
+stdout/stderr placement and exit `1`. The standalone resolver test compiles an
+executable through `testfixture.FixtureBinary` with a side-effect marker and
+proves discovery of both it and its
+symlink leaves that marker absent, then rejects a non-executable target.
+
+### Focused checks
+
+- Red starting point:
+  `GOCACHE=/tmp/roundfix-task02-cache rtk proxy go test ./internal/config ./internal/agent ./internal/baseline -run 'Test(VerificationTools|MissingNodePreloads|ResolveExecutable)'`
+  exited `1` because `Verification.Tools`, `MissingNodePreloads` and
+  `ResolveExecutable` were not yet defined.
+- At the initial handback:
+  `GOCACHE=/tmp/roundfix-task02-cache rtk proxy go test ./internal/config ./internal/agent ./internal/baseline ./internal/cli -run 'Test(Verification|ThisRepository|MissingNode|ResolveExecutable|Toolchain|EnvironmentReadiness|Doctor|RunDoctor|Forge|Readiness|Init)'`
+  exited `0` for all four packages. This includes the new acceptance tests,
+  existing Doctor and forge checks, config Verification checks and config
+  initialization checks. All external reads use local fixtures or injected
+  runners; no live network probe was run.
+- `gofmt` was applied to all changed Go files. `git diff --check` exited `0`.
+  Diff review confirms only `.roundfixrc.yml` changes among Governed Paths;
+  `_tasks.md`, other Task files and generated artifacts are untouched.
+
+Declared Verification and Task settlement remain for the Daemon. No follow-up
+work was added to this slice.
+
+### Verification Feedback repair — attempt 1
+
+Inspected the Daemon diagnostic artifact
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261002T124121Z_c56fb26225ec8dc1/verification/batch-002-attempt-1.log`.
+The recorded `make verify-changed` attempt reported two failures caused by
+this slice: the generated config inserted the new tools list before the
+existing Verification Capacity block, violating its tested layout; and the
+resolver test directly wrote an executable instead of using the repository's
+compiled-fixture mechanism.
+
+Moved the generated tools list after the existing Verification settings,
+preserving that block's contract, and added an assertion in this Task's config
+test that generated config still exposes `tools: []`. Replaced the resolver
+test's direct executable write with `testfixture.FixtureBinary`; the test
+retains its marker assertion, symlink resolution and non-executable-target
+rejection. Existing contract tests and the frozen executable inventory were
+left unchanged.
+
+- Before repair,
+  `GOCACHE=/tmp/roundfix-task02-cache rtk proxy go test ./internal/config ./internal/testfixture -run 'Test(DefaultConfigYAMLVerificationCapacity|NoTestWritesAnExecutableOutsideTheResidue)'`
+  exited `1`, reproducing both reported failures in isolation.
+- After repair,
+  `GOCACHE=/tmp/roundfix-task02-cache rtk proxy go test -count=1 ./internal/config ./internal/baseline ./internal/testfixture -run 'Test(DefaultConfigYAML|VerificationTools|ThisRepositoryDeclares|ResolveExecutable|NoTestWritesAnExecutableOutsideTheResidue)'`
+  exited `0` for all three packages. This exercises generated-config contracts,
+  tools validation and repository declarations, the non-executing resolver
+  probe, and the repository-wide executable-write guard.
+- Applied `gofmt` to the three repaired Go files; `git diff --check` exited
+  `0`. Repairs remain inside this Task's paths.
+
+Task status remains Daemon-owned. Neither `make verify-changed` nor any
+declared Task Verification command was rerun by this Agent; no commit, push
+or Pull Request was created. The Daemon owns the full Verification rerun.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/readiness_forge.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261002T124121Z_c56fb26225ec8dc1`
+- Source commit: `c1c1b68d0df774f9408e6d0f6e2e02e47ee6c177`

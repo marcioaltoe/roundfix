@@ -2,6 +2,24 @@
 # User Config: ~/.roundfix/config.yml
 # Project Config: <repo>/.roundfixrc.yml
 
+verification:
+  tools: [go, gofmt, git, make]
+
+delivery:
+  derived_paths:
+    - paths:
+        - internal/baseline/testdata/catalog.digest
+        - internal/baseline/testdata/catalog.normalized.json
+        - internal/baseline/testdata/catalog.diagnostics.golden.json
+        - internal/baseline/testdata/plan-characterization/*.golden.json
+      regenerate: make baseline-digests
+    - paths:
+        - docs/agents/setup-context.json
+      regenerate: go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text
+    - paths:
+        - skills/testdata/owned-skill-versions.json
+      regenerate: go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions
+
 defaults:
   # Keep false. Setting it true is accepted by config validation and then rejected
   # by the codex adapter at session creation — `session/set_mode "full-access"`

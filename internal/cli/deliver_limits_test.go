@@ -24,6 +24,7 @@ func TestDeliverStartRecordsAndPrintsItsLimits(t *testing.T) {
 	setImplementFixtureAuthorizationOperations(t, repoDir, allDeliveryOperations...)
 	started := 0
 	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.deliveryReadiness = readyDeliveryReadiness
 		dependencies.startDeliveryOwner = func(context.Context, roundconfig.Loaded, commandEnvironment, io.Writer, io.Writer) int {
 			started++
 			return exitOK
@@ -56,6 +57,7 @@ func TestDeliverStartRecordsNoneForOmittedLimits(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	setImplementFixtureAuthorizationOperations(t, repoDir, allDeliveryOperations...)
 	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.deliveryReadiness = readyDeliveryReadiness
 		dependencies.startDeliveryOwner = func(context.Context, roundconfig.Loaded, commandEnvironment, io.Writer, io.Writer) int {
 			return exitOK
 		}

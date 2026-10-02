@@ -7,7 +7,7 @@ profiles, builds the generated Agent Selection Profiles in memory, exact-proves
 every distinct tuple, and only then offers acpx local adapter overrides, User
 Config, and Project Config writes. Each check prints one
 deterministic report line with status `ok`, `installed`, `skipped`,
-`offered: declined`, or `failed`. Tested report lines include:
+`offered: declined`, `warn`, or `failed`. Tested report lines include:
 
 ```text
 node: ok
@@ -23,6 +23,48 @@ Project Config: installed
 offers instead of prompting and writes nothing. When acpx is missing or older
 than `0.12.0`, setup offers `npm install -g acpx@0.12.0`. Version `0.12.0` and
 newer versions are accepted; Setup never downgrades a newer installation.
+
+After `acpx` and before adapter work, Setup prints Doctor's five readiness
+lines in order: `gh`, `git`, `remote`, `toolchain`, and `environment`. They
+also appear when acpx is unavailable. Each uses `<name>: <status> (<detail>)`;
+`failed` and `warn` findings include a stable `DR-` code and `; next: <action>`.
+Setup offers no install or change for these lines, including with `--yes`.
+Only `failed` makes Setup exit `1` at the end; `warn` alone does not.
+
+- `gh` checks GitHub CLI version, login for the repository's forge, and write
+  permission. `DR-GH-UNAUTHENTICATED` points to `gh auth login --hostname <host>`.
+- `git` checks Git version and repository `user.name` and `user.email`.
+- `remote` checks the delivery remote (`watch.push_remote`, otherwise `origin`)
+  and whether it is a reachable GitHub forge remote.
+- `toolchain` finds executables named by configured Verification, bootstrap,
+  regeneration commands, and `verification.tools`, without running them.
+  `DR-TOOL-MISSING` names the missing executable and the command that needs it.
+- `environment` names missing `NODE_OPTIONS` preload files and reports optional
+  `ROUNDFIX_` key variables as set or not set, never their values.
+
+Forge reads use the user's `gh` and Git credentials, no standard input, disabled
+Git terminal prompts, and a ten-second cancellation limit per read. A timeout
+or unreachable forge reports `warn`; Roundfix does not log in or change Git or
+shell configuration. Run `roundfix doctor` again after taking the next action.
+
+| Code | Status | Next action |
+| --- | --- | --- |
+| `DR-GH-MISSING` | failed | `install GitHub CLI 2.81.0 or newer from https://cli.github.com` |
+| `DR-GH-VERSION` | failed | `upgrade GitHub CLI to 2.81.0 or newer` |
+| `DR-GH-UNAUTHENTICATED` | failed | `gh auth login --hostname <host>` |
+| `DR-GH-TOKEN-REJECTED` | failed | `gh auth refresh --hostname <host>` |
+| `DR-GH-UNREACHABLE` | warn | `re-run roundfix doctor when <host> is reachable` |
+| `DR-GH-PERMISSION` | failed | `ask for write access to <owner/repo>, or gh auth switch --hostname <host>` |
+| `DR-GH-PERMISSION-UNVERIFIED` | warn | `re-run roundfix doctor when <host> is reachable` |
+| `DR-GIT-MISSING` | failed | `install Git 2.23.0 or newer` |
+| `DR-GIT-VERSION` | failed | `upgrade Git to 2.23.0 or newer` |
+| `DR-GIT-IDENTITY` | failed | `git config user.name <name>` or `git config user.email <address>` |
+| `DR-REMOTE-MISSING` | failed | `git remote add <remote> <url>` |
+| `DR-REMOTE-FORGE` | failed | `point <remote> at the repository's GitHub URL, or set watch.push_remote` |
+| `DR-REMOTE-UNREACHABLE` | warn | `re-run roundfix doctor when <host> is reachable` |
+| `DR-TOOL-MISSING` | failed | `install <tool>, or change the command that names it` |
+| `DR-TOOL-UNREAD` | warn | `list the tools this command needs under verification.tools in Project Config` |
+| `DR-NODE-PRELOAD-MISSING` | warn | `remove the preload from NODE_OPTIONS where your shell sets it` |
 
 The supported adapters are official `@agentclientprotocol/codex-acp` version
 `2.0.1` or newer and official
