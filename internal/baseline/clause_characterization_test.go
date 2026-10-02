@@ -200,7 +200,7 @@ func characterizedBaselineForce() map[string]string {
 		"clause.backend.http-independent-use-cases":                   "mandatory",
 		"clause.backend.layered-architecture":                         "mandatory",
 		"clause.backend.persistence-owner":                            "mandatory",
-		"clause.backend.prohibit-generic-layers":                      "prohibited",
+		"clause.backend.prohibit-generic-buckets":                     "prohibited",
 		"clause.backend.thin-http-handlers":                           "mandatory",
 		"clause.bun.add-from-owning-workspace":                        "mandatory",
 		"clause.bun.prohibit-other-package-managers":                  "prohibited",

@@ -16,7 +16,7 @@ command written in another language follows its own guide.
 
 - **mandatory**: Keep persistence implementation in infrastructure and behind application-owned boundaries; schema and query definitions belong to the selected persistence capability.
 
-- **prohibited**: Do not introduce generic `modules` or `services` buckets as the normative backend architecture.
+- **prohibited**: Do not organize backend code into generic `modules` or `services` buckets in place of the domain, application, and infrastructure layers. A domain service that lives in the domain layer is not such a bucket.
 
 - **mandatory**: Keep HTTP handlers thin: validate and translate transport input, invoke one application use case, and translate the result into the repository's HTTP Contract.
 

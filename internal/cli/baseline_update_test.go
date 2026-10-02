@@ -815,8 +815,8 @@ var fleetStructuralClauses = []fleetStructuralClause{
 	},
 	{
 		path: "docs/agents/backend.md",
-		ids:  []string{"clause.backend.prohibit-generic-layers"},
-		line: "- **prohibited**: Do not introduce generic `modules` or `services` buckets as the normative backend architecture.",
+		ids:  []string{"clause.backend.prohibit-generic-buckets"},
+		line: "- **prohibited**: Do not organize backend code into generic `modules` or `services` buckets in place of the domain, application, and infrastructure layers. A domain service that lives in the domain layer is not such a bucket.",
 	},
 	{
 		path: "docs/agents/backend.md",

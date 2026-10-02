@@ -698,14 +698,25 @@
       "digest": "3e7abf80cf0502e8714a58ee82bb663e89f8a6d9cdf011d6e465cb27aa08f2ac"
     },
     {
+      "id": "clause.backend.prohibit-generic-buckets",
+      "path": "corpus/docs/agents/backend.md",
+      "kind": "normative-clause",
+      "enforcement": "prohibited",
+      "carrier": "docs/agents/backend.md",
+      "structure": null,
+      "start": 1867,
+      "end": 2079,
+      "digest": "021cd0bd92cceef28ebdacdc6ac099da1c6ec89276d9fa4abc2de11297d75965"
+    },
+    {
       "id": "rule.backend.boundary-contracts",
       "path": "corpus/docs/agents/backend.md",
       "kind": "normative-clause",
       "enforcement": "mandatory",
       "carrier": "docs/agents/backend.md",
       "structure": null,
-      "start": 1859,
-      "end": 2132,
+      "start": 2217,
+      "end": 2490,
       "digest": "7c291f66741713ff48d71d84dc23f20afd2b10639504cd90c7344a0cae6941b3"
     },
     {
