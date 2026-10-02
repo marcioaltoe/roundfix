@@ -1,0 +1,496 @@
+{
+  "c49a0128..e8fad6f7": {
+    "command": "git diff --no-ext-diff --no-textconv --no-color c49a0128 e8fad6f7",
+    "full_bytes": 919745,
+    "filtered_bytes": 845643,
+    "qa_bytes": 74102,
+    "upstream_skill_bytes": 919745,
+    "omitted_paths": [
+      "docs/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/evidence/2026-10-01-gate/authoring.txt",
+      "docs/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/evidence/2026-10-01-gate/build-precondition.txt",
+      "docs/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/evidence/2026-10-01-gate/cli.txt",
+      "docs/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/evidence/2026-10-01-gate/daemon-verification.txt",
+      "docs/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/evidence/2026-10-01-gate/gate.py",
+      "docs/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/evidence/2026-10-01-gate/historical-195396de.txt",
+      "docs/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/evidence/2026-10-01-gate/historical-9721c298.txt",
+      "docs/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/evidence/2026-10-01-gate/history.txt",
+      "docs/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/evidence/2026-10-01-gate/layout.txt",
+      "docs/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/evidence/2026-10-01-gate/move.txt",
+      "docs/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/evidence/2026-10-01-gate/outside.txt",
+      "docs/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/evidence/2026-10-01-gate/pins.txt",
+      "docs/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/evidence/2026-10-01-gate/pr.txt",
+      "docs/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/evidence/2026-10-01-gate/promises.txt",
+      "docs/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/evidence/2026-10-01-gate/regeneration.txt",
+      "docs/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/evidence/2026-10-01-gate/report-audit.txt",
+      "docs/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/evidence/2026-10-01-gate/sabotage.txt",
+      "docs/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/evidence/2026-10-01-gate/scope.txt",
+      "docs/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/evidence/2026-10-01-gate/scratch.txt",
+      "docs/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/evidence/2026-10-01-gate/sweep-audit.txt",
+      "docs/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/evidence/2026-10-01-gate/sweep.txt",
+      "docs/specs/0194-a-skill-and-a-command-guide-read-one-command-at-a-time/qa/evidence/2026-10-01-gate/waves.txt"
+    ]
+  },
+  "64aff3f7..954ad599": {
+    "command": "git diff --no-ext-diff --no-textconv --no-color 64aff3f7 954ad599",
+    "full_bytes": 1295055,
+    "filtered_bytes": 460407,
+    "qa_bytes": 786524,
+    "upstream_skill_bytes": 48124,
+    "omitted_paths": [
+      ".agents/skills/context7-cli/SKILL.md",
+      ".agents/skills/context7-cli/references/docs.md",
+      ".agents/skills/context7-cli/references/setup.md",
+      ".agents/skills/context7-cli/references/skills.md",
+      ".agents/skills/context7/SKILL.md",
+      ".agents/skills/golang-dependency-management/SKILL.md",
+      ".agents/skills/golang-safety/SKILL.md",
+      ".agents/skills/golang-safety/references/nil-safety.md",
+      ".agents/skills/golang-safety/references/slice-map-safety.md",
+      ".agents/skills/golang-structs-interfaces/SKILL.md",
+      ".agents/skills/golang-structs-interfaces/references/struct-fields.md",
+      ".agents/skills/golang-structs-interfaces/references/type-assertions.md",
+      "docs/specs/0200-a-skill-snapshot-that-matches-its-upstream/qa/evidence/2026-10-01-gate/evidence-manifest.json",
+      "docs/specs/0200-a-skill-snapshot-that-matches-its-upstream/qa/evidence/2026-10-01-gate/plan-current-pretty.json",
+      "docs/specs/0200-a-skill-snapshot-that-matches-its-upstream/qa/evidence/2026-10-01-gate/plan-current-resolved.json",
+      "docs/specs/0200-a-skill-snapshot-that-matches-its-upstream/qa/evidence/2026-10-01-gate/plan-neither-pretty.json",
+      "docs/specs/0200-a-skill-snapshot-that-matches-its-upstream/qa/evidence/2026-10-01-gate/plan-neither-resolved.json",
+      "docs/specs/0200-a-skill-snapshot-that-matches-its-upstream/qa/evidence/2026-10-01-gate/plan-prior-pretty.json",
+      "docs/specs/0200-a-skill-snapshot-that-matches-its-upstream/qa/evidence/2026-10-01-gate/plan-prior-resolved.json",
+      "docs/specs/0200-a-skill-snapshot-that-matches-its-upstream/qa/evidence/2026-10-01-gate/run-flows.py",
+      "docs/specs/0200-a-skill-snapshot-that-matches-its-upstream/qa/evidence/2026-10-01-gate/scratch-path.txt",
+      "docs/specs/0200-a-skill-snapshot-that-matches-its-upstream/qa/evidence/2026-10-01-gate/skills-update-text.txt",
+      "docs/specs/0200-a-skill-snapshot-that-matches-its-upstream/qa/evidence/2026-10-01-gate/skills-update.html"
+    ]
+  },
+  "review_records": [
+    {
+      "path": "/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/pre-pr-review/fa1a7d7289802d52/pre-pr-review.json",
+      "record": {
+        "repository": "/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/roundfix-deliver-0200-a-skill-snapshot-that-matches-its-upstream-30adb4576987c163-1088dcae",
+        "baseCommit": "64aff3f72dc7d72559b31a6f9213452feb02e7e5",
+        "baseTipCommit": "64aff3f72dc7d72559b31a6f9213452feb02e7e5",
+        "headCommit": "954ad599a318f96d5e5bb3afa75c38371fb683e3",
+        "provider": "codex",
+        "source": "default",
+        "outcome": "blocked",
+        "reason": "review runtime failure: Agent Selection failed for runtime \"codex\": agent/protocol error",
+        "answerPath": "/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/pre-pr-review/fa1a7d7289802d52/pre-pr-review-answer.txt",
+        "specs": [
+          "0200-a-skill-snapshot-that-matches-its-upstream"
+        ],
+        "skippedSpecs": [],
+        "archivedSpecs": [],
+        "specContextTruncated": false
+      }
+    },
+    {
+      "path": "/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/pre-pr-review/7503cf20785a1a5b/pre-pr-review.json",
+      "record": {
+        "repository": "/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/roundfix-deliver-0194-a-skill-and-a-command-guide-read-one-command-at-a-time-1336c7de9a07c54a-7b92b617",
+        "baseCommit": "c49a01285601d009531ab4bd4a60d35398fdcc40",
+        "baseTipCommit": "eafb1f4cad728d1b5a89a813c542ef55a41a65f1",
+        "headCommit": "e8fad6f7165d46023178af8385636dd16e90c3e7",
+        "provider": "codex",
+        "source": "default",
+        "outcome": "reviewed",
+        "answerPath": "/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/pre-pr-review/7503cf20785a1a5b/pre-pr-review-answer.txt",
+        "specs": [
+          "0194-a-skill-and-a-command-guide-read-one-command-at-a-time"
+        ],
+        "skippedSpecs": [],
+        "archivedSpecs": [],
+        "specContextTruncated": false
+      }
+    }
+  ],
+  "archived_sources": [
+    {
+      "path": "docs/history/specs/0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds/qa/evidence/ledger_replay_test.go",
+      "bytes": 173,
+      "sha256": "aae47b69bd7cb275d1a0c8a87387a61353ba7c927730cd8b49924b51468e132a",
+      "relevant_content": "// Package evidence holds QA evidence for Spec 0203. The ledger replay test\n// is kept as ledger_replay_test.go.txt; it runs when copied into internal/cli.\npackage evidence\n"
+    },
+    {
+      "path": "docs/history/specs/0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds/qa/evidence/ledger_replay_test.go.txt",
+      "bytes": 2470,
+      "sha256": "1b55fbada533c9b45f6d2f4b9aa60019d92385be80d1d312b4f8fcd29903ab35",
+      "relevant_content": [
+        "package cli"
+      ]
+    },
+    {
+      "path": "docs/history/specs/0200-a-skill-snapshot-that-matches-its-upstream/task_04.md",
+      "bytes": 8901,
+      "sha256": "5c65d4e30a3b7fd6380e39a3eda99e7ed7dddd154db28c20ee964ccf056345ff",
+      "relevant_content": [
+        "After task_02 and task_03 this repository's catalog requires `context7-cli`, `exa-web-search` and three Go skills that its lock does not track, and it still holds the old `context7` directory and lock entry. This Task runs the adopter's path on this repository: the public update restores the required skills, the reconcile removes the obsolete lock entry, and the old directory is deleted. It documents the same path for adopters and corrects the Doctor line the guides print.",
+        "2. MUST run step 2, `roundfix baseline skills reconcile` at `a4e18e4fa223196b51d0fd8224e5a33b84f97717`, preview then confirm, so the `context7` lock entry is removed.",
+        "3. MUST delete `.agents/skills/context7/`, which no command removes.",
+        "6. MUST add `internal/cli/this_repository_skill_set_test.go` with the two tests of the TechSpec's Testing Approach 4. Both call one helper that resolves the external set with `resolveExternalSkillRequirement`, checks readiness with `skills.CheckRepositoryWithExternal`, and reports each missing or outdated skill and each lock entry or directory named `context7`, `feature-systems-pattern` or `rust`.",
+        "- [ ] No lock entry or directory names `context7`, `feature-systems-pattern` or `rust`, and a repository missing a required skill is reported by the same helper.",
+        "- creates: `.agents/skills/context7/SKILL.md`",
+        "- creates: `.agents/skills/context7-cli/SKILL.md`",
+        "- creates: `.agents/skills/context7-cli/references/docs.md`",
+        "- creates: `.agents/skills/context7-cli/references/setup.md`",
+        "- creates: `.agents/skills/context7-cli/references/skills.md`",
+        "- `out=\"$(go test -count=1 -v -run '^(TestThisRepositoryHoldsEveryRequiredExternalSkill|TestARepositoryMissingARequiredExternalSkillIsReported)$' ./internal/cli 2>&1)\" || { printf '%s\\n' \"$out\"; exit 1; }; for name in TestThisRepositoryHoldsEveryRequiredExternalSkill TestARepositoryMissingARequiredExternalSkillIsReported; do printf '%s\\n' \"$out\" | grep -q -- \"--- PASS: $name\" || { printf 'missing pass: %s\\n' \"$name\" >&2; exit 1; }; done && out=\"$(go test -count=1 -v -run '^(TestRecommendedSkillsMatchLock|TestAuthorialSkillSync|TestAuthoringConstraintOwnership|TestUpstreamADRFormatUnchanged)$' ./skills 2>&1)\" || { printf '%s\\n' \"$out\"; exit 1; }; for name in TestRecommendedSkillsMatchLock TestAuthorialSkillSync TestAuthoringConstraintOwnership TestUpstreamADRFormatUnchanged; do printf '%s\\n' \"$out\" | grep -q -- \"--- PASS: $name\" || { printf 'missing pass: %s\\n' \"$name\" >&2; exit 1; }; done && test ! -e .agents/skills/context7 && test -f .agents/skills/context7-cli/SKILL.md && for pair in \"README.md|skills: ok (42 required: 14 Roundfix-owned, 28 external)\" \"docs/user-guide/usage.md|skills: ok (42 required: 14 Roundfix-owned, 28 external)\" \"docs/user-guide/usage.md|skills: ok (42 required: 14 Roundfix-owned, 28 external)\" \"docs/user-guide/context-driven-development.md|When an upstream skill is renamed\" \"docs/user-guide/context-driven-development.md|never deletes an installed skill tree\"; do file=\"${pair%%|*}\"; phrase=\"${pair#*|}\"; tr -s '[:space:]' ' ' < \"$file\" | grep -qF -- \"$phrase\" || { printf 'missing phrase in %s: %s\\n' \"$file\" \"$phrase\" >&2; exit 1; }; done && go run -buildvcs=false ./cmd/roundfix baseline update --repo . --format json >/dev/null` \u2014 expected: exit 0; before this Task the two new tests do not exist, `context7-cli` is not installed and `.agents/skills/context7` exists, so the command fails.",
+        "The public update at upstream revision `a4e18e4fa223196b51d0fd8224e5a33b84f97717` restored `context7-cli` and the three required Go skills through the Roundfix CLI. The reconcile preview produced plan digest `6f81eb25b256b41dcf90993cf2bb78e4df4b94274cd1f756831497818dad4d48`; the confirmed plan removed only the obsolete `context7` lock entry, and the old `context7` directory was then deleted."
+      ]
+    }
+  ],
+  "vortex": {
+    "path": "/Users/marcio/dev/secondbrain/inbox/roundfix/_triaged/2026-09-25-reconcile-nunca-libera-run-de-spec-mergeada-por-squash.md",
+    "content": "---\norigin: vortex\ndestination: roundfix\ntype-hint: fix\ncreated_at: 2026-09-25\ncapture: manual\nresolved_to: docs/backlog/2026-10-01-reconcile-releases-the-runs-of-a-squash-merged-spec.md\n---\n\n# `reconcile` nunca libera Run de Spec mergeada por squash, e os worktrees se acumulam\n\nNo Vortex, em 2026-09-25, `roundfix reconcile` (0.16.0) reporta `preserved=13`, com 11 GB de\nworktrees em `~/.roundfix/worktrees/vortex-25dcc288`. S\u00e3o todos de Runs que terminaram sem `Clean`,\npor `BudgetExceeded`, `Unresolved` ou parada, nas Specs 0071 a 0076. O trabalho de cada um j\u00e1 foi\nlevado \u00e0 branch da Spec por fast-forward e entrou no `main` por squash (PRs #296 e #299). A regra do\nreposit\u00f3rio pro\u00edbe apagar worktree do Roundfix \u00e0 m\u00e3o, ent\u00e3o n\u00e3o h\u00e1 como liberar esse espa\u00e7o.\n\n## As duas classifica\u00e7\u00f5es que prendem os worktrees\n\n- **`unintegrated`** (6 Runs), por exemplo: \"Run Branch content is not fully represented: 45 Run-only\n  files, 164 differing shared files against default branch main\".\n  - A compara\u00e7\u00e3o de conte\u00fado contra o `main` nunca fecha depois de um squash seguido do `archive`,\n    que move `docs/specs/<slug>` para `docs/history/specs/<slug>`, e de commits posteriores nos\n    mesmos arquivos.\n  - A branch alvo (`feat/...`) foi apagada no merge, e a primeira rodada do `reconcile` j\u00e1 dizia\n    `target branch ... is absent`.\n- **`dirty`** (7 Runs): restos n\u00e3o commitados da tarefa interrompida, como a Task em curso quando o\n  or\u00e7amento de 2 h acabou. Esse trabalho foi refeito pelo Run seguinte e n\u00e3o tem valor.\n\n## Sugest\u00e3o\n\n- **Integra\u00e7\u00e3o por conte\u00fado commitado.** Reconhecer como integrado o Run cujos commits de Task t\u00eam\n  patch equivalente no `main` (`git cherry`, patch-id) ou cujo conte\u00fado foi absorvido por um squash\n  que nomeia a Spec. Considerar o destino arquivado da pasta da Spec.\n- **Descarte de `dirty` com prova.** Oferecer um modo expl\u00edcito, por exemplo\n  `--discard-dirty-superseded`, que descarte o `dirty` quando a Task interrompida aparece\n  `completed` num Run posterior da mesma Spec, j\u00e1 integrado.\n- **Espa\u00e7o vis\u00edvel.** Mostrar no relat\u00f3rio o espa\u00e7o que cada preservado ocupa.\n"
+  },
+  "storage": {
+    "mode": "SQLite URI mode=ro; SELECT only; du -sk; archived PRD at local main via git cat-file",
+    "runs": [
+      {
+        "run": "run_20260929T170240Z_b8558d4fb9103028",
+        "spec": "0181-gates-that-refuse-only-what-someone-can-act-on",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0181-gates-that-refuse-only-what-someone-can-act-on-79dc9a002826c704-361bbff2-6b290e20/run_20260929T170240Z_b8558d4fb9103028",
+        "state": "Unresolved",
+        "allocated_bytes": 58990592
+      },
+      {
+        "run": "run_20260929T174719Z_24238e6aebd23928",
+        "spec": "0182-delivery-that-reviews-and-retries-from-where-the-item-stands",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0182-delivery-that-reviews-and-retries-from-where-the-item-stands-6843d9640e1ebd5f-9dc0300d-6a77b8ef/run_20260929T174719Z_24238e6aebd23928",
+        "state": "Unresolved",
+        "allocated_bytes": 614653952
+      },
+      {
+        "run": "run_20260929T185005Z_5bdc71810126cc68",
+        "spec": "0181-gates-that-refuse-only-what-someone-can-act-on",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0181-gates-that-refuse-only-what-someone-can-act-on-79dc9a002826c704-361bbff2-6b290e20/run_20260929T185005Z_5bdc71810126cc68",
+        "state": "Unresolved",
+        "allocated_bytes": 672641024
+      },
+      {
+        "run": "run_20260929T195318Z_43a2234f5bbc8e85",
+        "spec": "0181-gates-that-refuse-only-what-someone-can-act-on",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0181-gates-that-refuse-only-what-someone-can-act-on-79dc9a002826c704-361bbff2-6b290e20/run_20260929T195318Z_43a2234f5bbc8e85",
+        "state": "Unresolved",
+        "allocated_bytes": 203399168
+      },
+      {
+        "run": "run_20260929T200238Z_ca4a5877c9dc9d5c",
+        "spec": "0181-gates-that-refuse-only-what-someone-can-act-on",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0181-gates-that-refuse-only-what-someone-can-act-on-79dc9a002826c704-361bbff2-6b290e20/run_20260929T200238Z_ca4a5877c9dc9d5c",
+        "state": "Unresolved",
+        "allocated_bytes": 203403264
+      },
+      {
+        "run": "run_20260929T201521Z_3d1a54f26096ba81",
+        "spec": "0181-gates-that-refuse-only-what-someone-can-act-on",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0181-gates-that-refuse-only-what-someone-can-act-on-79dc9a002826c704-361bbff2-6b290e20/run_20260929T201521Z_3d1a54f26096ba81",
+        "state": "Unresolved",
+        "allocated_bytes": 59105280
+      },
+      {
+        "run": "run_20260929T222541Z_a2fa4eeca2973de1",
+        "spec": "0184-baseline-plans-that-show-what-a-history-move-breaks",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0184-baseline-plans-that-show-what-a-history-move-breaks-07f6c41797833cdf-dd371a6a-8a16c26a/run_20260929T222541Z_a2fa4eeca2973de1",
+        "state": "Unresolved",
+        "allocated_bytes": 636231680
+      },
+      {
+        "run": "run_20260930T003046Z_bcec4aa35c2d3cc8",
+        "spec": "0184-baseline-plans-that-show-what-a-history-move-breaks",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0184-baseline-plans-that-show-what-a-history-move-breaks-07f6c41797833cdf-dd371a6a-8a16c26a/run_20260930T003046Z_bcec4aa35c2d3cc8",
+        "state": "Unresolved",
+        "allocated_bytes": 613842944
+      },
+      {
+        "run": "run_20260930T005742Z_043969a2ce1b565a",
+        "spec": "0184-baseline-plans-that-show-what-a-history-move-breaks",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0184-baseline-plans-that-show-what-a-history-move-breaks-07f6c41797833cdf-dd371a6a-8a16c26a/run_20260930T005742Z_043969a2ce1b565a",
+        "state": "Unresolved",
+        "allocated_bytes": 731631616
+      },
+      {
+        "run": "run_20260930T011500Z_f0e23f495ac8b795",
+        "spec": "0184-baseline-plans-that-show-what-a-history-move-breaks",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0184-baseline-plans-that-show-what-a-history-move-breaks-07f6c41797833cdf-dd371a6a-8a16c26a/run_20260930T011500Z_f0e23f495ac8b795",
+        "state": "Unresolved",
+        "allocated_bytes": 615976960
+      },
+      {
+        "run": "run_20260930T102010Z_231eaa2e314ed8d8",
+        "spec": "0187-a-queue-that-recovers-without-a-supervisor",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0187-a-queue-that-recovers-without-a-supervisor-f9e52398ecc40e6b-a44fcd56-9ac598c0/run_20260930T102010Z_231eaa2e314ed8d8",
+        "state": "Unresolved",
+        "allocated_bytes": 617062400
+      },
+      {
+        "run": "run_20260930T144240Z_33c18e8a522f7217",
+        "spec": "0192-owned-skills-that-describe-the-product-as-it-is",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0192-owned-skills-that-describe-the-product-as-it-is-f40486b5d07d309b-0e3b0f9b-d54ef3ad/run_20260930T144240Z_33c18e8a522f7217",
+        "state": "Unresolved",
+        "allocated_bytes": 619388928
+      },
+      {
+        "run": "run_20260930T153457Z_b5736250c995b99a",
+        "spec": "0193-baseline-guides-that-describe-the-product-as-it-is",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0193-baseline-guides-that-describe-the-product-as-it-is-ea7cfa6f7156595d-f006795d-164682cb/run_20260930T153457Z_b5736250c995b99a",
+        "state": "Unresolved",
+        "allocated_bytes": 1131528192
+      },
+      {
+        "run": "run_20260930T162501Z_8ec6b68021df9cef",
+        "spec": "0195-owned-skills-and-a-release-step-that-follow-the-bundle",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0195-owned-skills-and-a-release-step-that-follow-the-bundle-01c99942458fa075-e87e37b1-c660ef4c/run_20260930T162501Z_8ec6b68021df9cef",
+        "state": "Unresolved",
+        "allocated_bytes": 323252224
+      },
+      {
+        "run": "run_20260930T181925Z_a1967faa3d75e7bc",
+        "spec": "0192-owned-skills-that-describe-the-product-as-it-is",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0192-owned-skills-that-describe-the-product-as-it-is-f40486b5d07d309b-0e3b0f9b-d54ef3ad/run_20260930T181925Z_a1967faa3d75e7bc",
+        "state": "Unresolved",
+        "allocated_bytes": 619364352
+      },
+      {
+        "run": "run_20260930T184402Z_6aa3e4970df8def4",
+        "spec": "0193-baseline-guides-that-describe-the-product-as-it-is",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0193-baseline-guides-that-describe-the-product-as-it-is-ea7cfa6f7156595d-f006795d-164682cb/run_20260930T184402Z_6aa3e4970df8def4",
+        "state": "Unresolved",
+        "allocated_bytes": 591515648
+      },
+      {
+        "run": "run_20260930T203751Z_2b4c20bff8fbb572",
+        "spec": "0195-owned-skills-and-a-release-step-that-follow-the-bundle",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0195-owned-skills-and-a-release-step-that-follow-the-bundle-01c99942458fa075-e87e37b1-c660ef4c/run_20260930T203751Z_2b4c20bff8fbb572",
+        "state": "Unresolved",
+        "allocated_bytes": 61440000
+      },
+      {
+        "run": "run_20260930T215154Z_eb58c6882d4f3968",
+        "spec": "0189-profiles-that-follow-the-current-models",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0189-profiles-that-follow-the-current-models-109afd21dab8e187-a7f7c592-6cdb9075/run_20260930T215154Z_eb58c6882d4f3968",
+        "state": "Unresolved",
+        "allocated_bytes": 532021248
+      },
+      {
+        "run": "run_20260930T224533Z_22a572af678fb8c4",
+        "spec": "0196-a-notice-when-profiles-fall-behind",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0196-a-notice-when-profiles-fall-behind-e739af5fc7e869e5-cf55e654-6ada796e/run_20260930T224533Z_22a572af678fb8c4",
+        "state": "Unresolved",
+        "allocated_bytes": 181026816
+      },
+      {
+        "run": "run_20260930T230750Z_197aa9aff15490a9",
+        "spec": "0190-a-task-settles-on-the-facts-its-gate-will-check",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0190-a-task-settles-on-the-facts-its-gate-will-check-cadfb1e2e3c06afd-155130db-16abb505/run_20260930T230750Z_197aa9aff15490a9",
+        "state": "Unresolved",
+        "allocated_bytes": 883159040
+      },
+      {
+        "run": "run_20261001T000219Z_0e911d72b0d72d2f",
+        "spec": "0191-claims-with-receipts-and-contracts-as-they-ship",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0191-claims-with-receipts-and-contracts-as-they-ship-1ff7bcc0073ad04f-635cfed5-9523a295/run_20261001T000219Z_0e911d72b0d72d2f",
+        "state": "Unresolved",
+        "allocated_bytes": 735399936
+      },
+      {
+        "run": "run_20261001T010622Z_8bfe4bebad66f971",
+        "spec": "0194-a-skill-and-a-command-guide-read-one-command-at-a-time",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0194-a-skill-and-a-command-guide-read-one-command-at-a-time-1336c7de9a07c54a-7b92b617-7503cf20/run_20261001T010622Z_8bfe4bebad66f971",
+        "state": "Unresolved",
+        "allocated_bytes": 594223104
+      },
+      {
+        "run": "run_20261001T013631Z_c59b100cbb9f7af1",
+        "spec": "0200-a-skill-snapshot-that-matches-its-upstream",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0200-a-skill-snapshot-that-matches-its-upstream-30adb4576987c163-1088dcae-fa1a7d72/run_20261001T013631Z_c59b100cbb9f7af1",
+        "state": "Unresolved",
+        "allocated_bytes": 796286976
+      },
+      {
+        "run": "run_20261001T024730Z_a33946bbe6ed3a5d",
+        "spec": "0190-a-task-settles-on-the-facts-its-gate-will-check",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0190-a-task-settles-on-the-facts-its-gate-will-check-cadfb1e2e3c06afd-155130db-16abb505/run_20261001T024730Z_a33946bbe6ed3a5d",
+        "state": "Unresolved",
+        "allocated_bytes": 644775936
+      },
+      {
+        "run": "run_20261001T042433Z_6df902d7c713fec4",
+        "spec": "0200-a-skill-snapshot-that-matches-its-upstream",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0200-a-skill-snapshot-that-matches-its-upstream-30adb4576987c163-1088dcae-fa1a7d72/run_20261001T042433Z_6df902d7c713fec4",
+        "state": "Unresolved",
+        "allocated_bytes": 516030464
+      },
+      {
+        "run": "run_20261001T094428Z_f4d3047c47b08ac0",
+        "spec": "0204-a-run-that-reports-the-tokens-and-spend-it-used",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0204-a-run-that-reports-the-tokens-and-spend-it-used-cc47b63877703605-2e0ba472-a2af3b09/run_20261001T094428Z_f4d3047c47b08ac0",
+        "state": "Unresolved",
+        "allocated_bytes": 1482432512
+      },
+      {
+        "run": "run_20261001T114323Z_551200526baffade",
+        "spec": "0202-a-qa-gate-that-reruns-only-stale-rows",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0202-a-qa-gate-that-reruns-only-stale-rows-4a6580d3ff61290e-5e1fd238-172d4ada/run_20261001T114323Z_551200526baffade",
+        "state": "Unresolved",
+        "allocated_bytes": 1364787200
+      },
+      {
+        "run": "run_20261001T124541Z_e71bc4409b20b125",
+        "spec": "0202-a-qa-gate-that-reruns-only-stale-rows",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0202-a-qa-gate-that-reruns-only-stale-rows-4a6580d3ff61290e-5e1fd238-172d4ada/run_20261001T124541Z_e71bc4409b20b125",
+        "state": "Unresolved",
+        "allocated_bytes": 815603712
+      },
+      {
+        "run": "run_20261001T132158Z_a6c7b23ced59cce7",
+        "spec": "0202-a-qa-gate-that-reruns-only-stale-rows",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0202-a-qa-gate-that-reruns-only-stale-rows-4a6580d3ff61290e-5e1fd238-172d4ada/run_20261001T132158Z_a6c7b23ced59cce7",
+        "state": "Unresolved",
+        "allocated_bytes": 335036416
+      },
+      {
+        "run": "run_20261001T133454Z_7983d7d312c8ec5c",
+        "spec": "0202-a-qa-gate-that-reruns-only-stale-rows",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0202-a-qa-gate-that-reruns-only-stale-rows-4a6580d3ff61290e-5e1fd238-172d4ada/run_20261001T133454Z_7983d7d312c8ec5c",
+        "state": "Unresolved",
+        "allocated_bytes": 773521408
+      },
+      {
+        "run": "run_20261001T145917Z_95f0b38476c6ebcc",
+        "spec": "0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds-ee8bcc56d966613d-caf0a253-a9fec978/run_20261001T145917Z_95f0b38476c6ebcc",
+        "state": "Unresolved",
+        "allocated_bytes": 1799106560
+      },
+      {
+        "run": "run_20261001T165954Z_dec5e0e74ad42b1b",
+        "spec": "0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0203-a-reviewer-that-validates-its-findings-and-remembers-its-rounds-ee8bcc56d966613d-caf0a253-a9fec978/run_20261001T165954Z_dec5e0e74ad42b1b",
+        "state": "Unresolved",
+        "allocated_bytes": 697815040
+      },
+      {
+        "run": "run_20261001T205638Z_5e1457a22648dd9b",
+        "spec": "0205-an-advisory-judge-for-spec-authoring",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0205-an-advisory-judge-for-spec-authoring-3a4a44eee11543cd-c8d60a60-3784b200/run_20261001T205638Z_5e1457a22648dd9b",
+        "state": "Unresolved",
+        "allocated_bytes": 781156352
+      },
+      {
+        "run": "run_20261001T213927Z_19e4ee5e45dfaec4",
+        "spec": "0205-an-advisory-judge-for-spec-authoring",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0205-an-advisory-judge-for-spec-authoring-3a4a44eee11543cd-c8d60a60-3784b200/run_20261001T213927Z_19e4ee5e45dfaec4",
+        "state": "Unresolved",
+        "allocated_bytes": 68722688
+      },
+      {
+        "run": "run_20261001T214123Z_1a226c6ee6abc317",
+        "spec": "0205-an-advisory-judge-for-spec-authoring",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0205-an-advisory-judge-for-spec-authoring-3a4a44eee11543cd-c8d60a60-3784b200/run_20261001T214123Z_1a226c6ee6abc317",
+        "state": "Unresolved",
+        "allocated_bytes": 99876864
+      },
+      {
+        "run": "run_20261001T215854Z_cdd052c5b8440585",
+        "spec": "0205-an-advisory-judge-for-spec-authoring",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0205-an-advisory-judge-for-spec-authoring-3a4a44eee11543cd-c8d60a60-3784b200/run_20261001T215854Z_cdd052c5b8440585",
+        "state": "Unresolved",
+        "allocated_bytes": 1151156224
+      },
+      {
+        "run": "run_20261001T224524Z_b293a92b5b305c9a",
+        "spec": "0205-an-advisory-judge-for-spec-authoring",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0205-an-advisory-judge-for-spec-authoring-3a4a44eee11543cd-c8d60a60-3784b200/run_20261001T224524Z_b293a92b5b305c9a",
+        "state": "Unresolved",
+        "allocated_bytes": 68935680
+      },
+      {
+        "run": "run_20261001T224722Z_9f929d5fbdb9f19c",
+        "spec": "0205-an-advisory-judge-for-spec-authoring",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0205-an-advisory-judge-for-spec-authoring-3a4a44eee11543cd-c8d60a60-3784b200/run_20261001T224722Z_9f929d5fbdb9f19c",
+        "state": "Unresolved",
+        "allocated_bytes": 745029632
+      },
+      {
+        "run": "run_20261001T233647Z_36941fe094803f4f",
+        "spec": "0209-sources-that-share-a-context-share-a-spec",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0209-sources-that-share-a-context-share-a-spec-240c6fe3bb570ed8-49e3c04e-42e2f176/run_20261001T233647Z_36941fe094803f4f",
+        "state": "Unresolved",
+        "allocated_bytes": 751116288
+      },
+      {
+        "run": "run_20261002T010618Z_752db6f534b24618",
+        "spec": "0207-a-go-cli-and-a-typescript-monorepo-in-one-baseline",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0207-a-go-cli-and-a-typescript-monorepo-in-one-baseline-0adf3f7ea264bab6-cad7144f-f37064e2/run_20261002T010618Z_752db6f534b24618",
+        "state": "Unresolved",
+        "allocated_bytes": 73449472
+      },
+      {
+        "run": "run_20261002T011917Z_addae79802f34dce",
+        "spec": "0207-a-go-cli-and-a-typescript-monorepo-in-one-baseline",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0207-a-go-cli-and-a-typescript-monorepo-in-one-baseline-0adf3f7ea264bab6-cad7144f-f37064e2/run_20261002T011917Z_addae79802f34dce",
+        "state": "Unresolved",
+        "allocated_bytes": 73445376
+      },
+      {
+        "run": "run_20261002T013342Z_76a09201e8b3fbd7",
+        "spec": "0207-a-go-cli-and-a-typescript-monorepo-in-one-baseline",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0207-a-go-cli-and-a-typescript-monorepo-in-one-baseline-0adf3f7ea264bab6-cad7144f-f37064e2/run_20261002T013342Z_76a09201e8b3fbd7",
+        "state": "Unresolved",
+        "allocated_bytes": 760590336
+      },
+      {
+        "run": "run_20261002T021121Z_00c184b1d58d8009",
+        "spec": "0207-a-go-cli-and-a-typescript-monorepo-in-one-baseline",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0207-a-go-cli-and-a-typescript-monorepo-in-one-baseline-0adf3f7ea264bab6-cad7144f-f37064e2/run_20261002T021121Z_00c184b1d58d8009",
+        "state": "Unresolved",
+        "allocated_bytes": 813649920
+      },
+      {
+        "run": "run_20261002T024113Z_8885f5993a89b1e3",
+        "spec": "0207-a-go-cli-and-a-typescript-monorepo-in-one-baseline",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0207-a-go-cli-and-a-typescript-monorepo-in-one-baseline-0adf3f7ea264bab6-cad7144f-f37064e2/run_20261002T024113Z_8885f5993a89b1e3",
+        "state": "Unresolved",
+        "allocated_bytes": 1142394880
+      },
+      {
+        "run": "run_20261002T043757Z_a21dc1842d7cb28c",
+        "spec": "0206-stack-rules-with-force-and-the-rules-adopters-repeat",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0206-stack-rules-with-force-and-the-rules-adopters-repeat-027be83f1c5600af-678f31b6-d340ed00/run_20261002T043757Z_a21dc1842d7cb28c",
+        "state": "Unresolved",
+        "allocated_bytes": 74354688
+      },
+      {
+        "run": "run_20261002T064202Z_a22e1dd4644c4dc6",
+        "spec": "0213-a-test-suite-that-does-not-flake",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0213-a-test-suite-that-does-not-flake-3b2009bcf21445b8-2582b298-4ff180ce/run_20261002T064202Z_a22e1dd4644c4dc6",
+        "state": "Unresolved",
+        "allocated_bytes": 772132864
+      },
+      {
+        "run": "run_20261002T075527Z_5bea04bbe00b3ea6",
+        "spec": "0211-a-delivery-queue-that-finishes-without-intervention",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0211-a-delivery-queue-that-finishes-without-intervention-b7cc207f1d746d51-cd9deec5-71cb9f93/run_20261002T075527Z_5bea04bbe00b3ea6",
+        "state": "Unresolved",
+        "allocated_bytes": 75460608
+      },
+      {
+        "run": "run_20261002T081705Z_a516b29ed11eed22",
+        "spec": "0211-a-delivery-queue-that-finishes-without-intervention",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0211-a-delivery-queue-that-finishes-without-intervention-b7cc207f1d746d51-cd9deec5-71cb9f93/run_20261002T081705Z_a516b29ed11eed22",
+        "state": "Unresolved",
+        "allocated_bytes": 769990656
+      },
+      {
+        "run": "run_20261002T091638Z_dd1cab7767508751",
+        "spec": "0211-a-delivery-queue-that-finishes-without-intervention",
+        "worktree": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0211-a-delivery-queue-that-finishes-without-intervention-b7cc207f1d746d51-cd9deec5-71cb9f93/run_20261002T091638Z_dd1cab7767508751",
+        "state": "Unresolved",
+        "allocated_bytes": 770211840
+      }
+    ],
+    "count": 49,
+    "specs": 22,
+    "allocated_bytes": 29516328960
+  }
+}

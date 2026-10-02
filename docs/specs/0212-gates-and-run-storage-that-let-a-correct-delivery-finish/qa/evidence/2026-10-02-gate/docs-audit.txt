@@ -1,0 +1,2 @@
+PASS 6 canonical/mirror byte pairs; all required behavior phrases; 210 skill Markdown QA settlement sections unchanged from 7c1bc29a.
+Version ledger and guidance tests: row-6-tests.txt.

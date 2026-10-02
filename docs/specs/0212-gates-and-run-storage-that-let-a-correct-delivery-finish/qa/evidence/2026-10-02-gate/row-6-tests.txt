@@ -1,0 +1,8 @@
+=== RUN   TestEveryOwnedSkillVersionIsRecorded
+--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.00s)
+=== RUN   TestSettlementGuidanceIsOneTable
+--- PASS: TestSettlementGuidanceIsOneTable (0.00s)
+=== RUN   TestTaskAuthoringGuidanceNamesDeclarations
+--- PASS: TestTaskAuthoringGuidanceNamesDeclarations (0.00s)
+PASS
+ok  	roundfix/skills	0.109s

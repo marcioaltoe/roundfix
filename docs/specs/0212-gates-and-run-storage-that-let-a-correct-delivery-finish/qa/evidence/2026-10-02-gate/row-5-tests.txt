@@ -1,0 +1,243 @@
+=== RUN   TestMergedHeadRecordReleasesARunContainedInTheMergedHead
+=== PAUSE TestMergedHeadRecordReleasesARunContainedInTheMergedHead
+=== RUN   TestMergedHeadRecordSupersedesARedoneTaskAndAFailedQAReport
+=== PAUSE TestMergedHeadRecordSupersedesARedoneTaskAndAFailedQAReport
+=== RUN   TestMergedHeadDefaultBranchSupersedesARedoneTaskAndAFailedQAReport
+=== PAUSE TestMergedHeadDefaultBranchSupersedesARedoneTaskAndAFailedQAReport
+=== RUN   TestMergedHeadDefaultBranchComparesOnlyTheRunsChangedFiles
+=== PAUSE TestMergedHeadDefaultBranchComparesOnlyTheRunsChangedFiles
+=== RUN   TestMergedHeadDefaultBranchReleasesAnArchivedSpecRunAfterMainMoved
+=== PAUSE TestMergedHeadDefaultBranchReleasesAnArchivedSpecRunAfterMainMoved
+=== RUN   TestMergedHeadRefusesAnUnrepresentedCommit
+=== PAUSE TestMergedHeadRefusesAnUnrepresentedCommit
+=== RUN   TestMergedHeadRefusesATaskNotCompletedAtTheMergedHead
+=== PAUSE TestMergedHeadRefusesATaskNotCompletedAtTheMergedHead
+=== RUN   TestMergedHeadRefusesATaskCommitOfAnotherSpec
+=== PAUSE TestMergedHeadRefusesATaskCommitOfAnotherSpec
+=== RUN   TestMergedHeadRefusesAQAReportTheMergedHeadDoesNotSupersede
+=== PAUSE TestMergedHeadRefusesAQAReportTheMergedHeadDoesNotSupersede
+=== RUN   TestMergedHeadIgnoresARecordForAnotherSpec
+=== PAUSE TestMergedHeadIgnoresARecordForAnotherSpec
+=== RUN   TestMergedHeadFallsBackWhenRecordsDisagree
+=== PAUSE TestMergedHeadFallsBackWhenRecordsDisagree
+=== RUN   TestMergedHeadFallsBackWhenRecordCommitIsMissing
+=== PAUSE TestMergedHeadFallsBackWhenRecordCommitIsMissing
+=== RUN   TestMergedHeadKeepsADirtyRunWorktree
+=== PAUSE TestMergedHeadKeepsADirtyRunWorktree
+=== RUN   TestMergedHeadKeepsTheUnintegratedReasonWithoutASource
+=== PAUSE TestMergedHeadKeepsTheUnintegratedReasonWithoutASource
+=== RUN   TestMergedHeadApplyReleasesTheRunWorktreeAndBranch
+=== PAUSE TestMergedHeadApplyReleasesTheRunWorktreeAndBranch
+=== RUN   TestMergedHeadApplyRefusesAChangedRecord
+=== PAUSE TestMergedHeadApplyRefusesAChangedRecord
+=== RUN   TestMergedHeadApplyRefusesAMovedFallbackHead
+=== PAUSE TestMergedHeadApplyRefusesAMovedFallbackHead
+=== RUN   TestMergedSpecRunWithSpecDirectoryCommitsIsSuperseded
+=== PAUSE TestMergedSpecRunWithSpecDirectoryCommitsIsSuperseded
+=== RUN   TestMergedSpecRunWithDeclaredLeftoversIsSuperseded
+=== PAUSE TestMergedSpecRunWithDeclaredLeftoversIsSuperseded
+=== RUN   TestMergedSpecRunWithAnUndeclaredLeftoverStaysDirty
+=== PAUSE TestMergedSpecRunWithAnUndeclaredLeftoverStaysDirty
+=== RUN   TestMergedSpecRunWithAnUnrepresentedTaskCommitStaysUnintegrated
+=== PAUSE TestMergedSpecRunWithAnUnrepresentedTaskCommitStaysUnintegrated
+=== RUN   TestApplyRefusesWhenTheLeftoverSetChanged
+=== PAUSE TestApplyRefusesWhenTheLeftoverSetChanged
+=== RUN   TestApplyRemovesASupersededLeftoverWorktree
+=== PAUSE TestApplyRemovesASupersededLeftoverWorktree
+=== RUN   TestAbsentTargetBranchIsReleasedOnTheMergedHead
+=== PAUSE TestAbsentTargetBranchIsReleasedOnTheMergedHead
+=== RUN   TestArchivedSpecLeftoverScopeKinds
+=== PAUSE TestArchivedSpecLeftoverScopeKinds
+=== RUN   TestArchivedSpecLeftoversRequireTheArchivedPRD
+=== PAUSE TestArchivedSpecLeftoversRequireTheArchivedPRD
+=== RUN   TestArchivedSpecLeftoverRenameKeepsAnOutsideSource
+=== PAUSE TestArchivedSpecLeftoverRenameKeepsAnOutsideSource
+=== RUN   TestArchivedSpecDirtyPathsKeepLiteralFilenames
+=== PAUSE TestArchivedSpecDirtyPathsKeepLiteralFilenames
+=== RUN   TestArchivedSpecDirectoryProofStillComparesOtherCommitPaths
+=== PAUSE TestArchivedSpecDirectoryProofStillComparesOtherCommitPaths
+=== RUN   TestInspectTerminalRunSafe
+=== PAUSE TestInspectTerminalRunSafe
+=== RUN   TestInspectTerminalRunSafeWhenTargetDeletedAfterSquashMerge
+=== PAUSE TestInspectTerminalRunSafeWhenTargetDeletedAfterSquashMerge
+=== RUN   TestInspectTerminalRunRequiresArchivedEvidence
+=== PAUSE TestInspectTerminalRunRequiresArchivedEvidence
+=== RUN   TestInspectTerminalRunConcurrentSafe
+=== PAUSE TestInspectTerminalRunConcurrentSafe
+=== RUN   TestInspectTerminalRunUnintegrated
+=== PAUSE TestInspectTerminalRunUnintegrated
+=== RUN   TestInspectTerminalRunUnintegratedWhenDeletedTargetHasRunOnlyFile
+=== PAUSE TestInspectTerminalRunUnintegratedWhenDeletedTargetHasRunOnlyFile
+=== RUN   TestInspectTerminalRunUnintegratedWhenDeletedTargetHasDifferentSharedFile
+=== PAUSE TestInspectTerminalRunUnintegratedWhenDeletedTargetHasDifferentSharedFile
+=== RUN   TestInspectTerminalRunUnintegratedWhenDeletedTargetRetainsRunDeletedFile
+=== PAUSE TestInspectTerminalRunUnintegratedWhenDeletedTargetRetainsRunDeletedFile
+=== RUN   TestInspectTerminalRunUnintegratedWhenDeletedTargetContentComparisonFails
+=== PAUSE TestInspectTerminalRunUnintegratedWhenDeletedTargetContentComparisonFails
+=== RUN   TestInspectTerminalRunBoundsSupersededReason
+=== PAUSE TestInspectTerminalRunBoundsSupersededReason
+=== RUN   TestInspectTerminalRunClassifiesSupersededQAReport
+=== PAUSE TestInspectTerminalRunClassifiesSupersededQAReport
+=== RUN   TestInspectTerminalRunDirty
+=== PAUSE TestInspectTerminalRunDirty
+=== RUN   TestInspectTerminalRunUnknownMissingTarget
+=== PAUSE TestInspectTerminalRunUnknownMissingTarget
+=== RUN   TestInspectTerminalRunUnknownWhenDeletedTargetDefaultBranchCannotBeResolved
+=== PAUSE TestInspectTerminalRunUnknownWhenDeletedTargetDefaultBranchCannotBeResolved
+=== RUN   TestInspectTerminalRunActiveRunDoesNotInspectDeletedTargetContent
+=== PAUSE TestInspectTerminalRunActiveRunDoesNotInspectDeletedTargetContent
+=== RUN   TestInspectTerminalRunUnknownAmbiguousRef
+=== PAUSE TestInspectTerminalRunUnknownAmbiguousRef
+=== RUN   TestInspectTerminalRunUnknownMissingRunBranch
+=== PAUSE TestInspectTerminalRunUnknownMissingRunBranch
+=== RUN   TestInspectTerminalRunReleased
+=== PAUSE TestInspectTerminalRunReleased
+=== RUN   TestInspectTerminalRunSafeWithoutWorktree
+=== PAUSE TestInspectTerminalRunSafeWithoutWorktree
+=== RUN   TestInspectTerminalRunUnsafePath
+=== PAUSE TestInspectTerminalRunUnsafePath
+=== CONT  TestMergedHeadRecordReleasesARunContainedInTheMergedHead
+=== CONT  TestArchivedSpecLeftoversRequireTheArchivedPRD
+=== CONT  TestMergedHeadKeepsTheUnintegratedReasonWithoutASource
+=== CONT  TestArchivedSpecLeftoverScopeKinds
+=== RUN   TestArchivedSpecLeftoverScopeKinds/created.txt
+=== CONT  TestAbsentTargetBranchIsReleasedOnTheMergedHead
+=== CONT  TestApplyRemovesASupersededLeftoverWorktree
+=== CONT  TestApplyRefusesWhenTheLeftoverSetChanged
+=== CONT  TestMergedSpecRunWithAnUnrepresentedTaskCommitStaysUnintegrated
+=== CONT  TestMergedHeadRefusesATaskCommitOfAnotherSpec
+=== CONT  TestMergedHeadKeepsADirtyRunWorktree
+--- PASS: TestMergedHeadKeepsADirtyRunWorktree (0.49s)
+=== CONT  TestMergedSpecRunWithAnUndeclaredLeftoverStaysDirty
+=== RUN   TestMergedSpecRunWithAnUndeclaredLeftoverStaysDirty/unrelated.txt
+--- PASS: TestMergedHeadRecordReleasesARunContainedInTheMergedHead (0.58s)
+=== CONT  TestMergedSpecRunWithDeclaredLeftoversIsSuperseded
+--- PASS: TestMergedHeadKeepsTheUnintegratedReasonWithoutASource (0.61s)
+=== CONT  TestMergedSpecRunWithSpecDirectoryCommitsIsSuperseded
+--- PASS: TestMergedHeadRefusesATaskCommitOfAnotherSpec (0.65s)
+=== CONT  TestMergedHeadApplyRefusesAMovedFallbackHead
+--- PASS: TestArchivedSpecLeftoversRequireTheArchivedPRD (0.83s)
+=== CONT  TestMergedHeadApplyRefusesAChangedRecord
+=== RUN   TestArchivedSpecLeftoverScopeKinds/deleted.txt
+=== RUN   TestMergedSpecRunWithAnUndeclaredLeftoverStaysDirty/instruction.txt
+--- PASS: TestMergedSpecRunWithAnUnrepresentedTaskCommitStaysUnintegrated (1.36s)
+=== CONT  TestMergedHeadFallsBackWhenRecordCommitIsMissing
+--- PASS: TestMergedHeadApplyRefusesAChangedRecord (0.54s)
+=== CONT  TestMergedHeadApplyReleasesTheRunWorktreeAndBranch
+--- PASS: TestApplyRefusesWhenTheLeftoverSetChanged (1.43s)
+=== CONT  TestMergedHeadFallsBackWhenRecordsDisagree
+=== CONT  TestInspectTerminalRunUnintegratedWhenDeletedTargetContentComparisonFails
+--- PASS: TestMergedSpecRunWithDeclaredLeftoversIsSuperseded (0.90s)
+=== RUN   TestArchivedSpecLeftoverScopeKinds/recorded.txt
+--- PASS: TestMergedSpecRunWithSpecDirectoryCommitsIsSuperseded (1.20s)
+=== CONT  TestMergedHeadIgnoresARecordForAnotherSpec
+--- PASS: TestApplyRemovesASupersededLeftoverWorktree (1.83s)
+=== CONT  TestInspectTerminalRunUnsafePath
+=== RUN   TestInspectTerminalRunUnsafePath/symlinked_worktree
+=== RUN   TestInspectTerminalRunUnsafePath/symlinked_worktree_parent
+--- PASS: TestMergedHeadApplyRefusesAMovedFallbackHead (1.42s)
+=== CONT  TestMergedHeadRefusesAQAReportTheMergedHeadDoesNotSupersede
+--- PASS: TestInspectTerminalRunUnintegratedWhenDeletedTargetContentComparisonFails (0.66s)
+=== CONT  TestInspectTerminalRunSafeWithoutWorktree
+--- PASS: TestMergedHeadFallsBackWhenRecordCommitIsMissing (0.78s)
+=== CONT  TestInspectTerminalRunReleased
+--- PASS: TestMergedSpecRunWithAnUndeclaredLeftoverStaysDirty (1.68s)
+    --- PASS: TestMergedSpecRunWithAnUndeclaredLeftoverStaysDirty/unrelated.txt (0.87s)
+    --- PASS: TestMergedSpecRunWithAnUndeclaredLeftoverStaysDirty/instruction.txt (0.81s)
+=== CONT  TestMergedHeadDefaultBranchReleasesAnArchivedSpecRunAfterMainMoved
+--- PASS: TestMergedHeadApplyReleasesTheRunWorktreeAndBranch (0.90s)
+=== CONT  TestInspectTerminalRunUnknownMissingRunBranch
+=== RUN   TestInspectTerminalRunUnsafePath/unclean_worktree_path
+--- PASS: TestMergedHeadFallsBackWhenRecordsDisagree (0.88s)
+=== CONT  TestMergedHeadRefusesATaskNotCompletedAtTheMergedHead
+--- PASS: TestAbsentTargetBranchIsReleasedOnTheMergedHead (2.31s)
+=== CONT  TestInspectTerminalRunUnknownAmbiguousRef
+--- PASS: TestMergedHeadIgnoresARecordForAnotherSpec (0.52s)
+=== CONT  TestInspectTerminalRunActiveRunDoesNotInspectDeletedTargetContent
+--- PASS: TestInspectTerminalRunReleased (0.29s)
+=== CONT  TestMergedHeadRefusesAnUnrepresentedCommit
+--- PASS: TestInspectTerminalRunActiveRunDoesNotInspectDeletedTargetContent (0.17s)
+=== CONT  TestInspectTerminalRunUnknownWhenDeletedTargetDefaultBranchCannotBeResolved
+=== RUN   TestInspectTerminalRunUnsafePath/existing_unregistered_worktree_path
+--- PASS: TestInspectTerminalRunSafeWithoutWorktree (0.40s)
+=== CONT  TestInspectTerminalRunRequiresArchivedEvidence
+=== RUN   TestInspectTerminalRunRequiresArchivedEvidence/deleted_target_with_active_Spec_evidence_preserves
+--- PASS: TestArchivedSpecLeftoverScopeKinds (2.55s)
+    --- PASS: TestArchivedSpecLeftoverScopeKinds/created.txt (0.87s)
+    --- PASS: TestArchivedSpecLeftoverScopeKinds/deleted.txt (0.89s)
+    --- PASS: TestArchivedSpecLeftoverScopeKinds/recorded.txt (0.80s)
+=== CONT  TestInspectTerminalRunUnknownMissingTarget
+--- PASS: TestInspectTerminalRunUnknownMissingRunBranch (0.31s)
+=== CONT  TestInspectTerminalRunUnintegratedWhenDeletedTargetRetainsRunDeletedFile
+--- PASS: TestInspectTerminalRunUnknownAmbiguousRef (0.38s)
+=== CONT  TestInspectTerminalRunDirty
+=== RUN   TestInspectTerminalRunDirty/tracked_change_with_missing_target_metadata
+=== RUN   TestInspectTerminalRunUnsafePath/symlinked_Git_root
+--- PASS: TestMergedHeadRefusesAQAReportTheMergedHeadDoesNotSupersede (0.68s)
+=== CONT  TestInspectTerminalRunUnintegratedWhenDeletedTargetHasDifferentSharedFile
+--- PASS: TestInspectTerminalRunUnknownWhenDeletedTargetDefaultBranchCannotBeResolved (0.35s)
+=== CONT  TestInspectTerminalRunClassifiesSupersededQAReport
+=== RUN   TestInspectTerminalRunClassifiesSupersededQAReport/newer_target_report_supersedes_QA-only_branch
+--- PASS: TestInspectTerminalRunUnknownMissingTarget (0.30s)
+=== CONT  TestInspectTerminalRunUnintegratedWhenDeletedTargetHasRunOnlyFile
+=== RUN   TestInspectTerminalRunUnsafePath/symlinked_Git_root_parent
+--- PASS: TestMergedHeadDefaultBranchReleasesAnArchivedSpecRunAfterMainMoved (0.71s)
+=== CONT  TestInspectTerminalRunBoundsSupersededReason
+--- PASS: TestMergedHeadRefusesATaskNotCompletedAtTheMergedHead (0.65s)
+=== CONT  TestInspectTerminalRunUnintegrated
+=== RUN   TestInspectTerminalRunDirty/untracked_change
+--- PASS: TestInspectTerminalRunUnsafePath (1.17s)
+    --- PASS: TestInspectTerminalRunUnsafePath/symlinked_worktree (0.20s)
+    --- PASS: TestInspectTerminalRunUnsafePath/symlinked_worktree_parent (0.25s)
+    --- PASS: TestInspectTerminalRunUnsafePath/unclean_worktree_path (0.22s)
+    --- PASS: TestInspectTerminalRunUnsafePath/existing_unregistered_worktree_path (0.21s)
+    --- PASS: TestInspectTerminalRunUnsafePath/symlinked_Git_root (0.15s)
+    --- PASS: TestInspectTerminalRunUnsafePath/symlinked_Git_root_parent (0.14s)
+=== CONT  TestInspectTerminalRunConcurrentSafe
+--- PASS: TestMergedHeadRefusesAnUnrepresentedCommit (0.57s)
+=== CONT  TestArchivedSpecDirectoryProofStillComparesOtherCommitPaths
+=== RUN   TestInspectTerminalRunRequiresArchivedEvidence/deleted_target_with_archived_Spec_evidence_is_safe
+--- PASS: TestInspectTerminalRunUnintegratedWhenDeletedTargetRetainsRunDeletedFile (0.62s)
+=== CONT  TestMergedHeadDefaultBranchSupersedesARedoneTaskAndAFailedQAReport
+--- PASS: TestInspectTerminalRunUnintegratedWhenDeletedTargetHasDifferentSharedFile (0.68s)
+=== CONT  TestInspectTerminalRunSafeWhenTargetDeletedAfterSquashMerge
+=== RUN   TestInspectTerminalRunClassifiesSupersededQAReport/newer_archived_target_report_supersedes_archived_QA-only_branch
+--- PASS: TestInspectTerminalRunDirty (0.77s)
+    --- PASS: TestInspectTerminalRunDirty/tracked_change_with_missing_target_metadata (0.29s)
+    --- PASS: TestInspectTerminalRunDirty/untracked_change (0.48s)
+=== CONT  TestMergedHeadDefaultBranchComparesOnlyTheRunsChangedFiles
+--- PASS: TestInspectTerminalRunUnintegrated (0.58s)
+=== CONT  TestInspectTerminalRunSafe
+--- PASS: TestInspectTerminalRunConcurrentSafe (0.59s)
+=== CONT  TestArchivedSpecDirtyPathsKeepLiteralFilenames
+--- PASS: TestInspectTerminalRunUnintegratedWhenDeletedTargetHasRunOnlyFile (0.79s)
+=== CONT  TestArchivedSpecLeftoverRenameKeepsAnOutsideSource
+--- PASS: TestInspectTerminalRunBoundsSupersededReason (0.82s)
+=== CONT  TestMergedHeadRecordSupersedesARedoneTaskAndAFailedQAReport
+=== RUN   TestInspectTerminalRunClassifiesSupersededQAReport/non_QA_commit_preserves_branch
+--- PASS: TestArchivedSpecDirectoryProofStillComparesOtherCommitPaths (0.95s)
+=== RUN   TestInspectTerminalRunRequiresArchivedEvidence/present_target_without_archived_Spec_evidence_stays_safe
+--- PASS: TestInspectTerminalRunSafe (0.42s)
+--- PASS: TestMergedHeadDefaultBranchSupersedesARedoneTaskAndAFailedQAReport (0.78s)
+--- PASS: TestMergedHeadDefaultBranchComparesOnlyTheRunsChangedFiles (0.61s)
+--- PASS: TestInspectTerminalRunSafeWhenTargetDeletedAfterSquashMerge (0.69s)
+--- PASS: TestArchivedSpecDirtyPathsKeepLiteralFilenames (0.56s)
+--- PASS: TestInspectTerminalRunRequiresArchivedEvidence (1.67s)
+    --- PASS: TestInspectTerminalRunRequiresArchivedEvidence/deleted_target_with_active_Spec_evidence_preserves (0.65s)
+    --- PASS: TestInspectTerminalRunRequiresArchivedEvidence/deleted_target_with_archived_Spec_evidence_is_safe (0.76s)
+    --- PASS: TestInspectTerminalRunRequiresArchivedEvidence/present_target_without_archived_Spec_evidence_stays_safe (0.26s)
+--- PASS: TestMergedHeadRecordSupersedesARedoneTaskAndAFailedQAReport (0.52s)
+=== RUN   TestInspectTerminalRunClassifiesSupersededQAReport/missing_target_report_preserves_branch
+--- PASS: TestArchivedSpecLeftoverRenameKeepsAnOutsideSource (0.66s)
+=== RUN   TestInspectTerminalRunClassifiesSupersededQAReport/older_target_report_preserves_branch
+=== RUN   TestInspectTerminalRunClassifiesSupersededQAReport/same_target_report_preserves_branch
+--- PASS: TestInspectTerminalRunClassifiesSupersededQAReport (2.08s)
+    --- PASS: TestInspectTerminalRunClassifiesSupersededQAReport/newer_target_report_supersedes_QA-only_branch (0.59s)
+    --- PASS: TestInspectTerminalRunClassifiesSupersededQAReport/newer_archived_target_report_supersedes_archived_QA-only_branch (0.53s)
+    --- PASS: TestInspectTerminalRunClassifiesSupersededQAReport/non_QA_commit_preserves_branch (0.33s)
+    --- PASS: TestInspectTerminalRunClassifiesSupersededQAReport/missing_target_report_preserves_branch (0.20s)
+    --- PASS: TestInspectTerminalRunClassifiesSupersededQAReport/older_target_report_preserves_branch (0.22s)
+    --- PASS: TestInspectTerminalRunClassifiesSupersededQAReport/same_target_report_preserves_branch (0.22s)
+PASS
+suiteguard: guard cost: measured 8087 paths; fingerprint took 506.4285ms before and 257.377875ms after
+ok  	roundfix/internal/worktree	5.864s
