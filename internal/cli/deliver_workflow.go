@@ -841,7 +841,21 @@ func (workflow *commandDeliveryWorkflow) RunStart(ctx context.Context, gitRoot, 
 	if err != nil {
 		return "", fmt.Errorf("read Run %q: %w", runID, err)
 	}
-	if !found || run.Kind != store.KindImplement || run.GitRoot != gitRoot || strings.TrimSpace(run.HeadSHA) == "" {
+	if !found || run.Kind != store.KindImplement || strings.TrimSpace(run.HeadSHA) == "" {
+		return "", fmt.Errorf("Run %q has no Implement start head for repository %q", runID, gitRoot)
+	}
+	repositoryRoot, err := roundconfig.RepositoryRoot(gitRoot)
+	if err != nil {
+		return "", fmt.Errorf("resolve queue repository for Run %q: %w", runID, err)
+	}
+	runRepositoryRoot := run.RepositoryRoot
+	if runRepositoryRoot == "" {
+		runRepositoryRoot, err = roundconfig.RepositoryRoot(run.GitRoot)
+		if err != nil {
+			return "", fmt.Errorf("resolve Run %q repository: %w", runID, err)
+		}
+	}
+	if runRepositoryRoot != repositoryRoot {
 		return "", fmt.Errorf("Run %q has no Implement start head for repository %q", runID, gitRoot)
 	}
 	return strings.TrimSpace(run.HeadSHA), nil
