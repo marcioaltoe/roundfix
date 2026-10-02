@@ -1,0 +1,137 @@
+=== RUN   TestARoutedPromptNeedsAMonthlyKeyLimit
+=== RUN   TestARoutedPromptNeedsAMonthlyKeyLimit/"limit":null,"limit_remaining":null,"limit_reset":null
+=== RUN   TestARoutedPromptNeedsAMonthlyKeyLimit/"limit_reset":"monthly"
+=== RUN   TestARoutedPromptNeedsAMonthlyKeyLimit/"limit":null,"limit_reset":"monthly"
+--- PASS: TestARoutedPromptNeedsAMonthlyKeyLimit (0.01s)
+    --- PASS: TestARoutedPromptNeedsAMonthlyKeyLimit/"limit":null,"limit_remaining":null,"limit_reset":null (0.00s)
+    --- PASS: TestARoutedPromptNeedsAMonthlyKeyLimit/"limit_reset":"monthly" (0.00s)
+    --- PASS: TestARoutedPromptNeedsAMonthlyKeyLimit/"limit":null,"limit_reset":"monthly" (0.00s)
+=== RUN   TestALifetimeKeyLimitIsRefused
+=== RUN   TestALifetimeKeyLimitIsRefused/null
+=== RUN   TestALifetimeKeyLimitIsRefused/"daily"
+=== RUN   TestALifetimeKeyLimitIsRefused/"weekly"
+=== RUN   TestALifetimeKeyLimitIsRefused/"Monthly"
+--- PASS: TestALifetimeKeyLimitIsRefused (0.01s)
+    --- PASS: TestALifetimeKeyLimitIsRefused/null (0.00s)
+    --- PASS: TestALifetimeKeyLimitIsRefused/"daily" (0.00s)
+    --- PASS: TestALifetimeKeyLimitIsRefused/"weekly" (0.00s)
+    --- PASS: TestALifetimeKeyLimitIsRefused/"Monthly" (0.00s)
+=== RUN   TestAMonthlyKeyLimitAboveTheCeilingIsRefused
+--- PASS: TestAMonthlyKeyLimitAboveTheCeilingIsRefused (0.00s)
+=== RUN   TestAMonthlyKeyLimitWithinTheCeilingIsAccepted
+=== RUN   TestAMonthlyKeyLimitWithinTheCeilingIsAccepted/1
+=== RUN   TestAMonthlyKeyLimitWithinTheCeilingIsAccepted/5
+--- PASS: TestAMonthlyKeyLimitWithinTheCeilingIsAccepted (0.01s)
+    --- PASS: TestAMonthlyKeyLimitWithinTheCeilingIsAccepted/1 (0.00s)
+    --- PASS: TestAMonthlyKeyLimitWithinTheCeilingIsAccepted/5 (0.00s)
+=== RUN   TestAnExhaustedKeyLimitIsRefused
+=== RUN   TestAnExhaustedKeyLimitIsRefused/0
+=== RUN   TestAnExhaustedKeyLimitIsRefused/-0.1
+--- PASS: TestAnExhaustedKeyLimitIsRefused (0.00s)
+    --- PASS: TestAnExhaustedKeyLimitIsRefused/0 (0.00s)
+    --- PASS: TestAnExhaustedKeyLimitIsRefused/-0.1 (0.00s)
+=== RUN   TestKeyUsageSendsOnlyTheBearerHeader
+--- PASS: TestKeyUsageSendsOnlyTheBearerHeader (0.00s)
+=== RUN   TestKeyUsageRefusesAMalformedAnswer
+=== RUN   TestKeyUsageRefusesAMalformedAnswer/{}
+=== RUN   TestKeyUsageRefusesAMalformedAnswer/null
+=== RUN   TestKeyUsageRefusesAMalformedAnswer/{"data":null}
+=== RUN   TestKeyUsageRefusesAMalformedAnswer/{"data":{"usage_monthly":null}}
+=== RUN   TestKeyUsageRefusesAMalformedAnswer/{"data":{"usage_monthly":-1}}
+=== RUN   TestKeyUsageRefusesAMalformedAnswer/{"data":{"usage_monthly":"0.5"}}
+=== RUN   TestKeyUsageRefusesAMalformedAnswer/{"data":{"usage_monthly":true}}
+=== RUN   TestKeyUsageRefusesAMalformedAnswer/{"data":{"usage_monthly":1e999}}
+=== RUN   TestKeyUsageRefusesAMalformedAnswer/{"data":{"usage_monthly":0.5}}_trailing
+=== RUN   TestKeyUsageRefusesAMalformedAnswer/router-test-secret
+--- PASS: TestKeyUsageRefusesAMalformedAnswer (0.00s)
+    --- PASS: TestKeyUsageRefusesAMalformedAnswer/{} (0.00s)
+    --- PASS: TestKeyUsageRefusesAMalformedAnswer/null (0.00s)
+    --- PASS: TestKeyUsageRefusesAMalformedAnswer/{"data":null} (0.00s)
+    --- PASS: TestKeyUsageRefusesAMalformedAnswer/{"data":{"usage_monthly":null}} (0.00s)
+    --- PASS: TestKeyUsageRefusesAMalformedAnswer/{"data":{"usage_monthly":-1}} (0.00s)
+    --- PASS: TestKeyUsageRefusesAMalformedAnswer/{"data":{"usage_monthly":"0.5"}} (0.00s)
+    --- PASS: TestKeyUsageRefusesAMalformedAnswer/{"data":{"usage_monthly":true}} (0.00s)
+    --- PASS: TestKeyUsageRefusesAMalformedAnswer/{"data":{"usage_monthly":1e999}} (0.00s)
+    --- PASS: TestKeyUsageRefusesAMalformedAnswer/{"data":{"usage_monthly":0.5}}_trailing (0.00s)
+    --- PASS: TestKeyUsageRefusesAMalformedAnswer/router-test-secret (0.00s)
+=== RUN   TestKeyUsageRefusesHTTPFailuresAndRedirects
+=== RUN   TestKeyUsageRefusesHTTPFailuresAndRedirects/302
+=== RUN   TestKeyUsageRefusesHTTPFailuresAndRedirects/401
+=== RUN   TestKeyUsageRefusesHTTPFailuresAndRedirects/402
+=== RUN   TestKeyUsageRefusesHTTPFailuresAndRedirects/429
+=== RUN   TestKeyUsageRefusesHTTPFailuresAndRedirects/500
+--- PASS: TestKeyUsageRefusesHTTPFailuresAndRedirects (0.00s)
+    --- PASS: TestKeyUsageRefusesHTTPFailuresAndRedirects/302 (0.00s)
+    --- PASS: TestKeyUsageRefusesHTTPFailuresAndRedirects/401 (0.00s)
+    --- PASS: TestKeyUsageRefusesHTTPFailuresAndRedirects/402 (0.00s)
+    --- PASS: TestKeyUsageRefusesHTTPFailuresAndRedirects/429 (0.00s)
+    --- PASS: TestKeyUsageRefusesHTTPFailuresAndRedirects/500 (0.00s)
+=== RUN   TestKeyUsageHonorsCancellationAndNetworkFailure
+--- PASS: TestKeyUsageHonorsCancellationAndNetworkFailure (0.03s)
+=== RUN   TestKeyUsageCapsTheRequestAtTenSeconds
+--- PASS: TestKeyUsageCapsTheRequestAtTenSeconds (10.00s)
+=== RUN   TestRouterLineIsReadByTheJudgeLog
+--- PASS: TestRouterLineIsReadByTheJudgeLog (0.00s)
+=== RUN   TestLedgerRecordsUnreadableUsageAndClampsNegativeDelta
+--- PASS: TestLedgerRecordsUnreadableUsageAndClampsNegativeDelta (0.00s)
+=== RUN   TestMonthSpendAddsTypeSafeToTheLargerOpenRouterFigure
+=== RUN   TestMonthSpendAddsTypeSafeToTheLargerOpenRouterFigure/0.5
+=== RUN   TestMonthSpendAddsTypeSafeToTheLargerOpenRouterFigure/0.05
+=== RUN   TestMonthSpendAddsTypeSafeToTheLargerOpenRouterFigure/0
+--- PASS: TestMonthSpendAddsTypeSafeToTheLargerOpenRouterFigure (0.00s)
+    --- PASS: TestMonthSpendAddsTypeSafeToTheLargerOpenRouterFigure/0.5 (0.00s)
+    --- PASS: TestMonthSpendAddsTypeSafeToTheLargerOpenRouterFigure/0.05 (0.00s)
+    --- PASS: TestMonthSpendAddsTypeSafeToTheLargerOpenRouterFigure/0 (0.00s)
+=== RUN   TestMonthSpendFailsOnAnUnreadableKeyEndpoint
+--- PASS: TestMonthSpendFailsOnAnUnreadableKeyEndpoint (0.00s)
+=== RUN   TestMonthSpendRejectsUnreadableLogsAndMissingKeys
+--- PASS: TestMonthSpendRejectsUnreadableLogsAndMissingKeys (0.00s)
+PASS
+ok  	roundfix/internal/jevrouter	10.314s
+=== RUN   TestJevRouterCeilingFallsBackBeforeWork
+--- PASS: TestJevRouterCeilingFallsBackBeforeWork (0.12s)
+=== RUN   TestJevRouterCeilingFailsTheTaskAfterWork
+--- PASS: TestJevRouterCeilingFailsTheTaskAfterWork (0.08s)
+=== RUN   TestJevRouterUnreadableSpendFallsBack
+--- PASS: TestJevRouterUnreadableSpendFallsBack (0.08s)
+=== RUN   TestJevRouterPromptAppendsOneLine
+--- PASS: TestJevRouterPromptAppendsOneLine (0.00s)
+=== RUN   TestNonRoutedPromptCallsNoGate
+=== RUN   TestNonRoutedPromptCallsNoGate/other_OpenCode_model
+=== RUN   TestNonRoutedPromptCallsNoGate/other_runtime
+--- PASS: TestNonRoutedPromptCallsNoGate (0.00s)
+    --- PASS: TestNonRoutedPromptCallsNoGate/other_OpenCode_model (0.00s)
+    --- PASS: TestNonRoutedPromptCallsNoGate/other_runtime (0.00s)
+=== RUN   TestJevRouterAfterFailurePreservesPromptResult
+=== RUN   TestJevRouterAfterFailurePreservesPromptResult/success
+=== RUN   TestJevRouterAfterFailurePreservesPromptResult/failure
+--- PASS: TestJevRouterAfterFailurePreservesPromptResult (0.00s)
+    --- PASS: TestJevRouterAfterFailurePreservesPromptResult/success (0.00s)
+    --- PASS: TestJevRouterAfterFailurePreservesPromptResult/failure (0.00s)
+=== RUN   TestJevRouterCanceledPromptStillRecords
+--- PASS: TestJevRouterCanceledPromptStillRecords (0.00s)
+=== RUN   TestJevRouterPlainRunnerRecordsEveryPrompt
+--- PASS: TestJevRouterPlainRunnerRecordsEveryPrompt (0.00s)
+=== RUN   TestJevRouterKeyRefusalKeepsItsClassification
+--- PASS: TestJevRouterKeyRefusalKeepsItsClassification (0.00s)
+=== RUN   TestJevRouterDefaultGateUsesProcessHomeAndJudgeCeiling
+--- PASS: TestJevRouterDefaultGateUsesProcessHomeAndJudgeCeiling (0.01s)
+=== RUN   TestJevRouterUnboundedKeyFallsBackBeforeWork
+--- PASS: TestJevRouterUnboundedKeyFallsBackBeforeWork (0.08s)
+=== RUN   TestJevRouterUnboundedKeyFailsAfterWork
+--- PASS: TestJevRouterUnboundedKeyFailsAfterWork (0.08s)
+=== RUN   TestJevRouterGateChecksTheReportedKeyLimit
+=== RUN   TestJevRouterGateChecksTheReportedKeyLimit/unlimited
+=== RUN   TestJevRouterGateChecksTheReportedKeyLimit/lifetime
+=== RUN   TestJevRouterGateChecksTheReportedKeyLimit/over_ceiling
+=== RUN   TestJevRouterGateChecksTheReportedKeyLimit/bounded
+=== RUN   TestJevRouterGateChecksTheReportedKeyLimit/exhausted
+--- PASS: TestJevRouterGateChecksTheReportedKeyLimit (0.00s)
+    --- PASS: TestJevRouterGateChecksTheReportedKeyLimit/unlimited (0.00s)
+    --- PASS: TestJevRouterGateChecksTheReportedKeyLimit/lifetime (0.00s)
+    --- PASS: TestJevRouterGateChecksTheReportedKeyLimit/over_ceiling (0.00s)
+    --- PASS: TestJevRouterGateChecksTheReportedKeyLimit/bounded (0.00s)
+    --- PASS: TestJevRouterGateChecksTheReportedKeyLimit/exhausted (0.00s)
+PASS
+suiteguard: guard cost: measured 8406 paths; fingerprint took 270.032375ms before and 217.593291ms after
+ok  	roundfix/internal/daemon	1.269s

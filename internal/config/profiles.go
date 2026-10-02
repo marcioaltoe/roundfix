@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+
+	"roundfix/internal/agent"
 )
 
 type AgentSelection struct {
@@ -153,6 +155,9 @@ func ResolveProfile(config Config, category WorkCategory, preferredOverride *Age
 	source := entry.Source
 	deviation := cloneProfileDeviation(entry.Deviation)
 	if preferredOverride != nil {
+		if agent.IsJevRouterSelection(preferredOverride.Runtime, preferredOverride.Model) {
+			return ResolvedProfile{}, errors.New("the Jev Router cannot be a one-Run override; name it in Project Config")
+		}
 		selection, err := normalizeSelection("invocation preferred", *preferredOverride)
 		if err != nil {
 			return ResolvedProfile{}, err
@@ -298,11 +303,29 @@ func validateProfiles(entries Profiles) error {
 		}
 	}
 	for category, entry := range entries {
+		if err := validateJevRouterProfileSource("profiles."+string(category), entry); err != nil {
+			return err
+		}
 		if _, ok := ParseWorkCategory(string(category)); !ok {
 			return fmt.Errorf("profiles.%s is not a supported Agent Work Category; supported values: %s", category, supportedWorkCategoryList())
 		}
 		if err := validateAgentSelectionProfile("profiles."+string(category), entry.Profile); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func validateJevRouterProfileSource(path string, entry ProfileEntry) error {
+	if entry.Source == ProfileSourceProject {
+		return nil
+	}
+	if agent.IsJevRouterSelection(entry.Profile.Preferred.Runtime, entry.Profile.Preferred.Model) {
+		return fmt.Errorf("%s.preferred names the Jev Router (%s), which only Project Config may select", path, agent.JevRouterModel)
+	}
+	for index, selection := range entry.Profile.Fallbacks {
+		if agent.IsJevRouterSelection(selection.Runtime, selection.Model) {
+			return fmt.Errorf("%s.fallbacks[%d] names the Jev Router (%s), which only Project Config may select", path, index, agent.JevRouterModel)
 		}
 	}
 	return nil
@@ -467,6 +490,9 @@ func normalizeSelection(path string, selection AgentSelection) (AgentSelection, 
 	}
 	if normalized.Model == "" {
 		return AgentSelection{}, fmt.Errorf("%s.model must not be empty", path)
+	}
+	if agent.IsJevRouterSelection(normalized.Runtime, normalized.Model) && normalized.ReasoningEffort != "" {
+		return AgentSelection{}, fmt.Errorf(`%s.reasoning_effort must be "" for the Jev Router; the router chooses the effort`, path)
 	}
 	return normalized, nil
 }

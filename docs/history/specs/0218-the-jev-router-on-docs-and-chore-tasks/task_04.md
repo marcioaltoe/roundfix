@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0218-the-jev-router-on-docs-and-chore-tasks
-status: pending
+status: completed
 type: chore
 complexity: high
 ---
@@ -78,3 +78,43 @@ Entry. It changes no profile and no default.
 - [_prd.md](_prd.md) — Goal 4; User Story 4; Core Feature 6; Success Metric 5; Acceptance evidence; Open Questions
 - [_techspec.md](_techspec.md) — The measurement protocol; Risks & Considerations; Testing Approach 5; Build Order 4
 - ADR-0218; ADR-0211
+
+## Result
+
+The routed replay was not started. `ROUNDFIX_OPENROUTER_API_KEY` was present,
+`NODE_OPTIONS` was unset, and `env -u NODE_OPTIONS GOCACHE=/tmp/roundfix-0218-task04-gocache make build`
+rebuilt `bin/roundfix` from the Task 01–03 tree. The measurement record now
+records zero replay rows and the preflight stop; no Backlog Entry was written.
+
+Focused preflight evidence:
+
+- A fresh scratch clone rejected the first scratch-only config edit before any
+  Run or Agent started because the empty router effort must be YAML `""`.
+- With that corrected, the replay refused a detached HEAD before creating a
+  Run; the next fresh clone used a branch and reached the committed-Spec check.
+- The protocol requires a selected Task-only graph in the scratch clone, but
+  `roundfix implement` loads that graph from `HEAD`. Creating the required
+  disposable scratch commit was rejected by the approval review because this
+  Task explicitly prohibits commits. No routed prompt or default replay was
+  produced.
+
+- `docs/specs/0218-the-jev-router-on-docs-and-chore-tasks/measurement/jev-router.md`
+  records the zero-row measurement and explains why no router cost, tool-call,
+  fallback, token, or Verification-repair evidence exists.
+
+Focused checks after the repair:
+
+- `git diff --check` passed.
+- A structure check found `## Measured`, `## Reading`, the routed model label,
+  and the router-cost field in the new record.
+- A secret-pattern scan found no `sk-or-...` value in the record.
+
+The Daemon Verification commands remain for the Daemon. Direction is required
+on whether an ephemeral commit inside each disposable scratch clone is allowed
+to make the authored protocol executable; no repository commit, push, or PR was
+made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261002T194325Z_56cb22f8a792bdff`
+- Source commit: `547042ba45b3cd99769e7961565bc62c5ad37a7f`

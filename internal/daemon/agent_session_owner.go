@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"roundfix/internal/agent"
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/jevrouter"
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
@@ -21,6 +23,7 @@ type AgentSelectionProfiles map[roundconfig.WorkCategory]roundconfig.ResolvedPro
 
 type agentSessionScope struct {
 	RunID    string
+	Spec     string
 	Kind     string
 	ID       string
 	Category roundconfig.WorkCategory
@@ -114,6 +117,7 @@ func (engine *Engine) taskAgentSessionOwner(plan TaskPlan, task spec.Task, ordin
 	category := roundconfig.WorkCategory(task.Type)
 	return engine.agentSessionOwner(plan.agentSelectionOwnerConfig(), agentSessionScope{
 		RunID:    plan.RunID,
+		Spec:     plan.Spec.Slug,
 		Kind:     "task",
 		ID:       task.ID,
 		Category: category,
@@ -128,6 +132,7 @@ func (engine *Engine) qaAgentSessionOwner(plan TaskPlan, ordinal int) (*agentSes
 	}
 	return engine.agentSessionOwner(plan.agentSelectionOwnerConfig(), agentSessionScope{
 		RunID:    plan.RunID,
+		Spec:     plan.Spec.Slug,
 		Kind:     "qa",
 		ID:       "qa",
 		Category: roundconfig.CategoryQA,
@@ -343,6 +348,17 @@ func (owner *agentSessionOwner) prepareSession(ctx context.Context, req agent.Ex
 }
 
 func (owner *agentSessionOwner) runPrepared(ctx context.Context, req agent.ExecuteRequest) (agent.ExecuteResult, error) {
+	routed := agent.IsJevRouterSelection(req.Runtime.ID, req.Runtime.Model)
+	var usageBefore float64
+	var started time.Time
+	if routed {
+		var err error
+		usageBefore, err = owner.engine.deps.JevRouter.Before(ctx)
+		if err != nil {
+			return agent.ExecuteResult{LogPath: req.LogPath}, err
+		}
+		started = owner.engine.deps.Now()
+	}
 	sink := &agentSessionEventSink{owner: owner, req: req, next: owner.engine.deps.Sink}
 	var result agent.ExecuteResult
 	var err error
@@ -351,7 +367,27 @@ func (owner *agentSessionOwner) runPrepared(ctx context.Context, req agent.Execu
 	} else {
 		result, err = owner.engine.deps.Runner.Run(ctx, req, sink)
 	}
+	var latency time.Duration
+	if routed {
+		latency = owner.engine.deps.Now().Sub(started)
+	}
 	owner.engine.recordPromptUsage(ctx, req, result, owner.scope.Kind, owner.scope.ID, owner.attemptNumber)
+	if routed {
+		record := jevrouter.PromptRecord{
+			RunID: req.RunID, Spec: owner.scope.Spec, ScopeKind: owner.scope.Kind, ScopeID: owner.scope.ID,
+			Category: string(owner.scope.Category), Repository: req.GitRoot, Attempt: owner.attemptNumber,
+			UsageBefore: usageBefore, Latency: latency, Failed: err != nil,
+		}
+		if result.Usage.InputTokens != nil {
+			record.InputTokens = *result.Usage.InputTokens
+		}
+		if result.Usage.OutputTokens != nil {
+			record.OutputTokens = *result.Usage.OutputTokens
+		}
+		if afterErr := owner.engine.deps.JevRouter.After(context.WithoutCancel(ctx), record); afterErr != nil {
+			fmt.Fprintf(owner.engine.deps.Progress, "roundfix: warning: router prompt not recorded for %s %s: %v\n", owner.scope.Kind, owner.scope.ID, afterErr)
+		}
+	}
 	return result, err
 }
 
@@ -688,6 +724,11 @@ func selectionFailureForStart(runtime agent.RuntimeSpec, err error) *agent.Selec
 func selectionReasonCode(err error) string {
 	var failure *agent.SelectionFailureError
 	if errors.As(err, &failure) {
+		code, _, _ := strings.Cut(failure.Reason, ":")
+		switch strings.TrimSpace(code) {
+		case agent.JevRouterKeyMissing, "jev_router_key_unbounded", "jev_spend_unreadable", "jev_ceiling_reached":
+			return strings.TrimSpace(code)
+		}
 		if failure.Err != nil {
 			return selectionReasonCode(failure.Err)
 		}

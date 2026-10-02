@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0218-the-jev-router-on-docs-and-chore-tasks
-status: pending
+status: failed
 type: qa
 complexity: high
 ---
