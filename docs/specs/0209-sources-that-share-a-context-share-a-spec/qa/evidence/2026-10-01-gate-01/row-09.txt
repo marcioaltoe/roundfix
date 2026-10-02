@@ -1,0 +1,6 @@
+write-idea: section adjacency, required phrases and full mirror bytes pass.
+write-prd: section adjacency, required phrases and full mirror bytes pass.
+write-techspec: section adjacency, required phrases and full mirror bytes pass.
+Roundfix command/skill references describe pairs, 0.3 and advisory response; all mirrors identical.
+QA settlement unchanged in 58 skill files compared with delivery base.
+Focused four skill tests exit 0 (tests-09.txt); make skills-sync-check exits 0 (skills-sync-check.txt).

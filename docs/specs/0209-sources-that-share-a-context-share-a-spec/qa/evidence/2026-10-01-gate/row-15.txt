@@ -1,0 +1,62 @@
+docs/specs/0209-sources-that-share-a-context-share-a-spec/task_01.md 8b3138f5b29c6f42c270f4de85a8ea178f0ef3a3 24 changed paths, all declared in Context or Recorded paths:
+docs/agents/docs-layout.md
+docs/agents/setup-context.json
+docs/agents/spec-routing.md
+docs/specs/0209-sources-that-share-a-context-share-a-spec/task_01.md
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md
+internal/baseline/assets/modules/context-workflow.json
+internal/baseline/assets/modules/spec-workflow.json
+internal/baseline/assets/profiles/standard-typescript-monorepo.json
+internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/baseline.json
+internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/docs-layout.md
+internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/spec-routing.md
+internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/manifest.json
+internal/baseline/assets/source-baselines/index.json
+internal/baseline/clause_characterization_test.go
+internal/baseline/grouped_sources_clauses_test.go
+internal/baseline/preservation_test.go
+internal/baseline/testdata/catalog.diagnostics.golden.json
+internal/baseline/testdata/catalog.digest
+internal/baseline/testdata/catalog.normalized.json
+internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+
+docs/specs/0209-sources-that-share-a-context-share-a-spec/task_02.md 7c607c7e645043131fb7408dc3d90b0e6618bab9 10 changed paths, all declared in Context or Recorded paths:
+docs/specs/0209-sources-that-share-a-context-share-a-spec/task_02.md
+internal/judge/client.go
+internal/judge/grouping_test.go
+internal/judge/judge.go
+internal/judge/log.go
+internal/judge/pairs.go
+internal/judge/questions.go
+internal/judge/questions.json
+internal/judge/questions_test.go
+internal/judge/sources.go
+
+docs/specs/0209-sources-that-share-a-context-share-a-spec/task_03.md 5fcc743d854201ca3cc001b42720dc98d7ad60b8 9 changed paths, all declared in Context or Recorded paths:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/spec.md
+docs/specs/0209-sources-that-share-a-context-share-a-spec/task_03.md
+docs/user-guide/commands/spec.md
+internal/cli/spec_judge.go
+internal/cli/spec_judge_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/spec.md
+skills/testdata/owned-skill-versions.json
+
+docs/specs/0209-sources-that-share-a-context-share-a-spec/task_04.md 33c34579197044995123efa0d252629dcbed6180 8 changed paths, all declared in Context or Recorded paths:
+.agents/skills/write-idea/SKILL.md
+.agents/skills/write-prd/SKILL.md
+.agents/skills/write-techspec/SKILL.md
+docs/specs/0209-sources-that-share-a-context-share-a-spec/task_04.md
+skills/testdata/owned-skill-versions.json
+skills/write-idea/SKILL.md
+skills/write-prd/SKILL.md
+skills/write-techspec/SKILL.md
+
+Unchanged protected set: Makefile, .roundfixrc.yml, go.mod, internal/cli/cli_test.go, .github/workflows
+
+Daemon mechanical authorization table already audited task_01, task_03 and task_04 against approved record revision 14e049b3c17b3c050db7748a01ec0bad5ecd8ed0. No unlisted tooling Task or earlier-Run audit skip. Task_02 changes only ordinary judge code/tests and its own Task file. No consequent-fix declaration exists; preserve mechanical skip. Recorded paths credited where present; actual path lists above independent of Task Result.

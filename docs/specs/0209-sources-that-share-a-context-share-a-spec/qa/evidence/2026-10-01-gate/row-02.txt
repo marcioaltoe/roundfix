@@ -1,0 +1,7 @@
+internal/baseline/assets/modules/spec-workflow.json: 17 pre-existing clause objects remain byte-identical to Task 01 starting parent.
+
+internal/baseline/assets/modules/context-workflow.json: 24 pre-existing clause objects remain byte-identical to Task 01 starting parent.
+
+Focused Baseline suite exit 0; tests-02.txt captures exact texts/mandatory force, Standard TypeScript Monorepo guide goldens, Source Baseline rows, ready adopter plan with every new clause retained and none unaccounted, existing force/duplicates/citations/catalog/compatibility/formatter/plan gates.
+
+Public Run binary baseline update --repo /private/tmp/roundfix-0209-refresh-esnpjryq --no-skills --yes --format text, twice; both exit 0. Second reports File changes: 0. SHA-256 comparison of every non-.git file before/after second refresh is identical (6372 files); independent git status empty. refresh-first.txt and refresh-second.txt preserve complete output. Disposable HOME=/private/tmp/roundfix-0209-refresh-home-3jcigkdv. No API keys or real Home; same Run binary, local clone of audited HEAD. First cache failure and evidence-writing suiteguard refusal are recorded as harness issues; fresh tests outside checkout passed without source changes.

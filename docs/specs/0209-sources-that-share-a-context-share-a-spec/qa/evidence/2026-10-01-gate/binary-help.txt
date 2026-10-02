@@ -1,0 +1,19 @@
+Usage:
+  roundfix spec judge <slug> [--stage <prd|techspec>] [--format <text|json>]
+
+Raises advisory judgments for one active Spec. Never fails for a judgment.
+Also asks whether each open Finding or Backlog Entry belongs with a source
+the Spec adopted. A suggestion never gates.
+
+Options:
+  --stage   Judge prd or techspec (default: both)
+  --format  Output format: text or json (default: text)
+
+Set ROUNDFIX_OPENROUTER_API_KEY for OpenRouter, or ROUNDFIX_TYPESAFE_API_KEY
+as the direct TypeSafe alternative. The generic OPENROUTER_API_KEY is not read.
+The monthly ceiling is US$5.00 across both transports. Every request is
+recorded in the Judge Log: <home>/.roundfix/judge/<YYYY-MM>.jsonl (UTC month).
+
+Exit codes:
+  0  ran, including advisory, skipped, or stopped results
+  2  usage error, unknown active Spec, or missing required artifact
