@@ -83,7 +83,7 @@ func TestOutputsForCommand(t *testing.T) {
 			}
 			renamed = append(renamed, output)
 		}
-		want = append(renamed, "internal/baseline/assets/setups/go.json")
+		want = append(renamed, "internal/baseline/assets/setups/go.json", "internal/baseline/assets/setups/go-cli-typescript-bun.json")
 		sort.Strings(want)
 		if !reflect.DeepEqual(got, want) {
 			t.Fatalf("make baseline-digests outputs = %v, want enumerated %v", got, want)

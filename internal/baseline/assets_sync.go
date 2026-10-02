@@ -99,11 +99,12 @@ type assetsSyncSnapshot struct {
 }
 
 type assetsSyncSource struct {
-	Type       string `json:"type"`
-	Repository string `json:"repository,omitempty"`
-	Ref        string `json:"ref,omitempty"`
-	Path       string `json:"path,omitempty"`
-	Name       string `json:"name,omitempty"`
+	Setups     []string `json:"setups,omitempty"`
+	Type       string   `json:"type"`
+	Repository string   `json:"repository,omitempty"`
+	Ref        string   `json:"ref,omitempty"`
+	Path       string   `json:"path,omitempty"`
+	Name       string   `json:"name,omitempty"`
 }
 
 type assetsSyncSkill struct {
@@ -278,10 +279,14 @@ func syncAssets(
 
 	findings := []AssetsSyncFinding{}
 	plans := []assetsSyncPlan{}
-	overrides := map[string][]byte{}
+	built := make(map[string]assetsSyncSnapshot, len(current))
 	for _, setupID := range sortedMapKeys(current) {
 		if err := ctx.Err(); err != nil {
 			return assetsSyncPayload(findings), err
+		}
+		built[setupID] = current[setupID]
+		if current[setupID].Source.Type == "composed" {
+			continue
 		}
 		snapshot, snapshotFindings := buildAssetsSyncSnapshot(
 			ctx,
@@ -294,6 +299,47 @@ func syncAssets(
 		if snapshot == nil {
 			continue
 		}
+		built[setupID] = *snapshot
+	}
+	componentDocuments := make(map[string]document, len(built))
+	for setupID, snapshot := range built {
+		data, err := json.Marshal(snapshot)
+		if err != nil {
+			return failedAssetsSyncFindings([]AssetsSyncFinding{assetsSyncInvalidFinding(
+				dependencies.assetRoot, setupID, err.Error(),
+			)}, AssetsSyncInvalid)
+		}
+		componentDocuments[setupID], _ = decodeDocument(data, setupID)
+	}
+	for _, setupID := range sortedMapKeys(current) {
+		if current[setupID].Source.Type != "composed" {
+			continue
+		}
+		components, err := setupCompositionComponents(componentDocuments[setupID], componentDocuments)
+		var composed document
+		if err == nil {
+			composed, err = composeSetupSnapshot(setupID, components)
+		}
+		if err != nil {
+			findings = append(findings, assetsSyncInvalidFinding(dependencies.assetRoot, setupID, err.Error()))
+			continue
+		}
+		data, err := json.Marshal(composed)
+		if err == nil {
+			var snapshot assetsSyncSnapshot
+			err = json.Unmarshal(data, &snapshot)
+			built[setupID] = snapshot
+		}
+		if err != nil {
+			findings = append(findings, assetsSyncInvalidFinding(dependencies.assetRoot, setupID, err.Error()))
+		}
+	}
+	if hasAssetsSyncErrors(findings) {
+		return failedAssetsSyncFindings(findings, AssetsSyncInvalid)
+	}
+	overrides := map[string][]byte{}
+	for _, setupID := range sortedMapKeys(built) {
+		snapshot := built[setupID]
 		data, marshalErr := json.MarshalIndent(snapshot, "", "  ")
 		if marshalErr != nil {
 			findings = append(findings, assetsSyncInvalidFinding(
@@ -328,6 +374,9 @@ func syncAssets(
 	if hasAssetsSyncErrors(findings) {
 		return failedAssetsSyncFindings(findings, AssetsSyncInvalid)
 	}
+	// Transaction preimages are ordered by filename, not setup identifier:
+	// go-cli-typescript-bun.json sorts before go.json.
+	sort.Slice(plans, func(i, j int) bool { return plans[i].path < plans[j].path })
 	if _, err := LoadCatalog(assetsOverlayFS{
 		base:      os.DirFS(dependencies.assetRoot),
 		overrides: overrides,

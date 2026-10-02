@@ -1621,6 +1621,7 @@ func replaceSetupSkillDigest(
 		t.Fatalf("%s skills = %#v, want array", assetPath, setup["skills"])
 	}
 	changed := false
+	var changedSkill map[string]any
 	for _, rawSkill := range skills {
 		skill, ok := rawSkill.(map[string]any)
 		if !ok {
@@ -1634,6 +1635,7 @@ func replaceSetupSkillDigest(
 			digest = strings.Repeat("1", 64)
 		}
 		skill[field] = digest
+		changedSkill = skill
 		changed = true
 		break
 	}
@@ -1655,6 +1657,52 @@ func replaceSetupSkillDigest(
 	}
 	asset.Data = append(data, '\n')
 	assets[assetPath] = asset
+
+	// A shared entry must remain equal in every component before recomposition.
+	setups := map[string]document{}
+	for name, file := range assets {
+		if !strings.HasPrefix(name, "setups/") || !strings.HasSuffix(name, ".json") {
+			continue
+		}
+		setup, diagnostics := decodeDocument(file.Data, name)
+		if len(diagnostics) != 0 {
+			t.Fatalf("decode %s: %v", name, diagnostics)
+		}
+		source, _ := objectValue(setup["source"])
+		if source["type"] != "composed" {
+			for _, skill := range objectsOrEmpty(setup["skills"]) {
+				if skill["name"] == changedSkill["name"] {
+					skill[field] = digest
+				}
+			}
+			var payload any = setup["skills"]
+			if bundles, exists := setup["activationBundles"]; exists {
+				payload = document{"skills": setup["skills"], "activationBundles": bundles}
+			}
+			setup["digest"], err = canonicalSHA256(payload)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+		setups[setup["id"].(string)] = setup
+	}
+	for id, setup := range setups {
+		if source, _ := objectValue(setup["source"]); source["type"] == "composed" {
+			components, err := setupCompositionComponents(setup, setups)
+			if err != nil {
+				t.Fatal(err)
+			}
+			setup, err = composeSetupSnapshot(id, components)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+		data, err := json.MarshalIndent(setup, "", "  ")
+		if err != nil {
+			t.Fatal(err)
+		}
+		assets["setups/"+id+".json"].Data = append(data, '\n')
+	}
 }
 
 func addFormatterGoldenDrift(t *testing.T, assets fstest.MapFS) {

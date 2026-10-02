@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"reflect"
 	"regexp"
 	"sort"
 	"strings"
@@ -1314,6 +1315,17 @@ func (l *catalogLoader) validateDecisionCycles(graph map[string][]string) {
 func (l *catalogLoader) validateSetups(catalog *Catalog) {
 	for setupID, setup := range catalog.setups {
 		requireFields(l, "setup", setupID, setup, "id", "version", "source", "digest", "skills")
+		if source, _ := objectValue(setup["source"]); source["type"] == "composed" {
+			components, err := setupCompositionComponents(setup, catalog.setups)
+			if err != nil {
+				l.add("catalog.setup.composition.invalid", setupID, err.Error())
+			} else if expected, err := composeSetupSnapshot(setupID, components); err != nil {
+				l.add("catalog.setup.composition.conflict", setupID, err.Error())
+			} else if !reflect.DeepEqual(setup["skills"], expected["skills"]) ||
+				!reflect.DeepEqual(setup["activationBundles"], expected["activationBundles"]) {
+				l.add("catalog.setup.composition.drift", setupID, "skills or activation bundles differ from the component union")
+			}
+		}
 		skills, ok := objectList(setup["skills"])
 		if !ok {
 			l.add("catalog.setup.skills.invalid", setupID, "")
