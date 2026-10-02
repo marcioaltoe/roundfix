@@ -104,6 +104,7 @@ the stated suggestion. See ADR-0204 and ADR-0205.
   that this Spec ships a built-in composed profile for a Go CLI with a
   TypeScript monorepo and records the frontend layout as a decision, recorded
   in [_authorization.md](_authorization.md); bounded files:
+  `skills/baseline_skill_contract_test.go`,
   `internal/baseline/assets/decisions.json`,
   `internal/baseline/assets/modules/frontend.json`,
   `internal/baseline/assets/modules/go.json`,

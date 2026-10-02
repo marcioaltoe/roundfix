@@ -64,7 +64,8 @@ or a Make evaluator, and both leave a gap the Risks section names.
   Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — express maintainer authorization of
   2026-09-30, recorded in [_authorization.md](_authorization.md); bounded
-  files: `internal/baseline/assets/decisions.json`,
+  files: `skills/baseline_skill_contract_test.go`,
+  `internal/baseline/assets/decisions.json`,
   `internal/baseline/assets/modules/frontend.json`,
   `internal/baseline/assets/modules/go.json`,
   `internal/baseline/assets/templates/index.json`,
