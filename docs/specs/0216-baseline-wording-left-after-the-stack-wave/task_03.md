@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0216-baseline-wording-left-after-the-stack-wave
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -68,3 +68,55 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - `_prd.md` → Goal 3; Core Feature 3; Success Metric 3; Success Metric 4; Declared breaks; Acceptance evidence
 - `_techspec.md` → Exact texts; Source Baseline rows; Version changes; Existing tests that change; API Contract 3; Testing Approach 3; Build Order 3
 - ADR-0058, ADR-0060, ADR-0186, ADR-0202, ADR-0222
+
+
+## Result
+
+Added the mandatory person-only skill clause as the final clause of
+`rule.core.skill-dispatch`, with the exact TechSpec text. Raised core 17 → 18,
+the rule 5 → 6 and `guide.skill-dispatch` 4 → 5. Added the Source Baseline
+corpus row, manifest row and index identity after the vendored-skills clause,
+and updated the force characterization and maintained entry count 162 → 163.
+The sanctioned generator filled all offsets, digests, identity records and
+expected outputs; none were hand-edited. Managed Refresh updated this
+repository's skill guide and Setup Manifest.
+
+Acceptance evidence from focused implementation checks:
+
+| Criterion | Evidence |
+| --- | --- |
+| Profile guides state the mandatory clause; Rust keeps `cut-release` | `GOCACHE=/private/tmp/roundfix-task03-go-cache rtk proxy go test ./internal/baseline -run 'TestEveryBuiltInProfileTellsTheAgentToAskForAPersonOnlySkill\|TestTheSkillGuidesStateThePersonOnlySkillClause' -count=1 -v` exited 0. Both top-level tests passed: all four built-in profiles select core and carry the mandatory clause; Rust CLI, Go CLI/TUI and Standard TypeScript Monorepo Plan postimages state the exact guidance. The Rust subtest also asserts the skill name and `trigger.rust.cut-release` remain rendered. Before editing assets, both tests failed on the missing clause. |
+| This repository's guide states the clause | The first successful Managed Refresh reported `File changes: 2` for `docs/agents/skill-dispatch.md` and `docs/agents/setup-context.json`. Inspection of the generated guide confirms the exact text with `mandatory`. |
+| Regeneration and refresh converge | Two `rtk proxy make baseline-digests` runs exited 0: first `"changed":true`, second `"changed":false`. Two successful `GOCACHE=/private/tmp/roundfix-task03-go-cache rtk proxy go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text` runs exited 0: the second reported `File changes: 0` and `Idempotence: verified`. |
+
+The default-cache Managed Refresh attempt was blocked by sandbox cache access;
+the task-local-cache attempt then reached the Git transaction lock and was
+blocked by its read-only sandbox path. The two successful refreshes used
+approved elevated execution for that lock. Skills were skipped as requested.
+Direct source comparison confirms each version rose exactly once, the clause
+is last, and the core's existing skill declarations are unchanged.
+
+The Task's declared Verification was not run; it and Task settlement remain
+Daemon-owned. Task status, the Task Graph, other Tasks, skills, dispatch
+triggers and Skill Activations were left untouched.
+
+Additional checks:
+
+- Changed-path postflight found 20 changed paths, all within this Task's
+  Context or its Task file; `rtk proxy git -c core.fsmonitor=false diff --check`
+  exited 0.
+- The first `GOCACHE=/private/tmp/roundfix-task03-go-cache rtk proxy make
+  verify-incremental` exited 2. CLI force-stop tests were blocked by sandbox
+  process-table access. The suite guard also detected this Result being edited
+  while tests ran, so that invocation is not passing evidence. A fresh run
+  uses approved elevated execution and leaves repository files unchanged for
+  its entire duration.
+
+- The fresh elevated `GOCACHE=/private/tmp/roundfix-task03-go-cache rtk proxy
+  make verify-incremental` exited 0: formatting, vet, all Go test packages,
+  skill synchronization/checks and the CLI build passed. The repository stayed
+  unchanged throughout that check. Output is retained locally at
+  `/private/tmp/roundfix-task03-incremental-elevated.log`.
+- Final changed-path postflight still contains exactly the 20 authorized Task
+  paths; no follow-up work was added to this diff. No implementation blocker
+  remains for the Daemon's declared Verification.

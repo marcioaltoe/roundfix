@@ -86,6 +86,10 @@
 - MUST NOT edit a skill installed from an upstream source; a correction is stated as a Repository-Specific Normative Rule.
 <!-- /source-baseline-entry: clause.core.prohibit-editing-vendored-skills -->
 
+<!-- source-baseline-entry: clause.core.ask-the-person-to-start-a-person-only-skill -->
+- MUST ask the person to run a matching skill that only a person can start, instead of activating it or carrying out its workflow yourself.
+<!-- /source-baseline-entry: clause.core.ask-the-person-to-start-a-person-only-skill -->
+
 <!-- source-baseline-entry: clause.core.request-pull-request-review -->
 - MUST ask a hand-opened pull request for its own review when it changes code: automatic review is off by configuration, so a pull request opened directly gets none and its review check reports that automatic review is disabled, which reads like a pass. Put the review marker in the pull request description when the pull request is opened rather than adding it afterwards; a one-shot review comment is invalidated by any later push while the check still reads green. Before merging, read the review's own result against the head that will land and treat an absent or stale result as a block.
 <!-- /source-baseline-entry: clause.core.request-pull-request-review -->

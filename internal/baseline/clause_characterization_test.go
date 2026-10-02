@@ -182,6 +182,7 @@ func characterizedBaselineForce() map[string]string {
 		"clause.core.lint-warnings-block":                             "mandatory",
 		"clause.core.prohibit-test-only-production-hooks":             "prohibited",
 		"clause.core.prohibit-editing-vendored-skills":                "prohibited",
+		"clause.core.ask-the-person-to-start-a-person-only-skill":     "mandatory",
 		"clause.core.ask-before-database-mutation":                    "stop-and-ask",
 		"clause.core.prove-the-mutation-predicate":                    "mandatory",
 		"clause.core.prohibit-disguised-database-mutation":            "prohibited",
