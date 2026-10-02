@@ -71,3 +71,25 @@ func TestQuestionFileLoads(t *testing.T) {
 		t.Fatal("questions or thresholds lost")
 	}
 }
+
+// The service refuses "criteria": null with HTTP 400 ("expected object,
+// received null"), so a question without criteria must omit the key.
+func TestAQuestionWithoutCriteriaOmitsTheKey(t *testing.T) {
+	q, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, question := range map[string]Question{
+		"citation-support": q.Citation.Question,
+		"goal-mechanism":   q.Goal.Question,
+		"source-grouping":  q.Grouping.Question,
+	} {
+		data, err := json.Marshal(question)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Contains(string(data), `"criteria":null`) {
+			t.Errorf("%s question encodes null criteria: %s", name, data)
+		}
+	}
+}

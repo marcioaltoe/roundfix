@@ -20,7 +20,7 @@ type Transport struct {
 type Question struct {
 	Type         string            `json:"type"`
 	Instructions string            `json:"instructions"`
-	Criteria     map[string]string `json:"criteria"`
+	Criteria     map[string]string `json:"criteria,omitempty"`
 }
 
 type LanguageGate struct {
