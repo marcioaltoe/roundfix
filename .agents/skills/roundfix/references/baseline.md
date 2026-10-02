@@ -33,7 +33,7 @@ unchanged guidance it then reports `plan_ready` instead of `current`, and
 Doctor reports `DR-SKILL-TRAILS-SNAPSHOT` with status `warn` when a required
 upstream skill is present and matches its lock but differs from the embedded
 Setup Snapshot. The managed refresh lists those trailing skills under
-`skills.outdated` and, after confirmation, restores them to the snapshot
+`skills.drifted` and, after confirmation, restores them to the snapshot
 commit through the existing restore path. Use `roundfix baseline update` to
 preview that restore; `--no-skills` skips it.
 
