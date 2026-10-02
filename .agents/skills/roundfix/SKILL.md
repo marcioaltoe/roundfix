@@ -4,10 +4,10 @@ description: Use Roundfix to plan releases with the read-only Release Plan Comma
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.14
+  version: 0.1.15
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.14
+version: 0.1.15
 ---
 
 # Roundfix
@@ -37,7 +37,7 @@ covers a topic that spans commands and owns none.
 | [release](references/release.md) | `release` | Planning a release. |
 | [review](references/review.md) | `review` | Applying the pre-PR review policy. |
 | [review-runs](references/review-runs.md) | `fetch`, `resolve`, `watch` | Starting a review Run or inspecting its artifacts and isolation. |
-| [runs](references/runs.md) | `runs`, `attach` | Discovering, attaching to, or viewing detached Runs. |
+| [runs](references/runs.md) | `runs`, `runs causes`, `attach` | Discovering Runs, explaining Verification failures, or viewing detached Runs. |
 | [runtime](references/runtime.md) | — (the Node.js and acpx prerequisite that `setup`, `doctor` and `upgrade` check; those commands live in setup) | Checking or configuring the ACP Runtime dependency. |
 | [settle](references/settle.md) | `settle`, `reopen`, `qa-report` | Reopening or settling a Task, or accepting a QA Report. |
 | [setup](references/setup.md) | `init`, `setup`, `migrate`, `doctor`, `upgrade`, `skills` | Initializing config, checking readiness, upgrading, or installing skills. |

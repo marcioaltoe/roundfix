@@ -1,0 +1,26 @@
+{
+  "schema": "roundfix/cause-signatures/v1",
+  "classes": ["scope-or-authorization", "shared-section-contract", "repository-convention", "implementation-defect", "environment"],
+  "repository_knowledge": ["scope-or-authorization", "shared-section-contract", "repository-convention"],
+  "diagnostic_tail_bytes": 65536,
+  "task_text_bytes": 4096,
+  "triggers": [
+    {"id": "pre-pr-review", "pattern": "(?i)pre-PR review|independent review|review round|second review"},
+    {"id": "qa-gate", "pattern": "(?i)QA finding|QA gate|final QA|\\bF-\\d{3}\\b"},
+    {"id": "verification", "pattern": "(?i)repository Verification|make verify|Verification fail"}
+  ],
+  "signatures": [
+    {"id": "database-locked", "class": "environment", "source": "diagnostic", "pattern": "(?i)database is locked|SQLITE_BUSY"},
+    {"id": "disk-full", "class": "environment", "source": "diagnostic", "pattern": "(?i)no space left on device"},
+    {"id": "network-unreachable", "class": "environment", "source": "diagnostic", "pattern": "(?i)connection refused|no such host|i/o timeout|TLS handshake timeout|network is unreachable"},
+    {"id": "killed-or-timed-out", "class": "environment", "source": "diagnostic", "pattern": "(?i)signal: killed|panic: test timed out|context deadline exceeded"},
+    {"id": "governed-path", "class": "scope-or-authorization", "source": "diagnostic", "pattern": "(?i)governed path|tooling.authority|not authori[sz]ed|outside (the|its) grant|undeclared path"},
+    {"id": "authorization-or-scope", "class": "scope-or-authorization", "source": "task", "pattern": "(?i)authori[sz]ation|governed path|\\bgrant\\b|undeclared path|outside (the|its) (scope|slice|grant)"},
+    {"id": "shared-section", "class": "shared-section-contract", "source": "any", "pattern": "(?i)QA settlement|byte.identical|skills-sync-check|drifts from \\.agents/skills|shared section"},
+    {"id": "record-or-golden", "class": "repository-convention", "source": "any", "pattern": "(?i)coverage (record|addition|equivalence)|TestCoverageEquivalence|golden|re-?record|owned-skill-versions|skill version|baseline-digests|digest pin|characteri[sz]ation|corpus"},
+    {"id": "lint-or-format", "class": "repository-convention", "source": "diagnostic", "pattern": "(?i)gofmt|go vet|staticcheck|golangci|\\blint\\b"},
+    {"id": "help-or-guide", "class": "repository-convention", "source": "task", "pattern": "(?i)help text|user guide|command reference|Roundfix skill|describe the|teach the"},
+    {"id": "go-test-failure", "class": "implementation-defect", "source": "diagnostic", "pattern": "(?m)^\\s*--- FAIL: |\\[build failed\\]|^panic: |undefined: |cannot use "},
+    {"id": "review-defect", "class": "implementation-defect", "source": "task", "pattern": "(?i)found (a|an|one|two|three|four|\\d+) (defects?|gaps?|ways|bugs?)|confirmed in source|reproduced before|blocker|regression"}
+  ]
+}

@@ -90,6 +90,7 @@ Usage:
   roundfix runs
   roundfix runs list [--all] [--state <active|terminal|all>] [--limit N]
   roundfix runs show <run-id> [--json]
+  roundfix runs causes [--since <YYYY-MM-DD>] [--until <YYYY-MM-DD>] [--format <text|json>]
   roundfix stop [<run-id>|--run-id <id>|--pr <number>|--spec <slug>]
   roundfix attach [<run-id>] [--no-input]
   roundfix events <run-id> [--follow] [--filter <categories>]
@@ -5321,6 +5322,7 @@ Exit codes: 0 when the Run exists; 2 for usage errors or an unknown Run.
   roundfix runs
   roundfix runs list [--all] [--state <active|terminal|all>] [--limit N]
   roundfix runs show <run-id> [--json]
+  roundfix runs causes [--since <YYYY-MM-DD>] [--until <YYYY-MM-DD>] [--format <text|json>]
 
 Lists Runs from the Run Database newest first. By default the listing is
 scoped to the current repository and shows the 20 newest Active Runs. When
@@ -5330,6 +5332,7 @@ terminal, runs opens the Run Browser; non-interactive contexts must use
 'roundfix runs list'.
 
 Commands:
+  causes  Explain failed Verification and corrective Tasks (read-only)
   show  Print recorded token usage per scope and in total (read-only)
   list  Print run id, state, kind, target, agent, start time (UTC), duration,
         and local branch columns
@@ -5338,6 +5341,9 @@ Options:
   --all    List Runs from every repository and include the repository column
   --state  Filter by Run state: active (default), terminal, or all
   --limit  Print at most N matching Runs, newest first; 0 lists all (default 20)
+  --since  causes: inclusive UTC date (YYYY-MM-DD)
+  --until  causes: exclusive UTC date (YYYY-MM-DD)
+  --format causes: text (default) or json
 `
 	case "fetch":
 		return `Usage:

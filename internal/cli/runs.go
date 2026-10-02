@@ -41,7 +41,7 @@ var runsListNow = time.Now
 var runsInteractiveInputAvailable = defaultAttachInteractiveInputAvailable
 
 func runRunsCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
-	if commandWantsHelp(args) && (len(args) == 0 || args[0] != "show") {
+	if commandWantsHelp(args) && (len(args) == 0 || args[0] != "show" && args[0] != "causes") {
 		fmt.Fprint(stdout, commandUsage("runs"))
 		return exitOK
 	}
@@ -54,6 +54,8 @@ func runRunsCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 	}
 
 	switch args[0] {
+	case "causes":
+		return runRunsCausesCommand(ctx, args[1:], stdout, stderr, environment)
 	case "show":
 		return runRunsShowCommand(ctx, args[1:], stdout, stderr, environment)
 	case "list":

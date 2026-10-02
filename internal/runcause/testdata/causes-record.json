@@ -1,0 +1,631 @@
+{
+  "schema": "roundfix/runs-causes/v1",
+  "window": {
+    "since": "2026-10-01",
+    "until": "2026-10-02"
+  },
+  "signatures_sha256": "53e5e5a764109b92806c6efe4d88603c13e5de2c6d21816755406deb11b6dd5f",
+  "runs": 1,
+  "items": [
+    {
+      "kind": "corrective",
+      "spec": "0300-example",
+      "task": "task_04",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": null,
+      "check": "pre-pr-review",
+      "class": "repository-convention",
+      "signature": "record-or-golden",
+      "evidence": "task"
+    },
+    {
+      "kind": "corrective",
+      "spec": "0300-example",
+      "task": "task_05",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": null,
+      "check": "pre-pr-review",
+      "class": "repository-convention",
+      "signature": "record-or-golden",
+      "evidence": "task"
+    },
+    {
+      "kind": "corrective",
+      "spec": "0300-example",
+      "task": "task_06",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": null,
+      "check": "pre-pr-review",
+      "class": "repository-convention",
+      "signature": "record-or-golden",
+      "evidence": "task"
+    },
+    {
+      "kind": "corrective",
+      "spec": "0300-example",
+      "task": "task_07",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": null,
+      "check": "pre-pr-review",
+      "class": "repository-convention",
+      "signature": "record-or-golden",
+      "evidence": "task"
+    },
+    {
+      "kind": "corrective",
+      "spec": "0300-example",
+      "task": "task_08",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": null,
+      "check": "pre-pr-review",
+      "class": "repository-convention",
+      "signature": "record-or-golden",
+      "evidence": "task"
+    },
+    {
+      "kind": "corrective",
+      "spec": "0300-example",
+      "task": "task_09",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": null,
+      "check": "pre-pr-review",
+      "class": "repository-convention",
+      "signature": "record-or-golden",
+      "evidence": "task"
+    },
+    {
+      "kind": "corrective",
+      "spec": "0300-example",
+      "task": "task_10",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": null,
+      "check": "pre-pr-review",
+      "class": "repository-convention",
+      "signature": "record-or-golden",
+      "evidence": "task"
+    },
+    {
+      "kind": "corrective",
+      "spec": "0300-example",
+      "task": "task_11",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": null,
+      "check": "pre-pr-review",
+      "class": "repository-convention",
+      "signature": "record-or-golden",
+      "evidence": "task"
+    },
+    {
+      "kind": "corrective",
+      "spec": "0300-example",
+      "task": "task_12",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": null,
+      "check": "pre-pr-review",
+      "class": "repository-convention",
+      "signature": "record-or-golden",
+      "evidence": "task"
+    },
+    {
+      "kind": "corrective",
+      "spec": "0300-example",
+      "task": "task_13",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": null,
+      "check": "pre-pr-review",
+      "class": "repository-convention",
+      "signature": "record-or-golden",
+      "evidence": "task"
+    },
+    {
+      "kind": "corrective",
+      "spec": "0300-example",
+      "task": "task_14",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": null,
+      "check": "pre-pr-review",
+      "class": "repository-convention",
+      "signature": "record-or-golden",
+      "evidence": "task"
+    },
+    {
+      "kind": "corrective",
+      "spec": "0300-example",
+      "task": "task_15",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": null,
+      "check": "pre-pr-review",
+      "class": "repository-convention",
+      "signature": "record-or-golden",
+      "evidence": "task"
+    },
+    {
+      "kind": "corrective",
+      "spec": "0300-example",
+      "task": "task_16",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": null,
+      "check": "pre-pr-review",
+      "class": "repository-convention",
+      "signature": "record-or-golden",
+      "evidence": "task"
+    },
+    {
+      "kind": "corrective",
+      "spec": "0300-example",
+      "task": "task_17",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": null,
+      "check": "pre-pr-review",
+      "class": "repository-convention",
+      "signature": "record-or-golden",
+      "evidence": "task"
+    },
+    {
+      "kind": "corrective",
+      "spec": "0300-example",
+      "task": "task_18",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": null,
+      "check": "pre-pr-review",
+      "class": "repository-convention",
+      "signature": "record-or-golden",
+      "evidence": "task"
+    },
+    {
+      "kind": "corrective",
+      "spec": "0300-example",
+      "task": "task_19",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": null,
+      "check": "pre-pr-review",
+      "class": "repository-convention",
+      "signature": "record-or-golden",
+      "evidence": "task"
+    },
+    {
+      "kind": "corrective",
+      "spec": "0300-example",
+      "task": "task_20",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": null,
+      "check": "pre-pr-review",
+      "class": "repository-convention",
+      "signature": "record-or-golden",
+      "evidence": "task"
+    },
+    {
+      "kind": "corrective",
+      "spec": "0300-example",
+      "task": "task_21",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": null,
+      "check": "pre-pr-review",
+      "class": "repository-convention",
+      "signature": "record-or-golden",
+      "evidence": "task"
+    },
+    {
+      "kind": "corrective",
+      "spec": "0300-example",
+      "task": "task_22",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": null,
+      "check": "pre-pr-review",
+      "class": "repository-convention",
+      "signature": "record-or-golden",
+      "evidence": "task"
+    },
+    {
+      "kind": "corrective",
+      "spec": "0300-example",
+      "task": "task_23",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": null,
+      "check": "pre-pr-review",
+      "class": "repository-convention",
+      "signature": "record-or-golden",
+      "evidence": "task"
+    },
+    {
+      "kind": "verification",
+      "spec": "0300-example",
+      "task": "task_01",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": 1,
+      "check": "make verify",
+      "class": "environment",
+      "signature": "disk-full",
+      "evidence": "diagnostic"
+    },
+    {
+      "kind": "verification",
+      "spec": "0300-example",
+      "task": "task_01",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": 2,
+      "check": "make verify",
+      "class": "environment",
+      "signature": "disk-full",
+      "evidence": "diagnostic"
+    },
+    {
+      "kind": "verification",
+      "spec": "0300-example",
+      "task": "task_01",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": 3,
+      "check": "make verify",
+      "class": "environment",
+      "signature": "disk-full",
+      "evidence": "diagnostic"
+    },
+    {
+      "kind": "verification",
+      "spec": "0300-example",
+      "task": "task_01",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": 4,
+      "check": "make verify",
+      "class": "unclassified",
+      "signature": null,
+      "evidence": null
+    },
+    {
+      "kind": "verification",
+      "spec": "0300-example",
+      "task": "task_01",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": 5,
+      "check": "make verify",
+      "class": "unclassified",
+      "signature": null,
+      "evidence": null
+    },
+    {
+      "kind": "verification",
+      "spec": "0300-example",
+      "task": "task_01",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": 6,
+      "check": "make verify",
+      "class": "unclassified",
+      "signature": null,
+      "evidence": null
+    },
+    {
+      "kind": "verification",
+      "spec": "0300-example",
+      "task": "task_01",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": 7,
+      "check": "make verify",
+      "class": "unclassified",
+      "signature": null,
+      "evidence": null
+    },
+    {
+      "kind": "verification",
+      "spec": "0300-example",
+      "task": "task_01",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": 8,
+      "check": "make verify",
+      "class": "unclassified",
+      "signature": null,
+      "evidence": null
+    },
+    {
+      "kind": "verification",
+      "spec": "0300-example",
+      "task": "task_01",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": 9,
+      "check": "make verify",
+      "class": "unclassified",
+      "signature": null,
+      "evidence": null
+    },
+    {
+      "kind": "verification",
+      "spec": "0300-example",
+      "task": "task_01",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": 10,
+      "check": "make verify",
+      "class": "unclassified",
+      "signature": null,
+      "evidence": null
+    },
+    {
+      "kind": "verification",
+      "spec": "0300-example",
+      "task": "task_01",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": 11,
+      "check": "make verify",
+      "class": "unclassified",
+      "signature": null,
+      "evidence": null
+    },
+    {
+      "kind": "verification",
+      "spec": "0300-example",
+      "task": "task_01",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": 12,
+      "check": "make verify",
+      "class": "unclassified",
+      "signature": null,
+      "evidence": null
+    },
+    {
+      "kind": "verification",
+      "spec": "0300-example",
+      "task": "task_01",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": 13,
+      "check": "make verify",
+      "class": "unclassified",
+      "signature": null,
+      "evidence": null
+    },
+    {
+      "kind": "verification",
+      "spec": "0300-example",
+      "task": "task_01",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": 14,
+      "check": "make verify",
+      "class": "unclassified",
+      "signature": null,
+      "evidence": null
+    },
+    {
+      "kind": "verification",
+      "spec": "0300-example",
+      "task": "task_01",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": 15,
+      "check": "make verify",
+      "class": "unclassified",
+      "signature": null,
+      "evidence": null
+    },
+    {
+      "kind": "verification",
+      "spec": "0300-example",
+      "task": "task_01",
+      "run_id": "run_20261001T120000Z_0000000000000001",
+      "attempt": 16,
+      "check": "make verify",
+      "class": "unclassified",
+      "signature": null,
+      "evidence": null
+    }
+  ],
+  "tasks": [
+    {
+      "spec": "0300-example",
+      "task": "task_01",
+      "qa": false,
+      "corrective": false,
+      "verdicts_passed": 0,
+      "verdicts_failed": 16,
+      "feedback_rounds": 1,
+      "runs": 1
+    },
+    {
+      "spec": "0300-example",
+      "task": "task_04",
+      "qa": false,
+      "corrective": true,
+      "verdicts_passed": 0,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0300-example",
+      "task": "task_05",
+      "qa": false,
+      "corrective": true,
+      "verdicts_passed": 0,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0300-example",
+      "task": "task_06",
+      "qa": false,
+      "corrective": true,
+      "verdicts_passed": 0,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0300-example",
+      "task": "task_07",
+      "qa": false,
+      "corrective": true,
+      "verdicts_passed": 0,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0300-example",
+      "task": "task_08",
+      "qa": false,
+      "corrective": true,
+      "verdicts_passed": 0,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0300-example",
+      "task": "task_09",
+      "qa": false,
+      "corrective": true,
+      "verdicts_passed": 0,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0300-example",
+      "task": "task_10",
+      "qa": false,
+      "corrective": true,
+      "verdicts_passed": 0,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0300-example",
+      "task": "task_11",
+      "qa": false,
+      "corrective": true,
+      "verdicts_passed": 0,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0300-example",
+      "task": "task_12",
+      "qa": false,
+      "corrective": true,
+      "verdicts_passed": 0,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0300-example",
+      "task": "task_13",
+      "qa": false,
+      "corrective": true,
+      "verdicts_passed": 0,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0300-example",
+      "task": "task_14",
+      "qa": false,
+      "corrective": true,
+      "verdicts_passed": 0,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0300-example",
+      "task": "task_15",
+      "qa": false,
+      "corrective": true,
+      "verdicts_passed": 0,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0300-example",
+      "task": "task_16",
+      "qa": false,
+      "corrective": true,
+      "verdicts_passed": 0,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0300-example",
+      "task": "task_17",
+      "qa": false,
+      "corrective": true,
+      "verdicts_passed": 0,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0300-example",
+      "task": "task_18",
+      "qa": false,
+      "corrective": true,
+      "verdicts_passed": 0,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0300-example",
+      "task": "task_19",
+      "qa": false,
+      "corrective": true,
+      "verdicts_passed": 0,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0300-example",
+      "task": "task_20",
+      "qa": false,
+      "corrective": true,
+      "verdicts_passed": 0,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0300-example",
+      "task": "task_21",
+      "qa": false,
+      "corrective": true,
+      "verdicts_passed": 0,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0300-example",
+      "task": "task_22",
+      "qa": false,
+      "corrective": true,
+      "verdicts_passed": 0,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    },
+    {
+      "spec": "0300-example",
+      "task": "task_23",
+      "qa": false,
+      "corrective": true,
+      "verdicts_passed": 0,
+      "verdicts_failed": 0,
+      "feedback_rounds": 0,
+      "runs": 1
+    }
+  ],
+  "summary": {
+    "scope-or-authorization": 0,
+    "shared-section-contract": 0,
+    "repository-convention": 20,
+    "implementation-defect": 0,
+    "environment": 3,
+    "unclassified": 13,
+    "items": 36,
+    "classified": 23,
+    "repository_knowledge": 20
+  },
+  "specs_not_found": []
+}

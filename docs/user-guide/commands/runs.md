@@ -82,3 +82,41 @@ An unknown Run prints only this diagnostic on stderr:
 roundfix: runs show failed: Run "run_missing" does not exist
 Run 'roundfix runs show --help' for usage.
 ```
+
+#### Why Verification failed
+
+```bash
+roundfix runs causes [--since <YYYY-MM-DD>] [--until <YYYY-MM-DD>] [--format <text|json>]
+```
+
+This read-only command reports failed Verification attempts and corrective
+Tasks for this repository's terminal Spec Runs, oldest first. The window
+uses Run creation dates: `--since` includes its UTC midnight and `--until`
+excludes its UTC midnight. Omit either flag for an open end. The command
+writes nothing and makes no network request. SQLite may create the WAL and
+shared-memory sidecars when opening a WAL database read-only; the database,
+lock and artifact logs stay unchanged.
+
+Each item names its class, the first matching signature, and its check. The
+five classes are `scope-or-authorization`, `shared-section-contract`,
+`repository-convention`, `implementation-defect` and `environment`. The first
+three count as repository knowledge. An unmatched item is `unclassified`,
+which is counted separately and is not a class. The summary counts every
+class and gives the embedded signature table's digest.
+
+A corrective Task is a graph node numbered after the QA Task, excluding the
+QA Task itself. The command reads the active Task Graph first, then its
+archive. A missing graph produces `corrective: null` in JSON and lists the
+Spec under `specs_not_found`. Corrective Tasks appear once, attached to their
+first Run in the window. Their title and Overview determine the trigger:
+`pre-pr-review`, `qa-gate`, `verification`, or `unknown`, in that order.
+
+`--format json` emits schema `roundfix/runs-causes/v1`, including the window,
+signature digest, items, per-Task passed and failed verdict counts, feedback
+rounds, Run counts, QA and corrective flags, summary, and missing Specs. An
+unclassified item's signature and evidence are null; a corrective item's
+attempt is null. Diagnostic text, absolute paths and keys are excluded.
+
+Exit `0` means the report ran, including an empty window or absent Run
+Database. Exit `2` means invalid flags, dates, format, a non-increasing window,
+or no Git repository. Exit `1` means the Run Database could not be read.

@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0214-measure-before-changing
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -98,3 +98,177 @@ reproduces Surface Transcripts 1 to 4 and leaves the home byte-identical, except
 - [_techspec.md](_techspec.md) — The signature table; Interfaces; Building the report; Data Models; Decision rules; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Surface Transcript 4; API Contract 1; API Contract 2; API Contract 3; API Contract 4; Testing Approach 1; Testing Approach 2; Testing Approach 3; Testing Approach 5; Build Order 1
 - [references/2026-09-30-measure-why-corrective-tasks-happen.md](references/2026-09-30-measure-why-corrective-tasks-happen.md)
 - ADR-0214; ADR-0215; ADR-0004; ADR-0008; ADR-0033; ADR-0035; ADR-0038; ADR-0089; ADR-0184; ADR-0187; ADR-0189
+
+## Result
+
+Implemented the task_01 slice for Daemon Verification; status remains
+Daemon-owned. No declared Verification command was run, and no commit, push
+or pull request was made. The only pre-existing changed path was this Task
+file, whose Daemon-written `status: in_progress` was preserved.
+
+### Implementation
+
+- Added the SQL-filtered, parameter-bound `Store.RunEventsOfKinds` query,
+  preserving raw payloads and per-Run cursor order without writes.
+- Embedded the exact signature table and its SHA-256;
+  `Load` rejects unknown classes/sources, duplicate IDs and invalid patterns.
+  Classification and triggers preserve table order and source separation.
+- Built terminal, repository-scoped, half-open-window reports with one item
+  per failed attempt, per-Task verdict/feedback/Run counts, historical graph
+  membership, one corrective item per Task, missing-Spec reporting and summary.
+  Diagnostic reads are bounded to the last 65,536 bytes of regular files in
+  `<artifact_dir>/runs/<run-id>/`, rejecting leaf and parent symbolic links.
+  Task evidence is limited to 4,096 bytes of title and Overview.
+- Added `runs causes`, text/JSON output, UTC date validation, help and exit
+  contracts. It opens only `store.OpenReader`; an absent database produces an
+  empty report. Classification sees original commands; exported checks redact
+  absolute paths and credential assignments/flags. No diagnostic or Task text
+  is serialized. A missing Spec Root permits archive lookup and missing-Spec
+  reporting instead of requiring execution eligibility.
+- Added `internal/spec/cause_graph.go` as a necessary ordinary path in this
+  slice: the existing execution loader requires an active PRD, so the new
+  read-only projection uses the Spec package's manifest parser for archived
+  graph membership and title/Overview evidence. No execution loader or
+  settlement behavior changed.
+- Added the record consistency harness, valid and sabotaged synthetic records,
+  documentation sections and explicit docs-contract command anchors.
+
+### Acceptance evidence
+
+| Acceptance criterion | Focused evidence |
+| --- | --- |
+| Surface Transcripts 1–4 match byte for byte | `TestRunsCausesPrintsAClassifiedWindow`, `TestRunsCausesPrintsAnEmptyWindow` (absent and present databases), `TestRunsCausesRefusesAMalformedDate`, and `TestRunsCausesRequiresAGitRepository` compare full stdout, stderr and exit codes against the authored transcripts. |
+| Every signature/trigger and first-match order | `TestClassifyAppliesEachSignatureInOrder` covers all 12 signatures, overlapping golden/lint/test failures, source isolation, absent evidence and `any` source order. `TestTriggerNamesWhatAddedTheCorrectiveTask` covers all three triggers, precedence and unknown. `TestLoadRefusesABrokenTable` covers all specified refusals and the embedded-byte digest. |
+| Unsafe diagnostic files are absent evidence | `TestBuildIgnoresALogOutsideTheArtifactDirectory` covers leaf symlinks, parent symlinks, outside paths, another Run's directory, a directory and a missing file. `TestBuildBoundsEvidenceAndExportsNoPrivateCommandText` covers tail/text limits and command privacy. |
+| Corrective/QA boundary, archive and missing graphs | `TestBuildReportsAttemptsTasksAndCorrectives` checks earlier Tasks, QA, later Tasks, active/archive equivalence, null corrective fields and `specs_not_found`. `TestBuildWindowAndMultipleRuns` checks distinct-Run counts, first-Run corrective attachment, nonmembers, other repositories, Active Runs and inclusive/exclusive window boundaries. |
+| Home bytes preserved after Build and command | `TestBuildLeavesTheRunDatabaseUnchanged` exists in both `internal/runcause` and `internal/cli`. The CLI test hashes every file before Build, after Build, after JSON command and after reader close, allowing only new SQLite WAL/SHM sidecars. Existing database, lock, logs and all other file hashes must match. Build and command reports must also agree. |
+| Saved record passes and sabotage fails | `TestCausesRecordIsConsistent`, `TestCausesRecordRejectsASabotagedFixture` and `TestCausesRecordDecisionBoundaries` validate recomputed summary, digest, closed window, Run count and the single decision-rule verdict. Explicit valid flags passed; a missing record and a missing document each exited 1. |
+| Command reference, skill and version contracts | The two new Why Verification failed sections are present; both Roundfix Skill version fields rose from 0.1.14 to 0.1.15. `TestEveryCommandIsNamedInTheRoundfixSkill` and `TestEveryCommandIsNamedInTheUserGuide` explicitly require `runs causes`. Focused docs-contract checks passed; source/mirror bytes match and QA settlement is byte-identical to HEAD. |
+
+The store-focused `TestRunEventsOfKindsReturnsOnlyTheNamedKindsInCursorOrder`
+also proves SQL exclusion by corrupting an excluded event's timestamp: a
+reader that scanned and filtered afterward would fail. It checks another Run,
+duplicate requested kinds, empty selections, cursor order and exact payloads.
+All fixture writes use temporary repositories and temporary Roundfix Homes.
+
+### Commands and outcomes
+
+All Go checks used `GOCACHE=/tmp/roundfix-task01-cache`.
+
+- Starting-commit evidence: `git cat-file -e HEAD:internal/cli/runs_causes.go`
+  exited 128; the new command does not exist in the starting revision.
+- `go test ./internal/runcause ./internal/store -run
+  'Test(Classify|Trigger|LoadRefuses|RunEventsOfKinds)' -count=1`: exit 0.
+- `go test ./internal/runcause -run 'TestBuild' -count=1`: exit 0.
+- `go test ./internal/runcause -run 'TestCausesRecord' -count=1`: exit 0.
+- `go test ./internal/cli -run
+  'TestRunsCauses|TestBuildLeaves|TestRunCommandHelp' -count=1`: exit 0.
+- After restoring sabotages and adding privacy/bounds checks,
+  `go test ./internal/runcause ./internal/cli ./internal/store -run
+  'Test(Build|RunsCauses|Classify|Trigger|LoadRefuses|CausesRecord|RunEventsOfKinds)'
+  -count=1`: exit 0, 51 checks including subtests.
+- `go test -tags docscontract ./internal/docscontract -run
+  'TestEveryCommand|TestCommandPaths' -count=1`: exit 0, three tests.
+- `go test ./internal/runcause -run '^TestCausesRecordIsConsistent$'
+  -causes-record=testdata/causes-record.json
+  -causes-document=testdata/causes-measurement.md -count=1`: exit 0.
+  Replacing the record path with an absent temporary path exited 1 with
+  `read cause record`; replacing the document path exited 1 with
+  `read cause document`.
+- A Python byte comparison of the TechSpec's JSON block and embedded file
+  passed; SHA-256 is
+  `53e5e5a764109b92806c6efe4d88603c13e5de2c6d21816755406deb11b6dd5f`.
+  Source/mirror and unchanged QA settlement comparisons also passed.
+- `make verify-incremental`: the sandbox run exited 2 because two existing
+  force-stop integration tests could not enumerate the process table.
+  The permitted rerun exited 0, including formatting, Go vet, all Go tests,
+  skill sync/check and binary build. No product change was made for the
+  sandbox restriction.
+- `git -c core.fsmonitor=false diff --check`: exit 0. Scope inspection found
+  no Task Graph, other Task or archived-file changes.
+
+### Sabotage evidence
+
+Each mutation was restored from its original bytes in a `finally` block.
+Subsequent focused checks and incremental verification used restored code.
+
+| Gate | Deliberate mutation | Observed failure |
+| --- | --- | --- |
+| First-match order | Reversed signature iteration in `classify.go`, allowing implementation-defect to beat repository-convention. | `TestClassifyAppliesEachSignatureInOrder/record-or-golden` and `/lint-or-format` failed with implementation-defect/go-test-failure; the killed/timed-out overlap also failed. Test command exited 1. |
+| Symbolic-link refusal | Replaced `os.Lstat(current)` with `os.Stat(current)` in `report.go`. | `TestBuildIgnoresALogOutsideTheArtifactDirectory/leaf_symlink` and `/parent_symlink` failed because the linked log classified as environment. Test command exited 1. |
+| Record verdict | Removed the unclassified-share condition from the decision rule in `record_test.go`. | `TestCausesRecordIsConsistent` failed: recomputed verdict became reopen, while the document says inconclusive for 13 unclassified items out of 36. Test command exited 1. |
+
+### Skill regeneration
+
+- `make skills-sync`: exit 0. Byte changes were
+  `skills/roundfix/SKILL.md` and `skills/roundfix/references/runs.md`.
+  The target physically recopied every owned-bundle file listed below;
+  every other copied file retained its original bytes.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions`: exit 0; rewrote
+  `skills/testdata/owned-skill-versions.json` with Roundfix 0.1.15 and its digest.
+- `make baseline-digests`: exit 0, `changed:false`; no derived digest file
+  gained a byte change.
+
+Files recopied by `make skills-sync`:
+
+```text
+skills/archive-spec/SKILL.md
+skills/brainstorming/SKILL.md
+skills/business-analyst/SKILL.md
+skills/council/SKILL.md
+skills/council/assets/synthesis-template.md
+skills/council/references/archetypes.md
+skills/council/references/debate-protocols.md
+skills/evidence-gate/SKILL.md
+skills/implement-spec/SKILL.md
+skills/implement-task/SKILL.md
+skills/qa-gate/SKILL.md
+skills/roundfix/SKILL.md
+skills/roundfix/agents/openai.yaml
+skills/roundfix/references/archive.md
+skills/roundfix/references/baseline.md
+skills/roundfix/references/deliver.md
+skills/roundfix/references/events.md
+skills/roundfix/references/implement.md
+skills/roundfix/references/profiles.md
+skills/roundfix/references/reconcile.md
+skills/roundfix/references/release.md
+skills/roundfix/references/review-runs.md
+skills/roundfix/references/review.md
+skills/roundfix/references/runs.md
+skills/roundfix/references/runtime.md
+skills/roundfix/references/settle.md
+skills/roundfix/references/setup.md
+skills/roundfix/references/spec-delivery.md
+skills/roundfix/references/spec.md
+skills/roundfix/references/stop.md
+skills/roundfix/references/storage.md
+skills/setup-context-driven/SKILL.md
+skills/write-idea/SKILL.md
+skills/write-idea/references/idea-template.md
+skills/write-idea/references/opportunity-scan.md
+skills/write-prd/SKILL.md
+skills/write-prd/references/prd-template.md
+skills/write-tasks/SKILL.md
+skills/write-tasks/references/task-template.md
+skills/write-techspec/SKILL.md
+skills/write-techspec/references/concrete-contracts.md
+skills/write-techspec/references/techspec-template.md
+```
+
+No follow-up from another Task was implemented. Declared Verification and
+Task settlement remain with the Daemon.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/docscontract/command_documentation_test.go`
+- `internal/docscontract/user_guide_contract_test.go`
+- `internal/spec/cause_graph.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261002T171516Z_94169d908e48d811`
+- Source commit: `424ad384a3fb762d5ea13402d371a84f950c7830`
