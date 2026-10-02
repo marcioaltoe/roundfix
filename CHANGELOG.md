@@ -2,6 +2,16 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.30.0] - 2026-10-02
+
+### The Jev Router on docs and chore Tasks, opt-in and bounded
+
+A repository can name `typesafe/jev-router` through OpenRouter as the selection for `docs` or `chore` Tasks. Only its Project Config can do this, and the key is passed by placeholder from `ROUNDFIX_OPENROUTER_API_KEY`. The month's Jev spend adds the judge's and the router's Judge Log lines to the key's own `usage_monthly`, under the shared US$5 monthly ceiling.
+
+A routed prompt starts only when the gate allows it. The month's spend must be below the ceiling. The OpenRouter key must also carry a monthly credit limit (`limit_reset: monthly`) no larger than the ceiling, because only OpenRouter can stop a prompt that is already running. Otherwise the Task falls back to its default before work, or fails once work has begun. Every routed prompt leaves a Judge Log line.
+
+The measurement, `docs/history/specs/0218-the-jev-router-on-docs-and-chore-tasks/measurement/jev-router.md`, found that tool calls work through the router. The router settled one of two docs Tasks at US$0.37, and one prompt cost US$6.81 in flight. The router is therefore not proposed as a default.
+
 ## [0.29.0] - 2026-10-02
 
 ### Measure before changing
