@@ -593,6 +593,11 @@ func checkAdapter(ctx context.Context, runtime RuntimeSpec, environment []string
 			Err:        err,
 		}
 	}
+	if runtimeID == "cursor" {
+		if err := checkCursorLogin(ctx, invocation.executable(), environment); err != nil {
+			return AdapterEvidence{}, err
+		}
+	}
 	evidence := AdapterEvidence{Command: invocation.display()}
 	if !hasLineageContract {
 		return evidence, nil

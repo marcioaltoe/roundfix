@@ -25,7 +25,9 @@ roundfix: notice: NODE_OPTIONS preload "<path>" does not exist; Roundfix left it
   profiles proves its adapter package lineage and supported version. The
   runtime entries are deduplicated and sorted; legacy, unknown, old, and
   missing adapters fail the aggregate line with that runtime's official
-  install action.
+  install action. A Cursor runtime is checked with `cursor-agent status`; no
+  login fails the line with `cursor_login_required` and
+  `next: run cursor-agent login in a terminal yourself`.
 - `profiles:` — the required Agent Selection Profiles pass exact proof through
   disposable ACP Sessions. Success names distinct tuples and category
   references. Failure names the exact tuple, affected categories,
