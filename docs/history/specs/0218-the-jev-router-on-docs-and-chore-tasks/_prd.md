@@ -1,9 +1,18 @@
 ---
 spec: 0218-the-jev-router-on-docs-and-chore-tasks
-status: active
+status: archived
 created: 2026-10-01
 surfaces: [backend, data, docs]
+archived: "2026-10-02"
+source_slug: 0218-the-jev-router-on-docs-and-chore-tasks
+qa_override: true
+qa_override_approval: 'maintainer standing authorization 2026-09-30 (unattended program): qa_override only for environment-only partials'
+qa_override_reason: QA partial with zero findings; blocked rows need a /home/maintainer transcript fixture (2), outbound network the QA sandbox prohibits (6, 7) and an open Pull Request (11)
+qa_override_qa_outcome: partial
+qa_override_qa_task_status: failed
+qa_override_revision: 8a26592da6b48560aadc84c29bcea8c90b18ccb1
 ---
+
 
 # The Jev Router on docs and chore Tasks
 
