@@ -785,6 +785,12 @@ the Baseline contract.
 Roundfix ships `go-cli-tui`, `go-cli-typescript-monorepo`, `rust-cli`, and
 `standard-typescript-monorepo`. The `go-cli-typescript-monorepo` Profile combines
 the Go CLI and Standard TypeScript Monorepo modules on a composed setup.
+
+The composed profile's root gate is expected to run `make verify-go` and
+`bun run verify`. Alignment reports a non-blocking
+`verification.gate.part.missing` divergence for each part a declared root Make
+gate does not reach through its prerequisites or recipes.
+
 Inspect a built-in or repository-owned Baseline Profile before selecting it:
 
 ```bash

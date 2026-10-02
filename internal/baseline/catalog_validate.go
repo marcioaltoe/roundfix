@@ -370,6 +370,14 @@ func (l *catalogLoader) validateProfiles(catalog *Catalog) {
 
 	for profileID, profile := range catalog.profiles {
 		requireFields(l, "profile", profileID, profile, "id", "version", "setup", "entryDecisions", "modules")
+		for _, entry := range objectsOrEmpty(profile["verification"]) {
+			if marker, present := entry["partOfGate"]; present {
+				if _, ok := marker.(bool); !ok {
+					id, _ := stringValue(entry, "id")
+					l.add("catalog.profile.verification.invalid", profileID, id+": partOfGate must be a boolean")
+				}
+			}
+		}
 		setupID, _ := stringValue(profile, "setup")
 		setup, setupExists := catalog.setups[setupID]
 		if !setupExists {

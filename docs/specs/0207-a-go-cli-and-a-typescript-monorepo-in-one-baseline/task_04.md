@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0207-a-go-cli-and-a-typescript-monorepo-in-one-baseline
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -67,3 +67,47 @@ This is an authorized tooling Task. It may change only the files in its Context,
 - `_prd.md` → Goal 3; Story 4; Core Feature 4; Success Metric 4; Success Metric 7
 - `_techspec.md` → API Contract 6
 - ADR-0081, ADR-0149, ADR-0204
+
+## Result
+
+Implemented the bounded gate-part check. Catalog validation refuses a present
+non-boolean `partOfGate`. Profile alignment follows literal prerequisites and
+recursive Make recipes in the selected gate's declared Makefile, visits each
+target once, and reports each unreached marked part as a recommended,
+non-blocking `verification.gate.part.missing` divergence. It checks resolved
+projection commands, preserving existing Verification role mappings. The
+Profiles guide now states both expected commands and the advisory diagnostic.
+
+Acceptance evidence from focused checks:
+
+| Criterion | Evidence |
+| --- | --- |
+| Gate reaches both toolchains | `TestAGateThatReachesBothPartsReportsNoDivergence` passes for direct and transitive prerequisites, an order-only prerequisite, an inline recipe, and RTK-prefixed recipes. `TestAPartReachedThroughARecipeInvocationCounts` passes for `$(MAKE)`, `${MAKE}`, literal `make`, chained invocations, and a mapped Go role. |
+| Gate skips exactly one part | `TestAGateThatSkipsAPartReportsItOnce` passes, asserting exactly one recommended, non-blocking diagnostic naming `verification.workspace`, with the authored message and next action. An unrelated target's recipe does not satisfy the part. The recipe test also proves that an echo or a non-MAKE variable does not reach the Go part. |
+| Non-Make gates skipped; cycles terminate | `TestAGateThatIsNotAMakeTargetIsNotChecked` passes for a Bun script and an undeclared Make target. `TestMakeTargetReachStopsAtACycle` passes on two targets naming each other, returning exactly two targets and two recipes. |
+| Non-boolean marker refused | `TestANonBooleanPartOfGateIsRefused` passes for a string, null, number, and object, each producing `catalog.profile.verification.invalid`. |
+
+Focused commands and outcomes:
+
+- Initial focused build failed on the two absent helper functions, establishing
+  the pre-implementation signal.
+- `GOCACHE=/private/tmp/roundfix-task04-gocache rtk proxy go test ./internal/baseline -count=1 -v -run 'TestAGate|TestAPartReached|TestMakeTargetReach|TestANonBoolean|TestTheComposedProfilePlanConverges'`
+  — exit 0; all six authored tests and composed-profile convergence pass.
+- `GOCACHE=/private/tmp/roundfix-task04-gocache rtk go test ./internal/baseline -run 'TestPortableVerificationRoleMapping|TestExecutableVerificationCommandRequiresLocalDeclaration|TestIncrementalVerificationDecisionProjectsLikeTheGate' -count=1`
+  — exit 0; existing role-mapping and command-declaration checks pass.
+- `GOCACHE=/private/tmp/roundfix-task04-gocache rtk go test ./internal/cli -run '^TestGuidanceCompositionJourney$' -count=1`
+  — exit 0 when run alone; the journey test remains unchanged. An earlier
+  invocation encountered host Go-cache permissions; the first cache-local run
+  overlapped digest regeneration, so its assertions passed but the repository
+  guard refused the concurrent fixture writes. The isolated rerun passed both.
+- `GOCACHE=/private/tmp/roundfix-task04-gocache rtk make baseline-digests`
+  — exit 0, `ok: true`, `changed: false`; derived artifacts already match.
+- `GOCACHE=/private/tmp/roundfix-task04-gocache rtk proxy go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`
+  — run twice sequentially; both exit 0 and report `File changes: 0`.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+
+Scope review: only this Task file, the public guide, catalog validation,
+profile alignment, and the two new gate-part files changed. Neither profile
+asset, the frozen corpora, the Task Graph, nor another Task file changed. No
+top-level test or exported function was renamed or removed. The declared
+Verification command was not run; status and settlement remain Daemon-owned.
