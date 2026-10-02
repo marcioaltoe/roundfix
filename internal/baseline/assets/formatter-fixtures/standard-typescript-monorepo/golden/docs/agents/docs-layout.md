@@ -188,6 +188,8 @@ Before retiring a Rollup, transfer each member's absorption pointer to its true 
 
 - **mandatory**: When a Finding's lifecycle closes, mint each typed Backlog Entry that its recorded actions call for, while preserving the boundary between evidence and intent. Where a fleet observation is captured before it reaches this repository is the Secondbrain guidance's concern, not this one's.
 
+- **mandatory**: Before minting a Finding or Backlog Entry, including in Triage, look for an existing one that is not yet implemented and that the new observation or intent fits: an `open` Backlog Entry in `docs/backlog/` or an unresolved Finding in `docs/findings/`. Revise a fitting Backlog Entry in place under its existing name; extend a fitting Finding with a dated addendum, because a Finding is immutable history. Mint a new file only when none fits. A Triage that extends an existing entry resolves its Inbox Entry into that entry, which cites the Inbox Entry's provenance.
+
 <!-- setup-context-driven:end id=guide.docs-layout -->
 <!-- setup-context-driven:begin id=guide.spec-docs-layout version=0.0.1 -->
 

@@ -531,8 +531,16 @@ The per-month JSONL record of every advisory judgment call: the question, the tr
 _Avoid_: Run Event Journal, audit log
 
 **Advisory Judgment**:
-A typed semantic judgment about a Spec artifact, such as whether a cited ADR supports the attributed claim, that the authoring model must answer but that never gates, never changes another command's exit code, and fails open (ADR-0200).
+A typed semantic judgment about a Spec artifact, such as whether a cited ADR supports the attributed claim, or about a source relationship, such as whether a Finding or Backlog Entry shares a Spec's context, that the authoring model must answer but that never gates, never changes another command's exit code, and fails open (ADR-0200, ADR-0209).
 _Avoid_: Gate, check, finding
+
+**Grouping Suggestion**:
+An Advisory Judgment that an open Finding or Backlog Entry shares the context of a source the Spec already adopts, so the author adopts it into the same Spec or states why it stays apart; it never moves a source by itself (ADR-0209).
+_Avoid_: Merge rule, automatic grouping
+
+**Grouping Bound**:
+The size limit on grouping sources into one Spec: four implementation Tasks plus its QA gate. A grouped scope that needs more is split into Specs that each fit, and each source keeps exactly one owning Spec (ADR-0208).
+_Avoid_: Spec size rule, Task cap
 
 **Frontend Layout Decision**:
 The repository's recorded choice of frontend layout, `systems` or `repository-defined`. While none is recorded, the Baseline states the suggested `systems` layout; a recorded value is never overwritten (ADR-0205).

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0209-sources-that-share-a-context-share-a-spec
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -68,3 +68,101 @@ Spec 0205 creates `internal/cli/spec_judge.go`, its test and `docs/user-guide/co
 - [_prd.md](_prd.md) — Goal 5; User Story 4; Core Feature 7; Success Metric 3; Declared breaks
 - [_techspec.md](_techspec.md) — Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; API Contract 1; API Contract 2; API Contract 5; Existing tests that change; Testing Approach 4; Build Order 3
 - ADR-0209; ADR-0200; ADR-0184; ADR-0187; ADR-0189
+
+## Result
+
+Implemented the command output, help, tests, and documentation for this
+Task's slice. Task status and authored Verification remain Daemon-owned;
+neither declared Verification command was run. No commit, push, or Pull
+Request was made.
+
+### Implementation and acceptance evidence
+
+- Surface Transcripts 1–3: `TestSpecJudgePrintsAGroupingSuggestion/prd`,
+  `TestSpecJudgeSkipsANonEnglishSource`, and
+  `TestSpecJudgeCountsGroupingJudgmentsNotAsked` compare stdout, stderr,
+  and exit code byte for byte against the authored transcripts. The
+  suggestion test also checks `techspec` and the default both-artifacts
+  stage. Each fixture uses a temporary repository, temporary Roundfix
+  Home, fake HTTP transport, fixed UTC clock, and synthetic credentials
+  exclusively in the command environment. Missing command credentials
+  produce zero requests.
+- Spec 0205 compatibility: the existing advisory, non-English Spec, and
+  service-stop transcripts pass with `0 suggested` in their summaries.
+  The prerequisite also shipped `TestSpecJudgePrintsIndividualSkip`, which
+  has a counting summary beyond the three named transcripts; its expected
+  summary gained only `0 suggested` to satisfy Requirement 1's contract for
+  every counting form. No other existing assertions changed.
+- JSON: `TestSpecJudgePrintsGroupingJSON` exercises public command dispatch
+  and checks both suggested and clear pairs, the unchanged schema and exact
+  top-level field set, `kind: source-grouping`, anchor artifact, candidate
+  target, null line/text/section/choice fields, probabilities, and versioned
+  model. Task 02's existing `Judgment.MarshalJSON` already provides these
+  fields, so no judge-package change was needed.
+- Skipped grouping judgments: `TestSpecJudgePrintsSkippedGroupingPair`
+  injects an unpinned model and checks both arrow-separated pair lines,
+  reasons, and the zero-suggestion summary. Clear pairs print no text line.
+- Help: `TestSpecJudgeHelpNamesTheGroupingQuestion` checks the actual help
+  output names the open-source question and says a suggestion never gates.
+  Existing help tests still pass; flags, synopsis, and exit-code declarations
+  are unchanged.
+- Documentation and skill version: the command reference now describes
+  pairs at every stage, the `source-grouping` line, `P(same Spec)` threshold
+  of 0.3, the Findings/Backlog request boundary, and low recall. The Roundfix
+  Advisory judge reference describes adopting the open source within the
+  grouping bound or stating why it stays apart, and that suggestions never
+  gate. Both skill version fields rose from starting-commit `0.1.8` to
+  `0.1.9`, recorded in the owned-version history. A focused Python inspection
+  confirmed both changed mirror files match their canonical counterparts
+  and both `### QA settlement` sections remain byte-identical to `HEAD`.
+
+### Focused checks and regeneration
+
+Go and Make checks used `GOCACHE=/private/tmp/roundfix-task03-gocache`.
+
+- Before implementation, `go test ./internal/cli -run
+  '^TestSpecJudge(PrintsAGroupingSuggestion|SkipsANonEnglishSource|HelpNamesTheGroupingQuestion|PrintsSkippedGroupingPair)$'
+  -count=1` exited 1: missing suggestion/count/help and incorrect skipped
+  pair formatting were exposed.
+- After implementation and restoring both sabotages,
+  `go test ./internal/cli -run '^TestSpecJudge' -count=1 -v` exited 0;
+  all existing and new Spec Judge tests passed.
+- `make skills-sync` exited 0 and rewrote
+  `skills/roundfix/SKILL.md` and `skills/roundfix/references/spec.md`.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions` exited 0 and rewrote only
+  `skills/testdata/owned-skill-versions.json`, adding Roundfix `0.1.9`.
+- `make baseline-digests` exited 0 with `changed: false`; it rewrote no file.
+- `make verify-incremental` first exited 2 because the sandbox denied
+  process-table access in
+  `TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner` and
+  `TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion`.
+  The same command rerun with host process-table permission exited 0:
+  formatting, vet, repository tests, skill synchronization/checks, and build
+  passed. No test or implementation was altered to bypass that restriction.
+- `git -c core.fsmonitor=false diff --check` exited 0. The changed-file
+  inspection contains only this Task's CLI, test, documentation, canonical
+  Roundfix skill, required mirrors/version record, and this Task's Result.
+
+### Sabotage evidence
+
+Each mutation ran `go test ./internal/cli -run
+'^TestSpecJudgePrintsAGroupingSuggestion/prd$' -count=1` against the mutated
+renderer, then restored the original source in a `finally` block.
+
+- Summary sabotage: forced the rendered suggestion count to zero. The
+  command exited 1 and
+  `TestSpecJudgePrintsAGroupingSuggestion/prd` failed on `0 suggested`
+  versus the expected `1 suggested`. The code was restored.
+- Suggestion-line sabotage: changed `P(same Spec) %.2f` to `%.1f`. The
+  command exited 1 and the same test failed on `P(same Spec) 0.8` versus
+  `P(same Spec) 0.81`. The code was restored.
+
+The subsequent focused Spec Judge suite and incremental check passed on the
+restored implementation. Final Task Verification and settlement are pending
+the Daemon.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261001T233647Z_36941fe094803f4f`
+- Source commit: `5fcc743d854201ca3cc001b42720dc98d7ad60b8`

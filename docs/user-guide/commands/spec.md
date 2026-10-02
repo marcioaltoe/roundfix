@@ -8,10 +8,28 @@ Raises advisory judgments about ADR attributions and goal-to-mechanism links
 in one active Spec, resolved through the configured Spec Root. By default it
 reads both the PRD and TechSpec. `--stage prd` judges PRD attributions;
 `--stage techspec` judges TechSpec attributions and its Coverage Map against
-the PRD's goals. It reads only the PRD, TechSpec, and accepted ADRs.
+the PRD's goals. These judgments read the PRD, TechSpec, and accepted ADRs.
 
-Text output lists `advisory` and `skipped` results followed by a cost and
-transport summary. Clear judgments appear only in `--format json`, whose
+At every stage (`prd`, `techspec`, or both), the `source-grouping` question
+also asks whether each Finding or Backlog Entry the Spec adopted belongs in
+the same Spec as each open Backlog Entry (`open`) or unresolved Finding
+(`pending` or `partial`). Adopted sources come from `references/_index.md`;
+open sources come from this repository's `docs/backlog/` and `docs/findings/`.
+For this question, only Findings and Backlog Entries are sent, with front
+matter removed, Spec and ADR numbers scrubbed, and text cut to 1,500 Unicode
+characters. Inbox Entries, terminal sources, and source code are excluded.
+
+A pair with `P(same Spec)` at or above 0.3 prints
+`suggested source-grouping <anchor> → <candidate>: P(same Spec) <probability>`,
+with the probability to two decimal places. Answer it by adopting the open
+source within the bound of four implementation Tasks plus its QA gate, or by
+stating why it stays apart. A suggestion never gates. Its recall is low:
+the measured question found 27% of true pairs, so no suggestion does not
+mean no source fits.
+
+Text output lists `advisory`, `suggested`, and `skipped` results followed by
+`Judge: <a> advisory, <s> suggested, <c> clear, <k> skipped; …` and the cost
+and transport. Clear judgments appear only in `--format json`, whose
 schema is `roundfix/spec-judge/v1`. An advisory asks the author to correct the
 artifact or explain why the text stands. A skipped result proves neither a
 failure nor a clean result.
@@ -35,7 +53,7 @@ the request. A refused key (HTTP 401, 402, or 403), exhausted service retries,
 a server failure, timeout, network error, reached ceiling, or unreadable or
 unwritable log stops further requests. Judgments not asked count as skipped.
 
-The command exits `0` whenever it ran, including advisory, skipped, and
-stopped results. It never gates authoring or changes another command's exit
-code. Exit `2` means invalid arguments, an unknown active Spec, a missing
-PRD, or a missing TechSpec with `--stage techspec`.
+The command exits `0` whenever it ran, including advisory, suggested,
+skipped, and stopped results. It never gates authoring or changes another
+command's exit code. Exit `2` means invalid arguments, an unknown active Spec,
+a missing PRD, or a missing TechSpec with `--stage techspec`.

@@ -874,14 +874,25 @@
       "digest": "ac5e756c7cb8cbae76bb1e5699c2e12a94ba61875737ecdf3b0d226f20ca91b0"
     },
     {
+      "id": "clause.context.inbox-03-extend-before-minting",
+      "path": "corpus/docs/agents/docs-layout.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/docs-layout.md",
+      "structure": null,
+      "start": 13042,
+      "end": 13202,
+      "digest": "e9473889d9d273b6ea90de61289927f6acac1b12ba38b23e263a6c3162055f09"
+    },
+    {
       "id": "clause.spec.keep-artifacts-in-spec-folder",
       "path": "corpus/docs/agents/docs-layout.md",
       "kind": "normative-clause",
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 13038,
-      "end": 13233,
+      "start": 13356,
+      "end": 13551,
       "digest": "18356abb102fbe15989e30b192c48b76c587124c757c2321c83b3816f6eb3b37"
     },
     {
@@ -891,8 +902,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 13384,
-      "end": 13767,
+      "start": 13702,
+      "end": 14085,
       "digest": "437de61f4c3b444f6509517f1d8994432bb99adaf8edaf17394e611ec04e0dbc"
     },
     {
@@ -1446,14 +1457,36 @@
       "digest": "4997374227082fa4f1768cf09b62831f0c21e2cce2cf7fc77dadb2762e4bc35b"
     },
     {
+      "id": "clause.spec.sources-01-group-by-shared-context",
+      "path": "corpus/docs/agents/spec-routing.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/spec-routing.md",
+      "structure": null,
+      "start": 3746,
+      "end": 3963,
+      "digest": "e6072a87b8ba4099a3b6d9696151573b7b0ba22703e22ce897b5cede343bfbc4"
+    },
+    {
+      "id": "clause.spec.sources-02-bound-the-group",
+      "path": "corpus/docs/agents/spec-routing.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/spec-routing.md",
+      "structure": null,
+      "start": 4115,
+      "end": 4278,
+      "digest": "43fbad5a285e02d2e0f6896be65115ce5567919fb4cc505edc6244b8fb1f4e8f"
+    },
+    {
       "id": "clause.spec.project-constraints-06-outside-evidence",
       "path": "corpus/docs/agents/spec-routing.md",
       "kind": "normative-clause",
       "enforcement": "mandatory",
       "carrier": "docs/agents/spec-routing.md",
       "structure": null,
-      "start": 3751,
-      "end": 4172,
+      "start": 4435,
+      "end": 4856,
       "digest": "aa3aa853f82b6cdce783e0f74f1270c62eaa0c32d34b141f1c8f4a19ceef9afb"
     },
     {

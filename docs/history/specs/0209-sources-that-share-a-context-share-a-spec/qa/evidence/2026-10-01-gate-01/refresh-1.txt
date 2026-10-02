@@ -1,0 +1,24 @@
+Baseline update: verified
+Result: approved Baseline Plan is already applied
+Status matrix:
+- Approved postimages: verified
+- Semantic retention: not run
+- Profile alignment: verified
+- Repository Verification: not run
+- Idempotence: verified
+Prior catalog: sha256:31494d1de972172f2dd16c66480e04a1482fe9e10a282974929a5244166e17eb
+Current catalog: sha256:31494d1de972172f2dd16c66480e04a1482fe9e10a282974929a5244166e17eb
+File changes: 0
+Retention evidence: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: skipped
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:c5eccc228c890697925dff57b45beef60b30db07dd4698165f4334cb83b41294
+Approved Plan Digest: sha256:c5eccc228c890697925dff57b45beef60b30db07dd4698165f4334cb83b41294
+
+stderr:
+
+exit: 0

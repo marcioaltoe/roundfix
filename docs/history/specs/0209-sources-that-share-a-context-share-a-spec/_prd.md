@@ -1,9 +1,12 @@
 ---
 spec: 0209-sources-that-share-a-context-share-a-spec
-status: active
+status: archived
 created: 2026-10-01
 surfaces: [backend, cli, docs]
+archived: "2026-10-01"
+source_slug: 0209-sources-that-share-a-context-share-a-spec
 ---
+
 
 # Sources that share a context share a Spec
 

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "spec-workflow",
-  "version": 13,
+  "version": 14,
   "kind": "workflow",
   "title": "Local Spec workflow",
   "dependsOn": [
@@ -38,7 +38,7 @@
   "supportingGuides": [
     {
       "id": "guide.spec-routing",
-      "version": 9,
+      "version": 10,
       "path": "docs/agents/spec-routing.md",
       "template": "template.guide.spec-routing",
       "rules": [
@@ -71,7 +71,7 @@
   "rules": [
     {
       "id": "rule.spec.routing",
-      "version": 5,
+      "version": 6,
       "coverage": [
         "coverage.spec-workflow"
       ],
@@ -105,6 +105,16 @@
           "id": "clause.spec.verification-two-tiers",
           "enforcement": "mandatory",
           "guidance": "For each Task, run the selected incremental Verification named in `docs/agents/agent-instructions.md` to answer whether the current slice remains valid before handoff. CI must run the selected repository Verification from a fresh run to answer whether the assembled tree satisfies the repository contract. A missing incremental selection is a Baseline decision to answer, never a license to skip the local tier or a waiver to repeat in each Spec."
+        },
+        {
+          "id": "clause.spec.sources-01-group-by-shared-context",
+          "enforcement": "mandatory",
+          "guidance": "One Spec may adopt several Inbox Entries, Backlog Entries, and Findings whose context is similar or complementary: they change the same component or contract, share a root cause, or one completes the other. One Spec per source is neither required nor preferred, so before minting a Spec for a source, look among the open Backlog Entries and unresolved Findings for others that share its context. A grouping suggestion from `roundfix spec judge` is advisory: adopt the suggested source or state why it stays apart."
+        },
+        {
+          "id": "clause.spec.sources-02-bound-the-group",
+          "enforcement": "mandatory",
+          "guidance": "Group sources into one Spec only while the Spec fits four implementation Tasks plus its QA gate. When the grouped scope needs more, split it into Specs that each fit and give each source exactly one owning Spec; never add a source that shares no context with the Spec only to save a Spec."
         }
       ]
     },

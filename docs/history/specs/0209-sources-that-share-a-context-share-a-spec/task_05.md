@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0209-sources-that-share-a-context-share-a-spec
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

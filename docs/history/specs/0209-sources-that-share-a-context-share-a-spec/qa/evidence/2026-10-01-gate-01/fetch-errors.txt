@@ -1,0 +1,4 @@
+Direct curl-cffi GET https://docs.typesafe.ai/llms.txt: exit 1, curl (7) CONNECT tunnel failed, response 403.
+Web open https://dl.acm.org/doi/full/10.1145/3576042: Internal Error, one-line response; article not obtained.
+Web open https://docs.typesafe.ai/primitives/noul.md: Internal Error, one-line response; Markdown page not obtained.
+Read-only equivalents: author-hosted TOSEM PDF and official extensionless Noul page; see published-web-evidence.json and noul-web-evidence.json.

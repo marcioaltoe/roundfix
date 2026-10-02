@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "context-workflow",
-  "version": 20,
+  "version": 21,
   "kind": "workflow",
   "title": "CONTEXT-driven workflow",
   "dependsOn": [
@@ -222,7 +222,7 @@
   "supportingGuides": [
     {
       "id": "guide.docs-layout",
-      "version": 14,
+      "version": 15,
       "path": "docs/agents/docs-layout.md",
       "template": "template.guide.docs-layout",
       "rules": [
@@ -274,7 +274,7 @@
     },
     {
       "id": "rule.context.docs-layout",
-      "version": 15,
+      "version": 16,
       "coverage": [
         "coverage.context-workflow"
       ],
@@ -378,6 +378,11 @@
           "id": "clause.context.inbox-02-fleet-flow",
           "enforcement": "mandatory",
           "guidance": "When a Finding's lifecycle closes, mint each typed Backlog Entry that its recorded actions call for, while preserving the boundary between evidence and intent. Where a fleet observation is captured before it reaches this repository is the Secondbrain guidance's concern, not this one's."
+        },
+        {
+          "id": "clause.context.inbox-03-extend-before-minting",
+          "enforcement": "mandatory",
+          "guidance": "Before minting a Finding or Backlog Entry, including in Triage, look for an existing one that is not yet implemented and that the new observation or intent fits: an `open` Backlog Entry in `docs/backlog/` or an unresolved Finding in `docs/findings/`. Revise a fitting Backlog Entry in place under its existing name; extend a fitting Finding with a dated addendum, because a Finding is immutable history. Mint a new file only when none fits. A Triage that extends an existing entry resolves its Inbox Entry into that entry, which cites the Inbox Entry's provenance."
         }
       ]
     }

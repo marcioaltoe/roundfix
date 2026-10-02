@@ -46,6 +46,14 @@ Use `brainstorming` before creative or feature work, start with the smaller suff
 - MUST use the active Baseline Profile's declared incremental verification command for each Task to answer whether the current slice remains valid before handoff. CI MUST use the Profile's declared complete verification command from a fresh run to answer whether the assembled tree satisfies the repository contract. A missing incremental command leaves the Profile's two-tier contract unmet and never authorizes skipping the local tier.
 <!-- /source-baseline-entry: clause.spec.verification-two-tiers -->
 
+<!-- source-baseline-entry: clause.spec.sources-01-group-by-shared-context -->
+- MUST look among the open Backlog Entries and unresolved Findings for sources that share a context before minting a Spec for one source, and let one Spec adopt every source whose context is similar or complementary.
+<!-- /source-baseline-entry: clause.spec.sources-01-group-by-shared-context -->
+
+<!-- source-baseline-entry: clause.spec.sources-02-bound-the-group -->
+- MUST group sources into one Spec only while the Spec fits four implementation Tasks plus its QA gate, and split a larger grouped scope into Specs that each fit.
+<!-- /source-baseline-entry: clause.spec.sources-02-bound-the-group -->
+
 <!-- source-baseline-entry: clause.spec.project-constraints-06-outside-evidence -->
 - MUST rest a Spec's acceptance, in at least one named row, on evidence originating outside the Spec's own artifacts — a repository the Spec did not build, a measurement it did not design, or published literature — and record in that row where the evidence came from. A row whose outside source cannot be obtained is recorded as blocked with its reason; it never requires human interaction and never blocks the Spec.
 <!-- /source-baseline-entry: clause.spec.project-constraints-06-outside-evidence -->

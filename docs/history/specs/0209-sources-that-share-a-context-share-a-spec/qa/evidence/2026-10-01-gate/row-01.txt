@@ -1,0 +1,1 @@
+Daemon-supplied static gate: `make verify-changed`, exit 0, pass at audited head 33c34579197044995123efa0d252629dcbed6180; diagnostics removed on success. Recorded as supervised evidence; not rerun.

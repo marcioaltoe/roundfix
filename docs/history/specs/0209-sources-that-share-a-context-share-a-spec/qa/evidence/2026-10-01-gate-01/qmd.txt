@@ -1,0 +1,27 @@
+Tip: 361 documents need embeddings. Run 'qmd embed' to index them.
+Strong BM25 signal (0.95) — skipping expansion
+Expanding query... (0ms)
+└─ agrupar findings e backlog na mesma spec evitar duplicação
+Searching 1 queries...
+Embedding 1 query...[node-llama-cpp] Failed to get swap info
+[node-llama-cpp] ggml_metal_init: error: failed to create command queue
+[node-llama-cpp] ggml_backend_metal_device_init_backend: error: failed to allocate context
+[node-llama-cpp] llama_init_from_model: failed to initialize the context: failed to initialize  backend
+[node-llama-cpp] ggml_metal_init: error: failed to create command queue
+[node-llama-cpp] ggml_backend_metal_device_init_backend: error: failed to allocate context
+[node-llama-cpp] llama_init_from_model: failed to initialize the context: failed to initialize  backend
+[node-llama-cpp] ggml_metal_init: error: failed to create command queue
+[node-llama-cpp] ggml_backend_metal_device_init_backend: error: failed to allocate context
+Batch embedding error: Error: Failed to create any embedding context
+    at file:///opt/homebrew/lib/node_modules/@tobilu/qmd/dist/llm.js:849:31
+    at async LlamaCpp.ensureEmbedContexts (file:///opt/homebrew/lib/node_modules/@tobilu/qmd/dist/llm.js:857:20)
+    at async LlamaCpp.embedBatch (file:///opt/homebrew/lib/node_modules/@tobilu/qmd/dist/llm.js:1089:30)
+    at async hybridQuery (file:///opt/homebrew/lib/node_modules/@tobilu/qmd/dist/store.js:4402:28)
+    at async withLLMSession.maxDuration (file:///opt/homebrew/lib/node_modules/@tobilu/qmd/dist/cli/qmd.js:2539:23)
+    at async withLLMSession (file:///opt/homebrew/lib/node_modules/@tobilu/qmd/dist/llm.js:1617:16)
+    at async querySearch (file:///opt/homebrew/lib/node_modules/@tobilu/qmd/dist/cli/qmd.js:2492:5)
+    at async file:///opt/homebrew/lib/node_modules/@tobilu/qmd/dist/cli/qmd.js:4172:13
+ (1.1s)
+Reranking 1 chunks... (0ms)
+#a70d81,1.00,qmd://projects/roundfix/mirror/docs/specs/0209-sources-that-share-a-context-share-a-spec/_prd.md,"Mirrors sempre atualizados da documentação dos projetos e notas"
+[node-llama-cpp] llama_init_from_model: failed to initialize the context: failed to initialize  backend

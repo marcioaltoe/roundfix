@@ -18,6 +18,8 @@ const specJudgeUsage = `Usage:
   roundfix spec judge <slug> [--stage <prd|techspec>] [--format <text|json>]
 
 Raises advisory judgments for one active Spec. Never fails for a judgment.
+Also asks whether each open Finding or Backlog Entry belongs with a source
+the Spec adopted. A suggestion never gates.
 
 Options:
   --stage   Judge prd or techspec (default: both)
@@ -153,7 +155,7 @@ func renderSpecJudgeText(report judge.Report) string {
 	for _, artifact := range report.ArtifactsSkipped {
 		fmt.Fprintf(&out, "skipped %s: %s\n", artifact.Artifact, artifact.Reason)
 	}
-	advisory, clear, skipped := 0, 0, 0
+	advisory, suggested, clear, skipped := 0, 0, 0, 0
 	for _, j := range report.Judgments {
 		switch j.Outcome {
 		case "advisory":
@@ -164,13 +166,20 @@ func renderSpecJudgeText(report judge.Report) string {
 			} else {
 				fmt.Fprintf(&out, ": P(delivers) %.2f\n", *j.Noul)
 			}
+		case "suggested":
+			suggested++
+			fmt.Fprintf(&out, "suggested %s %s → %s: P(same Spec) %.2f\n", j.Kind, j.Artifact, j.Target, *j.Noul)
 		case "clear":
 			clear++
 		case "skipped":
 			skipped++
 			// Run-level reasons belong only on the summary, as in Transcripts 2, 3 and 5.
 			if report.Skipped == nil && !(report.Stopped != nil && j.Reason != nil && *j.Reason == *report.Stopped) {
-				fmt.Fprintf(&out, "skipped %s %s:%d %s: %s\n", j.Kind, j.Artifact, j.Line, j.Target, *j.Reason)
+				if j.Kind == "source-grouping" {
+					fmt.Fprintf(&out, "skipped %s %s → %s: %s\n", j.Kind, j.Artifact, j.Target, *j.Reason)
+				} else {
+					fmt.Fprintf(&out, "skipped %s %s:%d %s: %s\n", j.Kind, j.Artifact, j.Line, j.Target, *j.Reason)
+				}
 			}
 		}
 	}
@@ -178,7 +187,7 @@ func renderSpecJudgeText(report judge.Report) string {
 		fmt.Fprintf(&out, "Judge: skipped: %s; %d judgment(s) not asked\n", *report.Skipped, skipped)
 		return out.String()
 	}
-	fmt.Fprintf(&out, "Judge: %d advisory, %d clear, %d skipped; %d call(s), %d input tokens, US$%.4f; month US$%.4f of US$%.2f; model %s via %s", advisory, clear, skipped, report.Calls, report.InputTokens, report.CostUSD, report.MonthCostUSD, report.MonthCeilingUSD, report.Model, *report.Transport)
+	fmt.Fprintf(&out, "Judge: %d advisory, %d suggested, %d clear, %d skipped; %d call(s), %d input tokens, US$%.4f; month US$%.4f of US$%.2f; model %s via %s", advisory, suggested, clear, skipped, report.Calls, report.InputTokens, report.CostUSD, report.MonthCostUSD, report.MonthCeilingUSD, report.Model, *report.Transport)
 	if report.Stopped != nil {
 		fmt.Fprintf(&out, "; stopped: %s", *report.Stopped)
 	}

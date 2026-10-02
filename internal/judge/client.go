@@ -57,6 +57,9 @@ func (c client) ask(ctx context.Context, pending PendingJudgment, attempt int) c
 	if pending.Kind == "goal-mechanism" {
 		id, question = c.q.Goal.QuestionID, c.q.Goal.Question
 	}
+	if pending.Kind == "source-grouping" {
+		id, question = c.q.Grouping.QuestionID, c.q.Grouping.Question
+	}
 	var body bytes.Buffer
 	encoder := json.NewEncoder(&body)
 	encoder.SetEscapeHTML(false)
@@ -149,7 +152,13 @@ func evaluate(q Questions, p PendingJudgment, c call) (answer, string, string, b
 	if p.Kind == "goal-mechanism" {
 		id = q.Goal.QuestionID
 	}
+	if p.Kind == "source-grouping" {
+		id = q.Grouping.QuestionID
+	}
 	a := c.Answers[id]
+	if p.Kind == "source-grouping" {
+		a = answer{Type: a.Type, Noul: a.Noul}
+	}
 	if !q.pinned(c.Model) {
 		return a, "skipped", fmt.Sprintf("answered by %s, thresholds belong to %s", c.Model, q.PinnedModel), false
 	}
@@ -172,6 +181,12 @@ func evaluate(q Questions, p PendingJudgment, c call) (answer, string, string, b
 	} else {
 		if a.Type != "noul" || !validProbability(a.Noul) {
 			return answer{}, "skipped", "unreadable answer", false
+		}
+		if p.Kind == "source-grouping" {
+			if *a.Noul >= q.Grouping.SuggestWhenNoulAtLeast {
+				return a, "suggested", "", false
+			}
+			return a, "clear", "", false
 		}
 		advisory = *a.Noul < q.Goal.RaiseWhenNoulBelow
 	}
