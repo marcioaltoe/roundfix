@@ -23,6 +23,7 @@ This is an authorized tooling Task. It may change only the files in its Context,
 5. MUST update the Profiles section of `docs/user-guide/context-driven-development.md` as Fixed texts gives for task_04.
 6. MUST run `make baseline-digests`, then `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text` twice; the second MUST report `File changes: 0`.
 7. MUST NOT change the Standard TypeScript Monorepo Profile's verification entries or any Verification role mapping behavior, and MUST NOT rename or remove a top-level test or an exported function.
+8. MUST keep `TestGuidanceCompositionJourney` passing unchanged. Since task_03 it runs a journey for the composed profile whose fixture `verify` target reaches neither part, so that plan now carries two non-blocking `verification.gate.part.missing` divergences and still applies and converges.
 
 ## Subtasks
 

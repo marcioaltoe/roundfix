@@ -15,7 +15,9 @@ paths:
   - internal/baseline/assets/setups/go-cli-typescript-bun.json
   - internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/frontend.md
   - internal/baseline/derived_ownership_test.go
+  - internal/baseline/plan_test.go
   - internal/cli/baseline_human_test.go
+  - internal/cli/baseline_release_gate_test.go
   - docs/agents/setup-context.json
   - skills/baseline_skill_contract_test.go
 operations:
@@ -129,3 +131,19 @@ no `setups` field, so the regeneration dropped the composed setup's components.
 The one-field addition belongs to the Baseline source the maintainer authorized
 ("Autorizar os dois"), and it changes no skill.
 
+On 2026-10-02 the operator added `internal/baseline/plan_test.go` and
+`internal/cli/baseline_release_gate_test.go` to the paths, and task_03 now
+also edits `internal/baseline/derived_ownership_test.go` and a second
+scripted interview in `internal/cli/baseline_human_test.go`. task_03's first
+attempt showed that the new built-in profile and the Go guide's new bytes
+reach four test pins: the frozen parity identity of `docs/agents/go.md`
+(`docs/agents/go.md` joins the list of guides that grew past the frozen
+record; the corpus stays byte-identical), the `make baseline-digests`
+enumeration (the new profile file is one more output), the maintained profile
+list of the release journey (the composed profile gains a journey), and a
+profile chosen by its position in an interview. They are the Baseline source's
+own tests, which the maintainer's "Autorizar os dois" covers; both new paths
+are governed, measured with `GovernedPath` through a test overlay that wrote
+nothing. `internal/baseline/custom_profile.go` and
+`internal/baseline/custom_profile_test.go`, which the closest-source rule of
+ADR-0219 changes, are ordinary.
