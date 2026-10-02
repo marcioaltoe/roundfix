@@ -66,6 +66,14 @@ value. The Run therefore proves the effort applied. An empty effort remains
 `runtime_managed`: Roundfix declines to assign the advertised control and the
 Agent Model opens at its own value.
 
+### Cursor
+
+`cursor` is opt-in and reached as `cursor-agent acp` through acpx. A Cursor
+selection names the advertised model value verbatim with
+`reasoning_effort: ""`; a non-empty effort is refused. The login is the
+maintainer's own: Roundfix checks it with `cursor-agent status` and never
+performs it. A missing login is reported as `cursor_login_required`.
+
 The blocking `skills:` line runs after, and independently from, `profiles:`.
 For each Roundfix-owned skill, the minimum version is the version of that
 skill the running binary carries, and Doctor compares it with the version

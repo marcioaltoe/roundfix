@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0217-a-cursor-runtime-to-measure-grok-on
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -60,3 +60,49 @@ the skill's version (ADR-0189).
 - [_prd.md](_prd.md) — Core Feature 4; User Experience
 - [_techspec.md](_techspec.md) — The Cursor selection rule; The login check; Testing Approach 4; Build Order 3
 - ADR-0217; ADR-0187; ADR-0189
+
+## Result
+
+Implemented the Roundfix Skill documentation slice for Daemon Verification.
+Task status and acceptance checkboxes remain Daemon-owned; no declared
+Verification command, commit, push, or pull request was performed.
+
+### Implementation
+
+- Added `### Cursor` to the canonical runtime reference. It documents the
+  opt-in `cursor` runtime through `cursor-agent acp` via acpx, verbatim Cursor
+  model values with `reasoning_effort: ""`, refusal of non-empty effort, the
+  maintainer-owned login check through `cursor-agent status`, and the
+  `cursor_login_required` classification when the login is missing.
+- Raised both Roundfix Skill front-matter version fields from `0.1.15` to
+  `0.1.16`.
+- Regenerated the distributed `skills/roundfix` mirror with `make skills-sync`
+  and recorded the new `0.1.16` digest in
+  `skills/testdata/owned-skill-versions.json`.
+- No other skill or `### QA settlement` section was changed.
+
+### Acceptance evidence
+
+1. `rg` found `### Cursor`, `cursor-agent acp`,
+   `cursor_login_required`, and `reasoning_effort: ""` in the canonical
+   runtime reference. The synchronized mirror contains the same section.
+2. `make skills-version-check` exited 0. The required recording command first
+   hit the host Go cache permission boundary; rerunning it with
+   `GOCACHE=/private/tmp/roundfix-task03-gocache` exited 0 and added the
+   `0.1.16` Roundfix record. `make skills-sync` completed successfully, and
+   the canonical and mirror diffs show matching skill and runtime-reference
+   changes.
+
+### Focused checks
+
+- `git -c core.fsmonitor=false diff --check` exited 0.
+- The initial unscoped recording attempt was blocked only by the environment's
+  permission error opening the host Go cache; no repository failure was
+  observed.
+- The authored Verification commands and repository-wide Verification remain
+  for the Daemon, as required by the daemon-assigned execution contract.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261002T190644Z_6dc4ccb1092ddf45`
+- Source commit: `ed28e3562b57c1a66bbebeffe5ef7b7ea2501b48`
