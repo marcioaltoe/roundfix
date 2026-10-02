@@ -43,7 +43,12 @@ tail on a runtime failure, and describes the change in the Roundfix Skill's
 6. MUST add the tests named in Verification to the new file
    `internal/cli/review_scope_test.go`, over temporary repositories and the
    `reviewCommandRunner` fake, and MUST leave every existing review test
-   unedited and passing.
+   unedited and passing, except `TestReviewBoundsSpecContext` in
+   `internal/cli/review_test.go`: its oversized fixture writes about 18 times
+   the per-Spec context limit into each of two files, so its diff (1,180,372
+   bytes) exceeds the new bound. Shrink only that fixture to
+   `strings.Repeat("candidate context ", reviewSpecContextPerSpecLimit/8)`, which
+   still exceeds the per-Spec limit and keeps every assertion of the test.
 7. MUST describe the omission, its reasons, the bound and its reason text,
    and the three record fields in `.agents/skills/roundfix/references/review.md`
    and `docs/user-guide/commands/review.md`; MUST raise the Roundfix Skill's
@@ -85,7 +90,7 @@ tail on a runtime failure, and describes the change in the Roundfix Skill's
 - interface: `skills/roundfix/references/review.md`
 - interface: `skills/testdata/owned-skill-versions.json`
 - interface: `docs/user-guide/commands/review.md`
-- instruction: `internal/cli/review_test.go`
+- interface: `internal/cli/review_test.go`
 - instruction: `internal/cli/review_session_test.go`
 - instruction: `internal/agent/acpx_runner.go`
 - instruction: `skills-lock.json`
@@ -94,7 +99,7 @@ tail on a runtime failure, and describes the change in the Roundfix Skill's
 ## Verification
 
 - `out="$(go test -count=1 -v -run "^(TestReviewOmitsQAEvidenceAndUpstreamSkills|TestReviewOmitsASkillTheLockDroppedAtTheHead|TestReviewKeepsTheQAReportInTheDiff|TestReviewBlocksOnAMalformedSkillsLock|TestReviewBlocksAboveTheBoundWithoutAProviderCall|TestReviewRecordsTheRuntimeStderrTail|TestReviewReadsARecordWithoutTheNewFields)$" ./internal/cli 2>&1)" || { printf "%s\\n" "$out"; exit 1; }; for name in TestReviewOmitsQAEvidenceAndUpstreamSkills TestReviewOmitsASkillTheLockDroppedAtTheHead TestReviewKeepsTheQAReportInTheDiff TestReviewBlocksOnAMalformedSkillsLock TestReviewBlocksAboveTheBoundWithoutAProviderCall TestReviewRecordsTheRuntimeStderrTail TestReviewReadsARecordWithoutTheNewFields; do printf "%s\\n" "$out" | grep -q -- "--- PASS: $name" || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done` — expected: exit 0; before this Task the seven tests do not exist, so the command fails.
-- `out="$(go test -count=1 -v -run "^(TestReviewPromptCarriesTheCandidateDiff|TestReviewCommandExitsZeroOnExplicitClean|TestReviewCommandUsesFallbackOnlyWhenSelectionFailsBeforePrompt|TestReviewOmitsQAEvidenceAndUpstreamSkills)$" ./internal/cli 2>&1)" || { printf "%s\\n" "$out"; exit 1; }; for name in TestReviewPromptCarriesTheCandidateDiff TestReviewCommandExitsZeroOnExplicitClean TestReviewCommandUsesFallbackOnlyWhenSelectionFailsBeforePrompt TestReviewOmitsQAEvidenceAndUpstreamSkills; do printf "%s\\n" "$out" | grep -q -- "--- PASS: $name" || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done` — expected: exit 0; the existing review tests run unedited beside the scope test, which does not exist before this Task.
+- `out="$(go test -count=1 -v -run "^(TestReviewBoundsSpecContext|TestReviewPromptCarriesTheCandidateDiff|TestReviewCommandExitsZeroOnExplicitClean|TestReviewCommandUsesFallbackOnlyWhenSelectionFailsBeforePrompt|TestReviewOmitsQAEvidenceAndUpstreamSkills)$" ./internal/cli 2>&1)" || { printf "%s\\n" "$out"; exit 1; }; for name in TestReviewBoundsSpecContext TestReviewPromptCarriesTheCandidateDiff TestReviewCommandExitsZeroOnExplicitClean TestReviewCommandUsesFallbackOnlyWhenSelectionFailsBeforePrompt TestReviewOmitsQAEvidenceAndUpstreamSkills; do printf "%s\\n" "$out" | grep -q -- "--- PASS: $name" || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done` — expected: exit 0; the existing review tests run unedited beside the scope test, which does not exist before this Task.
 - `tr -s '[:space:]' ' ' < .agents/skills/roundfix/references/review.md | grep -qF -- "qa-evidence" || { printf 'missing phrase in %s: %s\n' .agents/skills/roundfix/references/review.md "qa-evidence" >&2; exit 1; }; tr -s '[:space:]' ' ' < .agents/skills/roundfix/references/review.md | grep -qF -- "upstream-skill" || { printf 'missing phrase in %s: %s\n' .agents/skills/roundfix/references/review.md "upstream-skill" >&2; exit 1; }; tr -s '[:space:]' ' ' < .agents/skills/roundfix/references/review.md | grep -qF -- "review diff too large" || { printf 'missing phrase in %s: %s\n' .agents/skills/roundfix/references/review.md "review diff too large" >&2; exit 1; }; tr -s '[:space:]' ' ' < .agents/skills/roundfix/references/review.md | grep -qF -- "omittedPaths" || { printf 'missing phrase in %s: %s\n' .agents/skills/roundfix/references/review.md "omittedPaths" >&2; exit 1; }; tr -s '[:space:]' ' ' < docs/user-guide/commands/review.md | grep -qF -- "omittedPaths" || { printf 'missing phrase in %s: %s\n' docs/user-guide/commands/review.md "omittedPaths" >&2; exit 1; }; tr -s '[:space:]' ' ' < docs/user-guide/commands/review.md | grep -qF -- "review diff too large" || { printf 'missing phrase in %s: %s\n' docs/user-guide/commands/review.md "review diff too large" >&2; exit 1; }; cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md && cmp .agents/skills/roundfix/references/review.md skills/roundfix/references/review.md && out="$(go test -count=1 -v -run "^(TestEveryOwnedSkillVersionIsRecorded|TestSettlementGuidanceIsOneTable|TestTaskAuthoringGuidanceNamesDeclarations)$" ./skills 2>&1)" || { printf "%s\\n" "$out"; exit 1; }; for name in TestEveryOwnedSkillVersionIsRecorded TestSettlementGuidanceIsOneTable TestTaskAuthoringGuidanceNamesDeclarations; do printf "%s\\n" "$out" | grep -q -- "--- PASS: $name" || { printf 'missing pass: %s\n' "$name" >&2; exit 1; }; done` — expected: exit 0; before this Task the review reference and guide carry none of these words, so the command fails.
 
 ## References
