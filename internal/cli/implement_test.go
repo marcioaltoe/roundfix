@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -41,8 +42,16 @@ const implementTestSlug = "0001-widget-flow"
 const cliTestHelperEnv = "ROUNDFIX_CLI_TEST_HELPER"
 const cliTestHoldAfterRunEnv = "ROUNDFIX_CLI_TEST_HOLD_AFTER_RUN"
 const detachTestChildModeEnv = "ROUNDFIX_DETACH_TEST_CHILD"
+const detachTestOwnerRecordEnv = "ROUNDFIX_DETACH_TEST_OWNER_RECORD"
 
 func TestMain(m *testing.M) {
+	resolvedTestBinary, err := filepath.Abs(os.Args[0])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "resolve compiled test binary: %v\n", err)
+		os.Exit(2)
+	}
+	scriptFixtureBinaryPath = resolvedTestBinary
+	runScriptFixture()
 	if mode := os.Getenv(detachTestChildModeEnv); mode != "" {
 		os.Exit(runDetachTestChild(mode))
 	}
@@ -134,6 +143,7 @@ func cliHelperEnv(t *testing.T, fakeACPX string, extra map[string]string) []stri
 	env := isolatedGitEnvForTest()
 	env = withEnvValue(env, "HOME", commandEnvironmentForTest(t).homeDir)
 	env = withEnvValue(env, cliTestHelperEnv, "1")
+	env = withEnvValue(env, "ROUNDFIX_FAKE_ACPX_OWNER_PID", strconv.Itoa(os.Getpid()))
 	if fakeACPX != "" {
 		env = withEnvValue(env, "PATH", filepath.Dir(fakeACPX)+string(os.PathListSeparator)+os.Getenv("PATH"))
 	}
@@ -250,6 +260,7 @@ case " $* " in
     fi
     if [ -n "$ROUNDFIX_FAKE_ACPX_RELEASE" ]; then
       while [ ! -f "$ROUNDFIX_FAKE_ACPX_RELEASE" ]; do
+        kill -0 "$ROUNDFIX_FAKE_ACPX_OWNER_PID" 2>/dev/null || exit 1
         sleep 0.05
       done
     fi
@@ -259,20 +270,14 @@ case " $* " in
 esac
 exit 0
 `, agent.MinimumACPXVersion, builtin.Runtimes.Codex.Model, modelsJSON, modelsJSON, implementFixtureAgentMarkerPrefix)
-	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
-		t.Fatalf("write fake acpx: %v", err)
-	}
+	writeScriptFixture(t, path, body)
 	// The adapter preflight probe LookPaths the agent-command binary; ship a
 	// fake codex-acp next to the fake acpx so detach children pass preflight
 	// on machines without the real adapter installed (CI runners).
 	adapterPath := filepath.Join(filepath.Dir(path), "codex-acp")
-	if err := os.WriteFile(adapterPath, []byte("#!/bin/sh\nprintf '%s\\n' '@agentclientprotocol/codex-acp "+agent.PinnedCodexAdapterVersion+"'\n"), 0o755); err != nil {
-		t.Fatalf("write fake codex-acp: %v", err)
-	}
+	writeScriptFixture(t, adapterPath, "#!/bin/sh\nprintf '%s\\n' '@agentclientprotocol/codex-acp "+agent.PinnedCodexAdapterVersion+"'\n")
 	claudeAdapterPath := filepath.Join(filepath.Dir(path), "claude-agent-acp")
-	if err := os.WriteFile(claudeAdapterPath, []byte("#!/bin/sh\nprintf '%s\\n' '@agentclientprotocol/claude-agent-acp "+agent.PinnedClaudeAdapterVersion+"'\n"), 0o755); err != nil {
-		t.Fatalf("write fake claude-agent-acp: %v", err)
-	}
+	writeScriptFixture(t, claudeAdapterPath, "#!/bin/sh\nprintf '%s\\n' '@agentclientprotocol/claude-agent-acp "+agent.PinnedClaudeAdapterVersion+"'\n")
 	// Bind each runtime to its own isolated adapter; one command override cannot
 	// prove the lineage of both runtimes in the built-in Fallback Chain.
 	configPath := filepath.Join(commandEnvironmentForTest(t).homeDir, ".acpx", "config.json")
@@ -1850,13 +1855,24 @@ func TestRunImplementDetachReportsAndRelaysPreflightFailure(t *testing.T) {
 func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	ownerPID := 0
+	reapOwner := func() {
+		if ownerPID > 0 {
+			killDetachFixtureGroup(t, ownerPID)
+			waitForDetachFixtureExit(t, ownerPID)
+			ownerPID = 0
+		}
+	}
+	t.Cleanup(reapOwner)
 	dir := t.TempDir()
+	t.Cleanup(reapOwner)
 	promptStarted := filepath.Join(dir, "prompt-started")
 	releasePrompt := filepath.Join(dir, "release")
 	t.Cleanup(func() {
 		_ = os.WriteFile(releasePrompt, []byte("release\n"), 0o644)
 	})
 	fakeACPX := fakeACPXCommand(t)
+	t.Cleanup(reapOwner)
 	cmd := exec.Command(os.Args[0], "implement", "--spec", implementTestSlug, "--detach")
 	cmd.Dir = repoDir
 	cmd.Env = cliHelperEnv(t, fakeACPX, map[string]string{
@@ -1875,16 +1891,38 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 		t.Fatalf("start detach caller: %v", err)
 	}
 
+	callerReaped := false
+	t.Cleanup(func() {
+		if !callerReaped {
+			killDetachFixtureGroup(t, cmd.Process.Pid)
+			_ = waitProcessForTest(t, cmd)
+		}
+	})
 	firstLine := readLineWithTimeout(t, bufio.NewReader(stdoutPipe))
 	runID, ok := strings.CutPrefix(strings.TrimSpace(firstLine), "Run ID: ")
 	if !ok || strings.TrimSpace(runID) == "" {
 		t.Fatalf("expected first detach line with Run id, got %q stderr=%q", firstLine, stderr.String())
 	}
+	reader, err := store.OpenReader(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open detached Run reader: %v", err)
+	}
+	ownedRun, found, runErr := reader.Run(context.Background(), runID)
+	closeErr := reader.Close()
+	if runErr != nil || closeErr != nil || !found || ownedRun.OwnerPID == nil || *ownedRun.OwnerPID <= 0 {
+		t.Fatalf("read detached Run owner: run=%+v found=%v error=%v", ownedRun, found, errors.Join(runErr, closeErr))
+	}
+	ownerPID = *ownedRun.OwnerPID
 	if err := syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL); err != nil && !errors.Is(err, syscall.ESRCH) {
 		t.Fatalf("kill caller process group: %v", err)
 	}
 	_ = waitProcessForTest(t, cmd)
+	callerReaped = true
 	waitForFile(t, promptStarted, nil)
+	if record := os.Getenv(detachTestOwnerRecordEnv); record != "" {
+		mustWrite(t, record, strconv.Itoa(ownerPID))
+		waitForDetachDeathTestKill(t, record)
+	}
 
 	var attachStdout bytes.Buffer
 	var attachStderr bytes.Buffer
@@ -7166,17 +7204,14 @@ func newMacroFakeACPX(t *testing.T) macroFakeACPX {
 	script := strings.ReplaceAll(macroFakeACPXScript, "__PINNED_ACPX_VERSION__", agent.MinimumACPXVersion)
 	script = strings.ReplaceAll(script, "__AGENT_MARKER_PREFIX__", implementFixtureAgentMarkerPrefix)
 	acpxPath := filepath.Join(binDir, "acpx")
-	if err := os.WriteFile(acpxPath, []byte(script), 0o755); err != nil {
-		t.Fatalf("write fake acpx: %v", err)
-	}
+	// Keep Python's stdin available for prompts; the shell only launches it.
+	writeScriptFixture(t, acpxPath, "exec python3 -c '"+strings.ReplaceAll(script, "'", "'\"'\"'")+"' \"$@\"\n")
 	for _, adapter := range []string{"codex-acp", "claude-agent-acp", "opencode", "npx"} {
 		content := "#!/bin/sh\nexit 0\n"
 		if adapter == "npx" {
 			content = "#!/bin/sh\ncase \"$*\" in\n  *claude-agent-acp*) printf '%s\\n' '" + agent.PinnedClaudeAdapterVersion + "' ;;\n  *) printf '%s\\n' '@agentclientprotocol/codex-acp " + agent.PinnedCodexAdapterVersion + "' ;;\nesac\n"
 		}
-		if err := os.WriteFile(filepath.Join(binDir, adapter), []byte(content), 0o755); err != nil {
-			t.Fatalf("write fake adapter %s: %v", adapter, err)
-		}
+		writeScriptFixture(t, filepath.Join(binDir, adapter), content)
 	}
 	codexPath := filepath.Join(binDir, "codex")
 	buildMacroCodexExecutable(t, codexPath)
@@ -7194,9 +7229,7 @@ func (fake macroFakeACPX) env() map[string]string {
 func buildMacroCodexExecutable(t *testing.T, destination string) {
 	t.Helper()
 	if runtime.GOOS != "darwin" {
-		if err := os.WriteFile(destination, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
-			t.Fatalf("write fake codex executable: %v", err)
-		}
+		writeScriptFixture(t, destination, "#!/bin/sh\nexit 0\n")
 		return
 	}
 	sourceDir := t.TempDir()

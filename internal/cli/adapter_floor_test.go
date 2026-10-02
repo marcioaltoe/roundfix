@@ -6,7 +6,6 @@ package cli
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -58,11 +57,15 @@ func TestDoctorAcceptsAnAdapterAtTheFloor(t *testing.T) {
 
 func doctorWithVersionFixture(t *testing.T, runtime, pkg, version string) CheckResult {
 	t.Helper()
-	command := filepath.Join(t.TempDir(), "fake-adapter")
-	script := "#!/bin/sh\nif [ \"$1\" != \"--version\" ]; then exit 91; fi\nprintf '%s\\n' '" + pkg + " " + version + "'\n"
-	if err := os.WriteFile(command, []byte(script), 0o700); err != nil {
-		t.Fatal(err)
-	}
+	command := writeAdapterVersionFixture(t, pkg, version)
 	checker := newHealthChecker(healthCheckDependencies{checkAdapter: agent.CheckAdapter})
 	return doctorAdapterCheck(context.Background(), checker, []agent.RuntimeSpec{{ID: runtime, Protocol: agent.ProtocolStdio, Command: command}}, nil)
+}
+
+func writeAdapterVersionFixture(t *testing.T, pkg, version string) string {
+	t.Helper()
+	command := filepath.Join(t.TempDir(), "fake-adapter")
+	script := "#!/bin/sh\nif [ \"$1\" != \"--version\" ]; then exit 91; fi\nprintf '%s\\n' '" + pkg + " " + version + "'\n"
+	writeScriptFixture(t, command, script)
+	return command
 }

@@ -145,6 +145,8 @@ type settleThenStallRunner struct {
 	gitRoot string
 	started chan struct{}
 	once    sync.Once
+	clock   *budgetTestClock
+	maximum time.Duration
 }
 
 func (*settleThenStallRunner) Probe(context.Context, agent.ProbeRequest) error { return nil }
@@ -152,6 +154,14 @@ func (*settleThenStallRunner) Probe(context.Context, agent.ProbeRequest) error {
 func (runner *settleThenStallRunner) Run(ctx context.Context, req agent.ExecuteRequest, _ runevent.Sink) (agent.ExecuteResult, error) {
 	taskID := taskIDFromPrompt(req.Prompt)
 	if taskID == "task_01" {
+		select {
+		case <-runner.started:
+		case <-ctx.Done():
+			return agent.ExecuteResult{}, agent.StopError{Err: ctx.Err()}
+		}
+		// Keep the first allowance intact until the other Task is stalling.
+		// Settlement then renews to the real present, exercising the watchdog.
+		runner.clock.Set(time.Now().Add(-runner.maximum))
 		if err := spec.SetStatus(taskPathFromPromptForTest(req.Prompt, runner.gitRoot, taskCycleSlug, taskID), spec.StatusCompleted); err != nil {
 			return agent.ExecuteResult{}, err
 		}
@@ -169,18 +179,22 @@ func (*settleThenStallRunner) EndSession(context.Context, agent.RuntimeSpec, age
 func TestTaskBudgetCancelsAStalledTaskOneAllowanceAfterTheLastSettlement(t *testing.T) {
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01"},
-		{id: "task_02", needs: []string{"task_01"}},
+		{id: "task_02"},
 	})
-	runner := &settleThenStallRunner{gitRoot: fixture.gitRoot, started: make(chan struct{})}
-	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
-	engine.deps.Now = time.Now
-	const maximum = 250 * time.Millisecond
+	startedAt := time.Now()
+	const maximum = time.Hour
+	clock := &budgetTestClock{now: startedAt}
+	runner := &settleThenStallRunner{gitRoot: fixture.gitRoot, started: make(chan struct{}), clock: clock, maximum: maximum}
+	engine := fixture.engineWithTaskWorktrees(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree, newFakeTaskWorktrees())
+	engine.deps.Now = clock.Now
+	plan := budgetedPlan(fixture.plan(), startedAt, maximum)
+	plan.Concurrency = 2
 	resultCh := make(chan struct {
 		result TaskCycleResult
 		err    error
 	}, 1)
 	go func() {
-		result, err := engine.TaskCycle(context.Background(), budgetedPlan(fixture.plan(), time.Now(), maximum))
+		result, err := engine.TaskCycle(t.Context(), plan)
 		resultCh <- struct {
 			result TaskCycleResult
 			err    error
@@ -276,25 +290,29 @@ func TestTaskCycleReportsNoBudgetDeadlineWhenTheBudgetIsDisabled(t *testing.T) {
 func TestTaskBudgetReasonNamesTheSettlementThatRenewedIt(t *testing.T) {
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01"},
-		{id: "task_02", needs: []string{"task_01"}},
+		{id: "task_02"},
 	})
-	runner := &settleThenStallRunner{gitRoot: fixture.gitRoot, started: make(chan struct{})}
-	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
-	engine.deps.Now = time.Now
-	const maximum = 200 * time.Millisecond
+	startedAt := time.Now()
+	const maximum = time.Hour
+	clock := &budgetTestClock{now: startedAt}
+	runner := &settleThenStallRunner{gitRoot: fixture.gitRoot, started: make(chan struct{}), clock: clock, maximum: maximum}
+	engine := fixture.engineWithTaskWorktrees(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree, newFakeTaskWorktrees())
+	engine.deps.Now = clock.Now
+	plan := budgetedPlan(fixture.plan(), startedAt, maximum)
+	plan.Concurrency = 2
 	resultCh := make(chan struct {
 		result TaskCycleResult
 		err    error
 	}, 1)
 	go func() {
-		result, err := engine.TaskCycle(context.Background(), budgetedPlan(fixture.plan(), time.Now(), maximum))
+		result, err := engine.TaskCycle(t.Context(), plan)
 		resultCh <- struct {
 			result TaskCycleResult
 			err    error
 		}{result: result, err: err}
 	}()
 
-	testwait.Until(t, "stalled Task to start after the renewing settlement", runner.started, resultCh)
+	testwait.Until(t, "stalled Task to start before the renewing settlement", runner.started, resultCh)
 	var noEnd <-chan struct{}
 	finished := testwait.Until(t, "renewed allowance to produce its reason", resultCh, noEnd)
 

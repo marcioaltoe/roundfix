@@ -864,9 +864,7 @@ func TestSettleRecoversMeasuredHookRefusedWork(t *testing.T) {
 	// whether this hook runs.
 	gittest.AppendConfig(t, repoDir, "[core]\n\thooksPath = "+hooksDir+"\n")
 	hookPath := filepath.Join(hooksDir, "pre-commit")
-	if err := os.WriteFile(hookPath, []byte("#!/bin/sh\n"+measuredHookRefusalScriptForTest), 0o755); err != nil {
-		t.Fatalf("write pre-commit hook: %v", err)
-	}
+	writeSettleHookFixture(t, hookPath)
 	for _, item := range work {
 		full := filepath.Join(repoDir, filepath.FromSlash(item.path))
 		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
@@ -1811,4 +1809,9 @@ func createImplementRunWorktreeFixture(t *testing.T, homeDir string, repoDir str
 		run = completed.Run
 	}
 	return run, runRef, taskRef
+}
+
+func writeSettleHookFixture(t *testing.T, path string) {
+	t.Helper()
+	writeScriptFixture(t, path, "#!/bin/sh\n"+measuredHookRefusalScriptForTest)
 }

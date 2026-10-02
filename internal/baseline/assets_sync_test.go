@@ -18,7 +18,6 @@ import (
 	"sync"
 	"testing"
 
-	"roundfix/internal/gittest"
 	"roundfix/internal/suiteguard"
 )
 
@@ -578,92 +577,175 @@ func TestAssetsSyncCompatibilityMatchesMaintainedPythonContract(t *testing.T) {
 	}
 }
 
-// assetsSyncTemplate holds one built copy of each Assets Sync fixture.
-//
-// Building a fixture means copying the whole embedded asset tree and then
-// running git init, config, add, and commit over hundreds of files — around
-// seven subprocesses per call. Roughly a dozen tests each paid that, and the
-// four heaviest were 68s of this package's 271s of serial work.
-//
-// The fixtures are identical every time, so they are built once and each test
-// receives a directory copy, .git included. Copying a tree costs a fraction of
-// rebuilding a repository, and every test still owns a private copy it is free
-// to mutate.
+func TestAssetsSyncTemplateLeavesNoDirectoryBehind(t *testing.T) {
+	t.Parallel()
+
+	assetsSyncTemplateRoot(t)
+	if _, err := os.Stat(assetsSyncTemplate.root); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("template build directory %s remains: %v", assetsSyncTemplate.root, err)
+	}
+	repository, assetRoot := newAssetsSyncTarget(t)
+	runAssetsSyncGit(t, repository, "fsck")
+	runAssetsSyncGit(t, repository, "rev-parse", "HEAD")
+	sourceDir, revision := newAssetsSyncSource(t, assetRoot)
+	if got := strings.TrimSpace(runAssetsSyncGit(t, filepath.Dir(sourceDir), "rev-parse", "HEAD")); got != revision {
+		t.Fatalf("source HEAD = %q, want %q", got, revision)
+	}
+}
+
+// assetsSyncTemplate holds immutable repository entries built once per process.
+// Each test restores its own copy, including .git, without reading a shared
+// temporary directory that could disappear during the package run.
 var assetsSyncTemplate struct {
 	once     sync.Once
 	root     string
+	target   []assetsSyncTemplateEntry
+	source   []assetsSyncTemplateEntry
 	revision string
 	err      error
+}
+
+type assetsSyncTemplateEntry struct {
+	name string
+	mode fs.FileMode
+	data []byte
 }
 
 func assetsSyncTemplateRoot(t *testing.T) (string, string) {
 	t.Helper()
 	assetsSyncTemplate.once.Do(func() {
-		root, err := os.MkdirTemp("", "assets-sync-template")
-		if err != nil {
-			assetsSyncTemplate.err = err
-			return
-		}
-		assetsSyncTemplate.root = root
-
-		repository := filepath.Join(root, "target")
-		assetRoot := filepath.Join(repository, "internal", "baseline", "assets")
-		copyAssetsSyncFS(t, embeddedAssets, assetRoot)
-		runAssetsSyncGit(t, repository, "init", "--quiet")
-		gittest.AppendConfig(t, repository, "[user]\n\temail = fixture@example.com\n\tname = Fixture\n[commit]\n\tgpgsign = false\n")
-		runAssetsSyncGit(t, repository, "add", ".")
-		runAssetsSyncGit(t, repository, "commit", "--quiet", "-m", "asset target")
-
-		checkout := filepath.Join(root, "source")
-		assetsSyncTemplate.revision = buildAssetsSyncSource(t, checkout, assetRoot)
+		assetsSyncTemplate.err = buildAssetsSyncTemplate()
 	})
 	if assetsSyncTemplate.err != nil {
-		t.Fatal(assetsSyncTemplate.err)
+		t.Fatalf("build Assets Sync template: %v", assetsSyncTemplate.err)
 	}
 	return assetsSyncTemplate.root, assetsSyncTemplate.revision
 }
 
-// removeAssetsSyncTemplate drops the shared fixture directory once the
-// package's tests are done with it.
-func removeAssetsSyncTemplate() {
-	if assetsSyncTemplate.root != "" {
-		_ = os.RemoveAll(assetsSyncTemplate.root)
+func buildAssetsSyncTemplate() (err error) {
+	root, err := os.MkdirTemp("", "assets-sync-template")
+	if err != nil {
+		return err
 	}
+	assetsSyncTemplate.root = root
+	defer func() {
+		if cleanupErr := os.RemoveAll(root); cleanupErr != nil {
+			err = errors.Join(err, fmt.Errorf("remove template build directory: %w", cleanupErr))
+		}
+	}()
+
+	repository := filepath.Join(root, "target")
+	assetRoot := filepath.Join(repository, "internal", "baseline", "assets")
+	if err := os.CopyFS(assetRoot, embeddedAssets); err != nil {
+		return fmt.Errorf("copy embedded assets: %w", err)
+	}
+	if err := initAssetsSyncRepository(repository); err != nil {
+		return err
+	}
+	if _, err := runAssetsSyncGitCommand(repository, "add", "."); err != nil {
+		return err
+	}
+	if _, err := runAssetsSyncGitCommand(repository, "commit", "--quiet", "-m", "asset target"); err != nil {
+		return err
+	}
+
+	checkout := filepath.Join(root, "source")
+	assetsSyncTemplate.revision, err = buildAssetsSyncSource(checkout, assetRoot)
+	if err != nil {
+		return fmt.Errorf("build source repository: %w", err)
+	}
+	assetsSyncTemplate.target, err = readAssetsSyncTemplate(repository)
+	if err != nil {
+		return fmt.Errorf("read target repository: %w", err)
+	}
+	assetsSyncTemplate.source, err = readAssetsSyncTemplate(checkout)
+	if err != nil {
+		return fmt.Errorf("read source repository: %w", err)
+	}
+	return nil
 }
 
-func copyAssetsSyncDir(t *testing.T, source string, target string) {
+func initAssetsSyncRepository(repository string) error {
+	if _, err := runAssetsSyncGitCommand(repository, "init", "--quiet"); err != nil {
+		return err
+	}
+	configPath := filepath.Join(repository, ".git", "config")
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("read Git config: %w", err)
+	}
+	data = append(data, []byte("[user]\n\temail = fixture@example.com\n\tname = Fixture\n[commit]\n\tgpgsign = false\n")...)
+	if err := os.WriteFile(configPath, data, 0o644); err != nil {
+		return fmt.Errorf("write Git config: %w", err)
+	}
+	return nil
+}
+
+func readAssetsSyncTemplate(root string) ([]assetsSyncTemplateEntry, error) {
+	var entries []assetsSyncTemplateEntry
+	err := fs.WalkDir(os.DirFS(root), ".", func(name string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		item := assetsSyncTemplateEntry{name: name, mode: info.Mode()}
+		if !entry.IsDir() {
+			item.data, err = os.ReadFile(filepath.Join(root, filepath.FromSlash(name)))
+			if err != nil {
+				return err
+			}
+		}
+		entries = append(entries, item)
+		return nil
+	})
+	return entries, err
+}
+
+func writeAssetsSyncTemplate(t *testing.T, entries []assetsSyncTemplateEntry, root string) {
 	t.Helper()
-	if err := os.CopyFS(target, os.DirFS(source)); err != nil {
-		t.Fatalf("copy fixture %s: %v", source, err)
+	for _, entry := range entries {
+		path := filepath.Join(root, filepath.FromSlash(entry.name))
+		if entry.mode.IsDir() {
+			if err := os.MkdirAll(path, entry.mode.Perm()); err != nil {
+				t.Fatalf("create fixture directory %s: %v", entry.name, err)
+			}
+		} else if err := os.WriteFile(path, entry.data, entry.mode.Perm()); err != nil {
+			t.Fatalf("write fixture file %s: %v", entry.name, err)
+		}
+		if err := os.Chmod(path, entry.mode.Perm()); err != nil {
+			t.Fatalf("restore fixture mode %s: %v", entry.name, err)
+		}
 	}
 }
 
 func newAssetsSyncTarget(t *testing.T) (string, string) {
 	t.Helper()
-	root, _ := assetsSyncTemplateRoot(t)
+	assetsSyncTemplateRoot(t)
 	repository := t.TempDir()
-	copyAssetsSyncDir(t, filepath.Join(root, "target"), repository)
+	writeAssetsSyncTemplate(t, assetsSyncTemplate.target, repository)
 	return repository, filepath.Join(repository, "internal", "baseline", "assets")
 }
 
 func newAssetsSyncSource(t *testing.T, assetRoot string) (string, string) {
 	t.Helper()
-	root, revision := assetsSyncTemplateRoot(t)
+	_, revision := assetsSyncTemplateRoot(t)
 	checkout := t.TempDir()
-	copyAssetsSyncDir(t, filepath.Join(root, "source"), checkout)
+	writeAssetsSyncTemplate(t, assetsSyncTemplate.source, checkout)
 	return filepath.Join(checkout, "setups"), revision
 }
 
-func buildAssetsSyncSource(t *testing.T, checkout string, assetRoot string) string {
-	t.Helper()
+func buildAssetsSyncSource(checkout string, assetRoot string) (string, error) {
 	sourceDir := filepath.Join(checkout, "setups")
 	if err := os.MkdirAll(sourceDir, 0o755); err != nil {
-		t.Fatal(err)
+		return "", err
 	}
 	paths := map[string]struct{}{}
 	entries, err := filepath.Glob(filepath.Join(assetRoot, "setups", "*.json"))
 	if err != nil {
-		t.Fatal(err)
+		return "", err
 	}
 	for _, snapshotPath := range entries {
 		var snapshot struct {
@@ -673,7 +755,13 @@ func buildAssetsSyncSource(t *testing.T, checkout string, assetRoot string) stri
 				Path string `json:"path"`
 			} `json:"skills"`
 		}
-		readAssetsSyncJSON(t, snapshotPath, &snapshot)
+		data, err := os.ReadFile(snapshotPath)
+		if err != nil {
+			return "", err
+		}
+		if err := json.Unmarshal(data, &snapshot); err != nil {
+			return "", fmt.Errorf("decode %s: %w", snapshotPath, err)
+		}
 		// ADR-0072 designed delta: composition has no upstream setup file.
 		if snapshot.Source.Type == "composed" {
 			continue
@@ -688,7 +776,7 @@ func buildAssetsSyncSource(t *testing.T, checkout string, assetRoot string) stri
 			[]byte(strings.Join(lines, "\n")+"\n"),
 			0o644,
 		); err != nil {
-			t.Fatal(err)
+			return "", err
 		}
 	}
 	for skillPath := range paths {
@@ -697,38 +785,26 @@ func buildAssetsSyncSource(t *testing.T, checkout string, assetRoot string) stri
 			target = filepath.Join(target, "SKILL.md")
 		}
 		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
-			t.Fatal(err)
+			return "", err
 		}
 		if err := os.WriteFile(target, assetsSyncSyntheticSkillFile(skillPath), 0o644); err != nil {
-			t.Fatal(err)
+			return "", err
 		}
 	}
-	runAssetsSyncGit(t, checkout, "init", "--quiet")
-	gittest.AppendConfig(t, checkout, "[user]\n\temail = fixture@example.com\n\tname = Fixture\n[commit]\n\tgpgsign = false\n")
-	runAssetsSyncGit(t, checkout, "remote", "add", "origin", "https://github.com/example/skills.git")
-	runAssetsSyncGit(t, checkout, "add", ".")
-	runAssetsSyncGit(t, checkout, "commit", "--quiet", "-m", "canonical source")
-	return strings.TrimSpace(runAssetsSyncGit(t, checkout, "rev-parse", "HEAD"))
-}
-
-func copyAssetsSyncFS(t *testing.T, source fs.FS, target string) {
-	t.Helper()
-	if err := fs.WalkDir(source, ".", func(name string, entry fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		destination := filepath.Join(target, filepath.FromSlash(name))
-		if entry.IsDir() {
-			return os.MkdirAll(destination, 0o755)
-		}
-		data, err := fs.ReadFile(source, name)
-		if err != nil {
-			return err
-		}
-		return os.WriteFile(destination, data, 0o644)
-	}); err != nil {
-		t.Fatal(err)
+	if err := initAssetsSyncRepository(checkout); err != nil {
+		return "", err
 	}
+	for _, args := range [][]string{
+		{"remote", "add", "origin", "https://github.com/example/skills.git"},
+		{"add", "."},
+		{"commit", "--quiet", "-m", "canonical source"},
+	} {
+		if _, err := runAssetsSyncGitCommand(checkout, args...); err != nil {
+			return "", err
+		}
+	}
+	revision, err := runAssetsSyncGitCommand(checkout, "rev-parse", "HEAD")
+	return strings.TrimSpace(revision), err
 }
 
 func captureAssetsSyncTree(t *testing.T, root string) map[string]string {
@@ -759,6 +835,14 @@ func captureAssetsSyncTree(t *testing.T, root string) map[string]string {
 
 func runAssetsSyncGit(t *testing.T, directory string, args ...string) string {
 	t.Helper()
+	output, err := runAssetsSyncGitCommand(directory, args...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return output
+}
+
+func runAssetsSyncGitCommand(directory string, args ...string) (string, error) {
 	gitArgs := append(
 		[]string{
 			"-C", directory,
@@ -771,9 +855,9 @@ func runAssetsSyncGit(t *testing.T, directory string, args ...string) string {
 	command.Env = append(os.Environ(), "GIT_CONFIG_NOSYSTEM=1")
 	output, err := command.CombinedOutput()
 	if err != nil {
-		t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, output)
+		return "", fmt.Errorf("git %s: %w\n%s", strings.Join(args, " "), err, output)
 	}
-	return string(output)
+	return string(output), nil
 }
 
 func readAssetsSyncJSON(t *testing.T, path string, target any) {
@@ -839,9 +923,6 @@ func assetsSyncOwnedMinimum(t *testing.T, snapshotPath string) string {
 	return ""
 }
 
-// TestMain drops the shared Assets Sync fixture after the package's tests
-// finish. The template outlives every individual test that copies it, so no
-// single test can own its cleanup.
 const baselineDigestRegenerationCommand = "make baseline-digests"
 
 func declareBaselineDigestRegeneration() {
@@ -850,6 +931,5 @@ func declareBaselineDigestRegeneration() {
 
 func TestMain(m *testing.M) {
 	code := suiteguard.Main(m, filepath.Join("..", ".."))
-	removeAssetsSyncTemplate()
 	os.Exit(code)
 }
