@@ -2,8 +2,8 @@
 // From: Lace test infrastructure improvements (2025-10-03)
 // Context: Fixed 15 flaky tests by replacing arbitrary timeouts
 
-import type { ThreadManager } from "~/threads/thread-manager";
-import type { LaceEvent, LaceEventType } from "~/threads/types";
+import type { ThreadManager } from '~/threads/thread-manager';
+import type { LaceEvent, LaceEventType } from '~/threads/types';
 
 /**
  * Wait for a specific event type to appear in thread
@@ -28,7 +28,7 @@ export function waitForEvent(
 
     const check = () => {
       const events = threadManager.getEvents(threadId);
-      const event = events.find(e => e.type === eventType);
+      const event = events.find((e) => e.type === eventType);
 
       if (event) {
         resolve(event);
@@ -69,7 +69,7 @@ export function waitForEventCount(
 
     const check = () => {
       const events = threadManager.getEvents(threadId);
-      const matchingEvents = events.filter(e => e.type === eventType);
+      const matchingEvents = events.filter((e) => e.type === eventType);
 
       if (matchingEvents.length >= count) {
         resolve(matchingEvents);
