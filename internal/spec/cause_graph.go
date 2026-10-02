@@ -2,10 +2,15 @@ package spec
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 )
+
+// causeTaskReadLimit bounds how much of a Task file is read to find its
+// title and Overview, whatever the evidence limit the caller applies.
+const causeTaskReadLimit = 64 << 10
 
 // CauseGraph is the historical Task Graph projection used by cause reports.
 // Unlike execution loading, it does not require an active PRD or Task status.
@@ -44,10 +49,28 @@ func (g CauseGraph) CauseTaskText(id string, limit int) (string, error) {
 	if !ok {
 		return "", nil
 	}
-	data, err := os.ReadFile(filepath.Join(g.Dir, file))
+	// Only a plain file directly in the Spec directory is evidence: a graph
+	// that names a path, a symbolic link or a non-regular file gives none.
+	if file == "" || filepath.Base(file) != file || file == "." || file == ".." {
+		return "", nil
+	}
+	path := filepath.Join(g.Dir, file)
+	info, err := os.Lstat(path)
 	if os.IsNotExist(err) {
 		return "", nil
 	}
+	if err != nil {
+		return "", fmt.Errorf("inspect cause Task %q: %w", id, err)
+	}
+	if !info.Mode().IsRegular() {
+		return "", nil
+	}
+	handle, err := os.Open(path)
+	if err != nil {
+		return "", fmt.Errorf("read cause Task %q: %w", id, err)
+	}
+	defer handle.Close()
+	data, err := io.ReadAll(io.LimitReader(handle, causeTaskReadLimit))
 	if err != nil {
 		return "", fmt.Errorf("read cause Task %q: %w", id, err)
 	}
