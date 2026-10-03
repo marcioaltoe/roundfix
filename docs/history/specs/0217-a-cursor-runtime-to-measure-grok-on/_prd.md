@@ -1,9 +1,12 @@
 ---
 spec: 0217-a-cursor-runtime-to-measure-grok-on
-status: active
+status: archived
 created: 2026-10-01
 surfaces: [backend, cli, docs]
+archived: "2026-10-03"
+source_slug: 0217-a-cursor-runtime-to-measure-grok-on
 ---
+
 
 # A Cursor runtime to measure Grok on
 
