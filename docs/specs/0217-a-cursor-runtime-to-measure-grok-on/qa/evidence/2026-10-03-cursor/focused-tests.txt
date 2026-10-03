@@ -1,0 +1,10 @@
+# ./internal/agent
+open /Users/marcio/Library/Caches/go-build/2d/2d4cd2dc4c5ec583618cad25c0464c36a13f61d303b91a518569005ddee00c1b-d: operation not permitted
+# ./internal/config
+open /Users/marcio/Library/Caches/go-build/95/95de2d20fb26a89e397416027b3061061d822f6b55849f68cb4fc382a19c81c3-d: operation not permitted
+# ./internal/cli
+open /Users/marcio/Library/Caches/go-build/0f/0f56303a37df855f8b252150797730e44041ea67ec81d6017270e40dd46af912-d: operation not permitted
+FAIL	./internal/agent [setup failed]
+FAIL	./internal/config [setup failed]
+FAIL	./internal/cli [setup failed]
+FAIL
