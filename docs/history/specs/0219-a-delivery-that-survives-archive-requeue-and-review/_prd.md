@@ -1,9 +1,18 @@
 ---
 spec: 0219-a-delivery-that-survives-archive-requeue-and-review
-status: active
+status: archived
 created: 2026-10-03
 surfaces: [backend, cli, docs]
+archived: "2026-10-03"
+source_slug: 0219-a-delivery-that-survives-archive-requeue-and-review
+qa_override: true
+qa_override_approval: 'maintainer standing authorization 2026-09-30 (unattended program): qa_override only for environment-only partials'
+qa_override_reason: QA partial with zero findings; the only blocked row is the Pull Request row (R10)
+qa_override_qa_outcome: partial
+qa_override_qa_task_status: failed
+qa_override_revision: 6d7bb6f1722526228a978b6133c72af9b61d6a1a
 ---
+
 
 # A delivery that survives archive, requeue and review
 
