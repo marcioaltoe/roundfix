@@ -1,0 +1,2 @@
+Refusal: active bytes unchanged; destination absent.
+After pin removal: active absent; archived bytes identical.

@@ -1,0 +1,10 @@
+{
+  "command": [
+    "./bin/roundfix",
+    "archive",
+    "0300-example"
+  ],
+  "exit": 0,
+  "stdout": "archived 0300-example -> docs/history/specs/0300-example\n",
+  "stderr": ""
+}

@@ -1,0 +1,14 @@
+{
+  "cwd": "/private/tmp/qa-0219-1rvwb0p1/probe",
+  "disposable_home": "/private/tmp/qa-0219-1rvwb0p1/probe-home",
+  "command": [
+    "./bin/roundfix",
+    "spec",
+    "check",
+    "0300-example",
+    "--run-verification"
+  ],
+  "stdout": "Spec 0300-example\n[error] SC-VERIFY-TRUNCATED: docs/specs/0300-example/task_01.md declares a truncated Verification code span\n  at docs/specs/0300-example/task_01.md:13\n  fix: Repair the Verification code span; avoid backticks inside the command's inline-code span.\nSkipped:\n  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md\n  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md\n  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json\n  SC-FINDING-LIFECYCLE: missing docs/findings\n  SC-ROLLUP-MEMBER: missing docs/findings\n  SC-ARCHIVE-LICENSE: missing docs/history/findings\n  SC-BACKLOG-UNMOVED: missing docs/backlog\n  vocabulary documentation detector: missing docs/specs/0300-example/_techspec.md Vocabulary Contract\n  SC-TRANSCRIPT-UNDECLARED: missing .agents/skills/write-techspec/references/concrete-contracts.md\n  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md\n  SC-REF-UNRESOLVED: missing docs/specs/0300-example/references/_index.md\nVerification tree: HEAD\nUncommitted Verification source: docs/specs/0300-example/_tasks.md (untracked)\nUncommitted Verification source: docs/specs/0300-example/task_01.md (untracked)\n- task_01: malformed \u2014 \"grep -qF '| \\\\\" (verification command malformed: sh: -c: line 0: unexpected EOF while looking for matching `''\nsh: -c: line 1: syntax error: unexpected end of file)\n",
+  "stderr": "",
+  "exit": 1
+}

@@ -1,0 +1,109 @@
+{
+  "commit_range": "4106efaca995767fb4cf540ceab2f7609faf3903..28eefd0482804df8ab59af3487162a023e13b718",
+  "bounded_paths": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/archive.md",
+    ".agents/skills/roundfix/references/deliver.md",
+    ".agents/skills/roundfix/references/review.md",
+    ".agents/skills/roundfix/references/spec.md",
+    "skills/roundfix/SKILL.md"
+  ],
+  "audit": [
+    {
+      "task": "task_01",
+      "commit": "34ab49658f16d95e41cc36c0dedf1815d1b5b627",
+      "paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/spec.md",
+        "docs/specs/0219-a-delivery-that-survives-archive-requeue-and-review/task_01.md",
+        "docs/user-guide/commands/archive.md",
+        "docs/user-guide/commands/spec.md",
+        "internal/cli/archive.go",
+        "internal/cli/archive_active_spec_path_test.go",
+        "internal/daemon/settlement_active_spec_path_test.go",
+        "internal/speccheck/active_spec_paths.go",
+        "internal/speccheck/active_spec_paths_test.go",
+        "internal/speccheck/citations.go",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/archive.md",
+        "skills/roundfix/references/spec.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "outside_declarations": [],
+      "governed_unbounded": [],
+      "protected_changes": [],
+      "ci_changes": [],
+      "grant_precedes_commit": true
+    },
+    {
+      "task": "task_02",
+      "commit": "a9d2d8d298412572e0ebf3b6670c3f2b88f7c669",
+      "paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        "docs/specs/0219-a-delivery-that-survives-archive-requeue-and-review/task_02.md",
+        "docs/user-guide/commands/deliver.md",
+        "internal/cli/deliver.go",
+        "internal/cli/deliver_item_branch_test.go",
+        "internal/cli/deliver_workflow.go",
+        "internal/delivery/archived_head_retry_test.go",
+        "internal/delivery/engine.go",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/deliver.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "outside_declarations": [],
+      "governed_unbounded": [],
+      "protected_changes": [],
+      "ci_changes": [],
+      "grant_precedes_commit": true
+    },
+    {
+      "task": "task_03",
+      "commit": "0cb99efcb2e58c85e53067649fd3510493690468",
+      "paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/review.md",
+        "docs/specs/0219-a-delivery-that-survives-archive-requeue-and-review/task_03.md",
+        "docs/user-guide/commands/review.md",
+        "internal/cli/review_conventions.go",
+        "internal/cli/review_override_convention_test.go",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/review.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "outside_declarations": [],
+      "governed_unbounded": [],
+      "protected_changes": [],
+      "ci_changes": [],
+      "grant_precedes_commit": true
+    },
+    {
+      "task": "task_04",
+      "commit": "28eefd0482804df8ab59af3487162a023e13b718",
+      "paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/spec.md",
+        "docs/specs/0219-a-delivery-that-survives-archive-requeue-and-review/task_04.md",
+        "docs/user-guide/commands/spec.md",
+        "internal/cli/spec_check.go",
+        "internal/cli/spec_check_provenance_test.go",
+        "internal/daemon/verification_probe.go",
+        "internal/daemon/verification_probe_malformed_test.go",
+        "internal/speccheck/citations.go",
+        "internal/speccheck/verification.go",
+        "internal/speccheck/verification_truncated_test.go",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/spec.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "outside_declarations": [],
+      "governed_unbounded": [],
+      "protected_changes": [],
+      "ci_changes": [],
+      "grant_precedes_commit": true
+    }
+  ],
+  "worktree_delta": "?? docs/specs/0219-a-delivery-that-survives-archive-requeue-and-review/qa/\n"
+}

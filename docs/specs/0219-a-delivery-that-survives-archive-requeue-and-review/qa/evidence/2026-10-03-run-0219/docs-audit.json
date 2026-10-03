@@ -1,0 +1,178 @@
+{
+  "mirrors_equal": [
+    "skills/roundfix/SKILL.md",
+    "skills/roundfix/references/archive.md",
+    "skills/roundfix/references/spec.md",
+    "skills/roundfix/references/deliver.md",
+    "skills/roundfix/references/review.md"
+  ],
+  "settlement_sections_unchanged": [
+    ".agents/skills/archive-spec/SKILL.md",
+    ".agents/skills/qa-gate/SKILL.md",
+    ".agents/skills/roundfix/SKILL.md",
+    "skills/archive-spec/SKILL.md",
+    "skills/qa-gate/SKILL.md",
+    "skills/roundfix/SKILL.md"
+  ],
+  "versions_by_commit": {
+    "4106efaca995767fb4cf540ceab2f7609faf3903": "0.1.18",
+    "34ab49658f16d95e41cc36c0dedf1815d1b5b627": "0.1.19",
+    "a9d2d8d298412572e0ebf3b6670c3f2b88f7c669": "0.1.20",
+    "0cb99efcb2e58c85e53067649fd3510493690468": "0.1.21",
+    "28eefd0482804df8ab59af3487162a023e13b718": "0.1.22"
+  },
+  "documentation_checks": [
+    {
+      "path": "docs/user-guide/commands/archive.md",
+      "term": "cannot archive",
+      "present": true
+    },
+    {
+      "path": "docs/user-guide/commands/archive.md",
+      "term": "file and line",
+      "present": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/archive.md",
+      "term": "cannot archive",
+      "present": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/archive.md",
+      "term": "file and line",
+      "present": true
+    },
+    {
+      "path": "docs/user-guide/commands/spec.md",
+      "term": "SC-SPEC-PATH-PINNED",
+      "present": true
+    },
+    {
+      "path": "docs/user-guide/commands/spec.md",
+      "term": "SC-VERIFY-TRUNCATED",
+      "present": true
+    },
+    {
+      "path": "docs/user-guide/commands/spec.md",
+      "term": "malformed",
+      "present": true
+    },
+    {
+      "path": "docs/user-guide/commands/spec.md",
+      "term": "Uncommitted Verification source",
+      "present": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/spec.md",
+      "term": "SC-SPEC-PATH-PINNED",
+      "present": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/spec.md",
+      "term": "SC-VERIFY-TRUNCATED",
+      "present": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/spec.md",
+      "term": "malformed",
+      "present": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/spec.md",
+      "term": "Uncommitted Verification source",
+      "present": true
+    },
+    {
+      "path": "docs/user-guide/commands/deliver.md",
+      "term": "Continuing item branch",
+      "present": true
+    },
+    {
+      "path": "docs/user-guide/commands/deliver.md",
+      "term": "reviewing",
+      "present": true
+    },
+    {
+      "path": "docs/user-guide/commands/deliver.md",
+      "term": "descend",
+      "present": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/deliver.md",
+      "term": "Continuing item branch",
+      "present": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/deliver.md",
+      "term": "reviewing",
+      "present": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/deliver.md",
+      "term": "descend",
+      "present": true
+    },
+    {
+      "path": "docs/user-guide/commands/review.md",
+      "term": "roundfix/delivery-conventions/v2",
+      "present": true
+    },
+    {
+      "path": "docs/user-guide/commands/review.md",
+      "term": "C5",
+      "present": true
+    },
+    {
+      "path": "docs/user-guide/commands/review.md",
+      "term": "qa_override_approval",
+      "present": true
+    },
+    {
+      "path": "docs/user-guide/commands/review.md",
+      "term": "qa_override_reason",
+      "present": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/review.md",
+      "term": "roundfix/delivery-conventions/v2",
+      "present": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/review.md",
+      "term": "C5",
+      "present": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/review.md",
+      "term": "qa_override_approval",
+      "present": true
+    },
+    {
+      "path": ".agents/skills/roundfix/references/review.md",
+      "term": "qa_override_reason",
+      "present": true
+    }
+  ],
+  "version_record_at_each_commit": {
+    "4106efaca995767fb4cf540ceab2f7609faf3903": {
+      "version": "0.1.18",
+      "digest": "952720edc2bac31927502c39eb5fcdaf07b52c57193a1ad5dc220ce59a83eb7d"
+    },
+    "34ab49658f16d95e41cc36c0dedf1815d1b5b627": {
+      "version": "0.1.19",
+      "digest": "89ef4878000a90d9c022a3ff88e7652808ca88653acbe80cf50c6bb18c3e9ccf"
+    },
+    "a9d2d8d298412572e0ebf3b6670c3f2b88f7c669": {
+      "version": "0.1.20",
+      "digest": "82fac7cd7316d89a8d3c8e6f56b198707c3ad4113819b4057022851209777f7d"
+    },
+    "0cb99efcb2e58c85e53067649fd3510493690468": {
+      "version": "0.1.21",
+      "digest": "a9e6cd1afcca57420074b22c309190d20d8989537b3d1ef46f3e000151342c26"
+    },
+    "28eefd0482804df8ab59af3487162a023e13b718": {
+      "version": "0.1.22",
+      "digest": "29f63338e1c9872142ff7346b354bf2db28008eb74757d8ee9f7d007f03bdc9c"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "transcript": 1,
+    "stdout_matches": true,
+    "stderr_matches": false,
+    "exit_matches": true,
+    "expected_stdout": "",
+    "expected_stderr": "Preflight failed\n\nReason:\n  Spec \"0300-example\" cannot archive while another file names its active directory docs/specs/0300-example/: internal/example/example_test.go:7\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.",
+    "observed_stdout": "",
+    "observed_stderr": "Preflight failed\n\nReason:\n  Spec \"0300-example\" cannot archive while another file names its active directory docs/specs/0300-example/: internal/example/example_test.go:7\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix archive --help' for usage.\n"
+  },
+  {
+    "transcript": 2,
+    "stdout_matches": true,
+    "stderr_matches": false,
+    "exit_matches": true,
+    "expected_stdout": "",
+    "expected_stderr": "Preflight failed\n\nReason:\n  Spec \"0300-example\" has 2 item branches with commits origin/main lacks: roundfix/deliver-0300-example-<hex>, roundfix/deliver-0300-example-<hex>; delete every branch but the one to continue, then run roundfix deliver start again\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.",
+    "observed_stdout": "",
+    "observed_stderr": "Preflight failed\n\nReason:\n  Spec \"0300-example\" has 2 item branches with commits origin/main lacks: roundfix/deliver-0300-example-1111111111111111, roundfix/deliver-0300-example-2222222222222222; delete every branch but the one to continue, then run roundfix deliver start again\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix deliver start --help' for usage.\n"
+  },
+  {
+    "transcript": 3,
+    "stdout_matches": false,
+    "stderr_matches": true,
+    "exit_matches": true,
+    "expected_stdout": "...\nVerification tree: HEAD\nUncommitted Verification source: docs/specs/0300-example/_tasks.md (untracked)\nUncommitted Verification source: docs/specs/0300-example/task_01.md (untracked)\n- task_01: malformed \u2014 <command> (<parse error>)",
+    "expected_stderr": "",
+    "observed_stdout": "Spec 0300-example\n[error] SC-VERIFY-TRUNCATED: docs/specs/0300-example/task_01.md declares a truncated Verification code span\n  at docs/specs/0300-example/task_01.md:13\n  fix: Repair the Verification code span; avoid backticks inside the command's inline-code span.\nSkipped:\n  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md\n  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md\n  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json\n  SC-FINDING-LIFECYCLE: missing docs/findings\n  SC-ROLLUP-MEMBER: missing docs/findings\n  SC-ARCHIVE-LICENSE: missing docs/history/findings\n  SC-BACKLOG-UNMOVED: missing docs/backlog\n  vocabulary documentation detector: missing docs/specs/0300-example/_techspec.md Vocabulary Contract\n  SC-TRANSCRIPT-UNDECLARED: missing .agents/skills/write-techspec/references/concrete-contracts.md\n  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md\n  SC-REF-UNRESOLVED: missing docs/specs/0300-example/references/_index.md\nVerification tree: HEAD\nUncommitted Verification source: docs/specs/0300-example/_tasks.md (untracked)\nUncommitted Verification source: docs/specs/0300-example/task_01.md (untracked)\n- task_01: malformed \u2014 \"grep -qF '| \\\\\" (verification command malformed: sh: -c: line 0: unexpected EOF while looking for matching `''\nsh: -c: line 1: syntax error: unexpected end of file)\n",
+    "observed_stderr": ""
+  }
+]

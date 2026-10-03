@@ -1,0 +1,58 @@
+{
+  "R2": {
+    "internal/speccheck/active_spec_paths_test.go": [
+      "TestActiveSpecPathPinIsAnError",
+      "TestActiveSpecPathPinSkipsMarkdownSpecRootsAndIgnoredFiles",
+      "TestActiveSpecPathPinsOutsideWorkTree",
+      "TestTaskContextResolvesThroughTheArchive",
+      "TestTaskContextMissingInBothPlacesIsUnresolved"
+    ],
+    "internal/daemon/settlement_active_spec_path_test.go": [
+      "TestSettlementRefusesATaskThatPinsItsSpecPath"
+    ],
+    "internal/cli/archive_active_spec_path_test.go": [
+      "TestArchiveRefusesASpecAFileStillPins",
+      "TestArchiveIgnoresMarkdownThatNamesTheSpec"
+    ]
+  },
+  "R3": {
+    "internal/delivery/archived_head_retry_test.go": [
+      "TestRetryOfAnArchivedItemWithACorrectionReturnsToReview",
+      "TestRetryOfAnArchivedItemRefusesAHeadThatDoesNotDescend",
+      "TestRetryOfACorrectiveSpecParkStillRefusesAMovedHead"
+    ],
+    "internal/cli/deliver_item_branch_test.go": [
+      "TestDeliverStartContinuesTheItemBranchThatHoldsWork",
+      "TestDeliverStartRefusesTwoItemBranchesWithWork",
+      "TestDeliverStartIgnoresAnItemBranchWithoutWork"
+    ]
+  },
+  "R4": {
+    "internal/cli/review_override_convention_test.go": [
+      "TestOverrideArchiveIsEligibleForConventionC5",
+      "TestArchiveWithoutOverrideIsNotEligibleForC5",
+      "TestReviewPromptCarriesConventionC5",
+      "TestConventionC5MalformedRecordFailsClosed",
+      "TestConventionC5ValidatorHonorsEligibility"
+    ]
+  },
+  "R5": {
+    "internal/daemon/verification_probe_malformed_test.go": [
+      "TestProbeReportsACommandTheShellCannotParse",
+      "TestProbeRunsNoMalformedCommand",
+      "TestPreWorkProbeRefusesAMalformedCommand",
+      "TestProbeParserUnavailableRunsVerifier",
+      "TestProbeCancelledParseDoesNotRunVerifier"
+    ],
+    "internal/speccheck/verification_truncated_test.go": [
+      "TestVerificationSpanEndingInBackslashIsTruncated",
+      "TestVerificationLineWithAStrayBacktickIsTruncated",
+      "TestCleanVerificationBulletIsNotTruncated"
+    ],
+    "internal/cli/spec_check_provenance_test.go": [
+      "TestSpecCheckReportsAMalformedCommand",
+      "TestSpecCheckNamesAnUncommittedVerificationSource",
+      "TestSpecCheckNamesNoSourceWhenCommitted"
+    ]
+  }
+}
