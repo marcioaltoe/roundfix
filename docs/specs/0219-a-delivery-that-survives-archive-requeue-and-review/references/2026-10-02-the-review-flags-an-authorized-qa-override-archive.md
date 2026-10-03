@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-02
-spec: null
+spec: 0219-a-delivery-that-survives-archive-requeue-and-review
 reason: null
 ---
 
