@@ -1,0 +1,173 @@
+{
+  "range": "4106efaca995767fb4cf540ceab2f7609faf3903..37c166e1a5ae04be58143ad5e9fcbcb561f13e68",
+  "tasks": [
+    {
+      "task": "task_01.md",
+      "commit": "376aff8a1cd51c021cce091406b61a3f49de1ce0",
+      "paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/spec.md",
+        "docs/specs/0219-a-delivery-that-survives-archive-requeue-and-review/task_01.md",
+        "docs/user-guide/commands/archive.md",
+        "docs/user-guide/commands/spec.md",
+        "internal/cli/archive.go",
+        "internal/cli/archive_active_spec_path_test.go",
+        "internal/daemon/settlement_active_spec_path_test.go",
+        "internal/speccheck/active_spec_paths.go",
+        "internal/speccheck/active_spec_paths_test.go",
+        "internal/speccheck/citations.go",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/archive.md",
+        "skills/roundfix/references/spec.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "declared": [
+        "internal/speccheck/active_spec_paths.go",
+        "internal/speccheck/active_spec_paths_test.go",
+        "internal/daemon/settlement_active_spec_path_test.go",
+        "internal/cli/archive_active_spec_path_test.go",
+        "internal/speccheck/citations.go",
+        "internal/cli/archive.go",
+        "docs/user-guide/commands/archive.md",
+        "docs/user-guide/commands/spec.md",
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/spec.md",
+        "skills/roundfix/references/archive.md",
+        "skills/roundfix/references/spec.md",
+        ".agents/skills/roundfix/SKILL.md",
+        "skills/roundfix/SKILL.md",
+        "skills/testdata/owned-skill-versions.json",
+        "docs/specs/0219-a-delivery-that-survives-archive-requeue-and-review/task_01.md"
+      ],
+      "outside": [],
+      "authorization_ancestor": "4106efaca995767fb4cf540ceab2f7609faf3903"
+    },
+    {
+      "task": "task_02.md",
+      "commit": "cbcb8deb8186701afe407203b4007ff9f4fc49b7",
+      "paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        "docs/specs/0219-a-delivery-that-survives-archive-requeue-and-review/task_02.md",
+        "docs/user-guide/commands/deliver.md",
+        "internal/cli/deliver.go",
+        "internal/cli/deliver_item_branch_test.go",
+        "internal/cli/deliver_workflow.go",
+        "internal/delivery/archived_head_retry_test.go",
+        "internal/delivery/engine.go",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/deliver.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "declared": [
+        "internal/delivery/archived_head_retry_test.go",
+        "internal/cli/deliver_item_branch_test.go",
+        "internal/delivery/engine.go",
+        "internal/cli/deliver_workflow.go",
+        "internal/cli/deliver.go",
+        "docs/user-guide/commands/deliver.md",
+        ".agents/skills/roundfix/references/deliver.md",
+        "skills/roundfix/references/deliver.md",
+        ".agents/skills/roundfix/SKILL.md",
+        "skills/roundfix/SKILL.md",
+        "skills/testdata/owned-skill-versions.json",
+        "docs/specs/0219-a-delivery-that-survives-archive-requeue-and-review/task_02.md"
+      ],
+      "outside": [],
+      "authorization_ancestor": "4106efaca995767fb4cf540ceab2f7609faf3903"
+    },
+    {
+      "task": "task_03.md",
+      "commit": "c1b7eed856543b67f37857ed7756ef4c6fd51f32",
+      "paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/review.md",
+        "docs/specs/0219-a-delivery-that-survives-archive-requeue-and-review/task_03.md",
+        "docs/user-guide/commands/review.md",
+        "internal/cli/review_conventions.go",
+        "internal/cli/review_override_convention_test.go",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/review.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "declared": [
+        "internal/cli/review_override_convention_test.go",
+        "internal/cli/review_conventions.go",
+        "docs/user-guide/commands/review.md",
+        ".agents/skills/roundfix/references/review.md",
+        "skills/roundfix/references/review.md",
+        ".agents/skills/roundfix/SKILL.md",
+        "skills/roundfix/SKILL.md",
+        "skills/testdata/owned-skill-versions.json",
+        "docs/specs/0219-a-delivery-that-survives-archive-requeue-and-review/task_03.md"
+      ],
+      "outside": [],
+      "authorization_ancestor": "4106efaca995767fb4cf540ceab2f7609faf3903"
+    },
+    {
+      "task": "task_04.md",
+      "commit": "77bf0132e40f3b52097281d848cefa2cbd7fd058",
+      "paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/spec.md",
+        "docs/specs/0219-a-delivery-that-survives-archive-requeue-and-review/task_04.md",
+        "docs/user-guide/commands/spec.md",
+        "internal/cli/spec_check.go",
+        "internal/cli/spec_check_provenance_test.go",
+        "internal/daemon/verification_probe.go",
+        "internal/daemon/verification_probe_malformed_test.go",
+        "internal/speccheck/citations.go",
+        "internal/speccheck/verification.go",
+        "internal/speccheck/verification_truncated_test.go",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/spec.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "declared": [
+        "internal/daemon/verification_probe_malformed_test.go",
+        "internal/speccheck/verification_truncated_test.go",
+        "internal/cli/spec_check_provenance_test.go",
+        "internal/daemon/verification_probe.go",
+        "internal/cli/spec_check.go",
+        "internal/speccheck/verification.go",
+        "internal/speccheck/citations.go",
+        "docs/user-guide/commands/spec.md",
+        ".agents/skills/roundfix/references/spec.md",
+        "skills/roundfix/references/spec.md",
+        ".agents/skills/roundfix/SKILL.md",
+        "skills/roundfix/SKILL.md",
+        "skills/testdata/owned-skill-versions.json",
+        "docs/specs/0219-a-delivery-that-survives-archive-requeue-and-review/task_04.md"
+      ],
+      "outside": [],
+      "authorization_ancestor": "4106efaca995767fb4cf540ceab2f7609faf3903"
+    }
+  ],
+  "post_QA_corrective_commit": {
+    "commit": "37c166e1",
+    "paths": [
+      "docs/specs/0219-a-delivery-that-survives-archive-requeue-and-review/_techspec.md",
+      "internal/daemon/verification_probe.go",
+      "internal/daemon/verification_probe_malformed_test.go"
+    ],
+    "scope": "F1/F2 correction; ordinary paths, no governed change; chronological descendant of task_04"
+  },
+  "governed": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/archive.md",
+    ".agents/skills/roundfix/references/deliver.md",
+    ".agents/skills/roundfix/references/review.md",
+    ".agents/skills/roundfix/references/spec.md",
+    "skills/roundfix/SKILL.md"
+  ],
+  "prohibited_unchanged": [
+    "Makefile",
+    ".roundfixrc.yml",
+    "go.mod",
+    "internal/speccheck/constraints.go",
+    "internal/speccheck/coherence.go",
+    "internal/spec/archive.go",
+    ".github/workflows/**"
+  ]
+}

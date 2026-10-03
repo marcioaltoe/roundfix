@@ -1,0 +1,12 @@
+{
+  "cwd": "/private/tmp/qa-0219-rerun-vi5nc0xb/archive",
+  "disposable_home": "/private/tmp/qa-0219-rerun-vi5nc0xb/archive-home",
+  "command": [
+    "./bin/roundfix",
+    "archive",
+    "0300-example"
+  ],
+  "stdout": "archived 0300-example -> docs/history/specs/0300-example\n",
+  "stderr": "",
+  "exit": 0
+}

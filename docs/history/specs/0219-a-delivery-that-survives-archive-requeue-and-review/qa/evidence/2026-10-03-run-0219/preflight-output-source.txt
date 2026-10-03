@@ -1,0 +1,1 @@
+Root of F1: internal/cli/cli.go printPreflightFailure, lines 5981-5995, unconditionally appends Usage after printPreflightNoSideEffects. Existing deliver_prerequisite_test.go expects this trailer. The new active-pin/archive and item-branch tests assert reason containment rather than the complete transcript. No code changed by QA.

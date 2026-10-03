@@ -1,0 +1,69 @@
+{
+  "checks": {
+    "archive": {
+      "mirror_equal": true,
+      "guide_and_reference_phrases": [
+        "cannot archive while another file names its active directory"
+      ]
+    },
+    "spec": {
+      "mirror_equal": true,
+      "guide_and_reference_phrases": [
+        "SC-SPEC-PATH-PINNED",
+        "SC-VERIFY-TRUNCATED",
+        "malformed",
+        "Uncommitted Verification source"
+      ]
+    },
+    "deliver": {
+      "mirror_equal": true,
+      "guide_and_reference_phrases": [
+        "Continuing item branch",
+        "reviewing",
+        "item branches"
+      ]
+    },
+    "review": {
+      "mirror_equal": true,
+      "guide_and_reference_phrases": [
+        "C5",
+        "QA Archive Override",
+        "delivery-conventions/v2"
+      ]
+    }
+  },
+  "versions": [
+    {
+      "task": "task_01.md",
+      "previous": "0.1.18",
+      "version": "0.1.19",
+      "recorded": true
+    },
+    {
+      "task": "task_02.md",
+      "previous": "0.1.19",
+      "version": "0.1.20",
+      "recorded": true
+    },
+    {
+      "task": "task_03.md",
+      "previous": "0.1.20",
+      "version": "0.1.21",
+      "recorded": true
+    },
+    {
+      "task": "task_04.md",
+      "previous": "0.1.21",
+      "version": "0.1.22",
+      "recorded": true
+    }
+  ],
+  "QA_settlement_unchanged": [
+    ".agents/skills/archive-spec/SKILL.md",
+    ".agents/skills/qa-gate/SKILL.md",
+    ".agents/skills/roundfix/SKILL.md",
+    "skills/archive-spec/SKILL.md",
+    "skills/qa-gate/SKILL.md",
+    "skills/roundfix/SKILL.md"
+  ]
+}

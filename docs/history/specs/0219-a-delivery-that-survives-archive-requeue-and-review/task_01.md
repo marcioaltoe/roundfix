@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0219-a-delivery-that-survives-archive-requeue-and-review
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -116,3 +116,52 @@ path through the archive root once that Spec is archived.
 - `_prd.md` → Goals; User Stories 1-2; Core Features 1-3, 9; Success Metrics 1-2; Acceptance evidence
 - `_techspec.md` → The pin detector; The archive refusal; Task Context through the archive; Interfaces; API Contract 1; API Contract 2; Surface Transcript 1; Testing Approach 1; Build Order 1
 - ADR-0223; ADR-0182; ADR-0187; ADR-0189
+
+
+## Result
+
+Implemented the Task 01 slice for Daemon Verification. Task status remains
+Daemon-owned; no authored Verification command was run, and nothing was
+committed, pushed or published. The starting worktree had only this Task file
+modified (the Daemon's `pending` to `in_progress` change); starting `HEAD`
+contains neither the detector nor the three new test files.
+
+The full Spec Consistency Check now searches for active-directory pins and
+reports an error at each file and line, with the TechSpec's exact fix sentence.
+Git searches include tracked and untracked non-ignored files, exclude Markdown
+and the declared roots, and skip binary content. Outside a work tree the
+filesystem walk applies the directory and Markdown exclusions. External Spec
+Roots produce no pins. The archive command invokes the same detector before
+`spec.Archive`, prints the specified refusal reason and exits `2` without
+moving or stamping files. Missing Task Context inputs under the Spec Root
+resolve through the corresponding archive root only if the archived path
+exists; existing active paths still resolve.
+
+Acceptance evidence from focused checks:
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| A code pin is an error; Markdown, archive/history and ignored files are excluded | `TestActiveSpecPathPinIsAnError` asserts one error at `pin_test.go:2` and the exact fix, for pending, in-progress and completed Tasks. `TestActiveSpecPathPinSkipsMarkdownSpecRootsAndIgnoredFiles` checks exclusions, binary content, similar path prefixes and two untracked pin lines. `TestActiveSpecPathPinsOutsideWorkTree` checks the fallback, configured archive root and external Spec Root. |
+| Settlement refuses the pin | `TestSettlementRefusesATaskThatPinsItsSpecPath` calls the real `SpecCheckSettlementChecker.RefusingFindings`, observes no baseline pin, adds the file, then asserts the refusing error and its location. |
+| Archived Context resolves; missing inputs remain unresolved | `TestTaskContextResolvesThroughTheArchive` checks both built-in and configured roots, and active-path resolution without an archive. `TestTaskContextMissingInBothPlacesIsUnresolved` asserts the original unresolved finding when only an unrelated archived file exists. |
+| Archive refuses with exit 2, leaves files unchanged, then succeeds after removal | `TestArchiveRefusesASpecAFileStillPins` asserts the complete reason, empty stdout, exit 2, unchanged Spec file bytes and absent destination, then removes the pin and observes the move. `TestArchiveIgnoresMarkdownThatNamesTheSpec` checks successful archival with a Markdown reference. |
+| Guides, skill, mirrors and recorded version agree | Both command guides and canonical references describe the refusal/finding and archive resolution. Both Roundfix Skill version fields rose from `0.1.18` to `0.1.19`; `make skills-sync` regenerated mirrors, and the authorized version-recording command recorded the new digest. Python byte comparisons confirmed all three mirrors and checked both version fields and the required documentation phrases. |
+
+Focused commands and outcomes:
+
+- `GOCACHE=/private/tmp/roundfix-task01-cache go test ./internal/speccheck ./internal/daemon ./internal/cli -run 'Test(ActiveSpecPath|TaskContext|SettlementRefusesATaskThatPins|ArchiveRefusesASpecAFile|ArchiveIgnoresMarkdown)' -count=1` — passed after correcting the temporary Spec fixture's missing Verification section. The initial run passed daemon/CLI and exposed that fixture loader error in speccheck.
+- `GOCACHE=/private/tmp/roundfix-task01-cache go test ./internal/speccheck ./internal/daemon ./internal/cli -run 'Test(Check|Context|Archive|Settlement|ActiveSpecPath|TaskContext)' -count=1` — passed after the final code edit, including existing reference, archive and settlement regression tests.
+- `GOCACHE=/private/tmp/roundfix-task01-cache go vet ./internal/speccheck ./internal/cli ./internal/daemon` — exit 0.
+- `make skills-sync` — exit 0.
+- `GOCACHE=/private/tmp/roundfix-task01-cache go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed, recorded `0.1.19`.
+- Python mirror/version/documentation assertions — passed.
+- `git -c core.fsmonitor=false diff --check` — exit 0.
+
+The declared Verification and repository gate remain for the Daemon. No
+follow-up work was added to this slice. The three explicitly prohibited source
+files, Task Graph and other Task files are untouched.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261003T213431Z_8d253be688342055`
+- Source commit: `34ab49658f16d95e41cc36c0dedf1815d1b5b627`

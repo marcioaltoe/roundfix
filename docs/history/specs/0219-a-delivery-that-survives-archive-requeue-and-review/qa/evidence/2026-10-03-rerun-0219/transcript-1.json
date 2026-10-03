@@ -1,0 +1,12 @@
+{
+  "cwd": "/private/tmp/qa-0219-rerun-vi5nc0xb/archive",
+  "disposable_home": "/private/tmp/qa-0219-rerun-vi5nc0xb/archive-home",
+  "command": [
+    "./bin/roundfix",
+    "archive",
+    "0300-example"
+  ],
+  "stdout": "",
+  "stderr": "Preflight failed\n\nReason:\n  Spec \"0300-example\" cannot archive while another file names its active directory docs/specs/0300-example/: internal/example/example_test.go:7\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix archive --help' for usage.\n",
+  "exit": 2
+}

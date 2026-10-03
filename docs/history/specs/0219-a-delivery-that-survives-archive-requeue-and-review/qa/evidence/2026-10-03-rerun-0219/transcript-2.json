@@ -1,0 +1,13 @@
+{
+  "cwd": "/private/tmp/qa-0219-rerun-vi5nc0xb/queue",
+  "disposable_home": "/private/tmp/qa-0219-rerun-vi5nc0xb/queue-home",
+  "command": [
+    "./bin/roundfix",
+    "deliver",
+    "start",
+    "0300-example"
+  ],
+  "stdout": "",
+  "stderr": "Preflight failed\n\nReason:\n  Spec \"0300-example\" has 2 item branches with commits origin/main lacks: roundfix/deliver-0300-example-1111111111111111, roundfix/deliver-0300-example-2222222222222222; delete every branch but the one to continue, then run roundfix deliver start again\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix deliver start --help' for usage.\n",
+  "exit": 2
+}

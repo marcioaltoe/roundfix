@@ -13,8 +13,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -382,9 +384,48 @@ func (workflow *commandDeliveryWorkflow) deliveryCarryForwardRuns(
 }
 
 func (workflow *commandDeliveryWorkflow) CreateItemBranch(ctx context.Context, gitRoot, specSlug string) (string, string, error) {
-	branch, err := newDeliveryBranch(specSlug)
+	// A recorded workspace is durable recovery state, even when the remote
+	// is unavailable. Only a new item selects among branches holding work.
+	queue, _, err := workflow.store.DeliveryQueue(ctx, gitRoot)
 	if err != nil {
-		return "", "", err
+		return "", "", fmt.Errorf("read item workspace: %w", err)
+	}
+	branch := ""
+	for _, item := range queue.Items {
+		if item.SpecSlug == specSlug {
+			branch = item.Branch
+			break
+		}
+	}
+	base := ""
+	if branch == "" {
+		defaultBranch := preflight.DetectDefaultBranch(ctx, gitRoot, "", workflow.git)
+		if defaultBranch.Source == preflight.DefaultBranchUndetermined {
+			return "", "", errors.New("create item branch: repository default branch is unknown")
+		}
+		remote := strings.TrimSpace(workflow.loaded.Config.Watch.PushRemote)
+		if remote == "" {
+			remote = "origin"
+		}
+		if _, err := workflow.git.RunGit(ctx, gitRoot, "fetch", remote, defaultBranch.Name); err != nil {
+			return "", "", fmt.Errorf("refresh default branch %q: %w", defaultBranch.Name, err)
+		}
+		base = remote + "/" + defaultBranch.Name
+		branches, err := existingItemBranches(ctx, workflow.git, gitRoot, base, specSlug)
+		if err != nil {
+			return "", "", err
+		}
+		if len(branches) > 1 {
+			return "", "", ambiguousItemBranches(specSlug, base, branches)
+		}
+		if len(branches) == 1 {
+			branch = branches[0]
+		} else {
+			branch, err = newDeliveryBranch(specSlug)
+			if err != nil {
+				return "", "", err
+			}
+		}
 	}
 	ref, err := runworktree.ItemRefFor(gitRoot, workflow.loaded.Config.Worktree.Location, branch)
 	if err != nil {
@@ -417,19 +458,22 @@ func (workflow *commandDeliveryWorkflow) CreateItemBranch(ctx context.Context, g
 			return "", "", err
 		}
 	}
-	defaultBranch := preflight.DetectDefaultBranch(ctx, gitRoot, "", workflow.git)
-	if defaultBranch.Source == preflight.DefaultBranchUndetermined {
-		return "", "", errors.New("create item branch: repository default branch is unknown")
-	}
-	remote := strings.TrimSpace(workflow.loaded.Config.Watch.PushRemote)
-	if remote == "" {
-		remote = "origin"
-	}
-	if _, err := workflow.git.RunGit(ctx, gitRoot, "fetch", remote, defaultBranch.Name); err != nil {
-		return "", "", fmt.Errorf("refresh default branch %q: %w", defaultBranch.Name, err)
+	if base == "" {
+		defaultBranch := preflight.DetectDefaultBranch(ctx, gitRoot, "", workflow.git)
+		if defaultBranch.Source == preflight.DefaultBranchUndetermined {
+			return "", "", errors.New("create item branch: repository default branch is unknown")
+		}
+		remote := strings.TrimSpace(workflow.loaded.Config.Watch.PushRemote)
+		if remote == "" {
+			remote = "origin"
+		}
+		if _, err := workflow.git.RunGit(ctx, gitRoot, "fetch", remote, defaultBranch.Name); err != nil {
+			return "", "", fmt.Errorf("refresh default branch %q: %w", defaultBranch.Name, err)
+		}
+		base = remote + "/" + defaultBranch.Name
 	}
 	if err := runworktree.CreateItem(ctx, ref, runworktree.ItemCreateOptions{
-		HeadSHA:  remote + "/" + defaultBranch.Name,
+		HeadSHA:  base,
 		CopyList: workflow.loaded.Config.Worktree.Copy,
 		Bootstrap: runworktree.BootstrapSpec{
 			Command: workflow.loaded.Config.Worktree.Bootstrap,
@@ -443,6 +487,43 @@ func (workflow *commandDeliveryWorkflow) CreateItemBranch(ctx context.Context, g
 		return "", "", err
 	}
 	return branch, itemWorktree, nil
+}
+
+// existingItemBranches reads only local refs; callers choose when to refresh
+// the default branch. A branch holds work when it has commits absent from base.
+func existingItemBranches(ctx context.Context, git preflight.GitRunner, gitRoot, base, specSlug string) ([]string, error) {
+	prefix := deliveryBranchPrefix + specSlug + "-"
+	refs, err := git.RunGit(ctx, gitRoot, "for-each-ref", "--format=%(refname:strip=2)", "refs/heads/"+prefix+"*")
+	if err != nil {
+		return nil, fmt.Errorf("list item branches for %q: %w", specSlug, err)
+	}
+	pattern := regexp.MustCompile("^" + regexp.QuoteMeta(prefix) + "[0-9a-f]{16}$")
+	var branches []string
+	for _, branch := range strings.Fields(refs) {
+		if !pattern.MatchString(branch) {
+			continue
+		}
+		if base == "" {
+			return nil, errors.New("inspect item branches: repository default branch is unknown")
+		}
+		output, err := git.RunGit(ctx, gitRoot, "rev-list", "--count", base+".."+branch)
+		if err != nil {
+			return nil, fmt.Errorf("count item branch %q commits beyond %q: %w", branch, base, err)
+		}
+		count, err := strconv.ParseUint(strings.TrimSpace(output), 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("read item branch %q commit count: %w", branch, err)
+		}
+		if count > 0 {
+			branches = append(branches, branch)
+		}
+	}
+	sort.Strings(branches)
+	return branches, nil
+}
+
+func ambiguousItemBranches(specSlug, base string, branches []string) error {
+	return fmt.Errorf("Spec %q has %d item branches with commits %s lacks: %s; delete every branch but the one to continue, then run roundfix deliver start again", specSlug, len(branches), base, strings.Join(branches, ", "))
 }
 
 func newDeliveryBranch(specSlug string) (string, error) {

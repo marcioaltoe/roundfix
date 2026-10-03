@@ -185,6 +185,22 @@
       {
         "version": "0.1.18",
         "digest": "952720edc2bac31927502c39eb5fcdaf07b52c57193a1ad5dc220ce59a83eb7d"
+      },
+      {
+        "version": "0.1.19",
+        "digest": "89ef4878000a90d9c022a3ff88e7652808ca88653acbe80cf50c6bb18c3e9ccf"
+      },
+      {
+        "version": "0.1.20",
+        "digest": "82fac7cd7316d89a8d3c8e6f56b198707c3ad4113819b4057022851209777f7d"
+      },
+      {
+        "version": "0.1.21",
+        "digest": "a9e6cd1afcca57420074b22c309190d20d8989537b3d1ef46f3e000151342c26"
+      },
+      {
+        "version": "0.1.22",
+        "digest": "29f63338e1c9872142ff7346b354bf2db28008eb74757d8ee9f7d007f03bdc9c"
       }
     ],
     "setup-context-driven": [

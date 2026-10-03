@@ -1,0 +1,6 @@
+Spec 0219-a-delivery-that-survives-archive-requeue-and-review
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  vocabulary documentation detector: missing docs/specs/0219-a-delivery-that-survives-archive-requeue-and-review/_techspec.md Vocabulary Contract

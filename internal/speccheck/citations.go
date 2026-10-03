@@ -72,6 +72,7 @@ var (
 		CodeVerifyWorkIndependent,
 		CodeVerifyInvertedExit,
 		CodeVerifyWrapFragile,
+		CodeVerifyTruncated,
 		CodeVerifyNonHermetic,
 		CodeRequirementContradictory,
 		CodeRehearsalUndeclared,
@@ -908,6 +909,18 @@ func detectCitationCoverageAndReferences(
 	specDir string,
 	techSpecPresent bool,
 ) error {
+	pins, err := ActiveSpecPathPins(repoRoot, specsRoot, slug)
+	if err != nil {
+		return err
+	}
+	for _, pin := range pins {
+		result.Findings = append(result.Findings, Finding{
+			Code: CodeSpecPathPinned, Severity: SeverityError,
+			Summary: pin.Path + " names the active directory of Spec " + slug,
+			Where:   []Location{{Path: pin.Path, Line: pin.Line}},
+			Fix:     "Read a fixture or an exported constant instead of the Spec's file; a Spec archives and may be deleted.",
+		})
+	}
 	prdPath := filepath.Join(specDir, "_prd.md")
 	prdContent, err := os.ReadFile(prdPath)
 	if err != nil {
@@ -985,6 +998,7 @@ func detectCitationCoverageAndReferences(
 		addSkip(result, CodeReferenceUnresolved, manifestDisplayPath)
 		addSkip(result, CodeVerifyInvertedExit, manifestDisplayPath)
 		addSkip(result, CodeVerifyWrapFragile, manifestDisplayPath)
+		addSkip(result, CodeVerifyTruncated, manifestDisplayPath)
 		addSkip(result, CodeVerifyNonHermetic, manifestDisplayPath)
 		addSkip(result, CodeOrdinalClaimed, manifestDisplayPath)
 		addSkip(result, CodeWaveCollision, manifestDisplayPath)
@@ -1562,12 +1576,13 @@ func detectTaskCoverageAndContextReferences(
 			}
 			addDeclaredReferences(references, line)
 		}
-		detectTaskContextReferences(result, repoRoot, taskPath, content, task.Context)
+		detectTaskContextReferences(result, repoRoot, specsRoot, taskPath, content, task.Context)
 		// Completed Tasks carry historical evidence whose authoring contract is
 		// not retroactively changed by a newly shipped detector.
 		if task.Status == spec.StatusCompleted {
 			continue
 		}
+		result.Findings = append(result.Findings, TruncatedVerification(artifactDisplayPath(repoRoot, taskPath), content)...)
 		if finding, ok := AuthoredQAVerification(task); ok {
 			finding.Where[0] = Location{
 				Path: artifactDisplayPath(repoRoot, taskPath),
@@ -1680,7 +1695,7 @@ func detectTaskCoverageAndContextReferences(
 	return nil
 }
 
-func detectTaskContextReferences(result *Result, repoRoot, taskPath string, content []byte, refs []spec.TaskContextRef) {
+func detectTaskContextReferences(result *Result, repoRoot, specsRoot, taskPath string, content []byte, refs []spec.TaskContextRef) {
 	taskDisplayPath := artifactDisplayPath(repoRoot, taskPath)
 	for _, ref := range refs {
 		if ref.Kind == spec.ContextKindCreates || ref.Kind == spec.ContextKindDeletes {
@@ -1688,6 +1703,17 @@ func detectTaskContextReferences(result *Result, repoRoot, taskPath string, cont
 		}
 		if repositoryPathExists(repoRoot, ref.Path) {
 			continue
+		}
+		activePath, valid := resolveRepositoryPath(repoRoot, ref.Path)
+		_, activeErr := os.Stat(activePath)
+		if valid && errors.Is(activeErr, os.ErrNotExist) {
+			relative, err := filepath.Rel(specsRoot, activePath)
+			if err == nil && !filepath.IsAbs(relative) && relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) && strings.Contains(relative, string(filepath.Separator)) {
+				archivedPath := filepath.Join(activeSpecArchiveRoot(repoRoot, specsRoot), relative)
+				if _, err := os.Stat(archivedPath); err == nil {
+					continue
+				}
+			}
 		}
 		line := sectionLineContaining(content, "Context", ref.Path)
 		result.Findings = append(result.Findings, Finding{

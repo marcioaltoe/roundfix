@@ -72,8 +72,31 @@ owner exits; retrying a prerequisite restarts it. You can also run
 without a worktree, revalidation or carry-forward. The owner checks its
 prerequisites again before starting it.
 
-Each queued Spec runs in its own linked worktree under `worktree.location`,
-created from the refreshed default branch.
+Each queued Spec runs in its own linked worktree under `worktree.location`.
+After the prerequisite check and before authorization or readiness checks,
+`deliver start` reads local item branches named
+`roundfix/deliver-<slug>-<16 lowercase hex digits>`. It compares them with the
+local `<remote>/<default>` ref without fetching. With exactly one branch
+holding commits that ref lacks, it records the new queue and prints on stdout:
+
+```text
+Continuing item branch <branch> for <slug>
+```
+
+The owner checks again after fetching the default branch and records that
+branch on the new item, reusing its worktree and completed work. The item
+starts at `queued`, as any new item does; Roundfix does not merge the default
+branch into it at start. With no branch holding work, it creates a new item
+branch from the refreshed default branch.
+
+With two or more item branches with commits the default branch lacks, start
+exits `2` before recording a queue. The reason names every branch in sorted
+order:
+
+```text
+Spec "0300-example" has 2 item branches with commits origin/main lacks: roundfix/deliver-0300-example-1111111111111111, roundfix/deliver-0300-example-2222222222222222; delete every branch but the one to continue, then run roundfix deliver start again
+```
+
 `roundfix deliver` never switches, resets or cleans your checkout, and it does not need the checkout to be clean.
 A parked item keeps its worktree, and `deliver status` prints that path. On
 resume, Roundfix recreates a missing worktree from its recorded branch; if the
@@ -128,8 +151,8 @@ the recorded values as:
 Limits: deadline <RFC 3339 UTC|none>, retries per item <n|none>, concurrency 1, tokens <n|none>
 ```
 
-`deliver start` prints only the limits line. `deliver status` prints usage
-immediately after it, summing every Run recorded for queue items, including
+`deliver start` prints the limits line after any continuation lines.
+`deliver status` prints usage immediately after it, summing every Run recorded for queue items, including
 Runs from earlier retries:
 
 ```text
@@ -150,7 +173,7 @@ cannot be retried. Record a new queue for the remaining Specs instead. When an
 item reaches its retry limit, `deliver retry` refuses the next retry and leaves
 the item unchanged.
 
-After the item worktree is created from that main and before the first Run,
+After the item worktree is created or continued and before the first Run,
 Roundfix runs the strict Spec Consistency Check in the worktree. A finding
 parks the item as `revalidation-failed: <code>, <code>` before any Run starts.
 
@@ -209,6 +232,18 @@ Carry-Forward. The archive stage recognizes the reviewed Spec already in the
 archive and proceeds to `gating` without another commit. Review, repository
 gating, delivery authorization and required checks still apply.
 
+A retry after a correction committed on top of an archived candidate accepts
+its current head when Git proves it descends from the newest candidate. It
+appends the head to the candidate commits and returns to `reviewing`, so the
+correction receives a fresh review before the archive and repository gate
+stages. This applies to an archived `gate-failed` item and other blockers,
+with two restrictions: `qa-environment-partial` still needs the recorded QA
+Archive Override, and `corrective-spec-required` still refuses a moved head.
+Only the QA environment park may use the Run start head when no candidate is
+recorded. A non-descendant head or unavailable item history refuses with the
+existing reason and leaves the item unchanged. An unchanged archived candidate
+keeps its `gating` stage without a Pull Request or `checking` stage with one.
+
 An archived retry of an operator-archived `qa-environment-partial` item finds
 the Implement start head of the Run the queue started by the repository the Run
 belongs to. When no candidate exists, the retry accepts an item head descended
@@ -219,9 +254,8 @@ Request can continue to merge without manual intervention.
 
 Delivery authorization is read from the parent of the newest first-parent
 commit that deleted the active Spec's `_prd.md`. A later operator commit does
-not hide that pre-archive grant. Other moved archived heads remain refused
-unless the item is a resolved
-`pull-request-conflict` as described below.
+not hide that pre-archive grant. A moved archived head that does not descend
+from its newest candidate remains refused.
 
 GitHub's `CONFLICTING` mergeable state stops the check wait on its first read;
 `UNKNOWN` stays pending. The owner starts from a clean item worktree at the
@@ -336,6 +370,7 @@ changes.
 | --- | --- |
 | Active Spec with any unfinished Task | `running` |
 | Active Spec with every Task completed | `reviewing` |
+| Archived Spec with a post-archive correction descended from its newest candidate | `reviewing` |
 | Operator-archived `qa-environment-partial` with a QA override and head descended from its candidate or Run start | `reviewing` |
 | Resolved `pull-request-conflict` with a head descended from the candidate | `reviewing` |
 | Archived Spec with unchanged candidate and no recorded pull request | `gating` |

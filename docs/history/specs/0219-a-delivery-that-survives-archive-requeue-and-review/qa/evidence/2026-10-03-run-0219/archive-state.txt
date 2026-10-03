@@ -1,0 +1,1 @@
+Refusal left Spec files unchanged. Pin removed: archive exited 0, active path absent, archived file bytes identical. Superseded fixture uses Task 01 test policy. First follow-up setup misspelled _supersession.md; corrected before success.

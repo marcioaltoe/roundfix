@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0219-a-delivery-that-survives-archive-requeue-and-review
-status: pending
+status: failed
 type: qa
 complexity: medium
 ---

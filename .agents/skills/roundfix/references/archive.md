@@ -15,6 +15,13 @@ self-supersession, or a Spec that already carries a supersession. Exit `0`
 means the amendment was recorded, exit `1` means the write failed, and exit
 `2` means Preflight Validation failed.
 
+A Spec cannot archive while another file names its active directory. The
+command exits `2`, lists each file and line, and leaves every file in place.
+This includes tracked and untracked non-ignored files other than Markdown,
+outside the Spec Root, its archive root and `docs/history`. Replace a code or
+test dependency on the Spec's files with a fixture or an exported constant,
+then retry the archive. This refusal also applies with `--qa-override`.
+
 ### Authorization audit
 
 The mechanical authorization audit reads each governed Task commit's grant at
