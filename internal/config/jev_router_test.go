@@ -5,13 +5,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"roundfix/internal/agent"
 )
 
 // The config loader owns scope and effort validation; no runtime is launched.
 func jevRouterProfileYAML(fallback bool, effort string) string {
-	router := fmt.Sprintf("{runtime: opencode, model: %s, reasoning_effort: %q}", agent.JevRouterModel, effort)
+	router := fmt.Sprintf("{runtime: opencode, model: %s, reasoning_effort: %q}", JevRouterModel, effort)
 	normal := `{runtime: codex, model: gpt-6.1-sol, reasoning_effort: high}`
 	if fallback {
 		router, normal = normal, router
@@ -49,7 +47,7 @@ func TestJevRouterLoadsFromProjectConfig(t *testing.T) {
 			if fallback {
 				selection = resolved.Profile.Fallbacks[0]
 			}
-			if resolved.Source != ProfileSourceProject || selection.Model != agent.JevRouterModel || selection.ReasoningEffort != "" {
+			if resolved.Source != ProfileSourceProject || selection.Model != JevRouterModel || selection.ReasoningEffort != "" {
 				t.Fatalf("unexpected profile: %+v", resolved)
 			}
 		})
@@ -75,7 +73,7 @@ func TestJevRouterRefusedFromUserConfig(t *testing.T) {
 					if fallback {
 						path = "profiles.docs.fallbacks[0]"
 					}
-					want := path + " names the Jev Router (" + agent.JevRouterModel + "), which only Project Config may select"
+					want := path + " names the Jev Router (" + JevRouterModel + "), which only Project Config may select"
 					if err == nil || !strings.Contains(err.Error(), want) || !strings.Contains(err.Error(), "parse config") {
 						t.Fatalf("error = %v, want %s", err, want)
 					}
@@ -104,7 +102,7 @@ func TestJevRouterRefusesAReasoningEffort(t *testing.T) {
 
 func TestJevRouterRefusedAsOneRunOverride(t *testing.T) {
 	t.Parallel()
-	override := AgentSelection{Runtime: " opencode ", Model: " " + agent.JevRouterModel + " "}
+	override := AgentSelection{Runtime: " opencode ", Model: " " + JevRouterModel + " "}
 	_, err := ResolveProfile(Config{}, CategoryDocs, &override)
 	want := "the Jev Router cannot be a one-Run override; name it in Project Config"
 	if err == nil || err.Error() != want {
@@ -118,7 +116,7 @@ func TestJevRouterRefusedFromNonProjectSources(t *testing.T) {
 		t.Run(string(source), func(t *testing.T) {
 			entries := builtinProfiles()
 			entries[CategoryDocs] = ProfileEntry{Source: source, Profile: AgentSelectionProfile{
-				Preferred: AgentSelection{Runtime: "opencode", Model: agent.JevRouterModel},
+				Preferred: AgentSelection{Runtime: "opencode", Model: JevRouterModel},
 				Fallbacks: []AgentSelection{{Runtime: "codex", Model: "gpt-6.1-sol", ReasoningEffort: "high"}},
 			}}
 			err := validateProfiles(entries)
@@ -139,7 +137,7 @@ runtimes:
   opencode:
     model: %s
     reasoning_effort: ""
-`, runtime, agent.JevRouterModel)
+`, runtime, JevRouterModel)
 			_, err := loadJevRouterConfig(t, "", document)
 			if err == nil || !strings.Contains(err.Error(), "the Jev Router cannot be selected through legacy runtimes; name it in Project Config profiles") {
 				t.Fatalf("error = %v", err)

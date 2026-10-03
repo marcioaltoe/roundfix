@@ -4016,8 +4016,13 @@ func installSymlinkedPackageAdapter(t *testing.T, packageName string, executable
 // in a non-executable sidecar, so tests never write the file they execute. This
 // removes the ETXTBSY window documented by https://go.dev/issue/22315.
 type fakeAdapterFixture struct {
-	Output       *string `json:"output,omitempty"`
-	ClaudeOutput *string `json:"claude_output,omitempty"`
+	StatusOutputEnv string  `json:"status_output_env,omitempty"`
+	StatusOutput    *string `json:"status_output,omitempty"`
+	StatusExitCode  int     `json:"status_exit_code,omitempty"`
+	StatusStderr    *string `json:"status_stderr,omitempty"`
+	StatusBlock     bool    `json:"status_block,omitempty"`
+	Output          *string `json:"output,omitempty"`
+	ClaudeOutput    *string `json:"claude_output,omitempty"`
 }
 
 func provisionFakeAdapter(path string, fixture fakeAdapterFixture) error {
@@ -4065,6 +4070,23 @@ func runFakeAdapterProcess() (int, bool) {
 	if err := json.Unmarshal(payload, &fixture); err != nil {
 		fmt.Fprintf(os.Stderr, "decode adapter fixture behavior: %v\n", err)
 		return 2, true
+	}
+	if len(os.Args) == 2 && os.Args[1] == "status" {
+		if fixture.StatusBlock {
+			for {
+				time.Sleep(time.Hour)
+			}
+		}
+		if fixture.StatusOutputEnv != "" {
+			fmt.Fprintln(os.Stdout, os.Getenv(fixture.StatusOutputEnv))
+		}
+		if fixture.StatusOutput != nil {
+			fmt.Fprintln(os.Stdout, *fixture.StatusOutput)
+		}
+		if fixture.StatusStderr != nil {
+			fmt.Fprintln(os.Stderr, *fixture.StatusStderr)
+		}
+		return fixture.StatusExitCode, true
 	}
 	output := fixture.Output
 	if fixture.ClaudeOutput != nil && strings.Contains(strings.Join(os.Args[1:], " "), "claude-agent-acp") {

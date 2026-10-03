@@ -154,6 +154,13 @@ func (checker runtimeHealthChecker) Adapter(ctx context.Context, runtime agent.R
 	if errors.As(err, &installErr) {
 		result.NextAction = installErr.InstallCommand()
 	}
+	var actionErr interface {
+		error
+		NextAction() string
+	}
+	if errors.As(err, &actionErr) {
+		result.NextAction = actionErr.NextAction()
+	}
 	return result
 }
 

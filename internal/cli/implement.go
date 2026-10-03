@@ -28,7 +28,7 @@ import (
 	runworktree "roundfix/internal/worktree"
 )
 
-const implementUsage = `Usage:
+var implementUsage = `Usage:
   roundfix implement --spec <slug>
   roundfix implement --spec <slug> --agent <agent> --model <model> --reasoning-effort <effort>
 
@@ -41,7 +41,7 @@ profiles. A one-Run override requires --agent, --model, and --reasoning-effort t
 
 Options:
   --spec               Spec slug under docs/specs/
-  --agent              Agent runtime. Supported: codex, claude, opencode
+  --agent              Agent runtime. Supported: ` + strings.Join(roundconfig.SupportedRuntimes(), ", ") + `
   --model              Agent model override
   --reasoning-effort   Default reasoning effort override
   --agent-command      Agent command override

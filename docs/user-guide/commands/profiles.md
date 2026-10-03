@@ -92,6 +92,11 @@ references, proves them through disposable ACP Runtime Sessions, sends no
 Agent prompt, and closes every Session on success or error. JSON schemas are
 `roundfix/profiles/v2`, `roundfix/profiles-configure/v1`, and
 `roundfix/profiles-validate/v1`.
+
+`profiles validate` and `profiles configure` refuse a Cursor tuple without
+the maintainer's login as `cursor_login_required`, before any session opens.
+Run `cursor-agent login` in a terminal yourself, then retry the command.
+
 A proof whose setup times out is retried once. A second timeout is classified
 `temporary`; rerun the command when load drops because the configured profile
 was not shown to be wrong.

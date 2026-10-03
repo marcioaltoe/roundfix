@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0217-a-cursor-runtime-to-measure-grok-on
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -91,3 +91,64 @@ login and never touches a Cursor credential (ADR-0217).
 - [_prd.md](_prd.md) — Goal 3; User Stories 2-3; Core Feature 3; Success Metric 3; Project Constraints (Authentication and HTTP)
 - [_techspec.md](_techspec.md) — Interfaces; The login check; Surface Transcript 1; API Contract 3; Testing Approach 3; Build Order 2
 - ADR-0217; ADR-0050; ADR-0125
+
+## Result
+
+Implemented the assigned login gate for Daemon Verification. Task status and
+acceptance checkboxes remain unsettled; the Daemon owns the terminal verdict.
+
+- `checkAdapter` checks Cursor (including the normalized `cursor-custom`
+  runtime) after executable lookup and before lineage inspection. The status
+  subprocess receives the explicit environment and is cancelled by the caller's
+  context or a ten-second ceiling. A failed command or `Not logged in` on either
+  output stream returns `CursorLoginRequiredError` unchanged, with no status
+  output in the error or adapter evidence.
+- The health checker reads `NextAction()` through the error chain. Doctor prints
+  the classified refusal and the maintainer's terminal login action. Both the
+  Doctor and profiles guides describe refusal before a session opens.
+- Every fake Cursor executable is provisioned by the agent suite's compiled
+  binary re-execution, with behavior in a non-executable sidecar. The fixture
+  now supports status stdout, stderr, exit code, environment and blocking.
+
+Acceptance evidence:
+
+1. `TestCursorAdapterRefusedWithoutLogin` covers the refusal message on stdout
+   and stderr and exit code 1. `TestCursorProofRefusesBeforeAnySessionWithoutLogin`
+   covers each case and asserts that no acpx invocation file exists.
+   `TestDoctorAdapterNamesTheCursorLogin` drives the Doctor command through the
+   real health/adapter path with compiled fixtures for message and exit refusal;
+   it asserts exit 1, the exact Surface Transcript 1 adapter line, empty stderr
+   and absence of a private-output sentinel.
+2. `TestCursorAdapterReadyWithLogin` accepts the logged-in fixture and returns
+   only command evidence. `TestCursorLoginUsesExplicitEnvironment`,
+   `TestCursorLoginHonorsCallerDeadline` and
+   `TestCursorCustomAdapterAlsoRequiresLogin` additionally cover environment,
+   cancellation and normalized runtime handling.
+3. A Python inspection of all non-test Go files under `internal` and `cmd`
+   found no Cursor credential variable, key/token flag, or login/logout
+   argument references. Direct inspection of the production gate confirms the
+   only Cursor subprocess argument is `status`; no status output is logged or
+   persisted and no `-H` is passed to Cursor.
+
+Focused checks:
+
+- Red starting point: `GOCACHE=/private/tmp/roundfix-task02-gocache go test
+  ./internal/agent -run '^TestCursorAdapterReadyWithLogin$' -count=1` failed to
+  build before implementation because the required error, classification and
+  login-check symbols did not exist.
+- Final focused check: `GOCACHE=/private/tmp/roundfix-task02-gocache go test
+  ./internal/agent ./internal/cli -run
+  'TestCursor(Adapter|Proof|Login|Custom)|TestDoctorAdapterNamesTheCursorLogin|TestRunDoctorAdapterReadiness|TestDoctorAdapterCheckAggregatesEveryFailure|TestFakeAdapterRuns'
+  -count=1` exited 0 for both packages. This includes existing Doctor adapter
+  aggregation and compiled-fixture provisioning regressions.
+- `git -c core.fsmonitor=false diff --check` exited 0. Source and guide diffs
+  were inspected against the assigned scope.
+
+The authored Verification command and repository-wide Verification were not
+run in this child turn. No live Cursor command, login, credential access,
+commit, push or pull request was performed. No follow-up scope was added.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261002T190644Z_6dc4ccb1092ddf45`
+- Source commit: `fe08a97db1bcefa4ecb23dd98caadf1ed49015de`

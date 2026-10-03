@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 
+	"roundfix/internal/config"
 	"roundfix/internal/runevent"
 )
 
@@ -60,6 +61,7 @@ const (
 )
 
 var defaultAdapterCommands = map[string]string{
+	"cursor":   "cursor-agent acp",
 	"codex":    defaultCodexAdapterCommand,
 	"claude":   defaultClaudeAdapterCommand,
 	"opencode": "opencode",
@@ -591,6 +593,11 @@ func checkAdapter(ctx context.Context, runtime RuntimeSpec, environment []string
 			Err:        err,
 		}
 	}
+	if runtimeID == "cursor" {
+		if err := checkCursorLogin(ctx, invocation.executable(), environment); err != nil {
+			return AdapterEvidence{}, err
+		}
+	}
 	evidence := AdapterEvidence{Command: invocation.display()}
 	if !hasLineageContract {
 		return evidence, nil
@@ -641,7 +648,7 @@ func resolveAdapterInvocation(runtime RuntimeSpec, environment []string) (adapte
 	if command, ok := defaultAdapterCommands[runtimeID]; ok {
 		return newAdapterInvocation(command, nil), nil
 	}
-	return adapterInvocation{}, fmt.Errorf("unsupported Agent %q; supported values: codex, claude, opencode", runtimeID)
+	return adapterInvocation{}, fmt.Errorf("unsupported Agent %q; supported values: %s", runtimeID, strings.Join(config.SupportedRuntimes(), ", "))
 }
 
 func configuredAdapterInvocation(runtimeID string, environment []string) (adapterInvocation, bool) {
