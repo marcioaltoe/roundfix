@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.31.0] - 2026-10-03
+
+### A Cursor runtime to measure Grok on
+
+`cursor` is an ACP Runtime: acpx starts `cursor-agent acp`. A Cursor selection names the exact model value Cursor advertises, such as `grok-4.7[context=256k,reasoning_effort=high,fast=true]`, with an empty reasoning effort, because Cursor states effort, context and speed inside the value. Roundfix never logs in. Without the maintainer's own `cursor-agent` login, a Cursor selection is refused with `cursor_login_required`. The Roundfix Skill and the configuration guide describe the runtime.
+
+The measurement, `docs/history/specs/0217-a-cursor-runtime-to-measure-grok-on/measurement/grok-through-cursor.md`, replayed two Tasks. Grok 4.7 settled both with no person needed and no Verification repair, at about 1.5 times the default's wall time, and Cursor reported no token counts. A non-binding Backlog Entry proposes Grok as a fallback for `docs` and `chore`.
+
 ## [0.30.0] - 2026-10-02
 
 ### The Jev Router on docs and chore Tasks, opt-in and bounded
