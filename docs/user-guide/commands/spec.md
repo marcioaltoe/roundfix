@@ -72,3 +72,30 @@ the same relative path under the archive root when that file exists. The
 built-in `docs/specs` root resolves through `docs/history/specs`; other roots
 resolve through `<spec-root>/_archived`. Existing active paths keep resolving,
 and a path missing in both places still reports `SC-REF-UNRESOLVED`.
+
+
+A non-completed Task reports one `SC-VERIFY-TRUNCATED` error for each
+Verification bullet whose first code span ends in a backslash or whose text
+after that span has an odd number of backticks. Completed Tasks retain their
+historical evidence. Repair the span before starting a Run.
+
+With `--run-verification`, the check runs authored commands from the
+working-tree Spec in a disposable checkout of `HEAD`. The shared prober first
+runs `sh -n -c <command>` without executing the command. A rejected command
+reports `malformed` with the shell's parser message, is never executed, and
+makes the check exit `1`. A parsable command that fails remains `honest`;
+a command that passes remains `vacuous`. The Daemon refuses malformed commands
+before opening an Agent Session. If the parser cannot start, the existing
+command probe still runs.
+
+After `Verification tree: HEAD`, the text report names each Task Graph or Task
+file listed by Git status as an uncommitted Verification source:
+
+```text
+Uncommitted Verification source: <path> (<untracked|modified>)
+```
+
+These lines disclose provenance and do not refuse execution. JSON includes
+`verification.uncommitted`, an array of `{path, state}` objects, empty when
+all sources are committed, and reports `malformed` plus the parser message in
+`verification.commands` through the `verdict` and `cause` fields.

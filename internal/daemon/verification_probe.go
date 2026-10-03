@@ -4,7 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os/exec"
+	"strings"
 )
+
+// ErrVerificationMalformed identifies a command rejected by the shell parser.
+var ErrVerificationMalformed = errors.New("verification command malformed")
 
 // CommandVerdict records what one authored command does against a tree where
 // no work has happened. Unknown means the command's verdict was not observed.
@@ -47,6 +52,24 @@ func ProbeCommands(
 	verdicts := make([]CommandVerdict, 0, len(commands))
 	for index, command := range commands {
 		outputPath := outputFor(index)
+		parser := exec.CommandContext(ctx, "sh", "-n", "-c", command)
+		parser.Dir = workDir
+		diagnostic, parseErr := parser.CombinedOutput()
+		if ctx.Err() != nil {
+			return nil, &commandProbeError{command: command, err: ctx.Err()}
+		}
+		var exitErr *exec.ExitError
+		if errors.As(parseErr, &exitErr) {
+			verdicts = append(verdicts, CommandVerdict{
+				Command: command,
+				Unknown: true,
+				Cause: completeVerificationUnknownCause(&VerificationUnknownError{
+					Err: fmt.Errorf("%w: %s", ErrVerificationMalformed, strings.TrimSpace(string(diagnostic))),
+				}, command, outputPath),
+			})
+			continue
+		}
+		// A parser that cannot start must not introduce a new refusal.
 		result, verifyErr := verifier.Verify(ctx, VerifyRequest{
 			WorkDir:    workDir,
 			Command:    command,

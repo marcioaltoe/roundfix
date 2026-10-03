@@ -44,7 +44,7 @@ Options:
 
 Exit codes:
   0  no errors (clean or gaps only)
-  1  at least one error, vacuous command, or unknown command verdict
+  1  at least one error, vacuous command, or unknown/malformed command verdict
   2  usage error or unreadable Spec Root
 `
 
@@ -80,9 +80,15 @@ type specCheckRequest struct {
 }
 
 type specCheckVerificationReport struct {
-	Executed bool                                 `json:"executed"`
-	Tree     string                               `json:"tree,omitempty"`
-	Commands []specCheckVerificationCommandReport `json:"commands"`
+	Executed    bool                                 `json:"executed"`
+	Tree        string                               `json:"tree,omitempty"`
+	Commands    []specCheckVerificationCommandReport `json:"commands"`
+	Uncommitted []specCheckVerificationSource        `json:"uncommitted"`
+}
+
+type specCheckVerificationSource struct {
+	Path  string `json:"path"`
+	State string `json:"state"`
 }
 
 type specCheckVerificationCommandReport struct {
@@ -114,10 +120,11 @@ type specCheckRepairInput struct {
 }
 
 const (
-	specCheckVerificationTreeHEAD       = "HEAD"
-	specCheckVerificationVerdictVacuous = "vacuous"
-	specCheckVerificationVerdictHonest  = "honest"
-	specCheckVerificationVerdictUnknown = "unknown"
+	specCheckVerificationTreeHEAD         = "HEAD"
+	specCheckVerificationVerdictVacuous   = "vacuous"
+	specCheckVerificationVerdictHonest    = "honest"
+	specCheckVerificationVerdictUnknown   = "unknown"
+	specCheckVerificationVerdictMalformed = "malformed"
 )
 
 type specAuditRequest struct {
@@ -311,7 +318,7 @@ func runSpecCheckCommand(ctx context.Context, args []string, stdout, stderr io.W
 			fmt.Fprintln(stdout, string(data))
 		}
 		for _, command := range verificationReports[index].Commands {
-			if command.Verdict == specCheckVerificationVerdictVacuous || command.Verdict == specCheckVerificationVerdictUnknown {
+			if command.Verdict == specCheckVerificationVerdictVacuous || command.Verdict == specCheckVerificationVerdictUnknown || command.Verdict == specCheckVerificationVerdictMalformed {
 				hasVerificationRefusal = true
 			}
 		}
@@ -430,6 +437,14 @@ func probeSpecVerifications(
 		if err != nil {
 			return nil, fmt.Errorf("load Verification commands for Spec %q: %w", slug, err)
 		}
+		sources := []string{manifestPath}
+		for _, task := range graph.Tasks {
+			sources = append(sources, filepath.Join(specsRoot, task.File))
+		}
+		report.Uncommitted, err = uncommittedVerificationSources(ctx, repoRoot, sources)
+		if err != nil {
+			return nil, err
+		}
 		for taskIndex, task := range graph.Tasks {
 			verdicts, err := daemon.ProbeCommands(ctx, verifier, checkoutDir, task.Verification, func(commandIndex int) string {
 				return filepath.Join(
@@ -458,6 +473,9 @@ func specCheckVerificationCommand(taskID string, verdict daemon.CommandVerdict) 
 	switch {
 	case verdict.Unknown:
 		report.Verdict = specCheckVerificationVerdictUnknown
+		if errors.Is(verdict.Cause, daemon.ErrVerificationMalformed) {
+			report.Verdict = specCheckVerificationVerdictMalformed
+		}
 		if verdict.Cause != nil {
 			report.Cause = verdict.Cause.Error()
 			var unknownErr *daemon.VerificationUnknownError
@@ -475,7 +493,7 @@ func renderSpecCheckText(outcome specCheckOutcome, verification specCheckVerific
 	var report strings.Builder
 	executed, unexecuted := 0, 0
 	for _, command := range verification.Commands {
-		if command.Verdict == specCheckVerificationVerdictUnknown {
+		if command.Verdict == specCheckVerificationVerdictUnknown || command.Verdict == specCheckVerificationVerdictMalformed {
 			unexecuted++
 			continue
 		}
@@ -500,6 +518,9 @@ func renderSpecCheckText(outcome specCheckOutcome, verification specCheckVerific
 		return report.String()
 	}
 	fmt.Fprintf(&report, "Verification tree: %s\n", verification.Tree)
+	for _, source := range verification.Uncommitted {
+		fmt.Fprintf(&report, "Uncommitted Verification source: %s (%s)\n", source.Path, source.State)
+	}
 	if len(verification.Commands) == 0 {
 		report.WriteString("No authored Verification commands.\n")
 		return report.String()
@@ -511,7 +532,7 @@ func renderSpecCheckText(outcome specCheckOutcome, verification specCheckVerific
 			report.WriteString(" (exited zero before work)")
 		case specCheckVerificationVerdictHonest:
 			report.WriteString(" (exited non-zero before work)")
-		case specCheckVerificationVerdictUnknown:
+		case specCheckVerificationVerdictUnknown, specCheckVerificationVerdictMalformed:
 			if command.Cause != "" {
 				fmt.Fprintf(&report, " (%s)", command.Cause)
 			}
@@ -536,6 +557,9 @@ func renderSpecCheckJSON(outcome specCheckOutcome, verification specCheckVerific
 	}
 	if verification.Commands == nil {
 		verification.Commands = []specCheckVerificationCommandReport{}
+	}
+	if verification.Uncommitted == nil {
+		verification.Uncommitted = []specCheckVerificationSource{}
 	}
 	data, err := json.Marshal(specCheckDocument{
 		Schema:       speccheck.SchemaVersion,
@@ -719,4 +743,31 @@ func printSpecAuditFailure(err error, stderr io.Writer, includeUsage bool) {
 	if includeUsage {
 		fmt.Fprintf(stderr, "Run '%s spec audit --help' for usage.\n", app.Name)
 	}
+}
+
+func uncommittedVerificationSources(ctx context.Context, repoRoot string, sources []string) ([]specCheckVerificationSource, error) {
+	args := []string{"status", "--porcelain", "--untracked-files=all", "--no-renames", "-z", "--"}
+	for _, source := range sources {
+		relative, err := filepath.Rel(repoRoot, source)
+		if err != nil {
+			return nil, fmt.Errorf("resolve Verification source: %w", err)
+		}
+		args = append(args, filepath.ToSlash(relative))
+	}
+	output, err := commandDependenciesForContext(ctx).reviewSpecGitRunner.RunGit(ctx, repoRoot, args...)
+	if err != nil {
+		return nil, fmt.Errorf("inspect uncommitted Verification sources: %w", err)
+	}
+	uncommitted := []specCheckVerificationSource{}
+	for _, entry := range strings.Split(output, "\x00") {
+		if len(entry) < 4 {
+			continue
+		}
+		state := "modified"
+		if entry[:2] == "??" {
+			state = "untracked"
+		}
+		uncommitted = append(uncommitted, specCheckVerificationSource{Path: entry[3:], State: state})
+	}
+	return uncommitted, nil
 }

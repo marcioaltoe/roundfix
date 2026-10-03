@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0219-a-delivery-that-survives-archive-requeue-and-review
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -116,3 +116,77 @@ truncated span, and names each uncommitted source the probe ran.
 - `_prd.md` → Goals; User Story 6; Core Features 7-9; Success Metric 6; Acceptance evidence
 - `_techspec.md` → The parse check and the probe report; Data Models; Interfaces; API Contract 1; API Contract 6; Surface Transcript 3; Testing Approach 4; Build Order 4
 - ADR-0226; ADR-0148; ADR-0182
+
+
+## Result
+
+Implemented the Task 04 slice for the 2026-09-30 Backlog Entry and its
+2026-10-01 malformed-command addendum, following ADR-0226's decision to name
+uncommitted sources without refusing them. Task status and declared
+Verification remain Daemon-owned.
+
+Acceptance evidence from focused implementation checks:
+
+1. The shared prober runs `sh -n -c` before the verifier. A parser rejection
+   produces an unknown verdict with `VerificationUnknownError` wrapping
+   `ErrVerificationMalformed` and the parser message. The new
+   `TestProbeReportsACommandTheShellCannotParse` exercises the truncated
+   `grep` command and a parsable failing command; `TestProbeRunsNoMalformedCommand`
+   proves a marker stays absent even when the malformed script places the
+   marker command on an earlier line. Parser-startup fallback and cancellation
+   also have focused tests.
+2. `TestPreWorkProbeRefusesAMalformedCommand` exercises `TaskCycle` and
+   observes the refusal reason, zero Agent calls, zero verifier calls, and
+   zero commits. The existing Daemon refusal consumes the shared unknown
+   verdict; no second parser or Task-engine policy was added.
+3. `TestSpecCheckReportsAMalformedCommand` proves text and JSON report
+   `malformed`, include the shell parser message, exit 1, and leave the marker
+   absent. `TestSpecCheckNamesAnUncommittedVerificationSource` proves the
+   modified graph and untracked Task are listed immediately after the HEAD
+   line, JSON carries matching path/state objects, unrelated files are
+   excluded, and the command still executes. `TestSpecCheckNamesNoSourceWhenCommitted`
+   proves no source line and an empty JSON array for committed artifacts.
+4. The authored-content detector reports one `SC-VERIFY-TRUNCATED` error per
+   affected bullet with its actual path and line. The new truncated-span tests
+   cover both malformed shapes, duplicate bullets, pending/in_progress/failed
+   Tasks, completed-Task exclusion, clean spans, balanced trailing spans, and
+   prose-only bullets. The Task-stage detector calls it after the completed
+   Task exclusion. `constraints.go` and `coherence.go` are unchanged.
+5. The command guide and canonical Skill reference describe the finding,
+   malformed verdict, parser fallback, source line, and JSON fields. Both
+   Skill front-matter versions rose from the starting 0.1.21 to 0.1.22.
+   `make skills-sync` regenerated the mirrors; a byte comparison confirmed
+   both mirror pairs match, and the version recorder added 0.1.22.
+
+Checks performed:
+
+- Initial focused regression compile failed on the absent
+  `ErrVerificationMalformed`, establishing the missing implementation signal.
+- `env GOCACHE="$PWD/.gocache" go test ./internal/daemon ./internal/speccheck ./internal/cli -run 'TestProbe|TestPreWorkProbe|TestVerificationSpan|TestVerificationLine|TestCleanVerification|TestSpecCheck|TestVerificationProbe' -count=1`
+  exited 0 in all three packages after the final code edits. The first test
+  run exposed a parser-message capitalization assumption and a fixture
+  line-number offset; both test mistakes were corrected before this pass.
+- `env GOCACHE="$PWD/.gocache" go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  exited 0. The initial invocation using the host cache was denied by the
+  sandbox; the workspace cache resolved that access issue.
+- `make baseline-digests` exited 0 and reported no derived changes.
+- `rtk make verify-incremental` initially exited 2 because existing tests
+  could not read the process table or bind a local HTTP test-server port in
+  the sandbox. The permission-enabled rerun exited 0, including formatting,
+  vet, the full existing Go suite, Skill checks, and build. Logs were captured
+  at `/tmp/task04-incremental.log` and
+  `/tmp/task04-incremental-unsandboxed.log`.
+- Direct byte/content inspection confirmed the two Skill mirrors and all
+  three documented surface terms. `git diff --check` reported no errors.
+
+The starting worktree's only changed path was this Task's Daemon-written
+status. Newly changed paths belong to this slice or its sanctioned Skill
+regeneration. Existing tests, other Task files, and `_tasks.md` were not
+edited. No commits, pushes, or pull requests were made. The commands in
+`## Verification` were not run; the Daemon retains that gate and settlement.
+No follow-up outside this slice was implemented.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261003T213431Z_8d253be688342055`
+- Source commit: `28eefd0482804df8ab59af3487162a023e13b718`

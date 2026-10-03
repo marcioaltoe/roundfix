@@ -11,6 +11,8 @@ import (
 )
 
 const (
+	// CodeVerifyTruncated identifies a prematurely closed Verification code span.
+	CodeVerifyTruncated = "SC-VERIFY-TRUNCATED"
 	// CodeVerifyWorkIndependent identifies a Verification that cannot distinguish Task work from no work.
 	CodeVerifyWorkIndependent = "SC-VERIFY-WORK-INDEPENDENT"
 	// CodeVerifyInvertedExit identifies a Verification whose shell status reverses or ignores its asserted condition.
@@ -895,4 +897,44 @@ func VacuousVerificationCommands(task spec.Task) []string {
 		}
 	}
 	return vacuous
+}
+
+// TruncatedVerification examines the authored bullets rather than the extracted
+// commands, because text following a prematurely closed span was discarded.
+func TruncatedVerification(path string, content []byte) []Finding {
+	var findings []Finding
+	inSection := false
+	for index, line := range strings.Split(string(content), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "# ") {
+			inSection = false
+			continue
+		}
+		if strings.HasPrefix(trimmed, "## ") {
+			inSection = strings.TrimSpace(strings.TrimPrefix(trimmed, "## ")) == "Verification"
+			continue
+		}
+		if !inSection || !strings.HasPrefix(trimmed, "- ") {
+			continue
+		}
+		start := strings.IndexByte(trimmed, '`')
+		if start < 0 {
+			continue
+		}
+		end := strings.IndexByte(trimmed[start+1:], '`')
+		if end < 0 {
+			continue
+		}
+		end += start + 1
+		if !strings.HasSuffix(trimmed[start+1:end], "\\") && strings.Count(trimmed[end+1:], "`")%2 == 0 {
+			continue
+		}
+		findings = append(findings, Finding{
+			Code: CodeVerifyTruncated, Severity: SeverityError,
+			Summary: path + " declares a truncated Verification code span",
+			Where:   []Location{{Path: path, Line: index + 1}},
+			Fix:     "Repair the Verification code span; avoid backticks inside the command's inline-code span.",
+		})
+	}
+	return findings
 }

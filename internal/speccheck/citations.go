@@ -72,6 +72,7 @@ var (
 		CodeVerifyWorkIndependent,
 		CodeVerifyInvertedExit,
 		CodeVerifyWrapFragile,
+		CodeVerifyTruncated,
 		CodeVerifyNonHermetic,
 		CodeRequirementContradictory,
 		CodeRehearsalUndeclared,
@@ -997,6 +998,7 @@ func detectCitationCoverageAndReferences(
 		addSkip(result, CodeReferenceUnresolved, manifestDisplayPath)
 		addSkip(result, CodeVerifyInvertedExit, manifestDisplayPath)
 		addSkip(result, CodeVerifyWrapFragile, manifestDisplayPath)
+		addSkip(result, CodeVerifyTruncated, manifestDisplayPath)
 		addSkip(result, CodeVerifyNonHermetic, manifestDisplayPath)
 		addSkip(result, CodeOrdinalClaimed, manifestDisplayPath)
 		addSkip(result, CodeWaveCollision, manifestDisplayPath)
@@ -1580,6 +1582,7 @@ func detectTaskCoverageAndContextReferences(
 		if task.Status == spec.StatusCompleted {
 			continue
 		}
+		result.Findings = append(result.Findings, TruncatedVerification(artifactDisplayPath(repoRoot, taskPath), content)...)
 		if finding, ok := AuthoredQAVerification(task); ok {
 			finding.Where[0] = Location{
 				Path: artifactDisplayPath(repoRoot, taskPath),
