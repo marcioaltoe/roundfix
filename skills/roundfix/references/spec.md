@@ -110,3 +110,18 @@ action, not an action the audit performs.
 Exit `0` means no residue or undelivered work was found. Exit `1` means residue
 or undelivered work was found, or the audit could not run. Exit `2` means a
 usage error or an unknown Spec slug.
+
+
+The full Spec Consistency Check reports `SC-SPEC-PATH-PINNED` as an error for
+each line in a non-Markdown file that names the checked Spec's active
+directory. It searches tracked and untracked non-ignored files outside the
+Spec Root, its archive root and `docs/history`, regardless of Task status.
+Read a fixture or an exported constant instead of the Spec's file; a Spec
+archives and may be deleted. The Daemon's Settlement Check refuses a pin
+introduced by the Task. Staged PRD and TechSpec checks do not run this detector.
+
+A Task Context entry whose path under the Spec Root is missing resolves to
+the same relative path under the archive root when that file exists. The
+built-in `docs/specs` root resolves through `docs/history/specs`; other roots
+resolve through `<spec-root>/_archived`. Existing active paths keep resolving,
+and a path missing in both places still reports `SC-REF-UNRESOLVED`.

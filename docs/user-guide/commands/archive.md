@@ -14,6 +14,14 @@ archive stamps the declarations' `satisfied-by` actions under `unproven` in
 `<specs.root>/<slug>/` to `docs/history/specs/<slug>/` for the built-in Spec
 Root, or to `<specs.root>/_archived/<slug>/` for any other configured root.
 
+
+A Spec cannot archive while another file names its active directory. The
+command exits `2`, lists each file and line, and leaves every file in place.
+This includes tracked and untracked non-ignored files other than Markdown,
+outside the Spec Root, its archive root and `docs/history`. Replace a code or
+test dependency on the Spec's files with a fixture or an exported constant,
+then retry the archive. This refusal also applies with `--qa-override`.
+
 A `pending` verdict is never accepted. A `pass` or otherwise-eligible `partial`
 that records no QA row is refused before archive changes the Spec.
 A report whose front matter is empty or duplicated is unreadable and refused;

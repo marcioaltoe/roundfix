@@ -11,6 +11,7 @@ import (
 	"roundfix/internal/app"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/spec"
+	"roundfix/internal/speccheck"
 )
 
 var archiveUsage = `Usage:
@@ -74,6 +75,24 @@ func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 	resolvedSpecsRoot, err := roundconfig.ResolveSpecsRoot(loaded, loaded.GitRoot)
 	if err != nil {
 		printPreflightFailure("archive", err, stderr)
+		return exitPreflight
+	}
+	pins, err := speccheck.ActiveSpecPathPins(loaded.GitRoot, resolvedSpecsRoot.Path, req.slug)
+	if err != nil {
+		printPreflightFailure("archive", err, stderr)
+		return exitPreflight
+	}
+	if len(pins) > 0 {
+		locations := make([]string, 0, len(pins))
+		for _, pin := range pins {
+			locations = append(locations, fmt.Sprintf("%s:%d", pin.Path, pin.Line))
+		}
+		rel, err := filepathRelSlash(loaded.GitRoot, filepath.Join(resolvedSpecsRoot.Path, req.slug))
+		if err != nil {
+			printPreflightFailure("archive", err, stderr)
+			return exitPreflight
+		}
+		printPreflightFailure("archive", fmt.Errorf("Spec %q cannot archive while another file names its active directory %s/: %s", req.slug, rel, strings.Join(locations, ", ")), stderr)
 		return exitPreflight
 	}
 	var qaOverride *spec.QAArchiveOverride

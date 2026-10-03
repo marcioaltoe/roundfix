@@ -185,6 +185,10 @@
       {
         "version": "0.1.18",
         "digest": "952720edc2bac31927502c39eb5fcdaf07b52c57193a1ad5dc220ce59a83eb7d"
+      },
+      {
+        "version": "0.1.19",
+        "digest": "89ef4878000a90d9c022a3ff88e7652808ca88653acbe80cf50c6bb18c3e9ccf"
       }
     ],
     "setup-context-driven": [
