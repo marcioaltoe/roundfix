@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0219-a-delivery-that-survives-archive-requeue-and-review
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -85,3 +85,73 @@ validator may dismiss a finding that only restates it.
 - `_prd.md` → Goals; User Story 5; Core Features 6, 9; Success Metric 5; Acceptance evidence
 - `_techspec.md` → Convention C5; API Contract 5; Testing Approach 3; Build Order 3
 - ADR-0223; ADR-0196; ADR-0197; ADR-0154
+
+
+## Result
+
+Implemented the C5 slice for the 2026-10-02 Backlog Entry, "The review flags
+an authorized QA override archive". Task status and declared Verification
+remain Daemon-owned; no declared Verification command was run.
+
+### Implementation and acceptance evidence
+
+1. Archived override eligibility: `conventionRegions` adds C5 for any file
+   under an archived Spec only when its `_prd.md` at the immutable review
+   head records `qa_override: true` with non-blank approval and reason.
+   `TestOverrideArchiveIsEligibleForConventionC5` covers the built-in history
+   archive and a custom `_archived` root, PRD, failed Task and partial QA
+   Report anchors, preservation of C1/C2/C3, and checkout edits that remove
+   authority without changing the reviewed head.
+2. Ineligible records: `TestArchiveWithoutOverrideIsNotEligibleForC5` covers
+   missing PRDs, absent or false override markers, missing or whitespace-only
+   approval/reason, body-only metadata, unclosed front matter, active Specs,
+   and uncommitted grants. `TestConventionC5MalformedRecordFailsClosed`
+   covers malformed YAML and duplicate override keys.
+3. Prompt and record contract: `deliveryConventionsVersion` is now
+   `roundfix/delivery-conventions/v2`, and C5 carries the TechSpec's exact
+   text. `TestReviewPromptCarriesConventionC5` checks the prompt's C5 text
+   and the shared version in both prompt and record validation.
+   `TestConventionC5ValidatorHonorsEligibility` checks an eligible sealed
+   dismissal and fail-closed rejection of an ineligible C5 rule or blank
+   reason. Every new test uses a disposable Git repository; no provider is
+   called. Existing validation tests and validator implementation are unedited.
+4. Documentation and Skill: the review guide and canonical review reference
+   describe v2, C5 and its eligibility, and extend the convention range
+   through C5. Both Roundfix Skill version fields rose from the starting
+   tree's `0.1.20` to `0.1.21`; `make skills-sync` regenerated the mirrors,
+   and the version recorder added its digest. A Python assertion check
+   confirmed guide/reference v2 and C5 text, both canonical/mirror byte
+   comparisons and the recorded version. Baseline digest regeneration
+   reported no derived changes.
+
+### Focused checks
+
+- Before implementation, `rtk proxy go test ./internal/cli -run
+  'Test(OverrideArchive|ArchiveWithoutOverride|ReviewPromptCarriesConvention)'
+  -count=1` exited 1 on missing C5 eligibility and prompt text, after
+  correcting an initially mistyped outcome constant in the new test.
+- After implementation, `rtk proxy go test ./internal/cli -run
+  'Test(OverrideArchive|ArchiveWithoutOverride|ReviewPrompt|ReviewConvention|ReviewValidation|ReviewValidator|Convention)'
+  -count=1` exited 0 (`internal/cli`, 10.720s), including the existing
+  convention and fail-closed validator tests.
+- `rtk make skills-sync` exited 0.
+- `rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions` exited 0 and recorded `0.1.21`.
+- `rtk make baseline-digests` exited 0 with `changed: false`.
+- `rtk make verify-incremental` initially exited 2 because the sandbox
+  denied process-table access in two existing force-stop tests and a local
+  listener in `TestJevRouterGateChecksTheReportedKeyLimit`. The same command
+  rerun with those permissions available exited 0: formatting, vet, the
+  repository test suite, skill checks and build passed. The CLI suite took
+  173.268s and the Daemon suite took 45.245s on that rerun.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+The starting worktree already had the Daemon's `status: in_progress` change
+in this Task file. All implementation changes stay within Task 03's declared
+paths; no other Task or Task Graph was edited, and no workspace commit, push
+or Pull Request was made. No follow-up implementation was added.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261003T213431Z_8d253be688342055`
+- Source commit: `0cb99efcb2e58c85e53067649fd3510493690468`

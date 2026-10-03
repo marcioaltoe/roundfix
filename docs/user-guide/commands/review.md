@@ -79,7 +79,7 @@ in a clause beginning with `Failure:`. An older record without `findingItems` de
 Roundfix reads it.
 
 The prompt carries Delivery Conventions version
-`roundfix/delivery-conventions/v1`. These describe what a delivery writes by
+`roundfix/delivery-conventions/v2`. These describe what a delivery writes by
 design:
 
 - C1. A Spec's QA Report records the head it audited and is committed after
@@ -93,6 +93,10 @@ design:
 - C4. A planning candidate authors a Spec whose Tasks are all pending and
   which has no QA Report; that Spec's own delivery implements it and is
   reviewed then.
+- C5. A Spec archived through the QA Archive Override records
+  `qa_override: true`, `qa_override_approval` and `qa_override_reason` in its
+  archived `_prd.md` front matter; its QA Task keeps its observed status and
+  its QA Report its observed verdict.
 
 Roundfix checks each anchor against the same candidate diff supplied in the
 prompt. Context and added lines count, as does the new-side start line of a
@@ -103,11 +107,14 @@ a held line. A missing or out-of-diff anchor records
 diagnostic on stderr.
 
 Validation has three dismissal rules. `unanchored` is the mechanical anchor
-check above. `convention:C1` through `convention:C4` requires the whole anchor
+check above. `convention:C1` through `convention:C5` requires the whole anchor
 to lie in that convention's mechanically computed region and a sealed
 validator judgment that the finding merely restates it. `no-failure` requires
 that the finding has no `Failure:` clause and the validator judges that it
 states no failure. A finding with a failure clause cannot receive that rule.
+C5 applies to files under an archived Spec only when its `_prd.md` at the
+review head records `qa_override: true` and non-blank approval and reason.
+Missing or incomplete records and active Specs are ineligible for C5.
 Other anchored findings stand. Each item's validation records `stands` or
 `dismissed-by-validation`, with the dismissal's rule and reason.
 

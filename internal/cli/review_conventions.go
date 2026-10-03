@@ -6,10 +6,12 @@ import (
 	"path"
 	"strings"
 
+	"gopkg.in/yaml.v3"
+
 	"roundfix/internal/preflight"
 )
 
-const deliveryConventionsVersion = "roundfix/delivery-conventions/v1"
+const deliveryConventionsVersion = "roundfix/delivery-conventions/v2"
 
 type deliveryConvention struct {
 	ID     string
@@ -22,6 +24,7 @@ func deliveryConventions() []deliveryConvention {
 		{"C2", "The Daemon writes a Task file's status and its `## Result`, `## Recorded paths` and `## Carry-forward provenance` sections after the Task's Verification passes; a Result that calls status Daemon-owned agrees with a `completed` status."},
 		{"C3", "The archive commit moves a completed Spec's directory to the archive root and stamps its archive front matter."},
 		{"C4", "A planning candidate authors a Spec whose Tasks are all pending and which has no QA Report; that Spec's own delivery implements it and is reviewed then."},
+		{"C5", "A Spec archived through the QA Archive Override records `qa_override: true`, `qa_override_approval` and `qa_override_reason` in its archived `_prd.md` front matter; its QA Task keeps its observed status and its QA Report its observed verdict."},
 	}
 }
 
@@ -49,6 +52,15 @@ func conventionRegions(ctx context.Context, repo reviewRepository, anchor review
 		parts := strings.Split(rel, "/")
 		if len(parts) < 2 {
 			continue
+		}
+		if index > 0 {
+			override, err := reviewSpecQAOverride(ctx, repo, root+"/"+parts[0])
+			if err != nil {
+				return nil, err
+			}
+			if override {
+				rules = append(rules, "C5")
+			}
 		}
 		if len(parts) > 2 && parts[1] == "qa" {
 			rules = append(rules, "C1")
@@ -80,6 +92,35 @@ func conventionRegions(ctx context.Context, repo reviewRepository, anchor review
 		}
 	}
 	return rules, nil
+}
+
+func reviewSpecQAOverride(ctx context.Context, repo reviewRepository, specPath string) (bool, error) {
+	prdPath := specPath + "/_prd.md"
+	files, err := repo.Git.RunGit(ctx, repo.Root, "ls-tree", "--name-only", repo.Head, "--", prdPath)
+	if err != nil {
+		return false, fmt.Errorf("inspect override PRD %s: %w", prdPath, err)
+	}
+	if strings.TrimSpace(files) == "" {
+		return false, nil
+	}
+	body, err := repo.Git.RunGit(ctx, repo.Root, "show", repo.Head+":"+prdPath)
+	if err != nil {
+		return false, fmt.Errorf("read override PRD %s: %w", prdPath, err)
+	}
+	lines := reviewFileLines(body)
+	end := reviewFrontMatterEnd(lines)
+	if end == 0 {
+		return false, nil
+	}
+	var record struct {
+		Override bool   `yaml:"qa_override"`
+		Approval string `yaml:"qa_override_approval"`
+		Reason   string `yaml:"qa_override_reason"`
+	}
+	if err := yaml.Unmarshal([]byte(strings.Join(lines[1:end-1], "\n")), &record); err != nil {
+		return false, fmt.Errorf("parse override PRD %s: %w", prdPath, err)
+	}
+	return record.Override && strings.TrimSpace(record.Approval) != "" && strings.TrimSpace(record.Reason) != "", nil
 }
 
 func reviewFileLines(body string) []string {
