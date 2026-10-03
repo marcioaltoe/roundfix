@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0219-a-delivery-that-survives-archive-requeue-and-review
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -110,3 +110,76 @@ branch.
 - `_prd.md` → Goals; User Stories 3-4; Core Features 4-5, 9; Success Metrics 3-4; Acceptance evidence
 - `_techspec.md` → The archived retry; The continued item branch; Interfaces; API Contract 3; API Contract 4; Surface Transcript 2; Testing Approach 2; Build Order 2
 - ADR-0223; ADR-0165; ADR-0170; ADR-0154
+
+## Result
+
+Implemented this Task's slice; Task status and declared Verification remain
+Daemon-owned.
+
+### Acceptance evidence
+
+1. Archived retry now accepts a moved head proven to descend from the newest
+   candidate for every applicable blocker and appends it before returning to
+   `reviewing`. The QA environment blocker still requires its override for a
+   moved head and alone can fall back to Run start. The corrective-Spec branch
+   is unchanged. `TestRetryOfAnArchivedItemWithACorrectionReturnsToReview`
+   checks the newest of two candidates and persisted stage/candidate history;
+   the two new refusal tests check unchanged persisted items, including absent
+   and unreadable history. Existing operator archive, retry, corrective-Spec
+   and conflict tests were left unedited.
+2. `existingItemBranches` reads local refs, restricts names to the Spec's
+   16-character lowercase hex item suffix, counts commits absent from the
+   configured default remote-tracking ref and sorts results. Start checks it
+   after prerequisites and before authorization/readiness. The two-branch
+   command test asserts exit 2, the exact sorted transcript reason, empty
+   stdout and no Run Database; an unavailable remote proves no fetch, and
+   readiness/owner callbacks fail if reached.
+3. Start prints the continuation after queue recording. Creation rechecks
+   after fetch and records the single existing branch, using the existing
+   worktree provisioning path. The continuation test covers two commits,
+   both a missing worktree and an existing worktree with a preserved local
+   note; invalid-suffix and other-Spec branches do not create ambiguity. The
+   no-work test checks a new branch at origin/main with no continuation.
+   Recorded workspace recovery retains its no-fetch path.
+4. Both the command guide and canonical deliver reference describe branch
+   selection, refusal and post-archive correction review, including the QA
+   override and corrective-Spec restrictions. Both Roundfix Skill version
+   fields increased from the starting 0.1.19 to 0.1.20. `make skills-sync`
+   regenerated the mirrors; the version recorder generated the final 0.1.20
+   digest. A Python content/byte comparison checked the phrases, both mirrors
+   and both version fields. Sanctioned baseline digest regeneration left no
+   final derived artifact changes.
+
+### Focused checks
+
+Commands below used `GOCACHE=/private/tmp/roundfix-task02-gocache` after the
+sandbox denied access to an entry in the host Go cache.
+
+- `go test ./internal/delivery ./internal/cli -run 'TestRetryOf|TestDeliverStartContinues|TestDeliverStartRefusesTwo|TestDeliverStartIgnores' -count=1`
+  — exit 0; all six new tests passed, including their subtests.
+- `go test ./internal/delivery ./internal/cli -run 'TestRetry|TestOperatorArchive|TestTheArchiveStage|TestDeliveryEngineParks|Test.*Conflict|Test.*Item|Test.*DeliveryGets|TestDeliverStart' -count=1`
+  — exit 0; existing recovery and item-worktree behavior also passed.
+- A temporary Go overlay substituted the three original HEAD production
+  files while retaining the new tests. The correction, continuation and
+  ambiguity tests failed on that starting behavior (exit 1), providing a
+  regression signal without changing the worktree.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  — exit 0; recorded the finalized 0.1.20 content. The initial record was
+  regenerated from the committed registry after a final formatting edit.
+- `make baseline-digests` — exit 0; final artifacts already match canonical
+  sources, `changed: false`.
+- `git -c core.fsmonitor=false diff --check` — exit 0.
+- `make verify-incremental` — exit 0 with host permissions, on the stable
+  final implementation tree; formatting, vet, all package tests, skill checks
+  and build passed. The first sandbox attempt exited 2 because process-table
+  access and localhost test sockets were denied; documentation edits that
+  overlapped that attempt also triggered the repository-change guard. The
+  permission-enabled rerun kept sources stable and passed those checks.
+
+The declared Verification commands were not run. No other Task file or Task
+Graph was edited, and no commit, push or Pull Request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261003T213431Z_8d253be688342055`
+- Source commit: `a9d2d8d298412572e0ebf3b6670c3f2b88f7c669`

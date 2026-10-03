@@ -465,7 +465,7 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 		}
 		head := strings.TrimSpace(state.Head)
 		accepted := false
-		if head != candidate && operatorArchive {
+		if head != candidate && engine.history != nil && (item.Blocker != BlockerQAEnvironmentPartial || state.QAOverride) {
 			anchor := candidate
 			if len(item.CandidateCommits) == 0 {
 				anchor, err = engine.history.RunStart(ctx, gitRoot, item.RunID)

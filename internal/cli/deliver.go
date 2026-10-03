@@ -15,6 +15,7 @@ import (
 
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/delivery"
+	"roundfix/internal/preflight"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
 )
@@ -233,6 +234,29 @@ func runDeliverStart(ctx context.Context, args []string, stdout, stderr io.Write
 	if err := validateDeliveryPrerequisites(specsRoot, graphs); err != nil {
 		return printDeliverFailure("start", err, stderr)
 	}
+	git := preflight.ExecGitRunner{}
+	defaultBranch := preflight.DetectDefaultBranch(ctx, loaded.GitRoot, "", git)
+	remote := strings.TrimSpace(loaded.Config.Watch.PushRemote)
+	if remote == "" {
+		remote = "origin"
+	}
+	base := ""
+	if defaultBranch.Source != preflight.DefaultBranchUndetermined {
+		base = remote + "/" + defaultBranch.Name
+	}
+	continuedBranches := make(map[string]string)
+	for _, slug := range options.Slugs {
+		branches, err := existingItemBranches(ctx, git, loaded.GitRoot, base, slug)
+		if err != nil {
+			return printDeliverFailure("start", err, stderr)
+		}
+		if len(branches) > 1 {
+			return printDeliverFailure("start", ambiguousItemBranches(slug, base, branches), stderr)
+		}
+		if len(branches) == 1 {
+			continuedBranches[slug] = branches[0]
+		}
+	}
 	var authorizationRefusals []string
 	for _, slug := range options.Slugs {
 		if reasons := deliveryAuthorizationReasons(ctx, loaded, specsRoot, slug); len(reasons) > 0 {
@@ -293,6 +317,11 @@ func runDeliverStart(ctx context.Context, args []string, stdout, stderr io.Write
 	}
 	if err := runStore.Close(); err != nil {
 		return printDeliverFailure("start", fmt.Errorf("close Run Database after recording Delivery Queue: %w", err), stderr)
+	}
+	for _, slug := range options.Slugs {
+		if branch := continuedBranches[slug]; branch != "" {
+			fmt.Fprintf(stdout, "Continuing item branch %s for %s\n", branch, slug)
+		}
 	}
 	printDeliveryLimits(stdout, queue.Limits)
 	return commandDependenciesForContext(ctx).startDeliveryOwner(ctx, loaded, environment, stdout, stderr)
