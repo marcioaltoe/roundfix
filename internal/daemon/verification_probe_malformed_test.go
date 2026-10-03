@@ -24,6 +24,10 @@ func TestProbeReportsACommandTheShellCannotParse(t *testing.T) {
 	if !errors.As(verdicts[0].Cause, &unknown) || !strings.Contains(strings.ToLower(unknown.Err.Error()), "syntax error") {
 		t.Fatalf("cause = %v", verdicts[0].Cause)
 	}
+	// The shell's diagnostic spans several lines; the verdict keeps one.
+	if strings.Contains(unknown.Err.Error(), "\n") {
+		t.Fatalf("malformed cause spans lines: %q", unknown.Err.Error())
+	}
 	if verdicts[1].Unknown || verdicts[1].Vacuous {
 		t.Fatalf("parsable failure = %+v", verdicts[1])
 	}

@@ -64,7 +64,9 @@ func ProbeCommands(
 				Command: command,
 				Unknown: true,
 				Cause: completeVerificationUnknownCause(&VerificationUnknownError{
-					Err: fmt.Errorf("%w: %s", ErrVerificationMalformed, strings.TrimSpace(string(diagnostic))),
+					// One line, so the verdict line stays a single line however
+					// many lines the shell reports.
+					Err: fmt.Errorf("%w: %s", ErrVerificationMalformed, strings.Join(strings.Fields(strings.ReplaceAll(strings.TrimSpace(string(diagnostic)), "\n", " ; ")), " ")),
 				}, command, outputPath),
 			})
 			continue

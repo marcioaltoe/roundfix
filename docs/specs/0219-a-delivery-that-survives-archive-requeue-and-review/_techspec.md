@@ -245,6 +245,9 @@ reports each listed file as `untracked` or `modified`.
    No side effects:
      Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
 
+   Usage:
+     Run 'roundfix archive --help' for usage.
+
    exit: 2
    ```
 
@@ -263,6 +266,9 @@ reports each listed file as `untracked` or `modified`.
 
    No side effects:
      Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+   Usage:
+     Run 'roundfix deliver start --help' for usage.
 
    exit: 2
    ```
