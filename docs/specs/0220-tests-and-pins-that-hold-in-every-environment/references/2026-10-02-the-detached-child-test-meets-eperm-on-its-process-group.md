@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-02
-spec: null
+spec: 0220-tests-and-pins-that-hold-in-every-environment
 reason: null
 ---
 
