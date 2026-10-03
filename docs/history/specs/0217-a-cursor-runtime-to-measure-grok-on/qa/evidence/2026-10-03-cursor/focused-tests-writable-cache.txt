@@ -1,0 +1,70 @@
+=== RUN   TestCursorCapabilitiesReadWholeModelValues
+=== RUN   TestCursorCapabilitiesReadWholeModelValues/cursor
+=== RUN   TestCursorCapabilitiesReadWholeModelValues/cursor-custom
+--- PASS: TestCursorCapabilitiesReadWholeModelValues (0.00s)
+    --- PASS: TestCursorCapabilitiesReadWholeModelValues/cursor (0.00s)
+    --- PASS: TestCursorCapabilitiesReadWholeModelValues/cursor-custom (0.00s)
+=== RUN   TestOtherRuntimesKeepBracketParsing
+=== RUN   TestOtherRuntimesKeepBracketParsing/codex
+=== RUN   TestOtherRuntimesKeepBracketParsing/claude
+=== RUN   TestOtherRuntimesKeepBracketParsing/opencode
+=== RUN   TestOtherRuntimesKeepBracketParsing/claude-custom
+--- PASS: TestOtherRuntimesKeepBracketParsing (0.00s)
+    --- PASS: TestOtherRuntimesKeepBracketParsing/codex (0.00s)
+    --- PASS: TestOtherRuntimesKeepBracketParsing/claude (0.00s)
+    --- PASS: TestOtherRuntimesKeepBracketParsing/opencode (0.00s)
+    --- PASS: TestOtherRuntimesKeepBracketParsing/claude-custom (0.00s)
+=== RUN   TestCursorAdapterRefusedWithoutLogin
+=== PAUSE TestCursorAdapterRefusedWithoutLogin
+=== RUN   TestCursorAdapterReadyWithLogin
+=== PAUSE TestCursorAdapterReadyWithLogin
+=== RUN   TestCursorProofRefusesBeforeAnySessionWithoutLogin
+=== PAUSE TestCursorProofRefusesBeforeAnySessionWithoutLogin
+=== RUN   TestCursorRecordedSessionAdvertisesGrok
+--- PASS: TestCursorRecordedSessionAdvertisesGrok (0.00s)
+=== CONT  TestCursorAdapterRefusedWithoutLogin
+=== RUN   TestCursorAdapterRefusedWithoutLogin/exit
+=== CONT  TestCursorProofRefusesBeforeAnySessionWithoutLogin
+=== CONT  TestCursorAdapterReadyWithLogin
+=== RUN   TestCursorProofRefusesBeforeAnySessionWithoutLogin/exit
+--- PASS: TestCursorAdapterReadyWithLogin (0.01s)
+=== RUN   TestCursorAdapterRefusedWithoutLogin/message
+=== RUN   TestCursorProofRefusesBeforeAnySessionWithoutLogin/message
+=== RUN   TestCursorAdapterRefusedWithoutLogin/stderr
+=== RUN   TestCursorProofRefusesBeforeAnySessionWithoutLogin/stderr
+--- PASS: TestCursorAdapterRefusedWithoutLogin (0.01s)
+    --- PASS: TestCursorAdapterRefusedWithoutLogin/exit (0.01s)
+    --- PASS: TestCursorAdapterRefusedWithoutLogin/message (0.00s)
+    --- PASS: TestCursorAdapterRefusedWithoutLogin/stderr (0.00s)
+--- PASS: TestCursorProofRefusesBeforeAnySessionWithoutLogin (0.02s)
+    --- PASS: TestCursorProofRefusesBeforeAnySessionWithoutLogin/exit (0.01s)
+    --- PASS: TestCursorProofRefusesBeforeAnySessionWithoutLogin/message (0.01s)
+    --- PASS: TestCursorProofRefusesBeforeAnySessionWithoutLogin/stderr (0.01s)
+PASS
+suiteguard: guard cost: measured 8445 paths; fingerprint took 782.307833ms before and 284.751125ms after
+ok  	roundfix/internal/agent	1.350s
+=== RUN   TestCursorProfileLoadsWithAnEmptyEffort
+=== RUN   TestCursorProfileLoadsWithAnEmptyEffort/effort_""
+=== RUN   TestCursorProfileLoadsWithAnEmptyEffort/effort_"__"
+--- PASS: TestCursorProfileLoadsWithAnEmptyEffort (0.00s)
+    --- PASS: TestCursorProfileLoadsWithAnEmptyEffort/effort_"" (0.00s)
+    --- PASS: TestCursorProfileLoadsWithAnEmptyEffort/effort_"__" (0.00s)
+=== RUN   TestCursorProfileRefusesAReasoningEffort
+=== RUN   TestCursorProfileRefusesAReasoningEffort/preferred
+=== RUN   TestCursorProfileRefusesAReasoningEffort/fallback
+--- PASS: TestCursorProfileRefusesAReasoningEffort (0.00s)
+    --- PASS: TestCursorProfileRefusesAReasoningEffort/preferred (0.00s)
+    --- PASS: TestCursorProfileRefusesAReasoningEffort/fallback (0.00s)
+PASS
+ok  	roundfix/internal/config	0.575s
+=== RUN   TestDoctorAdapterNamesTheCursorLogin
+=== PAUSE TestDoctorAdapterNamesTheCursorLogin
+=== CONT  TestDoctorAdapterNamesTheCursorLogin
+=== RUN   TestDoctorAdapterNamesTheCursorLogin/message
+=== RUN   TestDoctorAdapterNamesTheCursorLogin/exit
+--- PASS: TestDoctorAdapterNamesTheCursorLogin (0.52s)
+    --- PASS: TestDoctorAdapterNamesTheCursorLogin/message (0.27s)
+    --- PASS: TestDoctorAdapterNamesTheCursorLogin/exit (0.02s)
+PASS
+suiteguard: guard cost: measured 8445 paths; fingerprint took 289.906042ms before and 240.265417ms after
+ok  	roundfix/internal/cli	1.452s

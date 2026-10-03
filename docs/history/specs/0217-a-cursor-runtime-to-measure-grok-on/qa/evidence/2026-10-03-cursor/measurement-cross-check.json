@@ -1,0 +1,22 @@
+{
+  "options": 43,
+  "currentValue": "default[]",
+  "grok": [
+    "grok-4.7[context=256k,reasoning_effort=high,fast=true]",
+    "grok-4.6[effort=high,fast=true]",
+    "grok-4.5[effort=high,fast=true]"
+  ],
+  "replay_rows": 4,
+  "account_keys": [],
+  "record_commit": "29833eb795d87d46df17aee1d723a17e99f0d8a5",
+  "times_seconds": [
+    264,
+    167,
+    278,
+    189
+  ],
+  "grok_default_ratios": [
+    1.5808383233532934,
+    1.470899470899471
+  ]
+}

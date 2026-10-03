@@ -516,6 +516,21 @@ Its environment evidence is preserved in the
 this profile-aware Doctor readiness work so it can append Repository Skill Set
 readiness without duplicating exact proof.
 
+### Cursor runtime
+
+`cursor` is opt-in and runs as `cursor-agent acp` through acpx. A Cursor
+selection names the advertised model value verbatim, including its brackets:
+
+```yaml
+{runtime: cursor, model: "grok-4-20[thinking=true]", reasoning_effort: ""}
+```
+
+A non-empty `reasoning_effort` is refused: Cursor states effort, thinking,
+context and speed inside the model value. The value states speed, so choosing
+`fast=false` avoids Fast billing when Cursor offers that variant. Copy the
+advertised value rather than composing one. `cursor` is not supported in the
+legacy `runtimes:` section or `defaults.agent`; name it in profiles.
+
 ## Spec Root
 
 `specs.root` is the directory holding Spec folders; default `docs/specs`.

@@ -1,0 +1,3 @@
+package main
+import("fmt";"os";"path/filepath";"strings")
+func main(){name:=filepath.Base(os.Args[0]);args:=os.Args[1:]; f,_:=os.OpenFile(os.Getenv("QA_CALL_LOG"),os.O_CREATE|os.O_APPEND|os.O_WRONLY,0600);if f!=nil{fmt.Fprintln(f,name,strings.Join(args," "));f.Close()};switch name{case "cursor-agent":if len(args)==1&&args[0]=="status"{fmt.Println(os.Getenv("QA_CURSOR_STATUS"));return};case "node":fmt.Println("v24.0.0");return;case "acpx":if len(args)==1&&args[0]=="--version"{fmt.Println("0.19.4");return};case "codex":fmt.Println("codex-cli 0.100.0");return};fmt.Fprintln(os.Stderr,"offline QA fake refuses this operation");os.Exit(1)}

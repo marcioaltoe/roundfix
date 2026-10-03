@@ -1,0 +1,6 @@
+{
+  "command": "./bin/roundfix implement --help",
+  "exit": 0,
+  "stdout": "Usage:\n  roundfix implement --spec <slug>\n  roundfix implement --spec <slug> --agent <agent> --model <model> --reasoning-effort <effort>\n\nExecutes the Spec's Task Graph on the current branch as one Run: Tasks run\nin dependency order, each Task's Verification commands gate one commit, and\nthe Run pushes only when config enables implement.auto_push and the outcome\nis Clean. Without --spec, Interactive Input lists the repository's active\nSpecs for selection. Omit all Agent Selection flags to use Task Type and QA\nprofiles. A one-Run override requires --agent, --model, and --reasoning-effort together.\n\nOptions:\n  --spec               Spec slug under docs/specs/\n  --agent              Agent runtime. Supported: codex, claude, cursor, opencode\n  --model              Agent model override\n  --reasoning-effort   Default reasoning effort override\n  --agent-command      Agent command override\n  --agent-full-access  Opt into Agent runtime full-access mode\n  --no-agent-console   Hide Agent-source console events from non-TTY stderr\n  --detach             Start a Detached Run and print attach/stop commands\n  --interactive        Open Interactive Input before starting\n  --no-input           Fail instead of opening Interactive Input\n",
+  "stderr": ""
+}

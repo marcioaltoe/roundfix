@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0217-a-cursor-runtime-to-measure-grok-on
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

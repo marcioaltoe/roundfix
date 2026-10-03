@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0217-a-cursor-runtime-to-measure-grok-on
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -109,3 +109,129 @@ effort (ADR-0217), and parses Cursor values as whole model identities.
 - [_prd.md](_prd.md) — Goals 1-2; User Stories 1-2; Core Features 1-2; Success Metrics 1, 2 and 4; Declared breaks
 - [_techspec.md](_techspec.md) — Interfaces; The runtime list; The Cursor selection rule; Whole-value model parsing; Surface Transcripts 2 and 3; API Contracts 1-2; Testing Approach 1-2; Build Order 1
 - ADR-0217; ADR-0037; ADR-0049; ADR-0105
+
+## Result
+
+Implemented this Task's runtime, selection, projection, and help slice for
+Daemon Verification. Task status remains Daemon-owned. No declared Verification
+command was run, and no commit, push, or Pull Request was created.
+
+### Implementation
+
+- `config.SupportedRuntimes()` returns a caller-owned ordered list of `codex`,
+  `claude`, `cursor`, and `opencode`. Profile validation, CLI validation,
+  Runtime and adapter refusals, and the three command help lines read it.
+  A separate named legacy list governs `runtimes:` and `defaults.agent`;
+  Cursor's legacy default refusal directs the maintainer to profiles.
+- Cursor uses ACP, display name `Cursor`, and the default adapter argv
+  `cursor-agent acp`, with no full-access mode. Existing configured adapter
+  precedence and reasoning-control refusal remain in place.
+- Cursor selections preserve the trimmed advertised model value and refuse
+  non-empty trimmed effort with the authored rule, in preferred and fallback
+  positions. Cursor and `cursor-custom` retention reads bounded values as
+  whole model-managed identities and deduplicates by the full value. The
+  existing parser branch for other runtimes is unchanged.
+- Added the published model option fixture, including all 25 model values and
+  the mode option, with model current value `default[]` as specified. Source:
+  [Cursor forum response, post 9](https://forum.cursor.com/t/157312/9).
+  Only public option fields are retained; there is no account or session data.
+  The first HTTP fetch was sandbox-blocked; the web reader supplied the public
+  response. No Cursor service or local account was contacted.
+- Documented Cursor under Agent selection profiles, including opt-in use,
+  exact value selection, empty effort, `fast=false`, and the legacy exclusion.
+  Updated the intentionally changed pinned profile-runtime refusal.
+- Moved `TestModelCatalogRetainsOfficialCodexIdentifiers` from config's internal
+  test file into the new external `config_test` file, preserving every catalog
+  assertion and its `internal/config` package ownership. This avoids a test
+  import cycle now that agent reads config's runtime list. The model catalog
+  and recommended/built-in profiles are untouched.
+
+### Characterization before production changes
+
+New tests first asserted today's Cursor profile refusal and today's published
+fixture `malformed_model_value` refusal under Cursor. With an isolated writable
+Go cache, `go test ./internal/config ./internal/agent -run Characterization
+-count=1` exited 0 before production edits. Those tests then became the authored
+Cursor regression tests; the other-runtime test retains the old parser refusal.
+
+The initial attempt using the host Go cache was refused by the sandbox. All
+subsequent Go checks used `GOCACHE=/private/tmp/roundfix-0217-task01-cache`.
+
+### Focused checks and acceptance evidence
+
+- Profile acceptance and effort refusal: the final focused command
+  `GOCACHE=/private/tmp/roundfix-0217-task01-cache rtk proxy go test
+  ./internal/config ./internal/agent -run
+  'Cursor|SupportedRuntimes|LegacyRuntimes|OtherRuntimes|SelectionCapabilities|SelectionAssignment|ModelCatalogRetains|AgentSelectionProfileRejects'
+  -count=1` exited 0 for both packages. `TestCursorProfileLoadsWithAnEmptyEffort`
+  checks empty and whitespace-only effort, model trimming, and Cursor fallback
+  loading. `TestCursorProfileRefusesAReasoningEffort` checks the exact rule
+  at preferred and fallback paths.
+- Published fixture acceptance and preserved Claude refusal: that same focused
+  check includes `TestCursorCapabilitiesReadWholeModelValues` (Cursor and
+  custom Cursor, all 25 whole identities), `TestCursorSelectionAssignsTheExactValue`
+  (exact Grok value assigns as `model_managed`; the bare prefix is refused),
+  and `TestOtherRuntimesKeepBracketParsing` (Claude, Codex, OpenCode and custom
+  Claude still return only `malformed_model_value`).
+- Built help acceptance: `GOCACHE=/private/tmp/roundfix-0217-task01-cache rtk
+  proxy go build -o /private/tmp/roundfix-0217-task01 ./cmd/roundfix` exited 0.
+  A Python subprocess smoke check ran that binary's help for `implement`,
+  `resolve`, and `watch`: each exited 0 and its `--agent` line read
+  `Agent runtime. Supported: codex, claude, cursor, opencode`. The same smoke
+  check in an isolated empty Git repository exercised the implement override
+  with an unknown runtime; it exited 2 and reported the four-runtime refusal.
+- Additional config load regressions: `GOCACHE=/private/tmp/roundfix-0217-task01-cache
+  rtk proxy go test ./internal/config -run
+  'Load|AgentSelectionProfile|Legacy|SupportedRuntimes|Cursor' -count=1` exited 0.
+- `GOCACHE=/private/tmp/roundfix-0217-task01-cache rtk proxy go vet
+  ./internal/config ./internal/agent ./internal/cli` exited 0.
+- Production source inspection found no old three-runtime diagnostic/help
+  phrase. `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+### Handoff boundary
+
+The only pre-existing changed path was this Task file's Daemon-owned transition
+from `pending` to `in_progress`; it was preserved. No other Task or Task Graph
+file was edited. Setup overrides, skill install targets, model picker catalog,
+`internal/cli/cli_test.go`, and the Recommended Profile remain untouched.
+Login checks, the Roundfix Skill update, and live measurement remain assigned
+to their subsequent Tasks. Declared Verification and terminal settlement remain
+with the Daemon; the focused evidence above is not their verdict.
+
+### Verification Feedback repair — attempt 1
+
+Inspected the Daemon diagnostic artifact at
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261002T190644Z_6dc4ccb1092ddf45/verification/batch-001-attempt-1.log`.
+The configured `make verify-changed` failed because the coverage guard keys
+existing test names by package: moving the catalog test into `internal/agent`
+removed its recorded identity from `internal/config`. The diagnostic's coverage
+additions were informational; the missing config test was its sole regression.
+
+Moved that test into `internal/config/cursor_runtime_test.go`, now an external
+`config_test` package. The catalog assertions remain unchanged. Cursor tests
+in that file now exercise exported config loading and resolution; supported
+runtime acceptance is checked through actual profile loading. This preserves
+the original coverage ownership while avoiding the config/agent test import
+cycle. No coverage record or Verification configuration was changed.
+
+Fresh focused evidence (each Go command used
+`GOCACHE=/private/tmp/roundfix-0217-task01-cache` and `rtk proxy`):
+
+- Before the repair, `go test ./internal/config -list
+  '^TestModelCatalogRetainsOfficialCodexIdentifiers$'` did not list the test.
+  After the repair, the same discovery check listed it under `internal/config`.
+- `go test ./internal/config ./internal/agent -run
+  'Cursor|SupportedRuntimes|LegacyRuntimes|OtherRuntimes|ModelCatalogRetains'
+  -count=1` exited 0 for both packages.
+- `go test ./internal/spec -run '^TestCoverageEquivalence$' -count=1` exited 0,
+  directly checking the reported coverage regression.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+Task status and declared Verification remain untouched. The configured
+Verification sequence was not rerun; its next run and terminal settlement
+remain with the Daemon.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261002T190644Z_6dc4ccb1092ddf45`
+- Source commit: `4612c792ab521f642977c05e69007c3014634d9b`

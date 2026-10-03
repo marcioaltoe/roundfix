@@ -1,0 +1,6 @@
+{
+  "command": "./bin/roundfix implement --spec 0300-example --agent gemini --model x --reasoning-effort ",
+  "exit": 2,
+  "stdout": "",
+  "stderr": "Preflight failed\n\nReason:\n  unsupported Agent \"gemini\"; supported values: codex, claude, cursor, opencode\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix implement --help' for usage.\n"
+}

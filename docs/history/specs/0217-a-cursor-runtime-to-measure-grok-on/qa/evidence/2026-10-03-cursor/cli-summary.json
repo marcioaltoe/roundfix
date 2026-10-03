@@ -1,0 +1,11 @@
+{
+  "scratch": "/private/tmp/roundfix-0217-qa-9tblgymf",
+  "help": true,
+  "unknown": 2,
+  "unknown_exact_match": true,
+  "config": true,
+  "no_login": true,
+  "login": true,
+  "home_database_exists": false,
+  "comparison_note": "Exact spacing is required for implement Transcript 3 only; resolve/watch require runtime text, not implement padding."
+}

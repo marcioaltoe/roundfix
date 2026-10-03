@@ -83,16 +83,18 @@ type SelectCapability struct {
 // keep when an option advertises more values than Roundfix retains. It is the
 // requested Agent Selection, never inferred from the payload.
 type SelectionRetention struct {
-	Model           string
-	ReasoningEffort string
+	Model            string
+	ReasoningEffort  string
+	WholeModelValues bool // Cursor encodes parameters inside the model identity.
 }
 
 // RetentionFor returns the retention one runtime's requested Agent Selection
 // implies.
 func RetentionFor(runtime RuntimeSpec) SelectionRetention {
 	return SelectionRetention{
-		Model:           strings.TrimSpace(runtime.Model),
-		ReasoningEffort: strings.TrimSpace(runtime.ReasoningEffort),
+		WholeModelValues: strings.TrimSuffix(strings.TrimSpace(runtime.ID), "-custom") == "cursor",
+		Model:            strings.TrimSpace(runtime.Model),
+		ReasoningEffort:  strings.TrimSpace(runtime.ReasoningEffort),
 	}
 }
 
@@ -270,7 +272,7 @@ func ParseSessionConfigOptions(payload []byte, adapter AdapterEvidence, retentio
 	models := make([]ModelCapability, 0, len(modelOption.Values))
 	seenModels := make(map[string]struct{}, len(modelOption.Values))
 	for _, value := range modelOption.Values {
-		model, ok := parseModelCapability(value, opaqueModels)
+		model, ok := parseModelCapability(value, opaqueModels, retention.WholeModelValues)
 		if !ok {
 			issues.add(CapabilityIssueMalformedModelValue)
 			continue
@@ -282,7 +284,7 @@ func ParseSessionConfigOptions(payload []byte, adapter AdapterEvidence, retentio
 		// keeps the dedup honest without inventing an ambiguity. The variant
 		// encoding keeps its fail-closed canonical/effort ambiguity check.
 		key := model.AdapterValue
-		if !opaqueModels {
+		if !opaqueModels && !retention.WholeModelValues {
 			key = model.CanonicalModel + "\x00" + model.ReasoningEffort
 		}
 		if _, exists := seenModels[key]; exists {
@@ -587,10 +589,13 @@ func bindsRequestedModel(value string, requested string) bool {
 	return strings.TrimSpace(value[:open]) == requested
 }
 
-func parseModelCapability(adapterValue string, opaque bool) (ModelCapability, bool) {
+func parseModelCapability(adapterValue string, opaque bool, whole bool) (ModelCapability, bool) {
 	adapterValue = strings.TrimSpace(adapterValue)
 	if !boundedCapabilityValue(adapterValue) {
 		return ModelCapability{}, false
+	}
+	if whole {
+		return ModelCapability{AdapterValue: adapterValue, CanonicalModel: adapterValue, ModelManaged: true}, true
 	}
 	if !strings.Contains(adapterValue, "[") && !strings.Contains(adapterValue, "]") {
 		return ModelCapability{AdapterValue: adapterValue, CanonicalModel: adapterValue, ModelManaged: true}, true

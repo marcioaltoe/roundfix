@@ -3876,6 +3876,8 @@ func displayAgent(agentName string) string {
 		return "Codex"
 	case "claude":
 		return "Claude"
+	case "cursor":
+		return "Cursor"
 	case "opencode":
 		return "OpenCode"
 	case "":
@@ -4171,12 +4173,12 @@ func validateRoundValue(value string, allowAuto bool) error {
 }
 
 func validateAgent(agent string) error {
-	switch agent {
-	case "codex", "claude", "opencode":
-		return nil
-	default:
-		return validationError{message: fmt.Sprintf("unsupported Agent %q; supported values: codex, claude, opencode", agent)}
+	for _, runtime := range roundconfig.SupportedRuntimes() {
+		if agent == runtime {
+			return nil
+		}
 	}
+	return validationError{message: fmt.Sprintf("unsupported Agent %q; supported values: %s", agent, strings.Join(roundconfig.SupportedRuntimes(), ", "))}
 }
 
 type reviewSpecRequest struct {
@@ -5382,7 +5384,7 @@ Behavior:
 Options:
   --pr           Open Pull Request number
   --spec         Spec slug under docs/specs/
-  --agent        Agent runtime. Supported: codex, claude, opencode
+  --agent        Agent runtime. Supported: ` + strings.Join(roundconfig.SupportedRuntimes(), ", ") + `
   --model        Agent model override
   --reasoning-effort Default reasoning effort override
   --agent-command Agent command override
@@ -5426,7 +5428,7 @@ Options:
   --source       Review Source. Supported: coderabbit
   --pr           Open Pull Request number
   --spec         Spec slug under docs/specs/
-  --agent        Agent runtime. Supported: codex, claude, opencode
+  --agent        Agent runtime. Supported: ` + strings.Join(roundconfig.SupportedRuntimes(), ", ") + `
   --model        Agent model override
   --reasoning-effort Default reasoning effort override
   --agent-command Agent command override
