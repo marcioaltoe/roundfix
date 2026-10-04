@@ -1,9 +1,18 @@
 ---
 spec: 0220-tests-and-pins-that-hold-in-every-environment
-status: active
+status: archived
 created: 2026-10-03
 surfaces: [backend]
+archived: "2026-10-03"
+source_slug: 0220-tests-and-pins-that-hold-in-every-environment
+qa_override: true
+qa_override_approval: 'maintainer standing authorization 2026-09-30 (unattended program): qa_override only for environment-only partials'
+qa_override_reason: QA partial with zero findings; the only blocked row is the Pull Request row (9)
+qa_override_qa_outcome: partial
+qa_override_qa_task_status: failed
+qa_override_revision: 269a16f911d55b836314632d8806405ce4a944c4
 ---
+
 
 # Tests and pins that hold in every environment
 
