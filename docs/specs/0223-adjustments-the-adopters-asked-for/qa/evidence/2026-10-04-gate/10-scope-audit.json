@@ -1,0 +1,138 @@
+{
+  "commit_range": "3490588afbdffe4419574befd0d7d9569882ff69..2fb1ff071009480456e9a8f1f43a014f7facabff",
+  "classification": "shipped GovernedPath regex and exact-path table",
+  "authorization_paths": [
+    ".agents/skills/qa-gate/SKILL.md",
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/release.md",
+    "docs/agents/setup-context.json",
+    "internal/baseline/assets/decisions.json",
+    "internal/baseline/assets/modules/core.json",
+    "internal/baseline/assets/templates/guides/agent-instructions.md",
+    "internal/cli/baseline_plan_test.go",
+    "skills/qa-gate/SKILL.md",
+    "skills/roundfix/SKILL.md"
+  ],
+  "tasks": [
+    {
+      "task": "task_01",
+      "commit": "5bb14019b8e44f9e44f3735ef2c273310506f2f4",
+      "actual_paths": [
+        ".agents/skills/qa-gate/SKILL.md",
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/release.md",
+        "docs/specs/0223-adjustments-the-adopters-asked-for/task_01.md",
+        "docs/user-guide/context-driven-development.md",
+        "docs/user-guide/release-runbook.md",
+        "skills/qa-gate/SKILL.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/release.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "declared_paths": [
+        ".agents/skills/qa-gate/SKILL.md",
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/release.md",
+        "docs/specs/0223-adjustments-the-adopters-asked-for/task_01.md",
+        "docs/user-guide/context-driven-development.md",
+        "docs/user-guide/release-runbook.md",
+        "skills/qa-gate/SKILL.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/release.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "governed_changed_paths": [
+        ".agents/skills/qa-gate/SKILL.md",
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/release.md",
+        "skills/qa-gate/SKILL.md",
+        "skills/roundfix/SKILL.md"
+      ],
+      "all_declared": true,
+      "all_governed_bounded": true,
+      "grant_revision": "3490588afbdffe4419574befd0d7d9569882ff69",
+      "grant_precedes_commit": true,
+      "protected_no-change_paths": "unchanged",
+      "Recorded paths": "none needed"
+    },
+    {
+      "task": "task_02",
+      "commit": "6fe28898ca1d228261e1475a701f9fdaa0c3c8ab",
+      "actual_paths": [
+        "docs/agents/setup-context.json",
+        "docs/specs/0223-adjustments-the-adopters-asked-for/task_02.md",
+        "internal/baseline/assets/decisions.json",
+        "internal/baseline/assets/modules/core.json",
+        "internal/baseline/assets/templates/guides/agent-instructions.md",
+        "internal/baseline/branch_prefix_optional_test.go",
+        "internal/baseline/project_decision_render.go",
+        "internal/baseline/testdata/catalog.digest",
+        "internal/baseline/testdata/catalog.normalized.json",
+        "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+        "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+        "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+        "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json",
+        "internal/cli/baseline_branch_prefix_test.go",
+        "internal/cli/baseline_plan_test.go"
+      ],
+      "declared_paths": [
+        "docs/agents/setup-context.json",
+        "docs/specs/0223-adjustments-the-adopters-asked-for/task_02.md",
+        "internal/baseline/assets/decisions.json",
+        "internal/baseline/assets/modules/core.json",
+        "internal/baseline/assets/templates/guides/agent-instructions.md",
+        "internal/baseline/branch_prefix_optional_test.go",
+        "internal/baseline/project_decision_render.go",
+        "internal/baseline/testdata/catalog.digest",
+        "internal/baseline/testdata/catalog.normalized.json",
+        "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+        "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+        "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+        "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json",
+        "internal/cli/baseline_branch_prefix_test.go",
+        "internal/cli/baseline_plan_test.go"
+      ],
+      "governed_changed_paths": [
+        "docs/agents/setup-context.json",
+        "internal/baseline/assets/decisions.json",
+        "internal/baseline/assets/modules/core.json",
+        "internal/baseline/assets/templates/guides/agent-instructions.md",
+        "internal/cli/baseline_plan_test.go"
+      ],
+      "all_declared": true,
+      "all_governed_bounded": true,
+      "grant_revision": "3490588afbdffe4419574befd0d7d9569882ff69",
+      "grant_precedes_commit": true,
+      "protected_no-change_paths": "unchanged",
+      "Recorded paths": "none needed"
+    },
+    {
+      "task": "task_03",
+      "commit": "2fb1ff071009480456e9a8f1f43a014f7facabff",
+      "actual_paths": [
+        "docs/specs/0223-adjustments-the-adopters-asked-for/task_03.md",
+        "internal/cli/cli.go",
+        "internal/cli/doctor.go",
+        "internal/cli/releaseplan_checks.go",
+        "internal/cli/releaseplan_checks_test.go",
+        "internal/cli/releaseplan_command.go"
+      ],
+      "declared_paths": [
+        "docs/specs/0223-adjustments-the-adopters-asked-for/task_03.md",
+        "internal/cli/cli.go",
+        "internal/cli/doctor.go",
+        "internal/cli/releaseplan_checks.go",
+        "internal/cli/releaseplan_checks_test.go",
+        "internal/cli/releaseplan_command.go"
+      ],
+      "governed_changed_paths": [],
+      "all_declared": true,
+      "all_governed_bounded": true,
+      "grant_revision": "3490588afbdffe4419574befd0d7d9569882ff69",
+      "grant_precedes_commit": true,
+      "protected_no-change_paths": "unchanged",
+      "Recorded paths": "none needed"
+    }
+  ],
+  "working_delta": "only qa report/evidence; no implementation delta"
+}

@@ -1,0 +1,30 @@
+{
+  "promises": {
+    "optional branch prefix": {
+      "prd": "Core Features 1-3; User Stories 1-2; Success Metrics 1-2",
+      "implementation": "task_02",
+      "observables": "Fixed texts 1/2, no new decision, byte-identical recorded guide",
+      "evidence": "05-compatibility.json and 05-focused-tests.txt"
+    },
+    "re-execute rows without inputs": {
+      "prd": "Core Feature 4; User Story 3; Success Metric 4",
+      "implementation": "task_01",
+      "observables": "verbatim paragraph, unchanged settlement, raised/recorded version",
+      "evidence": "07-doc-audit.json"
+    },
+    "read-only release checks": {
+      "prd": "Core Features 5-6; User Story 4; Success Metric 3",
+      "implementation": "task_01 and task_03",
+      "observables": "transcripts 1/2, JSON checks, snapshot equality, reset/refused no check",
+      "evidence": "unadopted-snapshots.json and adopted-snapshots.json"
+    }
+  },
+  "glossary": {
+    "Baseline Profile": "A versioned composition of modules, Repository Capabilities, decisions, managed artifacts, and verification roles that defines one reproducible Context-Driven Baseline. Roundfix ships built-in profiles; a repository may own additional profiles for its own workflow.\n_Avoid_: Agent Selection Profile, setup template, user profile",
+    "Setup Manifest": "The setup-owned record of the selected profile, modules, decisions, and managed artifacts that reproduces and audits a repository's Context-Driven Baseline. Every applied Baseline change republishes it, so its recorded digests describe the bytes on disk rather than the bytes adoption wrote.\n_Avoid_: Project Config, lock file, generated guide",
+    "QA Report": "The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict, its Auditing Binary as `auditing_binary`, `auditor_staleness`, and the public-row binary's `--version` line as `user_flow_binary`, plus `rows_blocked_environment`, `rows_blocked_finding`, and `rows_blocked_declared` counts in its frontmatter. The auditor fields are Daemon-owned: the gate keeps the seeded `auditing_binary` and `auditor_staleness` values. A report recording a Precondition Refusal carries `rows_blocked_precondition` beside those counts, plus the `precondition_check` and `precondition_reason` keys that name the refusal; a gate that reached its matrix writes none of those three. The pre-PR Pull Request row, recorded as `blocked (environment: no open Pull Request)` with the Pull Request row named in its provenance, never decides a qualifying partial and needs no Unreachable Acceptance declaration. A `pending` verdict is never accepted, a report that records no QA row is refused, and a report whose front matter is empty or duplicated is unreadable and refused; only the newest report in the directory is read by a later run's mechanical stage, so a superseded report blocks nothing.\n_Avoid_: Test report, QA log"
+  },
+  "assessment": "Profile still composes decisions; Setup Manifest still records answered decisions and managed bytes; QA Report format is unchanged. Optional existing decision and additive checks reuse existing terms; no new term needed.",
+  "spec_promise_rule": "all promised observables named, falsifiable and supported; no hidden future behavior or unexplained omission",
+  "vocabulary_detector_skip": "manually compared skills/baseline/checks/statuses/next action/help/fixed text against documentation and observed CLI output"
+}

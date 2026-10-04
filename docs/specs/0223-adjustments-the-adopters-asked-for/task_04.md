@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0223-adjustments-the-adopters-asked-for
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

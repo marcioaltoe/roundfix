@@ -1,0 +1,15 @@
+{
+  "command": "make baseline-digests",
+  "location": "/private/tmp/roundfix-0223-qa/current",
+  "exit": 0,
+  "changed": false,
+  "compared_paths": [
+    "internal/baseline/testdata/catalog.digest",
+    "internal/baseline/testdata/catalog.normalized.json",
+    "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+    "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+    "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+    "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json"
+  ],
+  "all_byte_identical": true
+}

@@ -1,0 +1,4 @@
+cwd: /private/tmp/roundfix-0223-qa/v033
+HOME: /private/tmp/roundfix-0223-qa/home; NODE_OPTIONS: unset
+['./bin/roundfix', 'doctor']
+exit: 1
