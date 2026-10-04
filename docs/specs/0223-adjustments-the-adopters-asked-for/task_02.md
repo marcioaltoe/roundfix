@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0223-adjustments-the-adopters-asked-for
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -96,3 +96,61 @@ of 2026-10-01.
 - `_prd.md` → Core Features 1-3; User Stories 1-2; Success Metrics 1-2
 - `_techspec.md` → The optional branch prefix; API Contract 4; Testing Approach 1; Testing Approach 2; Build Order 2
 - ADR-0205; ADR-0228
+
+## Result
+
+Implemented the optional `branch.prefix` decision using the existing optional
+Project Decision machinery. The core module no longer requires it, all built-in
+profiles still select it, and the template delegates its paragraph to the
+renderer without a version change. Recorded values render Fixed text 1;
+unrecorded values render Fixed text 2. The decision's other fields and the
+Normative Clauses are unchanged. Only the named characterization case in the
+existing CLI test was adjusted; the five new tests live in the two declared
+files.
+
+Acceptance evidence from focused implementation checks:
+
+- **An unrecorded prefix is not missing and renders Fixed text 2:**
+  `rtk proxy go test -count=1 ./internal/baseline -run '^Test(AnUnrecordedBranchPrefixStatesTheCommitTypeRule|BranchPrefixIsAnOptionalDecision)$'`
+  first exited 1 before the source change, reporting
+  `required Baseline decisions are missing: branch.prefix` and that the decision
+  was required. After implementation,
+  `rtk proxy go test -count=1 ./internal/baseline -run '^(TestAnUnrecordedBranchPrefixStatesTheCommitTypeRule|TestARecordedBranchPrefixKeepsItsSentence|TestBranchPrefixIsAnOptionalDecision)$'`
+  exited 0. These tests check the complete fixed paragraph, absent Plan answer,
+  optional catalog declaration, core requirements and every built-in profile.
+- **Recorded `<type>/` and `ma/` retain their paragraph bytes:** the recorded
+  rendering test above passed both named cases against the five original
+  template lines. The recorded update test below also checks the complete guide
+  is byte-identical and retains its `ma/` answer after a stale-catalog refresh.
+- **Update without the decision asks nothing:**
+  `GOCACHE=/private/tmp/roundfix-0223-task02-gocache rtk proxy go test -count=1 ./internal/cli -run '^TestBaselineUpdate(WithoutABranchPrefixAsksNothing|KeepsARecordedBranchPrefix)$'`
+  exited 0. The unrecorded test checks JSON planning has no new decisions and no
+  decision category, applies with `--yes`, checks Fixed text 2, and confirms no
+  prefix is added to the manifest. The initial attempt using the shared Go cache
+  was denied by the sandbox; the task-local cache resolved that environment
+  restriction.
+- **The characterization case follows optional declarations:**
+  `GOCACHE=/private/tmp/roundfix-0223-task02-gocache rtk proxy go test -count=1 ./internal/cli -run '^TestBaselinePlanAdoptionAndDecisionCharacterizationCorpus/decisions-absent-names-every-required-decision$'`
+  exited 0. Optional decisions must be absent from the missing-decision message;
+  every other selected decision must still appear.
+- **This repository's guide remains byte-identical:**
+  `rtk proxy make baseline-digests` exited 0 and regenerated exactly the catalog
+  snapshots and four declared plan goldens. The authorized public refresh,
+  `GOCACHE=/private/tmp/roundfix-0223-task02-gocache rtk proxy go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`,
+  exited 0 with one file change, only the catalog digest in
+  `docs/agents/setup-context.json`. The second identical refresh exited 0 with
+  `File changes: 0` and `Idempotence: verified`. Both successful refreshes used
+  sandbox escalation for the Git-private transaction journal; the initial
+  sandboxed apply was denied before writing the manifest. The guide's SHA-256
+  before and after is
+  `563f4d00b644c6f4451eb25ac68aaa3d11daf8eb748b4d93cbd3ef4dff90b8e0`.
+  No derived file was hand-edited.
+
+The refresh reports the existing nested-carrier inventory warnings for the
+formatter fixture and Source Baseline corpus; both remain unchanged. Scope
+inspection shows only this Task's declared paths changed, and
+`rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+The authored Verification command and repository gate were not run in this
+Agent turn. Task status, settlement and commits remain Daemon-owned. No
+follow-up implementation was added.
