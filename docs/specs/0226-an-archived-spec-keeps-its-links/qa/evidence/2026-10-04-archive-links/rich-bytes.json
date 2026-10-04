@@ -1,0 +1,21 @@
+{
+  "before": {
+    "notes.txt": "[fixed-depth](../../missing.md)\n",
+    "task_01.md": "---\ntask: task_01\nspec: demo\nstatus: completed\ntype: backend\ncomplexity: low\n---\n\n# Task\n\n## Verification\n\n- `true` \u2014 expected: exit 0.\n",
+    "task_qa.md": "---\ntask: task_qa\nspec: demo\nstatus: completed\ntype: qa\ncomplexity: low\n---\n\n# Task\n\n## Verification\n\n- `true` \u2014 expected: exit 0.\n",
+    "notes.md": "[Finding](../../findings/finding.md)\n[ADR](../../adr/decision.md)\n[sibling](../sibling/_prd.md)\n[ref]: ../../adr/decision.md \"title\"\n![image](<../../adr/a%20b.png?raw=1#view> \"title\")\n[url](https://example.com/a)\n[local](_prd.md)\n`[code](../../missing.md)`\n```md\n[code](../../missing.md)\n```\n~~~md\n[code](../../missing.md)\n~~~\n<a href=\"../../missing.md\">HTML</a>\n",
+    "_prd.md": "---\nspec: demo\nstatus: active\ncreated: 2026-10-04\nsurfaces: [cli]\n---\n\n# Demo\n",
+    "_tasks.md": "---\nschema: spec-tasks/v1\nspec: demo\nqa: task_qa\ngraph:\n  nodes:\n    - id: task_01\n      file: task_01.md\n      needs: []\n    - id: task_qa\n      file: task_qa.md\n      needs: [task_01]\n---\n",
+    "qa/qa-report-2026-10-04.md": "---\nverdict: pass\nrows_blocked_environment: 0\nrows_blocked_finding: 0\nrows_blocked_declared: 0\n---\n\n## Results\n\n| # | Status | Provenance |\n| - | --- | --- |\n| 1 | pass | fixture |\n"
+  },
+  "after": {
+    "notes.txt": "[fixed-depth](../../missing.md)\n",
+    "task_01.md": "---\ntask: task_01\nspec: demo\nstatus: completed\ntype: backend\ncomplexity: low\n---\n\n# Task\n\n## Verification\n\n- `true` \u2014 expected: exit 0.\n",
+    "task_qa.md": "---\ntask: task_qa\nspec: demo\nstatus: completed\ntype: qa\ncomplexity: low\n---\n\n# Task\n\n## Verification\n\n- `true` \u2014 expected: exit 0.\n",
+    "notes.md": "[Finding](../../../findings/finding.md)\n[ADR](../../../adr/decision.md)\n[sibling](../../../specs/sibling/_prd.md)\n[ref]: ../../../adr/decision.md \"title\"\n![image](<../../../adr/a%20b.png?raw=1#view> \"title\")\n[url](https://example.com/a)\n[local](_prd.md)\n`[code](../../missing.md)`\n```md\n[code](../../missing.md)\n```\n~~~md\n[code](../../missing.md)\n~~~\n<a href=\"../../missing.md\">HTML</a>\n",
+    "_prd.md": "---\nspec: demo\nstatus: archived\ncreated: 2026-10-04\nsurfaces: [cli]\narchived: \"2026-10-04\"\nsource_slug: demo\n---\n\n\n# Demo\n",
+    "_tasks.md": "---\nschema: spec-tasks/v1\nspec: demo\nqa: task_qa\ngraph:\n  nodes:\n    - id: task_01\n      file: task_01.md\n      needs: []\n    - id: task_qa\n      file: task_qa.md\n      needs: [task_01]\n---\n",
+    "qa/qa-report-2026-10-04.md": "---\nverdict: pass\nrows_blocked_environment: 0\nrows_blocked_finding: 0\nrows_blocked_declared: 0\n---\n\n## Results\n\n| # | Status | Provenance |\n| - | --- | --- |\n| 1 | pass | fixture |\n"
+  },
+  "destination": "/private/tmp/roundfix-0226-8v4112x9/rich/docs/history/specs/demo"
+}

@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0226-an-archived-spec-keeps-its-links
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
