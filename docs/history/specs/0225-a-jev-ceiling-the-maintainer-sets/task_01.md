@@ -132,6 +132,11 @@ Acceptance evidence:
 The Daemon must run the declared Verification commands and own Task status and
 settlement.
 
+
+Operator addendum (2026-10-04): after this Task settled, 0226 merged with the
+Roundfix Skill at `0.1.26`; merging main into the item raised this Spec's
+Skill change to `0.1.27` and recorded that version.
+
 ## Carry-forward provenance
 
 - Source Run: `run_20261004T194332Z_e41f982109e26c75`
