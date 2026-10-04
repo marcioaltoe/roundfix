@@ -855,6 +855,14 @@ func prepareSpec0058Replay(t *testing.T, repositoryRoot string, reportFixture st
 	specsRoot := filepath.Join(t.TempDir(), "docs", "specs")
 	specDir := filepath.Join(specsRoot, spec0058ReplaySlug)
 	archiveTestCopyTree(t, sourceDir, specDir)
+	// Supply only the three outward targets linked by the replayed PRD.
+	for _, target := range []string{
+		"findings/2026-07-25-npm-trusted-publishing-and-release-preflight.md",
+		"adr/0082-release-publication-is-all-or-nothing-across-the-package-set.md",
+		"adr/0084-a-bounded-token-fallback-proves-trusted-publishing.md",
+	} {
+		writeFile(t, filepath.Join(filepath.Dir(specsRoot), filepath.FromSlash(target)), "Replay link target\n")
+	}
 
 	prdPath := filepath.Join(specDir, "_prd.md")
 	prd := archiveTestReadFile(t, prdPath)

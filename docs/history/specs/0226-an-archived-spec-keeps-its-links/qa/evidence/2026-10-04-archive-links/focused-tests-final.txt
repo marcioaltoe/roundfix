@@ -1,0 +1,90 @@
+=== RUN   TestArchiveRewritesRelativeLinksThatLeaveTheSpec
+--- PASS: TestArchiveRewritesRelativeLinksThatLeaveTheSpec (0.00s)
+=== RUN   TestArchiveKeepsLinksInsideTheSpecAndNonRelativeLinks
+--- PASS: TestArchiveKeepsLinksInsideTheSpecAndNonRelativeLinks (0.00s)
+=== RUN   TestArchiveRefusesALinkThatWouldStayBroken
+--- PASS: TestArchiveRefusesALinkThatWouldStayBroken (0.00s)
+=== RUN   TestArchiveRewritesLinksUnderAConfiguredSpecRoot
+--- PASS: TestArchiveRewritesLinksUnderAConfiguredSpecRoot (0.00s)
+=== RUN   TestArchiveRewritesLinksInASupersededSpec
+--- PASS: TestArchiveRewritesLinksInASupersededSpec (0.00s)
+=== RUN   TestArchiveKeepsALinkWhoseTargetWasAlreadyArchived
+--- PASS: TestArchiveKeepsALinkWhoseTargetWasAlreadyArchived (0.00s)
+=== RUN   TestArchiveLinksMatch
+=== RUN   TestArchiveLinksMatch/rewrite
+=== RUN   TestArchiveLinksMatch/unchanged
+=== RUN   TestArchiveLinksMatch/other_target
+=== RUN   TestArchiveLinksMatch/fragment
+=== RUN   TestArchiveLinksMatch/query
+=== RUN   TestArchiveLinksMatch/body
+=== RUN   TestArchiveLinksMatch/extra_byte
+--- PASS: TestArchiveLinksMatch (0.00s)
+    --- PASS: TestArchiveLinksMatch/rewrite (0.00s)
+    --- PASS: TestArchiveLinksMatch/unchanged (0.00s)
+    --- PASS: TestArchiveLinksMatch/other_target (0.00s)
+    --- PASS: TestArchiveLinksMatch/fragment (0.00s)
+    --- PASS: TestArchiveLinksMatch/query (0.00s)
+    --- PASS: TestArchiveLinksMatch/body (0.00s)
+    --- PASS: TestArchiveLinksMatch/extra_byte (0.00s)
+=== RUN   TestArchiveRestoresRewrittenBytesWhenRenameFails
+--- PASS: TestArchiveRestoresRewrittenBytesWhenRenameFails (0.00s)
+=== RUN   TestArchiveLinksMarkdownForms
+--- PASS: TestArchiveLinksMarkdownForms (0.00s)
+=== RUN   TestSpec0058ReplayArchivesDeclaredUnreachableRelease
+=== PAUSE TestSpec0058ReplayArchivesDeclaredUnreachableRelease
+=== CONT  TestSpec0058ReplayArchivesDeclaredUnreachableRelease
+--- PASS: TestSpec0058ReplayArchivesDeclaredUnreachableRelease (0.01s)
+PASS
+suiteguard: guard cost: measured 8777 paths; fingerprint took 291.099917ms before and 280.762125ms after
+ok  	roundfix/internal/spec	0.731s
+=== RUN   TestArchiveCommandRefusesABrokenOutwardLink
+--- PASS: TestArchiveCommandRefusesABrokenOutwardLink (0.05s)
+=== RUN   TestArchiveCommandReportsRewrittenLinks
+=== RUN   TestArchiveCommandReportsRewrittenLinks/normal
+=== RUN   TestArchiveCommandReportsRewrittenLinks/override
+=== RUN   TestArchiveCommandReportsRewrittenLinks/no_rewrites
+=== RUN   TestArchiveCommandReportsRewrittenLinks/override_no_rewrites
+--- PASS: TestArchiveCommandReportsRewrittenLinks (0.20s)
+    --- PASS: TestArchiveCommandReportsRewrittenLinks/normal (0.05s)
+    --- PASS: TestArchiveCommandReportsRewrittenLinks/override (0.05s)
+    --- PASS: TestArchiveCommandReportsRewrittenLinks/no_rewrites (0.05s)
+    --- PASS: TestArchiveCommandReportsRewrittenLinks/override_no_rewrites (0.05s)
+=== RUN   TestResumeAcceptsAnArchiveCommitWithRewrittenLinks
+=== RUN   TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/_prd.md
+=== RUN   TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/task_01.md
+=== RUN   TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/qa/links.md
+=== RUN   TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/_prd.md+task_01.md+qa/links.md
+--- PASS: TestResumeAcceptsAnArchiveCommitWithRewrittenLinks (0.66s)
+    --- PASS: TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/_prd.md (0.15s)
+    --- PASS: TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/task_01.md (0.17s)
+    --- PASS: TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/qa/links.md (0.17s)
+    --- PASS: TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/_prd.md+task_01.md+qa/links.md (0.18s)
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/extra_Task_byte
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/another_link_target
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/extra_PRD_byte
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/another_PRD_link_target
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/frontmatter_link_rewrite
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/added_file
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/removed_file
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_mode
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_type
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/non-Markdown_rewrite
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_query
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_fragment
+--- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges (1.82s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/extra_Task_byte (0.15s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/another_link_target (0.15s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/extra_PRD_byte (0.16s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/another_PRD_link_target (0.16s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/frontmatter_link_rewrite (0.17s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/added_file (0.13s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/removed_file (0.13s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_mode (0.14s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_type (0.14s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/non-Markdown_rewrite (0.15s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_query (0.15s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_fragment (0.16s)
+PASS
+suiteguard: guard cost: measured 8777 paths; fingerprint took 297.396584ms before and 246.742458ms after
+ok  	roundfix/internal/cli	3.504s

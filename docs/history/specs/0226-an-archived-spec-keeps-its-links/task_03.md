@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0226-an-archived-spec-keeps-its-links
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -60,3 +60,45 @@ delivered Specs.
 - `_prd.md` → Core Feature 6; User Story 3; Success Metric 3
 - `_techspec.md` → The resumed archive commit; API Contract 4; Testing Approach 3; Build Order 3
 - ADR-0223; ADR-0230
+
+## Result
+
+Implemented the resumed archive comparison in `internal/cli/deliver_workflow.go`.
+Equal tree entries retain the fast path; differing entries must be regular
+Markdown blobs with identical mode and type and must satisfy
+`spec.ArchiveLinksMatch`, using each file's active and archived directories.
+The PRD body accepts identical bytes or the same link match. Its existing
+frontmatter comparison and `archiveDiffIsExact` behavior are preserved.
+
+Added `internal/cli/deliver_archive_links_test.go`; no existing test was edited.
+The tests create real archive commits and resume them through the Delivery
+Engine using the existing delivery test boundary.
+
+Acceptance evidence from focused implementation checks:
+
+- **A resumed archive commit with rewritten links is exact:** the new
+  acceptance test covers PRD-only, Task-only, nested Markdown-only, and combined
+  rewrites, asserting that the archive head joins the reviewed candidate head.
+  Before the implementation, the PRD-only subtest parked as `review-stale`.
+  After the implementation, all four cases passed.
+- **Any other change in such a commit is still refused:** all twelve new
+  refusal cases passed, asserting a `review-stale` park and preservation of
+  only the reviewed candidate head. Cases cover extra Task/PRD bytes, different
+  Task/PRD link targets, a frontmatter destination change, an added or removed
+  file, mode/type changes, a non-Markdown rewrite, and query/fragment changes.
+  The two existing archive-resume tests also passed, including refusal of an
+  unrelated path and changed PRD body.
+
+Commands and outcomes:
+
+- `GOCACHE=/tmp/roundfix-task03-gocache rtk proxy go test -count=1 ./internal/cli -run '^TestResumeAcceptsAnArchiveCommitWithRewrittenLinks$/_prd.md$'`
+  — before implementation, exit 1 with the expected `review-stale` park.
+- `rtk proxy gofmt -w internal/cli/deliver_workflow.go internal/cli/deliver_archive_links_test.go`
+  — exit 0.
+- `GOCACHE=/tmp/roundfix-task03-gocache rtk proxy go test -count=1 ./internal/cli -run '^TestResume(AcceptsAnArchiveCommitWithRewrittenLinks|RefusesALinkRewritingArchiveCommitWithExtraChanges|AcceptsARealArchiveCommit|RefusesAnArchiveCommitWithExtraChanges)$'`
+  — exit 0, `ok roundfix/internal/cli`.
+
+Only the implementation file, new test file, and this Result were changed by
+the Agent. The pre-existing `status: in_progress` remains Daemon-owned.
+Declared Verification was not run; Task settlement remains with the Daemon.
+No follow-up work identified.

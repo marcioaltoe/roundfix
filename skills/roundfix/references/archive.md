@@ -67,6 +67,19 @@ Spec Root, stdout carries the deterministic report:
 archived <slug> -> docs/history/specs/<slug>
 ```
 
+Before the move, the archive rewrites each relative Markdown link that leaves
+the Spec — including inline links, images and reference definitions outside
+code blocks and code spans — so it reaches the same path from the archived
+location. It keeps the link's fragment, query and angle-bracket form. It keeps
+a link whose target was already archived when its unchanged destination reaches
+that target from the archived location. If any other relative links that leave
+the Spec and do not resolve remain, the command exits `2` before changing any
+file and names each link with its file, line and destination. When links were
+rewritten, the successful confirmation appends `; rewrote <n> relative link(s)`.
+Destinations inside the Spec, absolute destinations, URLs, HTML anchors and
+non-Markdown files are not rewritten, including evidence scripts that climb a
+fixed number of directories.
+
 Refusals exit `2` through Preflight Validation, name the first unmet condition
 on stderr, and leave the active Spec folder in place. Every refusal outside the
 one declared-only case is unchanged: a finding-blocked row, an
@@ -87,4 +100,3 @@ The command requires both approval and reason, keeps every non-QA Task
 the approval source, reason, observed QA outcome and archived revision. When the
 QA Task is not completed, it also stamps `qa_override_qa_task_status`. It does
 not change the QA Task or report verdict.
-
