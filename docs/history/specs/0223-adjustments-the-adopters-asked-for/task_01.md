@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0223-adjustments-the-adopters-asked-for
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -99,3 +99,39 @@ text changes raises its version.
 - `_prd.md` → Core Features 4 and 6; User Stories 3 and 4; Success Metric 4
 - `_techspec.md` → The QA gate paragraph; Vocabulary Contract; API Contract 1; API Contract 2; API Contract 5; Build Order 1
 - ADR-0187; ADR-0189; ADR-0228
+
+## Result
+
+Implemented the documentation slice for the QA gate re-execution rule, the
+release plan's read-only skills and Baseline checks, and the optional branch
+prefix guidance. Raised `qa-gate` from 0.0.7 to 0.0.8 and `roundfix` from
+0.1.24 to 0.1.25, synchronized the owned skill mirrors, and recorded both
+versions and content digests.
+
+Focused checks:
+
+- `make skills-sync` passed.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  passed with a task-scoped `GOCACHE` after the default shared cache was
+  unavailable in the sandbox.
+- `cmp` checks passed for the QA gate skill, Roundfix Skill, and release
+  reference mirrors.
+- Focused phrase checks found the QA re-execution paragraph, the release
+  checks wording and next action, and the branch-prefix wording in their
+  canonical and mirrored files. `git diff --check` reported no whitespace
+  errors.
+
+Acceptance evidence:
+
+- The QA gate canonical skill and mirror contain the TechSpec re-execution
+  paragraph immediately after the existing carry-forward input rule.
+- The release reference canonical file and mirror describe the read-only
+  `skills:` and `baseline:` lines, JSON `checks`, the runbook next action, and
+  unchanged decision, proposed version, and exit code; the release runbook's
+  release step names the same read-only checks and decision behavior.
+- The Context-Driven Development guide contains the optional `Branch prefix`
+  suggested value and the unrecorded `No branch prefix is recorded` wording
+  tied to the work's Conventional Commit type.
+- The owned skill mirrors compare equal to their canonical files, and
+  `skills/testdata/owned-skill-versions.json` records `qa-gate` 0.0.8 and
+  `roundfix` 0.1.25 with their generated digests.

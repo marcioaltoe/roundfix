@@ -1,0 +1,325 @@
+{
+  "verbatim_qa_paragraph": "A gate reopened over a report written before rows declared inputs re-executes\nevery row that report recorded without `inputs:`; such a row is never\ncarriable. A row executed again in a new pass declares its inputs for that pass\nwhen the pass plans it as `pending`. That is a new observation with its own\ninputs, not inputs added after execution; never add `inputs:` to the earlier\nreport's rows.",
+  "versions": [
+    {
+      "skill": "qa-gate",
+      "before": [
+        "0.0.7",
+        "0.0.7"
+      ],
+      "after": [
+        "0.0.8",
+        "0.0.8"
+      ],
+      "mirrors": "identical",
+      "version_record": "present"
+    },
+    {
+      "skill": "roundfix",
+      "before": [
+        "0.1.24",
+        "0.1.24"
+      ],
+      "after": [
+        "0.1.25",
+        "0.1.25"
+      ],
+      "mirrors": "identical",
+      "version_record": "present"
+    }
+  ],
+  "settlements": [
+    {
+      "path": "skills/implement-task/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": "skills/qa-gate/SKILL.md",
+      "has_section": true,
+      "unchanged": true
+    },
+    {
+      "path": "skills/write-idea/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": "skills/council/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": "skills/evidence-gate/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": "skills/setup-context-driven/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": "skills/roundfix/SKILL.md",
+      "has_section": true,
+      "unchanged": true
+    },
+    {
+      "path": "skills/brainstorming/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": "skills/business-analyst/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": "skills/write-tasks/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": "skills/implement-spec/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": "skills/archive-spec/SKILL.md",
+      "has_section": true,
+      "unchanged": true
+    },
+    {
+      "path": "skills/write-techspec/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": "skills/write-prd/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/implement-task/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/domain-modeling/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/qa-gate/SKILL.md",
+      "has_section": true,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/coding-guidelines/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/autoresearch/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/golang-concurrency/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/systematic-debugging/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/write-idea/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/council/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/github-pr-workflow/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/evidence-gate/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/bubbletea/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/setup-context-driven/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/handoff/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/roundfix/SKILL.md",
+      "has_section": true,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/golang-context/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/context7-cli/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/golang-cli/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/knowledge-workspace/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/typesafe-ai/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/golang-structs-interfaces/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/golang-lint/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/tui-design/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/brainstorming/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/grill-with-docs/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/agentic-cli-design/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/golang-dependency-management/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/business-analyst/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/no-workarounds/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/conventional-commits/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/write-tasks/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/testing-boss/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/implement-spec/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/golang-safety/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/crafting-effective-readmes/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/golang-error-handling/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/the-fool/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/exa-web-search/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/grilling/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/archive-spec/SKILL.md",
+      "has_section": true,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/write-techspec/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/tech-writer/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/golang-testing/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    },
+    {
+      "path": ".agents/skills/write-prd/SKILL.md",
+      "has_section": false,
+      "unchanged": true
+    }
+  ],
+  "release_reference_and_runbook": "match declared text",
+  "context_guide": "optional prefix, retained recorded sentence, no prompt"
+}

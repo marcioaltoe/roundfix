@@ -1,0 +1,1 @@
+roundfix: release plan failed: inventory GitHub Releases: read complete paginated GitHub Release inventory: gh api --method GET --paginate --slurp repos/{owner}/{repo}/releases?per_page=100: exec: "gh": executable file not found in $PATH: exec: "gh": executable file not found in $PATH; restore complete paginated GitHub Release access and rerun the Release Plan Command

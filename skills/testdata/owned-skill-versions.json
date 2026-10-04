@@ -83,6 +83,10 @@
       {
         "version": "0.0.7",
         "digest": "d3549f74338f72731aac514b67b9008839332c863614c5b9d3f7d8b3d08be4fa"
+      },
+      {
+        "version": "0.0.8",
+        "digest": "67e103ee060f3a178b84c0f03dfd8739fb73c655d56315b866369fe0294eb5ae"
       }
     ],
     "roundfix": [
@@ -209,6 +213,10 @@
       {
         "version": "0.1.24",
         "digest": "2b156225c945ab0b271ec1f6a360a56f42d462c9be2a5a93746c4d45a847f8f8"
+      },
+      {
+        "version": "0.1.25",
+        "digest": "e13b08cae587ee95a256f16b2b7aa891ee3171582ce772b0a0ab2ad4395a445e"
       }
     ],
     "setup-context-driven": [

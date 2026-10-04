@@ -1,0 +1,6 @@
+Repository guide equals base byte for byte. SHA256: 563f4d00b644c6f4451eb25ac68aaa3d11daf8eb748b4d93cbd3ef4dff90b8e0
+Changed assets:
+internal/baseline/assets/decisions.json
+internal/baseline/assets/modules/core.json
+internal/baseline/assets/templates/guides/agent-instructions.md
+No clause manifest was changed; all clause IDs/text are retained. Template prose moved into the renderer, not a Normative Clause.

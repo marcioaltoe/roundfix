@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "roundfix.release-plan/0.0.1",
+  "state": "ready",
+  "base": {
+    "tag": "v0.4.0",
+    "version": "v0.4.0",
+    "commitSHA": "b96ca1d79731a76253cb2a3b544da72b0be841d5"
+  },
+  "target": {
+    "name": "HEAD",
+    "commitSHA": "991739b534addd615a8526689c4b6a7505494a21"
+  },
+  "classification": {
+    "source": "conventional_commit",
+    "impact": "patch",
+    "breaking": false,
+    "manualClassificationRequired": false
+  },
+  "proposedVersion": "v0.4.1",
+  "approval": {
+    "required": false,
+    "increment": "none"
+  },
+  "checks": {
+    "skills": {
+      "status": "ok",
+      "detail": "43 required: 14 Roundfix-owned, 29 external"
+    },
+    "baseline": {
+      "status": "current",
+      "detail": "the repository already matches the current Baseline catalog"
+    }
+  },
+  "changes": [
+    {
+      "commitSHA": "991739b534addd615a8526689c4b6a7505494a21",
+      "subject": "fix: correct output",
+      "conventionalType": "fix",
+      "breaking": false,
+      "automaticImpact": "patch",
+      "crossesMaintenanceOnlyBoundary": true
+    }
+  ]
+}

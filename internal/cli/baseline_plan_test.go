@@ -566,7 +566,21 @@ func TestBaselinePlanAdoptionAndDecisionCharacterizationCorpus(t *testing.T) {
 					t.Fatalf("resolve characterization Profile: %v", err)
 				}
 				for _, decisionID := range profile.Decisions {
-					if !strings.Contains(result.Message, decisionID) {
+					declaration, found := catalog.Decision(decisionID)
+					if !found {
+						t.Fatalf("catalog omitted decision %q", decisionID)
+					}
+					var decision struct {
+						Optional bool `json:"optional"`
+					}
+					if err := json.Unmarshal(declaration.Data, &decision); err != nil {
+						t.Fatalf("decode decision %q: %v", decisionID, err)
+					}
+					if decision.Optional {
+						if strings.Contains(result.Message, decisionID) {
+							t.Errorf("missing-decision result named optional %q", decisionID)
+						}
+					} else if !strings.Contains(result.Message, decisionID) {
 						t.Errorf("missing-decision result omitted %q", decisionID)
 					}
 				}

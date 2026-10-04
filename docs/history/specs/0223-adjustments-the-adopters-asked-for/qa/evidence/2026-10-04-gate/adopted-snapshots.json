@@ -1,0 +1,34 @@
+[
+  {
+    "format": "text",
+    "before": {
+      "sha256": "9f3b1992419e54d297a5e16b9b105b00f07ca20335c98db90fd071aef33ababc",
+      "status": "",
+      "refs": "991739b534addd615a8526689c4b6a7505494a21 refs/heads/master\nb96ca1d79731a76253cb2a3b544da72b0be841d5 refs/tags/v0.4.0\n",
+      "config": "core.repositoryformatversion=0\ncore.filemode=true\ncore.bare=false\ncore.logallrefupdates=true\ncore.ignorecase=true\ncore.precomposeunicode=true\ncore.hookspath=/dev/null\nuser.name=QA\nuser.email=qa@example.invalid\ncommit.gpgsign=false\n"
+    },
+    "after": {
+      "sha256": "9f3b1992419e54d297a5e16b9b105b00f07ca20335c98db90fd071aef33ababc",
+      "status": "",
+      "refs": "991739b534addd615a8526689c4b6a7505494a21 refs/heads/master\nb96ca1d79731a76253cb2a3b544da72b0be841d5 refs/tags/v0.4.0\n",
+      "config": "core.repositoryformatversion=0\ncore.filemode=true\ncore.bare=false\ncore.logallrefupdates=true\ncore.ignorecase=true\ncore.precomposeunicode=true\ncore.hookspath=/dev/null\nuser.name=QA\nuser.email=qa@example.invalid\ncommit.gpgsign=false\n"
+    },
+    "exit": 0
+  },
+  {
+    "format": "json",
+    "before": {
+      "sha256": "9f3b1992419e54d297a5e16b9b105b00f07ca20335c98db90fd071aef33ababc",
+      "status": "",
+      "refs": "991739b534addd615a8526689c4b6a7505494a21 refs/heads/master\nb96ca1d79731a76253cb2a3b544da72b0be841d5 refs/tags/v0.4.0\n",
+      "config": "core.repositoryformatversion=0\ncore.filemode=true\ncore.bare=false\ncore.logallrefupdates=true\ncore.ignorecase=true\ncore.precomposeunicode=true\ncore.hookspath=/dev/null\nuser.name=QA\nuser.email=qa@example.invalid\ncommit.gpgsign=false\n"
+    },
+    "after": {
+      "sha256": "9f3b1992419e54d297a5e16b9b105b00f07ca20335c98db90fd071aef33ababc",
+      "status": "",
+      "refs": "991739b534addd615a8526689c4b6a7505494a21 refs/heads/master\nb96ca1d79731a76253cb2a3b544da72b0be841d5 refs/tags/v0.4.0\n",
+      "config": "core.repositoryformatversion=0\ncore.filemode=true\ncore.bare=false\ncore.logallrefupdates=true\ncore.ignorecase=true\ncore.precomposeunicode=true\ncore.hookspath=/dev/null\nuser.name=QA\nuser.email=qa@example.invalid\ncommit.gpgsign=false\n"
+    },
+    "exit": 0
+  }
+]

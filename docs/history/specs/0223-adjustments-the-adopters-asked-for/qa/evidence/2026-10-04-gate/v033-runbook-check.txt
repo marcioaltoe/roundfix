@@ -1,0 +1,16 @@
+Historical tag commit: e693d8b1a13af9a3ac3c85d76681a8d1db8d9bca
+
+
+This is a mandatory release step. Complete it before opening the release Pull
+Request.
+
+1. Run `roundfix doctor` and confirm the `skills:` line is `ok`.
+2. Run `go test -count=1 ./skills -run '^(TestEveryOwnedSkillVersionIsRecorded|TestTheOwnedSkillMinimumIsTheEmbeddedVersion)$'`.
+3. Run `go test -count=1 ./internal/baseline -run '^(TestNoTwoBaselineClausesShareText|TestBaselineClauseForceIsCharacterized|TestShippedGuidanceCitesNoRepositoryRecord)$'`
+   and `go test -count=1 ./internal/delivery -run '^TestTheLoopClauseOrderMatchesTheDeliveryQueue$'`.
+4. Run `go test -count=1 -tags docscontract ./internal/docscontract -run '^(TestEveryCommandIsNamedInTheRoundfixSkill|TestEveryCommandIsNamedInTheUserGuide)$'`.
+5. Run `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --format text` and confirm it reports `current`.
+6. For each user-visible change in the release range, confirm in a reading pass
+   that the Roundfix skill, the user guide and the Baseline clause that describe
+   it say what the release does. Fix a mismatch before the release Pull
+   Request, or record a Backlog Entry when the fix needs a Spec.

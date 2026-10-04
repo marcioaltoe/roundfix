@@ -4,10 +4,10 @@ description: Execute the self-contained final QA gate as a Spec's authored termi
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.7
+  version: 0.0.8
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.7
+version: 0.0.8
 ---
 
 # QA Gate
@@ -357,6 +357,13 @@ is not re-observed.
 
 A row whose inputs grow after it ran is not carriable. Do not add inputs after
 execution to make carry-forward eligible.
+
+A gate reopened over a report written before rows declared inputs re-executes
+every row that report recorded without `inputs:`; such a row is never
+carriable. A row executed again in a new pass declares its inputs for that pass
+when the pass plans it as `pending`. That is a new observation with its own
+inputs, not inputs added after execution; never add `inputs:` to the earlier
+report's rows.
 
 The Agent never writes `evidence_snapshots`; the Daemon records them after the
 turn. Rows naming the repository Verification or the Pull Request row are

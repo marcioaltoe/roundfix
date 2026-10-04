@@ -256,6 +256,7 @@ adoption again. Without a stored value, the embedded catalog suggests:
 | Identifier strategy | `{"kind":"uuid-v7"}` |
 | HTTP contract | `REST` |
 | Frontend layout | `systems` (applies while none is recorded) |
+| Branch prefix | `<type>/` (optional) |
 | Better Auth provider exception | `GET` and `POST` under `/api/auth/*`, owned by Better Auth |
 | Spec artifacts | Yes |
 | Domain layout | `single-context` |
@@ -265,6 +266,12 @@ adoption again. Without a stored value, the embedded catalog suggests:
 | Design runtime | `claude opus 5 xhigh` |
 | Secondbrain | Yes |
 | Repository-Specific Normative Rules carrier | Permitted when non-empty |
+
+The branch prefix is optional. While none is recorded, the guide says "No
+branch prefix is recorded" and names new work branches
+`<type>/<description>` from the work's Conventional Commit type. A recorded
+prefix keeps its existing sentence, and an update never asks for the branch
+prefix.
 
 The frontend layout is optional. While none is recorded, the suggested
 `systems` layout applies. Recording `repository-defined` binds the layout

@@ -1,0 +1,13 @@
+package main
+import (
+ "encoding/json"
+ "fmt"
+ "os"
+ "roundfix/internal/speccheck"
+)
+func main() {
+ findings, err := speccheck.ReportShapeFindings(os.Args[1], os.Args[2])
+ if err != nil { fmt.Fprintln(os.Stderr, err); os.Exit(1) }
+ if err := json.NewEncoder(os.Stdout).Encode(findings); err != nil { panic(err) }
+ if len(findings) != 0 { os.Exit(1) }
+}
