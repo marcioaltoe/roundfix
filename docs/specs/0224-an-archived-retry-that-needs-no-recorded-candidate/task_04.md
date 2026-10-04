@@ -30,7 +30,9 @@ outside-evidence row names.
    resumes a `run-unresolved` item at `reviewing` with the archived head as
    its only candidate after a real `roundfix archive --qa-override`, and that
    both refusals of API Contract 1 keep their text and leave the item
-   unchanged.
+   unchanged, and by executing task_05's test, that an override archive
+   without a candidate and without History refuses with the archived-head
+   text naming an empty candidate and leaves the item unchanged.
 3. MUST verify API Contract 2 and Success Metric 2 by executing task_02's
    tests against the built tree, and MUST additionally feed the archived
    0220 QA Report (`docs/history/specs/0220-tests-and-pins-that-hold-in-every-environment/qa/qa-report-2026-10-03.md`),

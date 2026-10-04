@@ -15,7 +15,10 @@ graph:
       needs: []
     - id: task_04
       file: task_04.md
-      needs: [task_01, task_02, task_03]
+      needs: [task_01, task_02, task_03, task_05]
+    - id: task_05
+      file: task_05.md
+      needs: [task_01]
 ---
 
 # Task Graph
@@ -26,11 +29,14 @@ graph:
 | task_02 | backend | An environment-only QA partial parks for the operator even when only Pull Request rows block it |
 | task_03 | docs | The Roundfix Skill and the deliver guide describe both rules |
 | task_04 | qa | Run the final QA gate |
+| task_05 | backend | An override archive without a candidate or History refuses with the archived-head text |
 
-Waves: 1 → task_01, task_03 · 2 → task_02 · 3 → task_04
+Waves: 1 → task_01, task_03 · 2 → task_02, task_05 · 3 → task_04
 
-The three implementation Tasks share no declared file. task_01 changes the
+The first three implementation Tasks share no declared file. task_01 changes the
 retry in the delivery engine and task_03 the `deliver` guide and the Roundfix
 Skill, written from the TechSpec, so they run together. task_02 changes the
 park classification in the CLI workflow, whose guide task_03 writes, so it
-follows task_03. The gate follows all three.
+follows task_03. task_05, the corrective Task for finding F1 of the
+2026-10-04 QA Report, changes the retry in the delivery engine that task_01
+changed, so it follows task_01. The gate follows all four.
