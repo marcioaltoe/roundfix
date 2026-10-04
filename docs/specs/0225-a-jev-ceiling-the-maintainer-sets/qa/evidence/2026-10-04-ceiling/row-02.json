@@ -1,0 +1,34 @@
+{
+  "runs": [
+    {
+      "command": [
+        "./bin/roundfix",
+        "spec",
+        "judge",
+        "0300-example"
+      ],
+      "stdout": "Judge: skipped: monthly ceiling reached (US$50.2500 of US$50.00); 2 judgment(s) not asked\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "command": [
+        "./bin/roundfix",
+        "spec",
+        "judge",
+        "0300-example",
+        "--format=json"
+      ],
+      "stdout": "{\"schema\":\"roundfix/spec-judge/v1\",\"spec\":\"0300-example\",\"model\":\"jev-1.13\",\"transport\":\"typesafe\",\"skipped\":\"monthly ceiling reached (US$50.2500 of US$50.00)\",\"stopped\":null,\"artifacts_skipped\":[],\"judgments\":[{\"kind\":\"goal-mechanism\",\"artifact\":\"docs/specs/0300-example/_techspec.md\",\"line\":8,\"target\":\"Reader mechanism\",\"text\":\"\",\"section_title\":null,\"outcome\":\"skipped\",\"reason\":\"no named section qualifies\",\"answer\":null,\"probabilities\":null,\"confidence\":null,\"noul\":null,\"model\":null},{\"kind\":\"citation-support\",\"artifact\":\"docs/specs/0300-example/_techspec.md\",\"line\":5,\"target\":\"ADR-0035\",\"text\":\"The cited decision requires the author to read evidence for the work.\",\"section_title\":null,\"outcome\":\"skipped\",\"reason\":\"monthly ceiling reached (US$50.2500 of US$50.00)\",\"answer\":null,\"probabilities\":null,\"confidence\":null,\"noul\":null,\"model\":null}],\"calls\":0,\"input_tokens\":0,\"cost_usd\":0,\"month_cost_usd\":50.25,\"month_ceiling_usd\":50}\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "fixture": {
+    "user_ceiling": 50,
+    "project_ceiling": null,
+    "spend": 50.25
+  },
+  "fixture_bytes_unchanged": true,
+  "network": "All outbound HTTP(S) forced to closed loopback proxy; no successful external request possible. Seeded spend >= ceiling prevents judge requests; JSON calls 0."
+}
