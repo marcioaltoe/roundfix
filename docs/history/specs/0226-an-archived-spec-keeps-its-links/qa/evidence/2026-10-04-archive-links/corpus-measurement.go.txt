@@ -1,0 +1,13 @@
+package spec
+import("testing";"os";"path/filepath";"fmt";"strings")
+func TestQA0226CorpusMeasurement(t *testing.T) {
+root:=os.Getenv("QA0226_REPOSITORY"); if root=="" {t.Fatal("repository missing")}
+entries,err:=os.ReadDir(filepath.Join(root,"docs/history/specs"));if err!=nil{t.Fatal(err)}
+count,withLinks,outward,activeOnly,archivedOnly,both,neither:=0,0,0,0,0,0,0
+for _,entry:=range entries{if !entry.IsDir(){continue};count++;slug:=entry.Name();source:=filepath.Join(root,"docs/specs",slug);history:=filepath.Join(root,"docs/history/specs",slug);n:=0
+err=filepath.WalkDir(history,func(path string,de os.DirEntry,err error)error{if err!=nil{return err};if !de.Type().IsRegular()||filepath.Ext(path)!=".md"{return nil};data,e:=os.ReadFile(path);if e!=nil{return e};rel,e:=filepath.Rel(history,path);if e!=nil{return e};activeDir:=filepath.Dir(filepath.Join(source,rel));archivedDir:=filepath.Dir(path)
+for _,span:=range scanArchiveMarkdown(data){dest:=string(data[span.start:span.end]);target,_,relative:=archiveLinkTarget(dest,activeDir);if !relative||archiveLinkInside(target,source){continue};n++;outward++;moved,_,_:=archiveLinkTarget(dest,archivedDir);_,a:=os.Stat(target);_,b:=os.Stat(moved);class:="neither";if a==nil&&b==nil{both++;class="both"}else if a==nil{activeOnly++;class="active_only"}else if b==nil{archivedOnly++;class="archived_only"}else{neither++};fmt.Printf("LINK %s %s %s %q\n",slug,filepath.ToSlash(rel),class,dest)
+};return nil});if err!=nil{t.Fatal(err)};if n>0{withLinks++}}
+fmt.Printf("MEASUREMENT specs=%d specs_with_outward=%d outward=%d active_only=%d archived_only=%d both=%d neither=%d\n",count,withLinks,outward,activeOnly,archivedOnly,both,neither)
+if outward!=activeOnly+archivedOnly+both+neither{t.Fatal("unclosed classes")};if !strings.Contains(root,"run_"){t.Fatal("wrong tree")}
+}

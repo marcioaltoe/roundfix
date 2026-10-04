@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -1438,8 +1437,33 @@ func (workflow *commandDeliveryWorkflow) archiveCommitIsExact(
 	}
 	delete(sourceTree, "_prd.md")
 	delete(destinationTree, "_prd.md")
-	if !maps.Equal(sourceTree, destinationTree) {
+	if len(sourceTree) != len(destinationTree) {
 		return false, nil
+	}
+	for name, sourceEntry := range sourceTree {
+		destinationEntry, exists := destinationTree[name]
+		if !exists {
+			return false, nil
+		}
+		if sourceEntry == destinationEntry {
+			continue
+		}
+		kind := gitTreeEntryKind(sourceEntry)
+		if filepath.Ext(name) != ".md" || (kind != "100644 blob" && kind != "100755 blob") || kind != gitTreeEntryKind(destinationEntry) {
+			return false, nil
+		}
+		sourceContent, err := workflow.git.RunGit(ctx, gitRoot, "show", parent+":"+source+"/"+name)
+		if err != nil {
+			return false, fmt.Errorf("read active Spec file %q: %w", name, err)
+		}
+		destinationContent, err := workflow.git.RunGit(ctx, gitRoot, "show", head+":"+destination+"/"+name)
+		if err != nil {
+			return false, fmt.Errorf("read archived Spec file %q: %w", name, err)
+		}
+		if !spec.ArchiveLinksMatch([]byte(sourceContent), []byte(destinationContent),
+			filepath.Dir(filepath.Join(source, name)), filepath.Dir(filepath.Join(destination, name)), source) {
+			return false, nil
+		}
 	}
 	sourcePRD, err := workflow.git.RunGit(ctx, gitRoot, "show", parent+":"+source+"/_prd.md")
 	if err != nil {
@@ -1449,7 +1473,7 @@ func (workflow *commandDeliveryWorkflow) archiveCommitIsExact(
 	if err != nil {
 		return false, fmt.Errorf("read archived Spec PRD: %w", err)
 	}
-	if !archivePRDChangeIsExact([]byte(sourcePRD), []byte(destinationPRD), filepath.Base(source)) {
+	if !archivePRDChangeIsExact([]byte(sourcePRD), []byte(destinationPRD), source, destination) {
 		return false, nil
 	}
 	sourceAtHead, err := workflow.gitObjectExists(ctx, gitRoot, head+":"+source)
@@ -1490,13 +1514,13 @@ func gitTreeEntryKind(entry string) string {
 	return fields[0] + " " + fields[1]
 }
 
-func archivePRDChangeIsExact(source, destination []byte, slug string) bool {
+func archivePRDChangeIsExact(source, destination []byte, sourceDir, destinationDir string) bool {
 	sourceFrontmatter, sourceBody, ok := splitArchivePRD(source)
 	if !ok {
 		return false
 	}
 	destinationFrontmatter, destinationBody, ok := splitArchivePRD(destination)
-	if !ok || !bytes.Equal(sourceBody, destinationBody) {
+	if !ok || (!bytes.Equal(sourceBody, destinationBody) && !spec.ArchiveLinksMatch(sourceBody, destinationBody, sourceDir, destinationDir, sourceDir)) {
 		return false
 	}
 	var sourceValues map[string]any
@@ -1510,7 +1534,7 @@ func archivePRDChangeIsExact(source, destination []byte, slug string) bool {
 	status, statusOK := destinationValues["status"].(string)
 	archived, archivedOK := destinationValues["archived"].(string)
 	sourceSlug, sourceSlugOK := destinationValues["source_slug"].(string)
-	if !statusOK || status != "archived" || !archivedOK || !validArchiveDate(archived) || !sourceSlugOK || sourceSlug != slug {
+	if !statusOK || status != "archived" || !archivedOK || !validArchiveDate(archived) || !sourceSlugOK || sourceSlug != filepath.Base(sourceDir) {
 		return false
 	}
 	for _, key := range []string{"status", "archived", "source_slug", "unproven"} {

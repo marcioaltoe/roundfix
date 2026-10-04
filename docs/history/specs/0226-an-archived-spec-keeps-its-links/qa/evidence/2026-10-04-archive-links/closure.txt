@@ -1,0 +1,2 @@
+Report closed: 13 rows; 12 pass; 1 environment block with equivalents; 0 pending/fail/skipped/finding/declared blocks.
+Exactly one frontmatter verdict; every row has typed inputs under matching identifier; every local evidence link resolves; seeded auditor fields and mechanical skips preserved.

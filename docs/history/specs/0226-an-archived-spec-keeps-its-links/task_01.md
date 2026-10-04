@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0226-an-archived-spec-keeps-its-links
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -78,3 +78,30 @@ refusal, the count on the confirmation line, and the limits.
 - `_prd.md` → Core Feature 7; User Stories 1-2
 - `_techspec.md` → Vocabulary Contract; API Contract 1; API Contract 2; API Contract 3; Surface Transcript 1; Surface Transcript 2; Build Order 1
 - ADR-0187; ADR-0189; ADR-0230
+
+## Result
+
+Implemented the documentation slice for the archive link rewrite contract.
+The Roundfix Skill archive reference and archive command guide now describe
+rewriting outward relative Markdown links, preserving fragments, queries and
+angle-bracket form; keeping links whose target was already archived; refusing
+unresolved outward links before changing files with file, line and destination;
+reporting `; rewrote <n> relative link(s)`; and excluding in-Spec, absolute,
+URL, HTML-anchor and non-Markdown destinations, including fixed-depth evidence
+scripts.
+
+Raised both Roundfix Skill front-matter version fields from `0.1.25` to
+`0.1.26`, synchronized the embedded mirror, recorded the version digest, and
+ran the required baseline digest regeneration (no derived changes).
+
+Focused checks completed:
+
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed.
+- `make baseline-digests` — passed; reported no derived changes.
+- `make skills-sync-check` — passed.
+- `cmp` checks for the canonical and embedded Roundfix Skill files — passed.
+- `git diff --check` — passed.
+- The recorded version is `0.1.26` with digest `0bb47417be37f1a5c84d7c019f5331f7f611170d45a46e775105e2b0fe83460b`.
+
+The daemon ran the authored Verification commands and settled the Task as
+`completed`.

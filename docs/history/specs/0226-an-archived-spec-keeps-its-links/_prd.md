@@ -1,9 +1,12 @@
 ---
 spec: 0226-an-archived-spec-keeps-its-links
-status: active
+status: archived
 created: 2026-10-04
 surfaces: [backend, cli, docs]
+archived: "2026-10-04"
+source_slug: 0226-an-archived-spec-keeps-its-links
 ---
+
 
 # An archived Spec keeps its links
 

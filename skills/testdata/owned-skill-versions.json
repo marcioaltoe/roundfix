@@ -220,7 +220,11 @@
       },
       {
         "version": "0.1.26",
-        "digest": "7d0dbb25f82a3cc2394a0e94d9a386ad8d188c2008fcfc497a05c2e8fdb285ac"
+        "digest": "0bb47417be37f1a5c84d7c019f5331f7f611170d45a46e775105e2b0fe83460b"
+      },
+      {
+        "version": "0.1.27",
+        "digest": "3005130e331ff9d64741a676ab46eff6ab5fe7d3226b224cd3c0a96a74a270b7"
       }
     ],
     "setup-context-driven": [

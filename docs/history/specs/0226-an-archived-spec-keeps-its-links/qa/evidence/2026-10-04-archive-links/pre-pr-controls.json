@@ -1,0 +1,11 @@
+{
+  "head": "9dc40eb8e7487ddeca8762de07f799110399e65a",
+  "run_branch": "roundfix/run-run_20261004T181758Z_aba276cda07403d2",
+  "target_branch": "roundfix/deliver-0226-an-archived-spec-keeps-its-links-1864c7d0e83eb6ed",
+  "pull_request": "none open (supervised prompt fact)",
+  "approval": "maintainer recorded authority, approved 2026-10-04, authorization record in delivery base",
+  "checks": "make verify-changed, daemon pass exit 0 at audited head; not rerun",
+  "threads": "none because no PR exists",
+  "merge_ready": "none yet; pre-PR review follows this authored gate; no review approval claimed",
+  "review_artifact_ancestry": "no acceptance artifact yet; claimed candidate 9dc40eb8e7487ddeca8762de07f799110399e65a"
+}

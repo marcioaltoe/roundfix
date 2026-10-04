@@ -1,0 +1,72 @@
+from pathlib import Path
+import os,subprocess,tempfile,json,hashlib,re
+exec((Path(__file__).parent/'report-helper.py.txt').read_text())
+base=Path(tempfile.mkdtemp(prefix='roundfix-0226-',dir='/private/tmp'))
+home=base/'home';home.mkdir()
+env=dict(os.environ,HOME=str(home),GIT_CONFIG_NOSYSTEM='1',GIT_CONFIG_GLOBAL='/dev/null');env.pop('NODE_OPTIONS',None)
+def put(p,s): p.parent.mkdir(parents=True,exist_ok=True);p.write_text(s)
+def fixture(name,configured=False):
+ repo=base/name;repo.mkdir();subprocess.run(['git','init','-q',str(repo)],env=env,check=True)
+ (repo/'bin').mkdir();(repo/'bin/roundfix').symlink_to(root/'bin/roundfix')
+ sp=repo/('plans' if configured else 'docs/specs')/'demo'
+ if configured: put(repo/'.roundfixrc.yml','specs:\n  root: plans\n')
+ put(sp/'_prd.md','---\nspec: demo\nstatus: active\ncreated: 2026-10-04\nsurfaces: [cli]\n---\n\n# Demo\n')
+ put(sp/'_tasks.md','---\nschema: spec-tasks/v1\nspec: demo\nqa: task_qa\ngraph:\n  nodes:\n    - id: task_01\n      file: task_01.md\n      needs: []\n    - id: task_qa\n      file: task_qa.md\n      needs: [task_01]\n---\n')
+ for id,typ in [('task_01','backend'),('task_qa','qa')]: put(sp/(id+'.md'),f'---\ntask: {id}\nspec: demo\nstatus: completed\ntype: {typ}\ncomplexity: low\n---\n\n# Task\n\n## Verification\n\n- `true` — expected: exit 0.\n')
+ put(sp/'qa/qa-report-2026-10-04.md','---\nverdict: pass\nrows_blocked_environment: 0\nrows_blocked_finding: 0\nrows_blocked_declared: 0\n---\n\n## Results\n\n| # | Status | Provenance |\n| - | --- | --- |\n| 1 | pass | fixture |\n')
+ return repo,sp,repo/('plans/_archived/demo' if configured else 'docs/history/specs/demo')
+def run(repo,label,args=['archive','demo']):
+ r=subprocess.run(['./bin/roundfix']+args,cwd=repo,env=env,capture_output=True,text=True)
+ (ev/(label+'.json')).write_text(json.dumps({'cwd':str(repo),'command':['./bin/roundfix']+args,'HOME':str(home),'NODE_OPTIONS':'unset','stdout':r.stdout,'stderr':r.stderr,'exit':r.returncode},indent=2))
+ return r
+def snapshot(sp): return {str(p.relative_to(sp)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(sp.rglob('*')) if p.is_file()}
+repo,sp,dst=fixture('transcript1')
+put(repo/'docs/adr/decision.md','decision');put(repo/'docs/findings/finding.md','finding')
+with (sp/'_prd.md').open('a') as f:f.write('\n[ADR](../../adr/decision.md)\n')
+with (sp/'task_01.md').open('a') as f:f.write('[Finding](../../findings/finding.md)\n')
+r=run(repo,'transcript1');assert (r.returncode,r.stdout,r.stderr)==(0,'archived demo -> docs/history/specs/demo; rewrote 2 relative link(s)\n',''),r
+assert not sp.exists() and dst.exists()
+assert (dst/'task_01.md').read_text().endswith('[Finding](../../../findings/finding.md)\n')
+repo,sp,dst=fixture('transcript2');put(repo/'docs/adr/decision.md','decision');put(repo/'docs/findings/finding.md','finding')
+with (sp/'_prd.md').open('a') as f:f.write('\n[ADR](../../adr/decision.md)\n')
+put(sp/'task_01.md',(sp/'task_01.md').read_text().replace('## Verification','[Finding](../../findings/finding.md)\n[missing](../../findings/missing.md)\n\n## Verification'))
+assert (sp/'task_01.md').read_text().splitlines()[11]=='[missing](../../findings/missing.md)'
+before=snapshot(sp);r=run(repo,'transcript2');after=snapshot(sp)
+expected='Preflight failed\n\nReason:\n  Spec "demo" has relative links that leave the Spec and do not resolve: task_01.md:12 "../../findings/missing.md"; fix or remove each link, then retry the archive\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run \'roundfix archive --help\' for usage.\n'
+assert (r.returncode,r.stdout,r.stderr)==(2,'',expected),r
+assert before==after and sp.exists() and not dst.exists()
+(ev/'refusal-checksums.json').write_text(json.dumps({'before':before,'after':after,'active_exists':sp.exists(),'archive_exists':dst.exists()},indent=2))
+settle('R02','pass','Supervisor ran `./bin/roundfix archive demo` in two disposable repositories. stdout/stderr and exit matched both TechSpec transcripts exactly (placeholders instantiated as demo, decision.md, finding.md). Refusal names task_01.md:12 and exits 2. SHA-256 for every Spec file is unchanged, active path remains and archive path is absent. Success independently reopens archived files and confirms active directory absent. [Transcript 1](evidence/2026-10-04-archive-links/transcript1.json), [Transcript 2](evidence/2026-10-04-archive-links/transcript2.json), [checksums](evidence/2026-10-04-archive-links/refusal-checksums.json).')
+for name,configured,already in [('rich',False,False),('configured',True,False),('already',False,True)]:
+ repo,sp,dst=fixture(name,configured)
+ if already:
+  put(repo/'docs/history/adr/decision.md','decision');body='[kept](../../adr/decision.md)\n';expected=body;count=0
+ else:
+  for p in ['docs/findings/finding.md','docs/adr/decision.md','docs/specs/sibling/_prd.md','docs/adr/a b.png']:put(repo/p,'target '+p)
+  # Relative paths also calculated for configured root, proving root-independent depth handling.
+  rel=lambda p:os.path.relpath(repo/p,sp).replace(os.sep,'/')
+  items=[('Finding','docs/findings/finding.md'),('ADR','docs/adr/decision.md'),('sibling','docs/specs/sibling/_prd.md')]
+  body=''.join(f'[{label}]({rel(p)})\n' for label,p in items)
+  body+=f'[ref]: {rel("docs/adr/decision.md")} "title"\n![image](<{rel("docs/adr/a b.png").replace(" ","%20")}?raw=1#view> "title")\n'
+  body+='[url](https://example.com/a)\n[local](_prd.md)\n`[code](../../missing.md)`\n```md\n[code](../../missing.md)\n```\n~~~md\n[code](../../missing.md)\n~~~\n<a href="../../missing.md">HTML</a>\n'
+  expected=body
+  for p in ['docs/findings/finding.md','docs/adr/decision.md','docs/specs/sibling/_prd.md','docs/adr/a b.png']:
+   expected=expected.replace(rel(p).replace(' ','%20'),os.path.relpath(repo/p,dst).replace(os.sep,'/').replace(' ','%20'))
+  count=5
+ put(sp/'notes.md',body);put(sp/'notes.txt','[fixed-depth](../../missing.md)\n');before={str(p.relative_to(sp)):p.read_bytes() for p in sp.rglob('*') if p.is_file()}
+ r=run(repo,name);outpath='plans/_archived/demo' if configured else 'docs/history/specs/demo';suffix=f'; rewrote {count} relative link(s)' if count else ''
+ assert (r.returncode,r.stdout,r.stderr)==(0,f'archived demo -> {outpath}{suffix}\n',''),r
+ after={str(p.relative_to(dst)):p.read_bytes() for p in dst.rglob('*') if p.is_file()}
+ assert set(before)==set(after)
+ for k in before:
+  if k=='notes.md':assert after[k]==expected.encode()
+  elif k=='_prd.md':assert after[k].split(b'---',2)[2]==b'\n'+before[k].split(b'---',2)[2]
+  else:assert after[k]==before[k],k
+ # fresh process independently resolves all outward link targets and snapshots archived bytes
+ for match in re.finditer(r'(?:\]\(|\[ref\]: )<?([^>\s)]+)',expected):
+  dest=match.group(1).split('?',1)[0].split('#',1)[0]
+  if '://' not in dest and 'missing' not in dest: assert (dst/(__import__('urllib.parse',fromlist=['unquote']).unquote(dest))).exists(),dest
+ (ev/(name+'-bytes.json')).write_text(json.dumps({'before':{k:v.decode() for k,v in before.items()},'after':{k:v.decode() for k,v in after.items()},'destination':str(dst)},indent=2))
+ assert not sp.exists()
+settle('R03','pass','Supervisor archived rich, configured-root and already-archived-target fixtures through `./bin/roundfix archive demo`. Five destinations (Finding, ADR, sibling Spec, reference definition, encoded angle-bracket image with query/fragment) retain target identity after fresh filesystem reads. Counts are 5, 5, 0; already-archived destination is byte-identical. URL, in-Spec destination, inline code, backtick/tilde fences, HTML and non-Markdown bytes stay identical. All files compare byte-for-byte except expected destination rewrites and normal PRD archive stamp; PRD has the existing stamp serializer’s extra separator newline; its remaining body is identical. [rich output](evidence/2026-10-04-archive-links/rich.json), [rich bytes](evidence/2026-10-04-archive-links/rich-bytes.json), [configured output](evidence/2026-10-04-archive-links/configured.json), [configured bytes](evidence/2026-10-04-archive-links/configured-bytes.json), [already output](evidence/2026-10-04-archive-links/already.json), [already bytes](evidence/2026-10-04-archive-links/already-bytes.json).')
+print('R02/R03 passed; disposable root',base)
