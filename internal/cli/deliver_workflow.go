@@ -908,7 +908,7 @@ func (workflow *commandDeliveryWorkflow) qaEnvironmentPartial(ctx context.Contex
 		return false
 	}
 	report, err := spec.ReadQAReportFile(temporary.Name())
-	return err == nil && report.Verdict == spec.VerdictPartial && report.RowsBlockedFinding == 0 && report.RowsBlockedEnvironment > report.RowsBlockedPrePullRequest
+	return err == nil && report.Verdict == spec.VerdictPartial && report.RowsBlockedFinding == 0 && report.RowsBlockedEnvironment > 0
 }
 
 func (workflow *commandDeliveryWorkflow) Descends(ctx context.Context, workDir, ancestor, head string) (bool, error) {
