@@ -111,6 +111,12 @@ Evidence for acceptance criteria:
 - Both Skill mirrors compare equal, and the raised version is recorded in
   `skills/testdata/owned-skill-versions.json`.
 
+
+Operator addendum (2026-10-04): after this Task settled, 0223, 0226 and 0225
+merged with the Roundfix Skill at `0.1.25`, `0.1.26` and `0.1.27`; merging main
+into the item raised this Spec's Skill change to `0.1.28` and recorded that
+version.
+
 ## Carry-forward provenance
 
 - Source Run: `run_20261004T162613Z_0bb1b015eb38156b`
