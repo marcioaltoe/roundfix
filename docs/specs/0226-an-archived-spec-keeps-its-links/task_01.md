@@ -103,5 +103,5 @@ Focused checks completed:
 - `git diff --check` — passed.
 - The recorded version is `0.1.26` with digest `0bb47417be37f1a5c84d7c019f5331f7f611170d45a46e775105e2b0fe83460b`.
 
-The task status remains daemon-owned as `in_progress`; the daemon must run the
-authored Verification commands and settle the Task.
+The daemon ran the authored Verification commands and settled the Task as
+`completed`.
