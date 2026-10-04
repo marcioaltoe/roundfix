@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0223-adjustments-the-adopters-asked-for
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -73,3 +73,54 @@ and guide checks".
 - `_prd.md` → Core Feature 5; User Story 4; Success Metric 3
 - `_techspec.md` → The release plan checks; API Contract 1; API Contract 2; API Contract 3; API Contract 5; Surface Transcript 1; Surface Transcript 2; Testing Approach 3; Build Order 3
 - ADR-0184
+
+## Result
+
+Implemented the advisory range-plan checks. The Doctor now calls the extracted
+`repositorySkillsCheck` with its existing comparison and output logic. A
+successful range build collects local skills readiness and a managed-refresh
+Baseline plan, then prints the two lines after `Next action:` or adds `checks`
+between `approval` and `changes` in JSON. The schema version and release
+state, proposal and exit-code calculation are unchanged. Reset planning and
+build/usage failures bypass collection. The help sentence follows API Contract 5.
+
+Acceptance evidence:
+
+- Text and JSON: `TestReleasePlanReportsTheSkillsAndBaselineChecks` checks
+  Surface Transcript 1, exactly one line per check immediately after the next
+  action, the JSON field order, actionable details and the help sentence.
+  `TestReleasePlanChecksOnAnAdoptedRepository` checks Surface Transcript 2's
+  `ok`/`current` statuses and omitted empty `nextAction`, and compares a stale
+  Baseline's file/move counts with `baseline update --no-skills`.
+- Decision isolation: `TestReleasePlanChecksNeverChangeTheDecision` covers
+  patch, minor, major, version-zero breaking, maintenance, ambiguous and
+  manually classified ranges with failing checks; state, proposed version,
+  exit code and schema version retain their existing expected values.
+- Read-only behavior: `TestReleasePlanChecksWriteNothing` compares repository
+  file bytes, Git status, refs, remotes and local Git configuration before and
+  after text and JSON plans with pending Baseline changes. Collection calls
+  only the local Doctor comparison and Baseline planning APIs; it does not
+  apply a plan or run the Baseline update skills stage.
+- Doctor parity: the existing Doctor tests were left unchanged and passed
+  after the extraction, including shared skills readiness and context checks.
+  The full CLI suite also passed in the incremental check.
+
+Focused checks and outcomes:
+
+- Red starting point:
+  `GOCACHE=/private/tmp/roundfix-task03-gocache rtk proxy go test ./internal/cli -run '^TestReleasePlanReportsTheSkillsAndBaselineChecks$' -count=1`
+  failed because the original output went directly from `Next action:` to
+  `Determining commits:` without checks.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache rtk proxy go test ./internal/cli -run 'TestReleasePlan(Check|Reports)|TestRunDoctor|TestDoctorAndSkills' -count=1`
+  passed after correcting the new fixtures to use a maintenance-only path and
+  copy the skills lock alongside external skills.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache rtk make verify-incremental`
+  passed with process-table and localhost-listener permissions. The sandboxed
+  attempt failed in existing process-owner and local HTTP integration tests
+  with `operation not permitted`; the permitted rerun passed. An earlier
+  incremental attempt was interrupted while correcting the new fixtures.
+- `rtk proxy git -c core.fsmonitor=false diff --check` passed.
+
+The authored Verification command was not run. Task status, other Task files
+and the Task Graph were not edited. No commit, push or Pull Request was made.
+No follow-up outside this Task's slice was identified.

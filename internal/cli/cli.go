@@ -5497,6 +5497,8 @@ tag; --to defaults to committed HEAD. --reset-to inventories every local and
 remote stable tag and every paginated GitHub Release for a clean committed
 HEAD, binds them to a plan digest, and exposes no deletion action.
 
+A range plan also reports the skills and baseline checks read-only; they never change the decision state, the proposed version, or the exit code.
+
 Decision states:
   ready                           Patch release can proceed without version approval.
   approval_required               Minor, major, or breaking version decision needs approval.

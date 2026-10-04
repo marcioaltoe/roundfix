@@ -82,11 +82,13 @@ func runReleasePlanCommand(ctx context.Context, args []string, stdout, stderr io
 		return exitPreflight
 	}
 
+	checks := collectReleasePlanChecks(ctx, source, environment)
+
 	switch req.outputFormat {
 	case releasePlanFormatText:
-		printReleasePlanText(plan, stdout)
+		printReleasePlanText(plan, checks, stdout)
 	case releasePlanFormatJSON:
-		if err := printReleasePlanJSON(plan, stdout); err != nil {
+		if err := printReleasePlanJSON(plan, checks, stdout); err != nil {
 			printReleasePlanFailure(err, stderr)
 			return exitRunFailed
 		}
@@ -198,7 +200,7 @@ func printReleasePlanFailure(err error, stderr io.Writer) {
 	fmt.Fprintf(stderr, "%s: release plan failed: %v\n", app.Name, err)
 }
 
-func printReleasePlanText(plan releaseplan.Plan, stdout io.Writer) {
+func printReleasePlanText(plan releaseplan.Plan, checks releasePlanChecks, stdout io.Writer) {
 	fmt.Fprintf(stdout, "Decision: %s\n", plan.State)
 	fmt.Fprintf(stdout, "Base: %s (%s)\n", plan.Base.Tag, shortReleasePlanSHA(plan.Base.CommitSHA))
 	fmt.Fprintf(stdout, "Target: %s (%s)\n", plan.Target.Name, shortReleasePlanSHA(plan.Target.CommitSHA))
@@ -228,6 +230,8 @@ func printReleasePlanText(plan releaseplan.Plan, stdout io.Writer) {
 		fmt.Fprintln(stdout, "Approval required: no")
 		fmt.Fprintf(stdout, "Next action: rerun roundfix release plan --from %s --to %s --impact <none|patch|minor|major> --reason <text>\n", plan.Base.Tag, plan.Target.Name)
 	}
+
+	printReleasePlanChecksText(checks, stdout)
 
 	changes := releasePlanTextChanges(plan)
 	if len(changes) == 0 {
@@ -299,10 +303,10 @@ func releasePlanChangeLabel(change releaseplan.ChangeEvidence) string {
 	return strings.Join(labels, ", ")
 }
 
-func printReleasePlanJSON(plan releaseplan.Plan, stdout io.Writer) error {
+func printReleasePlanJSON(plan releaseplan.Plan, checks releasePlanChecks, stdout io.Writer) error {
 	encoder := json.NewEncoder(stdout)
 	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(releasePlanJSONFromPlan(plan)); err != nil {
+	if err := encoder.Encode(releasePlanJSONWithChecks(plan, checks)); err != nil {
 		return fmt.Errorf("encode release plan JSON: %w", err)
 	}
 	return nil
@@ -368,6 +372,7 @@ type releasePlanJSON struct {
 	Classification  releasePlanClassificationJSON `json:"classification"`
 	ProposedVersion string                        `json:"proposedVersion,omitempty"`
 	Approval        releasePlanApprovalJSON       `json:"approval"`
+	Checks          releasePlanChecks             `json:"checks"`
 	Changes         []releasePlanChangeJSON       `json:"changes"`
 }
 
