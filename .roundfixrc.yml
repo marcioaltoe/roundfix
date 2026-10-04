@@ -6,6 +6,9 @@ verification:
   tools: [go, gofmt, git, make]
 
 delivery:
+  item_binary:
+    build: make build
+    path: bin/roundfix
   derived_paths:
     - paths:
         - internal/baseline/testdata/catalog.digest
