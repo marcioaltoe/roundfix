@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-09-30T00:00:00Z
-updated_at: 2026-10-01T00:00:00Z
+updated_at: 2026-10-04T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -61,3 +61,5 @@ convenient exception, so the command keeps it by construction:
   not read, because neither adopted judgment needs them.
 
 **Key scope (2026-10-01).** The maintainer named Roundfix's keys for every OpenRouter and TypeSafe use, not the judge alone: "ROUNDFIX_OPENROUTER_API_KEY e ROUNDFIX_TYPESAFE_API_KEY … a key de openrouter para o roundfix vai ser para todo uso do openrouter no roundfix e do typesafe a mesma coisa e não só o jev." Any later Roundfix feature that calls OpenRouter or TypeSafe reads these two names, never the generic `OPENROUTER_API_KEY` or `TYPESAFE_API_KEY`, so each project's spend stays attributable.
+
+**Ceiling value (2026-10-04).** Superseded in part by ADR-0231: the ceiling is the User Config value `jev.monthly_ceiling_usd`, and the US$5 above is its default when that value is unset. Every other part of this decision stands.
