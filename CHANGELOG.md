@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.35.0] - 2026-10-04
+
+### Adjustments the adopters asked for
+
+- **Optional branch prefix.** `branch.prefix` is now an optional Baseline decision. When no prefix is recorded, the agent-instructions guide states the Conventional Commit type rule (`<type>/<description>`); a recorded prefix renders the same sentence as before. An adopter's next `baseline update` asks nothing new, and no clause is removed or renamed.
+- **QA gate.** A row from a QA report written without declared inputs is never carried forward. It is re-executed, and the new pass declares its inputs.
+- **Release plan checks.** `roundfix release plan` prints a `skills:` line (the Doctor's skill comparison) and a `baseline:` line (what `baseline update --no-skills` would report) after `Next action:`, and the JSON output gains a `checks` object. Both are read-only and never change the decision, version or exit code.
+
 ## [0.34.0] - 2026-10-04
 
 ### A review through Claude that keeps its verdict
