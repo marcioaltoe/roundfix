@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0222-a-review-through-claude-that-keeps-its-verdict
-status: pending
+status: failed
 type: qa
 complexity: medium
 ---

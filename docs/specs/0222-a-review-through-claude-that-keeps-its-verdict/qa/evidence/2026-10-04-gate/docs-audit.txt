@@ -1,0 +1,7 @@
+Mirrors and guide bodies byte equal. Required phrases pass. Version ['0.1.23', '0.1.23'] -> ['0.1.24', '0.1.24']. QA settlement unchanged in all tracked skills (6 sections):
+.agents/skills/archive-spec/SKILL.md
+.agents/skills/qa-gate/SKILL.md
+.agents/skills/roundfix/SKILL.md
+skills/archive-spec/SKILL.md
+skills/qa-gate/SKILL.md
+skills/roundfix/SKILL.md

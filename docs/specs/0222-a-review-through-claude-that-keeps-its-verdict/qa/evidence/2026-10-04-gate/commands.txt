@@ -1,0 +1,11 @@
+Build: rtk proxy make build
+Identity: rtk proxy ./bin/roundfix --version
+Precondition: rtk proxy ./bin/roundfix spec check 0222-a-review-through-claude-that-keeps-its-verdict --strict
+Runner: GOCACHE=/private/tmp/roundfix-task04-gocache rtk proxy go test -count=1 -v -run '^TestACPX(RunPromptKeeps|PromptExitClassificationMatrix|ExitCodeMapping)' ./internal/agent
+CLI: GOCACHE=/private/tmp/roundfix-task04-gocache rtk proxy go test -count=1 -v -run '^TestReview(Command(ClassifiesFindingsAfterARefusedPermission|PassesNoFindingsAfterARefusedPermission|NamesTheRefusalWhenTheAnswerHasNoVerdict|NamesAPromptThatIsTooLong|BlocksOnTransportAnomaly|RefusesAClaudePromptOverHalfItsWindow|SendsAClaudePromptBeyondTheCodexByteBound|KeepsTheCodexDiffByteBound)|PromptTooLongKeepsFailurePrecedence|PermissionFlagIsOptionalAndPromptOverflowUsesFinalAnswer)|^TestEstimateReviewPromptTokens$' ./internal/cli
+Skill: GOCACHE=/private/tmp/roundfix-task04-gocache rtk proxy go test -count=1 -run '^TestEveryOwnedSkillVersionIsRecorded$' ./skills
+Capture tests outside the repository, then copy evidence after all tests complete.
+Public flows: ./bin/roundfix review --base main (disposable repository); ./bin/roundfix review --base qa-base (disposable clone). Symlinks target only this Run Worktree's built ./bin/roundfix.
+History: git -c core.fsmonitor=false diff-tree --no-commit-id --name-only -r <each Task commit>
+History range: ff1350172603bdb299c1310ece239443f7786dad..586e52662a3fc928c41e0df2b9faf6ec860985d8
+Repository Verification: make verify-changed — Daemon-provided pass, exit 0; never rerun by Agent.

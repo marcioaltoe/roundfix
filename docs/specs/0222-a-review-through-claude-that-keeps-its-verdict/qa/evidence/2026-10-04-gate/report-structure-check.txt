@@ -1,0 +1,1 @@
+PASS: one frontmatter; preserved auditor identity/staleness and all mechanical sections/skips; 15 closed rows (10 pass, 5 environment blocks); all 9 Requirements and non-waivable sources mapped; nonempty typed inputs for all rows; 24 local evidence links resolve; final test logs have ok and no FAIL; no Agent evidence_snapshots.

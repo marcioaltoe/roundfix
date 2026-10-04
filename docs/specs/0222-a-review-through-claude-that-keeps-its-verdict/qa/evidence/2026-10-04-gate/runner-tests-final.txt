@@ -1,0 +1,59 @@
+=== RUN   TestACPXRunPromptKeepsAReadOnlyTurnThatRefusedAPermission
+=== PAUSE TestACPXRunPromptKeepsAReadOnlyTurnThatRefusedAPermission
+=== RUN   TestACPXRunPromptKeepsTheAnomalyOutsideAReadOnlyRefusal
+=== PAUSE TestACPXRunPromptKeepsTheAnomalyOutsideAReadOnlyRefusal
+=== RUN   TestACPXPromptExitClassificationMatrix
+=== PAUSE TestACPXPromptExitClassificationMatrix
+=== RUN   TestACPXExitCodeMapping
+=== PAUSE TestACPXExitCodeMapping
+=== CONT  TestACPXRunPromptKeepsAReadOnlyTurnThatRefusedAPermission
+=== CONT  TestACPXPromptExitClassificationMatrix
+=== CONT  TestACPXExitCodeMapping
+=== CONT  TestACPXRunPromptKeepsTheAnomalyOutsideAReadOnlyRefusal
+=== RUN   TestACPXExitCodeMapping/success
+=== RUN   TestACPXRunPromptKeepsTheAnomalyOutsideAReadOnlyRefusal/read-only_other_exit
+=== RUN   TestACPXPromptExitClassificationMatrix/result_exit_zero
+--- PASS: TestACPXRunPromptKeepsAReadOnlyTurnThatRefusedAPermission (0.01s)
+=== RUN   TestACPXExitCodeMapping/agent_protocol_failure
+=== RUN   TestACPXRunPromptKeepsTheAnomalyOutsideAReadOnlyRefusal/read-only_incomplete_turn
+=== RUN   TestACPXPromptExitClassificationMatrix/result_exit_one_becomes_anomaly_success
+=== RUN   TestACPXRunPromptKeepsTheAnomalyOutsideAReadOnlyRefusal/read-write_turn
+=== RUN   TestACPXExitCodeMapping/timeout_failure
+=== RUN   TestACPXPromptExitClassificationMatrix/no_result_exit_one_becomes_selection_failure
+=== RUN   TestACPXExitCodeMapping/all_permissions_denied_failure
+=== RUN   TestACPXRunPromptKeepsTheAnomalyOutsideAReadOnlyRefusal/inert_read-only_turn
+=== RUN   TestACPXPromptExitClassificationMatrix/no_result_exit_two_remains_infrastructure
+=== RUN   TestACPXExitCodeMapping/usage_infrastructure_error
+--- PASS: TestACPXRunPromptKeepsTheAnomalyOutsideAReadOnlyRefusal (0.02s)
+    --- PASS: TestACPXRunPromptKeepsTheAnomalyOutsideAReadOnlyRefusal/read-only_other_exit (0.01s)
+    --- PASS: TestACPXRunPromptKeepsTheAnomalyOutsideAReadOnlyRefusal/read-only_incomplete_turn (0.00s)
+    --- PASS: TestACPXRunPromptKeepsTheAnomalyOutsideAReadOnlyRefusal/read-write_turn (0.00s)
+    --- PASS: TestACPXRunPromptKeepsTheAnomalyOutsideAReadOnlyRefusal/inert_read-only_turn (0.01s)
+=== RUN   TestACPXPromptExitClassificationMatrix/no_result_exit_four_remains_infrastructure
+=== RUN   TestACPXPromptExitClassificationMatrix/result_exit_one_with_buffer_error_line_becomes_anomaly_success
+=== RUN   TestACPXExitCodeMapping/missing_session_infrastructure_error
+=== RUN   TestACPXPromptExitClassificationMatrix/Agent_output_exit_one_remains_Batch_failure
+=== RUN   TestACPXExitCodeMapping/stop_request
+=== RUN   TestACPXPromptExitClassificationMatrix/result_exit_one_thirty_remains_stop
+--- PASS: TestACPXExitCodeMapping (0.03s)
+    --- PASS: TestACPXExitCodeMapping/success (0.01s)
+    --- PASS: TestACPXExitCodeMapping/agent_protocol_failure (0.00s)
+    --- PASS: TestACPXExitCodeMapping/timeout_failure (0.00s)
+    --- PASS: TestACPXExitCodeMapping/all_permissions_denied_failure (0.00s)
+    --- PASS: TestACPXExitCodeMapping/usage_infrastructure_error (0.00s)
+    --- PASS: TestACPXExitCodeMapping/missing_session_infrastructure_error (0.00s)
+    --- PASS: TestACPXExitCodeMapping/stop_request (0.00s)
+=== RUN   TestACPXPromptExitClassificationMatrix/partial_stream_without_Agent_output_becomes_selection_failure
+--- PASS: TestACPXPromptExitClassificationMatrix (0.04s)
+    --- PASS: TestACPXPromptExitClassificationMatrix/result_exit_zero (0.01s)
+    --- PASS: TestACPXPromptExitClassificationMatrix/result_exit_one_becomes_anomaly_success (0.00s)
+    --- PASS: TestACPXPromptExitClassificationMatrix/no_result_exit_one_becomes_selection_failure (0.00s)
+    --- PASS: TestACPXPromptExitClassificationMatrix/no_result_exit_two_remains_infrastructure (0.00s)
+    --- PASS: TestACPXPromptExitClassificationMatrix/no_result_exit_four_remains_infrastructure (0.00s)
+    --- PASS: TestACPXPromptExitClassificationMatrix/result_exit_one_with_buffer_error_line_becomes_anomaly_success (0.00s)
+    --- PASS: TestACPXPromptExitClassificationMatrix/Agent_output_exit_one_remains_Batch_failure (0.00s)
+    --- PASS: TestACPXPromptExitClassificationMatrix/result_exit_one_thirty_remains_stop (0.00s)
+    --- PASS: TestACPXPromptExitClassificationMatrix/partial_stream_without_Agent_output_becomes_selection_failure (0.00s)
+PASS
+suiteguard: guard cost: measured 8627 paths; fingerprint took 304.541167ms before and 248.441541ms after
+ok  	roundfix/internal/agent	0.800s

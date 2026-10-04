@@ -1,0 +1,7 @@
+Scratch: /private/tmp/rf222-qa-h7cih6tc/repo
+./bin/roundfix symlink targets /Users/marcio/.roundfix/worktrees/roundfix-deliver-0222-a-review-through-claude-that-keeps-its-verdict-7cde5e3d8bf74bac-d4adc70e-b127078e/run_20261004T145620Z_ee61ac9af5ab0ce2/bin/roundfix
+Candidate bytes: 1100000
+HOME=/private/tmp/rf222-qa-h7cih6tc/home; PATH=/usr/bin:/bin; NODE_OPTIONS unset
+Command: ./bin/roundfix review --base main
+claude: exit=2; persisted record equals stdout; roundfix: review blocked: review prompt too large: 561078 estimated tokens after omitting 0 path(s) exceeds the claude review budget of 500000 tokens, half of its 1000000-token context window; estimate=561078
+codex: exit=2; persisted record equals stdout; roundfix: review blocked: review diff too large: 1120128 bytes after omitting 0 path(s) exceeds the review bound of 917504 bytes; estimate=omitted
