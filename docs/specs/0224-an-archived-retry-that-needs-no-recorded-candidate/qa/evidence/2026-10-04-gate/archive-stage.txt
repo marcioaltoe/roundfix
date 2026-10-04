@@ -1,0 +1,4 @@
+=== RUN   TestTheArchiveStagePassesAnAlreadyArchivedSpec
+--- PASS: TestTheArchiveStagePassesAnAlreadyArchivedSpec (0.01s)
+PASS
+ok  	roundfix/internal/delivery	0.096s

@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0224-an-archived-retry-that-needs-no-recorded-candidate
-status: pending
+status: failed
 type: qa
 complexity: medium
 ---

@@ -1,0 +1,21 @@
+=== RUN   TestQA0220ArchivedReport
+    qa0224_probe_test.go:20: 0220: environment=2 prePR=2 finding=0 environmentPartial=true archiveRefusal=newest QA Report verdict is "partial"; expected "pass"
+--- PASS: TestQA0220ArchivedReport (0.09s)
+=== RUN   TestQA0224BuiltArchiveRetry
+    qa0224_probe_test.go:22: built archive stdout="archived 0001-widget-flow with QA override -> docs/history/specs/0001-widget-flow\n" stderr=""
+--- PASS: TestQA0224BuiltArchiveRetry (0.15s)
+=== RUN   TestQAReportAcceptRefusesAPendingReport
+=== PAUSE TestQAReportAcceptRefusesAPendingReport
+=== RUN   TestQAReportAcceptRefusesAHollowPass
+=== PAUSE TestQAReportAcceptRefusesAHollowPass
+=== RUN   TestQAReportAcceptRefusesAnEmptyFrontMatter
+=== PAUSE TestQAReportAcceptRefusesAnEmptyFrontMatter
+=== CONT  TestQAReportAcceptRefusesAPendingReport
+=== CONT  TestQAReportAcceptRefusesAnEmptyFrontMatter
+=== CONT  TestQAReportAcceptRefusesAHollowPass
+--- PASS: TestQAReportAcceptRefusesAPendingReport (0.00s)
+--- PASS: TestQAReportAcceptRefusesAnEmptyFrontMatter (0.00s)
+--- PASS: TestQAReportAcceptRefusesAHollowPass (0.00s)
+PASS
+suiteguard: guard cost: measured 8690 paths; fingerprint took 297.974875ms before and 259.459417ms after
+ok  	roundfix/internal/cli	1.199s
