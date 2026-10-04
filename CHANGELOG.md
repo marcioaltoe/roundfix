@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.33.0] - 2026-10-04
+
+### Tests and pins that hold in every environment
+
+- **Process-group fixtures.** The detached-child tests decide that a fixture's process group ended by reading the group's live members from the process table, with a start-time check against a reused PID. They no longer probe the group with a signal: macOS answers that probe with EPERM when every member has exited but has not yet been reaped. The stopgap that skipped the test on EPERM is removed.
+- **Skill checks.** This repository's upstream-managed skills are checked skill by skill against `skills-lock.json` and against the embedded Setup Snapshot, replacing a hand-pinned digest of the whole tree. The 11 skills that trailed the snapshot are restored, and `roundfix doctor` reports `skills: ok`.
+
 ## [0.32.0] - 2026-10-04
 
 ### A delivery that survives archive, requeue and review
