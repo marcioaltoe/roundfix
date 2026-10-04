@@ -7,7 +7,56 @@ import (
 	"os"
 	"path"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
+
+// Declared reports whether either field of the item build is present.
+func (declaration ItemBinaryDeclaration) Declared() bool {
+	return declaration.Build != "" || declaration.Path != ""
+}
+
+// UnmarshalYAML preserves strict nested-key validation for the declaration.
+func (declaration *ItemBinaryDeclaration) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind == yaml.MappingNode {
+		for index := 0; index < len(node.Content); index += 2 {
+			key := node.Content[index].Value
+			switch key {
+			case "build", "path":
+			default:
+				return fmt.Errorf("delivery.item_binary.%s is not a supported config key", key)
+			}
+		}
+	}
+	type rawItemBinaryDeclaration ItemBinaryDeclaration
+	var raw rawItemBinaryDeclaration
+	if err := node.Decode(&raw); err != nil {
+		return err
+	}
+	*declaration = ItemBinaryDeclaration(raw)
+	if !declaration.Declared() {
+		return errors.New("delivery.item_binary requires build and path")
+	}
+	return nil
+}
+
+func validateItemBinary(declaration ItemBinaryDeclaration) error {
+	if !declaration.Declared() {
+		return nil
+	}
+	if strings.TrimSpace(declaration.Build) == "" || strings.TrimSpace(declaration.Path) == "" {
+		return errors.New("delivery.item_binary requires build and path")
+	}
+	if path.IsAbs(declaration.Path) || strings.Contains(declaration.Path, "\\") || declaration.Path == "." || path.Clean(declaration.Path) != declaration.Path {
+		return fmt.Errorf("delivery.item_binary has unsafe path %q", declaration.Path)
+	}
+	for _, segment := range strings.Split(declaration.Path, "/") {
+		if segment == ".." {
+			return fmt.Errorf("delivery.item_binary has unsafe path %q", declaration.Path)
+		}
+	}
+	return nil
+}
 
 func validateDerivedPaths(declarations []DerivedPathDeclaration) error {
 	for index, declaration := range declarations {

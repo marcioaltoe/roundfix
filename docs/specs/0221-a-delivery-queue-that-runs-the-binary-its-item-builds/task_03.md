@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0221-a-delivery-queue-that-runs-the-binary-its-item-builds
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -73,3 +73,48 @@ Nothing reads it yet; task_04 does.
 - `_prd.md` → User Story 4; Core Feature 1
 - `_techspec.md` → The declaration; Interfaces; API Contract 4; Testing Approach 2; Build Order 3
 - ADR-0225; ADR-0192; ADR-0027
+
+
+## Result
+
+Implemented the Task 03 configuration slice. `Delivery.ItemBinary` holds the
+specified two-field `ItemBinaryDeclaration`; its zero value is undeclared.
+The YAML decoder refuses unknown nested keys and explicitly empty mappings.
+Project Config replaces the whole User Config declaration. Shared `Validate`
+checks completeness and repository-relative path safety beside derived-path
+validation, covering both `Load` and `ResolveConfigProposal`.
+
+Acceptance evidence from `internal/config/delivery_item_binary_test.go`:
+
+| Acceptance criterion | Focused-check evidence |
+| --- | --- |
+| Project Config reads `make build` and `bin/roundfix` as declared | `TestDeliveryItemBinaryIsReadFromProjectConfig` asserts both fields and `Declared()` through `Load` and `ResolveConfigProposal`. |
+| Project replaces User; absence is undeclared | `TestDeliveryItemBinaryProjectReplacesUser` proves replacement, inheritance when Project omits the declaration, and refusal of a partial Project declaration rather than field merging. `TestDeliveryItemBinaryIsUndeclaredByDefault` proves the zero value and absent configuration. |
+| Incomplete declarations, unsafe paths, and unknown keys fail with the contract messages | `TestDeliveryItemBinaryRefusesAnIncompleteDeclaration`, `TestDeliveryItemBinaryRefusesAnUnsafePath`, and `TestDeliveryItemBinaryRefusesAnUnknownKey` exercise both entry points. Cases include missing, empty and whitespace fields, an empty mapping, `/abs/roundfix`, `../roundfix`, a nested parent segment, a backslash, `.`, non-clean paths, and an unknown sub-key in both scopes. Parsing retains its existing scope wrapper; tests compare the underlying contract error exactly. |
+
+Focused checks:
+
+- Before implementation, `GOCACHE=/tmp/roundfix-task03-gocache rtk go test
+  ./internal/config -run '^TestDeliveryItemBinaryIsReadFromProjectConfig$'
+  -count=1` exited 1: the new type and field did not exist.
+- `GOCACHE=/tmp/roundfix-task03-gocache rtk proxy go test ./internal/config
+  -run 'TestDeliveryItemBinary|TestProjectConfigReadsDerivedPathDeclarations|TestDerivedPathDeclarationsRefuseUnsafeEntries'
+  -count=1` exited 0.
+- After the final code edit, `GOCACHE=/tmp/roundfix-task03-gocache rtk proxy
+  go test -count=1 ./internal/config` exited 0 (`ok`, 0.881s), exercising the
+  six new named tests and the existing config tests, including the unedited
+  derived-path tests.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+The only pre-existing worktree change was the Daemon's `status: in_progress`
+in this Task file, which was preserved. No declared Verification command,
+repository-wide gate, commit, push, or Pull Request operation was run.
+`delivery.derived_paths`, `.roundfixrc.yml`, the Task Graph, and other Task
+files were not changed. Task 04 owns consuming the declaration; this diff
+adds no binary build or selection behavior. Implementation is handed back
+for Daemon Verification and settlement.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261003T234640Z_3e854d86e9475f64`
+- Source commit: `7bdbc8838a2afd281e485e90ed33fafa5d40f6d2`
