@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-03
-spec: null
+spec: 0223-adjustments-the-adopters-asked-for
 reason: null
 ---
 

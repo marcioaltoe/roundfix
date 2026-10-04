@@ -1,9 +1,9 @@
 ---
 type: feat
-status: open
+status: declined
 created: 2026-10-03
 spec: null
-reason: null
+reason: maintainer decided 2026-10-04 to keep the cursor runtime opt-in only; no built-in profile changes
 ---
 
 # A Grok selection through Cursor as a `docs` and `chore` fallback
@@ -36,3 +36,10 @@ the measurement left open: the plan charge of a `fast=true` value, which
 Cursor does not report to Roundfix as tokens; the wall time, about 1.5 times
 the default's on both Tasks; and a larger sample than two low-complexity
 Tasks. Reconcile it with Spec 0218's Jev router on `docs` and `chore` Tasks.
+
+## Disposition — 2026-10-04 — declined
+
+The maintainer decided on 2026-10-04 to keep the cursor runtime opt-in only;
+no built-in profile changes. The `docs` and `chore` Fallback Chains stay as
+they are, and a repository that wants the Grok selection configures it in its
+own Project Config. No Spec consumes this entry.
