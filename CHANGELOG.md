@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.37.0] - 2026-10-04
+
+### A Jev ceiling the maintainer sets
+
+- **Configured ceiling.** The shared Jev monthly ceiling is read from `jev.monthly_ceiling_usd` in User Config (`~/.roundfix/config.yml`). When the key is unset the ceiling stays US$5, so existing installations see no change. A value in Project Config is ignored with a warning, so a cloned repository cannot raise the spend. A value that is not a finite number greater than 0 is refused.
+- **One ceiling for every consumer.** `roundfix spec judge`, the Jev Router gate and the key-limit check all read the configured value. The router still requires the OpenRouter key's monthly limit to be at or below the ceiling.
+- **Upgrade first.** Earlier binaries refuse a User Config that contains the new key, so set it only after every Roundfix binary on the machine is 0.37.0 or later.
+
 ## [0.36.0] - 2026-10-04
 
 ### An archived Spec keeps its links
