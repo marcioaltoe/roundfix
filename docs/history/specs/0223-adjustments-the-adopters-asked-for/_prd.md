@@ -1,9 +1,12 @@
 ---
 spec: 0223-adjustments-the-adopters-asked-for
-status: active
+status: archived
 created: 2026-10-04
 surfaces: [backend, cli, docs]
+archived: "2026-10-04"
+source_slug: 0223-adjustments-the-adopters-asked-for
 ---
+
 
 # Adjustments the adopters asked for
 
