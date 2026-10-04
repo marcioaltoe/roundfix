@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0226-an-archived-spec-keeps-its-links
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -77,3 +77,51 @@ measured on fluxus on 2026-10-02.
 - `_prd.md` → Core Features 1-5; User Stories 1-2; Success Metrics 1-2
 - `_techspec.md` → The link pass; API Contract 1; API Contract 2; API Contract 3; API Contract 4; Surface Transcript 1; Surface Transcript 2; Testing Approach 1; Testing Approach 2; Build Order 2
 - ADR-0230
+
+
+## Result
+
+Implemented the archive link pass after eligibility and destination checks,
+before the archive stamp. It scans regular Markdown files recursively, keeps
+internal and non-relative destinations, and skips symlinks, non-Markdown files,
+fenced code and inline code. Outward destinations retain their lexical target,
+query and fragment; angle brackets and titles retain their surrounding bytes.
+Every unresolved outward destination is reported with its Spec-relative file
+and line before any write. Rewritten files retain their original bytes for
+rollback if writing or renaming fails.
+
+`ArchiveResult.RewrittenLinks` counts changed destinations. The exported
+`ArchiveLinksMatch` uses the same scanner and rejects changed targets, queries,
+fragments and bytes outside destinations. Both command confirmation paths
+append the count only when positive, and usage includes API Contract 3 while
+retaining “moves unchanged”. The granted existing-test edit only supplies the
+three PRD link targets in `prepareSpec0058Replay`; no assertion changed.
+
+Focused evidence from this turn:
+
+- Initial focused compile failed because `ArchiveResult.RewrittenLinks` did
+  not exist. A later Markdown-form regression exposed an unfinished link being
+  scanned; the scanner now requires complete link syntax and handles an image
+  inside a linked label.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk proxy go test ./internal/spec ./internal/cli -run '(Archive|Spec0058Replay)' -count=1`
+  exited 0 after the final code edits: both packages passed, including the
+  existing Spec 0058 replay assertions.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk make verify-incremental`
+  exited 0 when rerun with local listener and process-table permissions and
+  the worktree held unchanged during execution. Includes formatting, vet,
+  package tests, skill checks and build. The first sandboxed attempt exited 2:
+  existing process-owner and HTTP-server tests lacked permissions, and the
+  suite guard detected this Agent's concurrent Result edit. The rerun changed
+  neither code nor assertions.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+| Acceptance criterion | Focused evidence |
+| --- | --- |
+| Outward links reach the same files after archive | `TestArchiveRewritesRelativeLinksThatLeaveTheSpec`, `TestArchiveRewritesLinksUnderAConfiguredSpecRoot`, `TestArchiveRewritesLinksInASupersededSpec`, and `TestArchiveLinksMarkdownForms` passed; covers nested Markdown, images, reference definitions, titles, encoded paths, queries and fragments. |
+| Broken outward link refuses with no byte changed | `TestArchiveRefusesALinkThatWouldStayBroken` passed with a full regular-file byte comparison and two reported missing destinations; `TestArchiveCommandRefusesABrokenOutwardLink` passed with exit 2, stderr diagnostics and no move. `TestArchiveRestoresRewrittenBytesWhenRenameFails` passed for both PRD and another rewritten file. |
+| Already archived target keeps its bytes | `TestArchiveKeepsALinkWhoseTargetWasAlreadyArchived` passed with identical Markdown bytes and a zero rewrite count. |
+| Confirmation count appears only when links were rewritten | `TestArchiveCommandReportsRewrittenLinks` passed all four normal/QA-override and positive/zero-count cases. |
+
+The declared Verification command remains for the Daemon. Task status,
+Task Graph and other Task files were not edited. Delivery Queue resume
+integration remains task_03's slice; no additional follow-up was identified.
