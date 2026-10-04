@@ -6,13 +6,16 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 
 	"roundfix/internal/app"
 	"roundfix/internal/store"
 )
 
 func runMigrateCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
-	if commandWantsHelp(args) && !(len(args) > 1 && args[0] == "--check") {
+	// --check stands alone: with any other argument, help included, in any
+	// order, it is refused rather than read as a help request.
+	if commandWantsHelp(args) && !slices.Contains(args, "--check") {
 		fmt.Fprint(stdout, commandUsage("migrate"))
 		return exitOK
 	}

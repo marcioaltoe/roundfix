@@ -65,7 +65,7 @@ func TestMigrateCheckReportsAnAbsentDatabaseAndCreatesNothing(t *testing.T) {
 
 func TestMigrateCheckRefusesAnExtraArgument(t *testing.T) {
 	t.Parallel()
-	for _, args := range [][]string{{"--check", "extra"}, {"extra"}, {"--unknown"}, {"--check", "--check"}, {"--check", "--help"}} {
+	for _, args := range [][]string{{"--check", "extra"}, {"extra"}, {"--unknown"}, {"--check", "--check"}, {"--check", "--help"}, {"--help", "--check"}} {
 		t.Run(fmt.Sprint(args), func(t *testing.T) {
 			homeDir := t.TempDir()
 			setCommandEnvironmentForTest(t, homeDir, t.TempDir())
