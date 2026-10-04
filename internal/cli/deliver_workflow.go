@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"os"
 	"os/exec"
@@ -34,6 +35,7 @@ type commandDeliveryWorkflow struct {
 	store  *store.Store
 	loaded roundconfig.Loaded
 	git    preflight.GitRunner
+	log    io.Writer
 }
 
 var _ delivery.PrerequisiteReader = (*commandDeliveryWorkflow)(nil)
@@ -828,7 +830,11 @@ func (workflow *commandDeliveryWorkflow) RunSpec(ctx context.Context, gitRoot, s
 	if err != nil {
 		return delivery.RunResult{}, err
 	}
-	result, err := workflow.runRoundfix(ctx, gitRoot, "implement", "--spec", specSlug)
+	executable, err := workflow.stepExecutable(ctx, gitRoot, specSlug, "implement")
+	if err != nil {
+		return delivery.RunResult{}, err
+	}
+	result, err := workflow.runRoundfix(ctx, executable, gitRoot, "implement", "--spec", specSlug)
 	if err != nil {
 		return delivery.RunResult{}, fmt.Errorf("start Implement executor: %w", err)
 	}
@@ -987,8 +993,8 @@ func (workflow *commandDeliveryWorkflow) ReviewPolicy(context.Context, string, s
 	return delivery.ReviewPolicyEnabled, nil
 }
 
-func (workflow *commandDeliveryWorkflow) Review(ctx context.Context, gitRoot, _ string, head string) (delivery.ReviewResult, error) {
-	record, result, err := workflow.runReview(ctx, gitRoot)
+func (workflow *commandDeliveryWorkflow) Review(ctx context.Context, gitRoot, specSlug string, head string) (delivery.ReviewResult, error) {
+	record, result, err := workflow.runReview(ctx, gitRoot, specSlug)
 	if err != nil {
 		return delivery.ReviewResult{}, err
 	}
@@ -1029,8 +1035,8 @@ func deliveryReviewResult(record reviewRecord, head string) (delivery.ReviewResu
 	}
 }
 
-func (workflow *commandDeliveryWorkflow) RecordReviewOmission(ctx context.Context, gitRoot, _ string, head string) error {
-	record, result, err := workflow.runReview(ctx, gitRoot)
+func (workflow *commandDeliveryWorkflow) RecordReviewOmission(ctx context.Context, gitRoot, specSlug string, head string) error {
+	record, result, err := workflow.runReview(ctx, gitRoot, specSlug)
 	if err != nil {
 		return err
 	}
@@ -1069,7 +1075,11 @@ func (workflow *commandDeliveryWorkflow) Archive(ctx context.Context, gitRoot, s
 	if strings.TrimSpace(active) == "" && strings.TrimSpace(archived) != "" {
 		return delivery.ArchiveResult{Head: before.HEAD, AlreadyArchived: true}, nil
 	}
-	result, err := workflow.runRoundfix(ctx, gitRoot, "archive", specSlug)
+	executable, err := workflow.stepExecutable(ctx, gitRoot, specSlug, "archive")
+	if err != nil {
+		return delivery.ArchiveResult{}, err
+	}
+	result, err := workflow.runRoundfix(ctx, executable, gitRoot, "archive", specSlug)
 	if err != nil {
 		return delivery.ArchiveResult{}, fmt.Errorf("start Archive Command: %w", err)
 	}
@@ -1227,11 +1237,64 @@ func (result roundfixCommandResult) failure(operation string) error {
 	return fmt.Errorf("%s failed with exit code %d: %s", operation, result.exitCode, detail)
 }
 
-func (workflow *commandDeliveryWorkflow) runRoundfix(ctx context.Context, workDir string, args ...string) (roundfixCommandResult, error) {
-	executable, err := os.Executable()
-	if err != nil {
-		return roundfixCommandResult{}, fmt.Errorf("resolve Roundfix executable: %w", err)
+// stepExecutable selects a binary using only the owner's loaded declaration.
+func (workflow *commandDeliveryWorkflow) stepExecutable(ctx context.Context, workDir, specSlug, step string) (string, error) {
+	declaration := workflow.loaded.Config.Delivery.ItemBinary
+	if !declaration.Declared() {
+		return os.Executable()
 	}
+	if _, err := workflow.git.RunGit(ctx, workDir, "check-ignore", "-q", "--", declaration.Path); err != nil {
+		return "", fmt.Errorf("item binary path %q is not ignored by Git", declaration.Path)
+	}
+	artifactDir, err := roundconfig.ValidateArtifactDirectory(workflow.loaded.Config.Defaults.ArtifactDir, workflow.loaded.GitRoot, workflow.loaded.HomeDir)
+	if err != nil {
+		return "", err
+	}
+	_, err = (daemon.ExecVerifier{}).Verify(ctx, daemon.VerifyRequest{
+		WorkDir:    workDir,
+		Command:    declaration.Build,
+		OutputPath: filepath.Join(artifactDir, "delivery", specSlug, "item-binary-build.log"),
+	})
+	if err != nil {
+		return "", fmt.Errorf("build item binary: %w", err)
+	}
+	executable, err := filepath.Abs(filepath.Join(workDir, filepath.FromSlash(declaration.Path)))
+	if err != nil {
+		return "", fmt.Errorf("resolve item binary: %w", err)
+	}
+	probe, err := workflow.runRoundfix(ctx, executable, workDir, "migrate", "--check")
+	if err != nil {
+		return "", fmt.Errorf("run item binary %q: %w", executable, err)
+	}
+	log := workflow.log
+	if log == nil {
+		log = os.Stderr
+	}
+	if probe.exitCode == exitOK {
+		if _, err := fmt.Fprintf(log, "roundfix: Delivery Queue item %s: %s runs the item binary %s\n", specSlug, step, executable); err != nil {
+			return "", fmt.Errorf("write item binary selection: %w", err)
+		}
+		return executable, nil
+	}
+	detail := ""
+	for _, output := range []string{probe.stderr, probe.stdout} {
+		for _, line := range strings.Split(output, "\n") {
+			if strings.TrimSpace(line) != "" {
+				detail = strings.TrimSpace(line)
+				break
+			}
+		}
+		if detail != "" {
+			break
+		}
+	}
+	if _, err := fmt.Fprintf(log, "roundfix: notice: Delivery Queue item %s: %s runs the owner's binary; the item binary's migrate --check exited %d: %s\n", specSlug, step, probe.exitCode, detail); err != nil {
+		return "", fmt.Errorf("write item binary fallback: %w", err)
+	}
+	return os.Executable()
+}
+
+func (workflow *commandDeliveryWorkflow) runRoundfix(ctx context.Context, executable, workDir string, args ...string) (roundfixCommandResult, error) {
 	command := exec.CommandContext(ctx, executable, args...)
 	command.Dir = workDir
 	command.Env = deliveryCommandEnvironment(os.Environ(), workflow.loaded.HomeDir)
@@ -1265,8 +1328,12 @@ func (workflow *commandDeliveryWorkflow) latestImplementRun(ctx context.Context,
 	return store.Run{}, false, nil
 }
 
-func (workflow *commandDeliveryWorkflow) runReview(ctx context.Context, gitRoot string) (reviewRecord, roundfixCommandResult, error) {
-	result, err := workflow.runRoundfix(ctx, gitRoot, "review")
+func (workflow *commandDeliveryWorkflow) runReview(ctx context.Context, gitRoot, specSlug string) (reviewRecord, roundfixCommandResult, error) {
+	executable, err := workflow.stepExecutable(ctx, gitRoot, specSlug, "review")
+	if err != nil {
+		return reviewRecord{}, roundfixCommandResult{}, err
+	}
+	result, err := workflow.runRoundfix(ctx, executable, gitRoot, "review")
 	if err != nil {
 		return reviewRecord{}, roundfixCommandResult{}, fmt.Errorf("start Pre-PR Review Command: %w", err)
 	}

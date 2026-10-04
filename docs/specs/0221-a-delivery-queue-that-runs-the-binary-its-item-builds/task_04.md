@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0221-a-delivery-queue-that-runs-the-binary-its-item-builds
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -107,3 +107,54 @@ before.
 - `_prd.md` → User Stories 1-3; Core Features 2-6; Success Metrics 1-3; Goals 1-3
 - `_techspec.md` → The step executable; Interfaces; API Contract 2; API Contract 3; API Contract 5; Testing Approach 3; Build Order 4; Risks & Considerations
 - ADR-0225; ADR-0192; ADR-0125; ADR-0213
+
+## Result
+
+Implemented the Task 04 slice in `internal/cli/deliver_workflow.go` and added
+`internal/cli/deliver_item_binary_test.go`. The owner uses only its loaded
+`delivery.item_binary` declaration. Before each child step it checks the Git
+ignore rule, builds through `daemon.ExecVerifier`, probes with the existing
+child environment, and selects the item or owner executable with the specified
+console line. Selection errors return before a step starts. The shared review
+helper also applies this selection when recording an omitted review.
+
+Focused evidence:
+
+- Before implementation,
+  `GOCACHE=/private/tmp/roundfix-task04-go-cache rtk proxy go test ./internal/cli -run '^TestDeliveryItemBinaryThatCannotStartReturnsAParkError$' -count=1`
+  failed to compile because `log` and `stepExecutable` did not exist.
+- After implementation and correction of the disposable fixture's Specs Root,
+  `GOCACHE=/private/tmp/roundfix-task04-go-cache rtk proxy go test ./internal/cli -run '^TestDelivery(Step|Steps|ItemBinary)' -count=1 -v`
+  exited 0; all seven new tests passed.
+- `GOCACHE=/private/tmp/roundfix-task04-go-cache rtk proxy make verify-incremental`
+  exited 0 with the access needed by existing integration tests. Formatting,
+  `go vet`, package tests, skill checks and the build passed. Output was captured
+  in `/private/tmp/roundfix-task04-incremental.log`.
+- The initial focused attempt could not access the host Go cache; subsequent
+  checks used the task cache above. The initial sandboxed incremental attempt
+  was interrupted by blocked access to `cafe.github.com`; the successful rerun
+  used an approved sandbox escalation.
+
+| Acceptance criterion | Implementation and focused-check evidence |
+| --- | --- |
+| Declaration and probe exit 0 select the built binary for all three steps, preserving arguments and worktree, with one API Contract 2 line per step | `TestDeliveryStepRunsTheItemBinary` checks the selected absolute path and exact line. `TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments` passed its implement, archive and review subtests, recording the probe followed by the specified step arguments, item directory and disposable HOME. Removing the output before each step proves each step rebuilds it. The fixture intentionally exits after recording the step. |
+| Probe exit 2 selects and starts the owner's executable, with one API Contract 3 notice and no fixture step | `TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate` passed stderr and stdout subtests. Each asserts the exact notice and first non-empty diagnostic line, starts the selected owner through the existing CLI test helper, and records only the fixture probe. |
+| Failed build or unignored path returns API Contract 5's error and starts nothing; an absent declaration runs and logs nothing new | `TestDeliveryStepParksWhenTheItemBuildFails` checks exit 7, the verifier error, retained build log path and contents, and no fixture start or selection line. `TestDeliveryStepParksWhenTheItemBinaryPathIsNotIgnored` checks the exact refusal, no build marker, no fixture start and no line. `TestDeliveryStepWithoutADeclarationRunsTheOwnerExecutable` uses a nil Git runner, checks the owner selection and execution, and checks no build output, fixture start or line. |
+
+`TestDeliveryItemBinaryThatCannotStartReturnsAParkError` additionally checks
+that a successful build which leaves the binary absent returns the specified
+absolute-path start error through Archive, with no step or selection line.
+Each disposable fixture compiles its fake once through
+`testfixture.FixtureBinary` and reuses it for its probes and steps. The fake
+starts no detached or waiting process; each invocation is synchronously waited
+through the test context. No new test writes an executable with a literal mode.
+
+No follow-up implementation was added. Task status and authored checkboxes
+remain unchanged by this Agent. The declared `## Verification` commands were
+not run; the Daemon owns Verification and settlement. No commit, push or Pull
+Request was created.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261003T234640Z_3e854d86e9475f64`
+- Source commit: `42f8e884c26f79f643a07d438f13cdacbeb56761`
