@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-03
-spec: null
+spec: 0222-a-review-through-claude-that-keeps-its-verdict
 reason: null
 ---
 
