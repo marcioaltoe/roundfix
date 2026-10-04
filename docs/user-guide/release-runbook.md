@@ -258,8 +258,10 @@ Request.
 ## Cutting a release
 
 1. Run `roundfix release plan` from a clean checkout and satisfy the decision
-   boundary described above. Use the proposed version as `<version>` only after
-   the plan is `ready` or the required human approval has been given.
+   boundary described above. The plan reports the skills and baseline checks
+   read-only in its `skills:` and `baseline:` lines; they never change its
+   decision. Use the proposed version as `<version>` only after the plan is
+   `ready` or the required human approval has been given.
 2. Land all release content on `main` and confirm `make verify` is green
    locally. The workflow re-runs the full gate and refuses to publish if it
    fails. No Spec merges without a passing QA Report in its `qa/` directory —

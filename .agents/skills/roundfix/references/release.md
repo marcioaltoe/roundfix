@@ -12,6 +12,15 @@ publication, asset uploads, or GitHub Release creation. The command creates no
 Run, reads no Roundfix configuration, contacts no external service, and
 mutates no repository or release state.
 
+A range plan also reports the skills and baseline checks read-only after its
+`Next action:` line. The `skills:` line reports the comparison that
+`roundfix doctor` makes, and the `baseline:` line reports what
+`roundfix baseline update --no-skills` would report. The JSON output carries
+both checks under `checks`. When either line is not `ok` or `current`, it ends
+with the next action `complete the skills and guides check in the release
+runbook before the release Pull Request`. These checks never change the
+decision state, the proposed version, or the exit code.
+
 Stable tags may be written as `MAJOR.MINOR.PATCH` or
 `vMAJOR.MINOR.PATCH`; the planner accepts both spellings. If the highest
 reachable version exists under both spellings, preflight refuses as ambiguous,
@@ -60,4 +69,3 @@ follow the repository release runbook. Preserve the existing tag-triggered
 workflow: validate the tag, keep artifact versions in agreement, publish npm
 packages through the release workflow, upload GitHub Release assets, and leave
 the Upgrade Command asset contract unchanged.
-
