@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-01T22:30:00Z
-updated_at: 2026-10-01T22:30:00Z
+updated_at: 2026-10-04T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -54,3 +54,5 @@ should is a decision for after the measurement. The ceiling can be overrun by
 at most the prompt in flight, and by any lag in OpenRouter's usage report. A
 repository other than this one that opts in spends the maintainer's key only
 because its own committed Project Config says so.
+
+**Ceiling value (2026-10-04).** Superseded in part by ADR-0231: the shared ceiling, and the key limit it bounds, is the User Config value `jev.monthly_ceiling_usd`, US$5 when unset. Every other part of this decision stands.
