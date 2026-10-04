@@ -127,7 +127,7 @@ func specJudgeRun(t *testing.T, env commandEnvironment, args []string, wantOut, 
 
 func TestSpecJudgeReportsAdvisoryJudgments(t *testing.T) {
 	env, fake := specJudgeFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
-	specJudgeRun(t, env, []string{"0300-example", "--stage", "techspec"}, specJudgeAdvisory+"advisory goal-mechanism docs/specs/0300-example/_techspec.md:74 Goal 2 → The widget cache: P(delivers) 0.12\nJudge: 2 advisory, 0 suggested, 3 clear, 0 skipped; 5 call(s), 4210 input tokens, US$0.0002; month US$0.0002 of US$5.00; model jev-1.13 via openrouter\n", "", 0)
+	specJudgeRun(t, env, []string{"0300-example", "--stage", "techspec"}, specJudgeAdvisory+fmt.Sprintf("advisory goal-mechanism docs/specs/0300-example/_techspec.md:74 Goal 2 → The widget cache: P(delivers) 0.12\nJudge: 2 advisory, 0 suggested, 3 clear, 0 skipped; 5 call(s), 4210 input tokens, US$0.0002; month US$0.0002 of US$%.2f; model jev-1.13 via openrouter\n", specJudgeCeiling(t)), "", 0)
 	if fake.calls != 5 {
 		t.Fatalf("calls=%d", fake.calls)
 	}
@@ -157,20 +157,20 @@ func TestSpecJudgeSkipsAtTheMonthlyCeiling(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		t.Fatal(err)
 	}
-	mustWrite(t, path, "{\"cost_usd\":5.0003}\n")
-	specJudgeRun(t, env, []string{"0300-example"}, "Judge: skipped: monthly ceiling reached (US$5.0003 of US$5.00); 5 judgment(s) not asked\n", "", 0)
+	mustWrite(t, path, fmt.Sprintf("{\"cost_usd\":%g}\n", specJudgeCeiling(t)+0.25))
+	specJudgeRun(t, env, []string{"0300-example"}, fmt.Sprintf("Judge: skipped: monthly ceiling reached (US$%.4f of US$%.2f); 5 judgment(s) not asked\n", specJudgeCeiling(t)+0.25, specJudgeCeiling(t)), "", 0)
 }
 
 func TestSpecJudgeSkipsANonEnglishSpec(t *testing.T) {
 	env, fake := specJudgeFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
 	fake.host = ""
-	specJudgeRun(t, env, []string{"0301-exemplo", "--stage", "prd"}, "skipped docs/specs/0301-exemplo/_prd.md: not English\nJudge: 0 advisory, 0 suggested, 0 clear, 0 skipped; 0 call(s), 0 input tokens, US$0.0000; month US$0.0000 of US$5.00; model jev-1.13 via openrouter\n", "", 0)
+	specJudgeRun(t, env, []string{"0301-exemplo", "--stage", "prd"}, fmt.Sprintf("skipped docs/specs/0301-exemplo/_prd.md: not English\nJudge: 0 advisory, 0 suggested, 0 clear, 0 skipped; 0 call(s), 0 input tokens, US$0.0000; month US$0.0000 of US$%.2f; model jev-1.13 via openrouter\n", specJudgeCeiling(t)), "", 0)
 }
 
 func TestSpecJudgeStopsWhenTheServiceFails(t *testing.T) {
 	env, fake := specJudgeFixture(t, "ROUNDFIX_TYPESAFE_API_KEY")
 	fake.failSecond = true
-	specJudgeRun(t, env, []string{"0300-example", "--stage", "techspec"}, specJudgeAdvisory+"Judge: 1 advisory, 0 suggested, 0 clear, 4 skipped; 2 call(s), 842 input tokens, US$0.0000; month US$0.0000 of US$5.00; model jev-1.13 via typesafe; stopped: service unavailable (HTTP 503)\n", "", 0)
+	specJudgeRun(t, env, []string{"0300-example", "--stage", "techspec"}, specJudgeAdvisory+fmt.Sprintf("Judge: 1 advisory, 0 suggested, 0 clear, 4 skipped; 2 call(s), 842 input tokens, US$0.0000; month US$0.0000 of US$%.2f; model jev-1.13 via typesafe; stopped: service unavailable (HTTP 503)\n", specJudgeCeiling(t)), "", 0)
 	if fake.calls != 2 {
 		t.Fatalf("calls after stop=%d", fake.calls)
 	}
@@ -251,7 +251,7 @@ func TestSpecJudgeHelp(t *testing.T) {
 			t.Errorf("missing judge synopsis")
 		}
 	}
-	for _, phrase := range []string{"ROUNDFIX_OPENROUTER_API_KEY", "ROUNDFIX_TYPESAFE_API_KEY", "monthly ceiling", "Judge Log", "Never fails for a judgment"} {
+	for _, phrase := range []string{"ROUNDFIX_OPENROUTER_API_KEY", "ROUNDFIX_TYPESAFE_API_KEY", "monthly ceiling", "jev.monthly_ceiling_usd", "Judge Log", "Never fails for a judgment"} {
 		if !strings.Contains(specJudgeUsage, phrase) {
 			t.Errorf("missing help phrase %s", phrase)
 		}
@@ -288,7 +288,7 @@ func TestSpecJudgePrintsIndividualSkip(t *testing.T) {
 	env, fake := specJudgeFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
 	fake.host = ""
 	mustWrite(t, filepath.Join(env.workDir, "docs/specs/0300-example/_prd.md"), specJudgeEnglish+"\n\nADR-0999 keeps every Run Event for ninety days after the Run ends.\n")
-	specJudgeRun(t, env, []string{"0300-example", "--stage=prd"}, "skipped citation-support docs/specs/0300-example/_prd.md:3 ADR-0999: cited decision is not an accepted regular ADR\nJudge: 0 advisory, 0 suggested, 0 clear, 1 skipped; 0 call(s), 0 input tokens, US$0.0000; month US$0.0000 of US$5.00; model jev-1.13 via openrouter\n", "", 0)
+	specJudgeRun(t, env, []string{"0300-example", "--stage=prd"}, fmt.Sprintf("skipped citation-support docs/specs/0300-example/_prd.md:3 ADR-0999: cited decision is not an accepted regular ADR\nJudge: 0 advisory, 0 suggested, 0 clear, 1 skipped; 0 call(s), 0 input tokens, US$0.0000; month US$0.0000 of US$%.2f; model jev-1.13 via openrouter\n", specJudgeCeiling(t)), "", 0)
 }
 
 func TestSpecJudgeJSONSkipHasNullTransport(t *testing.T) {
@@ -309,7 +309,11 @@ func TestSpecJudgeJSONSkipHasNullTransport(t *testing.T) {
 const specJudgeGroupingAnchor = "docs/specs/0300-example/references/2026-09-20-run-events-grow-without-bound.md"
 const specJudgeGroupingCandidate = "docs/backlog/2026-09-28-prune-run-events-after-archive.md"
 const specJudgeGroupingSuggestion = "suggested source-grouping " + specJudgeGroupingAnchor + " → " + specJudgeGroupingCandidate + ": P(same Spec) 0.81\n"
-const specJudgeGroupingSummary = "Judge: 0 advisory, 1 suggested, 1 clear, 0 skipped; 2 call(s), 1840 input tokens, US$0.0001; month US$0.0001 of US$5.00; model jev-1.13 via openrouter\n"
+
+func specJudgeGroupingSummary(t *testing.T) string {
+	t.Helper()
+	return fmt.Sprintf("Judge: 0 advisory, 1 suggested, 1 clear, 0 skipped; 2 call(s), 1840 input tokens, US$0.0001; month US$0.0001 of US$%.2f; model jev-1.13 via openrouter\n", specJudgeCeiling(t))
+}
 
 type specJudgeGroupingTransport struct {
 	t     *testing.T
@@ -377,7 +381,7 @@ func TestSpecJudgePrintsAGroupingSuggestion(t *testing.T) {
 			if stage != "both" {
 				args = append(args, "--stage", stage)
 			}
-			specJudgeRun(t, env, args, specJudgeGroupingSuggestion+specJudgeGroupingSummary, "", 0)
+			specJudgeRun(t, env, args, specJudgeGroupingSuggestion+specJudgeGroupingSummary(t), "", 0)
 			if fake.calls != 2 {
 				t.Fatalf("calls=%d", fake.calls)
 			}
@@ -388,7 +392,7 @@ func TestSpecJudgePrintsAGroupingSuggestion(t *testing.T) {
 func TestSpecJudgeSkipsANonEnglishSource(t *testing.T) {
 	env, fake := specJudgeGroupingFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
 	mustWrite(t, filepath.Join(env.workDir, "docs/backlog/2026-09-30-cor-do-cabecalho.md"), "---\nstatus: open\n---\nA decisão é uma regra para os autores e não está na sua documentação.\n")
-	specJudgeRun(t, env, []string{"0300-example", "--stage", "techspec"}, "skipped docs/backlog/2026-09-30-cor-do-cabecalho.md: not English\n"+specJudgeGroupingSuggestion+specJudgeGroupingSummary, "", 0)
+	specJudgeRun(t, env, []string{"0300-example", "--stage", "techspec"}, "skipped docs/backlog/2026-09-30-cor-do-cabecalho.md: not English\n"+specJudgeGroupingSuggestion+specJudgeGroupingSummary(t), "", 0)
 	if fake.calls != 2 {
 		t.Fatalf("calls=%d", fake.calls)
 	}
@@ -477,6 +481,76 @@ func TestSpecJudgePrintsSkippedGroupingPair(t *testing.T) {
 	reason := "answered by jev-1.14.0, thresholds belong to jev-1.13"
 	want := "skipped source-grouping " + specJudgeGroupingAnchor + " → " + specJudgeGroupingCandidate + ": " + reason + "\n" +
 		"skipped source-grouping " + specJudgeGroupingAnchor + " → docs/backlog/2026-09-29-color-the-tui-header.md: " + reason + "\n" +
-		"Judge: 0 advisory, 0 suggested, 0 clear, 2 skipped; 2 call(s), 1840 input tokens, US$0.0001; month US$0.0001 of US$5.00; model jev-1.13 via openrouter\n"
+		fmt.Sprintf("Judge: 0 advisory, 0 suggested, 0 clear, 2 skipped; 2 call(s), 1840 input tokens, US$0.0001; month US$0.0001 of US$%.2f; model jev-1.13 via openrouter\n", specJudgeCeiling(t))
 	specJudgeRun(t, env, []string{"0300-example", "--stage=prd"}, want, "", 0)
+}
+
+func specJudgeCeiling(t *testing.T) float64 {
+	t.Helper()
+	q, err := judge.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return q.MonthlyCeilingUSD
+}
+
+func specJudgeSeedSpend(t *testing.T, env commandEnvironment, spend float64) {
+	t.Helper()
+	path := filepath.Join(env.homeDir, ".roundfix/judge/2026-10.jsonl")
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		t.Fatal(err)
+	}
+	mustWrite(t, path, fmt.Sprintf("{\"cost_usd\":%g}\n", spend))
+}
+
+func specJudgeUserCeiling(t *testing.T, env commandEnvironment, value string) string {
+	t.Helper()
+	path := filepath.Join(env.homeDir, ".roundfix/config.yml")
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		t.Fatal(err)
+	}
+	mustWrite(t, path, "jev:\n  monthly_ceiling_usd: "+value+"\n")
+	return path
+}
+
+func TestSpecJudgeSkipsAtTheUserConfigCeiling(t *testing.T) {
+	env, fake := specJudgeFixture(t, "ROUNDFIX_TYPESAFE_API_KEY")
+	fake.host = ""
+	specJudgeUserCeiling(t, env, "50")
+	specJudgeSeedSpend(t, env, 50.25)
+	specJudgeRun(t, env, []string{"0300-example"}, "Judge: skipped: monthly ceiling reached (US$50.2500 of US$50.00); 5 judgment(s) not asked\n", "", 0)
+	var out, stderr bytes.Buffer
+	code := runWithContext(context.Background(), []string{"spec", "judge", "0300-example", "--format=json"}, &out, &stderr, env)
+	var report struct {
+		Ceiling float64 `json:"month_ceiling_usd"`
+		Calls   int     `json:"calls"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &report); err != nil {
+		t.Fatal(err)
+	}
+	if code != 0 || stderr.Len() != 0 || report.Ceiling != 50 || report.Calls != 0 || fake.calls != 0 {
+		t.Fatalf("exit=%d report=%+v stderr=%s calls=%d", code, report, &stderr, fake.calls)
+	}
+}
+
+func TestSpecJudgeIgnoresAProjectConfigCeiling(t *testing.T) {
+	env, fake := specJudgeFixture(t, "ROUNDFIX_TYPESAFE_API_KEY")
+	fake.host = ""
+	mustWrite(t, filepath.Join(env.workDir, ".roundfixrc.yml"), "jev:\n  monthly_ceiling_usd: 50\n")
+	ceiling := specJudgeCeiling(t)
+	specJudgeSeedSpend(t, env, ceiling+0.25)
+	specJudgeRun(t, env, []string{"0300-example"}, fmt.Sprintf("Judge: skipped: monthly ceiling reached (US$%.4f of US$%.2f); 5 judgment(s) not asked\n", ceiling+0.25, ceiling), "config: jev.monthly_ceiling_usd in Project Config is ignored; set jev.monthly_ceiling_usd in User Config\n", 0)
+	if fake.calls != 0 {
+		t.Fatal("ignored project ceiling sent a request")
+	}
+}
+
+func TestSpecJudgeRefusesAnInvalidUserConfigCeiling(t *testing.T) {
+	env, fake := specJudgeFixture(t, "ROUNDFIX_TYPESAFE_API_KEY")
+	fake.host = ""
+	path := specJudgeUserCeiling(t, env, "0")
+	specJudgeRun(t, env, []string{"0300-example"}, "", fmt.Sprintf("roundfix: spec judge failed: parse config %q: jev.monthly_ceiling_usd must be a finite number greater than 0\nRun 'roundfix spec judge --help' for usage.\n", path), 2)
+	if fake.calls != 0 {
+		t.Fatal("invalid config sent a request")
+	}
 }

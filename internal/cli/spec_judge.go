@@ -27,7 +27,8 @@ Options:
 
 Set ROUNDFIX_OPENROUTER_API_KEY for OpenRouter, or ROUNDFIX_TYPESAFE_API_KEY
 as the direct TypeSafe alternative. The generic OPENROUTER_API_KEY is not read.
-The monthly ceiling is US$5.00 across both transports. Every request is
+The monthly ceiling is jev.monthly_ceiling_usd in User Config, US$5 by default,
+across both transports. Every request is
 recorded in the Judge Log: <home>/.roundfix/judge/<YYYY-MM>.jsonl (UTC month).
 
 Exit codes:
@@ -132,7 +133,7 @@ func runSpecJudgeCommand(ctx context.Context, args []string, stdout, stderr io.W
 			keys[name] = value
 		}
 	}
-	report, err := judge.Run(ctx, questions, judge.Request{
+	report, err := judge.Run(ctx, questions.WithMonthlyCeiling(loaded.Config.Jev.MonthlyCeilingUSD), judge.Request{
 		RepoRoot: loaded.GitRoot, SpecDir: specDir, Spec: req.slug, Stage: req.stage,
 		Keys: keys, HomeDir: environment.homeDir,
 		Transport: environment.dependencies.judgeTransport, Now: environment.dependencies.judgeNow,
