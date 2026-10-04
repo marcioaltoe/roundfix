@@ -1,9 +1,18 @@
 ---
 spec: 0222-a-review-through-claude-that-keeps-its-verdict
-status: active
+status: archived
 created: 2026-10-04
 surfaces: [backend, cli, docs]
+archived: "2026-10-04"
+source_slug: 0222-a-review-through-claude-that-keeps-its-verdict
+qa_override: true
+qa_override_approval: 'maintainer standing authorization 2026-09-30 (unattended program): qa_override only for environment-only partials'
+qa_override_reason: 'Environment-only partial: rows 6b1-6b3 cite authoring-clone artifacts that no longer exist (ADR-0227 records the measurements); row 6e was cut at a 50-second QA limit, and the operator then ran one real claude/opus review of this candidate on 2026-10-04 (base ff135017): end_turn, outcome findings, finding id F1, estimatedPromptTokens 55912; row 9 has no Pull Request yet, and the queue opens it.'
+qa_override_qa_outcome: partial
+qa_override_qa_task_status: failed
+qa_override_revision: d65ee0052916d614e1e2264cef8cb20011c50f9c
 ---
+
 
 # A review through Claude that keeps its verdict
 
