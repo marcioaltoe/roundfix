@@ -62,7 +62,7 @@ later Spec raises it from the earlier one's value.
   ADR-0168, ADR-0176 and ADR-0183 check this Spec's consistency by citation and
   receipt. ADR-0178 authorizes each Task commit by its grant, ADR-0182 runs
   Settlement Checks before it, and ADR-0166 records undeclared paths; every
-  Task declares its paths. ADR-0096 and ADR-0097 cite ADR-0080 but decide the gate's machine stage and row carry, ADR-0165 cites ADR-0153 but decides how a blocking review after archive parks publication, and ADR-0192 cites ADR-0178 but decides how a conflict confined to declared derived paths is resolved; ADR-0194, ADR-0195 and ADR-0210 cite ADR-0097 but decide what a QA row records, when it is observed again and its evidence snapshot; this Spec changes none of them, so none applies. Source: `docs/agents/domain.md`.
+  Task declares its paths. ADR-0229 cites ADR-0167 but decides how an operator archive resumes a park, which this Spec does not touch; ADR-0096 and ADR-0097 cite ADR-0080 but decide the gate's machine stage and row carry, ADR-0165 cites ADR-0153 but decides how a blocking review after archive parks publication, and ADR-0192 cites ADR-0178 but decides how a conflict confined to declared derived paths is resolved; ADR-0194, ADR-0195 and ADR-0210 cite ADR-0097 but decide what a QA row records, when it is observed again and its evidence snapshot; this Spec changes none of them, so none applies. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — the Roundfix Skill's canonical files and its
   `SKILL.md` mirror are Governed Paths, and the maintainer authorized skill
   edits ("considere autorizado a ajustar todas as skills se necessário") and,
