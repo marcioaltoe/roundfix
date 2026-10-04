@@ -10,12 +10,12 @@
 
 Some emojis with variation selectors (U+FE0F) render inconsistently across terminals:
 
-| Emoji                 | Windows Terminal | WezTerm/Termux | Result       |
-| --------------------- | ---------------- | -------------- | ------------ |
-| ⬆️ (U+2B06 + U+FE0F)  | 2 cells          | 1 cell         | Misalignment |
-| ⚙️ (U+2699 + U+FE0F)  | 2 cells          | 1 cell         | Misalignment |
-| 🗜️ (U+1F5DC + U+FE0F) | 2 cells          | 1 cell         | Misalignment |
-| 📦 (U+1F4E6)          | 2 cells          | 2 cells        | ✅ Aligned   |
+| Emoji | Windows Terminal | WezTerm/Termux | Result |
+|-------|------------------|----------------|--------|
+| ⬆️ (U+2B06 + U+FE0F) | 2 cells | 1 cell | Misalignment |
+| ⚙️ (U+2699 + U+FE0F) | 2 cells | 1 cell | Misalignment |
+| 🗜️ (U+1F5DC + U+FE0F) | 2 cells | 1 cell | Misalignment |
+| 📦 (U+1F4E6) | 2 cells | 2 cells | ✅ Aligned |
 
 **Symptom:** File names with narrow emojis shift left by 1 space, breaking column alignment.
 
@@ -45,7 +45,6 @@ runewidth.StringWidth("⬆️")  // Returns 2 (base=1 + VS=1)
 ```
 
 This causes padding calculations to fail:
-
 - Code thinks "⬆️" is already 2 cells wide
 - No padding added
 - Terminal renders as 1 cell
@@ -54,7 +53,6 @@ This causes padding calculations to fail:
 ### 2. Terminal Rendering Differences
 
 Different terminals handle emoji + variation selector differently:
-
 - **Windows Terminal:** Honors VS-16 → renders as 2 cells (colorful, wide) - slightly different handling
 - **WezTerm/Termux:** Ignores VS-16 for width → renders as 1 cell - **need identical fixes**
 - **xterm:** Requires unicode11 configuration (see above)
@@ -133,7 +131,6 @@ func detectTerminalType() terminalType {
 ## Results
 
 **Before fix:**
-
 ```
   ⬆️ parent_dir      <-- shifted left by 1 space
   📦 package.tar    <-- correct alignment
@@ -141,7 +138,6 @@ func detectTerminalType() terminalType {
 ```
 
 **After fix:**
-
 ```
   ⬆ parent_dir      <-- aligned (VS stripped, emoji less colorful)
   📦 package.tar    <-- aligned
@@ -155,7 +151,6 @@ func detectTerminalType() terminalType {
 ## Alternative Approaches (Not Recommended)
 
 ### ❌ Emoji Replacement Map
-
 ```go
 // Replace narrow emojis with always-wide alternatives
 replacements := map[string]string{
@@ -163,20 +158,16 @@ replacements := map[string]string{
     "⚙️": "🔧",  // Gear → wrench
 }
 ```
-
 **Issue:** Loses semantic meaning, doesn't solve the root problem.
 
 ### ❌ Manual Space Addition
-
 ```go
 // Add extra space after problematic emojis
 icon := "⚙️ "
 ```
-
 **Issue:** Doesn't work reliably - Lipgloss may re-measure width.
 
 ### ❌ Zero-Width Joiners (ZWJ)
-
 **Issue:** Makes problems worse, poor terminal support.
 
 ---
@@ -187,7 +178,6 @@ icon := "⚙️ "
    - `RuneWidth()` breaks multi-rune emoji like flags, skin tones, emoji+VS
 
 2. **Strip ANSI codes before width calculation**
-
    ```go
    stripped := stripANSI(text)
    width := runewidth.StringWidth(stripped)
@@ -223,7 +213,6 @@ icon := "⚙️ "
 ## When to Use This Fix
 
 Apply this fix when:
-
 - ✅ Your TUI uses emoji icons for files/folders
 - ✅ You support multiple terminal emulators
 - ✅ Users report alignment issues in specific terminals
@@ -234,7 +223,6 @@ Apply this fix when:
 ## Testing Checklist
 
 When implementing this fix, test in:
-
 - [ ] Windows Terminal (should maintain perfect alignment)
 - [ ] WezTerm (should fix alignment, emoji may look different)
 - [ ] Termux (Android) (should fix alignment)
@@ -243,7 +231,6 @@ When implementing this fix, test in:
 - [ ] Generic xterm (baseline compatibility)
 
 Test all view modes:
-
 - [ ] List/table views
 - [ ] Tree views
 - [ ] Split pane layouts
@@ -254,7 +241,6 @@ Test all view modes:
 ## Code Location Reference
 
 From TFE project (reference implementation):
-
 - **file_operations.go:936-968** - `visualWidth()` function
 - **file_operations.go:969-983** - `visualWidthCompensated()` function
 - **file_operations.go:1237-1246** - `padIconToWidth()` function
