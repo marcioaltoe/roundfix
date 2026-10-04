@@ -2,6 +2,19 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.32.0] - 2026-10-04
+
+### A delivery that survives archive, requeue and review
+
+- **Active-path pins.** The new `SC-SPEC-PATH-PINNED` error flags a test or file outside Markdown that names a Spec's active directory, which archiving would break. Settlement and archive refuse it. Another Spec's Task Context resolves a reference to an archived Spec through the archive root.
+- **Retries and requeues.** A retry after a post-archive correction that descends from the reviewed candidate resumes at review. `deliver start` for a slug that already has an item branch with work continues that branch. When several such branches exist, it refuses and names each one, instead of recreating the item from the default branch.
+- **Review.** Review convention C5 treats an archive that records an authorized `qa_override`, with its approval and reason, as authorized.
+- **Verification.** Every Verification command is parsed with `sh -n` before it runs, and a command the shell cannot parse gets the `malformed` verdict. `SC-VERIFY-TRUNCATED` reports a command cut at an escaped backtick, and `spec check --run-verification` names commands whose source is uncommitted.
+
+### A delivery queue that runs the binary its item builds
+
+A repository can declare in Project Config how its own Roundfix binary is built: `delivery.item_binary` with `build` and `path`. Before the implement, archive and review steps of an item, the queue owner builds that binary in the item worktree and checks it with the new read-only `roundfix migrate --check`. When it is compatible, the step runs with it, so an item that adds a Project Config key can be delivered. Otherwise the step runs with the owner's binary and logs why. Adopters that install from npm declare nothing and see no change.
+
 ## [0.31.0] - 2026-10-03
 
 ### A Cursor runtime to measure Grok on
