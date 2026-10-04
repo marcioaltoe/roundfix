@@ -1,0 +1,14 @@
+package delivery
+import("fmt"; "testing")
+func TestQA0224NoCandidateHistoryRefusal(t *testing.T){
+ ctx:=t.Context();runStore:=openDeliveryEngineStore(t,ctx);const root="/repo-qa-no-history"
+ before:=seedParkedRetryItem(t,ctx,runStore,root,"qa-no-history",BlockerRunUnresolved);before.CandidateCommits=nil
+ if err:=runStore.UpdateDeliveryQueueItem(ctx,root,before);err!=nil{t.Fatal(err)}
+ before=readDeliveryQueue(t,ctx,runStore,root).Items[0]
+ recovery:=&fakeItemRecovery{states:[]ItemState{{Archived:true,QAOverride:true,Head:"operator-head"}}}
+ engine:=newRetryDeliveryEngine(runStore,newFakeDeliveryWorkflow(),nil,recovery,newFakeDeliveryBoundary())
+ _,err:=engine.Retry(ctx,root,before.SpecSlug)
+ assertRetryItemUnchanged(t,ctx,runStore,root,before)
+ want:=fmt.Sprintf(`retry Delivery Queue item %q: archived item head "operator-head" differs from candidate head ""`,before.SpecSlug)
+ if err==nil || err.Error()!=want {t.Fatalf("actual=%v; API Contract 1 requires=%s; persisted item unchanged",err,want)}
+}

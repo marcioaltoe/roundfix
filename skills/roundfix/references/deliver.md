@@ -226,8 +226,9 @@ build/setup failures, unattributable logs, and attempts past one park
 `checks-failed` without a re-run.
 
 An unresolved Run parks `qa-environment-partial` when its newest Run-Branch QA
-Report is partial, has no finding-blocked rows, and has environment-blocked
-rows beyond the pre-PR Pull Request row. Otherwise it keeps `run-unresolved`.
+Report is partial, has no finding-blocked rows, and has at least one
+environment-blocked row, including a row blocked only because no Pull Request
+is open yet. Otherwise it keeps `run-unresolved`.
 Status gives the carry-forward, environment repair, authorized archive override
 and retry sequence. Retry of an operator-archived item requires
 `qa_override: true` and a head descended from the last candidate, or the Run's
@@ -288,12 +289,14 @@ correction receives a fresh review before the archive and repository gate
 stages. This applies to an archived `gate-failed` item and other blockers,
 with two restrictions: `qa-environment-partial` still needs the recorded QA
 Archive Override, and `corrective-spec-required` still refuses a moved head.
-Only the QA environment park may use the Run start head when no candidate is
-recorded. A non-descendant head or unavailable item history refuses with the
-existing reason and leaves the item unchanged. An unchanged archived candidate
-keeps its `gating` stage without a Pull Request or `checking` stage with one.
+When no candidate is recorded, only an item the operator archived with the QA
+Archive Override may use the Run start head, whatever its park. The retry
+records the descended head as the candidate and resumes at `reviewing`. A
+non-descendant head or unavailable item history refuses with the existing
+reason and leaves the item unchanged. An unchanged archived candidate keeps
+its `gating` stage without a Pull Request or `checking` stage with one.
 
-An archived retry of an operator-archived `qa-environment-partial` item finds
+An archived retry of an operator-archived item finds
 the Implement start head of the Run the queue started by the repository the Run
 belongs to. When no candidate exists, the retry accepts an item head descended
 from that start head, records it as the candidate and resumes at `reviewing`.
@@ -322,7 +325,7 @@ moved input, or a refusal with another cause, keeps the existing single
 | Active Spec with any unfinished Task | `running` |
 | Active Spec with every Task completed | `reviewing` |
 | Archived Spec with a post-archive correction descended from its newest candidate | `reviewing` |
-| Operator-archived `qa-environment-partial` with override and proven ancestry | `reviewing` |
+| Operator-archived item with override and proven ancestry | `reviewing` |
 | Resolved `pull-request-conflict` with proven candidate ancestry | `reviewing` |
 | Archived Spec with unchanged candidate and no recorded pull request | `gating` |
 | Archived Spec with unchanged candidate and a recorded pull request | `checking` |

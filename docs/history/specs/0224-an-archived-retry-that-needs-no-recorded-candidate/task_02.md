@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0224-an-archived-retry-that-needs-no-recorded-candidate
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -74,3 +74,58 @@ whose status line names the override recovery.
 - `_prd.md` → Goals 2 and 3; Core Feature 2; Success Metric 2; Success Metric 3
 - `_techspec.md` → The environment-only partial; Interfaces; API Contract 2; Testing Approach 3; Build Order 2
 - ADR-0229; ADR-0167
+
+## Result
+
+The Run-Branch QA predicate now requires a readable newest report with verdict
+`partial`, zero finding-blocked rows and at least one environment-blocked row.
+It no longer subtracts pre-PR Pull Request rows. The QA reader, archive
+eligibility, blocker names and Park Classes are unchanged.
+
+Added the inline two-Pull-Request-row fixture through `runResult` in a
+disposable repository: the report is committed only to its Run Branch, then
+the item checkout returns to its original head before classification. The
+declared-only and finding-beside-Pull-Request cases use the same boundary.
+Only the existing `pre-PR only` expectation changed; its other cases retain
+their fixtures and expectations. No test reads an archived Spec.
+
+Focused evidence:
+
+- Before the predicate change,
+  `GOCACHE=/private/tmp/roundfix-0224-task02-gocache rtk proxy go test -count=1 -run '^TestRunSpecReportsAPartialBlockedOnlyByPullRequestRowsAsEnvironmentOnly$' ./internal/cli`
+  exited 1: `pull request rows only` returned
+  `QAEnvironmentPartial:false` instead of true. Both negative cases passed.
+- After the change,
+  `GOCACHE=/private/tmp/roundfix-0224-task02-gocache rtk proxy go test -count=1 -v -run '^TestRunSpecReports' ./internal/cli`
+  exited 0 with all ten subtests passing. Acceptance criterion 1 is covered by
+  `pull request rows only`, `declared rows only` and
+  `finding beside pull request rows`; the existing cases also cover missing
+  and unreadable reports, findings, the newest report, and the pass verdict.
+- `GOCACHE=/private/tmp/roundfix-0224-task02-gocache rtk proxy go test -count=1 -v -run '^TestAnEnvironmentOnlyPartialParksAsQAEnvironmentPartial$' ./internal/delivery`
+  exited 0. Acceptance criterion 2 is covered by `environment` and
+  `unresolved`: the unchanged engine parks the flag as
+  `qa-environment-partial` and its absence as `run-unresolved`. The environment
+  case also checks the Park Class and override recovery text.
+
+- `GOCACHE=/private/tmp/roundfix-0224-task02-gocache rtk make verify-incremental`
+  exited 2 in the sandbox: owner-process tests could not read the process
+  table and HTTP fixtures could not bind local listeners. Suite guards also
+  detected this Result section being appended while the suite was running.
+  These diagnostics do not replace the focused evidence.
+- The permission-enabled rerun,
+  `GOCACHE=/private/tmp/roundfix-0224-task02-gocache rtk proxy make verify-incremental > /private/tmp/roundfix-0224-task02-incremental.log 2>&1`,
+  exited 0 with the worktree unchanged throughout the check. Formatting,
+  Go vet, package tests, skill synchronization/readiness checks and the CLI
+  build passed. The log is local focused-check evidence, not Daemon
+  Verification evidence.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0. Final scope
+  inspection shows only the two assigned CLI paths and this Task file changed;
+  the pre-existing Daemon status change is preserved.
+
+The Task's declared Verification command remains for the Daemon. Status and
+checkboxes are unchanged; no commit, push or Pull Request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261004T162613Z_0bb1b015eb38156b`
+- Source commit: `0d99623956d9d0a5bed32bfd6e7cc47f27039bce`

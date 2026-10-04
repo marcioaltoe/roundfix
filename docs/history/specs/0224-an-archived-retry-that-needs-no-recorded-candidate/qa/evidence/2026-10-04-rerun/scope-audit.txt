@@ -1,0 +1,36 @@
+task_03 2a67defdbcf3e87c1083c01b2a7d650f105c0cb8 declared paths:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/deliver.md
+docs/specs/0224-an-archived-retry-that-needs-no-recorded-candidate/task_03.md
+docs/user-guide/commands/deliver.md
+skills/roundfix/SKILL.md
+skills/roundfix/references/deliver.md
+skills/testdata/owned-skill-versions.json
+
+task_01 67f661aa declared paths:
+docs/specs/0224-an-archived-retry-that-needs-no-recorded-candidate/task_01.md
+internal/cli/deliver_archived_retry_test.go
+internal/delivery/engine.go
+internal/delivery/operator_archive_any_park_test.go
+
+task_02 0d0c4752 declared paths:
+docs/specs/0224-an-archived-retry-that-needs-no-recorded-candidate/task_02.md
+internal/cli/deliver_operator_archive_test.go
+internal/cli/deliver_workflow.go
+
+task_05 3f97d198 declared paths:
+docs/specs/0224-an-archived-retry-that-needs-no-recorded-candidate/task_05.md
+internal/delivery/engine.go
+internal/delivery/operator_archive_no_history_test.go
+
+Protected exclusions unchanged: Makefile, .roundfixrc.yml, go.mod, go.sum, CI workflows, CONTEXT.md
+
+Authorization at base predates task_03; seeded mechanical audit already covers its grant. No later unlisted tooling Task commit. task_05 changes ordinary paths only.
+
+docs/user-guide/commands/deliver.md: required rules present, stale rules absent, restrictions retained
+
+.agents/skills/roundfix/references/deliver.md: required rules present, stale rules absent, restrictions retained
+
+Both mirrors byte equal; both version fields 0.1.24 -> 0.1.25
+
+Every skill QA settlement section byte-identical to base

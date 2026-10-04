@@ -95,7 +95,7 @@ function is unchanged.
 
 ```go
 // Engine.Retry, archived branch (internal/delivery/engine.go)
-operatorArchive := state.QAOverride && engine.history != nil
+operatorArchive := state.QAOverride
 
 // commandDeliveryWorkflow.qaEnvironmentPartial (internal/cli/deliver_workflow.go)
 return err == nil && report.Verdict == spec.VerdictPartial &&
@@ -230,7 +230,10 @@ the Roundfix Skill's `deliver` reference.
 3. The `deliver` guide, the Roundfix Skill's `deliver` reference, the skill
    version and its mirrors, written from this TechSpec, task_03 (depends on:
    none).
-4. Terminal QA, task_04 (depends on: 1, 2, 3).
+4. Terminal QA, task_04 (depends on: 1, 2, 3, 5).
+5. Corrective: the override alone admits the archived branch, so an archive
+   without a candidate and without History refuses with API Contract 1's
+   archived-head text, task_05 (depends on: 1).
 
 ## Risks & Considerations
 
@@ -254,3 +257,7 @@ the Roundfix Skill's `deliver` reference.
   park, and the Archive Command's eligibility is unchanged. See ADR-0229.
 - The refusal texts stay as they are, so status, logs and existing tests keep
   their bytes.
+- The override alone admits an archive without a candidate to the
+  archived-head comparison; a missing History is a failed proof that refuses
+  with API Contract 1's archived-head text, not `candidate head is missing`
+  (finding F1 of the 2026-10-04 QA Report, task_05).

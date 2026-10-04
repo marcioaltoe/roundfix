@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0224-an-archived-retry-that-needs-no-recorded-candidate
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -79,3 +79,45 @@ TechSpec, raises the skill's version and syncs the mirrors.
 - `_prd.md` → Core Feature 3
 - `_techspec.md` → Vocabulary Contract; API Contract 1; API Contract 2; Build Order 3
 - ADR-0187; ADR-0189; ADR-0229
+
+## Result
+
+The deliver guide and Roundfix Skill reference now describe the environment
+partial predicate as a zero-finding partial with at least one
+environment-blocked row, including rows waiting for an open Pull Request. They
+also describe the QA Archive Override as the authorization for using the Run
+start head when no candidate is recorded, whatever its park, and generalize
+the operator archive re-entry row accordingly. The `corrective-spec-required`
+and `pull-request-conflict` restrictions remain documented.
+
+The canonical Roundfix Skill version was raised from `0.1.24` to `0.1.25` in
+both front-matter fields. `make skills-sync` regenerated the mirrors, and the
+owned-version record now includes the `0.1.25` content digest.
+
+Focused checks:
+
+- `make skills-sync` — passed.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed (`ok roundfix/skills`); this recorded the new version.
+- `cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` and the matching `deliver.md` comparison — passed.
+- Required phrase searches found `has at least one environment-blocked row`
+  and `whatever its park` in both documents. Searches for each of the three
+  removed phrases returned no matches.
+- `git diff --check` — passed.
+
+Evidence for acceptance criteria:
+
+- Both guide surfaces contain the new environment and operator-archive rules,
+  and the stale sentences are absent.
+- Both Skill mirrors compare equal, and the raised version is recorded in
+  `skills/testdata/owned-skill-versions.json`.
+
+
+Operator addendum (2026-10-04): after this Task settled, 0223, 0226 and 0225
+merged with the Roundfix Skill at `0.1.25`, `0.1.26` and `0.1.27`; merging main
+into the item raised this Spec's Skill change to `0.1.28` and recorded that
+version.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261004T162613Z_0bb1b015eb38156b`
+- Source commit: `02bc1cff3195d25d1078db696620a31a354174ad`

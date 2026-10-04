@@ -1,0 +1,28 @@
+package cli
+import("bytes"; "fmt"; "os"; "os/exec"; "path/filepath"; "testing"; "roundfix/internal/spec"; "roundfix/internal/store"; "roundfix/internal/delivery"; "roundfix/internal/gittest")
+func TestQA0220ArchivedReport(t *testing.T) {
+ content,err:=os.ReadFile(os.Getenv("QA_0220_REPORT"));if err!=nil{t.Fatal(err)}
+ home,repo:=newImplementWorkspace(t,[]implementSeed{{id:"task_01"}})
+ workflow:=newItemRecoveryWorkflowForRepository(t,home,repo);head:=itemRecoveryHead(t,repo)
+ const id="qa-0220"
+ gittest.Run(t,repo,"checkout","-b",store.RunBranchPrefix+id)
+ dir:=filepath.Join(repo,"docs/specs",implementTestSlug,"qa");mustMkdir(t,dir)
+ target:=filepath.Join(dir,"qa-report-2026-10-03.md");mustWrite(t,target,string(content))
+ report,err:=spec.ReadQAReportFile(target);if err!=nil{t.Fatal(err)}
+ refusal:=spec.QAReportEligibility(filepath.Dir(dir),report)
+ if report.Verdict!=spec.VerdictPartial || report.RowsBlockedEnvironment!=2 || report.RowsBlockedPrePullRequest!=2 || report.RowsBlockedFinding!=0 {t.Fatalf("report=%+v",report)}
+ want:=`newest QA Report verdict is "partial"; expected "pass"`
+ if refusal==nil || refusal.Error()!=want {t.Fatalf("eligibility=%v",refusal)}
+ gittest.Run(t,repo,"add","docs/specs");gittest.Run(t,repo,"commit","-m","docs: archived outside QA evidence")
+ gittest.Run(t,repo,"checkout","--detach",head)
+ result,err:=workflow.runResult(t.Context(),repo,implementTestSlug,roundfixCommandResult{exitCode:exitRunFailed},"",nil,&store.Run{ID:id,State:store.StateUnresolved})
+ if err!=nil || result.Outcome!=delivery.RunOutcomeUnresolved || !result.QAEnvironmentPartial {t.Fatalf("result=%+v err=%v",result,err)}
+ t.Logf("0220: environment=%d prePR=%d finding=%d environmentPartial=%v archiveRefusal=%v",report.RowsBlockedEnvironment,report.RowsBlockedPrePullRequest,report.RowsBlockedFinding,result.QAEnvironmentPartial,refusal)
+}
+func TestQA0224BuiltArchiveRetry(t *testing.T){testArchivedRetryOfAQueueStartedRunReturnsToReview(t,delivery.BlockerRunUnresolved)}
+func qaBuiltCLI(t *testing.T,args []string,stdout,stderr *bytes.Buffer) int {
+ t.Helper(); o:=commandEnvironmentOverridesForTest(t)
+ cmd:=exec.CommandContext(t.Context(),os.Getenv("QA_BINARY"),args...)
+ cmd.Dir=o.workDir;cmd.Env=append(os.Environ(),"HOME="+o.homeDir);cmd.Stdout=stdout;cmd.Stderr=stderr
+ err:=cmd.Run();if err==nil {t.Logf("built archive stdout=%q stderr=%q",stdout.String(),stderr.String());return 0}; if ex,ok:=err.(*exec.ExitError);ok{return ex.ExitCode()};t.Fatal(fmt.Errorf("built CLI: %w",err));return -1
+}
