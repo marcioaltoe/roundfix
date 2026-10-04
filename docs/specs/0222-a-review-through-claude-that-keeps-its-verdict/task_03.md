@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0222-a-review-through-claude-that-keeps-its-verdict
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -90,3 +90,69 @@ fake runner.
 - `_techspec.md` → The refused permission; The prompt-too-long reason; API Contract 2; API Contract 3; Testing Approach 2; Build Order 3
 - ADR-0227
 - ADR-0174
+
+## Result
+
+Implemented the Task 03 slice; status and declared Verification remain
+Daemon-owned.
+
+- `reviewRecord.PermissionRefused` is copied from the runner result and
+  serialized as `permissionRefused`, omitted when false. The final answer
+  follows the existing verdict classification and finding-validation path.
+- Blocked records after a refusal carry the required suffix exactly once,
+  including a findings answer subsequently blocked by anchor validation.
+- A trimmed final-answer line beginning `Prompt is too long` supplies the
+  blocked reason before runtime failure, transport anomaly, or verdict
+  classification. The first matching line is capped at 512 bytes without
+  splitting a rune. Admission, timeout, and Spec-read failures retain their
+  precedence.
+
+Acceptance evidence:
+
+1. Refused-permission verdicts and disposition:
+   `TestReviewCommandClassifiesFindingsAfterARefusedPermission` checks exit
+   `1`, standing anchored findings `F1` and `F2`, the JSON field in the
+   persisted record and its agreement with stdout, and successful evidence
+   dismissal of `F1` with the ledger matching stdout.
+   `TestReviewCommandPassesNoFindingsAfterARefusedPermission` checks exit `0`
+   and `reviewed` from the final message. The no-verdict and no-anchor
+   subtests check exit `2` and the refusal suffix.
+2. Prompt-too-long diagnostics:
+   `TestReviewCommandNamesAPromptThatIsTooLong` checks exact reasons for
+   `BatchFailureError` with `agent/protocol error`, a parsed result, a
+   transport anomaly, a trimmed later line, a multibyte rune at the cap,
+   final-message selection, and a refused-permission result.
+   `TestReviewPromptTooLongKeepsFailurePrecedence` covers the three higher
+   priority failures. `TestReviewPermissionFlagIsOptionalAndPromptOverflowUsesFinalAnswer`
+   checks omission of the false field and ignores a prompt-overflow line in
+   a progress message when the final answer is clean.
+3. Other transport anomalies:
+   `TestReviewCommandBlocksOnTransportAnomaly` remains byte-identical and
+   passed in the focused review suite. The transport-anomaly branch remains
+   intact. The review prompt, verdict grammar, finding validation, and
+   lineage rules were not changed.
+
+Focused checks:
+
+- Before the implementation,
+  `GOCACHE=/tmp/roundfix-task03-gocache rtk proxy go test -count=1 ./internal/cli -run 'TestReviewCommand(ClassifiesFindingsAfterARefusedPermission|PassesNoFindingsAfterARefusedPermission|NamesTheRefusalWhenTheAnswerHasNoVerdict|NamesAPromptThatIsTooLong)$'`
+  exited `1`, reproducing the missing JSON field, missing blocked-reason
+  suffix, and generic runtime/transport/verdict reasons for prompt overflow.
+- After the classifier change,
+  `GOCACHE=/tmp/roundfix-task03-gocache rtk proxy go test -count=1 ./internal/cli -run 'TestReview(Command(ClassifiesFindingsAfterARefusedPermission|PassesNoFindingsAfterARefusedPermission|NamesTheRefusalWhenTheAnswerHasNoVerdict|NamesAPromptThatIsTooLong)|PromptTooLongKeepsFailurePrecedence)$'`
+  exited `0` (`ok roundfix/internal/cli 2.083s`).
+- After the final test additions,
+  `GOCACHE=/tmp/roundfix-task03-gocache rtk proxy go test -count=1 ./internal/cli -run '^TestReview'`
+  exited `0` (`ok roundfix/internal/cli 31.368s`). This focused suite includes
+  the unchanged transport-anomaly regression and existing review, validation,
+  disposition, and lineage tests.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited `0`.
+
+The declared Verification command and repository gates were not run in this
+Agent turn. No other Task or Task Graph was edited, and no commit, push, or
+Pull Request was created. No follow-up work was identified for this slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261004T145620Z_ee61ac9af5ab0ce2`
+- Source commit: `d5028f135b88e4176e6631de1e08420663fa2de1`
