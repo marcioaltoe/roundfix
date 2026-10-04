@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0224-an-archived-retry-that-needs-no-recorded-candidate
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -84,3 +84,67 @@ the proof failures that refuse with it.
 - `_prd.md` → Goals 1 and 3; Core Feature 1; Success Metric 1
 - `_techspec.md` → The archived retry without a candidate, step 4; Interfaces; API Contract 1; Build Order 5
 - ADR-0229
+
+## Result
+
+The archived branch now admits a missing candidate to the archived-head
+comparison based on `state.QAOverride` alone. Missing History still prevents
+ancestry proof, so the retry refuses with the archived-head text and never
+persists a change. The History guard on the proof itself, candidate anchors,
+other retry branches, refusal texts and interfaces are unchanged.
+
+Added `internal/delivery/operator_archive_no_history_test.go` using the real
+queue store and existing recovery and engine helpers. Its blocker-named
+subtests cover `run-unresolved` and `qa-environment-partial`; both explicitly
+assert no History, compare the exact refusal including the empty candidate,
+and compare the persisted item with its pre-retry snapshot.
+
+Focused checks:
+
+- `rtk proxy go test -count=1 -v -run '^TestRetryRefusesAnOperatorArchiveWithoutCandidateOrHistory$' ./internal/delivery`
+  could not access the sandbox-blocked default Go build cache.
+- `GOCACHE=/tmp/roundfix-task05-gocache rtk proxy go test -count=1 -v -run '^TestRetryRefusesAnOperatorArchiveWithoutCandidateOrHistory$' ./internal/delivery`
+  before the production change exited 1: both subtests returned
+  `candidate head is missing` instead of the required archived-head refusal.
+  Their unchanged-item assertions passed.
+- `GOCACHE=/tmp/roundfix-task05-gocache rtk proxy go test -count=1 -v -run '^(TestRetry|TestOperatorArchiveRetry)' ./internal/delivery`
+  after the production change exited 0. Acceptance criterion 1 is evidenced
+  by both new subtests passing with the exact refusal and unchanged persisted
+  items. Acceptance criterion 2 is evidenced by all existing operator-archive
+  retry tests passing, including candidate and Run start anchors, no override,
+  non-descendant heads, missing History and unreadable History. The two
+  existing operator-archive test files were left unedited. The same check
+  also passed prerequisite, corrective-Spec, conflict and active-Spec retry
+  tests.
+
+The declared Verification command was not run; the Daemon owns Verification
+and status settlement. No commit, push or pull request was created. No
+follow-up work was identified.
+
+### Verification Feedback — attempt 1
+
+Inspected the Daemon diagnostic artifact at
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261004T192138Z_db255ee424790676/verification/batch-001-attempt-1.log`
+and the related CLI detach test and process-group cleanup helper. The
+Daemon's `make verify-changed` exited 2 after the CLI detach fixture cleanup
+was denied permission to kill a live process group. The artifact records
+`internal/delivery` passing; it does not establish a passing repository gate.
+
+Focused feedback checks:
+
+- `GOCACHE=/tmp/roundfix-task05-gocache rtk proxy go test -count=1 -v -run '^TestRunImplementDetachSurvivesCallerProcessGroupKill$' ./internal/cli`
+  with host permissions exited 0. The isolated test passed, supporting an
+  execution-permission blocker rather than a Task 05 implementation defect.
+- `GOCACHE=/tmp/roundfix-task05-gocache rtk proxy go test -count=1 -run '^(TestRetry|TestOperatorArchiveRetry)' ./internal/delivery`
+  exited 0; the regression cases and existing retry coverage remain passing.
+
+No production or test changes were warranted by this feedback. The Daemon
+retry needs permission to signal its disposable fixture process groups.
+The full configured sequence and declared Verification remain Daemon-owned;
+neither was rerun in this feedback turn. Task status is unchanged, and no
+commit, push or pull request was created.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261004T192138Z_db255ee424790676`
+- Source commit: `3f97d1982ee2d4543cd23f384970e756ba32341a`
