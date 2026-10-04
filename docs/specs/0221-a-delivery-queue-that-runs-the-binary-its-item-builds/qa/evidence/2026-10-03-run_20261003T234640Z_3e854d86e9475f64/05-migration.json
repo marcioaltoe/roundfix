@@ -1,0 +1,47 @@
+{
+  "case": "newer",
+  "HOME": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0221-newer-edq2izkc",
+  "NODE_OPTIONS": "unset",
+  "before": {
+    "sha256": "8a94785c8f58a9c55fe61c9aafa8dfa08bb8a54e0cbe4dcba64cae53a983b06a",
+    "user_version": "23",
+    "files": [
+      ".roundfix",
+      ".roundfix/roundfix.db"
+    ]
+  },
+  "observations": [
+    {
+      "command": [
+        "./bin/roundfix",
+        "migrate",
+        "--check"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0221-a-delivery-queue-that-runs-the-binary-its-item-builds-08f3ee74f4b8f556-664e63e0-13b4e782/run_20261003T234640Z_3e854d86e9475f64",
+      "exit": 2,
+      "stdout": "",
+      "stderr": "roundfix: migrate check: Run Database \"/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0221-newer-edq2izkc/.roundfix/roundfix.db\" has schema version 23, newer than the schema version 22 this binary supports; a newer roundfix wrote it, so use that binary or run 'roundfix upgrade'\n"
+    },
+    {
+      "command": [
+        "./bin/roundfix",
+        "migrate",
+        "--check"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0221-a-delivery-queue-that-runs-the-binary-its-item-builds-08f3ee74f4b8f556-664e63e0-13b4e782/run_20261003T234640Z_3e854d86e9475f64",
+      "exit": 2,
+      "stdout": "",
+      "stderr": "roundfix: migrate check: Run Database \"/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0221-newer-edq2izkc/.roundfix/roundfix.db\" has schema version 23, newer than the schema version 22 this binary supports; a newer roundfix wrote it, so use that binary or run 'roundfix upgrade'\n"
+    }
+  ],
+  "after": {
+    "sha256": "8a94785c8f58a9c55fe61c9aafa8dfa08bb8a54e0cbe4dcba64cae53a983b06a",
+    "user_version": "23",
+    "files": [
+      ".roundfix",
+      ".roundfix/roundfix.db"
+    ]
+  },
+  "expected": "exit 2; empty stdout; stderr names roundfix upgrade (no exact newer-version transcript authored)",
+  "matched": true
+}

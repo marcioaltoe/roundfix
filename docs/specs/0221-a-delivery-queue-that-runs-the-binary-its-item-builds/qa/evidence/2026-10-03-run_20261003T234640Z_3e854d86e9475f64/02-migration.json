@@ -1,0 +1,51 @@
+{
+  "case": "current",
+  "HOME": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0221-current-hnww8jz2",
+  "NODE_OPTIONS": "unset",
+  "before": {
+    "sha256": "310dfbc9cfab2389068a9d7c31045ae02261f95c7d2f8ba18784c8724fbd7b57",
+    "user_version": "22",
+    "files": [
+      ".roundfix",
+      ".roundfix/roundfix.db"
+    ]
+  },
+  "observations": [
+    {
+      "command": [
+        "./bin/roundfix",
+        "migrate",
+        "--check"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0221-a-delivery-queue-that-runs-the-binary-its-item-builds-08f3ee74f4b8f556-664e63e0-13b4e782/run_20261003T234640Z_3e854d86e9475f64",
+      "exit": 0,
+      "stdout": "Run Database is at schema version 22, the version this binary supports: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0221-current-hnww8jz2/.roundfix/roundfix.db\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "./bin/roundfix",
+        "migrate",
+        "--check"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0221-a-delivery-queue-that-runs-the-binary-its-item-builds-08f3ee74f4b8f556-664e63e0-13b4e782/run_20261003T234640Z_3e854d86e9475f64",
+      "exit": 0,
+      "stdout": "Run Database is at schema version 22, the version this binary supports: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0221-current-hnww8jz2/.roundfix/roundfix.db\n",
+      "stderr": ""
+    }
+  ],
+  "after": {
+    "sha256": "310dfbc9cfab2389068a9d7c31045ae02261f95c7d2f8ba18784c8724fbd7b57",
+    "user_version": "22",
+    "files": [
+      ".roundfix",
+      ".roundfix/roundfix.db"
+    ]
+  },
+  "expected": [
+    0,
+    "Run Database is at schema version 22, the version this binary supports: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0221-current-hnww8jz2/.roundfix/roundfix.db\n",
+    ""
+  ],
+  "matched": true
+}

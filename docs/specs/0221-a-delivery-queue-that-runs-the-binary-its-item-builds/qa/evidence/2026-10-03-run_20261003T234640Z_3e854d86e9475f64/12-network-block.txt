@@ -1,0 +1,1 @@
+Fetch `https://sqlite.org/fileformat.html` with `rtk curl-cffi get ... --impersonate chrome --timeout 30 --quiet --download --output ...`: exit 1, `curl: (7) CONNECT tunnel failed, response 403`. Published content was not reached; design support could not be verified. No equivalent outside evidence obtained. Unblock by fetching the named page in a network-enabled QA session.

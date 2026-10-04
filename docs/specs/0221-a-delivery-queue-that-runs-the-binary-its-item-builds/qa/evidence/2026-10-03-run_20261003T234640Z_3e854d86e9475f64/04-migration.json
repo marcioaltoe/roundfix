@@ -1,0 +1,45 @@
+{
+  "case": "absent",
+  "HOME": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0221-absent-jo66wan4",
+  "NODE_OPTIONS": "unset",
+  "before": {
+    "sha256": null,
+    "user_version": null,
+    "files": []
+  },
+  "observations": [
+    {
+      "command": [
+        "./bin/roundfix",
+        "migrate",
+        "--check"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0221-a-delivery-queue-that-runs-the-binary-its-item-builds-08f3ee74f4b8f556-664e63e0-13b4e782/run_20261003T234640Z_3e854d86e9475f64",
+      "exit": 0,
+      "stdout": "No Run Database at /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0221-absent-jo66wan4/.roundfix/roundfix.db; nothing to migrate\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "./bin/roundfix",
+        "migrate",
+        "--check"
+      ],
+      "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0221-a-delivery-queue-that-runs-the-binary-its-item-builds-08f3ee74f4b8f556-664e63e0-13b4e782/run_20261003T234640Z_3e854d86e9475f64",
+      "exit": 0,
+      "stdout": "No Run Database at /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0221-absent-jo66wan4/.roundfix/roundfix.db; nothing to migrate\n",
+      "stderr": ""
+    }
+  ],
+  "after": {
+    "sha256": null,
+    "user_version": null,
+    "files": []
+  },
+  "expected": [
+    0,
+    "No Run Database at /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0221-absent-jo66wan4/.roundfix/roundfix.db; nothing to migrate\n",
+    ""
+  ],
+  "matched": true
+}

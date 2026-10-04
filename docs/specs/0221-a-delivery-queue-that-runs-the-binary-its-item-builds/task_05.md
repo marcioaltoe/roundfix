@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0221-a-delivery-queue-that-runs-the-binary-its-item-builds
-status: pending
+status: failed
 type: qa
 complexity: medium
 ---

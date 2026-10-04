@@ -1,0 +1,68 @@
+{
+  "command": [
+    "./bin/roundfix",
+    "spec",
+    "check",
+    "0221-a-delivery-queue-that-runs-the-binary-its-item-builds",
+    "--strict"
+  ],
+  "exit": 0,
+  "stdout": "Spec 0221-a-delivery-queue-that-runs-the-binary-its-item-builds\nNo findings. Authored Verification commands were not executed.\nSkipped:\n  SC-FINDING-LIFECYCLE: missing docs/findings Finding\n  SC-ROLLUP-MEMBER: missing docs/findings rollup\n  vocabulary documentation detector: missing docs/specs/0221-a-delivery-queue-that-runs-the-binary-its-item-builds/_techspec.md Vocabulary Contract\n  SC-REF-UNRESOLVED: missing docs/specs/0221-a-delivery-queue-that-runs-the-binary-its-item-builds/references/_index.md\n",
+  "stderr": "",
+  "numbered_success_metrics": 4,
+  "numbered_api_contracts": 5,
+  "metrics_in_techspec": {
+    "1": true,
+    "2": true,
+    "3": true,
+    "4": true
+  },
+  "metric_consumers": {
+    "1": [
+      "task_04.md",
+      "task_05.md"
+    ],
+    "2": [
+      "task_04.md",
+      "task_05.md"
+    ],
+    "3": [
+      "task_04.md",
+      "task_05.md"
+    ],
+    "4": [
+      "task_05.md",
+      "task_02.md"
+    ]
+  },
+  "API_contract_consumers": {
+    "1": [
+      "task_01.md",
+      "task_05.md",
+      "task_02.md"
+    ],
+    "2": [
+      "task_04.md",
+      "task_01.md",
+      "task_05.md"
+    ],
+    "3": [
+      "task_04.md",
+      "task_01.md",
+      "task_05.md"
+    ],
+    "4": [
+      "task_01.md",
+      "task_05.md",
+      "task_03.md"
+    ],
+    "5": [
+      "task_04.md",
+      "task_01.md",
+      "task_05.md"
+    ]
+  },
+  "unresolved_Task_context_paths": [],
+  "Unreachable_Acceptance": "none declared",
+  "frontend": false
+}
