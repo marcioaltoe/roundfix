@@ -14,6 +14,19 @@ archive stamps the declarations' `satisfied-by` actions under `unproven` in
 `<specs.root>/<slug>/` to `docs/history/specs/<slug>/` for the built-in Spec
 Root, or to `<specs.root>/_archived/<slug>/` for any other configured root.
 
+Before the move, the archive rewrites each relative Markdown link that leaves
+the Spec — including inline links, images and reference definitions outside
+code blocks and code spans — so it reaches the same path from the archived
+location. It keeps the link's fragment, query and angle-bracket form. It keeps
+a link whose target was already archived when its unchanged destination reaches
+that target from the archived location. If any other relative links that leave
+the Spec and do not resolve remain, the command exits `2` before changing any
+file and names each link with its file, line and destination. When links were
+rewritten, the successful confirmation appends `; rewrote <n> relative link(s)`.
+Destinations inside the Spec, absolute destinations, URLs, HTML anchors and
+non-Markdown files are not rewritten, including evidence scripts that climb a
+fixed number of directories.
+
 
 A Spec cannot archive while another file names its active directory. The
 command exits `2`, lists each file and line, and leaves every file in place.
@@ -46,4 +59,3 @@ Task is not completed, it also stamps `qa_override_qa_task_status` with that
 status; a completed QA Task omits the field. When the newest report is
 unreadable, the recorded outcome names it relative to the Spec folder and never
 stores an absolute machine path.
-

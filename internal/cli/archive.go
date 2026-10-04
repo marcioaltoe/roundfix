@@ -22,7 +22,10 @@ Archives a Spec after verifying either every Task is completed and the newest
 QA Report has verdict: pass (or a partial verdict covered only by declared
 Unreachable Acceptance), or a recorded supersession exists for a Spec without
 a Task Graph. Stamps archive metadata on the Task Graph path; a superseded Spec
-moves unchanged. The destination is the repository's default
+moves unchanged. Relative Markdown links that leave the
+Spec are rewritten to resolve from the archived location; a link whose
+target does not exist refuses the archive before any file changes.
+The destination is the repository's default
 docs/history/specs/<slug>/ when the Spec Root is the built-in docs/specs,
 otherwise <spec-root>/_archived/<slug>/ beside the configured Spec Root.
 archive creates no Run and never pushes.
@@ -127,10 +130,14 @@ func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		fmt.Fprintf(stderr, "%s: archive completed but could not format path: %v\n", app.Name, err)
 		return exitRunFailed
 	}
+	suffix := ""
+	if result.RewrittenLinks > 0 {
+		suffix = fmt.Sprintf("; rewrote %d relative link(s)", result.RewrittenLinks)
+	}
 	if result.QAOverride {
-		fmt.Fprintf(stdout, "archived %s with QA override -> %s\n", req.slug, rel)
+		fmt.Fprintf(stdout, "archived %s with QA override -> %s%s\n", req.slug, rel, suffix)
 	} else {
-		fmt.Fprintf(stdout, "archived %s -> %s\n", req.slug, rel)
+		fmt.Fprintf(stdout, "archived %s -> %s%s\n", req.slug, rel, suffix)
 	}
 	return exitOK
 }

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -47,7 +48,14 @@ const (
 	InitScopeProject = "project"
 )
 
+type Jev struct {
+	// MonthlyCeilingUSD is the User Config Jev ceiling in US dollars. Zero
+	// means unset, and every consumer keeps the judge's built-in ceiling.
+	MonthlyCeilingUSD float64
+}
+
 type Config struct {
+	Jev          Jev
 	Defaults     Defaults
 	Runtimes     Runtimes
 	Profiles     Profiles
@@ -260,7 +268,12 @@ func (duration *durationValue) UnmarshalYAML(node *yaml.Node) error {
 	return nil
 }
 
+type jevOverlay struct {
+	MonthlyCeilingUSD *float64 `yaml:"monthly_ceiling_usd"`
+}
+
 type configOverlay struct {
+	Jev          *jevOverlay          `yaml:"jev"`
 	Defaults     *defaultsOverlay     `yaml:"defaults"`
 	Runtimes     *runtimesOverlay     `yaml:"runtimes"`
 	Profiles     *profilesOverlay     `yaml:"profiles"`
@@ -1533,6 +1546,15 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 	if source == ProfileSourceProject && removeYAMLPath(&document, []string{"runs", "max_active"}) {
 		warnings.warnIgnoredProjectSetting("runs.max_active")
 	}
+	if source == ProfileSourceProject && removeYAMLPath(&document, []string{"jev", "monthly_ceiling_usd"}) {
+		warnings.warnIgnoredProjectSetting("jev.monthly_ceiling_usd")
+	}
+	if value, found := yamlValueAtPath(&document, []string{"jev", "monthly_ceiling_usd"}); found {
+		var ceiling float64
+		if (value.Tag != "!!int" && value.Tag != "!!float") || value.Decode(&ceiling) != nil || ceiling <= 0 || math.IsNaN(ceiling) || math.IsInf(ceiling, 0) {
+			return fmt.Errorf("parse config %q: jev.monthly_ceiling_usd must be a finite number greater than 0", label)
+		}
+	}
 	stripDeprecatedConfigKeys(&document, warnings)
 	if value, found := yamlValueAtPath(&document, []string{"review_source", "request_review"}); found && value.Tag == "!!null" {
 		return fmt.Errorf("parse config %q: review_source.request_review must be boolean: cannot unmarshal null value", label)
@@ -1659,6 +1681,9 @@ func encodeYAMLNode(node *yaml.Node) ([]byte, error) {
 }
 
 func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
+	if source != ProfileSourceProject && overlay.Jev != nil && overlay.Jev.MonthlyCeilingUSD != nil {
+		config.Jev.MonthlyCeilingUSD = *overlay.Jev.MonthlyCeilingUSD
+	}
 	if overlay.Delivery != nil && overlay.Delivery.DerivedPaths != nil {
 		config.Delivery.DerivedPaths = *overlay.Delivery.DerivedPaths
 	}

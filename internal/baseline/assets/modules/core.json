@@ -143,8 +143,7 @@
   "requiredDecisions": [
     "language.generated",
     "verification.gate",
-    "verification.incremental",
-    "branch.prefix"
+    "verification.incremental"
   ],
   "instructionHierarchy": {
     "narrowerPolicy": "strengthen-only",

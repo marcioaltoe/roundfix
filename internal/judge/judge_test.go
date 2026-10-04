@@ -5,10 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -105,10 +107,10 @@ func assertNoKey(t *testing.T, got Report) {
 func TestRunStopsAtTheMonthlyCeiling(t *testing.T) {
 	t.Run("already exactly at ceiling", func(t *testing.T) {
 		q, req := runFixture(t)
-		writeFixture(t, req.HomeDir, ".roundfix/judge/2026-10.jsonl", `{"cost_usd":5}`+"\n")
+		writeFixture(t, req.HomeDir, ".roundfix/judge/2026-10.jsonl", fmt.Sprintf("{\"cost_usd\":%g}\n", q.MonthlyCeilingUSD))
 		req.Transport = neverRequest(t)
 		got := runChecked(t, q, req)
-		if got.Skipped == nil || *got.Skipped != "monthly ceiling reached (US$5.0000 of US$5.00)" {
+		if got.Skipped == nil || *got.Skipped != fmt.Sprintf("monthly ceiling reached (US$%.4f of US$%.2f)", q.MonthlyCeilingUSD, q.MonthlyCeilingUSD) {
 			t.Fatalf("report=%+v", got)
 		}
 	})
@@ -117,7 +119,7 @@ func TestRunStopsAtTheMonthlyCeiling(t *testing.T) {
 		calls := 0
 		req.Transport = roundTripFunc(func(*http.Request) (*http.Response, error) {
 			calls++
-			return fixtureResponse(200, answerBody("jev-1.13.0", 0.8, 0.29, "5")), nil
+			return fixtureResponse(200, answerBody("jev-1.13.0", 0.8, 0.29, fmt.Sprint(q.MonthlyCeilingUSD))), nil
 		})
 		got := runChecked(t, q, req)
 		if calls != 1 || got.Stopped == nil || got.Judgments[1].Outcome != "skipped" {
@@ -326,11 +328,11 @@ func TestRunRechecksSpendBeforeRetryAndHonorsCancellation(t *testing.T) {
 		calls := 0
 		req.Transport = roundTripFunc(func(*http.Request) (*http.Response, error) {
 			calls++
-			writeFixture(t, req.HomeDir, ".roundfix/judge/2026-10.jsonl", `{"cost_usd":5}`+"\n")
+			writeFixture(t, req.HomeDir, ".roundfix/judge/2026-10.jsonl", fmt.Sprintf("{\"cost_usd\":%g}\n", q.MonthlyCeilingUSD))
 			return fixtureResponse(429, ""), nil
 		})
 		got := runChecked(t, q, req)
-		if calls != 1 || got.Stopped == nil || *got.Stopped != "monthly ceiling reached (US$5.0000 of US$5.00)" {
+		if calls != 1 || got.Stopped == nil || *got.Stopped != fmt.Sprintf("monthly ceiling reached (US$%.4f of US$%.2f)", q.MonthlyCeilingUSD, q.MonthlyCeilingUSD) {
 			t.Fatalf("report=%+v calls=%d", got, calls)
 		}
 	})
@@ -411,5 +413,45 @@ func TestRunReportsSkippedArtifactPathsWithoutSendingText(t *testing.T) {
 	got := runChecked(t, q, req)
 	if got.Calls != 0 || len(got.ArtifactsSkipped) != 1 || got.ArtifactsSkipped[0].Artifact != "docs/specs/0300-example/_prd.md" || got.ArtifactsSkipped[0].Reason != "not English" {
 		t.Fatalf("report=%+v", got)
+	}
+}
+
+func TestWithMonthlyCeilingReplacesOnlyAPositiveCeiling(t *testing.T) {
+	q := loadQuestions(t)
+	for _, value := range []float64{50, 0, -1} {
+		got := q.WithMonthlyCeiling(value)
+		want := q
+		if value > 0 {
+			want.MonthlyCeilingUSD = value
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("override %v changed other settings: %+v", value, got)
+		}
+	}
+	if q.MonthlyCeilingUSD != loadQuestions(t).MonthlyCeilingUSD {
+		t.Fatal("original questions changed")
+	}
+}
+
+func TestRunStopsAtAConfiguredCeiling(t *testing.T) {
+	for _, spend := range []float64{49, 50} {
+		t.Run(fmt.Sprint(spend), func(t *testing.T) {
+			q, req := runFixture(t)
+			q = q.WithMonthlyCeiling(50)
+			writeFixture(t, req.HomeDir, ".roundfix/judge/2026-10.jsonl", fmt.Sprintf("{\"cost_usd\":%g}\n", spend))
+			calls := 0
+			req.Transport = roundTripFunc(func(*http.Request) (*http.Response, error) {
+				calls++
+				return fixtureResponse(200, answerBody("jev-1.13.0", 0.8, 0.29, "")), nil
+			})
+			got := runChecked(t, q, req)
+			if spend < 50 {
+				if calls != 2 || got.Skipped != nil {
+					t.Fatalf("below ceiling: %+v calls=%d", got, calls)
+				}
+			} else if calls != 0 || got.Skipped == nil || *got.Skipped != "monthly ceiling reached (US$50.0000 of US$50.00)" {
+				t.Fatalf("at ceiling: %+v calls=%d", got, calls)
+			}
+		})
 	}
 }

@@ -1,0 +1,10 @@
+{
+  "skills": {
+    "status": "ok",
+    "detail": "43 required: 14 Roundfix-owned, 29 external"
+  },
+  "baseline": {
+    "status": "current",
+    "detail": "the repository already matches the current Baseline catalog"
+  }
+}

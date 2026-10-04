@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/fs"
+	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -78,17 +81,18 @@ type ArchiveRequest struct {
 
 // ArchiveResult reports the filesystem paths touched by Archive.
 type ArchiveResult struct {
-	SourceDir   string
-	ArchivedDir string
-	ArchivedOn  string
-	QAOverride  bool
+	SourceDir      string
+	ArchivedDir    string
+	ArchivedOn     string
+	QAOverride     bool
+	RewrittenLinks int
 }
 
 // Archive verifies either completion and QA evidence for a Spec with a Task
 // Graph or a supersession record for a Spec without one, then moves the Spec
 // under the resolved archived Spec root. A partial QA Report is eligible only
-// when its blocked rows are declared unreachable. Superseded Specs move
-// byte-identically because their amendment already records their disposition.
+// when its blocked rows are declared unreachable. Superseded Specs keep their
+// disposition metadata and receive the same link pass.
 func Archive(req ArchiveRequest) (ArchiveResult, error) {
 	qaOverride, err := validateQAArchiveOverride(req.QAOverride)
 	if err != nil {
@@ -170,6 +174,10 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 		return ArchiveResult{}, fmt.Errorf("stat archived Spec destination %q: %w", archivedDir, err)
 	}
 
+	rewrites, rewrittenLinks, err := prepareArchiveLinks(sourceDir, archivedDir, req.Slug)
+	if err != nil {
+		return ArchiveResult{}, err
+	}
 	archivedOn := archiveDate(req.ArchivedAt)
 	if stampMetadata {
 		prdPath := filepath.Join(sourceDir, "_prd.md")
@@ -180,14 +188,26 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 	if err := os.MkdirAll(archiveRoot, 0o755); err != nil {
 		return ArchiveResult{}, fmt.Errorf("create archived Spec root %q: %w", archiveRoot, err)
 	}
+	// Read again after stamping: destination offsets in the PRD may have moved.
+	for i := range rewrites {
+		current, readErr := os.ReadFile(rewrites[i].path)
+		if readErr != nil {
+			return ArchiveResult{}, errors.Join(fmt.Errorf("read link rewrite %q: %w", rewrites[i].path, readErr), restoreArchiveLinks(rewrites[:i]))
+		}
+		next := rewriteArchiveLinks(current, rewrites[i].destinations)
+		if writeErr := os.WriteFile(rewrites[i].path, next, rewrites[i].mode); writeErr != nil {
+			return ArchiveResult{}, errors.Join(fmt.Errorf("write link rewrite %q: %w", rewrites[i].path, writeErr), restoreArchiveLinks(rewrites[:i+1]))
+		}
+	}
 	if err := os.Rename(sourceDir, archivedDir); err != nil {
-		return ArchiveResult{}, fmt.Errorf("move Spec %q to %q: %w", sourceDir, archivedDir, err)
+		return ArchiveResult{}, errors.Join(fmt.Errorf("move Spec %q to %q: %w", sourceDir, archivedDir, err), restoreArchiveLinks(rewrites))
 	}
 	return ArchiveResult{
-		SourceDir:   sourceDir,
-		ArchivedDir: archivedDir,
-		ArchivedOn:  archivedOn,
-		QAOverride:  qaOverride != nil,
+		SourceDir:      sourceDir,
+		ArchivedDir:    archivedDir,
+		ArchivedOn:     archivedOn,
+		QAOverride:     qaOverride != nil,
+		RewrittenLinks: rewrittenLinks,
 	}, nil
 }
 
@@ -370,4 +390,375 @@ func archiveSequenceNode(values []string) *yaml.Node {
 		node.Content = append(node.Content, archiveScalarNode(value))
 	}
 	return node
+}
+
+// markdownDestination indexes only a destination's bytes, preserving its wrapper and title.
+type markdownDestination struct{ start, end int }
+type archiveLinkRewrite struct {
+	path         string
+	original     []byte
+	mode         fs.FileMode
+	destinations map[string]string
+}
+
+var archiveLinkScheme = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9+.-]*:`)
+
+func archiveLinkTarget(destination, dir string) (target, suffix string, relative bool) {
+	if destination == "" || strings.HasPrefix(destination, "/") || strings.HasPrefix(destination, "#") || archiveLinkScheme.MatchString(destination) {
+		return "", "", false
+	}
+	path := destination
+	if index := strings.IndexAny(path, "?#"); index >= 0 {
+		path, suffix = path[:index], path[index:]
+	}
+	if path == "" {
+		return "", "", false
+	}
+	decoded, err := url.PathUnescape(path)
+	if err != nil {
+		return "", "", false
+	}
+	return filepath.Clean(filepath.Join(dir, filepath.FromSlash(decoded))), suffix, true
+}
+
+func archiveLinkInside(target, specDir string) bool {
+	rel, err := filepath.Rel(specDir, target)
+	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel)
+}
+
+func prepareArchiveLinks(sourceDir, archivedDir, slug string) ([]archiveLinkRewrite, int, error) {
+	var rewrites []archiveLinkRewrite
+	var broken []string
+	count := 0
+	err := filepath.WalkDir(sourceDir, func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if !entry.Type().IsRegular() || filepath.Ext(path) != ".md" {
+			return nil
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("read Markdown %q: %w", path, err)
+		}
+		rel, err := filepath.Rel(sourceDir, path)
+		if err != nil {
+			return err
+		}
+		activeDir := filepath.Dir(path)
+		movedDir := filepath.Dir(filepath.Join(archivedDir, rel))
+		replacements := make(map[string]string)
+		for _, span := range scanArchiveMarkdown(content) {
+			destination := string(content[span.start:span.end])
+			target, suffix, relative := archiveLinkTarget(destination, activeDir)
+			if !relative || archiveLinkInside(target, sourceDir) {
+				continue
+			}
+			if _, err := os.Stat(target); err == nil {
+				next, err := filepath.Rel(movedDir, target)
+				if err != nil {
+					return err
+				}
+				encoded := (&url.URL{Path: filepath.ToSlash(next)}).EscapedPath() + suffix
+				if encoded != destination {
+					replacements[destination] = encoded
+					count++
+				}
+			} else if !errors.Is(err, os.ErrNotExist) {
+				return fmt.Errorf("stat link target %q: %w", target, err)
+			} else {
+				movedTarget, _, _ := archiveLinkTarget(destination, movedDir)
+				if _, err := os.Stat(movedTarget); errors.Is(err, os.ErrNotExist) {
+					line := bytes.Count(content[:span.start], []byte("\n")) + 1
+					broken = append(broken, fmt.Sprintf("%s:%d %q", filepath.ToSlash(rel), line, destination))
+				} else if err != nil {
+					return fmt.Errorf("stat archived link target %q: %w", movedTarget, err)
+				}
+			}
+		}
+		if len(replacements) > 0 {
+			info, err := entry.Info()
+			if err != nil {
+				return err
+			}
+			rewrites = append(rewrites, archiveLinkRewrite{path: path, original: content, mode: info.Mode(), destinations: replacements})
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, 0, fmt.Errorf("scan Spec Markdown links: %w", err)
+	}
+	if len(broken) > 0 {
+		return nil, 0, fmt.Errorf("Spec %q has relative links that leave the Spec and do not resolve: %s; fix or remove each link, then retry the archive", slug, strings.Join(broken, ", "))
+	}
+	return rewrites, count, nil
+}
+
+func rewriteArchiveLinks(content []byte, replacements map[string]string) []byte {
+	var next bytes.Buffer
+	end := 0
+	for _, span := range scanArchiveMarkdown(content) {
+		next.Write(content[end:span.start])
+		destination := string(content[span.start:span.end])
+		if replacement, ok := replacements[destination]; ok {
+			next.WriteString(replacement)
+		} else {
+			next.WriteString(destination)
+		}
+		end = span.end
+	}
+	next.Write(content[end:])
+	return next.Bytes()
+}
+
+func restoreArchiveLinks(rewrites []archiveLinkRewrite) error {
+	var errs []error
+	for _, rewrite := range rewrites {
+		if err := os.WriteFile(rewrite.path, rewrite.original, rewrite.mode); err != nil {
+			errs = append(errs, fmt.Errorf("restore link rewrite %q: %w", rewrite.path, err))
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// ArchiveLinksMatch reports whether only outward link destinations changed,
+// reaching the same lexical target and preserving their query and fragment.
+func ArchiveLinksMatch(active, archived []byte, activeDir, archivedDir, specDir string) bool {
+	left, right := scanArchiveMarkdown(active), scanArchiveMarkdown(archived)
+	if len(left) != len(right) {
+		return false
+	}
+	aEnd, bEnd := 0, 0
+	for i, a := range left {
+		b := right[i]
+		if !bytes.Equal(active[aEnd:a.start], archived[bEnd:b.start]) {
+			return false
+		}
+		before, after := string(active[a.start:a.end]), string(archived[b.start:b.end])
+		if before != after {
+			t1, s1, r1 := archiveLinkTarget(before, activeDir)
+			t2, s2, r2 := archiveLinkTarget(after, archivedDir)
+			if !r1 || !r2 || archiveLinkInside(t1, specDir) || t1 != t2 || s1 != s2 {
+				return false
+			}
+		}
+		aEnd, bEnd = a.end, b.end
+	}
+	return bytes.Equal(active[aEnd:], archived[bEnd:])
+}
+
+func markdownSpace(c byte) bool { return c == ' ' || c == '\t' || c == '\r' || c == '\n' }
+
+// scanArchiveMarkdown masks code first, then reads inline and reference
+// destinations without reformatting any surrounding Markdown.
+func scanArchiveMarkdown(content []byte) []markdownDestination {
+	masked := bytes.Clone(content)
+	fence := byte(0)
+	fenceLength := 0
+	for start := 0; start < len(masked); {
+		end := bytes.IndexByte(masked[start:], '\n')
+		if end < 0 {
+			end = len(masked)
+		} else {
+			end += start
+		}
+		line := masked[start:end]
+		indent := 0
+		for indent < len(line) && indent < 4 && line[indent] == ' ' {
+			indent++
+		}
+		run := 0
+		if indent < 4 && indent < len(line) && (line[indent] == '`' || line[indent] == '~') {
+			for indent+run < len(line) && line[indent+run] == line[indent] {
+				run++
+			}
+		}
+		if fence != 0 {
+			if run >= fenceLength && line[indent] == fence && len(bytes.TrimSpace(line[indent+run:])) == 0 {
+				fence = 0
+			}
+			for i := start; i < end; i++ {
+				masked[i] = ' '
+			}
+		} else if run >= 3 {
+			fence, fenceLength = line[indent], run
+			for i := start; i < end; i++ {
+				masked[i] = ' '
+			}
+		} else {
+			for i := start; i < end; i++ {
+				if masked[i] == '\\' {
+					i++
+					continue
+				}
+				if masked[i] != '`' {
+					continue
+				}
+				n := 1
+				for i+n < end && masked[i+n] == '`' {
+					n++
+				}
+				closeAt := -1
+				for j := i + n; j < end; {
+					if masked[j] != '`' {
+						j++
+						continue
+					}
+					k := j
+					for k < end && masked[k] == '`' {
+						k++
+					}
+					if k-j == n {
+						closeAt = k
+						break
+					}
+					j = k
+				}
+				if closeAt >= 0 {
+					for j := i; j < closeAt; j++ {
+						masked[j] = ' '
+					}
+					i = closeAt - 1
+				} else {
+					i += n - 1
+				}
+			}
+		}
+		start = end + 1
+	}
+	var spans []markdownDestination
+	var labels []int
+	for i := 0; i < len(masked); i++ {
+		if masked[i] == '\\' {
+			i++
+			continue
+		}
+		if masked[i] == '[' {
+			labels = append(labels, i)
+			continue
+		}
+		if masked[i] != ']' || len(labels) == 0 {
+			continue
+		}
+		labelStart := labels[len(labels)-1]
+		labels = labels[:len(labels)-1]
+		j := i
+		if j+1 >= len(masked) {
+			continue
+		}
+		reference := masked[j+1] == ':'
+		if !reference && masked[j+1] != '(' {
+			continue
+		}
+		if reference {
+			lineStart := bytes.LastIndexByte(masked[:labelStart], '\n') + 1
+			if labelStart-lineStart > 3 || len(bytes.TrimSpace(masked[lineStart:labelStart])) != 0 {
+				continue
+			}
+		}
+		k := j + 2
+		for k < len(masked) && markdownSpace(masked[k]) {
+			k++
+		}
+		begin := k
+		angle := k < len(masked) && masked[k] == '<'
+		if k < len(masked) && masked[k] == '<' {
+			begin = k + 1
+			k++
+			for k < len(masked) && masked[k] != '>' && masked[k] != '\n' {
+				if masked[k] == '\\' {
+					k++
+				}
+				k++
+			}
+			if k >= len(masked) || masked[k] != '>' {
+				continue
+			}
+		} else {
+			parens := 0
+			for k < len(masked) {
+				if masked[k] == '\\' && k+1 < len(masked) {
+					k += 2
+					continue
+				}
+				if markdownSpace(masked[k]) {
+					break
+				}
+				if masked[k] == '(' {
+					parens++
+				}
+				if masked[k] == ')' {
+					if parens == 0 {
+						break
+					}
+					parens--
+				}
+				k++
+			}
+			if parens != 0 {
+				continue
+			}
+		}
+		end := k
+		if angle {
+			end++
+		}
+		linkEnd, valid := archiveMarkdownLinkEnd(masked, end, reference)
+		if !valid {
+			continue
+		}
+		if k > begin {
+			spans = append(spans, markdownDestination{begin, k})
+		}
+		i = linkEnd
+	}
+	return spans
+}
+
+// A destination counts only when the surrounding link syntax is complete.
+func archiveMarkdownLinkEnd(content []byte, end int, reference bool) (int, bool) {
+	k := end
+	for k < len(content) && markdownSpace(content[k]) {
+		if reference && content[k] == '\n' {
+			return k, true
+		}
+		k++
+	}
+	if reference && k == len(content) {
+		return k, true
+	}
+	if !reference && k < len(content) && content[k] == ')' {
+		return k, true
+	}
+	if k == end || k >= len(content) {
+		return 0, false
+	}
+	quote := content[k]
+	if quote != '\'' && quote != '"' && quote != '(' {
+		return 0, false
+	}
+	if quote == '(' {
+		quote = ')'
+	}
+	k++
+	for k < len(content) && content[k] != quote {
+		if content[k] == '\\' {
+			k++
+		}
+		k++
+	}
+	if k >= len(content) {
+		return 0, false
+	}
+	k++
+	for k < len(content) && markdownSpace(content[k]) {
+		if reference && content[k] == '\n' {
+			return k, true
+		}
+		k++
+	}
+	if reference {
+		return k, k == len(content)
+	}
+	return k, k < len(content) && content[k] == ')'
 }

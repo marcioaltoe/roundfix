@@ -9,6 +9,7 @@ import (
 )
 
 const frontendLayoutDecisionID = "frontend.layout"
+const branchPrefixDecisionID = "branch.prefix"
 
 func renderProjectDecision(
 	decisionID string,
@@ -16,6 +17,14 @@ func renderProjectDecision(
 	declaration document,
 ) (string, error) {
 	switch decisionID {
+	case branchPrefixDecisionID:
+		return strings.Join([]string{
+			"The branch-prefix pattern is `" + renderDecisionValue(value) + "`; `<type>` is replaced by the",
+			"work's purpose, never used literally. Use `<type>/` as the portable decision",
+			"value. Legacy personal-prefix values must be revised through Baseline and do",
+			"not override the purpose-based branch rule below. Tool-owned Run and Task",
+			"branches follow their tool's documented namespace.",
+		}, "\n"), nil
 	case frontendLayoutDecisionID:
 		if err := validateDecisionValue(declaration, value); err != nil {
 			return "", err
@@ -226,6 +235,13 @@ func markdownCode(value string) string {
 
 func renderUnrecordedProjectDecision(decisionID string, declaration document) (string, error) {
 	switch decisionID {
+	case branchPrefixDecisionID:
+		return strings.Join([]string{
+			"No branch prefix is recorded. Name new work branches `<type>/<description>`,",
+			"where `<type>` is the work's Conventional Commit type, as the branch rule",
+			"below states. Tool-owned Run and Task branches follow their tool's documented",
+			"namespace.",
+		}, "\n"), nil
 	case frontendLayoutDecisionID:
 		return fmt.Sprintf("No frontend layout is recorded. The suggested `%s` layout applies until the repository records one.", renderDecisionValue(declaration["default"])), nil
 	default:

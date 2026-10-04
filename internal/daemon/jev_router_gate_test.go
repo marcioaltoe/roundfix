@@ -28,7 +28,15 @@ import (
 )
 
 const routerSentinelKey = "router-gate-test-secret-never-log"
-const routerCeilingReason = "jev_ceiling_reached: month's Jev spend US$5.0000 of US$5.0000"
+
+func routerCeilingReason(t *testing.T) string {
+	t.Helper()
+	q, err := judge.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return fmt.Sprintf("jev_ceiling_reached: month's Jev spend US$%.4f of US$%.4f", q.MonthlyCeilingUSD, q.MonthlyCeilingUSD)
+}
 
 type fakeJevRouterGate struct {
 	beforeErrors            []error
@@ -112,7 +120,7 @@ func assertNoRouterSecret(t *testing.T, text string, sink *captureEventSink) {
 }
 
 func TestJevRouterCeilingFallsBackBeforeWork(t *testing.T) {
-	gate := &fakeJevRouterGate{beforeErrors: []error{routerRefusal(routerCeilingReason)}}
+	gate := &fakeJevRouterGate{beforeErrors: []error{routerRefusal(routerCeilingReason(t))}}
 	fixture, runner, result := routerTaskFixture(t, gate, false)
 	if result.Completed != 1 || result.Failed != 0 {
 		t.Fatalf("fallback result: %+v", result)
@@ -125,7 +133,7 @@ func TestJevRouterCeilingFallsBackBeforeWork(t *testing.T) {
 		t.Fatalf("refused prompt reached runner: %+v", requests)
 	}
 	payload := eventPayloadMap(t, singleEventOfKind(t, fixture.sink, runevent.KindDaemonAgentSelectionFallback))
-	if payload["reason_code"] != "jev_ceiling_reached" || !strings.Contains(payload["reason"].(string), routerCeilingReason) {
+	if payload["reason_code"] != "jev_ceiling_reached" || !strings.Contains(payload["reason"].(string), routerCeilingReason(t)) {
 		t.Fatalf("refusal classification: %+v", payload)
 	}
 	if gate.beforeCalls != 1 || len(gate.records) != 0 {
@@ -134,7 +142,7 @@ func TestJevRouterCeilingFallsBackBeforeWork(t *testing.T) {
 }
 
 func TestJevRouterCeilingFailsTheTaskAfterWork(t *testing.T) {
-	gate := &fakeJevRouterGate{beforeErrors: []error{nil, routerRefusal(routerCeilingReason)}}
+	gate := &fakeJevRouterGate{beforeErrors: []error{nil, routerRefusal(routerCeilingReason(t))}}
 	fixture, runner, result := routerTaskFixture(t, gate, true)
 	if result.Failed != 1 || result.Completed != 0 {
 		t.Fatalf("post-work result: %+v", result)
@@ -384,7 +392,11 @@ func TestJevRouterDefaultGateUsesProcessHomeAndJudgeCeiling(t *testing.T) {
 }
 
 func TestJevRouterUnboundedKeyFallsBackBeforeWork(t *testing.T) {
-	reason := "jev_router_key_unbounded: set a monthly credit limit of at most US$5.0000 on the key at OpenRouter"
+	q, err := judge.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	reason := fmt.Sprintf("jev_router_key_unbounded: set a monthly credit limit of at most US$%.4f on the key at OpenRouter", q.MonthlyCeilingUSD)
 	gate := &fakeJevRouterGate{beforeErrors: []error{routerRefusal(reason)}}
 	fixture, runner, result := routerTaskFixture(t, gate, false)
 	if result.Completed != 1 || result.Failed != 0 {
@@ -455,5 +467,61 @@ func TestJevRouterGateChecksTheReportedKeyLimit(t *testing.T) {
 				t.Fatalf("usage=%v err=%v", usage, err)
 			}
 		})
+	}
+}
+
+func TestJevRouterDefaultGateUsesTheConfiguredCeiling(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	q, err := judge.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", taskType: string(spec.TaskTypeDocs)}})
+	for _, ceiling := range []float64{0, 50} {
+		engine, err := NewEngine(Dependencies{Runner: &selectionLifecycleRunner{}, Verifier: &taskFakeVerifier{}, Committer: &engineFakeCommitter{}, Pusher: &engineFakePusher{}, Source: &engineFakeSource{}, Runs: fixture.store, Worktree: fixture.worktree, JevMonthlyCeilingUSD: ceiling})
+		if err != nil {
+			t.Fatal(err)
+		}
+		gate, ok := engine.deps.JevRouter.(*jevRouterGate)
+		if !ok {
+			t.Fatalf("gate type=%T", engine.deps.JevRouter)
+		}
+		want := q.WithMonthlyCeiling(ceiling).MonthlyCeilingUSD
+		if gate.deps.Ceiling != want {
+			t.Fatalf("ceiling=%v want=%v", gate.deps.Ceiling, want)
+		}
+	}
+}
+
+func TestJevRouterGateAcceptsAKeyLimitAtTheConfiguredCeiling(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv(agent.JevRouterKeyEnv, routerSentinelKey)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer "+routerSentinelKey {
+			t.Error("missing bearer key")
+		}
+		fmt.Fprint(w, `{"data":{"usage_monthly":0.5,"limit":50,"limit_reset":"monthly","limit_remaining":49.5}}`)
+	}))
+	defer server.Close()
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", taskType: string(spec.TaskTypeDocs)}})
+	for _, ceiling := range []float64{50, 0} {
+		engine, err := NewEngine(Dependencies{Runner: &selectionLifecycleRunner{}, Verifier: &taskFakeVerifier{}, Committer: &engineFakeCommitter{}, Pusher: &engineFakePusher{}, Source: &engineFakeSource{}, Runs: fixture.store, Worktree: fixture.worktree, JevMonthlyCeilingUSD: ceiling})
+		if err != nil {
+			t.Fatal(err)
+		}
+		gate := engine.deps.JevRouter.(*jevRouterGate)
+		gate.deps.Client, gate.deps.Endpoint = server.Client(), server.URL
+		usage, err := gate.Before(context.Background())
+		if ceiling == 50 {
+			if err != nil || usage != 0.5 {
+				t.Fatalf("configured gate: usage=%v err=%v", usage, err)
+			}
+		} else {
+			want := fmt.Sprintf("jev_router_key_unbounded: set a monthly credit limit of at most US$%.4f on the key at OpenRouter", gate.deps.Ceiling)
+			var refusal *agent.SelectionFailureError
+			if !errors.As(err, &refusal) || refusal.Reason != want || usage != 0 {
+				t.Fatalf("default gate: usage=%v err=%v", usage, err)
+			}
+		}
 	}
 }

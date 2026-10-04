@@ -100,12 +100,31 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	if dependencies.readiness != nil {
 		results = append(results, dependencies.readiness(ctx, loaded)...)
 	}
+	results = append(results, repositorySkillsCheck(ctx, dependencies, repositoryRoot))
+	results = append(results, dependencies.residue(ctx, loaded.HomeDir)...)
+	results = append(results, dependencies.storage(ctx, loaded)...)
+	results = append(results, checker.Codex(ctx))
+
+	failed := false
+	for _, result := range results {
+		printDoctorResult(stdout, result)
+		if result.Status == CheckStatusFailed {
+			failed = true
+		}
+	}
+	if failed {
+		return exitRunFailed
+	}
+	return exitOK
+}
+
+func repositorySkillsCheck(ctx context.Context, dependencies doctorDependencies, repositoryRoot string) CheckResult {
 	if repositoryRoot == "" {
-		results = append(results, doctorMissingRepositoryRootResult())
+		return doctorMissingRepositoryRootResult()
 	} else {
 		external, manifestOK, requirementErr := dependencies.resolveExternal(repositoryRoot)
 		if requirementErr != nil {
-			results = append(results, doctorSkillRequirementResult(requirementErr))
+			return doctorSkillRequirementResult(requirementErr)
 		} else {
 			skillReadiness, skillErr := dependencies.checkSkills(ctx, repositoryRoot, external)
 			if manifestOK {
@@ -125,27 +144,12 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 						result.NextAction += "roundfix baseline update"
 					}
 				}
-				results = append(results, result)
+				return result
 			} else {
-				results = append(results, doctorMissingSetupManifestResult(skillReadiness, skillErr))
+				return doctorMissingSetupManifestResult(skillReadiness, skillErr)
 			}
 		}
 	}
-	results = append(results, dependencies.residue(ctx, loaded.HomeDir)...)
-	results = append(results, dependencies.storage(ctx, loaded)...)
-	results = append(results, checker.Codex(ctx))
-
-	failed := false
-	for _, result := range results {
-		printDoctorResult(stdout, result)
-		if result.Status == CheckStatusFailed {
-			failed = true
-		}
-	}
-	if failed {
-		return exitRunFailed
-	}
-	return exitOK
 }
 
 func doctorRecommendationsResult(config roundconfig.Config) CheckResult {

@@ -1,0 +1,4 @@
+cwd: /private/tmp/roundfix-0223-qa/old-adopter
+HOME: /private/tmp/roundfix-0223-qa/home; NODE_OPTIONS: unset
+['./bin/roundfix', 'baseline', 'apply', '--repo', '.', '--plan', '/private/tmp/roundfix-0223-qa/old-adopter-plan.json', '--confirm-plan', 'sha256:230c3cbd93bdf53a264c152559a36a516d3322bd000d3da10a9d14a1aa537db7', '--format', 'json']
+exit: 0

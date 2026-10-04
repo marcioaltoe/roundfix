@@ -110,6 +110,29 @@ fail configuration validation. Only User Config can set this machine-wide
 ceiling. A `runs.max_active` value in Project Config is ignored with a warning,
 so a repository cannot raise or disable the user's limit.
 
+## Jev monthly ceiling
+
+`jev.monthly_ceiling_usd` is a finite number of US dollars greater than zero.
+Set it only in User Config at `~/.roundfix/config.yml`; when unset, the
+effective ceiling is US$5. The judge, the Jev Router gate, and its key-limit
+check all read the same value, and the key's monthly credit limit must be at
+most that value:
+
+```yaml
+jev:
+  monthly_ceiling_usd: 50
+```
+
+A `jev.monthly_ceiling_usd` value in Project Config is ignored with this
+warning on standard error:
+`config: jev.monthly_ceiling_usd in Project Config is ignored; set jev.monthly_ceiling_usd in User Config`.
+An invalid User Config value fails with:
+`jev.monthly_ceiling_usd must be a finite number greater than 0`.
+
+An older Roundfix binary refuses a User Config containing this key as an
+unknown key. Set it only after every Roundfix binary on the machine includes
+this change.
+
 ## Context-Driven Baseline state
 
 User Config and Project Config are operational Roundfix state. They do not
@@ -295,6 +318,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `watch.push_branch` | `""` | Uses the upstream branch detected by Preflight Validation. |
 | `implement.auto_push` | `false` | Leaves a Clean Spec Run local. `true` pushes its upstream branch but never opens a pull request. |
 | `runs.max_active` | `3` | Limits Active Implement Runs across every repository in the Run Database. Only User Config can set it; Project Config is ignored with a warning. `0` disables the bound. |
+| `jev.monthly_ceiling_usd` | `5` | Sets the shared monthly Jev ceiling in User Config, in US dollars. Project Config is ignored with a warning. |
 | `notify.enabled` | `true` | Sends one terminal outcome notification for `resolve`, `watch`, and `implement`. |
 | `notify.command` | `""` | Uses the native desktop notifier. A non-empty shell command replaces it. |
 | `budget.enabled` | `true` | Enforces the configured Run duration budget. |
@@ -351,13 +375,14 @@ in the environment. Roundfix gives OpenCode the provider through
 `OPENCODE_CONFIG_CONTENT`, with `{env:ROUNDFIX_OPENROUTER_API_KEY}` as its key
 placeholder, replacing an inherited value for routed sessions only.
 
-Every routed prompt runs under the US$5 monthly Jev ceiling shared with
-`roundfix spec judge`. The router changes no built-in or Recommended Profile.
+Every routed prompt runs under the configured monthly Jev ceiling shared with
+`roundfix spec judge`; `jev.monthly_ceiling_usd` is US$5 when unset. The router
+changes no built-in or Recommended Profile.
 
 Before a routed prompt starts, the key must also report a numeric `limit`
 no greater than the ceiling and `limit_reset: monthly`. Set a monthly credit
-limit of at most US$5 on the key at OpenRouter; an unlimited key, a lifetime
-limit, or a monthly limit above the ceiling is refused with
+limit of at most the configured ceiling on the key at OpenRouter; an unlimited
+key, a lifetime limit, or a monthly limit above the ceiling is refused with
 `jev_router_key_unbounded`. OpenRouter enforces this limit while a prompt is
 running. A numeric `limit_remaining` at or below zero is refused with
 `jev_ceiling_reached`. These refusals activate the configured fallback before

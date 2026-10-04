@@ -1,0 +1,17 @@
+{
+  "command": [
+    "./bin/roundfix",
+    "spec",
+    "check",
+    "0226-an-archived-spec-keeps-its-links",
+    "--strict"
+  ],
+  "exit": 0,
+  "stdout": "Spec 0226-an-archived-spec-keeps-its-links\nNo findings. Authored Verification commands were not executed.\nSkipped:\n  SC-FINDING-LIFECYCLE: missing docs/findings Finding\n  SC-ROLLUP-MEMBER: missing docs/findings rollup\n  SC-BACKLOG-UNMOVED: missing docs/backlog\n  vocabulary documentation detector: missing docs/specs/0226-an-archived-spec-keeps-its-links/_techspec.md Vocabulary Contract\n",
+  "stderr": "",
+  "glossary_terms": [
+    "The configured directory holding Spec folders, `docs/specs` by default; it may resolve outside the repository working tree, such as a knowledge workspace repository.",
+    "The durable, ordered set of Specs that Roundfix advances from an Implement Run through merge with a fixed optional deadline and per-item retry limit. A blocker parks only its item while later items can continue.",
+    "The support command that retires a Spec under the archive eligibility contract, stamps its disposition, and moves the whole Spec to the resolved archive root. Normal QA eligibility and a user-authorized QA Archive Override are distinct dispositions. Neither retirement nor an override fabricates Task completion or a passing QA verdict."
+  ]
+}

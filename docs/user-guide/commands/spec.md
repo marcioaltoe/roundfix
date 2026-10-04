@@ -42,8 +42,9 @@ thresholds apply only to the pinned Jev 1.13 model family.
 
 Every request appends its answer, model, transport, and cost to the Judge Log
 at `<home>/.roundfix/judge/<YYYY-MM>.jsonl`, using the UTC month. The monthly
-ceiling is US$5.00 across both transports and every repository using that
-Roundfix Home. The log contains no API key.
+ceiling is `jev.monthly_ceiling_usd` in User Config, US$5 by default, across
+both transports and every repository using that Roundfix Home. The log
+contains no API key.
 
 The whole run skips without a key, with an unreadable Judge Log, or when the
 monthly ceiling is already reached. Non-English artifacts skip. Individual

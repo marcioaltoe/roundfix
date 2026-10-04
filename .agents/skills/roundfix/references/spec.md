@@ -74,9 +74,11 @@ Set `ROUNDFIX_OPENROUTER_API_KEY` for OpenRouter first, or
 `ROUNDFIX_TYPESAFE_API_KEY` for TypeSafe directly when the first key is
 absent. The generic `OPENROUTER_API_KEY` is not read. Every request is
 recorded in `<home>/.roundfix/judge/<YYYY-MM>.jsonl` (UTC month); the monthly
-ceiling is US$5.00 across both transports. Missing keys, non-English
-artifacts, source or answer skips, and stopped service or log failures remain
-advisory information. JSON includes clear judgments and the chosen transport.
+ceiling is `jev.monthly_ceiling_usd` in User Config, US$5 by default, across
+both transports and every repository using that Roundfix Home. Missing keys,
+non-English artifacts, source or answer skips, and stopped service or log
+failures remain advisory information. JSON includes clear judgments and the
+chosen transport.
 
 ## Spec close audit
 

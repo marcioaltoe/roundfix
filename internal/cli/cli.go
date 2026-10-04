@@ -3059,7 +3059,7 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 	fmt.Fprintf(ui.progress, "Agent Model: %s\n", resolvePlan.runtime.Model)
 	fmt.Fprintf(ui.progress, "Default Reasoning Effort: %s\n", displayReasoningEffort(resolvePlan.runtime.ReasoningEffort))
 
-	engine, err := newResolveEngine(collaborators, runStore, ui, writeGuard)
+	engine, err := newResolveEngine(collaborators, runStore, ui, writeGuard, loaded.Config.Jev.MonthlyCeilingUSD)
 	if err != nil {
 		return resolveBatchResult{}, err
 	}
@@ -3099,18 +3099,19 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 	return resolveBatchResult{Remaining: result.Remaining, CommitCreated: commitCreated}, nil
 }
 
-func newResolveEngine(collaborators engineCollaborators, runStore *store.Store, ui *runUI, writeGuard daemon.WriteBoundaryGuard) (*daemon.Engine, error) {
+func newResolveEngine(collaborators engineCollaborators, runStore *store.Store, ui *runUI, writeGuard daemon.WriteBoundaryGuard, jevMonthlyCeilingUSD float64) (*daemon.Engine, error) {
 	return daemon.NewEngine(daemon.Dependencies{
-		Runner:     collaborators.runner,
-		Verifier:   collaborators.verifier,
-		Committer:  collaborators.committer,
-		Pusher:     collaborators.pusher,
-		Source:     collaborators.source,
-		Runs:       runStore,
-		WriteGuard: writeGuard,
-		Worktree:   collaborators.worktree,
-		Sink:       ui.sink,
-		Progress:   ui.progress,
+		JevMonthlyCeilingUSD: jevMonthlyCeilingUSD,
+		Runner:               collaborators.runner,
+		Verifier:             collaborators.verifier,
+		Committer:            collaborators.committer,
+		Pusher:               collaborators.pusher,
+		Source:               collaborators.source,
+		Runs:                 runStore,
+		WriteGuard:           writeGuard,
+		Worktree:             collaborators.worktree,
+		Sink:                 ui.sink,
+		Progress:             ui.progress,
 	})
 }
 
@@ -3297,7 +3298,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 			if err != nil || commit.CommitSHA == "" {
 				return watch.ArtifactPublication{Commit: commit}, err
 			}
-			engine, err := newResolveEngine(collaborators, runStore, ui, writeGuard)
+			engine, err := newResolveEngine(collaborators, runStore, ui, writeGuard, loaded.Config.Jev.MonthlyCeilingUSD)
 			if err != nil {
 				return watch.ArtifactPublication{}, err
 			}
@@ -5496,6 +5497,8 @@ a committed target revision. --from defaults to the latest reachable stable
 tag; --to defaults to committed HEAD. --reset-to inventories every local and
 remote stable tag and every paginated GitHub Release for a clean committed
 HEAD, binds them to a plan digest, and exposes no deletion action.
+
+A range plan also reports the skills and baseline checks read-only; they never change the decision state, the proposed version, or the exit code.
 
 Decision states:
   ready                           Patch release can proceed without version approval.
