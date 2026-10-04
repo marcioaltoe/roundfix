@@ -66,6 +66,15 @@ func TestRunStartRefusesARunOfAnotherRepository(t *testing.T) {
 }
 
 func TestArchivedRetryOfAQueueStartedRunReturnsToReview(t *testing.T) {
+	testArchivedRetryOfAQueueStartedRunReturnsToReview(t, delivery.BlockerQAEnvironmentPartial)
+}
+
+func TestArchivedRetryOfARunUnresolvedItemWithoutACandidateReturnsToReview(t *testing.T) {
+	testArchivedRetryOfAQueueStartedRunReturnsToReview(t, delivery.BlockerRunUnresolved)
+}
+
+func testArchivedRetryOfAQueueStartedRunReturnsToReview(t *testing.T, blocker string) {
+	t.Helper()
 	home, repo := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", status: string(spec.StatusCompleted)},
 		implementQAGateSeed(string(spec.StatusFailed), "task_01"),
@@ -85,7 +94,7 @@ func TestArchivedRetryOfAQueueStartedRunReturnsToReview(t *testing.T) {
 	}
 	item := queue.Items[0]
 	item.Stage = store.DeliveryStageParked
-	item.Blocker = delivery.BlockerQAEnvironmentPartial
+	item.Blocker = blocker
 	item.RunID = run.ID
 	item.Branch = branch
 	item.Worktree = worktree

@@ -459,7 +459,7 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 		item.Stage = store.DeliveryStageReviewing
 	} else if state.Archived {
 		candidate, candidateErr := candidateHead(item)
-		operatorArchive := item.Blocker == BlockerQAEnvironmentPartial && state.QAOverride && engine.history != nil
+		operatorArchive := state.QAOverride && engine.history != nil
 		if candidateErr != nil && !operatorArchive {
 			return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: %w", specSlug, candidateErr)
 		}
