@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0222-a-review-through-claude-that-keeps-its-verdict
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -81,3 +81,36 @@ skill-version record.
 - `_prd.md` → Core Feature 5; User Stories 1-4; Goals
 - `_techspec.md` → Build Order 1; API Contract 2; API Contract 3; API Contract 4
 - ADR-0227
+
+## Result
+
+Implemented the review documentation slice. The canonical review reference now
+describes refused-permission verdict classification and `permissionRefused`,
+the final-answer `review prompt too long:` reason, and Claude's whole-prompt
+two-bytes-per-token estimate with `estimatedPromptTokens`, pre-readiness
+refusal, and the half-window reason. The 917504-byte bound is explicitly
+limited to Codex, and the transport-anomaly blocking paragraph names the
+read-only `end_turn` refusal exception. The user guide mirrors the reference
+below its heading. The owned Roundfix Skill is version `0.1.24` in both front
+matter fields, its mirror is synchronized, and the recorded digest is present.
+
+Focused checks:
+
+- `make skills-sync` — passed.
+- `GOCACHE=/private/tmp/roundfix-task-01-gocache go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed.
+- Whitespace-normalized phrase checks for both review documents — passed for
+  all three required phrases and both record field names.
+- Canonical/mirror parity checks for the review reference and Roundfix Skill,
+  guide/reference body parity, and `git diff --check` — passed.
+
+Acceptance evidence:
+
+- The reference and guide contain the required phrases and fields, and their
+  content matches below the first heading line.
+- The synchronized skill files are equal, both front matter versions are
+  `0.1.24`, and the owned-skill version record contains the generated digest.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261004T145620Z_ee61ac9af5ab0ce2`
+- Source commit: `6d068a7943d9a1017c4414b9ea0f8e8550f04f1c`

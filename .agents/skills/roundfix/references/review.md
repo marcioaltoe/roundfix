@@ -32,14 +32,15 @@ empty. `diffBytes` measures the diff text sent in that round, or the measured
 diff when the bound blocks it. Older records without these fields remain
 readable.
 
-A diff above 917504 bytes blocks with exit `2` before any provider call or
-Agent Session preparation, without trying a configured fallback. Its reason
-is `review diff too large: <bytes> bytes after omitting <n> path(s) exceeds the review bound of 917504 bytes`.
-This bound is below Spec 0194's successfully reviewed 919,745-byte candidate;
-Spec 0200's 1,295,055-byte candidate failed three times. On a runtime failure
-carrying `agent.BatchFailureError` stderr, `runtimeStderrTail` records its
-last 10 lines capped at the last 1,024 bytes. The reason text is unchanged;
-the tail field is omitted when empty.
+For `codex`, a diff above 917504 bytes blocks with exit `2` before any provider
+call or Agent Session preparation, without trying a configured fallback. Its
+reason is `review diff too large: <bytes> bytes after omitting <n> path(s)
+exceeds the review bound of 917504 bytes`. This bound is below Spec 0194's
+successfully reviewed 919,745-byte candidate; Spec 0200's 1,295,055-byte
+candidate failed three times. On a runtime failure carrying
+`agent.BatchFailureError` stderr, `runtimeStderrTail` records its last 10 lines
+capped at the last 1,024 bytes. The reason text is unchanged; the tail field
+is omitted when empty.
 
 `--base <ref>` selects the base Git ref. When omitted, Roundfix uses the
 repository's default branch.
@@ -69,6 +70,24 @@ Artifact Directory, and the review record's `answerPath` names that answer
 file. Roundfix never reads another checkout's record. Roundfix sets
 `answerPath` only when the prompt reached a reviewer; a pre-prompt failure has
 no answer path or answer file.
+
+If a read-only `end_turn` session exits after refusing a permission request,
+the record sets `permissionRefused` to true and the answer's verdict still
+decides the outcome. A findings verdict keeps the usual finding ids `F1`...
+`Fn`, disposition rules, and exit `1`; a no-findings verdict is `reviewed`
+with exit `0`. A blocked reason ends with ` (after the read-only session
+refused a permission request)`.
+
+If the final answer contains a line starting with `Prompt is too long`, the
+review blocks with exit `2` and the reason starts with `review prompt too
+long:` followed by that line. The line comes from the final answer, whether
+the runner returned an error or a parsed result.
+
+For `claude`, Roundfix estimates the whole prompt at two bytes per token and
+records the estimate in `estimatedPromptTokens`. An estimate above 500,000
+tokens refuses the review before readiness and any provider call, with a
+reason containing `half of its 1000000-token context window`. The 917504-byte
+diff bound applies to `codex` only; its existing reason text is unchanged.
 
 A findings record keeps the reviewer's original `findings` text and also lists
 each finding as `F1`, `F2`, and so on in `findingItems`. The reviewer prompt
@@ -238,8 +257,9 @@ Exit codes:
 - `2` — preflight failed or the review was blocked.
 
 Runtime failure, timeout, transport anomaly, empty output, and unclassifiable
-output each block the selected mode, with a reason in the record. None can
-become a pass or an omission. A configured selection fallback is eligible only
-when selection fails before the prompt is sent; failures after the prompt are
-review failures.
-
+output each block the selected mode, with a reason in the record. The exception
+is a read-only `end_turn` turn that exits after refusing a permission request:
+when its final answer has a verdict, the review is classified by that verdict
+and records the refusal. None can become a pass or an omission. A configured
+selection fallback is eligible only when selection fails before the prompt is
+sent; failures after the prompt are review failures.
