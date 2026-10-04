@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0221-a-delivery-queue-that-runs-the-binary-its-item-builds
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -83,3 +83,54 @@ this binary supports. It is demoable on its own through the CLI.
 - `_prd.md` → User Story 5; Core Feature 7; Success Metric 4; Goal 4
 - `_techspec.md` → The migration check; API Contract 1; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Testing Approach 1; Build Order 2
 - ADR-0225
+
+## Result
+
+Implemented `migrate --check` through `store.OpenReader`. The check returns the
+specified stdout and exit `0` for a current or absent Run Database, stderr
+with the existing migration or upgrade remedy and exit `2` for a schema
+mismatch, and `migrate check failed` with exit `1` for other read failures.
+It closes a successful reader before reporting, including on a version-read
+failure, and handles close errors. It calls neither the writer nor migration
+nor the machine-wide write lock. Root usage and migrate help now show
+`roundfix migrate [--check]` and explain that the check reports without writing.
+
+Focused evidence for the acceptance criteria:
+
+- Current and absent exact stdout, empty stderr, and exit `0`, plus older and
+  newer exact stderr remedies, empty stdout, and exit `2`: the four named
+  `TestMigrateCheckReports...` acceptance tests passed.
+- Database preservation: the current, older, newer, and invalid-argument
+  tests compare database bytes and `PRAGMA user_version` before and after,
+  inventory Roundfix Home, permit only new SQLite `-wal` and `-shm` sidecars,
+  and check preservation of existing files. The absent test confirms neither
+  `.roundfix` nor any other home entry appears.
+- Argument refusal: `TestMigrateCheckRefusesAnExtraArgument` passed for
+  `--check extra`, `extra`, an unknown flag, duplicate `--check`, and
+  `--check --help`, asserting exact streams and exit `2` as well as database
+  preservation.
+- Additional focused cases assert the exact read-failure diagnostic and exit
+  `1` without creating files, and the root and migrate help contract.
+
+Focused checks run:
+
+- Initial `go test -count=1 -run '^TestMigrateCheckReportsAnAbsent'
+  ./internal/cli` could not use the sandbox-restricted default Go cache.
+- With `GOCACHE=/tmp/roundfix-task02-gocache`, the same focused test reproduced
+  the pre-change refusal: exit `2`, `unexpected argument "--check"`.
+- After implementation, `GOCACHE=/tmp/roundfix-task02-gocache go test
+  -count=1 -run '^TestMigrate' ./internal/cli` exited `0`.
+- After the final test additions, `GOCACHE=/tmp/roundfix-task02-gocache go test
+  -count=1 -v -run '^TestMigrate' ./internal/cli` exited `0`; all seven new
+  check tests and the existing migration command tests passed. Commands were
+  invoked through `rtk proxy` to preserve output.
+
+The store package, schema, existing `migrate_test.go`, Task Graph, and other
+Task files were not edited. Task status and checkboxes remain unchanged.
+Declared Verification was not run; the Daemon owns it and Task settlement.
+No follow-up work was identified.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261003T234640Z_3e854d86e9475f64`
+- Source commit: `e37eb957135be17ee823f68d4a772f3871284750`
