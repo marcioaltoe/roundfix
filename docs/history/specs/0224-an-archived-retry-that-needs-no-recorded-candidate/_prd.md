@@ -1,9 +1,18 @@
 ---
 spec: 0224-an-archived-retry-that-needs-no-recorded-candidate
-status: active
+status: archived
 created: 2026-10-04
 surfaces: [backend, cli, docs]
+archived: "2026-10-04"
+source_slug: 0224-an-archived-retry-that-needs-no-recorded-candidate
+qa_override: true
+qa_override_approval: 'maintainer standing authorization 2026-09-30 (unattended program): qa_override only for environment-only partials'
+qa_override_reason: 'Environment-only partial after the corrective task_05: R7 needs the original 0220 queue item, which no longer exists (the intervention log entries 140-142 record it), and R13 has no Pull Request yet; the queue opens it. Every behavior row passed.'
+qa_override_qa_outcome: partial
+qa_override_qa_task_status: failed
+qa_override_revision: fe4baadb3398ce95040a59ad297442bdb4a33178
 ---
+
 
 # An archived retry that needs no recorded candidate
 
