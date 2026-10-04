@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.38.0] - 2026-10-04
+
+### An archived retry that needs no recorded candidate
+
+- **Archived retry from any park.** When the operator archives a parked item with the QA Archive Override and no candidate head was recorded, `roundfix deliver retry` resumes it at review from the Implement start head of its Run, whatever the park. Before, only `qa-environment-partial` could do this, so a `run-unresolved` item failed with `candidate head is missing` and needed a hand-opened Pull Request. The retry records that head as the candidate.
+- **Missing History.** An override archive with no candidate and no Run History refuses with the archived-head message naming both heads, and never admits the archive silently.
+- **Environment-only partials.** A QA partial with no finding rows and at least one environment-blocked row now parks as `qa-environment-partial`, even when its only blocked rows are the Pull Request row and its equivalents.
+
 ## [0.37.0] - 2026-10-04
 
 ### A Jev ceiling the maintainer sets
