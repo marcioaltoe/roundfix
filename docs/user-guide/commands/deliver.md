@@ -193,6 +193,31 @@ log print the combined warning, and the item continues to its Run. A docs-only
 change, a current owner, or a build commit absent from the repository adds no
 owner warning. A retry keeps the recorded warning and does not recompute it.
 
+A repository may declare `delivery.item_binary` in Project Config with a
+`build` command and a repository-relative `path`. The queue owner reads the
+declaration it loaded at start. Before each `implement`, `archive` and `review`
+step, it runs the build in the item worktree and writes the build output to
+`<artifact dir>/delivery/<slug>/item-binary-build.log`. It then asks the built
+binary to run `migrate --check`. When that exits `0`, the step runs the item
+binary and the owner's console log contains:
+
+```text
+roundfix: Delivery Queue item <slug>: <step> runs the item binary <absolute path>
+```
+
+When `migrate --check` exits with any other code, the step runs the owner's
+binary and the console log contains:
+
+```text
+roundfix: notice: Delivery Queue item <slug>: <step> runs the owner's binary; the item binary's migrate --check exited <n>: <first non-empty line of its stderr, else stdout>
+```
+
+A failed build, a declared path Git does not ignore, or an item binary that
+cannot start parks the item as `delivery-error`; the blocker names the command
+or path and the build log where applicable. A repository without
+`delivery.item_binary`, including every repository that installs Roundfix from
+npm, is delivered as before with the owner's binary.
+
 A blocker parks its item with a reason and the queue continues with later
 items. On resume, the owner reconciles every recorded action without a receipt
 against observed state before retrying it, so a lost acknowledgement cannot

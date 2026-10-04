@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0221-a-delivery-queue-that-runs-the-binary-its-item-builds
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -94,3 +94,50 @@ and its notice, the parks of a broken declaration, and
 - `_prd.md` → Core Feature 8; User Stories 1-5
 - `_techspec.md` → Vocabulary Contract; API Contract 1; API Contract 2; API Contract 3; API Contract 4; API Contract 5; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Build Order 1
 - ADR-0187; ADR-0189; ADR-0225
+
+## Result
+
+Implemented the documentation slice for the item binary and migration check.
+The delivery reference and guide now describe `delivery.item_binary`, the
+owner-loaded declaration, per-step build and probe, build-log location,
+item-binary and owner-binary console lines, `delivery-error` parks, and the
+unchanged npm-adopter path. The configuration guide documents `build`, `path`,
+Project Config precedence, the `make build` / `bin/roundfix` example, and all
+three declaration errors. The migrate guide and setup reference document
+`roundfix migrate [--check]`, all migration-check outcomes, exit codes,
+transcripts, and the no-write guarantee. The Roundfix Skill was raised from
+0.1.22 to 0.1.23 and its embedded mirrors were regenerated.
+
+Focused checks and outcomes:
+
+- `make skills-sync`: passed; embedded Roundfix Skill files regenerated.
+- `make baseline-digests`: passed; no unrelated derived changes remained.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`:
+  the first attempt hit the host Go cache permission error; the same command
+  passed with task-scoped `GOCACHE=/tmp/roundfix-0221-task01-gocache` and
+  recorded Roundfix 0.1.23 with its new digest.
+- `cmp` checks for the three canonical Roundfix Skill files and their embedded
+  mirrors: passed.
+- `git diff --check`: passed.
+- Phrase and transcript searches confirmed the required delivery, configuration,
+  migration, version-support, build-log, and park text is present in the named
+  files.
+
+Acceptance evidence:
+
+- Delivery reference and guide contain `delivery.item_binary`, `runs the item
+  binary`, `runs the owner's binary`, `migrate --check`, the exact API Contract
+  lines, build-log path, fallback behavior, parks, and npm-adopter behavior.
+- Configuration guide contains `delivery.item_binary requires build and path`,
+  the unsafe-path and unknown-key errors, both fields, precedence, and the
+  requested example.
+- Migrate guide and setup reference contain `roundfix migrate --check`,
+  `the version this binary supports`, Surface Transcripts 1 to 3, exit codes,
+  and the no-migration/no-write rule.
+- Canonical and embedded Skill files compare equal, and the owned-skill version
+  record contains Roundfix 0.1.23 and its content digest.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261003T234640Z_3e854d86e9475f64`
+- Source commit: `39e164af1ec5cec8659c3fc869c994734a7ca626`

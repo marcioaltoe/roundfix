@@ -1,0 +1,52 @@
+=== RUN   TestDeliveryItemBinaryIsReadFromProjectConfig
+--- PASS: TestDeliveryItemBinaryIsReadFromProjectConfig (0.01s)
+=== RUN   TestDeliveryItemBinaryProjectReplacesUser
+=== RUN   TestDeliveryItemBinaryProjectReplacesUser/absent_project_declaration_inherits_user
+=== RUN   TestDeliveryItemBinaryProjectReplacesUser/partial_project_declaration_cannot_inherit_user_fields
+--- PASS: TestDeliveryItemBinaryProjectReplacesUser (0.06s)
+    --- PASS: TestDeliveryItemBinaryProjectReplacesUser/absent_project_declaration_inherits_user (0.02s)
+    --- PASS: TestDeliveryItemBinaryProjectReplacesUser/partial_project_declaration_cannot_inherit_user_fields (0.02s)
+=== RUN   TestDeliveryItemBinaryIsUndeclaredByDefault
+--- PASS: TestDeliveryItemBinaryIsUndeclaredByDefault (0.01s)
+=== RUN   TestDeliveryItemBinaryRefusesAnIncompleteDeclaration
+=== RUN   TestDeliveryItemBinaryRefusesAnIncompleteDeclaration/empty_fields
+=== RUN   TestDeliveryItemBinaryRefusesAnIncompleteDeclaration/empty_mapping
+=== RUN   TestDeliveryItemBinaryRefusesAnIncompleteDeclaration/missing_build
+=== RUN   TestDeliveryItemBinaryRefusesAnIncompleteDeclaration/missing_path
+=== RUN   TestDeliveryItemBinaryRefusesAnIncompleteDeclaration/empty_build
+=== RUN   TestDeliveryItemBinaryRefusesAnIncompleteDeclaration/empty_path
+=== RUN   TestDeliveryItemBinaryRefusesAnIncompleteDeclaration/blank_build
+=== RUN   TestDeliveryItemBinaryRefusesAnIncompleteDeclaration/blank_path
+--- PASS: TestDeliveryItemBinaryRefusesAnIncompleteDeclaration (0.11s)
+    --- PASS: TestDeliveryItemBinaryRefusesAnIncompleteDeclaration/empty_fields (0.01s)
+    --- PASS: TestDeliveryItemBinaryRefusesAnIncompleteDeclaration/empty_mapping (0.02s)
+    --- PASS: TestDeliveryItemBinaryRefusesAnIncompleteDeclaration/missing_build (0.01s)
+    --- PASS: TestDeliveryItemBinaryRefusesAnIncompleteDeclaration/missing_path (0.01s)
+    --- PASS: TestDeliveryItemBinaryRefusesAnIncompleteDeclaration/empty_build (0.01s)
+    --- PASS: TestDeliveryItemBinaryRefusesAnIncompleteDeclaration/empty_path (0.01s)
+    --- PASS: TestDeliveryItemBinaryRefusesAnIncompleteDeclaration/blank_build (0.01s)
+    --- PASS: TestDeliveryItemBinaryRefusesAnIncompleteDeclaration/blank_path (0.01s)
+=== RUN   TestDeliveryItemBinaryRefusesAnUnsafePath
+=== RUN   TestDeliveryItemBinaryRefusesAnUnsafePath/dot
+=== RUN   TestDeliveryItemBinaryRefusesAnUnsafePath/dot_segment
+=== RUN   TestDeliveryItemBinaryRefusesAnUnsafePath/double_slash
+=== RUN   TestDeliveryItemBinaryRefusesAnUnsafePath/trailing_slash
+=== RUN   TestDeliveryItemBinaryRefusesAnUnsafePath/absolute
+=== RUN   TestDeliveryItemBinaryRefusesAnUnsafePath/parent
+=== RUN   TestDeliveryItemBinaryRefusesAnUnsafePath/nested_parent
+=== RUN   TestDeliveryItemBinaryRefusesAnUnsafePath/backslash
+--- PASS: TestDeliveryItemBinaryRefusesAnUnsafePath (0.13s)
+    --- PASS: TestDeliveryItemBinaryRefusesAnUnsafePath/dot (0.02s)
+    --- PASS: TestDeliveryItemBinaryRefusesAnUnsafePath/dot_segment (0.02s)
+    --- PASS: TestDeliveryItemBinaryRefusesAnUnsafePath/double_slash (0.02s)
+    --- PASS: TestDeliveryItemBinaryRefusesAnUnsafePath/trailing_slash (0.01s)
+    --- PASS: TestDeliveryItemBinaryRefusesAnUnsafePath/absolute (0.01s)
+    --- PASS: TestDeliveryItemBinaryRefusesAnUnsafePath/parent (0.01s)
+    --- PASS: TestDeliveryItemBinaryRefusesAnUnsafePath/nested_parent (0.01s)
+    --- PASS: TestDeliveryItemBinaryRefusesAnUnsafePath/backslash (0.02s)
+=== RUN   TestDeliveryItemBinaryRefusesAnUnknownKey
+=== RUN   TestDeliveryItemBinaryRefusesAnUnknownKey/user_scope
+--- PASS: TestDeliveryItemBinaryRefusesAnUnknownKey (0.03s)
+    --- PASS: TestDeliveryItemBinaryRefusesAnUnknownKey/user_scope (0.01s)
+PASS
+ok  	roundfix/internal/config	0.626s

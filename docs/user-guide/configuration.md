@@ -672,6 +672,24 @@ Paths must be clean repository-relative files, directories ending in `/`, or
 Go `path.Match` patterns over the whole path. Absolute paths and `..` segments
 are refused with a `delivery.derived_paths` config error.
 
+`delivery.item_binary` declares the Roundfix binary the Delivery Queue builds
+and can run for an item's `implement`, `archive` and `review` steps. It has two
+fields, `build` and `path`; Project Config replaces User Config for this value.
+For example:
+
+```yaml
+delivery:
+  item_binary:
+    build: make build
+    path: bin/roundfix
+```
+
+`delivery.item_binary requires build and path` when either field is empty.
+`delivery.item_binary has unsafe path "<path>"` when `path` is absolute, uses a
+backslash, contains a `..` segment, is `.`, or is not already its clean form.
+An unknown nested key is refused with
+`delivery.item_binary.<key> is not a supported config key`.
+
 The Delivery Queue reads these declarations from the fetched default-branch
 commit, with User Config beneath it. A declaration added or changed only on an
 item branch takes effect after that branch merges. During a derived conflict,

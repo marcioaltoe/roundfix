@@ -82,7 +82,7 @@ Usage:
   roundfix archive <slug>
   roundfix init [--scope <project|user>]
   roundfix setup [--yes] [--no-input]
-  roundfix migrate
+  roundfix migrate [--check]
   roundfix doctor
   roundfix gc [--dry-run]
   roundfix storage report
@@ -5234,12 +5234,15 @@ ten-second limit. Every other check stays offline.
 `
 	case "migrate":
 		return `Usage:
-  roundfix migrate
+  roundfix migrate [--check]
 
 Upgrades an existing Run Database to the schema version supported by this
 binary under the machine-wide write lock. It creates nothing when the Run
 Database is absent, writes nothing when it is current, and refuses a database
 written by a newer Roundfix binary.
+
+Options:
+  --check  Report whether the Run Database is at this binary's schema version without writing
 `
 	case "review":
 		return `Usage:

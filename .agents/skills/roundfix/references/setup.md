@@ -104,6 +104,45 @@ skills: ok (<total> required: <owned> Roundfix-owned, <external> external)
 codex: ok
 ```
 
+## Migration check
+
+The synopsis is `roundfix migrate [--check]`. With `--check`, the migration
+check reads the database and never migrates or writes it. A current database
+prints `Run Database is at schema version <n>, the version this binary
+supports: <path>` on stdout and exits `0`. An older database prints
+`roundfix: migrate check: <error>` on stderr and exits `2`; its error names
+`roundfix migrate` as the remedy. A newer database prints the same error form
+and exits `2`; its error names `roundfix upgrade`. An absent database prints
+`No Run Database at <path>; nothing to migrate` on stdout, exits `0`, and
+creates nothing. Any other read failure prints
+`roundfix: migrate check failed: <error>` on stderr and exits `1`.
+
+The migration check uses these surface transcripts:
+
+```text
+$ roundfix migrate --check
+stdout:
+Run Database is at schema version <n>, the version this binary supports: <path>
+stderr:
+exit: 0
+```
+
+```text
+$ roundfix migrate --check
+stdout:
+stderr:
+roundfix: migrate check: Run Database "<path>" has schema version 21, older than the schema version <n> this binary supports; run 'roundfix migrate' to upgrade it
+exit: 2
+```
+
+```text
+$ roundfix migrate --check
+stdout:
+No Run Database at <path>; nothing to migrate
+stderr:
+exit: 0
+```
+
 ## Config initialization
 
 ```bash
@@ -129,4 +168,3 @@ config: defaults.model is deprecated and ignored; use profiles.<category>.prefer
 
 Unknown keys that are not in the deprecation registry still fail strict
 validation.
-

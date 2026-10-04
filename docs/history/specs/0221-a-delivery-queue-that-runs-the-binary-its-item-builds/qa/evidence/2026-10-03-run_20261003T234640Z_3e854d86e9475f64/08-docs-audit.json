@@ -1,0 +1,152 @@
+{
+  "mirrors": [
+    {
+      "canonical": ".agents/skills/roundfix/SKILL.md",
+      "mirror": "skills/roundfix/SKILL.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/agents/openai.yaml",
+      "mirror": "skills/roundfix/agents/openai.yaml",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/archive.md",
+      "mirror": "skills/roundfix/references/archive.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/baseline.md",
+      "mirror": "skills/roundfix/references/baseline.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/deliver.md",
+      "mirror": "skills/roundfix/references/deliver.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/events.md",
+      "mirror": "skills/roundfix/references/events.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/implement.md",
+      "mirror": "skills/roundfix/references/implement.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/profiles.md",
+      "mirror": "skills/roundfix/references/profiles.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/reconcile.md",
+      "mirror": "skills/roundfix/references/reconcile.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/release.md",
+      "mirror": "skills/roundfix/references/release.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/review-runs.md",
+      "mirror": "skills/roundfix/references/review-runs.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/review.md",
+      "mirror": "skills/roundfix/references/review.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/runs.md",
+      "mirror": "skills/roundfix/references/runs.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/runtime.md",
+      "mirror": "skills/roundfix/references/runtime.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/settle.md",
+      "mirror": "skills/roundfix/references/settle.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/setup.md",
+      "mirror": "skills/roundfix/references/setup.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/spec-delivery.md",
+      "mirror": "skills/roundfix/references/spec-delivery.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/spec.md",
+      "mirror": "skills/roundfix/references/spec.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/stop.md",
+      "mirror": "skills/roundfix/references/stop.md",
+      "equal": true
+    },
+    {
+      "canonical": ".agents/skills/roundfix/references/storage.md",
+      "mirror": "skills/roundfix/references/storage.md",
+      "equal": true
+    }
+  ],
+  "QA_settlement": [
+    {
+      "path": ".agents/skills/archive-spec/SKILL.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/qa-gate/SKILL.md",
+      "equal": true
+    },
+    {
+      "path": ".agents/skills/roundfix/SKILL.md",
+      "equal": true
+    },
+    {
+      "path": "skills/archive-spec/SKILL.md",
+      "equal": true
+    },
+    {
+      "path": "skills/qa-gate/SKILL.md",
+      "equal": true
+    },
+    {
+      "path": "skills/roundfix/SKILL.md",
+      "equal": true
+    }
+  ],
+  "versions": {
+    "before": [
+      [
+        "0.1.22",
+        ""
+      ],
+      [
+        "",
+        "0.1.22"
+      ]
+    ],
+    "after": [
+      [
+        "0.1.23",
+        ""
+      ],
+      [
+        "",
+        "0.1.23"
+      ]
+    ]
+  }
+}

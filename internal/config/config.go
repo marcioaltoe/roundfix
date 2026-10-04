@@ -114,6 +114,15 @@ type PrePRReview struct {
 
 type Delivery struct {
 	DerivedPaths []DerivedPathDeclaration
+	ItemBinary   ItemBinaryDeclaration
+}
+
+// ItemBinaryDeclaration names the command that builds the repository's own
+// Roundfix binary and the repository-relative path it writes. The zero value
+// is undeclared.
+type ItemBinaryDeclaration struct {
+	Build string `yaml:"build"`
+	Path  string `yaml:"path"`
 }
 
 type DerivedPathDeclaration struct {
@@ -338,6 +347,7 @@ func (value *requestReviewValue) UnmarshalYAML(node *yaml.Node) error {
 
 type deliveryOverlay struct {
 	DerivedPaths *[]DerivedPathDeclaration `yaml:"derived_paths"`
+	ItemBinary   *ItemBinaryDeclaration    `yaml:"item_binary"`
 }
 
 type watchOverlay struct {
@@ -989,6 +999,9 @@ resolve:
 
 func Validate(config Config) error {
 	if err := validateDerivedPaths(config.Delivery.DerivedPaths); err != nil {
+		return err
+	}
+	if err := validateItemBinary(config.Delivery.ItemBinary); err != nil {
 		return err
 	}
 	if config.Defaults.Agent != "" && !slices.Contains(legacyRuntimes, config.Defaults.Agent) {
@@ -1648,6 +1661,9 @@ func encodeYAMLNode(node *yaml.Node) ([]byte, error) {
 func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
 	if overlay.Delivery != nil && overlay.Delivery.DerivedPaths != nil {
 		config.Delivery.DerivedPaths = *overlay.Delivery.DerivedPaths
+	}
+	if overlay.Delivery != nil && overlay.Delivery.ItemBinary != nil {
+		config.Delivery.ItemBinary = *overlay.Delivery.ItemBinary
 	}
 	if overlay.Defaults != nil {
 		if overlay.Defaults.Agent != nil {

@@ -1,9 +1,18 @@
 ---
 spec: 0221-a-delivery-queue-that-runs-the-binary-its-item-builds
-status: active
+status: archived
 created: 2026-10-03
 surfaces: [backend, cli, docs]
+archived: "2026-10-03"
+source_slug: 0221-a-delivery-queue-that-runs-the-binary-its-item-builds
+qa_override: true
+qa_override_approval: 'maintainer standing authorization 2026-09-30 (unattended program): qa_override only for environment-only partials'
+qa_override_reason: QA partial with zero findings; blocked rows need the operator's log outside the repository (09), outbound network the QA sandbox denies (11, 12) and an open Pull Request (15)
+qa_override_qa_outcome: partial
+qa_override_qa_task_status: failed
+qa_override_revision: a9a317dcc0ad48ed17956dbd0e4423a99916141c
 ---
+
 
 # A delivery queue that runs the binary its item builds
 

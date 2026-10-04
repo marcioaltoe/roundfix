@@ -5,18 +5,29 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"slices"
 
 	"roundfix/internal/app"
 	"roundfix/internal/store"
 )
 
 func runMigrateCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
-	if commandWantsHelp(args) {
+	// --check stands alone: with any other argument, help included, in any
+	// order, it is refused rather than read as a help request.
+	if commandWantsHelp(args) && !slices.Contains(args, "--check") {
 		fmt.Fprint(stdout, commandUsage("migrate"))
 		return exitOK
 	}
 	if len(args) > 0 {
-		printMigrateFailure(validationError{message: fmt.Sprintf("unexpected argument %q", args[0])}, stderr, true)
+		if args[0] == "--check" && len(args) == 1 {
+			return runMigrateCheck(ctx, stdout, stderr, environment)
+		}
+		unexpected := args[0]
+		if unexpected == "--check" {
+			unexpected = args[1]
+		}
+		printMigrateFailure(validationError{message: fmt.Sprintf("unexpected argument %q", unexpected)}, stderr, true)
 		return exitPreflight
 	}
 
@@ -43,6 +54,34 @@ func runMigrateCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 	default:
 		fmt.Fprintf(stdout, "Run Database migrated from schema version %d to %d: %s\n", result.From, result.To, result.Path)
 	}
+	return exitOK
+}
+
+func runMigrateCheck(ctx context.Context, stdout, stderr io.Writer, environment commandEnvironment) int {
+	if environment.homeDirErr != nil {
+		fmt.Fprintf(stderr, "%s: migrate check failed: resolve home directory: %v\n", app.Name, environment.homeDirErr)
+		return exitRunFailed
+	}
+	reader, err := store.OpenReader(ctx, environment.homeDir)
+	if errors.Is(err, os.ErrNotExist) {
+		fmt.Fprintf(stdout, "No Run Database at %s; nothing to migrate\n", store.DatabasePath(environment.homeDir))
+		return exitOK
+	}
+	if err != nil {
+		var versionErr store.SchemaVersionError
+		if errors.As(err, &versionErr) {
+			fmt.Fprintf(stderr, "%s: migrate check: %v\n", app.Name, err)
+			return exitPreflight
+		}
+		fmt.Fprintf(stderr, "%s: migrate check failed: %v\n", app.Name, err)
+		return exitRunFailed
+	}
+	version, versionErr := reader.MigrationVersion(ctx)
+	if err := errors.Join(versionErr, reader.Close()); err != nil {
+		fmt.Fprintf(stderr, "%s: migrate check failed: %v\n", app.Name, err)
+		return exitRunFailed
+	}
+	fmt.Fprintf(stdout, "Run Database is at schema version %d, the version this binary supports: %s\n", version, store.DatabasePath(environment.homeDir))
 	return exitOK
 }
 
