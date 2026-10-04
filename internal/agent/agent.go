@@ -193,14 +193,15 @@ type ExecuteRequest struct {
 }
 
 type ExecuteResult struct {
-	ACPSessionID     string
-	Usage            TurnUsage
-	LogPath          string
-	Output           string
-	Message          string
-	Messages         []string
-	StopReason       string
-	TransportAnomaly string
+	ACPSessionID      string
+	Usage             TurnUsage
+	LogPath           string
+	Output            string
+	Message           string
+	Messages          []string
+	StopReason        string
+	TransportAnomaly  string
+	PermissionRefused bool
 }
 
 func (result ExecuteResult) Answer() string {

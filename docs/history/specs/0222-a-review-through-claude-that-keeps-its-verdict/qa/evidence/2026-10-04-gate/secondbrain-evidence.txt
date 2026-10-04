@@ -1,0 +1,8 @@
+/Users/marcio/dev/secondbrain/inbox/roundfix/_triaged/2026-10-02-review-claude-bloqueia-quando-o-revisor-pede-terminal.md
+sha256=c24ddfe8b98de645777272f31f9d0219f456f5af164a1919afce8afdb60866bf
+
+Observed external fiscus report: clean verdict lost on two attempts; acpx exit 5; request rejected; end_turn delivered. Supports preservation for the exact read-only boundary.
+/Users/marcio/dev/secondbrain/inbox/roundfix/_triaged/2026-10-02-review-claude-perde-achados-e-estoura-o-prompt-no-oraculum.md
+sha256=da4432f757105dcc6f6a7630344c1d1cbce11a3cdf73e3aa8cb7cca897587da8
+
+Observed external fiscus report: clean verdict lost on two attempts; acpx exit 5; request rejected; end_turn delivered. Supports preservation for the exact read-only boundary.

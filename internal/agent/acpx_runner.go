@@ -1477,6 +1477,13 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 		if !ok {
 			return result, fmt.Errorf("wait for acpx prompt: %w", waitErr)
 		}
+		if exitCode == 5 && stream.promptResultParsed && result.StopReason == "end_turn" && req.Access == SessionAccessReadOnly && !req.Inert {
+			if err := runner.publishStatus(ctx, req.ExecuteRequest, sink, acpxPermissionDeniedStatus); err != nil {
+				return result, err
+			}
+			result.PermissionRefused = true
+			return result, nil
+		}
 		if stream.promptResultParsed && exitCode != 130 {
 			result.TransportAnomaly = acpxTransportAnomaly(exitCode, stderr.String())
 			return result, nil

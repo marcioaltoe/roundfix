@@ -3499,6 +3499,72 @@ func TestACPXRunPromptAllowsEmptyLogPathAndStillJournals(t *testing.T) {
 	}
 }
 
+func TestACPXRunPromptKeepsAReadOnlyTurnThatRefusedAPermission(t *testing.T) {
+	t.Parallel()
+
+	answer := "No findings."
+	stdout := acpxUpdateLine(`{"sessionId":"sess-1","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"No findings."}}}`) + acpxPromptResponseLine("end_turn")
+	run := runFakeACPXPrompt(t, fakeACPXPrompt{
+		access:   SessionAccessReadOnly,
+		stdout:   stdout,
+		exitCode: 5,
+	})
+	if run.err != nil {
+		t.Fatalf("RunPrompt() error = %v, want nil", run.err)
+	}
+	if run.result.StopReason != "end_turn" || run.result.Answer() != answer || run.result.Output != stdout {
+		t.Fatalf("RunPrompt() lost the delivered result: %+v", run.result)
+	}
+	if run.result.TransportAnomaly != "" {
+		t.Fatalf("transport anomaly = %q, want empty", run.result.TransportAnomaly)
+	}
+	if !run.result.PermissionRefused {
+		t.Fatal("expected PermissionRefused")
+	}
+	if !run.sink.HasStatus(acpxPermissionDeniedStatus) {
+		t.Fatalf("expected permission-denied Run Event, got %+v", run.sink.Events())
+	}
+}
+
+func TestACPXRunPromptKeepsTheAnomalyOutsideAReadOnlyRefusal(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		exitCode   int
+		access     SessionAccess
+		inert      bool
+		stopReason string
+	}{
+		{name: "read-only other exit", exitCode: 1, access: SessionAccessReadOnly, stopReason: "end_turn"},
+		{name: "read-only incomplete turn", exitCode: 5, access: SessionAccessReadOnly, stopReason: "max_tokens"},
+		{name: "read-write turn", exitCode: 5, access: SessionAccessReadWrite, stopReason: "end_turn"},
+		{name: "inert read-only turn", exitCode: 5, access: SessionAccessReadOnly, inert: true, stopReason: "end_turn"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			run := runFakeACPXPrompt(t, fakeACPXPrompt{
+				access:   tt.access,
+				inert:    tt.inert,
+				stdout:   acpxPromptResponseLine(tt.stopReason),
+				exitCode: tt.exitCode,
+			})
+			if run.err != nil {
+				t.Fatalf("RunPrompt() error = %v, want nil", run.err)
+			}
+			if run.result.StopReason != tt.stopReason {
+				t.Fatalf("stop reason = %q, want %q", run.result.StopReason, tt.stopReason)
+			}
+			if !strings.Contains(run.result.TransportAnomaly, fmt.Sprintf("exit code %d", tt.exitCode)) {
+				t.Fatalf("transport anomaly = %q, want exit code %d", run.result.TransportAnomaly, tt.exitCode)
+			}
+			if run.result.PermissionRefused {
+				t.Fatal("unexpected PermissionRefused outside read-only refusal")
+			}
+		})
+	}
+}
+
 func TestACPXPromptExitClassificationMatrix(t *testing.T) {
 	t.Parallel()
 
@@ -3840,6 +3906,8 @@ func TestACPXExitCodeMapping(t *testing.T) {
 
 type fakeACPXPrompt struct {
 	runtime    RuntimeSpec
+	access     SessionAccess
+	inert      bool
 	prompt     string
 	stdout     string
 	stderr     string
@@ -4418,6 +4486,7 @@ func runFakeACPXPrompt(t *testing.T, prompt fakeACPXPrompt) fakeACPXRun {
 	result, err := runner.RunPrompt(context.Background(), ACPXPromptRequest{
 		ExecuteRequest: ExecuteRequest{
 			Runtime: runtime,
+			Access:  prompt.access,
 			RunID:   "run-acpx",
 			Batch:   rounds.Batch{Number: 7},
 			LogPath: logPath,
@@ -4425,6 +4494,7 @@ func runFakeACPXPrompt(t *testing.T, prompt fakeACPXPrompt) fakeACPXRun {
 			GitRoot: dir,
 		},
 		Session: "roundfix-run-1",
+		Inert:   prompt.inert,
 	}, sink)
 	return fakeACPXRun{
 		result:  result,
@@ -5155,10 +5225,11 @@ func fakeACPXCommandKey(args []string) string {
 		"--prompt-retries":              true,
 	}
 	booleanGlobals := map[string]bool{
-		"--json-strict": true,
-		"--approve-all": true,
-		"--deny-all":    true,
-		"--no-terminal": true,
+		"--json-strict":   true,
+		"--approve-all":   true,
+		"--approve-reads": true,
+		"--deny-all":      true,
+		"--no-terminal":   true,
 	}
 	sawAgentOverride := false
 	index := 0

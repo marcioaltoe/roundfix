@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0222-a-review-through-claude-that-keeps-its-verdict
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -77,3 +77,49 @@ its own through the runner's fake-acpx tests.
 - `_techspec.md` → The refused permission; API Contract 1; Testing Approach 1; Build Order 2
 - ADR-0227
 - ADR-0020
+
+## Result
+
+Implemented the runner slice. `ExecuteResult.PermissionRefused` marks a
+non-inert read-only turn with a parsed `end_turn` result and acpx exit `5`.
+The runner publishes `acpxPermissionDeniedStatus`, preserves the answer and
+stream output, and returns no error or transport anomaly. Event publication
+errors still propagate. Other exits retain the existing classification.
+
+The fake-acpx harness now accepts access and inert settings; their zero values
+preserve the existing read-write, non-inert defaults. Its argument parser also
+recognizes the existing `--approve-reads` flag so read-only prompts reach the
+fake process's prompt handler. Production session arguments are unchanged.
+
+Focused implementation evidence:
+
+- Before the runner change,
+  `GOCACHE=/tmp/roundfix-task02-gocache rtk proxy go test -count=1 -run '^TestACPXRunPromptKeeps' ./internal/agent`
+  exited `1`: the read-only refusal test observed the existing exit-5
+  transport anomaly. The four neighboring cases passed.
+- After the change,
+  `GOCACHE=/tmp/roundfix-task02-gocache rtk proxy go test -count=1 -v -run '^TestACPX(RunPrompt|PromptExitClassificationMatrix|ExitCodeMapping)' ./internal/agent`
+  exited `0`.
+- Acceptance criterion 1: `TestACPXRunPromptKeepsAReadOnlyTurnThatRefusedAPermission`
+  passed, asserting the retained answer, output and `end_turn`, nil error,
+  empty anomaly, refusal flag and permission-denied Run Event.
+- Acceptance criterion 2: `TestACPXRunPromptKeepsTheAnomalyOutsideAReadOnlyRefusal`
+  passed all four required cases, asserting exit-bearing anomalies and a false
+  refusal flag. Existing prompt, exit-classification and exit-mapping tests
+  also passed, including parsed exit `130` and exit `5` without a result.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited `0`.
+- `GOCACHE=/tmp/roundfix-task02-gocache rtk make verify-incremental`
+  initially exited `2`: the sandbox denied process-table reads and loopback
+  binds, and editing this Result during the run triggered suiteguard's
+  repository-change detector. The same command rerun with escalated access
+  and no concurrent worktree edits exited `0`, covering formatting, vet,
+  repository Go tests, skill checks and the CLI build. Existing agent tests
+  passed in the first run and were reused from Go's cache in the second.
+
+The authored Verification command was not run; Verification and Task settlement
+remain Daemon-owned. No daemon package, other Task file or Task Graph changed.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261004T145620Z_ee61ac9af5ab0ce2`
+- Source commit: `b5fce724941c34472f27dd9972d64c6a3877a6cd`

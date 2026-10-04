@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0222-a-review-through-claude-that-keeps-its-verdict
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -86,3 +86,51 @@ It is verifiable on its own through the review tests and the built binary.
 - `_techspec.md` → The Claude prompt bound; API Contract 4; Surface Transcript 1; Testing Approach 3; Build Order 4
 - ADR-0227
 - ADR-0169
+
+## Result
+
+Implemented the provider-specific admission bound in `internal/cli/review.go`.
+Claude estimates the assembled round-one or round-two prompt, including Spec
+context, as its byte length divided by two rounded up. Its window constant is
+1,000,000 tokens and its budget is half that window. The optional
+`estimatedPromptTokens` record field carries the estimate. An over-budget
+prompt returns the specified `reviewPrePromptError` before readiness,
+preparation, prompting or fallback. Codex keeps the existing diff bound at
+its existing admission point and records no token estimate. Spec context is
+now read before readiness; prompt text and lineage rules are unchanged.
+
+Focused evidence for the acceptance criteria:
+
+- Over-budget refusal: `TestReviewCommandRefusesAClaudePromptOverHalfItsWindow`
+  exercises both rounds, checks exit `2`, the exact Surface Transcript 1
+  stderr line and reason, an estimate above the budget in the persisted
+  record, no answer path, and no additional probe, prepare, prompt or session
+  end calls, with a fallback configured.
+- Provider-specific admission: `TestReviewCommandSendsAClaudePromptBeyondTheCodexByteBound`
+  checks that a diff above `reviewDiffBound` reaches exactly one prepared
+  Claude prompt, includes Spec context, and records that whole prompt's
+  estimate within budget. `TestReviewCommandKeepsTheCodexDiffByteBound` uses
+  the same candidate content and checks exit `2`, the unchanged byte-bound
+  reason, no runner calls, and absence of the estimate JSON field.
+- `TestEstimateReviewPromptTokens` checks empty, even-byte, odd-byte and
+  non-ASCII inputs. Existing scope and review tests remain unchanged.
+
+Focused checks run:
+
+- `GOCACHE=/private/tmp/roundfix-task04-gocache rtk proxy go test ./internal/cli -count=1 -run 'TestReviewCommand.*(HalfItsWindow|CodexByteBound|DiffByteBound)'`
+  initially exited `1`: both Claude cases reproduced the old byte-bound
+  refusal instead of the new behavior; the Codex case passed.
+- `GOCACHE=/private/tmp/roundfix-task04-gocache rtk proxy go test ./internal/cli -count=1 -run 'TestReview|TestEstimateReviewPromptTokens'`
+  exited `0` after the final implementation and test edits (`ok`, 32.558s).
+  This includes the unchanged bound tests in `review_scope_test.go`.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited `0`.
+
+The incoming `status: in_progress` is Daemon-owned and was preserved. No
+declared Verification command was run; verification and settlement remain
+with the Daemon. No commit, push, or pull request was made. No follow-up scope
+was identified.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261004T145620Z_ee61ac9af5ab0ce2`
+- Source commit: `586e52662a3fc928c41e0df2b9faf6ec860985d8`
