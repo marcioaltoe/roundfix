@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.36.0] - 2026-10-04
+
+### An archived Spec keeps its links
+
+- **Rewritten links.** `roundfix archive` rewrites each relative Markdown link that leaves the moved Spec directory so it still reaches its target from `docs/history/specs/`. A link whose target already resolves from the archived location keeps its bytes, and so does a link inside the Spec. Fragments, queries and percent-encoding are kept. Fenced code blocks and code spans are not touched.
+- **Refused archive.** If a link would reach nothing from either location, the archive refuses with exit code 2 and names each broken link with its file and line before writing any file.
+- **Resumed archive.** A resumed delivery accepts an archive commit whose only difference from the moved Spec is these link rewrites. `ArchiveResult` reports the number of rewritten links.
+
 ## [0.35.0] - 2026-10-04
 
 ### Adjustments the adopters asked for
