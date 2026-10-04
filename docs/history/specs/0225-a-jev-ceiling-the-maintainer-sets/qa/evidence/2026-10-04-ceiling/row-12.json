@@ -1,0 +1,14 @@
+{
+  "cause": "no open Pull Request",
+  "source": "QA assignment from Daemon",
+  "target_branch": "roundfix/deliver-0225-a-jev-ceiling-the-maintainer-sets-13a688090a496460",
+  "controls": {
+    "approval": "Maintainer recorded delivery authority, granted 2026-09-30, with the 2026-10-04 action recorded, and implement/commit/push/pull_request/merge, grant revision 7686bc12; this is authority, not current-candidate review acceptance.",
+    "checks_and_status": "Daemon make verify-changed exit 0 at d2bf17e795e9b8fb19957e7eac43bec06cbee592; diagnostics removed on success.",
+    "unresolved_review_threads": "None: no Pull Request exists, as confirmed by Daemon.",
+    "merge_ready_acceptance": "None yet: pre-PR review follows archive; no approval invented.",
+    "review_artifact_ancestry": "Claimed candidate head d2bf17e795e9b8fb19957e7eac43bec06cbee592; no later Review Artifact exists yet. Git HEAD independently confirms candidate."
+  },
+  "independent_confirmation": "d2bf17e795e9b8fb19957e7eac43bec06cbee592",
+  "unblock": "Delivery owner follows post-QA review/archive/checks/open-PR sequence; this Agent performs no delivery operation."
+}

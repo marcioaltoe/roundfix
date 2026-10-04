@@ -114,3 +114,12 @@ func Load() (Questions, error) {
 	}
 	return q, nil
 }
+
+// WithMonthlyCeiling returns q with ceilingUSD as its monthly ceiling when
+// ceilingUSD is greater than zero, and q unchanged otherwise.
+func (q Questions) WithMonthlyCeiling(ceilingUSD float64) Questions {
+	if ceilingUSD > 0 {
+		q.MonthlyCeilingUSD = ceilingUSD
+	}
+	return q
+}

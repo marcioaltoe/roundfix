@@ -1,0 +1,110 @@
+=== RUN   TestJevMonthlyCeilingIsReadFromUserConfig
+--- PASS: TestJevMonthlyCeilingIsReadFromUserConfig (0.00s)
+=== RUN   TestJevMonthlyCeilingIsUnsetByDefault
+--- PASS: TestJevMonthlyCeilingIsUnsetByDefault (0.00s)
+=== RUN   TestProjectConfigCannotSetTheJevCeiling
+=== RUN   TestProjectConfigCannotSetTheJevCeiling/""/50
+=== RUN   TestProjectConfigCannotSetTheJevCeiling/""/0
+=== RUN   TestProjectConfigCannotSetTheJevCeiling/""/invalid
+=== RUN   TestProjectConfigCannotSetTheJevCeiling/"jev:\n__monthly_ceiling_usd:_25\n"/50
+=== RUN   TestProjectConfigCannotSetTheJevCeiling/"jev:\n__monthly_ceiling_usd:_25\n"/0
+=== RUN   TestProjectConfigCannotSetTheJevCeiling/"jev:\n__monthly_ceiling_usd:_25\n"/invalid
+--- PASS: TestProjectConfigCannotSetTheJevCeiling (0.00s)
+    --- PASS: TestProjectConfigCannotSetTheJevCeiling/""/50 (0.00s)
+    --- PASS: TestProjectConfigCannotSetTheJevCeiling/""/0 (0.00s)
+    --- PASS: TestProjectConfigCannotSetTheJevCeiling/""/invalid (0.00s)
+    --- PASS: TestProjectConfigCannotSetTheJevCeiling/"jev:\n__monthly_ceiling_usd:_25\n"/50 (0.00s)
+    --- PASS: TestProjectConfigCannotSetTheJevCeiling/"jev:\n__monthly_ceiling_usd:_25\n"/0 (0.00s)
+    --- PASS: TestProjectConfigCannotSetTheJevCeiling/"jev:\n__monthly_ceiling_usd:_25\n"/invalid (0.00s)
+=== RUN   TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue
+=== RUN   TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/0
+=== RUN   TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/-1
+=== RUN   TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/.inf
+=== RUN   TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/-.inf
+=== RUN   TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/.nan
+=== RUN   TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/null
+=== RUN   TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/nope
+=== RUN   TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/true
+=== RUN   TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/[]
+=== RUN   TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/'50'
+--- PASS: TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue (0.01s)
+    --- PASS: TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/0 (0.00s)
+    --- PASS: TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/-1 (0.00s)
+    --- PASS: TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/.inf (0.00s)
+    --- PASS: TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/-.inf (0.00s)
+    --- PASS: TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/.nan (0.00s)
+    --- PASS: TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/null (0.00s)
+    --- PASS: TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/nope (0.00s)
+    --- PASS: TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/true (0.00s)
+    --- PASS: TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/[] (0.00s)
+    --- PASS: TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/'50' (0.00s)
+PASS
+ok  	roundfix/internal/config	0.091s
+=== RUN   TestRunStopsAtTheMonthlyCeiling
+=== RUN   TestRunStopsAtTheMonthlyCeiling/already_exactly_at_ceiling
+=== RUN   TestRunStopsAtTheMonthlyCeiling/run_reaches_ceiling
+--- PASS: TestRunStopsAtTheMonthlyCeiling (0.00s)
+    --- PASS: TestRunStopsAtTheMonthlyCeiling/already_exactly_at_ceiling (0.00s)
+    --- PASS: TestRunStopsAtTheMonthlyCeiling/run_reaches_ceiling (0.00s)
+=== RUN   TestRunRechecksSpendBeforeRetryAndHonorsCancellation
+=== RUN   TestRunRechecksSpendBeforeRetryAndHonorsCancellation/retry_reaches_ceiling
+=== RUN   TestRunRechecksSpendBeforeRetryAndHonorsCancellation/cancelled_retry_wait
+=== RUN   TestRunRechecksSpendBeforeRetryAndHonorsCancellation/already_cancelled
+--- PASS: TestRunRechecksSpendBeforeRetryAndHonorsCancellation (0.01s)
+    --- PASS: TestRunRechecksSpendBeforeRetryAndHonorsCancellation/retry_reaches_ceiling (0.00s)
+    --- PASS: TestRunRechecksSpendBeforeRetryAndHonorsCancellation/cancelled_retry_wait (0.00s)
+    --- PASS: TestRunRechecksSpendBeforeRetryAndHonorsCancellation/already_cancelled (0.00s)
+=== RUN   TestWithMonthlyCeilingReplacesOnlyAPositiveCeiling
+--- PASS: TestWithMonthlyCeilingReplacesOnlyAPositiveCeiling (0.00s)
+=== RUN   TestRunStopsAtAConfiguredCeiling
+=== RUN   TestRunStopsAtAConfiguredCeiling/49
+=== RUN   TestRunStopsAtAConfiguredCeiling/50
+--- PASS: TestRunStopsAtAConfiguredCeiling (0.00s)
+    --- PASS: TestRunStopsAtAConfiguredCeiling/49 (0.00s)
+    --- PASS: TestRunStopsAtAConfiguredCeiling/50 (0.00s)
+PASS
+ok  	roundfix/internal/judge	0.124s
+=== RUN   TestSpecJudgeSkipsAtTheMonthlyCeiling
+--- PASS: TestSpecJudgeSkipsAtTheMonthlyCeiling (0.01s)
+=== RUN   TestSpecJudgeHelp
+--- PASS: TestSpecJudgeHelp (0.01s)
+=== RUN   TestSpecJudgeSkipsAtTheUserConfigCeiling
+--- PASS: TestSpecJudgeSkipsAtTheUserConfigCeiling (0.01s)
+=== RUN   TestSpecJudgeIgnoresAProjectConfigCeiling
+--- PASS: TestSpecJudgeIgnoresAProjectConfigCeiling (0.01s)
+=== RUN   TestSpecJudgeRefusesAnInvalidUserConfigCeiling
+--- PASS: TestSpecJudgeRefusesAnInvalidUserConfigCeiling (0.01s)
+PASS
+suiteguard: guard cost: measured 8783 paths; fingerprint took 264.732125ms before and 250.098375ms after
+ok  	roundfix/internal/cli	0.792s
+=== RUN   TestJevRouterCeilingFallsBackBeforeWork
+--- PASS: TestJevRouterCeilingFallsBackBeforeWork (0.13s)
+=== RUN   TestJevRouterDefaultGateUsesProcessHomeAndJudgeCeiling
+--- PASS: TestJevRouterDefaultGateUsesProcessHomeAndJudgeCeiling (0.01s)
+=== RUN   TestJevRouterUnboundedKeyFallsBackBeforeWork
+--- PASS: TestJevRouterUnboundedKeyFallsBackBeforeWork (0.09s)
+=== RUN   TestJevRouterGateChecksTheReportedKeyLimit
+=== RUN   TestJevRouterGateChecksTheReportedKeyLimit/unlimited
+=== RUN   TestJevRouterGateChecksTheReportedKeyLimit/lifetime
+=== RUN   TestJevRouterGateChecksTheReportedKeyLimit/over_ceiling
+=== RUN   TestJevRouterGateChecksTheReportedKeyLimit/bounded
+=== RUN   TestJevRouterGateChecksTheReportedKeyLimit/exhausted
+--- PASS: TestJevRouterGateChecksTheReportedKeyLimit (0.00s)
+    --- PASS: TestJevRouterGateChecksTheReportedKeyLimit/unlimited (0.00s)
+    --- PASS: TestJevRouterGateChecksTheReportedKeyLimit/lifetime (0.00s)
+    --- PASS: TestJevRouterGateChecksTheReportedKeyLimit/over_ceiling (0.00s)
+    --- PASS: TestJevRouterGateChecksTheReportedKeyLimit/bounded (0.00s)
+    --- PASS: TestJevRouterGateChecksTheReportedKeyLimit/exhausted (0.00s)
+=== RUN   TestJevRouterDefaultGateUsesTheConfiguredCeiling
+--- PASS: TestJevRouterDefaultGateUsesTheConfiguredCeiling (0.01s)
+=== RUN   TestJevRouterGateAcceptsAKeyLimitAtTheConfiguredCeiling
+--- PASS: TestJevRouterGateAcceptsAKeyLimitAtTheConfiguredCeiling (0.01s)
+=== RUN   TestQAConfiguredKeyRefusal
+    qa_configured_key_refusal_test.go:11: got Agent Selection failed for runtime "opencode": jev_router_key_unbounded: set a monthly credit limit of at most US$50.0000 on the key at OpenRouter want jev_router_key_unbounded: set a monthly credit limit of at most US$50.0000 on the key at OpenRouter
+--- FAIL: TestQAConfiguredKeyRefusal (0.00s)
+FAIL
+suiteguard: guard cost: measured 8783 paths; fingerprint took 301.099125ms before and 240.042083ms after
+suiteguard: repository boundary violated:
+suiteguard: modified: docs/specs/0225-a-jev-ceiling-the-maintainer-sets/qa/evidence/2026-10-04-ceiling/row-06-tests-local-http.txt
+FAIL	roundfix/internal/daemon	1.177s
+FAIL

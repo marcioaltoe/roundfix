@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0225-a-jev-ceiling-the-maintainer-sets
-status: pending
+status: failed
 type: qa
 complexity: medium
 ---

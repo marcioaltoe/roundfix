@@ -102,24 +102,25 @@ func (gate *jevRouterGate) After(ctx context.Context, record jevrouter.PromptRec
 // Dependencies are the engine's explicit collaborators, replacing the CLI
 // package globals that previously wired orchestration.
 type Dependencies struct {
-	Runner            agent.Runner
-	JevRouter         JevRouterGate
-	Verifier          Verifier
-	Committer         Committer
-	Pusher            Pusher
-	Source            ReviewSourceResolver
-	Runs              RunStateStore
-	WriteGuard        WriteBoundaryGuard
-	Worktree          WorktreeSnapshotter
-	TaskWorktrees     TaskWorktreeManager
-	PriorChanges      PriorChangedResolver
-	MechanicalStage   QAMechanicalStage
-	SettlementChecker SettlementChecker
-	Auditor           func() app.AuditingBinary
-	GH                GHRunner
-	Sink              runevent.Sink
-	Now               func() time.Time
-	Progress          io.Writer
+	Runner               agent.Runner
+	JevRouter            JevRouterGate
+	JevMonthlyCeilingUSD float64 // zero keeps the judge's built-in ceiling
+	Verifier             Verifier
+	Committer            Committer
+	Pusher               Pusher
+	Source               ReviewSourceResolver
+	Runs                 RunStateStore
+	WriteGuard           WriteBoundaryGuard
+	Worktree             WorktreeSnapshotter
+	TaskWorktrees        TaskWorktreeManager
+	PriorChanges         PriorChangedResolver
+	MechanicalStage      QAMechanicalStage
+	SettlementChecker    SettlementChecker
+	Auditor              func() app.AuditingBinary
+	GH                   GHRunner
+	Sink                 runevent.Sink
+	Now                  func() time.Time
+	Progress             io.Writer
 }
 
 // Engine executes one resolve cycle over a validated plan and exposes Final
@@ -822,7 +823,7 @@ func NewEngine(deps Dependencies) (*Engine, error) {
 		}
 		deps.JevRouter = &jevRouterGate{deps: jevrouter.Deps{
 			Env: os.Environ(), HomeDir: home,
-			Endpoint: "https://openrouter.ai/api/v1", Ceiling: questions.MonthlyCeilingUSD,
+			Endpoint: "https://openrouter.ai/api/v1", Ceiling: questions.WithMonthlyCeiling(deps.JevMonthlyCeilingUSD).MonthlyCeilingUSD,
 		}, now: deps.Now}
 	}
 	if deps.Progress == nil {

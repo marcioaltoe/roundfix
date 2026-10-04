@@ -1,0 +1,44 @@
+{
+  "published_reference": {
+    "url": "https://openrouter.ai/docs/api_reference/limits",
+    "retrieved": "2026-10-04",
+    "method": "web open, after curl-cffi domain allowlist refused access",
+    "observed": "Published key response documents a nullable credit limit, reset type, remaining credits and usage accumulated in the current UTC month. Per-key spending caps are separate from rate limits.",
+    "supports_design": true,
+    "comparison": "The router requires monthly reset and a numeric limit at most the effective ceiling, while MonthSpend uses monthly key usage. These comparisons use the documented quantities. No key endpoint queried."
+  },
+  "decision_and_key_status": {
+    "status": "unavailable original evidence",
+    "requested": "Original 2026-10-04 maintainer decision and sanitized limit=50 / limit_reset=monthly key-status receipt",
+    "available": "PRD, authorization and ADR repeat the attribution, but they were authored for this Spec. No original conversation locator or safe key-status receipt is supplied in the Context Bundle or checked-in Spec artifacts.",
+    "supports_design": "The authored claims agree with the design, but are not accepted as outside observation.",
+    "unblock": "Supply the original user-message locator and sanitized historical key-status receipt; no new live key query is authorized."
+  },
+  "installed_binary_reproduction": {
+    "status": "unavailable admissible historical reproduction",
+    "installation_metadata": [
+      {
+        "path": "/opt/homebrew/bin/roundfix",
+        "exists": false,
+        "resolved": null
+      },
+      {
+        "path": "/usr/local/bin/roundfix",
+        "exists": false,
+        "resolved": null
+      },
+      {
+        "path": "/Users/marcio/.local/bin/roundfix",
+        "exists": false,
+        "resolved": null
+      }
+    ],
+    "requested": "Installed old binary refusal for disposable User Config containing jev.monthly_ceiling_usd: 50",
+    "observed": "No launch of an installed binary: the QA assignment requires every public-CLI row to use ./bin/roundfix rebuilt from this Run Worktree, and prohibits a roundfix found on PATH. The pre-change authoring reproduction is attributed in the PRD but has no separately provided stdout/stderr/exit artifact. Current rebuilt binary accepts 50, so it cannot establish the older-binary refusal.",
+    "supports_design": "Upgrade-order risk is consistent with strict unknown-key decoding, but its installed-binary reproduction is not freshly established.",
+    "unblock": "Provide the original authoring reproduction transcript tied to its old binary identity, or explicitly scope an old-installed-binary evidence exception to this self-audit."
+  },
+  "cause": "original historical records and admissible installed-binary reproduction not supplied",
+  "equivalent_evidence": "Published documentation is obtained and supports the design, but does not establish the historical decision/key read or installed reproduction. Spec-authored claims cannot substitute.",
+  "no_paid_requests": true
+}

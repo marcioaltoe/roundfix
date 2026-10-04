@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0225-a-jev-ceiling-the-maintainer-sets
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -105,3 +105,75 @@ ignored with a warning (ADR-0231).
 - `_prd.md` → User Stories 1-5; Core Features 1-5; Success Metric 1; Success Metric 2; Success Metric 3
 - `_techspec.md` → The configured ceiling; The ceiling rule; The consumers; Interfaces; API Contract 1; API Contract 2; API Contract 3; API Contract 4; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Surface Transcript 4; Testing Approach 1-4; Build Order 2
 - ADR-0231; ADR-0201; ADR-0218; ADR-0027
+
+## Result
+
+Implemented the User Config ceiling and its shared application rule. The
+judge command, Implement Run engine and resolve engine receive the loaded
+value; an unset value preserves the embedded ceiling. Project Config removes
+the setting before strict decoding and warns once. Invalid User Config
+values return the specified error with the configuration path.
+
+Acceptance evidence from focused implementation checks:
+
+- Config loading: `TestJevMonthlyCeilingIsReadFromUserConfig` loads 50;
+  `TestJevMonthlyCeilingIsUnsetByDefault` proves loaded and built-in values
+  remain zero. `TestProjectConfigCannotSetTheJevCeiling` preserves either
+  the User Config value or zero and checks the exact warning, including
+  invalid ignored Project Config values.
+  `TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue` checks 0, -1,
+  infinities, NaN, null and non-number values against the exact wrapped error.
+- Judge output: `TestSpecJudgeSkipsAtTheUserConfigCeiling` checks the
+  US$50.25/US$50 text transcript, JSON `month_ceiling_usd: 50`, and no HTTP
+  calls. `TestSpecJudgeSkipsAtTheMonthlyCeiling` checks the unchanged
+  default behavior using the loaded ceiling plus US$0.25.
+  `TestSpecJudgeIgnoresAProjectConfigCeiling` checks the exact warning;
+  `TestSpecJudgeRefusesAnInvalidUserConfigCeiling` checks exit 2.
+  `TestSpecJudgeHelp` now requires the key name.
+- Router gate: `TestJevRouterDefaultGateUsesTheConfiguredCeiling` checks
+  the default gate with 50 and with zero.
+  `TestJevRouterGateAcceptsAKeyLimitAtTheConfiguredCeiling` serves a local
+  key endpoint with monthly limit 50, observes acceptance at ceiling 50,
+  and checks the exact `jev_router_key_unbounded` refusal naming the
+  embedded ceiling when unset.
+- Default literals: existing judge, command and router expectations and
+  ceiling-reaching spend fixtures now derive from `judge.Load()`.
+  A Python inspection of all three test files found no `US$5.0` literal.
+  `TestWithMonthlyCeilingReplacesOnlyAPositiveCeiling` checks other settings
+  and the original value are preserved; `TestRunStopsAtAConfiguredCeiling`
+  checks requests below 50 and no requests at 50.
+
+Focused check command:
+
+```sh
+GOCACHE="$PWD/.gocache" rtk proxy go test -count=1 ./internal/config ./internal/judge ./internal/cli ./internal/daemon -run 'JevMonthlyCeiling|ProjectConfigCannotSetTheJevCeiling|WithMonthlyCeiling|ConfiguredCeiling|SpecJudge|JevRouter|RunStopsAtTheMonthlyCeiling|RunRechecksSpend'
+```
+
+Outcome: exit 0 for all four packages. The initial config test failed to
+compile because `Config.Jev` was absent, establishing the pre-change gap.
+The sandbox initially refused local HTTP binding; the focused run succeeded
+with the required sandbox escalation. All test endpoints are local or fake;
+no paid API call was made.
+
+`git -c core.fsmonitor=false diff --check` exited 0. The initial working
+tree contained only the Daemon's task_02 status edit; it was preserved.
+No other Task, Task Graph, config template or repository Project Config was
+edited. Declared Verification remains for the Daemon; Task status was not
+changed by this Agent.
+
+The first `rtk make verify-incremental` run exited 2: test assertions
+passed, but the repository suiteguard detected this Agent appending the
+Result while the baseline, CLI and daemon tests were running. This was a
+check-execution error, not a test assertion failure. The incremental check
+was rerun without concurrent file edits. RTK's recovery hint
+`rtk recall dee832fa96ab` returned `store unavailable: init recall schema`.
+
+The rerun, `rtk proxy make verify-incremental`, exited 0: formatting,
+`go vet ./...`, repository tests (including CLI and daemon suiteguards),
+shipped skill synchronization and validation, and the CLI build all passed.
+The final Result update was made only after that command exited.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261004T194332Z_e41f982109e26c75`
+- Source commit: `d2bf17e795e9b8fb19957e7eac43bec06cbee592`

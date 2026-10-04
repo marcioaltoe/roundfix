@@ -1,0 +1,12 @@
+// Suite: QA configured key bound
+// Invariant: configured ceiling is named in key-limit refusals.
+// Boundary IN: engine gate using a local HTTP endpoint.
+// Boundary OUT: no paid service.
+package daemon
+import ("errors"; "context"; "fmt"; "net/http"; "net/http/httptest"; "testing"; "time"; "roundfix/internal/agent"; "roundfix/internal/jevrouter")
+func TestQAConfiguredKeyRefusal(t *testing.T) {
+server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,r *http.Request){fmt.Fprint(w,`{"data":{"usage_monthly":0.5,"limit":51,"limit_reset":"monthly","limit_remaining":50.5}}`)})); defer server.Close()
+gate:= &jevRouterGate{deps:jevrouter.Deps{HomeDir:t.TempDir(),Env:[]string{agent.JevRouterKeyEnv+"=qa-dummy"},Client:server.Client(),Endpoint:server.URL,Ceiling:50},now:time.Now}
+_,err:=gate.Before(context.Background()); want:="jev_router_key_unbounded: set a monthly credit limit of at most US$50.0000 on the key at OpenRouter"
+var refusal *agent.SelectionFailureError; if !errors.As(err, &refusal) || refusal.Reason!=want {t.Fatalf("got %v want %s",err,want)}; t.Log(want)
+}

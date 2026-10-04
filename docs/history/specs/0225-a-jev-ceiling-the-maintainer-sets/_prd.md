@@ -1,9 +1,18 @@
 ---
 spec: 0225-a-jev-ceiling-the-maintainer-sets
-status: active
+status: archived
 created: 2026-10-04
 surfaces: [backend, cli, docs]
+archived: "2026-10-04"
+source_slug: 0225-a-jev-ceiling-the-maintainer-sets
+qa_override: true
+qa_override_approval: 'maintainer standing authorization 2026-09-30 (unattended program): qa_override only for environment-only partials'
+qa_override_reason: 'Environment-only partial: row 09 needs the operator''s key-status record and installation; the operator read GET /api/v1/key on 2026-10-04 (limit 50, limit_reset monthly) and the maintainer''s decision is quoted in _authorization.md. Row 12 has no Pull Request yet; the queue opens it. Every behavior row passed.'
+qa_override_qa_outcome: partial
+qa_override_qa_task_status: failed
+qa_override_revision: 94761ac03fe623575143ccf90703580620e1999c
 ---
+
 
 # A Jev ceiling the maintainer sets
 
