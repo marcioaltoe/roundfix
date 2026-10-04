@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0220-tests-and-pins-that-hold-in-every-environment
-status: pending
+status: completed
 type: chore
 complexity: medium
 ---
@@ -132,3 +132,36 @@ reports `skills: ok` and `make verify` passes.
 - `_techspec.md` → Testing Approach 3-4; Build Order 2; Risks & Considerations
 - [references/2026-10-02-restoring-trailing-skills-breaks-the-pinned-skill-digests.md](references/2026-10-02-restoring-trailing-skills-breaks-the-pinned-skill-digests.md)
 - ADR-0224; ADR-0221; ADR-0191; ADR-0179
+
+## Result
+
+Implementation evidence:
+
+- Ran a binary built from this tree with `roundfix baseline update --repo . --yes --skills-source-dir /Users/marcio/dev/skills --format text`, using the upstream checkout at commit `b3c45a45f1bccd3b33aaecaaa22947d942f2fc02` (`b3c45a4`). It restored the eleven trailing external skills and updated only their restore-written trees plus `skills-lock.json`.
+- Ran the same supported restore a second time; it reported `Skills restored: 0` and `Skills drifted: 0`.
+- Replaced the hand-pinned aggregate upstream tree digest with per-entry `skills-lock.json` `computedHash` comparisons against `SkillFolderHash`. The comparison collects and names every differing skill. The ADR-FORMAT digest assertion remains present and unchanged.
+- Added `TestUpstreamManagedSkillLockNamesAnEditedTree`, which copies the `bubbletea` tree and lock entry into a temporary repository, flips one byte, and observes only `bubbletea` as mismatched.
+- Added `TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot`, which reads the Setup Manifest Profile and lock skill names, calls `TrailingSetupSkills`, and names each trailing skill with `roundfix baseline update` remediation.
+
+Focused checks:
+
+- `go test -count=1 ./skills -run '^TestUpstreamManagedSkillLockNamesAnEditedTree$'` passed.
+- `go test -count=1 ./internal/baseline -run '^TestThisRepositoryHoldsItsRequiredSkillsAtTheSetupSnapshot$'` passed.
+- `go test -count=1 ./skills` passed.
+- `go test -count=1 ./internal/baseline` passed.
+- `roundfix doctor` reported `skills: ok (43 required: 14 Roundfix-owned, 29 external)` with no `DR-SKILL-TRAILS-SNAPSHOT`.
+- Digest-removal and restored-tree shape checks passed; `.agents/skills/domain-modeling/CONTEXT-FORMAT.md` is absent and `GLOSSARY-FORMAT.md` is present.
+
+Acceptance evidence:
+
+- No upstream-managed aggregate digest constant or comparison remains in `skills/baseline_skill_contract_test.go`.
+- The one-byte lock mismatch test passes and asserts the edited skill is the only reported mismatch.
+- The repository snapshot test passes with no trailing skill names, and Doctor reports the skills line as `ok` without the snapshot diagnostic.
+- Both required Go package suites pass on the restored tree.
+
+The task status remains daemon-owned. The declared Verification commands were not run in this Agent turn.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261004T010416Z_bdbf1cc82a3473ae`
+- Source commit: `6bccd2ff639c3750c1653a931dbea25b5c9ff173`

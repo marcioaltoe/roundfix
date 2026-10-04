@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0220-tests-and-pins-that-hold-in-every-environment
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -105,3 +105,61 @@ zombie group the test holds itself.
   Build Order 1
 - [references/2026-10-02-the-detached-child-test-meets-eperm-on-its-process-group.md](references/2026-10-02-the-detached-child-test-meets-eperm-on-its-process-group.md)
 - ADR-0213; ADR-0125; ADR-0126; ADR-0028
+
+## Result
+
+Implemented the Task's test-only slice. Darwin reads `kern.proc.pgrp` and
+excludes the named `SZOMB` state; Linux reads the state and group after the
+last `)` in procfs stat records, excludes `Z`, and tolerates only vanished
+PIDs (`ENOENT`/`ESRCH`). Other Unix systems retain the signal probe and return
+permission failures as errors. Failed readings cannot prove an empty group.
+
+Both death tests record the live fixture's start identity before killing the
+inner binary. The exit assertion now requires no live group member or a
+changed leader identity; an absent leader with live children does not prove
+exit. Cleanup accepts `ESRCH`, and accepts `EPERM` only after a successful
+reading with no live members. Removed the skip, preserving the `SIGKILL`
+wait-status assertion and the absence of fixture cleanup signals before the
+exit assertion. The existing survival assertions remain unchanged.
+
+The new characterization test holds a real `cat` child alive on an input
+pipe, verifies live membership and identity, closes the pipe without reaping,
+checks the platform's zombie-group signal answer and the ended predicate,
+then reaps through `testwait` and checks `ESRCH`. It also checks that a
+different recorded identity reports the old fixture ended. The zombie
+characterization applies to Darwin and Linux; other Unix platforms retain
+the specified fallback and compile the package.
+
+Focused evidence from this Agent turn:
+
+| Acceptance criterion | Evidence |
+| --- | --- |
+| An exited, unreaped group is reported ended | `TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded` passed on Darwin, asserting `kill(pid, 0)` succeeds, `kill(-pgid, 0)` answers `EPERM`, the ended predicate is true, and the reaped group answers `ESRCH`. Linux runtime behavior remains for a Linux executor. |
+| A live child is listed | The same test passed its explicit live-child membership assertion and rejected ended for the matching start identity. |
+| Both death tests pass ten times without skipping | Each death test passed once in the final focused run with no skip. Source inspection found no `t.Skip` call in the teardown file. The authored ten-iteration gate remains exclusively for Daemon Verification. |
+| Linux and FreeBSD test package compilation | Both final foreign-platform compile checks exited 0, using `-exec /usr/bin/true` to avoid executing their binaries. |
+
+Commands and outcomes:
+
+- `rtk proxy go test -count=1 -timeout 180s -v -run '^(TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded|TestImplementDetachChildEndsWhenItsTestBinaryDies|TestDetachSurvivorEndsWhenItsTestBinaryDies|TestRunImplementDetachSurvivesCallerProcessGroupKill|TestDetachedChildIsTerminatedAtTeardown)$' ./internal/cli`
+  — exit 0; all five tests passed on Darwin, no skip (5.519s package time).
+- `GOOS=linux rtk proxy go test -buildvcs=false -exec /usr/bin/true -run '^$' ./internal/cli`
+  — exit 0; compiled the Linux test package, no foreign tests executed.
+- `GOOS=freebsd rtk proxy go test -buildvcs=false -exec /usr/bin/true -run '^$' ./internal/cli`
+  — exit 0; compiled the FreeBSD test package, no foreign tests executed.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+
+The first sandboxed characterization attempt could not open the host Go
+build cache (`operation not permitted`). Focused Go checks then ran with
+approved host cache/process-table access. Before editing, the task file was
+the sole pre-existing changed path; the old teardown source contained the
+`EPERM` skip and lacked the characterization test and platform readers.
+
+No production code, other Task, Task Graph, tooling configuration or skill
+content changed. Task status and authored Verification remain Daemon-owned;
+no authored Verification command was run, and no commit, push or PR was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261004T010416Z_bdbf1cc82a3473ae`
+- Source commit: `39cd3d980a0c1eb78aa741e228100b2e241f05b7`

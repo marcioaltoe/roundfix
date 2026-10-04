@@ -24,7 +24,6 @@ contentHeight := totalHeight - titleLines - statusLines - 2  // -2 for borders
 ```
 
 **Quick Fix:**
-
 ```go
 func (m model) calculateLayout() (int, int) {
     contentHeight := m.height
@@ -63,7 +62,6 @@ for i := range contentLines {
 ```
 
 **Helper function:**
-
 ```go
 func truncateString(s string, maxLen int) string {
     if len(s) <= maxLen {
@@ -84,21 +82,18 @@ Panel borders missing or showing weird characters.
 **Possible Causes:**
 
 1. **Terminal doesn't support Unicode box drawing**
-
    ```go
    // Use ASCII fallback
    border := lipgloss.NormalBorder()  // Uses +-| instead of ┌─┐
    ```
 
 2. **Terminal encoding issue**
-
    ```bash
    export LANG=en_US.UTF-8
    export LC_ALL=en_US.UTF-8
    ```
 
 3. **Wrong border style**
-
    ```go
    // Make sure you're using a valid border
    import "charm.land/lipgloss/v2"
@@ -118,7 +113,6 @@ Text or content extends beyond panel boundaries.
 **Solutions:**
 
 1. **For text content:**
-
    ```go
    // Truncate to fit
    maxWidth := panelWidth - 4
@@ -126,7 +120,6 @@ Text or content extends beyond panel boundaries.
    ```
 
 2. **For multi-line content:**
-
    ```go
    // Limit both width and height
    maxWidth := panelWidth - 4
@@ -157,7 +150,6 @@ Clicking panels doesn't change focus or trigger actions.
 **Possible Causes:**
 
 1. **Mouse not enabled in program**
-
    ```go
    p := tea.NewProgram(initialModel())
 
@@ -170,7 +162,6 @@ Clicking panels doesn't change focus or trigger actions.
    ```
 
 2. **Not handling MouseMsg**
-
    ```go
    func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
        switch msg := msg.(type) {
@@ -221,7 +212,6 @@ func (m model) handleLeftClick(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 Mouse wheel doesn't scroll content.
 
 **Solution:**
-
 ```go
 case tea.MouseMsg:
     switch msg.Type {
@@ -249,7 +239,6 @@ Screen flickers or elements jump around during updates.
 **Causes & Solutions:**
 
 1. **Updating too frequently**
-
    ```go
    // Don't update on every tick
    case tickMsg:
@@ -261,7 +250,6 @@ Screen flickers or elements jump around during updates.
    ```
 
 2. **Inconsistent dimensions**
-
    ```go
    // Cache dimensions, don't recalculate every frame
    type model struct {
@@ -298,7 +286,6 @@ Colors appear as plain text or wrong colors.
 **Possible Causes:**
 
 1. **Terminal doesn't support colors**
-
    ```bash
    # Check color support
    echo $COLORTERM  # Should show "truecolor" or "24bit"
@@ -306,7 +293,6 @@ Colors appear as plain text or wrong colors.
    ```
 
 2. **Not using lipgloss properly**
-
    ```go
    // Use lipgloss for color
    import "charm.land/lipgloss/v2"
@@ -333,7 +319,6 @@ Different terminals calculate emoji width differently (1 vs 2 cells).
 **Solutions:**
 
 1. **Detect and adjust**
-
    ```go
    import "github.com/mattn/go-runewidth"
 
@@ -342,14 +327,12 @@ Different terminals calculate emoji width differently (1 vs 2 cells).
    ```
 
 2. **Avoid emojis in structural elements**
-
    ```go
    // DON'T use emojis in borders, tables, or aligned content
    // DO use emojis in content that doesn't need precise alignment
    ```
 
 3. **Use icons from fixed-width sets**
-
    ```go
    // Use Nerd Fonts or similar fixed-width icon fonts instead
    // 󰈙 (vs 📁 emoji)
@@ -368,14 +351,12 @@ Key presses don't trigger expected actions.
 **Debugging Steps:**
 
 1. **Log the key events**
-
    ```go
    case tea.KeyPressMsg:
        log.Printf("Key: %s, Keystroke: %s", msg.String(), msg.Keystroke())
    ```
 
 2. **Check key matching**
-
    ```go
    import "charm.land/bubbles/v2/key"
 
@@ -432,7 +413,6 @@ case tea.KeyPressMsg:
 ```
 
 Common keys:
-
 - `tea.KeyTab`
 - `tea.KeyEnter`
 - `tea.KeyEsc`
@@ -450,7 +430,6 @@ Noticeable lag when updating the display.
 **Solutions:**
 
 1. **Only render visible content**
-
    ```go
    // Don't render 1000 lines when only 20 are visible
    visibleStart := m.scroll
@@ -462,7 +441,6 @@ Noticeable lag when updating the display.
    ```
 
 2. **Cache expensive computations**
-
    ```go
    type model struct {
        content       []string
@@ -480,7 +458,6 @@ Noticeable lag when updating the display.
    ```
 
 3. **Avoid string concatenation in loops**
-
    ```go
    // SLOW
    var s string
@@ -498,7 +475,6 @@ Noticeable lag when updating the display.
    ```
 
 4. **Lazy load data**
-
    ```go
    // Don't load all files upfront
    type model struct {
@@ -524,7 +500,6 @@ Application uses excessive memory.
 **Solutions:**
 
 1. **Limit cache size**
-
    ```go
    const maxCacheEntries = 100
 
@@ -541,7 +516,6 @@ Application uses excessive memory.
    ```
 
 2. **Stream large files**
-
    ```go
    // Don't load entire file into memory
    func readLines(path string, start, count int) ([]string, error) {
@@ -577,7 +551,6 @@ Application uses excessive memory.
 Application doesn't respect config file settings.
 
 **Common Locations:**
-
 ```go
 configPaths := []string{
     "./config.yaml",                           // Current directory
@@ -593,7 +566,6 @@ for _, path := range configPaths {
 ```
 
 **Debug config loading:**
-
 ```go
 func loadConfig(path string) (*Config, error) {
     log.Printf("Attempting to load config from: %s", path)
@@ -698,7 +670,6 @@ infocmp $TERM
 ### 4. Test in Different Terminals
 
 Try your app in multiple terminals:
-
 - iTerm2 (macOS)
 - Alacritty (cross-platform)
 - kitty (cross-platform)

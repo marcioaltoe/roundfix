@@ -83,7 +83,6 @@ Content Height:        19 ✓
 ### The Problem
 
 When text wraps inside a bordered panel, it can cause:
-
 - Panels to become different heights (misalignment)
 - Content to overflow panel boundaries
 - Inconsistent rendering across different terminal widths
@@ -122,7 +121,6 @@ func truncateString(s string, maxLen int) string {
 ### Real-World Example
 
 Without truncation, this subtitle wraps:
-
 ```
 ┌─────────────┐
 │Weight: 2 | │
@@ -131,7 +129,6 @@ Without truncation, this subtitle wraps:
 ```
 
 With truncation:
-
 ```
 ┌─────────────┐
 │Weight: 2 | …│  ← Truncated, stays 1 line
@@ -182,7 +179,6 @@ func (m model) handleLeftClick(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 ### Visual Guide
 
 **Horizontal Layout (use X coordinates):**
-
 ```
 ┌────────┬────────┐
 │ Left   │ Right  │
@@ -192,7 +188,6 @@ func (m model) handleLeftClick(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 ```
 
 **Vertical Layout (use Y coordinates):**
-
 ```
 ┌────────────────┐
 │ Top            │  ↑
@@ -208,7 +203,6 @@ func (m model) handleLeftClick(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 ### The Problem
 
 Fixed pixel widths break when:
-
 - Terminal is resized
 - Different monitors have different dimensions
 - Users have portrait vs landscape terminals
@@ -234,7 +228,6 @@ rightWidth := availableWidth - leftWidth
 ### Weight Examples
 
 **Equal weights (1:1) = 50/50 split:**
-
 ```
 Total width: 80
 leftWeight: 1, rightWeight: 1
@@ -251,7 +244,6 @@ rightWidth = 80 - 40 = 40
 ```
 
 **Focused weight (2:1) = 66/33 split:**
-
 ```
 Total width: 80
 leftWeight: 2, rightWeight: 1

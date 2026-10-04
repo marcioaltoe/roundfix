@@ -11,13 +11,11 @@ Pre-built panel layouts for different UI arrangements.
 Full-screen single view with optional title and status bars.
 
 **Use for:**
-
 - Simple focused interfaces
 - Full-screen text editors
 - Single-purpose tools
 
 **Implementation:**
-
 ```go
 func (m model) renderSinglePanel() string {
     contentWidth, contentHeight := m.calculateLayout()
@@ -36,20 +34,17 @@ func (m model) renderSinglePanel() string {
 Side-by-side panels with configurable split ratio and accordion mode.
 
 **Use for:**
-
 - File browsers with preview
 - Split editors
 - Source/destination views
 
 **Features:**
-
 - Dynamic split ratio (50/50, 66/33, 75/25)
 - Accordion mode (focused panel expands)
 - Responsive (stacks vertically on narrow terminals)
 - Weight-based sizing for smooth resizing
 
 **Implementation:**
-
 ```go
 func (m model) renderDualPane() string {
     contentWidth, contentHeight := m.calculateLayout()
@@ -74,13 +69,11 @@ func (m model) renderDualPane() string {
 ```
 
 **Keyboard shortcuts:**
-
 - `Tab` - Switch focus between panels
 - `a` - Toggle accordion mode
 - Arrow keys - Focus panel in direction
 
 **Mouse support:**
-
 - Click panel to focus
 - Works in both horizontal and vertical stack modes
 
@@ -89,20 +82,17 @@ func (m model) renderDualPane() string {
 3+ panels with configurable sizes and arrangements.
 
 **Use for:**
-
 - IDEs (file tree, editor, terminal, output)
 - Dashboard views
 - Complex workflows
 
 **Common layouts:**
-
 - Three-column (25/50/25)
 - Three-row
 - Grid (2x2, 3x3)
 - Sidebar + main + inspector
 
 **Implementation:**
-
 ```go
 // Three-column example
 mainWeight, leftWeight, rightWeight := 2, 1, 1  // 50/25/25
@@ -118,13 +108,11 @@ rightWidth := contentWidth - leftWidth - mainWidth
 Multiple views with tab switching.
 
 **Use for:**
-
 - Multiple documents
 - Settings pages
 - Different data views
 
 **Features:**
-
 - Tab bar with active indicator
 - Keyboard shortcuts (`1-9`, `Ctrl+Tab`)
 - Mouse click to switch tabs
@@ -137,20 +125,17 @@ Multiple views with tab switching.
 Basic scrollable list of items.
 
 **Use for:**
-
 - File listings
 - Menu options
 - Search results
 
 **Features:**
-
 - Keyboard navigation (Up/Down, Home/End, PgUp/PgDn)
 - Mouse scrolling and selection
 - Visual selection indicator
 - Viewport scrolling (only visible items rendered)
 
 **Integration:**
-
 ```go
 import "charm.land/bubbles/v2/list"
 
@@ -173,19 +158,16 @@ func (m model) Init() tea.Cmd {
 List with fuzzy search/filter.
 
 **Use for:**
-
 - Quick file finder
 - Command palette
 - Searchable settings
 
 **Features:**
-
 - Real-time filtering as you type
 - Fuzzy matching
 - Highlighted matches
 
 **Dependencies:**
-
 ```go
 github.com/koki-develop/go-fzf
 ```
@@ -195,13 +177,11 @@ github.com/koki-develop/go-fzf
 Hierarchical list with expand/collapse.
 
 **Use for:**
-
 - Directory trees
 - Nested data structures
 - Outline views
 
 **Features:**
-
 - Expand/collapse nodes
 - Indentation levels
 - Parent/child relationships
@@ -214,13 +194,11 @@ Hierarchical list with expand/collapse.
 Single-line text field.
 
 **Use for:**
-
 - Forms
 - Search boxes
 - Prompts
 
 **Integration:**
-
 ```go
 import "charm.land/bubbles/v2/textinput"
 
@@ -241,13 +219,11 @@ func (m model) Init() tea.Cmd {
 Text area for longer content.
 
 **Use for:**
-
 - Commit messages
 - Notes
 - Configuration editing
 
 **Integration:**
-
 ```go
 import "charm.land/bubbles/v2/textarea"
 
@@ -261,13 +237,11 @@ type model struct {
 Structured input with multiple fields.
 
 **Use for:**
-
 - Settings dialogs
 - User registration
 - Multi-field input
 
 **Integration:**
-
 ```go
 import "charm.land/huh/v2"
 
@@ -288,13 +262,11 @@ form := huh.NewForm(
 Text input with suggestions.
 
 **Use for:**
-
 - Command entry
 - File paths
 - Tag selection
 
 **Features:**
-
 - Real-time suggestions
 - Keyboard navigation of suggestions
 - Tab completion
@@ -306,13 +278,11 @@ Text input with suggestions.
 Yes/No confirmation.
 
 **Use for:**
-
 - Delete confirmations
 - Save prompts
 - Destructive actions
 
 **Example:**
-
 ```
 ┌─────────────────────────────┐
 │ Delete this file?           │
@@ -326,7 +296,6 @@ Yes/No confirmation.
 Prompt for single value.
 
 **Use for:**
-
 - Quick input
 - Rename operations
 - New file creation
@@ -336,13 +305,11 @@ Prompt for single value.
 Show long-running operations.
 
 **Use for:**
-
 - File uploads
 - Build processes
 - Data processing
 
 **Integration:**
-
 ```go
 import "charm.land/bubbles/v2/progress"
 
@@ -356,7 +323,6 @@ type model struct {
 Full overlay dialog.
 
 **Use for:**
-
 - Settings
 - Help screens
 - Complex forms
@@ -368,13 +334,11 @@ Full overlay dialog.
 Right-click or keyboard-triggered menu.
 
 **Use for:**
-
 - File operations
 - Quick actions
 - Tool integration
 
 **Example:**
-
 ```
 ┌─────────────┐
 │ Open        │
@@ -389,13 +353,11 @@ Right-click or keyboard-triggered menu.
 Fuzzy searchable command list.
 
 **Use for:**
-
 - Command discovery
 - Keyboard-first workflows
 - Power user features
 
 **Keyboard:**
-
 - `Ctrl+P` or `Ctrl+Shift+P` to open
 - Type to filter
 - Enter to execute
@@ -405,13 +367,11 @@ Fuzzy searchable command list.
 Top-level menu system.
 
 **Use for:**
-
 - Traditional application menus
 - Organized commands
 - Discoverability
 
 **Example:**
-
 ```
 File  Edit  View  Help
 ```
@@ -423,13 +383,11 @@ File  Edit  View  Help
 Bottom bar showing state and help.
 
 **Use for:**
-
 - Current mode/state
 - Keyboard hints
 - File info
 
 **Example:**
-
 ```
 ┌────────────────────────────────────┐
 │                                    │
@@ -441,7 +399,6 @@ Bottom bar showing state and help.
 ```
 
 **Pattern:**
-
 ```go
 func (m model) renderStatusBar() string {
     left := fmt.Sprintf("%s | %s", m.mode, m.filename)
@@ -459,7 +416,6 @@ func (m model) renderStatusBar() string {
 Top bar with app title and context.
 
 **Use for:**
-
 - Application name
 - Current path/document
 - Action buttons
@@ -469,13 +425,11 @@ Top bar with app title and context.
 Path navigation component.
 
 **Use for:**
-
 - Directory navigation
 - Nested views
 - History trail
 
 **Example:**
-
 ```
 Home > Projects > TUITemplate > components
 ```
@@ -487,13 +441,11 @@ Home > Projects > TUITemplate > components
 Rendered text with syntax highlighting.
 
 **Use for:**
-
 - File preview
 - Code display
 - Log viewing
 
 **Integration:**
-
 ```go
 import "github.com/alecthomas/chroma/v2/quick"
 
@@ -509,7 +461,6 @@ func renderCode(code, language string) string {
 Rendered markdown.
 
 **Integration:**
-
 ```go
 import "github.com/charmbracelet/glamour"
 
@@ -527,13 +478,11 @@ func renderMarkdown(md string) (string, error) {
 ASCII/Unicode art from images.
 
 **Use for:**
-
 - Image thumbnails
 - Visual file preview
 - Logos/artwork
 
 **External tools:**
-
 - `catimg` - Convert images to 256-color ASCII
 - `viu` - View images in terminal with full color
 
@@ -542,13 +491,11 @@ ASCII/Unicode art from images.
 Binary file viewer.
 
 **Use for:**
-
 - Binary file inspection
 - Debugging
 - Data analysis
 
 **Example:**
-
 ```
 00000000: 7f45 4c46 0201 0100 0000 0000 0000 0000  .ELF............
 00000010: 0200 3e00 0100 0000 6009 4000 0000 0000  ..>.....`.@.....
@@ -561,7 +508,6 @@ Binary file viewer.
 Static data display.
 
 **Use for:**
-
 - Data display
 - Reports
 - Comparison views
@@ -571,13 +517,11 @@ Static data display.
 Navigable table with selection.
 
 **Use for:**
-
 - Database browsers
 - CSV viewers
 - Process lists
 
 **Integration:**
-
 ```go
 import "github.com/evertras/bubble-table/table"
 
@@ -595,7 +539,6 @@ func (m model) Init() tea.Cmd {
 ```
 
 **Features:**
-
 - Sort by column
 - Row selection
 - Keyboard navigation
@@ -686,7 +629,6 @@ case fileSelectedMsg:
 ## External Dependencies
 
 **Core Charm libraries:**
-
 ```
 charm.land/bubbletea/v2              # Framework
 charm.land/lipgloss/v2               # Styling
@@ -694,7 +636,6 @@ charm.land/bubbles/v2                # Standard components
 ```
 
 **Extended functionality:**
-
 ```
 github.com/charmbracelet/glamour      # Markdown rendering
 charm.land/huh/v2                     # Forms

@@ -1856,10 +1856,11 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	ownerPID := 0
+	ownerIdentity := ""
 	reapOwner := func() {
 		if ownerPID > 0 {
 			killDetachFixtureGroup(t, ownerPID)
-			waitForDetachFixtureExit(t, ownerPID)
+			waitForDetachFixtureExit(t, ownerPID, ownerIdentity)
 			ownerPID = 0
 		}
 	}
@@ -1913,6 +1914,10 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 		t.Fatalf("read detached Run owner: run=%+v found=%v error=%v", ownedRun, found, errors.Join(runErr, closeErr))
 	}
 	ownerPID = *ownedRun.OwnerPID
+	ownerIdentity, err = store.OwnerProcessIdentity(t.Context(), ownerPID)
+	if err != nil {
+		t.Fatalf("record detached Run owner %d start identity: %v", ownerPID, err)
+	}
 	if err := syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL); err != nil && !errors.Is(err, syscall.ESRCH) {
 		t.Fatalf("kill caller process group: %v", err)
 	}

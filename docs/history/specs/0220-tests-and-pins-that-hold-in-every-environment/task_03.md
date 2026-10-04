@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0220-tests-and-pins-that-hold-in-every-environment
-status: pending
+status: failed
 type: qa
 complexity: high
 ---

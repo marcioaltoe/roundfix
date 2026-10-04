@@ -1,0 +1,7 @@
+Outside source observed through web reader on 2026-10-03 after curl network sandbox denial.
+URL: https://raw.githubusercontent.com/apple-oss-distributions/xnu/main/bsd/kern/kern_sig.c
+Lines 1612-1624: killpg1 iterates the requested process group, filters out system, init and zombie processes, and returns EPERM under POSIX when no permitted member was counted.
+Exact key expressions:
+p->p_stat != SZOMB
+karg.nfound > 0 ? 0 : (posix ? EPERM : ESRCH)
+This explains why an existing zombie-only group can reject the null signal; live membership, rather than signal permission, is the needed observable.

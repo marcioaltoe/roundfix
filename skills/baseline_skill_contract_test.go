@@ -24,12 +24,6 @@ var updateDerivedDigests = flag.Bool("update", false, "regenerate derived digest
 
 const baselineDigestRegenerationHint = "run 'make baseline-digests'"
 
-// upstreamManagedSkillTreeDigest pins the tree of every upstream-managed skill
-// declared in skills-lock.json. It moves only when that declared set changes on
-// purpose; three tests read this one constant so a legitimate change edits one
-// line instead of three.
-const upstreamManagedSkillTreeDigest = "8832b7acd7fb65ec196f7108900b95f0b1bdc9065a707e70ff4b80b1f605ec1c"
-
 type baselineDigestTargetResult struct {
 	SchemaVersion *int    `json:"schemaVersion"`
 	Type          *string `json:"type"`
@@ -467,9 +461,7 @@ func TestAuthorialSkillSync(t *testing.T) {
 	if err := json.Unmarshal(lockBytes, &lock); err != nil {
 		t.Fatalf("decode skills lock: %v", err)
 	}
-	if got := upstreamManagedSkillDigest(t, repoRoot, lock.Skills); got != upstreamManagedSkillTreeDigest {
-		t.Fatalf("upstream-managed skill tree digest = %q, want %q", got, upstreamManagedSkillTreeDigest)
-	}
+	assertUpstreamManagedSkillLocksMatch(t, repoRoot, lock.Skills)
 }
 
 func TestAuthorialSkillSyncUpdateModeRoundTrip(t *testing.T) {
@@ -1221,9 +1213,7 @@ func TestAuthoringConstraintOwnership(t *testing.T) {
 		})
 	}
 
-	if got := upstreamManagedSkillDigest(t, repoRoot, lock.Skills); got != upstreamManagedSkillTreeDigest {
-		t.Fatalf("upstream-managed skill tree digest = %q, want %q", got, upstreamManagedSkillTreeDigest)
-	}
+	assertUpstreamManagedSkillLocksMatch(t, repoRoot, lock.Skills)
 }
 
 func TestUpstreamADRFormatUnchanged(t *testing.T) {
@@ -1234,10 +1224,8 @@ func TestUpstreamADRFormatUnchanged(t *testing.T) {
 		filepath.Join(repoRoot, "skills-lock.json"),
 	)
 	var lock struct {
-		Version int `json:"version"`
-		Skills  map[string]struct {
-			ComputedHash string `json:"computedHash"`
-		} `json:"skills"`
+		Version int                        `json:"version"`
+		Skills  map[string]json.RawMessage `json:"skills"`
 	}
 	if err := json.Unmarshal(lockBytes, &lock); err != nil {
 		t.Fatalf("decode skills lock: %v", err)
@@ -1246,23 +1234,7 @@ func TestUpstreamADRFormatUnchanged(t *testing.T) {
 		t.Fatalf("unexpected skills lock contract: version=%d skills=%d", lock.Version, len(lock.Skills))
 	}
 
-	names := make([]string, 0, len(lock.Skills))
-	for name := range lock.Skills {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	upstreamDigest := sha256.New()
-	for _, name := range names {
-		folderDigest, err := SkillFolderHash(t.Context(), filepath.Join(repoRoot, ".agents", "skills", name))
-		if err != nil {
-			t.Fatalf("hash upstream-managed skill %q: %v", name, err)
-		}
-		_, _ = upstreamDigest.Write([]byte(name))
-		_, _ = upstreamDigest.Write([]byte(folderDigest))
-	}
-	if got := hex.EncodeToString(upstreamDigest.Sum(nil)); got != upstreamManagedSkillTreeDigest {
-		t.Fatalf("upstream-managed skill tree digest = %q, want %q", got, upstreamManagedSkillTreeDigest)
-	}
+	assertUpstreamManagedSkillLocksMatch(t, repoRoot, lock.Skills)
 
 	const wantADRFormatSHA256 = "944c92aa790e8fbdc9199640b170979abb8a34ba8d0fe18c2a01a63bce140ca0"
 	adrFormat := readBaselineSkillContractFile(
@@ -1515,27 +1487,125 @@ func assertSkillTreesEqual(t *testing.T, canonicalRoot, distributedRoot string) 
 	}
 }
 
-func upstreamManagedSkillDigest(
-	t *testing.T,
-	repoRoot string,
-	managed map[string]json.RawMessage,
-) string {
+type upstreamManagedSkillLock struct {
+	ComputedHash string `json:"computedHash"`
+}
+
+func assertUpstreamManagedSkillLocksMatch(t *testing.T, repoRoot string, managed map[string]json.RawMessage) {
 	t.Helper()
 	names := make([]string, 0, len(managed))
 	for name := range managed {
 		names = append(names, name)
 	}
 	sort.Strings(names)
-	digest := sha256.New()
+	var mismatches []string
 	for _, name := range names {
+		var lock upstreamManagedSkillLock
+		if err := json.Unmarshal(managed[name], &lock); err != nil {
+			t.Errorf("decode lock entry for upstream-managed skill %q: %v", name, err)
+			mismatches = append(mismatches, name)
+			continue
+		}
 		folderDigest, err := SkillFolderHash(t.Context(), filepath.Join(repoRoot, ".agents", "skills", name))
 		if err != nil {
-			t.Fatalf("hash upstream-managed skill %q: %v", name, err)
+			t.Errorf("hash upstream-managed skill %q: %v", name, err)
+			mismatches = append(mismatches, name)
+			continue
 		}
-		_, _ = digest.Write([]byte(name))
-		_, _ = digest.Write([]byte(folderDigest))
+		if folderDigest != lock.ComputedHash {
+			mismatches = append(mismatches, name)
+		}
 	}
-	return hex.EncodeToString(digest.Sum(nil))
+	if len(mismatches) != 0 {
+		t.Errorf("skills-lock.json computedHash differs from installed tree for: %s", strings.Join(mismatches, ", "))
+	}
+}
+
+func TestUpstreamManagedSkillLockNamesAnEditedTree(t *testing.T) {
+	t.Parallel()
+	sourceRoot := filepath.Clean(filepath.Join(".."))
+	const skillName = "bubbletea"
+	tempRoot := t.TempDir()
+	skillRoot := filepath.Join(tempRoot, ".agents", "skills", skillName)
+	if err := copySkillTree(filepath.Join(sourceRoot, ".agents", "skills", skillName), skillRoot); err != nil {
+		t.Fatal(err)
+	}
+	lockBytes := readBaselineSkillContractFile(t, filepath.Join(sourceRoot, "skills-lock.json"))
+	var lock struct {
+		Version int                        `json:"version"`
+		Skills  map[string]json.RawMessage `json:"skills"`
+	}
+	if err := json.Unmarshal(lockBytes, &lock); err != nil {
+		t.Fatalf("decode skills lock: %v", err)
+	}
+	entry, ok := lock.Skills[skillName]
+	if !ok {
+		t.Fatalf("skills lock does not contain %q", skillName)
+	}
+	lock.Skills = map[string]json.RawMessage{skillName: entry}
+	lockBytes, err := json.Marshal(lock)
+	if err != nil {
+		t.Fatalf("encode edited-tree lock: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tempRoot, "skills-lock.json"), lockBytes, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	editedPath := filepath.Join(skillRoot, "SKILL.md")
+	edited, err := os.ReadFile(editedPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(edited) == 0 {
+		t.Fatal("selected upstream-managed skill is empty")
+	}
+	edited[0] ^= 1
+	if err := os.WriteFile(editedPath, edited, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	names := mismatchedUpstreamManagedSkillLocks(t, tempRoot, lock.Skills)
+	if !reflect.DeepEqual(names, []string{skillName}) {
+		t.Fatalf("lock mismatches = %v, want [%s]", names, skillName)
+	}
+}
+
+func mismatchedUpstreamManagedSkillLocks(t *testing.T, repoRoot string, managed map[string]json.RawMessage) []string {
+	t.Helper()
+	names := make([]string, 0, len(managed))
+	for name, raw := range managed {
+		var lock upstreamManagedSkillLock
+		if err := json.Unmarshal(raw, &lock); err != nil {
+			names = append(names, name)
+			continue
+		}
+		folderDigest, err := SkillFolderHash(t.Context(), filepath.Join(repoRoot, ".agents", "skills", name))
+		if err != nil || folderDigest != lock.ComputedHash {
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+	return names
+}
+
+func copySkillTree(sourceRoot, targetRoot string) error {
+	return filepath.WalkDir(sourceRoot, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		relative, err := filepath.Rel(sourceRoot, path)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(targetRoot, relative)
+		if entry.IsDir() {
+			return os.MkdirAll(target, 0o755)
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(target, data, 0o644)
+	})
 }
 
 type baselineSetupSnapshot struct {

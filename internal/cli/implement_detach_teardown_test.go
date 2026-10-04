@@ -10,6 +10,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"syscall"
@@ -107,6 +109,10 @@ func runDetachFixtureDeathTest(t *testing.T, innerTest string, survivor bool) {
 		}
 		return true, "fixture alive"
 	})
+	identity, err := store.OwnerProcessIdentity(t.Context(), ownerPID)
+	if err != nil {
+		t.Fatalf("record fixture %d start identity: %v", ownerPID, err)
+	}
 	killDetachFixtureGroup(t, cmd.Process.Pid)
 	waitErr := testwait.Until(t, "killed inner test binary", ended, (<-chan error)(nil))
 	reaped = true
@@ -119,8 +125,8 @@ func runDetachFixtureDeathTest(t *testing.T, innerTest string, survivor bool) {
 		t.Fatalf("inner binary was not killed by SIGKILL: %v", waitErr)
 	}
 	// No cleanup signal is sent to the fixture before this assertion. Group
-	// absence also proves the fake ACPX and its shell children have exited.
-	waitForDetachFixtureExit(t, ownerPID)
+	// membership also proves the fake ACPX and its shell children have exited.
+	waitForDetachFixtureExit(t, ownerPID, identity)
 }
 
 func killDetachFixtureGroup(t *testing.T, pid int) {
@@ -132,28 +138,133 @@ func killDetachFixtureGroup(t *testing.T, pid int) {
 	switch {
 	case err == nil, errors.Is(err, syscall.ESRCH):
 	case errors.Is(err, syscall.EPERM):
-		// A sandboxed Verification may deny signals to the group; the probe
-		// below skips the test there, so cleanup only records the denial.
-		t.Logf("kill fixture process group %d: %v", pid, err)
+		live, readErr := detachFixtureGroupLiveMembers(pid)
+		if readErr != nil || len(live) != 0 {
+			t.Errorf("kill fixture process group %d: %v; live members=%v; reading error=%v", pid, err, live, readErr)
+		}
 	default:
 		t.Errorf("kill fixture process group %d: %v", pid, err)
 	}
 }
 
-func waitForDetachFixtureExit(t *testing.T, pid int) {
+func waitForDetachFixtureExit(t *testing.T, pid int, identity string) {
 	t.Helper()
 	testwait.Poll(t, fmt.Sprintf("fixture %d and its process group to exit", pid), (<-chan error)(nil), func() (bool, string) {
-		alive := store.ProcessAlive(pid)
-		err := syscall.Kill(-pid, 0)
-		if errors.Is(err, syscall.EPERM) {
-			t.Skipf("probe fixture process group %d: %v; this environment denies the signal the test observes, and the CI Verification gate runs it", pid, err)
-		}
-		if err != nil && !errors.Is(err, syscall.ESRCH) {
-			t.Fatalf("probe fixture process group %d: %v", pid, err)
-		}
-		groupAlive := err == nil
-		return !alive && !groupAlive, fmt.Sprintf("PID alive=%v; process group alive=%v", alive, groupAlive)
+		return detachFixtureEnded(t, pid, identity)
 	})
+}
+
+func detachFixtureEnded(t *testing.T, pid int, identity string) (bool, string) {
+	t.Helper()
+	live, err := detachFixtureGroupLiveMembers(pid)
+	if err != nil {
+		t.Fatalf("read fixture process group %d: %v", pid, err)
+	}
+	if len(live) == 0 {
+		return true, "no live group members"
+	}
+	// A leader that exited can leave live children. Its absence alone is
+	// not proof that the group ended, and its identity need not be readable.
+	if slices.Contains(live, pid) {
+		current, err := store.OwnerProcessIdentity(t.Context(), pid)
+		if errors.Is(err, syscall.ESRCH) || errors.Is(err, os.ErrNotExist) {
+			return false, fmt.Sprintf("fixture %d vanished during identity read; live members=%v", pid, live)
+		}
+		if err != nil {
+			t.Fatalf("read fixture %d start identity: %v", pid, err)
+		}
+		if current != identity {
+			return true, "fixture PID start identity changed"
+		}
+	}
+	return false, fmt.Sprintf("live group members=%v", live)
+}
+
+func TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded(t *testing.T) {
+	// The other Unix fallback intentionally cannot distinguish zombies.
+	if runtime.GOOS != "darwin" && runtime.GOOS != "linux" {
+		return
+	}
+	t.Parallel()
+	input, writer, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = writer.Close() })
+	t.Cleanup(func() { _ = input.Close() })
+	cmd := exec.Command("cat")
+	cmd.Stdin = input
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("start fixture cat: %v", err)
+	}
+	pid := cmd.Process.Pid
+	reaped := false
+	reap := func() error {
+		ended := make(chan error, 1)
+		go func() { ended <- cmd.Wait() }()
+		err := testwait.Until(t, "fixture cat reap", ended, (<-chan error)(nil))
+		reaped = true
+		return err
+	}
+	t.Cleanup(func() {
+		if !reaped {
+			killDetachFixtureGroup(t, pid)
+			if err := reap(); err != nil {
+				t.Logf("reap fixture cat after cleanup: %v", err)
+			}
+		}
+	})
+	if err := input.Close(); err != nil {
+		t.Fatal(err)
+	}
+	live, err := detachFixtureGroupLiveMembers(pid)
+	if err != nil || !slices.Contains(live, pid) {
+		t.Fatalf("live fixture group %d: members=%v error=%v; want child listed", pid, live, err)
+	}
+	identity, err := store.OwnerProcessIdentity(t.Context(), pid)
+	if err != nil {
+		t.Fatalf("record fixture %d start identity: %v", pid, err)
+	}
+	if ended, observation := detachFixtureEnded(t, pid, identity); ended {
+		t.Fatalf("live fixture %d reported ended: %s", pid, observation)
+	}
+	if ended, observation := detachFixtureEnded(t, pid, identity+"-different"); !ended {
+		t.Fatalf("fixture %d with a different recorded identity reported live: %s", pid, observation)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
+	// Do not Wait yet: this test owns the unreaped member and holds it
+	// through both the signal probe and the fixture-ended assertion.
+	testwait.Poll(t, "fixture cat exited but unreaped", (<-chan error)(nil), func() (bool, string) {
+		live, err := detachFixtureGroupLiveMembers(pid)
+		if err != nil {
+			t.Fatalf("read fixture group %d: %v", pid, err)
+		}
+		probeErr := syscall.Kill(pid, 0)
+		if probeErr != nil {
+			t.Fatalf("probe unreaped fixture %d: %v", pid, probeErr)
+		}
+		return len(live) == 0, fmt.Sprintf("live group members=%v", live)
+	})
+	probeErr := syscall.Kill(-pid, 0)
+	if runtime.GOOS == "darwin" {
+		if !errors.Is(probeErr, syscall.EPERM) {
+			t.Fatalf("probe unreaped fixture group %d: got %v, want EPERM", pid, probeErr)
+		}
+	} else if probeErr != nil {
+		t.Fatalf("probe unreaped fixture group %d: got %v, want success", pid, probeErr)
+	}
+	if ended, observation := detachFixtureEnded(t, pid, identity); !ended {
+		t.Fatalf("unreaped fixture %d reported live: %s", pid, observation)
+	}
+	if err := reap(); err != nil {
+		t.Fatalf("fixture cat exit: %v", err)
+	}
+	if err := syscall.Kill(-pid, 0); !errors.Is(err, syscall.ESRCH) {
+		t.Fatalf("probe reaped fixture group %d: got %v, want ESRCH", pid, err)
+	}
 }
 
 // A record requests an inner death-test rendezvous. Normal survival tests
