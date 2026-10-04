@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.34.0] - 2026-10-04
+
+### A review through Claude that keeps its verdict
+
+- **Refused permissions.** A read-only review turn that ends `end_turn` after the Claude session refused a permission is classified by its verdict instead of as a transport anomaly. Its findings get ids that `review dispose` accepts, and the review record gains `permissionRefused`. Any other nonzero acpx exit still blocks.
+- **Prompt too long.** An answer that starts `Prompt is too long` blocks with the reason `review prompt too long: <line>` instead of a protocol error.
+- **Token bound.** A Claude review estimates its whole prompt at two bytes per token and refuses, before any provider call, a prompt above 500,000 tokens (half of a 1,000,000-token context window). The record reports `estimatedPromptTokens`. Codex keeps its 917,504-byte diff bound.
+
 ## [0.33.0] - 2026-10-04
 
 ### Tests and pins that hold in every environment
