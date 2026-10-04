@@ -48,6 +48,11 @@ fixed ceiling from these files.
    `.agents/skills/roundfix/SKILL.md`, run `make skills-sync` so the mirrors
    equal their canonical files, and re-record the version with
    `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`.
+   Running that record command is an implementation step of this Task, not
+   part of its Verification: run it yourself after the last skill edit. Never
+   write a digest by hand. The record flag never replaces a recorded digest, so
+   if an entry for the raised version already exists with another digest,
+   delete that entry and run the record command again.
 6. MUST NOT edit the `### QA settlement` section of any skill, any other
    command reference or guide, `commands.md`, `.roundfixrc.yml`, the ADRs or
    `CONTEXT.md`, and MUST NOT write any file outside the repository.
