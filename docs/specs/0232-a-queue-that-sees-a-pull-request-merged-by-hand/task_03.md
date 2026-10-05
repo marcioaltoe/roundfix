@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0232-a-queue-that-sees-a-pull-request-merged-by-hand
-status: pending
+status: failed
 type: qa
 complexity: high
 ---
