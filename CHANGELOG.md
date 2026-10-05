@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.39.0] - 2026-10-05
+
+### Queue items that stay current with main
+
+- **The record command picks the version.** When an owned skill's content is not recorded under a free version, `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` writes the next patch above the highest recorded version into both front-matter fields and the mirror, then records it. It still never replaces a recorded digest.
+- **Line-scoped derived merge.** A `delivery.derived_paths` declaration can name `lines`: paths plus a pattern. A Pull Request conflict whose hunks differ only on matching lines takes the default branch's side and is regenerated; identical lines between them are kept. Any other difference still parks `pull-request-conflict`. This repository declares the version fields of every `SKILL.md`, so two queued Specs that raise the same skill no longer conflict.
+- **Review-only correction after archive.** A correction that descends from the parked candidate, disposes every review finding and changes only the archived Spec's own records returns the item to review round 2 instead of `corrective-spec-required`.
+- **Implement Task skill.** A command a requirement names is part of the Task's work, even when the Verification runs the same test.
+
 ## [0.38.0] - 2026-10-04
 
 ### An archived retry that needs no recorded candidate
