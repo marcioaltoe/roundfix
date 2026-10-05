@@ -376,7 +376,7 @@ func (owner *agentSessionOwner) runPrepared(ctx context.Context, req agent.Execu
 		record := jevrouter.PromptRecord{
 			RunID: req.RunID, Spec: owner.scope.Spec, ScopeKind: owner.scope.Kind, ScopeID: owner.scope.ID,
 			Category: string(owner.scope.Category), Repository: req.GitRoot, Attempt: owner.attemptNumber,
-			UsageBefore: usageBefore, Latency: latency, Failed: err != nil,
+			UsageBefore: usageBefore, Latency: latency, Failed: err != nil, Reported: result.Router,
 		}
 		if result.Usage.InputTokens != nil {
 			record.InputTokens = *result.Usage.InputTokens

@@ -83,3 +83,19 @@ func TestLedgerRecordsUnreadableUsageAndClampsNegativeDelta(t *testing.T) {
 		t.Fatalf("rows=%+v err=%v", rows, err)
 	}
 }
+
+func TestRouterLineRecordsTheReportedModels(t *testing.T) {
+	home := t.TempDir()
+	now := time.Now()
+	reported := Observation{Models: []string{"a/one", "b/two"}, Providers: []string{"p", "q"}, ResponseID: "last"}
+	if err := (Ledger{HomeDir: home}).Append(PromptRecord{Reported: reported}, now); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := judge.ReadMonth(t.Context(), home, now)
+	if err != nil || len(rows) != 1 {
+		t.Fatalf("rows=%+v err=%v", rows, err)
+	}
+	if rows[0].Model != "a/one, b/two" || rows[0].Provider != "p, q" || rows[0].ResponseID != "last" {
+		t.Fatalf("row=%+v", rows[0])
+	}
+}

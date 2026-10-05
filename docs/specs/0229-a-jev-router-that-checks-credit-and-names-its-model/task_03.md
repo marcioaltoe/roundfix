@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0229-a-jev-router-that-checks-credit-and-names-its-model
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -118,3 +118,76 @@ observation with the prompt's result, and the Judge Log line records it
 - `_prd.md` → User Story 4; Core Feature 5; Success Metric 3
 - `_techspec.md` → The relay; The runner; The Judge Log line; Interfaces; API Contract 6; Testing Approach 4-6; Build Order 3
 - ADR-0234; ADR-0218; ADR-0201
+
+## Result
+
+Implemented the Task 03 slice for Daemon Verification. The relay binds only
+`127.0.0.1`, maps live session tokens to the upstream API through
+`httputil.ReverseProxy`, forwards bodies unchanged, flushes immediately, and
+retains only models, providers, the last response id and the first HTTP 402.
+Whole-body parsing stops at 1 MiB; malformed or oversized bodies still pass
+unchanged. Unknown and released tokens return 404 without contacting upstream;
+upstream failures return 502 without diagnostics. `Close` awaits the serving
+goroutine.
+
+Routed ACPX commands receive one stable loopback base URL per session and the
+existing environment-key placeholder. Normal and disposable session cleanup
+release tokens through `clearSessionState`; releasing the last token closes
+the runner's relay. `RunPrompt` takes the observation on success and failure,
+`runPrepared` copies it into the prompt record, and the existing Judge Log
+fields carry models and providers joined by `", "` and the last response id.
+Credit-refusal naming remains task_04's slice.
+
+Acceptance evidence from focused checks:
+
+- Byte-identical streamed and whole responses, unchanged upstream request body
+  and Authorization, unchanged query, stripped forwarding headers, unknown and
+  released token rejection, model/provider ordering, last id, first 402,
+  malformed/oversized passthrough and serving shutdown are exercised by the
+  `TestRelay*` checks. `TestRelayFlushesBeforeUpstreamFinishes` receives the
+  first streamed bytes before allowing the upstream to finish;
+  `TestRelayKeepsTokensAndTakesIndependent` also checks escaped paths and token
+  isolation.
+- `TestJevRouterSessionPointsOpenCodeAtTheRelay` crosses the compiled fake
+  acpx boundary twice and checks the same loopback URL and key placeholder.
+  The updated `TestJevRouterSessionCarriesThePlaceholderConfig` compares
+  against the configuration built for that observed URL and excludes the
+  sentinel key from configuration, acpx arguments and acpx configuration.
+  `TestJevRouterClearedSessionReleasesItsRelayToken` checks 404 while a second
+  session remains live and listener shutdown after the last token is released.
+- `TestJevRouterPromptReturnsTheRelayObservation` posts through the configured
+  relay to a local upstream on both successful and failed prompts and checks
+  the returned observation and its clearing. `TestRouterLineRecordsTheReportedModels`
+  and `TestJevRouterPromptRecordsTheReportedModels` check one Judge Log line
+  with `a/one, b/two`, `p, q` and `last`. Existing empty-report/schema checks
+  remain in the focused selection; daemon tests exclude the sentinel key from
+  the Judge Log and Run Events and exclude private prompt/output text.
+
+Focused commands:
+
+- `GOCACHE=/tmp/roundfix-task03-gocache rtk proxy go test -count=1 -run 'TestRelay|TestRouterLine|TestJevRouter(Session|Prompt|Cleared)' ./internal/jevrouter ./internal/agent ./internal/daemon`
+  — exit 0 for all three packages against the final source.
+- `GOCACHE=/tmp/roundfix-task03-gocache rtk proxy go test -race -count=1 -run 'TestRelay|TestRouterLine|TestJevRouter(Session|Prompt|Cleared)' ./internal/jevrouter ./internal/agent ./internal/daemon`
+  — exit 0 for all three packages; no race reported.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+- `GOCACHE=/tmp/roundfix-task03-gocache rtk make verify-incremental`
+  — final frozen-tree run exited 0: formatting, vet, repository tests, skill
+  checks and build passed. The first run exited 2 because I edited
+  `internal/agent/jev_router.go` and `internal/jevrouter/relay_test.go` during
+  the tests; the suite guard reported those concurrent edits. The rerun kept
+  the repository unchanged until the gate exited.
+
+The default Go cache initially reported the installed standard-library
+`net/http/httputil` package missing; the isolated task cache resolved it. The
+sandbox denied local test listeners, so the successful checks used approved
+execution with loopback sockets available. Every test HTTP request stays on
+loopback. No live OpenRouter or TypeSafe API request was made.
+
+The authored Verification command was not run. Task status, the Task Graph,
+other Task files and selection/gate/default/Profile behavior were not edited.
+No commit, push or Pull Request was created.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261005T141012Z_a1b532ab932de7ab`
+- Source commit: `f9328e75126d5f42b75ee5be4c489aeaeb7a89bc`

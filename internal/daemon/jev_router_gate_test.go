@@ -676,3 +676,31 @@ func TestJevRouterDefaultGateUsesTheConfiguredCreditFloor(t *testing.T) {
 		t.Fatalf("configured prompt: %v sent=%v", err, runner.ran)
 	}
 }
+
+func TestJevRouterPromptRecordsTheReportedModels(t *testing.T) {
+	gate := &fakeJevRouterGate{home: t.TempDir(), now: time.Now()}
+	reported := jevrouter.Observation{Models: []string{"a/one", "b/two"}, Providers: []string{"p", "q"}, ResponseID: "last"}
+	runner := &routerPromptRunner{result: agent.ExecuteResult{Router: reported}}
+	owner, sink := routerPromptOwner(t, gate, runner)
+	if _, err := owner.Run(t.Context(), agent.ExecuteRequest{RunID: owner.scope.RunID, Prompt: "private prompt"}); err != nil {
+		t.Fatal(err)
+	}
+	if len(gate.records) != 1 || !reflect.DeepEqual(gate.records[0].Reported, reported) {
+		t.Fatalf("records=%+v", gate.records)
+	}
+	rows, err := judge.ReadMonth(t.Context(), gate.home, gate.now)
+	if err != nil || len(rows) != 1 {
+		t.Fatalf("rows=%+v err=%v", rows, err)
+	}
+	if rows[0].Model != "a/one, b/two" || rows[0].Provider != "p, q" || rows[0].ResponseID != "last" {
+		t.Fatalf("row=%+v", rows[0])
+	}
+	raw, err := os.ReadFile(filepath.Join(gate.home, ".roundfix", "judge", gate.now.UTC().Format("2006-01")+".jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertNoRouterSecret(t, string(raw), sink)
+	if strings.Contains(string(raw), "private prompt") {
+		t.Fatal("prompt reached Judge Log")
+	}
+}
