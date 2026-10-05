@@ -474,6 +474,38 @@ func validateAgentSelectionProfile(path string, profile AgentSelectionProfile) e
 	return nil
 }
 
+// SubscriptionRule states the model access policy of ADR-0235.
+const SubscriptionRule = "OpenAI and Anthropic models run only through the codex and claude subscriptions"
+
+const SubscriptionOnlyReason = "subscription_only"
+
+// CheckSubscriptionRule refuses retired routers and OpenRouter selections that
+// can reach models reserved for the codex and claude subscriptions.
+func CheckSubscriptionRule(field, runtime, model string) error {
+	if strings.TrimSuffix(strings.TrimSpace(runtime), "-custom") != "opencode" {
+		return nil
+	}
+	model = strings.TrimSpace(model)
+	provider, remainder, _ := strings.Cut(strings.ToLower(model), "/")
+	if provider == "roundfix-openrouter" {
+		return fmt.Errorf("%s %q names the retired Jev Router; %s", field, model, SubscriptionRule)
+	}
+	if provider != "openrouter" {
+		return nil
+	}
+	author, _, _ := strings.Cut(remainder, "/")
+	author = strings.TrimPrefix(author, "~")
+	author, _, _ = strings.Cut(author, ":")
+	switch author {
+	case "openai", "anthropic", "openrouter", "typesafe":
+	default:
+		if !strings.HasPrefix(author, "@") {
+			return nil
+		}
+	}
+	return fmt.Errorf("%s %q can reach OpenAI or Anthropic models through OpenRouter; %s", field, model, SubscriptionRule)
+}
+
 func normalizeSelection(path string, selection AgentSelection) (AgentSelection, error) {
 	normalized := AgentSelection{
 		Runtime:         strings.TrimSpace(selection.Runtime),

@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"roundfix/internal/config"
-	"roundfix/internal/jevrouter"
 	"roundfix/internal/runevent"
 )
 
@@ -134,9 +133,6 @@ func ClaudeAdapterCommand() string {
 // ACPXRunner is the acpx-backed invocation core. Later migration tasks wire
 // this into Runner after Agent Session lifecycle is available.
 type ACPXRunner struct {
-	RouterEndpoint      string
-	routerRelay         *jevrouter.Relay
-	routerSessions      map[string]routerSession
 	Command             string
 	Environment         []string
 	Notices             io.Writer // nil writes notices to os.Stderr
@@ -151,8 +147,6 @@ type ACPXRunner struct {
 	codexSpawn          codexSpawnDependencies
 	codexResolutions    map[string]codexSpawnResolution
 }
-
-type routerSession struct{ token, baseURL string }
 
 type cancellationTimer interface {
 	C() <-chan time.Time
@@ -1387,6 +1381,9 @@ func (runner *ACPXRunner) applyFullAccess(ctx context.Context, req ExecuteReques
 
 func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, sink runevent.Sink) (result ExecuteResult, err error) {
 	result = ExecuteResult{LogPath: req.LogPath}
+	if err := config.CheckSubscriptionRule("agent model", req.Runtime.ID, req.Runtime.Model); err != nil {
+		return result, &SelectionFailureError{Runtime: req.Runtime.ID, Reason: config.SubscriptionOnlyReason + ": " + err.Error()}
+	}
 	if err := validateACPXPromptRequest(req); err != nil {
 		return result, err
 	}
@@ -1417,33 +1414,6 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 	}
 	classifyFailure := func(agentOutput bool, failure error) error {
 		return runner.classifyNoOutputFailure(ctx, req.ExecuteRequest, sink, agentOutput, failure)
-	}
-	if IsJevRouterSelection(req.Runtime.ID, req.Runtime.Model) {
-		unlock := runner.lockState()
-		relay, session := runner.routerRelay, runner.routerSessions[req.Session]
-		unlock()
-		observed := false
-		observe := func() {
-			if !observed {
-				result.Router = relay.Take(session.token)
-				observed = true
-			}
-		}
-		defer observe()
-		classifyFailure = func(agentOutput bool, failure error) error {
-			observe()
-			if refusal := result.Router.Refusal; refusal != nil {
-				source := strings.TrimSpace(refusal.LimitSource)
-				if source == "" {
-					source = "unspecified"
-				}
-				var batch *BatchFailureError
-				if errors.As(failure, &batch) {
-					batch.Reason = "openrouter_credit_refused: OpenRouter refused a routed request for credit (" + source + ")"
-				}
-			}
-			return runner.classifyNoOutputFailure(ctx, req.ExecuteRequest, sink, agentOutput, failure)
-		}
 	}
 	args, err := acpxPromptArgs(req)
 	if err != nil {
@@ -1597,6 +1567,9 @@ func validateACPXPromptRequest(req ACPXPromptRequest) error {
 }
 
 func validateRuntimeSelection(runtime RuntimeSpec) error {
+	if err := config.CheckSubscriptionRule("agent model", runtime.ID, runtime.Model); err != nil {
+		return &SelectionFailureError{Runtime: runtime.ID, Reason: config.SubscriptionOnlyReason + ": " + err.Error()}
+	}
 	if strings.TrimSpace(runtime.Model) == "" {
 		return errors.New("agent model is required")
 	}
@@ -1617,36 +1590,6 @@ func (runner *ACPXRunner) command() string {
 }
 
 func (runner *ACPXRunner) codexEnvForSession(ctx context.Context, runtime RuntimeSpec, sessionName string) ([]string, error) {
-	if IsJevRouterSelection(runtime.ID, runtime.Model) {
-		if environmentValue(runner.baseEnv(), JevRouterKeyEnv) == "" {
-			return nil, &SelectionFailureError{Runtime: "opencode", Reason: JevRouterKeyMissing + ": " + JevRouterKeyEnv + " is not set"}
-		}
-		unlock := runner.lockState()
-		defer unlock()
-		if err := ctx.Err(); err != nil {
-			return nil, err
-		}
-		if runner.routerRelay == nil {
-			endpoint := runner.RouterEndpoint
-			if endpoint == "" {
-				endpoint = jevrouter.OpenRouterAPI
-			}
-			relay, err := jevrouter.StartRelay(endpoint, nil)
-			if err != nil {
-				return nil, &SelectionFailureError{Runtime: "opencode", Reason: "router relay startup", Err: err}
-			}
-			runner.routerRelay = relay
-		}
-		if runner.routerSessions == nil {
-			runner.routerSessions = make(map[string]routerSession)
-		}
-		session, ok := runner.routerSessions[sessionName]
-		if !ok {
-			session.token, session.baseURL = runner.routerRelay.Open()
-			runner.routerSessions[sessionName] = session
-		}
-		return []string{"OPENCODE_CONFIG_CONTENT=" + jevRouterProviderConfig(session.baseURL)}, nil
-	}
 	if strings.TrimSpace(runtime.ID) != "codex" || runtime.Protocol == ProtocolStdio {
 		return nil, nil
 	}
@@ -1732,22 +1675,7 @@ func (runner *ACPXRunner) clearSessionState(sessionName string) {
 	delete(runner.workStartedSessions, sessionName)
 	delete(runner.sessionSelections, sessionName)
 	delete(runner.codexResolutions, sessionName)
-	var closing *jevrouter.Relay
-	if session, ok := runner.routerSessions[sessionName]; ok {
-		delete(runner.routerSessions, sessionName)
-		if runner.routerRelay.Release(session.token) == 0 {
-			closing = runner.routerRelay
-			runner.routerRelay = nil
-		}
-	}
 	unlock()
-	if closing != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), acpxPreflightCleanupTimeout)
-		defer cancel()
-		if err := closing.Close(ctx); err != nil {
-			runner.warningf("router relay cleanup: %v", err)
-		}
-	}
 }
 
 func (runner *ACPXRunner) lockState() func() {

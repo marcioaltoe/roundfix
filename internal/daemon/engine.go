@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
@@ -18,8 +17,6 @@ import (
 
 	"roundfix/internal/agent"
 	"roundfix/internal/app"
-	"roundfix/internal/jevrouter"
-	"roundfix/internal/judge"
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
@@ -62,80 +59,26 @@ type GHRunner interface {
 
 var ErrStopRequested = errors.New("stop requested")
 
-// JevRouterGate refuses routed prompts before execution and records their cost
-// afterwards under the judge's shared monthly ceiling.
-type JevRouterGate interface {
-	Before(context.Context) (float64, error)
-	After(context.Context, jevrouter.PromptRecord) error
-}
-
-type jevRouterGate struct {
-	deps jevrouter.Deps
-	now  func() time.Time
-}
-
-func (gate *jevRouterGate) Before(ctx context.Context) (float64, error) {
-	spend, err := jevrouter.MonthSpend(ctx, gate.deps, gate.now())
-	if err != nil {
-		return 0, &agent.SelectionFailureError{Runtime: "opencode", Reason: "jev_spend_unreadable: " + err.Error()}
-	}
-	if err := spend.CheckKeyLimit(); err != nil {
-		return 0, &agent.SelectionFailureError{Runtime: "opencode", Reason: err.Error()}
-	}
-	if spend.Total >= spend.Ceiling {
-		return 0, &agent.SelectionFailureError{Runtime: "opencode", Reason: fmt.Sprintf("jev_ceiling_reached: month's Jev spend US$%.4f of US$%.4f", spend.Total, spend.Ceiling)}
-	}
-	var key string
-	for _, entry := range gate.deps.Env {
-		if value, ok := strings.CutPrefix(entry, agent.JevRouterKeyEnv+"="); ok {
-			key = value
-		}
-	}
-	credits, err := jevrouter.ReadCredits(ctx, gate.deps.Client, gate.deps.Endpoint, key)
-	if err != nil {
-		return 0, &agent.SelectionFailureError{Runtime: "opencode", Reason: "jev_spend_unreadable: " + err.Error()}
-	}
-	left, floor := jevrouter.CreditLeft(credits, spend.Key), jevrouter.MinCredit(gate.deps.MinCreditUSD)
-	if left < floor {
-		return 0, &agent.SelectionFailureError{Runtime: "opencode", Reason: fmt.Sprintf("openrouter_credit_low: OpenRouter credit US$%.4f is below the US$%.4f floor", left, floor)}
-	}
-	return spend.KeyUsageMonthly, nil
-}
-
-func (gate *jevRouterGate) After(ctx context.Context, record jevrouter.PromptRecord) error {
-	var key string
-	for _, entry := range gate.deps.Env {
-		if value, ok := strings.CutPrefix(entry, agent.JevRouterKeyEnv+"="); ok {
-			key = value
-		}
-	}
-	record.UsageAfter, record.UsageAfterErr = jevrouter.KeyUsage(ctx, gate.deps.Client, gate.deps.Endpoint, key)
-	return (jevrouter.Ledger{HomeDir: gate.deps.HomeDir}).Append(record, gate.now())
-}
-
 // Dependencies are the engine's explicit collaborators, replacing the CLI
 // package globals that previously wired orchestration.
 type Dependencies struct {
-	Runner                agent.Runner
-	JevRouter             JevRouterGate
-	JevMonthlyCeilingUSD  float64 // zero keeps the judge's built-in ceiling
-	JevRouterMinCreditUSD float64 // zero keeps the built-in credit floor
-	Verifier              Verifier
-	Committer             Committer
-	Pusher                Pusher
-	Source                ReviewSourceResolver
-	Runs                  RunStateStore
-	WriteGuard            WriteBoundaryGuard
-	Worktree              WorktreeSnapshotter
-	TaskWorktrees         TaskWorktreeManager
-	PriorChanges          PriorChangedResolver
-	MechanicalStage       QAMechanicalStage
-	SettlementChecker     SettlementChecker
-	Auditor               func() app.AuditingBinary
-	GH                    GHRunner
-	Sink                  runevent.Sink
-	Now                   func() time.Time
-	Progress              io.Writer
+	Runner            agent.Runner
+	Verifier          Verifier
+	Committer         Committer
+	Pusher            Pusher
+	Source            ReviewSourceResolver
+	Runs              RunStateStore
+	WriteGuard        WriteBoundaryGuard
+	Worktree          WorktreeSnapshotter
+	TaskWorktrees     TaskWorktreeManager
+	PriorChanges      PriorChangedResolver
+	MechanicalStage   QAMechanicalStage
+	SettlementChecker SettlementChecker
+	Auditor           func() app.AuditingBinary
+	GH                GHRunner
+	Sink              runevent.Sink
+	Now               func() time.Time
+	Progress          io.Writer
 }
 
 // Engine executes one resolve cycle over a validated plan and exposes Final
@@ -826,20 +769,6 @@ func NewEngine(deps Dependencies) (*Engine, error) {
 	}
 	if deps.Now == nil {
 		deps.Now = time.Now
-	}
-	if deps.JevRouter == nil {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return nil, fmt.Errorf("create Jev Router gate: resolve Home: %w", err)
-		}
-		questions, err := judge.Load()
-		if err != nil {
-			return nil, fmt.Errorf("create Jev Router gate: load ceiling: %w", err)
-		}
-		deps.JevRouter = &jevRouterGate{deps: jevrouter.Deps{
-			Env: os.Environ(), HomeDir: home, MinCreditUSD: deps.JevRouterMinCreditUSD,
-			Endpoint: "https://openrouter.ai/api/v1", Ceiling: questions.WithMonthlyCeiling(deps.JevMonthlyCeilingUSD).MonthlyCeilingUSD,
-		}, now: deps.Now}
 	}
 	if deps.Progress == nil {
 		deps.Progress = io.Discard
