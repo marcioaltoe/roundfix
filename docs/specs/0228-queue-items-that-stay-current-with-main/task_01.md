@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0228-queue-items-that-stay-current-with-main
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -83,3 +83,51 @@ derived merge of task_02 runs the same command.
 - `_prd.md` → Goals 1, 2 and 4; Core Feature 1; Success Metric 1; Success Metric 4
 - `_techspec.md` → The record command chooses the version; API Contract 1; Testing Approach 1; Build Order 1
 - ADR-0233; ADR-0189
+
+## Result
+
+Record mode now appends one patch above the highest recorded version when
+the declared version collides with different content or is stale. It validates
+every canonical/mirror folder before writing, ignoring only frontmatter
+version lines. A raise rewrites those lines in both copies, preserves body
+examples and reference files, and records the digest read from the rewritten
+mirror on disk. Existing history is cloned and retained; patch overflow
+refuses instead of wrapping into a lower version.
+
+Acceptance evidence:
+
+- Colliding and stale versions: the three new raise tests exercise the
+  version choice and disposable canonical/mirror roots. The disk cases
+  assert both fields become `0.1.27`, the recorded digest equals the
+  rewritten mirror's folder hash, and recording again leaves history intact.
+- Mirror drift and immutable history: disposable body, reference and extra
+  file drift cases refuse with `make skills-sync`, preserving both trees
+  and history. Each refusal also includes an earlier skill needing a raise,
+  proving preflight prevents partial writes. The two intentionally changed
+  record-mode cases assert appended versions and unchanged input history;
+  all other existing cases remain unedited.
+- Check mode: the existing changed-content and unrecorded-version refusal
+  tests remain unedited and pass with their original message assertions.
+
+Focused checks:
+
+- Before implementation,
+  `GOCACHE=/private/tmp/roundfix-0228-task01-gocache rtk proxy go test -count=1 ./skills -run '^TestRecordingRaisesAVersion'`
+  exited 1 with the existing colliding and stale version refusals.
+- After implementation,
+  `GOCACHE=/private/tmp/roundfix-0228-task01-gocache rtk proxy go test -count=1 -v ./skills -run 'TestRecording|TestAChangedOwnedSkill|TestAnUnrecordedOwnedSkill'`
+  exited 0 for the raise, rewrite, mirror-drift, history and check-mode cases.
+- After the final test edit,
+  `GOCACHE=/private/tmp/roundfix-0228-task01-gocache rtk proxy go test -count=1 ./skills`
+  exited 0 (`ok roundfix/skills`, 1.323s), covering all existing skills tests.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+Only the assigned Result and the two owned-skill recording test files were
+edited. No shipped skill content or version record changed. The declared
+Verification command was not run; Task status, settlement and commit remain
+Daemon-owned. No follow-up outside this Task's slice was implemented.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261005T101255Z_f599a5cc8ea7f4c2`
+- Source commit: `0219c9a3030ed9f2c8ae4faba35b96eedaa1bc19`
