@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-04
-spec: null
+spec: 0227-reconcile-releases-the-runs-of-merged-specs
 ---
 
 # Reconcile keeps the Runs of Specs that are already merged
