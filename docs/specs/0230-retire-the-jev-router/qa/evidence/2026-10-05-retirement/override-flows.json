@@ -1,0 +1,170 @@
+[
+  {
+    "command": [
+      "./bin/roundfix",
+      "implement",
+      "--spec",
+      "0230-retire-the-jev-router",
+      "--agent",
+      "opencode",
+      "--model",
+      "roundfix-openrouter/typesafe/jev-router",
+      "--reasoning-effort",
+      "high",
+      "--agent-command",
+      "/usr/bin/false",
+      "--no-input"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "Preflight failed\n\nReason:\n  invocation preferred.model \"roundfix-openrouter/typesafe/jev-router\" names the retired Jev Router; OpenAI and Anthropic models run only through the codex and claude subscriptions\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix implement --help' for usage.\n",
+    "repeat": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "implement",
+      "--spec",
+      "0230-retire-the-jev-router",
+      "--agent",
+      "opencode",
+      "--model",
+      "roundfix-openrouter/typesafe/jev-router",
+      "--reasoning-effort",
+      "high",
+      "--agent-command",
+      "/usr/bin/false",
+      "--no-input"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "Preflight failed\n\nReason:\n  invocation preferred.model \"roundfix-openrouter/typesafe/jev-router\" names the retired Jev Router; OpenAI and Anthropic models run only through the codex and claude subscriptions\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix implement --help' for usage.\n",
+    "repeat": 2
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "implement",
+      "--spec",
+      "0230-retire-the-jev-router",
+      "--agent",
+      "opencode",
+      "--model",
+      "openrouter/openai/gpt-6.1-sol",
+      "--reasoning-effort",
+      "high",
+      "--agent-command",
+      "/usr/bin/false",
+      "--no-input"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "Preflight failed\n\nReason:\n  invocation preferred.model \"openrouter/openai/gpt-6.1-sol\" can reach OpenAI or Anthropic models through OpenRouter; OpenAI and Anthropic models run only through the codex and claude subscriptions\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix implement --help' for usage.\n",
+    "repeat": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "implement",
+      "--spec",
+      "0230-retire-the-jev-router",
+      "--agent",
+      "opencode",
+      "--model",
+      "openrouter/openai/gpt-6.1-sol",
+      "--reasoning-effort",
+      "high",
+      "--agent-command",
+      "/usr/bin/false",
+      "--no-input"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "Preflight failed\n\nReason:\n  invocation preferred.model \"openrouter/openai/gpt-6.1-sol\" can reach OpenAI or Anthropic models through OpenRouter; OpenAI and Anthropic models run only through the codex and claude subscriptions\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix implement --help' for usage.\n",
+    "repeat": 2
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "implement",
+      "--spec",
+      "0230-retire-the-jev-router",
+      "--agent",
+      "opencode",
+      "--model",
+      "openrouter/anthropic/claude-opus-5.5",
+      "--reasoning-effort",
+      "high",
+      "--agent-command",
+      "/usr/bin/false",
+      "--no-input"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "Preflight failed\n\nReason:\n  invocation preferred.model \"openrouter/anthropic/claude-opus-5.5\" can reach OpenAI or Anthropic models through OpenRouter; OpenAI and Anthropic models run only through the codex and claude subscriptions\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix implement --help' for usage.\n",
+    "repeat": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "implement",
+      "--spec",
+      "0230-retire-the-jev-router",
+      "--agent",
+      "opencode",
+      "--model",
+      "openrouter/anthropic/claude-opus-5.5",
+      "--reasoning-effort",
+      "high",
+      "--agent-command",
+      "/usr/bin/false",
+      "--no-input"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "Preflight failed\n\nReason:\n  invocation preferred.model \"openrouter/anthropic/claude-opus-5.5\" can reach OpenAI or Anthropic models through OpenRouter; OpenAI and Anthropic models run only through the codex and claude subscriptions\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix implement --help' for usage.\n",
+    "repeat": 2
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "implement",
+      "--spec",
+      "0230-retire-the-jev-router",
+      "--agent",
+      "opencode",
+      "--model",
+      "openrouter/openrouter/auto",
+      "--reasoning-effort",
+      "high",
+      "--agent-command",
+      "/usr/bin/false",
+      "--no-input"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "Preflight failed\n\nReason:\n  invocation preferred.model \"openrouter/openrouter/auto\" can reach OpenAI or Anthropic models through OpenRouter; OpenAI and Anthropic models run only through the codex and claude subscriptions\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix implement --help' for usage.\n",
+    "repeat": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "implement",
+      "--spec",
+      "0230-retire-the-jev-router",
+      "--agent",
+      "opencode",
+      "--model",
+      "openrouter/openrouter/auto",
+      "--reasoning-effort",
+      "high",
+      "--agent-command",
+      "/usr/bin/false",
+      "--no-input"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "Preflight failed\n\nReason:\n  invocation preferred.model \"openrouter/openrouter/auto\" can reach OpenAI or Anthropic models through OpenRouter; OpenAI and Anthropic models run only through the codex and claude subscriptions\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix implement --help' for usage.\n",
+    "repeat": 2
+  }
+]

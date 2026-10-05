@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0230-retire-the-jev-router
-status: pending
+status: failed
 type: qa
 complexity: high
 ---
