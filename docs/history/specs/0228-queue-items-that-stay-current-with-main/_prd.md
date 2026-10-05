@@ -1,9 +1,18 @@
 ---
 spec: 0228-queue-items-that-stay-current-with-main
-status: active
+status: archived
 created: 2026-10-04
 surfaces: [backend, cli, docs]
+archived: "2026-10-05"
+source_slug: 0228-queue-items-that-stay-current-with-main
+qa_override: true
+qa_override_approval: 'maintainer standing authorization 2026-09-30 (unattended program): qa_override only for environment-only partials'
+qa_override_reason: 'Environment-only partial after corrective task_06: Q08 needs the historical 0225 queue item, which no longer exists (intervention log entries 157-159 record it), and Q14 has no Pull Request yet; the queue opens it. Every behavior row passed, including the real SKILL.md version collision.'
+qa_override_qa_outcome: partial
+qa_override_qa_task_status: failed
+qa_override_revision: 3ef4d88faf1ed9ecc6edcddc61206707cfd3e85e
 ---
+
 
 # Queue items that stay current with main
 
