@@ -111,9 +111,9 @@ records this Spec's raise with the record command on the tree it starts from.
    above the highest recorded version, in both version fields of the
    canonical `SKILL.md` and its mirror, then records it (ADR-0233).
 2. **Line-scoped derived paths.** A derived-path declaration may name paths
-   whose conflicts are resolved line by line: a conflict whose hunks hold
-   only lines matching the declared pattern takes the default branch's side
-   of each hunk, and the regeneration may change those paths only on matching
+   whose conflicts are resolved line by line: a conflict whose hunks differ only on lines matching the declared
+   pattern (identical lines between them are kept) takes the default
+   branch's side of each hunk, and the regeneration may change those paths only on matching
    lines. This repository declares the version fields of every `SKILL.md` for
    the owned-skill record command (ADR-0233).
 3. **A review-only correction returns to round 2.** A Delivery Retry of a
@@ -195,7 +195,8 @@ The outside-evidence row rests on sources this Spec did not produce:
 
 - The record command chooses the version; a merge regenerates it. See
   ADR-0233.
-- Line-scoped derived paths resolve only conflict hunks of matching lines.
+- Line-scoped derived paths resolve only conflict hunks that differ on matching
+  lines alone.
   See ADR-0233.
 - A review-only correction after archive returns to round 2. See ADR-0233.
 

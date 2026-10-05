@@ -31,8 +31,9 @@ Three rules settle it:
   digest, and the check without the flag still refuses unrecorded content.
 - A derived-path declaration may name line-scoped paths with a line pattern.
   At a Pull Request conflict, a conflicted line-scoped path whose every
-  conflict hunk holds only matching lines on both sides takes the default
-  branch's side of each hunk; any other hunk keeps it a source conflict. The
+  conflict hunk has the same number of lines on both sides and differs only on matching lines (identical lines between them are kept) takes the
+  default branch's side of each hunk; any other hunk keeps it a source
+  conflict. The
   regeneration may then change a line-scoped path only on matching lines. This
   repository declares the two version fields of every `SKILL.md` as line-scoped
   for the record command, so two items that raise the same skill merge with
