@@ -232,7 +232,9 @@ func (body *relayBody) collect(data []byte) {
 	if body.oversized {
 		return
 	}
-	if !body.stream && len(body.buffer)+len(data) > relayBodyLimit {
+	// The limit bounds a whole body, or one line of a stream; finishLine resets
+	// it for the next line.
+	if len(body.buffer)+len(data) > relayBodyLimit {
 		body.buffer = nil
 		body.oversized = true
 		return

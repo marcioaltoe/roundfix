@@ -269,3 +269,35 @@ func TestRelayKeepsTokensAndTakesIndependent(t *testing.T) {
 		t.Fatal("release removed another token")
 	}
 }
+
+func TestRelayBoundsAnOversizedStreamedLine(t *testing.T) {
+	t.Parallel()
+	long := "data: {\"model\":\"" + strings.Repeat("x", 2*relayBodyLimit) + "\"}\n"
+	next := "data: {\"model\":\"a/after\"}\n"
+	var seen [][]byte
+	peak := 0
+	body := &relayBody{
+		ReadCloser: io.NopCloser(strings.NewReader(long + next)),
+		stream:     true,
+		observe:    func(line []byte) { seen = append(seen, append([]byte(nil), line...)) },
+	}
+	chunk := make([]byte, 64<<10)
+	var forwarded strings.Builder
+	for {
+		n, err := body.Read(chunk)
+		forwarded.Write(chunk[:n])
+		peak = max(peak, len(body.buffer))
+		if err != nil {
+			break
+		}
+	}
+	if forwarded.String() != long+next {
+		t.Fatal("streamed bytes changed")
+	}
+	if peak > relayBodyLimit {
+		t.Fatalf("buffered %d bytes of one streamed line, limit %d", peak, relayBodyLimit)
+	}
+	if len(seen) != 1 || string(seen[0]) != "{\"model\":\"a/after\"}" {
+		t.Fatalf("observed %d lines; want only the line after the oversized one", len(seen))
+	}
+}
