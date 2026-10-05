@@ -149,6 +149,15 @@ type ItemHistory interface {
 	RunStart(ctx context.Context, gitRoot, runID string) (string, error)
 }
 
+type ReviewCorrection struct {
+	Accepted bool
+	Reason   string
+}
+
+type ReviewCorrectionProver interface {
+	ProveReviewCorrection(ctx context.Context, workDir string, archivedSpecs []string, candidate, head string) (ReviewCorrection, error)
+}
+
 type RetryResult struct {
 	SpecSlug      string
 	Blocker       string
@@ -213,6 +222,7 @@ type ConflictResolution struct {
 }
 
 type EngineDependencies struct {
+	Corrections   ReviewCorrectionProver
 	Conflicts     ConflictResolver
 	Prerequisites PrerequisiteReader
 	Workspace     ItemWorkspace
@@ -237,6 +247,7 @@ type EngineDependencies struct {
 type Engine struct {
 	policyRefusals map[string]bool
 
+	corrections   ReviewCorrectionProver
 	conflicts     ConflictResolver
 	prerequisites PrerequisiteReader
 	store         *store.Store
@@ -285,6 +296,7 @@ func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
 		checkInterval = defaultCheckInterval
 	}
 	return &Engine{
+		corrections:   dependencies.Corrections,
 		conflicts:     dependencies.Conflicts,
 		store:         runStore,
 		prerequisites: dependencies.Prerequisites,
@@ -428,13 +440,27 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 		}
 		head := strings.TrimSpace(state.Head)
 		if head != candidate {
-			return RetryResult{}, fmt.Errorf(
-				"retry Delivery Queue item %q: archived Specs %s were reviewed at parked candidate head %q, but the item head is %q; author a corrective Spec with its own authorization and QA gate",
-				specSlug,
-				archivedSpecs,
-				candidate,
-				head,
-			)
+			proof := ReviewCorrection{}
+			suffix := ""
+			if engine.corrections != nil && head != "" {
+				slugs := strings.Split(archivedSpecs, ",")
+				for index := range slugs {
+					slugs[index] = strings.TrimSpace(slugs[index])
+				}
+				proof, err = engine.corrections.ProveReviewCorrection(ctx, workDir, slugs, candidate, head)
+				if err != nil {
+					fmt.Fprintf(engine.log, "roundfix: review correction proof: Delivery Queue item %s: %v\n", specSlug, err)
+					proof = ReviewCorrection{Reason: err.Error()}
+				}
+				suffix = " (" + proof.Reason + ")"
+			}
+			if !proof.Accepted {
+				return RetryResult{}, fmt.Errorf(
+					"retry Delivery Queue item %q: archived Specs %s were reviewed at parked candidate head %q, but the item head is %q%s; author a corrective Spec with its own authorization and QA gate",
+					specSlug, archivedSpecs, candidate, head, suffix,
+				)
+			}
+			item.CandidateCommits = append(item.CandidateCommits, head)
 		}
 		item.Stage = store.DeliveryStageReviewing
 	} else if blockerMatches(item.Blocker, BlockerPullRequestConflict) {

@@ -114,6 +114,31 @@ func reviewDispositionsAtHead(ledger []reviewFindingDisposition, repository, hea
 	return result
 }
 
+// A correction additionally bounds a fixing commit to the reviewed candidate.
+// The ceiling uses only containment in the current head, as before.
+func reviewDispositionValidAtHead(ctx context.Context, git preflight.GitRunner, repository, candidate, head string, d reviewFindingDisposition) (bool, error) {
+	if d.Disposition == "dismissed" {
+		return strings.TrimSpace(d.Evidence) != "" && d.FixedBy == "", nil
+	}
+	if d.Disposition != "fixed" || strings.TrimSpace(d.FixedBy) == "" {
+		return false, nil
+	}
+	pairs := [][2]string{{d.FixedBy, head}}
+	if candidate != "" {
+		pairs = append(pairs, [2]string{candidate, d.FixedBy})
+	}
+	for _, pair := range pairs {
+		if _, err := git.RunGit(ctx, repository, "merge-base", "--is-ancestor", pair[0], pair[1]); err != nil {
+			var exitErr interface{ ExitCode() int }
+			if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+				return false, nil
+			}
+			return false, fmt.Errorf("check disposition fixing commit ancestry: %w", err)
+		}
+	}
+	return true, nil
+}
+
 func closeAtCeiling(plan reviewLineagePlan, ledger []reviewFindingDisposition, git preflight.GitRunner) (reviewRecord, int) {
 	record := plan.candidate
 	prior := plan.prior
@@ -135,10 +160,9 @@ func closeAtCeiling(plan reviewLineagePlan, ledger []reviewFindingDisposition, g
 			if d.Finding != finding.ID || d.Text != finding.Text {
 				continue
 			}
-			valid := d.Disposition == "dismissed" && strings.TrimSpace(d.Evidence) != "" && d.FixedBy == ""
-			if d.Disposition == "fixed" && strings.TrimSpace(d.FixedBy) != "" {
-				_, err := git.RunGit(plan.ctx, record.Repository, "merge-base", "--is-ancestor", d.FixedBy, record.HeadCommit)
-				valid = err == nil
+			valid, err := reviewDispositionValidAtHead(plan.ctx, git, record.Repository, "", record.HeadCommit, d)
+			if err != nil {
+				valid = false
 			}
 			if valid {
 				matches++

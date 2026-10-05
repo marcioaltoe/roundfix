@@ -52,6 +52,7 @@ func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) 
 		git:    preflight.ExecGitRunner{},
 	}
 	return delivery.NewEngine(runStore, delivery.EngineDependencies{
+		Corrections:   workflow,
 		Conflicts:     workflow,
 		Workspace:     workflow,
 		Runner:        workflow,
