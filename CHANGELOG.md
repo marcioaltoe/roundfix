@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.41.0] - 2026-10-05
+
+### A Jev Router that checks credit and names its model
+
+- **Credit floor.** Before each routed prompt, the Jev Router gate reads the OpenRouter account balance (`/api/v1/credits`) and the key's `limit_remaining`, and refuses with `openrouter_credit_low` when the lower of the two is below `jev.router_min_credit_usd`. The floor is set in User Config, and is US$15 when unset; a Project Config value is ignored with a warning. If the balance cannot be read, the prompt is refused as `jev_spend_unreadable`.
+- **Named credit refusal.** An HTTP 402 from OpenRouter during a routed Task is reported as `openrouter_credit_refused` instead of `agent/protocol error`. The fallback still takes the Task only when no Agent work has begun.
+- **Routed model on the Judge Log.** Each routed session reaches OpenRouter through a loopback relay that forwards requests unchanged and records the models, providers and last response id on the prompt's Judge Log line. The key stays in Roundfix's memory and is never written to arguments, files or logs. The relay bounds each streamed line as well as each body.
+
 ## [0.40.0] - 2026-10-05
 
 ### Reconcile releases the Runs of merged Specs
