@@ -51,9 +51,9 @@ clone was removed after its row was recorded.
 | --- | --- | --- | --- | ---: | ---: | --- | --- | --- | ---: |
 | 0194 task_04 (`run_20261004T212840Z_25315d03ee4a1279`) | docs | opencode / roundfix-openrouter/typesafe/jev-router / "" | 7m02s | 2 sent, 0 refused by the gate | 1 attempted; died at OpenRouter | Unresolved; Task failed: `Agent Batch failed after acpx exited with code 1: agent/protocol error` | none: work had begun, so the Work Item failed and no fallback started | 79,070 (turn, 1 of 2 prompts) | US$2.0430 |
 | 0194 task_04 (2026-10-02 default, `run_20261002T210520Z_d60410842cfb639f`) | docs | codex / gpt-5.6-luna / max | 4m35s | 1 | 0 | Clean; Verification passed on attempt 1 | none | 1,800,531 (request-sum) | — |
-| 0200 task_04 | chore | opencode / roundfix-openrouter/typesafe/jev-router / "" | not started | — | — | Not started: the OpenRouter account had about US$5.11 of credit left | — | — | — |
+| 0200 task_04 | chore | opencode / roundfix-openrouter/typesafe/jev-router / "" | not started | — | — | Not started that afternoon: the OpenRouter account had about US$5.11 of credit left. Ran in the evening; see "Chore replays, 2026-10-04 evening" | — | — | — |
 | 0200 task_04 (2026-10-02 default, `run_20261002T212145Z_701d3c4118ab6714`) | chore | codex / gpt-5.6-luna / max | 10m40s | 2 | 1 | Clean; Verification passed on attempt 2 | none | 5,827,127 (request-sum) | — |
-| 0195 task_06 | chore | opencode / roundfix-openrouter/typesafe/jev-router / "" | not started | — | — | Not started: same account credit | — | — | — |
+| 0195 task_06 | chore | opencode / roundfix-openrouter/typesafe/jev-router / "" | not started | — | — | Not started that afternoon: same account credit. Ran in the evening; see "Chore replays, 2026-10-04 evening" | — | — | — |
 | 0195 task_06 (2026-10-02 default, `run_20261002T212145Z_3102fd99c88c4de8`) | chore | codex / gpt-5.6-luna / max | 3m14s | 1 | 0 | Clean; Verification passed on attempt 1 | none | 687,813 (request-sum) | — |
 
 The 0194 replay wrote two `router-prompt` Judge Log lines:
@@ -114,24 +114,161 @@ different prices. The router's first prompt cost ten times less on 2026-10-04
 than on 2026-10-02 for the same outcome. Since neither line records the
 model, the price spread cannot be attributed to a model choice.
 
+## Chore replays, 2026-10-04 evening
+
+The maintainer added credit to the OpenRouter account and approved the two
+`chore` replays. They ran between 21:31 and 21:53 local time
+(2026-10-05T00:31Z to 00:53Z), one after the other, with nothing else using
+the router.
+
+**Setup.** Same protocol as the afternoon, with two differences. The binary
+was `roundfix 0.38.0` (`bin/roundfix`, built from `13894704` with a dirty tree). The scratch
+`.roundfixrc.yml` was the squash commit's own Project Config with five keys
+changed: `profiles.docs` and `profiles.chore` set to the router as preferred
+and `codex / gpt-5.6-luna / max` as the only fallback,
+`worktree.location` under the clone, `notify.enabled: false`,
+`budget.max_run_duration: 60m` and `implement.auto_push: false`. The graph
+declared `qa: declined` with a `qa_reason`. Each clone's push URL pointed at
+a path that does not exist.
+
+The pre-states were rebuilt from the squash commits, `bfebc0e9` (0200) and
+`cad8bb25` (0195), and each Task's Verification failed on its pre-state:
+
+- 0200 task_04: `missing pass: TestThisRepositoryHoldsEveryRequiredExternalSkill`.
+  The restore brought back `.agents/skills/context7/` and removed
+  `context7-cli` and the new test file.
+- 0195 task_06: `TestEveryOwnedSkillVersionIsRecorded` failed with
+  `open testdata/owned-skill-versions.json: no such file or directory`. As on
+  2026-10-02, the restored Roundfix skill was at `0.0.2`, and the version
+  record was absent at the first parent.
+
+**Spend guard.** Before each replay the guard read
+`GET /api/v1/credits` and `GET /api/v1/key`. It would not start a replay
+below US$15 of account credit or above US$40 of key `usage_monthly`. During
+each replay it polled the key every 30 seconds and would have interrupted the
+Run past US$15. It never fired.
+
+| Read | Account credit left | Key `usage_monthly` | Judge Log, month |
+| --- | ---: | ---: | ---: |
+| Before 0200 task_04 | US$34.6799 | US$10.0205 | US$9.2339 |
+| Before 0195 task_06 | US$26.8121 | US$17.8882 | US$15.0431 |
+| After both | US$24.3574 | US$20.3430 | US$16.9907 |
+
+### Measured
+
+| Task | Category | Selection | Wall time | Prompts | Verification repairs | Outcome | Fallback | Tokens | Router cost (Judge Log / key delta) |
+| --- | --- | --- | --- | ---: | ---: | --- | --- | --- | --- |
+| 0200 task_04 (`run_20261005T003215Z_499a8ed2e919d19a`) | chore | opencode / roundfix-openrouter/typesafe/jev-router / "" | 10m33s | 1 sent, 0 refused | 0 | Clean; Verification passed on attempt 1; Task commit `chore: this repository takes its own update` | none | 183,533 (turn); 5,930,832 (OpenCode request-sum) | US$5.8084 / US$7.8678 |
+| 0200 task_04 (2026-10-02 default, `run_20261002T212145Z_701d3c4118ab6714`) | chore | codex / gpt-5.6-luna / max | 10m40s | 2 | 1 | Clean; Verification passed on attempt 2 | none | 5,827,127 (request-sum) | — |
+| 0195 task_06 (`run_20261005T004451Z_4b2afc8dd9b272df`) | chore | opencode / roundfix-openrouter/typesafe/jev-router / "" | 7m32s | 1 sent, 0 refused | 0 | Clean; Verification passed on attempt 1; Task commit `chore: the Roundfix skill declares the version its merged content needs` | none | 120,646 (turn); 2,346,544 (OpenCode request-sum) | US$1.9476 / US$2.4548 |
+| 0195 task_06 (2026-10-02 default, `run_20261002T212145Z_3102fd99c88c4de8`) | chore | codex / gpt-5.6-luna / max | 3m14s | 1 | 0 | Clean; Verification passed on attempt 1 | none | 687,813 (request-sum) | — |
+
+Wall time spans the whole `roundfix implement` command, Preflight included.
+The two 2026-10-02 default replays ran together; these two ran alone.
+
+**Tokens.** The turn figure is what `roundfix runs show` reports. The
+request-sum figure adds every OpenCode step of the session and of the one
+`task` subagent it started, read from OpenCode's local session database:
+input, cache reads, output and reasoning. It is the closest figure to Codex's
+request-sum, but the two runtimes count cache differently, so treat it as an
+order of magnitude.
+
+| Session | Steps | Input | Cache read | Output | Reasoning |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 0200 task_04, main + subagent | 41 + 8 | 699,388 | 5,203,042 | 18,286 | 10,116 |
+| 0195 task_06, main + subagent | 17 + 9 | 326,054 | 2,008,048 | 9,339 | 3,103 |
+
+**Cost.** Each Run wrote one `router-prompt` Judge Log line, `outcome: clear`,
+no error, with an empty `model` and `provider`. The line records the key's
+usage change at the end of the prompt, and OpenRouter kept reporting usage
+after that. The key read 60 seconds after each Run was US$2.0594 higher than
+the 0200 line and US$0.5072 higher than the 0195 line. It then held still
+before the next replay and after the last one. The account's `total_usage`
+moved by the same US$10.3225 as the key. So the key delta is the cost of
+each replay, and the Judge Log understated tonight's spend by US$2.5666, or
+25 %.
+
+| | 0200 task_04 | 0195 task_06 | Total |
+| --- | ---: | ---: | ---: |
+| Judge Log `cost_usd` | US$5.8084 | US$1.9476 | US$7.7560 |
+| Key `usage_monthly` delta | US$7.8678 | US$2.4548 | US$10.3226 |
+| Prompt latency | 583,372 ms | 389,448 ms | |
+
+**Routed model.** It was not observable. The Judge Log line has an empty
+`model` and `response_id`. OpenCode records only the configured
+`roundfix-openrouter/typesafe/jev-router`, because the inline provider does
+not return the routed model to it.
+
+**Tool calls.** All tool calls ran through the router. 0200 task_04 completed
+111 tool calls (88 main, 23 subagent): `bash`, `read`, `edit`, `skill`,
+`grep`, `glob`, `todowrite`, `write` and `task`. 0195 task_06 completed 60
+and had 2 `read` errors, both for `skills/testdata/owned-skill-versions.json`,
+which is absent in that pre-state. No tool call failed in transport.
+
+**What the routed prompts did.**
+
+- 0200 task_04 ran the public update with an upstream source directory, the
+  reconcile preview and confirm, deleted `.agents/skills/context7/`, aligned
+  `skills/recommended.txt` and the digest pin, wrote
+  `internal/cli/this_repository_skill_set_test.go`, and updated the three
+  guides. It ran Doctor under a temporary `HOME`, because that commit's
+  binary rejects the host User Config's `jev` key. The Task commit touched
+  only declared files and the Task file (21 files).
+- 0195 task_06 raised both versions of `.agents/skills/roundfix/SKILL.md`
+  to `0.0.4`, synced the bundle and re-recorded the version file. The commit
+  touched only the three declared files and the Task file.
+
+### Comparison with the 2026-10-02 default
+
+| | 0200 task_04 routed | 0200 task_04 default | 0195 task_06 routed | 0195 task_06 default |
+| --- | --- | --- | --- | --- |
+| Outcome | Clean, attempt 1 | Clean, attempt 2 | Clean, attempt 1 | Clean, attempt 1 |
+| Prompts / repairs | 1 / 0 | 2 / 1 | 1 / 0 | 1 / 0 |
+| Wall time | 10m33s | 10m40s | 7m32s | 3m14s |
+| Request-sum tokens | 5.93 M (OpenCode) | 5.83 M (Codex) | 2.35 M (OpenCode) | 0.69 M (Codex) |
+| Money | US$7.8678 | — (subscription) | US$2.4548 | — (subscription) |
+
+On 0200 task_04 the router matched the default's wall time and needed one
+prompt fewer. On 0195 task_06 it settled the same way in more than twice the
+time and about three times the tokens.
+
 ## What this shows
 
+Updated after the evening's chore replays.
+
 - The ceiling from Spec 0225 works as configured. The gate read US$50 and
-  passed both prompts. Nothing in Roundfix stopped this replay.
-- The binding limit is now the OpenRouter account balance, which the gate
+  passed all four routed prompts of the day. Nothing in Roundfix stopped a
+  replay.
+- The binding limit is the OpenRouter account balance, which the gate
   does not read. With US$40.31 left on the key and about US$5.11 on the
   account, the provider refused mid-Task. Roundfix reported it as an
   `agent/protocol error`, not as a spend refusal, and no fallback ran.
-- Across three routed attempts in two days, the router settled 1 Task
-  (0210 task_02), at US$0.3730. 0194 task_04 failed twice, for US$8.86 in
-  total. The default settled 0194 task_04 in 4m35s on the subscription.
+- The router now has `chore` evidence. It settled both `chore` Tasks on the
+  first Verification attempt, with no repair, the same outcome as the
+  default or better. 0200 task_04 cost US$7.87 and 0195 task_06 cost
+  US$2.45.
+- Across five routed attempts in two days, the router settled 3 Tasks
+  (0210 task_02, 0200 task_04 and 0195 task_06) for US$10.70, or US$3.57 per
+  settled Task. 0194 task_04 failed twice, for US$8.86. Counting the
+  failures, the router spent US$19.55, or US$6.52 per settled Task. The
+  default settled all four Tasks on the subscription, at no marginal cost.
+- The router is not faster. It matched the default on 0200 task_04 and took
+  more than twice as long on 0195 task_06. On 0210 and 0194 it took three to
+  four times as long.
+- The Judge Log understates router cost. Each line records the key's usage
+  change when the prompt ends, and OpenRouter reported another 25 % in the
+  following minute. The gate reads the month's spend from the key, so the
+  ceiling still sees the full cost, but a reading of the Judge Log alone
+  does not. The routed model remains unobservable.
 - The 0194 task_04 pre-state is a poor probe. Restoring only the declared
   files leaves the version ledger at `0.0.6`. The router stops on that
   inconsistency every time and the default works around it, so this replay
   measures caution more than capability.
-- There is still no `chore` evidence for the router.
-- No follow-up Backlog Entry: the router did not settle every Task the
-  default settled.
+- No follow-up Backlog Entry. The protocol's condition covers both
+  categories, and the router did not settle 0194 task_04, which the default
+  settled. For `chore` alone the condition holds, but at US$2.45 to US$7.87
+  per Task against a subscription that settled the same Tasks, the evidence
+  does not support moving `chore` off the default.
 
 ## Cost-reduction proposal
 
