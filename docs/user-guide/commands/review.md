@@ -239,7 +239,8 @@ Spec. When a findings verdict has archived Specs, stderr names those slugs,
 says that an archived Spec is never corrected in place, and tells the operator
 to author a corrective Spec with its own authorization and QA gate. Delivery
 parks that review as `corrective-spec-required`; a no-findings verdict prints
-no corrective-Spec line.
+no corrective-Spec line. The queue resumes without a corrective Spec when the
+correction answers only the review in the archived Spec's own records.
 
 Spec context is bounded at 32 KiB per Spec and 64 KiB in total. When context is
 truncated, the prompt includes `[Spec context truncated]` and the record sets

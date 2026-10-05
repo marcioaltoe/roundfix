@@ -156,10 +156,10 @@ type ReviewCorrectionProver interface {
 2. A conflicted path that matches a declaration's `paths` is resolved as
    today; `paths` takes precedence over `lines`.
 3. A conflicted path that matches a declaration's `lines.paths` is resolved
-   only when every conflict hunk in its working file holds, on both sides,
-   lines that each match `match`. The resolver writes the default branch's
-   side of each hunk, stages the file and marks the declaration matched; a
-   hunk with any other line makes the path a source path, and the merge
+   only when every conflict hunk in its working file has the same number of
+   lines on both sides and every line that differs between them matches
+   `match`; identical lines between them are kept. The resolver writes the default branch's
+   side of each hunk, stages the file and marks the declaration matched; a hunk with any other difference makes the path a source path, and the merge
    aborts and parks `pull-request-conflict: <path>` as today. The resolver
    runs its own merge with `merge.conflictStyle=merge`, so the hunks have the
    two-sided form Git documents.

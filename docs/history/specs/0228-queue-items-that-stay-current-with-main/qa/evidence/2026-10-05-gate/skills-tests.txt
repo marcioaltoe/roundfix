@@ -1,0 +1,7 @@
+Command: ['go', 'test', '-count=1', '-v', './skills', '-run', '^(TestEveryOwnedSkillVersionIsRecorded|TestAChangedOwnedSkillUnderARecordedVersionIsRefused|TestAnUnrecordedOwnedSkillVersionIsRefused|TestRecordingNeverReplacesARecordedVersion|TestRecordingRaisesAVersionRecordedWithOtherContent|TestRecordingRaisesAVersionBelowTheHighestRecorded|TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror)$']
+# ./skills
+open /Users/marcio/Library/Caches/go-build/de/defd4e8c5a797c87c83a137f6fcdb5f916c3d53b6ab199a62e98510fd55c4706-d: operation not permitted
+FAIL	./skills [setup failed]
+FAIL
+
+Exit: 1

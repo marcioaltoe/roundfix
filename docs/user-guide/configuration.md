@@ -697,6 +697,33 @@ Paths must be clean repository-relative files, directories ending in `/`, or
 Go `path.Match` patterns over the whole path. Absolute paths and `..` segments
 are refused with a `delivery.derived_paths` config error.
 
+An entry can also declare optional `lines` for files that contain source and
+regenerated lines:
+
+```yaml
+delivery:
+  derived_paths:
+    - paths: [skills/testdata/owned-skill-versions.json]
+      lines:
+        paths: [.agents/skills/*/SKILL.md, skills/*/SKILL.md]
+        match: '^ *version: '
+      regenerate: go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions
+```
+
+`lines` needs a non-empty `paths` list with the same path rules and a non-empty
+`match` that compiles as a Go regular expression. An incomplete or invalid
+value is refused with a `delivery.derived_paths[<n>].lines` config error.
+Whole-file `paths` takes precedence over `lines.paths`.
+
+For a conflicted `lines.paths` file, the owner takes the default branch's side of
+each conflict hunk only when its sides have the same number of lines and differ
+only on lines matching `match` on both sides; identical lines between them are
+kept. Other hunks keep the file a source conflict and park the item. The resolver
+uses two-sided merge hunks, regardless of the user's conflict style.
+Regeneration may change matching
+lines only when they match before and after, with the file's line count kept;
+any other change aborts with `regenerated <path> outside delivery.derived_paths`.
+
 `delivery.item_binary` declares the Roundfix binary the Delivery Queue builds
 and can run for an item's `implement`, `archive` and `review` steps. It has two
 fields, `build` and `path`; Project Config replaces User Config for this value.

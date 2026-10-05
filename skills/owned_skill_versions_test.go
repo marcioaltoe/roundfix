@@ -2,12 +2,16 @@ package skills
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/fs"
 	"maps"
 	"os"
+	"path/filepath"
 	"reflect"
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -69,6 +73,9 @@ func checkOwnedSkillVersionRecord(record ownedSkillVersionRecord, current map[st
 				continue
 			}
 			if recorded.Digest != entry.Digest {
+				if recording {
+					break
+				}
 				return record, fmt.Errorf("%s: content changed under version %s; raise the version", name, entry.Version)
 			}
 			found = true
@@ -83,10 +90,136 @@ func checkOwnedSkillVersionRecord(record ownedSkillVersionRecord, current map[st
 		if len(entries) > 0 {
 			latest, _ := parseSkillVersion(entries[len(entries)-1].Version)
 			if slices.Compare(version[:], latest[:]) <= 0 {
-				return record, fmt.Errorf("%s: cannot record version %s; it must be higher than every recorded version", name, entry.Version)
+				if latest[2] == ^uint64(0) {
+					return record, fmt.Errorf("%s: cannot raise version %s: patch overflows", name, entries[len(entries)-1].Version)
+				}
+				entry.Version = fmt.Sprintf("%d.%d.%d", latest[0], latest[1], latest[2]+1)
 			}
 		}
 		updated.Skills[name] = append(updated.Skills[name], entry)
+	}
+	return updated, nil
+}
+
+var ownedSkillVersionLine = regexp.MustCompile(`(?m)^ *version: [^\n]*`)
+
+// Only frontmatter is rewritten; matching examples in the body stay intact.
+func mapOwnedSkillVersionLines(data []byte, rewrite func([]byte) []byte) []byte {
+	lines := bytes.SplitAfter(data, []byte("\n"))
+	if len(lines) == 0 || strings.TrimSpace(string(lines[0])) != "---" {
+		return data
+	}
+	for index := 1; index < len(lines); index++ {
+		if strings.TrimSpace(string(lines[index])) == "---" {
+			break
+		}
+		line := lines[index]
+		if ownedSkillVersionLine.Match(line) {
+			lines[index] = rewrite(line)
+		}
+	}
+	return bytes.Join(lines, nil)
+}
+
+func rewriteOwnedSkillVersion(data []byte, version string) []byte {
+	return mapOwnedSkillVersionLines(data, func(line []byte) []byte {
+		prefix := line[:bytes.Index(line, []byte("version: "))+len("version: ")]
+		ending := ""
+		if bytes.HasSuffix(line, []byte("\r\n")) {
+			ending = "\r\n"
+		} else if bytes.HasSuffix(line, []byte("\n")) {
+			ending = "\n"
+		}
+		return []byte(string(prefix) + version + ending)
+	})
+}
+
+func ownedSkillFolderContent(root string) (map[string]string, error) {
+	content := make(map[string]string)
+	tree := os.DirFS(root)
+	err := fs.WalkDir(tree, ".", func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		data, err := fs.ReadFile(tree, path)
+		if err != nil {
+			return err
+		}
+		if path == "SKILL.md" {
+			data = mapOwnedSkillVersionLines(data, func([]byte) []byte {
+				return []byte("version: <version>\n")
+			})
+		}
+		content[path] = string(data)
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("read skill folder %s: %w", root, err)
+	}
+	return content, nil
+}
+
+// Preflight all mirrors and history before any version-line write. Read disk
+// rather than the embedded bundle, which predates any version raise.
+func recordOwnedSkillVersions(ctx context.Context, record ownedSkillVersionRecord, names []string, canonicalRoot, mirrorRoot string) (ownedSkillVersionRecord, error) {
+	current := make(map[string]ownedSkillVersionEntry, len(names))
+	for _, name := range names {
+		canonical, err := ownedSkillFolderContent(filepath.Join(canonicalRoot, name))
+		if err != nil {
+			return record, err
+		}
+		mirror, err := ownedSkillFolderContent(filepath.Join(mirrorRoot, name))
+		if err != nil {
+			return record, err
+		}
+		if !reflect.DeepEqual(canonical, mirror) {
+			return record, fmt.Errorf("%s: mirror differs from canonical skill outside version lines; run make skills-sync", name)
+		}
+		data, err := os.ReadFile(filepath.Join(mirrorRoot, name, "SKILL.md"))
+		if err != nil {
+			return record, fmt.Errorf("read %s skill: %w", name, err)
+		}
+		metadata, ok := parseSkillFrontmatter(string(data))
+		if !ok || !ValidVersion(metadata.Version) {
+			return record, fmt.Errorf("%s has no valid mirror version", name)
+		}
+		digest, err := skillFolderHash(ctx, os.DirFS(mirrorRoot), name, name)
+		if err != nil {
+			return record, err
+		}
+		current[name] = ownedSkillVersionEntry{Version: strings.TrimSpace(metadata.Version), Digest: digest}
+	}
+	updated, err := checkOwnedSkillVersionRecord(record, current, true)
+	if err != nil {
+		return record, err
+	}
+	for _, name := range names {
+		entries := updated.Skills[name]
+		if len(entries) == len(record.Skills[name]) {
+			continue
+		}
+		last := len(entries) - 1
+		if entries[last].Version == current[name].Version {
+			continue
+		}
+		for _, root := range []string{canonicalRoot, mirrorRoot} {
+			path := filepath.Join(root, name, "SKILL.md")
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return record, fmt.Errorf("read skill to raise %s: %w", path, err)
+			}
+			if err := os.WriteFile(path, rewriteOwnedSkillVersion(data, entries[last].Version), 0o644); err != nil {
+				return record, fmt.Errorf("raise skill version %s: %w", path, err)
+			}
+		}
+		digest, err := skillFolderHash(ctx, os.DirFS(mirrorRoot), name, name)
+		if err != nil {
+			return record, err
+		}
+		updated.Skills[name][last].Digest = digest
 	}
 	return updated, nil
 }
@@ -118,7 +251,12 @@ func TestEveryOwnedSkillVersionIsRecorded(t *testing.T) {
 			t.Fatalf("decode owned skill versions: %v", err)
 		}
 	}
-	updated, err := checkOwnedSkillVersionRecord(record, current, *recordSkillVersions)
+	var updated ownedSkillVersionRecord
+	if *recordSkillVersions {
+		updated, err = recordOwnedSkillVersions(t.Context(), record, Names(), "../.agents/skills", ".")
+	} else {
+		updated, err = checkOwnedSkillVersionRecord(record, current, false)
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,14 +299,18 @@ func TestAnUnrecordedOwnedSkillVersionIsRefused(t *testing.T) {
 
 func TestRecordingNeverReplacesARecordedVersion(t *testing.T) {
 	t.Parallel()
+	t.Run("changed digest", func(t *testing.T) {
+		assertRecordingRaisesVersion(t, []ownedSkillVersionEntry{{"1.0.0", "original"}}, ownedSkillVersionEntry{"1.0.0", "changed"}, "1.0.1")
+	})
+	t.Run("lower unrecorded version", func(t *testing.T) {
+		assertRecordingRaisesVersion(t, []ownedSkillVersionEntry{{"1.0.1", "original"}}, ownedSkillVersionEntry{"1.0.0", "new"}, "1.0.2")
+	})
 	for _, test := range []struct {
 		name    string
 		entries []ownedSkillVersionEntry
 		current ownedSkillVersionEntry
 		wantErr string
 	}{
-		{"changed digest", []ownedSkillVersionEntry{{"1.0.0", "original"}}, ownedSkillVersionEntry{"1.0.0", "changed"}, "content changed under version"},
-		{"lower unrecorded version", []ownedSkillVersionEntry{{"1.0.1", "original"}}, ownedSkillVersionEntry{"1.0.0", "new"}, "higher than every recorded version"},
 		{"descending versions", []ownedSkillVersionEntry{{"1.0.1", "new"}, {"1.0.0", "original"}}, ownedSkillVersionEntry{"1.0.2", "next"}, "ascending version order"},
 		{"duplicate version", []ownedSkillVersionEntry{{"1.0.0", "original"}, {"1.0.0", "original"}}, ownedSkillVersionEntry{"1.0.1", "new"}, "ascending version order"},
 		{"unchanged digest", []ownedSkillVersionEntry{{"1.0.0", "original"}}, ownedSkillVersionEntry{"1.0.0", "original"}, ""},

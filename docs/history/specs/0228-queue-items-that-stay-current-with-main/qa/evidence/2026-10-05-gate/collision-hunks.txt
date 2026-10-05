@@ -1,0 +1,55 @@
+['git', '-c', 'merge.conflictStyle=merge', 'merge', '--no-ff', '--no-commit', 'origin/test/qa-collision-main']
+Exit: 1
+Auto-merging .agents/skills/roundfix/SKILL.md
+CONFLICT (content): Merge conflict in .agents/skills/roundfix/SKILL.md
+Auto-merging skills/roundfix/SKILL.md
+CONFLICT (content): Merge conflict in skills/roundfix/SKILL.md
+Auto-merging skills/testdata/owned-skill-versions.json
+CONFLICT (content): Merge conflict in skills/testdata/owned-skill-versions.json
+Automatic merge failed; fix conflicts and then commit the result.
+Recorded preimage for '.agents/skills/roundfix/SKILL.md'
+Recorded preimage for 'skills/roundfix/SKILL.md'
+Recorded preimage for 'skills/testdata/owned-skill-versions.json'
+
+.agents/skills/roundfix/SKILL.md frontmatter:
+---
+name: roundfix
+description: Use Roundfix to plan releases with the read-only Release Plan Command, clean CodeRabbit pull request feedback, diagnose runtime readiness with the Doctor Command, execute a Spec's Task Graph with the Implement Command, monitor Runs through the Supervisor Run Event Stream, reclaim Run storage with the GC Command, archive completed Specs, and, inside daemon-assigned Batch runs, follow the bounded Review Issue or Task resolution contract.
+metadata:
+  category: code-review
+  tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
+<<<<<<< HEAD
+  version: 0.1.31
+  author: Marcio Altoé
+  source: https://github.com/marcioaltoe/roundfix
+version: 0.1.31
+=======
+  version: 0.1.32
+  author: Marcio Altoé
+  source: https://github.com/marcioaltoe/roundfix
+version: 0.1.32
+>>>>>>> origin/test/qa-collision-main
+---
+
+skills/roundfix/SKILL.md frontmatter:
+---
+name: roundfix
+description: Use Roundfix to plan releases with the read-only Release Plan Command, clean CodeRabbit pull request feedback, diagnose runtime readiness with the Doctor Command, execute a Spec's Task Graph with the Implement Command, monitor Runs through the Supervisor Run Event Stream, reclaim Run storage with the GC Command, archive completed Specs, and, inside daemon-assigned Batch runs, follow the bounded Review Issue or Task resolution contract.
+metadata:
+  category: code-review
+  tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
+<<<<<<< HEAD
+  version: 0.1.31
+  author: Marcio Altoé
+  source: https://github.com/marcioaltoe/roundfix
+version: 0.1.31
+=======
+  version: 0.1.32
+  author: Marcio Altoé
+  source: https://github.com/marcioaltoe/roundfix
+version: 0.1.32
+>>>>>>> origin/test/qa-collision-main
+---
+
+After abort:
+HEAD 89cc35ccdf3e9af42e07f71f3e9f98074f1d1e67

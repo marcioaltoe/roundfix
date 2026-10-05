@@ -58,7 +58,7 @@ func TestThisRepositoryDeclaresItsToolsAndDerivedPaths(t *testing.T) {
 	want := []DerivedPathDeclaration{
 		{Paths: []string{"internal/baseline/testdata/catalog.digest", "internal/baseline/testdata/catalog.normalized.json", "internal/baseline/testdata/catalog.diagnostics.golden.json", "internal/baseline/testdata/plan-characterization/*.golden.json"}, Regenerate: "make baseline-digests"},
 		{Paths: []string{"docs/agents/setup-context.json"}, Regenerate: "go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text"},
-		{Paths: []string{"skills/testdata/owned-skill-versions.json"}, Regenerate: "go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions"},
+		{Paths: []string{"skills/testdata/owned-skill-versions.json"}, Lines: &DerivedLineDeclaration{Paths: []string{".agents/skills/*/SKILL.md", "skills/*/SKILL.md"}, Match: "^ *version: "}, Regenerate: "go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions"},
 	}
 	if !reflect.DeepEqual(cfg.Delivery.DerivedPaths, want) {
 		t.Fatalf("derived declarations = %#v", cfg.Delivery.DerivedPaths)

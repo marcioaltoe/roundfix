@@ -1,9 +1,18 @@
 ---
 spec: 0228-queue-items-that-stay-current-with-main
-status: active
+status: archived
 created: 2026-10-04
 surfaces: [backend, cli, docs]
+archived: "2026-10-05"
+source_slug: 0228-queue-items-that-stay-current-with-main
+qa_override: true
+qa_override_approval: 'maintainer standing authorization 2026-09-30 (unattended program): qa_override only for environment-only partials'
+qa_override_reason: 'Environment-only partial after corrective task_06: Q08 needs the historical 0225 queue item, which no longer exists (intervention log entries 157-159 record it), and Q14 has no Pull Request yet; the queue opens it. Every behavior row passed, including the real SKILL.md version collision.'
+qa_override_qa_outcome: partial
+qa_override_qa_task_status: failed
+qa_override_revision: 3ef4d88faf1ed9ecc6edcddc61206707cfd3e85e
 ---
+
 
 # Queue items that stay current with main
 
@@ -111,9 +120,9 @@ records this Spec's raise with the record command on the tree it starts from.
    above the highest recorded version, in both version fields of the
    canonical `SKILL.md` and its mirror, then records it (ADR-0233).
 2. **Line-scoped derived paths.** A derived-path declaration may name paths
-   whose conflicts are resolved line by line: a conflict whose hunks hold
-   only lines matching the declared pattern takes the default branch's side
-   of each hunk, and the regeneration may change those paths only on matching
+   whose conflicts are resolved line by line: a conflict whose hunks differ only on lines matching the declared
+   pattern (identical lines between them are kept) takes the default
+   branch's side of each hunk, and the regeneration may change those paths only on matching
    lines. This repository declares the version fields of every `SKILL.md` for
    the owned-skill record command (ADR-0233).
 3. **A review-only correction returns to round 2.** A Delivery Retry of a
@@ -195,7 +204,8 @@ The outside-evidence row rests on sources this Spec did not produce:
 
 - The record command chooses the version; a merge regenerates it. See
   ADR-0233.
-- Line-scoped derived paths resolve only conflict hunks of matching lines.
+- Line-scoped derived paths resolve only conflict hunks that differ on matching
+  lines alone.
   See ADR-0233.
 - A review-only correction after archive returns to round 2. See ADR-0233.
 

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0228-queue-items-that-stay-current-with-main
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -100,3 +100,75 @@ correction answers only that review (ADR-0233).
 - `_prd.md` → Goals 3 and 4; Core Feature 3; Success Metric 3; Success Metric 4
 - `_techspec.md` → A review-only correction returns to round 2; Interfaces; API Contract 3; Testing Approach 3; Build Order 3
 - ADR-0233; ADR-0197; ADR-0223; ADR-0165
+
+## Result
+
+Implemented the bounded review-correction retry path. `EngineDependencies`
+now accepts a `ReviewCorrectionProver`; the command workflow provides it. A
+proved moved head is appended to the candidate commits and resumes at
+`reviewing`. A refused proof or proof error names its reason in the existing
+corrective-Spec refusal and does not persist any item change. Proof errors
+are also logged. With no prover, the refusal text remains unchanged; an
+unchanged head bypasses the proof.
+
+The workflow reads the item checkout's persisted review record and the
+artifact directory's disposition ledger. It requires a findings record at
+the parked candidate, descendant ancestry, one valid disposition for every
+standing finding, and changed paths confined to the named archived Specs.
+Fixing commits must lie between the candidate and current head. The shared
+`reviewDispositionValidAtHead` helper preserves the ceiling's existing
+head-containment rule while adding the candidate bound for correction proof.
+No queue schema, blocker name, Park Class or other retry branch changed.
+
+### Acceptance evidence
+
+- Accepted correction: `TestAReviewOnlyCorrectionIsProvedFromTheReviewRecord`
+  uses a disposable real repository with one archive correction commit, one
+  finding fixed by that commit and one dismissed with evidence. It also
+  asserts that the persisted record and new head select review round 2.
+  `TestRetryReturnsAReviewOnlyCorrectionToReview` uses the real queue store
+  and a fake prover to assert `reviewing`, the appended candidate and cleared
+  blocker.
+- Refused correction: `TestACorrectionOutsideTheArchivedSpecIsRefused`
+  covers an unrelated file, a sibling archive directory sharing the slug
+  prefix and another Spec. `TestACorrectionWithAnUndisposedFindingIsRefused`
+  covers missing/duplicate dispositions, empty dismissal evidence, mismatched
+  finding text, dispositions at another head, a fix preceding the candidate
+  and a fix absent from the proposed head.
+  `TestACorrectionThatDoesNotDescendIsRefused` covers non-descendant ancestry;
+  `TestReviewCorrectionRequiresTheParkedReviewRecord` covers another record
+  head, another repository and an outcome other than findings.
+  `TestRetryRefusesACorrectionTheProofRejects` asserts the exact reason-bearing
+  refusal and unchanged persisted item for both refusal and proof error,
+  including an error returned alongside an accepted result.
+- Existing behavior: `corrective_spec_test.go`, `archived_head_retry_test.go`
+  and `review_lineage_test.go` remain unedited. Their tests passed in the
+  incremental repository check. All new repositories, records, ledgers and
+  queue stores use disposable directories, not the real `~/.roundfix`.
+
+### Focused checks
+
+- Initial red check:
+  `GOCACHE=/tmp/roundfix-task03-gocache rtk proxy go test ./internal/delivery -run '^TestRetryReturnsAReviewOnlyCorrectionToReview$' -count=1`
+  exited 1 because `ReviewCorrection` and the prover dependency were absent.
+- Focused check after implementation:
+  `GOCACHE=/tmp/roundfix-task03-gocache rtk proxy go test -count=1 ./internal/delivery ./internal/cli -run 'Test(Retry.*(Correction|Corrective)|AReviewOnlyCorrection|ACorrection|ReviewCorrection|ReviewCeiling|ReviewLineage)'`
+  exited 0 for both packages. Earlier fixture runs exposed missing parent
+  directories and a missing Specs Root; the fixture now creates those paths.
+- `GOCACHE=/tmp/roundfix-task03-gocache rtk make verify-incremental`
+  exited 2 in the sandbox: existing process-owner tests could not read the
+  process table, and existing HTTP tests could not bind localhost listeners.
+  The same incremental target rerun as
+  `GOCACHE=/tmp/roundfix-task03-gocache rtk proxy make verify-incremental`
+  with host permissions exited 0: formatting, vet, repository tests, skill
+  checks and build passed.
+
+The Daemon's pre-existing `status: in_progress` is preserved. The declared
+Verification commands were not run; settlement remains Daemon-owned. No
+commit, push or Pull Request was made. Documentation and skill changes remain
+in task_04's slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261005T101255Z_f599a5cc8ea7f4c2`
+- Source commit: `7285be89765cc528894f49d08aae02ae3f04fd2b`

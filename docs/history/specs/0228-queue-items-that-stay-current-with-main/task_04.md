@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0228-queue-items-that-stay-current-with-main
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -99,3 +99,56 @@ rule, and records both skill versions with the record command task_01 changes.
 - `_prd.md` → Goal 2; Core Feature 4
 - `_techspec.md` → Vocabulary Contract; API Contract 2; API Contract 3; Build Order 4
 - ADR-0233; ADR-0187; ADR-0189
+
+## Result
+
+The deliver guides and Roundfix references now describe line-scoped derived
+paths and the review-only correction proof: a moved corrective-spec item can
+return to `reviewing` when every path changed from the candidate to the head
+lies under an archived Spec the blocker names, while other corrections still
+require a corrective Spec. The review guides retain the existing stderr
+corrective-Spec line and document the review-only queue resumption. The
+implement-task skill and repository rule require named generators and the
+owned-skill record command to produce their output, with the record command
+choosing one patch above the highest recorded version.
+
+Focused evidence:
+
+- `rtk make skills-sync` completed after the canonical edits; canonical and
+  shipped mirrors compare byte-identically, and `rtk make skills-sync-check`
+  passed.
+- `GOCACHE=/private/tmp/roundfix-0228-task04-gocache rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  passed and generated the Roundfix `0.1.30` and implement-task `0.0.3`
+  version raises plus their recorded digests. The non-recording focused check
+  `go test -count=1 ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'`
+  also passed.
+- The focused wording checks passed for all required phrases and confirmed
+  that neither deliver surface contains `still refuses a moved head` or
+  `after the item head moved`. `git diff --check` passed.
+- Changed-path inspection found only the assigned Task file, the named guide
+  and skill surfaces, and `skills/testdata/owned-skill-versions.json`; no
+  other Task file or `_tasks.md` changed.
+
+The Task's declared Verification commands were not run; Verification,
+status, settlement and commit remain Daemon-owned. No commit, push or pull
+request was created.
+
+Verification feedback:
+
+- The Daemon's `make verify-changed` attempt passed vet, build and the preceding
+  package checks, then failed in the unrelated
+  `TestRunImplementDetachSurvivesCallerProcessGroupKill` cleanup because the
+  environment denied signaling its disposable process group.
+- Inspecting `internal/cli/implement_detach_teardown_test.go` confirmed the
+  failure was the test's process-group permission boundary, outside this
+  documentation and skill slice. The focused rerun
+  `GOCACHE=/private/tmp/roundfix-0228-task04-gocache rtk proxy go test -count=1 ./internal/cli -run '^TestRunImplementDetachSurvivesCallerProcessGroupKill$'`
+  passed with the required process permission.
+- No implementation repair was necessary; Task 04 files remain limited to the
+  previously recorded scope. The daemon should rerun its configured
+  verification with the environment permission available.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261005T101255Z_f599a5cc8ea7f4c2`
+- Source commit: `857e9fb6f40c8b58f13ab593713dbebabac8cfc8`

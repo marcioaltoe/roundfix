@@ -1,0 +1,169 @@
+COMMAND ['git', 'clone', '--no-hardlinks', '/Users/marcio/.roundfix/worktrees/roundfix-deliver-0228-queue-items-that-stay-current-with-main-e6d47191f729d353-f56b61b3-e3f46a5a/run_20261005T112526Z_f4195dc79490f939', '/private/tmp/roundfix-0228-qa-d0n0kxkq/item']
+Cloning into '/private/tmp/roundfix-0228-qa-d0n0kxkq/item'...
+done.
+
+Exit: 0
+COMMAND ['git', 'config', 'commit.gpgsign', 'false']
+
+Exit: 0
+COMMAND ['git', 'config', 'user.name', 'QA']
+
+Exit: 0
+COMMAND ['git', 'config', 'user.email', 'qa@example.invalid']
+
+Exit: 0
+COMMAND ['go', 'test', '-count=1', '-v', './skills', '-run', '^TestEveryOwnedSkillVersionIsRecorded$', '-record-skill-versions']
+=== RUN   TestEveryOwnedSkillVersionIsRecorded
+    owned_skill_versions_test.go:273: recorded owned skill versions in testdata/owned-skill-versions.json
+--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.01s)
+PASS
+ok  	roundfix/skills	0.351s
+
+Exit: 0
+COMMAND ['go', 'test', '-count=1', '-v', './skills', '-run', '^TestEveryOwnedSkillVersionIsRecorded$']
+=== RUN   TestEveryOwnedSkillVersionIsRecorded
+--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.00s)
+PASS
+ok  	roundfix/skills	0.288s
+
+Exit: 0
+COMMAND ['go', 'test', '-count=1', '-v', './skills', '-run', '^TestEveryOwnedSkillVersionIsRecorded$', '-record-skill-versions']
+=== RUN   TestEveryOwnedSkillVersionIsRecorded
+--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.01s)
+PASS
+ok  	roundfix/skills	0.165s
+
+Exit: 0
+Q02 PASS: both canonical/mirror version fields 0.1.31; exactly one entry added; historical digests unchanged; fresh non-record check and idempotent recording pass.
+COMMAND ['git', 'reset', '--hard', 'HEAD']
+HEAD is now at b957f7cf feat: the real skill version hunk is merged and regenerated
+
+Exit: 0
+COMMAND ['git', 'checkout', '-b', 'test/qa-collision-main']
+Switched to a new branch 'test/qa-collision-main'
+
+Exit: 0
+COMMAND ['git', 'init', '--bare', '/private/tmp/roundfix-0228-qa-d0n0kxkq/origin.git']
+Initialized empty Git repository in /private/tmp/roundfix-0228-qa-d0n0kxkq/origin.git/
+
+Exit: 0
+COMMAND ['git', 'remote', 'set-url', 'origin', '/private/tmp/roundfix-0228-qa-d0n0kxkq/origin.git']
+
+Exit: 0
+COMMAND ['git', 'rev-parse', 'HEAD']
+b957f7cfe233c19e865dfdf80b10465b77bdac75
+
+Exit: 0
+COMMAND ['go', 'test', '-count=1', '-v', './skills', '-run', '^TestEveryOwnedSkillVersionIsRecorded$', '-record-skill-versions']
+=== RUN   TestEveryOwnedSkillVersionIsRecorded
+    owned_skill_versions_test.go:273: recorded owned skill versions in testdata/owned-skill-versions.json
+--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.01s)
+PASS
+ok  	roundfix/skills	0.307s
+
+Exit: 0
+COMMAND ['go', 'test', '-count=1', '-v', './skills', '-run', '^TestEveryOwnedSkillVersionIsRecorded$', '-record-skill-versions']
+=== RUN   TestEveryOwnedSkillVersionIsRecorded
+    owned_skill_versions_test.go:273: recorded owned skill versions in testdata/owned-skill-versions.json
+--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.01s)
+PASS
+ok  	roundfix/skills	0.299s
+
+Exit: 0
+COMMAND ['git', 'add', '.']
+
+Exit: 0
+COMMAND ['git', 'commit', '-m', 'test: default skill edits recorded']
+[test/qa-collision-main f16af2d9] test: default skill edits recorded
+ 5 files changed, 20 insertions(+), 4 deletions(-)
+
+Exit: 0
+COMMAND ['git', 'push', 'origin', 'test/qa-collision-main']
+To /private/tmp/roundfix-0228-qa-d0n0kxkq/origin.git
+ * [new branch]        test/qa-collision-main -> test/qa-collision-main
+ * [new tag]           v0.0.2 -> v0.0.2
+ * [new tag]           v0.1.0 -> v0.1.0
+ * [new tag]           v0.10.0 -> v0.10.0
+ * [new tag]           v0.11.0 -> v0.11.0
+ * [new tag]           v0.12.0 -> v0.12.0
+ * [new tag]           v0.15.0 -> v0.15.0
+ * [new tag]           v0.16.0 -> v0.16.0
+ * [new tag]           v0.17.0 -> v0.17.0
+ * [new tag]           v0.18.0 -> v0.18.0
+ * [new tag]           v0.19.0 -> v0.19.0
+ * [new tag]           v0.20.0 -> v0.20.0
+ * [new tag]           v0.21.0 -> v0.21.0
+ * [new tag]           v0.22.0 -> v0.22.0
+ * [new tag]           v0.23.0 -> v0.23.0
+ * [new tag]           v0.24.0 -> v0.24.0
+ * [new tag]           v0.25.0 -> v0.25.0
+ * [new tag]           v0.26.0 -> v0.26.0
+ * [new tag]           v0.27.0 -> v0.27.0
+ * [new tag]           v0.28.0 -> v0.28.0
+ * [new tag]           v0.29.0 -> v0.29.0
+ * [new tag]           v0.3.1 -> v0.3.1
+ * [new tag]           v0.30.0 -> v0.30.0
+ * [new tag]           v0.31.0 -> v0.31.0
+ * [new tag]           v0.32.0 -> v0.32.0
+ * [new tag]           v0.33.0 -> v0.33.0
+ * [new tag]           v0.34.0 -> v0.34.0
+ * [new tag]           v0.35.0 -> v0.35.0
+ * [new tag]           v0.36.0 -> v0.36.0
+ * [new tag]           v0.37.0 -> v0.37.0
+ * [new tag]           v0.38.0 -> v0.38.0
+ * [new tag]           v0.4.0 -> v0.4.0
+ * [new tag]           v0.5.0 -> v0.5.0
+ * [new tag]           v0.6.0 -> v0.6.0
+ * [new tag]           v0.7.0 -> v0.7.0
+ * [new tag]           v0.8.0 -> v0.8.0
+ * [new tag]           v0.9.0 -> v0.9.0
+
+Exit: 0
+COMMAND ['git', 'symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/test/qa-collision-main']
+
+Exit: 0
+COMMAND ['git', 'symbolic-ref', 'HEAD', 'refs/heads/test/qa-collision-main']
+
+Exit: 0
+COMMAND ['git', 'checkout', '-b', 'test/qa-collision-item', 'b957f7cfe233c19e865dfdf80b10465b77bdac75']
+Switched to a new branch 'test/qa-collision-item'
+
+Exit: 0
+COMMAND ['go', 'test', '-count=1', '-v', './skills', '-run', '^TestEveryOwnedSkillVersionIsRecorded$', '-record-skill-versions']
+=== RUN   TestEveryOwnedSkillVersionIsRecorded
+    owned_skill_versions_test.go:273: recorded owned skill versions in testdata/owned-skill-versions.json
+--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.01s)
+PASS
+ok  	roundfix/skills	0.167s
+
+Exit: 0
+COMMAND ['git', 'add', '.']
+
+Exit: 0
+COMMAND ['git', 'commit', '-m', 'test: item skill edit recorded']
+[test/qa-collision-item 9825e7fb] test: item skill edit recorded
+ 5 files changed, 12 insertions(+), 4 deletions(-)
+
+Exit: 0
+COMMAND ['go', 'test', '-count=1', '-v', '-overlay', '/private/tmp/roundfix-0228-qa-d0n0kxkq/overlay.json', './internal/cli', '-run', '^TestQAActualSkillCollision$']
+=== RUN   TestQAActualSkillCollision
+    qa_collision_probe_test.go:19: resolution={Head:fcf12e009f5f4fa445449d6302e133062ac5dae4 SourcePaths:[] Regenerated:[go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions]}; commit=chore: merge default branch and regenerate derived paths
+        
+        Roundfix-Delivery: derived-merge
+--- PASS: TestQAActualSkillCollision (1.61s)
+PASS
+suiteguard: guard cost: measured 8943 paths; fingerprint took 307.873666ms before and 252.179375ms after
+ok  	roundfix/internal/cli	2.573s
+
+Exit: 0
+COMMAND ['go', 'test', '-count=1', '-v', './skills', '-run', '^TestEveryOwnedSkillVersionIsRecorded$']
+=== RUN   TestEveryOwnedSkillVersionIsRecorded
+--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.00s)
+PASS
+ok  	roundfix/skills	0.269s
+
+Exit: 0
+COMMAND ['git', 'status', '--porcelain']
+
+Exit: 0
+Q03 PASS: default=0.1.32 merged=0.1.33; actual skill edits plus record collision; trailer asserted; clean merged tree record check passes.

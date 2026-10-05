@@ -134,8 +134,14 @@ type ItemBinaryDeclaration struct {
 }
 
 type DerivedPathDeclaration struct {
-	Paths      []string `yaml:"paths"`
-	Regenerate string   `yaml:"regenerate"`
+	Paths      []string                `yaml:"paths"`
+	Lines      *DerivedLineDeclaration `yaml:"lines"`
+	Regenerate string                  `yaml:"regenerate"`
+}
+
+type DerivedLineDeclaration struct {
+	Paths []string `yaml:"paths"`
+	Match string   `yaml:"match"`
 }
 
 type Watch struct {
@@ -1556,6 +1562,9 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 		}
 	}
 	stripDeprecatedConfigKeys(&document, warnings)
+	if err := validateDerivedLineNodes(&document); err != nil {
+		return fmt.Errorf("parse config %q: %w", label, err)
+	}
 	if value, found := yamlValueAtPath(&document, []string{"review_source", "request_review"}); found && value.Tag == "!!null" {
 		return fmt.Errorf("parse config %q: review_source.request_review must be boolean: cannot unmarshal null value", label)
 	}

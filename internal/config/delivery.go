@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -63,19 +64,63 @@ func validateDerivedPaths(declarations []DerivedPathDeclaration) error {
 		if len(declaration.Paths) == 0 || strings.TrimSpace(declaration.Regenerate) == "" {
 			return fmt.Errorf("delivery.derived_paths[%d] requires paths and regenerate", index)
 		}
-		for _, entry := range declaration.Paths {
-			clean := strings.TrimSuffix(entry, "/")
-			if clean == "" || clean == "." || path.IsAbs(entry) || strings.Contains(entry, "\\") || path.Clean(clean) != clean {
-				return fmt.Errorf("delivery.derived_paths[%d] has unsafe path %q", index, entry)
+		key := fmt.Sprintf("delivery.derived_paths[%d]", index)
+		if err := validateDerivedPathPatterns(key, declaration.Paths); err != nil {
+			return err
+		}
+		if declaration.Lines != nil {
+			key += ".lines"
+			if len(declaration.Lines.Paths) == 0 || strings.TrimSpace(declaration.Lines.Match) == "" {
+				return fmt.Errorf("%s requires paths and match", key)
 			}
-			for _, segment := range strings.Split(entry, "/") {
-				if segment == ".." {
-					return fmt.Errorf("delivery.derived_paths[%d] has unsafe path %q", index, entry)
-				}
+			if err := validateDerivedPathPatterns(key, declaration.Lines.Paths); err != nil {
+				return err
 			}
-			if _, err := path.Match(entry, ""); err != nil {
-				return fmt.Errorf("delivery.derived_paths[%d] has invalid pattern %q: %w", index, entry, err)
+			if _, err := regexp.Compile(declaration.Lines.Match); err != nil {
+				return fmt.Errorf("%s has invalid match: %w", key, err)
 			}
+		}
+	}
+	return nil
+}
+
+// Validate the shape before typed decoding so malformed line declarations
+// retain their indexed config key, including an explicitly null declaration.
+func validateDerivedLineNodes(document *yaml.Node) error {
+	declarations, found := yamlValueAtPath(document, []string{"delivery", "derived_paths"})
+	if !found || declarations.Kind != yaml.SequenceNode {
+		return nil
+	}
+	for index, declaration := range declarations.Content {
+		lines, found := yamlValueAtPath(declaration, []string{"lines"})
+		if !found {
+			continue
+		}
+		key := fmt.Sprintf("delivery.derived_paths[%d].lines", index)
+		if lines.Tag == "!!null" {
+			return fmt.Errorf("%s requires paths and match", key)
+		}
+		var decoded DerivedLineDeclaration
+		if err := lines.Decode(&decoded); err != nil {
+			return fmt.Errorf("%s: %w", key, err)
+		}
+	}
+	return nil
+}
+
+func validateDerivedPathPatterns(key string, paths []string) error {
+	for _, entry := range paths {
+		clean := strings.TrimSuffix(entry, "/")
+		if clean == "" || clean == "." || path.IsAbs(entry) || strings.Contains(entry, "\\") || path.Clean(clean) != clean {
+			return fmt.Errorf("%s has unsafe path %q", key, entry)
+		}
+		for _, segment := range strings.Split(entry, "/") {
+			if segment == ".." {
+				return fmt.Errorf("%s has unsafe path %q", key, entry)
+			}
+		}
+		if _, err := path.Match(entry, ""); err != nil {
+			return fmt.Errorf("%s has invalid pattern %q: %w", key, entry, err)
 		}
 	}
 	return nil
@@ -83,7 +128,16 @@ func validateDerivedPaths(declarations []DerivedPathDeclaration) error {
 
 // Matches covers an exact file, a directory prefix, or a whole-path Go pattern.
 func (declaration DerivedPathDeclaration) Matches(name string) bool {
-	for _, entry := range declaration.Paths {
+	return matchesDerivedPath(declaration.Paths, name)
+}
+
+// MatchesLines covers paths whose matching lines may be regenerated.
+func (declaration DerivedPathDeclaration) MatchesLines(name string) bool {
+	return declaration.Lines != nil && matchesDerivedPath(declaration.Lines.Paths, name)
+}
+
+func matchesDerivedPath(paths []string, name string) bool {
+	for _, entry := range paths {
 		if strings.HasSuffix(entry, "/") && strings.HasPrefix(name, entry) {
 			return true
 		}

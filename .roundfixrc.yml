@@ -21,6 +21,9 @@ delivery:
       regenerate: go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text
     - paths:
         - skills/testdata/owned-skill-versions.json
+      lines:
+        paths: [.agents/skills/*/SKILL.md, skills/*/SKILL.md]
+        match: '^ *version: '
       regenerate: go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions
 
 defaults:
