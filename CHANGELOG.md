@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.42.0] - 2026-10-05
+
+### The Jev Router is retired
+
+- **Subscription rule.** OpenAI and Anthropic models run only through the Codex and Claude subscriptions. Configuration validation and `roundfix profiles configure` refuse the `roundfix-openrouter/typesafe/jev-router` selection and any `opencode` model under OpenCode's `openrouter` provider whose author is `openai`, `anthropic`, `openrouter` or `typesafe`, or that names an `@` preset. The runner checks the same rule again before any session, with reason `subscription_only`. Other OpenRouter vendors stay selectable.
+- **Removed.** The Jev Router selection and gate, the loopback relay and the router's `router-prompt` Judge Log lines are gone. `jev.router_min_credit_usd` is deprecated: it still loads, with one warning, and has no effect.
+- **Unchanged.** The direct Jev judge (`roundfix spec judge`), its `jev.monthly_ceiling_usd` and its Judge Log lines work as before.
+
 ## [0.41.0] - 2026-10-05
 
 ### A Jev Router that checks credit and names its model
