@@ -76,7 +76,8 @@ defaults:
 # NEVER route a `gpt-*-sol` model through OpenRouter. Every one below is
 # `runtime: codex`, which is the GPT subscription. The `opencode` runtime can
 # reach the same models pay-per-use, which is billing for a model this
-# repository already has.
+# repository already has. Roundfix refuses it: OpenAI and Anthropic models run
+# only through the codex and claude subscriptions (ADR-0235).
 #
 # Research and sources: the Secondbrain entry
 # `inbox/secondbrain/2026-09-30-modelos-de-codificacao-ago-set-2026-e-runtimes-cursor-grok.md`.

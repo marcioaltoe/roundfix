@@ -276,6 +276,8 @@ selectable this way:
 | `z-ai/glm-5.2` | `openrouter/z-ai/glm-5.2` |
 | `xiaomi/mimo-v2.5` | `openrouter/xiaomi/mimo-v2.5` |
 
+**Subscription rule — 2026-10-05.** Since ADR-0235, Roundfix refuses the OpenAI and Anthropic rows of this table: OpenAI and Anthropic models run only through the codex and claude subscriptions. Other OpenRouter models remain selectable through `opencode`.
+
 The same identifiers also appear without the `openrouter/` prefix and under an
 `opencode/` prefix for some models; the prefixed OpenRouter form is the one that
 names its provider explicitly and is preferred here.

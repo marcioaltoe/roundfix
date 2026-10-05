@@ -151,48 +151,13 @@ in Work Item reasons, Run Events, and final report reason lines instead of a
 generic `agent/protocol error`. Verification remains the only gate for settling
 and committing.
 
-### Jev Router
+### OpenAI and Anthropic subscription rule
 
-Only Project Config may select the Jev Router as a preferred or fallback
-OpenCode selection: runtime `opencode` or `opencode-custom`, model
-`roundfix-openrouter/typesafe/jev-router`, and empty reasoning effort because
-the router chooses it. User Config and one-Run overrides cannot select it.
-The key comes only from `ROUNDFIX_OPENROUTER_API_KEY` in the environment;
-Roundfix gives OpenCode a provider definition with an environment placeholder,
-and never writes the key to arguments, configuration files, or logs.
-
-Every routed prompt shares the configured monthly Jev ceiling with the judge;
-`jev.monthly_ceiling_usd` is US$5 when unset. Before sending it, Roundfix adds
-the Judge Log's TypeSafe spend to the larger of
-its OpenRouter spend and the key's monthly usage. Missing keys are
-`jev_router_key_missing`, unreadable spend is `jev_spend_unreadable`, and
-spend at or above the ceiling is `jev_ceiling_reached`. A refusal before
-Agent work begins activates the next configured fallback after notification;
-a refusal after work begins fails the Work Item. Each routed prompt that
-runs appends one `router-prompt` Judge Log line with the change in key usage.
-An append failure is reported in Run progress and preserves the prompt's
-result. Non-routed prompts make no key endpoint call.
-
-The gate also reads `GET /api/v1/credits` before each routed prompt and names
-the required fields `total_credits` and `total_usage`. It compares the
-`jev.router_min_credit_usd` floor with the lower of the account balance
-(`total_credits` less `total_usage`) and the key's remaining limit. A balance
-below the floor is refused with `openrouter_credit_low`; an unreadable credits
-answer is `jev_spend_unreadable`. An OpenRouter HTTP 402 on a routed request is
-`openrouter_credit_refused`. Before Agent work begins that is a failed
-selection and the Fallback Chain takes the Task; after work begins it fails
-the Work Item.
-
-Routed sessions reach OpenRouter through a relay Roundfix runs on the loopback
-interface. The relay forwards requests unchanged and never logs or stores the
-key. Each `router-prompt` Judge Log line records the models and providers the
-router reported, in first-seen order, and the last response id.
-
-Before a routed prompt starts, the key must also report a numeric `limit`
-no greater than the ceiling and `limit_reset: monthly`. Set a monthly credit
-limit of at most the configured ceiling on the key at OpenRouter; an unlimited
-key, a lifetime limit, or a monthly limit above the ceiling is refused with
-`jev_router_key_unbounded`. OpenRouter enforces this limit while a prompt is
-running. A numeric `limit_remaining` at or below zero is refused with
-`jev_ceiling_reached`. These refusals activate the configured fallback before
-Agent work begins and fail the Work Item after work begins.
+OpenAI and Anthropic models run only through the codex and claude
+subscriptions. For `opencode` and `opencode-custom`, Roundfix refuses
+`roundfix-openrouter/typesafe/jev-router` and other selections under the
+retired `roundfix-openrouter` provider. Under the `openrouter` provider it
+refuses authors `openai` and `anthropic`, router authors `openrouter` and
+`typesafe`, and `@` presets. The refusal reason is `subscription_only`; a
+refusal before Agent work activates the configured fallback. Other OpenRouter
+models stay selectable. `jev.router_min_credit_usd` is a deprecated key.
