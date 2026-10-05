@@ -1,0 +1,57 @@
+from pathlib import Path
+import subprocess,os,tempfile,hashlib,sqlite3,json,re,shutil
+root=Path.cwd(); ev=root/'docs/specs/0227-reconcile-releases-the-runs-of-merged-specs/qa/evidence/2026-10-05-spec-0227'; scratch=Path(tempfile.mkdtemp(prefix='0227-flow-',dir='/private/tmp')); repo=scratch/'repo'; repo.mkdir(); fixture_home=scratch/'fixture-home'; (fixture_home/'.roundfix').mkdir(parents=True)
+log=[]
+def run(args,cwd=repo,check=True,env=None):
+ p=subprocess.run(args,cwd=cwd,text=True,capture_output=True,env=env); log.append({'args':args,'cwd':str(cwd),'exit':p.returncode,'stdout':p.stdout,'stderr':p.stderr});
+ if check and p.returncode: raise RuntimeError(log[-1])
+ return p
+
+def git(*args,cwd=repo,check=True): return run(['git','-c','core.fsmonitor=false',*args],cwd,check).stdout.strip()
+def write(path,text): path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text)
+def commit(msg,cwd=repo): git('add','.',cwd=cwd);git('commit','-m',msg,cwd=cwd)
+try:
+ git('init','-b','main'); git('config','commit.gpgsign','false');git('config','core.hooksPath','/dev/null');git('config','user.name','QA');git('config','user.email','qa@example.invalid')
+ write(repo/'seed.txt','base\n');commit('chore: seed')
+ base=git('rev-parse','HEAD'); slug='0172-reconcile-merged-spec';rid='run_20261005T134000Z_0123456789abcdef'; branch='roundfix/run-'+rid
+ loc=fixture_home/'.roundfix/worktrees'; repo_slug='repo-'+hashlib.sha256(str(repo).encode()).hexdigest()[:8];wt=loc/repo_slug/rid;wt.parent.mkdir(parents=True)
+ git('worktree','add','-b',branch,str(wt),base)
+ write(wt/'operator.txt','operator work\n');write(wt/'renamed.txt','operator file\n');commit('fix: inherited operator work',wt)
+ write(wt/'feature.txt','delivered\n');commit('feat: settle task_05\n\nRoundfix-Spec: '+slug+'\nRoundfix-Task: task_05',wt);head=git('rev-parse','HEAD',cwd=wt)
+ archive=repo/'docs/history/specs'/slug
+ write(archive/'_prd.md','archived planning\n');write(archive/'task_05.md',f'---\ntask: task_05\nspec: {slug}\nstatus: completed\ntype: backend\ncomplexity: low\n---\n\n# Task 05\n\n## Verification\n\n- `true`\n')
+ write(archive/'_tasks.md',f'---\nschema: spec-tasks/v1\nspec: {slug}\ngraph:\n  nodes:\n    - id: task_05\n      file: task_05.md\n      needs: []\n---\n')
+ write(archive/'qa/qa-report-2026-10-04.md','---\nverdict: pass\n---\nQA report\n')
+ for file in ('feature.txt','operator.txt','renamed.txt'):shutil.copyfile(wt/file,repo/file)
+ commit('feat: archived delivery');git('mv','renamed.txt','later-name.txt');write(repo/'operator.txt','later edit\n');commit('fix: later default changes')
+ schema=run(['sqlite3','-readonly','/Users/marcio/.roundfix/roundfix.db','.schema'],cwd=root).stdout
+ db=sqlite3.connect(fixture_home/'.roundfix/roundfix.db');db.executescript(re.sub(r"CREATE TABLE sqlite_sequence[^;]*;", "", schema))
+ db.execute('PRAGMA user_version=22')
+ db.execute('INSERT INTO runs (id,kind,state,git_root,repository_root,local_branch,head_sha,work_dir,spec_slug,agent,created_at,updated_at,completed_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',(rid,'implement','Stopped',str(repo),str(repo),'delivery/'+slug,base,str(wt),slug,'codex','2026-10-05T13:00:00Z','2026-10-05T13:00:01Z','2026-10-05T13:00:01Z'));db.commit()
+ # Use a per-child environment so only these fixture processes resolve the disposable user home.
+ child_env=dict(os.environ);child_env.update({'HOME':str(fixture_home),'ROUNDFIX_COLOR':'never','NO_COLOR':'1'})
+ def cli(name,*args):
+  p=run([str(root/'bin/roundfix'),'reconcile',*args],env=child_env); (ev/(name+'.stdout.txt')).write_text(p.stdout);(ev/(name+'.stderr.txt')).write_text(p.stderr);return p
+ dry=json.loads(cli('run-dry',rid,'--format=json').stdout);assert dry['results'][0]['classification']=='superseded',dry
+ write(wt/'outside.txt','dirty unrelated\n');dirty=json.loads(cli('run-dirty',rid,'--format=json').stdout);assert dirty['results'][0]['classification']=='dirty',dirty
+ (wt/'outside.txt').unlink()
+ item='roundfix/deliver-'+slug+'-0123456789abcdef';live='roundfix/deliver-'+slug+'-fedcba9876543210';git('branch',item,head);git('branch',live,head)
+ db.execute('INSERT INTO delivery_queues(git_root) VALUES (?)',(str(repo),));db.execute('INSERT INTO delivery_queue_items(git_root,spec_slug,position,stage,branch) VALUES (?,?,?,?,?)',(str(repo),slug,0,'parked',live));db.commit();db.close()
+ transcript=cli('transcript-dry').stdout
+ spec=(root/'docs/specs/0227-reconcile-releases-the-runs-of-merged-specs/_techspec.md').read_text(); text=spec.split('stdout:\n',1)[1].split('   stderr:',1)[0];patterns=[x[3:] for x in text.rstrip().splitlines()]
+ regex='\\n'.join('(?:[^\\n]*\\n)*' if x=='...' else re.sub(r'<[^>]+>',lambda m:'.+',re.escape(x)) for x in patterns)
+ # Build line matcher preserving wildcard placeholders and ellipsis semantics.
+ def match(pi,oi):
+  if pi==len(patterns):return oi==len(transcript.splitlines())
+  if patterns[pi]=='...':return any(match(pi+1,k) for k in range(oi,len(transcript.splitlines())+1))
+  if oi>=len(transcript.splitlines()):return False
+  pat=''.join('.+' if part.startswith('<') else re.escape(part) for part in re.split(r'(<[^>]+>)',patterns[pi]))
+  return bool(re.fullmatch(pat,transcript.splitlines()[oi])) and match(pi+1,oi+1)
+ assert match(0,0),(patterns,transcript)
+ applied=json.loads(cli('full-apply','--apply','--format=json').stdout);assert applied['debrisSummary']['itemBranchesApplied']==1,applied
+ assert git('show-ref','--verify','refs/heads/'+item,check=False)=='', 'item remains'
+ assert git('show-ref','--verify','refs/heads/'+live), 'live removed'
+ assert not wt.exists();assert git('show-ref','--verify','refs/heads/'+branch,check=False)==''
+ again=json.loads(cli('full-repeat','--format=json').stdout);assert again['itemBranchCandidates']==[]
+ (ev/'flow-summary.txt').write_text('PASS: inherited operator edit/rename Run superseded; unrelated dirty path remains dirty; transcript stdout matched, stderr empty, exit 0; apply removed merged item and Run; live parked item branch preserved; fresh scan confirms no releasable item branches.\nfixture: '+str(scratch)+'\n')
+finally:(ev/'flow-commands.json').write_text(json.dumps(log,indent=2))

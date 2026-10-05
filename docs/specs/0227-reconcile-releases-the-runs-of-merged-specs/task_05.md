@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0227-reconcile-releases-the-runs-of-merged-specs
-status: pending
+status: failed
 type: qa
 complexity: medium
 ---

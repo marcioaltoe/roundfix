@@ -1,0 +1,7 @@
+PASS: required phrases present; removed sentences absent; both mirrors identical; version 0.1.30 -> 0.1.31; QA settlement sections unchanged.
+A	internal/cli/deliver_release_moved_main_test.go
+A	internal/cli/reconcile_item_branch_test.go
+A	internal/cli/reconcile_merge_evidence_test.go
+A	internal/worktree/item_branch_reconcile_test.go
+A	internal/worktree/merge_evidence_test.go
+M	internal/worktree/merged_spec_leftovers_test.go

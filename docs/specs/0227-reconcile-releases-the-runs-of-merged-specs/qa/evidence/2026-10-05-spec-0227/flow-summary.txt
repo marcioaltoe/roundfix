@@ -1,0 +1,2 @@
+PASS: inherited operator edit/rename Run superseded; unrelated dirty path remains dirty; transcript stdout matched, stderr empty, exit 0; apply removed merged item and Run; live parked item branch preserved; fresh scan confirms no releasable item branches.
+fixture: /private/tmp/0227-flow-7y_dmwg9
