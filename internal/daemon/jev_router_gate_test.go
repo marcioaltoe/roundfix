@@ -444,6 +444,10 @@ func TestJevRouterGateChecksTheReportedKeyLimit(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			calls := 0
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/credits" {
+					fmt.Fprint(w, `{"data":{"total_credits":200,"total_usage":0}}`)
+					return
+				}
 				calls++
 				if r.Header.Get("Authorization") != "Bearer "+routerSentinelKey {
 					t.Error("missing bearer key")
@@ -451,7 +455,7 @@ func TestJevRouterGateChecksTheReportedKeyLimit(t *testing.T) {
 				fmt.Fprintf(w, `{"data":{"usage_monthly":0.5,%s}}`, tc.fields)
 			}))
 			defer server.Close()
-			gate := &jevRouterGate{deps: jevrouter.Deps{HomeDir: t.TempDir(), Env: []string{agent.JevRouterKeyEnv + "=" + routerSentinelKey}, Client: server.Client(), Endpoint: server.URL}, now: time.Now}
+			gate := &jevRouterGate{deps: jevrouter.Deps{MinCreditUSD: 0.5, HomeDir: t.TempDir(), Env: []string{agent.JevRouterKeyEnv + "=" + routerSentinelKey}, Client: server.Client(), Endpoint: server.URL}, now: time.Now}
 			usage, err := gate.Before(context.Background())
 			if calls != 1 {
 				t.Fatalf("key calls=%d", calls)
@@ -500,6 +504,10 @@ func TestJevRouterGateAcceptsAKeyLimitAtTheConfiguredCeiling(t *testing.T) {
 		if r.Header.Get("Authorization") != "Bearer "+routerSentinelKey {
 			t.Error("missing bearer key")
 		}
+		if r.URL.Path == "/credits" {
+			fmt.Fprint(w, `{"data":{"total_credits":200,"total_usage":0}}`)
+			return
+		}
 		fmt.Fprint(w, `{"data":{"usage_monthly":0.5,"limit":50,"limit_reset":"monthly","limit_remaining":49.5}}`)
 	}))
 	defer server.Close()
@@ -523,5 +531,148 @@ func TestJevRouterGateAcceptsAKeyLimitAtTheConfiguredCeiling(t *testing.T) {
 				t.Fatalf("default gate: usage=%v err=%v", usage, err)
 			}
 		}
+	}
+}
+
+func TestJevRouterCreditLowFallsBackBeforeWork(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	gate := &fakeJevRouterGate{beforeErrors: []error{routerRefusal(routerCreditLowReason())}}
+	fixture, runner, result := routerTaskFixture(t, gate, false)
+	if result.Completed != 1 || result.Failed != 0 {
+		t.Fatalf("fallback result: %+v", result)
+	}
+	if !runner.fallbackPreparedAfterNotification() || !runner.fallbackPreparedAfterVisibleMessage() {
+		t.Fatal("fallback prepared before both notifications")
+	}
+	requests := runner.runRequests()
+	if len(requests) != 1 || requests[0].Runtime.Model != "good-model" {
+		t.Fatalf("refused prompt reached runner: %+v", requests)
+	}
+	payload := eventPayloadMap(t, singleEventOfKind(t, fixture.sink, runevent.KindDaemonAgentSelectionFallback))
+	if payload["reason_code"] != "openrouter_credit_low" || !strings.Contains(payload["reason"].(string), routerCreditLowReason()) {
+		t.Fatalf("refusal classification: %+v", payload)
+	}
+	if gate.beforeCalls != 1 || len(gate.records) != 0 {
+		t.Fatalf("gate calls: before=%d after=%d", gate.beforeCalls, len(gate.records))
+	}
+}
+
+func TestJevRouterCreditLowFailsTheTaskAfterWork(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	gate := &fakeJevRouterGate{beforeErrors: []error{nil, routerRefusal(routerCreditLowReason())}}
+	fixture, runner, result := routerTaskFixture(t, gate, true)
+	if result.Failed != 1 || result.Completed != 0 {
+		t.Fatalf("post-work result: %+v", result)
+	}
+	if len(runner.runRequests()) != 1 || len(runner.prepareRequests()) != 1 {
+		t.Fatal("refused feedback prompt ran or fallback prepared")
+	}
+	if len(eventsOfKind(fixture.sink, runevent.KindDaemonAgentSelectionFallback)) != 0 {
+		t.Fatal("fallback activated after work")
+	}
+	if gate.beforeCalls != 2 || len(gate.records) != 1 {
+		t.Fatalf("gate calls: before=%d after=%d", gate.beforeCalls, len(gate.records))
+	}
+	record := gate.records[0]
+	if record.RunID != fixture.run.ID || record.Spec != taskCycleSlug || record.ScopeKind != "task" || record.ScopeID != "task_01" || record.Category != "docs" || record.Attempt < 1 {
+		t.Fatalf("Task prompt identity: %+v", record)
+	}
+	graph, err := spec.Load(fixture.specsRoot, taskCycleSlug)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if graph.Tasks[0].Status != spec.StatusFailed || len(result.Outcomes) != 1 || !strings.Contains(result.Outcomes[0].Reason, "openrouter_credit_low") {
+		t.Fatalf("Task outcome: %+v", result.Outcomes)
+	}
+}
+
+func routerCreditLowReason() string {
+	return fmt.Sprintf("openrouter_credit_low: OpenRouter credit US$5.1100 is below the US$%.4f floor", jevrouter.DefaultMinCreditUSD)
+}
+
+func routerCreditServer(t *testing.T, balance, remaining float64, creditsStatus int) *httptest.Server {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer "+routerSentinelKey {
+			t.Error("missing bearer key")
+		}
+		switch r.URL.Path {
+		case "/key":
+			fmt.Fprintf(w, `{"data":{"usage_monthly":0.5,"limit":50,"limit_reset":"monthly","limit_remaining":%v}}`, remaining)
+		case "/credits":
+			w.WriteHeader(creditsStatus)
+			fmt.Fprintf(w, `{"data":{"total_credits":%v,"total_usage":10}}`, balance+10)
+		default:
+			t.Errorf("unexpected path %s", r.URL.Path)
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(server.Close)
+	return server
+}
+
+func TestJevRouterGateRefusesCreditBelowTheFloor(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	for _, tc := range []struct {
+		name               string
+		balance, remaining float64
+		refused            bool
+	}{
+		{"account below floor", 5.11, 40.31, true}, {"account above floor", 20, 40.31, false}, {"key below floor", 200, 3, true}, {"at floor", jevrouter.DefaultMinCreditUSD, 40.31, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			server := routerCreditServer(t, tc.balance, tc.remaining, http.StatusOK)
+			gate := &jevRouterGate{deps: jevrouter.Deps{HomeDir: t.TempDir(), Env: []string{agent.JevRouterKeyEnv + "=" + routerSentinelKey}, Client: server.Client(), Endpoint: server.URL, Ceiling: 50}, now: time.Now}
+			runner := &routerPromptRunner{}
+			owner, _ := routerPromptOwner(t, &fakeJevRouterGate{}, runner)
+			owner.engine.deps.JevRouter = gate
+			_, err := owner.runPrepared(context.Background(), owner.activeRequest(agent.ExecuteRequest{RunID: owner.scope.RunID}))
+			if !tc.refused {
+				if err != nil || len(runner.ran) != 1 {
+					t.Fatalf("prompt not sent: %v", err)
+				}
+				return
+			}
+			left := min(tc.balance, tc.remaining)
+			want := fmt.Sprintf("openrouter_credit_low: OpenRouter credit US$%.4f is below the US$%.4f floor", left, jevrouter.DefaultMinCreditUSD)
+			var refusal *agent.SelectionFailureError
+			if !errors.As(err, &refusal) || refusal.Runtime != "opencode" || refusal.Reason != want || len(runner.ran) != 0 {
+				t.Fatalf("refusal=%v sent=%v", err, runner.ran)
+			}
+		})
+	}
+}
+
+func TestJevRouterGateRefusesUnreadableCredits(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	server := routerCreditServer(t, 200, 40.31, http.StatusForbidden)
+	gate := &jevRouterGate{deps: jevrouter.Deps{HomeDir: t.TempDir(), Env: []string{agent.JevRouterKeyEnv + "=" + routerSentinelKey}, Client: server.Client(), Endpoint: server.URL, Ceiling: 50}, now: time.Now}
+	runner := &routerPromptRunner{}
+	owner, _ := routerPromptOwner(t, &fakeJevRouterGate{}, runner)
+	owner.engine.deps.JevRouter = gate
+	_, err := owner.runPrepared(context.Background(), owner.activeRequest(agent.ExecuteRequest{RunID: owner.scope.RunID}))
+	var refusal *agent.SelectionFailureError
+	if !errors.As(err, &refusal) || refusal.Runtime != "opencode" || refusal.Reason != "jev_spend_unreadable: read account credits: HTTP 403" || len(runner.ran) != 0 {
+		t.Fatalf("refusal=%v sent=%v", err, runner.ran)
+	}
+}
+
+func TestJevRouterDefaultGateUsesTheConfiguredCreditFloor(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv(agent.JevRouterKeyEnv, routerSentinelKey)
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", taskType: string(spec.TaskTypeDocs)}})
+	server := routerCreditServer(t, 5.11, 40.31, http.StatusOK)
+	engine, err := NewEngine(Dependencies{Runner: &selectionLifecycleRunner{}, Verifier: &taskFakeVerifier{}, Committer: &engineFakeCommitter{}, Pusher: &engineFakePusher{}, Source: &engineFakeSource{}, Runs: fixture.store, Worktree: fixture.worktree, JevMonthlyCeilingUSD: 50, JevRouterMinCreditUSD: 4})
+	if err != nil {
+		t.Fatal(err)
+	}
+	gate := engine.deps.JevRouter.(*jevRouterGate)
+	gate.deps.Client, gate.deps.Endpoint = server.Client(), server.URL
+	runner := &routerPromptRunner{}
+	owner, _ := routerPromptOwner(t, &fakeJevRouterGate{}, runner)
+	owner.engine = engine
+	owner.engine.deps.Runner = runner
+	if _, err := owner.Run(context.Background(), agent.ExecuteRequest{RunID: owner.scope.RunID}); err != nil || len(runner.ran) != 1 {
+		t.Fatalf("configured prompt: %v sent=%v", err, runner.ran)
 	}
 }

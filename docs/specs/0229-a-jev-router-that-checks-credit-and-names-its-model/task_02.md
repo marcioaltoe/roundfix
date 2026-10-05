@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0229-a-jev-router-that-checks-credit-and-names-its-model
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -115,3 +115,72 @@ Fallback Chain; after it the Work Item fails, as for `jev_ceiling_reached`.
 - `_prd.md` → User Stories 1, 2 and 5; Core Features 1-3; Success Metric 1; Success Metric 4
 - `_techspec.md` → The configured floor; The credit read and the gate; Interfaces; API Contract 1; API Contract 2; API Contract 3; API Contract 4; Testing Approach 1-3; Build Order 2
 - ADR-0234; ADR-0231; ADR-0218; ADR-0114; ADR-0050; ADR-0027
+
+
+## Result
+
+Implemented the account-credit floor within this Task's slice. User Config
+accepts `jev.router_min_credit_usd`; unset and `Builtin()` preserve zero, and
+Project Config removes the setting before validation and decoding. The gate
+reads account credits only after the existing spend, key-limit and ceiling
+checks, compares the lower of account balance and key remaining limit with the
+effective floor, and refuses before the prompt reaches the runner. Both CLI
+engine constructors pass the loaded floor, and fallback receipts recognize
+`openrouter_credit_low`. `MonthSpend` and `Spend.CheckKeyLimit` are unchanged.
+
+Acceptance evidence from focused implementation checks:
+
+- Configuration: `TestJevRouterMinCreditIsReadFromUserConfig` loads 20;
+  `TestJevRouterMinCreditIsUnsetByDefault` preserves zero;
+  `TestProjectConfigCannotSetTheJevRouterMinCredit` checks the exact warning
+  and preserves the User Config value or zero, including invalid Project
+  Config values; `TestJevRouterMinCreditRefusesANonPositiveOrInfiniteValue`
+  checks the exact path-wrapped error for 0, -1, `.inf` and other invalid types.
+- Credit gate: `TestJevRouterGateRefusesCreditBelowTheFloor` checks the exact
+  US$5.1100 / US$15.0000 refusal and no runner call, sends at US$20 and at the
+  floor, and refuses a US$3 key remaining limit despite US$200 account credit.
+  `TestJevRouterGateRefusesUnreadableCredits` checks a 403 becomes
+  `jev_spend_unreadable` without a runner call.
+  `TestJevRouterDefaultGateUsesTheConfiguredCreditFloor` constructs the engine
+  with a US$4 floor and sends with a US$5.11 balance.
+- Lifecycle: `TestJevRouterCreditLowFallsBackBeforeWork` checks a fallback
+  receipt naming `openrouter_credit_low`, notification order, and no routed
+  prompt. `TestJevRouterCreditLowFailsTheTaskAfterWork` checks the persisted
+  failed fixture Task and outcome reason, with no feedback prompt or fallback.
+- Transport: `TestReadCreditsSendsOnlyTheBearerHeader` also supplies a cookie
+  jar and checks it is suppressed without mutating the caller's client.
+  Malformed, missing, negative, overflowing, oversized and non-200 responses
+  and redirects are refused with redacted errors. Additional reader tests
+  check cancellation, network failure and the ten-second bound. `CreditLeft`
+  and `MinCredit` tests cover the balance rule and default.
+- Existing key-limit tests now serve `/credits`. The bounded-key case that
+  reports only US$1 remaining uses an explicit US$0.50 floor so it continues
+  to isolate and assert the existing key-limit contract.
+
+Focused commands and outcomes:
+
+- `GOCACHE="$PWD/.task02-gocache" rtk proxy go test -count=1 ./internal/config ./internal/jevrouter ./internal/daemon -run 'Test(JevRouter|ProjectConfigCannotSetTheJevRouterMinCredit|ReadCredits|CreditLeft|MinCredit)'`
+  — exit 0; all three packages passed. The localhost tests ran with approved
+  sandbox escalation after the sandbox refused to bind local listeners.
+- `GOCACHE="$PWD/.task02-gocache" rtk proxy go test ./internal/cli -run '^$'`
+  — exit 0; CLI source and tests compile with both changed constructor signatures.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+
+Initial inspection showed no credit-floor configuration field, account-credit
+reader or gate credit check. The default build cache was inaccessible, so
+focused checks used a disposable repository-local cache, removed after testing.
+All HTTP test requests use local stand-ins; no live API usage was incurred.
+Live OpenRouter credit documentation confirmed the authored response fields;
+the TypeSafe documentation index was read through the web tool after direct
+HTTP access was blocked.
+
+Declared Task Verification and repository settlement checks were not run;
+they remain Daemon-owned. Task status, Task Graph, other Task files, Project
+Config, configuration templates, profiles and selection rules were not edited
+by this Agent. No commit, push or pull request was created. No follow-up work
+was added to this diff.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261005T141012Z_a1b532ab932de7ab`
+- Source commit: `f74e69c4c67912ee3289f337e97dc3fc6635b5eb`
