@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.40.0] - 2026-10-05
+
+### Reconcile releases the Runs of merged Specs
+
+- **Merge evidence.** When the content proof fails, `roundfix reconcile` now releases a terminal Run if its Spec is archived on the default branch through a commit that is not in the Run's branch. Before, a later edit to a shared file kept such a Run as `unintegrated` forever. Task commits still need their Task completed, and the dirty-worktree scope rule is unchanged.
+- **Item branches.** `reconcile` inspects `roundfix/deliver-*` branches and releases those of merged Specs that no live Delivery Queue item owns. A dirty item worktree keeps its branch.
+- **Post-merge cleanup.** The queue's cleanup accepts a squash merge onto a default branch that moved during the item, by comparing the merge commit with `git merge-tree --write-tree` of its parent and the candidate. The warning `candidate head … is not represented by merge commit …` no longer appears in that case. The check fails closed on Git older than 2.38.
+
 ## [0.39.0] - 2026-10-05
 
 ### Queue items that stay current with main
