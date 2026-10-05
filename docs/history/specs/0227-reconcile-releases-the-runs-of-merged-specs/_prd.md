@@ -1,9 +1,18 @@
 ---
 spec: 0227-reconcile-releases-the-runs-of-merged-specs
-status: active
+status: archived
 created: 2026-10-04
 surfaces: [backend, cli, docs]
+archived: "2026-10-05"
+source_slug: 0227-reconcile-releases-the-runs-of-merged-specs
+qa_override: true
+qa_override_approval: 'maintainer standing authorization 2026-09-30 (unattended program): qa_override only for environment-only partials'
+qa_override_reason: 'Environment-only partial: row 07 needs historical Run Database items of the hand-cleaned Specs, which no longer exist (intervention log entries 144-145 record them), and row 10 has no Pull Request yet; the queue opens it. Every behavior row passed.'
+qa_override_qa_outcome: partial
+qa_override_qa_task_status: failed
+qa_override_revision: 03454c09d9f23c0ec5c69c1d981267fc673a1be7
 ---
+
 
 # Reconcile releases the Runs of merged Specs
 
