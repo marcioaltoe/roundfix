@@ -158,7 +158,21 @@ type ReviewCorrectionProver interface {
 	ProveReviewCorrection(ctx context.Context, workDir string, archivedSpecs []string, candidate, head string) (ReviewCorrection, error)
 }
 
+// MergeObservation records evidence that a parked item has already merged.
+type MergeObservation struct {
+	Merged         bool
+	MergeCommit    string
+	Head           string
+	Evidence       string
+	ClosedUnmerged bool
+}
+
+type MergeObserver interface {
+	ObserveMerge(ctx context.Context, gitRoot string, item store.DeliveryQueueItem) (MergeObservation, error)
+}
+
 type RetryResult struct {
+	Merge         MergeObservation
 	SpecSlug      string
 	Blocker       string
 	Stage         store.DeliveryStage
@@ -222,6 +236,7 @@ type ConflictResolution struct {
 }
 
 type EngineDependencies struct {
+	Merges        MergeObserver
 	Corrections   ReviewCorrectionProver
 	Conflicts     ConflictResolver
 	Prerequisites PrerequisiteReader
@@ -245,6 +260,7 @@ type EngineDependencies struct {
 }
 
 type Engine struct {
+	merges         MergeObserver
 	policyRefusals map[string]bool
 
 	corrections   ReviewCorrectionProver
@@ -296,6 +312,7 @@ func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
 		checkInterval = defaultCheckInterval
 	}
 	return &Engine{
+		merges:        dependencies.Merges,
 		corrections:   dependencies.Corrections,
 		conflicts:     dependencies.Conflicts,
 		store:         runStore,
@@ -356,7 +373,7 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 	if !itemFound {
 		return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: Delivery Queue does not contain the item", specSlug)
 	}
-	if !prerequisitePark(item.Blocker) && validationErr != nil {
+	if engine.merges == nil && !prerequisitePark(item.Blocker) && validationErr != nil {
 		return RetryResult{}, validationErr
 	}
 	if item.Stage != store.DeliveryStageParked {
@@ -367,6 +384,34 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 			item.Blocker,
 			store.DeliveryStageParked,
 		)
+	}
+	if engine.merges != nil {
+		observation, err := engine.merges.ObserveMerge(ctx, gitRoot, item)
+		if err == nil && observation.Merged && (strings.TrimSpace(observation.MergeCommit) == "" || strings.TrimSpace(observation.Head) == "") {
+			err = errors.New("merged observation requires a merge commit and head")
+		}
+		if err != nil {
+			return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: observe merge: %w", specSlug, err)
+		}
+		if observation.Merged {
+			blocker := item.Blocker
+			item.Stage = store.DeliveryStageMerged
+			item.MergeCommit = observation.MergeCommit
+			if len(item.CandidateCommits) == 0 || item.CandidateCommits[len(item.CandidateCommits)-1] != observation.Head {
+				item.CandidateCommits = append(item.CandidateCommits, observation.Head)
+			}
+			pid, identity, err := engine.store.RecordDeliveryQueueItemMerged(ctx, gitRoot, item, blocker)
+			if err != nil {
+				return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: %w", specSlug, err)
+			}
+			return RetryResult{SpecSlug: specSlug, Blocker: blocker, Stage: item.Stage, Merge: observation, OwnerPID: pid, OwnerIdentity: identity}, nil
+		}
+		if observation.ClosedUnmerged {
+			return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: pull request #%s was closed without merging; reopen it or merge the Spec into the default branch, then run roundfix deliver retry %s", specSlug, item.PullRequestNumber, specSlug)
+		}
+		if !prerequisitePark(item.Blocker) && validationErr != nil {
+			return RetryResult{}, validationErr
+		}
 	}
 	if queue.Limits.MaxTokens > 0 {
 		usage, err := engine.store.DeliveryQueueTokenUsage(ctx, gitRoot)

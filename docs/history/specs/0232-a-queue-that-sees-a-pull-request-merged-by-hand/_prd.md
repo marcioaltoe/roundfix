@@ -1,9 +1,18 @@
 ---
 spec: 0232-a-queue-that-sees-a-pull-request-merged-by-hand
-status: active
+status: archived
 created: 2026-10-05
 surfaces: [backend, cli, docs]
+archived: "2026-10-05"
+source_slug: 0232-a-queue-that-sees-a-pull-request-merged-by-hand
+qa_override: true
+qa_override_approval: 'maintainer standing authorization 2026-09-30 (unattended program): qa_override only for environment-only partials'
+qa_override_reason: 'Environment-only partial: the Run sandbox could not reach GitHub or the web (rows 7a-7c, 7f) and the original 0231 queue row is gone (7e); the operator confirmed with gh on 2026-10-05 that #404, #382 and #396 are MERGED from their item branches (merged 2026-10-05T20:20:08Z, 2026-10-04T21:03:19Z, 2026-10-05T15:52:46Z); row 10 has no Pull Request yet. Every behavior row passed.'
+qa_override_qa_outcome: partial
+qa_override_qa_task_status: failed
+qa_override_revision: 477a1ebe287fcd8887123fdd4542a36552d40200
 ---
+
 
 # A queue that sees a Pull Request merged by hand
 

@@ -288,6 +288,37 @@ item re-enters at `running` when any Task is unfinished or at `reviewing` when
 every Task is completed. An archived Spec with an unchanged candidate
 re-enters at `gating` without a recorded pull request or at `checking` with one.
 
+Before those retry rules, Roundfix asks whether the parked item already merged.
+It first reads the recorded Pull Request through `gh pr view` in the repository
+checkout. A merged Pull Request must name the item's recorded branch and have
+both a head and a merge commit. Otherwise it reads the Spec's archived `_prd.md`
+on the local default branch and proves that the delivery commit that added it
+is absent from the local item branch's tip, or the newest candidate when the
+branch is gone. The fallback does not fetch; the local default branch must
+already hold the delivery.
+
+The retry records that item `merged` without changing its retry count,
+regardless of the retry limit, queue deadline or token ceiling. It touches no
+item workspace and hands the queue to its owner for normal post-merge cleanup.
+Before `Retried <slug>: <blocker> -> merged`, stdout prints:
+
+```text
+Merged outside the queue: <evidence>; merge commit <sha>
+```
+
+`<evidence>` is `pull request #<n>` or `Spec archived on default branch
+"<branch>"`; `<sha>` is the full Pull Request merge commit or the delivery
+commit from the archive proof. A failed Pull Request read refuses the retry.
+A recorded Pull Request that was closed without merging and has no archive
+proof also refuses it, with this reason:
+
+```text
+retry Delivery Queue item "<slug>": pull request #<n> was closed without merging; reopen it or merge the Spec into the default branch, then run roundfix deliver retry <slug>
+```
+
+The refusal exits `2`, prints `Retry refused` on stderr, keeps the item parked
+and unchanged, and starts no owner.
+
 A retry after a correction committed on top of an archived candidate accepts
 its current head when Git proves it descends from the newest candidate. It
 appends the head to the candidate commits and returns to `reviewing`, so the
