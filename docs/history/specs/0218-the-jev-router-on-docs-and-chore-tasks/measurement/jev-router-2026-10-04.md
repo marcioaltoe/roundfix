@@ -303,3 +303,68 @@ Measure-and-propose only; nothing here changes code or configuration.
 6. **Keep `docs` and `chore` on the subscription default.** Its marginal cost
    is zero, and it settled every Task in this sample. Revisit only once the
    router has settled a `chore` Task.
+
+## Relay confirmation, 2026-10-05
+
+One more routed replay of 0195 task_06 (`chore`) after Spec 0229 merged. It
+checks that the relay records the routed model on the Judge Log. It ran
+alone, from 16:04Z to 16:12Z.
+
+**Setup.** Same pre-state protocol and scratch `.roundfixrc.yml` as the
+evening's chore replays, rebuilt from `cad8bb25` in a fresh clone. The
+Verification failed on the pre-state as before, with
+`open testdata/owned-skill-versions.json: no such file or directory`. The
+binary was `roundfix 0.41.0` (`bin/roundfix`, built from `7919b3ff` with a
+dirty tree). User Config held `jev.monthly_ceiling_usd: 50` and no
+`jev.router_min_credit_usd`, so the gate's credit floor was the US$15
+default. The spend guard used the same start rules, US$15 of account credit
+and US$40 of key `usage_monthly`, and a stop line of US$10 for the replay.
+It never fired.
+
+| Read | Account credit left | Key `usage_monthly` | Judge Log, month |
+| --- | ---: | ---: | ---: |
+| Before | US$22.7644 | US$20.4128 | US$16.9907 |
+| After | US$12.7830 | US$30.3942 | US$26.8548 |
+
+**Measured.** `run_20261005T160520Z_0a44478d40386049` reached Clean with
+the routed selection: 1 prompt, 0 refused, Verification passed on attempt 1,
+no repair, no fallback. The Task commit
+`chore: the Roundfix skill declares the version its merged content needs`
+touched only the three declared files and the Task file. Wall time was
+6m33s; the prompt took 352,282 ms. `roundfix runs show` reports 70,052
+tokens (turn).
+
+**The Judge Log line.** One `router-prompt` line, `outcome: clear`, empty
+`error`. The fields that were empty in every earlier routed line are now
+filled:
+
+- `model`: `deepseek/deepseek-v4.1-flash, openai/gpt-6.1-sol, anthropic/claude-opus-5.5`
+- `provider`: `Together, OpenAI, Google`
+- `response_id`: the last response's `gen-…` id
+- `requested_model`: `roundfix-openrouter/typesafe/jev-router`, as before
+
+The two lists hold distinct values in first-seen order and are not paired,
+so the line does not say which provider served which model.
+
+**Cost.** The Judge Log `cost_usd` was US$9.8641. The key's `usage_monthly`
+moved by US$9.9814, read 60 seconds after the Run and unchanged on a second
+read. The gap was US$0.1173, about 1 %, against 25 % on 2026-10-04 evening.
+The same Task settled the same way for US$2.4548 that evening, so this
+replay cost four times as much. The routed models included
+`anthropic/claude-opus-5.5`. One replay cannot say how the cost split across
+the three models.
+
+**After the replay** the account held US$12.7830, below the US$15 floor.
+The next routed prompt should be refused before it starts with
+`openrouter_credit_low`. This was not exercised.
+
+## Maintainer decision, 2026-10-05
+
+The maintainer reviewed the OpenRouter activity for 2026-10-01 to 2026-10-05
+on the `roundfix_jev` key. The routed replays had billed `openai/gpt-6-astra`
+(US$15.35), `anthropic/claude-opus-5.5` (US$10.12), `openai/gpt-6.1-sol`
+(US$4.81) and DeepSeek (US$0.10), against US$0.014 for 456 direct Jev judge
+calls. The maintainer's rule is that OpenAI and Anthropic models are used only
+through the Codex and Claude subscriptions, never through OpenRouter. The
+`jev-router` routes to those models, so on 2026-10-05 the maintainer decided
+to retire the Jev Router ("Aposentar o router"). The direct Jev judge stays.
