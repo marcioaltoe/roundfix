@@ -13,6 +13,7 @@ import (
 	"reflect"
 	"roundfix/internal/jevrouter"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -327,5 +328,72 @@ func TestJevRouterClearedSessionReleasesItsRelayToken(t *testing.T) {
 	if err == nil {
 		response.Body.Close()
 		t.Fatal("relay still serves")
+	}
+}
+
+func TestJevRouterCreditRefusalBeforeWorkIsAFailedSelection(t *testing.T) {
+	testRouterCreditRefusal(t, false)
+}
+
+func TestJevRouterCreditRefusalAfterWorkNamesItsReason(t *testing.T) {
+	testRouterCreditRefusal(t, true)
+}
+
+func testRouterCreditRefusal(t *testing.T, output bool) {
+	t.Helper()
+	for _, source := range []string{"openrouter_credits", ""} {
+		t.Run(fmt.Sprintf("source=%s", source), func(t *testing.T) {
+			var requests atomic.Int32
+			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requests.Add(1)
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusPaymentRequired)
+				fmt.Fprintf(w, `{"error":{"metadata":{"limit_source":%q}}}`, source)
+			}))
+			defer upstream.Close()
+			harness := newFakeACPXHarness(t)
+			defer harness.runner.clearSessionState("router-test")
+			harness.runner.RouterEndpoint = upstream.URL
+			harness.setEnv(JevRouterKeyEnv, jevRouterSentinel)
+			harness.setEnv(jevRouterFixturePost, "1")
+			stdout := `{}`
+			if output {
+				stdout = acpxUpdateLine(`{"sessionId":"fake","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"started"}}}`)
+			}
+			harness.setEnv(fakeACPXStdout, stdout)
+			harness.setEnv(fakeACPXStdoutBy, `{}`)
+			harness.setEnv(fakeACPXExitCode, "1")
+			harness.setEnv(fakeACPXStderr, "credit refusal detail")
+			sink := newCaptureSink("")
+			result, err := harness.runner.RunPrompt(t.Context(), ACPXPromptRequest{ExecuteRequest: ExecuteRequest{Runtime: RuntimeSpec{ID: "opencode", Protocol: ProtocolACP, Model: JevRouterModel}, GitRoot: harness.gitRoot, Prompt: "fixture"}, Session: "router-test"}, sink)
+			limit := source
+			if limit == "" {
+				limit = "unspecified"
+			}
+			want := "openrouter_credit_refused: OpenRouter refused a routed request for credit (" + limit + ")"
+			if result.Router.Refusal == nil || result.Router.Refusal.Status != 402 || result.Router.Refusal.LimitSource != source {
+				t.Fatalf("observation=%+v", result.Router)
+			}
+			if requests.Load() != 1 {
+				t.Fatalf("requests=%d, refused request must not be retried", requests.Load())
+			}
+			var selection *SelectionFailureError
+			var batch *BatchFailureError
+			if output {
+				if !errors.As(err, &batch) || errors.As(err, &selection) || batch.Reason != want || batch.ExitCode != 1 || batch.Stderr != "credit refusal detail" {
+					t.Fatalf("batch refusal=%v", err)
+				}
+			} else {
+				if !errors.As(err, &selection) || selection.Runtime != "opencode" || selection.Reason != want {
+					t.Fatalf("selection refusal=%v", err)
+				}
+				if countStatusEventsForTest(sink.Events(), AgentSelectionFailedStatus) != 1 {
+					t.Fatal("selection failure was not reported")
+				}
+			}
+			if err == nil || !strings.Contains(err.Error(), want) || strings.Contains(err.Error(), "agent/protocol error") {
+				t.Fatalf("message=%v", err)
+			}
+		})
 	}
 }

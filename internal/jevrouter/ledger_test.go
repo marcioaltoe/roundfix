@@ -99,3 +99,33 @@ func TestRouterLineRecordsTheReportedModels(t *testing.T) {
 		t.Fatalf("row=%+v", rows[0])
 	}
 }
+
+func TestRouterLineRecordsACreditRefusal(t *testing.T) {
+	for _, source := range []string{"openrouter_credits", ""} {
+		for _, usageErr := range []error{nil, errors.New("HTTP 500")} {
+			home := t.TempDir()
+			now := time.Now()
+			record := PromptRecord{Reported: Observation{Refusal: &Refusal{Status: 402, LimitSource: source}}, Failed: true, UsageBefore: 1, UsageAfter: 2, UsageAfterErr: usageErr}
+			if err := (Ledger{HomeDir: home}).Append(record, now); err != nil {
+				t.Fatal(err)
+			}
+			rows, err := judge.ReadMonth(t.Context(), home, now)
+			if err != nil || len(rows) != 1 {
+				t.Fatalf("rows=%+v err=%v", rows, err)
+			}
+			limit := source
+			if limit == "" {
+				limit = "unspecified"
+			}
+			want := "openrouter_credit_refused: " + limit
+			cost := 1.0
+			if usageErr != nil {
+				want += "; key usage unreadable after prompt: HTTP 500"
+				cost = 0
+			}
+			if rows[0].Judgment != "router-prompt" || rows[0].Error != want || rows[0].Outcome != "skipped" || rows[0].CostUSD != cost {
+				t.Fatalf("row=%+v want error=%q", rows[0], want)
+			}
+		}
+	}
+}

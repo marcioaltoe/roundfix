@@ -43,8 +43,18 @@ func (ledger Ledger) Append(record PromptRecord, now time.Time) error {
 	if record.Failed {
 		row.Outcome = "skipped"
 	}
+	if refusal := record.Reported.Refusal; refusal != nil {
+		source := strings.TrimSpace(refusal.LimitSource)
+		if source == "" {
+			source = "unspecified"
+		}
+		row.Error = "openrouter_credit_refused: " + source
+	}
 	if record.UsageAfterErr != nil {
-		row.Error = "key usage unreadable after prompt: " + record.UsageAfterErr.Error()
+		if row.Error != "" {
+			row.Error += "; "
+		}
+		row.Error += "key usage unreadable after prompt: " + record.UsageAfterErr.Error()
 		row.CostUSD = 0
 	}
 	if err := judge.AppendLogLine(ledger.HomeDir, now, row); err != nil {

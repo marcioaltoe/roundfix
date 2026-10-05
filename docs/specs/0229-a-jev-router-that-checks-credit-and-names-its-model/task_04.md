@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0229-a-jev-router-that-checks-credit-and-names-its-model
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -86,3 +86,66 @@ fails with that reason, as `jev_ceiling_reached` does (ADR-0234, ADR-0114).
 - `_prd.md` → User Story 3; Core Feature 4; Success Metric 2
 - `_techspec.md` → The runner; The Judge Log line; API Contract 5; Testing Approach 5; Testing Approach 6; Build Order 4
 - ADR-0234; ADR-0114; ADR-0050; ADR-0218
+
+
+## Result
+
+Implemented the task_04 refusal classification slice. The runner consumes the
+routed prompt's relay observation before classifying its failure, replaces the
+Batch failure reason with API Contract 5, and uses the existing no-output
+selection classifier. It retains exit code and stderr after Agent output.
+The session owner recognizes `openrouter_credit_refused` in fallback receipts.
+The Judge Log starts `error` with the refusal and limit source, appends an
+unreadable key-usage error after `; `, and keeps failed prompts `skipped`.
+An absent limit source is `unspecified`. Gate checks, forwarding, profiles and
+retry policy were not changed.
+
+Acceptance evidence:
+
+- Before work: `TestJevRouterCreditRefusalBeforeWorkIsAFailedSelection` uses
+  the compiled acpx fixture and a loopback 402 upstream, checks the exact
+  selection reason, runtime and failed-selection status, and asserts one
+  upstream request. `TestJevRouterCreditRefusalFallsBackBeforeWork` checks
+  routed-to-fallback execution and notification ordering with the receipt's
+  `openrouter_credit_refused` code and full reason.
+- After work: `TestJevRouterCreditRefusalAfterWorkNamesItsReason` checks the
+  Batch failure reason, exit code and stderr after an Agent message, and
+  excludes `agent/protocol error`. The daemon test
+  `TestJevRouterCreditRefusalFailsTheTaskAfterWork` emits an Agent message,
+  checks the work-start status and persisted failed Task outcome, and
+  excludes retry or fallback activation.
+- Judge Log: `TestRouterLineRecordsACreditRefusal` reads the appended line
+  through the shared judge reader and checks refusal-first error ordering,
+  both limit-source cases, optional usage errors, cost and `skipped` outcome.
+
+Focused checks:
+
+- Red reproduction: `rtk proxy go test ./internal/agent -run
+  'TestJevRouterCreditRefusal' -count=1` exited 1 before production edits,
+  showing both before/after failures still named `agent/protocol error`.
+  The initial three-package focused run also exposed the missing ledger
+  refusal and fallback reason code; its agent tests encountered the sandbox
+  loopback-listener restriction. Subsequent local listener/process checks
+  ran with approved sandbox escalation.
+- `rtk proxy go test ./internal/agent ./internal/jevrouter ./internal/daemon
+  -run 'Test(JevRouterCreditRefusal|RouterLineRecordsACreditRefusal|JevRouterPromptReturnsTheRelayObservation|LedgerRecordsUnreadableUsage)'
+  -count=1` exited 0 in all three packages after the production edits.
+- After strengthening the daemon post-work test to emit Agent output,
+  `rtk proxy go test ./internal/daemon -run 'TestJevRouterCreditRefusal'
+  -count=1` exited 0.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+- Initial `rtk make verify-incremental` exited 2: the CLI tests reported
+  `PASS`, but suiteguard detected this Agent's concurrent Result edit to
+  `task_04.md`. All other packages passed. The worktree was then frozen for
+  a fresh incremental run; this was not a production or assertion failure.
+- Fresh `rtk make verify-incremental` exited 0 with the worktree held unchanged
+  during testing: formatting, vet, Go tests, skill checks and CLI build passed.
+  Only this Result evidence was appended afterward.
+
+The authored Verification commands were not run. Status remains Daemon-owned;
+no other Task, Task Graph, commit, push or Pull Request was changed.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261005T141012Z_a1b532ab932de7ab`
+- Source commit: `807d6896a642308a52ef76b1b6c556240b588037`

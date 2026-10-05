@@ -76,7 +76,7 @@ func routerRefusal(reason string) error {
 	return &agent.SelectionFailureError{Runtime: "opencode", Reason: reason}
 }
 
-func routerTaskFixture(t *testing.T, gate *fakeJevRouterGate, feedback bool) (*taskCycleFixture, *selectionLifecycleRunner, TaskCycleResult) {
+func routerTaskFixture(t *testing.T, gate *fakeJevRouterGate, feedback bool, promptErrors ...error) (*taskCycleFixture, *selectionLifecycleRunner, TaskCycleResult) {
 	t.Helper()
 	t.Setenv(agent.JevRouterKeyEnv, routerSentinelKey)
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", taskType: string(spec.TaskTypeDocs)}})
@@ -85,11 +85,21 @@ func routerTaskFixture(t *testing.T, gate *fakeJevRouterGate, feedback bool) (*t
 		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
 		sink:         fixture.sink, progress: fixture.progress,
 	}
+	if len(promptErrors) > 0 {
+		runner.runErrByModel = map[string]error{agent.JevRouterModel: promptErrors[0]}
+	}
 	verifier := &taskFakeVerifier{calls: fixture.calls}
 	if feedback {
 		verifier.script = []error{errors.New("verification needs a repair")}
 	}
-	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	var engineRunner agent.Runner = runner
+	if len(promptErrors) > 0 {
+		var batch *agent.BatchFailureError
+		if errors.As(promptErrors[0], &batch) {
+			engineRunner = &routerWorkOutputRunner{selectionLifecycleRunner: runner}
+		}
+	}
+	engine := fixture.engine(t, engineRunner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
 	engine.deps.JevRouter = gate
 	plan := fixture.plan()
 	plan.AgentSelections = selectionProfilesForTest(map[roundconfig.WorkCategory]roundconfig.AgentSelectionProfile{
@@ -702,5 +712,66 @@ func TestJevRouterPromptRecordsTheReportedModels(t *testing.T) {
 	assertNoRouterSecret(t, string(raw), sink)
 	if strings.Contains(string(raw), "private prompt") {
 		t.Fatal("prompt reached Judge Log")
+	}
+}
+
+// Emit actual Agent output before the fake runner returns its post-work failure.
+type routerWorkOutputRunner struct {
+	*selectionLifecycleRunner
+}
+
+func (runner *routerWorkOutputRunner) RunPrepared(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {
+	if err := sink.Publish(ctx, runevent.RunEvent{RunID: req.RunID, Source: runevent.SourceAgent, Kind: runevent.KindAgentMessage, Payload: []byte(`{"text":"started"}`)}); err != nil {
+		return agent.ExecuteResult{}, err
+	}
+	return runner.selectionLifecycleRunner.RunPrepared(ctx, req, sink)
+}
+
+const routerCreditRefusalReason = "openrouter_credit_refused: OpenRouter refused a routed request for credit (openrouter_credits)"
+
+func TestJevRouterCreditRefusalFallsBackBeforeWork(t *testing.T) {
+	gate := &fakeJevRouterGate{}
+	fixture, runner, result := routerTaskFixture(t, gate, false, routerRefusal(routerCreditRefusalReason))
+	if result.Completed != 1 || result.Failed != 0 {
+		t.Fatalf("result=%+v", result)
+	}
+	requests := runner.runRequests()
+	if len(requests) != 2 || requests[0].Runtime.Model != agent.JevRouterModel || requests[1].Runtime.Model != "good-model" {
+		t.Fatalf("requests=%+v", requests)
+	}
+	if !runner.fallbackPreparedAfterNotification() || !runner.fallbackPreparedAfterVisibleMessage() {
+		t.Fatal("fallback preceded notification")
+	}
+	payload := eventPayloadMap(t, singleEventOfKind(t, fixture.sink, runevent.KindDaemonAgentSelectionFallback))
+	if payload["reason_code"] != "openrouter_credit_refused" || !strings.Contains(payload["reason"].(string), routerCreditRefusalReason) {
+		t.Fatalf("receipt=%+v", payload)
+	}
+	if len(gate.records) != 1 || !gate.records[0].Failed {
+		t.Fatalf("records=%+v", gate.records)
+	}
+}
+
+func TestJevRouterCreditRefusalFailsTheTaskAfterWork(t *testing.T) {
+	gate := &fakeJevRouterGate{}
+	failure := &agent.BatchFailureError{ExitCode: 1, Reason: routerCreditRefusalReason, Stderr: "credit refusal detail"}
+	fixture, runner, result := routerTaskFixture(t, gate, false, failure)
+	if result.Failed != 1 || result.Completed != 0 {
+		t.Fatalf("result=%+v", result)
+	}
+	if len(runner.runRequests()) != 1 || len(runner.prepareRequests()) != 1 || len(eventsOfKind(fixture.sink, runevent.KindDaemonAgentSelectionFallback)) != 0 {
+		t.Fatal("post-work refusal retried or activated fallback")
+	}
+	if countAgentStatusEvents(fixture.sink, agent.AgentWorkStartedStatus) != 1 {
+		t.Fatal("post-work test did not start Agent work")
+	}
+	graph, err := spec.Load(fixture.specsRoot, taskCycleSlug)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if graph.Tasks[0].Status != spec.StatusFailed || len(result.Outcomes) != 1 || !strings.Contains(result.Outcomes[0].Reason, routerCreditRefusalReason) || strings.Contains(result.Outcomes[0].Reason, "agent/protocol error") {
+		t.Fatalf("outcomes=%+v", result.Outcomes)
+	}
+	if len(gate.records) != 1 || !gate.records[0].Failed {
+		t.Fatalf("records=%+v", gate.records)
 	}
 }

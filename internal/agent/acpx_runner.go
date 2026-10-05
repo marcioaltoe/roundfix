@@ -1415,11 +1415,35 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 	if err != nil {
 		return result, err
 	}
+	classifyFailure := func(agentOutput bool, failure error) error {
+		return runner.classifyNoOutputFailure(ctx, req.ExecuteRequest, sink, agentOutput, failure)
+	}
 	if IsJevRouterSelection(req.Runtime.ID, req.Runtime.Model) {
 		unlock := runner.lockState()
 		relay, session := runner.routerRelay, runner.routerSessions[req.Session]
 		unlock()
-		defer func() { result.Router = relay.Take(session.token) }()
+		observed := false
+		observe := func() {
+			if !observed {
+				result.Router = relay.Take(session.token)
+				observed = true
+			}
+		}
+		defer observe()
+		classifyFailure = func(agentOutput bool, failure error) error {
+			observe()
+			if refusal := result.Router.Refusal; refusal != nil {
+				source := strings.TrimSpace(refusal.LimitSource)
+				if source == "" {
+					source = "unspecified"
+				}
+				var batch *BatchFailureError
+				if errors.As(failure, &batch) {
+					batch.Reason = "openrouter_credit_refused: OpenRouter refused a routed request for credit (" + source + ")"
+				}
+			}
+			return runner.classifyNoOutputFailure(ctx, req.ExecuteRequest, sink, agentOutput, failure)
+		}
 	}
 	args, err := acpxPromptArgs(req)
 	if err != nil {
@@ -1501,15 +1525,15 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 			return result, nil
 		}
 		mappedErr := runner.mapExitCode(ctx, req.ExecuteRequest, sink, exitCode, stderr.String(), result.Output)
-		return result, runner.classifyNoOutputFailure(ctx, req.ExecuteRequest, sink, stream.agentOutput, mappedErr)
+		return result, classifyFailure(stream.agentOutput, mappedErr)
 	}
 	if stream.err != nil {
 		failure := &BatchFailureError{Reason: stream.err.Error(), Stderr: stderr.String()}
-		return result, runner.classifyNoOutputFailure(ctx, req.ExecuteRequest, sink, stream.agentOutput, failure)
+		return result, classifyFailure(stream.agentOutput, failure)
 	}
 	if result.StopReason == "" {
 		failure := &BatchFailureError{Reason: "missing session/prompt stop reason", Stderr: stderr.String()}
-		return result, runner.classifyNoOutputFailure(ctx, req.ExecuteRequest, sink, stream.agentOutput, failure)
+		return result, classifyFailure(stream.agentOutput, failure)
 	}
 	return result, nil
 }

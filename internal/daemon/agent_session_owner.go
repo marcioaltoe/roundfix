@@ -726,7 +726,7 @@ func selectionReasonCode(err error) string {
 	if errors.As(err, &failure) {
 		code, _, _ := strings.Cut(failure.Reason, ":")
 		switch strings.TrimSpace(code) {
-		case agent.JevRouterKeyMissing, "jev_router_key_unbounded", "jev_spend_unreadable", "jev_ceiling_reached", "openrouter_credit_low":
+		case agent.JevRouterKeyMissing, "jev_router_key_unbounded", "jev_spend_unreadable", "jev_ceiling_reached", "openrouter_credit_low", "openrouter_credit_refused":
 			return strings.TrimSpace(code)
 		}
 		if failure.Err != nil {
