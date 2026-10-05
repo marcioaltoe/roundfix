@@ -69,23 +69,26 @@ type reconcileSummary struct {
 }
 
 type reconcileReport struct {
-	SchemaVersion       string                  `json:"schemaVersion"`
-	Mode                string                  `json:"mode"`
-	Repository          string                  `json:"repository"`
-	ApplyCommand        string                  `json:"applyCommand"`
-	Results             []reconcileResult       `json:"results"`
-	Runs                []reconcileResult       `json:"runs"`
-	Summary             reconcileSummary        `json:"summary"`
-	ProcessCandidates   []reconcileDebrisResult `json:"processCandidates"`
-	RunBranchCandidates []reconcileDebrisResult `json:"runBranchCandidates"`
-	StagingCandidates   []reconcileDebrisResult `json:"stagingCandidates"`
-	PreservedCandidates []reconcileDebrisResult `json:"preservedCandidates"`
-	DebrisSummary       reconcileDebrisSummary  `json:"debrisSummary"`
-	CarryForwards       []spec.CarryForward     `json:"carryForwards"`
+	SchemaVersion        string                   `json:"schemaVersion"`
+	Mode                 string                   `json:"mode"`
+	Repository           string                   `json:"repository"`
+	ApplyCommand         string                   `json:"applyCommand"`
+	Results              []reconcileResult        `json:"results"`
+	Runs                 []reconcileResult        `json:"runs"`
+	Summary              reconcileSummary         `json:"summary"`
+	ProcessCandidates    []reconcileDebrisResult  `json:"processCandidates"`
+	RunBranchCandidates  []reconcileDebrisResult  `json:"runBranchCandidates"`
+	StagingCandidates    []reconcileDebrisResult  `json:"stagingCandidates"`
+	ItemBranchCandidates *[]reconcileDebrisResult `json:"itemBranchCandidates,omitempty"`
+	PreservedCandidates  []reconcileDebrisResult  `json:"preservedCandidates"`
+	DebrisSummary        reconcileDebrisSummary   `json:"debrisSummary"`
+	CarryForwards        []spec.CarryForward      `json:"carryForwards"`
 }
 
 type reconcileDebrisResult struct {
 	Kind              string `json:"kind"`
+	ItemBranch        string `json:"itemBranch,omitempty"`
+	Head              string `json:"head,omitempty"`
 	RunID             string `json:"runId"`
 	Outcome           string `json:"outcome"`
 	OwnerPID          int    `json:"ownerPid"`
@@ -102,24 +105,29 @@ type reconcileDebrisResult struct {
 	run            store.Run
 	classification runworktree.BranchSetClassification
 	staging        runworktree.StagingCandidate
+	itemBranch     runworktree.ItemBranchReconciliation
 }
 
 type reconcileDebrisSummary struct {
-	ProcessCandidates   int `json:"processCandidates"`
-	RunBranchCandidates int `json:"runBranchCandidates"`
-	StagingCandidates   int `json:"stagingCandidates"`
-	Preserved           int `json:"preserved"`
-	ProcessesApplied    int `json:"processesApplied"`
-	RunBranchesApplied  int `json:"runBranchesApplied"`
-	StagingApplied      int `json:"stagingApplied"`
+	ProcessCandidates    int `json:"processCandidates"`
+	RunBranchCandidates  int `json:"runBranchCandidates"`
+	StagingCandidates    int `json:"stagingCandidates"`
+	Preserved            int `json:"preserved"`
+	ProcessesApplied     int `json:"processesApplied"`
+	RunBranchesApplied   int `json:"runBranchesApplied"`
+	StagingApplied       int `json:"stagingApplied"`
+	ItemBranchCandidates int `json:"itemBranchCandidates"`
+	ItemBranchesApplied  int `json:"itemBranchesApplied"`
 }
 
 type reconcileRunSelection struct {
-	selected     []store.Run
-	all          []store.Run
-	coverage     []daemon.RunTaskCoverage
-	taskEvidence map[string]map[string]reconcileTaskEvidence
-	mergedHeads  []runworktree.MergedHead
+	selected         []store.Run
+	all              []store.Run
+	coverage         []daemon.RunTaskCoverage
+	taskEvidence     map[string]map[string]reconcileTaskEvidence
+	mergedHeads      []runworktree.MergedHead
+	liveItemBranches []string
+	worktreeLocation string
 }
 
 type reconcileTaskEvidence struct {
@@ -172,6 +180,7 @@ func runReconcileCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitRunFailed
 	}
 
+	runs.worktreeLocation = loaded.Config.Worktree.Location
 	report := inspectReconcileRuns(ctx, repository, opts, runs)
 	if opts.carryForward {
 		applyReconcileStaging(ctx, repository, &report)
@@ -274,7 +283,7 @@ func runReconcileCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 	if opts.apply && (report.Summary.Safe+report.Summary.Superseded > 0 ||
 		len(report.ProcessCandidates) > 0 || len(report.RunBranchCandidates) > 0 ||
-		len(report.StagingCandidates) > 0) {
+		len(report.StagingCandidates) > 0 || report.DebrisSummary.ItemBranchCandidates > 0) {
 		applyReconcileReport(ctx, loaded.HomeDir, opts, &report)
 	}
 	if err := printReconcileReport(stdout, opts.format, report); err != nil {
@@ -435,16 +444,24 @@ func loadReconcileRuns(
 			selected = append(selected, run)
 		}
 	}
+	var liveItemBranches []string
+	if runID == "" {
+		liveItemBranches, err = loadLiveItemBranches(ctx, reader, loadedRepository)
+		if err != nil {
+			return reconcileRunSelection{}, err
+		}
+	}
 	coverage, taskEvidence, err := loadReconcileTaskCoverage(ctx, reader, all)
 	if err != nil {
 		return reconcileRunSelection{}, err
 	}
 	return reconcileRunSelection{
-		selected:     selected,
-		all:          all,
-		coverage:     coverage,
-		taskEvidence: taskEvidence,
-		mergedHeads:  mergedHeads,
+		selected:         selected,
+		all:              all,
+		coverage:         coverage,
+		taskEvidence:     taskEvidence,
+		mergedHeads:      mergedHeads,
+		liveItemBranches: liveItemBranches,
 	}, nil
 }
 
@@ -649,6 +666,9 @@ func inspectReconcileRuns(
 	inspectReconcileProcesses(ctx, opts, runs, &report)
 	inspectReconcileRunBranches(ctx, repository, opts, runs, classifications, &report)
 	inspectReconcileStaging(ctx, repository, opts, &report)
+	if opts.runID == "" {
+		inspectReconcileItemBranches(ctx, repository, opts, runs, &report)
+	}
 	report.DebrisSummary.ProcessCandidates = len(report.ProcessCandidates)
 	report.DebrisSummary.RunBranchCandidates = len(report.RunBranchCandidates)
 	report.DebrisSummary.StagingCandidates = len(report.StagingCandidates)
@@ -1070,6 +1090,7 @@ func applyReconcileReport(
 	applyReconcileProcesses(ctx, report)
 	applyReconcileWorktrees(ctx, homeDir, opts, report)
 	applyReconcileStaging(ctx, report.Repository, report)
+	applyReconcileItemBranches(ctx, homeDir, report)
 	for index := range report.RunBranchCandidates {
 		candidate := &report.RunBranchCandidates[index]
 		if err := runworktree.ApplyRunBranchCandidate(ctx, candidate.classification, candidate.RunBranch); err != nil {
@@ -1265,6 +1286,16 @@ func reconcileText(report reconcileReport) string {
 		fmt.Fprintf(&output, "  action: %s\n", textReconcileValue(candidate.Action))
 		fmt.Fprintf(&output, "  refusal-reason: %s\n", textReconcileValue(candidate.RefusalReason))
 	}
+	if report.ItemBranchCandidates != nil {
+		for _, candidate := range *report.ItemBranchCandidates {
+			fmt.Fprintf(&output, "Item branch candidate: %s (Spec %s)\n", candidate.ItemBranch, candidate.SpecSlug)
+			fmt.Fprintf(&output, "  head: %s\n", textReconcileValue(candidate.Head))
+			fmt.Fprintf(&output, "  worktree: %s\n", textReconcileValue(candidate.Worktree))
+			fmt.Fprintf(&output, "  proof: %s\n", textReconcileValue(candidate.Proof))
+			fmt.Fprintf(&output, "  action: %s\n", textReconcileValue(candidate.Action))
+			fmt.Fprintf(&output, "  refusal-reason: %s\n", textReconcileValue(candidate.RefusalReason))
+		}
+	}
 	for _, candidate := range report.StagingCandidates {
 		fmt.Fprintf(&output, "Staging candidate: %s\n", textReconcileValue(candidate.Worktree))
 		fmt.Fprintf(&output, "  owner-pid: %d\n", candidate.OwnerPID)
@@ -1274,8 +1305,13 @@ func reconcileText(report reconcileReport) string {
 	}
 	for _, candidate := range report.PreservedCandidates {
 		fmt.Fprintf(&output, "Preserved candidate: kind=%s Run=%s\n", candidate.Kind, candidate.RunID)
-		fmt.Fprintf(&output, "  owner-pid: %d\n", candidate.OwnerPID)
-		fmt.Fprintf(&output, "  run-branch: %s\n", textReconcileValue(candidate.RunBranch))
+		if candidate.Kind == "itemBranch" {
+			fmt.Fprintf(&output, "  item-branch: %s\n", textReconcileValue(candidate.ItemBranch))
+			fmt.Fprintf(&output, "  head: %s\n", textReconcileValue(candidate.Head))
+		} else {
+			fmt.Fprintf(&output, "  owner-pid: %d\n", candidate.OwnerPID)
+			fmt.Fprintf(&output, "  run-branch: %s\n", textReconcileValue(candidate.RunBranch))
+		}
 		fmt.Fprintf(&output, "  worktree: %s\n", textReconcileValue(candidate.Worktree))
 		fmt.Fprintf(&output, "  action: %s\n", textReconcileValue(candidate.Action))
 		fmt.Fprintf(&output, "  refusal-reason: %s\n", textReconcileValue(candidate.RefusalReason))
@@ -1306,7 +1342,7 @@ func reconcileText(report reconcileReport) string {
 	)
 	fmt.Fprintf(
 		&output,
-		"Debris summary: process-candidates=%d run-branch-candidates=%d staging-candidates=%d staging-applied=%d preserved=%d processes-applied=%d run-branches-applied=%d\n",
+		"Debris summary: process-candidates=%d run-branch-candidates=%d staging-candidates=%d staging-applied=%d preserved=%d processes-applied=%d run-branches-applied=%d item-branch-candidates=%d item-branches-applied=%d\n",
 		report.DebrisSummary.ProcessCandidates,
 		report.DebrisSummary.RunBranchCandidates,
 		report.DebrisSummary.StagingCandidates,
@@ -1314,6 +1350,8 @@ func reconcileText(report reconcileReport) string {
 		report.DebrisSummary.Preserved,
 		report.DebrisSummary.ProcessesApplied,
 		report.DebrisSummary.RunBranchesApplied,
+		report.DebrisSummary.ItemBranchCandidates,
+		report.DebrisSummary.ItemBranchesApplied,
 	)
 	if report.Mode == "dry-run" {
 		fmt.Fprintf(&output, "Apply with: %s\n", report.ApplyCommand)
@@ -1368,4 +1406,94 @@ func printReconcileValidationFailure(err error, stderr io.Writer) {
 func printReconcileOperationalFailure(err error, nextAction string, stderr io.Writer) {
 	fmt.Fprintf(stderr, "%s: reconcile failed: %v\n", app.Name, err)
 	fmt.Fprintf(stderr, "Next safe action: %s\n", nextAction)
+}
+
+// Read live items through the reconciliation reader, including repository aliases
+// accepted by the Delivery Queue merge-record loader.
+func loadLiveItemBranches(ctx context.Context, reader *store.Store, repository string) ([]string, error) {
+	resolved, err := filepath.EvalSymlinks(repository)
+	if err != nil {
+		return nil, fmt.Errorf("resolve repository for live Delivery Queue items: %w", err)
+	}
+	roots := []string{resolved}
+	if filepath.Clean(repository) != filepath.Clean(resolved) {
+		roots = append(roots, repository)
+	}
+	live := make([]string, 0)
+	for _, root := range roots {
+		queue, found, err := reader.DeliveryQueue(ctx, root)
+		if err != nil {
+			return nil, fmt.Errorf("read live Delivery Queue items: %w", err)
+		}
+		if !found {
+			continue
+		}
+		for _, item := range queue.Items {
+			if item.Stage != store.DeliveryStageMerged && strings.TrimSpace(item.Branch) != "" {
+				live = append(live, strings.TrimSpace(item.Branch))
+			}
+		}
+	}
+	return live, nil
+}
+
+func inspectReconcileItemBranches(ctx context.Context, repository string, opts reconcileOptions, runs reconcileRunSelection, report *reconcileReport) {
+	candidates := make([]reconcileDebrisResult, 0)
+	report.ItemBranchCandidates = &candidates
+	inspected, err := runworktree.InspectItemBranches(ctx, repository, runs.worktreeLocation, runs.liveItemBranches)
+	if err != nil {
+		report.Summary.OperationalFailures++
+		report.PreservedCandidates = append(report.PreservedCandidates, reconcileDebrisResult{Kind: "itemBranch", Action: "preserve", RefusalReason: err.Error()})
+		return
+	}
+	for _, item := range inspected {
+		candidate := reconcileDebrisResult{Kind: "itemBranch", SpecSlug: item.SpecSlug, ItemBranch: item.Branch, Head: item.Head, Worktree: item.Worktree, Proof: item.Proof, RefusalReason: item.RefusalReason, itemBranch: item}
+		if item.Releasable {
+			candidate.Action = debrisCandidateAction(opts.apply)
+			candidates = append(candidates, candidate)
+		} else {
+			candidate.Action = "preserve"
+			report.PreservedCandidates = append(report.PreservedCandidates, candidate)
+		}
+	}
+	report.DebrisSummary.ItemBranchCandidates = len(candidates)
+}
+
+func applyReconcileItemBranches(ctx context.Context, homeDir string, report *reconcileReport) {
+	if report.ItemBranchCandidates == nil {
+		return
+	}
+	for index := range *report.ItemBranchCandidates {
+		candidate := &(*report.ItemBranchCandidates)[index]
+		err := applyReconcileItemBranch(ctx, homeDir, report.Repository, candidate.itemBranch)
+		if err != nil {
+			candidate.Action = "preserve"
+			candidate.RefusalReason = err.Error()
+			report.PreservedCandidates = append(report.PreservedCandidates, *candidate)
+			report.DebrisSummary.Preserved++
+			report.Summary.OperationalFailures++
+			continue
+		}
+		candidate.Action = "released"
+		candidate.RefusalReason = ""
+		report.DebrisSummary.ItemBranchesApplied++
+	}
+}
+
+func applyReconcileItemBranch(ctx context.Context, homeDir, repository string, item runworktree.ItemBranchReconciliation) error {
+	reader, err := store.OpenReader(ctx, homeDir)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("reinspect live Delivery Queue items: %w", err)
+	}
+	if err == nil {
+		defer func() { _ = reader.Close() }()
+		live, err := loadLiveItemBranches(ctx, reader, repository)
+		if err != nil {
+			return err
+		}
+		if slices.Contains(live, item.Branch) {
+			return fmt.Errorf("item branch belongs to live Delivery Queue item %q", item.SpecSlug)
+		}
+	}
+	return runworktree.ApplyItemBranch(ctx, item)
 }

@@ -1,0 +1,403 @@
+[
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "init",
+      "-b",
+      "main"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 0,
+    "stdout": "Initialized empty Git repository in /private/tmp/0227-flow-7y_dmwg9/repo/.git/\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "config",
+      "commit.gpgsign",
+      "false"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "config",
+      "core.hooksPath",
+      "/dev/null"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "config",
+      "user.name",
+      "QA"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "config",
+      "user.email",
+      "qa@example.invalid"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "add",
+      "."
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "commit",
+      "-m",
+      "chore: seed"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 0,
+    "stdout": "[main (root-commit) 5a098d3] chore: seed\n 1 file changed, 1 insertion(+)\n create mode 100644 seed.txt\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "rev-parse",
+      "HEAD"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 0,
+    "stdout": "5a098d37aa96bc0d687f204061d3c54aa883a8cb\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "worktree",
+      "add",
+      "-b",
+      "roundfix/run-run_20261005T134000Z_0123456789abcdef",
+      "/private/tmp/0227-flow-7y_dmwg9/fixture-home/.roundfix/worktrees/repo-9ba061e0/run_20261005T134000Z_0123456789abcdef",
+      "5a098d37aa96bc0d687f204061d3c54aa883a8cb"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 0,
+    "stdout": "HEAD is now at 5a098d3 chore: seed\n",
+    "stderr": "Preparing worktree (new branch 'roundfix/run-run_20261005T134000Z_0123456789abcdef')\n"
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "add",
+      "."
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/fixture-home/.roundfix/worktrees/repo-9ba061e0/run_20261005T134000Z_0123456789abcdef",
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "commit",
+      "-m",
+      "fix: inherited operator work"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/fixture-home/.roundfix/worktrees/repo-9ba061e0/run_20261005T134000Z_0123456789abcdef",
+    "exit": 0,
+    "stdout": "[roundfix/run-run_20261005T134000Z_0123456789abcdef 30bdd56] fix: inherited operator work\n 2 files changed, 2 insertions(+)\n create mode 100644 operator.txt\n create mode 100644 renamed.txt\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "add",
+      "."
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/fixture-home/.roundfix/worktrees/repo-9ba061e0/run_20261005T134000Z_0123456789abcdef",
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "commit",
+      "-m",
+      "feat: settle task_05\n\nRoundfix-Spec: 0172-reconcile-merged-spec\nRoundfix-Task: task_05"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/fixture-home/.roundfix/worktrees/repo-9ba061e0/run_20261005T134000Z_0123456789abcdef",
+    "exit": 0,
+    "stdout": "[roundfix/run-run_20261005T134000Z_0123456789abcdef aefc318] feat: settle task_05\n 1 file changed, 1 insertion(+)\n create mode 100644 feature.txt\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "rev-parse",
+      "HEAD"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/fixture-home/.roundfix/worktrees/repo-9ba061e0/run_20261005T134000Z_0123456789abcdef",
+    "exit": 0,
+    "stdout": "aefc318cca729d593307edc67074817d9a0a4104\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "add",
+      "."
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "commit",
+      "-m",
+      "feat: archived delivery"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 0,
+    "stdout": "[main 60f9f16] feat: archived delivery\n 7 files changed, 30 insertions(+)\n create mode 100644 docs/history/specs/0172-reconcile-merged-spec/_prd.md\n create mode 100644 docs/history/specs/0172-reconcile-merged-spec/_tasks.md\n create mode 100644 docs/history/specs/0172-reconcile-merged-spec/qa/qa-report-2026-10-04.md\n create mode 100644 docs/history/specs/0172-reconcile-merged-spec/task_05.md\n create mode 100644 feature.txt\n create mode 100644 operator.txt\n create mode 100644 renamed.txt\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "mv",
+      "renamed.txt",
+      "later-name.txt"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "add",
+      "."
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "commit",
+      "-m",
+      "fix: later default changes"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 0,
+    "stdout": "[main acff3d3] fix: later default changes\n 2 files changed, 1 insertion(+), 1 deletion(-)\n rename renamed.txt => later-name.txt (100%)\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "sqlite3",
+      "-readonly",
+      "/Users/marcio/.roundfix/roundfix.db",
+      ".schema"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0227-reconcile-releases-the-runs-of-merged-specs-2e433a1f6c12f52c-5d3ac3de-26868229/run_20261005T123704Z_9101d15c662d2abe",
+    "exit": 0,
+    "stdout": "CREATE TABLE runs (\n\t\t\tid TEXT PRIMARY KEY,\n\t\t\tkind TEXT NOT NULL,\n\t\t\tstate TEXT NOT NULL,\n\t\t\thead_repository TEXT NOT NULL DEFAULT '',\n\t\t\thead_branch TEXT NOT NULL DEFAULT '',\n\t\t\tbase_repository TEXT NOT NULL DEFAULT '',\n\t\t\tpr_number TEXT NOT NULL DEFAULT '',\n\t\t\tgit_root TEXT NOT NULL,\n\t\t\tlocal_branch TEXT NOT NULL,\n\t\t\thead_sha TEXT NOT NULL DEFAULT '',\n\t\t\tartifact_dir TEXT NOT NULL DEFAULT '',\n\t\t\twork_dir TEXT,\n\t\t\tspec_slug TEXT NOT NULL DEFAULT '',\n\t\t\tagent TEXT NOT NULL DEFAULT '',\n\t\t\tmodel TEXT NOT NULL DEFAULT '',\n\t\t\treasoning_effort TEXT NOT NULL DEFAULT '',\n\t\t\towner_pid INTEGER,\n\t\t\towner_identity TEXT,\n\t\t\towner_identity_unproven INTEGER NOT NULL DEFAULT 0,\n\t\t\tstop_requested_at TEXT,\n\t\t\tcreated_at TEXT NOT NULL,\n\t\t\tupdated_at TEXT NOT NULL,\n\t\t\tcompleted_at TEXT NOT NULL DEFAULT ''\n\t\t, repository_root TEXT NOT NULL DEFAULT '');\nCREATE TABLE active_run_locks (\n\ttarget_kind TEXT NOT NULL,\n\ttarget_key TEXT NOT NULL,\n\trun_id TEXT NOT NULL UNIQUE,\n\tcreated_at TEXT NOT NULL,\n\tPRIMARY KEY (target_kind, target_key),\n\tFOREIGN KEY (run_id) REFERENCES runs(id) ON DELETE CASCADE\n);\nCREATE INDEX idx_runs_head ON runs (head_repository, head_branch);\nCREATE TABLE interactive_defaults (\n\t\t\tkey TEXT PRIMARY KEY,\n\t\t\tvalue TEXT NOT NULL,\n\t\t\tupdated_at TEXT NOT NULL\n\t\t);\nCREATE TABLE run_events (\n\t\t\trun_id TEXT NOT NULL,\n\t\t\tcursor INTEGER NOT NULL,\n\t\t\tbatch INTEGER NOT NULL DEFAULT 0,\n\t\t\tsource TEXT NOT NULL,\n\t\t\tkind TEXT NOT NULL,\n\t\t\treview_issue TEXT NOT NULL DEFAULT '',\n\t\t\ttool_id TEXT NOT NULL DEFAULT '',\n\t\t\ttool_state TEXT NOT NULL DEFAULT '',\n\t\t\tsummary TEXT NOT NULL DEFAULT '',\n\t\t\tcreated_at TEXT NOT NULL,\n\t\t\tpayload TEXT NOT NULL DEFAULT '',\n\t\t\tPRIMARY KEY (run_id, cursor),\n\t\t\tFOREIGN KEY (run_id) REFERENCES runs(id) ON DELETE CASCADE\n\t\t);\nCREATE TABLE run_agent_selections (\n\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\trun_id TEXT NOT NULL,\n\tscope_kind TEXT NOT NULL,\n\tscope_id TEXT NOT NULL,\n\tcategory TEXT NOT NULL,\n\tprofile_source TEXT NOT NULL,\n\tattempt INTEGER NOT NULL,\n\tselection_role TEXT NOT NULL,\n\tfallback_index INTEGER NOT NULL DEFAULT 0,\n\truntime TEXT NOT NULL,\n\tmodel TEXT NOT NULL,\n\treasoning_effort TEXT NOT NULL,\n\tstatus TEXT NOT NULL,\n\treason_code TEXT NOT NULL DEFAULT '',\n\treason TEXT NOT NULL DEFAULT '',\n\tcreated_at TEXT NOT NULL,\n\tFOREIGN KEY (run_id) REFERENCES runs(id) ON DELETE CASCADE,\n\tCHECK (scope_kind IN ('task', 'qa', 'review')),\n\tCHECK (selection_role IN ('preferred', 'fallback')),\n\tCHECK (status IN ('attempting', 'active', 'failed', 'closed')),\n\tCHECK (attempt > 0),\n\tCHECK ((selection_role = 'preferred' AND fallback_index = 0) OR (selection_role = 'fallback' AND fallback_index > 0)),\n\tUNIQUE (run_id, scope_kind, scope_id, attempt)\n);\nCREATE TABLE sqlite_sequence(name,seq);\nCREATE INDEX idx_run_agent_selections_scope\n\t\t\tON run_agent_selections (run_id, scope_kind, scope_id, attempt);\nCREATE TABLE run_windows (\n\t\t\tgit_root TEXT PRIMARY KEY,\n\t\t\tcutoff_at INTEGER NOT NULL,\n\t\t\tcreated_at INTEGER NOT NULL\n\t\t);\nCREATE TABLE delivery_queues (\n\t\t\tgit_root TEXT PRIMARY KEY\n\t\t, owner_pid INTEGER, owner_identity TEXT NOT NULL DEFAULT '', deadline_unix INTEGER NOT NULL DEFAULT 0, max_retries INTEGER NOT NULL DEFAULT 0, max_tokens INTEGER NOT NULL DEFAULT 0);\nCREATE TABLE delivery_queue_items (\n\t\t\tgit_root TEXT NOT NULL,\n\t\t\tspec_slug TEXT NOT NULL,\n\t\t\tposition INTEGER NOT NULL,\n\t\t\tstage TEXT NOT NULL,\n\t\t\tblocker TEXT NOT NULL DEFAULT '',\n\t\t\trun_id TEXT NOT NULL DEFAULT '',\n\t\t\tcandidate_commits TEXT NOT NULL DEFAULT '[]',\n\t\t\tpull_request_number TEXT NOT NULL DEFAULT '',\n\t\t\tmerge_commit TEXT NOT NULL DEFAULT '', branch TEXT NOT NULL DEFAULT '', starting_branch TEXT NOT NULL DEFAULT '', worktree TEXT NOT NULL DEFAULT '', worktree_provisioned INTEGER NOT NULL DEFAULT 0, retry_count INTEGER NOT NULL DEFAULT 0, warning TEXT NOT NULL DEFAULT '',\n\t\t\tPRIMARY KEY (git_root, spec_slug),\n\t\t\tUNIQUE (git_root, position),\n\t\t\tFOREIGN KEY (git_root) REFERENCES delivery_queues(git_root) ON DELETE CASCADE\n\t\t);\nCREATE TABLE delivery_action_intents (\n\t\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\t\tgit_root TEXT NOT NULL,\n\t\t\tspec_slug TEXT NOT NULL,\n\t\t\taction TEXT NOT NULL,\n\t\t\tcreated_at TEXT NOT NULL,\n\t\t\tFOREIGN KEY (git_root, spec_slug)\n\t\t\t\tREFERENCES delivery_queue_items(git_root, spec_slug) ON DELETE CASCADE\n\t\t);\nCREATE INDEX idx_delivery_action_intents_queue\n\t\t\tON delivery_action_intents (git_root, id);\nCREATE TABLE delivery_action_receipts (\n\t\t\tintent_id INTEGER PRIMARY KEY,\n\t\t\tresult TEXT NOT NULL,\n\t\t\tcreated_at TEXT NOT NULL,\n\t\t\tFOREIGN KEY (intent_id) REFERENCES delivery_action_intents(id) ON DELETE CASCADE\n\t\t);\nCREATE TABLE run_token_usage (\n id INTEGER PRIMARY KEY AUTOINCREMENT,\n run_id TEXT NOT NULL REFERENCES runs(id) ON DELETE CASCADE,\n scope_kind TEXT NOT NULL CHECK (scope_kind IN ('task','qa','review','session')),\n scope_id TEXT NOT NULL, session TEXT NOT NULL, attempt INTEGER NOT NULL DEFAULT 0,\n runtime TEXT NOT NULL DEFAULT '', model TEXT NOT NULL DEFAULT '', reasoning_effort TEXT NOT NULL DEFAULT '',\n basis TEXT NOT NULL CHECK (basis IN ('unreported','turn','request-sum')),\n total_tokens INTEGER, input_tokens INTEGER, output_tokens INTEGER,\n cached_read_tokens INTEGER, cached_write_tokens INTEGER, thought_tokens INTEGER,\n readings INTEGER NOT NULL DEFAULT 0, cost_amount REAL, cost_currency TEXT NOT NULL DEFAULT '',\n created_at TEXT NOT NULL,\n CHECK ((basis = 'unreported' AND total_tokens IS NULL) OR (basis != 'unreported' AND total_tokens IS NOT NULL)));\nCREATE INDEX idx_run_token_usage_scope ON run_token_usage (run_id, scope_kind, scope_id);\nCREATE TABLE delivery_queue_runs (\n git_root TEXT NOT NULL REFERENCES delivery_queues(git_root) ON DELETE CASCADE,\n spec_slug TEXT NOT NULL, run_id TEXT NOT NULL, PRIMARY KEY (git_root, run_id));\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0227-reconcile-releases-the-runs-of-merged-specs-2e433a1f6c12f52c-5d3ac3de-26868229/run_20261005T123704Z_9101d15c662d2abe/bin/roundfix",
+      "reconcile",
+      "run_20261005T134000Z_0123456789abcdef",
+      "--format=json"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 0,
+    "stdout": "{\"schemaVersion\":\"roundfix-reconcile/v1\",\"mode\":\"dry-run\",\"repository\":\"/private/tmp/0227-flow-7y_dmwg9/repo\",\"applyCommand\":\"roundfix reconcile run_20261005T134000Z_0123456789abcdef --apply\",\"results\":[{\"runId\":\"run_20261005T134000Z_0123456789abcdef\",\"outcome\":\"Stopped\",\"classification\":\"superseded\",\"runBranch\":\"roundfix/run-run_20261005T134000Z_0123456789abcdef\",\"runHead\":\"aefc318cca729d593307edc67074817d9a0a4104\",\"targetBranch\":\"delivery/0172-reconcile-merged-spec\",\"targetHead\":\"acff3d3f93519a4708a36293a86129581657e28e\",\"worktree\":\"/private/tmp/0227-flow-7y_dmwg9/fixture-home/.roundfix/worktrees/repo-9ba061e0/run_20261005T134000Z_0123456789abcdef\",\"supersedingReport\":\"\",\"evidence\":\"Run work is superseded by the delivery of Spec 0172-reconcile-merged-spec: delivery commit 60f9f16b3c3a archived it on default branch \\\"main\\\"; 1 Task commit(s...\",\"action\":\"would release with --apply\",\"refusalReason\":\"\"}],\"runs\":[{\"runId\":\"run_20261005T134000Z_0123456789abcdef\",\"outcome\":\"Stopped\",\"classification\":\"superseded\",\"runBranch\":\"roundfix/run-run_20261005T134000Z_0123456789abcdef\",\"runHead\":\"aefc318cca729d593307edc67074817d9a0a4104\",\"targetBranch\":\"delivery/0172-reconcile-merged-spec\",\"targetHead\":\"acff3d3f93519a4708a36293a86129581657e28e\",\"worktree\":\"/private/tmp/0227-flow-7y_dmwg9/fixture-home/.roundfix/worktrees/repo-9ba061e0/run_20261005T134000Z_0123456789abcdef\",\"supersedingReport\":\"\",\"evidence\":\"Run work is superseded by the delivery of Spec 0172-reconcile-merged-spec: delivery commit 60f9f16b3c3a archived it on default branch \\\"main\\\"; 1 Task commit(s...\",\"action\":\"would release with --apply\",\"refusalReason\":\"\"}],\"summary\":{\"total\":1,\"safe\":0,\"superseded\":1,\"unintegrated\":0,\"dirty\":0,\"unknown\":0,\"released\":0,\"applied\":0,\"preserved\":0,\"operationalFailures\":0},\"processCandidates\":[],\"runBranchCandidates\":[],\"stagingCandidates\":[],\"preservedCandidates\":[],\"debrisSummary\":{\"processCandidates\":0,\"runBranchCandidates\":0,\"stagingCandidates\":0,\"preserved\":0,\"processesApplied\":0,\"runBranchesApplied\":0,\"stagingApplied\":0,\"itemBranchCandidates\":0,\"itemBranchesApplied\":0},\"carryForwards\":null}\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0227-reconcile-releases-the-runs-of-merged-specs-2e433a1f6c12f52c-5d3ac3de-26868229/run_20261005T123704Z_9101d15c662d2abe/bin/roundfix",
+      "reconcile",
+      "run_20261005T134000Z_0123456789abcdef",
+      "--format=json"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 0,
+    "stdout": "{\"schemaVersion\":\"roundfix-reconcile/v1\",\"mode\":\"dry-run\",\"repository\":\"/private/tmp/0227-flow-7y_dmwg9/repo\",\"applyCommand\":\"roundfix reconcile run_20261005T134000Z_0123456789abcdef --apply\",\"results\":[{\"runId\":\"run_20261005T134000Z_0123456789abcdef\",\"outcome\":\"Stopped\",\"classification\":\"dirty\",\"runBranch\":\"roundfix/run-run_20261005T134000Z_0123456789abcdef\",\"runHead\":\"aefc318cca729d593307edc67074817d9a0a4104\",\"targetBranch\":\"delivery/0172-reconcile-merged-spec\",\"targetHead\":\"\",\"worktree\":\"/private/tmp/0227-flow-7y_dmwg9/fixture-home/.roundfix/worktrees/repo-9ba061e0/run_20261005T134000Z_0123456789abcdef\",\"supersedingReport\":\"\",\"evidence\":\"Run Worktree has tracked or untracked changes\",\"action\":\"preserve\",\"refusalReason\":\"Run Worktree has tracked or untracked changes\"}],\"runs\":[{\"runId\":\"run_20261005T134000Z_0123456789abcdef\",\"outcome\":\"Stopped\",\"classification\":\"dirty\",\"runBranch\":\"roundfix/run-run_20261005T134000Z_0123456789abcdef\",\"runHead\":\"aefc318cca729d593307edc67074817d9a0a4104\",\"targetBranch\":\"delivery/0172-reconcile-merged-spec\",\"targetHead\":\"\",\"worktree\":\"/private/tmp/0227-flow-7y_dmwg9/fixture-home/.roundfix/worktrees/repo-9ba061e0/run_20261005T134000Z_0123456789abcdef\",\"supersedingReport\":\"\",\"evidence\":\"Run Worktree has tracked or untracked changes\",\"action\":\"preserve\",\"refusalReason\":\"Run Worktree has tracked or untracked changes\"}],\"summary\":{\"total\":1,\"safe\":0,\"superseded\":0,\"unintegrated\":0,\"dirty\":1,\"unknown\":0,\"released\":0,\"applied\":0,\"preserved\":1,\"operationalFailures\":0},\"processCandidates\":[],\"runBranchCandidates\":[],\"stagingCandidates\":[],\"preservedCandidates\":[{\"kind\":\"runBranch\",\"runId\":\"run_20261005T134000Z_0123456789abcdef\",\"outcome\":\"Stopped\",\"ownerPid\":0,\"processIds\":null,\"runBranch\":\"roundfix/run-run_20261005T134000Z_0123456789abcdef\",\"targetBranch\":\"delivery/0172-reconcile-merged-spec\",\"worktree\":\"/private/tmp/0227-flow-7y_dmwg9/fixture-home/.roundfix/worktrees/repo-9ba061e0/run_20261005T134000Z_0123456789abcdef\",\"specSlug\":\"0172-reconcile-merged-spec\",\"supersedingReport\":\"\",\"proof\":\"\",\"action\":\"preserve\",\"refusalReason\":\"Run Worktree classification \\\"dirty\\\" is not a clean releasable branch surface\"}],\"debrisSummary\":{\"processCandidates\":0,\"runBranchCandidates\":0,\"stagingCandidates\":0,\"preserved\":1,\"processesApplied\":0,\"runBranchesApplied\":0,\"stagingApplied\":0,\"itemBranchCandidates\":0,\"itemBranchesApplied\":0},\"carryForwards\":null}\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "branch",
+      "roundfix/deliver-0172-reconcile-merged-spec-0123456789abcdef",
+      "aefc318cca729d593307edc67074817d9a0a4104"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "branch",
+      "roundfix/deliver-0172-reconcile-merged-spec-fedcba9876543210",
+      "aefc318cca729d593307edc67074817d9a0a4104"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0227-reconcile-releases-the-runs-of-merged-specs-2e433a1f6c12f52c-5d3ac3de-26868229/run_20261005T123704Z_9101d15c662d2abe/bin/roundfix",
+      "reconcile"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 0,
+    "stdout": "Repository: /private/tmp/0227-flow-7y_dmwg9/repo\nMode: dry-run\nRun: run_20261005T134000Z_0123456789abcdef\n  outcome: Stopped\n  classification: superseded\n  run-branch: roundfix/run-run_20261005T134000Z_0123456789abcdef\n  run-head: aefc318cca729d593307edc67074817d9a0a4104\n  target-branch: delivery/0172-reconcile-merged-spec\n  target-head: acff3d3f93519a4708a36293a86129581657e28e\n  worktree: /private/tmp/0227-flow-7y_dmwg9/fixture-home/.roundfix/worktrees/repo-9ba061e0/run_20261005T134000Z_0123456789abcdef\n  superseding-report: -\n  evidence: Run work is superseded by the delivery of Spec 0172-reconcile-merged-spec: delivery commit 60f9f16b3c3a archived it on default branch \"main\"; 1 Task commit(s...\n  action: would release with --apply\n  refusal-reason: -\nItem branch candidate: roundfix/deliver-0172-reconcile-merged-spec-0123456789abcdef (Spec 0172-reconcile-merged-spec)\n  head: aefc318cca729d593307edc67074817d9a0a4104\n  worktree: -\n  proof: item branch is superseded by the delivery of Spec 0172-reconcile-merged-spec: delivery commit 60f9f16b3c3a archived it on default branch \"main\"; 1 Task commit(s...\n  action: would reclaim with --apply\n  refusal-reason: -\nPreserved candidate: kind=itemBranch Run=\n  item-branch: roundfix/deliver-0172-reconcile-merged-spec-fedcba9876543210\n  head: aefc318cca729d593307edc67074817d9a0a4104\n  worktree: -\n  action: preserve\n  refusal-reason: item branch belongs to live Delivery Queue item \"0172-reconcile-merged-spec\"\nSummary: total=1 safe=0 superseded=1 unintegrated=0 dirty=0 unknown=0 released=0 applied=0 preserved=0 operational-failures=0\nDebris summary: process-candidates=0 run-branch-candidates=0 staging-candidates=0 staging-applied=0 preserved=1 processes-applied=0 run-branches-applied=0 item-branch-candidates=1 item-branches-applied=0\nApply with: roundfix reconcile --apply\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0227-reconcile-releases-the-runs-of-merged-specs-2e433a1f6c12f52c-5d3ac3de-26868229/run_20261005T123704Z_9101d15c662d2abe/bin/roundfix",
+      "reconcile",
+      "--apply",
+      "--format=json"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 0,
+    "stdout": "{\"schemaVersion\":\"roundfix-reconcile/v1\",\"mode\":\"apply\",\"repository\":\"/private/tmp/0227-flow-7y_dmwg9/repo\",\"applyCommand\":\"roundfix reconcile --apply\",\"results\":[{\"runId\":\"run_20261005T134000Z_0123456789abcdef\",\"outcome\":\"Stopped\",\"classification\":\"superseded\",\"runBranch\":\"roundfix/run-run_20261005T134000Z_0123456789abcdef\",\"runHead\":\"aefc318cca729d593307edc67074817d9a0a4104\",\"targetBranch\":\"delivery/0172-reconcile-merged-spec\",\"targetHead\":\"acff3d3f93519a4708a36293a86129581657e28e\",\"worktree\":\"/private/tmp/0227-flow-7y_dmwg9/fixture-home/.roundfix/worktrees/repo-9ba061e0/run_20261005T134000Z_0123456789abcdef\",\"supersedingReport\":\"\",\"evidence\":\"Run work is superseded by the delivery of Spec 0172-reconcile-merged-spec: delivery commit 60f9f16b3c3a archived it on default branch \\\"main\\\"; 1 Task commit(s...\",\"action\":\"released\",\"refusalReason\":\"\"}],\"runs\":[{\"runId\":\"run_20261005T134000Z_0123456789abcdef\",\"outcome\":\"Stopped\",\"classification\":\"superseded\",\"runBranch\":\"roundfix/run-run_20261005T134000Z_0123456789abcdef\",\"runHead\":\"aefc318cca729d593307edc67074817d9a0a4104\",\"targetBranch\":\"delivery/0172-reconcile-merged-spec\",\"targetHead\":\"acff3d3f93519a4708a36293a86129581657e28e\",\"worktree\":\"/private/tmp/0227-flow-7y_dmwg9/fixture-home/.roundfix/worktrees/repo-9ba061e0/run_20261005T134000Z_0123456789abcdef\",\"supersedingReport\":\"\",\"evidence\":\"Run work is superseded by the delivery of Spec 0172-reconcile-merged-spec: delivery commit 60f9f16b3c3a archived it on default branch \\\"main\\\"; 1 Task commit(s...\",\"action\":\"released\",\"refusalReason\":\"\"}],\"summary\":{\"total\":1,\"safe\":0,\"superseded\":1,\"unintegrated\":0,\"dirty\":0,\"unknown\":0,\"released\":0,\"applied\":1,\"preserved\":0,\"operationalFailures\":0},\"processCandidates\":[],\"runBranchCandidates\":[],\"stagingCandidates\":[],\"itemBranchCandidates\":[{\"kind\":\"itemBranch\",\"itemBranch\":\"roundfix/deliver-0172-reconcile-merged-spec-0123456789abcdef\",\"head\":\"aefc318cca729d593307edc67074817d9a0a4104\",\"runId\":\"\",\"outcome\":\"\",\"ownerPid\":0,\"processIds\":null,\"runBranch\":\"\",\"targetBranch\":\"\",\"worktree\":\"\",\"specSlug\":\"0172-reconcile-merged-spec\",\"supersedingReport\":\"\",\"proof\":\"item branch is superseded by the delivery of Spec 0172-reconcile-merged-spec: delivery commit 60f9f16b3c3a archived it on default branch \\\"main\\\"; 1 Task commit(s...\",\"action\":\"released\",\"refusalReason\":\"\"}],\"preservedCandidates\":[{\"kind\":\"itemBranch\",\"itemBranch\":\"roundfix/deliver-0172-reconcile-merged-spec-fedcba9876543210\",\"head\":\"aefc318cca729d593307edc67074817d9a0a4104\",\"runId\":\"\",\"outcome\":\"\",\"ownerPid\":0,\"processIds\":null,\"runBranch\":\"\",\"targetBranch\":\"\",\"worktree\":\"\",\"specSlug\":\"0172-reconcile-merged-spec\",\"supersedingReport\":\"\",\"proof\":\"\",\"action\":\"preserve\",\"refusalReason\":\"item branch belongs to live Delivery Queue item \\\"0172-reconcile-merged-spec\\\"\"}],\"debrisSummary\":{\"processCandidates\":0,\"runBranchCandidates\":0,\"stagingCandidates\":0,\"preserved\":1,\"processesApplied\":0,\"runBranchesApplied\":0,\"stagingApplied\":0,\"itemBranchCandidates\":1,\"itemBranchesApplied\":1},\"carryForwards\":null}\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "show-ref",
+      "--verify",
+      "refs/heads/roundfix/deliver-0172-reconcile-merged-spec-0123456789abcdef"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 128,
+    "stdout": "",
+    "stderr": "fatal: 'refs/heads/roundfix/deliver-0172-reconcile-merged-spec-0123456789abcdef' - not a valid ref\n"
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "show-ref",
+      "--verify",
+      "refs/heads/roundfix/deliver-0172-reconcile-merged-spec-fedcba9876543210"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 0,
+    "stdout": "aefc318cca729d593307edc67074817d9a0a4104 refs/heads/roundfix/deliver-0172-reconcile-merged-spec-fedcba9876543210\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "git",
+      "-c",
+      "core.fsmonitor=false",
+      "show-ref",
+      "--verify",
+      "refs/heads/roundfix/run-run_20261005T134000Z_0123456789abcdef"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 128,
+    "stdout": "",
+    "stderr": "fatal: 'refs/heads/roundfix/run-run_20261005T134000Z_0123456789abcdef' - not a valid ref\n"
+  },
+  {
+    "args": [
+      "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0227-reconcile-releases-the-runs-of-merged-specs-2e433a1f6c12f52c-5d3ac3de-26868229/run_20261005T123704Z_9101d15c662d2abe/bin/roundfix",
+      "reconcile",
+      "--format=json"
+    ],
+    "cwd": "/private/tmp/0227-flow-7y_dmwg9/repo",
+    "exit": 0,
+    "stdout": "{\"schemaVersion\":\"roundfix-reconcile/v1\",\"mode\":\"dry-run\",\"repository\":\"/private/tmp/0227-flow-7y_dmwg9/repo\",\"applyCommand\":\"roundfix reconcile --apply\",\"results\":[{\"runId\":\"run_20261005T134000Z_0123456789abcdef\",\"outcome\":\"Stopped\",\"classification\":\"released\",\"runBranch\":\"roundfix/run-run_20261005T134000Z_0123456789abcdef\",\"runHead\":\"\",\"targetBranch\":\"delivery/0172-reconcile-merged-spec\",\"targetHead\":\"\",\"worktree\":\"/private/tmp/0227-flow-7y_dmwg9/fixture-home/.roundfix/worktrees/repo-9ba061e0/run_20261005T134000Z_0123456789abcdef\",\"supersedingReport\":\"\",\"evidence\":\"Run Worktree and Run Branch are absent\",\"action\":\"none\",\"refusalReason\":\"\"}],\"runs\":[{\"runId\":\"run_20261005T134000Z_0123456789abcdef\",\"outcome\":\"Stopped\",\"classification\":\"released\",\"runBranch\":\"roundfix/run-run_20261005T134000Z_0123456789abcdef\",\"runHead\":\"\",\"targetBranch\":\"delivery/0172-reconcile-merged-spec\",\"targetHead\":\"\",\"worktree\":\"/private/tmp/0227-flow-7y_dmwg9/fixture-home/.roundfix/worktrees/repo-9ba061e0/run_20261005T134000Z_0123456789abcdef\",\"supersedingReport\":\"\",\"evidence\":\"Run Worktree and Run Branch are absent\",\"action\":\"none\",\"refusalReason\":\"\"}],\"summary\":{\"total\":1,\"safe\":0,\"superseded\":0,\"unintegrated\":0,\"dirty\":0,\"unknown\":0,\"released\":1,\"applied\":0,\"preserved\":0,\"operationalFailures\":0},\"processCandidates\":[],\"runBranchCandidates\":[],\"stagingCandidates\":[],\"itemBranchCandidates\":[],\"preservedCandidates\":[{\"kind\":\"itemBranch\",\"itemBranch\":\"roundfix/deliver-0172-reconcile-merged-spec-fedcba9876543210\",\"head\":\"aefc318cca729d593307edc67074817d9a0a4104\",\"runId\":\"\",\"outcome\":\"\",\"ownerPid\":0,\"processIds\":null,\"runBranch\":\"\",\"targetBranch\":\"\",\"worktree\":\"\",\"specSlug\":\"0172-reconcile-merged-spec\",\"supersedingReport\":\"\",\"proof\":\"\",\"action\":\"preserve\",\"refusalReason\":\"item branch belongs to live Delivery Queue item \\\"0172-reconcile-merged-spec\\\"\"}],\"debrisSummary\":{\"processCandidates\":0,\"runBranchCandidates\":0,\"stagingCandidates\":0,\"preserved\":1,\"processesApplied\":0,\"runBranchesApplied\":0,\"stagingApplied\":0,\"itemBranchCandidates\":0,\"itemBranchesApplied\":0},\"carryForwards\":null}\n",
+    "stderr": ""
+  }
+]

@@ -1,0 +1,29 @@
+Repository: /private/tmp/0227-flow-7y_dmwg9/repo
+Mode: dry-run
+Run: run_20261005T134000Z_0123456789abcdef
+  outcome: Stopped
+  classification: superseded
+  run-branch: roundfix/run-run_20261005T134000Z_0123456789abcdef
+  run-head: aefc318cca729d593307edc67074817d9a0a4104
+  target-branch: delivery/0172-reconcile-merged-spec
+  target-head: acff3d3f93519a4708a36293a86129581657e28e
+  worktree: /private/tmp/0227-flow-7y_dmwg9/fixture-home/.roundfix/worktrees/repo-9ba061e0/run_20261005T134000Z_0123456789abcdef
+  superseding-report: -
+  evidence: Run work is superseded by the delivery of Spec 0172-reconcile-merged-spec: delivery commit 60f9f16b3c3a archived it on default branch "main"; 1 Task commit(s...
+  action: would release with --apply
+  refusal-reason: -
+Item branch candidate: roundfix/deliver-0172-reconcile-merged-spec-0123456789abcdef (Spec 0172-reconcile-merged-spec)
+  head: aefc318cca729d593307edc67074817d9a0a4104
+  worktree: -
+  proof: item branch is superseded by the delivery of Spec 0172-reconcile-merged-spec: delivery commit 60f9f16b3c3a archived it on default branch "main"; 1 Task commit(s...
+  action: would reclaim with --apply
+  refusal-reason: -
+Preserved candidate: kind=itemBranch Run=
+  item-branch: roundfix/deliver-0172-reconcile-merged-spec-fedcba9876543210
+  head: aefc318cca729d593307edc67074817d9a0a4104
+  worktree: -
+  action: preserve
+  refusal-reason: item branch belongs to live Delivery Queue item "0172-reconcile-merged-spec"
+Summary: total=1 safe=0 superseded=1 unintegrated=0 dirty=0 unknown=0 released=0 applied=0 preserved=0 operational-failures=0
+Debris summary: process-candidates=0 run-branch-candidates=0 staging-candidates=0 staging-applied=0 preserved=1 processes-applied=0 run-branches-applied=0 item-branch-candidates=1 item-branches-applied=0
+Apply with: roundfix reconcile --apply

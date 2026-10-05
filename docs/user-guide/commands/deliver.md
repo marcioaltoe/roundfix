@@ -106,7 +106,9 @@ are removed. Before that removal, cleanup refreshes the default branch from the 
 Roundfix then releases every terminal Run of the merged Spec that it can prove
 is represented at the recorded merged head. A Run it cannot prove stays in
 place, and `deliver status` names the Run and its reason in the item's cleanup
-warning.
+warning. This cleanup proves a squash merge onto a default branch that moved
+during the item by comparing the merge commit with Git's merge of the candidate
+into its first parent.
 
 A start requires every named Spec's committed authorization to grant
 `implement`, `commit`, `push`, `pull_request`, and `merge`. If any Spec lacks

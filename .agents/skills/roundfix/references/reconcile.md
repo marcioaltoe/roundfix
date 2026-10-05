@@ -22,8 +22,13 @@ repository. The report classifies every selected Run into one of six states:
 | `unknown` | Metadata or Git evidence cannot prove another state. Preserve every identified Run Worktree and Run Branch. |
 | `released` | Both the Run Worktree and Run Branch are absent. No cleanup is needed. |
 
-The same report can add three debris candidate kinds beside those legacy Run
-Worktree classifications:
+The same report can add debris candidates beside those legacy Run Worktree
+classifications. Only a full scan (`roundfix reconcile` without a Run ID)
+inspects item branches named `roundfix/deliver-<slug>-<16 hex>`. A live item's
+branch is preserved with its Delivery Queue item. `--apply` deletes a proven
+item branch with its clean worktree. The `roundfix-reconcile/v1` report's
+`itemBranchCandidates` list names these entries, and `debrisSummary` reports
+`itemBranchCandidates` and `itemBranchesApplied` counts.
 
 For a Run of a merged Spec, reconciliation proves the Run against the merged
 head. The Delivery Queue merge record is the primary source; when no usable
@@ -33,11 +38,12 @@ status, a superseding QA Report, or matching changed content. If neither source
 is usable or a commit is unrepresented, the Run remains preserved and its
 reason names the missing proof; an absent target alone is not proof of release.
 
-When the merged head contains `<archive root>/<slug>/_prd.md`, the archived
-Spec represents non-Task, non-QA paths under its active and archive directories.
-The superseded reason counts `Spec-directory path(s) archived` alongside
-completed Task commits and superseded QA Report commits. Other committed paths
-still require content comparison; an unrepresented Task commit preserves the Run.
+When the default branch holds the archived `<archive root>/<slug>/_prd.md` and
+the delivery commit that added it is not in the branch being proven, the Spec
+carries merge evidence. With merge evidence, Task commits still need their
+Task completed in the archived Spec, and every other commit is superseded by
+the delivery of Spec; an unrepresented Task commit preserves the Run. Without
+merge evidence, the content comparison is unchanged.
 
 A dirty Run Worktree is `superseded` only when the merged-head proof is `safe`
 or `superseded` and every uncommitted path belongs to those Spec directories
@@ -47,6 +53,7 @@ archived head. The reason appends
 An unrelated dirty path keeps the Run `dirty`. Apply re-proves the state,
 Run head, merged head and exact dirty path set before forced removal; clean
 worktrees are removed without force. A changed path set refuses apply as stale.
+A dirty item worktree keeps its item branch.
 An absent target branch also uses the merged-head proof before preserving a
 terminal Run Branch, including Runs recorded from linked repository worktrees.
 All proof comes from local Git; reconciliation does not read GitHub.
@@ -109,4 +116,3 @@ Never substitute manual Git deletion for this supported workflow. Do not run
 `git worktree remove`, delete the Run Branch, or remove a recorded worktree
 directory by hand. The Reconcile Command owns safety proof, evidence recording,
 the guarded Integration Pending transition, and cleanup.
-

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0227-reconcile-releases-the-runs-of-merged-specs
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -95,3 +95,64 @@ public reconcile command.
 - `_prd.md` → Goals 3 and 4; Core Feature 3; Success Metric 4
 - `_techspec.md` → Item branch reconciliation; API Contract 3; Surface Transcript 1; Testing Approach 4; Build Order 3
 - ADR-0232; ADR-0053; ADR-0115
+
+## Result
+
+Implemented the item branch slice answering the 2026-10-04 Backlog Entry,
+"Reconcile keeps the Runs of Specs that are already merged".
+
+A full scan now inspects matching local item branches and preserves every
+branch recorded by a non-merged Delivery Queue item. Other branches require
+task_01's local delivery and Task supersession evidence. Every registered
+worktree on the branch must be clean and at the configured derived item path.
+Apply reloads Queue ownership and re-inspects the Git evidence, refuses a
+changed branch head, default head, delivery or worktree, removes a clean
+worktree without force, then deletes only that item branch.
+
+The report includes the item candidate text block, its captured head, proof
+and action, and the two debris summary counts. Full-scan JSON carries an
+`itemBranchCandidates` array, including `[]`; Run-ID JSON omits it.
+Preserved item branches carry their branch, head and refusal reason in
+`preservedCandidates`. Other debris entries omit the item-only fields.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Dry-run lists a merged Spec's item branch and apply removes its clean worktree and branch | `TestItemBranchOfAMergedSpecIsReleasable`, `TestApplyItemBranchRemovesTheCleanWorktreeAndBranch` and `TestReconcileListsAndReleasesAnItemBranchOfAMergedSpec` exercise real Git repositories, the Surface Transcript lines, text/JSON counts, dry-run preservation, explicit apply and the subsequent empty full scan. The direct item apply check also asserts the unrelated Run Worktree and Run Branch survive. |
+| Live, dirty, unmerged and moved-head branches stay | The named live, unmerged, dirty and moved-head worktree tests, plus `TestReconcileKeepsTheItemBranchOfALiveQueueItem` and `TestReconcileItemBranchSafety`, cover these refusals and assert the branch and remaining worktree survive. Queue tests cover queued, running and parked items, a merged item, and ownership acquired after proof. `TestItemBranchSafetyBoundaries` also covers wrong/duplicate worktree registrations, moved default heads, dirtiness or worktree removal after proof, post-delivery branches, pending/other-Spec Task commits, branches without worktrees, unrelated refs and ambiguous short refs. |
+| A Run-ID report has no `itemBranchCandidates` key | `TestReconcileWithARunIDOmitsItemBranchCandidates` checks the raw JSON key and proves Run-ID apply leaves the item branch/worktree intact. `TestReconcileEmptyFullScanIncludesItemBranches` proves an empty full scan emits `[]`. The unchanged `TestRunReconcileJSONMatchesTextFields` also passed in the focused reconcile selection. |
+
+### Focused checks
+
+- The pre-implementation check of `TestItemBranchSafetyBoundaries`, with a
+  task-scoped cache, failed compilation because `ItemBranchReconciliation`,
+  `InspectItemBranches` and `ApplyItemBranch` did not exist.
+- `GOCACHE=/private/tmp/roundfix-task03-go-cache rtk proxy go test ./internal/worktree ./internal/cli -run 'ItemBranch|ItemBranches|Reconcile' -count=1`
+  exited 0: worktree 6.400s, CLI 28.646s. This exercised the new item tests and
+  existing reconcile tests without editing any existing test.
+- The initial `GOCACHE=/private/tmp/roundfix-task03-go-cache rtk make verify-incremental`
+  exited 2 after the test target failed on sandbox restrictions: two existing
+  CLI force-stop tests could not read the process table, and existing daemon
+  and router tests could not bind localhost HTTP listeners. Formatting and
+  vet passed, and the worktree package passed. The same incremental check
+  was rerun with the required process-table and localhost access.
+- The retry of `GOCACHE=/private/tmp/roundfix-task03-go-cache rtk make verify-incremental`
+  with the required test access exited 0: formatting, vet, the full Go suite,
+  skill sync/checks and build passed. CLI reran in 165.038s, daemon in
+  41.872s and router in 10.256s; other packages reused the incremental cache.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+### Handoff boundary
+
+No declared Task Verification command was run. The Daemon-owned
+`status: in_progress` remains unchanged, and Task settlement is left to the
+Daemon. No existing test, other Task, Task Graph, skill, dependency or tooling
+configuration was edited. The user guide and skill descriptions already
+arrived with this behavior documented by task_04. No commit, push or Pull
+Request was created. No follow-up outside this slice was required.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261005T123704Z_9101d15c662d2abe`
+- Source commit: `ed71d3e254693ac2efcbfdc33865290b16623406`

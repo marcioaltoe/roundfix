@@ -1042,16 +1042,20 @@ func inspectTerminalRunMerged(
 		if status != "" {
 			dirtyPaths, parsed := terminalRunDirtyPaths(status)
 			if parsed && runHeadErr == nil && result.RunHead != "" && targetMetadataValid && targetHeadErr == nil {
+				proof := result
+				proof.State = ReconciliationUnintegrated
 				if source, found := chooseMergedHead(ctx, runner, run, gitRoot, merged); found && specArchivedAtMergedHead(ctx, runner, gitRoot, source.head, run.SpecSlug) {
-					proof := inspectRunAtMergedHead(ctx, runner, run, gitRoot, result, worktreePresent, runBranchPresent, merged, source)
-					if (proof.State == ReconciliationSafe || proof.State == ReconciliationSuperseded) && dirtyPathsInArchivedSpec(ctx, runner, gitRoot, source.head, run.SpecSlug, dirtyPaths) {
-						proof.State = ReconciliationSuperseded
-						suffix := fmt.Sprintf("; %d uncommitted path(s) superseded by the archived Spec", len(dirtyPaths))
-						proof.Reason = boundedReconciliationReasonWithSuffix(proof.Reason, suffix)
-						proof.evidence.snapshot = terminalRunSnapshot(proof)
-						proof.evidence.dirtyPaths = slices.Clone(dirtyPaths)
-						return proof, nil
-					}
+					proof = inspectRunAtMergedHead(ctx, runner, run, gitRoot, proof, worktreePresent, runBranchPresent, merged, source)
+				} else {
+					proof = inspectRunByDelivery(ctx, runner, run, gitRoot, proof, worktreePresent, runBranchPresent, merged)
+				}
+				if (proof.State == ReconciliationSafe || proof.State == ReconciliationSuperseded) && dirtyPathsInArchivedSpec(ctx, runner, gitRoot, proof.evidence.proofHead, run.SpecSlug, dirtyPaths) {
+					proof.State = ReconciliationSuperseded
+					suffix := fmt.Sprintf("; %d uncommitted path(s) superseded by the archived Spec", len(dirtyPaths))
+					proof.Reason = boundedReconciliationReasonWithSuffix(proof.Reason, suffix)
+					proof.evidence.snapshot = terminalRunSnapshot(proof)
+					proof.evidence.dirtyPaths = slices.Clone(dirtyPaths)
+					return proof, nil
 				}
 			}
 			result.State = ReconciliationDirty
@@ -1133,7 +1137,7 @@ func inspectTerminalRunMerged(
 				worktreePresent,
 				runBranchPresent,
 			)
-			return result, nil
+			return inspectRunByDelivery(ctx, runner, run, gitRoot, result, worktreePresent, runBranchPresent, merged), nil
 		}
 		result.Reason = reconciliationReasonAncestry
 		return result, nil
@@ -1191,7 +1195,7 @@ func inspectDeletedTargetRunByContent(
 		return result
 	}
 	result.TargetHead = source.head
-	result = inspectRunAtMergedHead(
+	result = inspectRunAtMergedHeadContent(
 		ctx,
 		runner,
 		run,
@@ -1208,7 +1212,10 @@ func inspectDeletedTargetRunByContent(
 		result.Reason = reconciliationReasonDefaultBranchSpecNotArchived(run.SpecSlug)
 		result.SupersedingReport = ""
 		result.evidence = nil
-		return result
+		return inspectRunByDelivery(ctx, runner, run, gitRoot, result, worktreePresent, runBranchPresent, merged)
+	}
+	if result.State == ReconciliationUnintegrated {
+		return inspectRunByDelivery(ctx, runner, run, gitRoot, result, worktreePresent, runBranchPresent, merged)
 	}
 	return result
 }

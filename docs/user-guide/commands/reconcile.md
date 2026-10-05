@@ -38,17 +38,25 @@ and refusal reason. `debrisSummary.stagingCandidates` counts those entries and
 `debrisSummary.stagingApplied` counts the staging worktrees released in that
 invocation; every existing report field keeps its meaning.
 
+Only a full scan (`roundfix reconcile` without a Run ID) inspects item branches
+named `roundfix/deliver-<slug>-<16 hex>`. A live item's branch is preserved with
+its Delivery Queue item. `--apply` deletes a proven item branch with its clean
+worktree. The `roundfix-reconcile/v1` report's `itemBranchCandidates` list
+names these entries, and `debrisSummary` reports `itemBranchCandidates` and
+`itemBranchesApplied` counts.
+
 For a Run of a merged Spec, reconciliation proves the Run against the merged
 head. The Delivery Queue merge record is the primary source; when no usable
 record remains, the default branch carrying the archived Spec is the fallback.
 The existing `evidence` field names the source and proof without changing the
 text or JSON report shape.
 
-When the merged head contains `<archive root>/<slug>/_prd.md`, the archived
-Spec represents non-Task, non-QA paths under its active and archive directories.
-The superseded reason counts `Spec-directory path(s) archived` alongside
-completed Task commits and superseded QA Report commits. Other committed paths
-still require content comparison; an unrepresented Task commit preserves the Run.
+When the default branch holds the archived `<archive root>/<slug>/_prd.md` and
+the delivery commit that added it is not in the branch being proven, the Spec
+carries merge evidence. With merge evidence, Task commits still need their
+Task completed in the archived Spec, and every other commit is superseded by
+the delivery of Spec; an unrepresented Task commit preserves the Run. Without
+merge evidence, the content comparison is unchanged.
 
 A dirty Run Worktree is `superseded` only when the merged-head proof is `safe`
 or `superseded` and every uncommitted path belongs to those Spec directories
@@ -58,6 +66,7 @@ archived head. The reason appends
 An unrelated dirty path keeps the Run `dirty`. Apply re-proves the state,
 Run head, merged head and exact dirty path set before forced removal; clean
 worktrees are removed without force. A changed path set refuses apply as stale.
+A dirty item worktree keeps its item branch.
 An absent target branch also uses the merged-head proof before preserving a
 terminal Run Branch, including Runs recorded from linked repository worktrees.
 All proof comes from local Git; reconciliation does not read GitHub.
@@ -146,4 +155,3 @@ and
 Adjacent terminal-cleanup diagnostics remain traced through the
 [Stop Command](stop.md#stop) to the
 [detached-watch finding](../../history/findings/2026-07-16-vortex-pr87-detached-watch-notification.md#4-cleanup-noise-appeared-before-the-actionable-failure).
-

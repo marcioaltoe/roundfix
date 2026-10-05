@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0227-reconcile-releases-the-runs-of-merged-specs
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -102,3 +102,94 @@ through the worktree package and the public reconcile command.
 - `_prd.md` → Goals 1 and 4; Core Feature 1; Success Metrics 1, 2 and 5; Acceptance evidence
 - `_techspec.md` → Merge evidence; API Contract 1; Testing Approach 1 and 2; Build Order 1
 - ADR-0232; ADR-0161; ADR-0212; ADR-0053
+
+
+## Result
+
+Implemented the terminal Run merge-evidence fallback in the shared worktree
+proof. Local Git must show the archived `_prd.md` on the default head and its
+adding commit outside the Run's ancestry. At that default head, every absent
+Task commit must name this Spec and have its Task completed in the archived
+Spec; all other commits are superseded. The bounded reason names the delivery,
+and apply evidence binds the default head and branch for fresh revalidation.
+Successful ancestry, QA and content proofs retain their existing reasons.
+
+Dirty Runs use the head actually proving supersession to check ADR-0212's
+scope. An undeclared dirty path remains `dirty`. The fallback also handles an
+absent target and archives without a QA Report. The delivery owner benefits
+through its existing shared inspection call; its candidate validation remains
+Task 02's concern. Only the declared-break existing test was renamed and its
+expectation changed; all other existing tests are unedited.
+
+Acceptance evidence from focused implementation checks:
+
+1. Worktree coverage: the seven required `TestMergeEvidence...` tests exercise
+   divergence with and without a record, pending Task refusal, missing archive
+   refusal, held-delivery refusal, undeclared dirt refusal and stale apply.
+   Additional cases cover a Task of another Spec, scoped dirty work when the
+   selected record lacks the archive, and clean release without archived QA
+   for both a present and an absent target. The non-Task regression also
+   covers a QA Report newer than the archived report and unrelated repeated
+   Spec trailers, neither of which gates delivery supersession.
+2. Public fixture: `TestReconcileReleasesAMergedSpecRunWhoseFilesDivergedLater`
+   rebuilds a Run with an inherited item-branch operator commit before its
+   Task commit, creates no Delivery Queue merge record, then edits one file
+   and renames another on main. It observes `superseded` / `would release with
+   --apply`, preserves both surfaces in dry-run, then observes `released`
+   and removal after apply. `TestDeliverReleaseReleasesAnEarlierRunOfTheMergedSpec`
+   exercises `ReleaseMergedRuns` with an earlier Run outside the candidate's
+   ancestry and inherited content differing from the candidate.
+3. Existing refusal coverage: the complete worktree package ran with the
+   existing refusal tests unchanged, apart from the specified rename to
+   `TestArchivedSpecWithMergeEvidenceSupersedesOtherCommitPaths` and its
+   intended `superseded` expectation. The broader CLI package also passed with process-table
+   permission; affected CLI checks passed again after the final non-Task edge
+   adjustment.
+
+Commands and observed outcomes (all Go checks used a task-scoped cache):
+
+- Before implementation,
+  `rtk proxy env GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 ./internal/worktree -run '^TestMergeEvidenceSupersedesARunWhoseFilesDivergedAfterTheMerge$'`
+  exited 1: expected `superseded`, got `unintegrated`, with one Run-only file
+  and one differing shared file against main.
+- `rtk proxy env GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 ./internal/worktree -run 'TestMergeEvidence|TestArchivedSpec|TestMergedHead|TestMergedSpecRun'`
+  exited 0.
+- `rtk proxy env GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 ./internal/cli -run 'TestReconcileReleasesAMergedSpecRunWhoseFilesDivergedLater|TestDeliverReleaseReleasesAnEarlierRunOfTheMergedSpec'`
+  exited 0.
+- `rtk proxy env GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 ./internal/worktree`
+  exited 0, including the additional dirty-scope and no-QA coverage.
+- After strengthening the delivery-reason assertion,
+  `rtk proxy env GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 ./internal/worktree -run 'TestMergeEvidence'`
+  exited 0.
+- `rtk proxy env GOCACHE=/tmp/roundfix-task01-gocache go vet ./internal/worktree ./internal/cli`
+  exited 0.
+
+
+- The broader check
+  `rtk proxy env GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 ./internal/cli`
+  initially exited 1: two existing force-stop tests could not read the process
+  table in the sandbox. Its suite guard also detected my concurrent edits to
+  the Task Result and the new worktree test. With required process-table
+  permission and no concurrent edits, the same command exited 0 (187.867s).
+- The added `TestMergeEvidenceSupersedesNonTaskCommitsWithoutRepresentation`
+  initially exited 1 in its non-Task Spec-trailer case. The fallback now reads
+  a Spec trailer only for a Task commit, matching the all-other-commits rule.
+- After that final production change,
+  `rtk proxy env GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 ./internal/worktree ./internal/cli -run 'TestMergeEvidence|TestArchivedSpec|TestMergedHead|TestMergedSpecRun|TestReconcile.*Merged|TestReconcilePreservesARunTheMergeRecordDoesNotRepresent|TestReconcileReleasesAnArchivedSpecRunWithoutARecord|TestDeliverRelease'`
+  exited 0 for both packages. The two-package `go vet` command above also
+  exited 0 again, and the complete worktree package check exited 0 (29.567s).
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+Follow-up owned by final QA: the TechSpec's Vocabulary Contract calls for a
+candidate glossary update naming merge evidence in Run Worktree
+Reconciliation; no glossary change is included in this Task's slice.
+
+The Task's authored Verification commands were not run. Status remains
+Daemon-owned. No Task Graph, other Task, schema, tooling configuration or
+shipped guide was edited; Task 04 already supplies the guide changes. No
+commit, push, pull request or network request was made by this implementation.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261005T123704Z_9101d15c662d2abe`
+- Source commit: `d403d02ea910a1f0033399bd1377ac4f86405398`

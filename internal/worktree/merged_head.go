@@ -148,7 +148,107 @@ func decimalString(value string) bool {
 	return value != ""
 }
 
+// Keep the existing proof first, including its successful reason strings.
 func inspectRunAtMergedHead(
+	ctx context.Context, runner gitRunner, run store.Run, gitRoot string,
+	result RunWorktreeReconciliation, worktreePresent, runBranchPresent bool,
+	merged []MergedHead, source mergedHeadSource,
+) RunWorktreeReconciliation {
+	result = inspectRunAtMergedHeadContent(ctx, runner, run, gitRoot, result, worktreePresent, runBranchPresent, merged, source)
+	if result.State == ReconciliationUnintegrated {
+		return inspectRunByDelivery(ctx, runner, run, gitRoot, result, worktreePresent, runBranchPresent, merged)
+	}
+	return result
+}
+
+// deliveryEvidence binds the archive to the current local default branch.
+type deliveryEvidence struct {
+	defaultBranch  string
+	defaultHead    string
+	deliveryCommit string
+}
+
+func provenDeliveryEvidence(ctx context.Context, runner gitRunner, gitRoot, slug, head string) (deliveryEvidence, bool) {
+	branch, defaultHead, resolved := resolveDefaultBranchHead(ctx, runner, gitRoot)
+	if !resolved || !specArchivedAtMergedHead(ctx, runner, gitRoot, defaultHead, slug) {
+		return deliveryEvidence{}, false
+	}
+	archivePRD := path.Join(spec.ArchiveDir(spec.ArchiveKindSpec), slug, "_prd.md")
+	output, err := runner.Run(ctx, gitRoot, "log", "-1", "--diff-filter=A", "--format=%H", defaultHead, "--", archivePRD)
+	commit := strings.TrimSpace(output)
+	if err != nil || !validMergedHeadRevision(commit) {
+		return deliveryEvidence{}, false
+	}
+	if _, err := runner.Run(ctx, gitRoot, "merge-base", "--is-ancestor", commit, head); !isAncestryMiss(err) {
+		return deliveryEvidence{}, false
+	}
+	return deliveryEvidence{defaultBranch: branch, defaultHead: defaultHead, deliveryCommit: commit}, true
+}
+
+func supersededByDelivery(ctx context.Context, runner gitRunner, gitRoot, slug, head string, evidence deliveryEvidence) (reason string, refusal string, proven bool) {
+	source := mergedHeadSource{head: evidence.defaultHead, ref: evidence.defaultBranch, label: fmt.Sprintf("default branch %q", evidence.defaultBranch)}
+	output, err := runner.Run(ctx, gitRoot, "rev-list", head, "^"+evidence.defaultHead)
+	if err != nil {
+		return "", "", false
+	}
+	tasks, others := 0, 0
+	for _, commit := range strings.Fields(output) {
+		task, taskErr := commitTrailer(ctx, runner, gitRoot, commit, "Roundfix-Task")
+		// Spec identity constrains Task commits only. Every other commit is
+		// superseded by the delivery, regardless of its Spec trailers.
+		var slugTrailer string
+		var slugErr error
+		if task != "" {
+			slugTrailer, slugErr = commitTrailer(ctx, runner, gitRoot, commit, "Roundfix-Spec")
+		}
+		cause := ""
+		switch {
+		case taskErr != nil || slugErr != nil:
+			cause = "its commit metadata could not be inspected"
+		case task != "" && slugTrailer != slug:
+			cause = fmt.Sprintf("it belongs to Spec %s", slugTrailer)
+		case task != "" && !taskCompletedInRoots(ctx, runner, gitRoot, evidence.defaultHead, task, []string{path.Join(spec.ArchiveDir(spec.ArchiveKindSpec), slug)}):
+			cause = fmt.Sprintf("Task %s is not completed", task)
+		}
+		if cause != "" {
+			refused := unrepresentedMergedHeadCommit(RunWorktreeReconciliation{}, commit, source, cause)
+			return "", refused.Reason, false
+		}
+		if task != "" {
+			tasks++
+		} else {
+			others++
+		}
+	}
+	return boundedReconciliationReason(fmt.Sprintf(
+		"Run work is superseded by the delivery of Spec %s: delivery commit %s archived it on default branch %q; %d Task commit(s) completed, %d other commit(s) superseded",
+		slug, evidence.deliveryCommit[:12], evidence.defaultBranch, tasks, others,
+	)), "", true
+}
+
+func inspectRunByDelivery(
+	ctx context.Context, runner gitRunner, run store.Run, gitRoot string,
+	result RunWorktreeReconciliation, worktreePresent, runBranchPresent bool, merged []MergedHead,
+) RunWorktreeReconciliation {
+	delivery, found := provenDeliveryEvidence(ctx, runner, gitRoot, run.SpecSlug, result.RunHead)
+	if !found {
+		return result
+	}
+	reason, refusal, proven := supersededByDelivery(ctx, runner, gitRoot, run.SpecSlug, result.RunHead, delivery)
+	if !proven {
+		if refusal != "" {
+			result.Reason = refusal
+		}
+		return result
+	}
+	result.State = ReconciliationSuperseded
+	result.Reason = reason
+	result.SupersedingReport = ""
+	result.evidence = newMergedHeadReconciliationEvidence(run, gitRoot, result, worktreePresent, runBranchPresent, merged, mergedHeadSource{head: delivery.defaultHead, ref: delivery.defaultBranch})
+	return result
+}
+
+func inspectRunAtMergedHeadContent(
 	ctx context.Context,
 	runner gitRunner,
 	run store.Run,
@@ -368,6 +468,10 @@ func taskCompletedAtMergedHead(
 		filepath.ToSlash(filepath.Join("docs", "specs", slug)),
 		filepath.ToSlash(filepath.Join(filepath.FromSlash(spec.ArchiveDir(spec.ArchiveKindSpec)), slug)),
 	}
+	return taskCompletedInRoots(ctx, runner, gitRoot, head, taskID, roots)
+}
+
+func taskCompletedInRoots(ctx context.Context, runner gitRunner, gitRoot, head, taskID string, roots []string) bool {
 	completed := 0
 	for _, root := range roots {
 		manifestPath := path.Join(root, "_tasks.md")

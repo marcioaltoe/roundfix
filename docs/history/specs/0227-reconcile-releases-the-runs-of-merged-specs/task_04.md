@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0227-reconcile-releases-the-runs-of-merged-specs
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -58,19 +58,37 @@ from the TechSpec, raises the skill's version and syncs the mirrors.
 
 ## Subtasks
 
-- [ ] Rewrite the merged-Spec proof paragraph in the guide and the reference.
-- [ ] Add the item branch candidates to both.
-- [ ] Add the moved-default-branch sentence to the deliver guide.
-- [ ] Raise the version, sync the mirrors and record the version.
+- [x] Rewrite the merged-Spec proof paragraph in the guide and the reference.
+- [x] Add the item branch candidates to both.
+- [x] Add the moved-default-branch sentence to the deliver guide.
+- [x] Raise the version, sync the mirrors and record the version.
 
 ## Acceptance Criteria
 
-- [ ] The guide and the reference carry the four required phrases and
+- [x] The guide and the reference carry the four required phrases and
       neither carries the removed sentence; the reference no longer carries
       "three debris candidate kinds".
-- [ ] The deliver guide carries "a default branch that moved during the item".
-- [ ] Each mirror equals its canonical file, and the raised version is
+- [x] The deliver guide carries "a default branch that moved during the item".
+- [x] Each mirror equals its canonical file, and the raised version is
       recorded.
+
+## Result
+
+Rewrote the reconcile guide and Roundfix reconcile reference with the
+merge-evidence rule, item-branch candidate behavior, report count fields, and
+the unchanged dirty-path rule. Updated the deliver guide with the moved-default
+branch squash-merge proof. Raised the Roundfix Skill from 0.1.30 to 0.1.31,
+then synchronized its mirrors and recorded the new content digest.
+
+Focused checks after the edits:
+
+- `make skills-sync` — passed; canonical Roundfix skill files were synchronized
+  to their mirrors.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed; version 0.1.31 was recorded.
+- Targeted phrase and stale-text inspection, mirror comparison, and front-matter
+  checks — passed; the reconcile docs contain the required phrases, omit the
+  removed wording, the deliver guide contains the moved-default-branch phrase,
+  and both mirrors match their canonical files.
 
 ## Context
 
@@ -93,3 +111,8 @@ from the TechSpec, raises the skill's version and syncs the mirrors.
 - `_prd.md` → Core Feature 4; Goals 1 to 4
 - `_techspec.md` → Merge evidence; API Contract 1; API Contract 2; API Contract 3; Surface Transcript 1; Vocabulary Contract; Build Order 4
 - ADR-0187; ADR-0189; ADR-0232
+
+## Carry-forward provenance
+
+- Source Run: `run_20261005T123704Z_9101d15c662d2abe`
+- Source commit: `4f3396ccf4f43c30a848d802a213fede434113d3`

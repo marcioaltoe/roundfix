@@ -1,0 +1,20 @@
+[
+  {
+    "merge": "f0353479",
+    "candidate": "88e2fe3c",
+    "parent": "6fd4cab859cf0df353dca4df86ec7b57797f019a",
+    "merge_tree": "3125a364e9bf6c93f4e28f35121bf41cbf148499",
+    "candidate_tree": "fce545499dd4c12648f68c8ac9a09a36d19d9250",
+    "synthesized_tree": "3125a364e9bf6c93f4e28f35121bf41cbf148499",
+    "candidate_ancestor_exit": 1
+  },
+  {
+    "merge": "69ace45d",
+    "candidate": "e62588bd",
+    "parent": "7686bc12bc084336f54517e5567398dce8660dfc",
+    "merge_tree": "d89c12c00e3bfb2a47c54ff3cffefbc513715ebc",
+    "candidate_tree": "27f964fa3b410a43d9532bb0102117052dd7e68b",
+    "synthesized_tree": "d89c12c00e3bfb2a47c54ff3cffefbc513715ebc",
+    "candidate_ancestor_exit": 1
+  }
+]

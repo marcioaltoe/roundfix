@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0227-reconcile-releases-the-runs-of-merged-specs
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -74,3 +74,64 @@ default-branch commits is proven, and every other difference still refuses.
 - `_prd.md` → Goal 2; Core Feature 2; Success Metric 3; Acceptance evidence
 - `_techspec.md` → The cleanup proof for a moved default branch; API Contract 2; Testing Approach 3; Build Order 2
 - ADR-0232; ADR-0161
+
+## Result
+
+Implemented the cleanup proof for the 2026-10-04 Backlog Entry's moved-default-
+branch warning. `resolveMergedReleaseEvidence` retains ancestry and equal-tree
+proofs, then compares the merge commit's tree with the successful output of
+`git merge-tree --write-tree <merge>^1 <candidate>`. Git errors (including a
+missing first parent, conflicts, or unsupported `--write-tree`) and different
+trees retain the existing refusal text. No fetch or GitHub read was added.
+
+Acceptance evidence:
+
+- The new `TestReleaseMergedRunsAcceptsASquashMergeOntoAMovedDefaultBranch`
+  constructs a real squash merge after a separate default-branch commit,
+  confirms ancestry and equal-tree proofs miss, and observes removal of the
+  Run Worktree and Run Branch while retaining the Run record.
+- `TestReleaseMergedRunsRefusesAMergeCommitThatAltersTheCandidate` covers
+  both an altered conflict-free squash tree and a shared-file conflict with
+  a different resolution. Both assert the exact existing error and preservation
+  of the Run Worktree and Run Branch.
+- The existing release evidence, merged-release, and refresh tests passed in
+  the focused selection below. Their three source files remain unedited,
+  confirmed with `git -c core.fsmonitor=false diff --exit-code --
+  internal/cli/deliver_release_evidence_test.go
+  internal/cli/deliver_merged_release_test.go
+  internal/cli/deliver_release_refresh_test.go` (exit 0).
+
+Focused checks:
+
+- Initial `rtk proxy go test` could not use the host build cache under the
+  sandbox. Subsequent checks used
+  `GOCACHE=/private/tmp/roundfix-0227-task02-gocache`.
+- Before the production change,
+  `GOCACHE=/private/tmp/roundfix-0227-task02-gocache rtk proxy go test -count=1
+  -run '^TestReleaseMergedRuns(AcceptsASquashMergeOntoAMovedDefaultBranch|RefusesAMergeCommitThatAltersTheCandidate)$'
+  ./internal/cli` exited 1: the moved-default-branch acceptance test reproduced
+  `not represented by merge commit`; the altered-merge test did not fail.
+- After the change,
+  `GOCACHE=/private/tmp/roundfix-0227-task02-gocache rtk proxy go test -count=1
+  -v -run '^(TestReleaseMergedRuns|TestDeliverRelease|TestAutomaticRelease)'
+  ./internal/cli` exited 0: all 19 selected tests passed, including both
+  altered-merge subtests and the existing release tests.
+- `rtk proxy gofmt -w internal/cli/deliver_workflow.go
+  internal/cli/deliver_release_moved_main_test.go` and
+  `git -c core.fsmonitor=false diff --check` exited 0.
+- `GOCACHE=/private/tmp/roundfix-0227-task02-gocache rtk proxy make
+  verify-incremental` reached `go test -parallel 16 ./...` after formatting
+  and `go vet ./...` passed. The execution was interrupted by the sandbox:
+  `Network access to "cafe.github.com" was blocked: domain is not on the
+  allowlist for the current sandbox mode`. No passing incremental-gate result
+  is claimed. Partial output is in
+  `/private/tmp/roundfix-0227-task02-incremental.log`.
+
+The authored Verification command was not run. Task status, checkbox
+settlement, and the Task Graph remain daemon-owned. The implementation is
+handed back for daemon Verification; no commit, push, or Pull Request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261005T123704Z_9101d15c662d2abe`
+- Source commit: `1682c1734ef2644f7566faf5e9db82a9124174eb`
