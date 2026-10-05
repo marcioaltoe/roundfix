@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.43.0] - 2026-10-05
+
+### Checks that hold in delivery
+
+- **Exiting fixture members.** On macOS a process that is exiting still appears in the process table but refuses `kill` with `EPERM`. The detach tests now count such a member (`P_WEXIT`) as ended, so `TestRunImplementDetachSurvivesCallerProcessGroupKill` and its neighbours hold in every environment without a skip.
+- **CI tests the current base.** The pull request job checks out the Pull Request head, merges the default-branch tip it fetches when the job starts, verifies against that tip and records it as a `tested-base` annotation. A re-run of an old job therefore no longer tests an outdated merge.
+- **Stale failures are re-run, not parked.** Before classifying a failed Pull Request check, the Delivery Queue compares its `tested-base` annotation with the current default branch. A failure that tested an older base is re-run once per base tip instead of parking as `flaky-check` or `checks-failed`.
+- **Suite guard.** The `internal/delivery` tests install the repository suite guard.
+
 ## [0.42.0] - 2026-10-05
 
 ### The Jev Router is retired
