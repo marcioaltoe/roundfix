@@ -1,0 +1,93 @@
+COMMAND: ['go', 'test', '-count=1', '-v', '-run', '^(TestRelayForwardsStreamedAndWholeAnswersUnchanged|TestRelayNotesModelsProvidersAndTheLastResponseID|TestRelayNotesACreditRefusal|TestRelayRefusesAPathWithoutAnOpenToken|TestRelayCloseStopsServing|TestRouterLineRecordsTheReportedModels|TestRouterLineIsReadByTheJudgeLog|TestJevRouterSessionCarriesThePlaceholderConfig|TestJevRouterSessionPointsOpenCodeAtTheRelay|TestJevRouterPromptReturnsTheRelayObservation|TestJevRouterClearedSessionReleasesItsRelayToken|TestJevRouterPromptRecordsTheReportedModels|TestJevRouterPromptAppendsOneLine)$', './internal/jevrouter', './internal/agent', './internal/daemon', '2>']
+FAIL	2> [setup failed]
+=== RUN   TestRouterLineIsReadByTheJudgeLog
+--- PASS: TestRouterLineIsReadByTheJudgeLog (0.00s)
+=== RUN   TestRouterLineRecordsTheReportedModels
+--- PASS: TestRouterLineRecordsTheReportedModels (0.00s)
+=== RUN   TestRelayForwardsStreamedAndWholeAnswersUnchanged
+=== PAUSE TestRelayForwardsStreamedAndWholeAnswersUnchanged
+=== RUN   TestRelayNotesModelsProvidersAndTheLastResponseID
+=== PAUSE TestRelayNotesModelsProvidersAndTheLastResponseID
+=== RUN   TestRelayNotesACreditRefusal
+=== PAUSE TestRelayNotesACreditRefusal
+=== RUN   TestRelayRefusesAPathWithoutAnOpenToken
+=== PAUSE TestRelayRefusesAPathWithoutAnOpenToken
+=== RUN   TestRelayCloseStopsServing
+=== PAUSE TestRelayCloseStopsServing
+=== CONT  TestRelayForwardsStreamedAndWholeAnswersUnchanged
+=== RUN   TestRelayForwardsStreamedAndWholeAnswersUnchanged/stream=false
+--- FAIL: TestRelayForwardsStreamedAndWholeAnswersUnchanged (0.00s)
+    --- FAIL: TestRelayForwardsStreamedAndWholeAnswersUnchanged/stream=false (0.00s)
+panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]
+
+goroutine 27 [running]:
+testing.tRunner.func1.2({0x101432120, 0x749762419090})
+	/usr/local/go/src/testing/testing.go:1974 +0x1a0
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1977 +0x318
+panic({0x101432120?, 0x749762419090?})
+	/usr/local/go/src/runtime/panic.go:860 +0x12c
+net/http/httptest.newLocalListener()
+	/usr/local/go/src/net/http/httptest/server.go:72 +0xd4
+net/http/httptest.NewUnstartedServer(...)
+	/usr/local/go/src/net/http/httptest/server.go:120
+net/http/httptest.NewServer({0x1014c1a20, 0x7497624f2600})
+	/usr/local/go/src/net/http/httptest/server.go:107 +0x28
+roundfix/internal/jevrouter.localRelay(0x74976237b8c8, 0x7497624f2600)
+	/Users/marcio/.roundfix/worktrees/roundfix-deliver-0229-a-jev-router-that-checks-credit-and-names-its-model-ddca39cde7bea775-cdee440c-36cf02a5/run_20261005T141012Z_a1b532ab932de7ab/internal/jevrouter/relay_test.go:19 +0x38
+roundfix/internal/jevrouter.TestRelayForwardsStreamedAndWholeAnswersUnchanged.func1(0x74976237b8c8)
+	/Users/marcio/.roundfix/worktrees/roundfix-deliver-0229-a-jev-router-that-checks-credit-and-names-its-model-ddca39cde7bea775-cdee440c-36cf02a5/run_20261005T141012Z_a1b532ab932de7ab/internal/jevrouter/relay_test.go:64 +0xe4
+testing.tRunner(0x74976237b8c8, 0x7497624fc2b0)
+	/usr/local/go/src/testing/testing.go:2036 +0xc4
+created by testing.(*T).Run in goroutine 22
+	/usr/local/go/src/testing/testing.go:2101 +0x3a8
+FAIL	roundfix/internal/jevrouter	0.112s
+=== RUN   TestJevRouterSessionCarriesThePlaceholderConfig
+=== PAUSE TestJevRouterSessionCarriesThePlaceholderConfig
+=== RUN   TestJevRouterSessionPointsOpenCodeAtTheRelay
+=== PAUSE TestJevRouterSessionPointsOpenCodeAtTheRelay
+=== RUN   TestJevRouterPromptReturnsTheRelayObservation
+=== PAUSE TestJevRouterPromptReturnsTheRelayObservation
+=== RUN   TestJevRouterClearedSessionReleasesItsRelayToken
+=== PAUSE TestJevRouterClearedSessionReleasesItsRelayToken
+=== CONT  TestJevRouterSessionCarriesThePlaceholderConfig
+=== CONT  TestJevRouterPromptReturnsTheRelayObservation
+=== CONT  TestJevRouterClearedSessionReleasesItsRelayToken
+=== RUN   TestJevRouterPromptReturnsTheRelayObservation/failed=false
+=== CONT  TestJevRouterSessionPointsOpenCodeAtTheRelay
+--- FAIL: TestJevRouterPromptReturnsTheRelayObservation (0.00s)
+    --- FAIL: TestJevRouterPromptReturnsTheRelayObservation/failed=false (0.00s)
+panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]
+
+goroutine 49 [running]:
+testing.tRunner.func1.2({0x1012672a0, 0x597fd8101d0})
+	/usr/local/go/src/testing/testing.go:1974 +0x1a0
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1977 +0x318
+panic({0x1012672a0?, 0x597fd8101d0?})
+	/usr/local/go/src/runtime/panic.go:860 +0x12c
+net/http/httptest.newLocalListener()
+	/usr/local/go/src/net/http/httptest/server.go:72 +0xd4
+net/http/httptest.NewUnstartedServer(...)
+	/usr/local/go/src/net/http/httptest/server.go:120
+net/http/httptest.NewServer({0x10130fcc0, 0x597fd810180})
+	/usr/local/go/src/net/http/httptest/server.go:107 +0x28
+roundfix/internal/agent.TestJevRouterPromptReturnsTheRelayObservation.func1(0x597fe09c008)
+	/Users/marcio/.roundfix/worktrees/roundfix-deliver-0229-a-jev-router-that-checks-credit-and-names-its-model-ddca39cde7bea775-cdee440c-36cf02a5/run_20261005T141012Z_a1b532ab932de7ab/internal/agent/jev_router_test.go:268 +0x84
+testing.tRunner(0x597fe09c008, 0x597fd756190)
+	/usr/local/go/src/testing/testing.go:2036 +0xc4
+created by testing.(*T).Run in goroutine 35
+	/usr/local/go/src/testing/testing.go:2101 +0x3a8
+FAIL	roundfix/internal/agent	0.616s
+=== RUN   TestJevRouterPromptAppendsOneLine
+--- PASS: TestJevRouterPromptAppendsOneLine (0.00s)
+=== RUN   TestJevRouterPromptRecordsTheReportedModels
+--- PASS: TestJevRouterPromptRecordsTheReportedModels (0.00s)
+PASS
+suiteguard: guard cost: measured 9009 paths; fingerprint took 379.653541ms before and 260.583041ms after
+ok  	roundfix/internal/daemon	0.875s
+FAIL
+# 2>
+malformed import path "2>": invalid char '>'
+
+exit: 1

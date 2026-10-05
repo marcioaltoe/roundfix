@@ -1,0 +1,67 @@
+COMMAND: ['go', 'test', '-count=1', '-v', '-run', '^(TestRelayForwardsStreamedAndWholeAnswersUnchanged|TestRelayNotesModelsProvidersAndTheLastResponseID|TestRelayNotesACreditRefusal|TestRelayRefusesAPathWithoutAnOpenToken|TestRelayCloseStopsServing|TestRouterLineRecordsTheReportedModels|TestRouterLineIsReadByTheJudgeLog|TestJevRouterSessionCarriesThePlaceholderConfig|TestJevRouterSessionPointsOpenCodeAtTheRelay|TestJevRouterPromptReturnsTheRelayObservation|TestJevRouterClearedSessionReleasesItsRelayToken|TestJevRouterPromptRecordsTheReportedModels|TestJevRouterPromptAppendsOneLine)$', './internal/jevrouter', './internal/agent', './internal/daemon']
+=== RUN   TestRouterLineIsReadByTheJudgeLog
+--- PASS: TestRouterLineIsReadByTheJudgeLog (0.00s)
+=== RUN   TestRouterLineRecordsTheReportedModels
+--- PASS: TestRouterLineRecordsTheReportedModels (0.00s)
+=== RUN   TestRelayForwardsStreamedAndWholeAnswersUnchanged
+=== PAUSE TestRelayForwardsStreamedAndWholeAnswersUnchanged
+=== RUN   TestRelayNotesModelsProvidersAndTheLastResponseID
+=== PAUSE TestRelayNotesModelsProvidersAndTheLastResponseID
+=== RUN   TestRelayNotesACreditRefusal
+=== PAUSE TestRelayNotesACreditRefusal
+=== RUN   TestRelayRefusesAPathWithoutAnOpenToken
+=== PAUSE TestRelayRefusesAPathWithoutAnOpenToken
+=== RUN   TestRelayCloseStopsServing
+=== PAUSE TestRelayCloseStopsServing
+=== CONT  TestRelayForwardsStreamedAndWholeAnswersUnchanged
+=== CONT  TestRelayRefusesAPathWithoutAnOpenToken
+=== RUN   TestRelayForwardsStreamedAndWholeAnswersUnchanged/stream=false
+=== CONT  TestRelayNotesACreditRefusal
+=== RUN   TestRelayNotesACreditRefusal/{"error":{"metadata":{"limit_source":"account"}}}
+=== CONT  TestRelayNotesModelsProvidersAndTheLastResponseID
+=== CONT  TestRelayCloseStopsServing
+--- PASS: TestRelayCloseStopsServing (0.00s)
+--- PASS: TestRelayRefusesAPathWithoutAnOpenToken (0.00s)
+=== RUN   TestRelayForwardsStreamedAndWholeAnswersUnchanged/stream=true
+--- PASS: TestRelayNotesModelsProvidersAndTheLastResponseID (0.00s)
+=== RUN   TestRelayNotesACreditRefusal/unparseable
+--- PASS: TestRelayForwardsStreamedAndWholeAnswersUnchanged (0.00s)
+    --- PASS: TestRelayForwardsStreamedAndWholeAnswersUnchanged/stream=false (0.00s)
+    --- PASS: TestRelayForwardsStreamedAndWholeAnswersUnchanged/stream=true (0.00s)
+--- PASS: TestRelayNotesACreditRefusal (0.00s)
+    --- PASS: TestRelayNotesACreditRefusal/{"error":{"metadata":{"limit_source":"account"}}} (0.00s)
+    --- PASS: TestRelayNotesACreditRefusal/unparseable (0.00s)
+PASS
+ok  	roundfix/internal/jevrouter	0.105s
+=== RUN   TestJevRouterSessionCarriesThePlaceholderConfig
+=== PAUSE TestJevRouterSessionCarriesThePlaceholderConfig
+=== RUN   TestJevRouterSessionPointsOpenCodeAtTheRelay
+=== PAUSE TestJevRouterSessionPointsOpenCodeAtTheRelay
+=== RUN   TestJevRouterPromptReturnsTheRelayObservation
+=== PAUSE TestJevRouterPromptReturnsTheRelayObservation
+=== RUN   TestJevRouterClearedSessionReleasesItsRelayToken
+=== PAUSE TestJevRouterClearedSessionReleasesItsRelayToken
+=== CONT  TestJevRouterSessionCarriesThePlaceholderConfig
+=== CONT  TestJevRouterPromptReturnsTheRelayObservation
+=== CONT  TestJevRouterSessionPointsOpenCodeAtTheRelay
+=== CONT  TestJevRouterClearedSessionReleasesItsRelayToken
+=== RUN   TestJevRouterPromptReturnsTheRelayObservation/failed=false
+=== RUN   TestJevRouterPromptReturnsTheRelayObservation/failed=true
+--- PASS: TestJevRouterSessionCarriesThePlaceholderConfig (0.02s)
+--- PASS: TestJevRouterSessionPointsOpenCodeAtTheRelay (0.02s)
+--- PASS: TestJevRouterPromptReturnsTheRelayObservation (0.02s)
+    --- PASS: TestJevRouterPromptReturnsTheRelayObservation/failed=false (0.01s)
+    --- PASS: TestJevRouterPromptReturnsTheRelayObservation/failed=true (0.01s)
+--- PASS: TestJevRouterClearedSessionReleasesItsRelayToken (0.03s)
+PASS
+suiteguard: guard cost: measured 9013 paths; fingerprint took 319.660292ms before and 286.27575ms after
+ok  	roundfix/internal/agent	0.753s
+=== RUN   TestJevRouterPromptAppendsOneLine
+--- PASS: TestJevRouterPromptAppendsOneLine (0.00s)
+=== RUN   TestJevRouterPromptRecordsTheReportedModels
+--- PASS: TestJevRouterPromptRecordsTheReportedModels (0.00s)
+PASS
+suiteguard: guard cost: measured 9013 paths; fingerprint took 293.894208ms before and 236.345542ms after
+ok  	roundfix/internal/daemon	0.687s
+
+exit: 0

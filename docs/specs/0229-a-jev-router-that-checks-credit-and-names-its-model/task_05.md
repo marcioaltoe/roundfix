@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0229-a-jev-router-that-checks-credit-and-names-its-model
-status: pending
+status: failed
 type: qa
 complexity: high
 ---

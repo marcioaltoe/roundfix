@@ -1,0 +1,42 @@
+[
+  {
+    "Path": "adapters/claude-agent-acp.fixture.json",
+    "SHA256": "3a01e731d583f780795405633cb8979ea86422d3160957fa6dacc935be4a953c",
+    "SentinelMatch": false
+  },
+  {
+    "Path": "adapters/codex-acp.fixture.json",
+    "SHA256": "0b4818c493291daa8510101b223094790eec1f38eb44c8a273aae82b229782ba",
+    "SentinelMatch": false
+  },
+  {
+    "Path": "adapters/custom-acp.fixture.json",
+    "SHA256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "SentinelMatch": false
+  },
+  {
+    "Path": "adapters/npx.fixture.json",
+    "SHA256": "4a8391bb6465839a4cce45d9929a118145ad763ec82fa7dd48602a1e5b7442a8",
+    "SentinelMatch": false
+  },
+  {
+    "Path": "adapters/opencode.fixture.json",
+    "SHA256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "SentinelMatch": false
+  },
+  {
+    "Path": "home/.acpx/config.json",
+    "SHA256": "6b72020a920811dc46be373293bb2ba98e4cc3dc5254d4ce03114796ab8506c6",
+    "SentinelMatch": false
+  },
+  {
+    "Path": "invocations.jsonl",
+    "SHA256": "7529279bcd06f7325ae210702415c4c154496099a3422a2c7720279527032f9a",
+    "SentinelMatch": false
+  },
+  {
+    "Path": "prompts.jsonl",
+    "SHA256": "87ebf2e944ee267daa6d72290549a99290da4f0514b34b3fe02fbe5d49a62eac",
+    "SentinelMatch": false
+  }
+]

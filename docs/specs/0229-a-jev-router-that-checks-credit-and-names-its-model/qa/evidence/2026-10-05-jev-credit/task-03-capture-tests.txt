@@ -1,0 +1,97 @@
+=== RUN   TestRouterLineIsReadByTheJudgeLog
+--- PASS: TestRouterLineIsReadByTheJudgeLog (0.00s)
+=== RUN   TestRouterLineRecordsTheReportedModels
+--- PASS: TestRouterLineRecordsTheReportedModels (0.00s)
+=== RUN   TestRelayForwardsStreamedAndWholeAnswersUnchanged
+=== PAUSE TestRelayForwardsStreamedAndWholeAnswersUnchanged
+=== RUN   TestRelayNotesModelsProvidersAndTheLastResponseID
+=== PAUSE TestRelayNotesModelsProvidersAndTheLastResponseID
+=== RUN   TestRelayNotesACreditRefusal
+=== PAUSE TestRelayNotesACreditRefusal
+=== RUN   TestRelayRefusesAPathWithoutAnOpenToken
+=== PAUSE TestRelayRefusesAPathWithoutAnOpenToken
+=== RUN   TestRelayCloseStopsServing
+=== PAUSE TestRelayCloseStopsServing
+=== CONT  TestRelayForwardsStreamedAndWholeAnswersUnchanged
+=== RUN   TestRelayForwardsStreamedAndWholeAnswersUnchanged/stream=false
+=== CONT  TestRelayRefusesAPathWithoutAnOpenToken
+=== CONT  TestRelayNotesACreditRefusal
+=== RUN   TestRelayNotesACreditRefusal/{"error":{"metadata":{"limit_source":"account"}}}
+=== CONT  TestRelayNotesModelsProvidersAndTheLastResponseID
+=== CONT  TestRelayCloseStopsServing
+--- PASS: TestRelayCloseStopsServing (0.00s)
+--- PASS: TestRelayRefusesAPathWithoutAnOpenToken (0.00s)
+--- PASS: TestRelayNotesModelsProvidersAndTheLastResponseID (0.00s)
+=== RUN   TestRelayForwardsStreamedAndWholeAnswersUnchanged/stream=true
+=== RUN   TestRelayNotesACreditRefusal/unparseable
+--- PASS: TestRelayForwardsStreamedAndWholeAnswersUnchanged (0.00s)
+    --- PASS: TestRelayForwardsStreamedAndWholeAnswersUnchanged/stream=false (0.00s)
+    --- PASS: TestRelayForwardsStreamedAndWholeAnswersUnchanged/stream=true (0.00s)
+--- PASS: TestRelayNotesACreditRefusal (0.00s)
+    --- PASS: TestRelayNotesACreditRefusal/{"error":{"metadata":{"limit_source":"account"}}} (0.00s)
+    --- PASS: TestRelayNotesACreditRefusal/unparseable (0.00s)
+PASS
+ok  	roundfix/internal/jevrouter	0.412s
+=== RUN   TestJevRouterSessionCarriesThePlaceholderConfig
+=== PAUSE TestJevRouterSessionCarriesThePlaceholderConfig
+=== RUN   TestJevRouterSessionPointsOpenCodeAtTheRelay
+=== PAUSE TestJevRouterSessionPointsOpenCodeAtTheRelay
+=== RUN   TestJevRouterPromptReturnsTheRelayObservation
+=== PAUSE TestJevRouterPromptReturnsTheRelayObservation
+=== RUN   TestJevRouterClearedSessionReleasesItsRelayToken
+=== PAUSE TestJevRouterClearedSessionReleasesItsRelayToken
+=== CONT  TestJevRouterSessionCarriesThePlaceholderConfig
+=== CONT  TestJevRouterPromptReturnsTheRelayObservation
+=== CONT  TestJevRouterClearedSessionReleasesItsRelayToken
+=== RUN   TestJevRouterPromptReturnsTheRelayObservation/failed=false
+=== CONT  TestJevRouterSessionPointsOpenCodeAtTheRelay
+=== RUN   TestJevRouterPromptReturnsTheRelayObservation/failed=true
+--- PASS: TestJevRouterSessionCarriesThePlaceholderConfig (0.02s)
+--- PASS: TestJevRouterSessionPointsOpenCodeAtTheRelay (0.02s)
+--- PASS: TestJevRouterPromptReturnsTheRelayObservation (0.02s)
+    --- PASS: TestJevRouterPromptReturnsTheRelayObservation/failed=false (0.01s)
+    --- PASS: TestJevRouterPromptReturnsTheRelayObservation/failed=true (0.01s)
+--- PASS: TestJevRouterClearedSessionReleasesItsRelayToken (0.03s)
+PASS
+suiteguard: guard cost: measured 9027 paths; fingerprint took 300.609875ms before and 270.107416ms after
+suiteguard: repository boundary violated:
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/agent-1758898078
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/agent-1758898078/inventory.json
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/agent-1758898078/invocations.jsonl
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/agent-1758898078/prompts.jsonl
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/agent-2903566126
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/agent-2903566126/inventory.json
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/agent-2903566126/invocations.jsonl
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/agent-3041023826
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/agent-3041023826/inventory.json
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/agent-3041023826/invocations.jsonl
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/agent-3041023826/prompts.jsonl
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/agent-3805594274
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/agent-3805594274/inventory.json
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/agent-3805594274/invocations.jsonl
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/agent-3805594274/prompts.jsonl
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/agent-623342821
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/agent-623342821/inventory.json
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/agent-623342821/invocations.jsonl
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/agent-623342821/prompts.jsonl
+FAIL	roundfix/internal/agent	1.139s
+=== RUN   TestJevRouterPromptAppendsOneLine
+--- PASS: TestJevRouterPromptAppendsOneLine (0.00s)
+=== RUN   TestJevRouterPromptRecordsTheReportedModels
+--- PASS: TestJevRouterPromptRecordsTheReportedModels (0.00s)
+PASS
+suiteguard: guard cost: measured 9046 paths; fingerprint took 295.701334ms before and 260.808875ms after
+suiteguard: repository boundary violated:
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/daemon-1014879283
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/daemon-1014879283/inventory.json
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/daemon-2950046985
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/daemon-2950046985/2026-10.jsonl
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/daemon-2950046985/inventory.json
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/daemon-3551985211
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/daemon-3551985211/2026-10.jsonl
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/daemon-3551985211/inventory.json
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/daemon-957206235
+suiteguard: created: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/captured-test-files/daemon-957206235/inventory.json
+suiteguard: modified: docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/evidence/2026-10-05-jev-credit/task-03-capture-tests.txt
+FAIL	roundfix/internal/daemon	1.098s
+FAIL
