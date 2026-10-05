@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0230-retire-the-jev-router
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -93,3 +93,69 @@ through configuration loading and the configure command.
 - `_prd.md` → Goals; User Stories 1, 2 and 3; Core Features 2 and 4; Success Metrics 1 and 4
 - `_techspec.md` → Interfaces; API Contract 1; API Contract 2; API Contract 3; API Contract 5; Surface Transcript 1; Surface Transcript 2; Testing Approach; Build Order 3
 - ADR-0235; ADR-0027; ADR-0049; ADR-0231
+
+## Result
+
+Implemented the configuration slice for Daemon Verification; status remains
+Daemon-owned.
+
+- Selection normalization now checks the subscription rule immediately after
+  the non-empty model check, using `<path>.model`. Removed the router's scope,
+  override and effort rules and its three configuration source/test files.
+- Legacy runtime defaults pass through the same normalization during profile
+  conversion, so an allowed Project Config cannot hide a refused User Config
+  legacy selection. Unsupported legacy runtimes retain their existing
+  `defaults.agent` diagnostic.
+- Registered `jev.router_min_credit_usd` in the deprecated-key table with no
+  replacement, removed its field, overlay and validation, and kept the
+  existing replacement-warning format and monthly-ceiling behavior.
+
+Acceptance evidence from focused checks:
+
+1. `TestSubscriptionRuleRefusesEveryConfigScope` exercises all four refused
+   models through `Load` in User Config and Project Config, in preferred,
+   fallback and legacy selections, including shadowed User Config, and through
+   `ResolveProfile` overrides. It asserts the field, trimmed model and exact
+   rule message. The allowed DeepSeek/OpenCode and GPT/Codex selections load
+   and resolve. The shadowed legacy cases initially returned no error for all
+   four models; normalization during conversion makes them refuse.
+2. `TestProfilesConfigureRefusesSubscriptionModels` exercises all four models
+   through `runCLI`, asserting exit 2, empty stdout, the exact Surface
+   Transcript 1 diagnostic (with the disposable fragment path), and
+   byte-identical Project Config.
+3. `TestRetiredRouterCreditFloorIsDeprecated` covers values `20`, `0`, negative,
+   infinite, NaN, null, boolean, string, sequence and mapping in User Config,
+   Project Config and both together. Every case loads with exactly one API
+   Contract 5 warning. Before the implementation, `20` emitted no User Config
+   warning and `0` failed validation.
+4. A focused `rg` search of `internal` and `cmd` for the retired router symbols,
+   floor field and old rule messages returned no matches. The three router
+   configuration files are deleted. Changes are limited to configuration,
+   the new CLI test and this Result; runtime, daemon, judge, guides, skills and
+   built-in/Recommended Profiles were not edited.
+
+Focused checks:
+
+- `GOCACHE=/tmp/roundfix-task02-gocache rtk proxy go test -count=1 ./internal/config`
+  — exit 0, including the new scope/floor tests and existing monthly-ceiling,
+  deprecated-warning, unknown-key and legacy-Cursor tests.
+- `GOCACHE=/tmp/roundfix-task02-gocache rtk proxy go test -count=1 -run 'TestProfilesConfigureRefusesSubscriptionModels|TestProfilesConfigureExitCodes/validation' ./internal/cli`
+  — exit 0.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+- `GOCACHE=/tmp/roundfix-task02-gocache rtk make verify-incremental`
+  — final run exit 0 with process-table access and an unchanged tree during
+  execution: formatting, vet, all Go packages, skill checks and build passed.
+  The first run exited 2 because sandbox process-table access was denied in
+  two process-owner tests and the repository guard detected implementation
+  edits made while the suite was running. The final run resolves both causes.
+- The default Go cache denied sandbox access; focused checks use a disposable
+  task cache instead. Homes and repositories in the new tests are disposable;
+  no new test reaches the network or the real Roundfix Home.
+
+The declared Verification commands were not run; the Daemon owns them and
+settlement. No commit, push or Pull Request was created.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261005T171514Z_58452834493beeb1`
+- Source commit: `1a90ab674b50a9d5ccbfc845bbf78291c3ab431c`

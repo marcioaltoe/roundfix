@@ -153,9 +153,6 @@ func ResolveProfile(config Config, category WorkCategory, preferredOverride *Age
 	source := entry.Source
 	deviation := cloneProfileDeviation(entry.Deviation)
 	if preferredOverride != nil {
-		if IsJevRouterSelection(preferredOverride.Runtime, preferredOverride.Model) {
-			return ResolvedProfile{}, errors.New("the Jev Router cannot be a one-Run override; name it in Project Config")
-		}
 		selection, err := normalizeSelection("invocation preferred", *preferredOverride)
 		if err != nil {
 			return ResolvedProfile{}, err
@@ -264,15 +261,23 @@ func applyProfilesOverlay(config *Config, overlay *profilesOverlay, source Profi
 	}
 }
 
-func applyLegacyRuntimeProfiles(config *Config, source ProfileSource) {
+func applyLegacyRuntimeProfiles(config *Config, source ProfileSource) error {
 	if config.Profiles == nil {
 		config.Profiles = builtinProfiles()
 	}
-	defaults, _ := config.Runtimes.DefaultsFor(config.Defaults.Agent)
+	defaults, supported := config.Runtimes.DefaultsFor(config.Defaults.Agent)
 	selection := AgentSelection{
 		Runtime:         strings.TrimSpace(config.Defaults.Agent),
 		Model:           strings.TrimSpace(defaults.Model),
 		ReasoningEffort: strings.TrimSpace(defaults.ReasoningEffort),
+	}
+	// Unsupported legacy runtimes retain Validate's defaults.agent diagnostic.
+	if supported {
+		normalized, err := normalizeSelection("profiles.general.preferred", selection)
+		if err != nil {
+			return err
+		}
+		selection = normalized
 	}
 	builtins := builtinProfiles()
 	for _, category := range requiredWorkCategories {
@@ -285,6 +290,7 @@ func applyLegacyRuntimeProfiles(config *Config, source ProfileSource) {
 		}
 		config.Profiles[category] = ProfileEntry{Profile: base, Source: source}
 	}
+	return nil
 }
 
 func validateProfiles(entries Profiles) error {
@@ -301,29 +307,11 @@ func validateProfiles(entries Profiles) error {
 		}
 	}
 	for category, entry := range entries {
-		if err := validateJevRouterProfileSource("profiles."+string(category), entry); err != nil {
-			return err
-		}
 		if _, ok := ParseWorkCategory(string(category)); !ok {
 			return fmt.Errorf("profiles.%s is not a supported Agent Work Category; supported values: %s", category, supportedWorkCategoryList())
 		}
 		if err := validateAgentSelectionProfile("profiles."+string(category), entry.Profile); err != nil {
 			return err
-		}
-	}
-	return nil
-}
-
-func validateJevRouterProfileSource(path string, entry ProfileEntry) error {
-	if entry.Source == ProfileSourceProject {
-		return nil
-	}
-	if IsJevRouterSelection(entry.Profile.Preferred.Runtime, entry.Profile.Preferred.Model) {
-		return fmt.Errorf("%s.preferred names the Jev Router (%s), which only Project Config may select", path, JevRouterModel)
-	}
-	for index, selection := range entry.Profile.Fallbacks {
-		if IsJevRouterSelection(selection.Runtime, selection.Model) {
-			return fmt.Errorf("%s.fallbacks[%d] names the Jev Router (%s), which only Project Config may select", path, index, JevRouterModel)
 		}
 	}
 	return nil
@@ -521,8 +509,8 @@ func normalizeSelection(path string, selection AgentSelection) (AgentSelection, 
 	if normalized.Model == "" {
 		return AgentSelection{}, fmt.Errorf("%s.model must not be empty", path)
 	}
-	if IsJevRouterSelection(normalized.Runtime, normalized.Model) && normalized.ReasoningEffort != "" {
-		return AgentSelection{}, fmt.Errorf(`%s.reasoning_effort must be "" for the Jev Router; the router chooses the effort`, path)
+	if err := CheckSubscriptionRule(path+".model", normalized.Runtime, normalized.Model); err != nil {
+		return AgentSelection{}, err
 	}
 	if normalized.Runtime == "cursor" && normalized.ReasoningEffort != "" {
 		return AgentSelection{}, fmt.Errorf("%s.reasoning_effort must be \"\" for runtime cursor; Cursor states effort, thinking, context and speed inside the model value, for example \"grok-4-20[thinking=true]\"", path)
