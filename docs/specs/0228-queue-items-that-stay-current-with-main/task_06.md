@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0228-queue-items-that-stay-current-with-main
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -111,3 +111,76 @@ differs between the sides is still refused.
 - `_prd.md` → Core Feature 2; Success Metric 2
 - `_techspec.md` → Line-scoped derived paths; Testing Approach 2
 - ADR-0233; ADR-0192
+
+## Result
+
+Implemented the assigned corrective slice for Daemon Verification:
+
+- `resolveDerivedLineHunks` now collects both sides of each hunk, refuses
+  unequal line counts, and compares corresponding lines. Identical lines are
+  preserved; a differing line must match the declaration on both sides. The
+  output keeps the default branch's side. The regeneration bound in
+  `derivedLineChangesAllowed` is unchanged.
+- Added real local Git fixtures with canonical and mirrored skill frontmatter,
+  the repository's derived-record and line-scoped declarations, a local bare
+  default-branch remote, and shell regeneration. An invocation log outside
+  the worktree proves the command ran exactly once or never ran, even when a
+  merge is aborted.
+- Updated Delivery conflict recovery in the configuration guide to describe
+  equal line counts and differences confined to matching lines, including
+  "identical lines between them are kept" and the default-side rule.
+
+Acceptance evidence from focused implementation checks:
+
+1. Real skill collision merges and regenerates one patch above main:
+   `TestARealSkillVersionHunkIsMergedAndRegeneratedOnePatchAboveMain` first
+   proves, through its own two-sided Git merge followed by abort, exactly one
+   canonical-file conflict hunk with both versions and the author/source lines
+   between them. It then asserts both version fields in both files become
+   `0.1.33`, both branches' body edits survive, the record is regenerated,
+   exactly one command ran, the merge parents are item then main, the
+   `Roundfix-Delivery: derived-merge` trailer is present, no source paths are
+   returned, and the worktree is clean.
+2. Non-matching differences remain source conflicts:
+   `TestAVersionHunkWhoseInterveningLineDiffersAbortsTheMerge` asserts that a
+   differing author line returns both `SKILL.md` paths, runs no regeneration,
+   preserves the item head and clean worktree, and leaves no `MERGE_HEAD`.
+   Every existing test in `deliver_conflict_test.go` and
+   `deliver_derived_lines_test.go` passed unedited in the final focused run,
+   including the regeneration-bound and whole-file-precedence tests.
+
+Red and mutation evidence (Requirement 6):
+
+- Before the production fix,
+  `GOCACHE=/tmp/roundfix-task06-gocache rtk proxy go test ./internal/cli -count=1 -run '^TestARealSkillVersionHunk' -v`
+  exited 1 at the resolution assertion:
+  `Head:` empty,
+  `SourcePaths:[.agents/skills/example/SKILL.md skills/example/SKILL.md]`,
+  `Regenerated:[]`. The fixture's one-hunk proof had already succeeded.
+- With a temporary mutation that exempted differing `  author: ` lines from
+  the pattern check,
+  `GOCACHE=/tmp/roundfix-task06-gocache rtk proxy go test ./internal/cli -count=1 -run '^TestAVersionHunkWhoseInterveningLine' -v`
+  exited 1: the refusal assertion saw a merged head, `SourcePaths:[]`, and
+  a regeneration command. The mutation was removed before the final run.
+- With the intended fix, the focused two-test selection
+  `GOCACHE=/tmp/roundfix-task06-gocache rtk proxy go test ./internal/cli -count=1 -run 'Test(ARealSkillVersionHunk|AVersionHunkWhoseInterveningLine)' -v`
+  exited 0 with both tests passing.
+- Final focused regression check after removing the mutation:
+  `GOCACHE=/tmp/roundfix-task06-gocache rtk proxy go test ./internal/cli -count=1 -run 'Test.*(Conflict|Regeneration|DerivedPaths|VersionHunk)' -v`
+  exited 0 (`ok roundfix/internal/cli`, 9.563s). Both new tests and every
+  existing test in the two protected test files passed.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0, and
+  `rtk proxy git -c core.fsmonitor=false diff --exit-code -- internal/cli/deliver_conflict_test.go internal/cli/deliver_derived_lines_test.go`
+  exited 0, confirming both existing files are unchanged.
+
+The initial worktree already contained the Daemon's `pending` to
+`in_progress` status change. That status is preserved. No Task Graph, other
+Task, owned skill, or tooling configuration was edited. No declared
+Verification command or repository settlement gate was run; these remain
+Daemon-owned. No commit, push, or Pull Request was created. No follow-up was
+needed for this slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261005T112526Z_f4195dc79490f939`
+- Source commit: `b957f7cfe233c19e865dfdf80b10465b77bdac75`

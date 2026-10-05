@@ -1918,6 +1918,7 @@ func resolveDerivedLineHunks(content []byte, pattern string) ([]byte, bool) {
 	match := regexp.MustCompile(pattern) // Project Config has validated it.
 	lines := strings.SplitAfter(string(content), "\n")
 	var output strings.Builder
+	var ours, theirs []string
 	state, width, hunks := 0, 0, 0
 	for _, line := range lines {
 		text := strings.TrimSuffix(line, "\n")
@@ -1930,6 +1931,7 @@ func resolveDerivedLineHunks(content []byte, pattern string) ([]byte, bool) {
 				return nil, false
 			}
 			state = 1
+			ours, theirs = nil, nil
 			hunks++
 		} else if text == strings.Repeat("=", width) && state == 1 {
 			state = 2
@@ -1937,13 +1939,22 @@ func resolveDerivedLineHunks(content []byte, pattern string) ([]byte, bool) {
 			if state != 2 || !strings.HasPrefix(text, strings.Repeat(">", width)+" ") {
 				return nil, false
 			}
-			state = 0
-		} else if state != 0 {
-			if !match.MatchString(text) {
+			if len(ours) != len(theirs) {
 				return nil, false
 			}
-			if state == 2 {
-				output.WriteString(line)
+			for index, oldLine := range ours {
+				newLine := theirs[index]
+				if oldLine != newLine && (!match.MatchString(strings.TrimSuffix(oldLine, "\n")) || !match.MatchString(strings.TrimSuffix(newLine, "\n"))) {
+					return nil, false
+				}
+				output.WriteString(newLine)
+			}
+			state = 0
+		} else if state != 0 {
+			if state == 1 {
+				ours = append(ours, line)
+			} else {
+				theirs = append(theirs, line)
 			}
 		} else {
 			output.WriteString(line)
