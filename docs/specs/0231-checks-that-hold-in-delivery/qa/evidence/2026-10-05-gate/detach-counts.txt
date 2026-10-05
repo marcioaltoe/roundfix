@@ -1,0 +1,6 @@
+TestRunImplementDetachSurvivesCallerProcessGroupKill: 10 passes
+TestImplementDetachChildEndsWhenItsTestBinaryDies: 10 passes
+TestDetachSurvivorEndsWhenItsTestBinaryDies: 10 passes
+TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded: 10 passes
+TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded: 10 passes
+No skips; command exit 0.

@@ -1,0 +1,3 @@
+Source: /Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261005T101255Z_f599a5cc8ea7f4c2/verification/batch-003-attempt-1.log
+--- FAIL: TestRunImplementDetachSurvivesCallerProcessGroupKill (5.07s)
+    implement_test.go:1862: kill fixture process group 52154: operation not permitted; live members=[52154]; reading error=<nil>
