@@ -1,9 +1,18 @@
 ---
 spec: 0229-a-jev-router-that-checks-credit-and-names-its-model
-status: active
+status: archived
 created: 2026-10-04
 surfaces: [backend, docs]
+archived: "2026-10-05"
+source_slug: 0229-a-jev-router-that-checks-credit-and-names-its-model
+qa_override: true
+qa_override_approval: 'maintainer standing authorization 2026-09-30 (unattended program): qa_override only for environment-only partials'
+qa_override_reason: 'Environment-only partial: row 7b needs historical raw run records outside the authorized scope (the 2026-10-04 measurement addenda record them), and row 10 has no Pull Request yet; the queue opens it. Every behavior row passed against local upstreams. The operator runs one live routed replay after merge to confirm the recorded model.'
+qa_override_qa_outcome: partial
+qa_override_qa_task_status: failed
+qa_override_revision: 932cd2c5987206523d30c7c34b87fe0f7efcc028
 ---
+
 
 # A Jev Router that checks its credit and names its model
 
