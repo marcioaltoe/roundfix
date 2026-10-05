@@ -1699,7 +1699,7 @@ func (workflow *commandDeliveryWorkflow) ResolveConflict(ctx context.Context, wo
 	for _, name := range nulPaths(initialUntracked) {
 		existingUntracked[name] = true
 	}
-	_, mergeErr := workflow.git.RunGit(ctx, workDir, "merge", "--no-ff", "--no-commit", defaultHead)
+	_, mergeErr := workflow.git.RunGit(ctx, workDir, "-c", "merge.conflictStyle=merge", "merge", "--no-ff", "--no-commit", defaultHead)
 	merging, err := workflow.gitObjectExists(ctx, workDir, "MERGE_HEAD")
 	if err != nil {
 		return resolution, fmt.Errorf("inspect conflict merge: %w", err)
@@ -1741,15 +1741,40 @@ func (workflow *commandDeliveryWorkflow) ResolveConflict(ctx context.Context, wo
 	}
 	paths := nulPaths(conflicts)
 	matched := make([]bool, len(declarations))
+	lineResolutions := make(map[string][]byte)
 	for _, name := range paths {
-		if !matches(name) {
+		if matches(name) {
+			for index, declaration := range declarations {
+				if declaration.Matches(name) {
+					matched[index] = true
+				}
+			}
+			continue
+		}
+		lineScoped := false
+		for _, declaration := range declarations {
+			lineScoped = lineScoped || declaration.MatchesLines(name)
+		}
+		if !lineScoped {
 			resolution.SourcePaths = append(resolution.SourcePaths, name)
 			continue
 		}
+		content, mode, err := readDerivedLineFile(workDir, name)
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return resolution, fmt.Errorf("read line-scoped conflict %s: %w", name, err)
+		}
 		for index, declaration := range declarations {
-			if declaration.Matches(name) {
+			if !declaration.MatchesLines(name) || !mode.IsRegular() {
+				continue
+			}
+			resolved, ok := resolveDerivedLineHunks(content, declaration.Lines.Match)
+			if ok {
+				lineResolutions[name] = resolved
 				matched[index] = true
 			}
+		}
+		if _, ok := lineResolutions[name]; !ok {
+			resolution.SourcePaths = append(resolution.SourcePaths, name)
 		}
 	}
 	if len(resolution.SourcePaths) != 0 {
@@ -1759,7 +1784,11 @@ func (workflow *commandDeliveryWorkflow) ResolveConflict(ctx context.Context, wo
 		return resolution, fmt.Errorf("merge conflict default: %w", mergeErr)
 	}
 	for _, name := range paths {
-		if _, err := workflow.git.RunGit(ctx, workDir, "checkout", "--theirs", "--", name); err != nil {
+		if content, ok := lineResolutions[name]; ok {
+			if err := os.WriteFile(filepath.Join(workDir, filepath.FromSlash(name)), content, 0600); err != nil {
+				return resolution, fmt.Errorf("take default derived lines: %w", err)
+			}
+		} else if _, err := workflow.git.RunGit(ctx, workDir, "checkout", "--theirs", "--", name); err != nil {
 			return resolution, fmt.Errorf("take default derived path: %w", err)
 		}
 		if _, err := workflow.git.RunGit(ctx, workDir, "add", "--", name); err != nil {
@@ -1769,6 +1798,28 @@ func (workflow *commandDeliveryWorkflow) ResolveConflict(ctx context.Context, wo
 	baseline, err := workflow.git.RunGit(ctx, workDir, "write-tree")
 	if err != nil {
 		return resolution, fmt.Errorf("snapshot merge before regeneration: %w", err)
+	}
+	// Snapshot every tracked line-scoped file, including cleanly merged files
+	// that a matched command may rewrite. Preserve bytes and file mode exactly.
+	lineBaseline := make(map[string]derivedLineSnapshot)
+	tracked, err := workflow.git.RunGit(ctx, workDir, "ls-files", "-z")
+	if err != nil {
+		return resolution, fmt.Errorf("list line-scoped merge paths: %w", err)
+	}
+	for _, name := range nulPaths(tracked) {
+		if matches(name) {
+			continue
+		}
+		for _, declaration := range declarations {
+			if declaration.MatchesLines(name) {
+				content, mode, err := readDerivedLineFile(workDir, name)
+				if err != nil {
+					return resolution, fmt.Errorf("snapshot derived lines %s: %w", name, err)
+				}
+				lineBaseline[name] = derivedLineSnapshot{content: content, mode: mode}
+				break
+			}
+		}
 	}
 	artifactDir, err := roundconfig.ValidateArtifactDirectory(workflow.loaded.Config.Defaults.ArtifactDir, workflow.loaded.GitRoot, workflow.loaded.HomeDir)
 	if err != nil {
@@ -1799,7 +1850,23 @@ func (workflow *commandDeliveryWorkflow) ResolveConflict(ctx context.Context, wo
 		}
 	}
 	for _, name := range changedPaths {
-		if !matches(name) {
+		allowed := matches(name)
+		if !allowed {
+			before, exists := lineBaseline[name]
+			after, mode, err := readDerivedLineFile(workDir, name)
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				return resolution, fmt.Errorf("inspect regenerated lines %s: %w", name, err)
+			}
+			if exists && err == nil && mode.IsRegular() && mode == before.mode {
+				for _, declaration := range declarations {
+					if declaration.MatchesLines(name) && derivedLineChangesAllowed(before.content, after, declaration.Lines.Match) {
+						allowed = true
+						break
+					}
+				}
+			}
+		}
+		if !allowed {
 			resolution.SourcePaths = append(resolution.SourcePaths, "regenerated "+name+" outside delivery.derived_paths")
 		}
 	}
@@ -1821,6 +1888,83 @@ func (workflow *commandDeliveryWorkflow) ResolveConflict(ctx context.Context, wo
 	}
 	resolution.Head = strings.TrimSpace(newHead)
 	return resolution, nil
+}
+
+type derivedLineSnapshot struct {
+	content []byte
+	mode    os.FileMode
+}
+
+func readDerivedLineFile(workDir, name string) ([]byte, os.FileMode, error) {
+	name = filepath.Join(workDir, filepath.FromSlash(name))
+	info, err := os.Lstat(name)
+	if err != nil {
+		return nil, 0, err
+	}
+	if !info.Mode().IsRegular() {
+		return nil, info.Mode(), nil
+	}
+	content, err := os.ReadFile(name)
+	return content, info.Mode(), err
+}
+
+// Resolve only well-formed, two-sided text hunks. Keep all bytes outside
+// hunks, including cleanly merged source edits, and take the incoming side.
+func resolveDerivedLineHunks(content []byte, pattern string) ([]byte, bool) {
+	if bytes.ContainsRune(content, '\x00') {
+		return nil, false
+	}
+	match := regexp.MustCompile(pattern) // Project Config has validated it.
+	lines := strings.SplitAfter(string(content), "\n")
+	var output strings.Builder
+	state, width, hunks := 0, 0, 0
+	for _, line := range lines {
+		text := strings.TrimSuffix(line, "\n")
+		if strings.HasPrefix(text, "<<<<<<<") {
+			if state != 0 {
+				return nil, false
+			}
+			width = len(text) - len(strings.TrimLeft(text, "<"))
+			if !strings.HasPrefix(text[width:], " ") {
+				return nil, false
+			}
+			state = 1
+			hunks++
+		} else if text == strings.Repeat("=", width) && state == 1 {
+			state = 2
+		} else if strings.HasPrefix(text, ">>>>>>>") {
+			if state != 2 || !strings.HasPrefix(text, strings.Repeat(">", width)+" ") {
+				return nil, false
+			}
+			state = 0
+		} else if state != 0 {
+			if !match.MatchString(text) {
+				return nil, false
+			}
+			if state == 2 {
+				output.WriteString(line)
+			}
+		} else {
+			output.WriteString(line)
+		}
+	}
+	return []byte(output.String()), state == 0 && hunks > 0
+}
+
+func derivedLineChangesAllowed(before, after []byte, pattern string) bool {
+	oldLines := strings.SplitAfter(string(before), "\n")
+	newLines := strings.SplitAfter(string(after), "\n")
+	if len(oldLines) != len(newLines) {
+		return false
+	}
+	match := regexp.MustCompile(pattern) // Project Config has validated it.
+	for index, oldLine := range oldLines {
+		newLine := newLines[index]
+		if oldLine != newLine && (!match.MatchString(strings.TrimSuffix(oldLine, "\n")) || !match.MatchString(strings.TrimSuffix(newLine, "\n"))) {
+			return false
+		}
+	}
+	return true
 }
 
 func nulPaths(output string) []string {
