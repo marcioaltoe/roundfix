@@ -1,0 +1,10 @@
+{
+  ".agents/skills/roundfix/SKILL.md mirror_equal": true,
+  ".agents/skills/roundfix/references/runtime.md mirror_equal": true,
+  "docs/user-guide/configuration.md phrases": true,
+  ".agents/skills/roundfix/references/runtime.md phrases": true,
+  "version_raised": true,
+  "ADR_note": true,
+  "profiles_unchanged": true,
+  "QA_settlement_unchanged": true
+}

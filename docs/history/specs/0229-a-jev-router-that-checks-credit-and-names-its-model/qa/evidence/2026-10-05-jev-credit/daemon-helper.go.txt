@@ -1,0 +1,20 @@
+package daemon
+import("bytes";"crypto/sha256";"encoding/json";"fmt";"os";"path/filepath";"testing")
+func qaCaptureTempDir(t *testing.T) string {
+ t.Helper();root:=t.TempDir()
+ t.Cleanup(func(){
+  type item struct {Path string; SHA256 string; SentinelMatch bool}
+  rows:=[]item{}
+  out,err:=os.MkdirTemp("/private/tmp/roundfix-0229-qa-captured","daemon-");if err!=nil{t.Fatal(err)}
+  err=filepath.WalkDir(root,func(path string,d os.DirEntry,err error)error {
+   if err!=nil{return err};if !d.Type().IsRegular(){return nil}
+   data,err:=os.ReadFile(path);if err!=nil{return err};rel,_:=filepath.Rel(root,path)
+   found:=false;for _,key:=range []string{"task01-sentinel-key-never-in-config","router-gate-test-secret-never-log","relay-sentinel"}{found=found||bytes.Contains(data,[]byte(key))}
+   rows=append(rows,item{rel,fmt.Sprintf("%x",sha256.Sum256(data)),found})
+   if found{t.Errorf("sentinel leaked to file %s",rel)}
+   if filepath.Ext(path)==".jsonl"{if err:=os.WriteFile(filepath.Join(out,filepath.Base(path)),data,0600);err!=nil{return err}}
+   return nil
+  });if err!=nil{t.Error(err)}
+  data,_:=json.MarshalIndent(rows,"","  ");if err:=os.WriteFile(filepath.Join(out,"inventory.json"),data,0600);err!=nil{t.Error(err)}
+ });return root
+}

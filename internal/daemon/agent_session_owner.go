@@ -376,7 +376,7 @@ func (owner *agentSessionOwner) runPrepared(ctx context.Context, req agent.Execu
 		record := jevrouter.PromptRecord{
 			RunID: req.RunID, Spec: owner.scope.Spec, ScopeKind: owner.scope.Kind, ScopeID: owner.scope.ID,
 			Category: string(owner.scope.Category), Repository: req.GitRoot, Attempt: owner.attemptNumber,
-			UsageBefore: usageBefore, Latency: latency, Failed: err != nil,
+			UsageBefore: usageBefore, Latency: latency, Failed: err != nil, Reported: result.Router,
 		}
 		if result.Usage.InputTokens != nil {
 			record.InputTokens = *result.Usage.InputTokens
@@ -726,7 +726,7 @@ func selectionReasonCode(err error) string {
 	if errors.As(err, &failure) {
 		code, _, _ := strings.Cut(failure.Reason, ":")
 		switch strings.TrimSpace(code) {
-		case agent.JevRouterKeyMissing, "jev_router_key_unbounded", "jev_spend_unreadable", "jev_ceiling_reached":
+		case agent.JevRouterKeyMissing, "jev_router_key_unbounded", "jev_spend_unreadable", "jev_ceiling_reached", "openrouter_credit_low", "openrouter_credit_refused":
 			return strings.TrimSpace(code)
 		}
 		if failure.Err != nil {

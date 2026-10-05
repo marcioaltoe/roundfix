@@ -1,0 +1,5 @@
+COMMAND: ./bin/roundfix profiles show --json
+roundfix: profiles failed: parse config "/private/tmp/roundfix-0229-qa-guide-home/.roundfix/config.yml": jev.router_min_credit_usd must be a finite number greater than 0
+Run 'roundfix profiles --help' for usage.
+
+exit: 2

@@ -173,6 +173,21 @@ runs appends one `router-prompt` Judge Log line with the change in key usage.
 An append failure is reported in Run progress and preserves the prompt's
 result. Non-routed prompts make no key endpoint call.
 
+The gate also reads `GET /api/v1/credits` before each routed prompt and names
+the required fields `total_credits` and `total_usage`. It compares the
+`jev.router_min_credit_usd` floor with the lower of the account balance
+(`total_credits` less `total_usage`) and the key's remaining limit. A balance
+below the floor is refused with `openrouter_credit_low`; an unreadable credits
+answer is `jev_spend_unreadable`. An OpenRouter HTTP 402 on a routed request is
+`openrouter_credit_refused`. Before Agent work begins that is a failed
+selection and the Fallback Chain takes the Task; after work begins it fails
+the Work Item.
+
+Routed sessions reach OpenRouter through a relay Roundfix runs on the loopback
+interface. The relay forwards requests unchanged and never logs or stores the
+key. Each `router-prompt` Judge Log line records the models and providers the
+router reported, in first-seen order, and the last response id.
+
 Before a routed prompt starts, the key must also report a numeric `limit`
 no greater than the ceiling and `limit_reset: monthly`. Set a monthly credit
 limit of at most the configured ceiling on the key at OpenRouter; an unlimited

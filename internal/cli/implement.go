@@ -554,7 +554,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 
 	// The Spec's target branch comes off the Run record, not from git in the
 	// Run Worktree: the Run Worktree is checked out on the Run Branch.
-	cycleResult, err := executeImplementCycle(ctx, gitState, run.LocalBranch, runRef, session, executionSpecsRoot, executionGraph, req.artifactDir, loadedConfig.Config.Logs.Agent, loadedConfig.Config.Jev.MonthlyCeilingUSD, implementCapacities{
+	cycleResult, err := executeImplementCycle(ctx, gitState, run.LocalBranch, runRef, session, executionSpecsRoot, executionGraph, req.artifactDir, loadedConfig.Config.Logs.Agent, loadedConfig.Config.Jev.MonthlyCeilingUSD, loadedConfig.Config.Jev.RouterMinCreditUSD, implementCapacities{
 		task:         loadedConfig.Config.Worktree.Concurrency,
 		verification: loadedConfig.Config.Verification.Concurrency,
 	}, budgetNow, run.CreatedAt, loadedConfig.Config.Budget, loadedConfig.Config.Defaults.Verification, loadedConfig.Config.Verification.RepositoryAtSettlement, loadedConfig.Config.Worktree.Copy, worktreeBootstrapSpec(loadedConfig.Config), newBootstrapOutputWriter(ctx, run.ID, runStore, ui.progress), authorization, runtime, agentSelections, operationalRuntimeFactory(req), collaborators, runStore, ui)
@@ -1016,7 +1016,7 @@ type implementCapacities struct {
 	verification int
 }
 
-func executeImplementCycle(ctx context.Context, gitState preflight.GitState, targetBranch string, runRef runworktree.Ref, session agent.SessionRef, specsRoot string, graph *spec.Graph, artifactDir string, agentLogs bool, jevMonthlyCeilingUSD float64, capacities implementCapacities, now func() time.Time, runStartedAt time.Time, budget roundconfig.Budget, repositoryVerification string, repositoryVerificationAtSettlement bool, copyList []string, bootstrap runworktree.BootstrapSpec, bootstrapOutput io.Writer, authorization spec.AuthorizationResolution, runtime agent.RuntimeSpec, agentSelections daemon.AgentSelectionProfiles, runtimeFactory daemon.AgentRuntimeFactory, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
+func executeImplementCycle(ctx context.Context, gitState preflight.GitState, targetBranch string, runRef runworktree.Ref, session agent.SessionRef, specsRoot string, graph *spec.Graph, artifactDir string, agentLogs bool, jevMonthlyCeilingUSD, jevRouterMinCreditUSD float64, capacities implementCapacities, now func() time.Time, runStartedAt time.Time, budget roundconfig.Budget, repositoryVerification string, repositoryVerificationAtSettlement bool, copyList []string, bootstrap runworktree.BootstrapSpec, bootstrapOutput io.Writer, authorization spec.AuthorizationResolution, runtime agent.RuntimeSpec, agentSelections daemon.AgentSelectionProfiles, runtimeFactory daemon.AgentRuntimeFactory, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
 	runID := runRef.RunID
 	fmt.Fprintf(ui.progress, "%s: implement selected Spec %s with %d Task(s); %d to execute this Run.\n", app.Name, graph.Spec.Slug, len(graph.Tasks), countNonCompletedTasks(graph.Tasks))
 	fmt.Fprintf(ui.progress, "Implement Run: %s\n", runID)
@@ -1027,10 +1027,11 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, tar
 	fmt.Fprintf(ui.progress, "Default Reasoning Effort: %s\n", displayReasoningEffort(runtime.ReasoningEffort))
 
 	engine, err := daemon.NewEngine(daemon.Dependencies{
-		JevMonthlyCeilingUSD: jevMonthlyCeilingUSD,
-		Runner:               collaborators.runner,
-		Verifier:             collaborators.verifier,
-		Committer:            collaborators.committer,
+		JevMonthlyCeilingUSD:  jevMonthlyCeilingUSD,
+		JevRouterMinCreditUSD: jevRouterMinCreditUSD,
+		Runner:                collaborators.runner,
+		Verifier:              collaborators.verifier,
+		Committer:             collaborators.committer,
 		// Pusher and Source only satisfy engine construction: the Task
 		// cycle never invokes them. The CLI performs the optional
 		// Clean-only spec push after the cycle settles (ADR 0021).

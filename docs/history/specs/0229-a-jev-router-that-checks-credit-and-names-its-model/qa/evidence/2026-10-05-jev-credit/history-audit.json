@@ -1,0 +1,79 @@
+{
+  "base": "96e733771b33a206f95be2e95a3a66512dd820a9",
+  "head": "807d6896a642308a52ef76b1b6c556240b588037",
+  "commits": [
+    {
+      "task": "docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/task_01.md",
+      "commit": "f223132f0abde72bfaaf152d1b449a8c2ed1fb7a",
+      "paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/runtime.md",
+        "docs/adr/0218-the-jev-router-is-a-project-selected-opencode-model-under-the-shared-jev-ceiling.md",
+        "docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/task_01.md",
+        "docs/user-guide/configuration.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/runtime.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "all_declared": true,
+      "governed_bounded": true
+    },
+    {
+      "task": "docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/task_02.md",
+      "commit": "f74e69c4c67912ee3289f337e97dc3fc6635b5eb",
+      "paths": [
+        "docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/task_02.md",
+        "internal/cli/cli.go",
+        "internal/cli/implement.go",
+        "internal/config/config.go",
+        "internal/config/jev_router_credit_test.go",
+        "internal/daemon/agent_session_owner.go",
+        "internal/daemon/engine.go",
+        "internal/daemon/jev_router_gate_test.go",
+        "internal/jevrouter/credits.go",
+        "internal/jevrouter/credits_test.go",
+        "internal/jevrouter/spend.go"
+      ],
+      "all_declared": true,
+      "governed_bounded": true
+    },
+    {
+      "task": "docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/task_03.md",
+      "commit": "f9328e75126d5f42b75ee5be4c489aeaeb7a89bc",
+      "paths": [
+        "docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/task_03.md",
+        "internal/agent/acpx_runner.go",
+        "internal/agent/acpx_runner_test.go",
+        "internal/agent/agent.go",
+        "internal/agent/jev_router.go",
+        "internal/agent/jev_router_test.go",
+        "internal/daemon/agent_session_owner.go",
+        "internal/daemon/jev_router_gate_test.go",
+        "internal/jevrouter/ledger.go",
+        "internal/jevrouter/ledger_test.go",
+        "internal/jevrouter/relay.go",
+        "internal/jevrouter/relay_test.go"
+      ],
+      "all_declared": true,
+      "governed_bounded": true
+    },
+    {
+      "task": "docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/task_04.md",
+      "commit": "807d6896a642308a52ef76b1b6c556240b588037",
+      "paths": [
+        "docs/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/task_04.md",
+        "internal/agent/acpx_runner.go",
+        "internal/agent/jev_router_test.go",
+        "internal/daemon/agent_session_owner.go",
+        "internal/daemon/jev_router_gate_test.go",
+        "internal/jevrouter/ledger.go",
+        "internal/jevrouter/ledger_test.go"
+      ],
+      "all_declared": true,
+      "governed_bounded": true
+    }
+  ],
+  "bad_tasks": [],
+  "protected_files_unchanged": true,
+  "authorization_at_base": true
+}

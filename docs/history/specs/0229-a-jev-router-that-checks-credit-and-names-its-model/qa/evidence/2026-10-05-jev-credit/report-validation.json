@@ -1,0 +1,8 @@
+{
+  "report_structure": "pass",
+  "rows": 14,
+  "relative_evidence_links": 18,
+  "all_evidence_links_exist": true,
+  "task_05_declared_verification_exit": 0,
+  "diff_check": "see final git diff --check"
+}

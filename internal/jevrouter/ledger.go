@@ -3,12 +3,14 @@ package jevrouter
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"roundfix/internal/judge"
 )
 
 type PromptRecord struct {
+	Reported                                              Observation
 	RunID, Spec, ScopeKind, ScopeID, Category, Repository string
 	Attempt                                               int
 	UsageBefore, UsageAfter                               float64
@@ -33,15 +35,26 @@ func (ledger Ledger) Append(record PromptRecord, now time.Time) error {
 		Target:     fmt.Sprintf("%s %s %s", record.RunID, record.ScopeKind, record.ScopeID),
 		QuestionID: record.Category, Transport: "openrouter",
 		RequestedModel: "roundfix-openrouter/typesafe/jev-router",
-		LatencyMS:      record.Latency.Milliseconds(), InputTokens: int(record.InputTokens), OutputTokens: int(record.OutputTokens),
+		Model:          strings.Join(record.Reported.Models, ", "), Provider: strings.Join(record.Reported.Providers, ", "), ResponseID: record.Reported.ResponseID,
+		LatencyMS: record.Latency.Milliseconds(), InputTokens: int(record.InputTokens), OutputTokens: int(record.OutputTokens),
 		CostUSD: max(0, record.UsageAfter-record.UsageBefore), CostSource: "reported",
 		Attempts: record.Attempt, Outcome: "clear",
 	}
 	if record.Failed {
 		row.Outcome = "skipped"
 	}
+	if refusal := record.Reported.Refusal; refusal != nil {
+		source := strings.TrimSpace(refusal.LimitSource)
+		if source == "" {
+			source = "unspecified"
+		}
+		row.Error = "openrouter_credit_refused: " + source
+	}
 	if record.UsageAfterErr != nil {
-		row.Error = "key usage unreadable after prompt: " + record.UsageAfterErr.Error()
+		if row.Error != "" {
+			row.Error += "; "
+		}
+		row.Error += "key usage unreadable after prompt: " + record.UsageAfterErr.Error()
 		row.CostUSD = 0
 	}
 	if err := judge.AppendLogLine(ledger.HomeDir, now, row); err != nil {

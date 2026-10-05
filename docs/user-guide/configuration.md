@@ -133,6 +133,32 @@ An older Roundfix binary refuses a User Config containing this key as an
 unknown key. Set it only after every Roundfix binary on the machine includes
 this change.
 
+## Jev Router credit floor
+
+`jev.router_min_credit_usd` is a finite number of US dollars greater than
+zero. Set it only in User Config at `~/.roundfix/config.yml`; when unset, the
+floor is US$15. Before each routed prompt, the Jev Router gate reads
+OpenRouter's account credit from `GET /api/v1/credits`, where
+`total_credits` less `total_usage` is the account balance. It compares the
+floor with the lower of that balance and the key's remaining limit.
+
+For example:
+
+```yaml
+jev:
+  router_min_credit_usd: 20
+```
+
+A `jev.router_min_credit_usd` value in Project Config is ignored with this
+warning on standard error:
+`config: jev.router_min_credit_usd in Project Config is ignored; set jev.router_min_credit_usd in User Config`.
+An invalid User Config value fails with:
+`jev.router_min_credit_usd must be a finite number greater than 0`.
+
+An older Roundfix binary refuses a User Config containing this key as an
+unknown key. Set it only after every Roundfix binary on the machine includes
+this change.
+
 ## Context-Driven Baseline state
 
 User Config and Project Config are operational Roundfix state. They do not
@@ -319,6 +345,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `implement.auto_push` | `false` | Leaves a Clean Spec Run local. `true` pushes its upstream branch but never opens a pull request. |
 | `runs.max_active` | `3` | Limits Active Implement Runs across every repository in the Run Database. Only User Config can set it; Project Config is ignored with a warning. `0` disables the bound. |
 | `jev.monthly_ceiling_usd` | `5` | Sets the shared monthly Jev ceiling in User Config, in US dollars. Project Config is ignored with a warning. |
+| `jev.router_min_credit_usd` | `15` | Sets the Jev Router account credit floor in User Config, in US dollars. Project Config is ignored with a warning. |
 | `notify.enabled` | `true` | Sends one terminal outcome notification for `resolve`, `watch`, and `implement`. |
 | `notify.command` | `""` | Uses the native desktop notifier. A non-empty shell command replaces it. |
 | `budget.enabled` | `true` | Enforces the configured Run duration budget. |
@@ -378,6 +405,21 @@ placeholder, replacing an inherited value for routed sessions only.
 Every routed prompt runs under the configured monthly Jev ceiling shared with
 `roundfix spec judge`; `jev.monthly_ceiling_usd` is US$5 when unset. The router
 changes no built-in or Recommended Profile.
+
+Before each routed prompt, the gate also reads `GET /api/v1/credits` and
+requires the numeric fields `total_credits` and `total_usage`. It refuses when
+the lower of the account balance (`total_credits` less `total_usage`) and the
+key's remaining limit is below `jev.router_min_credit_usd`, with
+`openrouter_credit_low`. An unreadable credits answer is
+`jev_spend_unreadable`. An OpenRouter HTTP 402 on a routed request is
+`openrouter_credit_refused`; before Agent work begins it is a failed selection
+and the Fallback Chain takes the Task, and after work begins it fails the Work
+Item.
+
+Routed sessions reach OpenRouter through a relay Roundfix runs on the loopback
+interface. The relay forwards requests unchanged and never logs or stores the
+key. Each `router-prompt` Judge Log line records the models and providers the
+router reported, in first-seen order, and the last response id.
 
 Before a routed prompt starts, the key must also report a numeric `limit`
 no greater than the ceiling and `limit_reset: monthly`. Set a monthly credit

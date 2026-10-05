@@ -5004,6 +5004,12 @@ func runFakeACPXProcess() int {
 	}
 	args := os.Args[1:]
 	commandKey := fakeACPXCommandKey(args)
+	if commandKey == "prompt" {
+		if err := postJevRouterFixture(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 2
+		}
+	}
 	if path := os.Getenv(fakeACPXArgsPath); path != "" {
 		payload, err := json.Marshal(args)
 		if err != nil {

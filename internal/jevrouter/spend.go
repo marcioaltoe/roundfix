@@ -14,11 +14,12 @@ import (
 // Deps supplies an explicit environment, Home and key endpoint. A zero ceiling
 // loads the judge's questions; production overrides also come from judge.Load.
 type Deps struct {
-	Env      []string
-	HomeDir  string
-	Client   *http.Client
-	Endpoint string
-	Ceiling  float64
+	Env          []string
+	HomeDir      string
+	Client       *http.Client
+	Endpoint     string
+	Ceiling      float64
+	MinCreditUSD float64
 }
 
 type Spend struct {

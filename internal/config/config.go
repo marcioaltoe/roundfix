@@ -51,7 +51,8 @@ const (
 type Jev struct {
 	// MonthlyCeilingUSD is the User Config Jev ceiling in US dollars. Zero
 	// means unset, and every consumer keeps the judge's built-in ceiling.
-	MonthlyCeilingUSD float64
+	MonthlyCeilingUSD  float64
+	RouterMinCreditUSD float64 // zero keeps the built-in credit floor
 }
 
 type Config struct {
@@ -275,7 +276,8 @@ func (duration *durationValue) UnmarshalYAML(node *yaml.Node) error {
 }
 
 type jevOverlay struct {
-	MonthlyCeilingUSD *float64 `yaml:"monthly_ceiling_usd"`
+	MonthlyCeilingUSD  *float64 `yaml:"monthly_ceiling_usd"`
+	RouterMinCreditUSD *float64 `yaml:"router_min_credit_usd"`
 }
 
 type configOverlay struct {
@@ -1561,6 +1563,15 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 			return fmt.Errorf("parse config %q: jev.monthly_ceiling_usd must be a finite number greater than 0", label)
 		}
 	}
+	if source == ProfileSourceProject && removeYAMLPath(&document, []string{"jev", "router_min_credit_usd"}) {
+		warnings.warnIgnoredProjectSetting("jev.router_min_credit_usd")
+	}
+	if value, found := yamlValueAtPath(&document, []string{"jev", "router_min_credit_usd"}); found {
+		var floor float64
+		if (value.Tag != "!!int" && value.Tag != "!!float") || value.Decode(&floor) != nil || floor <= 0 || math.IsNaN(floor) || math.IsInf(floor, 0) {
+			return fmt.Errorf("parse config %q: jev.router_min_credit_usd must be a finite number greater than 0", label)
+		}
+	}
 	stripDeprecatedConfigKeys(&document, warnings)
 	if err := validateDerivedLineNodes(&document); err != nil {
 		return fmt.Errorf("parse config %q: %w", label, err)
@@ -1692,6 +1703,9 @@ func encodeYAMLNode(node *yaml.Node) ([]byte, error) {
 func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
 	if source != ProfileSourceProject && overlay.Jev != nil && overlay.Jev.MonthlyCeilingUSD != nil {
 		config.Jev.MonthlyCeilingUSD = *overlay.Jev.MonthlyCeilingUSD
+	}
+	if source != ProfileSourceProject && overlay.Jev != nil && overlay.Jev.RouterMinCreditUSD != nil {
+		config.Jev.RouterMinCreditUSD = *overlay.Jev.RouterMinCreditUSD
 	}
 	if overlay.Delivery != nil && overlay.Delivery.DerivedPaths != nil {
 		config.Delivery.DerivedPaths = *overlay.Delivery.DerivedPaths

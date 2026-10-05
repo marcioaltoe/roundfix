@@ -3059,7 +3059,7 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 	fmt.Fprintf(ui.progress, "Agent Model: %s\n", resolvePlan.runtime.Model)
 	fmt.Fprintf(ui.progress, "Default Reasoning Effort: %s\n", displayReasoningEffort(resolvePlan.runtime.ReasoningEffort))
 
-	engine, err := newResolveEngine(collaborators, runStore, ui, writeGuard, loaded.Config.Jev.MonthlyCeilingUSD)
+	engine, err := newResolveEngine(collaborators, runStore, ui, writeGuard, loaded.Config.Jev.MonthlyCeilingUSD, loaded.Config.Jev.RouterMinCreditUSD)
 	if err != nil {
 		return resolveBatchResult{}, err
 	}
@@ -3099,19 +3099,20 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 	return resolveBatchResult{Remaining: result.Remaining, CommitCreated: commitCreated}, nil
 }
 
-func newResolveEngine(collaborators engineCollaborators, runStore *store.Store, ui *runUI, writeGuard daemon.WriteBoundaryGuard, jevMonthlyCeilingUSD float64) (*daemon.Engine, error) {
+func newResolveEngine(collaborators engineCollaborators, runStore *store.Store, ui *runUI, writeGuard daemon.WriteBoundaryGuard, jevMonthlyCeilingUSD, jevRouterMinCreditUSD float64) (*daemon.Engine, error) {
 	return daemon.NewEngine(daemon.Dependencies{
-		JevMonthlyCeilingUSD: jevMonthlyCeilingUSD,
-		Runner:               collaborators.runner,
-		Verifier:             collaborators.verifier,
-		Committer:            collaborators.committer,
-		Pusher:               collaborators.pusher,
-		Source:               collaborators.source,
-		Runs:                 runStore,
-		WriteGuard:           writeGuard,
-		Worktree:             collaborators.worktree,
-		Sink:                 ui.sink,
-		Progress:             ui.progress,
+		JevMonthlyCeilingUSD:  jevMonthlyCeilingUSD,
+		JevRouterMinCreditUSD: jevRouterMinCreditUSD,
+		Runner:                collaborators.runner,
+		Verifier:              collaborators.verifier,
+		Committer:             collaborators.committer,
+		Pusher:                collaborators.pusher,
+		Source:                collaborators.source,
+		Runs:                  runStore,
+		WriteGuard:            writeGuard,
+		Worktree:              collaborators.worktree,
+		Sink:                  ui.sink,
+		Progress:              ui.progress,
 	})
 }
 
@@ -3298,7 +3299,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 			if err != nil || commit.CommitSHA == "" {
 				return watch.ArtifactPublication{Commit: commit}, err
 			}
-			engine, err := newResolveEngine(collaborators, runStore, ui, writeGuard, loaded.Config.Jev.MonthlyCeilingUSD)
+			engine, err := newResolveEngine(collaborators, runStore, ui, writeGuard, loaded.Config.Jev.MonthlyCeilingUSD, loaded.Config.Jev.RouterMinCreditUSD)
 			if err != nil {
 				return watch.ArtifactPublication{}, err
 			}

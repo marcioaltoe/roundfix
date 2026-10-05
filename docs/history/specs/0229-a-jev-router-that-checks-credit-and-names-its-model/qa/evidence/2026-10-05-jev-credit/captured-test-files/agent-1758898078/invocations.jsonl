@@ -1,0 +1,1 @@
+["--cwd","/private/tmp/roundfix-0229-qa-tmp/TestJevRouterPromptReturnsTheRelayObservationfailed=false1093880869/001","--format","json","--json-strict","--approve-all","--model","roundfix-openrouter/typesafe/jev-router","opencode","prompt","-s","router-test","-f","-"]

@@ -85,6 +85,20 @@ func (gate *jevRouterGate) Before(ctx context.Context) (float64, error) {
 	if spend.Total >= spend.Ceiling {
 		return 0, &agent.SelectionFailureError{Runtime: "opencode", Reason: fmt.Sprintf("jev_ceiling_reached: month's Jev spend US$%.4f of US$%.4f", spend.Total, spend.Ceiling)}
 	}
+	var key string
+	for _, entry := range gate.deps.Env {
+		if value, ok := strings.CutPrefix(entry, agent.JevRouterKeyEnv+"="); ok {
+			key = value
+		}
+	}
+	credits, err := jevrouter.ReadCredits(ctx, gate.deps.Client, gate.deps.Endpoint, key)
+	if err != nil {
+		return 0, &agent.SelectionFailureError{Runtime: "opencode", Reason: "jev_spend_unreadable: " + err.Error()}
+	}
+	left, floor := jevrouter.CreditLeft(credits, spend.Key), jevrouter.MinCredit(gate.deps.MinCreditUSD)
+	if left < floor {
+		return 0, &agent.SelectionFailureError{Runtime: "opencode", Reason: fmt.Sprintf("openrouter_credit_low: OpenRouter credit US$%.4f is below the US$%.4f floor", left, floor)}
+	}
 	return spend.KeyUsageMonthly, nil
 }
 
@@ -102,25 +116,26 @@ func (gate *jevRouterGate) After(ctx context.Context, record jevrouter.PromptRec
 // Dependencies are the engine's explicit collaborators, replacing the CLI
 // package globals that previously wired orchestration.
 type Dependencies struct {
-	Runner               agent.Runner
-	JevRouter            JevRouterGate
-	JevMonthlyCeilingUSD float64 // zero keeps the judge's built-in ceiling
-	Verifier             Verifier
-	Committer            Committer
-	Pusher               Pusher
-	Source               ReviewSourceResolver
-	Runs                 RunStateStore
-	WriteGuard           WriteBoundaryGuard
-	Worktree             WorktreeSnapshotter
-	TaskWorktrees        TaskWorktreeManager
-	PriorChanges         PriorChangedResolver
-	MechanicalStage      QAMechanicalStage
-	SettlementChecker    SettlementChecker
-	Auditor              func() app.AuditingBinary
-	GH                   GHRunner
-	Sink                 runevent.Sink
-	Now                  func() time.Time
-	Progress             io.Writer
+	Runner                agent.Runner
+	JevRouter             JevRouterGate
+	JevMonthlyCeilingUSD  float64 // zero keeps the judge's built-in ceiling
+	JevRouterMinCreditUSD float64 // zero keeps the built-in credit floor
+	Verifier              Verifier
+	Committer             Committer
+	Pusher                Pusher
+	Source                ReviewSourceResolver
+	Runs                  RunStateStore
+	WriteGuard            WriteBoundaryGuard
+	Worktree              WorktreeSnapshotter
+	TaskWorktrees         TaskWorktreeManager
+	PriorChanges          PriorChangedResolver
+	MechanicalStage       QAMechanicalStage
+	SettlementChecker     SettlementChecker
+	Auditor               func() app.AuditingBinary
+	GH                    GHRunner
+	Sink                  runevent.Sink
+	Now                   func() time.Time
+	Progress              io.Writer
 }
 
 // Engine executes one resolve cycle over a validated plan and exposes Final
@@ -822,7 +837,7 @@ func NewEngine(deps Dependencies) (*Engine, error) {
 			return nil, fmt.Errorf("create Jev Router gate: load ceiling: %w", err)
 		}
 		deps.JevRouter = &jevRouterGate{deps: jevrouter.Deps{
-			Env: os.Environ(), HomeDir: home,
+			Env: os.Environ(), HomeDir: home, MinCreditUSD: deps.JevRouterMinCreditUSD,
 			Endpoint: "https://openrouter.ai/api/v1", Ceiling: questions.WithMonthlyCeiling(deps.JevMonthlyCeilingUSD).MonthlyCeilingUSD,
 		}, now: deps.Now}
 	}
