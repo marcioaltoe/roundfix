@@ -22,6 +22,8 @@ config — they are ignored with one stderr warning naming the replacement:
 
 - `resolve.concurrent` → `worktree.concurrency`
 - `defaults.model` → `profiles.<category>.preferred.model`
+- `jev.router_min_credit_usd` — removed with the Jev Router; it is ignored
+  with this warning: `config: jev.router_min_credit_usd is deprecated and ignored; the Jev Router was retired, so remove it`.
 
 Unknown keys that are not registered as deprecated fail strict validation.
 
@@ -114,9 +116,7 @@ so a repository cannot raise or disable the user's limit.
 
 `jev.monthly_ceiling_usd` is a finite number of US dollars greater than zero.
 Set it only in User Config at `~/.roundfix/config.yml`; when unset, the
-effective ceiling is US$5. The judge, the Jev Router gate, and its key-limit
-check all read the same value, and the key's monthly credit limit must be at
-most that value:
+effective ceiling is US$5. The judge reads this ceiling:
 
 ```yaml
 jev:
@@ -133,31 +133,8 @@ An older Roundfix binary refuses a User Config containing this key as an
 unknown key. Set it only after every Roundfix binary on the machine includes
 this change.
 
-## Jev Router credit floor
-
-`jev.router_min_credit_usd` is a finite number of US dollars greater than
-zero. Set it only in User Config at `~/.roundfix/config.yml`; when unset, the
-floor is US$15. Before each routed prompt, the Jev Router gate reads
-OpenRouter's account credit from `GET /api/v1/credits`, where
-`total_credits` less `total_usage` is the account balance. It compares the
-floor with the lower of that balance and the key's remaining limit.
-
-For example:
-
-```yaml
-jev:
-  router_min_credit_usd: 20
-```
-
-A `jev.router_min_credit_usd` value in Project Config is ignored with this
-warning on standard error:
-`config: jev.router_min_credit_usd in Project Config is ignored; set jev.router_min_credit_usd in User Config`.
-An invalid User Config value fails with:
-`jev.router_min_credit_usd must be a finite number greater than 0`.
-
-An older Roundfix binary refuses a User Config containing this key as an
-unknown key. Set it only after every Roundfix binary on the machine includes
-this change.
+Past `router-prompt` lines written before the retirement stay in the Judge Log
+and count toward their month's ceiling.
 
 ## Context-Driven Baseline state
 
@@ -345,7 +322,6 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `implement.auto_push` | `false` | Leaves a Clean Spec Run local. `true` pushes its upstream branch but never opens a pull request. |
 | `runs.max_active` | `3` | Limits Active Implement Runs across every repository in the Run Database. Only User Config can set it; Project Config is ignored with a warning. `0` disables the bound. |
 | `jev.monthly_ceiling_usd` | `5` | Sets the shared monthly Jev ceiling in User Config, in US dollars. Project Config is ignored with a warning. |
-| `jev.router_min_credit_usd` | `15` | Sets the Jev Router account credit floor in User Config, in US dollars. Project Config is ignored with a warning. |
 | `notify.enabled` | `true` | Sends one terminal outcome notification for `resolve`, `watch`, and `implement`. |
 | `notify.command` | `""` | Uses the native desktop notifier. A non-empty shell command replaces it. |
 | `budget.enabled` | `true` | Enforces the configured Run duration budget. |
@@ -375,60 +351,19 @@ plus a non-empty ordered Fallback Chain. Project Config replaces User Config,
 User Config replaces built-ins, and no tuple field or fallback entry merges
 across scopes.
 
-### Jev Router
+### OpenAI and Anthropic subscription rule
 
-The Jev Router is an experimental OpenCode selection that only Project Config
-may select. Set its effort to `""`: the router chooses the model and effort.
-User Config and a one-Run override cannot name it. For example, opt in for
-`docs` in your Project Config, with the current default as its fallback:
+OpenAI and Anthropic models run only through the codex and claude
+subscriptions. For `opencode` and `opencode-custom`, Roundfix refuses the
+retired `roundfix-openrouter` provider, and under the `openrouter` provider it
+refuses authors `openai` and `anthropic`, router authors `openrouter` and
+`typesafe`, and `@` presets. The refusal holds in every scope, including
+`roundfix profiles configure`.
 
-```yaml
-profiles:
-  docs:
-    preferred:
-      runtime: opencode
-      model: roundfix-openrouter/typesafe/jev-router
-      reasoning_effort: ""
-    fallbacks:
-      - runtime: codex
-        model: gpt-6.1-sol
-        reasoning_effort: high
-```
-
-Export `ROUNDFIX_OPENROUTER_API_KEY` in the environment that starts Roundfix.
-Roundfix uses this key name and never `OPENROUTER_API_KEY`; without the key,
-the selection is refused with `jev_router_key_missing`. The key value stays
-in the environment. Roundfix gives OpenCode the provider through
-`OPENCODE_CONFIG_CONTENT`, with `{env:ROUNDFIX_OPENROUTER_API_KEY}` as its key
-placeholder, replacing an inherited value for routed sessions only.
-
-Every routed prompt runs under the configured monthly Jev ceiling shared with
-`roundfix spec judge`; `jev.monthly_ceiling_usd` is US$5 when unset. The router
-changes no built-in or Recommended Profile.
-
-Before each routed prompt, the gate also reads `GET /api/v1/credits` and
-requires the numeric fields `total_credits` and `total_usage`. It refuses when
-the lower of the account balance (`total_credits` less `total_usage`) and the
-key's remaining limit is below `jev.router_min_credit_usd`, with
-`openrouter_credit_low`. An unreadable credits answer is
-`jev_spend_unreadable`. An OpenRouter HTTP 402 on a routed request is
-`openrouter_credit_refused`; before Agent work begins it is a failed selection
-and the Fallback Chain takes the Task, and after work begins it fails the Work
-Item.
-
-Routed sessions reach OpenRouter through a relay Roundfix runs on the loopback
-interface. The relay forwards requests unchanged and never logs or stores the
-key. Each `router-prompt` Judge Log line records the models and providers the
-router reported, in first-seen order, and the last response id.
-
-Before a routed prompt starts, the key must also report a numeric `limit`
-no greater than the ceiling and `limit_reset: monthly`. Set a monthly credit
-limit of at most the configured ceiling on the key at OpenRouter; an unlimited
-key, a lifetime limit, or a monthly limit above the ceiling is refused with
-`jev_router_key_unbounded`. OpenRouter enforces this limit while a prompt is
-running. A numeric `limit_remaining` at or below zero is refused with
-`jev_ceiling_reached`. These refusals activate the configured fallback before
-Agent work begins and fail the Work Item after work begins.
+The configuration refusal for an OpenRouter selection is:
+`<field> "<model>" can reach OpenAI or Anthropic models through OpenRouter; OpenAI and Anthropic models run only through the codex and claude subscriptions`.
+At the runner boundary, the refusal reason is `subscription_only`. Other
+OpenRouter models stay selectable through OpenCode.
 
 ### Access policy readiness
 

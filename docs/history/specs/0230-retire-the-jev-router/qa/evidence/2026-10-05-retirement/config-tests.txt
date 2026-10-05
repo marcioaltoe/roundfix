@@ -1,0 +1,243 @@
+=== RUN   TestLoadWarnsAndIgnoresDeprecatedConfigKeys
+=== PAUSE TestLoadWarnsAndIgnoresDeprecatedConfigKeys
+=== RUN   TestLoadWarnsAndIgnoresDeprecatedDefaultsModel
+=== PAUSE TestLoadWarnsAndIgnoresDeprecatedDefaultsModel
+=== RUN   TestJevMonthlyCeilingIsReadFromUserConfig
+--- PASS: TestJevMonthlyCeilingIsReadFromUserConfig (0.00s)
+=== RUN   TestJevMonthlyCeilingIsUnsetByDefault
+--- PASS: TestJevMonthlyCeilingIsUnsetByDefault (0.00s)
+=== RUN   TestProjectConfigCannotSetTheJevCeiling
+=== RUN   TestProjectConfigCannotSetTheJevCeiling/""/50
+=== RUN   TestProjectConfigCannotSetTheJevCeiling/""/0
+=== RUN   TestProjectConfigCannotSetTheJevCeiling/""/invalid
+=== RUN   TestProjectConfigCannotSetTheJevCeiling/"jev:\n__monthly_ceiling_usd:_25\n"/50
+=== RUN   TestProjectConfigCannotSetTheJevCeiling/"jev:\n__monthly_ceiling_usd:_25\n"/0
+=== RUN   TestProjectConfigCannotSetTheJevCeiling/"jev:\n__monthly_ceiling_usd:_25\n"/invalid
+--- PASS: TestProjectConfigCannotSetTheJevCeiling (0.01s)
+    --- PASS: TestProjectConfigCannotSetTheJevCeiling/""/50 (0.00s)
+    --- PASS: TestProjectConfigCannotSetTheJevCeiling/""/0 (0.00s)
+    --- PASS: TestProjectConfigCannotSetTheJevCeiling/""/invalid (0.00s)
+    --- PASS: TestProjectConfigCannotSetTheJevCeiling/"jev:\n__monthly_ceiling_usd:_25\n"/50 (0.00s)
+    --- PASS: TestProjectConfigCannotSetTheJevCeiling/"jev:\n__monthly_ceiling_usd:_25\n"/0 (0.00s)
+    --- PASS: TestProjectConfigCannotSetTheJevCeiling/"jev:\n__monthly_ceiling_usd:_25\n"/invalid (0.00s)
+=== RUN   TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue
+=== RUN   TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/0
+=== RUN   TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/-1
+=== RUN   TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/.inf
+=== RUN   TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/-.inf
+=== RUN   TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/.nan
+=== RUN   TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/null
+=== RUN   TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/nope
+=== RUN   TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/true
+=== RUN   TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/[]
+=== RUN   TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/'50'
+--- PASS: TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue (0.01s)
+    --- PASS: TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/0 (0.00s)
+    --- PASS: TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/-1 (0.00s)
+    --- PASS: TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/.inf (0.00s)
+    --- PASS: TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/-.inf (0.00s)
+    --- PASS: TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/.nan (0.00s)
+    --- PASS: TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/null (0.00s)
+    --- PASS: TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/nope (0.00s)
+    --- PASS: TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/true (0.00s)
+    --- PASS: TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/[] (0.00s)
+    --- PASS: TestJevMonthlyCeilingRefusesANonPositiveOrInfiniteValue/'50' (0.00s)
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope
+=== PAUSE TestSubscriptionRuleRefusesEveryConfigScope
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated
+=== PAUSE TestRetiredRouterCreditFloorIsDeprecated
+=== CONT  TestLoadWarnsAndIgnoresDeprecatedConfigKeys
+=== RUN   TestLoadWarnsAndIgnoresDeprecatedConfigKeys/user_config_exact_0009_corpse_key
+=== CONT  TestSubscriptionRuleRefusesEveryConfigScope
+=== CONT  TestRetiredRouterCreditFloorIsDeprecated
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/roundfix-openrouter/typesafe/jev-router
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/roundfix-openrouter/typesafe/jev-router/user/preferred
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/user/20
+=== CONT  TestLoadWarnsAndIgnoresDeprecatedDefaultsModel
+=== RUN   TestLoadWarnsAndIgnoresDeprecatedConfigKeys/user_config_mixes_deprecated_and_valid_keys
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/user/0
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/roundfix-openrouter/typesafe/jev-router/user/fallback
+--- PASS: TestLoadWarnsAndIgnoresDeprecatedDefaultsModel (0.00s)
+=== RUN   TestLoadWarnsAndIgnoresDeprecatedConfigKeys/project_config_mixes_deprecated_and_valid_keys
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/roundfix-openrouter/typesafe/jev-router/user/legacy
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/user/-1
+=== RUN   TestLoadWarnsAndIgnoresDeprecatedConfigKeys/user_and_project_config_warn_once_per_load
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/roundfix-openrouter/typesafe/jev-router/project/preferred
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/user/.inf
+--- PASS: TestLoadWarnsAndIgnoresDeprecatedConfigKeys (0.01s)
+    --- PASS: TestLoadWarnsAndIgnoresDeprecatedConfigKeys/user_config_exact_0009_corpse_key (0.00s)
+    --- PASS: TestLoadWarnsAndIgnoresDeprecatedConfigKeys/user_config_mixes_deprecated_and_valid_keys (0.00s)
+    --- PASS: TestLoadWarnsAndIgnoresDeprecatedConfigKeys/project_config_mixes_deprecated_and_valid_keys (0.00s)
+    --- PASS: TestLoadWarnsAndIgnoresDeprecatedConfigKeys/user_and_project_config_warn_once_per_load (0.00s)
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/roundfix-openrouter/typesafe/jev-router/project/fallback
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/user/.nan
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/roundfix-openrouter/typesafe/jev-router/project/legacy
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/user/null
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/roundfix-openrouter/typesafe/jev-router/user-shadowed/preferred
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/user/true
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/roundfix-openrouter/typesafe/jev-router/user-shadowed/fallback
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/user/nope
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/roundfix-openrouter/typesafe/jev-router/user-shadowed/legacy
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/user/[]
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/roundfix-openrouter/typesafe/jev-router/override
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/user/{}
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openai/gpt-6.1-sol
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openai/gpt-6.1-sol/user/preferred
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/user/'50'
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openai/gpt-6.1-sol/user/fallback
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/project/20
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openai/gpt-6.1-sol/user/legacy
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/project/0
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openai/gpt-6.1-sol/project/preferred
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/project/-1
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/project/.inf
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openai/gpt-6.1-sol/project/fallback
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/project/.nan
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openai/gpt-6.1-sol/project/legacy
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/project/null
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openai/gpt-6.1-sol/user-shadowed/preferred
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/project/true
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openai/gpt-6.1-sol/user-shadowed/fallback
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/project/nope
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openai/gpt-6.1-sol/user-shadowed/legacy
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/project/[]
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openai/gpt-6.1-sol/override
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/project/{}
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/anthropic/claude-opus-5.5
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/anthropic/claude-opus-5.5/user/preferred
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/project/'50'
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/anthropic/claude-opus-5.5/user/fallback
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/both/20
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/anthropic/claude-opus-5.5/user/legacy
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/both/0
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/anthropic/claude-opus-5.5/project/preferred
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/both/-1
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/anthropic/claude-opus-5.5/project/fallback
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/both/.inf
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/anthropic/claude-opus-5.5/project/legacy
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/both/.nan
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/anthropic/claude-opus-5.5/user-shadowed/preferred
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/both/null
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/anthropic/claude-opus-5.5/user-shadowed/fallback
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/both/true
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/anthropic/claude-opus-5.5/user-shadowed/legacy
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/both/nope
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/anthropic/claude-opus-5.5/override
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/both/[]
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openrouter/auto
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openrouter/auto/user/preferred
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/both/{}
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openrouter/auto/user/fallback
+=== RUN   TestRetiredRouterCreditFloorIsDeprecated/both/'50'
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openrouter/auto/user/legacy
+--- PASS: TestRetiredRouterCreditFloorIsDeprecated (0.03s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/user/20 (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/user/0 (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/user/-1 (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/user/.inf (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/user/.nan (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/user/null (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/user/true (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/user/nope (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/user/[] (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/user/{} (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/user/'50' (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/project/20 (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/project/0 (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/project/-1 (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/project/.inf (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/project/.nan (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/project/null (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/project/true (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/project/nope (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/project/[] (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/project/{} (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/project/'50' (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/both/20 (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/both/0 (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/both/-1 (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/both/.inf (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/both/.nan (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/both/null (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/both/true (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/both/nope (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/both/[] (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/both/{} (0.00s)
+    --- PASS: TestRetiredRouterCreditFloorIsDeprecated/both/'50' (0.00s)
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openrouter/auto/project/preferred
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openrouter/auto/project/fallback
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openrouter/auto/project/legacy
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openrouter/auto/user-shadowed/preferred
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openrouter/auto/user-shadowed/fallback
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openrouter/auto/user-shadowed/legacy
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openrouter/auto/override
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/user/allowed/openrouter/deepseek/deepseek-v4-pro
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/project/allowed/openrouter/deepseek/deepseek-v4-pro
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/user/allowed/gpt-6.1-sol
+=== RUN   TestSubscriptionRuleRefusesEveryConfigScope/project/allowed/gpt-6.1-sol
+--- PASS: TestSubscriptionRuleRefusesEveryConfigScope (0.04s)
+    --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/roundfix-openrouter/typesafe/jev-router (0.01s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/roundfix-openrouter/typesafe/jev-router/user/preferred (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/roundfix-openrouter/typesafe/jev-router/user/fallback (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/roundfix-openrouter/typesafe/jev-router/user/legacy (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/roundfix-openrouter/typesafe/jev-router/project/preferred (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/roundfix-openrouter/typesafe/jev-router/project/fallback (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/roundfix-openrouter/typesafe/jev-router/project/legacy (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/roundfix-openrouter/typesafe/jev-router/user-shadowed/preferred (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/roundfix-openrouter/typesafe/jev-router/user-shadowed/fallback (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/roundfix-openrouter/typesafe/jev-router/user-shadowed/legacy (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/roundfix-openrouter/typesafe/jev-router/override (0.00s)
+    --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openai/gpt-6.1-sol (0.01s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openai/gpt-6.1-sol/user/preferred (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openai/gpt-6.1-sol/user/fallback (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openai/gpt-6.1-sol/user/legacy (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openai/gpt-6.1-sol/project/preferred (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openai/gpt-6.1-sol/project/fallback (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openai/gpt-6.1-sol/project/legacy (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openai/gpt-6.1-sol/user-shadowed/preferred (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openai/gpt-6.1-sol/user-shadowed/fallback (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openai/gpt-6.1-sol/user-shadowed/legacy (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openai/gpt-6.1-sol/override (0.00s)
+    --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/anthropic/claude-opus-5.5 (0.01s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/anthropic/claude-opus-5.5/user/preferred (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/anthropic/claude-opus-5.5/user/fallback (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/anthropic/claude-opus-5.5/user/legacy (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/anthropic/claude-opus-5.5/project/preferred (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/anthropic/claude-opus-5.5/project/fallback (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/anthropic/claude-opus-5.5/project/legacy (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/anthropic/claude-opus-5.5/user-shadowed/preferred (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/anthropic/claude-opus-5.5/user-shadowed/fallback (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/anthropic/claude-opus-5.5/user-shadowed/legacy (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/anthropic/claude-opus-5.5/override (0.00s)
+    --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openrouter/auto (0.01s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openrouter/auto/user/preferred (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openrouter/auto/user/fallback (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openrouter/auto/user/legacy (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openrouter/auto/project/preferred (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openrouter/auto/project/fallback (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openrouter/auto/project/legacy (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openrouter/auto/user-shadowed/preferred (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openrouter/auto/user-shadowed/fallback (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openrouter/auto/user-shadowed/legacy (0.00s)
+        --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/openrouter/openrouter/auto/override (0.00s)
+    --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/user/allowed/openrouter/deepseek/deepseek-v4-pro (0.00s)
+    --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/project/allowed/openrouter/deepseek/deepseek-v4-pro (0.00s)
+    --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/user/allowed/gpt-6.1-sol (0.00s)
+    --- PASS: TestSubscriptionRuleRefusesEveryConfigScope/project/allowed/gpt-6.1-sol (0.00s)
+PASS
+ok  	roundfix/internal/config	0.445s
+=== RUN   TestProfilesConfigureRefusesSubscriptionModels
+=== PAUSE TestProfilesConfigureRefusesSubscriptionModels
+=== CONT  TestProfilesConfigureRefusesSubscriptionModels
+=== RUN   TestProfilesConfigureRefusesSubscriptionModels/roundfix-openrouter/typesafe/jev-router
+=== RUN   TestProfilesConfigureRefusesSubscriptionModels/openrouter/openai/gpt-6.1-sol
+=== RUN   TestProfilesConfigureRefusesSubscriptionModels/openrouter/anthropic/claude-opus-5.5
+=== RUN   TestProfilesConfigureRefusesSubscriptionModels/openrouter/openrouter/auto
+--- PASS: TestProfilesConfigureRefusesSubscriptionModels (0.00s)
+    --- PASS: TestProfilesConfigureRefusesSubscriptionModels/roundfix-openrouter/typesafe/jev-router (0.00s)
+    --- PASS: TestProfilesConfigureRefusesSubscriptionModels/openrouter/openai/gpt-6.1-sol (0.00s)
+    --- PASS: TestProfilesConfigureRefusesSubscriptionModels/openrouter/anthropic/claude-opus-5.5 (0.00s)
+    --- PASS: TestProfilesConfigureRefusesSubscriptionModels/openrouter/openrouter/auto (0.00s)
+PASS
+suiteguard: guard cost: measured 9149 paths; fingerprint took 312.126333ms before and 254.712ms after
+ok  	roundfix/internal/cli	0.974s

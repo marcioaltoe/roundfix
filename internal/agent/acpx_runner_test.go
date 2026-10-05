@@ -4998,18 +4998,12 @@ func acpxPromptResponseLine(stopReason string) string {
 }
 
 func runFakeACPXProcess() int {
-	if err := recordJevRouterFixtureEnvironment(); err != nil {
+	if err := recordFakeACPXConfig(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
 	}
 	args := os.Args[1:]
 	commandKey := fakeACPXCommandKey(args)
-	if commandKey == "prompt" {
-		if err := postJevRouterFixture(); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return 2
-		}
-	}
 	if path := os.Getenv(fakeACPXArgsPath); path != "" {
 		payload, err := json.Marshal(args)
 		if err != nil {

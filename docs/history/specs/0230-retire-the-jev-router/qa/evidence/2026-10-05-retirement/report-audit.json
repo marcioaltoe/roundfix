@@ -1,0 +1,18 @@
+{
+  "report": "docs/specs/0230-retire-the-jev-router/qa/qa-report-2026-10-05.md",
+  "verdict": "partial",
+  "rows_passed": 10,
+  "rows_blocked_environment": 4,
+  "rows_blocked_finding": 0,
+  "rows_blocked_declared": 0,
+  "rows_pending": 0,
+  "coverage_closed": true,
+  "all_row_inputs_present": true,
+  "Q8_input_expansion_not_carriable": true,
+  "all_evidence_paths_resolve": true,
+  "seeded_auditor_identity_preserved": true,
+  "only_QA_outputs_changed": true,
+  "public_CLI_observations": 80,
+  "repository_Verification": "Daemon pass; not rerun",
+  "qualifying_declared_partial": false
+}

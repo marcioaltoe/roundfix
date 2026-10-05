@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0230-retire-the-jev-router
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -125,3 +125,44 @@ OpenRouter's host.
 - `_prd.md` → Goals; User Stories 1, 2 and 4; Core Features 1, 3 and 5; Success Metrics 2 and 3
 - `_techspec.md` → Interfaces; Invariants 1 to 9; API Contract 1; API Contract 2; API Contract 4; API Contract 6; Testing Approach; Build Order 2
 - ADR-0235; ADR-0050; ADR-0114; ADR-0201
+
+## Result
+
+Implemented this Task's runtime retirement slice. The router package and tests,
+agent router files, daemon gate and gate tests, relay tokens, inline provider,
+router observation and failure classification, and CLI gate parameters are
+removed. `CheckSubscriptionRule` implements the TechSpec predicate and messages;
+both runtime selection validation and `RunPrompt` wrap its refusal as a
+`SelectionFailureError` with `subscription_only` and field `agent model`.
+The daemon preserves that reason in fallback events.
+
+Starting evidence: source inspection found the relay, `RouterEndpoint`, inline
+`OPENCODE_CONFIG_CONTENT` assignment, routed observation and daemon credit/spend
+gate before editing. The only pre-existing worktree change was this Task's
+Daemon-owned `status: in_progress`; that field remains unchanged.
+
+Acceptance evidence from focused implementation checks:
+
+| Criterion | Implementation and evidence |
+| --- | --- |
+| Predicate and refusal text | `TestCheckSubscriptionRule` covers 41 cases: both OpenCode runtimes, whitespace, model case, alias and author suffix forms, retired provider with arbitrary or absent remainder, reserved authors, routers and presets, allowed vendors/providers, other runtimes and empty values. Refusals match API Contract 1 or 2 exactly, including the trimmed configured model and field. |
+| Refused selections never start ACP; allowed model runs | `TestRunPromptRefusesSubscriptionModelsBeforeTheAdapter` and `TestPrepareSessionRefusesSubscriptionModels` cover the three required refused selections and the allowed DeepSeek model on both `opencode` and `opencode-custom`. Refused cases leave no fake acpx invocation file and expose the exact selection reason. Allowed cases invoke fake acpx. `TestAllowedOpenCodeModelPreservesInheritedConfig` captures empty and populated inherited configuration in the fake child process and proves it remains unchanged. All fixtures use disposable Homes and no network. |
+| Fallback reason before Agent work | `TestSubscriptionOnlyRefusalActivatesTheFallback` exercises refusal during preparation and prompt execution through the existing Session owner boundary. The fallback produces the output, exactly one fallback event carries `reason_code: subscription_only`, and only fallback output starts Agent work. Existing fallback eligibility tests also pass. |
+| Removed source boundaries; judge unchanged | A focused Python inspection of `internal/` and `cmd/` found host references only in `internal/cli/spec_judge_test.go` and `internal/judge/questions.json`, no `router-prompt` outside the judge, no non-test Go reference to `OPENCODE_CONFIG_CONTENT`, and all required router paths absent. Byte comparisons against `git show HEAD:<path>` confirmed all 32 tracked judge and judge-command files unchanged. An `rg` sweep of agent, daemon, CLI and command sources found none of the retired gate symbols or refusal codes. |
+
+Checks run:
+
+- `GOCACHE=/private/tmp/roundfix-0230-task01-cache rtk proxy go test -count=1 ./internal/config ./internal/agent ./internal/daemon ./internal/cli -run 'Subscription|InheritedConfig|FallbackEligibility'` — exit 0; config, agent and daemon tests pass; CLI compiles with no matching tests. The initial run exposed an unused `os` import after removing the gate; removing that orphan fixed compilation.
+- `GOCACHE=/private/tmp/roundfix-0230-task01-cache rtk proxy go test -count=1 ./internal/agent ./internal/daemon -run 'ACPXRun|ACPXPrepare|Subscription|InheritedConfig|FallbackEligibility'` — exit 0; the existing runner/session and fallback tests selected by this expression pass.
+- Focused Python source/deletion/byte inspection described above — exit 0.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+
+Declared Verification commands were not run; the Daemon owns Verification and
+Task settlement. Configuration validation, router configuration fields and
+profiles remain for task_02. No guide, skill, judge, Task Graph, other Task file,
+commit, push or Pull Request was changed by this turn.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261005T171514Z_58452834493beeb1`
+- Source commit: `a990f1cfde2c0a9ee0785ae64fea55edc8e06f09`

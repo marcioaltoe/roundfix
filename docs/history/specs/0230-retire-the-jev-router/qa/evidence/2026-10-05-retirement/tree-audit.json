@@ -1,0 +1,111 @@
+{
+  "Q4": {
+    "outside_judge_hosts": [],
+    "router_prompt_lines": [],
+    "non_test_config_assignment_references": [],
+    "judge_byte_identical_files": 33,
+    "existing_deprecated_warning_line_unchanged": true,
+    "existing_deprecated_entries_unchanged": 2
+  },
+  "Q6": {
+    "mirrors_identical": true,
+    "version_before": "0.1.32",
+    "version_after": "0.1.33",
+    "version_recorded": true,
+    "project_config_values_unchanged": true,
+    "retired_ADRs_superseded": true,
+    "ceiling_ADR_note": true,
+    "routed_spend_backlog_declined": true,
+    "unchanged_QA_settlement_sections": [
+      ".agents/skills/archive-spec/SKILL.md",
+      ".agents/skills/qa-gate/SKILL.md",
+      ".agents/skills/roundfix/SKILL.md",
+      "skills/archive-spec/SKILL.md",
+      "skills/qa-gate/SKILL.md",
+      "skills/roundfix/SKILL.md"
+    ]
+  },
+  "Q9": {
+    "commit_range": "c5b2f27eced385822ad39147631f910a29df028e..1a90ab674b50a9d5ccbfc845bbf78291c3ab431c",
+    "task_commits": [
+      {
+        "task": "task_03",
+        "commit": "764991a486020b3f204a5b8d02479b1efb15e70f",
+        "actual_paths": [
+          ".agents/skills/roundfix/SKILL.md",
+          ".agents/skills/roundfix/references/runtime.md",
+          ".roundfixrc.yml",
+          "docs/references/model-selection.md",
+          "docs/specs/0230-retire-the-jev-router/task_03.md",
+          "docs/user-guide/configuration.md",
+          "skills/roundfix/SKILL.md",
+          "skills/roundfix/references/runtime.md",
+          "skills/testdata/owned-skill-versions.json"
+        ],
+        "outside_declarations": [],
+        "governed_paths": [
+          ".agents/skills/roundfix/SKILL.md",
+          ".agents/skills/roundfix/references/runtime.md",
+          ".roundfixrc.yml",
+          "skills/roundfix/SKILL.md"
+        ],
+        "grant_revision": "c5b2f27eced385822ad39147631f910a29df028e"
+      },
+      {
+        "task": "task_01",
+        "commit": "a990f1cfde2c0a9ee0785ae64fea55edc8e06f09",
+        "actual_paths": [
+          "docs/specs/0230-retire-the-jev-router/task_01.md",
+          "internal/agent/acpx_runner.go",
+          "internal/agent/acpx_runner_test.go",
+          "internal/agent/agent.go",
+          "internal/agent/jev_router.go",
+          "internal/agent/jev_router_test.go",
+          "internal/agent/subscription_rule_test.go",
+          "internal/cli/cli.go",
+          "internal/cli/implement.go",
+          "internal/config/profiles.go",
+          "internal/config/subscription_rule_test.go",
+          "internal/daemon/agent_session_owner.go",
+          "internal/daemon/engine.go",
+          "internal/daemon/jev_router_gate_test.go",
+          "internal/daemon/subscription_rule_test.go",
+          "internal/jevrouter/credits.go",
+          "internal/jevrouter/credits_test.go",
+          "internal/jevrouter/key.go",
+          "internal/jevrouter/key_limit_test.go",
+          "internal/jevrouter/key_test.go",
+          "internal/jevrouter/ledger.go",
+          "internal/jevrouter/ledger_test.go",
+          "internal/jevrouter/relay.go",
+          "internal/jevrouter/relay_test.go",
+          "internal/jevrouter/spend.go",
+          "internal/jevrouter/spend_test.go"
+        ],
+        "outside_declarations": [],
+        "governed_paths": [],
+        "grant_revision": "c5b2f27eced385822ad39147631f910a29df028e"
+      },
+      {
+        "task": "task_02",
+        "commit": "1a90ab674b50a9d5ccbfc845bbf78291c3ab431c",
+        "actual_paths": [
+          "docs/specs/0230-retire-the-jev-router/task_02.md",
+          "internal/cli/profiles_configure_subscription_test.go",
+          "internal/config/config.go",
+          "internal/config/jev_router.go",
+          "internal/config/jev_router_credit_test.go",
+          "internal/config/jev_router_test.go",
+          "internal/config/profiles.go",
+          "internal/config/subscription_rule_config_test.go"
+        ],
+        "outside_declarations": [],
+        "governed_paths": [],
+        "grant_revision": "c5b2f27eced385822ad39147631f910a29df028e"
+      }
+    ],
+    "protected_non_goals_unchanged": true,
+    "authorization_precedes_all_task_commits": true,
+    "authorization_mechanical_task03_audit_preserved": true
+  }
+}

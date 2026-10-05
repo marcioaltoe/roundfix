@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"roundfix/internal/config"
-	"roundfix/internal/jevrouter"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
 )
@@ -194,7 +193,6 @@ type ExecuteRequest struct {
 }
 
 type ExecuteResult struct {
-	Router            jevrouter.Observation
 	ACPSessionID      string
 	Usage             TurnUsage
 	LogPath           string

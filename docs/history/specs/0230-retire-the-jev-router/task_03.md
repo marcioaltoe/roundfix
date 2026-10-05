@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0230-retire-the-jev-router
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -112,3 +112,40 @@ the Spec was authored and is not this Task's work.
 - `_prd.md` → User Story 5; Core Feature 6; Success Metric 5
 - `_techspec.md` → API Contract 2; API Contract 5; Vocabulary Contract; Build Order 1
 - ADR-0235; ADR-0187; ADR-0189; ADR-0027
+
+## Result
+
+Implementation evidence:
+
+- Replaced the configuration guide's Jev Router and credit-floor passages
+  with the OpenAI and Anthropic subscription rule, the refused OpenCode
+  selections, `subscription_only`, the API Contract 2 message, the deprecated
+  `jev.router_min_credit_usd` warning, the judge-ceiling wording, and the
+  historical `router-prompt` Judge Log behavior.
+- Replaced the Roundfix Skill runtime reference with the subscription rule,
+  refused selections, fallback behavior, and deprecated-key statement. Added
+  the dated ADR-0235 note to the model reference and the required sentence to
+  the Project Config comment; the Project Config diff contains comments only.
+- Raised both canonical Roundfix Skill front-matter versions from `0.1.32` to
+  `0.1.33`, ran `make skills-sync`, and recorded the new version with
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions`.
+
+Focused checks:
+
+- `make skills-sync` — passed.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions` — passed; `roundfix` `0.1.33` is recorded with a
+  generated digest.
+- `make skills-sync-check` — passed.
+- `go test ./skills -run '^TestAuthorialSkillSync$' -count=1` — passed.
+- Canonical and mirrored Roundfix Skill files compare equal; `git diff --check`
+  passed; only the authorized paths and the daemon-owned Task file are
+  changed.
+
+The Daemon-owned Verification commands and Task status were left untouched.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261005T171514Z_58452834493beeb1`
+- Source commit: `764991a486020b3f204a5b8d02479b1efb15e70f`

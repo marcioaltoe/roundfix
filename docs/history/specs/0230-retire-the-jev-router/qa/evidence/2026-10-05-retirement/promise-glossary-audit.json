@@ -1,0 +1,125 @@
+{
+  "promise_map": {
+    "configuration refusal and error text": "Q2, T1, Q5",
+    "runtime refusal and fallback reason": "Q3",
+    "router retirement and unchanged judge": "Q4",
+    "deprecated-key compatibility": "Q5",
+    "guides, mirrors and lifecycle records": "Q6",
+    "outside acceptance evidence": "Q7a through Q7d; three explicit environment limits remain"
+  },
+  "spec_artifact_check": "strict spec check passed; all named API Contracts and Surface Transcripts exist; dependencies completed; intentional deleted references resolved against base",
+  "glossary": {
+    "Judge Log": "The per-month JSONL record of every advisory judgment call: the question, the transport that carried it (OpenRouter or TypeSafe), the answer, probabilities, confidence, latency, input tokens, the model the service reported and the call's cost. Its monthly sum is what the spend ceiling reads (ADR-0201).",
+    "Agent Selection": "One exact ACP Runtime, Agent Model, and reasoning-effort tuple that Roundfix can prove and assign to an Agent Session.",
+    "Fallback Chain": "The non-empty ordered Agent Selection list Roundfix proves with the Preferred Selection before a Run and may activate after notifying the user and Supervisor that the preceding selection failed before Agent work began.",
+    "User Config": "Configuration that applies to Roundfix runs started by one developer across repositories.",
+    "subscription rule": "Plain policy phrase beside established Agent Selection and Fallback Chain. No new entity, identity, state or overloaded meaning; no new glossary term required."
+  },
+  "deleted_reference_resolutions": [
+    {
+      "path": "internal/jevrouter",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/jevrouter",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/jevrouter",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/jevrouter/credits.go",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/jevrouter/credits_test.go",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/jevrouter/key.go",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/jevrouter/key_test.go",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/jevrouter/key_limit_test.go",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/jevrouter/ledger.go",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/jevrouter/ledger_test.go",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/jevrouter/relay.go",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/jevrouter/relay_test.go",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/jevrouter/spend.go",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/jevrouter/spend_test.go",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/agent/jev_router.go",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/agent/jev_router_test.go",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/daemon/jev_router_gate_test.go",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/config/jev_router.go",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/config/jev_router_test.go",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/config/jev_router_credit_test.go",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/jevrouter",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/config/jev_router.go",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/agent/jev_router.go",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/jevrouter",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/jevrouter",
+      "resolution": "deleted path exists at delivery base"
+    },
+    {
+      "path": "internal/jevrouter",
+      "resolution": "deleted path exists at delivery base"
+    }
+  ],
+  "no_new_term_needed": true
+}
