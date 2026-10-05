@@ -14,6 +14,7 @@ func TestGitHubCLIInspectsAgainstTheDeliveryRemote(t *testing.T) {
 	}
 	script := newScriptedCommandRunner(t,
 		commandStep{name: "gh", args: []string{"run", "view", "42", "--json", "attempt"}, result: CommandResult{Stdout: `{"attempt":1}`}},
+		commandStep{name: "gh", args: []string{"api", "repos/{owner}/{repo}/check-runs/7/annotations?per_page=100"}, result: CommandResult{Stdout: `[]`}},
 		commandStep{name: "gh", args: []string{"run", "view", "42", "--log-failed"}, result: CommandResult{Stdout: "FAIL\texample.test/repo/internal/other\t1s"}},
 		commandStep{name: "git", args: []string{"symbolic-ref", "refs/remotes/upstream/HEAD"}, result: CommandResult{Stdout: "refs/remotes/upstream/trunk"}},
 		commandStep{name: "git", args: []string{"fetch", "upstream", "+refs/heads/trunk:refs/remotes/upstream/trunk"}},

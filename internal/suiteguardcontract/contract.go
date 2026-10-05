@@ -24,6 +24,7 @@ var guardedSpawningPackages = []string{
 	"internal/baseline",
 	"internal/cli",
 	"internal/daemon",
+	"internal/delivery",
 	"internal/gittest",
 	"internal/preflight",
 	"internal/spec",

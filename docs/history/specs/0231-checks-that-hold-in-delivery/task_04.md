@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0231-checks-that-hold-in-delivery
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

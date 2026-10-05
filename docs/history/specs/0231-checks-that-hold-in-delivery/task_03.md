@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0231-checks-that-hold-in-delivery
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -94,3 +94,69 @@ deliver guide.
 - `_prd.md` → Goals; Core Feature 3; Success Metric 3; Success Metric 4; Acceptance evidence
 - `_techspec.md` → Interfaces; Invariants 1 to 8; API Contract 2; API Contract 3; API Contract 4; API Contract 5; Vocabulary Contract; Testing Approach; Build Order 3
 - ADR-0236
+
+## Result
+
+Implemented the Task 03 slice for Daemon Verification; status and the authored
+Verification commands remain Daemon-owned.
+
+- `InspectFailedCheck` now extracts the job id from the check link and reads
+  its annotations after the attempt. Exactly one `tested-base` annotation with
+  a 40-character lowercase hexadecimal message is accepted. With that evidence,
+  inspection fetches the delivery remote's default branch, resolves its tip,
+  checks the tested commit and its ancestry, and returns a stale failure before
+  reading the failed log. Without usable evidence, attribution retains its
+  previous command order and behavior. A current or descendant tested base
+  proceeds through the existing package attribution using the refreshed ref.
+- `RerunFailedCheck` accepts stale or outside-change failures with valid run
+  ids; the engine owns attempt limits. Check polling remembers stale (run, tip)
+  pairs, runs re-run as stale, and the attempt re-run per run only in memory.
+  Stale failures bypass classification and add the documented owner log line.
+  Delayed attempt reports keep polling; a newer current-tip failure can receive
+  the existing one outside-change re-run. Both recovery paths share the one
+  timeout restart. Existing blockers, Park Classes, recovery logs and Warning
+  behavior remain in place.
+- The deliver guide explains the annotation, stale rule, exact log line,
+  timeout bound, in-memory lifetime and eligibility past attempt one.
+- Existing scripted inspection sequences changed only by adding the empty
+  annotation response. The new `stale_check_test.go` uses the existing queue
+  and command-runner seams; GitHub commands are always scripted and local Git
+  fixtures use disposable repositories.
+
+Acceptance evidence:
+
+1. Older-base failures re-run and keep polling: the #391 replay
+   `TestARetryAfterTheDefaultBranchMovedRerunsTheStaleCheckAndMerges` reaches
+   `merging` from an attempt-2 failure, preserving the existing Warning and
+   asserting the exact stale log. The delayed-attempt test proves both stale
+   and non-stale reports of the re-run attempt keep polling. Additional tests
+   prove once-per-tip re-runs, only one timeout restart, refusal parking as
+   `checks-failed`, and the newer-attempt outside-change path ending in
+   `flaky-check` or preserving its existing pass Warning.
+2. Current-base and unannotated failures retain classification: real Git
+   inspection calls older and unknown commits stale, current and descendant
+   commits current, and reads the failed log only for current evidence.
+   Named subtests cover absent, unrelated, malformed, uppercase and ambiguous
+   annotations, including a valid annotation alongside a malformed duplicate.
+   Existing attribution and engine re-run tests pass in the focused selection.
+   Additional tests cover links without a job and inspection command failures.
+3. Guide contract: a focused Python assertion confirmed `tested-base`, the
+   exact stale log line, and both later-attempt qualifications are present.
+
+Focused checks (after the last code edit):
+
+- `GOCACHE=/tmp/roundfix-task03-gocache rtk proxy go test -count=1 ./internal/delivery -run 'Stale|TestGitHubCLI|TestA.*Check|TestCheck|TestSecondCheck|TestMultipleFailed|TestSkippedRerun|TestARetryAfter|TestActionsLink'`
+  — exit 0, `ok roundfix/internal/delivery` (3.292s).
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+- Focused Python guide and Task-status assertions — exit 0; the annotation,
+  log line and eligibility prose are present, and status remains `in_progress`.
+
+Initial inspection showed no tested-base fields or annotation read, and
+classification allowed only attempt-one recovery. An initial focused test run
+caught an omitted existing re-run log line in the implementation edit; the line
+was restored and the final focused selection above passed.
+
+The declared Verification commands and repository-wide gate were not run in
+this child turn. No commits, pushes, Pull Request operations, workflow edits,
+Database schema changes, skill edits, or edits to other Task files or the Task
+Graph were made. No follow-up scope was discovered.

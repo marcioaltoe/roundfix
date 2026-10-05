@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0231-checks-that-hold-in-delivery
-status: pending
+status: completed
 type: infra
 complexity: low
 ---
@@ -70,3 +70,68 @@ record it as the `tested-base` notice the Delivery Queue reads (ADR-0236).
 - `_prd.md` → Goals; Core Feature 2; Success Metric 2; Acceptance evidence
 - `_techspec.md` → Interfaces; Invariant 10; API Contract 1; Integration Points; Build Order 2
 - ADR-0236; ADR-0179
+
+## Result
+
+The pull request job now checks out the head commit and merges the fetched
+base branch tip before `Verify changed`. The merge reads `BASE_REF` from the
+step environment, uses a CI-only identity through Git's `-c` options, and
+exports the resolved tip as `VERIFY_BASE` with one `tested-base` notice.
+`Verify changed` no longer overrides that export with the event's base SHA.
+Push checkout keeps an empty ref; full history and disabled credential
+persistence remain unchanged.
+
+Focused evidence from this Agent turn:
+
+- Acceptance criterion 1: `rtk proxy ruby /tmp/task02-ci-focused.rb` exited
+  0. This temporary harness read the actual workflow script and ran it in
+  disposable clones with real file changes after the head branched. The
+  successful merge's parents were the head and moved main tip; the base fix
+  was present, `VERIFY_BASE` matched that tip, exactly one matching notice
+  was printed, and the committer was `CI <ci@example.com>`. A conflicting
+  clone exited 1, retained its head, and emitted neither an environment
+  export nor a tested-base notice. Both clones were removed by the harness.
+- Acceptance criterion 2: the same harness compared parsed `Verify` and
+  `Verify docs` steps and event triggers with `HEAD`; all were identical.
+  Diff inspection confirmed `fetch-depth: 0`, `persist-credentials: false`,
+  and the push budget, test target, and GOFLAGS were retained. The baseline
+  workflow had no explicit merge step and used the event's base SHA.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+- `rtk make verify-incremental` initially exited 2: two CLI force-stop tests
+  could not read the process table in the sandbox, and the suite guard
+  detected this Agent editing the Result section during the check. The
+  rerun with sandbox escalation and no concurrent repository edits exited
+  0; vet, tests, skill synchronization, skill checks, and build passed.
+  `internal/cli` ran in 251.522s. No test or configuration was changed to
+  address the initial diagnostics.
+
+The pre-existing task-file diff was the Daemon's `pending` to `in_progress`
+transition, which is preserved. Changed-path inspection found only
+`.github/workflows/ci-verify.yml` and this assigned Task file. No other Task,
+Task Graph, workflow, or authorization record was edited. The declared
+Verification commands and terminal settlement
+remain Daemon-owned; this Agent did not run them, commit, push, or open a
+Pull Request.
+
+### Verification feedback, attempt 1
+
+Inspected the Daemon diagnostic artifact
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261005T182524Z_6b3e6994ac77c127/verification/batch-002-attempt-1.log`.
+The configured `make verify-changed` exited 2 in
+`TestRunImplementDetachSurvivesCallerProcessGroupKill`: fixture cleanup
+received EPERM while the group reader still reported a live member.
+Inspection of `internal/cli/implement_test.go` and
+`internal/cli/detach_fixture_group_darwin_test.go` confirmed that cleanup
+uses the Darwin reader, which currently excludes zombies only. This is the
+2026-10-05 exiting-owner finding assigned to task_01; excluding exiting
+members belongs to that Task, outside task_02's authorized workflow slice.
+No Go code, tests, or verification configuration was changed in this repair
+turn. Follow-up: integrate task_01's Darwin reader repair before expecting
+the assembled check to cover that finding.
+
+Fresh focused check: `rtk proxy ruby /tmp/task02-ci-focused.rb` exited 0
+again, proving both acceptance criteria through the actual workflow script:
+the moved-base merge, base export and single notice, conflict rejection,
+and unchanged push Verify and Verify docs steps. The workflow implementation
+needed no change for the reported failure. The Daemon's configured command
+and the Task's declared Verification commands were not rerun by this Agent.

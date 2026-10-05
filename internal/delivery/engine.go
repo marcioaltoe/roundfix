@@ -1148,6 +1148,9 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 	}
 	deadline := engine.clock.Now().Add(engine.checkTimeout)
 	rerunRuns := make(map[string]bool)
+	stalePairs := make(map[[2]string]bool)
+	staleRuns := make(map[string]bool)
+	rerunAttempts := make(map[string]int)
 	rerunChecks := make(map[string]bool)
 	timeoutRestarted := false
 	lastMergeState := ""
@@ -1216,19 +1219,26 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 						fmt.Fprintf(engine.log, "roundfix: check recovery: Delivery Queue item %s: %s\n", item.SpecSlug, inspectErr)
 						return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
 					}
-					if rerunRuns[failure.RunID] {
-						// GitHub can still report the first attempt while the re-run is queued.
-						if failure.Attempt == 1 {
+					if failure.Stale {
+						if stalePairs[[2]string{failure.RunID, failure.DefaultTip}] {
 							pending = true
 							continue
 						}
-						if failure.OutsideChange && failure.Attempt > 1 {
-							return engine.park(ctx, gitRoot, item, BlockerFlakyCheck+": "+strings.Join(failure.Packages, ", "))
+					} else {
+						if attempt, reran := rerunAttempts[failure.RunID]; reran && failure.Attempt <= attempt {
+							// GitHub can still report the attempt whose re-run is queued.
+							pending = true
+							continue
 						}
-						return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
-					}
-					if !failure.OutsideChange || failure.Attempt != 1 || failure.RunID == "" {
-						return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+						if rerunRuns[failure.RunID] {
+							if failure.OutsideChange {
+								return engine.park(ctx, gitRoot, item, BlockerFlakyCheck+": "+strings.Join(failure.Packages, ", "))
+							}
+							return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+						}
+						if !failure.OutsideChange || (failure.Attempt != 1 && !staleRuns[failure.RunID]) || failure.RunID == "" {
+							return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+						}
 					}
 					if err := engine.checks.RerunFailedCheck(ctx, workDir, failure); err != nil {
 						if ctx.Err() != nil {
@@ -1237,18 +1247,25 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 						fmt.Fprintf(engine.log, "roundfix: check recovery: Delivery Queue item %s: %s\n", item.SpecSlug, err)
 						return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
 					}
-					rerunRuns[failure.RunID] = true
-					for _, failed := range report.Checks {
-						if failed.Bucket == "fail" && checkRunID(failed.Link) == failure.RunID {
-							rerunChecks[failed.Workflow+":"+failed.Name] = true
+					rerunAttempts[failure.RunID] = failure.Attempt
+					if failure.Stale {
+						stalePairs[[2]string{failure.RunID, failure.DefaultTip}] = true
+						staleRuns[failure.RunID] = true
+						fmt.Fprintf(engine.log, "roundfix: check stale: Delivery Queue item %s: %s tested %s, default branch is at %s; re-run (run %s)\n", item.SpecSlug, check.Name, failure.TestedBase, failure.DefaultTip, failure.RunID)
+					} else {
+						rerunRuns[failure.RunID] = true
+						for _, failed := range report.Checks {
+							if failed.Bucket == "fail" && checkRunID(failed.Link) == failure.RunID {
+								rerunChecks[failed.Workflow+":"+failed.Name] = true
+							}
 						}
+						rerunChecks[check.Workflow+":"+check.Name] = true
+						fmt.Fprintf(engine.log, "roundfix: check re-run: Delivery Queue item %s: %s (run %s)\n", item.SpecSlug, check.Name, failure.RunID)
 					}
-					rerunChecks[check.Workflow+":"+check.Name] = true
 					if !timeoutRestarted {
 						deadline = engine.clock.Now().Add(engine.checkTimeout)
 						timeoutRestarted = true
 					}
-					fmt.Fprintf(engine.log, "roundfix: check re-run: Delivery Queue item %s: %s (run %s)\n", item.SpecSlug, check.Name, failure.RunID)
 					pending = true
 				case "cancel", "cancelled":
 					return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
