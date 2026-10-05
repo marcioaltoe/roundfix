@@ -192,7 +192,7 @@ func TestArchivedSpecDirtyPathsKeepLiteralFilenames(t *testing.T) {
 	}
 }
 
-func TestArchivedSpecDirectoryProofStillComparesOtherCommitPaths(t *testing.T) {
+func TestArchivedSpecWithMergeEvidenceSupersedesOtherCommitPaths(t *testing.T) {
 	t.Parallel()
 	f := newArchivedLeftoverFixture(t, "archived-mixed-paths")
 	commitMergedHeadFiles(t, f.ref.Path, map[string]string{
@@ -200,5 +200,5 @@ func TestArchivedSpecDirectoryProofStillComparesOtherCommitPaths(t *testing.T) {
 		"outside.txt": "unique\n",
 	}, "docs: planning with outside work")
 	result := inspectMergedHeadTestRun(t, f, nil)
-	assertTerminalRunReconciliation(t, result, f.run, ReconciliationUnintegrated)
+	assertTerminalRunReconciliation(t, result, f.run, ReconciliationSuperseded)
 }
