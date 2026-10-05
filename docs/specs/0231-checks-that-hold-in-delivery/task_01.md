@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0231-checks-that-hold-in-delivery
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -67,3 +67,40 @@ window and proves the reading. No production code changes.
 - `_prd.md` → Goals; Core Feature 1; Success Metric 1; Acceptance evidence
 - `_techspec.md` → Interfaces; Invariant 9; Testing Approach; Build Order 1
 - ADR-0213
+
+## Result
+
+The Darwin fixture-group reading now excludes `P_WEXIT`, named by
+`detachFixtureExitingFlag`, as well as zombies. The new
+`TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded` launches short-lived
+children in private process groups and reads `kern.proc.pgrp` directly until
+it observes the only child as non-zombie with `P_WEXIT` and a group signal
+probe returning `EPERM`. It then asserts that the helper lists no live
+member. Polling uses the `testwait` deadline, reports launch counts, fails
+rather than skips when the window is absent, and reaps each started child
+through a deferred cleanup, including assertion-failure paths.
+
+Focused evidence for acceptance criterion 1:
+
+- Before the filter change, `rtk proxy go test -count=1 -timeout=30s -v -run
+  '^TestDetachFixtureGroupWithOnlyAn(Exiting|Unreaped)MemberHasEnded$'
+  ./internal/cli` exited 1. The new test observed PID 50725, state 2, flags
+  `0x6004`, and `EPERM`, but the helper reported `live members=[50725]`.
+  The unchanged unreaped-member test passed.
+- After the filter change and formatting, the same focused command exited
+  0; both tests passed without skips. The exiting test observed the window
+  after one launch: PID 65157, state 2, flags `0x6004`, and `EPERM`. The
+  existing unreaped-member test still proves a running child is live and a
+  different recorded start identity ends the fixture.
+- `GOOS=darwin rtk proxy go build ./internal/cli` exited 0.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+Acceptance criterion 2 remains for Daemon Verification: the declared
+ten-iteration death, survivor, unreaped-member and exiting-member commands
+were not run in this Agent turn. No ten-iteration outcome is claimed.
+
+Scope review: only the Darwin test file and this Result were edited. The
+pre-existing `status: in_progress` change remains Daemon-owned. The existing
+unreaped-member, survivor and death tests, other platform readings, production
+detach code, and `internal/store` are unchanged. No glossary term was added;
+no follow-up outside this Task's slice was identified.
