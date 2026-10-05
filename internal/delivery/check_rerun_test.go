@@ -188,6 +188,7 @@ func inspectRecoveryFixture(t *testing.T, log, changes string, attempt int, gitE
 	}
 	steps := []commandStep{
 		{name: "gh", args: []string{"run", "view", "42", "--json", "attempt"}, result: CommandResult{Stdout: `{"attempt":` + strconv.Itoa(attempt) + `}`}},
+		{name: "gh", args: []string{"api", "repos/{owner}/{repo}/check-runs/7/annotations?per_page=100"}, result: CommandResult{Stdout: `[]`}},
 		{name: "gh", args: []string{"run", "view", "42", "--log-failed"}, result: CommandResult{Stdout: log}},
 	}
 	if gitExpected {
@@ -315,6 +316,7 @@ func TestGitHubCLIRejectsMalformedAttemptResponses(t *testing.T) {
 func TestGitHubCLIReportsFailedLogReadErrors(t *testing.T) {
 	script := newScriptedCommandRunner(t,
 		commandStep{name: "gh", args: []string{"run", "view", "42", "--json", "attempt"}, result: CommandResult{Stdout: `{"attempt":1}`}},
+		commandStep{name: "gh", args: []string{"api", "repos/{owner}/{repo}/check-runs/7/annotations?per_page=100"}, result: CommandResult{Stdout: `[]`}},
 		commandStep{name: "gh", args: []string{"run", "view", "42", "--log-failed"}, result: CommandResult{ExitCode: 1, Stderr: "log not available"}},
 	)
 	failure, err := (GitHubCLI{Runner: script}).InspectFailedCheck(t.Context(), "/repo", "origin", "candidate", PullRequestCheck{Link: recoveryLink})
@@ -385,6 +387,7 @@ func TestGitHubCLIAttributionUsesTheRefreshedMergeBaseWithRealGit(t *testing.T) 
 			gittest.Run(t, repo, "checkout", "feat/item")
 			script := newScriptedCommandRunner(t,
 				commandStep{name: "gh", args: []string{"run", "view", "42", "--json", "attempt"}, result: CommandResult{Stdout: `{"attempt":1}`}},
+				commandStep{name: "gh", args: []string{"api", "repos/{owner}/{repo}/check-runs/7/annotations?per_page=100"}, result: CommandResult{Stdout: `[]`}},
 				commandStep{name: "gh", args: []string{"run", "view", "42", "--log-failed"}, result: CommandResult{Stdout: "FAIL\texample.test/repo/internal/other\t1s"}},
 			)
 			client := GitHubCLI{Runner: localGitRecoveryRunner{t, script}}

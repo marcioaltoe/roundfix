@@ -353,7 +353,25 @@ The Park Class identifies the reason and the next action:
 Each existing blocker keeps its previous next action. A queue without parked
 items adds no `Park:` line.
 
-When a required GitHub Actions check fails on its first attempt, the owner
+Before classifying a failed GitHub Actions check, the owner reads the failing
+job's `tested-base` notice annotation and fetches the delivery remote's default
+branch. The annotation records the full commit id of the default branch tip
+merged by that attempt. If that tested base does not contain the current tip,
+or is not a known commit after the fetch, the failure is stale. The owner
+re-runs the failed jobs once per run and default tip and keeps polling, logging:
+
+```text
+roundfix: check stale: Delivery Queue item <slug>: <check> tested <sha>, default branch is at <sha>; re-run (run <id>)
+```
+
+A stale failure is not classified as `flaky-check` or `checks-failed`. A pass
+after a stale re-run adds no Warning. The check timeout restarts at most once
+across stale and outside-change re-runs; further default branch movement does
+not extend it again. Stale re-runs are remembered only during this check wait.
+An absent, malformed or ambiguous annotation keeps the previous rules.
+
+When a required GitHub Actions check fails on its first attempt, or on the
+first newer attempt after a stale re-run against the current tip, the owner
 reads its failed log and compares the failing Go package directories with the
 item's changed paths against the refreshed remote default branch. If every
 failing package lies outside that change, it re-runs the failed jobs once,
@@ -363,7 +381,8 @@ outside the change parks as `flaky-check: <package>, …`, with an action to fix
 or re-run the check and then run `roundfix deliver retry <slug>`.
 
 A failure in a changed package, a build or setup failure, a log without Go
-packages, a non-Actions check, or a run already past attempt one parks as
+packages, a non-Actions check, or a run already past attempt one without
+eligibility from a stale re-run parks as
 `checks-failed` without a re-run. An inspection or re-run error also parks as
 `checks-failed` and is recorded in the owner log.
 
