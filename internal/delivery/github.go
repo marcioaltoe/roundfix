@@ -386,6 +386,11 @@ func (client GitHubCLI) MergePullRequest(ctx context.Context, number, expectedHe
 	return MergeResult{PullRequest: merged}, nil
 }
 
+// ViewPullRequest reads the recorded Pull Request in the client's repository.
+func (client GitHubCLI) ViewPullRequest(ctx context.Context, number string) (PullRequest, error) {
+	return client.pullRequest(ctx, number)
+}
+
 func (client GitHubCLI) pullRequest(ctx context.Context, target string) (PullRequest, error) {
 	result, err := client.run(
 		ctx,
@@ -490,6 +495,11 @@ func pullRequestFromPayload(payload pullRequestPayload) (PullRequest, error) {
 }
 
 func (pullRequest PullRequest) isMerged() bool {
+	return pullRequest.Merged()
+}
+
+// Merged reports whether GitHub metadata records a merge.
+func (pullRequest PullRequest) Merged() bool {
 	return strings.EqualFold(pullRequest.State, "merged") || pullRequest.MergedAt != "" || pullRequest.MergeCommit != ""
 }
 

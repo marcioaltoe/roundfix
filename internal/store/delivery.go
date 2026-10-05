@@ -723,6 +723,118 @@ WHERE git_root = ?`, gitRoot).Scan(&storedOwnerPID, &ownerIdentity); err != nil 
 	return ownerPID, ownerIdentity, nil
 }
 
+// RecordDeliveryQueueItemMerged records a merge only while the observed park
+// still matches. It preserves retry count and all workspace and Run records.
+func (store *Store) RecordDeliveryQueueItemMerged(
+	ctx context.Context,
+	gitRoot string,
+	item DeliveryQueueItem,
+	parkedBlocker string,
+) (int, string, error) {
+	gitRoot = strings.TrimSpace(gitRoot)
+	item.SpecSlug = strings.TrimSpace(item.SpecSlug)
+	parkedBlocker = strings.TrimSpace(parkedBlocker)
+	if gitRoot == "" {
+		return 0, "", errors.New("retry Delivery Queue item: Git root is required")
+	}
+	if item.SpecSlug == "" {
+		return 0, "", errors.New("retry Delivery Queue item: Spec slug is required")
+	}
+	if item.Position < 0 {
+		return 0, "", fmt.Errorf("retry Delivery Queue item %q: position must not be negative", item.SpecSlug)
+	}
+	if item.Stage != DeliveryStageMerged {
+		return 0, "", fmt.Errorf(
+			"retry Delivery Queue item %q: target stage %q is not merged",
+			item.SpecSlug,
+			item.Stage,
+		)
+	}
+	commits := item.CandidateCommits
+	if commits == nil {
+		commits = []string{}
+	}
+	encodedCommits, err := json.Marshal(commits)
+	if err != nil {
+		return 0, "", fmt.Errorf("encode candidate commits for Delivery Queue item %q: %w", item.SpecSlug, err)
+	}
+
+	ownerPID := 0
+	ownerIdentity := ""
+	err = store.withWriteTx(ctx, fmt.Sprintf("Delivery Queue item %q merge recording", item.SpecSlug), func(tx *sql.Tx) error {
+		var storedSpecSlug string
+		var storedStage DeliveryStage
+		var storedBlocker string
+		if err := tx.QueryRowContext(ctx, `
+SELECT item.spec_slug, item.stage, item.blocker
+FROM delivery_queue_items item
+WHERE item.git_root = ? AND item.position = ?`, gitRoot, item.Position).Scan(
+			&storedSpecSlug,
+			&storedStage,
+			&storedBlocker,
+		); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf(
+					"retry Delivery Queue item %q: item at position %d does not exist",
+					item.SpecSlug,
+					item.Position,
+				)
+			}
+			return fmt.Errorf("read Delivery Queue item %q before recording merge: %w", item.SpecSlug, err)
+		}
+		if storedSpecSlug != item.SpecSlug {
+			return fmt.Errorf(
+				"retry Delivery Queue item %q: stored item at position %d is %q",
+				item.SpecSlug,
+				item.Position,
+				storedSpecSlug,
+			)
+		}
+		if storedStage != DeliveryStageParked || storedBlocker != parkedBlocker {
+			return fmt.Errorf(
+				"retry Delivery Queue item %q: stored item has stage %q and blocker %q; want stage %q and blocker %q",
+				item.SpecSlug,
+				storedStage,
+				storedBlocker,
+				DeliveryStageParked,
+				parkedBlocker,
+			)
+		}
+
+		if _, err := tx.ExecContext(ctx, `
+UPDATE delivery_queue_items
+SET stage = ?, blocker = '', merge_commit = ?, candidate_commits = ?
+WHERE git_root = ? AND position = ?`,
+			item.Stage,
+			item.MergeCommit,
+			string(encodedCommits),
+			gitRoot,
+			item.Position,
+		); err != nil {
+			return fmt.Errorf("retry Delivery Queue item %q: %w", item.SpecSlug, err)
+		}
+
+		var storedOwnerPID sql.NullInt64
+		if err := tx.QueryRowContext(ctx, `
+SELECT owner_pid, owner_identity
+FROM delivery_queues
+WHERE git_root = ?`, gitRoot).Scan(&storedOwnerPID, &ownerIdentity); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf("retry Delivery Queue item %q: queue does not exist", item.SpecSlug)
+			}
+			return fmt.Errorf("read Delivery Queue owner after recording item merge %q: %w", item.SpecSlug, err)
+		}
+		if storedOwnerPID.Valid {
+			ownerPID = int(storedOwnerPID.Int64)
+		}
+		return nil
+	})
+	if err != nil {
+		return 0, "", err
+	}
+	return ownerPID, ownerIdentity, nil
+}
+
 func (store *Store) RecordDeliveryActionIntent(
 	ctx context.Context,
 	gitRoot string,

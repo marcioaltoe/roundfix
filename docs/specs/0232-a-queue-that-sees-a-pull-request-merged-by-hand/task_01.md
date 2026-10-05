@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0232-a-queue-that-sees-a-pull-request-merged-by-hand
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -110,3 +110,65 @@ the observer is a test fake.
 - `_prd.md` → Goals; Core Feature 1; Success Metric 3; Success Metric 4
 - `_techspec.md` → Interfaces; Invariants 1 to 7; Data Models; API Contract 1; API Contract 3; API Contract 4; Vocabulary Contract; Testing Approach; Build Order 1
 - ADR-0237; ADR-0223; ADR-0199
+
+## Result
+
+Implemented task_01's Merge Observer seam and merge-recording path. A parked
+item's merge observation runs before Queue Limits, prerequisite re-entry and
+workspace recovery. A valid merge records `merged`, the merge commit and the
+newest candidate head without counting a retry; it returns the observed park,
+merge evidence and owner identity. The store compare-and-set requires the same
+position, slug, parked stage and blocker, and updates only stage, blocker,
+merge commit and candidate commits in one write transaction. Existing
+`PullRequestBoundary` methods and calls remain unchanged; `ViewPullRequest`
+and `Merged` expose the existing read and merge predicate.
+
+Acceptance evidence:
+
+- Merged retry and Queue Limits: tests in `merged_outside_test.go` cover
+  checks, missing-workspace, prerequisite, corrective and conflict parks;
+  retry allowance exhausted with an expired deadline; and recorded token
+  usage at the ceiling. They compare the full persisted item, preserve its
+  retry count and metadata, check owner PID/identity and the returned merge,
+  and assert no workspace, recovery, revalidation or workflow action. A
+  separate case preserves an already-newest candidate without appending it.
+- Refusal with unchanged item: closed-unmerged observations assert the exact
+  API Contract 3 reason. Observer errors retain `errors.Is` identity; missing
+  or blank merge commits and heads receive the `observe merge` error prefix.
+  Every refusal compares the full stored item and checks no recovery/workspace
+  action. Store tests reject changed blockers, stages, slugs and positions.
+- Existing retry behavior: nil and not-merged observers both re-enter
+  `checking` with the existing workspace/inspection actions and one counted
+  retry. The focused run also exercises existing retry and GitHub CLI tests.
+  A non-parked item refuses before calling the observer. Scripted `gh pr view`
+  cases parse merged and closed Pull Requests without reaching GitHub.
+- Guide: the retry section states both merge evidence paths, unchanged retry
+  count, Queue Limit bypass and owner cleanup; its first re-entry row is
+  `merged`. The refusal is quoted verbatim with `<slug>` and `<n>` and included
+  in the refusal list. A Python inspection confirmed those contract elements.
+
+Focused checks:
+
+- Baseline inspection of committed `HEAD` confirmed that `MergeObserver`,
+  `RecordDeliveryQueueItemMerged` and `ViewPullRequest` were absent.
+- `GOCACHE=/tmp/roundfix-task01-go-cache rtk proxy go test ./internal/delivery ./internal/store -run 'Test(ARetry|AMergeObserver|GitHubCLI|RecordDeliveryQueueItemMerged|Retry)' -count=1`
+  exited 0; delivery and store both reported `ok` (12.069s and 5.702s).
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+- `GOCACHE=/tmp/roundfix-task01-go-cache rtk make verify-incremental`
+  exited 0 on the final unchanged code/test tree with process-table access:
+  formatting, vet, the full Go suite, skill sync/check and build passed.
+  The first attempt exited 2: my concurrent edits triggered the repository
+  fingerprint guard, and two existing CLI force-stop tests lacked sandbox
+  process-table access. Holding the worktree unchanged and rerunning with
+  that access resolved both causes without code or configuration changes.
+- The initial check using the shared Go build cache was blocked by sandbox
+  cache access; the task-scoped `/tmp` cache resolved that environment issue.
+
+The declared Verification commands were not run, status remains Daemon-owned,
+and no commit, push or Pull Request was made. The real GitHub/Git observer,
+CLI wiring/output and skill updates remain task_02's slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261005T214431Z_77dc874bf3a7c619`
+- Source commit: `37300f673412959996cac17c2e4ffe1c6478fc61`

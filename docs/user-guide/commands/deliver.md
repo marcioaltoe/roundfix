@@ -394,7 +394,14 @@ A dependency park can clear after its prerequisites merge. Other parks need
 `deliver stop` ends the detached owner; `deliver resume` restarts it from the
 persisted queue.
 
-`roundfix deliver retry <slug>` returns one parked item to the queue. For an
+`roundfix deliver retry <slug>` first records a parked item `merged` when its
+recorded Pull Request was merged from the item branch, or when the local
+default branch already archives its Spec through a delivery commit outside
+the item branch. Recording the merge does not count a retry and applies
+regardless of the retry limit, queue deadline or token ceiling. It touches no
+item workspace; the owner then runs the normal post-merge cleanup.
+
+Otherwise the retry returns the parked item to the queue. For an
 active Spec that has not run, it first repeats the strict check in the item
 worktree and refuses while findings remain, leaving the item unchanged. It
 then carries the remaining settled Tasks from every terminal Implement Run of
@@ -427,6 +434,7 @@ changes.
 
 | Recorded evidence | Re-entry stage |
 | --- | --- |
+| Recorded Pull Request merged from the item branch, or Spec archived on the local default branch through a delivery commit outside the item branch | `merged`, without counting a retry; owner runs post-merge cleanup |
 | Active Spec with any unfinished Task | `running` |
 | Active Spec with every Task completed | `reviewing` |
 | Archived Spec with a post-archive correction descended from its newest candidate | `reviewing` |
@@ -448,8 +456,16 @@ forward from Run <run-id>: <task>, <task>` line per Run carried from, in
 newest-first order, before `Retried <slug>: <blocker> -> <stage>`. A missing or
 empty slug, an extra argument, an unknown flag, an item that is not parked, a
 missing item branch, a moved archived head without accepted recovery evidence,
-a refused carry-forward, or an owner hand-off failure exits `2` and starts no owner. An item-level refusal
-leaves the stored item unchanged.
+a refused carry-forward, a recorded Pull Request closed without merging, a failed
+merge observation, or an owner hand-off failure exits `2` and starts no owner.
+An item-level refusal leaves the stored item unchanged.
+
+A recorded Pull Request closed without merging, with no merge evidence on the
+local default branch, refuses the retry with this reason:
+
+```text
+retry Delivery Queue item "<slug>": pull request #<n> was closed without merging; reopen it or merge the Spec into the default branch, then run roundfix deliver retry <slug>
+```
 
 An item-level refusal exits `2` and prints `Retry refused`, followed by
 `Reason:`, the refused retry reason, `Item:` with its stage and blocker, and
