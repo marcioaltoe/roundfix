@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-04
-spec: null
+spec: 0228-queue-items-that-stay-current-with-main
 ---
 
 # A documentation fix after archive forces a hand-opened Pull Request
