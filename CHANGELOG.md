@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.44.0] - 2026-10-05
+
+### A queue that sees a Pull Request merged by hand
+
+- **Merged by hand.** `roundfix deliver retry` first checks whether a parked item's work is already merged. It looks at the item's recorded Pull Request, merged from the item branch, or at Spec 0227's merge evidence on the default branch. If the work is merged, the item is recorded `merged` without counting a retry, and the normal post-merge cleanup runs. Before, an item whose Pull Request the operator merged after a manual fix stayed parked, and a retry was refused.
+- **Closed, not merged.** A Pull Request closed without merging, with no merge evidence, keeps the item parked and the retry is refused. If the recorded Pull Request cannot be read, the retry is refused as well.
+
 ## [0.43.0] - 2026-10-05
 
 ### Checks that hold in delivery
