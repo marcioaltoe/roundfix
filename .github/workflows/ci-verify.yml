@@ -25,6 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}
           # Historical authorization contracts read retained main ancestors.
           fetch-depth: 0
           persist-credentials: false
@@ -45,13 +46,22 @@ jobs:
       - name: Align GOCACHE with the restored cache
         run: echo "GOCACHE=$(go env GOCACHE)" >> "$GITHUB_ENV"
 
+      - name: Merge the current base branch
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          base_sha="$(git rev-parse "refs/remotes/origin/$BASE_REF")"
+          git -c user.name='CI' -c user.email='ci@example.com' merge --no-ff --no-edit "$base_sha"
+          echo "VERIFY_BASE=$base_sha" >> "$GITHUB_ENV"
+          echo "::notice title=tested-base::$base_sha"
+
       # Pull requests run the sets affected since the base branch head. The
       # full-history checkout above lets the selector resolve their merge base.
       - name: Verify changed
         if: github.event_name == 'pull_request'
         env:
           GOFLAGS: -count=1
-          VERIFY_BASE: ${{ github.event.pull_request.base.sha }}
         run: make verify-changed
 
       # Pushes to main owe a fresh verdict on the whole tree. -count=1 disables
