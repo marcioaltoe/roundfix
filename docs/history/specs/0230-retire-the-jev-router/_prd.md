@@ -1,9 +1,18 @@
 ---
 spec: 0230-retire-the-jev-router
-status: active
+status: archived
 created: 2026-10-05
 surfaces: [backend, cli, docs]
+archived: "2026-10-05"
+source_slug: 0230-retire-the-jev-router
+qa_override: true
+qa_override_approval: 'maintainer standing authorization 2026-09-30 (unattended program): qa_override only for environment-only partials'
+qa_override_reason: 'Environment-only partial: Q7a needs the operator''s OpenRouter activity export (docs/_inbox/openrouter_activity_2026-10-05.csv in the main checkout; the measurement addendum records its figures), Q7c and Q7d would need OpenRouter requests that this Spec forbids, and Q10 has no Pull Request yet; the queue opens it. Every behavior row passed.'
+qa_override_qa_outcome: partial
+qa_override_qa_task_status: failed
+qa_override_revision: 73587c4d7ea9ccf5531168868093219ba53b3f82
 ---
+
 
 # Retire the Jev Router
 
