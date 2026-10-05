@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0229-a-jev-router-that-checks-credit-and-names-its-model
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -104,3 +104,41 @@ the note that ADR-0234 supersedes it in part.
 - `_prd.md` → Core Feature 6; User Stories 1-5; Success Metric 4
 - `_techspec.md` → Vocabulary Contract; API Contract 1; API Contract 2; API Contract 3; API Contract 4; API Contract 5; API Contract 6; Build Order 1
 - ADR-0187; ADR-0189; ADR-0218; ADR-0234
+
+## Result
+
+Implemented the documentation and Skill-sync slice. The configuration guide
+now documents the User Config-only `jev.router_min_credit_usd` floor, its US$15
+default, example, exact Project Config warning and invalid-value error, credit
+read fields, named credit refusals, loopback relay, and `router-prompt` model,
+provider, and response-id fields. The same routed-credit behavior is described
+in the Roundfix Skill runtime reference. ADR-0218 now records the partial
+supersession by ADR-0234 and has an updated timestamp. The Roundfix Skill was
+raised from 0.1.31 to 0.1.32 in both front-matter fields, its mirrors were
+regenerated, and the 0.1.32 content digest was recorded by the repository test.
+
+Focused checks and outcomes:
+
+- `make skills-sync` — passed.
+- `GOCACHE=/private/tmp/roundfix-task-0229-gocache go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed. The first invocation against the shared Go cache was blocked by its filesystem permissions; the task-scoped cache completed the required command successfully.
+- `git diff --check` — passed.
+- Targeted repository search confirmed the floor key, API Contract 2 and 3 text,
+  `total_credits`, `total_usage`, `openrouter_credit_low`,
+  `openrouter_credit_refused`, loopback relay, ADR-0234 note, and version 0.1.32
+  in the expected files. The canonical and mirrored Skill files are both
+  updated by `make skills-sync`.
+
+Acceptance-criterion evidence:
+
+- Configuration guide: floor key/default, exact configuration warning/error,
+  both named refusal reasons, and the Key reference row are present.
+- Runtime reference and ADR: the floor key, credit/refusal behavior, relay,
+  and ADR-0234 supersession note are present.
+- Skill synchronization and version recording: canonical and mirror content
+  were regenerated together, and the recorded 0.1.32 digest is present in
+  `skills/testdata/owned-skill-versions.json`.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261005T141012Z_a1b532ab932de7ab`
+- Source commit: `f223132f0abde72bfaaf152d1b449a8c2ed1fb7a`

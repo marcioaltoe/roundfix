@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-01T22:30:00Z
-updated_at: 2026-10-04T00:00:00Z
+updated_at: 2026-10-05T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -56,3 +56,5 @@ repository other than this one that opts in spends the maintainer's key only
 because its own committed Project Config says so.
 
 **Ceiling value (2026-10-04).** Superseded in part by ADR-0231: the shared ceiling, and the key limit it bounds, is the User Config value `jev.monthly_ceiling_usd`, US$5 when unset. Every other part of this decision stands.
+
+**Relay and credit (2026-10-04).** Superseded in part by ADR-0234: the inline provider now points at the loopback relay, and the gate also refuses below the account credit floor. Every other part of this decision stands.
