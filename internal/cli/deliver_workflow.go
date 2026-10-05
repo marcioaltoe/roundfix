@@ -814,11 +814,21 @@ func (workflow *commandDeliveryWorkflow) resolveMergedReleaseEvidence(
 		candidateTree, candidateTreeErr := runner.RunGit(ctx, gitRoot, "rev-parse", resolvedHead+"^{tree}")
 		mergeTree, mergeTreeErr := runner.RunGit(ctx, gitRoot, "rev-parse", resolvedMergeCommit+"^{tree}")
 		if candidateTreeErr != nil || mergeTreeErr != nil || strings.TrimSpace(candidateTree) != strings.TrimSpace(mergeTree) {
-			return "", "", fmt.Errorf(
-				"candidate head %q is not represented by merge commit %q",
-				candidateHead,
-				mergeCommit,
+			mergedCandidateTree, mergedCandidateTreeErr := runner.RunGit(
+				ctx,
+				gitRoot,
+				"merge-tree",
+				"--write-tree",
+				resolvedMergeCommit+"^1",
+				resolvedHead,
 			)
+			if mergeTreeErr != nil || mergedCandidateTreeErr != nil || strings.TrimSpace(mergedCandidateTree) != strings.TrimSpace(mergeTree) {
+				return "", "", fmt.Errorf(
+					"candidate head %q is not represented by merge commit %q",
+					candidateHead,
+					mergeCommit,
+				)
+			}
 		}
 	}
 
