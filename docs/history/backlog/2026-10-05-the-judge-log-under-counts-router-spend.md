@@ -1,8 +1,9 @@
 ---
 type: fix
-status: open
+status: declined
 created: 2026-10-05
 spec: null
+reason: "The Jev Router was retired on 2026-10-05 (ADR-0235), so no routed prompt writes to the Judge Log any more; the 2026-10-05 relay replay measured a gap of about 1 %, and the judge's own spend is cents."
 ---
 
 # The Judge Log under-counts the Jev Router's spend
@@ -31,3 +32,14 @@ routed prompt's Judge Log line after usage stops changing.
 Non-binding. Spec 0229's relay sees each response's generation id, and
 OpenRouter's generation lookup returns the final cost of that id, so the
 relay could record a settled cost per response.
+
+## Disposition — 2026-10-05
+
+Declined. The maintainer retired the Jev Router on 2026-10-05 ("Aposentar o
+router", then "Vamos seguir com a remoção"), recorded in ADR-0235 and carried
+out by Spec 0230-retire-the-jev-router. The lag this entry measured belonged
+to routed prompts only. The relay replay of 2026-10-05 (the "Relay
+confirmation, 2026-10-05" section of the same measurement record) found the
+Judge Log US$0.1173 below the key's usage change, about 1 %, and the judge's
+own 456 calls from 2026-10-01 to 2026-10-05 cost US$0.014, so the judge's
+Judge Log sum needs no settled cost.

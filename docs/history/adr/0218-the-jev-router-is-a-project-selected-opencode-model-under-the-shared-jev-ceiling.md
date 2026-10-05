@@ -1,9 +1,9 @@
 ---
-status: accepted
+status: superseded
 created_at: 2026-10-01T22:30:00Z
 updated_at: 2026-10-05T00:00:00Z
 deprecated_at: null
-superseded_by: null
+superseded_by: ADR-0235
 ---
 
 # The Jev Router is a project-selected OpenCode model under the shared Jev ceiling
@@ -58,3 +58,5 @@ because its own committed Project Config says so.
 **Ceiling value (2026-10-04).** Superseded in part by ADR-0231: the shared ceiling, and the key limit it bounds, is the User Config value `jev.monthly_ceiling_usd`, US$5 when unset. Every other part of this decision stands.
 
 **Relay and credit (2026-10-04).** Superseded in part by ADR-0234: the inline provider now points at the loopback relay, and the gate also refuses below the account credit floor. Every other part of this decision stands.
+
+**Retired (2026-10-05).** Superseded by ADR-0235: the maintainer retired the Jev Router because its routed sessions billed OpenAI and Anthropic models through OpenRouter, which the subscription rule forbids. No part of this decision stands; the shared ceiling it relied on stays the judge's, as ADR-0231 decides.

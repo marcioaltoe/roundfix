@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-04T00:00:00Z
-updated_at: 2026-10-04T00:00:00Z
+updated_at: 2026-10-05T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -45,3 +45,5 @@ would only make that repository stop first.
 - Raising the ceiling raises real spend: the OpenRouter key's own monthly
   limit stays the hard stop for the router, and TypeSafe-direct calls are
   bounded only by the Judge Log sum.
+
+**Router retired (2026-10-05).** Superseded in part by ADR-0235: the Jev Router gate and its key-limit check are gone with the router, so only the judge reads the ceiling. The ceiling's key, its User Config scope, its default and its validation stand.

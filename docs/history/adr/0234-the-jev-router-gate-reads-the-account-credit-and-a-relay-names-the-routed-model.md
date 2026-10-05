@@ -1,9 +1,9 @@
 ---
-status: accepted
+status: superseded
 created_at: 2026-10-04T00:00:00Z
-updated_at: 2026-10-04T00:00:00Z
+updated_at: 2026-10-05T00:00:00Z
 deprecated_at: null
-superseded_by: null
+superseded_by: ADR-0235
 ---
 
 # The Jev Router gate reads the account credit, and a relay names the routed model
@@ -78,3 +78,5 @@ only the responses carry.
   revisited.
 - An older Roundfix binary refuses a User Config that carries
   `jev.router_min_credit_usd` (ADR-0027).
+
+**Retired (2026-10-05).** Superseded by ADR-0235: the gate, the credit floor `jev.router_min_credit_usd`, the named credit refusals and the relay existed only for the Jev Router, which ADR-0235 retires. The floor key is now a deprecated key that loads with a warning (ADR-0027).
