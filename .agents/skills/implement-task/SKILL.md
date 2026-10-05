@@ -4,10 +4,10 @@ description: Execute one task file from docs/specs/<slug>/ end-to-end — ground
 metadata:
   category: implementation
   tags: [workflow, coding, agents, testing]
-  version: 0.0.2
+  version: 0.0.3
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.2
+version: 0.0.3
 ---
 
 # Implement task
@@ -113,6 +113,7 @@ editing it.
 ## 3. Implement
 
 - Stay inside the slice. The PRD's Non-Goals and the task's scope are walls, not suggestions — work that belongs to another task goes in a follow-up note, not in this diff.
+- A command a requirement names, such as a generator or the owned-skill record command, is part of the work even when Verification runs the same test; its output is never written by hand.
 - Tests first at the seams the TechSpec names (they are pre-agreed; a new seam needs the user's sign-off). Typecheck and run the focused tests frequently; save the full suite for the gate.
 - Root cause only — no lint/type suppressions, no swallowed errors, no timing hacks. A workaround closes the task and opens a bug.
 - For an authorized tooling Task, compare the target path with the mutation

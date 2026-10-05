@@ -263,7 +263,12 @@ appends the head to the candidate commits and returns to `reviewing`, so the
 correction receives a fresh review before the archive and repository gate
 stages. This applies to an archived `gate-failed` item and other blockers,
 with two restrictions: `qa-environment-partial` still needs the recorded QA
-Archive Override, and `corrective-spec-required` still refuses a moved head.
+Archive Override. A moved `corrective-spec-required` head returns to `reviewing`
+when Git proves the correction answers only the review in the archived Spec's
+own records: it descends from the parked candidate, every standing finding has
+one disposition, and every path changed from the candidate to the head lies
+under an archived Spec the blocker names. Anything else still requires a
+corrective Spec.
 When no candidate is recorded, only an item the operator archived with the QA
 Archive Override may use the Run start head, whatever its park. The retry
 records the descended head as the candidate and resumes at `reviewing`. A
@@ -302,6 +307,12 @@ delivery.derived_paths`. Otherwise the owner commits the merge with the
 The repository gate, push and current-head checks run again. An existing Pull
 Request still reporting an earlier candidate is read again at each check
 interval up to the check timeout.
+
+Line-scoped derived paths may resolve a conflicted path when every conflict
+hunk contains only matching lines, and regeneration may change that path only
+on matching lines. The two version fields in each owned `SKILL.md` are
+line-scoped for the record command, so a derived merge can take the default
+branch's version lines before the command raises and records the next version.
 
 During `checking`, Roundfix waits while GitHub reports the Pull Request merge
 state as `BLOCKED` or `UNKNOWN`, even when the listed checks pass. The existing
@@ -403,7 +414,7 @@ changes.
 | Archived Spec with unchanged candidate and no recorded pull request | `gating` |
 | Archived Spec with unchanged candidate and a recorded pull request | `checking` |
 | `corrective-spec-required` with the parked candidate head unchanged | `reviewing`, without Task Carry-Forward |
-| `corrective-spec-required` after the item head moved | Refused with exit `2`; the item stays unchanged and the operator must author a corrective Spec with its own authorization and QA gate |
+| `corrective-spec-required` with a moved head | `reviewing` when the correction answers only the review in the archived Spec's own records and every path changed from the candidate to the head lies under an archived Spec the blocker names; otherwise refused with exit `2`, the item stays unchanged, and the operator must author a corrective Spec with its own authorization and QA gate |
 
 After the retry, a live owner whose identity Roundfix proves keeps the queue
 and stdout reports `Handed <slug> to Delivery Queue owner PID <pid>.`. If the

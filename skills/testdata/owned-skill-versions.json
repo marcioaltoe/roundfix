@@ -61,6 +61,10 @@
       {
         "version": "0.0.2",
         "digest": "6c27aeead5a40348e395e94a73dcc021791b66688a21a0fcfe59980c39f276f4"
+      },
+      {
+        "version": "0.0.3",
+        "digest": "b29715978c528200ea79bfd2a87ab0f6ecfab91e13f364407ead298c9c601553"
       }
     ],
     "qa-gate": [
@@ -229,6 +233,14 @@
       {
         "version": "0.1.28",
         "digest": "29a4a7260629404d4abf25b600eb7d247d90c7c482bb8ec3fdc47c35b3c3e3d6"
+      },
+      {
+        "version": "0.1.29",
+        "digest": "4ffde83b906c28a0ca042375f8af5d2d818ac2523511f9ab695f2e87ad6b0370"
+      },
+      {
+        "version": "0.1.30",
+        "digest": "843a6dcf01d6736618074896e288d55390793223abb1b43e6949ee2d47f2242a"
       }
     ],
     "setup-context-driven": [
