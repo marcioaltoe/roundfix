@@ -1,9 +1,12 @@
 ---
 spec: 0231-checks-that-hold-in-delivery
-status: active
+status: archived
 created: 2026-10-05
 surfaces: [backend, docs]
+archived: "2026-10-05"
+source_slug: 0231-checks-that-hold-in-delivery
 ---
+
 
 # Checks that hold in delivery
 
