@@ -168,6 +168,27 @@ type deliveryEvidence struct {
 	deliveryCommit string
 }
 
+// DeliveryProof binds a Spec archive and its delivery commit to the local
+// default branch, when that commit is absent from the supplied item head.
+type DeliveryProof struct {
+	DefaultBranch  string
+	DefaultHead    string
+	DeliveryCommit string
+}
+
+// ProveDelivery exposes the same delivery evidence used by reconciliation.
+// Unavailable Git evidence is not proof of delivery.
+func ProveDelivery(ctx context.Context, gitRoot, specSlug, head string) (DeliveryProof, bool) {
+	evidence, proven := provenDeliveryEvidence(ctx, execGitRunner{}, gitRoot, specSlug, head)
+	if !proven {
+		return DeliveryProof{}, false
+	}
+	return DeliveryProof{
+		DefaultBranch: evidence.defaultBranch, DefaultHead: evidence.defaultHead,
+		DeliveryCommit: evidence.deliveryCommit,
+	}, true
+}
+
 func provenDeliveryEvidence(ctx context.Context, runner gitRunner, gitRoot, slug, head string) (deliveryEvidence, bool) {
 	branch, defaultHead, resolved := resolveDefaultBranchHead(ctx, runner, gitRoot)
 	if !resolved || !specArchivedAtMergedHead(ctx, runner, gitRoot, defaultHead, slug) {

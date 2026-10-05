@@ -401,6 +401,26 @@ the item branch. Recording the merge does not count a retry and applies
 regardless of the retry limit, queue deadline or token ceiling. It touches no
 item workspace; the owner then runs the normal post-merge cleanup.
 
+The retry first reads the recorded Pull Request through `gh pr view` in the
+repository checkout. A merged Pull Request must name the recorded item branch
+and have both a head and a merge commit. Otherwise it reads the Spec's archived
+`_prd.md` on the local default branch and proves that the delivery commit that
+added it is absent from the item head: the local item branch's tip, or the
+newest candidate when the branch is gone. This fallback does not fetch; the
+local default branch must already hold the delivery.
+
+A recorded merge prints this line on stdout before `Retried <slug>: <blocker>
+-> merged`:
+
+```text
+Merged outside the queue: <evidence>; merge commit <sha>
+```
+
+`<evidence>` is `pull request #<n>` or `Spec archived on default branch
+"<branch>"`; `<sha>` is the full merge commit from the Pull Request or the
+delivery commit from the archive proof. A failed Pull Request read refuses
+the retry and leaves the item unchanged.
+
 Otherwise the retry returns the parked item to the queue. For an
 active Spec that has not run, it first repeats the strict check in the item
 worktree and refuses while findings remain, leaving the item unchanged. It

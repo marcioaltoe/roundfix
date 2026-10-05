@@ -203,6 +203,9 @@ func printDeliverRetryRefusal(ctx context.Context, runStore *store.Store, gitRoo
 }
 
 func printDeliverRetryResult(stdout io.Writer, specSlug string, result delivery.RetryResult) {
+	if result.Merge.Merged {
+		fmt.Fprintf(stdout, "Merged outside the queue: %s; merge commit %s\n", result.Merge.Evidence, result.Merge.MergeCommit)
+	}
 	for _, carried := range result.CarriedFrom.Runs {
 		fmt.Fprintf(
 			stdout,

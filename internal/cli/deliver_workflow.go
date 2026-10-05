@@ -34,6 +34,7 @@ type commandDeliveryWorkflow struct {
 	store  *store.Store
 	loaded roundconfig.Loaded
 	git    preflight.GitRunner
+	gh     delivery.GitHubCLI
 	log    io.Writer
 }
 
@@ -42,16 +43,20 @@ var _ delivery.ItemHistory = (*commandDeliveryWorkflow)(nil)
 var _ delivery.ItemRecovery = (*commandDeliveryWorkflow)(nil)
 var _ delivery.ItemWorkspace = (*commandDeliveryWorkflow)(nil)
 var _ delivery.ItemRevalidator = (*commandDeliveryWorkflow)(nil)
+var _ delivery.MergeObserver = (*commandDeliveryWorkflow)(nil)
 
 const deliveryBranchPrefix = "roundfix/deliver-"
 
 func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) deliveryEngine {
+	github := delivery.NewGitHubCLI(loaded.GitRoot)
 	workflow := &commandDeliveryWorkflow{
 		store:  runStore,
 		loaded: loaded,
 		git:    preflight.ExecGitRunner{},
+		gh:     github,
 	}
 	return delivery.NewEngine(runStore, delivery.EngineDependencies{
+		Merges:        workflow,
 		Corrections:   workflow,
 		Conflicts:     workflow,
 		Workspace:     workflow,
@@ -61,14 +66,66 @@ func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) 
 		Gate:          workflow,
 		Authorizer:    workflow,
 		Publication:   workflow,
-		PullRequests:  delivery.NewGitHubCLI(loaded.GitRoot),
-		Checks:        delivery.NewGitHubCLI(loaded.GitRoot),
+		PullRequests:  github,
+		Checks:        github,
 		Recovery:      workflow,
 		History:       workflow,
 		Revalidator:   workflow,
 		Prerequisites: workflow,
 		Log:           os.Stderr,
 	})
+}
+
+func (workflow *commandDeliveryWorkflow) ObserveMerge(ctx context.Context, gitRoot string, item store.DeliveryQueueItem) (delivery.MergeObservation, error) {
+	var pullRequest delivery.PullRequest
+	if item.PullRequestNumber != "" {
+		github := workflow.gh
+		github.WorkDir = gitRoot
+		var err error
+		pullRequest, err = github.ViewPullRequest(ctx, item.PullRequestNumber)
+		if err != nil {
+			return delivery.MergeObservation{}, fmt.Errorf("read recorded pull request #%s: %w", item.PullRequestNumber, err)
+		}
+		if pullRequest.Merged() && pullRequest.HeadBranch == item.Branch && pullRequest.HeadSHA != "" && pullRequest.MergeCommit != "" {
+			return delivery.MergeObservation{
+				Merged: true, Head: pullRequest.HeadSHA, MergeCommit: pullRequest.MergeCommit,
+				Evidence: "pull request #" + item.PullRequestNumber,
+			}, nil
+		}
+	}
+
+	head := ""
+	if len(item.CandidateCommits) != 0 {
+		head = strings.TrimSpace(item.CandidateCommits[len(item.CandidateCommits)-1])
+	}
+	if item.Branch != "" {
+		runner := workflow.git
+		if runner == nil {
+			runner = preflight.ExecGitRunner{}
+		}
+		exists, err := localItemBranchExists(ctx, runner, gitRoot, item.Branch)
+		if err != nil {
+			return delivery.MergeObservation{}, fmt.Errorf("inspect item branch %q: %w", item.Branch, err)
+		}
+		if exists {
+			output, err := runner.RunGit(ctx, gitRoot, "rev-parse", "--verify", "--end-of-options", "refs/heads/"+item.Branch+"^{commit}")
+			if err != nil {
+				return delivery.MergeObservation{}, fmt.Errorf("read item branch %q head: %w", item.Branch, err)
+			}
+			head = strings.TrimSpace(output)
+		}
+	}
+	if head != "" {
+		if proof, proven := runworktree.ProveDelivery(ctx, gitRoot, item.SpecSlug, head); proven {
+			return delivery.MergeObservation{
+				Merged: true, Head: head, MergeCommit: proof.DeliveryCommit,
+				Evidence: fmt.Sprintf("Spec archived on default branch %q", proof.DefaultBranch),
+			}, nil
+		}
+	}
+	return delivery.MergeObservation{
+		ClosedUnmerged: strings.EqualFold(pullRequest.State, "CLOSED") && !pullRequest.Merged(),
+	}, nil
 }
 
 func (workflow *commandDeliveryWorkflow) InspectItem(
