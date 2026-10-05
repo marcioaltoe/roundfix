@@ -1,0 +1,20 @@
+package cli
+import (
+ "os"
+ "path/filepath"
+ "strings"
+ "testing"
+ roundconfig "roundfix/internal/config"
+ "roundfix/internal/preflight"
+)
+func TestQAActualSkillCollision(t *testing.T) {
+ repo:=os.Getenv("QA_COLLISION_REPO")
+ root:=t.TempDir()
+ cfg:=roundconfig.Builtin();cfg.Defaults.ArtifactDir=filepath.Join(root,"artifacts")
+ w:=&commandDeliveryWorkflow{git:preflight.ExecGitRunner{},loaded:roundconfig.Loaded{Config:cfg,HomeDir:root,GitRoot:repo}}
+ head,err:=w.git.RunGit(t.Context(),repo,"rev-parse","HEAD");if err!=nil {t.Fatal(err)}
+ result,err:=w.ResolveConflict(t.Context(),repo,"qa-collision",strings.TrimSpace(head));if err!=nil {t.Fatal(err)}
+ if result.Head==""||len(result.SourcePaths)!=0 {t.Fatalf("result=%+v",result)}
+ msg,err:=w.git.RunGit(t.Context(),repo,"show","-s","--format=%B","HEAD");if err!=nil||!strings.Contains(msg,"Roundfix-Delivery: derived-merge") {t.Fatalf("commit=%s err=%v",msg,err)}
+ t.Logf("resolution=%+v; commit=%s",result,msg)
+}

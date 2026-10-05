@@ -1,0 +1,175 @@
+GOCACHE=/private/tmp/roundfix-0228-qa01-cache
+Command: ['go', 'test', '-count=1', '-v', './internal/cli', '-run', '^(TestADerivedConflictIsMergedAndRegenerated|TestASourceConflictAbortsTheMerge|TestARegenerationThatWritesAnUndeclaredPathAbortsTheMerge|TestConflictRecoveryReadsDerivedPathsFromTheDefaultBranch|TestConflictRecoveryRequiresTheCleanCandidate|TestConflictRecoveryAbortsAFailedRegeneration|TestConflictRecoveryDoesNotHideIgnoredNewPaths|TestConflictRecoveryRunsMatchedDeclarationsInOrder|TestAConflictConfinedToDeclaredLinesIsMergedAndRegenerated|TestAConflictHunkOutsideDeclaredLinesAbortsTheMerge|TestARegenerationThatChangesAnUndeclaredLineAbortsTheMerge|TestWholeFileDerivedPathsTakePrecedenceOverDeclaredLines|TestARealSkillVersionHunkIsMergedAndRegeneratedOnePatchAboveMain|TestAVersionHunkWhoseInterveningLineDiffersAbortsTheMerge|TestAReviewOnlyCorrectionIsProvedFromTheReviewRecord|TestACorrectionOutsideTheArchivedSpecIsRefused|TestACorrectionWithAnUndisposedFindingIsRefused|TestACorrectionThatDoesNotDescendIsRefused|TestReviewCorrectionRequiresTheParkedReviewRecord|TestReviewLineageDecidesEachRound|TestReviewRoundTwoPromptCarriesTheDeltaAndRoundOneFindings|TestReviewRoundTwoAnchorsAgainstTheFullCandidateDiff|TestReviewCeilingBlocksWithoutCallingTheReviewer|TestReviewCeilingClosesOnDispositions|TestDeliveryReviewResultAdvancesACeilingClosedRecord|TestReviewBlockedRoundTwoRepeatsItsOriginalDelta|TestReviewCeilingClosedRecordRequiresDispositionEvidence)$']
+=== RUN   TestADerivedConflictIsMergedAndRegenerated
+--- PASS: TestADerivedConflictIsMergedAndRegenerated (0.33s)
+=== RUN   TestASourceConflictAbortsTheMerge
+--- PASS: TestASourceConflictAbortsTheMerge (0.28s)
+=== RUN   TestARegenerationThatWritesAnUndeclaredPathAbortsTheMerge
+=== RUN   TestARegenerationThatWritesAnUndeclaredPathAbortsTheMerge/source.txt
+=== RUN   TestARegenerationThatWritesAnUndeclaredPathAbortsTheMerge/new.txt
+--- PASS: TestARegenerationThatWritesAnUndeclaredPathAbortsTheMerge (0.64s)
+    --- PASS: TestARegenerationThatWritesAnUndeclaredPathAbortsTheMerge/source.txt (0.32s)
+    --- PASS: TestARegenerationThatWritesAnUndeclaredPathAbortsTheMerge/new.txt (0.32s)
+=== RUN   TestConflictRecoveryReadsDerivedPathsFromTheDefaultBranch
+=== RUN   TestConflictRecoveryReadsDerivedPathsFromTheDefaultBranch/printf_'item-command\n'_>_derived.txt
+=== RUN   TestConflictRecoveryReadsDerivedPathsFromTheDefaultBranch/printf_'item-command\n'_>_derived.txt;_touch_forbidden.txt
+--- PASS: TestConflictRecoveryReadsDerivedPathsFromTheDefaultBranch (0.63s)
+    --- PASS: TestConflictRecoveryReadsDerivedPathsFromTheDefaultBranch/printf_'item-command\n'_>_derived.txt (0.32s)
+    --- PASS: TestConflictRecoveryReadsDerivedPathsFromTheDefaultBranch/printf_'item-command\n'_>_derived.txt;_touch_forbidden.txt (0.31s)
+=== RUN   TestConflictRecoveryRequiresTheCleanCandidate
+=== RUN   TestConflictRecoveryRequiresTheCleanCandidate/wrong_head
+=== RUN   TestConflictRecoveryRequiresTheCleanCandidate/dirty_worktree
+--- PASS: TestConflictRecoveryRequiresTheCleanCandidate (0.39s)
+    --- PASS: TestConflictRecoveryRequiresTheCleanCandidate/wrong_head (0.19s)
+    --- PASS: TestConflictRecoveryRequiresTheCleanCandidate/dirty_worktree (0.19s)
+=== RUN   TestConflictRecoveryAbortsAFailedRegeneration
+--- PASS: TestConflictRecoveryAbortsAFailedRegeneration (0.31s)
+=== RUN   TestConflictRecoveryDoesNotHideIgnoredNewPaths
+--- PASS: TestConflictRecoveryDoesNotHideIgnoredNewPaths (0.32s)
+=== RUN   TestConflictRecoveryRunsMatchedDeclarationsInOrder
+--- PASS: TestConflictRecoveryRunsMatchedDeclarationsInOrder (0.38s)
+=== RUN   TestAConflictConfinedToDeclaredLinesIsMergedAndRegenerated
+=== RUN   TestAConflictConfinedToDeclaredLinesIsMergedAndRegenerated/record_and_version_conflicts
+=== RUN   TestAConflictConfinedToDeclaredLinesIsMergedAndRegenerated/only_version_conflicts
+--- PASS: TestAConflictConfinedToDeclaredLinesIsMergedAndRegenerated (0.76s)
+    --- PASS: TestAConflictConfinedToDeclaredLinesIsMergedAndRegenerated/record_and_version_conflicts (0.36s)
+    --- PASS: TestAConflictConfinedToDeclaredLinesIsMergedAndRegenerated/only_version_conflicts (0.41s)
+=== RUN   TestAConflictHunkOutsideDeclaredLinesAbortsTheMerge
+--- PASS: TestAConflictHunkOutsideDeclaredLinesAbortsTheMerge (0.30s)
+=== RUN   TestARegenerationThatChangesAnUndeclaredLineAbortsTheMerge
+=== RUN   TestARegenerationThatChangesAnUndeclaredLineAbortsTheMerge/body
+=== RUN   TestARegenerationThatChangesAnUndeclaredLineAbortsTheMerge/added_matching_line
+=== RUN   TestARegenerationThatChangesAnUndeclaredLineAbortsTheMerge/removed_matching_line
+=== RUN   TestARegenerationThatChangesAnUndeclaredLineAbortsTheMerge/no_longer_matching
+=== RUN   TestARegenerationThatChangesAnUndeclaredLineAbortsTheMerge/deleted_file
+--- PASS: TestARegenerationThatChangesAnUndeclaredLineAbortsTheMerge (1.81s)
+    --- PASS: TestARegenerationThatChangesAnUndeclaredLineAbortsTheMerge/body (0.35s)
+    --- PASS: TestARegenerationThatChangesAnUndeclaredLineAbortsTheMerge/added_matching_line (0.35s)
+    --- PASS: TestARegenerationThatChangesAnUndeclaredLineAbortsTheMerge/removed_matching_line (0.35s)
+    --- PASS: TestARegenerationThatChangesAnUndeclaredLineAbortsTheMerge/no_longer_matching (0.39s)
+    --- PASS: TestARegenerationThatChangesAnUndeclaredLineAbortsTheMerge/deleted_file (0.38s)
+=== RUN   TestWholeFileDerivedPathsTakePrecedenceOverDeclaredLines
+--- PASS: TestWholeFileDerivedPathsTakePrecedenceOverDeclaredLines (0.41s)
+=== RUN   TestARealSkillVersionHunkIsMergedAndRegeneratedOnePatchAboveMain
+--- PASS: TestARealSkillVersionHunkIsMergedAndRegeneratedOnePatchAboveMain (0.43s)
+=== RUN   TestAVersionHunkWhoseInterveningLineDiffersAbortsTheMerge
+--- PASS: TestAVersionHunkWhoseInterveningLineDiffersAbortsTheMerge (0.32s)
+=== RUN   TestAReviewOnlyCorrectionIsProvedFromTheReviewRecord
+--- PASS: TestAReviewOnlyCorrectionIsProvedFromTheReviewRecord (0.09s)
+=== RUN   TestACorrectionOutsideTheArchivedSpecIsRefused
+=== RUN   TestACorrectionOutsideTheArchivedSpecIsRefused/outside.txt
+=== RUN   TestACorrectionOutsideTheArchivedSpecIsRefused/docs/history/specs/0225-example-sibling/_prd.md
+=== RUN   TestACorrectionOutsideTheArchivedSpecIsRefused/docs/history/specs/another/_prd.md
+--- PASS: TestACorrectionOutsideTheArchivedSpecIsRefused (0.33s)
+    --- PASS: TestACorrectionOutsideTheArchivedSpecIsRefused/outside.txt (0.11s)
+    --- PASS: TestACorrectionOutsideTheArchivedSpecIsRefused/docs/history/specs/0225-example-sibling/_prd.md (0.11s)
+    --- PASS: TestACorrectionOutsideTheArchivedSpecIsRefused/docs/history/specs/another/_prd.md (0.11s)
+=== RUN   TestACorrectionWithAnUndisposedFindingIsRefused
+=== RUN   TestACorrectionWithAnUndisposedFindingIsRefused/missing
+=== RUN   TestACorrectionWithAnUndisposedFindingIsRefused/duplicate
+=== RUN   TestACorrectionWithAnUndisposedFindingIsRefused/empty_evidence
+=== RUN   TestACorrectionWithAnUndisposedFindingIsRefused/wrong_finding_text
+=== RUN   TestACorrectionWithAnUndisposedFindingIsRefused/ledger_another_head
+=== RUN   TestACorrectionWithAnUndisposedFindingIsRefused/fix_before_candidate
+=== RUN   TestACorrectionWithAnUndisposedFindingIsRefused/fix_absent_from_head
+--- PASS: TestACorrectionWithAnUndisposedFindingIsRefused (0.62s)
+    --- PASS: TestACorrectionWithAnUndisposedFindingIsRefused/missing (0.09s)
+    --- PASS: TestACorrectionWithAnUndisposedFindingIsRefused/duplicate (0.09s)
+    --- PASS: TestACorrectionWithAnUndisposedFindingIsRefused/empty_evidence (0.08s)
+    --- PASS: TestACorrectionWithAnUndisposedFindingIsRefused/wrong_finding_text (0.08s)
+    --- PASS: TestACorrectionWithAnUndisposedFindingIsRefused/ledger_another_head (0.08s)
+    --- PASS: TestACorrectionWithAnUndisposedFindingIsRefused/fix_before_candidate (0.09s)
+    --- PASS: TestACorrectionWithAnUndisposedFindingIsRefused/fix_absent_from_head (0.11s)
+=== RUN   TestACorrectionThatDoesNotDescendIsRefused
+--- PASS: TestACorrectionThatDoesNotDescendIsRefused (0.07s)
+=== RUN   TestReviewCorrectionRequiresTheParkedReviewRecord
+=== RUN   TestReviewCorrectionRequiresTheParkedReviewRecord/head
+=== RUN   TestReviewCorrectionRequiresTheParkedReviewRecord/repository
+=== RUN   TestReviewCorrectionRequiresTheParkedReviewRecord/outcome
+--- PASS: TestReviewCorrectionRequiresTheParkedReviewRecord (0.22s)
+    --- PASS: TestReviewCorrectionRequiresTheParkedReviewRecord/head (0.07s)
+    --- PASS: TestReviewCorrectionRequiresTheParkedReviewRecord/repository (0.07s)
+    --- PASS: TestReviewCorrectionRequiresTheParkedReviewRecord/outcome (0.07s)
+=== RUN   TestReviewLineageDecidesEachRound
+=== RUN   TestReviewLineageDecidesEachRound/absent
+=== RUN   TestReviewLineageDecidesEachRound/another_provider
+=== RUN   TestReviewLineageDecidesEachRound/moved_merge_base_after_rebase
+=== RUN   TestReviewLineageDecidesEachRound/head_does_not_descend
+=== RUN   TestReviewLineageDecidesEachRound/same_head_reuse
+=== RUN   TestReviewLineageDecidesEachRound/same_head_blocked_repeats
+=== RUN   TestReviewLineageDecidesEachRound/ancestor_blocked_legacy_repeats
+=== RUN   TestReviewLineageDecidesEachRound/ancestor_blocked_round_two_repeats
+=== RUN   TestReviewLineageDecidesEachRound/legacy_reviewed
+=== RUN   TestReviewLineageDecidesEachRound/round_one_reviewed
+=== RUN   TestReviewLineageDecidesEachRound/another_checkout
+=== RUN   TestReviewLineageDecidesEachRound/same_head_closed_reuse
+=== RUN   TestReviewLineageDecidesEachRound/round_one_findings
+=== RUN   TestReviewLineageDecidesEachRound/round_one_findings_dismissed
+=== RUN   TestReviewLineageDecidesEachRound/round_two_ceiling
+=== RUN   TestReviewLineageDecidesEachRound/closed_ceiling
+--- PASS: TestReviewLineageDecidesEachRound (0.17s)
+    --- PASS: TestReviewLineageDecidesEachRound/absent (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/another_provider (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/moved_merge_base_after_rebase (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/head_does_not_descend (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/same_head_reuse (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/same_head_blocked_repeats (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/ancestor_blocked_legacy_repeats (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/ancestor_blocked_round_two_repeats (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/legacy_reviewed (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/round_one_reviewed (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/another_checkout (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/same_head_closed_reuse (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/round_one_findings (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/round_one_findings_dismissed (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/round_two_ceiling (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/closed_ceiling (0.00s)
+=== RUN   TestReviewRoundTwoPromptCarriesTheDeltaAndRoundOneFindings
+--- PASS: TestReviewRoundTwoPromptCarriesTheDeltaAndRoundOneFindings (0.29s)
+=== RUN   TestReviewRoundTwoAnchorsAgainstTheFullCandidateDiff
+--- PASS: TestReviewRoundTwoAnchorsAgainstTheFullCandidateDiff (0.21s)
+=== RUN   TestReviewCeilingBlocksWithoutCallingTheReviewer
+--- PASS: TestReviewCeilingBlocksWithoutCallingTheReviewer (0.26s)
+=== RUN   TestReviewCeilingClosesOnDispositions
+=== RUN   TestReviewCeilingClosesOnDispositions/fixed_by_contained_commit
+=== RUN   TestReviewCeilingClosesOnDispositions/dismissed_with_evidence
+=== RUN   TestReviewCeilingClosesOnDispositions/fixed_by_commit_outside_current_head
+--- PASS: TestReviewCeilingClosesOnDispositions (1.05s)
+    --- PASS: TestReviewCeilingClosesOnDispositions/fixed_by_contained_commit (0.37s)
+    --- PASS: TestReviewCeilingClosesOnDispositions/dismissed_with_evidence (0.35s)
+    --- PASS: TestReviewCeilingClosesOnDispositions/fixed_by_commit_outside_current_head (0.34s)
+=== RUN   TestDeliveryReviewResultAdvancesACeilingClosedRecord
+=== RUN   TestDeliveryReviewResultAdvancesACeilingClosedRecord/ceiling-closed
+=== RUN   TestDeliveryReviewResultAdvancesACeilingClosedRecord/blocked
+--- PASS: TestDeliveryReviewResultAdvancesACeilingClosedRecord (0.00s)
+    --- PASS: TestDeliveryReviewResultAdvancesACeilingClosedRecord/ceiling-closed (0.00s)
+    --- PASS: TestDeliveryReviewResultAdvancesACeilingClosedRecord/blocked (0.00s)
+=== RUN   TestReviewBlockedRoundTwoRepeatsItsOriginalDelta
+--- PASS: TestReviewBlockedRoundTwoRepeatsItsOriginalDelta (0.31s)
+=== RUN   TestReviewCeilingClosedRecordRequiresDispositionEvidence
+=== RUN   TestReviewCeilingClosedRecordRequiresDispositionEvidence/missing_lineage
+=== RUN   TestReviewCeilingClosedRecordRequiresDispositionEvidence/wrong_round
+=== RUN   TestReviewCeilingClosedRecordRequiresDispositionEvidence/same_reviewed_head
+=== RUN   TestReviewCeilingClosedRecordRequiresDispositionEvidence/missing_disposition
+=== RUN   TestReviewCeilingClosedRecordRequiresDispositionEvidence/missing_fixed_commit
+=== RUN   TestReviewCeilingClosedRecordRequiresDispositionEvidence/dismissal_without_evidence
+=== RUN   TestReviewCeilingClosedRecordRequiresDispositionEvidence/disposition_wrong_head
+=== RUN   TestReviewCeilingClosedRecordRequiresDispositionEvidence/disposition_wrong_text
+=== RUN   TestReviewCeilingClosedRecordRequiresDispositionEvidence/duplicate_disposition
+=== RUN   TestReviewCeilingClosedRecordRequiresDispositionEvidence/findings_without_items
+--- PASS: TestReviewCeilingClosedRecordRequiresDispositionEvidence (0.07s)
+    --- PASS: TestReviewCeilingClosedRecordRequiresDispositionEvidence/missing_lineage (0.00s)
+    --- PASS: TestReviewCeilingClosedRecordRequiresDispositionEvidence/wrong_round (0.00s)
+    --- PASS: TestReviewCeilingClosedRecordRequiresDispositionEvidence/same_reviewed_head (0.00s)
+    --- PASS: TestReviewCeilingClosedRecordRequiresDispositionEvidence/missing_disposition (0.00s)
+    --- PASS: TestReviewCeilingClosedRecordRequiresDispositionEvidence/missing_fixed_commit (0.00s)
+    --- PASS: TestReviewCeilingClosedRecordRequiresDispositionEvidence/dismissal_without_evidence (0.00s)
+    --- PASS: TestReviewCeilingClosedRecordRequiresDispositionEvidence/disposition_wrong_head (0.00s)
+    --- PASS: TestReviewCeilingClosedRecordRequiresDispositionEvidence/disposition_wrong_text (0.00s)
+    --- PASS: TestReviewCeilingClosedRecordRequiresDispositionEvidence/duplicate_disposition (0.00s)
+    --- PASS: TestReviewCeilingClosedRecordRequiresDispositionEvidence/findings_without_items (0.00s)
+PASS
+suiteguard: guard cost: measured 8939 paths; fingerprint took 935.495792ms before and 254.049375ms after
+ok  	roundfix/internal/cli	12.626s
+
+Exit: 0

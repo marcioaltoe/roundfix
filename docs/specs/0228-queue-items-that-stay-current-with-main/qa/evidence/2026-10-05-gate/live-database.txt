@@ -1,0 +1,5 @@
+['sqlite3', '-readonly', '-json', '/Users/marcio/.roundfix/roundfix.db', "SELECT spec_slug,stage,blocker,candidate_commits,pull_request_number FROM delivery_queue_items WHERE spec_slug LIKE '0225%';"]
+Exit: 0
+(zero rows)
+
+[{"spec_slug":"0228-queue-items-that-stay-current-with-main","stage":"running"}]

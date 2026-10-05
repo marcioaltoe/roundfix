@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0228-queue-items-that-stay-current-with-main
-status: pending
+status: failed
 type: qa
 complexity: high
 ---

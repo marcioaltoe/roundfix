@@ -1,0 +1,21 @@
+Command: ['./bin/roundfix', '--version']
+stdout:
+roundfix 0.38.0 (b957f7cf-dirty, built 2026-10-05 08:41:03 -0300)
+
+stderr:
+
+Exit: 0
+
+Command: ['./bin/roundfix', 'spec', 'check', '0228-queue-items-that-stay-current-with-main', '--strict']
+stdout:
+Spec 0228-queue-items-that-stay-current-with-main
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  vocabulary documentation detector: missing docs/specs/0228-queue-items-that-stay-current-with-main/_techspec.md Vocabulary Contract
+
+stderr:
+
+Exit: 0

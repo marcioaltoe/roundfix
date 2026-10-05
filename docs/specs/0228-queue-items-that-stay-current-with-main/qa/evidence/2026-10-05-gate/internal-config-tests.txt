@@ -1,0 +1,7 @@
+Command: ['go', 'test', '-count=1', '-v', './internal/config', '-run', '^(TestDerivedLineDeclarationsAreReadAndValidated|TestVerificationToolsAreBareExecutableNames|TestThisRepositoryDeclaresItsToolsAndDerivedPaths)$']
+# ./internal/config
+open /Users/marcio/Library/Caches/go-build/0e/0ec898109a0234448e35c8732531db9c1c16a01439703c01499604a025241ee0-d: operation not permitted
+FAIL	./internal/config [setup failed]
+FAIL
+
+Exit: 1
