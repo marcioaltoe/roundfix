@@ -102,8 +102,13 @@ still keeps everything.
 - The Git pack does not shrink. Rewriting history in this repository or in
   the Secondbrain stays a separate maintainer decision ("Não agora",
   2026-10-06).
-- Spec 0238 (drop raw `qa/evidence` at archive, with an evidence manifest) is
-  a strict subset of this entry. If this entry is adopted, 0238 should be
+- Spec 0238 (drop raw `qa/evidence` at archive, with an evidence manifest) was
+  authored on 2026-10-06 and, by the maintainer's decision the same day
+  ("Incorporar ao saneamento"), is not delivered on its own: its reader
+  analysis (coverage record, repo-copy test helper, owned-skill test) carries
+  into this entry. Its draft is kept on branch
+  `docs/archive-keeps-the-report-not-the-raw-evidence`. It was a strict subset
+  of this entry. If this entry is adopted, 0238 should be
   folded into it rather than delivered on its own, so the manifest and
   link-rewrite work is not built and then removed.
 - Size the work: this likely needs two Specs. One covers the Archive Record,

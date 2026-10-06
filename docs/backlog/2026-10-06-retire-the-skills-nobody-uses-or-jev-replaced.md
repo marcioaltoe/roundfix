@@ -82,3 +82,20 @@ authoring, those interactive skills have had no reader in the measured Runs.
 
 Resolve after the current cycle (0235–0237), alongside or after the history
 clean-up entry, `2026-10-06-history-keeps-only-what-the-secondbrain-needs.md`.
+
+## Maintainer decision — 2026-10-06
+
+Asked through AskUserQuestion, the maintainer answered: "remover: the-fool,
+autoresearch, council // manter: grilling, grill-with-docs, write-idea,
+business-analyst e handoff". Scope therefore:
+
+- **Retire:** `the-fool`, `autoresearch` and `council`. `council` is
+  Roundfix-owned, so it leaves the owned set and its mirror too.
+- **Keep:** `grilling`, `grill-with-docs`, `write-idea`, `business-analyst`
+  and `handoff`. They stay in their modules.
+
+The maintainer also asked to validate in the Baseline why `grilling` and
+`domain-modeling` are not being executed and why `CONTEXT.md` is not kept
+current during implementations. That is recorded separately in
+`2026-10-06-the-context-driven-loop-does-not-keep-context-md-current.md`.
+
