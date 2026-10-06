@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.49.0] - 2026-10-06
+
+### Review selection failures that say why
+
+- **The failing step and the adapter's message.** When a pre-PR review blocks because the agent session failed, the reason and the review record name the protocol step that failed (initialize, session load or new, set model, prompt) in `failedStep`, and the adapter's own message in `adapterMessage` (one line, at most 512 bytes). Before, every such failure read only `Agent Selection failed … agent/protocol error`.
+- **One retry before the prompt.** A failure before `session/prompt` is retried once on the same selection, and `selectionRetries` records the retry. A configured fallback runs only after that retry also fails. A failure after the prompt is never retried, so a review never runs twice, and the review never falls back to `none`.
+
 ## [0.48.0] - 2026-10-06
 
 ### Baseline update with a repository profile
