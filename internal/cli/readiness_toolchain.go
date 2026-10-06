@@ -12,6 +12,7 @@ import (
 	"roundfix/internal/agent"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/judge"
+	"roundfix/internal/openrouterkey"
 )
 
 var readinessToolPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._+-]*$`)
@@ -137,24 +138,22 @@ func environmentReadiness(deps readinessDependencies) CheckResult {
 	if err != nil {
 		return CheckResult{Name: HealthCheckEnvironment, Status: CheckStatusFailed, Detail: "load spec judge transports: " + err.Error(), Err: err}
 	}
-	var keys []string
-	seen := make(map[string]bool)
-	for _, transport := range questions.Transports {
-		name := transport.KeyVariable
-		if !strings.HasPrefix(name, "ROUNDFIX_") || seen[name] {
-			continue
+	keyStates := func(variables []string) string {
+		var keys []string
+		for _, name := range variables {
+			status := "not set"
+			if readinessKeyIsSet(deps.environ, name) {
+				status = "set"
+			}
+			keys = append(keys, name+" "+status)
 		}
-		seen[name] = true
-		status := "not set"
-		if readinessKeyIsSet(deps.environ, name) {
-			status = "set"
-		}
-		keys = append(keys, name+" "+status)
+		return strings.Join(keys, ", ")
 	}
 	result := readinessResult(HealthCheckEnvironment, "", findings)
 	if result.Detail != "" {
 		result.Detail += "; "
 	}
-	result.Detail += "spec judge keys: " + strings.Join(keys, ", ")
+	result.Detail += "spec judge keys: " + keyStates(questions.KeyVariables()) +
+		"; implementation keys: " + keyStates(openrouterkey.Variables(openrouterkey.StageImplement))
 	return result
 }

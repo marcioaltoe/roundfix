@@ -1,0 +1,1 @@
+Report checks passed: 16 terminal rows, 15 pass and 1 environment block; all named behavior tests passed; no pending evidence; seeded auditor and mechanical sections preserved; tracked tree unchanged; only QA directory untracked.

@@ -5,10 +5,10 @@ argument-hint: "<spec slug, path to docs/specs/<slug>/_prd.md, or a refactor/bug
 metadata:
   category: engineering-design
   tags: [architecture, documentation, workflow]
-  version: 0.0.6
+  version: 0.0.7
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.6
+version: 0.0.7
 ---
 
 # Write TechSpec
@@ -158,8 +158,8 @@ every raised judgment, answer each raised judgment by correcting the artifact
 and re-running the checker, or by keeping the text and stating in the report
 why it stands. The judge is advisory and never a gate. a skipped result is
 neither a failure nor a clean result, so report the skip reason and continue.
-Never print, store or ask for either Jev key
-(`ROUNDFIX_OPENROUTER_API_KEY` or `ROUNDFIX_TYPESAFE_API_KEY`).
+Never print, store or ask for any Jev key: `ROUNDFIX_OPENROUTER_JUDGE_API_KEY`,
+`ROUNDFIX_OPENROUTER_API_KEY` or `ROUNDFIX_TYPESAFE_API_KEY`.
 
 ## Anti-patterns
 

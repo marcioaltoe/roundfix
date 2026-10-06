@@ -11,8 +11,8 @@ import (
 	"testing"
 
 	"roundfix/internal/agent"
-	roundconfig "roundfix/internal/config"
 	"roundfix/internal/lighttier"
+	"roundfix/internal/openrouterkey"
 	"roundfix/internal/spec"
 )
 
@@ -38,7 +38,7 @@ func TestImplementBuildsTheLightTierPlan(t *testing.T) {
 			runner := &implementFakeRunner{gitRoot: repo, statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted, "task_02": spec.StatusCompleted}, onTask: func(req agent.ExecuteRequest, _ string) error { requests = append(requests, req); return nil }}
 			withImplementCollaborators(t, runner)
 			environment := commandEnvironmentForTest(t)
-			variable, _ := roundconfig.OpenRouterImplementKey(func(string) string { return "" })
+			variable := openrouterkey.Shared
 			environment.environ = withEnvValue(environment.environ, variable, "")
 			if name != "missing-key" {
 				environment.environ = withEnvValue(environment.environ, variable, "fixture-secret")
@@ -63,7 +63,7 @@ func TestImplementBuildsTheLightTierPlan(t *testing.T) {
 			if strings.Contains(stdout.String()+stderr.String(), "fixture-secret") {
 				t.Fatal("key value reached command output")
 			}
-			warning := "roundfix: warning: light tier skipped for Task task_01: " + variable + " is not set; it runs on its docs profile"
+			warning := "roundfix: warning: light tier skipped for Task task_01: " + openrouterkey.Implement + " is not set; it runs on its docs profile"
 			if name == "missing-key" {
 				if !strings.Contains(stderr.String(), warning) || strings.Contains(stdout.String(), "light tier skipped") {
 					t.Fatalf("Surface Transcript 3 mismatch: %s", stderr.String())

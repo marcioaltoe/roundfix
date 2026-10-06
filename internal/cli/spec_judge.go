@@ -25,8 +25,10 @@ Options:
   --stage   Judge prd, techspec or tasks (default: prd and techspec)
   --format  Output format: text or json (default: text)
 
-Set ROUNDFIX_OPENROUTER_API_KEY for OpenRouter, or ROUNDFIX_TYPESAFE_API_KEY
-as the direct TypeSafe alternative. The generic OPENROUTER_API_KEY is not read.
+Keys, first set wins: ROUNDFIX_OPENROUTER_JUDGE_API_KEY, then the shared
+ROUNDFIX_OPENROUTER_API_KEY (both OpenRouter), then ROUNDFIX_TYPESAFE_API_KEY
+(TypeSafe directly). The generic OPENROUTER_API_KEY is not read. The summary
+names the variable used, never its value.
 The monthly ceiling is jev.monthly_ceiling_usd in User Config, US$5 by default,
 across both transports. Every request is
 recorded in the Judge Log: <home>/.roundfix/judge/<YYYY-MM>.jsonl (UTC month).
@@ -127,9 +129,13 @@ func runSpecJudgeCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return fail(err)
 	}
 	keys := make(map[string]string)
+	allowed := make(map[string]bool)
+	for _, variable := range questions.KeyVariables() {
+		allowed[variable] = true
+	}
 	for _, entry := range environment.environ {
 		name, value, _ := strings.Cut(entry, "=")
-		if name == "ROUNDFIX_OPENROUTER_API_KEY" || name == "ROUNDFIX_TYPESAFE_API_KEY" {
+		if allowed[name] {
 			keys[name] = value
 		}
 	}
@@ -192,7 +198,7 @@ func renderSpecJudgeText(report judge.Report) string {
 		fmt.Fprintf(&out, "Judge: skipped: %s; %d judgment(s) not asked\n", *report.Skipped, skipped)
 		return out.String()
 	}
-	fmt.Fprintf(&out, "Judge: %d advisory, %d suggested, %d clear, %d skipped; %d call(s), %d input tokens, US$%.4f; month US$%.4f of US$%.2f; model %s via %s", advisory, suggested, clear, skipped, report.Calls, report.InputTokens, report.CostUSD, report.MonthCostUSD, report.MonthCeilingUSD, report.Model, *report.Transport)
+	fmt.Fprintf(&out, "Judge: %d advisory, %d suggested, %d clear, %d skipped; %d call(s), %d input tokens, US$%.4f; month US$%.4f of US$%.2f; model %s via %s on %s", advisory, suggested, clear, skipped, report.Calls, report.InputTokens, report.CostUSD, report.MonthCostUSD, report.MonthCeilingUSD, report.Model, *report.Transport, *report.KeyVariable)
 	if report.Stopped != nil {
 		fmt.Fprintf(&out, "; stopped: %s", *report.Stopped)
 	}

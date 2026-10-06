@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0234-an-openrouter-key-per-stage
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

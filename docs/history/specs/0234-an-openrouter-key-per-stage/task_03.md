@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0234-an-openrouter-key-per-stage
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -77,3 +77,84 @@ named here.
 - `_prd.md` → Prerequisites; Goals; User Stories 1, 2, 4; Core Features 2, 4; Success Metric 3; Success Metric 5
 - `_techspec.md` → Invariants 12, 13; Data Models; API Contract 4; Testing Approach; Build Order 3; Risks & Considerations
 - ADR-0239; ADR-0235
+
+## Result
+
+Implemented the Task 03 slice for Daemon Verification. Task status, the
+authored Verification commands, and the Subtasks/Acceptance checkboxes remain
+Daemon-owned. No commit, push or Pull Request was made.
+
+Spec 0233's helper `OpenRouterImplementKey` in `internal/config/light_tier.go`
+now takes the command environ and returns exactly
+`openrouterkey.Select(environ, openrouterkey.StageImplement)`, so the
+implementation stage reads `ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY` first and
+the shared `ROUNDFIX_OPENROUTER_API_KEY` second. The helper no longer names the
+shared variable itself. `implementLightTierPlan` passes `environment.environ`
+straight to it; when neither variable is set it keeps the stage's preferred
+variable name so the existing no-key skip still names a real variable. Every
+place that hands OpenCode the key (`Plan.KeyVariable` ->
+`RuntimeSpec.OpenRouterKeyVariable` -> `lightSessionEnvironment`) and the
+ceiling check in `applyLightTier` use that one selected variable.
+
+`lighttier.SpendLine` gained `key_variable`, and `recordLightSpend` writes
+`owner.lightPlan.KeyVariable` into each record. No record carries a key value,
+and records written before this change still parse and still sum toward the
+ceiling.
+
+Acceptance-criterion evidence:
+
+- **Both variables set: implementation key used and recorded:**
+  `TestOpenModelImplementationPrefersTheImplementStageKey` (both OpenRouter
+  variables and the generic one set to different sentinels) selects
+  `ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY` and builds OpenCode's inline
+  configuration with only `{env:ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY}`; the
+  generic `OPENROUTER_API_KEY` is removed and neither the shared variable nor
+  a sentinel value appears.
+- **Shared fallback and no key:** `TestOpenModelImplementationFallsBackToTheSharedKey`
+  selects and configures the shared variable when it is the only Roundfix key,
+  and selects no variable when only the generic `OPENROUTER_API_KEY` is set.
+  `TestOpenModelImplementationSpendRecordNamesItsKeyVariable` writes a record
+  with `key_variable` and neither sentinel, and proves a pre-change record
+  without the field still parses and still counts.
+- **Every reader selects through the stage list:** a non-test file outside the
+  key package calls `openrouterkey.Select(..., openrouterkey.StageImplement)`
+  (`internal/config/light_tier.go`); no non-test reader names the shared key for
+  this stage.
+
+Focused checks (all with `GOCACHE=/private/tmp/roundfix-0234-task03-gocache`),
+run directly rather than through the declared Verification commands:
+
+- `go build ./...`: exit 0.
+- `go test -count=1 -v -run '^TestOpenModelImplementation' ./internal/agent
+  ./internal/lighttier`: the three named tests each printed
+  `--- PASS: ...`; `ok` for both packages.
+- `go test -count=1 ./internal/config`: exit 0, 558 passed.
+- `go test -count=1 ./internal/agent ./internal/lighttier`: exit 0, 553
+  passed.
+- `go test -count=1 -run 'TestImplement' ./internal/cli`: 59 passed, including
+  the updated `TestImplementBuildsTheLightTierPlan` (its no-key warning now
+  names the implementation variable).
+- `go test -count=1 ./internal/daemon`: 567 passed, including
+  `TestLightTierRecordsSpend` and the skip-warning cases.
+- `gofmt -l` on every changed Go file: no output.
+
+The declared Verification commands were not run. Files changed beyond the
+helper and record include `internal/config/light_tier_test.go`,
+`internal/agent/light_session_test.go`, `internal/cli/implement_light_tier_test.go`
+and `internal/daemon/light_tier_test.go`, all adapting to the helper's new
+environ parameter or adding the required tests. No `CONTEXT.md`, `CHANGELOG.md`,
+model selection, ceiling value or sum changed.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/agent/light_session_test.go`
+- `internal/cli/implement.go`
+- `internal/cli/implement_light_tier_test.go`
+- `internal/config/light_tier.go`
+- `internal/config/light_tier_test.go`
+- `internal/daemon/agent_session_owner.go`
+- `internal/daemon/light_tier_test.go`
+- `internal/lighttier/spend_log.go`
+- `internal/lighttier/spend_log_test.go`

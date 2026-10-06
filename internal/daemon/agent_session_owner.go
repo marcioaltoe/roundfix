@@ -917,6 +917,7 @@ func (owner *agentSessionOwner) recordLightSpend(req agent.ExecuteRequest, resul
 	err := lighttier.AppendSpend(owner.lightPlan.HomeDir, owner.engine.deps.Now(), lighttier.SpendLine{
 		Repository: owner.lightPlan.Repository, RunID: owner.scope.RunID, Spec: owner.scope.Spec, Task: owner.scope.ID,
 		Session: req.Session.Name, Model: req.Runtime.Model, CostUSD: cost, CostSource: source,
+		KeyVariable: owner.lightPlan.KeyVariable,
 	})
 	if err != nil {
 		fmt.Fprintf(owner.engine.deps.Progress, "roundfix: warning: Light Spend Log not recorded for Task %s: %v\n", owner.scope.ID, err)

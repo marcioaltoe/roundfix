@@ -38,10 +38,15 @@ schema is `roundfix/spec-judge/v1`. An advisory asks the author to correct the
 artifact or explain why the text stands. A skipped result proves neither a
 failure nor a clean result.
 
-The command reads `ROUNDFIX_OPENROUTER_API_KEY` for OpenRouter first, then
-`ROUNDFIX_TYPESAFE_API_KEY` for TypeSafe directly when the OpenRouter key is
-absent. It does not read the generic `OPENROUTER_API_KEY`, so Roundfix's Jev
-cost stays on its own key. Each response's versioned model ID is recorded;
+Keys, first set wins: `ROUNDFIX_OPENROUTER_JUDGE_API_KEY`, then the shared
+`ROUNDFIX_OPENROUTER_API_KEY` (both OpenRouter), then
+`ROUNDFIX_TYPESAFE_API_KEY` for TypeSafe directly. Empty values count as unset.
+The shared key keeps existing setups working when the judge key is absent.
+The generic `OPENROUTER_API_KEY` is never read. The text summary names the
+selected variable with `via <transport> on <variable>`; the JSON report and
+every Judge Log line name it in `key_variable`, never by value. Without a
+key, JSON has `key_variable: null` and the skip names the judge key first.
+Each response's versioned model ID is recorded;
 thresholds apply only to the pinned Jev 1.13 model family.
 
 Every request appends its answer, model, transport, and cost to the Judge Log

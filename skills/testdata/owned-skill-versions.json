@@ -261,6 +261,14 @@
       {
         "version": "0.1.35",
         "digest": "eaee59686c1d1c08ccfa9dc39bde09e6590f6f73b652f0c403f049664a1b3052"
+      },
+      {
+        "version": "0.1.36",
+        "digest": "ef5583f6f9fb92260cd557d4327a82bec6d3bc26a1753556add81f95f3226bc1"
+      },
+      {
+        "version": "0.1.37",
+        "digest": "3ca57f552b3dab57df9aba9c6fdc0cc29cebc7c641de03a0fd35a9c4ed407b20"
       }
     ],
     "setup-context-driven": [
@@ -307,6 +315,10 @@
       {
         "version": "0.0.6",
         "digest": "e42fe9c807087a91a74b7dd044d3fc0018a2f427ea86d0813e70aa88f5506e99"
+      },
+      {
+        "version": "0.0.7",
+        "digest": "7bf72eb662f03e360447efa31a8769b0938ac81563e1f0a5d52e66d6c042dc8f"
       }
     ],
     "write-tasks": [
@@ -359,6 +371,10 @@
       {
         "version": "0.0.6",
         "digest": "e150220e1c331a593c9b4700ceff140287bf8afe6747b32f19c26b8299b9856c"
+      },
+      {
+        "version": "0.0.7",
+        "digest": "f1938fb49592af6d5217c4644c314a6c158f5cd560226df844b6c9a426362285"
       }
     ]
   }

@@ -88,6 +88,56 @@ func TestEnvironmentReadinessNamesAMissingPreloadAndNeverAKeyValue(t *testing.T)
 	}
 }
 
+func TestEnvironmentReadinessListsEachStageKeyByName(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		environ []string
+		want    string
+	}{
+		{
+			name: "stage keys",
+			environ: []string{
+				"ROUNDFIX_OPENROUTER_JUDGE_API_KEY=judge-sentinel",
+				"ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY=implement-sentinel",
+			},
+			want: "spec judge keys: ROUNDFIX_OPENROUTER_JUDGE_API_KEY set, ROUNDFIX_OPENROUTER_API_KEY not set, ROUNDFIX_TYPESAFE_API_KEY not set; implementation keys: ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY set, ROUNDFIX_OPENROUTER_API_KEY not set",
+		},
+		{
+			name:    "generic key ignored",
+			environ: []string{"OPENROUTER_API_KEY=generic-sentinel"},
+			want:    "spec judge keys: ROUNDFIX_OPENROUTER_JUDGE_API_KEY not set, ROUNDFIX_OPENROUTER_API_KEY not set, ROUNDFIX_TYPESAFE_API_KEY not set; implementation keys: ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY not set, ROUNDFIX_OPENROUTER_API_KEY not set",
+		},
+		{
+			name: "last entry wins",
+			environ: []string{
+				"ROUNDFIX_OPENROUTER_JUDGE_API_KEY=judge-sentinel",
+				"ROUNDFIX_OPENROUTER_JUDGE_API_KEY=",
+				"ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY=implement-sentinel",
+				"ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY=",
+				"ROUNDFIX_OPENROUTER_API_KEY=",
+				"ROUNDFIX_OPENROUTER_API_KEY=shared-sentinel",
+			},
+			want: "spec judge keys: ROUNDFIX_OPENROUTER_JUDGE_API_KEY not set, ROUNDFIX_OPENROUTER_API_KEY set, ROUNDFIX_TYPESAFE_API_KEY not set; implementation keys: ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY not set, ROUNDFIX_OPENROUTER_API_KEY set",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			deps := scriptedReadiness(t, nil, "")
+			deps.environ = tc.environ
+			line := environmentReadiness(deps)
+			if line.Status != CheckStatusOK || line.Detail != tc.want {
+				t.Fatalf("environment status=%s detail=%q, want ok and %q", line.Status, line.Detail, tc.want)
+			}
+			code, out, stderr := doctorWithReadiness(t, []CheckResult{line})
+			if code != exitOK || stderr != "" || !strings.Contains(out, "environment: ok ("+tc.want+")") {
+				t.Fatalf("Doctor exit=%d stdout=%q stderr=%q", code, out, stderr)
+			}
+			if strings.Contains(out+stderr, "sentinel") {
+				t.Fatal("key value rendered")
+			}
+		})
+	}
+}
+
 func TestDoctorPrintsTheFiveReadinessLines(t *testing.T) {
 	root := t.TempDir()
 	writeReadinessManifest(t, root)
@@ -115,7 +165,7 @@ func TestDoctorPrintsTheFiveReadinessLines(t *testing.T) {
 		"git: failed (" + readinessGitMinimumVersion + " >= 2.23.0; DR-GIT-IDENTITY: user.email is not set for this repository; next: git config user.email <address>)",
 		"remote: ok (origin: github.com/owner/repository; reachable)",
 		"DR-TOOL-MISSING: rtk is not on PATH, needed by Setup Manifest verification.gate, Setup Manifest verification.incremental; next: install rtk, or change the command that names it)",
-		`environment: warn (DR-NODE-PRELOAD-MISSING: NODE_OPTIONS preload "/missing.cjs" does not exist; spec judge keys: ROUNDFIX_OPENROUTER_API_KEY not set, ROUNDFIX_TYPESAFE_API_KEY not set; next: remove the preload from NODE_OPTIONS where your shell sets it)`,
+		`environment: warn (DR-NODE-PRELOAD-MISSING: NODE_OPTIONS preload "/missing.cjs" does not exist; spec judge keys: ROUNDFIX_OPENROUTER_JUDGE_API_KEY not set, ROUNDFIX_OPENROUTER_API_KEY not set, ROUNDFIX_TYPESAFE_API_KEY not set; implementation keys: ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY not set, ROUNDFIX_OPENROUTER_API_KEY not set; next: remove the preload from NODE_OPTIONS where your shell sets it)`,
 	} {
 		if !strings.Contains(out, phrase) {
 			t.Fatalf("Doctor missing transcript phrase %q", phrase)

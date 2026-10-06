@@ -8,6 +8,8 @@ import (
 	"unicode"
 
 	"gopkg.in/yaml.v3"
+
+	"roundfix/internal/openrouterkey"
 )
 
 const DefaultLightModel = "deepseek/deepseek-v4.1-flash"
@@ -25,9 +27,8 @@ type openRouterOverlay struct {
 }
 
 // OpenRouterImplementKey names the implementation key without exposing its value.
-func OpenRouterImplementKey(getenv func(string) string) (variable string, present bool) {
-	const name = "ROUNDFIX_OPENROUTER_API_KEY"
-	return name, getenv(name) != ""
+func OpenRouterImplementKey(environ []string) (variable string, present bool) {
+	return openrouterkey.Select(environ, openrouterkey.StageImplement)
 }
 
 func prepareLightTierConfig(document *yaml.Node, warnings *configWarnings, source ProfileSource) error {

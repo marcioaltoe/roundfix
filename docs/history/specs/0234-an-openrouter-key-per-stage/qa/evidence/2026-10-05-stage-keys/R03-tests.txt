@@ -1,0 +1,20 @@
+command: go test -count=1 -v -run ^TestOpenModelImplementation(PrefersTheImplementStageKey|FallsBackToTheSharedKey|SpendRecordNamesItsKeyVariable)$ ./internal/agent ./internal/config ./internal/daemon
+exit: 0
+=== RUN   TestOpenModelImplementationPrefersTheImplementStageKey
+=== PAUSE TestOpenModelImplementationPrefersTheImplementStageKey
+=== RUN   TestOpenModelImplementationFallsBackToTheSharedKey
+=== PAUSE TestOpenModelImplementationFallsBackToTheSharedKey
+=== CONT  TestOpenModelImplementationPrefersTheImplementStageKey
+=== CONT  TestOpenModelImplementationFallsBackToTheSharedKey
+--- PASS: TestOpenModelImplementationPrefersTheImplementStageKey (0.00s)
+--- PASS: TestOpenModelImplementationFallsBackToTheSharedKey (0.00s)
+PASS
+suiteguard: guard cost: measured 9279 paths; fingerprint took 325.268417ms before and 259.657333ms after
+ok  	roundfix/internal/agent	0.903s
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/config	0.200s [no tests to run]
+testing: warning: no tests to run
+PASS
+suiteguard: guard cost: measured 9279 paths; fingerprint took 311.607667ms before and 243.49925ms after
+ok  	roundfix/internal/daemon	0.820s [no tests to run]

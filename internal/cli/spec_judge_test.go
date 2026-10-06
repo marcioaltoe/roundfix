@@ -19,6 +19,7 @@ import (
 
 	"roundfix/internal/gittest"
 	"roundfix/internal/judge"
+	"roundfix/internal/openrouterkey"
 )
 
 type specJudgeTransport struct {
@@ -89,7 +90,7 @@ func (f *specJudgeTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 
 const specJudgeEnglish = "The author reads the evidence for the work and keeps the rule in the documentation. "
 const specJudgeAdvisory = "advisory citation-support docs/specs/0300-example/_techspec.md:31 ADR-0035 says_nothing at confidence 0.93: The cited decision keeps every Run Event for ninety days after the Run ends.\n"
-const specJudgeNoKey = "Judge: skipped: ROUNDFIX_OPENROUTER_API_KEY is not set (nor ROUNDFIX_TYPESAFE_API_KEY); 5 judgment(s) not asked\n"
+const specJudgeNoKey = "Judge: skipped: ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set (nor ROUNDFIX_OPENROUTER_API_KEY, nor ROUNDFIX_TYPESAFE_API_KEY); 5 judgment(s) not asked\n"
 
 func specJudgeFixture(t *testing.T, keyVariable string) (commandEnvironment, *specJudgeTransport) {
 	t.Helper()
@@ -145,7 +146,7 @@ func specJudgeRun(t *testing.T, env commandEnvironment, args []string, wantOut, 
 
 func TestSpecJudgeReportsAdvisoryJudgments(t *testing.T) {
 	env, fake := specJudgeFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
-	specJudgeRun(t, env, []string{"0300-example", "--stage", "techspec"}, specJudgeAdvisory+fmt.Sprintf("advisory goal-mechanism docs/specs/0300-example/_techspec.md:74 Goal 2 → The widget cache: P(delivers) 0.12\nJudge: 2 advisory, 0 suggested, 3 clear, 0 skipped; 5 call(s), 4210 input tokens, US$0.0002; month US$0.0002 of US$%.2f; model jev-1.13 via openrouter\n", specJudgeCeiling(t)), "", 0)
+	specJudgeRun(t, env, []string{"0300-example", "--stage", "techspec"}, specJudgeAdvisory+fmt.Sprintf("advisory goal-mechanism docs/specs/0300-example/_techspec.md:74 Goal 2 → The widget cache: P(delivers) 0.12\nJudge: 2 advisory, 0 suggested, 3 clear, 0 skipped; 5 call(s), 4210 input tokens, US$0.0002; month US$0.0002 of US$%.2f; model jev-1.13 via openrouter on ROUNDFIX_OPENROUTER_API_KEY\n", specJudgeCeiling(t)), "", 0)
 	if fake.calls != 5 {
 		t.Fatalf("calls=%d", fake.calls)
 	}
@@ -182,13 +183,13 @@ func TestSpecJudgeSkipsAtTheMonthlyCeiling(t *testing.T) {
 func TestSpecJudgeSkipsANonEnglishSpec(t *testing.T) {
 	env, fake := specJudgeFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
 	fake.host = ""
-	specJudgeRun(t, env, []string{"0301-exemplo", "--stage", "prd"}, fmt.Sprintf("skipped docs/specs/0301-exemplo/_prd.md: not English\nJudge: 0 advisory, 0 suggested, 0 clear, 0 skipped; 0 call(s), 0 input tokens, US$0.0000; month US$0.0000 of US$%.2f; model jev-1.13 via openrouter\n", specJudgeCeiling(t)), "", 0)
+	specJudgeRun(t, env, []string{"0301-exemplo", "--stage", "prd"}, fmt.Sprintf("skipped docs/specs/0301-exemplo/_prd.md: not English\nJudge: 0 advisory, 0 suggested, 0 clear, 0 skipped; 0 call(s), 0 input tokens, US$0.0000; month US$0.0000 of US$%.2f; model jev-1.13 via openrouter on ROUNDFIX_OPENROUTER_API_KEY\n", specJudgeCeiling(t)), "", 0)
 }
 
 func TestSpecJudgeStopsWhenTheServiceFails(t *testing.T) {
 	env, fake := specJudgeFixture(t, "ROUNDFIX_TYPESAFE_API_KEY")
 	fake.failSecond = true
-	specJudgeRun(t, env, []string{"0300-example", "--stage", "techspec"}, specJudgeAdvisory+fmt.Sprintf("Judge: 1 advisory, 0 suggested, 0 clear, 4 skipped; 2 call(s), 842 input tokens, US$0.0000; month US$0.0000 of US$%.2f; model jev-1.13 via typesafe; stopped: service unavailable (HTTP 503)\n", specJudgeCeiling(t)), "", 0)
+	specJudgeRun(t, env, []string{"0300-example", "--stage", "techspec"}, specJudgeAdvisory+fmt.Sprintf("Judge: 1 advisory, 0 suggested, 0 clear, 4 skipped; 2 call(s), 842 input tokens, US$0.0000; month US$0.0000 of US$%.2f; model jev-1.13 via typesafe on ROUNDFIX_TYPESAFE_API_KEY; stopped: service unavailable (HTTP 503)\n", specJudgeCeiling(t)), "", 0)
 	if fake.calls != 2 {
 		t.Fatalf("calls after stop=%d", fake.calls)
 	}
@@ -230,7 +231,7 @@ func TestSpecJudgePrintsJSON(t *testing.T) {
 	if e := json.Unmarshal(out.Bytes(), &doc); e != nil {
 		t.Fatal(e)
 	}
-	fields := strings.Fields("schema spec model transport skipped stopped artifacts_skipped judgments calls input_tokens cost_usd month_cost_usd month_ceiling_usd")
+	fields := strings.Fields("schema spec model transport key_variable skipped stopped artifacts_skipped judgments calls input_tokens cost_usd month_cost_usd month_ceiling_usd")
 	if len(doc) != len(fields) {
 		t.Fatalf("fields=%v", doc)
 	}
@@ -306,7 +307,7 @@ func TestSpecJudgePrintsIndividualSkip(t *testing.T) {
 	env, fake := specJudgeFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
 	fake.host = ""
 	mustWrite(t, filepath.Join(env.workDir, "docs/specs/0300-example/_prd.md"), specJudgeEnglish+"\n\nADR-0999 keeps every Run Event for ninety days after the Run ends.\n")
-	specJudgeRun(t, env, []string{"0300-example", "--stage=prd"}, fmt.Sprintf("skipped citation-support docs/specs/0300-example/_prd.md:3 ADR-0999: cited decision is not an accepted regular ADR\nJudge: 0 advisory, 0 suggested, 0 clear, 1 skipped; 0 call(s), 0 input tokens, US$0.0000; month US$0.0000 of US$%.2f; model jev-1.13 via openrouter\n", specJudgeCeiling(t)), "", 0)
+	specJudgeRun(t, env, []string{"0300-example", "--stage=prd"}, fmt.Sprintf("skipped citation-support docs/specs/0300-example/_prd.md:3 ADR-0999: cited decision is not an accepted regular ADR\nJudge: 0 advisory, 0 suggested, 0 clear, 1 skipped; 0 call(s), 0 input tokens, US$0.0000; month US$0.0000 of US$%.2f; model jev-1.13 via openrouter on ROUNDFIX_OPENROUTER_API_KEY\n", specJudgeCeiling(t)), "", 0)
 }
 
 func TestSpecJudgeJSONSkipHasNullTransport(t *testing.T) {
@@ -317,7 +318,7 @@ func TestSpecJudgeJSONSkipHasNullTransport(t *testing.T) {
 	if err := json.Unmarshal(out.Bytes(), &doc); err != nil {
 		t.Fatal(err)
 	}
-	if code != 0 || stderr.Len() != 0 || string(doc["transport"]) != "null" || string(doc["stopped"]) != "null" || string(doc["artifacts_skipped"]) != "[]" {
+	if code != 0 || stderr.Len() != 0 || string(doc["transport"]) != "null" || string(doc["key_variable"]) != "null" || string(doc["stopped"]) != "null" || string(doc["artifacts_skipped"]) != "[]" {
 		t.Fatalf("exit=%d stdout=%s stderr=%s", code, &out, &stderr)
 	}
 }
@@ -330,7 +331,7 @@ const specJudgeGroupingSuggestion = "suggested source-grouping " + specJudgeGrou
 
 func specJudgeGroupingSummary(t *testing.T) string {
 	t.Helper()
-	return fmt.Sprintf("Judge: 0 advisory, 1 suggested, 1 clear, 0 skipped; 2 call(s), 1840 input tokens, US$0.0001; month US$0.0001 of US$%.2f; model jev-1.13 via openrouter\n", specJudgeCeiling(t))
+	return fmt.Sprintf("Judge: 0 advisory, 1 suggested, 1 clear, 0 skipped; 2 call(s), 1840 input tokens, US$0.0001; month US$0.0001 of US$%.2f; model jev-1.13 via openrouter on ROUNDFIX_OPENROUTER_API_KEY\n", specJudgeCeiling(t))
 }
 
 type specJudgeGroupingTransport struct {
@@ -418,7 +419,7 @@ func TestSpecJudgeSkipsANonEnglishSource(t *testing.T) {
 
 func TestSpecJudgeCountsGroupingJudgmentsNotAsked(t *testing.T) {
 	env, fake := specJudgeGroupingFixture(t, "OPENROUTER_API_KEY")
-	specJudgeRun(t, env, []string{"0300-example", "--stage", "prd"}, "Judge: skipped: ROUNDFIX_OPENROUTER_API_KEY is not set (nor ROUNDFIX_TYPESAFE_API_KEY); 2 judgment(s) not asked\n", "", 0)
+	specJudgeRun(t, env, []string{"0300-example", "--stage", "prd"}, "Judge: skipped: ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set (nor ROUNDFIX_OPENROUTER_API_KEY, nor ROUNDFIX_TYPESAFE_API_KEY); 2 judgment(s) not asked\n", "", 0)
 	if fake.calls != 0 {
 		t.Fatalf("calls without a command key=%d", fake.calls)
 	}
@@ -435,7 +436,7 @@ func TestSpecJudgePrintsGroupingJSON(t *testing.T) {
 	if err := json.Unmarshal(out.Bytes(), &doc); err != nil {
 		t.Fatal(err)
 	}
-	fields := strings.Fields("schema spec model transport skipped stopped artifacts_skipped judgments calls input_tokens cost_usd month_cost_usd month_ceiling_usd")
+	fields := strings.Fields("schema spec model transport key_variable skipped stopped artifacts_skipped judgments calls input_tokens cost_usd month_cost_usd month_ceiling_usd")
 	if len(doc) != len(fields) {
 		t.Fatalf("top-level fields=%v", doc)
 	}
@@ -499,7 +500,7 @@ func TestSpecJudgePrintsSkippedGroupingPair(t *testing.T) {
 	reason := "answered by jev-1.14.0, thresholds belong to jev-1.13"
 	want := "skipped source-grouping " + specJudgeGroupingAnchor + " → " + specJudgeGroupingCandidate + ": " + reason + "\n" +
 		"skipped source-grouping " + specJudgeGroupingAnchor + " → docs/backlog/2026-09-29-color-the-tui-header.md: " + reason + "\n" +
-		fmt.Sprintf("Judge: 0 advisory, 0 suggested, 0 clear, 2 skipped; 2 call(s), 1840 input tokens, US$0.0001; month US$0.0001 of US$%.2f; model jev-1.13 via openrouter\n", specJudgeCeiling(t))
+		fmt.Sprintf("Judge: 0 advisory, 0 suggested, 0 clear, 2 skipped; 2 call(s), 1840 input tokens, US$0.0001; month US$0.0001 of US$%.2f; model jev-1.13 via openrouter on ROUNDFIX_OPENROUTER_API_KEY\n", specJudgeCeiling(t))
 	specJudgeRun(t, env, []string{"0300-example", "--stage=prd"}, want, "", 0)
 }
 
@@ -570,5 +571,45 @@ func TestSpecJudgeRefusesAnInvalidUserConfigCeiling(t *testing.T) {
 	specJudgeRun(t, env, []string{"0300-example"}, "", fmt.Sprintf("roundfix: spec judge failed: parse config %q: jev.monthly_ceiling_usd must be a finite number greater than 0\nRun 'roundfix spec judge --help' for usage.\n", path), 2)
 	if fake.calls != 0 {
 		t.Fatal("invalid config sent a request")
+	}
+}
+
+func TestSpecJudgeNamesTheKeyVariableItUsed(t *testing.T) {
+	for _, variable := range []string{openrouterkey.Judge, openrouterkey.Shared} {
+		t.Run(variable, func(t *testing.T) {
+			env, fake := specJudgeFixture(t, openrouterkey.Shared)
+			env.environ = []string{openrouterkey.Shared + "=shared-command-fake"}
+			fake.key = "shared-command-fake"
+			if variable == openrouterkey.Judge {
+				env.environ = append(env.environ, openrouterkey.Judge+"=judge-command-fake")
+				fake.key = "judge-command-fake"
+			}
+			var out, stderr bytes.Buffer
+			code := runWithContext(context.Background(), []string{"spec", "judge", "0300-example", "--stage=techspec"}, &out, &stderr, env)
+			if code != 0 || stderr.Len() != 0 || fake.calls == 0 || !strings.Contains(out.String(), "via openrouter on "+variable+"\n") {
+				t.Fatalf("exit=%d stdout=%s stderr=%s", code, &out, &stderr)
+			}
+			if strings.Contains(out.String(), "command-fake") {
+				t.Fatal("key in text output")
+			}
+			out.Reset()
+			code = runWithContext(context.Background(), []string{"spec", "judge", "0300-example", "--stage=techspec", "--format=json"}, &out, &stderr, env)
+			var report judge.Report
+			if err := json.Unmarshal(out.Bytes(), &report); err != nil {
+				t.Fatal(err)
+			}
+			if code != 0 || stderr.Len() != 0 || report.KeyVariable == nil || *report.KeyVariable != variable || strings.Contains(out.String(), "command-fake") {
+				t.Fatalf("exit=%d JSON=%s stderr=%s", code, &out, &stderr)
+			}
+		})
+	}
+}
+func TestSpecJudgeSkipNamesTheJudgeKeyFirst(t *testing.T) {
+	env, fake := specJudgeFixture(t, "")
+	env.environ = []string{"OPENROUTER_API_KEY=ignored", "TYPESAFE_API_KEY=ignored", openrouterkey.Implement + "=ignored", openrouterkey.Judge + "="}
+	mustWrite(t, filepath.Join(env.workDir, "docs/specs/0300-example/_prd.md"), specJudgeEnglish+"\n\nADR-0035 keeps every Run Event for ninety days after the Run ends.\n")
+	specJudgeRun(t, env, []string{"0300-example", "--stage=prd"}, "Judge: skipped: ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set (nor ROUNDFIX_OPENROUTER_API_KEY, nor ROUNDFIX_TYPESAFE_API_KEY); 1 judgment(s) not asked\n", "", 0)
+	if fake.calls != 0 {
+		t.Fatal("request without a supported key")
 	}
 }

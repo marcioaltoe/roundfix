@@ -11,13 +11,15 @@ import (
 	"time"
 )
 
-func selectTransport(q Questions, keys map[string]string) (Transport, string, bool) {
+func selectTransport(q Questions, keys map[string]string) (Transport, string, string, bool) {
 	for _, t := range q.Transports {
-		if key := keys[t.KeyVariable]; key != "" {
-			return t, key, true
+		for _, variable := range t.KeyVariables() {
+			if key := keys[variable]; key != "" {
+				return t, variable, key, true
+			}
 		}
 	}
-	return Transport{}, "", false
+	return Transport{}, "", "", false
 }
 func (q Questions) pinned(model string) bool { return q.AcceptedModel.MatchString(model) }
 

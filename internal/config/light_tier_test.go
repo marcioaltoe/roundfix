@@ -92,20 +92,22 @@ func TestLightTierUserConfig(t *testing.T) {
 
 func TestOpenRouterImplementKeyNamesOneVariable(t *testing.T) {
 	for _, tc := range []struct {
-		name    string
-		env     map[string]string
-		present bool
+		name     string
+		environ  []string
+		variable string
+		present  bool
 	}{
-		{"set", map[string]string{"ROUNDFIX_OPENROUTER_API_KEY": "fake"}, true},
-		{"empty", map[string]string{"ROUNDFIX_OPENROUTER_API_KEY": ""}, false},
-		{"absent", nil, false},
-		{"generic only", map[string]string{"OPENROUTER_API_KEY": "fake"}, false},
+		{"implement first", []string{"ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY=fake", "ROUNDFIX_OPENROUTER_API_KEY=shared"}, "ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY", true},
+		{"shared fallback", []string{"ROUNDFIX_OPENROUTER_API_KEY=shared"}, "ROUNDFIX_OPENROUTER_API_KEY", true},
+		{"empty implement falls through", []string{"ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY=", "ROUNDFIX_OPENROUTER_API_KEY=shared"}, "ROUNDFIX_OPENROUTER_API_KEY", true},
+		{"empty shared", []string{"ROUNDFIX_OPENROUTER_API_KEY="}, "", false},
+		{"absent", nil, "", false},
+		{"generic only", []string{"OPENROUTER_API_KEY=fake"}, "", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			var lookedUp []string
-			variable, present := OpenRouterImplementKey(func(key string) string { lookedUp = append(lookedUp, key); return tc.env[key] })
-			if variable != "ROUNDFIX_OPENROUTER_API_KEY" || present != tc.present || !slices.Equal(lookedUp, []string{variable}) {
-				t.Fatalf("variable=%q present=%t lookedUp=%v", variable, present, lookedUp)
+			variable, present := OpenRouterImplementKey(tc.environ)
+			if variable != tc.variable || present != tc.present {
+				t.Fatalf("variable=%q present=%t", variable, present)
 			}
 		})
 	}

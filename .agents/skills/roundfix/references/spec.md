@@ -78,9 +78,13 @@ question; its recall is low, so no suggestion does not prove no source fits.
 An unknown stage fails with `unsupported --stage "<value>"; use prd, techspec
 or tasks`.
 
-Set `ROUNDFIX_OPENROUTER_API_KEY` for OpenRouter first, or
-`ROUNDFIX_TYPESAFE_API_KEY` for TypeSafe directly when the first key is
-absent. The generic `OPENROUTER_API_KEY` is not read. Every request is
+Set `ROUNDFIX_OPENROUTER_JUDGE_API_KEY` for OpenRouter first; the shared
+`ROUNDFIX_OPENROUTER_API_KEY` is its fallback, followed by
+`ROUNDFIX_TYPESAFE_API_KEY` for TypeSafe directly. Empty values count as unset.
+The generic `OPENROUTER_API_KEY` is never read. The text summary ends
+`via <transport> on <variable>`; JSON and every Judge Log line carry the
+selected name in `key_variable`, never its value. Without a key, JSON has
+`key_variable: null` and the skip names the judge key first. Every request is
 recorded in `<home>/.roundfix/judge/<YYYY-MM>.jsonl` (UTC month); the monthly
 ceiling is `jev.monthly_ceiling_usd` in User Config, US$5 by default, across
 both transports and every repository using that Roundfix Home. Missing keys,

@@ -136,6 +136,28 @@ this change.
 Past `router-prompt` lines written before the retirement stay in the Judge Log
 and count toward their month's ceiling.
 
+## OpenRouter keys per stage
+
+Each stage uses its first non-empty variable in this preference order:
+
+- Spec judge keys: `ROUNDFIX_OPENROUTER_JUDGE_API_KEY`,
+  `ROUNDFIX_OPENROUTER_API_KEY`, then `ROUNDFIX_TYPESAFE_API_KEY` for TypeSafe
+  directly.
+- Open-model implementation keys through OpenCode:
+  `ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY`, then `ROUNDFIX_OPENROUTER_API_KEY`.
+
+Both stages fall back to the shared `ROUNDFIX_OPENROUTER_API_KEY` when their
+stage key is unset. With only the shared key set, both stages bill to it as
+before; separate stage keys let OpenRouter's activity export distinguish
+their costs. The generic `OPENROUTER_API_KEY` is never read.
+
+`roundfix doctor` lists both stages' variables by name as `set` or `not set`
+in that order. The Judge Log and each implementation spend record carry
+`key_variable`, the name of the variable used, never its value. Each stage
+keeps its own ceiling whichever key it reads: `jev.monthly_ceiling_usd` for
+the judge and `openrouter.implement_monthly_ceiling_usd` for implementation.
+A key's own OpenRouter limit remains the hard stop on that key.
+
 ## Light implementation tier
 
 A Task is `light` when its `complexity` is `low`, its `type` is not `qa`, and
@@ -151,8 +173,9 @@ list is a User Config value; an empty list turns the tier off, a model must be
 `<author>/<slug>`, and the subscription rule refuses models that could reach
 OpenAI or Anthropic through OpenRouter.
 
-The light session reads its key through Roundfix's key helper, currently named
-`ROUNDFIX_OPENROUTER_API_KEY`. OpenCode receives only a reference to that
+The light session reads its key through Roundfix's key helper, preferring
+`ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY` and falling back to
+`ROUNDFIX_OPENROUTER_API_KEY`. OpenCode receives only a reference to the selected
 variable, never the key value, and Roundfix removes the generic
 `OPENROUTER_API_KEY`. Every light Task's prompt, the files its agent reads,
 and its Verification diagnostics reach OpenRouter and the selected model's
@@ -169,8 +192,9 @@ tier and uses the category profile.
 The Light Spend Log is one JSONL file per UTC month at
 `<home>/.roundfix/openrouter/implement/<YYYY-MM>.jsonl`. Each line records
 `schema`, `time`, `repository`, `run_id`, `spec`, `task`, `session`, `model`,
-`cost_usd`, and `cost_source` (`opencode` or `unreported`). It contains no
-key, prompt, or diagnostic. A skipped Task prints
+`cost_usd`, `cost_source` (`opencode` or `unreported`), and `key_variable`, the
+selected variable's name. It contains no key value, prompt, or diagnostic.
+A skipped Task prints
 `roundfix: warning: light tier skipped for Task` and names one of the three
 reasons: the key variable is not set, the Light Spend Log could not be read,
 or this month's light spend reached the ceiling.

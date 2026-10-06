@@ -1,0 +1,1808 @@
+diff --git a/.agents/skills/roundfix/SKILL.md b/.agents/skills/roundfix/SKILL.md
+index 129f92fe..05b1ca30 100644
+--- a/.agents/skills/roundfix/SKILL.md
++++ b/.agents/skills/roundfix/SKILL.md
+@@ -4,10 +4,10 @@ description: Use Roundfix to plan releases with the read-only Release Plan Comma
+ metadata:
+   category: code-review
+   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
+-  version: 0.1.35
++  version: 0.1.37
+   author: Marcio Altoé
+   source: https://github.com/marcioaltoe/roundfix
+-version: 0.1.35
++version: 0.1.37
+ ---
+ 
+ # Roundfix
+diff --git a/.agents/skills/roundfix/references/runtime.md b/.agents/skills/roundfix/references/runtime.md
+index 657ec01d..63b5bd48 100644
+--- a/.agents/skills/roundfix/references/runtime.md
++++ b/.agents/skills/roundfix/references/runtime.md
+@@ -11,7 +11,13 @@ Tasks use per-Task Agent Sessions named `roundfix-<run-id>-<task_id>` in their
+ Task Worktrees, and QA uses its own Agent Session after Tasks settle.
+ 
+ Use the Doctor Command, `roundfix doctor`, to diagnose Run readiness without
+-installing dependencies, writing config, or changing files. Doctor runs the
++installing dependencies, writing config, or changing files. The `environment:`
++line lists `spec judge keys` by name in preference order:
++`ROUNDFIX_OPENROUTER_JUDGE_API_KEY`, `ROUNDFIX_OPENROUTER_API_KEY`,
++`ROUNDFIX_TYPESAFE_API_KEY`; then `implementation keys`:
++`ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY`, `ROUNDFIX_OPENROUTER_API_KEY`.
++Each entry is `set` or `not set`, never a key value; both stages fall back
++to the shared key when their stage key is unset. Doctor runs the
+ shared Node.js, minimum-supported acpx, effective adapters, configured Agent
+ Selection Profiles, Repository Skill Set, process residue, storage check, and
+ codex runtime hygiene checks and prints one line per check with status `ok`,
+@@ -160,7 +166,11 @@ retired `roundfix-openrouter` provider. Under the `openrouter` provider it
+ refuses authors `openai` and `anthropic`, router authors `openrouter` and
+ `typesafe`, and `@` presets. The refusal reason is `subscription_only`; a
+ refusal before Agent work activates the configured fallback. Other OpenRouter
+-models stay selectable. `jev.router_min_credit_usd` is a deprecated key.
++models stay selectable. An open model through OpenCode reads
++`ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY` first and the shared
++`ROUNDFIX_OPENROUTER_API_KEY` second; empty values count as unset and the
++generic `OPENROUTER_API_KEY` is never read.
++`jev.router_min_credit_usd` is a deprecated key.
+ 
+ ### Light implementation tier
+ 
+diff --git a/.agents/skills/roundfix/references/spec.md b/.agents/skills/roundfix/references/spec.md
+index 25608778..76271023 100644
+--- a/.agents/skills/roundfix/references/spec.md
++++ b/.agents/skills/roundfix/references/spec.md
+@@ -78,9 +78,13 @@ question; its recall is low, so no suggestion does not prove no source fits.
+ An unknown stage fails with `unsupported --stage "<value>"; use prd, techspec
+ or tasks`.
+ 
+-Set `ROUNDFIX_OPENROUTER_API_KEY` for OpenRouter first, or
+-`ROUNDFIX_TYPESAFE_API_KEY` for TypeSafe directly when the first key is
+-absent. The generic `OPENROUTER_API_KEY` is not read. Every request is
++Set `ROUNDFIX_OPENROUTER_JUDGE_API_KEY` for OpenRouter first; the shared
++`ROUNDFIX_OPENROUTER_API_KEY` is its fallback, followed by
++`ROUNDFIX_TYPESAFE_API_KEY` for TypeSafe directly. Empty values count as unset.
++The generic `OPENROUTER_API_KEY` is never read. The text summary ends
++`via <transport> on <variable>`; JSON and every Judge Log line carry the
++selected name in `key_variable`, never its value. Without a key, JSON has
++`key_variable: null` and the skip names the judge key first. Every request is
+ recorded in `<home>/.roundfix/judge/<YYYY-MM>.jsonl` (UTC month); the monthly
+ ceiling is `jev.monthly_ceiling_usd` in User Config, US$5 by default, across
+ both transports and every repository using that Roundfix Home. Missing keys,
+diff --git a/.agents/skills/write-prd/SKILL.md b/.agents/skills/write-prd/SKILL.md
+index 2c426e6f..633f25b3 100644
+--- a/.agents/skills/write-prd/SKILL.md
++++ b/.agents/skills/write-prd/SKILL.md
+@@ -5,10 +5,10 @@ argument-hint: "<feature description, or nothing after a grilling/brainstorm ses
+ metadata:
+   category: planning
+   tags: [prd, product, requirements, workflow, documentation]
+-  version: 0.0.6
++  version: 0.0.7
+   author: Marcio Altoé
+   source: https://github.com/marcioaltoe/skills
+-version: 0.0.6
++version: 0.0.7
+ ---
+ 
+ # Write PRD
+@@ -246,8 +246,8 @@ raised judgment, answer each raised judgment by correcting the artifact and
+ re-running the checker, or by keeping the text and stating in the report why it
+ stands. The judge is advisory and never a gate. a skipped result is neither a
+ failure nor a clean result, so report the skip reason and continue. Never print,
+-store or ask for either Jev key (`ROUNDFIX_OPENROUTER_API_KEY` or
+-`ROUNDFIX_TYPESAFE_API_KEY`).
++store or ask for any Jev key: `ROUNDFIX_OPENROUTER_JUDGE_API_KEY`,
++`ROUNDFIX_OPENROUTER_API_KEY` or `ROUNDFIX_TYPESAFE_API_KEY`.
+ 
+ ## Anti-patterns
+ 
+diff --git a/.agents/skills/write-techspec/SKILL.md b/.agents/skills/write-techspec/SKILL.md
+index 46aed026..80ed8b3d 100644
+--- a/.agents/skills/write-techspec/SKILL.md
++++ b/.agents/skills/write-techspec/SKILL.md
+@@ -5,10 +5,10 @@ argument-hint: "<spec slug, path to docs/specs/<slug>/_prd.md, or a refactor/bug
+ metadata:
+   category: engineering-design
+   tags: [architecture, documentation, workflow]
+-  version: 0.0.6
++  version: 0.0.7
+   author: Marcio Altoé
+   source: https://github.com/marcioaltoe/skills
+-version: 0.0.6
++version: 0.0.7
+ ---
+ 
+ # Write TechSpec
+@@ -158,8 +158,8 @@ every raised judgment, answer each raised judgment by correcting the artifact
+ and re-running the checker, or by keeping the text and stating in the report
+ why it stands. The judge is advisory and never a gate. a skipped result is
+ neither a failure nor a clean result, so report the skip reason and continue.
+-Never print, store or ask for either Jev key
+-(`ROUNDFIX_OPENROUTER_API_KEY` or `ROUNDFIX_TYPESAFE_API_KEY`).
++Never print, store or ask for any Jev key: `ROUNDFIX_OPENROUTER_JUDGE_API_KEY`,
++`ROUNDFIX_OPENROUTER_API_KEY` or `ROUNDFIX_TYPESAFE_API_KEY`.
+ 
+ ## Anti-patterns
+ 
+diff --git a/docs/specs/0234-an-openrouter-key-per-stage/task_01.md b/docs/specs/0234-an-openrouter-key-per-stage/task_01.md
+index 5fe13b72..05b2d3a5 100644
+--- a/docs/specs/0234-an-openrouter-key-per-stage/task_01.md
++++ b/docs/specs/0234-an-openrouter-key-per-stage/task_01.md
+@@ -1,7 +1,7 @@
+ ---
+ task: task_01
+ spec: 0234-an-openrouter-key-per-stage
+-status: pending
++status: completed
+ type: backend
+ complexity: medium
+ ---
+@@ -121,3 +121,124 @@ Task" of 2026-10-05, which Spec 0233 owns.
+ - `_prd.md` → Goals; User Stories 1, 2, 4; Core Features 1, 3, 4, 6; Success Metric 1; Success Metric 2; Success Metric 5; Acceptance evidence
+ - `_techspec.md` → Interfaces; Invariants 1 to 10; Data Models; API Contract 1; API Contract 2; Surface Transcript 1; Surface Transcript 2; Vocabulary Contract; Testing Approach; Build Order 1
+ - ADR-0239; ADR-0201; ADR-0231; ADR-0189
++
++## Result
++
++Implemented the Task 01 slice for Daemon Verification. Task status and the
++Subtasks and Acceptance Criteria checkboxes remain Daemon-owned.
++
++The new standard-library-only `internal/openrouterkey` package returns fresh
++stage-variable lists and selects a name only. Empty values are unset and the
++last duplicate wins. The judge expands its existing OpenRouter transport to
++the judge list, collects only the declared command-environment variables,
++snapshots every collected key for redaction, and keeps one selected transport
++and variable throughout the run. No endpoint, model, question or ceiling
++changed.
++
++The report and every request's Judge Log record carry `key_variable`; the
++summary names it, and the no-key skip lists the judge key first. The help's
++four key lines match Surface Transcript 2 byte for byte. The guide and skill
++reference describe the order, shared fallback, ignored generic key, and
++variable-only records.
++
++### Acceptance evidence
++
++| Criterion | Implementation and focused evidence |
++| --- | --- |
++| Both OpenRouter keys: only the judge key is sent and named | `TestRunPrefersTheJudgeStageKey` asserts the bearer header and endpoint on both requests, including after the injected key map changes; report and every log row name the judge variable. `TestSpecJudgeNamesTheKeyVariableItUsed` asserts command text and JSON with different fake key values. |
++| Shared-only fallback is sent and named | `TestRunFallsBackToTheSharedKeyAndNamesIt` asserts the shared bearer value, report and every log row. The command test also covers shared-only text and JSON. |
++| No-key transcript and JSON null | `TestSpecJudgeSkipNamesTheJudgeKeyFirst` asserts Surface Transcript 1 through `--stage=prd` with one pending judgment and no requests, even with ignored generic and implementation keys. `TestSpecJudgeJSONSkipHasNullTransport` and `TestJudgeLogNamesTheKeyVariableAndNoKey` assert null `key_variable`. |
++| No key values in records or output | Stage-key tests echo configured fake values in response metadata and service errors, then check raw logs and serialized reports. Command tests inspect text and JSON for their fake values. Redaction uses a snapshot, including the unused shared key. |
++| Guide, skill mirrors and recorded version | Updated the guide and canonical spec reference. Ran the sanctioned sync, version record and digest commands below. Roundfix version is now `0.1.36`, raised and recorded by the generator. Byte comparisons prove both mirrors equal their canonical files. |
++
++`TestVariablesListEachStageKeyBeforeTheSharedKey` also covers unknown stages
++and independent slices. `TestSelectReturnsTheFirstSetVariableByName` covers
++both stages, empty values, duplicate names, malformed entries, values
++containing equals, and ignored generic OpenRouter and TypeSafe names.
++`TestJudgeLogNamesTheKeyVariableAndNoKey` proves ordered deduplication and
++that a historical log row without the new field still contributes US$1.25
++to the ceiling.
++
++### Focused checks and generation
++
++All Go commands used `GOCACHE=/private/tmp/roundfix-0234-gocache`.
++
++- Initial `go test ./internal/openrouterkey`: failed to compile because the
++  new package's symbols did not exist, establishing the pre-change signal.
++- `go test ./internal/openrouterkey ./internal/judge`: exit 0 after the
++  final implementation and test edits. The opt-in live measurement test
++  remained disabled; no test read real credentials or made a live call.
++- `go test ./internal/cli -run 'TestSpecJudge' -skip 'TestSpecJudgeSuggestsModelTier|TestSpecJudgeTasksSkipsWithoutKey'`:
++  exit 0 after the final command-test edit. The two explicit exclusions are
++  the follow-up below, not evidence for a passing full CLI suite.
++- An earlier focused run including all `TestSpecJudge` tests reported those
++  two stale tier goldens and two new-fixture mistakes. The new fixtures were
++  corrected: use TechSpec judgments for real requests and echo only configured
++  secrets in the shared-only case; subsequent focused checks passed.
++- `make skills-sync`: exit 0.
++- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`:
++  exit 0 with approved sandbox escalation after the restricted attempt could
++  not write the protected canonical skill version.
++- `make baseline-digests`: exit 0; strict catalog validation passed and
++  derived artifacts already matched their canonical sources.
++- Python byte comparisons of both skill mirrors and the exact four-line
++  help paragraph: passed.
++- `git -c core.fsmonitor=false diff --check`: exit 0.
++
++The canonical reference edit also required approved sandbox escalation. The
++TypeSafe skill was consulted; fetching its public documentation index with
++`curl-cffi` was blocked by the sandbox domain allowlist. No TypeSafe API
++contract was changed or inferred.
++
++### Initial handoff limitation (resolved in feedback attempt 1)
++
++`internal/cli/spec_judge_tier_test.go` contains two additional old output
++goldens introduced with the model-tier surface:
++`TestSpecJudgeSuggestsModelTier/text` expects a summary without
++`on ROUNDFIX_OPENROUTER_API_KEY`, and
++`TestSpecJudgeTasksSkipsWithoutKey` expects the old two-key skip reason.
++Both fail against this Task's required output. Requirement 6 permits existing
++test updates only in its named files, so this file is left unchanged.
++A follow-up must authorize those two expectation adaptations before claiming
++a passing full CLI suite.
++
++Declared Verification was not run. No Task Graph or other Task file was
++edited; no commit, push or Pull Request was made.
++
++### Verification Feedback repair — attempt 1
++
++Inspected the Daemon diagnostic artifact at
++`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261006T015541Z_e61daedf35265e2d/verification/batch-001-attempt-1.log`.
++The recorded `make verify-changed` failure identifies the two stale
++model-tier output expectations noted above. This is Daemon-provided evidence,
++not a locally rerun Verification result.
++
++The feedback instruction to repair this Task's failure authorizes the two
++expectation adaptations in `internal/cli/spec_judge_tier_test.go`:
++the text summary now expects `on ROUNDFIX_OPENROUTER_API_KEY`, and the
++no-key skip now expects the judge variable before the shared and direct
++variables. Only those two expected strings changed; all model-tier, request,
++log, file-preservation and ceiling assertions remain intact. The initial
++handoff limitation above is resolved by this repair.
++
++Focused evidence after the repair:
++
++- `GOCACHE=/private/tmp/roundfix-0234-gocache go test -count=1 ./internal/cli -run '^TestSpecJudge'`:
++  exit 0, with no test exclusions. This includes both formerly failing
++  model-tier cases and the Task 01 command acceptance tests.
++- `git -c core.fsmonitor=false diff --check`: exit 0.
++- Diff inspection confirmed only the two expected strings changed in the
++  tier test file.
++
++No production or skill source changed in this repair, so the existing
++key-selection, redaction and generated-skill evidence remains applicable.
++Task status remains unchanged. Neither `make verify-changed` nor the Task's
++declared Verification commands were rerun; full Verification remains
++Daemon-owned. No other Task or Task Graph was edited, and no commit, push or
++Pull Request was made.
++
++## Recorded paths
++
++The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
++
++- `internal/cli/spec_judge_tier_test.go`
+diff --git a/docs/specs/0234-an-openrouter-key-per-stage/task_02.md b/docs/specs/0234-an-openrouter-key-per-stage/task_02.md
+index d9b6e6a8..73058612 100644
+--- a/docs/specs/0234-an-openrouter-key-per-stage/task_02.md
++++ b/docs/specs/0234-an-openrouter-key-per-stage/task_02.md
+@@ -1,7 +1,7 @@
+ ---
+ task: task_02
+ spec: 0234-an-openrouter-key-per-stage
+-status: pending
++status: completed
+ type: backend
+ complexity: low
+ ---
+@@ -103,3 +103,62 @@ shared-key fallback and `key_variable`.
+ - `_prd.md` → Goals; User Story 3; Core Features 3, 5, 6; Success Metric 4; Success Metric 5
+ - `_techspec.md` → Invariant 11; API Contract 3; Vocabulary Contract; Testing Approach; Build Order 2
+ - ADR-0239; ADR-0189
++
++## Result
++
++Implemented the Task 02 slice for Daemon Verification. Task status and the
++authored Verification commands remain Daemon-owned; no commit, push or Pull
++Request was made.
++
++Acceptance-criterion evidence:
++
++- **Environment line and key secrecy:** `environmentReadiness` now renders
++  `Questions.KeyVariables()` followed by
++  `openrouterkey.Variables(openrouterkey.StageImplement)`, with the two
++  labels and five ordered entries from API Contract 3. The existing
++  presence-only, last-entry-wins reader is unchanged, as are findings,
++  status and remediation. `TestEnvironmentReadinessListsEachStageKeyByName`
++  covers stage-key sentinels, generic-key exclusion, duplicate entries and
++  Doctor output without key values. The warning transcript now includes
++  both lists before its existing `next:` suffix.
++- **Guides and runtime reference:** the Doctor reference and sample output,
++  configuration guide and Roundfix runtime reference name each stage's
++  variables in preference order and the shared-key fallback. The
++  configuration guide also names the unread generic key, `key_variable` in
++  both records and both independent ceilings. The existing light-tier text
++  was updated to match the stage-key rule.
++- **Authoring skill secrecy:** both Advisory judgment sections now forbid
++  printing, storing or asking for any Jev key and explicitly name
++  `ROUNDFIX_OPENROUTER_JUDGE_API_KEY`, `ROUNDFIX_OPENROUTER_API_KEY` and
++  `ROUNDFIX_TYPESAFE_API_KEY`.
++- **Mirrors and versions:** `make skills-sync` regenerated the mirrors.
++  The required version recorder raised and recorded Roundfix `0.1.37`,
++  write-prd `0.0.7` and write-techspec `0.0.7` in both version fields and
++  `skills/testdata/owned-skill-versions.json`. A byte comparison of every
++  file in these three skill trees confirmed all mirrors match.
++
++Focused checks and implementation steps:
++
++- `GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/cli -run
++  '^TestEnvironmentReadinessListsEachStageKeyByName$' -count=1`: before the
++  production change, all three subtests failed because Doctor omitted the
++  stage variables and implementation list, establishing the red signal.
++- `gofmt -w internal/cli/readiness_toolchain.go
++  internal/cli/readiness_toolchain_test.go`: exit 0.
++- `GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/cli -run
++  'TestEnvironmentReadiness|TestDoctorPrintsTheFiveReadinessLines' -count=1`:
++  exit 0 after the implementation, including the existing preload and
++  warning-output checks.
++- `make skills-sync`: exit 0.
++- `GOCACHE=/private/tmp/roundfix-task02-gocache go test ./skills -run
++  '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`: the first
++  attempt was blocked by the sandbox's read-only `.agents` directory; the
++  same required generator with approved filesystem permission exited 0.
++- `GOCACHE=/private/tmp/roundfix-task02-gocache make baseline-digests`:
++  exit 0; `ok: true`, `changed: false`, derived artifacts already match.
++- Python byte comparison of canonical and mirrored skill trees: exit 0;
++  Roundfix 20 files, write-prd 2 files, write-techspec 3 files match.
++- `git -c core.fsmonitor=false diff --check`: exit 0.
++
++The declared Verification commands were not run. No follow-up work was
++identified within this slice.
+diff --git a/docs/specs/0234-an-openrouter-key-per-stage/task_03.md b/docs/specs/0234-an-openrouter-key-per-stage/task_03.md
+index fe70c59a..c15482e5 100644
+--- a/docs/specs/0234-an-openrouter-key-per-stage/task_03.md
++++ b/docs/specs/0234-an-openrouter-key-per-stage/task_03.md
+@@ -1,7 +1,7 @@
+ ---
+ task: task_03
+ spec: 0234-an-openrouter-key-per-stage
+-status: pending
++status: completed
+ type: backend
+ complexity: low
+ ---
+@@ -77,3 +77,84 @@ named here.
+ - `_prd.md` → Prerequisites; Goals; User Stories 1, 2, 4; Core Features 2, 4; Success Metric 3; Success Metric 5
+ - `_techspec.md` → Invariants 12, 13; Data Models; API Contract 4; Testing Approach; Build Order 3; Risks & Considerations
+ - ADR-0239; ADR-0235
++
++## Result
++
++Implemented the Task 03 slice for Daemon Verification. Task status, the
++authored Verification commands, and the Subtasks/Acceptance checkboxes remain
++Daemon-owned. No commit, push or Pull Request was made.
++
++Spec 0233's helper `OpenRouterImplementKey` in `internal/config/light_tier.go`
++now takes the command environ and returns exactly
++`openrouterkey.Select(environ, openrouterkey.StageImplement)`, so the
++implementation stage reads `ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY` first and
++the shared `ROUNDFIX_OPENROUTER_API_KEY` second. The helper no longer names the
++shared variable itself. `implementLightTierPlan` passes `environment.environ`
++straight to it; when neither variable is set it keeps the stage's preferred
++variable name so the existing no-key skip still names a real variable. Every
++place that hands OpenCode the key (`Plan.KeyVariable` ->
++`RuntimeSpec.OpenRouterKeyVariable` -> `lightSessionEnvironment`) and the
++ceiling check in `applyLightTier` use that one selected variable.
++
++`lighttier.SpendLine` gained `key_variable`, and `recordLightSpend` writes
++`owner.lightPlan.KeyVariable` into each record. No record carries a key value,
++and records written before this change still parse and still sum toward the
++ceiling.
++
++Acceptance-criterion evidence:
++
++- **Both variables set: implementation key used and recorded:**
++  `TestOpenModelImplementationPrefersTheImplementStageKey` (both OpenRouter
++  variables and the generic one set to different sentinels) selects
++  `ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY` and builds OpenCode's inline
++  configuration with only `{env:ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY}`; the
++  generic `OPENROUTER_API_KEY` is removed and neither the shared variable nor
++  a sentinel value appears.
++- **Shared fallback and no key:** `TestOpenModelImplementationFallsBackToTheSharedKey`
++  selects and configures the shared variable when it is the only Roundfix key,
++  and selects no variable when only the generic `OPENROUTER_API_KEY` is set.
++  `TestOpenModelImplementationSpendRecordNamesItsKeyVariable` writes a record
++  with `key_variable` and neither sentinel, and proves a pre-change record
++  without the field still parses and still counts.
++- **Every reader selects through the stage list:** a non-test file outside the
++  key package calls `openrouterkey.Select(..., openrouterkey.StageImplement)`
++  (`internal/config/light_tier.go`); no non-test reader names the shared key for
++  this stage.
++
++Focused checks (all with `GOCACHE=/private/tmp/roundfix-0234-task03-gocache`),
++run directly rather than through the declared Verification commands:
++
++- `go build ./...`: exit 0.
++- `go test -count=1 -v -run '^TestOpenModelImplementation' ./internal/agent
++  ./internal/lighttier`: the three named tests each printed
++  `--- PASS: ...`; `ok` for both packages.
++- `go test -count=1 ./internal/config`: exit 0, 558 passed.
++- `go test -count=1 ./internal/agent ./internal/lighttier`: exit 0, 553
++  passed.
++- `go test -count=1 -run 'TestImplement' ./internal/cli`: 59 passed, including
++  the updated `TestImplementBuildsTheLightTierPlan` (its no-key warning now
++  names the implementation variable).
++- `go test -count=1 ./internal/daemon`: 567 passed, including
++  `TestLightTierRecordsSpend` and the skip-warning cases.
++- `gofmt -l` on every changed Go file: no output.
++
++The declared Verification commands were not run. Files changed beyond the
++helper and record include `internal/config/light_tier_test.go`,
++`internal/agent/light_session_test.go`, `internal/cli/implement_light_tier_test.go`
++and `internal/daemon/light_tier_test.go`, all adapting to the helper's new
++environ parameter or adding the required tests. No `CONTEXT.md`, `CHANGELOG.md`,
++model selection, ceiling value or sum changed.
++
++## Recorded paths
++
++The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
++
++- `internal/agent/light_session_test.go`
++- `internal/cli/implement.go`
++- `internal/cli/implement_light_tier_test.go`
++- `internal/config/light_tier.go`
++- `internal/config/light_tier_test.go`
++- `internal/daemon/agent_session_owner.go`
++- `internal/daemon/light_tier_test.go`
++- `internal/lighttier/spend_log.go`
++- `internal/lighttier/spend_log_test.go`
+diff --git a/docs/user-guide/commands/doctor.md b/docs/user-guide/commands/doctor.md
+index 876adf4d..ff237365 100644
+--- a/docs/user-guide/commands/doctor.md
++++ b/docs/user-guide/commands/doctor.md
+@@ -62,11 +62,16 @@ roundfix: notice: NODE_OPTIONS preload "<path>" does not exist; Roundfix left it
+ - `environment:` — after `toolchain:`, reports one
+   `DR-NODE-PRELOAD-MISSING` (`warn`) per missing absolute preload path in the
+   last `NODE_OPTIONS` value, using the agent environment's parser. Existing
+-  paths and package names produce no finding. It reports each `ROUNDFIX_` key
+-  variable named by the spec judge transports as `set` or `not set`, never a
+-  key value. Generic provider key variables are not read. Remove a missing
+-  preload where your shell sets `NODE_OPTIONS`; unset optional judge keys do
+-  not fail the line.
++  paths and package names produce no finding. It lists `spec judge keys` in
++  preference order: `ROUNDFIX_OPENROUTER_JUDGE_API_KEY`,
++  `ROUNDFIX_OPENROUTER_API_KEY`, `ROUNDFIX_TYPESAFE_API_KEY`; then
++  `implementation keys`: `ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY`,
++  `ROUNDFIX_OPENROUTER_API_KEY`. Each entry is `set` or `not set`, never a
++  key value. Both stages fall back to the shared `ROUNDFIX_OPENROUTER_API_KEY`
++  when their stage key is unset; the judge can then use TypeSafe directly.
++  Empty values count as unset, and the last entry for a name wins. The generic
++  `OPENROUTER_API_KEY` is never read. Remove a missing preload where your shell
++  sets `NODE_OPTIONS`; unset optional keys do not fail the line.
+ - `skills:` — the required Repository Skill Set matches its local
+   authorities. The running binary's embedded artifacts are authoritative for
+   the 14 Roundfix-owned skills, including the Roundfix Skill. Each of the 25
+@@ -108,7 +113,7 @@ gh: ok (gh <version>; github.com login=<login>; <owner/repo> permission=WRITE)
+ git: ok (<version> >= 2.23.0)
+ remote: ok (origin: github.com/<owner/repo>; reachable)
+ toolchain: ok (<tools> found)
+-environment: ok (spec judge keys: ROUNDFIX_OPENROUTER_API_KEY not set, ROUNDFIX_TYPESAFE_API_KEY not set)
++environment: ok (spec judge keys: ROUNDFIX_OPENROUTER_JUDGE_API_KEY not set, ROUNDFIX_OPENROUTER_API_KEY not set, ROUNDFIX_TYPESAFE_API_KEY not set; implementation keys: ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY not set, ROUNDFIX_OPENROUTER_API_KEY not set)
+ skills: ok (<required> required: <owned> Roundfix-owned, <external> external)
+ residue: ok (no process residue found)
+ storage: ok (nothing to reclaim; Runs reclaimable: 0; Run Database free bytes: 0)
+diff --git a/docs/user-guide/commands/spec.md b/docs/user-guide/commands/spec.md
+index 8f8008cb..39d5ca55 100644
+--- a/docs/user-guide/commands/spec.md
++++ b/docs/user-guide/commands/spec.md
+@@ -38,10 +38,15 @@ schema is `roundfix/spec-judge/v1`. An advisory asks the author to correct the
+ artifact or explain why the text stands. A skipped result proves neither a
+ failure nor a clean result.
+ 
+-The command reads `ROUNDFIX_OPENROUTER_API_KEY` for OpenRouter first, then
+-`ROUNDFIX_TYPESAFE_API_KEY` for TypeSafe directly when the OpenRouter key is
+-absent. It does not read the generic `OPENROUTER_API_KEY`, so Roundfix's Jev
+-cost stays on its own key. Each response's versioned model ID is recorded;
++Keys, first set wins: `ROUNDFIX_OPENROUTER_JUDGE_API_KEY`, then the shared
++`ROUNDFIX_OPENROUTER_API_KEY` (both OpenRouter), then
++`ROUNDFIX_TYPESAFE_API_KEY` for TypeSafe directly. Empty values count as unset.
++The shared key keeps existing setups working when the judge key is absent.
++The generic `OPENROUTER_API_KEY` is never read. The text summary names the
++selected variable with `via <transport> on <variable>`; the JSON report and
++every Judge Log line name it in `key_variable`, never by value. Without a
++key, JSON has `key_variable: null` and the skip names the judge key first.
++Each response's versioned model ID is recorded;
+ thresholds apply only to the pinned Jev 1.13 model family.
+ 
+ Every request appends its answer, model, transport, and cost to the Judge Log
+diff --git a/docs/user-guide/configuration.md b/docs/user-guide/configuration.md
+index 286e15e0..7b532d3e 100644
+--- a/docs/user-guide/configuration.md
++++ b/docs/user-guide/configuration.md
+@@ -136,6 +136,28 @@ this change.
+ Past `router-prompt` lines written before the retirement stay in the Judge Log
+ and count toward their month's ceiling.
+ 
++## OpenRouter keys per stage
++
++Each stage uses its first non-empty variable in this preference order:
++
++- Spec judge keys: `ROUNDFIX_OPENROUTER_JUDGE_API_KEY`,
++  `ROUNDFIX_OPENROUTER_API_KEY`, then `ROUNDFIX_TYPESAFE_API_KEY` for TypeSafe
++  directly.
++- Open-model implementation keys through OpenCode:
++  `ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY`, then `ROUNDFIX_OPENROUTER_API_KEY`.
++
++Both stages fall back to the shared `ROUNDFIX_OPENROUTER_API_KEY` when their
++stage key is unset. With only the shared key set, both stages bill to it as
++before; separate stage keys let OpenRouter's activity export distinguish
++their costs. The generic `OPENROUTER_API_KEY` is never read.
++
++`roundfix doctor` lists both stages' variables by name as `set` or `not set`
++in that order. The Judge Log and each implementation spend record carry
++`key_variable`, the name of the variable used, never its value. Each stage
++keeps its own ceiling whichever key it reads: `jev.monthly_ceiling_usd` for
++the judge and `openrouter.implement_monthly_ceiling_usd` for implementation.
++A key's own OpenRouter limit remains the hard stop on that key.
++
+ ## Light implementation tier
+ 
+ A Task is `light` when its `complexity` is `low`, its `type` is not `qa`, and
+@@ -151,8 +173,9 @@ list is a User Config value; an empty list turns the tier off, a model must be
+ `<author>/<slug>`, and the subscription rule refuses models that could reach
+ OpenAI or Anthropic through OpenRouter.
+ 
+-The light session reads its key through Roundfix's key helper, currently named
+-`ROUNDFIX_OPENROUTER_API_KEY`. OpenCode receives only a reference to that
++The light session reads its key through Roundfix's key helper, preferring
++`ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY` and falling back to
++`ROUNDFIX_OPENROUTER_API_KEY`. OpenCode receives only a reference to the selected
+ variable, never the key value, and Roundfix removes the generic
+ `OPENROUTER_API_KEY`. Every light Task's prompt, the files its agent reads,
+ and its Verification diagnostics reach OpenRouter and the selected model's
+@@ -169,8 +192,9 @@ tier and uses the category profile.
+ The Light Spend Log is one JSONL file per UTC month at
+ `<home>/.roundfix/openrouter/implement/<YYYY-MM>.jsonl`. Each line records
+ `schema`, `time`, `repository`, `run_id`, `spec`, `task`, `session`, `model`,
+-`cost_usd`, and `cost_source` (`opencode` or `unreported`). It contains no
+-key, prompt, or diagnostic. A skipped Task prints
++`cost_usd`, `cost_source` (`opencode` or `unreported`), and `key_variable`, the
++selected variable's name. It contains no key value, prompt, or diagnostic.
++A skipped Task prints
+ `roundfix: warning: light tier skipped for Task` and names one of the three
+ reasons: the key variable is not set, the Light Spend Log could not be read,
+ or this month's light spend reached the ceiling.
+diff --git a/internal/agent/light_session_test.go b/internal/agent/light_session_test.go
+index ed79fe28..899773f5 100644
+--- a/internal/agent/light_session_test.go
++++ b/internal/agent/light_session_test.go
+@@ -9,6 +9,7 @@ import (
+ 	"testing"
+ 
+ 	"roundfix/internal/config"
++	"roundfix/internal/openrouterkey"
+ )
+ 
+ // Called by the existing fake acpx process; capture the inline option and the
+@@ -35,7 +36,7 @@ func recordFakeLightEnvironment() error {
+ }
+ 
+ func lightRuntimeForTest() RuntimeSpec {
+-	variable, _ := config.OpenRouterImplementKey(func(string) string { return "fixture" })
++	variable, _ := config.OpenRouterImplementKey([]string{openrouterkey.Shared + "=fixture"})
+ 	return RuntimeSpec{ID: "opencode", Protocol: ProtocolACP, Model: "openrouter/" + config.DefaultLightModel, OpenRouterKeyVariable: variable}
+ }
+ 
+@@ -112,6 +113,73 @@ func TestLightSessionReadsTheImplementKeyByName(t *testing.T) {
+ 	}
+ }
+ 
++func TestOpenModelImplementationPrefersTheImplementStageKey(t *testing.T) {
++	t.Parallel()
++	environ := []string{
++		openrouterkey.Implement + "=implement-sentinel",
++		openrouterkey.Shared + "=shared-sentinel",
++		"OPENROUTER_API_KEY=generic-sentinel",
++	}
++	variable, present := config.OpenRouterImplementKey(environ)
++	if !present || variable != openrouterkey.Implement {
++		t.Fatalf("selected variable=%q present=%t", variable, present)
++	}
++	runtime := RuntimeSpec{ID: "opencode", Protocol: ProtocolACP, Model: "openrouter/" + config.DefaultLightModel, OpenRouterKeyVariable: variable}
++	overrides, err := lightSessionEnvironment(runtime, environ)
++	if err != nil {
++		t.Fatal(err)
++	}
++	inline := environmentValue(overrides, "OPENCODE_CONFIG_CONTENT")
++	if !strings.Contains(inline, `"apiKey":"{env:`+openrouterkey.Implement+`}"`) {
++		t.Fatalf("OpenCode config does not reference the implementation variable: %s", inline)
++	}
++	if strings.Contains(inline, openrouterkey.Shared) || strings.Contains(inline, "implement-sentinel") || strings.Contains(inline, "shared-sentinel") {
++		t.Fatalf("OpenCode config carries another variable or a key value: %s", inline)
++	}
++	commandEnv := acpxCommandEnv(environ, overrides)
++	if value := environmentValue(commandEnv, "OPENROUTER_API_KEY"); value != "" {
++		t.Fatalf("generic key reached OpenCode: %q", value)
++	}
++	if value := environmentValue(commandEnv, openrouterkey.Implement); value != "implement-sentinel" {
++		t.Fatalf("implementation key missing from OpenCode environment: %q", value)
++	}
++}
++
++func TestOpenModelImplementationFallsBackToTheSharedKey(t *testing.T) {
++	t.Parallel()
++	environ := []string{
++		openrouterkey.Shared + "=shared-sentinel",
++		"OPENROUTER_API_KEY=generic-sentinel",
++	}
++	variable, present := config.OpenRouterImplementKey(environ)
++	if !present || variable != openrouterkey.Shared {
++		t.Fatalf("selected variable=%q present=%t", variable, present)
++	}
++	runtime := RuntimeSpec{ID: "opencode", Protocol: ProtocolACP, Model: "openrouter/" + config.DefaultLightModel, OpenRouterKeyVariable: variable}
++	overrides, err := lightSessionEnvironment(runtime, environ)
++	if err != nil {
++		t.Fatal(err)
++	}
++	inline := environmentValue(overrides, "OPENCODE_CONFIG_CONTENT")
++	if !strings.Contains(inline, `"apiKey":"{env:`+openrouterkey.Shared+`}"`) {
++		t.Fatalf("OpenCode config does not reference the shared variable: %s", inline)
++	}
++	if strings.Contains(inline, openrouterkey.Implement) {
++		t.Fatalf("OpenCode config references the implementation variable: %s", inline)
++	}
++	commandEnv := acpxCommandEnv(environ, overrides)
++	if value := environmentValue(commandEnv, "OPENROUTER_API_KEY"); value != "" {
++		t.Fatalf("generic key reached OpenCode: %q", value)
++	}
++	if value := environmentValue(commandEnv, openrouterkey.Shared); value != "shared-sentinel" {
++		t.Fatalf("shared key missing from OpenCode environment: %q", value)
++	}
++	variable, present = config.OpenRouterImplementKey([]string{"OPENROUTER_API_KEY=generic-sentinel"})
++	if present || variable != "" {
++		t.Fatalf("generic key selected variable=%q present=%t", variable, present)
++	}
++}
++
+ func TestLightSessionSendsNoWarmup(t *testing.T) {
+ 	t.Parallel()
+ 	h := newFakeACPXHarness(t)
+diff --git a/internal/cli/implement.go b/internal/cli/implement.go
+index 530379c7..77b02309 100644
+--- a/internal/cli/implement.go
++++ b/internal/cli/implement.go
+@@ -21,6 +21,7 @@ import (
+ 	"roundfix/internal/daemon"
+ 	"roundfix/internal/lighttier"
+ 	roundnotify "roundfix/internal/notify"
++	"roundfix/internal/openrouterkey"
+ 	"roundfix/internal/preflight"
+ 	"roundfix/internal/spec"
+ 	"roundfix/internal/speccheck"
+@@ -1430,15 +1431,10 @@ func implementLightTierPlan(loaded roundconfig.Loaded, environment []string, rep
+ 	if override {
+ 		return lighttier.Plan{}
+ 	}
+-	variable, present := roundconfig.OpenRouterImplementKey(func(name string) string {
+-		for index := len(environment) - 1; index >= 0; index-- {
+-			key, value, found := strings.Cut(environment[index], "=")
+-			if found && key == name {
+-				return value
+-			}
+-		}
+-		return ""
+-	})
++	variable, present := roundconfig.OpenRouterImplementKey(environment)
++	if variable == "" {
++		variable = openrouterkey.Variables(openrouterkey.StageImplement)[0]
++	}
+ 	return lighttier.Plan{Models: append([]string(nil), loaded.Config.OpenRouter.LightModels...),
+ 		CeilingUSD:  loaded.Config.OpenRouter.ImplementMonthlyCeilingUSD,
+ 		KeyVariable: variable, KeyPresent: present, HomeDir: loaded.HomeDir, Repository: repository}
+diff --git a/internal/cli/implement_light_tier_test.go b/internal/cli/implement_light_tier_test.go
+index 75aad494..5068edb6 100644
+--- a/internal/cli/implement_light_tier_test.go
++++ b/internal/cli/implement_light_tier_test.go
+@@ -11,8 +11,8 @@ import (
+ 	"testing"
+ 
+ 	"roundfix/internal/agent"
+-	roundconfig "roundfix/internal/config"
+ 	"roundfix/internal/lighttier"
++	"roundfix/internal/openrouterkey"
+ 	"roundfix/internal/spec"
+ )
+ 
+@@ -38,7 +38,7 @@ func TestImplementBuildsTheLightTierPlan(t *testing.T) {
+ 			runner := &implementFakeRunner{gitRoot: repo, statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted, "task_02": spec.StatusCompleted}, onTask: func(req agent.ExecuteRequest, _ string) error { requests = append(requests, req); return nil }}
+ 			withImplementCollaborators(t, runner)
+ 			environment := commandEnvironmentForTest(t)
+-			variable, _ := roundconfig.OpenRouterImplementKey(func(string) string { return "" })
++			variable := openrouterkey.Shared
+ 			environment.environ = withEnvValue(environment.environ, variable, "")
+ 			if name != "missing-key" {
+ 				environment.environ = withEnvValue(environment.environ, variable, "fixture-secret")
+@@ -63,7 +63,7 @@ func TestImplementBuildsTheLightTierPlan(t *testing.T) {
+ 			if strings.Contains(stdout.String()+stderr.String(), "fixture-secret") {
+ 				t.Fatal("key value reached command output")
+ 			}
+-			warning := "roundfix: warning: light tier skipped for Task task_01: " + variable + " is not set; it runs on its docs profile"
++			warning := "roundfix: warning: light tier skipped for Task task_01: " + openrouterkey.Implement + " is not set; it runs on its docs profile"
+ 			if name == "missing-key" {
+ 				if !strings.Contains(stderr.String(), warning) || strings.Contains(stdout.String(), "light tier skipped") {
+ 					t.Fatalf("Surface Transcript 3 mismatch: %s", stderr.String())
+diff --git a/internal/cli/readiness_toolchain.go b/internal/cli/readiness_toolchain.go
+index bff10214..122c7981 100644
+--- a/internal/cli/readiness_toolchain.go
++++ b/internal/cli/readiness_toolchain.go
+@@ -12,6 +12,7 @@ import (
+ 	"roundfix/internal/agent"
+ 	roundconfig "roundfix/internal/config"
+ 	"roundfix/internal/judge"
++	"roundfix/internal/openrouterkey"
+ )
+ 
+ var readinessToolPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._+-]*$`)
+@@ -137,24 +138,22 @@ func environmentReadiness(deps readinessDependencies) CheckResult {
+ 	if err != nil {
+ 		return CheckResult{Name: HealthCheckEnvironment, Status: CheckStatusFailed, Detail: "load spec judge transports: " + err.Error(), Err: err}
+ 	}
+-	var keys []string
+-	seen := make(map[string]bool)
+-	for _, transport := range questions.Transports {
+-		name := transport.KeyVariable
+-		if !strings.HasPrefix(name, "ROUNDFIX_") || seen[name] {
+-			continue
++	keyStates := func(variables []string) string {
++		var keys []string
++		for _, name := range variables {
++			status := "not set"
++			if readinessKeyIsSet(deps.environ, name) {
++				status = "set"
++			}
++			keys = append(keys, name+" "+status)
+ 		}
+-		seen[name] = true
+-		status := "not set"
+-		if readinessKeyIsSet(deps.environ, name) {
+-			status = "set"
+-		}
+-		keys = append(keys, name+" "+status)
++		return strings.Join(keys, ", ")
+ 	}
+ 	result := readinessResult(HealthCheckEnvironment, "", findings)
+ 	if result.Detail != "" {
+ 		result.Detail += "; "
+ 	}
+-	result.Detail += "spec judge keys: " + strings.Join(keys, ", ")
++	result.Detail += "spec judge keys: " + keyStates(questions.KeyVariables()) +
++		"; implementation keys: " + keyStates(openrouterkey.Variables(openrouterkey.StageImplement))
+ 	return result
+ }
+diff --git a/internal/cli/readiness_toolchain_test.go b/internal/cli/readiness_toolchain_test.go
+index 7d0baaa1..3460cbcd 100644
+--- a/internal/cli/readiness_toolchain_test.go
++++ b/internal/cli/readiness_toolchain_test.go
+@@ -88,6 +88,56 @@ func TestEnvironmentReadinessNamesAMissingPreloadAndNeverAKeyValue(t *testing.T)
+ 	}
+ }
+ 
++func TestEnvironmentReadinessListsEachStageKeyByName(t *testing.T) {
++	for _, tc := range []struct {
++		name    string
++		environ []string
++		want    string
++	}{
++		{
++			name: "stage keys",
++			environ: []string{
++				"ROUNDFIX_OPENROUTER_JUDGE_API_KEY=judge-sentinel",
++				"ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY=implement-sentinel",
++			},
++			want: "spec judge keys: ROUNDFIX_OPENROUTER_JUDGE_API_KEY set, ROUNDFIX_OPENROUTER_API_KEY not set, ROUNDFIX_TYPESAFE_API_KEY not set; implementation keys: ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY set, ROUNDFIX_OPENROUTER_API_KEY not set",
++		},
++		{
++			name:    "generic key ignored",
++			environ: []string{"OPENROUTER_API_KEY=generic-sentinel"},
++			want:    "spec judge keys: ROUNDFIX_OPENROUTER_JUDGE_API_KEY not set, ROUNDFIX_OPENROUTER_API_KEY not set, ROUNDFIX_TYPESAFE_API_KEY not set; implementation keys: ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY not set, ROUNDFIX_OPENROUTER_API_KEY not set",
++		},
++		{
++			name: "last entry wins",
++			environ: []string{
++				"ROUNDFIX_OPENROUTER_JUDGE_API_KEY=judge-sentinel",
++				"ROUNDFIX_OPENROUTER_JUDGE_API_KEY=",
++				"ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY=implement-sentinel",
++				"ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY=",
++				"ROUNDFIX_OPENROUTER_API_KEY=",
++				"ROUNDFIX_OPENROUTER_API_KEY=shared-sentinel",
++			},
++			want: "spec judge keys: ROUNDFIX_OPENROUTER_JUDGE_API_KEY not set, ROUNDFIX_OPENROUTER_API_KEY set, ROUNDFIX_TYPESAFE_API_KEY not set; implementation keys: ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY not set, ROUNDFIX_OPENROUTER_API_KEY set",
++		},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			deps := scriptedReadiness(t, nil, "")
++			deps.environ = tc.environ
++			line := environmentReadiness(deps)
++			if line.Status != CheckStatusOK || line.Detail != tc.want {
++				t.Fatalf("environment status=%s detail=%q, want ok and %q", line.Status, line.Detail, tc.want)
++			}
++			code, out, stderr := doctorWithReadiness(t, []CheckResult{line})
++			if code != exitOK || stderr != "" || !strings.Contains(out, "environment: ok ("+tc.want+")") {
++				t.Fatalf("Doctor exit=%d stdout=%q stderr=%q", code, out, stderr)
++			}
++			if strings.Contains(out+stderr, "sentinel") {
++				t.Fatal("key value rendered")
++			}
++		})
++	}
++}
++
+ func TestDoctorPrintsTheFiveReadinessLines(t *testing.T) {
+ 	root := t.TempDir()
+ 	writeReadinessManifest(t, root)
+@@ -115,7 +165,7 @@ func TestDoctorPrintsTheFiveReadinessLines(t *testing.T) {
+ 		"git: failed (" + readinessGitMinimumVersion + " >= 2.23.0; DR-GIT-IDENTITY: user.email is not set for this repository; next: git config user.email <address>)",
+ 		"remote: ok (origin: github.com/owner/repository; reachable)",
+ 		"DR-TOOL-MISSING: rtk is not on PATH, needed by Setup Manifest verification.gate, Setup Manifest verification.incremental; next: install rtk, or change the command that names it)",
+-		`environment: warn (DR-NODE-PRELOAD-MISSING: NODE_OPTIONS preload "/missing.cjs" does not exist; spec judge keys: ROUNDFIX_OPENROUTER_API_KEY not set, ROUNDFIX_TYPESAFE_API_KEY not set; next: remove the preload from NODE_OPTIONS where your shell sets it)`,
++		`environment: warn (DR-NODE-PRELOAD-MISSING: NODE_OPTIONS preload "/missing.cjs" does not exist; spec judge keys: ROUNDFIX_OPENROUTER_JUDGE_API_KEY not set, ROUNDFIX_OPENROUTER_API_KEY not set, ROUNDFIX_TYPESAFE_API_KEY not set; implementation keys: ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY not set, ROUNDFIX_OPENROUTER_API_KEY not set; next: remove the preload from NODE_OPTIONS where your shell sets it)`,
+ 	} {
+ 		if !strings.Contains(out, phrase) {
+ 			t.Fatalf("Doctor missing transcript phrase %q", phrase)
+diff --git a/internal/cli/spec_judge.go b/internal/cli/spec_judge.go
+index 30c5d5b0..80ea9ebc 100644
+--- a/internal/cli/spec_judge.go
++++ b/internal/cli/spec_judge.go
+@@ -25,8 +25,10 @@ Options:
+   --stage   Judge prd, techspec or tasks (default: prd and techspec)
+   --format  Output format: text or json (default: text)
+ 
+-Set ROUNDFIX_OPENROUTER_API_KEY for OpenRouter, or ROUNDFIX_TYPESAFE_API_KEY
+-as the direct TypeSafe alternative. The generic OPENROUTER_API_KEY is not read.
++Keys, first set wins: ROUNDFIX_OPENROUTER_JUDGE_API_KEY, then the shared
++ROUNDFIX_OPENROUTER_API_KEY (both OpenRouter), then ROUNDFIX_TYPESAFE_API_KEY
++(TypeSafe directly). The generic OPENROUTER_API_KEY is not read. The summary
++names the variable used, never its value.
+ The monthly ceiling is jev.monthly_ceiling_usd in User Config, US$5 by default,
+ across both transports. Every request is
+ recorded in the Judge Log: <home>/.roundfix/judge/<YYYY-MM>.jsonl (UTC month).
+@@ -127,9 +129,13 @@ func runSpecJudgeCommand(ctx context.Context, args []string, stdout, stderr io.W
+ 		return fail(err)
+ 	}
+ 	keys := make(map[string]string)
++	allowed := make(map[string]bool)
++	for _, variable := range questions.KeyVariables() {
++		allowed[variable] = true
++	}
+ 	for _, entry := range environment.environ {
+ 		name, value, _ := strings.Cut(entry, "=")
+-		if name == "ROUNDFIX_OPENROUTER_API_KEY" || name == "ROUNDFIX_TYPESAFE_API_KEY" {
++		if allowed[name] {
+ 			keys[name] = value
+ 		}
+ 	}
+@@ -192,7 +198,7 @@ func renderSpecJudgeText(report judge.Report) string {
+ 		fmt.Fprintf(&out, "Judge: skipped: %s; %d judgment(s) not asked\n", *report.Skipped, skipped)
+ 		return out.String()
+ 	}
+-	fmt.Fprintf(&out, "Judge: %d advisory, %d suggested, %d clear, %d skipped; %d call(s), %d input tokens, US$%.4f; month US$%.4f of US$%.2f; model %s via %s", advisory, suggested, clear, skipped, report.Calls, report.InputTokens, report.CostUSD, report.MonthCostUSD, report.MonthCeilingUSD, report.Model, *report.Transport)
++	fmt.Fprintf(&out, "Judge: %d advisory, %d suggested, %d clear, %d skipped; %d call(s), %d input tokens, US$%.4f; month US$%.4f of US$%.2f; model %s via %s on %s", advisory, suggested, clear, skipped, report.Calls, report.InputTokens, report.CostUSD, report.MonthCostUSD, report.MonthCeilingUSD, report.Model, *report.Transport, *report.KeyVariable)
+ 	if report.Stopped != nil {
+ 		fmt.Fprintf(&out, "; stopped: %s", *report.Stopped)
+ 	}
+diff --git a/internal/cli/spec_judge_test.go b/internal/cli/spec_judge_test.go
+index 2a1ae873..bd1c382e 100644
+--- a/internal/cli/spec_judge_test.go
++++ b/internal/cli/spec_judge_test.go
+@@ -19,6 +19,7 @@ import (
+ 
+ 	"roundfix/internal/gittest"
+ 	"roundfix/internal/judge"
++	"roundfix/internal/openrouterkey"
+ )
+ 
+ type specJudgeTransport struct {
+@@ -89,7 +90,7 @@ func (f *specJudgeTransport) RoundTrip(r *http.Request) (*http.Response, error)
+ 
+ const specJudgeEnglish = "The author reads the evidence for the work and keeps the rule in the documentation. "
+ const specJudgeAdvisory = "advisory citation-support docs/specs/0300-example/_techspec.md:31 ADR-0035 says_nothing at confidence 0.93: The cited decision keeps every Run Event for ninety days after the Run ends.\n"
+-const specJudgeNoKey = "Judge: skipped: ROUNDFIX_OPENROUTER_API_KEY is not set (nor ROUNDFIX_TYPESAFE_API_KEY); 5 judgment(s) not asked\n"
++const specJudgeNoKey = "Judge: skipped: ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set (nor ROUNDFIX_OPENROUTER_API_KEY, nor ROUNDFIX_TYPESAFE_API_KEY); 5 judgment(s) not asked\n"
+ 
+ func specJudgeFixture(t *testing.T, keyVariable string) (commandEnvironment, *specJudgeTransport) {
+ 	t.Helper()
+@@ -145,7 +146,7 @@ func specJudgeRun(t *testing.T, env commandEnvironment, args []string, wantOut,
+ 
+ func TestSpecJudgeReportsAdvisoryJudgments(t *testing.T) {
+ 	env, fake := specJudgeFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
+-	specJudgeRun(t, env, []string{"0300-example", "--stage", "techspec"}, specJudgeAdvisory+fmt.Sprintf("advisory goal-mechanism docs/specs/0300-example/_techspec.md:74 Goal 2 → The widget cache: P(delivers) 0.12\nJudge: 2 advisory, 0 suggested, 3 clear, 0 skipped; 5 call(s), 4210 input tokens, US$0.0002; month US$0.0002 of US$%.2f; model jev-1.13 via openrouter\n", specJudgeCeiling(t)), "", 0)
++	specJudgeRun(t, env, []string{"0300-example", "--stage", "techspec"}, specJudgeAdvisory+fmt.Sprintf("advisory goal-mechanism docs/specs/0300-example/_techspec.md:74 Goal 2 → The widget cache: P(delivers) 0.12\nJudge: 2 advisory, 0 suggested, 3 clear, 0 skipped; 5 call(s), 4210 input tokens, US$0.0002; month US$0.0002 of US$%.2f; model jev-1.13 via openrouter on ROUNDFIX_OPENROUTER_API_KEY\n", specJudgeCeiling(t)), "", 0)
+ 	if fake.calls != 5 {
+ 		t.Fatalf("calls=%d", fake.calls)
+ 	}
+@@ -182,13 +183,13 @@ func TestSpecJudgeSkipsAtTheMonthlyCeiling(t *testing.T) {
+ func TestSpecJudgeSkipsANonEnglishSpec(t *testing.T) {
+ 	env, fake := specJudgeFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
+ 	fake.host = ""
+-	specJudgeRun(t, env, []string{"0301-exemplo", "--stage", "prd"}, fmt.Sprintf("skipped docs/specs/0301-exemplo/_prd.md: not English\nJudge: 0 advisory, 0 suggested, 0 clear, 0 skipped; 0 call(s), 0 input tokens, US$0.0000; month US$0.0000 of US$%.2f; model jev-1.13 via openrouter\n", specJudgeCeiling(t)), "", 0)
++	specJudgeRun(t, env, []string{"0301-exemplo", "--stage", "prd"}, fmt.Sprintf("skipped docs/specs/0301-exemplo/_prd.md: not English\nJudge: 0 advisory, 0 suggested, 0 clear, 0 skipped; 0 call(s), 0 input tokens, US$0.0000; month US$0.0000 of US$%.2f; model jev-1.13 via openrouter on ROUNDFIX_OPENROUTER_API_KEY\n", specJudgeCeiling(t)), "", 0)
+ }
+ 
+ func TestSpecJudgeStopsWhenTheServiceFails(t *testing.T) {
+ 	env, fake := specJudgeFixture(t, "ROUNDFIX_TYPESAFE_API_KEY")
+ 	fake.failSecond = true
+-	specJudgeRun(t, env, []string{"0300-example", "--stage", "techspec"}, specJudgeAdvisory+fmt.Sprintf("Judge: 1 advisory, 0 suggested, 0 clear, 4 skipped; 2 call(s), 842 input tokens, US$0.0000; month US$0.0000 of US$%.2f; model jev-1.13 via typesafe; stopped: service unavailable (HTTP 503)\n", specJudgeCeiling(t)), "", 0)
++	specJudgeRun(t, env, []string{"0300-example", "--stage", "techspec"}, specJudgeAdvisory+fmt.Sprintf("Judge: 1 advisory, 0 suggested, 0 clear, 4 skipped; 2 call(s), 842 input tokens, US$0.0000; month US$0.0000 of US$%.2f; model jev-1.13 via typesafe on ROUNDFIX_TYPESAFE_API_KEY; stopped: service unavailable (HTTP 503)\n", specJudgeCeiling(t)), "", 0)
+ 	if fake.calls != 2 {
+ 		t.Fatalf("calls after stop=%d", fake.calls)
+ 	}
+@@ -230,7 +231,7 @@ func TestSpecJudgePrintsJSON(t *testing.T) {
+ 	if e := json.Unmarshal(out.Bytes(), &doc); e != nil {
+ 		t.Fatal(e)
+ 	}
+-	fields := strings.Fields("schema spec model transport skipped stopped artifacts_skipped judgments calls input_tokens cost_usd month_cost_usd month_ceiling_usd")
++	fields := strings.Fields("schema spec model transport key_variable skipped stopped artifacts_skipped judgments calls input_tokens cost_usd month_cost_usd month_ceiling_usd")
+ 	if len(doc) != len(fields) {
+ 		t.Fatalf("fields=%v", doc)
+ 	}
+@@ -306,7 +307,7 @@ func TestSpecJudgePrintsIndividualSkip(t *testing.T) {
+ 	env, fake := specJudgeFixture(t, "ROUNDFIX_OPENROUTER_API_KEY")
+ 	fake.host = ""
+ 	mustWrite(t, filepath.Join(env.workDir, "docs/specs/0300-example/_prd.md"), specJudgeEnglish+"\n\nADR-0999 keeps every Run Event for ninety days after the Run ends.\n")
+-	specJudgeRun(t, env, []string{"0300-example", "--stage=prd"}, fmt.Sprintf("skipped citation-support docs/specs/0300-example/_prd.md:3 ADR-0999: cited decision is not an accepted regular ADR\nJudge: 0 advisory, 0 suggested, 0 clear, 1 skipped; 0 call(s), 0 input tokens, US$0.0000; month US$0.0000 of US$%.2f; model jev-1.13 via openrouter\n", specJudgeCeiling(t)), "", 0)
++	specJudgeRun(t, env, []string{"0300-example", "--stage=prd"}, fmt.Sprintf("skipped citation-support docs/specs/0300-example/_prd.md:3 ADR-0999: cited decision is not an accepted regular ADR\nJudge: 0 advisory, 0 suggested, 0 clear, 1 skipped; 0 call(s), 0 input tokens, US$0.0000; month US$0.0000 of US$%.2f; model jev-1.13 via openrouter on ROUNDFIX_OPENROUTER_API_KEY\n", specJudgeCeiling(t)), "", 0)
+ }
+ 
+ func TestSpecJudgeJSONSkipHasNullTransport(t *testing.T) {
+@@ -317,7 +318,7 @@ func TestSpecJudgeJSONSkipHasNullTransport(t *testing.T) {
+ 	if err := json.Unmarshal(out.Bytes(), &doc); err != nil {
+ 		t.Fatal(err)
+ 	}
+-	if code != 0 || stderr.Len() != 0 || string(doc["transport"]) != "null" || string(doc["stopped"]) != "null" || string(doc["artifacts_skipped"]) != "[]" {
++	if code != 0 || stderr.Len() != 0 || string(doc["transport"]) != "null" || string(doc["key_variable"]) != "null" || string(doc["stopped"]) != "null" || string(doc["artifacts_skipped"]) != "[]" {
+ 		t.Fatalf("exit=%d stdout=%s stderr=%s", code, &out, &stderr)
+ 	}
+ }
+@@ -330,7 +331,7 @@ const specJudgeGroupingSuggestion = "suggested source-grouping " + specJudgeGrou
+ 
+ func specJudgeGroupingSummary(t *testing.T) string {
+ 	t.Helper()
+-	return fmt.Sprintf("Judge: 0 advisory, 1 suggested, 1 clear, 0 skipped; 2 call(s), 1840 input tokens, US$0.0001; month US$0.0001 of US$%.2f; model jev-1.13 via openrouter\n", specJudgeCeiling(t))
++	return fmt.Sprintf("Judge: 0 advisory, 1 suggested, 1 clear, 0 skipped; 2 call(s), 1840 input tokens, US$0.0001; month US$0.0001 of US$%.2f; model jev-1.13 via openrouter on ROUNDFIX_OPENROUTER_API_KEY\n", specJudgeCeiling(t))
+ }
+ 
+ type specJudgeGroupingTransport struct {
+@@ -418,7 +419,7 @@ func TestSpecJudgeSkipsANonEnglishSource(t *testing.T) {
+ 
+ func TestSpecJudgeCountsGroupingJudgmentsNotAsked(t *testing.T) {
+ 	env, fake := specJudgeGroupingFixture(t, "OPENROUTER_API_KEY")
+-	specJudgeRun(t, env, []string{"0300-example", "--stage", "prd"}, "Judge: skipped: ROUNDFIX_OPENROUTER_API_KEY is not set (nor ROUNDFIX_TYPESAFE_API_KEY); 2 judgment(s) not asked\n", "", 0)
++	specJudgeRun(t, env, []string{"0300-example", "--stage", "prd"}, "Judge: skipped: ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set (nor ROUNDFIX_OPENROUTER_API_KEY, nor ROUNDFIX_TYPESAFE_API_KEY); 2 judgment(s) not asked\n", "", 0)
+ 	if fake.calls != 0 {
+ 		t.Fatalf("calls without a command key=%d", fake.calls)
+ 	}
+@@ -435,7 +436,7 @@ func TestSpecJudgePrintsGroupingJSON(t *testing.T) {
+ 	if err := json.Unmarshal(out.Bytes(), &doc); err != nil {
+ 		t.Fatal(err)
+ 	}
+-	fields := strings.Fields("schema spec model transport skipped stopped artifacts_skipped judgments calls input_tokens cost_usd month_cost_usd month_ceiling_usd")
++	fields := strings.Fields("schema spec model transport key_variable skipped stopped artifacts_skipped judgments calls input_tokens cost_usd month_cost_usd month_ceiling_usd")
+ 	if len(doc) != len(fields) {
+ 		t.Fatalf("top-level fields=%v", doc)
+ 	}
+@@ -499,7 +500,7 @@ func TestSpecJudgePrintsSkippedGroupingPair(t *testing.T) {
+ 	reason := "answered by jev-1.14.0, thresholds belong to jev-1.13"
+ 	want := "skipped source-grouping " + specJudgeGroupingAnchor + " → " + specJudgeGroupingCandidate + ": " + reason + "\n" +
+ 		"skipped source-grouping " + specJudgeGroupingAnchor + " → docs/backlog/2026-09-29-color-the-tui-header.md: " + reason + "\n" +
+-		fmt.Sprintf("Judge: 0 advisory, 0 suggested, 0 clear, 2 skipped; 2 call(s), 1840 input tokens, US$0.0001; month US$0.0001 of US$%.2f; model jev-1.13 via openrouter\n", specJudgeCeiling(t))
++		fmt.Sprintf("Judge: 0 advisory, 0 suggested, 0 clear, 2 skipped; 2 call(s), 1840 input tokens, US$0.0001; month US$0.0001 of US$%.2f; model jev-1.13 via openrouter on ROUNDFIX_OPENROUTER_API_KEY\n", specJudgeCeiling(t))
+ 	specJudgeRun(t, env, []string{"0300-example", "--stage=prd"}, want, "", 0)
+ }
+ 
+@@ -572,3 +573,43 @@ func TestSpecJudgeRefusesAnInvalidUserConfigCeiling(t *testing.T) {
+ 		t.Fatal("invalid config sent a request")
+ 	}
+ }
++
++func TestSpecJudgeNamesTheKeyVariableItUsed(t *testing.T) {
++	for _, variable := range []string{openrouterkey.Judge, openrouterkey.Shared} {
++		t.Run(variable, func(t *testing.T) {
++			env, fake := specJudgeFixture(t, openrouterkey.Shared)
++			env.environ = []string{openrouterkey.Shared + "=shared-command-fake"}
++			fake.key = "shared-command-fake"
++			if variable == openrouterkey.Judge {
++				env.environ = append(env.environ, openrouterkey.Judge+"=judge-command-fake")
++				fake.key = "judge-command-fake"
++			}
++			var out, stderr bytes.Buffer
++			code := runWithContext(context.Background(), []string{"spec", "judge", "0300-example", "--stage=techspec"}, &out, &stderr, env)
++			if code != 0 || stderr.Len() != 0 || fake.calls == 0 || !strings.Contains(out.String(), "via openrouter on "+variable+"\n") {
++				t.Fatalf("exit=%d stdout=%s stderr=%s", code, &out, &stderr)
++			}
++			if strings.Contains(out.String(), "command-fake") {
++				t.Fatal("key in text output")
++			}
++			out.Reset()
++			code = runWithContext(context.Background(), []string{"spec", "judge", "0300-example", "--stage=techspec", "--format=json"}, &out, &stderr, env)
++			var report judge.Report
++			if err := json.Unmarshal(out.Bytes(), &report); err != nil {
++				t.Fatal(err)
++			}
++			if code != 0 || stderr.Len() != 0 || report.KeyVariable == nil || *report.KeyVariable != variable || strings.Contains(out.String(), "command-fake") {
++				t.Fatalf("exit=%d JSON=%s stderr=%s", code, &out, &stderr)
++			}
++		})
++	}
++}
++func TestSpecJudgeSkipNamesTheJudgeKeyFirst(t *testing.T) {
++	env, fake := specJudgeFixture(t, "")
++	env.environ = []string{"OPENROUTER_API_KEY=ignored", "TYPESAFE_API_KEY=ignored", openrouterkey.Implement + "=ignored", openrouterkey.Judge + "="}
++	mustWrite(t, filepath.Join(env.workDir, "docs/specs/0300-example/_prd.md"), specJudgeEnglish+"\n\nADR-0035 keeps every Run Event for ninety days after the Run ends.\n")
++	specJudgeRun(t, env, []string{"0300-example", "--stage=prd"}, "Judge: skipped: ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set (nor ROUNDFIX_OPENROUTER_API_KEY, nor ROUNDFIX_TYPESAFE_API_KEY); 1 judgment(s) not asked\n", "", 0)
++	if fake.calls != 0 {
++		t.Fatal("request without a supported key")
++	}
++}
+diff --git a/internal/cli/spec_judge_tier_test.go b/internal/cli/spec_judge_tier_test.go
+index 2c64b6f8..adf4a125 100644
+--- a/internal/cli/spec_judge_tier_test.go
++++ b/internal/cli/spec_judge_tier_test.go
+@@ -65,7 +65,7 @@ func TestSpecJudgeSuggestsModelTier(t *testing.T) {
+ 				t.Fatalf("exit=%d calls=%d stderr=%s", code, fake.calls, &stderr)
+ 			}
+ 			if format == "text" {
+-				want := "suggested model-tier docs/specs/0300-example/task_01.md: light at confidence 0.93\nsuggested model-tier docs/specs/0300-example/task_02.md: light at confidence 0.93\n" + fmt.Sprintf("Judge: 0 advisory, 2 suggested, 0 clear, 0 skipped; 2 call(s), 1684 input tokens, US$0.0001; month US$0.0001 of US$%.2f; model jev-1.13 via openrouter\n", specJudgeCeiling(t))
++				want := "suggested model-tier docs/specs/0300-example/task_01.md: light at confidence 0.93\nsuggested model-tier docs/specs/0300-example/task_02.md: light at confidence 0.93\n" + fmt.Sprintf("Judge: 0 advisory, 2 suggested, 0 clear, 0 skipped; 2 call(s), 1684 input tokens, US$0.0001; month US$0.0001 of US$%.2f; model jev-1.13 via openrouter on ROUNDFIX_OPENROUTER_API_KEY\n", specJudgeCeiling(t))
+ 				if out.String() != want {
+ 					t.Fatalf("stdout=%q want=%q", out.String(), want)
+ 				}
+@@ -118,7 +118,7 @@ func TestSpecJudgeSuggestsModelTier(t *testing.T) {
+ 
+ func TestSpecJudgeTasksSkipsWithoutKey(t *testing.T) {
+ 	env, fake := specJudgeTierFixture(t, "")
+-	specJudgeRun(t, env, []string{"0300-example", "--stage=tasks"}, "Judge: skipped: ROUNDFIX_OPENROUTER_API_KEY is not set (nor ROUNDFIX_TYPESAFE_API_KEY); 2 judgment(s) not asked\n", "", 0)
++	specJudgeRun(t, env, []string{"0300-example", "--stage=tasks"}, "Judge: skipped: ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set (nor ROUNDFIX_OPENROUTER_API_KEY, nor ROUNDFIX_TYPESAFE_API_KEY); 2 judgment(s) not asked\n", "", 0)
+ 	if fake.calls != 0 {
+ 		t.Fatal("asked without key")
+ 	}
+diff --git a/internal/config/light_tier.go b/internal/config/light_tier.go
+index 8a043cbf..b193d592 100644
+--- a/internal/config/light_tier.go
++++ b/internal/config/light_tier.go
+@@ -8,6 +8,8 @@ import (
+ 	"unicode"
+ 
+ 	"gopkg.in/yaml.v3"
++
++	"roundfix/internal/openrouterkey"
+ )
+ 
+ const DefaultLightModel = "deepseek/deepseek-v4.1-flash"
+@@ -25,9 +27,8 @@ type openRouterOverlay struct {
+ }
+ 
+ // OpenRouterImplementKey names the implementation key without exposing its value.
+-func OpenRouterImplementKey(getenv func(string) string) (variable string, present bool) {
+-	const name = "ROUNDFIX_OPENROUTER_API_KEY"
+-	return name, getenv(name) != ""
++func OpenRouterImplementKey(environ []string) (variable string, present bool) {
++	return openrouterkey.Select(environ, openrouterkey.StageImplement)
+ }
+ 
+ func prepareLightTierConfig(document *yaml.Node, warnings *configWarnings, source ProfileSource) error {
+diff --git a/internal/config/light_tier_test.go b/internal/config/light_tier_test.go
+index 0da50ca0..452faf26 100644
+--- a/internal/config/light_tier_test.go
++++ b/internal/config/light_tier_test.go
+@@ -92,20 +92,22 @@ func TestLightTierUserConfig(t *testing.T) {
+ 
+ func TestOpenRouterImplementKeyNamesOneVariable(t *testing.T) {
+ 	for _, tc := range []struct {
+-		name    string
+-		env     map[string]string
+-		present bool
++		name     string
++		environ  []string
++		variable string
++		present  bool
+ 	}{
+-		{"set", map[string]string{"ROUNDFIX_OPENROUTER_API_KEY": "fake"}, true},
+-		{"empty", map[string]string{"ROUNDFIX_OPENROUTER_API_KEY": ""}, false},
+-		{"absent", nil, false},
+-		{"generic only", map[string]string{"OPENROUTER_API_KEY": "fake"}, false},
++		{"implement first", []string{"ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY=fake", "ROUNDFIX_OPENROUTER_API_KEY=shared"}, "ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY", true},
++		{"shared fallback", []string{"ROUNDFIX_OPENROUTER_API_KEY=shared"}, "ROUNDFIX_OPENROUTER_API_KEY", true},
++		{"empty implement falls through", []string{"ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY=", "ROUNDFIX_OPENROUTER_API_KEY=shared"}, "ROUNDFIX_OPENROUTER_API_KEY", true},
++		{"empty shared", []string{"ROUNDFIX_OPENROUTER_API_KEY="}, "", false},
++		{"absent", nil, "", false},
++		{"generic only", []string{"OPENROUTER_API_KEY=fake"}, "", false},
+ 	} {
+ 		t.Run(tc.name, func(t *testing.T) {
+-			var lookedUp []string
+-			variable, present := OpenRouterImplementKey(func(key string) string { lookedUp = append(lookedUp, key); return tc.env[key] })
+-			if variable != "ROUNDFIX_OPENROUTER_API_KEY" || present != tc.present || !slices.Equal(lookedUp, []string{variable}) {
+-				t.Fatalf("variable=%q present=%t lookedUp=%v", variable, present, lookedUp)
++			variable, present := OpenRouterImplementKey(tc.environ)
++			if variable != tc.variable || present != tc.present {
++				t.Fatalf("variable=%q present=%t", variable, present)
+ 			}
+ 		})
+ 	}
+diff --git a/internal/daemon/agent_session_owner.go b/internal/daemon/agent_session_owner.go
+index 0a4e9d54..0a76d841 100644
+--- a/internal/daemon/agent_session_owner.go
++++ b/internal/daemon/agent_session_owner.go
+@@ -917,6 +917,7 @@ func (owner *agentSessionOwner) recordLightSpend(req agent.ExecuteRequest, resul
+ 	err := lighttier.AppendSpend(owner.lightPlan.HomeDir, owner.engine.deps.Now(), lighttier.SpendLine{
+ 		Repository: owner.lightPlan.Repository, RunID: owner.scope.RunID, Spec: owner.scope.Spec, Task: owner.scope.ID,
+ 		Session: req.Session.Name, Model: req.Runtime.Model, CostUSD: cost, CostSource: source,
++		KeyVariable: owner.lightPlan.KeyVariable,
+ 	})
+ 	if err != nil {
+ 		fmt.Fprintf(owner.engine.deps.Progress, "roundfix: warning: Light Spend Log not recorded for Task %s: %v\n", owner.scope.ID, err)
+diff --git a/internal/daemon/light_tier_test.go b/internal/daemon/light_tier_test.go
+index 95f8b9e8..75d4faa9 100644
+--- a/internal/daemon/light_tier_test.go
++++ b/internal/daemon/light_tier_test.go
+@@ -15,6 +15,7 @@ import (
+ 	roundconfig "roundfix/internal/config"
+ 	"roundfix/internal/gittest"
+ 	"roundfix/internal/lighttier"
++	"roundfix/internal/openrouterkey"
+ 	"roundfix/internal/runevent"
+ 	"roundfix/internal/spec"
+ 	"roundfix/internal/store"
+@@ -31,7 +32,7 @@ func lightPlanForTest(t *testing.T, fixture *taskCycleFixture) TaskPlan {
+ 		roundconfig.CategoryQA:      selectionProfileForTest(selectionForTest("claude", "qa-model", "high")),
+ 	})
+ 	plan.RuntimeFactory = runtimeFactoryForLifecycleTest(nil)
+-	variable, _ := roundconfig.OpenRouterImplementKey(func(string) string { return "fixture" })
++	variable, _ := roundconfig.OpenRouterImplementKey([]string{openrouterkey.Shared + "=fixture"})
+ 	plan.LightTier = lighttier.Plan{Models: []string{roundconfig.DefaultLightModel, "x-ai/grok-4.5"}, CeilingUSD: 10, KeyVariable: variable, KeyPresent: true, HomeDir: t.TempDir(), Repository: fixture.gitRoot}
+ 	return plan
+ }
+diff --git a/internal/judge/client.go b/internal/judge/client.go
+index fb465f20..2c0cbddc 100644
+--- a/internal/judge/client.go
++++ b/internal/judge/client.go
+@@ -11,13 +11,15 @@ import (
+ 	"time"
+ )
+ 
+-func selectTransport(q Questions, keys map[string]string) (Transport, string, bool) {
++func selectTransport(q Questions, keys map[string]string) (Transport, string, string, bool) {
+ 	for _, t := range q.Transports {
+-		if key := keys[t.KeyVariable]; key != "" {
+-			return t, key, true
++		for _, variable := range t.KeyVariables() {
++			if key := keys[variable]; key != "" {
++				return t, variable, key, true
++			}
+ 		}
+ 	}
+-	return Transport{}, "", false
++	return Transport{}, "", "", false
+ }
+ func (q Questions) pinned(model string) bool { return q.AcceptedModel.MatchString(model) }
+ 
+diff --git a/internal/judge/judge.go b/internal/judge/judge.go
+index 23fffb81..5d426338 100644
+--- a/internal/judge/judge.go
++++ b/internal/judge/judge.go
+@@ -43,6 +43,7 @@ type Report struct {
+ 	Spec             string         `json:"spec"`
+ 	Model            string         `json:"model"`
+ 	Transport        *string        `json:"transport"`
++	KeyVariable      *string        `json:"key_variable"`
+ 	Skipped          *string        `json:"skipped"`
+ 	Stopped          *string        `json:"stopped"`
+ 	ArtifactsSkipped []ArtifactSkip `json:"artifacts_skipped"`
+@@ -90,7 +91,7 @@ func Run(ctx context.Context, q Questions, req Request) (Report, error) {
+ 	for _, s := range plan.Skipped {
+ 		report.Judgments = append(report.Judgments, Judgment{Kind: s.Kind, Artifact: relativeArtifact(req.RepoRoot, s.Artifact), Line: s.Line, Target: s.Target, Outcome: "skipped", Reason: reasonPointer(s.Reason)})
+ 	}
+-	t, key, ok := selectTransport(q, req.Keys)
++	t, variable, key, ok := selectTransport(q, req.Keys)
+ 	now := req.Now
+ 	if now == nil {
+ 		now = time.Now
+@@ -100,9 +101,18 @@ func Run(ctx context.Context, q Questions, req Request) (Report, error) {
+ 		return fmt.Sprintf("monthly ceiling reached (US$%.4f of US$%.2f)", report.MonthCostUSD, q.MonthlyCeilingUSD)
+ 	}
+ 	if !ok {
+-		report.Skipped = reasonPointer("ROUNDFIX_OPENROUTER_API_KEY is not set (nor ROUNDFIX_TYPESAFE_API_KEY)")
++		variables := q.KeyVariables()
++		reason := "no key variable is set"
++		if len(variables) > 0 {
++			reason = variables[0] + " is not set"
++			if len(variables) > 1 {
++				reason += " (nor " + strings.Join(variables[1:], ", nor ") + ")"
++			}
++		}
++		report.Skipped = reasonPointer(reason)
+ 	} else {
+ 		report.Transport = &t.Name
++		report.KeyVariable = &variable
+ 		cost, err := log.monthCost()
+ 		if err != nil {
+ 			report.Skipped = reasonPointer("judge log unreadable: " + err.Error())
+@@ -114,9 +124,9 @@ func Run(ctx context.Context, q Questions, req Request) (Report, error) {
+ 		}
+ 	}
+ 	// Snapshot credentials with the transport so later changes cannot weaken redaction.
+-	secrets := make([]string, 0, len(q.Transports))
+-	for _, candidate := range q.Transports {
+-		if secret := req.Keys[candidate.KeyVariable]; secret != "" {
++	secrets := make([]string, 0, len(q.KeyVariables()))
++	for _, name := range q.KeyVariables() {
++		if secret := req.Keys[name]; secret != "" {
+ 			secrets = append(secrets, secret)
+ 		}
+ 	}
+@@ -209,8 +219,8 @@ func Run(ctx context.Context, q Questions, req Request) (Report, error) {
+ 			if recordError == "" && outcome == "skipped" {
+ 				recordError = reason
+ 			}
+-			row := logLine{Schema: "roundfix/judge-log/v1", Time: callTime, Repository: req.RepoRoot, Spec: req.Spec, Judgment: p.Kind, Artifact: j.Artifact, Line: p.Line, Target: j.Target, StateHash: fmt.Sprintf("%x", hash)[:16], QuestionID: id, Transport: t.Name, ResponseID: result.ResponseID, Provider: result.Provider, RequestedModel: t.RequestModel, Model: result.Model, Answer: a.Choice, Probabilities: a.Probabilities, Confidence: a.Confidence, Noul: a.Noul, LatencyMS: result.LatencyMS, InputTokens: result.Usage.InputTokens, OutputTokens: result.Usage.OutputTokens, CostUSD: cost, CostSource: costSource, Status: result.Status, Attempts: attempt, Error: recordError, Outcome: outcome}
+-			for _, field := range []*string{&row.Schema, &row.Repository, &row.Spec, &row.Judgment, &row.Artifact, &row.Target, &row.StateHash, &row.QuestionID, &row.Transport, &row.RequestedModel, &row.CostSource, &row.Outcome} {
++			row := logLine{Schema: "roundfix/judge-log/v1", Time: callTime, Repository: req.RepoRoot, Spec: req.Spec, Judgment: p.Kind, Artifact: j.Artifact, Line: p.Line, Target: j.Target, StateHash: fmt.Sprintf("%x", hash)[:16], QuestionID: id, Transport: t.Name, KeyVariable: variable, ResponseID: result.ResponseID, Provider: result.Provider, RequestedModel: t.RequestModel, Model: result.Model, Answer: a.Choice, Probabilities: a.Probabilities, Confidence: a.Confidence, Noul: a.Noul, LatencyMS: result.LatencyMS, InputTokens: result.Usage.InputTokens, OutputTokens: result.Usage.OutputTokens, CostUSD: cost, CostSource: costSource, Status: result.Status, Attempts: attempt, Error: recordError, Outcome: outcome}
++			for _, field := range []*string{&row.Schema, &row.Repository, &row.Spec, &row.Judgment, &row.Artifact, &row.Target, &row.StateHash, &row.QuestionID, &row.Transport, &row.KeyVariable, &row.RequestedModel, &row.CostSource, &row.Outcome} {
+ 				*field = redact(*field)
+ 			}
+ 			if err := callLog.append(row); err != nil {
+diff --git a/internal/judge/judge_test.go b/internal/judge/judge_test.go
+index 5b538f78..35d574eb 100644
+--- a/internal/judge/judge_test.go
++++ b/internal/judge/judge_test.go
+@@ -95,7 +95,7 @@ func neverRequest(t *testing.T) http.RoundTripper {
+ }
+ func assertNoKey(t *testing.T, got Report) {
+ 	t.Helper()
+-	if got.Skipped == nil || *got.Skipped != "ROUNDFIX_OPENROUTER_API_KEY is not set (nor ROUNDFIX_TYPESAFE_API_KEY)" || got.Calls != 0 || len(got.Judgments) != 2 {
++	if got.Skipped == nil || *got.Skipped != "ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set (nor ROUNDFIX_OPENROUTER_API_KEY, nor ROUNDFIX_TYPESAFE_API_KEY)" || got.Calls != 0 || len(got.Judgments) != 2 {
+ 		t.Fatalf("report=%+v", got)
+ 	}
+ 	for _, j := range got.Judgments {
+diff --git a/internal/judge/log.go b/internal/judge/log.go
+index 70dcfc0e..f544fafd 100644
+--- a/internal/judge/log.go
++++ b/internal/judge/log.go
+@@ -88,6 +88,7 @@ type logLine struct {
+ 	StateHash      string             `json:"state_hash"`
+ 	QuestionID     string             `json:"question_id"`
+ 	Transport      string             `json:"transport"`
++	KeyVariable    string             `json:"key_variable"`
+ 	ResponseID     string             `json:"response_id"`
+ 	Provider       string             `json:"provider"`
+ 	RequestedModel string             `json:"requested_model"`
+diff --git a/internal/judge/log_test.go b/internal/judge/log_test.go
+index c75cfd5c..d0925e1c 100644
+--- a/internal/judge/log_test.go
++++ b/internal/judge/log_test.go
+@@ -54,7 +54,7 @@ func TestJudgeLogRecordsEveryCall(t *testing.T) {
+ 	if strings.Contains(string(b), req.Keys[q.Transports[0].KeyVariable]) {
+ 		t.Fatal("secret in log")
+ 	}
+-	required := []string{"schema", "time", "repository", "spec", "judgment", "artifact", "line", "target", "state_hash", "question_id", "transport", "response_id", "provider", "requested_model", "model", "answer", "probabilities", "confidence", "noul", "latency_ms", "input_tokens", "output_tokens", "cost_usd", "cost_source", "status", "attempts", "error", "outcome"}
++	required := []string{"schema", "time", "repository", "spec", "judgment", "artifact", "line", "target", "state_hash", "question_id", "transport", "key_variable", "response_id", "provider", "requested_model", "model", "answer", "probabilities", "confidence", "noul", "latency_ms", "input_tokens", "output_tokens", "cost_usd", "cost_source", "status", "attempts", "error", "outcome"}
+ 	for _, line := range strings.Split(strings.TrimSpace(string(b)), "\n") {
+ 		var fields map[string]json.RawMessage
+ 		if err := json.Unmarshal([]byte(line), &fields); err != nil {
+diff --git a/internal/judge/questions.go b/internal/judge/questions.go
+index 2ba3e267..53facbe5 100644
+--- a/internal/judge/questions.go
++++ b/internal/judge/questions.go
+@@ -5,6 +5,8 @@ import (
+ 	"encoding/json"
+ 	"fmt"
+ 	"regexp"
++
++	"roundfix/internal/openrouterkey"
+ )
+ 
+ //go:embed questions.json
+@@ -131,3 +133,26 @@ func (q Questions) WithMonthlyCeiling(ceilingUSD float64) Questions {
+ 	}
+ 	return q
+ }
++
++// KeyVariables lists the credential variables for this transport in preference order.
++func (t Transport) KeyVariables() []string {
++	if t.KeyVariable == openrouterkey.Shared {
++		return openrouterkey.Variables(openrouterkey.StageJudge)
++	}
++	return []string{t.KeyVariable}
++}
++
++// KeyVariables lists every transport's variables in order, without duplicates.
++func (q Questions) KeyVariables() []string {
++	var variables []string
++	seen := make(map[string]bool)
++	for _, transport := range q.Transports {
++		for _, variable := range transport.KeyVariables() {
++			if !seen[variable] {
++				variables = append(variables, variable)
++				seen[variable] = true
++			}
++		}
++	}
++	return variables
++}
+diff --git a/internal/judge/stage_key_test.go b/internal/judge/stage_key_test.go
+new file mode 100644
+index 00000000..2bc50096
+--- /dev/null
++++ b/internal/judge/stage_key_test.go
+@@ -0,0 +1,102 @@
++package judge
++
++import (
++	"encoding/json"
++	"errors"
++	"net/http"
++	"os"
++	"reflect"
++	"strings"
++	"testing"
++
++	"roundfix/internal/openrouterkey"
++)
++
++func TestRunPrefersTheJudgeStageKey(t *testing.T) {
++	checkStageKey(t, map[string]string{openrouterkey.Judge: "stage-fake-value", openrouterkey.Shared: "shared-fake-value"}, openrouterkey.Judge)
++}
++func TestRunFallsBackToTheSharedKeyAndNamesIt(t *testing.T) {
++	checkStageKey(t, map[string]string{openrouterkey.Shared: "shared-fake-value"}, openrouterkey.Shared)
++}
++func checkStageKey(t *testing.T, keys map[string]string, variable string) {
++	t.Helper()
++	q, req := runFixture(t)
++	req.Keys = keys
++	calls := 0
++	expected := keys[variable]
++	echo := keys[openrouterkey.Judge] + " " + keys[openrouterkey.Shared]
++	req.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
++		calls++
++		if r.URL.String() != q.Transports[0].Endpoint || r.Header.Get("Authorization") != "Bearer "+expected {
++			t.Fatal("wrong recipient or bearer key")
++		}
++		delete(req.Keys, variable)
++		body := strings.ReplaceAll(answerBody("jev-1.13.0", 0.8, 0.29, ""), "fixture-id", echo)
++		return fixtureResponse(200, body), nil
++	})
++	got := runChecked(t, q, req)
++	if calls != 2 || got.KeyVariable == nil || *got.KeyVariable != variable || got.Transport == nil || *got.Transport != "openrouter" {
++		t.Fatalf("selection report=%+v calls=%d", got, calls)
++	}
++	for _, row := range readLog(t, req) {
++		if row.KeyVariable != variable {
++			t.Fatalf("logged variable=%q", row.KeyVariable)
++		}
++	}
++	assertStageSecretsAbsent(t, got, req)
++}
++func assertStageSecretsAbsent(t *testing.T, got Report, req Request) {
++	t.Helper()
++	report, err := json.Marshal(got)
++	if err != nil {
++		t.Fatal(err)
++	}
++	log, err := os.ReadFile(newJudgeLog(req.HomeDir, req.Now()).path)
++	if err != nil {
++		t.Fatal(err)
++	}
++	for _, secret := range []string{"stage-fake-value", "shared-fake-value"} {
++		if strings.Contains(string(report), secret) || strings.Contains(string(log), secret) {
++			t.Fatal("key value in report or log")
++		}
++	}
++}
++func TestJudgeLogNamesTheKeyVariableAndNoKey(t *testing.T) {
++	q, req := runFixture(t)
++	want := []string{openrouterkey.Judge, openrouterkey.Shared, "ROUNDFIX_TYPESAFE_API_KEY"}
++	if !reflect.DeepEqual(q.KeyVariables(), want) {
++		t.Fatalf("variables=%v", q.KeyVariables())
++	}
++	duplicate := q
++	duplicate.Transports = append(append([]Transport(nil), q.Transports...), q.Transports[0])
++	if !reflect.DeepEqual(duplicate.KeyVariables(), want) {
++		t.Fatal("duplicate variable retained")
++	}
++	req.Keys = map[string]string{openrouterkey.Judge: "stage-fake-value", openrouterkey.Shared: "shared-fake-value"}
++	req.Transport = roundTripFunc(func(*http.Request) (*http.Response, error) {
++		return nil, errors.New("stage-fake-value shared-fake-value")
++	})
++	got := runChecked(t, q, req)
++	assertStageSecretsAbsent(t, got, req)
++	rows := readLog(t, req)
++	if len(rows) != 1 || rows[0].KeyVariable != openrouterkey.Judge {
++		t.Fatalf("rows=%+v", rows)
++	}
++	// Historical records without key_variable still contribute to the ceiling.
++	q, req = runFixture(t)
++	writeFixture(t, req.HomeDir, ".roundfix/judge/2026-10.jsonl", `{"cost_usd":1.25}`+"\n")
++	log := newJudgeLog(req.HomeDir, req.Now())
++	if cost, err := log.monthCost(); err != nil || cost != 1.25 {
++		t.Fatalf("legacy cost=%v err=%v", cost, err)
++	}
++	req.Keys = nil
++	req.Transport = neverRequest(t)
++	got = runChecked(t, q, req)
++	b, err := json.Marshal(got)
++	if err != nil {
++		t.Fatal(err)
++	}
++	if got.KeyVariable != nil || !strings.Contains(string(b), `"key_variable":null`) {
++		t.Fatalf("no-key report=%s", b)
++	}
++}
+diff --git a/internal/judge/task_acceptance_measure_test.go b/internal/judge/task_acceptance_measure_test.go
+index 81d52c8f..c480afd1 100644
+--- a/internal/judge/task_acceptance_measure_test.go
++++ b/internal/judge/task_acceptance_measure_test.go
+@@ -263,7 +263,7 @@ func measureTaskAcceptance(ctx context.Context, repo string, labels []byte, keys
+ 	}
+ 	// Only Roundfix-scoped names enter transport selection or redaction.
+ 	scoped := map[string]string{"ROUNDFIX_OPENROUTER_API_KEY": keys["ROUNDFIX_OPENROUTER_API_KEY"], "ROUNDFIX_TYPESAFE_API_KEY": keys["ROUNDFIX_TYPESAFE_API_KEY"]}
+-	recipient, key, ok := selectTransport(q, scoped)
++	recipient, _, key, ok := selectTransport(q, scoped)
+ 	if !ok {
+ 		record.Status, record.Reason = "blocked", "neither Roundfix transport key is set"
+ 		return finish(), nil
+diff --git a/internal/lighttier/spend_log.go b/internal/lighttier/spend_log.go
+index 21f22454..769dfdb8 100644
+--- a/internal/lighttier/spend_log.go
++++ b/internal/lighttier/spend_log.go
+@@ -12,16 +12,17 @@ import (
+ 
+ // SpendLine records a light prompt's incremental cost, never a credential.
+ type SpendLine struct {
+-	Schema     string    `json:"schema"`
+-	Time       time.Time `json:"time"`
+-	Repository string    `json:"repository"`
+-	RunID      string    `json:"run_id"`
+-	Spec       string    `json:"spec"`
+-	Task       string    `json:"task"`
+-	Session    string    `json:"session"`
+-	Model      string    `json:"model"`
+-	CostUSD    float64   `json:"cost_usd"`
+-	CostSource string    `json:"cost_source"`
++	Schema      string    `json:"schema"`
++	Time        time.Time `json:"time"`
++	Repository  string    `json:"repository"`
++	RunID       string    `json:"run_id"`
++	Spec        string    `json:"spec"`
++	Task        string    `json:"task"`
++	Session     string    `json:"session"`
++	Model       string    `json:"model"`
++	CostUSD     float64   `json:"cost_usd"`
++	CostSource  string    `json:"cost_source"`
++	KeyVariable string    `json:"key_variable"`
+ }
+ 
+ func monthPath(home string, now time.Time) string {
+diff --git a/internal/lighttier/spend_log_test.go b/internal/lighttier/spend_log_test.go
+index 6ff518b8..d06121d0 100644
+--- a/internal/lighttier/spend_log_test.go
++++ b/internal/lighttier/spend_log_test.go
+@@ -3,11 +3,15 @@ package lighttier
+ import (
+ 	"bytes"
+ 	"encoding/json"
++	"math"
+ 	"os"
+ 	"path/filepath"
+ 	"reflect"
++	"strings"
+ 	"testing"
+ 	"time"
++
++	"roundfix/internal/openrouterkey"
+ )
+ 
+ func TestLightSpendLog(t *testing.T) {
+@@ -131,3 +135,34 @@ func TestLightSpendLog(t *testing.T) {
+ 		}
+ 	})
+ }
++
++func TestOpenModelImplementationSpendRecordNamesItsKeyVariable(t *testing.T) {
++	now := time.Date(2026, 10, 5, 12, 0, 0, 0, time.UTC)
++	home := t.TempDir()
++	line := SpendLine{Model: "deepseek/deepseek-v4.1-flash", CostUSD: 0.25, CostSource: "opencode", KeyVariable: openrouterkey.Implement}
++	if err := AppendSpend(home, now, line); err != nil {
++		t.Fatal(err)
++	}
++	path := filepath.Join(home, ".roundfix/openrouter/implement/2026-10.jsonl")
++	data, err := os.ReadFile(path)
++	if err != nil {
++		t.Fatal(err)
++	}
++	raw := string(data)
++	if !strings.Contains(raw, `"key_variable":"`+openrouterkey.Implement+`"`) {
++		t.Fatalf("record does not name its key variable: %s", raw)
++	}
++	for _, sentinel := range []string{"implement-sentinel", "shared-sentinel"} {
++		if strings.Contains(raw, sentinel) {
++			t.Fatalf("record carries key value sentinel %q: %s", sentinel, raw)
++		}
++	}
++	legacy := "{\"schema\":\"roundfix/light-spend/v1\",\"time\":\"" + now.Format(time.RFC3339Nano) + "\",\"cost_usd\":0.5,\"cost_source\":\"opencode\"}\n"
++	if err := os.WriteFile(path, append(data, []byte(legacy)...), 0600); err != nil {
++		t.Fatal(err)
++	}
++	total, err := ReadMonth(home, now)
++	if err != nil || math.Abs(total-0.75) > 1e-9 {
++		t.Fatalf("legacy record did not count: sum=%v err=%v", total, err)
++	}
++}
+diff --git a/internal/openrouterkey/openrouterkey.go b/internal/openrouterkey/openrouterkey.go
+new file mode 100644
+index 00000000..3cce300d
+--- /dev/null
++++ b/internal/openrouterkey/openrouterkey.go
+@@ -0,0 +1,47 @@
++// Package openrouterkey names each stage's OpenRouter variables in preference order.
++package openrouterkey
++
++import "strings"
++
++const (
++	Shared    = "ROUNDFIX_OPENROUTER_API_KEY"
++	Judge     = "ROUNDFIX_OPENROUTER_JUDGE_API_KEY"
++	Implement = "ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY"
++)
++
++type Stage string
++
++const (
++	StageJudge     Stage = "judge"
++	StageImplement Stage = "implement"
++)
++
++// Variables returns a fresh list of the stage key followed by the shared key.
++func Variables(stage Stage) []string {
++	switch stage {
++	case StageJudge:
++		return []string{Judge, Shared}
++	case StageImplement:
++		return []string{Implement, Shared}
++	default:
++		return nil
++	}
++}
++
++// Select returns only the first set variable's name; the last duplicate wins.
++func Select(environ []string, stage Stage) (string, bool) {
++	variables := Variables(stage)
++	for _, variable := range variables {
++		set := false
++		for _, entry := range environ {
++			name, value, found := strings.Cut(entry, "=")
++			if found && name == variable {
++				set = value != ""
++			}
++		}
++		if set {
++			return variable, true
++		}
++	}
++	return "", false
++}
+diff --git a/internal/openrouterkey/openrouterkey_test.go b/internal/openrouterkey/openrouterkey_test.go
+new file mode 100644
+index 00000000..1c0d583d
+--- /dev/null
++++ b/internal/openrouterkey/openrouterkey_test.go
+@@ -0,0 +1,64 @@
++package openrouterkey
++
++import (
++	"reflect"
++	"testing"
++)
++
++func TestVariablesListEachStageKeyBeforeTheSharedKey(t *testing.T) {
++	for _, tc := range []struct {
++		name  string
++		stage Stage
++		want  []string
++	}{
++		{"judge", StageJudge, []string{Judge, Shared}},
++		{"implement", StageImplement, []string{Implement, Shared}},
++		{"unknown", Stage("unknown"), nil},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			got := Variables(tc.stage)
++			if !reflect.DeepEqual(got, tc.want) {
++				t.Fatalf("variables=%v want=%v", got, tc.want)
++			}
++			if len(got) > 0 {
++				got[0] = "changed"
++				if !reflect.DeepEqual(Variables(tc.stage), tc.want) {
++					t.Fatal("slice is shared")
++				}
++			}
++		})
++	}
++}
++func TestSelectReturnsTheFirstSetVariableByName(t *testing.T) {
++	for _, stage := range []Stage{StageJudge, StageImplement} {
++		t.Run(string(stage), func(t *testing.T) {
++			first := Variables(stage)[0]
++			for _, tc := range []struct {
++				name string
++				env  []string
++				want string
++			}{
++				{"stage", []string{Shared + "=shared", first + "=stage"}, first},
++				{"shared", []string{Shared + "=shared"}, Shared},
++				{"empty stage", []string{first + "=", Shared + "=shared"}, Shared},
++				{"empty", []string{first + "=", Shared + "="}, ""},
++				{"last wins", []string{first + "=old", first + "=", Shared + "=shared"}, Shared},
++				{"last sets", []string{first + "=", first + "=new"}, first},
++				{"generic router", []string{"OPENROUTER_API_KEY=generic"}, ""},
++				{"generic typesafe", []string{"TYPESAFE_API_KEY=generic"}, ""},
++				{"malformed", []string{first}, ""},
++				{"embedded equals", []string{first + "=a=b"}, first},
++			} {
++				t.Run(tc.name, func(t *testing.T) {
++					got, ok := Select(tc.env, stage)
++					if got != tc.want || ok != (tc.want != "") {
++						t.Fatalf("name=%q ok=%v", got, ok)
++					}
++				})
++			}
++		})
++	}
++	if name, ok := Select([]string{Shared + "=shared"}, Stage("unknown")); name != "" || ok {
++		t.Fatal("unknown stage selected a key")
++	}
++}
+diff --git a/skills/roundfix/SKILL.md b/skills/roundfix/SKILL.md
+index 129f92fe..05b1ca30 100644
+--- a/skills/roundfix/SKILL.md
++++ b/skills/roundfix/SKILL.md
+@@ -4,10 +4,10 @@ description: Use Roundfix to plan releases with the read-only Release Plan Comma
+ metadata:
+   category: code-review
+   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
+-  version: 0.1.35
++  version: 0.1.37
+   author: Marcio Altoé
+   source: https://github.com/marcioaltoe/roundfix
+-version: 0.1.35
++version: 0.1.37
+ ---
+ 
+ # Roundfix
+diff --git a/skills/roundfix/references/runtime.md b/skills/roundfix/references/runtime.md
+index 657ec01d..63b5bd48 100644
+--- a/skills/roundfix/references/runtime.md
++++ b/skills/roundfix/references/runtime.md
+@@ -11,7 +11,13 @@ Tasks use per-Task Agent Sessions named `roundfix-<run-id>-<task_id>` in their
+ Task Worktrees, and QA uses its own Agent Session after Tasks settle.
+ 
+ Use the Doctor Command, `roundfix doctor`, to diagnose Run readiness without
+-installing dependencies, writing config, or changing files. Doctor runs the
++installing dependencies, writing config, or changing files. The `environment:`
++line lists `spec judge keys` by name in preference order:
++`ROUNDFIX_OPENROUTER_JUDGE_API_KEY`, `ROUNDFIX_OPENROUTER_API_KEY`,
++`ROUNDFIX_TYPESAFE_API_KEY`; then `implementation keys`:
++`ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY`, `ROUNDFIX_OPENROUTER_API_KEY`.
++Each entry is `set` or `not set`, never a key value; both stages fall back
++to the shared key when their stage key is unset. Doctor runs the
+ shared Node.js, minimum-supported acpx, effective adapters, configured Agent
+ Selection Profiles, Repository Skill Set, process residue, storage check, and
+ codex runtime hygiene checks and prints one line per check with status `ok`,
+@@ -160,7 +166,11 @@ retired `roundfix-openrouter` provider. Under the `openrouter` provider it
+ refuses authors `openai` and `anthropic`, router authors `openrouter` and
+ `typesafe`, and `@` presets. The refusal reason is `subscription_only`; a
+ refusal before Agent work activates the configured fallback. Other OpenRouter
+-models stay selectable. `jev.router_min_credit_usd` is a deprecated key.
++models stay selectable. An open model through OpenCode reads
++`ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY` first and the shared
++`ROUNDFIX_OPENROUTER_API_KEY` second; empty values count as unset and the
++generic `OPENROUTER_API_KEY` is never read.
++`jev.router_min_credit_usd` is a deprecated key.
+ 
+ ### Light implementation tier
+ 
+diff --git a/skills/roundfix/references/spec.md b/skills/roundfix/references/spec.md
+index 25608778..76271023 100644
+--- a/skills/roundfix/references/spec.md
++++ b/skills/roundfix/references/spec.md
+@@ -78,9 +78,13 @@ question; its recall is low, so no suggestion does not prove no source fits.
+ An unknown stage fails with `unsupported --stage "<value>"; use prd, techspec
+ or tasks`.
+ 
+-Set `ROUNDFIX_OPENROUTER_API_KEY` for OpenRouter first, or
+-`ROUNDFIX_TYPESAFE_API_KEY` for TypeSafe directly when the first key is
+-absent. The generic `OPENROUTER_API_KEY` is not read. Every request is
++Set `ROUNDFIX_OPENROUTER_JUDGE_API_KEY` for OpenRouter first; the shared
++`ROUNDFIX_OPENROUTER_API_KEY` is its fallback, followed by
++`ROUNDFIX_TYPESAFE_API_KEY` for TypeSafe directly. Empty values count as unset.
++The generic `OPENROUTER_API_KEY` is never read. The text summary ends
++`via <transport> on <variable>`; JSON and every Judge Log line carry the
++selected name in `key_variable`, never its value. Without a key, JSON has
++`key_variable: null` and the skip names the judge key first. Every request is
+ recorded in `<home>/.roundfix/judge/<YYYY-MM>.jsonl` (UTC month); the monthly
+ ceiling is `jev.monthly_ceiling_usd` in User Config, US$5 by default, across
+ both transports and every repository using that Roundfix Home. Missing keys,
+diff --git a/skills/testdata/owned-skill-versions.json b/skills/testdata/owned-skill-versions.json
+index f72cb0eb..369e124a 100644
+--- a/skills/testdata/owned-skill-versions.json
++++ b/skills/testdata/owned-skill-versions.json
+@@ -261,6 +261,14 @@
+       {
+         "version": "0.1.35",
+         "digest": "eaee59686c1d1c08ccfa9dc39bde09e6590f6f73b652f0c403f049664a1b3052"
++      },
++      {
++        "version": "0.1.36",
++        "digest": "ef5583f6f9fb92260cd557d4327a82bec6d3bc26a1753556add81f95f3226bc1"
++      },
++      {
++        "version": "0.1.37",
++        "digest": "3ca57f552b3dab57df9aba9c6fdc0cc29cebc7c641de03a0fd35a9c4ed407b20"
+       }
+     ],
+     "setup-context-driven": [
+@@ -307,6 +315,10 @@
+       {
+         "version": "0.0.6",
+         "digest": "e42fe9c807087a91a74b7dd044d3fc0018a2f427ea86d0813e70aa88f5506e99"
++      },
++      {
++        "version": "0.0.7",
++        "digest": "7bf72eb662f03e360447efa31a8769b0938ac81563e1f0a5d52e66d6c042dc8f"
+       }
+     ],
+     "write-tasks": [
+@@ -359,6 +371,10 @@
+       {
+         "version": "0.0.6",
+         "digest": "e150220e1c331a593c9b4700ceff140287bf8afe6747b32f19c26b8299b9856c"
++      },
++      {
++        "version": "0.0.7",
++        "digest": "f1938fb49592af6d5217c4644c314a6c158f5cd560226df844b6c9a426362285"
+       }
+     ]
+   }
+diff --git a/skills/write-prd/SKILL.md b/skills/write-prd/SKILL.md
+index 2c426e6f..633f25b3 100644
+--- a/skills/write-prd/SKILL.md
++++ b/skills/write-prd/SKILL.md
+@@ -5,10 +5,10 @@ argument-hint: "<feature description, or nothing after a grilling/brainstorm ses
+ metadata:
+   category: planning
+   tags: [prd, product, requirements, workflow, documentation]
+-  version: 0.0.6
++  version: 0.0.7
+   author: Marcio Altoé
+   source: https://github.com/marcioaltoe/skills
+-version: 0.0.6
++version: 0.0.7
+ ---
+ 
+ # Write PRD
+@@ -246,8 +246,8 @@ raised judgment, answer each raised judgment by correcting the artifact and
+ re-running the checker, or by keeping the text and stating in the report why it
+ stands. The judge is advisory and never a gate. a skipped result is neither a
+ failure nor a clean result, so report the skip reason and continue. Never print,
+-store or ask for either Jev key (`ROUNDFIX_OPENROUTER_API_KEY` or
+-`ROUNDFIX_TYPESAFE_API_KEY`).
++store or ask for any Jev key: `ROUNDFIX_OPENROUTER_JUDGE_API_KEY`,
++`ROUNDFIX_OPENROUTER_API_KEY` or `ROUNDFIX_TYPESAFE_API_KEY`.
+ 
+ ## Anti-patterns
+ 
+diff --git a/skills/write-techspec/SKILL.md b/skills/write-techspec/SKILL.md
+index 46aed026..80ed8b3d 100644
+--- a/skills/write-techspec/SKILL.md
++++ b/skills/write-techspec/SKILL.md
+@@ -5,10 +5,10 @@ argument-hint: "<spec slug, path to docs/specs/<slug>/_prd.md, or a refactor/bug
+ metadata:
+   category: engineering-design
+   tags: [architecture, documentation, workflow]
+-  version: 0.0.6
++  version: 0.0.7
+   author: Marcio Altoé
+   source: https://github.com/marcioaltoe/skills
+-version: 0.0.6
++version: 0.0.7
+ ---
+ 
+ # Write TechSpec
+@@ -158,8 +158,8 @@ every raised judgment, answer each raised judgment by correcting the artifact
+ and re-running the checker, or by keeping the text and stating in the report
+ why it stands. The judge is advisory and never a gate. a skipped result is
+ neither a failure nor a clean result, so report the skip reason and continue.
+-Never print, store or ask for either Jev key
+-(`ROUNDFIX_OPENROUTER_API_KEY` or `ROUNDFIX_TYPESAFE_API_KEY`).
++Never print, store or ask for any Jev key: `ROUNDFIX_OPENROUTER_JUDGE_API_KEY`,
++`ROUNDFIX_OPENROUTER_API_KEY` or `ROUNDFIX_TYPESAFE_API_KEY`.
+ 
+ ## Anti-patterns
+ 

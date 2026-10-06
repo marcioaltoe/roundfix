@@ -1,0 +1,8 @@
+entry: worktree ./bin/roundfix (absolute resolution required from disposable repository)
+args: spec judge 0300-qa-example --stage prd --format json
+HOME: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0234-qa-rpr9mr31
+exit: 0
+stdout:
+{"schema":"roundfix/spec-judge/v1","spec":"0300-qa-example","model":"jev-1.13","transport":null,"key_variable":null,"skipped":"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set (nor ROUNDFIX_OPENROUTER_API_KEY, nor ROUNDFIX_TYPESAFE_API_KEY)","stopped":null,"artifacts_skipped":[],"judgments":[{"kind":"citation-support","artifact":"docs/specs/0300-qa-example/_prd.md","line":53,"target":"ADR-0238","text":"","section_title":null,"outcome":"skipped","reason":"cited decision is not an accepted regular ADR","answer":null,"probabilities":null,"confidence":null,"noul":null,"model":null},{"kind":"citation-support","artifact":"docs/specs/0300-qa-example/_prd.md","line":58,"target":"ADR-0184","text":"","section_title":null,"outcome":"skipped","reason":"cited decision is not an accepted regular ADR","answer":null,"probabilities":null,"confidence":null,"noul":null,"model":null}],"calls":0,"input_tokens":0,"cost_usd":0,"month_cost_usd":0,"month_ceiling_usd":5}
+
+stderr:

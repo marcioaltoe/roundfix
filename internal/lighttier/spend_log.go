@@ -12,16 +12,17 @@ import (
 
 // SpendLine records a light prompt's incremental cost, never a credential.
 type SpendLine struct {
-	Schema     string    `json:"schema"`
-	Time       time.Time `json:"time"`
-	Repository string    `json:"repository"`
-	RunID      string    `json:"run_id"`
-	Spec       string    `json:"spec"`
-	Task       string    `json:"task"`
-	Session    string    `json:"session"`
-	Model      string    `json:"model"`
-	CostUSD    float64   `json:"cost_usd"`
-	CostSource string    `json:"cost_source"`
+	Schema      string    `json:"schema"`
+	Time        time.Time `json:"time"`
+	Repository  string    `json:"repository"`
+	RunID       string    `json:"run_id"`
+	Spec        string    `json:"spec"`
+	Task        string    `json:"task"`
+	Session     string    `json:"session"`
+	Model       string    `json:"model"`
+	CostUSD     float64   `json:"cost_usd"`
+	CostSource  string    `json:"cost_source"`
+	KeyVariable string    `json:"key_variable"`
 }
 
 func monthPath(home string, now time.Time) string {

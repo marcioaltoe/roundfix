@@ -3,11 +3,15 @@ package lighttier
 import (
 	"bytes"
 	"encoding/json"
+	"math"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
+
+	"roundfix/internal/openrouterkey"
 )
 
 func TestLightSpendLog(t *testing.T) {
@@ -130,4 +134,35 @@ func TestLightSpendLog(t *testing.T) {
 			t.Fatalf("time=%v", row.Time)
 		}
 	})
+}
+
+func TestOpenModelImplementationSpendRecordNamesItsKeyVariable(t *testing.T) {
+	now := time.Date(2026, 10, 5, 12, 0, 0, 0, time.UTC)
+	home := t.TempDir()
+	line := SpendLine{Model: "deepseek/deepseek-v4.1-flash", CostUSD: 0.25, CostSource: "opencode", KeyVariable: openrouterkey.Implement}
+	if err := AppendSpend(home, now, line); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(home, ".roundfix/openrouter/implement/2026-10.jsonl")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw := string(data)
+	if !strings.Contains(raw, `"key_variable":"`+openrouterkey.Implement+`"`) {
+		t.Fatalf("record does not name its key variable: %s", raw)
+	}
+	for _, sentinel := range []string{"implement-sentinel", "shared-sentinel"} {
+		if strings.Contains(raw, sentinel) {
+			t.Fatalf("record carries key value sentinel %q: %s", sentinel, raw)
+		}
+	}
+	legacy := "{\"schema\":\"roundfix/light-spend/v1\",\"time\":\"" + now.Format(time.RFC3339Nano) + "\",\"cost_usd\":0.5,\"cost_source\":\"opencode\"}\n"
+	if err := os.WriteFile(path, append(data, []byte(legacy)...), 0600); err != nil {
+		t.Fatal(err)
+	}
+	total, err := ReadMonth(home, now)
+	if err != nil || math.Abs(total-0.75) > 1e-9 {
+		t.Fatalf("legacy record did not count: sum=%v err=%v", total, err)
+	}
 }
