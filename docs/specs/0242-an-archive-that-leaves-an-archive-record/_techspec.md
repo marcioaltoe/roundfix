@@ -644,6 +644,12 @@ Each names `<slug>.md`, `source_revision`, `--plan` and `--promote`.
 `CONTEXT.md` gains **Archive Record** and **Archive Advice**, and the
 **Archive Command** entry stops saying the command "moves the whole Spec".
 
+## Glossary
+
+- adds: **Archive Record**
+- adds: **Archive Advice**
+- changes: **Archive Command**
+
 ## Research basis
 
 - Secondbrain: `wiki/index.md` was read, then

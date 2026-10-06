@@ -229,6 +229,12 @@ The outside-evidence row rests on sources this Spec did not produce:
   (<https://git-scm.com/book/en/v2/Git-Internals-Maintenance-and-Data-Recovery>):
   removing a file from the tree keeps every reachable version.
 
+## Glossary
+
+- adds: **Archive Record**
+- adds: **Archive Advice**
+- changes: **Archive Command**
+
 ## Decisions
 
 - An archive leaves an Archive Record and removes the Spec folder, and the
