@@ -1,0 +1,17 @@
+command: go test -count=1 -v -run ^(TestEnvironmentReadinessListsEachStageKeyByName|TestEnvironmentReadinessNamesAMissingPreloadAndNeverAKeyValue|TestDoctorPrintsTheFiveReadinessLines)$ ./internal/cli
+exit: 0
+=== RUN   TestEnvironmentReadinessNamesAMissingPreloadAndNeverAKeyValue
+--- PASS: TestEnvironmentReadinessNamesAMissingPreloadAndNeverAKeyValue (0.00s)
+=== RUN   TestEnvironmentReadinessListsEachStageKeyByName
+=== RUN   TestEnvironmentReadinessListsEachStageKeyByName/stage_keys
+=== RUN   TestEnvironmentReadinessListsEachStageKeyByName/generic_key_ignored
+=== RUN   TestEnvironmentReadinessListsEachStageKeyByName/last_entry_wins
+--- PASS: TestEnvironmentReadinessListsEachStageKeyByName (0.00s)
+    --- PASS: TestEnvironmentReadinessListsEachStageKeyByName/stage_keys (0.00s)
+    --- PASS: TestEnvironmentReadinessListsEachStageKeyByName/generic_key_ignored (0.00s)
+    --- PASS: TestEnvironmentReadinessListsEachStageKeyByName/last_entry_wins (0.00s)
+=== RUN   TestDoctorPrintsTheFiveReadinessLines
+--- PASS: TestDoctorPrintsTheFiveReadinessLines (0.00s)
+PASS
+suiteguard: guard cost: measured 9280 paths; fingerprint took 321.432417ms before and 270.941542ms after
+ok  	roundfix/internal/cli	0.855s

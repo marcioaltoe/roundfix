@@ -1,0 +1,55 @@
+Task 01: 4ae42ea996d71f0342ef28c61caf421c796ed471
+.agents/skills/roundfix/SKILL.md: Context declaration; bounded Governed Path
+.agents/skills/roundfix/references/spec.md: Context declaration; bounded Governed Path
+docs/specs/0234-an-openrouter-key-per-stage/task_01.md: assigned Task; ordinary
+docs/user-guide/commands/spec.md: Context declaration; ordinary
+internal/cli/spec_judge.go: Context declaration; ordinary
+internal/cli/spec_judge_test.go: Context declaration; ordinary
+internal/cli/spec_judge_tier_test.go: Recorded paths; ordinary
+internal/judge/client.go: Context declaration; ordinary
+internal/judge/judge.go: Context declaration; ordinary
+internal/judge/judge_test.go: Context declaration; ordinary
+internal/judge/log.go: Context declaration; ordinary
+internal/judge/log_test.go: Context declaration; ordinary
+internal/judge/questions.go: Context declaration; ordinary
+internal/judge/stage_key_test.go: Context declaration; ordinary
+internal/judge/task_acceptance_measure_test.go: Context declaration; ordinary
+internal/openrouterkey/openrouterkey.go: Context declaration; ordinary
+internal/openrouterkey/openrouterkey_test.go: Context declaration; ordinary
+skills/roundfix/SKILL.md: Context declaration; bounded Governed Path
+skills/roundfix/references/spec.md: Context declaration; ordinary
+skills/testdata/owned-skill-versions.json: Context declaration; ordinary
+Authorization ancestor: True
+Authorization changed in Task: False
+Task 02: 719646f47665ac069c91d798eaaf10fad626d95d
+.agents/skills/roundfix/SKILL.md: Context declaration; bounded Governed Path
+.agents/skills/roundfix/references/runtime.md: Context declaration; bounded Governed Path
+.agents/skills/write-prd/SKILL.md: Context declaration; bounded Governed Path
+.agents/skills/write-techspec/SKILL.md: Context declaration; bounded Governed Path
+docs/specs/0234-an-openrouter-key-per-stage/task_02.md: assigned Task; ordinary
+docs/user-guide/commands/doctor.md: Context declaration; ordinary
+docs/user-guide/configuration.md: Context declaration; ordinary
+internal/cli/readiness_toolchain.go: Context declaration; ordinary
+internal/cli/readiness_toolchain_test.go: Context declaration; ordinary
+skills/roundfix/SKILL.md: Context declaration; bounded Governed Path
+skills/roundfix/references/runtime.md: Context declaration; ordinary
+skills/testdata/owned-skill-versions.json: Context declaration; ordinary
+skills/write-prd/SKILL.md: Context declaration; bounded Governed Path
+skills/write-techspec/SKILL.md: Context declaration; bounded Governed Path
+Authorization ancestor: True
+Authorization changed in Task: False
+Task 03: a6242d0fff5055291407e74076043616dbf68417
+docs/specs/0234-an-openrouter-key-per-stage/task_03.md: assigned Task; ordinary
+internal/agent/light_session_test.go: Recorded paths; ordinary
+internal/cli/implement.go: Recorded paths; ordinary
+internal/cli/implement_light_tier_test.go: Recorded paths; ordinary
+internal/config/light_tier.go: Recorded paths; ordinary
+internal/config/light_tier_test.go: Recorded paths; ordinary
+internal/daemon/agent_session_owner.go: Recorded paths; ordinary
+internal/daemon/light_tier_test.go: Recorded paths; ordinary
+internal/lighttier/spend_log.go: Recorded paths; ordinary
+internal/lighttier/spend_log_test.go: Recorded paths; ordinary
+Authorization ancestor: True
+Authorization changed in Task: False
+Protected exclusions changed: ''
+Scope violations: []

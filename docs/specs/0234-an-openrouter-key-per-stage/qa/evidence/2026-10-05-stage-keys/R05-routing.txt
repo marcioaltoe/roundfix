@@ -1,0 +1,4 @@
+Confirmed from Task diff and production reader sweep:
+OpenRouterImplementKey -> Select(StageImplement) -> implementLightTierPlan.KeyVariable -> applyLightTier ceiling check -> RuntimeSpec.OpenRouterKeyVariable -> OpenCode env reference; recordLightSpend uses the same plan.KeyVariable. No implementation reader embeds the shared key.
+Judge transport loops declared key variables; Report.KeyVariable, logLine.KeyVariable and rendering use selected name; redaction snapshots all allowed values.
+Independent evidence: R02-tests.txt, R03-tests.txt, R06-regression.txt, R06-surfaces.txt, task-diff.patch.txt.

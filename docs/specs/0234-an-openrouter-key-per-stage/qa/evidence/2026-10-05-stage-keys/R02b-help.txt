@@ -1,0 +1,29 @@
+entry: worktree ./bin/roundfix (absolute resolution required from disposable repository)
+args: spec judge --help
+HOME: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0234-qa-rpr9mr31
+exit: 0
+stdout:
+Usage:
+  roundfix spec judge <slug> [--stage <prd|techspec|tasks>] [--format <text|json>]
+
+Raises advisory judgments for one active Spec. Never fails for a judgment.
+Also asks whether each open Finding or Backlog Entry belongs with a source
+the Spec adopted. A suggestion never gates.
+
+Options:
+  --stage   Judge prd, techspec or tasks (default: prd and techspec)
+  --format  Output format: text or json (default: text)
+
+Keys, first set wins: ROUNDFIX_OPENROUTER_JUDGE_API_KEY, then the shared
+ROUNDFIX_OPENROUTER_API_KEY (both OpenRouter), then ROUNDFIX_TYPESAFE_API_KEY
+(TypeSafe directly). The generic OPENROUTER_API_KEY is not read. The summary
+names the variable used, never its value.
+The monthly ceiling is jev.monthly_ceiling_usd in User Config, US$5 by default,
+across both transports. Every request is
+recorded in the Judge Log: <home>/.roundfix/judge/<YYYY-MM>.jsonl (UTC month).
+
+Exit codes:
+  0  ran, including advisory, skipped, or stopped results
+  2  usage error, unknown active Spec, or missing required artifact
+
+stderr:

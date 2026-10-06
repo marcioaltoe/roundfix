@@ -1,0 +1,8 @@
+Pull Request row: blocked (environment: no open Pull Request).
+Source: Daemon prompt, target roundfix/deliver-0234-an-openrouter-key-per-stage-6ec5b30a11785f28; Run branch never pushed and has no own PR.
+Approval equivalent: approved _authorization.md at 888ef084, granted 2026-10-05, permits implement/commit/push/pull_request/merge for this Spec. This is recorded maintainer delivery authority, not invented final review approval.
+Checks and status equivalent: Daemon repository Verification make verify-changed pass, exit 0, at a6242d0fff5055291407e74076043616dbf68417, plus fresh focused QA and built strict check.
+Unresolved review threads: none because no Pull Request exists (prompt fact).
+Merge-Ready acceptance: none yet because current-candidate pre-PR review follows archive, as required by task_04 Requirement 11. No later review acceptance claimed.
+Review-artifact ancestry: audited and claimed candidate a6242d0fff5055291407e74076043616dbf68417; separate review artifact does not exist yet. Grant ancestry confirmed through all three Task commits.
+Unblocking action: Daemon completes configured pre-PR review and publication after this gate; QA neither opens a PR nor reviews another head.
