@@ -542,8 +542,9 @@ type acpxJSONRPCMessage struct {
 }
 
 type acpxJSONRPCError struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
+	Code    int             `json:"code"`
+	Message string          `json:"message"`
+	Data    json.RawMessage `json:"data"`
 }
 
 type acpxStreamResult struct {

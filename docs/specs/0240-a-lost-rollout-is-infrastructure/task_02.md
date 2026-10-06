@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0240-a-lost-rollout-is-infrastructure
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -91,3 +91,55 @@ with stdout recorded from acpx 0.19.4.
 - `_techspec.md` → Interfaces; Invariants 1 to 4; API Contract 1; Testing Approach 1; Build Order 2
 - ADR-0245
 - ADR-0242
+
+## Result
+
+Implemented the runner slice for Daemon Verification. The Task status remains
+Daemon-owned; no declared Verification command was run, and no commit, push or
+Pull Request was made.
+
+- Both recorded losses: the new runner tests replay the investigation
+  appendix's exact stdout through `runFakeACPXPrompt`. Resume retains a
+  `SelectionFailureError`, step `session/resume`, Runtime `codex`, and
+  `PromptSent: false`; mid-turn retains a `BatchFailureError`, step
+  `session/prompt`, and `PromptSent: true`. Both expose the phrase through
+  `DescribeLostRollout` and assert the exact error text including the suffix.
+- Other error lines: negative controls assert byte-identical diagnostics for
+  both selection and batch paths when details lack the phrase, the code is
+  `-32602`, details are an object, the phrase is in another data field, or
+  data itself is a string. Only `data.details` is decoded, and only matching
+  losses keep `Detail`. The existing Reason, Err, Stderr and exit mapping are
+  preserved. A non-lost resume now names its tracked step as required.
+- Existing agent tests: left unchanged. The focused package check below
+  exercised all existing tests alongside the new tests. Additional new
+  coverage checks the phrase in `message` under `-32600`, multiline Unicode
+  detail truncation, wrapped/joined failure chains, Runtime propagation, and
+  cancellation/StopError exclusion.
+
+Focused-check evidence:
+
+- Before implementation,
+  `GOCACHE=/tmp/roundfix-task02-gocache rtk proxy go test -count=1 -run TestLostRolloutIsNamedDuringResume ./internal/agent`
+  exited 1: the new API and ProtocolFailure fields were absent.
+- After the final code/test edits,
+  `GOCACHE=/tmp/roundfix-task02-gocache rtk proxy go test -count=1 ./internal/agent`
+  exited 0 (`ok roundfix/internal/agent 2.752s`).
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+- The first
+  `GOCACHE=/tmp/roundfix-task02-gocache rtk make verify-incremental`
+  exited 2. Formatting and vet passed; agent tests passed. Two CLI
+  process-owner tests could not read the host process table (`operation not
+  permitted`). Several suite guards also detected this Agent's Result edit
+  while that check was running.
+- A subsequent
+  `GOCACHE=/tmp/roundfix-task02-gocache rtk make verify-incremental`
+  with host process-table access and no concurrent worktree edits exited 0.
+  Formatting, vet, the repository Go suite, shipped-skill checks and CLI build
+  passed. This is incremental-check evidence, not Daemon Verification or a
+  Task settlement verdict.
+
+The diff is bounded to the two new agent files, the two declared agent
+interfaces, and this Result. No daemon, delivery, CLI, existing test, Task
+Graph, other Task file, or acpx command arguments changed. No follow-up was
+identified within this runner slice. Declared Verification and Task settlement
+remain with the Daemon.
