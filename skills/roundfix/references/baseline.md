@@ -57,6 +57,10 @@ optional `unrecordedManagedRegions` field only when at least one exists. The
 same report remains in the applied result. Managed refresh never invokes
 semantic classification and preserves every non-managed byte exactly.
 
+`baseline update` lists each Retired Skill the repository still holds under
+`Skills retired` (`skills.retired` in JSON) with the paths to delete; it never
+deletes the copy and never changes the update's state.
+
 When a plan includes History Relocations, it will report each tracked file whose
 citations its History Relocations would break. These warnings use
 `baseline.history.citation` for each citing file,

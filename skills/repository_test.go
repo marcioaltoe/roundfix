@@ -106,7 +106,7 @@ func TestCheckRepositoryReportsReadyRequiredSetWithoutMutation(t *testing.T) {
 func TestCheckRepositoryWithExternalUsesExplicitRequirement(t *testing.T) {
 	t.Parallel()
 	root := writeReadyRepositoryFixture(t)
-	for _, name := range []string{"agentic-cli-design", "autoresearch", "bubbletea", "exa-web-search"} {
+	for _, name := range []string{"agentic-cli-design", "context7-cli", "bubbletea", "exa-web-search"} {
 		if err := os.RemoveAll(filepath.Join(root, ".agents", "skills", name)); err != nil {
 			t.Fatalf("remove external skill %q: %v", name, err)
 		}
@@ -115,7 +115,7 @@ func TestCheckRepositoryWithExternalUsesExplicitRequirement(t *testing.T) {
 	got, err := CheckRepositoryWithExternal(
 		t.Context(),
 		root,
-		[]string{"autoresearch", "bubbletea", "agentic-cli-design"},
+		[]string{"context7-cli", "bubbletea", "agentic-cli-design"},
 	)
 	if err != nil {
 		t.Fatalf("check repository with explicit external requirement: %v", err)
@@ -123,7 +123,7 @@ func TestCheckRepositoryWithExternalUsesExplicitRequirement(t *testing.T) {
 	if got.ExternalRequired != 3 {
 		t.Fatalf("external required = %d, want 3", got.ExternalRequired)
 	}
-	wantMissing := []string{"agentic-cli-design", "autoresearch", "bubbletea"}
+	wantMissing := []string{"agentic-cli-design", "bubbletea", "context7-cli"}
 	if !reflect.DeepEqual(got.MissingExternal, wantMissing) {
 		t.Fatalf("missing external = %v, want %v", got.MissingExternal, wantMissing)
 	}
@@ -162,7 +162,7 @@ func TestCheckRepositoryWithExternalAcceptsEmptyRequirement(t *testing.T) {
 func TestCheckRepositoryMatchesExternalCompatibilityEntryPoint(t *testing.T) {
 	t.Parallel()
 	root := writeReadyRepositoryFixture(t)
-	if err := os.RemoveAll(filepath.Join(root, ".agents", "skills", "autoresearch")); err != nil {
+	if err := os.RemoveAll(filepath.Join(root, ".agents", "skills", "context7-cli")); err != nil {
 		t.Fatalf("remove external skill: %v", err)
 	}
 
@@ -616,7 +616,7 @@ func TestCheckRepositoryHandlesNestedLinksSpecialEntriesAndStableOrdering(t *tes
 	if err := os.RemoveAll(filepath.Join(root, ".agents", "skills", "archive-spec")); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.RemoveAll(filepath.Join(root, ".agents", "skills", "autoresearch")); err != nil {
+	if err := os.RemoveAll(filepath.Join(root, ".agents", "skills", "context7-cli")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -625,7 +625,7 @@ func TestCheckRepositoryHandlesNestedLinksSpecialEntriesAndStableOrdering(t *tes
 		t.Fatalf("check repository with owned symlink: %v", err)
 	}
 	if !reflect.DeepEqual(got.MissingOwned, []string{"archive-spec"}) ||
-		!reflect.DeepEqual(got.MissingExternal, []string{"agentic-cli-design", "autoresearch"}) ||
+		!reflect.DeepEqual(got.MissingExternal, []string{"agentic-cli-design", "context7-cli"}) ||
 		ownedReadinessFor(t, got, "roundfix").State != ReadinessUnversioned {
 		t.Fatalf("unstable classifications: %#v", got)
 	}
@@ -640,7 +640,17 @@ func TestCheckRepositoryHandlesNestedLinksSpecialEntriesAndStableOrdering(t *tes
 		t.Fatalf("expected external symlink error naming %q, got %v", externalPath, err)
 	}
 
-	specialRoot := writeReadyRepositoryFixture(t)
+	// Keep the socket path below the Unix-domain socket limit on macOS.
+	specialRoot, err := os.MkdirTemp("/tmp", "rfsk")
+	if err != nil {
+		t.Skipf("create short special-entry fixture root: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.RemoveAll(specialRoot); err != nil {
+			t.Errorf("remove special-entry fixture root: %v", err)
+		}
+	})
+	writeReadyRepositoryFixtureAt(t, specialRoot)
 	specialPath := filepath.Join(specialRoot, ".agents", "skills", "agentic-cli-design", "socket")
 	listener, err := net.Listen("unix", specialPath)
 	if err != nil {
@@ -669,6 +679,12 @@ type repositoryLockSkillFixture struct {
 func writeReadyRepositoryFixture(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
+	writeReadyRepositoryFixtureAt(t, root)
+	return root
+}
+
+func writeReadyRepositoryFixtureAt(t *testing.T, root string) {
+	t.Helper()
 	skillsRoot := filepath.Join(root, ".agents", "skills")
 	files, err := Files()
 	if err != nil {
@@ -692,7 +708,6 @@ func writeReadyRepositoryFixture(t *testing.T) string {
 		lock.Skills[name] = repositoryLockSkillFixture{ComputedHash: hash}
 	}
 	writeRepositoryLockFixture(t, root, lock)
-	return root
 }
 
 func readRepositoryLockFixture(t *testing.T, root string) repositoryLockFixture {

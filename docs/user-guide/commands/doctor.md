@@ -74,8 +74,8 @@ roundfix: notice: NODE_OPTIONS preload "<path>" does not exist; Roundfix left it
   sets `NODE_OPTIONS`; unset optional keys do not fail the line.
 - `skills:` — the required Repository Skill Set matches its local
   authorities. The running binary's embedded artifacts are authoritative for
-  the 14 Roundfix-owned skills, including the Roundfix Skill. Each of the 25
-  required external skills must hash to its `computedHash` in
+  the 13 Roundfix-owned skills, including the Roundfix Skill. Each required
+  external skill must hash to its `computedHash` in
   `skills-lock.json`. The minimum version of an owned skill is the version
   of that skill the running binary carries, so a copy installed by an older
   binary fails this line until it is refreshed.

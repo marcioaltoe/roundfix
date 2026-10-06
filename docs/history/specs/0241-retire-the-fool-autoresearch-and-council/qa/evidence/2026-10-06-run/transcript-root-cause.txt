@@ -1,0 +1,18 @@
+if len(result.Skills.Retired) != 0 {
+		fmt.Fprintf(stdout, "Skills retired: %d\n", len(result.Skills.Retired))
+		for _, retired := range result.Skills.Retired {
+			targets := append([]string(nil), retired.Paths...)
+			if retired.LockEntry {
+				targets = append(targets, "its skills-lock.json entry")
+			}
+			deletion := targets[0]
+			if len(targets) > 1 {
+				deletion = strings.Join(targets[:len(targets)-1], ", ") + " and " + targets[len(targets)-1]
+			}
+			fmt.Fprintf(stdout, "- retired %s: no longer required by the Baseline; delete %s\n", retired.Skill, deletion)
+		}
+	}
+	if result.PlanDigest != "" {
+		fmt.Fprintf(stdout, "Plan Digest: %s\n", result.PlanDigest)
+	}
+	

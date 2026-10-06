@@ -81,8 +81,6 @@ Individual skill triggers:
   - `trigger.core.conventional-commits`: Staging changes, writing commit messages, or preparing pull request titles.
 - `core-web-vitals`:
   - `trigger.frontend.core-web-vitals`: Measuring or improving frontend Core Web Vitals.
-- `council`:
-  - `trigger.context-workflow.council`: Debating a high-impact product or architecture decision through multiple advisors.
 - `crafting-effective-readmes`:
   - `trigger.core.crafting-effective-readmes`: Writing or revising the repository README.
 - `data-sync-workflows`:
@@ -204,8 +202,6 @@ Individual skill triggers:
   - `trigger.core.tech-writer`: Writing or revising technical documentation, Specs, findings, or delivery notes.
 - `testing-boss`:
   - `trigger.core.testing-boss`: Writing, changing, or reviewing tests and fixtures.
-- `the-fool`:
-  - `trigger.context-workflow.the-fool`: Challenging a proposal through a pre-mortem, red-team, or evidence audit.
 - `to-prompt`:
   - `trigger.typescript.to-prompt`: Converting TypeScript repository context into a bounded implementation prompt.
 - `turborepo`:

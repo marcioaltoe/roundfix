@@ -41,8 +41,6 @@ Individual skill triggers:
   - `trigger.core.context7-cli`: Consulting authoritative current documentation for a library, framework, runtime, or toolchain.
 - `conventional-commits`:
   - `trigger.core.conventional-commits`: Staging changes, writing commit messages, or preparing pull request titles.
-- `council`:
-  - `trigger.context-workflow.council`: Debating a high-impact product or architecture decision through multiple advisors.
 - `crafting-effective-readmes`:
   - `trigger.core.crafting-effective-readmes`: Writing or revising the repository README.
 - `domain-modeling`:
@@ -100,8 +98,6 @@ Individual skill triggers:
   - `trigger.core.tech-writer`: Writing or revising technical documentation, Specs, findings, or delivery notes.
 - `testing-boss`:
   - `trigger.core.testing-boss`: Writing, changing, or reviewing tests and fixtures.
-- `the-fool`:
-  - `trigger.context-workflow.the-fool`: Challenging a proposal through a pre-mortem, red-team, or evidence audit.
 - `tui-design`:
   - `trigger.tui-surface.tui-design`: Designing terminal layout, navigation, keyboard, mouse, color, or accessibility behavior.
 - `typesafe-ai`:

@@ -8,12 +8,6 @@
       "skillPath": "skills/03-engineering-design/agentic-cli-design/SKILL.md",
       "computedHash": "76efd87702573d94f0140801085893ca6d4e26af2ee104aaeccf96304e562e4b"
     },
-    "autoresearch": {
-      "source": "marcioaltoe/skills",
-      "sourceType": "github",
-      "skillPath": "skills/09-learning-loop/autoresearch/SKILL.md",
-      "computedHash": "05b6ebb49bfc76a5e0a959ffdea50e3b859bae1d5be2f3a277c2d64ba8605ccf"
-    },
     "bubbletea": {
       "source": "marcioaltoe/skills",
       "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
@@ -152,13 +146,6 @@
       "sourceType": "github",
       "skillPath": "skills/05-implementation-loop/testing-boss/SKILL.md",
       "computedHash": "3a0cc1b11eb7f7419b781608683a07b3951a450f00d29adaea2aed812f3227f7"
-    },
-    "the-fool": {
-      "source": "marcioaltoe/skills",
-      "ref": "main",
-      "sourceType": "github",
-      "skillPath": "skills/01-discovery/the-fool/SKILL.md",
-      "computedHash": "6bdba13f4c274424f97601061201c0333a620c0c8fe03f4d68f0f407806e6177"
     },
     "tui-design": {
       "source": "marcioaltoe/skills",

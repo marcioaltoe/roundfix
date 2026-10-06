@@ -125,6 +125,26 @@ even when managed guidance is current. Rerun with `--yes` or the preview's
 restore path. `--skills-source-dir` supplies an offline source commit as for
 other external restorations; `--no-skills` skips the comparison and restore.
 
+### Retired skills
+
+A Retired Skill is a skill the Baseline no longer requires although the
+upstream catalog may still list it: `council` and `the-fool` since 0.52.0.
+No module requires or dispatches it, and the asset sync drops it from every
+Setup Snapshot. `roundfix baseline update` never deletes an installed copy.
+When the repository still holds one, the preview and the applied update list
+it under `Skills retired` (`skills.retired` in JSON) with the paths to
+delete; the state and exit code do not change, and `--no-skills` skips the
+list. To remove the copies:
+
+```bash
+git rm -r -q --ignore-unmatch .agents/skills/council .agents/skills/the-fool .claude/skills/council .claude/skills/the-fool
+rm -rf .agents/skills/council .agents/skills/the-fool .claude/skills/council .claude/skills/the-fool
+```
+
+Then delete the `the-fool` entry from `skills-lock.json` by hand, because the
+skills CLI's `remove` can leave a project lock entry behind, and commit. The
+next `roundfix baseline update` lists no retired skill.
+
 `baseline skills reconcile` removes only lock entries proven absent from one
 source repository at the exact 40-hex commit passed with `--revision`, and only
 when the selected Profile does not require them. A non-empty preview exits `3`

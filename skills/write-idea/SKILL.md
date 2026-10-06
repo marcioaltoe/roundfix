@@ -1,14 +1,14 @@
 ---
 name: write-idea
-description: Expand a raw product idea into a research-backed spec at docs/specs/<slug>/_idea.md — targeted questions, parallel codebase + market research, business-viability scoring, council debate, and an opportunity scan before drafting. The _idea.md feeds write-prd.
+description: Expand a raw product idea into a research-backed spec at docs/specs/<slug>/_idea.md — targeted questions, parallel codebase + market research, business-viability scoring, a trade-off debate, and an opportunity scan before drafting. The _idea.md feeds write-prd.
 argument-hint: "<feature idea or problem description>"
 metadata:
   category: discovery
   tags: [product, research, requirements, workflow]
-  version: 0.0.4
+  version: 0.0.5
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.4
+version: 0.0.5
 ---
 
 # Write Idea
@@ -82,7 +82,7 @@ Apply the `business-analyst` skill in feature-scoring mode: 3–6 KPIs with nume
 
 ### 6. Debate trade-offs
 
-Run the `council` skill in embedded mode on the real dilemmas: V1 scope, priority vs other work, simpler alternatives, risks and hidden dependencies, and the 10x challenge. Extract the recommended approach, key trade-offs, out-of-scope items, and an optional V2+ stretch goal. If the scope decision is hard to reverse, surprising, and a real trade-off, record it as `docs/adr/NNNN-slug.md` (continue the repository numbering).
+Weigh the real dilemmas yourself: V1 scope, priority vs other work, simpler alternatives, risks and hidden dependencies, and the 10x challenge. For each, state the strongest case on both sides and keep the losing side as dissent. Extract the recommended approach, key trade-offs, out-of-scope items, and an optional V2+ stretch goal. If the scope decision is hard to reverse, surprising, and a real trade-off, record it as `docs/adr/NNNN-slug.md` (continue the repository numbering).
 
 ### 7. Opportunity scan
 
@@ -97,7 +97,7 @@ Draft from [references/idea-template.md](references/idea-template.md), present i
 - Asking about implementation ("which database?") — the fastest way to poison a product conversation.
 - Skipping research because the idea "is obviously good" — that's precisely the idea that needs the market check.
 - Padding the draft with features nobody validated — every feature traces to an answer or a finding.
-- Smoothing over the council's dissent — preserved disagreement is input for the PRD's risk section.
+- Smoothing over the dissent from step 6 — preserved disagreement is input for the PRD's risk section.
 - Running the full factory on a small, well-understood feature instead of saying "skip to write-prd".
 
 ## References

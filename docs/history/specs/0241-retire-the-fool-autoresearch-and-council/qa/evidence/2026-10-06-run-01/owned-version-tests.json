@@ -1,0 +1,15 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-count=1",
+    "-v",
+    "-run",
+    "^(TestEveryOwnedSkillVersionIsRecorded|TestAuthorialSkillSync|TestCouncilIsNotARoundfixOwnedSkill)$",
+    "./skills"
+  ],
+  "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0241-retire-the-fool-autoresearch-and-council-a85a89f642e24d7b-c036ffd2-3683dde1/run_20261006T224042Z_935b2c7a4007fcea",
+  "exit": 0,
+  "stdout": "=== RUN   TestAuthorialSkillSync\n=== PAUSE TestAuthorialSkillSync\n=== RUN   TestEveryOwnedSkillVersionIsRecorded\n--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.00s)\n=== RUN   TestCouncilIsNotARoundfixOwnedSkill\n--- PASS: TestCouncilIsNotARoundfixOwnedSkill (0.00s)\n=== CONT  TestAuthorialSkillSync\n=== RUN   TestAuthorialSkillSync/roundfix\n=== RUN   TestAuthorialSkillSync/write-idea\n=== RUN   TestAuthorialSkillSync/write-prd\n=== RUN   TestAuthorialSkillSync/write-techspec\n=== RUN   TestAuthorialSkillSync/write-tasks\n=== RUN   TestAuthorialSkillSync/setup-context-driven\n=== RUN   TestAuthorialSkillSync/implement-task\n=== RUN   TestAuthorialSkillSync/implement-spec\n=== RUN   TestAuthorialSkillSync/brainstorming\n=== RUN   TestAuthorialSkillSync/business-analyst\n=== RUN   TestAuthorialSkillSync/archive-spec\n=== RUN   TestAuthorialSkillSync/qa-gate\n=== RUN   TestAuthorialSkillSync/evidence-gate\n=== RUN   TestAuthorialSkillSync/go-cli-typescript-bun.json\n=== RUN   TestAuthorialSkillSync/go.json\n=== RUN   TestAuthorialSkillSync/rust.json\n=== RUN   TestAuthorialSkillSync/typescript.json\n--- PASS: TestAuthorialSkillSync (0.01s)\n    --- PASS: TestAuthorialSkillSync/roundfix (0.00s)\n    --- PASS: TestAuthorialSkillSync/write-idea (0.00s)\n    --- PASS: TestAuthorialSkillSync/write-prd (0.00s)\n    --- PASS: TestAuthorialSkillSync/write-techspec (0.00s)\n    --- PASS: TestAuthorialSkillSync/write-tasks (0.00s)\n    --- PASS: TestAuthorialSkillSync/setup-context-driven (0.00s)\n    --- PASS: TestAuthorialSkillSync/implement-task (0.00s)\n    --- PASS: TestAuthorialSkillSync/implement-spec (0.00s)\n    --- PASS: TestAuthorialSkillSync/brainstorming (0.00s)\n    --- PASS: TestAuthorialSkillSync/business-analyst (0.00s)\n    --- PASS: TestAuthorialSkillSync/archive-spec (0.00s)\n    --- PASS: TestAuthorialSkillSync/qa-gate (0.00s)\n    --- PASS: TestAuthorialSkillSync/evidence-gate (0.00s)\n    --- PASS: TestAuthorialSkillSync/go-cli-typescript-bun.json (0.00s)\n    --- PASS: TestAuthorialSkillSync/go.json (0.00s)\n    --- PASS: TestAuthorialSkillSync/rust.json (0.00s)\n    --- PASS: TestAuthorialSkillSync/typescript.json (0.00s)\nPASS\nok  \troundfix/skills\t0.549s\n",
+  "stderr": ""
+}

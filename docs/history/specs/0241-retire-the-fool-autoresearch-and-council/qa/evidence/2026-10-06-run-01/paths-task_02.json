@@ -1,0 +1,16 @@
+{
+  "command": [
+    "git",
+    "-c",
+    "core.fsmonitor=false",
+    "diff-tree",
+    "--no-commit-id",
+    "--name-status",
+    "-r",
+    "9572a981561e41472325ed824a31a8e2ab640203"
+  ],
+  "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0241-retire-the-fool-autoresearch-and-council-a85a89f642e24d7b-c036ffd2-3683dde1/run_20261006T224042Z_935b2c7a4007fcea",
+  "exit": 0,
+  "stdout": "D\t.agents/skills/autoresearch/SKILL.md\nD\t.agents/skills/autoresearch/references/eval-guide.md\nD\t.agents/skills/council/SKILL.md\nD\t.agents/skills/council/assets/synthesis-template.md\nD\t.agents/skills/council/references/archetypes.md\nD\t.agents/skills/council/references/debate-protocols.md\nD\t.agents/skills/the-fool/SKILL.md\nD\t.agents/skills/the-fool/references/cognitive-bias-inventory.md\nD\t.agents/skills/the-fool/references/dialectic-synthesis.md\nD\t.agents/skills/the-fool/references/evidence-audit.md\nD\t.agents/skills/the-fool/references/mode-selection-guide.md\nD\t.agents/skills/the-fool/references/pre-mortem-analysis.md\nD\t.agents/skills/the-fool/references/red-team-adversarial.md\nD\t.agents/skills/the-fool/references/socratic-questioning.md\nM\t.agents/skills/write-idea/SKILL.md\nM\t.agents/skills/write-idea/references/idea-template.md\nM\t.agents/skills/write-prd/SKILL.md\nM\tMakefile\nM\tREADME.md\nM\tdocs/agents/setup-context.json\nM\tdocs/specs/0241-retire-the-fool-autoresearch-and-council/_techspec.md\nM\tdocs/specs/0241-retire-the-fool-autoresearch-and-council/task_02.md\nM\tdocs/user-guide/commands/doctor.md\nM\tdocs/user-guide/commands/skills.md\nM\tdocs/user-guide/usage.md\nM\tinternal/cli/this_repository_skill_set_test.go\nM\tskills-lock.json\nD\tskills/council/SKILL.md\nD\tskills/council/assets/synthesis-template.md\nD\tskills/council/references/archetypes.md\nD\tskills/council/references/debate-protocols.md\nM\tskills/recommended.txt\nM\tskills/repository_test.go\nA\tskills/retired_owned_skill_test.go\nM\tskills/skills.go\nM\tskills/testdata/owned-skill-versions.json\nM\tskills/write-idea/SKILL.md\nM\tskills/write-idea/references/idea-template.md\nM\tskills/write-prd/SKILL.md\n",
+  "stderr": ""
+}

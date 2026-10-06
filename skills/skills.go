@@ -17,17 +17,17 @@ import (
 	"roundfix/internal/skillhash"
 )
 
-//go:embed roundfix write-idea write-prd write-techspec write-tasks setup-context-driven implement-task implement-spec brainstorming council business-analyst archive-spec qa-gate evidence-gate recommended.txt
+//go:embed roundfix write-idea write-prd write-techspec write-tasks setup-context-driven implement-task implement-spec brainstorming business-analyst archive-spec qa-gate evidence-gate recommended.txt
 var embedded embed.FS
 
 // skillNames is the Roundfix-owned skill bundle shipped in the binary: the
-// operational roundfix skill plus the 13 authorial workflow skills. Kept in
+// operational roundfix skill plus the 12 authorial workflow skills. Kept in
 // sync with the Makefile OWNED_SKILLS list by make skills-sync/skills-sync-check.
 var skillNames = []string{
 	"roundfix",
 	"write-idea", "write-prd", "write-techspec", "write-tasks",
 	"setup-context-driven", "implement-task", "implement-spec",
-	"brainstorming", "council", "business-analyst",
+	"brainstorming", "business-analyst",
 	"archive-spec", "qa-gate", "evidence-gate",
 }
 

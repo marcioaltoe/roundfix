@@ -136,7 +136,6 @@ var assetsSyncRepoOwnedSkills = map[string]struct{}{
 	"archive-spec":         {},
 	"brainstorming":        {},
 	"business-analyst":     {},
-	"council":              {},
 	"evidence-gate":        {},
 	"implement-spec":       {},
 	"implement-task":       {},
@@ -568,6 +567,9 @@ func buildAssetsSyncSnapshot(
 			findings = append(findings, *finding)
 			continue
 		}
+		if _, retired := retiredSkills[skill.Name]; retired {
+			continue
+		}
 		if _, duplicate := seenNames[skill.Name]; duplicate {
 			findings = append(findings, assetsSyncInvalidFinding(
 				sourcePath,
@@ -591,6 +593,9 @@ func buildAssetsSyncSnapshot(
 	}
 	for _, skill := range current.Skills {
 		if skill.Source.Type != "repo" {
+			continue
+		}
+		if _, retired := retiredSkills[skill.Name]; retired {
 			continue
 		}
 		if _, yielded := seenNames[skill.Name]; !yielded {

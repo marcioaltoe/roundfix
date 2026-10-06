@@ -1,0 +1,26 @@
+{
+  "preview_preserved_retired_bytes": true,
+  "removal_commands": [
+    [
+      "git",
+      "rm",
+      "-r",
+      "-q",
+      "--ignore-unmatch",
+      ".agents/skills/council",
+      ".agents/skills/the-fool",
+      ".claude/skills/council",
+      ".claude/skills/the-fool"
+    ],
+    [
+      "rm",
+      "-rf",
+      ".agents/skills/council",
+      ".agents/skills/the-fool",
+      ".claude/skills/council",
+      ".claude/skills/the-fool"
+    ]
+  ],
+  "lock_entry_manually_removed": true,
+  "fresh_commands_omit_retired": true
+}

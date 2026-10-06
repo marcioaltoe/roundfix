@@ -1,0 +1,13 @@
+{
+  "command": [
+    "git",
+    "merge-base",
+    "--is-ancestor",
+    "df23abeaf8c91e1597e9c2ac010aa091e714dc64",
+    "73b1ac3d8764ff5f8a5c1d80ac982b97816e47ba"
+  ],
+  "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0241-retire-the-fool-autoresearch-and-council-a85a89f642e24d7b-c036ffd2-3683dde1/run_20261006T224042Z_935b2c7a4007fcea",
+  "exit": 0,
+  "stdout": "",
+  "stderr": ""
+}

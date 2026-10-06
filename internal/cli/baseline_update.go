@@ -55,12 +55,13 @@ type baselineUpdateSkillOutdated struct {
 }
 
 type baselineUpdateSkillsResult struct {
-	Outdated       []baselineUpdateSkillOutdated `json:"outdated,omitempty"`
-	Status         string                        `json:"status"`
-	InstalledCount int                           `json:"installedCount"`
-	Installed      []string                      `json:"installed"`
-	Restored       []string                      `json:"restored"`
-	Drifted        []baselineUpdateSkillDrift    `json:"drifted"`
+	Retired        []baseline.InstalledRetiredSkill `json:"retired,omitempty"`
+	Outdated       []baselineUpdateSkillOutdated    `json:"outdated,omitempty"`
+	Status         string                           `json:"status"`
+	InstalledCount int                              `json:"installedCount"`
+	Installed      []string                         `json:"installed"`
+	Restored       []string                         `json:"restored"`
+	Drifted        []baselineUpdateSkillDrift       `json:"drifted"`
 }
 
 type baselineUpdateSkillsStage func(
@@ -285,6 +286,10 @@ func runBaselineUpdateCommandWithSkillsStage(
 					result.Skills.Drifted = append(result.Skills.Drifted, baselineUpdateSkillDrift{Skill: name, Reason: "trails its Setup Snapshot; restore with roundfix baseline update --yes"})
 				}
 			}
+			result.Skills.Retired, err = baseline.InstalledRetiredSkills(request.repo)
+			if err != nil {
+				return writeBaselineUpdateFailure(result, err, "execution", "repair skills-lock.json and rerun roundfix baseline update", exitRunFailed, jsonOutput, stdout, stderr)
+			}
 		}
 		if len(plan.FileChanges) == 0 && len(plan.HistoryMoves) == 0 {
 			if len(result.Skills.Drifted) != 0 {
@@ -350,6 +355,10 @@ func runBaselineUpdateCommandWithSkillsStage(
 				stdout,
 				stderr,
 			)
+		}
+		result.Skills.Retired, err = baseline.InstalledRetiredSkills(request.repo)
+		if err != nil {
+			return writeBaselineUpdateFailure(result, err, "execution", "repair skills-lock.json and rerun roundfix baseline update", exitRunFailed, jsonOutput, stdout, stderr)
 		}
 	}
 	return writeBaselineUpdateOutcome(result, exitOK, jsonOutput, stdout, stderr)
@@ -791,6 +800,20 @@ func writeBaselineUpdateResult(result baselineUpdateResult, jsonOutput bool, std
 		fmt.Fprintf(stdout, "Skills outdated: %d\n", len(result.Skills.Outdated))
 		for _, outdated := range result.Skills.Outdated {
 			fmt.Fprintf(stdout, "- outdated %s: found %s, requires %s\n", outdated.Skill, outdated.Found, outdated.Required)
+		}
+	}
+	if len(result.Skills.Retired) != 0 {
+		fmt.Fprintf(stdout, "Skills retired: %d\n", len(result.Skills.Retired))
+		for _, retired := range result.Skills.Retired {
+			targets := append([]string(nil), retired.Paths...)
+			if retired.LockEntry {
+				targets = append(targets, "its skills-lock.json entry")
+			}
+			deletion := targets[0]
+			if len(targets) > 1 {
+				deletion = strings.Join(targets[:len(targets)-1], ", ") + " and " + targets[len(targets)-1]
+			}
+			fmt.Fprintf(stdout, "- retired %s: no longer required by the Baseline; delete %s\n", retired.Skill, deletion)
 		}
 	}
 	if result.PlanDigest != "" {
