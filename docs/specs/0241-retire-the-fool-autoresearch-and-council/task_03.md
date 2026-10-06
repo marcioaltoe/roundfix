@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0241-retire-the-fool-autoresearch-and-council
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -99,3 +99,68 @@ in `_authorization.md`.
 - `_prd.md` → Goal 4; User Story 2; Core Feature 5; Success Metrics 5-6; Release note; Declared breaks
 - `_techspec.md` → Interfaces; Data Models; Fixed texts (task_03); API Contract 2; Surface Transcript 1; Testing Approach 3-4; Vocabulary Contract; Build Order 3
 - ADR-0246, ADR-0191, ADR-0189, ADR-0233
+
+## Result
+
+Implemented the task_03 slice for Daemon Verification; status and the authored
+Verification commands remain Daemon-owned. The starting worktree had only
+this Task file's Daemon-written `in_progress` status change.
+
+- Retired copies: `InstalledRetiredSkills` reads the existing validated lock
+  and uses `Lstat` for both skill locations. It combines trees, dangling
+  links and lock-only entries in lexical skill order, with stable relative
+  paths, and excludes `autoresearch`. Preview and applied update output add
+  the optional report without changing the successful update state, message,
+  category, next action or exit code. The CLI tests assert the Surface
+  Transcript 1 lines verbatim, structured entries and unchanged retired
+  trees/lock bytes. Additional checks cover lock-only deletion text and all
+  three deletion targets.
+- Omission: tests cover current repositories without retired copies and
+  `--no-skills` in both formats, in preview and with `--yes`. They assert no
+  retired text block or JSON field and preserve repository bytes.
+- Malformed lock: inspection refuses malformed JSON and an invalid skills
+  object, naming `skills-lock.json`. The CLI reports an execution failure
+  with next action `repair skills-lock.json and rerun roundfix baseline update`.
+  Additional tests cover a non-regular lock and a skill-path `Lstat` error.
+- Documentation and versions: added the TechSpec's fixed guide section,
+  Roundfix baseline-reference sentence, and only the **Retired Skill** entry
+  after **Composed Setup Snapshot** in `CONTEXT.md`. `make skills-sync` copied
+  the reference. The record generator raised both Roundfix version fields
+  from 0.1.44 to 0.1.45 in both copies and appended the generated digest.
+  Python comparisons confirmed both mirrors equal their canonical files,
+  the guide matches the fixed text and no other glossary entry changed.
+
+Focused-check evidence:
+
+- Before implementation, `GOCACHE=/private/tmp/roundfix-task03-cache go test
+  ./internal/baseline -run InstalledRetiredSkills -count=1` exited 1 because
+  `InstalledRetiredSkill` and `InstalledRetiredSkills` did not exist.
+- After the final code/test edits, `GOCACHE=/private/tmp/roundfix-task03-cache
+  go test ./internal/baseline ./internal/cli -run
+  'InstalledRetiredSkills|BaselineUpdate.*RetiredSkill' -count=1` exited 0
+  (baseline 1.141s; CLI 6.930s).
+- `make skills-sync` exited 0. The required `go test ./skills -run
+  '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`, with the
+  task-scoped cache, first hit the protected canonical file's sandbox write
+  restriction, then exited 0 with authorized escalation (0.164s). No version
+  or digest was edited by hand.
+- `GOCACHE=/private/tmp/roundfix-task03-cache make baseline-digests` exited 0
+  with `changed:false`; it changed no Baseline asset or derived pin.
+- `GOCACHE=/private/tmp/roundfix-task03-cache go test ./internal/cli -run
+  BaselineUpdate -count=1` exited 0 (33.032s) on a stable worktree. An earlier
+  overlapping run passed its assertions but exited 1 because suiteguard
+  observed the concurrently authorized skill-version generator writes;
+  stopping those mutations resolved the guard failure without changing tests.
+- `git -c core.fsmonitor=false diff --check` exited 0. Changed-file inspection
+  shows only this Task's declared source, tests, docs, Roundfix Skill copies,
+  generated owned-version record and this Result. No Doctor, lock, other skill,
+  other Task or Task Graph change was made.
+
+The Task's declared Verification commands and the repository-wide gate were
+not run in this child turn. No commit, push or Pull Request was made. No
+follow-up work was identified.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261006T214048Z_131051a4f3c19cbe`
+- Source commit: `f807e63f7f26f15cc312e5d66f74a92bd5895035`

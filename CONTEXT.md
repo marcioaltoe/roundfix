@@ -570,6 +570,10 @@ _Avoid_: Frontend architecture rule, mandated layout
 A setup snapshot built by name from upstream setups in a fixed order, with duplicate skills dropped, so a built-in profile can span several toolchains (ADR-0204).
 _Avoid_: Merged setup, custom setup
 
+**Retired Skill**:
+A skill the Baseline no longer requires although the upstream catalog may still list it. No module requires or dispatches it, the asset sync drops it from every Setup Snapshot, and `roundfix baseline update` lists an installed copy for the adopter to delete without deleting it (ADR-0246).
+_Avoid_: Deprecated skill, obsolete skill
+
 **Park Class**:
 The named reason a Delivery Queue item is parked — for example a prerequisite not yet merged, a Pull Request conflict, an environment-only QA partial or a check that failed twice outside the item's packages — shown with the next command that answers it (ADR-0192, ADR-0193).
 _Avoid_: Blocker text, error code
