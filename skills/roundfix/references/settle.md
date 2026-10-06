@@ -144,4 +144,5 @@ provenance, and an outside-evidence row recorded as
 named in its provenance, never decide a qualifying partial and need no
 Unreachable Acceptance declaration. Any other blocked outside-evidence row
 still blocks Pull Request preparation. When this eligibility check refuses,
-the stderr reason ends with `(report <path>)` naming the report it judged.
+`qa-report accept` prints the reason alone. Only the Settle Command appends
+`(report <path>)` to its refusal, naming the report it judged.

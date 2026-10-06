@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0235-one-qa-partial-policy
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -104,3 +104,41 @@ Roundfix Skill version. It changes no code and no archived report.
 - `_prd.md` → Acceptance evidence; Success Metric 1
 - `_techspec.md` → API Contract 4; Surface Transcript 3
 - ADR-0240; ADR-0189
+
+## Result
+
+Implementation evidence:
+
+- Updated the PRD's measured archived `partial` baseline to accept 0073,
+  0079 and 0179, with every other archived `partial` refused.
+- Updated the canonical Roundfix settle reference, synchronized its mirror,
+  and recorded Roundfix Skill version 0.1.39 with the generated digest.
+
+Focused checks:
+
+- `make skills-sync` — passed before and after owned-skill version recording.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions` — reached the test after switching to the
+  task-scoped Go cache and passed with exit 0. The initial host-cache attempt
+  was blocked by cache permissions.
+- `cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` and the
+  equivalent settle-reference comparison — passed; both mirrors are equal.
+- Targeted text inspection confirmed the corrected PRD baseline and the
+  corrected `qa-report accept` / Settle Command suffix wording. No stale
+  `0179 is the only one accepted` claim remains in the declared Spec and ADR
+  scope.
+
+Acceptance evidence:
+
+- The PRD acceptance criterion is supported by the corrected measured clause
+  and the targeted text inspection; `_techspec.md`, `task_05.md` and
+  ADR-0240 were left unchanged.
+- The settle-reference criterion is supported by both `cmp` checks and the
+  targeted wording inspection; the suffix is assigned to Settle Command only.
+- The raised-version criterion is supported by the recorder test passing and
+  the generated 0.1.39 entry in `skills/testdata/owned-skill-versions.json`.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261006T131510Z_7cff0c6eeb3ab564`
+- Source commit: `c3e658a0c83ba081e3d64346b096dd5bda6a09ba`

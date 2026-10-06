@@ -176,7 +176,9 @@ The outside-evidence rows rest on records this Spec did not produce:
   0220 are refused with `newest QA Report verdict is "partial"; expected
   "pass"` although every unmet row is a Pull Request row, 0227 is refused
   with `rows_blocked_environment is 2; expected 0` because its Pull Request
-  row's provenance carries a note, and 0179 is the only one accepted.
+  row's provenance carries a note, and 0073, 0079 and 0179, whose only unmet
+  rows are declared rows their Specs cover, are accepted. Every other
+  archived `partial` report is refused.
 - The Fluxus report mirrored in the Secondbrain,
   `projects/fluxus/mirror/docs/history/specs/0100-cada-loja-aponta-para-o-mesmo-fabricante-e-a-mesma-categoria/qa/`.
   Its `qa-report-2026-10-05-01.md` (two declared rows, the Pull Request row)
