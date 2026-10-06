@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-06
-spec: null
+spec: 0237-review-selection-failures-that-say-why
 ---
 
 # A pre-PR review agent selection failure says nothing actionable
