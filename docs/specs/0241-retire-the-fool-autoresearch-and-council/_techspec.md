@@ -341,6 +341,7 @@ The first managed refresh changes only `docs/agents/skill-dispatch.md` and
    Skills retired: 2
    - retired council: no longer required by the Baseline; delete .agents/skills/council
    - retired the-fool: no longer required by the Baseline; delete .agents/skills/the-fool and its skills-lock.json entry
+   Plan Digest: sha256:<digest>
    stderr:
    exit: 0
    ```
