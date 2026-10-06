@@ -197,6 +197,7 @@ type ACPXPromptRequest struct {
 // BatchFailureError is returned when acpx reports an Agent/Batch-level
 // failure. Callers can settle the Batch and continue under ADR 0010.
 type BatchFailureError struct {
+	Protocol *ProtocolFailure
 	ExitCode int
 	Reason   string
 	Stderr   string
@@ -214,6 +215,7 @@ func (err *BatchFailureError) Error() string {
 	if err.Reason != "" {
 		message += ": " + err.Reason
 	}
+	message += protocolFailureText(err.Protocol)
 	if err.Err != nil {
 		message += ": " + err.Err.Error()
 		return message
@@ -532,6 +534,7 @@ func (err *AgentSessionCleanupError) Classification() string {
 }
 
 type acpxJSONRPCMessage struct {
+	ID     json.RawMessage   `json:"id"`
 	Method string            `json:"method"`
 	Params json.RawMessage   `json:"params"`
 	Result json.RawMessage   `json:"result"`
@@ -544,6 +547,7 @@ type acpxJSONRPCError struct {
 }
 
 type acpxStreamResult struct {
+	protocol           *ProtocolFailure
 	acpSessionID       string
 	usage              TurnUsage
 	output             string
@@ -1502,6 +1506,10 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 			return result, nil
 		}
 		mappedErr := runner.mapExitCode(ctx, req.ExecuteRequest, sink, exitCode, stderr.String(), result.Output)
+		var batchFailure *BatchFailureError
+		if !stream.promptResultParsed && errors.As(mappedErr, &batchFailure) {
+			batchFailure.Protocol = stream.protocol
+		}
 		return result, classifyFailure(stream.agentOutput, mappedErr)
 	}
 	if stream.err != nil {
@@ -1525,10 +1533,12 @@ func (runner *ACPXRunner) readPromptStream(ctx context.Context, req ExecuteReque
 	var usage promptUsageCollector
 	var agentOutput bool
 	var streamErr error
+	var protocol promptProtocolTrace
 	reader := bufio.NewReader(stdout)
 	for {
 		line, readErr := reader.ReadBytes('\n')
 		if len(line) > 0 {
+			protocol.observe(line)
 			if _, err := logFile.Write(line); err != nil && streamErr == nil {
 				streamErr = fmt.Errorf("write Agent log: %w", err)
 			}
@@ -1560,7 +1570,7 @@ func (runner *ACPXRunner) readPromptStream(ctx context.Context, req ExecuteReque
 	}
 	messageList := messages.messages()
 	contract := adapterLineageContracts[strings.TrimSpace(req.Runtime.ID)]
-	return acpxStreamResult{acpSessionID: acpSessionID, usage: countTurnUsage(contract.LastRequestOnly, usage.reported, usage.readings, usage.cost), output: output.String(), message: strings.Join(messageList, "\n\n"), messages: messageList, stopReason: stopReason, promptResultParsed: promptResultParsed, agentOutput: agentOutput, err: streamErr}
+	return acpxStreamResult{protocol: protocol.result(), acpSessionID: acpSessionID, usage: countTurnUsage(contract.LastRequestOnly, usage.reported, usage.readings, usage.cost), output: output.String(), message: strings.Join(messageList, "\n\n"), messages: messageList, stopReason: stopReason, promptResultParsed: promptResultParsed, agentOutput: agentOutput, err: streamErr}
 }
 
 func validateACPXPromptRequest(req ACPXPromptRequest) error {
@@ -1969,9 +1979,10 @@ func (runner *ACPXRunner) classifyNoOutputFailure(ctx context.Context, req Execu
 		return err
 	}
 	failure := &SelectionFailureError{
-		Runtime: strings.TrimSpace(req.Runtime.ID),
-		Reason:  strings.TrimSpace(batchErr.Reason),
-		Err:     batchErr.Err,
+		Runtime:  strings.TrimSpace(req.Runtime.ID),
+		Reason:   strings.TrimSpace(batchErr.Reason),
+		Protocol: batchErr.Protocol,
+		Err:      batchErr.Err,
 	}
 	if failure.Err == nil {
 		if detail := strings.TrimSpace(batchErr.Stderr); detail != "" {
