@@ -1,9 +1,12 @@
 ---
 spec: 0236-baseline-update-with-a-repository-profile
-status: active
+status: archived
 created: 2026-10-06
 surfaces: [backend, cli, docs]
+archived: "2026-10-06"
+source_slug: 0236-baseline-update-with-a-repository-profile
 ---
+
 
 # Baseline update with a repository profile
 
