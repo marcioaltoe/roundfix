@@ -47,6 +47,9 @@ type stagedDetector struct {
 }
 
 var stagedDetectors = []stagedDetector{
+	{code: CodeGlossaryUndeclared, stage: StagePRD},
+	{code: CodeGlossaryUnplanned, stage: StageTasks},
+	{code: CodeGlossaryMissing, stage: StageTasks},
 	{code: CodeLoopOrderDivergent, stage: StagePRD},
 	{code: CodeFindingLifecycle, stage: StagePRD},
 	{code: CodeRollupMember, stage: StagePRD},
@@ -134,6 +137,7 @@ func checkAuthoringStage(specsRoot, repoRoot, slug string, stage Stage) (Result,
 		return result, err
 	}
 	if !present {
+		addSkip(&result, CodeGlossaryUndeclared, artifactDisplayPath(repoRoot, prdPath))
 		for _, code := range detectorCodes {
 			addSkip(&result, code, artifactDisplayPath(repoRoot, prdPath))
 		}
@@ -200,6 +204,9 @@ func checkAuthoringStage(specsRoot, repoRoot, slug string, stage Stage) (Result,
 		if err := detectVocabularyContract(&result, repoRoot, techSpecPath, found); err != nil {
 			return result, err
 		}
+	}
+	if err := detectGlossary(&result, repoRoot, citationArtifactPaths, stage, nil); err != nil {
+		return result, err
 	}
 	if err := detectAuthoringStageUnsupportedCitations(&result, repoRoot, citationArtifactPaths); err != nil {
 		return result, err

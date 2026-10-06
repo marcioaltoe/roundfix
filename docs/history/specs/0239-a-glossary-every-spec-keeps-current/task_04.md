@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0239-a-glossary-every-spec-keeps-current
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -76,3 +76,27 @@ declared term.
 - [_prd.md](_prd.md) — Goal 4; User Story 1; Core Feature 7; Success Metric 5; Glossary
 - [_techspec.md](_techspec.md) — Catch-up glossary entries; API Contract 8; Testing Approach 6; Build Order 4
 - ADR-0244; ADR-0174; ADR-0196; ADR-0231; ADR-0232; ADR-0236; ADR-0238; ADR-0239; ADR-0240
+
+## Result
+
+Implemented the twelve catch-up glossary entries in the specified order at the
+end of `CONTEXT.md` and added the Glossary Declaration horizon sentence to the
+first paragraph of the existing Spec Consistency Check entry. The definitions
+contain no Spec identifiers or paths beyond the required Item Branch pattern,
+and the five excluded candidates were not added.
+
+Read ADR-0244, ADR-0174, ADR-0196, ADR-0231, ADR-0232, ADR-0236, ADR-0238,
+ADR-0239, and ADR-0240 before writing the entries. No correction to the
+TechSpec wording was needed: each entry agrees with its named ADR or ADRs.
+
+Focused checks after the edit:
+
+- `rg -n` confirmed all twelve bold headings, the Spec Consistency Check
+  sentence, and none of the five excluded candidate names in the changed
+  glossary section.
+- `git diff --check` exited 0.
+- `git status --short` showed only the pre-existing Task file change and this
+  Task's permitted `CONTEXT.md` change; no `GLOSSARY.md` was created.
+
+The declared Verification and repository-wide verification remain for the
+Daemon, per the daemon-assigned execution contract.

@@ -13,6 +13,16 @@ are `error` when the check locates both sides of a contradiction and `gap` when
 it surfaces a candidate it cannot settle; `--strict` promotes gaps to errors.
 The authoring-honesty contract includes these stable identifiers:
 
+The Glossary Declaration is a `## Glossary` section in the PRD or TechSpec.
+It lists each term the Spec adds or changes and each bolded phrase declared not
+a domain term. The glossary horizon begins with the commit that adds
+`.agents/skills/write-prd/references/glossary.md`; a Spec before that horizon
+is checked under the historical skip, while a declaration is checked at any
+age. The glossary findings are `SC-GLOSSARY-UNDECLARED` for an uncovered bold
+term, `SC-GLOSSARY-UNPLANNED` for a declared term without a binding Task or a
+changed term missing from the glossary, and `SC-GLOSSARY-MISSING` for a declared
+term still absent after its binding Tasks complete.
+
 - `SC-RECEIPT-UNPROVEN`: a written Claim Receipt has an unresolved source, fewer than three words, or a quote absent from its source.
 - `SC-RECEIPT-MISSING`: a held Spec attributes a claim to an accepted ADR without a receipt for that record in the same paragraph.
 - `SC-TRANSCRIPT-UNDECLARED`: a held TechSpec has no Surface Transcripts declaration.

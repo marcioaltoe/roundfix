@@ -1,0 +1,1 @@
+Fresh observation after input expansion: all 13 headings once; exact catch-up block; no GLOSSARY.md; comparing delivery base headings finds precisely 12 declared additions. ADR-0237 confirms Delivery Retry reads merge evidence; ADR-0235 retires Router while judge ceiling remains. Semantic ADR comparison remains as recorded in the report table.

@@ -1,0 +1,7 @@
+command: go test -count=1 -v -tags docscontract ./internal/docscontract -run TestCheckCorpusGolden|TestCheckActiveCorpusHasNoErrors
+=== RUN   TestCheckCorpusGolden
+--- PASS: TestCheckCorpusGolden (0.32s)
+=== RUN   TestCheckActiveCorpusHasNoErrors
+--- PASS: TestCheckActiveCorpusHasNoErrors (0.28s)
+PASS
+ok  	roundfix/internal/docscontract	0.799s

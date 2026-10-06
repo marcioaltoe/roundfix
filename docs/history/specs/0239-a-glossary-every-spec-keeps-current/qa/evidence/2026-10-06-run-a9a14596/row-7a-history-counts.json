@@ -1,0 +1,32 @@
+{
+  "adopter_glossary_commit_counts": [
+    {
+      "repository": "conexus",
+      "glossary_commits": 7
+    },
+    {
+      "repository": "fluxus",
+      "glossary_commits": 13
+    },
+    {
+      "repository": "vortex",
+      "glossary_commits": 5
+    },
+    {
+      "repository": "tax-poc",
+      "glossary_commits": 4
+    },
+    {
+      "repository": "oraculum",
+      "glossary_commits": 12
+    }
+  ],
+  "Roundfix_pre_Task": {
+    "base": "efdd10640cf99f504fe3a198993facdffc2e107b",
+    "terms": 225,
+    "last_change": "0ac530815d7ac5b6aa7ab8bc49e37129a6b2c4a7 2026-10-02 1790967811",
+    "archived_after": 21,
+    "archived_total": 249,
+    "glossary_commits": 71
+  }
+}

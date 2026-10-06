@@ -35,6 +35,8 @@ that edits its own record remain refusals.
 
 ## Archive Command
 
+Archive refuses a Spec with a Glossary Gap, also under a QA Archive Override.
+
 Use `roundfix archive <slug>` after a Spec's Tasks are completed and the newest
 QA Report is acceptable under the one declared-acceptance eligibility policy:
 either `verdict: pass` with no disallowed blocked rows, or a `partial` verdict

@@ -1,0 +1,188 @@
+[
+  {
+    "command": [
+      "git",
+      "init",
+      "-b",
+      "main"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0239-uz6hw_34/repo",
+    "exit": 0,
+    "stdout": "Initialized empty Git repository in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0239-uz6hw_34/repo/.git/\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "git",
+      "config",
+      "user.name",
+      "QA"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0239-uz6hw_34/repo",
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "git",
+      "config",
+      "user.email",
+      "qa@example.invalid"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0239-uz6hw_34/repo",
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "git",
+      "add",
+      "."
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0239-uz6hw_34/repo",
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "git",
+      "-c",
+      "commit.gpgsign=false",
+      "commit",
+      "-m",
+      "seed horizon"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0239-uz6hw_34/repo",
+    "exit": 0,
+    "stdout": "[main (root-commit) f4cb7cd] seed horizon\n 2 files changed, 2 insertions(+)\n create mode 100644 .agents/skills/write-prd/references/glossary.md\n create mode 100644 CONTEXT.md\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0239-a-glossary-every-spec-keeps-current-3a355bf29df2e64a-2b570cfb-55f5d1a2/run_20261006T174129Z_a9a145968099ccbd/bin/roundfix",
+      "spec",
+      "check",
+      "0200-example",
+      "--stage",
+      "prd"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0239-uz6hw_34/repo",
+    "exit": 1,
+    "stdout": "Spec 0200-example\n[gap] SC-METRIC-UNDECLARED: docs/specs/0200-example/_prd.md has no declaration in its Success Metrics section\n  at docs/specs/0200-example/_prd.md:1\n  fix: Declare numbered Success Metrics in docs/specs/0200-example/_prd.md, or write None. followed by the reason none apply.\n[error] SC-GLOSSARY-UNDECLARED: docs/specs/0200-example/_prd.md bolds undeclared term \"New Term\"\n  at docs/specs/0200-example/_prd.md:10\n  fix: Define the term in the glossary or cover it in ## Glossary, including - not a term: **phrase** \u2014 reason.\n[error] SC-CONSTRAINT-MISSING: docs/specs/0200-example/_prd.md omits Identifier strategy required by docs/agents/spec-routing.md\n  at docs/specs/0200-example/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Identifier strategy row to docs/specs/0200-example/_prd.md with applicability, a reason, and an operative Source path.\n[error] SC-CONSTRAINT-MISSING: docs/specs/0200-example/_prd.md omits Authentication and HTTP required by docs/agents/spec-routing.md\n  at docs/specs/0200-example/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Authentication and HTTP row to docs/specs/0200-example/_prd.md with applicability, a reason, and an operative Source path.\n[error] SC-CONSTRAINT-MISSING: docs/specs/0200-example/_prd.md omits Active ADR obligations required by docs/agents/spec-routing.md\n  at docs/specs/0200-example/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Active ADR obligations row to docs/specs/0200-example/_prd.md with applicability, a reason, and an operative Source path.\n[error] SC-CONSTRAINT-MISSING: docs/specs/0200-example/_prd.md omits Tooling authority required by docs/agents/spec-routing.md\n  at docs/specs/0200-example/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Tooling authority row to docs/specs/0200-example/_prd.md with applicability, a reason, and an operative Source path.\nSkipped:\n  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md\n  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md\n  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json\n  SC-FINDING-LIFECYCLE: missing docs/findings\n  SC-ROLLUP-MEMBER: missing docs/findings\n  SC-ARCHIVE-LICENSE: missing docs/history/findings\n  SC-BACKLOG-UNMOVED: missing docs/backlog\n  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md\n  SC-GLOSSARY-UNPLANNED: missing stage prd\n  SC-GLOSSARY-MISSING: missing stage prd\n  SC-TRANSCRIPT-UNDECLARED: missing stage prd\n  SC-TRANSCRIPT-MALFORMED: missing stage prd\n  SC-TRANSCRIPT-UNGATED: missing stage prd\n  SC-COVERAGE-UNMAPPED: missing stage prd\n  SC-CONTRACT-UNDECLARED: missing stage prd\n  vocabulary documentation detector: missing stage prd\n  SC-ADR-UNLISTED: missing stage prd\n  SC-ADR-RELATED: missing stage prd\n  SC-COVERAGE-UNTASKED: missing stage prd\n  SC-REF-UNRESOLVED: missing stage prd\n  SC-VERIFY-WORK-INDEPENDENT: missing stage prd\n  SC-VERIFY-INVERTED-EXIT: missing stage prd\n  SC-VERIFY-WRAP-FRAGILE: missing stage prd\n  SC-VERIFY-NON-HERMETIC: missing stage prd\n  SC-VERIFY-VACUOUS-COMMAND: missing stage prd\n  SC-REQUIREMENT-CONTRADICTORY: missing stage prd\n  SC-REHEARSAL-UNDECLARED: missing stage prd\n  SC-QA-VERIFICATION-AUTHORED: missing stage prd\n  SC-ORDINAL-CLAIMED: missing stage prd\n  SC-WAVE-COLLISION: missing stage prd\n  SC-TOOLING-UNDECLARED: missing stage prd\n  SC-CLI-UNDOCUMENTED: missing stage prd\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0239-a-glossary-every-spec-keeps-current-3a355bf29df2e64a-2b570cfb-55f5d1a2/run_20261006T174129Z_a9a145968099ccbd/bin/roundfix",
+      "spec",
+      "check",
+      "0200-example"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0239-uz6hw_34/repo",
+    "exit": 1,
+    "stdout": "Spec 0200-example\n[error] SC-CONSTRAINT-MISSING: docs/specs/0200-example/_prd.md omits Identifier strategy required by docs/agents/spec-routing.md\n  at docs/specs/0200-example/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Identifier strategy row to docs/specs/0200-example/_prd.md with applicability, a reason, and an operative Source path.\n[error] SC-CONSTRAINT-MISSING: docs/specs/0200-example/_prd.md omits Authentication and HTTP required by docs/agents/spec-routing.md\n  at docs/specs/0200-example/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Authentication and HTTP row to docs/specs/0200-example/_prd.md with applicability, a reason, and an operative Source path.\n[error] SC-CONSTRAINT-MISSING: docs/specs/0200-example/_prd.md omits Active ADR obligations required by docs/agents/spec-routing.md\n  at docs/specs/0200-example/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Active ADR obligations row to docs/specs/0200-example/_prd.md with applicability, a reason, and an operative Source path.\n[error] SC-CONSTRAINT-MISSING: docs/specs/0200-example/_prd.md omits Tooling authority required by docs/agents/spec-routing.md\n  at docs/specs/0200-example/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Tooling authority row to docs/specs/0200-example/_prd.md with applicability, a reason, and an operative Source path.\n[gap] SC-METRIC-UNDECLARED: docs/specs/0200-example/_prd.md has no declaration in its Success Metrics section\n  at docs/specs/0200-example/_prd.md:1\n  fix: Declare numbered Success Metrics in docs/specs/0200-example/_prd.md, or write None. followed by the reason none apply.\nSkipped:\n  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md\n  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md\n  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json\n  SC-FINDING-LIFECYCLE: missing docs/findings\n  SC-ROLLUP-MEMBER: missing docs/findings\n  SC-ARCHIVE-LICENSE: missing docs/history/findings\n  SC-BACKLOG-UNMOVED: missing docs/backlog\n  SC-CONSTRAINT-MISSING: missing docs/specs/0200-example/_techspec.md\n  SC-CONSTRAINT-UNREASONED: missing docs/specs/0200-example/_techspec.md\n  SC-CONSTRAINT-SOURCE: missing docs/specs/0200-example/_techspec.md\n  SC-TOOLING-UNAUTHORIZED: missing docs/specs/0200-example/_techspec.md\n  SC-TOOLING-UNBOUNDED: missing docs/specs/0200-example/_techspec.md\n  SC-TOOLING-UNTYPED: missing docs/specs/0200-example/_techspec.md\n  SC-TOOLING-UNAPPROVED: missing docs/specs/0200-example/_techspec.md\n  vocabulary documentation detector: missing docs/specs/0200-example/_techspec.md\n  SC-ADR-UNLISTED: missing docs/adr\n  SC-ADR-RELATED: missing docs/adr\n  SC-CITATION-UNSUPPORTED: missing docs/adr\n  SC-TRANSCRIPT-UNDECLARED: missing docs/specs/0200-example/_techspec.md\n  SC-TRANSCRIPT-MALFORMED: missing docs/specs/0200-example/_techspec.md\n  SC-COVERAGE-UNMAPPED: missing docs/specs/0200-example/_techspec.md\n  SC-CONTRACT-UNDECLARED: missing docs/specs/0200-example/_techspec.md\n  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md\n  SC-REF-UNRESOLVED: missing docs/specs/0200-example/references/_index.md\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0239-a-glossary-every-spec-keeps-current-3a355bf29df2e64a-2b570cfb-55f5d1a2/run_20261006T174129Z_a9a145968099ccbd/bin/roundfix",
+      "spec",
+      "check",
+      "0200-example"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0239-uz6hw_34/repo",
+    "exit": 1,
+    "stdout": "Spec 0200-example\n[error] SC-CONSTRAINT-MISSING: docs/specs/0200-example/_prd.md omits Identifier strategy required by docs/agents/spec-routing.md\n  at docs/specs/0200-example/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Identifier strategy row to docs/specs/0200-example/_prd.md with applicability, a reason, and an operative Source path.\n[error] SC-CONSTRAINT-MISSING: docs/specs/0200-example/_prd.md omits Authentication and HTTP required by docs/agents/spec-routing.md\n  at docs/specs/0200-example/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Authentication and HTTP row to docs/specs/0200-example/_prd.md with applicability, a reason, and an operative Source path.\n[error] SC-CONSTRAINT-MISSING: docs/specs/0200-example/_prd.md omits Active ADR obligations required by docs/agents/spec-routing.md\n  at docs/specs/0200-example/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Active ADR obligations row to docs/specs/0200-example/_prd.md with applicability, a reason, and an operative Source path.\n[error] SC-CONSTRAINT-MISSING: docs/specs/0200-example/_prd.md omits Tooling authority required by docs/agents/spec-routing.md\n  at docs/specs/0200-example/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Tooling authority row to docs/specs/0200-example/_prd.md with applicability, a reason, and an operative Source path.\n[error] SC-GLOSSARY-UNPLANNED: Glossary term \"New Term\" has no binding Task\n  at docs/specs/0200-example/_prd.md:7\n  fix: Add a non-QA Task declaring the glossary under interface: or creates: and naming **New Term** in ## Verification.\n[gap] SC-METRIC-UNDECLARED: docs/specs/0200-example/_prd.md has no declaration in its Success Metrics section\n  at docs/specs/0200-example/_prd.md:1\n  fix: Declare numbered Success Metrics in docs/specs/0200-example/_prd.md, or write None. followed by the reason none apply.\nSkipped:\n  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md\n  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md\n  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json\n  SC-FINDING-LIFECYCLE: missing docs/findings\n  SC-ROLLUP-MEMBER: missing docs/findings\n  SC-ARCHIVE-LICENSE: missing docs/history/findings\n  SC-BACKLOG-UNMOVED: missing docs/backlog\n  SC-CONSTRAINT-MISSING: missing docs/specs/0200-example/_techspec.md\n  SC-CONSTRAINT-UNREASONED: missing docs/specs/0200-example/_techspec.md\n  SC-CONSTRAINT-SOURCE: missing docs/specs/0200-example/_techspec.md\n  SC-TOOLING-UNAUTHORIZED: missing docs/specs/0200-example/_techspec.md\n  SC-TOOLING-UNBOUNDED: missing docs/specs/0200-example/_techspec.md\n  SC-TOOLING-UNTYPED: missing docs/specs/0200-example/_techspec.md\n  SC-TOOLING-UNAPPROVED: missing docs/specs/0200-example/_techspec.md\n  vocabulary documentation detector: missing docs/specs/0200-example/_techspec.md\n  SC-ADR-UNLISTED: missing docs/adr\n  SC-ADR-RELATED: missing docs/adr\n  SC-CITATION-UNSUPPORTED: missing docs/adr\n  SC-TRANSCRIPT-UNDECLARED: missing docs/specs/0200-example/_techspec.md\n  SC-TRANSCRIPT-MALFORMED: missing docs/specs/0200-example/_techspec.md\n  SC-COVERAGE-UNMAPPED: missing docs/specs/0200-example/_techspec.md\n  SC-CONTRACT-UNDECLARED: missing docs/specs/0200-example/_techspec.md\n  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md\n  SC-REF-UNRESOLVED: missing docs/specs/0200-example/references/_index.md\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0239-a-glossary-every-spec-keeps-current-3a355bf29df2e64a-2b570cfb-55f5d1a2/run_20261006T174129Z_a9a145968099ccbd/bin/roundfix",
+      "spec",
+      "check",
+      "0200-example"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0239-uz6hw_34/repo",
+    "exit": 1,
+    "stdout": "Spec 0200-example\n[error] SC-CONSTRAINT-MISSING: docs/specs/0200-example/_prd.md omits Identifier strategy required by docs/agents/spec-routing.md\n  at docs/specs/0200-example/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Identifier strategy row to docs/specs/0200-example/_prd.md with applicability, a reason, and an operative Source path.\n[error] SC-CONSTRAINT-MISSING: docs/specs/0200-example/_prd.md omits Authentication and HTTP required by docs/agents/spec-routing.md\n  at docs/specs/0200-example/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Authentication and HTTP row to docs/specs/0200-example/_prd.md with applicability, a reason, and an operative Source path.\n[error] SC-CONSTRAINT-MISSING: docs/specs/0200-example/_prd.md omits Active ADR obligations required by docs/agents/spec-routing.md\n  at docs/specs/0200-example/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Active ADR obligations row to docs/specs/0200-example/_prd.md with applicability, a reason, and an operative Source path.\n[error] SC-CONSTRAINT-MISSING: docs/specs/0200-example/_prd.md omits Tooling authority required by docs/agents/spec-routing.md\n  at docs/specs/0200-example/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Tooling authority row to docs/specs/0200-example/_prd.md with applicability, a reason, and an operative Source path.\n[error] SC-GLOSSARY-MISSING: Glossary term \"New Term\" is missing after its binding Tasks completed\n  at docs/specs/0200-example/_prd.md:7\n  fix: Define the declared term in the glossary.\n[gap] SC-METRIC-UNDECLARED: docs/specs/0200-example/_prd.md has no declaration in its Success Metrics section\n  at docs/specs/0200-example/_prd.md:1\n  fix: Declare numbered Success Metrics in docs/specs/0200-example/_prd.md, or write None. followed by the reason none apply.\nSkipped:\n  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md\n  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md\n  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json\n  SC-FINDING-LIFECYCLE: missing docs/findings\n  SC-ROLLUP-MEMBER: missing docs/findings\n  SC-ARCHIVE-LICENSE: missing docs/history/findings\n  SC-BACKLOG-UNMOVED: missing docs/backlog\n  SC-CONSTRAINT-MISSING: missing docs/specs/0200-example/_techspec.md\n  SC-CONSTRAINT-UNREASONED: missing docs/specs/0200-example/_techspec.md\n  SC-CONSTRAINT-SOURCE: missing docs/specs/0200-example/_techspec.md\n  SC-TOOLING-UNAUTHORIZED: missing docs/specs/0200-example/_techspec.md\n  SC-TOOLING-UNBOUNDED: missing docs/specs/0200-example/_techspec.md\n  SC-TOOLING-UNTYPED: missing docs/specs/0200-example/_techspec.md\n  SC-TOOLING-UNAPPROVED: missing docs/specs/0200-example/_techspec.md\n  vocabulary documentation detector: missing docs/specs/0200-example/_techspec.md\n  SC-ADR-UNLISTED: missing docs/adr\n  SC-ADR-RELATED: missing docs/adr\n  SC-CITATION-UNSUPPORTED: missing docs/adr\n  SC-TRANSCRIPT-UNDECLARED: missing docs/specs/0200-example/_techspec.md\n  SC-TRANSCRIPT-MALFORMED: missing docs/specs/0200-example/_techspec.md\n  SC-COVERAGE-UNMAPPED: missing docs/specs/0200-example/_techspec.md\n  SC-CONTRACT-UNDECLARED: missing docs/specs/0200-example/_techspec.md\n  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md\n  SC-REF-UNRESOLVED: missing docs/specs/0200-example/references/_index.md\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0239-a-glossary-every-spec-keeps-current-3a355bf29df2e64a-2b570cfb-55f5d1a2/run_20261006T174129Z_a9a145968099ccbd/bin/roundfix",
+      "archive",
+      "0200-example"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0239-uz6hw_34/repo",
+    "exit": 2,
+    "stdout": "",
+    "stderr": "Preflight failed\n\nReason:\n  Spec \"0200-example\" cannot archive with a Glossary Gap: SC-GLOSSARY-MISSING: Glossary term \"New Term\" is missing after its binding Tasks completed\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix archive --help' for usage.\n"
+  },
+  {
+    "command": [
+      "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0239-a-glossary-every-spec-keeps-current-3a355bf29df2e64a-2b570cfb-55f5d1a2/run_20261006T174129Z_a9a145968099ccbd/bin/roundfix",
+      "archive",
+      "0200-example",
+      "--qa-override",
+      "--approval",
+      "scratch QA authority",
+      "--reason",
+      "exercise refusal"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0239-uz6hw_34/repo",
+    "exit": 2,
+    "stdout": "",
+    "stderr": "Preflight failed\n\nReason:\n  Spec \"0200-example\" cannot archive with a Glossary Gap: SC-GLOSSARY-MISSING: Glossary term \"New Term\" is missing after its binding Tasks completed\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix archive --help' for usage.\n"
+  },
+  {
+    "command": [
+      "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0239-a-glossary-every-spec-keeps-current-3a355bf29df2e64a-2b570cfb-55f5d1a2/run_20261006T174129Z_a9a145968099ccbd/bin/roundfix",
+      "archive",
+      "0200-example"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0239-uz6hw_34/repo",
+    "exit": 2,
+    "stdout": "",
+    "stderr": "Preflight failed\n\nReason:\n  Spec \"0200-example\" cannot archive with a Glossary Gap: SC-GLOSSARY-MISSING: Glossary term \"New Term\" is missing after its binding Tasks completed\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix archive --help' for usage.\n"
+  },
+  {
+    "command": [
+      "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0239-a-glossary-every-spec-keeps-current-3a355bf29df2e64a-2b570cfb-55f5d1a2/run_20261006T174129Z_a9a145968099ccbd/bin/roundfix",
+      "spec",
+      "check",
+      "0200-example"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0239-uz6hw_34/repo",
+    "exit": 1,
+    "stdout": "Spec 0200-example\n[error] SC-CONSTRAINT-MISSING: docs/specs/0200-example/_prd.md omits Identifier strategy required by docs/agents/spec-routing.md\n  at docs/specs/0200-example/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Identifier strategy row to docs/specs/0200-example/_prd.md with applicability, a reason, and an operative Source path.\n[error] SC-CONSTRAINT-MISSING: docs/specs/0200-example/_prd.md omits Authentication and HTTP required by docs/agents/spec-routing.md\n  at docs/specs/0200-example/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Authentication and HTTP row to docs/specs/0200-example/_prd.md with applicability, a reason, and an operative Source path.\n[error] SC-CONSTRAINT-MISSING: docs/specs/0200-example/_prd.md omits Active ADR obligations required by docs/agents/spec-routing.md\n  at docs/specs/0200-example/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Active ADR obligations row to docs/specs/0200-example/_prd.md with applicability, a reason, and an operative Source path.\n[error] SC-CONSTRAINT-MISSING: docs/specs/0200-example/_prd.md omits Tooling authority required by docs/agents/spec-routing.md\n  at docs/specs/0200-example/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Tooling authority row to docs/specs/0200-example/_prd.md with applicability, a reason, and an operative Source path.\n[gap] SC-METRIC-UNDECLARED: docs/specs/0200-example/_prd.md has no declaration in its Success Metrics section\n  at docs/specs/0200-example/_prd.md:1\n  fix: Declare numbered Success Metrics in docs/specs/0200-example/_prd.md, or write None. followed by the reason none apply.\nSkipped:\n  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md\n  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md\n  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json\n  SC-FINDING-LIFECYCLE: missing docs/findings\n  SC-ROLLUP-MEMBER: missing docs/findings\n  SC-ARCHIVE-LICENSE: missing docs/history/findings\n  SC-BACKLOG-UNMOVED: missing docs/backlog\n  SC-CONSTRAINT-MISSING: missing docs/specs/0200-example/_techspec.md\n  SC-CONSTRAINT-UNREASONED: missing docs/specs/0200-example/_techspec.md\n  SC-CONSTRAINT-SOURCE: missing docs/specs/0200-example/_techspec.md\n  SC-TOOLING-UNAUTHORIZED: missing docs/specs/0200-example/_techspec.md\n  SC-TOOLING-UNBOUNDED: missing docs/specs/0200-example/_techspec.md\n  SC-TOOLING-UNTYPED: missing docs/specs/0200-example/_techspec.md\n  SC-TOOLING-UNAPPROVED: missing docs/specs/0200-example/_techspec.md\n  vocabulary documentation detector: missing docs/specs/0200-example/_techspec.md\n  SC-ADR-UNLISTED: missing docs/adr\n  SC-ADR-RELATED: missing docs/adr\n  SC-CITATION-UNSUPPORTED: missing docs/adr\n  SC-TRANSCRIPT-UNDECLARED: missing docs/specs/0200-example/_techspec.md\n  SC-TRANSCRIPT-MALFORMED: missing docs/specs/0200-example/_techspec.md\n  SC-COVERAGE-UNMAPPED: missing docs/specs/0200-example/_techspec.md\n  SC-CONTRACT-UNDECLARED: missing docs/specs/0200-example/_techspec.md\n  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md\n  SC-REF-UNRESOLVED: missing docs/specs/0200-example/references/_index.md\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0239-a-glossary-every-spec-keeps-current-3a355bf29df2e64a-2b570cfb-55f5d1a2/run_20261006T174129Z_a9a145968099ccbd/bin/roundfix",
+      "archive",
+      "0200-example"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0239-uz6hw_34/repo",
+    "exit": 0,
+    "stdout": "archived 0200-example -> docs/history/specs/0200-example\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0239-a-glossary-every-spec-keeps-current-3a355bf29df2e64a-2b570cfb-55f5d1a2/run_20261006T174129Z_a9a145968099ccbd/bin/roundfix",
+      "spec",
+      "check",
+      "0201-input",
+      "--stage",
+      "prd"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0239-uz6hw_34/repo",
+    "exit": 1,
+    "stdout": "Spec 0201-input\n[gap] SC-METRIC-UNDECLARED: docs/specs/0201-input/_prd.md has no declaration in its Success Metrics section\n  at docs/specs/0201-input/_prd.md:1\n  fix: Declare numbered Success Metrics in docs/specs/0201-input/_prd.md, or write None. followed by the reason none apply.\n[error] SC-CONSTRAINT-MISSING: docs/specs/0201-input/_prd.md omits Identifier strategy required by docs/agents/spec-routing.md\n  at docs/specs/0201-input/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Identifier strategy row to docs/specs/0201-input/_prd.md with applicability, a reason, and an operative Source path.\n[error] SC-CONSTRAINT-MISSING: docs/specs/0201-input/_prd.md omits Authentication and HTTP required by docs/agents/spec-routing.md\n  at docs/specs/0201-input/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Authentication and HTTP row to docs/specs/0201-input/_prd.md with applicability, a reason, and an operative Source path.\n[error] SC-CONSTRAINT-MISSING: docs/specs/0201-input/_prd.md omits Active ADR obligations required by docs/agents/spec-routing.md\n  at docs/specs/0201-input/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Active ADR obligations row to docs/specs/0201-input/_prd.md with applicability, a reason, and an operative Source path.\n[error] SC-CONSTRAINT-MISSING: docs/specs/0201-input/_prd.md omits Tooling authority required by docs/agents/spec-routing.md\n  at docs/specs/0201-input/_prd.md:1\n  at docs/agents/spec-routing.md:1\n  fix: Add the Tooling authority row to docs/specs/0201-input/_prd.md with applicability, a reason, and an operative Source path.\nSkipped:\n  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md\n  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md\n  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json\n  SC-FINDING-LIFECYCLE: missing docs/findings\n  SC-ROLLUP-MEMBER: missing docs/findings\n  SC-ARCHIVE-LICENSE: missing docs/history/findings\n  SC-BACKLOG-UNMOVED: missing docs/backlog\n  SC-GLOSSARY-UNDECLARED: missing CONTEXT.md or GLOSSARY.md\n  SC-GLOSSARY-UNPLANNED: missing CONTEXT.md or GLOSSARY.md\n  SC-GLOSSARY-MISSING: missing CONTEXT.md or GLOSSARY.md\n  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md\n  SC-GLOSSARY-UNPLANNED: missing stage prd\n  SC-GLOSSARY-MISSING: missing stage prd\n  SC-TRANSCRIPT-UNDECLARED: missing stage prd\n  SC-TRANSCRIPT-MALFORMED: missing stage prd\n  SC-TRANSCRIPT-UNGATED: missing stage prd\n  SC-COVERAGE-UNMAPPED: missing stage prd\n  SC-CONTRACT-UNDECLARED: missing stage prd\n  vocabulary documentation detector: missing stage prd\n  SC-ADR-UNLISTED: missing stage prd\n  SC-ADR-RELATED: missing stage prd\n  SC-COVERAGE-UNTASKED: missing stage prd\n  SC-REF-UNRESOLVED: missing stage prd\n  SC-VERIFY-WORK-INDEPENDENT: missing stage prd\n  SC-VERIFY-INVERTED-EXIT: missing stage prd\n  SC-VERIFY-WRAP-FRAGILE: missing stage prd\n  SC-VERIFY-NON-HERMETIC: missing stage prd\n  SC-VERIFY-VACUOUS-COMMAND: missing stage prd\n  SC-REQUIREMENT-CONTRADICTORY: missing stage prd\n  SC-REHEARSAL-UNDECLARED: missing stage prd\n  SC-QA-VERIFICATION-AUTHORED: missing stage prd\n  SC-ORDINAL-CLAIMED: missing stage prd\n  SC-WAVE-COLLISION: missing stage prd\n  SC-TOOLING-UNDECLARED: missing stage prd\n  SC-CLI-UNDOCUMENTED: missing stage prd\n",
+    "stderr": ""
+  }
+]

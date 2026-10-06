@@ -98,6 +98,19 @@ func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		printPreflightFailure("archive", fmt.Errorf("Spec %q cannot archive while another file names its active directory %s/: %s", req.slug, rel, strings.Join(locations, ", ")), stderr)
 		return exitPreflight
 	}
+	findings, err := speccheck.GlossaryFindings(resolvedSpecsRoot.Path, loaded.GitRoot, req.slug)
+	if err != nil {
+		printPreflightFailure("archive", err, stderr)
+		return exitPreflight
+	}
+	if len(findings) > 0 {
+		reasons := make([]string, 0, len(findings))
+		for _, finding := range findings {
+			reasons = append(reasons, finding.Code+": "+finding.Summary)
+		}
+		printPreflightFailure("archive", fmt.Errorf("Spec %q cannot archive with a Glossary Gap: %s", req.slug, strings.Join(reasons, "; ")), stderr)
+		return exitPreflight
+	}
 	var qaOverride *spec.QAArchiveOverride
 	if req.qaOverride {
 		revisionRoot := loaded.GitRoot

@@ -1,0 +1,25 @@
+command: go test -count=1 -v ./internal/baseline -run TestTheGlossaryClauses|TestAnAdopterRetainsTheGlossaryClauses
+=== RUN   TestTheGlossaryClausesCarryTheirForceAndText
+=== RUN   TestTheGlossaryClausesCarryTheirForceAndText/clause.context.read-domain-contract
+=== RUN   TestTheGlossaryClausesCarryTheirForceAndText/clause.domain.glossary-currency
+--- PASS: TestTheGlossaryClausesCarryTheirForceAndText (0.03s)
+    --- PASS: TestTheGlossaryClausesCarryTheirForceAndText/clause.context.read-domain-contract (0.00s)
+    --- PASS: TestTheGlossaryClausesCarryTheirForceAndText/clause.domain.glossary-currency (0.00s)
+=== RUN   TestTheGlossaryClausesRenderInTheDomainGuide
+=== RUN   TestTheGlossaryClausesRenderInTheDomainGuide/clause.context.read-domain-contract
+=== RUN   TestTheGlossaryClausesRenderInTheDomainGuide/clause.domain.glossary-currency
+--- PASS: TestTheGlossaryClausesRenderInTheDomainGuide (0.00s)
+    --- PASS: TestTheGlossaryClausesRenderInTheDomainGuide/clause.context.read-domain-contract (0.00s)
+    --- PASS: TestTheGlossaryClausesRenderInTheDomainGuide/clause.domain.glossary-currency (0.00s)
+=== RUN   TestAnAdopterRetainsTheGlossaryClauses
+=== RUN   TestAnAdopterRetainsTheGlossaryClauses/clause.context.read-domain-contract
+=== RUN   TestAnAdopterRetainsTheGlossaryClauses/clause.domain.glossary-currency
+--- PASS: TestAnAdopterRetainsTheGlossaryClauses (0.85s)
+    --- PASS: TestAnAdopterRetainsTheGlossaryClauses/clause.context.read-domain-contract (0.00s)
+    --- PASS: TestAnAdopterRetainsTheGlossaryClauses/clause.domain.glossary-currency (0.00s)
+PASS
+suiteguard: guard cost: measured 9501 paths; fingerprint took 533.290083ms before and 415.337583ms after
+suiteguard: repository boundary violated:
+suiteguard: modified: docs/specs/0239-a-glossary-every-spec-keeps-current/qa/evidence/2026-10-06-run-a9a14596/row-4-tests.txt
+FAIL	roundfix/internal/baseline	2.610s
+FAIL

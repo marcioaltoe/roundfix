@@ -60,3 +60,13 @@ Task is not completed, it also stamps `qa_override_qa_task_status` with that
 status; a completed QA Task omits the field. When the newest report is
 unreadable, the recorded outcome names it relative to the Spec folder and never
 stores an absolute machine path.
+
+After checking active-directory pins, archive refuses a Spec with a Glossary
+Gap: an undeclared bold term or malformed declaration, an added or changed
+term without a binding glossary-writing Task, or a declared term still missing
+after every binding Task completed. It exits `2`, changes no file, and reports
+`Spec "<slug>" cannot archive with a Glossary Gap: <code>: <summary>`, joining
+multiple findings with `; `. This refusal also applies under a QA Archive
+Override (`--qa-override`); the override waives only the QA prerequisite.
+See [Glossary Declaration](spec.md#glossary-declaration) for the codes,
+matching rules and glossary horizon.

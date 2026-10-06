@@ -90,6 +90,10 @@ created: YYYY-MM-DD
 
 <!-- Known risks with mitigations; performance/security/observability notes worth a task's attention. -->
 
+## Glossary
+
+<!-- Optional. Use `adds: **<term>**`, `changes: **<term>**`, or `not a term: **<phrase>** — <reason>`. Write `None.` when there are no entries. -->
+
 ## Decisions
 
 <!-- Technical decisions made during clarification, one line each; ADR-gated ones link: `See ADR-0013.` -->

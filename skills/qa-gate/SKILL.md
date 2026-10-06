@@ -4,10 +4,10 @@ description: Execute the self-contained final QA gate as a Spec's authored termi
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.9
+  version: 0.0.10
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.9
+version: 0.0.10
 ---
 
 # QA Gate
@@ -392,6 +392,10 @@ every chosen default probe has a reason, and the report contains the full
 pending matrix.
 
 ## 3. Run static gates first
+
+## Glossary at the gate
+
+The strict precondition reports every Glossary Gap. The report records, for each term the Glossary Declaration adds or changes, whether the glossary defines it after the work.
 
 In a Daemon-assigned gate, the Daemon already ran the repository Verification and gives its result in the prompt; record that result and do not run the repository Verification again. In a standalone gate, run the repository's selected Verification. If the selected Verification cannot run at all, record the verification gate as blocked. A formatting, test, or build check that runs and fails is a `fail`, not a block — classify it with the code-caused and environment-caused distinction below before recording anything.
 

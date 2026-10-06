@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
-  "catalogDigest": "sha256:b0187ed9c909a91930efec49e4231e3574c95a77aac89e5898ee6e76a1e6c5da",
+  "catalogDigest": "sha256:e0d863b24a53737ded1a3c34a2b5186d7769963238735386566ae17f1ae8848f",
   "modules": [
     "core",
     "context-workflow",
@@ -201,7 +201,7 @@
       "module": "context-workflow",
       "template": "template.guide.domain.single-context",
       "version": "0.0.1",
-      "digest": "7626cb6e6d50a5273bd50360ddaf1b0ee38350f0e331f1a4d8e229e0378ddbca"
+      "digest": "cc969b44097582875117ee2b920c2a19accdfd6cdc6b18cb01a4442d5cab87dc"
     },
     {
       "id": "root.tui-surface",

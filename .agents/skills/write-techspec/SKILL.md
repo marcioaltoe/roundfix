@@ -5,10 +5,10 @@ argument-hint: "<spec slug, path to docs/specs/<slug>/_prd.md, or a refactor/bug
 metadata:
   category: engineering-design
   tags: [architecture, documentation, workflow]
-  version: 0.0.7
+  version: 0.0.8
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.7
+version: 0.0.8
 ---
 
 # Write TechSpec
@@ -94,6 +94,10 @@ Write `_techspec.md` from the template in [references/techspec-template.md](refe
 Write API Contracts as numbered API Contract items, or as the single entry
 `None.` followed by the reason none applies. Each numbered contract must be
 addressable by its name and number in downstream Task References.
+
+## Glossary terms
+
+When the TechSpec names a concept the glossary does not define, activate domain-modeling, sharpen the term, and declare it in the Glossary section of the PRD or of the TechSpec.
 
 ## Concrete contracts
 

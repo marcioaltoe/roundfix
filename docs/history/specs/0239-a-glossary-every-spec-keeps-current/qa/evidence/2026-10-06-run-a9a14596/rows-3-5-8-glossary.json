@@ -1,0 +1,72 @@
+{
+  "terms": [
+    {
+      "term": "Glossary Declaration",
+      "defined": true,
+      "definition": "The `## Glossary` section of a Spec's PRD or TechSpec that lists each domain term the Spec adds to or changes in the glossary, and each bolded phrase it declares not a domain term, or `None.`. A Task that declares the glossary file and names the term in its Verification writes each listed term.\n_Avoid_: Vocabulary Contract, term list, glossary candidates"
+    },
+    {
+      "term": "Glossary Gap",
+      "defined": true,
+      "definition": "A domain term a Spec introduces that the glossary does not carry as required: a bolded phrase the glossary lacks and the Glossary Declaration does not cover, a declared term no Task plans to write, or a declared term still missing after its Tasks completed. The Spec Consistency Check reports it, and the QA gate and the Archive Command refuse a Spec that has one.\n_Avoid_: Missing term, undocumented token, stale glossary"
+    },
+    {
+      "term": "Light Tier",
+      "defined": true,
+      "definition": "The dispatch tier that runs a Task on an open model through OpenCode and OpenRouter when its complexity is low, its type is not qa, and it declares no Governed Path; every other Task runs on the standard tier. A light Task whose first Verification fails escalates its one feedback turn to its category's Preferred Selection.\n_Avoid_: Cheap model, Jev routing, light model profile"
+    },
+    {
+      "term": "Light Spend Log",
+      "defined": true,
+      "definition": "The per-UTC-month record in Roundfix Home of the cost each Light Tier session reports, summed across every repository and compared with the Light Tier's monthly ceiling. A month that reached the ceiling, or whose log cannot be read, runs light Tasks on their category's profile.\n_Avoid_: Judge Log, OpenRouter usage, spend cache"
+    },
+    {
+      "term": "Jev Ceiling",
+      "defined": true,
+      "definition": "The monthly spending ceiling of the Jev judge, read from User Config only and compared with the Judge Log's sum across every repository on the machine; when it is unset a built-in default applies. The judge's key must carry a monthly credit limit no higher than it.\n_Avoid_: Judge budget, key limit, Project Config ceiling"
+    },
+    {
+      "term": "Stage Key",
+      "defined": true,
+      "definition": "The Roundfix environment variable an OpenRouter stage reads first, the judge's or implementation's own key, before the shared Roundfix OpenRouter key; the generic OpenRouter variable is never read. Each stage records the variable it used by name, never by value.\n_Avoid_: API key value, generic OpenRouter key, shared key"
+    },
+    {
+      "term": "Tested Base",
+      "defined": true,
+      "definition": "The default-branch commit a failed required check actually tested, read from the check job's annotation. A failure whose Tested Base does not contain the current default-branch tip is stale, and the Delivery Queue re-runs it instead of parking the item.\n_Avoid_: PR base, merge base, Delivery Base"
+    },
+    {
+      "term": "Merge Evidence",
+      "defined": true,
+      "definition": "Proof that a Spec was delivered: the default-branch head holds its archived PRD, and the Delivery Commit that added that file is not reachable from the Run Branch or Item Branch being proven. With it, reconcile releases that Spec's terminal Runs and Item Branches without comparing content.\n_Avoid_: Content proof, merged flag, merge commit"
+    },
+    {
+      "term": "Delivery Commit",
+      "defined": true,
+      "definition": "The default-branch commit that added a Spec's archived PRD. Merge Evidence and a Delivery Retry that records a merge made outside the queue both read it.\n_Avoid_: Merge commit, archive commit, release commit"
+    },
+    {
+      "term": "Item Branch",
+      "defined": true,
+      "definition": "The branch a Delivery Queue item builds its candidate on, named `roundfix/deliver-<slug>-<16 hex>`. Once no live item names it, Merge Evidence releases it, with its worktree only when that worktree is clean.\n_Avoid_: Run Branch, PR Head Branch, deliver branch"
+    },
+    {
+      "term": "Network-Denied Row",
+      "defined": true,
+      "definition": "An outside-evidence QA row blocked only because the Run sandbox denied network access, recorded with the host it could not reach. Like the pre-PR Pull Request row, it never decides a qualifying partial; whoever needs that proof declares it under Unreachable Acceptance.\n_Avoid_: Failed outside evidence, skipped row, environment pass"
+    },
+    {
+      "term": "Pre-PR Review Command",
+      "defined": true,
+      "definition": "The command that obtains the Pre-PR Review Provider's review of the current candidate before a Pull Request opens, reads the verdict from the reviewer's final message and keeps the Pre-PR Review Record. A finding parks delivery only after it is validated.\n_Avoid_: Review Run, PR feedback Watch, review command alias"
+    },
+    {
+      "term": "Spec Consistency Check",
+      "defined": true,
+      "definition": "The read-only, pre-Run support command that compares a Spec's written citations, declarations, and cross-references. It uses an ADR horizon: `SC-ADR-RELATED` reports an ADR for a committed Spec only when the commit that added the ADR is an ancestor of the commit that added the Spec's `_prd.md`. Its Claim Receipt and Surface Transcript declaration gaps begin at the contract horizon, the commit that added the concrete-contract guide to the write-techspec skill. It reports consistency findings and never edits artifacts or emits a QA verdict. Its Glossary Declaration gap begins at the glossary horizon, the commit that added the glossary guide to the write-prd skill, and a Spec that carries a Glossary Declaration is checked at any age.\n_Avoid_: QA gate, Spec validator, inference engine"
+    }
+  ],
+  "other_terms_introduced": [],
+  "GLOSSARY.md_exists": false,
+  "catch_up_exact_contract": true
+}

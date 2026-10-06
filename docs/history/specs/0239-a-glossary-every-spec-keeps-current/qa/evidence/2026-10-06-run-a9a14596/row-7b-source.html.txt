@@ -1,0 +1,10 @@
+{
+  "status": "blocked",
+  "host": "ddd.fed.wiki.org",
+  "reason": "not_allowed",
+  "decision": "deny",
+  "source": "baseline_policy",
+  "protocol": "http",
+  "port": 80,
+  "message": "Domain not in allowlist."
+}

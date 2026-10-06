@@ -148,6 +148,9 @@ func Check(specsRoot, repoRoot, slug string) (Result, error) {
 		return result, err
 	}
 	if !present {
+		for _, code := range []string{CodeGlossaryUndeclared, CodeGlossaryUnplanned, CodeGlossaryMissing} {
+			addSkip(&result, code, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_prd.md")))
+		}
 		for _, code := range detectorCodes {
 			addSkip(&result, code, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_prd.md")))
 		}
@@ -182,6 +185,9 @@ func Check(specsRoot, repoRoot, slug string) (Result, error) {
 	}
 	graph, graphPresent, err := loadOptionalTaskGraph(filepath.Clean(specsRoot), slug, specDir)
 	if err != nil {
+		return result, err
+	}
+	if err := detectGlossary(&result, repoRoot, []string{filepath.Join(specDir, "_prd.md"), techSpecPath}, StageAll, graph); err != nil {
 		return result, err
 	}
 	if graphPresent {
