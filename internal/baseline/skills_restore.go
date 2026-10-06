@@ -226,7 +226,11 @@ func RestoreSkills(ctx context.Context, request SkillsRestoreRequest) (SkillsRes
 			err,
 		))
 	}
-	profile, err := loadRestoreProfile(catalog, request.ProfileID)
+	repoRoot, err := skillSnapshotRepositoryRoot(ctx, request.Repository, request.ProfileID, catalog)
+	if err != nil {
+		return failedRestorePayload(request.ProfileID, "", err)
+	}
+	profile, err := loadSkillSnapshotProfile(repoRoot, request.ProfileID, catalog)
 	if err != nil {
 		return failedRestorePayload(request.ProfileID, "", err)
 	}
@@ -353,8 +357,8 @@ func buildSkillsRestorePlan(
 		return restorePlan{}, restoreError(
 			SkillsRestoreInvalid,
 			"restore.profile-unknown",
-			fmt.Sprintf("Unknown built-in Baseline Profile %q.", request.ProfileID),
-			"Choose a profile id from the embedded Baseline catalog.",
+			fmt.Sprintf("Unknown Baseline Profile %q.", request.ProfileID),
+			"Choose the selected Baseline Profile id.",
 			errors.New("profile does not match the selected catalog"),
 		)
 	}
@@ -537,7 +541,7 @@ func buildSkillsRestorePlan(
 	payload := SkillsRestorePayload{
 		SchemaVersion:  SkillsRestoreSchemaVersion,
 		Profile:        dependencies.profile.ID,
-		Setup:          stringPointer(dependencies.profile.Setup),
+		Setup:          optionalSetupPointer(dependencies.profile.Setup),
 		Acquisitions:   acquisitions,
 		Skills:         skillPlans,
 		PlannedChanges: plannedChanges,
@@ -558,6 +562,126 @@ func buildSkillsRestorePlan(
 	return restorePlan{
 		payload: payload, document: document, repository: root, sourceFiles: sourceFiles,
 	}, nil
+}
+
+// Built-in readers keep their existing validation order and need no repository
+// lookup. Repository profiles are always resolved at the Git worktree root.
+func skillSnapshotRepositoryRoot(ctx context.Context, repository, profileID string, catalog *Catalog) (string, error) {
+	if _, ok := catalog.Profile(strings.TrimSpace(profileID)); ok {
+		return repository, nil
+	}
+	if ctx == nil {
+		return "", restoreError(SkillsRestoreInvalid, "restore.context-invalid", "Skill profile resolution requires a live context.", "Rerun the Baseline skills command.", errors.New("context is required"))
+	}
+	repository = strings.TrimSpace(repository)
+	if repository == "" {
+		return "", restoreError(
+			SkillsRestoreInvalid,
+			"restore.repo-invalid",
+			"Repository path cannot be empty.",
+			"Pass an existing Git worktree with --repo.",
+			errors.New("repository path is empty"),
+		)
+	}
+	root, err := (ExecGitRunner{}).RunGit(ctx, repository, "rev-parse", "--show-toplevel")
+	if err != nil {
+		return "", restoreError(SkillsRestoreInvalid, "restore.repo-invalid", fmt.Sprintf("Repository root is not a usable Git worktree: %v.", err), "Pass an existing Git worktree with --repo.", err)
+	}
+	return strings.TrimSpace(root), nil
+}
+
+func optionalSetupPointer(setup string) *string {
+	if setup == "" {
+		return nil
+	}
+	return stringPointer(setup)
+}
+
+type setupSnapshotSkills struct {
+	ID     string
+	Skills map[string]restoreSkillContract
+}
+
+func loadSkillSnapshotProfile(repoRoot, profileID string, catalog *Catalog) (restoreProfile, error) {
+	profileID = strings.TrimSpace(profileID)
+	if _, ok := catalog.Profile(profileID); ok {
+		return loadRestoreProfile(catalog, profileID)
+	}
+	resolved, err := ResolveProfile(repoRoot, profileID, catalog)
+	if err != nil {
+		return restoreProfile{}, restoreError(SkillsRestoreInvalid, "restore.profile-unresolved",
+			fmt.Sprintf("Baseline Profile %q is neither built-in nor resolvable at %s/%s.json.", profileID, customProfileDirectory, profileID),
+			fmt.Sprintf("Run roundfix baseline profile validate %s to see why, restore that file, or choose a built-in profile id.", profileID), err)
+	}
+	required := make(map[string]struct{})
+	for _, moduleID := range resolved.Modules {
+		for _, name := range stringsOrEmpty(catalog.modules[moduleID]["requiredSkills"]) {
+			required[name] = struct{}{}
+		}
+	}
+	snapshots := embeddedSnapshotContracts(catalog)
+	contracts, err := repositorySnapshotContracts(profileID, required, snapshots)
+	if err != nil {
+		return restoreProfile{}, err
+	}
+	return restoreProfile{ID: resolved.ID, RequiredSkills: required, Skills: contracts}, nil
+}
+
+// Catalog loading has already validated the snapshot documents and their sources.
+func embeddedSnapshotContracts(catalog *Catalog) []setupSnapshotSkills {
+	snapshots := make([]setupSnapshotSkills, 0, len(catalog.SetupIDs()))
+	for _, id := range catalog.SetupIDs() {
+		snapshot := setupSnapshotSkills{ID: id, Skills: make(map[string]restoreSkillContract)}
+		for _, skill := range objectsOrEmpty(catalog.setups[id]["skills"]) {
+			source, _ := objectValue(skill["source"])
+			provider, _ := stringValue(source, "type")
+			if provider != "github" {
+				continue
+			}
+			name, _ := stringValue(skill, "name")
+			repository, _ := stringValue(source, "repository")
+			ref, _ := stringValue(source, "ref")
+			sourcePath, _ := stringValue(source, "path")
+			digest, _ := stringValue(skill, "treeDigest")
+			snapshot.Skills[name] = restoreSkillContract{
+				Name: name,
+				Source: RestoreSource{
+					Provider: provider, Repository: repository, Ref: ref, Path: sourcePath,
+				},
+				TreeDigest: digest,
+			}
+		}
+		snapshots = append(snapshots, snapshot)
+	}
+	return snapshots
+}
+
+func repositorySnapshotContracts(profileID string, required map[string]struct{}, snapshots []setupSnapshotSkills) (map[string]restoreSkillContract, error) {
+	names := make([]string, 0, len(required))
+	for name := range required {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	contracts := make(map[string]restoreSkillContract)
+	for _, name := range names {
+		firstID := ""
+		for _, snapshot := range snapshots {
+			contract, ok := snapshot.Skills[name]
+			if !ok {
+				continue
+			}
+			if first, exists := contracts[name]; exists && first != contract {
+				return nil, restoreError(SkillsRestoreInvalid, "restore.snapshot-conflict",
+					fmt.Sprintf("Baseline Profile %q requires skill %q, whose contracts disagree in Setup Snapshots %q and %q.", profileID, name, firstID, snapshot.ID),
+					"Make the embedded Setup Snapshots agree before restoring or comparing this skill.", errors.New("embedded snapshot skill contracts disagree"))
+			}
+			if _, exists := contracts[name]; !exists {
+				contracts[name] = contract
+				firstID = snapshot.ID
+			}
+		}
+	}
+	return contracts, nil
 }
 
 func loadRestoreProfile(catalog *Catalog, profileID string) (restoreProfile, error) {
