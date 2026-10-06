@@ -1,8 +1,8 @@
 ---
 type: feat
-status: open
+status: promoted
 created: 2026-10-06
-spec: null
+spec: 0242-an-archive-that-leaves-an-archive-record
 ---
 
 # History keeps only what the Secondbrain needs
