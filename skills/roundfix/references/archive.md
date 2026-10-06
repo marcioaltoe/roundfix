@@ -38,12 +38,16 @@ that edits its own record remain refusals.
 Use `roundfix archive <slug>` after a Spec's Tasks are completed and the newest
 QA Report is acceptable under the one declared-acceptance eligibility policy:
 either `verdict: pass` with no disallowed blocked rows, or a `partial` verdict
-whose only unmet rows other than the pre-PR Pull Request row are declared
-unreachable and fully covered by the Spec's `## Unreachable Acceptance`
-declarations. The pre-PR Pull Request row, recorded as `blocked (environment:
-no open Pull Request)` with the Pull Request row named in its provenance,
-never decides a qualifying partial and needs no Unreachable Acceptance
-declaration. Settlement and archive both apply this same policy. A `fail`, an
+whose only unmet rows are the pre-PR Pull Request row or an outside-evidence row
+the Run sandbox could not reach, with any declared-blocked rows covered by the
+Spec's `## Unreachable Acceptance` declarations. The pre-PR Pull Request row,
+recorded as `blocked (environment: no open Pull Request)` with the Pull Request
+row named in its provenance, and the outside-evidence row, recorded as
+`blocked (environment: network denied: <host>)` with the outside-evidence row
+named in its provenance, never decide a qualifying partial and need no
+Unreachable Acceptance declaration. Any other blocked outside-evidence row
+still blocks Pull Request preparation. Settlement and archive both apply this
+same policy. A `fail`, an
 undeclared `partial`, a missing or unparseable
 report, and a `pass` carrying finding-, declared-, or precondition-blocked rows
 all refuse; an environment-blocked row remains acceptable under the existing
@@ -83,7 +87,8 @@ fixed number of directories.
 Refusals exit `2` through Preflight Validation, name the first unmet condition
 on stderr, and leave the active Spec folder in place. Every refusal outside the
 one declared-only case is unchanged: a finding-blocked row, an
-environment-blocked row other than the pre-PR Pull Request row, a declared count not covered by the Spec's
+environment-blocked row other than the pre-PR Pull Request row or a
+network-denied outside-evidence row, a declared count not covered by the Spec's
 declarations, `verdict: fail`, missing QA, and any non-completed Task all
 refuse. `qa_override` keeps its existing meaning for explicitly authorized
 archival of genuinely failed or missing evidence; declared unreachability does

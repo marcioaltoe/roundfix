@@ -63,8 +63,16 @@ Settle surface: <path>
 roundfix: settle QA Report is ineligible: <reason> (report <path>)
 ```
 
+The pre-PR Pull Request row, recorded as `blocked (environment: no open Pull
+Request)` with the Pull Request row named in its provenance, and an
+outside-evidence row blocked only because the Run sandbox denied network
+access, recorded as `blocked (environment: network denied: <host>)` with the
+outside-evidence row named in its provenance, never decide a qualifying
+partial. Any other blocked outside-evidence row still blocks Pull Request
+preparation. The refusal suffix `(report <path>)` identifies the report
+judged.
+
 When other Tasks of the Spec are `failed` at settle time, one stderr warning
 names them: their work may be swept into this commit. Settle creates no Run,
 writes no Run Event Journal entries, and never pushes; Task Worktree
 settlements integrate onto the Run Branch before the Run-level integration.
-
