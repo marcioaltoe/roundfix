@@ -110,3 +110,53 @@ These lines disclose provenance and do not refuse execution. JSON includes
 `verification.uncommitted`, an array of `{path, state}` objects, empty when
 all sources are committed, and reports `malformed` plus the parser message in
 `verification.commands` through the `verdict` and `cause` fields.
+
+### Glossary Declaration
+
+The Spec Consistency Check reads the `## Glossary` section of the PRD or
+TechSpec. Each non-blank line declares a term added or changed, or explains
+why a bold phrase is not a domain term:
+
+```markdown
+## Glossary
+
+- adds: **New Term**
+- changes: **Existing Term** — revise its definition
+- not a term: **Example Label** — a test label
+```
+
+Use `None.` as the section's only entry when there are no declarations.
+`adds` and `changes` allow an optional note after ` — `; `not a term` requires
+a non-empty reason.
+
+The glossary is each existing root `CONTEXT.md` and `GLOSSARY.md`, plus existing
+files with either name reached by relative Markdown links in `CONTEXT-MAP.md`
+or `GLOSSARY-MAP.md`. Definitions begin a line with `**Term**:`. Matching folds
+case and collapses whitespace; bold phrases also match a defined term followed
+by `s` or `es`.
+
+| Code | Reported when |
+| --- | --- |
+| `SC-GLOSSARY-UNDECLARED` | A required declaration is absent, a declaration line is malformed, or a bold candidate is neither defined nor declared. Runs from the PRD stage, reading only the PRD at `--stage prd` and both artifacts after it. |
+| `SC-GLOSSARY-UNPLANNED` | An added or changed term has no binding Task, or a changed term is not defined (declare it as added). Runs from the Tasks stage with a Task Graph. |
+| `SC-GLOSSARY-MISSING` | Every binding Task has completed but the glossary still lacks the declared term. Runs from the Tasks stage with a Task Graph. |
+
+A binding Task is a non-QA Task whose Context declares a glossary file under
+`interface:` or `creates:` and whose `## Verification` text contains
+`**Term**` exactly as declared. All three codes are errors, including without
+`--strict`. Missing glossary files or a missing Task Graph record detector skips.
+
+The bold rule reads single-line `**…**` spans outside fenced blocks and the
+Glossary Declaration. A candidate has two to five words, no backtick, digit or
+parenthesis, and does not end in `.`, `:`, `;`, `,`, `?` or `!`. Each word starts
+with an uppercase letter, except `a`, `an`, `and`, `at`, `by`, `for`, `from`,
+`in`, `of`, `on`, `or`, `per`, `the`, `to` and `with` after the first word.
+Each uncovered phrase is reported once per artifact, at its first line.
+
+The glossary horizon is the adding commit of
+`.agents/skills/write-prd/references/glossary.md`. A PRD committed at or after
+that commit must have the section in either artifact. An uncommitted PRD or
+unreadable history is held to the rule once the guide exists. Earlier Specs
+without a section record a skip; a Spec declaring the section is checked at
+any age. The detector reads local files and Git history and makes no judge or
+network call.
