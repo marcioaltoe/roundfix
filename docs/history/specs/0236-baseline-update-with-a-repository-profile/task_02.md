@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0236-baseline-update-with-a-repository-profile
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -120,3 +120,46 @@ baseline reference.
 - `_prd.md` → Goals; Core Features 3, 4, 5; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4; Success Metric 5; Success Metric 6
 - `_techspec.md` → API Contract 1; API Contract 2; API Contract 3; API Contract 4; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Vocabulary Contract; Testing Approach; Build Order 2
 - ADR-0241; ADR-0221; ADR-0189
+
+## Result
+
+Implemented the task_02 slice without changing Baseline update or Doctor
+production code. The new CLI fixture adopts an isolated Git repository through
+the real profile init, plan and apply commands, using the decisions from
+`baselineApplyTestPlan`, and optionally copies the repository skill set and
+lock. Before implementation, the new CLI test file and documented finding
+names were absent. Only this Task's Daemon-owned status change was present
+in the initial worktree.
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Repository profile reaches current | `TestBaselineUpdateReachesCurrentWithARepositoryProfile` passed with and without the copied skill set: real JSON update reports `current`, text matches Surface Transcript 1, stderr is empty, and repository bytes remain unchanged. |
+| Preview and skills refresh | `TestBaselineUpdatePreviewListsATrailingSkillWithARepositoryProfile` passed: a lock-matching edited `testing-boss` appears in `skills.drifted`, exit is 3, state is `plan_ready`, and bytes remain unchanged. `TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile` passed with real owned install, external resolution, readiness and snapshot comparison; all owned skills were removed first and reinstalled, result is `verified`, and the fake restore receives only `testing-boss` with the repository profile ID. |
+| Doctor comparison and missing-profile path | `TestDoctorComparesARepositoryProfileWithItsSnapshot` passed through Doctor's real repository skills check: trailing warning names `testing-boss`; missing profile preserves readiness and reports comparison unavailable with the searched repository profile path. Both checks leave bytes unchanged. |
+| Restore transcripts | `TestBaselineSkillsRestoreNamesTheProfilePath` and `TestBaselineSkillsRestoreAcceptsARepositoryProfile` passed through real command dispatch, matching Surface Transcripts 2 and 3 exactly for stdout, stderr and exit 2; neither refusal changes repository bytes. |
+| References, skill mirrors and recorded version | Baseline and Doctor guides explain repository-profile contracts, null `setup`, unresolved paths and snapshot conflict. The Roundfix reference uses `<profile-id>` for restore and reconcile and names both findings. A focused Python inspection confirmed required phrases, both byte-identical mirrors, and unchanged QA settlement sections. The record command generated Roundfix version `0.1.40` and its digest entry. |
+
+Focused checks and implementation steps:
+
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk proxy go test ./internal/cli -run 'TestBaselineUpdateReachesCurrentWithARepositoryProfile' -count=1`
+  exited 0 during fixture development.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk proxy go test ./internal/cli -run 'Test.*(WithARepositoryProfile|RepositoryProfileWithItsSnapshot|RestoreNamesTheProfilePath|RestoreAcceptsARepositoryProfile)$' -count=1 -v`
+  exited 0 after the final skill regeneration, with explicit pass lines for
+  all six new tests and both current-state subtests.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk make skills-sync` exited 0.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  initially hit the sandbox's read-only canonical `SKILL.md` restriction;
+  rerunning the same authorized implementation step with the required
+  permission exited 0 and generated the version changes in both mirrors.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk make baseline-digests`
+  exited 0 with `ok: true`, `changed: false`; no derived artifact changed.
+- Focused documentation/mirror/QA-section inspection and
+  `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+The changed-path postflight contains only the new CLI test, the two user
+guides, the authorized Roundfix skill/reference and mirrors, the version
+record, and this Task file. No follow-up implementation was needed. Task
+status, checkboxes, the Task Graph, other Task files, `CONTEXT.md` and
+`CHANGELOG.md` were left untouched by this turn. Declared Verification was
+not run; Daemon Verification and settlement remain pending. No commit, push
+or pull request was made in the Run worktree.

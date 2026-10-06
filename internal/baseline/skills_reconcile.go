@@ -92,7 +92,11 @@ func ReconcileSkillsLock(
 			err,
 		))
 	}
-	profile, err := loadRestoreProfile(catalog, request.ProfileID)
+	repoRoot, err := skillSnapshotRepositoryRoot(ctx, request.Repository, request.ProfileID, catalog)
+	if err != nil {
+		return failedReconcilePayload(request.ProfileID, "", err)
+	}
+	profile, err := loadSkillSnapshotProfile(repoRoot, request.ProfileID, catalog)
 	if err != nil {
 		return failedReconcilePayload(request.ProfileID, "", err)
 	}
@@ -213,8 +217,8 @@ func validateSkillsReconcileRequest(
 		return restoreError(
 			SkillsRestoreInvalid,
 			"restore.profile-unknown",
-			fmt.Sprintf("Unknown built-in Baseline Profile %q.", request.ProfileID),
-			"Choose a profile id from the embedded Baseline catalog.",
+			fmt.Sprintf("Unknown Baseline Profile %q.", request.ProfileID),
+			"Choose the selected Baseline Profile id.",
 			errors.New("profile does not match the selected catalog"),
 		)
 	}
@@ -348,7 +352,7 @@ func buildSkillsReconcilePlan(
 	payload := SkillsReconcilePayload{
 		SchemaVersion: SkillsReconcileSchemaVersion,
 		Profile:       profile.ID,
-		Setup:         stringPointer(profile.Setup),
+		Setup:         optionalSetupPointer(profile.Setup),
 		Acquisitions: []RestoreAcquisition{{
 			Provider: provenance.Provider, Repository: provenance.Repository, Ref: provenance.Ref,
 		}},

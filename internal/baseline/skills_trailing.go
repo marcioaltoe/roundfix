@@ -14,7 +14,7 @@ func TrailingSetupSkills(repoRoot, profileID string, required []string) ([]strin
 	if err != nil {
 		return nil, fmt.Errorf("load catalog for snapshot comparison: %w", err)
 	}
-	profile, err := loadRestoreProfile(catalog, profileID)
+	profile, err := loadSkillSnapshotProfile(repoRoot, profileID, catalog)
 	if err != nil {
 		return nil, fmt.Errorf("load profile for snapshot comparison: %w", err)
 	}

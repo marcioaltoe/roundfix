@@ -1,0 +1,41 @@
+{
+  "base": "a7426b452746af3b55db0869ed15731941e545f9",
+  "head": "b263269acb51d475ab7cba3df7e034685da705c8",
+  "audits": [
+    {
+      "task": 1,
+      "commit": "c5e86252a3b5d0236e78762c91d5635da293dd94",
+      "paths": [
+        "docs/specs/0236-baseline-update-with-a-repository-profile/task_01.md",
+        "internal/baseline/skills_reconcile.go",
+        "internal/baseline/skills_restore.go",
+        "internal/baseline/skills_snapshot_profile_test.go",
+        "internal/baseline/skills_trailing.go"
+      ],
+      "undeclared": []
+    },
+    {
+      "task": 2,
+      "commit": "b263269acb51d475ab7cba3df7e034685da705c8",
+      "paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/baseline.md",
+        "docs/specs/0236-baseline-update-with-a-repository-profile/task_02.md",
+        "docs/user-guide/commands/baseline.md",
+        "docs/user-guide/commands/doctor.md",
+        "internal/cli/baseline_update_repository_profile_test.go",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/baseline.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "undeclared": []
+    }
+  ],
+  "authorization_precedes_tasks": true,
+  "protected_unchanged": true,
+  "governed_paths": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/baseline.md",
+    "skills/roundfix/SKILL.md"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "checks": [
+    {
+      "path": "docs/user-guide/commands/baseline.md",
+      "phrases": [
+        "restore.profile-unresolved",
+        "restore.snapshot-conflict",
+        "repository profile"
+      ]
+    },
+    {
+      "path": "docs/user-guide/commands/doctor.md",
+      "phrases": [
+        "neither built-in nor resolvable"
+      ]
+    },
+    {
+      "path": ".agents/skills/roundfix/references/baseline.md",
+      "phrases": [
+        "--profile <profile-id>",
+        "restore.profile-unresolved"
+      ]
+    }
+  ],
+  "mirrors_equal": true,
+  "skill_version": "0.1.40"
+}

@@ -120,10 +120,16 @@ Use explicit maintenance operations only when the user placed them in scope:
 ```bash
 roundfix baseline profile show <profile-id> --format json
 roundfix baseline profile validate <profile-id> --format text
-roundfix baseline skills restore --repo . --profile <built-in-id> --skill <skill-name> --format json
-roundfix baseline skills reconcile --repo . --profile <built-in-id> --source <owner/repo> --revision <40-hex-commit> --format json
+roundfix baseline skills restore --repo . --profile <profile-id> --skill <skill-name> --format json
+roundfix baseline skills reconcile --repo . --profile <profile-id> --source <owner/repo> --revision <40-hex-commit> --format json
 roundfix baseline assets sync --source-dir <canonical-setups> --check --format json
 ```
+
+Restore and reconcile accept a repository profile, and
+`restore.profile-unresolved` names its searched
+`.roundfix/baseline/profiles/<profile-id>.json` path.
+`restore.snapshot-conflict` names an external skill whose embedded Setup
+Snapshot contracts disagree.
 
 `roundfix baseline skills reconcile` removes only lock entries absent at the
 selected immutable commit. It preserves present, moved, unrelated, and
@@ -161,4 +167,3 @@ through `--confirm-plan`. Asset refresh without `--check` requires explicit
 maintainer intent. For Decision Documents, preservation, cross-clone safety,
 recovery, migration, security limits, and completion evidence, follow
 `docs/user-guide/context-driven-development.md#adopt-or-update-the-context-driven-baseline`.
-

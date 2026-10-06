@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0236-baseline-update-with-a-repository-profile
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

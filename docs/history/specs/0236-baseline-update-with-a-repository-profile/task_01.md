@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0236-baseline-update-with-a-repository-profile
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -97,3 +97,71 @@ repository profile, and an unresolvable one is named by its repository path.
 - `_prd.md` → Goals; Core Features 1, 2, 3; Success Metric 5; Success Metric 6
 - `_techspec.md` → Interfaces; Invariants 1 to 8; API Contract 2; API Contract 3; Vocabulary Contract; Testing Approach; Build Order 1
 - ADR-0241; ADR-0221; ADR-0067
+
+
+## Result
+
+Implemented the skill-reader slice for the Backlog Entry of 2026-10-06.
+`loadSkillSnapshotProfile` preserves `loadRestoreProfile` for built-in IDs
+and resolves repository profiles through `ResolveProfile`. Repository
+profiles require the union of their modules' skills and take external
+contracts from the embedded Setup Snapshots in catalog order. Conflicts
+are refused by the first conflicting skill in lexical order and name both
+snapshots. Comparison, restore and reconcile now use that loader; restore
+and reconcile resolve repository profiles at the Git top level, including
+requests from a nested directory. Payloads carry null `setup` for a
+repository profile, and unresolved-profile findings name its repository
+path while wrapping the resolution error.
+
+Focused checks and acceptance evidence:
+
+- Built-in contracts: `TestSkillSnapshotProfileKeepsEveryBuiltInProfile`
+  compares every built-in ID with the unchanged loader using deep equality.
+- Repository comparison:
+  `TestTrailingSetupSkillsComparesARepositoryProfile` checks a matching
+  repository-held `golang-cli` tree and an edited `testing-boss` tree;
+  only `testing-boss` is reported, including duplicate input names.
+- Restore and reconcile:
+  `TestRestoreSkillsAcceptsARepositoryProfile` and
+  `TestReconcileSkillsLockAcceptsARepositoryProfile` use temporary Git
+  repositories and nested request paths, reach `restore.source-dir-invalid`,
+  retain the repository profile ID and carry null `setup`.
+- Unresolved profile: `TestSkillSnapshotProfileNamesTheRepositoryPath`
+  checks the invalid-category `restore.profile-unresolved` finding,
+  repository path, wrapped `ProfileResolutionError` and comparison wrapper.
+- Snapshot conflict: `TestRepositorySnapshotContractsRefusesDisagreement`
+  checks agreement, a skill listed by only one snapshot, a required skill
+  absent from external snapshots, and disagreements in provider,
+  repository, ref, path and tree digest. Each conflict names `alpha`
+  before `zeta`, and names `first` and `second` in order.
+- Module union and catalog agreement:
+  `TestSkillSnapshotProfileResolvesARepositoryProfile` checks the required
+  union, each external contract against the `go` snapshot, profile identity
+  and empty setup; `TestEmbeddedSetupSnapshotsAgreeOnEveryExternalSkill`
+  checks agreement across the embedded catalog.
+
+Commands and observed outcomes:
+
+- Before implementation, the focused restore/reconcile regression command
+  below exited 1: both tests refused `repository-go` as an unknown built-in
+  profile. The initial default-cache attempt was blocked by sandbox access
+  to the host Go cache; subsequent checks used a task-scoped cache.
+  `GOCACHE=/private/tmp/roundfix-task01-gocache rtk proxy go test ./internal/baseline -run '^Test(RestoreSkillsAccepts|ReconcileSkillsLockAccepts)' -count=1`
+- After the final source edit:
+  `GOCACHE=/private/tmp/roundfix-task01-gocache rtk proxy go test ./internal/baseline -run 'Test(SkillSnapshotProfile|RepositorySnapshotContracts|EmbeddedSetupSnapshots|TrailingSetupSkills|RestoreSkillsAccepts|ReconcileSkillsLockAccepts|SkillsRestore|SkillsReconcile)' -count=1`
+  exited 0 (`ok roundfix/internal/baseline`, 31.596s). This selection includes
+  the unchanged installed-tree comparison and existing restore/reconcile
+  implementation tests.
+- `GOCACHE=/private/tmp/roundfix-task01-gocache rtk make verify-incremental`
+  first exited 2: sandbox process-table access blocked two existing CLI
+  force-stop tests, and a source edit made during that run triggered suite
+  guards. Rerunning with process access against the unchanged implementation
+  exited 0. Formatting, vet, repository-wide tests, skill checks and build
+  passed; baseline took 102.992s and CLI took 260.908s.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+The declared Verification command was not run. Task status remains
+Daemon-owned. No commit, push or pull request was made. No update, Doctor,
+profile schema, draft binding, catalog or derived Baseline file was changed.
+Task_02 retains its authored CLI regression tests and documentation work;
+no additional follow-up was introduced by this slice.

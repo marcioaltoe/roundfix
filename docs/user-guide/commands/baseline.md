@@ -107,6 +107,16 @@ acquired. If the lock changes during planning before its transaction preimage
 is captured, the command refuses with `lock.changed-during-plan`, exits `3`,
 and writes nothing.
 
+Restore, lock reconciliation, and the managed refresh accept both built-in
+and repository-owned Baseline Profiles. A repository profile's restorable
+skills are the external skills its modules require, with contracts taken
+from the embedded Setup Snapshots that agree on each skill. Its restore and
+reconcile payloads carry `setup: null` because it names no single snapshot.
+`restore.profile-unresolved` says the profile is neither built-in nor
+resolvable and names the searched `.roundfix/baseline/profiles/<id>.json`
+path. `restore.snapshot-conflict` names a skill whose embedded snapshot
+contracts disagree; no contract is chosen by catalog order.
+
 The managed refresh (`roundfix baseline update`) also restores a required
 external skill that matches its lock but trails its Setup Snapshot. Its
 read-only preview lists the skill under `Skills drifted` with a restore action,
@@ -143,4 +153,3 @@ formatter and Verification commands as recommendations but never runs them.
 For the adoption, automation, Decision Document, cross-clone, migration,
 recovery, and security procedures, read
 [CONTEXT-driven development](../context-driven-development.md#adopt-or-update-the-context-driven-baseline).
-
