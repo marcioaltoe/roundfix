@@ -136,6 +136,45 @@ this change.
 Past `router-prompt` lines written before the retirement stay in the Judge Log
 and count toward their month's ceiling.
 
+## Light implementation tier
+
+A Task is `light` when its `complexity` is `low`, its `type` is not `qa`, and
+none of the files it declares to create, change, or delete is a Governed Path.
+Every other Task, every QA gate, and every review Batch remains `standard`. A
+one-Run Agent Selection override turns the light tier off for that Run.
+
+Light Tasks try the configured OpenRouter models on the `opencode` runtime in
+order, with no reasoning effort and no warm-up prompt. The default is
+`deepseek/deepseek-v4.1-flash`. If those candidates cannot start, the Task
+uses its category's Preferred Selection and Fallback Chain. The light model
+list is a User Config value; an empty list turns the tier off, a model must be
+`<author>/<slug>`, and the subscription rule refuses models that could reach
+OpenAI or Anthropic through OpenRouter.
+
+The light session reads its key through Roundfix's key helper, currently named
+`ROUNDFIX_OPENROUTER_API_KEY`. OpenCode receives only a reference to that
+variable, never the key value, and Roundfix removes the generic
+`OPENROUTER_API_KEY`. Every light Task's prompt, the files its agent reads,
+and its Verification diagnostics reach OpenRouter and the selected model's
+provider. Without the named key, the light tier is skipped and the category
+profile runs instead.
+
+`openrouter.implement_monthly_ceiling_usd` is a finite User Config number
+greater than zero and defaults to US$10. `openrouter.light_models` defaults to
+`[deepseek/deepseek-v4.1-flash]`; both keys are ignored with a warning when
+placed in Project Config. Before each light Task, Roundfix sums the current
+month's Light Spend Log. A reached ceiling or unreadable log skips the light
+tier and uses the category profile.
+
+The Light Spend Log is one JSONL file per UTC month at
+`<home>/.roundfix/openrouter/implement/<YYYY-MM>.jsonl`. Each line records
+`schema`, `time`, `repository`, `run_id`, `spec`, `task`, `session`, `model`,
+`cost_usd`, and `cost_source` (`opencode` or `unreported`). It contains no
+key, prompt, or diagnostic. A skipped Task prints
+`roundfix: warning: light tier skipped for Task` and names one of the three
+reasons: the key variable is not set, the Light Spend Log could not be read,
+or this month's light spend reached the ceiling.
+
 ## Context-Driven Baseline state
 
 User Config and Project Config are operational Roundfix state. They do not
@@ -322,6 +361,8 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `implement.auto_push` | `false` | Leaves a Clean Spec Run local. `true` pushes its upstream branch but never opens a pull request. |
 | `runs.max_active` | `3` | Limits Active Implement Runs across every repository in the Run Database. Only User Config can set it; Project Config is ignored with a warning. `0` disables the bound. |
 | `jev.monthly_ceiling_usd` | `5` | Sets the shared monthly Jev ceiling in User Config, in US dollars. Project Config is ignored with a warning. |
+| `openrouter.light_models` | `[deepseek/deepseek-v4.1-flash]` | User Config list of `<author>/<slug>` OpenRouter models for light Tasks. An empty list turns the tier off; subscription-rule refusals fail validation. Project Config is ignored with a warning. |
+| `openrouter.implement_monthly_ceiling_usd` | `10` | Finite positive User Config ceiling in US dollars for light implementation spend. Project Config is ignored with a warning. |
 | `notify.enabled` | `true` | Sends one terminal outcome notification for `resolve`, `watch`, and `implement`. |
 | `notify.command` | `""` | Uses the native desktop notifier. A non-empty shell command replaces it. |
 | `budget.enabled` | `true` | Enforces the configured Run duration budget. |

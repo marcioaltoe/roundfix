@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0233-a-light-tier-on-open-models
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -107,3 +107,34 @@ mirrors and the recorded skill versions.
 - `_prd.md` → Core Features 1-8; User Stories 3 and 6
 - `_techspec.md` → API Contract 1; API Contract 2; API Contract 3; API Contract 4; API Contract 5; API Contract 6; API Contract 7; Surface Transcript 1; Surface Transcript 2; Vocabulary Contract; Build Order 1
 - ADR-0238; ADR-0235; ADR-0187; ADR-0189
+
+## Result
+
+Implemented the light-tier documentation across the configuration guide, model
+reference, Spec command reference, canonical Roundfix and write-tasks skills,
+and regenerated the embedded skill mirrors. The canonical skills now carry
+Roundfix `0.1.35` and write-tasks `0.0.9`; both front-matter fields and the
+owned-skill version record were updated by the recorder.
+
+Focused checks:
+
+- `make skills-sync` — passed; canonical and embedded skill trees were synchronized.
+- `GOCACHE=/private/tmp/roundfix-task-0233-gocache go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed.
+- `make baseline-digests` — passed; no derived digest changes were needed.
+- Fresh phrase and scope probes — passed for both configuration keys, the Light Spend Log and skip warning, tier and event terms, judge stage/output/refusal terms, write-tasks guidance, and model namespace/default; `cmp` passed for every canonical/mirror skill pair.
+
+Acceptance evidence:
+
+- Configuration guide: names `openrouter.light_models` and `openrouter.implement_monthly_ceiling_usd` with defaults, validation/refusal behavior, Project Config warnings, the Light Spend Log path and fields, the three skip reasons, key-variable handling, and provider-bound data flow.
+- Runtime reference: records the light rule, `light-tier` profile source, no reasoning effort, one escalation, `light_tier_skipped` reason codes, and `light_tier_escalated` event data plus the one-Run override.
+- Spec references: document `--stage tasks`, advisory `suggested model-tier` output, dispatch independence, and the exact unknown-stage message in both references.
+- Write-tasks and model references: state which Tasks run on the light tier, the advisory planning judge command, and the `openrouter/deepseek/deepseek-v4.1-flash` default selection namespace.
+- Mirror/version contract: canonical and embedded skill files compare equal, and `skills/testdata/owned-skill-versions.json` records the raised versions.
+
+The Daemon-owned Task status remains `in_progress`. The declared Verification
+commands were not run in this Agent turn.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261006T004151Z_0e07759cbdbec8e5`
+- Source commit: `c8dec6dd788a4a0a0d5a1f90e9105e9b50a4b09a`

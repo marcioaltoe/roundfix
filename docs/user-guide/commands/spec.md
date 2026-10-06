@@ -1,14 +1,18 @@
 ### spec judge
 
 ```bash
-roundfix spec judge <slug> [--stage <prd|techspec>] [--format <text|json>]
+roundfix spec judge <slug> [--stage <prd|techspec|tasks>] [--format <text|json>]
 ```
 
 Raises advisory judgments about ADR attributions and goal-to-mechanism links
 in one active Spec, resolved through the configured Spec Root. By default it
 reads both the PRD and TechSpec. `--stage prd` judges PRD attributions;
 `--stage techspec` judges TechSpec attributions and its Coverage Map against
-the PRD's goals. These judgments read the PRD, TechSpec, and accepted ADRs.
+the PRD's goals; `--stage tasks` asks for an advisory `light`, `standard`, or
+`heavy` model-tier suggestion for each non-QA Task and prints
+`suggested model-tier <task file>: <answer> at confidence <c>`. The suggestion
+does not change any file and is never read at dispatch. These judgments read
+the PRD, TechSpec, and accepted ADRs.
 
 At every stage (`prd`, `techspec`, or both), the `source-grouping` question
 also asks whether each Finding or Backlog Entry the Spec adopted belongs in
@@ -57,7 +61,8 @@ unwritable log stops further requests. Judgments not asked count as skipped.
 The command exits `0` whenever it ran, including advisory, suggested,
 skipped, and stopped results. It never gates authoring or changes another
 command's exit code. Exit `2` means invalid arguments, an unknown active Spec,
-a missing PRD, or a missing TechSpec with `--stage techspec`.
+a missing PRD, or a missing TechSpec with `--stage techspec`. An unknown stage
+fails with `unsupported --stage "<value>"; use prd, techspec or tasks`.
 
 
 The full Spec Consistency Check reports `SC-SPEC-PATH-PINNED` as an error for

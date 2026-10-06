@@ -51,12 +51,17 @@ Root. Text is the default output; JSON uses the `roundfix-speccheck/v1` schema.
 ```bash
 roundfix spec judge <slug> --stage prd
 roundfix spec judge <slug> --stage techspec
-roundfix spec judge <slug> [--stage <prd|techspec>] [--format <text|json>]
+roundfix spec judge <slug> --stage tasks
+roundfix spec judge <slug> [--stage <prd|techspec|tasks>] [--format <text|json>]
 ```
 
 The Advisory Judge reads one active Spec from the configured Spec Root. With
-no stage it judges both artifacts. It never gates and never changes another
-command's exit code: advisory, skipped, and stopped runs exit `0`.
+no stage it judges both artifacts. With `--stage tasks` it reads `_tasks.md`,
+asks one model-tier question for each non-QA Task, and prints
+`suggested model-tier <task file>: <answer> at confidence <c>`. The suggestion
+is advisory, writes no Spec file, and is never read at dispatch. It never gates
+and never changes another command's exit code: advisory, skipped, and stopped
+runs exit `0`.
 
 Answer each `advisory` line by correcting the artifact or stating why the
 text stands. A `skipped` result is neither a failure nor a clean result;
@@ -69,6 +74,9 @@ the open source within the grouping bound or by stating why it stays apart.
 The grouping bound is four implementation Tasks plus its QA gate. A
 suggestion never gates. Only Findings and Backlog Entries are sent for this
 question; its recall is low, so no suggestion does not prove no source fits.
+
+An unknown stage fails with `unsupported --stage "<value>"; use prd, techspec
+or tasks`.
 
 Set `ROUNDFIX_OPENROUTER_API_KEY` for OpenRouter first, or
 `ROUNDFIX_TYPESAFE_API_KEY` for TypeSafe directly when the first key is
