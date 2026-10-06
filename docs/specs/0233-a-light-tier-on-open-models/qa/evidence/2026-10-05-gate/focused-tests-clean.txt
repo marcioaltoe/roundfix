@@ -1,0 +1,328 @@
+=== RUN   TestLightTierUserConfig
+=== RUN   TestLightTierUserConfig/defaults
+=== RUN   TestLightTierUserConfig/custom
+=== RUN   TestLightTierUserConfig/off
+=== RUN   TestLightTierUserConfig/refuse_model_openai/gpt-6.1-sol
+=== RUN   TestLightTierUserConfig/refuse_model_anthropic/claude-opus-5.5
+=== RUN   TestLightTierUserConfig/refuse_model_openrouter/auto
+=== RUN   TestLightTierUserConfig/refuse_model_deepseek
+=== RUN   TestLightTierUserConfig/refuse_model_deepseek/
+=== RUN   TestLightTierUserConfig/refuse_model_/flash
+=== RUN   TestLightTierUserConfig/refuse_model_deepseek/a/b
+=== RUN   TestLightTierUserConfig/refuse_model_deepseek/a_b
+=== RUN   TestLightTierUserConfig/refuse_ceiling_0
+=== RUN   TestLightTierUserConfig/refuse_ceiling_-1
+=== RUN   TestLightTierUserConfig/refuse_ceiling_.inf
+=== RUN   TestLightTierUserConfig/refuse_ceiling_-.inf
+=== RUN   TestLightTierUserConfig/refuse_ceiling_.nan
+=== RUN   TestLightTierUserConfig/refuse_ceiling_a_string
+=== RUN   TestLightTierUserConfig/refuse_ceiling_'10'
+=== RUN   TestLightTierUserConfig/refuse_ceiling_null
+=== RUN   TestLightTierUserConfig/refuse_ceiling_true
+=== RUN   TestLightTierUserConfig/refuse_ceiling_[]
+=== RUN   TestLightTierUserConfig/refuse_list_null
+=== RUN   TestLightTierUserConfig/refuse_list_deepseek/flash
+=== RUN   TestLightTierUserConfig/refuse_list_{}
+=== RUN   TestLightTierUserConfig/refuse_list_[42]
+=== RUN   TestLightTierUserConfig/refuse_list_[null]
+=== RUN   TestLightTierUserConfig/refuse_list_[{}]
+=== RUN   TestLightTierUserConfig/project_ignores_
+=== RUN   TestLightTierUserConfig/project_ignores_openrouter:___light_models:_[]___implement_monthly_ceiling_usd:_30_
+--- PASS: TestLightTierUserConfig (0.05s)
+    --- PASS: TestLightTierUserConfig/defaults (0.00s)
+    --- PASS: TestLightTierUserConfig/custom (0.00s)
+    --- PASS: TestLightTierUserConfig/off (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_model_openai/gpt-6.1-sol (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_model_anthropic/claude-opus-5.5 (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_model_openrouter/auto (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_model_deepseek (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_model_deepseek/ (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_model_/flash (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_model_deepseek/a/b (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_model_deepseek/a_b (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_ceiling_0 (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_ceiling_-1 (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_ceiling_.inf (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_ceiling_-.inf (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_ceiling_.nan (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_ceiling_a_string (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_ceiling_'10' (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_ceiling_null (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_ceiling_true (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_ceiling_[] (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_list_null (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_list_deepseek/flash (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_list_{} (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_list_[42] (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_list_[null] (0.00s)
+    --- PASS: TestLightTierUserConfig/refuse_list_[{}] (0.00s)
+    --- PASS: TestLightTierUserConfig/project_ignores_ (0.00s)
+    --- PASS: TestLightTierUserConfig/project_ignores_openrouter:___light_models:_[]___implement_monthly_ceiling_usd:_30_ (0.00s)
+=== RUN   TestOpenRouterImplementKeyNamesOneVariable
+=== RUN   TestOpenRouterImplementKeyNamesOneVariable/set
+=== RUN   TestOpenRouterImplementKeyNamesOneVariable/empty
+=== RUN   TestOpenRouterImplementKeyNamesOneVariable/absent
+=== RUN   TestOpenRouterImplementKeyNamesOneVariable/generic_only
+--- PASS: TestOpenRouterImplementKeyNamesOneVariable (0.00s)
+    --- PASS: TestOpenRouterImplementKeyNamesOneVariable/set (0.00s)
+    --- PASS: TestOpenRouterImplementKeyNamesOneVariable/empty (0.00s)
+    --- PASS: TestOpenRouterImplementKeyNamesOneVariable/absent (0.00s)
+    --- PASS: TestOpenRouterImplementKeyNamesOneVariable/generic_only (0.00s)
+PASS
+ok  	roundfix/internal/config	0.253s
+=== RUN   TestLightSpendLog
+=== RUN   TestLightSpendLog/append_sum_and_modes
+=== RUN   TestLightSpendLog/missing
+=== RUN   TestLightSpendLog/unreadable_not_json_
+=== RUN   TestLightSpendLog/unreadable_{"cost_usd":0.25}_{_
+=== RUN   TestLightSpendLog/unreadable_{"cost_usd":-0.1}_
+=== RUN   TestLightSpendLog/unreadable_null_
+=== RUN   TestLightSpendLog/unreadable_{}_
+=== RUN   TestLightSpendLog/unreadable_{"cost_usd":"bad"}_
+=== RUN   TestLightSpendLog/unreadable_{"time":"invalid","cost_usd":0}_
+=== RUN   TestLightSpendLog/UTC_month_boundary
+--- PASS: TestLightSpendLog (0.01s)
+    --- PASS: TestLightSpendLog/append_sum_and_modes (0.00s)
+    --- PASS: TestLightSpendLog/missing (0.00s)
+    --- PASS: TestLightSpendLog/unreadable_not_json_ (0.00s)
+    --- PASS: TestLightSpendLog/unreadable_{"cost_usd":0.25}_{_ (0.00s)
+    --- PASS: TestLightSpendLog/unreadable_{"cost_usd":-0.1}_ (0.00s)
+    --- PASS: TestLightSpendLog/unreadable_null_ (0.00s)
+    --- PASS: TestLightSpendLog/unreadable_{}_ (0.00s)
+    --- PASS: TestLightSpendLog/unreadable_{"cost_usd":"bad"}_ (0.00s)
+    --- PASS: TestLightSpendLog/unreadable_{"time":"invalid","cost_usd":0}_ (0.00s)
+    --- PASS: TestLightSpendLog/UTC_month_boundary (0.00s)
+=== RUN   TestTierFor
+=== RUN   TestTierFor/low
+=== RUN   TestTierFor/trimmed
+=== RUN   TestTierFor/qa
+=== RUN   TestTierFor/medium
+=== RUN   TestTierFor/high
+=== RUN   TestTierFor/missing
+=== RUN   TestTierFor/unknown
+=== RUN   TestTierFor/governed_creates
+=== RUN   TestTierFor/governed_interface
+=== RUN   TestTierFor/governed_deletes
+=== RUN   TestTierFor/instruction_only
+=== RUN   TestTierFor/ordinary_writes
+=== RUN   TestTierFor/instruction_and_governed_write
+--- PASS: TestTierFor (0.00s)
+    --- PASS: TestTierFor/low (0.00s)
+    --- PASS: TestTierFor/trimmed (0.00s)
+    --- PASS: TestTierFor/qa (0.00s)
+    --- PASS: TestTierFor/medium (0.00s)
+    --- PASS: TestTierFor/high (0.00s)
+    --- PASS: TestTierFor/missing (0.00s)
+    --- PASS: TestTierFor/unknown (0.00s)
+    --- PASS: TestTierFor/governed_creates (0.00s)
+    --- PASS: TestTierFor/governed_interface (0.00s)
+    --- PASS: TestTierFor/governed_deletes (0.00s)
+    --- PASS: TestTierFor/instruction_only (0.00s)
+    --- PASS: TestTierFor/ordinary_writes (0.00s)
+    --- PASS: TestTierFor/instruction_and_governed_write (0.00s)
+=== RUN   TestPlanEnabled
+=== RUN   TestPlanEnabled/zero
+=== RUN   TestPlanEnabled/empty_models
+=== RUN   TestPlanEnabled/models
+=== RUN   TestPlanEnabled/key_absent_still_allows_skip_diagnostic
+--- PASS: TestPlanEnabled (0.00s)
+    --- PASS: TestPlanEnabled/zero (0.00s)
+    --- PASS: TestPlanEnabled/empty_models (0.00s)
+    --- PASS: TestPlanEnabled/models (0.00s)
+    --- PASS: TestPlanEnabled/key_absent_still_allows_skip_diagnostic (0.00s)
+PASS
+ok  	roundfix/internal/lighttier	0.202s
+=== RUN   TestTaskCarriesComplexity
+=== RUN   TestTaskCarriesComplexity/low
+=== RUN   TestTaskCarriesComplexity/__medium__
+=== RUN   TestTaskCarriesComplexity/#00
+=== RUN   TestTaskCarriesComplexity/custom
+--- PASS: TestTaskCarriesComplexity (0.01s)
+    --- PASS: TestTaskCarriesComplexity/low (0.00s)
+    --- PASS: TestTaskCarriesComplexity/__medium__ (0.00s)
+    --- PASS: TestTaskCarriesComplexity/#00 (0.00s)
+    --- PASS: TestTaskCarriesComplexity/custom (0.00s)
+PASS
+suiteguard: guard cost: measured 9240 paths; fingerprint took 447.674916ms before and 456.546208ms after
+ok  	roundfix/internal/spec	1.077s
+=== RUN   TestLightSessionReadsTheImplementKeyByName
+=== PAUSE TestLightSessionReadsTheImplementKeyByName
+=== RUN   TestLightSessionSendsNoWarmup
+=== PAUSE TestLightSessionSendsNoWarmup
+=== CONT  TestLightSessionReadsTheImplementKeyByName
+=== CONT  TestLightSessionSendsNoWarmup
+=== RUN   TestLightSessionReadsTheImplementKeyByName/#00
+--- PASS: TestLightSessionSendsNoWarmup (0.07s)
+=== RUN   TestLightSessionReadsTheImplementKeyByName/{"theme":"dark","provider":{"other":{"name":"kept"},"openrouter":{"options":{"timeout":42,"apiKey":"old"}}}}
+=== RUN   TestLightSessionReadsTheImplementKeyByName/nonobject/null
+=== RUN   TestLightSessionReadsTheImplementKeyByName/nonobject/[]
+=== RUN   TestLightSessionReadsTheImplementKeyByName/nonobject/"fixture-secret"
+=== RUN   TestLightSessionReadsTheImplementKeyByName/nonobject/invalid
+=== RUN   TestLightSessionReadsTheImplementKeyByName/nonobject/42
+--- PASS: TestLightSessionReadsTheImplementKeyByName (0.11s)
+    --- PASS: TestLightSessionReadsTheImplementKeyByName/#00 (0.08s)
+    --- PASS: TestLightSessionReadsTheImplementKeyByName/{"theme":"dark","provider":{"other":{"name":"kept"},"openrouter":{"options":{"timeout":42,"apiKey":"old"}}}} (0.03s)
+    --- PASS: TestLightSessionReadsTheImplementKeyByName/nonobject/null (0.00s)
+    --- PASS: TestLightSessionReadsTheImplementKeyByName/nonobject/[] (0.00s)
+    --- PASS: TestLightSessionReadsTheImplementKeyByName/nonobject/"fixture-secret" (0.00s)
+    --- PASS: TestLightSessionReadsTheImplementKeyByName/nonobject/invalid (0.00s)
+    --- PASS: TestLightSessionReadsTheImplementKeyByName/nonobject/42 (0.00s)
+PASS
+suiteguard: guard cost: measured 9240 paths; fingerprint took 445.874458ms before and 459.42325ms after
+ok  	roundfix/internal/agent	1.186s
+=== RUN   TestLightTierDispatchOrder
+=== PAUSE TestLightTierDispatchOrder
+=== RUN   TestLightTierSkipsWithAWarning
+=== PAUSE TestLightTierSkipsWithAWarning
+=== RUN   TestLightTierRecordsSpend
+=== PAUSE TestLightTierRecordsSpend
+=== RUN   TestLightTierEscalatesOnce
+=== PAUSE TestLightTierEscalatesOnce
+=== CONT  TestLightTierDispatchOrder
+=== RUN   TestLightTierDispatchOrder/light
+=== CONT  TestLightTierRecordsSpend
+=== CONT  TestLightTierSkipsWithAWarning
+=== CONT  TestLightTierEscalatesOnce
+=== RUN   TestLightTierSkipsWithAWarning/key_missing
+=== RUN   TestLightTierEscalatesOnce/repair-passes
+--- PASS: TestLightTierRecordsSpend (0.19s)
+=== RUN   TestLightTierDispatchOrder/medium
+=== RUN   TestLightTierSkipsWithAWarning/spend_unreadable
+=== RUN   TestLightTierEscalatesOnce/repair-fails
+=== RUN   TestLightTierDispatchOrder/governed
+=== RUN   TestLightTierSkipsWithAWarning/ceiling_reached
+=== RUN   TestLightTierEscalatesOnce/category-start-fails
+=== RUN   TestLightTierDispatchOrder/off
+--- PASS: TestLightTierSkipsWithAWarning (0.50s)
+    --- PASS: TestLightTierSkipsWithAWarning/key_missing (0.21s)
+    --- PASS: TestLightTierSkipsWithAWarning/spend_unreadable (0.15s)
+    --- PASS: TestLightTierSkipsWithAWarning/ceiling_reached (0.14s)
+=== RUN   TestLightTierEscalatesOnce/light-start-fails
+=== RUN   TestLightTierDispatchOrder/first-start-fails
+=== RUN   TestLightTierDispatchOrder/light-starts-fail
+--- PASS: TestLightTierEscalatesOnce (0.69s)
+    --- PASS: TestLightTierEscalatesOnce/repair-passes (0.24s)
+    --- PASS: TestLightTierEscalatesOnce/repair-fails (0.17s)
+    --- PASS: TestLightTierEscalatesOnce/category-start-fails (0.16s)
+    --- PASS: TestLightTierEscalatesOnce/light-start-fails (0.12s)
+--- PASS: TestLightTierDispatchOrder (0.78s)
+    --- PASS: TestLightTierDispatchOrder/light (0.20s)
+    --- PASS: TestLightTierDispatchOrder/medium (0.13s)
+    --- PASS: TestLightTierDispatchOrder/governed (0.15s)
+    --- PASS: TestLightTierDispatchOrder/off (0.11s)
+    --- PASS: TestLightTierDispatchOrder/first-start-fails (0.10s)
+    --- PASS: TestLightTierDispatchOrder/light-starts-fail (0.09s)
+PASS
+suiteguard: guard cost: measured 9240 paths; fingerprint took 395.007166ms before and 276.117916ms after
+ok  	roundfix/internal/daemon	1.643s
+=== RUN   TestImplementBuildsTheLightTierPlan
+=== PAUSE TestImplementBuildsTheLightTierPlan
+=== RUN   TestSpecJudgeReportsAdvisoryJudgments
+--- PASS: TestSpecJudgeReportsAdvisoryJudgments (0.02s)
+=== RUN   TestSpecJudgeSkipsWithoutAKey
+--- PASS: TestSpecJudgeSkipsWithoutAKey (0.02s)
+=== RUN   TestSpecJudgeReadsTheKeyFromItsOwnEnvironment
+--- PASS: TestSpecJudgeReadsTheKeyFromItsOwnEnvironment (0.02s)
+=== RUN   TestSpecJudgeSkipsAtTheMonthlyCeiling
+--- PASS: TestSpecJudgeSkipsAtTheMonthlyCeiling (0.02s)
+=== RUN   TestSpecJudgeSkipsANonEnglishSpec
+--- PASS: TestSpecJudgeSkipsANonEnglishSpec (0.01s)
+=== RUN   TestSpecJudgeStopsWhenTheServiceFails
+--- PASS: TestSpecJudgeStopsWhenTheServiceFails (0.02s)
+=== RUN   TestSpecJudgeRefusesAnUnknownSpec
+--- PASS: TestSpecJudgeRefusesAnUnknownSpec (0.02s)
+=== RUN   TestSpecJudgeRefusesAnUnknownStageOrFormat
+=== RUN   TestSpecJudgeRefusesAnUnknownStageOrFormat/stage
+=== RUN   TestSpecJudgeRefusesAnUnknownStageOrFormat/format
+=== RUN   TestSpecJudgeRefusesAnUnknownStageOrFormat/flag
+=== RUN   TestSpecJudgeRefusesAnUnknownStageOrFormat/missing_slug
+=== RUN   TestSpecJudgeRefusesAnUnknownStageOrFormat/missing_value
+=== RUN   TestSpecJudgeRefusesAnUnknownStageOrFormat/extra_slug
+--- PASS: TestSpecJudgeRefusesAnUnknownStageOrFormat (0.11s)
+    --- PASS: TestSpecJudgeRefusesAnUnknownStageOrFormat/stage (0.02s)
+    --- PASS: TestSpecJudgeRefusesAnUnknownStageOrFormat/format (0.02s)
+    --- PASS: TestSpecJudgeRefusesAnUnknownStageOrFormat/flag (0.01s)
+    --- PASS: TestSpecJudgeRefusesAnUnknownStageOrFormat/missing_slug (0.02s)
+    --- PASS: TestSpecJudgeRefusesAnUnknownStageOrFormat/missing_value (0.02s)
+    --- PASS: TestSpecJudgeRefusesAnUnknownStageOrFormat/extra_slug (0.02s)
+=== RUN   TestSpecJudgePrintsJSON
+--- PASS: TestSpecJudgePrintsJSON (0.01s)
+=== RUN   TestSpecJudgeHelp
+--- PASS: TestSpecJudgeHelp (0.02s)
+=== RUN   TestSpecJudgeUsesConfiguredSpecRoot
+--- PASS: TestSpecJudgeUsesConfiguredSpecRoot (0.02s)
+=== RUN   TestSpecJudgeRequiresStageArtifacts
+=== RUN   TestSpecJudgeRequiresStageArtifacts/_prd.md
+=== RUN   TestSpecJudgeRequiresStageArtifacts/_techspec.md
+--- PASS: TestSpecJudgeRequiresStageArtifacts (0.03s)
+    --- PASS: TestSpecJudgeRequiresStageArtifacts/_prd.md (0.01s)
+    --- PASS: TestSpecJudgeRequiresStageArtifacts/_techspec.md (0.01s)
+=== RUN   TestSpecJudgePrintsIndividualSkip
+--- PASS: TestSpecJudgePrintsIndividualSkip (0.01s)
+=== RUN   TestSpecJudgeJSONSkipHasNullTransport
+--- PASS: TestSpecJudgeJSONSkipHasNullTransport (0.01s)
+=== RUN   TestSpecJudgePrintsAGroupingSuggestion
+=== RUN   TestSpecJudgePrintsAGroupingSuggestion/prd
+=== RUN   TestSpecJudgePrintsAGroupingSuggestion/techspec
+=== RUN   TestSpecJudgePrintsAGroupingSuggestion/both
+--- PASS: TestSpecJudgePrintsAGroupingSuggestion (0.05s)
+    --- PASS: TestSpecJudgePrintsAGroupingSuggestion/prd (0.02s)
+    --- PASS: TestSpecJudgePrintsAGroupingSuggestion/techspec (0.02s)
+    --- PASS: TestSpecJudgePrintsAGroupingSuggestion/both (0.02s)
+=== RUN   TestSpecJudgeSkipsANonEnglishSource
+--- PASS: TestSpecJudgeSkipsANonEnglishSource (0.02s)
+=== RUN   TestSpecJudgeCountsGroupingJudgmentsNotAsked
+--- PASS: TestSpecJudgeCountsGroupingJudgmentsNotAsked (0.01s)
+=== RUN   TestSpecJudgePrintsGroupingJSON
+--- PASS: TestSpecJudgePrintsGroupingJSON (0.01s)
+=== RUN   TestSpecJudgeHelpNamesTheGroupingQuestion
+--- PASS: TestSpecJudgeHelpNamesTheGroupingQuestion (0.01s)
+=== RUN   TestSpecJudgePrintsSkippedGroupingPair
+--- PASS: TestSpecJudgePrintsSkippedGroupingPair (0.01s)
+=== RUN   TestSpecJudgeSkipsAtTheUserConfigCeiling
+--- PASS: TestSpecJudgeSkipsAtTheUserConfigCeiling (0.01s)
+=== RUN   TestSpecJudgeIgnoresAProjectConfigCeiling
+--- PASS: TestSpecJudgeIgnoresAProjectConfigCeiling (0.01s)
+=== RUN   TestSpecJudgeRefusesAnInvalidUserConfigCeiling
+--- PASS: TestSpecJudgeRefusesAnInvalidUserConfigCeiling (0.01s)
+=== RUN   TestSpecJudgeSuggestsModelTier
+=== RUN   TestSpecJudgeSuggestsModelTier/text
+=== RUN   TestSpecJudgeSuggestsModelTier/json
+--- PASS: TestSpecJudgeSuggestsModelTier (0.03s)
+    --- PASS: TestSpecJudgeSuggestsModelTier/text (0.01s)
+    --- PASS: TestSpecJudgeSuggestsModelTier/json (0.01s)
+=== RUN   TestSpecJudgeTasksSkipsWithoutKey
+--- PASS: TestSpecJudgeTasksSkipsWithoutKey (0.01s)
+=== RUN   TestSpecJudgeTasksRequiresGraph
+--- PASS: TestSpecJudgeTasksRequiresGraph (0.01s)
+=== RUN   TestSpecJudgeDefaultIgnoresTasks
+--- PASS: TestSpecJudgeDefaultIgnoresTasks (0.03s)
+=== RUN   TestSpecJudgeTasksHonorsCeiling
+--- PASS: TestSpecJudgeTasksHonorsCeiling (0.01s)
+=== CONT  TestImplementBuildsTheLightTierPlan
+=== RUN   TestImplementBuildsTheLightTierPlan/missing-key
+=== RUN   TestImplementBuildsTheLightTierPlan/configured-light
+=== RUN   TestImplementBuildsTheLightTierPlan/override
+=== RUN   TestImplementBuildsTheLightTierPlan/disabled-models
+=== RUN   TestImplementBuildsTheLightTierPlan/configured-ceiling
+--- PASS: TestImplementBuildsTheLightTierPlan (1.45s)
+    --- PASS: TestImplementBuildsTheLightTierPlan/missing-key (0.31s)
+    --- PASS: TestImplementBuildsTheLightTierPlan/configured-light (0.29s)
+    --- PASS: TestImplementBuildsTheLightTierPlan/override (0.29s)
+    --- PASS: TestImplementBuildsTheLightTierPlan/disabled-models (0.29s)
+    --- PASS: TestImplementBuildsTheLightTierPlan/configured-ceiling (0.28s)
+PASS
+suiteguard: guard cost: measured 9240 paths; fingerprint took 446.02625ms before and 263.535167ms after
+ok  	roundfix/internal/cli	2.967s
+=== RUN   TestModelTierPlansNonQATasks
+--- PASS: TestModelTierPlansNonQATasks (0.00s)
+=== RUN   TestModelTierRequiresTaskGraph
+--- PASS: TestModelTierRequiresTaskGraph (0.00s)
+=== RUN   TestModelTierChoicePolicy
+--- PASS: TestModelTierChoicePolicy (0.00s)
+PASS
+ok  	roundfix/internal/judge	0.119s
+=== RUN   TestEveryOwnedSkillVersionIsRecorded
+--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.00s)
+PASS
+ok  	roundfix/skills	0.115s

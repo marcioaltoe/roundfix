@@ -1,0 +1,419 @@
+{
+  "checks": [
+    {
+      "check": "mirror roundfix/SKILL.md",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "mirror roundfix/references/runtime.md",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "mirror roundfix/references/spec.md",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "mirror write-tasks/SKILL.md",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "raised version roundfix",
+      "pass_": true,
+      "detail": "['0.1.34'] -> ['0.1.35']"
+    },
+    {
+      "check": "raised version write-tasks",
+      "pass_": true,
+      "detail": "['0.0.8'] -> ['0.0.9']"
+    },
+    {
+      "check": "QA settlement unchanged .agents/skills/archive-spec/SKILL.md",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "QA settlement unchanged .agents/skills/qa-gate/SKILL.md",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "QA settlement unchanged .agents/skills/roundfix/SKILL.md",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "QA settlement unchanged skills/archive-spec/SKILL.md",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "QA settlement unchanged skills/qa-gate/SKILL.md",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "QA settlement unchanged skills/roundfix/SKILL.md",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "vocabulary light tier skipped for Task",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "vocabulary light_tier_escalated",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "vocabulary suggested model-tier",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "documented contract docs/user-guide/configuration.md",
+      "pass_": true,
+      "detail": "light_models, implement_monthly_ceiling_usd, Light Spend Log, ROUNDFIX_OPENROUTER_API_KEY, OPENROUTER_API_KEY"
+    },
+    {
+      "check": "documented contract docs/user-guide/commands/spec.md",
+      "pass_": true,
+      "detail": "--stage tasks, suggest"
+    },
+    {
+      "check": "documented contract docs/references/model-selection.md",
+      "pass_": true,
+      "detail": "light tier, deepseek/deepseek-v4.1-flash"
+    },
+    {
+      "check": "documented contract .agents/skills/roundfix/references/runtime.md",
+      "pass_": true,
+      "detail": "Light Spend Log, escalates once, User Config"
+    },
+    {
+      "check": "documented contract .agents/skills/roundfix/references/spec.md",
+      "pass_": true,
+      "detail": "--stage tasks, suggested model-tier"
+    },
+    {
+      "check": "documented contract .agents/skills/write-tasks/SKILL.md",
+      "pass_": true,
+      "detail": "light tier, Governed Path, complexity, --stage tasks"
+    },
+    {
+      "check": "Task changed paths task_02",
+      "pass_": true,
+      "detail": "[]"
+    },
+    {
+      "check": "bounded governed task_02",
+      "pass_": true,
+      "detail": "[]"
+    },
+    {
+      "check": "authorization predates task_02",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "Task changed paths task_01",
+      "pass_": true,
+      "detail": "[]"
+    },
+    {
+      "check": "bounded governed task_01",
+      "pass_": true,
+      "detail": "['.agents/skills/roundfix/SKILL.md', '.agents/skills/roundfix/references/runtime.md', '.agents/skills/roundfix/references/spec.md', '.agents/skills/write-tasks/SKILL.md', 'skills/roundfix/SKILL.md', 'skills/write-tasks/SKILL.md']"
+    },
+    {
+      "check": "authorization predates task_01",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "Task changed paths task_04",
+      "pass_": true,
+      "detail": "[]"
+    },
+    {
+      "check": "bounded governed task_04",
+      "pass_": true,
+      "detail": "[]"
+    },
+    {
+      "check": "authorization predates task_04",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "Task changed paths task_03",
+      "pass_": true,
+      "detail": "[]"
+    },
+    {
+      "check": "bounded governed task_03",
+      "pass_": true,
+      "detail": "[]"
+    },
+    {
+      "check": "authorization predates task_03",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "protected contracts unchanged",
+      "pass_": true,
+      "detail": "[]"
+    },
+    {
+      "check": "promise Success Metric 1",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "promise Success Metric 2",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "promise Success Metric 3",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "promise Success Metric 4",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "promise Success Metric 5",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "promise Success Metric 6",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "promise Success Metric 7",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "promise API Contract 1",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "promise API Contract 2",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "promise API Contract 3",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "promise API Contract 4",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "promise API Contract 5",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "promise API Contract 6",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "promise API Contract 7",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "established glossary terms present",
+      "pass_": true,
+      "detail": ""
+    },
+    {
+      "check": "outside measurement six costs",
+      "pass_": true,
+      "detail": "[0.0559, 0.0741, 0.0574, 0.039, 0.0471, 0.0431] sum=0.3166"
+    },
+    {
+      "check": "outside measurement time ratio",
+      "pass_": true,
+      "detail": "0.41341295360587965"
+    }
+  ],
+  "task_commits": [
+    {
+      "task": "task_02",
+      "commit": "d9d932f9e78bc4c04526e64ff8db6b012a4636b4",
+      "actual": [
+        "docs/specs/0233-a-light-tier-on-open-models/task_02.md",
+        "internal/config/config.go",
+        "internal/config/light_tier.go",
+        "internal/config/light_tier_test.go",
+        "internal/lighttier/spend_log.go",
+        "internal/lighttier/spend_log_test.go",
+        "internal/lighttier/tier.go",
+        "internal/lighttier/tier_test.go",
+        "internal/spec/spec.go",
+        "internal/spec/task.go",
+        "internal/spec/task_complexity_test.go"
+      ],
+      "declared": [
+        "docs/adr/0238-a-light-tier-runs-low-complexity-tasks-on-an-open-model.md",
+        "internal/config/config.go",
+        "internal/config/light_tier.go",
+        "internal/config/light_tier_test.go",
+        "internal/lighttier/spend_log.go",
+        "internal/lighttier/spend_log_test.go",
+        "internal/lighttier/tier.go",
+        "internal/lighttier/tier_test.go",
+        "internal/spec/spec.go",
+        "internal/spec/task.go",
+        "internal/spec/task_complexity_test.go"
+      ],
+      "recorded": "",
+      "extras": [],
+      "governed": [],
+      "unbounded": []
+    },
+    {
+      "task": "task_01",
+      "commit": "c8dec6dd788a4a0a0d5a1f90e9105e9b50a4b09a",
+      "actual": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/runtime.md",
+        ".agents/skills/roundfix/references/spec.md",
+        ".agents/skills/write-tasks/SKILL.md",
+        "docs/references/model-selection.md",
+        "docs/specs/0233-a-light-tier-on-open-models/task_01.md",
+        "docs/user-guide/commands/spec.md",
+        "docs/user-guide/configuration.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/runtime.md",
+        "skills/roundfix/references/spec.md",
+        "skills/testdata/owned-skill-versions.json",
+        "skills/write-tasks/SKILL.md"
+      ],
+      "declared": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/runtime.md",
+        ".agents/skills/roundfix/references/spec.md",
+        ".agents/skills/write-tasks/SKILL.md",
+        "docs/adr/0238-a-light-tier-runs-low-complexity-tasks-on-an-open-model.md",
+        "docs/references/model-selection.md",
+        "docs/user-guide/commands/spec.md",
+        "docs/user-guide/configuration.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/runtime.md",
+        "skills/roundfix/references/spec.md",
+        "skills/testdata/owned-skill-versions.json",
+        "skills/write-tasks/SKILL.md"
+      ],
+      "recorded": "",
+      "extras": [],
+      "governed": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/runtime.md",
+        ".agents/skills/roundfix/references/spec.md",
+        ".agents/skills/write-tasks/SKILL.md",
+        "skills/roundfix/SKILL.md",
+        "skills/write-tasks/SKILL.md"
+      ],
+      "unbounded": []
+    },
+    {
+      "task": "task_04",
+      "commit": "1d7686f23c6d7fdf2efbea69538e59d3b05f70d8",
+      "actual": [
+        "docs/specs/0233-a-light-tier-on-open-models/task_04.md",
+        "internal/cli/cli.go",
+        "internal/cli/spec_check.go",
+        "internal/cli/spec_judge.go",
+        "internal/cli/spec_judge_test.go",
+        "internal/cli/spec_judge_tier_test.go",
+        "internal/judge/client.go",
+        "internal/judge/judge.go",
+        "internal/judge/model_tier_test.go",
+        "internal/judge/pairs.go",
+        "internal/judge/questions.go",
+        "internal/judge/questions.json",
+        "internal/judge/questions_test.go"
+      ],
+      "declared": [
+        "docs/adr/0200-spec-authoring-gets-an-advisory-judge-that-never-gates.md",
+        "internal/cli/cli.go",
+        "internal/cli/spec_check.go",
+        "internal/cli/spec_judge.go",
+        "internal/cli/spec_judge_test.go",
+        "internal/cli/spec_judge_tier_test.go",
+        "internal/judge/client.go",
+        "internal/judge/judge.go",
+        "internal/judge/model_tier_test.go",
+        "internal/judge/pairs.go",
+        "internal/judge/questions.go",
+        "internal/judge/questions.json",
+        "internal/judge/questions_test.go"
+      ],
+      "recorded": "\n\nThe Daemon recorded these paths, which this Task changed without declaring them in `## Context`.\n\n- `internal/judge/client.go`\n",
+      "extras": [],
+      "governed": [],
+      "unbounded": []
+    },
+    {
+      "task": "task_03",
+      "commit": "04b7b185c1b48a387c9ef6a39c4b340b8abff52d",
+      "actual": [
+        "docs/specs/0233-a-light-tier-on-open-models/task_03.md",
+        "internal/agent/acpx_runner.go",
+        "internal/agent/agent.go",
+        "internal/agent/codex_spawn.go",
+        "internal/agent/light_session.go",
+        "internal/agent/light_session_test.go",
+        "internal/agent/subscription_rule_test.go",
+        "internal/cli/implement.go",
+        "internal/cli/implement_light_tier_test.go",
+        "internal/daemon/agent_session_owner.go",
+        "internal/daemon/light_tier_test.go",
+        "internal/daemon/task_engine.go"
+      ],
+      "declared": [
+        ".agents/skills/roundfix/references/runtime.md",
+        "docs/adr/0114-opening-an-agent-session-is-not-agent-work.md",
+        "docs/adr/0238-a-light-tier-runs-low-complexity-tasks-on-an-open-model.md",
+        "docs/user-guide/configuration.md",
+        "internal/agent/acpx_runner.go",
+        "internal/agent/agent.go",
+        "internal/agent/codex_spawn.go",
+        "internal/agent/light_session.go",
+        "internal/agent/light_session_test.go",
+        "internal/agent/subscription_rule_test.go",
+        "internal/cli/implement.go",
+        "internal/cli/implement_light_tier_test.go",
+        "internal/daemon/agent_session_owner.go",
+        "internal/daemon/light_tier_test.go",
+        "internal/daemon/task_engine.go"
+      ],
+      "recorded": "\n\nThe Daemon recorded these paths, which this Task changed without declaring them in `## Context`.\n\n- `internal/agent/codex_spawn.go`\n- `internal/agent/light_session.go`\n- `internal/agent/subscription_rule_test.go`\n",
+      "extras": [],
+      "governed": [],
+      "unbounded": []
+    }
+  ],
+  "base": "4118c798dc3ae666adb59b3040dc9ba01a6d618f",
+  "head": "04b7b185c1b48a387c9ef6a39c4b340b8abff52d"
+}

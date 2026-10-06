@@ -1,0 +1,10 @@
+OpenCode documentation: rtk curl-cffi get https://opencode.ai/docs/config/ --impersonate chrome --timeout 30 --quiet --download --output opencode-config.html
+Tool refusal: Network access to "opencode.ai" was blocked: domain is not on the allowlist for the current sandbox mode.
+Both declared documentation pages share this denied domain; neither could be refreshed.
+
+Issue 13219: rtk curl-cffi get https://github.com/anomalyco/opencode/issues/13219 --impersonate chrome --timeout 30 --quiet --download --output opencode-issue.html
+Tool refusal: Network access to "github.com" was blocked: domain is not on the allowlist for the current sandbox mode.
+
+Live Requirement 8: key presence checked as boolean only: true. Python urllib.request key endpoint probe with Authorization from environment, never printed/stored.
+Tool refusal: Network access to "openrouter.ai" was blocked: domain is not on the allowlist for the current sandbox mode.
+The safety prerequisite of a before-usage reading could not be met: no real light Task launched, no live spend was incurred by this gate.

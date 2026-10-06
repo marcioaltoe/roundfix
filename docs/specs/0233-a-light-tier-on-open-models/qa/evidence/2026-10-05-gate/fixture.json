@@ -1,0 +1,13 @@
+{
+  "base": "/private/tmp/roundfix-0233-qa-2jdin2zx",
+  "repository": "/private/tmp/roundfix-0233-qa-2jdin2zx/repo",
+  "home": "/private/tmp/roundfix-0233-qa-2jdin2zx/home",
+  "files": {
+    "docs/agents/agent-instructions.md": "# Instructions\n",
+    "docs/agents/domain.md": "# Domain\n",
+    "docs/specs/0300-example/task_01.md": "---\ntask: task_01\nspec: 0300-example\nstatus: pending\ntype: docs\ncomplexity: low\n---\n\n# Task 1\n\nThe author reads the decision and the gate is the rule for the work.\n\n## Verification\n\n- `test -f \"$(git rev-parse --git-path roundfix-test-agent-task_01.done)\"`\n",
+    "docs/specs/0300-example/_prd.md": "---\nstatus: active\n---\n\n# PRD\n\n## Project Constraints\n\n- Identifier strategy: not applicable \u2014 disposable CLI fixture. Source: `docs/agents/domain.md`.\n- Authentication and HTTP: not applicable \u2014 disposable CLI fixture. Source: `docs/agents/agent-instructions.md`.\n- Active ADR obligations: not applicable \u2014 disposable CLI fixture. Source: `docs/agents/domain.md`.\n- Tooling authority: not applicable \u2014 disposable CLI fixture. Source: `docs/agents/agent-instructions.md`.\n\n## Success Metrics\n\nNone. Operational command fixture.\n",
+    "docs/specs/0300-example/_tasks.md": "---\nschema: spec-tasks/v1\nqa: declined\nqa_reason: disposable low-docs CLI behavior probe\ngraph:\n  nodes:\n    - id: task_01\n      file: task_01.md\n      needs: []\n---\n",
+    "docs/specs/0300-example/_authorization.md": "---\nstatus: approved\ngranted: 2026-10-05\naction: execute disposable QA fixture\nconsuming: 0300-example\npaths: []\noperations: [implement, commit]\n---\n"
+  }
+}

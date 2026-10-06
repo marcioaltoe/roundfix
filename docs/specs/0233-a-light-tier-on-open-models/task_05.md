@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0233-a-light-tier-on-open-models
-status: pending
+status: failed
 type: qa
 complexity: high
 ---
