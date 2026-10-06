@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0233-a-light-tier-on-open-models
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -89,3 +89,77 @@ planner and the command with the existing fake transport.
 - `_prd.md` → Goals; User Story 6; Core Feature 7; Success Metric 6
 - `_techspec.md` → API Contract 7; Surface Transcript 1; Surface Transcript 2; Testing Approach; Build Order 4
 - ADR-0238; ADR-0200; ADR-0201
+
+## Result
+
+Implemented the advisory `tasks` stage with one `model-tier` Choice for each
+readable English, graph-listed non-QA Task. The catalog defines `light`,
+`standard` and `heavy` and bounds the authored Task text to 12,000 characters.
+Requests exclude `status`, `complexity`, `## Result`, `## Recorded paths` and
+`## Carry-forward provenance`, retain Verification, and include Task identity
+so identical authored texts still receive separate requests. This stage
+requires `_tasks.md` and never plans PRD, TechSpec or source-grouping judgments.
+
+Answers render as `suggested model-tier <task file>: <answer> at confidence
+<c>` and carry `kind: model-tier` and `outcome: suggested` in JSON. The existing
+request path selects the new catalog question and records its question ID and
+judgment in the unchanged Judge Log schema. Credential selection, the pinned
+model, retries, monthly ceiling and skip policy retain their existing behavior.
+Dispatch, configuration, guides, skills and transport definitions are unchanged.
+
+Acceptance evidence from focused checks:
+
+- Suggestions per non-QA Task: `TestModelTierPlansNonQATasks` checks graph order,
+  QA and unlisted-file exclusion, stripped sections, retained Verification,
+  Task identity and bounded text. `TestSpecJudgeSuggestsModelTier` exercises
+  public command dispatch with the existing fake transport for exact text and
+  JSON output; the fake also checks the outgoing authored text.
+- Default output unchanged: `TestSpecJudgeDefaultIgnoresTasks` compares the
+  entire default text output with and without a Task Graph and confirms five
+  existing judgments in both cases. The existing Spec judge transcript and
+  JSON tests also ran in the focused selection.
+- Unknown stage and help: the existing
+  `TestSpecJudgeRefusesAnUnknownStageOrFormat` and `TestSpecJudgeHelp`
+  assertions now require the three-stage error and all three usage synopses.
+- Spec immutability and Judge Log: `TestSpecJudgeSuggestsModelTier` snapshots
+  every Spec file before and after the command and checks one disposable-Home
+  log row per request, with judgment `model-tier`, outcome `suggested`, the
+  catalog question ID, artifact and reported model.
+- Key, ceiling and skips: `TestSpecJudgeTasksSkipsWithoutKey` checks Surface
+  Transcript 2 exactly, zero requests and no Judge Log creation;
+  `TestSpecJudgeTasksHonorsCeiling` checks zero requests and an unchanged log.
+  Missing graphs are rejected before any request. `TestModelTierChoicePolicy`
+  checks all three choices, including low-confidence suggestions and malformed
+  answer skips. All command fixtures use disposable repositories and Homes;
+  no test makes a network request or uses the real Roundfix Home.
+
+Focused command:
+
+```text
+rtk proxy env GOCACHE=/tmp/roundfix-task04-gocache GOPROXY=off GOSUMDB=off go test -count=1 ./internal/judge ./internal/cli -run 'Test(ModelTier|QuestionFileLoads|SpecJudge)'
+```
+
+Outcome: exit 0; judge package 0.372s, CLI package 1.526s. `git diff --check`
+also reported no whitespace errors. Initial inspection showed no `model-tier`
+catalog entry and only two accepted stages; the new behavior was absent.
+
+The Choice request/response shape was checked against
+[TypeSafe's Choice documentation](https://docs.typesafe.ai/primitives/choice).
+It confirms the existing choice, probabilities and confidence fields; no API
+or model pin change was needed. No live judgment was requested.
+
+The pre-existing Task status change to `in_progress` remains Daemon-owned and
+was not edited. Declared Verification commands, repository delivery gates,
+Task settlement, commits, pushes and Pull Requests remain for their owners;
+this section records implementation and focused checks only.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/judge/client.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261006T004151Z_0e07759cbdbec8e5`
+- Source commit: `1d7686f23c6d7fdf2efbea69538e59d3b05f70d8`

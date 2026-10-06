@@ -34,7 +34,13 @@ func TestQuestionFileLoads(t *testing.T) {
 	}
 	block := strings.SplitN(strings.SplitN(strings.SplitN(string(tech), "### Questions and thresholds", 2)[1], "```json\n", 2)[1], "```", 2)[0]
 	// Remove only the exact new member and its separating comma.
-	original := strings.Replace(string(questionFile), ",\n"+strings.TrimSuffix(groupingBlock(t), "\n"), "", 1)
+	catalog := string(questionFile)
+	start := strings.Index(catalog, ",\n    \"model-tier\":")
+	if start < 0 {
+		t.Fatal("missing model-tier catalog member")
+	}
+	catalog = catalog[:start] + "\n  }\n}\n"
+	original := strings.Replace(catalog, ",\n"+strings.TrimSuffix(groupingBlock(t), "\n"), "", 1)
 	if !bytes.Equal([]byte(original), []byte(block)) {
 		t.Fatal("original embedded settings differ from the TechSpec block")
 	}

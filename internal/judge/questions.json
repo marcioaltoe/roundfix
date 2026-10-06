@@ -62,6 +62,19 @@
       "unresolved_finding_statuses": ["pending", "partial"],
       "source_scrub_pattern": "\\b0\\d{3}\\b|ADR-\\d{4}",
       "source_max_chars": 1500
+    },
+    "model-tier": {
+      "question_id": "model_tier",
+      "question": {
+        "type": "choice",
+        "instructions": "`task` is an authored software Task, including its Verification commands; which is the cheapest model tier that would most likely implement it and pass its Verification on the first attempt?",
+        "criteria": {
+          "light": "A small inexpensive open model can handle this narrow, explicit change with little reasoning or coordination.",
+          "standard": "A capable general coding model is needed for this change's moderate reasoning, integration or debugging.",
+          "heavy": "The strongest reasoning model is needed for this change's difficult architecture, ambiguity or broad interactions."
+        }
+      },
+      "task_max_chars": 12000
     }
   }
 }

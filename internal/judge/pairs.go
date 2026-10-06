@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+
+	"gopkg.in/yaml.v3"
 )
 
 type Stage string
@@ -41,8 +43,11 @@ var itemMarker = regexp.MustCompile(`^(?:- |\d+\. )`)
 // PlanSpec constructs states exclusively from bounded Source values.
 func PlanSpec(q Questions, repoRoot, specDir string, stage Stage) (Plan, error) {
 	var plan Plan
-	if stage != "" && stage != "prd" && stage != "techspec" {
+	if stage != "" && stage != "prd" && stage != "techspec" && stage != "tasks" {
 		return plan, fmt.Errorf("unknown judge stage %q", stage)
+	}
+	if stage == "tasks" {
+		return planModelTiers(q, specDir)
 	}
 	prd, prdErr := readSpecArtifact(specDir, "_prd.md")
 	readable := func(name string, src Source, err error) bool {
@@ -372,4 +377,119 @@ func planGoals(q Questions, prd, tech Source, plan *Plan, seen map[string]bool) 
 			addPending(plan, seen, PendingJudgment{Kind: "goal-mechanism", Artifact: tech.path, Line: line.number, Target: target, Text: goalList[n-1]}, state)
 		}
 	}
+}
+
+// planModelTiers reads only graph-listed Tasks, never other Spec artifacts.
+func planModelTiers(q Questions, specDir string) (Plan, error) {
+	var plan Plan
+	text, err := readRegular(filepath.Join(specDir, "_tasks.md"))
+	if err != nil {
+		return plan, fmt.Errorf("read Spec Task Graph: %w", err)
+	}
+	front, _, _, err := splitFrontMatter(text)
+	if err != nil {
+		return plan, fmt.Errorf("read Spec Task Graph: %w", err)
+	}
+	var manifest struct {
+		Graph struct {
+			Nodes []struct {
+				File string `yaml:"file"`
+			} `yaml:"nodes"`
+		} `yaml:"graph"`
+	}
+	if front == "" {
+		return plan, fmt.Errorf("read Spec Task Graph: missing front matter")
+	}
+	if err := yaml.Unmarshal([]byte(front), &manifest); err != nil {
+		return plan, fmt.Errorf("read Spec Task Graph: %w", err)
+	}
+	seenFiles := map[string]bool{}
+	for _, node := range manifest.Graph.Nodes {
+		name := node.File
+		skip := func(reason string) {
+			plan.SkippedArtifacts = append(plan.SkippedArtifacts, SkippedArtifact{name, reason})
+		}
+		if name == "" || filepath.Base(name) != name || !strings.HasSuffix(name, ".md") || !strings.HasPrefix(name, "task_") {
+			skip("not a Task file in the Spec directory")
+			continue
+		}
+		if seenFiles[name] {
+			continue
+		}
+		seenFiles[name] = true
+		task, err := readRegular(filepath.Join(specDir, name))
+		if err != nil {
+			skip("not a regular file in the Spec directory")
+			continue
+		}
+		front, body, _, err := splitFrontMatter(task)
+		if err != nil || front == "" {
+			skip("unreadable Task front matter")
+			continue
+		}
+		var fields yaml.Node
+		if err := yaml.Unmarshal([]byte(front), &fields); err != nil || len(fields.Content) != 1 || fields.Content[0].Kind != yaml.MappingNode {
+			skip("unreadable Task front matter")
+			continue
+		}
+		mapping := fields.Content[0]
+		qa := false
+		var kept []*yaml.Node
+		for i := 0; i < len(mapping.Content); i += 2 {
+			key, value := mapping.Content[i], mapping.Content[i+1]
+			if key.Value == "type" && value.Value == "qa" {
+				qa = true
+			}
+			if key.Value != "status" && key.Value != "complexity" {
+				kept = append(kept, key, value)
+			}
+		}
+		if qa {
+			continue
+		}
+		mapping.Content = kept
+		authoredFront, err := yaml.Marshal(mapping)
+		if err != nil {
+			return plan, fmt.Errorf("prepare Task %s: %w", name, err)
+		}
+		authored := "---\n" + string(authoredFront) + "---\n" + modelTierBody(body)
+		if !q.Language.isEnglish(authored) {
+			skip("not English")
+			continue
+		}
+		state := struct {
+			TaskFile string `json:"task_file"`
+			Task     string `json:"task"`
+		}{name, cut(authored, q.ModelTier.TaskMaxChars)}
+		// Task identity keeps identical authored texts as separate requests.
+		addPending(&plan, map[string]bool{}, PendingJudgment{Kind: "model-tier", Artifact: filepath.Join(specDir, name)}, state)
+	}
+	return plan, nil
+}
+
+func modelTierBody(body string) string {
+	var kept []string
+	excluded, fenced := false, ""
+	for _, line := range strings.Split(body, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "```") || strings.HasPrefix(trimmed, "~~~") {
+			marker := trimmed[:3]
+			if fenced == "" {
+				fenced = marker
+			} else if fenced == marker {
+				fenced = ""
+			}
+		} else if fenced == "" && (strings.HasPrefix(line, "## ") || strings.HasPrefix(line, "# ")) {
+			switch strings.TrimSpace(line) {
+			case "## Result", "## Recorded paths", "## Carry-forward provenance":
+				excluded = true
+			default:
+				excluded = false
+			}
+		}
+		if !excluded {
+			kept = append(kept, line)
+		}
+	}
+	return strings.Join(kept, "\n")
 }

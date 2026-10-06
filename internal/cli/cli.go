@@ -63,7 +63,7 @@ Usage:
   roundfix qa-report accept <path>
   roundfix spec check [<slug> ...] [--format <text|json>] [--strict] [--run-verification]
   roundfix spec audit <slug> [--format <text|json>]
-  roundfix spec judge <slug> [--stage <prd|techspec>] [--format <text|json>]
+  roundfix spec judge <slug> [--stage <prd|techspec|tasks>] [--format <text|json>]
   roundfix baseline update [--repo <path>] [--format <text|json>] [--yes | --confirm-plan <digest>] [--adopt-suggested] [--no-skills] [--skills-source-dir <path>]
   roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
   roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]

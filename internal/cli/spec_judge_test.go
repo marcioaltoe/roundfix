@@ -41,6 +41,7 @@ func (f *specJudgeTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 	}
 	var body struct {
 		Questions map[string]json.RawMessage `json:"questions"`
+		State     json.RawMessage            `json:"state"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		f.t.Fatal(err)
@@ -58,6 +59,23 @@ func (f *specJudgeTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 			noul = 0.12
 		}
 		answer = fmt.Sprintf(`{"type":"noul","noul":%g}`, noul)
+	} else if _, ok := body.Questions[questions.ModelTier.QuestionID]; ok {
+		id = questions.ModelTier.QuestionID
+		var state struct {
+			Task string `json:"task"`
+		}
+		if err := json.Unmarshal(body.State, &state); err != nil {
+			f.t.Fatal(err)
+		}
+		for _, excluded := range []string{"status:", "complexity:", "## Result", "Private result."} {
+			if strings.Contains(state.Task, excluded) {
+				f.t.Fatalf("model-tier request includes %s", excluded)
+			}
+		}
+		if !strings.Contains(state.Task, "## Verification") {
+			f.t.Fatal("model-tier request lost Verification")
+		}
+		answer = `{"type":"choice","choice":"light","probabilities":{"light":0.93,"standard":0.05,"heavy":0.02},"confidence":0.93}`
 	} else if f.calls == 1 {
 		answer = `{"type":"choice","choice":"says_nothing","probabilities":{"supports":0.02,"contradicts":0.05,"says_nothing":0.93},"confidence":0.93}`
 	}
@@ -187,7 +205,7 @@ func TestSpecJudgeRefusesAnUnknownStageOrFormat(t *testing.T) {
 		args    []string
 		message string
 	}{
-		{"stage", []string{"0300-example", "--stage", "qa"}, `unsupported --stage "qa"; use prd or techspec`},
+		{"stage", []string{"0300-example", "--stage", "qa"}, `unsupported --stage "qa"; use prd, techspec or tasks`},
 		{"format", []string{"0300-example", "--format=yaml"}, `unsupported --format "yaml"; use text or json`},
 		{"flag", []string{"0300-example", "--bogus"}, `unknown flag "--bogus"`},
 		{"missing slug", nil, "spec judge requires one Spec slug"},
@@ -247,7 +265,7 @@ func TestSpecJudgeHelp(t *testing.T) {
 	env, _ := specJudgeFixture(t, "")
 	specJudgeRun(t, env, []string{"--help"}, specJudgeUsage, "", 0)
 	for _, text := range []string{specJudgeUsage, specUsage, usage} {
-		if !strings.Contains(text, "roundfix spec judge <slug> [--stage <prd|techspec>] [--format <text|json>]") {
+		if !strings.Contains(text, "roundfix spec judge <slug> [--stage <prd|techspec|tasks>] [--format <text|json>]") {
 			t.Errorf("missing judge synopsis")
 		}
 	}
