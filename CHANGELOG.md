@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.47.0] - 2026-10-06
+
+### One QA partial policy
+
+- **One rule everywhere.** Daemon settlement, `roundfix settle`, `roundfix archive`, `roundfix qa-report accept` and the Delivery Queue now apply the same eligibility to a QA `partial`, so they no longer disagree.
+- **What qualifies.** A `partial` qualifies when its only unmet rows are Pull Request rows (with or without a note after the provenance), declared Unreachable Acceptance rows the Spec covers, and outside-evidence rows a Run sandbox could not reach, written `blocked (environment: network denied: <host>)`. A finding row, a skipped row or any other environment row still needs a fix, a declaration or the QA Archive Override.
+- **Queue.** An item parks `qa-environment-partial` only when a row actually needs the override; a qualifying partial proceeds.
+- **Settle names its report.** A `settle` refusal ends with `(report <path>)`, naming the report it judged.
+
 ## [0.46.0] - 2026-10-06
 
 ### An OpenRouter key per stage
