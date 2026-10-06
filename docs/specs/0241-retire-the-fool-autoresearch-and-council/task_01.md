@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0241-retire-the-fool-autoresearch-and-council
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -120,3 +120,79 @@ guides, all bounded in `_authorization.md`.
 - `_prd.md` → Goal 1; User Stories 1-2; Core Features 1-2; Success Metrics 1-2; Declared breaks
 - `_techspec.md` → Measured facts; Interfaces; Fixed texts (task_01); The refresh procedure; Existing tests that change; API Contract 1; Testing Approach 1-2; Build Order 1
 - ADR-0246, ADR-0191, ADR-0072, ADR-0081, ADR-0149
+
+## Result
+
+Implemented this Task's Baseline retirement slice. `RetiredSkills()` returns
+`council` and `the-fool` in lexical order. Asset sync skips both before the
+duplicate checks and skips recorded repository-owned retired entries when
+re-appending omitted skills; neither adds a finding. `council` is no longer
+in the sync's repository-owned set. Removed only the two required-skill
+entries and their dispatch objects from `context-workflow.json`. The Run's
+starting module already had version 22, so that prescribed value remains
+unchanged; every other module byte is preserved.
+
+### Focused evidence per acceptance criterion
+
+1. Catalog membership: added `TestNoCatalogEntryNamesARetiredSkill` and
+   `TestARetiredSkillNameInTheCatalogIsReported`, sharing
+   `namedSkillFindings` with the upstream-removal tests. Both retired names
+   are planted in required lists, dispatch objects, trigger identifiers,
+   bundles and snapshots, with exact retired diagnostics asserted. Existing
+   removed diagnostics retain their text. The three new tests first exposed
+   the unfiltered catalog and sync, then the focused command below exited 0.
+2. Sync behavior: `TestAssetSyncDropsARetiredSkillTheUpstreamListNames`
+   covers an upstream list naming both skills, duplicate retired entries,
+   an omitted recorded `repo` council, and a non-retired external control.
+   It asserts the complete resulting entries, including the preserved
+   external tree digest, `qa-gate`, `roundfix`, order and minimum versions.
+3. Pinned refresh: proved the commit exists with
+   `git -C /Users/marcio/dev/skills cat-file -e 'b3c45a45f1bccd3b33aaecaaa22947d942f2fc02^{commit}'`,
+   cloned only that local checkout using `--no-local`, detached the temporary
+   clone at that commit, and set its origin URL without contacting it.
+   `baseline assets sync --source-dir <temporary-clone>/setups --format text`
+   refreshed all four snapshots; its `--check` rerun exited 0 and printed
+   `setup-context-driven audit: ok`. A JSON comparison against HEAD proved
+   each snapshot's skills equal its prior entries minus the two retired
+   names, preserving every other entry and minimum version. No write was
+   made to the source checkout and no network clone ran.
+4. Managed guide convergence: ran
+   `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`
+   twice after regeneration. Both exited 0; the first changed exactly
+   `docs/agents/skill-dispatch.md` and `docs/agents/setup-context.json`, and
+   the second printed `File changes: 0` and `Idempotence: verified`.
+   Direct inspection confirmed neither retired trigger remains in the guide.
+
+### Commands and scope
+
+- `GOCACHE=/tmp/roundfix-0241-gocache go test -count=1 ./internal/baseline -run '^(TestNoCatalogEntryNamesARetiredSkill|TestARetiredSkillNameInTheCatalogIsReported|TestAssetSyncDropsARetiredSkillTheUpstreamListNames|TestNoCatalogEntryNamesASkillRemovedUpstream|TestARemovedSkillNameInTheCatalogIsReported|TestAssetSyncKeepsAnOwnedSkillTheUpstreamListOmits)$'`:
+  exited 0. This focused selection is separate from declared Verification.
+- Applied the TechSpec's `jq --indent 2` fixture transform only to
+  `asset-sync.json`, then ran `GOCACHE=/tmp/roundfix-0241-gocache make baseline-digests`:
+  exited 0 with `ok: true`; all pins, goldens and digests were generator-owned.
+  Every other parity fixture remains byte-identical to HEAD.
+- Initial `GOCACHE=/tmp/roundfix-0241-gocache make verify-incremental`:
+  exited 2. Writing this Result while its tests were running triggered the
+  suite guard's repository-change rejection. CLI process-owner integration
+  tests also failed because the sandbox denied reading the process table.
+  The elevated rerun held the worktree unchanged and exited 0: formatting,
+  vet, package tests, skill mirror/readiness checks and CLI build passed.
+  Its complete output is `/tmp/roundfix-0241-incremental.log`.
+- `git diff --check`: exited 0.
+- Changed-path postflight: all 24 changed or new paths are declared by this
+  Task or are this Task file. Source Baselines, retention transitions,
+  skill trees, lock, `CONTEXT.md`, the Task Graph and other Tasks are unchanged.
+- The first atomic asset refresh was denied at its Git-private transaction
+  journal outside the writable root. The elevated retry succeeded; both
+  managed refreshes used that same authorized filesystem access. Their two
+  nested-carrier inventory warnings left those carriers unchanged.
+- Declared `## Verification` commands were not run. Task status remains
+  Daemon-owned; no commit, push or pull request was made.
+
+No implementation follow-up was added to this slice. Bundle and repository
+skill removal remain task_02; installed-copy reporting remains task_03.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261006T210445Z_99a7fa488c3e533d`
+- Source commit: `a91e6c47a9edd401f210fb62337a0b727f00bc61`

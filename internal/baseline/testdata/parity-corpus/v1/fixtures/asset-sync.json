@@ -22,15 +22,15 @@
   },
   "managedEntryLedger": [
     {
-      "digest": "54836b45f68851e65f390881a90a007b6c0a0b9e7edf6eab17b998e24e4e330d",
+      "digest": "15f848d3d1eccdda3c783d1911145455a439ea0809677786d729e7a0e60c09bd",
       "id": "go"
     },
     {
-      "digest": "62410ddcf48074ff0a5e9216cfe6a3e64873d6a5d942b51d2033bcacbb9f4cc0",
+      "digest": "705586b5978712bcf0b09bdbcec9e107ea5f135d5c92c28bc2c1124afed71499",
       "id": "rust"
     },
     {
-      "digest": "aa53175827c0ff08d314befc115f3b5726ba6b3a7bfe28351a81afeac3465330",
+      "digest": "06a1f05fdf139acc5d4c258ba722ddc972a852535af48beae366711ccd3e1ae4",
       "id": "typescript"
     }
   ],
@@ -53,7 +53,7 @@
             ]
           }
         ],
-        "digest": "54836b45f68851e65f390881a90a007b6c0a0b9e7edf6eab17b998e24e4e330d",
+        "digest": "15f848d3d1eccdda3c783d1911145455a439ea0809677786d729e7a0e60c09bd",
         "id": "go",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -107,15 +107,6 @@
             "treeDigest": "2df0c7a73c9f2c0b69f72d1ec23d83be955ddaddffbd9aa6f56d18b878ab4551"
           },
           {
-            "minimumVersion": "0.0.2",
-            "name": "council",
-            "path": "skills/01-discovery/council",
-            "source": {
-              "name": "roundfix",
-              "type": "repo"
-            }
-          },
-          {
             "name": "exa-web-search",
             "path": "skills/01-discovery/exa-web-search",
             "source": {
@@ -147,17 +138,6 @@
               "type": "github"
             },
             "treeDigest": "58116986bd1354f902ab3f9862030c43f9f8a5dbe9814aca1ff24c1243299cca"
-          },
-          {
-            "name": "the-fool",
-            "path": "skills/01-discovery/the-fool",
-            "source": {
-              "path": "skills/01-discovery/the-fool",
-              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
-              "repository": "example/skills",
-              "type": "github"
-            },
-            "treeDigest": "53fba8dad40988c3c79bd57c56feead8ffdf059a9871402b8a638d9c4b4f7609"
           },
           {
             "minimumVersion": "0.0.2",
@@ -528,7 +508,7 @@
             ]
           }
         ],
-        "digest": "62410ddcf48074ff0a5e9216cfe6a3e64873d6a5d942b51d2033bcacbb9f4cc0",
+        "digest": "705586b5978712bcf0b09bdbcec9e107ea5f135d5c92c28bc2c1124afed71499",
         "id": "rust",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -582,15 +562,6 @@
             "treeDigest": "2df0c7a73c9f2c0b69f72d1ec23d83be955ddaddffbd9aa6f56d18b878ab4551"
           },
           {
-            "minimumVersion": "0.0.2",
-            "name": "council",
-            "path": "skills/01-discovery/council",
-            "source": {
-              "name": "roundfix",
-              "type": "repo"
-            }
-          },
-          {
             "name": "exa-web-search",
             "path": "skills/01-discovery/exa-web-search",
             "source": {
@@ -622,17 +593,6 @@
               "type": "github"
             },
             "treeDigest": "58116986bd1354f902ab3f9862030c43f9f8a5dbe9814aca1ff24c1243299cca"
-          },
-          {
-            "name": "the-fool",
-            "path": "skills/01-discovery/the-fool",
-            "source": {
-              "path": "skills/01-discovery/the-fool",
-              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
-              "repository": "example/skills",
-              "type": "github"
-            },
-            "treeDigest": "53fba8dad40988c3c79bd57c56feead8ffdf059a9871402b8a638d9c4b4f7609"
           },
           {
             "minimumVersion": "0.0.2",
@@ -993,7 +953,7 @@
             ]
           }
         ],
-        "digest": "aa53175827c0ff08d314befc115f3b5726ba6b3a7bfe28351a81afeac3465330",
+        "digest": "06a1f05fdf139acc5d4c258ba722ddc972a852535af48beae366711ccd3e1ae4",
         "id": "typescript",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -1944,15 +1904,6 @@
             }
           },
           {
-            "minimumVersion": "0.0.2",
-            "name": "council",
-            "path": "skills/01-discovery/council",
-            "source": {
-              "name": "roundfix",
-              "type": "repo"
-            }
-          },
-          {
             "name": "exa-web-search",
             "path": "skills/01-discovery/exa-web-search",
             "source": {
@@ -2037,17 +1988,6 @@
               "name": "roundfix",
               "type": "repo"
             }
-          },
-          {
-            "name": "the-fool",
-            "path": "skills/01-discovery/the-fool",
-            "source": {
-              "path": "skills/01-discovery/the-fool",
-              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
-              "repository": "example/skills",
-              "type": "github"
-            },
-            "treeDigest": "53fba8dad40988c3c79bd57c56feead8ffdf059a9871402b8a638d9c4b4f7609"
           },
           {
             "minimumVersion": "0.0.2",

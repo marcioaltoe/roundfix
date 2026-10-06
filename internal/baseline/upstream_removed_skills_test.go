@@ -20,11 +20,15 @@ var upstreamRemovedSkills = []string{
 }
 
 func removedSkillFindings(modules, bundles, setups []document) []string {
+	return namedSkillFindings(upstreamRemovedSkills, "removed", modules, bundles, setups)
+}
+
+func namedSkillFindings(names []string, label string, modules, bundles, setups []document) []string {
 	var findings []string
 	check := func(owner, name string) {
-		for _, removed := range upstreamRemovedSkills {
+		for _, removed := range names {
 			if name == removed {
-				findings = append(findings, fmt.Sprintf("%s names removed skill %s", owner, name))
+				findings = append(findings, fmt.Sprintf("%s names %s skill %s", owner, label, name))
 			}
 		}
 	}
@@ -41,7 +45,7 @@ func removedSkillFindings(modules, bundles, setups []document) []string {
 			check(id, name)
 			for _, trigger := range objectsOrEmpty(dispatch["triggers"]) {
 				triggerID, _ := stringValue(trigger, "id")
-				for _, removed := range upstreamRemovedSkills {
+				for _, removed := range names {
 					if strings.HasSuffix(triggerID, "."+removed) {
 						check(id, removed)
 					}

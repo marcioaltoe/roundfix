@@ -8,7 +8,7 @@
     "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
     "path": "setups/go.txt"
   },
-  "digest": "07eb452b72908ed778ecfd464f226d3d096c8ccfdcc7330ed9faeba2eb41acff",
+  "digest": "a7700cd35afd6fbcafb8cf65459c493e90b970c13cb269097edd0fce7cd52613",
   "skills": [
     {
       "name": "knowledge-workspace",
@@ -60,15 +60,6 @@
       "treeDigest": "e4ea7cfa3ce50f64245bd09959316b1653fa171051651a7771471dcf0119ca19"
     },
     {
-      "name": "council",
-      "path": "skills/01-discovery/council",
-      "source": {
-        "type": "repo",
-        "name": "roundfix"
-      },
-      "minimumVersion": "0.0.2"
-    },
-    {
       "name": "exa-web-search",
       "path": "skills/01-discovery/exa-web-search",
       "source": {
@@ -100,17 +91,6 @@
         "path": "skills/01-discovery/grilling"
       },
       "treeDigest": "b0af4cb93507011cab704853dc540ae142dec2a1256d374a38f4f196a04f7b50"
-    },
-    {
-      "name": "the-fool",
-      "path": "skills/01-discovery/the-fool",
-      "source": {
-        "type": "github",
-        "repository": "marcioaltoe/skills",
-        "ref": "b3c45a45f1bccd3b33aaecaaa22947d942f2fc02",
-        "path": "skills/01-discovery/the-fool"
-      },
-      "treeDigest": "1b4f41804f0c288993b0a5a295d90d538d7dd1bf7d6971f8af13d7ee47cfabb1"
     },
     {
       "name": "write-idea",
