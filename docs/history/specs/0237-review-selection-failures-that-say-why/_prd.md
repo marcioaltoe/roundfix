@@ -1,9 +1,12 @@
 ---
 spec: 0237-review-selection-failures-that-say-why
-status: active
+status: archived
 created: 2026-10-06
 surfaces: [backend, cli, docs]
+archived: "2026-10-06"
+source_slug: 0237-review-selection-failures-that-say-why
 ---
+
 
 # Review selection failures that say why
 
