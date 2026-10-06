@@ -18,6 +18,9 @@ graph:
       needs: [task_03]
     - id: task_05
       file: task_05.md
+      needs: [task_04, task_06]
+    - id: task_06
+      file: task_06.md
       needs: [task_04]
 ---
 
@@ -29,11 +32,16 @@ graph:
 | task_02 | Settlement, archive, settle and the queue agree on every partial, and settle names the report it refused | backend | medium     | task_01 |
 | task_03 | The skills and user guides state the one partial policy and the network-denied marker                   | docs    | medium     | task_02 |
 | task_04 | The Spec routing and autonomous-work guides exempt a network-denied outside-evidence row                 | docs    | medium     | task_03 |
-| task_05 | Run the final QA gate                                                                                   | qa      | high       | task_04 |
+| task_05 | Run the final QA gate                                                                                   | qa      | high       | task_04, task_06 |
+| task_06 | The archived baseline names every accepted partial, and the settle reference gives the suffix to settle | docs    | low        | task_04 |
 
-Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05
+Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_06 · 6 → task_05
 
 task_02 depends on the policy task_01 puts in `internal/spec`. task_03
 documents both and shares `docs/user-guide/commands/settle.md` with task_02.
 task_04 follows task_03 so that only one Task at a time edits guidance and
-runs the derived-file regeneration. The gate follows the only leaf.
+runs the derived-file regeneration. task_06 is the corrective Task from the
+first QA gate: it corrects the PRD's archived baseline and the settle
+reference's suffix sentence, and raises the Roundfix Skill version again, so
+it follows task_04, the last Task to touch guidance. The gate follows the only
+leaf, task_06.
