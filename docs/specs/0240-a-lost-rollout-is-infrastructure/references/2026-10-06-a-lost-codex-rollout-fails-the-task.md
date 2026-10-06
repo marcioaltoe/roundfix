@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-06
-spec: null
+spec: 0240-a-lost-rollout-is-infrastructure
 ---
 
 # A lost Codex rollout fails the Task and spends a retry
