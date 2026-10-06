@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.51.0] - 2026-10-06
+
+### A lost rollout is infrastructure
+
+- **Lost Rollout.** When codex-acp reports `-32603` or `-32600` with "no rollout found for thread id" (in the message or in `data.details`), Roundfix treats it as a runtime infrastructure failure, not a Task failure. No other `-32603` changes meaning. The Task gets no repair and continues in a fresh Agent Session (`-rollout-NN`), and the lost session is never resumed.
+- **Fallback.** Before the First Handoff, or in a QA Task while its report is still pending, the recovery uses the next Fallback Selection (for example `claude` through the subscription). Otherwise the same selection runs again. Each Agent Session owner gets at most two recoveries; a third settles the Task as runtime infrastructure.
+- **Queue and records.** A `rollout_lost` Run Event records each loss, and a QA fallback adds a section to the QA report. An unrecovered loss parks the item as `runtime-infrastructure`, and its retry does not count against the retry limit.
+- **Glossary.** Adds Lost Rollout and First Handoff.
+
 ## [0.50.0] - 2026-10-06
 
 ### A glossary every Spec keeps current
