@@ -139,6 +139,11 @@ When the manifest's profile cannot resolve, the line says
 trailing skills, Repository Skill Set readiness and its existing text stay
 unchanged.
 
+The comparison accepts repository-owned Baseline Profiles and uses their
+modules' external skill contracts from the embedded Setup Snapshots. An
+unresolvable profile's detail says "neither built-in nor resolvable" and
+names the searched `.roundfix/baseline/profiles/<id>.json` path.
+
 A missing or outdated required skill, or an invalid required lock declaration,
 prints one sorted blocking line and makes Doctor exit `1`. Doctor still prints
 every other readiness result:
