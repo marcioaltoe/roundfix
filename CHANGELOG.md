@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.48.0] - 2026-10-06
+
+### Baseline update with a repository profile
+
+- **Repository profiles work again.** `roundfix baseline update`, `roundfix doctor`, `roundfix baseline skills restore` and lock reconciliation resolve a repository Baseline Profile (`.roundfix/baseline/profiles/<id>.json`) the same way `baseline update` and `baseline profile validate` already did. Before, the skill snapshot comparison accepted only built-in profiles. `update` then exited 1 with `Unknown built-in Baseline Profile`, and a repository-profile adopter never reached `state: current` or received owned-skill updates.
+- **Pinned contracts.** A repository profile's upstream skills take their pinned contract from the embedded snapshots, and a disagreement between snapshots is refused by name. A profile that cannot be resolved is refused as `restore.profile-unresolved`, naming its path.
+
 ## [0.47.0] - 2026-10-06
 
 ### One QA partial policy
