@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-06
-spec: null
+spec: 0236-baseline-update-with-a-repository-profile
 ---
 
 # `baseline update` refuses every repository Baseline Profile
