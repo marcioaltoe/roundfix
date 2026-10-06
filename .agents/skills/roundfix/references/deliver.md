@@ -263,7 +263,7 @@ before `Limits:`. Status and the Pending Question use the same Park Classes:
 | --- | --- |
 | `dependency` | `prerequisite-unmerged`; retry a parked prerequisite, or deliver/merge an external prerequisite and retry the dependent item |
 | `conflict` | `pull-request-conflict`; merge, resolve, commit, then retry |
-| `environment` | `qa-environment-partial`, `checks-timeout`, `item-worktree-missing`, `delivery-error`; the QA partial prints carry-forward, repair, authorized override and retry |
+| `environment` | `qa-environment-partial`, `checks-timeout`, `item-worktree-missing`, `delivery-error`, `runtime-infrastructure`; the QA partial prints carry-forward, repair, authorized override and retry |
 | `flaky-check` | `flaky-check`; fix or re-run the failing packages, then retry |
 | `finding` | `run-unresolved`, `review-findings`, `corrective-spec-required`, `gate-failed`, `checks-failed`, `revalidation-failed` |
 | `budget` | `run-budget-exceeded`, `queue-deadline` |
@@ -273,6 +273,9 @@ before `Limits:`. Status and the Pending Question use the same Park Classes:
 
 Existing blockers keep their next actions. A queue without parked items adds
 no Park line.
+
+A Delivery Retry from `runtime-infrastructure` is not counted against the retry
+limit and re-enters as a `run-unresolved` retry does.
 When one or more items are parked, it prints exactly one `Pending question:`
 for the lowest-position parked item, the action that answers it, and the count
 waiting behind it. A dependency park can clear after its prerequisites merge. Other parks need

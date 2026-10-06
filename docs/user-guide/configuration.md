@@ -560,8 +560,12 @@ A Roundfix older than this release refuses a configuration that uses it.
 
 Automatic fallback is pre-prompt only. Roundfix records and shows the fallback
 notification before activating the next configured tuple. Once
-`agent_work_started` is recorded, no prompt, tool, verification, cancellation,
-rate-limit, or session-loss failure can start a replacement session.
+`agent_work_started` is recorded, prompt, tool, verification, cancellation and
+rate-limit failures keep their normal failure semantics. A Lost Rollout gets no
+repair: the Task continues in a new Agent Session, using the next Fallback
+Selection before the First Handoff or while a QA report is pending, and the
+same selection otherwise. An Agent Session owner gets at most two recoveries;
+the third settles the Task as runtime infrastructure.
 
 Legacy configs with `defaults.agent` or top-level `runtimes` still load during
 the compatibility window only when the same file has no `profiles` section.

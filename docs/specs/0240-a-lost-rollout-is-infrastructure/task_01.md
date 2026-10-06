@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0240-a-lost-rollout-is-infrastructure
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -65,22 +65,40 @@ recorded skill version.
 
 ## Subtasks
 
-- [ ] Add the two glossary terms and amend the three fallback entries.
-- [ ] Rewrite the replacement-session sentences in the three fallback passages.
-- [ ] Describe the Run Event and the QA report section in the usage guide.
-- [ ] Add the park to both Park Class tables.
-- [ ] Raise and record the skill version and sync the mirrors.
+- [x] Add the two glossary terms and amend the three fallback entries.
+- [x] Rewrite the replacement-session sentences in the three fallback passages.
+- [x] Describe the Run Event and the QA report section in the usage guide.
+- [x] Add the park to both Park Class tables.
+- [x] Raise and record the skill version and sync the mirrors.
 
 ## Acceptance Criteria
 
-- [ ] `CONTEXT.md` defines **Lost Rollout** and **First Handoff**, and the
+- [x] `CONTEXT.md` defines **Lost Rollout** and **First Handoff**, and the
       fallback entries name the exception.
-- [ ] No guide or skill reference still says that a session-loss failure never
+- [x] No guide or skill reference still says that a session-loss failure never
       starts a replacement session.
-- [ ] Both Park Class tables list `runtime-infrastructure` with its uncounted
+- [x] Both Park Class tables list `runtime-infrastructure` with its uncounted
       retry.
-- [ ] Every skill mirror equals its canonical file, and the raised version is
+- [x] Every skill mirror equals its canonical file, and the raised version is
       recorded.
+
+## Result
+
+Implemented the Lost Rollout and First Handoff glossary terms, the fallback
+exception, recovery behavior, Run Event and QA report documentation, and the
+runtime-infrastructure park and uncounted retry contract. Raised the Roundfix
+Skill from `0.1.42` to `0.1.43` through the owned-skill recorder and synced its
+canonical files to the embedded mirrors.
+
+Focused implementation evidence:
+
+- `make skills-sync`: passed before and after recording the raised version.
+- `GOCACHE=/tmp/roundfix-go-cache-recorder go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`: passed; the recorder raised both front-matter fields and updated `skills/testdata/owned-skill-versions.json`.
+- Focused phrase checks over the changed documentation: passed for both glossary terms, `before the First Handoff`, `Lost Rollout`, `rollout_lost`, `retry_spent: false`, `## Agent runtime fallback`, `runtime-infrastructure`, `is not counted`, and `run-unresolved`.
+- Canonical/embedded skill mirror comparison: passed for `SKILL.md`, `references/profiles.md`, and `references/deliver.md`.
+- `git diff --check`: passed.
+
+The Task's authored Verification commands remain for the Daemon to run.
 
 ## Context
 

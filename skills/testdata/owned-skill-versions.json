@@ -301,6 +301,10 @@
       {
         "version": "0.1.42",
         "digest": "7ca9a172db855ac1d08c64e0dfbcd03a240123f7ecd72ed3dcf6d2c27cad0c81"
+      },
+      {
+        "version": "0.1.43",
+        "digest": "9a3888243f748d9f9c900629e64931602571899ce254c0f8bc078bbbb8339656"
       }
     ],
     "setup-context-driven": [

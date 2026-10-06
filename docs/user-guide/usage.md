@@ -275,8 +275,19 @@ creation. If a session cannot start after the Run exists, Roundfix records and
 renders the fallback notification before creating or preparing the next fallback
 session. Automatic fallback is allowed only before the first prompt. After
 `agent_work_started`, prompt, tool, verification, cancellation, rate-limit, or
-session-loss failures use normal Task or Run failure semantics; Roundfix never
-starts a replacement session over possibly changed state.
+failures use normal Task or Run failure semantics. A Lost Rollout gets no
+repair: the Task continues in a new Agent Session, using the next Fallback
+Selection before the First Handoff or while a QA report is pending, and the
+same selection otherwise. Each Agent Session owner can recover at most twice;
+the third Lost Rollout settles the Task as runtime infrastructure.
+
+Each recovery is recorded in the Run Event Journal as a `daemon.task` event
+with phase `rollout_lost`. Its payload includes the scope, selection, step and
+detail, `recovery` set to `fallback`, `new_session` or `exhausted`,
+`next_selection` when the value is `fallback`, and `retry_spent: false`. When
+a QA fallback session starts, the seeded report keeps `verdict: pending` and
+gains a `## Agent runtime fallback` section with the lost rollout, fallback
+selection and `- retry_spent: false` lines.
 
 ### Legacy migration
 
