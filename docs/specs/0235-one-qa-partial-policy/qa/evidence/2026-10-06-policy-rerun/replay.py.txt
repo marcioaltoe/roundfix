@@ -1,0 +1,53 @@
+from pathlib import Path
+import subprocess, json, re, hashlib, tempfile, shutil, os
+root=Path.cwd(); spec=root/'docs/specs/0235-one-qa-partial-policy'; ev=spec/'qa/evidence/2026-10-06-policy-rerun'; ev.mkdir(parents=True,exist_ok=True)
+report=spec/'qa/qa-report-2026-10-06-01.md'
+base='08660fcc1a82a2d50beecbbb0e14e639d05dbd36'; head='c3e658a0c83ba081e3d64346b096dd5bda6a09ba'
+home=Path(tempfile.mkdtemp(prefix='roundfix-0235-rerun-home-',dir='/private/tmp'))
+env=dict(os.environ,HOME=str(home),GOCACHE='/private/tmp/roundfix-0235-qa-cache',GOPROXY='off')
+def run(cmd,cwd=root):
+ p=subprocess.run(cmd,cwd=cwd,env=env,text=True,capture_output=True); return dict(command=cmd,cwd=str(cwd),exit=p.returncode,stdout=p.stdout,stderr=p.stderr)
+def save(name,data): (ev/name).write_text(json.dumps(data,indent=2))
+def result(id,status,text):
+ s=report.read_text(); s=re.sub(r'\| '+id+r' \| pending \|','| '+id+' | '+status+' |',s); s=s.replace('Actor: maintainer. Entry: built CLI, declared tests or bounded artifact audit. Expected: Requirement and transcript observables match; independently confirm output or preserved bytes. Pending execution.',text,1) if False else s
+ start=s.index('### '+id+'\n'); end=s.find('\n### ',start+1); end=len(s) if end<0 else end
+ block=s[start:end]; block=block.replace('Pending execution.',text); s=s[:start]+block+s[end:]; report.write_text(s)
+result('R1','pass','Daemon-provided make verify-changed: pass, exit 0 at '+head+'; diagnostics removed on success. Recorded fact; not rerun.')
+records=[]
+for d in sorted((root/'docs/history/specs').iterdir()):
+ files=list((d/'qa').glob('qa-report-*.md'))
+ def key(p):
+  m=re.fullmatch(r'qa-report-(\d{4}-\d{2}-\d{2})(?:-(\d+))?\.md',p.name); return (m[1],int(m[2] or -1)) if m else ('',-2)
+ if not files: continue
+ p=max(files,key=key); data=p.read_text()
+ if not re.search(r'^verdict: partial\s*$',data,re.M): continue
+ before=hashlib.sha256(p.read_bytes()).hexdigest(); r=run(['./bin/roundfix','qa-report','accept',str(p.relative_to(root))]); r['sha256']=before; r['unchanged']=before==hashlib.sha256(p.read_bytes()).hexdigest(); r['spec']=d.name
+ r['baseline']='accepted' if d.name[:4] in ['0073','0079','0179'] else 'refused'; r['expected_after']=0 if d.name[:4] in ['0073','0079','0179','0213','0220'] else 1; records.append(r)
+save('archived-replay.json',records)
+assert len(records)==28 and all(r['exit']==r['expected_after'] and r['unchanged'] for r in records)
+table='\n\n| Archived Spec / newest report | Before (corrected PRD measurement) | After built CLI |\n| --- | --- | --- |\n'
+for r in records: table+=f"| {r['spec']} / {Path(r['command'][-1]).name} | {r['baseline']} | {'accepted' if r['exit']==0 else r['stderr'].strip()} (exit {r['exit']}) |\n"
+result('R2','pass','Fresh replay of all 28 newest archived partial reports matches the corrected PRD baseline. 0213 and 0220 now accept; 0073, 0079 and 0179 retain acceptance; 0227 refuses only its ordinary environment row. Hashes confirm no report mutation. Evidence: [archived-replay.json](evidence/2026-10-06-policy-rerun/archived-replay.json).'+table)
+fixture=Path(tempfile.mkdtemp(prefix='roundfix-0235-rerun-fixture-',dir='/private/tmp'))
+shutil.copytree('/private/tmp/roundfix-0235-fixture-6fyd45tw',fixture,dirs_exist_ok=True); shutil.copy2(root/'bin/roundfix',fixture/'bin/roundfix')
+qa=fixture/'docs/specs/qa-policy-fixture/qa/qa-report-2026-10-06.md'
+def qa_data(status,prov): return '---\nverdict: partial\nrows_blocked_environment: 1\nrows_blocked_finding: 0\nrows_blocked_declared: 0\n---\n\n# QA Report\n\n## Results\n\n| # | Status | Provenance |\n| - | --- | --- |\n| 1 | '+status+' | '+prov+' |\n'
+transcripts=[]
+for id,status,prov,code in [('T1','blocked (environment: no open Pull Request)','Pull Request row',0),('T2','blocked (environment: network denied: docs.example.com)','repository row',1)]:
+ qa.write_text(qa_data(status,prov)); before=qa.read_bytes(); runs=[run(['./bin/roundfix','qa-report','accept',str(qa.relative_to(fixture))],fixture) for _ in range(2)]; transcripts+=runs
+ assert all(r['exit']==code and r['stdout']=='' and r['stderr']==('' if code==0 else 'roundfix: QA Report eligibility refused: rows_blocked_environment is 1; expected 0\n') for r in runs) and before==qa.read_bytes()
+ result(id,'pass','Transcript reproduced twice through the freshly built CLI; exit and separate streams match exactly; fresh invocation confirms persistence and original report bytes remain unchanged. [transcripts.json](evidence/2026-10-06-policy-rerun/transcripts.json).')
+task=fixture/'docs/specs/qa-policy-fixture/task_qa.md'; task_before=task.read_bytes(); git_before=run(['git','-c','core.fsmonitor=false','rev-parse','HEAD'],fixture)['stdout']
+r=run(['./bin/roundfix','settle','--spec','qa-policy-fixture','--task','task_qa'],fixture); transcripts.append(r)
+expected='Settle surface: '+str(fixture)+'\nroundfix: settle QA Report is ineligible: rows_blocked_environment is 1; expected 0 (report docs/specs/qa-policy-fixture/qa/qa-report-2026-10-06.md)\n'
+assert r['exit']==1 and r['stderr']==expected and task.read_bytes()==task_before and run(['git','-c','core.fsmonitor=false','rev-parse','HEAD'],fixture)['stdout']==git_before
+save('transcripts.json',transcripts); result('T3','pass','Built settle exits 1; stderr matches both declared lines exactly and stdout matches the ellipsis. Independent reads confirm Task bytes and Git HEAD unchanged. Disposable fixture reused an existing scratch HEAD; no commit was created. [transcripts.json](evidence/2026-10-06-policy-rerun/transcripts.json).')
+flux=Path('/Users/marcio/dev/secondbrain/projects/fluxus/mirror/docs/history/specs/0100-cada-loja-aponta-para-o-mesmo-fabricante-e-a-mesma-categoria/qa'); fr=[]
+for name,code in [('qa-report-2026-10-05.md',1),('qa-report-2026-10-05-01.md',0)]:
+ p=flux/name; text=p.read_text(); r=run(['./bin/roundfix','qa-report','accept',str(p)]); r['sha256']=hashlib.sha256(p.read_bytes()).hexdigest(); r['verdict']=re.search(r'^verdict: (.+)$',text,re.M)[1]; fr.append(r); assert r['exit']==code
+save('fluxus-replay.json',fr); result('O1','pass','Read and freshly replayed both original Fluxus mirror reports: original refuses the one non-PR environment row (exit 1); rerun accepts its two covered declarations plus PR row (exit 0). Supports report selection diagnosis and unified policy. Original file hashes captured. Sources: /Users/marcio/dev/secondbrain/projects/fluxus/mirror/docs/history/specs/0100-cada-loja-aponta-para-o-mesmo-fabricante-e-a-mesma-categoria/qa/qa-report-2026-10-05.md and qa-report-2026-10-05-01.md. [fluxus-replay.json](evidence/2026-10-06-policy-rerun/fluxus-replay.json).')
+source=Path('/Users/marcio/dev/secondbrain/inbox/roundfix/_triaged/2026-10-06-partial-so-com-a-linha-do-pr-e-recusado-no-assentamento.md'); text=source.read_text(); assert 'expected "pass"' in text
+qa.write_text(qa_data('blocked (environment: no open Pull Request)','Pull Request row')); runs=[run(['./bin/roundfix','qa-report','accept',str(qa.relative_to(fixture))],fixture) for _ in range(2)]; assert all(r['exit']==0 and r['stdout']==r['stderr']=='' for r in runs)
+save('oraculum-reproduction.json',dict(source=str(source),sha256=hashlib.sha256(source.read_bytes()).hexdigest(),runs=runs)); result('O2','pass','Fresh read of the Oraculum independently reported PR-only partial refusal (0.44.0); reproduced its quoted report shape twice through built accept, both exit 0 with empty streams. This confirms the shape, not the original Oraculum repository. Source: /Users/marcio/dev/secondbrain/inbox/roundfix/_triaged/2026-10-06-partial-so-com-a-linha-do-pr-e-recusado-no-assentamento.md. [oraculum-reproduction.json](evidence/2026-10-06-policy-rerun/oraculum-reproduction.json). Secondbrain wiki/index.md read first; qmd lookup failed SQLITE_CANTOPEN, so exact PRD locators were used.')
+result('O3','blocked (environment: Spec authorization forbids network lookup)','JUnit URL https://docs.junit.org/5.14.4/api/org.junit.jupiter.api/org/junit/jupiter/api/Assumptions.html was not reached: _authorization.md Limits and task_05 Overview expressly prohibit network requests. Fresh bounded rg search of Secondbrain wiki, inbox and raw finds unrelated JUnit mentions but no publisher assumption contract. No lookup was attempted, so no sandbox-denied marker is asserted. PRD quotation cannot establish outside evidence. Unblock by providing independently captured publisher content or authorizing this exact read-only lookup in corrective QA scope; no matching Unreachable Acceptance declaration exists.')
+print('Replay and transcripts complete:',len(records),'archived reports')

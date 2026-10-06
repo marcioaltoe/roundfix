@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0235-one-qa-partial-policy
-status: pending
+status: failed
 type: qa
 complexity: high
 ---

@@ -1,0 +1,36 @@
+[
+  {
+    "command": [
+      "make",
+      "baseline-digests"
+    ],
+    "exit": 0,
+    "stdout": "{\"schemaVersion\":1,\"type\":\"baseline-digests\",\"ok\":true,\"changed\":false}\n",
+    "stderr": "ok  \troundfix/internal/baseline\t1.078s\nok  \troundfix/skills\t0.319s\nok  \troundfix/internal/baseline\t1.475s\nok  \troundfix/internal/baseline\t0.681s\nok  \troundfix/internal/baseline\t0.925s\nok  \troundfix/internal/baseline\t1.014s\nok  \troundfix/internal/baseline\t1.857s\nok  \troundfix/internal/baseline\t0.675s\nbaseline-digests: no changes; derived artifacts already match their canonical sources\n"
+  },
+  {
+    "command": [
+      "make",
+      "baseline-digests"
+    ],
+    "exit": 0,
+    "stdout": "{\"schemaVersion\":1,\"type\":\"baseline-digests\",\"ok\":true,\"changed\":false}\n",
+    "stderr": "ok  \troundfix/internal/baseline\t0.917s\nok  \troundfix/skills\t0.174s\nok  \troundfix/internal/baseline\t1.366s\nok  \troundfix/internal/baseline\t0.635s\nok  \troundfix/internal/baseline\t0.909s\nok  \troundfix/internal/baseline\t1.030s\nok  \troundfix/internal/baseline\t1.814s\nok  \troundfix/internal/baseline\t0.681s\nbaseline-digests: no changes; derived artifacts already match their canonical sources\n"
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "baseline",
+      "update",
+      "--repo",
+      ".",
+      "--no-skills",
+      "--yes",
+      "--format",
+      "text"
+    ],
+    "exit": 2,
+    "stdout": "Baseline update: failed\nCategory: invalid\nResult: Baseline repository requires at least one commit: git rev-parse --show-toplevel --show-object-format --verify HEAD^{commit}: fatal: Needed a single revision: exit status 128\nPrior catalog: sha256:b0187ed9c909a91930efec49e4231e3574c95a77aac89e5898ee6e76a1e6c5da\nCurrent catalog: sha256:b0187ed9c909a91930efec49e4231e3574c95a77aac89e5898ee6e76a1e6c5da\nFile changes: 0\nRetention evidence: 0\nSkills: not run\nSkills installed: 0\nSkills restored: 0\nSkills drifted: 0\nNext action: repair the repository or manifest input and rerun roundfix baseline update\n",
+    "stderr": "roundfix: baseline update failed: Baseline repository requires at least one commit: git rev-parse --show-toplevel --show-object-format --verify HEAD^{commit}: fatal: Needed a single revision: exit status 128\n"
+  }
+]

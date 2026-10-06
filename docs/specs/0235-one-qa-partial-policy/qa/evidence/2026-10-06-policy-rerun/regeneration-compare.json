@@ -1,0 +1,54 @@
+[
+  {
+    "path": "docs/agents/autonomous-work.md",
+    "equal": true
+  },
+  {
+    "path": "docs/agents/setup-context.json",
+    "equal": true
+  },
+  {
+    "path": "docs/agents/spec-routing.md",
+    "equal": true
+  },
+  {
+    "path": "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md",
+    "equal": true
+  },
+  {
+    "path": "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md",
+    "equal": true
+  },
+  {
+    "path": "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+    "equal": true
+  },
+  {
+    "path": "internal/baseline/testdata/catalog.diagnostics.golden.json",
+    "equal": true
+  },
+  {
+    "path": "internal/baseline/testdata/catalog.digest",
+    "equal": true
+  },
+  {
+    "path": "internal/baseline/testdata/catalog.normalized.json",
+    "equal": true
+  },
+  {
+    "path": "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+    "equal": true
+  },
+  {
+    "path": "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+    "equal": true
+  },
+  {
+    "path": "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+    "equal": true
+  },
+  {
+    "path": "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json",
+    "equal": true
+  }
+]

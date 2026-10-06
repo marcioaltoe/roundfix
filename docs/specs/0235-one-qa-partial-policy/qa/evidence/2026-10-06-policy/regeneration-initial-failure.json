@@ -1,0 +1,11 @@
+[
+  {
+    "command": [
+      "make",
+      "baseline-digests"
+    ],
+    "exit": 2,
+    "stdout": "{\"schemaVersion\":1,\"type\":\"baseline-digests\",\"ok\":false,\"changed\":false,\"errorCode\":\"regeneration_failed\",\"stage\":\"./internal/baseline:TestReadoptionCompatibilityMaintainedFixture\",\"retryable\":false,\"nextSteps\":\"Read the failing test output above, fix the canonical source it validates, then rerun make baseline-digests.\"}\n",
+    "stderr": "go: downloading golang.org/x/sys v0.47.0\ngo: downloading gopkg.in/yaml.v3 v3.0.1\ngo: downloading golang.org/x/text v0.41.0\n# roundfix/internal/baseline\ninternal/baseline/transaction_lock_unix.go:10:2: golang.org/x/sys@v0.47.0: Get \"https://proxy.golang.org/golang.org/x/sys/@v/v0.47.0.zip\": Forbidden\n# roundfix/internal/baseline\ninternal/baseline/derived_ownership.go:15:2: gopkg.in/yaml.v3@v3.0.1: Get \"https://proxy.golang.org/gopkg.in/yaml.v3/@v/v3.0.1.zip\": Forbidden\n# roundfix/internal/baseline\ninternal/skillhash/hash.go:9:2: golang.org/x/text@v0.41.0: Get \"https://proxy.golang.org/golang.org/x/text/@v/v0.41.0.zip\": Forbidden\n# roundfix/internal/baseline\ninternal/skillhash/hash.go:10:2: golang.org/x/text@v0.41.0: Get \"https://proxy.golang.org/golang.org/x/text/@v/v0.41.0.zip\": Forbidden\nFAIL\troundfix/internal/baseline [setup failed]\nFAIL\nbaseline-digests: regeneration failed at ./internal/baseline:TestReadoptionCompatibilityMaintainedFixture\nmake: *** [baseline-digests] Error 1\n"
+  }
+]

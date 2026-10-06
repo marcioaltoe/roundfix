@@ -1,0 +1,74 @@
+[
+  {
+    "task": "docs/specs/0235-one-qa-partial-policy/task_01.md",
+    "commit": "fa25b7267dfbc31833197effc3ea9448ee17b4bb",
+    "changed": [
+      "docs/specs/0235-one-qa-partial-policy/task_01.md",
+      "internal/spec/qa.go",
+      "internal/spec/qa_partial_policy_test.go",
+      "internal/spec/qa_prepr_row_test.go"
+    ],
+    "undeclared": []
+  },
+  {
+    "task": "docs/specs/0235-one-qa-partial-policy/task_02.md",
+    "commit": "e3922de6a1294c42e235327fec4e081c4bf8fac2",
+    "changed": [
+      "docs/specs/0235-one-qa-partial-policy/task_02.md",
+      "docs/user-guide/commands/settle.md",
+      "internal/cli/deliver_operator_archive_test.go",
+      "internal/cli/deliver_workflow.go",
+      "internal/cli/qa_partial_policy_test.go",
+      "internal/cli/settle.go",
+      "internal/daemon/qa_partial_policy_test.go"
+    ],
+    "undeclared": []
+  },
+  {
+    "task": "docs/specs/0235-one-qa-partial-policy/task_03.md",
+    "commit": "a8dd1be06fefb33043194eb7f4901d6aac0e15f3",
+    "changed": [
+      ".agents/skills/archive-spec/SKILL.md",
+      ".agents/skills/qa-gate/SKILL.md",
+      ".agents/skills/roundfix/SKILL.md",
+      ".agents/skills/roundfix/references/archive.md",
+      ".agents/skills/roundfix/references/settle.md",
+      "docs/specs/0235-one-qa-partial-policy/task_03.md",
+      "docs/user-guide/commands/archive.md",
+      "docs/user-guide/commands/qa-report.md",
+      "docs/user-guide/commands/settle.md",
+      "docs/user-guide/context-driven-development.md",
+      "skills/archive-spec/SKILL.md",
+      "skills/qa-gate/SKILL.md",
+      "skills/roundfix/SKILL.md",
+      "skills/roundfix/references/archive.md",
+      "skills/roundfix/references/settle.md",
+      "skills/testdata/owned-skill-versions.json"
+    ],
+    "undeclared": []
+  },
+  {
+    "task": "docs/specs/0235-one-qa-partial-policy/task_04.md",
+    "commit": "9d55539ccfad9ff420f2184b7e481f81ed2b17dd",
+    "changed": [
+      "docs/agents/autonomous-work.md",
+      "docs/agents/setup-context.json",
+      "docs/agents/spec-routing.md",
+      "docs/specs/0235-one-qa-partial-policy/task_04.md",
+      "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md",
+      "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md",
+      "internal/baseline/assets/modules/autonomous-work.json",
+      "internal/baseline/assets/modules/spec-workflow.json",
+      "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+      "internal/baseline/network_denied_row_clause_test.go",
+      "internal/baseline/testdata/catalog.diagnostics.golden.json",
+      "internal/baseline/testdata/catalog.digest",
+      "internal/baseline/testdata/catalog.normalized.json",
+      "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+      "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+      "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+      "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json"
+    ],
+    "undeclared": []
+  }
+]

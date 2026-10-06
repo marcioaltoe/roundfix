@@ -1,0 +1,1199 @@
+=== RUN   TestArchiveRefusesASpecAFileStillPins
+--- PASS: TestArchiveRefusesASpecAFileStillPins (0.06s)
+=== RUN   TestArchiveIgnoresMarkdownThatNamesTheSpec
+--- PASS: TestArchiveIgnoresMarkdownThatNamesTheSpec (0.05s)
+=== RUN   TestArchiveCommandRefusesABrokenOutwardLink
+--- PASS: TestArchiveCommandRefusesABrokenOutwardLink (0.05s)
+=== RUN   TestArchiveCommandReportsRewrittenLinks
+=== RUN   TestArchiveCommandReportsRewrittenLinks/normal
+=== RUN   TestArchiveCommandReportsRewrittenLinks/override
+=== RUN   TestArchiveCommandReportsRewrittenLinks/no_rewrites
+=== RUN   TestArchiveCommandReportsRewrittenLinks/override_no_rewrites
+--- PASS: TestArchiveCommandReportsRewrittenLinks (0.20s)
+    --- PASS: TestArchiveCommandReportsRewrittenLinks/normal (0.05s)
+    --- PASS: TestArchiveCommandReportsRewrittenLinks/override (0.05s)
+    --- PASS: TestArchiveCommandReportsRewrittenLinks/no_rewrites (0.05s)
+    --- PASS: TestArchiveCommandReportsRewrittenLinks/override_no_rewrites (0.05s)
+=== RUN   TestArchiveAcceptsARecordedSupersession
+=== RUN   TestArchiveAcceptsARecordedSupersession/no_Task_Graph_with_supersession_archives_byte-identically
+=== RUN   TestArchiveAcceptsARecordedSupersession/no_Task_Graph_without_supersession_keeps_the_missing_manifest_refusal
+=== RUN   TestArchiveAcceptsARecordedSupersession/supersession_keeps_the_destination_collision_precondition
+=== RUN   TestArchiveAcceptsARecordedSupersession/Task_Graph_keeps_its_incomplete-Task_refusal_without_supersession
+=== RUN   TestArchiveAcceptsARecordedSupersession/Task_Graph_keeps_its_incomplete-Task_refusal_with_supersession
+--- PASS: TestArchiveAcceptsARecordedSupersession (0.25s)
+    --- PASS: TestArchiveAcceptsARecordedSupersession/no_Task_Graph_with_supersession_archives_byte-identically (0.05s)
+    --- PASS: TestArchiveAcceptsARecordedSupersession/no_Task_Graph_without_supersession_keeps_the_missing_manifest_refusal (0.05s)
+    --- PASS: TestArchiveAcceptsARecordedSupersession/supersession_keeps_the_destination_collision_precondition (0.05s)
+    --- PASS: TestArchiveAcceptsARecordedSupersession/Task_Graph_keeps_its_incomplete-Task_refusal_without_supersession (0.05s)
+    --- PASS: TestArchiveAcceptsARecordedSupersession/Task_Graph_keeps_its_incomplete-Task_refusal_with_supersession (0.05s)
+=== RUN   TestRunArchiveMovesCompletedSpecAndStampsMetadata
+=== PAUSE TestRunArchiveMovesCompletedSpecAndStampsMetadata
+=== RUN   TestRunArchiveDeclaredUnreachableContract
+=== PAUSE TestRunArchiveDeclaredUnreachableContract
+=== RUN   TestRunArchiveUsesConfiguredExternalSpecRoot
+=== PAUSE TestRunArchiveUsesConfiguredExternalSpecRoot
+=== RUN   TestRunArchiveRefusesIncompleteTask
+=== PAUSE TestRunArchiveRefusesIncompleteTask
+=== RUN   TestArchiveRefusesAHollowPass
+=== PAUSE TestArchiveRefusesAHollowPass
+=== RUN   TestArchiveRefusesAnEmptyFrontMatter
+=== PAUSE TestArchiveRefusesAnEmptyFrontMatter
+=== RUN   TestRunArchiveRefusesMissingOrNonPassingQA
+=== PAUSE TestRunArchiveRefusesMissingOrNonPassingQA
+=== RUN   TestArchiveCommandQAOverrideRequiresApprovalAndReason
+=== PAUSE TestArchiveCommandQAOverrideRequiresApprovalAndReason
+=== RUN   TestRunArchiveQAOverrideReportsOverride
+=== PAUSE TestRunArchiveQAOverrideReportsOverride
+=== RUN   TestRunArchiveHelp
+=== PAUSE TestRunArchiveHelp
+=== RUN   TestBranchIntegrityPreflightWatchDisregardsOnlySupersededFailedQACycles
+=== PAUSE TestBranchIntegrityPreflightWatchDisregardsOnlySupersededFailedQACycles
+=== RUN   TestInvocationProfileOverrideOmittedUsesTaskQAAndReviewProfiles
+=== PAUSE TestInvocationProfileOverrideOmittedUsesTaskQAAndReviewProfiles
+=== RUN   TestImplementProfileCategoriesDerivesQAFromGraphDeclaration
+=== PAUSE TestImplementProfileCategoriesDerivesQAFromGraphDeclaration
+=== RUN   TestRunResolveSelectionOverrideRejectsPartialBeforeConfigLoad
+=== PAUSE TestRunResolveSelectionOverrideRejectsPartialBeforeConfigLoad
+=== RUN   TestRunWatchSelectionOverrideRejectsPartialBeforeConfigLoad
+=== PAUSE TestRunWatchSelectionOverrideRejectsPartialBeforeConfigLoad
+=== RUN   TestBranchIntegrityPreflightListsTaskWorkAndSupersededQAReportSeparately
+=== PAUSE TestBranchIntegrityPreflightListsTaskWorkAndSupersededQAReportSeparately
+=== RUN   TestResumeAcceptsAnArchiveCommitWithRewrittenLinks
+=== RUN   TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/_prd.md
+=== RUN   TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/task_01.md
+=== RUN   TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/qa/links.md
+=== RUN   TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/_prd.md+task_01.md+qa/links.md
+--- PASS: TestResumeAcceptsAnArchiveCommitWithRewrittenLinks (0.72s)
+    --- PASS: TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/_prd.md (0.17s)
+    --- PASS: TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/task_01.md (0.19s)
+    --- PASS: TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/qa/links.md (0.18s)
+    --- PASS: TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/_prd.md+task_01.md+qa/links.md (0.18s)
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/extra_Task_byte
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/another_link_target
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/extra_PRD_byte
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/another_PRD_link_target
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/frontmatter_link_rewrite
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/added_file
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/removed_file
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_mode
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_type
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/non-Markdown_rewrite
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_query
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_fragment
+--- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges (1.83s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/extra_Task_byte (0.16s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/another_link_target (0.16s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/extra_PRD_byte (0.17s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/another_PRD_link_target (0.17s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/frontmatter_link_rewrite (0.17s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/added_file (0.14s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/removed_file (0.14s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_mode (0.14s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_type (0.15s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/non-Markdown_rewrite (0.14s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_query (0.15s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_fragment (0.16s)
+=== RUN   TestArchivedRetryOfAQueueStartedRunReturnsToReview
+--- PASS: TestArchivedRetryOfAQueueStartedRunReturnsToReview (0.15s)
+=== RUN   TestArchivedRetryOfARunUnresolvedItemWithoutACandidateReturnsToReview
+--- PASS: TestArchivedRetryOfARunUnresolvedItemWithoutACandidateReturnsToReview (0.15s)
+=== RUN   TestDeliveryRunResultMapsABudgetExceededRun
+=== PAUSE TestDeliveryRunResultMapsABudgetExceededRun
+=== RUN   TestDeliveryRunResultMapsAnUnresolvedRun
+=== PAUSE TestDeliveryRunResultMapsAnUnresolvedRun
+=== RUN   TestDeliveryRunResultMapsACleanExit
+=== PAUSE TestDeliveryRunResultMapsACleanExit
+=== RUN   TestDeliveryRunResultRefusesAFailedRun
+=== PAUSE TestDeliveryRunResultRefusesAFailedRun
+=== RUN   TestDeliveryRunResultRefusesAnExitWithoutANewRun
+=== PAUSE TestDeliveryRunResultRefusesAnExitWithoutANewRun
+=== RUN   TestDeliveryRunResultIgnoresARunThatExistedBeforeTheInvocation
+=== PAUSE TestDeliveryRunResultIgnoresARunThatExistedBeforeTheInvocation
+=== RUN   TestDeliveryStepRunsTheItemBinary
+--- PASS: TestDeliveryStepRunsTheItemBinary (0.38s)
+=== RUN   TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments
+=== RUN   TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments/implement
+=== RUN   TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments/archive
+=== RUN   TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments/review
+--- PASS: TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments (0.65s)
+    --- PASS: TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments/implement (0.25s)
+    --- PASS: TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments/archive (0.15s)
+    --- PASS: TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments/review (0.10s)
+=== RUN   TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate
+=== RUN   TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate/stderr
+=== RUN   TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate/stdout
+--- PASS: TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate (0.42s)
+    --- PASS: TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate/stderr (0.24s)
+    --- PASS: TestDeliveryStepFallsBackWhenTheItemBinaryWouldMigrate/stdout (0.04s)
+=== RUN   TestDeliveryStepParksWhenTheItemBuildFails
+--- PASS: TestDeliveryStepParksWhenTheItemBuildFails (0.14s)
+=== RUN   TestDeliveryStepParksWhenTheItemBinaryPathIsNotIgnored
+--- PASS: TestDeliveryStepParksWhenTheItemBinaryPathIsNotIgnored (0.14s)
+=== RUN   TestDeliveryStepWithoutADeclarationRunsTheOwnerExecutable
+--- PASS: TestDeliveryStepWithoutADeclarationRunsTheOwnerExecutable (0.15s)
+=== RUN   TestDeliveryItemBinaryThatCannotStartReturnsAParkError
+--- PASS: TestDeliveryItemBinaryThatCannotStartReturnsAParkError (0.18s)
+=== RUN   TestDeliverStartContinuesTheItemBranchThatHoldsWork
+=== RUN   TestDeliverStartContinuesTheItemBranchThatHoldsWork/existing_worktree_false
+=== RUN   TestDeliverStartContinuesTheItemBranchThatHoldsWork/existing_worktree_true
+--- PASS: TestDeliverStartContinuesTheItemBranchThatHoldsWork (0.71s)
+    --- PASS: TestDeliverStartContinuesTheItemBranchThatHoldsWork/existing_worktree_false (0.36s)
+    --- PASS: TestDeliverStartContinuesTheItemBranchThatHoldsWork/existing_worktree_true (0.35s)
+=== RUN   TestDeliverStartRefusesTwoItemBranchesWithWork
+--- PASS: TestDeliverStartRefusesTwoItemBranchesWithWork (0.24s)
+=== RUN   TestDeliverStartIgnoresAnItemBranchWithoutWork
+--- PASS: TestDeliverStartIgnoresAnItemBranchWithoutWork (0.31s)
+=== RUN   TestDeliverStartRecordsAndPrintsItsLimits
+=== PAUSE TestDeliverStartRecordsAndPrintsItsLimits
+=== RUN   TestDeliverStartRecordsNoneForOmittedLimits
+=== PAUSE TestDeliverStartRecordsNoneForOmittedLimits
+=== RUN   TestDeliverStartRefusesANonPositiveMaxDuration
+=== RUN   TestDeliverStartRefusesANonPositiveMaxDuration/zero
+=== RUN   TestDeliverStartRefusesANonPositiveMaxDuration/negative
+--- PASS: TestDeliverStartRefusesANonPositiveMaxDuration (0.07s)
+    --- PASS: TestDeliverStartRefusesANonPositiveMaxDuration/zero (0.04s)
+    --- PASS: TestDeliverStartRefusesANonPositiveMaxDuration/negative (0.04s)
+=== RUN   TestDeliverStartRefusesAMalformedMaxDuration
+--- PASS: TestDeliverStartRefusesAMalformedMaxDuration (0.04s)
+=== RUN   TestDeliverStartRefusesAMaxRetriesBelowOne
+=== RUN   TestDeliverStartRefusesAMaxRetriesBelowOne/zero
+=== RUN   TestDeliverStartRefusesAMaxRetriesBelowOne/negative
+--- PASS: TestDeliverStartRefusesAMaxRetriesBelowOne (0.07s)
+    --- PASS: TestDeliverStartRefusesAMaxRetriesBelowOne/zero (0.04s)
+    --- PASS: TestDeliverStartRefusesAMaxRetriesBelowOne/negative (0.04s)
+=== RUN   TestDeliverStatusPrintsOnePendingQuestion
+=== PAUSE TestDeliverStatusPrintsOnePendingQuestion
+=== RUN   TestDeliverStatusPrintsNoQuestionWithoutAParkedItem
+=== PAUSE TestDeliverStatusPrintsNoQuestionWithoutAParkedItem
+=== RUN   TestDeliverHelpNamesTheLimitFlags
+=== PAUSE TestDeliverHelpNamesTheLimitFlags
+=== RUN   TestDeliverRetryRecordsAPullRequestMergedByHandAfterTheItemBranchIsGone
+--- PASS: TestDeliverRetryRecordsAPullRequestMergedByHandAfterTheItemBranchIsGone (0.35s)
+=== RUN   TestDeliverRetryRecordsASpecArchivedOnTheDefaultBranchWithoutARecordedPullRequest
+--- PASS: TestDeliverRetryRecordsASpecArchivedOnTheDefaultBranchWithoutARecordedPullRequest (0.26s)
+=== RUN   TestDeliverRetryRefusesAPullRequestClosedWithoutMerging
+--- PASS: TestDeliverRetryRefusesAPullRequestClosedWithoutMerging (0.22s)
+=== RUN   TestDeliverRetryWithAnOpenPullRequestAndNoMergeEvidenceRetriesAsBefore
+--- PASS: TestDeliverRetryWithAnOpenPullRequestAndNoMergeEvidenceRetriesAsBefore (0.24s)
+=== RUN   TestDeliverReleaseRemovesEveryProvenRunOfTheMergedSpec
+=== PAUSE TestDeliverReleaseRemovesEveryProvenRunOfTheMergedSpec
+=== RUN   TestDeliverReleaseKeepsAnUnrepresentedRun
+=== PAUSE TestDeliverReleaseKeepsAnUnrepresentedRun
+=== RUN   TestDeliverReleaseLeavesAnActiveRunAlone
+=== PAUSE TestDeliverReleaseLeavesAnActiveRunAlone
+=== RUN   TestDeliverReleaseNeverTouchesAnotherSpecsRun
+=== PAUSE TestDeliverReleaseNeverTouchesAnotherSpecsRun
+=== RUN   TestDeliverReleaseRefusesAnItemWithoutAMergeCommit
+=== PAUSE TestDeliverReleaseRefusesAnItemWithoutAMergeCommit
+=== RUN   TestDeliverReleaseRefusesAnItemWithoutACandidateHead
+=== PAUSE TestDeliverReleaseRefusesAnItemWithoutACandidateHead
+=== RUN   TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch
+=== RUN   TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch/environment
+=== RUN   TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch/finding
+=== RUN   TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch/missing
+=== RUN   TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch/unreadable
+=== RUN   TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch/pre-PR_only
+=== RUN   TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch/environment_beyond_pre-PR
+=== RUN   TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch/pass
+--- PASS: TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch (0.58s)
+    --- PASS: TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch/environment (0.09s)
+    --- PASS: TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch/finding (0.08s)
+    --- PASS: TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch/missing (0.06s)
+    --- PASS: TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch/unreadable (0.08s)
+    --- PASS: TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch/pre-PR_only (0.08s)
+    --- PASS: TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch/environment_beyond_pre-PR (0.08s)
+    --- PASS: TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch/pass (0.09s)
+=== RUN   TestInspectItemReadsTheQAOverrideOfTheArchivedSpec
+=== RUN   TestInspectItemReadsTheQAOverrideOfTheArchivedSpec/override
+=== RUN   TestInspectItemReadsTheQAOverrideOfTheArchivedSpec/normal_archive
+--- PASS: TestInspectItemReadsTheQAOverrideOfTheArchivedSpec (0.18s)
+    --- PASS: TestInspectItemReadsTheQAOverrideOfTheArchivedSpec/override (0.09s)
+    --- PASS: TestInspectItemReadsTheQAOverrideOfTheArchivedSpec/normal_archive (0.09s)
+=== RUN   TestTheDeliveryAuthorizationIsReadBeforeTheArchiveCommit
+=== RUN   TestTheDeliveryAuthorizationIsReadBeforeTheArchiveCommit/archive_head
+=== RUN   TestTheDeliveryAuthorizationIsReadBeforeTheArchiveCommit/operator_commit_after_archive
+--- PASS: TestTheDeliveryAuthorizationIsReadBeforeTheArchiveCommit (0.40s)
+    --- PASS: TestTheDeliveryAuthorizationIsReadBeforeTheArchiveCommit/archive_head (0.19s)
+    --- PASS: TestTheDeliveryAuthorizationIsReadBeforeTheArchiveCommit/operator_commit_after_archive (0.21s)
+=== RUN   TestArchiveReportsASpecAlreadyArchivedAtTheReviewedHead
+--- PASS: TestArchiveReportsASpecAlreadyArchivedAtTheReviewedHead (0.13s)
+=== RUN   TestOperatorArchiveHistoryReadsTheRunStartAndAncestry
+--- PASS: TestOperatorArchiveHistoryReadsTheRunStartAndAncestry (0.10s)
+=== RUN   TestDeliverStatusPrintsAParkLinePerParkedItem
+=== PAUSE TestDeliverStatusPrintsAParkLinePerParkedItem
+=== RUN   TestDeliverStatusReproducesSurfaceTranscriptOne
+--- PASS: TestDeliverStatusReproducesSurfaceTranscriptOne (0.04s)
+=== RUN   TestDeliverPlanApprovesAnExplicitEmptyPathsGrant
+=== PAUSE TestDeliverPlanApprovesAnExplicitEmptyPathsGrant
+=== RUN   TestDeliverPlanRefusesANullPathsGrant
+=== PAUSE TestDeliverPlanRefusesANullPathsGrant
+=== RUN   TestDeliverStartAcceptsAnExplicitEmptyPathsGrant
+=== PAUSE TestDeliverStartAcceptsAnExplicitEmptyPathsGrant
+=== RUN   TestDeliverPlanReportsAnApprovedAndABlockedSpec
+=== PAUSE TestDeliverPlanReportsAnApprovedAndABlockedSpec
+=== RUN   TestDeliverPlanExitsZeroWhenEverySpecIsApproved
+=== PAUSE TestDeliverPlanExitsZeroWhenEverySpecIsApproved
+=== RUN   TestDeliverPlanJSONCarriesTheSameFacts
+=== PAUSE TestDeliverPlanJSONCarriesTheSameFacts
+=== RUN   TestDeliverPlanNamesSharedProductionPremises
+=== PAUSE TestDeliverPlanNamesSharedProductionPremises
+=== RUN   TestDeliverPlanIgnoresSharedTestsAndGuides
+=== PAUSE TestDeliverPlanIgnoresSharedTestsAndGuides
+=== RUN   TestDeliverPlanListsIntentThatIsNotApprovedToRun
+=== PAUSE TestDeliverPlanListsIntentThatIsNotApprovedToRun
+=== RUN   TestDeliverPlanWritesNothing
+=== PAUSE TestDeliverPlanWritesNothing
+=== RUN   TestDeliverPlanDefaultsToEveryActiveSpec
+=== PAUSE TestDeliverPlanDefaultsToEveryActiveSpec
+=== RUN   TestDeliverPlanRefusesAnUnknownSlug
+=== PAUSE TestDeliverPlanRefusesAnUnknownSlug
+=== RUN   TestDeliverPlanRefusesAnUnknownFlag
+=== PAUSE TestDeliverPlanRefusesAnUnknownFlag
+=== RUN   TestDeliverStartRefusesASpecWithoutDeliveryAuthority
+=== PAUSE TestDeliverStartRefusesASpecWithoutDeliveryAuthority
+=== RUN   TestDeliverStartAcceptsASpecWithEveryDeliveryOperation
+=== PAUSE TestDeliverStartAcceptsASpecWithEveryDeliveryOperation
+=== RUN   TestDeliverHelpNamesThePlanCommand
+=== PAUSE TestDeliverHelpNamesThePlanCommand
+=== RUN   TestDeliverStartRefusesAPrerequisiteCycle
+--- PASS: TestDeliverStartRefusesAPrerequisiteCycle (0.04s)
+=== RUN   TestDeliverStartRefusesAnUnknownPrerequisite
+--- PASS: TestDeliverStartRefusesAnUnknownPrerequisite (0.04s)
+=== RUN   TestAPrerequisiteIsMetByItsArchiveOnTheRefreshedDefaultBranch
+=== RUN   TestAPrerequisiteIsMetByItsArchiveOnTheRefreshedDefaultBranch/origin
+=== RUN   TestAPrerequisiteIsMetByItsArchiveOnTheRefreshedDefaultBranch/delivery
+--- PASS: TestAPrerequisiteIsMetByItsArchiveOnTheRefreshedDefaultBranch (0.27s)
+    --- PASS: TestAPrerequisiteIsMetByItsArchiveOnTheRefreshedDefaultBranch/origin (0.13s)
+    --- PASS: TestAPrerequisiteIsMetByItsArchiveOnTheRefreshedDefaultBranch/delivery (0.13s)
+=== RUN   TestDeliverPrerequisitePreflightAcceptsActiveAndArchivedSpecs
+--- PASS: TestDeliverPrerequisitePreflightAcceptsActiveAndArchivedSpecs (0.00s)
+=== RUN   TestDeliverPrerequisitePreflightReportsLongerCyclesDeterministically
+--- PASS: TestDeliverPrerequisitePreflightReportsLongerCyclesDeterministically (0.00s)
+=== RUN   TestPrerequisiteReaderWithoutRequiresSkipsArchiveRead
+--- PASS: TestPrerequisiteReaderWithoutRequiresSkipsArchiveRead (0.04s)
+=== RUN   TestDeliveryPublicationRequestsNoCodeRabbitReview
+=== RUN   TestDeliveryPublicationRequestsNoCodeRabbitReview/codex
+=== RUN   TestDeliveryPublicationRequestsNoCodeRabbitReview/claude
+=== RUN   TestDeliveryPublicationRequestsNoCodeRabbitReview/coderabbit
+=== RUN   TestDeliveryPublicationRequestsNoCodeRabbitReview/none
+--- PASS: TestDeliveryPublicationRequestsNoCodeRabbitReview (0.32s)
+    --- PASS: TestDeliveryPublicationRequestsNoCodeRabbitReview/codex (0.08s)
+    --- PASS: TestDeliveryPublicationRequestsNoCodeRabbitReview/claude (0.08s)
+    --- PASS: TestDeliveryPublicationRequestsNoCodeRabbitReview/coderabbit (0.08s)
+    --- PASS: TestDeliveryPublicationRequestsNoCodeRabbitReview/none (0.08s)
+=== RUN   TestInspectItemReportsAnArchivedSpec
+--- PASS: TestInspectItemReportsAnArchivedSpec (0.05s)
+=== RUN   TestReleaseMergedRunsUsesConfiguredDeliveryRemote
+=== PAUSE TestReleaseMergedRunsUsesConfiguredDeliveryRemote
+=== RUN   TestDeliverRetryPrintsOneLinePerCarriedRun
+--- PASS: TestDeliverRetryPrintsOneLinePerCarriedRun (0.00s)
+=== RUN   TestDeliverRetryStartsAnOwnerWhenNoneIsRunning
+--- PASS: TestDeliverRetryStartsAnOwnerWhenNoneIsRunning (0.04s)
+=== RUN   TestDeliverRetryHandsTheItemToALiveOwner
+--- PASS: TestDeliverRetryHandsTheItemToALiveOwner (0.04s)
+=== RUN   TestDeliverRetryReclaimsAStaleOwnerAndStartsOne
+--- PASS: TestDeliverRetryReclaimsAStaleOwnerAndStartsOne (0.04s)
+=== RUN   TestDeliverRetryRequiresOneSlug
+--- PASS: TestDeliverRetryRequiresOneSlug (0.04s)
+=== RUN   TestDeliverRetryRefusesAnEmptySlug
+--- PASS: TestDeliverRetryRefusesAnEmptySlug (0.04s)
+=== RUN   TestDeliverRetryRefusesAnExtraArgument
+--- PASS: TestDeliverRetryRefusesAnExtraArgument (0.04s)
+=== RUN   TestDeliverRetryRefusesUnknownFlag
+--- PASS: TestDeliverRetryRefusesUnknownFlag (0.04s)
+=== RUN   TestDeliverRetryRefusalStartsNoOwner
+--- PASS: TestDeliverRetryRefusalStartsNoOwner (0.04s)
+=== RUN   TestDeliveryOwnerRunsAgainForAnItemRetriedDuringItsPass
+--- PASS: TestDeliveryOwnerRunsAgainForAnItemRetriedDuringItsPass (0.04s)
+=== RUN   TestDeliveryOwnerReleasesAnIdleQueueAfterOnePass
+--- PASS: TestDeliveryOwnerReleasesAnIdleQueueAfterOnePass (0.04s)
+=== RUN   TestDeliveryOwnerFailsWhenIdleReleaseFails
+--- PASS: TestDeliveryOwnerFailsWhenIdleReleaseFails (0.04s)
+=== RUN   TestDeliveryOwnerReleasesItsClaimAfterEngineFailure
+--- PASS: TestDeliveryOwnerReleasesItsClaimAfterEngineFailure (0.04s)
+=== RUN   TestTopLevelUsageNamesDeliverRetry
+=== PAUSE TestTopLevelUsageNamesDeliverRetry
+=== RUN   TestDeliverRetryPrintsARefusalWithoutUsage
+--- PASS: TestDeliverRetryPrintsARefusalWithoutUsage (0.04s)
+=== RUN   TestDeliverRetryKeepsUsageForAnArgumentError
+--- PASS: TestDeliverRetryKeepsUsageForAnArgumentError (0.04s)
+=== RUN   TestDeliverRetryRefusalOmitsAnUnreadableItem
+=== PAUSE TestDeliverRetryRefusalOmitsAnUnreadableItem
+=== RUN   TestDeliverStatusPrintsAnItemWarning
+=== PAUSE TestDeliverStatusPrintsAnItemWarning
+=== RUN   TestDeliverStatusPrintsNoWarningLineWithoutAWarning
+=== PAUSE TestDeliverStatusPrintsNoWarningLineWithoutAWarning
+=== RUN   TestACorrectionOutsideTheArchivedSpecIsRefused
+=== RUN   TestACorrectionOutsideTheArchivedSpecIsRefused/outside.txt
+=== RUN   TestACorrectionOutsideTheArchivedSpecIsRefused/docs/history/specs/0225-example-sibling/_prd.md
+=== RUN   TestACorrectionOutsideTheArchivedSpecIsRefused/docs/history/specs/another/_prd.md
+--- PASS: TestACorrectionOutsideTheArchivedSpecIsRefused (0.33s)
+    --- PASS: TestACorrectionOutsideTheArchivedSpecIsRefused/outside.txt (0.11s)
+    --- PASS: TestACorrectionOutsideTheArchivedSpecIsRefused/docs/history/specs/0225-example-sibling/_prd.md (0.11s)
+    --- PASS: TestACorrectionOutsideTheArchivedSpecIsRefused/docs/history/specs/another/_prd.md (0.11s)
+=== RUN   TestDeliverStartRefusesWhenThisMachineCannotPublish
+=== RUN   TestDeliverStartRefusesWhenThisMachineCannotPublish/transcript
+=== RUN   TestDeliverStartRefusesWhenThisMachineCannotPublish/multiple_failures
+--- PASS: TestDeliverStartRefusesWhenThisMachineCannotPublish (0.27s)
+    --- PASS: TestDeliverStartRefusesWhenThisMachineCannotPublish/transcript (0.13s)
+    --- PASS: TestDeliverStartRefusesWhenThisMachineCannotPublish/multiple_failures (0.14s)
+=== RUN   TestDeliverStartProceedsOnAForgeWarning
+--- PASS: TestDeliverStartProceedsOnAForgeWarning (0.14s)
+=== RUN   TestDeliverStatusPrintsTheItemWorktree
+=== PAUSE TestDeliverStatusPrintsTheItemWorktree
+=== RUN   TestDeliverCommandRejectsUnknownSlugBeforeRecordingQueue
+=== PAUSE TestDeliverCommandRejectsUnknownSlugBeforeRecordingQueue
+=== RUN   TestDeliverCommandStopsAndResumesPersistedQueue
+=== PAUSE TestDeliverCommandStopsAndResumesPersistedQueue
+=== RUN   TestEachDeliveryGetsItsOwnBranch
+=== PAUSE TestEachDeliveryGetsItsOwnBranch
+=== RUN   TestDeliverNeverTouchesTheUserCheckout
+--- PASS: TestDeliverNeverTouchesTheUserCheckout (0.33s)
+=== RUN   TestResumeAcceptsARealArchiveCommit
+--- PASS: TestResumeAcceptsARealArchiveCommit (0.15s)
+=== RUN   TestResumeRefusesAnArchiveCommitWithExtraChanges
+=== RUN   TestResumeRefusesAnArchiveCommitWithExtraChanges/unrelated_path
+=== RUN   TestResumeRefusesAnArchiveCommitWithExtraChanges/changed_PRD_body
+--- PASS: TestResumeRefusesAnArchiveCommitWithExtraChanges (0.26s)
+    --- PASS: TestResumeRefusesAnArchiveCommitWithExtraChanges/unrelated_path (0.12s)
+    --- PASS: TestResumeRefusesAnArchiveCommitWithExtraChanges/changed_PRD_body (0.14s)
+=== RUN   TestDeliverCommandRefusesUnknownFlags
+=== PAUSE TestDeliverCommandRefusesUnknownFlags
+=== RUN   TestDeliverStartRecordsAndPrintsTheTokenCeiling
+=== PAUSE TestDeliverStartRecordsAndPrintsTheTokenCeiling
+=== RUN   TestDeliverStartRefusesAMaxTokensBelowOne
+=== RUN   TestDeliverStartRefusesAMaxTokensBelowOne/0
+=== RUN   TestDeliverStartRefusesAMaxTokensBelowOne/-1
+--- PASS: TestDeliverStartRefusesAMaxTokensBelowOne (0.08s)
+    --- PASS: TestDeliverStartRefusesAMaxTokensBelowOne/0 (0.04s)
+    --- PASS: TestDeliverStartRefusesAMaxTokensBelowOne/-1 (0.04s)
+=== RUN   TestDeliverStartRefusesANonIntegerMaxTokens
+=== RUN   TestDeliverStartRefusesANonIntegerMaxTokens/1.5
+=== RUN   TestDeliverStartRefusesANonIntegerMaxTokens/not-a-number
+=== RUN   TestDeliverStartRefusesANonIntegerMaxTokens/9223372036854775808
+--- PASS: TestDeliverStartRefusesANonIntegerMaxTokens (0.12s)
+    --- PASS: TestDeliverStartRefusesANonIntegerMaxTokens/1.5 (0.05s)
+    --- PASS: TestDeliverStartRefusesANonIntegerMaxTokens/not-a-number (0.04s)
+    --- PASS: TestDeliverStartRefusesANonIntegerMaxTokens/9223372036854775808 (0.04s)
+=== RUN   TestDeliverStatusPrintsTheTokenCeilingQuestion
+=== PAUSE TestDeliverStatusPrintsTheTokenCeilingQuestion
+=== RUN   TestDeliverRetryIsRefusedAtTheTokenCeiling
+=== PAUSE TestDeliverRetryIsRefusedAtTheTokenCeiling
+=== RUN   TestDeliverHelpNamesTheTokenCeiling
+=== PAUSE TestDeliverHelpNamesTheTokenCeiling
+=== RUN   TestDeliverStartPrintsTokensNone
+=== PAUSE TestDeliverStartPrintsTokensNone
+=== RUN   TestDeliverStatusPrintsTheUsageLine
+=== PAUSE TestDeliverStatusPrintsTheUsageLine
+=== RUN   TestDeliverStatusPrintsNoRunsRecorded
+=== PAUSE TestDeliverStatusPrintsNoRunsRecorded
+=== RUN   TestDoctorStorageIsPartialWhenTheRunDatabaseCannotBeRead
+--- PASS: TestDoctorStorageIsPartialWhenTheRunDatabaseCannotBeRead (0.00s)
+=== RUN   TestImplementGatedGraphRunsRepositoryVerificationAtSettlement
+=== PAUSE TestImplementGatedGraphRunsRepositoryVerificationAtSettlement
+=== RUN   TestImplementRepositoryAtSettlementOffRunsOnlyDeclaredCommands
+=== PAUSE TestImplementRepositoryAtSettlementOffRunsOnlyDeclaredCommands
+=== RUN   TestRunImplementRemovedQAFlagExplainsTaskGraph
+=== PAUSE TestRunImplementRemovedQAFlagExplainsTaskGraph
+=== RUN   TestRunImplementInteractiveInputDoesNotChooseQAGate
+=== PAUSE TestRunImplementInteractiveInputDoesNotChooseQAGate
+=== RUN   TestRunImplementSelectionOverrideRejectsPartialBeforeConfigLoad
+=== PAUSE TestRunImplementSelectionOverrideRejectsPartialBeforeConfigLoad
+=== RUN   TestRunImplementSettledQAGateReportsWithoutRun
+=== PAUSE TestRunImplementSettledQAGateReportsWithoutRun
+=== RUN   TestRunImplementDeclinedQAGateReportsWithoutRun
+=== PAUSE TestRunImplementDeclinedQAGateReportsWithoutRun
+=== RUN   TestBudgetClockCrossesAfterTheSettledTask
+--- PASS: TestBudgetClockCrossesAfterTheSettledTask (0.26s)
+=== RUN   TestBudgetExceededKeepsWorkSettledBeforeTheBudget
+--- PASS: TestBudgetExceededKeepsWorkSettledBeforeTheBudget (0.14s)
+=== RUN   TestRunImplementQAVerdictMatrix
+=== PAUSE TestRunImplementQAVerdictMatrix
+=== RUN   TestRunImplementQAStepSkippedWhenAnyTaskFails
+=== PAUSE TestRunImplementQAStepSkippedWhenAnyTaskFails
+=== RUN   TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict
+=== PAUSE TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict
+=== RUN   TestRunImplementQAPromptStatesSpecTargetBranchFromRunRecord
+=== PAUSE TestRunImplementQAPromptStatesSpecTargetBranchFromRunRecord
+=== RUN   TestRunSettleReclaimsDeadOwnerActiveRun
+=== PAUSE TestRunSettleReclaimsDeadOwnerActiveRun
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration/settle
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row/qa-report
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row/archive
+=== RUN   TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row/settle
+--- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape (4.78s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only (0.32s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only/qa-report (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only/archive (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0213_PR_only/settle (0.20s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only (0.32s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only/archive (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0220_PR_only/settle (0.20s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only (0.32s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only/archive (0.07s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Oraculum_PR_only/settle (0.20s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR (0.33s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR/archive (0.07s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Spec_0227_annotated_PR/settle (0.21s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR (0.32s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR/archive (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/Fluxus_covered_declarations_and_PR/settle (0.20s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only (0.32s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only/archive (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_only/settle (0.20s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network (0.32s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network/qa-report (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network/archive (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_network/settle (0.20s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds (0.33s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds/archive (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/all_three_kinds/settle (0.21s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only (0.32s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only/archive (0.07s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/declared_only/settle (0.20s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence (0.27s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence/archive (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/network_without_outside_evidence/settle (0.16s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host (0.27s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host/archive (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/empty_network_host/settle (0.15s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network (0.27s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network/qa-report (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network/archive (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/another_environment_beside_network/settle (0.16s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped (0.27s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped/archive (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/PR_and_skipped/settle (0.15s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding (0.27s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding/qa-report (0.05s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding/archive (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/finding/settle (0.15s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration (0.27s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration/qa-report (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration/archive (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/uncovered_declaration/settle (0.15s)
+    --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row (0.27s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row/qa-report (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row/archive (0.06s)
+        --- PASS: TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape/no_unmet_row/settle (0.15s)
+=== RUN   TestSettleNamesTheReportItRefused
+--- PASS: TestSettleNamesTheReportItRefused (0.22s)
+=== RUN   TestRunSpecDoesNotParkAQualifyingPartialAsEnvironmentOnly
+=== RUN   TestRunSpecDoesNotParkAQualifyingPartialAsEnvironmentOnly/pull_request_rows_only
+=== RUN   TestRunSpecDoesNotParkAQualifyingPartialAsEnvironmentOnly/PR_and_network_outside_evidence
+=== RUN   TestRunSpecDoesNotParkAQualifyingPartialAsEnvironmentOnly/another_environment_row
+=== RUN   TestRunSpecDoesNotParkAQualifyingPartialAsEnvironmentOnly/network_without_outside_evidence
+=== RUN   TestRunSpecDoesNotParkAQualifyingPartialAsEnvironmentOnly/declared_rows_only
+=== RUN   TestRunSpecDoesNotParkAQualifyingPartialAsEnvironmentOnly/finding_beside_pull_request_rows
+--- PASS: TestRunSpecDoesNotParkAQualifyingPartialAsEnvironmentOnly (0.52s)
+    --- PASS: TestRunSpecDoesNotParkAQualifyingPartialAsEnvironmentOnly/pull_request_rows_only (0.09s)
+    --- PASS: TestRunSpecDoesNotParkAQualifyingPartialAsEnvironmentOnly/PR_and_network_outside_evidence (0.08s)
+    --- PASS: TestRunSpecDoesNotParkAQualifyingPartialAsEnvironmentOnly/another_environment_row (0.08s)
+    --- PASS: TestRunSpecDoesNotParkAQualifyingPartialAsEnvironmentOnly/network_without_outside_evidence (0.08s)
+    --- PASS: TestRunSpecDoesNotParkAQualifyingPartialAsEnvironmentOnly/declared_rows_only (0.09s)
+    --- PASS: TestRunSpecDoesNotParkAQualifyingPartialAsEnvironmentOnly/finding_beside_pull_request_rows (0.09s)
+=== RUN   TestRunQAReportAcceptCommandAcceptsAQualifyingPartial
+--- PASS: TestRunQAReportAcceptCommandAcceptsAQualifyingPartial (0.00s)
+=== RUN   TestQAReportAcceptRefusesAPendingReport
+=== PAUSE TestQAReportAcceptRefusesAPendingReport
+=== RUN   TestQAReportAcceptRefusesAHollowPass
+=== PAUSE TestQAReportAcceptRefusesAHollowPass
+=== RUN   TestQAReportAcceptRefusesAnEmptyFrontMatter
+=== PAUSE TestQAReportAcceptRefusesAnEmptyFrontMatter
+=== RUN   TestRunQAReportAcceptCommandFailsClosed
+=== RUN   TestRunQAReportAcceptCommandFailsClosed/failed_report
+=== RUN   TestRunQAReportAcceptCommandFailsClosed/missing_report
+=== RUN   TestRunQAReportAcceptCommandFailsClosed/unparseable_report
+--- PASS: TestRunQAReportAcceptCommandFailsClosed (0.00s)
+    --- PASS: TestRunQAReportAcceptCommandFailsClosed/failed_report (0.00s)
+    --- PASS: TestRunQAReportAcceptCommandFailsClosed/missing_report (0.00s)
+    --- PASS: TestRunQAReportAcceptCommandFailsClosed/unparseable_report (0.00s)
+=== RUN   TestReadinessRemoteFormsAndDeliverySelection
+=== RUN   TestReadinessRemoteFormsAndDeliverySelection/https://github.com/owner/repository.git
+=== RUN   TestReadinessRemoteFormsAndDeliverySelection/ssh://git@github.com/owner/repository.git
+=== RUN   TestReadinessRemoteFormsAndDeliverySelection/git@github.com:owner/repository.git
+=== RUN   TestReadinessRemoteFormsAndDeliverySelection/enterprise
+=== RUN   TestReadinessRemoteFormsAndDeliverySelection/unknown_host
+=== RUN   TestReadinessRemoteFormsAndDeliverySelection/outside_Git
+--- PASS: TestReadinessRemoteFormsAndDeliverySelection (0.00s)
+    --- PASS: TestReadinessRemoteFormsAndDeliverySelection/https://github.com/owner/repository.git (0.00s)
+    --- PASS: TestReadinessRemoteFormsAndDeliverySelection/ssh://git@github.com/owner/repository.git (0.00s)
+    --- PASS: TestReadinessRemoteFormsAndDeliverySelection/git@github.com:owner/repository.git (0.00s)
+    --- PASS: TestReadinessRemoteFormsAndDeliverySelection/enterprise (0.00s)
+    --- PASS: TestReadinessRemoteFormsAndDeliverySelection/unknown_host (0.00s)
+    --- PASS: TestReadinessRemoteFormsAndDeliverySelection/outside_Git (0.00s)
+=== RUN   TestDeliverReleaseReleasesAnEarlierRunOfTheMergedSpec
+=== PAUSE TestDeliverReleaseReleasesAnEarlierRunOfTheMergedSpec
+=== RUN   TestReconcileReleasesARunProvenByTheDeliveryMergeRecord
+=== PAUSE TestReconcileReleasesARunProvenByTheDeliveryMergeRecord
+=== RUN   TestReconcileReleasesAnArchivedSpecRunWithoutARecord
+=== PAUSE TestReconcileReleasesAnArchivedSpecRunWithoutARecord
+=== RUN   TestReconcileFailsWhenDeliveryMergeRecordsCannotBeRead
+=== PAUSE TestReconcileFailsWhenDeliveryMergeRecordsCannotBeRead
+=== RUN   TestReopenRefusesPendingQATaskWithoutMutation
+=== PAUSE TestReopenRefusesPendingQATaskWithoutMutation
+=== RUN   TestReopenRefusesSpecWithoutTerminalQATask
+=== PAUSE TestReopenRefusesSpecWithoutTerminalQATask
+=== RUN   TestReopenRefusesQATaskResolvedOutsideSpecRoot
+=== PAUSE TestReopenRefusesQATaskResolvedOutsideSpecRoot
+=== RUN   TestReviewRecordsTheSpecsACandidateArchives
+--- PASS: TestReviewRecordsTheSpecsACandidateArchives (0.19s)
+=== RUN   TestReviewRecordsNoArchivedSpecForAnActiveSpec
+--- PASS: TestReviewRecordsNoArchivedSpecForAnActiveSpec (0.15s)
+=== RUN   TestReviewNamesTheCorrectiveSpecForFindingsAfterArchive
+--- PASS: TestReviewNamesTheCorrectiveSpecForFindingsAfterArchive (0.15s)
+=== RUN   TestReviewAfterArchiveWithoutFindingsNamesNoCorrectiveSpec
+--- PASS: TestReviewAfterArchiveWithoutFindingsNamesNoCorrectiveSpec (0.16s)
+=== RUN   TestDeliveryReviewResultCarriesArchivedSpecs
+--- PASS: TestDeliveryReviewResultCarriesArchivedSpecs (0.00s)
+=== RUN   TestReviewValidatorDismissesADaemonSettlementAsC2
+--- PASS: TestReviewValidatorDismissesADaemonSettlementAsC2 (0.16s)
+=== RUN   TestReviewConventionC2IncludesEverySettlementSection
+=== RUN   TestReviewConventionC2IncludesEverySettlementSection/recorded_paths
+=== RUN   TestReviewConventionC2IncludesEverySettlementSection/carry-forward
+=== RUN   TestReviewConventionC2IncludesEverySettlementSection/adjacent_settlement_sections
+=== RUN   TestReviewConventionC2IncludesEverySettlementSection/crosses_requirement
+=== RUN   TestReviewConventionC2IncludesEverySettlementSection/invalid_zero
+=== RUN   TestReviewConventionC2IncludesEverySettlementSection/past_end
+--- PASS: TestReviewConventionC2IncludesEverySettlementSection (0.17s)
+    --- PASS: TestReviewConventionC2IncludesEverySettlementSection/recorded_paths (0.01s)
+    --- PASS: TestReviewConventionC2IncludesEverySettlementSection/carry-forward (0.01s)
+    --- PASS: TestReviewConventionC2IncludesEverySettlementSection/adjacent_settlement_sections (0.01s)
+    --- PASS: TestReviewConventionC2IncludesEverySettlementSection/crosses_requirement (0.01s)
+    --- PASS: TestReviewConventionC2IncludesEverySettlementSection/invalid_zero (0.00s)
+    --- PASS: TestReviewConventionC2IncludesEverySettlementSection/past_end (0.01s)
+=== RUN   TestDeliveryReviewResultAdvancesDismissedFindings
+--- PASS: TestDeliveryReviewResultAdvancesDismissedFindings (0.00s)
+=== RUN   TestDeliveryReviewResultParksStandingFindings
+--- PASS: TestDeliveryReviewResultParksStandingFindings (0.00s)
+=== RUN   TestDeliveryReviewResultAdvancesACeilingClosedRecord
+=== RUN   TestDeliveryReviewResultAdvancesACeilingClosedRecord/ceiling-closed
+=== RUN   TestDeliveryReviewResultAdvancesACeilingClosedRecord/blocked
+--- PASS: TestDeliveryReviewResultAdvancesACeilingClosedRecord (0.00s)
+    --- PASS: TestDeliveryReviewResultAdvancesACeilingClosedRecord/ceiling-closed (0.00s)
+    --- PASS: TestDeliveryReviewResultAdvancesACeilingClosedRecord/blocked (0.00s)
+=== RUN   TestReviewListsOnlyTheArchivedSpecsTheCandidateChanged
+--- PASS: TestReviewListsOnlyTheArchivedSpecsTheCandidateChanged (0.19s)
+=== RUN   TestOverrideArchiveIsEligibleForConventionC5
+=== RUN   TestOverrideArchiveIsEligibleForConventionC5/docs/history/specs
+=== RUN   TestOverrideArchiveIsEligibleForConventionC5/docs/history/specs/_prd.md
+=== RUN   TestOverrideArchiveIsEligibleForConventionC5/docs/history/specs/task_01.md
+=== RUN   TestOverrideArchiveIsEligibleForConventionC5/docs/history/specs/qa/report.md
+=== RUN   TestOverrideArchiveIsEligibleForConventionC5/specs/_archived
+=== RUN   TestOverrideArchiveIsEligibleForConventionC5/specs/_archived/_prd.md
+=== RUN   TestOverrideArchiveIsEligibleForConventionC5/specs/_archived/task_01.md
+=== RUN   TestOverrideArchiveIsEligibleForConventionC5/specs/_archived/qa/report.md
+--- PASS: TestOverrideArchiveIsEligibleForConventionC5 (0.14s)
+    --- PASS: TestOverrideArchiveIsEligibleForConventionC5/docs/history/specs (0.07s)
+        --- PASS: TestOverrideArchiveIsEligibleForConventionC5/docs/history/specs/_prd.md (0.01s)
+        --- PASS: TestOverrideArchiveIsEligibleForConventionC5/docs/history/specs/task_01.md (0.02s)
+        --- PASS: TestOverrideArchiveIsEligibleForConventionC5/docs/history/specs/qa/report.md (0.01s)
+    --- PASS: TestOverrideArchiveIsEligibleForConventionC5/specs/_archived (0.07s)
+        --- PASS: TestOverrideArchiveIsEligibleForConventionC5/specs/_archived/_prd.md (0.01s)
+        --- PASS: TestOverrideArchiveIsEligibleForConventionC5/specs/_archived/task_01.md (0.01s)
+        --- PASS: TestOverrideArchiveIsEligibleForConventionC5/specs/_archived/qa/report.md (0.01s)
+=== RUN   TestArchiveWithoutOverrideIsNotEligibleForC5
+=== RUN   TestArchiveWithoutOverrideIsNotEligibleForC5/missing_PRD
+=== RUN   TestArchiveWithoutOverrideIsNotEligibleForC5/no_override
+=== RUN   TestArchiveWithoutOverrideIsNotEligibleForC5/false_override
+=== RUN   TestArchiveWithoutOverrideIsNotEligibleForC5/missing_approval
+=== RUN   TestArchiveWithoutOverrideIsNotEligibleForC5/blank_approval
+=== RUN   TestArchiveWithoutOverrideIsNotEligibleForC5/missing_reason
+=== RUN   TestArchiveWithoutOverrideIsNotEligibleForC5/blank_reason
+=== RUN   TestArchiveWithoutOverrideIsNotEligibleForC5/body_only
+=== RUN   TestArchiveWithoutOverrideIsNotEligibleForC5/unclosed_front_matter
+=== RUN   TestArchiveWithoutOverrideIsNotEligibleForC5/active_Spec
+--- PASS: TestArchiveWithoutOverrideIsNotEligibleForC5 (0.41s)
+    --- PASS: TestArchiveWithoutOverrideIsNotEligibleForC5/missing_PRD (0.04s)
+    --- PASS: TestArchiveWithoutOverrideIsNotEligibleForC5/no_override (0.04s)
+    --- PASS: TestArchiveWithoutOverrideIsNotEligibleForC5/false_override (0.04s)
+    --- PASS: TestArchiveWithoutOverrideIsNotEligibleForC5/missing_approval (0.04s)
+    --- PASS: TestArchiveWithoutOverrideIsNotEligibleForC5/blank_approval (0.04s)
+    --- PASS: TestArchiveWithoutOverrideIsNotEligibleForC5/missing_reason (0.04s)
+    --- PASS: TestArchiveWithoutOverrideIsNotEligibleForC5/blank_reason (0.04s)
+    --- PASS: TestArchiveWithoutOverrideIsNotEligibleForC5/body_only (0.04s)
+    --- PASS: TestArchiveWithoutOverrideIsNotEligibleForC5/unclosed_front_matter (0.04s)
+    --- PASS: TestArchiveWithoutOverrideIsNotEligibleForC5/active_Spec (0.03s)
+=== RUN   TestReviewOmitsQAEvidenceAndUpstreamSkills
+--- PASS: TestReviewOmitsQAEvidenceAndUpstreamSkills (0.24s)
+=== RUN   TestReviewKeepsTheQAReportInTheDiff
+--- PASS: TestReviewKeepsTheQAReportInTheDiff (0.18s)
+=== RUN   TestReviewReadsAnArchivedSpecFromTheCandidate
+--- PASS: TestReviewReadsAnArchivedSpecFromTheCandidate (0.15s)
+=== RUN   TestReviewPromptCarriesTheDeliveryConventionsAndTheFindingGrammar
+--- PASS: TestReviewPromptCarriesTheDeliveryConventionsAndTheFindingGrammar (0.00s)
+=== RUN   TestSettleRecordsTheUndeclaredPathsOfItsTaskCommit
+=== PAUSE TestSettleRecordsTheUndeclaredPathsOfItsTaskCommit
+=== RUN   TestSettleRecordsNothingWhenEveryPathIsDeclared
+=== PAUSE TestSettleRecordsNothingWhenEveryPathIsDeclared
+=== RUN   TestRunSettleCommitsFailedTaskWorktreeWithDaemonMessage
+=== PAUSE TestRunSettleCommitsFailedTaskWorktreeWithDaemonMessage
+=== RUN   TestSettleAppliesEligibilityToAQATask
+=== RUN   TestSettleAppliesEligibilityToAQATask/refuses_an_ineligible_report_after_Verification
+=== RUN   TestSettleAppliesEligibilityToAQATask/completes_a_QA_Task_with_a_qualifying_report
+=== RUN   TestSettleAppliesEligibilityToAQATask/leaves_non-QA_settlement_unchanged
+--- PASS: TestSettleAppliesEligibilityToAQATask (0.52s)
+    --- PASS: TestSettleAppliesEligibilityToAQATask/refuses_an_ineligible_report_after_Verification (0.16s)
+    --- PASS: TestSettleAppliesEligibilityToAQATask/completes_a_QA_Task_with_a_qualifying_report (0.19s)
+    --- PASS: TestSettleAppliesEligibilityToAQATask/leaves_non-QA_settlement_unchanged (0.18s)
+=== RUN   TestSettleQATaskRefusesAHollowPass
+=== PAUSE TestSettleQATaskRefusesAHollowPass
+=== RUN   TestRunSettleWarnsWhenOtherSpecTasksAreFailed
+=== PAUSE TestRunSettleWarnsWhenOtherSpecTasksAreFailed
+=== RUN   TestRunSettleNoCommitPrintsNoCommitPathsOrSharedWarning
+=== PAUSE TestRunSettleNoCommitPrintsNoCommitPathsOrSharedWarning
+=== RUN   TestRunSettleUsesConfiguredExternalSpecRoot
+=== PAUSE TestRunSettleUsesConfiguredExternalSpecRoot
+=== RUN   TestSettleTaskStatusRetargetsKeptRunWorktreeAndCleansUpAfterIntegration
+=== PAUSE TestSettleTaskStatusRetargetsKeptRunWorktreeAndCleansUpAfterIntegration
+=== RUN   TestRunSettleSkipsStaleKeptRunWorktreeAndUsesFailedCheckout
+=== PAUSE TestRunSettleSkipsStaleKeptRunWorktreeAndUsesFailedCheckout
+=== RUN   TestRunSettleRetargetsKeptTaskWorktreeAndCleansUpAfterIntegration
+=== PAUSE TestRunSettleRetargetsKeptTaskWorktreeAndCleansUpAfterIntegration
+=== RUN   TestRunSettleTaskWorktreeIntegrationConflictKeepsSurfaces
+=== PAUSE TestRunSettleTaskWorktreeIntegrationConflictKeepsSurfaces
+=== RUN   TestSettleAcceptsCompletedTaskWithUncommittedWorkInCheckout
+=== PAUSE TestSettleAcceptsCompletedTaskWithUncommittedWorkInCheckout
+=== RUN   TestSettleAcceptsCompletedTaskFromKeptTaskWorktreeAfterHookRefusal
+=== PAUSE TestSettleAcceptsCompletedTaskFromKeptTaskWorktreeAfterHookRefusal
+=== RUN   TestSettleCommitsDeletedAndRenamedWorkFromTaskWorktree
+=== PAUSE TestSettleCommitsDeletedAndRenamedWorkFromTaskWorktree
+=== RUN   TestSettleCommitsUnstagedDeletionFromCheckoutSurface
+=== PAUSE TestSettleCommitsUnstagedDeletionFromCheckoutSurface
+=== RUN   TestSettleRecoversMeasuredHookRefusedWork
+=== PAUSE TestSettleRecoversMeasuredHookRefusedWork
+=== RUN   TestSettleRefusesCompletedTaskWhenNoSurfaceHoldsUncommittedWork
+=== PAUSE TestSettleRefusesCompletedTaskWhenNoSurfaceHoldsUncommittedWork
+=== RUN   TestRunSettleRefusalEnumeratesCandidateStatuses
+=== PAUSE TestRunSettleRefusalEnumeratesCandidateStatuses
+=== RUN   TestRunSettleRequiresSpecAndTask
+=== PAUSE TestRunSettleRequiresSpecAndTask
+=== RUN   TestRunSettlePreflightRefusalsWriteNothing
+=== PAUSE TestRunSettlePreflightRefusalsWriteNothing
+=== RUN   TestRunSettleVerificationFailureLeavesTaskAndTreeUntouched
+=== PAUSE TestRunSettleVerificationFailureLeavesTaskAndTreeUntouched
+=== RUN   TestSettleVerificationRunsSurfaceCommandsVerbatim
+=== PAUSE TestSettleVerificationRunsSurfaceCommandsVerbatim
+=== RUN   TestSettleExecutesCommandFromModifiedSource
+=== PAUSE TestSettleExecutesCommandFromModifiedSource
+=== RUN   TestSettleRefusesMissingCommitAuthority
+=== PAUSE TestSettleRefusesMissingCommitAuthority
+=== RUN   TestSettleClassifiesGovernedRemoval
+=== PAUSE TestSettleClassifiesGovernedRemoval
+=== RUN   TestSettleCommitsOrdinaryWorkWithoutRecord
+=== PAUSE TestSettleCommitsOrdinaryWorkWithoutRecord
+=== RUN   TestSettleVerificationFailureKeepsHookRefusedWorkInTaskWorktree
+=== PAUSE TestSettleVerificationFailureKeepsHookRefusedWorkInTaskWorktree
+=== RUN   TestSettleVerificationUnknownVerdictStopsWithoutCommitting
+=== PAUSE TestSettleVerificationUnknownVerdictStopsWithoutCommitting
+=== RUN   TestRunSettleActiveRunOnSameWorkingTreeBlocks
+=== PAUSE TestRunSettleActiveRunOnSameWorkingTreeBlocks
+=== RUN   TestRunSettleHelpDocumentsContract
+=== PAUSE TestRunSettleHelpDocumentsContract
+=== RUN   TestRunSpecCheckCleanText
+=== PAUSE TestRunSpecCheckCleanText
+=== RUN   TestRunSpecCheckErrorText
+=== PAUSE TestRunSpecCheckErrorText
+=== RUN   TestRunSpecCheckGapStrictPromotion
+=== PAUSE TestRunSpecCheckGapStrictPromotion
+=== RUN   TestRunSpecCheckJSONWritesOneObjectPerSpec
+=== PAUSE TestRunSpecCheckJSONWritesOneObjectPerSpec
+=== RUN   TestRunSpecCheckUnknownSlugIsUsageError
+=== PAUSE TestRunSpecCheckUnknownSlugIsUsageError
+=== RUN   TestRunSpecCheckWithoutSlugChecksEveryActiveSpec
+=== PAUSE TestRunSpecCheckWithoutSlugChecksEveryActiveSpec
+=== RUN   TestRunSpecCheckUnreadableRootIsUsageError
+=== PAUSE TestRunSpecCheckUnreadableRootIsUsageError
+=== RUN   TestRunSpecCheckHelpAppearsInTopLevelUsageAndCommandList
+=== PAUSE TestRunSpecCheckHelpAppearsInTopLevelUsageAndCommandList
+=== RUN   TestRunSpecAuditCleanText
+=== PAUSE TestRunSpecAuditCleanText
+=== RUN   TestRunSpecAuditResidueText
+=== PAUSE TestRunSpecAuditResidueText
+=== RUN   TestRunSpecAuditUndeliveredTextNamesHoldingBranch
+=== PAUSE TestRunSpecAuditUndeliveredTextNamesHoldingBranch
+=== RUN   TestRunSpecAuditJSONWritesOneObject
+=== PAUSE TestRunSpecAuditJSONWritesOneObject
+=== RUN   TestRunSpecAuditUnknownSlugIsUsageError
+=== PAUSE TestRunSpecAuditUnknownSlugIsUsageError
+=== RUN   TestRunSpecAuditHelpAppearsInUsageAndCommandList
+=== PAUSE TestRunSpecAuditHelpAppearsInUsageAndCommandList
+=== RUN   TestRunSpecAuditPreservesSpecCheckBehavior
+=== PAUSE TestRunSpecAuditPreservesSpecCheckBehavior
+=== RUN   TestSupersedeRejectsANonActiveDeliverer
+=== RUN   TestSupersedeRejectsANonActiveDeliverer/draft
+=== RUN   TestSupersedeRejectsANonActiveDeliverer/archived_in_active_root
+=== RUN   TestSupersedeRejectsANonActiveDeliverer/malformed_frontmatter
+=== RUN   TestSupersedeRejectsANonActiveDeliverer/missing_status
+=== RUN   TestSupersedeRejectsANonActiveDeliverer/absent
+=== RUN   TestSupersedeRejectsANonActiveDeliverer/missing_PRD
+--- PASS: TestSupersedeRejectsANonActiveDeliverer (0.22s)
+    --- PASS: TestSupersedeRejectsANonActiveDeliverer/draft (0.04s)
+    --- PASS: TestSupersedeRejectsANonActiveDeliverer/archived_in_active_root (0.04s)
+    --- PASS: TestSupersedeRejectsANonActiveDeliverer/malformed_frontmatter (0.04s)
+    --- PASS: TestSupersedeRejectsANonActiveDeliverer/missing_status (0.04s)
+    --- PASS: TestSupersedeRejectsANonActiveDeliverer/absent (0.04s)
+    --- PASS: TestSupersedeRejectsANonActiveDeliverer/missing_PRD (0.04s)
+=== RUN   TestSupersedeAcceptsAnActiveDeliverer
+--- PASS: TestSupersedeAcceptsAnActiveDeliverer (0.04s)
+=== RUN   TestSupersedeAcceptsASupersessionArchivedDeliverer
+--- PASS: TestSupersedeAcceptsASupersessionArchivedDeliverer (0.05s)
+=== RUN   TestSupersedeRejectsAnUnmarkedArchivedDeliverer
+--- PASS: TestSupersedeRejectsAnUnmarkedArchivedDeliverer (0.04s)
+=== CONT  TestRunArchiveMovesCompletedSpecAndStampsMetadata
+=== CONT  TestSettleAcceptsCompletedTaskFromKeptTaskWorktreeAfterHookRefusal
+=== CONT  TestRunSettleHelpDocumentsContract
+=== CONT  TestRunSpecAuditPreservesSpecCheckBehavior
+=== CONT  TestRunSpecAuditHelpAppearsInUsageAndCommandList
+=== CONT  TestRunSpecAuditUnknownSlugIsUsageError
+--- PASS: TestRunSettleHelpDocumentsContract (0.00s)
+=== CONT  TestRunSpecCheckHelpAppearsInTopLevelUsageAndCommandList
+=== CONT  TestRunSpecAuditJSONWritesOneObject
+--- PASS: TestRunSpecAuditHelpAppearsInUsageAndCommandList (0.00s)
+=== CONT  TestRunSpecCheckUnreadableRootIsUsageError
+=== CONT  TestRunSpecAuditUndeliveredTextNamesHoldingBranch
+=== CONT  TestRunSpecAuditResidueText
+=== CONT  TestRunSpecAuditCleanText
+--- PASS: TestRunSpecCheckHelpAppearsInTopLevelUsageAndCommandList (0.00s)
+=== CONT  TestRunSpecCheckWithoutSlugChecksEveryActiveSpec
+--- PASS: TestRunSpecAuditUnknownSlugIsUsageError (0.09s)
+=== CONT  TestRunSpecCheckUnknownSlugIsUsageError
+--- PASS: TestRunSpecCheckUnreadableRootIsUsageError (0.14s)
+=== CONT  TestRunSpecCheckJSONWritesOneObjectPerSpec
+--- PASS: TestRunArchiveMovesCompletedSpecAndStampsMetadata (0.15s)
+=== CONT  TestRunSpecCheckGapStrictPromotion
+--- PASS: TestRunSpecAuditPreservesSpecCheckBehavior (0.18s)
+=== CONT  TestRunSpecCheckCleanText
+--- PASS: TestRunSpecCheckWithoutSlugChecksEveryActiveSpec (0.22s)
+=== CONT  TestTopLevelUsageNamesDeliverRetry
+--- PASS: TestRunSpecAuditJSONWritesOneObject (0.22s)
+=== CONT  TestSettleAcceptsCompletedTaskWithUncommittedWorkInCheckout
+--- PASS: TestTopLevelUsageNamesDeliverRetry (0.00s)
+=== CONT  TestRunSettleTaskWorktreeIntegrationConflictKeepsSurfaces
+--- PASS: TestRunSpecCheckUnknownSlugIsUsageError (0.14s)
+=== CONT  TestRunSettleRetargetsKeptTaskWorktreeAndCleansUpAfterIntegration
+--- PASS: TestRunSpecAuditCleanText (0.24s)
+=== CONT  TestRunSettleSkipsStaleKeptRunWorktreeAndUsesFailedCheckout
+--- PASS: TestRunSpecCheckJSONWritesOneObjectPerSpec (0.20s)
+=== CONT  TestSettleTaskStatusRetargetsKeptRunWorktreeAndCleansUpAfterIntegration
+=== CONT  TestRunSpecCheckErrorText
+--- PASS: TestRunSpecCheckCleanText (0.19s)
+--- PASS: TestRunSpecAuditUndeliveredTextNamesHoldingBranch (0.39s)
+=== CONT  TestRunSettleUsesConfiguredExternalSpecRoot
+--- PASS: TestRunSpecAuditResidueText (0.39s)
+=== CONT  TestRunSettleNoCommitPrintsNoCommitPathsOrSharedWarning
+--- PASS: TestRunSpecCheckGapStrictPromotion (0.35s)
+=== CONT  TestSettleVerificationRunsSurfaceCommandsVerbatim
+=== CONT  TestRunSettleWarnsWhenOtherSpecTasksAreFailed
+--- PASS: TestRunSpecCheckErrorText (0.15s)
+=== CONT  TestSettleQATaskRefusesAHollowPass
+--- PASS: TestSettleAcceptsCompletedTaskWithUncommittedWorkInCheckout (0.46s)
+--- PASS: TestSettleAcceptsCompletedTaskFromKeptTaskWorktreeAfterHookRefusal (0.83s)
+=== CONT  TestRunSettleActiveRunOnSameWorkingTreeBlocks
+--- PASS: TestRunSettleSkipsStaleKeptRunWorktreeAndUsesFailedCheckout (0.61s)
+=== CONT  TestRunSettleCommitsFailedTaskWorktreeWithDaemonMessage
+--- PASS: TestRunSettleNoCommitPrintsNoCommitPathsOrSharedWarning (0.49s)
+=== CONT  TestSettleRecordsNothingWhenEveryPathIsDeclared
+--- PASS: TestRunSettleUsesConfiguredExternalSpecRoot (0.52s)
+=== CONT  TestSettleRecordsTheUndeclaredPathsOfItsTaskCommit
+--- PASS: TestRunSettleWarnsWhenOtherSpecTasksAreFailed (0.43s)
+=== CONT  TestSettleVerificationUnknownVerdictStopsWithoutCommitting
+--- PASS: TestSettleVerificationRunsSurfaceCommandsVerbatim (0.49s)
+=== CONT  TestReopenRefusesQATaskResolvedOutsideSpecRoot
+--- PASS: TestSettleQATaskRefusesAHollowPass (0.34s)
+=== CONT  TestSettleRefusesMissingCommitAuthority
+--- PASS: TestRunSettleActiveRunOnSameWorkingTreeBlocks (0.19s)
+=== CONT  TestSettleExecutesCommandFromModifiedSource
+--- PASS: TestRunSettleRetargetsKeptTaskWorktreeAndCleansUpAfterIntegration (0.85s)
+=== CONT  TestReopenRefusesSpecWithoutTerminalQATask
+--- PASS: TestRunSettleTaskWorktreeIntegrationConflictKeepsSurfaces (0.87s)
+=== CONT  TestReopenRefusesPendingQATaskWithoutMutation
+--- PASS: TestReopenRefusesQATaskResolvedOutsideSpecRoot (0.11s)
+=== CONT  TestReconcileFailsWhenDeliveryMergeRecordsCannotBeRead
+--- PASS: TestReopenRefusesSpecWithoutTerminalQATask (0.09s)
+=== CONT  TestSettleVerificationFailureKeepsHookRefusedWorkInTaskWorktree
+--- PASS: TestReopenRefusesPendingQATaskWithoutMutation (0.09s)
+=== CONT  TestSettleClassifiesGovernedRemoval
+--- PASS: TestSettleVerificationUnknownVerdictStopsWithoutCommitting (0.38s)
+=== CONT  TestReconcileReleasesAnArchivedSpecRunWithoutARecord
+--- PASS: TestSettleTaskStatusRetargetsKeptRunWorktreeAndCleansUpAfterIntegration (0.98s)
+=== CONT  TestReconcileReleasesARunProvenByTheDeliveryMergeRecord
+--- PASS: TestRunSettleCommitsFailedTaskWorktreeWithDaemonMessage (0.50s)
+=== CONT  TestSettleCommitsOrdinaryWorkWithoutRecord
+--- PASS: TestSettleRecordsNothingWhenEveryPathIsDeclared (0.49s)
+=== CONT  TestRunSettleRefusalEnumeratesCandidateStatuses
+--- PASS: TestSettleRecordsTheUndeclaredPathsOfItsTaskCommit (0.46s)
+=== CONT  TestRunSettleVerificationFailureLeavesTaskAndTreeUntouched
+--- PASS: TestSettleRefusesMissingCommitAuthority (0.39s)
+=== CONT  TestDeliverReleaseReleasesAnEarlierRunOfTheMergedSpec
+--- PASS: TestReconcileFailsWhenDeliveryMergeRecordsCannotBeRead (0.34s)
+=== CONT  TestImplementGatedGraphRunsRepositoryVerificationAtSettlement
+--- PASS: TestSettleExecutesCommandFromModifiedSource (0.49s)
+=== CONT  TestDeliverStatusPrintsNoRunsRecorded
+--- PASS: TestDeliverStatusPrintsNoRunsRecorded (0.10s)
+=== CONT  TestRunSettlePreflightRefusalsWriteNothing
+=== RUN   TestRunSettlePreflightRefusalsWriteNothing/repository_must_resolve
+=== RUN   TestRunSettlePreflightRefusalsWriteNothing/spec_must_load
+--- PASS: TestSettleClassifiesGovernedRemoval (0.45s)
+=== CONT  TestRunSettleRequiresSpecAndTask
+=== RUN   TestRunSettleRequiresSpecAndTask/missing_spec
+=== RUN   TestRunSettleRequiresSpecAndTask/missing_task
+--- PASS: TestRunSettleRequiresSpecAndTask (0.01s)
+    --- PASS: TestRunSettleRequiresSpecAndTask/missing_spec (0.00s)
+    --- PASS: TestRunSettleRequiresSpecAndTask/missing_task (0.00s)
+=== CONT  TestQAReportAcceptRefusesAnEmptyFrontMatter
+--- PASS: TestQAReportAcceptRefusesAnEmptyFrontMatter (0.00s)
+=== CONT  TestEachDeliveryGetsItsOwnBranch
+--- PASS: TestRunSettleRefusalEnumeratesCandidateStatuses (0.30s)
+=== CONT  TestDeliverCommandStopsAndResumesPersistedQueue
+--- PASS: TestRunSettleVerificationFailureLeavesTaskAndTreeUntouched (0.39s)
+=== CONT  TestRunImplementQAVerdictMatrix
+=== RUN   TestRunImplementQAVerdictMatrix/pass
+--- PASS: TestSettleVerificationFailureKeepsHookRefusedWorkInTaskWorktree (0.62s)
+=== CONT  TestDeliverCommandRejectsUnknownSlugBeforeRecordingQueue
+--- PASS: TestDeliverCommandStopsAndResumesPersistedQueue (0.11s)
+=== CONT  TestRunImplementDeclinedQAGateReportsWithoutRun
+--- PASS: TestSettleCommitsOrdinaryWorkWithoutRecord (0.47s)
+=== CONT  TestQAReportAcceptRefusesAHollowPass
+--- PASS: TestQAReportAcceptRefusesAHollowPass (0.01s)
+=== CONT  TestDeliverStatusPrintsTheItemWorktree
+=== RUN   TestRunSettlePreflightRefusalsWriteNothing/task_id_must_exist
+--- PASS: TestDeliverCommandRejectsUnknownSlugBeforeRecordingQueue (0.11s)
+=== CONT  TestDeliverStatusPrintsNoWarningLineWithoutAWarning
+--- PASS: TestDeliverStatusPrintsNoWarningLineWithoutAWarning (0.10s)
+=== CONT  TestQAReportAcceptRefusesAPendingReport
+--- PASS: TestQAReportAcceptRefusesAPendingReport (0.00s)
+=== CONT  TestRunImplementSettledQAGateReportsWithoutRun
+--- PASS: TestRunImplementDeclinedQAGateReportsWithoutRun (0.22s)
+=== CONT  TestRunSettleReclaimsDeadOwnerActiveRun
+=== RUN   TestRunSettlePreflightRefusalsWriteNothing/pending_task_points_to_implement
+--- PASS: TestEachDeliveryGetsItsOwnBranch (0.42s)
+=== CONT  TestDeliverStatusPrintsAnItemWarning
+--- PASS: TestDeliverStatusPrintsTheItemWorktree (0.32s)
+=== CONT  TestRunImplementSelectionOverrideRejectsPartialBeforeConfigLoad
+--- PASS: TestRunImplementSettledQAGateReportsWithoutRun (0.17s)
+=== CONT  TestDeliverRetryRefusalOmitsAnUnreadableItem
+--- PASS: TestDeliverStatusPrintsAnItemWarning (0.10s)
+=== CONT  TestSettleRecoversMeasuredHookRefusedWork
+--- PASS: TestDeliverRetryRefusalOmitsAnUnreadableItem (0.01s)
+=== CONT  TestRunImplementQAPromptStatesSpecTargetBranchFromRunRecord
+--- PASS: TestRunImplementSelectionOverrideRejectsPartialBeforeConfigLoad (0.10s)
+=== CONT  TestSettleRefusesCompletedTaskWhenNoSurfaceHoldsUncommittedWork
+=== RUN   TestRunSettlePreflightRefusalsWriteNothing/in_progress_task_points_to_implement
+=== RUN   TestRunSettlePreflightRefusalsWriteNothing/completed_task_with_committed_work_has_nothing_to_settle
+=== CONT  TestRunImplementInteractiveInputDoesNotChooseQAGate
+--- PASS: TestRunSettleReclaimsDeadOwnerActiveRun (0.45s)
+=== RUN   TestRunImplementInteractiveInputDoesNotChooseQAGate/input_cannot_add_a_gate_absent_from_the_graph
+--- PASS: TestImplementGatedGraphRunsRepositoryVerificationAtSettlement (1.04s)
+=== CONT  TestRunImplementQAStepSkippedWhenAnyTaskFails
+--- PASS: TestSettleRefusesCompletedTaskWhenNoSurfaceHoldsUncommittedWork (0.33s)
+=== CONT  TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict
+=== RUN   TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict/pass_ends_Clean
+--- PASS: TestRunSettlePreflightRefusalsWriteNothing (1.04s)
+    --- PASS: TestRunSettlePreflightRefusalsWriteNothing/repository_must_resolve (0.01s)
+    --- PASS: TestRunSettlePreflightRefusalsWriteNothing/spec_must_load (0.22s)
+    --- PASS: TestRunSettlePreflightRefusalsWriteNothing/task_id_must_exist (0.20s)
+    --- PASS: TestRunSettlePreflightRefusalsWriteNothing/pending_task_points_to_implement (0.20s)
+    --- PASS: TestRunSettlePreflightRefusalsWriteNothing/in_progress_task_points_to_implement (0.19s)
+    --- PASS: TestRunSettlePreflightRefusalsWriteNothing/completed_task_with_committed_work_has_nothing_to_settle (0.22s)
+=== CONT  TestRunImplementRemovedQAFlagExplainsTaskGraph
+--- PASS: TestRunImplementRemovedQAFlagExplainsTaskGraph (0.00s)
+=== CONT  TestSettleCommitsUnstagedDeletionFromCheckoutSurface
+=== RUN   TestRunImplementQAVerdictMatrix/qualifying_partial
+--- PASS: TestRunImplementQAPromptStatesSpecTargetBranchFromRunRecord (0.76s)
+=== CONT  TestDeliverHelpNamesTheLimitFlags
+--- PASS: TestDeliverHelpNamesTheLimitFlags (0.00s)
+=== CONT  TestImplementRepositoryAtSettlementOffRunsOnlyDeclaredCommands
+=== RUN   TestRunImplementInteractiveInputDoesNotChooseQAGate/input_cannot_remove_a_gate_declared_by_the_graph
+--- PASS: TestDeliverReleaseReleasesAnEarlierRunOfTheMergedSpec (1.61s)
+=== CONT  TestDeliverCommandRefusesUnknownFlags
+=== RUN   TestDeliverCommandRefusesUnknownFlags/start
+=== PAUSE TestDeliverCommandRefusesUnknownFlags/start
+=== RUN   TestDeliverCommandRefusesUnknownFlags/status
+=== PAUSE TestDeliverCommandRefusesUnknownFlags/status
+=== RUN   TestDeliverCommandRefusesUnknownFlags/resume
+=== PAUSE TestDeliverCommandRefusesUnknownFlags/resume
+=== RUN   TestDeliverCommandRefusesUnknownFlags/stop
+=== PAUSE TestDeliverCommandRefusesUnknownFlags/stop
+=== CONT  TestSettleCommitsDeletedAndRenamedWorkFromTaskWorktree
+--- PASS: TestSettleRecoversMeasuredHookRefusedWork (0.98s)
+=== CONT  TestDeliverPlanExitsZeroWhenEverySpecIsApproved
+=== CONT  TestReleaseMergedRunsUsesConfiguredDeliveryRemote
+--- PASS: TestSettleCommitsUnstagedDeletionFromCheckoutSurface (0.50s)
+--- PASS: TestRunImplementQAStepSkippedWhenAnyTaskFails (0.70s)
+=== CONT  TestDeliverPlanJSONCarriesTheSameFacts
+--- PASS: TestReconcileReleasesARunProvenByTheDeliveryMergeRecord (1.93s)
+=== CONT  TestDeliverStatusPrintsTheUsageLine
+--- PASS: TestDeliverStatusPrintsTheUsageLine (0.03s)
+=== CONT  TestDeliverPlanReportsAnApprovedAndABlockedSpec
+=== RUN   TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict/fail_ends_Unresolved
+--- PASS: TestReconcileReleasesAnArchivedSpecRunWithoutARecord (2.12s)
+=== CONT  TestDeliverStartPrintsTokensNone
+--- PASS: TestDeliverPlanExitsZeroWhenEverySpecIsApproved (0.52s)
+=== CONT  TestDeliverReleaseRefusesAnItemWithoutAMergeCommit
+--- PASS: TestDeliverStartPrintsTokensNone (0.28s)
+=== CONT  TestDeliverReleaseRefusesAnItemWithoutACandidateHead
+--- PASS: TestDeliverPlanJSONCarriesTheSameFacts (0.57s)
+=== CONT  TestDeliverHelpNamesTheTokenCeiling
+--- PASS: TestDeliverHelpNamesTheTokenCeiling (0.00s)
+=== CONT  TestDeliverReleaseNeverTouchesAnotherSpecsRun
+--- PASS: TestDeliverPlanReportsAnApprovedAndABlockedSpec (0.50s)
+=== CONT  TestDeliverStartAcceptsAnExplicitEmptyPathsGrant
+=== RUN   TestRunImplementQAVerdictMatrix/non-qualifying_partial
+--- PASS: TestSettleCommitsDeletedAndRenamedWorkFromTaskWorktree (0.87s)
+=== CONT  TestDeliverReleaseLeavesAnActiveRunAlone
+--- PASS: TestImplementRepositoryAtSettlementOffRunsOnlyDeclaredCommands (0.96s)
+=== CONT  TestDeliverRetryIsRefusedAtTheTokenCeiling
+--- PASS: TestDeliverRetryIsRefusedAtTheTokenCeiling (0.02s)
+=== CONT  TestDeliverReleaseKeepsAnUnrepresentedRun
+--- PASS: TestRunImplementInteractiveInputDoesNotChooseQAGate (1.53s)
+    --- PASS: TestRunImplementInteractiveInputDoesNotChooseQAGate/input_cannot_add_a_gate_absent_from_the_graph (0.53s)
+    --- PASS: TestRunImplementInteractiveInputDoesNotChooseQAGate/input_cannot_remove_a_gate_declared_by_the_graph (0.99s)
+=== CONT  TestDeliverStatusPrintsTheTokenCeilingQuestion
+--- PASS: TestDeliverStatusPrintsTheTokenCeilingQuestion (0.01s)
+=== CONT  TestDeliverStartRecordsAndPrintsTheTokenCeiling
+--- PASS: TestDeliverReleaseRefusesAnItemWithoutAMergeCommit (0.36s)
+=== CONT  TestDeliverPlanRefusesANullPathsGrant
+--- PASS: TestDeliverReleaseRefusesAnItemWithoutACandidateHead (0.32s)
+=== CONT  TestDeliverStatusPrintsAParkLinePerParkedItem
+=== CONT  TestDeliverReleaseRemovesEveryProvenRunOfTheMergedSpec
+--- PASS: TestDeliverReleaseLeavesAnActiveRunAlone (0.21s)
+--- PASS: TestDeliverStartAcceptsAnExplicitEmptyPathsGrant (0.34s)
+=== CONT  TestRunResolveSelectionOverrideRejectsPartialBeforeConfigLoad
+=== RUN   TestRunResolveSelectionOverrideRejectsPartialBeforeConfigLoad/agent_only_detached
+=== RUN   TestRunResolveSelectionOverrideRejectsPartialBeforeConfigLoad/model_only
+=== RUN   TestRunResolveSelectionOverrideRejectsPartialBeforeConfigLoad/reasoning_only
+=== RUN   TestRunResolveSelectionOverrideRejectsPartialBeforeConfigLoad/agent_and_model
+=== RUN   TestRunResolveSelectionOverrideRejectsPartialBeforeConfigLoad/agent_and_reasoning
+=== RUN   TestRunResolveSelectionOverrideRejectsPartialBeforeConfigLoad/model_and_reasoning
+--- PASS: TestRunResolveSelectionOverrideRejectsPartialBeforeConfigLoad (0.02s)
+    --- PASS: TestRunResolveSelectionOverrideRejectsPartialBeforeConfigLoad/agent_only_detached (0.00s)
+    --- PASS: TestRunResolveSelectionOverrideRejectsPartialBeforeConfigLoad/model_only (0.00s)
+    --- PASS: TestRunResolveSelectionOverrideRejectsPartialBeforeConfigLoad/reasoning_only (0.00s)
+    --- PASS: TestRunResolveSelectionOverrideRejectsPartialBeforeConfigLoad/agent_and_model (0.00s)
+    --- PASS: TestRunResolveSelectionOverrideRejectsPartialBeforeConfigLoad/agent_and_reasoning (0.00s)
+    --- PASS: TestRunResolveSelectionOverrideRejectsPartialBeforeConfigLoad/model_and_reasoning (0.00s)
+=== CONT  TestDeliveryRunResultRefusesAnExitWithoutANewRun
+--- PASS: TestDeliveryRunResultRefusesAnExitWithoutANewRun (0.00s)
+=== CONT  TestDeliveryRunResultRefusesAFailedRun
+--- PASS: TestDeliveryRunResultRefusesAFailedRun (0.00s)
+=== CONT  TestDeliverHelpNamesThePlanCommand
+--- PASS: TestDeliverHelpNamesThePlanCommand (0.00s)
+=== CONT  TestArchiveCommandQAOverrideRequiresApprovalAndReason
+=== RUN   TestArchiveCommandQAOverrideRequiresApprovalAndReason/override_without_approval_or_reason
+=== PAUSE TestArchiveCommandQAOverrideRequiresApprovalAndReason/override_without_approval_or_reason
+=== RUN   TestArchiveCommandQAOverrideRequiresApprovalAndReason/override_without_approval
+=== PAUSE TestArchiveCommandQAOverrideRequiresApprovalAndReason/override_without_approval
+=== RUN   TestArchiveCommandQAOverrideRequiresApprovalAndReason/override_without_reason
+=== PAUSE TestArchiveCommandQAOverrideRequiresApprovalAndReason/override_without_reason
+=== RUN   TestArchiveCommandQAOverrideRequiresApprovalAndReason/approval_without_override
+=== PAUSE TestArchiveCommandQAOverrideRequiresApprovalAndReason/approval_without_override
+=== RUN   TestArchiveCommandQAOverrideRequiresApprovalAndReason/reason_without_override
+=== PAUSE TestArchiveCommandQAOverrideRequiresApprovalAndReason/reason_without_override
+=== CONT  TestImplementProfileCategoriesDerivesQAFromGraphDeclaration
+=== RUN   TestImplementProfileCategoriesDerivesQAFromGraphDeclaration/declared_gate_resolves_QA_category
+=== PAUSE TestImplementProfileCategoriesDerivesQAFromGraphDeclaration/declared_gate_resolves_QA_category
+=== RUN   TestImplementProfileCategoriesDerivesQAFromGraphDeclaration/legacy_graph_does_not_resolve_QA_category
+=== PAUSE TestImplementProfileCategoriesDerivesQAFromGraphDeclaration/legacy_graph_does_not_resolve_QA_category
+=== CONT  TestDeliverStartAcceptsASpecWithEveryDeliveryOperation
+--- PASS: TestDeliverStatusPrintsAParkLinePerParkedItem (0.10s)
+=== CONT  TestDeliveryRunResultMapsACleanExit
+--- PASS: TestDeliveryRunResultMapsACleanExit (0.00s)
+=== CONT  TestDeliverStartRefusesASpecWithoutDeliveryAuthority
+--- PASS: TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict (1.64s)
+    --- PASS: TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict/pass_ends_Clean (0.83s)
+    --- PASS: TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict/fail_ends_Unresolved (0.80s)
+=== CONT  TestDeliveryRunResultMapsAnUnresolvedRun
+--- PASS: TestDeliveryRunResultMapsAnUnresolvedRun (0.00s)
+=== CONT  TestDeliverStatusPrintsNoQuestionWithoutAParkedItem
+--- PASS: TestDeliverReleaseNeverTouchesAnotherSpecsRun (0.45s)
+=== CONT  TestInvocationProfileOverrideOmittedUsesTaskQAAndReviewProfiles
+--- PASS: TestInvocationProfileOverrideOmittedUsesTaskQAAndReviewProfiles (0.00s)
+=== CONT  TestBranchIntegrityPreflightWatchDisregardsOnlySupersededFailedQACycles
+--- PASS: TestDeliverStatusPrintsNoQuestionWithoutAParkedItem (0.10s)
+=== CONT  TestDeliverStatusPrintsOnePendingQuestion
+--- PASS: TestDeliverStartRecordsAndPrintsTheTokenCeiling (0.32s)
+=== CONT  TestDeliverPlanRefusesAnUnknownFlag
+--- PASS: TestDeliverPlanRefusesANullPathsGrant (0.33s)
+=== CONT  TestDeliverStartRecordsNoneForOmittedLimits
+--- PASS: TestDeliverStatusPrintsOnePendingQuestion (0.10s)
+=== CONT  TestDeliveryRunResultMapsABudgetExceededRun
+--- PASS: TestDeliveryRunResultMapsABudgetExceededRun (0.00s)
+=== CONT  TestBranchIntegrityPreflightListsTaskWorkAndSupersededQAReportSeparately
+--- PASS: TestBranchIntegrityPreflightListsTaskWorkAndSupersededQAReportSeparately (0.03s)
+=== CONT  TestRunWatchSelectionOverrideRejectsPartialBeforeConfigLoad
+--- PASS: TestRunWatchSelectionOverrideRejectsPartialBeforeConfigLoad (0.00s)
+=== CONT  TestRunArchiveQAOverrideReportsOverride
+--- PASS: TestDeliverStartAcceptsASpecWithEveryDeliveryOperation (0.30s)
+=== CONT  TestRunArchiveHelp
+--- PASS: TestRunArchiveHelp (0.00s)
+=== CONT  TestDeliverStartRecordsAndPrintsItsLimits
+--- PASS: TestDeliverPlanRefusesAnUnknownFlag (0.12s)
+=== CONT  TestDeliverPlanRefusesAnUnknownSlug
+--- PASS: TestDeliverStartRefusesASpecWithoutDeliveryAuthority (0.30s)
+=== CONT  TestArchiveRefusesAHollowPass
+--- PASS: TestRunArchiveQAOverrideReportsOverride (0.13s)
+=== CONT  TestDeliveryRunResultIgnoresARunThatExistedBeforeTheInvocation
+--- PASS: TestDeliveryRunResultIgnoresARunThatExistedBeforeTheInvocation (0.00s)
+=== CONT  TestDeliverPlanIgnoresSharedTestsAndGuides
+--- PASS: TestDeliverPlanRefusesAnUnknownSlug (0.13s)
+=== CONT  TestDeliverPlanNamesSharedProductionPremises
+--- PASS: TestArchiveRefusesAHollowPass (0.12s)
+=== CONT  TestRunArchiveUsesConfiguredExternalSpecRoot
+--- PASS: TestReleaseMergedRunsUsesConfiguredDeliveryRemote (1.46s)
+=== CONT  TestRunArchiveRefusesIncompleteTask
+--- PASS: TestDeliverReleaseKeepsAnUnrepresentedRun (0.70s)
+=== CONT  TestRunArchiveRefusesMissingOrNonPassingQA
+=== RUN   TestRunArchiveRefusesMissingOrNonPassingQA/missing_QA_Report
+--- PASS: TestDeliverStartRecordsNoneForOmittedLimits (0.33s)
+=== CONT  TestDeliverPlanDefaultsToEveryActiveSpec
+=== RUN   TestRunArchiveRefusesMissingOrNonPassingQA/failing_QA_Report
+--- PASS: TestRunArchiveRefusesIncompleteTask (0.12s)
+=== CONT  TestRunArchiveDeclaredUnreachableContract
+=== RUN   TestRunArchiveDeclaredUnreachableContract/passing_report_remains_unchanged
+--- PASS: TestRunArchiveUsesConfiguredExternalSpecRoot (0.16s)
+=== CONT  TestDeliverPlanWritesNothing
+--- PASS: TestDeliverStartRecordsAndPrintsItsLimits (0.34s)
+=== CONT  TestDeliverPlanApprovesAnExplicitEmptyPathsGrant
+=== RUN   TestRunArchiveRefusesMissingOrNonPassingQA/partial_QA_Report
+=== RUN   TestRunArchiveDeclaredUnreachableContract/declared-only_partial_report_archives
+=== RUN   TestRunImplementQAVerdictMatrix/fail
+=== RUN   TestRunArchiveRefusesMissingOrNonPassingQA/finding-blocked_pass_QA_Report
+=== RUN   TestRunArchiveDeclaredUnreachableContract/surplus_declarations_still_cover_declared_rows
+--- PASS: TestRunArchiveRefusesMissingOrNonPassingQA (0.47s)
+    --- PASS: TestRunArchiveRefusesMissingOrNonPassingQA/missing_QA_Report (0.11s)
+    --- PASS: TestRunArchiveRefusesMissingOrNonPassingQA/failing_QA_Report (0.12s)
+    --- PASS: TestRunArchiveRefusesMissingOrNonPassingQA/partial_QA_Report (0.12s)
+    --- PASS: TestRunArchiveRefusesMissingOrNonPassingQA/finding-blocked_pass_QA_Report (0.11s)
+=== CONT  TestArchiveRefusesAnEmptyFrontMatter
+--- PASS: TestDeliverPlanIgnoresSharedTestsAndGuides (0.54s)
+=== CONT  TestDeliverPlanListsIntentThatIsNotApprovedToRun
+=== RUN   TestRunArchiveDeclaredUnreachableContract/finding-blocked_partial_report_refuses
+=== CONT  TestDeliverCommandRefusesUnknownFlags/start
+--- PASS: TestDeliverPlanApprovesAnExplicitEmptyPathsGrant (0.32s)
+--- PASS: TestDeliverPlanNamesSharedProductionPremises (0.53s)
+=== CONT  TestDeliverCommandRefusesUnknownFlags/resume
+--- PASS: TestDeliverPlanWritesNothing (0.37s)
+=== CONT  TestDeliverCommandRefusesUnknownFlags/status
+=== CONT  TestDeliverCommandRefusesUnknownFlags/stop
+=== CONT  TestArchiveCommandQAOverrideRequiresApprovalAndReason/override_without_approval_or_reason
+=== CONT  TestImplementProfileCategoriesDerivesQAFromGraphDeclaration/declared_gate_resolves_QA_category
+=== CONT  TestArchiveCommandQAOverrideRequiresApprovalAndReason/reason_without_override
+=== CONT  TestArchiveCommandQAOverrideRequiresApprovalAndReason/approval_without_override
+=== CONT  TestArchiveCommandQAOverrideRequiresApprovalAndReason/override_without_reason
+=== CONT  TestArchiveCommandQAOverrideRequiresApprovalAndReason/override_without_approval
+--- PASS: TestArchiveCommandQAOverrideRequiresApprovalAndReason (0.00s)
+    --- PASS: TestArchiveCommandQAOverrideRequiresApprovalAndReason/override_without_approval_or_reason (0.00s)
+    --- PASS: TestArchiveCommandQAOverrideRequiresApprovalAndReason/reason_without_override (0.00s)
+    --- PASS: TestArchiveCommandQAOverrideRequiresApprovalAndReason/approval_without_override (0.00s)
+    --- PASS: TestArchiveCommandQAOverrideRequiresApprovalAndReason/override_without_reason (0.00s)
+    --- PASS: TestArchiveCommandQAOverrideRequiresApprovalAndReason/override_without_approval (0.00s)
+=== CONT  TestImplementProfileCategoriesDerivesQAFromGraphDeclaration/legacy_graph_does_not_resolve_QA_category
+--- PASS: TestImplementProfileCategoriesDerivesQAFromGraphDeclaration (0.00s)
+    --- PASS: TestImplementProfileCategoriesDerivesQAFromGraphDeclaration/declared_gate_resolves_QA_category (0.00s)
+    --- PASS: TestImplementProfileCategoriesDerivesQAFromGraphDeclaration/legacy_graph_does_not_resolve_QA_category (0.00s)
+--- PASS: TestDeliverPlanDefaultsToEveryActiveSpec (0.53s)
+=== RUN   TestRunArchiveDeclaredUnreachableContract/environment-blocked_partial_report_refuses
+--- PASS: TestArchiveRefusesAnEmptyFrontMatter (0.13s)
+--- PASS: TestDeliverCommandRefusesUnknownFlags (0.00s)
+    --- PASS: TestDeliverCommandRefusesUnknownFlags/start (0.10s)
+    --- PASS: TestDeliverCommandRefusesUnknownFlags/status (0.09s)
+    --- PASS: TestDeliverCommandRefusesUnknownFlags/resume (0.11s)
+    --- PASS: TestDeliverCommandRefusesUnknownFlags/stop (0.07s)
+=== RUN   TestRunArchiveDeclaredUnreachableContract/declaration_shortfall_refuses
+=== RUN   TestRunArchiveDeclaredUnreachableContract/failing_report_refuses_exactly_as_before
+--- PASS: TestDeliverPlanListsIntentThatIsNotApprovedToRun (0.27s)
+--- PASS: TestRunArchiveDeclaredUnreachableContract (0.67s)
+    --- PASS: TestRunArchiveDeclaredUnreachableContract/passing_report_remains_unchanged (0.13s)
+    --- PASS: TestRunArchiveDeclaredUnreachableContract/declared-only_partial_report_archives (0.12s)
+    --- PASS: TestRunArchiveDeclaredUnreachableContract/surplus_declarations_still_cover_declared_rows (0.11s)
+    --- PASS: TestRunArchiveDeclaredUnreachableContract/finding-blocked_partial_report_refuses (0.13s)
+    --- PASS: TestRunArchiveDeclaredUnreachableContract/environment-blocked_partial_report_refuses (0.07s)
+    --- PASS: TestRunArchiveDeclaredUnreachableContract/declaration_shortfall_refuses (0.06s)
+    --- PASS: TestRunArchiveDeclaredUnreachableContract/failing_report_refuses_exactly_as_before (0.05s)
+--- PASS: TestDeliverReleaseRemovesEveryProvenRunOfTheMergedSpec (1.34s)
+--- PASS: TestBranchIntegrityPreflightWatchDisregardsOnlySupersededFailedQACycles (1.26s)
+=== RUN   TestRunImplementQAVerdictMatrix/missing_report
+=== RUN   TestRunImplementQAVerdictMatrix/unreadable_verdict
+--- PASS: TestRunImplementQAVerdictMatrix (4.58s)
+    --- PASS: TestRunImplementQAVerdictMatrix/pass (1.04s)
+    --- PASS: TestRunImplementQAVerdictMatrix/qualifying_partial (1.01s)
+    --- PASS: TestRunImplementQAVerdictMatrix/non-qualifying_partial (1.07s)
+    --- PASS: TestRunImplementQAVerdictMatrix/fail (0.66s)
+    --- PASS: TestRunImplementQAVerdictMatrix/missing_report (0.40s)
+    --- PASS: TestRunImplementQAVerdictMatrix/unreadable_verdict (0.41s)
+PASS
+suiteguard: guard cost: measured 9356 paths; fingerprint took 316.665375ms before and 267.58725ms after
+ok  	roundfix/internal/cli	28.938s
