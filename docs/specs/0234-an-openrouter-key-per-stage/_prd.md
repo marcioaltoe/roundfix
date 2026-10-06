@@ -50,6 +50,8 @@ Spec after 0233.
   ADR-0231: "Project Config cannot set it". The subscription rule stands and
   the implementation key changes no selectable model, ADR-0235: "OpenAI and
   Anthropic models run only through the codex and claude subscriptions".
+  ADR-0238 applies: "A light tier runs low-complexity Tasks on an open model",
+  and this Spec routes the implementation key helper it introduced.
   ADR-0200 and ADR-0209 stay as they are: the judge stays advisory and asks
   the same questions. ADR-0208 is honored by adopting nothing, since Spec
   0233 owns the one Backlog Entry that shares this context. ADR-0229 and ADR-0237 do not apply, because no Delivery Queue
