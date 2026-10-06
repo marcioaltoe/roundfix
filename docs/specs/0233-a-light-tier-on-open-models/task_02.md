@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0233-a-light-tier-on-open-models
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -104,3 +104,68 @@ Task files and the log in a temporary Home.
 - `_prd.md` → Goals; User Stories 2 and 3; Core Features 1, 2, 3, 4 and 5; Success Metric 5
 - `_techspec.md` → Interfaces; Invariants; Data Models; API Contract 1; API Contract 2; API Contract 3; Testing Approach; Build Order 2
 - ADR-0238; ADR-0235; ADR-0231; ADR-0027; ADR-0002
+
+## Result
+
+Implemented this Task's configuration, parsing, tier rule and spend-log slice.
+Dispatch, runner, daemon, judge, guides, skills and selection profiles are
+unchanged. The pre-existing `status: in_progress` is preserved; settlement and
+declared Verification remain with the Daemon.
+
+- User Config: `Config.OpenRouter` loads the default model list and US$10
+  ceiling, preserves an explicit empty list as off, and accepts custom models
+  and a positive finite ceiling. Model ids are checked for `<author>/<slug>`
+  without whitespace, then passed to the existing subscription predicate as
+  `opencode` / `openrouter/<id>`. `TestLightTierUserConfig` exercises defaults,
+  custom values, off, all four required refused entries, malformed ids and
+  list shapes, and every required refused ceiling with its contract message.
+- Project Config: both keys are removed before validation, preserving the
+  User Config values and emitting one existing-format warning per key.
+  `TestLightTierUserConfig` proves that invalid project values are ignored,
+  with exact warning text, both with defaults and with explicit user values.
+- Tier rule: `TierFor` returns light only for non-QA `low` Tasks with no
+  governed creates/interface/deletes reference; instruction references never
+  count. `TestTierFor` parses disposable Task files for every clause, including
+  ordinary write references and a governed instruction beside a governed
+  write. `TestPlanEnabled` covers zero/empty plans and keeps key availability
+  separate from enablement so later dispatch can explain a missing-key skip.
+- Light Spend Log: `AppendSpend` records the schema, UTC time and prompt
+  metadata as one JSON line under the UTC month's path, enforcing directory
+  mode 0700 and file mode 0600, including existing storage. `ReadMonth` sums
+  costs, returns zero without creating storage for a missing file, and returns
+  an error rather than a partial sum for malformed records or negative costs.
+  `TestLightSpendLog` covers append, sum, zero/unreported spend, missing files,
+  malformed records (including an invalid timestamp), negative costs,
+  September/October separation, a local September time in UTC October, and
+  new/existing file modes.
+- Supporting contracts: `TestTaskCarriesComplexity` proves graph load and
+  reload retain trimmed complexity, tolerate custom/missing values, and leave
+  every other reloaded Task field unchanged. The parser's error paths are
+  untouched. `TestOpenRouterImplementKeyNamesOneVariable` uses a fake lookup
+  for set, empty, absent and generic-only keys, asserting exactly one lookup
+  of the implementation variable and no lookup of `OPENROUTER_API_KEY`.
+
+Focused implementation evidence:
+
+- Before implementation, `GOCACHE=/private/tmp/roundfix-task02-go-cache rtk proxy go test -count=1 ./internal/config ./internal/spec` exited 1 on the
+  new tests' missing configuration symbols and Task complexity field.
+- After the final code and test edits,
+  `GOCACHE=/private/tmp/roundfix-task02-go-cache rtk proxy go test -count=1 ./internal/config ./internal/spec ./internal/lighttier` exited 0:
+  config 0.999s, spec 19.524s, lighttier 0.358s. These package checks include
+  all five required new tests and existing config/spec regression tests.
+- `rtk proxy gofmt -w` formatted the changed Go files.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0; changed-path
+  inspection found only this Task's declared source/test paths and its Task
+  file. The Task status change from pending to in_progress predates this turn.
+- The first check using the normal Go cache was sandbox-blocked; all subsequent
+  checks used the disposable task cache above. New tests use temporary Homes
+  and Spec/repository files, with no network or real Roundfix Home access.
+
+The Task's `## Verification` commands and repository delivery gates were not
+run in this Daemon-assigned turn. No commit, push or Pull Request was made.
+No follow-up implementation was added to this slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261006T004151Z_0e07759cbdbec8e5`
+- Source commit: `d9d932f9e78bc4c04526e64ff8db6b012a4636b4`

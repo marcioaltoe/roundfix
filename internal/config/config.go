@@ -55,6 +55,7 @@ type Jev struct {
 }
 
 type Config struct {
+	OpenRouter   OpenRouter
 	Jev          Jev
 	Defaults     Defaults
 	Runtimes     Runtimes
@@ -279,6 +280,7 @@ type jevOverlay struct {
 }
 
 type configOverlay struct {
+	OpenRouter   *openRouterOverlay   `yaml:"openrouter"`
 	Jev          *jevOverlay          `yaml:"jev"`
 	Defaults     *defaultsOverlay     `yaml:"defaults"`
 	Runtimes     *runtimesOverlay     `yaml:"runtimes"`
@@ -704,6 +706,10 @@ func (warnings *configWarnings) warnIgnoredProjectSetting(name string) {
 func Builtin() Config {
 	general, _ := RecommendedProfile(CategoryGeneral)
 	return Config{
+		OpenRouter: OpenRouter{
+			LightModels:                []string{DefaultLightModel},
+			ImplementMonthlyCeilingUSD: DefaultImplementMonthlyCeilingUSD,
+		},
 		Defaults: Defaults{
 			Agent:        defaultAgent,
 			AutoCommit:   true,
@@ -1559,6 +1565,9 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 		}
 		return fmt.Errorf("parse config %q: %w", label, err)
 	}
+	if err := prepareLightTierConfig(&document, warnings, source); err != nil {
+		return fmt.Errorf("parse config %q: %w", label, err)
+	}
 	if source == ProfileSourceProject && removeYAMLPath(&document, []string{"runs", "max_active"}) {
 		warnings.warnIgnoredProjectSetting("runs.max_active")
 	}
@@ -1693,6 +1702,14 @@ func encodeYAMLNode(node *yaml.Node) ([]byte, error) {
 }
 
 func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
+	if source != ProfileSourceProject && overlay.OpenRouter != nil {
+		if overlay.OpenRouter.LightModels != nil {
+			config.OpenRouter.LightModels = append([]string{}, (*overlay.OpenRouter.LightModels)...)
+		}
+		if overlay.OpenRouter.ImplementMonthlyCeilingUSD != nil {
+			config.OpenRouter.ImplementMonthlyCeilingUSD = *overlay.OpenRouter.ImplementMonthlyCeilingUSD
+		}
+	}
 	if source != ProfileSourceProject && overlay.Jev != nil && overlay.Jev.MonthlyCeilingUSD != nil {
 		config.Jev.MonthlyCeilingUSD = *overlay.Jev.MonthlyCeilingUSD
 	}

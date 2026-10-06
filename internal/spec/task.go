@@ -70,6 +70,7 @@ func ReloadTask(specsRoot string, task *Task) error {
 	task.Status = Status(document.Frontmatter.Status)
 	task.StatusNormalized = document.StatusNormalized
 	task.Type = document.Type
+	task.Complexity = strings.TrimSpace(document.Frontmatter.Complexity)
 	task.Context = append([]TaskContextRef(nil), document.Context...)
 	task.Requirements = append([]TaskDeclaration(nil), document.Requirements...)
 	task.RehearsalCases = append([]TaskDeclaration(nil), document.RehearsalCases...)
