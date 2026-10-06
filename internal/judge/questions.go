@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+
+	"roundfix/internal/openrouterkey"
 )
 
 //go:embed questions.json
@@ -130,4 +132,27 @@ func (q Questions) WithMonthlyCeiling(ceilingUSD float64) Questions {
 		q.MonthlyCeilingUSD = ceilingUSD
 	}
 	return q
+}
+
+// KeyVariables lists the credential variables for this transport in preference order.
+func (t Transport) KeyVariables() []string {
+	if t.KeyVariable == openrouterkey.Shared {
+		return openrouterkey.Variables(openrouterkey.StageJudge)
+	}
+	return []string{t.KeyVariable}
+}
+
+// KeyVariables lists every transport's variables in order, without duplicates.
+func (q Questions) KeyVariables() []string {
+	var variables []string
+	seen := make(map[string]bool)
+	for _, transport := range q.Transports {
+		for _, variable := range transport.KeyVariables() {
+			if !seen[variable] {
+				variables = append(variables, variable)
+				seen[variable] = true
+			}
+		}
+	}
+	return variables
 }

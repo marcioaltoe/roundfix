@@ -95,7 +95,7 @@ func neverRequest(t *testing.T) http.RoundTripper {
 }
 func assertNoKey(t *testing.T, got Report) {
 	t.Helper()
-	if got.Skipped == nil || *got.Skipped != "ROUNDFIX_OPENROUTER_API_KEY is not set (nor ROUNDFIX_TYPESAFE_API_KEY)" || got.Calls != 0 || len(got.Judgments) != 2 {
+	if got.Skipped == nil || *got.Skipped != "ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set (nor ROUNDFIX_OPENROUTER_API_KEY, nor ROUNDFIX_TYPESAFE_API_KEY)" || got.Calls != 0 || len(got.Judgments) != 2 {
 		t.Fatalf("report=%+v", got)
 	}
 	for _, j := range got.Judgments {

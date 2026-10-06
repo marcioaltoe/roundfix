@@ -43,6 +43,7 @@ type Report struct {
 	Spec             string         `json:"spec"`
 	Model            string         `json:"model"`
 	Transport        *string        `json:"transport"`
+	KeyVariable      *string        `json:"key_variable"`
 	Skipped          *string        `json:"skipped"`
 	Stopped          *string        `json:"stopped"`
 	ArtifactsSkipped []ArtifactSkip `json:"artifacts_skipped"`
@@ -90,7 +91,7 @@ func Run(ctx context.Context, q Questions, req Request) (Report, error) {
 	for _, s := range plan.Skipped {
 		report.Judgments = append(report.Judgments, Judgment{Kind: s.Kind, Artifact: relativeArtifact(req.RepoRoot, s.Artifact), Line: s.Line, Target: s.Target, Outcome: "skipped", Reason: reasonPointer(s.Reason)})
 	}
-	t, key, ok := selectTransport(q, req.Keys)
+	t, variable, key, ok := selectTransport(q, req.Keys)
 	now := req.Now
 	if now == nil {
 		now = time.Now
@@ -100,9 +101,18 @@ func Run(ctx context.Context, q Questions, req Request) (Report, error) {
 		return fmt.Sprintf("monthly ceiling reached (US$%.4f of US$%.2f)", report.MonthCostUSD, q.MonthlyCeilingUSD)
 	}
 	if !ok {
-		report.Skipped = reasonPointer("ROUNDFIX_OPENROUTER_API_KEY is not set (nor ROUNDFIX_TYPESAFE_API_KEY)")
+		variables := q.KeyVariables()
+		reason := "no key variable is set"
+		if len(variables) > 0 {
+			reason = variables[0] + " is not set"
+			if len(variables) > 1 {
+				reason += " (nor " + strings.Join(variables[1:], ", nor ") + ")"
+			}
+		}
+		report.Skipped = reasonPointer(reason)
 	} else {
 		report.Transport = &t.Name
+		report.KeyVariable = &variable
 		cost, err := log.monthCost()
 		if err != nil {
 			report.Skipped = reasonPointer("judge log unreadable: " + err.Error())
@@ -114,9 +124,9 @@ func Run(ctx context.Context, q Questions, req Request) (Report, error) {
 		}
 	}
 	// Snapshot credentials with the transport so later changes cannot weaken redaction.
-	secrets := make([]string, 0, len(q.Transports))
-	for _, candidate := range q.Transports {
-		if secret := req.Keys[candidate.KeyVariable]; secret != "" {
+	secrets := make([]string, 0, len(q.KeyVariables()))
+	for _, name := range q.KeyVariables() {
+		if secret := req.Keys[name]; secret != "" {
 			secrets = append(secrets, secret)
 		}
 	}
@@ -209,8 +219,8 @@ func Run(ctx context.Context, q Questions, req Request) (Report, error) {
 			if recordError == "" && outcome == "skipped" {
 				recordError = reason
 			}
-			row := logLine{Schema: "roundfix/judge-log/v1", Time: callTime, Repository: req.RepoRoot, Spec: req.Spec, Judgment: p.Kind, Artifact: j.Artifact, Line: p.Line, Target: j.Target, StateHash: fmt.Sprintf("%x", hash)[:16], QuestionID: id, Transport: t.Name, ResponseID: result.ResponseID, Provider: result.Provider, RequestedModel: t.RequestModel, Model: result.Model, Answer: a.Choice, Probabilities: a.Probabilities, Confidence: a.Confidence, Noul: a.Noul, LatencyMS: result.LatencyMS, InputTokens: result.Usage.InputTokens, OutputTokens: result.Usage.OutputTokens, CostUSD: cost, CostSource: costSource, Status: result.Status, Attempts: attempt, Error: recordError, Outcome: outcome}
-			for _, field := range []*string{&row.Schema, &row.Repository, &row.Spec, &row.Judgment, &row.Artifact, &row.Target, &row.StateHash, &row.QuestionID, &row.Transport, &row.RequestedModel, &row.CostSource, &row.Outcome} {
+			row := logLine{Schema: "roundfix/judge-log/v1", Time: callTime, Repository: req.RepoRoot, Spec: req.Spec, Judgment: p.Kind, Artifact: j.Artifact, Line: p.Line, Target: j.Target, StateHash: fmt.Sprintf("%x", hash)[:16], QuestionID: id, Transport: t.Name, KeyVariable: variable, ResponseID: result.ResponseID, Provider: result.Provider, RequestedModel: t.RequestModel, Model: result.Model, Answer: a.Choice, Probabilities: a.Probabilities, Confidence: a.Confidence, Noul: a.Noul, LatencyMS: result.LatencyMS, InputTokens: result.Usage.InputTokens, OutputTokens: result.Usage.OutputTokens, CostUSD: cost, CostSource: costSource, Status: result.Status, Attempts: attempt, Error: recordError, Outcome: outcome}
+			for _, field := range []*string{&row.Schema, &row.Repository, &row.Spec, &row.Judgment, &row.Artifact, &row.Target, &row.StateHash, &row.QuestionID, &row.Transport, &row.KeyVariable, &row.RequestedModel, &row.CostSource, &row.Outcome} {
 				*field = redact(*field)
 			}
 			if err := callLog.append(row); err != nil {

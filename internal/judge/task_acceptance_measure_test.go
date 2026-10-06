@@ -263,7 +263,7 @@ func measureTaskAcceptance(ctx context.Context, repo string, labels []byte, keys
 	}
 	// Only Roundfix-scoped names enter transport selection or redaction.
 	scoped := map[string]string{"ROUNDFIX_OPENROUTER_API_KEY": keys["ROUNDFIX_OPENROUTER_API_KEY"], "ROUNDFIX_TYPESAFE_API_KEY": keys["ROUNDFIX_TYPESAFE_API_KEY"]}
-	recipient, key, ok := selectTransport(q, scoped)
+	recipient, _, key, ok := selectTransport(q, scoped)
 	if !ok {
 		record.Status, record.Reason = "blocked", "neither Roundfix transport key is set"
 		return finish(), nil

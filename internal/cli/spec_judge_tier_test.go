@@ -65,7 +65,7 @@ func TestSpecJudgeSuggestsModelTier(t *testing.T) {
 				t.Fatalf("exit=%d calls=%d stderr=%s", code, fake.calls, &stderr)
 			}
 			if format == "text" {
-				want := "suggested model-tier docs/specs/0300-example/task_01.md: light at confidence 0.93\nsuggested model-tier docs/specs/0300-example/task_02.md: light at confidence 0.93\n" + fmt.Sprintf("Judge: 0 advisory, 2 suggested, 0 clear, 0 skipped; 2 call(s), 1684 input tokens, US$0.0001; month US$0.0001 of US$%.2f; model jev-1.13 via openrouter\n", specJudgeCeiling(t))
+				want := "suggested model-tier docs/specs/0300-example/task_01.md: light at confidence 0.93\nsuggested model-tier docs/specs/0300-example/task_02.md: light at confidence 0.93\n" + fmt.Sprintf("Judge: 0 advisory, 2 suggested, 0 clear, 0 skipped; 2 call(s), 1684 input tokens, US$0.0001; month US$0.0001 of US$%.2f; model jev-1.13 via openrouter on ROUNDFIX_OPENROUTER_API_KEY\n", specJudgeCeiling(t))
 				if out.String() != want {
 					t.Fatalf("stdout=%q want=%q", out.String(), want)
 				}
@@ -118,7 +118,7 @@ func TestSpecJudgeSuggestsModelTier(t *testing.T) {
 
 func TestSpecJudgeTasksSkipsWithoutKey(t *testing.T) {
 	env, fake := specJudgeTierFixture(t, "")
-	specJudgeRun(t, env, []string{"0300-example", "--stage=tasks"}, "Judge: skipped: ROUNDFIX_OPENROUTER_API_KEY is not set (nor ROUNDFIX_TYPESAFE_API_KEY); 2 judgment(s) not asked\n", "", 0)
+	specJudgeRun(t, env, []string{"0300-example", "--stage=tasks"}, "Judge: skipped: ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set (nor ROUNDFIX_OPENROUTER_API_KEY, nor ROUNDFIX_TYPESAFE_API_KEY); 2 judgment(s) not asked\n", "", 0)
 	if fake.calls != 0 {
 		t.Fatal("asked without key")
 	}

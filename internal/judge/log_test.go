@@ -54,7 +54,7 @@ func TestJudgeLogRecordsEveryCall(t *testing.T) {
 	if strings.Contains(string(b), req.Keys[q.Transports[0].KeyVariable]) {
 		t.Fatal("secret in log")
 	}
-	required := []string{"schema", "time", "repository", "spec", "judgment", "artifact", "line", "target", "state_hash", "question_id", "transport", "response_id", "provider", "requested_model", "model", "answer", "probabilities", "confidence", "noul", "latency_ms", "input_tokens", "output_tokens", "cost_usd", "cost_source", "status", "attempts", "error", "outcome"}
+	required := []string{"schema", "time", "repository", "spec", "judgment", "artifact", "line", "target", "state_hash", "question_id", "transport", "key_variable", "response_id", "provider", "requested_model", "model", "answer", "probabilities", "confidence", "noul", "latency_ms", "input_tokens", "output_tokens", "cost_usd", "cost_source", "status", "attempts", "error", "outcome"}
 	for _, line := range strings.Split(strings.TrimSpace(string(b)), "\n") {
 		var fields map[string]json.RawMessage
 		if err := json.Unmarshal([]byte(line), &fields); err != nil {

@@ -88,6 +88,7 @@ type logLine struct {
 	StateHash      string             `json:"state_hash"`
 	QuestionID     string             `json:"question_id"`
 	Transport      string             `json:"transport"`
+	KeyVariable    string             `json:"key_variable"`
 	ResponseID     string             `json:"response_id"`
 	Provider       string             `json:"provider"`
 	RequestedModel string             `json:"requested_model"`
