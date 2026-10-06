@@ -2,6 +2,16 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.45.0] - 2026-10-06
+
+### A light tier on open models
+
+- **Light Tasks.** A Task with `complexity: low` that is not a QA Task and declares no Governed Path runs first on `opencode` with an open model through OpenRouter, with no reasoning effort. The models come from the User Config key `openrouter.light_models`, which defaults to `deepseek/deepseek-v4.1-flash`; an empty list turns the tier off. Every id must pass the subscription rule. The tier is on by default for every project.
+- **Escalation.** If a light Task fails its first Verification, the repair runs on the category's normal profile in a new session, keeping the light attempt's changes.
+- **Spend ceiling.** `openrouter.implement_monthly_ceiling_usd` in User Config, US$10 by default, caps light spend summed across repositories. Each light Task's cost, as OpenCode reports it, is recorded in `~/.roundfix/openrouter/implement/<YYYY-MM>.jsonl`.
+- **Fallbacks.** With no OpenRouter key, a reached ceiling or an unreadable spend log, the Task runs on its normal profile with a warning. A one-Run `--agent` override turns the tier off.
+- **Judge.** `roundfix spec judge --stage tasks` suggests a tier for each Task. The suggestion is advisory, and dispatch never reads it.
+
 ## [0.44.0] - 2026-10-05
 
 ### A queue that sees a Pull Request merged by hand
