@@ -1,0 +1,52 @@
+Source: /Users/marcio/dev/secondbrain/inbox/roundfix/_triaged/2026-10-06-codex-acp-perde-o-rollout-e-a-task-falha-com-32603.md
+SHA256: 1348f43bf6bcc0c945141763e1bf878bf417ad20fdedc5da150e57c35a8f3cb2
+
+---
+origin: oraculum
+destination: roundfix
+type-hint: finding
+created_at: 2026-10-06
+capture: manual
+---
+
+# Run de Task e de QA com o Codex falha com "no rollout found for thread id" (-32603)
+
+## Observação
+
+Na fila de entrega do Oraculum (Roundfix 0.44–0.46, `@agentclientprotocol/codex-acp`
+2.1.1), entre 2026-10-05 e 2026-10-06, Runs de `implement` falharam no meio do turno
+do agente com:
+
+```
+internal error -32603: no rollout found for thread id <uuid>
+```
+
+Três threads distintos falharam: `01a10ec8-2071-7912-b2ed-645c09812e6a`,
+`01a110db-9b73-7073-865d-7f41e10c32da` e `01a110e3-5f35-70c2-bdd4-9a833b8d49a7`.
+Nenhum dos três tem arquivo em `~/.codex/sessions/`, enquanto outras 47 sessões do
+mesmo dia têm. A sessão é criada, mas o rollout nunca é persistido, e a retomada
+do thread pelo adaptador falha.
+
+O caso mais caro foi o QA. O agente de QA morre antes de escrever o relatório,
+que fica com `verdict: pending`. O item estaciona `run-unresolved`, e cada
+tentativa gasta um dos 3 retries da fila. O mesmo QA, refeito com
+`roundfix implement --spec <spec> --agent claude --model opus --reasoning-effort high --detach`,
+rodou até o veredito (Oraculum 0059, 0062, 0065).
+
+## Por que é acionável
+
+- A falha é de infraestrutura do runtime, mas é classificada como falha da Task
+  ou do QA e consome retry. Pelo contrato do Roundfix, um erro de runtime deveria
+  sair pelo caminho de infraestrutura, sem repair e sem gastar retry.
+- Não há fallback de agente: a única saída hoje é a troca manual para outro
+  provedor.
+
+## Pedido
+
+1. Classificar `-32603 no rollout found` como erro de infraestrutura do runtime.
+   Com isso, o item não gasta retry e pode ser retomado na mesma sessão ou numa
+   nova.
+2. Opcional: um fallback de agente configurável por perfil quando o runtime
+   principal falha antes do primeiro handoff.
+3. Investigar por que o rollout não é gravado (CODEX_HOME por Run? concorrência
+   entre sessões?).

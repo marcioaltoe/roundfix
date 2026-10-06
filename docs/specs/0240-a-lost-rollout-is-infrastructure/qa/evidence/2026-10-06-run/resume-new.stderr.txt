@@ -1,0 +1,3 @@
+[acpx] created session cwd (a90821f5-4dcf-459c-a0b4-27ac2aa0ff99)
+[acpx] agent: codex
+[acpx] cwd: /private/tmp/roundfix-0240-qa/resume-final/work

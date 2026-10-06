@@ -1,0 +1,3 @@
+package main
+import("os";"bufio";"fmt";"roundfix/internal/speccheck")
+func main(){s:=bufio.NewScanner(os.Stdin);for s.Scan(){if speccheck.GovernedPath(s.Text()){fmt.Println(s.Text())}};if s.Err()!=nil{panic(s.Err())}}

@@ -1,0 +1,3 @@
+package main
+import("fmt";"os";"roundfix/internal/spec")
+func main(){r,e:=spec.ReadQAReportFile(os.Args[1]);if e!=nil{panic(e)};fmt.Printf("%+v\n",r)}

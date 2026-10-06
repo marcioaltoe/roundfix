@@ -1,0 +1,87 @@
+Source: /opt/homebrew/lib/node_modules/@agentclientprotocol/codex-acp/dist/index.js
+Version: 2.1.1
+SHA256: 4b76310393d756a0f111687cd9df899720f36f7c59b1eb1d86429484034ff91b
+
+function errorToResult(error62) {
+  if (error62 instanceof RequestError) {
+    return error62.toResult();
+  }
+  if (isZodError(error62)) {
+    return RequestError.invalidParams(error62.format()).toResult();
+  }
+  const details = errorDetails(error62);
+  try {
+    return RequestError.internalError(details ? JSON.parse(details) : {}).toResult();
+  } catch {
+    return RequestError.internalError({ details }).toResult();
+  }
+}
+
+  /**
+   * `thread/resume`, with a fallback for a thread Codex has not materialized
+   * on disk yet.
+   *
+   * Codex writes a thread's rollout file on its first user message, so
+   * `thread/resume` fails with "no rollout found" for a session that was
+   * created but never prompted. Such a thread is still live in the
+   * app-server -- and still subscribed, since `thread/start` subscribed it --
+   * so `thread/read` answers for it and gives back the same state resume
+   * would have. A thread id Codex has genuinely never seen fails both calls,
+   * and the original resume error is what the caller sees.
+   *
+   * A thread that another Codex client has loaded fails with a clear ACP
+   * error instead of the raw Codex message.
+   */
+  async resumeThread(params) {
+    try {
+      const response = await this.codexClient.threadResume(params);
+      return {
+        thread: response.thread,
+        model: response.model,
+        modelProvider: response.modelProvider,
+        reasoningEffort: response.reasoningEffort,
+        serviceTier: response.serviceTier,
+        itemsBackwardsCursor: response.itemsBackwardsCursor ?? null,
+        materialized: true,
+        collaborationMode: response.collaborationMode?.mode ?? null
+      };
+    } catch (err) {
+      if (isThreadActiveWriterError(err)) throw threadActiveWriterRequestError(params.threadId, err);
+      if (!isMissingRolloutError(err)) throw err;
+      let response;
+      try {
+        response = await this.codexClient.threadRead({ threadId: params.threadId });
+      } catch {
+        throw err;
+      }
+      logger.log("Thread has no rollout yet; resumed it from its live app-server state", {
+        threadId: params.threadId
+      });
+      return {
+        thread: response.thread,
+        model: response.thread.model,
+        modelProvider: response.thread.modelProvider,
+        reasoningEffort: response.thread.reasoningEffort,
+        serviceTier: null,
+        // An unmaterialized thread has no persisted history to hydrate:
+        // `thread/turns/list` rejects it outright ("not materialized
+        // yet"), and there is nothing to list either way.
+        itemsBackwardsCursor: null,
+        materialized: false,
+        collaborationMode: null
+      };
+    }
+  }
+  async resumeSession(request, onSubscribed) {
+    const additionalDirectories = readAdditionalDirectories(request.cwd, request.additionalDirectories, request._meta);
+    await this.refreshSkills(request.cwd, additionalDirectories);
+    const response = await this.resumeThread({
+      excludeTurns: true,
+      config: await this.createSessionConfig(request.cwd, additionalDirectories, request.mcpServers ?? []),
+      cwd: request.cwd,
+      modelProvider: await this.getResumeModelProvider(),
+      threadId: request.sessionId
+    });
+    onSubscribed?.();
+    const codexModels = await this.fetchAvailableModels();
+    const currentModelId =

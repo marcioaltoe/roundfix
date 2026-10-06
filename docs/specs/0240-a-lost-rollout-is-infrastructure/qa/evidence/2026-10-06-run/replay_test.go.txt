@@ -1,0 +1,11 @@
+package agent
+import("os";"testing";"fmt";"strings")
+func TestQAInstalledACPXReplay(t *testing.T) {
+ for _, mode := range []string{"resume","prompt"} {
+  output, err := os.ReadFile("/private/tmp/roundfix-0240-qa/"+mode+"-second.stdout.txt"); if err != nil {t.Fatal(err)}
+  run:=runFakeACPXPrompt(t,fakeACPXPrompt{stdout:string(output),exitCode:1})
+  loss, ok:=DescribeLostRollout(run.err)
+  if !ok || loss.Step!="session/"+mode || !strings.Contains(loss.Detail,LostRolloutPhrase) || loss.PromptSent!=(mode=="prompt") {t.Fatalf("%s: %+v err=%v",mode,loss,run.err)}
+  fmt.Printf("%s: %+v\nerror: %v\n",mode,loss,run.err)
+ }
+}

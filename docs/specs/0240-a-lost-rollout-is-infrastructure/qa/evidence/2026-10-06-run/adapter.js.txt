@@ -1,0 +1,21 @@
+const fs = require('fs');
+const readline = require('readline');
+const mode = process.argv[2];
+const marker = process.argv[3];
+const send = o => process.stdout.write(JSON.stringify(o)+'\n');
+readline.createInterface({input:process.stdin}).on('line', line => {
+ let q; try { q=JSON.parse(line); } catch { return; }
+ if (!q.method || q.id===undefined) return;
+ const result = r => send({jsonrpc:'2.0',id:q.id,result:r});
+ const loss = () => send({jsonrpc:'2.0',id:q.id,error:{code:-32603,message:'Internal error',data:{details:'no rollout found for thread id fake-thread-0240'}}});
+ const sess={sessionId:'fake-thread-0240',models:{currentModelId:'default',availableModels:[{modelId:'default',name:'Default'}]}};
+ if(q.method==='initialize') return result({protocolVersion:1,agentCapabilities:{loadSession:true,sessionCapabilities:{resume:{}}},agentInfo:{name:'fake-codex',version:'1'},authMethods:[]});
+ if(q.method==='session/new') return result(sess);
+ if(q.method==='session/resume'||q.method==='session/load') { if(mode==='resume'&&fs.existsSync(marker)) return loss(); return result(sess); }
+ if(q.method==='session/prompt') {
+  send({jsonrpc:'2.0',method:'session/update',params:{sessionId:'fake-thread-0240',update:{sessionUpdate:'agent_message_chunk',content:{type:'text',text:'working'}}}});
+  if(fs.existsSync(marker)&&mode==='prompt') return loss();
+  fs.writeFileSync(marker,'done');return result({stopReason:'end_turn'});
+ }
+ return result({});
+});

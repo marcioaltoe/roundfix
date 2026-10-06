@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0240-a-lost-rollout-is-infrastructure
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

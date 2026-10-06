@@ -1,0 +1,23 @@
+=== RUN   TestRuntimeInfrastructureParksTheItem
+--- PASS: TestRuntimeInfrastructureParksTheItem (0.01s)
+=== RUN   TestClassifyParkRuntimeInfrastructure
+--- PASS: TestClassifyParkRuntimeInfrastructure (0.00s)
+=== RUN   TestRuntimeInfrastructureRetryIsNotCounted
+--- PASS: TestRuntimeInfrastructureRetryIsNotCounted (0.01s)
+PASS
+suiteguard: guard cost: measured 9544 paths; fingerprint took 564.653208ms before and 379.908ms after
+suiteguard: repository boundary violated:
+suiteguard: modified: docs/specs/0240-a-lost-rollout-is-infrastructure/qa/evidence/2026-10-06-run/runner-tests.txt
+FAIL	roundfix/internal/delivery	1.974s
+=== RUN   TestDeliveryRunResultReadsAnExhaustedLostRollout
+=== RUN   TestDeliveryRunResultReadsAnExhaustedLostRollout/fallback
+=== RUN   TestDeliveryRunResultReadsAnExhaustedLostRollout/new_session
+=== RUN   TestDeliveryRunResultReadsAnExhaustedLostRollout/exhausted
+--- PASS: TestDeliveryRunResultReadsAnExhaustedLostRollout (0.01s)
+    --- PASS: TestDeliveryRunResultReadsAnExhaustedLostRollout/fallback (0.01s)
+    --- PASS: TestDeliveryRunResultReadsAnExhaustedLostRollout/new_session (0.00s)
+    --- PASS: TestDeliveryRunResultReadsAnExhaustedLostRollout/exhausted (0.00s)
+PASS
+suiteguard: guard cost: measured 9544 paths; fingerprint took 324.231208ms before and 276.278709ms after
+ok  	roundfix/internal/cli	1.040s
+FAIL
