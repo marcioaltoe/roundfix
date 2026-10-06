@@ -79,6 +79,10 @@ surfaces: [backend] # every surface touched: frontend | backend | cli | data | i
        satisfied-by: <evidence or follow-up that satisfies it>
      Omit this section when every criterion is reachable. -->
 
+## Glossary
+
+<!-- Use `adds: **<term>**`, `changes: **<term>**`, or `not a term: **<phrase>** — <reason>`. Write `None.` when there are no entries. -->
+
 ## Decisions
 
 <!-- Product decisions made during clarification, one line each.

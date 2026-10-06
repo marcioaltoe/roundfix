@@ -5,10 +5,10 @@ argument-hint: "<feature description, or nothing after a grilling/brainstorm ses
 metadata:
   category: planning
   tags: [prd, product, requirements, workflow, documentation]
-  version: 0.0.7
+  version: 0.0.8
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.7
+version: 0.0.8
 ---
 
 # Write PRD
@@ -38,6 +38,10 @@ in that paragraph: the record identifier or repository path, a colon, and a
 verbatim quote in straight double quotes. The Spec Consistency Check proves the
 quote against the source, so copy it exactly; it checks presence and leaves
 support for the reader.
+
+## Glossary Declaration
+
+Whenever the PRD names a concept the glossary does not define, activate domain-modeling before writing it, even on the autonomous route, and sharpen the term there. The PRD carries the `## Glossary` section of [references/glossary.md](references/glossary.md); every new term is bolded where it is introduced. When a person drives the authoring, grilling or grill-with-docs stays the interactive entry.
 
 ## Sources that share a context
 

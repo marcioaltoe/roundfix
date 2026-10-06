@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0239-a-glossary-every-spec-keeps-current
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -107,3 +107,43 @@ Context, the mirrors `make skills-sync` rewrites, and this Task file.
 - [_prd.md](_prd.md) — Goal 2; User Story 2; Core Feature 6; Success Metric 6
 - [_techspec.md](_techspec.md) — Skill text; Invariants; API Contract 7; Testing Approach 5; Build Order 3
 - ADR-0244; ADR-0187; ADR-0189; ADR-0233
+
+## Result
+
+Implemented the Glossary Declaration guidance for the five owned skills,
+created the write-prd glossary guide and both template sections, documented
+the Roundfix finding codes, horizon and archive refusal, synchronized the
+mirrors, and raised each canonical skill's two version fields by one patch
+step. The Task status remains Daemon-owned.
+
+Focused checks and generated evidence:
+
+- `make skills-sync` completed; it rewrote the mirrored files under
+  `skills/qa-gate/`, `skills/roundfix/`, `skills/write-prd/`,
+  `skills/write-tasks/`, and `skills/write-techspec/`, including the new
+  `skills/write-prd/references/glossary.md`.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions` first hit the sandbox default-cache permission
+  error; the same required check passed with
+  `GOCACHE=/tmp/roundfix-0239-task03-gocache`, recording the five raised
+  versions in `skills/testdata/owned-skill-versions.json`.
+- `make baseline-digests` passed and reported no derived-artifact changes.
+- The final diff contains only the authorized skill sources, mirrors, owned
+  version record, new glossary guide, and this Task's Result; the upstream
+  `domain-modeling`, `grilling`, and `grill-with-docs` skills are untouched.
+
+Acceptance evidence:
+
+- The write-prd and write-techspec headings direct authors to
+  `domain-modeling` on the autonomous route and preserve `grilling` and
+  `grill-with-docs` as the interactive entry; the templates expose `adds`,
+  `changes`, and `not a term` forms.
+- The write-tasks heading requires each declared term to be written through
+  `domain-modeling` and checked in glossary Verification text; the QA heading
+  records whether each declared term is defined after the work.
+- The Roundfix spec reference describes the Glossary Declaration, horizon and
+  `SC-GLOSSARY-UNDECLARED`, `SC-GLOSSARY-UNPLANNED`, and
+  `SC-GLOSSARY-MISSING`; the archive reference carries the required refusal
+  sentence.
+- The version-recording test passed after synchronization, and the mirror
+  rewrites plus recorded JSON are present for all five raised skills.

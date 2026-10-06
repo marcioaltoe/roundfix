@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.9
+  version: 0.0.10
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.9
+version: 0.0.10
 ---
 
 # Write Tasks
@@ -215,6 +215,10 @@ changed, or dropped is noticed while the work is still open rather than after it
 closes. The domain guide (`docs/agents/domain.md`) owns what the check looks for
 and when the domain context is updated in response; the graph owns only where it
 happens, and nothing in it waits for a human.
+
+### Glossary requirement
+
+For each term the declaration adds or changes, the docs Task, or a dedicated glossary Task when the Spec has none, declares the glossary file, carries a requirement to write the term through domain-modeling, and its Verification checks the bolded term followed by a colon in the glossary on whitespace-normalized text.
 
 ### Corrective-Task ceiling
 
