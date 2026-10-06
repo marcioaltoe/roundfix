@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0239-a-glossary-every-spec-keeps-current
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -104,3 +104,108 @@ file.
 - [_prd.md](_prd.md) — Goal 3; User Story 4; Core Feature 5; Success Metric 4
 - [_techspec.md](_techspec.md) — Exact clause texts; Version changes; Retention; API Contract 6; Testing Approach 4; Build Order 2
 - ADR-0244; ADR-0186; ADR-0189
+
+## Result
+
+Implemented the two exact TechSpec clause texts in place, preserving their ids,
+`mandatory` enforcement and absence of `replaces`. Starting-commit versions
+were module 21, `rule.context.domain-docs` 5 and `guide.domain` 6; they are now
+22, 6 and 7. The module diff contains only those three version lines and the
+two guidance lines. Added `internal/baseline/glossary_clauses_test.go` following
+the grouping-clause tests, with independent text literals, exactly-once forced
+bullet assertions, and a temporary Git adopter built by
+`newClauseReplacementAdopter` in Managed Refresh mode.
+
+### Focused evidence by acceptance criterion
+
+All successful Go and Make commands used
+`GOCACHE=/private/tmp/roundfix-0239-task02-gocache`; the default cache was
+sandbox-denied on the first test attempt.
+
+- Repository domain guide: an exact-text inspection required each authored
+  clause once as a `mandatory` bullet in `docs/agents/domain.md`; passed.
+  The public refresh applied and verified its two postimages.
+- Standard TypeScript Monorepo golden: the same inspection and
+  `TestTheGlossaryClausesRenderInTheDomainGuide` passed, requiring each whole
+  clause once with the `mandatory` label.
+- Source Baseline adopter: `TestAnAdopterRetainsTheGlossaryClauses` passed.
+  It required a ready Managed Refresh plan, both clause dispositions and
+  retention rows `retained`, and no `unaccounted` clause anywhere.
+- Preserved force and catalog contracts:
+  `go test -count=1 -v ./internal/baseline -run 'TestTheGlossaryClauses|TestAnAdopterRetainsTheGlossaryClauses|TestBaselineClauseForceIsCharacterized|TestNoTwoBaselineClausesShareText|TestShippedGuidanceCitesNoRepositoryRecord'`
+  exited 0 after restoration, with all six gates passing. The final
+  `make baseline-digests` exited 0, including strict catalog validation.
+  `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`
+  applied the first refresh and verified the postimages; the second invocation
+  exited 0 with `File changes: 0` and `Idempotence: verified`.
+  The first refresh initially encountered a sandbox denial creating its
+  Git-private journal; the authorized retry with filesystem escalation applied
+  successfully. Both invocations reported the existing nested-carrier warnings
+  for the golden and Source Baseline AGENTS.md; neither nested carrier changed.
+
+### Mutation evidence
+
+Before changing the module, the two new text/rendering gates both failed on
+the original texts. This established the red starting signal without running
+the Task's declared Verification.
+
+1. Text sabotage: removed the last sentence of
+   `clause.domain.glossary-currency` in the module, then ran
+   `make baseline-digests` so the catalog and rendered golden consistently
+   carried that incorrect text. The focused command
+   `go test -count=1 -v ./internal/baseline -run '^TestTheGlossaryClauses(CarryTheirForceAndText|RenderInTheDomainGuide)$'`
+   exited 1. Both `TestTheGlossaryClausesCarryTheirForceAndText` and
+   `TestTheGlossaryClausesRenderInTheDomainGuide` failed for
+   `clause.domain.glossary-currency`; the other clause still passed.
+   Restored the exact module bytes saved before sabotage and ran
+   `make baseline-digests` again, exit 0. No derived file was hand-edited.
+2. Retention sabotage: a temporary Go overlay of the new test changed
+   `clause.domain.glossary-currency` from `mandatory` to `prohibited` only in
+   the adopter helper's cloned in-memory catalog, after creating the adopter.
+   `go test -overlay=/private/tmp/roundfix-0239-task02-retention-overlay.json -count=1 -v ./internal/baseline -run '^TestAnAdopterRetainsTheGlossaryClauses$'`
+   exited 1 in `TestAnAdopterRetainsTheGlossaryClauses`: the refresh was
+   `action_required`, with one `unaccounted` clause,
+   `clause.domain.glossary-currency`. The shipped source enforcement and
+   Source Baseline never changed. The final focused run omitted the overlay
+   and passed; the source had already been restored and regenerated.
+
+### Files rewritten by the sanctioned commands
+
+`make baseline-digests` rewrote exactly these nine derived files:
+
+- `internal/baseline/assets/profiles/standard-typescript-monorepo.json`
+- `internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/domain.md`
+- `internal/baseline/testdata/catalog.diagnostics.golden.json`
+- `internal/baseline/testdata/catalog.digest`
+- `internal/baseline/testdata/catalog.normalized.json`
+- `internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json`
+- `internal/baseline/testdata/plan-characterization/clean-adoption.golden.json`
+- `internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json`
+- `internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json`
+
+The first public Managed Refresh rewrote exactly:
+
+- `docs/agents/domain.md`
+- `docs/agents/setup-context.json`
+
+The second refresh rewrote no file. The source module, new Go test and this
+Result are the other Task-owned changes. The only pre-existing changed path
+was this Task file's Daemon-owned `status: in_progress` change, preserved.
+No Source Baseline corpus, manifest or index, force record, other clause,
+skill, Task Graph or other Task file changed. Declared Verification and Task
+settlement remain Daemon-owned; no commit, push or Pull Request was made.
+
+### Incremental check and final postflight
+
+`GOCACHE=/private/tmp/roundfix-0239-task02-gocache rtk make verify-incremental`
+exited 0 with filesystem/process-table escalation and no concurrent edits:
+formatting, vet, package tests, skill sync/check and build passed. Its first
+sandboxed attempt exited 2: two existing force-stop integration tests could
+not enumerate the process table, and writing this Result while tests were
+running triggered the repository mutation guard. The retry corrected both
+execution conditions, with no production or test changes and no bypass.
+
+`git -c core.fsmonitor=false diff --check` exited 0. A postflight compared
+tracked and untracked changes to this Task's Context and found all 14 paths
+within the declared set. The Task's authored bytes before Result match the
+starting commit except for the pre-existing Daemon-owned `in_progress` status.
