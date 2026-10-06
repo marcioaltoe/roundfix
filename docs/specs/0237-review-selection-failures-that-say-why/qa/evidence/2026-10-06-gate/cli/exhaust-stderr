@@ -1,0 +1,4 @@
+roundfix: review Agent Selection failed before the prompt at session/set_model (QA adapter failure); retrying selection 0 once.
+roundfix: review Agent Selection failed before prompt (Agent Selection failed for runtime "claude": agent/protocol error at session/set_model: QA adapter failure (JSON-RPC -32603)); activating fallback 1.
+roundfix: review Agent Selection failed before the prompt at session/set_model (QA adapter failure); retrying selection 1 once.
+roundfix: review blocked: review runtime failure: Agent Selection failed for runtime "claude": agent/protocol error at session/set_model: QA adapter failure (JSON-RPC -32603) (after one automatic retry before the prompt)

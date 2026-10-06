@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0237-review-selection-failures-that-say-why
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

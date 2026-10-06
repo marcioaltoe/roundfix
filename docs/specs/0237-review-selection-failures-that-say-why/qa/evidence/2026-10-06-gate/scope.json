@@ -1,0 +1,52 @@
+{
+  "range": "ff867f52..abea0d8a42b0e24376c7ceb72f4978be290280e5",
+  "commits": [
+    {
+      "task": "task_01",
+      "commit": "9c2ef7f3eee95704eadddc0f4660d7e532e06a20",
+      "paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/review.md",
+        "docs/specs/0237-review-selection-failures-that-say-why/task_01.md",
+        "docs/user-guide/commands/review.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/review.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "undeclared": []
+    },
+    {
+      "task": "task_02",
+      "commit": "2616b506efa04ab15ce9c1057923bc1bf7bd723b",
+      "paths": [
+        "docs/specs/0237-review-selection-failures-that-say-why/task_02.md",
+        "internal/agent/acpx_runner.go",
+        "internal/agent/agent.go",
+        "internal/agent/protocol_failure.go",
+        "internal/agent/protocol_failure_test.go"
+      ],
+      "undeclared": []
+    },
+    {
+      "task": "task_03",
+      "commit": "abea0d8a42b0e24376c7ceb72f4978be290280e5",
+      "paths": [
+        "docs/specs/0237-review-selection-failures-that-say-why/task_03.md",
+        "internal/cli/review.go",
+        "internal/cli/review_convention_validator_test.go",
+        "internal/cli/review_selection_retry_test.go",
+        "internal/cli/review_session_test.go",
+        "internal/cli/review_test.go"
+      ],
+      "undeclared": []
+    }
+  ],
+  "unchanged": [
+    "Makefile",
+    "go.mod",
+    ".github/workflows",
+    "internal/daemon",
+    "internal/agent/acpx_runner_test.go"
+  ],
+  "authorization": "ff867f52 precedes task_01; seeded mechanical operative grant covers the three protected skill paths; no consequent-fix declaration"
+}
