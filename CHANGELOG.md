@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.46.0] - 2026-10-06
+
+### An OpenRouter key per stage
+
+- **Stage keys.** The Jev judge reads `ROUNDFIX_OPENROUTER_JUDGE_API_KEY`, then the shared `ROUNDFIX_OPENROUTER_API_KEY`, then `ROUNDFIX_TYPESAFE_API_KEY`. Light-tier implementation reads `ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY`, then the shared key. With one OpenRouter key per stage, the activity export shows each stage's cost. The generic `OPENROUTER_API_KEY` is never read.
+- **Which key was used.** Every Judge Log line and every light spend record gains `key_variable`: the variable's name, never its value. The `spec judge` summary ends with `via <transport> on <variable>`.
+- **Doctor.** The `environment:` line lists each stage key as set or not set.
+- **Ceilings unchanged.** `jev.monthly_ceiling_usd` still caps the judge, and `openrouter.implement_monthly_ceiling_usd` still caps the light tier.
+
 ## [0.45.0] - 2026-10-06
 
 ### A light tier on open models
