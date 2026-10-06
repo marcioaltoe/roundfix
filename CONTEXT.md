@@ -651,7 +651,7 @@ The support command that upgrades an older Run Database to the binary's schema v
 _Avoid_: Automatic migration, database downgrade, schema compatibility mode
 
 **Spec Consistency Check**:
-The read-only, pre-Run support command that compares a Spec's written citations, declarations, and cross-references. It uses an ADR horizon: `SC-ADR-RELATED` reports an ADR for a committed Spec only when the commit that added the ADR is an ancestor of the commit that added the Spec's `_prd.md`. Its Claim Receipt and Surface Transcript declaration gaps begin at the contract horizon, the commit that added the concrete-contract guide to the write-techspec skill. It reports consistency findings and never edits artifacts or emits a QA verdict.
+The read-only, pre-Run support command that compares a Spec's written citations, declarations, and cross-references. It uses an ADR horizon: `SC-ADR-RELATED` reports an ADR for a committed Spec only when the commit that added the ADR is an ancestor of the commit that added the Spec's `_prd.md`. Its Claim Receipt and Surface Transcript declaration gaps begin at the contract horizon, the commit that added the concrete-contract guide to the write-techspec skill. It reports consistency findings and never edits artifacts or emits a QA verdict. Its Glossary Declaration gap begins at the glossary horizon, the commit that added the glossary guide to the write-prd skill, and a Spec that carries a Glossary Declaration is checked at any age.
 _Avoid_: QA gate, Spec validator, inference engine
 
 **Claim Receipt**:
@@ -924,3 +924,51 @@ Spec despite its QA prerequisite being unmet. The recorded exception preserves
 actual QA and Task evidence while retaining non-QA completion, source integrity
 and separate delivery gates.
 _Avoid_: QA pass, QA bypass, Implement Clean
+
+**Glossary Declaration**:
+The `## Glossary` section of a Spec's PRD or TechSpec that lists each domain term the Spec adds to or changes in the glossary, and each bolded phrase it declares not a domain term, or `None.`. A Task that declares the glossary file and names the term in its Verification writes each listed term.
+_Avoid_: Vocabulary Contract, term list, glossary candidates
+
+**Glossary Gap**:
+A domain term a Spec introduces that the glossary does not carry as required: a bolded phrase the glossary lacks and the Glossary Declaration does not cover, a declared term no Task plans to write, or a declared term still missing after its Tasks completed. The Spec Consistency Check reports it, and the QA gate and the Archive Command refuse a Spec that has one.
+_Avoid_: Missing term, undocumented token, stale glossary
+
+**Light Tier**:
+The dispatch tier that runs a Task on an open model through OpenCode and OpenRouter when its complexity is low, its type is not qa, and it declares no Governed Path; every other Task runs on the standard tier. A light Task whose first Verification fails escalates its one feedback turn to its category's Preferred Selection.
+_Avoid_: Cheap model, Jev routing, light model profile
+
+**Light Spend Log**:
+The per-UTC-month record in Roundfix Home of the cost each Light Tier session reports, summed across every repository and compared with the Light Tier's monthly ceiling. A month that reached the ceiling, or whose log cannot be read, runs light Tasks on their category's profile.
+_Avoid_: Judge Log, OpenRouter usage, spend cache
+
+**Jev Ceiling**:
+The monthly spending ceiling of the Jev judge, read from User Config only and compared with the Judge Log's sum across every repository on the machine; when it is unset a built-in default applies. The judge's key must carry a monthly credit limit no higher than it.
+_Avoid_: Judge budget, key limit, Project Config ceiling
+
+**Stage Key**:
+The Roundfix environment variable an OpenRouter stage reads first, the judge's or implementation's own key, before the shared Roundfix OpenRouter key; the generic OpenRouter variable is never read. Each stage records the variable it used by name, never by value.
+_Avoid_: API key value, generic OpenRouter key, shared key
+
+**Tested Base**:
+The default-branch commit a failed required check actually tested, read from the check job's annotation. A failure whose Tested Base does not contain the current default-branch tip is stale, and the Delivery Queue re-runs it instead of parking the item.
+_Avoid_: PR base, merge base, Delivery Base
+
+**Merge Evidence**:
+Proof that a Spec was delivered: the default-branch head holds its archived PRD, and the Delivery Commit that added that file is not reachable from the Run Branch or Item Branch being proven. With it, reconcile releases that Spec's terminal Runs and Item Branches without comparing content.
+_Avoid_: Content proof, merged flag, merge commit
+
+**Delivery Commit**:
+The default-branch commit that added a Spec's archived PRD. Merge Evidence and a Delivery Retry that records a merge made outside the queue both read it.
+_Avoid_: Merge commit, archive commit, release commit
+
+**Item Branch**:
+The branch a Delivery Queue item builds its candidate on, named `roundfix/deliver-<slug>-<16 hex>`. Once no live item names it, Merge Evidence releases it, with its worktree only when that worktree is clean.
+_Avoid_: Run Branch, PR Head Branch, deliver branch
+
+**Network-Denied Row**:
+An outside-evidence QA row blocked only because the Run sandbox denied network access, recorded with the host it could not reach. Like the pre-PR Pull Request row, it never decides a qualifying partial; whoever needs that proof declares it under Unreachable Acceptance.
+_Avoid_: Failed outside evidence, skipped row, environment pass
+
+**Pre-PR Review Command**:
+The command that obtains the Pre-PR Review Provider's review of the current candidate before a Pull Request opens, reads the verdict from the reviewer's final message and keeps the Pre-PR Review Record. A finding parks delivery only after it is validated.
+_Avoid_: Review Run, PR feedback Watch, review command alias
