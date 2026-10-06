@@ -191,6 +191,14 @@ The outside-evidence row rests on sources this Spec did not produce:
   openai/codex#42099 (zero-turn threads not persisted since 0.151.0) and
   openai/codex#28496 (clients must match `no rollout found` by text).
 
+## Glossary
+
+- adds: **Lost Rollout**
+- adds: **First Handoff**
+- changes: **Fallback Chain**
+- changes: **Fallback Selection**
+- changes: **Agent Work Started**
+
 ## Decisions
 
 - Match the code and the phrase, reading `data.details` only for this match;

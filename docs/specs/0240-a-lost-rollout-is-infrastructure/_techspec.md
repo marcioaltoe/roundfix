@@ -312,6 +312,10 @@ Glossary terms adopted in `CONTEXT.md` by task_01: **Lost Rollout** and
 **First Handoff**; **Fallback Chain**, **Fallback Selection** and **Agent Work
 Started** gain the Lost Rollout exception.
 
+## Glossary
+
+- not a term: **ACPX Runner** — the existing runner component in `internal/agent`, named as code, not a domain term
+
 ## Decisions
 
 - Match code and phrase; read `data.details` for this match only; see
