@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-04T00:00:00Z
-updated_at: 2026-10-04T00:00:00Z
+updated_at: 2026-10-06T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -51,3 +51,5 @@ start head is a weak anchor, since every commit of the item branch descends
 from it, so the override record is what authorizes the retry; review,
 repository gate, delivery authorization and required checks still run on the
 recorded head.
+
+**Qualifying partials do not park (2026-10-06).** Superseded in part by ADR-0240: a partial whose only environment-blocked rows are pre-PR Pull Request rows or network-denied outside-evidence rows qualifies, settles `completed`, and never parks `qa-environment-partial`; only an environment-blocked row outside those two kinds parks it. The operator archive's retry rule stands.

@@ -1,8 +1,9 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-06
-spec: null
+spec: 0235-one-qa-partial-policy
+reason: null
 ---
 
 # Settlement refuses a QA partial that archive and `qa-report accept` accept

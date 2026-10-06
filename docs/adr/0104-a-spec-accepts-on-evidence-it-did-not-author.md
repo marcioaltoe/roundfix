@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-08-08T00:00:00Z
-updated_at: 2026-08-08T00:00:00Z
+updated_at: 2026-10-06T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -31,3 +31,5 @@ in a replayed corpus carried no bug-discriminating information. Separating the
 author of acceptance criteria from the author of implementation was considered
 and deferred as the structurally more expensive answer to the same problem; this
 decision is the cheap one that would have caught the measured failure.
+
+**Rows a Run sandbox cannot reach (2026-10-06).** Superseded in part by ADR-0240: an outside-evidence row blocked only because the Run sandbox denied network access, recorded as `blocked (environment: network denied: <host>)`, never decides a qualifying partial and no longer holds Pull Request preparation; the report records that it was not reached. Every other blocked outside-evidence row still holds it, and every other part of this decision stands.
