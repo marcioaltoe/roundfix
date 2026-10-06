@@ -1,8 +1,8 @@
 ---
 type: chore
-status: open
+status: promoted
 created: 2026-10-06
-spec: null
+spec: 0241-retire-the-fool-autoresearch-and-council
 ---
 
 # Retire the skills nobody uses, or that the Jev judge replaced
