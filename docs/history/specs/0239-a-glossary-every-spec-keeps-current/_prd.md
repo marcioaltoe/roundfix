@@ -1,9 +1,12 @@
 ---
 spec: 0239-a-glossary-every-spec-keeps-current
-status: active
+status: archived
 created: 2026-10-06
 surfaces: [backend, cli, docs]
+archived: "2026-10-06"
+source_slug: 0239-a-glossary-every-spec-keeps-current
 ---
+
 
 # A glossary every Spec keeps current
 
