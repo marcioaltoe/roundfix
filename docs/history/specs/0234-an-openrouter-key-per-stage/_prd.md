@@ -1,9 +1,12 @@
 ---
 spec: 0234-an-openrouter-key-per-stage
-status: active
+status: archived
 created: 2026-10-05
 surfaces: [backend, cli, docs]
+archived: "2026-10-05"
+source_slug: 0234-an-openrouter-key-per-stage
 ---
+
 
 # An OpenRouter key per stage
 
