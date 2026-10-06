@@ -1,0 +1,155 @@
+{
+  "scratch": "/private/tmp/roundfix-qa0236-oijj_vp8",
+  "home": "/private/tmp/roundfix-qa0236-oijj_vp8/home",
+  "steps": [
+    {
+      "name": "git-init",
+      "command": [
+        "git",
+        "init",
+        "-q"
+      ],
+      "cwd": "/private/tmp/roundfix-qa0236-oijj_vp8/repo",
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "git-identity",
+      "command": [
+        "git",
+        "config",
+        "user.email",
+        "qa@example.invalid"
+      ],
+      "cwd": "/private/tmp/roundfix-qa0236-oijj_vp8/repo",
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "git-name",
+      "command": [
+        "git",
+        "config",
+        "user.name",
+        "QA"
+      ],
+      "cwd": "/private/tmp/roundfix-qa0236-oijj_vp8/repo",
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "seed-add",
+      "command": [
+        "git",
+        "add",
+        "README.md"
+      ],
+      "cwd": "/private/tmp/roundfix-qa0236-oijj_vp8/repo",
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "seed-commit",
+      "command": [
+        "git",
+        "commit",
+        "-qm",
+        "QA seed"
+      ],
+      "cwd": "/private/tmp/roundfix-qa0236-oijj_vp8/repo",
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "profile-init",
+      "command": [
+        "./bin/roundfix",
+        "baseline",
+        "profile",
+        "init",
+        "--id",
+        "scratch-go",
+        "--from",
+        "go-cli-tui"
+      ],
+      "cwd": "/private/tmp/roundfix-qa0236-oijj_vp8/repo",
+      "exit": 0,
+      "stdout": "Created repository-owned Baseline Profile scratch-go\nPath: .roundfix/baseline/profiles/scratch-go.json\nBuilt-in source: go-cli-tui\nDigest: sha256:e4aeac3ab58882e2d8dda70165e6fb8329e967e7079786b158e6515dcd1be5a0\n",
+      "stderr": ""
+    },
+    {
+      "name": "profile-add",
+      "command": [
+        "git",
+        "add",
+        ".roundfix"
+      ],
+      "cwd": "/private/tmp/roundfix-qa0236-oijj_vp8/repo",
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "profile-commit",
+      "command": [
+        "git",
+        "commit",
+        "-qm",
+        "QA profile"
+      ],
+      "cwd": "/private/tmp/roundfix-qa0236-oijj_vp8/repo",
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "plan",
+      "command": [
+        "./bin/roundfix",
+        "baseline",
+        "plan",
+        "--repo",
+        "/private/tmp/roundfix-qa0236-oijj_vp8/repo",
+        "--profile",
+        "scratch-go",
+        "--format",
+        "json",
+        "--decision",
+        "preservation.mode=greenfield",
+        "--decision",
+        "language.generated=English",
+        "--decision",
+        "verification.gate=make verify",
+        "--decision",
+        "verification.incremental=make verify-incremental",
+        "--decision",
+        "branch.prefix=feat/",
+        "--decision",
+        "spec.scaffold=true",
+        "--decision",
+        "domain.layout=single-context",
+        "--decision",
+        "triage.external=false",
+        "--decision",
+        "autonomous.enabled=true",
+        "--decision",
+        "runtime.backend=codex gpt-5.5 xhigh",
+        "--decision",
+        "runtime.design=claude opus xhigh",
+        "--decision",
+        "secondbrain.enabled=false",
+        "--decision",
+        "repository.extension.enabled=false"
+      ],
+      "cwd": "/private/tmp/roundfix-qa0236-oijj_vp8/repo",
+      "exit": 3,
+      "stdout": "{\n  \"schemaVersion\": \"roundfix/baseline-result/v1\",\n  \"operation\": \"plan\",\n  \"state\": \"action_required\",\n  \"category\": \"decision\",\n  \"message\": \"required profile alignment is unresolved: capability.context7, capability.exa, verification.gate, verification.incremental\",\n  \"nextAction\": \"Run roundfix baseline skills restore --profile scratch-go --skill context7-cli, review its exact restoration Plan Digest, rerun with --confirm-plan \\u003cdigest\\u003e, then rerun profile alignment. Run roundfix baseline skills restore --profile scratch-go --skill exa-web-search, review its exact restoration Plan Digest, rerun with --confirm-plan \\u003cdigest\\u003e, then rerun profile alignment. select a command declared by the repository or add its local declaration\",\n  \"verifiedPostimages\": [],\n  \"warnings\": [],\n  \"recommendations\": []\n}\n",
+      "stderr": ""
+    }
+  ]
+}
