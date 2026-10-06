@@ -5,6 +5,22 @@
 CONTEXT.md
 docs/
 
+# Archived Spec history stays in this repository. Only its durable knowledge
+# (references/ and measurement/) is mirrored; raw QA evidence, QA reports,
+# Task files and Spec artifacts are repository records (Jev judgment of 123
+# archived artifacts, 2026-10-06: ~8% of history text is reusable knowledge).
+!docs/history/specs/*/qa/
+!docs/history/specs/*/task_*.md
+!docs/history/specs/*/_*.md
+!docs/history/specs/*/reviews/
+!docs/history/specs/*/fixtures/
+!docs/history/specs/*/baseline/
+!docs/history/**/*.pdf
+!docs/history/**/*.png
+!docs/history/**/*.db
+!docs/history/**/*.db-shm
+!docs/history/**/*.db-wal
+
 # Project overview
 README.md
 AGENTS.md
