@@ -1,8 +1,8 @@
 ---
 type: feat
-status: open
+status: promoted
 created: 2026-10-05
-spec: null
+spec: 0233-a-light-tier-on-open-models
 ---
 
 # A judge-assigned model tier per Task
