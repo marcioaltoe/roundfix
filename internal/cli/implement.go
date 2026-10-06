@@ -21,6 +21,7 @@ import (
 	"roundfix/internal/daemon"
 	"roundfix/internal/lighttier"
 	roundnotify "roundfix/internal/notify"
+	"roundfix/internal/openrouterkey"
 	"roundfix/internal/preflight"
 	"roundfix/internal/spec"
 	"roundfix/internal/speccheck"
@@ -1430,15 +1431,10 @@ func implementLightTierPlan(loaded roundconfig.Loaded, environment []string, rep
 	if override {
 		return lighttier.Plan{}
 	}
-	variable, present := roundconfig.OpenRouterImplementKey(func(name string) string {
-		for index := len(environment) - 1; index >= 0; index-- {
-			key, value, found := strings.Cut(environment[index], "=")
-			if found && key == name {
-				return value
-			}
-		}
-		return ""
-	})
+	variable, present := roundconfig.OpenRouterImplementKey(environment)
+	if variable == "" {
+		variable = openrouterkey.Variables(openrouterkey.StageImplement)[0]
+	}
 	return lighttier.Plan{Models: append([]string(nil), loaded.Config.OpenRouter.LightModels...),
 		CeilingUSD:  loaded.Config.OpenRouter.ImplementMonthlyCeilingUSD,
 		KeyVariable: variable, KeyPresent: present, HomeDir: loaded.HomeDir, Repository: repository}

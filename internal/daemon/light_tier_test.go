@@ -15,6 +15,7 @@ import (
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/gittest"
 	"roundfix/internal/lighttier"
+	"roundfix/internal/openrouterkey"
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
@@ -31,7 +32,7 @@ func lightPlanForTest(t *testing.T, fixture *taskCycleFixture) TaskPlan {
 		roundconfig.CategoryQA:      selectionProfileForTest(selectionForTest("claude", "qa-model", "high")),
 	})
 	plan.RuntimeFactory = runtimeFactoryForLifecycleTest(nil)
-	variable, _ := roundconfig.OpenRouterImplementKey(func(string) string { return "fixture" })
+	variable, _ := roundconfig.OpenRouterImplementKey([]string{openrouterkey.Shared + "=fixture"})
 	plan.LightTier = lighttier.Plan{Models: []string{roundconfig.DefaultLightModel, "x-ai/grok-4.5"}, CeilingUSD: 10, KeyVariable: variable, KeyPresent: true, HomeDir: t.TempDir(), Repository: fixture.gitRoot}
 	return plan
 }

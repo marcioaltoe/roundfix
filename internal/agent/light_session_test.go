@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"roundfix/internal/config"
+	"roundfix/internal/openrouterkey"
 )
 
 // Called by the existing fake acpx process; capture the inline option and the
@@ -35,7 +36,7 @@ func recordFakeLightEnvironment() error {
 }
 
 func lightRuntimeForTest() RuntimeSpec {
-	variable, _ := config.OpenRouterImplementKey(func(string) string { return "fixture" })
+	variable, _ := config.OpenRouterImplementKey([]string{openrouterkey.Shared + "=fixture"})
 	return RuntimeSpec{ID: "opencode", Protocol: ProtocolACP, Model: "openrouter/" + config.DefaultLightModel, OpenRouterKeyVariable: variable}
 }
 
@@ -109,6 +110,73 @@ func TestLightSessionReadsTheImplementKeyByName(t *testing.T) {
 			assertNoFile(t, "work prompt", h.promptsPath)
 			assertNoFile(t, "acpx commands", h.invocationsPath)
 		})
+	}
+}
+
+func TestOpenModelImplementationPrefersTheImplementStageKey(t *testing.T) {
+	t.Parallel()
+	environ := []string{
+		openrouterkey.Implement + "=implement-sentinel",
+		openrouterkey.Shared + "=shared-sentinel",
+		"OPENROUTER_API_KEY=generic-sentinel",
+	}
+	variable, present := config.OpenRouterImplementKey(environ)
+	if !present || variable != openrouterkey.Implement {
+		t.Fatalf("selected variable=%q present=%t", variable, present)
+	}
+	runtime := RuntimeSpec{ID: "opencode", Protocol: ProtocolACP, Model: "openrouter/" + config.DefaultLightModel, OpenRouterKeyVariable: variable}
+	overrides, err := lightSessionEnvironment(runtime, environ)
+	if err != nil {
+		t.Fatal(err)
+	}
+	inline := environmentValue(overrides, "OPENCODE_CONFIG_CONTENT")
+	if !strings.Contains(inline, `"apiKey":"{env:`+openrouterkey.Implement+`}"`) {
+		t.Fatalf("OpenCode config does not reference the implementation variable: %s", inline)
+	}
+	if strings.Contains(inline, openrouterkey.Shared) || strings.Contains(inline, "implement-sentinel") || strings.Contains(inline, "shared-sentinel") {
+		t.Fatalf("OpenCode config carries another variable or a key value: %s", inline)
+	}
+	commandEnv := acpxCommandEnv(environ, overrides)
+	if value := environmentValue(commandEnv, "OPENROUTER_API_KEY"); value != "" {
+		t.Fatalf("generic key reached OpenCode: %q", value)
+	}
+	if value := environmentValue(commandEnv, openrouterkey.Implement); value != "implement-sentinel" {
+		t.Fatalf("implementation key missing from OpenCode environment: %q", value)
+	}
+}
+
+func TestOpenModelImplementationFallsBackToTheSharedKey(t *testing.T) {
+	t.Parallel()
+	environ := []string{
+		openrouterkey.Shared + "=shared-sentinel",
+		"OPENROUTER_API_KEY=generic-sentinel",
+	}
+	variable, present := config.OpenRouterImplementKey(environ)
+	if !present || variable != openrouterkey.Shared {
+		t.Fatalf("selected variable=%q present=%t", variable, present)
+	}
+	runtime := RuntimeSpec{ID: "opencode", Protocol: ProtocolACP, Model: "openrouter/" + config.DefaultLightModel, OpenRouterKeyVariable: variable}
+	overrides, err := lightSessionEnvironment(runtime, environ)
+	if err != nil {
+		t.Fatal(err)
+	}
+	inline := environmentValue(overrides, "OPENCODE_CONFIG_CONTENT")
+	if !strings.Contains(inline, `"apiKey":"{env:`+openrouterkey.Shared+`}"`) {
+		t.Fatalf("OpenCode config does not reference the shared variable: %s", inline)
+	}
+	if strings.Contains(inline, openrouterkey.Implement) {
+		t.Fatalf("OpenCode config references the implementation variable: %s", inline)
+	}
+	commandEnv := acpxCommandEnv(environ, overrides)
+	if value := environmentValue(commandEnv, "OPENROUTER_API_KEY"); value != "" {
+		t.Fatalf("generic key reached OpenCode: %q", value)
+	}
+	if value := environmentValue(commandEnv, openrouterkey.Shared); value != "shared-sentinel" {
+		t.Fatalf("shared key missing from OpenCode environment: %q", value)
+	}
+	variable, present = config.OpenRouterImplementKey([]string{"OPENROUTER_API_KEY=generic-sentinel"})
+	if present || variable != "" {
+		t.Fatalf("generic key selected variable=%q present=%t", variable, present)
 	}
 }
 
