@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "context-workflow",
-  "version": 22,
+  "version": 23,
   "kind": "workflow",
   "title": "CONTEXT-driven workflow",
   "dependsOn": [
