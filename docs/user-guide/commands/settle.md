@@ -54,6 +54,15 @@ after Verification passes. A `pending` verdict is never accepted, and a report
 that records no QA row is refused even when it says `pass` or would otherwise
 qualify as declared-only `partial`.
 
+If the newest report in the selected surface is ineligible, settle exits `1`
+and leaves the Task file unchanged. Its stderr refusal names that report with
+`(report <path>)`, relative to the surface's working tree:
+
+```text
+Settle surface: <path>
+roundfix: settle QA Report is ineligible: <reason> (report <path>)
+```
+
 When other Tasks of the Spec are `failed` at settle time, one stderr warning
 names them: their work may be swept into this commit. Settle creates no Run,
 writes no Run Event Journal entries, and never pushes; Task Worktree
