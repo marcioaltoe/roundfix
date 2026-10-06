@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.52.0] - 2026-10-06
+
+### Retired skills
+
+- **Retired.** `the-fool`, `autoresearch` and `council` leave the Roundfix skill set and the Baseline, by the maintainer's decision. `council` is no longer an owned skill shipped in the binary. `the-fool` and `autoresearch` leave the lock, the Setup Snapshots and the `context-workflow` module, which moves to version 23. `grilling`, `grill-with-docs`, `write-idea`, `business-analyst` and `handoff` stay.
+- **Retired Skill.** A Retired Skill set keeps them out of the asset sync even while upstream still lists them.
+- **Adopters keep their copies.** `baseline update` never deletes an adopter's copy. It lists the retired copies the repository still holds under `Skills retired`, with the paths to delete, without changing its state or exit code.
+
 ## [0.51.0] - 2026-10-06
 
 ### A lost rollout is infrastructure
