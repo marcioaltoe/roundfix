@@ -39,7 +39,10 @@ func TestImplementBuildsTheLightTierPlan(t *testing.T) {
 			withImplementCollaborators(t, runner)
 			environment := commandEnvironmentForTest(t)
 			variable := openrouterkey.Shared
-			environment.environ = withEnvValue(environment.environ, variable, "")
+			// The machine's own stage keys must not decide the selection.
+			for _, stageKey := range []string{openrouterkey.Implement, openrouterkey.Judge, variable} {
+				environment.environ = withEnvValue(environment.environ, stageKey, "")
+			}
 			if name != "missing-key" {
 				environment.environ = withEnvValue(environment.environ, variable, "fixture-secret")
 			}
