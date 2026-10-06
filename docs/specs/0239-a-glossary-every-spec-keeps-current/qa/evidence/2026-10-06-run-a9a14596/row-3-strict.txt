@@ -1,0 +1,7 @@
+command: ./bin/roundfix spec check 0239-a-glossary-every-spec-keeps-current --strict
+exit: 0
+Spec 0239-a-glossary-every-spec-keeps-current
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup

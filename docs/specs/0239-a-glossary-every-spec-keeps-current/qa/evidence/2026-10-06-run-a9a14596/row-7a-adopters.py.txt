@@ -1,0 +1,23 @@
+from pathlib import Path
+import subprocess,re,json
+results=[]
+def git(root,*args):
+ r=subprocess.run(['git','-c','core.fsmonitor=false','-C',str(root),*args],capture_output=True,text=True);assert r.returncode==0,(args,r.stderr);return r.stdout
+for name in ['conexus','fluxus','vortex','tax-poc','oraculum']:
+ root=Path('/Users/marcio/dev')/name;paths=['CONTEXT.md']+(['packages/backend/CONTEXT.md'] if name=='vortex' else [])
+ status=git(root,'status','--porcelain');head=git(root,'rev-parse','HEAD').strip();files=git(root,'ls-tree','-r','--name-only','HEAD').splitlines();arch=[p for p in files if p.endswith('/_prd.md') and ('/_archived/' in p or '/history/specs/' in p)]
+ entries=[]
+ for p in paths:
+  last=git(root,'log','-1','--format=%H %cs %ct','HEAD','--',p).strip();stamp=int(last.split()[-1]);data=git(root,'show','HEAD:'+p)
+  terms=re.findall(r'^\*\*([^*]+)\*\*\s*:',data,re.M)
+  after=[]
+  for path in arch:
+   # Last stamp reflects archive edit/move; archived frontmatter gives independent date.
+   content=git(root,'show','HEAD:'+path);date=re.search(r'^archived:\s*["\']?(\d{4}-\d{2}-\d{2})',content,re.M)
+   commits=git(root,'log','-1','--format=%ct','HEAD','--',path).strip()
+   if commits and int(commits)>stamp: after.append({'path':path,'archived_date':date.group(1) if date else None})
+  entries.append({'path':p,'last_change':last,'defined_terms':len(terms),'archived_after_last_change':len(after),'archived_total':len(arch),'after':after})
+ assert git(root,'rev-parse','HEAD').strip()==head and git(root,'status','--porcelain')==status
+ results.append({'repository':str(root),'head':head,'tip_date':git(root,'log','-1','--format=%cs').strip(),'entries':entries,'read_only_confirmation':'HEAD and status unchanged; no fetch or mutation'})
+Path('/tmp/qa0239-adopters.json').write_text(json.dumps(results,indent=2))
+for r in results: print(r['repository'],[(x['path'],x['last_change'].split()[1],x['defined_terms'],x['archived_after_last_change'],x['archived_total']) for x in r['entries']])

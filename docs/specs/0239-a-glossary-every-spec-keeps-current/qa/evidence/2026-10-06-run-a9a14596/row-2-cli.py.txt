@@ -1,0 +1,40 @@
+from pathlib import Path
+import subprocess,tempfile,os,json,hashlib
+root=Path.cwd(); binary=root/'bin/roundfix'; scratch=Path(tempfile.mkdtemp(prefix='qa0239-')); repo=scratch/'repo'; repo.mkdir(); home=scratch/'home';home.mkdir()
+env={k:v for k,v in os.environ.items() if not any(x in k.upper() for x in ['API_KEY','TOKEN','SECRET'])};env.update(HOME=str(home),ROUNDFIX_HOME=str(home),GIT_CONFIG_GLOBAL='/dev/null')
+log=[]
+def run(args,cwd=repo):
+ r=subprocess.run(args,cwd=cwd,env=env,capture_output=True,text=True); log.append({'command':args,'cwd':str(cwd),'exit':r.returncode,'stdout':r.stdout,'stderr':r.stderr});return r
+def write(path,text):
+ p=repo/path;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text)
+def snapshot():
+ return {str(p.relative_to(repo)):hashlib.sha256(p.read_bytes()).hexdigest() for p in repo.rglob('*') if p.is_file() and '.git' not in p.parts}
+run(['git','init','-b','main']);run(['git','config','user.name','QA']);run(['git','config','user.email','qa@example.invalid'])
+write('CONTEXT.md','**Existing Term**: definition\n');write('.agents/skills/write-prd/references/glossary.md','guide\n');run(['git','add','.']);run(['git','-c','commit.gpgsign=false','commit','-m','seed horizon'])
+slug='0200-example';base='docs/specs/'+slug
+write(base+'/_prd.md','---\nstatus: active\n---\n# Example\n\n## Glossary\nNone.\n\n## Story\n**New Term**\n')
+r=run([str(binary),'spec','check',slug,'--stage','prd']);assert r.returncode==1 and 'SC-GLOSSARY-UNDECLARED' in r.stdout
+write(base+'/_prd.md','---\nstatus: active\n---\n# Example\n\n## Glossary\n- adds: **New Term**\n')
+write(base+'/_tasks.md','---\nschema: spec-tasks/v1\nqa: declined\nqa_reason: scratch detector fixture\ngraph:\n  nodes:\n    - id: task_01\n      file: task_01.md\n      needs: []\n---\n')
+task='---\ntask: task_01\nspec: '+slug+'\nstatus: pending\ntype: docs\n---\n# Write term\n\n## Context\n- interface: CONTEXT.md\n\n## Verification\n- `true` — **New Term**\n'
+write(base+'/task_01.md',task)
+r=run([str(binary),'spec','check',slug]);assert not any(x in r.stdout for x in ['SC-GLOSSARY-UNDECLARED','SC-GLOSSARY-UNPLANNED','SC-GLOSSARY-MISSING'])
+# Missing binding is independently distinguishable.
+write(base+'/task_01.md',task.replace('interface:','instruction:'))
+r=run([str(binary),'spec','check',slug]);assert 'SC-GLOSSARY-UNPLANNED' in r.stdout
+write(base+'/task_01.md',task.replace('status: pending','status: completed'))
+r=run([str(binary),'spec','check',slug]);assert r.returncode==1 and 'SC-GLOSSARY-MISSING' in r.stdout
+before=snapshot()
+for extra in [[],['--qa-override','--approval','scratch QA authority','--reason','exercise refusal']]:
+ r=run([str(binary),'archive',slug]+extra);assert r.returncode==2 and 'Glossary Gap: SC-GLOSSARY-MISSING' in r.stderr and not r.stdout; assert snapshot()==before
+# Repeat from a fresh process confirms refusal and persistence.
+r=run([str(binary),'archive',slug]);assert r.returncode==2 and snapshot()==before
+write('CONTEXT.md','**Existing Term**: definition\n**New Term**: definition\n')
+r=run([str(binary),'spec','check',slug]);assert 'SC-GLOSSARY-' not in r.stdout
+write(base+'/qa/qa-report-2026-10-06.md','---\nverdict: pass\nrows_blocked_environment: 0\nrows_blocked_finding: 0\nrows_blocked_declared: 0\n---\n# QA Report\n')
+r=run([str(binary),'archive',slug]);assert r.returncode==0 and 'archived '+slug in r.stdout
+assert not (repo/base).exists() and (repo/'docs/history/specs'/slug/'_prd.md').exists()
+# Missing glossary input is explicitly skipped.
+(repo/'CONTEXT.md').unlink();write('docs/specs/0201-input/_prd.md','---\nstatus: active\n---\n## Glossary\nNone.\n')
+r=run([str(binary),'spec','check','0201-input','--stage','prd']);assert 'CONTEXT.md or GLOSSARY.md' in r.stdout
+Path('/tmp/qa0239-flows.json').write_text(json.dumps(log,indent=2));print('all CLI assertions passed',scratch)

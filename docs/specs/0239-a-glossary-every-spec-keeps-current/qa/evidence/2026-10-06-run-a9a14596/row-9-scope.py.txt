@@ -1,0 +1,21 @@
+import subprocess,re,json
+from pathlib import Path
+root=Path.cwd(); slug='0239-a-glossary-every-spec-keeps-current';base='efdd10640cf99f504fe3a198993facdffc2e107b';head='40807a83686a2d3fa6f44c13949ede05dac21128'
+def git(*a):
+ r=subprocess.run(['git','-c','core.fsmonitor=false',*a],capture_output=True,text=True);assert r.returncode==0,r.stderr;return r.stdout
+commits={'task_01':'a394ec965a841c32d54b5354621892af0774b81d','task_02':'e1877d4b0431fc6ac94fb6d43dc6610ec079511f','task_03':head,'task_04':'f97198a1f36cb560b32f61bfd53e318a0e17c9af'}
+results=[]
+for task,c in commits.items():
+ file=f'docs/specs/{slug}/{task}.md';text=git('show',c+':'+file);changed=git('diff-tree','--no-commit-id','--name-only','-r',c).splitlines()
+ declared=set(re.findall(r'^- (?:instruction|interface|creates): `?([^`\n]+?)`?\s*$',text,re.M));declared.add(file)
+ recorded=text.partition('## Recorded paths')[2];declared.update(re.findall(r'`([^`\n]+)`',recorded))
+ # Task 02 explicitly lists sanctioned generated paths in Context; Result is supplementary, not declaration.
+ outside=[p for p in changed if p not in declared]
+ results.append({'task':task,'commit':c,'command':'git diff-tree --no-commit-id --name-only -r '+c,'changed':changed,'declared':sorted(declared),'outside':outside})
+ grant=git('show',c+'^:docs/specs/'+slug+'/_authorization.md'); assert grant==git('show',base+':docs/specs/'+slug+'/_authorization.md')
+ assert subprocess.run(['git','merge-base','--is-ancestor',base,c],capture_output=True).returncode==0
+assert all(not x['outside'] for x in results),results
+changed=git('diff','--name-only',base,head).splitlines()
+protected=['Makefile','go.mod','.github/workflows/','internal/baseline/assets/source-baselines/','.agents/skills/domain-modeling/','.agents/skills/grilling/','.agents/skills/grill-with-docs/','skills/domain-modeling/','skills/grilling/','skills/grill-with-docs/']
+assert not any(p==x or p.startswith(x) for p in changed for x in protected)
+Path('/tmp/qa0239-scope.json').write_text(json.dumps({'base':base,'head':head,'tasks':results,'unchanged_boundaries':protected,'grant_precedes_all_tasks':True},indent=2));print('scope assertions passed',[(r['task'],len(r['changed'])) for r in results])

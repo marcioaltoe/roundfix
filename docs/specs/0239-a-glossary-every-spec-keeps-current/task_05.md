@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0239-a-glossary-every-spec-keeps-current
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

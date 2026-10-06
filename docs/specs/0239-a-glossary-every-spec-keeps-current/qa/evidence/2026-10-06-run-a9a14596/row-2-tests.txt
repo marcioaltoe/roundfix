@@ -1,0 +1,70 @@
+command: go test -count=1 -v ./internal/speccheck ./internal/cli ./internal/spec -run TestGlossary|TestArchive.*Glossary|TestArchiveRefusesASpecWithAGlossaryGap|TestArchiveWithQAOverrideStillRefusesAGlossaryGap|TestStageScopeDefaultSweepIsUnchanged|TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095
+=== RUN   TestGlossaryDeclarationIsRequiredAfterTheHorizon
+--- PASS: TestGlossaryDeclarationIsRequiredAfterTheHorizon (0.14s)
+=== RUN   TestGlossaryMalformedEntryIsReported
+=== RUN   TestGlossaryMalformedEntryIsReported/-_adds:_New_Term
+=== RUN   TestGlossaryMalformedEntryIsReported/-_not_a_term:_**New_Term**
+=== RUN   TestGlossaryMalformedEntryIsReported/None._-_adds:_**New_Term**
+=== RUN   TestGlossaryMalformedEntryIsReported/-_changes:_****
+=== RUN   TestGlossaryMalformedEntryIsReported/-_adds:_**New_Term**_—_
+--- PASS: TestGlossaryMalformedEntryIsReported (0.21s)
+    --- PASS: TestGlossaryMalformedEntryIsReported/-_adds:_New_Term (0.04s)
+    --- PASS: TestGlossaryMalformedEntryIsReported/-_not_a_term:_**New_Term** (0.04s)
+    --- PASS: TestGlossaryMalformedEntryIsReported/None._-_adds:_**New_Term** (0.04s)
+    --- PASS: TestGlossaryMalformedEntryIsReported/-_changes:_**** (0.05s)
+    --- PASS: TestGlossaryMalformedEntryIsReported/-_adds:_**New_Term**_—_ (0.04s)
+=== RUN   TestGlossaryUndeclaredBoldTermIsReported
+--- PASS: TestGlossaryUndeclaredBoldTermIsReported (0.05s)
+=== RUN   TestGlossaryBoldRuleIgnoresLabelsDigitsAndFences
+--- PASS: TestGlossaryBoldRuleIgnoresLabelsDigitsAndFences (0.07s)
+=== RUN   TestGlossaryNotATermCoversAPhrase
+--- PASS: TestGlossaryNotATermCoversAPhrase (0.07s)
+=== RUN   TestGlossaryAddedTermNeedsATaskThatWritesIt
+=== RUN   TestGlossaryAddedTermNeedsATaskThatWritesIt/bound
+=== RUN   TestGlossaryAddedTermNeedsATaskThatWritesIt/created
+=== RUN   TestGlossaryAddedTermNeedsATaskThatWritesIt/no_path
+=== RUN   TestGlossaryAddedTermNeedsATaskThatWritesIt/no_verification
+=== RUN   TestGlossaryAddedTermNeedsATaskThatWritesIt/different_case
+=== RUN   TestGlossaryAddedTermNeedsATaskThatWritesIt/QA_Task_does_not_bind
+--- PASS: TestGlossaryAddedTermNeedsATaskThatWritesIt (0.72s)
+    --- PASS: TestGlossaryAddedTermNeedsATaskThatWritesIt/bound (0.14s)
+    --- PASS: TestGlossaryAddedTermNeedsATaskThatWritesIt/created (0.12s)
+    --- PASS: TestGlossaryAddedTermNeedsATaskThatWritesIt/no_path (0.11s)
+    --- PASS: TestGlossaryAddedTermNeedsATaskThatWritesIt/no_verification (0.12s)
+    --- PASS: TestGlossaryAddedTermNeedsATaskThatWritesIt/different_case (0.13s)
+    --- PASS: TestGlossaryAddedTermNeedsATaskThatWritesIt/QA_Task_does_not_bind (0.10s)
+=== RUN   TestGlossaryChangedTermMustExist
+--- PASS: TestGlossaryChangedTermMustExist (0.11s)
+=== RUN   TestGlossaryCompletedTaskMustLeaveTheTermDefined
+--- PASS: TestGlossaryCompletedTaskMustLeaveTheTermDefined (0.25s)
+=== RUN   TestGlossaryReadsMappedAndRenamedGlossaries
+=== RUN   TestGlossaryReadsMappedAndRenamedGlossaries/CONTEXT.md
+=== RUN   TestGlossaryReadsMappedAndRenamedGlossaries/GLOSSARY.md
+--- PASS: TestGlossaryReadsMappedAndRenamedGlossaries (0.22s)
+    --- PASS: TestGlossaryReadsMappedAndRenamedGlossaries/CONTEXT.md (0.11s)
+    --- PASS: TestGlossaryReadsMappedAndRenamedGlossaries/GLOSSARY.md (0.11s)
+=== RUN   TestGlossaryStagesReportOnlyTheirCodes
+=== RUN   TestGlossaryStagesReportOnlyTheirCodes/missing_inputs_are_recorded
+--- PASS: TestGlossaryStagesReportOnlyTheirCodes (0.20s)
+    --- PASS: TestGlossaryStagesReportOnlyTheirCodes/missing_inputs_are_recorded (0.10s)
+=== RUN   TestGlossaryLegacySpecIsSkipped
+--- PASS: TestGlossaryLegacySpecIsSkipped (0.26s)
+PASS
+suiteguard: guard cost: measured 9499 paths; fingerprint took 759.713ms before and 502.901666ms after
+ok  	roundfix/internal/speccheck	3.849s
+=== RUN   TestArchiveRefusesASpecWithAGlossaryGap
+--- PASS: TestArchiveRefusesASpecWithAGlossaryGap (0.08s)
+=== RUN   TestArchiveWithQAOverrideStillRefusesAGlossaryGap
+--- PASS: TestArchiveWithQAOverrideStillRefusesAGlossaryGap (0.10s)
+=== RUN   TestArchiveAcceptsASpecWhoseGlossaryIsCurrent
+--- PASS: TestArchiveAcceptsASpecWhoseGlossaryIsCurrent (0.10s)
+PASS
+suiteguard: guard cost: measured 9499 paths; fingerprint took 587.77575ms before and 528.074083ms after
+ok  	roundfix/internal/cli	1.807s
+=== RUN   TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095
+=== PAUSE TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095
+=== CONT  TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095
+--- PASS: TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095 (0.00s)
+PASS
+suiteguard: guard cost: measured 9499 paths; fingerprint took 756.035209ms before and 633.049ms after
+ok  	roundfix/internal/spec	1.624s
