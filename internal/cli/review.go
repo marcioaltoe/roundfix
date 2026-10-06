@@ -87,7 +87,22 @@ type reviewPrePromptError struct{ err error }
 func (err reviewPrePromptError) Error() string { return err.err.Error() }
 func (err reviewPrePromptError) Unwrap() error { return err.err }
 
+type reviewSelectionRetry struct {
+	Selection int    `json:"selection"`
+	Step      string `json:"step"`
+	Message   string `json:"message,omitempty"`
+}
+
+// Retains the original error chain while marking the failing selection's retry.
+type reviewRetriedSelectionError struct{ err error }
+
+func (err reviewRetriedSelectionError) Error() string { return err.err.Error() }
+func (err reviewRetriedSelectionError) Unwrap() error { return err.err }
+
 type reviewRecord struct {
+	FailedStep            string                     `json:"failedStep,omitempty"`
+	AdapterMessage        string                     `json:"adapterMessage,omitempty"`
+	SelectionRetries      []reviewSelectionRetry     `json:"selectionRetries,omitempty"`
 	EstimatedPromptTokens int                        `json:"estimatedPromptTokens,omitempty"`
 	DiffBytes             int                        `json:"diffBytes"`
 	OmittedPaths          []reviewOmittedPath        `json:"omittedPaths"`
@@ -505,6 +520,7 @@ type reviewSpecContextResult struct {
 	session               agent.SessionRef
 	selection             int
 	resumed               bool
+	selectionRetries      []reviewSelectionRetry
 	contexts              []reviewSpecContext
 	skipped               []string
 	archivedSpecs         []string
@@ -722,6 +738,7 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		stderr,
 		plan,
 	)
+	record.SelectionRetries = specContext.selectionRetries
 	record.DiffBytes = specContext.diffBytes
 	record.EstimatedPromptTokens = specContext.estimatedPromptTokens
 	record.OmittedPaths = specContext.omittedPaths
@@ -1202,6 +1219,38 @@ func runConfiguredReviewSession(
 	selections := make([]roundconfig.AgentSelection, 0, len(profile.Profile.Fallbacks)+1)
 	selections = append(selections, profile.Profile.Preferred)
 	selections = append(selections, profile.Profile.Fallbacks...)
+	retried := make([]bool, len(selections))
+	retry := func(index int, err error) {
+		description, placed := agent.DescribeProtocolFailure(err)
+		if !placed {
+			description.Step = "session setup"
+		}
+		fmt.Fprintf(stderr, "roundfix: review Agent Selection failed before the prompt at %s (%s); retrying selection %d once.\n", description.Step, description.Message, index)
+		specContext.selectionRetries = append(specContext.selectionRetries, reviewSelectionRetry{Selection: index, Step: description.Step, Message: description.Message})
+		retried[index] = true
+	}
+	finishError := func(index int, err error) error {
+		if err != nil && retried[index] {
+			return reviewRetriedSelectionError{err}
+		}
+		return err
+	}
+	runPrepared := func(index int) (agent.ExecuteResult, error) {
+		result, runErr := preparedRunner.RunPrepared(ctx, request, runevent.Discard)
+		if ctx.Err() == nil && reviewPromptFailedBeforePrompt(runErr) && !retried[index] {
+			retry(index, runErr)
+			result, runErr = preparedRunner.RunPrepared(ctx, request, runevent.Discard)
+		}
+		return result, runErr
+	}
+	fallback := func(index int, err error) bool {
+		if ctx.Err() != nil || !retried[index] || index+1 >= len(selections) {
+			return false
+		}
+		fmt.Fprintf(stderr, "roundfix: review Agent Selection failed before prompt (%v); activating fallback %d.\n", err, index+1)
+		return true
+	}
+	firstSelection := 0
 	if plan.Lineage.Round == 2 && plan.prior != nil && plan.prior.Lineage != nil && plan.prior.Lineage.SessionOpen {
 		prior := plan.prior.Lineage
 		selection := 0
@@ -1215,18 +1264,26 @@ func runConfiguredReviewSession(
 			}
 			request.Runtime = runtime
 			request.Session = agent.SessionRef{Name: prior.Session, WorkDir: gitRoot}
-			if prepareErr := preparer.PrepareSession(ctx, request, runevent.Discard); prepareErr == nil {
+			prepareErr := preparer.PrepareSession(ctx, request, runevent.Discard)
+			if prepareErr == nil {
 				specContext.runtime, specContext.session, specContext.selection = runtime, request.Session, selection
 				specContext.resumed = true
-				result, runErr := preparedRunner.RunPrepared(ctx, request, runevent.Discard)
-				return result, specContext, true, runErr
+				result, runErr := runPrepared(selection)
+				if !reviewPromptFailedBeforePrompt(runErr) || !fallback(selection, runErr) {
+					return result, specContext, true, finishError(selection, runErr)
+				}
+				firstSelection = selection + 1
+				specContext.resumed = false
+			} else if errors.Is(prepareErr, context.Canceled) || errors.Is(prepareErr, context.DeadlineExceeded) || ctx.Err() != nil {
+				return agent.ExecuteResult{}, specContext, false, prepareErr
 			}
 		}
 		if err := endOpenReviewSession(ctx, plan.prior, runner); err != nil {
 			return agent.ExecuteResult{}, specContext, false, err
 		}
 	}
-	for index, selection := range selections {
+	for index := firstSelection; index < len(selections); index++ {
+		selection := selections[index]
 		runtime, runtimeErr := runtimeForProfileSelection(selection)
 		if runtimeErr != nil {
 			return agent.ExecuteResult{}, specContext, false, runtimeErr
@@ -1234,19 +1291,30 @@ func runConfiguredReviewSession(
 		request.Runtime = runtime
 		specContext.runtime = runtime
 		request.Session = reviewSessionRef(headCommit, gitRoot, index)
-		if prepareErr := preparer.PrepareSession(ctx, request, runevent.Discard); prepareErr != nil {
+		prepareErr := preparer.PrepareSession(ctx, request, runevent.Discard)
+		if prepareErr != nil {
 			_ = runner.EndSession(context.WithoutCancel(ctx), runtime, request.Session)
-			if reviewSelectionCanFallback(prepareErr) && index+1 < len(selections) {
-				fmt.Fprintf(stderr, "roundfix: review Agent Selection failed before prompt (%v); activating fallback %d.\n", prepareErr, index+1)
-				continue
+			if ctx.Err() == nil && reviewPreparationCanRetry(prepareErr) && !retried[index] {
+				retry(index, prepareErr)
+				prepareErr = preparer.PrepareSession(ctx, request, runevent.Discard)
+				if prepareErr != nil {
+					_ = runner.EndSession(context.WithoutCancel(ctx), runtime, request.Session)
+				}
 			}
-			return agent.ExecuteResult{}, specContext, false, prepareErr
+			if prepareErr != nil {
+				if reviewPreparationCanRetry(prepareErr) && fallback(index, prepareErr) {
+					continue
+				}
+				return agent.ExecuteResult{}, specContext, false, finishError(index, prepareErr)
+			}
 		}
 		specContext.session, specContext.selection = request.Session, index
-		result, runErr := preparedRunner.RunPrepared(ctx, request, runevent.Discard)
-		// Once RunPrepared is called, the prompt has been sent. Every failure
-		// from that boundary belongs to this review and cannot activate fallback.
-		return result, specContext, true, runErr
+		result, runErr := runPrepared(index)
+		if reviewPromptFailedBeforePrompt(runErr) && fallback(index, runErr) {
+			_ = runner.EndSession(context.WithoutCancel(ctx), runtime, request.Session)
+			continue
+		}
+		return result, specContext, true, finishError(index, runErr)
 	}
 	return agent.ExecuteResult{}, specContext, false, errors.New("review Agent Selection Profile has no selections")
 }
@@ -1628,6 +1696,22 @@ func reviewSelectionCanFallback(err error) bool {
 	return errors.As(err, &adapterFailure)
 }
 
+func reviewPromptFailedBeforePrompt(err error) bool {
+	if err == nil || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return false
+	}
+	description, placed := agent.DescribeProtocolFailure(err)
+	return placed && description.FromPrompt && !description.PromptSent
+}
+
+func reviewPreparationCanRetry(err error) bool {
+	if !reviewSelectionCanFallback(err) {
+		return false
+	}
+	description, placed := agent.DescribeProtocolFailure(err)
+	return !placed || !description.PromptSent
+}
+
 func classifyReviewCommandResult(record reviewRecord, result agent.ExecuteResult, runErr error) (classified reviewRecord, code int) {
 	record.PermissionRefused = result.PermissionRefused
 	defer func() { appendReviewPermissionRefusalReason(&classified) }()
@@ -1665,6 +1749,13 @@ func classifyReviewCommandResult(record reviewRecord, result agent.ExecuteResult
 		return record, exitPreflight
 	case runErr != nil:
 		record.Reason = "review runtime failure: " + runErr.Error()
+		if description, placed := agent.DescribeProtocolFailure(runErr); placed {
+			record.FailedStep, record.AdapterMessage = description.Step, description.Message
+		}
+		var retried reviewRetriedSelectionError
+		if errors.As(runErr, &retried) {
+			record.Reason += " (after one automatic retry before the prompt)"
+		}
 		return record, exitPreflight
 	case strings.TrimSpace(result.TransportAnomaly) != "":
 		record.Reason = "review transport anomaly: " + strings.TrimSpace(result.TransportAnomaly)
