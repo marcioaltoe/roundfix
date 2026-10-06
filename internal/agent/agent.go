@@ -15,6 +15,8 @@ import (
 )
 
 type RuntimeSpec struct {
+	// OpenRouterKeyVariable scopes a light session to the implementation key by name.
+	OpenRouterKeyVariable   string
 	ID                      string
 	DisplayName             string
 	Protocol                string

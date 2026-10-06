@@ -1,0 +1,38 @@
+from pathlib import Path
+import subprocess,re,json
+root=Path.cwd(); e=root/'docs/specs/0233-a-light-tier-on-open-models/qa/evidence/2026-10-05-gate'; base='4118c798dc3ae666adb59b3040dc9ba01a6d618f'; head='04b7b185c1b48a387c9ef6a39c4b340b8abff52d'
+def git(*a): return subprocess.check_output(['git','-c','core.fsmonitor=false',*a],text=True)
+checks=[]
+def check(name,condition,detail=''):
+ checks.append(dict(check=name,pass_=bool(condition),detail=detail)); print(('PASS ' if condition else 'FAIL ')+name+' '+detail)
+for name in ['roundfix/SKILL.md','roundfix/references/runtime.md','roundfix/references/spec.md','write-tasks/SKILL.md']:
+ check('mirror '+name,(root/'.agents/skills'/name).read_bytes()==(root/'skills'/name).read_bytes())
+for skill in ['roundfix','write-tasks']:
+ now=(root/f'.agents/skills/{skill}/SKILL.md').read_text(); old=git('show',base+':.agents/skills/'+skill+'/SKILL.md'); v=re.findall(r'^version: (.+)$',now,re.M); ov=re.findall(r'^version: (.+)$',old,re.M); check('raised version '+skill,len(v)==1 and v[0]!=ov[0],str(ov)+' -> '+str(v))
+# Every QA settlement section remains byte-identical to the delivery base.
+paths=git('ls-tree','-r','--name-only',base,'.agents/skills','skills').splitlines(); count=0
+for path in paths:
+ if not Path(path).is_file() or not path.endswith('.md'): continue
+ old=git('show',base+':'+path); now=Path(path).read_text()
+ def sections(s): return re.findall(r'^### QA settlement\n[\s\S]*?(?=^## |^### |\Z)',s,re.M)
+ if sections(old) or sections(now):
+  count+=1; check('QA settlement unchanged '+path,sections(old)==sections(now))
+print('QA settlement sections compared:',count)
+for pattern,emit,doc in [('light tier skipped for Task','internal/daemon/agent_session_owner.go','docs/user-guide/configuration.md'),('light_tier_escalated','internal/daemon/task_engine.go','.agents/skills/roundfix/references/runtime.md'),('suggested model-tier','internal/cli/spec_judge.go','.agents/skills/roundfix/references/spec.md')]: check('vocabulary '+pattern,pattern in Path(emit).read_text() and pattern in Path(doc).read_text())
+for path,patterns in {'docs/user-guide/configuration.md':['light_models','implement_monthly_ceiling_usd','Light Spend Log','ROUNDFIX_OPENROUTER_API_KEY','OPENROUTER_API_KEY'],'docs/user-guide/commands/spec.md':['--stage tasks','suggest'],'docs/references/model-selection.md':['light tier','deepseek/deepseek-v4.1-flash'],'.agents/skills/roundfix/references/runtime.md':['Light Spend Log','escalates once','User Config'],'.agents/skills/roundfix/references/spec.md':['--stage tasks','suggested model-tier'],'.agents/skills/write-tasks/SKILL.md':['light tier','Governed Path','complexity','--stage tasks']}.items():
+ text=' '.join(Path(path).read_text().split()); check('documented contract '+path,all(x in text for x in patterns),', '.join(patterns))
+commits=git('rev-list','--reverse',base+'..'+head).splitlines(); mapping={commits[0]:'task_02',commits[1]:'task_01',commits[2]:'task_04',commits[3]:'task_03'}
+auth=Path('docs/specs/0233-a-light-tier-on-open-models/_authorization.md').read_text(); bound=set(re.findall(r'^  - (.+)$',auth.split('operations:')[0],re.M)); audits=[]
+for commit in commits:
+ task=mapping[commit]; taskpath='docs/specs/0233-a-light-tier-on-open-models/'+task+'.md'; text=Path(taskpath).read_text(); declared=set(re.findall(r'^- (?:instruction|interface|creates|deletes): `([^`]+)`',text,re.M)); recorded=text.split('## Recorded paths')[-1] if '## Recorded paths' in text else ''; declared.update(re.findall(r'^- `([^`]+)`',recorded,re.M)); actual=git('diff-tree','--no-commit-id','--name-only','-r',commit).splitlines(); extras=sorted(set(actual)-declared-{taskpath}); governed=[x for x in actual if x.startswith('.agents/skills/') or x in ['skills/roundfix/SKILL.md','skills/write-tasks/SKILL.md']]; unbounded=sorted(set(governed)-bound)
+ check('Task changed paths '+task,not extras,str(extras)); check('bounded governed '+task,not unbounded,str(governed)); audits.append(dict(task=task,commit=commit,actual=actual,declared=sorted(declared),recorded=recorded,extras=extras,governed=governed,unbounded=unbounded))
+ subprocess.run(['git','merge-base','--is-ancestor',base,commit],check=True); check('authorization predates '+task,git('show',base+':docs/specs/0233-a-light-tier-on-open-models/_authorization.md')==auth)
+changed=git('diff','--name-only',base,head).splitlines(); forbidden=[p for p in changed if p in ['Makefile','go.mod','.roundfixrc.yml','CONTEXT.md','CHANGELOG.md'] or p.startswith('.github/workflows/') or (p.startswith('internal/store/') and ('schema' in p or 'migration' in p))]; check('protected contracts unchanged',not forbidden,str(forbidden))
+# Promise mapping: judge-tier stays advisory, and success metrics/API contracts are named in Task References.
+alltasks='\n'.join(Path('docs/specs/0233-a-light-tier-on-open-models/'+x+'.md').read_text().split('## References',1)[1].split('## Result')[0] for x in ['task_01','task_02','task_03','task_04','task_05'])
+for n in range(1,8): check('promise Success Metric '+str(n),bool(re.search(r'Success Metrics?[^\n]*\b'+str(n)+r'\b',alltasks)))
+for n in range(1,8): check('promise API Contract '+str(n),'API Contract '+str(n) in alltasks)
+ctx=Path('CONTEXT.md').read_text(); terms=['Agent Selection Profile','Preferred Selection','Fallback Chain','Verification Feedback','Judge Log','User Config']; check('established glossary terms present',all('**'+x+'**:' in ctx for x in terms)); print('New glossary terms needed: Light Tier and Light Spend Log; missing from CONTEXT.md. Authorization forbids CONTEXT.md edits; gate records the closure need without expanding its report-only scope.')
+# Recompute the independent operator measurement aggregate, rather than merely reading it.
+measurement=Path('docs/specs/0233-a-light-tier-on-open-models/references/2026-10-05-a-judge-assigned-model-tier-per-task.md').read_text(); costs=[float(x) for x in re.findall(r'\| US\$(0\.\d+) \|',measurement)]; check('outside measurement six costs',len(costs)==6 and abs(sum(costs)-0.3166)<1e-9,str(costs)+' sum='+str(sum(costs))); check('outside measurement time ratio',abs(900/2177-0.41)<0.01,str(900/2177)); print('Original replay Runs and caveat: qa declined, repository gate run afterwards; comparative agent time excludes settlement overhead. Six first-attempt successes support feasibility, not universal success or current billing parity.')
+(e/'repository-audits.json').write_text(json.dumps({'checks':checks,'task_commits':audits,'base':base,'head':head},indent=2)); assert all(x['pass_'] for x in checks)

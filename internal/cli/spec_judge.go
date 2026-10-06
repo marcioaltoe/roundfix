@@ -15,14 +15,14 @@ import (
 )
 
 const specJudgeUsage = `Usage:
-  roundfix spec judge <slug> [--stage <prd|techspec>] [--format <text|json>]
+  roundfix spec judge <slug> [--stage <prd|techspec|tasks>] [--format <text|json>]
 
 Raises advisory judgments for one active Spec. Never fails for a judgment.
 Also asks whether each open Finding or Backlog Entry belongs with a source
 the Spec adopted. A suggestion never gates.
 
 Options:
-  --stage   Judge prd or techspec (default: both)
+  --stage   Judge prd, techspec or tasks (default: prd and techspec)
   --format  Output format: text or json (default: text)
 
 Set ROUNDFIX_OPENROUTER_API_KEY for OpenRouter, or ROUNDFIX_TYPESAFE_API_KEY
@@ -56,8 +56,8 @@ func parseSpecJudgeCommand(args []string) (specJudgeRequest, error) {
 				value = args[i]
 			}
 			if name == "--stage" {
-				if value != "prd" && value != "techspec" {
-					return req, fmt.Errorf("unsupported --stage %q; use prd or techspec", value)
+				if value != "prd" && value != "techspec" && value != "tasks" {
+					return req, fmt.Errorf("unsupported --stage %q; use prd, techspec or tasks", value)
 				}
 				req.stage = judge.Stage(value)
 			} else {
@@ -169,7 +169,11 @@ func renderSpecJudgeText(report judge.Report) string {
 			}
 		case "suggested":
 			suggested++
-			fmt.Fprintf(&out, "suggested %s %s → %s: P(same Spec) %.2f\n", j.Kind, j.Artifact, j.Target, *j.Noul)
+			if j.Kind == "model-tier" {
+				fmt.Fprintf(&out, "suggested model-tier %s: %s at confidence %.2f\n", j.Artifact, *j.Answer, *j.Confidence)
+			} else {
+				fmt.Fprintf(&out, "suggested %s %s → %s: P(same Spec) %.2f\n", j.Kind, j.Artifact, j.Target, *j.Noul)
+			}
 		case "clear":
 			clear++
 		case "skipped":

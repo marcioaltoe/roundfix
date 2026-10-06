@@ -21,6 +21,7 @@ import (
 
 	"roundfix/internal/agent"
 	"roundfix/internal/app"
+	"roundfix/internal/lighttier"
 	"roundfix/internal/preflight"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
@@ -219,6 +220,7 @@ func (gate *fairVerificationGate) notifyLocked() {
 // TargetBranch is that branch — the Spec's target branch as recorded on
 // the Run — and stays empty for a Run that recorded none.
 type TaskPlan struct {
+	LightTier                          lighttier.Plan
 	RunID                              string
 	Session                            agent.SessionRef
 	WorkDir                            string
@@ -860,7 +862,7 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 			taskPlan.specConsistencyBaseline[speccheck.RefusalReason(finding)] = struct{}{}
 		}
 	}
-	owner, ownerErr := engine.taskAgentSessionOwner(taskPlan, task, ordinal)
+	owner, ownerErr := engine.taskAgentSessionOwner(ctx, taskPlan, task, ordinal)
 	if ownerErr != nil {
 		return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: ownerErr}
 	}
@@ -1991,6 +1993,23 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 	})
 	if err != nil {
 		return "", fmt.Errorf("build Verification Feedback prompt for run %q Task %s: %w", plan.RunID, task.ID, err)
+	}
+	if owner != nil && owner.isLightActive() && !owner.escalated {
+		model := owner.activeRuntime.Model
+		if err := owner.escalate(ctx); err != nil {
+			return "", err
+		}
+		summary := fmt.Sprintf("Task %s escalates from the light tier to its %s profile after Verification failed.", task.ID, owner.scope.Category)
+		fmt.Fprintln(engine.deps.Progress, summary)
+		commands := make([]string, 0, len(feedbackFailures))
+		for _, failure := range feedbackFailures {
+			commands = append(commands, failure.Command)
+		}
+		if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonTask, summary,
+			map[string]any{"task": task.ID, "phase": "light_tier_escalated", "model": model, "failed_commands": commands}); err != nil {
+			return "", err
+		}
+		prompt = owner.taskPrompt + "\nThe working tree holds another model's attempt. Keep its changes and repair the Verification failures below.\n" + prompt
 	}
 	logPath := agentLogPath(plan.AgentLogs, plan.ArtifactDir, plan.RunID, ordinal)
 	fmt.Fprintf(engine.deps.Progress, "Verification Feedback: Task %s (Batch %03d)\n", task.ID, ordinal)

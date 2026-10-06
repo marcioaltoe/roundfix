@@ -161,3 +161,27 @@ refuses authors `openai` and `anthropic`, router authors `openrouter` and
 `typesafe`, and `@` presets. The refusal reason is `subscription_only`; a
 refusal before Agent work activates the configured fallback. Other OpenRouter
 models stay selectable. `jev.router_min_credit_usd` is a deprecated key.
+
+### Light implementation tier
+
+At dispatch, a Task is `light` when `complexity` is `low`, `type` is not `qa`,
+and it declares no Governed Path to create, change, or delete. All other Tasks,
+QA gates, and review Batches are `standard`. A one-Run Agent Selection override
+turns the tier off for that Run.
+
+A light Task derives a profile from the User Config `openrouter.light_models`
+list on the `opencode` runtime, with no reasoning effort and
+`profile_source` `light-tier`; its category Preferred Selection and Fallback
+Chain follow the light models. An empty list disables the tier. The default
+model is `deepseek/deepseek-v4.1-flash`, and each configured light model must
+pass the subscription rule. The light session receives the key variable name
+from Roundfix's key helper and never the key value or generic
+`OPENROUTER_API_KEY`.
+
+A skipped light Task emits phase `light_tier_skipped` with reason code
+`key_missing`, `spend_unreadable`, or `ceiling_reached`. A light Task that
+fails Verification escalates once. The escalation emits phase
+`light_tier_escalated`, naming the light model and failed commands, and runs a
+new session on the category's Preferred Selection or its pre-work fallback.
+The light prompt, read files, and diagnostics are sent to OpenRouter and its
+provider; the Light Spend Log records the reported cost without credentials.

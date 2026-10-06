@@ -21,7 +21,7 @@ import (
 const specUsage = `Usage:
   roundfix spec check [<slug> ...] [--stage <prd|techspec|tasks>] [--format <text|json>] [--strict] [--run-verification]
   roundfix spec audit <slug> [--format <text|json>]
-  roundfix spec judge <slug> [--stage <prd|techspec>] [--format <text|json>]
+  roundfix spec judge <slug> [--stage <prd|techspec|tasks>] [--format <text|json>]
 
 Commands:
   check  Check Spec artifact consistency

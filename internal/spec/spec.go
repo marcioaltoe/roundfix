@@ -99,6 +99,7 @@ type Task struct {
 	Status           Status
 	StatusNormalized bool
 	Type             TaskType
+	Complexity       string
 	Context          []TaskContextRef
 	Requirements     []TaskDeclaration
 	RehearsalCases   []TaskDeclaration
@@ -942,6 +943,7 @@ func loadTask(dir string, slug string, node manifestNode) (Task, error) {
 		Status:           Status(document.Frontmatter.Status),
 		StatusNormalized: document.StatusNormalized,
 		Type:             document.Type,
+		Complexity:       strings.TrimSpace(document.Frontmatter.Complexity),
 		Context:          append([]TaskContextRef(nil), document.Context...),
 		Requirements:     append([]TaskDeclaration(nil), document.Requirements...),
 		RehearsalCases:   append([]TaskDeclaration(nil), document.RehearsalCases...),

@@ -1,0 +1,17 @@
+Installed package version: 0.19.4
+Source: /opt/homebrew/lib/node_modules/acpx/dist/queue-owner-runtime-C0wIYowh.js
+SHA256: 13a85ebc243b592bf97843e23399bfb1338bb0462e3759c4a4549890c8f5c6f2
+
+1160: function buildQoderAcpCommandArgs(initialArgs, options) {
+1164: 	if (Array.isArray(sessionOptions?.allowedTools) && !hasCommandFlag(args, "--allowed-tools") && !hasCommandFlag(args, "--disallowed-tools")) {
+1165: 		const encodedTools = sessionOptions.allowedTools.map(normalizeQoderAllowedToolName).join(",");
+1246: function buildClaudeCodeOptionsMeta(options, isolateUserSettings = false) {
+1251: 	if (Object.keys(claudeCodeOptions).length > 0) meta.claudeCode = { options: claudeCodeOptions };
+1262: 	if (Array.isArray(options.allowedTools)) target.allowedTools = [...options.allowedTools];
+2732: 		if (isQoderAcpCommand(spawnCommand, args)) args = buildQoderAcpCommandArgs(args, this.options);
+2979: 		return buildClaudeCodeOptionsMeta(this.options.sessionOptions, isClaudeAcpCommand(command, args));
+4563: 	assignDefinedOption(merged, "allowedTools", preferred?.allowedTools);
+4601: 	assignDefinedOption(sessionOptions, "allowedTools", storedAllowedTools(stored.allowed_tools));
+4610: 		allowed_tools: Array.isArray(options.allowedTools) ? [...options.allowedTools] : void 0,
+
+Conclusion: allowedTools is forwarded into Claude Code metadata and Qoder argv; no OpenCode-specific forwarding exists among all allowedTools references. This supports avoiding warm-up reliance on an OpenCode tool restriction; current no-warm-up is independently exercised in TestLightSessionSendsNoWarmup.

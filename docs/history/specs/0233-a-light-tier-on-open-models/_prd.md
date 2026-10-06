@@ -1,9 +1,18 @@
 ---
 spec: 0233-a-light-tier-on-open-models
-status: active
+status: archived
 created: 2026-10-05
 surfaces: [backend, cli, docs]
+archived: "2026-10-05"
+source_slug: 0233-a-light-tier-on-open-models
+qa_override: true
+qa_override_approval: 'maintainer standing authorization 2026-09-30 (unattended program): qa_override only for environment-only partials'
+qa_override_reason: 'Environment-only partial: the Run sandbox denied the OpenCode docs, the GitHub issue and the OpenRouter key endpoint (R11-R13), and R16 has no Pull Request yet; the queue opens it. Every behavior row passed. The live light-tier check happens on Spec 0234''s own delivery, whose low Tasks run on the light tier by default; the operator records its cost.'
+qa_override_qa_outcome: partial
+qa_override_qa_task_status: failed
+qa_override_revision: 0a9172b6342f30b2c1ca0d0238a25b648687cea5
 ---
+
 
 # A light tier on open models
 

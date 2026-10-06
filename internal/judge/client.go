@@ -60,6 +60,9 @@ func (c client) ask(ctx context.Context, pending PendingJudgment, attempt int) c
 	if pending.Kind == "source-grouping" {
 		id, question = c.q.Grouping.QuestionID, c.q.Grouping.Question
 	}
+	if pending.Kind == "model-tier" {
+		id, question = c.q.ModelTier.QuestionID, c.q.ModelTier.Question
+	}
 	var body bytes.Buffer
 	encoder := json.NewEncoder(&body)
 	encoder.SetEscapeHTML(false)
@@ -155,6 +158,9 @@ func evaluate(q Questions, p PendingJudgment, c call) (answer, string, string, b
 	if p.Kind == "source-grouping" {
 		id = q.Grouping.QuestionID
 	}
+	if p.Kind == "model-tier" {
+		id = q.ModelTier.QuestionID
+	}
 	a := c.Answers[id]
 	if p.Kind == "source-grouping" {
 		a = answer{Type: a.Type, Noul: a.Noul}
@@ -164,18 +170,25 @@ func evaluate(q Questions, p PendingJudgment, c call) (answer, string, string, b
 	}
 	validProbability := func(v *float64) bool { return v != nil && *v >= 0 && *v <= 1 }
 	advisory := false
-	if p.Kind == "citation-support" {
-		if a.Type != "choice" || a.Choice == nil || !validProbability(a.Confidence) || len(a.Probabilities) != len(q.Citation.Question.Criteria) {
+	if p.Kind == "citation-support" || p.Kind == "model-tier" {
+		criteria := q.Citation.Question.Criteria
+		if p.Kind == "model-tier" {
+			criteria = q.ModelTier.Question.Criteria
+		}
+		if a.Type != "choice" || a.Choice == nil || !validProbability(a.Confidence) || len(a.Probabilities) != len(criteria) {
 			return answer{}, "skipped", "unreadable answer", false
 		}
-		if _, ok := q.Citation.Question.Criteria[*a.Choice]; !ok {
+		if _, ok := criteria[*a.Choice]; !ok {
 			return answer{}, "skipped", "unreadable answer", false
 		}
-		for name := range q.Citation.Question.Criteria {
+		for name := range criteria {
 			v, ok := a.Probabilities[name]
 			if !ok || v < 0 || v > 1 {
 				return answer{}, "skipped", "unreadable answer", false
 			}
+		}
+		if p.Kind == "model-tier" {
+			return a, "suggested", "", false
 		}
 		advisory = *a.Choice != q.Citation.RaiseWhenChoiceIsNot && *a.Confidence >= q.Citation.RaiseMinConfidence
 	} else {

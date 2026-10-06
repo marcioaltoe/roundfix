@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0233-a-light-tier-on-open-models
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -122,3 +122,77 @@ harness and the `implement` command with a fake runner.
 - `_prd.md` → Goals; User Stories 1, 4 and 5; Core Features 1, 2, 3, 4, 5 and 6; Success Metrics 1, 2, 3 and 4
 - `_techspec.md` → Interfaces; Invariants; Data Models; API Contract 4; API Contract 5; API Contract 6; Surface Transcript 3; Testing Approach; Build Order 3
 - ADR-0238; ADR-0114; ADR-0050; ADR-0108
+
+
+## Result
+
+Implemented the Task 03 slice for Daemon Verification. The Daemon-owned
+`status: in_progress` is preserved; the authored Verification commands were
+not run. No commit, push or Pull Request was made in this worktree.
+
+Light Tasks derive a `light-tier` profile with the configured OpenCode models
+first, no effort, and the category's original selections afterward. Dispatch
+checks the implementation-key presence, monthly log readability and ceiling
+in that order. Each skip keeps the category profile and emits one warning and
+a Task Run Event with its reason code. QA and review owners retain their
+existing selection behavior.
+
+The light runtime carries the key variable's name. Its acpx commands merge the
+inline OpenCode provider option, remove the generic key variable, and preserve
+unrelated inherited options. A malformed or non-object inherited configuration
+produces a selection failure before any prompt, without echoing the inherited
+content. Runtimes without the variable retain their existing environment path.
+
+Every light prompt records the session's incremental reported USD cost or an
+unreported zero. Append errors warn without failing Agent work; the last
+recorded cost advances only after a successful append, so later recording
+includes an intervening missed delta. The first command failure in Verification
+closes the light session and gives the one feedback turn a new category
+session, the original Task prompt, diagnostic references, and the statement
+that the working tree holds another model's attempt. Category startup failures
+retain the existing fallback-before-work behavior. The retry and commit rules
+are unchanged.
+
+`implement` builds the plan from the loaded User Config, its explicit Run
+environment through `OpenRouterImplementKey`, Home and repository. A one-Run
+Agent Selection override leaves it disabled. Tests use fake adapters/runners
+and disposable Homes, repositories and Run stores; no network or real
+`~/.roundfix` is used.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| First selection is the first light model with no effort and no warm-up | `TestLightTierDispatchOrder` checks selection order, a failed first light candidate, category takeover when both light starts fail, profile-source persistence, and unchanged medium/Governed-Path/disabled/QA ownership. `TestLightSessionSendsNoWarmup` captures exactly one work prompt even when the adapter advertises effort. |
+| Missing key, unreadable log and reached ceiling each use the profile with one warning | `TestLightTierSkipsWithAWarning` checks all reason codes, one warning and one Task Run Event; malformed spend with a missing key proves key-first priority, and malformed spend at the ceiling proves readability-first priority. `TestImplementBuildsTheLightTierPlan` covers Surface Transcript 3 and the loaded US$0.75 ceiling against US$0.80 spend. |
+| Every light prompt records spend without the key value | `TestLightSessionReadsTheImplementKeyByName` captures each acpx command's inline reference and absence of the generic variable, preserves inherited options, checks the Agent log, and rejects non-objects before any command. `TestLightTierRecordsSpend` checks four prompt lines with full identities, cumulative US$0.12 and US$0.32 readings, unreported/non-USD zeroes, append warnings and recovery to US$0.70. The CLI test checks two lines in the disposable Home with the loaded model and repository and no fixture key value in output or spend. |
+| Failed light Task gets one repair on its profile in a new session | `TestLightTierEscalatesOnce` checks a successful repair, failure after the second Verification, category startup fallback during repair, two distinct closed sessions, original prompt and feedback context, and one escalation warning/event with model and failed command. Category takeover before initial work retains same-session repair without escalation. |
+
+### Focused checks
+
+- Starting inspection: the runtime lacked the implementation-key field, Task
+  dispatch lacked a light plan and skip warnings, and Verification Feedback
+  had no light escalation path.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache rtk proxy go test ./internal/agent ./internal/daemon ./internal/cli -run 'TestLight|TestAllowedOpenCodeModelPreservesInheritedConfig|TestImplementBuildsTheLight|TestFallbackEligibility|TestAgentSelectionFallback|TestACPXSessionEffortCharacterization' -count=1` — exit 0 in all three packages.
+- Final code/test check: `GOCACHE=/private/tmp/roundfix-task03-gocache rtk proxy go test -race ./internal/agent ./internal/daemon ./internal/cli -run 'TestLight|TestImplementBuildsTheLight|TestAllowedOpenCodeModelPreservesInheritedConfig|TestFallbackEligibility|TestAgentSelectionFallback|TestACPXSessionEffortCharacterization|TestCodexSpawn' -count=1` — exit 0 in all three packages, with no race reports.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+
+The fake acpx environment capture extends the existing
+`internal/agent/subscription_rule_test.go` harness. Production support also
+adds `internal/agent/light_session.go` and per-command override removal in
+`internal/agent/codex_spawn.go`; these are part of this Task's runtime boundary.
+Guides, skills, configuration keys, profiles, the judge, the Run Database
+schema, the Task Graph and other Task files were not edited.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/agent/codex_spawn.go`
+- `internal/agent/light_session.go`
+- `internal/agent/subscription_rule_test.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261006T004151Z_0e07759cbdbec8e5`
+- Source commit: `04b7b185c1b48a387c9ef6a39c4b340b8abff52d`

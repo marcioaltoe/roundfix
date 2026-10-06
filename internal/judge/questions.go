@@ -66,7 +66,14 @@ type GroupingJudgment struct {
 	SourceMaxChars            int            `json:"source_max_chars"`
 }
 
+type ModelTierJudgment struct {
+	QuestionID   string   `json:"question_id"`
+	Question     Question `json:"question"`
+	TaskMaxChars int      `json:"task_max_chars"`
+}
+
 type Questions struct {
+	ModelTier                                   ModelTierJudgment
 	PinnedModel                                 string
 	AcceptedModel                               *regexp.Regexp
 	Transports                                  []Transport
@@ -87,15 +94,16 @@ func Load() (Questions, error) {
 		MonthlyCeilingUSD        float64      `json:"monthly_ceiling_usd"`
 		Language                 LanguageGate `json:"language"`
 		Judgments                struct {
-			Citation CitationJudgment `json:"citation-support"`
-			Goal     GoalJudgment     `json:"goal-mechanism"`
-			Grouping GroupingJudgment `json:"source-grouping"`
+			Citation  CitationJudgment  `json:"citation-support"`
+			Goal      GoalJudgment      `json:"goal-mechanism"`
+			Grouping  GroupingJudgment  `json:"source-grouping"`
+			ModelTier ModelTierJudgment `json:"model-tier"`
 		} `json:"judgments"`
 	}
 	if err := json.Unmarshal(questionFile, &file); err != nil {
 		return Questions{}, fmt.Errorf("load judge questions: %w", err)
 	}
-	q := Questions{PinnedModel: file.PinnedModel, Transports: file.Transports, USDPerMillionInputTokens: file.USDPerMillionInputTokens, MonthlyCeilingUSD: file.MonthlyCeilingUSD, Language: file.Language, Citation: file.Judgments.Citation, Goal: file.Judgments.Goal, Grouping: file.Judgments.Grouping}
+	q := Questions{PinnedModel: file.PinnedModel, Transports: file.Transports, USDPerMillionInputTokens: file.USDPerMillionInputTokens, MonthlyCeilingUSD: file.MonthlyCeilingUSD, Language: file.Language, Citation: file.Judgments.Citation, Goal: file.Judgments.Goal, Grouping: file.Judgments.Grouping, ModelTier: file.Judgments.ModelTier}
 	for _, pattern := range []struct {
 		name, text string
 		dst        **regexp.Regexp

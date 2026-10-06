@@ -23,6 +23,10 @@ as `runtime / model / effort`; the rationale is recorded beside it.
 | `qa` | `codex / gpt-6.1-sol / high` | The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer. | `claude / opus / high` | Changes runtime; `opus` resolves to Opus 5.5. |
 | `review` | `codex / gpt-5.6-luna / max` | Bounded work that blocks no other Task; about five minutes per session at a fraction of the price. | `codex / gpt-6.1-sol / high` | Stays on Codex, because every review selection must use the pre-PR review provider's runtime. |
 
+The light tier's default selection is `openrouter/deepseek/deepseek-v4.1-flash`
+with no reasoning effort. Every light model passes the subscription rule; the
+`openrouter/` prefix is the selection namespace.
+
 ### Model Catalog and picker efforts
 
 The catalog and picker values were read from `codex-acp` 2.0.1 and

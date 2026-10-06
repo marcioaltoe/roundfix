@@ -81,6 +81,9 @@ func TestAllowedOpenCodeModelPreservesInheritedConfig(t *testing.T) {
 
 // Capture the inherited value at the fake acpx process boundary.
 func recordFakeACPXConfig() error {
+	if err := recordFakeLightEnvironment(); err != nil {
+		return err
+	}
 	if path := os.Getenv("ROUNDFIX_FAKE_ACPX_CONFIG_PATH"); strings.TrimSpace(path) != "" {
 		return os.WriteFile(path, []byte(os.Getenv("OPENCODE_CONFIG_CONTENT")), 0o600)
 	}

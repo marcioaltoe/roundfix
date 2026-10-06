@@ -71,13 +71,13 @@ func relativeArtifact(root, artifact string) string {
 	return filepath.ToSlash(relative)
 }
 
-// Run fails open for judgments and service/log errors. Only an unreadable PRD
-// is an error for the caller; environment and filesystem roots are explicit.
+// Run fails open for judgments and service/log errors. An unreadable required
+// artifact is an error; environment and filesystem roots are explicit.
 func Run(ctx context.Context, q Questions, req Request) (Report, error) {
 	report := Report{Schema: "roundfix/spec-judge/v1", Spec: req.Spec, Model: q.PinnedModel, MonthCeilingUSD: q.MonthlyCeilingUSD, Judgments: []Judgment{}, ArtifactsSkipped: []ArtifactSkip{}}
-	// Invalid stages are a command validation concern; Run still reads the PRD.
+	// Invalid stages are a command validation concern; retain the default plan.
 	stage := req.Stage
-	if stage != "prd" && stage != "techspec" {
+	if stage != "prd" && stage != "techspec" && stage != "tasks" {
 		stage = ""
 	}
 	plan, err := PlanSpec(q, req.RepoRoot, req.SpecDir, stage)
@@ -200,6 +200,9 @@ func Run(ctx context.Context, q Questions, req Request) (Report, error) {
 			}
 			if p.Kind == "source-grouping" {
 				id = q.Grouping.QuestionID
+			}
+			if p.Kind == "model-tier" {
+				id = q.ModelTier.QuestionID
 			}
 			hash := sha256.Sum256(p.state)
 			recordError := result.Error

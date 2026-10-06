@@ -19,6 +19,7 @@ import (
 	"roundfix/internal/app"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/daemon"
+	"roundfix/internal/lighttier"
 	roundnotify "roundfix/internal/notify"
 	"roundfix/internal/preflight"
 	"roundfix/internal/spec"
@@ -557,7 +558,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	cycleResult, err := executeImplementCycle(ctx, gitState, run.LocalBranch, runRef, session, executionSpecsRoot, executionGraph, req.artifactDir, loadedConfig.Config.Logs.Agent, implementCapacities{
 		task:         loadedConfig.Config.Worktree.Concurrency,
 		verification: loadedConfig.Config.Verification.Concurrency,
-	}, budgetNow, run.CreatedAt, loadedConfig.Config.Budget, loadedConfig.Config.Defaults.Verification, loadedConfig.Config.Verification.RepositoryAtSettlement, loadedConfig.Config.Worktree.Copy, worktreeBootstrapSpec(loadedConfig.Config), newBootstrapOutputWriter(ctx, run.ID, runStore, ui.progress), authorization, runtime, agentSelections, operationalRuntimeFactory(req), collaborators, runStore, ui)
+	}, budgetNow, run.CreatedAt, loadedConfig.Config.Budget, loadedConfig.Config.Defaults.Verification, loadedConfig.Config.Verification.RepositoryAtSettlement, loadedConfig.Config.Worktree.Copy, worktreeBootstrapSpec(loadedConfig.Config), newBootstrapOutputWriter(ctx, run.ID, runStore, ui.progress), authorization, runtime, agentSelections, operationalRuntimeFactory(req), implementLightTierPlan(loadedConfig, environment.environ, gitState.Root, profilePreflight.Override != nil), collaborators, runStore, ui)
 	_, failureCounts = renderImplementTaskLinesWithOutcomes(executionSpecsRoot, executionGraph, false, cycleResult.Outcomes)
 	postCycleCtx, cancelPostCycle := implementBudgetContext(ctx, cycleResult.BudgetDeadline)
 	defer cancelPostCycle()
@@ -1016,7 +1017,7 @@ type implementCapacities struct {
 	verification int
 }
 
-func executeImplementCycle(ctx context.Context, gitState preflight.GitState, targetBranch string, runRef runworktree.Ref, session agent.SessionRef, specsRoot string, graph *spec.Graph, artifactDir string, agentLogs bool, capacities implementCapacities, now func() time.Time, runStartedAt time.Time, budget roundconfig.Budget, repositoryVerification string, repositoryVerificationAtSettlement bool, copyList []string, bootstrap runworktree.BootstrapSpec, bootstrapOutput io.Writer, authorization spec.AuthorizationResolution, runtime agent.RuntimeSpec, agentSelections daemon.AgentSelectionProfiles, runtimeFactory daemon.AgentRuntimeFactory, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
+func executeImplementCycle(ctx context.Context, gitState preflight.GitState, targetBranch string, runRef runworktree.Ref, session agent.SessionRef, specsRoot string, graph *spec.Graph, artifactDir string, agentLogs bool, capacities implementCapacities, now func() time.Time, runStartedAt time.Time, budget roundconfig.Budget, repositoryVerification string, repositoryVerificationAtSettlement bool, copyList []string, bootstrap runworktree.BootstrapSpec, bootstrapOutput io.Writer, authorization spec.AuthorizationResolution, runtime agent.RuntimeSpec, agentSelections daemon.AgentSelectionProfiles, runtimeFactory daemon.AgentRuntimeFactory, lightPlan lighttier.Plan, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
 	runID := runRef.RunID
 	fmt.Fprintf(ui.progress, "%s: implement selected Spec %s with %d Task(s); %d to execute this Run.\n", app.Name, graph.Spec.Slug, len(graph.Tasks), countNonCompletedTasks(graph.Tasks))
 	fmt.Fprintf(ui.progress, "Implement Run: %s\n", runID)
@@ -1049,6 +1050,7 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, tar
 		return daemon.TaskCycleResult{}, err
 	}
 	return engine.TaskCycle(ctx, daemon.TaskPlan{
+		LightTier:                          lightPlan,
 		RunID:                              runID,
 		Session:                            session,
 		WorkDir:                            runRef.Path,
@@ -1422,4 +1424,22 @@ func sweepTerminalRunSessions(ctx context.Context, runtime agent.RuntimeSpec, gi
 		}
 		fmt.Fprintf(stderr, "%s: closed session %s\n", app.Name, ref.Name)
 	}
+}
+
+func implementLightTierPlan(loaded roundconfig.Loaded, environment []string, repository string, override bool) lighttier.Plan {
+	if override {
+		return lighttier.Plan{}
+	}
+	variable, present := roundconfig.OpenRouterImplementKey(func(name string) string {
+		for index := len(environment) - 1; index >= 0; index-- {
+			key, value, found := strings.Cut(environment[index], "=")
+			if found && key == name {
+				return value
+			}
+		}
+		return ""
+	})
+	return lighttier.Plan{Models: append([]string(nil), loaded.Config.OpenRouter.LightModels...),
+		CeilingUSD:  loaded.Config.OpenRouter.ImplementMonthlyCeilingUSD,
+		KeyVariable: variable, KeyPresent: present, HomeDir: loaded.HomeDir, Repository: repository}
 }

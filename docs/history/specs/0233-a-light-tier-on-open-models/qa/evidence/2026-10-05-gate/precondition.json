@@ -1,0 +1,7 @@
+{
+  "command": "./bin/roundfix spec check 0233-a-light-tier-on-open-models --strict",
+  "home": "/private/tmp/roundfix-0233-precondition-1uh7mfgn",
+  "exit": 0,
+  "stdout": "Spec 0233-a-light-tier-on-open-models\nNo findings. Authored Verification commands were not executed.\nSkipped:\n  SC-FINDING-LIFECYCLE: missing docs/findings Finding\n  SC-ROLLUP-MEMBER: missing docs/findings rollup\n  SC-BACKLOG-UNMOVED: missing docs/backlog\n",
+  "stderr": ""
+}
