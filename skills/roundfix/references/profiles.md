@@ -149,9 +149,9 @@ After Run creation, automatic fallback is notification-first and pre-prompt
 only. If selection start fails before the first prompt, Roundfix records the
 failed attempt, publishes `agent_selection_fallback`, renders the same notice on
 stderr/TUI/Attach/Run Event Stream, and only then activates the next configured
-fallback in order. Once `agent_work_started` is recorded, prompt, tool,
-verification, cancellation and rate-limit failures keep their normal failure
-semantics. A Lost Rollout gets no repair: the Task continues in a new Agent
+fallback in order. Once `agent_work_started` is recorded, there is no fallback
+for prompt, tool, verification, cancellation or rate-limit failure; they keep
+their normal failure semantics. A Lost Rollout is the one exception and gets no repair: the Task continues in a new Agent
 Session, using the next Fallback Selection before the First Handoff or while a
 QA report is pending, and the same selection otherwise. An Agent Session owner
 gets at most two recoveries; the third settles the Task as runtime
