@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.50.0] - 2026-10-06
+
+### A glossary every Spec keeps current
+
+- **Glossary Declaration.** Every PRD and TechSpec carries a `## Glossary` section listing the terms the Spec `adds:` or `changes:` in `CONTEXT.md`, and phrases that are `not a term:` with a reason (or `None.` alone). A declared term must be written into `CONTEXT.md` by a non-QA Task whose Verification names it.
+- **Glossary gate.** `roundfix spec check` reports `SC-GLOSSARY-UNDECLARED` (missing declaration, or a bold 2–5-word capitalized phrase left undeclared), `SC-GLOSSARY-UNPLANNED` (no Task writes the term) and `SC-GLOSSARY-MISSING` (the term is not in the glossary). The QA precondition and `roundfix archive` refuse on any of them, even under `--qa-override`. Specs authored before this release are exempt unless they carry the section. The check reads `CONTEXT.md` and `GLOSSARY.md`.
+- **Skills and Baseline.** `write-prd`, `write-techspec`, `write-tasks`, `qa-gate` and the Roundfix Skill route new vocabulary through `domain-modeling`. The two Baseline domain clauses state that the glossary and the ADRs are the base of the CONTEXT-driven process, and that a Spec updates the glossary for the terms it introduces.
+- **Catch-up.** Twelve terms dropped since 2026-10-02 enter `CONTEXT.md`, among them Light Tier, Stage Key, Tested Base and Merge Evidence.
+
 ## [0.49.0] - 2026-10-06
 
 ### Review selection failures that say why
