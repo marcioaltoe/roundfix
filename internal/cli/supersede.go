@@ -163,23 +163,14 @@ func knownDelivererSpec(root roundconfig.SpecsRoot, slug string) (bool, error) {
 		return false, validationError{message: fmt.Sprintf("superseding Spec %q has malformed _prd.md in the active Spec Root: %v", slug, err)}
 	}
 
-	archivedDir := filepath.Join(spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot), slug)
-	status, err = spec.ReadPRDStatus(archivedDir)
-	if errors.Is(err, os.ErrNotExist) {
+	_, err = spec.ReadArchivedSpec(spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot), slug)
+	if errors.Is(err, spec.ErrNotArchived) {
 		return false, nil
 	}
 	if err != nil {
-		return false, validationError{message: fmt.Sprintf("superseding Spec %q has malformed _prd.md in the archive: %v", slug, err)}
+		return false, validationError{message: fmt.Sprintf("superseding Spec %q has malformed archive: %v", slug, err)}
 	}
-	if status == "archived" {
-		return true, nil
-	}
-	if _, err := spec.ReadSupersession(archivedDir); err == nil {
-		return true, nil
-	} else if !errors.Is(err, spec.ErrNoSupersession) {
-		return false, validationError{message: fmt.Sprintf("superseding Spec %q has malformed supersession record in the archive: %v", slug, err)}
-	}
-	return false, validationError{message: fmt.Sprintf("superseding Spec %q is not archived: archived _prd.md frontmatter status is %q; expected %q", slug, status, "archived")}
+	return true, nil
 }
 
 func knownSpecDirectory(directory string) (bool, error) {

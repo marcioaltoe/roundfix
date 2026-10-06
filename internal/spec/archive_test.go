@@ -230,8 +230,9 @@ func TestArchiveQAOverrideStampsProvenance(t *testing.T) {
 			specDir := writeArchiveOverrideFixture(t, specsRoot, StatusCompleted, StatusFailed, tt.reports, "")
 			beforeEvidence := archiveOverrideEvidence(t, specDir)
 			wantOutcome := tt.wantOutcome(specDir)
+			sourceRevision := archiveFixtureRevision(t, specsRoot)
 
-			result, err := Archive(ArchiveRequest{
+			result, err := Archive(ArchiveRequest{SourceRevision: sourceRevision, RepositoryRoot: filepath.Dir(filepath.Dir(specsRoot)),
 				SpecsRoot: specsRoot,
 				Slug:      slug,
 				QAOverride: &QAArchiveOverride{
@@ -256,7 +257,7 @@ func TestArchiveQAOverrideStampsProvenance(t *testing.T) {
 				QAOutcome        string `yaml:"qa_override_qa_outcome"`
 				OverrideRevision string `yaml:"qa_override_revision"`
 			}
-			content := archiveTestReadFile(t, filepath.Join(result.ArchivedDir, "_prd.md"))
+			content := archiveTestReadFile(t, result.RecordPath)
 			frontmatterBytes, _, err := splitFrontmatter([]byte(content))
 			if err != nil {
 				t.Fatalf("parse archived override PRD: %v", err)
@@ -267,8 +268,9 @@ func TestArchiveQAOverrideStampsProvenance(t *testing.T) {
 			if frontmatter.Status != "archived" || !frontmatter.QAOverride || frontmatter.Approval != approval || frontmatter.Reason != reason || frontmatter.QAOutcome != wantOutcome || frontmatter.OverrideRevision != revision {
 				t.Fatalf("archived override frontmatter = %+v, want all override provenance", frontmatter)
 			}
-			if afterEvidence := archiveOverrideEvidence(t, result.ArchivedDir); !reflect.DeepEqual(afterEvidence, beforeEvidence) {
-				t.Fatalf("QA override changed QA evidence\nbefore: %#v\nafter:  %#v", beforeEvidence, afterEvidence)
+			assertArchiveEvidenceInGit(t, specsRoot, result, beforeEvidence)
+			if _, err := os.Stat(specDir); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("Spec remains: %v", err)
 			}
 		})
 	}
@@ -281,8 +283,9 @@ func TestArchiveQAOverrideAcceptsAFailedQATaskWithAPassReport(t *testing.T) {
 		"qa-report-2026-09-24.md": "---\nverdict: pass\n---\n\n# QA Report\n",
 	}, "")
 	beforeEvidence := archiveOverrideEvidence(t, specDir)
+	sourceRevision := archiveFixtureRevision(t, specsRoot)
 
-	result, err := Archive(ArchiveRequest{
+	result, err := Archive(ArchiveRequest{SourceRevision: sourceRevision, RepositoryRoot: filepath.Dir(filepath.Dir(specsRoot)),
 		SpecsRoot: specsRoot,
 		Slug:      "demo",
 		QAOverride: &QAArchiveOverride{
@@ -297,8 +300,9 @@ func TestArchiveQAOverrideAcceptsAFailedQATaskWithAPassReport(t *testing.T) {
 	if !result.QAOverride {
 		t.Fatal("Archive result did not report the QA override")
 	}
-	if afterEvidence := archiveOverrideEvidence(t, result.ArchivedDir); !reflect.DeepEqual(afterEvidence, beforeEvidence) {
-		t.Fatalf("QA override changed QA evidence\nbefore: %#v\nafter:  %#v", beforeEvidence, afterEvidence)
+	assertArchiveEvidenceInGit(t, specsRoot, result, beforeEvidence)
+	if _, err := os.Stat(specDir); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("Spec remains: %v", err)
 	}
 }
 
@@ -309,7 +313,7 @@ func TestArchiveQAOverrideRecordsTheQATaskStatus(t *testing.T) {
 		"qa-report-2026-09-24.md": "---\nverdict: pass\n---\n\n# QA Report\n",
 	}, "")
 
-	result, err := Archive(ArchiveRequest{
+	result, err := Archive(ArchiveRequest{SourceRevision: strings.Repeat("a", 40),
 		SpecsRoot: specsRoot,
 		Slug:      "demo",
 		QAOverride: &QAArchiveOverride{
@@ -323,7 +327,7 @@ func TestArchiveQAOverrideRecordsTheQATaskStatus(t *testing.T) {
 	}
 
 	var frontmatter map[string]any
-	content := archiveTestReadFile(t, filepath.Join(result.ArchivedDir, "_prd.md"))
+	content := archiveTestReadFile(t, result.RecordPath)
 	frontmatterBytes, _, err := splitFrontmatter([]byte(content))
 	if err != nil {
 		t.Fatalf("parse archived override PRD: %v", err)
@@ -343,7 +347,7 @@ func TestArchiveQAOverrideOmitsTheStatusForACompletedQATask(t *testing.T) {
 		"qa-report-2026-09-24.md": "---\nverdict: fail\n---\n\n# QA Report\n",
 	}, "")
 
-	result, err := Archive(ArchiveRequest{
+	result, err := Archive(ArchiveRequest{SourceRevision: strings.Repeat("a", 40),
 		SpecsRoot: specsRoot,
 		Slug:      "demo",
 		QAOverride: &QAArchiveOverride{
@@ -357,7 +361,7 @@ func TestArchiveQAOverrideOmitsTheStatusForACompletedQATask(t *testing.T) {
 	}
 
 	var frontmatter map[string]any
-	content := archiveTestReadFile(t, filepath.Join(result.ArchivedDir, "_prd.md"))
+	content := archiveTestReadFile(t, result.RecordPath)
 	frontmatterBytes, _, err := splitFrontmatter([]byte(content))
 	if err != nil {
 		t.Fatalf("parse archived override PRD: %v", err)
@@ -365,8 +369,8 @@ func TestArchiveQAOverrideOmitsTheStatusForACompletedQATask(t *testing.T) {
 	if err := yaml.Unmarshal(frontmatterBytes, &frontmatter); err != nil {
 		t.Fatalf("decode archived override PRD: %v", err)
 	}
-	if got, ok := frontmatter["qa_override_qa_task_status"]; ok {
-		t.Fatalf("qa_override_qa_task_status = %#v, want field omitted", got)
+	if got := frontmatter["qa_override_qa_task_status"]; got != "" {
+		t.Fatalf("qa_override_qa_task_status = %#v, want empty field", got)
 	}
 }
 
@@ -378,7 +382,7 @@ func TestArchiveQAOverrideStillRequiresNonQATasks(t *testing.T) {
 	}, "")
 	beforeEvidence := archiveOverrideEvidence(t, specDir)
 
-	_, err := Archive(ArchiveRequest{
+	_, err := Archive(ArchiveRequest{SourceRevision: strings.Repeat("a", 40),
 		SpecsRoot: specsRoot,
 		Slug:      "demo",
 		QAOverride: &QAArchiveOverride{
@@ -432,7 +436,7 @@ func testArchiveQAOverrideRefusedOnlyWhenNormalArchiveSucceeds(t *testing.T) {
 			}, tt.prdTail)
 			beforeEvidence := archiveOverrideEvidence(t, specDir)
 
-			_, err := Archive(ArchiveRequest{
+			_, err := Archive(ArchiveRequest{SourceRevision: strings.Repeat("a", 40),
 				SpecsRoot: specsRoot,
 				Slug:      "demo",
 				QAOverride: &QAArchiveOverride{
@@ -464,7 +468,7 @@ func TestArchiveQAOverrideRecordsARelativeOutcome(t *testing.T) {
 		t.Fatalf("create unreadable QA Report symlink: %v", err)
 	}
 
-	result, err := Archive(ArchiveRequest{
+	result, err := Archive(ArchiveRequest{SourceRevision: strings.Repeat("a", 40),
 		SpecsRoot: specsRoot,
 		Slug:      "demo",
 		QAOverride: &QAArchiveOverride{
@@ -480,7 +484,7 @@ func TestArchiveQAOverrideRecordsARelativeOutcome(t *testing.T) {
 	var frontmatter struct {
 		QAOutcome string `yaml:"qa_override_qa_outcome"`
 	}
-	content := archiveTestReadFile(t, filepath.Join(result.ArchivedDir, "_prd.md"))
+	content := archiveTestReadFile(t, result.RecordPath)
 	frontmatterBytes, _, err := splitFrontmatter([]byte(content))
 	if err != nil {
 		t.Fatalf("parse archived override PRD: %v", err)
@@ -533,7 +537,7 @@ func TestSpec0058ReplayArchivesDeclaredUnreachableRelease(t *testing.T) {
 		t.Fatalf("replay QA Report = %+v, want partial with one declared-only blocked row", report)
 	}
 
-	result, err := Archive(ArchiveRequest{
+	result, err := Archive(ArchiveRequest{SourceRevision: strings.Repeat("a", 40),
 		SpecsRoot:  specsRoot,
 		Slug:       spec0058ReplaySlug,
 		ArchivedAt: time.Date(2026, time.August, 4, 0, 0, 0, 0, time.UTC),
@@ -544,7 +548,7 @@ func TestSpec0058ReplayArchivesDeclaredUnreachableRelease(t *testing.T) {
 	if _, err := os.Stat(specDir); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("active replay still exists after archive: %v", err)
 	}
-	archivedPRD := archiveTestReadFile(t, filepath.Join(result.ArchivedDir, "_prd.md"))
+	archivedPRD := archiveTestReadFile(t, result.RecordPath)
 	var frontmatter struct {
 		Status     string   `yaml:"status"`
 		QAOverride bool     `yaml:"qa_override"`
@@ -593,7 +597,7 @@ func TestSpec0058ReplayReportsWronglyDeclaredReachableRow(t *testing.T) {
 		t.Fatalf("wrongly declared replay did not report the finding:\n%s", reportContent)
 	}
 
-	_, err = Archive(ArchiveRequest{SpecsRoot: specsRoot, Slug: spec0058ReplaySlug})
+	_, err = Archive(ArchiveRequest{SourceRevision: strings.Repeat("a", 40), SpecsRoot: specsRoot, Slug: spec0058ReplaySlug})
 	if err == nil {
 		t.Fatal("Archive accepted a replay whose declared row was reachable")
 	}
@@ -608,7 +612,7 @@ func TestSpec0058ReplayRefusesUnmatchedBlockedRow(t *testing.T) {
 	repositoryRoot := archiveTestRepositoryRoot(t)
 	specsRoot, _ := prepareSpec0058Replay(t, repositoryRoot, "unmatched", false)
 
-	_, err := Archive(ArchiveRequest{SpecsRoot: specsRoot, Slug: spec0058ReplaySlug})
+	_, err := Archive(ArchiveRequest{SourceRevision: strings.Repeat("a", 40), SpecsRoot: specsRoot, Slug: spec0058ReplaySlug})
 	if err == nil {
 		t.Fatal("Archive accepted a replay with a blocked row and no declaration")
 	}

@@ -72,11 +72,14 @@ func ArchiveDir(kind ArchiveKind) string {
 
 // ArchiveRequest asks the Spec package to retire one completed Spec.
 type ArchiveRequest struct {
-	SpecsRoot   string
-	BuiltInRoot bool
-	Slug        string
-	ArchivedAt  time.Time
-	QAOverride  *QAArchiveOverride
+	SpecsRoot      string
+	BuiltInRoot    bool
+	Slug           string
+	ArchivedAt     time.Time
+	QAOverride     *QAArchiveOverride
+	SourceRevision string
+	Promote        []string
+	RepositoryRoot string
 }
 
 // ArchiveResult reports the filesystem paths touched by Archive.
@@ -86,20 +89,21 @@ type ArchiveResult struct {
 	ArchivedOn     string
 	QAOverride     bool
 	RewrittenLinks int
+	RecordPath     string
+	RemovedFiles   int
+	RemovedBytes   int64
+	Promoted       []string
 }
 
-// Archive verifies either completion and QA evidence for a Spec with a Task
-// Graph or a supersession record for a Spec without one, then moves the Spec
-// under the resolved archived Spec root. A partial QA Report is eligible only
-// when its blocked rows are declared unreachable. Superseded Specs keep their
-// disposition metadata and receive the same link pass.
+// Archive keeps the existing completion and QA eligibility policy, then writes
+// an Archive Record and removes the Spec folder. Its bytes remain at the
+// caller's committed SourceRevision; no PRD or link is rewritten.
 func Archive(req ArchiveRequest) (ArchiveResult, error) {
 	qaOverride, err := validateQAArchiveOverride(req.QAOverride)
 	if err != nil {
 		return ArchiveResult{}, err
 	}
 	sourceDir := filepath.Join(filepath.Clean(req.SpecsRoot), req.Slug)
-	stampMetadata := true
 	var unproven []string
 	qaOverrideOutcome := ""
 	qaOverrideQATaskStatus := ""
@@ -119,7 +123,6 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 			}
 			return ArchiveResult{}, fmt.Errorf("invalid supersession proof: %w", supersessionErr)
 		}
-		stampMetadata = false
 	} else {
 		sourceDir = graph.Spec.Dir
 		if qaOverride != nil {
@@ -168,47 +171,156 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 
 	archiveRoot := ArchiveSpecRoot(req.SpecsRoot, req.BuiltInRoot)
 	archivedDir := filepath.Join(archiveRoot, req.Slug)
-	if _, err := os.Stat(archivedDir); err == nil {
+	if _, err := os.Lstat(archivedDir); err == nil {
 		return ArchiveResult{}, fmt.Errorf("archived Spec destination %q already exists", archivedDir)
 	} else if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return ArchiveResult{}, fmt.Errorf("stat archived Spec destination %q: %w", archivedDir, err)
 	}
 
-	rewrites, rewrittenLinks, err := prepareArchiveLinks(sourceDir, archivedDir, req.Slug)
+	if _, _, err := prepareArchiveLinks(sourceDir, archivedDir, req.Slug); err != nil {
+		return ArchiveResult{}, err
+	}
+	if !regexp.MustCompile(`^[0-9a-fA-F]{40}$`).MatchString(req.SourceRevision) {
+		return ArchiveResult{}, errors.New("archive requires a 40-hex SourceRevision")
+	}
+	recordPath := ArchiveRecordPath(archiveRoot, req.Slug)
+	if _, err := os.Lstat(recordPath); err == nil {
+		return ArchiveResult{}, fmt.Errorf("archived Spec destination %q already exists", recordPath)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return ArchiveResult{}, err
+	}
+	var promoted []string
+	copies := make(map[string][]byte)
+	for _, candidate := range req.Promote {
+		clean := filepath.Clean(candidate)
+		if filepath.IsAbs(candidate) || clean == "." || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+			return ArchiveResult{}, fmt.Errorf("promoted path %q is outside the Spec", candidate)
+		}
+		base := filepath.Base(clean)
+		if (filepath.Dir(clean) == "." && strings.HasPrefix(base, "_") && strings.HasSuffix(base, ".md")) || (strings.HasPrefix(base, "task_") && strings.HasSuffix(base, ".md")) || (strings.HasPrefix(base, "qa-report-") && strings.HasSuffix(base, ".md")) {
+			return ArchiveResult{}, fmt.Errorf("cannot promote core artifact %q", candidate)
+		}
+		filePath := filepath.Join(sourceDir, clean)
+		// Reject symlinks in every component, including directory components.
+		current := sourceDir
+		for _, component := range strings.Split(clean, string(filepath.Separator)) {
+			current = filepath.Join(current, component)
+			info, err := os.Lstat(current)
+			if err != nil {
+				return ArchiveResult{}, err
+			}
+			if info.Mode()&os.ModeSymlink != 0 {
+				return ArchiveResult{}, fmt.Errorf("promoted path %q is not a regular file", candidate)
+			}
+		}
+		info, err := os.Lstat(filePath)
+		if err != nil {
+			return ArchiveResult{}, err
+		}
+		if !info.Mode().IsRegular() {
+			return ArchiveResult{}, fmt.Errorf("promoted path %q is not a regular file", candidate)
+		}
+		if req.RepositoryRoot == "" {
+			return ArchiveResult{}, errors.New("promotion requires RepositoryRoot")
+		}
+		destination := filepath.Join(req.RepositoryRoot, "docs", "references", base)
+		if _, err := os.Lstat(destination); err == nil {
+			return ArchiveResult{}, fmt.Errorf("promotion destination %q already exists", destination)
+		} else if !errors.Is(err, os.ErrNotExist) {
+			return ArchiveResult{}, err
+		}
+		if _, exists := copies[destination]; exists {
+			return ArchiveResult{}, fmt.Errorf("duplicate promotion destination %q", destination)
+		}
+		content, err := os.ReadFile(filePath)
+		if err != nil {
+			return ArchiveResult{}, err
+		}
+		copies[destination] = content
+		promoted = append(promoted, "docs/references/"+base)
+	}
+	archivedOn := archiveDate(req.ArchivedAt)
+	repositoryRoot := req.RepositoryRoot
+	if repositoryRoot == "" {
+		repositoryRoot = filepath.Dir(req.SpecsRoot)
+		if req.BuiltInRoot {
+			repositoryRoot = filepath.Dir(repositoryRoot)
+		}
+	}
+	canonicalRoot, err := filepath.EvalSymlinks(repositoryRoot)
 	if err != nil {
 		return ArchiveResult{}, err
 	}
-	archivedOn := archiveDate(req.ArchivedAt)
-	if stampMetadata {
-		prdPath := filepath.Join(sourceDir, "_prd.md")
-		if err := stampArchiveMetadata(prdPath, req.Slug, archivedOn, unproven, qaOverride, qaOverrideOutcome, qaOverrideQATaskStatus); err != nil {
-			return ArchiveResult{}, err
+	canonicalSource, err := filepath.EvalSymlinks(sourceDir)
+	if err != nil {
+		return ArchiveResult{}, err
+	}
+	source, err := filepath.Rel(canonicalRoot, canonicalSource)
+	if err != nil {
+		return ArchiveResult{}, err
+	}
+	var overrideRecord *QAArchiveOverrideRecord
+	if qaOverride != nil {
+		overrideRecord = &QAArchiveOverrideRecord{qaOverride.Approval, qaOverride.Reason, qaOverrideOutcome, qaOverrideQATaskStatus, qaOverride.Revision}
+	}
+	record, err := BuildArchiveRecord(ArchiveRecordInput{SpecDir: sourceDir, Slug: req.Slug, Source: filepath.ToSlash(source), SourceRevision: req.SourceRevision, Archived: archivedOn, Unproven: unproven, QAOverride: overrideRecord, Promoted: promoted})
+	if err != nil {
+		return ArchiveResult{}, err
+	}
+	content, err := RenderArchiveRecord(record)
+	if err != nil {
+		return ArchiveResult{}, err
+	}
+	result := ArchiveResult{SourceDir: sourceDir, ArchivedDir: archivedDir, ArchivedOn: archivedOn, QAOverride: qaOverride != nil, RecordPath: recordPath, Promoted: promoted}
+	if err := filepath.WalkDir(sourceDir, func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		result.RemovedFiles++
+		result.RemovedBytes += info.Size()
+		return nil
+	}); err != nil {
+		return ArchiveResult{}, err
+	}
+	var written []string
+	rollback := func(cause error) error {
+		for _, path := range written {
+			cause = errors.Join(cause, os.Remove(path))
+		}
+		return cause
+	}
+	write := func(path string, data []byte) error {
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			return err
+		}
+		file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+		if err != nil {
+			return err
+		}
+		written = append(written, path)
+		_, writeErr := file.Write(data)
+		return errors.Join(writeErr, file.Close())
+	}
+	if err := write(recordPath, content); err != nil {
+		return ArchiveResult{}, rollback(fmt.Errorf("write archive record: %w", err))
+	}
+	for _, destination := range promoted {
+		path := filepath.Join(req.RepositoryRoot, filepath.FromSlash(destination))
+		if err := write(path, copies[path]); err != nil {
+			return ArchiveResult{}, rollback(fmt.Errorf("copy promotion: %w", err))
 		}
 	}
-	if err := os.MkdirAll(archiveRoot, 0o755); err != nil {
-		return ArchiveResult{}, fmt.Errorf("create archived Spec root %q: %w", archiveRoot, err)
+	if err := os.RemoveAll(sourceDir); err != nil {
+		return ArchiveResult{}, fmt.Errorf("remove Spec; leftover folder %q: %w", sourceDir, err)
 	}
-	// Read again after stamping: destination offsets in the PRD may have moved.
-	for i := range rewrites {
-		current, readErr := os.ReadFile(rewrites[i].path)
-		if readErr != nil {
-			return ArchiveResult{}, errors.Join(fmt.Errorf("read link rewrite %q: %w", rewrites[i].path, readErr), restoreArchiveLinks(rewrites[:i]))
-		}
-		next := rewriteArchiveLinks(current, rewrites[i].destinations)
-		if writeErr := os.WriteFile(rewrites[i].path, next, rewrites[i].mode); writeErr != nil {
-			return ArchiveResult{}, errors.Join(fmt.Errorf("write link rewrite %q: %w", rewrites[i].path, writeErr), restoreArchiveLinks(rewrites[:i+1]))
-		}
-	}
-	if err := os.Rename(sourceDir, archivedDir); err != nil {
-		return ArchiveResult{}, errors.Join(fmt.Errorf("move Spec %q to %q: %w", sourceDir, archivedDir, err), restoreArchiveLinks(rewrites))
-	}
-	return ArchiveResult{
-		SourceDir:      sourceDir,
-		ArchivedDir:    archivedDir,
-		ArchivedOn:     archivedOn,
-		QAOverride:     qaOverride != nil,
-		RewrittenLinks: rewrittenLinks,
-	}, nil
+	return result, nil
 }
 
 func validateQAArchiveOverride(override *QAArchiveOverride) (*QAArchiveOverride, error) {

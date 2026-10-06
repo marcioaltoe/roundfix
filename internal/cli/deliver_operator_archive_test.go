@@ -1,5 +1,5 @@
 // Suite: delivery recovery evidence at real local Git boundaries.
-// Boundary IN: isolated repositories, Run Database, QA reader, and archive command.
+// Boundary IN: isolated repositories, Run Database, QA reader, and legacy archive fixtures.
 // Boundary OUT: no GitHub calls or external Agent execution.
 package cli
 
@@ -60,7 +60,7 @@ func TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch(t *testing.T) {
 func TestInspectItemReadsTheQAOverrideOfTheArchivedSpec(t *testing.T) {
 	for _, override := range []bool{true, false} {
 		t.Run(map[bool]string{true: "override", false: "normal archive"}[override], func(t *testing.T) {
-			repo, _, _ := commitRealArchive(t, nil)
+			repo, _, _ := commitLinkRewritingArchive(t, nil, nil)
 			workflow := newItemRecoveryWorkflowForRepository(t, t.TempDir(), repo)
 			_, destination, err := workflow.archivePaths(repo, implementTestSlug)
 			if err != nil {
@@ -85,7 +85,7 @@ func TestInspectItemReadsTheQAOverrideOfTheArchivedSpec(t *testing.T) {
 func TestTheDeliveryAuthorizationIsReadBeforeTheArchiveCommit(t *testing.T) {
 	for _, postArchive := range []bool{false, true} {
 		t.Run(map[bool]string{false: "archive head", true: "operator commit after archive"}[postArchive], func(t *testing.T) {
-			repo, _, _ := commitRealArchive(t, nil)
+			repo, _, _ := commitLinkRewritingArchive(t, nil, nil)
 			workflow := newItemRecoveryWorkflowForRepository(t, t.TempDir(), repo)
 			// Install an explicit delivery grant in a new active -> archive transition.
 			source, destination, err := workflow.archivePaths(repo, implementTestSlug)

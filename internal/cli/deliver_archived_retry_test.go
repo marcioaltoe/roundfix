@@ -1,10 +1,9 @@
 // Suite: archived Delivery Retry of queue-started Implement Runs.
-// Boundary IN: linked item worktrees, Run Database, archive command, and Retry.
+// Boundary IN: linked item worktrees, Run Database, legacy archive fixtures, and Retry.
 // Boundary OUT: Pull Request operations use the existing fake boundary.
 package cli
 
 import (
-	"bytes"
 	"database/sql"
 	"fmt"
 	"path/filepath"
@@ -107,11 +106,9 @@ func testArchivedRetryOfAQueueStartedRunReturnsToReview(t *testing.T, blocker st
 	mustWrite(t, filepath.Join(worktree, "operator-evidence.md"), "The operator satisfied the environment-blocked row.\n")
 	gittest.Run(t, worktree, "add", "-A")
 	gittest.Run(t, worktree, "commit", "-m", "docs: operator QA evidence")
-	setCommandEnvironmentForTest(t, home, worktree)
-	var stdout, stderr bytes.Buffer
-	if code := runCLIContext(t, t.Context(), []string{"archive", implementTestSlug, "--qa-override", "--approval", "test maintainer request", "--reason", "retain the environment partial and operator evidence"}, &stdout, &stderr); code != exitOK {
-		t.Fatalf("archive exit=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
-	}
+	// This reader's legacy-folder contract remains separate from record support
+	// in task_02. The real record-producing command is covered in archive_record_test.go.
+	legacyQAOverrideArchiveFixture(t, worktree)
 	gittest.Run(t, worktree, "add", "-A")
 	gittest.Run(t, worktree, "commit", "-m", "docs: archive with QA override")
 	head := itemRecoveryHead(t, worktree)

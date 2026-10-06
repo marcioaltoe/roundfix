@@ -9,24 +9,28 @@ Non-interactive; creates no Run and never pushes. Verifies every Task is
 `completed` and accepts either `verdict: pass` or a declared-only `partial`
 verdict. Declared-only means every unmet row is declared unreachable and fully
 covered by the Spec's `## Unreachable Acceptance` declarations. For that case,
-archive stamps the declarations' `satisfied-by` actions under `unproven` in
-`_prd.md`, so the archived record names what was never verified. It then moves
-`<specs.root>/<slug>/` to `docs/history/specs/<slug>/` for the built-in Spec
-Root, or to `<specs.root>/_archived/<slug>/` for any other configured root.
+archive records the declarations' `satisfied-by` actions under `unproven` in
+the Archive Record, so it names what was never verified. It writes
+`docs/history/specs/<slug>.md` for the built-in Spec Root, or
+`<specs.root>/_archived/<slug>.md` for another configured root, then removes
+`<specs.root>/<slug>/`. The PRD and relative links are never rewritten.
+The original folder's bytes stay in Git at the record's `source_revision`.
+Existing archived folders retain their legacy link semantics.
 
-Before the move, the archive rewrites each relative Markdown link that leaves
-the Spec — including inline links, images and reference definitions outside
-code blocks and code spans — so it reaches the same path from the archived
-location. It keeps the link's fragment, query and angle-bracket form. It keeps
-a link whose target was already archived when its unchanged destination reaches
-that target from the archived location. If any other relative links that leave
-the Spec and do not resolve remain, the command exits `2` before changing any
-file and names each link with its file, line and destination. When links were
-rewritten, the successful confirmation appends `; rewrote <n> relative link(s)`.
-Destinations inside the Spec, absolute destinations, URLs, HTML anchors and
-non-Markdown files are not rewritten, including evidence scripts that climb a
-fixed number of directories.
+The Spec folder must match its repository's `HEAD`. Modified, staged, deleted
+or untracked Spec files cause exit `2`; commit them before archiving so the
+recorded revision holds every removed file. For an external Spec Root, this
+revision comes from that root's repository.
 
+A normal archive prints:
+
+```text
+archived <slug> -> docs/history/specs/<slug>.md; removed <n> file(s) (<b> bytes) kept in Git at <12-hex>
+```
+
+An override inserts ` with QA override` after the slug. An existing Archive
+Record or legacy folder for the same slug refuses the archive before any file
+changes. Broken outward Markdown links retain their existing preflight refusal.
 
 A Spec cannot archive while another file names its active directory. The
 command exits `2`, lists each file and line, and leaves every file in place.
@@ -54,10 +58,10 @@ authorized the override, and `--reason <text>` records why. The command still
 requires every non-QA Task to be `completed`. It accepts a failed or pending QA
 Task regardless of the newest report's verdict, and refuses only when every
 Task is `completed` and that report qualifies because the same Spec can archive
-normally. It stamps the approval source, reason, observed QA outcome and
+normally. It records the approval source, reason, observed QA outcome and
 archived revision without changing the QA Task or report verdict. When the QA
-Task is not completed, it also stamps `qa_override_qa_task_status` with that
-status; a completed QA Task omits the field. When the newest report is
+Task is not completed, it also records `qa_override_qa_task_status` with that
+status; a completed QA Task records an empty value. When the newest report is
 unreadable, the recorded outcome names it relative to the Spec folder and never
 stores an absolute machine path.
 

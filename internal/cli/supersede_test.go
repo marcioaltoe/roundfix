@@ -320,12 +320,13 @@ func TestSupersedeAcceptsASupersessionArchivedDeliverer(t *testing.T) {
 
 	var archiveStdout bytes.Buffer
 	var archiveStderr bytes.Buffer
+	commitArchiveFixture(t)
 	code = runCLIContext(t, context.Background(), []string{"archive", delivererSlug}, &archiveStdout, &archiveStderr)
 	if code != exitOK {
 		t.Fatalf("archive exit = %d, want %d; stderr=%q stdout=%q", code, exitOK, archiveStderr.String(), archiveStdout.String())
 	}
 	archivedDelivererDir := archiveTestRepositoryPath(repoDir, spec.ArchiveKindSpec, delivererSlug)
-	archivedPRDPath := filepath.Join(archivedDelivererDir, "_prd.md")
+	archivedPRDPath := archivedDelivererDir + ".md"
 	prdBefore := mustRead(t, archivedPRDPath)
 
 	var finalStdout bytes.Buffer

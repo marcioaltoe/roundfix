@@ -21,13 +21,10 @@ var archiveUsage = `Usage:
 Archives a Spec after verifying either every Task is completed and the newest
 QA Report has verdict: pass (or a partial verdict covered only by declared
 Unreachable Acceptance), or a recorded supersession exists for a Spec without
-a Task Graph. Stamps archive metadata on the Task Graph path; a superseded Spec
-moves unchanged. Relative Markdown links that leave the
-Spec are rewritten to resolve from the archived location; a link whose
-target does not exist refuses the archive before any file changes.
-The destination is the repository's default
-docs/history/specs/<slug>/ when the Spec Root is the built-in docs/specs,
-otherwise <spec-root>/_archived/<slug>/ beside the configured Spec Root.
+a Task Graph. Writes one Archive Record and removes the committed Spec folder.
+The removed bytes stay in Git at the record's source_revision. The destination
+is docs/history/specs/<slug>.md for the built-in root, otherwise
+<spec-root>/_archived/<slug>.md.
 archive creates no Run and never pushes.
 
 The QA override requires an approval source and reason, still requires every
@@ -111,42 +108,53 @@ func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		printPreflightFailure("archive", fmt.Errorf("Spec %q cannot archive with a Glossary Gap: %s", req.slug, strings.Join(reasons, "; ")), stderr)
 		return exitPreflight
 	}
+	revisionRoot := loaded.GitRoot
+	if resolvedSpecsRoot.External {
+		revisionRoot = resolvedSpecsRoot.Path
+	}
+	repositoryRoot, err := gitOutput(ctx, revisionRoot, "rev-parse", "--show-toplevel")
+	if err != nil {
+		printPreflightFailure("archive", err, stderr)
+		return exitPreflight
+	}
+	revision, err := gitOutput(ctx, revisionRoot, "rev-parse", "HEAD")
+	if err != nil {
+		printPreflightFailure("archive", fmt.Errorf("resolve archive revision from HEAD: %w", err), stderr)
+		return exitPreflight
+	}
+	specDir := filepath.Join(resolvedSpecsRoot.Path, req.slug)
+	changes, err := gitOutput(ctx, revisionRoot, "status", "--porcelain", "--untracked-files=all", "--", specDir)
+	if err != nil {
+		printPreflightFailure("archive", err, stderr)
+		return exitPreflight
+	}
+	if strings.TrimSpace(changes) != "" {
+		rel, _ := filepathRelSlash(repositoryRoot, specDir)
+		printPreflightFailure("archive", fmt.Errorf("Spec %q has changes not committed at HEAD under %s; commit them before archive so the Archive Record's source_revision holds the Spec", req.slug, rel), stderr)
+		return exitPreflight
+	}
 	var qaOverride *spec.QAArchiveOverride
 	if req.qaOverride {
-		revisionRoot := loaded.GitRoot
-		if resolvedSpecsRoot.External {
-			revisionRoot = resolvedSpecsRoot.Path
-		}
-		revision, revisionErr := gitOutput(ctx, revisionRoot, "rev-parse", "HEAD")
-		if revisionErr != nil {
-			printPreflightFailure("archive", fmt.Errorf("resolve QA archive override revision from HEAD: %w", revisionErr), stderr)
-			return exitPreflight
-		}
-		qaOverride = &spec.QAArchiveOverride{
-			Approval: req.approval,
-			Reason:   req.reason,
-			Revision: revision,
-		}
+		qaOverride = &spec.QAArchiveOverride{Approval: req.approval, Reason: req.reason, Revision: revision}
 	}
 	result, err := spec.Archive(spec.ArchiveRequest{
-		SpecsRoot:   resolvedSpecsRoot.Path,
-		BuiltInRoot: resolvedSpecsRoot.BuiltInRoot,
-		Slug:        req.slug,
-		QAOverride:  qaOverride,
+		SpecsRoot:      resolvedSpecsRoot.Path,
+		BuiltInRoot:    resolvedSpecsRoot.BuiltInRoot,
+		Slug:           req.slug,
+		QAOverride:     qaOverride,
+		SourceRevision: revision,
+		RepositoryRoot: repositoryRoot,
 	})
 	if err != nil {
 		printPreflightFailure("archive", err, stderr)
 		return exitPreflight
 	}
-	rel, err := filepathRelSlash(loaded.GitRoot, result.ArchivedDir)
+	rel, err := filepathRelSlash(loaded.GitRoot, result.RecordPath)
 	if err != nil {
 		fmt.Fprintf(stderr, "%s: archive completed but could not format path: %v\n", app.Name, err)
 		return exitRunFailed
 	}
-	suffix := ""
-	if result.RewrittenLinks > 0 {
-		suffix = fmt.Sprintf("; rewrote %d relative link(s)", result.RewrittenLinks)
-	}
+	suffix := fmt.Sprintf("; removed %d file(s) (%d bytes) kept in Git at %.12s", result.RemovedFiles, result.RemovedBytes, revision)
 	if result.QAOverride {
 		fmt.Fprintf(stdout, "archived %s with QA override -> %s%s\n", req.slug, rel, suffix)
 	} else {

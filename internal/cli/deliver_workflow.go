@@ -1153,7 +1153,7 @@ func (workflow *commandDeliveryWorkflow) Archive(ctx context.Context, gitRoot, s
 	if err != nil {
 		return delivery.ArchiveResult{}, fmt.Errorf("inspect active Spec at reviewed head: %w", err)
 	}
-	archived, err := workflow.git.RunGit(ctx, gitRoot, "ls-tree", "--name-only", reviewedHead, "--", destinationPath+"/_prd.md")
+	archived, err := workflow.git.RunGit(ctx, gitRoot, "ls-tree", "--name-only", reviewedHead, "--", destinationPath+"/_prd.md", destinationPath+".md")
 	if err != nil {
 		return delivery.ArchiveResult{}, fmt.Errorf("inspect archived Spec at reviewed head: %w", err)
 	}
@@ -1180,7 +1180,18 @@ func (workflow *commandDeliveryWorkflow) Archive(ctx context.Context, gitRoot, s
 	if err != nil || !exactMove {
 		return delivery.ArchiveResult{Parent: before.HEAD, ExactSpecMove: false}, err
 	}
-	if _, err := workflow.git.RunGit(ctx, gitRoot, "add", "-A", "--", source, destination); err != nil {
+	stagePaths := []string{source}
+	if _, err := os.Stat(filepath.Join(gitRoot, destination+".md")); err == nil {
+		stagePaths = append(stagePaths, destination+".md")
+		archived, err := spec.ReadArchivedSpec(filepath.Join(gitRoot, filepath.Dir(destination)), specSlug)
+		if err != nil {
+			return delivery.ArchiveResult{}, err
+		}
+		stagePaths = append(stagePaths, archived.Record.Promoted...)
+	} else {
+		stagePaths = append(stagePaths, destination)
+	}
+	if _, err := workflow.git.RunGit(ctx, gitRoot, append([]string{"add", "-A", "--"}, stagePaths...)...); err != nil {
 		return delivery.ArchiveResult{}, fmt.Errorf("stage archived Spec: %w", err)
 	}
 	if _, err := workflow.git.RunGit(ctx, gitRoot, "commit", "-m", "docs: archive "+specSlug); err != nil {
@@ -1453,6 +1464,15 @@ func (workflow *commandDeliveryWorkflow) archivePaths(gitRoot, specSlug string) 
 }
 
 func (workflow *commandDeliveryWorkflow) archiveDiffIsExact(ctx context.Context, gitRoot, source, destination string) (bool, error) {
+	if _, err := os.Lstat(filepath.Join(gitRoot, destination+".md")); err == nil {
+		parent, err := workflow.git.RunGit(ctx, gitRoot, "rev-parse", "HEAD")
+		if err != nil {
+			return false, err
+		}
+		return workflow.archiveRetirementIsExact(ctx, gitRoot, strings.TrimSpace(parent), "", source, destination)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return false, err
+	}
 	state, err := preflight.InspectGit(ctx, gitRoot, workflow.git)
 	if err != nil {
 		return false, fmt.Errorf("inspect archive diff: %w", err)
@@ -1481,6 +1501,13 @@ func (workflow *commandDeliveryWorkflow) archiveCommitIsExact(
 	source string,
 	destination string,
 ) (bool, error) {
+	exists, err := workflow.gitObjectExists(ctx, gitRoot, head+":"+destination+".md")
+	if err != nil {
+		return false, err
+	}
+	if exists {
+		return workflow.archiveRetirementIsExact(ctx, gitRoot, parent, head, source, destination)
+	}
 	changed, err := workflow.git.RunGit(ctx, gitRoot, "diff", "--name-only", "--no-renames", "-z", parent, head, "--")
 	if err != nil {
 		return false, fmt.Errorf("inspect archive commit diff: %w", err)
@@ -1571,6 +1598,148 @@ func (workflow *commandDeliveryWorkflow) archiveCommitIsExact(
 		return false, fmt.Errorf("inspect archive destination before archive: %w", err)
 	}
 	return !sourceAtHead && !destinationAtParent, nil
+}
+
+// archiveRetirementIsExact proves both committed and unstaged record retirements.
+// An empty head reads the working tree while keeping provenance anchored at parent.
+func (workflow *commandDeliveryWorkflow) archiveRetirementIsExact(ctx context.Context, root, parent, head, source, destination string) (bool, error) {
+	read := func(path string) ([]byte, error) {
+		if head == "" {
+			return os.ReadFile(filepath.Join(root, filepath.FromSlash(path)))
+		}
+		text, err := workflow.git.RunGit(ctx, root, "show", head+":"+path)
+		return []byte(text), err
+	}
+	content, err := read(destination + ".md")
+	if err != nil {
+		return false, err
+	}
+	record, err := spec.ParseArchiveRecord(content)
+	if err != nil {
+		return false, nil
+	}
+	if record.Spec != filepath.Base(source) || record.Source != source || record.SourceRevision != parent {
+		return false, nil
+	}
+	sourceTree, err := workflow.gitTreeEntries(ctx, root, parent+":"+source)
+	if err != nil {
+		return false, err
+	}
+	if _, ok := sourceTree["_prd.md"]; !ok {
+		return false, nil
+	}
+	prd, err := workflow.git.RunGit(ctx, root, "show", parent+":"+source+"/_prd.md")
+	if err != nil {
+		return false, err
+	}
+	fm, body, ok := splitArchivePRD([]byte(prd))
+	if !ok {
+		return false, nil
+	}
+	var meta struct{ Created string }
+	if err := yaml.Unmarshal(fm, &meta); err != nil {
+		return false, nil
+	}
+	title := ""
+	for _, line := range strings.Split(string(body), "\n") {
+		if strings.HasPrefix(line, "# ") {
+			title = strings.TrimSpace(strings.TrimPrefix(line, "# "))
+			break
+		}
+	}
+	if record.Title != title || record.Created != meta.Created {
+		return false, nil
+	}
+	allowed := map[string]bool{destination + ".md": true}
+	for name := range sourceTree {
+		allowed[source+"/"+name] = true
+	}
+	for _, path := range record.Promoted {
+		if !strings.HasPrefix(path, "docs/references/") || filepath.ToSlash(filepath.Clean(path)) != path || allowed[path] {
+			return false, nil
+		}
+		allowed[path] = true
+		var blob string
+		if head == "" {
+			info, err := os.Lstat(filepath.Join(root, filepath.FromSlash(path)))
+			if err != nil {
+				return false, err
+			}
+			if !info.Mode().IsRegular() {
+				return false, nil
+			}
+			blob, err = workflow.git.RunGit(ctx, root, "hash-object", "--", path)
+		} else {
+			entries, treeErr := workflow.gitTreeEntries(ctx, root, head)
+			if treeErr != nil {
+				return false, treeErr
+			}
+			entry, ok := entries[path]
+			if !ok || (gitTreeEntryKind(entry) != "100644 blob" && gitTreeEntryKind(entry) != "100755 blob") {
+				return false, nil
+			}
+			blob = strings.Fields(entry)[2]
+		}
+		if err != nil {
+			return false, err
+		}
+		matched := false
+		for _, entry := range sourceTree {
+			fields := strings.Fields(entry)
+			if len(fields) == 3 && (gitTreeEntryKind(entry) == "100644 blob" || gitTreeEntryKind(entry) == "100755 blob") && fields[2] == strings.TrimSpace(blob) {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return false, nil
+		}
+	}
+	for path := range allowed {
+		if !strings.HasPrefix(path, source+"/") {
+			exists, err := workflow.gitObjectExists(ctx, root, parent+":"+path)
+			if err != nil {
+				return false, err
+			}
+			if exists {
+				return false, nil
+			}
+		}
+	}
+	var changes []string
+	if head == "" {
+		state, err := preflight.InspectGit(ctx, root, workflow.git)
+		if err != nil {
+			return false, err
+		}
+		for _, change := range state.Dirty {
+			changes = append(changes, change.Path)
+		}
+		if _, err := os.Lstat(filepath.Join(root, source)); !errors.Is(err, os.ErrNotExist) {
+			return false, err
+		}
+	} else {
+		changed, err := workflow.git.RunGit(ctx, root, "diff", "--name-only", "--no-renames", "-z", parent, head, "--")
+		if err != nil {
+			return false, err
+		}
+		changes = strings.Split(strings.TrimSuffix(changed, "\x00"), "\x00")
+		exists, err := workflow.gitObjectExists(ctx, root, head+":"+source)
+		if err != nil || exists {
+			return false, err
+		}
+	}
+	if len(changes) != len(allowed) {
+		return false, nil
+	}
+	seen := map[string]bool{}
+	for _, path := range changes {
+		if !allowed[path] || seen[path] {
+			return false, nil
+		}
+		seen[path] = true
+	}
+	return true, nil
 }
 
 func (workflow *commandDeliveryWorkflow) gitTreeEntries(ctx context.Context, gitRoot, object string) (map[string]string, error) {

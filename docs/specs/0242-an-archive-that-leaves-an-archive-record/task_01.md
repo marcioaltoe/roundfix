@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0242-an-archive-that-leaves-an-archive-record
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -138,3 +138,99 @@ Secondbrain needs" of 2026-10-06.
 - `_prd.md` → Goal 1; Goal 2; User Story 1; User Story 3; Core Feature 1; Core Feature 2; Success Metric 1; Success Metric 2
 - `_techspec.md` → Interfaces; Invariants 1-8; Data Models; API Contract 1; API Contract 2; API Contract 5; Surface Transcript 1; Surface Transcript 2; Surface Transcript 5; Build Order 1
 - ADR-0247; ADR-0230; ADR-0154; ADR-0223
+
+## Result
+
+Implemented the Task 01 retirement slice. The archive builds an Archive Record
+from the PRD, newest QA Report, Task Graph, supersession, adopted-source index
+and sanctioned regenerations. It renders ordered frontmatter, preserves every
+non-outcome field, shortens only the outcome to meet the size target, and
+resolves both record and legacy-folder forms. Conflicting forms and malformed
+records are refused.
+
+`spec.Archive` keeps the existing eligibility/refusal sequence, including the
+outward-link preflight, without applying link rewrites or stamping the PRD.
+It validates the source revision and promotions before writes, creates the
+record and byte-identical promoted copies, then removes the folder. A write
+failure rolls back the files it created; a removal failure names the leftover
+folder and retains the record. The Archive Command resolves the Spec Root's
+repository HEAD, refuses uncommitted Spec changes and reports the record path,
+removed file/byte counts and abbreviated revision. Canonical filesystem paths
+keep external-root provenance correct across macOS `/var` aliases.
+
+The Delivery Queue's archive stage, already-archived check and reconcile accept
+record retirements. The proof requires all source paths deleted, only the
+record and declared promotions added, matching Spec/source/parent/title/created
+metadata, and promoted blob identities matching deleted regular-file blobs.
+Blob identities avoid the Git runner's trailing-newline normalization. Legacy
+move and link proofs remain covered by explicit historical move fixtures.
+Supersede accepts the shared resolver. The archive command reference describes
+the record, removal, HEAD requirement and confirmation while retaining the QA
+override contract.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Every disposition leaves a record within 2,048 bytes and no folder; only the outcome is shortened | `TestArchiveWritesTheArchiveRecordAndRemovesTheSpecFolder`, `TestArchiveRecordKeepsEveryOverrideField`, `TestArchiveRecordOfASupersededSpec`, `TestArchiveRecordStaysWithinTheTargetSize` and `TestArchiveRecordRoundTrips` passed in the focused Spec selection. The override includes a 300-byte reason; the long outcome is 5,000 bytes and truncates at a rune boundary. Explicit empty regeneration outputs also round-trip. |
+| Every removed byte remains available at `source_revision` | `TestArchiveCommandRemovedBytesStayInGit` compares every removed fixture file, including binary evidence, with `git show` at the record's revision and checks the confirmation's total. Existing override and supersession tests now recover their original evidence from Git. `TestArchiveCommandRefusesUncommittedSpecChanges` covers modified, staged, untracked and deleted files. The external-root command test passed with its own committed repository. |
+| The queue accepts exactly Invariant 8 retirement and preserves the legacy move | `TestDeliveryAcceptsAnExactRetirement` covers working-tree and committed retirements with and without promotion, plus reconcile. `TestDeliveryRefusesAnInexactRetirement` covers a retained file, an extra path, another revision, changed title/created metadata and a differing promoted blob. `TestDeliveryKeepsTheLegacyExactMove` and `TestDeliveryArchiveStageCommitsTheArchiveRecord` passed, including the real command, committed record and already-archived retry. |
+
+### Focused checks
+
+- `GOCACHE=/tmp/roundfix-task01-cache rtk proxy go test ./internal/spec -run 'TestArchive|TestReadArchived|TestSpec0058Replay' -count=1` — exit 0 after the final Spec edits. Includes record/refusal/resolver cases, promotion rollback, prior eligibility replay and legacy link coverage.
+- `GOCACHE=/tmp/roundfix-task01-cache rtk proxy go test ./internal/cli -run '^Test(RunArchive|Archive[A-Z]|Supersede|ResumeAcceptsAnArchive|ResumeRefusesAnArchive|ResumeAcceptsALink|ResumeRefusesALink|DeliveryAccepts|DeliveryRefuses|DeliveryKeeps|DeliveryArchiveStage|DeliverySteps|DeliveryStep|QAReportAcceptArchive)' -count=1` — exit 0 after the final CLI edits. Includes command transcripts, pin/glossary refusals, supersede, queue proof, item-binary dispatch and QA partial policy.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+- `GOCACHE=/tmp/roundfix-task01-cache rtk make verify-incremental` — attempted; the sandbox stopped execution with `Network access to "cafe.github.com" was blocked: domain is not on the allowlist for the current sandbox mode`. No passing incremental-gate claim is made.
+
+### Follow-up boundary
+
+The record support for `InspectItem` remains assigned to task_02. The existing
+item-inspection, archived-retry and pre-archive authorization reader tests now
+seed explicit legacy folder archives, preserving their reader assertions and
+legacy compatibility coverage. Task 01's real-command tests continue to prove
+the record, removed folder, Git provenance, override metadata, archive-stage
+commit and already-archived check. No runtime reader was changed ahead of its
+assigned Task.
+
+The worktree initially contained only the Daemon-owned task-file change.
+Task status remains `in_progress`; authored Verification commands were not
+run. No other Task, Task Graph, existing `docs/history` file, owned skill or
+Baseline artifact was edited. No workspace commit, push or PR was made.
+
+
+### Verification Feedback repair — attempt 1
+
+Inspected the Daemon diagnostic artifact at
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261006T232220Z_7c2e4a372c1dd72e/verification/batch-001-attempt-1.log`.
+The reported CLI failures shared one fixture mismatch: tests of legacy readers
+received the new Archive Record instead of an archived folder. Two operator
+reader tests also assumed the archive could be moved back into the active
+root. Their fixtures now use the existing historical exact-move builder. The
+archived-retry fixtures explicitly seed the historical QA override metadata
+and preserve the Task and QA bytes through a real filesystem move. Reader
+assertions, queue retry outcomes and authorization ancestry checks remain
+intact. Runtime record-reader support stays in task_02.
+
+Focused checks after this repair:
+
+- `GOCACHE=/tmp/roundfix-task01-cache rtk proxy go test ./internal/cli -run '^Test(ArchivedRetryOfAQueueStartedRunReturnsToReview|ArchivedRetryOfARunUnresolvedItemWithoutACandidateReturnsToReview|InspectItemReadsTheQAOverrideOfTheArchivedSpec|TheDeliveryAuthorizationIsReadBeforeTheArchiveCommit|ArchiveReportsASpecAlreadyArchivedAtTheReviewedHead)$' -count=1` — exit 0; every failure named in the Daemon diagnostic is covered, with the record-based already-archived check retained.
+- `GOCACHE=/tmp/roundfix-task01-cache rtk proxy go test ./internal/cli -run '^Test(RunArchive|Archive[A-Z]|ArchivedRetry|Supersede|ResumeAcceptsAnArchive|ResumeRefusesAnArchive|ResumeAcceptsALink|ResumeRefusesALink|DeliveryAccepts|DeliveryRefuses|DeliveryKeeps|DeliveryArchiveStage|DeliverySteps|DeliveryStep|QAReportAcceptArchive|InspectItemReadsTheQAOverride|TheDeliveryAuthorization)' -count=1` — exit 0 after the final test edits; includes record retirement, override provenance, removed-byte recovery, exact-retirement refusals, legacy proof and recovered reader flows.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+
+The repair changes only test fixtures and this Result. Task status is
+unchanged. No authored Verification command or configured Verification
+sequence was rerun, and no workspace commit, push or PR was made. The Daemon
+owns the next full Verification run and settlement.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/archive_glossary_test.go`
+- `internal/cli/deliver_operator_archive_test.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261006T232220Z_7c2e4a372c1dd72e`
+- Source commit: `934e02f7ee1a177be9408f52299f0db07a734a34`
