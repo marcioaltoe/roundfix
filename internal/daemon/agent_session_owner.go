@@ -10,6 +10,7 @@ import (
 
 	"roundfix/internal/agent"
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/lighttier"
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
@@ -30,10 +31,15 @@ type agentSessionScope struct {
 }
 
 type agentSessionOwner struct {
-	engine         *Engine
-	scope          agentSessionScope
-	profile        roundconfig.ResolvedProfile
-	runtimeFactory AgentRuntimeFactory
+	lightPlan       lighttier.Plan
+	lightCandidates int
+	escalated       bool
+	taskPrompt      string
+	lastCost        float64
+	engine          *Engine
+	scope           agentSessionScope
+	profile         roundconfig.ResolvedProfile
+	runtimeFactory  AgentRuntimeFactory
 
 	activeRuntime             agent.RuntimeSpec
 	activeSession             agent.SessionRef
@@ -108,12 +114,12 @@ func (err *AgentSelectionExhaustedError) Error() string {
 	)
 }
 
-func (engine *Engine) taskAgentSessionOwner(plan TaskPlan, task spec.Task, ordinal int) (*agentSessionOwner, error) {
+func (engine *Engine) taskAgentSessionOwner(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int) (*agentSessionOwner, error) {
 	if !plan.hasAgentSelectionProfiles() {
 		return nil, nil
 	}
 	category := roundconfig.WorkCategory(task.Type)
-	return engine.agentSessionOwner(plan.agentSelectionOwnerConfig(), agentSessionScope{
+	owner, err := engine.agentSessionOwner(plan.agentSelectionOwnerConfig(), agentSessionScope{
 		RunID:    plan.RunID,
 		Spec:     plan.Spec.Slug,
 		Kind:     "task",
@@ -122,6 +128,13 @@ func (engine *Engine) taskAgentSessionOwner(plan TaskPlan, task spec.Task, ordin
 		Session:  agent.SessionRefForTask(plan.RunID, task.ID, plan.WorkDir),
 		Batch:    ordinal,
 	})
+	if err != nil || !plan.LightTier.Enabled() || lighttier.TierFor(task) != lighttier.Light {
+		return owner, err
+	}
+	if err := owner.applyLightTier(ctx, plan.LightTier); err != nil {
+		return nil, err
+	}
+	return owner, nil
 }
 
 func (engine *Engine) qaAgentSessionOwner(plan TaskPlan, ordinal int) (*agentSessionOwner, error) {
@@ -182,6 +195,9 @@ func (owner *agentSessionOwner) Run(ctx context.Context, req agent.ExecuteReques
 	if owner == nil || owner.engine == nil {
 		return agent.ExecuteResult{LogPath: req.LogPath}, errors.New("Agent Session owner is required")
 	}
+	if owner.taskPrompt == "" {
+		owner.taskPrompt = req.Prompt
+	}
 	for {
 		if !owner.active {
 			if err := owner.activate(ctx, req); err != nil {
@@ -239,6 +255,9 @@ func (owner *agentSessionOwner) activate(ctx context.Context, req agent.ExecuteR
 		if err != nil {
 			return err
 		}
+		if index < owner.lightCandidates {
+			runtime.OpenRouterKeyVariable = owner.lightPlan.KeyVariable
+		}
 		session := owner.sessionForCandidate(candidate)
 		prepareReq := req
 		prepareReq.Runtime = runtime
@@ -289,6 +308,7 @@ func (owner *agentSessionOwner) activate(ctx context.Context, req agent.ExecuteR
 			owner.closeAttempt(context.WithoutCancel(ctx), runtime, session)
 			return err
 		}
+		owner.lastCost = 0
 		owner.activeRuntime = runtime
 		owner.activeSession = session
 		owner.active = true
@@ -355,6 +375,7 @@ func (owner *agentSessionOwner) runPrepared(ctx context.Context, req agent.Execu
 		result, err = owner.engine.deps.Runner.Run(ctx, req, sink)
 	}
 	owner.engine.recordPromptUsage(ctx, req, result, owner.scope.Kind, owner.scope.ID, owner.attemptNumber)
+	owner.recordLightSpend(req, result)
 	return result, err
 }
 
@@ -830,4 +851,76 @@ func (engine *Engine) recordPromptUsage(ctx context.Context, req agent.ExecuteRe
 	if err := appender.AppendTokenUsage(context.WithoutCancel(ctx), record); err != nil && engine.deps.Progress != nil {
 		fmt.Fprintf(engine.deps.Progress, "roundfix: warning: token usage not recorded for %s %s: %v\n", scopeKind, scopeID, err)
 	}
+}
+
+func (owner *agentSessionOwner) applyLightTier(ctx context.Context, plan lighttier.Plan) error {
+	reason, code := "", ""
+	switch {
+	case !plan.KeyPresent:
+		reason, code = plan.KeyVariable+" is not set", "key_missing"
+	default:
+		spent, err := lighttier.ReadMonth(plan.HomeDir, owner.engine.deps.Now())
+		if err != nil {
+			reason, code = "the Light Spend Log could not be read: "+err.Error(), "spend_unreadable"
+		} else if spent >= plan.CeilingUSD {
+			reason, code = fmt.Sprintf("this month's light spend US$%.4f reached the ceiling of US$%.2f", spent, plan.CeilingUSD), "ceiling_reached"
+		}
+	}
+	if code != "" {
+		summary := fmt.Sprintf("roundfix: warning: light tier skipped for Task %s: %s; it runs on its %s profile", owner.scope.ID, reason, owner.scope.Category)
+		fmt.Fprintln(owner.engine.deps.Progress, summary)
+		return owner.engine.publishTaskEvent(ctx, owner.scope.RunID, owner.scope.Batch, owner.scope.ID, runevent.KindDaemonTask, summary,
+			map[string]any{"task": owner.scope.ID, "phase": "light_tier_skipped", "reason_code": code})
+	}
+	selections := make([]roundconfig.AgentSelection, 0, len(plan.Models)+1+len(owner.profile.Profile.Fallbacks))
+	for _, model := range plan.Models {
+		selections = append(selections, roundconfig.AgentSelection{Runtime: "opencode", Model: "openrouter/" + model})
+	}
+	selections = append(selections, owner.profile.Profile.Preferred)
+	selections = append(selections, owner.profile.Profile.Fallbacks...)
+	owner.profile.Profile = roundconfig.AgentSelectionProfile{Preferred: selections[0], Fallbacks: selections[1:]}
+	owner.profile.Source = "light-tier"
+	owner.lightPlan, owner.lightCandidates = plan, len(plan.Models)
+	return nil
+}
+
+func (owner *agentSessionOwner) isLightActive() bool {
+	return owner.active && owner.candidateIndex < owner.lightCandidates
+}
+
+// escalate is separate from selection fallback: work already began, and only
+// the one Verification Feedback repair is authorized to inherit that attempt.
+func (owner *agentSessionOwner) escalate(ctx context.Context) error {
+	if err := owner.Close(context.WithoutCancel(ctx)); err != nil {
+		return err
+	}
+	owner.escalated = true
+	owner.candidateIndex = owner.lightCandidates
+	owner.workStarted.Store(false)
+	owner.selectionFailurePublished.Store(false)
+	return nil
+}
+
+func (owner *agentSessionOwner) recordLightSpend(req agent.ExecuteRequest, result agent.ExecuteResult) {
+	if !owner.isLightActive() {
+		return
+	}
+	cost, source := 0.0, "unreported"
+	nextCost := owner.lastCost
+	if reading := result.Usage.Cost; reading != nil && strings.EqualFold(reading.Currency, "USD") {
+		source = "opencode"
+		if reading.Amount >= owner.lastCost {
+			cost = reading.Amount - owner.lastCost
+			nextCost = reading.Amount
+		}
+	}
+	err := lighttier.AppendSpend(owner.lightPlan.HomeDir, owner.engine.deps.Now(), lighttier.SpendLine{
+		Repository: owner.lightPlan.Repository, RunID: owner.scope.RunID, Spec: owner.scope.Spec, Task: owner.scope.ID,
+		Session: req.Session.Name, Model: req.Runtime.Model, CostUSD: cost, CostSource: source,
+	})
+	if err != nil {
+		fmt.Fprintf(owner.engine.deps.Progress, "roundfix: warning: Light Spend Log not recorded for Task %s: %v\n", owner.scope.ID, err)
+		return
+	}
+	owner.lastCost = nextCost
 }

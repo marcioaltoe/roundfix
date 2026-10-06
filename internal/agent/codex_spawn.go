@@ -132,15 +132,26 @@ const claudeNestedGuardEnv = "CLAUDECODE"
 // hygiene path, re-added per session through overrides, and Claude Code's
 // nested-session guard), then per-runtime overrides are appended.
 func acpxCommandEnv(base []string, overrides []string) []string {
+	// An override without an equals sign removes the named inherited variable.
+	replaced := make(map[string]bool, len(overrides))
+	for _, entry := range overrides {
+		key, _, _ := strings.Cut(entry, "=")
+		replaced[key] = true
+	}
 	filtered := make([]string, 0, len(base)+len(overrides))
 	for _, entry := range base {
 		key, _, _ := strings.Cut(entry, "=")
-		if key == codexPathEnv || key == claudeNestedGuardEnv {
+		if key == codexPathEnv || key == claudeNestedGuardEnv || replaced[key] {
 			continue
 		}
 		filtered = append(filtered, entry)
 	}
-	return append(filtered, overrides...)
+	for _, entry := range overrides {
+		if strings.Contains(entry, "=") {
+			filtered = append(filtered, entry)
+		}
+	}
+	return filtered
 }
 
 func (runner *ACPXRunner) commandEnv(overrides []string) []string {

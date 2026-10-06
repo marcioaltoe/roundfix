@@ -1209,7 +1209,14 @@ func (runner *ACPXRunner) ListRoundfixSessions(ctx context.Context, runtime Runt
 	if err != nil {
 		return nil, fmt.Errorf("build acpx sessions list command: %w", err)
 	}
-	output, err := runner.runACPXCommandOutput(ctx, args)
+	var env []string
+	if runtime.OpenRouterKeyVariable != "" {
+		env, err = lightSessionEnvironment(runtime, runner.baseEnv())
+		if err != nil {
+			return nil, err
+		}
+	}
+	output, err := runner.runACPXCommandOutputWithEnv(ctx, args, env)
 	if err != nil {
 		return nil, fmt.Errorf("list acpx Agent Sessions: %w", err)
 	}
@@ -1590,6 +1597,9 @@ func (runner *ACPXRunner) command() string {
 }
 
 func (runner *ACPXRunner) codexEnvForSession(ctx context.Context, runtime RuntimeSpec, sessionName string) ([]string, error) {
+	if runtime.OpenRouterKeyVariable != "" {
+		return lightSessionEnvironment(runtime, runner.baseEnv())
+	}
 	if strings.TrimSpace(runtime.ID) != "codex" || runtime.Protocol == ProtocolStdio {
 		return nil, nil
 	}
