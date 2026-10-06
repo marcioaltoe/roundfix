@@ -59,7 +59,8 @@ Spec raises it from the earlier one's value.
   command and ADR-0189 ties an owned skill's version to its content, so the
   skill edit raises the version. ADR-0184: "A TechSpec now declares numbered
   Surface Transcripts", answered in the TechSpec with the reason none applies.
-  The gate is bound by ADR-0080, ADR-0088, ADR-0091, ADR-0104, ADR-0155,
+  ADR-0240: "One QA partial policy, and rows a Run sandbox cannot reach"
+  decides when its QA partial qualifies. The gate is bound by ADR-0080, ADR-0088, ADR-0091, ADR-0104, ADR-0155,
   ADR-0156 and ADR-0167, and ADR-0093, ADR-0117, ADR-0168, ADR-0176 and
   ADR-0183 check this Spec's consistency by citation and receipt. ADR-0178
   authorizes each Task commit by its grant, ADR-0182 runs Settlement Checks
