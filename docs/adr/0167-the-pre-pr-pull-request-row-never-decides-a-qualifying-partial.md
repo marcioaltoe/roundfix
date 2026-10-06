@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-09-29T00:00:00Z
-updated_at: 2026-09-29T00:00:00Z
+updated_at: 2026-10-06T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -37,3 +37,5 @@ environment block still has to be declared for a `partial` to qualify. A row
 with the same status but another source in its provenance is an ordinary
 environment block. A report written without a provenance column gains nothing
 from the exception.
+
+**One policy (2026-10-06).** Extended by ADR-0240: a partial whose only unmet row is the pre-PR Pull Request row qualifies without an Unreachable Acceptance declaration, and a provenance item that starts with the Pull Request row followed by a space, `:` or `(` names it. Every other part of this decision stands.
