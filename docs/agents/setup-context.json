@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
-  "catalogDigest": "sha256:59529222ebf18cbe4470e6b7b8fb5d46232daf49e79a9fd40c90462e3f43143e",
+  "catalogDigest": "sha256:b0187ed9c909a91930efec49e4231e3574c95a77aac89e5898ee6e76a1e6c5da",
   "modules": [
     "core",
     "context-workflow",
@@ -174,7 +174,7 @@
       "module": "spec-workflow",
       "template": "template.guide.spec-routing",
       "version": "0.0.1",
-      "digest": "0051cd4e6d02005986876eaef52220eafb3d3f7df3ef906ed3bd0b9ca592e2ec"
+      "digest": "48b7ebc8ea2a6accaa39bac1afd8a8449c103729031130da778cbdfaceb50c7e"
     },
     {
       "id": "guide.issue-tracker",
@@ -219,7 +219,7 @@
       "module": "autonomous-work",
       "template": "template.guide.autonomous-work",
       "version": "0.0.1",
-      "digest": "fc0bf725a46c92f8c901d256cf813843b398c340096dba55fcd54894fe128b3a"
+      "digest": "d3021fadc86c03e1f2c76072424efd8f368bc02296641c5188fc2b2dae5bbb53"
     },
     {
       "id": "root.secondbrain",
