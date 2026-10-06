@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-06
-spec: null
+spec: 0239-a-glossary-every-spec-keeps-current
 ---
 
 # The CONTEXT-driven loop does not keep `CONTEXT.md` current
