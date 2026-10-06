@@ -1,0 +1,43 @@
+{
+  "write-idea": {
+    "files": [
+      "SKILL.md",
+      "references/idea-template.md",
+      "references/opportunity-scan.md"
+    ],
+    "byte_identical": true
+  },
+  "write-prd": {
+    "files": [
+      "SKILL.md",
+      "references/glossary.md",
+      "references/prd-template.md"
+    ],
+    "byte_identical": true
+  },
+  "roundfix": {
+    "files": [
+      "SKILL.md",
+      "agents/openai.yaml",
+      "references/archive.md",
+      "references/baseline.md",
+      "references/deliver.md",
+      "references/events.md",
+      "references/implement.md",
+      "references/profiles.md",
+      "references/reconcile.md",
+      "references/release.md",
+      "references/review-runs.md",
+      "references/review.md",
+      "references/runs.md",
+      "references/runtime.md",
+      "references/settle.md",
+      "references/setup.md",
+      "references/spec-delivery.md",
+      "references/spec.md",
+      "references/stop.md",
+      "references/storage.md"
+    ],
+    "byte_identical": true
+  }
+}

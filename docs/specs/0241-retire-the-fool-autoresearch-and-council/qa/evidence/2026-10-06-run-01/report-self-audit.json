@@ -1,0 +1,15 @@
+{
+  "rows": 12,
+  "passed": 9,
+  "environment_blocked": 3,
+  "finding_blocked": 0,
+  "declared_blocked": 0,
+  "pending": 0,
+  "verdict": "partial",
+  "qualifying": false,
+  "inputs_every_row": true,
+  "mechanical_skips_preserved": true,
+  "carry_forward_reasons_preserved": true,
+  "daemon_identity_preserved": true,
+  "evidence_paths_resolve": true
+}

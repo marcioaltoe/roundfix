@@ -1,0 +1,6 @@
+{
+  "stdout": true,
+  "stderr": true,
+  "exit": true,
+  "expected": "Baseline update: current\nResult: the repository already matches the current Baseline catalog\n...\nSkills drifted: 0\nSkills retired: 2\n- retired council: no longer required by the Baseline; delete .agents/skills/council\n- retired the-fool: no longer required by the Baseline; delete .agents/skills/the-fool and its skills-lock.json entry\nPlan Digest: sha256:<digest>"
+}

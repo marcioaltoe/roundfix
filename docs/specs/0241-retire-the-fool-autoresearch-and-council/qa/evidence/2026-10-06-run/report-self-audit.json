@@ -1,0 +1,14 @@
+{
+  "verdict": "fail",
+  "rows": 12,
+  "passed": 8,
+  "failed": 1,
+  "environment_blocked": 3,
+  "finding_blocked": 0,
+  "declared_blocked": 0,
+  "pending": 0,
+  "skipped": 0,
+  "seeded_auditor_fields_preserved": true,
+  "all_rows_have_typed_inputs": true,
+  "all_declared_and_nonwaivable_sources_covered": true
+}

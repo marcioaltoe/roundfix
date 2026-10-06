@@ -1,0 +1,7 @@
+{
+  "Core Features": "1-2 task_01; 3-4 task_02; 5 task_03",
+  "Success Metrics": "1-2 task_01; 3-4 task_02; 5-6 task_03; live coverage task_04 Requirements 2-6",
+  "API Contracts": "1 task_01; 2 task_03; 3 task_02",
+  "Surface Transcripts": "1 task_03 and task_04 Requirement 5",
+  "reference_check": "Every named family exists in its declaring artifact and is linked by named Task References and the TechSpec Coverage Map. Strict precondition No findings is retained as checker evidence, not rerun. Task Result evidence supplies concrete command names. Transcript accuracy is separately failed in R5."
+}

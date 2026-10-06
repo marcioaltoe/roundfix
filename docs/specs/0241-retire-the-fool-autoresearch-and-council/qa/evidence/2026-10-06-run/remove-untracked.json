@@ -1,0 +1,14 @@
+{
+  "command": [
+    "rm",
+    "-rf",
+    ".agents/skills/council",
+    ".agents/skills/the-fool",
+    ".claude/skills/council",
+    ".claude/skills/the-fool"
+  ],
+  "cwd": "/private/tmp/rf0241-bh37wt50/adopter",
+  "exit": 0,
+  "stdout": "",
+  "stderr": ""
+}

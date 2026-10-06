@@ -1,0 +1,5 @@
+{
+  "Retired Skill": "A skill the Baseline no longer requires although the upstream catalog may still list it. No module requires or dispatches it, the asset sync drops it from every Setup Snapshot, and `roundfix baseline update` lists an installed copy for the adopter to delete without deleting it (ADR-0246).\n_Avoid_: Deprecated skill, obsolete skill",
+  "Composed Setup Snapshot": "A setup snapshot built by name from upstream setups in a fixed order, with duplicate skills dropped, so a built-in profile can span several toolchains (ADR-0204).\n_Avoid_: Merged setup, custom setup",
+  "Repository Skill Set": "The complete set of Roundfix-owned and externally managed Agent Skills required by a repository workflow. Every required installed artifact matches its authoritative local source; unrelated extras do not join the set.\n_Avoid_: Installed skills, plugin set, global skill set"
+}

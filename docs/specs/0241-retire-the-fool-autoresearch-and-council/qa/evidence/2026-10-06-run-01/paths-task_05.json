@@ -1,0 +1,16 @@
+{
+  "command": [
+    "git",
+    "-c",
+    "core.fsmonitor=false",
+    "diff-tree",
+    "--no-commit-id",
+    "--name-status",
+    "-r",
+    "f30360e5b08395af1cf5a3f66246293ae8426890"
+  ],
+  "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0241-retire-the-fool-autoresearch-and-council-a85a89f642e24d7b-c036ffd2-3683dde1/run_20261006T224042Z_935b2c7a4007fcea",
+  "exit": 0,
+  "stdout": "M\tdocs/specs/0241-retire-the-fool-autoresearch-and-council/task_05.md\nM\tskills/repository_test.go\n",
+  "stderr": ""
+}

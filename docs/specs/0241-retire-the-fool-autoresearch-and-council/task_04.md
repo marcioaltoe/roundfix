@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0241-retire-the-fool-autoresearch-and-council
-status: pending
+status: failed
 type: qa
 complexity: high
 ---
