@@ -75,7 +75,9 @@ and the operator orders the queue (ADR-0233).
   depend on every leaf"; ADR-0096, ADR-0097, ADR-0104 and ADR-0167 bind its
   machine stage, row carry, outside evidence and pre-PR Pull Request row,
   and ADR-0117, ADR-0182, ADR-0194, ADR-0195 and ADR-0210 its stage
-  ownership, settlement, row record, re-observation and evidence snapshot.
+  ownership, settlement, row record, re-observation and evidence snapshot;
+  ADR-0240: "One QA partial policy, and rows a Run sandbox cannot reach"
+  decides when its QA partial qualifies.
   ADR-0093, ADR-0156, ADR-0168, ADR-0176 and ADR-0183 check this Spec's
   consistency by citation and receipt, and ADR-0184 binds the TechSpec's
   three Surface Transcripts. ADR-0229 and ADR-0237 cite ADRs listed here but
