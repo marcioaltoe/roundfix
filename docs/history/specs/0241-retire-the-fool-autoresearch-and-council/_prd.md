@@ -1,9 +1,18 @@
 ---
 spec: 0241-retire-the-fool-autoresearch-and-council
-status: active
+status: archived
 created: 2026-10-06
 surfaces: [backend, cli, docs]
+archived: "2026-10-06"
+source_slug: 0241-retire-the-fool-autoresearch-and-council
+qa_override: true
+qa_override_approval: 'maintainer standing authorization 2026-09-30 (unattended program): qa_override only for environment-only partials'
+qa_override_reason: 'Environment-only partial after the transcript fix: R4 needs github.com (network denied in the Run sandbox, but its provenance is a requirement row, not an outside-evidence row), R8b is an outside-evidence lookup the Spec''s authorization prohibits, and R11 has no Pull Request yet; the queue opens it. Every behavior row passed, including Surface Transcript 1.'
+qa_override_qa_outcome: partial
+qa_override_qa_task_status: failed
+qa_override_revision: 816411615c1791a1df88fcf155de165d3cc2e0aa
 ---
+
 
 # Retire the-fool, autoresearch and council
 
