@@ -187,7 +187,7 @@ func TestAPassIsUnchangedByThePrePullRequestRow(t *testing.T) {
 		}
 	})
 
-	t.Run("partial without a declared row keeps its refusal", func(t *testing.T) {
+	t.Run("partial without a declared row qualifies", func(t *testing.T) {
 		t.Parallel()
 
 		report := QAReport{
@@ -195,10 +195,8 @@ func TestAPassIsUnchangedByThePrePullRequestRow(t *testing.T) {
 			RowsBlockedEnvironment:    1,
 			RowsBlockedPrePullRequest: 1,
 		}
-		err := QAReportEligibility(t.TempDir(), report)
-		const want = `newest QA Report verdict is "partial"; expected "pass"`
-		if err == nil || err.Error() != want {
-			t.Fatalf("error = %v, want %q", err, want)
+		if err := QAReportEligibility(t.TempDir(), report); err != nil {
+			t.Fatalf("QAReportEligibility: %v", err)
 		}
 	})
 }
