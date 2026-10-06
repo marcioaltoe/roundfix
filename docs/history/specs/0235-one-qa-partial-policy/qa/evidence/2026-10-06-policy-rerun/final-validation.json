@@ -1,0 +1,17 @@
+{
+  "rows": 17,
+  "passed": 15,
+  "blocked_environment": 2,
+  "blocked_finding": 0,
+  "blocked_declared": 0,
+  "eligibility_command": [
+    "./bin/roundfix",
+    "qa-report",
+    "accept",
+    "docs/specs/0235-one-qa-partial-policy/qa/qa-report-2026-10-06-01.md"
+  ],
+  "eligibility_exit": 1,
+  "eligibility_stderr": "roundfix: QA Report eligibility refused: rows_blocked_environment is 2, 1 outside the pre-PR Pull Request row; expected 0 outside it\n",
+  "tracked_changes": [],
+  "head": "c3e658a0c83ba081e3d64346b096dd5bda6a09ba"
+}

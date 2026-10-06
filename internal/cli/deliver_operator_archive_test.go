@@ -25,7 +25,7 @@ func TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch(t *testing.T) {
 		{"finding", "---\nverdict: partial\nrows_blocked_finding: 1\nrows_blocked_environment: 1\n---\nQA finding row\n", false},
 		{"missing", "", false},
 		{"unreadable", "---\nverdict: partial\nrows_blocked_environment: invalid\n---\n", false},
-		{"pre-PR only", "---\nverdict: partial\nrows_blocked_finding: 0\nrows_blocked_environment: 1\n---\n" + prePRRow, true},
+		{"pre-PR only", "---\nverdict: partial\nrows_blocked_finding: 0\nrows_blocked_environment: 1\n---\n" + prePRRow, false},
 		{"environment beyond pre-PR", "---\nverdict: partial\nrows_blocked_finding: 0\nrows_blocked_environment: 2\n---\n" + prePRRow, true},
 		{"pass", "---\nverdict: pass\nrows_blocked_finding: 0\nrows_blocked_environment: 1\n---\n", false},
 	}
@@ -47,57 +47,6 @@ func TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch(t *testing.T) {
 			gittest.Run(t, repo, "checkout", "--detach", itemHead)
 			// Exercise the RunSpec outcome boundary without launching an Agent executor.
 			result, err := workflow.runResult(t.Context(), repo, implementTestSlug, roundfixCommandResult{exitCode: exitRunFailed}, "", nil, &store.Run{ID: "qa-partial", State: store.StateUnresolved})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if result.Outcome != delivery.RunOutcomeUnresolved || result.QAEnvironmentPartial != tt.want {
-				t.Fatalf("result=%+v want environment partial %v", result, tt.want)
-			}
-		})
-	}
-}
-
-func TestRunSpecReportsAPartialBlockedOnlyByPullRequestRowsAsEnvironmentOnly(t *testing.T) {
-	const pullRequestRows = `
-## Results
-
-| ID | Provenance | Status |
-| --- | --- | --- |
-| PR | Pull Request row | blocked (environment: no open Pull Request) |
-| CI | Pull Request row | blocked (environment: no open Pull Request) |
-`
-	tests := []struct {
-		name, content string
-		want          bool
-	}{
-		{
-			name:    "pull request rows only",
-			content: "---\nverdict: partial\nrows_blocked_finding: 0\nrows_blocked_environment: 2\n---\n" + pullRequestRows,
-			want:    true,
-		},
-		{
-			name:    "declared rows only",
-			content: "---\nverdict: partial\nrows_blocked_finding: 0\nrows_blocked_environment: 0\nrows_blocked_declared: 1\n---\n\n## Results\n\n| ID | Provenance | Status |\n| --- | --- | --- |\n| D1 | Declared acceptance | blocked (declared: unreachable acceptance) |\n",
-		},
-		{
-			name:    "finding beside pull request rows",
-			content: "---\nverdict: partial\nrows_blocked_finding: 1\nrows_blocked_environment: 2\n---\n" + pullRequestRows + "| F1 | Finding row | blocked (finding: regression) |\n",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			home, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
-			workflow := newItemRecoveryWorkflowForRepository(t, home, repo)
-			itemHead := itemRecoveryHead(t, repo)
-			const runID = "qa-pull-request-partial"
-			gittest.Run(t, repo, "checkout", "-b", store.RunBranchPrefix+runID)
-			qaDir := filepath.Join(repo, "docs", "specs", implementTestSlug, "qa")
-			mustMkdir(t, qaDir)
-			mustWrite(t, filepath.Join(qaDir, "qa-report-2026-10-03-01.md"), tt.content)
-			gittest.Run(t, repo, "add", "docs/specs")
-			gittest.Run(t, repo, "commit", "-m", "docs: Run QA report")
-			gittest.Run(t, repo, "checkout", "--detach", itemHead)
-			result, err := workflow.runResult(t.Context(), repo, implementTestSlug, roundfixCommandResult{exitCode: exitRunFailed}, "", nil, &store.Run{ID: runID, State: store.StateUnresolved})
 			if err != nil {
 				t.Fatal(err)
 			}

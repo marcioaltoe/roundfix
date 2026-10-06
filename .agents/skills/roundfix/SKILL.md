@@ -4,10 +4,10 @@ description: Use Roundfix to plan releases with the read-only Release Plan Comma
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.37
+  version: 0.1.39
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.37
+version: 0.1.39
 ---
 
 # Roundfix
@@ -56,7 +56,7 @@ may move:
 | Outcome | Settles | Archives |
 | --- | --- | --- |
 | `pass` | Settles the QA Task as `completed` and makes the Spec archive-eligible when the report has no disallowed blocked rows. | The Spec and its QA report and evidence. |
-| qualifying declared `partial` | Settles the QA Task as `completed` when every unmet row other than the pre-PR Pull Request row is covered by a matching `## Unreachable Acceptance` declaration; the pre-PR Pull Request row, recorded as `blocked (environment: no open Pull Request)` with the Pull Request row named in its provenance, never decides a qualifying partial and needs no Unreachable Acceptance declaration. | The Spec, its QA report and evidence, and the declarations' `satisfied-by` record. |
+| qualifying declared `partial` | Settles the QA Task as `completed` when no row failed, was skipped or is finding-blocked, every declared-blocked row is covered by a matching `## Unreachable Acceptance` declaration, and every environment-blocked row is the pre-PR Pull Request row, recorded as `blocked (environment: no open Pull Request)` with the Pull Request row named in its provenance, or an outside-evidence row the Run sandbox could not reach, recorded as `blocked (environment: network denied: <host>)` with the outside-evidence row named in its provenance. Neither row needs an Unreachable Acceptance declaration, and a partial whose only unmet rows are such rows qualifies. | The Spec, its QA report and evidence, and the declarations' `satisfied-by` record. |
 | `environment-blocked` | Leaves the row blocked; the report can still settle as `pass` when equivalent evidence satisfies the environment policy. | Nothing by itself; a qualifying report can archive the Spec. |
 | `failed` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
 | `missing` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |

@@ -213,11 +213,22 @@ func requireSettleQAReportEligibility(plan settlePlan) error {
 	if plan.task.Type != spec.TaskTypeQA {
 		return nil
 	}
-	report, err := spec.ReadQAReport(plan.graph.Spec.Dir)
+	path, err := spec.NewestQAReport(plan.graph.Spec.Dir)
 	if err != nil {
 		return fmt.Errorf("read newest QA Report: %w", err)
 	}
-	return spec.QAReportEligibility(plan.graph.Spec.Dir, report)
+	report, err := spec.ReadQAReportFile(path)
+	if err != nil {
+		return fmt.Errorf("read newest QA Report: %w", err)
+	}
+	if err := spec.QAReportEligibility(plan.graph.Spec.Dir, report); err != nil {
+		relative, pathErr := filepath.Rel(plan.workDir, path)
+		if pathErr != nil {
+			return fmt.Errorf("resolve QA Report path: %w", pathErr)
+		}
+		return fmt.Errorf("%w (report %s)", err, filepath.ToSlash(relative))
+	}
+	return nil
 }
 
 func parseSettleCommand(args []string) (settleRequest, error) {

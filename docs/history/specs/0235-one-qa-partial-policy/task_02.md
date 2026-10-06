@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0235-one-qa-partial-policy
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -111,3 +111,70 @@ refused.
 - `_prd.md` → Goals; Core Features 4-5; Success Metric 2; Success Metric 3; Success Metric 4
 - `_techspec.md` → Invariants 8 to 10; API Contract 1; API Contract 4; API Contract 5; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Testing Approach; Build Order 2
 - ADR-0240; ADR-0229; ADR-0154
+
+## Result
+
+Implemented this Task's caller changes. The Delivery Queue reads the newest
+Run Branch report through the existing shared reader and classifies
+`qa-environment-partial` only when the partial has no finding-blocked row and
+`EnvironmentRowsNeedingOverride() > 0`. Settle selects the newest report once,
+reads that file through the shared reader, and appends its path relative to
+the selected working tree to the shared eligibility refusal. The settle guide
+quotes `(report <path>)` and documents exit 1 and the unchanged Task file.
+Daemon settlement, archive and `qa-report accept` retain their existing policy
+calls with no added conditions.
+
+Acceptance evidence:
+
+- Agreement: `TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape`
+  exercises 16 report shapes independently through all three commands, and
+  `TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo` exercises the same
+  shapes through `Engine.TaskCycle` and `taskFakeRunner`. Both use explicit
+  expected verdicts and refusal reasons. The command test matches empty
+  stdout/stderr on accepted `qa-report accept` reports and the exact refusal
+  line on rejected reports. The Daemon test matches completed/failed QA Task
+  status and `QA verdict partial not accepted: <reason>` for refusals.
+- Queue classification: `TestRunSpecDoesNotParkAQualifyingPartialAsEnvironmentOnly`
+  reads committed newest reports from the Run Branch while the checkout
+  remains at the item head. Pull Request rows only and Pull Request plus
+  network-denied outside evidence are not environment-only parks; another
+  environment row and network denial without outside-evidence provenance
+  remain parks. The removed test's three original fixtures are retained in
+  this replacement. The existing environment-only matrix changes only the
+  specified pre-PR-only expectation.
+- Refused report identity: `TestSettleNamesTheReportItRefused` selects a kept
+  Task Worktree with two reports while the checkout holds different eligible
+  evidence. It matches exit 1 and the complete stderr transcript, including
+  `Settle surface:` and the newest report's relative path, and proves the
+  Task file is unchanged. The agreement test checks this refusal shape for
+  every rejected partial. Existing settle eligibility tests remain unchanged.
+
+Focused checks:
+
+- Before the caller edits,
+  `rtk proxy env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 ./internal/cli -run '^(TestSettleNamesTheReportItRefused|TestRunSpecDoesNotParkAQualifyingPartialAsEnvironmentOnly)$'`
+  exited 1: settle omitted the report path, and both exempt-only queue cases
+  incorrectly classified as environment partials.
+- After the caller edits and fixture correction,
+  `rtk proxy env GOCACHE=/tmp/roundfix-task02-gocache go test -count=1 ./internal/cli ./internal/daemon -run 'TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape|TestSettleNamesTheReportItRefused|TestRunSpecDoesNotParkAQualifyingPartialAsEnvironmentOnly|TestRunSpecReportsAnEnvironmentOnlyPartialFromTheRunBranch|TestTheDaemonSettlesEveryPartialShapeAsTheCommandsDo|TestSettleAppliesEligibilityToAQATask'`
+  exited 0 for both packages. An earlier agreement run exposed that the test
+  harness's selected working directory does not change the process directory
+  for `qa-report accept`; its fixture now passes the temporary absolute path.
+- `rtk proxy env GOCACHE=/tmp/roundfix-task02-gocache rtk make verify-incremental`
+  initially exited 2 because the sandbox denied process-table access in
+  `TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner` and
+  `TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion`.
+  After preserving the moved queue fixtures, the same command with elevated
+  process access exited 0: formatting, vet, the Go suite, skill checks and
+  build passed. Other unchanged package results reused the incremental cache;
+  the final CLI package run passed in 237.651 seconds.
+
+The authored Verification command was not run. Task status remains
+Daemon-owned; no Task Graph, other Task file, skill, Baseline asset,
+`CONTEXT.md` or `CHANGELOG.md` was edited. No commit, push or Pull Request was
+created. No follow-up implementation outside this slice was added.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261006T120012Z_3cae1c6ab9ca3edb`
+- Source commit: `e3922de6a1294c42e235327fec4e081c4bf8fac2`

@@ -139,6 +139,10 @@ unacceptable, and `2` means a usage error. Read its usage through
 A `pending` verdict, a report with no QA row, and empty or duplicated front
 matter are refused. The pre-PR Pull Request row recorded as
 `blocked (environment: no open Pull Request)` with that row named in its
-provenance never decides a qualifying partial and needs no Unreachable
-Acceptance declaration.
-
+provenance, and an outside-evidence row recorded as
+`blocked (environment: network denied: <host>)` with the outside-evidence row
+named in its provenance, never decide a qualifying partial and need no
+Unreachable Acceptance declaration. Any other blocked outside-evidence row
+still blocks Pull Request preparation. When this eligibility check refuses,
+`qa-report accept` prints the reason alone. Only the Settle Command appends
+`(report <path>)` to its refusal, naming the report it judged.

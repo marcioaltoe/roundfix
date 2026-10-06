@@ -4,10 +4,10 @@ description: Execute the self-contained final QA gate as a Spec's authored termi
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.8
+  version: 0.0.9
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.8
+version: 0.0.9
 ---
 
 # QA Gate
@@ -49,7 +49,7 @@ may move:
 | Outcome | Settles | Archives |
 | --- | --- | --- |
 | `pass` | Settles the QA Task as `completed` and makes the Spec archive-eligible when the report has no disallowed blocked rows. | The Spec and its QA report and evidence. |
-| qualifying declared `partial` | Settles the QA Task as `completed` when every unmet row other than the pre-PR Pull Request row is covered by a matching `## Unreachable Acceptance` declaration; the pre-PR Pull Request row, recorded as `blocked (environment: no open Pull Request)` with the Pull Request row named in its provenance, never decides a qualifying partial and needs no Unreachable Acceptance declaration. | The Spec, its QA report and evidence, and the declarations' `satisfied-by` record. |
+| qualifying declared `partial` | Settles the QA Task as `completed` when no row failed, was skipped or is finding-blocked, every declared-blocked row is covered by a matching `## Unreachable Acceptance` declaration, and every environment-blocked row is the pre-PR Pull Request row, recorded as `blocked (environment: no open Pull Request)` with the Pull Request row named in its provenance, or an outside-evidence row the Run sandbox could not reach, recorded as `blocked (environment: network denied: <host>)` with the outside-evidence row named in its provenance. Neither row needs an Unreachable Acceptance declaration, and a partial whose only unmet rows are such rows qualifies. | The Spec, its QA report and evidence, and the declarations' `satisfied-by` record. |
 | `environment-blocked` | Leaves the row blocked; the report can still settle as `pass` when equivalent evidence satisfies the environment policy. | Nothing by itself; a qualifying report can archive the Spec. |
 | `failed` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
 | `missing` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
@@ -259,7 +259,8 @@ enumerated control left unanswered is exactly that.
   as `blocked (environment: no open Pull Request)` and count it in
   `rows_blocked_environment`. The pre-PR Pull Request row never decides a
   qualifying partial and needs no Unreachable Acceptance declaration; name the
-  Pull Request row in its provenance. When the fact says the Pull Request could
+  Pull Request row in its provenance. The Pull Request row's provenance item
+  may carry a note after `Pull Request row`. When the fact says the Pull Request could
   not be resolved, the absence is unproven: record the cause as
   `blocked (environment: Pull Request unresolved)` and never write it up as a
   confirmed absence. Do not try to resolve a Pull Request from the Run
@@ -374,13 +375,15 @@ evidence originating outside the Spec's own artifacts — a repository the Spec
 did not build, a measurement it did not design, or published literature. Record
 in that row where its evidence came from, named precisely enough for a later
 reader to reach the same source, so the result cannot be read as a rehearsal of
-the Spec's own premise. When that source cannot be obtained, record the row as
-`blocked (environment: <cause>)` with the reason it was unreachable and count it
-in `rows_blocked_environment`. Never drop the row, and never satisfy it with
-evidence the Spec authored. A blocked or partial outside-evidence row blocks
-pull request preparation until the row is satisfied or carried forward on
-declared unmoved evidence under ADR-0097. Task authoring never stalls on it —
-decomposition records the blocked row and proceeds — so the obligation lands
+the Spec's own premise. When the Run sandbox denies network access to the
+lookup, record the row as `blocked (environment: network denied: <host>)`, naming
+the host the lookup tried, and keep an `outside-evidence row` item in its
+provenance. This records that the source was not reached and never decides a
+qualifying partial. Any other blocked outside-evidence row still blocks Pull
+Request preparation. Count every blocked outside-evidence row in
+`rows_blocked_environment`; never drop the row, and never satisfy it with
+evidence the Spec authored. Task authoring never stalls on it — decomposition
+records the blocked row and proceeds — so the obligation lands
 here, at the gate, where the Spec is asked to account for it. See ADR-0104.
 
 The plan is complete when every coverage source appears in at least one row's
@@ -572,7 +575,7 @@ whose provenance is `precondition`, plus `precondition_check` and
 `precondition_reason`. A gate that reached its matrix writes none of these three
 keys: the refusal is an added shape, not a fourth count every report owes.
 
-The gate permits Pull Request preparation on `pass`, or on a qualifying declared `partial` as the QA settlement table defines. On other outcomes, state what must change or be verified before rerunning. In a daemon-assigned Roundfix QA step, write the report but never commit or push; the daemon owns the QA report commit. Daemon-assigned steps may also run sandboxed: when an operation outside the workspace fails with a permission error (writes to `$HOME`, network, nested tool state), classify it immediately as environment-caused, mark the affected row `blocked (environment: <error>)`, and move on — never retry-loop a sandbox denial — noting in the environment record which checks need a full-access session.
+The gate permits Pull Request preparation on `pass`, or on a qualifying declared `partial` as the QA settlement table defines. On other outcomes, state what must change or be verified before rerunning. In a daemon-assigned Roundfix QA step, write the report but never commit or push; the daemon owns the QA report commit. Daemon-assigned steps may also run sandboxed: when an operation outside the workspace fails with a permission error (writes to `$HOME`, nested tool state), classify it immediately as environment-caused, mark the affected row `blocked (environment: <error>)`, and move on — never retry-loop a sandbox denial — noting in the environment record which checks need a full-access session. For an outside-evidence lookup denied by the Run sandbox's network policy, write `blocked (environment: network denied: <host>)` with the attempted host and the `outside-evidence row` provenance item; record that the source was not reached, and apply the one-rule verdict described above: a Pull Request row with equivalent evidence for every control still allows `pass`, and without it the report closes `partial`, which qualifies when no other unmet row remains.
 
 ## Decision examples
 
@@ -589,9 +592,12 @@ The gate permits Pull Request preparation on `pass`, or on a qualifying declared
   behavior: block only the governance rows that wait on that named check and
   continue the functional journeys.
 - The outside-evidence row names repositories this environment does not hold:
-  record `blocked (environment: <cause>)` with the attempted lookup as proof and
-  count it in `rows_blocked_environment` — never substitute a rehearsal the Spec
-  authored.
+  record `blocked (environment: network denied: <host>)` with the attempted
+  host and an `outside-evidence row` provenance item when the Run sandbox denied
+  network access; this records that the source was not reached and never decides
+  a qualifying partial. Any other blocked outside-evidence row still blocks Pull
+  Request preparation. Count it in `rows_blocked_environment` — never substitute
+  a rehearsal the Spec authored.
 - The prompt names an Open Pull Request and read-only observation proves approval, Merge-Ready acceptance, and review-artifact ancestry: pass those Pull Request journeys without commit, push, or Pull Request mutation authority.
 - A task Result names a passing unit test, while the assembled browser journey also persists after refresh with screenshots: credit the task criterion and pass the user-story row from live evidence.
 

@@ -1,9 +1,18 @@
 ---
 spec: 0235-one-qa-partial-policy
-status: active
+status: archived
 created: 2026-10-06
 surfaces: [backend, cli, docs]
+archived: "2026-10-06"
+source_slug: 0235-one-qa-partial-policy
+qa_override: true
+qa_override_approval: 'maintainer standing authorization 2026-09-30 (unattended program): qa_override only for environment-only partials'
+qa_override_reason: 'Environment-only partial after the corrective docs task_06: O3 is an outside-evidence JUnit lookup the Spec''s authorization forbids, and R12 has no Pull Request yet; the queue opens it. Every behavior row passed, F1 and F2 are fixed by task_06.'
+qa_override_qa_outcome: partial
+qa_override_qa_task_status: failed
+qa_override_revision: 6efb825354b51d04a5f1fb49afd17b3dcdb168bd
 ---
+
 
 # One QA partial policy
 
@@ -176,7 +185,9 @@ The outside-evidence rows rest on records this Spec did not produce:
   0220 are refused with `newest QA Report verdict is "partial"; expected
   "pass"` although every unmet row is a Pull Request row, 0227 is refused
   with `rows_blocked_environment is 2; expected 0` because its Pull Request
-  row's provenance carries a note, and 0179 is the only one accepted.
+  row's provenance carries a note, and 0073, 0079 and 0179, whose only unmet
+  rows are declared rows their Specs cover, are accepted. Every other
+  archived `partial` report is refused.
 - The Fluxus report mirrored in the Secondbrain,
   `projects/fluxus/mirror/docs/history/specs/0100-cada-loja-aponta-para-o-mesmo-fabricante-e-a-mesma-categoria/qa/`.
   Its `qa-report-2026-10-05-01.md` (two declared rows, the Pull Request row)

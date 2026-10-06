@@ -1,0 +1,28 @@
+{
+  "source": "/Users/marcio/dev/secondbrain/inbox/roundfix/_triaged/2026-10-06-partial-so-com-a-linha-do-pr-e-recusado-no-assentamento.md",
+  "read_fact": "PR-only partial, no declaration, previously refused expected pass and parked environment-partial",
+  "observations": [
+    {
+      "command": [
+        "./bin/roundfix",
+        "qa-report",
+        "accept",
+        "/private/tmp/roundfix-0235-oraculum-888hu92a/docs/specs/observed-oraculum/qa/qa-report-2026-10-06.md"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "./bin/roundfix",
+        "qa-report",
+        "accept",
+        "/private/tmp/roundfix-0235-oraculum-888hu92a/docs/specs/observed-oraculum/qa/qa-report-2026-10-06.md"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ]
+}

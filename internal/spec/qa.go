@@ -30,6 +30,12 @@ const (
 	QAPullRequestRowSource    = "Pull Request row"
 )
 
+// Results-row markers for outside evidence the Run sandbox could not reach.
+const (
+	QANetworkDeniedStatusPrefix = "blocked (environment: network denied: "
+	QAOutsideEvidenceRowSource  = "outside-evidence row"
+)
+
 // The terminal row a gate writes when it refuses at a precondition check. The
 // gate stopped before it built its matrix, so it has no measured requirement
 // to report; row 0 records the refusal itself, which keeps the Results table
@@ -70,6 +76,8 @@ type QAReport struct {
 	UserFlowBinary            string
 	RowsBlockedEnvironment    int
 	RowsBlockedPrePullRequest int
+	RowsBlockedNetworkDenied  int
+	RowsSkipped               int
 	RowsBlockedFinding        int
 	RowsBlockedDeclared       int
 	RowsBlockedPrecondition   int
@@ -308,11 +316,16 @@ func ReadQAReportFile(path string) (QAReport, error) {
 	return readQAReport(path)
 }
 
+// EnvironmentRowsNeedingOverride counts environment rows outside the two
+// exempt kinds, capped by the frontmatter's environment count.
+func (report QAReport) EnvironmentRowsNeedingOverride() int {
+	return report.RowsBlockedEnvironment - min(report.RowsBlockedEnvironment,
+		report.RowsBlockedPrePullRequest+report.RowsBlockedNetworkDenied)
+}
+
 // QAReportEligibility reports whether a parsed QA Report satisfies the
-// archive eligibility policy. A pass is eligible outright. A partial is
-// eligible only when all of its blocked rows are covered by the Spec's
-// unreachable acceptance declarations and none are blocked by a finding or
-// the environment.
+// shared QA eligibility policy. A partial qualifies only with exempt
+// environment rows and covered declared rows, without findings or skips.
 func QAReportEligibility(specDir string, report QAReport) error {
 	if report.Verdict == VerdictPass {
 		if report.Hollow {
@@ -326,12 +339,11 @@ func QAReportEligibility(specDir string, report QAReport) error {
 	if report.RowsBlockedFinding > 0 {
 		return fmt.Errorf("rows_blocked_finding is %d; expected 0", report.RowsBlockedFinding)
 	}
-	excused := report.RowsBlockedPrePullRequest
-	if excused > report.RowsBlockedEnvironment {
-		excused = report.RowsBlockedEnvironment
-	}
-	if outside := report.RowsBlockedEnvironment - excused; outside > 0 {
-		if excused == 0 {
+	if outside := report.EnvironmentRowsNeedingOverride(); outside > 0 {
+		if report.RowsBlockedNetworkDenied > 0 {
+			return fmt.Errorf("rows_blocked_environment is %d, %d outside the pre-PR Pull Request row and network-denied outside-evidence rows; expected 0 outside them", report.RowsBlockedEnvironment, outside)
+		}
+		if report.RowsBlockedPrePullRequest == 0 {
 			return fmt.Errorf("rows_blocked_environment is %d; expected 0", report.RowsBlockedEnvironment)
 		}
 		return fmt.Errorf(
@@ -340,26 +352,30 @@ func QAReportEligibility(specDir string, report QAReport) error {
 			outside,
 		)
 	}
-	if report.RowsBlockedDeclared == 0 {
-		return fmt.Errorf("newest QA Report verdict is %q; expected %q", report.Verdict, VerdictPass)
+	if report.RowsSkipped > 0 {
+		return fmt.Errorf("partial records %d skipped row(s); a qualifying partial records none", report.RowsSkipped)
 	}
-
-	declarations, err := Unreachable(specDir)
-	if err != nil {
-		return fmt.Errorf("read unreachable acceptance declarations: %w", err)
-	}
-	if report.RowsBlockedDeclared > len(declarations) {
-		plural := ""
-		if len(declarations) != 1 {
-			plural = "s"
+	if report.RowsBlockedDeclared > 0 {
+		declarations, err := Unreachable(specDir)
+		if err != nil {
+			return fmt.Errorf("read unreachable acceptance declarations: %w", err)
 		}
-		return fmt.Errorf(
-			"rows_blocked_declared is %d, but Spec declares %d unreachable acceptance%s; shortfall is %d",
-			report.RowsBlockedDeclared,
-			len(declarations),
-			plural,
-			report.RowsBlockedDeclared-len(declarations),
-		)
+		if report.RowsBlockedDeclared > len(declarations) {
+			plural := ""
+			if len(declarations) != 1 {
+				plural = "s"
+			}
+			return fmt.Errorf(
+				"rows_blocked_declared is %d, but Spec declares %d unreachable acceptance%s; shortfall is %d",
+				report.RowsBlockedDeclared,
+				len(declarations),
+				plural,
+				report.RowsBlockedDeclared-len(declarations),
+			)
+		}
+	}
+	if report.RowsBlockedPrePullRequest == 0 && report.RowsBlockedNetworkDenied == 0 && report.RowsBlockedDeclared == 0 {
+		return fmt.Errorf("newest QA Report verdict is %q; expected %q", report.Verdict, VerdictPass)
 	}
 	if report.Hollow {
 		return fmt.Errorf("newest QA Report verdict is %q but records no QA row", report.Verdict)
@@ -411,6 +427,7 @@ func readQAReport(path string) (QAReport, error) {
 	// reason stays empty rather than becoming the writer's placeholder, so a
 	// reader can tell a refusal whose cause was unnamed from one that was never
 	// written down.
+	prePullRequest, networkDenied, skipped := qaReportResultsCounts(body)
 	report := QAReport{
 		Verdict:                   frontmatter.Verdict,
 		Hollow:                    qaReportHollow(body),
@@ -418,7 +435,9 @@ func readQAReport(path string) (QAReport, error) {
 		AuditorStaleness:          frontmatter.AuditorStaleness,
 		UserFlowBinary:            frontmatter.UserFlowBinary,
 		RowsBlockedEnvironment:    rowsBlockedEnvironment,
-		RowsBlockedPrePullRequest: qaReportPrePullRequestRows(body),
+		RowsBlockedPrePullRequest: prePullRequest,
+		RowsBlockedNetworkDenied:  networkDenied,
+		RowsSkipped:               skipped,
 		RowsBlockedFinding:        rowsBlockedFinding,
 		RowsBlockedDeclared:       rowsBlockedDeclared,
 		RowsBlockedPrecondition:   rowsBlockedPrecondition,
@@ -574,16 +593,14 @@ func qaReportHollow(body []byte) bool {
 	return hasResults
 }
 
-// qaReportPrePullRequestRows derives the structural environment block that a
-// QA gate records before a Pull Request exists. Only Results tables with both
-// required columns contribute; the frontmatter's environment count retains
-// its existing meaning and validation.
-func qaReportPrePullRequestRows(body []byte) int {
+// qaReportResultsCounts derives exempt environment and skipped counts in
+// one Results-table pass. Exempt rows also require a Provenance column;
+// frontmatter counts retain their existing meaning and validation.
+func qaReportResultsCounts(body []byte) (prePullRequest, networkDenied, skipped int) {
 	lines := strings.Split(string(body), "\n")
 	inResults := false
 	inFence := false
 	fence := ""
-	rows := 0
 
 	for index := 0; index < len(lines); {
 		trimmed := strings.TrimSpace(lines[index])
@@ -638,17 +655,27 @@ func qaReportPrePullRequestRows(body []byte) int {
 			if len(cells) == 0 {
 				break
 			}
-			if !markdownTableSeparator(cells) &&
-				statusColumn >= 0 && provenanceColumn >= 0 &&
-				statusColumn < len(cells) && provenanceColumn < len(cells) &&
-				strings.TrimSpace(cells[statusColumn]) == QANoOpenPullRequestStatus &&
-				qaReportProvenanceNames(cells[provenanceColumn], QAPullRequestRowSource) {
-				rows++
+			if !markdownTableSeparator(cells) && statusColumn >= 0 && statusColumn < len(cells) {
+				status := strings.TrimSpace(cells[statusColumn])
+				if strings.EqualFold(status, "skipped") {
+					skipped++
+				}
+				if provenanceColumn >= 0 && provenanceColumn < len(cells) {
+					provenance := cells[provenanceColumn]
+					if status == QANoOpenPullRequestStatus && qaReportProvenanceNames(provenance, QAPullRequestRowSource) {
+						prePullRequest++
+					}
+					if strings.HasPrefix(status, QANetworkDeniedStatusPrefix) && strings.HasSuffix(status, ")") &&
+						strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(status, QANetworkDeniedStatusPrefix), ")")) != "" &&
+						qaReportProvenanceNames(provenance, QAOutsideEvidenceRowSource) {
+						networkDenied++
+					}
+				}
 			}
 			index++
 		}
 	}
-	return rows
+	return prePullRequest, networkDenied, skipped
 }
 
 func qaReportProvenanceNames(provenance, source string) bool {
@@ -656,7 +683,8 @@ func qaReportProvenanceNames(provenance, source string) bool {
 		return char == ';' || char == ','
 	})
 	for _, item := range items {
-		if strings.TrimSpace(item) == source {
+		item = strings.TrimSpace(item)
+		if item == source || strings.HasPrefix(item, source+" ") || strings.HasPrefix(item, source+":") || strings.HasPrefix(item, source+"(") {
 			return true
 		}
 	}

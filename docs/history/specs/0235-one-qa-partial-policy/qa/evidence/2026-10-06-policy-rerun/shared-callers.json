@@ -1,0 +1,16 @@
+{
+  "internal/spec/archive.go": [
+    "if err := QAReportEligibility(specDir, report); err != nil {"
+  ],
+  "internal/cli/qa_report.go": [
+    "if err := spec.QAReportEligibility(specDir, report); err != nil {"
+  ],
+  "internal/cli/settle.go": [
+    "if err := requireSettleQAReportEligibility(plan); err != nil {",
+    "func requireSettleQAReportEligibility(plan settlePlan) error {",
+    "if err := spec.QAReportEligibility(plan.graph.Spec.Dir, report); err != nil {"
+  ],
+  "internal/daemon/task_engine.go": [
+    "eligibilityErr = spec.QAReportEligibility(plan.Spec.Dir, report)"
+  ]
+}

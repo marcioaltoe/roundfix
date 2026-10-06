@@ -66,7 +66,11 @@ Pull Request. When no Pull Request is open, those journeys are
 environment-blocked. The pre-PR Pull Request row, recorded as `blocked
 (environment: no open Pull Request)` with the Pull Request row named in its
 provenance, never decides a qualifying partial and needs no Unreachable
-Acceptance declaration.
+Acceptance declaration. An outside-evidence row blocked only because the Run
+sandbox denied network access, recorded as `blocked (environment: network denied: <host>)` with the outside-evidence row named in its provenance, also
+never decides a qualifying partial and needs no Unreachable Acceptance
+declaration. Any other blocked outside-evidence row still blocks Pull Request
+preparation.
 
 Every blocked row records its cause. A row the environment makes unreachable
 counts in `rows_blocked_environment`; it does not by itself prevent `pass` when

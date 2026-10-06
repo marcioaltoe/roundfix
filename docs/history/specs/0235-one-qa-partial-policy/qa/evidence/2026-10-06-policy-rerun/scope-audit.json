@@ -1,0 +1,151 @@
+{
+  "range": "08660fcc1a82a2d50beecbbb0e14e639d05dbd36..c3e658a0c83ba081e3d64346b096dd5bda6a09ba",
+  "tasks": [
+    {
+      "task": "task_01",
+      "commit": "46b485b9b8edc9a4ab153b4dfaebaff230df5465",
+      "command": [
+        "git",
+        "diff-tree",
+        "--no-commit-id",
+        "--name-only",
+        "-r",
+        "46b485b9b8edc9a4ab153b4dfaebaff230df5465"
+      ],
+      "paths": [
+        "docs/specs/0235-one-qa-partial-policy/task_01.md",
+        "internal/spec/qa.go",
+        "internal/spec/qa_partial_policy_test.go",
+        "internal/spec/qa_prepr_row_test.go"
+      ],
+      "undeclared": []
+    },
+    {
+      "task": "task_02",
+      "commit": "15ac1480a9671294fd8fe0e3bd509c1d8d1a4e4c",
+      "command": [
+        "git",
+        "diff-tree",
+        "--no-commit-id",
+        "--name-only",
+        "-r",
+        "15ac1480a9671294fd8fe0e3bd509c1d8d1a4e4c"
+      ],
+      "paths": [
+        "docs/specs/0235-one-qa-partial-policy/task_02.md",
+        "docs/user-guide/commands/settle.md",
+        "internal/cli/deliver_operator_archive_test.go",
+        "internal/cli/deliver_workflow.go",
+        "internal/cli/qa_partial_policy_test.go",
+        "internal/cli/settle.go",
+        "internal/daemon/qa_partial_policy_test.go"
+      ],
+      "undeclared": []
+    },
+    {
+      "task": "task_03",
+      "commit": "4f7216e68689c35a4f4a80ebb1d2e473e3111dc4",
+      "command": [
+        "git",
+        "diff-tree",
+        "--no-commit-id",
+        "--name-only",
+        "-r",
+        "4f7216e68689c35a4f4a80ebb1d2e473e3111dc4"
+      ],
+      "paths": [
+        ".agents/skills/archive-spec/SKILL.md",
+        ".agents/skills/qa-gate/SKILL.md",
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/archive.md",
+        ".agents/skills/roundfix/references/settle.md",
+        "docs/specs/0235-one-qa-partial-policy/task_03.md",
+        "docs/user-guide/commands/archive.md",
+        "docs/user-guide/commands/qa-report.md",
+        "docs/user-guide/commands/settle.md",
+        "docs/user-guide/context-driven-development.md",
+        "skills/archive-spec/SKILL.md",
+        "skills/qa-gate/SKILL.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/archive.md",
+        "skills/roundfix/references/settle.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "undeclared": []
+    },
+    {
+      "task": "task_04",
+      "commit": "077e96e15c4c4af156173892d1a4680baec96f6d",
+      "command": [
+        "git",
+        "diff-tree",
+        "--no-commit-id",
+        "--name-only",
+        "-r",
+        "077e96e15c4c4af156173892d1a4680baec96f6d"
+      ],
+      "paths": [
+        "docs/agents/autonomous-work.md",
+        "docs/agents/setup-context.json",
+        "docs/agents/spec-routing.md",
+        "docs/specs/0235-one-qa-partial-policy/task_04.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md",
+        "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md",
+        "internal/baseline/assets/modules/autonomous-work.json",
+        "internal/baseline/assets/modules/spec-workflow.json",
+        "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+        "internal/baseline/network_denied_row_clause_test.go",
+        "internal/baseline/testdata/catalog.diagnostics.golden.json",
+        "internal/baseline/testdata/catalog.digest",
+        "internal/baseline/testdata/catalog.normalized.json",
+        "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+        "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+        "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+        "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json"
+      ],
+      "undeclared": []
+    },
+    {
+      "task": "task_06",
+      "commit": "c3e658a0c83ba081e3d64346b096dd5bda6a09ba",
+      "command": [
+        "git",
+        "diff-tree",
+        "--no-commit-id",
+        "--name-only",
+        "-r",
+        "c3e658a0c83ba081e3d64346b096dd5bda6a09ba"
+      ],
+      "paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/settle.md",
+        "docs/specs/0235-one-qa-partial-policy/_prd.md",
+        "docs/specs/0235-one-qa-partial-policy/task_06.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/settle.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "undeclared": []
+    }
+  ],
+  "governed": [
+    ".agents/skills/archive-spec/SKILL.md",
+    ".agents/skills/qa-gate/SKILL.md",
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/archive.md",
+    ".agents/skills/roundfix/references/settle.md",
+    "docs/agents/autonomous-work.md",
+    "docs/agents/setup-context.json",
+    "docs/agents/spec-routing.md",
+    "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md",
+    "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md",
+    "internal/baseline/assets/modules/autonomous-work.json",
+    "internal/baseline/assets/modules/spec-workflow.json",
+    "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+    "skills/archive-spec/SKILL.md",
+    "skills/qa-gate/SKILL.md",
+    "skills/roundfix/SKILL.md"
+  ],
+  "forbidden": [],
+  "authorization_revision": "08660fcc1a82a2d50beecbbb0e14e639d05dbd36"
+}

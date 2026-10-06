@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0235-one-qa-partial-policy
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -99,3 +99,66 @@ note, refuses a partial with a skipped row, and adds
 - `_prd.md` → Goals; Core Features 1-3; Success Metric 1; Success Metric 2; Acceptance evidence
 - `_techspec.md` → Interfaces; Invariants 1 to 7; API Contract 2; API Contract 3; Surface Transcript 1; Surface Transcript 2; Testing Approach; Build Order 1
 - ADR-0240; ADR-0167; ADR-0080
+
+
+## Result
+
+Implemented the Task 01 policy in `internal/spec/qa.go`. The Results reader
+now derives pre-PR Pull Request, network-denied outside-evidence and skipped
+row counts in one pass. Provenance items recognize the specified note
+boundaries, and the network marker requires a non-empty host. Frontmatter
+counts and their validation retain their existing meaning.
+
+`QAReportEligibility` applies Invariant 6's refusal order and reads
+Unreachable Acceptance declarations only when declared rows exist. Existing
+refusal text is preserved; the two new refusals use API Contracts 2 and 3.
+`EnvironmentRowsNeedingOverride` subtracts the two exempt kinds, clamped to
+the environment count. The pass rule is unchanged.
+
+Focused checks:
+
+- Before implementation,
+  `rtk proxy env GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 ./internal/spec -run 'TestAPartialWhoseOnlyUnmetRowsArePullRequestRowsQualifies|TestAPullRequestRowWithANoteInItsProvenanceIsRecognized'`
+  exited 1: the PR-only partials were refused with `expected "pass"`, and
+  annotated PR provenance derived zero exempt rows.
+- After the final code edit,
+  `rtk proxy env GOCACHE=/tmp/roundfix-task01-gocache go test -count=1 ./internal/spec`
+  exited 0 (`ok roundfix/internal/spec`, 22.060s). Output was captured in
+  `/tmp/roundfix-task01-spec-check.log`. An earlier package-check attempt
+  was invalidated by a formatting edit during execution; its suiteguard
+  failure is not used as evidence.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+Acceptance evidence:
+
+1. Eligible mixes: `TestAPartialWhoseOnlyUnmetRowsArePullRequestRowsQualifies`
+   covers the 0213, 0220 and Oraculum PR-only shapes without `_prd.md`.
+   `TestAPullRequestRowWithANoteInItsProvenanceIsRecognized` covers 0227's
+   annotated provenance. `TestANetworkDeniedOutsideEvidenceRowNeverDecidesAQualifyingPartial`
+   covers network-only, PR/network, Fluxus's PR/two-declaration shape,
+   all three kinds, network/declared and declared-only reports.
+2. Refusals: `TestANetworkDeniedRowWithoutOutsideEvidenceProvenanceStillRefuses`
+   covers Requirement 8 provenance, empty/blank hosts, missing closing
+   parenthesis and invalid source/status matches.
+   `TestAPartialWithAnotherEnvironmentRowBesideANetworkDeniedRowNamesBoth`
+   asserts API Contract 2 exactly. `TestAPartialWithASkippedRowNeverQualifies`
+   asserts API Contract 3, finding/environment/skipped/declaration precedence,
+   uncovered declarations and no-unmet-row refusal. Existing QA, pre-PR and
+   archive tests passed unchanged except for the one prescribed PR-only
+   partial expectation.
+3. Override count: `TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows`
+   covers both exempt kinds, other environment rows, zero and undersized
+   frontmatter counts, missing columns, fenced and outside-Results tables,
+   multiple tables and deeper headings. Counts stay non-negative, and skipped
+   rows need no Provenance column.
+
+Only this Task's implementation/test paths and this Result section were
+edited. The incoming Daemon-owned `status: in_progress` is preserved.
+Authored Verification was not run; Verification and settlement remain with
+the Daemon. No commit, push or Pull Request was made. No follow-up was found
+inside this slice; caller and guidance work remains with the later Tasks.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261006T120012Z_3cae1c6ab9ca3edb`
+- Source commit: `fa25b7267dfbc31833197effc3ea9448ee17b4bb`

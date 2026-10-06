@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0235-one-qa-partial-policy
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -111,3 +111,43 @@ owns the policy the row states.
 - `_prd.md` → Goals; Core Features 3; Core Features 6; Success Metric 5
 - `_techspec.md` → Exact texts; Vocabulary Contract; Invariants 1, 2 and 6; API Contract 4; Build Order 3
 - ADR-0240; ADR-0189; ADR-0233; ADR-0104
+
+## Result
+
+Implementation evidence for daemon handoff; declared Verification remains for
+the Daemon.
+
+- Updated the qualifying declared `partial` settlement row identically in the
+  three owned canonical skills, naming both the pre-PR Pull Request row and the
+  network-denied outside-evidence row.
+- Updated the qa-gate instructions for the exact network-denied marker, host
+  naming, outside-evidence provenance, source-not-reached meaning, Pull Request
+  provenance notes, and the single verdict rule. Updated the Roundfix archive
+  and settle references and all four requested user guides with the same policy;
+  the settle reference and guide name the `(report <path>)` suffix.
+- `make skills-sync` — passed; canonical skill mirrors were synchronized.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions` — passed after rerunning with the required filesystem
+  access; raised versions are recorded in both skill frontmatter fields and
+  `skills/testdata/owned-skill-versions.json`.
+- Focused checks — `git diff --check` passed; SHA-256 comparisons confirmed
+  every canonical skill and mirror pair matches; a targeted text sweep found no
+  remaining Pull Request-only exemption wording in the affected surfaces.
+
+Acceptance evidence:
+
+- The three settlement tables contain the TechSpec exact row text, and their
+  canonical/mirror content is synchronized.
+- The qa-gate contains the marker, named host and `outside-evidence row`
+  provenance instructions, states that the source was not reached, preserves
+  the blocking rule for other outside-evidence rows, and states the verdict
+  rule.
+- The affected references and user guides contain the network-denied marker and
+  the two-row exemption policy; settle guidance contains `(report <path>)`.
+- Version recording changed only the three owned skills and the generated
+  owned-version registry within this Task's declared documentation slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261006T120012Z_3cae1c6ab9ca3edb`
+- Source commit: `a8dd1be06fefb33043194eb7f4901d6aac0e15f3`

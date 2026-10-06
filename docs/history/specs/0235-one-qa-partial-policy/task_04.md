@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0235-one-qa-partial-policy
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -94,3 +94,37 @@ the repository's own commands.
 - `_prd.md` → Goals; Core Features 6; Success Metric 5
 - `_techspec.md` → Exact texts; System Architecture; Build Order 4
 - ADR-0240; ADR-0104
+
+## Result
+
+Implemented the two Baseline clause additions from the TechSpec and added
+`TestTheGuidesExemptANetworkDeniedOutsideEvidenceRow`, which checks the
+embedded clauses, both Standard TypeScript Monorepo formatter goldens, and
+both repository guides.
+
+Focused evidence from this turn:
+
+- `rtk make baseline-digests`: regenerated the expected derived catalog,
+  profile, plan characterizations, and formatter goldens.
+- Second `rtk make baseline-digests`: passed with `changed:false`.
+- `GOCACHE=/private/tmp/roundfix-0235-gocache go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`:
+  verified and applied the three managed guide/setup changes.
+- Second managed refresh with the same command: verified with `File changes: 0`
+  and `Idempotence: verified`.
+- `gofmt -w internal/baseline/network_denied_row_clause_test.go` followed by
+  `GOCACHE=/private/tmp/roundfix-0235-gocache go test -count=1 -run
+  '^TestTheGuidesExemptANetworkDeniedOutsideEvidenceRow$' ./internal/baseline`:
+  passed.
+
+Acceptance evidence:
+
+- The added clause test covers both generated guides and both formatter
+  goldens, including the network-denied outside-evidence wording, while the
+  source clauses retain their existing sentences.
+- The second digest regeneration reported `changed:false`, and the second
+  managed refresh reported `File changes: 0` with idempotence verified.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261006T120012Z_3cae1c6ab9ca3edb`
+- Source commit: `9d55539ccfad9ff420f2184b7e481f81ed2b17dd`

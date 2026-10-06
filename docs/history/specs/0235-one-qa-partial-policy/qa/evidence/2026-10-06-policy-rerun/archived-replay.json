@@ -1,0 +1,478 @@
+[
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0001-implement-command/qa/qa-report-2026-07-04.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: newest QA Report verdict is \"partial\"; expected \"pass\"\n",
+    "sha256": "548c5a004cb392839b4dbdb390ff0c88ebbe15bbc4162afa9a5d5cdb3265aaea",
+    "unchanged": true,
+    "spec": "0001-implement-command",
+    "baseline": "refused",
+    "expected_after": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0039-review-source-evidence-and-detached-outcomes/qa/qa-report-2026-07-28-04.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: newest QA Report verdict is \"partial\"; expected \"pass\"\n",
+    "sha256": "c12d2468214fd3d1e5152ac19bc4aff520a4f08e44eb4b729f1334903b21e97f",
+    "unchanged": true,
+    "spec": "0039-review-source-evidence-and-detached-outcomes",
+    "baseline": "refused",
+    "expected_after": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0046-public-context-driven-baseline-command/qa/qa-report-2026-07-24.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: newest QA Report verdict is \"partial\"; expected \"pass\"\n",
+    "sha256": "696193306edacd3226e047d3804dc4cf8956d25de29d9a8a33d079d715edb528",
+    "unchanged": true,
+    "spec": "0046-public-context-driven-baseline-command",
+    "baseline": "refused",
+    "expected_after": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0054-tooling-task-and-verification-hygiene/qa/qa-report-2026-07-29.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: partial records 1 skipped row(s); a qualifying partial records none\n",
+    "sha256": "673a622697bcd01d8d24d7db84de678821a134b365f294608b2628aca7af65bf",
+    "unchanged": true,
+    "spec": "0054-tooling-task-and-verification-hygiene",
+    "baseline": "refused",
+    "expected_after": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0058-npm-trusted-publishing-and-release-preflight/qa/qa-report-2026-08-01-04.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: rows_blocked_environment is 2; expected 0\n",
+    "sha256": "5ad64f42c62edb9924f0f5c072f2a3f78ad78406170b7a2d3e0cd06817637dcb",
+    "unchanged": true,
+    "spec": "0058-npm-trusted-publishing-and-release-preflight",
+    "baseline": "refused",
+    "expected_after": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0061-repository-derived-skill-requirements/qa/qa-report-2026-07-29.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: newest QA Report verdict is \"partial\"; expected \"pass\"\n",
+    "sha256": "8d277f22d183256718655e8351cdf655b7b6dd2afcbc2d92ca77a6af2a800e87",
+    "unchanged": true,
+    "spec": "0061-repository-derived-skill-requirements",
+    "baseline": "refused",
+    "expected_after": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0073-skill-versions-decoupled-from-the-binary/qa/qa-report-2026-08-06-01.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 0,
+    "stdout": "",
+    "stderr": "",
+    "sha256": "0aa69c3ef4596eb658459591f35b785fce10fdb60bd27d659eaeb398428e9740",
+    "unchanged": true,
+    "spec": "0073-skill-versions-decoupled-from-the-binary",
+    "baseline": "accepted",
+    "expected_after": 0
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0079-one-door-for-fleet-knowledge/qa/qa-report-2026-08-06-04.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 0,
+    "stdout": "",
+    "stderr": "",
+    "sha256": "cf900878599ee4e678724a3fc688c5076a1fb66e8c17c85ca0e17e9eb68bd059",
+    "unchanged": true,
+    "spec": "0079-one-door-for-fleet-knowledge",
+    "baseline": "accepted",
+    "expected_after": 0
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0089-an-effort-the-runtime-actually-receives/qa/qa-report-2026-08-09-02.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: rows_blocked_environment is 4; expected 0\n",
+    "sha256": "b1f4c3757fad6b519f6f95ed54997b75c7c5dafa827581dd16f97f2cd674183d",
+    "unchanged": true,
+    "spec": "0089-an-effort-the-runtime-actually-receives",
+    "baseline": "refused",
+    "expected_after": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0179-review-findings-with-evidence-and-no-unselected-providers/qa/qa-report-2026-09-29-04.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 0,
+    "stdout": "",
+    "stderr": "",
+    "sha256": "7f09ff888b46bc8fde4c4a56fea1fa9ad086ba76ecd6c7f8bb3590e7d0cc4e02",
+    "unchanged": true,
+    "spec": "0179-review-findings-with-evidence-and-no-unselected-providers",
+    "baseline": "accepted",
+    "expected_after": 0
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0184-baseline-plans-that-show-what-a-history-move-breaks/qa/qa-report-2026-09-29.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: rows_blocked_environment is 2; expected 0\n",
+    "sha256": "f90a0b30f5ebc073cee8ad343a0cc653168b55c3cfa9cab3c864d712bad18d6e",
+    "unchanged": true,
+    "spec": "0184-baseline-plans-that-show-what-a-history-move-breaks",
+    "baseline": "refused",
+    "expected_after": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0192-owned-skills-that-describe-the-product-as-it-is/qa/qa-report-2026-09-30.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: rows_blocked_environment is 2, 1 outside the pre-PR Pull Request row; expected 0 outside it\n",
+    "sha256": "7ee081c332648810ed3d7640d1697abbedc46503665ffbfa827c0deee79d2c0f",
+    "unchanged": true,
+    "spec": "0192-owned-skills-that-describe-the-product-as-it-is",
+    "baseline": "refused",
+    "expected_after": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0211-a-delivery-queue-that-finishes-without-intervention/qa/qa-report-2026-10-02-01.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: rows_blocked_environment is 3, 2 outside the pre-PR Pull Request row; expected 0 outside it\n",
+    "sha256": "c4e0bb63dd6b74d39c7c2f1bbb3b1d0fbf17ccd075f1e6fb36b9439feb1742c0",
+    "unchanged": true,
+    "spec": "0211-a-delivery-queue-that-finishes-without-intervention",
+    "baseline": "refused",
+    "expected_after": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0213-a-test-suite-that-does-not-flake/qa/qa-report-2026-10-02.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 0,
+    "stdout": "",
+    "stderr": "",
+    "sha256": "e76c19b0000c006086e819f6c8c557730e007d213a67e3d9511d2a01d3add5cd",
+    "unchanged": true,
+    "spec": "0213-a-test-suite-that-does-not-flake",
+    "baseline": "refused",
+    "expected_after": 0
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0215-a-setup-and-doctor-that-recognize-what-the-machine-and-the-repository-need/qa/qa-report-2026-10-02-02.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: rows_blocked_environment is 3, 2 outside the pre-PR Pull Request row; expected 0 outside it\n",
+    "sha256": "f4e3818fcdd87039f6742495ee907928b54a4f60c9a06c21ec0ec3e61886f40a",
+    "unchanged": true,
+    "spec": "0215-a-setup-and-doctor-that-recognize-what-the-machine-and-the-repository-need",
+    "baseline": "refused",
+    "expected_after": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0218-the-jev-router-on-docs-and-chore-tasks/qa/qa-report-2026-10-02-01.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: rows_blocked_environment is 4, 3 outside the pre-PR Pull Request row; expected 0 outside it\n",
+    "sha256": "241d8bd709eed342d0bf90381f801cbcd6afd60e5565ae9a20dabe41009a9bef",
+    "unchanged": true,
+    "spec": "0218-the-jev-router-on-docs-and-chore-tasks",
+    "baseline": "refused",
+    "expected_after": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0219-a-delivery-that-survives-archive-requeue-and-review/qa/qa-report-2026-10-03-01.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: rows_blocked_environment is 3, 2 outside the pre-PR Pull Request row; expected 0 outside it\n",
+    "sha256": "ea1ee2a89f47ce4021dc88177f776bde101cac190c5253a135cbff32f69491ab",
+    "unchanged": true,
+    "spec": "0219-a-delivery-that-survives-archive-requeue-and-review",
+    "baseline": "refused",
+    "expected_after": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0220-tests-and-pins-that-hold-in-every-environment/qa/qa-report-2026-10-03.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 0,
+    "stdout": "",
+    "stderr": "",
+    "sha256": "2ebdb3e84688ad199d8668e11deba4bf3bca4dc4fdab7c3a802ba7c298d913eb",
+    "unchanged": true,
+    "spec": "0220-tests-and-pins-that-hold-in-every-environment",
+    "baseline": "refused",
+    "expected_after": 0
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0221-a-delivery-queue-that-runs-the-binary-its-item-builds/qa/qa-report-2026-10-03.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: rows_blocked_environment is 4, 3 outside the pre-PR Pull Request row; expected 0 outside it\n",
+    "sha256": "598d556e2e57e89e1d8b2f47805b7090e5b5266c36aaa23b4b91e166c95a25c5",
+    "unchanged": true,
+    "spec": "0221-a-delivery-queue-that-runs-the-binary-its-item-builds",
+    "baseline": "refused",
+    "expected_after": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0222-a-review-through-claude-that-keeps-its-verdict/qa/qa-report-2026-10-04.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: rows_blocked_environment is 5, 4 outside the pre-PR Pull Request row; expected 0 outside it\n",
+    "sha256": "161f971cf0f4f4b8fb3c6009eb4f6162568d2cae8a4c03ef1c9c84841e56b7c0",
+    "unchanged": true,
+    "spec": "0222-a-review-through-claude-that-keeps-its-verdict",
+    "baseline": "refused",
+    "expected_after": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0224-an-archived-retry-that-needs-no-recorded-candidate/qa/qa-report-2026-10-04-01.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: rows_blocked_environment is 2, 1 outside the pre-PR Pull Request row; expected 0 outside it\n",
+    "sha256": "1ea664dfdb7065ea426f27c404b3facccb4b1b43eaa164ad994efe2fed13b1b3",
+    "unchanged": true,
+    "spec": "0224-an-archived-retry-that-needs-no-recorded-candidate",
+    "baseline": "refused",
+    "expected_after": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0225-a-jev-ceiling-the-maintainer-sets/qa/qa-report-2026-10-04.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: rows_blocked_environment is 2, 1 outside the pre-PR Pull Request row; expected 0 outside it\n",
+    "sha256": "96552d3270ded4ab42ba3b058f6cac4feebbe39da4d5d86fe3d5855599d09d26",
+    "unchanged": true,
+    "spec": "0225-a-jev-ceiling-the-maintainer-sets",
+    "baseline": "refused",
+    "expected_after": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0227-reconcile-releases-the-runs-of-merged-specs/qa/qa-report-2026-10-05.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: rows_blocked_environment is 2, 1 outside the pre-PR Pull Request row; expected 0 outside it\n",
+    "sha256": "670fbef89f0c36aeb448662453eb7ed185a832aaecabbc3652ff1393c43d9de4",
+    "unchanged": true,
+    "spec": "0227-reconcile-releases-the-runs-of-merged-specs",
+    "baseline": "refused",
+    "expected_after": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0228-queue-items-that-stay-current-with-main/qa/qa-report-2026-10-05-01.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: rows_blocked_environment is 2, 1 outside the pre-PR Pull Request row; expected 0 outside it\n",
+    "sha256": "760c23bba269bf40f3698fb9be84bf6be586688af7cef966cc647bba24554be6",
+    "unchanged": true,
+    "spec": "0228-queue-items-that-stay-current-with-main",
+    "baseline": "refused",
+    "expected_after": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0229-a-jev-router-that-checks-credit-and-names-its-model/qa/qa-report-2026-10-05.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: rows_blocked_environment is 2, 1 outside the pre-PR Pull Request row; expected 0 outside it\n",
+    "sha256": "3ddf6049ded5621a519c9a8242ebeebf9c6c7fecfa1c1932a2544fb7b646098d",
+    "unchanged": true,
+    "spec": "0229-a-jev-router-that-checks-credit-and-names-its-model",
+    "baseline": "refused",
+    "expected_after": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0230-retire-the-jev-router/qa/qa-report-2026-10-05.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: rows_blocked_environment is 4, 3 outside the pre-PR Pull Request row; expected 0 outside it\n",
+    "sha256": "f86888dea2cf4087770599572742ee17c4d2dda80fa2aeff1233b53ee1be915e",
+    "unchanged": true,
+    "spec": "0230-retire-the-jev-router",
+    "baseline": "refused",
+    "expected_after": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0232-a-queue-that-sees-a-pull-request-merged-by-hand/qa/qa-report-2026-10-05.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: rows_blocked_environment is 6, 5 outside the pre-PR Pull Request row; expected 0 outside it\n",
+    "sha256": "3be51110cdbf8c5a12429fbb30cfc9d7d3f2361a9ab900ea3425f7bf8fa2bace",
+    "unchanged": true,
+    "spec": "0232-a-queue-that-sees-a-pull-request-merged-by-hand",
+    "baseline": "refused",
+    "expected_after": 1
+  },
+  {
+    "command": [
+      "./bin/roundfix",
+      "qa-report",
+      "accept",
+      "docs/history/specs/0233-a-light-tier-on-open-models/qa/qa-report-2026-10-05.md"
+    ],
+    "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0235-one-qa-partial-policy-c6ff38df388f7c42-f6defb6f-3075954b/run_20261006T131510Z_7cff0c6eeb3ab564",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "roundfix: QA Report eligibility refused: rows_blocked_environment is 4, 3 outside the pre-PR Pull Request row; expected 0 outside it\n",
+    "sha256": "4dc9d94b86d6097e387a014f931df965684f22d7654acac0e286dc3a63ee987e",
+    "unchanged": true,
+    "spec": "0233-a-light-tier-on-open-models",
+    "baseline": "refused",
+    "expected_after": 1
+  }
+]
