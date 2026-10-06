@@ -432,6 +432,10 @@ The first managed refresh changes only `docs/agents/skill-dispatch.md` and
 The glossary adopts one term, **Retired Skill**, defined in `CONTEXT.md` by
 task_03.
 
+## Glossary
+
+- adds: **Retired Skill**
+
 ## Decisions
 
 - A set of Retired Skills that the asset sync drops. See ADR-0246.

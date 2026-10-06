@@ -308,6 +308,10 @@ clean-up changes `docs/history/`, and the CONTEXT-driven loop entry changes
 the clauses that make implementations keep `CONTEXT.md` current; neither
 changes the skill set.
 
+## Glossary
+
+- adds: **Retired Skill**
+
 ## Decisions
 
 - Retired Skills are a set in code; the asset sync drops them and the catalog
