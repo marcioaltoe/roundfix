@@ -11,7 +11,13 @@ Tasks use per-Task Agent Sessions named `roundfix-<run-id>-<task_id>` in their
 Task Worktrees, and QA uses its own Agent Session after Tasks settle.
 
 Use the Doctor Command, `roundfix doctor`, to diagnose Run readiness without
-installing dependencies, writing config, or changing files. Doctor runs the
+installing dependencies, writing config, or changing files. The `environment:`
+line lists `spec judge keys` by name in preference order:
+`ROUNDFIX_OPENROUTER_JUDGE_API_KEY`, `ROUNDFIX_OPENROUTER_API_KEY`,
+`ROUNDFIX_TYPESAFE_API_KEY`; then `implementation keys`:
+`ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY`, `ROUNDFIX_OPENROUTER_API_KEY`.
+Each entry is `set` or `not set`, never a key value; both stages fall back
+to the shared key when their stage key is unset. Doctor runs the
 shared Node.js, minimum-supported acpx, effective adapters, configured Agent
 Selection Profiles, Repository Skill Set, process residue, storage check, and
 codex runtime hygiene checks and prints one line per check with status `ok`,
@@ -160,7 +166,11 @@ retired `roundfix-openrouter` provider. Under the `openrouter` provider it
 refuses authors `openai` and `anthropic`, router authors `openrouter` and
 `typesafe`, and `@` presets. The refusal reason is `subscription_only`; a
 refusal before Agent work activates the configured fallback. Other OpenRouter
-models stay selectable. `jev.router_min_credit_usd` is a deprecated key.
+models stay selectable. An open model through OpenCode reads
+`ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY` first and the shared
+`ROUNDFIX_OPENROUTER_API_KEY` second; empty values count as unset and the
+generic `OPENROUTER_API_KEY` is never read.
+`jev.router_min_credit_usd` is a deprecated key.
 
 ### Light implementation tier
 

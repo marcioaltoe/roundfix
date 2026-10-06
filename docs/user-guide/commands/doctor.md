@@ -62,11 +62,16 @@ roundfix: notice: NODE_OPTIONS preload "<path>" does not exist; Roundfix left it
 - `environment:` — after `toolchain:`, reports one
   `DR-NODE-PRELOAD-MISSING` (`warn`) per missing absolute preload path in the
   last `NODE_OPTIONS` value, using the agent environment's parser. Existing
-  paths and package names produce no finding. It reports each `ROUNDFIX_` key
-  variable named by the spec judge transports as `set` or `not set`, never a
-  key value. Generic provider key variables are not read. Remove a missing
-  preload where your shell sets `NODE_OPTIONS`; unset optional judge keys do
-  not fail the line.
+  paths and package names produce no finding. It lists `spec judge keys` in
+  preference order: `ROUNDFIX_OPENROUTER_JUDGE_API_KEY`,
+  `ROUNDFIX_OPENROUTER_API_KEY`, `ROUNDFIX_TYPESAFE_API_KEY`; then
+  `implementation keys`: `ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY`,
+  `ROUNDFIX_OPENROUTER_API_KEY`. Each entry is `set` or `not set`, never a
+  key value. Both stages fall back to the shared `ROUNDFIX_OPENROUTER_API_KEY`
+  when their stage key is unset; the judge can then use TypeSafe directly.
+  Empty values count as unset, and the last entry for a name wins. The generic
+  `OPENROUTER_API_KEY` is never read. Remove a missing preload where your shell
+  sets `NODE_OPTIONS`; unset optional keys do not fail the line.
 - `skills:` — the required Repository Skill Set matches its local
   authorities. The running binary's embedded artifacts are authoritative for
   the 14 Roundfix-owned skills, including the Roundfix Skill. Each of the 25
@@ -108,7 +113,7 @@ gh: ok (gh <version>; github.com login=<login>; <owner/repo> permission=WRITE)
 git: ok (<version> >= 2.23.0)
 remote: ok (origin: github.com/<owner/repo>; reachable)
 toolchain: ok (<tools> found)
-environment: ok (spec judge keys: ROUNDFIX_OPENROUTER_API_KEY not set, ROUNDFIX_TYPESAFE_API_KEY not set)
+environment: ok (spec judge keys: ROUNDFIX_OPENROUTER_JUDGE_API_KEY not set, ROUNDFIX_OPENROUTER_API_KEY not set, ROUNDFIX_TYPESAFE_API_KEY not set; implementation keys: ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY not set, ROUNDFIX_OPENROUTER_API_KEY not set)
 skills: ok (<required> required: <owned> Roundfix-owned, <external> external)
 residue: ok (no process residue found)
 storage: ok (nothing to reclaim; Runs reclaimable: 0; Run Database free bytes: 0)
