@@ -257,9 +257,10 @@ const (
 // SelectionFailureError marks a turn that ended before the Agent produced output,
 // so a configured Fallback Selection remains eligible.
 type SelectionFailureError struct {
-	Runtime string
-	Reason  string
-	Err     error
+	Protocol *ProtocolFailure
+	Runtime  string
+	Reason   string
+	Err      error
 }
 
 func (err *SelectionFailureError) Error() string {
@@ -273,6 +274,7 @@ func (err *SelectionFailureError) Error() string {
 	if reason := strings.TrimSpace(err.Reason); reason != "" {
 		message += ": " + reason
 	}
+	message += protocolFailureText(err.Protocol)
 	if err.Err != nil {
 		message += ": " + err.Err.Error()
 	}

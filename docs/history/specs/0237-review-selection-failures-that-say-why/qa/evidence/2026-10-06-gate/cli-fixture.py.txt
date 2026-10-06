@@ -1,0 +1,43 @@
+import os,pathlib,tempfile,subprocess,json
+root=pathlib.Path(tempfile.mkdtemp(prefix='roundfix-0237-cli-'));bin=root/'bin';bin.mkdir();adapter=root/'node_modules/@zed-industries/claude-agent-acp/bin/adapter';adapter.parent.mkdir(parents=True);adapter.write_text('#!/bin/sh\necho 0.84.0\n');adapter.chmod(0o755);(bin/'claude-agent-acp').symlink_to(adapter);(bin/'npx').symlink_to(adapter)
+acpx=bin/'acpx';acpx.write_text("""#!/usr/bin/env python3
+import sys,os,json,pathlib
+args=sys.argv[1:]
+if '--version' in args: print('0.19.4');sys.exit(0)
+r=pathlib.Path(os.environ['QA_STATE']);log=r/'calls.jsonl'
+with log.open('a') as f:f.write(json.dumps(args)+'\\n')
+if 'prompt' in args:
+ c=r/'count';n=int(c.read_text()) if c.exists() else 0;c.write_text(str(n+1))
+ mode=os.environ['QA_MODE']
+ if mode=='after' or n==0 or mode=='exhaust':
+  step='session/prompt' if mode=='after' else 'session/set_model'
+  print(json.dumps({'jsonrpc':'2.0','id':1,'method':step,'params':{}}))
+  print(json.dumps({'jsonrpc':'2.0','id':1,'error':{'code':-32603,'message':'QA adapter failure'}}));sys.exit(1)
+ print(json.dumps({'jsonrpc':'2.0','method':'session/update','params':{'sessionId':'qa-session','update':{'sessionUpdate':'agent_message_chunk','content':{'type':'text','text':'No findings.'}}}}))
+ print(json.dumps({'jsonrpc':'2.0','id':1,'result':{'stopReason':'end_turn'}}));sys.exit(0)
+if 'show' in args or 'set' in args:
+ state=r/'model';model=state.read_text() if state.exists() else 'opus';effort='high'
+ if 'set' in args and args[args.index('set')+1]=='model': model=args[args.index('set')+2];state.write_text(model)
+ options=[{'id':'model','category':'model','type':'select','currentValue':model,'options':[{'value':'opus'},{'value':'sonnet'}]},{'id':'effort','type':'select','currentValue':effort,'options':[{'value':effort}]}]
+ if 'show' in args: print(json.dumps({'schema':'acpx.session.v1','acpx':{'current_model_id':model,'config_options':options}}))
+ else: print(json.dumps({'action':'config_set','configId':args[args.index('set')+1],'value':args[args.index('set')+2],'configOptions':options}))
+ sys.exit(0)
+print('{}')
+""");acpx.chmod(0o755)
+product=pathlib.Path.cwd()/'bin/roundfix'
+for mode in ['after','retry','exhaust']:
+ d=root/mode;d.mkdir();repo=d/'repo';repo.mkdir();home=d/'home';home.mkdir();art=d/'artifacts'
+ env={'PATH':str(bin)+':'+os.environ['PATH'],'HOME':str(home),'QA_STATE':str(d),'QA_MODE':mode,'TMPDIR':str(d)}
+ def git(*a):return subprocess.check_output(['git','-c','core.fsmonitor=false',*a],cwd=repo,env=env,stderr=subprocess.STDOUT,text=True)
+ git('init','-b','main');git('config','user.name','QA Fixture');git('config','user.email','qa@example.invalid');git('config','commit.gpgsign','false');(repo/'file.txt').write_text('base');git('add','file.txt');git('commit','-m','chore: fixture base');base=git('rev-parse','HEAD').strip();(repo/'file.txt').write_text('candidate');git('add','file.txt');git('commit','-m','fix: fixture candidate')
+ (repo/'.roundfixrc.yml').write_text('defaults:\n  artifact_dir: '+str(art)+'\npre_pr_review:\n  provider: claude\nprofiles:\n  review:\n    preferred:\n      runtime: claude\n      model: opus\n      reasoning_effort: high\n    fallbacks:\n      - runtime: claude\n        model: sonnet\n        reasoning_effort: high\n')
+ # Invoke the exact Run Worktree ./bin/roundfix file; working directory is disposable.
+ cmd=[str(product),'review','--base',base]
+ r=subprocess.run(cmd,cwd=repo,env=env,capture_output=True,text=True,timeout=30)
+ (d/'stdout').write_text(r.stdout);(d/'stderr').write_text(r.stderr)
+ print(mode,r.returncode,r.stdout,r.stderr,flush=True)
+ (d/'exit').write_text(str(r.returncode))
+ records=list(art.rglob('pre-pr-review.json'))
+ if records:
+  record=json.loads(records[0].read_text());assert record==json.loads(r.stdout);(d/'record.json').write_text(json.dumps(record,indent=2))
+pathlib.Path('/private/tmp/roundfix-0237-cli-location').write_text(str(root));print(root)

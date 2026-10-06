@@ -331,13 +331,13 @@ func TestReviewDisposeRefusesAConventionDismissal(t *testing.T) {
 func TestReviewValidatorUsesTheSuccessfulFallbackSelection(t *testing.T) {
 	fixture, runner := validatorFixture(t, "- "+validatorTaskPath+":4 Failure: invalid status", validatorAnswer(validatorVerdict{"F1", "dismiss", "convention:C2", "restates settlement"}))
 	writeReviewCommandProfileConfig(t, fixture.repository, "codex", fixture.artifactDir, "codex", "codex")
-	runner.prepareErrors = []error{&agent.SelectionFailureError{Runtime: "codex", Reason: "adapter startup"}}
+	runner.prepareErrors = []error{&agent.SelectionFailureError{Runtime: "codex", Reason: "adapter startup"}, &agent.SelectionFailureError{Runtime: "codex", Reason: "adapter startup"}}
 	code, record, stderr := fixture.run(t)
 	if code != exitOK || record.Validation.Validator != "ran" {
 		t.Fatalf("exit=%d record=%+v stderr=%q", code, record, stderr)
 	}
 	validatorQuestions(t, runner)
-	if runner.sealedRequests[0].Runtime.Model != "fallback-model" || runner.prepareCalls != 2 {
+	if runner.sealedRequests[0].Runtime.Model != "fallback-model" || runner.prepareCalls != 3 {
 		t.Fatalf("selection=%+v prepares=%d", runner.sealedRequests[0].Runtime, runner.prepareCalls)
 	}
 }

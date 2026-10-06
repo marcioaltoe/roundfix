@@ -201,7 +201,7 @@ func TestReviewRoundTwoFindingsEndsItsSession(t *testing.T) {
 
 func TestReviewRoundTwoContinuesTheRecordedFallbackSelection(t *testing.T) {
 	r := newSessionReviewRunner(sessionReviewFinding, "No findings.")
-	r.prepareErrors = []error{&agent.SelectionFailureError{Runtime: "codex", Reason: "adapter startup"}, nil, nil}
+	r.prepareErrors = []error{&agent.SelectionFailureError{Runtime: "codex", Reason: "adapter startup"}, &agent.SelectionFailureError{Runtime: "codex", Reason: "adapter startup"}, nil, nil}
 	fixture := newReviewCommandFixture(t, "codex", r)
 	_, first, _ := runLineageReview(t, fixture)
 	if first.Lineage.Selection == nil || *first.Lineage.Selection != 1 {
@@ -209,7 +209,7 @@ func TestReviewRoundTwoContinuesTheRecordedFallbackSelection(t *testing.T) {
 	}
 	commitLineageFile(t, fixture, "delta.txt", "fix\n")
 	_, second, _ := runLineageReview(t, fixture)
-	if second.Lineage.Selection == nil || *second.Lineage.Selection != 1 || !second.Lineage.Continued || r.prepares[2].Runtime != r.prepares[1].Runtime || r.prepares[2].Session != r.prepares[1].Session || len(r.ends) != 2 || r.ends[1] != r.prepares[1].Session {
+	if second.Lineage.Selection == nil || *second.Lineage.Selection != 1 || !second.Lineage.Continued || r.prepares[3].Runtime != r.prepares[2].Runtime || r.prepares[3].Session != r.prepares[2].Session || len(r.ends) != 3 || r.ends[2] != r.prepares[2].Session {
 		t.Fatalf("lineage=%+v prepares=%+v ends=%+v", second.Lineage, r.prepares, r.ends)
 	}
 }

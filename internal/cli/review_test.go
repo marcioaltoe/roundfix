@@ -1295,6 +1295,7 @@ func TestReviewCommandUsesFallbackOnlyWhenSelectionFailsBeforePrompt(t *testing.
 	runner := &reviewCommandRunner{
 		prepareErrors: []error{
 			&agent.SelectionFailureError{Runtime: "codex", Reason: "adapter startup"},
+			&agent.SelectionFailureError{Runtime: "codex", Reason: "adapter startup"},
 			nil,
 		},
 		results: []reviewCommandRunResult{{
@@ -1308,8 +1309,8 @@ func TestReviewCommandUsesFallbackOnlyWhenSelectionFailsBeforePrompt(t *testing.
 	if code != exitOK || record.Outcome != reviewOutcomeReviewed {
 		t.Fatalf("fallback review exit=%d record=%+v stderr=%q", code, record, stderr)
 	}
-	if runner.prepareCalls != 2 || runner.preparedCalls != 1 {
-		t.Fatalf("fallback calls: prepares=%d prompts=%d, want 2 and 1", runner.prepareCalls, runner.preparedCalls)
+	if runner.prepareCalls != 3 || runner.preparedCalls != 1 {
+		t.Fatalf("fallback calls: prepares=%d prompts=%d, want 3 and 1", runner.prepareCalls, runner.preparedCalls)
 	}
 	if !strings.Contains(stderr, "activating fallback 1") {
 		t.Fatalf("fallback notification missing from stderr: %q", stderr)

@@ -262,5 +262,22 @@ output each block the selected mode, with a reason in the record. The exception
 is a read-only `end_turn` turn that exits after refusing a permission request:
 when its final answer has a verdict, the review is classified by that verdict
 and records the refusal. None can become a pass or an omission. A configured
-selection fallback is eligible only when selection fails before the prompt is
-sent; failures after the prompt are review failures.
+selection fallback is eligible only after the same selection's one automatic
+retry also fails before the prompt; a failure after the prompt is never retried,
+and no failure selects `none`.
+
+API Contract 3 records the failing step in `failedStep` and the adapter's
+message in `adapterMessage` when a runtime failure is placed. The step is the
+protocol request that failed (`initialize`, `session/load` or `session/new`,
+`session/set_model`, `session/prompt`) or the session preparation command
+(`sessions ensure`, `set <key>`, `set-mode`). `adapterMessage` contains only the
+adapter's error message, on one line of at most 512 bytes. The reason remains
+`review runtime failure: <err>`.
+
+API Contract 4 retries a failure during Agent Selection once on the same
+selection when it occurs before the review prompt was sent. Before retrying,
+stderr contains the exact phrase `retrying selection`, and the record appends a
+`selectionRetries` entry with `selection`, `step` and `message`. When the retry
+also fails before the prompt, the reason ends with the exact phrase `after one
+automatic retry before the prompt`. A failure after the prompt is never
+retried.

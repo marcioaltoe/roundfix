@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0237-review-selection-failures-that-say-why
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -82,3 +82,26 @@ its own by the phrases, the mirrors and the recorded skill version.
 - `_techspec.md` → Build Order 1; API Contract 3; API Contract 4; Vocabulary Contract
 - ADR-0242
 - ADR-0189
+
+## Result
+
+Implementation is ready for Daemon Verification. The review reference now
+documents `failedStep`, `adapterMessage`, the bounded protocol or session
+preparation step, and `selectionRetries` with the single pre-prompt retry,
+stderr notice, retry reason suffix, and fallback eligibility rules. The command
+guide carries the same body below its heading. The Roundfix Skill version was
+raised from `0.1.40` to `0.1.41`, its shipped mirrors were regenerated, and the
+owned version record was generated.
+
+Focused evidence:
+
+- `make skills-sync` — passed.
+- `GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-deliver-0237-review-selection-failures-that-say-why-bb5befdc69932e64-0060f39f-5068b8b4/run_20261006T151517Z_63f7ac2ee342847c.task_01/.gocache go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed, 1 test; recorded Roundfix Skill version `0.1.41`.
+- `git diff --check` — passed.
+- Phrase and field search over the reference and guide found `retrying selection`, `after one automatic retry before the prompt`, `failedStep`, `adapterMessage`, and `selectionRetries` in both documents.
+- The guide and reference bodies matched after their first heading lines; canonical and shipped Roundfix skill files were regenerated together by `make skills-sync`.
+
+The first version-recording attempt against the shared Go cache was blocked by
+cache permissions; the same required command passed with the task-scoped
+absolute `GOCACHE` above. The declared Verification commands remain for the
+Daemon and were not run as the terminal gate.
