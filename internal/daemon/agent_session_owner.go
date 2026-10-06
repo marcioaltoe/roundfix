@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"sync/atomic"
 
@@ -30,16 +31,30 @@ type agentSessionScope struct {
 	Batch    int
 }
 
+const maxLostRolloutRecoveries = 2
+
+const lostRolloutNotice = "The previous Agent Session was lost by the ACP Runtime; the working tree holds its changes. Keep them and continue."
+
+type lostRolloutExhaustedError struct{ scopeID, step string }
+
+func (err *lostRolloutExhaustedError) Error() string {
+	return fmt.Sprintf("runtime infrastructure: lost rollout for %s at %s", err.scopeID, err.step)
+}
+
 type agentSessionOwner struct {
-	lightPlan       lighttier.Plan
-	lightCandidates int
-	escalated       bool
-	taskPrompt      string
-	lastCost        float64
-	engine          *Engine
-	scope           agentSessionScope
-	profile         roundconfig.ResolvedProfile
-	runtimeFactory  AgentRuntimeFactory
+	handedOff         bool
+	rolloutRecoveries int
+	reportPending     func() bool
+	reportPath        string
+	lightPlan         lighttier.Plan
+	lightCandidates   int
+	escalated         bool
+	taskPrompt        string
+	lastCost          float64
+	engine            *Engine
+	scope             agentSessionScope
+	profile           roundconfig.ResolvedProfile
+	runtimeFactory    AgentRuntimeFactory
 
 	activeRuntime             agent.RuntimeSpec
 	activeSession             agent.SessionRef
@@ -198,6 +213,7 @@ func (owner *agentSessionOwner) Run(ctx context.Context, req agent.ExecuteReques
 	if owner.taskPrompt == "" {
 		owner.taskPrompt = req.Prompt
 	}
+	lostPrompt := req.Prompt
 	for {
 		if !owner.active {
 			if err := owner.activate(ctx, req); err != nil {
@@ -207,6 +223,7 @@ func (owner *agentSessionOwner) Run(ctx context.Context, req agent.ExecuteReques
 		activeReq := owner.activeRequest(req)
 		result, err := owner.runPrepared(ctx, activeReq)
 		if err == nil {
+			owner.handedOff = true
 			if strings.TrimSpace(result.Output) != "" {
 				if publishErr := owner.publishWorkStartedOnce(ctx, activeReq); publishErr != nil {
 					owner.closeActive(context.WithoutCancel(ctx))
@@ -214,6 +231,16 @@ func (owner *agentSessionOwner) Run(ctx context.Context, req agent.ExecuteReques
 				}
 			}
 			return result, nil
+		}
+		if loss, ok := agent.DescribeLostRollout(err); ok && ctx.Err() == nil && owner.scope.Kind != "review" {
+			if recoveryErr := owner.recoverLostRollout(ctx, loss, err); recoveryErr != nil {
+				return result, recoveryErr
+			}
+			req.Prompt = owner.taskPrompt + "\n\n" + lostRolloutNotice
+			if lostPrompt != owner.taskPrompt {
+				req.Prompt += "\n\n" + lostPrompt
+			}
+			continue
 		}
 		var selectionErr *agent.SelectionFailureError
 		if !errors.As(err, &selectionErr) || owner.workStarted.Load() {
@@ -228,6 +255,65 @@ func (owner *agentSessionOwner) Run(ctx context.Context, req agent.ExecuteReques
 			return result, fallbackErr
 		}
 	}
+}
+
+func (owner *agentSessionOwner) recoverLostRollout(ctx context.Context, loss agent.LostRollout, cause error) error {
+	failed := owner.activeCandidate()
+	owner.closeAttempt(context.WithoutCancel(ctx), owner.activeRuntime, owner.activeSession)
+	owner.active = false
+	owner.attempts = append(owner.attempts, agentSelectionAttempt{Candidate: failed, Err: cause})
+	if err := owner.persistSelectionAttempt(context.WithoutCancel(ctx), failed, store.AgentSelectionStatusFailed, cause); err != nil {
+		return err
+	}
+	recovery := "new_session"
+	candidates := owner.candidates()
+	nextIndex := owner.candidateIndex + 1
+	pending := owner.scope.Kind == "qa" && owner.reportPending != nil && owner.reportPending()
+	fallback := nextIndex < len(candidates) && ((owner.scope.Kind == "task" && !owner.handedOff) || pending)
+	if owner.rolloutRecoveries >= maxLostRolloutRecoveries {
+		recovery = "exhausted"
+	} else if fallback {
+		recovery = "fallback"
+	}
+	payload := map[string]any{
+		"phase": "rollout_lost", "scope_kind": owner.scope.Kind, "scope_id": owner.scope.ID,
+		"selection": selectionPayload(failed.Selection), "step": loss.Step, "detail": loss.Detail,
+		"recovery": recovery, "retry_spent": false,
+	}
+	if recovery == "fallback" {
+		payload["next_selection"] = selectionPayload(candidates[nextIndex].Selection)
+	}
+	summary := fmt.Sprintf("%s %s lost its rollout at %s; recovery: %s", owner.scope.Kind, owner.scope.ID, loss.Step, recovery)
+	if err := owner.engine.publishDaemonEvent(ctx, owner.scope.RunID, owner.scope.Batch, runevent.KindDaemonTask, summary, payload); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(owner.engine.deps.Progress, "roundfix: %s\n", summary); err != nil {
+		return fmt.Errorf("write lost rollout notice: %w", err)
+	}
+	if recovery == "exhausted" {
+		return &lostRolloutExhaustedError{scopeID: owner.scope.ID, step: loss.Step}
+	}
+	owner.rolloutRecoveries++
+	if recovery == "fallback" {
+		next := candidates[nextIndex]
+		if pending {
+			section := fmt.Sprintf("\n## Agent runtime fallback\n\n- lost_rollout: %s at %s: %s\n- fallback: %s\n- retry_spent: false\n", selectionLabel(failed.Selection), loss.Step, loss.Detail, selectionLabel(next.Selection))
+			file, err := os.OpenFile(owner.reportPath, os.O_APPEND|os.O_WRONLY, 0)
+			if err != nil {
+				return fmt.Errorf("open QA runtime fallback report: %w", err)
+			}
+			_, writeErr := file.WriteString(section)
+			if err := errors.Join(writeErr, file.Close()); err != nil {
+				return fmt.Errorf("append QA runtime fallback: %w", err)
+			}
+		}
+		if err := owner.publishFallback(ctx, failed, next, cause); err != nil {
+			return err
+		}
+		owner.candidateIndex = nextIndex
+	}
+	owner.selectionFailurePublished.Store(false)
+	return nil
 }
 
 func (owner *agentSessionOwner) Close(ctx context.Context) error {
@@ -344,6 +430,9 @@ func (owner *agentSessionOwner) sessionForCandidate(candidate agentSelectionCand
 	session.WorkDir = strings.TrimSpace(session.WorkDir)
 	if candidate.FallbackIndex > 0 {
 		session.Name = fmt.Sprintf("%s-fallback-%02d", strings.TrimSpace(session.Name), candidate.FallbackIndex)
+	}
+	if owner.rolloutRecoveries > 0 {
+		session.Name = fmt.Sprintf("%s-rollout-%02d", session.Name, owner.rolloutRecoveries)
 	}
 	return session
 }
@@ -710,6 +799,9 @@ func selectionFailureForStart(runtime agent.RuntimeSpec, err error) *agent.Selec
 }
 
 func selectionReasonCode(err error) string {
+	if _, ok := agent.DescribeLostRollout(err); ok {
+		return "rollout_lost"
+	}
 	var failure *agent.SelectionFailureError
 	if errors.As(err, &failure) {
 		code, _, _ := strings.Cut(failure.Reason, ":")

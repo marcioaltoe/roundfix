@@ -1,0 +1,6 @@
+0240-a-lost-rollout-is-infrastructure	parked	runtime-infrastructure: qa lost its rollout at session/resume	-
+Park: 0240-a-lost-rollout-is-infrastructure environment: run roundfix deliver retry 0240-a-lost-rollout-is-infrastructure; a retry from runtime-infrastructure is not counted
+Limits: deadline none, retries per item none, concurrency 1, tokens none
+Usage: no Runs recorded
+Pending question: 0240-a-lost-rollout-is-infrastructure parked runtime-infrastructure: qa lost its rollout at session/resume
+Answer: run roundfix deliver retry 0240-a-lost-rollout-is-infrastructure; a retry from runtime-infrastructure is not counted

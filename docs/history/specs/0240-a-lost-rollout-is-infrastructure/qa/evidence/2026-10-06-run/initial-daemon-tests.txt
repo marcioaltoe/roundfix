@@ -1,0 +1,17 @@
+=== RUN   TestLostRolloutBeforeFirstHandoffActivatesTheFallback
+--- PASS: TestLostRolloutBeforeFirstHandoffActivatesTheFallback (0.27s)
+=== RUN   TestLostRolloutAfterFirstHandoffResumesInANewSession
+--- PASS: TestLostRolloutAfterFirstHandoffResumesInANewSession (0.20s)
+=== RUN   TestLostRolloutWithoutFallbackResumesTheSameSelection
+--- PASS: TestLostRolloutWithoutFallbackResumesTheSameSelection (0.15s)
+=== RUN   TestThirdLostRolloutSettlesRuntimeInfrastructure
+--- PASS: TestThirdLostRolloutSettlesRuntimeInfrastructure (0.12s)
+=== RUN   TestQALostRolloutBeforeTheReportFallsBackAndRecordsIt
+--- PASS: TestQALostRolloutBeforeTheReportFallsBackAndRecordsIt (0.23s)
+PASS
+suiteguard: guard cost: measured 9544 paths; fingerprint took 537.913041ms before and 307.712208ms after
+suiteguard: repository boundary violated:
+suiteguard: modified: docs/specs/0240-a-lost-rollout-is-infrastructure/qa/evidence/2026-10-06-run/daemon-tests.txt
+suiteguard: modified: docs/specs/0240-a-lost-rollout-is-infrastructure/qa/evidence/2026-10-06-run/runner-tests.txt
+FAIL	roundfix/internal/daemon	2.434s
+FAIL

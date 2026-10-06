@@ -14,10 +14,12 @@ const ProtocolFailureMessageLimit = 512
 
 // ProtocolFailure places the first failure in an acpx prompt process.
 type ProtocolFailure struct {
-	Step       string
-	Code       int
-	Message    string
-	PromptSent bool
+	Step        string
+	Code        int
+	Message     string
+	PromptSent  bool
+	LostRollout bool
+	Detail      string
 }
 
 // ProtocolDescription describes a prompt-process or session-preparation failure.
@@ -126,6 +128,9 @@ func protocolFailureText(protocol *ProtocolFailure) string {
 	if message := boundedProtocolMessage(protocol.Message); message != "" {
 		text += fmt.Sprintf(": %s (JSON-RPC %d)", message, protocol.Code)
 	}
+	if protocol.LostRollout {
+		text += "; lost rollout: " + boundedProtocolMessage(protocol.Detail)
+	}
 	return text
 }
 
@@ -160,6 +165,7 @@ func (trace *promptProtocolTrace) observe(line []byte) {
 		failure := trace.describe(id)
 		failure.Code = message.Error.Code
 		failure.Message = boundedProtocolMessage(message.Error.Message)
+		failure.Detail, failure.LostRollout = lostRolloutDetail(message.Error)
 		trace.failure = &failure
 	}
 	if hasID && message.Method == "" && (len(message.Result) > 0 || message.Error != nil) {
@@ -174,7 +180,7 @@ func (trace *promptProtocolTrace) observe(line []byte) {
 
 func trackedProtocolMethod(method string) bool {
 	switch method {
-	case "initialize", "authenticate", "session/new", "session/load", "session/set_model", "session/set_mode", "session/set_config_option", "session/prompt":
+	case "initialize", "authenticate", "session/new", "session/load", "session/resume", "session/set_model", "session/set_mode", "session/set_config_option", "session/prompt":
 		return true
 	default:
 		return false

@@ -342,7 +342,7 @@ The Park Class identifies the reason and the next action:
 | --- | --- |
 | `dependency` | `prerequisite-unmerged` |
 | `conflict` | `pull-request-conflict` |
-| `environment` | `qa-environment-partial`, `checks-timeout`, `item-worktree-missing`, `delivery-error` |
+| `environment` | `qa-environment-partial`, `checks-timeout`, `item-worktree-missing`, `delivery-error`, `runtime-infrastructure` |
 | `flaky-check` | a check that failed again outside the item's changed packages |
 | `finding` | `run-unresolved`, `review-findings`, `corrective-spec-required`, `gate-failed`, `checks-failed`, `revalidation-failed` |
 | `budget` | `run-budget-exceeded`, `queue-deadline` |
@@ -352,6 +352,9 @@ The Park Class identifies the reason and the next action:
 
 Each existing blocker keeps its previous next action. A queue without parked
 items adds no `Park:` line.
+
+A Delivery Retry from `runtime-infrastructure` is not counted against the retry
+limit and re-enters as a `run-unresolved` retry does.
 
 Before classifying a failed GitHub Actions check, the owner reads the failing
 job's `tested-base` notice annotation and fetches the delivery remote's default

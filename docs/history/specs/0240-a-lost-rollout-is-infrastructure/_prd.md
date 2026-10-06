@@ -1,9 +1,12 @@
 ---
 spec: 0240-a-lost-rollout-is-infrastructure
-status: active
+status: archived
 created: 2026-10-06
 surfaces: [backend, cli, docs]
+archived: "2026-10-06"
+source_slug: 0240-a-lost-rollout-is-infrastructure
 ---
+
 
 # A lost rollout is infrastructure
 

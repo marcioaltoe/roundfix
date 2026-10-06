@@ -1,0 +1,4 @@
+ok  	roundfix/internal/agent	3.719s
+ok  	roundfix/internal/daemon	45.842s
+ok  	roundfix/internal/delivery	2.766s
+ok  	roundfix/internal/cli	177.396s

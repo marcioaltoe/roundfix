@@ -2891,6 +2891,16 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		if ownerErr != nil {
 			return "", "", false, ownerErr
 		}
+		if owner != nil {
+			owner.reportPath = reportPath
+			if !filepath.IsAbs(owner.reportPath) {
+				owner.reportPath = filepath.Join(plan.WorkDir, reportPath)
+			}
+			owner.reportPending = func() bool {
+				report, readErr := spec.ReadQAReportFile(owner.reportPath)
+				return readErr == nil && report.Verdict == spec.VerdictPending
+			}
+		}
 		defer func() {
 			if closeErr := owner.Close(context.WithoutCancel(ctx)); closeErr != nil && err == nil {
 				err = fmt.Errorf("close Agent Session for run %q QA step: %w", plan.RunID, closeErr)
@@ -2909,6 +2919,13 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		})
 		cancelAgent()
 		if runErr != nil {
+			var lost *lostRolloutExhaustedError
+			if errors.As(runErr, &lost) {
+				if settleErr := engine.settleTask(ctx, plan, qaTask, ordinal, spec.StatusFailed, agentFailureReason(runErr, "")); settleErr != nil {
+					return "", "", false, settleErr
+				}
+				return spec.VerdictPending, reportPath, false, nil
+			}
 			return "", "", false, fmt.Errorf("run Agent for run %q QA step: %w", plan.RunID, runErr)
 		}
 		if plan.runBudget.expiredAt(engine.deps.Now()) {

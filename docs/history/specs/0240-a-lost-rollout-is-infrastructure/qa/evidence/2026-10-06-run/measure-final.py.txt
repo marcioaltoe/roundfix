@@ -1,0 +1,14 @@
+from pathlib import Path
+import subprocess,os,time,json
+base=Path('/private/tmp/roundfix-0240-qa')
+for mode in ['resume','prompt']:
+ root=base/(mode+'-final');root.mkdir(exist_ok=True);home=root/'home';home.mkdir(exist_ok=True);cwd=root/'work';cwd.mkdir(exist_ok=True)
+ env={'HOME':str(home),'PATH':'/opt/homebrew/bin:/usr/bin:/bin','TMPDIR':str(base)}
+ cmd=['/opt/homebrew/bin/acpx','--agent',f'/opt/homebrew/bin/node {base}/adapter.js {mode} {root}/first-turn','--cwd',str(cwd),'--format','json','--ttl','1','--timeout','10','--deny-all']
+ runs=[('new',['sessions','new']),('first',['prompt','first turn']),('second',['prompt','second turn'])]
+ for name,args in runs:
+  if name=='second': time.sleep(3)
+  r=subprocess.run(cmd+args,env=env,capture_output=True,text=True,timeout=25)
+  (base/f'{mode}-{name}.stdout.txt').write_text(r.stdout);(base/f'{mode}-{name}.stderr.txt').write_text(r.stderr)
+  (base/f'{mode}-{name}.exit.txt').write_text(str(r.returncode)+'\n')
+  print(mode,name,r.returncode,r.stdout[-700:],r.stderr[-200:],flush=True)

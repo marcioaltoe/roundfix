@@ -25,6 +25,7 @@ import (
 	"roundfix/internal/daemon"
 	"roundfix/internal/delivery"
 	"roundfix/internal/preflight"
+	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
 	runworktree "roundfix/internal/worktree"
@@ -932,6 +933,23 @@ func (workflow *commandDeliveryWorkflow) RunSpec(ctx context.Context, gitRoot, s
 func (workflow *commandDeliveryWorkflow) runResult(ctx context.Context, gitRoot, specSlug string, command roundfixCommandResult, candidateHead string, before, after *store.Run) (delivery.RunResult, error) {
 	result, err := deliveryRunResult(command, candidateHead, before, after)
 	if err == nil && result.Outcome == delivery.RunOutcomeUnresolved {
+		if workflow.store != nil {
+			events, readErr := workflow.store.RunEventsOfKinds(ctx, result.RunID, runevent.KindDaemonTask)
+			if readErr != nil {
+				return result, fmt.Errorf("read runtime infrastructure Run Events: %w", readErr)
+			}
+			for _, event := range events {
+				var payload struct {
+					Phase    string `json:"phase"`
+					Recovery string `json:"recovery"`
+					ScopeID  string `json:"scope_id"`
+					Step     string `json:"step"`
+				}
+				if json.Unmarshal(event.Event.Payload, &payload) == nil && payload.Phase == "rollout_lost" && payload.Recovery == "exhausted" {
+					result.RuntimeInfrastructure = payload.ScopeID + " lost its rollout at " + payload.Step
+				}
+			}
+		}
 		result.QAEnvironmentPartial = workflow.qaEnvironmentPartial(ctx, gitRoot, specSlug, store.RunBranchPrefix+result.RunID)
 	}
 	return result, err

@@ -223,7 +223,7 @@ The first Agent Selection Roundfix proves and attempts for an Agent Work Categor
 _Avoid_: Default model, primary runtime, recommendation winner
 
 **Fallback Chain**:
-The non-empty ordered Agent Selection list Roundfix proves with the Preferred Selection before a Run and may activate after notifying the user and Supervisor that the preceding selection failed before Agent work began.
+The non-empty ordered Agent Selection list Roundfix proves with the Preferred Selection before a Run and may activate after notifying the user and Supervisor that the preceding selection failed before Agent work began. A Lost Rollout before the First Handoff, or in a QA Task before its report, lets the next Fallback Selection take the Task.
 _Avoid_: Dynamic fallback, silent retry, unproven selection
 
 **Default Agent Model**:
@@ -243,7 +243,7 @@ The dated Agent Selection Profile Roundfix recommends for one Agent Work Categor
 _Avoid_: Model Recommendation Ranking, model router, benchmark policy, automatic selection
 
 **Fallback Selection**:
-The next configured Agent Selection in a profile's Fallback Chain. Roundfix proves it before the Run, emits a notification before activation, and may switch ACP Runtime automatically only while Agent work has not begun.
+The next configured Agent Selection in a profile's Fallback Chain. Roundfix proves it before the Run, emits a notification before activation, and may switch ACP Runtime automatically only while Agent work has not begun. A Lost Rollout before the First Handoff, or in a QA Task before its report, is the exception that lets this selection take the Task.
 _Avoid_: Dynamic fallback, silent model switch, catalog probe winner
 
 **Negative Control**:
@@ -275,7 +275,7 @@ The Spec check finding (`SC-CITATION-UNSUPPORTED`) raised when an artifact attri
 _Avoid_: Broken link, missing ADR, stale reference
 
 **Agent Work Started**:
-The status (`agent_work_started`) marking the first Agent output that could have changed something, published once per Agent Session. It is the boundary after which a Fallback Selection may no longer switch ACP Runtime, because a second runtime would inherit state the first one built. Preparing or activating a Session does not reach it.
+The status (`agent_work_started`) marking the first Agent output that could have changed something, published once per Agent Session. It is the boundary after which a Fallback Selection may no longer switch ACP Runtime, because a second runtime would inherit state the first one built. Preparing or activating a Session does not reach it. The exception is a Lost Rollout before the First Handoff, or in a QA Task before its report, which lets the next Fallback Selection take the Task.
 _Avoid_: Session opened, prompt sent, turn started
 
 **Selection Failure**:
@@ -298,6 +298,14 @@ _Avoid_: authorization error, permission code, trust error
 **Agent Session**:
 The acpx-backed session owned by one Work Item or action. Each Implement Task owns a Task Type-selected Agent Session, requested QA owns a separate `qa` Agent Session, and review work uses a review-selected Agent Session; effective selection and fallback attempts are persisted for that owner.
 _Avoid_: ACP session, chat, conversation, thread
+
+**Lost Rollout**:
+The runtime infrastructure failure (`rollout_lost`) in which the ACP Runtime cannot find the persisted record of the Agent Session it is asked to continue. The Daemon recovers it in a new Agent Session without repair or a counted queue retry (ADR-0245).
+_Avoid_: Session loss, missing prompt, retryable Task failure
+
+**First Handoff**:
+The first Agent turn of a Task that returns to the Daemon (ADR-0057's "Agent handoff"). Before it, a Lost Rollout lets the Fallback Chain take the Task.
+_Avoid_: Session opening, first prompt, Agent Work Started
 
 **Merge-Ready**:
 The state where accepted Review Source Evidence verifies the pushed head commit, or its proven Roundfix artifact-only descendant, with no new Review Issues, letting a watch Run end Clean.

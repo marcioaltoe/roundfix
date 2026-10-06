@@ -1,0 +1,4 @@
+{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":1,"clientCapabilities":{"fs":{"readTextFile":true,"writeTextFile":true},"terminal":true},"clientInfo":{"name":"acpx","version":"0.19.4"}}}
+{"jsonrpc":"2.0","id":0,"result":{"protocolVersion":1,"agentCapabilities":{"loadSession":true,"sessionCapabilities":{"resume":{}}},"agentInfo":{"name":"fake-codex","version":"1"},"authMethods":[]}}
+{"jsonrpc":"2.0","id":1,"method":"session/resume","params":{"sessionId":"fake-thread-0240","cwd":"/private/tmp/roundfix-0240-qa/resume-final/work","mcpServers":[]}}
+{"jsonrpc":"2.0","id":1,"error":{"code":-32603,"message":"Internal error","data":{"details":"no rollout found for thread id fake-thread-0240"}}}

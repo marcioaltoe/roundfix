@@ -1,0 +1,28 @@
+=== RUN   TestLostRolloutIsNamedDuringResume
+--- PASS: TestLostRolloutIsNamedDuringResume (0.01s)
+=== RUN   TestLostRolloutIsNamedMidTurn
+--- PASS: TestLostRolloutIsNamedMidTurn (0.01s)
+=== RUN   TestOtherErrorsAreNotLostRollouts
+=== RUN   TestOtherErrorsAreNotLostRollouts/other_detail
+=== RUN   TestOtherErrorsAreNotLostRollouts/other_code
+=== RUN   TestOtherErrorsAreNotLostRollouts/object_detail
+=== RUN   TestOtherErrorsAreNotLostRollouts/other_field
+=== RUN   TestOtherErrorsAreNotLostRollouts/non_object_data
+=== RUN   TestOtherErrorsAreNotLostRollouts/phrase_in_message
+--- PASS: TestOtherErrorsAreNotLostRollouts (0.10s)
+    --- PASS: TestOtherErrorsAreNotLostRollouts/other_detail (0.01s)
+    --- PASS: TestOtherErrorsAreNotLostRollouts/other_code (0.01s)
+    --- PASS: TestOtherErrorsAreNotLostRollouts/object_detail (0.02s)
+    --- PASS: TestOtherErrorsAreNotLostRollouts/other_field (0.03s)
+    --- PASS: TestOtherErrorsAreNotLostRollouts/non_object_data (0.01s)
+    --- PASS: TestOtherErrorsAreNotLostRollouts/phrase_in_message (0.01s)
+=== RUN   TestLostRolloutDetailIsBounded
+--- PASS: TestLostRolloutDetailIsBounded (0.01s)
+=== RUN   TestSessionResumeIsATrackedStep
+--- PASS: TestSessionResumeIsATrackedStep (0.01s)
+PASS
+suiteguard: guard cost: measured 9544 paths; fingerprint took 640.073667ms before and 372.694292ms after
+suiteguard: repository boundary violated:
+suiteguard: modified: docs/specs/0240-a-lost-rollout-is-infrastructure/qa/evidence/2026-10-06-run/runner-tests.txt
+FAIL	roundfix/internal/agent	2.182s
+FAIL

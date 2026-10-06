@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0240-a-lost-rollout-is-infrastructure
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -133,3 +133,58 @@ verifiable with the Daemon's fake runner and the delivery fakes.
 - ADR-0245
 - ADR-0114
 - ADR-0057
+
+
+## Result
+
+Implemented this Task's recovery, QA and Delivery Queue slice. Status remains
+Daemon-owned; authored Verification has not been run in this turn.
+
+- First Handoff boundary: the session owner detects `DescribeLostRollout`
+  before ordinary selection failure handling, ends the lost session, persists
+  the failed selection attempt and recovers at most twice. Before handoff it
+  takes the next fallback; after handoff or without a fallback it retains the
+  selection. Replacement names use `-rollout-NN`, and prompts preserve the
+  initial Task prompt, recovery notice and any lost Verification Feedback
+  prompt. The first-turn fake emits Agent output before the loss, proving that
+  work-started does not prevent this recovery. The new Daemon tests assert
+  selection persistence, distinct session names, recovery events and Task
+  settlement without adding a repair for a lost turn.
+- QA fallback: the QA owner reads the seeded report's pending verdict. Before
+  fallback it appends the runtime fallback section without replacing the
+  frontmatter or rows. The QA test inspects the pending report before the
+  fallback runs and the final report for `retry_spent: false`. An additional
+  QA exhaustion test proves the third loss settles failed with the runtime
+  infrastructure reason instead of halting the cycle.
+- Exhaustion and retry: the third loss publishes `rollout_lost` with
+  `recovery: exhausted`. Delivery reads this event through
+  `Store.RunEventsOfKinds`, parks `runtime-infrastructure` ahead of QA partial
+  and generic unresolved decisions, and classifies it as `environment` with
+  the specified next action. The real-store retry test reaches the retry
+  limit with an ordinary retry, then proves the infrastructure retry carries
+  forward and re-enters Running without increasing `retry_count`. CLI journal
+  tests distinguish exhausted events from both recovered outcomes.
+- Existing expectations: no existing test files or expectations changed.
+  The affected Daemon, Delivery, CLI and store suites have passing results
+  from the checks below. Runner, review execution, legacy Runs, ordinary
+  selection failure and light-tier escalation code remain outside this diff.
+
+Focused implementation checks:
+
+- `GOCACHE=/private/tmp/roundfix-task03-cache rtk proxy go test ./internal/daemon ./internal/delivery ./internal/cli -run 'LostRollout|RuntimeInfrastructure' -count=1`
+  — passed.
+- `GOCACHE=/private/tmp/roundfix-task03-cache rtk proxy go test ./internal/daemon -run 'LostRollout' -count=1`
+  — passed after adding persistence and QA exhaustion assertions.
+- `GOCACHE=/private/tmp/roundfix-task03-cache rtk proxy go test ./internal/daemon ./internal/delivery ./internal/cli ./internal/store -count=1`
+  — Delivery and store passed. Daemon and CLI repository guards detected a
+  concurrent edit to the new Daemon test; CLI also reported process-table
+  permission failures in two existing force-stop integration tests.
+- `GOCACHE=/private/tmp/roundfix-task03-cache rtk proxy go test ./internal/daemon -count=1`
+  — passed with stable files after strengthening the first-turn output case
+  (46.568s).
+- `GOCACHE=/private/tmp/roundfix-task03-cache rtk proxy go test ./internal/cli -count=1`
+  — passed with stable files and elevated process-table access (184.010s).
+- `rtk proxy git -c core.fsmonitor=false diff --check` — passed.
+
+No commits, pushes or Pull Requests were created. The Task Graph and other
+Task files were not edited. The incoming `status: in_progress` is preserved.

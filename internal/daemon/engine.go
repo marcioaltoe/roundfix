@@ -237,6 +237,10 @@ func agentTerminalReason(step string, err error) string {
 }
 
 func agentFailureReason(err error, fallback string) string {
+	var lost *lostRolloutExhaustedError
+	if errors.As(err, &lost) {
+		return lost.Error()
+	}
 	if reason, ok := modelNotAdvertisedTerminalReason(err); ok {
 		return terminalReasonLine(reason)
 	}

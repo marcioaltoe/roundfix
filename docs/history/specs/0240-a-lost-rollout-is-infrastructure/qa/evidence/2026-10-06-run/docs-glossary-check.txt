@@ -1,0 +1,27 @@
+Lost Rollout: The runtime infrastructure failure (`rollout_lost`) in which the ACP Runtime cannot find the persisted record of the Agent Session it is asked to continue. The Daemon recovers it in a new Agent Session without repair or a counted queue retry (ADR-0245).
+
+First Handoff: The first Agent turn of a Task that returns to the Daemon (ADR-0057's "Agent handoff"). Before it, a Lost Rollout lets the Fallback Chain take the Task.
+
+Fallback Chain: The non-empty ordered Agent Selection list Roundfix proves with the Preferred Selection before a Run and may activate after notifying the user and Supervisor that the preceding selection failed before Agent work began. A Lost Rollout before the First Handoff, or in a QA Task before its report, lets the next Fallback Selection take the Task.
+
+Fallback Selection: The next configured Agent Selection in a profile's Fallback Chain. Roundfix proves it before the Run, emits a notification before activation, and may switch ACP Runtime automatically only while Agent work has not begun. A Lost Rollout before the First Handoff, or in a QA Task before its report, is the exception that lets this selection take the Task.
+
+Agent Work Started: The status (`agent_work_started`) marking the first Agent output that could have changed something, published once per Agent Session. It is the boundary after which a Fallback Selection may no longer switch ACP Runtime, because a second runtime would inherit state the first one built. Preparing or activating a Session does not reach it. The exception is a Lost Rollout before the First Handoff, or in a QA Task before its report, which lets the next Fallback Selection take the Task.
+
+docs/user-guide/configuration.md: recovery, first-handoff/QA exception, same-selection continuation verified
+
+docs/user-guide/usage.md: recovery, first-handoff/QA exception, same-selection continuation verified
+
+.agents/skills/roundfix/references/profiles.md: recovery, first-handoff/QA exception, same-selection continuation verified
+
+docs/user-guide/commands/deliver.md: park and uncounted retry verified
+
+.agents/skills/roundfix/references/deliver.md: park and uncounted retry verified
+
+runtime-infrastructure: emitted and documented at declared paths; behavior confirmed by queue/Daemon evidence
+
+rollout_lost: emitted and documented at declared paths; behavior confirmed by queue/Daemon evidence
+
+Three canonical/mirror pairs equal. Roundfix skill raised 0.1.42 to 0.1.43 in both version fields; version-record test passed.
+
+New glossary headings from Spec diff: Lost Rollout and First Handoff. runtime-infrastructure is a Park blocker token, not a separate domain term. rollout_lost is the Lost Rollout event phase. No additional introduced domain term found.
