@@ -640,7 +640,17 @@ func TestCheckRepositoryHandlesNestedLinksSpecialEntriesAndStableOrdering(t *tes
 		t.Fatalf("expected external symlink error naming %q, got %v", externalPath, err)
 	}
 
-	specialRoot := writeReadyRepositoryFixture(t)
+	// Keep the socket path below the Unix-domain socket limit on macOS.
+	specialRoot, err := os.MkdirTemp("/tmp", "rfsk")
+	if err != nil {
+		t.Skipf("create short special-entry fixture root: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.RemoveAll(specialRoot); err != nil {
+			t.Errorf("remove special-entry fixture root: %v", err)
+		}
+	})
+	writeReadyRepositoryFixtureAt(t, specialRoot)
 	specialPath := filepath.Join(specialRoot, ".agents", "skills", "agentic-cli-design", "socket")
 	listener, err := net.Listen("unix", specialPath)
 	if err != nil {
@@ -669,6 +679,12 @@ type repositoryLockSkillFixture struct {
 func writeReadyRepositoryFixture(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
+	writeReadyRepositoryFixtureAt(t, root)
+	return root
+}
+
+func writeReadyRepositoryFixtureAt(t *testing.T, root string) {
+	t.Helper()
 	skillsRoot := filepath.Join(root, ".agents", "skills")
 	files, err := Files()
 	if err != nil {
@@ -692,7 +708,6 @@ func writeReadyRepositoryFixture(t *testing.T) string {
 		lock.Skills[name] = repositoryLockSkillFixture{ComputedHash: hash}
 	}
 	writeRepositoryLockFixture(t, root, lock)
-	return root
 }
 
 func readRepositoryLockFixture(t *testing.T, root string) repositoryLockFixture {

@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0241-retire-the-fool-autoresearch-and-council
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -68,3 +68,50 @@ the same file.
 
 - task_02 → Verification command 1
 - `_techspec.md` → Existing tests that change
+
+## Result
+
+The special-entry case now creates its repository root with
+`os.MkdirTemp("/tmp", "rfsk")` and registers removal with `t.Cleanup`.
+The existing listener cleanup is registered afterward, so it closes before
+the directory is removed. The shared fixture writer now accepts a root;
+`writeReadyRepositoryFixture` still delegates using `t.TempDir()`, preserving
+the other cases and tests. The socket-error assertion is unchanged. A socket
+path with a ten-digit temporary suffix is 60 bytes, below the macOS limit.
+
+Focused evidence on macOS (`uname -s`: `Darwin`):
+
+- Ran `GOCACHE=/tmp/roundfix-task05-gocache rtk proxy go test -count=1 -v -run 'TestCheckRepositoryHandlesNestedLinks|TestCheckRepositoryWithExternalUsesExplicitRequirement' ./skills`
+  before editing. The target printed `--- SKIP` after binding its long
+  `/var/folders/...` socket path failed with `invalid argument`.
+- Acceptance criterion 1: the same focused selection after editing, with
+  approved execution outside the sandbox, exited 0 and printed
+  `--- PASS: TestCheckRepositoryHandlesNestedLinksSpecialEntriesAndStableOrdering (0.06s)`.
+  The companion test also passed. Inside the sandbox, the short socket path
+  was denied with `operation not permitted`; this was a separate environment
+  restriction, resolved by the approved rerun. The default Go build cache was
+  also inaccessible, so these checks used the task-scoped cache above.
+- Acceptance criterion 2: ran the focused selection with
+  `-overlay=/tmp/rf-task05-mutation-_3_4b8xn/overlay.json`. The temporary
+  overlay made the skill-folder walker ignore sockets, allowing
+  `CheckRepository` to accept the socket. The target exited 1 and printed
+  `--- FAIL: TestCheckRepositoryHandlesNestedLinksSpecialEntriesAndStableOrdering`,
+  with `expected external special-entry error naming "/tmp/rfsk1652707670/.agents/skills/agentic-cli-design/socket", got <nil>`.
+  The overlay lived outside the repository and was removed afterward; no
+  production file was edited.
+- `rtk proxy git -c core.fsmonitor=false diff --check`: exited 0.
+- The first `GOCACHE=/tmp/roundfix-task05-gocache rtk make verify-incremental`
+  run exited 2: the repository guard detected this Agent appending Result
+  while the suite was running. Its test bodies reported `PASS`, but the
+  guard rejected the mid-run change to this task file. The fresh rerun held
+  the repository unchanged until exit and exited 0, including formatting,
+  vet, tests, skill checks, and build.
+
+The declared Verification command remains for the Daemon. Task status and
+the Task Graph were not edited by this Agent. No follow-up changes are
+included.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261006T214048Z_131051a4f3c19cbe`
+- Source commit: `cceb70017fb8f1c3bce8833750e88c8206b5d25e`
