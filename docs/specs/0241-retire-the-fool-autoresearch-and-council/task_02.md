@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0241-retire-the-fool-autoresearch-and-council
-status: pending
+status: completed
 type: chore
 complexity: medium
 ---
@@ -128,3 +128,34 @@ bounded in `_authorization.md`. The vendored trees are deleted, never edited.
 - `_prd.md` → Goals 2-3; User Story 3; Core Features 3-4; Success Metrics 3-4; Declared breaks
 - `_techspec.md` → Measured facts; Fixed texts (task_02); The repository procedure; Existing tests that change; API Contract 3; Testing Approach 5; Build Order 2
 - ADR-0246, ADR-0191, ADR-0189, ADR-0233
+
+## Result
+
+Implemented the Task slice: removed `council` from the owned bundle and
+deleted its canonical and mirrored trees; reworded both owned skills and
+synchronized their mirrors; removed `the-fool` and `autoresearch` from the
+repository lock, recommendations, and installed trees; updated the bounded
+repository tests and guide counts; and added the retired-owned-skill boundary
+test. The managed setup manifest was refreshed after the lock change.
+
+Focused checks and evidence:
+
+- `GOCACHE=/tmp/roundfix-0241-task02-gocache go test ./skills -run '^TestCouncilIsNotARoundfixOwnedSkill$'` passed.
+- `GOCACHE=/tmp/roundfix-0241-task02-gocache go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'` passed after the mandated recorder run. The recorder recorded write-idea 0.0.5 and write-prd 0.0.9; write-prd was already 0.0.8 before this Task and its changed content therefore received the next recorded version.
+- `make skills-sync` completed; both canonical/mirror skill trees compare equal, and no write-idea or write-prd file names `council`.
+- The owned bundle contains 13 names, no embedded or installed `council` path remains, and the lock/recommended list contain neither `the-fool` nor `autoresearch`.
+- The first managed refresh applied one setup-manifest change; the second reported `File changes: 0`.
+- `make build` completed and rebuilt `bin/roundfix`. Direct Doctor capture produced no output in this environment, so the required Doctor count line remains for Daemon Verification to observe.
+- Settlement feedback repair: updated the stale TechSpec claim receipts to quote the current Task 02 source passages verbatim; Task status remains Daemon-owned.
+- Focused repair check: `GOCACHE=/tmp/roundfix-0241-task02-gocache go run -buildvcs=false ./cmd/roundfix spec check 0241-retire-the-fool-autoresearch-and-council --strict` reported `No findings`; authored Verification commands were not executed.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `docs/specs/0241-retire-the-fool-autoresearch-and-council/_techspec.md`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261006T214048Z_131051a4f3c19cbe`
+- Source commit: `4f76f4c51ee51be61e2c63cc47102b9f7a33ca69`

@@ -23,7 +23,7 @@ successful release outcome, without changing standard output or the exit code.
 
    Doctor prints Agent Selection Profile Readiness first, then independently
    proves the Repository Skill Set. A ready repository prints
-   `skills: ok (43 required: 14 Roundfix-owned, 29 external)` for this repository.
+   `skills: ok (41 required: 13 Roundfix-owned, 28 external)` for this repository.
    The numbers come from the repository's Repository Skill Set. A blocking
    mismatch prints `skills: failed` with the applicable owned or external
    update command and exits `1`. Doctor is offline and read-only: it never

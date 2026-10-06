@@ -49,9 +49,9 @@ leverage: quick-win # quick-win | strategic-bet | compounding
 | Defensibility   | Is this easy to copy or does it compound over time? |       |
 | Feasibility     | Can we actually build this?                         |       |
 
-## Council Insights
+## Trade-off Insights
 
-<!-- From the embedded council session. Keep the dissent — it feeds the PRD's risks. -->
+<!-- From the step 6 trade-off debate. Keep the dissent — it feeds the PRD's risks. -->
 
 - **Recommended approach:** ...
 - **Key trade-offs:** ...

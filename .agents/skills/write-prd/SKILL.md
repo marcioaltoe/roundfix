@@ -5,10 +5,10 @@ argument-hint: "<feature description, or nothing after a grilling/brainstorm ses
 metadata:
   category: planning
   tags: [prd, product, requirements, workflow, documentation]
-  version: 0.0.8
+  version: 0.0.9
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.8
+version: 0.0.9
 ---
 
 # Write PRD
@@ -19,7 +19,7 @@ Produce `docs/specs/<feature-slug>/_prd.md` — the product definition the rest 
 
 `$ARGUMENTS` is a feature description, or empty when the current conversation already explored the feature (a grilling or brainstorm session). Everything already answered in the conversation counts as answered — do not re-interview.
 
-If `docs/specs/<slug>/_idea.md` exists (produced by `write-idea`), it **is** the exploration: read it first, and treat its research, scoring, council insights, chosen direction, and Out of Scope list as answered ground truth. Clarify only what the idea left open.
+If `docs/specs/<slug>/_idea.md` exists (produced by `write-idea`), it **is** the exploration: read it first, and treat its research, scoring, trade-off insights, chosen direction, and Out of Scope list as answered ground truth. Clarify only what the idea left open.
 
 ## Size triage first
 

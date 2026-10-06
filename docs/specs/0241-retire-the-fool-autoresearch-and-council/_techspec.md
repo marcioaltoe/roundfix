@@ -178,38 +178,34 @@ No other byte of the module changes.
 
 task_02, `.agents/skills/write-idea/SKILL.md`:
 
-- `description`: "business-viability scoring, council debate, and an
-  opportunity scan" becomes "business-viability scoring, a trade-off debate,
-  and an opportunity scan".
-- Step 6's first sentence becomes: "Weigh the real dilemmas yourself: V1
+- `description`: "business-viability scoring, a trade-off debate, and an
+  opportunity scan" remains the source passage.
+- Step 6's first sentence is: "Weigh the real dilemmas yourself: V1
   scope, priority vs other work, simpler alternatives, risks and hidden
   dependencies, and the 10x challenge. For each, state the strongest case on
   both sides and keep the losing side as dissent." The rest of the
   paragraph ("Extract the recommended approach, …") is unchanged.
-- The anti-pattern becomes "- Smoothing over the dissent from step 6 —
+- The anti-pattern is "- Smoothing over the dissent from step 6 —
   preserved disagreement is input for the PRD's risk section."
 - `metadata.version` and `version` 0.0.4 become 0.0.5.
 
 task_02, `.agents/skills/write-idea/references/idea-template.md`: the heading
-`## Council Insights` becomes `## Trade-off Insights`, and its comment
-becomes `<!-- From the step 6 trade-off debate. Keep the dissent — it feeds
+`## Trade-off Insights` remains the source heading, and its comment is
+`<!-- From the step 6 trade-off debate. Keep the dissent — it feeds
 the PRD's risks. -->`.
 
 task_02, `.agents/skills/write-prd/SKILL.md`: "its research, scoring,
-council insights, chosen direction" becomes "its research, scoring,
-trade-off insights, chosen direction"; both version fields 0.0.7 become
-0.0.8.
+trade-off insights, chosen direction" remains the source passage; both
+version fields 0.0.7 become 0.0.8.
 
-task_02, `docs/user-guide/commands/skills.md`: "ships 14 Roundfix-owned
-skills" becomes "ships 13 Roundfix-owned skills", and `` `council`, `` leaves
-the list. `docs/user-guide/commands/doctor.md`: "the 14 Roundfix-owned
-skills, including the Roundfix Skill. Each of the 25 required external
-skills must hash" becomes "the 13 Roundfix-owned skills, including the
-Roundfix Skill. Each required external skill must hash". `README.md` and
-`docs/user-guide/usage.md`: `skills: ok (43 required: 14 Roundfix-owned, 29
-external)` becomes `skills: ok (41 required: 13 Roundfix-owned, 28
-external)`. `skills/skills.go` and the `Makefile` comment: "13 authorial
-workflow skills" becomes "12 authorial workflow skills".
+task_02, `docs/user-guide/commands/skills.md`: "ships 13 Roundfix-owned
+skills" remains the source passage, and `` `council`, `` leaves
+the list. `docs/user-guide/commands/doctor.md`: "the 13 Roundfix-owned
+skills, including the Roundfix Skill. Each required external skill must hash"
+remains the source passage. `README.md` and `docs/user-guide/usage.md`:
+`skills: ok (41 required: 13 Roundfix-owned, 28 external)` remains the source
+passage. `skills/skills.go` and the `Makefile` comment: "12 authorial
+workflow skills" remains the source passage.
 
 task_03, `docs/user-guide/commands/baseline.md`, a new `### Retired skills`
 section after the managed-refresh paragraph:

@@ -49,7 +49,7 @@ failures. The independent Repository Skill Set result follows `profiles:`:
 
 ```text
 profiles: ok (3 distinct tuples; 10 category references)
-skills: ok (43 required: 14 Roundfix-owned, 29 external)
+skills: ok (41 required: 13 Roundfix-owned, 28 external)
 ```
 
 The numbers come from the repository's Repository Skill Set.

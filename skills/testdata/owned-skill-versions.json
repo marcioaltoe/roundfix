@@ -35,16 +35,6 @@
         "digest": "a9cd63389b87e40b08336c3837f8da3a61a2a4d06e1727ce6c33a72025a87252"
       }
     ],
-    "council": [
-      {
-        "version": "0.0.2",
-        "digest": "54a4dad89e0b40704c1613a12a8dfa8d2edfd3372db1f15b45f883d13beb04c1"
-      },
-      {
-        "version": "0.0.3",
-        "digest": "9e671c0c8074bc0737d234ffc444fa1e3a91b8f12df1de2c602ea80ed821c9b0"
-      }
-    ],
     "evidence-gate": [
       {
         "version": "0.0.2",
@@ -333,6 +323,10 @@
       {
         "version": "0.0.4",
         "digest": "c55e30bb784fe9a6cc14fe7d4f38951621773669cc125ed05544552c06184d33"
+      },
+      {
+        "version": "0.0.5",
+        "digest": "ffad36d5c52bed856d0dd8a43191c79dc64324f8c281757506ef6391d1458b92"
       }
     ],
     "write-prd": [
@@ -363,6 +357,10 @@
       {
         "version": "0.0.8",
         "digest": "92901bb01f574dbb2f0d6b923544ffef7d44ac92752c890c3356e8cebc4e8e30"
+      },
+      {
+        "version": "0.0.9",
+        "digest": "3335412d5c1443e60677c46eb9f6ce64ebe1feb9a1bf028d21af17da72adab29"
       }
     ],
     "write-tasks": [
