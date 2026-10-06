@@ -13,6 +13,7 @@ import (
 )
 
 const (
+	BlockerRuntimeInfrastructure  = "runtime-infrastructure"
 	BlockerRunUnresolved          = "run-unresolved"
 	BlockerQAEnvironmentPartial   = "qa-environment-partial"
 	BlockerReviewFindings         = "review-findings"
@@ -71,11 +72,12 @@ const (
 )
 
 type RunResult struct {
-	QAEnvironmentPartial bool
-	RunID                string
-	Outcome              RunOutcome
-	CandidateCommits     []string
-	Reason               string
+	RuntimeInfrastructure string
+	QAEnvironmentPartial  bool
+	RunID                 string
+	Outcome               RunOutcome
+	CandidateCommits      []string
+	Reason                string
 }
 
 type ReviewResult struct {
@@ -432,7 +434,7 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 			queue.Limits.Deadline.UTC().Format(time.RFC3339),
 		)
 	}
-	if queue.Limits.MaxRetries != 0 && item.RetryCount >= queue.Limits.MaxRetries {
+	if !blockerMatches(item.Blocker, BlockerRuntimeInfrastructure) && queue.Limits.MaxRetries != 0 && item.RetryCount >= queue.Limits.MaxRetries {
 		return RetryResult{}, fmt.Errorf(
 			"retry Delivery Queue item %q: retry count %d reached queue limit %d: %w",
 			specSlug,
@@ -917,6 +919,9 @@ func (engine *Engine) runCandidate(ctx context.Context, gitRoot string, item *st
 	item.RunID = strings.TrimSpace(result.RunID)
 	switch result.Outcome {
 	case RunOutcomeUnresolved:
+		if result.RuntimeInfrastructure != "" {
+			return engine.park(ctx, gitRoot, item, BlockerRuntimeInfrastructure+": "+result.RuntimeInfrastructure)
+		}
 		if result.QAEnvironmentPartial {
 			return engine.park(ctx, gitRoot, item, BlockerQAEnvironmentPartial)
 		}

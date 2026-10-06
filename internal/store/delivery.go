@@ -676,7 +676,11 @@ WHERE item.git_root = ? AND item.position = ?`, gitRoot, item.Position).Scan(
 				parkedBlocker,
 			)
 		}
-		if maxRetries != 0 && retryCount >= maxRetries {
+		retryIncrement := 1
+		if blocker, _, _ := strings.Cut(storedBlocker, ":"); blocker == "runtime-infrastructure" {
+			retryIncrement = 0
+		}
+		if retryIncrement != 0 && maxRetries != 0 && retryCount >= maxRetries {
 			return fmt.Errorf(
 				"retry Delivery Queue item %q: retry count %d reached queue limit %d: %w",
 				item.SpecSlug,
@@ -688,11 +692,12 @@ WHERE item.git_root = ? AND item.position = ?`, gitRoot, item.Position).Scan(
 
 		if _, err := tx.ExecContext(ctx, `
 UPDATE delivery_queue_items
-SET stage = ?, blocker = '', run_id = ?, candidate_commits = ?, retry_count = retry_count + 1
+SET stage = ?, blocker = '', run_id = ?, candidate_commits = ?, retry_count = retry_count + ?
 WHERE git_root = ? AND position = ?`,
 			item.Stage,
 			item.RunID,
 			string(encodedCommits),
+			retryIncrement,
 			gitRoot,
 			item.Position,
 		); err != nil {
