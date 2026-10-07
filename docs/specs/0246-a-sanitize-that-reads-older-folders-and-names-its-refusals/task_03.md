@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0246-a-sanitize-that-reads-older-folders-and-names-its-refusals
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -94,3 +94,50 @@ the spec tests below.
 - `_techspec.md` → API Contract 2; Invariant 5; Invariant 6; Invariant 7; Invariant 8; Build Order 3
 - ADR-0251
 - ADR-0154
+
+## Result
+
+Implemented the Task 03 slice for Daemon Verification. `BuildArchiveRecord`
+maps the newest failing QA verdict to `ArchiveFailedQA`, retaining the report
+name and verdict. Override and supersession precedence are preserved.
+`ParseArchiveRecord` enforces Invariant 6's three exact refusal messages;
+missing QA fields receive those messages for `failed-qa` only. The QA Task of
+a `failed-qa` record is excluded by `ArchivedTaskCompleted`.
+
+Acceptance evidence from focused implementation checks:
+
+- Conversion and retained evidence: `TestLegacyConversionOfAFailedQAIsFailedQA`
+  passed with an older passing report and a newest failing report. Planning
+  preserved source bytes, the rendered record omitted `qa_override`, and the
+  applied record was read back with identical metadata.
+  `TestFailedQARecordRoundTrips` passed metadata and rendered-byte comparisons.
+- Parser refusals: `TestFailedQARecordRefusesAnotherVerdictOrAnOverride`
+  passed seven cases for another, empty or absent verdict; an empty or absent
+  report; and both true and false override keys, asserting the exact messages.
+  `TestArchivedTaskCompletedExcludesTheQATaskOfAFailedQA` passed for the QA
+  Task, another Task and an empty Task identity.
+- Preserved archive behavior: `TestArchiveStillRefusesAFailingQAWithoutAnOverride`
+  passed with the exact existing refusal, identical repository files and no
+  archive record. Every test in `internal/spec/archive_record_test.go` passed
+  in the focused selections below, including override, supersession, size,
+  round-trip, refusal and rollback cases. Existing lenient legacy reading
+  checks also passed. No CLI, other disposition reader, or existing test
+  expectation changed.
+
+Commands and outcomes:
+
+- Before the production change,
+  `GOCACHE=/tmp/roundfix-task03-gocache rtk proxy go test -count=1 ./internal/spec -run 'Test(LegacyConversionOfAFailedQA|FailedQARecord|ArchivedTaskCompletedExcludes|ArchiveStillRefuses)'`
+  exited 1, reproducing the unknown `fail`/`failed-qa` dispositions, missing
+  disposition-specific guards and incorrectly completed QA Task.
+- After the change,
+  `GOCACHE=/tmp/roundfix-task03-gocache rtk proxy go test -count=1 -v ./internal/spec -run 'Test(LegacyConversionOfAFailedQA|FailedQARecord|ArchivedTaskCompletedExcludes|ArchiveStillRefuses|ArchiveRecord|ArchiveWrites|ArchiveRefuses|ReadArchivedSpec|LegacyConversion|ActiveSpecStillRefuses)'`
+  exited 0; all five new tests and the selected existing tests passed.
+- `GOCACHE=/tmp/roundfix-task03-gocache rtk proxy go test -count=1 ./internal/spec -run '^TestArchiveRollsBackTheRecordWhenPromotionCannotBeWritten$'`
+  exited 0, covering the remaining existing archive record rollback test.
+- `rtk proxy gofmt -w internal/spec/archive_record.go internal/spec/archive_reader.go internal/spec/archive_failed_qa_test.go`
+  exited 0.
+
+The Daemon-owned `status: in_progress` was present on arrival and is unchanged
+by this Agent. Declared Verification was not run; no terminal Task verdict is
+claimed. No commit, push or Pull Request was made. No follow-up identified.

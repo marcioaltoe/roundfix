@@ -25,6 +25,7 @@ const (
 	ArchivePass       ArchiveDisposition = "pass"
 	ArchivePartial    ArchiveDisposition = "partial"
 	ArchiveQAOverride ArchiveDisposition = "qa-override"
+	ArchiveFailedQA   ArchiveDisposition = "failed-qa"
 	ArchiveSuperseded ArchiveDisposition = "superseded"
 	ArchiveNoQA       ArchiveDisposition = "no-qa"
 )
@@ -161,6 +162,9 @@ func BuildArchiveRecord(in ArchiveRecordInput) (ArchiveRecord, error) {
 		r.QAReport = filepath.Base(reportPath)
 		r.QAVerdict = report.Verdict
 		r.Disposition = ArchiveDisposition(report.Verdict)
+		if report.Verdict == VerdictFail {
+			r.Disposition = ArchiveFailedQA
+		}
 		text, readErr := os.ReadFile(reportPath)
 		if readErr != nil {
 			return r, readErr
@@ -343,6 +347,10 @@ func ParseArchiveRecord(content []byte) (ArchiveRecord, error) {
 	required := []string{"schema", "spec", "title", "status", "created", "archived", "disposition", "source", "source_revision", "qa_task", "qa_report", "qa_verdict", "unproven", "adrs", "sources", "regeneration", "promoted"}
 	for _, k := range required {
 		if _, ok := m[k]; !ok {
+			// Failed QA fields use the disposition's specific validation below.
+			if m["disposition"].Value == string(ArchiveFailedQA) && (k == "qa_report" || k == "qa_verdict") {
+				continue
+			}
 			return ArchiveRecord{}, fmt.Errorf("archive record missing %s", k)
 		}
 	}
@@ -375,6 +383,16 @@ func ParseArchiveRecord(content []byte) (ArchiveRecord, error) {
 		return r, errors.New("archive record missing superseded_by")
 	}
 	switch r.Disposition {
+	case ArchiveFailedQA:
+		if r.QAVerdict != VerdictFail {
+			return r, errors.New("archive record disposition failed-qa requires qa_verdict fail")
+		}
+		if strings.TrimSpace(r.QAReport) == "" {
+			return r, errors.New("archive record disposition failed-qa requires qa_report")
+		}
+		if _, ok := m["qa_override"]; ok {
+			return r, errors.New("archive record disposition failed-qa cannot carry qa_override")
+		}
 	case ArchivePass, ArchivePartial, ArchiveQAOverride, ArchiveSuperseded, ArchiveNoQA:
 	default:
 		return r, fmt.Errorf("unknown archive disposition %q", r.Disposition)

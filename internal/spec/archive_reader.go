@@ -64,5 +64,8 @@ func validArchiveSource(source, revision string) bool {
 // ArchivedTaskCompleted is the record's completion contract. It does not
 // infer membership: callers bind Task identity through commit metadata.
 func ArchivedTaskCompleted(record ArchiveRecord, task string) bool {
+	if task == record.QATask && record.Disposition == ArchiveFailedQA {
+		return false
+	}
 	return task != "" && !(task == record.QATask && record.Disposition == ArchiveQAOverride && record.QAOverride != nil && record.QAOverride.QATaskStatus != "")
 }
