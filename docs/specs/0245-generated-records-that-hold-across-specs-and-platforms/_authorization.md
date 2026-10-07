@@ -71,6 +71,31 @@ no source path.
 command: make baseline-digests
 ```
 
+The Module Version Record step writes a changed module's version line and the
+record; suiteguard accepts those writes only for this declared command:
+
+```yaml
+command: go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1
+outputs:
+  - internal/baseline/module-versions.json
+  - internal/baseline/assets/modules/autonomous-work.json
+  - internal/baseline/assets/modules/backend.json
+  - internal/baseline/assets/modules/bun.json
+  - internal/baseline/assets/modules/cli-surface.json
+  - internal/baseline/assets/modules/context-workflow.json
+  - internal/baseline/assets/modules/core.json
+  - internal/baseline/assets/modules/external-triage.json
+  - internal/baseline/assets/modules/frontend.json
+  - internal/baseline/assets/modules/go.json
+  - internal/baseline/assets/modules/monorepo.json
+  - internal/baseline/assets/modules/repository-extension.json
+  - internal/baseline/assets/modules/rust.json
+  - internal/baseline/assets/modules/secondbrain.json
+  - internal/baseline/assets/modules/spec-workflow.json
+  - internal/baseline/assets/modules/tui-surface.json
+  - internal/baseline/assets/modules/typescript.json
+```
+
 `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`
 renders this repository's guides and Setup Manifest, and a second refresh
 reports no file change. No digest pin, golden or generated guide is
