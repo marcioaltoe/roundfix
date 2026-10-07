@@ -194,6 +194,43 @@ func ReopenGate(taskPath string, reportPath string, taskIDs []string, date time.
 	return nil
 }
 
+// ReopenGateForLateDependencies atomically resets the gate and records Tasks
+// absent from the closure recorded with its QA Report.
+func ReopenGateForLateDependencies(taskPath, reportPath string, taskIDs []string, date time.Time) error {
+	info, err := os.Stat(taskPath)
+	if err != nil {
+		return fmt.Errorf("stat QA Task file %q: %w", taskPath, err)
+	}
+	content, err := os.ReadFile(taskPath)
+	if err != nil {
+		return fmt.Errorf("read QA Task file %q: %w", taskPath, err)
+	}
+	updated, err := rewriteStatus(content, StatusPending)
+	if err != nil {
+		return fmt.Errorf("rewrite status in QA Task file %q: %w", taskPath, err)
+	}
+	var record strings.Builder
+	if !bytes.HasSuffix(updated, []byte{'\n'}) {
+		record.WriteByte('\n')
+	}
+	record.WriteString("\n## Invalidation\n\n")
+	fmt.Fprintf(&record, "- Date: `%s`\n", date.Format("2006-01-02"))
+	fmt.Fprintf(&record, "- QA Report: `%s`\n", filepath.ToSlash(reportPath))
+	record.WriteString("- Dependencies added after the QA Report: ")
+	for index, id := range taskIDs {
+		if index > 0 {
+			record.WriteString(", ")
+		}
+		fmt.Fprintf(&record, "`%s`", id)
+	}
+	record.WriteByte('\n')
+	updated = append(updated, record.String()...)
+	if err := replaceTaskFile(taskPath, updated, info.Mode().Perm()); err != nil {
+		return fmt.Errorf("replace QA Task file %q atomically: %w", taskPath, err)
+	}
+	return nil
+}
+
 // AppendGateInvalidation records why a completed QA gate was reopened while
 // preserving the Task's existing body, including its prior Result section.
 func AppendGateInvalidation(taskPath string, reportPath string, taskIDs []string, date time.Time) error {

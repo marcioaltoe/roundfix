@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0244-a-formatted-qa-report-and-a-reopen-for-late-dependencies
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -91,3 +91,55 @@ hand. It is verifiable on its own through the spec and CLI tests below.
 - `_prd.md` → Core Feature 3; Goals; Success Metric 4; Success Metric 5
 - `_techspec.md` → API Contract 3; Invariant 9; Invariant 10; Invariant 11; Build Order 4
 - ADR-0249
+
+
+## Result
+
+Implemented the Task 04 slice for Daemon Verification. Task status remains
+Daemon-owned; no declared Verification command was run, and no worktree commit,
+push or pull request was made.
+
+- A completed gate with a Late Dependency: `QAGateClosure` parses manifest
+  bytes with the existing parser and returns a sorted, deduplicated transitive
+  closure without reading Task files. Reopen compares the working-tree closure
+  against the manifest at the oldest `HEAD`-reachable addition of the newest
+  QA Report. Both Git commands use the checkout Git root and command context.
+  The built-binary regression observes exit 0, QA Task `pending`, the new
+  invalidation line, unchanged report and dependency bytes, and no Run Database.
+  The spec regression checks the exact record bytes, preserved prior Result
+  and file permissions. `ReopenGate` and its existing record remain unchanged.
+- Without a recording commit or Late Dependency: the existing healthy-gate
+  refusal remains exit 2 with the existing message and no mutation. New tests
+  cover an uncommitted newest report, an equal recorded closure, an absent or
+  unparsable recorded manifest, and a report resolving outside the Git root.
+  Another regression deletes and re-adds a report to prove the oldest addition
+  is used. The pre-write recheck re-derives the Late Dependency ids and refuses
+  if they change; a regression adds another completed dependency between
+  preflight and write and observes no QA Task mutation.
+- Existing reopen and spec expectations: existing test files are unchanged.
+  The full spec package and all existing reopen tests passed in focused checks.
+  The usage text names both reopen triggers. The Task Graph loader, implement,
+  settle, deliver, `_tasks.md` and other Task files were not changed.
+
+Focused checks (fresh in this turn):
+
+- Before implementation,
+  `GOCACHE=/private/tmp/roundfix-task04-cache rtk proxy go test ./internal/spec -run TestQAGateClosureFromManifestBytes -count=1`
+  failed to compile because `QAGateClosure` and
+  `ReopenGateForLateDependencies` were absent.
+- `GOCACHE=/private/tmp/roundfix-task04-cache rtk proxy go test -count=1 ./internal/spec`
+  exited 0, including the new closure and exact invalidation-record tests and
+  all existing spec tests.
+- `GOCACHE=/private/tmp/roundfix-task04-cache rtk proxy go test -count=1 ./internal/cli -run 'Test(Reopen|DeriveReopen)'`
+  exited 0 after the final code and test edits, including both built-binary
+  regressions, every existing reopen test, and the added Git-proof/recheck
+  cases.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+
+The declared Verification and Task settlement are left to the Daemon. No
+follow-up work was identified for this slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261007T095139Z_d22b1ce63abf526a`
+- Source commit: `f63515b68e2009a62001b4c728b71ef4128f3d2b`
