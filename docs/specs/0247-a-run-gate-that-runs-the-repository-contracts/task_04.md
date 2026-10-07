@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0247-a-run-gate-that-runs-the-repository-contracts
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

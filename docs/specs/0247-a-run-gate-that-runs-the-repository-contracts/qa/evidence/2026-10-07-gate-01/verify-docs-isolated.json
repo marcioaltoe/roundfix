@@ -1,0 +1,11 @@
+{
+  "command": [
+    "make",
+    "verify-docs"
+  ],
+  "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-docs-9mn73bve/repo",
+  "head": "04dabe7cac344091e1299b861c84a8fcda068a40",
+  "exit": 0,
+  "seconds": 58.019773457956035,
+  "final_status": ""
+}

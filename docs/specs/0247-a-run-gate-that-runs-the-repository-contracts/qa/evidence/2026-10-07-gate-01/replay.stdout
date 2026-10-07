@@ -1,0 +1,55 @@
+go vet ./...
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=0a92a880' -X 'roundfix/internal/app.BuildTime=2026-10-07 18:40:11 -0300'" -o bin/roundfix ./cmd/roundfix
+?   	roundfix/cmd/roundfix	[no test files]
+?   	roundfix/cmd/verify-select	[no test files]
+ok  	roundfix/internal/agent	4.865s
+ok  	roundfix/internal/app	0.056s
+ok  	roundfix/internal/authorization	0.860s
+ok  	roundfix/internal/codex	0.059s
+ok  	roundfix/internal/config	2.275s
+ok  	roundfix/internal/daemon	64.873s
+ok  	roundfix/internal/delivery	4.727s
+?   	roundfix/internal/docscontract	[no test files]
+ok  	roundfix/internal/gittest	1.158s
+ok  	roundfix/internal/judge	1.817s
+ok  	roundfix/internal/lighttier	0.172s
+ok  	roundfix/internal/mdtree	0.057s
+ok  	roundfix/internal/notify	0.076s
+ok  	roundfix/internal/openrouterkey	0.060s
+ok  	roundfix/internal/preflight	1.419s
+ok  	roundfix/internal/releaseplan	0.071s
+ok  	roundfix/internal/reviewsource	0.063s
+ok  	roundfix/internal/reviewsource/coderabbit	0.100s
+ok  	roundfix/internal/rounds	0.156s
+ok  	roundfix/internal/runcause	0.266s
+ok  	roundfix/internal/runevent	0.068s
+ok  	roundfix/internal/skillhash	0.065s
+ok  	roundfix/internal/spec	36.661s
+ok  	roundfix/internal/specaudit	4.445s
+ok  	roundfix/internal/speccheck	36.703s
+ok  	roundfix/internal/store	10.255s
+ok  	roundfix/internal/suiteguard	2.082s
+ok  	roundfix/internal/suiteguardcontract	0.192s
+ok  	roundfix/internal/testfixture	1.612s
+ok  	roundfix/internal/testwait	0.692s
+ok  	roundfix/internal/tui	0.490s
+ok  	roundfix/internal/verifyselect	7.210s
+ok  	roundfix/internal/watch	0.094s
+ok  	roundfix/internal/worktree	42.080s
+ok  	roundfix/internal/cli	166.429s
+ok  	roundfix/internal/docscontract	1.201s
+--- FAIL: TestEverySpawningPackageInstallsTheSuiteGuard (0.20s)
+    suiteguard_repocontract_test.go:16: suite guard installation contract failed:
+        internal/config spawns a process but is not enumerated as guarded
+FAIL
+suiteguard: guard cost: measured 2476 paths; fingerprint took 83.779625ms before and 59.645417ms after
+FAIL	roundfix/internal/config	0.559s
+ok  	roundfix/internal/speccheck	1.220s
+--- FAIL: TestEverySpawningPackageInstallsTheSuiteGuard (0.14s)
+    --- FAIL: TestEverySpawningPackageInstallsTheSuiteGuard/repository_installations (0.14s)
+        installation_repocontract_test.go:60: suite guard installation contract failed:
+            internal/config spawns a process but is not enumerated as guarded
+FAIL
+suiteguard: guard cost: measured 2476 paths; fingerprint took 89.325917ms before and 54.607292ms after
+FAIL	roundfix/internal/suiteguard	0.524s
+FAIL

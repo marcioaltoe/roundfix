@@ -1,0 +1,2 @@
+237. 2026-10-07 — 0245: CI found go list stderr download lines parsed as packages (fixed 794b8612, proved with empty GOMODCACHE). Review F1 false (NumFields counts names; fixture test passes); dismissed; retry.
+238. 2026-10-07 — 0245 CI: suiteguard installation contract refused internal/config (task_05 test spawns). Added TestMain + enumeration; regeneration test ran 4x with empty GOCACHE (196s) -> once with shared cache (46s). verify + verify-docs ok; pushed; retry.

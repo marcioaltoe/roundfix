@@ -1,0 +1,27 @@
+{
+  "verdict": "pass",
+  "rows": 15,
+  "pass": 14,
+  "blocked_environment": 1,
+  "blocked_finding": 0,
+  "blocked_declared": 0,
+  "pending": 0,
+  "skipped": 0,
+  "declared_requirements": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    10
+  ],
+  "all_inputs_declared": true,
+  "all_required_evidence_exists": true,
+  "seeded_auditor_preserved": true,
+  "evidence_snapshots_written": false,
+  "seeded_carry_forward_preserved": true,
+  "run_head_unchanged": true,
+  "tracked_source_delta": []
+}

@@ -1,0 +1,55 @@
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=04dabe7c' -X 'roundfix/internal/app.BuildTime=2026-10-07 18:38:17 -0300'" -o bin/roundfix ./cmd/roundfix
+go test -count=1 -tags docscontract ./internal/docscontract
+ok  	roundfix/internal/docscontract	1.333s
+go test -count=1 -tags repocontract -run '^(TestMeasuredSanctionedOwnershipMatchesRecords|TestDeclaredStepRegenerationAndFrozenBoundaries|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical|TestRepositoryGateRunsTheAnalyzer|TestEverySpawningPackageInstallsTheSuiteGuard|TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows|TestCleanupHistoricalGrantEvidence|TestEveryBoundedPathIsGoverned)$' ./...
+?   	roundfix/cmd/roundfix	[no test files]
+?   	roundfix/cmd/verify-select	[no test files]
+ok  	roundfix/internal/agent	0.680s
+ok  	roundfix/internal/app	0.446s
+ok  	roundfix/internal/authorization	0.730s
+ok  	roundfix/internal/baseline	45.670s
+ok  	roundfix/internal/baselineacp	0.507s
+ok  	roundfix/internal/cli	0.977s
+ok  	roundfix/internal/codex	0.461s
+ok  	roundfix/internal/config	0.851s
+ok  	roundfix/internal/daemon	0.848s
+ok  	roundfix/internal/delivery	0.565s [no tests to run]
+ok  	roundfix/internal/docscontract	0.594s
+ok  	roundfix/internal/gittest	1.358s
+ok  	roundfix/internal/judge	0.253s [no tests to run]
+ok  	roundfix/internal/lighttier	0.385s [no tests to run]
+ok  	roundfix/internal/mdtree	0.195s [no tests to run]
+ok  	roundfix/internal/notify	0.467s
+ok  	roundfix/internal/openrouterkey	0.197s [no tests to run]
+ok  	roundfix/internal/preflight	1.176s
+ok  	roundfix/internal/releaseplan	0.572s
+ok  	roundfix/internal/reviewsource	0.628s
+ok  	roundfix/internal/reviewsource/coderabbit	0.677s
+ok  	roundfix/internal/rounds	0.793s
+ok  	roundfix/internal/runcause	0.250s [no tests to run]
+ok  	roundfix/internal/runevent	0.645s
+ok  	roundfix/internal/skillhash	0.614s
+ok  	roundfix/internal/spec	1.133s
+ok  	roundfix/internal/specaudit	1.089s
+ok  	roundfix/internal/speccheck	2.415s
+ok  	roundfix/internal/store	1.141s
+ok  	roundfix/internal/suiteguard	1.112s
+ok  	roundfix/internal/suiteguardcontract	0.191s [no tests to run]
+ok  	roundfix/internal/testfixture	0.191s [no tests to run]
+ok  	roundfix/internal/testwait	0.197s [no tests to run]
+ok  	roundfix/internal/tui	0.538s
+ok  	roundfix/internal/verifyselect	1.028s
+ok  	roundfix/internal/watch	0.551s
+ok  	roundfix/internal/worktree	0.929s
+ok  	roundfix/skills	15.787s
+go test -count=1 -parallel=1 -tags docscontract ./internal/docscontract -run '^TestCheckCorpusBudget$'
+ok  	roundfix/internal/docscontract	0.372s
+bin/roundfix spec check
+Spec 0247-a-run-gate-that-runs-the-repository-contracts
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  vocabulary documentation detector: missing docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/_techspec.md Vocabulary Contract
+  SC-REF-UNRESOLVED: missing docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/references/_index.md

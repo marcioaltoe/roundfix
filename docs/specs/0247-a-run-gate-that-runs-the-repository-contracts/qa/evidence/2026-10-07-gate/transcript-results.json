@@ -1,0 +1,195 @@
+{
+  "base": {
+    "command": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-6ezdb2rp/repo",
+    "exit": 0,
+    "seconds": 0.005606624996289611
+  },
+  "transcript1-branch": {
+    "command": [
+      "git",
+      "checkout",
+      "-B",
+      "test/transcript1",
+      "186248f2f7e2763bab28670a9ce8b427e30c32cf"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-6ezdb2rp/repo",
+    "exit": 0,
+    "seconds": 0.1163795409956947
+  },
+  "transcript1-add": {
+    "command": [
+      "git",
+      "add",
+      "docs/user-guide/release-runbook.md"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-6ezdb2rp/repo",
+    "exit": 0,
+    "seconds": 0.11931887501850724
+  },
+  "transcript1-commit": {
+    "command": [
+      "git",
+      "-c",
+      "core.hooksPath=/dev/null",
+      "commit",
+      "-m",
+      "test: QA transcript1"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-6ezdb2rp/repo",
+    "exit": 0,
+    "seconds": 0.17535912501625717
+  },
+  "transcript1-state": {
+    "command": [
+      "git",
+      "show",
+      "--stat",
+      "--oneline",
+      "HEAD"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-6ezdb2rp/repo",
+    "exit": 0,
+    "seconds": 0.006694999989122152
+  },
+  "transcript1": {
+    "command": [
+      "go",
+      "run",
+      "-buildvcs=false",
+      "./cmd/verify-select",
+      "-contracts",
+      "-base",
+      "186248f2f7e2763bab28670a9ce8b427e30c32cf"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-6ezdb2rp/repo",
+    "exit": 0,
+    "seconds": 0.468206999998074
+  },
+  "transcript3-branch": {
+    "command": [
+      "git",
+      "checkout",
+      "-B",
+      "test/transcript3",
+      "186248f2f7e2763bab28670a9ce8b427e30c32cf"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-6ezdb2rp/repo",
+    "exit": 0,
+    "seconds": 0.10955941601423547
+  },
+  "transcript3-add": {
+    "command": [
+      "git",
+      "add",
+      ".agents/skills/roundfix/SKILL.md"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-6ezdb2rp/repo",
+    "exit": 0,
+    "seconds": 0.018534667033236474
+  },
+  "transcript3-commit": {
+    "command": [
+      "git",
+      "-c",
+      "core.hooksPath=/dev/null",
+      "commit",
+      "-m",
+      "test: QA transcript3"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-6ezdb2rp/repo",
+    "exit": 0,
+    "seconds": 0.028587249980773777
+  },
+  "transcript3-state": {
+    "command": [
+      "git",
+      "show",
+      "--stat",
+      "--oneline",
+      "HEAD"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-6ezdb2rp/repo",
+    "exit": 0,
+    "seconds": 0.005920541996601969
+  },
+  "transcript3": {
+    "command": [
+      "go",
+      "run",
+      "-buildvcs=false",
+      "./cmd/verify-select",
+      "-contracts",
+      "-base",
+      "186248f2f7e2763bab28670a9ce8b427e30c32cf"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-6ezdb2rp/repo",
+    "exit": 0,
+    "seconds": 0.1890120420139283
+  },
+  "transcript2-branch": {
+    "command": [
+      "git",
+      "checkout",
+      "-B",
+      "test/transcript2",
+      "186248f2f7e2763bab28670a9ce8b427e30c32cf"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-6ezdb2rp/repo",
+    "exit": 0,
+    "seconds": 0.023505249992012978
+  },
+  "transcript2-add": {
+    "command": [
+      "git",
+      "add",
+      "internal/suiteguard/installation_repocontract_test.go"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-6ezdb2rp/repo",
+    "exit": 0,
+    "seconds": 0.017605125030968338
+  },
+  "transcript2-commit": {
+    "command": [
+      "git",
+      "-c",
+      "core.hooksPath=/dev/null",
+      "commit",
+      "-m",
+      "test: QA transcript2"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-6ezdb2rp/repo",
+    "exit": 0,
+    "seconds": 0.029867750010453165
+  },
+  "transcript2-state": {
+    "command": [
+      "git",
+      "show",
+      "--stat",
+      "--oneline",
+      "HEAD"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-6ezdb2rp/repo",
+    "exit": 0,
+    "seconds": 0.005829209054354578
+  },
+  "transcript2": {
+    "command": [
+      "go",
+      "run",
+      "-buildvcs=false",
+      "./cmd/verify-select",
+      "-contracts",
+      "-base",
+      "186248f2f7e2763bab28670a9ce8b427e30c32cf"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-6ezdb2rp/repo",
+    "exit": 1,
+    "seconds": 0.06665220798458904
+  }
+}

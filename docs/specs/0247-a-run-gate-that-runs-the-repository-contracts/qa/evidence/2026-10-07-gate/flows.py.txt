@@ -1,0 +1,30 @@
+import subprocess,pathlib,tempfile,os,time,json,re
+root=pathlib.Path.cwd(); temp=pathlib.Path(tempfile.mkdtemp(prefix='0247-qa-')); clone=temp/'repo'; logs=temp/'logs';logs.mkdir()
+env=os.environ.copy();env['GOCACHE']=str(root/'.gocache');env['GOFLAGS']='-count=1'
+results={};print('scratch:',temp,flush=True)
+def run(name,args,cwd=None,check=False):
+ start=time.monotonic();p=subprocess.run(args,cwd=cwd or clone,env=env,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+ duration=time.monotonic()-start
+ (logs/(name+'.stdout')).write_text(p.stdout);(logs/(name+'.stderr')).write_text(p.stderr)
+ data={'command':args,'cwd':str(cwd or clone),'exit':p.returncode,'seconds':duration};results[name]=data
+ (logs/'results.json').write_text(json.dumps(results,indent=2));print(name,p.returncode,round(duration,3),flush=True)
+ if check and p.returncode:raise RuntimeError(name+': '+p.stderr[-1500:])
+ return p
+run('clone',['git','clone','--no-hardlinks',str(root),str(clone)],cwd=temp,check=True)
+run('config-sign',['git','config','commit.gpgsign','false'],check=True);run('config-name',['git','config','user.name','QA scratch'],check=True);run('config-mail',['git','config','user.email','qa@example.invalid'],check=True)
+base=run('base',['git','rev-parse','HEAD'],check=True).stdout.strip()
+def branch(name,ref=base):run(name+'-branch',['git','checkout','-B','test/'+name,ref],check=True)
+def commit(name,paths):
+ run(name+'-add',['git','add',*paths],check=True);run(name+'-commit',['git','-c','core.hooksPath=/dev/null','commit','-m','test: QA '+name],check=True);run(name+'-state',['git','show','--stat','--oneline','HEAD'],check=True)
+def append(path,text):
+ p=clone/path;p.write_text(p.read_text()+text)
+for name,path in [('transcript1','docs/user-guide/README.md'),('transcript3','.agents/skills/roundfix/SKILL.md')]:
+ branch(name)
+ if not (clone/path).exists():path='docs/user-guide/release-runbook.md'
+ append(path,'\n<!-- QA isolated selection probe -->\n');commit(name,[path]);p=run(name,['go','run','-buildvcs=false','./cmd/verify-select','-contracts','-base',base])
+branch('transcript2');path='internal/suiteguard/installation_repocontract_test.go';p=clone/path;p.write_text(p.read_text().replace('//verify:always','//verify:sometimes'));commit('transcript2',[path]);run('transcript2',['go','run','-buildvcs=false','./cmd/verify-select','-contracts','-base',base])
+branch('timing');append('internal/config/config.go','\n// QA typical core change.\n');commit('timing',['internal/config/config.go'])
+run('timing',['make','verify-changed','VERIFY_BASE='+base]);run('timing-contracts',['make','verify-changed-contracts','VERIFY_BASE='+base])
+branch('replay');path='internal/suiteguardcontract/contract.go';p=clone/path;assert '\t"internal/config",' in p.read_text();p.write_text(p.read_text().replace('\t"internal/config",\n',''));append('internal/config/config.go','\n// QA suiteguard replay.\n');commit('replay',[path,'internal/config/config.go']);run('replay',['make','verify-changed','VERIFY_BASE='+base])
+branch('baseline-replay','59548f13');oldbase=run('oldbase',['git','rev-parse','HEAD'],check=True).stdout.strip();path='internal/suiteguardcontract/contract.go';p=clone/path;p.write_text(p.read_text().replace('\t"internal/config",\n',''));append('internal/config/config.go','\n// QA suiteguard baseline replay.\n');commit('baseline-replay',[path,'internal/config/config.go']);run('baseline-replay',['make','verify-changed','VERIFY_BASE='+oldbase])
+print('DONE '+str(logs),flush=True)

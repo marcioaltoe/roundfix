@@ -1,0 +1,154 @@
+{
+  "task_01": {
+    "commit": "7743dcf928c0b1c6d39d98fdde6ae6eee78ee93e",
+    "declared": [
+      "docs/adr/0252-the-selective-gate-runs-the-repository-contracts-a-change-makes-relevant.md",
+      "docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/task_01.md",
+      "internal/suiteguardcontract/repository_gate_test.go",
+      "internal/verifyselect/contracts.go",
+      "internal/verifyselect/contracts_test.go",
+      "internal/verifyselect/verifyselect.go",
+      "internal/verifyselect/verifyselect_test.go"
+    ],
+    "actual": [
+      "docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/task_01.md",
+      "internal/verifyselect/contracts.go",
+      "internal/verifyselect/contracts_test.go",
+      "internal/verifyselect/verifyselect.go"
+    ],
+    "undeclared": [],
+    "governed_paths": [],
+    "bodies": []
+  },
+  "task_02": {
+    "commit": "186248f2f7e2763bab28670a9ce8b427e30c32cf",
+    "declared": [
+      "Makefile",
+      "docs/adr/0252-the-selective-gate-runs-the-repository-contracts-a-change-makes-relevant.md",
+      "docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/task_02.md",
+      "internal/baseline/derived_regeneration_repocontract_test.go",
+      "internal/baseline/repository_gate_repocontract_test.go",
+      "internal/config/regeneration_declared_test.go",
+      "internal/docscontract/command_documentation_test.go",
+      "internal/docscontract/commands_index_test.go",
+      "internal/docscontract/corpus_test.go",
+      "internal/docscontract/model_selection_test.go",
+      "internal/docscontract/publicdocs_test.go",
+      "internal/docscontract/release_step_test.go",
+      "internal/docscontract/secondbrain_export_test.go",
+      "internal/docscontract/user_guide_contract_test.go",
+      "internal/speccheck/governed_repocontract_test.go",
+      "internal/suiteguard/installation_repocontract_test.go",
+      "internal/suiteguardcontract/repository_gate_test.go",
+      "internal/verifyselect/contracts_repository_test.go",
+      "internal/verifyselect/verifyselect_test.go",
+      "skills/owned_skill_edit_repocontract_test.go"
+    ],
+    "actual": [
+      "Makefile",
+      "docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/task_02.md",
+      "internal/baseline/derived_regeneration_repocontract_test.go",
+      "internal/baseline/repository_gate_repocontract_test.go",
+      "internal/config/regeneration_declared_test.go",
+      "internal/docscontract/command_documentation_test.go",
+      "internal/docscontract/commands_index_test.go",
+      "internal/docscontract/corpus_test.go",
+      "internal/docscontract/model_selection_test.go",
+      "internal/docscontract/publicdocs_test.go",
+      "internal/docscontract/release_step_test.go",
+      "internal/docscontract/secondbrain_export_test.go",
+      "internal/docscontract/user_guide_contract_test.go",
+      "internal/speccheck/governed_repocontract_test.go",
+      "internal/suiteguard/installation_repocontract_test.go",
+      "internal/verifyselect/contracts_repository_test.go",
+      "skills/owned_skill_edit_repocontract_test.go"
+    ],
+    "undeclared": [],
+    "governed_paths": [
+      "Makefile",
+      "internal/baseline/derived_regeneration_repocontract_test.go",
+      "internal/docscontract/publicdocs_test.go",
+      "internal/speccheck/governed_repocontract_test.go",
+      "skills/owned_skill_edit_repocontract_test.go"
+    ],
+    "bodies": [
+      {
+        "path": "internal/baseline/derived_regeneration_repocontract_test.go",
+        "package_and_body_identical": true
+      },
+      {
+        "path": "internal/baseline/repository_gate_repocontract_test.go",
+        "package_and_body_identical": true
+      },
+      {
+        "path": "internal/config/regeneration_declared_test.go",
+        "package_and_body_identical": true
+      },
+      {
+        "path": "internal/docscontract/command_documentation_test.go",
+        "package_and_body_identical": true
+      },
+      {
+        "path": "internal/docscontract/commands_index_test.go",
+        "package_and_body_identical": true
+      },
+      {
+        "path": "internal/docscontract/corpus_test.go",
+        "package_and_body_identical": true
+      },
+      {
+        "path": "internal/docscontract/model_selection_test.go",
+        "package_and_body_identical": true
+      },
+      {
+        "path": "internal/docscontract/publicdocs_test.go",
+        "package_and_body_identical": true
+      },
+      {
+        "path": "internal/docscontract/release_step_test.go",
+        "package_and_body_identical": true
+      },
+      {
+        "path": "internal/docscontract/secondbrain_export_test.go",
+        "package_and_body_identical": true
+      },
+      {
+        "path": "internal/docscontract/user_guide_contract_test.go",
+        "package_and_body_identical": true
+      },
+      {
+        "path": "internal/speccheck/governed_repocontract_test.go",
+        "package_and_body_identical": true
+      },
+      {
+        "path": "internal/suiteguard/installation_repocontract_test.go",
+        "package_and_body_identical": true
+      },
+      {
+        "path": "skills/owned_skill_edit_repocontract_test.go",
+        "package_and_body_identical": true
+      }
+    ]
+  },
+  "task_03": {
+    "commit": "81da1768f95f4e0f6e2e06d2519f2ba6678e83fb",
+    "declared": [
+      ".agents/skills/domain-modeling/SKILL.md",
+      "CONTEXT.md",
+      "docs/adr/0252-the-selective-gate-runs-the-repository-contracts-a-change-makes-relevant.md",
+      "docs/agents/specific-repository.md",
+      "docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/task_03.md"
+    ],
+    "actual": [
+      "CONTEXT.md",
+      "docs/agents/specific-repository.md",
+      "docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/task_03.md"
+    ],
+    "undeclared": [],
+    "governed_paths": [
+      "docs/agents/specific-repository.md"
+    ],
+    "bodies": []
+  },
+  "errors": []
+}

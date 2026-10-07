@@ -1,0 +1,395 @@
+=== RUN   TestRepositoryContractTestsDeclareTheirRelevance
+=== PAUSE TestRepositoryContractTestsDeclareTheirRelevance
+=== RUN   TestVerifyChangedRunsTheSelectedContracts
+=== PAUSE TestVerifyChangedRunsTheSelectedContracts
+=== RUN   TestContractDiscoveryReadsTagsAndDirectives
+=== PAUSE TestContractDiscoveryReadsTagsAndDirectives
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations
+=== RUN   TestContractDiscoveryValidatesBuildConstraints
+=== PAUSE TestContractDiscoveryValidatesBuildConstraints
+=== RUN   TestContractSelectionFollowsChangedPaths
+=== PAUSE TestContractSelectionFollowsChangedPaths
+=== RUN   TestContractSelectionFailsSafeWithoutAChangeList
+=== RUN   TestContractSelectionFailsSafeWithoutAChangeList/empty_repository_fails_safe
+--- PASS: TestContractSelectionFailsSafeWithoutAChangeList (0.06s)
+    --- PASS: TestContractSelectionFailsSafeWithoutAChangeList/empty_repository_fails_safe (0.00s)
+=== RUN   TestContractInvocationsSortAndDeduplicate
+=== PAUSE TestContractInvocationsSortAndDeduplicate
+=== RUN   TestRunPrintsContractInvocations
+=== RUN   TestRunPrintsContractInvocations/malformed_directive
+=== RUN   TestRunPrintsContractInvocations/conflict_-packages_core
+=== RUN   TestRunPrintsContractInvocations/conflict_-packages=
+=== RUN   TestRunPrintsContractInvocations/conflict_-baseline-cli-pattern
+=== RUN   TestRunPrintsContractInvocations/conflict_-baseline-cli-pattern=false
+--- PASS: TestRunPrintsContractInvocations (0.09s)
+    --- PASS: TestRunPrintsContractInvocations/malformed_directive (0.00s)
+    --- PASS: TestRunPrintsContractInvocations/conflict_-packages_core (0.00s)
+    --- PASS: TestRunPrintsContractInvocations/conflict_-packages= (0.00s)
+    --- PASS: TestRunPrintsContractInvocations/conflict_-baseline-cli-pattern (0.00s)
+    --- PASS: TestRunPrintsContractInvocations/conflict_-baseline-cli-pattern=false (0.00s)
+=== RUN   TestClassifyPath
+=== PAUSE TestClassifyPath
+=== RUN   TestDocumentationSelectsBothSets
+=== PAUSE TestDocumentationSelectsBothSets
+=== RUN   TestRootMarkdownSelectsBothSets
+=== PAUSE TestRootMarkdownSelectsBothSets
+=== RUN   TestFixtureChangesSelectTheOwningSet
+=== PAUSE TestFixtureChangesSelectTheOwningSet
+=== RUN   TestUnknownNonDocumentationPathsFailSafe
+=== PAUSE TestUnknownNonDocumentationPathsFailSafe
+=== RUN   TestSelectClassifiesFixtureChangeSets
+=== PAUSE TestSelectClassifiesFixtureChangeSets
+=== RUN   TestSelectListsCommittedUnstagedAndUntrackedPaths
+--- PASS: TestSelectListsCommittedUnstagedAndUntrackedPaths (0.09s)
+=== RUN   TestSelectListsStagedPaths
+--- PASS: TestSelectListsStagedPaths (0.08s)
+=== RUN   TestSelectFailsSafeToBothSets
+=== RUN   TestSelectFailsSafeToBothSets/unresolvable_base
+=== RUN   TestSelectFailsSafeToBothSets/failing_Git_invocation
+--- PASS: TestSelectFailsSafeToBothSets (0.05s)
+    --- PASS: TestSelectFailsSafeToBothSets/unresolvable_base (0.05s)
+    --- PASS: TestSelectFailsSafeToBothSets/failing_Git_invocation (0.00s)
+=== RUN   TestPackagesAreAPartition
+--- PASS: TestPackagesAreAPartition (0.03s)
+=== RUN   TestBaselineSelectionAlsoRunsTheCoreSet
+=== RUN   TestBaselineSelectionAlsoRunsTheCoreSet/package_import
+=== RUN   TestBaselineSelectionAlsoRunsTheCoreSet/test_import
+=== RUN   TestBaselineSelectionAlsoRunsTheCoreSet/no_core_importer
+--- PASS: TestBaselineSelectionAlsoRunsTheCoreSet (0.27s)
+    --- PASS: TestBaselineSelectionAlsoRunsTheCoreSet/package_import (0.09s)
+    --- PASS: TestBaselineSelectionAlsoRunsTheCoreSet/test_import (0.09s)
+    --- PASS: TestBaselineSelectionAlsoRunsTheCoreSet/no_core_importer (0.09s)
+=== RUN   TestBaselineCLITestPatternIsDerived
+--- PASS: TestBaselineCLITestPatternIsDerived (0.04s)
+=== RUN   TestPartitionCoversEveryTestExactlyOnce
+=== RUN   TestPartitionCoversEveryTestExactlyOnce/tree_satisfies_the_partition
+=== RUN   TestPartitionCoversEveryTestExactlyOnce/package_omitted_from_both_sets_is_named
+=== RUN   TestPartitionCoversEveryTestExactlyOnce/package_selected_by_both_sets_is_named
+--- PASS: TestPartitionCoversEveryTestExactlyOnce (0.48s)
+    --- PASS: TestPartitionCoversEveryTestExactlyOnce/tree_satisfies_the_partition (0.00s)
+    --- PASS: TestPartitionCoversEveryTestExactlyOnce/package_omitted_from_both_sets_is_named (0.00s)
+    --- PASS: TestPartitionCoversEveryTestExactlyOnce/package_selected_by_both_sets_is_named (0.00s)
+=== RUN   TestPartitionFollowsTheMakefileRecipes
+=== RUN   TestPartitionFollowsTheMakefileRecipes/tree_recipes_partition_every_top-level_CLI_test
+=== RUN   TestPartitionFollowsTheMakefileRecipes/drifted_recipe_pattern_breaks_the_partition
+=== RUN   TestPartitionFollowsTheMakefileRecipes/overlapping_recipes_name_the_duplicated_test
+--- PASS: TestPartitionFollowsTheMakefileRecipes (1.51s)
+    --- PASS: TestPartitionFollowsTheMakefileRecipes/tree_recipes_partition_every_top-level_CLI_test (0.16s)
+    --- PASS: TestPartitionFollowsTheMakefileRecipes/drifted_recipe_pattern_breaks_the_partition (0.15s)
+    --- PASS: TestPartitionFollowsTheMakefileRecipes/overlapping_recipes_name_the_duplicated_test (0.23s)
+=== RUN   TestRunPrintsRequestedDefinitions
+--- PASS: TestRunPrintsRequestedDefinitions (0.01s)
+=== CONT  TestRepositoryContractTestsDeclareTheirRelevance
+=== CONT  TestClassifyPath
+=== RUN   TestClassifyPath/Baseline_package
+=== PAUSE TestClassifyPath/Baseline_package
+=== CONT  TestFixtureChangesSelectTheOwningSet
+=== RUN   TestClassifyPath/Baseline_ACP_package
+=== PAUSE TestClassifyPath/Baseline_ACP_package
+=== CONT  TestRootMarkdownSelectsBothSets
+=== RUN   TestFixtureChangesSelectTheOwningSet/core_package_fixture
+=== CONT  TestDocumentationSelectsBothSets
+=== CONT  TestContractDiscoveryValidatesBuildConstraints
+=== RUN   TestContractDiscoveryValidatesBuildConstraints/docscontract_&&_!repocontract
+=== PAUSE TestContractDiscoveryValidatesBuildConstraints/docscontract_&&_!repocontract
+=== RUN   TestContractDiscoveryValidatesBuildConstraints/repocontract_&&_!docscontract
+=== CONT  TestContractDiscoveryReadsTagsAndDirectives
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/unknown/header
+=== RUN   TestClassifyPath/embedded_skill
+=== PAUSE TestClassifyPath/embedded_skill
+=== RUN   TestClassifyPath/canonical_skill
+=== PAUSE TestFixtureChangesSelectTheOwningSet/core_package_fixture
+=== CONT  TestContractInvocationsSortAndDeduplicate
+=== CONT  TestContractSelectionFollowsChangedPaths
+=== RUN   TestContractSelectionFollowsChangedPaths/empty
+=== PAUSE TestContractSelectionFollowsChangedPaths/empty
+=== RUN   TestContractSelectionFollowsChangedPaths/direct_package_file
+--- PASS: TestRootMarkdownSelectsBothSets (0.00s)
+--- PASS: TestDocumentationSelectsBothSets (0.00s)
+--- PASS: TestContractInvocationsSortAndDeduplicate (0.00s)
+=== PAUSE TestContractSelectionFollowsChangedPaths/direct_package_file
+=== RUN   TestContractSelectionFollowsChangedPaths/package_subdirectory
+=== CONT  TestSelectClassifiesFixtureChangeSets
+=== RUN   TestSelectClassifiesFixtureChangeSets/core_only
+=== PAUSE TestSelectClassifiesFixtureChangeSets/core_only
+=== RUN   TestSelectClassifiesFixtureChangeSets/Baseline_only
+=== PAUSE TestSelectClassifiesFixtureChangeSets/Baseline_only
+=== CONT  TestUnknownNonDocumentationPathsFailSafe
+--- PASS: TestUnknownNonDocumentationPathsFailSafe (0.00s)
+=== CONT  TestVerifyChangedRunsTheSelectedContracts
+=== PAUSE TestContractDiscoveryValidatesBuildConstraints/repocontract_&&_!docscontract
+=== RUN   TestContractDiscoveryValidatesBuildConstraints/integration
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/unknown/header
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/unknown/test
+=== PAUSE TestContractDiscoveryValidatesBuildConstraints/integration
+=== RUN   TestContractDiscoveryValidatesBuildConstraints/docscontract_||_repocontract
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/unknown/test
+=== RUN   TestFixtureChangesSelectTheOwningSet/Baseline_package_fixture
+=== PAUSE TestFixtureChangesSelectTheOwningSet/Baseline_package_fixture
+=== CONT  TestFixtureChangesSelectTheOwningSet/core_package_fixture
+=== PAUSE TestContractSelectionFollowsChangedPaths/package_subdirectory
+=== RUN   TestSelectClassifiesFixtureChangeSets/both_path_classes
+=== CONT  TestFixtureChangesSelectTheOwningSet/Baseline_package_fixture
+=== PAUSE TestSelectClassifiesFixtureChangeSets/both_path_classes
+=== RUN   TestContractSelectionFollowsChangedPaths/relevant_package
+--- PASS: TestFixtureChangesSelectTheOwningSet (0.00s)
+    --- PASS: TestFixtureChangesSelectTheOwningSet/core_package_fixture (0.00s)
+    --- PASS: TestFixtureChangesSelectTheOwningSet/Baseline_package_fixture (0.00s)
+=== PAUSE TestContractDiscoveryValidatesBuildConstraints/docscontract_||_repocontract
+=== RUN   TestVerifyChangedRunsTheSelectedContracts/ordered_invocations
+=== RUN   TestContractDiscoveryValidatesBuildConstraints/docscontract_&&_repocontract
+=== PAUSE TestClassifyPath/canonical_skill
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/empty_class/header
+=== PAUSE TestContractDiscoveryValidatesBuildConstraints/docscontract_&&_repocontract
+=== PAUSE TestContractSelectionFollowsChangedPaths/relevant_package
+=== RUN   TestContractDiscoveryValidatesBuildConstraints/!docscontract
+=== RUN   TestContractSelectionFollowsChangedPaths/directory_pattern
+=== RUN   TestSelectClassifiesFixtureChangeSets/module_file
+=== PAUSE TestContractSelectionFollowsChangedPaths/directory_pattern
+=== PAUSE TestSelectClassifiesFixtureChangeSets/module_file
+=== RUN   TestContractSelectionFollowsChangedPaths/glob
+=== PAUSE TestContractSelectionFollowsChangedPaths/glob
+=== RUN   TestContractSelectionFollowsChangedPaths/glob_subdirectory
+=== RUN   TestSelectClassifiesFixtureChangeSets/documentation_only
+=== PAUSE TestContractSelectionFollowsChangedPaths/glob_subdirectory
+=== PAUSE TestSelectClassifiesFixtureChangeSets/documentation_only
+=== RUN   TestContractSelectionFollowsChangedPaths/directory_sibling
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/empty_class/header
+=== RUN   TestClassifyPath/Baseline_CLI_source
+=== PAUSE TestContractSelectionFollowsChangedPaths/directory_sibling
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/empty_class/test
+=== PAUSE TestClassifyPath/Baseline_CLI_source
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/empty_class/test
+=== RUN   TestContractSelectionFollowsChangedPaths/duplicate_paths
+=== RUN   TestClassifyPath/Baseline_CLI_test
+=== PAUSE TestContractSelectionFollowsChangedPaths/duplicate_paths
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/explicit_package/header
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/explicit_package/header
+=== RUN   TestContractSelectionFollowsChangedPaths/go.mod
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/explicit_package/test
+=== PAUSE TestClassifyPath/Baseline_CLI_test
+=== RUN   TestClassifyPath/module_manifest
+=== CONT  TestSelectClassifiesFixtureChangeSets/documentation_only
+=== PAUSE TestClassifyPath/module_manifest
+=== CONT  TestSelectClassifiesFixtureChangeSets/both_path_classes
+=== CONT  TestSelectClassifiesFixtureChangeSets/Baseline_only
+=== PAUSE TestContractDiscoveryValidatesBuildConstraints/!docscontract
+=== CONT  TestSelectClassifiesFixtureChangeSets/core_only
+=== PAUSE TestContractSelectionFollowsChangedPaths/go.mod
+=== RUN   TestContractDiscoveryValidatesBuildConstraints/!integration_||_docscontract
+=== RUN   TestContractSelectionFollowsChangedPaths/go.sum
+=== PAUSE TestContractDiscoveryValidatesBuildConstraints/!integration_||_docscontract
+=== PAUSE TestContractSelectionFollowsChangedPaths/go.sum
+=== RUN   TestContractDiscoveryValidatesBuildConstraints/docscontract_&&_linux
+=== RUN   TestClassifyPath/module_sums
+=== PAUSE TestContractDiscoveryValidatesBuildConstraints/docscontract_&&_linux
+=== CONT  TestSelectClassifiesFixtureChangeSets/module_file
+=== PAUSE TestClassifyPath/module_sums
+=== RUN   TestClassifyPath/Makefile
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/explicit_package/test
+=== RUN   TestContractDiscoveryValidatesBuildConstraints/legacy_and_testing_alias
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/missing_paths/header
+--- PASS: TestSelectClassifiesFixtureChangeSets (0.00s)
+    --- PASS: TestSelectClassifiesFixtureChangeSets/documentation_only (0.00s)
+    --- PASS: TestSelectClassifiesFixtureChangeSets/both_path_classes (0.00s)
+    --- PASS: TestSelectClassifiesFixtureChangeSets/Baseline_only (0.00s)
+    --- PASS: TestSelectClassifiesFixtureChangeSets/core_only (0.00s)
+    --- PASS: TestSelectClassifiesFixtureChangeSets/module_file (0.00s)
+=== RUN   TestContractSelectionFollowsChangedPaths/Makefile
+=== PAUSE TestClassifyPath/Makefile
+=== RUN   TestClassifyPath/core_source
+=== PAUSE TestClassifyPath/core_source
+=== RUN   TestClassifyPath/core_test
+=== PAUSE TestClassifyPath/core_test
+=== RUN   TestClassifyPath/Markdown_in_core_package
+=== PAUSE TestContractSelectionFollowsChangedPaths/Makefile
+=== PAUSE TestClassifyPath/Markdown_in_core_package
+=== CONT  TestContractSelectionFollowsChangedPaths/empty
+=== CONT  TestContractSelectionFollowsChangedPaths/glob_subdirectory
+=== CONT  TestContractSelectionFollowsChangedPaths/go.mod
+=== RUN   TestClassifyPath/documentation
+=== PAUSE TestClassifyPath/documentation
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/missing_paths/header
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/missing_paths/test
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/missing_paths/test
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/missing_reason/header
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/missing_reason/header
+=== CONT  TestContractSelectionFollowsChangedPaths/package_subdirectory
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/missing_reason/test
+=== CONT  TestContractSelectionFollowsChangedPaths/direct_package_file
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/missing_reason/test
+=== CONT  TestContractSelectionFollowsChangedPaths/glob
+=== CONT  TestContractSelectionFollowsChangedPaths/directory_sibling
+=== CONT  TestContractSelectionFollowsChangedPaths/directory_pattern
+=== CONT  TestContractSelectionFollowsChangedPaths/go.sum
+=== CONT  TestContractSelectionFollowsChangedPaths/relevant_package
+=== RUN   TestClassifyPath/root_Markdown
+=== PAUSE TestClassifyPath/root_Markdown
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/multiple/header
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/multiple/header
+=== CONT  TestContractSelectionFollowsChangedPaths/Makefile
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/multiple/test
+=== CONT  TestContractSelectionFollowsChangedPaths/duplicate_paths
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/multiple/test
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/path_/abs/header
+--- PASS: TestContractSelectionFollowsChangedPaths (0.00s)
+    --- PASS: TestContractSelectionFollowsChangedPaths/empty (0.00s)
+    --- PASS: TestContractSelectionFollowsChangedPaths/glob_subdirectory (0.00s)
+    --- PASS: TestContractSelectionFollowsChangedPaths/go.mod (0.00s)
+    --- PASS: TestContractSelectionFollowsChangedPaths/package_subdirectory (0.00s)
+    --- PASS: TestContractSelectionFollowsChangedPaths/direct_package_file (0.00s)
+    --- PASS: TestContractSelectionFollowsChangedPaths/glob (0.00s)
+    --- PASS: TestContractSelectionFollowsChangedPaths/directory_sibling (0.00s)
+    --- PASS: TestContractSelectionFollowsChangedPaths/directory_pattern (0.00s)
+    --- PASS: TestContractSelectionFollowsChangedPaths/go.sum (0.00s)
+    --- PASS: TestContractSelectionFollowsChangedPaths/relevant_package (0.00s)
+    --- PASS: TestContractSelectionFollowsChangedPaths/Makefile (0.00s)
+    --- PASS: TestContractSelectionFollowsChangedPaths/duplicate_paths (0.00s)
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/path_/abs/header
+=== RUN   TestClassifyPath/unrelated_data
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/path_/abs/test
+=== PAUSE TestClassifyPath/unrelated_data
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/path_/abs/test
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/path_./x/header
+=== CONT  TestClassifyPath/Baseline_package
+=== CONT  TestClassifyPath/Makefile
+=== CONT  TestClassifyPath/module_sums
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/path_./x/header
+=== CONT  TestClassifyPath/documentation
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/path_./x/test
+=== CONT  TestClassifyPath/core_source
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/path_./x/test
+=== CONT  TestClassifyPath/canonical_skill
+=== CONT  TestClassifyPath/Baseline_ACP_package
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/path_a/../b/header
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/path_a/../b/header
+=== CONT  TestClassifyPath/module_manifest
+=== CONT  TestClassifyPath/unrelated_data
+=== CONT  TestClassifyPath/embedded_skill
+=== CONT  TestClassifyPath/Baseline_CLI_test
+=== CONT  TestClassifyPath/core_test
+=== CONT  TestClassifyPath/Baseline_CLI_source
+=== CONT  TestClassifyPath/root_Markdown
+=== CONT  TestClassifyPath/Markdown_in_core_package
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/path_a/../b/test
+--- PASS: TestClassifyPath (0.00s)
+    --- PASS: TestClassifyPath/Baseline_package (0.00s)
+    --- PASS: TestClassifyPath/Makefile (0.00s)
+    --- PASS: TestClassifyPath/module_sums (0.00s)
+    --- PASS: TestClassifyPath/documentation (0.00s)
+    --- PASS: TestClassifyPath/core_source (0.00s)
+    --- PASS: TestClassifyPath/canonical_skill (0.00s)
+    --- PASS: TestClassifyPath/Baseline_ACP_package (0.00s)
+    --- PASS: TestClassifyPath/module_manifest (0.00s)
+    --- PASS: TestClassifyPath/unrelated_data (0.00s)
+    --- PASS: TestClassifyPath/Baseline_CLI_test (0.00s)
+    --- PASS: TestClassifyPath/embedded_skill (0.00s)
+    --- PASS: TestClassifyPath/core_test (0.00s)
+    --- PASS: TestClassifyPath/Baseline_CLI_source (0.00s)
+    --- PASS: TestClassifyPath/root_Markdown (0.00s)
+    --- PASS: TestClassifyPath/Markdown_in_core_package (0.00s)
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/path_a/../b/test
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/path_a/**/header
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/path_a/**/header
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/path_a/**/test
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/path_a/**/test
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/path_[/header
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/path_[/header
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/path_[/test
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/path_[/test
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/path_a\b/header
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/path_a\b/header
+=== RUN   TestContractDirectiveRefusesMalformedDeclarations/path_a\b/test
+=== PAUSE TestContractDirectiveRefusesMalformedDeclarations/path_a\b/test
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/unknown/header
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/path_/abs/header
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/multiple/test
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/path_a/**/header
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/missing_paths/header
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/multiple/header
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/missing_reason/test
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/missing_reason/header
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/path_./x/test
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/path_a/../b/test
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/missing_paths/test
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/path_a/../b/header
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/path_/abs/test
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/path_./x/header
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/path_a\b/test
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/empty_class/test
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/explicit_package/test
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/explicit_package/header
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/path_a\b/header
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/path_[/test
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/path_a/**/test
+--- PASS: TestContractDiscoveryReadsTagsAndDirectives (0.01s)
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/empty_class/header
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/unknown/test
+=== CONT  TestContractDirectiveRefusesMalformedDeclarations/path_[/header
+=== CONT  TestContractDiscoveryValidatesBuildConstraints/docscontract_&&_!repocontract
+=== CONT  TestContractDiscoveryValidatesBuildConstraints/docscontract_&&_repocontract
+=== CONT  TestContractDiscoveryValidatesBuildConstraints/docscontract_&&_linux
+=== CONT  TestContractDiscoveryValidatesBuildConstraints/!integration_||_docscontract
+=== CONT  TestContractDiscoveryValidatesBuildConstraints/!docscontract
+=== CONT  TestContractDiscoveryValidatesBuildConstraints/integration
+=== CONT  TestContractDiscoveryValidatesBuildConstraints/docscontract_||_repocontract
+=== CONT  TestContractDiscoveryValidatesBuildConstraints/repocontract_&&_!docscontract
+--- PASS: TestContractDirectiveRefusesMalformedDeclarations (0.00s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/path_/abs/header (0.00s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/path_a/**/header (0.00s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/multiple/header (0.00s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/multiple/test (0.00s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/missing_paths/header (0.00s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/unknown/header (0.00s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/missing_reason/test (0.00s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/missing_reason/header (0.00s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/missing_paths/test (0.00s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/path_./x/test (0.01s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/path_a/../b/test (0.00s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/path_a/../b/header (0.00s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/path_/abs/test (0.00s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/path_./x/header (0.00s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/explicit_package/test (0.00s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/path_a\b/test (0.01s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/empty_class/test (0.00s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/path_a\b/header (0.00s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/explicit_package/header (0.01s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/path_a/**/test (0.00s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/empty_class/header (0.00s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/unknown/test (0.00s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/path_[/test (0.01s)
+    --- PASS: TestContractDirectiveRefusesMalformedDeclarations/path_[/header (0.00s)
+--- PASS: TestContractDiscoveryValidatesBuildConstraints (0.00s)
+    --- PASS: TestContractDiscoveryValidatesBuildConstraints/legacy_and_testing_alias (0.00s)
+    --- PASS: TestContractDiscoveryValidatesBuildConstraints/docscontract_&&_!repocontract (0.00s)
+    --- PASS: TestContractDiscoveryValidatesBuildConstraints/docscontract_&&_repocontract (0.00s)
+    --- PASS: TestContractDiscoveryValidatesBuildConstraints/!docscontract (0.00s)
+    --- PASS: TestContractDiscoveryValidatesBuildConstraints/!integration_||_docscontract (0.00s)
+    --- PASS: TestContractDiscoveryValidatesBuildConstraints/docscontract_&&_linux (0.00s)
+    --- PASS: TestContractDiscoveryValidatesBuildConstraints/integration (0.00s)
+    --- PASS: TestContractDiscoveryValidatesBuildConstraints/docscontract_||_repocontract (0.00s)
+    --- PASS: TestContractDiscoveryValidatesBuildConstraints/repocontract_&&_!docscontract (0.00s)
+=== RUN   TestRepositoryContractTestsDeclareTheirRelevance/user_guide_selects_only_always
+=== RUN   TestRepositoryContractTestsDeclareTheirRelevance/owned_skill_selects_regeneration
+--- PASS: TestRepositoryContractTestsDeclareTheirRelevance (0.03s)
+    --- PASS: TestRepositoryContractTestsDeclareTheirRelevance/user_guide_selects_only_always (0.00s)
+    --- PASS: TestRepositoryContractTestsDeclareTheirRelevance/owned_skill_selects_regeneration (0.00s)
+=== RUN   TestVerifyChangedRunsTheSelectedContracts/first_test_failure_stops_execution
+=== RUN   TestVerifyChangedRunsTheSelectedContracts/selector_failure_prevents_execution
+=== RUN   TestVerifyChangedRunsTheSelectedContracts/empty_selection_runs_no_tests
+=== RUN   TestVerifyChangedRunsTheSelectedContracts/empty_package_list_runs_no_tests
+=== RUN   TestVerifyChangedRunsTheSelectedContracts/empty_sets_still_run_contracts
+=== RUN   TestVerifyChangedRunsTheSelectedContracts/contract_failure_fails_verify-changed_with_empty_sets
+--- PASS: TestVerifyChangedRunsTheSelectedContracts (1.66s)
+    --- PASS: TestVerifyChangedRunsTheSelectedContracts/ordered_invocations (0.50s)
+    --- PASS: TestVerifyChangedRunsTheSelectedContracts/first_test_failure_stops_execution (0.28s)
+    --- PASS: TestVerifyChangedRunsTheSelectedContracts/selector_failure_prevents_execution (0.24s)
+    --- PASS: TestVerifyChangedRunsTheSelectedContracts/empty_selection_runs_no_tests (0.10s)
+    --- PASS: TestVerifyChangedRunsTheSelectedContracts/empty_package_list_runs_no_tests (0.08s)
+    --- PASS: TestVerifyChangedRunsTheSelectedContracts/empty_sets_still_run_contracts (0.31s)
+    --- PASS: TestVerifyChangedRunsTheSelectedContracts/contract_failure_fails_verify-changed_with_empty_sets (0.15s)
+PASS
+suiteguard: guard cost: measured 2532 paths; fingerprint took 104.881709ms before and 75.09175ms after
+ok  	roundfix/internal/verifyselect	4.995s

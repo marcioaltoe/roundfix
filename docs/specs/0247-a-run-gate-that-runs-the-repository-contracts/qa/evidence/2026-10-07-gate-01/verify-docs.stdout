@@ -1,0 +1,87 @@
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=04dabe7c-dirty' -X 'roundfix/internal/app.BuildTime=2026-10-07 18:35:18 -0300'" -o bin/roundfix ./cmd/roundfix
+go test -count=1 -tags docscontract ./internal/docscontract
+ok  	roundfix/internal/docscontract	1.441s
+go test -count=1 -tags repocontract -run '^(TestMeasuredSanctionedOwnershipMatchesRecords|TestDeclaredStepRegenerationAndFrozenBoundaries|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical|TestRepositoryGateRunsTheAnalyzer|TestEverySpawningPackageInstallsTheSuiteGuard|TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows|TestCleanupHistoricalGrantEvidence|TestEveryBoundedPathIsGoverned)$' ./...
+?   	roundfix/cmd/roundfix	[no test files]
+?   	roundfix/cmd/verify-select	[no test files]
+ok  	roundfix/internal/agent	0.907s
+ok  	roundfix/internal/app	0.298s
+ok  	roundfix/internal/authorization	0.801s
+PASS
+suiteguard: guard cost: measured 2584 paths; fingerprint took 144.161125ms before and 240.962333ms after
+suiteguard: repository boundary violated:
+suiteguard: modified: docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/qa/evidence/2026-10-07-gate-01/results.json
+suiteguard: created: docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/qa/evidence/2026-10-07-gate-01/warm-contracts.stderr
+suiteguard: created: docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/qa/evidence/2026-10-07-gate-01/warm-contracts.stdout
+FAIL	roundfix/internal/baseline	94.974s
+ok  	roundfix/internal/baselineacp	0.370s
+ok  	roundfix/internal/cli	1.113s
+ok  	roundfix/internal/codex	0.392s
+ok  	roundfix/internal/config	0.981s
+ok  	roundfix/internal/daemon	0.862s
+ok  	roundfix/internal/delivery	0.733s [no tests to run]
+ok  	roundfix/internal/docscontract	0.430s
+ok  	roundfix/internal/gittest	0.894s
+ok  	roundfix/internal/judge	0.260s [no tests to run]
+ok  	roundfix/internal/lighttier	0.230s [no tests to run]
+ok  	roundfix/internal/mdtree	0.189s [no tests to run]
+ok  	roundfix/internal/notify	0.382s
+ok  	roundfix/internal/openrouterkey	0.186s [no tests to run]
+PASS
+suiteguard: guard cost: measured 2584 paths; fingerprint took 299.980709ms before and 458.556875ms after
+suiteguard: repository boundary violated:
+suiteguard: modified: docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/qa/evidence/2026-10-07-gate-01/results.json
+suiteguard: created: docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/qa/evidence/2026-10-07-gate-01/warm-contracts.stderr
+suiteguard: created: docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/qa/evidence/2026-10-07-gate-01/warm-contracts.stdout
+FAIL	roundfix/internal/preflight	3.012s
+ok  	roundfix/internal/releaseplan	0.391s
+ok  	roundfix/internal/reviewsource	0.345s
+ok  	roundfix/internal/reviewsource/coderabbit	0.727s
+ok  	roundfix/internal/rounds	0.454s
+ok  	roundfix/internal/runcause	0.240s [no tests to run]
+ok  	roundfix/internal/runevent	0.624s
+ok  	roundfix/internal/skillhash	0.640s
+PASS
+suiteguard: guard cost: measured 2584 paths; fingerprint took 509.185917ms before and 241.531625ms after
+suiteguard: repository boundary violated:
+suiteguard: modified: docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/qa/evidence/2026-10-07-gate-01/results.json
+suiteguard: created: docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/qa/evidence/2026-10-07-gate-01/warm-contracts.stderr
+suiteguard: created: docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/qa/evidence/2026-10-07-gate-01/warm-contracts.stdout
+FAIL	roundfix/internal/spec	3.145s
+PASS
+suiteguard: guard cost: measured 2584 paths; fingerprint took 431.493375ms before and 271.818208ms after
+suiteguard: repository boundary violated:
+suiteguard: modified: docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/qa/evidence/2026-10-07-gate-01/results.json
+suiteguard: created: docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/qa/evidence/2026-10-07-gate-01/warm-contracts.stderr
+suiteguard: created: docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/qa/evidence/2026-10-07-gate-01/warm-contracts.stdout
+FAIL	roundfix/internal/specaudit	3.212s
+PASS
+suiteguard: guard cost: measured 2584 paths; fingerprint took 247.938333ms before and 318.261125ms after
+suiteguard: repository boundary violated:
+suiteguard: modified: docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/qa/evidence/2026-10-07-gate-01/results.json
+suiteguard: created: docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/qa/evidence/2026-10-07-gate-01/warm-contracts.stderr
+suiteguard: created: docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/qa/evidence/2026-10-07-gate-01/warm-contracts.stdout
+FAIL	roundfix/internal/speccheck	4.178s
+PASS
+suiteguard: guard cost: measured 2584 paths; fingerprint took 295.793917ms before and 243.59175ms after
+suiteguard: repository boundary violated:
+suiteguard: modified: docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/qa/evidence/2026-10-07-gate-01/results.json
+suiteguard: created: docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/qa/evidence/2026-10-07-gate-01/warm-contracts.stderr
+suiteguard: created: docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/qa/evidence/2026-10-07-gate-01/warm-contracts.stdout
+FAIL	roundfix/internal/store	3.040s
+PASS
+suiteguard: guard cost: measured 2584 paths; fingerprint took 330.156083ms before and 246.466625ms after
+suiteguard: repository boundary violated:
+suiteguard: modified: docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/qa/evidence/2026-10-07-gate-01/results.json
+suiteguard: created: docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/qa/evidence/2026-10-07-gate-01/warm-contracts.stderr
+suiteguard: created: docs/specs/0247-a-run-gate-that-runs-the-repository-contracts/qa/evidence/2026-10-07-gate-01/warm-contracts.stdout
+FAIL	roundfix/internal/suiteguard	3.069s
+ok  	roundfix/internal/suiteguardcontract	0.210s [no tests to run]
+ok  	roundfix/internal/testfixture	0.190s [no tests to run]
+ok  	roundfix/internal/testwait	0.201s [no tests to run]
+ok  	roundfix/internal/tui	0.536s
+ok  	roundfix/internal/verifyselect	1.072s
+ok  	roundfix/internal/watch	0.471s
+ok  	roundfix/internal/worktree	1.113s
+ok  	roundfix/skills	31.653s
+FAIL

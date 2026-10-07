@@ -1,0 +1,443 @@
+{
+  "clone": {
+    "command": [
+      "git",
+      "clone",
+      "--no-hardlinks",
+      "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0247-a-run-gate-that-runs-the-repository-contracts-be21662ae65f30d7-a59f466f-711ec9fd/run_20261007T212606Z_bedfe5aff3a033b8",
+      "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3",
+    "exit": 0,
+    "seconds": 0.5047414170112461
+  },
+  "config-sign": {
+    "command": [
+      "git",
+      "config",
+      "commit.gpgsign",
+      "false"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.005755332997068763
+  },
+  "config-name": {
+    "command": [
+      "git",
+      "config",
+      "user.name",
+      "QA scratch"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.005188749986700714
+  },
+  "config-mail": {
+    "command": [
+      "git",
+      "config",
+      "user.email",
+      "qa@example.invalid"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.005052665947005153
+  },
+  "base": {
+    "command": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.004911541996989399
+  },
+  "transcript1-branch": {
+    "command": [
+      "git",
+      "checkout",
+      "-B",
+      "test/transcript1",
+      "04dabe7cac344091e1299b861c84a8fcda068a40"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.10301945800893009
+  },
+  "transcript1-add": {
+    "command": [
+      "git",
+      "add",
+      "docs/user-guide/release-runbook.md"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.0734579159761779
+  },
+  "transcript1-commit": {
+    "command": [
+      "git",
+      "-c",
+      "core.hooksPath=/dev/null",
+      "commit",
+      "-m",
+      "test: QA transcript1"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.022333916975185275
+  },
+  "transcript1-state": {
+    "command": [
+      "git",
+      "show",
+      "--stat",
+      "--oneline",
+      "HEAD"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.00589112495072186
+  },
+  "transcript1": {
+    "command": [
+      "go",
+      "run",
+      "-buildvcs=false",
+      "./cmd/verify-select",
+      "-contracts",
+      "-base",
+      "04dabe7cac344091e1299b861c84a8fcda068a40"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.5039496670360677
+  },
+  "transcript3-branch": {
+    "command": [
+      "git",
+      "checkout",
+      "-B",
+      "test/transcript3",
+      "04dabe7cac344091e1299b861c84a8fcda068a40"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.014607583987526596
+  },
+  "transcript3-add": {
+    "command": [
+      "git",
+      "add",
+      ".agents/skills/roundfix/SKILL.md"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.011490915960166603
+  },
+  "transcript3-commit": {
+    "command": [
+      "git",
+      "-c",
+      "core.hooksPath=/dev/null",
+      "commit",
+      "-m",
+      "test: QA transcript3"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.017271417018491775
+  },
+  "transcript3-state": {
+    "command": [
+      "git",
+      "show",
+      "--stat",
+      "--oneline",
+      "HEAD"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.005743124987930059
+  },
+  "transcript3": {
+    "command": [
+      "go",
+      "run",
+      "-buildvcs=false",
+      "./cmd/verify-select",
+      "-contracts",
+      "-base",
+      "04dabe7cac344091e1299b861c84a8fcda068a40"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.18985158298164606
+  },
+  "transcript2-branch": {
+    "command": [
+      "git",
+      "checkout",
+      "-B",
+      "test/transcript2",
+      "04dabe7cac344091e1299b861c84a8fcda068a40"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.015080000041052699
+  },
+  "transcript2-add": {
+    "command": [
+      "git",
+      "add",
+      "internal/suiteguard/installation_repocontract_test.go"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.011452250008005649
+  },
+  "transcript2-commit": {
+    "command": [
+      "git",
+      "-c",
+      "core.hooksPath=/dev/null",
+      "commit",
+      "-m",
+      "test: QA transcript2"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.016403958026785403
+  },
+  "transcript2-state": {
+    "command": [
+      "git",
+      "show",
+      "--stat",
+      "--oneline",
+      "HEAD"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.0059284999733790755
+  },
+  "transcript2": {
+    "command": [
+      "go",
+      "run",
+      "-buildvcs=false",
+      "./cmd/verify-select",
+      "-contracts",
+      "-base",
+      "04dabe7cac344091e1299b861c84a8fcda068a40"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 1,
+    "seconds": 0.06227862503146753
+  },
+  "timing-branch": {
+    "command": [
+      "git",
+      "checkout",
+      "-B",
+      "test/timing",
+      "04dabe7cac344091e1299b861c84a8fcda068a40"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.01340179203543812
+  },
+  "timing-add": {
+    "command": [
+      "git",
+      "add",
+      "internal/config/config.go"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.009824999957345426
+  },
+  "timing-commit": {
+    "command": [
+      "git",
+      "-c",
+      "core.hooksPath=/dev/null",
+      "commit",
+      "-m",
+      "test: QA timing"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.018390709010418504
+  },
+  "timing-state": {
+    "command": [
+      "git",
+      "show",
+      "--stat",
+      "--oneline",
+      "HEAD"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.006136292009614408
+  },
+  "warm-contracts": {
+    "command": [
+      "make",
+      "verify-changed-contracts",
+      "VERIFY_BASE=04dabe7cac344091e1299b861c84a8fcda068a40"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 8.943486708973069
+  },
+  "timing": {
+    "command": [
+      "make",
+      "verify-changed",
+      "VERIFY_BASE=04dabe7cac344091e1299b861c84a8fcda068a40"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 283.94689625001047
+  },
+  "timing-contracts": {
+    "command": [
+      "make",
+      "verify-changed-contracts",
+      "VERIFY_BASE=04dabe7cac344091e1299b861c84a8fcda068a40"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 3.019597749982495
+  },
+  "replay-branch": {
+    "command": [
+      "git",
+      "checkout",
+      "-B",
+      "test/replay",
+      "04dabe7cac344091e1299b861c84a8fcda068a40"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.012762165977619588
+  },
+  "replay-add": {
+    "command": [
+      "git",
+      "add",
+      "internal/suiteguardcontract/contract.go",
+      "internal/config/config.go"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.010484208003617823
+  },
+  "replay-commit": {
+    "command": [
+      "git",
+      "-c",
+      "core.hooksPath=/dev/null",
+      "commit",
+      "-m",
+      "test: QA replay"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.018913834006525576
+  },
+  "replay-state": {
+    "command": [
+      "git",
+      "show",
+      "--stat",
+      "--oneline",
+      "HEAD"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.006548415985889733
+  },
+  "replay": {
+    "command": [
+      "make",
+      "verify-changed",
+      "VERIFY_BASE=04dabe7cac344091e1299b861c84a8fcda068a40"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 2,
+    "seconds": 239.05664537497796
+  },
+  "baseline-replay-branch": {
+    "command": [
+      "git",
+      "checkout",
+      "-B",
+      "test/baseline-replay",
+      "59548f13"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.031023917021229863
+  },
+  "oldbase": {
+    "command": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.00521766598103568
+  },
+  "baseline-replay-add": {
+    "command": [
+      "git",
+      "add",
+      "internal/suiteguardcontract/contract.go",
+      "internal/config/config.go"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.016048124991357327
+  },
+  "baseline-replay-commit": {
+    "command": [
+      "git",
+      "-c",
+      "core.hooksPath=/dev/null",
+      "commit",
+      "-m",
+      "test: QA baseline-replay"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.018631790997460485
+  },
+  "baseline-replay-state": {
+    "command": [
+      "git",
+      "show",
+      "--stat",
+      "--oneline",
+      "HEAD"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 0.006574208033271134
+  },
+  "baseline-replay": {
+    "command": [
+      "make",
+      "verify-changed",
+      "VERIFY_BASE=59548f137cc22a20546b0efc95d7d058a770eae4"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-8kzc7vt3/repo",
+    "exit": 0,
+    "seconds": 232.06868554197717
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "verify": true,
+  "verify-docs": true,
+  "docs-test": true,
+  "repo-test": true,
+  "spec-budget": true,
+  "verify-changed-core": true,
+  "verify-changed-baseline": true,
+  "REPO_CONTRACT_TESTS": true
+}

@@ -1,0 +1,2 @@
+verify-select: internal/suiteguard/installation_repocontract_test.go: unknown Contract Relevance class "sometimes"
+exit status 1

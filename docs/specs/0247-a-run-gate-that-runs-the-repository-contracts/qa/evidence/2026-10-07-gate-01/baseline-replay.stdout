@@ -1,0 +1,39 @@
+go vet ./...
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=22edf3df' -X 'roundfix/internal/app.BuildTime=2026-10-07 18:44:10 -0300'" -o bin/roundfix ./cmd/roundfix
+?   	roundfix/cmd/roundfix	[no test files]
+?   	roundfix/cmd/verify-select	[no test files]
+ok  	roundfix/internal/agent	4.100s
+ok  	roundfix/internal/app	0.191s
+ok  	roundfix/internal/authorization	0.772s
+ok  	roundfix/internal/codex	0.238s
+ok  	roundfix/internal/config	1.905s
+ok  	roundfix/internal/daemon	64.256s
+ok  	roundfix/internal/delivery	4.598s
+?   	roundfix/internal/docscontract	[no test files]
+ok  	roundfix/internal/gittest	1.082s
+ok  	roundfix/internal/judge	1.760s
+ok  	roundfix/internal/lighttier	0.424s
+ok  	roundfix/internal/mdtree	0.247s
+ok  	roundfix/internal/notify	0.219s
+ok  	roundfix/internal/openrouterkey	0.209s
+ok  	roundfix/internal/preflight	1.085s
+ok  	roundfix/internal/releaseplan	0.195s
+ok  	roundfix/internal/reviewsource	0.191s
+ok  	roundfix/internal/reviewsource/coderabbit	0.241s
+ok  	roundfix/internal/rounds	0.257s
+ok  	roundfix/internal/runcause	0.358s
+ok  	roundfix/internal/runevent	0.192s
+ok  	roundfix/internal/skillhash	0.207s
+ok  	roundfix/internal/spec	37.397s
+ok  	roundfix/internal/specaudit	3.656s
+ok  	roundfix/internal/speccheck	36.442s
+ok  	roundfix/internal/store	10.411s
+ok  	roundfix/internal/suiteguard	2.176s
+ok  	roundfix/internal/suiteguardcontract	0.374s
+ok  	roundfix/internal/testfixture	0.948s
+ok  	roundfix/internal/testwait	1.088s
+ok  	roundfix/internal/tui	0.638s
+ok  	roundfix/internal/verifyselect	4.795s
+ok  	roundfix/internal/watch	0.244s
+ok  	roundfix/internal/worktree	42.516s
+ok  	roundfix/internal/cli	164.675s

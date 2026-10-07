@@ -1,0 +1,11 @@
+{
+  "command": [
+    "go",
+    "run",
+    "/private/tmp/0247-wrapper-probe/main.go"
+  ],
+  "source": "package main\nimport \"os\"\nfunc main(){ os.Exit(1) }\n",
+  "exit": 1,
+  "stdout": "",
+  "stderr": "exit status 1\n"
+}

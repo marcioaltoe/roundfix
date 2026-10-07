@@ -1,0 +1,250 @@
+{
+  "clone": {
+    "command": [
+      "git",
+      "clone",
+      "--no-hardlinks",
+      "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0247-a-run-gate-that-runs-the-repository-contracts-be21662ae65f30d7-a59f466f-711ec9fd/run_20261007T202708Z_1511c9319dd8dbf6",
+      "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5/repo"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5",
+    "exit": 0,
+    "seconds": 0.4996929159970023
+  },
+  "config-sign": {
+    "command": [
+      "git",
+      "config",
+      "commit.gpgsign",
+      "false"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5/repo",
+    "exit": 0,
+    "seconds": 0.006207667000126094
+  },
+  "config-name": {
+    "command": [
+      "git",
+      "config",
+      "user.name",
+      "QA scratch"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5/repo",
+    "exit": 0,
+    "seconds": 0.0051252919947728515
+  },
+  "config-mail": {
+    "command": [
+      "git",
+      "config",
+      "user.email",
+      "qa@example.invalid"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5/repo",
+    "exit": 0,
+    "seconds": 0.004876290971878916
+  },
+  "base": {
+    "command": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5/repo",
+    "exit": 0,
+    "seconds": 0.004571541969198734
+  },
+  "timing-branch": {
+    "command": [
+      "git",
+      "checkout",
+      "-B",
+      "test/timing",
+      "186248f2f7e2763bab28670a9ce8b427e30c32cf"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5/repo",
+    "exit": 0,
+    "seconds": 0.09277008299250156
+  },
+  "timing-add": {
+    "command": [
+      "git",
+      "add",
+      "internal/config/config.go"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5/repo",
+    "exit": 0,
+    "seconds": 0.07084462500642985
+  },
+  "timing-commit": {
+    "command": [
+      "git",
+      "-c",
+      "core.hooksPath=/dev/null",
+      "commit",
+      "-m",
+      "test: QA timing"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5/repo",
+    "exit": 0,
+    "seconds": 0.022562500031199306
+  },
+  "timing-state": {
+    "command": [
+      "git",
+      "show",
+      "--stat",
+      "--oneline",
+      "HEAD"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5/repo",
+    "exit": 0,
+    "seconds": 0.005966332973912358
+  },
+  "timing": {
+    "command": [
+      "make",
+      "verify-changed",
+      "VERIFY_BASE=186248f2f7e2763bab28670a9ce8b427e30c32cf"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5/repo",
+    "exit": 0,
+    "seconds": 239.72441000002436
+  },
+  "timing-contracts": {
+    "command": [
+      "make",
+      "verify-changed-contracts",
+      "VERIFY_BASE=186248f2f7e2763bab28670a9ce8b427e30c32cf"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5/repo",
+    "exit": 0,
+    "seconds": 3.0015914579853415
+  },
+  "replay-branch": {
+    "command": [
+      "git",
+      "checkout",
+      "-B",
+      "test/replay",
+      "186248f2f7e2763bab28670a9ce8b427e30c32cf"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5/repo",
+    "exit": 0,
+    "seconds": 0.02321804198436439
+  },
+  "replay-add": {
+    "command": [
+      "git",
+      "add",
+      "internal/suiteguardcontract/contract.go",
+      "internal/config/config.go"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5/repo",
+    "exit": 0,
+    "seconds": 0.009586375032085925
+  },
+  "replay-commit": {
+    "command": [
+      "git",
+      "-c",
+      "core.hooksPath=/dev/null",
+      "commit",
+      "-m",
+      "test: QA replay"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5/repo",
+    "exit": 0,
+    "seconds": 0.01789958303561434
+  },
+  "replay-state": {
+    "command": [
+      "git",
+      "show",
+      "--stat",
+      "--oneline",
+      "HEAD"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5/repo",
+    "exit": 0,
+    "seconds": 0.006247124983929098
+  },
+  "replay": {
+    "command": [
+      "make",
+      "verify-changed",
+      "VERIFY_BASE=186248f2f7e2763bab28670a9ce8b427e30c32cf"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5/repo",
+    "exit": 2,
+    "seconds": 232.39238299999852
+  },
+  "baseline-replay-branch": {
+    "command": [
+      "git",
+      "checkout",
+      "-B",
+      "test/baseline-replay",
+      "59548f13"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5/repo",
+    "exit": 0,
+    "seconds": 0.028270042035728693
+  },
+  "oldbase": {
+    "command": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5/repo",
+    "exit": 0,
+    "seconds": 0.005065999983344227
+  },
+  "baseline-replay-add": {
+    "command": [
+      "git",
+      "add",
+      "internal/suiteguardcontract/contract.go",
+      "internal/config/config.go"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5/repo",
+    "exit": 0,
+    "seconds": 0.008765917038545012
+  },
+  "baseline-replay-commit": {
+    "command": [
+      "git",
+      "-c",
+      "core.hooksPath=/dev/null",
+      "commit",
+      "-m",
+      "test: QA baseline-replay"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5/repo",
+    "exit": 0,
+    "seconds": 0.02587674994720146
+  },
+  "baseline-replay-state": {
+    "command": [
+      "git",
+      "show",
+      "--stat",
+      "--oneline",
+      "HEAD"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5/repo",
+    "exit": 0,
+    "seconds": 0.006310124997980893
+  },
+  "baseline-replay": {
+    "command": [
+      "make",
+      "verify-changed",
+      "VERIFY_BASE=59548f137cc22a20546b0efc95d7d058a770eae4"
+    ],
+    "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0247-qa-rpjtgft5/repo",
+    "exit": 0,
+    "seconds": 227.99792808300117
+  }
+}
