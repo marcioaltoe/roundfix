@@ -466,7 +466,8 @@ longer stamps the PRD.
    stderr:
    Preflight failed
    ...
-   Spec "<slug>" has changes not committed at HEAD under docs/specs/<slug>; commit them before archive so the Archive Record's source_revision holds the Spec
+   Reason:
+     Spec "<slug>" has changes not committed at HEAD under docs/specs/<slug>; commit them before archive so the Archive Record's source_revision holds the Spec
    ...
    exit: 2
    ```
