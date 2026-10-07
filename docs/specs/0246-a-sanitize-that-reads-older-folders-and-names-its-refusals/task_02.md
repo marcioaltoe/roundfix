@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0246-a-sanitize-that-reads-older-folders-and-names-its-refusals
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -88,3 +88,52 @@ verifiable on its own through the spec tests below.
 - `_prd.md` → Core Feature 1; Goals; Success Metric 4; Success Metric 5
 - `_techspec.md` → API Contract 1; Invariant 1; Invariant 2; Invariant 3; Invariant 4; Build Order 2
 - ADR-0251
+
+## Result
+
+Implemented the task_02 slice for Daemon Verification. `ReadLegacyCauseGraph`
+shares all manifest front-matter validation with the strict reader and reports
+the two permitted projection tolerances in table order. A row outside the
+graph with a retired type is named once, as outside the graph. Malformed and
+duplicate rows retain the strict reader's messages.
+
+`ArchiveRecordInput.Legacy` selects lenient QA Task reading only for legacy
+conversion and the folder branch of `ReadArchivedSpec`. The Archive Command
+continues to use the default strict input. `LegacyConversion.Tolerated` holds
+the reader's tolerances without adding them to the Archive Record. Disposition
+logic and CLI behavior are unchanged.
+
+Acceptance evidence:
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Legacy folders convert with named tolerances | `TestLegacyConversionToleratesAProjectionRowOutsideTheGraph` and `TestLegacyConversionToleratesARetiredTaskType` exercise plan, apply, and record reading; assert exact tolerance wording/order, QA identity, and absence of tolerances from the rendered record. `TestReadArchivedSpecReadsALegacyFolderLeniently` covers both tolerated shapes together and verifies graph membership and unchanged folder bytes. |
+| Active Specs refuse exactly as before | `TestActiveSpecStillRefusesWhatLegacyReadingTolerates` asserts exact errors from `Load`, `ReadCauseGraph`, `ReadCauseGraphAt`, and `BuildArchiveRecord` without `Legacy`. `TestLegacyConversionStillRefusesAMalformedProjectionRow` verifies the exact refusal and unchanged folder. `TestLegacyCauseGraphPreservesManifestRefusals` compares strict and legacy errors for 13 front-matter and projection cases, including duplicate rows outside the graph. |
+| Existing spec tests pass unchanged | `GOCACHE=/tmp/roundfix-task02-gocache rtk proxy go test ./internal/spec -count=1` exited 0 (`ok roundfix/internal/spec`), including the new tests. No existing test or expectation was edited. |
+
+Focused checks:
+
+- Before production changes, `GOCACHE=/tmp/roundfix-task02-gocache rtk proxy go test ./internal/spec -run '^TestLegacyConversionTolerates' -count=1`
+  exited 1: `LegacyConversion.Tolerated` and `ReadLegacyCauseGraph` were absent.
+- After the implementation, `GOCACHE=/tmp/roundfix-task02-gocache rtk proxy go test ./internal/spec -run 'Test(LegacyConversion|ActiveSpecStill|ReadArchivedSpecReadsALegacy)' -count=1`
+  exited 0.
+- After adding refusal-parity coverage, the complete spec package check above
+  exited 0.
+- `rtk proxy git -c core.fsmonitor=false diff --check` exited 0.
+- The first `GOCACHE=/tmp/roundfix-task02-gocache rtk make verify-incremental`
+  exited 2. Formatting and `go vet ./...` passed. Two CLI process-owner tests
+  could not enumerate the process table in the sandbox. Suiteguard also
+  detected this Agent's concurrent Result edit; that edit was made while the
+  suite was active and invalidated the repository fingerprint checks. The
+  rerun uses process-table permission and keeps the worktree unchanged until
+  the check exits.
+- The rerun of `GOCACHE=/tmp/roundfix-task02-gocache rtk make verify-incremental`
+  with host process-table access exited 0: formatting, vet, the repository Go
+  tests, skill synchronization/checks, and build passed. No worktree edit was
+  made during that run. The Result was updated after the check exited.
+
+The authored `## Verification` command was not run; the Daemon owns that
+command and Task settlement. Status and task checkboxes were preserved. No
+Task Graph, other Task file, disposition logic, CLI, or existing expectation
+was edited. No commit, push, or Pull Request was made. No follow-up work was
+identified within this slice.

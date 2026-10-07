@@ -48,6 +48,7 @@ type ArchiveRecord struct {
 	Outcome                        string
 }
 type ArchiveRecordInput struct {
+	Legacy                                          bool
 	SpecDir, Slug, Source, SourceRevision, Archived string
 	Unproven                                        []string
 	QAOverride                                      *QAArchiveOverrideRecord
@@ -140,7 +141,12 @@ func BuildArchiveRecord(in ArchiveRecordInput) (ArchiveRecord, error) {
 	for _, regen := range suiteguardcontract.ParseSanctionedRegenerations(auth) {
 		r.Regeneration = append(r.Regeneration, ArchiveRegeneration{regen.Command, regen.Outputs})
 	}
-	graph, err := ReadCauseGraph(filepath.Dir(in.SpecDir), filepath.Base(in.SpecDir))
+	var graph CauseGraph
+	if in.Legacy {
+		graph, _, err = ReadLegacyCauseGraph(filepath.Dir(in.SpecDir), filepath.Base(in.SpecDir))
+	} else {
+		graph, err = ReadCauseGraph(filepath.Dir(in.SpecDir), filepath.Base(in.SpecDir))
+	}
 	if err == nil {
 		r.QATask = graph.QATaskID
 	} else if _, statErr := os.Stat(filepath.Join(in.SpecDir, "_tasks.md")); !errors.Is(statErr, os.ErrNotExist) {
@@ -433,7 +439,7 @@ func ReadArchivedSpec(root, slug string) (ArchivedSpec, error) {
 				return ArchivedSpec{}, fmt.Errorf("legacy Spec %q frontmatter status is %q; expected %q", slug, status, "archived")
 			}
 		}
-		r, err := BuildArchiveRecord(ArchiveRecordInput{SpecDir: folder, Slug: slug})
+		r, err := BuildArchiveRecord(ArchiveRecordInput{SpecDir: folder, Slug: slug, Legacy: true})
 		if err != nil {
 			return ArchivedSpec{}, err
 		}

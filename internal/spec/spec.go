@@ -596,46 +596,13 @@ func loadManifestNodes(manifestPath string) ([]manifestNode, map[string]TaskType
 }
 
 func parseManifestNodes(manifestPath string, content []byte) ([]manifestNode, map[string]TaskType, bool, qaDeclaration, []string, error) {
-	frontmatterBytes, body, err := splitFrontmatter(content)
-	if err != nil {
-		return nil, nil, false, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: "invalid frontmatter", Err: err}
-	}
-	var manifest manifestFrontmatter
-	if err := yaml.Unmarshal(frontmatterBytes, &manifest); err != nil {
-		return nil, nil, false, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: "invalid frontmatter", Err: err}
-	}
-	if manifest.Schema != manifestSchema {
-		return nil, nil, false, qaDeclaration{}, nil, ManifestSchemaError{Path: manifestPath, Schema: manifest.Schema}
-	}
-	requires, err := parseRequiredSpecs(manifest.Requires, filepath.Base(filepath.Dir(manifestPath)))
-	if err != nil {
-		return nil, nil, false, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: "invalid requires", Err: err}
-	}
-	qa, err := parseQADeclaration(manifestPath, manifest)
+	nodes, body, qa, requires, err := parseManifestGraph(manifestPath, content)
 	if err != nil {
 		return nil, nil, false, qaDeclaration{}, nil, err
 	}
-	nodes := manifest.Graph.Nodes
-	if len(nodes) == 0 {
-		return nil, nil, false, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: "graph has no nodes"}
-	}
-
 	known := make(map[string]bool, len(nodes))
-	for index, node := range nodes {
-		if node.ID == "" || node.File == "" {
-			return nil, nil, false, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: fmt.Sprintf("graph node %d is missing id or file", index+1)}
-		}
-		if known[node.ID] {
-			return nil, nil, false, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: fmt.Sprintf("duplicate Task id %q", node.ID)}
-		}
-		known[node.ID] = true
-	}
 	for _, node := range nodes {
-		for _, need := range node.Needs {
-			if !known[need] {
-				return nil, nil, false, qaDeclaration{}, nil, UnknownNeedError{TaskID: node.ID, Need: need}
-			}
-		}
+		known[node.ID] = true
 	}
 	projections, hasProjections, err := parseTaskTypeProjections(manifestPath, body)
 	if err != nil {
@@ -650,6 +617,52 @@ func parseManifestNodes(manifestPath string, content []byte) ([]manifestNode, ma
 		}
 	}
 	return nodes, projections, hasProjections, qa, requires, nil
+}
+
+// parseManifestGraph validates the front matter shared by strict and legacy readers.
+func parseManifestGraph(manifestPath string, content []byte) ([]manifestNode, []byte, qaDeclaration, []string, error) {
+	frontmatterBytes, body, err := splitFrontmatter(content)
+	if err != nil {
+		return nil, nil, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: "invalid frontmatter", Err: err}
+	}
+	var manifest manifestFrontmatter
+	if err := yaml.Unmarshal(frontmatterBytes, &manifest); err != nil {
+		return nil, nil, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: "invalid frontmatter", Err: err}
+	}
+	if manifest.Schema != manifestSchema {
+		return nil, nil, qaDeclaration{}, nil, ManifestSchemaError{Path: manifestPath, Schema: manifest.Schema}
+	}
+	requires, err := parseRequiredSpecs(manifest.Requires, filepath.Base(filepath.Dir(manifestPath)))
+	if err != nil {
+		return nil, nil, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: "invalid requires", Err: err}
+	}
+	qa, err := parseQADeclaration(manifestPath, manifest)
+	if err != nil {
+		return nil, nil, qaDeclaration{}, nil, err
+	}
+	nodes := manifest.Graph.Nodes
+	if len(nodes) == 0 {
+		return nil, nil, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: "graph has no nodes"}
+	}
+
+	known := make(map[string]bool, len(nodes))
+	for index, node := range nodes {
+		if node.ID == "" || node.File == "" {
+			return nil, nil, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: fmt.Sprintf("graph node %d is missing id or file", index+1)}
+		}
+		if known[node.ID] {
+			return nil, nil, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: fmt.Sprintf("duplicate Task id %q", node.ID)}
+		}
+		known[node.ID] = true
+	}
+	for _, node := range nodes {
+		for _, need := range node.Needs {
+			if !known[need] {
+				return nil, nil, qaDeclaration{}, nil, UnknownNeedError{TaskID: node.ID, Need: need}
+			}
+		}
+	}
+	return nodes, body, qa, requires, nil
 }
 
 func parseQADeclaration(manifestPath string, manifest manifestFrontmatter) (qaDeclaration, error) {
