@@ -1,5 +1,9 @@
 {
-  "schemaVersion": "setup-context-driven/module-v3", "id": "cli-surface", "version": 3, "kind": "application-surface", "title": "Agentic CLI surface guidance",
+  "schemaVersion": "setup-context-driven/module-v3",
+  "id": "cli-surface",
+  "version": 3,
+  "kind": "application-surface",
+  "title": "Agentic CLI surface guidance",
   "dependsOn": ["core"], "conflictsWith": [], "requiredSkills": [
     "agentic-cli-design"
   ],

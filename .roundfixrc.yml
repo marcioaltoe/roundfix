@@ -11,13 +11,27 @@ delivery:
     path: bin/roundfix
   derived_paths:
     - paths:
+        - internal/baseline/module-versions.json
         - internal/baseline/testdata/catalog.digest
         - internal/baseline/testdata/catalog.normalized.json
         - internal/baseline/testdata/catalog.diagnostics.golden.json
         - internal/baseline/testdata/plan-characterization/*.golden.json
-      regenerate: make baseline-digests
+      lines:
+        paths: [internal/baseline/assets/modules/*.json]
+        match: '^  "version": [0-9]+,$'
+      regenerate: go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1 && make baseline-digests
+    - paths:
+        - internal/baseline/assets/profiles/standard-typescript-monorepo.json
+      lines:
+        paths: [internal/baseline/assets/profiles/standard-typescript-monorepo.json]
+        match: '^    "goldenDigest": "[0-9a-f]+",$'
+      regenerate: go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1 && make baseline-digests
+    - paths:
+        - internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/
+      regenerate: go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1 && make baseline-digests
     - paths:
         - docs/agents/setup-context.json
+        - docs/agents/
       regenerate: go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text
     - paths:
         - skills/testdata/owned-skill-versions.json
@@ -25,6 +39,9 @@ delivery:
         paths: [.agents/skills/*/SKILL.md, skills/*/SKILL.md]
         match: '^ *version: '
       regenerate: go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions
+    - paths:
+        - docs/references/coverage-record.json
+      regenerate: go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1
 
 defaults:
   # Keep false. Setting it true is accepted by config validation and then rejected

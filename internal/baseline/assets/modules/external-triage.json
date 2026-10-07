@@ -1,5 +1,9 @@
 {
-  "schemaVersion": "setup-context-driven/module-v3", "id": "external-triage", "version": 3, "kind": "workflow", "title": "External issue triage",
+  "schemaVersion": "setup-context-driven/module-v3",
+  "id": "external-triage",
+  "version": 3,
+  "kind": "workflow",
+  "title": "External issue triage",
   "dependsOn": ["context-workflow"], "conflictsWith": [], "requiredSkills": [],
   "skillDispatch": [],
   "requiredDecisions": ["triage.external"],

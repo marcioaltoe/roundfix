@@ -1,5 +1,9 @@
 {
-  "schemaVersion": "setup-context-driven/module-v3", "id": "rust", "version": 4, "kind": "language-runtime", "title": "Rust repository guidance",
+  "schemaVersion": "setup-context-driven/module-v3",
+  "id": "rust",
+  "version": 4,
+  "kind": "language-runtime",
+  "title": "Rust repository guidance",
   "dependsOn": ["core"], "conflictsWith": [], "requiredSkills": [
     "clap-rust",
     "cut-release",

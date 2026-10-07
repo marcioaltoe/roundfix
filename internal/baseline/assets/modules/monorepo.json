@@ -1,5 +1,9 @@
 {
-  "schemaVersion": "setup-context-driven/module-v2", "id": "monorepo", "version": 3, "kind": "repository-layout", "title": "Monorepo context boundaries",
+  "schemaVersion": "setup-context-driven/module-v2",
+  "id": "monorepo",
+  "version": 3,
+  "kind": "repository-layout",
+  "title": "Monorepo context boundaries",
   "dependsOn": ["context-workflow"], "conflictsWith": [], "requiredSkills": [
     "turborepo"
   ],

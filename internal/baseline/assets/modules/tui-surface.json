@@ -1,5 +1,9 @@
 {
-  "schemaVersion": "setup-context-driven/module-v3", "id": "tui-surface", "version": 3, "kind": "application-surface", "title": "Terminal UI surface guidance",
+  "schemaVersion": "setup-context-driven/module-v3",
+  "id": "tui-surface",
+  "version": 3,
+  "kind": "application-surface",
+  "title": "Terminal UI surface guidance",
   "dependsOn": ["cli-surface"], "conflictsWith": [], "requiredSkills": [
     "bubbletea",
     "tui-design"

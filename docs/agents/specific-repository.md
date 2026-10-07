@@ -32,6 +32,17 @@ Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
   the record command raises both version fields one patch above the highest
   recorded version when needed, records the result, and requires
   `skills/testdata/owned-skill-versions.json` to be declared in the Task.
+- A Baseline module's content changes only together with its version.
+  After editing a module under `internal/baseline/assets/modules/`, run
+  `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`
+  before `make baseline-digests`; the record command keeps a version above
+  every recorded one or writes the next free version into the module's own
+  version line, records it in `internal/baseline/module-versions.json`, and
+  requires that record to be declared in the Task. A Spec names the next
+  version, never a number. `docs/references/coverage-record.json` is
+  re-recorded only with
+  `go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1`,
+  which writes the same bytes on any host.
 - **HARD RULE — sanctioned digest regeneration**: after an expressly authorized
   Roundfix-owned Skill or Baseline module edit, run `make baseline-digests`.
   Every derived pin rewritten by that command is deterministic fallout of the

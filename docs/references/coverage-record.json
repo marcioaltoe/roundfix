@@ -1,4 +1,9 @@
 {
+  "platforms": [
+    "darwin",
+    "linux",
+    "windows"
+  ],
   "packages": {
     "roundfix/cmd/roundfix": [],
     "roundfix/cmd/verify-select": [],
@@ -311,7 +316,9 @@
       "TestAMissingCoreSkillTriggerIsReported",
       "TestAMissingOrUnlabelledExternalTriageClauseIsReported",
       "TestAMissingSourceBaselineRowIsReported",
+      "TestAModuleChangedUnderARecordedVersionIsRefused",
       "TestAModuleTheProfileDoesNotSelectIsNotChecked",
+      "TestAModuleVersionNotOnItsOwnLineIsRefused",
       "TestANonBooleanPartOfGateIsRefused",
       "TestAPartReachedThroughARecipeInvocationCounts",
       "TestAProfileHTTPDefaultThatDisagreesIsReported",
@@ -346,6 +353,7 @@
       "TestAnUnlistedBaselineClauseIsReported",
       "TestAnUnrecordedBranchPrefixStatesTheCommitTypeRule",
       "TestAnUnrecordedFrontendLayoutStatesTheSuggestionAndKeepsTheSystemsClauses",
+      "TestAnUnrecordedModuleVersionIsRefused",
       "TestAnUnrecordedOptionalDecisionIsNotMissing",
       "TestApplyCanonicalizesLegacyRepositoryRules",
       "TestApplyCrossClone",
@@ -446,6 +454,7 @@
       "TestEmbeddedSetupSnapshotsAgreeOnEveryExternalSkill",
       "TestEmptyReapply",
       "TestEquallyCloseProfileDraftSourcesStayAmbiguous",
+      "TestEveryBaselineModuleVersionIsRecorded",
       "TestEveryBuiltInProfileRequiresTheIncrementalVerificationDecision",
       "TestEveryBuiltInProfileSetupListsEverySkillItsGuidesName",
       "TestEveryBuiltInProfileTakesItsRenamedUpstreamSetup",
@@ -485,6 +494,7 @@
       "TestHistoryMoveRemovesEmptiedSource",
       "TestHistoryMoveRollback",
       "TestHistoryRelocationPlanCarriesOrderedIdentitiesOutsideRenderedCarriers",
+      "TestHistorySanitizeClauseIsAppended",
       "TestIdentifierGuidance",
       "TestIdentifierStrategyDecision",
       "TestImmutableRootBackup",
@@ -523,6 +533,8 @@
       "TestManagedRefreshUnsafeRootCarrierStillBlocks",
       "TestManagedRootFreshPlan",
       "TestManualClassificationFallbackReturnsCompleteDestinations",
+      "TestModuleContentDigestIgnoresVersionAndLayout",
+      "TestModuleVersionRecordHistoryRefusals",
       "TestNestedCarrierRemainsByteIdenticalAndWarningOnly",
       "TestNestedCarrierWarningLeavesNestedSourcesOutOfPreservation",
       "TestNestedCarrierWarningUnsafeAliasRemainsNonBlocking",
@@ -589,6 +601,11 @@
       "TestReconcileSkillsLockUnreachableSourceRemovesNothing",
       "TestReconcileTransactionDocumentAcceptsTheLockItPlanned",
       "TestReconcileTransactionDocumentRefusesAChangedLock",
+      "TestRecordingKeepsAHigherModuleVersion",
+      "TestRecordingNeverRewritesARecordedModuleEntry",
+      "TestRecordingRaisesAModuleAboveTheHighestRecordedVersion",
+      "TestRecordingRewritesOnlyTheTopLevelVersionLine",
+      "TestRecordingWritesNothingWhenAModuleIsRefused",
       "TestRegenerationBreaksGoldenDigestCycle",
       "TestRegenerationLoadsCatalogOnce",
       "TestRejectedPlanRevision",
@@ -943,7 +960,6 @@
       "TestBuiltBinaryLeavesTheSeededVersionCacheUntouched",
       "TestBuiltInProfilesProveOncePerUniqueTuple",
       "TestBuiltinReviewProfileStaysOnTheReviewProvidersRuntime",
-      "TestCLIForceStopOwnerProcessHelper",
       "TestCapabilityRecheck",
       "TestCapabilityTextRendersProbe",
       "TestCarryForwardAcceptsAnUnresolvedRun",
@@ -1174,6 +1190,22 @@
       "TestHelpTokenAsAFlagValueIsNotHelp",
       "TestHelpTokenAsASpecValueIsNotHelp",
       "TestHelperProcessRecordsTheOfflineLookup",
+      "TestHistorySanitizeAdviceIsAdvisory",
+      "TestHistorySanitizeAdviceWithoutAKnownDelivery",
+      "TestHistorySanitizeAdviseFailsOpenWithoutAKey",
+      "TestHistorySanitizeAdviseWithAFakeJudge",
+      "TestHistorySanitizeAppliesTheNextBatch",
+      "TestHistorySanitizeFolderCitationsAndKindNamedSlugs",
+      "TestHistorySanitizePlanWritesNothing",
+      "TestHistorySanitizePreflightsWholeBatch",
+      "TestHistorySanitizePromotesIntoReferences",
+      "TestHistorySanitizeRefusesADirtyTree",
+      "TestHistorySanitizeRefusesATagWithoutTheBatchPaths",
+      "TestHistorySanitizeRefusesAnExternalSpecRoot",
+      "TestHistorySanitizeRefusesWithoutAnAnnotatedAncestorTag",
+      "TestHistorySanitizeUsageErrors",
+      "TestHistorySanitizeWithNothingPending",
+      "TestHistorySnapshotSkipsGitMetadataBeforeReading",
       "TestHumanAutomationPlanParity",
       "TestHumanBaselineAdoption",
       "TestHumanBaselineConfirmationRequiresExplicitChoice",
@@ -1192,6 +1224,7 @@
       "TestImplementEndsBudgetExceededWhenTheRenewedDeadlinePasses",
       "TestImplementGatedGraphRunsRepositoryVerificationAtSettlement",
       "TestImplementIntegrationRunsUnderTheRenewedDeadline",
+      "TestImplementPassesVerificationFormatToTheQAStep",
       "TestImplementPreflightIsSilentForARunWithNothingToCarry",
       "TestImplementPreflightNamesOnlyTheTasksLeftToCarry",
       "TestImplementProceedsWhenNothingIsCarriable",
@@ -1415,20 +1448,26 @@
       "TestRenderImplementTaskLinesUsesDaemonOutcomeForPreservedTaskWorktree",
       "TestRenderSpecAuditJSONReportsAttention",
       "TestReopenLeavesTheTaskUnchangedWhenTheRecordCannotBeWritten",
-      "TestReopenRefusesAnActiveRunWithoutReclaimingIt",
       "TestReopenRefusesHealthyCompletedGateWithoutMutation",
       "TestReopenRefusesPendingQATaskWithoutMutation",
       "TestReopenRefusesQATaskResolvedOutsideSpecRoot",
       "TestReopenRefusesSpecWithoutTerminalQATask",
       "TestReopenRefusesUnknownFlag",
+      "TestReopenRefusesWhenLateDependencyIDsChangeBeforeWrite",
+      "TestReopenRefusesWhenReportResolvesOutsideGitRoot",
       "TestReopenRefusesWhenTheGateChangedBeforeTheWrite",
+      "TestReopenRefusesWhenTheNewestReportIsUncommitted",
+      "TestReopenRefusesWhenTheRecordedClosureMatches",
       "TestReopenRefusesWhenTheStaleDependencySetChangedBeforeTheWrite",
       "TestReopenRefusesWhileARunIsActive",
+      "TestReopenRefusesWithoutRecordedManifest",
       "TestReopenRejectsAManifestPathOutsideTheSpecDirectory",
       "TestReopenRejectsPathLikeSpecValues",
+      "TestReopenReopensALateDependencyThroughTheBuiltBinary",
       "TestReopenStaleGatePreservesEvidence",
       "TestReopenStaleGatePreservesSymlinkedTaskPath",
       "TestReopenThroughTheBuiltBinary",
+      "TestReopenUsesOldestReportAddition",
       "TestRepeatedPlanRevisionDeterminism",
       "TestResolveExternalSkillRequirementUnreadableManifest",
       "TestResolveJournalsAgentRunEventsDurably",
@@ -1547,8 +1586,6 @@
       "TestReviewDisposeRefusesWithoutAFindingsRecord",
       "TestReviewDoesNotRetryAGenericPreparationError",
       "TestReviewFailureAfterRetryDoesNotActivateFallbackAfterPrompt",
-      "TestReviewFetchBlocksOlderLiveRunAfterReclaimingNewerOrphan",
-      "TestReviewFetchReclaimsDeadOwnerActiveRun",
       "TestReviewFindingAnchorParsesEachForm",
       "TestReviewFindingFailureClauseRequiresContent",
       "TestReviewFindingsAllDismissedByValidationExitZero",
@@ -1658,7 +1695,6 @@
       "TestRunArchiveUsesConfiguredExternalSpecRoot",
       "TestRunCausesReadAnArchivedTaskGraphFromGit",
       "TestRunCausesReportAnArchiveRecordWithoutItsRevision",
-      "TestRunCeilingReclaimsADeadHolder",
       "TestRunCeilingRefusalNamesTheWayOut",
       "TestRunCommandHelp",
       "TestRunDetachRejectsInteractiveWithExistingConflictShape",
@@ -1692,12 +1728,9 @@
       "TestRunFetchWritesReviewArtifactsUnderSpeclessRoot",
       "TestRunFetchWritesReviewArtifactsUnderTrailerSpec",
       "TestRunForceStopAcceptsFlagsInAnyPosition",
-      "TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner",
       "TestRunForceStopOwnerExitPrecedesCompletionAndLockRelease",
       "TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof",
-      "TestRunForceStopOwnerPIDReuseFailsClosed",
       "TestRunForceStopOwnerPermissionAndDeadlineFailuresRetainActiveLock",
-      "TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion",
       "TestRunForceStopOwnerProofFailurePreservesAgentSessions",
       "TestRunForceStopPrimaryFailurePrecedesSecondaryCleanupWarnings",
       "TestRunForceStopStoppedRunIsIdempotentWithoutOwnerOrSessionActions",
@@ -1759,7 +1792,6 @@
       "TestRunImplementQAVerdictMatrix",
       "TestRunImplementQueuedCancellationStartsNoChildAndKeepsResumableTasks",
       "TestRunImplementRealWorktreeFastForwardsAndCleansPreservingNonOverlappingUserDirt",
-      "TestRunImplementReclaimsDeadOwnerActiveRun",
       "TestRunImplementRejectsExplicitEmptySelectionOverrides",
       "TestRunImplementRejectsInvalidVerificationCapacityBeforeRunCreation",
       "TestRunImplementRemovedQAFlagExplainsTaskGraph",
@@ -1875,7 +1907,6 @@
       "TestRunSettleHelpDocumentsContract",
       "TestRunSettleNoCommitPrintsNoCommitPathsOrSharedWarning",
       "TestRunSettlePreflightRefusalsWriteNothing",
-      "TestRunSettleReclaimsDeadOwnerActiveRun",
       "TestRunSettleRefusalEnumeratesCandidateStatuses",
       "TestRunSettleRequiresSpecAndTask",
       "TestRunSettleRetargetsKeptTaskWorktreeAndCleansUpAfterIntegration",
@@ -2058,7 +2089,6 @@
       "TestSpecJudgeUsesConfiguredSpecRoot",
       "TestSplitReviewFindingsKeepsPreambleAndIndentedLines",
       "TestStageableReviewRootClassifiesInsideOutsideAndSymlink",
-      "TestStopTerminalRunWithDeadOwnerKeepsTerminalError",
       "TestStoppedResolveJournalsStoppedEventBeforeReturning",
       "TestStoppedRunJournalsStopWithoutLaterUnsafeDaemonEvents",
       "TestSubcommandLeadingHelpTokenPrintsUsage",
@@ -2219,6 +2249,7 @@
       "TestRecommendedModelsAreInTheModelCatalog",
       "TestRecommendedProfileCoversEveryWorkCategory",
       "TestRecommendedProfileFallbackChangesRuntimeExceptReview",
+      "TestRegenerationIsDeclared",
       "TestRenderedConfig",
       "TestRenderedConfigStatesTheImplementBudgetRenewal",
       "TestReplacingAProfileDropsItsDeviation",
@@ -2244,6 +2275,10 @@
       "TestValidateArtifactDirectoryResolvesAndCreatesPaths",
       "TestValidateRejectsEmptyReviewRequestCommand",
       "TestValidateVerificationCapacity",
+      "TestVerificationFormatDefaultsEmpty",
+      "TestVerificationFormatProjectReplacesUser",
+      "TestVerificationFormatRejectsANonString",
+      "TestVerificationFormatRendersInTheDefaultConfig",
       "TestVerificationToolsAreBareExecutableNames",
       "TestWriteProfilesConfigRejectsMultiDocumentConfigWithoutMutating"
     ],
@@ -2394,6 +2429,15 @@
       "TestQAEvidenceSnapshotFileErrorIsInfrastructure",
       "TestQAEvidenceSnapshotGitErrorDoesNotPreventSettlement",
       "TestQAEvidenceSnapshotSkipsAnExternalReport",
+      "TestQAFormatBoundsDiagnostics",
+      "TestQAFormatCancellationRestoresFiles",
+      "TestQAFormatCommitsTheFormattedReport",
+      "TestQAFormatEmptyCommandRunsNothing",
+      "TestQAFormatFormatsAnImportedPassBeforeThePrecondition",
+      "TestQAFormatLeavesFilesOutsideTheQADirectory",
+      "TestQAFormatRevertsAFailingFormatter",
+      "TestQAFormatRevertsAVerdictChange",
+      "TestQAFormatStartFailureRestoresFiles",
       "TestQAGateCarriesARowFromAnUnintegratedFailedPass",
       "TestQAGateCommitsTheEvidenceSnapshotAtTheAuditedHead",
       "TestQAGatePromptUsesTaskContextBuilderAndPreviousReportIdentity",
@@ -2851,6 +2895,8 @@
       "TestReviewHistoryConfiguration",
       "TestReviewHistoryConfigurationRejectsReachableRuleSources",
       "TestReviewHistoryConfigurationRequiresExclusions",
+      "TestSecondbrainExportFollowsTheHistoryForm",
+      "TestSecondbrainExportRuleRefusesBothMismatches",
       "TestStageScopeDefaultSweepIsUnchanged",
       "TestTheReleaseRunbookRequiresTheSkillsAndGuidesCheck",
       "TestUserGuideLinksResolve",
@@ -3140,6 +3186,7 @@
       "TestAPullRequestRowWithANoteInItsProvenanceIsRecognized",
       "TestARecordedSectionLeavesContextAndCarryForwardInputsUnchanged",
       "TestAResultsTableWithoutProvenanceGainsNoPrePullRequestRow",
+      "TestApplyHistoryKindRemovesReviewsAndHandoffsOnly",
       "TestArchiveAppliesTheOneEligibilityDecision",
       "TestArchiveDirAnswersEveryRetiredKind",
       "TestArchiveDirRejectsAnUnknownKind",
@@ -3219,13 +3266,18 @@
       "TestCollisionsStillReportsASharedInterfacePath",
       "TestCollisionsTreatsAnAbsentRepositoryAsAbsentEvidence",
       "TestCollisionsUsesOnlyTheNewestSettlementPerTask",
+      "TestCompareCoverageRecordsReportsAPlatformRegression",
       "TestCompareCoverageRecordsReportsAddedTestWithoutRegression",
       "TestCompareCoverageRecordsReportsMissingTest",
       "TestContextAcceptsADeletesEntry",
       "TestContextDeclaredOutput",
       "TestContextRefusesAPathUnderTwoKinds",
+      "TestCoverageCollectionListsEachPlatformOnlyTest",
+      "TestCoverageCollectionMatchesTheToolchainOnThisPlatform",
       "TestCoverageEquivalence",
+      "TestCoveragePlatformsComeFromTheReleaseMatrix",
       "TestCoverageRecordCountsNoPackageUnderDocs",
+      "TestCoverageRecordRefusesAMalformedPlatformEntry",
       "TestCreatedVerificationOperandIsACollisionTouch",
       "TestDerivedQAVerificationInvokesNoRoundfixBinary",
       "TestDerivedQAVerificationPassesTheChecker",
@@ -3234,6 +3286,18 @@
       "TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows",
       "TestFailedGateLoadsAboveIncompleteDependencies",
       "TestGateStalenessCharacterizesEachVerdict",
+      "TestHistoryCitationsNameMarkdownThatCitesARemovedPath",
+      "TestLegacyArchiveFoldersSkipRecords",
+      "TestLegacyConversionAcceptsAPreStampFolder",
+      "TestLegacyConversionKeepsEveryOverrideField",
+      "TestLegacyConversionLeavesTheFolderWholeOnFailure",
+      "TestLegacyConversionOfAFolderWithoutQAIsNoQA",
+      "TestLegacyConversionPreservesTheRendererOutcomeBudget",
+      "TestLegacyConversionPromotionRefusals",
+      "TestLegacyConversionRefusesMetadataThatDoesNotRoundTrip",
+      "TestLegacyConversionWritesARecordGitStillHolds",
+      "TestLegacyDeliveryIgnoresARelocation",
+      "TestLegacyDeliveryNamesTheCommitThatRetiredTheSpec",
       "TestListActiveDetailedReportsSkippedSpecFolders",
       "TestListActiveFiltersInactiveArchivedAndNonSpecDirectories",
       "TestListActiveWithoutSpecsRootReturnsNothing",
@@ -3259,13 +3323,16 @@
       "TestNegativeControlSectionParsesInOrder",
       "TestNewestQAReportOrdersByDateThenRunSequence",
       "TestNewestQAReportReportsMissingReports",
+      "TestNoQARecordRoundTrips",
       "TestNormalizeStatus",
       "TestOperationAuthorityDefaultRootUnchanged",
       "TestOperationAuthorityReportsUnresolvableSpecRoot",
       "TestOperationAuthorityResolvesExternalSpecRoot",
       "TestParseTaskDocumentDeclarations",
+      "TestPlanHistoryKindsOrdersAndMeasures",
       "TestPreconditionRefusalReportNamesItsAuditor",
       "TestPreconditionRefusalRoundTripsThroughTheQAReport",
+      "TestQAGateClosureFromManifestBytes",
       "TestQAGateLeafCoverageAppliesToBothVerdicts",
       "TestQAGateLegacyArchivedManifestsLoadUnchanged",
       "TestQAReportEligibility",
@@ -3310,10 +3377,14 @@
       "TestRecordedPathsKeepAFencedHeadingInAuthoredText",
       "TestRecordedPathsKeepAnAuthoredHeadingFollowedBySections",
       "TestRecordedPathsReplaceTheTrailingDaemonSection",
+      "TestReduceHistoryEntryKeepsFrontMatterTitleAndFirstParagraph",
+      "TestReduceHistoryEntryRefusesWhatItCannotReduce",
+      "TestReducedHistoryEntryIsNotPendingAgain",
       "TestReloadTaskDerivesOnlyQAVerification",
       "TestReloadTaskNormalizesStatusValues",
       "TestReloadTaskPicksUpAgentEdits",
       "TestReloadTaskReportsBrokenAgentEdits",
+      "TestReopenGateForLateDependenciesRecordsTheLine",
       "TestReopenGateWritesToTheValidatedTarget",
       "TestRepositorySpecCorpusStillLoads",
       "TestResolveAuditorEvidence",
@@ -3644,6 +3715,8 @@
       "TestReceiptsResolveArchivedAndInactiveRecords",
       "TestRecordEvidenceSnapshotsRefusesAReportUnderASymlinkedDirectory",
       "TestRecordEvidenceSnapshotsRefusesASymlinkedReport",
+      "TestReducedFindingWithABrokenLicenseStillFails",
+      "TestReducedFindingsKeepTheirLicensesAndMembers",
       "TestRefusalReasonIsTheReasonTheGateRecords",
       "TestRenderResultTextAndJSON",
       "TestRenderVocabularySkipDoesNotLookLikeFinding",
@@ -3804,7 +3877,6 @@
       "TestDeliveryQueueTokenUsageSumsLinkedRuns",
       "TestDeliveryQueueUsageLinkFailureRollsBackTheItem",
       "TestDeliveryQueueWithoutLimitsRecordsNone",
-      "TestDescendantProcessPIDsAfterStartRejectsStaleParentLinks",
       "TestDiscoverArtifactRootsReturnsEveryRecordedRepository",
       "TestDurableTableLifecyclePolicyCoversEveryTable",
       "TestDurableTableLifecyclePolicyRejectsUnstatedFixtureTable",
@@ -3851,42 +3923,13 @@
       "TestOpenRefusesANewerDatabaseWithTheTypedError",
       "TestOpenRejectsAWorktreeKeyWithoutACommonDirectory",
       "TestOpenRepositoryKeyBackfillIsIdempotent",
-      "TestOwnerProcessControllerAcceptsAlreadyAbsentProcess",
-      "TestOwnerProcessControllerForceKillExitProof",
-      "TestOwnerProcessControllerGracefulExitProof",
-      "TestOwnerProcessControllerInspectTreeFindsOutlivingGrandchild",
-      "TestOwnerProcessControllerInspectTreeReportsOnlyLiveOwnedProcesses",
-      "TestOwnerProcessControllerMatchingOwnerIdentityProceeds",
-      "TestOwnerProcessControllerProveOwnerAcceptsAbsentOwner",
-      "TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence",
-      "TestOwnerProcessControllerProveOwnerDoesNotReportLegacyIdentityAsReusedPID",
-      "TestOwnerProcessControllerProveOwnerLeavesProvenOwnerRunning",
-      "TestOwnerProcessControllerProveOwnerRefusesMismatchedIdentity",
-      "TestOwnerProcessControllerProveOwnerRejectsCurrentProcess",
-      "TestOwnerProcessControllerRefusesMismatchedOwnerIdentity",
-      "TestOwnerProcessControllerRejectsUnprovenCurrentProcess",
-      "TestOwnerProcessControllerTerminateTreeLeavesUnrelatedProcessRunning",
-      "TestOwnerProcessControllerTerminateTreeProvesOutlivingGrandchildGone",
-      "TestOwnerProcessControllerTerminateTreeReportsUnprovenAbsence",
-      "TestOwnerProcessControllerTerminateTreeStopsRediscoveryWhenContextCanceled",
-      "TestOwnerProcessHelper",
-      "TestOwnerProcessHelperIgnoreModeStaysAlive",
-      "TestOwnerProcessIdentityDoesNotSpawnPS",
-      "TestOwnerProcessIdentityFailsForAbsentProcess",
-      "TestOwnerProcessIdentityIgnoresCallerTimezone",
-      "TestOwnerProcessIdentityIsStableForOneProcess",
       "TestParallelRuns",
-      "TestParsePSOwnedProcess",
-      "TestProcessAliveReportsCurrentProcessAlive",
-      "TestProcessAliveReportsReapedChildDead",
       "TestPruneTerminalRunsDeletesOnlyEligibleJournalRows",
       "TestPruneTerminalRunsNeedsNoWriteLockWhenNoCandidateHasEvents",
       "TestPruneTerminalRunsNeverVacuumsAllocatedPages",
       "TestPruneTerminalRunsNoOpsWhenCutoffSelectsNothing",
       "TestPruneTerminalRunsSkipsCandidatesWithoutEvents",
       "TestReaderPagesEventsWhileWriterAppends",
-      "TestReclaimOrphanedRunCompletesFailedReleasesLockAndJournalsReason",
-      "TestReclaimOrphanedRunConcurrentAttemptsJournalOnce",
       "TestReconcileIntegrationDatabaseFailureNamesOperationAndRun",
       "TestReconcileIntegrationIdempotent",
       "TestReconcileIntegrationInvalidCompleteEvidence",
@@ -4439,5 +4482,196 @@
       "TestWriteTasksSkillStatesTheDeclaredPathRules",
       "TestWriteTechSpecProjectConstraints"
     ]
+  },
+  "platformTests": {
+    "roundfix/internal/cli": {
+      "TestCLIForceStopOwnerProcessHelper": [
+        "darwin",
+        "linux"
+      ],
+      "TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded": [
+        "darwin"
+      ],
+      "TestReopenRefusesAnActiveRunWithoutReclaimingIt": [
+        "darwin",
+        "linux"
+      ],
+      "TestReviewFetchBlocksOlderLiveRunAfterReclaimingNewerOrphan": [
+        "darwin",
+        "linux"
+      ],
+      "TestReviewFetchReclaimsDeadOwnerActiveRun": [
+        "darwin",
+        "linux"
+      ],
+      "TestRunCeilingReclaimsADeadHolder": [
+        "darwin",
+        "linux"
+      ],
+      "TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner": [
+        "darwin",
+        "linux"
+      ],
+      "TestRunForceStopOwnerPIDReuseFailsClosed": [
+        "darwin",
+        "linux"
+      ],
+      "TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion": [
+        "darwin",
+        "linux"
+      ],
+      "TestRunImplementReclaimsDeadOwnerActiveRun": [
+        "darwin",
+        "linux"
+      ],
+      "TestRunSettleReclaimsDeadOwnerActiveRun": [
+        "darwin",
+        "linux"
+      ],
+      "TestStopTerminalRunWithDeadOwnerKeepsTerminalError": [
+        "darwin",
+        "linux"
+      ]
+    },
+    "roundfix/internal/store": {
+      "TestDescendantProcessPIDsAfterStartRejectsStaleParentLinks": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessControllerAcceptsAlreadyAbsentProcess": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessControllerForceKillExitProof": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessControllerGracefulExitProof": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessControllerInspectTreeFindsOutlivingGrandchild": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessControllerInspectTreeReportsOnlyLiveOwnedProcesses": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessControllerMatchingOwnerIdentityProceeds": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessControllerProveOwnerAcceptsAbsentOwner": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessControllerProveOwnerDoesNotReportLegacyIdentityAsReusedPID": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessControllerProveOwnerLeavesProvenOwnerRunning": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessControllerProveOwnerRefusesMismatchedIdentity": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessControllerProveOwnerRejectsCurrentProcess": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessControllerRefusesMismatchedOwnerIdentity": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessControllerRejectsUnprovenCurrentProcess": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessControllerTerminateTreeLeavesUnrelatedProcessRunning": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessControllerTerminateTreeProvesOutlivingGrandchildGone": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessControllerTerminateTreeReportsUnprovenAbsence": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessControllerTerminateTreeStopsRediscoveryWhenContextCanceled": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessHelper": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessHelperIgnoreModeStaysAlive": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessIdentityDoesNotSpawnPS": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessIdentityFailsForAbsentProcess": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessIdentityIgnoresCallerTimezone": [
+        "darwin",
+        "linux"
+      ],
+      "TestOwnerProcessIdentityIsStableForOneProcess": [
+        "darwin",
+        "linux"
+      ],
+      "TestParsePSOwnedProcess": [
+        "darwin",
+        "linux"
+      ],
+      "TestParseProcStatStartTimeCountsFromLastClosingParenthesis": [
+        "linux"
+      ],
+      "TestParseProcStatStartTimeRejectsMissingField": [
+        "linux"
+      ],
+      "TestProcessAliveReportsCurrentProcessAlive": [
+        "darwin",
+        "linux"
+      ],
+      "TestProcessAliveReportsExitedUnreapedChildDead": [
+        "windows"
+      ],
+      "TestProcessAliveReportsReapedChildDead": [
+        "darwin",
+        "linux"
+      ],
+      "TestProcessVanishedAcceptsBothProcfsAnswers": [
+        "linux"
+      ],
+      "TestReclaimOrphanedRunCompletesFailedReleasesLockAndJournalsReason": [
+        "darwin",
+        "linux"
+      ],
+      "TestReclaimOrphanedRunConcurrentAttemptsJournalOnce": [
+        "darwin",
+        "linux"
+      ],
+      "TestWindowsProcessStartParsesRecordedIdentity": [
+        "windows"
+      ],
+      "TestWindowsProcessTreeRejectsStaleParentLinks": [
+        "windows"
+      ]
+    }
   }
 }

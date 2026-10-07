@@ -1,5 +1,9 @@
 {
-  "schemaVersion": "setup-context-driven/module-v2", "id": "backend", "version": 6, "kind": "application-surface", "title": "Backend application guidance",
+  "schemaVersion": "setup-context-driven/module-v2",
+  "id": "backend",
+  "version": 6,
+  "kind": "application-surface",
+  "title": "Backend application guidance",
   "dependsOn": ["typescript"], "conflictsWith": [], "requiredSkills": [
     "ai-sdk",
     "backend-docs",

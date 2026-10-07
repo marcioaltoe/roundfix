@@ -23,6 +23,7 @@ var guardedSpawningPackages = []string{
 	"internal/authorization",
 	"internal/baseline",
 	"internal/cli",
+	"internal/config",
 	"internal/daemon",
 	"internal/delivery",
 	"internal/gittest",
