@@ -18,9 +18,12 @@ Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
 - **HARD RULE — repository contracts validate at the pull request boundary**:
   `make verify` excludes the checks whose inputs are the repository itself —
   markdown contracts and the derived-artifact regeneration gates — so an
-  ordinary commit does not re-run them. `make verify-docs` runs those
-  contracts and `roundfix spec check`, and it **MUST** pass before any pull
-  request opens. Nothing under `docs/history/` is ever validated as live work.
+  ordinary commit does not re-run them. `make verify-changed`, the Verification
+  of Runs and of the QA gate, runs the Repository Contract Tests that their
+  Contract Relevance selects (ADR-0252). `make verify-docs` still runs all Repository
+  Contract Tests and `roundfix spec check`, and it **MUST** pass before any pull
+  request opens. Platform-only failures stay a known limit because CI is the
+  Linux gate. Nothing under `docs/history/` is ever validated as live work.
 - **HARD RULE — roundfix skill sync**: before opening any PR, confirm the
   roundfix skill still matches the shipped CLI behavior; a PR that changes CLI
   behavior ships the skill update too.

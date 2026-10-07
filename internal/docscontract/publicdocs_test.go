@@ -6,8 +6,10 @@
 // which stay in internal/cli.
 
 // The docscontract tag keeps this invalidation domain out of go test ./...;
-// make verify-docs runs it at the pull request boundary.
+// The selective gate runs it by its Contract Relevance; make verify-docs still runs it.
 //go:build docscontract
+
+//verify:always
 
 package docscontract
 

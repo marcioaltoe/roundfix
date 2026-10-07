@@ -6,9 +6,12 @@
 //
 // The repocontract tag keeps this out of go test ./...: it copies every
 // tracked file, which makes the whole repository its input, so any change
-// anywhere re-runs it. make verify-docs runs it at the pull request boundary.
+// anywhere re-runs it. The selective gate runs it by its Contract Relevance;
+// make verify-docs still runs it.
 
 //go:build repocontract
+
+//verify:relevant internal/baseline/assets/ internal/baseline/testdata/ .agents/skills/ skills/
 
 package skills
 

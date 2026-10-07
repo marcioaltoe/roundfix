@@ -395,6 +395,14 @@ _Avoid_: Advisory check, best-effort warning, soft gate
 The authoritative command or commands the Daemon runs verbatim in the repository root to decide whether Agent or Settle Command work can be settled and committed. A failure returns only its diagnostics to the Agent Session; for Tasks, a pass is required before status `completed`.
 _Avoid_: CI, smoke test, best-effort check
 
+**Repository Contract Test**:
+A Go test under the `docscontract` or `repocontract` build tag that checks the repository itself — its documents, derived artifacts or test wiring — rather than one package's behavior. `make verify-docs` runs every one, and `make verify-changed` runs the ones its Contract Relevance selects (ADR-0252).
+_Avoid_: docs test, integration test, CI-only test
+
+**Contract Relevance**:
+The declaration in a Repository Contract Test's source that decides when `make verify-changed` runs it: `always` on every change; by default, when a file in its package directory changes; `relevant`, when its package directory or a declared path changes; or `boundary`, never in that gate. A malformed declaration fails the gate. A change to `go.mod`, `go.sum` or `Makefile`, and a change list that Git cannot produce, each select every contract that is not `boundary` (ADR-0252).
+_Avoid_: test tags, impact map, test filter
+
 **Incremental Verification**:
 The selected fast local check recorded by the `verification.incremental` Baseline decision for validating the current change while reusing safe local state. It is distinct from the complete repository Verification selected by `verification.gate`.
 _Avoid_: Complete Verification, CI gate, optional check

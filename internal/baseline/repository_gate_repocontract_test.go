@@ -5,6 +5,8 @@
 
 //go:build repocontract
 
+//verify:relevant internal/baseline/analyzer/
+
 package baseline
 
 import (
