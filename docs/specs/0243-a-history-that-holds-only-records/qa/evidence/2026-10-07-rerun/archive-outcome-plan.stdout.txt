@@ -1,4 +1,0 @@
-archive plan for 0243-a-history-that-holds-only-records: removes 412 file(s) (3145087 bytes) and writes docs/history/specs/0243-a-history-that-holds-only-records.md
-core 11 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-07-01.md, qa/qa-report-2026-10-07.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md
-evidence 401 file(s) (2997911 bytes) under qa/evidence/
-promote with: roundfix archive 0243-a-history-that-holds-only-records --promote <path>

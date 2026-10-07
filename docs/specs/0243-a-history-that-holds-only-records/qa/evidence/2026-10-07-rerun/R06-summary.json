@@ -1,9 +1,0 @@
-{
-  "source_head": "36ad11279e7cb0cc9ba0162e34621f86b35fd000",
-  "bytes_before": 60653133,
-  "bytes_after": 405406,
-  "apply": "history sanitize applied 227 unit(s): wrote 223 Archive Record(s), reduced 129 file(s), removed 6303 file(s) (59914337 bytes) kept in Git at 36ad11279e7c and tag history-full; promoted 0 file(s) to docs/references/; 0 unit(s) remain",
-  "make_verify": 0,
-  "make_verify_docs": 0,
-  "clone_removed": true
-}

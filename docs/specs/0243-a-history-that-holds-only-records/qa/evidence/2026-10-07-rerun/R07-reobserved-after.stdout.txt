@@ -1,4 +1,0 @@
-=== RUN   TestSecondbrainExportFollowsTheHistoryForm
---- PASS: TestSecondbrainExportFollowsTheHistoryForm (0.00s)
-PASS
-ok  	roundfix/internal/docscontract	0.202s

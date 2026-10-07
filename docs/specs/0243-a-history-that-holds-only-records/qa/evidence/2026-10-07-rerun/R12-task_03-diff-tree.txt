@@ -1,6 +1,0 @@
-docs/specs/0243-a-history-that-holds-only-records/task_03.md
-docs/user-guide/commands.md
-docs/user-guide/commands/history.md
-internal/cli/cli.go
-internal/cli/history.go
-internal/cli/history_test.go

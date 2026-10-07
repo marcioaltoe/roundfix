@@ -1,9 +1,0 @@
-{
-  "argv": [
-    "git",
-    "add",
-    "--all"
-  ],
-  "cwd": "/private/tmp/qa0243-ablation-gfu190vx/clone",
-  "exit": 0
-}

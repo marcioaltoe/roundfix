@@ -1,9 +1,0 @@
-{
-  "argv": [
-    "./bin/roundfix",
-    "history",
-    "sanitize"
-  ],
-  "cwd": "/private/tmp/qa0243-x2aiitw1/tmpeyxfxsvw",
-  "exit": 0
-}
