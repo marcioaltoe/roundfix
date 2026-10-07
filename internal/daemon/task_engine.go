@@ -239,6 +239,7 @@ type TaskPlan struct {
 	Concurrency                        int
 	VerificationConcurrency            int
 	RepositoryVerification             string
+	FormatCommand                      string
 	RepositoryVerificationAtSettlement bool
 	settlementChecks                   bool
 	specConsistencyBaseline            map[string]struct{}
@@ -2759,7 +2760,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	if err != nil {
 		return "", "", false, err
 	}
-	prior, _, err := engine.importPriorQAPass(ctx, plan, ordinal)
+	prior, imported, err := engine.importPriorQAPass(ctx, plan, ordinal)
 	if err != nil {
 		return "", "", false, err
 	}
@@ -2794,6 +2795,11 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 			return "", "", false, fmt.Errorf("run QA mechanical stage for run %q: %w", plan.RunID, errors.Join(err, publishErr))
 		}
 		return "", "", false, fmt.Errorf("run QA mechanical stage for run %q: %w", plan.RunID, err)
+	}
+	if imported && strings.TrimSpace(plan.FormatCommand) != "" {
+		if err := engine.formatQADirectory(ctx, plan, ordinal, "imported", prior.Files, ""); err != nil {
+			return "", "", false, err
+		}
 	}
 	repositoryVerificationPrompt, verificationWindowPaths, verificationErr := engine.runQARepositoryVerification(ctx, plan, qaTask, ordinal, &mechanicalResult)
 	if verificationErr != nil {
@@ -3646,6 +3652,9 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 	}
 	if len(stageable) == 0 {
 		return nil
+	}
+	if err := engine.formatQADirectory(ctx, plan, ordinal, "commit", stageable, verdict); err != nil {
+		return err
 	}
 	message := QACommitMessage(plan.Spec.Slug, verdict)
 	if err := engine.deps.Committer.Commit(ctx, CommitRequest{

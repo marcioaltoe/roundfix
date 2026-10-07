@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0244-a-formatted-qa-report-and-a-reopen-for-late-dependencies
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -107,3 +107,81 @@ CLI tests below.
 - `_techspec.md` → API Contract 2; Invariants 2 to 8; Build Order 3
 - ADR-0249
 - ADR-0194
+
+## Result
+
+Implemented the Task 03 slice for Daemon Verification. The existing
+`status: in_progress` is preserved; the authored Verification commands were
+not run, and no commit, push or Pull Request was made.
+
+### Implementation
+
+- `TaskPlan.FormatCommand` receives the loaded `verification.format` from
+  `executeImplementCycle`.
+- The imported-pass format runs after the mechanical stage and its carry
+  proof, before repository Verification. The commit format runs after the
+  stageable set is final, immediately before the QA Report commit, without
+  recomputing that set. Import and carry code remain unchanged.
+- The format run keeps sorted regular files under the Spec's `qa/` directory,
+  rejects symlinks and symlink ancestors, snapshots bytes and modes, and
+  supplies repository-relative paths as separate shell arguments. It has a
+  five-minute cancellation cap and observes durable Stop Requests.
+- A failed command or changed/unreadable report verdict restores every kept
+  file's bytes and mode. The newest committed report is checked against the
+  settled verdict; older included reports retain their own verdicts.
+- Each invocation records its format stage, outcome, command, path count and
+  sorted changed paths. Failed/reverted runs record the reason and last 2048
+  diagnostic bytes and write the documented stderr line. An empty command
+  returns before any formatting work, event or diagnostic.
+- `qa_format_unix.go` isolates process-group cancellation so shell children
+  stop before restoration; `qa_format_windows.go` retains CommandContext
+  process cancellation. These additional ordinary source paths belong to
+  this Task's cancellation implementation.
+- Test formatter scripts are private non-executable temporary files invoked
+  through `sh`, preserving the frozen executable-fixture inventory.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused-check evidence |
+| --- | --- |
+| Configured output is committed | `TestQAFormatCommitsTheFormattedReport` reads real Git blobs for both the report and evidence and matches the script output. `TestImplementPassesVerificationFormatToTheQAStep` exercises User Config through implement and checks every recorded formatter argument is under `qa/`, including the report. |
+| Imported unformatted pass reaches the Agent | `TestQAFormatFormatsAnImportedPassBeforeThePrecondition` imports a journal-proven prior pass, runs a real repository command rejecting any unformatted QA file, reaches the QA Agent, and records both format stages. |
+| Failures and verdict changes preserve verdict and are recorded | `TestQAFormatRevertsAFailingFormatter` and `TestQAFormatRevertsAVerdictChange` inspect the original committed report/evidence bytes and failure events; the failing case also checks restored modes and diagnostics. Additional tests cover context cancellation, durable Stop Request, failure to start the shell, and the diagnostic-tail limit. |
+| Empty command changes nothing | `TestQAFormatEmptyCommandRunsNothing` checks unchanged committed bytes, no format event and no format stderr line. `TestQAFormatLeavesFilesOutsideTheQADirectory` proves the QA Task, an outside path and a symlink are not supplied to the script. |
+| Existing tests remain unchanged | The focused QA/prior-pass/implement selection passed, and the stable incremental rerun passed the entire Go suite, including daemon, CLI, spec and speccheck. No existing test expectation was edited. |
+
+### Checks run
+
+All Go commands below used `GOCACHE=/private/tmp/roundfix-task03-gocache`.
+
+- `rtk proxy go test ./internal/daemon ./internal/cli -run 'QA|Prior|Implement' -count=1`
+  — passed.
+- `rtk proxy go test -race ./internal/daemon ./internal/cli ./internal/testfixture -run 'TestQAFormat|TestImplementPassesVerificationFormatToTheQAStep|TestNoTestWritesAnExecutableOutsideTheResidue' -count=1`
+  — passed after the fixture correction, including all six required daemon
+  tests, the CLI wiring test and the additional failure/cancellation tests.
+- `GOOS=windows rtk proxy go build ./internal/daemon` and
+  `GOOS=linux rtk proxy go build ./internal/daemon` — each passed; the host
+  build and tests also exercise Darwin.
+- `rtk make verify-incremental` — the initial sandboxed run exited 2: the new
+  executable script writes violated the frozen fixture inventory, two
+  existing force-stop tests lacked process-table access, and an edit to the
+  new CLI test during that run triggered the repository fingerprint guard.
+  The scripts were corrected to private files invoked through `sh`. The
+  rerun with host process-table access and no concurrent source edits exited
+  0: formatting, vet, the full Go suite, skill checks and binary build passed.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — passed.
+
+The listed Task Verification commands remain for the Daemon. No follow-up
+implementation outside Task 03 was included.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/daemon/qa_format_unix.go`
+- `internal/daemon/qa_format_windows.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261007T095139Z_d22b1ce63abf526a`
+- Source commit: `3f0d8fdcdb260f8e122206ead6e1126aa05c4ce7`
