@@ -138,6 +138,11 @@ func printRunsCauses(out io.Writer, table runcause.Table, report runcause.Report
 		}
 		fmt.Fprintf(out, "%s %s/%s %s %s %s %s: %s\n", item.Kind, item.Spec, item.Task, item.RunID, attempt, item.Class, signature, check)
 	}
+	for _, archived := range report.ArchivedSpecs {
+		if !archived.SourceAvailable {
+			fmt.Fprintf(out, "Spec %s archived (%s); source_revision unavailable\n", archived.Spec, archived.Disposition)
+		}
+	}
 	since, until := "*", "*"
 	if report.Window.Since != nil {
 		since = *report.Window.Since

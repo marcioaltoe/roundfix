@@ -11,6 +11,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"roundfix/internal/gittest"
 )
 
 // md turns single quotes into backticks so markdown fixtures can be raw
@@ -1742,7 +1744,7 @@ func TestQAGateLegacyArchivedManifestsLoadUnchanged(t *testing.T) {
 	if !ok {
 		t.Fatal("runtime.Caller could not locate the repository")
 	}
-	archivedRoot := archiveTestRepositoryPath(filepath.Join(filepath.Dir(testFile), "..", ".."), ArchiveKindSpec)
+	archivedRoot := archiveTestRepositoryPath(gittest.PinnedHistory(t, filepath.Join(filepath.Dir(testFile), "..", ".."), ArchiveDir(ArchiveKindSpec)), ArchiveKindSpec)
 	tempSpecsRoot := defaultSpecsRoot(t.TempDir())
 	entries, err := os.ReadDir(archivedRoot)
 	if err != nil {
@@ -1828,7 +1830,7 @@ func TestRepositorySpecCorpusStillLoads(t *testing.T) {
 	t.Run("repository corpus", func(t *testing.T) {
 		loaded, err := loadSpecCorpus(
 			filepath.Join(repositoryRoot, "docs", "specs"),
-			archiveTestRepositoryPath(repositoryRoot, ArchiveKindSpec),
+			archiveTestRepositoryPath(gittest.PinnedHistory(t, repositoryRoot, ArchiveDir(ArchiveKindSpec)), ArchiveKindSpec),
 			t.TempDir(),
 		)
 		if err != nil {

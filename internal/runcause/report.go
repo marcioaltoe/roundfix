@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"roundfix/internal/preflight"
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
@@ -70,6 +71,14 @@ type Report struct {
 	Tasks            []TaskCounts   `json:"tasks"`
 	Summary          map[string]int `json:"summary"`
 	SpecsNotFound    []string       `json:"specs_not_found"`
+	ArchivedSpecs    []ArchivedSpec `json:"archived_specs,omitempty"`
+}
+
+// ArchivedSpec preserves disposition when source history is unavailable.
+type ArchivedSpec struct {
+	Spec            string                  `json:"spec"`
+	Disposition     spec.ArchiveDisposition `json:"disposition"`
+	SourceAvailable bool                    `json:"source_available"`
 }
 
 func date(t time.Time) *string {
@@ -129,12 +138,16 @@ func Build(ctx context.Context, t Table, req Request) (Report, error) {
 		report.Runs++
 		graph, cached := graphs[run.SpecSlug]
 		if !cached {
-			graph, err = findGraph(req, run.SpecSlug)
+			var archived *ArchivedSpec
+			graph, archived, err = findGraph(ctx, req, run.SpecSlug)
+			if archived != nil {
+				report.ArchivedSpecs = append(report.ArchivedSpecs, *archived)
+			}
 			if err != nil {
 				return Report{}, err
 			}
 			graphs[run.SpecSlug] = graph
-			if graph == nil {
+			if graph == nil && archived == nil {
 				report.SpecsNotFound = append(report.SpecsNotFound, run.SpecSlug)
 			}
 		}
@@ -264,7 +277,7 @@ func classifyItem(t Table, e Evidence) (string, *string, *string) {
 	return class, &signature, &source
 }
 
-func findGraph(req Request, slug string) (*spec.CauseGraph, error) {
+func findGraph(ctx context.Context, req Request, slug string) (*spec.CauseGraph, *ArchivedSpec, error) {
 	for _, root := range []string{req.SpecsRoot, req.ArchiveRoot} {
 		if root == "" {
 			continue
@@ -274,11 +287,53 @@ func findGraph(req Request, slug string) (*spec.CauseGraph, error) {
 			continue
 		}
 		if err != nil {
-			return nil, fmt.Errorf("read cause graph %q: %w", slug, err)
+			return nil, nil, fmt.Errorf("read cause graph %q: %w", slug, err)
 		}
-		return &graph, nil
+		return &graph, nil, nil
 	}
-	return nil, nil
+	archived, err := spec.ReadArchivedSpec(req.ArchiveRoot, slug)
+	if errors.Is(err, spec.ErrNotArchived) || errors.Is(err, os.ErrNotExist) {
+		return nil, nil, nil
+	}
+	if err != nil {
+		return nil, nil, fmt.Errorf("read cause archive %q: %w", slug, err)
+	}
+	if archived.Form != spec.ArchivedRecord {
+		return nil, nil, nil
+	}
+	r := archived.Record
+	metadata := &ArchivedSpec{Spec: slug, Disposition: r.Disposition}
+	git := preflight.ExecGitRunner{}
+	// The archive may belong to an external Specs Root's repository.
+	// Git resolves that repository from the existing archive directory.
+	repository, err := git.RunGit(ctx, req.ArchiveRoot, "rev-parse", "--show-toplevel")
+	if err != nil {
+		return nil, metadata, fmt.Errorf("resolve cause archive repository: %w", err)
+	}
+	repository = strings.TrimSpace(repository)
+	if _, err := git.RunGit(ctx, repository, "cat-file", "-e", r.SourceRevision+"^{commit}"); err != nil {
+		if ctx.Err() != nil {
+			return nil, nil, ctx.Err()
+		}
+		return nil, metadata, nil
+	}
+	metadata.SourceAvailable = true
+	graph, err := spec.ReadCauseGraphAt(r.Source, slug, func(file string) ([]byte, error) {
+		entry, err := git.RunGit(ctx, repository, "ls-tree", r.SourceRevision, "--", file)
+		if err != nil {
+			return nil, err
+		}
+		// Historical evidence follows the folder reader's regular-file rule.
+		if !strings.HasPrefix(entry, "100644 blob ") && !strings.HasPrefix(entry, "100755 blob ") {
+			return nil, os.ErrNotExist
+		}
+		content, err := git.RunGit(ctx, repository, "show", r.SourceRevision+":"+file)
+		return []byte(content), err
+	})
+	if err != nil {
+		return nil, metadata, err
+	}
+	return &graph, metadata, nil
 }
 
 func taskNumber(id string) int {

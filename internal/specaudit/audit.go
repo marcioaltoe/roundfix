@@ -299,9 +299,17 @@ func claimedArtifacts(
 	activeSpec := filepath.ToSlash(filepath.Join(specTree.artifactRoot, slug))
 	archivedSpec := archivedSpecArtifactPath(builtInRoot, specTree.artifactRoot, slug)
 
-	archiveClaimed, err := artifactClaimed(ctx, runner, specTree, archivedSpec)
+	recordClaimed, err := artifactClaimed(ctx, runner, specTree, archivedSpec)
 	if err != nil {
 		return nil, err
+	}
+	archiveClaimed := recordClaimed
+	if !recordClaimed {
+		archivedSpec = strings.TrimSuffix(archivedSpec, ".md")
+		archiveClaimed, err = artifactClaimed(ctx, runner, specTree, archivedSpec)
+		if err != nil {
+			return nil, err
+		}
 	}
 	specArtifact := activeSpec
 	if archiveClaimed {
@@ -318,7 +326,11 @@ func claimedArtifacts(
 	for _, artifact := range taskArtifacts {
 		if archiveClaimed && codeTree.repoRoot == specTree.repoRoot &&
 			(artifact == activeSpec || strings.HasPrefix(artifact, activeSpec+"/")) {
-			artifact = archivedSpec + strings.TrimPrefix(artifact, activeSpec)
+			if recordClaimed {
+				artifact = archivedSpec
+			} else {
+				artifact = archivedSpec + strings.TrimPrefix(artifact, activeSpec)
+			}
 		}
 		claimed[codeTree.repoRoot+"\x00"+artifact] = artifactClaim{path: artifact, tree: codeTree}
 	}
@@ -340,7 +352,7 @@ func archivedSpecArtifactPath(builtInRoot bool, artifactRoot, slug string) strin
 	// archive location is resolved within that tree using the Spec Root's
 	// built-in classification.
 	archiveDir := spec.ArchiveSpecRoot(filepath.FromSlash(artifactRoot), builtInRoot)
-	return filepath.ToSlash(filepath.Join(archiveDir, slug))
+	return filepath.ToSlash(spec.ArchiveRecordPath(archiveDir, slug))
 }
 
 func artifactClaimed(

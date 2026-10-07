@@ -79,6 +79,6 @@ authorizes owner reclamation.
 The terminology and behavior trace to the
 [Roundfix glossary](../../../CONTEXT.md#language),
 [ADR-0052](../../adr/0052-run-completion-is-compare-and-set.md),
-[Spec 0037](../../history/specs/0037-terminal-outcome-integrity/_prd.md), and the
+Spec 0037, and the
 [detached-watch finding](../../history/findings/2026-07-16-vortex-pr87-detached-watch-notification.md#4-cleanup-noise-appeared-before-the-actionable-failure).
 

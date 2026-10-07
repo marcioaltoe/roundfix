@@ -1,11 +1,13 @@
 package speccheck
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -217,14 +219,13 @@ func detectFindingsConsistency(result *Result, repoRoot string) error {
 	if err != nil {
 		return err
 	}
-	archivedSpecs, err := repositoryDirectoryNames(
+	archivedSpecs, err := repositoryArchivedSpecNames(
 		filepath.Join(filepath.Clean(repoRoot), filepath.FromSlash(spec.ArchiveDir(spec.ArchiveKindSpec))),
-		false,
 	)
 	if err != nil {
 		return err
 	}
-	detectArchiveLicenses(result, archived, findingDocumentNames(rollups), activeSpecs, archivedSpecs)
+	detectArchiveLicenses(result, repoRoot, archived, findingDocumentNames(rollups), activeSpecs, archivedSpecs)
 	return nil
 }
 
@@ -410,6 +411,18 @@ func detectRollupMembers(result *Result, rollups []findingDocument, active, arch
 	}
 }
 
+func repositoryArchivedSpecNames(directory string) (map[string]bool, error) {
+	slugs, err := spec.ArchivedSpecSlugs(directory)
+	if err != nil {
+		return nil, err
+	}
+	names := make(map[string]bool, len(slugs))
+	for _, slug := range slugs {
+		names[slug] = true
+	}
+	return names, nil
+}
+
 func repositoryDirectoryNames(directory string, skipUnderscore bool) (map[string]bool, error) {
 	names := make(map[string]bool)
 	entries, err := os.ReadDir(directory)
@@ -428,11 +441,44 @@ func repositoryDirectoryNames(directory string, skipUnderscore bool) (map[string
 	return names, nil
 }
 
-func detectArchiveLicenses(result *Result, archived []findingDocument, rollups, activeSpecs, archivedSpecs map[string]bool) {
+func deletedArchivedSpecNames(repoRoot string) map[string]bool {
+	archiveRoot := spec.ArchiveDir(spec.ArchiveKindSpec)
+	command := exec.CommandContext(context.Background(), "git", "-C", repoRoot,
+		"log", "--format=", "--name-only", "-z", "--diff-filter=D", "--no-renames", "HEAD", "--", archiveRoot)
+	output, err := command.Output()
+	if err != nil {
+		// Git history is optional; filesystem licenses still apply outside Git
+		// or when the repository's history is unavailable.
+		return nil
+	}
+	names := make(map[string]bool)
+	for _, path := range strings.Split(string(output), "\x00") {
+		relative, ok := strings.CutPrefix(strings.TrimLeft(path, "\n"), archiveRoot+"/")
+		if !ok {
+			continue
+		}
+		slug, file, nested := strings.Cut(relative, "/")
+		if nested && slug != "" && file != "" {
+			names[slug] = true
+		}
+	}
+	return names
+}
+
+func detectArchiveLicenses(result *Result, repoRoot string, archived []findingDocument, rollups, activeSpecs, archivedSpecs map[string]bool) {
+	var deletedSpecs map[string]bool
+	historyLoaded := false
 	for _, document := range archived {
 		if document.frontmatter.hasLicense {
 			license := document.frontmatter.absorbedBy
 			if rollups[license.value] || activeSpecs[license.value] || archivedSpecs[license.value] {
+				continue
+			}
+			if !historyLoaded {
+				deletedSpecs = deletedArchivedSpecNames(repoRoot)
+				historyLoaded = true
+			}
+			if deletedSpecs[license.value] {
 				continue
 			}
 			result.Findings = append(result.Findings, Finding{
@@ -1701,7 +1747,7 @@ func detectTaskContextReferences(result *Result, repoRoot, specsRoot, taskPath s
 		if ref.Kind == spec.ContextKindCreates || ref.Kind == spec.ContextKindDeletes {
 			continue
 		}
-		if repositoryPathExists(repoRoot, ref.Path) {
+		if repositoryPathExists(repoRoot, ref.Path) || archivedTaskContextExists(repoRoot, specsRoot, ref.Path) {
 			continue
 		}
 		activePath, valid := resolveRepositoryPath(repoRoot, ref.Path)
@@ -1727,6 +1773,39 @@ func detectTaskContextReferences(result *Result, repoRoot, specsRoot, taskPath s
 			Fix: "Create " + ref.Path + " or update the Task Context entry in " + taskDisplayPath + ".",
 		})
 	}
+}
+
+// Archived context can name either the former active path or its legacy archive path.
+func archivedTaskContextExists(repoRoot, specsRoot, refPath string) bool {
+	candidate, valid := resolveRepositoryPath(repoRoot, refPath)
+	if !valid {
+		return false
+	}
+	archiveRoot := activeSpecArchiveRoot(repoRoot, specsRoot)
+	for _, root := range []string{specsRoot, archiveRoot} {
+		relative, err := filepath.Rel(root, candidate)
+		if err != nil || filepath.IsAbs(relative) || strings.HasPrefix(relative, "..") {
+			continue
+		}
+		parts := strings.SplitN(filepath.ToSlash(relative), "/", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		archived, err := spec.ReadArchivedSpec(archiveRoot, parts[0])
+		if err != nil || archived.Form != spec.ArchivedRecord {
+			continue
+		}
+		record := archived.Record
+		cmd := exec.CommandContext(context.Background(), "git", "-C", repoRoot, "cat-file", "-e", record.SourceRevision+"^{commit}")
+		if cmd.Run() != nil {
+			continue
+		}
+		cmd = exec.CommandContext(context.Background(), "git", "-C", repoRoot, "show", record.SourceRevision+":"+record.Source+"/"+parts[1])
+		if cmd.Run() == nil {
+			return true
+		}
+	}
+	return false
 }
 
 func detectReferenceIndex(result *Result, repoRoot, specDir string) error {

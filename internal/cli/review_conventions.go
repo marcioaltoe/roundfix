@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"roundfix/internal/preflight"
+	"roundfix/internal/spec"
 )
 
 const deliveryConventionsVersion = "roundfix/delivery-conventions/v2"
@@ -22,9 +24,9 @@ func deliveryConventions() []deliveryConvention {
 	return []deliveryConvention{
 		{"C1", "A Spec's QA Report records the head it audited and is committed after that head, so it never names the commit that records it."},
 		{"C2", "The Daemon writes a Task file's status and its `## Result`, `## Recorded paths` and `## Carry-forward provenance` sections after the Task's Verification passes; a Result that calls status Daemon-owned agrees with a `completed` status."},
-		{"C3", "The archive commit moves a completed Spec's directory to the archive root and stamps its archive front matter."},
+		{"C3", "The archive commit adds an Archive Record at the archive root and removes the Spec folder, whose bytes stay in Git at source_revision; legacy archives move the folder and stamp its front matter."},
 		{"C4", "A planning candidate authors a Spec whose Tasks are all pending and which has no QA Report; that Spec's own delivery implements it and is reviewed then."},
-		{"C5", "A Spec archived through the QA Archive Override records `qa_override: true`, `qa_override_approval` and `qa_override_reason` in its archived `_prd.md` front matter; its QA Task keeps its observed status and its QA Report its observed verdict."},
+		{"C5", "A Spec archived through the QA Archive Override records `qa_override: true`, `qa_override_approval` and `qa_override_reason` in its archived `_prd.md` front matter; its QA Task keeps its observed status and its QA Report its observed verdict. For an Archive Record, these fields are in the record and the unchanged QA Task and Report stay in Git at source_revision."},
 	}
 }
 
@@ -50,6 +52,15 @@ func conventionRegions(ctx context.Context, repo reviewRepository, anchor review
 		}
 		rel := strings.TrimPrefix(anchor.Path, root+"/")
 		parts := strings.Split(rel, "/")
+		if len(parts) == 1 && index > 0 && strings.HasSuffix(parts[0], ".md") {
+			override, err := reviewSpecQAOverride(ctx, repo, root+"/"+strings.TrimSuffix(parts[0], ".md"))
+			if err != nil {
+				return nil, err
+			}
+			if override {
+				rules = append(rules, "C5")
+			}
+		}
 		if len(parts) < 2 {
 			continue
 		}
@@ -95,6 +106,14 @@ func conventionRegions(ctx context.Context, repo reviewRepository, anchor review
 }
 
 func reviewSpecQAOverride(ctx context.Context, repo reviewRepository, specPath string) (bool, error) {
+	archived, err := readArchivedSpecAt(ctx, repo.Git, repo.Root, repo.Head, path.Dir(specPath), path.Base(specPath))
+	if err == nil && archived.Form == spec.ArchivedRecord {
+		override := archived.Record.QAOverride
+		return override != nil && strings.TrimSpace(override.Approval) != "" && strings.TrimSpace(override.Reason) != "", nil
+	}
+	if err != nil && !errors.Is(err, spec.ErrNotArchived) {
+		return false, err
+	}
 	prdPath := specPath + "/_prd.md"
 	files, err := repo.Git.RunGit(ctx, repo.Root, "ls-tree", "--name-only", repo.Head, "--", prdPath)
 	if err != nil {

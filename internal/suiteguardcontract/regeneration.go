@@ -22,6 +22,7 @@ import (
 )
 
 const sanctionedRegenerationHeading = "Sanctioned regeneration"
+const archiveRecordSchema = "roundfix/archive-record/v1"
 
 const (
 	legacyAuthorizationRoot = "docs/workflow/authorizations"
@@ -88,6 +89,12 @@ func readSanctionedRegenerations(root string) ([]SanctionedRegeneration, error) 
 		declarations = append(declarations, discovered...)
 	}
 
+	records, err := readArchiveRecordRegenerations(root)
+	if err != nil {
+		return nil, err
+	}
+	declarations = append(declarations, records...)
+
 	for index := range declarations {
 		if declarations[index].Outputs != nil {
 			continue
@@ -110,6 +117,57 @@ func readSanctionedRegenerations(root string) ([]SanctionedRegeneration, error) 
 		return strings.Join(declarations[i].Outputs, "\x00") <
 			strings.Join(declarations[j].Outputs, "\x00")
 	})
+	return declarations, nil
+}
+
+// Archive Records preserve authority after the Spec folder leaves the tree.
+// This reader owns its YAML projection and does not depend on the Spec package.
+func readArchiveRecordRegenerations(root string) ([]SanctionedRegeneration, error) {
+	directory := filepath.Join(root, filepath.FromSlash(archivedSpecRoot))
+	entries, err := os.ReadDir(directory)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("read archive records: %w", err)
+	}
+	var declarations []SanctionedRegeneration
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
+			continue
+		}
+		content, err := os.ReadFile(filepath.Join(directory, entry.Name()))
+		if err != nil {
+			return nil, fmt.Errorf("read archive record %q: %w", entry.Name(), err)
+		}
+		text := strings.ReplaceAll(string(content), "\r\n", "\n")
+		if !strings.HasPrefix(text, "---\n") {
+			continue
+		}
+		front, _, found := strings.Cut(text[4:], "\n---")
+		if !found {
+			return nil, fmt.Errorf("archive record %q has unclosed frontmatter", entry.Name())
+		}
+		var record struct {
+			Schema       string `yaml:"schema"`
+			Regeneration []struct {
+				Command string   `yaml:"command"`
+				Outputs []string `yaml:"outputs"`
+			} `yaml:"regeneration"`
+		}
+		if err := yaml.Unmarshal([]byte(front), &record); err != nil {
+			return nil, fmt.Errorf("decode archive record %q: %w", entry.Name(), err)
+		}
+		if record.Schema != archiveRecordSchema {
+			return nil, fmt.Errorf("archive record %q has unknown schema %q", entry.Name(), record.Schema)
+		}
+		for _, regeneration := range record.Regeneration {
+			if strings.TrimSpace(regeneration.Command) == "" {
+				return nil, fmt.Errorf("archive record %q has empty regeneration command", entry.Name())
+			}
+			declarations = append(declarations, SanctionedRegeneration{Command: regeneration.Command, Outputs: regeneration.Outputs})
+		}
+	}
 	return declarations, nil
 }
 

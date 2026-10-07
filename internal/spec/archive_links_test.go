@@ -1,6 +1,8 @@
 package spec
 
 import (
+	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -21,7 +23,7 @@ func TestArchiveRewritesRelativeLinksThatLeaveTheSpec(t *testing.T) {
 	writeFile(t, filepath.Join(req.SpecsRoot, "..", "adr", "decision.md"), "decision")
 	writeFile(t, filepath.Join(req.SpecsRoot, "..", "adr", "a b.png"), "image")
 	writeFile(t, filepath.Join(dir, "nested", "notes.md"), "[nested](../../../adr/decision.md)\n")
-	result, err := Archive(req)
+	result, err := legacyLinkArchive(t, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,7 +49,7 @@ func TestArchiveKeepsLinksInsideTheSpecAndNonRelativeLinks(t *testing.T) {
 	if err := os.Symlink("missing.md", filepath.Join(dir, "symlink.md")); err != nil {
 		t.Fatal(err)
 	}
-	result, err := Archive(req)
+	result, err := legacyLinkArchive(t, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +70,7 @@ func TestArchiveRefusesALinkThatWouldStayBroken(t *testing.T) {
 	writeFile(t, filepath.Join(req.SpecsRoot, "..", "adr", "decision.md"), "target")
 	writeFile(t, filepath.Join(dir, "rewritable.md"), "[valid](../../adr/decision.md)\n")
 	before := archiveLinksTree(t, dir)
-	_, err := Archive(req)
+	_, err := legacyLinkArchive(t, req)
 	if err == nil || !strings.Contains(err.Error(), `Spec "demo" has relative links that leave the Spec and do not resolve: _prd.md:`) || !strings.Contains(err.Error(), `"../../adr/missing.md"`) {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -89,7 +91,7 @@ func TestArchiveRefusesALinkThatWouldStayBroken(t *testing.T) {
 func TestArchiveRewritesLinksUnderAConfiguredSpecRoot(t *testing.T) {
 	req, _ := archiveLinksFixture(t, false, "\n[target](../target.md)\n")
 	writeFile(t, filepath.Join(req.SpecsRoot, "target.md"), "target")
-	result, err := Archive(req)
+	result, err := legacyLinkArchive(t, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,7 +109,7 @@ func TestArchiveRewritesLinksInASupersededSpec(t *testing.T) {
 	prd := "---\nspec: demo\nstatus: active\nsuperseded_by: successor\nsuperseded: 2026-10-04\nsupersession_reason: Delivered elsewhere\n---\n\n[target](../../adr/decision.md)\n"
 	writeFile(t, filepath.Join(dir, "_prd.md"), prd)
 	writeFile(t, filepath.Join(req.SpecsRoot, "..", "adr", "decision.md"), "target")
-	result, err := Archive(req)
+	result, err := legacyLinkArchive(t, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +123,7 @@ func TestArchiveKeepsALinkWhoseTargetWasAlreadyArchived(t *testing.T) {
 	body := "[archived](../../adr/decision.md)\n"
 	writeFile(t, filepath.Join(dir, "notes.md"), body)
 	writeFile(t, filepath.Join(req.SpecsRoot, "..", "history", "adr", "decision.md"), "target")
-	result, err := Archive(req)
+	result, err := legacyLinkArchive(t, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -171,7 +173,7 @@ func TestArchiveRestoresRewrittenBytesWhenRenameFails(t *testing.T) {
 	if err := os.Rename(dir, moved); err != nil {
 		t.Fatal(err)
 	}
-	_, err := Archive(req)
+	_, err := legacyLinkArchive(t, req)
 	if err == nil || !strings.Contains(err.Error(), "move Spec") {
 		t.Fatalf("expected rename failure: %v", err)
 	}
@@ -190,6 +192,13 @@ func archiveLinksTree(t *testing.T, dir string) map[string]string {
 		if err != nil {
 			return err
 		}
+		if entry.Type()&os.ModeSymlink != 0 {
+			target, err := os.Readlink(path)
+			if err != nil {
+				return err
+			}
+			files[path] = "symlink:" + target
+		}
 		if entry.Type().IsRegular() {
 			files[path] = archiveTestReadFile(t, path)
 		}
@@ -207,7 +216,7 @@ func TestArchiveLinksMarkdownForms(t *testing.T) {
 	writeFile(t, target, "target")
 	before := "[![badge](../../adr/a(b).md)](../../adr/a(b).md)\n[malformed](../../missing\n[nested [label]](../../adr/a(b).md 'title')\n![image](<../../adr/a(b).md>)\n[reference]: <../../adr/a(b).md> (title)\n`` [code](../../missing) ` ``\n\\[escaped](../../missing)\n"
 	writeFile(t, filepath.Join(dir, "notes.md"), before)
-	result, err := Archive(req)
+	result, err := legacyLinkArchive(t, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -218,4 +227,27 @@ func TestArchiveLinksMarkdownForms(t *testing.T) {
 	if !ArchiveLinksMatch([]byte(before), []byte(after), dir, result.ArchivedDir, dir) {
 		t.Fatal("Archive output does not match")
 	}
+}
+
+// Legacy folders retain ADR-0230's link pass; new cuts never call it.
+func legacyLinkArchive(t *testing.T, req ArchiveRequest) (ArchiveResult, error) {
+	t.Helper()
+	source := filepath.Join(req.SpecsRoot, req.Slug)
+	destination := filepath.Join(ArchiveSpecRoot(req.SpecsRoot, req.BuiltInRoot), req.Slug)
+	rewrites, count, err := prepareArchiveLinks(source, destination, req.Slug)
+	if err != nil {
+		return ArchiveResult{}, err
+	}
+	if err := os.MkdirAll(filepath.Dir(destination), 0755); err != nil {
+		return ArchiveResult{}, err
+	}
+	for _, rewrite := range rewrites {
+		if err := os.WriteFile(rewrite.path, rewriteArchiveLinks(rewrite.original, rewrite.destinations), rewrite.mode); err != nil {
+			return ArchiveResult{}, err
+		}
+	}
+	if err := os.Rename(source, destination); err != nil {
+		return ArchiveResult{}, errors.Join(fmt.Errorf("move Spec: %w", err), restoreArchiveLinks(rewrites))
+	}
+	return ArchiveResult{SourceDir: source, ArchivedDir: destination, RewrittenLinks: count}, nil
 }

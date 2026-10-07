@@ -151,7 +151,7 @@ or treats a missing path as proof.
 The contract uses the [Roundfix glossary](../../../CONTEXT.md#language) and follows
 [ADR-0053](../../adr/0053-terminal-run-worktree-reconciliation-is-proof-based.md)
 and
-[Spec 0038](../../history/specs/0038-terminal-run-worktree-reconciliation/_prd.md).
+Spec 0038.
 Adjacent terminal-cleanup diagnostics remain traced through the
 [Stop Command](stop.md#stop) to the
 [detached-watch finding](../../history/findings/2026-07-16-vortex-pr87-detached-watch-notification.md#4-cleanup-noise-appeared-before-the-actionable-failure).

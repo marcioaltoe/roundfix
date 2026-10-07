@@ -55,10 +55,11 @@ func TestArchiveAcceptsASpecWhoseGlossaryIsCurrent(t *testing.T) {
 	root, dir := glossaryArchiveWorkspace(t)
 	mustWrite(t, filepath.Join(root, "CONTEXT.md"), "**Missing Term**: definition\n")
 	var stdout, stderr bytes.Buffer
+	commitArchiveFixture(t)
 	code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
 	if code != 0 || stderr.Len() != 0 || !strings.Contains(stdout.String(), "archived "+implementTestSlug) {
 		t.Fatalf("exit=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
 	}
 	assertPathMissing(t, dir)
-	assertPathExists(t, archiveTestRepositoryPath(root, spec.ArchiveKindSpec, implementTestSlug))
+	assertPathExists(t, archiveTestRepositoryPath(root, spec.ArchiveKindSpec, implementTestSlug)+".md")
 }

@@ -411,16 +411,51 @@ func reviewScopedDiff(ctx context.Context, gitRoot, baseCommit, headCommit strin
 	if err != nil {
 		return "", nil, fmt.Errorf("collect review scope paths: %w", err)
 	}
+	retiredSources := []string{}
+	for _, changedPath := range strings.Split(changed, "\x00") {
+		for _, root := range specRoots[min(1, len(specRoots)):] {
+			root = strings.TrimSuffix(root, "/")
+			if !strings.HasPrefix(changedPath, root+"/") || strings.Contains(strings.TrimPrefix(changedPath, root+"/"), "/") || !strings.HasSuffix(changedPath, ".md") {
+				continue
+			}
+			files, err := runner.RunGit(ctx, gitRoot, "ls-tree", "--name-only", headCommit, "--", changedPath)
+			if err != nil {
+				return "", nil, fmt.Errorf("inspect review archive record: %w", err)
+			}
+			if strings.TrimSpace(files) == "" {
+				continue
+			}
+			slug := strings.TrimSuffix(strings.TrimPrefix(changedPath, root+"/"), ".md")
+			archived, err := readArchivedSpecAt(ctx, runner, gitRoot, headCommit, root, slug)
+			if err != nil {
+				return "", nil, fmt.Errorf("read review archive record: %w", err)
+			}
+			retiredSources = append(retiredSources, archived.Record.Source)
+		}
+	}
+	deleted, err := runner.RunGit(ctx, gitRoot, "diff", "--no-renames", "--name-only", "--diff-filter=D", "-z", baseCommit, headCommit, "--")
+	if err != nil {
+		return "", nil, fmt.Errorf("collect retired Spec paths: %w", err)
+	}
+	deletedPaths := make(map[string]bool)
+	for _, file := range strings.Split(deleted, "\x00") {
+		deletedPaths[file] = true
+	}
 	omitted := make([]reviewOmittedPath, 0)
 	for _, path := range strings.Split(changed, "\x00") {
 		reason := ""
+		for _, source := range retiredSources {
+			if deletedPaths[path] && strings.HasPrefix(path, source+"/") {
+				reason = "archived-spec-source"
+			}
+		}
 		for _, root := range specRoots {
 			prefix := strings.TrimSuffix(root, "/") + "/"
 			if !strings.HasPrefix(path, prefix) {
 				continue
 			}
 			parts := strings.SplitN(strings.TrimPrefix(path, prefix), "/", 4)
-			if len(parts) == 4 && parts[0] != "" && parts[1] == "qa" && parts[2] == "evidence" {
+			if reason == "" && len(parts) == 4 && parts[0] != "" && parts[1] == "qa" && parts[2] == "evidence" {
 				reason = "qa-evidence"
 				break
 			}
@@ -1417,8 +1452,9 @@ func reviewCandidateSpecContexts(
 	}
 
 	type changedSpec struct {
-		root string
-		slug string
+		root   string
+		slug   string
+		record *spec.ArchiveRecord
 	}
 	changedSpecs := make(map[string]changedSpec)
 	for _, changedPath := range strings.Split(changed, "\x00") {
@@ -1430,6 +1466,14 @@ func reviewCandidateSpecContexts(
 			}
 			remainder := strings.TrimPrefix(changedPath, prefix)
 			slash := strings.IndexByte(remainder, '/')
+			if slash < 0 && root != activeRoot && strings.HasSuffix(remainder, ".md") {
+				slug := strings.TrimSuffix(remainder, ".md")
+				archived, err := readArchivedSpecAt(ctx, runner, gitRoot, headCommit, root, slug)
+				if err != nil {
+					return reviewSpecContextResult{}, fmt.Errorf("read archived Spec %q: %w", slug, err)
+				}
+				changedSpecs[root+"\x00"+slug] = changedSpec{root: root, slug: slug, record: &archived.Record}
+			}
 			if slash > 0 {
 				slug := remainder[:slash]
 				changedSpecs[root+"\x00"+slug] = changedSpec{root: root, slug: slug}
@@ -1473,10 +1517,20 @@ func reviewCandidateSpecContexts(
 		prefix := strings.TrimSuffix(location.root, "/") + "/"
 		prdPath := prefix + slug + "/_prd.md"
 		techSpecPath := prefix + slug + "/_techspec.md"
+		revision := headCommit
+		if location.record != nil {
+			revision = location.record.SourceRevision
+			if _, err := runner.RunGit(ctx, gitRoot, "cat-file", "-e", revision+"^{commit}"); err != nil {
+				result.skipped = append(result.skipped, slug)
+				continue
+			}
+			prdPath = location.record.Source + "/_prd.md"
+			techSpecPath = location.record.Source + "/_techspec.md"
+		}
 		prdExists, techSpecExists, err := reviewCandidateSpecFilesExist(
 			ctx,
 			gitRoot,
-			headCommit,
+			revision,
 			prdPath,
 			techSpecPath,
 			runner,
@@ -1489,7 +1543,7 @@ func reviewCandidateSpecContexts(
 			continue
 		}
 
-		prd, err := reviewCandidateFile(ctx, gitRoot, headCommit, prdPath, runner)
+		prd, err := reviewCandidateFile(ctx, gitRoot, revision, prdPath, runner)
 		if err != nil {
 			return reviewSpecContextResult{}, fmt.Errorf("load changed Spec %q PRD: %w", slug, err)
 		}
@@ -1498,7 +1552,7 @@ func reviewCandidateSpecContexts(
 			result.skipped = append(result.skipped, slug)
 			continue
 		}
-		technicalSpec, err := reviewCandidateFile(ctx, gitRoot, headCommit, techSpecPath, runner)
+		technicalSpec, err := reviewCandidateFile(ctx, gitRoot, revision, techSpecPath, runner)
 		if err != nil {
 			return reviewSpecContextResult{}, fmt.Errorf("load changed Spec %q TechSpec: %w", slug, err)
 		}

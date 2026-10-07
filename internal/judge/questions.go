@@ -74,8 +74,14 @@ type ModelTierJudgment struct {
 	TaskMaxChars int      `json:"task_max_chars"`
 }
 
+type ArchiveJudgment struct {
+	QuestionID string   `json:"question_id"`
+	Question   Question `json:"question"`
+}
+
 type Questions struct {
 	ModelTier                                   ModelTierJudgment
+	Archive                                     ArchiveJudgment
 	PinnedModel                                 string
 	AcceptedModel                               *regexp.Regexp
 	Transports                                  []Transport
@@ -100,12 +106,13 @@ func Load() (Questions, error) {
 			Goal      GoalJudgment      `json:"goal-mechanism"`
 			Grouping  GroupingJudgment  `json:"source-grouping"`
 			ModelTier ModelTierJudgment `json:"model-tier"`
+			Archive   ArchiveJudgment   `json:"archive-value"`
 		} `json:"judgments"`
 	}
 	if err := json.Unmarshal(questionFile, &file); err != nil {
 		return Questions{}, fmt.Errorf("load judge questions: %w", err)
 	}
-	q := Questions{PinnedModel: file.PinnedModel, Transports: file.Transports, USDPerMillionInputTokens: file.USDPerMillionInputTokens, MonthlyCeilingUSD: file.MonthlyCeilingUSD, Language: file.Language, Citation: file.Judgments.Citation, Goal: file.Judgments.Goal, Grouping: file.Judgments.Grouping, ModelTier: file.Judgments.ModelTier}
+	q := Questions{PinnedModel: file.PinnedModel, Transports: file.Transports, USDPerMillionInputTokens: file.USDPerMillionInputTokens, MonthlyCeilingUSD: file.MonthlyCeilingUSD, Language: file.Language, Citation: file.Judgments.Citation, Goal: file.Judgments.Goal, Grouping: file.Judgments.Grouping, ModelTier: file.Judgments.ModelTier, Archive: file.Judgments.Archive}
 	for _, pattern := range []struct {
 		name, text string
 		dst        **regexp.Regexp

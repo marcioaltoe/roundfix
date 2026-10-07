@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+	"roundfix/internal/gittest"
 	"roundfix/internal/suiteguardcontract"
 )
 
@@ -262,7 +263,17 @@ func TestEveryBoundedPathIsGoverned(t *testing.T) {
 			t.Fatalf("resolve repository root: %v", err)
 		}
 
+		pinned := gittest.PinnedHistory(t, repoRoot,
+			"docs/history/specs/0119-spec-contained-authorization/_authorization.md",
+			"docs/history/specs/0130-documentation-cleanup-compatibility/_authorization.md")
 		findings, auditedRecords, err := auditBoundedPathsAreGoverned(repoRoot)
+		if err != nil {
+			t.Fatal(err)
+		}
+		historicalFindings, historicalRecords, err := auditBoundedPathsAreGoverned(pinned)
+		findings = append(findings, historicalFindings...)
+		auditedRecords = append(auditedRecords, historicalRecords...)
+		sort.Strings(auditedRecords)
 		if err != nil {
 			t.Fatal(err)
 		}

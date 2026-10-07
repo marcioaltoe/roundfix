@@ -12,6 +12,8 @@ import (
 	"testing"
 
 	"roundfix/internal/spec"
+
+	"roundfix/internal/gittest"
 )
 
 const transcriptTech = "docs/specs/0200-example/_techspec.md"
@@ -313,17 +315,9 @@ func TestThisSpecsTranscriptsHaveImplementationAndGateReferences(t *testing.T) {
 	}
 }
 
-// thisSpecDir finds Spec 0191 where it lives: active under docs/specs, or
-// archived under docs/history/specs once its delivery archives it.
+// thisSpecDir reads the measured transcript corpus at the pinned revision.
 func thisSpecDir(t *testing.T) string {
 	t.Helper()
-	const slug = "0191-claims-with-receipts-and-contracts-as-they-ship"
-	for _, root := range []string{"../../docs/specs", "../../docs/history/specs"} {
-		dir := filepath.Join(root, slug)
-		if info, err := os.Stat(dir); err == nil && info.IsDir() {
-			return dir
-		}
-	}
-	t.Fatalf("Spec %s is neither active nor archived", slug)
-	return ""
+	const source = "docs/history/specs/0191-claims-with-receipts-and-contracts-as-they-ship"
+	return filepath.Join(gittest.PinnedHistory(t, "../..", source), filepath.FromSlash(source))
 }

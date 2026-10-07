@@ -56,9 +56,8 @@ func detectBacklogPromotion(result *Result, repoRoot string) error {
 		return err
 	}
 	archivePath := spec.ArchiveDir(spec.ArchiveKindSpec)
-	archivedSpecs, err := repositoryDirectoryNames(
+	archivedSpecs, err := repositoryArchivedSpecNames(
 		filepath.Join(filepath.Clean(repoRoot), filepath.FromSlash(archivePath)),
-		false,
 	)
 	if err != nil {
 		return err
@@ -110,6 +109,16 @@ func detectBacklogPromotion(result *Result, repoRoot string) error {
 			continue
 		}
 		if archivedSpecs[slug] {
+			record := spec.ArchiveRecordPath(archivePath, slug)
+			if _, err := os.Stat(filepath.Join(repoRoot, filepath.FromSlash(record))); err == nil {
+				result.Findings = append(result.Findings, Finding{
+					Code: CodeBacklogUnmoved, Severity: SeverityError,
+					Summary: document.displayPath + " is promoted to " + slug + " but still lives in " + backlogPath,
+					Where:   []Location{{Path: document.displayPath, Line: document.frontmatter.status.line}},
+					Fix:     "Move " + document.displayPath + " to " + spec.ArchiveDir(spec.ArchiveKindBacklog) + "/; its owning Spec is archived in " + record + ".",
+				})
+				continue
+			}
 			destination = archivePath + "/" + slug + "/references/"
 		}
 		result.Findings = append(result.Findings, Finding{

@@ -8,10 +8,12 @@ package judge
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"roundfix/internal/gittest"
 )
 
 func loadQuestions(t *testing.T) Questions {
@@ -25,10 +27,9 @@ func loadQuestions(t *testing.T) Questions {
 
 func TestQuestionFileLoads(t *testing.T) {
 	// The Spec is active until it is archived into docs/history/specs.
-	tech, err := os.ReadFile("../../docs/specs/0205-an-advisory-judge-for-spec-authoring/_techspec.md")
-	if errors.Is(err, os.ErrNotExist) {
-		tech, err = os.ReadFile("../../docs/history/specs/0205-an-advisory-judge-for-spec-authoring/_techspec.md")
-	}
+	source := "docs/history/specs/0205-an-advisory-judge-for-spec-authoring/_techspec.md"
+	pinned := gittest.PinnedHistory(t, "../..", source)
+	tech, err := os.ReadFile(filepath.Join(pinned, source))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -62,7 +62,7 @@ func (workflow *commandDeliveryWorkflow) ProveReviewCorrection(ctx context.Conte
 			return refuse(fmt.Sprintf("finding %s requires exactly one valid disposition with evidence or a fixing commit between the candidate and item head", finding.ID))
 		}
 	}
-	root, err := roundconfig.ResolveSpecsRoot(workflow.loaded, workDir)
+	root, err := resolveHistoricalSpecsRoot(workflow.loaded, workDir)
 	if err != nil {
 		return delivery.ReviewCorrection{}, err
 	}
@@ -87,7 +87,7 @@ func (workflow *commandDeliveryWorkflow) ProveReviewCorrection(ctx context.Conte
 	for _, name := range nulPaths(paths) {
 		allowed := false
 		for _, prefix := range prefixes {
-			allowed = allowed || strings.HasPrefix(name, prefix)
+			allowed = allowed || strings.HasPrefix(name, prefix) || name == strings.TrimSuffix(prefix, "/")+".md"
 		}
 		if !allowed {
 			return refuse(fmt.Sprintf("changed path %s is outside the named archived Specs", name))

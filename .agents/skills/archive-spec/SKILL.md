@@ -1,35 +1,34 @@
 ---
 name: archive-spec
-description: Archive a completed spec — verify every task completed, QA passed, and indexed references are self-contained, then stamp the archive metadata and move <spec-root>/<slug>/ to the resolved archive root (<spec-root>/_archived/<slug>/, or docs/history/specs/<slug>/ for the built-in docs/specs root). Runs automatically at the end of the implement-spec loop after a QA pass, or whenever the user asks to archive a spec.
+description: Archive a completed spec — verify every task completed, QA passed, and indexed references are self-contained, then write <slug>.md under the resolved archive root (<spec-root>/_archived/, or docs/history/specs/ for the built-in docs/specs root) and remove the Spec folder, which stays in Git at the record's source_revision. Runs automatically at the end of the implement-spec loop after a QA pass, or whenever the user asks to archive a spec.
 argument-hint: "<spec slug>"
 metadata:
   category: delivery
   tags: [workflow, documentation, process]
-  version: 0.0.4
+  version: 0.0.6
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.4
+version: 0.0.6
 ---
 
 # Archive Spec
 
-Move a completed spec out of the active set: `<resolved-spec-root>/<slug>/` → `<resolved-archive-root>/<slug>/`, with the completion stamped in its frontmatter. The source is the configured Spec Root; the destination is its resolved archive root — `docs/history/specs/` for the built-in `docs/specs` root, or `<spec-root>/_archived/` for an external or non-default root, matching the `roundfix archive` destination. A normal archive means _implemented, verified, and self-contained_ — every task done, QA passed, and every indexed reference owned by the Spec. A QA Archive Override records the explicit exception without claiming verification. After either disposition, one `ls <spec-root>/` separates live work from history, and the archive stays greppable as the record of what was built and why.
+Archive a completed spec by writing `<slug>.md` under the resolved archive root and removing `<resolved-spec-root>/<slug>/`, which stays in Git at the record's `source_revision`. The source is the configured Spec Root; the destination is its resolved archive root — `docs/history/specs/` for the built-in `docs/specs` root, or `<spec-root>/_archived/` for an external or non-default root, matching the `roundfix archive` destination. A normal archive means _implemented, verified, and self-contained_ — every task done, QA passed, and every indexed reference owned by the Spec. A QA Archive Override records the explicit exception without claiming verification. After either disposition, one `ls <spec-root>/` separates live work from history, and the archive stays greppable as the record of what was built and why.
 
 The trigger is spec completion, not publication: run this automatically at the end of the `implement-spec` loop once the QA gate passes, or whenever the user asks. Merge and release are separate, user-driven steps — the archive commit simply travels with the branch and ships inside the feature's own PR.
 
 ### QA settlement
 
-The same outcome settles the authored `qa` Task and determines what archive
-may move:
+The same outcome settles the authored `qa` Task and determines what the archive leaves:
 
 | Outcome | Settles | Archives |
 | --- | --- | --- |
-| `pass` | Settles the QA Task as `completed` and makes the Spec archive-eligible when the report has no disallowed blocked rows. | The Spec and its QA report and evidence. |
-| qualifying declared `partial` | Settles the QA Task as `completed` when no row failed, was skipped or is finding-blocked, every declared-blocked row is covered by a matching `## Unreachable Acceptance` declaration, and every environment-blocked row is the pre-PR Pull Request row, recorded as `blocked (environment: no open Pull Request)` with the Pull Request row named in its provenance, or an outside-evidence row the Run sandbox could not reach, recorded as `blocked (environment: network denied: <host>)` with the outside-evidence row named in its provenance. Neither row needs an Unreachable Acceptance declaration, and a partial whose only unmet rows are such rows qualifies. | The Spec, its QA report and evidence, and the declarations' `satisfied-by` record. |
+| `pass` | Settles the QA Task as `completed` and makes the Spec archive-eligible when the report has no disallowed blocked rows. | The Archive Record, which names the QA Report and verdict; the Spec, its QA report and evidence stay in Git at the record's `source_revision`. |
+| qualifying declared `partial` | Settles the QA Task as `completed` when no row failed, was skipped or is finding-blocked, every declared-blocked row is covered by a matching `## Unreachable Acceptance` declaration, and every environment-blocked row is the pre-PR Pull Request row, recorded as `blocked (environment: no open Pull Request)` with the Pull Request row named in its provenance, or an outside-evidence row the Run sandbox could not reach, recorded as `blocked (environment: network denied: <host>)` with the outside-evidence row named in its provenance. Neither row needs an Unreachable Acceptance declaration, and a partial whose only unmet rows are such rows qualifies. | The Archive Record, which names the QA Report and verdict and carries the declarations' `satisfied-by` record as `unproven`; the Spec, its QA report and evidence stay in Git at the record's `source_revision`. |
 | `environment-blocked` | Leaves the row blocked; the report can still settle as `pass` when equivalent evidence satisfies the environment policy. | Nothing by itself; a qualifying report can archive the Spec. |
 | `failed` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
 | `missing` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
-| `override` | Does not change the QA Task status or report verdict; settles archive as explicitly authorized despite failed or missing QA. | The Spec with `qa_override`, `qa_override_approval`, `qa_override_reason`, `qa_override_qa_outcome`, `qa_override_qa_task_status` when the QA Task is incomplete, and `qa_override_revision`; QA files move byte-identically. |
+| `override` | Does not change the QA Task status or report verdict; settles archive as explicitly authorized despite failed or missing QA. | The Archive Record with `qa_override`, `qa_override_approval`, `qa_override_reason`, `qa_override_qa_outcome`, `qa_override_qa_task_status` when the QA Task is incomplete, and `qa_override_revision`; the QA Task and Reports stay unchanged in Git at the record's `source_revision`. |
 
 ## Preconditions — verify, don't trust
 
@@ -57,7 +56,7 @@ Check all three with fresh command evidence before touching anything:
    directory, malformed newest report, or non-passing verdict blocks the
    normal archive. Proceed only under an explicit QA Archive Override performed
    through `roundfix archive <slug> --qa-override --approval <source> --reason
-   <text>`. Never record the override by editing stamped frontmatter. A
+   <text>`. Never record the override by editing the Archive Record. A
    qualifying newest report does not make a failed or pending QA Task completed;
    the override is refused only when the report qualifies and every Task is
    completed.
@@ -250,8 +249,8 @@ never the machine's absolute path.
 For a QA Archive Override, perform the archive only through
 `roundfix archive <slug> --qa-override --approval <source> --reason <text>`.
 For a normal archive, run `roundfix archive <slug>`; it verifies the
-preconditions, stamps the archive metadata, and moves the folder. Never
-hand-edit archive front matter; the command owns its refusals, provenance, and
+preconditions, writes the Archive Record and removes the Spec folder. Never
+hand-edit the Archive Record; the command owns its refusals, provenance, and
 archive lifecycle. The Delivery Queue writes the commit subject
 `docs: archive <slug>` (Conventional Commits). Do not push unless asked.
 
@@ -260,9 +259,19 @@ Report the new path and anything carried over (open follow-ups from task
 isn't merged yet, suggest opening the PR via `github-pr-workflow`; opening the
 PR is the user's call.
 
+## Archive Record
+
+An archive writes `<slug>.md` under the resolved archive root. The record names
+the QA Report and verdict, its disposition, and `source_revision`, the Git
+revision where the removed Spec folder remains recoverable. Before archiving,
+use `roundfix archive <slug> --plan` to see the cut and Archive Advice for
+candidate files. Promote durable knowledge with repeatable
+`--promote <path>`; promotion copies that file to `docs/references/` in the
+archive change.
+
 ## Unarchive
 
-Rare, explicit, reversed: `git mv` back, set `status: active`, remove `release`/`archived`. Reopening usually means new work — prefer a fresh spec that references the archived one.
+Rare, explicit, reversed: Restore the Spec folder from Git at the record's `source_revision` and delete the record. Reopening usually means new work — prefer a fresh spec that references the archived one.
 
 ## Anti-patterns
 

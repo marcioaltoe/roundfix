@@ -7,9 +7,12 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"roundfix/internal/gittest"
 )
 
 func TestReceiptCharacterizationKeepsEveryParsedClaim(t *testing.T) {
+	pinned := gittest.PinnedHistory(t, "../..", "docs/history/specs/0181-gates-that-refuse-only-what-someone-can-act-on", "docs/history/specs/0182-delivery-that-reviews-and-retries-from-where-the-item-stands")
 	var got []Claim
 	for _, item := range []struct{ name, slug, artifact string }{
 		{"0181-prd.md", "0181-gates-that-refuse-only-what-someone-can-act-on", "_prd.md"},
@@ -22,7 +25,7 @@ func TestReceiptCharacterizationKeepsEveryParsedClaim(t *testing.T) {
 			t.Fatal(err)
 		}
 		artifact := "docs/history/specs/" + item.slug + "/" + item.artifact
-		original, err := os.ReadFile(filepath.Join("../..", artifact))
+		original, err := os.ReadFile(filepath.Join(pinned, artifact))
 		if err != nil {
 			t.Fatal(err)
 		}

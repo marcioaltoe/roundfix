@@ -22,6 +22,7 @@ func TestArchiveCommandRefusesABrokenOutwardLink(t *testing.T) {
 	}
 	withNoEngineCollaborators(t)
 	var stdout, stderr bytes.Buffer
+	commitArchiveFixture(t)
 	code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
 	if code != exitPreflight || stdout.Len() != 0 || !strings.Contains(stderr.String(), "Preflight failed") || !strings.Contains(stderr.String(), `_prd.md:`) || !strings.Contains(stderr.String(), `"../../adr/missing.md"; fix or remove each link, then retry the archive`) {
 		t.Fatalf("code=%d stdout=%q stderr=%q", code, &stdout, &stderr)
@@ -64,18 +65,13 @@ func TestArchiveCommandReportsRewrittenLinks(t *testing.T) {
 			}
 			withNoEngineCollaborators(t)
 			args := []string{"archive", implementTestSlug}
-			override := ""
 			if tt.override {
 				args = append(args, "--qa-override", "--approval", "maintainer", "--reason", "authorized test")
-				override = " with QA override"
 			}
 			var stdout, stderr bytes.Buffer
+			commitArchiveFixture(t)
 			code := runCLIContext(t, context.Background(), args, &stdout, &stderr)
-			suffix := ""
-			if tt.rewrite {
-				suffix = "; rewrote 1 relative link(s)"
-			}
-			want := "archived " + implementTestSlug + override + " -> " + archiveTestPath(spec.ArchiveKindSpec, implementTestSlug) + suffix + "\n"
+			want := archiveConfirmation(t, repo, archiveTestRepositoryPath(repo, spec.ArchiveKindSpec, implementTestSlug)+".md", tt.override)
 			if code != exitOK || stdout.String() != want || stderr.Len() != 0 {
 				t.Fatalf("code=%d stdout=%q want=%q stderr=%q", code, &stdout, want, &stderr)
 			}

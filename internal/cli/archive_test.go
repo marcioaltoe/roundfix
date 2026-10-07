@@ -44,6 +44,8 @@ func TestArchiveAcceptsARecordedSupersession(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
+		commitArchiveFixture(t)
+
 		code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
 
 		if code != exitOK {
@@ -54,7 +56,7 @@ func TestArchiveAcceptsARecordedSupersession(t *testing.T) {
 		}
 		archivedDir := archiveTestRepositoryPath(repoDir, spec.ArchiveKindSpec, implementTestSlug)
 		assertPathMissing(t, specDir)
-		after := snapshotDirectoryFiles(t, archivedDir)
+		after := archivedSourceFiles(t, repoDir, archivedDir+".md")
 		if !reflect.DeepEqual(after, before) {
 			t.Fatalf("archive changed superseded Spec files\nbefore: %#v\nafter:  %#v", before, after)
 		}
@@ -70,6 +72,8 @@ func TestArchiveAcceptsARecordedSupersession(t *testing.T) {
 		before := snapshotDirectoryFiles(t, specDir)
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
+
+		commitArchiveFixture(t)
 
 		code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
 
@@ -101,6 +105,8 @@ func TestArchiveAcceptsARecordedSupersession(t *testing.T) {
 		mustWrite(t, filepath.Join(archivedDir, "existing.md"), "preserve destination\n")
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
+
+		commitArchiveFixture(t)
 
 		code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
 
@@ -140,6 +146,8 @@ func TestArchiveAcceptsARecordedSupersession(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
+			commitArchiveFixture(t)
+
 			code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
 
 			if code != exitPreflight {
@@ -170,12 +178,14 @@ func TestRunArchiveMovesCompletedSpecAndStampsMetadata(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
+	commitArchiveFixture(t)
+
 	code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected archive exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
 	}
-	wantStdout := "archived " + implementTestSlug + " -> " + archiveTestPath(spec.ArchiveKindSpec, implementTestSlug) + "\n"
+	wantStdout := archiveConfirmation(t, repoDir, archiveTestRepositoryPath(repoDir, spec.ArchiveKindSpec, implementTestSlug)+".md", false)
 	if stdout.String() != wantStdout {
 		t.Fatalf("expected stdout %q, got %q", wantStdout, stdout.String())
 	}
@@ -184,12 +194,12 @@ func TestRunArchiveMovesCompletedSpecAndStampsMetadata(t *testing.T) {
 	}
 	assertPathMissing(t, filepath.Join(repoDir, "docs", "specs", implementTestSlug))
 	archivedDir := archiveTestRepositoryPath(repoDir, spec.ArchiveKindSpec, implementTestSlug)
-	assertPathExists(t, archivedDir)
-	assertPathExists(t, filepath.Join(archivedDir, "task_01.md"))
-	prd := mustRead(t, filepath.Join(archivedDir, "_prd.md"))
+	assertPathExists(t, archivedDir+".md")
+	assertPathMissing(t, archivedDir)
+	prd := mustRead(t, archivedDir+".md")
 	for _, want := range []string{
 		"status: archived",
-		"source_slug: " + implementTestSlug,
+		"spec: " + implementTestSlug,
 		"archived:",
 	} {
 		if !strings.Contains(prd, want) {
@@ -296,6 +306,8 @@ func TestRunArchiveDeclaredUnreachableContract(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
+			commitArchiveFixture(t)
+
 			code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
 
 			activeDir := filepath.Join(repoDir, "docs", "specs", implementTestSlug)
@@ -325,8 +337,8 @@ func TestRunArchiveDeclaredUnreachableContract(t *testing.T) {
 				t.Fatalf("expected archive stderr empty, got %q", stderr.String())
 			}
 			assertPathMissing(t, activeDir)
-			assertPathExists(t, archivedDir)
-			prdPath := filepath.Join(archivedDir, "_prd.md")
+			assertPathExists(t, archivedDir+".md")
+			prdPath := archivedDir + ".md"
 			gotUnproven := readArchivedUnproven(t, prdPath)
 			if len(gotUnproven) != len(tt.wantUnproven) {
 				t.Fatalf("archived PRD unproven = %q, want %q", gotUnproven, tt.wantUnproven)
@@ -353,10 +365,13 @@ func TestRunArchiveUsesConfiguredExternalSpecRoot(t *testing.T) {
 	reportPath := filepath.Join(externalRoot, implementTestSlug, "qa", "qa-report-2026-07-06.md")
 	mustMkdir(t, filepath.Dir(reportPath))
 	mustWrite(t, reportPath, implementQAReport(spec.VerdictPass))
+	initGitRepository(t, externalRoot)
 	configureExternalSpecsRoot(t, repoDir, externalRoot)
 	withNoEngineCollaborators(t)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
+
+	commitArchiveFixture(t)
 
 	code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
 
@@ -364,7 +379,7 @@ func TestRunArchiveUsesConfiguredExternalSpecRoot(t *testing.T) {
 		t.Fatalf("expected archive exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
 	}
 	archivedDir := filepath.Join(spec.ArchiveSpecRoot(externalRoot, false), implementTestSlug)
-	wantStdout := "archived " + implementTestSlug + " -> " + filepath.ToSlash(archivedDir) + "\n"
+	wantStdout := archiveConfirmation(t, repoDir, archivedDir+".md", false)
 	if stdout.String() != wantStdout {
 		t.Fatalf("expected stdout %q, got %q", wantStdout, stdout.String())
 	}
@@ -372,7 +387,7 @@ func TestRunArchiveUsesConfiguredExternalSpecRoot(t *testing.T) {
 		t.Fatalf("expected archive stderr empty, got %q", stderr.String())
 	}
 	assertPathMissing(t, filepath.Join(externalRoot, implementTestSlug))
-	assertPathExists(t, filepath.Join(archivedDir, "task_01.md"))
+	assertPathMissing(t, archivedDir)
 	assertPathExists(t, filepath.Join(repoDir, "docs", "specs", implementTestSlug))
 	assertNoRunDatabase(t, homeDir)
 }
@@ -386,6 +401,8 @@ func TestRunArchiveRefusesIncompleteTask(t *testing.T) {
 	writeArchiveQAReport(t, repoDir, spec.VerdictPass)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
+
+	commitArchiveFixture(t)
 
 	code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
 
@@ -422,6 +439,8 @@ func TestArchiveRefusesAHollowPass(t *testing.T) {
 	mustWrite(t, reportPath, "---\nverdict: pass\n---\n\n# QA Report\n\n## Results\n\n| # | Status |\n| - | --- |\n")
 	var stdout, stderr bytes.Buffer
 
+	commitArchiveFixture(t)
+
 	code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
 
 	if code != exitPreflight || stdout.Len() != 0 {
@@ -445,6 +464,8 @@ func TestArchiveRefusesAnEmptyFrontMatter(t *testing.T) {
 	mustMkdir(t, filepath.Dir(reportPath))
 	mustWrite(t, reportPath, content)
 	var stdout, stderr bytes.Buffer
+
+	commitArchiveFixture(t)
 
 	code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
 
@@ -518,6 +539,8 @@ func TestRunArchiveRefusesMissingOrNonPassingQA(t *testing.T) {
 			}
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
+
+			commitArchiveFixture(t)
 
 			code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
 
@@ -604,9 +627,12 @@ func TestRunArchiveQAOverrideReportsOverride(t *testing.T) {
 	activeDir := filepath.Join(repoDir, "docs", "specs", implementTestSlug)
 	qaTaskBefore := mustRead(t, filepath.Join(activeDir, "task_qa.md"))
 	reportBefore := mustRead(t, filepath.Join(activeDir, "qa", "qa-report-2026-07-06.md"))
+	commitArchiveFixture(t)
 	wantRevision := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
+
+	commitArchiveFixture(t)
 
 	code := runCLIContext(t, context.Background(), []string{
 		"archive", implementTestSlug,
@@ -625,13 +651,13 @@ func TestRunArchiveQAOverrideReportsOverride(t *testing.T) {
 		t.Fatalf("archive stdout = %q, want override disposition", stdout.String())
 	}
 	archivedDir := archiveTestRepositoryPath(repoDir, spec.ArchiveKindSpec, implementTestSlug)
-	if got := mustRead(t, filepath.Join(archivedDir, "task_qa.md")); got != qaTaskBefore {
+	if got := archivedSourceFiles(t, repoDir, archivedDir+".md")["task_qa.md"]; string(got) != qaTaskBefore {
 		t.Fatalf("QA Task changed during override\nbefore: %q\nafter:  %q", qaTaskBefore, got)
 	}
-	if got := mustRead(t, filepath.Join(archivedDir, "qa", "qa-report-2026-07-06.md")); got != reportBefore {
+	if got := archivedSourceFiles(t, repoDir, archivedDir+".md")["qa/qa-report-2026-07-06.md"]; string(got) != reportBefore {
 		t.Fatalf("QA Report changed during override\nbefore: %q\nafter:  %q", reportBefore, got)
 	}
-	prd := mustRead(t, filepath.Join(archivedDir, "_prd.md"))
+	prd := mustRead(t, archivedDir+".md")
 	for _, want := range []string{
 		"qa_override: true",
 		"qa_override_approval: maintainer request 2026-09-24",
@@ -666,8 +692,8 @@ func TestRunArchiveHelp(t *testing.T) {
 		"Unreachable Acceptance",
 		"recorded",
 		"supersession",
-		"a superseded Spec",
-		"moves unchanged",
+		"Archive Record",
+		"removes the committed Spec folder",
 		"archive creates no Run and",
 		"never pushes",
 	} {

@@ -6,7 +6,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"time"
+
+	"gopkg.in/yaml.v3"
 
 	"roundfix/internal/delivery"
 	"roundfix/internal/gittest"
@@ -132,20 +133,66 @@ func commitLinkRewritingArchive(t *testing.T, files []string, mutate func(*testi
 	gittest.Run(t, repository, "add", "-A")
 	gittest.Run(t, repository, "commit", "-m", "docs: record reviewed links")
 	reviewedHead := strings.TrimSpace(gittest.Run(t, repository, "rev-parse", "HEAD"))
-	result, err := spec.Archive(spec.ArchiveRequest{
-		SpecsRoot: filepath.Join(repository, "docs", "specs"), BuiltInRoot: true,
-		Slug: implementTestSlug, ArchivedAt: time.Date(2026, time.October, 4, 0, 0, 0, 0, time.UTC),
-	})
-	if err != nil {
-		t.Fatalf("archive Spec with links: %v", err)
+	// A historical move fixture retains ADR-0230's exact link proof.
+	destination := archiveTestRepositoryPath(repository, spec.ArchiveKindSpec, implementTestSlug)
+	for _, file := range files {
+		path := filepath.Join(source, file)
+		content := mustRead(t, path)
+		content = strings.ReplaceAll(content, "../../adr/archive-link.md", "../../../adr/archive-link.md")
+		mustWrite(t, path, content)
 	}
-	if result.RewrittenLinks != len(files) {
-		t.Fatalf("rewritten links = %d, want %d", result.RewrittenLinks, len(files))
+	prdContent := mustRead(t, prd)
+	prdContent = strings.Replace(prdContent, "status: active", "status: archived\narchived: \"2026-10-04\"\nsource_slug: "+implementTestSlug+"\nunproven: [a maintainer publishes the tagged release]", 1)
+	mustWrite(t, prd, prdContent)
+	mustMkdir(t, filepath.Dir(destination))
+	if err := os.Rename(source, destination); err != nil {
+		t.Fatal(err)
 	}
+	result := spec.ArchiveResult{ArchivedDir: destination}
 	if mutate != nil {
 		mutate(t, result.ArchivedDir)
 	}
 	gittest.Run(t, repository, "add", "-A")
 	gittest.Run(t, repository, "commit", "-m", "docs: archive "+implementTestSlug)
 	return repository, reviewedHead, strings.TrimSpace(gittest.Run(t, repository, "rev-parse", "HEAD"))
+}
+
+// legacyQAOverrideArchiveFixture seeds the pre-record disposition for readers
+// whose record support belongs to task_02. It leaves Task and QA bytes intact.
+func legacyQAOverrideArchiveFixture(t *testing.T, repo string) {
+	t.Helper()
+	source := filepath.Join(repo, "docs/specs", implementTestSlug)
+	destination := archiveTestRepositoryPath(repo, spec.ArchiveKindSpec, implementTestSlug)
+	content := []byte(mustRead(t, filepath.Join(source, "_prd.md")))
+	frontmatter, body, ok := splitArchivePRD(content)
+	if !ok {
+		t.Fatal("fixture PRD has invalid frontmatter")
+	}
+	var metadata map[string]any
+	if err := yaml.Unmarshal(frontmatter, &metadata); err != nil {
+		t.Fatal(err)
+	}
+	metadata["status"] = "archived"
+	metadata["archived"] = "2026-10-06"
+	metadata["source_slug"] = implementTestSlug
+	metadata["qa_override"] = true
+	metadata["qa_override_approval"] = "test maintainer request"
+	metadata["qa_override_reason"] = "retain the environment partial and operator evidence"
+	metadata["qa_override_qa_outcome"] = spec.VerdictPartial
+	metadata["qa_override_qa_task_status"] = string(spec.StatusFailed)
+	metadata["qa_override_revision"] = strings.TrimSpace(gittest.Run(t, repo, "rev-parse", "HEAD"))
+	encoded, err := yaml.Marshal(metadata)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustWrite(t, filepath.Join(source, "_prd.md"), "---\n"+string(encoded)+"---\n\n"+string(body))
+	before := snapshotDirectoryFiles(t, source)
+	mustMkdir(t, filepath.Dir(destination))
+	if err := os.Rename(source, destination); err != nil {
+		t.Fatal(err)
+	}
+	if after := snapshotDirectoryFiles(t, destination); !reflect.DeepEqual(before, after) {
+		t.Fatal("legacy move changed fixture bytes")
+	}
+	assertPathMissing(t, source)
 }

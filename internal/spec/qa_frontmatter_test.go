@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"roundfix/internal/gittest"
 )
 
 // Suite: QA Report front matter reader parity
@@ -83,7 +85,7 @@ func TestQAReportReaderAgreesWithTheDerivedVerificationOnTheArchive(t *testing.T
 	if !ok {
 		t.Fatal("runtime.Caller could not locate the repository")
 	}
-	repoRoot := filepath.Join(filepath.Dir(testFile), "..", "..")
+	repoRoot := gittest.PinnedHistory(t, filepath.Join(filepath.Dir(testFile), "..", ".."), ArchiveDir(ArchiveKindSpec))
 	pattern := filepath.Join(repoRoot, filepath.FromSlash("docs/history/specs/*/qa/qa-report-*.md"))
 	reportPaths, err := filepath.Glob(pattern)
 	if err != nil {

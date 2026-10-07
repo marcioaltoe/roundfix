@@ -949,11 +949,11 @@ func TestResumeRefusesAnArchiveCommitWithExtraChanges(t *testing.T) {
 			},
 		},
 		{
-			name: "changed PRD body",
+			name: "changed record title",
 			mutate: func(t *testing.T, repository string) {
 				t.Helper()
-				prdPath := archiveTestRepositoryPath(repository, spec.ArchiveKindSpec, implementTestSlug, "_prd.md")
-				mustWrite(t, prdPath, mustRead(t, prdPath)+"\nChanged after archive.\n")
+				prdPath := archiveTestRepositoryPath(repository, spec.ArchiveKindSpec, implementTestSlug) + ".md"
+				mustWrite(t, prdPath, strings.Replace(mustRead(t, prdPath), "title: PRD", "title: Changed", 1))
 			},
 		},
 	}
@@ -989,7 +989,7 @@ func commitRealArchive(t *testing.T, mutate func(*testing.T, string)) (string, s
 	gittest.Run(t, repository, "commit", "-m", "docs: record passing QA")
 	reviewedHead := strings.TrimSpace(gittest.Run(t, repository, "rev-parse", "HEAD"))
 
-	archiveResult, err := spec.Archive(spec.ArchiveRequest{
+	archiveResult, err := spec.Archive(spec.ArchiveRequest{SourceRevision: reviewedHead, RepositoryRoot: repository,
 		SpecsRoot:   filepath.Join(repository, "docs", "specs"),
 		BuiltInRoot: true,
 		Slug:        implementTestSlug,
@@ -998,7 +998,7 @@ func commitRealArchive(t *testing.T, mutate func(*testing.T, string)) (string, s
 	if err != nil {
 		t.Fatalf("archive Spec through real command boundary: %v", err)
 	}
-	if got := readArchivedUnproven(t, filepath.Join(archiveResult.ArchivedDir, "_prd.md")); !reflect.DeepEqual(got, []string{unprovenAction}) {
+	if got := readArchivedUnproven(t, archiveResult.RecordPath); !reflect.DeepEqual(got, []string{unprovenAction}) {
 		t.Fatalf("real archive unproven actions = %q, want %q", got, []string{unprovenAction})
 	}
 	if mutate != nil {

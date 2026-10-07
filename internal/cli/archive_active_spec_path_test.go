@@ -24,6 +24,7 @@ func archivePinWorkspace(t *testing.T) (string, string) {
 		t.Fatal(err)
 	}
 	mustWrite(t, filepath.Join(dir, spec.SupersessionFilename), "---\nsuperseded_by: 0002-delivered-widget\ndate: 2026-10-03\nreason: delivered elsewhere\n---\n\nDelivered elsewhere.\n")
+	commitArchiveFixture(t)
 	return root, dir
 }
 
@@ -51,7 +52,7 @@ func TestArchiveRefusesASpecAFileStillPins(t *testing.T) {
 		t.Fatalf("pin removed: exit=%d stderr=%q", code, stderr.String())
 	}
 	assertPathMissing(t, dir)
-	if after := snapshotDirectoryFiles(t, archiveTestRepositoryPath(root, spec.ArchiveKindSpec, implementTestSlug)); !reflect.DeepEqual(after, before) {
+	if after := archivedSourceFiles(t, root, archiveTestRepositoryPath(root, spec.ArchiveKindSpec, implementTestSlug)+".md"); !reflect.DeepEqual(after, before) {
 		t.Fatal("archive changed superseded files")
 	}
 }
