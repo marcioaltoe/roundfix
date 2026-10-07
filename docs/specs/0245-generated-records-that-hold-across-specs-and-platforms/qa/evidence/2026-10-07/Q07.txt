@@ -1,1 +1,0 @@
-No open Pull Request, supplied by Daemon. Linux TestCoverageEquivalence CI unavailable. Q05 confirms Linux-specific regression detected on macOS; Q06 confirms fixture platform matrix and host anchor. These do not establish an actual Linux CI run. Unblock: open target-branch PR and observe Linux CI at candidate head.

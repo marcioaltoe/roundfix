@@ -1,4 +1,0 @@
-/Users/marcio/.roundfix-operator/queue-interventions.md:157: 215. 2026-10-06 — 0241 review: F1 override dismissed; F2 module version real → bumped to 23 (0239 took 22), digests regenerated, verify ok; retry refused; round-2 F1 (wants 22) dismissed; manual PR.
-/Users/marcio/.roundfix-operator/queue-interventions.md:166: 224. 2026-10-07 — PR #441 CI: TestCoverageEquivalence (corrective tests not in coverage-record); re-recorded (+27 lines, 0 removed), pushed.
-/Users/marcio/.roundfix-operator/queue-interventions.md:167: 225. 2026-10-07 — PR #441 CI: coverage regression for the darwin-only detach test I re-recorded on macOS; removed that entry (additions only log), pushed.
-Observed log confirms manual version collision correction and macOS-only entry breaking Linux CI; supports both fixes. No remote request.

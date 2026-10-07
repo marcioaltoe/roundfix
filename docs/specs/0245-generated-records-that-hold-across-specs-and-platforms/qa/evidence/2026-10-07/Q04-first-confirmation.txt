@@ -1,1 +1,0 @@
-Independent git-object reload of scratch merge: profile decisions identical to both parents after excluding only declared goldenDigest line. Both source clauses are preserved, module version 25. Generated docs/agents/domain.md contains both clauses, confirming Managed Refresh used rebuilt scratch assets.
