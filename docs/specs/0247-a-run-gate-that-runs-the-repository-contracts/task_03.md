@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0247-a-run-gate-that-runs-the-repository-contracts
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -80,3 +80,36 @@ verifiable on its own through phrase checks and the docs contracts.
 - `_prd.md` → Core Feature 3; Glossary
 - `_techspec.md` → Build Order 3; Glossary
 - ADR-0252
+
+## Result
+
+Implementation:
+
+- Added **Repository Contract Test** and **Contract Relevance** to the glossary
+  immediately after **Verification**, including their selection rules, fallback
+  behavior, and ADR-0252 reference.
+- Amended only the repository-contract hard rule to describe the selective Run
+  and QA gate, the all-contracts `make verify-docs` boundary, the Linux CI
+  limit, and ADR-0252.
+
+Focused checks:
+
+- `git diff --check` — passed.
+- Reviewed the post-edit diff to confirm the glossary terms use the required
+  `**Term**:` / definition / `_Avoid_:` shape and that no other glossary entry
+  or repository-rule bullet changed.
+
+Acceptance evidence:
+
+- `CONTEXT.md` contains both required definitions and their four Contract
+  Relevance cases.
+- `docs/agents/specific-repository.md` names `make verify-changed`,
+  `Contract Relevance`, `make verify-docs`, and the Linux gate, with ADR-0252
+  cited.
+
+The Task's declared Verification commands were left for the Daemon.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261007T202708Z_1511c9319dd8dbf6`
+- Source commit: `81da1768f95f4e0f6e2e06d2519f2ba6678e83fb`
