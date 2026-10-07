@@ -2249,6 +2249,7 @@
       "TestRecommendedModelsAreInTheModelCatalog",
       "TestRecommendedProfileCoversEveryWorkCategory",
       "TestRecommendedProfileFallbackChangesRuntimeExceptReview",
+      "TestRegenerationIsDeclared",
       "TestRenderedConfig",
       "TestRenderedConfigStatesTheImplementBudgetRenewal",
       "TestReplacingAProfileDropsItsDeviation",

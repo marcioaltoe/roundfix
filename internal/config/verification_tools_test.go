@@ -57,7 +57,9 @@ func TestThisRepositoryDeclaresItsToolsAndDerivedPaths(t *testing.T) {
 	}
 	want := []DerivedPathDeclaration{
 		{Paths: []string{"internal/baseline/module-versions.json", "internal/baseline/testdata/catalog.digest", "internal/baseline/testdata/catalog.normalized.json", "internal/baseline/testdata/catalog.diagnostics.golden.json", "internal/baseline/testdata/plan-characterization/*.golden.json"}, Lines: &DerivedLineDeclaration{Paths: []string{"internal/baseline/assets/modules/*.json"}, Match: `^  "version": [0-9]+,$`}, Regenerate: "go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1 && make baseline-digests"},
-		{Paths: []string{"docs/agents/setup-context.json"}, Regenerate: "go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text"},
+		{Paths: []string{"internal/baseline/assets/profiles/standard-typescript-monorepo.json"}, Lines: &DerivedLineDeclaration{Paths: []string{"internal/baseline/assets/profiles/standard-typescript-monorepo.json"}, Match: `^    "goldenDigest": "[0-9a-f]+",$`}, Regenerate: "go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1 && make baseline-digests"},
+		{Paths: []string{"internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/"}, Regenerate: "go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1 && make baseline-digests"},
+		{Paths: []string{"docs/agents/setup-context.json", "docs/agents/"}, Regenerate: "go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text"},
 		{Paths: []string{"skills/testdata/owned-skill-versions.json"}, Lines: &DerivedLineDeclaration{Paths: []string{".agents/skills/*/SKILL.md", "skills/*/SKILL.md"}, Match: "^ *version: "}, Regenerate: "go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions"},
 		{Paths: []string{"docs/references/coverage-record.json"}, Regenerate: "go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1"},
 	}
