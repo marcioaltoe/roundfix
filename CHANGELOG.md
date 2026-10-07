@@ -2,6 +2,22 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.54.0] - 2026-10-07
+
+### A history that holds only records
+
+- **`roundfix history sanitize`.** Without flags it only reports: each pending unit, the files and bytes that leave `docs/history`, the Archive Record each Legacy Archive Folder would become, promotion candidates and CHANGELOG lines that cite a history path. Nothing is written.
+- **`--apply --batch <n>`.** Converts the next n units:
+  - Spec folders become Archive Records, with `source_revision` held by Git.
+  - Retired Findings and Backlog Entries keep their front matter, title and first paragraph, plus the commit that holds the full text.
+  - Retired reviews and handoffs are removed.
+  - ADRs stay whole.
+  - `--promote <path>` copies a file to `docs/references/` before its folder leaves.
+- **Safety.** `--apply` refuses a dirty working tree. It also refuses unless an annotated `history-full` tag is an ancestor of HEAD and holds every path the batch removes, so the full history stays one `git checkout history-full` away.
+- **`no-qa` disposition.** An Archive Record can say a folder never had a QA result, instead of inventing a pass.
+- **Secondbrain export.** The export keeps its history exclusions while any Legacy Archive Folder remains, and drops them after the last one goes.
+- **Glossary.** Adds History Sanitize Command, Legacy Archive Folder, Sanitize Batch, Reduced History Entry and History Full Tag. Revises Archive Record and History Root.
+
 ## [0.53.0] - 2026-10-07
 
 ### An archive that leaves an Archive Record
