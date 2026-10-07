@@ -259,7 +259,7 @@ func TestBoundary(t *testing.T) {}`))
 	var stdout, stderr bytes.Buffer
 	code := verifyselect.Run(t.Context(), args, &stdout, &stderr)
 	wantOut := "docscontract ^(TestDocs)$ ./docs\nrepocontract ^(TestAlways|TestPackage)$ ./pkg\n"
-	wantErr := "verify-select: contracts: 3 selected (2 always, 1 by change), 2 not selected, 1 boundary\n"
+	wantErr := "verify-select: contracts: 3 selected (2 always, 1 by change), 2 not selected, 1 boundary; boundary: TestBoundary (pkg)\n"
 	if code != 0 || stdout.String() != wantOut || stderr.String() != wantErr {
 		t.Fatalf("Run() = %d, stdout %q, stderr %q; want 0, %q, %q", code, stdout.String(), stderr.String(), wantOut, wantErr)
 	}
@@ -279,6 +279,165 @@ func TestBoundary(t *testing.T) {}`))
 			want := "verify-select: -contracts cannot be combined with -packages or -baseline-cli-pattern\n"
 			if code != 2 || out.Len() != 0 || diagnostic.String() != want {
 				t.Fatalf("Run() = %d, stdout %q, stderr %q", code, out.String(), diagnostic.String())
+			}
+		})
+	}
+}
+
+func TestRunPrintsEveryContractWithAll(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		git     bool
+		noTools bool
+	}{
+		{"git repository", true, false},
+		{"without Git repository", false, false},
+		{"without Git or Go executables", false, true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repo := t.TempDir()
+			if test.git {
+				runGit(t, repo, "init", "-q")
+			}
+			writeFile(t, repo, "docs/contract_test.go", contractSource("docscontract", "", `//verify:always
+func TestAlways(t *testing.T) {}
+//verify:boundary manual gate
+func TestBoundary(t *testing.T) {}`))
+			writeFile(t, repo, "pkg/contract_test.go", contractSource("repocontract", "", `func TestPackage(t *testing.T) {}
+//verify:relevant inputs/
+func TestRelevant(t *testing.T) {}`))
+			if test.noTools {
+				t.Setenv("PATH", t.TempDir())
+			}
+			var stdout, stderr bytes.Buffer
+			code := verifyselect.Run(t.Context(), []string{"-repo", repo, "-contracts", "-all"}, &stdout, &stderr)
+			wantOut := "docscontract ^(TestAlways|TestBoundary)$ ./docs\nrepocontract ^(TestPackage|TestRelevant)$ ./pkg\n"
+			wantErr := "verify-select: contracts: 4 selected (every Repository Contract Test), 0 not selected\n"
+			if code != 0 || stdout.String() != wantOut || stderr.String() != wantErr {
+				t.Fatalf("Run() = %d, stdout %q, stderr %q; want 0, %q, %q", code, stdout.String(), stderr.String(), wantOut, wantErr)
+			}
+		})
+	}
+	t.Run("malformed directive", func(t *testing.T) {
+		repo := t.TempDir()
+		writeFile(t, repo, "pkg/contract_test.go", contractSource("repocontract", "//verify:relevant", "func TestBad(t *testing.T) {}"))
+		var stdout, stderr bytes.Buffer
+		code := verifyselect.Run(t.Context(), []string{"-repo", repo, "-contracts", "-all"}, &stdout, &stderr)
+		want := "verify-select: pkg/contract_test.go: relevant needs at least one path\n"
+		if code != 1 || stdout.Len() != 0 || stderr.String() != want {
+			t.Fatalf("Run() = %d, stdout %q, stderr %q; want diagnostic %q", code, stdout.String(), stderr.String(), want)
+		}
+	})
+	t.Run("empty repository", func(t *testing.T) {
+		var stdout, stderr bytes.Buffer
+		code := verifyselect.Run(t.Context(), []string{"-repo", t.TempDir(), "-contracts", "-all"}, &stdout, &stderr)
+		want := "verify-select: contracts: 0 selected (every Repository Contract Test), 0 not selected\n"
+		if code != 0 || stdout.Len() != 0 || stderr.String() != want {
+			t.Fatalf("Run() = %d, stdout %q, stderr %q; want diagnostic %q", code, stdout.String(), stderr.String(), want)
+		}
+	})
+}
+
+func TestRunRefusesAllOutsideTheContractMode(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		args    []string
+		message string
+	}{
+		{"without contracts", []string{"-all"}, "verify-select: -all requires -contracts\n"},
+		{"explicit base", []string{"-contracts", "-all", "-base", "main"}, "verify-select: -all cannot be combined with -base\n"},
+		{"empty base", []string{"-contracts", "-all", "-base="}, "verify-select: -all cannot be combined with -base\n"},
+		{"packages", []string{"-contracts", "-all", "-packages", "core"}, "verify-select: -contracts cannot be combined with -packages or -baseline-cli-pattern\n"},
+		{"empty packages", []string{"-contracts", "-all", "-packages="}, "verify-select: -contracts cannot be combined with -packages or -baseline-cli-pattern\n"},
+		{"baseline pattern", []string{"-contracts", "-all", "-baseline-cli-pattern"}, "verify-select: -contracts cannot be combined with -packages or -baseline-cli-pattern\n"},
+		{"false baseline pattern", []string{"-contracts", "-all", "-baseline-cli-pattern=false"}, "verify-select: -contracts cannot be combined with -packages or -baseline-cli-pattern\n"},
+		{"conflict before base", []string{"-contracts", "-all", "-base", "main", "-packages", "core"}, "verify-select: -contracts cannot be combined with -packages or -baseline-cli-pattern\n"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			repo := t.TempDir()
+			var stdout, stderr bytes.Buffer
+			code := verifyselect.Run(t.Context(), append([]string{"-repo", repo}, test.args...), &stdout, &stderr)
+			if code != 2 || stdout.Len() != 0 || stderr.String() != test.message {
+				t.Fatalf("Run() = %d, stdout %q, stderr %q; want diagnostic %q", code, stdout.String(), stderr.String(), test.message)
+			}
+		})
+	}
+}
+
+func TestContractSummaryNamesEveryExclusion(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		declarations string
+		wantOut      string
+		wantSummary  string
+		failSafe     bool
+	}{
+		{
+			name: "one relevant excluded",
+			declarations: `//verify:relevant inputs/
+func TestSelected(t *testing.T) {}
+//verify:relevant other/
+func TestExcluded(t *testing.T) {}
+//verify:boundary manual gate
+func TestBoundary(t *testing.T) {}`,
+			wantOut:     "repocontract ^(TestSelected)$ ./pkg\n",
+			wantSummary: "verify-select: contracts: 1 selected (0 always, 1 by change), 2 not selected, 1 boundary; relevant not selected: TestExcluded (pkg); boundary: TestBoundary (pkg)\n",
+		},
+		{
+			name: "no named exclusions",
+			declarations: `//verify:always
+func TestAlways(t *testing.T) {}
+func TestPackage(t *testing.T) {}`,
+			wantOut:     "repocontract ^(TestAlways)$ ./pkg\n",
+			wantSummary: "verify-select: contracts: 1 selected (1 always, 0 by change), 1 not selected, 0 boundary\n",
+		},
+		{
+			name: "discovery order",
+			declarations: `//verify:relevant other/
+func TestZ(t *testing.T) {}
+//verify:relevant other/
+func TestA(t *testing.T) {}
+//verify:boundary manual gate
+func TestBoundaryZ(t *testing.T) {}
+//verify:boundary manual gate
+func TestBoundaryA(t *testing.T) {}`,
+			wantSummary: "verify-select: contracts: 0 selected (0 always, 0 by change), 4 not selected, 2 boundary; relevant not selected: TestA (pkg), TestZ (pkg); boundary: TestBoundaryA (pkg), TestBoundaryZ (pkg)\n",
+		},
+		{
+			name: "fail-safe names boundary",
+			declarations: `//verify:relevant other/
+func TestRelevant(t *testing.T) {}
+//verify:boundary manual gate
+func TestBoundary(t *testing.T) {}`,
+			wantOut:     "repocontract ^(TestRelevant)$ ./pkg\n",
+			wantSummary: "verify-select: contracts: 1 selected (0 always, 1 by change), 1 not selected, 1 boundary; boundary: TestBoundary (pkg)\n",
+			failSafe:    true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repo := newGitRepository(t)
+			writeFile(t, repo, "pkg/contract_test.go", contractSource("repocontract", "", test.declarations))
+			runGit(t, repo, "add", ".")
+			runGit(t, repo, "commit", "-q", "-m", "base contracts")
+			base := strings.TrimSpace(runGit(t, repo, "rev-parse", "HEAD"))
+			writeFile(t, repo, "inputs/data.txt", "changed\n")
+			if test.failSafe {
+				base = "missing-base"
+			}
+			var stdout, stderr bytes.Buffer
+			code := verifyselect.Run(t.Context(), []string{"-repo", repo, "-contracts", "-base", base}, &stdout, &stderr)
+			diagnostic := stderr.String()
+			if test.failSafe {
+				lines := strings.SplitN(diagnostic, "\n", 2)
+				if len(lines) != 2 || !strings.HasPrefix(lines[0], "verify-select: select contracts:") || !strings.HasSuffix(lines[0], "; selecting every contract that is not boundary") {
+					t.Fatalf("fail-safe diagnostic = %q", diagnostic)
+				}
+				diagnostic = lines[1]
+			}
+			if code != 0 || stdout.String() != test.wantOut || diagnostic != test.wantSummary {
+				t.Fatalf("Run() = %d, stdout %q, summary %q; want 0, %q, %q", code, stdout.String(), diagnostic, test.wantOut, test.wantSummary)
 			}
 		})
 	}

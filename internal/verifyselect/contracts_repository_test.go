@@ -5,6 +5,7 @@
 package verifyselect_test
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 	"strings"
 	"testing"
 
+	"roundfix/internal/config"
 	"roundfix/internal/verifyselect"
 )
 
@@ -24,7 +26,9 @@ func TestRepositoryContractTestsDeclareTheirRelevance(t *testing.T) {
 		t.Fatal(err)
 	}
 	regeneration := []string{"internal/baseline/assets/", "internal/baseline/testdata/", ".agents/skills/", "skills/"}
+	declaredRegeneration := []string{".roundfixrc.yml", "internal/baseline/", ".agents/skills/", "skills/", "docs/agents/", "docs/references/coverage-record.json", "internal/spec/", "internal/cli/baseline_*", "cmd/roundfix/", "internal/suiteguard/", "internal/suiteguardcontract/"}
 	relevant := map[string][]string{
+		"TestRegenerationIsDeclared":                            declaredRegeneration,
 		"TestMeasuredSanctionedOwnershipMatchesRecords":         regeneration,
 		"TestDeclaredStepRegenerationAndFrozenBoundaries":       regeneration,
 		"TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical": regeneration,
@@ -39,7 +43,7 @@ func TestRepositoryContractTestsDeclareTheirRelevance(t *testing.T) {
 	seen := make(map[string]bool)
 	foundRelevant := make(map[string]bool)
 	foundGoverned := make(map[string]bool)
-	var foundInstallation, foundBoundary, foundPackage bool
+	var foundInstallation, foundPackage bool
 	docsFiles := make(map[string]bool)
 	for _, contract := range contracts {
 		seen[contract.Name] = true
@@ -60,12 +64,10 @@ func TestRepositoryContractTestsDeclareTheirRelevance(t *testing.T) {
 			if !reflect.DeepEqual(contract.Paths, relevant[contract.Name]) {
 				t.Errorf("%s paths = %v, want %v", contract.Name, contract.Paths, relevant[contract.Name])
 			}
-		case contract.Name == "TestRegenerationIsDeclared":
-			want = verifyselect.ContractBoundary
-			foundBoundary = true
-			if contract.Reason == "" {
-				t.Error("regeneration boundary has no reason")
-			}
+
+		}
+		if contract.Class == verifyselect.ContractBoundary {
+			t.Errorf("%s/%s is boundary", contract.Package, contract.Name)
 		}
 		if contract.Class != want {
 			t.Errorf("%s/%s class = %s, want %s", contract.Package, contract.Name, contract.Class, want)
@@ -74,8 +76,8 @@ func TestRepositoryContractTestsDeclareTheirRelevance(t *testing.T) {
 			foundPackage = true
 		}
 	}
-	if !foundInstallation || !foundBoundary || !foundPackage || len(docsFiles) != 8 || len(foundRelevant) != len(relevant) || len(foundGoverned) != len(governed) {
-		t.Fatalf("missing declarations: installation=%t boundary=%t package=%t docs files=%d relevant=%v governed=%v", foundInstallation, foundBoundary, foundPackage, len(docsFiles), foundRelevant, foundGoverned)
+	if !foundInstallation || !foundPackage || len(docsFiles) != 8 || len(foundRelevant) != len(relevant) || len(foundGoverned) != len(governed) {
+		t.Fatalf("missing declarations: installation=%t package=%t docs files=%d relevant=%v governed=%v", foundInstallation, foundPackage, len(docsFiles), foundRelevant, foundGoverned)
 	}
 	contents, err := os.ReadFile(filepath.Join(root, "Makefile"))
 	if err != nil {
@@ -96,7 +98,8 @@ func TestRepositoryContractTestsDeclareTheirRelevance(t *testing.T) {
 		extra      int
 	}{
 		{"user guide selects only always", "docs/user-guide/example.md", 0},
-		{"owned skill selects regeneration", ".agents/skills/roundfix/SKILL.md", 3},
+		{"owned skill selects regeneration", ".agents/skills/roundfix/SKILL.md", 4},
+		{"project config selects declared regeneration", ".roundfixrc.yml", 1},
 	} {
 		t.Run(scenario.name, func(t *testing.T) {
 			selected := verifyselect.SelectContractPaths(contracts, []string{scenario.path})
@@ -110,7 +113,9 @@ func TestRepositoryContractTestsDeclareTheirRelevance(t *testing.T) {
 				if contract.Class == verifyselect.ContractAlways {
 					continue
 				}
-				if contract.Class != verifyselect.ContractRelevant || !reflect.DeepEqual(contract.Paths, regeneration) {
+				if contract.Class != verifyselect.ContractRelevant || !reflect.DeepEqual(contract.Paths, relevant[contract.Name]) ||
+					(contract.Name != "TestRegenerationIsDeclared" && !reflect.DeepEqual(contract.Paths, regeneration)) ||
+					(scenario.path == ".roundfixrc.yml" && contract.Name != "TestRegenerationIsDeclared") {
 					t.Errorf("unexpected selected contract: %+v", contract)
 				}
 				extra++
@@ -121,6 +126,81 @@ func TestRepositoryContractTestsDeclareTheirRelevance(t *testing.T) {
 		})
 	}
 
+}
+
+func TestRegenerationContractRunsWhenADerivedInputChanges(t *testing.T) {
+	t.Parallel()
+	root := findRepositoryRoot(t)
+	contracts, err := verifyselect.DiscoverContracts(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contents, err := os.ReadFile(filepath.Join(root, ".roundfixrc.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	proposal, err := config.ResolveConfigProposal(nil, contents)
+	if err != nil {
+		t.Fatal(err)
+	}
+	declarations := proposal.Delivery.DerivedPaths
+	if len(declarations) < 4 {
+		t.Fatalf(".roundfixrc.yml derived_paths has %d declarations, want at least four", len(declarations))
+	}
+	assertSelected := func(t *testing.T, entry, sample string, want bool) {
+		t.Helper()
+		selected := false
+		for _, contract := range verifyselect.SelectContractPaths(contracts, []string{sample}) {
+			if contract.Name == "TestRegenerationIsDeclared" {
+				selected = true
+			}
+		}
+		if selected != want {
+			t.Errorf("entry %q (sample %q) selects TestRegenerationIsDeclared = %t, want %t", entry, sample, selected, want)
+		}
+	}
+	for i, declaration := range declarations {
+		scopes := []struct {
+			name  string
+			paths []string
+		}{{"paths", declaration.Paths}}
+		if declaration.Lines != nil {
+			scopes = append(scopes, struct {
+				name  string
+				paths []string
+			}{"lines.paths", declaration.Lines.Paths})
+		}
+		for _, scope := range scopes {
+			for _, entry := range scope.paths {
+				t.Run(fmt.Sprintf("declaration_%d/%s/%s", i, scope.name, entry), func(t *testing.T) {
+					sample := strings.ReplaceAll(entry, "*", "sample")
+					if strings.HasSuffix(entry, "/") {
+						sample += "sample.json"
+					}
+					assertSelected(t, entry, sample, true)
+				})
+			}
+		}
+	}
+	for _, entry := range []string{
+		".roundfixrc.yml",
+		"internal/baseline/plan.go",
+		"skills/skills.go",
+		"internal/spec/archive.go",
+		"internal/cli/baseline_update.go",
+		"cmd/roundfix/main.go",
+		"internal/suiteguard/suiteguard.go",
+		"internal/suiteguardcontract/regeneration.go",
+	} {
+		t.Run(entry, func(t *testing.T) {
+			assertSelected(t, entry, entry, true)
+		})
+	}
+	for _, entry := range []string{"docs/user-guide/example.md", "internal/daemon/daemon.go"} {
+		t.Run(entry, func(t *testing.T) {
+			assertSelected(t, entry, entry, false)
+		})
+	}
 }
 
 func TestVerifyChangedRunsTheSelectedContracts(t *testing.T) {

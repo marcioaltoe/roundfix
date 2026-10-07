@@ -79,3 +79,8 @@ jobs:
       # the binary, or whose Spec corpus is inconsistent, fails here.
       - name: Verify docs
         run: make verify-docs
+
+      # The Full Contract Run runs on every push to main (ADR-0253).
+      - name: Verify every contract
+        if: github.event_name == 'push'
+        run: make verify-contracts

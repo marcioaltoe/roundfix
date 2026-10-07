@@ -396,12 +396,16 @@ The authoritative command or commands the Daemon runs verbatim in the repository
 _Avoid_: CI, smoke test, best-effort check
 
 **Repository Contract Test**:
-A Go test under the `docscontract` or `repocontract` build tag that checks the repository itself — its documents, derived artifacts or test wiring — rather than one package's behavior. `make verify-docs` runs every one, and `make verify-changed` runs the ones its Contract Relevance selects (ADR-0252).
+A Go test under the `docscontract` or `repocontract` build tag that checks the repository itself — its documents, derived artifacts or test wiring — rather than one package's behavior. The Full Contract Run runs every one; `make verify-changed` runs the ones its Contract Relevance selects, and `make verify-docs` runs the `internal/docscontract` tests and the contracts its `repo-test` step lists (ADR-0252, ADR-0253).
 _Avoid_: docs test, integration test, CI-only test
 
 **Contract Relevance**:
-The declaration in a Repository Contract Test's source that decides when `make verify-changed` runs it: `always` on every change; by default, when a file in its package directory changes; `relevant`, when its package directory or a declared path changes; or `boundary`, never in that gate. A malformed declaration fails the gate. A change to `go.mod`, `go.sum` or `Makefile`, and a change list that Git cannot produce, each select every contract that is not `boundary` (ADR-0252).
+The declaration in a Repository Contract Test's source that decides when `make verify-changed` runs it: `always` on every change; by default, when a file in its package directory changes; `relevant`, when its package directory or a declared path changes; or `boundary`, never in that gate. A malformed declaration fails the gate. A change to `go.mod`, `go.sum` or `Makefile`, and a change list that Git cannot produce, each select every contract that is not `boundary`. The selector's summary line names each `relevant` contract it leaves out and each `boundary` contract. The Full Contract Run ignores Contract Relevance (ADR-0252, ADR-0253).
 _Avoid_: test tags, impact map, test filter
+
+**Full Contract Run**:
+`make verify-contracts`: one run of every Repository Contract Test that `cmd/verify-select` discovers, whatever its Contract Relevance, with no hand-kept list. CI runs it on every push to main and before every release, so a contract the selective gate leaves out of a pull request still runs before the change ships (ADR-0253).
+_Avoid_: full suite, nightly run, repo-test
 
 **Incremental Verification**:
 The selected fast local check recorded by the `verification.incremental` Baseline decision for validating the current change while reusing safe local state. It is distinct from the complete repository Verification selected by `verification.gate`.

@@ -255,6 +255,7 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	packageSet := flags.String("packages", "", "print packages in core or baseline")
 	baselinePattern := flags.Bool("baseline-cli-pattern", false, "print the Baseline internal/cli test pattern")
 	contracts := flags.Bool("contracts", false, "print relevant Repository Contract Test invocations")
+	allContracts := flags.Bool("all", false, "print every Repository Contract Test invocation (requires -contracts)")
 	if err := flags.Parse(args); err != nil {
 		return 2
 	}
@@ -263,13 +264,25 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	conflictingContractFlag := false
+	explicitBase := false
 	flags.Visit(func(f *flag.Flag) {
 		if f.Name == "packages" || f.Name == "baseline-cli-pattern" {
 			conflictingContractFlag = true
 		}
+		if f.Name == "base" {
+			explicitBase = true
+		}
 	})
 	if *contracts && conflictingContractFlag {
 		fmt.Fprintln(stderr, "verify-select: -contracts cannot be combined with -packages or -baseline-cli-pattern")
+		return 2
+	}
+	if *allContracts && !*contracts {
+		fmt.Fprintln(stderr, "verify-select: -all requires -contracts")
+		return 2
+	}
+	if *allContracts && explicitBase {
+		fmt.Fprintln(stderr, "verify-select: -all cannot be combined with -base")
 		return 2
 	}
 	if *packageSet != "" && *baselinePattern {
@@ -278,6 +291,18 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	}
 
 	if *contracts {
+		if *allContracts {
+			all, err := DiscoverContracts(*repoRoot)
+			if err != nil {
+				fmt.Fprintf(stderr, "verify-select: %v\n", err)
+				return 1
+			}
+			for _, invocation := range ContractInvocations(all) {
+				fmt.Fprintln(stdout, invocation)
+			}
+			fmt.Fprintf(stderr, "verify-select: contracts: %d selected (every Repository Contract Test), 0 not selected\n", len(all))
+			return 0
+		}
 		all, selected, err := SelectContracts(ctx, *repoRoot, *baseRef)
 		if err != nil {
 			if all == nil {
@@ -289,18 +314,32 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		for _, invocation := range ContractInvocations(selected) {
 			fmt.Fprintln(stdout, invocation)
 		}
-		always, boundary := 0, 0
+		always := 0
+		type contractKey struct{ name, packagePath, tag string }
+		selectedContracts := make(map[contractKey]bool, len(selected))
 		for _, contract := range selected {
+			selectedContracts[contractKey{contract.Name, contract.Package, contract.Tag}] = true
 			if contract.Class == ContractAlways {
 				always++
 			}
 		}
+		var relevantNotSelected, boundaries []string
 		for _, contract := range all {
+			if contract.Class == ContractRelevant && !selectedContracts[contractKey{contract.Name, contract.Package, contract.Tag}] {
+				relevantNotSelected = append(relevantNotSelected, fmt.Sprintf("%s (%s)", contract.Name, contract.Package))
+			}
 			if contract.Class == ContractBoundary {
-				boundary++
+				boundaries = append(boundaries, fmt.Sprintf("%s (%s)", contract.Name, contract.Package))
 			}
 		}
-		fmt.Fprintf(stderr, "verify-select: contracts: %d selected (%d always, %d by change), %d not selected, %d boundary\n", len(selected), always, len(selected)-always, len(all)-len(selected), boundary)
+		fmt.Fprintf(stderr, "verify-select: contracts: %d selected (%d always, %d by change), %d not selected, %d boundary", len(selected), always, len(selected)-always, len(all)-len(selected), len(boundaries))
+		if len(relevantNotSelected) != 0 {
+			fmt.Fprintf(stderr, "; relevant not selected: %s", strings.Join(relevantNotSelected, ", "))
+		}
+		if len(boundaries) != 0 {
+			fmt.Fprintf(stderr, "; boundary: %s", strings.Join(boundaries, ", "))
+		}
+		fmt.Fprintln(stderr)
 		return 0
 	}
 
