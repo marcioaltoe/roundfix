@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0245-generated-records-that-hold-across-specs-and-platforms
-status: pending
+status: completed
 type: test
 complexity: high
 ---
@@ -84,3 +84,94 @@ of 2026-10-07.
 - `_prd.md` → Goal 3; Goal 4; Core Feature 2; Success Metric 4; Success Metric 5
 - `_techspec.md` → Measured starting point; Interfaces; Invariants 6-12; Data Models; API Contract 3; Testing Approach 2; Build Order 2
 - ADR-0250
+
+## Result
+
+Implemented the Task 02 slice: the Coverage Record now collects the sorted,
+unique release `goos` values from `dist/npm/platforms.json`, lists package test
+files with `GOOS`, `CGO_ENABLED=0` and `GOWORK=off`, and parses each file once
+across platforms. Common tests remain in `packages`; limited tests carry their
+platform sets in `platformTests`. No foreign test binary runs. The existing
+`go test -list` parser remains in `collectToolchainCoverage` for the host anchor.
+Comparison reports lost and gained platforms and preserves the existing
+all-platform and package messages. Legacy records retain one implicit platform.
+Validation and marshaling cover platform tokens, ordering, proper subsets,
+unknown packages, duplicate placement and deterministic copies.
+
+Starting evidence: the checked-in record had no `platforms` field or required
+Darwin, Linux and Windows entries; `coverage_platform_test.go` did not exist.
+The pre-existing Task file change was the Daemon's `pending` to `in_progress`
+transition. Task status, checkboxes, authored Verification and the Task Graph
+were left unchanged.
+
+### Acceptance evidence
+
+1. Release-platform entries and repeatable bytes: the required generator
+   `go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1`
+   generated `docs/references/coverage-record.json`; it was not hand-edited.
+   JSON inspection confirmed `platforms: [darwin, linux, windows]`,
+   `TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded: [darwin]`,
+   `TestParseProcStatStartTimeRejectsMissingField: [linux]` and
+   `TestWindowsProcessStartParsesRecordedIdentity: [windows]`, with 48
+   platform-limited tests total. A second generator run exited 0. Comparing
+   saved first-run bytes with the second output found them identical, SHA-256
+   `9b8b3b0a343c0a281048f0446a52e6d0709b6531a1e535b8b67c8502f30b30da`.
+2. Platform-specific regression: `TestCompareCoverageRecordsReportsAPlatformRegression`
+   passed cases for losing only Linux from a common test, losing a Unix-only
+   test, losing all platforms, additions and release-platform/package removal.
+   The Linux-only loss reports exactly
+   `coverage regression: package "roundfix/example" no longer executes "TestKept" on linux`.
+   These comparisons contain no host-dependent branch. The fixture-module test
+   passed the same explicit expected Darwin, Linux, Windows and Unix record,
+   including external tests, aliased imports, invalid-signature exclusions,
+   a Linux-only package and docs exclusion.
+3. Host anchor: `TestCoverageCollectionMatchesTheToolchainOnThisPlatform`
+   passed on `darwin` with no additions or regressions against `go test -list`.
+
+### Focused checks
+
+Checks used `GOCACHE=/private/tmp/roundfix-0245-task02-gocache GOPROXY=off`.
+The first host-anchor attempt using the shared cache failed with
+`operation not permitted` reading a cache entry; the task-scoped cache resolved
+that environment restriction.
+
+- `go test ./internal/spec -run '^(TestCoverageCollection|TestCompareCoverageRecords|TestCoverageRecordRefuses|TestCoveragePlatforms|TestMarshalCoverageRecord|TestCoverageRecordCounts)' -count=1 -v`
+  — exit 0; nine top-level checks passed, including the unchanged legacy
+  missing-test, added-test, marshal and docs-package tests. Log:
+  `/private/tmp/roundfix-0245-task02-focused.log`.
+- Required generator, second invocation — exit 0; byte equality checked in
+  Python against `/private/tmp/roundfix-0245-task02-record.json`.
+- `GOCACHE=/private/tmp/roundfix-0245-task02-gocache GOPROXY=off rtk make verify-incremental`
+  — first run exited 2 at `make test`; only
+  `TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner` and
+  `TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion`
+  failed because the sandbox denied reading the process table. The coverage
+  package and every other package passed. Rerun with host process-table
+  permission exited 0, including formatting, vet, tests, skill checks and
+  CLI build. Logs: `/private/tmp/roundfix-0245-task02-incremental.log` and
+  `/private/tmp/roundfix-0245-task02-incremental-permitted.log`.
+- `git -c core.fsmonitor=false diff --check` — exit 0 after the Result append.
+  Postflight paths are exactly the collector, new platform test file,
+  generated record and assigned Task file.
+
+### Follow-up outside this Task
+
+The first generator invocation passed `TestCoverageEquivalence` and wrote the
+record, then exited 1 because the existing `internal/spec/main_test.go` suite
+guard reported `modified: docs/references/coverage-record.json`. The second
+invocation passed because the bytes were unchanged. No guard was disabled.
+For a future regeneration that changes the record, the sanctioned-regeneration
+integration needs a command declaration, explicit output authority for this
+record, and registration by the recording test. The current Spec authorization's
+`Sanctioned regeneration` section declares only `make baseline-digests`, and
+`TestCoverageEquivalence` does not call `suiteguard.DeclareSanctionedRegeneration`.
+Those authorization and guard-integration changes require a separately scoped
+follow-up; this Task does not alter authorization records or guard wiring.
+
+Daemon Verification remains pending; neither authored Verification command was
+executed. No commit, push or pull request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261007T115541Z_03741c3fcc656349`
+- Source commit: `55555df76f71c617dd46c6df6f1c873fa07755b7`
