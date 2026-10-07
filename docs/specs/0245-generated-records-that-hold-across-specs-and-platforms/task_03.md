@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0245-generated-records-that-hold-across-specs-and-platforms
-status: pending
+status: completed
 type: chore
 complexity: medium
 ---
@@ -85,3 +85,48 @@ holds the tests task_01 added.
 - `_prd.md` → Goal 2; Core Feature 3; Core Feature 4; Success Metric 3
 - `_techspec.md` → Data Models; Invariant 4; Build Order 3
 - ADR-0250; ADR-0233; ADR-0192
+
+## Result
+
+Implemented the Task 03 slice: the Project Config now declares the Baseline
+module version record before the Baseline digests, scopes its module version
+lines, keeps the Setup Manifest and owned-skill declarations in their existing
+order, and declares the Coverage Record last. The repository-config test pins
+the resulting four declarations. The repository rule and the two CONTEXT
+glossary terms describe the record steps and cite ADR-0250.
+
+The required Coverage Record generator re-recorded the existing platform
+matrix and added the Task 01 baseline tests, including
+`TestEveryBaselineModuleVersionIsRecorded`. The generated file was not hand
+edited.
+
+Acceptance evidence:
+
+- Project Config and declaration shape: direct diff inspection confirms the
+  record path is first, the module line matcher is
+  `^  "version": [0-9]+,$`, the record command precedes `make baseline-digests`,
+  and the Coverage Record is the fourth declaration. The focused config
+  declaration and validation tests passed.
+- Repository guidance and vocabulary: direct diff inspection confirms the
+  rule follows the owned-skill rule, names the next-version behavior, and
+  `CONTEXT.md` defines **Module Version Record** and **Coverage Record** after
+  **Derived Path Declaration**, each with an `_Avoid_` line and ADR-0250.
+
+Focused checks:
+
+- `GOCACHE=/private/tmp/roundfix-0245-task03-gocache go test ./internal/config -run '^(TestDerivedLineDeclarationsAreReadAndValidated|TestVerificationToolsAreBareExecutableNames)$' -count=1` — exit 0.
+- `GOCACHE=/private/tmp/roundfix-0245-task03-gocache go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1` — the generator wrote the 11 missing baseline test entries, including `TestEveryBaselineModuleVersionIsRecorded`; the package then exited 1 because suiteguard reported the intentional modification of `docs/references/coverage-record.json`.
+- `gofmt -w internal/config/verification_tools_test.go` — completed.
+- `git -c core.fsmonitor=false diff --check` — exit 0.
+- `rg` inspection of `docs/references/coverage-record.json` confirmed the
+  platform field, the Darwin/Linux/Windows platform-specific tests, and the
+  newly generated `TestEveryBaselineModuleVersionIsRecorded` entry.
+
+Daemon Verification remains pending; no command from this Task's authored
+Verification section was run. Task status and checkboxes remain Daemon-owned.
+No commit, push, or pull request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261007T115541Z_03741c3fcc656349`
+- Source commit: `c78cfc85c9055790e29bde9a3321cc4c522bc317`

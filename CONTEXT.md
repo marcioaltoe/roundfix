@@ -586,6 +586,14 @@ _Avoid_: Queue order, dependency Task
 A Project Config entry naming a path pattern and the sanctioned command that regenerates it; a Pull Request conflict confined to declared derived paths is resolved by regeneration instead of parking (ADR-0192).
 _Avoid_: Generated file list, merge strategy
 
+**Module Version Record**:
+A generated record of each Baseline module's versions and content digests, so a module version names one recorded content and the record step can choose the next free version (ADR-0250).
+_Avoid_: Module changelog, manual version note
+
+**Coverage Record**:
+A generated record of the tests in the repository's packages, including the release platforms on which platform-limited tests are built, so coverage comparisons are stable on every host (ADR-0250).
+_Avoid_: Host test list, test result report
+
 **Evidence Snapshot**:
 The Daemon's record, written when a QA pass closes, of the inputs each carriable passing row observed at the audited head (ADR-0194).
 _Avoid_: QA cache, Agent-written evidence
