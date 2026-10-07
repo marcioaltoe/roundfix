@@ -34,6 +34,7 @@ type LegacyConversion struct {
 	Files                    []string
 	Bytes                    int64
 	Promoted                 []string
+	Tolerated                []string
 	legacyCopies             map[string][]byte
 }
 
@@ -268,9 +269,15 @@ func PlanLegacyConversion(req LegacyConversionRequest) (LegacyConversion, error)
 		c.Promoted = append(c.Promoted, destination)
 	}
 	sort.Strings(c.Promoted)
-	c.Record, err = BuildArchiveRecord(ArchiveRecordInput{SpecDir: folder, Slug: req.Slug, Source: c.Folder, SourceRevision: req.SourceRevision, Promoted: c.Promoted})
+	c.Record, err = BuildArchiveRecord(ArchiveRecordInput{SpecDir: folder, Slug: req.Slug, Source: c.Folder, SourceRevision: req.SourceRevision, Promoted: c.Promoted, Legacy: true})
 	if err != nil {
 		return c, fmt.Errorf("build legacy record: %w", err)
+	}
+	if _, statErr := os.Stat(filepath.Join(folder, "_tasks.md")); !errors.Is(statErr, os.ErrNotExist) {
+		_, c.Tolerated, err = ReadLegacyCauseGraph(req.ArchiveRoot, req.Slug)
+		if err != nil {
+			return c, fmt.Errorf("read legacy tolerances: %w", err)
+		}
 	}
 	c.Record.PullRequest, c.Record.DeliveryCommit = req.Delivery.PullRequest, req.Delivery.Commit
 	if c.Record.Archived == "" {

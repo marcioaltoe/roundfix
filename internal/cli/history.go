@@ -18,7 +18,8 @@ const historyUsage = `Usage:
   roundfix history sanitize [--batch <n>] [--advise] [--apply] [--promote <path> ...]
 
 Plans pending legacy folders, findings, backlog, reviews and handoffs in that
-order. Plans write nothing in the repository. Advice is optional and advisory.
+order. Refused Units are listed with their reason, left in place and not counted
+toward --batch. Plans write nothing in the repository. Advice is optional and advisory.
 
 Options:
   --batch <n>       Select the next positive number of pending units
@@ -43,6 +44,7 @@ type historyUnit struct {
 	files      []string // repository-relative paths removed or rewritten
 	conversion *spec.LegacyConversion
 	kind       *spec.HistoryKindPlan
+	refusal    error
 }
 
 func parseHistory(args []string) (historyRequest, error) {
@@ -76,7 +78,7 @@ func parseHistory(args []string) (historyRequest, error) {
 	return req, nil
 }
 
-// Inventory precedes conversion planning so tag coverage is checked first.
+// Inventory preserves unit errors so planning can continue past a refused unit.
 func historyInventory(root, archive string) ([]historyUnit, error) {
 	slugs, err := spec.LegacyArchiveFolders(archive)
 	if err != nil {
@@ -84,37 +86,22 @@ func historyInventory(root, archive string) ([]historyUnit, error) {
 	}
 	var units []historyUnit
 	for _, slug := range slugs {
-		folder := filepath.Join(archive, slug)
-		names, err := archivePlanFiles(folder)
-		if err != nil {
-			return nil, err
-		}
-		rel, err := filepath.Rel(root, folder)
-		if err != nil {
-			return nil, err
-		}
-		u := historyUnit{name: slug, folder: true}
-		for _, name := range names {
-			u.files = append(u.files, filepath.ToSlash(filepath.Join(rel, name)))
-		}
-		units = append(units, u)
+		units = append(units, historyUnit{name: slug, folder: true})
 	}
 	for _, kind := range []spec.ArchiveKind{spec.ArchiveKindFinding, spec.ArchiveKindBacklog, spec.ArchiveKindReview, spec.ArchiveKindHandoff} {
 		dir := filepath.Join(root, spec.ArchiveDir(kind))
 		if _, err := os.Stat(dir); os.IsNotExist(err) {
 			continue
 		}
-		names, err := archivePlanFiles(dir)
-		if err != nil {
-			return nil, err
-		}
-		u := historyUnit{name: string(kind)}
+		names, inventoryErr := archivePlanFiles(dir)
+		u := historyUnit{name: string(kind), refusal: inventoryErr}
 		for _, name := range names {
 			rel := filepath.ToSlash(filepath.Join(spec.ArchiveDir(kind), name))
 			if kind == spec.ArchiveKindFinding || kind == spec.ArchiveKindBacklog {
 				data, err := os.ReadFile(filepath.Join(root, rel))
 				if err != nil {
-					return nil, err
+					u.refusal = err
+					break
 				}
 				if spec.IsReducedHistoryEntry(data) {
 					continue
@@ -122,14 +109,14 @@ func historyInventory(root, archive string) ([]historyUnit, error) {
 			}
 			u.files = append(u.files, rel)
 		}
-		if len(u.files) > 0 {
+		if len(u.files) > 0 || u.refusal != nil {
 			units = append(units, u)
 		}
 	}
 	return units, nil
 }
 
-func historyTagCheck(ctx context.Context, root string, units []historyUnit) error {
+func historyTagCheck(ctx context.Context, root string) error {
 	const needs = "history sanitize --apply needs the annotated tag history-full at or before HEAD; tag the last commit before the first batch with git tag -a history-full"
 	typ, err := gitOutput(ctx, root, "cat-file", "-t", "refs/tags/history-full")
 	if err != nil || typ != "tag" {
@@ -138,6 +125,10 @@ func historyTagCheck(ctx context.Context, root string, units []historyUnit) erro
 	if _, err := gitOutput(ctx, root, "merge-base", "--is-ancestor", "refs/tags/history-full^{commit}", "HEAD"); err != nil {
 		return fmt.Errorf("%s", needs)
 	}
+	return nil
+}
+
+func historyTagCoverage(ctx context.Context, root string, units []historyUnit) error {
 	tree, err := gitOutput(ctx, root, "ls-tree", "-r", "--name-only", "-z", "refs/tags/history-full")
 	if err != nil {
 		return err
@@ -203,9 +194,6 @@ func runHistoryCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		return fail(err)
 	}
 	total := len(units)
-	if req.batchSet && req.batch < len(units) {
-		units = units[:req.batch]
-	}
 	if len(units) == 0 {
 		if len(req.promote) > 0 {
 			return fail(fmt.Errorf("promotion is outside the batch"))
@@ -214,21 +202,62 @@ func runHistoryCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		return exitOK
 	}
 	if req.apply {
-		if err := historyTagCheck(ctx, repo, units); err != nil {
+		if err := historyTagCheck(ctx, repo); err != nil {
 			return fail(err)
 		}
 	}
 	specRel, _ := filepathRelSlash(repo, root.Path)
 	archiveRel, _ := filepathRelSlash(repo, archive)
+	var selected, refused []historyUnit
+	for _, u := range units {
+		if req.batchSet && len(selected) == req.batch {
+			break
+		}
+		if u.folder {
+			names, err := archivePlanFiles(filepath.Join(archive, u.name))
+			u.refusal = err
+			for _, name := range names {
+				u.files = append(u.files, archiveRel+"/"+u.name+"/"+name)
+			}
+		}
+		if u.refusal == nil {
+			if u.folder {
+				delivery, err := spec.FindLegacyDelivery(ctx, repo, specRel, archiveRel, u.name)
+				if err != nil {
+					return fail(err)
+				}
+				c, err := spec.PlanLegacyConversion(spec.LegacyConversionRequest{RepositoryRoot: repo, ArchiveRoot: archive, Slug: u.name, SourceRevision: revision, Delivery: delivery})
+				u.refusal = err
+				u.conversion = &c
+			} else {
+				k, err := spec.PlanHistoryKind(repo, revision, spec.ArchiveKind(u.name))
+				u.refusal = err
+				u.kind = &k
+			}
+		}
+		if u.refusal != nil {
+			if u.folder {
+				u.name = archiveRel + "/" + u.name
+			}
+			refused = append(refused, u)
+			continue
+		}
+		selected = append(selected, u)
+	}
 	promotions := map[string][]string{}
 	destinations := map[string]bool{}
 	for _, p := range req.promote {
 		if filepath.IsAbs(p) || filepath.ToSlash(filepath.Clean(p)) != p || strings.Contains(p, "\\") {
 			return fail(fmt.Errorf("promotion must be repository-relative: %q", p))
 		}
+		for _, u := range refused {
+			if u.folder && strings.HasPrefix(p, u.name+"/") {
+				return fail(fmt.Errorf("promotion %q is in refused unit %s: %v", p, u.name, u.refusal))
+			}
+		}
 		found := false
-		for _, u := range units {
-			if u.folder && strings.HasPrefix(p, archiveRel+"/"+u.name+"/") {
+		for _, u := range selected {
+			if u.folder && strings.HasPrefix(p, u.conversion.Folder+"/") {
 				dest := filepath.Base(p)
 				if destinations[dest] {
 					return fail(fmt.Errorf("duplicate promotion destination %q", dest))
@@ -243,41 +272,34 @@ func runHistoryCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 			return fail(fmt.Errorf("promotion %q is outside the batch", p))
 		}
 	}
-	var kinds []spec.HistoryKindPlan
-	for i := range units {
-		u := &units[i]
-		if u.folder {
-			delivery, err := spec.FindLegacyDelivery(ctx, repo, specRel, archiveRel, u.name)
-			if err != nil {
-				return fail(err)
-			}
-			c, err := spec.PlanLegacyConversion(spec.LegacyConversionRequest{RepositoryRoot: repo, ArchiveRoot: archive, Slug: u.name, SourceRevision: revision, Delivery: delivery, Promote: promotions[u.name]})
-			if err != nil {
-				return fail(err)
-			}
-			u.conversion = &c
-		} else {
-			if kinds == nil {
-				kinds, err = spec.PlanHistoryKinds(repo, revision)
-				if err != nil {
-					return fail(err)
-				}
-			}
-			for j := range kinds {
-				if string(kinds[j].Kind) == u.name {
-					u.kind = &kinds[j]
-					break
-				}
-			}
+	for i := range selected {
+		u := &selected[i]
+		if !u.folder || len(promotions[u.name]) == 0 {
+			continue
+		}
+		c := u.conversion
+		converted, err := spec.PlanLegacyConversion(spec.LegacyConversionRequest{RepositoryRoot: repo, ArchiveRoot: archive, Slug: u.name, SourceRevision: revision, Delivery: spec.LegacyDelivery{Commit: c.Record.DeliveryCommit, PullRequest: c.Record.PullRequest, Date: c.Record.Archived}, Promote: promotions[u.name]})
+		if err != nil {
+			return fail(err)
+		}
+		u.conversion = &converted
+	}
+	if req.apply {
+		if err := historyTagCoverage(ctx, repo, selected); err != nil {
+			return fail(err)
+		}
+		printHistoryRefused(refused, stdout)
+		if len(selected) == 0 && len(refused) > 0 {
+			return fail(fmt.Errorf("history sanitize --apply found no convertible unit; %d unit(s) refused", len(refused)))
 		}
 	}
 	if req.apply {
-		return applyHistoryUnits(ctx, repo, revision, units, total-len(units), stdout, stderr)
+		return applyHistoryUnits(ctx, repo, revision, selected, len(refused), total-len(selected), stdout, stderr)
 	}
-	return printHistoryPlan(ctx, req, loaded, env, units, stdout, stderr)
+	return printHistoryPlan(ctx, req, loaded, env, selected, refused, stdout, stderr)
 }
 
-func applyHistoryUnits(ctx context.Context, repo, revision string, units []historyUnit, remaining int, stdout, stderr io.Writer) int {
+func applyHistoryUnits(ctx context.Context, repo, revision string, units []historyUnit, refused, remaining int, stdout, stderr io.Writer) int {
 	var records, reduced, removed, promoted int
 	var bytes int64
 	for _, u := range units {
@@ -304,11 +326,11 @@ func applyHistoryUnits(ctx context.Context, repo, revision string, units []histo
 			return exitRunFailed
 		}
 	}
-	fmt.Fprintf(stdout, "history sanitize applied %d unit(s): wrote %d Archive Record(s), reduced %d file(s), removed %d file(s) (%d bytes) kept in Git at %.12s and tag history-full; promoted %d file(s) to docs/references/; %d unit(s) remain\n", len(units), records, reduced, removed, bytes, revision, promoted, remaining)
+	fmt.Fprintf(stdout, "history sanitize applied %d unit(s): wrote %d Archive Record(s), reduced %d file(s), removed %d file(s) (%d bytes) kept in Git at %.12s and tag history-full; promoted %d file(s) to docs/references/%s; %d unit(s) remain\n", len(units), records, reduced, removed, bytes, revision, promoted, historyRefusalSuffix(refused), remaining)
 	return exitOK
 }
 
-func printHistoryPlan(ctx context.Context, req historyRequest, loaded config.Loaded, env commandEnvironment, units []historyUnit, stdout, stderr io.Writer) int {
+func printHistoryPlan(ctx context.Context, req historyRequest, loaded config.Loaded, env commandEnvironment, units, refused []historyUnit, stdout, stderr io.Writer) int {
 	var files int
 	var bytes int64
 	var removed []string
@@ -349,7 +371,7 @@ func printHistoryPlan(ctx context.Context, req historyRequest, loaded config.Loa
 			citations = append(citations, c)
 		}
 	}
-	fmt.Fprintf(stdout, "history sanitize plan: %d unit(s) pending; %d file(s) (%d bytes) leave docs/history\n", len(units), files, bytes)
+	fmt.Fprintf(stdout, "history sanitize plan: %d unit(s) pending; %d file(s) (%d bytes) leave docs/history%s\n", len(units), files, bytes, historyRefusalSuffix(len(refused)))
 	for _, u := range units {
 		if c := u.conversion; c != nil {
 			delivery := "unknown"
@@ -360,6 +382,9 @@ func printHistoryPlan(ctx context.Context, req historyRequest, loaded config.Loa
 				}
 			}
 			fmt.Fprintf(stdout, "folder %s: removes %d file(s) (%d bytes) and writes %s (%d bytes, %s, delivery %s)\n", c.Folder, len(c.Files), c.Bytes, c.RecordPath, len(c.Rendered), c.Record.Disposition, delivery)
+			for _, tolerance := range c.Tolerated {
+				fmt.Fprintf(stdout, "tolerates %s: %s\n", c.Folder, tolerance)
+			}
 			var candidates []string
 			for _, p := range c.Files {
 				if !judgeArchiveCore(p) && !strings.HasPrefix(p, "qa/evidence/") {
@@ -422,9 +447,23 @@ func printHistoryPlan(ctx context.Context, req historyRequest, loaded config.Loa
 			fmt.Fprintf(stdout, "%s: removes %d file(s) (%d bytes)\n", k.Kind, len(k.Files), k.BytesBefore)
 		}
 	}
+	printHistoryRefused(refused, stdout)
 	for _, c := range citations {
 		fmt.Fprintf(stdout, "cites %s:%d names %s\n", c.Path, c.Line, c.Target)
 	}
 	fmt.Fprintln(stdout, "apply with: roundfix history sanitize --apply --batch <n> (needs the annotated tag history-full at or before HEAD)")
 	return exitOK
+}
+
+func historyRefusalSuffix(count int) string {
+	if count == 0 {
+		return ""
+	}
+	return fmt.Sprintf("; %d unit(s) refused", count)
+}
+
+func printHistoryRefused(units []historyUnit, stdout io.Writer) {
+	for _, u := range units {
+		fmt.Fprintf(stdout, "refused %s: %v\n", u.name, u.refusal)
+	}
 }

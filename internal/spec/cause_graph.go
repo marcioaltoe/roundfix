@@ -44,6 +44,78 @@ func ReadCauseGraph(root, slug string) (CauseGraph, error) {
 	return graph, nil
 }
 
+// ReadLegacyCauseGraph reads a Legacy Archive Folder's graph with named
+// tolerances for projection rows outside the graph and retired Task types.
+// Front matter, malformed rows, and duplicate rows retain strict validation.
+func ReadLegacyCauseGraph(root, slug string) (CauseGraph, []string, error) {
+	if filepath.Base(slug) != slug || slug == "." || slug == ".." {
+		return CauseGraph{}, nil, fmt.Errorf("unsafe Spec slug %q", slug)
+	}
+	dir := filepath.Join(root, slug)
+	manifestPath := filepath.Join(dir, "_tasks.md")
+	if _, err := os.Stat(manifestPath); err != nil {
+		return CauseGraph{}, nil, fmt.Errorf("inspect cause Task Graph: %w", err)
+	}
+	content, err := os.ReadFile(manifestPath)
+	if err != nil {
+		return CauseGraph{}, nil, fmt.Errorf("read Task Graph manifest %q: %w", manifestPath, err)
+	}
+	nodes, body, qa, _, err := parseManifestGraph(manifestPath, content)
+	if err != nil {
+		return CauseGraph{}, nil, err
+	}
+	graph := CauseGraph{QATaskID: qa.TaskID, Tasks: map[string]string{}, Dir: dir}
+	for _, node := range nodes {
+		graph.Tasks[node.ID] = node.File
+	}
+	tolerated, err := legacyProjectionTolerances(manifestPath, body, graph.Tasks)
+	if err != nil {
+		return CauseGraph{}, nil, err
+	}
+	return graph, tolerated, nil
+}
+
+func legacyProjectionTolerances(manifestPath string, body []byte, tasks map[string]string) ([]string, error) {
+	var tolerated []string
+	seen := map[string]bool{}
+	inProjectionTable := false
+	for _, line := range strings.Split(string(body), "\n") {
+		cells := markdownTableCells(line)
+		if !inProjectionTable {
+			if taskTypeProjectionHeader(cells) {
+				inProjectionTable = true
+			}
+			continue
+		}
+		if len(cells) == 0 {
+			break
+		}
+		if markdownTableSeparator(cells) {
+			continue
+		}
+		if len(cells) < 5 || !strings.HasPrefix(cells[0], "task_") {
+			return nil, ManifestError{
+				Path:   manifestPath,
+				Reason: "projection table has a malformed Task row; each row must start with a canonical task_NN id and include title, type, complexity, and needs cells",
+			}
+		}
+		id := cells[0]
+		if seen[id] {
+			return nil, ManifestError{
+				Path:   manifestPath,
+				Reason: fmt.Sprintf("projection table defines Task %q more than once; remove duplicate rows", id),
+			}
+		}
+		seen[id] = true
+		if _, known := tasks[id]; !known {
+			tolerated = append(tolerated, fmt.Sprintf("projection row %s names a Task outside the graph", id))
+		} else if _, err := ParseTaskType(manifestPath, cells[2]); err != nil {
+			tolerated = append(tolerated, fmt.Sprintf("projection row %s has retired Task type %q", id, cells[2]))
+		}
+	}
+	return tolerated, nil
+}
+
 // ReadCauseGraphAt reads the historical graph and its Tasks through the same
 // immutable tree reader. It shares manifest validation with the folder form.
 func ReadCauseGraphAt(source, slug string, read func(string) ([]byte, error)) (CauseGraph, error) {
