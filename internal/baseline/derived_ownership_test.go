@@ -992,6 +992,11 @@ func newDerivedRegenerationFixture(t *testing.T) string {
 	// sanction regeneration outputs; the real reader includes that root, so the
 	// fixture copies it too.
 	for _, directory := range []string{".agents", "docs/specs", "docs/history/specs", "internal", "skills"} {
+		if directory == "docs/history/specs" {
+			if _, err := os.Stat(filepath.Join(sourceRoot, directory)); errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+		}
 		if err := os.CopyFS(
 			filepath.Join(fixtureRoot, directory),
 			os.DirFS(filepath.Join(sourceRoot, directory)),

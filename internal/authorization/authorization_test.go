@@ -14,6 +14,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"roundfix/internal/gittest"
 )
 
 func TestAuthorizationParseCharacterization(t *testing.T) {
@@ -285,6 +287,7 @@ func TestCurrentRecordPermitsItsDeclaredOperations(t *testing.T) {
 	}
 	repoRoot := filepath.Clean(filepath.Join(filepath.Dir(sourceFile), "..", ".."))
 	const slug = "0119-spec-contained-authorization"
+	repoRoot = gittest.PinnedHistory(t, repoRoot, "docs/history/specs/"+slug+"/_authorization.md")
 	recordPath, err := discoverSpecAuthorizationRecord(repoRoot, slug)
 	if err != nil {
 		t.Fatal(err)

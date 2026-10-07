@@ -13,6 +13,7 @@
 package skills
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -30,6 +31,9 @@ func TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical(t *testing.T) {
 		"internal/baseline/testdata/plan-characterization",
 	}
 	archivedPaths := []string{spec.ArchiveDir(spec.ArchiveKindSpec)}
+	if _, err := os.Stat(filepath.Join(verificationRoot, archivedPaths[0])); errors.Is(err, os.ErrNotExist) {
+		archivedPaths = nil
+	}
 	derivedBefore := artifactBytes(t, verificationRoot, derivedPaths)
 	characterizationBefore := artifactBytes(t, verificationRoot, characterizationPaths)
 	archivedBefore := artifactBytes(t, verificationRoot, archivedPaths)

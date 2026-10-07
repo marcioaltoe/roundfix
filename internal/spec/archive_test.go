@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+
+	"roundfix/internal/gittest"
 )
 
 func TestArchiveDirAnswersEveryRetiredKind(t *testing.T) {
@@ -634,7 +636,7 @@ func TestArchivedPassCorpusRemainsArchiveEligible(t *testing.T) {
 	if !ok {
 		t.Fatal("runtime.Caller could not locate the repository")
 	}
-	pattern := archiveTestRepositoryPath(filepath.Join(filepath.Dir(testFile), "..", ".."), ArchiveKindSpec, "*", "qa", "qa-report-*.md")
+	pattern := archiveTestRepositoryPath(gittest.PinnedHistory(t, filepath.Join(filepath.Dir(testFile), "..", ".."), ArchiveDir(ArchiveKindSpec)), ArchiveKindSpec, "*", "qa", "qa-report-*.md")
 	reportPaths, err := filepath.Glob(pattern)
 	if err != nil {
 		t.Fatalf("find archived QA Reports: %v", err)
@@ -813,7 +815,7 @@ func TestArchivedQAOverrideCorpusIncludesFailedSpec(t *testing.T) {
 	if !ok {
 		t.Fatal("runtime.Caller could not locate the repository")
 	}
-	pattern := archiveTestRepositoryPath(filepath.Join(filepath.Dir(testFile), "..", ".."), ArchiveKindSpec, "*", "_prd.md")
+	pattern := archiveTestRepositoryPath(gittest.PinnedHistory(t, filepath.Join(filepath.Dir(testFile), "..", ".."), ArchiveDir(ArchiveKindSpec)), ArchiveKindSpec, "*", "_prd.md")
 	prdPaths, err := filepath.Glob(pattern)
 	if err != nil {
 		t.Fatalf("find archived Spec PRDs: %v", err)
@@ -855,7 +857,8 @@ func TestArchivedQAOverrideCorpusIncludesFailedSpec(t *testing.T) {
 func prepareSpec0058Replay(t *testing.T, repositoryRoot string, reportFixture string, addDeclaration bool) (string, string) {
 	t.Helper()
 	fixtureRoot := filepath.Join(repositoryRoot, "internal", "spec", "testdata", "archive-replay-0058")
-	sourceDir := filepath.Join(repositoryRoot, filepath.FromSlash(filepath.Dir(filepath.Dir(spec0058SourceReport))))
+	sourceRoot := gittest.PinnedHistory(t, repositoryRoot, filepath.ToSlash(filepath.Dir(filepath.Dir(spec0058SourceReport))))
+	sourceDir := filepath.Join(sourceRoot, filepath.FromSlash(filepath.Dir(filepath.Dir(spec0058SourceReport))))
 	specsRoot := filepath.Join(t.TempDir(), "docs", "specs")
 	specDir := filepath.Join(specsRoot, spec0058ReplaySlug)
 	archiveTestCopyTree(t, sourceDir, specDir)

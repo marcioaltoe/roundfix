@@ -666,6 +666,11 @@ func validateSpecAuditSlug(specsRoot string, builtInRoot bool, slug string) erro
 			return fmt.Errorf("read Spec %q: %w", slug, err)
 		}
 	}
+	if _, err := spec.ReadArchivedSpec(spec.ArchiveSpecRoot(specsRoot, builtInRoot), slug); err == nil {
+		return nil
+	} else if !errors.Is(err, spec.ErrNotArchived) {
+		return fmt.Errorf("read archived Spec %q: %w", slug, err)
+	}
 	return validationError{message: fmt.Sprintf("unknown Spec slug %q", slug)}
 }
 

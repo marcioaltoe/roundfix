@@ -10,6 +10,7 @@ package spec
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -59,6 +60,9 @@ func TestArchiveLayoutCharacterizationRecordsEveryRetiredFamily(t *testing.T) {
 				return
 			}
 			info, err := os.Stat(filepath.Join(repositoryRoot, filepath.FromSlash(retiredFamily.directory)))
+			if retiredFamily.kind == ArchiveKindSpec && errors.Is(err, os.ErrNotExist) {
+				return
+			}
 			if err != nil {
 				t.Fatalf("stat current %s directory %q: %v", retiredFamily.family, retiredFamily.directory, err)
 			}

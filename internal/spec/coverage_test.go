@@ -166,7 +166,9 @@ func collectCoverageRecord(repoRoot string) (CoverageRecord, error) {
 		}
 		if packagePath, terminated := coveragePackageTerminator(line); terminated {
 			sort.Strings(pending)
-			record.Packages[packagePath] = pending
+			if !strings.HasPrefix(packagePath, "roundfix/docs/") {
+				record.Packages[packagePath] = pending
+			}
 			pending = nil
 			continue
 		}
@@ -374,4 +376,25 @@ func equalStrings(left, right []string) bool {
 		}
 	}
 	return true
+}
+
+func TestCoverageRecordCountsNoPackageUnderDocs(t *testing.T) {
+	record, err := readCoverageRecord(filepath.Join("..", "..", coverageRecordPath))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for packagePath := range record.Packages {
+		if strings.HasPrefix(packagePath, "roundfix/docs/") {
+			t.Errorf("documentation package counted: %s", packagePath)
+		}
+	}
+	actual, err := collectCoverageRecord(filepath.Join("..", ".."))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for packagePath := range actual.Packages {
+		if strings.HasPrefix(packagePath, "roundfix/docs/") {
+			t.Errorf("documentation package collected: %s", packagePath)
+		}
+	}
 }

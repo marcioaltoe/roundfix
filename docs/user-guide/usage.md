@@ -649,7 +649,7 @@ Review Issues: unknown — fetch did not complete.
 
 The full evidence and refusal rules trace to
 [ADR-0054](../history/adr/0054-review-source-evidence-determines-review-outcomes.md),
-[Spec 0039](../history/specs/0039-review-source-evidence-and-detached-outcomes/_prd.md),
+Spec 0039,
 and the
 [detached-watch finding](../history/findings/2026-07-16-vortex-pr87-detached-watch-notification.md).
 
@@ -753,7 +753,7 @@ outcome. Never kill Agent or acpx processes by hand while a Run is Active.
 For the full failure and replay contract, see the
 [Stop Command reference](commands/stop.md), which traces to
 [ADR-0052](../adr/0052-run-completion-is-compare-and-set.md) and the
-[terminal-outcome Spec](../history/specs/0037-terminal-outcome-integrity/_prd.md).
+terminal-outcome Spec.
 
 ## Token usage
 

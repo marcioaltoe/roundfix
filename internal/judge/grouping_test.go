@@ -12,14 +12,15 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"roundfix/internal/gittest"
 )
 
 func groupingBlock(t *testing.T) string {
 	t.Helper()
-	b, err := os.ReadFile("../../docs/specs/0209-sources-that-share-a-context-share-a-spec/_techspec.md")
-	if err != nil {
-		b, err = os.ReadFile("../../docs/history/specs/0209-sources-that-share-a-context-share-a-spec/_techspec.md")
-	}
+	source := "docs/history/specs/0209-sources-that-share-a-context-share-a-spec/_techspec.md"
+	pinned := gittest.PinnedHistory(t, "../..", source)
+	b, err := os.ReadFile(filepath.Join(pinned, source))
 	if err != nil {
 		t.Fatal(err)
 	}
