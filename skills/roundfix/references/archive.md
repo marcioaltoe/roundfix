@@ -107,3 +107,11 @@ The command requires both approval and reason, keeps every non-QA Task
 the approval source, reason, observed QA outcome and archived revision. When the
 QA Task is not completed, it also stamps `qa_override_qa_task_status`. It does
 not change the QA Task or report verdict.
+### Archive Record
+
+The command writes `<slug>.md` under the resolved archive root and removes the
+Spec folder. The record names the QA Report and verdict and carries its
+`source_revision`, the Git revision where the removed folder remains
+recoverable. Run `roundfix archive <slug> --plan` to inspect the cut and
+Archive Advice before it happens. Use repeatable `--promote <path>` to copy a
+confirmed candidate to `docs/references/` in the archive change.

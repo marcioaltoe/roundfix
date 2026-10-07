@@ -75,6 +75,18 @@
         }
       },
       "task_max_chars": 12000
+    },
+    "archive-value": {
+      "question_id": "archive_value",
+      "question": {
+        "type": "choice",
+        "instructions": "`file` is a candidate file from a Spec that will be removed by archive. Which value best describes keeping its contents in the repository after the Spec folder is cut?",
+        "criteria": {
+          "reusable_knowledge": "The file contains reusable knowledge that belongs in a durable project reference or guide",
+          "repository_record": "The file records what happened in this repository or Spec and is useful as provenance",
+          "transient_evidence": "The file is transient evidence, generated output or an intermediate artifact whose contents need not remain in the live tree"
+        }
+      }
     }
   }
 }

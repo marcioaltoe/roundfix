@@ -214,6 +214,9 @@ func Run(ctx context.Context, q Questions, req Request) (Report, error) {
 			if p.Kind == "model-tier" {
 				id = q.ModelTier.QuestionID
 			}
+			if p.Kind == "archive-value" {
+				id = q.Archive.QuestionID
+			}
 			hash := sha256.Sum256(p.state)
 			recordError := result.Error
 			if recordError == "" && outcome == "skipped" {

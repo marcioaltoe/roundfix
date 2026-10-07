@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0242-an-archive-that-leaves-an-archive-record
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -167,3 +167,36 @@ of 2026-10-06.
 - `_prd.md` → Goal 3; Goal 5; User Story 2; Core Feature 3; Core Feature 6; Success Metric 3
 - `_techspec.md` → Invariants 4, 14 and 15; API Contract 3; API Contract 4; Surface Transcripts 2, 3 and 4; Exact texts; Vocabulary Contract; Build Order 4
 - ADR-0247; ADR-0189; ADR-0233
+
+## Result
+
+Implemented the `archive-value` question and fail-open `AdviseArchive` path,
+including candidate-only classification, binary skipping, bounded content,
+transport/key/ceiling reuse, retry logging, and advisory outcomes. Extended
+`roundfix archive` with repeatable `--promote` and `--plan`; the plan reports
+the cut categories and advice without modifying repository files, while
+promotion is passed through to `spec.Archive`.
+
+Updated the canonical archive, QA-gate, and Roundfix guidance, synchronized
+their mirrors, added the Archive Record sections, appended the two Baseline
+clauses, regenerated Baseline digests, applied the Managed Refresh, updated
+the archive guides and glossary, and recorded owned-skill versions.
+
+Focused evidence after the last edit:
+
+- `GOCACHE=/tmp/roundfix-gocache-task04 go test -count=1 ./internal/judge ./internal/cli ./internal/baseline -run '^(TestArchiveAdviceJudgesOnlyCandidateFiles|TestArchiveAdviceFailsOpenWithoutAKey|TestArchiveAdviceStopsAtTheCeiling|TestArchivePlanListsWhatTheCutRemoves|TestArchivePlanWithoutAKeyNamesTheSkip|TestArchivePlanWritesNothing|TestArchivePromoteCopiesUpstream|TestArchivePromoteRefusals|TestArchivePlanUsageErrors|TestArchiveRecordClausesAreAppended)$'` passed.
+- Canonical and embedded skill copies compare byte-identically with `cmp`.
+- `GOCACHE=/tmp/roundfix-gocache-task04 go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` passed after the required elevated filesystem retry.
+- `GOCACHE=/tmp/roundfix-gocache-task04 make baseline-digests` regenerated the declared Baseline outputs; the Managed Refresh applied and verified the two derived guide changes.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/judge/client.go`
+- `internal/judge/judge.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261006T232220Z_7c2e4a372c1dd72e`
+- Source commit: `a4905f1f10d10ec5722098331f22a5917bc223e6`

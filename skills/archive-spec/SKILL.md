@@ -5,10 +5,10 @@ argument-hint: "<spec slug>"
 metadata:
   category: delivery
   tags: [workflow, documentation, process]
-  version: 0.0.4
+  version: 0.0.5
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.4
+version: 0.0.5
 ---
 
 # Archive Spec
@@ -19,17 +19,16 @@ The trigger is spec completion, not publication: run this automatically at the e
 
 ### QA settlement
 
-The same outcome settles the authored `qa` Task and determines what archive
-may move:
+The same outcome settles the authored `qa` Task and determines what the archive leaves:
 
 | Outcome | Settles | Archives |
 | --- | --- | --- |
-| `pass` | Settles the QA Task as `completed` and makes the Spec archive-eligible when the report has no disallowed blocked rows. | The Spec and its QA report and evidence. |
+| `pass` | Settles the QA Task as `completed` and makes the Spec archive-eligible when the report has no disallowed blocked rows. | The Archive Record, which names the QA Report and verdict; the Spec, its QA report and evidence stay in Git at the record's `source_revision`. |
 | qualifying declared `partial` | Settles the QA Task as `completed` when no row failed, was skipped or is finding-blocked, every declared-blocked row is covered by a matching `## Unreachable Acceptance` declaration, and every environment-blocked row is the pre-PR Pull Request row, recorded as `blocked (environment: no open Pull Request)` with the Pull Request row named in its provenance, or an outside-evidence row the Run sandbox could not reach, recorded as `blocked (environment: network denied: <host>)` with the outside-evidence row named in its provenance. Neither row needs an Unreachable Acceptance declaration, and a partial whose only unmet rows are such rows qualifies. | The Spec, its QA report and evidence, and the declarations' `satisfied-by` record. |
 | `environment-blocked` | Leaves the row blocked; the report can still settle as `pass` when equivalent evidence satisfies the environment policy. | Nothing by itself; a qualifying report can archive the Spec. |
 | `failed` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
 | `missing` | Leaves the QA Task unresolved and refuses archive unless an authorized override applies. | Nothing. |
-| `override` | Does not change the QA Task status or report verdict; settles archive as explicitly authorized despite failed or missing QA. | The Spec with `qa_override`, `qa_override_approval`, `qa_override_reason`, `qa_override_qa_outcome`, `qa_override_qa_task_status` when the QA Task is incomplete, and `qa_override_revision`; QA files move byte-identically. |
+| `override` | Does not change the QA Task status or report verdict; settles archive as explicitly authorized despite failed or missing QA. | The Archive Record with `qa_override`, `qa_override_approval`, `qa_override_reason`, `qa_override_qa_outcome`, `qa_override_qa_task_status` when the QA Task is incomplete, and `qa_override_revision`; the QA Task and Reports stay unchanged in Git at the record's `source_revision`. |
 
 ## Preconditions — verify, don't trust
 
@@ -259,6 +258,16 @@ Report the new path and anything carried over (open follow-ups from task
 `## Result` sections belong in new specs, not in the archive). When the work
 isn't merged yet, suggest opening the PR via `github-pr-workflow`; opening the
 PR is the user's call.
+
+## Archive Record
+
+An archive writes `<slug>.md` under the resolved archive root. The record names
+the QA Report and verdict, its disposition, and `source_revision`, the Git
+revision where the removed Spec folder remains recoverable. Before archiving,
+use `roundfix archive <slug> --plan` to see the cut and Archive Advice for
+candidate files. Promote durable knowledge with repeatable
+`--promote <path>`; promotion copies that file to `docs/references/` in the
+archive change.
 
 ## Unarchive
 

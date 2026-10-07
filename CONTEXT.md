@@ -686,8 +686,16 @@ _Avoid_: Missing metric, untraced metric
 The Spec Consistency Check gap raised when a Spec's `_techspec.md` does not declare numbered API Contracts or an explicit `None.` with a reason.
 _Avoid_: Missing contract, untraced contract
 
+**Archive Record**:
+The small `<slug>.md` record an archive leaves under the resolved archive root. It carries the disposition, QA Report and verdict, promoted references, and `source_revision`; the removed Spec folder stays recoverable in Git at that revision.
+_Avoid_: Archive folder, archive log, copied Spec
+
+**Archive Advice**:
+Jev's advisory classification of candidate files before the archive cut. It labels reusable knowledge, repository records or transient evidence and never gates the archive.
+_Avoid_: Archive verdict, promotion decision, required evidence
+
 **Archive Command**:
-The support command that retires a Spec under the archive eligibility contract, stamps its disposition, and moves the whole Spec to the resolved archive root. Normal QA eligibility and a user-authorized QA Archive Override are distinct dispositions. Neither retirement nor an override fabricates Task completion or a passing QA verdict.
+The support command that retires a Spec under the archive eligibility contract, writes its Archive Record, and removes the Spec folder while keeping it in Git at `source_revision`. Normal QA eligibility and a user-authorized QA Archive Override are distinct dispositions. Neither retirement nor an override fabricates Task completion or a passing QA verdict.
 _Avoid_: Move command, retire run, cleanup command
 
 **History Root**:

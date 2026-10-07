@@ -3,6 +3,8 @@
 ```bash
 roundfix archive <slug>
 roundfix archive <slug> --qa-override --approval <source> --reason <text>
+roundfix archive <slug> --plan
+roundfix archive <slug> --promote <path> [--promote <path> ...]
 ```
 
 Non-interactive; creates no Run and never pushes. Verifies every Task is
@@ -14,7 +16,16 @@ the Archive Record, so it names what was never verified. It writes
 `docs/history/specs/<slug>.md` for the built-in Spec Root, or
 `<specs.root>/_archived/<slug>.md` for another configured root, then removes
 `<specs.root>/<slug>/`. The PRD and relative links are never rewritten.
-The original folder's bytes stay in Git at the record's `source_revision`.
+The original folder's bytes stay in Git at the record's `source_revision`. The
+Archive Record is the small `<slug>.md` file under the archive root; it names
+the disposition, QA Report and verdict, source revision, and promoted files.
+
+Use `roundfix archive <slug> --plan` to list the core artifacts, QA evidence,
+and candidate files that the cut removes. Candidate files receive optional
+Archive Advice from Jev. Advice is advisory and is skipped when the judge key
+is absent or the monthly ceiling is reached. The plan leaves repository files
+unchanged. Use repeatable `--promote <path>` to copy a confirmed candidate to
+`docs/references/` during the archive change.
 Existing archived folders retain their legacy link semantics.
 
 The Spec folder must match its repository's `HEAD`. Modified, staged, deleted
