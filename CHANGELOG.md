@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.55.0] - 2026-10-07
+
+### A formatted QA report and a reopen for late dependencies
+
+- **Format Command.** A new optional Project Config key, `verification.format`, names the repository's formatter, for example `bun x oxfmt@latest` or `gofmt -w`. The Daemon runs it outside the Agent sandbox, from the Run Worktree root, on the regular files under the Spec's `qa/` directory. It runs at two points: on a QA Report carried over from a previous pass, before the QA precondition; and before the QA Report is committed. A QA Report written by one Run no longer fails the next Run's formatter check. If the formatter fails, times out or would change the verdict, the original bytes are kept, and a `daemon.qa` event with phase `format` records it. An empty key changes nothing.
+- **Late Dependency.** `roundfix reopen --spec <slug>` returns a completed QA gate to `pending` when the Task Graph has gained a dependency of it since the newest QA Report. The prior closure is read from the commit that added that report, and the invalidation record says `Dependencies added after the QA Report`. Without that commit, reopen refuses as before.
+- **Glossary.** Adds Format Command and Late Dependency.
+
 ## [0.54.0] - 2026-10-07
 
 ### A history that holds only records
