@@ -119,8 +119,13 @@ selected file to `docs/references/` while applying a batch.
 The command converts each Legacy Archive Folder into an Archive Record,
 reduces retired Findings and Backlog Entries to Reduced History Entries, and
 removes retired Review Artifacts and handoffs. A folder without a QA Report,
-override or supersession receives the `no-qa` disposition. Apply requires the
-annotated `history-full` tag on an ancestor of `HEAD` and holding every path
-the batch rewrites or removes, so the full history remains reachable in Git.
+override or supersession receives the `no-qa` disposition. A failed QA without
+an override is recorded as `failed-qa`, keeping its verdict and report name.
+A Legacy Archive Folder is read with Lenient Legacy Reading: tolerated rows are
+named, while an active Spec is read strictly. A Refused Unit is listed with its
+reason and skipped, so it remains untouched and does not consume a batch slot.
+Apply requires the annotated `history-full` tag on an ancestor of `HEAD` and
+holding every path the batch rewrites or removes, so the full history remains
+reachable in Git.
 Each `--apply --batch <n>` is one reviewable, revertible Pull Request; the
 command never commits, tags, pushes or opens one.

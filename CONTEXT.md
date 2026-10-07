@@ -695,7 +695,7 @@ The Spec Consistency Check gap raised when a Spec's `_techspec.md` does not decl
 _Avoid_: Missing contract, untraced contract
 
 **Archive Record**:
-The small `<slug>.md` record an archive leaves under the resolved archive root. It carries the disposition, QA Report and verdict, promoted references, and `source_revision`; the removed Spec folder stays recoverable in Git at that revision. The History Sanitize Command also writes one for a Legacy Archive Folder; a folder without a QA Report receives the disposition `no-qa` (ADR-0248).
+The small `<slug>.md` record an archive leaves under the resolved archive root. It carries the disposition, QA Report and verdict, promoted references, and `source_revision`; the removed Spec folder stays recoverable in Git at that revision. The History Sanitize Command also writes one for a Legacy Archive Folder; a folder without a QA Report receives the disposition `no-qa`, while a folder whose newest QA Report failed without an override receives `failed-qa` and keeps that verdict and report name. `failed-qa` is never a pass or an override (ADR-0248, ADR-0251).
 _Avoid_: Archive folder, archive log, copied Spec
 
 **Archive Advice**:
@@ -714,8 +714,16 @@ _Avoid_: Archive Command, history deletion, cleanup command
 A Spec folder the Archive Command left under the archive root before archives wrote Archive Records (ADR-0248).
 _Avoid_: Archive Record, active Spec, history root
 
+**Refused Unit**:
+A pending History Sanitize Command unit that cannot be converted. The plan and the batch name it with its reason, leave it untouched, and do not count it toward `--batch <n>` (ADR-0251).
+_Avoid_: Converted unit, skipped silently, failed batch
+
+**Lenient Legacy Reading**:
+The reading of a Legacy Archive Folder's Task Graph that tolerates and names projection rows outside the graph and retired Task types. It is never applied to an active Spec (ADR-0251).
+_Avoid_: Relaxed active reading, manifest rewrite, schema bypass
+
 **Sanitize Batch**:
-The next units one `--apply` converts, delivered as one Pull Request with the repository gates green and revertible (ADR-0248).
+The next units one `--apply` can convert, delivered as one Pull Request with the repository gates green and revertible; Refused Units do not count toward the batch (ADR-0248, ADR-0251).
 _Avoid_: Archive batch, migration wave, unreviewed cleanup
 
 **Reduced History Entry**:

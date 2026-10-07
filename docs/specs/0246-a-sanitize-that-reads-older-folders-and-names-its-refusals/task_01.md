@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0246-a-sanitize-that-reads-older-folders-and-names-its-refusals
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -105,3 +105,22 @@ phrases, the mirrors and the recorded skill version.
 - `_techspec.md` → Build Order 1; API Contract 1; API Contract 2; API Contract 3; Invariant 11; Invariant 12; Invariant 13
 - ADR-0251
 - ADR-0248
+
+## Result
+
+Implemented the documentation slice for Refused Units, Lenient Legacy Reading
+and `failed-qa`. `CONTEXT.md` now defines both terms and revises Archive Record
+and Sanitize Batch; the history reference documents tolerance and refusal lines,
+batch counting, exit 2 for an all-refused apply, and the whole-command refusal
+cases; and the Roundfix archive reference carries the same behavior.
+
+The canonical Roundfix Skill was raised from `0.1.51` to `0.1.52`, `make
+skills-sync` updated its mirror, and the owned-skill record command recorded the
+new digest in `skills/testdata/owned-skill-versions.json`.
+
+Focused checks:
+
+- `rtk make skills-sync` — passed.
+- `GOCACHE=/private/tmp/roundfix-0246-task01-gocache go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed (1 test). The initial invocation with the default Go cache was blocked by the host cache permission error.
+- `diff -q` checks for both skill mirrors — passed.
+- `git diff --check` — passed.

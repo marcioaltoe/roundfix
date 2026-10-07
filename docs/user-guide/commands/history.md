@@ -15,10 +15,14 @@ roundfix history sanitize --apply --batch 1 --promote docs/history/specs/example
 ```
 
 Units are ordered by Legacy Archive Folder slug, then `findings`, `backlog`,
-`reviews` and `handoffs`. Each kind counts as one unit while files remain pending.
-`--batch <n>` selects the next positive number of units; without it the plan shows
-all pending units. A later batch starts from the next remaining unit. Already
-reduced entries are skipped.
+`reviews` and `handoffs`. Legacy Archive Folders use Lenient Legacy Reading: the
+Task Graph tolerates projection rows outside the graph and retired Task types,
+and the plan names each tolerance as `tolerates <folder>: <tolerance>`. Active
+Specs keep strict reading. Each kind counts as one unit while files remain
+pending. `--batch <n>` selects the next positive number of units it can convert;
+Refused Units do not count toward `n`. Without it the plan shows all pending
+units. A later batch starts from the next remaining unit. Already reduced
+entries are skipped.
 
 The plan writes nothing under the repository. Its first line is:
 
@@ -32,6 +36,11 @@ disposition and delivery (`delivery <12-hex> #<pr>`, `delivery <12-hex>` or
 `qa/evidence/`, using the archive plan's grouping. Kind lines report reductions
 or removals. `cites <path>:<line> names <target>` reports tracked Markdown outside
 the History Root that cites a removed path; citations never refuse the batch.
+
+When a unit cannot be converted, the plan continues and lists
+`refused <unit>: <reason>`. Its first line adds `; <r> unit(s) refused`. A failed
+newest QA Report without an override is recorded as `failed-qa`, beside `no-qa`
+for a folder with no QA Report, override or supersession.
 
 `--advise` requires `--batch` and cannot accompany `--apply`. It adds Jev's advice
 for candidate files in selected folders, using the archive judge's process key
@@ -53,14 +62,25 @@ The confirmation is one line:
 history sanitize applied <n> unit(s): wrote <r> Archive Record(s), reduced <f> file(s), removed <d> file(s) (<b> bytes) kept in Git at <12-hex> and tag history-full; promoted <p> file(s) to docs/references/; <remaining> unit(s) remain
 ```
 
+Apply prints each `refused <unit>: <reason>` line before the confirmation. When
+there are refusals, the confirmation includes `; <r> unit(s) refused` before the
+remaining-unit suffix. If every examined unit is refused, apply writes nothing,
+prints the refusal lines, refuses with exit `2`, and reports the preflight reason
+on stderr.
+
 Refusals use Preflight Validation on stderr and exit `2`: invalid or missing
 batch values, unknown flags, extra arguments or unknown subcommands; advice
 without a batch or with apply; promotion without apply; an external Spec Root
 or no Git repository; a dirty tree including staged and untracked files; a
 missing, lightweight or non-ancestor `history-full` tag; a tag missing any path
-removed or rewritten; and any batch planning error. Promotions outside the batch,
+removed or rewritten; and any Git failure while reading delivery history.
+Promotions outside the batch or inside a Refused Unit, duplicate promotion
+destinations and promotion errors are also refusals before writing. An individual
+unit conversion error is listed as a Refused Unit instead of stopping the plan.
 non-regular files, core artifacts, duplicate destination basenames, existing
-destinations and unsafe paths are refused before writing. `history` alone and
+destinations and unsafe paths are refused before writing. These whole-command
+refusals are the cases covered by the TechSpec's Invariants 9 to 13 and Surface
+Transcripts 1 to 3. `history` alone and
 `--help` print usage and exit `0`.
 
 A write failure exits `1` and names the unit. Restore the partial tree with
