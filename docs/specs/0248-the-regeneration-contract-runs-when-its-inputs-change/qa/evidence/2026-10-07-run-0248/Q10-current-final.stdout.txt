@@ -1,0 +1,7 @@
+--- FAIL: TestRegenerationIsDeclared (34.85s)
+    regeneration_declared_test.go:29: regeneration produced undeclared changes: [internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/domain.md]
+FAIL
+suiteguard: guard cost: measured 2480 paths; fingerprint took 77.5805ms before and 63.8915ms after
+FAIL	roundfix/internal/config	35.070s
+ok  	roundfix/internal/docscontract	0.984s
+FAIL

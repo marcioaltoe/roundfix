@@ -1,0 +1,6 @@
+{
+  "command": "go test -count=1 -v -run '^(TestRepositoryContractTestsDeclareTheirRelevance|TestRegenerationContractRunsWhenADerivedInputChanges)$' ./internal/verifyselect",
+  "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0248-the-regeneration-contract-runs-when-its-inputs-change-c9418b06fa18cd9a-6b868346-27a8154b/run_20261007T224320Z_bb897360f5900228",
+  "exit": 0,
+  "wall_seconds": 0.4007168330135755
+}

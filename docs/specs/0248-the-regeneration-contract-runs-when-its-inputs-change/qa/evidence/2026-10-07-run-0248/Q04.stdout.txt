@@ -1,0 +1,21 @@
+=== RUN   TestVerifyContractsRunsEveryContract
+=== PAUSE TestVerifyContractsRunsEveryContract
+=== RUN   TestMainAndReleaseRunEveryContract
+=== PAUSE TestMainAndReleaseRunEveryContract
+=== CONT  TestVerifyContractsRunsEveryContract
+=== CONT  TestMainAndReleaseRunEveryContract
+=== RUN   TestVerifyContractsRunsEveryContract/ordered_invocations
+--- PASS: TestMainAndReleaseRunEveryContract (0.00s)
+=== RUN   TestVerifyContractsRunsEveryContract/first_failure_stops_execution
+=== RUN   TestVerifyContractsRunsEveryContract/selector_failure_prevents_execution
+=== RUN   TestVerifyContractsRunsEveryContract/empty_selection
+=== RUN   TestVerifyContractsRunsEveryContract/line_without_packages_is_skipped
+--- PASS: TestVerifyContractsRunsEveryContract (0.49s)
+    --- PASS: TestVerifyContractsRunsEveryContract/ordered_invocations (0.10s)
+    --- PASS: TestVerifyContractsRunsEveryContract/first_failure_stops_execution (0.11s)
+    --- PASS: TestVerifyContractsRunsEveryContract/selector_failure_prevents_execution (0.07s)
+    --- PASS: TestVerifyContractsRunsEveryContract/empty_selection (0.07s)
+    --- PASS: TestVerifyContractsRunsEveryContract/line_without_packages_is_skipped (0.13s)
+PASS
+suiteguard: guard cost: measured 2547 paths; fingerprint took 96.819334ms before and 77.645584ms after
+ok  	roundfix/internal/verifyselect	0.829s

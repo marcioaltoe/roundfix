@@ -1,0 +1,6 @@
+{
+  "command": "git checkout -q -B test/replay ae56aba0",
+  "cwd": "/private/tmp/roundfix-0248-qa-tzo4wp_f/baseline",
+  "exit": 0,
+  "wall_seconds": 0.07915212499210611
+}

@@ -1,0 +1,11 @@
+{
+  "verdict": "pass",
+  "rows": 19,
+  "passed": 18,
+  "blocked_environment": 1,
+  "blocked_finding": 0,
+  "blocked_declared": 0,
+  "coverage_sources_complete": true,
+  "seed_preserved": true,
+  "inputs_present": true
+}

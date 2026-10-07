@@ -1,0 +1,73 @@
+=== RUN   TestRunPrintsContractInvocations
+=== RUN   TestRunPrintsContractInvocations/malformed_directive
+=== RUN   TestRunPrintsContractInvocations/conflict_-packages_core
+=== RUN   TestRunPrintsContractInvocations/conflict_-packages=
+=== RUN   TestRunPrintsContractInvocations/conflict_-baseline-cli-pattern
+=== RUN   TestRunPrintsContractInvocations/conflict_-baseline-cli-pattern=false
+--- PASS: TestRunPrintsContractInvocations (0.09s)
+    --- PASS: TestRunPrintsContractInvocations/malformed_directive (0.00s)
+    --- PASS: TestRunPrintsContractInvocations/conflict_-packages_core (0.00s)
+    --- PASS: TestRunPrintsContractInvocations/conflict_-packages= (0.00s)
+    --- PASS: TestRunPrintsContractInvocations/conflict_-baseline-cli-pattern (0.00s)
+    --- PASS: TestRunPrintsContractInvocations/conflict_-baseline-cli-pattern=false (0.00s)
+=== RUN   TestRunPrintsEveryContractWithAll
+=== RUN   TestRunPrintsEveryContractWithAll/git_repository
+=== RUN   TestRunPrintsEveryContractWithAll/without_Git_repository
+=== RUN   TestRunPrintsEveryContractWithAll/without_Git_or_Go_executables
+=== RUN   TestRunPrintsEveryContractWithAll/malformed_directive
+=== RUN   TestRunPrintsEveryContractWithAll/empty_repository
+--- PASS: TestRunPrintsEveryContractWithAll (0.01s)
+    --- PASS: TestRunPrintsEveryContractWithAll/git_repository (0.01s)
+    --- PASS: TestRunPrintsEveryContractWithAll/without_Git_repository (0.00s)
+    --- PASS: TestRunPrintsEveryContractWithAll/without_Git_or_Go_executables (0.00s)
+    --- PASS: TestRunPrintsEveryContractWithAll/malformed_directive (0.00s)
+    --- PASS: TestRunPrintsEveryContractWithAll/empty_repository (0.00s)
+=== RUN   TestRunRefusesAllOutsideTheContractMode
+=== PAUSE TestRunRefusesAllOutsideTheContractMode
+=== RUN   TestContractSummaryNamesEveryExclusion
+=== RUN   TestContractSummaryNamesEveryExclusion/one_relevant_excluded
+=== RUN   TestContractSummaryNamesEveryExclusion/no_named_exclusions
+=== RUN   TestContractSummaryNamesEveryExclusion/discovery_order
+=== RUN   TestContractSummaryNamesEveryExclusion/fail-safe_names_boundary
+--- PASS: TestContractSummaryNamesEveryExclusion (0.27s)
+    --- PASS: TestContractSummaryNamesEveryExclusion/one_relevant_excluded (0.07s)
+    --- PASS: TestContractSummaryNamesEveryExclusion/no_named_exclusions (0.07s)
+    --- PASS: TestContractSummaryNamesEveryExclusion/discovery_order (0.07s)
+    --- PASS: TestContractSummaryNamesEveryExclusion/fail-safe_names_boundary (0.05s)
+=== CONT  TestRunRefusesAllOutsideTheContractMode
+=== RUN   TestRunRefusesAllOutsideTheContractMode/without_contracts
+=== PAUSE TestRunRefusesAllOutsideTheContractMode/without_contracts
+=== RUN   TestRunRefusesAllOutsideTheContractMode/explicit_base
+=== PAUSE TestRunRefusesAllOutsideTheContractMode/explicit_base
+=== RUN   TestRunRefusesAllOutsideTheContractMode/empty_base
+=== PAUSE TestRunRefusesAllOutsideTheContractMode/empty_base
+=== RUN   TestRunRefusesAllOutsideTheContractMode/packages
+=== PAUSE TestRunRefusesAllOutsideTheContractMode/packages
+=== RUN   TestRunRefusesAllOutsideTheContractMode/empty_packages
+=== PAUSE TestRunRefusesAllOutsideTheContractMode/empty_packages
+=== RUN   TestRunRefusesAllOutsideTheContractMode/baseline_pattern
+=== PAUSE TestRunRefusesAllOutsideTheContractMode/baseline_pattern
+=== RUN   TestRunRefusesAllOutsideTheContractMode/false_baseline_pattern
+=== PAUSE TestRunRefusesAllOutsideTheContractMode/false_baseline_pattern
+=== RUN   TestRunRefusesAllOutsideTheContractMode/conflict_before_base
+=== PAUSE TestRunRefusesAllOutsideTheContractMode/conflict_before_base
+=== CONT  TestRunRefusesAllOutsideTheContractMode/without_contracts
+=== CONT  TestRunRefusesAllOutsideTheContractMode/false_baseline_pattern
+=== CONT  TestRunRefusesAllOutsideTheContractMode/empty_packages
+=== CONT  TestRunRefusesAllOutsideTheContractMode/baseline_pattern
+=== CONT  TestRunRefusesAllOutsideTheContractMode/conflict_before_base
+=== CONT  TestRunRefusesAllOutsideTheContractMode/empty_base
+=== CONT  TestRunRefusesAllOutsideTheContractMode/packages
+=== CONT  TestRunRefusesAllOutsideTheContractMode/explicit_base
+--- PASS: TestRunRefusesAllOutsideTheContractMode (0.00s)
+    --- PASS: TestRunRefusesAllOutsideTheContractMode/without_contracts (0.00s)
+    --- PASS: TestRunRefusesAllOutsideTheContractMode/empty_packages (0.00s)
+    --- PASS: TestRunRefusesAllOutsideTheContractMode/false_baseline_pattern (0.00s)
+    --- PASS: TestRunRefusesAllOutsideTheContractMode/conflict_before_base (0.00s)
+    --- PASS: TestRunRefusesAllOutsideTheContractMode/baseline_pattern (0.00s)
+    --- PASS: TestRunRefusesAllOutsideTheContractMode/empty_base (0.00s)
+    --- PASS: TestRunRefusesAllOutsideTheContractMode/packages (0.00s)
+    --- PASS: TestRunRefusesAllOutsideTheContractMode/explicit_base (0.00s)
+PASS
+suiteguard: guard cost: measured 2486 paths; fingerprint took 104.94275ms before and 71.454ms after
+ok  	roundfix/internal/verifyselect	0.955s

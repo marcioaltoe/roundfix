@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0248-the-regeneration-contract-runs-when-its-inputs-change
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

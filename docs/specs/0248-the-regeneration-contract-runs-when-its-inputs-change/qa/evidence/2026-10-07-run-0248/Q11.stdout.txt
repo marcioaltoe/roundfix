@@ -1,0 +1,468 @@
+=== RUN   TestRegenerationIsDeclared
+=== RUN   TestRegenerationIsDeclared/declaration_1_is_required
+=== RUN   TestRegenerationIsDeclared/declaration_2_is_required
+=== RUN   TestRegenerationIsDeclared/declaration_3_is_required
+--- PASS: TestRegenerationIsDeclared (43.51s)
+    --- PASS: TestRegenerationIsDeclared/declaration_1_is_required (0.00s)
+    --- PASS: TestRegenerationIsDeclared/declaration_2_is_required (0.00s)
+    --- PASS: TestRegenerationIsDeclared/declaration_3_is_required (0.00s)
+PASS
+suiteguard: guard cost: measured 2589 paths; fingerprint took 90.914833ms before and 74.446125ms after
+ok  	roundfix/internal/config	43.762s
+=== RUN   TestCommandPathsReadSubcommandsAndAlternatives
+--- PASS: TestCommandPathsReadSubcommandsAndAlternatives (0.00s)
+=== RUN   TestEveryCommandIsNamedInTheRoundfixSkill
+--- PASS: TestEveryCommandIsNamedInTheRoundfixSkill (0.00s)
+=== RUN   TestAnUndocumentedCommandIsReported
+--- PASS: TestAnUndocumentedCommandIsReported (0.00s)
+=== RUN   TestCommandIndexNamesEveryCommandFile
+--- PASS: TestCommandIndexNamesEveryCommandFile (0.00s)
+=== RUN   TestCommandReferenceLinksResolve
+--- PASS: TestCommandReferenceLinksResolve (0.00s)
+=== RUN   TestCheckCorpusGolden
+--- PASS: TestCheckCorpusGolden (0.15s)
+=== RUN   TestCheckCorpusBudget
+    corpus_test.go:63: active Spec corpus sweep completed in 147.489291ms; work: 1 Check operations across 1 Specs (budget: at most 1 Check operation per Spec)
+--- PASS: TestCheckCorpusBudget (0.15s)
+=== RUN   TestCheckActiveCorpusHasNoErrors
+--- PASS: TestCheckActiveCorpusHasNoErrors (0.15s)
+=== RUN   TestCheckLoopOrderRepositoryAgrees
+=== PAUSE TestCheckLoopOrderRepositoryAgrees
+=== RUN   TestStageScopeDefaultSweepIsUnchanged
+=== RUN   TestStageScopeDefaultSweepIsUnchanged/specs/0248-the-regeneration-contract-runs-when-its-inputs-change
+--- PASS: TestStageScopeDefaultSweepIsUnchanged (0.29s)
+    --- PASS: TestStageScopeDefaultSweepIsUnchanged/specs/0248-the-regeneration-contract-runs-when-its-inputs-change (0.29s)
+=== RUN   TestCheckLoopOrderDivergent
+=== PAUSE TestCheckLoopOrderDivergent
+=== RUN   TestModelSelectionReferenceStatesTheShippedSnapshot
+=== RUN   TestModelSelectionReferenceStatesTheShippedSnapshot/general
+=== RUN   TestModelSelectionReferenceStatesTheShippedSnapshot/backend
+=== RUN   TestModelSelectionReferenceStatesTheShippedSnapshot/frontend
+=== RUN   TestModelSelectionReferenceStatesTheShippedSnapshot/data
+=== RUN   TestModelSelectionReferenceStatesTheShippedSnapshot/infra
+=== RUN   TestModelSelectionReferenceStatesTheShippedSnapshot/docs
+=== RUN   TestModelSelectionReferenceStatesTheShippedSnapshot/test
+=== RUN   TestModelSelectionReferenceStatesTheShippedSnapshot/chore
+=== RUN   TestModelSelectionReferenceStatesTheShippedSnapshot/qa
+=== RUN   TestModelSelectionReferenceStatesTheShippedSnapshot/review
+--- PASS: TestModelSelectionReferenceStatesTheShippedSnapshot (0.00s)
+    --- PASS: TestModelSelectionReferenceStatesTheShippedSnapshot/general (0.00s)
+    --- PASS: TestModelSelectionReferenceStatesTheShippedSnapshot/backend (0.00s)
+    --- PASS: TestModelSelectionReferenceStatesTheShippedSnapshot/frontend (0.00s)
+    --- PASS: TestModelSelectionReferenceStatesTheShippedSnapshot/data (0.00s)
+    --- PASS: TestModelSelectionReferenceStatesTheShippedSnapshot/infra (0.00s)
+    --- PASS: TestModelSelectionReferenceStatesTheShippedSnapshot/docs (0.00s)
+    --- PASS: TestModelSelectionReferenceStatesTheShippedSnapshot/test (0.00s)
+    --- PASS: TestModelSelectionReferenceStatesTheShippedSnapshot/chore (0.00s)
+    --- PASS: TestModelSelectionReferenceStatesTheShippedSnapshot/qa (0.00s)
+    --- PASS: TestModelSelectionReferenceStatesTheShippedSnapshot/review (0.00s)
+=== RUN   TestBaselineDocumentationContract
+=== PAUSE TestBaselineDocumentationContract
+=== RUN   TestGuidanceCompositionDocumentation
+=== PAUSE TestGuidanceCompositionDocumentation
+=== RUN   TestDocsLayoutGuideNamesEveryHistoryFamily
+=== PAUSE TestDocsLayoutGuideNamesEveryHistoryFamily
+=== RUN   TestProjectConstraintDocumentation
+=== PAUSE TestProjectConstraintDocumentation
+=== RUN   TestBaselineDecisionExamples
+=== PAUSE TestBaselineDecisionExamples
+=== RUN   TestProfilesDocumentationContractMatchesPublicGuidance
+=== PAUSE TestProfilesDocumentationContractMatchesPublicGuidance
+=== RUN   TestReviewHistoryConfiguration
+=== PAUSE TestReviewHistoryConfiguration
+=== RUN   TestReviewHistoryConfigurationRejectsReachableRuleSources
+=== PAUSE TestReviewHistoryConfigurationRejectsReachableRuleSources
+=== RUN   TestReviewHistoryConfigurationRequiresExclusions
+=== PAUSE TestReviewHistoryConfigurationRequiresExclusions
+=== RUN   TestReleasePlanDocumentationContract
+=== PAUSE TestReleasePlanDocumentationContract
+=== RUN   TestTheReleaseRunbookRequiresTheSkillsAndGuidesCheck
+--- PASS: TestTheReleaseRunbookRequiresTheSkillsAndGuidesCheck (0.00s)
+=== RUN   TestEveryCheckTheReleaseStepNamesExists
+--- PASS: TestEveryCheckTheReleaseStepNamesExists (0.04s)
+=== RUN   TestAReleaseStepThatNamesAMissingCheckIsReported
+--- PASS: TestAReleaseStepThatNamesAMissingCheckIsReported (0.00s)
+=== RUN   TestSecondbrainExportFollowsTheHistoryForm
+--- PASS: TestSecondbrainExportFollowsTheHistoryForm (0.00s)
+=== RUN   TestSecondbrainExportRuleRefusesBothMismatches
+=== RUN   TestSecondbrainExportRuleRefusesBothMismatches/exclusions_without_legacy_folders
+=== RUN   TestSecondbrainExportRuleRefusesBothMismatches/legacy_folder_without_exclusions
+--- PASS: TestSecondbrainExportRuleRefusesBothMismatches (0.00s)
+    --- PASS: TestSecondbrainExportRuleRefusesBothMismatches/exclusions_without_legacy_folders (0.00s)
+    --- PASS: TestSecondbrainExportRuleRefusesBothMismatches/legacy_folder_without_exclusions (0.00s)
+=== RUN   TestEveryCommandIsNamedInTheUserGuide
+--- PASS: TestEveryCommandIsNamedInTheUserGuide (0.00s)
+=== RUN   TestUserGuideLinksResolve
+--- PASS: TestUserGuideLinksResolve (0.00s)
+=== RUN   TestABrokenUserGuideLinkIsReported
+--- PASS: TestABrokenUserGuideLinkIsReported (0.00s)
+=== RUN   TestBrokenLinksHandlesDestinationDecorationsAndFences
+--- PASS: TestBrokenLinksHandlesDestinationDecorationsAndFences (0.00s)
+=== RUN   TestUserGuideNamesNoRefusedQAFlag
+--- PASS: TestUserGuideNamesNoRefusedQAFlag (0.00s)
+=== CONT  TestCheckLoopOrderRepositoryAgrees
+=== CONT  TestBaselineDecisionExamples
+=== CONT  TestGuidanceCompositionDocumentation
+=== CONT  TestReviewHistoryConfigurationRejectsReachableRuleSources
+=== CONT  TestBaselineDocumentationContract
+=== CONT  TestCheckLoopOrderDivergent
+=== RUN   TestBaselineDocumentationContract/baseline
+=== RUN   TestCheckLoopOrderDivergent/shipped_clause
+=== CONT  TestReleasePlanDocumentationContract
+=== CONT  TestProfilesDocumentationContractMatchesPublicGuidance
+=== CONT  TestReviewHistoryConfigurationRequiresExclusions
+=== RUN   TestReviewHistoryConfigurationRequiresExclusions/history_root
+=== RUN   TestGuidanceCompositionDocumentation/ADR_lifecycle_template
+=== CONT  TestReviewHistoryConfiguration
+=== RUN   TestBaselineDocumentationContract/baseline_capabilities_check
+=== RUN   TestGuidanceCompositionDocumentation/Findings_template
+=== RUN   TestReviewHistoryConfigurationRejectsReachableRuleSources/history_root
+=== RUN   TestReleasePlanDocumentationContract/release_runbook
+=== CONT  TestProjectConstraintDocumentation
+=== PAUSE TestCheckLoopOrderDivergent/shipped_clause
+--- PASS: TestGuidanceCompositionDocumentation (0.00s)
+    --- PASS: TestGuidanceCompositionDocumentation/ADR_lifecycle_template (0.00s)
+    --- PASS: TestGuidanceCompositionDocumentation/Findings_template (0.00s)
+=== RUN   TestReleasePlanDocumentationContract/usage_command_index
+=== RUN   TestCheckLoopOrderDivergent/repository_guide
+=== RUN   TestBaselineDocumentationContract/baseline_plan
+=== PAUSE TestCheckLoopOrderDivergent/repository_guide
+=== RUN   TestCheckLoopOrderDivergent/Baseline_module_asset
+=== PAUSE TestCheckLoopOrderDivergent/Baseline_module_asset
+=== RUN   TestReviewHistoryConfigurationRequiresExclusions/Spec-owned_review_directory
+=== CONT  TestDocsLayoutGuideNamesEveryHistoryFamily
+--- PASS: TestDocsLayoutGuideNamesEveryHistoryFamily (0.00s)
+=== CONT  TestCheckLoopOrderDivergent/shipped_clause
+=== RUN   TestBaselineDocumentationContract/baseline_update
+=== RUN   TestReviewHistoryConfigurationRejectsReachableRuleSources/Spec-owned_review_directory
+--- PASS: TestReviewHistoryConfiguration (0.00s)
+=== CONT  TestCheckLoopOrderDivergent/Baseline_module_asset
+=== RUN   TestReleasePlanDocumentationContract/root_Agent_pointer
+=== RUN   TestReleasePlanDocumentationContract/canonical_release-planning_rule
+=== RUN   TestBaselineDocumentationContract/baseline_apply
+=== RUN   TestBaselineDocumentationContract/baseline_profile
+=== RUN   TestBaselineDocumentationContract/baseline_skills_restore
+=== RUN   TestReleasePlanDocumentationContract/repository-specific_rules
+--- PASS: TestReviewHistoryConfigurationRequiresExclusions (0.00s)
+    --- PASS: TestReviewHistoryConfigurationRequiresExclusions/history_root (0.00s)
+    --- PASS: TestReviewHistoryConfigurationRequiresExclusions/Spec-owned_review_directory (0.00s)
+=== CONT  TestCheckLoopOrderDivergent/repository_guide
+--- PASS: TestReviewHistoryConfigurationRejectsReachableRuleSources (0.00s)
+    --- PASS: TestReviewHistoryConfigurationRejectsReachableRuleSources/history_root (0.00s)
+    --- PASS: TestReviewHistoryConfigurationRejectsReachableRuleSources/Spec-owned_review_directory (0.00s)
+=== RUN   TestBaselineDocumentationContract/baseline_assets_sync
+=== RUN   TestReleasePlanDocumentationContract/canonical_Roundfix_skill
+=== RUN   TestBaselineDocumentationContract/Context-Driven_user_guide
+=== RUN   TestBaselineDocumentationContract/command_reference
+=== RUN   TestBaselineDocumentationContract/README
+=== RUN   TestBaselineDocumentationContract/canonical_setup_skill
+=== RUN   TestReleasePlanDocumentationContract/embedded_Roundfix_skill
+=== RUN   TestBaselineDocumentationContract/canonical_Roundfix_skill
+--- PASS: TestBaselineDocumentationContract (0.01s)
+    --- PASS: TestBaselineDocumentationContract/baseline (0.00s)
+    --- PASS: TestBaselineDocumentationContract/baseline_capabilities_check (0.00s)
+    --- PASS: TestBaselineDocumentationContract/baseline_plan (0.00s)
+    --- PASS: TestBaselineDocumentationContract/baseline_update (0.00s)
+    --- PASS: TestBaselineDocumentationContract/baseline_apply (0.00s)
+    --- PASS: TestBaselineDocumentationContract/baseline_profile (0.00s)
+    --- PASS: TestBaselineDocumentationContract/baseline_skills_restore (0.00s)
+    --- PASS: TestBaselineDocumentationContract/baseline_assets_sync (0.00s)
+    --- PASS: TestBaselineDocumentationContract/Context-Driven_user_guide (0.00s)
+    --- PASS: TestBaselineDocumentationContract/command_reference (0.00s)
+    --- PASS: TestBaselineDocumentationContract/README (0.00s)
+    --- PASS: TestBaselineDocumentationContract/canonical_setup_skill (0.00s)
+    --- PASS: TestBaselineDocumentationContract/canonical_Roundfix_skill (0.00s)
+--- PASS: TestProfilesDocumentationContractMatchesPublicGuidance (0.01s)
+--- PASS: TestReleasePlanDocumentationContract (0.01s)
+    --- PASS: TestReleasePlanDocumentationContract/release_runbook (0.00s)
+    --- PASS: TestReleasePlanDocumentationContract/usage_command_index (0.00s)
+    --- PASS: TestReleasePlanDocumentationContract/root_Agent_pointer (0.00s)
+    --- PASS: TestReleasePlanDocumentationContract/canonical_release-planning_rule (0.00s)
+    --- PASS: TestReleasePlanDocumentationContract/repository-specific_rules (0.00s)
+    --- PASS: TestReleasePlanDocumentationContract/canonical_Roundfix_skill (0.00s)
+    --- PASS: TestReleasePlanDocumentationContract/embedded_Roundfix_skill (0.00s)
+--- PASS: TestCheckLoopOrderDivergent (0.00s)
+    --- PASS: TestCheckLoopOrderDivergent/Baseline_module_asset (0.02s)
+    --- PASS: TestCheckLoopOrderDivergent/shipped_clause (0.02s)
+    --- PASS: TestCheckLoopOrderDivergent/repository_guide (0.02s)
+--- PASS: TestProjectConstraintDocumentation (0.03s)
+--- PASS: TestBaselineDecisionExamples (0.03s)
+--- PASS: TestCheckLoopOrderRepositoryAgrees (0.07s)
+PASS
+ok  	roundfix/internal/docscontract	1.065s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.43s)
+PASS
+suiteguard: guard cost: measured 2589 paths; fingerprint took 197.38925ms before and 208.1ms after
+ok  	roundfix/internal/agent	0.984s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.32s)
+PASS
+ok  	roundfix/internal/app	0.450s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.44s)
+PASS
+suiteguard: guard cost: measured 2589 paths; fingerprint took 198.295583ms before and 204.771917ms after
+ok  	roundfix/internal/authorization	0.989s
+=== RUN   TestMeasuredSanctionedOwnershipMatchesRecords
+=== PAUSE TestMeasuredSanctionedOwnershipMatchesRecords
+=== RUN   TestDeclaredStepRegenerationAndFrozenBoundaries
+=== PAUSE TestDeclaredStepRegenerationAndFrozenBoundaries
+=== RUN   TestRepositoryGateRunsTheAnalyzer
+--- PASS: TestRepositoryGateRunsTheAnalyzer (0.76s)
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.28s)
+=== CONT  TestMeasuredSanctionedOwnershipMatchesRecords
+=== CONT  TestDeclaredStepRegenerationAndFrozenBoundaries
+=== RUN   TestDeclaredStepRegenerationAndFrozenBoundaries/dedicated/synthetic_plan_characterization
+=== RUN   TestDeclaredStepRegenerationAndFrozenBoundaries/failure/command_does_not_exist
+=== RUN   TestDeclaredStepRegenerationAndFrozenBoundaries/failure/declared_flag_is_wrong
+=== RUN   TestDeclaredStepRegenerationAndFrozenBoundaries/failure/command_leaves_artifacts_unchanged
+=== RUN   TestDeclaredStepRegenerationAndFrozenBoundaries/sanctioned_command_rewrites_sanctioned_and_preserves_frozen
+=== RUN   TestDeclaredStepRegenerationAndFrozenBoundaries/frozen_resolved_path_rejects_rewrite
+--- PASS: TestDeclaredStepRegenerationAndFrozenBoundaries (39.86s)
+    --- PASS: TestDeclaredStepRegenerationAndFrozenBoundaries/dedicated/synthetic_plan_characterization (5.52s)
+    --- PASS: TestDeclaredStepRegenerationAndFrozenBoundaries/failure/command_does_not_exist (0.02s)
+    --- PASS: TestDeclaredStepRegenerationAndFrozenBoundaries/failure/declared_flag_is_wrong (2.41s)
+    --- PASS: TestDeclaredStepRegenerationAndFrozenBoundaries/failure/command_leaves_artifacts_unchanged (0.03s)
+    --- PASS: TestDeclaredStepRegenerationAndFrozenBoundaries/sanctioned_command_rewrites_sanctioned_and_preserves_frozen (21.86s)
+    --- PASS: TestDeclaredStepRegenerationAndFrozenBoundaries/frozen_resolved_path_rejects_rewrite (9.35s)
+--- PASS: TestMeasuredSanctionedOwnershipMatchesRecords (43.68s)
+PASS
+suiteguard: guard cost: measured 2589 paths; fingerprint took 182.399292ms before and 75.003542ms after
+suiteguard: repository boundary violated:
+suiteguard: created: docs/specs/0248-the-regeneration-contract-runs-when-its-inputs-change/qa/evidence/2026-10-07-run-0248/Q14-operator.txt
+suiteguard: created: docs/specs/0248-the-regeneration-contract-runs-when-its-inputs-change/qa/evidence/2026-10-07-run-0248/Q15-source.txt
+suiteguard: created: docs/specs/0248-the-regeneration-contract-runs-when-its-inputs-change/qa/evidence/2026-10-07-run-0248/Q16-source.txt
+suiteguard: created: docs/specs/0248-the-regeneration-contract-runs-when-its-inputs-change/qa/evidence/2026-10-07-run-0248/Q17-glossary.json
+suiteguard: created: docs/specs/0248-the-regeneration-contract-runs-when-its-inputs-change/qa/evidence/2026-10-07-run-0248/Q18-scope.json
+suiteguard: modified: docs/specs/0248-the-regeneration-contract-runs-when-its-inputs-change/qa/qa-report-2026-10-07.md
+FAIL	roundfix/internal/baseline	45.395s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.43s)
+PASS
+ok  	roundfix/internal/baselineacp	0.500s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.30s)
+PASS
+suiteguard: guard cost: measured 2589 paths; fingerprint took 189.442ms before and 162.612375ms after
+ok  	roundfix/internal/cli	0.901s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.34s)
+PASS
+ok  	roundfix/internal/codex	0.410s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.40s)
+PASS
+suiteguard: guard cost: measured 2589 paths; fingerprint took 204.820667ms before and 156.015666ms after
+ok  	roundfix/internal/config	0.841s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.33s)
+PASS
+suiteguard: guard cost: measured 2589 paths; fingerprint took 196.215375ms before and 161.281375ms after
+ok  	roundfix/internal/daemon	0.830s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.31s)
+PASS
+ok  	roundfix/internal/docscontract	0.377s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.39s)
+PASS
+suiteguard: guard cost: measured 2589 paths; fingerprint took 182.91675ms before and 153.760916ms after
+ok  	roundfix/internal/gittest	0.783s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.28s)
+PASS
+ok  	roundfix/internal/notify	0.337s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.32s)
+PASS
+suiteguard: guard cost: measured 2589 paths; fingerprint took 216.499375ms before and 302.388541ms after
+ok  	roundfix/internal/preflight	0.906s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.26s)
+PASS
+ok  	roundfix/internal/releaseplan	0.316s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.27s)
+PASS
+ok  	roundfix/internal/reviewsource	0.322s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.28s)
+PASS
+ok  	roundfix/internal/reviewsource/coderabbit	0.370s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.26s)
+PASS
+ok  	roundfix/internal/rounds	0.322s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.28s)
+PASS
+ok  	roundfix/internal/runevent	0.338s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.32s)
+PASS
+ok  	roundfix/internal/skillhash	0.402s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.34s)
+PASS
+suiteguard: guard cost: measured 2589 paths; fingerprint took 232.836458ms before and 200.72625ms after
+ok  	roundfix/internal/spec	0.851s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.41s)
+PASS
+suiteguard: guard cost: measured 2589 paths; fingerprint took 228.723417ms before and 409.196333ms after
+ok  	roundfix/internal/specaudit	1.160s
+=== RUN   TestGovernedSetCoversOwnedShippedTemplates
+=== PAUSE TestGovernedSetCoversOwnedShippedTemplates
+=== RUN   TestGovernedSetOnlyGrows
+=== PAUSE TestGovernedSetOnlyGrows
+=== RUN   TestCleanupHistoricalGrantEvidence
+--- PASS: TestCleanupHistoricalGrantEvidence (1.19s)
+=== RUN   TestEveryBoundedPathIsGoverned
+=== RUN   TestEveryBoundedPathIsGoverned/repository_records_are_governed
+=== RUN   TestEveryBoundedPathIsGoverned/unmatched_path_names_path_and_record
+=== RUN   TestEveryBoundedPathIsGoverned/no_authorization_records_skips
+    governed_repocontract_test.go:344: no operative authorization records
+--- PASS: TestEveryBoundedPathIsGoverned (0.03s)
+    --- PASS: TestEveryBoundedPathIsGoverned/repository_records_are_governed (0.03s)
+    --- PASS: TestEveryBoundedPathIsGoverned/unmatched_path_names_path_and_record (0.00s)
+    --- SKIP: TestEveryBoundedPathIsGoverned/no_authorization_records_skips (0.00s)
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.26s)
+=== CONT  TestGovernedSetCoversOwnedShippedTemplates
+=== RUN   TestGovernedSetCoversOwnedShippedTemplates/shipped_PRD_template_is_governed
+=== CONT  TestGovernedSetOnlyGrows
+=== PAUSE TestGovernedSetCoversOwnedShippedTemplates/shipped_PRD_template_is_governed
+=== RUN   TestGovernedSetCoversOwnedShippedTemplates/shipped_TechSpec_template_is_governed
+=== RUN   TestGovernedSetOnlyGrows/keeps_.golangci.yml_governed
+=== PAUSE TestGovernedSetCoversOwnedShippedTemplates/shipped_TechSpec_template_is_governed
+=== CONT  TestGovernedSetCoversOwnedShippedTemplates/shipped_PRD_template_is_governed
+=== CONT  TestGovernedSetCoversOwnedShippedTemplates/shipped_TechSpec_template_is_governed
+=== PAUSE TestGovernedSetOnlyGrows/keeps_.golangci.yml_governed
+=== RUN   TestGovernedSetOnlyGrows/keeps_.prettierrc_governed
+=== PAUSE TestGovernedSetOnlyGrows/keeps_.prettierrc_governed
+--- PASS: TestGovernedSetCoversOwnedShippedTemplates (0.00s)
+    --- PASS: TestGovernedSetCoversOwnedShippedTemplates/shipped_TechSpec_template_is_governed (0.00s)
+    --- PASS: TestGovernedSetCoversOwnedShippedTemplates/shipped_PRD_template_is_governed (0.00s)
+=== RUN   TestGovernedSetOnlyGrows/keeps_tsconfig.json_governed
+=== PAUSE TestGovernedSetOnlyGrows/keeps_tsconfig.json_governed
+=== RUN   TestGovernedSetOnlyGrows/keeps_vitest.config.ts_governed
+=== PAUSE TestGovernedSetOnlyGrows/keeps_vitest.config.ts_governed
+=== RUN   TestGovernedSetOnlyGrows/keeps_.dependency-cruiser.js_governed
+=== PAUSE TestGovernedSetOnlyGrows/keeps_.dependency-cruiser.js_governed
+=== RUN   TestGovernedSetOnlyGrows/keeps_Makefile_governed
+=== PAUSE TestGovernedSetOnlyGrows/keeps_Makefile_governed
+=== RUN   TestGovernedSetOnlyGrows/keeps_go.mod_governed
+=== PAUSE TestGovernedSetOnlyGrows/keeps_go.mod_governed
+=== RUN   TestGovernedSetOnlyGrows/keeps_scripts/generate.sh_governed
+=== PAUSE TestGovernedSetOnlyGrows/keeps_scripts/generate.sh_governed
+=== RUN   TestGovernedSetOnlyGrows/keeps_.gitignore_governed
+=== PAUSE TestGovernedSetOnlyGrows/keeps_.gitignore_governed
+=== RUN   TestGovernedSetOnlyGrows/keeps_.codex-plugin/plugin.json_governed
+=== PAUSE TestGovernedSetOnlyGrows/keeps_.codex-plugin/plugin.json_governed
+=== RUN   TestGovernedSetOnlyGrows/keeps_.tool-versions_governed
+=== PAUSE TestGovernedSetOnlyGrows/keeps_.tool-versions_governed
+=== RUN   TestGovernedSetOnlyGrows/adds_internal/speccheck/governed.go_under_the_historical_clause
+=== PAUSE TestGovernedSetOnlyGrows/adds_internal/speccheck/governed.go_under_the_historical_clause
+=== RUN   TestGovernedSetOnlyGrows/adds_internal/speccheck/governed_repocontract_test.go_under_the_historical_clause
+=== PAUSE TestGovernedSetOnlyGrows/adds_internal/speccheck/governed_repocontract_test.go_under_the_historical_clause
+=== RUN   TestGovernedSetOnlyGrows/adds_internal/speccheck/mechanical_test.go_under_the_historical_clause
+=== PAUSE TestGovernedSetOnlyGrows/adds_internal/speccheck/mechanical_test.go_under_the_historical_clause
+=== RUN   TestGovernedSetOnlyGrows/adds_internal/suiteguardcontract/regeneration.go_under_the_historical_clause
+=== PAUSE TestGovernedSetOnlyGrows/adds_internal/suiteguardcontract/regeneration.go_under_the_historical_clause
+=== RUN   TestGovernedSetOnlyGrows/adds_internal/suiteguardcontract/regeneration_test.go_under_the_historical_clause
+=== PAUSE TestGovernedSetOnlyGrows/adds_internal/suiteguardcontract/regeneration_test.go_under_the_historical_clause
+=== RUN   TestGovernedSetOnlyGrows/adds_skills/_ownership.yml_under_the_historical_clause
+=== PAUSE TestGovernedSetOnlyGrows/adds_skills/_ownership.yml_under_the_historical_clause
+=== RUN   TestGovernedSetOnlyGrows/adds_skills/write-prd/references/prd-template.md_under_the_historical_clause
+=== PAUSE TestGovernedSetOnlyGrows/adds_skills/write-prd/references/prd-template.md_under_the_historical_clause
+=== RUN   TestGovernedSetOnlyGrows/adds_skills/write-techspec/references/techspec-template.md_under_the_historical_clause
+=== PAUSE TestGovernedSetOnlyGrows/adds_skills/write-techspec/references/techspec-template.md_under_the_historical_clause
+=== RUN   TestGovernedSetOnlyGrows/keeps_internal/app/metadata.go_ungoverned
+=== PAUSE TestGovernedSetOnlyGrows/keeps_internal/app/metadata.go_ungoverned
+=== RUN   TestGovernedSetOnlyGrows/keeps_docs/specs/example/_prd.md_ungoverned
+=== PAUSE TestGovernedSetOnlyGrows/keeps_docs/specs/example/_prd.md_ungoverned
+=== CONT  TestGovernedSetOnlyGrows/keeps_.golangci.yml_governed
+=== CONT  TestGovernedSetOnlyGrows/adds_internal/speccheck/governed.go_under_the_historical_clause
+=== CONT  TestGovernedSetOnlyGrows/keeps_.tool-versions_governed
+=== CONT  TestGovernedSetOnlyGrows/keeps_docs/specs/example/_prd.md_ungoverned
+=== CONT  TestGovernedSetOnlyGrows/adds_skills/write-techspec/references/techspec-template.md_under_the_historical_clause
+=== CONT  TestGovernedSetOnlyGrows/keeps_internal/app/metadata.go_ungoverned
+=== CONT  TestGovernedSetOnlyGrows/keeps_go.mod_governed
+=== CONT  TestGovernedSetOnlyGrows/keeps_Makefile_governed
+=== CONT  TestGovernedSetOnlyGrows/adds_internal/suiteguardcontract/regeneration.go_under_the_historical_clause
+=== CONT  TestGovernedSetOnlyGrows/adds_internal/suiteguardcontract/regeneration_test.go_under_the_historical_clause
+=== CONT  TestGovernedSetOnlyGrows/adds_skills/write-prd/references/prd-template.md_under_the_historical_clause
+=== CONT  TestGovernedSetOnlyGrows/keeps_vitest.config.ts_governed
+=== CONT  TestGovernedSetOnlyGrows/keeps_.dependency-cruiser.js_governed
+=== CONT  TestGovernedSetOnlyGrows/adds_internal/speccheck/mechanical_test.go_under_the_historical_clause
+=== CONT  TestGovernedSetOnlyGrows/adds_internal/speccheck/governed_repocontract_test.go_under_the_historical_clause
+=== CONT  TestGovernedSetOnlyGrows/keeps_.prettierrc_governed
+=== CONT  TestGovernedSetOnlyGrows/adds_skills/_ownership.yml_under_the_historical_clause
+=== CONT  TestGovernedSetOnlyGrows/keeps_.codex-plugin/plugin.json_governed
+=== CONT  TestGovernedSetOnlyGrows/keeps_.gitignore_governed
+=== CONT  TestGovernedSetOnlyGrows/keeps_scripts/generate.sh_governed
+=== CONT  TestGovernedSetOnlyGrows/keeps_tsconfig.json_governed
+--- PASS: TestGovernedSetOnlyGrows (0.00s)
+    --- PASS: TestGovernedSetOnlyGrows/keeps_.golangci.yml_governed (0.00s)
+    --- PASS: TestGovernedSetOnlyGrows/keeps_.tool-versions_governed (0.00s)
+    --- PASS: TestGovernedSetOnlyGrows/keeps_Makefile_governed (0.00s)
+    --- PASS: TestGovernedSetOnlyGrows/adds_internal/speccheck/governed.go_under_the_historical_clause (0.00s)
+    --- PASS: TestGovernedSetOnlyGrows/adds_internal/suiteguardcontract/regeneration.go_under_the_historical_clause (0.00s)
+    --- PASS: TestGovernedSetOnlyGrows/keeps_docs/specs/example/_prd.md_ungoverned (0.00s)
+    --- PASS: TestGovernedSetOnlyGrows/keeps_vitest.config.ts_governed (0.00s)
+    --- PASS: TestGovernedSetOnlyGrows/keeps_go.mod_governed (0.00s)
+    --- PASS: TestGovernedSetOnlyGrows/adds_skills/write-prd/references/prd-template.md_under_the_historical_clause (0.00s)
+    --- PASS: TestGovernedSetOnlyGrows/adds_internal/speccheck/mechanical_test.go_under_the_historical_clause (0.00s)
+    --- PASS: TestGovernedSetOnlyGrows/keeps_internal/app/metadata.go_ungoverned (0.00s)
+    --- PASS: TestGovernedSetOnlyGrows/keeps_.prettierrc_governed (0.00s)
+    --- PASS: TestGovernedSetOnlyGrows/adds_skills/write-techspec/references/techspec-template.md_under_the_historical_clause (0.00s)
+    --- PASS: TestGovernedSetOnlyGrows/adds_skills/_ownership.yml_under_the_historical_clause (0.00s)
+    --- PASS: TestGovernedSetOnlyGrows/adds_internal/suiteguardcontract/regeneration_test.go_under_the_historical_clause (0.00s)
+    --- PASS: TestGovernedSetOnlyGrows/keeps_.dependency-cruiser.js_governed (0.00s)
+    --- PASS: TestGovernedSetOnlyGrows/keeps_.codex-plugin/plugin.json_governed (0.00s)
+    --- PASS: TestGovernedSetOnlyGrows/adds_internal/speccheck/governed_repocontract_test.go_under_the_historical_clause (0.00s)
+    --- PASS: TestGovernedSetOnlyGrows/keeps_.gitignore_governed (0.00s)
+    --- PASS: TestGovernedSetOnlyGrows/keeps_scripts/generate.sh_governed (0.00s)
+    --- PASS: TestGovernedSetOnlyGrows/keeps_tsconfig.json_governed (0.00s)
+PASS
+suiteguard: guard cost: measured 2589 paths; fingerprint took 194.735041ms before and 123.6885ms after
+ok  	roundfix/internal/speccheck	2.004s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.34s)
+PASS
+suiteguard: guard cost: measured 2589 paths; fingerprint took 200.295667ms before and 448.743375ms after
+ok  	roundfix/internal/store	1.190s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard/names_an_unenumerated_and_unguarded_spawning_package
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard/repository_installations
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.36s)
+    --- PASS: TestEverySpawningPackageInstallsTheSuiteGuard/names_an_unenumerated_and_unguarded_spawning_package (0.00s)
+    --- PASS: TestEverySpawningPackageInstallsTheSuiteGuard/repository_installations (0.35s)
+PASS
+suiteguard: guard cost: measured 2589 paths; fingerprint took 222.655791ms before and 384.986875ms after
+ok  	roundfix/internal/suiteguard	1.040s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.35s)
+PASS
+ok  	roundfix/internal/tui	0.463s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.57s)
+PASS
+suiteguard: guard cost: measured 2589 paths; fingerprint took 140.593958ms before and 218.554708ms after
+ok  	roundfix/internal/verifyselect	1.016s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.58s)
+PASS
+ok  	roundfix/internal/watch	0.672s
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.29s)
+PASS
+suiteguard: guard cost: measured 2589 paths; fingerprint took 379.91275ms before and 120.175958ms after
+ok  	roundfix/internal/worktree	0.906s
+=== RUN   TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical
+--- PASS: TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical (15.74s)
+PASS
+ok  	roundfix/skills	15.854s
+FAIL

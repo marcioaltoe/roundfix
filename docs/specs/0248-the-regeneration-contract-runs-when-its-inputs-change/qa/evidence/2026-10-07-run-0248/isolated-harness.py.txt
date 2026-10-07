@@ -1,0 +1,33 @@
+import subprocess, time, os, json, re, tempfile, shlex, textwrap
+from pathlib import Path
+root=Path.cwd(); ev=root/'docs/specs/0248-the-regeneration-contract-runs-when-its-inputs-change/qa/evidence/2026-10-07-run-0248'; plan=json.loads((ev/'plan.json').read_text()); report=Path(plan['report'])
+env=os.environ.copy(); env.update(GOCACHE=str(root/'.gocache'),GOPROXY='off',GOSUMDB='off',GIT_CONFIG_COUNT='1',GIT_CONFIG_KEY_0='core.fsmonitor',GIT_CONFIG_VALUE_0='false')
+def run(name,args,cwd=root,extra=None):
+ e=env.copy(); e.update(extra or {}); t=time.monotonic(); c=subprocess.run(args,cwd=cwd,env=e,text=True,capture_output=True); sec=time.monotonic()-t
+ (ev/(name+'.stdout.txt')).write_text(c.stdout); (ev/(name+'.stderr.txt')).write_text(c.stderr)
+ (ev/(name+'.json')).write_text(json.dumps({'command':shlex.join(args),'cwd':str(cwd),'exit':c.returncode,'wall_seconds':sec},indent=2)); print(name,c.returncode,round(sec,3),flush=True); return c
+
+def finish(row,ok,detail,status=None):
+ s=report.read_text(); s=re.sub(r'\| '+row+r' \| [^|]+ \|', '| '+row+' | '+(status or ('pass' if ok else 'fail'))+' |',s)
+ start=s.index('### '+row+'\n'); end=s.find('\n### ',start+1); end=len(s) if end<0 else end
+ s=s[:start]+re.sub(r'(?:Pending execution\.|Execution result:.*)', 'Execution result: '+detail,s[start:end],flags=re.S)+s[end:]; report.write_text(s)
+ print(row,('pass' if ok else status or 'fail'),flush=True)
+
+# All test runners use a clean committed clone; QA artifacts stay in the Run checkout.
+scratch=Path(tempfile.mkdtemp(prefix='roundfix-0248-isolated-',dir='/private/tmp')); clone=scratch/'head'; base=plan['head']; run('isolated-clone',['git','clone','--quiet','--no-hardlinks',str(root),str(clone)])
+selected=run('Q11-selection-final',['go','run','-buildvcs=false','./cmd/verify-select','-contracts','-all'],clone)
+c=run('Q11-final',['make','verify-contracts'],clone,{'GOFLAGS':'-v'})
+expected=int(re.search(r'contracts: (\d+) selected',selected.stderr).group(1)); actual=re.findall(r'^=== RUN   (Test[^/\s]+)$',c.stdout,re.M); passed=re.findall(r'^--- PASS: (Test[^/\s]+) ',c.stdout,re.M)
+finish('Q11',c.returncode==0 and len(actual)==expected and len(passed)==expected,'Clean clone at '+base+': `make verify-contracts`, GOFLAGS=-v only for test-count observation, exit '+str(c.returncode)+'. Discovery '+str(expected)+'; top-level starts '+str(len(actual))+'; passes '+str(len(passed))+'. Wall time '+str(json.loads((ev/'Q11-final.json').read_text())['wall_seconds'])+' s. Evidence Q11-final and Q11-selection-final stdout/stderr/JSON. Initial run (Q11 files) was invalidated by concurrent QA report/evidence writes detected by suiteguard after passing tests. Rerun excludes untracked QA artifacts and uses unchanged committed code; no guard suppression.')
+fixture='internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/'
+def remove_decl(s):
+ pattern=r'    - paths:\n        - '+re.escape(fixture)+r'\n      regenerate: [^\n]+\n'; result,n=re.subn(pattern,'',s); assert n==1,n; return result
+results=[]
+for name,revision in [('Q10-current-final',base),('Q10-baseline-final','ae56aba0')]:
+ run(name+'-checkout',['git','checkout','-q','-B','test/'+name,revision],clone)
+ p=clone/'.roundfixrc.yml'; p.write_text(remove_decl(p.read_text())); run(name+'-add',['git','add','.roundfixrc.yml'],clone); run(name+'-commit',['git','-c','user.name=QA','-c','user.email=qa@localhost','-c','core.hooksPath=/dev/null','-c','commit.gpgsign=false','commit','-qm','remove formatter declaration'],clone)
+ change=subprocess.check_output(['git','show','--format=','HEAD','--','.roundfixrc.yml'],cwd=clone,text=True); (ev/(name+'-diff.txt')).write_text(change)
+ c=run(name,['make','verify-changed-contracts','VERIFY_BASE='+revision],clone); results.append(c)
+current,prior=results
+finish('Q10',current.returncode!=0 and '--- FAIL: TestRegenerationIsDeclared' in current.stdout+current.stderr and 'regeneration produced undeclared changes' in current.stdout+current.stderr and prior.returncode==0 and 'TestRegenerationIsDeclared' not in prior.stdout,'Removed the complete formatter derived_paths declaration (three lines, leaving valid config), committed on separate branches at '+base+' and ae56aba0. Current run exits '+str(current.returncode)+' with TestRegenerationIsDeclared failing on `regeneration produced undeclared changes`; baseline exits '+str(prior.returncode)+' without running that test. Evidence Q10-current-final and Q10-baseline-final stdout/stderr/JSON and exact diff. Earlier Q10 probe removed only the path, reached config validation and was not accepted as the complete generated-path replay; the final replay supersedes it.')
+(ev/'isolated-scratch.json').write_text(json.dumps({'scratch':str(scratch),'clone':str(clone)},indent=2))

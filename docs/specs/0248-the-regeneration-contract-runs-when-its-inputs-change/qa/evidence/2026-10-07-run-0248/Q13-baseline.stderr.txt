@@ -1,0 +1,1 @@
+verify-select: contracts: 41 selected (37 always, 4 by change), 28 not selected, 0 boundary; relevant not selected: TestRepositoryGateRunsTheAnalyzer (internal/baseline)

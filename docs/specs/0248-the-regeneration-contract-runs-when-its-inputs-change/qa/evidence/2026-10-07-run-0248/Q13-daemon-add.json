@@ -1,0 +1,6 @@
+{
+  "command": "git add internal/daemon/daemon.go",
+  "cwd": "/private/tmp/roundfix-0248-qa-tzo4wp_f/current",
+  "exit": 0,
+  "wall_seconds": 0.01548462500795722
+}

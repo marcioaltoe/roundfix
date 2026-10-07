@@ -1,0 +1,6 @@
+{
+  "command": "make verify-changed-contracts VERIFY_BASE=7ab8151fc34b8301ff47d5264fe75dd1bfd59c98",
+  "cwd": "/private/tmp/roundfix-0248-qa-tzo4wp_f/current",
+  "exit": 2,
+  "wall_seconds": 4.001837457995862
+}

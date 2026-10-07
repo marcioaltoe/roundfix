@@ -1,0 +1,103 @@
+{
+  "root": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0248-the-regeneration-contract-runs-when-its-inputs-change-c9418b06fa18cd9a-6b868346-27a8154b/run_20261007T224320Z_bb897360f5900228",
+  "report": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0248-the-regeneration-contract-runs-when-its-inputs-change-c9418b06fa18cd9a-6b868346-27a8154b/run_20261007T224320Z_bb897360f5900228/docs/specs/0248-the-regeneration-contract-runs-when-its-inputs-change/qa/qa-report-2026-10-07.md",
+  "evidence": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0248-the-regeneration-contract-runs-when-its-inputs-change-c9418b06fa18cd9a-6b868346-27a8154b/run_20261007T224320Z_bb897360f5900228/docs/specs/0248-the-regeneration-contract-runs-when-its-inputs-change/qa/evidence/2026-10-07-run-0248",
+  "head": "7ab8151fc34b8301ff47d5264fe75dd1bfd59c98",
+  "rows": [
+    [
+      "Q01",
+      "Requirement 1; repository Verification",
+      "Static gate"
+    ],
+    [
+      "Q02",
+      "Requirement 2",
+      "Selector API tests"
+    ],
+    [
+      "Q03",
+      "Requirement 3",
+      "Derived input repository tests"
+    ],
+    [
+      "Q04",
+      "Requirement 4",
+      "Makefile and workflow contracts; unchanged recipes"
+    ],
+    [
+      "Q05",
+      "Requirement 5",
+      "Surface Transcript 1"
+    ],
+    [
+      "Q06",
+      "Requirement 5",
+      "Surface Transcript 2"
+    ],
+    [
+      "Q07",
+      "Requirement 5",
+      "Surface Transcript 3"
+    ],
+    [
+      "Q08",
+      "Requirement 5",
+      "Surface Transcript 4"
+    ],
+    [
+      "Q09",
+      "Requirement 5",
+      "Surface Transcript 5"
+    ],
+    [
+      "Q10",
+      "Requirement 6",
+      "Undeclared fixture replay, current and baseline"
+    ],
+    [
+      "Q11",
+      "Requirement 7",
+      "Full Contract Run count and wall time"
+    ],
+    [
+      "Q12",
+      "Requirement 8",
+      "Docs gate cold and warm times"
+    ],
+    [
+      "Q13",
+      "Requirement 9",
+      "Daemon and Baseline change selection cost"
+    ],
+    [
+      "Q14",
+      "Requirement 10; outside-evidence row",
+      "Operator entries 233 and 238"
+    ],
+    [
+      "Q15",
+      "Requirement 10; outside-evidence row",
+      "CircleCI guide"
+    ],
+    [
+      "Q16",
+      "Requirement 10; outside-evidence row",
+      "WarpBuild guide"
+    ],
+    [
+      "Q17",
+      "Requirement 11",
+      "Glossary audit"
+    ],
+    [
+      "Q18",
+      "Requirement 12",
+      "Task commit scope audit"
+    ],
+    [
+      "Q19",
+      "Requirement 13; Pull Request row",
+      "Pre-PR equivalents"
+    ]
+  ]
+}

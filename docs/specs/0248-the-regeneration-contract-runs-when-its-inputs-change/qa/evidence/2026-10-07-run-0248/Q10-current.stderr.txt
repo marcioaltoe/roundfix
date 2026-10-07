@@ -1,0 +1,2 @@
+verify-select: contracts: 38 selected (37 always, 1 by change), 31 not selected, 0 boundary; relevant not selected: TestDeclaredStepRegenerationAndFrozenBoundaries (internal/baseline), TestMeasuredSanctionedOwnershipMatchesRecords (internal/baseline), TestRepositoryGateRunsTheAnalyzer (internal/baseline), TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical (skills)
+make: *** [verify-changed-contracts] Error 1

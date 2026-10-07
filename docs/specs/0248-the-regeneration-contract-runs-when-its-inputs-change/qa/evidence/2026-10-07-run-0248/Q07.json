@@ -1,0 +1,6 @@
+{
+  "command": "go run -buildvcs=false ./cmd/verify-select -contracts -all",
+  "cwd": "/private/tmp/roundfix-0248-qa-tzo4wp_f/current",
+  "exit": 0,
+  "wall_seconds": 0.06549975002417341
+}
