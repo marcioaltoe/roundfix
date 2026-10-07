@@ -409,11 +409,29 @@ func TestHistorySanitizePreflightsWholeBatch(t *testing.T) {
 	historyWrite(t, filepath.Join(h.repo, "docs/history/specs/bbb/_prd.md"), "invalid PRD")
 	historyCommit(t, h.repo, "Malformed second unit")
 	historyTag(t, h)
-	historyRefusal(t, h, "sanitize", "--apply", "--batch", "2")
+
 	code, out, err := historyRun(t, h, "sanitize", "--apply", "--batch", "1")
 	if code != 0 || !strings.Contains(out, "wrote 1 Archive Record(s)") {
 		t.Fatalf("unselected invalid folder blocked batch: %d %s %s", code, out, err)
 	}
+	h = newHistoryFixture(t, true)
+	historyWrite(t, filepath.Join(h.repo, "docs/history/specs/bbb/_prd.md"), "invalid PRD")
+	historyCommit(t, h.repo, "Malformed second unit")
+	historyTag(t, h)
+	before := snapshotDirectoryFiles(t, filepath.Join(h.repo, "docs/history/specs/bbb"))
+	code, out, err = historyRun(t, h, "sanitize", "--apply", "--batch", "2")
+	if code != 0 || err != "" || !strings.Contains(out, "refused docs/history/specs/bbb: ") {
+		t.Fatalf("%d %s %s", code, out, err)
+	}
+	for _, slug := range []string{"aaa", "ccc"} {
+		if _, e := os.Stat(filepath.Join(h.repo, "docs/history/specs", slug+".md")); e != nil {
+			t.Fatal(e)
+		}
+	}
+	if !reflect.DeepEqual(before, snapshotDirectoryFiles(t, filepath.Join(h.repo, "docs/history/specs/bbb"))) {
+		t.Fatal("refused folder changed")
+	}
+
 }
 func TestHistorySanitizeFolderCitationsAndKindNamedSlugs(t *testing.T) {
 	h := newHistoryFixture(t, false)

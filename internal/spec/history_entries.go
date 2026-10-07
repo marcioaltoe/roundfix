@@ -111,57 +111,66 @@ func historyEntryHeading(line string) bool {
 func PlanHistoryKinds(repositoryRoot, revision string) ([]HistoryKindPlan, error) {
 	var plans []HistoryKindPlan
 	for _, kind := range []ArchiveKind{ArchiveKindFinding, ArchiveKindBacklog, ArchiveKindReview, ArchiveKindHandoff} {
-		plan := HistoryKindPlan{Kind: kind, Action: "remove", reduced: make(map[string][]byte)}
-		if kind == ArchiveKindFinding || kind == ArchiveKindBacklog {
-			plan.Action = "reduce"
-		}
-		root := filepath.Join(repositoryRoot, ArchiveDir(kind))
-		err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
-			if errors.Is(walkErr, os.ErrNotExist) && path == root {
-				return nil
-			}
-			if walkErr != nil {
-				return walkErr
-			}
-			if entry.IsDir() {
-				return nil
-			}
-			if !entry.Type().IsRegular() {
-				return fmt.Errorf("history entry %q is not a regular file", path)
-			}
-			content, err := os.ReadFile(path)
-			if err != nil {
-				return err
-			}
-			if plan.Action == "reduce" && IsReducedHistoryEntry(content) {
-				return nil
-			}
-			rel, err := filepath.Rel(repositoryRoot, path)
-			if err != nil {
-				return err
-			}
-			rel = filepath.ToSlash(rel)
-			if plan.Action == "reduce" {
-				reduced, err := ReduceHistoryEntry(content, revision, rel)
-				if err != nil {
-					return err
-				}
-				plan.reduced[rel] = reduced
-				plan.BytesAfter += int64(len(reduced))
-			}
-			plan.Files = append(plan.Files, rel)
-			plan.BytesBefore += int64(len(content))
-			return nil
-		})
+		plan, err := PlanHistoryKind(repositoryRoot, revision, kind)
 		if err != nil {
-			return nil, fmt.Errorf("plan history kind %s: %w", kind, err)
+			return nil, err
 		}
 		if len(plan.Files) > 0 {
-			sort.Strings(plan.Files)
 			plans = append(plans, plan)
 		}
 	}
 	return plans, nil
+}
+
+// PlanHistoryKind measures one pending family independently of other kinds.
+func PlanHistoryKind(repositoryRoot, revision string, kind ArchiveKind) (HistoryKindPlan, error) {
+	plan := HistoryKindPlan{Kind: kind, Action: "remove", reduced: make(map[string][]byte)}
+	if kind == ArchiveKindFinding || kind == ArchiveKindBacklog {
+		plan.Action = "reduce"
+	}
+	root := filepath.Join(repositoryRoot, ArchiveDir(kind))
+	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
+		if errors.Is(walkErr, os.ErrNotExist) && path == root {
+			return nil
+		}
+		if walkErr != nil {
+			return walkErr
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		if !entry.Type().IsRegular() {
+			return fmt.Errorf("history entry %q is not a regular file", path)
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if plan.Action == "reduce" && IsReducedHistoryEntry(content) {
+			return nil
+		}
+		rel, err := filepath.Rel(repositoryRoot, path)
+		if err != nil {
+			return err
+		}
+		rel = filepath.ToSlash(rel)
+		if plan.Action == "reduce" {
+			reduced, err := ReduceHistoryEntry(content, revision, rel)
+			if err != nil {
+				return err
+			}
+			plan.reduced[rel] = reduced
+			plan.BytesAfter += int64(len(reduced))
+		}
+		plan.Files = append(plan.Files, rel)
+		plan.BytesBefore += int64(len(content))
+		return nil
+	})
+	if err != nil {
+		return plan, fmt.Errorf("plan history kind %s: %w", kind, err)
+	}
+	sort.Strings(plan.Files)
+	return plan, nil
 }
 
 // ApplyHistoryKind touches only a plan's files and directories they leave empty.

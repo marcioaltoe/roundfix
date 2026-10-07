@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0246-a-sanitize-that-reads-older-folders-and-names-its-refusals
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -119,3 +119,60 @@ on its own through the CLI tests below.
 - `_techspec.md` → API Contract 3; Invariant 9; Invariant 10; Invariant 11; Invariant 12; Invariant 13; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Build Order 4
 - ADR-0251
 - ADR-0248
+
+## Result
+
+Implemented the Task 04 slice for Daemon Verification; status remains
+Daemon-owned.
+
+- Split `PlanHistoryKind` from `PlanHistoryKinds`, retaining the latter's
+  fail-fast behavior and existing error text. The CLI now plans each selected
+  kind independently.
+- Folder inventory and conversion errors and kind inventory/planning errors
+  become ordered Refused Units. Selection fills `--batch` with convertible
+  units and stops conversion planning at its limit. Folder inventories beyond
+  that limit are not walked. Remaining counts include refused units.
+- Apply checks tag existence, annotation and ancestry before conversion
+  planning, and checks path coverage only for selected convertible units.
+  Promotions into examined Refused Units refuse the entire command with the
+  unit's reason; promotions outside selection, duplicate destinations and
+  promotion planning errors still refuse before writing. Promotion replanning
+  distinguishes a folder from a kind with the same name.
+- Plan prints tolerance lines between each folder and its candidates, followed
+  by ordered refusal lines before citations. Plan and apply counts include the
+  refusal suffix only when needed. Apply prints refusals before its confirmation
+  and exits 2 with the specified reason when all examined units are refused.
+  Help explains that refused units remain in place and do not consume batch
+  capacity.
+- Added the six requested synthetic CLI tests and three focused edge-case
+  tests. Changed only `TestHistorySanitizePreflightsWholeBatch` among existing
+  tests; its batch-one assertion is preserved. No record builder, parser or
+  lenient reader was changed.
+
+Acceptance evidence from focused implementation checks:
+
+| Acceptance criterion | Evidence |
+| --- | --- |
+| Plan lists every Refused Unit and exits 0 | `TestHistorySanitizePlanListsEveryRefusedUnit` checks two ordered refusal reasons, the suffix, exit 0 and unchanged repository bytes/status. `TestHistorySanitizeRefusesAKindUnitAndPlansTheRest` checks a malformed Finding without blocking folders or later kinds. |
+| Batch fills past refusals and preserves their bytes | `TestHistorySanitizeApplySkipsARefusedUnitAndFillsTheBatch` and the updated whole-batch test check two written records and identical refused-folder bytes. The all-refused and refused-promotion tests check exit 2 and unchanged repository bytes/status. Extra tests cover inventory symlinks, the batch boundary, coverage excluding a refused folder absent from the tag, and folder/kind name collisions during promotion. |
+| Four adopter shapes convert together | `TestHistorySanitizeConvertsTheFourLegacyShapes` constructs a commented node still in the table, several omitted graph rows, a retired `refactor` row, and three failing QA reports. It checks all named tolerances, a read-only plan, four applied parseable records, and the newest failed-QA report without an override or QA completion. |
+| Other existing history tests retain their expectations | The focused CLI sanitize selection passes, including the exact-output plan test and unchanged tag, dirty-tree, promotion, advice, empty-plan and configured-root cases. Focused spec history/legacy/archive tests pass. Diff inspection confirms that only the requested existing test changed. |
+
+Commands and outcomes:
+
+- `GOCACHE=/tmp/roundfix-task04-gocache rtk proxy go test -count=1 -run 'TestHistorySanitize' ./internal/cli`
+  — exit 0 on the final code/test changes (`ok roundfix/internal/cli`).
+- `GOCACHE=/tmp/roundfix-task04-gocache rtk proxy go test -count=1 -run 'History|Legacy|Archive' ./internal/spec`
+  — exit 0 (`ok roundfix/internal/spec`).
+- Baseline reproduction using a Go overlay containing the two production
+  files from committed `HEAD`:
+  `GOCACHE=/tmp/roundfix-task04-gocache rtk proxy go test -overlay=/tmp/roundfix-task04-baseline/overlay.json -count=1 -run 'TestHistorySanitizePlanListsEveryRefusedUnit|TestHistorySanitizeApplySkipsARefusedUnitAndFillsTheBatch' ./internal/cli`
+  — expected exit 1: both new regressions observe exit 2 at the first malformed
+  PRD under the original implementation. The overlay changes no repository
+  file.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+
+The initial worktree change was the Daemon's `status: in_progress` update in
+this Task file. It is preserved. Declared Verification and repository delivery
+gates were not run; those remain with the Daemon. No commit, push or Pull
+Request was created. No follow-up outside this slice was implemented.
