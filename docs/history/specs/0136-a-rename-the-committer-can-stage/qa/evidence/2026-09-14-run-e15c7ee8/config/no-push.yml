@@ -1,6 +1,0 @@
-defaults:
-  auto_commit: true
-implement:
-  auto_push: false
-notify:
-  enabled: false

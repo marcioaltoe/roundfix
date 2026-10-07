@@ -1,2 +1,0 @@
-M	docs/specs/0001-rename-fixture/task_01.md
-M	ordinary.txt
