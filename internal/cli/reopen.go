@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -20,27 +21,29 @@ import (
 const reopenUsage = `Usage:
   roundfix reopen --spec <slug>
 
-Returns a completed terminal QA Task to pending only when one or more of its
-dependencies are no longer completed. Records the invalidated QA Report and
-stale dependency ids in the QA Task while preserving the prior Result and QA
-Report. reopen creates no Run, writes no Run Event Journal entry, and never
+Returns a completed terminal QA Task to pending when a dependency is no longer
+completed or Git proves a Late Dependency was added after the newest QA Report.
+Records the invalidated QA Report and dependency ids in the QA Task while
+preserving the prior Result and QA Report. reopen creates no Run, writes no Run Event Journal entry, and never
 commits or pushes.
 
 Options:
   --spec  Spec slug under the configured Spec Root
 
 Exit codes:
-  0  stale QA gate reopened
+  0  QA gate reopened
   1  reopen write failed
   2  Preflight Validation failed
 `
 
 type reopenPlan struct {
-	specsRoot   string
-	qaTaskPath  string
-	qaTaskID    string
-	reportLabel string
-	taskIDs     []string
+	specsRoot        string
+	gitRoot          string
+	lateDependencies bool
+	qaTaskPath       string
+	qaTaskID         string
+	reportLabel      string
+	taskIDs          []string
 }
 
 func runReopenCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
@@ -66,7 +69,7 @@ func reopenFromPlan(ctx context.Context, slug string, plan reopenPlan, stdout, s
 		printPreflightFailure("reopen", err, stderr)
 		return exitPreflight
 	}
-	rechecked, err := deriveReopenPlan(plan.specsRoot, slug)
+	rechecked, err := deriveReopenPlanWithContext(ctx, plan.gitRoot, plan.specsRoot, slug)
 	if err != nil {
 		printPreflightFailure("reopen", fmt.Errorf("gate changed after preflight: %w", err), stderr)
 		return exitPreflight
@@ -75,7 +78,11 @@ func reopenFromPlan(ctx context.Context, slug string, plan reopenPlan, stdout, s
 		printPreflightFailure("reopen", err, stderr)
 		return exitPreflight
 	}
-	if err := spec.ReopenGate(rechecked.qaTaskPath, rechecked.reportLabel, rechecked.taskIDs, time.Now().UTC()); err != nil {
+	reopen := spec.ReopenGate
+	if rechecked.lateDependencies {
+		reopen = spec.ReopenGateForLateDependencies
+	}
+	if err := reopen(rechecked.qaTaskPath, rechecked.reportLabel, rechecked.taskIDs, time.Now().UTC()); err != nil {
 		fmt.Fprintf(stderr, "%s: reopen failed: %v\n", app.Name, err)
 		return exitRunFailed
 	}
@@ -122,13 +129,34 @@ func preflightReopen(ctx context.Context, slug string, stderr io.Writer, environ
 	if err := ensureNoReopenActiveRun(ctx, loaded.HomeDir, loaded.GitRoot, slug); err != nil {
 		return reopenPlan{}, err
 	}
-	return deriveReopenPlan(resolvedSpecsRoot.Path, slug)
+	return deriveReopenPlanWithContext(ctx, loaded.GitRoot, resolvedSpecsRoot.Path, slug)
 }
 
 func deriveReopenPlan(specsRoot string, slug string) (reopenPlan, error) {
+	return deriveReopenPlanWithContext(context.Background(), "", specsRoot, slug)
+}
+
+func deriveReopenPlanWithContext(ctx context.Context, gitRoot, specsRoot, slug string) (reopenPlan, error) {
 	graph, loadErr := spec.LoadForRecovery(specsRoot, slug)
+	late := false
 	if loadErr == nil {
-		return reopenHealthyGateRefusal(graph)
+		_, refusal := reopenHealthyGateRefusal(graph)
+		if graph == nil || graph.QATaskID == "" {
+			return reopenPlan{}, refusal
+		}
+		gate, found := reopenTaskByID(graph.Tasks, graph.QATaskID)
+		if !found || gate.Status != spec.StatusCompleted {
+			return reopenPlan{}, refusal
+		}
+		lateIDs := reopenLateDependencyIDs(ctx, gitRoot, graph)
+		if err := ctx.Err(); err != nil {
+			return reopenPlan{}, err
+		}
+		if len(lateIDs) == 0 {
+			return reopenPlan{}, refusal
+		}
+		late = true
+		loadErr = spec.StaleGateError{QATaskID: graph.QATaskID, TaskIDs: lateIDs}
 	}
 	var stale spec.StaleGateError
 	if !errors.As(loadErr, &stale) || graph == nil {
@@ -153,17 +181,93 @@ func deriveReopenPlan(specsRoot string, slug string) (reopenPlan, error) {
 		return reopenPlan{}, err
 	}
 	return reopenPlan{
-		specsRoot:   specsRoot,
-		qaTaskPath:  validatedTaskPath,
-		qaTaskID:    qaTask.ID,
-		reportLabel: filepath.ToSlash(reportLabel),
-		taskIDs:     append([]string(nil), stale.TaskIDs...),
+		specsRoot:        specsRoot,
+		gitRoot:          gitRoot,
+		lateDependencies: late,
+		qaTaskPath:       validatedTaskPath,
+		qaTaskID:         qaTask.ID,
+		reportLabel:      filepath.ToSlash(reportLabel),
+		taskIDs:          append([]string(nil), stale.TaskIDs...),
 	}, nil
+}
+
+// Missing Git evidence preserves the healthy-gate refusal. Both derivations
+// read history in the checkout root with the command's cancellation context.
+func reopenLateDependencyIDs(ctx context.Context, gitRoot string, graph *spec.Graph) []string {
+	if gitRoot == "" {
+		return nil
+	}
+	report, err := spec.NewestQAReport(graph.Spec.Dir)
+	if err != nil {
+		return nil
+	}
+	report, err = filepath.EvalSymlinks(report)
+	if err != nil {
+		return nil
+	}
+	reportRel, inside := repositoryRelativePath(gitRoot, report)
+	if !inside {
+		return nil
+	}
+	manifest := filepath.Join(graph.Spec.Dir, "_tasks.md")
+	resolvedManifest, err := filepath.EvalSymlinks(manifest)
+	if err != nil {
+		return nil
+	}
+	manifestRel, inside := repositoryRelativePath(gitRoot, resolvedManifest)
+	if !inside {
+		return nil
+	}
+	current, err := os.ReadFile(manifest)
+	if err != nil {
+		return nil
+	}
+	currentQA, currentClosure, err := spec.QAGateClosure(manifest, current)
+	if err != nil || currentQA != graph.QATaskID {
+		return nil
+	}
+	log := exec.CommandContext(ctx, "git", "log", "--diff-filter=A", "--format=%H", "HEAD", "--", filepath.ToSlash(reportRel))
+	log.Dir = gitRoot
+	output, err := log.Output()
+	if err != nil {
+		return nil
+	}
+	commits := strings.Fields(string(output))
+	if len(commits) == 0 {
+		return nil
+	}
+	show := exec.CommandContext(ctx, "git", "show", commits[len(commits)-1]+":"+filepath.ToSlash(manifestRel))
+	show.Dir = gitRoot
+	recorded, err := show.Output()
+	if err != nil {
+		return nil
+	}
+	recordedQA, recordedClosure, err := spec.QAGateClosure(manifest, recorded)
+	if err != nil || recordedQA != currentQA {
+		return nil
+	}
+	known := make(map[string]bool, len(recordedClosure))
+	for _, id := range recordedClosure {
+		known[id] = true
+	}
+	var added []string
+	for _, id := range currentClosure {
+		if !known[id] {
+			added = append(added, id)
+		}
+	}
+	return added
 }
 
 func compareReopenPlans(before reopenPlan, after reopenPlan) error {
 	if before.qaTaskID != after.qaTaskID {
 		return validationError{message: fmt.Sprintf("gate changed after preflight: terminal QA Task changed from %q to %q", before.qaTaskID, after.qaTaskID)}
+	}
+	if before.lateDependencies != after.lateDependencies {
+		return validationError{message: "gate changed after preflight: reopen trigger changed"}
+	}
+	if before.lateDependencies && (before.reportLabel != after.reportLabel || before.qaTaskPath != after.qaTaskPath) {
+		return validationError{message: "gate changed after preflight: Late Dependency evidence target changed"}
 	}
 	if !sameTaskIDSet(before.taskIDs, after.taskIDs) {
 		return validationError{message: fmt.Sprintf("gate changed after preflight: stale dependencies for terminal QA Task %q changed from %q to %q", before.qaTaskID, before.taskIDs, after.taskIDs)}

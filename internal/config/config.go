@@ -175,6 +175,7 @@ type Worktree struct {
 }
 
 type Verification struct {
+	Format                 string
 	Tools                  []string
 	Concurrency            int
 	RepositoryAtSettlement bool
@@ -441,6 +442,7 @@ type runsOverlay struct {
 }
 
 type verificationOverlay struct {
+	Format                 *string                       `yaml:"format"`
 	Tools                  *[]string                     `yaml:"tools"`
 	RepositoryAtSettlement *bool                         `yaml:"repository_at_settlement"`
 	Concurrency            *verificationConcurrencyValue `yaml:"concurrency"`
@@ -469,6 +471,11 @@ func (overlay *verificationOverlay) UnmarshalYAML(node *yaml.Node) error {
 	for index := 0; index < len(node.Content); index += 2 {
 		key := node.Content[index].Value
 		switch key {
+		case "format":
+			value := node.Content[index+1]
+			if value.Kind != yaml.ScalarNode || value.Tag != "!!str" {
+				return errors.New("verification.format must be a string")
+			}
 		case "tools":
 			var tools []string
 			value := node.Content[index+1]
@@ -952,6 +959,8 @@ verification:
   repository_at_settlement: %t
   # Additional bare executable names Doctor must find on PATH without running.
   tools: []
+  # Formats the files a QA step commits under the Spec's qa/ directory; empty runs nothing.
+  format: ""
 
 store:
   # Terminal Run journals older than this duration are eligible for pruning; 0 keeps everything.
@@ -1825,6 +1834,9 @@ func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
 		}
 	}
 	if overlay.Verification != nil {
+		if overlay.Verification.Format != nil {
+			config.Verification.Format = strings.TrimSpace(*overlay.Verification.Format)
+		}
 		if overlay.Verification.Tools != nil {
 			config.Verification.Tools = append([]string{}, (*overlay.Verification.Tools)...)
 		}

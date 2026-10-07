@@ -111,10 +111,13 @@ it was blocked.
 
 An **Evidence Snapshot** is the Daemon's record of the repository inputs a
 passing row observed at the audited head. When a failed pass is not integrated,
-the next pass imports its newest QA Report and its evidence byte for byte before
-building the matrix. The import is reported by the `prior_report` phase with
-outcome `imported`, `none`, or `refused`, and its payload names `commit`,
-`report`, `files`, and `reason`.
+the next pass imports its newest QA Report and its evidence byte for byte,
+proves the carry on those bytes, and then runs the Format Command before the
+repository Verification precondition sees the imported files. The import is
+reported by the `prior_report` phase with outcome `imported`, `none`, or
+`refused`, and its payload names `commit`, `report`, `files`, and `reason`.
+The `daemon.qa` phase `format` records its `stage` (`imported` or `commit`) and
+`outcome` (`formatted`, `unchanged`, `failed`, or `reverted`).
 
 Each snapshot holds one line per declared input: its ref, the number of files it
 matched, and one SHA-256 digest over their sorted paths and content digests. Its

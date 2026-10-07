@@ -862,6 +862,14 @@ _Avoid_: HTTP profile, universal REST rule, inferred route style
 Generated managed Markdown that the target repository's selected formatter leaves unchanged, so apply, formatting, Verification, audit, and reapply compose with no delta.
 _Avoid_: Renderer-canonical output, format-after-apply fixup
 
+**Format Command**:
+The Project Config command `verification.format` that the Daemon runs, outside the Agent sandbox, over the files under a Spec's `qa/` directory before the repository Verification precondition (an imported pass) and before the QA Report commit, restoring the original bytes when it fails (ADR-0249).
+_Avoid_: Repository Verification, Baseline formatter, whole-tree formatter
+
+**Late Dependency**:
+A Task in a completed QA gate's dependency closure that the Task Graph did not hold when the newest QA Report was committed; `roundfix reopen` returns the gate to `pending` over it whatever its status (ADR-0249).
+_Avoid_: Stale dependency, missing dependency, unresolved dependency
+
 **Internal Identifier**:
 A technical identity for an entity or resource that is generated and controlled by the project.
 _Avoid_: External identifier, natural key, business code

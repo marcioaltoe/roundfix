@@ -559,7 +559,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	cycleResult, err := executeImplementCycle(ctx, gitState, run.LocalBranch, runRef, session, executionSpecsRoot, executionGraph, req.artifactDir, loadedConfig.Config.Logs.Agent, implementCapacities{
 		task:         loadedConfig.Config.Worktree.Concurrency,
 		verification: loadedConfig.Config.Verification.Concurrency,
-	}, budgetNow, run.CreatedAt, loadedConfig.Config.Budget, loadedConfig.Config.Defaults.Verification, loadedConfig.Config.Verification.RepositoryAtSettlement, loadedConfig.Config.Worktree.Copy, worktreeBootstrapSpec(loadedConfig.Config), newBootstrapOutputWriter(ctx, run.ID, runStore, ui.progress), authorization, runtime, agentSelections, operationalRuntimeFactory(req), implementLightTierPlan(loadedConfig, environment.environ, gitState.Root, profilePreflight.Override != nil), collaborators, runStore, ui)
+	}, budgetNow, run.CreatedAt, loadedConfig.Config.Budget, loadedConfig.Config.Defaults.Verification, loadedConfig.Config.Verification.Format, loadedConfig.Config.Verification.RepositoryAtSettlement, loadedConfig.Config.Worktree.Copy, worktreeBootstrapSpec(loadedConfig.Config), newBootstrapOutputWriter(ctx, run.ID, runStore, ui.progress), authorization, runtime, agentSelections, operationalRuntimeFactory(req), implementLightTierPlan(loadedConfig, environment.environ, gitState.Root, profilePreflight.Override != nil), collaborators, runStore, ui)
 	_, failureCounts = renderImplementTaskLinesWithOutcomes(executionSpecsRoot, executionGraph, false, cycleResult.Outcomes)
 	postCycleCtx, cancelPostCycle := implementBudgetContext(ctx, cycleResult.BudgetDeadline)
 	defer cancelPostCycle()
@@ -1018,7 +1018,7 @@ type implementCapacities struct {
 	verification int
 }
 
-func executeImplementCycle(ctx context.Context, gitState preflight.GitState, targetBranch string, runRef runworktree.Ref, session agent.SessionRef, specsRoot string, graph *spec.Graph, artifactDir string, agentLogs bool, capacities implementCapacities, now func() time.Time, runStartedAt time.Time, budget roundconfig.Budget, repositoryVerification string, repositoryVerificationAtSettlement bool, copyList []string, bootstrap runworktree.BootstrapSpec, bootstrapOutput io.Writer, authorization spec.AuthorizationResolution, runtime agent.RuntimeSpec, agentSelections daemon.AgentSelectionProfiles, runtimeFactory daemon.AgentRuntimeFactory, lightPlan lighttier.Plan, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
+func executeImplementCycle(ctx context.Context, gitState preflight.GitState, targetBranch string, runRef runworktree.Ref, session agent.SessionRef, specsRoot string, graph *spec.Graph, artifactDir string, agentLogs bool, capacities implementCapacities, now func() time.Time, runStartedAt time.Time, budget roundconfig.Budget, repositoryVerification string, formatCommand string, repositoryVerificationAtSettlement bool, copyList []string, bootstrap runworktree.BootstrapSpec, bootstrapOutput io.Writer, authorization spec.AuthorizationResolution, runtime agent.RuntimeSpec, agentSelections daemon.AgentSelectionProfiles, runtimeFactory daemon.AgentRuntimeFactory, lightPlan lighttier.Plan, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
 	runID := runRef.RunID
 	fmt.Fprintf(ui.progress, "%s: implement selected Spec %s with %d Task(s); %d to execute this Run.\n", app.Name, graph.Spec.Slug, len(graph.Tasks), countNonCompletedTasks(graph.Tasks))
 	fmt.Fprintf(ui.progress, "Implement Run: %s\n", runID)
@@ -1070,6 +1070,7 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, tar
 		Concurrency:                        capacities.task,
 		VerificationConcurrency:            capacities.verification,
 		RepositoryVerification:             repositoryVerification,
+		FormatCommand:                      formatCommand,
 		RepositoryVerificationAtSettlement: repositoryVerificationAtSettlement,
 		RunStartedAt:                       runStartedAt,
 		BudgetEnabled:                      budget.Enabled,

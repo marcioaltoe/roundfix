@@ -1,15 +1,22 @@
 ## Reopen Command
 
 Use `roundfix reopen --spec <slug>` to clear a settled QA gate when one or
-more of its dependencies are no longer completed. This is the supported way
-to reopen the gate; never edit the QA Task file by hand. The command retains
-the prior QA Report and the Task's prior Result, and records which stale
-dependencies invalidated that report.
+more of its dependencies are no longer completed, or when the gate has a Late
+Dependency. Reopen proves a Late Dependency from the Task Graph manifest at
+the commit that added the newest QA Report: a Task in the current dependency
+closure that the recorded closure lacked reopens the completed gate to
+`pending`, whatever its status. The invalidation record says `Dependencies added after the QA Report`.
+This is the supported way to reopen the gate;
+never edit the QA Task file by hand. The command retains the prior QA Report
+and the Task's prior Result. Without the commit that added the newest report,
+reopen refuses as before.
 
-Reopen refuses before mutation when the terminal QA gate is not settled or is
-not stale — that is, when it is not completed or every dependency is still
-completed. It creates no Run, writes no Run Event Journal entry, and never
-commits or pushes.
+Reopen refuses before mutation when the terminal QA gate is not settled, or is
+neither stale nor above a proven Late Dependency: it is not completed, or
+every dependency is still completed and no Late Dependency is proven, either
+because the closure is unchanged or because the newest QA Report has no
+commit from which the prior Task Graph manifest can be proven. It creates no
+Run, writes no Run Event Journal entry, and never commits or pushes.
 
 Immediately before it writes, reopen rechecks the gate's staleness and refuses
 with exit 2 when the gate changed since preflight.
@@ -18,9 +25,10 @@ Flags:
 
 - `--spec` — Spec slug under the configured Spec Root.
 
-Exit codes: `0` means a stale settled QA gate was reopened, `1` means the
-reopen write failed, and `2` means Preflight Validation failed, including an
-unsettled or non-stale QA gate.
+Exit codes: `0` means a settled QA gate that was stale or above a Late
+Dependency was reopened, `1` means the reopen write failed, and `2` means
+Preflight Validation failed, including an unsettled QA gate or one that is
+neither stale nor above a proven Late Dependency.
 
 ## Settle Command
 
