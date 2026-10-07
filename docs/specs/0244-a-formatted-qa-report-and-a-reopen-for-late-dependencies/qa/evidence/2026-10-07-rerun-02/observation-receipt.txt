@@ -1,0 +1,1 @@
+R7/R8/R10 re-observed after expanding their pending input plans to include the carried independent measurement/transcript. All external hashes unchanged; carried measurement passed; CLI transcript preserves report and invalidation; guide phrases and every mirror pass. No carried row was re-executed.

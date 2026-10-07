@@ -1,0 +1,114 @@
+{
+  "base": "d3e77bffd1161e7129e0ce4cc389a7fe2b72b894",
+  "head": "a14348fccc0cb4479e2cf5e3a6afbdbefb9a1d4c",
+  "commits": [
+    {
+      "task": "task_01",
+      "commit": "de7409fdcc63648ba6b8f732214bd3315d1ad92e",
+      "repair": false,
+      "actual_paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/implement.md",
+        ".agents/skills/roundfix/references/settle.md",
+        "CONTEXT.md",
+        "docs/specs/0244-a-formatted-qa-report-and-a-reopen-for-late-dependencies/task_01.md",
+        "docs/user-guide/commands/reopen.md",
+        "docs/user-guide/configuration.md",
+        "docs/user-guide/context-driven-development.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/implement.md",
+        "skills/roundfix/references/settle.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "undeclared": [],
+      "governed_paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/implement.md",
+        ".agents/skills/roundfix/references/settle.md",
+        "skills/roundfix/SKILL.md"
+      ],
+      "existing_test_changes": []
+    },
+    {
+      "task": "task_02",
+      "commit": "52ac8e1d753fa40d1d0e6299a1088019089ea840",
+      "repair": false,
+      "actual_paths": [
+        "docs/specs/0244-a-formatted-qa-report-and-a-reopen-for-late-dependencies/task_02.md",
+        "internal/config/config.go",
+        "internal/config/verification_format_test.go"
+      ],
+      "undeclared": [],
+      "governed_paths": [],
+      "existing_test_changes": []
+    },
+    {
+      "task": "task_04",
+      "commit": "cd8dae53c9377ecc87d1c2003c10b66b9995812a",
+      "repair": false,
+      "actual_paths": [
+        "docs/specs/0244-a-formatted-qa-report-and-a-reopen-for-late-dependencies/task_04.md",
+        "internal/cli/reopen.go",
+        "internal/cli/reopen_late_dependency_test.go",
+        "internal/spec/gate_closure.go",
+        "internal/spec/gate_closure_test.go",
+        "internal/spec/task.go"
+      ],
+      "undeclared": [],
+      "governed_paths": [],
+      "existing_test_changes": []
+    },
+    {
+      "task": "task_03",
+      "commit": "5ecd5cdc471bce16dd737a5e3d427d6825132e7d",
+      "repair": false,
+      "actual_paths": [
+        "docs/specs/0244-a-formatted-qa-report-and-a-reopen-for-late-dependencies/task_03.md",
+        "internal/cli/implement.go",
+        "internal/cli/implement_qa_format_test.go",
+        "internal/daemon/qa_format.go",
+        "internal/daemon/qa_format_test.go",
+        "internal/daemon/qa_format_unix.go",
+        "internal/daemon/qa_format_windows.go",
+        "internal/daemon/task_engine.go"
+      ],
+      "undeclared": [],
+      "governed_paths": [],
+      "existing_test_changes": []
+    },
+    {
+      "task": "task_01",
+      "commit": "2baf01fe5b1bc08115e9793a7395e0d80924f28b",
+      "repair": true,
+      "actual_paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/settle.md",
+        "skills/roundfix/SKILL.md",
+        "skills/roundfix/references/settle.md",
+        "skills/testdata/owned-skill-versions.json"
+      ],
+      "undeclared": [],
+      "governed_paths": [
+        ".agents/skills/roundfix/SKILL.md",
+        ".agents/skills/roundfix/references/settle.md",
+        "skills/roundfix/SKILL.md"
+      ],
+      "existing_test_changes": []
+    },
+    {
+      "task": "task_01",
+      "commit": "a14348fccc0cb4479e2cf5e3a6afbdbefb9a1d4c",
+      "repair": true,
+      "actual_paths": [
+        "docs/user-guide/commands/reopen.md"
+      ],
+      "undeclared": [],
+      "governed_paths": [],
+      "existing_test_changes": []
+    }
+  ],
+  "protected_changes": [],
+  "prior_pass_diff": "",
+  "worktree_status": "?? docs/specs/0244-a-formatted-qa-report-and-a-reopen-for-late-dependencies/qa/\n",
+  "notes": "All Task and repair commits inspected with diff-tree; grant ancestor of each. Task 03 Recorded paths credited. No derived pins, prerequisite or consequent-fix declaration."
+}

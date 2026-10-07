@@ -1,0 +1,102 @@
+=== RUN   TestVerificationFormatDefaultsEmpty
+=== RUN   TestVerificationFormatDefaultsEmpty/unset
+=== RUN   TestVerificationFormatDefaultsEmpty/empty
+=== RUN   TestVerificationFormatDefaultsEmpty/whitespace
+--- PASS: TestVerificationFormatDefaultsEmpty (0.00s)
+    --- PASS: TestVerificationFormatDefaultsEmpty/unset (0.00s)
+    --- PASS: TestVerificationFormatDefaultsEmpty/empty (0.00s)
+    --- PASS: TestVerificationFormatDefaultsEmpty/whitespace (0.00s)
+=== RUN   TestVerificationFormatProjectReplacesUser
+=== RUN   TestVerificationFormatProjectReplacesUser/user_retained
+=== RUN   TestVerificationFormatProjectReplacesUser/project_replaces
+=== RUN   TestVerificationFormatProjectReplacesUser/empty_replaces
+=== RUN   TestVerificationFormatProjectReplacesUser/whitespace_replaces
+--- PASS: TestVerificationFormatProjectReplacesUser (0.00s)
+    --- PASS: TestVerificationFormatProjectReplacesUser/user_retained (0.00s)
+    --- PASS: TestVerificationFormatProjectReplacesUser/project_replaces (0.00s)
+    --- PASS: TestVerificationFormatProjectReplacesUser/empty_replaces (0.00s)
+    --- PASS: TestVerificationFormatProjectReplacesUser/whitespace_replaces (0.00s)
+=== RUN   TestVerificationFormatRejectsANonString
+=== RUN   TestVerificationFormatRejectsANonString/user/list
+=== RUN   TestVerificationFormatRejectsANonString/project/list
+=== RUN   TestVerificationFormatRejectsANonString/user/mapping
+=== RUN   TestVerificationFormatRejectsANonString/project/mapping
+=== RUN   TestVerificationFormatRejectsANonString/user/integer
+=== RUN   TestVerificationFormatRejectsANonString/project/integer
+=== RUN   TestVerificationFormatRejectsANonString/user/boolean
+=== RUN   TestVerificationFormatRejectsANonString/project/boolean
+=== RUN   TestVerificationFormatRejectsANonString/user/null
+=== RUN   TestVerificationFormatRejectsANonString/project/null
+--- PASS: TestVerificationFormatRejectsANonString (0.00s)
+    --- PASS: TestVerificationFormatRejectsANonString/user/list (0.00s)
+    --- PASS: TestVerificationFormatRejectsANonString/project/list (0.00s)
+    --- PASS: TestVerificationFormatRejectsANonString/user/mapping (0.00s)
+    --- PASS: TestVerificationFormatRejectsANonString/project/mapping (0.00s)
+    --- PASS: TestVerificationFormatRejectsANonString/user/integer (0.00s)
+    --- PASS: TestVerificationFormatRejectsANonString/project/integer (0.00s)
+    --- PASS: TestVerificationFormatRejectsANonString/user/boolean (0.00s)
+    --- PASS: TestVerificationFormatRejectsANonString/project/boolean (0.00s)
+    --- PASS: TestVerificationFormatRejectsANonString/user/null (0.00s)
+    --- PASS: TestVerificationFormatRejectsANonString/project/null (0.00s)
+=== RUN   TestVerificationFormatRendersInTheDefaultConfig
+--- PASS: TestVerificationFormatRendersInTheDefaultConfig (0.00s)
+PASS
+ok  	roundfix/internal/config	0.323s
+=== RUN   TestQAFormatCommitsTheFormattedReport
+--- PASS: TestQAFormatCommitsTheFormattedReport (0.37s)
+=== RUN   TestQAFormatFormatsAnImportedPassBeforeThePrecondition
+--- PASS: TestQAFormatFormatsAnImportedPassBeforeThePrecondition (0.52s)
+=== RUN   TestQAFormatRevertsAFailingFormatter
+--- PASS: TestQAFormatRevertsAFailingFormatter (0.22s)
+=== RUN   TestQAFormatRevertsAVerdictChange
+--- PASS: TestQAFormatRevertsAVerdictChange (0.19s)
+=== RUN   TestQAFormatLeavesFilesOutsideTheQADirectory
+--- PASS: TestQAFormatLeavesFilesOutsideTheQADirectory (0.18s)
+=== RUN   TestQAFormatEmptyCommandRunsNothing
+--- PASS: TestQAFormatEmptyCommandRunsNothing (0.15s)
+=== RUN   TestQAFormatCancellationRestoresFiles
+=== RUN   TestQAFormatCancellationRestoresFiles/context
+=== RUN   TestQAFormatCancellationRestoresFiles/stop_request
+--- PASS: TestQAFormatCancellationRestoresFiles (0.34s)
+    --- PASS: TestQAFormatCancellationRestoresFiles/context (0.13s)
+    --- PASS: TestQAFormatCancellationRestoresFiles/stop_request (0.21s)
+=== RUN   TestQAFormatStartFailureRestoresFiles
+--- PASS: TestQAFormatStartFailureRestoresFiles (0.15s)
+=== RUN   TestQAFormatBoundsDiagnostics
+--- PASS: TestQAFormatBoundsDiagnostics (0.21s)
+PASS
+suiteguard: guard cost: measured 2468 paths; fingerprint took 237.491166ms before and 82.724541ms after
+ok  	roundfix/internal/daemon	2.952s
+=== RUN   TestImplementPassesVerificationFormatToTheQAStep
+--- PASS: TestImplementPassesVerificationFormatToTheQAStep (0.60s)
+=== RUN   TestReopenReopensALateDependencyThroughTheBuiltBinary
+--- PASS: TestReopenReopensALateDependencyThroughTheBuiltBinary (0.97s)
+=== RUN   TestReopenRefusesWhenTheNewestReportIsUncommitted
+--- PASS: TestReopenRefusesWhenTheNewestReportIsUncommitted (0.06s)
+=== RUN   TestReopenRefusesWhenTheRecordedClosureMatches
+--- PASS: TestReopenRefusesWhenTheRecordedClosureMatches (0.07s)
+PASS
+suiteguard: guard cost: measured 2468 paths; fingerprint took 88.603375ms before and 72.432375ms after
+suiteguard: repository boundary violated:
+suiteguard: modified: docs/specs/0244-a-formatted-qa-report-and-a-reopen-for-late-dependencies/qa/evidence/focused-tests.txt
+FAIL	roundfix/internal/cli	2.435s
+=== RUN   TestQAGateClosureFromManifestBytes
+=== PAUSE TestQAGateClosureFromManifestBytes
+=== RUN   TestReopenGateForLateDependenciesRecordsTheLine
+=== PAUSE TestReopenGateForLateDependenciesRecordsTheLine
+=== CONT  TestQAGateClosureFromManifestBytes
+=== CONT  TestReopenGateForLateDependenciesRecordsTheLine
+=== RUN   TestQAGateClosureFromManifestBytes/invalid_YAML
+=== RUN   TestQAGateClosureFromManifestBytes/unknown_dependency
+=== RUN   TestQAGateClosureFromManifestBytes/missing_gate
+=== RUN   TestQAGateClosureFromManifestBytes/cycle
+--- PASS: TestQAGateClosureFromManifestBytes (0.00s)
+    --- PASS: TestQAGateClosureFromManifestBytes/invalid_YAML (0.00s)
+    --- PASS: TestQAGateClosureFromManifestBytes/unknown_dependency (0.00s)
+    --- PASS: TestQAGateClosureFromManifestBytes/missing_gate (0.00s)
+    --- PASS: TestQAGateClosureFromManifestBytes/cycle (0.00s)
+--- PASS: TestReopenGateForLateDependenciesRecordsTheLine (0.00s)
+PASS
+suiteguard: guard cost: measured 2468 paths; fingerprint took 98.083833ms before and 74.793292ms after
+ok  	roundfix/internal/spec	0.368s
+FAIL

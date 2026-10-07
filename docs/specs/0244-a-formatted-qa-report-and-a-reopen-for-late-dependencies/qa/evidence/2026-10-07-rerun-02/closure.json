@@ -1,0 +1,28 @@
+{
+  "report": "docs/specs/0244-a-formatted-qa-report-and-a-reopen-for-late-dependencies/qa/qa-report-2026-10-07-02.md",
+  "head": "a14348fccc0cb4479e2cf5e3a6afbdbefb9a1d4c",
+  "verdict": "pass",
+  "rows_passed": 12,
+  "rows_carried": 4,
+  "rows_blocked_environment": 1,
+  "rows_blocked_finding": 0,
+  "rows_blocked_declared": 0,
+  "qa_report_accept": {
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "worktree_status": "?? docs/specs/0244-a-formatted-qa-report-and-a-reopen-for-late-dependencies/qa/\n",
+  "static_gate": {
+    "command": "make verify-changed",
+    "result": "daemon supplied pass, exit 0; not rerun"
+  },
+  "focused_checks": {
+    "make build": 0,
+    "strict spec check": 0,
+    "behavior tests stable": 0,
+    "complete config/spec stable": 0,
+    "owned skill version": 0
+  },
+  "mutations": "Only current report and new evidence directory; no Task, prior report, commit, push or PR mutation."
+}

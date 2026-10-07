@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0244-a-formatted-qa-report-and-a-reopen-for-late-dependencies
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

@@ -1,0 +1,111 @@
+{
+  "sources": [
+    {
+      "path": "/Users/marcio/dev/secondbrain/wiki/index.md",
+      "sha256": "70d845cb69bc0a84843008f94e0dd6cb095fb0c9b0320a0037a517a77706ea90",
+      "relevant_lines": [
+        {
+          "line": 622,
+          "text": "- [[validacao-e-verificacao-de-email]] \u2014 Valida\u00e7\u00e3o e verifica\u00e7\u00e3o de email"
+        }
+      ]
+    },
+    {
+      "path": "/Users/marcio/dev/secondbrain/inbox/roundfix/_triaged/2026-10-06-relatorio-de-qa-sem-formatacao-derruba-a-proxima-run.md",
+      "sha256": "a270f79fe3341ede4a74c1403ea0bd46f225cfbf9106e1bab221e0bbfe0fe70c",
+      "relevant_lines": [
+        {
+          "line": 9,
+          "text": "# Relat\u00f3rio de QA gravado sem formata\u00e7\u00e3o derruba a pr\u00e9-condi\u00e7\u00e3o da Run seguinte"
+        },
+        {
+          "line": 14,
+          "text": "pr\u00e9-condi\u00e7\u00e3o do `qa-gate`. Com o Roundfix 0.46.0, na Spec 0047, em 2026-10-06:"
+        },
+        {
+          "line": 18,
+          "text": "2. A Run seguinte (`run_20261006T134004Z_f96397038ab85269`) partiu do HEAD da"
+        },
+        {
+          "line": 35,
+          "text": "`status: pending` \u00e0 m\u00e3o (Spec 0046)."
+        }
+      ]
+    },
+    {
+      "path": "/Users/marcio/dev/secondbrain/projects/pantheon/mirror/docs/agents/agent-instructions.md",
+      "sha256": "39c76d4b28814da36fcd839de04a447295457bb4048da10825b2f0a52c3da124",
+      "relevant_lines": []
+    },
+    {
+      "path": "/Users/marcio/dev/secondbrain/projects/pantheon/mirror/AGENTS.md",
+      "sha256": "dae4d2c62d1ce4ba61b2ca89ecfbea588931603cf3cc40066c063f94e35280b4",
+      "relevant_lines": []
+    },
+    {
+      "path": "/Users/marcio/dev/secondbrain/projects/pantheon/mirror/docs/agents/specific-repository.md",
+      "sha256": "49b25ad09a25454e314728b8c706211434b4784100f84250b5a66750447c8d07",
+      "relevant_lines": [
+        {
+          "line": 99,
+          "text": "make verify     # fmt-check + tf-validate; checks only, never writes"
+        },
+        {
+          "line": 102,
+          "text": "To fix what `verify` reports, use the writing formatters: `make tf-fmt`"
+        }
+      ]
+    },
+    {
+      "path": "/Users/marcio/dev/secondbrain/projects/pantheon/mirror/docs/history/specs/0047-dnssec-da-zona-gesttione-com/qa/qa-report-2026-10-06.md",
+      "sha256": "ced854a26804fd2f23bdf68c4f762e50c87c9a3126277234f83a0a94d44d692e",
+      "relevant_lines": [
+        {
+          "line": 153,
+          "text": "Observation: PASS: reopened the activation record, including all four dated sections, panel messages, exact DS, authoritative/public distinction and recheck section. The panel screenshot itself is not in this checkout; its messages are a reported historical observation, not independently re-observed panel state."
+        },
+        {
+          "line": 361,
+          "text": "Document sources were freshly reopened, compared to actual Git changes and read in context. The nonexistent-name variant probe and independent live digest check were planned but blocked by the proved DNS boundary restriction. Historical user-operated panel evidence was not reexecuted. No credentials, external account mutations, Terraform actions or production commands were used."
+        }
+      ]
+    },
+    {
+      "path": "/Users/marcio/dev/secondbrain/projects/pantheon/mirror/docs/history/specs/0047-dnssec-da-zona-gesttione-com/qa/qa-report-2026-10-06-02.md",
+      "sha256": "2b92a72f2b6734850abdd909f36a3e195ce71d245789d9c71d6e26d6f1cf753d",
+      "relevant_lines": [
+        {
+          "line": 129,
+          "text": "Report formatting: `bun x oxfmt@latest <report>` could not start because Bun temporary/cache writes were denied (EPERM), including with the allowed temp directory. The installed `oxfmt` 0.71.0 formatted the one report successfully (exit 0); this resolves report formatting without a package installation or configuration edit."
+        }
+      ]
+    },
+    {
+      "path": "/Users/marcio/dev/secondbrain/projects/pantheon/mirror/docs/history/specs/0046-restauracao-descartavel-em-diretorio-proprio/task_02.md",
+      "sha256": "e9b09fc235b5f46a1e790268f4e5b176b97c1ace9fdc0cb5a24d92b8e089bb79",
+      "relevant_lines": [
+        {
+          "line": 65,
+          "text": "Reaberto em 2026-10-06 pela sess\u00e3o supervisora: o relat\u00f3rio `qa/qa-report-2026-10-06.md` foi escrito antes da Task 03, a corre\u00e7\u00e3o do achado da revis\u00e3o pr\u00e9-PR sobre `fd7013e`, e n\u00e3o a cobre."
+        }
+      ]
+    },
+    {
+      "path": "/Users/marcio/dev/secondbrain/projects/pantheon/mirror/docs/history/specs/0046-restauracao-descartavel-em-diretorio-proprio/task_03.md",
+      "sha256": "c2a1237f97c1e0325474163176822445630f344709a8074069e85d0d1057e889",
+      "relevant_lines": [
+        {
+          "line": 57,
+          "text": "Supervisor-run em 2026-10-06. A guarda `case` entrou logo depois de"
+        }
+      ]
+    },
+    {
+      "path": "/Users/marcio/dev/secondbrain/projects/pantheon/mirror/docs/history/specs/0046-restauracao-descartavel-em-diretorio-proprio/qa/qa-report-2026-10-06-01.md",
+      "sha256": "26cf227ce72842126b0c00a18fec2176232c9be35385a64bfe588723e3b049d2",
+      "relevant_lines": []
+    }
+  ],
+  "qmd_limitation": "qmd query failed: SQLITE_READONLY while caching rerank; local Metal context allocation also failed. No retry. PRD-named sources were read directly, read only.",
+  "comparison": "Triaged failure and mirrored refusal/workaround are supported independently by configured=false vs true TaskCycle measurement, built reopen completed Late Dependency, and mirror formatter check/write separation."
+}

@@ -1,0 +1,134 @@
+{
+  "documentation_checks": {
+    "config_format_key": true,
+    "config_restore": true,
+    "workflow_format_events": true,
+    "guide_late_dependency": true,
+    "skill_both_triggers": true,
+    "skill_refusal_excludes_late": true
+  },
+  "mirrors": [
+    {
+      "source": ".agents/skills/roundfix/SKILL.md",
+      "mirror": "skills/roundfix/SKILL.md",
+      "equal": true
+    },
+    {
+      "source": ".agents/skills/roundfix/agents/openai.yaml",
+      "mirror": "skills/roundfix/agents/openai.yaml",
+      "equal": true
+    },
+    {
+      "source": ".agents/skills/roundfix/references/archive.md",
+      "mirror": "skills/roundfix/references/archive.md",
+      "equal": true
+    },
+    {
+      "source": ".agents/skills/roundfix/references/baseline.md",
+      "mirror": "skills/roundfix/references/baseline.md",
+      "equal": true
+    },
+    {
+      "source": ".agents/skills/roundfix/references/deliver.md",
+      "mirror": "skills/roundfix/references/deliver.md",
+      "equal": true
+    },
+    {
+      "source": ".agents/skills/roundfix/references/events.md",
+      "mirror": "skills/roundfix/references/events.md",
+      "equal": true
+    },
+    {
+      "source": ".agents/skills/roundfix/references/implement.md",
+      "mirror": "skills/roundfix/references/implement.md",
+      "equal": true
+    },
+    {
+      "source": ".agents/skills/roundfix/references/profiles.md",
+      "mirror": "skills/roundfix/references/profiles.md",
+      "equal": true
+    },
+    {
+      "source": ".agents/skills/roundfix/references/reconcile.md",
+      "mirror": "skills/roundfix/references/reconcile.md",
+      "equal": true
+    },
+    {
+      "source": ".agents/skills/roundfix/references/release.md",
+      "mirror": "skills/roundfix/references/release.md",
+      "equal": true
+    },
+    {
+      "source": ".agents/skills/roundfix/references/review-runs.md",
+      "mirror": "skills/roundfix/references/review-runs.md",
+      "equal": true
+    },
+    {
+      "source": ".agents/skills/roundfix/references/review.md",
+      "mirror": "skills/roundfix/references/review.md",
+      "equal": true
+    },
+    {
+      "source": ".agents/skills/roundfix/references/runs.md",
+      "mirror": "skills/roundfix/references/runs.md",
+      "equal": true
+    },
+    {
+      "source": ".agents/skills/roundfix/references/runtime.md",
+      "mirror": "skills/roundfix/references/runtime.md",
+      "equal": true
+    },
+    {
+      "source": ".agents/skills/roundfix/references/settle.md",
+      "mirror": "skills/roundfix/references/settle.md",
+      "equal": true
+    },
+    {
+      "source": ".agents/skills/roundfix/references/setup.md",
+      "mirror": "skills/roundfix/references/setup.md",
+      "equal": true
+    },
+    {
+      "source": ".agents/skills/roundfix/references/spec-delivery.md",
+      "mirror": "skills/roundfix/references/spec-delivery.md",
+      "equal": true
+    },
+    {
+      "source": ".agents/skills/roundfix/references/spec.md",
+      "mirror": "skills/roundfix/references/spec.md",
+      "equal": true
+    },
+    {
+      "source": ".agents/skills/roundfix/references/stop.md",
+      "mirror": "skills/roundfix/references/stop.md",
+      "equal": true
+    },
+    {
+      "source": ".agents/skills/roundfix/references/storage.md",
+      "mirror": "skills/roundfix/references/storage.md",
+      "equal": true
+    }
+  ],
+  "version_fields": [
+    "0.1.51",
+    "0.1.51"
+  ],
+  "remaining_QA_001": {
+    "path": "docs/user-guide/commands/reopen.md",
+    "exit_code_legend": "- `0` \u2014 stale QA gate reopened.\n- `1` \u2014 reopen write failed.\n- `2` \u2014 Preflight Validation failed, including a missing/invalid `--spec`, an\n  unsettled QA gate, or a non-stale QA gate.",
+    "contradictory_prior_cli_observable": {
+      "command": [
+        "./bin/roundfix",
+        "reopen",
+        "--spec",
+        "qa-late-dependency"
+      ],
+      "exit": 0,
+      "stdout": "reopened task_qa pending \u2014 invalidated qa/qa-report-2026-10-06.md\n",
+      "stderr": ""
+    },
+    "carried_row": "R5; not re-executed"
+  },
+  "skill_QA_001": "repaired",
+  "basis": "compare docs against required observable, carried CLI transcript, current unchanged reopen implementation and fresh existing regressions"
+}

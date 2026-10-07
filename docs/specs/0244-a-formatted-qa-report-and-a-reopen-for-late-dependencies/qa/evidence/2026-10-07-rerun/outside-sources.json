@@ -1,0 +1,213 @@
+{
+  "sources": [
+    {
+      "path": "/Users/marcio/dev/secondbrain/wiki/index.md",
+      "sha256": "d115c949df101e0372519e0ed16428182d3372accea6e0a88edd9a2894907ea6",
+      "same_as_prior": false,
+      "relevant_lines": [
+        {
+          "line": 686,
+          "text": "- [[informatize-contabilidade]] \u2014 Informatize Contabilidade"
+        },
+        {
+          "line": 1062,
+          "text": "- [[digest-roundfix-toolchain-formatter-e-subprocessos-go-no-macos-2026-09-09]] \u2014 Digest roundfix \u2014 toolchain, formatter e subprocessos Go no macOS (2026-09-09)"
+        },
+        {
+          "line": 1145,
+          "text": "- [[informatize-contabilidade-site]] \u2014 Informatize Contabilidade \u2014 site oficial"
+        }
+      ]
+    },
+    {
+      "path": "/Users/marcio/dev/secondbrain/inbox/roundfix/_triaged/2026-10-06-relatorio-de-qa-sem-formatacao-derruba-a-proxima-run.md",
+      "sha256": "a270f79fe3341ede4a74c1403ea0bd46f225cfbf9106e1bab221e0bbfe0fe70c",
+      "same_as_prior": true,
+      "relevant_lines": [
+        {
+          "line": 9,
+          "text": "# Relat\u00f3rio de QA gravado sem formata\u00e7\u00e3o derruba a pr\u00e9-condi\u00e7\u00e3o da Run seguinte"
+        },
+        {
+          "line": 14,
+          "text": "pr\u00e9-condi\u00e7\u00e3o do `qa-gate`. Com o Roundfix 0.46.0, na Spec 0047, em 2026-10-06:"
+        },
+        {
+          "line": 17,
+          "text": "   gravou `qa/qa-report-2026-10-06.md` sem formatar."
+        },
+        {
+          "line": 20,
+          "text": "   a worktree. A pr\u00e9-condi\u00e7\u00e3o `make verify` saiu 2 por formata\u00e7\u00e3o nesse arquivo,"
+        },
+        {
+          "line": 21,
+          "text": "   e a Run gravou um relat\u00f3rio `fail` com `rows_blocked_precondition: 1`, sem"
+        },
+        {
+          "line": 23,
+          "text": "3. A sa\u00edda foi trazer o `qa/` da Run anterior para a branch, formatar e"
+        },
+        {
+          "line": 26,
+          "text": "O mesmo relat\u00f3rio sem formata\u00e7\u00e3o j\u00e1 obrigava um commit de formata\u00e7\u00e3o depois de"
+        },
+        {
+          "line": 31,
+          "text": "Formatar o relat\u00f3rio e a evid\u00eancia com o formatador do reposit\u00f3rio antes do"
+        },
+        {
+          "line": 32,
+          "text": "commit da Run, ou excluir da pr\u00e9-condi\u00e7\u00e3o os arquivos que a pr\u00f3pria Run"
+        }
+      ]
+    },
+    {
+      "path": "/Users/marcio/dev/secondbrain/projects/pantheon/mirror/docs/agents/agent-instructions.md",
+      "sha256": "39c76d4b28814da36fcd839de04a447295457bb4048da10825b2f0a52c3da124",
+      "same_as_prior": true,
+      "relevant_lines": [
+        {
+          "line": 54,
+          "text": "- **stop-and-ask**: Stop and ask for explicit authority before intentionally changing lint, formatter, typecheck, test-runner, architecture, or Verification configuration."
+        },
+        {
+          "line": 68,
+          "text": "- **prohibited**: Do not create, edit, rename, move, or delete any linter, formatter, typechecker, test-runner, architecture-checker, build-tool, package-manager, code-generator, or other repository-tooling configuration, script, ignore file, plugin declaration, or version pin without express maintainer authorization. Setup completion, a Profile, a narrower guide, or a generic implementation request does not grant that authorization."
+        }
+      ]
+    },
+    {
+      "path": "/Users/marcio/dev/secondbrain/projects/pantheon/mirror/AGENTS.md",
+      "sha256": "dae4d2c62d1ce4ba61b2ca89ecfbea588931603cf3cc40066c063f94e35280b4",
+      "same_as_prior": true,
+      "relevant_lines": []
+    },
+    {
+      "path": "/Users/marcio/dev/secondbrain/projects/pantheon/mirror/docs/agents/specific-repository.md",
+      "sha256": "49b25ad09a25454e314728b8c706211434b4784100f84250b5a66750447c8d07",
+      "same_as_prior": true,
+      "relevant_lines": [
+        {
+          "line": 31,
+          "text": "  format are allowed; apply, destroy, import, and state mutations are"
+        },
+        {
+          "line": 102,
+          "text": "To fix what `verify` reports, use the writing formatters: `make tf-fmt`"
+        },
+        {
+          "line": 197,
+          "text": "  that owns the work**, following that repository's finding format, and open"
+        }
+      ]
+    },
+    {
+      "path": "/Users/marcio/dev/secondbrain/projects/pantheon/mirror/docs/history/specs/0047-dnssec-da-zona-gesttione-com/qa/qa-report-2026-10-06.md",
+      "sha256": "ced854a26804fd2f23bdf68c4f762e50c87c9a3126277234f83a0a94d44d692e",
+      "same_as_prior": true,
+      "relevant_lines": [
+        {
+          "line": 93,
+          "text": "Precondition: `roundfix spec check 0047-dnssec-da-zona-gesttione-com --strict` exited 0, no findings; authored Verification not executed. Skipped detectors: SC-LOOP-ORDER-DIVERGENT (two Roundfix-internal baseline assets absent), SC-ROLLUP-MEMBER (no rollup), vocabulary documentation detector (no Vocabulary Contract). No baseline implementation or rollup changes belong to this slice. Row 15 retains the manual vocabulary check."
+        }
+      ]
+    },
+    {
+      "path": "/Users/marcio/dev/secondbrain/projects/pantheon/mirror/docs/history/specs/0047-dnssec-da-zona-gesttione-com/qa/qa-report-2026-10-06-02.md",
+      "sha256": "2b92a72f2b6734850abdd909f36a3e195ce71d245789d9c71d6e26d6f1cf753d",
+      "same_as_prior": true,
+      "relevant_lines": [
+        {
+          "line": 98,
+          "text": "| 15  | pass                                                                   | Task 01 criterion 1; Task 01 criterion 2; Task 03 criterion 1                                                                      |"
+        },
+        {
+          "line": 101,
+          "text": "| 18  | pass                                                                   | Task 03 criterion 2                                                                                                                |"
+        },
+        {
+          "line": 102,
+          "text": "| 19  | pass                                                                   | Task 03 criterion 3                                                                                                                |"
+        },
+        {
+          "line": 119,
+          "text": "Full terminal task_02 after completed task_01 and task_03. The current seed carries no passed row; the prior precondition refusal (row 0) is re-run by accepting the current Daemon static gate receipt. No numbered Requirement begins with `MUST verify` or `MUST run`, so default coverage applies. Requirement 1 also requires a separate row for each Goal, Core Feature and Success Metric. No frontend or intentional breaks are declared. All six pre-run Unreachable Acceptance entries are tested, with their supervisor capture inspected separately."
+        },
+        {
+          "line": 129,
+          "text": "Report formatting: `bun x oxfmt@latest <report>` could not start because Bun temporary/cache writes were denied (EPERM), including with the allowed temp directory. The installed `oxfmt` 0.71.0 formatted the one report successfully (exit 0); this resolves report formatting without a package installation or configuration edit."
+        },
+        {
+          "line": 315,
+          "text": "Current Run receipt supplied by the Daemon: make verify, pass, exit 0; diagnostics removed on success. Accepted as the static gate and not re-run. Prior row 0 was only a failed precondition in the older Run; the current receipt resolves that refusal, with no inherited completion claim."
+        },
+        {
+          "line": 457,
+          "text": "19 rows observed: 12 pass, 6 declared-blocked, 1 environment-blocked; 0 fail, 0 finding-blocked, 0 skipped, 0 pending. No carried row was supplied in this seed. Three Goals, three Core Features and three Success Metrics each have their own row. All four Task 01 criteria and all three Task 03 criteria are covered, along with the three observable Non-Goals and all six Unreachable Acceptance declarations. Non-waivable coverage: outside evidence (11), repository Verification (12), Pull Request (13), declarations (01, 07, 08, 11, 16, 17). Frontend sweep is not applicable to surfaces [infra, docs]."
+        }
+      ]
+    },
+    {
+      "path": "/Users/marcio/dev/secondbrain/projects/pantheon/mirror/docs/history/specs/0046-restauracao-descartavel-em-diretorio-proprio/task_02.md",
+      "sha256": "e9b09fc235b5f46a1e790268f4e5b176b97c1ace9fdc0cb5a24d92b8e089bb79",
+      "same_as_prior": true,
+      "relevant_lines": [
+        {
+          "line": 65,
+          "text": "Reaberto em 2026-10-06 pela sess\u00e3o supervisora: o relat\u00f3rio `qa/qa-report-2026-10-06.md` foi escrito antes da Task 03, a corre\u00e7\u00e3o do achado da revis\u00e3o pr\u00e9-PR sobre `fd7013e`, e n\u00e3o a cobre."
+        }
+      ]
+    },
+    {
+      "path": "/Users/marcio/dev/secondbrain/projects/pantheon/mirror/docs/history/specs/0046-restauracao-descartavel-em-diretorio-proprio/task_03.md",
+      "sha256": "c2a1237f97c1e0325474163176822445630f344709a8074069e85d0d1057e889",
+      "same_as_prior": true,
+      "relevant_lines": [
+        {
+          "line": 10,
+          "text": "# Task 03: Recusar nome de restaura\u00e7\u00e3o fora da forma antes de apagar ou montar"
+        },
+        {
+          "line": 57,
+          "text": "Supervisor-run em 2026-10-06. A guarda `case` entrou logo depois de"
+        }
+      ]
+    },
+    {
+      "path": "/Users/marcio/dev/secondbrain/projects/pantheon/mirror/docs/history/specs/0046-restauracao-descartavel-em-diretorio-proprio/qa/qa-report-2026-10-06-01.md",
+      "sha256": "26cf227ce72842126b0c00a18fec2176232c9be35385a64bfe588723e3b049d2",
+      "same_as_prior": true,
+      "relevant_lines": [
+        {
+          "line": 74,
+          "text": "| NAME1  | pass                                        | Task 03 criterion 1                                                         |"
+        },
+        {
+          "line": 75,
+          "text": "| NAME2  | pass                                        | Task 03 criterion 2                                                         |"
+        },
+        {
+          "line": 105,
+          "text": "Full documentation gate at a562b71a4d5378e68ac52bf1b79a923fbbaef2cf; base 3015363bdf3c5dc0330750edc03f846a9227a79c. Task 01 and Task 03 are completed; task_02 is the terminal QA node and depends on both. No row is carried. No frontend, intentional break, Surface Transcript or Unreachable Acceptance is declared. Task 02 has no English MUST verify/MUST run declaration: default coverage applies, with one row per PRD Goal, Core Feature and Success Metric. Observable Non-Goals are covered by SCOPE. Production execution is out of scope."
+        },
+        {
+          "line": 107,
+          "text": "Strict precondition: `roundfix spec check 0046-restauracao-descartavel-em-diretorio-proprio --strict`, exit 0, no findings. Skipped loop-source checks concern absent Roundfix internal assets; no Rollup exists. Vocabulary detector skipped: TERMS performs that check. No implementation or repository tooling is changed by QA."
+        },
+        {
+          "line": 415,
+          "text": "Actor: runbook reader/operator. Surface: docs exercised in a local harness or repository audit. Observation: `python3 docs/specs/0046-restauracao-descartavel-em-diretorio-proprio/qa/evidence/2026-10-06-rerun-01/name-probe.py.txt`: exit 0. [Probe transcript](evidence/2026-10-06-rerun-01/name-probe.txt). Full remote recipes reject `../../etc`, appended traversal, malformed/empty names, leading whitespace, trailing newline and `-rf`: exact diagnostic on stderr, status 2, empty stdout and no operation. A name generated by the documented UTC format passes the guard and reaches a deliberately failing local operation boundary (status 91). Real marker reread after each process confirms preservation; the original harness supplies the valid-name full lifecycle."
+        },
+        {
+          "line": 435,
+          "text": "`make verify`: pass, exit 0, supplied by the Daemon and recorded in [static evidence](evidence/2026-10-06-rerun-01/static-gate.txt). Strict authoring precondition: exit 0 ([record](evidence/2026-10-06-rerun-01/precondition.txt)). No product CLI is declared; roundfix 0.46.0 was used only for authoring validation."
+        },
+        {
+          "line": 447,
+          "text": "16 rows: 15 pass, 1 environment-blocked, 0 fail, 0 finding-blocked, 0 declared-blocked, 0 skipped, 0 pending. Goals 3/3, Core Features 3/3, Success Metrics 2/2, Task 01 Acceptance Criteria 3/3, Task 03 Acceptance Criteria 2/2, outside evidence, repository Verification, Pull Request row and both observable Non-Goals are named in provenance. Every row has typed inputs; no source outside the default coverage sources is claimed. Task 02 execution constraints 1\u20136 are satisfied by the per-PRD matrix, two harnesses/byte audit, EXT, CF1/SECRET, SCOPE and TERMS."
+        }
+      ]
+    }
+  ]
+}

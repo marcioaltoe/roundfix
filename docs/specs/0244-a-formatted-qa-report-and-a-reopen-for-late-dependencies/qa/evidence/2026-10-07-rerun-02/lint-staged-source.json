@@ -1,0 +1,11 @@
+{
+  "source": "https://raw.githubusercontent.com/lint-staged/lint-staged/main/README.md",
+  "access": "read-only web tool: open and find, 2026-10-07; 1039 lines returned",
+  "shell_attempt": "exit 1; CONNECT response 403; evidence shell-network-denial.txt",
+  "observations": {
+    "arguments": "README lines 144-146, 300-305, 328 and 358 describe matched staged file paths appended as command arguments.",
+    "filtering": "Lines 312-314 describe formatter-owned ignore configuration, with function filtering available when the task cannot ignore files.",
+    "independent_confirmation": "Configuration and supported-command examples demonstrate argument addition; the filtering section describes Prettier handling ignored vendor files received as inputs.",
+    "design_support": "Supports explicit command plus file arguments and formatter-owned exclusions. Roundfix selects regular QA files itself; it does not promise lint-staged globbing or absolute paths."
+  }
+}
