@@ -1,5 +1,0 @@
-=== R15: flag registrations added by this Spec in the update command ===
-(empty above = no flag added)
-
-=== R15: exit-code / state / schema constants changed ===
-(empty above = unchanged)

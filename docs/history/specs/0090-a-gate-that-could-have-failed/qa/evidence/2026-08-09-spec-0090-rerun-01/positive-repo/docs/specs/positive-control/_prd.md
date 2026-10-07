@@ -1,5 +1,0 @@
----
-status: active
----
-
-# Positive control
