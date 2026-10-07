@@ -1,0 +1,1 @@
+All disposable clones created by this QA session removed. First probes removed by finally blocks. Retained second clone /private/tmp/qa0245-laihjez6 and final clone /private/tmp/qa0245-emc6fa5r removed after captured verification and confirmation. Only QA report/evidence are new in audited checkout; no Run branch commit, push or Pull Request.

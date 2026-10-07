@@ -1,0 +1,32 @@
+$ go test -count=1 -v ./internal/config -run '^TestThisRepositoryDeclaresItsToolsAndDerivedPaths$'
+=== RUN   TestThisRepositoryDeclaresItsToolsAndDerivedPaths
+--- PASS: TestThisRepositoryDeclaresItsToolsAndDerivedPaths (0.00s)
+PASS
+ok  	roundfix/internal/config	0.241s
+
+exit: 0
+
+$ go test -count=1 -v -tags docscontract ./internal/config -run '^TestRegenerationIsDeclared$'
+=== RUN   TestRegenerationIsDeclared
+=== RUN   TestRegenerationIsDeclared/declaration_1_is_required
+=== RUN   TestRegenerationIsDeclared/declaration_2_is_required
+=== RUN   TestRegenerationIsDeclared/declaration_3_is_required
+--- PASS: TestRegenerationIsDeclared (209.34s)
+    --- PASS: TestRegenerationIsDeclared/declaration_1_is_required (54.56s)
+    --- PASS: TestRegenerationIsDeclared/declaration_2_is_required (50.23s)
+    --- PASS: TestRegenerationIsDeclared/declaration_3_is_required (54.39s)
+PASS
+ok  	roundfix/internal/config	209.449s
+
+exit: 0
+
+Traceback (most recent call last):
+  File "/private/tmp/qa0245.py", line 13, in row
+    try: fn();status='pass'
+         ~~^^
+  File "/private/tmp/qa0245.py", line 73, in q09
+    s=(root/'docs/agents/specific-repository.md').read_text();assert '-record-module-versions -count=1' in s and 'A Spec names the next version, never a number.' in s;adr=(root/'docs/adr/0250-a-module-version-is-chosen-when-recorded-and-the-coverage-record-lists-every-platform.md').read_text();assert 'accepted' in adr.lower();logs.append('Guidance followed in live Q02/Q03/Q04; six corrected declarations pinned including three output-removal ablations; ADR accepted. Original four-declaration language superseded by Task 05.')
+                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+
+Follow-up: normalize prose whitespace before checking wrapped command. Both required rule phrases present and ADR-0250 accepted. Earlier AssertionError was a QA whitespace check error after both live tests passed. No product change or test rerun. Original four derived declarations expanded to six by Task 05.

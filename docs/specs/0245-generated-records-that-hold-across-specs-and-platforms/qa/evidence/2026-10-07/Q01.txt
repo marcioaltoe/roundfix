@@ -1,0 +1,1 @@
+Daemon-provided gate fact at audited head 92de34df983515675a690237f73eeffccab00cc3: make verify-changed; pass (exit 0); diagnostics removed on success. Recorded, not rerun.

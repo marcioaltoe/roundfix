@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0245-generated-records-that-hold-across-specs-and-platforms
-status: pending
+status: failed
 type: qa
 complexity: high
 ---

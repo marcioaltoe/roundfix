@@ -1,0 +1,3072 @@
+$ git show 90be701:internal/baseline/assets/modules/frontend.json
+{
+  "schemaVersion": "setup-context-driven/module-v3",
+  "id": "frontend",
+  "version": 6,
+  "kind": "application-surface",
+  "title": "Frontend application guidance",
+  "dependsOn": [
+    "typescript"
+  ],
+  "conflictsWith": [],
+  "requiredSkills": [
+    "agent-browser",
+    "baseline-ui",
+    "building-components",
+    "core-web-vitals",
+    "fixing-accessibility",
+    "fixing-metadata",
+    "fixing-motion-performance",
+    "frontend-design",
+    "frontend-docs",
+    "interaction-design",
+    "interface-design",
+    "motion",
+    "react",
+    "react-best-practices",
+    "react-composition-patterns",
+    "react-hook-form-zod",
+    "shadcn",
+    "solid",
+    "tailwindcss",
+    "tanstack-query",
+    "tanstack-router",
+    "tanstack-table",
+    "ui-ux-pro-max",
+    "wcag-audit-patterns",
+    "web-design-guidelines",
+    "zustand"
+  ],
+  "skillDispatch": [
+    {
+      "skill": "agent-browser",
+      "triggers": [
+        {
+          "id": "trigger.frontend.agent-browser",
+          "when": "Exercising frontend behavior in a real browser."
+        }
+      ]
+    },
+    {
+      "skill": "baseline-ui",
+      "triggers": [
+        {
+          "id": "trigger.frontend.baseline-ui",
+          "when": "Building or reviewing the selected baseline UI system."
+        }
+      ]
+    },
+    {
+      "skill": "building-components",
+      "triggers": [
+        {
+          "id": "trigger.frontend.building-components",
+          "when": "Building reusable frontend components."
+        }
+      ]
+    },
+    {
+      "skill": "core-web-vitals",
+      "triggers": [
+        {
+          "id": "trigger.frontend.core-web-vitals",
+          "when": "Measuring or improving frontend Core Web Vitals."
+        }
+      ]
+    },
+    {
+      "skill": "fixing-accessibility",
+      "triggers": [
+        {
+          "id": "trigger.frontend.fixing-accessibility",
+          "when": "Diagnosing and fixing frontend accessibility defects."
+        }
+      ]
+    },
+    {
+      "skill": "fixing-metadata",
+      "triggers": [
+        {
+          "id": "trigger.frontend.fixing-metadata",
+          "when": "Changing frontend metadata and document discovery behavior."
+        }
+      ]
+    },
+    {
+      "skill": "fixing-motion-performance",
+      "triggers": [
+        {
+          "id": "trigger.frontend.fixing-motion-performance",
+          "when": "Diagnosing and fixing frontend motion performance."
+        }
+      ]
+    },
+    {
+      "skill": "frontend-design",
+      "triggers": [
+        {
+          "id": "trigger.frontend.frontend-design",
+          "when": "Designing or implementing frontend visual behavior."
+        }
+      ]
+    },
+    {
+      "skill": "frontend-docs",
+      "triggers": [
+        {
+          "id": "trigger.frontend.frontend-docs",
+          "when": "Writing frontend component or interaction documentation."
+        }
+      ]
+    },
+    {
+      "skill": "interaction-design",
+      "triggers": [
+        {
+          "id": "trigger.frontend.interaction-design",
+          "when": "Designing frontend states, transitions, and interaction flows."
+        }
+      ]
+    },
+    {
+      "skill": "interface-design",
+      "triggers": [
+        {
+          "id": "trigger.frontend.interface-design",
+          "when": "Designing frontend interface hierarchy and controls."
+        }
+      ]
+    },
+    {
+      "skill": "motion",
+      "triggers": [
+        {
+          "id": "trigger.frontend.motion",
+          "when": "Building or changing frontend motion and animation."
+        }
+      ]
+    },
+    {
+      "skill": "react",
+      "triggers": [
+        {
+          "id": "trigger.frontend.react",
+          "when": "Building or changing React components and hooks."
+        }
+      ]
+    },
+    {
+      "skill": "react-best-practices",
+      "triggers": [
+        {
+          "id": "trigger.frontend.react-best-practices",
+          "when": "Reviewing React implementation against current practices."
+        }
+      ]
+    },
+    {
+      "skill": "react-composition-patterns",
+      "triggers": [
+        {
+          "id": "trigger.frontend.react-composition-patterns",
+          "when": "Designing React component composition and reuse."
+        }
+      ]
+    },
+    {
+      "skill": "react-hook-form-zod",
+      "triggers": [
+        {
+          "id": "trigger.frontend.react-hook-form-zod",
+          "when": "Building validated React forms with React Hook Form and Zod."
+        }
+      ]
+    },
+    {
+      "skill": "shadcn",
+      "triggers": [
+        {
+          "id": "trigger.frontend.shadcn",
+          "when": "Building or changing components based on shadcn."
+        }
+      ]
+    },
+    {
+      "skill": "solid",
+      "triggers": [
+        {
+          "id": "trigger.frontend.solid",
+          "when": "Applying SOLID design to frontend TypeScript boundaries."
+        }
+      ]
+    },
+    {
+      "skill": "tailwindcss",
+      "triggers": [
+        {
+          "id": "trigger.frontend.tailwindcss",
+          "when": "Building or changing Tailwind CSS styling and configuration."
+        }
+      ]
+    },
+    {
+      "skill": "tanstack-query",
+      "triggers": [
+        {
+          "id": "trigger.frontend.tanstack-query",
+          "when": "Changing server-state queries, caching, or mutations with TanStack Query."
+        }
+      ]
+    },
+    {
+      "skill": "tanstack-router",
+      "triggers": [
+        {
+          "id": "trigger.frontend.tanstack-router",
+          "when": "Changing frontend routes and navigation with TanStack Router."
+        }
+      ]
+    },
+    {
+      "skill": "tanstack-table",
+      "triggers": [
+        {
+          "id": "trigger.frontend.tanstack-table",
+          "when": "Building or changing data tables with TanStack Table."
+        }
+      ]
+    },
+    {
+      "skill": "ui-ux-pro-max",
+      "triggers": [
+        {
+          "id": "trigger.frontend.ui-ux-pro-max",
+          "when": "Designing or reviewing polished frontend UI and UX."
+        }
+      ]
+    },
+    {
+      "skill": "wcag-audit-patterns",
+      "triggers": [
+        {
+          "id": "trigger.frontend.wcag-audit-patterns",
+          "when": "Auditing frontend behavior against WCAG patterns."
+        }
+      ]
+    },
+    {
+      "skill": "web-design-guidelines",
+      "triggers": [
+        {
+          "id": "trigger.frontend.web-design-guidelines",
+          "when": "Reviewing frontend design against web interface guidelines."
+        }
+      ]
+    },
+    {
+      "skill": "zustand",
+      "triggers": [
+        {
+          "id": "trigger.frontend.zustand",
+          "when": "Changing frontend state management with Zustand."
+        }
+      ]
+    }
+  ],
+  "requiredDecisions": [],
+  "rootBlocks": [
+    {
+      "id": "root.frontend",
+      "version": 2,
+      "template": "template.root.frontend",
+      "rules": [],
+      "references": [
+        {
+          "id": "reference.root.frontend",
+          "token": "reference.frontend",
+          "ownership": "setup",
+          "managedId": "guide.frontend"
+        }
+      ]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.frontend",
+      "version": 6,
+      "path": "docs/agents/frontend.md",
+      "template": "template.guide.frontend",
+      "rules": [
+        "rule.frontend.user-visible-behavior",
+        "rule.frontend.recorded-layout"
+      ],
+      "references": [
+        {
+          "id": "reference.frontend.design-contract",
+          "token": "repository.design-contract",
+          "ownership": "repository",
+          "path": "DESIGN.md"
+        }
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.frontend.user-visible-behavior",
+      "version": 5,
+      "coverage": [
+        "coverage.frontend",
+        "coverage.verification-integrity"
+      ],
+      "clauses": [
+        {
+          "id": "clause.frontend.organize-by-system",
+          "enforcement": "mandatory",
+          "appliesWhen": {"decision": "frontend.layout", "equals": "systems"},
+          "guidance": "Organize frontend feature code by domain system. Each system exposes one public boundary while its internal components, hooks, queries, routes, and state import each other directly."
+        },
+        {
+          "id": "clause.frontend.public-system-boundary",
+          "enforcement": "mandatory",
+          "appliesWhen": {"decision": "frontend.layout", "equals": "systems"},
+          "guidance": "Import another system through that system's public boundary instead of reaching into its internal modules."
+        },
+        {
+          "id": "clause.frontend.read-design-contract-before-ui-work",
+          "enforcement": "mandatory",
+          "guidance": "Read the repository-owned `DESIGN.md` before writing, modifying, or reviewing UI code, and treat it as the selected design contract."
+        },
+        {
+          "id": "clause.frontend.test-user-visible-behavior",
+          "enforcement": "mandatory",
+          "guidance": "Test user-visible roles, labels, text, state changes, loading, error, and empty states."
+        },
+        {
+          "id": "clause.frontend.prohibit-incidental-ui-assertions",
+          "enforcement": "prohibited",
+          "guidance": "Do not make component internals or incidental CSS structure the source of correctness."
+        },
+        {
+          "id": "clause.frontend.inspect-runnable-ui",
+          "enforcement": "mandatory",
+          "guidance": "Inspect significant local UI changes through the available browser when the target is runnable."
+        }
+      ]
+    },
+    {
+      "id": "rule.frontend.recorded-layout",
+      "version": 1,
+      "coverage": ["coverage.frontend"],
+      "clauses": [
+        {
+          "id": "clause.frontend.follow-recorded-layout",
+          "enforcement": "mandatory",
+          "appliesWhen": {"decision": "frontend.layout", "equals": "repository-defined"},
+          "guidance": "Organize frontend feature code by the layout the repository's own rules state, and update those rules in the same change that alters the layout."
+        }
+      ]
+    }
+  ],
+  "repositoryExtensions": []
+}
+
+exit: 0
+
+$ git show 90be701:internal/baseline/assets/modules/go.json
+{
+  "schemaVersion": "setup-context-driven/module-v3",
+  "id": "go",
+  "version": 5,
+  "kind": "language-runtime",
+  "title": "Go repository guidance",
+  "dependsOn": [
+    "core"
+  ],
+  "conflictsWith": [],
+  "requiredSkills": [
+    "golang-cli",
+    "golang-concurrency",
+    "golang-context",
+    "golang-dependency-management",
+    "golang-error-handling",
+    "golang-lint",
+    "golang-safety",
+    "golang-structs-interfaces",
+    "golang-testing"
+  ],
+  "skillDispatch": [
+    {
+      "skill": "golang-cli",
+      "triggers": [
+        {
+          "id": "trigger.go.golang-cli",
+          "when": "Changing Go command structure, flags, package layout, version output, or command tests."
+        }
+      ]
+    },
+    {
+      "skill": "golang-concurrency",
+      "triggers": [
+        {
+          "id": "trigger.go.golang-concurrency",
+          "when": "Using goroutines, channels, locks, worker pools, or other concurrent Go behavior."
+        }
+      ]
+    },
+    {
+      "skill": "golang-context",
+      "triggers": [
+        {
+          "id": "trigger.go.golang-context",
+          "when": "Designing Go IO boundaries, cancellation, timeouts, deadlines, or request-scoped values."
+        }
+      ]
+    },
+    {
+      "skill": "golang-dependency-management",
+      "triggers": [
+        {
+          "id": "trigger.go.golang-dependency-management",
+          "when": "Adding, upgrading, or removing Go dependencies, auditing vulnerabilities, resolving version conflicts, or configuring automated updates."
+        }
+      ]
+    },
+    {
+      "skill": "golang-error-handling",
+      "triggers": [
+        {
+          "id": "trigger.go.golang-error-handling",
+          "when": "Creating, wrapping, matching, logging, or exposing Go errors."
+        }
+      ]
+    },
+    {
+      "skill": "golang-lint",
+      "triggers": [
+        {
+          "id": "trigger.go.golang-lint",
+          "when": "Changing Go lint configuration or adding a lint suppression."
+        }
+      ]
+    },
+    {
+      "skill": "golang-safety",
+      "triggers": [
+        {
+          "id": "trigger.go.golang-safety",
+          "when": "Writing or reviewing Go for nil safety, append aliasing, concurrent map access, numeric conversion overflow, defer in loops, or defensive copying."
+        }
+      ]
+    },
+    {
+      "skill": "golang-structs-interfaces",
+      "triggers": [
+        {
+          "id": "trigger.go.golang-structs-interfaces",
+          "when": "Designing Go types and interfaces — composition, embedding, type assertions and switches, struct field tags, or pointer versus value receivers."
+        }
+      ]
+    },
+    {
+      "skill": "golang-testing",
+      "triggers": [
+        {
+          "id": "trigger.go.golang-testing",
+          "when": "Writing or reviewing Go tests, fixtures, fuzz tests, or integration tests."
+        }
+      ]
+    }
+  ],
+  "requiredDecisions": [],
+  "rootBlocks": [
+    {
+      "id": "root.go",
+      "version": 2,
+      "template": "template.root.go",
+      "rules": [],
+      "references": [
+        {
+          "id": "reference.root.go",
+          "token": "reference.go",
+          "ownership": "setup",
+          "managedId": "guide.go"
+        }
+      ]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.go",
+      "version": 4,
+      "path": "docs/agents/go.md",
+      "template": "template.guide.go",
+      "rules": [
+        "rule.go.stdlib-first",
+        "rule.go.context-errors",
+        "rule.go.observable-tests"
+      ],
+      "references": []
+    }
+  ],
+  "repositoryExtensions": [],
+  "rules": [
+    {
+      "id": "rule.go.stdlib-first",
+      "version": 3,
+      "coverage": [
+        "coverage.go",
+        "coverage.dependencies"
+      ],
+      "clauses": [
+        {"id": "clause.go.change-module-files-through-go", "enforcement": "prohibited", "guidance": "Do not hand-edit `go.mod` or `go.sum`; change them through the `go` command."},
+        {"id": "clause.go.keep-entry-points-thin", "enforcement": "mandatory", "guidance": "Keep each Go `main` package thin: it parses input, wires dependencies, and calls behavior that lives in cohesive packages."},
+        {"id": "clause.go.record-the-reason-for-a-module", "enforcement": "mandatory", "guidance": "Prefer the Go standard library. Add a third-party module only for a named job that the standard library and the modules already required cannot do, and record that reason in an ADR or another recorded repository decision in the change that adds it."}
+      ]
+    },
+    {
+      "id": "rule.go.context-errors",
+      "version": 3,
+      "coverage": [
+        "coverage.go",
+        "coverage.backend"
+      ],
+      "clauses": [
+        {"id": "clause.go.own-every-goroutine", "enforcement": "mandatory", "guidance": "Give every goroutine an owner that waits for it and a cancellation path that stops it."},
+        {"id": "clause.go.pass-context-first", "enforcement": "mandatory", "guidance": "Pass a `context.Context` as the first parameter of blocking and IO work, and stop that work when the context is cancelled."},
+        {"id": "clause.go.wrap-errors-with-the-operation", "enforcement": "mandatory", "guidance": "Wrap a returned error with the operation that failed using `%w`, and keep `errors.Is` and `errors.As` matching wherever a caller branches on the error."}
+      ]
+    },
+    {
+      "id": "rule.go.observable-tests",
+      "version": 3,
+      "coverage": [
+        "coverage.go",
+        "coverage.verification-integrity"
+      ],
+      "clauses": [
+        {"id": "clause.go.build-every-constrained-platform", "enforcement": "mandatory", "guidance": "When a change touches a file with a build constraint, build the affected non-test packages for every operating system its constraints name, for example with `GOOS=windows go build ./...`; a build or test run on the host compiles only the host's files."},
+        {"id": "clause.go.test-observable-behavior", "enforcement": "mandatory", "guidance": "Test observable package and command behavior through public entry points: stdout, stderr, files, exit codes, cancellation, and failure paths."},
+        {"id": "clause.go.test-through-go-test", "enforcement": "mandatory", "guidance": "Run Go tests through `go test` with the standard `testing` package as the harness. An assertion or mocking library is a third-party module and needs its recorded reason."}
+      ]
+    }
+  ]
+}
+
+exit: 0
+
+$ git show 90be701:internal/baseline/assets/modules/spec-workflow.json
+{
+  "schemaVersion": "setup-context-driven/module-v3",
+  "id": "spec-workflow",
+  "version": 15,
+  "kind": "workflow",
+  "title": "Local Spec workflow",
+  "dependsOn": [
+    "context-workflow"
+  ],
+  "conflictsWith": [],
+  "requiredSkills": [],
+  "skillDispatch": [],
+  "requiredDecisions": [
+    "spec.scaffold"
+  ],
+  "rootBlocks": [
+    {
+      "id": "root.spec-workflow",
+      "version": 2,
+      "template": "template.root.spec-workflow",
+      "rules": [],
+      "references": [
+        {
+          "id": "reference.root.spec.routing",
+          "token": "reference.spec-routing",
+          "ownership": "setup",
+          "managedId": "guide.spec-routing"
+        },
+        {
+          "id": "reference.root.spec.tracker",
+          "token": "reference.issue-tracker",
+          "ownership": "setup",
+          "managedId": "guide.issue-tracker"
+        }
+      ]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.spec-routing",
+      "version": 11,
+      "path": "docs/agents/spec-routing.md",
+      "template": "template.guide.spec-routing",
+      "rules": [
+        "rule.spec.routing",
+        "rule.spec.project-constraints"
+      ],
+      "references": []
+    },
+    {
+      "id": "guide.issue-tracker",
+      "version": 4,
+      "path": "docs/agents/issue-tracker.md",
+      "template": "template.guide.issue-tracker",
+      "rules": [
+        "rule.spec.artifacts"
+      ],
+      "references": []
+    },
+    {
+      "id": "guide.spec-docs-layout",
+      "version": 8,
+      "path": "docs/agents/docs-layout.md",
+      "template": "template.guide.spec-docs-layout",
+      "rules": [
+        "rule.spec.docs-layout"
+      ],
+      "references": []
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.spec.routing",
+      "version": 7,
+      "coverage": [
+        "coverage.spec-workflow"
+      ],
+      "clauses": [
+        {
+          "id": "clause.spec.routing-01-large-initiative",
+          "enforcement": "mandatory",
+          "guidance": "Large or fuzzy product initiative: run `write-idea` → `write-prd` → `write-techspec` → `write-tasks`."
+        },
+        {
+          "id": "clause.spec.routing-02-standard-feature",
+          "enforcement": "mandatory",
+          "guidance": "Standard feature that changes product behavior: run `write-prd` → `write-techspec` → `write-tasks`; skip the TechSpec only when the feature has no architectural surface."
+        },
+        {
+          "id": "clause.spec.routing-03-refactor-bugfix",
+          "enforcement": "mandatory",
+          "guidance": "Refactor or bug fix without product-behavior change: run `write-techspec` → `write-tasks` and create the minimal `_prd.md` required by the downstream artifact contract."
+        },
+        {
+          "id": "clause.spec.routing-04-trivial-change",
+          "enforcement": "mandatory",
+          "guidance": "Trivial one-line fix, typo, or configuration tweak: implement directly without a Spec only when intent, acceptance criteria, and Verification are obvious."
+        },
+        {
+          "id": "clause.spec.routing-05-task-graph",
+          "enforcement": "mandatory",
+          "guidance": "Use `brainstorming` before creative or feature work, start with the smaller sufficient route when two routes fit, and execute implementation from the Task Graph."
+        },
+        {
+          "id": "clause.spec.verification-two-tiers",
+          "enforcement": "mandatory",
+          "guidance": "For each Task, run the selected incremental Verification named in `docs/agents/agent-instructions.md` to answer whether the current slice remains valid before handoff. CI must run the selected repository Verification from a fresh run to answer whether the assembled tree satisfies the repository contract. A missing incremental selection is a Baseline decision to answer, never a license to skip the local tier or a waiver to repeat in each Spec."
+        },
+        {
+          "id": "clause.spec.sources-01-group-by-shared-context",
+          "enforcement": "mandatory",
+          "guidance": "One Spec may adopt several Inbox Entries, Backlog Entries, and Findings whose context is similar or complementary: they change the same component or contract, share a root cause, or one completes the other. One Spec per source is neither required nor preferred, so before minting a Spec for a source, look among the open Backlog Entries and unresolved Findings for others that share its context. A grouping suggestion from `roundfix spec judge` is advisory: adopt the suggested source or state why it stays apart."
+        },
+        {
+          "id": "clause.spec.sources-02-bound-the-group",
+          "enforcement": "mandatory",
+          "guidance": "Group sources into one Spec only while the Spec fits four implementation Tasks plus its QA gate. When the grouped scope needs more, split it into Specs that each fit and give each source exactly one owning Spec; never add a source that shares no context with the Spec only to save a Spec."
+        },
+        {
+          "id": "clause.spec.name-the-finding-a-task-answers",
+          "enforcement": "mandatory",
+          "guidance": "When a Task answers a recorded finding, name that finding and its date in one of the Task's requirements."
+        },
+        {
+          "id": "clause.spec.verification-fails-before-the-change",
+          "enforcement": "mandatory",
+          "guidance": "Author each Task's Verification so every command fails on the tree before the Task's change, and run `roundfix spec check <slug> --run-verification` before a Run starts: the Daemon refuses a Task whose command already exits zero on the unchanged tree."
+        }
+      ]
+    },
+    {
+      "id": "rule.spec.artifacts",
+      "version": 4,
+      "coverage": [
+        "coverage.spec-workflow"
+      ],
+      "clauses": [
+        {
+          "id": "clause.spec.local-task-tracker-only",
+          "enforcement": "mandatory",
+          "guidance": "Use the local Spec folder, Task Graph, and Task files as the implementation issue tracker. Do not introduce external triage labels or external issue status as Task state."
+        },
+        {
+          "id": "clause.spec.status-only-in-task",
+          "enforcement": "mandatory",
+          "guidance": "Keep Task status only in the assigned Task file frontmatter. The Task Graph records topology and dependencies, not progress."
+        },
+        {
+          "id": "clause.spec.tracker-artifacts",
+          "enforcement": "mandatory",
+          "guidance": "Keep each Spec under `docs/specs/<feature-slug>/`. Dependencies live only in `_tasks.md`; status lives only in each Task file, and the local Task files are the published planning issues."
+        }
+      ]
+    },
+    {
+      "id": "rule.spec.project-constraints",
+      "version": 4,
+      "coverage": [
+        "coverage.spec-workflow"
+      ],
+      "clauses": [
+        {
+          "id": "clause.spec.project-constraints-01-active-artifacts",
+          "enforcement": "mandatory",
+          "guidance": "Before producing a Task Graph, require every active, non-archived, and not already completed Spec PRD and present TechSpec to contain complete Project Constraints: applicability with reasons for identifier strategy, authentication and HTTP, active ADR obligations, and tooling authority, each citing its operative `docs/agents/` source."
+        },
+        {
+          "id": "clause.spec.project-constraints-02-tooling-authorization",
+          "enforcement": "mandatory",
+          "guidance": "Refuse a tooling Task unless the active PRD and present TechSpec record express maintainer authorization and the exact bounded repository-relative files; Task assignment, setup approval, or generic implementation approval is not authorization. The operative record lives at `<spec-root>/<slug>/_authorization.md` and carries the approval state (`status`), maintainer decision date (`granted`), permitted actions (`action`), the closed `operations` vocabulary (`implement`, `commit`, `push`, `pull_request`, `merge`, and `release`), exact bounded repository paths (`paths`), the consuming Spec (`consuming`), and any sanctioned regeneration. An absent `operations` list grants no operation. A Spec that changes no Governed Path records `paths: []`, which grants its listed operations and bounds no path; a record without a `paths` key is refused."
+        },
+        {
+          "id": "clause.spec.project-constraints-03-bounded-execution",
+          "enforcement": "mandatory",
+          "guidance": "An authorized tooling Task may change a Governed Path, that is a protected tooling path, only when its grant bounds that path; stop before any other governed mutation, because the Task fails when its commit changes a Governed Path outside the grant. An ordinary path a Task changes without declaring it is not refused: the Daemon records it in the Task file under `## Recorded paths`, and the QA gate discloses it. A new or widened grant must land in the delivery target's ancestry before the consuming squash delivery; a separate grant commit inside that consuming pull request is insufficient."
+        },
+        {
+          "id": "clause.spec.project-constraints-04-qa-audit",
+          "enforcement": "mandatory",
+          "guidance": "Final QA verifies Project Constraint applicability, operative source paths, tooling authorization, and actual changed-file scope from Git evidence; missing authorization, untraceable scope, or out-of-scope tooling changes fails the gate."
+        },
+        {
+          "id": "clause.spec.project-constraints-05-legacy-and-ownership",
+          "enforcement": "mandatory",
+          "guidance": "Keep completed or archived legacy Specs byte-identical. Dependencies remain owned only by the Task Graph, and status remains owned only by each Task file."
+        },
+        {
+          "id": "clause.spec.project-constraints-06-outside-evidence",
+          "enforcement": "mandatory",
+          "guidance": "Rest a Spec's acceptance, in at least one named row, on evidence originating outside the Spec's own artifacts: a repository the Spec did not build, a measurement it did not design, or published literature. Record in that row where the evidence came from, so a later reader can tell it apart from a rehearsal of the Spec's own premise. When the outside source cannot be obtained during authoring, record the row as blocked with that reason and continue: decomposition never stalls and never asks a person. The QA gate then holds Pull Request preparation until the row is satisfied or carried forward on declared unmoved evidence. An outside-evidence row blocked only because the Run sandbox denied network access, recorded as `blocked (environment: network denied: <host>)`, is the exception: the report records that the source was not reached, the row never decides a qualifying `partial`, and whoever needs that proof declares it under Unreachable Acceptance."
+        }
+      ]
+    },
+    {
+      "id": "rule.spec.docs-layout",
+      "version": 8,
+      "coverage": [
+        "coverage.spec-workflow"
+      ],
+      "clauses": [
+        {
+          "id": "clause.spec.keep-artifacts-in-spec-folder",
+          "enforcement": "mandatory",
+          "guidance": "Keep `_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, Task files, `_authorization.md`, and `qa/` evidence under the Spec folder. Archive Specs under the resolved archive root (`docs/history/specs/` for the built-in root) after their non-QA Tasks are completed and their QA meets the normal archive eligibility contract, or when an explicit user request or applicable prior user authorization permits a QA Archive Override. A generic archive request alone does not silently waive QA. Perform the override only through the runtime's archive override command, such as `roundfix archive <slug> --qa-override --approval <source> --reason <text>`; that command records the approval source, date, covered Spec revision and actual QA outcome or absence, stamps `qa_override: true` and preserves the reason. Never hand-edit the override stamp or any other archive front matter, because a hand edit skips the command's refusals and provenance. Do not ask again for an already applicable approval. The override may waive the named terminal QA gate's completion/evidence prerequisite for archive, but never changes its Task status or report verdict to completed/pass. Missing, failed, incomplete, stale or malformed QA remains recorded as observed. Non-QA Task completion, self-contained references, safe destination and execution ownership remain required. An archive override is not Implement Clean, QA success, review approval, permission to publish/merge/release or a waiver of required checks. Declared QA decline and qualifying declared-only partial evidence are evaluated under their own contracts, not automatically called overrides. A runtime command without override support must be reported as unsupported rather than given an invented flag. A runtime whose archive leaves an Archive Record, such as `roundfix archive <slug>`, writes `<archive-root>/<slug>.md` and removes the Spec folder in the same change; the folder stays in Git at the record's `source_revision`, so copy every file a later reader needs to `docs/references/`, an accepted ADR, the glossary, an agent guide or the Secondbrain inbox before or at archive."
+        },
+        {
+          "id": "clause.spec.specs-are-downstream-artifacts",
+          "enforcement": "mandatory",
+          "guidance": "Specs are downstream results of the CONTEXT-driven workflow, never sources it depends on: an archived Spec may be deleted at any time, so durable knowledge a Spec produced must move upstream to its semantic owner — the project glossary, an accepted ADR, an agent guide, or `docs/references/` — before or at archive. The glossary and the agent guides must never reference a Spec."
+        },
+        {
+          "id": "clause.spec.prohibit-tests-that-read-specs",
+          "enforcement": "prohibited",
+          "guidance": "Do not make a test, fixture, or build step read a file under the Spec root or assume that a Spec is still active; Specs archive and may be deleted. A check whose subject is the Spec artifacts themselves is exempt."
+        }
+      ]
+    }
+  ],
+  "repositoryExtensions": []
+}
+
+exit: 0
+
+$ git show 90be701:internal/baseline/assets/modules/repository-extension.json
+{
+  "schemaVersion": "setup-context-driven/module-v3",
+  "id": "repository-extension",
+  "version": 1,
+  "kind": "repository-policy",
+  "title": "Repository-Specific Normative Rules",
+  "dependsOn": ["core"],
+  "conflictsWith": [],
+  "requiredSkills": [],
+  "skillDispatch": [],
+  "requiredDecisions": ["repository.extension.enabled"],
+  "rootBlocks": [
+    {
+      "id": "root.repository-extension",
+      "version": 1,
+      "template": "template.root.repository-extension",
+      "rules": [],
+      "references": [
+        {
+          "id": "reference.root.repository-extension",
+          "token": "reference.repository-extension",
+          "ownership": "repository",
+          "path": "docs/agents/specific-repository.md"
+        }
+      ]
+    }
+  ],
+  "supportingGuides": [],
+  "rules": [],
+  "repositoryExtensions": [
+    {
+      "id": "extension.repository-rules",
+      "path": "docs/agents/specific-repository.md",
+      "template": "template.extension.repository-rules",
+      "rootPointer": "root.repository-extension",
+      "decision": "repository.extension.enabled"
+    }
+  ]
+}
+
+exit: 0
+
+$ git show 90be701:internal/baseline/assets/modules/secondbrain.json
+{
+  "schemaVersion": "setup-context-driven/module-v3",
+  "id": "secondbrain",
+  "version": 10,
+  "kind": "knowledge-source",
+  "title": "Secondbrain guidance",
+  "dependsOn": [
+    "context-workflow"
+  ],
+  "conflictsWith": [],
+  "requiredSkills": [],
+  "skillDispatch": [],
+  "requiredDecisions": [
+    "secondbrain.enabled"
+  ],
+  "rootBlocks": [
+    {
+      "id": "root.secondbrain",
+      "version": 2,
+      "template": "template.root.secondbrain",
+      "rules": [],
+      "references": [
+        {
+          "id": "reference.root.secondbrain",
+          "token": "reference.secondbrain",
+          "ownership": "setup",
+          "managedId": "guide.secondbrain"
+        }
+      ]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.secondbrain",
+      "version": 10,
+      "path": "docs/agents/secondbrain.md",
+      "template": "template.guide.secondbrain",
+      "rules": [
+        "rule.secondbrain.index-first",
+        "rule.secondbrain.read-only",
+        "rule.secondbrain.secret-safety",
+        "rule.secondbrain.citations",
+        "rule.secondbrain.hermes-escalation"
+      ],
+      "references": []
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.secondbrain.index-first",
+      "version": 6,
+      "coverage": [
+        "coverage.secondbrain",
+        "coverage.research"
+      ],
+      "clauses": [
+        {
+          "id": "clause.secondbrain.01-consult-triggers",
+          "enforcement": "mandatory",
+          "guidance": "Consult both the local Secondbrain and Exa MCP before proposing solutions or recommendations, making product, design, or architecture decisions, and authoring an Idea, PRD, or TechSpec. Both sources are required; one does not replace the other."
+        },
+        {
+          "id": "clause.secondbrain.02-query-order",
+          "enforcement": "mandatory",
+          "guidance": "Read `wiki/index.md` first. Then run `qmd query \"<question>\" --all --files --min-score 0.3`. Inspect `projects/<project>/mirror/` only when the index and query point there, and open only the files required for the task; treat mirrors as references, not workspaces."
+        },
+        {
+          "id": "clause.secondbrain.03-decision-consultation",
+          "enforcement": "mandatory",
+          "guidance": "Use Secondbrain for prior decisions, related project experience, and existing research. Follow the index-first and local query workflow defined in this guide."
+        },
+        {
+          "id": "clause.secondbrain.04-external-research",
+          "enforcement": "mandatory",
+          "guidance": "Use Exa MCP to find and read relevant external sources that support or challenge the proposal. Prefer primary sources, assess their applicability, and distinguish published evidence from inference. This requirement complements the mandatory authoritative documentation workflow for external APIs and libraries."
+        },
+        {
+          "id": "clause.secondbrain.05-research-limitations",
+          "enforcement": "mandatory",
+          "guidance": "If either source is unavailable or yields no relevant result, record the attempted consultation and its limitation explicitly, then continue with the available evidence. Do not claim validation from an unavailable, unread, or irrelevant source. Another research tool does not satisfy the Exa MCP requirement."
+        }
+      ]
+    },
+    {
+      "id": "rule.secondbrain.read-only",
+      "version": 10,
+      "coverage": [
+        "coverage.secondbrain",
+        "coverage.universal-safety"
+      ],
+      "clauses": [
+        {
+          "id": "clause.secondbrain.inbox-write-permission",
+          "enforcement": "mandatory",
+          "guidance": "`inbox/**` is the only writable Secondbrain namespace; every other Secondbrain path stays read-only. This clause bounds where a session may write, never whether it must — the capture obligation is stated separately."
+        },
+        {
+          "id": "clause.secondbrain.inbox-entry-contract",
+          "enforcement": "mandatory",
+          "guidance": "An Inbox Entry uses positional status: pending entries live at the destination namespace root under `inbox/<destination>/`, and resolved entries live under `inbox/<destination>/_triaged/`. Use this complete copyable contract:\n\n```yaml\n---\norigin: <project-that-observed>\ndestination: <project-that-triages>\ntype-hint: <finding-or-intent-hint>\ncreated_at: YYYY-MM-DD\ncapture: manual # manual | auto\n# added at triage time; exactly one:\nresolved_to: <repository-relative-artifact-path>\n# or discarded_reason: <reason>\n---\n```"
+        },
+        {
+          "id": "clause.secondbrain.inbox-triage-order",
+          "enforcement": "mandatory",
+          "guidance": "Triage works pending entries `oldest first`, ordered by `created_at`; take the earliest entry before newer arrivals."
+        },
+        {
+          "id": "clause.secondbrain.inbox-empty-state",
+          "enforcement": "mandatory",
+          "guidance": "Treat an `empty inbox` as rest and continue the session's current work; do not invent a missing Triage step."
+        },
+        {
+          "id": "clause.secondbrain.inbox-auto-capture",
+          "enforcement": "mandatory",
+          "guidance": "The maintainer owns the session-end hook outside this repository; this clause contracts only what that hook writes. Every `capture: auto` draft is always pending triage and never self-triaged."
+        },
+        {
+          "id": "clause.secondbrain.research-capture",
+          "enforcement": "mandatory",
+          "guidance": "Capture substantive external research and relevant findings or articles from Exa MCP as sourced digests in pending research Inbox Entries in the brain's own namespace, for later ingestion and reuse as reference material. Capture relevant articles on subjects important or foundational to the projects even when found outside a dedicated research session. Include each source's title and URL, a concise summary of the content read, the projects or topics it informs, and why it matters; distinguish published evidence from inference. Run the advisory qmd duplicate check first through an authorized access path, verify that returned paths exist, and review substantive overlap; a score alone never decides. A strong verified match routes the digest to extend existing knowledge instead of duplicating it; otherwise create a new pending research Inbox Entry. Follow the Inbox Entry contract. Capture is pending ingestion, which remains the brain's own contract."
+        },
+        {
+          "id": "clause.secondbrain.capture-trigger",
+          "enforcement": "mandatory",
+          "guidance": "Observing a defect, an improvement worth making, or a feature idea obliges capture: create one pending Inbox Entry under `inbox/<destination>/` for the project that owns the fix, which is frequently not the project the session is running in. Read the destination's existing pending and triaged entries first and extend a strong verified match instead of duplicating it. Capture is an obligation, not a permission; an observation left only in a session transcript is lost when that session ends."
+        },
+        {
+          "id": "clause.secondbrain.capture-self-contained",
+          "enforcement": "mandatory",
+          "guidance": "Write each Inbox Entry so the triaging session can act on it without the author's context: the observation, its evidence with commands and paths, and the reasoning that makes it actionable. The publication owner is an installed scheduler that commits and pushes the checkout, or the capturing session when no scheduler is installed. Under a scheduler, the session writes the entry and does not commit. Without one, the session commits and pushes only its own entry's path, never stages another session's change, and never installs a second schedule. Evidence has three levels: `captured locally`, `committed locally`, and `confirmed on the remote`; a session reports only the level it observed, and a scheduler's presence or last exit status is never confirmation. Never commit, edit, or move an entry another session created, even in the same namespace on the same day; two projects reporting one class of defect is signal for Triage, not a merge conflict to resolve."
+        },
+        {
+          "id": "clause.secondbrain.prohibit-writes",
+          "enforcement": "prohibited",
+          "guidance": "Do not create, edit, rename, move, or delete any Secondbrain file outside `inbox/**`. Do not edit `raw/` or `projects/*/mirror/`, and never copy code or generated artifacts from a mirror without a local source check."
+        }
+      ]
+    },
+    {
+      "id": "rule.secondbrain.secret-safety",
+      "version": 4,
+      "coverage": [
+        "coverage.secondbrain",
+        "coverage.security-configuration"
+      ],
+      "clauses": [
+        {
+          "id": "clause.secondbrain.prohibit-secret-access",
+          "enforcement": "prohibited",
+          "guidance": "Never read, copy, or expose `.env` files, tokens, credentials, cookies, private keys, API keys, session material, or unsafe personal and client data. Stop at likely secret-bearing sources and request a safe source."
+        },
+        {
+          "id": "clause.secondbrain.prohibit-external-local-discovery",
+          "enforcement": "prohibited",
+          "guidance": "Do not use Exa or another external research tool to discover or infer local repository code or behavior. Use local code-search tools for that purpose. Never include credentials, private client records, or proprietary source code in external search queries."
+        }
+      ]
+    },
+    {
+      "id": "rule.secondbrain.citations",
+      "version": 4,
+      "coverage": [
+        "coverage.secondbrain",
+        "coverage.research"
+      ],
+      "clauses": [
+        {
+          "id": "clause.secondbrain.record-decision-sources",
+          "enforcement": "mandatory",
+          "guidance": "Record the Secondbrain file paths and external source URLs used, and explain how they informed, changed, or challenged the decision in the relevant technical artifact. If no artifact is being authored, include this record in the response."
+        },
+        {
+          "id": "clause.secondbrain.cite-used-files",
+          "enforcement": "mandatory",
+          "guidance": "Cite every Secondbrain file used in the final response or handoff by path. Do not claim Secondbrain context when no Secondbrain file was read."
+        }
+      ]
+    },
+    {
+      "id": "rule.secondbrain.hermes-escalation",
+      "version": 4,
+      "coverage": [
+        "coverage.secondbrain"
+      ],
+      "clauses": [
+        {
+          "id": "clause.secondbrain.escalate-durable-updates",
+          "enforcement": "mandatory",
+          "guidance": "When Secondbrain knowledge must be added or corrected, ask Hermes to ingest or update it instead of writing from this repository."
+        },
+        {
+          "id": "clause.secondbrain.baseline-owned-guidance",
+          "enforcement": "mandatory",
+          "guidance": "Guidance delivered inside `setup-context-driven` markers is owned by the Baseline, not by the repository holding it. Proposing a change to it is an Inbox Entry addressed to the Baseline's owner; editing it locally produces a change the next Baseline update silently overwrites. Verify ownership by looking for the markers before editing any agent guide, because the same file usually carries repository-authored prose outside them that is yours to change."
+        }
+      ]
+    }
+  ],
+  "repositoryExtensions": []
+}
+
+exit: 0
+
+$ git show 90be701:internal/baseline/assets/modules/context-workflow.json
+{
+  "schemaVersion": "setup-context-driven/module-v3",
+  "id": "context-workflow",
+  "version": 23,
+  "kind": "workflow",
+  "title": "CONTEXT-driven workflow",
+  "dependsOn": [
+    "core"
+  ],
+  "conflictsWith": [],
+  "requiredSkills": [
+    "archive-spec",
+    "brainstorming",
+    "business-analyst",
+    "domain-modeling",
+    "grill-with-docs",
+    "grilling",
+    "implement-spec",
+    "implement-task",
+    "knowledge-workspace",
+    "qa-gate",
+    "setup-context-driven",
+    "write-idea",
+    "write-prd",
+    "write-tasks",
+    "write-techspec"
+  ],
+  "skillDispatch": [
+    {
+      "skill": "archive-spec",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.archive-spec",
+          "when": "Archiving a Spec under normal QA eligibility or an explicitly user-authorized QA Archive Override, with non-QA Tasks completed."
+        }
+      ]
+    },
+    {
+      "skill": "brainstorming",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.brainstorming",
+          "when": "Starting creative feature or behavior design before implementation."
+        }
+      ]
+    },
+    {
+      "skill": "business-analyst",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.business-analyst",
+          "when": "Evaluating product viability, options, KPIs, or business trade-offs."
+        }
+      ]
+    },
+    {
+      "skill": "domain-modeling",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.domain-modeling",
+          "when": "Defining or changing domain vocabulary, ownership, or bounded-context relationships."
+        }
+      ]
+    },
+    {
+      "skill": "grill-with-docs",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.grill-with-docs",
+          "when": "Stress-testing a plan or decision against repository documents."
+        }
+      ]
+    },
+    {
+      "skill": "grilling",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.grilling",
+          "when": "Stress-testing an idea or plan through direct questions."
+        }
+      ]
+    },
+    {
+      "skill": "implement-spec",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.implement-spec",
+          "when": "Executing every pending Task in a Spec Task Graph."
+        },
+        {
+          "id": "trigger.autonomous-work.implement-spec",
+          "when": "Delegating a complete autonomous Spec Task Graph."
+        }
+      ]
+    },
+    {
+      "skill": "implement-task",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.implement-task",
+          "when": "Executing exactly one assigned Spec Task."
+        },
+        {
+          "id": "trigger.autonomous-work.implement-task",
+          "when": "Delegating one autonomous Task to an ACP Runtime."
+        }
+      ]
+    },
+    {
+      "skill": "knowledge-workspace",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.knowledge-workspace",
+          "when": "Consulting the configured knowledge workspace for relevant prior context."
+        },
+        {
+          "id": "trigger.context-workflow.knowledge-workspace-secondbrain-authoring",
+          "when": "Consulting the Secondbrain before authoring an Idea, PRD, or TechSpec."
+        }
+      ]
+    },
+    {
+      "skill": "qa-gate",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.qa-gate",
+          "when": "Running final Spec QA after implementation Tasks complete."
+        }
+      ]
+    },
+    {
+      "skill": "setup-context-driven",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.setup-context-driven",
+          "when": "Auditing or applying the Context-Driven Baseline for first adoption, or refreshing an adopted repository with `roundfix baseline update`."
+        }
+      ]
+    },
+    {
+      "skill": "write-idea",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.write-idea",
+          "when": "Expanding a product-level idea into a researched opportunity artifact."
+        }
+      ]
+    },
+    {
+      "skill": "write-prd",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.write-prd",
+          "when": "Defining product requirements and user outcomes."
+        }
+      ]
+    },
+    {
+      "skill": "write-tasks",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.write-tasks",
+          "when": "Decomposing an approved Spec into a dependency-ordered Task Graph."
+        }
+      ]
+    },
+    {
+      "skill": "write-techspec",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.write-techspec",
+          "when": "Settling implementation architecture and technical contracts."
+        }
+      ]
+    }
+  ],
+  "requiredDecisions": [
+    "domain.layout"
+  ],
+  "rootBlocks": [
+    {
+      "id": "root.context-workflow",
+      "version": 2,
+      "template": "template.root.context-workflow",
+      "rules": [],
+      "references": [
+        {
+          "id": "reference.root.context.domain",
+          "token": "reference.domain",
+          "ownership": "setup",
+          "managedId": "guide.domain"
+        },
+        {
+          "id": "reference.root.context.docs-layout",
+          "token": "reference.docs-layout",
+          "ownership": "setup",
+          "managedId": "guide.docs-layout"
+        }
+      ]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.docs-layout",
+      "version": 15,
+      "path": "docs/agents/docs-layout.md",
+      "template": "template.guide.docs-layout",
+      "rules": [
+        "rule.context.docs-layout"
+      ],
+      "references": []
+    },
+    {
+      "id": "guide.domain",
+      "version": 7,
+      "path": "docs/agents/domain.md",
+      "template": "template.guide.domain",
+      "rules": [
+        "rule.context.domain-docs"
+      ],
+      "references": []
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.context.domain-docs",
+      "version": 6,
+      "coverage": [
+        "coverage.context-workflow",
+        "coverage.research"
+      ],
+      "clauses": [
+        {
+          "id": "clause.context.read-domain-contract",
+          "enforcement": "mandatory",
+          "guidance": "The repository's selected domain context and its accepted ADRs are the base of the CONTEXT-driven workflow. Read both before naming domain concepts or changing behavior, and flag conflicts instead of silently overriding repository decisions."
+        },
+        {
+          "id": "clause.domain.canonical-language",
+          "enforcement": "mandatory",
+          "guidance": "Use the repository's canonical domain terms in code names, tests, user-facing copy, Specs, and delivery notes. Call out a missing term instead of inventing a competing synonym."
+        },
+        {
+          "id": "clause.domain.layout-decision",
+          "enforcement": "mandatory",
+          "guidance": "Follow the repository's declared single-context or multi-context layout. Setup can require that decision but cannot infer bounded contexts from directory names."
+        },
+        {
+          "id": "clause.domain.glossary-currency",
+          "enforcement": "mandatory",
+          "guidance": "A Spec adds each domain term it introduces to the domain context, and revises each term it changes, through `domain-modeling` in one of its own Tasks, whose Verification names the term. It lists those terms in a `## Glossary` section of its PRD or TechSpec, with any bolded phrase it declares not a domain term. `roundfix spec check` reports a bolded term the domain context lacks and the section does not cover, and the QA gate and `roundfix archive` refuse a Spec whose declared term is still missing. When `domain-modeling` names its glossary file differently, it writes to the selected domain context. Work outside a Spec checks at its close whether it introduced, changed, or retired a term and updates the domain context when it did. Neither the check nor the update waits for human interaction; reach for `grilling` only when a term is ambiguous enough to need sharpening before it is written down."
+        }
+      ]
+    },
+    {
+      "id": "rule.context.docs-layout",
+      "version": 16,
+      "coverage": [
+        "coverage.context-workflow"
+      ],
+      "clauses": [
+        {
+          "id": "clause.context.adr-01-template",
+          "enforcement": "mandatory",
+          "guidance": "When creating a new ADR, prepend this repository-owned lifecycle overlay to the body contract in `.agents/skills/domain-modeling/ADR-FORMAT.md`:\n\n```markdown\n---\nstatus: proposed # proposed | accepted | rejected | deprecated | superseded\ncreated_at: YYYY-MM-DDTHH:MM:SSZ\nupdated_at: YYYY-MM-DDTHH:MM:SSZ\ndeprecated_at: null # null or YYYY-MM-DDTHH:MM:SSZ\nsuperseded_by: null # null or ADR-NNNN\n---\n\n# <Short title of the decision>\n\n<One to three sentences describing the context, decision, and reason.>\n```"
+        },
+        {
+          "id": "clause.context.adr-02-active-status",
+          "enforcement": "mandatory",
+          "guidance": "For an ADR that carries lifecycle frontmatter, only `accepted` is active. Treat `proposed`, `rejected`, `deprecated`, and `superseded` ADRs as inactive."
+        },
+        {
+          "id": "clause.context.adr-03-legacy-compatibility",
+          "enforcement": "mandatory",
+          "guidance": "Treat a legacy ADR without lifecycle frontmatter as active unless its body explicitly marks it inactive. Do not rewrite existing ADRs solely to adopt lifecycle metadata."
+        },
+        {
+          "id": "clause.context.docs-one-job-per-directory",
+          "enforcement": "mandatory",
+          "guidance": "Give each documentation directory one job: `docs/_inbox/` for raw notes, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts, `docs/backlog/` for dated, typed intent not yet committed to a Spec, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/references/` for external pointers and durable project reference documents, and `docs/user-guide/` for human documentation. Preserve repository-authored extensions outside setup markers. Each of these directories holds live work only: retired content moves under the single history root `docs/history/`, family by family (`docs/history/adr/`, `docs/history/backlog/`, `docs/history/findings/`, `docs/history/handoffs/`, `docs/history/reviews/`, `docs/history/specs/`). Handoffs archive only on the user's explicit confirmation, and when confirmed, every handoff archives together — the active `docs/handoffs/` directory is the capture door, never a shelf. Disposition is recorded as a dated disposition addendum for Findings and Backlog Entries, lifecycle front matter for ADRs, the archive stamp for Specs, and a byte-identical move for Review Artifacts and handoffs. Rejected, deprecated and superseded ADRs retire to `docs/history/adr/`, while a `proposed` ADR stays in `docs/adr/`. A finished orphan Review Artifact retires to `docs/history/reviews/`; a new Round never writes into history. Findings, Backlog Entries and Rollups with a terminal lifecycle status must leave their active directory for the matching history family; preserve valid provenance and update dependent references as part of that transition. Spec-owned adopted references retain their Spec ownership and archive with the Spec; this rule clears active family directories without dismantling self-contained Specs. Spec-contained authorization records live at `<spec-root>/<slug>/_authorization.md`. The preserved legacy location `docs/workflow/authorizations/` remains readable for historical grants; its old paths are historical references and are not required to exist as worktree files. When the runtime's archive leaves an Archive Record, the record names each Spec-owned adopted reference, and the reference leaves the tree with the Spec folder. When the runtime offers a history sanitize, such as `roundfix history sanitize --apply --batch <n>`, it replaces each Spec folder an earlier archive left under the history root with its Archive Record, reduces each retired Finding and Backlog Entry to its front matter, title, first paragraph and the revision that holds its full text, and removes retired Review Artifacts and handoffs, one reviewed batch at a time after a tag marks the full history; retired ADRs stay whole."
+        },
+        {
+          "id": "clause.context.docs-upstream-flow",
+          "enforcement": "mandatory",
+          "guidance": "Durable knowledge flows upstream only: the project glossary (`CONTEXT.md`) and the agent guides reference accepted ADRs and never reference `docs/specs/` or `docs/findings/` content. Findings are dated reports that become Specs, not reference material; a document meant as durable project reference belongs in `docs/references/`."
+        },
+        {
+          "id": "clause.context.backlog-01-operational-contract",
+          "enforcement": "mandatory",
+          "guidance": "Name backlog entries `YYYY-MM-DD-<kebab-slug>.md`. Use this complete copyable Backlog Operational Contract:\n\n```markdown\n---\ntype: feat # feat | fix | perf | refactor\nstatus: open # open | promoted | declined | deferred | done | deprecated | superseded | closed | cancelled\ncreated: YYYY-MM-DD\nspec: null # Spec slug when status: promoted\nreason: null # required for terminal closure without a consuming Spec\n---\n```\n\nFor `type: feat`, use:\n\n```markdown\n# <Title — the intent in one line>\n\n## Opportunity\n\n<What could exist and for whom.>\n\n## Value\n\n<Why it would matter; the hypothesis.>\n\n## Shape\n\n<The rough form of a solution, explicitly non-binding.>\n```\n\nFor `type: fix`, use:\n\n```markdown\n# <Title — the defect in one line>\n\n## Symptom\n\n<What misbehaves, as a user or operator sees it.>\n\n## Where\n\n<The surface, command, or package, as known.>\n\n## Expected\n\n<The behavior that should replace it.>\n\n## Evidence\n\n<A finding link when one exists; `none yet` is honest.>\n```\n\nFor `type: perf`, use:\n\n```markdown\n# <Title — the cost in one line>\n\n## Slow\n\n<What is slow, for whom, and in which operation.>\n\n## Measured\n\n<The number that says so and how it was measured.>\n\n## Target\n\n<The number that would settle it.>\n```\n\nFor `type: refactor`, use:\n\n```markdown\n# <Title — the tangle in one line>\n\n## Tangled\n\n<What resists change, and where it is duplicated or coupled.>\n\n## Cost\n\n<What it makes slow, risky, or wrong to touch.>\n\n## Shape\n\n<The structure that would replace it, explicitly non-binding.>\n```\n\nKeep `open` entries in `docs/backlog/`. When a Spec adopts an entry, set `status: promoted` and `spec` to that Spec's slug, then move the entry to `docs/specs/<slug>/references/`; git history remains the discovery trail. Set `status: declined` or `status: deferred` only with a non-null `reason`. The current type set is open: a new type must be a Conventional Commits type that expresses intent. Adding a type is a contract change that requires a corpus re-record, never an informal addition. Use `refactor` as the canonical token, never an abbreviation.\n\n`docs/backlog/` holds unresolved `open` intent only. A `promoted` entry is adopted source material and moves to its consuming Spec's `references/` under the adoption contract; it is not a terminal implementation verdict. Every terminal Backlog Entry (`declined`, `deferred`, `done`, `deprecated`, `superseded`, `closed`, or `cancelled`) moves to `docs/history/backlog/` in the same operation that records its terminal status. Preserve its original intent, the true disposition, any consuming Spec and the reason for closure. No absorption license is required for a Backlog Entry. An unknown status is a declaration error, never an inferred terminal disposition."
+        },
+        {
+          "id": "clause.context.backlog-02-finding-boundary",
+          "enforcement": "mandatory",
+          "guidance": "Keep evidence and intent distinct in both directions: a finding records what happened and is never a commitment; it is evidence-backed, immutable history. A backlog entry records what to do next and is never evidence. A finding may spawn a backlog entry; a backlog entry needs no finding. A `feat` entry is upstream raw material that the spec pipeline may consume, never the `write-idea` artifact itself."
+        },
+        {
+          "id": "clause.context.findings-01-frontmatter",
+          "enforcement": "mandatory",
+          "guidance": "Use this complete copyable Findings Operational Contract:\n\n```markdown\n---\nstatus: pending # pending | partial | deferred | done | deprecated | superseded | closed | cancelled\ncreated_at: YYYY-MM-DD\nupdated_at: YYYY-MM-DD\n---\n\n# <Area> — <short title> (YYYY-MM-DD)\n\n<Two to four sentences describing the session or investigation, the attempted outcome, and links to adjacent evidence.>\n\n## 1. <Finding title — symptom, not hypothesis>\n\n- Symptom / evidence: <observed behavior, command output, identifiers, and paths needed to reproduce>\n- Root cause: <proven cause, or `unknown` with what was ruled out>\n- Action / suggestion: <fix, mitigation, or route to a Spec, direct change, or upstream report>\n\n## 2. <Next finding>\n\n## What worked — keep\n\n<Optional evidence about behavior worth preserving.>\n\n## Addendum — YYYY-MM-DD — <short title>\n\n<Append new evidence, root-cause proof, status context, or routing links without rewriting the original observation.>\n```"
+        },
+        {
+          "id": "clause.context.findings-08-rollup",
+          "enforcement": "mandatory",
+          "guidance": "A Rollup is a Finding of `kind: rollup` that consolidates related Findings and shares their lifecycle contract. Only a Rollup with unresolved work belongs under `docs/findings/`; a terminal Rollup belongs under `docs/history/findings/`. It declares a non-empty `members:` list of Finding basenames. Every member must resolve under `docs/findings/` or `docs/history/findings/`. Use this extension:\n\n```yaml\nkind: rollup\nmembers:\n  - YYYY-MM-DD-<finding-slug>.md\n```"
+        },
+        {
+          "id": "clause.context.findings-09-archive",
+          "enforcement": "mandatory",
+          "guidance": "The active `docs/findings/` directory holds unresolved Findings and unresolved Rollups only. Every terminal Finding or Rollup still in an active family directory (`done`, `deferred`, `deprecated`, `superseded`, `closed`, or `cancelled`) moves to `docs/history/findings/` in the same operation that records its terminal status; do not wait for the consuming Spec's implementation, QA, merge, or release. Preserve the original observation and record the true disposition and its reason in a dated addendum. An unknown status is a declaration error, never an inferred terminal disposition. A Spec-owned adopted reference retains its Spec ownership and travels with that Spec at archive; do not extract it from `references/` merely because its preserved source status is terminal. When absorption actually occurred, the archived Finding or Rollup retains a valid `absorbed_by:` pointer to the active or archived Spec that absorbs its content, or to an unresolved active Rollup:\n\n```yaml\nabsorbed_by: <active-rollup-basename-or-active-or-archived-spec-slug>\n```\n\nWhen any terminal Finding has no consuming Spec or Rollup, record a non-empty `closure_reason` and `closure_evidence` source locator instead of inventing an absorber. Preserve its original observation and dated disposition; absence of a Spec never prevents a legitimate terminal record from entering history. An invalid existing `absorbed_by` must be repaired, not hidden by these closure fields.\n\nBefore retiring a Rollup, transfer each member's absorption pointer to its true remaining owner and record the retiring Rollup's own absorption or evidenced terminal closure. Preserve the prior routing in a dated addendum and validate all member and absorption references before completing the move. Referenced history is a migration obligation, not an exemption that keeps a terminal Rollup active indefinitely. Do not invent an owner or rewrite original evidence merely to satisfy the archive check."
+        },
+        {
+          "id": "clause.context.findings-10-live-work-health",
+          "enforcement": "mandatory",
+          "guidance": "Read a findings directory holding only live work as `health`, not loss: Rollups and `docs/history/findings/` hold what was learned. Do not restore absorbed Findings merely to repopulate the active directory."
+        },
+        {
+          "id": "clause.context.findings-11-rollup-closure",
+          "enforcement": "mandatory",
+          "guidance": "When a Rollup has no unresolved work of its own because its residuals were absorbed by Specs or received an evidenced terminal disposition, record its terminal status, migrate its member links and archive it under `docs/history/findings/`. A linked implementation Spec may still be pending: closure of the routing record does not assert delivery of that Spec. Do not keep a terminal Rollup under `docs/findings/` solely because archived members previously named it."
+        },
+        {
+          "id": "clause.context.findings-02-pending",
+          "enforcement": "mandatory",
+          "guidance": "Use `pending` when the finding is new and has no implementation Spec."
+        },
+        {
+          "id": "clause.context.findings-03-partial",
+          "enforcement": "mandatory",
+          "guidance": "Use `partial` when a linked Spec covers only the selected implementation scope. Record the reason the remaining observations are unnecessary and link the covering Spec."
+        },
+        {
+          "id": "clause.context.findings-04-deferred",
+          "enforcement": "mandatory",
+          "guidance": "Use `deferred` only when the finding will not be implemented. Record the reason for deferral."
+        },
+        {
+          "id": "clause.context.findings-05-done",
+          "enforcement": "mandatory",
+          "guidance": "Set `status: done` as soon as the Spec is created and linked; do not wait for its Tasks, QA, archive, or release. Complete source adoption or move the terminal Finding to `docs/history/findings/` in that same lifecycle operation, preserving its valid absorption pointer. `done` records routing completion, not verified implementation."
+        },
+        {
+          "id": "clause.context.findings-06-append-evidence",
+          "enforcement": "mandatory",
+          "guidance": "Treat findings as immutable history: append evidence and routing links as dated addenda instead of rewriting the original observations."
+        },
+        {
+          "id": "clause.context.findings-07-update-timestamp",
+          "enforcement": "mandatory",
+          "guidance": "Update `updated_at` whenever status changes or an evidence addendum is appended; keep `created_at` as the document creation date."
+        },
+        {
+          "id": "clause.context.inbox-01-triage",
+          "enforcement": "mandatory",
+          "guidance": "Triage resolves one pending Inbox Entry into exactly one Finding, one Backlog Entry, or one recorded discard. Preserve the boundary between evidence and intent: evidence never becomes intent without a human choice. A minted Finding or Backlog Entry must cite the Inbox Entry's provenance."
+        },
+        {
+          "id": "clause.context.inbox-02-fleet-flow",
+          "enforcement": "mandatory",
+          "guidance": "When a Finding's lifecycle closes, mint each typed Backlog Entry that its recorded actions call for, while preserving the boundary between evidence and intent. Where a fleet observation is captured before it reaches this repository is the Secondbrain guidance's concern, not this one's."
+        },
+        {
+          "id": "clause.context.inbox-03-extend-before-minting",
+          "enforcement": "mandatory",
+          "guidance": "Before minting a Finding or Backlog Entry, including in Triage, look for an existing one that is not yet implemented and that the new observation or intent fits: an `open` Backlog Entry in `docs/backlog/` or an unresolved Finding in `docs/findings/`. Revise a fitting Backlog Entry in place under its existing name; extend a fitting Finding with a dated addendum, because a Finding is immutable history. Mint a new file only when none fits. A Triage that extends an existing entry resolves its Inbox Entry into that entry, which cites the Inbox Entry's provenance."
+        }
+      ]
+    }
+  ],
+  "repositoryExtensions": []
+}
+
+exit: 0
+
+$ git show 90be701:internal/baseline/assets/modules/bun.json
+{
+  "schemaVersion": "setup-context-driven/module-v3",
+  "id": "bun",
+  "version": 5,
+  "kind": "language-runtime",
+  "title": "Bun runtime guidance",
+  "dependsOn": [
+    "typescript"
+  ],
+  "conflictsWith": [],
+  "requiredSkills": [
+    "bun"
+  ],
+  "skillDispatch": [
+    {
+      "skill": "bun",
+      "triggers": [
+        {
+          "id": "trigger.bun.bun",
+          "when": "Changing Bun runtime, package, script, workspace, or test behavior."
+        }
+      ]
+    }
+  ],
+  "requiredDecisions": [],
+  "rootBlocks": [
+    {
+      "id": "root.bun",
+      "version": 2,
+      "template": "template.root.bun",
+      "rules": [],
+      "references": []
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.bun",
+      "version": 4,
+      "path": "docs/agents/typescript-bun.md",
+      "template": "template.guide.bun",
+      "rules": [
+        "rule.bun.package-manager"
+      ],
+      "references": []
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.bun.package-manager",
+      "version": 4,
+      "coverage": [
+        "coverage.bun",
+        "coverage.dependencies"
+      ],
+      "clauses": [
+        {
+          "id": "clause.bun.use-bun-owned-commands",
+          "enforcement": "mandatory",
+          "guidance": "Inside the Bun workspace, use Bun-owned commands for dependency installation, scripts, and lockfile updates, and run tests through the package's `test` script (`bun run test`), never through a bare runner such as `bun test`."
+        },
+        {
+          "id": "clause.bun.verify-dependency-before-add",
+          "enforcement": "mandatory",
+          "guidance": "Verify that a dependency exists and inspect its current version before adding it."
+        },
+        {
+          "id": "clause.bun.add-from-owning-workspace",
+          "enforcement": "mandatory",
+          "guidance": "Run `bun add` from the workspace package that owns the dependency."
+        },
+        {
+          "id": "clause.bun.prohibit-other-package-managers",
+          "enforcement": "prohibited",
+          "guidance": "Inside the Bun workspace, do not substitute another JavaScript package manager or runner (npm, pnpm, yarn, npx) or hand-edit the lockfile. A toolchain for another language in the same repository keeps its own package manager."
+        }
+      ]
+    }
+  ],
+  "repositoryExtensions": []
+}
+
+exit: 0
+
+$ git show 90be701:internal/baseline/assets/modules/monorepo.json
+{
+  "schemaVersion": "setup-context-driven/module-v2", "id": "monorepo", "version": 3, "kind": "repository-layout", "title": "Monorepo context boundaries",
+  "dependsOn": ["context-workflow"], "conflictsWith": [], "requiredSkills": [
+    "turborepo"
+  ],
+  "skillDispatch": [
+    {
+      "skill": "turborepo",
+      "triggers": [
+        {
+          "id": "trigger.monorepo.turborepo",
+          "when": "Changing Turborepo tasks, caching, package boundaries, or workspace orchestration."
+        }
+      ]
+    }
+  ],
+  "requiredDecisions": [],
+  "rootBlocks": [{"id": "root.monorepo", "version": 2, "template": "template.root.monorepo", "rules": [], "references": [
+    {"id": "reference.root.monorepo", "token": "reference.monorepo", "ownership": "setup", "managedId": "guide.monorepo"}
+  ]}],
+  "supportingGuides": [{"id": "guide.monorepo", "version": 3, "path": "docs/agents/monorepo.md", "template": "template.guide.monorepo", "rules": ["rule.monorepo.context-boundaries"], "references": []}],
+  "rules": [{"id": "rule.monorepo.context-boundaries", "version": 3, "coverage": ["coverage.monorepo", "coverage.context-workflow"], "clauses": [
+    {"id": "rule.monorepo.context-boundaries", "enforcement": "mandatory", "guidance": "Identify the owning package and bounded context before editing. Read its context and local instructions, keep changes inside the Task slice, and require an explicit owning contract plus boundary Verification for cross-package changes."}
+  ]}]
+}
+
+exit: 0
+
+$ git show 90be701:internal/baseline/assets/modules/core.json
+{
+  "schemaVersion": "setup-context-driven/module-v3",
+  "id": "core",
+  "version": 18,
+  "kind": "core",
+  "title": "Universal agent baseline",
+  "dependsOn": [],
+  "conflictsWith": [],
+  "requiredSkills": [
+    "coding-guidelines",
+    "context7-cli",
+    "conventional-commits",
+    "crafting-effective-readmes",
+    "evidence-gate",
+    "exa-web-search",
+    "github-pr-workflow",
+    "handoff",
+    "no-workarounds",
+    "systematic-debugging",
+    "tech-writer",
+    "testing-boss",
+    "typesafe-ai"
+  ],
+  "skillDispatch": [
+    {
+      "skill": "coding-guidelines",
+      "triggers": [
+        {
+          "id": "trigger.core.coding-guidelines",
+          "when": "Writing, modifying, refactoring, or reviewing implementation code."
+        }
+      ]
+    },
+    {
+      "skill": "context7-cli",
+      "triggers": [
+        {
+          "id": "trigger.core.context7-cli",
+          "when": "Consulting authoritative current documentation for a library, framework, runtime, or toolchain."
+        }
+      ]
+    },
+    {
+      "skill": "conventional-commits",
+      "triggers": [
+        {
+          "id": "trigger.core.conventional-commits",
+          "when": "Staging changes, writing commit messages, or preparing pull request titles."
+        }
+      ]
+    },
+    {
+      "skill": "crafting-effective-readmes",
+      "triggers": [
+        {
+          "id": "trigger.core.crafting-effective-readmes",
+          "when": "Writing or revising the repository README."
+        }
+      ]
+    },
+    {
+      "skill": "evidence-gate",
+      "triggers": [
+        {
+          "id": "trigger.core.evidence-gate",
+          "when": "Making any completion, readiness, or handoff claim."
+        }
+      ]
+    },
+    {
+      "skill": "exa-web-search",
+      "triggers": [
+        {
+          "id": "trigger.core.exa-web-search",
+          "when": "Searching the web broadly when local sources and current documentation do not answer the question."
+        }
+      ]
+    },
+    {
+      "skill": "github-pr-workflow",
+      "triggers": [
+        {
+          "id": "trigger.core.github-pr-workflow",
+          "when": "Preparing, opening, updating, or handing off a pull request."
+        }
+      ]
+    },
+    {
+      "skill": "handoff",
+      "triggers": [
+        {
+          "id": "trigger.core.handoff",
+          "when": "Recording resumable session state for another Agent or maintainer."
+        }
+      ]
+    },
+    {
+      "skill": "no-workarounds",
+      "triggers": [
+        {
+          "id": "trigger.core.no-workarounds",
+          "when": "Fixing defects, regressions, or verification failures at their root cause."
+        }
+      ]
+    },
+    {
+      "skill": "systematic-debugging",
+      "triggers": [
+        {
+          "id": "trigger.core.systematic-debugging",
+          "when": "Diagnosing a bug, failing check, or unexpected behavior before proposing a fix."
+        }
+      ]
+    },
+    {
+      "skill": "tech-writer",
+      "triggers": [
+        {
+          "id": "trigger.core.tech-writer",
+          "when": "Writing or revising technical documentation, Specs, findings, or delivery notes."
+        }
+      ]
+    },
+    {
+      "skill": "testing-boss",
+      "triggers": [
+        {
+          "id": "trigger.core.testing-boss",
+          "when": "Writing, changing, or reviewing tests and fixtures."
+        }
+      ]
+    },
+    {
+      "skill": "typesafe-ai",
+      "triggers": [
+        {
+          "id": "trigger.core.typesafe-ai",
+          "when": "Adding programmable semantic judgment (routing, ranking, extraction, verification) or touching TypeSafe/Jev."
+        }
+      ]
+    }
+  ],
+  "requiredDecisions": [
+    "language.generated",
+    "verification.gate",
+    "verification.incremental"
+  ],
+  "instructionHierarchy": {
+    "narrowerPolicy": "strengthen-only",
+    "levels": [
+      {
+        "id": "universal", "title": "Universal instructions",
+        "rootBlocks": ["root.core"]
+      },
+      {
+        "id": "context", "title": "Context and documentation",
+        "rootBlocks": ["root.context-workflow"]
+      },
+      {
+        "id": "spec", "title": "Spec workflow",
+        "rootBlocks": ["root.spec-workflow", "root.external-triage"]
+      },
+      {
+        "id": "autonomous", "title": "Autonomous work",
+        "rootBlocks": ["root.autonomous-work"]
+      },
+      {
+        "id": "stack", "title": "Stack guidance",
+        "rootBlocks": [
+          "root.typescript",
+          "root.bun",
+          "root.monorepo",
+          "root.backend",
+          "root.frontend",
+          "root.go",
+          "root.rust"
+        ]
+      },
+      {
+        "id": "surface", "title": "Surface guidance",
+        "rootBlocks": ["root.cli-surface", "root.tui-surface"]
+      },
+      {
+        "id": "optional-knowledge", "title": "Optional knowledge sources",
+        "rootBlocks": ["root.secondbrain"]
+      },
+      {
+        "id": "repository-specific", "title": "Repository-Specific Normative Rules",
+        "rootBlocks": ["root.repository-extension"]
+      }
+    ]
+  },
+  "semanticOwners": [
+    {
+      "managedId": "guide.agent-instructions",
+      "title": "Universal agent instructions",
+      "classifications": ["universal-execution", "universal-safety"]
+    },
+    {
+      "managedId": "guide.skill-dispatch",
+      "title": "Skill dispatch",
+      "classifications": ["skill-dispatch"]
+    },
+    {
+      "managedId": "guide.docs-layout",
+      "title": "Documentation layout",
+      "classifications": ["documentation-layout"]
+    },
+    {
+      "managedId": "guide.domain",
+      "title": "Domain language",
+      "classifications": ["domain-language", "identifier-policy"]
+    },
+    {
+      "managedId": "guide.spec-routing",
+      "title": "Spec routing",
+      "classifications": ["spec-routing"]
+    },
+    {
+      "managedId": "guide.issue-tracker",
+      "title": "Task tracking",
+      "classifications": ["task-tracking"]
+    },
+    {
+      "managedId": "guide.spec-docs-layout",
+      "title": "Spec documentation layout",
+      "classifications": ["spec-documentation-layout"]
+    },
+    {
+      "managedId": "guide.external-triage",
+      "title": "External issue triage",
+      "classifications": ["external-triage"]
+    },
+    {
+      "managedId": "guide.autonomous-work",
+      "title": "Autonomous work",
+      "classifications": ["autonomous-work"]
+    },
+    {
+      "managedId": "guide.typescript-bun",
+      "title": "TypeScript guidance",
+      "classifications": ["typescript"]
+    },
+    {
+      "managedId": "guide.bun",
+      "title": "Bun guidance",
+      "classifications": ["bun"]
+    },
+    {
+      "managedId": "guide.monorepo",
+      "title": "Monorepo guidance",
+      "classifications": ["monorepo"]
+    },
+    {
+      "managedId": "guide.backend",
+      "title": "Backend guidance",
+      "classifications": ["backend", "http"]
+    },
+    {
+      "managedId": "guide.frontend",
+      "title": "Frontend guidance",
+      "classifications": ["frontend"]
+    },
+    {
+      "managedId": "guide.go",
+      "title": "Go guidance",
+      "classifications": ["go"]
+    },
+    {
+      "managedId": "guide.rust",
+      "title": "Rust guidance",
+      "classifications": ["rust"]
+    },
+    {
+      "managedId": "guide.cli-surface",
+      "title": "CLI surface guidance",
+      "classifications": ["cli"]
+    },
+    {
+      "managedId": "guide.tui-surface",
+      "title": "TUI surface guidance",
+      "classifications": ["tui"]
+    },
+    {
+      "managedId": "guide.secondbrain",
+      "title": "Secondbrain guidance",
+      "classifications": ["secondbrain"]
+    }
+  ],
+  "rootBlocks": [
+    {
+      "id": "root.core",
+      "version": 2,
+      "template": "template.root.core",
+      "rules": [],
+      "references": [
+        {
+          "id": "reference.root.core.agent-instructions",
+          "token": "reference.agent-instructions",
+          "ownership": "setup",
+          "managedId": "guide.agent-instructions"
+        },
+        {
+          "id": "reference.root.core.skill-dispatch",
+          "token": "reference.skill-dispatch",
+          "ownership": "setup",
+          "managedId": "guide.skill-dispatch"
+        }
+      ]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.agent-instructions",
+      "version": 13,
+      "path": "docs/agents/agent-instructions.md",
+      "template": "template.guide.agent-instructions",
+      "rules": [
+        "rule.core.compact-root",
+        "rule.core.root-cause-only",
+        "rule.core.evidence-before-complete",
+        "rule.core.verification-selected",
+        "rule.core.verification-integrity",
+        "rule.core.tooling-authority",
+        "rule.core.english-guidance",
+        "rule.core.research-authority",
+        "rule.core.dependency-discipline",
+        "rule.core.git-delivery",
+        "rule.core.decision-authority",
+        "rule.core.security-configuration"
+      ],
+      "references": []
+    },
+    {
+      "id": "guide.skill-dispatch",
+      "version": 5,
+      "path": "docs/agents/skill-dispatch.md",
+      "template": "template.guide.skill-dispatch",
+      "rules": [
+        "rule.core.skill-dispatch"
+      ],
+      "references": []
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.core.compact-root",
+      "version": 3,
+      "coverage": [
+        "coverage.universal-safety"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.keep-root-compact",
+          "enforcement": "mandatory",
+          "guidance": "Keep root agent instructions as short mandatory pointers. Setup owns only marked baseline content; preserve repository-authored bytes outside setup markers and keep project-specific architecture and policy in repository-owned documents."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.root-cause-only",
+      "version": 4,
+      "coverage": [
+        "coverage.universal-safety",
+        "coverage.verification-integrity"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.fix-root-causes",
+          "enforcement": "mandatory",
+          "guidance": "Fix root causes."
+        },
+        {
+          "id": "clause.core.prohibit-verification-workarounds",
+          "enforcement": "prohibited",
+          "guidance": "Do not suppress diagnostics, weaken assertions, swallow errors, add timing hacks, or bypass a required check to produce a passing result."
+        },
+        {
+          "id": "clause.core.regenerate-generated-files",
+          "enforcement": "prohibited",
+          "guidance": "Do not hand-edit a generated file, such as a schema migration, a client generated from an API description, or a derived digest; change its source and run the generator that owns it."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.evidence-before-complete",
+      "version": 4,
+      "coverage": [
+        "coverage.verification"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.keep-follow-ups-outside-slice",
+          "enforcement": "mandatory",
+          "guidance": "Keep follow-up work outside the current slice; record it for later instead of expanding the active change."
+        },
+        {
+          "id": "clause.core.record-acceptance-evidence",
+          "enforcement": "mandatory",
+          "guidance": "Record the commands and outcomes that provide fresh evidence for every acceptance criterion."
+        },
+        {
+          "id": "clause.core.require-fresh-evidence",
+          "enforcement": "mandatory",
+          "guidance": "Use fresh evidence from the current worktree before claiming work complete, fixed, passing, ready, committed, or delivered. A narrower check supports only the behavior it exercised."
+        },
+        {
+          "id": "clause.core.request-pull-request-review",
+          "enforcement": "mandatory",
+          "guidance": "Resolve the repository's pre-PR review policy before publication. Supported policy choices are `codex`, `claude`, `coderabbit`, and explicit `none`; Codex remains the built-in default when no applicable explicit selection is declared. Preserve User Config over built-in defaults and Project Config over User Config; an explicit project selection takes precedence. Honor the selected provider and its configured model/effort where applicable. With review enabled, obtain the configured provider's review of the current candidate before opening the Pull Request and require a complete applicable result. With explicit `none`, omit the reviewer and provider calls and record that review was disabled by configuration; otherwise authorized publication and merge may proceed after QA and required checks. Disabled review is not a passing review. This policy does not waive repository or GitHub requirements."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.verification-selected",
+      "version": 7,
+      "coverage": [
+        "coverage.verification"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.run-selected-verification",
+          "enforcement": "mandatory",
+          "guidance": "Run the selected repository Verification before completion claims. Treat every failure as blocking and report the command plus its actionable diagnostic."
+        },
+        {
+          "id": "clause.core.verification-two-tiers",
+          "enforcement": "mandatory",
+          "guidance": "Use the selected incremental Verification named at the top of this guide for fast local checks; it answers whether the current change remains valid while reusing safe local state. CI must run the selected repository Verification from a fresh run; it answers whether the complete tree satisfies the repository contract. Baseline planning refuses until the repository selects and declares both commands, so neither tier is ever satisfied by omission. Execute authored Verification only on committed provenance: the Spec artifacts that carry its commands must be tracked in the repository and byte-identical to their committed bytes at the resolved revision, comparing the authored projection while excluding Daemon-owned `status` and `## Result` fields. A Run satisfies this by construction, because its Run Worktree is created from a commit. No other command checks it: `roundfix spec check --run-verification` executes the commands of the working-tree Spec in a checkout of `HEAD`, and `roundfix settle` reads the Task file of the directory it settles, so whoever runs them on an uncommitted or modified Spec first reads the commands they will execute. No approval record makes an untrusted source executable; commit the artifacts or do not execute them. Read-only checking remains available for any source."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.verification-integrity",
+      "version": 4,
+      "coverage": [
+        "coverage.verification-integrity"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.prohibit-verification-contract-bypass",
+          "enforcement": "prohibited",
+          "guidance": "Do not edit verification configuration, tests, fixtures, golden files, or generated expectations merely to make a failure disappear. Change them only when the repository contract intentionally changes, and prove the new contract."
+        },
+        {
+          "id": "clause.core.ask-before-verification-configuration-change",
+          "enforcement": "stop-and-ask",
+          "guidance": "Stop and ask for explicit authority before intentionally changing lint, formatter, typecheck, test-runner, architecture, or Verification configuration."
+        },
+        {
+          "id": "clause.core.never-let-a-pipe-hide-a-gate",
+          "enforcement": "mandatory",
+          "guidance": "Never let a pipe hide a gate's exit status. A pipeline exits with its last command's status, so piping Verification into a pager or filter reports that filter's success and lets `&&` proceed over a red gate. Run the gate on its own, capture its status, or redirect it to a file and read the file."
+        },
+        {
+          "id": "clause.core.assertion-reads-the-constant",
+          "enforcement": "mandatory",
+          "guidance": "An assertion reads the constant it means. A test that copies a pinned version, digest, or identifier as a literal stops testing the day a legitimate change moves it, sometimes silently. Reference the exported or package constant; when a value must be duplicated, search for every occurrence and change them in the same commit."
+        },
+        {
+          "id": "clause.core.flaky-tests-block",
+          "enforcement": "mandatory",
+          "guidance": "A flaky test is a blocking failure: find and fix the cause of its nondeterminism before completion, and never rerun Verification until it happens to pass."
+        },
+        {
+          "id": "clause.core.lint-warnings-block",
+          "enforcement": "mandatory",
+          "replaces": [
+            "clause.bun.block-warnings-when-profile-treats-them-as-errors"
+          ],
+          "guidance": "A lint warning fails Verification. Every linter the repository Verification runs uses its option that turns a warning into a failure, such as `oxlint --deny-warnings`, `biome check --error-on-warnings`, `eslint --max-warnings 0`, or `cargo clippy -- -D warnings`, and every warning Verification reports blocks completion."
+        },
+        {
+          "id": "clause.core.prohibit-test-only-production-hooks",
+          "enforcement": "prohibited",
+          "guidance": "Do not add a production hook, flag, branch, or exported symbol that exists only for tests; test through the public entry points."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.tooling-authority",
+      "version": 3,
+      "coverage": [
+        "coverage.tooling-authority"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.require-tooling-authorization",
+          "enforcement": "prohibited",
+          "guidance": "Do not create, edit, rename, move, or delete any linter, formatter, typechecker, test-runner, architecture-checker, build-tool, package-manager, code-generator, or other repository-tooling configuration, script, ignore file, plugin declaration, or version pin without express maintainer authorization. Setup completion, a Profile, a narrower guide, or a generic implementation request does not grant that authorization."
+        },
+        {
+          "id": "clause.core.tooling-commit-choreography",
+          "enforcement": "mandatory",
+          "guidance": "Land an authorized tooling change as its own commit, separate from the record that authorizes it. The express authorization record with its exact bounded paths, and any prerequisite fix repairing something already red before the change, are each their own commit landing before the authorized commit, in either relative order. A consequent fix, which only becomes necessary because the authorized change made something else stale, is its own commit landing after it; it cannot precede the cause that created it. Either kind folded into the authorized commit fails the tooling-authority gate. Prefer no consequent fix at all: a change's declared scope should include the tests its own edit invalidates. Read an express grant from the consuming Spec's `<spec-root>/<slug>/_authorization.md`; a proposed, absent, contradictory, or withdrawn record grants no governed mutation and no delivery operation. `roundfix implement` still runs a Spec that changes no Governed Path, and `roundfix deliver start` refuses a Spec whose record does not grant `implement`, `commit`, `push`, `pull_request`, and `merge`. An executor cannot widen the grant it depends on."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.skill-dispatch",
+      "version": 6,
+      "coverage": [
+        "coverage.skill-dispatch"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.activate-matching-skills",
+          "enforcement": "mandatory",
+          "guidance": "Activate every matching required skill before governed work. When one skill has distinct active-module triggers, retain and follow each trigger. When a skill's default conflicts with a Baseline rule or a Repository-Specific Normative Rule, follow the rule."
+        },
+        {
+          "id": "clause.core.use-conventional-commits",
+          "enforcement": "mandatory",
+          "guidance": "Use the governing `conventional-commits` skill before staging changes, writing commit messages, or preparing pull request titles."
+        },
+        {
+          "id": "clause.core.use-github-pr-workflow",
+          "enforcement": "mandatory",
+          "guidance": "Use the governing `github-pr-workflow` skill before preparing, opening, updating, or handing off a pull request."
+        },
+        {
+          "id": "clause.core.prohibit-editing-vendored-skills",
+          "enforcement": "prohibited",
+          "guidance": "Do not edit a skill the repository installs from an upstream source; its upstream owns its text. State a correction as a Repository-Specific Normative Rule, which governs over the skill's default."
+        },
+        {
+          "id": "clause.core.ask-the-person-to-start-a-person-only-skill",
+          "enforcement": "mandatory",
+          "guidance": "When a matching skill can be started only by a person, because its metadata turns off model invocation, ask the person to run it instead of activating it or carrying out its workflow yourself."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.english-guidance",
+      "version": 3,
+      "coverage": [
+        "coverage.language"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.write-generated-guidance-in-english",
+          "enforcement": "mandatory",
+          "guidance": "Write generated repository guidance, identifiers, headings, and examples in English. Preserve repository-authored language outside setup-owned markers."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.research-authority",
+      "version": 3,
+      "coverage": [
+        "coverage.research"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.research-authoritative-external-sources",
+          "enforcement": "mandatory",
+          "guidance": "For external APIs and libraries, use current authoritative documentation through the profile's declared documentation skill."
+        },
+        {
+          "id": "clause.core.research-local-code-locally",
+          "enforcement": "mandatory",
+          "guidance": "Search repository files with local code-search tools."
+        },
+        {
+          "id": "clause.core.use-declared-external-research-fallback",
+          "enforcement": "mandatory",
+          "guidance": "When authoritative documentation cannot answer an external question, use the profile's declared external web-research fallback with varied searches and verify conclusions against primary sources."
+        },
+        {
+          "id": "clause.core.prohibit-external-research-for-local-code",
+          "enforcement": "prohibited",
+          "guidance": "Do not use external research tools to discover or infer local repository code or behavior."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.dependency-discipline",
+      "version": 4,
+      "coverage": [
+        "coverage.dependencies"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.follow-dependency-workflow",
+          "enforcement": "mandatory",
+          "guidance": "Use each language's declared package manager and lockfile workflow. Add or upgrade a dependency only for a named job the existing stack cannot perform, and keep manifest and lockfile changes together."
+        },
+        {
+          "id": "clause.core.review-new-dependencies",
+          "enforcement": "mandatory",
+          "guidance": "Review every new dependency for necessity, provenance, maintenance, and security before delivery."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.git-delivery",
+      "version": 7,
+      "coverage": [
+        "coverage.git-delivery"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.preserve-git-scope",
+          "enforcement": "mandatory",
+          "guidance": "Inspect repository status before staging or delivery and preserve unrelated work."
+        },
+        {
+          "id": "clause.core.ask-before-destructive-git",
+          "enforcement": "stop-and-ask",
+          "guidance": "Stop and ask for explicit authority before destructive Git operations that discard, overwrite, or remove work."
+        },
+        {
+          "id": "clause.core.ask-before-delivery",
+          "enforcement": "stop-and-ask",
+          "guidance": "Stop and ask for explicit authority before committing, pushing, creating a branch, or opening a pull request when that authority is not already explicit."
+        },
+        {
+          "id": "clause.core.request-review-explicitly",
+          "enforcement": "mandatory",
+          "guidance": "Follow the explicit configured review policy without re-enabling an opted-out provider. CodeRabbit is an optional choice, never a mandatory dependency. With `codex`, `claude`, or `coderabbit` enabled, use the supported pre-PR review path and block on failed, unavailable, incomplete, absent, or stale review evidence. Such an outcome never selects `none` automatically. With explicit `none`, do not request a review or wait for reviewer readiness; retain QA and required checks and report the intentional omission. Configuration or runtime support that has not been implemented must not be presented as a working command."
+        },
+        {
+          "id": "clause.core.conventional-commit-titles",
+          "enforcement": "mandatory",
+          "guidance": "Write commit subjects and pull request titles as Conventional Commits subjects, and follow the scope policy the repository's commit configuration declares. A squash merge often takes the pull request title as the final commit message, so the title is held to the same contract as a commit. Name new work branches `<type>/<description>` using the same purpose types the repository accepts for commits and pull request titles, such as `feat/`, `fix/`, `refactor/`, `docs/`, `test/`, `chore/`, `perf/`, `build/`, `ci/`, `style/`, or `revert/`. Use `refactor/`, not `refact/`; never use personal names or initials as branch prefixes. Tool-owned Run and Task branches use the tool's documented namespace; Roundfix retains `roundfix/run-` and its derived Task branch names. Existing branches are not renamed automatically."
+        },
+        {
+          "id": "clause.core.plan-the-release-first",
+          "enforcement": "mandatory",
+          "guidance": "Release work starts with the read-only release plan before any changelog, version, tag, push, package, asset, or published-release mutation. A generic release request authorizes only a conclusive patch plan; minor, major, version-zero breaking, and manual classification outcomes require the maintainer decisions recorded in the repository's release runbook. Before the release Pull Request, confirm that the skills and guides the repository ships describe the behavior being released; the repository's release runbook owns that check."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.decision-authority",
+      "version": 5,
+      "coverage": [
+        "coverage.universal-safety"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.ask-user-answerable-decisions",
+          "enforcement": "stop-and-ask",
+          "guidance": "Never guess a decision the user can answer cheaply. Use the structured user-interaction tool actually exposed and permitted in the current session: `AskUserQuestion` in Claude Code, `request_user_input` in Codex, or `question` in OpenCode; Codex runtimes that expose `request_user_input_async` may use that equivalent. Interpret skill references to `AskUserQuestion` as this interaction contract across runtimes. Respect the tool's advertised schema and mode restrictions; do not invent tool calls or switch session modes merely to ask a question. Ask exactly one question per call or message and keep only one question pending, even when the tool accepts an array of questions. Wait for the user's response before asking the next question or doing work that depends on the answer; an asynchronous request may leave independent work running. Make the question answerable without rereading the session: state what was found and why it forces a choice, provide 2-3 concise, mutually exclusive options with the consequence of each choice, and put the recommended option first with `(Recommended)` in its label. Preserve custom text input; do not add an `Other` option when the interface already supplies one. If no permitted structured tool is available, present the same single question with numbered or lettered options in chat and accept a custom answer. Never bundle questions, replace the options with an open-prose question, or treat a recommendation, preselection, dismissal, timeout, or missing answer as the user's choice."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.security-configuration",
+      "version": 4,
+      "coverage": [
+        "coverage.security-configuration"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.prohibit-secret-exposure",
+          "enforcement": "prohibited",
+          "guidance": "Never read, print, commit, or generate secrets. Keep credentials and environment-specific values in the repository's existing secure configuration boundary, and do not invent authentication, authorization, database, transport, or deployment policy."
+        },
+        {
+          "id": "clause.core.ask-before-database-mutation",
+          "enforcement": "stop-and-ask",
+          "guidance": "Stop and ask for express authorization before any statement that changes data or schema in a database other than a disposable local one. Name the exact statement and database; an authorization covers only that statement."
+        },
+        {
+          "id": "clause.core.prove-the-mutation-predicate",
+          "enforcement": "mandatory",
+          "guidance": "Before an authorized database write, run a read with the same predicate and report its row count, then run the write inside an explicit transaction and confirm the affected row count before committing."
+        },
+        {
+          "id": "clause.core.prohibit-disguised-database-mutation",
+          "enforcement": "prohibited",
+          "guidance": "Do not route a database change through a migration, script, seed, or test to avoid that authorization. The repository's committed migrate and seed commands run against a disposable local database are exempt."
+        }
+      ]
+    }
+  ],
+  "repositoryExtensions": []
+}
+
+exit: 0
+
+$ git show 90be701:internal/baseline/assets/modules/rust.json
+{
+  "schemaVersion": "setup-context-driven/module-v3", "id": "rust", "version": 4, "kind": "language-runtime", "title": "Rust repository guidance",
+  "dependsOn": ["core"], "conflictsWith": [], "requiredSkills": [
+    "clap-rust",
+    "cut-release",
+    "rust-expert",
+    "rust-cli"
+  ],
+  "skillDispatch": [
+    {
+      "skill": "clap-rust",
+      "triggers": [
+        {
+          "id": "trigger.rust.clap-rust",
+          "when": "Designing or changing Rust command parsing with Clap."
+        }
+      ]
+    },
+    {
+      "skill": "cut-release",
+      "triggers": [
+        {
+          "id": "trigger.rust.cut-release",
+          "when": "Preparing or publishing a Rust CLI release."
+        }
+      ]
+    },
+    {
+      "skill": "rust-expert",
+      "triggers": [
+        {
+          "id": "trigger.rust.rust-expert",
+          "when": "Writing or reviewing general Rust implementation and Cargo behavior."
+        }
+      ]
+    },
+    {
+      "skill": "rust-cli",
+      "triggers": [
+        {
+          "id": "trigger.rust.rust-cli",
+          "when": "Changing Rust CLI structure, behavior, packaging, or command tests."
+        }
+      ]
+    }
+  ],
+  "requiredDecisions": [],
+  "rootBlocks": [{"id": "root.rust", "version": 2, "template": "template.root.rust", "rules": [], "references": [
+    {"id": "reference.root.rust", "token": "reference.rust", "ownership": "setup", "managedId": "guide.rust"}
+  ]}],
+  "supportingGuides": [{"id": "guide.rust", "version": 3, "path": "docs/agents/rust.md", "template": "template.guide.rust", "rules": ["rule.rust.current-docs", "rule.rust.cargo-gates", "rule.rust.library-and-entry-point"], "references": []}],
+  "repositoryExtensions": [],
+  "rules": [
+    {"id": "rule.rust.current-docs", "version": 3, "coverage": ["coverage.rust", "coverage.research", "coverage.dependencies"], "clauses": [
+      {"id": "clause.rust.change-manifests-through-cargo", "enforcement": "mandatory", "guidance": "Change dependencies through Cargo commands such as `cargo add`, `cargo remove`, and `cargo update`, and commit `Cargo.toml` and `Cargo.lock` together."},
+      {"id": "clause.rust.read-current-docs", "enforcement": "mandatory", "guidance": "Use current authoritative crate and toolchain documentation before changing Rust APIs, configuration, or dependencies."}
+    ]},
+    {"id": "rule.rust.cargo-gates", "version": 3, "coverage": ["coverage.rust", "coverage.cli", "coverage.verification-integrity"], "clauses": [
+      {"id": "clause.rust.iterate-with-focused-cargo-commands", "enforcement": "mandatory", "guidance": "Use focused `cargo check`, `cargo test`, and lint commands while iterating, then run the selected repository Verification."},
+      {"id": "clause.rust.test-the-command-through-execution", "enforcement": "mandatory", "guidance": "Treat CLI flags, streams, JSON fields, and exit codes as public behavior and test them through observable command execution."}
+    ]},
+    {"id": "rule.rust.library-and-entry-point", "version": 1, "coverage": ["coverage.rust", "coverage.cli"], "clauses": [
+      {"id": "clause.rust.keep-the-binary-thin", "enforcement": "mandatory", "guidance": "Keep each binary target's `main` thin: it parses arguments and calls behavior that lives in the library crate."},
+      {"id": "clause.rust.keep-type-erased-errors-at-the-entry-point", "enforcement": "prohibited", "guidance": "Do not use `anyhow` or another type-erased error type outside a binary's entry point. Only `main` and the command dispatch it calls may turn typed errors into a type-erased report."},
+      {"id": "clause.rust.prohibit-panics-on-user-paths", "enforcement": "prohibited", "guidance": "Do not call `unwrap`, `expect`, or `panic!` on a path that user input, the environment, a file, or an IO result can reach; return a typed error instead. Test code is not such a path."},
+      {"id": "clause.rust.return-typed-errors", "enforcement": "mandatory", "guidance": "Return typed errors from library and domain code: an error enum per boundary that implements `std::error::Error`, for example through `thiserror`, so a caller can match its variants."}
+    ]}
+  ]
+}
+
+exit: 0
+
+$ git show 90be701:internal/baseline/assets/modules/external-triage.json
+{
+  "schemaVersion": "setup-context-driven/module-v3", "id": "external-triage", "version": 3, "kind": "workflow", "title": "External issue triage",
+  "dependsOn": ["context-workflow"], "conflictsWith": [], "requiredSkills": [],
+  "skillDispatch": [],
+  "requiredDecisions": ["triage.external"],
+  "rootBlocks": [{"id": "root.external-triage", "version": 2, "template": "template.root.external-triage", "rules": [], "references": [
+    {"id": "reference.root.external-triage", "token": "reference.external-triage", "ownership": "setup", "managedId": "guide.external-triage"}
+  ]}],
+  "supportingGuides": [{"id": "guide.external-triage", "version": 3, "path": "docs/agents/external-triage.md", "template": "template.guide.external-triage", "rules": ["rule.external-triage"], "references": []}],
+  "rules": [{"id": "rule.external-triage", "version": 3, "coverage": ["coverage.external-triage", "coverage.language"], "clauses": [
+    {"id": "clause.external-triage.classify-before-labelling", "enforcement": "mandatory", "replaces": ["rule.external-triage"], "guidance": "Use this workflow only for issues and pull requests managed in an external forge. Classify each item as a bug or an enhancement, and state its user-visible problem and next action in English, before changing its labels or status."},
+    {"id": "clause.external-triage.move-through-mapped-states", "enforcement": "mandatory", "guidance": "Move each item through the triage states needs-triage, needs-info, ready, and wontfix, applying the forge label the repository maps to each state. The repository records that mapping in this guide, outside its setup markers, when it enables external triage."},
+    {"id": "clause.external-triage.ask-for-an-unmapped-label", "enforcement": "stop-and-ask", "guidance": "Stop and ask the maintainer for the forge label of a triage state the repository has not mapped; never invent a label."},
+    {"id": "clause.external-triage.needs-info-asks-and-stops", "enforcement": "mandatory", "guidance": "When an item lacks what triage needs, mark it needs-info, ask the reporter specific questions that name each missing fact, and stop triaging it until the reporter answers."},
+    {"id": "clause.external-triage.disclose-ai-authorship", "enforcement": "mandatory", "guidance": "Start every comment posted on the forge with a sentence stating that an AI agent generated it."},
+    {"id": "clause.external-triage.record-wontfix-decisions", "enforcement": "mandatory", "guidance": "Record each wontfix decision as a declined Backlog Entry whose reason cites the forge item, and answer a repeated request with that recorded decision instead of deciding it again."},
+    {"id": "clause.external-triage.pull-request-is-an-issue-with-code", "enforcement": "mandatory", "guidance": "Triage an external pull request as an issue with code attached: classify it and move it through the same states before reviewing or merging its code."},
+    {"id": "clause.external-triage.route-accepted-work-to-specs", "enforcement": "mandatory", "guidance": "Route accepted work into the repository's local Spec workflow; a forge label or status never stands in for a Task's status."}
+  ]}],
+  "repositoryExtensions": []
+}
+
+exit: 0
+
+$ git show 90be701:internal/baseline/assets/modules/autonomous-work.json
+{
+  "schemaVersion": "setup-context-driven/module-v3",
+  "id": "autonomous-work",
+  "version": 12,
+  "kind": "workflow",
+  "title": "Autonomous Supervisor and ACP Runtime model",
+  "dependsOn": [
+    "context-workflow"
+  ],
+  "conflictsWith": [],
+  "requiredSkills": ["roundfix"],
+  "skillDispatch": [
+    {
+      "skill": "roundfix",
+      "triggers": [
+        {
+          "id": "trigger.autonomous-work.roundfix",
+          "when": "Running, inspecting, recovering or delivering work with the `roundfix` command line, or reading its output."
+        }
+      ]
+    }
+  ],
+  "requiredDecisions": [
+    "autonomous.enabled",
+    "runtime.backend",
+    "runtime.design"
+  ],
+  "rootBlocks": [
+    {
+      "id": "root.autonomous-work",
+      "version": 2,
+      "template": "template.root.autonomous-work",
+      "rules": [],
+      "references": [
+        {
+          "id": "reference.root.autonomous-work",
+          "token": "reference.autonomous-work",
+          "ownership": "setup",
+          "managedId": "guide.autonomous-work"
+        }
+      ]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.autonomous-work",
+      "version": 12,
+      "path": "docs/agents/autonomous-work.md",
+      "template": "template.guide.autonomous-work",
+      "rules": [
+        "rule.autonomous.supervisor-delegates",
+        "rule.autonomous.verification-gate",
+        "rule.autonomous.hook-strictness",
+        "rule.autonomous.loop"
+      ],
+      "references": []
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.autonomous.supervisor-delegates",
+      "version": 3,
+      "coverage": [
+        "coverage.autonomous-work"
+      ],
+      "clauses": [
+        {
+          "id": "clause.autonomous.delegate-through-roundfix",
+          "enforcement": "mandatory",
+          "guidance": "The Supervisor authors Specs, starts and monitors Runs, and orchestrates outcomes. Delegate implementation to the selected ACP Runtime through a Roundfix Run."
+        },
+        {
+          "id": "clause.autonomous.supervisor-prohibition",
+          "enforcement": "prohibited",
+          "guidance": "The Supervisor must not write feature code or tests."
+        }
+      ]
+    },
+    {
+      "id": "rule.autonomous.verification-gate",
+      "version": 3,
+      "coverage": [
+        "coverage.autonomous-work",
+        "coverage.verification"
+      ],
+      "clauses": [
+        {
+          "id": "clause.autonomous.daemon-verifies-task",
+          "enforcement": "mandatory",
+          "guidance": "The Daemon runs each Task's declared Verification verbatim. A Task can settle `completed` only after that Verification passes; failed diagnostics return to the same Agent Session for the bounded retry policy."
+        }
+      ]
+    },
+    {
+      "id": "rule.autonomous.hook-strictness",
+      "version": 2,
+      "coverage": [
+        "coverage.autonomous-work",
+        "coverage.verification"
+      ],
+      "clauses": [
+        {
+          "id": "clause.autonomous.hook-strictness",
+          "enforcement": "mandatory",
+          "guidance": "A commit hook must not be stricter than the Task's declared Verification. The Daemon is the verification authority, and it commits only after that Verification passes, so a hook refusing at that point is a second gate the loop cannot satisfy: it discards work already proven correct. Keep every check a hook enforces inside the declared Verification. A refusal recorded with the `hook_refused` classification is a repository misconfiguration to repair, not a Task failure; the work stays staged in its surface and the Run ends unresolved instead of losing it."
+        }
+      ]
+    },
+    {
+      "id": "rule.autonomous.loop",
+      "version": 5,
+      "coverage": [
+        "coverage.autonomous-work"
+      ],
+      "clauses": [
+        {
+          "id": "clause.autonomous.loop-01-qa-once",
+          "enforcement": "mandatory",
+          "guidance": "Follow one order per Spec: implement the graph including its authored gate, apply the configured pre-PR review policy, archive and commit the candidate, run the repository gate, push the candidate, open the Pull Request, verify required checks for the current head, and merge. The Delivery Queue (`roundfix deliver`) runs this order for each queued Spec, and a Supervisor driving the steps by hand follows the same order. For `codex`, `claude`, or `coderabbit`, require the selected provider's current-candidate review. For explicit `none`, skip review and provider calls, record the configured omission and continue through the other gates. A legacy PR-feedback Watch loop is not a mandatory step for every policy, and a missing local adapter never becomes a successful review. The authored QA gate is the graph's terminal Task, so the gate runs before any Pull Request exists. An environment-blocked row can still reach `pass` when the report carries equivalent evidence, and the row blocked only because no Pull Request is open never decides a qualifying `partial`. Neither does an outside-evidence row blocked only because the Run sandbox denied network access, recorded as `blocked (environment: network denied: <host>)`. Run the Implement Command while implementation work is pending or a corrective Task is planned; normally the authored QA gate must also settle. When a corrective Task is added after the gate settled, reopen the gate with `roundfix reopen --spec <slug>`; never edit the QA Task by hand. When a Run ends with Tasks already settled, hand them back with Task Carry-Forward before amending the Spec, so proved work is not run again: use `roundfix reconcile <run-id> --carry-forward`, or `roundfix deliver retry <slug>` for a parked Delivery Queue item. An explicit user-authorized QA Archive Override may waive only the covered QA gate's archive prerequisite, with the approval and original QA/Task state preserved. Consume an applicable prior approval without asking again. That archive does not establish Implement Clean or satisfy QA, review, publication, merge or required-check obligations; evaluate those separately before continuing delivery. The Daemon gates the authored QA Task on every dependency reaching completed; re-running the gate after each corrective Task turns discovery into a serial chain of full cycles. Close several findings together; more than two corrective Tasks generated by QA findings means the decomposition needs re-examining. Rebuild any binary the gate exercises before the gate becomes runnable, or the gate reports defects the running artifact does not contain."
+        },
+        {
+          "id": "clause.autonomous.loop-02-autonomous-decomposition",
+          "enforcement": "mandatory",
+          "guidance": "Decide the Task Graph autonomously from a PRD and TechSpec that passed their own gates, and report the breakdown instead of blocking on approval. Stop and ask only when the next decision would change authority, architecture, or blast radius: protected tooling the Spec does not authorize with exact bounded files, a Task whose acceptance needs a person or a credential the repository cannot hold, a decomposition that only works by contradicting the TechSpec, an irreversible action inside one slice, or a verdict needing supervised judgement."
+        },
+        {
+          "id": "clause.autonomous.loop-03-specify-the-hazard",
+          "enforcement": "mandatory",
+          "guidance": "State the hazard in a requirement, not only the objective: name where data comes from and who reads its destination. A time cap must say whether it cancels or abandons; a destination must say whether a secret may reach it. Requirements whose hazard is implicit are the largest source of rework."
+        },
+        {
+          "id": "clause.autonomous.loop-04-verify-the-class",
+          "enforcement": "mandatory",
+          "guidance": "Write Verification that proves the class, not the case. When a finding is that nothing may do X, sweep every place that could, and put the detector where the risk is: a Task changing a contract with an external surface probes that surface rather than only compiling and unit-testing."
+        },
+        {
+          "id": "clause.autonomous.loop-05-clean-is-not-evidence",
+          "enforcement": "mandatory",
+          "guidance": "Treat a terminal Clean and a resolved status as claims, not evidence. Read the diff after a Run reports Clean. When review is enabled, confirm that the selected provider completed review for the current candidate; silence or a provider-reported skip is not approval. With explicit `none`, record review as disabled by configuration and continue only when the other delivery gates pass; do not manufacture a reviewed verdict. Preserve historical Review Skipped and Clean Unverified meanings."
+        },
+        {
+          "id": "clause.autonomous.loop-06-branch-hygiene",
+          "enforcement": "mandatory",
+          "guidance": "Never commit to a Run's branch or move the checkout away from it while that Run is Active. Roundfix integrates a Run Branch with a fast-forward merge and review Runs operate in the user checkout, so either action strands the Run or sends its commits to the wrong branch. Parallel work belongs in its own clone or waits."
+        },
+        {
+          "id": "clause.autonomous.loop-07-outlive-the-turn",
+          "enforcement": "mandatory",
+          "guidance": "A supervising session that intends to keep working unattended must arm something that outlives its own turn before that turn ends: a detached Run, a scheduled wake-up, or a daemon. Never end a turn stating that work will continue, because a turn that has ended is indistinguishable, to whoever is waiting, from a turn still working. When no such mechanism is armed, say plainly that work is stopping and what remains."
+        }
+      ]
+    }
+  ],
+  "repositoryExtensions": []
+}
+
+exit: 0
+
+$ git show 90be701:internal/baseline/assets/modules/backend.json
+{
+  "schemaVersion": "setup-context-driven/module-v2", "id": "backend", "version": 6, "kind": "application-surface", "title": "Backend application guidance",
+  "dependsOn": ["typescript"], "conflictsWith": [], "requiredSkills": [
+    "ai-sdk",
+    "backend-docs",
+    "better-auth",
+    "clean-architecture",
+    "data-sync-workflows",
+    "design-patterns",
+    "drizzle-orm",
+    "external-api-adapters",
+    "hono",
+    "hono-api-best-practices",
+    "inngest",
+    "integration-contract-testing",
+    "logtape",
+    "observability-audit",
+    "security-best-practices",
+    "security-threat-model",
+    "tactical-ddd",
+    "vertical-slice-architecture"
+  ],
+  "skillDispatch": [
+    {
+      "skill": "ai-sdk",
+      "triggers": [
+        {
+          "id": "trigger.backend.ai-sdk",
+          "when": "Building backend AI flows with the selected AI SDK."
+        }
+      ]
+    },
+    {
+      "skill": "backend-docs",
+      "triggers": [
+        {
+          "id": "trigger.backend.backend-docs",
+          "when": "Writing backend API or service documentation."
+        }
+      ]
+    },
+    {
+      "skill": "better-auth",
+      "triggers": [
+        {
+          "id": "trigger.backend.better-auth",
+          "when": "Changing authentication or authorization through the installed `better-auth` skill."
+        }
+      ]
+    },
+    {
+      "skill": "clean-architecture",
+      "triggers": [
+        {
+          "id": "trigger.backend.clean-architecture",
+          "when": "Designing backend dependency boundaries with Clean Architecture."
+        }
+      ]
+    },
+    {
+      "skill": "data-sync-workflows",
+      "triggers": [
+        {
+          "id": "trigger.backend.data-sync-workflows",
+          "when": "Designing backend data synchronization and reconciliation workflows."
+        }
+      ]
+    },
+    {
+      "skill": "design-patterns",
+      "triggers": [
+        {
+          "id": "trigger.backend.design-patterns",
+          "when": "Selecting or applying backend design patterns."
+        }
+      ]
+    },
+    {
+      "skill": "drizzle-orm",
+      "triggers": [
+        {
+          "id": "trigger.backend.drizzle-orm",
+          "when": "Changing Drizzle schemas, queries, or migrations."
+        }
+      ]
+    },
+    {
+      "skill": "external-api-adapters",
+      "triggers": [
+        {
+          "id": "trigger.backend.external-api-adapters",
+          "when": "Building or changing external API adapter boundaries."
+        }
+      ]
+    },
+    {
+      "skill": "hono",
+      "triggers": [
+        {
+          "id": "trigger.backend.hono",
+          "when": "Building or changing Hono routes, middleware, or handlers."
+        }
+      ]
+    },
+    {
+      "skill": "hono-api-best-practices",
+      "triggers": [
+        {
+          "id": "trigger.backend.hono-api-best-practices",
+          "when": "Reviewing Hono API contracts and implementation practices."
+        }
+      ]
+    },
+    {
+      "skill": "inngest",
+      "triggers": [
+        {
+          "id": "trigger.backend.inngest",
+          "when": "Building or changing Inngest functions and event workflows."
+        }
+      ]
+    },
+    {
+      "skill": "integration-contract-testing",
+      "triggers": [
+        {
+          "id": "trigger.backend.integration-contract-testing",
+          "when": "Writing backend integration or provider contract tests."
+        }
+      ]
+    },
+    {
+      "skill": "logtape",
+      "triggers": [
+        {
+          "id": "trigger.backend.logtape",
+          "when": "Changing structured logging through LogTape."
+        }
+      ]
+    },
+    {
+      "skill": "observability-audit",
+      "triggers": [
+        {
+          "id": "trigger.backend.observability-audit",
+          "when": "Auditing backend logs, metrics, traces, and operational signals."
+        }
+      ]
+    },
+    {
+      "skill": "security-best-practices",
+      "triggers": [
+        {
+          "id": "trigger.backend.security-best-practices",
+          "when": "Reviewing backend implementation against security practices."
+        }
+      ]
+    },
+    {
+      "skill": "security-threat-model",
+      "triggers": [
+        {
+          "id": "trigger.backend.security-threat-model",
+          "when": "Threat-modeling backend data, trust boundaries, and abuse cases."
+        }
+      ]
+    },
+    {
+      "skill": "tactical-ddd",
+      "triggers": [
+        {
+          "id": "trigger.backend.tactical-ddd",
+          "when": "Modeling backend aggregates, entities, values, and domain services."
+        }
+      ]
+    },
+    {
+      "skill": "vertical-slice-architecture",
+      "triggers": [
+        {
+          "id": "trigger.backend.vertical-slice-architecture",
+          "when": "Designing backend features as vertical slices."
+        }
+      ]
+    }
+  ],
+  "requiredDecisions": [],
+  "rootBlocks": [{"id": "root.backend", "version": 2, "template": "template.root.backend", "rules": [], "references": [
+    {"id": "reference.root.backend", "token": "reference.backend", "ownership": "setup", "managedId": "guide.backend"}
+  ]}],
+  "supportingGuides": [{"id": "guide.backend", "version": 6, "path": "docs/agents/backend.md", "template": "template.guide.backend", "rules": ["rule.backend.boundary-contracts"], "references": []}],
+  "rules": [{"id": "rule.backend.boundary-contracts", "version": 5, "coverage": ["coverage.backend", "coverage.security-configuration"], "clauses": [
+    {"id": "clause.backend.boundary-contracts", "replaces": ["rule.backend.boundary-contracts"], "enforcement": "mandatory", "guidance": "Keep blocking, network, process, database, and daemon boundaries explicit about ownership, cancellation, timeouts, and error reporting. Test the lowest real boundary that proves the repository-authored contract; do not invent authentication, database, or transport policy."},
+    {"id": "clause.backend.layered-architecture", "enforcement": "mandatory", "guidance": "Organize backend behavior through domain, application, and infrastructure layers. Dependencies point inward toward domain behavior."},
+    {"id": "clause.backend.thin-http-handlers", "enforcement": "mandatory", "guidance": "Keep HTTP handlers thin: validate and translate transport input, invoke one application use case, and translate the result into the repository's HTTP Contract."},
+    {"id": "clause.backend.http-independent-use-cases", "enforcement": "mandatory", "guidance": "Keep application use cases independent of HTTP request, response, router, and middleware types."},
+    {"id": "clause.backend.persistence-owner", "enforcement": "mandatory", "guidance": "Keep persistence implementation in infrastructure and behind application-owned boundaries; schema and query definitions belong to the selected persistence capability."},
+    {"id": "clause.backend.prohibit-generic-buckets", "replaces": ["clause.backend.prohibit-generic-layers"], "enforcement": "prohibited", "guidance": "Do not organize backend code into generic `modules` or `services` buckets in place of the domain, application, and infrastructure layers. A domain service that lives in the domain layer is not such a bucket."}
+  ]}]
+}
+
+exit: 0
+
+$ git show 90be701:internal/baseline/assets/modules/cli-surface.json
+{
+  "schemaVersion": "setup-context-driven/module-v3", "id": "cli-surface", "version": 3, "kind": "application-surface", "title": "Agentic CLI surface guidance",
+  "dependsOn": ["core"], "conflictsWith": [], "requiredSkills": [
+    "agentic-cli-design"
+  ],
+  "skillDispatch": [
+    {
+      "skill": "agentic-cli-design",
+      "triggers": [
+        {
+          "id": "trigger.cli-surface.agentic-cli-design",
+          "when": "Changing CLI flags, streams, exit codes, JSON, dry-run, non-interactive, or introspection behavior."
+        }
+      ]
+    }
+  ],
+  "requiredDecisions": [],
+  "rootBlocks": [{"id": "root.cli-surface", "version": 2, "template": "template.root.cli-surface", "rules": [], "references": [
+    {"id": "reference.root.cli", "token": "reference.cli", "ownership": "setup", "managedId": "guide.cli-surface"}
+  ]}],
+  "supportingGuides": [{"id": "guide.cli-surface", "version": 3, "path": "docs/agents/cli.md", "template": "template.guide.cli-surface", "rules": ["rule.cli.output-contract", "rule.cli.non-interactive"], "references": []}],
+  "repositoryExtensions": [],
+  "rules": [
+    {"id": "rule.cli.output-contract", "version": 3, "coverage": ["coverage.cli"], "clauses": [
+      {"id": "clause.cli.public-command-contract", "enforcement": "mandatory", "guidance": "Treat command names, flags, stdout and stderr placement, machine-readable fields, and exit codes as public API."},
+      {"id": "clause.cli.separate-output-streams", "enforcement": "mandatory", "guidance": "Keep stdout for requested output and stderr for diagnostics, progress, and warnings."},
+      {"id": "clause.cli.ship-the-skill-with-the-behavior", "enforcement": "mandatory", "guidance": "When the repository ships a skill or a command reference that describes its commands, a change to command behavior updates that skill or reference in the same pull request."}
+    ]},
+    {"id": "rule.cli.non-interactive", "version": 3, "coverage": ["coverage.cli", "coverage.universal-safety"], "clauses": [
+      {"id": "clause.cli.deterministic-non-interactive", "enforcement": "mandatory", "guidance": "Make automation deterministic and non-interactive."},
+      {"id": "clause.cli.explicit-safe-writes", "enforcement": "mandatory", "guidance": "Make write operations explicit, replayable, safe by default, and observable; use dry-run, confirmation, or idempotency contracts where the repository requires them."}
+    ]}
+  ]
+}
+
+exit: 0
+
+$ git show 90be701:internal/baseline/assets/modules/tui-surface.json
+{
+  "schemaVersion": "setup-context-driven/module-v3", "id": "tui-surface", "version": 3, "kind": "application-surface", "title": "Terminal UI surface guidance",
+  "dependsOn": ["cli-surface"], "conflictsWith": [], "requiredSkills": [
+    "bubbletea",
+    "tui-design"
+  ],
+  "skillDispatch": [
+    {
+      "skill": "bubbletea",
+      "triggers": [
+        {
+          "id": "trigger.tui-surface.bubbletea",
+          "when": "Building or changing Bubble Tea models, commands, messages, or component composition."
+        }
+      ]
+    },
+    {
+      "skill": "tui-design",
+      "triggers": [
+        {
+          "id": "trigger.tui-surface.tui-design",
+          "when": "Designing terminal layout, navigation, keyboard, mouse, color, or accessibility behavior."
+        }
+      ]
+    }
+  ],
+  "requiredDecisions": [],
+  "rootBlocks": [{"id": "root.tui-surface", "version": 2, "template": "template.root.tui-surface", "rules": [], "references": [
+    {"id": "reference.root.tui", "token": "reference.tui", "ownership": "setup", "managedId": "guide.tui-surface"}
+  ]}],
+  "supportingGuides": [{"id": "guide.tui-surface", "version": 3, "path": "docs/agents/tui.md", "template": "template.guide.tui-surface", "rules": ["rule.tui.synchronous-model-tests"], "references": []}],
+  "repositoryExtensions": [],
+  "rules": [{"id": "rule.tui.synchronous-model-tests", "version": 3, "coverage": ["coverage.tui", "coverage.frontend"], "clauses": [
+      {"id": "clause.tui.drive-models-synchronously", "enforcement": "mandatory", "guidance": "Drive TUI model updates synchronously and assert rendered state, messages, and transitions."},
+      {"id": "clause.tui.emulate-the-terminal-last", "enforcement": "mandatory", "guidance": "Use terminal emulation only when model-level tests cannot prove the behavior."},
+      {"id": "clause.tui.keep-design-policy-in-repository-guidance", "enforcement": "mandatory", "guidance": "Keep layout and interaction policy in repository-owned design guidance."}
+    ]}]
+}
+
+exit: 0
+
+$ git show 90be701:internal/baseline/assets/modules/typescript.json
+{
+  "schemaVersion": "setup-context-driven/module-v3",
+  "id": "typescript",
+  "version": 8,
+  "kind": "language-runtime",
+  "title": "TypeScript repository guidance",
+  "dependsOn": [
+    "core"
+  ],
+  "conflictsWith": [],
+  "requiredSkills": [
+    "architectural-analysis",
+    "business-storyteller",
+    "clean-code",
+    "codebase-design",
+    "diagnosing-bugs",
+    "docker",
+    "app-renderer-systems",
+    "find-rules",
+    "find-skills",
+    "game-changing-features",
+    "git-rebase",
+    "humanizer",
+    "onioncry",
+    "refactoring-analysis",
+    "tdd",
+    "to-prompt",
+    "typescript-advanced",
+    "vite",
+    "vitest",
+    "writing-clearly-and-concisely",
+    "zod"
+  ],
+  "skillDispatch": [
+    {
+      "skill": "architectural-analysis",
+      "triggers": [
+        {
+          "id": "trigger.typescript.architectural-analysis",
+          "when": "Analyzing TypeScript repository architecture and dependency boundaries."
+        }
+      ]
+    },
+    {
+      "skill": "business-storyteller",
+      "triggers": [
+        {
+          "id": "trigger.typescript.business-storyteller",
+          "when": "Turning TypeScript product evidence into a decision-ready narrative."
+        }
+      ]
+    },
+    {
+      "skill": "clean-code",
+      "triggers": [
+        {
+          "id": "trigger.typescript.clean-code",
+          "when": "Refactoring TypeScript code for clarity without changing behavior."
+        }
+      ]
+    },
+    {
+      "skill": "codebase-design",
+      "triggers": [
+        {
+          "id": "trigger.typescript.codebase-design",
+          "when": "Designing TypeScript codebase structure and component boundaries."
+        }
+      ]
+    },
+    {
+      "skill": "diagnosing-bugs",
+      "triggers": [
+        {
+          "id": "trigger.typescript.diagnosing-bugs",
+          "when": "Diagnosing TypeScript or Bun defects and unexpected behavior."
+        }
+      ]
+    },
+    {
+      "skill": "docker",
+      "triggers": [
+        {
+          "id": "trigger.typescript.docker",
+          "when": "Changing container packaging or local container workflows for the TypeScript stack."
+        }
+      ]
+    },
+    {
+      "skill": "app-renderer-systems",
+      "triggers": [
+        {
+          "id": "trigger.typescript.app-renderer-systems",
+          "when": "Designing a feature system within the TypeScript application."
+        }
+      ]
+    },
+    {
+      "skill": "find-rules",
+      "triggers": [
+        {
+          "id": "trigger.typescript.find-rules",
+          "when": "Discovering repository rules before TypeScript implementation work."
+        }
+      ]
+    },
+    {
+      "skill": "find-skills",
+      "triggers": [
+        {
+          "id": "trigger.typescript.find-skills",
+          "when": "Discovering applicable skills for TypeScript repository work."
+        }
+      ]
+    },
+    {
+      "skill": "game-changing-features",
+      "triggers": [
+        {
+          "id": "trigger.typescript.game-changing-features",
+          "when": "Exploring high-impact product opportunities for the TypeScript application."
+        }
+      ]
+    },
+    {
+      "skill": "git-rebase",
+      "triggers": [
+        {
+          "id": "trigger.typescript.git-rebase",
+          "when": "Rebasing TypeScript repository work when explicitly authorized."
+        }
+      ]
+    },
+    {
+      "skill": "humanizer",
+      "triggers": [
+        {
+          "id": "trigger.typescript.humanizer",
+          "when": "Revising generated prose in the TypeScript repository to sound natural and direct."
+        }
+      ]
+    },
+    {
+      "skill": "onioncry",
+      "triggers": [
+        {
+          "id": "trigger.typescript.onioncry",
+          "when": "Auditing architectural dependency direction in the TypeScript repository."
+        }
+      ]
+    },
+    {
+      "skill": "refactoring-analysis",
+      "triggers": [
+        {
+          "id": "trigger.typescript.refactoring-analysis",
+          "when": "Planning a behavior-preserving TypeScript refactor."
+        }
+      ]
+    },
+    {
+      "skill": "tdd",
+      "triggers": [
+        {
+          "id": "trigger.typescript.tdd",
+          "when": "Developing TypeScript behavior through a red-green-refactor loop."
+        }
+      ]
+    },
+    {
+      "skill": "to-prompt",
+      "triggers": [
+        {
+          "id": "trigger.typescript.to-prompt",
+          "when": "Converting TypeScript repository context into a bounded implementation prompt."
+        }
+      ]
+    },
+    {
+      "skill": "typescript-advanced",
+      "triggers": [
+        {
+          "id": "trigger.typescript.typescript-advanced",
+          "when": "Using advanced TypeScript types or language features."
+        }
+      ]
+    },
+    {
+      "skill": "vite",
+      "triggers": [
+        {
+          "id": "trigger.typescript.vite",
+          "when": "Changing Vite build, development, or test integration."
+        }
+      ]
+    },
+    {
+      "skill": "vitest",
+      "triggers": [
+        {
+          "id": "trigger.typescript.vitest",
+          "when": "Writing or changing Vitest suites and configuration."
+        }
+      ]
+    },
+    {
+      "skill": "writing-clearly-and-concisely",
+      "triggers": [
+        {
+          "id": "trigger.typescript.writing-clearly-and-concisely",
+          "when": "Revising TypeScript repository prose for clarity and brevity."
+        }
+      ]
+    },
+    {
+      "skill": "zod",
+      "triggers": [
+        {
+          "id": "trigger.typescript.zod",
+          "when": "Designing or changing Zod schemas and validation boundaries."
+        }
+      ]
+    }
+  ],
+  "requiredDecisions": [],
+  "rootBlocks": [
+    {
+      "id": "root.typescript",
+      "version": 2,
+      "template": "template.root.typescript",
+      "rules": [],
+      "references": [
+        {
+          "id": "reference.root.typescript",
+          "token": "reference.typescript",
+          "ownership": "setup",
+          "managedId": "guide.typescript-bun"
+        }
+      ]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.typescript-bun",
+      "version": 5,
+      "path": "docs/agents/typescript-bun.md",
+      "template": "template.guide.typescript-bun",
+      "rules": [
+        "rule.typescript.current-docs",
+        "rule.typescript.behavior-tests"
+      ],
+      "references": []
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.typescript.current-docs",
+      "version": 4,
+      "coverage": [
+        "coverage.typescript",
+        "coverage.research",
+        "coverage.dependencies"
+      ],
+      "clauses": [
+        {
+          "id": "clause.typescript.read-current-authoritative-docs",
+          "enforcement": "mandatory",
+          "guidance": "Use current authoritative documentation before changing TypeScript library APIs, framework configuration, runtime behavior, or dependencies."
+        },
+        {
+          "id": "clause.typescript.keep-type-errors-visible",
+          "enforcement": "mandatory",
+          "guidance": "Keep TypeScript type errors visible; never hide one to make Verification pass."
+        }
+      ]
+    },
+    {
+      "id": "rule.typescript.behavior-tests",
+      "version": 4,
+      "coverage": [
+        "coverage.typescript",
+        "coverage.verification-integrity"
+      ],
+      "clauses": [
+        {
+          "id": "clause.typescript.inspect-dependent-interfaces-before-tests",
+          "enforcement": "mandatory",
+          "guidance": "Read the dependent interfaces and their current contracts before writing or changing tests."
+        },
+        {
+          "id": "clause.typescript.test-observable-failure-modes",
+          "enforcement": "mandatory",
+          "guidance": "Test observable behavior and explicit failure modes."
+        },
+        {
+          "id": "clause.typescript.prohibit-incidental-test-oracles",
+          "enforcement": "prohibited",
+          "guidance": "Do not make mocks, snapshots of incidental output, private structure, or type assertions the source of correctness."
+        },
+        {
+          "id": "clause.typescript.type-fixtures-from-the-schema",
+          "enforcement": "mandatory",
+          "guidance": "Type a test fixture that stands for a stored row from the schema's inferred row type, with a complete base row and partial overrides, never from an untyped record."
+        }
+      ]
+    }
+  ],
+  "repositoryExtensions": []
+}
+
+exit: 0
+
+$ go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1
+ok  	roundfix/internal/baseline	0.316s
+
+exit: 0
+
+$ make baseline-digests
+ok  	roundfix/internal/baseline	0.630s
+ok  	roundfix/skills	0.173s
+ok  	roundfix/internal/baseline	1.228s
+ok  	roundfix/internal/baseline	0.346s
+ok  	roundfix/internal/baseline	0.636s
+ok  	roundfix/internal/baseline	0.743s
+ok  	roundfix/internal/baseline	1.552s
+ok  	roundfix/internal/baseline	0.315s
+baseline-digests: no changes; derived artifacts already match their canonical sources
+{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":false}
+
+exit: 0
+
+All 16 catalog versions equal latest record and starting head; full content snapshot unchanged.

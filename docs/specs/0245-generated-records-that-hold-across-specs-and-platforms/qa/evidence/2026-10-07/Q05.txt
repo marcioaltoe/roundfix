@@ -1,0 +1,224 @@
+{
+  "roundfix/internal/cli": {
+    "TestCLIForceStopOwnerProcessHelper": [
+      "darwin",
+      "linux"
+    ],
+    "TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded": [
+      "darwin"
+    ],
+    "TestReopenRefusesAnActiveRunWithoutReclaimingIt": [
+      "darwin",
+      "linux"
+    ],
+    "TestReviewFetchBlocksOlderLiveRunAfterReclaimingNewerOrphan": [
+      "darwin",
+      "linux"
+    ],
+    "TestReviewFetchReclaimsDeadOwnerActiveRun": [
+      "darwin",
+      "linux"
+    ],
+    "TestRunCeilingReclaimsADeadHolder": [
+      "darwin",
+      "linux"
+    ],
+    "TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner": [
+      "darwin",
+      "linux"
+    ],
+    "TestRunForceStopOwnerPIDReuseFailsClosed": [
+      "darwin",
+      "linux"
+    ],
+    "TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion": [
+      "darwin",
+      "linux"
+    ],
+    "TestRunImplementReclaimsDeadOwnerActiveRun": [
+      "darwin",
+      "linux"
+    ],
+    "TestRunSettleReclaimsDeadOwnerActiveRun": [
+      "darwin",
+      "linux"
+    ],
+    "TestStopTerminalRunWithDeadOwnerKeepsTerminalError": [
+      "darwin",
+      "linux"
+    ]
+  },
+  "roundfix/internal/store": {
+    "TestDescendantProcessPIDsAfterStartRejectsStaleParentLinks": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessControllerAcceptsAlreadyAbsentProcess": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessControllerForceKillExitProof": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessControllerGracefulExitProof": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessControllerInspectTreeFindsOutlivingGrandchild": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessControllerInspectTreeReportsOnlyLiveOwnedProcesses": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessControllerMatchingOwnerIdentityProceeds": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessControllerProveOwnerAcceptsAbsentOwner": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessControllerProveOwnerDoesNotReportLegacyIdentityAsReusedPID": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessControllerProveOwnerLeavesProvenOwnerRunning": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessControllerProveOwnerRefusesMismatchedIdentity": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessControllerProveOwnerRejectsCurrentProcess": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessControllerRefusesMismatchedOwnerIdentity": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessControllerRejectsUnprovenCurrentProcess": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessControllerTerminateTreeLeavesUnrelatedProcessRunning": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessControllerTerminateTreeProvesOutlivingGrandchildGone": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessControllerTerminateTreeReportsUnprovenAbsence": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessControllerTerminateTreeStopsRediscoveryWhenContextCanceled": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessHelper": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessHelperIgnoreModeStaysAlive": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessIdentityDoesNotSpawnPS": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessIdentityFailsForAbsentProcess": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessIdentityIgnoresCallerTimezone": [
+      "darwin",
+      "linux"
+    ],
+    "TestOwnerProcessIdentityIsStableForOneProcess": [
+      "darwin",
+      "linux"
+    ],
+    "TestParsePSOwnedProcess": [
+      "darwin",
+      "linux"
+    ],
+    "TestParseProcStatStartTimeCountsFromLastClosingParenthesis": [
+      "linux"
+    ],
+    "TestParseProcStatStartTimeRejectsMissingField": [
+      "linux"
+    ],
+    "TestProcessAliveReportsCurrentProcessAlive": [
+      "darwin",
+      "linux"
+    ],
+    "TestProcessAliveReportsExitedUnreapedChildDead": [
+      "windows"
+    ],
+    "TestProcessAliveReportsReapedChildDead": [
+      "darwin",
+      "linux"
+    ],
+    "TestProcessVanishedAcceptsBothProcfsAnswers": [
+      "linux"
+    ],
+    "TestReclaimOrphanedRunCompletesFailedReleasesLockAndJournalsReason": [
+      "darwin",
+      "linux"
+    ],
+    "TestReclaimOrphanedRunConcurrentAttemptsJournalOnce": [
+      "darwin",
+      "linux"
+    ],
+    "TestWindowsProcessStartParsesRecordedIdentity": [
+      "windows"
+    ],
+    "TestWindowsProcessTreeRejectsStaleParentLinks": [
+      "windows"
+    ]
+  }
+}
+$ go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1
+ok  	roundfix/internal/spec	0.925s
+
+exit: 0
+
+$ git clone --no-local /Users/marcio/.roundfix/worktrees/roundfix-deliver-0245-generated-records-that-hold-across-specs-and-platforms-a33105064172e34c-a93c6fd1-d2504e46/run_20261007T140950Z_74ae5850fe6a3ae6 /private/tmp/qa0245-vn_8_6t9
+Cloning into '/private/tmp/qa0245-vn_8_6t9'...
+
+exit: 0
+
+$ git config user.name QA disposable rehearsal
+
+exit: 0
+
+$ git config user.email qa@example.invalid
+
+exit: 0
+
+$ go test ./internal/spec -run '^TestCoverageEquivalence$' -count=1
+--- FAIL: TestCoverageEquivalence (0.66s)
+    coverage_test.go:75: coverage regression: package "roundfix/internal/store" no longer executes "TestParseProcStatStartTimeRejectsMissingField" on linux
+FAIL
+suiteguard: guard cost: measured 2469 paths; fingerprint took 86.26925ms before and 55.817458ms after
+FAIL	roundfix/internal/spec	1.053s
+FAIL
+
+exit: 1
+
+Explicit independent JSON confirmation:
+TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded: ['darwin']
+TestParseProcStatStartTimeRejectsMissingField: ['linux']
+TestParseProcStatStartTimeCountsFromLastClosingParenthesis: ['linux']
+TestWindowsProcessStartParsesRecordedIdentity: ['windows']

@@ -1,0 +1,619 @@
+$ git clone --no-local /Users/marcio/.roundfix/worktrees/roundfix-deliver-0245-generated-records-that-hold-across-specs-and-platforms-a33105064172e34c-a93c6fd1-d2504e46/run_20261007T140950Z_74ae5850fe6a3ae6 /private/tmp/qa0245-nnjroz0b
+Cloning into '/private/tmp/qa0245-nnjroz0b'...
+
+exit: 0
+
+$ git config user.name QA disposable rehearsal
+
+exit: 0
+
+$ git config user.email qa@example.invalid
+
+exit: 0
+
+$ git config commit.gpgsign false
+
+exit: 0
+
+$ git checkout -b qa-main
+Switched to a new branch 'qa-main'
+
+exit: 0
+
+$ git checkout -b qa-first
+Switched to a new branch 'qa-first'
+
+exit: 0
+
+$ go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1
+ok  	roundfix/internal/baseline	0.714s
+
+exit: 0
+
+$ make baseline-digests
+ok  	roundfix/internal/baseline	0.653s
+ok  	roundfix/skills	0.268s
+ok  	roundfix/internal/baseline	1.521s
+ok  	roundfix/internal/baseline	0.392s
+ok  	roundfix/internal/baseline	0.507s
+ok  	roundfix/internal/baseline	1.104s
+ok  	roundfix/internal/baseline	2.090s
+ok  	roundfix/internal/baseline	0.459s
+baseline-digests: regenerated
+  internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/domain.md
+  internal/baseline/assets/profiles/standard-typescript-monorepo.json
+  internal/baseline/testdata/catalog.diagnostics.golden.json
+  internal/baseline/testdata/catalog.digest
+  internal/baseline/testdata/catalog.normalized.json
+  internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+  internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+  internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+  internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":true}
+
+exit: 0
+
+$ make build
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=92de34df-dirty' -X 'roundfix/internal/app.BuildTime=2026-10-07 11:22:34 -0300'" -o bin/roundfix ./cmd/roundfix
+
+exit: 0
+
+$ ./bin/roundfix --version
+roundfix 0.55.0 (92de34df-dirty, built 2026-10-07 11:22:34 -0300)
+
+exit: 0
+
+$ ./bin/roundfix baseline update --repo . --no-skills --yes --format text
+Baseline update: verified
+Result: approved Baseline Plan applied
+Status matrix:
+- Approved postimages: verified
+- Semantic retention: not run
+- Profile alignment: verified
+- Repository Verification: not run
+- Idempotence: not run
+Prior catalog: sha256:28caf099b47b72a829a099bca29227ea9c472933c48ec1bc85e86e1c078815df
+Current catalog: sha256:7ddf00459200b6f25a58abb7e2372474cc217bf33a76a565c53852bed0c58958
+File changes: 2
+- update docs/agents/domain.md (1 managed entries)
+- update docs/agents/setup-context.json (1 managed entries)
+Retention evidence: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: skipped
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:e7db0d1b8e2fd604c8179823dcf6d6f418ea0a085343e395ef9d447fb43e857d
+Approved Plan Digest: sha256:e7db0d1b8e2fd604c8179823dcf6d6f418ea0a085343e395ef9d447fb43e857d
+
+exit: 0
+
+$ git add -A
+
+exit: 0
+
+$ git commit -m test: first disposable clause
+[qa-first ebffe8df] test: first disposable clause
+ 13 files changed, 82 insertions(+), 78 deletions(-)
+
+exit: 0
+
+$ git checkout qa-main
+Switched to branch 'qa-main'
+
+exit: 0
+
+$ git checkout -b qa-second
+Switched to a new branch 'qa-second'
+
+exit: 0
+
+$ go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1
+ok  	roundfix/internal/baseline	0.631s
+
+exit: 0
+
+$ make baseline-digests
+ok  	roundfix/internal/baseline	0.646s
+ok  	roundfix/skills	0.262s
+ok  	roundfix/internal/baseline	1.419s
+ok  	roundfix/internal/baseline	0.440s
+ok  	roundfix/internal/baseline	0.515s
+ok  	roundfix/internal/baseline	1.053s
+ok  	roundfix/internal/baseline	1.878s
+ok  	roundfix/internal/baseline	0.454s
+baseline-digests: regenerated
+  internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/domain.md
+  internal/baseline/assets/profiles/standard-typescript-monorepo.json
+  internal/baseline/testdata/catalog.diagnostics.golden.json
+  internal/baseline/testdata/catalog.digest
+  internal/baseline/testdata/catalog.normalized.json
+  internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+  internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+  internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+  internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":true}
+
+exit: 0
+
+$ make build
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=92de34df-dirty' -X 'roundfix/internal/app.BuildTime=2026-10-07 11:22:58 -0300'" -o bin/roundfix ./cmd/roundfix
+
+exit: 0
+
+$ ./bin/roundfix --version
+roundfix 0.55.0 (92de34df-dirty, built 2026-10-07 11:22:58 -0300)
+
+exit: 0
+
+$ ./bin/roundfix baseline update --repo . --no-skills --yes --format text
+Baseline update: verified
+Result: approved Baseline Plan applied
+Status matrix:
+- Approved postimages: verified
+- Semantic retention: not run
+- Profile alignment: verified
+- Repository Verification: not run
+- Idempotence: not run
+Prior catalog: sha256:28caf099b47b72a829a099bca29227ea9c472933c48ec1bc85e86e1c078815df
+Current catalog: sha256:e6ee683381b084826e7648e0b6275e55a4e32423b8ce1582477d2c5b2541eb65
+File changes: 2
+- update docs/agents/domain.md (1 managed entries)
+- update docs/agents/setup-context.json (1 managed entries)
+Retention evidence: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: skipped
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:066680712f19fdb66e3f7e61fa75de1aa314de2a59928adf722d763398222a85
+Approved Plan Digest: sha256:066680712f19fdb66e3f7e61fa75de1aa314de2a59928adf722d763398222a85
+
+exit: 0
+
+$ git add -A
+
+exit: 0
+
+$ git commit -m test: second disposable clause
+[qa-second 8a4c2925] test: second disposable clause
+ 13 files changed, 82 insertions(+), 78 deletions(-)
+
+exit: 0
+
+$ git checkout qa-main
+Switched to branch 'qa-main'
+
+exit: 0
+
+$ git merge --ff-only qa-first
+Updating 92de34df..ebffe8df
+Fast-forward
+ docs/agents/domain.md                              |  2 +-
+ docs/agents/setup-context.json                     |  4 +--
+ .../golden/docs/agents/domain.md                   |  2 +-
+ .../baseline/assets/modules/context-workflow.json  |  4 +--
+ .../profiles/standard-typescript-monorepo.json     |  2 +-
+ internal/baseline/module-versions.json             |  4 +++
+ .../testdata/catalog.diagnostics.golden.json       |  2 +-
+ internal/baseline/testdata/catalog.digest          |  2 +-
+ internal/baseline/testdata/catalog.normalized.json |  2 +-
+ .../advisory-only-divergences.golden.json          | 30 ++++++++--------
+ .../clean-adoption.golden.json                     | 30 ++++++++--------
+ ...mpotent-replan-after-verified-apply.golden.json | 36 +++++++++----------
+ ...changed-profile-and-catalog-digests.golden.json | 40 +++++++++++-----------
+ 13 files changed, 82 insertions(+), 78 deletions(-)
+
+exit: 0
+
+$ git checkout qa-second
+Switched to branch 'qa-second'
+
+exit: 0
+
+$ git -c merge.conflictStyle=merge merge qa-main
+Auto-merging docs/agents/domain.md
+Auto-merging docs/agents/setup-context.json
+CONFLICT (content): Merge conflict in docs/agents/setup-context.json
+Auto-merging internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/domain.md
+Auto-merging internal/baseline/assets/modules/context-workflow.json
+Auto-merging internal/baseline/assets/profiles/standard-typescript-monorepo.json
+CONFLICT (content): Merge conflict in internal/baseline/assets/profiles/standard-typescript-monorepo.json
+Auto-merging internal/baseline/module-versions.json
+CONFLICT (content): Merge conflict in internal/baseline/module-versions.json
+Auto-merging internal/baseline/testdata/catalog.diagnostics.golden.json
+CONFLICT (content): Merge conflict in internal/baseline/testdata/catalog.diagnostics.golden.json
+Auto-merging internal/baseline/testdata/catalog.digest
+CONFLICT (content): Merge conflict in internal/baseline/testdata/catalog.digest
+Auto-merging internal/baseline/testdata/catalog.normalized.json
+CONFLICT (content): Merge conflict in internal/baseline/testdata/catalog.normalized.json
+Auto-merging internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+CONFLICT (content): Merge conflict in internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+Auto-merging internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+CONFLICT (content): Merge conflict in internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+Auto-merging internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+CONFLICT (content): Merge conflict in internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+Auto-merging internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+CONFLICT (content): Merge conflict in internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+Recorded preimage for 'docs/agents/setup-context.json'
+Recorded preimage for 'internal/baseline/assets/profiles/standard-typescript-monorepo.json'
+Recorded preimage for 'internal/baseline/module-versions.json'
+Recorded preimage for 'internal/baseline/testdata/catalog.diagnostics.golden.json'
+Recorded preimage for 'internal/baseline/testdata/catalog.digest'
+Recorded preimage for 'internal/baseline/testdata/catalog.normalized.json'
+Recorded preimage for 'internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json'
+Recorded preimage for 'internal/baseline/testdata/plan-characterization/clean-adoption.golden.json'
+Recorded preimage for 'internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json'
+Recorded preimage for 'internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json'
+Automatic merge failed; fix conflicts and then commit the result.
+
+exit: 1
+
+$ git diff --name-only --diff-filter=U
+docs/agents/setup-context.json
+internal/baseline/assets/profiles/standard-typescript-monorepo.json
+internal/baseline/module-versions.json
+internal/baseline/testdata/catalog.diagnostics.golden.json
+internal/baseline/testdata/catalog.digest
+internal/baseline/testdata/catalog.normalized.json
+internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+
+exit: 0
+
+Conflicted paths: ['docs/agents/setup-context.json', 'internal/baseline/assets/profiles/standard-typescript-monorepo.json', 'internal/baseline/module-versions.json', 'internal/baseline/testdata/catalog.diagnostics.golden.json', 'internal/baseline/testdata/catalog.digest', 'internal/baseline/testdata/catalog.normalized.json', 'internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json', 'internal/baseline/testdata/plan-characterization/clean-adoption.golden.json', 'internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json', 'internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json']
+$ git checkout --theirs -- docs/agents/setup-context.json
+
+exit: 0
+
+$ git add docs/agents/setup-context.json
+
+exit: 0
+
+$ git checkout --theirs -- internal/baseline/assets/profiles/standard-typescript-monorepo.json
+
+exit: 0
+
+$ git add internal/baseline/assets/profiles/standard-typescript-monorepo.json
+
+exit: 0
+
+$ git checkout --theirs -- internal/baseline/module-versions.json
+
+exit: 0
+
+$ git add internal/baseline/module-versions.json
+
+exit: 0
+
+$ git checkout --theirs -- internal/baseline/testdata/catalog.diagnostics.golden.json
+
+exit: 0
+
+$ git add internal/baseline/testdata/catalog.diagnostics.golden.json
+
+exit: 0
+
+$ git checkout --theirs -- internal/baseline/testdata/catalog.digest
+
+exit: 0
+
+$ git add internal/baseline/testdata/catalog.digest
+
+exit: 0
+
+$ git checkout --theirs -- internal/baseline/testdata/catalog.normalized.json
+
+exit: 0
+
+$ git add internal/baseline/testdata/catalog.normalized.json
+
+exit: 0
+
+$ git checkout --theirs -- internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+
+exit: 0
+
+$ git add internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+
+exit: 0
+
+$ git checkout --theirs -- internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+
+exit: 0
+
+$ git add internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+
+exit: 0
+
+$ git checkout --theirs -- internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+
+exit: 0
+
+$ git add internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+
+exit: 0
+
+$ git checkout --theirs -- internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+
+exit: 0
+
+$ git add internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+
+exit: 0
+
+$ go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1
+ok  	roundfix/internal/baseline	0.658s
+
+exit: 0
+
+$ make baseline-digests
+ok  	roundfix/internal/baseline	0.674s
+ok  	roundfix/skills	0.319s
+ok  	roundfix/internal/baseline	1.385s
+ok  	roundfix/internal/baseline	0.510s
+ok  	roundfix/internal/baseline	0.518s
+ok  	roundfix/internal/baseline	1.067s
+ok  	roundfix/internal/baseline	1.956s
+ok  	roundfix/internal/baseline	0.454s
+baseline-digests: regenerated
+  internal/baseline/assets/profiles/standard-typescript-monorepo.json
+  internal/baseline/testdata/catalog.diagnostics.golden.json
+  internal/baseline/testdata/catalog.digest
+  internal/baseline/testdata/catalog.normalized.json
+  internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+  internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+  internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+  internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":true}
+
+exit: 0
+
+$ go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1
+ok  	roundfix/internal/baseline	0.283s
+
+exit: 0
+
+$ make baseline-digests
+ok  	roundfix/internal/baseline	0.536s
+ok  	roundfix/skills	0.294s
+ok  	roundfix/internal/baseline	1.166s
+ok  	roundfix/internal/baseline	0.264s
+ok  	roundfix/internal/baseline	0.492s
+ok  	roundfix/internal/baseline	0.694s
+ok  	roundfix/internal/baseline	1.535s
+ok  	roundfix/internal/baseline	0.308s
+baseline-digests: no changes; derived artifacts already match their canonical sources
+{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":false}
+
+exit: 0
+
+$ go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1
+ok  	roundfix/internal/baseline	0.299s
+
+exit: 0
+
+$ make baseline-digests
+ok  	roundfix/internal/baseline	0.534s
+ok  	roundfix/skills	0.166s
+ok  	roundfix/internal/baseline	0.994s
+ok  	roundfix/internal/baseline	0.300s
+ok  	roundfix/internal/baseline	0.530s
+ok  	roundfix/internal/baseline	0.668s
+ok  	roundfix/internal/baseline	1.572s
+ok  	roundfix/internal/baseline	0.282s
+baseline-digests: no changes; derived artifacts already match their canonical sources
+{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":false}
+
+exit: 0
+
+$ make build
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=8a4c2925-dirty' -X 'roundfix/internal/app.BuildTime=2026-10-07 11:23:36 -0300'" -o bin/roundfix ./cmd/roundfix
+
+exit: 0
+
+$ ./bin/roundfix --version
+roundfix 0.55.0 (8a4c2925-dirty, built 2026-10-07 11:23:36 -0300)
+
+exit: 0
+
+$ ./bin/roundfix baseline update --repo . --no-skills --yes --format text
+Baseline update: verified
+Result: approved Baseline Plan applied
+Status matrix:
+- Approved postimages: verified
+- Semantic retention: not run
+- Profile alignment: verified
+- Repository Verification: not run
+- Idempotence: not run
+Prior catalog: sha256:7ddf00459200b6f25a58abb7e2372474cc217bf33a76a565c53852bed0c58958
+Current catalog: sha256:8bd8f5e234f309486970fbbc8dcb2a25af837272d366bd5e0257af6821002700
+File changes: 1
+- update docs/agents/setup-context.json (1 managed entries)
+Unrecorded managed regions: 1
+- Path: docs/agents/domain.md
+  Managed identity: guide.domain
+  Reason: digest-mismatch
+  Removed lines: no lines removed
+Retention evidence: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: skipped
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:80c130665ee0aee9c351e7fc359b2c5ab0537d1041ba29d3ef1e0e078e52ea65
+Approved Plan Digest: sha256:80c130665ee0aee9c351e7fc359b2c5ab0537d1041ba29d3ef1e0e078e52ea65
+
+exit: 0
+
+$ git diff --name-only --diff-filter=U
+
+exit: 0
+
+Both source clauses preserved; merged version 25 is one above first 24
+$ git add -A
+
+exit: 0
+
+$ git commit -m test: resolve disposable derived merge
+Recorded resolution for 'docs/agents/setup-context.json'.
+Recorded resolution for 'internal/baseline/assets/profiles/standard-typescript-monorepo.json'.
+Recorded resolution for 'internal/baseline/module-versions.json'.
+Recorded resolution for 'internal/baseline/testdata/catalog.diagnostics.golden.json'.
+Recorded resolution for 'internal/baseline/testdata/catalog.digest'.
+Recorded resolution for 'internal/baseline/testdata/catalog.normalized.json'.
+Recorded resolution for 'internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json'.
+Recorded resolution for 'internal/baseline/testdata/plan-characterization/clean-adoption.golden.json'.
+Recorded resolution for 'internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json'.
+Recorded resolution for 'internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json'.
+[qa-second 1f700940] test: resolve disposable derived merge
+
+exit: 0
+
+$ make verify
+go vet ./...
+go test -parallel 16 ./...
+?   	roundfix/cmd/roundfix	[no test files]
+?   	roundfix/cmd/verify-select	[no test files]
+ok  	roundfix/internal/agent	2.525s
+ok  	roundfix/internal/app	0.190s
+ok  	roundfix/internal/authorization	0.863s
+--- FAIL: TestTheGlossaryClausesCarryTheirForceAndText (0.00s)
+    --- FAIL: TestTheGlossaryClausesCarryTheirForceAndText/clause.context.read-domain-contract (0.00s)
+        glossary_clauses_test.go:39: clause clause.context.read-domain-contract force/text differs: map[enforcement:mandatory guidance:QA first clause. The repository's selected domain context and its accepted ADRs are the base of the CONTEXT-driven workflow. Read both before naming domain concepts or changing behavior, and flag conflicts instead of silently overriding repository decisions. id:clause.context.read-domain-contract]
+    --- FAIL: TestTheGlossaryClausesCarryTheirForceAndText/clause.domain.glossary-currency (0.00s)
+        glossary_clauses_test.go:39: clause clause.domain.glossary-currency force/text differs: map[enforcement:mandatory guidance:QA second clause. A Spec adds each domain term it introduces to the domain context, and revises each term it changes, through `domain-modeling` in one of its own Tasks, whose Verification names the term. It lists those terms in a `## Glossary` section of its PRD or TechSpec, with any bolded phrase it declares not a domain term. `roundfix spec check` reports a bolded term the domain context lacks and the section does not cover, and the QA gate and `roundfix archive` refuse a Spec whose declared term is still missing. When `domain-modeling` names its glossary file differently, it writes to the selected domain context. Work outside a Spec checks at its close whether it introduced, changed, or retired a term and updates the domain context when it did. Neither the check nor the update waits for human interaction; reach for `grilling` only when a term is ambiguous enough to need sharpening before it is written down. id:clause.domain.glossary-currency]
+--- FAIL: TestTheGlossaryClausesRenderInTheDomainGuide (0.00s)
+    --- FAIL: TestTheGlossaryClausesRenderInTheDomainGuide/clause.context.read-domain-contract (0.00s)
+        glossary_clauses_test.go:63: guide lacks exactly one forced clause clause.context.read-domain-contract
+    --- FAIL: TestTheGlossaryClausesRenderInTheDomainGuide/clause.domain.glossary-currency (0.00s)
+        glossary_clauses_test.go:63: guide lacks exactly one forced clause clause.domain.glossary-currency
+FAIL
+suiteguard: guard cost: measured 2469 paths; fingerprint took 112.933708ms before and 264.186458ms after
+FAIL	roundfix/internal/baseline	105.456s
+ok  	roundfix/internal/baselineacp	0.243s
+--- FAIL: TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner (0.25s)
+    orphan_unix_test.go:246: legacy force stop exit = 1, want 0; stderr="Stop failed\n\nReason:\n  force stop Run run_20261007T142807Z_3dc143d846fcd1ab owner PID 50918 failed step \"enumerate owned process tree\": owner process 50918 failed step \"enumerate owned process tree\": read process table for non-session owner: operation not permitted; Run remains Active; Active Run lock retained\n\nUsage:\n  Run 'roundfix stop --help' for usage.\n"
+--- FAIL: TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion (0.19s)
+    orphan_unix_test.go:103: force stop exit = 1, want 0; stderr="Stop failed\n\nReason:\n  force stop Run run_20261007T142808Z_171f121ca9323ce6 owner PID 51156 failed step \"enumerate owned process tree\": owner process 51156 failed step \"enumerate owned process tree\": read process table for non-session owner: operation not permitted; Run remains Active; Active Run lock retained\n\nUsage:\n  Run 'roundfix stop --help' for usage.\n"
+FAIL
+suiteguard: guard cost: measured 2469 paths; fingerprint took 232.854291ms before and 64.288792ms after
+FAIL	roundfix/internal/cli	287.698s
+ok  	roundfix/internal/codex	0.216s
+ok  	roundfix/internal/config	1.897s
+ok  	roundfix/internal/daemon	130.536s
+ok  	roundfix/internal/delivery	4.678s
+?   	roundfix/internal/docscontract	[no test files]
+ok  	roundfix/internal/gittest	0.970s
+ok  	roundfix/internal/judge	2.081s
+ok  	roundfix/internal/lighttier	0.311s
+ok  	roundfix/internal/mdtree	0.216s
+ok  	roundfix/internal/notify	0.193s
+ok  	roundfix/internal/openrouterkey	0.181s
+ok  	roundfix/internal/preflight	1.079s
+ok  	roundfix/internal/releaseplan	0.193s
+ok  	roundfix/internal/reviewsource	0.189s
+ok  	roundfix/internal/reviewsource/coderabbit	0.230s
+ok  	roundfix/internal/rounds	0.232s
+ok  	roundfix/internal/runcause	0.542s
+ok  	roundfix/internal/runevent	0.192s
+ok  	roundfix/internal/skillhash	0.204s
+ok  	roundfix/internal/spec	110.220s
+ok  	roundfix/internal/specaudit	4.490s
+ok  	roundfix/internal/speccheck	109.231s
+ok  	roundfix/internal/store	37.042s
+ok  	roundfix/internal/suiteguard	0.654s
+ok  	roundfix/internal/suiteguardcontract	0.483s
+ok  	roundfix/internal/testfixture	1.467s
+ok  	roundfix/internal/testwait	0.844s
+ok  	roundfix/internal/tui	0.438s
+ok  	roundfix/internal/verifyselect	5.760s
+ok  	roundfix/internal/watch	0.230s
+ok  	roundfix/internal/worktree	89.259s
+ok  	roundfix/skills	1.399s
+FAIL
+make: *** [test] Error 1
+
+exit: 2
+
+Traceback (most recent call last):
+  File "/private/tmp/qa0245-merge-final.py", line 13, in row
+    try: fn();status='pass'
+         ~~^^
+  File "/private/tmp/qa0245-merge-final.py", line 62, in q04
+    run(['git','add','-A'],d);run(['git','commit','-m','test: resolve disposable derived merge'],d);run('make verify',d)
+                                                                                                    ~~~^^^^^^^^^^^^^^^^^
+  File "/private/tmp/qa0245-merge-final.py", line 7, in run
+    if expected is not None: assert p.returncode==expected, logs[-1]
+                                    ^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: $ make verify
+go vet ./...
+go test -parallel 16 ./...
+?   	roundfix/cmd/roundfix	[no test files]
+?   	roundfix/cmd/verify-select	[no test files]
+ok  	roundfix/internal/agent	2.525s
+ok  	roundfix/internal/app	0.190s
+ok  	roundfix/internal/authorization	0.863s
+--- FAIL: TestTheGlossaryClausesCarryTheirForceAndText (0.00s)
+    --- FAIL: TestTheGlossaryClausesCarryTheirForceAndText/clause.context.read-domain-contract (0.00s)
+        glossary_clauses_test.go:39: clause clause.context.read-domain-contract force/text differs: map[enforcement:mandatory guidance:QA first clause. The repository's selected domain context and its accepted ADRs are the base of the CONTEXT-driven workflow. Read both before naming domain concepts or changing behavior, and flag conflicts instead of silently overriding repository decisions. id:clause.context.read-domain-contract]
+    --- FAIL: TestTheGlossaryClausesCarryTheirForceAndText/clause.domain.glossary-currency (0.00s)
+        glossary_clauses_test.go:39: clause clause.domain.glossary-currency force/text differs: map[enforcement:mandatory guidance:QA second clause. A Spec adds each domain term it introduces to the domain context, and revises each term it changes, through `domain-modeling` in one of its own Tasks, whose Verification names the term. It lists those terms in a `## Glossary` section of its PRD or TechSpec, with any bolded phrase it declares not a domain term. `roundfix spec check` reports a bolded term the domain context lacks and the section does not cover, and the QA gate and `roundfix archive` refuse a Spec whose declared term is still missing. When `domain-modeling` names its glossary file differently, it writes to the selected domain context. Work outside a Spec checks at its close whether it introduced, changed, or retired a term and updates the domain context when it did. Neither the check nor the update waits for human interaction; reach for `grilling` only when a term is ambiguous enough to need sharpening before it is written down. id:clause.domain.glossary-currency]
+--- FAIL: TestTheGlossaryClausesRenderInTheDomainGuide (0.00s)
+    --- FAIL: TestTheGlossaryClausesRenderInTheDomainGuide/clause.context.read-domain-contract (0.00s)
+        glossary_clauses_test.go:63: guide lacks exactly one forced clause clause.context.read-domain-contract
+    --- FAIL: TestTheGlossaryClausesRenderInTheDomainGuide/clause.domain.glossary-currency (0.00s)
+        glossary_clauses_test.go:63: guide lacks exactly one forced clause clause.domain.glossary-currency
+FAIL
+suiteguard: guard cost: measured 2469 paths; fingerprint took 112.933708ms before and 264.186458ms after
+FAIL	roundfix/internal/baseline	105.456s
+ok  	roundfix/internal/baselineacp	0.243s
+--- FAIL: TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner (0.25s)
+    orphan_unix_test.go:246: legacy force stop exit = 1, want 0; stderr="Stop failed\n\nReason:\n  force stop Run run_20261007T142807Z_3dc143d846fcd1ab owner PID 50918 failed step \"enumerate owned process tree\": owner process 50918 failed step \"enumerate owned process tree\": read process table for non-session owner: operation not permitted; Run remains Active; Active Run lock retained\n\nUsage:\n  Run 'roundfix stop --help' for usage.\n"
+--- FAIL: TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion (0.19s)
+    orphan_unix_test.go:103: force stop exit = 1, want 0; stderr="Stop failed\n\nReason:\n  force stop Run run_20261007T142808Z_171f121ca9323ce6 owner PID 51156 failed step \"enumerate owned process tree\": owner process 51156 failed step \"enumerate owned process tree\": read process table for non-session owner: operation not permitted; Run remains Active; Active Run lock retained\n\nUsage:\n  Run 'roundfix stop --help' for usage.\n"
+FAIL
+suiteguard: guard cost: measured 2469 paths; fingerprint took 232.854291ms before and 64.288792ms after
+FAIL	roundfix/internal/cli	287.698s
+ok  	roundfix/internal/codex	0.216s
+ok  	roundfix/internal/config	1.897s
+ok  	roundfix/internal/daemon	130.536s
+ok  	roundfix/internal/delivery	4.678s
+?   	roundfix/internal/docscontract	[no test files]
+ok  	roundfix/internal/gittest	0.970s
+ok  	roundfix/internal/judge	2.081s
+ok  	roundfix/internal/lighttier	0.311s
+ok  	roundfix/internal/mdtree	0.216s
+ok  	roundfix/internal/notify	0.193s
+ok  	roundfix/internal/openrouterkey	0.181s
+ok  	roundfix/internal/preflight	1.079s
+ok  	roundfix/internal/releaseplan	0.193s
+ok  	roundfix/internal/reviewsource	0.189s
+ok  	roundfix/internal/reviewsource/coderabbit	0.230s
+ok  	roundfix/internal/rounds	0.232s
+ok  	roundfix/internal/runcause	0.542s
+ok  	roundfix/internal/runevent	0.192s
+ok  	roundfix/internal/skillhash	0.204s
+ok  	roundfix/internal/spec	110.220s
+ok  	roundfix/internal/specaudit	4.490s
+ok  	roundfix/internal/speccheck	109.231s
+ok  	roundfix/internal/store	37.042s
+ok  	roundfix/internal/suiteguard	0.654s
+ok  	roundfix/internal/suiteguardcontract	0.483s
+ok  	roundfix/internal/testfixture	1.467s
+ok  	roundfix/internal/testwait	0.844s
+ok  	roundfix/internal/tui	0.438s
+ok  	roundfix/internal/verifyselect	5.760s
+ok  	roundfix/internal/watch	0.230s
+ok  	roundfix/internal/worktree	89.259s
+ok  	roundfix/skills	1.399s
+FAIL
+make: *** [test] Error 1
+
+exit: 2
+

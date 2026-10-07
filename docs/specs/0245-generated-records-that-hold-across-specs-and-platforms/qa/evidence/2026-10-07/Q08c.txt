@@ -1,0 +1,5 @@
+$ git cat-file -t 66f2d85b
+commit
+
+exit: 0
+Original independent authoring measurement unavailable. Searched named measurement/authoring/coverage artifacts in /private/tmp and operator log; no raw output at 66f2d85b located. Prior locator audit /private/tmp/qa0245-rerun-Q08.txt corroborates absence. PRD retelling and post-implementation tests do not establish original zero differences, 48 restricted tests, six-header refresh and full-suite pass. Unblock: supply original raw measurement or independently replay it completely at 66f2d85b. No network denial claimed.

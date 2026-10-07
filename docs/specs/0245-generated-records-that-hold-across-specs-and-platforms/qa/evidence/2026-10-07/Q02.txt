@@ -1,0 +1,110 @@
+$ go test -count=1 -v ./internal/baseline -run 'Test(ModuleContent|AModule|AnUnrecorded|Recording|ModuleVersionRecordHistory|EveryBaseline)' 
+=== RUN   TestAnUnrecordedBranchPrefixStatesTheCommitTypeRule
+--- PASS: TestAnUnrecordedBranchPrefixStatesTheCommitTypeRule (0.08s)
+=== RUN   TestAModuleTheProfileDoesNotSelectIsNotChecked
+=== PAUSE TestAModuleTheProfileDoesNotSelectIsNotChecked
+=== RUN   TestAnUnrecordedFrontendLayoutStatesTheSuggestionAndKeepsTheSystemsClauses
+--- PASS: TestAnUnrecordedFrontendLayoutStatesTheSuggestionAndKeepsTheSystemsClauses (0.06s)
+=== RUN   TestAnUnrecordedOptionalDecisionIsNotMissing
+--- PASS: TestAnUnrecordedOptionalDecisionIsNotMissing (0.00s)
+=== RUN   TestEveryBaselineModuleVersionIsRecorded
+--- PASS: TestEveryBaselineModuleVersionIsRecorded (0.00s)
+=== RUN   TestModuleContentDigestIgnoresVersionAndLayout
+--- PASS: TestModuleContentDigestIgnoresVersionAndLayout (0.00s)
+=== RUN   TestAModuleChangedUnderARecordedVersionIsRefused
+--- PASS: TestAModuleChangedUnderARecordedVersionIsRefused (0.00s)
+=== RUN   TestAnUnrecordedModuleVersionIsRefused
+--- PASS: TestAnUnrecordedModuleVersionIsRefused (0.00s)
+=== RUN   TestRecordingRaisesAModuleAboveTheHighestRecordedVersion
+=== RUN   TestRecordingRaisesAModuleAboveTheHighestRecordedVersion/current-1
+=== RUN   TestRecordingRaisesAModuleAboveTheHighestRecordedVersion/current-2
+--- PASS: TestRecordingRaisesAModuleAboveTheHighestRecordedVersion (0.00s)
+    --- PASS: TestRecordingRaisesAModuleAboveTheHighestRecordedVersion/current-1 (0.00s)
+    --- PASS: TestRecordingRaisesAModuleAboveTheHighestRecordedVersion/current-2 (0.00s)
+=== RUN   TestRecordingKeepsAHigherModuleVersion
+--- PASS: TestRecordingKeepsAHigherModuleVersion (0.00s)
+=== RUN   TestRecordingNeverRewritesARecordedModuleEntry
+--- PASS: TestRecordingNeverRewritesARecordedModuleEntry (0.00s)
+=== RUN   TestAModuleVersionNotOnItsOwnLineIsRefused
+=== RUN   TestAModuleVersionNotOnItsOwnLineIsRefused/wrong-indent
+=== RUN   TestAModuleVersionNotOnItsOwnLineIsRefused/nested-decoy
+=== RUN   TestAModuleVersionNotOnItsOwnLineIsRefused/duplicate
+=== RUN   TestAModuleVersionNotOnItsOwnLineIsRefused/inline
+--- PASS: TestAModuleVersionNotOnItsOwnLineIsRefused (0.00s)
+    --- PASS: TestAModuleVersionNotOnItsOwnLineIsRefused/wrong-indent (0.00s)
+    --- PASS: TestAModuleVersionNotOnItsOwnLineIsRefused/nested-decoy (0.00s)
+    --- PASS: TestAModuleVersionNotOnItsOwnLineIsRefused/duplicate (0.00s)
+    --- PASS: TestAModuleVersionNotOnItsOwnLineIsRefused/inline (0.00s)
+=== RUN   TestRecordingRewritesOnlyTheTopLevelVersionLine
+--- PASS: TestRecordingRewritesOnlyTheTopLevelVersionLine (0.00s)
+=== RUN   TestRecordingWritesNothingWhenAModuleIsRefused
+=== RUN   TestRecordingWritesNothingWhenAModuleIsRefused/layout
+=== RUN   TestRecordingWritesNothingWhenAModuleIsRefused/history
+=== RUN   TestRecordingWritesNothingWhenAModuleIsRefused/schema
+=== RUN   TestRecordingWritesNothingWhenAModuleIsRefused/overflow
+=== RUN   TestRecordingWritesNothingWhenAModuleIsRefused/invalid-version
+=== RUN   TestRecordingWritesNothingWhenAModuleIsRefused/malformed-json
+--- PASS: TestRecordingWritesNothingWhenAModuleIsRefused (0.01s)
+    --- PASS: TestRecordingWritesNothingWhenAModuleIsRefused/layout (0.00s)
+    --- PASS: TestRecordingWritesNothingWhenAModuleIsRefused/history (0.00s)
+    --- PASS: TestRecordingWritesNothingWhenAModuleIsRefused/schema (0.00s)
+    --- PASS: TestRecordingWritesNothingWhenAModuleIsRefused/overflow (0.00s)
+    --- PASS: TestRecordingWritesNothingWhenAModuleIsRefused/invalid-version (0.00s)
+    --- PASS: TestRecordingWritesNothingWhenAModuleIsRefused/malformed-json (0.00s)
+=== RUN   TestModuleVersionRecordHistoryRefusals
+=== RUN   TestModuleVersionRecordHistoryRefusals/missing
+=== RUN   TestModuleVersionRecordHistoryRefusals/schema
+=== RUN   TestModuleVersionRecordHistoryRefusals/ascending
+=== RUN   TestModuleVersionRecordHistoryRefusals/removed
+--- PASS: TestModuleVersionRecordHistoryRefusals (0.00s)
+    --- PASS: TestModuleVersionRecordHistoryRefusals/missing (0.00s)
+    --- PASS: TestModuleVersionRecordHistoryRefusals/schema (0.00s)
+    --- PASS: TestModuleVersionRecordHistoryRefusals/ascending (0.00s)
+    --- PASS: TestModuleVersionRecordHistoryRefusals/removed (0.00s)
+=== CONT  TestAModuleTheProfileDoesNotSelectIsNotChecked
+--- PASS: TestAModuleTheProfileDoesNotSelectIsNotChecked (0.02s)
+PASS
+suiteguard: guard cost: measured 2478 paths; fingerprint took 83.51375ms before and 79.537375ms after
+ok  	roundfix/internal/baseline	0.631s
+
+exit: 0
+
+$ git clone --no-local /Users/marcio/.roundfix/worktrees/roundfix-deliver-0245-generated-records-that-hold-across-specs-and-platforms-a33105064172e34c-a93c6fd1-d2504e46/run_20261007T140950Z_74ae5850fe6a3ae6 /private/tmp/qa0245-pifyl8k_
+Cloning into '/private/tmp/qa0245-pifyl8k_'...
+
+exit: 0
+
+$ git config user.name QA disposable rehearsal
+
+exit: 0
+
+$ git config user.email qa@example.invalid
+
+exit: 0
+
+$ go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -count=1
+--- FAIL: TestEveryBaselineModuleVersionIsRecorded (0.01s)
+    module_versions_test.go:266: context-workflow: content changed under version 23; run go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1
+FAIL
+suiteguard: guard cost: measured 2469 paths; fingerprint took 119.325708ms before and 77.647709ms after
+FAIL	roundfix/internal/baseline	0.470s
+FAIL
+
+exit: 1
+
+$ go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1
+ok  	roundfix/internal/baseline	0.521s
+
+exit: 0
+
+$ go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1
+ok  	roundfix/internal/baseline	0.398s
+
+exit: 0
+
+$ go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -count=1
+ok  	roundfix/internal/baseline	0.249s
+
+exit: 0
+
+Only top-level version changed; next free version 24; repeated record byte-identical.

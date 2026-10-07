@@ -1,0 +1,10 @@
+Offline upstream equivalent of https://pkg.go.dev/cmd/go; no network opened under authored no-network scope.
+/usr/local/go/src/cmd/go/alldocs.go:2124: // the file is considered to have an implicit build constraint requiring
+/usr/local/go/src/cmd/go/alldocs.go:873: //	    GoFiles           []string   // .go source files (excluding CgoFiles, TestGoFiles, XTestGoFiles)
+/usr/local/go/src/cmd/go/alldocs.go:887: //	    TestGoFiles       []string   // _test.go files in package
+/usr/local/go/src/cmd/go/alldocs.go:888: //	    XTestGoFiles      []string   // _test.go files outside package
+/usr/local/go/src/cmd/go/alldocs.go:873: //	    GoFiles           []string   // .go source files (excluding CgoFiles, TestGoFiles, XTestGoFiles)
+/usr/local/go/src/cmd/go/alldocs.go:888: //	    XTestGoFiles      []string   // _test.go files outside package
+/usr/local/go/src/cmd/go/alldocs.go:895: //	    XTestEmbedPatterns []string // //go:embed patterns in XTestGoFiles
+/usr/local/go/src/cmd/go/alldocs.go:1860: // Each listed package causes the execution of a separate test binary.
+Go docs support static GOOS-constrained test file discovery and host-only toolchain execution. Independently cross-checked with go help buildconstraint and host anchor.

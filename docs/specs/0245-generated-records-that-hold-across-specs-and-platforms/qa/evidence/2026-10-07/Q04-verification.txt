@@ -1,0 +1,56 @@
+go vet ./...
+go test -parallel 16 ./...
+?   	roundfix/cmd/roundfix	[no test files]
+?   	roundfix/cmd/verify-select	[no test files]
+ok  	roundfix/internal/agent	2.797s
+ok  	roundfix/internal/app	0.215s
+ok  	roundfix/internal/authorization	0.524s
+--- FAIL: TestStandardTypeScriptStructuralClauseRetention (0.04s)
+    plan_test.go:3096: structural clause "clause.domain.canonical-language" guidance = "QA first clause. Use the repository's canonical domain terms in code names, tests, user-facing copy, Specs, and delivery notes. Call out a missing term instead of inventing a competing synonym.", want Source Baseline text "Use the repository's canonical domain terms in code names, tests, user-facing copy, Specs, and delivery notes. Call out a missing term instead of inventing a competing synonym."
+    plan_test.go:3096: structural clause "clause.domain.layout-decision" guidance = "QA second clause. Follow the repository's declared single-context or multi-context layout. Setup can require that decision but cannot infer bounded contexts from directory names.", want Source Baseline text "Follow the repository's declared single-context or multi-context layout. Setup can require that decision but cannot infer bounded contexts from directory names."
+FAIL
+suiteguard: guard cost: measured 2469 paths; fingerprint took 169.068458ms before and 79.701834ms after
+FAIL	roundfix/internal/baseline	81.130s
+ok  	roundfix/internal/baselineacp	0.233s
+--- FAIL: TestBaselineUpdateFleetSweep (4.00s)
+    --- FAIL: TestBaselineUpdateFleetSweep/structural-clauses-missing (0.89s)
+        baseline_update_test.go:686: structural clauses [clause.domain.canonical-language] occur 0 times in docs/agents/domain.md, want 1
+suiteguard: guard cost: measured 2469 paths; fingerprint took 202.097916ms before and 228.376875ms after
+suiteguard: guard cost: measured 2469 paths; fingerprint took 185.706792ms before and 126.735542ms after
+FAIL
+suiteguard: guard cost: measured 2469 paths; fingerprint took 254.318334ms before and 65.596208ms after
+FAIL	roundfix/internal/cli	329.139s
+ok  	roundfix/internal/codex	0.222s
+ok  	roundfix/internal/config	1.810s
+ok  	roundfix/internal/daemon	110.204s
+ok  	roundfix/internal/delivery	4.188s
+?   	roundfix/internal/docscontract	[no test files]
+ok  	roundfix/internal/gittest	0.900s
+ok  	roundfix/internal/judge	1.992s
+ok  	roundfix/internal/lighttier	0.306s
+ok  	roundfix/internal/mdtree	0.220s
+ok  	roundfix/internal/notify	0.194s
+ok  	roundfix/internal/openrouterkey	0.184s
+ok  	roundfix/internal/preflight	1.323s
+ok  	roundfix/internal/releaseplan	0.190s
+ok  	roundfix/internal/reviewsource	0.186s
+ok  	roundfix/internal/reviewsource/coderabbit	0.237s
+ok  	roundfix/internal/rounds	0.247s
+ok  	roundfix/internal/runcause	0.418s
+ok  	roundfix/internal/runevent	0.194s
+ok  	roundfix/internal/skillhash	0.196s
+ok  	roundfix/internal/spec	89.095s
+ok  	roundfix/internal/specaudit	4.092s
+ok  	roundfix/internal/speccheck	85.698s
+ok  	roundfix/internal/store	29.212s
+ok  	roundfix/internal/suiteguard	1.358s
+ok  	roundfix/internal/suiteguardcontract	0.274s
+ok  	roundfix/internal/testfixture	1.545s
+ok  	roundfix/internal/testwait	0.823s
+ok  	roundfix/internal/tui	0.379s
+ok  	roundfix/internal/verifyselect	5.392s
+ok  	roundfix/internal/watch	0.222s
+ok  	roundfix/internal/worktree	82.110s
+ok  	roundfix/skills	1.313s
+FAIL
+make: *** [test] Error 1

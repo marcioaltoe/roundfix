@@ -1,0 +1,102 @@
+$ go test -count=1 -v ./internal/spec -run '^(TestCoverageCollection|TestCompareCoverageRecords|TestCoverageRecordRefuses|TestCoveragePlatforms|TestMarshalCoverageRecord|TestCoverageRecordCounts)' 
+=== RUN   TestCoverageCollectionListsEachPlatformOnlyTest
+=== PAUSE TestCoverageCollectionListsEachPlatformOnlyTest
+=== RUN   TestCoverageCollectionMatchesTheToolchainOnThisPlatform
+=== PAUSE TestCoverageCollectionMatchesTheToolchainOnThisPlatform
+=== RUN   TestCompareCoverageRecordsReportsAPlatformRegression
+=== PAUSE TestCompareCoverageRecordsReportsAPlatformRegression
+=== RUN   TestCoverageRecordRefusesAMalformedPlatformEntry
+=== PAUSE TestCoverageRecordRefusesAMalformedPlatformEntry
+=== RUN   TestCoveragePlatformsComeFromTheReleaseMatrix
+=== PAUSE TestCoveragePlatformsComeFromTheReleaseMatrix
+=== RUN   TestCompareCoverageRecordsReportsMissingTest
+=== PAUSE TestCompareCoverageRecordsReportsMissingTest
+=== RUN   TestCompareCoverageRecordsReportsAddedTestWithoutRegression
+=== PAUSE TestCompareCoverageRecordsReportsAddedTestWithoutRegression
+=== RUN   TestMarshalCoverageRecordIsDeterministic
+=== PAUSE TestMarshalCoverageRecordIsDeterministic
+=== RUN   TestCoverageRecordCountsNoPackageUnderDocs
+--- PASS: TestCoverageRecordCountsNoPackageUnderDocs (0.48s)
+=== CONT  TestCoverageCollectionListsEachPlatformOnlyTest
+=== CONT  TestCoveragePlatformsComeFromTheReleaseMatrix
+=== CONT  TestCompareCoverageRecordsReportsAPlatformRegression
+=== RUN   TestCompareCoverageRecordsReportsAPlatformRegression/lost_one_platform
+=== CONT  TestCoverageRecordRefusesAMalformedPlatformEntry
+=== RUN   TestCoverageRecordRefusesAMalformedPlatformEntry/unsorted_platforms
+=== CONT  TestCoverageCollectionMatchesTheToolchainOnThisPlatform
+=== CONT  TestCompareCoverageRecordsReportsAddedTestWithoutRegression
+=== CONT  TestMarshalCoverageRecordIsDeterministic
+--- PASS: TestCompareCoverageRecordsReportsAddedTestWithoutRegression (0.00s)
+=== CONT  TestCompareCoverageRecordsReportsMissingTest
+=== RUN   TestCompareCoverageRecordsReportsAPlatformRegression/lost_limited_test
+--- PASS: TestCompareCoverageRecordsReportsMissingTest (0.00s)
+--- PASS: TestMarshalCoverageRecordIsDeterministic (0.00s)
+=== RUN   TestCompareCoverageRecordsReportsAPlatformRegression/lost_all_platforms
+=== RUN   TestCoveragePlatformsComeFromTheReleaseMatrix/empty
+=== RUN   TestCompareCoverageRecordsReportsAPlatformRegression/gained_limited_test
+=== RUN   TestCompareCoverageRecordsReportsAPlatformRegression/gained_all_platforms
+=== RUN   TestCompareCoverageRecordsReportsAPlatformRegression/lost_release_platform
+=== RUN   TestCompareCoverageRecordsReportsAPlatformRegression/gained_release_platform
+=== RUN   TestCompareCoverageRecordsReportsAPlatformRegression/lost_package
+--- PASS: TestCompareCoverageRecordsReportsAPlatformRegression (0.00s)
+    --- PASS: TestCompareCoverageRecordsReportsAPlatformRegression/lost_one_platform (0.00s)
+    --- PASS: TestCompareCoverageRecordsReportsAPlatformRegression/lost_limited_test (0.00s)
+    --- PASS: TestCompareCoverageRecordsReportsAPlatformRegression/lost_all_platforms (0.00s)
+    --- PASS: TestCompareCoverageRecordsReportsAPlatformRegression/gained_limited_test (0.00s)
+    --- PASS: TestCompareCoverageRecordsReportsAPlatformRegression/gained_all_platforms (0.00s)
+    --- PASS: TestCompareCoverageRecordsReportsAPlatformRegression/lost_release_platform (0.00s)
+    --- PASS: TestCompareCoverageRecordsReportsAPlatformRegression/gained_release_platform (0.00s)
+    --- PASS: TestCompareCoverageRecordsReportsAPlatformRegression/lost_package (0.00s)
+=== RUN   TestCoverageRecordRefusesAMalformedPlatformEntry/duplicate_platforms
+=== RUN   TestCoveragePlatformsComeFromTheReleaseMatrix/null
+=== RUN   TestCoverageRecordRefusesAMalformedPlatformEntry/uppercase_platform
+=== RUN   TestCoverageRecordRefusesAMalformedPlatformEntry/empty_token
+=== RUN   TestCoveragePlatformsComeFromTheReleaseMatrix/invalid_JSON
+=== RUN   TestCoverageRecordRefusesAMalformedPlatformEntry/punctuation_token
+=== RUN   TestCoveragePlatformsComeFromTheReleaseMatrix/missing_goos
+=== RUN   TestCoverageRecordRefusesAMalformedPlatformEntry/missing_package
+=== RUN   TestCoverageRecordRefusesAMalformedPlatformEntry/empty_subset
+=== RUN   TestCoveragePlatformsComeFromTheReleaseMatrix/invalid_goos
+=== RUN   TestCoverageRecordRefusesAMalformedPlatformEntry/whole_set
+=== RUN   TestCoverageRecordRefusesAMalformedPlatformEntry/unsorted_subset
+=== RUN   TestCoveragePlatformsComeFromTheReleaseMatrix/unreadable
+=== RUN   TestCoverageRecordRefusesAMalformedPlatformEntry/duplicate_subset
+--- PASS: TestCoveragePlatformsComeFromTheReleaseMatrix (0.01s)
+    --- PASS: TestCoveragePlatformsComeFromTheReleaseMatrix/empty (0.00s)
+    --- PASS: TestCoveragePlatformsComeFromTheReleaseMatrix/null (0.00s)
+    --- PASS: TestCoveragePlatformsComeFromTheReleaseMatrix/invalid_JSON (0.00s)
+    --- PASS: TestCoveragePlatformsComeFromTheReleaseMatrix/missing_goos (0.00s)
+    --- PASS: TestCoveragePlatformsComeFromTheReleaseMatrix/invalid_goos (0.00s)
+    --- PASS: TestCoveragePlatformsComeFromTheReleaseMatrix/unreadable (0.00s)
+=== RUN   TestCoverageRecordRefusesAMalformedPlatformEntry/foreign_platform
+=== RUN   TestCoverageRecordRefusesAMalformedPlatformEntry/no_platforms
+=== RUN   TestCoverageRecordRefusesAMalformedPlatformEntry/test_in_both_places
+=== RUN   TestCoverageRecordRefusesAMalformedPlatformEntry/invalid_test_name
+=== RUN   TestCoverageRecordRefusesAMalformedPlatformEntry/marshal_sorts_without_mutating
+--- PASS: TestCoverageRecordRefusesAMalformedPlatformEntry (0.01s)
+    --- PASS: TestCoverageRecordRefusesAMalformedPlatformEntry/unsorted_platforms (0.00s)
+    --- PASS: TestCoverageRecordRefusesAMalformedPlatformEntry/duplicate_platforms (0.00s)
+    --- PASS: TestCoverageRecordRefusesAMalformedPlatformEntry/uppercase_platform (0.00s)
+    --- PASS: TestCoverageRecordRefusesAMalformedPlatformEntry/empty_token (0.00s)
+    --- PASS: TestCoverageRecordRefusesAMalformedPlatformEntry/punctuation_token (0.00s)
+    --- PASS: TestCoverageRecordRefusesAMalformedPlatformEntry/missing_package (0.00s)
+    --- PASS: TestCoverageRecordRefusesAMalformedPlatformEntry/empty_subset (0.00s)
+    --- PASS: TestCoverageRecordRefusesAMalformedPlatformEntry/whole_set (0.00s)
+    --- PASS: TestCoverageRecordRefusesAMalformedPlatformEntry/unsorted_subset (0.00s)
+    --- PASS: TestCoverageRecordRefusesAMalformedPlatformEntry/duplicate_subset (0.00s)
+    --- PASS: TestCoverageRecordRefusesAMalformedPlatformEntry/foreign_platform (0.00s)
+    --- PASS: TestCoverageRecordRefusesAMalformedPlatformEntry/no_platforms (0.00s)
+    --- PASS: TestCoverageRecordRefusesAMalformedPlatformEntry/test_in_both_places (0.00s)
+    --- PASS: TestCoverageRecordRefusesAMalformedPlatformEntry/invalid_test_name (0.00s)
+    --- PASS: TestCoverageRecordRefusesAMalformedPlatformEntry/marshal_sorts_without_mutating (0.00s)
+=== NAME  TestCoverageCollectionListsEachPlatformOnlyTest
+    coverage_platform_test.go:89: all release platforms collected without foreign execution on darwin
+--- PASS: TestCoverageCollectionListsEachPlatformOnlyTest (0.06s)
+=== NAME  TestCoverageCollectionMatchesTheToolchainOnThisPlatform
+    coverage_platform_test.go:109: static collection and go test -list compared on darwin
+--- PASS: TestCoverageCollectionMatchesTheToolchainOnThisPlatform (9.82s)
+PASS
+suiteguard: guard cost: measured 2477 paths; fingerprint took 80.945083ms before and 72.080375ms after
+ok  	roundfix/internal/spec	10.549s
+
+exit: 0
