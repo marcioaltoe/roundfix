@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0243-a-history-that-holds-only-records
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -105,3 +105,59 @@ must do" in Spec 0242's TechSpec.
 - `_prd.md` → Goal 3; User Story 1; Core Feature 3; Success Metric 2
 - `_techspec.md` → Measured inventory; Interfaces; Invariants 1, 3, 4, 5 and 6; Data Models; Build Order 1
 - ADR-0248; ADR-0247; ADR-0154
+
+## Result
+
+Implemented this Task's slice for Daemon Verification; status remains
+Daemon-owned.
+
+- Added `ArchiveNoQA` and parser support. The builder uses it only after QA,
+  override and supersession rules leave the disposition unset, and accepts
+  a pre-stamp folder without a Task Graph.
+- Added sorted legacy-folder discovery, first-parent Git delivery discovery,
+  read-only conversion planning and conversion application. Plans use the
+  folder's repository-relative source and the caller's revision, preserve an
+  existing archive stamp, and otherwise use the delivery's author date.
+- Plans validate promotion containment, regular files, core-artifact
+  exclusions and destination collisions, then compare rendered and parsed
+  metadata and verify stable rendering. The existing renderer still owns
+  outcome shortening. Application creates outputs exclusively, copies
+  promotion bytes, and rolls back written files on failure before removal.
+- Added the ten required fixture-repository tests and two additional tests
+  for metadata round-trip refusal and the renderer's outcome budget. Every
+  added unexported helper has a `legacy` prefix.
+
+### Acceptance evidence
+
+| Acceptance criterion | Focused evidence |
+| --- | --- |
+| A Legacy Archive Folder converts to a record that round-trips and Git still backs | `TestLegacyConversionWritesARecordGitStillHolds` passed: planning leaves the folder unchanged, inventory counts match, the passing record is at most `ArchiveRecordTargetBytes`, application removes the folder, its promotion is byte-identical, and every removed file reads back byte-identically from `git show <source_revision>:<source>/<path>`. `TestLegacyConversionLeavesTheFolderWholeOnFailure` passed after a second promotion failed, proving rollback of the record and first promotion. All promotion-refusal cases passed. |
+| A folder without QA is `no-qa`, and a pre-stamp folder converts | `TestLegacyConversionOfAFolderWithoutQAIsNoQA`, `TestNoQARecordRoundTrips` and `TestLegacyConversionAcceptsAPreStampFolder` passed. The pre-stamp fixture has `status: active` and receives the delivery date. `TestLegacyConversionKeepsEveryOverrideField` passed, retaining the override boolean and all five associated metadata fields. |
+| Delivery is found or empty, never guessed from relocation | `TestLegacyDeliveryNamesTheCommitThatRetiredTheSpec` passed for Spec Root deletion, direct archive addition, merge retirement and the newest retirement. It checks the commit, Pull Request suffix and author date. `TestLegacyDeliveryIgnoresARelocation` passed with every delivery field empty; it also verifies context cancellation. |
+
+### Checks run
+
+- Initial inspection found no legacy-conversion implementation or required
+  tests. The first focused run exposed an absolute-versus-relative path
+  error in the new fixture adapter; the adapter was corrected.
+- `GOCACHE=/private/tmp/roundfix-task01-gocache rtk proxy go test ./internal/spec -run '^(TestLegacy|TestNoQA|TestArchiveRecord|TestArchiveWrites)' -count=1 -v`
+  — exit 0 after the final code edit; all 12 new tests and six selected
+  existing Archive Record tests passed. The suite guard reported no
+  repository mutation.
+- `GOCACHE=/private/tmp/roundfix-task01-gocache rtk make verify-incremental`
+  — the sandboxed attempt passed `internal/spec` but exited 2 because two
+  existing CLI force-stop integration tests could not read the process
+  table. The same command rerun with the required process-table permission
+  exited 0, including formatting, vet, package tests, skill checks and build.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+
+The declared Verification commands were not run. No commit, push or Pull
+Request was made. No changes were made to the Task Graph, another Task,
+archive execution, archived-Spec readers or `docs/history`. The initial
+Daemon change from `pending` to `in_progress` was preserved. No follow-up
+implementation was added to this slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261007T040343Z_bb67f44effbee11e`
+- Source commit: `b44eeb1c7aaf13b7c89a023fae00e8952480c5c9`

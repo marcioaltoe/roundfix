@@ -26,6 +26,7 @@ const (
 	ArchivePartial    ArchiveDisposition = "partial"
 	ArchiveQAOverride ArchiveDisposition = "qa-override"
 	ArchiveSuperseded ArchiveDisposition = "superseded"
+	ArchiveNoQA       ArchiveDisposition = "no-qa"
 )
 
 type ArchiveRegeneration struct {
@@ -171,17 +172,17 @@ func BuildArchiveRecord(in ArchiveRecordInput) (ArchiveRecord, error) {
 	if _, err := os.Stat(filepath.Join(in.SpecDir, "_tasks.md")); errors.Is(err, os.ErrNotExist) {
 		s, err := ReadSupersession(in.SpecDir)
 		if err != nil {
-			if errors.Is(err, ErrNoSupersession) && meta.Status == "archived" {
-				if r.Disposition == "" {
-					r.Disposition = ArchivePass
-				}
-				return r, nil
+			if !errors.Is(err, ErrNoSupersession) {
+				return r, err
 			}
-			return r, err
+		} else {
+			r.Disposition = ArchiveSuperseded
+			r.SupersededBy = s.SupersededBy
+			r.Outcome = strings.Join(strings.Fields(s.Reason), " ")
 		}
-		r.Disposition = ArchiveSuperseded
-		r.SupersededBy = s.SupersededBy
-		r.Outcome = strings.Join(strings.Fields(s.Reason), " ")
+	}
+	if r.Disposition == "" {
+		r.Disposition = ArchiveNoQA
 	}
 	return r, nil
 }
@@ -368,7 +369,7 @@ func ParseArchiveRecord(content []byte) (ArchiveRecord, error) {
 		return r, errors.New("archive record missing superseded_by")
 	}
 	switch r.Disposition {
-	case ArchivePass, ArchivePartial, ArchiveQAOverride, ArchiveSuperseded:
+	case ArchivePass, ArchivePartial, ArchiveQAOverride, ArchiveSuperseded, ArchiveNoQA:
 	default:
 		return r, fmt.Errorf("unknown archive disposition %q", r.Disposition)
 	}
