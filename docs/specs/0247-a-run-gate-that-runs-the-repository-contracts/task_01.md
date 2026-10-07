@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0247-a-run-gate-that-runs-the-repository-contracts
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -106,3 +106,61 @@ Task is verifiable on its own through fixture tests.
 - `_prd.md` → Core Feature 1; Goals; Success Metric 4; Success Metric 5
 - `_techspec.md` → API Contract 1; Surface Transcript 2; Invariant 1; Invariant 2; Invariant 3; Invariant 4; Invariant 5; Invariant 6; Invariant 7; Invariant 8; Invariant 9; Invariant 10; Invariant 11; Build Order 1
 - ADR-0252
+
+## Result
+
+Implemented the Task 01 selector slice. Discovery walks temporary or supplied
+repository sources without `go list`, evaluates modern and legacy build
+constraints, recognizes top-level Go test signatures, and sorts contracts by
+package and name. Header relevance applies across detached header comments;
+per-test doc directives override it. Invalid directives return the required
+file- and test-scoped messages.
+
+Selection implements the always, package, relevant and boundary rules,
+module-wide changes, and a wrapped Git-error fail-safe. `Run -contracts`
+prints sorted, deduplicated per-tag invocations and the stderr summary;
+malformed discovery exits 1 and conflicting output flags exit 2. The summary's
+not-selected count includes boundary tests, which are also counted separately.
+An empty discovered inventory still exits 0 when Git cannot list changes.
+
+Acceptance evidence:
+
+- Per-tag invocations: `TestRunPrintsContractInvocations` asserts exact stdout
+  and summary for a committed package change in a fixture Git repository.
+  `TestContractInvocationsSortAndDeduplicate` covers tag/package/name ordering,
+  duplicate names, regular-expression escaping and an empty selection.
+- Malformed directive exits 1 and names its file:
+  `TestRunPrintsContractInvocations/malformed_directive` asserts the exact
+  Surface Transcript 2 refusal. `TestContractDirectiveRefusesMalformedDeclarations`
+  checks every required message in both header and test scopes, including all
+  required invalid patterns.
+- Missing change list selects every non-boundary contract:
+  `TestContractSelectionFailsSafeWithoutAChangeList` exercises an unknown base,
+  checks both returned selections and the wrapped error, and asserts CLI exit
+  0 with the fail-safe diagnostic. Its empty-repository case covers an empty
+  inventory with the same diagnostic behavior.
+- Existing tests remain unchanged. Focused regression checks exercised the
+  existing classification, Git selection, package partition, Baseline
+  dependency/pattern and command-output tests. The two existing complete-test
+  partition/Makefile-recipe tests and the full package run remain for Daemon
+  Verification; no full-package passing claim is made here.
+
+Focused checks after the final implementation edit:
+
+- `GOCACHE=/private/tmp/roundfix-task01-gocache rtk proxy go test ./internal/verifyselect -run 'TestContract|TestRunPrints|TestClassify|TestDocumentation|TestRoot|TestFixture|TestUnknown|TestSelect|TestPackages|TestBaseline' -count=1 -timeout=120s`
+  — exit 0 (`ok roundfix/internal/verifyselect`, 4.782 s). This includes all
+  five authored fixture tests plus additional build-constraint and invocation
+  edge cases, and the focused existing regressions listed above.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+
+Starting evidence: neither new contract file nor the five fixture tests
+existed, and `Run` had no `-contracts` flag. The Task file was already modified
+by the Daemon; its status and authored sections were preserved. Newly changed
+paths are only the two new contract files, `internal/verifyselect/verifyselect.go`
+and this Result section. Task 02 owns directive assignments and Makefile
+integration. Declared Verification, settlement and commits remain Daemon-owned.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261007T202708Z_1511c9319dd8dbf6`
+- Source commit: `7743dcf928c0b1c6d39d98fdde6ae6eee78ee93e`

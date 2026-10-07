@@ -254,6 +254,7 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	repoRoot := flags.String("repo", ".", "repository root")
 	packageSet := flags.String("packages", "", "print packages in core or baseline")
 	baselinePattern := flags.Bool("baseline-cli-pattern", false, "print the Baseline internal/cli test pattern")
+	contracts := flags.Bool("contracts", false, "print relevant Repository Contract Test invocations")
 	if err := flags.Parse(args); err != nil {
 		return 2
 	}
@@ -261,9 +262,46 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "verify-select: positional arguments are not supported")
 		return 2
 	}
+	conflictingContractFlag := false
+	flags.Visit(func(f *flag.Flag) {
+		if f.Name == "packages" || f.Name == "baseline-cli-pattern" {
+			conflictingContractFlag = true
+		}
+	})
+	if *contracts && conflictingContractFlag {
+		fmt.Fprintln(stderr, "verify-select: -contracts cannot be combined with -packages or -baseline-cli-pattern")
+		return 2
+	}
 	if *packageSet != "" && *baselinePattern {
 		fmt.Fprintln(stderr, "verify-select: -packages and -baseline-cli-pattern are mutually exclusive")
 		return 2
+	}
+
+	if *contracts {
+		all, selected, err := SelectContracts(ctx, *repoRoot, *baseRef)
+		if err != nil {
+			if all == nil {
+				fmt.Fprintf(stderr, "verify-select: %v\n", err)
+				return 1
+			}
+			fmt.Fprintf(stderr, "verify-select: %v; selecting every contract that is not boundary\n", err)
+		}
+		for _, invocation := range ContractInvocations(selected) {
+			fmt.Fprintln(stdout, invocation)
+		}
+		always, boundary := 0, 0
+		for _, contract := range selected {
+			if contract.Class == ContractAlways {
+				always++
+			}
+		}
+		for _, contract := range all {
+			if contract.Class == ContractBoundary {
+				boundary++
+			}
+		}
+		fmt.Fprintf(stderr, "verify-select: contracts: %d selected (%d always, %d by change), %d not selected, %d boundary\n", len(selected), always, len(selected)-always, len(all)-len(selected), boundary)
+		return 0
 	}
 
 	if *baselinePattern {
