@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0243-a-history-that-holds-only-records
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -145,3 +145,24 @@ Expected 5.
 - `_prd.md` → Goal 5; Core Feature 5; Success Metric 5; Glossary
 - `_techspec.md` → Measured inventory; Exact texts; Glossary; Operator batch procedure; Build Order 4
 - ADR-0248; ADR-0189; ADR-0233
+
+## Result
+
+Implementation evidence for daemon handoff:
+
+- The Roundfix archive reference now documents `roundfix history sanitize`, dry-run and batch behavior, `--advise`, `--promote`, `history-full`, and `no-qa`; the archive index names `history`, and `make skills-sync` plus the owned-skill version recording command updated the canonical and embedded mirrors. The two mirrors compare byte-for-byte.
+- The exact history-sanitize sentence was appended to the Baseline module. `make baseline-digests` passed with the task-scoped Go cache and regenerated the declared catalog, profile, formatter-golden, and characterization artifacts. The managed refresh completed successfully and updated `docs/agents/docs-layout.md` and `docs/agents/setup-context.json`.
+- `CONTEXT.md` now contains the five requested terms and the revised Archive Record and History Root entries, with ADR-0248 citations. The two requested CHANGELOG measurements point to `docs/references/`.
+- Added `internal/baseline/history_sanitize_clause_test.go` and `internal/docscontract/secondbrain_export_test.go`. Focused checks passed: `go test ./internal/baseline -run '^TestHistorySanitizeClauseIsAppended$'`, `go test -tags docscontract ./internal/docscontract -run '^TestSecondbrainExport(FollowsTheHistoryForm|RuleRefusesBothMismatches)$'`, `gofmt`, `git diff --check`, and mirror comparisons. The export test covers the repository rule and both mismatched temporary fixtures.
+
+Acceptance evidence:
+
+- Skill, Baseline clause, glossary, mirrors, and derived artifacts have been updated by their owning sync/regeneration commands; focused Baseline and mirror checks pass.
+- The export contract passes for this repository and rejects both mismatch fixtures in the focused docscontract test.
+
+The task remains `status: in_progress` for daemon-owned Verification and settlement. Declared `## Verification` commands were left for the Daemon.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261007T040343Z_bb67f44effbee11e`
+- Source commit: `a5b3a3ab143d9cbdbd8c9cb8e419d5d103a8e615`

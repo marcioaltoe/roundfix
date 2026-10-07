@@ -196,7 +196,7 @@ A repository can declare in Project Config how its own Roundfix binary is built:
 
 `cursor` is an ACP Runtime: acpx starts `cursor-agent acp`. A Cursor selection names the exact model value Cursor advertises, such as `grok-4.7[context=256k,reasoning_effort=high,fast=true]`, with an empty reasoning effort, because Cursor states effort, context and speed inside the value. Roundfix never logs in. Without the maintainer's own `cursor-agent` login, a Cursor selection is refused with `cursor_login_required`. The Roundfix Skill and the configuration guide describe the runtime.
 
-The measurement, `docs/history/specs/0217-a-cursor-runtime-to-measure-grok-on/measurement/grok-through-cursor.md`, replayed two Tasks. Grok 4.7 settled both with no person needed and no Verification repair, at about 1.5 times the default's wall time, and Cursor reported no token counts. A non-binding Backlog Entry proposes Grok as a fallback for `docs` and `chore`.
+The measurement, `docs/references/grok-through-cursor-measurement.md`, replayed two Tasks. Grok 4.7 settled both with no person needed and no Verification repair, at about 1.5 times the default's wall time, and Cursor reported no token counts. A non-binding Backlog Entry proposes Grok as a fallback for `docs` and `chore`.
 
 ## [0.30.0] - 2026-10-02
 
@@ -206,7 +206,7 @@ A repository can name `typesafe/jev-router` through OpenRouter as the selection 
 
 A routed prompt starts only when the gate allows it. The month's spend must be below the ceiling. The OpenRouter key must also carry a monthly credit limit (`limit_reset: monthly`) no larger than the ceiling, because only OpenRouter can stop a prompt that is already running. Otherwise the Task falls back to its default before work, or fails once work has begun. Every routed prompt leaves a Judge Log line.
 
-The measurement, `docs/history/specs/0218-the-jev-router-on-docs-and-chore-tasks/measurement/jev-router.md`, found that tool calls work through the router. The router settled one of two docs Tasks at US$0.37, and one prompt cost US$6.81 in flight. The router is therefore not proposed as a default.
+The measurement, `docs/references/jev-router-measurement-2026-10-02.md`, found that tool calls work through the router. The router settled one of two docs Tasks at US$0.37, and one prompt cost US$6.81 in flight. The router is therefore not proposed as a default.
 
 ## [0.29.0] - 2026-10-02
 
