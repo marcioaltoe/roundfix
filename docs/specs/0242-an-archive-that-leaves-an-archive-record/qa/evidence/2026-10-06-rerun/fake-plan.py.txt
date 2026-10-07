@@ -1,4 +1,0 @@
-from pathlib import Path
-import subprocess,json,shutil
-ns={};source=Path('docs/specs/0242-an-archive-that-leaves-an-archive-record/qa/evidence/2026-10-06-rerun/flows.py.txt').read_text();exec(source.split("for name,override,sup in")[0],ns)
-repo,slug,d=ns['seed']('fake-plan');env=ns['env'];env['ROUNDFIX_OPENROUTER_JUDGE_API_KEY']='qa-synthetic-not-a-credential';env['HTTPS_PROXY']='http://127.0.0.1:9';env['HTTP_PROXY']=env['HTTPS_PROXY'];env['NO_PROXY']='';r=ns['cli']('fake-plan',repo,['archive',slug,'--plan']);e=ns['e'];result={'exit':r.returncode,'stderr':r.stderr,'stdout':r.stdout,'status_porcelain':ns['git'](repo,'status','--porcelain'),'provider_requests':0,'boundary':'HTTPS proxy is loopback port 9, connection refused; no forwarding transport'};(e/'fake-plan-result.json').write_text(json.dumps(result,indent=2));print(json.dumps(result,indent=2));shutil.rmtree(ns['tmp'])

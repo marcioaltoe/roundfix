@@ -1,5 +1,0 @@
-$ ./bin/roundfix archive 9000-override --qa-override --approval disposable-fixture-authority --reason rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr --promote references/knowledge.md
-stdout:
-archived 9000-override with QA override -> docs/history/specs/9000-override.md; removed 9 file(s) (829 bytes) kept in Git at 483695c8cd6a; promoted 1 file(s) to docs/references/
-stderr:
-exit: 0

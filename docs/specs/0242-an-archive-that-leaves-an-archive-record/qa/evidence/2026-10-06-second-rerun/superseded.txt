@@ -1,5 +1,0 @@
-$ ./bin/roundfix archive 9000-superseded
-stdout:
-archived 9000-superseded -> docs/history/specs/9000-superseded.md; removed 6 file(s) (285 bytes) kept in Git at 22ec299606da
-stderr:
-exit: 0
