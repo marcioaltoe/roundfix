@@ -169,6 +169,9 @@ func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		return exitRunFailed
 	}
 	suffix := fmt.Sprintf("; removed %d file(s) (%d bytes) kept in Git at %.12s", result.RemovedFiles, result.RemovedBytes, revision)
+	if len(result.Promoted) > 0 {
+		suffix += fmt.Sprintf("; promoted %d file(s) to docs/references/", len(result.Promoted))
+	}
 	if result.QAOverride {
 		fmt.Fprintf(stdout, "archived %s with QA override -> %s%s\n", req.slug, rel, suffix)
 	} else {
@@ -327,7 +330,7 @@ func runArchivePlan(ctx context.Context, req archiveCommandRequest, loaded round
 				}
 			}
 		} else if advice.Reason != nil {
-			detail = *advice.Reason
+			detail += " (" + *advice.Reason + ")"
 		}
 		fmt.Fprintf(stdout, "candidate %s %d bytes: %s\n", advice.File, size, detail)
 	}

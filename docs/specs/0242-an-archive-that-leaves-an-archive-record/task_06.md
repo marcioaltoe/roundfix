@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0242-an-archive-that-leaves-an-archive-record
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -88,3 +88,50 @@ the user guide.
 - `_techspec.md` → API Contract 3; API Contract 4; Surface Transcripts 1, 2 and 4
 - QA Report `qa-report-2026-10-06.md` → F-01; F-02; rows 03 and 08
 - ADR-0247
+
+## Result
+
+Implemented the two output corrections in `internal/cli/archive.go`.
+The confirmation appends the promotion count after the Git revision for
+both normal and QA override archives. Plans retain `no advice` and wrap
+the advice reason in parentheses. Choice/probability formatting and the
+no-reason fallback remain unchanged.
+
+Focused checks:
+
+- Before the implementation change,
+  `rtk proxy go test -count=1 -run 'TestArchive(ConfirmationNamesPromotedFiles|PlanWithoutAKeyPrintsNoAdvice)$' ./internal/cli`
+  exited 1: both promotion cases lacked the suffix, and the keyless candidate
+  printed the bare reason instead of `no advice (...)`.
+- After the change and formatting,
+  `rtk proxy go test -count=1 -run 'Test(Archive|RunArchive)' ./internal/cli`
+  exited 0 (`ok roundfix/internal/cli`, 5.134s).
+
+Acceptance evidence:
+
+- Promoting archive: `TestArchiveConfirmationNamesPromotedFiles` compares
+  complete stdout against the record-derived confirmation plus exactly
+  `; promoted 1 file(s) to docs/references/` and a newline. Both normal and
+  override cases assert empty stderr; the override uses approval `maintainer`
+  and a 300-byte reason.
+- Keyless plan: `TestArchivePlanWithoutAKeyPrintsNoAdvice` clears every
+  variable returned by `judge.Load().KeyVariables()` and checks the exact
+  candidate line with its byte count and the first key variable's skip reason.
+  It asserts exit 0 and empty stderr.
+- No promotion: the unchanged `TestArchiveCommandLeavesTheArchiveRecord`
+  runs in the focused selection and still compares the complete normal and
+  override confirmations with the original record-derived transcript.
+
+The new tests use committed temporary repositories, temporary home directories,
+explicit environments containing no credentials, and a fake HTTP transport
+that rejects any request. Both tests assert zero provider requests. Existing
+archive tests were left unchanged.
+
+Declared Verification was not run; Task status and settlement remain
+Daemon-owned. No commit, push, PR, Task Graph edit, or other Task edit was made.
+The user-guide update remains task_07's slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261007T012355Z_4430cb7122321779`
+- Source commit: `ef9b4972a14500e984f489966fd3cc1956a471e6`
