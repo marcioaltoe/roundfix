@@ -111,6 +111,13 @@ Spec under `specs_not_found`. Corrective Tasks appear once, attached to their
 first Run in the window. Their title and Overview determine the trigger:
 `pre-pr-review`, `qa-gate`, `verification`, or `unknown`, in that order.
 
+An Archive Record supplies the graph and Task files from Git at its
+`source_revision`. If that commit is absent, the Spec stays archived in the
+report with its disposition; it is not listed under `specs_not_found`.
+JSON adds `archived_specs` entries with `spec`, `disposition` and
+`source_available`. Text reports the unavailable revision. Corrective
+classification remains unknown without the graph.
+
 `--format json` emits schema `roundfix/runs-causes/v1`, including the window,
 signature digest, items, per-Task passed and failed verdict counts, feedback
 rounds, Run counts, QA and corrective flags, summary, and missing Specs. An

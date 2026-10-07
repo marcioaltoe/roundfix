@@ -101,7 +101,7 @@ func chooseMergedHead(
 		ref:           defaultBranch,
 		label:         fmt.Sprintf("default branch %q", defaultBranch),
 		defaultBranch: true,
-		archived:      archiveErr == nil,
+		archived:      archiveErr == nil || specArchivedAtMergedHead(ctx, runner, gitRoot, defaultHead, run.SpecSlug),
 	}, true
 }
 
@@ -154,6 +154,11 @@ func inspectRunAtMergedHead(
 	result RunWorktreeReconciliation, worktreePresent, runBranchPresent bool,
 	merged []MergedHead, source mergedHeadSource,
 ) RunWorktreeReconciliation {
+	if err := archiveSourceUnavailable(ctx, runner, gitRoot, source.head, run.SpecSlug); err != nil && specArchivedAtMergedHead(ctx, runner, gitRoot, source.head, run.SpecSlug) {
+		result.State = ReconciliationUnintegrated
+		result.Reason = boundedReconciliationReason(err.Error())
+		return result
+	}
 	result = inspectRunAtMergedHeadContent(ctx, runner, run, gitRoot, result, worktreePresent, runBranchPresent, merged, source)
 	if result.State == ReconciliationUnintegrated {
 		return inspectRunByDelivery(ctx, runner, run, gitRoot, result, worktreePresent, runBranchPresent, merged)
@@ -183,6 +188,9 @@ func ProveDelivery(ctx context.Context, gitRoot, specSlug, head string) (Deliver
 	if !proven {
 		return DeliveryProof{}, false
 	}
+	if err := archiveSourceUnavailable(ctx, execGitRunner{}, gitRoot, evidence.defaultHead, specSlug); err != nil {
+		return DeliveryProof{}, false
+	}
 	return DeliveryProof{
 		DefaultBranch: evidence.defaultBranch, DefaultHead: evidence.defaultHead,
 		DeliveryCommit: evidence.deliveryCommit,
@@ -195,7 +203,10 @@ func provenDeliveryEvidence(ctx context.Context, runner gitRunner, gitRoot, slug
 		return deliveryEvidence{}, false
 	}
 	archivePRD := path.Join(spec.ArchiveDir(spec.ArchiveKindSpec), slug, "_prd.md")
-	output, err := runner.Run(ctx, gitRoot, "log", "-1", "--diff-filter=A", "--format=%H", defaultHead, "--", archivePRD)
+	if archived, err := archivedSpecAtHead(ctx, runner, gitRoot, defaultHead, slug); err == nil && archived.Form == spec.ArchivedRecord {
+		archivePRD = archived.Path
+	}
+	output, err := runner.Run(ctx, gitRoot, "log", "--first-parent", "-1", "--diff-filter=A", "--format=%H", defaultHead, "--", archivePRD)
 	commit := strings.TrimSpace(output)
 	if err != nil || !validMergedHeadRevision(commit) {
 		return deliveryEvidence{}, false
@@ -228,7 +239,7 @@ func supersededByDelivery(ctx context.Context, runner gitRunner, gitRoot, slug, 
 			cause = "its commit metadata could not be inspected"
 		case task != "" && slugTrailer != slug:
 			cause = fmt.Sprintf("it belongs to Spec %s", slugTrailer)
-		case task != "" && !taskCompletedInRoots(ctx, runner, gitRoot, evidence.defaultHead, task, []string{path.Join(spec.ArchiveDir(spec.ArchiveKindSpec), slug)}):
+		case task != "" && !archivedTaskCompletedAtHead(ctx, runner, gitRoot, evidence.defaultHead, slug, task):
 			cause = fmt.Sprintf("Task %s is not completed", task)
 		}
 		if cause != "" {
@@ -253,6 +264,11 @@ func inspectRunByDelivery(
 ) RunWorktreeReconciliation {
 	delivery, found := provenDeliveryEvidence(ctx, runner, gitRoot, run.SpecSlug, result.RunHead)
 	if !found {
+		return result
+	}
+	if err := archiveSourceUnavailable(ctx, runner, gitRoot, delivery.defaultHead, run.SpecSlug); err != nil {
+		result.State = ReconciliationUnintegrated
+		result.Reason = boundedReconciliationReason(err.Error())
 		return result
 	}
 	reason, refusal, proven := supersededByDelivery(ctx, runner, gitRoot, run.SpecSlug, result.RunHead, delivery)
@@ -481,6 +497,9 @@ func taskCompletedAtMergedHead(
 	slug string,
 	taskID string,
 ) bool {
+	if archived, err := archivedSpecAtHead(ctx, runner, gitRoot, head, slug); err == nil && archived.Form == spec.ArchivedRecord {
+		return spec.ArchivedTaskCompleted(archived.Record, taskID)
+	}
 	cleanSlug, err := cleanPathSegment(slug)
 	if err != nil || cleanSlug != slug {
 		return false
@@ -748,21 +767,31 @@ func mergedHeadRecordsEqual(left []MergedHead, right []MergedHead) bool {
 
 // The archived PRD is positive proof that the Spec directory was delivered.
 func specArchivedAtMergedHead(ctx context.Context, runner gitRunner, root, head, slug string) bool {
-	clean, err := cleanPathSegment(slug)
-	if err != nil || clean != slug {
-		return false
-	}
-	_, err = runner.Run(ctx, root, "cat-file", "-e", head+":"+path.Join(spec.ArchiveDir(spec.ArchiveKindSpec), slug, "_prd.md"))
+	_, err := archivedSpecAtHead(ctx, runner, root, head, slug)
 	return err == nil
 }
 
+func archivedTaskCompletedAtHead(ctx context.Context, runner gitRunner, root, head, slug, task string) bool {
+	archived, err := archivedSpecAtHead(ctx, runner, root, head, slug)
+	if err != nil {
+		return false
+	}
+	if archived.Form == spec.ArchivedRecord {
+		return spec.ArchivedTaskCompleted(archived.Record, task)
+	}
+	return taskCompletedInRoots(ctx, runner, root, head, task, []string{archived.Path})
+}
+
 func dirtyPathsInArchivedSpec(ctx context.Context, runner gitRunner, root, head, slug string, dirty []string) bool {
-	directories := mergedSpecDirectories(slug)
+	sourceHead, archive, err := archivedSourceAtHead(ctx, runner, root, head, slug)
+	if err != nil {
+		return false
+	}
+	directories := append(mergedSpecDirectories(slug), archive)
 	if pathsUnderGitDirectories(dirty, directories) {
 		return true
 	}
-	archive := path.Join(spec.ArchiveDir(spec.ArchiveKindSpec), slug)
-	content, err := gitBlobAtHead(ctx, runner, root, head, path.Join(archive, "_tasks.md"))
+	content, err := gitBlobAtHead(ctx, runner, root, sourceHead, path.Join(archive, "_tasks.md"))
 	if err != nil {
 		return false
 	}
@@ -780,7 +809,7 @@ func dirtyPathsInArchivedSpec(ctx context.Context, runner gitRunner, root, head,
 		if !ok {
 			return false
 		}
-		taskContent, err := gitBlobAtHead(ctx, runner, root, head, path.Join(archive, file))
+		taskContent, err := gitBlobAtHead(ctx, runner, root, sourceHead, path.Join(archive, file))
 		if err != nil {
 			return false
 		}

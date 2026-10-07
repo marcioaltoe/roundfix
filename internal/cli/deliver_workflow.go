@@ -134,7 +134,7 @@ func (workflow *commandDeliveryWorkflow) InspectItem(
 	workDir string,
 	specSlug string,
 ) (delivery.ItemState, error) {
-	resolvedSpecsRoot, err := roundconfig.ResolveSpecsRoot(workflow.loaded, workDir)
+	resolvedSpecsRoot, err := resolveHistoricalSpecsRoot(workflow.loaded, workDir)
 	if err != nil {
 		return delivery.ItemState{}, fmt.Errorf("resolve item Specs Root: %w", err)
 	}
@@ -160,33 +160,38 @@ func (workflow *commandDeliveryWorkflow) InspectItem(
 		return delivery.ItemState{}, fmt.Errorf("inspect item Spec %q: %w", specSlug, err)
 	}
 
-	_, archiveDestination, err := workflow.archivePaths(workDir, specSlug)
+	archiveRoot := spec.ArchiveSpecRoot(resolvedSpecsRoot.Path, resolvedSpecsRoot.BuiltInRoot)
+	archived, err := spec.ReadArchivedSpecAt(archiveRoot, specSlug, os.ReadFile)
 	if err != nil {
-		return delivery.ItemState{}, fmt.Errorf("resolve item archive path: %w", err)
-	}
-	if _, err := os.Stat(filepath.Join(workDir, filepath.FromSlash(archiveDestination))); err == nil {
-		content, err := os.ReadFile(filepath.Join(workDir, filepath.FromSlash(archiveDestination), "_prd.md"))
-		if err != nil {
-			return delivery.ItemState{}, fmt.Errorf("read archived item PRD: %w", err)
-		}
-		frontmatter, _, ok := splitArchivePRD(content)
-		if !ok {
-			return delivery.ItemState{}, errors.New("read archived item PRD: invalid frontmatter")
-		}
-		var metadata struct {
-			QAOverride bool `yaml:"qa_override"`
-		}
-		if err := yaml.Unmarshal(frontmatter, &metadata); err != nil {
-			return delivery.ItemState{}, fmt.Errorf("read archived item QA override: %w", err)
-		}
-		state.Archived = true
-		state.QAOverride = metadata.QAOverride
-		return state, nil
-	} else if errors.Is(err, os.ErrNotExist) {
-		return delivery.ItemState{}, fmt.Errorf("inspect item Spec %q: active and archived Spec folders are missing", specSlug)
-	} else {
 		return delivery.ItemState{}, fmt.Errorf("inspect archived item Spec %q: %w", specSlug, err)
 	}
+	state.Archived = true
+	if archived.Form == spec.ArchivedRecord {
+		archived, err = spec.ReadArchivedSpec(archiveRoot, specSlug)
+		if err != nil {
+			return delivery.ItemState{}, fmt.Errorf("read archived item Spec %q: %w", specSlug, err)
+		}
+		state.QAOverride = archived.Record.QAOverride != nil
+		return state, nil
+	}
+	// Queue inspection historically trusts the legacy archive namespace,
+	// including folders whose PRD was not stamped. Keep that read contract.
+	content, err := os.ReadFile(filepath.Join(archived.Path, "_prd.md"))
+	if err != nil {
+		return delivery.ItemState{}, fmt.Errorf("read archived item PRD: %w", err)
+	}
+	frontmatter, _, ok := splitArchivePRD(content)
+	if !ok {
+		return delivery.ItemState{}, errors.New("read archived item PRD: invalid frontmatter")
+	}
+	var metadata struct {
+		QAOverride bool `yaml:"qa_override"`
+	}
+	if err := yaml.Unmarshal(frontmatter, &metadata); err != nil {
+		return delivery.ItemState{}, fmt.Errorf("read archived item QA override: %w", err)
+	}
+	state.QAOverride = metadata.QAOverride
+	return state, nil
 }
 
 type deliveryCarryForwardRefusal struct {
@@ -1848,7 +1853,7 @@ func deliveryCommandEnvironment(environment []string, homeDir string) []string {
 // UnmetPrerequisites reads merge evidence from the refreshed delivery default,
 // never from the owner's checkout or an unmerged item branch.
 func (workflow *commandDeliveryWorkflow) UnmetPrerequisites(ctx context.Context, gitRoot, specSlug string) ([]string, error) {
-	root, err := roundconfig.ResolveSpecsRoot(workflow.loaded, gitRoot)
+	root, err := resolveHistoricalSpecsRoot(workflow.loaded, gitRoot)
 	if err != nil {
 		return nil, fmt.Errorf("resolve prerequisite Specs Root: %w", err)
 	}
@@ -1898,7 +1903,7 @@ func (workflow *commandDeliveryWorkflow) UnmetPrerequisites(ctx context.Context,
 	}
 	var unmet []string
 	for _, slug := range requires {
-		if !present[filepath.ToSlash(filepath.Join(archiveRoot, slug, "_prd.md"))] {
+		if !present[filepath.ToSlash(filepath.Join(archiveRoot, slug, "_prd.md"))] && !present[filepath.ToSlash(spec.ArchiveRecordPath(archiveRoot, slug))] {
 			unmet = append(unmet, slug)
 		}
 	}

@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0242-an-archive-that-leaves-an-archive-record
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -110,3 +110,86 @@ Backlog Entry "History keeps only what the Secondbrain needs" of 2026-10-06.
 - `_prd.md` → Goal 4; User Story 3; Core Feature 4; Success Metric 2; Success Metric 5
 - `_techspec.md` → Readers; Invariants 7, 9, 10 and 11; API Contract 5; Build Order 2
 - ADR-0247; ADR-0232; ADR-0165; ADR-0229
+
+## Result
+
+Implemented this Task's runtime-reader slice. Task status remains Daemon-owned;
+the declared Verification commands were not run, and no workspace commit, push
+or Pull Request was created.
+
+### Implementation
+
+- Queue inspection resolves Archive Records through `ReadArchivedSpec`, reads
+  their override metadata, and works when the last active Spec has left the
+  Specs Root. Legacy folders retain their prior namespace-based inspection,
+  including unstamped PRDs. Prerequisites count records on disk and at the
+  refreshed default ref; review correction permits only the exact named
+  record path alongside the legacy folder paths.
+- Reconciliation recognizes the default-head record and finds its delivery
+  commit through first-parent history. Task completion follows Invariant 10.
+  Task Context and recorded paths come from the source revision. A missing
+  source revision keeps clean and dirty worktrees, with the missing-proof
+  reason placed before the slug so reason truncation preserves it.
+- QA supersession reads reports at the source revision, including identical
+  same-path reports whose blobs must match across the Run and source trees.
+- Review discovers record-only archives, loads PRD Decisions and TechSpec
+  from Git, reads override conventions from the record and omits source
+  deletions while keeping the record. Missing source context stays explicitly
+  skipped without losing archived identity or the corrective-Spec park.
+  The original C5 sentence remains verbatim, followed by record guidance.
+- Run causes reads the historical graph and regular Task blobs from the
+  archive's owning repository. Missing history produces archived disposition
+  metadata (`archived_specs`) instead of `specs_not_found`; corrective
+  classification stays unknown. The shared manifest parser preserves legacy
+  validation. Command references document the review and causes behavior.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Every listed reader sees a record-only archived Spec after a squash merge. | The eight named CLI tests and five named worktree tests were added in the required files. Their fixtures squash the record onto `main` and assert that `main` never held the Spec folder. Focused tests exercise inspection, prerequisites, correction paths, review context and parking, conventions, diff scope, causes, merge evidence, completion, leftovers and QA supersession. |
+| A missing `source_revision` never releases a worktree or drops a park. | Missing-revision variants retain archive/override identity and prerequisite satisfaction, preserve the `corrective-spec-required` park, and report causes with the record disposition. `TestMergeEvidenceFromTheArchiveRecordAfterASquash` preserves clean worktrees; `TestLeftoversKeepTheWorktreeWithoutTheSourceRevision` preserves dirty worktrees and refuses apply, including leftovers inside the former Spec directory. QA supersession refuses missing-source proof. |
+| Every existing reader test passes unchanged. | The final incremental check exited 0 with the complete existing `internal/cli`, `internal/worktree` and `internal/delivery` suites. Existing tests were not edited. Focused checks also re-ran legacy item inspection, retry, cause reporting and the verbatim C5 prompt contract. |
+
+### Checks run
+
+- `GOCACHE=/private/tmp/roundfix-task02-go-cache rtk proxy go test ./internal/cli ./internal/worktree ./internal/runcause -run 'ArchiveRecord|SourceRevision|AfterASquash|ArchivedTaskGraphFromGit|RemovedSpecFolder|TestInspectItemReportsAnArchivedSpec|TestDeliverRetryWithAnOpenPullRequestAndNoMergeEvidenceRetriesAsBefore|TestBuildReportsAttemptsTasksAndCorrectives|TestReviewPromptCarriesConventionC5' -count=1`
+  — exit 0 on the final implementation; CLI 4.691 s, worktree 9.828 s,
+  causes 0.507 s. This is a focused implementation check, not either declared
+  Verification command.
+- `GOCACHE=/private/tmp/roundfix-task02-go-cache rtk make verify-incremental`
+  — exit 0 on the stable final implementation, with process-table access for
+  existing owner-process tests. Formatting, vet, all Go packages, skill checks
+  and the CLI build passed; CLI 284.528 s and worktree 46.764 s.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0 before the
+  Result append; repeated for the final handoff diff.
+
+The first build could not access the default Go cache; the task-scoped cache
+resolved that environment restriction. An initial sandboxed broad run also
+could not enumerate owner processes, and overlapping edits invalidated its
+suiteguard snapshot. Those attempts are not passing evidence. Stable checks
+ran after fixing legacy namespace inspection, absent legacy graphs, Git
+root-relative tree reads and the C5 prompt compatibility regression.
+
+Only this Task's code, tests, command references and Result were changed. The
+pre-existing `pending` to `in_progress` diff belongs to the Daemon. No other
+Task, Task Graph manifest, Archive Command, exact-retirement proof, Spec check,
+Spec audit, suite guard or file under `docs/history` was edited. Task 04
+continues to own the broader skill, Baseline and glossary updates.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `docs/user-guide/commands/review.md`
+- `docs/user-guide/commands/runs.md`
+- `internal/cli/archive_reader.go`
+- `internal/spec/archive_reader.go`
+- `internal/spec/cause_graph.go`
+- `internal/spec/spec.go`
+- `internal/worktree/archive_reader.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261006T232220Z_7c2e4a372c1dd72e`
+- Source commit: `b2330535f0b1faba68e7949ab375ce15cb07bf72`

@@ -24,6 +24,13 @@ omitted. A missing lock omits no skills for that revision. An unreadable or
 malformed lock blocks with `review scope: read skills-lock.json: <error>`.
 These rules apply to round one's candidate and round two's delta.
 
+For an Archive Record added under the archive root, the diff also omits
+deletions under its `source`, with reason `archived-spec-source`, and keeps
+the record. PRD Decisions and the TechSpec come from Git at
+`source_revision`. If the commit is absent, context is skipped while the
+Spec stays in `archivedSpecs`; blocking findings still require a corrective
+Spec.
+
 After the diff block, the prompt lists the sorted omitted paths and their
 reasons, introduced by `Omitted from this diff (not reviewed): <n> path(s) of
 QA evidence, <m> of upstream-managed skills.` The record's `omittedPaths`
@@ -107,15 +114,16 @@ design:
   `## Recorded paths` and `## Carry-forward provenance` sections after the
   Task's Verification passes; a Result that calls status Daemon-owned agrees
   with a `completed` status.
-- C3. The archive commit moves a completed Spec's directory to the archive
-  root and stamps its archive front matter.
+- C3. The archive commit adds an Archive Record and removes the Spec folder,
+  whose bytes stay in Git at `source_revision`. Legacy archives move the
+  folder and stamp its archive front matter.
 - C4. A planning candidate authors a Spec whose Tasks are all pending and
   which has no QA Report; that Spec's own delivery implements it and is
   reviewed then.
 - C5. A Spec archived through the QA Archive Override records
   `qa_override: true`, `qa_override_approval` and `qa_override_reason` in its
-  archived `_prd.md` front matter; its QA Task keeps its observed status and
-  its QA Report its observed verdict.
+  Archive Record or legacy archived `_prd.md` front matter; its QA Task keeps
+  its observed status and its QA Report its observed verdict.
 
 Roundfix checks each anchor against the same candidate diff supplied in the
 prompt. Context and added lines count, as does the new-side start line of a
@@ -131,8 +139,9 @@ to lie in that convention's mechanically computed region and a sealed
 validator judgment that the finding merely restates it. `no-failure` requires
 that the finding has no `Failure:` clause and the validator judges that it
 states no failure. A finding with a failure clause cannot receive that rule.
-C5 applies to files under an archived Spec only when its `_prd.md` at the
-review head records `qa_override: true` and non-blank approval and reason.
+C5 applies to an Archive Record or files under a legacy archived Spec only
+when the record or archived `_prd.md` at the review head records
+`qa_override: true` and non-blank approval and reason.
 Missing or incomplete records and active Specs are ineligible for C5.
 Other anchored findings stand. Each item's validation records `stands` or
 `dismissed-by-validation`, with the dismissal's rule and reason.

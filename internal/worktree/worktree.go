@@ -12,6 +12,7 @@ import (
 	"maps"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"slices"
 	"sort"
@@ -520,7 +521,7 @@ func classifyRunBranchSet(
 				head, resolveErr := resolveUnambiguousLocalBranch(ctx, runner, root, branch)
 				if resolveErr == nil && head != "" {
 					if report, proven := supersedingQAReport(ctx, runner, root, defaultHead, head, specSlug); proven {
-						if pathUnderAnyGitDirectory(report, []string{archivedQAReportDirectory(specSlug)}) {
+						if pathUnderAnyGitDirectory(report, []string{archivedQAReportDirectory(specSlug)}) || specArchivedAtMergedHead(ctx, runner, root, defaultHead, specSlug) {
 							release(branch, report)
 						} else {
 							preserve(branch, reconciliationReasonDefaultBranchSpecNotArchived(specSlug))
@@ -1060,7 +1061,22 @@ func inspectTerminalRunMerged(
 			}
 			result.State = ReconciliationDirty
 			result.Reason = reconciliationReasonDirty
+			if source, found := chooseMergedHead(ctx, runner, run, gitRoot, merged); found && specArchivedAtMergedHead(ctx, runner, gitRoot, source.head, run.SpecSlug) {
+				if err := archiveSourceUnavailable(ctx, runner, gitRoot, source.head, run.SpecSlug); err != nil {
+					result.Reason = boundedReconciliationReason(err.Error())
+				}
+			}
 			return result, nil
+		}
+	}
+
+	if _, defaultHead, found := resolveDefaultBranchHead(ctx, runner, gitRoot); found {
+		if archived, err := archivedSpecAtHead(ctx, runner, gitRoot, defaultHead, run.SpecSlug); err == nil && archived.Form == spec.ArchivedRecord {
+			if err := archiveSourceUnavailable(ctx, runner, gitRoot, defaultHead, run.SpecSlug); err != nil {
+				result.State = ReconciliationUnintegrated
+				result.Reason = boundedReconciliationReason(err.Error())
+				return result, nil
+			}
 		}
 	}
 
@@ -1350,14 +1366,19 @@ func supersedingQAReportAfterQAOnly(
 		return "", false
 	}
 	targetReport, err := newestQAReportAtHead(ctx, runner, gitRoot, targetHead, slug)
-	if err != nil || targetReport == runReport {
+	if err != nil {
+		return "", false
+	}
+	runRevision := qaReportRevision(ctx, runner, gitRoot, runHead, slug, runReport)
+	targetRevision := qaReportRevision(ctx, runner, gitRoot, targetHead, slug, targetReport)
+	if targetReport == runReport && targetRevision == targetHead && runRevision == runHead {
 		return "", false
 	}
 	runReportName := filepath.Base(filepath.FromSlash(runReport))
 	targetReportName := filepath.Base(filepath.FromSlash(targetReport))
 	if runReportName == targetReportName {
-		runBlob, runBlobErr := runner.Run(ctx, gitRoot, "rev-parse", "--verify", runHead+":"+runReport)
-		targetBlob, targetBlobErr := runner.Run(ctx, gitRoot, "rev-parse", "--verify", targetHead+":"+targetReport)
+		runBlob, runBlobErr := runner.Run(ctx, gitRoot, "rev-parse", "--verify", runRevision+":"+runReport)
+		targetBlob, targetBlobErr := runner.Run(ctx, gitRoot, "rev-parse", "--verify", targetRevision+":"+targetReport)
 		if runBlobErr != nil || targetBlobErr != nil ||
 			strings.TrimSpace(runBlob) == "" || strings.TrimSpace(runBlob) != strings.TrimSpace(targetBlob) {
 			return "", false
@@ -1377,6 +1398,14 @@ func newestQAReportAtHead(
 	head string,
 	slug string,
 ) (string, error) {
+	archived, err := archivedSpecAtHead(ctx, runner, gitRoot, head, slug)
+	if err == nil && archived.Form == spec.ArchivedRecord {
+		revision, source, err := archivedSourceAtHead(ctx, runner, gitRoot, head, slug)
+		if err != nil {
+			return "", err
+		}
+		return newestQAReportAtHeadInDirectories(ctx, runner, gitRoot, revision, []string{path.Join(source, "qa")})
+	}
 	return newestQAReportAtHeadInDirectories(ctx, runner, gitRoot, head, qaReportDirectories(slug))
 }
 

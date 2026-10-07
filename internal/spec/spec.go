@@ -592,6 +592,10 @@ func loadManifestNodes(manifestPath string) ([]manifestNode, map[string]TaskType
 	if err != nil {
 		return nil, nil, false, qaDeclaration{}, nil, fmt.Errorf("read Task Graph manifest %q: %w", manifestPath, err)
 	}
+	return parseManifestNodes(manifestPath, content)
+}
+
+func parseManifestNodes(manifestPath string, content []byte) ([]manifestNode, map[string]TaskType, bool, qaDeclaration, []string, error) {
 	frontmatterBytes, body, err := splitFrontmatter(content)
 	if err != nil {
 		return nil, nil, false, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: "invalid frontmatter", Err: err}

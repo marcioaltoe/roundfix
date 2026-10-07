@@ -722,6 +722,13 @@ func validateDeliveryPrerequisites(root roundconfig.SpecsRoot, graphs []*spec.Gr
 				}
 			}
 			if !found {
+				archived, err := spec.ReadArchivedSpec(archiveRoot, required)
+				if err != nil && !errors.Is(err, spec.ErrNotArchived) {
+					return fmt.Errorf("resolve prerequisite %q: %w", required, err)
+				}
+				found = err == nil && archived.Form == spec.ArchivedRecord
+			}
+			if !found {
 				return fmt.Errorf("Delivery Queue Spec %s requires unknown Spec %s", graph.Spec.Slug, required)
 			}
 		}
