@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-07
-spec: null
+spec: 0245-generated-records-that-hold-across-specs-and-platforms
 ---
 
 # Generated records break when Specs are authored in parallel or tested on another platform
