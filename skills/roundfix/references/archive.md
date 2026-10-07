@@ -62,29 +62,20 @@ filesystem, it verifies every Task in the Spec's Task Graph has
 `status: completed` and that the newest QA Report meets that eligibility
 contract.
 
-For a passing verdict, archive stamps `_prd.md` with `status: archived`,
-`archived`, and `source_slug`. For the declared-only `partial` case, it also
-stamps the declarations' `satisfied-by` actions under `unproven`, so a reader
-of the archived record learns what was never verified. It then moves
-`<specs.root>/<slug>/` to its resolved archive directory. With the default
-Spec Root, stdout carries the deterministic report:
+For a passing verdict, archive writes `<slug>.md` under the resolved archive
+root and removes the Spec folder, which stays in Git at the record's
+`source_revision`. For a qualifying `partial`, the record also carries the
+declarations' `satisfied-by` actions under `unproven`, so a reader learns what
+was never verified. With the default Spec Root, stdout carries the
+deterministic report:
 
 ```text
-archived <slug> -> docs/history/specs/<slug>
+archived <slug> -> docs/history/specs/<slug>.md; removed <n> file(s) (<b> bytes) kept in Git at <12-hex>
 ```
 
-Before the move, the archive rewrites each relative Markdown link that leaves
-the Spec — including inline links, images and reference definitions outside
-code blocks and code spans — so it reaches the same path from the archived
-location. It keeps the link's fragment, query and angle-bracket form. It keeps
-a link whose target was already archived when its unchanged destination reaches
-that target from the archived location. If any other relative links that leave
-the Spec and do not resolve remain, the command exits `2` before changing any
-file and names each link with its file, line and destination. When links were
-rewritten, the successful confirmation appends `; rewrote <n> relative link(s)`.
-Destinations inside the Spec, absolute destinations, URLs, HTML anchors and
-non-Markdown files are not rewritten, including evidence scripts that climb a
-fixed number of directories.
+When files are promoted, the successful confirmation appends
+`; promoted <n> file(s) to docs/references/`.
+Existing archived folders retain their legacy link semantics.
 
 Refusals exit `2` through Preflight Validation, name the first unmet condition
 on stderr, and leave the active Spec folder in place. Every refusal outside the
@@ -103,9 +94,10 @@ roundfix archive <slug> --qa-override --approval <source> --reason <text>
 ```
 
 The command requires both approval and reason, keeps every non-QA Task
-`completed`, and is refused only when a normal archive would succeed. It stamps
-the approval source, reason, observed QA outcome and archived revision. When the
-QA Task is not completed, it also stamps `qa_override_qa_task_status`. It does
+`completed`, and is refused only when a normal archive would succeed. The record carries
+`qa_override`, `qa_override_approval`, `qa_override_reason`,
+`qa_override_qa_outcome` and `qa_override_revision`. When the QA Task is not
+completed, it also carries `qa_override_qa_task_status`. It does
 not change the QA Task or report verdict.
 ### Archive Record
 

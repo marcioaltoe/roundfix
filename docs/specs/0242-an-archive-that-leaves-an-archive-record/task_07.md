@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0242-an-archive-that-leaves-an-archive-record
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -176,3 +176,79 @@ clone. It rewrites no file under `docs/history`.
 - `_techspec.md` → Readers; Exact texts; Vocabulary Contract; Surface Transcripts 1, 2, 3 and 4
 - QA Report `qa-report-2026-10-06.md` → F-03; F-04; rows 09 and 14
 - ADR-0247; ADR-0189; ADR-0233
+
+## Result
+
+Implemented the Task slice for Daemon Verification; status and the authored
+Verification commands remain Daemon-owned.
+
+`SC-ARCHIVE-LICENSE` retains the active-folder, legacy-folder, Archive Record
+and active-Rollup checks. On the first unresolved `absorbed_by`, it reads
+deleted paths reachable from `HEAD` under the archive root with one
+NUL-delimited `git log` process, then reuses that slug set for the remaining
+licenses. Git failure or absence leaves the filesystem checks in effect.
+No Finding, absorption pointer or file under `docs/history` was edited.
+
+The canonical archive-spec workflow and Roundfix archive reference now
+describe writing the record, removing the folder, recovery from Git, override
+fields and the promotion confirmation. All three partial Archives cells use
+the Exact texts wording; other settlement cells and outcomes are unchanged.
+The archive guide adds the plan, keyless candidate and promotion examples
+while retaining every original line. `make skills-sync` generated the mirrors.
+The required owned-skill record command selected archive-spec `0.0.6`, qa-gate
+`0.0.12` and roundfix `0.1.47`, updating both version fields and appending
+their records without replacing any earlier entry.
+
+Acceptance evidence:
+
+- Absorption after folder removal: the new public-API fixture commits the
+  legacy folder and then removes it in a second commit. Before the resolver
+  edit, it reported both `0003-legacy` and `0004-never-archived`; after the
+  edit, it reports only `0004-never-archived`. The full repository ablation
+  and its two corpus tests were not run here: they are explicitly authored
+  Verification owned by the Daemon. No ablation verdict is claimed.
+- Never-archived slug remains an error: the same fixture asserts exactly one
+  `SC-ARCHIVE-LICENSE` naming `0004-never-archived`. Its Git-failure and
+  outside-Git subtests assert that the record still resolves and both absent
+  folders remain unresolved without historical evidence.
+- Archive guidance: a focused Python inspection checked canonical/mirror
+  byte equality, absence of the stale stamping/moving/link-rewriting phrases,
+  all three new guide output forms, retention of every original guide line,
+  and no changed `docs/history` paths. It exited 0.
+- Settlement tables: the same inspection extracted all three sections,
+  asserted byte equality, and compared each with `HEAD` after replacing only
+  the qualifying partial Archives cell. qa-gate and Roundfix `SKILL.md` also
+  remain otherwise byte-identical after excluding generated version fields.
+
+Focused commands and outcomes (Go commands used
+`GOCACHE=/private/tmp/roundfix-task07-gocache`):
+
+- `go test ./internal/speccheck -run '^TestArchiveLicenseResolvesThroughTheRecordOrGit$'`:
+  reproduced the missing historical resolution before the implementation.
+- `go test ./internal/speccheck -run 'TestArchiveLicense' -count=1 -v`:
+  exit 0; the record/Git fixture and both fallback subtests passed.
+- `make skills-sync`: exit 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`:
+  exit 0; versions and entries were generated, never hand-edited.
+- `make baseline-digests`: exit 0, reported `changed: false`; final catalog
+  artifacts, the two Baseline clause sources and the repository docs-layout
+  guide were confirmed byte-identical to `HEAD`. No derived path remains
+  changed.
+- `go run ./cmd/roundfix spec check 0242-an-archive-that-leaves-an-archive-record --strict`:
+  exit 0, no findings; explicitly reported that authored Verification was
+  not executed.
+- `git diff --check`: exit 0.
+- `make verify-incremental` (sandboxed): exit 2. Two existing CLI force-stop
+  tests could not enumerate the process tree (`operation not permitted`).
+  The suite guard also detected this Agent appending the Result during the
+  run. The retry requires process-table permission and no worktree edits
+  while the suite runs; neither cause was silenced or bypassed.
+- `make verify-incremental` (with process-table permission, no concurrent
+  edits): exit 0. All package tests, analyzer, skill checks, mirror check and
+  CLI build passed. This is incremental repository evidence, not a claim
+  that the Daemon's authored Verification or corpus ablation has run.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261007T012355Z_4430cb7122321779`
+- Source commit: `e45126e2828ef5b0236d4b4266c4af7b533cba23`

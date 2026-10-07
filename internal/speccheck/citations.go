@@ -225,7 +225,7 @@ func detectFindingsConsistency(result *Result, repoRoot string) error {
 	if err != nil {
 		return err
 	}
-	detectArchiveLicenses(result, archived, findingDocumentNames(rollups), activeSpecs, archivedSpecs)
+	detectArchiveLicenses(result, repoRoot, archived, findingDocumentNames(rollups), activeSpecs, archivedSpecs)
 	return nil
 }
 
@@ -441,11 +441,44 @@ func repositoryDirectoryNames(directory string, skipUnderscore bool) (map[string
 	return names, nil
 }
 
-func detectArchiveLicenses(result *Result, archived []findingDocument, rollups, activeSpecs, archivedSpecs map[string]bool) {
+func deletedArchivedSpecNames(repoRoot string) map[string]bool {
+	archiveRoot := spec.ArchiveDir(spec.ArchiveKindSpec)
+	command := exec.CommandContext(context.Background(), "git", "-C", repoRoot,
+		"log", "--format=", "--name-only", "-z", "--diff-filter=D", "--no-renames", "HEAD", "--", archiveRoot)
+	output, err := command.Output()
+	if err != nil {
+		// Git history is optional; filesystem licenses still apply outside Git
+		// or when the repository's history is unavailable.
+		return nil
+	}
+	names := make(map[string]bool)
+	for _, path := range strings.Split(string(output), "\x00") {
+		relative, ok := strings.CutPrefix(strings.TrimLeft(path, "\n"), archiveRoot+"/")
+		if !ok {
+			continue
+		}
+		slug, file, nested := strings.Cut(relative, "/")
+		if nested && slug != "" && file != "" {
+			names[slug] = true
+		}
+	}
+	return names
+}
+
+func detectArchiveLicenses(result *Result, repoRoot string, archived []findingDocument, rollups, activeSpecs, archivedSpecs map[string]bool) {
+	var deletedSpecs map[string]bool
+	historyLoaded := false
 	for _, document := range archived {
 		if document.frontmatter.hasLicense {
 			license := document.frontmatter.absorbedBy
 			if rollups[license.value] || activeSpecs[license.value] || archivedSpecs[license.value] {
+				continue
+			}
+			if !historyLoaded {
+				deletedSpecs = deletedArchivedSpecNames(repoRoot)
+				historyLoaded = true
+			}
+			if deletedSpecs[license.value] {
 				continue
 			}
 			result.Findings = append(result.Findings, Finding{

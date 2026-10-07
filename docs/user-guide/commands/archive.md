@@ -28,6 +28,16 @@ unchanged. Use repeatable `--promote <path>` to copy a confirmed candidate to
 `docs/references/` during the archive change.
 Existing archived folders retain their legacy link semantics.
 
+A plan prints:
+
+```text
+archive plan for <slug>: removes <n> file(s) (<b> bytes) and writes docs/history/specs/<slug>.md
+core <k> file(s): _prd.md, _techspec.md, _tasks.md, _authorization.md, <task files>, <QA Reports>, references/_index.md and adopted sources
+evidence <e> file(s) (<eb> bytes) under qa/evidence/
+candidate references/<file>.md <bytes> bytes: no advice (<KEY_VARIABLE> is not set)
+promote with: roundfix archive <slug> --promote <path>
+```
+
 The Spec folder must match its repository's `HEAD`. Modified, staged, deleted
 or untracked Spec files cause exit `2`; commit them before archiving so the
 recorded revision holds every removed file. For an external Spec Root, this
@@ -38,6 +48,9 @@ A normal archive prints:
 ```text
 archived <slug> -> docs/history/specs/<slug>.md; removed <n> file(s) (<b> bytes) kept in Git at <12-hex>
 ```
+
+When files are promoted, the successful confirmation appends
+`; promoted <n> file(s) to docs/references/`.
 
 An override inserts ` with QA override` after the slug. An existing Archive
 Record or legacy folder for the same slug refuses the archive before any file

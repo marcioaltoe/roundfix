@@ -17,6 +17,10 @@
       {
         "version": "0.0.5",
         "digest": "7e86ac8b06fce7af0d5179aa3f2e5f2ec7d2d83e97c16016dd863ad5680a9f63"
+      },
+      {
+        "version": "0.0.6",
+        "digest": "ca951297a683cf647185936b6e8ef72631ae5a907029588774c6aabdfa6952cb"
       }
     ],
     "brainstorming": [
@@ -101,6 +105,10 @@
       {
         "version": "0.0.11",
         "digest": "658fc4be689a173208bbdf2fe519e8c426a53578ad19716faec204d819e071b5"
+      },
+      {
+        "version": "0.0.12",
+        "digest": "3812449df3e5b0f5b2620cbf2a10f2d7e521befb28745eee986d19454790e7bb"
       }
     ],
     "roundfix": [
@@ -315,6 +323,10 @@
       {
         "version": "0.1.46",
         "digest": "df6ef127e5e0611e17779bfe7150422c5b8cb6b1bd9a80eb3f801364450b8ef7"
+      },
+      {
+        "version": "0.1.47",
+        "digest": "fa182a67ab0949091d03384796466ff3cb7babff6868275e5676feb9e1a8547a"
       }
     ],
     "setup-context-driven": [
