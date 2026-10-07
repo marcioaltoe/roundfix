@@ -1,7 +1,0 @@
-$ ./bin/roundfix runs causes --unknown
-
-STDERR:
-roundfix: runs causes failed: flag provided but not defined: -unknown
-Run 'roundfix runs causes --help' for usage.
-
-EXIT: 2

@@ -1,4 +1,0 @@
-Initial commands exited 1 because live in-repository log writes triggered suiteguard, although assertions passed. Corrected output destination to /private/tmp, reran combined selection with -count=1, exit 0. Full assertions: tests-final.txt
-
-Final command: go test -count=1 -v ./internal/cli -run '^(TestProfilesCheckApply|TestProfilesConfigure|TestRunCommandHelp|TestUpgrade|TestDoctorRecommendations|TestDoctorReportsRecommendations|TestRecommendationCheck)'
-Output redirected to /private/tmp/roundfix-0196-qa-tests.txt during execution, then copied to tests-final.txt. Exit 0.

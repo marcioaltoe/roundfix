@@ -1,6 +1,0 @@
-Source requested: https://github.com/git/git/blob/e9019fca/t/t0450-txt-doc-vs-help.sh
-Fetch attempted: rtk curl-cffi get https://raw.githubusercontent.com/git/git/e9019fca/t/t0450-txt-doc-vs-help.sh --impersonate chrome --timeout 30 --body
-exit: 1
-Error: curl (7) CONNECT tunnel failed, response 403.
-Alternate tool: web open original GitHub URL; failed to fetch, Cache miss.
-No outside Git source bytes observed.

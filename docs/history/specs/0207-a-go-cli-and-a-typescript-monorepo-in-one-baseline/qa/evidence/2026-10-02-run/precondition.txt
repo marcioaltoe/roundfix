@@ -1,4 +1,0 @@
-COMMAND: ./bin/roundfix spec check 0207-a-go-cli-and-a-typescript-monorepo-in-one-baseline --strict
-EXIT: 0
-No findings. Authored Verification commands were not executed.
-Skipped: SC-FINDING-LIFECYCLE (no Finding); SC-ROLLUP-MEMBER (no rollup); vocabulary documentation detector (no Vocabulary Contract); SC-TRANSCRIPT-UNDECLARED and SC-RECEIPT-MISSING (PRD predates concrete-contracts guide); SC-REF-UNRESOLVED (no references/_index.md).

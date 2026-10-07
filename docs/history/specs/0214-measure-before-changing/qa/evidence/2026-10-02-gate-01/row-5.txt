@@ -1,6 +1,0 @@
-$ ./bin/roundfix runs causes --until 2026-09-01
-Causes: 0 item(s) from 0 terminal Spec Run(s) in window *..2026-09-01; scope-or-authorization 0, shared-section-contract 0, repository-convention 0, implementation-defect 0, environment 0, unclassified 0; repository knowledge 0 of 0 classified; signatures 53e5e5a76410
-
-STDERR:
-
-EXIT: 0

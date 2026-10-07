@@ -1,8 +1,0 @@
-command: go test -count=1 -tags docscontract -v -run ^TestEveryCommandIsNamedInTheRoundfixSkill$ ./internal/docscontract
-exit: 1
-=== RUN   TestEveryCommandIsNamedInTheRoundfixSkill
-    command_documentation_test.go:93: Roundfix skill does not name command paths: [window clear]
---- FAIL: TestEveryCommandIsNamedInTheRoundfixSkill (0.00s)
-FAIL
-FAIL	roundfix/internal/docscontract	0.408s
-FAIL

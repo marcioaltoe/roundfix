@@ -1,7 +1,0 @@
-Retrieved 2026-10-01 through web.open after curl-cffi domain allowlist denial.
-Source: https://learn.microsoft.com/en-us/agent-framework/agents/skills
-Visible substantive content, lines 38–48: reference files are loaded on demand.
-Lines 74–80: recommendation of fewer than 500 lines for SKILL.md, detailed material in separate files, and loading resources as needed.
-Current entry measured independently: 203 lines, 12,629 bytes. 203 < 500.
-Independent confirmation: published directory example and progressive-disclosure sequence agree.
-History evidence: history.txt (two 0181 QA Runs and one 0187 QA Run; serial four-task chain).

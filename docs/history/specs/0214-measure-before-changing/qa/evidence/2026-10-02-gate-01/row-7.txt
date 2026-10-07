@@ -1,7 +1,0 @@
-$ ./bin/roundfix runs causes
-
-STDERR:
-roundfix: runs causes failed: runs causes requires a Git repository
-Run 'roundfix runs causes --help' for usage.
-
-EXIT: 2

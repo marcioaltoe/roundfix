@@ -1,5 +1,0 @@
-Source: Daemon QA assignment at audited head f7aa4f5348466653afd1f3a79a4e5b865d14910a
-command: make verify-changed
-verdict: pass (exit 0)
-diagnostics: removed on success
-Not rerun by QA.

@@ -1,3 +1,0 @@
-Read 2026-10-02 through web tool. Direct curl-cffi attempt blocked by sandbox domain allowlist, not retried.
-Source: https://arxiv.org/pdf/2607.09510
-Sections and comparison: PDF Table II, page 6, and Results RQ2: 1,184 failed trajectories, nine error types, epistemic 57.9%, competence 32.8%, environment family 9.4%, including other 0.6%. PRD values supported; other is inside the environment family, not an additional tenth type.

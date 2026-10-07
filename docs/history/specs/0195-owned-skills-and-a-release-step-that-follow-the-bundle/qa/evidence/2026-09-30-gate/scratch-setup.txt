@@ -1,5 +1,0 @@
-Cloning into '/tmp/roundfix-0195-qa-d6q3qy5g/repo'...
-done.
-
-exit: 0
-repo: /tmp/roundfix-0195-qa-d6q3qy5g/repo

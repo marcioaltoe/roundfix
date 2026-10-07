@@ -1,2 +1,0 @@
-Comparisons: [True, True, True, True]
-[('0204-first', 'parked', 'pull-request-conflict: internal/baseline/assets/profiles/standard-typescript-monorepo.json', '/worktrees/0204-first', 0), ('0205-second', 'parked', 'prerequisite-unmerged: 0204-first', '', 0)]

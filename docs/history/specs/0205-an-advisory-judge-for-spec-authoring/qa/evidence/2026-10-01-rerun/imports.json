@@ -1,9 +1,0 @@
-{
-  "packages": 43,
-  "net_http_files": [
-    "internal/cli/cli.go",
-    "internal/judge/client.go",
-    "internal/judge/judge.go"
-  ],
-  "violations": []
-}

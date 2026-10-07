@@ -1,3 +1,0 @@
-Disposable repository: /private/tmp/roundfix-0192-qa-pdfshi1g/repo
-Disposable Roundfix Home placeholder: /private/tmp/roundfix-0192-qa-pdfshi1g/roundfix-home
-Help and unknown-flag refusal return during parsing, before user-home/config/Run Database loading. No command reaches GitHub/provider; HOME was not reassigned. Scratch repository has no remote. Live Run Database was not opened.

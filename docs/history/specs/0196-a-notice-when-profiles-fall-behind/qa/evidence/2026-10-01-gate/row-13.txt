@@ -1,7 +1,0 @@
-Pull Request row: no open Pull Request, supplied by Daemon for Spec target branch roundfix/deliver-0196-a-notice-when-profiles-fall-behind-e739af5fc7e869e5. Run branch is never pushed and is not used for PR discovery.
-Approval equivalent: maintainer recorded delivery authority in _authorization.md, approved 2026-09-30; grant revision 1c9a4f93c56da8bf8a12dfff0f86f9705054fb15; operations implement, commit, push, pull_request, merge. This is delivery authority, not reviewer approval.
-Checks/status: Daemon repository Verification make verify-changed passed exit 0 at audited head; fresh scoped QA tests and build passed.
-Unresolved threads: none because no PR exists (supplied fact).
-Merge-Ready acceptance: none yet, because pre-PR review follows this gate/archive (Requirement 13); no review acceptance claimed.
-Review-artifact ancestry: no review artifact yet; claimed candidate head dd0a1de44a2d206af28877f250f73dde97288a12; each Task commit and grant verified as ancestor. A later review must name the eventual archived candidate head, which can differ.
-Equivalent supervised pre-PR evidence supplies all five controls for this authored gate; unblock PR journey after authorized delivery opens the target branch PR.

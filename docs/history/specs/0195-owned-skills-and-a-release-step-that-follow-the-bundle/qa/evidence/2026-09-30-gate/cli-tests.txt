@@ -1,4 +1,0 @@
-# roundfix/internal/cli
-internal/cli/baseline_release_gate_test.go:27:2: open /Users/marcio/Library/Caches/go-build/60/609ebb275db57eac7f4c17bdb8a06fd7fc07467074e28777049589da102c5fea-d: operation not permitted
-FAIL	roundfix/internal/cli [setup failed]
-FAIL

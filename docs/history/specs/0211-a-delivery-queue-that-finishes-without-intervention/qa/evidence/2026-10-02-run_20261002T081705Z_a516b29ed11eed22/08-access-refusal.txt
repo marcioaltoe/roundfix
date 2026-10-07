@@ -1,3 +1,0 @@
-gh pr view 317 --repo marcioaltoe/roundfix --json number,state,headRefOid,mergedAt,mergeCommit,statusCheckRollup
-Tool refusal: Network access to "api.github.com" was blocked: domain is not on the allowlist for the current sandbox mode.
-Workflow run read not executed after this network denial.

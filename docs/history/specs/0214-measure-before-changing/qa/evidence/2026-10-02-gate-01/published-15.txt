@@ -1,3 +1,0 @@
-Observed 2026-10-02 through web reader.
-Source: https://arxiv.org/html/2605.29442v2
-Dataset section, extraction validation section 3.3, Table 3: 20,574 sessions; single-stage extraction produces systematic false positives, motivating a second evidence-validation step; cannot-determine causes 26.85%. PRD claims agree.

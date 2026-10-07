@@ -1,7 +1,0 @@
-Source: Roundfix Daemon QA prompt
-command: make verify-changed
-verdict: pass
-exit: 0
-diagnostics: removed on success
-Agent rerun: none
-audited head: 0d0fc16f116d747e763ff54370cda40cc51a6e57

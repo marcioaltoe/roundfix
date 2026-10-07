@@ -1,6 +1,0 @@
-Built ./bin/roundfix spec judge 0300-example --stage prd (executed by absolute path to this exact Run binary from disposable repository /private/tmp/roundfix-0209-qa-repo-n8am493h): exit 0, stderr empty, stdout:
-
-```text
-Judge: skipped: ROUNDFIX_OPENROUTER_API_KEY is not set (nor ROUNDFIX_TYPESAFE_API_KEY); 2 judgment(s) not asked
-```
-HOME=/private/tmp/roundfix-0209-qa-home-80fksx0b; HTTP_PROXY and HTTPS_PROXY point to closed 127.0.0.1:1; only a synthetic generic OPENROUTER_API_KEY is present. Explicit Roundfix keys are absent from the constructed child environment. A fresh second process reproduced all bytes and exit 0. Independent recursive inspection found zero Judge Log files/lines. ./bin/roundfix spec judge --help exited 0, named grouping and suggestion never gates; binary-help.txt captures output. No real key read and no real Home touched.

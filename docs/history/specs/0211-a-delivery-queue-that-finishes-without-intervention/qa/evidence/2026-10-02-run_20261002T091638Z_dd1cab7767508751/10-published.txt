@@ -1,4 +1,0 @@
-Fresh primary-source reads through web tool 2026-10-02:
-https://docs.github.com/en/graphql/reference/enums#mergestatestatus redirects to index; current https://docs.github.com/en/graphql/reference/pulls#mergestatestatus lines 2756–2772 describes blocked, ready and indeterminate states. Supports waiting on BLOCKED/UNKNOWN.
-https://cli.github.com/manual/gh_pr_checks lines 539–545: distinct JSON buckets and pending exit 8. Supports separate check and merge-state reads.
-https://nodejs.org/api/cli.html v26.10.0 lines 2784–2807,1593–1602,2066–2078: quoted space-separated options, ordered startup preloads, module path or package name. Supports bounded missing-absolute-preload filtering, order and package/relative preservation. Publications support design, not inaccessible historical chronology.

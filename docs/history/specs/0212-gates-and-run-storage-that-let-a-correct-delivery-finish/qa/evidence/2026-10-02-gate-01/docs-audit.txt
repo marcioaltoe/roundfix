@@ -1,3 +1,0 @@
-PASS 6 canonical/mirror pairs; all required phrases; 210 tracked skill Markdown QA settlement sections unchanged from 7c1bc29a.
-Version ledger and settlement/authoring checks: row-6-tests.txt (3 named tests pass).
-Glossary: Recorded Path remains disclosed ordinary scope, not tooling permission; Reconcile Command still requires fresh proof and explicit apply; Evidence Snapshot stays daemon-owned. deletes is a Task Context kind; omission classes are documented reason values, not new domain concepts.

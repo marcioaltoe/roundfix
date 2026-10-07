@@ -1,1 +1,0 @@
-Daemon-supplied static gate: make verify-changed, pass, exit 0 at audited head 70d124f3ab3cfa2de4d983cd24b223483f083299. Diagnostics removed on success. Recorded as supervised evidence; repository Verification not rerun.

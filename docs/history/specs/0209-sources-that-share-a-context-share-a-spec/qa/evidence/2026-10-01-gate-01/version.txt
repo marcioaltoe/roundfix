@@ -1,5 +1,0 @@
-roundfix 0.24.0 (70d124f3-dirty, built 2026-10-01 21:42:32 -0300)
-
-stderr:
-
-exit: 0

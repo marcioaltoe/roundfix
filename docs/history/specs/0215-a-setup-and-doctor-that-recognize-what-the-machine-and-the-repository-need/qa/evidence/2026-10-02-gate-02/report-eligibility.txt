@@ -1,1 +1,0 @@
-roundfix: QA Report eligibility refused: rows_blocked_environment is 3, 2 outside the pre-PR Pull Request row; expected 0 outside it

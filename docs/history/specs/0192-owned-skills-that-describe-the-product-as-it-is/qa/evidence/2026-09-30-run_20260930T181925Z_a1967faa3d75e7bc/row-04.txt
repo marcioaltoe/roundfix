@@ -1,1 +1,0 @@
-Disposable git archive HEAD copy. Removed every literal roundfix window clear from canonical skill; contract exited 1 and named window clear (mutation-command.txt). Restored skill, appended missing link qa-0192-missing.md; link contract exited 1 and named commands.md and link (mutation-link.txt). Original repository untouched; discarded task-created scratch copy.

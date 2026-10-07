@@ -1,2 +1,0 @@
---- FAIL: TestSettlementGuidanceIsOneTable (0.00s)
-    settlement_guidance_repocontract_test.go:43: QA settlement section differs in ../.agents/skills/archive-spec/SKILL.md
