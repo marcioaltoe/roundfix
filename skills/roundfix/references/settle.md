@@ -11,9 +11,10 @@ never edit the QA Task file by hand. The command retains the prior QA Report
 and the Task's prior Result. Without the commit that added the newest report,
 reopen refuses as before.
 
-Reopen refuses before mutation when the terminal QA gate is not settled or is
-neither stale nor above a proven Late Dependency — that is, when it is not
-completed, every dependency is still completed, or the newest QA Report has no
+Reopen refuses before mutation when the terminal QA gate is not settled, or is
+neither stale nor above a proven Late Dependency: it is not completed, or
+every dependency is still completed and no Late Dependency is proven, either
+because the closure is unchanged or because the newest QA Report has no
 commit from which the prior Task Graph manifest can be proven. It creates no
 Run, writes no Run Event Journal entry, and never commits or pushes.
 
@@ -24,9 +25,10 @@ Flags:
 
 - `--spec` — Spec slug under the configured Spec Root.
 
-Exit codes: `0` means a stale settled QA gate was reopened, `1` means the
-reopen write failed, and `2` means Preflight Validation failed, including an
-unsettled or non-stale QA gate.
+Exit codes: `0` means a settled QA gate that was stale or above a Late
+Dependency was reopened, `1` means the reopen write failed, and `2` means
+Preflight Validation failed, including an unsettled QA gate or one that is
+neither stale nor above a proven Late Dependency.
 
 ## Settle Command
 
