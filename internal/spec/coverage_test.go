@@ -7,6 +7,7 @@ package spec
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -192,9 +193,11 @@ func collectCoverageRecordFor(repoRoot string, platforms []string) (CoverageReco
 		cmd := exec.Command("go", "list", "-tags", "docscontract", "-f", "{{.ImportPath}}\t{{.Dir}}\t{{join .TestGoFiles \",\"}}\t{{join .XTestGoFiles \",\"}}", "./...")
 		cmd.Dir = repoRoot
 		cmd.Env = append(os.Environ(), "GOOS="+platform, "CGO_ENABLED=0", "GOWORK=off")
-		output, err := cmd.CombinedOutput()
+		// stdout only: go writes "go: downloading" progress to stderr when a
+		// platform needs a module the host has not fetched.
+		output, err := cmd.Output()
 		if err != nil {
-			return CoverageRecord{}, fmt.Errorf("list coverage packages on %s: %w\n%s", platform, err, output)
+			return CoverageRecord{}, fmt.Errorf("list coverage packages on %s: %w\n%s", platform, err, commandStderr(err))
 		}
 		for _, line := range strings.Split(strings.TrimSuffix(string(output), "\n"), "\n") {
 			fields := strings.Split(line, "\t")
@@ -383,11 +386,19 @@ func coveragePackageTerminator(line string) (string, bool) {
 func runGo(repoRoot string, args ...string) (string, error) {
 	cmd := exec.Command("go", args...)
 	cmd.Dir = repoRoot
-	output, err := cmd.CombinedOutput()
+	output, err := cmd.Output()
 	if err != nil {
-		return "", fmt.Errorf("go %s: %w\n%s", strings.Join(args, " "), err, output)
+		return "", fmt.Errorf("go %s: %w\n%s", strings.Join(args, " "), err, commandStderr(err))
 	}
 	return string(output), nil
+}
+
+func commandStderr(err error) []byte {
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return exitErr.Stderr
+	}
+	return nil
 }
 
 func listedTestNames(output string) []string {
