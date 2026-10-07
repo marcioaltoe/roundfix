@@ -1,6 +1,0 @@
-{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":1,"clientCapabilities":{"fs":{"readTextFile":true,"writeTextFile":true},"terminal":true},"clientInfo":{"name":"acpx","version":"0.19.4"}}}
-{"jsonrpc":"2.0","id":0,"result":{"protocolVersion":1,"agentCapabilities":{"loadSession":true},"agentInfo":{"name":"qa-fake","version":"1"},"authMethods":[]}}
-{"jsonrpc":"2.0","id":1,"method":"session/load","params":{"sessionId":"qa-session","cwd":"/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0237-acpx-4hgedy99/session-set_model","mcpServers":[],"_meta":{"claudeCode":{"options":{"model":"qa-model"}}}}}
-{"jsonrpc":"2.0","id":1,"result":{"sessionId":"qa-session","models":{"currentModelId":"default","availableModels":[{"modelId":"default","name":"Default"},{"modelId":"qa-model","name":"QA"}]}}}
-{"jsonrpc":"2.0","id":2,"method":"session/set_model","params":{"sessionId":"qa-session","modelId":"qa-model"}}
-{"jsonrpc":"2.0","id":2,"error":{"code":-32603,"message":"QA adapter refused session/set_model","data":{"marker":"not-diagnostic"}}}

@@ -1,6 +1,0 @@
-command: go test -count=1 -v -run ^TestEveryOwnedSkillVersionIsRecorded$ ./skills
-exit: 0
-=== RUN   TestEveryOwnedSkillVersionIsRecorded
---- PASS: TestEveryOwnedSkillVersionIsRecorded (0.00s)
-PASS
-ok  	roundfix/skills	0.296s

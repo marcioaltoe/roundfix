@@ -1,4 +1,0 @@
-=== RUN   TestQA0224NoCandidateHistoryRefusal
---- PASS: TestQA0224NoCandidateHistoryRefusal (0.01s)
-PASS
-ok  	roundfix/internal/delivery	0.286s

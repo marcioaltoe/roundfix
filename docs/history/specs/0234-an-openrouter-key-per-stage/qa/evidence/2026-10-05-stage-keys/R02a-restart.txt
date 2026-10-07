@@ -1,8 +1,0 @@
-entry: worktree ./bin/roundfix (absolute resolution required from disposable repository)
-args: spec judge 0300-qa-example --stage prd
-HOME: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0234-qa-rpr9mr31
-exit: 0
-stdout:
-Judge: skipped: ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set (nor ROUNDFIX_OPENROUTER_API_KEY, nor ROUNDFIX_TYPESAFE_API_KEY); 2 judgment(s) not asked
-
-stderr:

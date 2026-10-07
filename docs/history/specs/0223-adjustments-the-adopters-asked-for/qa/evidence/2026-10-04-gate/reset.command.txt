@@ -1,4 +1,0 @@
-cwd: /private/tmp/roundfix-0223-qa/unadopted
-HOME: /private/tmp/roundfix-0223-qa/home; NODE_OPTIONS: unset
-['./bin/roundfix', 'release', 'plan', '--reset-to', 'v0.0.1']
-exit: 2

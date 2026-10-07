@@ -1,9 +1,0 @@
-{
-  "production_generic_key_references": [],
-  "measurement_matches_HEAD": true,
-  "measurement_secret_pattern_present": false,
-  "measurement_replays": 0,
-  "measurement_cost_available": false,
-  "measurement_scratch_origin": "this repository per Task 04 Result; not independently attested by clone metadata",
-  "unreachable_acceptance_declarations": false
-}

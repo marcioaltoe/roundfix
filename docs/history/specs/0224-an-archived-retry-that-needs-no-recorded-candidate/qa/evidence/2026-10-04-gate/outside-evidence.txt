@@ -1,7 +1,0 @@
-Observed 2026-10-04, read-only.
-Operator log lines 38,82-84: entries 96,140,141,142 record candidate-empty/manual PR and 0220 run-unresolved missing-candidate/manual review then merge #367.
-SQLite -readonly: SELECT count(*) FROM delivery_queue_items WHERE spec_slug='0220-tests-and-pins-that-hold-in-every-environment'; => 0.
-Run SELECT: run_20261004T010416Z_bdbf1cc82a3473ae|implement|9c98d516fcb1a443fcb67fae6bbd61a13b75d2d3|Unresolved.
-Git https://git-scm.com/docs/git-merge-base --is-ancestor section, web read: true ancestry exits 0, false 1, errors other nonzero. Supports real-Git ancestry proof and refusal on unavailable history.
-Temporal https://docs.temporal.io/guides/recover-without-restart Solution, web read: operator corrections wake a paused process, preserve completed steps and correction history. Supports resume instead of repeat, as an analogy.
-Initial curl-cffi read of Git was denied by sandbox network allowlist; the web read succeeded. No GitHub or provider call was made.

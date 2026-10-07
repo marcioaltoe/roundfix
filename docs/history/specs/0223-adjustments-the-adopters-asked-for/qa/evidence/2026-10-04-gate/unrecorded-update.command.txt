@@ -1,4 +1,0 @@
-cwd: /private/tmp/roundfix-0223-qa/unrecorded-adopter
-HOME: /private/tmp/roundfix-0223-qa/home; NODE_OPTIONS: unset
-['./bin/roundfix', 'baseline', 'update', '--repo', '.', '--no-skills', '--yes', '--format', 'json']
-exit: 0

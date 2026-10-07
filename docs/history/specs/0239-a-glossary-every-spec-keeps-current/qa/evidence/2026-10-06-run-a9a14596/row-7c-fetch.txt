@@ -1,4 +1,0 @@
-url: https://www.jamesshore.com/v2/books/aoad1/ubiquitous_language
-exit: 1
-stderr: Error: Failed to perform, curl: (7) CONNECT tunnel failed, response 403. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.
-

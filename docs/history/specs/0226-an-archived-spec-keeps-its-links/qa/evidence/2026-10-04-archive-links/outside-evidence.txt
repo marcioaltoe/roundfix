@@ -1,9 +1,0 @@
-Sources observed 2026-10-04
-Secondbrain index read first; qmd query failed SQLITE_CANTOPEN.
-Inbox: /Users/marcio/dev/secondbrain/inbox/roundfix/_triaged/2026-10-02-o-archive-nao-reescreve-links-relativos.md
-Origin fluxus; 0096 broken after archive; 0097 and 0098 three manual link repairs.
-Fluxus 0067 PRD and QA: /Users/marcio/dev/secondbrain/projects/fluxus/mirror/docs/history/specs/0067-os-links-de-documentacao-resolvem/
-QA build cb5fd5ea21692345840607d89ef8bea51f10c095; forty repairs; independent base distribution 16/10/8/5/1; final broken=0.
-CommonMark https://spec.commonmark.org/0.31.2/#link-reference-definitions section 4.7: reference definitions separate label, destination and optional title; fenced code is excluded. Supporting grammar only.
-curl-cffi denied domain allowlist; web reader obtained the page.
-docmv https://pypi.org/project/docmv/ Features/Agent safety: resolve target before recomputing relative destination; preserve fragments; simulate post-move links; refusal preserves files. Broader inbound/parser handling excluded by this Spec.

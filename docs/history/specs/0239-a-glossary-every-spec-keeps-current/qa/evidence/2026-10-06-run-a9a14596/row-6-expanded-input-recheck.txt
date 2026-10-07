@@ -1,3 +1,0 @@
-go test -count=1 -run ^TestEveryOwnedSkillVersionIsRecorded$ ./skills
-exit: 0
-ok  	roundfix/skills	0.367s

@@ -1,7 +1,0 @@
-Command: ['go', 'test', '-count=1', '-v', './internal/delivery', '-run', '^(TestDeliveryEngineParksFindingsAfterArchiveAsCorrectiveSpecRequired|TestDeliveryEngineParksFindingsWithoutArchiveAsReviewFindings|TestRetryRefusesACorrectiveSpecItemWhoseHeadMoved|TestRetryReturnsAnUnchangedCorrectiveSpecItemToReviewing|TestRetryOfAnArchivedItemWithACorrectionReturnsToReview|TestRetryOfAnArchivedItemRefusesAHeadThatDoesNotDescend|TestRetryOfACorrectiveSpecParkStillRefusesAMovedHead|TestRetryReturnsAReviewOnlyCorrectionToReview|TestRetryRefusesACorrectionTheProofRejects)$']
-# ./internal/delivery
-open /Users/marcio/Library/Caches/go-build/d6/d69077034c758699edd03996e02d11aea8e940dd4b8eeb99c830c3a6852f594b-d: operation not permitted
-FAIL	./internal/delivery [setup failed]
-FAIL
-
-Exit: 1

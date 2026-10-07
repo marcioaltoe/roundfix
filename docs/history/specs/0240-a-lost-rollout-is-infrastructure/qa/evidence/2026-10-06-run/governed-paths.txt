@@ -1,4 +1,0 @@
-.agents/skills/roundfix/SKILL.md
-.agents/skills/roundfix/references/deliver.md
-.agents/skills/roundfix/references/profiles.md
-skills/roundfix/SKILL.md

@@ -1,3 +1,0 @@
-url: http://ddd.fed.wiki.org/ubiquitous-language.html
-exit: 1
-stderr: 

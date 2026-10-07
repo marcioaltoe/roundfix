@@ -1,9 +1,0 @@
-from pathlib import Path
-import re
-root=Path.cwd()
-report=root/'docs/specs/0226-an-archived-spec-keeps-its-links/qa/qa-report-2026-10-04.md'
-ev=report.parent/'evidence/2026-10-04-archive-links'
-def settle(row,status,note):
- s=report.read_text(); s=s.replace('| '+row+' | pending |','| '+row+' | '+status+' |')
- a=s.index('### '+row+'\n'); end=s.find('\n### ',a+1); end=len(s) if end<0 else end
- s=s[:a]+s[a:end].replace('Pending execution.',note)+s[end:]; report.write_text(s)

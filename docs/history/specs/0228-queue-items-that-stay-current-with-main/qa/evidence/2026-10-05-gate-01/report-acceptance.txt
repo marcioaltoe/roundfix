@@ -1,7 +1,0 @@
-Command: ['./bin/roundfix', 'qa-report', 'accept', 'docs/specs/0228-queue-items-that-stay-current-with-main/qa/qa-report-2026-10-05-01.md']
-stdout:
-
-stderr:
-roundfix: QA Report eligibility refused: rows_blocked_environment is 2, 1 outside the pre-PR Pull Request row; expected 0 outside it
-
-Exit: 1

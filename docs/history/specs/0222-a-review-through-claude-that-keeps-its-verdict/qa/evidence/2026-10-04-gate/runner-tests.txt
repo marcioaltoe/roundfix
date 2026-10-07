@@ -1,4 +1,0 @@
-# ./internal/agent
-open /Users/marcio/Library/Caches/go-build/24/2434534186fc2ba710efb49f57559301a450da7c97786206e173f31ea1d8d210-d: operation not permitted
-FAIL	./internal/agent [setup failed]
-FAIL

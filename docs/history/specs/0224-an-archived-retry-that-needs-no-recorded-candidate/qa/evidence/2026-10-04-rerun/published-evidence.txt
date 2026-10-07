@@ -1,3 +1,0 @@
-curl-cffi attempts of both source pages: exit 1, CONNECT tunnel failed, response 403. Web-tool fallback successfully read both pages.
-Git: https://git-scm.com/docs/git-merge-base ; Operation Modes --is-ancestor: true=0, false=1, errors=other nonzero. This supports fail-closed ancestry proof, independently exercised in the real-Git tests.
-Temporal: https://docs.temporal.io/guides/recover-without-restart ; Problem statement and Solution: operator correction resumes a paused process with completed steps and correction history retained. Supports recovery shape, not implementation proof or authority.

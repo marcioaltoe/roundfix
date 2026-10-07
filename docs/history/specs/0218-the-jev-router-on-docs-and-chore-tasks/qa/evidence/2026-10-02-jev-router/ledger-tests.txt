@@ -1,6 +1,0 @@
-=== RUN   TestRouterLineIsReadByTheJudgeLog
---- PASS: TestRouterLineIsReadByTheJudgeLog (0.00s)
-=== RUN   TestLedgerRecordsUnreadableUsageAndClampsNegativeDelta
---- PASS: TestLedgerRecordsUnreadableUsageAndClampsNegativeDelta (0.00s)
-PASS
-ok  	roundfix/internal/jevrouter	0.242s

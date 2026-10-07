@@ -1,4 +1,0 @@
-cwd: /private/tmp/roundfix-0223-qa/old-adopter
-HOME: /private/tmp/roundfix-0223-qa/home; NODE_OPTIONS: unset
-['./bin/roundfix', 'baseline', 'plan', '--repo', '.', '--profile', 'go-cli-tui', '--format', 'json', '--decision', 'preservation.mode=greenfield', '--decision', 'language.generated=English', '--decision', 'verification.gate=make verify', '--decision', 'verification.incremental=make verify-incremental', '--decision', 'branch.prefix=ma/', '--decision', 'spec.scaffold=true', '--decision', 'domain.layout=single-context', '--decision', 'triage.external=false', '--decision', 'autonomous.enabled=true', '--decision', 'runtime.backend=codex gpt-5.5 xhigh', '--decision', 'runtime.design=claude opus xhigh', '--decision', 'secondbrain.enabled=false', '--decision', 'repository.extension.enabled=false']
-exit: 0

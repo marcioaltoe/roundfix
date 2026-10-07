@@ -1,1 +1,0 @@
-Source: Daemon prompt; make verify-changed; exit 0; pass; diagnostics removed on success; head d2bf17e795e9b8fb19957e7eac43bec06cbee592. Not rerun.

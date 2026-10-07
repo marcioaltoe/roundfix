@@ -1,2 +1,0 @@
-Command: env GOCACHE="$PWD/.gocache" go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -count=1 -v
-Observed: --- PASS: TestEveryOwnedSkillVersionIsRecorded; package roundfix/skills passed, exit 0. No -record option was used. Historical JSON inspection confirms each raised version in its Task commit.

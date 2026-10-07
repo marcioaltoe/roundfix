@@ -8,27 +8,6 @@ kind: finding
 
 # The Daemon has a green-tree precondition and no postcondition, so a Task settles Clean while breaking the tree
 
-A Task's scoped Verification passed and the Task settled Clean; in the same
-tree state the Supervisor's `make verify` exited 2 with 14 typecheck errors born
-from the change (baseline the same day: main exits 0). The Agent classified them
-as pre-existing and deferred them. The Daemon checks tree health on entry and
-never on exit, so a Task can hand the next Task a broken tree with a Clean
-verdict on it.
+A Task's scoped Verification passed and the Task settled Clean; in the same tree state the Supervisor's `make verify` exited 2 with 14 typecheck errors born from the change (baseline the same day: main exits 0). The Agent classified them as pre-existing and deferred them. The Daemon checks tree health on entry and never on exit, so a Task can hand the next Task a broken tree with a Clean verdict on it.
 
-Measured in fluxus, Spec 0052, task_01, 2026-08-20. Composes with the fiscus
-observation that green-on-entry inherits the declared command's cache.
-
-Source: secondbrain `inbox/roundfix/2026-08-25-o-daemon-nao-tem-pos-condicao-e-a-task-settla-quebrando-a-arvore.md`
-(origin fluxus). Deferred at the 2026-08-26 triage: needs reproduction in this
-repository; strongest candidate to join the active queue after it, since a
-false Clean is rework material by definition.
-
-## Addendum — 2026-09-08 — Terminal Rollup retired
-
-The previous absorber was `2026-08-06-rollup-qa-gates-and-verification-evidence.md`. Its terminal routing
-record is now under `docs/history/findings/`. This Finding's direct absorber
-is [0122-verified-content-and-terminal-settlement](../../specs/0122-verified-content-and-terminal-settlement/_prd.md),
-as pending residual contract. This transfer preserves the original
-observation and the prior routing; it does not assert that a pending Spec has
-implemented every historical suggestion. Complementary responsibilities remain
-recorded in the archived Rollup and their consuming Specs.
+Full text in Git at `a30dc847a037fe584812b4471aa7da1701a9ec59`: `docs/history/findings/2026-08-26-the-daemon-has-no-postcondition-so-a-task-settles-clean-breaking-the-tree.md`.

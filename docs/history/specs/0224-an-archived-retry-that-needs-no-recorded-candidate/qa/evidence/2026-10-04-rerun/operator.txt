@@ -1,4 +1,0 @@
-38: 96. 2026-10-02 — 0211 qa-environment-partial (0 findings) → carry-forward, QA report cherry-pick, archive --qa-override, PR by hand (retry refused: candidate head empty).
-82: 140. 2026-10-04 — 0220 partial (PR row only, 0 findings) → archive --qa-override, retry, owner .
-83: 141. 2026-10-04 — 0220 retry refused 'candidate head is missing' (run-unresolved park, no candidate) → PR by hand + review by hand. Gap: archived retry without candidate after run-unresolved (extend backlog).
-84: 142. 2026-10-04 — 0220 merged by hand (#367), doctor skills: ok. Release PR v0.33.0 #368.

@@ -1,2 +1,0 @@
-{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":1,"clientCapabilities":{"fs":{"readTextFile":true,"writeTextFile":true},"terminal":true},"clientInfo":{"name":"acpx","version":"0.19.4"}}}
-{"jsonrpc":"2.0","id":0,"error":{"code":-32603,"message":"QA adapter refused initialize","data":{"marker":"not-diagnostic"}}}

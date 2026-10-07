@@ -1,1 +1,0 @@
-FAIL: Transcript 3 expected one malformed-command line. Actual parser message spans two output lines; <parse error> must remain within a line. HEAD and both untracked source lines, empty stderr and exit 1 match. JSON independently confirms malformed classification and the two sources. See transcript-comparison.json.

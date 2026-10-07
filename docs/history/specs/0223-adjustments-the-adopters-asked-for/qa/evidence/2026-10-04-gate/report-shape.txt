@@ -1,5 +1,0 @@
-['go', 'run', '-buildvcs=false', './cmd/qa-report-shape', '/Users/marcio/.roundfix/worktrees/roundfix-deliver-0223-adjustments-the-adopters-asked-for-1849b9352d20db39-cfe86f58-d68d526f/run_20261004T171257Z_0a1e9f2d35fa399e', 'docs/specs/0223-adjustments-the-adopters-asked-for/qa/qa-report-2026-10-04.md']
-exit: 0
-stdout: null
-
-stderr: 

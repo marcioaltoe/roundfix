@@ -1,4 +1,0 @@
-cwd: /private/tmp/roundfix-0223-qa/adopted
-HOME: /private/tmp/roundfix-0223-qa/home; NODE_OPTIONS: unset
-['./bin/roundfix', 'release', 'plan', '--format', 'text']
-exit: 0
