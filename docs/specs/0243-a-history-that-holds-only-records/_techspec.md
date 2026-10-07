@@ -333,8 +333,11 @@ No Run Database field changes.
    history sanitize plan: <u> unit(s) pending; <f> file(s) (<b> bytes) leave docs/history
    folder docs/history/specs/<slug>: removes <n> file(s) (<b> bytes) and writes docs/history/specs/<slug>.md (<r> bytes, <disposition>, delivery <12-hex> #<pr>)
    candidate docs/history/specs/<slug>/references/<file>.md <bytes> bytes
+   ...
    findings: reduces <n> file(s) from <b> to <a> bytes
+   backlog: reduces <n> file(s) from <b> to <a> bytes
    reviews: removes <n> file(s) (<b> bytes)
+   handoffs: removes <n> file(s) (<b> bytes)
    cites CHANGELOG.md:<line> names docs/history/specs/<slug>/<path>
    apply with: roundfix history sanitize --apply --batch <n> (needs the annotated tag history-full at or before HEAD)
    stderr:
