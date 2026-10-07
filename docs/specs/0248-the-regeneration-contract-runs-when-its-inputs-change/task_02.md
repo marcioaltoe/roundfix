@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0248-the-regeneration-contract-runs-when-its-inputs-change
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -94,3 +94,60 @@ does not cover fails here. This answers the maintainer decision of
 - `_prd.md` → Core Feature 3; Goals; Success Metric 1; Success Metric 2; Success Metric 6
 - `_techspec.md` → Directive assignment; Invariant 6; Invariant 7; Surface Transcript 1; Surface Transcript 2; Testing Approach; Build Order 2
 - ADR-0253; ADR-0252
+
+
+## Result
+
+Implemented the Task 02 slice for Daemon Verification. The regeneration
+contract now carries the exact relevant directive from the TechSpec. Its
+build constraint, body, assertions and all other bytes are unchanged.
+The repository inventory checks its ordered patterns, rejects every boundary
+contract, expects four contracts by change for an owned skill and exactly
+`TestRegenerationIsDeclared` by change for `.roundfixrc.yml`. The existing
+user-guide scenario still expects no contracts by change.
+
+`TestRegenerationContractRunsWhenADerivedInputChanges` reads the real project
+config through `config.ResolveConfigProposal(nil, contents)` and selects
+against the real `DiscoverContracts` result. It checks all 15 path entries
+across six declarations, including `lines.paths`, directory samples and
+wildcard samples, plus `.roundfixrc.yml` and all seven generator files.
+Failures identify the declaration, scope, original entry and sampled path.
+
+### Focused checks and acceptance evidence
+
+- Before changing the directive,
+  `rtk proxy go test -count=1 -run '^TestRegenerationContractRunsWhenADerivedInputChanges$' ./internal/verifyselect`
+  exited 1: every positive input was unselected under the original boundary
+  directive, with each uncovered entry named. The first sandbox attempt was
+  blocked by Go cache permissions; the executed check used approved access.
+- After changing the directive,
+  `rtk proxy go test -race -count=1 ./internal/verifyselect` exited 0.
+  This exercises both repository tests and the rest of the selector package.
+  Acceptance criterion 1: the project config, every declared sample and every
+  generator selects the regeneration contract. Acceptance criterion 2:
+  `docs/user-guide/example.md` and `internal/daemon/daemon.go` do not select it.
+  The inventory scenarios also cover the selection counts in Surface
+  Transcripts 1 and 2; their summary formatting belongs to Task 01.
+- Acceptance criterion 3: compiled the package with
+  `rtk proxy go test -c -o /tmp/roundfix-task02-verifyselect.test ./internal/verifyselect`,
+  then used a Python temporary-repository probe to run that binary with
+  `-test.run '^TestRegenerationContractRunsWhenADerivedInputChanges$'`.
+  The copies retained real tagged test sources and project config; the real
+  `.roundfixrc.yml` was never changed. Adding `uncovered/sample.json` to a
+  declaration exited 1 and named that entry and sample as unselected.
+  Reducing the copied config to three declarations exited 1 with
+  `.roundfixrc.yml derived_paths has 3 declarations, want at least four`.
+  Both expected failures were checked by the probe, which exited 0 and
+  removed its temporary repositories.
+- `rtk make verify-incremental GOCACHE=/Users/marcio/Library/Caches/go-build`
+  exited 0 with approved cache and process access: formatting, Go analysis,
+  repository package tests, skill checks and CLI build passed.
+- Git diff inspection confirmed the regeneration directive is the only
+  changed line in that contract file. A byte comparison confirmed the
+  existing Makefile wiring test is unchanged. `git diff --check` exited 0.
+
+Only the two Task 02 test files and this Result section were edited. The
+initial worktree already contained the Daemon's `status: in_progress` change;
+that status and the declared Verification section were preserved. No authored
+Verification command, commit, push or pull request was run. No follow-up work
+was identified. Task settlement remains with the Daemon.

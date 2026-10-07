@@ -1,6 +1,6 @@
 //go:build docscontract
 
-//verify:boundary regenerates Baseline derived artifacts in a repository copy (about 43 s) and is not yet selected by its inputs
+//verify:relevant .roundfixrc.yml internal/baseline/ .agents/skills/ skills/ docs/agents/ docs/references/coverage-record.json internal/spec/ internal/cli/baseline_* cmd/roundfix/ internal/suiteguard/ internal/suiteguardcontract/
 
 package config
 
