@@ -1,4 +1,0 @@
-# ./internal/cli
-open /Users/marcio/Library/Caches/go-build/92/9242410b4cd4f3e30de0527a60994c93f6c6caacbb512aec8f3bfb11246e31cd-d: operation not permitted
-FAIL	./internal/cli [setup failed]
-FAIL
