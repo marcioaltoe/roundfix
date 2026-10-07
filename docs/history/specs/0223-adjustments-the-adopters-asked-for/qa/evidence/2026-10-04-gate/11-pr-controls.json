@@ -1,7 +1,0 @@
-{
-  "approval": "maintainer delivery authority recorded 2026-10-04, Autorizar os dois / Confirmo and standing skills grant; approved _authorization.md at 3490588afbdffe4419574befd0d7d9569882ff69",
-  "checks and status": "Daemon make verify-changed pass, exit 0 at 2fb1ff071009480456e9a8f1f43a014f7facabff; diagnostics removed on success; not rerun",
-  "unresolved review threads": "none: the supplied no-open-PR fact makes there be no PR thread",
-  "Merge-Ready acceptance": "none yet; pre-PR provider review is downstream of this gate; no review acceptance is claimed",
-  "review-artifact ancestry": "claimed candidate 2fb1ff071009480456e9a8f1f43a014f7facabff; no pre-PR Review Artifact exists yet or is credited to that head"
-}

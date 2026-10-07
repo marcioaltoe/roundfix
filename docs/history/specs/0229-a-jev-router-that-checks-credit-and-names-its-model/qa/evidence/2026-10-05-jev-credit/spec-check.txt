@@ -1,7 +1,0 @@
-Spec 0229-a-jev-router-that-checks-credit-and-names-its-model
-No findings. Authored Verification commands were not executed.
-Skipped:
-  SC-FINDING-LIFECYCLE: missing docs/findings Finding
-  SC-ROLLUP-MEMBER: missing docs/findings rollup
-
-exit: 0

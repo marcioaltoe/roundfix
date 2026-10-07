@@ -1,8 +1,0 @@
-Disposable clone: /private/tmp/rf222-real-3cyva2ie/repo
-Disposable HOME: /private/tmp/rf222-real-3cyva2ie/home
-./bin/roundfix symlink to Run Worktree-built binary
-Command: ./bin/roundfix review --base qa-base
-Ignored CLAUDE.local.md asks go vet ./internal/cli/
-cancelled at 50-second QA limit; process group terminated
-Initial config-only attempt missed required fallback; corrected in disposable clone before runtime invocation.
-No writes to live Run Database/artifacts.

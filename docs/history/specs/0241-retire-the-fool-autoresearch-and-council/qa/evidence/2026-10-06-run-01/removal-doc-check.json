@@ -1,8 +1,0 @@
-{
-  "commands": [
-    "git rm -r -q --ignore-unmatch .agents/skills/council .agents/skills/the-fool .claude/skills/council .claude/skills/the-fool",
-    "rm -rf .agents/skills/council .agents/skills/the-fool .claude/skills/council .claude/skills/the-fool"
-  ],
-  "release_matches_guide": true,
-  "lock_manual": true
-}

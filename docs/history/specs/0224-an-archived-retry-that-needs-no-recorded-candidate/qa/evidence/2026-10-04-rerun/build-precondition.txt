@@ -1,5 +1,0 @@
-make build: exit 0
-roundfix 0.33.0 (3f97d198-dirty, built 2026-10-04 16:36:08 -0300)
-./bin/roundfix spec check 0224-an-archived-retry-that-needs-no-recorded-candidate --strict: exit 0
-No findings. Authored Verification commands were not executed.
-Skipped: SC-FINDING-LIFECYCLE; SC-ROLLUP-MEMBER; SC-BACKLOG-UNMOVED; vocabulary documentation detector; SC-REF-UNRESOLVED. Manual applicability checked in R11.

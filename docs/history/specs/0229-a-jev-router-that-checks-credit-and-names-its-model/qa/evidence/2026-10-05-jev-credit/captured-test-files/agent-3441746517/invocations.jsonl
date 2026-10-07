@@ -1,5 +1,0 @@
-["--cwd","/private/tmp/roundfix-0229-qa-tmp/TestJevRouterClearedSessionReleasesItsRelayToken4232732614/001","--model","roundfix-openrouter/typesafe/jev-router","opencode","sessions","ensure","--name","first"]
-["--cwd","/private/tmp/roundfix-0229-qa-tmp/TestJevRouterClearedSessionReleasesItsRelayToken4232732614/001","--format","json","--json-strict","opencode","sessions","show","first"]
-["--cwd","/private/tmp/roundfix-0229-qa-tmp/TestJevRouterClearedSessionReleasesItsRelayToken4232732614/001","--model","roundfix-openrouter/typesafe/jev-router","opencode","sessions","ensure","--name","second"]
-["--cwd","/private/tmp/roundfix-0229-qa-tmp/TestJevRouterClearedSessionReleasesItsRelayToken4232732614/001","--format","json","--json-strict","opencode","sessions","show","second"]
-["--cwd","/private/tmp/roundfix-0229-qa-tmp/TestJevRouterClearedSessionReleasesItsRelayToken4232732614/001","opencode","sessions","close","first"]

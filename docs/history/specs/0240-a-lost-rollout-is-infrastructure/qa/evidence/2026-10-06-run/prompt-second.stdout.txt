@@ -1,7 +1,0 @@
-{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":1,"clientCapabilities":{"fs":{"readTextFile":true,"writeTextFile":true},"terminal":true},"clientInfo":{"name":"acpx","version":"0.19.4"}}}
-{"jsonrpc":"2.0","id":0,"result":{"protocolVersion":1,"agentCapabilities":{"loadSession":true,"sessionCapabilities":{"resume":{}}},"agentInfo":{"name":"fake-codex","version":"1"},"authMethods":[]}}
-{"jsonrpc":"2.0","id":1,"method":"session/resume","params":{"sessionId":"fake-thread-0240","cwd":"/private/tmp/roundfix-0240-qa/prompt-final/work","mcpServers":[]}}
-{"jsonrpc":"2.0","id":1,"result":{"sessionId":"fake-thread-0240","models":{"currentModelId":"default","availableModels":[{"modelId":"default","name":"Default"}]}}}
-{"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"fake-thread-0240","prompt":[{"type":"text","text":"second turn"}]}}
-{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"fake-thread-0240","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"working"}}}}
-{"jsonrpc":"2.0","id":2,"error":{"code":-32603,"message":"Internal error","data":{"details":"no rollout found for thread id fake-thread-0240"}}}

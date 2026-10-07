@@ -1,8 +1,0 @@
-Source: ~/.roundfix-operator/queue-interventions.md; read 2026-10-05
-137. 2026-10-04 — 0221 review F1 (migrate --help --check order) real → fixed + test; disposed fixed-by; retry with item binary, owner .
-138. 2026-10-04 — 0221 retry refused corrective-spec-required (head moved after archive by the review fix) → PR #365 by hand; review round 2 by hand.
-150. 2026-10-04 — v0.34.0 tagged (0222). 0225 parked run-unresolved: task_01 recorded skill 0.1.25 digest before finishing its edits; the record flag never replaces a digest, so the version test fails 'content changed under 0.1.25'. Retried (fresh Run re-does task_01).
-154. 2026-10-04 — 0225 parked run-unresolved again: codex wrote the 0.1.25 digest by hand (treated the record command as Verification). Item ff'd to main 7686bc12 (skill 0.1.25 from 0223) + task_01 clarified (3c815767: run record yourself; delete stale entry); retry. Risk: concurrent skill-version bumps across queued Specs (0224 at 0.1.25 on old base, 0226 at 0.1.26) — expect conflicts at merge.
-157. 2026-10-04 — v0.36.0 tagged (0226). 0225 parked gate-failed: conflict on owned-skill-versions.json (0.1.26 both with 0226). Merged origin/main into item, raised 0225 to 0.1.27, re-recorded, make verify ok (814ca147); retry.
-158. 2026-10-04 — 0225 parked corrective-spec-required after a review at 814ca147 (F1 dismissed, F2 fixed 5eb81db5); retry refused (head differs); manual review round 2 reviewed; manual PR opened. Owner 38651 exited; 0224 parked pull-request-conflict (wait for 0225 merge, then raise to 0.1.28).
-159. 2026-10-04 — #382 merged (0225). 0224 item: merged main, raised to 0.1.28 (hunk-only resolution), re-recorded, make verify ok, task_03 addendum 88e2fe3c; retry accepted -> reviewing, owner 71491.

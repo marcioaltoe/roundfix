@@ -1,5 +1,0 @@
-['./bin/roundfix', 'qa-report', 'accept', 'docs/specs/0228-queue-items-that-stay-current-with-main/qa/qa-report-2026-10-05.md']
-stdout:
-stderr:
-roundfix: QA Report eligibility refused: newest QA Report verdict is "fail"; expected "pass"
-exit: 1

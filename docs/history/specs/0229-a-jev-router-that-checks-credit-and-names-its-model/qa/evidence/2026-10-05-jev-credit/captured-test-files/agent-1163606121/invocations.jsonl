@@ -1,2 +1,0 @@
-["--cwd","/private/tmp/roundfix-0229-qa-tmp/TestJevRouterSessionCarriesThePlaceholderConfig637019934/001","--format","json","--json-strict","--approve-all","--model","roundfix-openrouter/typesafe/jev-router","opencode","prompt","-s","router-test","-f","-"]
-["--cwd","/private/tmp/roundfix-0229-qa-tmp/TestJevRouterSessionCarriesThePlaceholderConfig637019934/001","--format","json","--json-strict","--approve-all","--model","opencode-go/kimi-k3","opencode","prompt","-s","router-test","-f","-"]

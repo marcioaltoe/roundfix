@@ -1,6 +1,0 @@
-=== RUN   TestQA0224NoCandidateHistoryRefusal
-    qa0224_probe_test.go:13: actual=retry Delivery Queue item "qa-no-history": candidate head is missing; API Contract 1 requires=retry Delivery Queue item "qa-no-history": archived item head "operator-head" differs from candidate head ""; persisted item unchanged
---- FAIL: TestQA0224NoCandidateHistoryRefusal (0.01s)
-FAIL
-FAIL	roundfix/internal/delivery	0.281s
-FAIL

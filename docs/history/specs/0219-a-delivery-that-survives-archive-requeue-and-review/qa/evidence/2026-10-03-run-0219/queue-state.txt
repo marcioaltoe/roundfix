@@ -1,2 +1,0 @@
-No database/queue created. Two branches remain, each one commit ahead of origin/main: {"roundfix/deliver-0300-example-1111111111111111": "1", "roundfix/deliver-0300-example-2222222222222222": "1"}
-Setup: set local origin/HEAD after seed push, as a clone would.

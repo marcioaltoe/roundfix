@@ -1,1 +1,0 @@
-{"pid": 36316, "session": 36316, "process_group": 36316, "stdin": "/dev/null", "command": ["go", "test", "-count=20", "-timeout", "900s", "-v", "-run", "^(TestImplementDetachChildEndsWhenItsTestBinaryDies|TestDetachSurvivorEndsWhenItsTestBinaryDies)$", "./internal/cli"]}

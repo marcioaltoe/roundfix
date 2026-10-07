@@ -1,9 +1,0 @@
-=== RUN   TestQAInstalledACPXReplay
-resume: {Runtime:codex Step:session/resume Detail:no rollout found for thread id fake-thread-0240 PromptSent:false}
-error: Agent Selection failed for runtime "codex": agent/protocol error at session/resume: Internal error (JSON-RPC -32603); lost rollout: no rollout found for thread id fake-thread-0240
-prompt: {Runtime: Step:session/prompt Detail:no rollout found for thread id fake-thread-0240 PromptSent:true}
-error: Agent Batch failed after acpx exited with code 1: agent/protocol error at session/prompt: Internal error (JSON-RPC -32603); lost rollout: no rollout found for thread id fake-thread-0240
---- PASS: TestQAInstalledACPXReplay (0.01s)
-PASS
-suiteguard: guard cost: measured 9551 paths; fingerprint took 356.249583ms before and 299.336792ms after
-ok  	roundfix/internal/agent	0.769s

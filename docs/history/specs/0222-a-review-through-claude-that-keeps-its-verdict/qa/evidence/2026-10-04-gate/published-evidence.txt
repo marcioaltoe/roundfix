@@ -1,7 +1,0 @@
-Retrieved on 2026-10-04 through web open/find. Direct curl-cffi HTTP attempts were environment-blocked by CONNECT proxy 403; web reader succeeded and returned intended documentation.
-
-https://code.claude.com/docs/en/agent-sdk/permissions
-Permission evaluation and allow/deny rules: listed allowedTools are auto-approved; unlisted tools remain available. Bare disallowedTools removes the tool definition. Supports the design’s decision that allowedTools alone cannot disable terminal tools.
-
-https://platform.claude.com/docs/en/build-with-claude/token-counting
-Supported models section: Claude 4.7 and later use a newer tokenizer yielding roughly 30 percent more tokens than earlier models for the same text; exact increase depends on content. Counts include system/tool/content costs and are estimates. Supports estimating whole prompt with reserve; does not prove this particular half-window threshold fits every future attachment.

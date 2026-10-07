@@ -1,4 +1,0 @@
-command: scan every non-test Go file under internal/ for generic OPENROUTER_API_KEY tokens
-internal/agent/light_session.go:31: return []string{"OPENROUTER_API_KEY", "OPENCODE_CONFIG_CONTENT=" + string(data)}, nil
-internal/cli/spec_judge.go:30: (TypeSafe directly). The generic OPENROUTER_API_KEY is not read. The summary
-Conclusion: references are help, ignored-key removal, or configuration templates; no generic credential lookup.

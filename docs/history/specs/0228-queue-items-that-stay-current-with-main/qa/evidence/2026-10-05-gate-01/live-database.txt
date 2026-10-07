@@ -1,9 +1,0 @@
-Command: ['sqlite3', '-readonly', '-json', '/Users/marcio/.roundfix/roundfix.db', "SELECT spec_slug,stage,blocker,candidate_commits FROM delivery_queue_items WHERE spec_slug LIKE '0225%';"]
-stdout: 
-stderr: 
-Exit: 0
-Independent read: ['sqlite3', '-readonly', '-json', '/Users/marcio/.roundfix/roundfix.db', "SELECT spec_slug,stage FROM delivery_queue_items WHERE spec_slug LIKE '0228%';"]
-stdout: [{"spec_slug":"0228-queue-items-that-stay-current-with-main","stage":"running"}]
-
-stderr: 
-Exit: 0

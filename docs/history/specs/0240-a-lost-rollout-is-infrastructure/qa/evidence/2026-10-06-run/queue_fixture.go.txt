@@ -1,3 +1,0 @@
-package main
-import("context";"os";"roundfix/internal/store";"fmt")
-func main(){ctx:=context.Background();s,e:=store.Open(ctx,os.Args[1]);if e!=nil{panic(e)};defer s.Close();root,e:=os.Getwd();if e!=nil{panic(e)};q,e:=s.CreateDeliveryQueue(ctx,root,[]string{"0240-a-lost-rollout-is-infrastructure"});if e!=nil{panic(e)};item:=q.Items[0];item.Stage=store.DeliveryStageParked;item.Blocker="runtime-infrastructure: qa lost its rollout at session/resume";if e=s.UpdateDeliveryQueueItem(ctx,root,item);e!=nil{panic(e)};fmt.Printf("root=%s stage=%s blocker=%s retry_count=%d\n",root,item.Stage,item.Blocker,item.RetryCount)}

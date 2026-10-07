@@ -1,4 +1,0 @@
-make build: exit 0, GOCACHE=/private/tmp/roundfix-0224-qa-cache
-./bin/roundfix --version: roundfix 0.33.0 (0d996239-dirty, built 2026-10-04 14:03:09 -0300)
-./bin/roundfix spec check 0224-an-archived-retry-that-needs-no-recorded-candidate --strict: exit 0; No findings. Authored Verification commands were not executed.
-Skipped: SC-FINDING-LIFECYCLE missing Finding; SC-ROLLUP-MEMBER missing rollup; SC-BACKLOG-UNMOVED missing backlog; vocabulary documentation detector missing machine-recognized Vocabulary Contract; SC-REF-UNRESOLVED missing references/_index.md.

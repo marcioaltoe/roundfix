@@ -86,20 +86,21 @@ Run this after the implementation merges, outside a Task.
    `git show history-full:docs/history/<path>` or use its record's revision.
 
 2. Save `roundfix history sanitize`'s plan. Request `--batch 40 --advise` per
-   batch when the monthly ceiling allows. The ceiling was reached on
-   2026-10-02; advice skips until the month turns, with the judgment recorded
-   on 2026-10-06 standing in.
+   batch for Jev's advice on each text candidate; it uses the judge key and
+   skips when the monthly ceiling is reached.
 3. For each batch, create `chore/history-sanitize-<k>` from `main`, run
-   `roundfix history sanitize --apply --batch 40`, then `make verify` and
-   `make verify-docs`. Commit `chore: sanitize history batch <k>`, open one
+   `roundfix history sanitize --apply --batch 40`, stage it with
+   `git add -A docs` (the repository contract inspects tracked files), then
+   run `make verify` and `make verify-docs`. Commit `chore: sanitize history batch <k>`, open one
    Pull Request, merge it and update `main`. Revert a batch by reverting its
    commit.
-4. Promote lessons in the batch that holds them:
-
-   ```text
-   --promote docs/history/specs/0129-spec-authoring-and-gate-recovery/references/2026-08-12-a-queue-of-eight-specs-shows-where-the-loop-breaks.md
-   --promote docs/history/specs/0231-checks-that-hold-in-delivery/references/2026-10-05-a-pull-request-check-ran-on-a-stale-merge.md
-   ```
+4. Promote lessons in the batch that holds them, with `--promote <path>`.
+   `--promote` needs a clean tree like `--apply`; a lesson a batch missed is
+   copied from `history-full` into `docs/references/` and named in its record's
+   `promoted` field. This repository completed its sanitize on 2026-10-07 in
+   six batches and promoted, among others,
+   `docs/references/2026-08-12-a-queue-of-eight-specs-shows-where-the-loop-breaks.md`
+   and `docs/references/2026-10-05-a-pull-request-check-ran-on-a-stale-merge.md`.
 
    Send cross-project lessons to the Secondbrain inbox following
    [Secondbrain guidance](../../agents/secondbrain.md). The 0035 skill analysis
