@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.57.0] - 2026-10-07
+
+### A sanitize that reads older folders and names its refusals
+
+- **Lenient Legacy Reading.** `roundfix history sanitize` converts Legacy Archive Folders written under older Task Graph rules. A projection-table row that names a Task outside the graph, or a Task type that is no longer allowed, is tolerated and named in the plan. Malformed and duplicate rows still refuse. Active Specs and `roundfix archive` keep today's checks.
+- **`failed-qa` disposition.** A Spec archived with a failing QA and no override becomes an Archive Record with disposition `failed-qa`. The record keeps `qa_verdict: fail` and the report name, never carries `qa_override`, and its QA Task never counts as completed.
+- **Refused Units.** The plan lists every unit the sanitize refuses, with its reason, and still plans the others. `--apply --batch <n>` leaves refused units untouched and does not count them toward n. When every examined unit is refused, it writes nothing and exits 2.
+- **Glossary.** Adds Refused Unit and Lenient Legacy Reading, and revises Archive Record and Sanitize Batch.
+
 ## [0.56.0] - 2026-10-07
 
 ### Generated records that hold across Specs and platforms
