@@ -1,1 +1,0 @@
-{"command": ["./bin/roundfix", "spec", "check", "0247-a-run-gate-that-runs-the-repository-contracts", "--strict"], "exit": 0}

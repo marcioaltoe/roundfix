@@ -1,1 +1,0 @@
-{"command": ["go", "test", "-count=1", "-v", "./internal/verifyselect"], "exit": 0}
