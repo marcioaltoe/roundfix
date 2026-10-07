@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0243-a-history-that-holds-only-records
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -98,3 +98,60 @@ Backlog Entry "History keeps only what the Secondbrain needs" of
 - `_prd.md` → Goal 4; User Story 1; Core Feature 4
 - `_techspec.md` → Measured inventory; Interfaces; Invariants 2, 7, 8 and 9; Data Models; Build Order 2
 - ADR-0248; ADR-0120; ADR-0215
+
+## Result
+
+Implemented this Task's slice for Daemon Verification. Status remains
+Daemon-owned. The initial worktree had only the Daemon's `pending` to
+`in_progress` status change in this file; `internal/spec/history_entries.go`
+was absent.
+
+- Added reduction and detection with byte-identical front matter, the first
+  title, the first non-heading paragraph with collapsed whitespace, and the
+  exact Git provenance line. Missing front matter, missing title and already
+  reduced entries are refused. The detector accepts 40- and 64-hex revisions
+  only on the last non-empty line.
+- Added ordered kind planning through `ArchiveDir`, sorted pending paths,
+  before/after byte counts and planned replacement bytes. Applying a kind
+  uses only those paths, refuses ADR and out-of-kind plans, and removes only
+  parent directories left empty by its deletions. Already reduced entries
+  are omitted from later plans.
+- Added tracked Markdown citation reporting through `git ls-files`, outside
+  the History Root, with source path, line and removed target. Folder-prefix
+  citations, inline paths and relative Markdown links are reported as advice.
+- Added the six requested `internal/spec` tests and two requested
+  `internal/speccheck` tests. Every fixture uses a temporary tree or repository.
+
+Focused check after the final code edits:
+
+```sh
+GOCACHE=/private/tmp/roundfix-task02-gocache rtk proxy go test ./internal/spec ./internal/speccheck -run 'Test(ReduceHistoryEntry|ReducedHistoryEntry|PlanHistoryKinds|ApplyHistoryKind|HistoryCitations|ReducedFindings|ReducedFindingWith)' -count=1 -v
+```
+
+Exit 0; all eight requested test functions and their subtests passed.
+
+Acceptance evidence:
+
+- Metadata and Spec check: exact-byte Finding and Backlog reduction fixtures
+  passed, including CRLF front matter and comments. The Spec check fixture
+  accepted a reduced Finding licensed by an Archive Record, a reduced member
+  licensed by its active Rollup, and closure evidence naming a reduced
+  Backlog Entry, with no findings. The broken-license fixture still reported
+  `CodeArchiveLicense` at the preserved `absorbed_by` line.
+- Removal and ADR preservation: kind ordering and byte counts matched exact
+  expectations; applying plans left the ADR byte-identical. Removal deleted
+  nested Review Artifact files, handoffs and their empty parent directories,
+  preserving other families, reference files and a file added after planning.
+- Advisory citations: the scan reported the link, inline path and relative
+  link to the removed folder, ignored Markdown under the History Root and
+  untracked Markdown, and avoided a similarly prefixed sibling folder.
+
+No repository `docs/history` files, Spec check rules or `internal/spec/archive.go`
+were changed. No follow-up work was identified. The declared Verification
+commands and repository-wide gates were not run; the Daemon owns the declared
+Verification and settlement. No commit, push or Pull Request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261007T040343Z_bb67f44effbee11e`
+- Source commit: `6845a2ba5c0f5a06019f99e36063ab99d19c86be`
