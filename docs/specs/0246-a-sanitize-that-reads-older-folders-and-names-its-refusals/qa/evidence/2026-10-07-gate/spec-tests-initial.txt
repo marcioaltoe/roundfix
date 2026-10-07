@@ -1,0 +1,4 @@
+# ./internal/spec
+open /Users/marcio/Library/Caches/go-build/18/189d811f608331688a8821d1ee2fe35f1d706bbd1b3c7bf3a98f3c801521f97f-d: operation not permitted
+FAIL	./internal/spec [setup failed]
+FAIL

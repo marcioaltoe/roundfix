@@ -1,0 +1,766 @@
+diff --git a/internal/spec/archive_failed_qa_test.go b/internal/spec/archive_failed_qa_test.go
+new file mode 100644
+index 00000000..9e1cfecd
+--- /dev/null
++++ b/internal/spec/archive_failed_qa_test.go
+@@ -0,0 +1,138 @@
++package spec
++
++// Suite: Failed QA Archive Records.
++// Invariant: legacy failure stays recorded without granting QA completion.
++// Boundary IN: synthetic Spec folders and rendered Archive Records.
++// Boundary OUT: conversion metadata, parser refusals, and preserved active files.
++
++import (
++	"os"
++	"path/filepath"
++	"reflect"
++	"strings"
++	"testing"
++)
++
++func failedQALegacyFixture(t *testing.T) LegacyConversionRequest {
++	t.Helper()
++	req := legacyProjectionFixture(t, "| task_01 | Implementation | backend | low | - |\n| task_qa | QA | qa | low | task_01 |\n")
++	folder := filepath.Join(req.ArchiveRoot, req.Slug)
++	writeFile(t, filepath.Join(folder, "qa", "qa-report-2026-09-01.md"), "---\nverdict: pass\n---\n\n# Older QA\n")
++	writeFile(t, filepath.Join(folder, "qa", "qa-report-2026-09-02.md"), "---\nverdict: fail\n---\n\n# Newest QA\n\n## Outcome\n\nThe gate failed.\n")
++	return req
++}
++
++func TestLegacyConversionOfAFailedQAIsFailedQA(t *testing.T) {
++	t.Parallel()
++	req := failedQALegacyFixture(t)
++	before := legacyTree(t, req)
++	conversion, err := PlanLegacyConversion(req)
++	if err != nil {
++		t.Fatal(err)
++	}
++	legacyAssertWhole(t, req, before)
++	record := conversion.Record
++	if record.Disposition != ArchiveFailedQA || record.QAVerdict != VerdictFail || record.QAReport != "qa-report-2026-09-02.md" || record.QAOverride != nil {
++		t.Fatalf("record=%+v", record)
++	}
++	if strings.Contains(string(conversion.Rendered), "qa_override:") {
++		t.Fatalf("record carries an override:\n%s", conversion.Rendered)
++	}
++	if err := ApplyLegacyConversion(req.RepositoryRoot, conversion); err != nil {
++		t.Fatal(err)
++	}
++	archived, err := ReadArchivedSpec(req.ArchiveRoot, req.Slug)
++	if err != nil || archived.Form != ArchivedRecord || !reflect.DeepEqual(archived.Record, record) {
++		t.Fatalf("archive=%+v err=%v", archived, err)
++	}
++}
++
++func TestFailedQARecordRoundTrips(t *testing.T) {
++	t.Parallel()
++	req := failedQALegacyFixture(t)
++	record, err := BuildArchiveRecord(ArchiveRecordInput{SpecDir: filepath.Join(req.ArchiveRoot, req.Slug), Slug: req.Slug, Legacy: true, Source: "docs/history/specs/demo", SourceRevision: req.SourceRevision})
++	if err != nil {
++		t.Fatal(err)
++	}
++	content, err := RenderArchiveRecord(record)
++	if err != nil {
++		t.Fatal(err)
++	}
++	parsed, err := ParseArchiveRecord(content)
++	if err != nil {
++		t.Fatal(err)
++	}
++	if parsed.Disposition != ArchiveFailedQA || parsed.QAVerdict != VerdictFail || parsed.QAReport != "qa-report-2026-09-02.md" || parsed.QAOverride != nil {
++		t.Fatalf("record=%+v", parsed)
++	}
++	if !reflect.DeepEqual(archiveRecordMapping(record), archiveRecordMapping(parsed)) {
++		t.Fatalf("metadata changed: before=%+v after=%+v", record, parsed)
++	}
++	rerendered, err := RenderArchiveRecord(parsed)
++	if err != nil || string(rerendered) != string(content) {
++		t.Fatalf("render changed: %s err=%v", rerendered, err)
++	}
++}
++
++func TestFailedQARecordRefusesAnotherVerdictOrAnOverride(t *testing.T) {
++	t.Parallel()
++	record := ArchiveRecord{Disposition: ArchiveFailedQA, QAVerdict: VerdictFail, QAReport: "qa-report-demo.md"}
++	content, err := RenderArchiveRecord(record)
++	if err != nil {
++		t.Fatal(err)
++	}
++	cases := []struct {
++		name, old, replacement, want string
++	}{
++		{"pass verdict", "qa_verdict: fail\n", "qa_verdict: pass\n", "archive record disposition failed-qa requires qa_verdict fail"},
++		{"empty verdict", "qa_verdict: fail\n", "qa_verdict: \"\"\n", "archive record disposition failed-qa requires qa_verdict fail"},
++		{"absent verdict", "qa_verdict: fail\n", "", "archive record disposition failed-qa requires qa_verdict fail"},
++		{"empty report", "qa_report: qa-report-demo.md\n", "qa_report: \"\"\n", "archive record disposition failed-qa requires qa_report"},
++		{"absent report", "qa_report: qa-report-demo.md\n", "", "archive record disposition failed-qa requires qa_report"},
++		{"true override", "qa_verdict: fail\n", "qa_verdict: fail\nqa_override: true\n", "archive record disposition failed-qa cannot carry qa_override"},
++		{"false override", "qa_verdict: fail\n", "qa_verdict: fail\nqa_override: false\n", "archive record disposition failed-qa cannot carry qa_override"},
++	}
++	for _, tc := range cases {
++		t.Run(tc.name, func(t *testing.T) {
++			bad := strings.Replace(string(content), tc.old, tc.replacement, 1)
++			if bad == string(content) {
++				t.Fatal("fixture mutation did not apply")
++			}
++			if _, err := ParseArchiveRecord([]byte(bad)); err == nil || err.Error() != tc.want {
++				t.Fatalf("refusal=%v, want %q", err, tc.want)
++			}
++		})
++	}
++}
++
++func TestArchivedTaskCompletedExcludesTheQATaskOfAFailedQA(t *testing.T) {
++	t.Parallel()
++	record := ArchiveRecord{Disposition: ArchiveFailedQA, QATask: "task_qa"}
++	if ArchivedTaskCompleted(record, record.QATask) {
++		t.Fatal("failed QA Task counted as completed")
++	}
++	if !ArchivedTaskCompleted(record, "task_01") {
++		t.Fatal("implementation Task excluded from completion")
++	}
++	if ArchivedTaskCompleted(record, "") {
++		t.Fatal("empty Task counted as completed")
++	}
++}
++
++func TestArchiveStillRefusesAFailingQAWithoutAnOverride(t *testing.T) {
++	t.Parallel()
++	req, dir := recordFixture(t)
++	writeFile(t, filepath.Join(dir, "qa", "qa-report-2026-10-04.md"), "---\nverdict: fail\n---\n\n# Failed QA\n")
++	before := archiveLinksTree(t, req.RepositoryRoot)
++	_, err := Archive(req)
++	const want = `no passing QA verdict: newest QA Report verdict is "fail"; expected "pass"`
++	if err == nil || err.Error() != want {
++		t.Fatalf("refusal=%v, want %q", err, want)
++	}
++	if after := archiveLinksTree(t, req.RepositoryRoot); !reflect.DeepEqual(before, after) {
++		t.Fatal("repository files changed on refusal")
++	}
++	if _, err := os.Stat(ArchiveRecordPath(ArchiveSpecRoot(req.SpecsRoot, req.BuiltInRoot), req.Slug)); !os.IsNotExist(err) {
++		t.Fatalf("archive record exists: %v", err)
++	}
++}
+diff --git a/internal/spec/archive_reader.go b/internal/spec/archive_reader.go
+index 326c171c..0c1d0260 100644
+--- a/internal/spec/archive_reader.go
++++ b/internal/spec/archive_reader.go
+@@ -64,5 +64,8 @@ func validArchiveSource(source, revision string) bool {
+ // ArchivedTaskCompleted is the record's completion contract. It does not
+ // infer membership: callers bind Task identity through commit metadata.
+ func ArchivedTaskCompleted(record ArchiveRecord, task string) bool {
++	if task == record.QATask && record.Disposition == ArchiveFailedQA {
++		return false
++	}
+ 	return task != "" && !(task == record.QATask && record.Disposition == ArchiveQAOverride && record.QAOverride != nil && record.QAOverride.QATaskStatus != "")
+ }
+diff --git a/internal/spec/archive_record.go b/internal/spec/archive_record.go
+index cd5a12fd..e3d93b20 100644
+--- a/internal/spec/archive_record.go
++++ b/internal/spec/archive_record.go
+@@ -25,6 +25,7 @@ const (
+ 	ArchivePass       ArchiveDisposition = "pass"
+ 	ArchivePartial    ArchiveDisposition = "partial"
+ 	ArchiveQAOverride ArchiveDisposition = "qa-override"
++	ArchiveFailedQA   ArchiveDisposition = "failed-qa"
+ 	ArchiveSuperseded ArchiveDisposition = "superseded"
+ 	ArchiveNoQA       ArchiveDisposition = "no-qa"
+ )
+@@ -48,6 +49,7 @@ type ArchiveRecord struct {
+ 	Outcome                        string
+ }
+ type ArchiveRecordInput struct {
++	Legacy                                          bool
+ 	SpecDir, Slug, Source, SourceRevision, Archived string
+ 	Unproven                                        []string
+ 	QAOverride                                      *QAArchiveOverrideRecord
+@@ -140,7 +142,12 @@ func BuildArchiveRecord(in ArchiveRecordInput) (ArchiveRecord, error) {
+ 	for _, regen := range suiteguardcontract.ParseSanctionedRegenerations(auth) {
+ 		r.Regeneration = append(r.Regeneration, ArchiveRegeneration{regen.Command, regen.Outputs})
+ 	}
+-	graph, err := ReadCauseGraph(filepath.Dir(in.SpecDir), filepath.Base(in.SpecDir))
++	var graph CauseGraph
++	if in.Legacy {
++		graph, _, err = ReadLegacyCauseGraph(filepath.Dir(in.SpecDir), filepath.Base(in.SpecDir))
++	} else {
++		graph, err = ReadCauseGraph(filepath.Dir(in.SpecDir), filepath.Base(in.SpecDir))
++	}
+ 	if err == nil {
+ 		r.QATask = graph.QATaskID
+ 	} else if _, statErr := os.Stat(filepath.Join(in.SpecDir, "_tasks.md")); !errors.Is(statErr, os.ErrNotExist) {
+@@ -155,6 +162,9 @@ func BuildArchiveRecord(in ArchiveRecordInput) (ArchiveRecord, error) {
+ 		r.QAReport = filepath.Base(reportPath)
+ 		r.QAVerdict = report.Verdict
+ 		r.Disposition = ArchiveDisposition(report.Verdict)
++		if report.Verdict == VerdictFail {
++			r.Disposition = ArchiveFailedQA
++		}
+ 		text, readErr := os.ReadFile(reportPath)
+ 		if readErr != nil {
+ 			return r, readErr
+@@ -337,6 +347,10 @@ func ParseArchiveRecord(content []byte) (ArchiveRecord, error) {
+ 	required := []string{"schema", "spec", "title", "status", "created", "archived", "disposition", "source", "source_revision", "qa_task", "qa_report", "qa_verdict", "unproven", "adrs", "sources", "regeneration", "promoted"}
+ 	for _, k := range required {
+ 		if _, ok := m[k]; !ok {
++			// Failed QA fields use the disposition's specific validation below.
++			if m["disposition"].Value == string(ArchiveFailedQA) && (k == "qa_report" || k == "qa_verdict") {
++				continue
++			}
+ 			return ArchiveRecord{}, fmt.Errorf("archive record missing %s", k)
+ 		}
+ 	}
+@@ -369,6 +383,16 @@ func ParseArchiveRecord(content []byte) (ArchiveRecord, error) {
+ 		return r, errors.New("archive record missing superseded_by")
+ 	}
+ 	switch r.Disposition {
++	case ArchiveFailedQA:
++		if r.QAVerdict != VerdictFail {
++			return r, errors.New("archive record disposition failed-qa requires qa_verdict fail")
++		}
++		if strings.TrimSpace(r.QAReport) == "" {
++			return r, errors.New("archive record disposition failed-qa requires qa_report")
++		}
++		if _, ok := m["qa_override"]; ok {
++			return r, errors.New("archive record disposition failed-qa cannot carry qa_override")
++		}
+ 	case ArchivePass, ArchivePartial, ArchiveQAOverride, ArchiveSuperseded, ArchiveNoQA:
+ 	default:
+ 		return r, fmt.Errorf("unknown archive disposition %q", r.Disposition)
+@@ -433,7 +457,7 @@ func ReadArchivedSpec(root, slug string) (ArchivedSpec, error) {
+ 				return ArchivedSpec{}, fmt.Errorf("legacy Spec %q frontmatter status is %q; expected %q", slug, status, "archived")
+ 			}
+ 		}
+-		r, err := BuildArchiveRecord(ArchiveRecordInput{SpecDir: folder, Slug: slug})
++		r, err := BuildArchiveRecord(ArchiveRecordInput{SpecDir: folder, Slug: slug, Legacy: true})
+ 		if err != nil {
+ 			return ArchivedSpec{}, err
+ 		}
+diff --git a/internal/spec/cause_graph.go b/internal/spec/cause_graph.go
+index 382f0811..b241177d 100644
+--- a/internal/spec/cause_graph.go
++++ b/internal/spec/cause_graph.go
+@@ -44,6 +44,78 @@ func ReadCauseGraph(root, slug string) (CauseGraph, error) {
+ 	return graph, nil
+ }
+ 
++// ReadLegacyCauseGraph reads a Legacy Archive Folder's graph with named
++// tolerances for projection rows outside the graph and retired Task types.
++// Front matter, malformed rows, and duplicate rows retain strict validation.
++func ReadLegacyCauseGraph(root, slug string) (CauseGraph, []string, error) {
++	if filepath.Base(slug) != slug || slug == "." || slug == ".." {
++		return CauseGraph{}, nil, fmt.Errorf("unsafe Spec slug %q", slug)
++	}
++	dir := filepath.Join(root, slug)
++	manifestPath := filepath.Join(dir, "_tasks.md")
++	if _, err := os.Stat(manifestPath); err != nil {
++		return CauseGraph{}, nil, fmt.Errorf("inspect cause Task Graph: %w", err)
++	}
++	content, err := os.ReadFile(manifestPath)
++	if err != nil {
++		return CauseGraph{}, nil, fmt.Errorf("read Task Graph manifest %q: %w", manifestPath, err)
++	}
++	nodes, body, qa, _, err := parseManifestGraph(manifestPath, content)
++	if err != nil {
++		return CauseGraph{}, nil, err
++	}
++	graph := CauseGraph{QATaskID: qa.TaskID, Tasks: map[string]string{}, Dir: dir}
++	for _, node := range nodes {
++		graph.Tasks[node.ID] = node.File
++	}
++	tolerated, err := legacyProjectionTolerances(manifestPath, body, graph.Tasks)
++	if err != nil {
++		return CauseGraph{}, nil, err
++	}
++	return graph, tolerated, nil
++}
++
++func legacyProjectionTolerances(manifestPath string, body []byte, tasks map[string]string) ([]string, error) {
++	var tolerated []string
++	seen := map[string]bool{}
++	inProjectionTable := false
++	for _, line := range strings.Split(string(body), "\n") {
++		cells := markdownTableCells(line)
++		if !inProjectionTable {
++			if taskTypeProjectionHeader(cells) {
++				inProjectionTable = true
++			}
++			continue
++		}
++		if len(cells) == 0 {
++			break
++		}
++		if markdownTableSeparator(cells) {
++			continue
++		}
++		if len(cells) < 5 || !strings.HasPrefix(cells[0], "task_") {
++			return nil, ManifestError{
++				Path:   manifestPath,
++				Reason: "projection table has a malformed Task row; each row must start with a canonical task_NN id and include title, type, complexity, and needs cells",
++			}
++		}
++		id := cells[0]
++		if seen[id] {
++			return nil, ManifestError{
++				Path:   manifestPath,
++				Reason: fmt.Sprintf("projection table defines Task %q more than once; remove duplicate rows", id),
++			}
++		}
++		seen[id] = true
++		if _, known := tasks[id]; !known {
++			tolerated = append(tolerated, fmt.Sprintf("projection row %s names a Task outside the graph", id))
++		} else if _, err := ParseTaskType(manifestPath, cells[2]); err != nil {
++			tolerated = append(tolerated, fmt.Sprintf("projection row %s has retired Task type %q", id, cells[2]))
++		}
++	}
++	return tolerated, nil
++}
++
+ // ReadCauseGraphAt reads the historical graph and its Tasks through the same
+ // immutable tree reader. It shares manifest validation with the folder form.
+ func ReadCauseGraphAt(source, slug string, read func(string) ([]byte, error)) (CauseGraph, error) {
+diff --git a/internal/spec/history_entries.go b/internal/spec/history_entries.go
+index 9f252ff2..fca03ff1 100644
+--- a/internal/spec/history_entries.go
++++ b/internal/spec/history_entries.go
+@@ -111,59 +111,68 @@ func historyEntryHeading(line string) bool {
+ func PlanHistoryKinds(repositoryRoot, revision string) ([]HistoryKindPlan, error) {
+ 	var plans []HistoryKindPlan
+ 	for _, kind := range []ArchiveKind{ArchiveKindFinding, ArchiveKindBacklog, ArchiveKindReview, ArchiveKindHandoff} {
+-		plan := HistoryKindPlan{Kind: kind, Action: "remove", reduced: make(map[string][]byte)}
+-		if kind == ArchiveKindFinding || kind == ArchiveKindBacklog {
+-			plan.Action = "reduce"
+-		}
+-		root := filepath.Join(repositoryRoot, ArchiveDir(kind))
+-		err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
+-			if errors.Is(walkErr, os.ErrNotExist) && path == root {
+-				return nil
+-			}
+-			if walkErr != nil {
+-				return walkErr
+-			}
+-			if entry.IsDir() {
+-				return nil
+-			}
+-			if !entry.Type().IsRegular() {
+-				return fmt.Errorf("history entry %q is not a regular file", path)
+-			}
+-			content, err := os.ReadFile(path)
+-			if err != nil {
+-				return err
+-			}
+-			if plan.Action == "reduce" && IsReducedHistoryEntry(content) {
+-				return nil
+-			}
+-			rel, err := filepath.Rel(repositoryRoot, path)
+-			if err != nil {
+-				return err
+-			}
+-			rel = filepath.ToSlash(rel)
+-			if plan.Action == "reduce" {
+-				reduced, err := ReduceHistoryEntry(content, revision, rel)
+-				if err != nil {
+-					return err
+-				}
+-				plan.reduced[rel] = reduced
+-				plan.BytesAfter += int64(len(reduced))
+-			}
+-			plan.Files = append(plan.Files, rel)
+-			plan.BytesBefore += int64(len(content))
+-			return nil
+-		})
++		plan, err := PlanHistoryKind(repositoryRoot, revision, kind)
+ 		if err != nil {
+-			return nil, fmt.Errorf("plan history kind %s: %w", kind, err)
++			return nil, err
+ 		}
+ 		if len(plan.Files) > 0 {
+-			sort.Strings(plan.Files)
+ 			plans = append(plans, plan)
+ 		}
+ 	}
+ 	return plans, nil
+ }
+ 
++// PlanHistoryKind measures one pending family independently of other kinds.
++func PlanHistoryKind(repositoryRoot, revision string, kind ArchiveKind) (HistoryKindPlan, error) {
++	plan := HistoryKindPlan{Kind: kind, Action: "remove", reduced: make(map[string][]byte)}
++	if kind == ArchiveKindFinding || kind == ArchiveKindBacklog {
++		plan.Action = "reduce"
++	}
++	root := filepath.Join(repositoryRoot, ArchiveDir(kind))
++	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
++		if errors.Is(walkErr, os.ErrNotExist) && path == root {
++			return nil
++		}
++		if walkErr != nil {
++			return walkErr
++		}
++		if entry.IsDir() {
++			return nil
++		}
++		if !entry.Type().IsRegular() {
++			return fmt.Errorf("history entry %q is not a regular file", path)
++		}
++		content, err := os.ReadFile(path)
++		if err != nil {
++			return err
++		}
++		if plan.Action == "reduce" && IsReducedHistoryEntry(content) {
++			return nil
++		}
++		rel, err := filepath.Rel(repositoryRoot, path)
++		if err != nil {
++			return err
++		}
++		rel = filepath.ToSlash(rel)
++		if plan.Action == "reduce" {
++			reduced, err := ReduceHistoryEntry(content, revision, rel)
++			if err != nil {
++				return err
++			}
++			plan.reduced[rel] = reduced
++			plan.BytesAfter += int64(len(reduced))
++		}
++		plan.Files = append(plan.Files, rel)
++		plan.BytesBefore += int64(len(content))
++		return nil
++	})
++	if err != nil {
++		return plan, fmt.Errorf("plan history kind %s: %w", kind, err)
++	}
++	sort.Strings(plan.Files)
++	return plan, nil
++}
++
+ // ApplyHistoryKind touches only a plan's files and directories they leave empty.
+ func ApplyHistoryKind(repositoryRoot string, plan HistoryKindPlan) error {
+ 	action := HistoryKindAction("remove")
+diff --git a/internal/spec/history_sanitize.go b/internal/spec/history_sanitize.go
+index 3ed00f0b..e448f64e 100644
+--- a/internal/spec/history_sanitize.go
++++ b/internal/spec/history_sanitize.go
+@@ -34,6 +34,7 @@ type LegacyConversion struct {
+ 	Files                    []string
+ 	Bytes                    int64
+ 	Promoted                 []string
++	Tolerated                []string
+ 	legacyCopies             map[string][]byte
+ }
+ 
+@@ -268,10 +269,16 @@ func PlanLegacyConversion(req LegacyConversionRequest) (LegacyConversion, error)
+ 		c.Promoted = append(c.Promoted, destination)
+ 	}
+ 	sort.Strings(c.Promoted)
+-	c.Record, err = BuildArchiveRecord(ArchiveRecordInput{SpecDir: folder, Slug: req.Slug, Source: c.Folder, SourceRevision: req.SourceRevision, Promoted: c.Promoted})
++	c.Record, err = BuildArchiveRecord(ArchiveRecordInput{SpecDir: folder, Slug: req.Slug, Source: c.Folder, SourceRevision: req.SourceRevision, Promoted: c.Promoted, Legacy: true})
+ 	if err != nil {
+ 		return c, fmt.Errorf("build legacy record: %w", err)
+ 	}
++	if _, statErr := os.Stat(filepath.Join(folder, "_tasks.md")); !errors.Is(statErr, os.ErrNotExist) {
++		_, c.Tolerated, err = ReadLegacyCauseGraph(req.ArchiveRoot, req.Slug)
++		if err != nil {
++			return c, fmt.Errorf("read legacy tolerances: %w", err)
++		}
++	}
+ 	c.Record.PullRequest, c.Record.DeliveryCommit = req.Delivery.PullRequest, req.Delivery.Commit
+ 	if c.Record.Archived == "" {
+ 		c.Record.Archived = req.Delivery.Date
+diff --git a/internal/spec/history_sanitize_legacy_test.go b/internal/spec/history_sanitize_legacy_test.go
+new file mode 100644
+index 00000000..a6239138
+--- /dev/null
++++ b/internal/spec/history_sanitize_legacy_test.go
+@@ -0,0 +1,186 @@
++package spec
++
++// Suite: Lenient Legacy Reading.
++// Invariant: only legacy projection membership and retired types are tolerated.
++// Boundary IN: synthetic Spec folders in temporary directories.
++// Boundary OUT: conversion records, named tolerances, and unchanged source bytes.
++
++import (
++	"errors"
++	"fmt"
++	"os"
++	"path/filepath"
++	"reflect"
++	"strings"
++	"testing"
++)
++
++const legacyProjectionManifest = `---
++schema: ` + manifestSchema + `
++qa: task_qa
++graph:
++  nodes:
++    - id: task_01
++      file: task_01.md
++    # - id: task_02
++    #   file: task_02.md
++    # - id: task_03
++    #   file: task_03.md
++    - id: task_qa
++      file: task_qa.md
++      needs: [task_01]
++---
++
++| id | title | type | complexity | needs |
++| --- | --- | --- | --- | --- |
++`
++
++func legacyProjectionFixture(t *testing.T, rows string) LegacyConversionRequest {
++	t.Helper()
++	root := t.TempDir()
++	req := LegacyConversionRequest{RepositoryRoot: root, ArchiveRoot: filepath.Join(root, "docs/history/specs"), Slug: "demo", SourceRevision: strings.Repeat("a", 40)}
++	folder := filepath.Join(req.ArchiveRoot, req.Slug)
++	writeFile(t, filepath.Join(folder, "_prd.md"), "---\nspec: demo\nstatus: archived\ncreated: 2026-09-01\narchived: 2026-09-02\n---\n\n# Demo\n\nPreserved outcome.\n")
++	writeFile(t, filepath.Join(folder, "_tasks.md"), legacyProjectionManifest+rows)
++	writeFile(t, filepath.Join(folder, "task_01.md"), "---\ntask: task_01\nspec: demo\nstatus: completed\ntype: backend\n---\n\n# Implementation\n")
++	writeFile(t, filepath.Join(folder, "task_qa.md"), "---\ntask: task_qa\nspec: demo\nstatus: completed\ntype: qa\n---\n\n# QA\n")
++	return req
++}
++
++func assertLegacyProjectionConversion(t *testing.T, req LegacyConversionRequest, want []string) {
++	t.Helper()
++	before := legacyTree(t, req)
++	c := legacyPlan(t, req)
++	legacyAssertWhole(t, req, before)
++	if !reflect.DeepEqual(c.Tolerated, want) || c.Record.QATask != "task_qa" {
++		t.Fatalf("tolerated=%v QA Task=%q", c.Tolerated, c.Record.QATask)
++	}
++	for _, tolerance := range want {
++		if strings.Contains(string(c.Rendered), tolerance) {
++			t.Fatalf("record contains tolerance %q", tolerance)
++		}
++	}
++	if strings.Contains(string(c.Rendered), "tolerated:") {
++		t.Fatal("record contains a tolerated field")
++	}
++	if err := ApplyLegacyConversion(req.RepositoryRoot, c); err != nil {
++		t.Fatal(err)
++	}
++	archived, err := ReadArchivedSpec(req.ArchiveRoot, req.Slug)
++	if err != nil || archived.Form != ArchivedRecord || !reflect.DeepEqual(archived.Record, c.Record) {
++		t.Fatalf("archive=%+v err=%v", archived, err)
++	}
++	if _, err := os.Stat(filepath.Join(req.ArchiveRoot, req.Slug)); !errors.Is(err, os.ErrNotExist) {
++		t.Fatalf("converted folder remains: %v", err)
++	}
++}
++
++func TestLegacyConversionToleratesAProjectionRowOutsideTheGraph(t *testing.T) {
++	t.Parallel()
++	req := legacyProjectionFixture(t, "| task_03 | Removed first | refactor | low | - |\n| task_01 | Kept | backend | low | - |\n| task_02 | Removed second | backend | low | - |\n| task_qa | QA | qa | low | task_01 |\n")
++	assertLegacyProjectionConversion(t, req, []string{
++		"projection row task_03 names a Task outside the graph",
++		"projection row task_02 names a Task outside the graph",
++	})
++}
++
++func TestLegacyConversionToleratesARetiredTaskType(t *testing.T) {
++	t.Parallel()
++	req := legacyProjectionFixture(t, "| task_01 | Kept | refactor | low | - |\n| task_qa | QA | qa | low | task_01 |\n")
++	assertLegacyProjectionConversion(t, req, []string{`projection row task_01 has retired Task type "refactor"`})
++}
++
++func TestLegacyConversionStillRefusesAMalformedProjectionRow(t *testing.T) {
++	t.Parallel()
++	req := legacyProjectionFixture(t, "| task_02 | Removed | backend | low |\n")
++	before := legacyTree(t, req)
++	manifestPath := filepath.Join(req.ArchiveRoot, req.Slug, "_tasks.md")
++	want := (ManifestError{Path: manifestPath, Reason: "projection table has a malformed Task row; each row must start with a canonical task_NN id and include title, type, complexity, and needs cells"}).Error()
++	_, err := PlanLegacyConversion(req)
++	if err == nil || err.Error() != "build legacy record: "+want {
++		t.Fatalf("refusal=%v, want %q", err, "build legacy record: "+want)
++	}
++	legacyAssertWhole(t, req, before)
++}
++
++func TestActiveSpecStillRefusesWhatLegacyReadingTolerates(t *testing.T) {
++	t.Parallel()
++	for _, retired := range []bool{false, true} {
++		t.Run(fmt.Sprintf("retired=%t", retired), func(t *testing.T) {
++			taskType := "backend"
++			if retired {
++				taskType = "refactor"
++			}
++			rows := "| task_02 | Removed | backend | low | - |\n| task_01 | Kept | " + taskType + " | low | - |\n| task_qa | QA | qa | low | task_01 |\n"
++			req := legacyProjectionFixture(t, rows)
++			folder := filepath.Join(req.ArchiveRoot, req.Slug)
++			writeFile(t, filepath.Join(folder, "_prd.md"), "---\nspec: demo\nstatus: active\n---\n\n# Demo\n")
++			manifestPath := filepath.Join(folder, "_tasks.md")
++			want := (ManifestError{Path: manifestPath, Reason: `projection table row names unknown Task "task_02"; remove it or add a matching graph node`}).Error()
++			if retired {
++				want = (ManifestError{Path: manifestPath, Reason: fmt.Sprintf(`projection row for Task "task_01" has invalid type "refactor" (allowed: %s); update the _tasks.md type cell to one allowed value`, allowedTaskTypeValues()), Err: TaskTypeError{Path: manifestPath, Value: "refactor"}}).Error()
++			}
++			_, loadErr := Load(req.ArchiveRoot, req.Slug)
++			_, graphErr := ReadCauseGraph(req.ArchiveRoot, req.Slug)
++			_, atErr := ReadCauseGraphAt(folder, req.Slug, os.ReadFile)
++			_, buildErr := BuildArchiveRecord(ArchiveRecordInput{SpecDir: folder, Slug: req.Slug})
++			for name, err := range map[string]error{"Load": loadErr, "ReadCauseGraph": graphErr, "ReadCauseGraphAt": atErr, "BuildArchiveRecord": buildErr} {
++				if err == nil || err.Error() != want {
++					t.Errorf("%s refusal=%v, want %q", name, err, want)
++				}
++			}
++		})
++	}
++}
++
++func TestReadArchivedSpecReadsALegacyFolderLeniently(t *testing.T) {
++	t.Parallel()
++	req := legacyProjectionFixture(t, "| task_02 | Removed | refactor | low | - |\n| task_01 | Kept | refactor | low | - |\n| task_qa | QA | qa | low | task_01 |\n")
++	before := legacyTree(t, req)
++	archived, err := ReadArchivedSpec(req.ArchiveRoot, req.Slug)
++	if err != nil || archived.Form != ArchivedFolder || archived.Record.QATask != "task_qa" || archived.Record.Disposition != ArchiveNoQA {
++		t.Fatalf("archive=%+v err=%v", archived, err)
++	}
++	graph, tolerated, err := ReadLegacyCauseGraph(req.ArchiveRoot, req.Slug)
++	want := []string{"projection row task_02 names a Task outside the graph", `projection row task_01 has retired Task type "refactor"`}
++	if err != nil || !reflect.DeepEqual(tolerated, want) || !reflect.DeepEqual(graph.Tasks, map[string]string{"task_01": "task_01.md", "task_qa": "task_qa.md"}) {
++		t.Fatalf("graph=%+v tolerated=%v err=%v", graph, tolerated, err)
++	}
++	legacyAssertWhole(t, req, before)
++}
++
++func TestLegacyCauseGraphPreservesManifestRefusals(t *testing.T) {
++	t.Parallel()
++	valid := legacyProjectionManifest + "| task_01 | Kept | backend | low | - |\n"
++	cases := []struct {
++		name     string
++		manifest string
++	}{
++		{name: "missing front matter", manifest: "# Graph\n"},
++		{name: "invalid YAML", manifest: strings.Replace(valid, "qa: task_qa", "qa: [", 1)},
++		{name: "schema", manifest: strings.Replace(valid, manifestSchema, "unknown/v1", 1)},
++		{name: "requires", manifest: strings.Replace(valid, "qa: task_qa", "requires: [demo]\nqa: task_qa", 1)},
++		{name: "QA declaration", manifest: strings.Replace(valid, "qa: task_qa", "qa: declined", 1)},
++		{name: "no nodes", manifest: "---\nschema: " + manifestSchema + "\ngraph:\n  nodes: []\n---\n"},
++		{name: "missing id", manifest: strings.Replace(valid, "id: task_01", "id: ''", 1)},
++		{name: "missing file", manifest: strings.Replace(valid, "file: task_01.md", "file: ''", 1)},
++		{name: "duplicate node", manifest: strings.Replace(valid, "id: task_qa", "id: task_01", 1)},
++		{name: "unknown need", manifest: strings.Replace(valid, "needs: [task_01]", "needs: [task_02]", 1)},
++		{name: "malformed row", manifest: valid + "| task_02 | Removed | backend | low |\n"},
++		{name: "duplicate known row", manifest: valid + "| task_01 | Again | refactor | low | - |\n"},
++		{name: "duplicate outside row", manifest: valid + "| task_02 | Removed | backend | low | - |\n| task_02 | Again | refactor | low | - |\n"},
++	}
++	for _, tc := range cases {
++		t.Run(tc.name, func(t *testing.T) {
++			req := legacyProjectionFixture(t, "")
++			writeFile(t, filepath.Join(req.ArchiveRoot, req.Slug, "_tasks.md"), tc.manifest)
++			before := legacyTree(t, req)
++			_, strictErr := ReadCauseGraph(req.ArchiveRoot, req.Slug)
++			_, _, legacyErr := ReadLegacyCauseGraph(req.ArchiveRoot, req.Slug)
++			if strictErr == nil || legacyErr == nil || strictErr.Error() != legacyErr.Error() {
++				t.Fatalf("strict=%v legacy=%v", strictErr, legacyErr)
++			}
++			legacyAssertWhole(t, req, before)
++		})
++	}
++}
+diff --git a/internal/spec/spec.go b/internal/spec/spec.go
+index 396a340e..1a844cb4 100644
+--- a/internal/spec/spec.go
++++ b/internal/spec/spec.go
+@@ -596,46 +596,13 @@ func loadManifestNodes(manifestPath string) ([]manifestNode, map[string]TaskType
+ }
+ 
+ func parseManifestNodes(manifestPath string, content []byte) ([]manifestNode, map[string]TaskType, bool, qaDeclaration, []string, error) {
+-	frontmatterBytes, body, err := splitFrontmatter(content)
+-	if err != nil {
+-		return nil, nil, false, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: "invalid frontmatter", Err: err}
+-	}
+-	var manifest manifestFrontmatter
+-	if err := yaml.Unmarshal(frontmatterBytes, &manifest); err != nil {
+-		return nil, nil, false, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: "invalid frontmatter", Err: err}
+-	}
+-	if manifest.Schema != manifestSchema {
+-		return nil, nil, false, qaDeclaration{}, nil, ManifestSchemaError{Path: manifestPath, Schema: manifest.Schema}
+-	}
+-	requires, err := parseRequiredSpecs(manifest.Requires, filepath.Base(filepath.Dir(manifestPath)))
+-	if err != nil {
+-		return nil, nil, false, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: "invalid requires", Err: err}
+-	}
+-	qa, err := parseQADeclaration(manifestPath, manifest)
++	nodes, body, qa, requires, err := parseManifestGraph(manifestPath, content)
+ 	if err != nil {
+ 		return nil, nil, false, qaDeclaration{}, nil, err
+ 	}
+-	nodes := manifest.Graph.Nodes
+-	if len(nodes) == 0 {
+-		return nil, nil, false, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: "graph has no nodes"}
+-	}
+-
+ 	known := make(map[string]bool, len(nodes))
+-	for index, node := range nodes {
+-		if node.ID == "" || node.File == "" {
+-			return nil, nil, false, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: fmt.Sprintf("graph node %d is missing id or file", index+1)}
+-		}
+-		if known[node.ID] {
+-			return nil, nil, false, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: fmt.Sprintf("duplicate Task id %q", node.ID)}
+-		}
+-		known[node.ID] = true
+-	}
+ 	for _, node := range nodes {
+-		for _, need := range node.Needs {
+-			if !known[need] {
+-				return nil, nil, false, qaDeclaration{}, nil, UnknownNeedError{TaskID: node.ID, Need: need}
+-			}
+-		}
++		known[node.ID] = true
+ 	}
+ 	projections, hasProjections, err := parseTaskTypeProjections(manifestPath, body)
+ 	if err != nil {
+@@ -652,6 +619,52 @@ func parseManifestNodes(manifestPath string, content []byte) ([]manifestNode, ma
+ 	return nodes, projections, hasProjections, qa, requires, nil
+ }
+ 
++// parseManifestGraph validates the front matter shared by strict and legacy readers.
++func parseManifestGraph(manifestPath string, content []byte) ([]manifestNode, []byte, qaDeclaration, []string, error) {
++	frontmatterBytes, body, err := splitFrontmatter(content)
++	if err != nil {
++		return nil, nil, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: "invalid frontmatter", Err: err}
++	}
++	var manifest manifestFrontmatter
++	if err := yaml.Unmarshal(frontmatterBytes, &manifest); err != nil {
++		return nil, nil, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: "invalid frontmatter", Err: err}
++	}
++	if manifest.Schema != manifestSchema {
++		return nil, nil, qaDeclaration{}, nil, ManifestSchemaError{Path: manifestPath, Schema: manifest.Schema}
++	}
++	requires, err := parseRequiredSpecs(manifest.Requires, filepath.Base(filepath.Dir(manifestPath)))
++	if err != nil {
++		return nil, nil, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: "invalid requires", Err: err}
++	}
++	qa, err := parseQADeclaration(manifestPath, manifest)
++	if err != nil {
++		return nil, nil, qaDeclaration{}, nil, err
++	}
++	nodes := manifest.Graph.Nodes
++	if len(nodes) == 0 {
++		return nil, nil, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: "graph has no nodes"}
++	}
++
++	known := make(map[string]bool, len(nodes))
++	for index, node := range nodes {
++		if node.ID == "" || node.File == "" {
++			return nil, nil, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: fmt.Sprintf("graph node %d is missing id or file", index+1)}
++		}
++		if known[node.ID] {
++			return nil, nil, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: fmt.Sprintf("duplicate Task id %q", node.ID)}
++		}
++		known[node.ID] = true
++	}
++	for _, node := range nodes {
++		for _, need := range node.Needs {
++			if !known[need] {
++				return nil, nil, qaDeclaration{}, nil, UnknownNeedError{TaskID: node.ID, Need: need}
++			}
++		}
++	}
++	return nodes, body, qa, requires, nil
++}
++
+ func parseQADeclaration(manifestPath string, manifest manifestFrontmatter) (qaDeclaration, error) {
+ 	if !manifest.QA.Present {
+ 		if manifest.QAReason.Present {

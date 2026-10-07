@@ -1,0 +1,11 @@
+{
+  "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0246-qa-1234o7gg/repo",
+  "command": [
+    "./bin/roundfix",
+    "history",
+    "sanitize"
+  ],
+  "exit": 0,
+  "stdout": "history sanitize plan: 0 unit(s) pending; nothing pending\n",
+  "stderr": ""
+}

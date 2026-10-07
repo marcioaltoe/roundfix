@@ -1,0 +1,23 @@
+{
+  "required_phrases": {
+    "CONTEXT.md": [
+      "**Refused Unit**:",
+      "**Lenient Legacy Reading**:",
+      "**Archive Record**:",
+      "**Sanitize Batch**:",
+      "failed-qa"
+    ],
+    "docs/user-guide/commands/history.md": [
+      "refused <unit>: <reason>",
+      "tolerates <folder>: <tolerance>",
+      "unit(s) refused",
+      "failed-qa"
+    ],
+    ".agents/skills/roundfix/references/archive.md": [
+      "Refused Unit",
+      "failed-qa"
+    ]
+  },
+  "mirrors_equal": true,
+  "owned_version_test": "pass"
+}

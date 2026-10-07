@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0246-a-sanitize-that-reads-older-folders-and-names-its-refusals
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

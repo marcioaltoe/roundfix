@@ -1,0 +1,29 @@
+{
+  "spec-tests": [
+    "go",
+    "test",
+    "-count=1",
+    "-v",
+    "-run",
+    "History|Legacy|Archive|ActiveSpecStill|FailedQA",
+    "./internal/spec"
+  ],
+  "cli-tests": [
+    "go",
+    "test",
+    "-count=1",
+    "-v",
+    "-run",
+    "History|Archive",
+    "./internal/cli"
+  ],
+  "skill-tests": [
+    "go",
+    "test",
+    "-count=1",
+    "-v",
+    "-run",
+    "^TestEveryOwnedSkillVersionIsRecorded$",
+    "./skills"
+  ]
+}

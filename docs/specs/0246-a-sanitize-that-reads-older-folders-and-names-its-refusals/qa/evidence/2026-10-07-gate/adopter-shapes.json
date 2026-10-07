@@ -1,0 +1,61 @@
+[
+  {
+    "path": "/Users/marcio/dev/oraculum/docs/history/specs/0001-oraculum-mvp",
+    "outside_graph": [
+      "task_12",
+      "task_13"
+    ],
+    "retired_refactor": [],
+    "reports": [],
+    "prd_override": true
+  },
+  {
+    "path": "/Users/marcio/dev/oraculum/docs/history/specs/0004-cicd-oraculum",
+    "outside_graph": [
+      "task_03",
+      "task_04",
+      "task_05"
+    ],
+    "retired_refactor": [],
+    "reports": [],
+    "prd_override": true
+  },
+  {
+    "path": "/Users/marcio/dev/oraculum/docs/history/specs/0005-credenciais-sync-axis",
+    "outside_graph": [],
+    "retired_refactor": [
+      "task_01"
+    ],
+    "reports": [],
+    "prd_override": false
+  },
+  {
+    "path": "/Users/marcio/dev/oraculum/docs/history/specs/0036-retomada-da-homologacao-top",
+    "outside_graph": [],
+    "retired_refactor": [],
+    "reports": [
+      {
+        "name": "qa-report-2026-08-14-01.md",
+        "verdict": [
+          "fail"
+        ],
+        "override": false
+      },
+      {
+        "name": "qa-report-2026-08-14.md",
+        "verdict": [
+          "fail"
+        ],
+        "override": false
+      },
+      {
+        "name": "qa-report-2026-08-17.md",
+        "verdict": [
+          "fail"
+        ],
+        "override": false
+      }
+    ],
+    "prd_override": false
+  }
+]

@@ -1,0 +1,4 @@
+# ./skills
+open /Users/marcio/Library/Caches/go-build/57/577f9b1ef2a46095a22f87a4fee664f1c8657c18d84468bb3eefa2bc48a9d8f7-d: operation not permitted
+FAIL	./skills [setup failed]
+FAIL

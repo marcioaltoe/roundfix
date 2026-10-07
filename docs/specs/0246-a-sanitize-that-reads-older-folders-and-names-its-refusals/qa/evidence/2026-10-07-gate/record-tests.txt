@@ -1,0 +1,10 @@
+=== RUN   TestQA0246ActualCLIRecords
+    qa0246_readback_test.go:9: record aaa parsed: disposition=no-qa source_revision=9cef698cddc90a385d583d8a6affd7febfb1d9c0
+    qa0246_readback_test.go:9: record bbb parsed: disposition=no-qa source_revision=9cef698cddc90a385d583d8a6affd7febfb1d9c0
+    qa0246_readback_test.go:9: record ccc parsed: disposition=no-qa source_revision=9cef698cddc90a385d583d8a6affd7febfb1d9c0
+    qa0246_readback_test.go:9: record ddd parsed: disposition=failed-qa source_revision=9cef698cddc90a385d583d8a6affd7febfb1d9c0
+    qa0246_readback_test.go:9: record eee parsed: disposition=no-qa source_revision=9cef698cddc90a385d583d8a6affd7febfb1d9c0
+--- PASS: TestQA0246ActualCLIRecords (0.00s)
+PASS
+suiteguard: guard cost: measured 2501 paths; fingerprint took 92.212958ms before and 82.935666ms after
+ok  	roundfix/internal/spec	0.389s

@@ -1,0 +1,14 @@
+{
+  "cwd": "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0246-qa-l3s6wdbw/repo",
+  "command": [
+    "./bin/roundfix",
+    "history",
+    "sanitize",
+    "--apply",
+    "--batch",
+    "1"
+  ],
+  "exit": 2,
+  "stdout": "refused docs/history/specs/aaa: build legacy record: missing YAML frontmatter opening marker\n",
+  "stderr": "Preflight failed\n\nReason:\n  history sanitize --apply found no convertible unit; 1 unit(s) refused\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix history sanitize --help' for usage.\n"
+}
