@@ -1,8 +1,0 @@
-Spec 0193-baseline-guides-that-describe-the-product-as-it-is
-No findings. Authored Verification commands were not executed.
-Skipped:
-  SC-FINDING-LIFECYCLE: missing docs/findings Finding
-  SC-ROLLUP-MEMBER: missing docs/findings rollup
-  vocabulary documentation detector: missing docs/specs/0193-baseline-guides-that-describe-the-product-as-it-is/_techspec.md Vocabulary Contract
-
-exit: 0

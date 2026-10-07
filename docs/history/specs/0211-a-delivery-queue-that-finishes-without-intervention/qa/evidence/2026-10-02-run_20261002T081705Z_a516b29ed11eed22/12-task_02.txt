@@ -1,8 +1,0 @@
-$ ["git", "-c", "core.fsmonitor=false", "diff-tree", "--no-commit-id", "--name-only", "-r", "89953dc64cd707e59ee4bae6b92a927394142294"]
-exit: 0
-stdout:
-docs/specs/0211-a-delivery-queue-that-finishes-without-intervention/task_02.md
-internal/cli/deliver_archived_retry_test.go
-internal/cli/deliver_workflow.go
-
-stderr:

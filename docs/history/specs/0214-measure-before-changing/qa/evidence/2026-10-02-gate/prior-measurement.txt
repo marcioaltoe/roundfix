@@ -1,7 +1,0 @@
-docs/history/findings/2026-09-30-jev-judgments-measured-against-the-spec-archive.md
-| 4 | Task lint: do three Nouls predict a Verification repair? | 300 tasks | 23% repaired | Chance, AUROC 0.50 | Vague acceptance: AUROC 0.62 [0.55, 0.70]; verification targets the Task: 0.60; file outside context: 0.50 | **Inconclusive**: a weak real signal, too weak to flag a Task |
-- Backend Tasks only: AUROC 0.67 [0.59, 0.76], n = 198.
-- Of the 30 Tasks scored below 0.5, 37% needed a repair, against a 23% base rate. That is too weak to act on per Task.
-- **Clause pairs** (1,091 shortlisted): one confirmed defect, the duplicated `clause.backend.boundary-contracts` / `rule.backend.boundary-contracts` entry that Spec 0193 removed. Every flagged "contradiction" between 0.50 and 0.70 confidence was a wording tension or a false alarm.
-- **Skill vs clause** (1,485 pairs): Jev kept nothing at confidence ≥ 0.70. Its 24 lower-confidence `contradicts` answers held 4 real contradictions (17% precision).
-Historical independent authoring observations 2026-10-01, TechSpec Measured outside evidence: 210 Runs since 2026-08-27; 2618 verification events since 2026-09-17; 85 failed verdicts; 42 feedback rounds; 357 Task executions across 63 Specs; 34 repaired; 86 failed-attempt logs present; no classification fields; 827 tool events naming history, 372 naming QA evidence. These are recorded earlier observations, not freshly rerun historic counts. Fresh independent record is row 11.

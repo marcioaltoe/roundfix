@@ -1,3 +1,0 @@
-Read 2026-10-02 through web tool. Direct curl-cffi attempt blocked by sandbox domain allowlist, not retried.
-Source: https://pmc.ncbi.nlm.nih.gov/articles/PMC10728486/
-Sections and comparison: Simulation results 3.2 and Discussion: traditional bootstrap under-covers when within-subject correlation is strong; cluster bootstrap maintains near-95% coverage. Supports resampling Specs, rather than individual Tasks.

@@ -1,9 +1,0 @@
-internal/baseline/assets/modules/spec-workflow.json: 17 pre-existing clause objects byte-identical; 2 added.
-internal/baseline/assets/modules/context-workflow.json: 24 pre-existing clause objects byte-identical; 1 added.
-Refresh 1: exit 0; 6372 files; 0 changed bytes.
-Refresh 2: exit 0; 6372 files; 0 changed bytes.
-Clone head: 70d124f3ab3cfa2de4d983cd24b223483f083299
-Disposable repository: /private/tmp/roundfix-0209-rerun-refresh-tkf4llib
-Disposable Home: /private/tmp/roundfix-0209-rerun-home-fqrzux_j
-Second refresh byte hashes identical; independent git status empty.
-Focused Baseline suite: exit 0; tests-02.txt names all twelve selected tests.

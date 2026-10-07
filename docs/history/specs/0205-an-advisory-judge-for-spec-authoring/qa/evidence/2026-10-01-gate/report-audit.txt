@@ -1,1 +1,0 @@
-Single frontmatter, closed fail verdict, 20 unique terminal rows, 18 pass/1 fail/1 environment block; all row input blocks present, every explicit evidence path resolves, Daemon auditor fields intact. No evidence_snapshots written. Seeded mechanical audit and skips preserved.

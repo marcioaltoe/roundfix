@@ -1,9 +1,0 @@
-command: ['go', 'test', '-count=1', '-v', './internal/cli', '-run', 'Doctor.*Preload|Setup.*Preload']
-exit: 0
-stdout:
-testing: warning: no tests to run
-PASS
-suiteguard: guard cost: measured 8040 paths; fingerprint took 313.957ms before and 281.941334ms after
-ok  	roundfix/internal/cli	0.836s [no tests to run]
-
-stderr:

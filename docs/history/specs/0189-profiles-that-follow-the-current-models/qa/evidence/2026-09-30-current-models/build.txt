@@ -1,3 +1,0 @@
-rtk make build: successful production build from Run Worktree
-go build -buildvcs=false -ldflags "-X roundfix/internal/app.BuildCommit=59c0ace4-dirty -X roundfix/internal/app.BuildTime=2026-09-30 23:37:19 -0300" -o bin/roundfix ./cmd/roundfix
-./bin/roundfix --version: roundfix 0.22.0 (59c0ace4-dirty, built 2026-09-30 23:37:19 -0300)

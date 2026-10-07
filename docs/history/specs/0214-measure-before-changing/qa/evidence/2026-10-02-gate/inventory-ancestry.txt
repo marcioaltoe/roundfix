@@ -1,5 +1,0 @@
-$ git merge-base --is-ancestor 513b22ebab2d62a23b4222073c937c2862907ec2 HEAD
-
-STDERR:
-
-EXIT: 0

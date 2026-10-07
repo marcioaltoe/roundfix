@@ -1,8 +1,0 @@
-$ git diff-tree --no-commit-id --name-only -r fd1d94f6aee4ec70befb371910b9f3d58608f439
-docs/references/archived-evidence-measurement.md
-docs/specs/0214-measure-before-changing/task_03.md
-
-STDERR:
-error: fsmonitor_ipc__send_query: unspecified error on '/Users/marcio/dev/roundfix/.git/worktrees/run_20261002T171516Z_94169d908e48d811/fsmonitor--daemon.ipc'
-
-EXIT: 0

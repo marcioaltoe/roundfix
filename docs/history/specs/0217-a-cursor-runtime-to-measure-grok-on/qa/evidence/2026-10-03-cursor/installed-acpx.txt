@@ -1,5 +1,0 @@
-Installed package: /opt/homebrew/lib/node_modules/acpx
-Version: 0.19.4
-Registry: dist/agent-registry-kHdpsK9F.js
-Observed cursor argv: ["cursor-agent", "acp"]
-Read-only parser assertion passed. No acpx agent operation executed.

@@ -1,1 +1,0 @@
-Python exact comparison: TechSpec grouping text block is byte-identical in questions.json. Parsed threshold 0.3, cut 1500 Unicode characters, statuses open / pending, partial and scrub pattern all match the recorded measurement. Independent JSON parsing confirms the block is operative configuration. Exit 0.

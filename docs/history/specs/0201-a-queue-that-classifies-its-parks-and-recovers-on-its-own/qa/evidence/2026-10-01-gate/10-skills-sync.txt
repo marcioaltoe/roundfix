@@ -1,5 +1,0 @@
-command: rtk proxy make skills-sync-check
-go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
-ok roundfix/skills 0.650s
-exit: 0
-Named recorded-version and settlement tests independently executed in 07-tests.txt, both passed.

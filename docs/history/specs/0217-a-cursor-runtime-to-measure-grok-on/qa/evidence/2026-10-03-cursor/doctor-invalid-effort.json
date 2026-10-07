@@ -1,6 +1,0 @@
-{
-  "command": "./bin/roundfix doctor",
-  "exit": 1,
-  "stdout": "",
-  "stderr": "roundfix: doctor failed: parse config \"/private/tmp/roundfix-0217-qa-9tblgymf/repo/.roundfixrc.yml\": profiles.general.preferred.reasoning_effort must be \"\" for runtime cursor; Cursor states effort, thinking, context and speed inside the model value, for example \"grok-4-20[thinking=true]\"\nRun 'roundfix doctor --help' for usage.\n"
-}

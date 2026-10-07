@@ -1,3 +1,0 @@
-make build: exit 0
-./bin/roundfix --version: roundfix 0.26.0 (f495ec3a-dirty, built 2026-10-02 06:22:07 -0300)
-spec check --strict: exit 0, no findings; vocabulary detector skipped and checked in row 11

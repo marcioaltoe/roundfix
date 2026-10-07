@@ -1,4 +1,0 @@
-Adopted source provenance: 81aa91ed47d7615aa07e5731f6da8eafae78db99 2026-10-01 16:12:28 -0300 docs: plan a delivery queue that finishes without intervention (0211, 0212) (#322)
-
-Observed contents: original Run-start refusal on queue-started 0204; dated extension for 0203 pending rerun, policy refusal, delivery-error retry refusal and PR 317 manual merge; missing NODE_OPTIONS preload stopping ACPX. These pre-implementation records support the fixes.
-Intervention log entries 61–63: no source path is named by the PRD or reference index. Filename/content searches under this repository docs and /Users/marcio/dev/roundfix/docs, and filename check of /private/tmp did not locate a numbered intervention log. Archived 2026-09-30 finding names twelve earlier interventions but does not contain entries 61–63. No entries inferred from Spec prose.

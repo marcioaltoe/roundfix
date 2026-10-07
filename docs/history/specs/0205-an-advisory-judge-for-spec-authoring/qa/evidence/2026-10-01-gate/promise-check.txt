@@ -1,9 +1,0 @@
-Requirement 12 names “the promise rule” but the supplied guides define no rule by that exact name. Applied the documented promise-to-observable principle: in-scope feature claims have executable positive/negative evidence, limitations and Non-Goals remain explicit, and no future capability is silently credited as implemented.
-Core Features 1, 6, 8 | TestSpecJudgeRefusesAnUnknownStageOrFormat | TestSpecJudgeSkipsWithoutAKey
-Core Features 2, 3, 4 | TestCitationClaimsFollowTheMeasuredExtraction | TestGoalPairsFollowTheMeasuredSelection
-Core Feature 5 | TestRunNeverComparesAnotherModelsAnswer | TestModelPinAcceptsOnlyJev113
-Core Feature 7 | TestRequestsCarryOnlySpecArtifactText | TestPlanSkipsASymbolicLinkArtifact
-Core Features 9, 10 | TestJudgeLogRecordsEveryCall | TestRunStopsAtTheMonthlyCeiling
-Core Feature 11: required staged command, advisory handling, mirrors and sync observed by R16’s content comparisons and make skills-sync-check.
-Archived corpus measurement audited by the direct archive probe (558 artifacts, lowest .10375); recursive Requirement 8 remains failed and is not waived by this check.
-No TODO/TBD production promise in authored PRD/TechSpec; the unused proposed skill name is explicitly out of scope. Checklists remain historical plans; daemon-written completed statuses are the settlement facts.

@@ -1,4 +1,0 @@
-QA_0190_EVIDENCE=/private/tmp/roundfix-0190-qa-stream QA_0190_BINARY=<worktree>/bin/roundfix GOCACHE=/private/tmp/roundfix-0190-qa-cache go test -overlay <spec>/qa/evidence/2026-10-01-settlement/overlay.json -count=1 -v -run '^TestQAGatePublicStreamFixture$' ./internal/cli
-EXIT: 0
---- PASS: TestQAGatePublicStreamFixture (0.38s)
-Notes: initial harness used public task instead of work_item; raw output proved labels present. Corrected harness field, wrote transient output outside repository to honor suiteguard, and fresh run passed. No source/tests changed.

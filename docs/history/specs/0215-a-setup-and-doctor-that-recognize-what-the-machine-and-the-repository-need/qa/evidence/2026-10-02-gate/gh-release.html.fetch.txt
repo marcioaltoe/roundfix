@@ -1,3 +1,0 @@
-URL: https://github.com/cli/cli/releases/tag/v2.81.0
-exit: 1
-Error: Failed to perform, curl: (7) CONNECT tunnel failed, response 403. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.

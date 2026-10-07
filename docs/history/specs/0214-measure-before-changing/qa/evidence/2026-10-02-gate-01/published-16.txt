@@ -1,3 +1,0 @@
-Observed 2026-10-02 through web reader.
-Source: https://pubmed.ncbi.nlm.nih.gov/26323286/
-curl-cffi: CONNECT tunnel 403; web reader: one footer-only line, no abstract. Original source unavailable. Equivalent primary publisher abstract https://journals.sagepub.com/doi/10.1177/0962280215602040 independently verifies 29 methods and larger method discrepancies with smaller samples and larger true AUC. Successful PubMed content access would unblock the original journey.

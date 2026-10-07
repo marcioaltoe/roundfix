@@ -1,3 +1,0 @@
-2026-10-02: PubMed https://pubmed.ncbi.nlm.nih.gov/26323286/ yielded only the HHS Vulnerability Disclosure footer, with no article abstract; format=pubmed returned Internal Error.
-Equivalent primary publisher: https://journals.sagepub.com/doi/10.1177/0962280215602040
-Abstract independently read: compares 29 CI methods; discrepancies grow with smaller samples and larger true AUC. PRD claim supported. Full text access is not required to verify this abstract claim.

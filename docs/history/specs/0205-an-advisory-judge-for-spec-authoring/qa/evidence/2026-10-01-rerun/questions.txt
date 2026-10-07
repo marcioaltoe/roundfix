@@ -1,1 +1,0 @@
-Exact authored block byte comparison passed; pinned model, ordered transports, thresholds verified; accepted_model_pattern exact authored bytes and fresh TestModelPinAcceptsOnlyJev113 passes.

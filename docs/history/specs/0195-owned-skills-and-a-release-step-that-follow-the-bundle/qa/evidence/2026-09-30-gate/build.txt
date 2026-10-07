@@ -1,4 +1,0 @@
-make build: exit 0
-roundfix 0.21.0 (c32b91e0-dirty, built 2026-09-30 18:06:01 -0300)
-head: c32b91e0d968c4bd05c162f45a9dbecf5aa1105e
-Dirty suffix includes seeded untracked qa/ report; implementation files unchanged.

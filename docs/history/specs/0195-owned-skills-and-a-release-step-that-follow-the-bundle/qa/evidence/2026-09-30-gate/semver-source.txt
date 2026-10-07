@@ -1,5 +1,0 @@
-Source: https://semver.org/spec/v2.0.0.html
-Read: 2026-09-30 using web.open after curl-cffi CONNECT proxy returned 403.
-Observed: Semantic Versioning 2.0.0, specification item 3, line 69 of fetched page. Released version contents are immutable; modifications require a new version.
-Short excerpt: "the contents of that version MUST NOT be modified".
-Web retrieval succeeded; initial transport constraint did not block the row.

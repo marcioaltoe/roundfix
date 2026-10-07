@@ -1,6 +1,0 @@
-$ go test -count=1 -tags docscontract ./internal/docscontract -run ^(TestEveryCommandIsNamedInTheRoundfixSkill|TestEveryCommandIsNamedInTheUserGuide)$
-ok  	roundfix/internal/docscontract	0.432s
-
-STDERR:
-
-EXIT: 0
