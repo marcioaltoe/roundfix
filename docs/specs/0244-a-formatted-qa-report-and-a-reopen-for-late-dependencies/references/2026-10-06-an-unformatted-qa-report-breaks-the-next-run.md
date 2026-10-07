@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-06
-spec: null
+spec: 0244-a-formatted-qa-report-and-a-reopen-for-late-dependencies
 ---
 
 # An unformatted QA report breaks the next Run's precondition
