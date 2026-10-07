@@ -1,3 +1,0 @@
-Source: https://circleci.com/docs/guides/test/set-up-test-impact-analysis/
-Read using web reader after curl-cffi CONNECT tunnel returned 403.
-The guide describes default-branch analysis and feature-branch selection, with every test run by default on the default branch and only affected tests on feature branches. Its additional rules cover manifests and dependencies that coverage misses. This supports the design policy; Roundfix uses declared paths rather than coverage data.

@@ -1,6 +1,0 @@
-{
-  "command": "git -c user.name=QA -c user.email=qa@localhost -c core.hooksPath=/dev/null -c commit.gpgsign=false commit -qm Q05",
-  "cwd": "/private/tmp/roundfix-0248-qa-tzo4wp_f/current",
-  "exit": 0,
-  "wall_seconds": 0.024924416036810726
-}

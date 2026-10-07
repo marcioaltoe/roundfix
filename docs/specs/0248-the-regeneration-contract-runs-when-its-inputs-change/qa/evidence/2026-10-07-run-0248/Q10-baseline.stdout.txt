@@ -1,3 +1,0 @@
-ok  	roundfix/internal/docscontract	0.500s
-ok  	roundfix/internal/speccheck	1.193s
-ok  	roundfix/internal/suiteguard	0.541s

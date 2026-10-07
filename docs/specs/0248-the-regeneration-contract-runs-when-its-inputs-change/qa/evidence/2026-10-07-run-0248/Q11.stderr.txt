@@ -1,2 +1,0 @@
-verify-select: contracts: 69 selected (every Repository Contract Test), 0 not selected
-make: *** [verify-contracts] Error 1

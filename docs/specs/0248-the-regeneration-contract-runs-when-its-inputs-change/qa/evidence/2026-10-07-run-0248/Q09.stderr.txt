@@ -1,2 +1,0 @@
-verify-select: -all cannot be combined with -base
-exit status 2

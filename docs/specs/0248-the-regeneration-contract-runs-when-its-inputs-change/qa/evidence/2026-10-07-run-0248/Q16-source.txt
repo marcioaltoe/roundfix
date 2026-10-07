@@ -1,3 +1,0 @@
-Source: https://www.warpbuild.com/guides/test-impact-analysis-github-actions
-Read using web reader after curl-cffi CONNECT tunnel returned 403.
-The guide warns that path filters can miss shared configuration and generated code. It prescribes an explicit full-suite safety net on every default-branch push and nightly, with impacted selection for pull requests. This supports the push-to-main policy; Roundfix also runs the full contract set before releases and does not add a nightly trigger.

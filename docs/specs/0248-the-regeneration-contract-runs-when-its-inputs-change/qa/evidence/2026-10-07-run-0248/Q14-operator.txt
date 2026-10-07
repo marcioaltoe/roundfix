@@ -1,2 +1,0 @@
-233. 2026-10-07 — 0245 QA fail F1 (Blocks-Completion): module-edit merge conflicts in profile goldenDigest, formatter golden fixture and docs/agents/domain.md, undeclared. Corrective task_05 (declare + regeneration-coverage test), QA needs task_05; retry.
-238. 2026-10-07 — 0245 CI: suiteguard installation contract refused internal/config (task_05 test spawns). Added TestMain + enumeration; regeneration test ran 4x with empty GOCACHE (196s) -> once with shared cache (46s). verify + verify-docs ok; pushed; retry.

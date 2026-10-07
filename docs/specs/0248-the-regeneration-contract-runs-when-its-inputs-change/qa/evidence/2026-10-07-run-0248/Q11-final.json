@@ -1,6 +1,0 @@
-{
-  "command": "make verify-contracts",
-  "cwd": "/private/tmp/roundfix-0248-isolated-065kxz5y/head",
-  "exit": 0,
-  "wall_seconds": 93.82202883297578
-}

@@ -1,7 +1,0 @@
---- FAIL: TestRegenerationIsDeclared (0.00s)
-    regeneration_declared_test.go:23: delivery.derived_paths[2] requires paths and regenerate
-FAIL
-suiteguard: guard cost: measured 2480 paths; fingerprint took 73.253417ms before and 97.194083ms after
-FAIL	roundfix/internal/config	0.383s
-ok  	roundfix/internal/docscontract	1.143s
-FAIL

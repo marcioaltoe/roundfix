@@ -1,6 +1,0 @@
-{
-  "command": "git checkout -q -B test/transcripts 7ab8151fc34b8301ff47d5264fe75dd1bfd59c98",
-  "cwd": "/private/tmp/roundfix-0248-qa-tzo4wp_f/current",
-  "exit": 0,
-  "wall_seconds": 0.01911408401792869
-}

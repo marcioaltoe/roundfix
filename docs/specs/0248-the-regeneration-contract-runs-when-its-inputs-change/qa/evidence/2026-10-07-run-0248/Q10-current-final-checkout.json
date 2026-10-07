@@ -1,6 +1,0 @@
-{
-  "command": "git checkout -q -B test/Q10-current-final 7ab8151fc34b8301ff47d5264fe75dd1bfd59c98",
-  "cwd": "/private/tmp/roundfix-0248-isolated-065kxz5y/head",
-  "exit": 0,
-  "wall_seconds": 0.011500000022351742
-}

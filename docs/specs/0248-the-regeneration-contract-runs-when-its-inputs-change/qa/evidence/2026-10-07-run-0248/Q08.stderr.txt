@@ -1,2 +1,0 @@
-verify-select: -all requires -contracts
-exit status 2
