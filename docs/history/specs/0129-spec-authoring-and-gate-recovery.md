@@ -17,7 +17,8 @@ adrs: []
 sources:
   - 2026-08-12-a-queue-of-eight-specs-shows-where-the-loop-breaks.md
 regeneration: []
-promoted: []
+promoted:
+  - docs/references/2026-08-12-a-queue-of-eight-specs-shows-where-the-loop-breaks.md
 pull_request: "255"
 delivery_commit: 595876fc5525e213339ee15079c8153b53bdb462
 ---
