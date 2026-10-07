@@ -29,7 +29,7 @@ GO_FILES := $(shell find . -name '*.go' -not -path './.git/*')
 
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap verify verify-changed verify-changed-core verify-changed-baseline verify-incremental spec-check spec-budget fmt fmt-check vet test test-race baseline-digests build install run version clean deps skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
+.PHONY: help bootstrap verify verify-changed verify-changed-contracts verify-changed-core verify-changed-baseline verify-incremental spec-check spec-budget fmt fmt-check vet test test-race baseline-digests build install run version clean deps skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n"} \
@@ -57,10 +57,23 @@ VERIFY_SELECT := $(GO) run $(RUN_FLAGS) ./cmd/verify-select
 
 verify: fmt-check vet $(VERIFY_TEST_TARGET) skills-sync-check skills-check build ## Run the required local verification gate
 
+# The gate runs the Repository Contract Tests selected by their Contract Relevance;
+# make verify-docs still runs all of them. Platform-only failures remain a known
+# limit because CI is the Linux gate: for example, go list prints go: downloading
+# on stderr for modules the host never fetched (ADR-0252).
 verify-changed: fmt-check vet build ## Verify the test sets selected by changes from VERIFY_BASE
 	@sets="$$( $(VERIFY_SELECT) -base "$(VERIFY_BASE)" )" || exit $$?; \
 	for set in $$sets; do \
 		$(MAKE) --no-print-directory "verify-changed-$$set" || exit $$?; \
+	done
+	@$(MAKE) --no-print-directory verify-changed-contracts
+
+verify-changed-contracts: ## Run the Repository Contract Tests selected by Contract Relevance
+	@invocations="$$( $(VERIFY_SELECT) -contracts -base "$(VERIFY_BASE)" )" || exit $$?; \
+	printf '%s\n' "$$invocations" | while read -r tag tests packages; do \
+		if [ -n "$$packages" ]; then \
+			$(GO) test -count=1 -tags "$$tag" -run "$$tests" $$packages || exit $$?; \
+		fi; \
 	done
 
 verify-changed-core:

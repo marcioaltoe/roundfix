@@ -1,5 +1,7 @@
 //go:build docscontract
 
+//verify:boundary regenerates Baseline derived artifacts in a repository copy (about 43 s) and is not yet selected by its inputs
+
 package config
 
 import (

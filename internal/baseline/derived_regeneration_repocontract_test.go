@@ -8,10 +8,12 @@
 // The repocontract tag keeps these out of go test ./...: each copies the whole
 // repository tree, which makes every file under internal/ one of their inputs,
 // so any code change anywhere re-runs them. Their verdict changes only when
-// Baseline assets or owned skills change, so make verify-docs runs them at the
-// pull request boundary instead.
+// Baseline assets or owned skills change. The selective gate runs them by their
+// Contract Relevance; make verify-docs still runs them.
 
 //go:build repocontract
+
+//verify:relevant internal/baseline/assets/ internal/baseline/testdata/ .agents/skills/ skills/
 
 package baseline
 

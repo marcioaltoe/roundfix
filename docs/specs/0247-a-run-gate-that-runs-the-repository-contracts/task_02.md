@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0247-a-run-gate-that-runs-the-repository-contracts
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -133,3 +133,73 @@ real run of the new target and `make verify-docs`.
 - `_prd.md` → Core Feature 2; Goals; Success Metric 1; Success Metric 3; Success Metric 4; Success Metric 5
 - `_techspec.md` → API Contract 2; Surface Transcript 1; Surface Transcript 3; Directive assignments; Invariant 9; Invariant 12; Build Order 2
 - ADR-0252
+
+## Result
+
+Implemented the Task 02 slice for Daemon Verification. `verify-changed` now
+invokes `verify-changed-contracts` after its set loop, including an empty set
+list. The new target captures selector output before running tests, runs one
+uncached invocation per selected tag in order, skips empty package lists, and
+propagates selector or test failures. Its recipe uses `tests`, preserving the
+existing baseline recipe's sole `-run "$$pattern"` occurrence.
+
+All assigned contract headers now declare their Contract Relevance. The
+regeneration boundary includes its cost and reason. Existing header sentences
+about the pull request boundary describe selective execution and retain
+`make verify-docs`. The Makefile comment records the Linux CI platform limit
+and the `go list` downloading-stderr example.
+
+Focused evidence by acceptance criterion:
+
+- Selected contracts end the gate and failures stop it:
+  `TestVerifyChangedRunsTheSelectedContracts` passed all seven subtests. The
+  real Makefile ran with temporary selector and Go scripts: ordered tag and
+  package arguments, first-test failure, selector failure, empty selection,
+  empty package list, parent execution with empty sets, and propagation of a
+  contract failure through the parent recipe. All stub writes stayed under
+  each subtest's temporary directory.
+- Assigned directives are present:
+  `TestRepositoryContractTestsDeclareTheirRelevance` passed against the real
+  repository. It checks all eight docscontract files, the suiteguard audit,
+  the four governed-set contracts, all four relevant contracts and their
+  exact patterns, the regeneration boundary, package-class suiteguard checks,
+  and discovery of every name in `REPO_CONTRACT_TESTS`. Its two selection
+  subtests prove that a user-guide path selects only the always set and an
+  owned-skill path adds exactly the three regeneration contracts.
+- The all-contract gate retains its coverage:
+  comparison against `HEAD` confirmed byte-identical `verify`, `verify-docs`,
+  `docs-test`, `repo-test`, `spec-budget`, `verify-changed-core`, and
+  `verify-changed-baseline` recipes and `REPO_CONTRACT_TESTS`.
+  `TestEveryRepositoryContractTestRunsInTheRepositoryGate` passed. Four
+  focused documentation checks passed, covering active corpus validity,
+  user-guide command coverage and links, and roundfix skill command coverage.
+  Full `make verify-docs` success remains for Daemon Verification.
+
+Focused commands (each exited 0 with the final implementation):
+
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk proxy go test -run 'TestRepositoryContractTestsDeclareTheirRelevance|TestVerifyChangedRunsTheSelectedContracts' -v ./internal/verifyselect`
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk proxy go test -run '^TestPartitionFollowsTheMakefileRecipes$' ./internal/verifyselect`
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk proxy go test -run '^TestEveryRepositoryContractTestRunsInTheRepositoryGate$' ./internal/suiteguardcontract`
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk proxy go test -tags docscontract -run '^(TestCheckActiveCorpusHasNoErrors|TestEveryCommandIsNamedInTheUserGuide|TestUserGuideLinksResolve|TestEveryCommandIsNamedInTheRoundfixSkill)$' ./internal/docscontract`
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk proxy go test -tags repocontract -run '^TestEverySpawningPackageInstallsTheSuiteGuard$' ./internal/suiteguard`
+- `rtk proxy git -c core.fsmonitor=false diff --check`
+
+Before wiring the gate and headers, the two new focused tests failed on the
+missing parent invocation and the missing relevance declarations. The first
+attempt using the host Go cache was blocked by sandbox permissions; the
+Task-scoped cache resolved that environment limitation.
+
+Postflight inspection confirmed unchanged existing test bodies, assertions,
+and comments after every package clause; no per-package suiteguard header,
+CI workflow, or `.roundfixrc.yml` changed. All new changed paths belong to
+this Task's declared slice. The Task Graph and other Task files were untouched.
+
+The authored Verification commands, including real `make
+verify-changed-contracts` and `make verify-docs`, were not run during this
+Daemon-assigned turn. Status and checkboxes remain for the Daemon to settle.
+No commit, push, or pull request was made. No follow-up was identified.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261007T202708Z_1511c9319dd8dbf6`
+- Source commit: `186248f2f7e2763bab28670a9ce8b427e30c32cf`

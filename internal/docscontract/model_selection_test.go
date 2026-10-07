@@ -1,5 +1,7 @@
 //go:build docscontract
 
+//verify:always
+
 package docscontract
 
 import (

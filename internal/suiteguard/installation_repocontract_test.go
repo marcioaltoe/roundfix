@@ -4,6 +4,8 @@
 // Invariant: every internal package whose tests spawn a process installs suiteguard.Main.
 // Boundary IN: internal Go test files and package-level TestMain wiring.
 // Boundary OUT: subprocess lifetime and repository-write behavior inside each package.
+//verify:always
+
 package suiteguard_test
 
 import (

@@ -4,6 +4,8 @@
 // Invariant: every path bounded by an authorization record remains governed.
 // Boundary IN: authorization records and the public governed-path predicate.
 // Boundary OUT: changed-path audit integration and sanctioned regeneration.
+//verify:always
+
 package speccheck
 
 import (
