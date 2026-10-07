@@ -1,0 +1,1 @@
+Canonical skill and archive-reference mirrors byte-identical. Skill raised 0.1.47 to 0.1.48 and recorded. Index names history. Both CHANGELOG reference targets resolve. Guide includes plan, confirmation, tag, promotion and no-qa. Baseline focused tests provide executable sentence parity evidence.

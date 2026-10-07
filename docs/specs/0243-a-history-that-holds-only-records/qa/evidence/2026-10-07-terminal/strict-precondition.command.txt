@@ -1,0 +1,10 @@
+{
+  "argv": [
+    "./bin/roundfix",
+    "spec",
+    "check",
+    "0243-a-history-that-holds-only-records",
+    "--strict"
+  ],
+  "exit": 0
+}

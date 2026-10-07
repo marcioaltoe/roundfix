@@ -1,0 +1,11 @@
+=== RUN   TestQACapturedCLIRecordsRoundTrip
+=== RUN   TestQACapturedCLIRecordsRoundTrip/R03-aaa-record.md
+    archive_record_qa_test.go:31: R03-aaa-record.md: 494 bytes, disposition pass, source_revision bda2cef660d7b15e3110d4216fd7ab82223ece60; byte-identical round trip
+=== RUN   TestQACapturedCLIRecordsRoundTrip/R03-bbb-record.md
+    archive_record_qa_test.go:31: R03-bbb-record.md: 672 bytes, disposition qa-override, source_revision bda2cef660d7b15e3110d4216fd7ab82223ece60; byte-identical round trip
+--- PASS: TestQACapturedCLIRecordsRoundTrip (0.00s)
+    --- PASS: TestQACapturedCLIRecordsRoundTrip/R03-aaa-record.md (0.00s)
+    --- PASS: TestQACapturedCLIRecordsRoundTrip/R03-bbb-record.md (0.00s)
+PASS
+suiteguard: guard cost: measured 9938 paths; fingerprint took 1.572957875s before and 333.977583ms after
+ok  	roundfix/internal/spec	2.191s

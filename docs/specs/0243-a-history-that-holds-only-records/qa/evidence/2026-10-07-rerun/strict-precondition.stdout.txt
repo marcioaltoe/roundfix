@@ -1,0 +1,3 @@
+Spec 0243-a-history-that-holds-only-records
+No findings. Authored Verification commands were not executed.
+Skipped: SC-FINDING-LIFECYCLE (no live Finding); SC-ROLLUP-MEMBER (no rollup); vocabulary documentation (no Vocabulary Contract); SC-REF-UNRESOLVED (no reference index).

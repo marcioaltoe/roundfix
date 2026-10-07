@@ -1,0 +1,6 @@
+=== RUN   TestSecondbrainExportFollowsTheHistoryForm
+    secondbrain_export_test.go:24: history exclusion "!docs/history/specs/*/qa/" remains without legacy archive folders
+--- FAIL: TestSecondbrainExportFollowsTheHistoryForm (0.00s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.430s
+FAIL

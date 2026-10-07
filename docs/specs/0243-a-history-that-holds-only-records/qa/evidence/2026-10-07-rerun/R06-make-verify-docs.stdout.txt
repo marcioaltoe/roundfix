@@ -1,0 +1,54 @@
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=dea320b8' -X 'roundfix/internal/app.BuildTime=2026-10-07 02:30:40 -0300'" -o bin/roundfix ./cmd/roundfix
+go test -count=1 -tags docscontract ./internal/docscontract
+ok  	roundfix/internal/docscontract	1.358s
+go test -count=1 -tags repocontract -run '^(TestMeasuredSanctionedOwnershipMatchesRecords|TestDeclaredStepRegenerationAndFrozenBoundaries|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical|TestRepositoryGateRunsTheAnalyzer|TestEverySpawningPackageInstallsTheSuiteGuard|TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows|TestCleanupHistoricalGrantEvidence|TestEveryBoundedPathIsGoverned)$' ./...
+?   	roundfix/cmd/roundfix	[no test files]
+?   	roundfix/cmd/verify-select	[no test files]
+ok  	roundfix/internal/agent	0.584s
+ok  	roundfix/internal/app	0.399s
+ok  	roundfix/internal/authorization	0.572s
+ok  	roundfix/internal/baseline	43.694s
+ok  	roundfix/internal/baselineacp	0.395s
+ok  	roundfix/internal/cli	1.078s
+ok  	roundfix/internal/codex	0.471s
+ok  	roundfix/internal/config	0.466s
+ok  	roundfix/internal/daemon	0.822s
+ok  	roundfix/internal/delivery	0.517s [no tests to run]
+ok  	roundfix/internal/docscontract	0.488s
+ok  	roundfix/internal/gittest	0.697s
+ok  	roundfix/internal/judge	0.278s [no tests to run]
+ok  	roundfix/internal/lighttier	0.260s [no tests to run]
+ok  	roundfix/internal/mdtree	0.184s [no tests to run]
+ok  	roundfix/internal/notify	0.361s
+ok  	roundfix/internal/openrouterkey	0.181s [no tests to run]
+ok  	roundfix/internal/preflight	1.144s
+ok  	roundfix/internal/releaseplan	0.587s
+ok  	roundfix/internal/reviewsource	0.631s
+ok  	roundfix/internal/reviewsource/coderabbit	0.650s
+ok  	roundfix/internal/rounds	0.559s
+ok  	roundfix/internal/runcause	0.219s [no tests to run]
+ok  	roundfix/internal/runevent	0.612s
+ok  	roundfix/internal/skillhash	0.535s
+ok  	roundfix/internal/spec	0.912s
+ok  	roundfix/internal/specaudit	1.016s
+ok  	roundfix/internal/speccheck	2.144s
+ok  	roundfix/internal/store	0.929s
+ok  	roundfix/internal/suiteguard	0.972s
+ok  	roundfix/internal/suiteguardcontract	0.184s [no tests to run]
+ok  	roundfix/internal/testfixture	0.185s [no tests to run]
+ok  	roundfix/internal/testwait	0.190s [no tests to run]
+ok  	roundfix/internal/tui	0.592s
+ok  	roundfix/internal/verifyselect	0.797s
+ok  	roundfix/internal/watch	0.545s
+ok  	roundfix/internal/worktree	0.775s
+ok  	roundfix/skills	15.243s
+go test -count=1 -parallel=1 -tags docscontract ./internal/docscontract -run '^TestCheckCorpusBudget$'
+ok  	roundfix/internal/docscontract	0.435s
+bin/roundfix spec check
+Spec 0243-a-history-that-holds-only-records
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  vocabulary documentation detector: missing docs/specs/0243-a-history-that-holds-only-records/_techspec.md Vocabulary Contract
+  SC-REF-UNRESOLVED: missing docs/specs/0243-a-history-that-holds-only-records/references/_index.md

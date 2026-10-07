@@ -1,0 +1,4 @@
+history sanitize plan: 1 unit(s) pending; 2 file(s) (64 bytes) leave docs/history
+folder docs/history/specs/demo: removes 2 file(s) (64 bytes) and writes docs/history/specs/demo.md (350 bytes, no-qa, delivery unknown)
+candidate docs/history/specs/demo/references/lesson.md 7 bytes: no advice (ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set)
+apply with: roundfix history sanitize --apply --batch <n> (needs the annotated tag history-full at or before HEAD)

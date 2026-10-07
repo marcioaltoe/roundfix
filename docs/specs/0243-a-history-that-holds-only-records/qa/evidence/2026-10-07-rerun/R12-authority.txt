@@ -1,0 +1,1 @@
+Operative grant byte-identical at delivery base 4f5dc8e192738ab6efaea4be5dc2b02d8a0dfa2e; ancestor of task_04 51c30f45c7006721ea9b9808d00985843ebeb452. Eight governed paths all bounded. Authorization not folded into Task commit. Current worktree mutations limited to QA report/evidence. Regeneration evidence: R09-digests artifacts.

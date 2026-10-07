@@ -1,0 +1,7 @@
+{
+  "argv": [
+    "./bin/roundfix",
+    "--version"
+  ],
+  "exit": 0
+}

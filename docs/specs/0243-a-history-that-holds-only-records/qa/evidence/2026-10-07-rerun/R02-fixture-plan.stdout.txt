@@ -1,0 +1,13 @@
+history sanitize plan: 7 unit(s) pending; 14 file(s) (891 bytes) leave docs/history
+folder docs/history/specs/aaa: removes 4 file(s) (207 bytes) and writes docs/history/specs/aaa.md (467 bytes, pass, delivery ad7918095702 #42)
+candidate docs/history/specs/aaa/references/lesson.md 20 bytes
+folder docs/history/specs/bbb: removes 3 file(s) (355 bytes) and writes docs/history/specs/bbb.md (672 bytes, qa-override, delivery ad7918095702 #42)
+candidate docs/history/specs/bbb/references/lesson.md 20 bytes
+folder docs/history/specs/ccc: removes 3 file(s) (134 bytes) and writes docs/history/specs/ccc.md (445 bytes, no-qa, delivery ad7918095702 #42)
+candidate docs/history/specs/ccc/references/lesson.md 20 bytes
+findings: reduces 1 file(s) from 90 to 164 bytes
+backlog: reduces 1 file(s) from 90 to 163 bytes
+reviews: removes 1 file(s) (7 bytes)
+handoffs: removes 1 file(s) (8 bytes)
+cites CHANGELOG.md:3 names docs/history/specs/aaa/references/lesson.md
+apply with: roundfix history sanitize --apply --batch <n> (needs the annotated tag history-full at or before HEAD)

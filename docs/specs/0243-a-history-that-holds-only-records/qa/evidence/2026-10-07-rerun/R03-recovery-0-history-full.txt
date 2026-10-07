@@ -1,0 +1,10 @@
+---
+spec: aaa
+created: 2026-09-01
+status: archived
+archived: 2026-09-02
+---
+
+# aaa
+
+A preserved outcome.

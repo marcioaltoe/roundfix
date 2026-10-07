@@ -1,0 +1,9 @@
+{
+  "argv": [
+    "./bin/roundfix",
+    "history",
+    "sanitize"
+  ],
+  "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0243-a-history-that-holds-only-records-99f5f45f102e7895-5083d9ac-7db8b392/run_20261007T040343Z_bb67f44effbee11e",
+  "exit": 0
+}

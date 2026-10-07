@@ -1,0 +1,16 @@
+{
+  "verdict": "fail",
+  "rows_total": 12,
+  "rows_passed": 8,
+  "rows_failed": 1,
+  "rows_blocked_environment": 3,
+  "rows_blocked_finding": 0,
+  "rows_blocked_declared": 0,
+  "rows_pending": 0,
+  "seed_preserved": true,
+  "one_typed_input_block_per_row": true,
+  "tracked_delta": [],
+  "head": "1048ca2f2b2bfdc6ef6bfecd93277bade741860e",
+  "user_flow_binary": "roundfix 0.53.0 (1048ca2f-dirty, built 2026-10-07 01:55:36 -0300)",
+  "clone_removed": true
+}

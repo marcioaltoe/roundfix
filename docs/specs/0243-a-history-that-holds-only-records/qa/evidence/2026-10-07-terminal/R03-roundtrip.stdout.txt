@@ -1,0 +1,9 @@
+=== RUN   TestLegacyConversionWritesARecordGitStillHolds
+--- PASS: TestLegacyConversionWritesARecordGitStillHolds (1.69s)
+=== RUN   TestLegacyConversionKeepsEveryOverrideField
+--- PASS: TestLegacyConversionKeepsEveryOverrideField (3.52s)
+=== RUN   TestNoQARecordRoundTrips
+--- PASS: TestNoQARecordRoundTrips (0.68s)
+PASS
+suiteguard: guard cost: measured 9864 paths; fingerprint took 1.286826042s before and 469.125709ms after
+ok  	roundfix/internal/spec	7.967s

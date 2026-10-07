@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0243-a-history-that-holds-only-records
-status: pending
+status: failed
 type: qa
 complexity: high
 ---

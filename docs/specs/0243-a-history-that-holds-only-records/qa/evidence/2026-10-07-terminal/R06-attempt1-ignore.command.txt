@@ -1,0 +1,10 @@
+{
+  "argv": [
+    "git",
+    "config",
+    "core.excludesFile",
+    "/private/tmp/qa0243-ablation-wpr27iy0/home/ignore"
+  ],
+  "cwd": "/private/tmp/qa0243-ablation-wpr27iy0/clone",
+  "exit": 0
+}

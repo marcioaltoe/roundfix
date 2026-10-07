@@ -1,0 +1,11 @@
+{
+  "argv": [
+    "./bin/roundfix",
+    "archive",
+    "0243-a-history-that-holds-only-records",
+    "--plan"
+  ],
+  "exit": 0,
+  "temporary_home": true,
+  "provider_keys": "none"
+}

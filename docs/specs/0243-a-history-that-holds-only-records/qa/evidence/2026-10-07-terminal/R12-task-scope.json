@@ -1,0 +1,66 @@
+[
+  {
+    "task": "task_02",
+    "commit": "6845a2ba5c0f5a06019f99e36063ab99d19c86be",
+    "paths": [
+      "docs/specs/0243-a-history-that-holds-only-records/task_02.md",
+      "internal/spec/history_entries.go",
+      "internal/spec/history_entries_test.go",
+      "internal/speccheck/reduced_history_entry_test.go"
+    ],
+    "all_declared": true
+  },
+  {
+    "task": "task_04",
+    "commit": "a5b3a3ab143d9cbdbd8c9cb8e419d5d103a8e615",
+    "paths": [
+      ".agents/skills/roundfix/SKILL.md",
+      ".agents/skills/roundfix/references/archive.md",
+      "CHANGELOG.md",
+      "CONTEXT.md",
+      "docs/agents/docs-layout.md",
+      "docs/agents/setup-context.json",
+      "docs/specs/0243-a-history-that-holds-only-records/task_04.md",
+      "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md",
+      "internal/baseline/assets/modules/context-workflow.json",
+      "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+      "internal/baseline/history_sanitize_clause_test.go",
+      "internal/baseline/testdata/catalog.diagnostics.golden.json",
+      "internal/baseline/testdata/catalog.digest",
+      "internal/baseline/testdata/catalog.normalized.json",
+      "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+      "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+      "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+      "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json",
+      "internal/docscontract/secondbrain_export_test.go",
+      "skills/roundfix/SKILL.md",
+      "skills/roundfix/references/archive.md",
+      "skills/testdata/owned-skill-versions.json"
+    ],
+    "all_declared": true
+  },
+  {
+    "task": "task_01",
+    "commit": "b44eeb1c7aaf13b7c89a023fae00e8952480c5c9",
+    "paths": [
+      "docs/specs/0243-a-history-that-holds-only-records/task_01.md",
+      "internal/spec/archive_record.go",
+      "internal/spec/history_sanitize.go",
+      "internal/spec/history_sanitize_test.go"
+    ],
+    "all_declared": true
+  },
+  {
+    "task": "task_03",
+    "commit": "1048ca2f2b2bfdc6ef6bfecd93277bade741860e",
+    "paths": [
+      "docs/specs/0243-a-history-that-holds-only-records/task_03.md",
+      "docs/user-guide/commands.md",
+      "docs/user-guide/commands/history.md",
+      "internal/cli/cli.go",
+      "internal/cli/history.go",
+      "internal/cli/history_test.go"
+    ],
+    "all_declared": true
+  }
+]

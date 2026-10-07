@@ -1,0 +1,15 @@
+{
+  "argv": [
+    "go",
+    "test",
+    "-count=1",
+    "-v",
+    "-tags",
+    "docscontract",
+    "-run",
+    "^TestSecondbrainExportFollowsTheHistoryForm$",
+    "./internal/docscontract"
+  ],
+  "cwd": "/private/tmp/qa0243-ablation-od_jojwh/clone",
+  "exit": 1
+}

@@ -1,0 +1,1 @@
+history sanitize applied 2 unit(s): wrote 2 Archive Record(s), reduced 0 file(s), removed 7 file(s) (562 bytes) kept in Git at bda2cef660d7 and tag history-full; promoted 1 file(s) to docs/references/; 5 unit(s) remain

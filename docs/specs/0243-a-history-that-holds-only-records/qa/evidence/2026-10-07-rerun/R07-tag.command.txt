@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "git",
+    "tag",
+    "-a",
+    "history-full",
+    "-m",
+    "QA full history"
+  ],
+  "cwd": "/private/tmp/qa0243-guidance-6cj2ltic/clone",
+  "exit": 0
+}

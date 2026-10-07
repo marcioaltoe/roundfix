@@ -1,0 +1,2158 @@
+History Sanitize Command:
+The `roundfix history sanitize` command, a dry run unless `--apply --batch <n>`, that converts the existing history after the History Full Tag.
+_Avoid_: Archive Command, history deletion, cleanup command
+
+**Legacy Archive Folder**:
+A Spec folder the Archive Command left under the archive root before archives wrote Archive Records (ADR-0248).
+_Avoid_: Archive Record, active Spec, history root
+
+**Sanitize Batch**:
+The next units one `--apply` converts, delivered as one Pull Request with the repository gates green and revertible (ADR-0248).
+_Avoid_: Archive batch, migration wave, unreviewed cleanup
+
+**Reduced History Entry**:
+A retired Finding or Backlog Entry cut to its front matter, title, first paragraph and the revision holding its full text (ADR-0248).
+_Avoid_: Summary, Archive Record, truncated history
+
+**History Full Tag**:
+The annotated `history-full` tag on the last commit before the first batch, which keeps every removed byte reachable (ADR-0248).
+_Avoid_: Lightweight tag, batch tag, archive stamp
+
+**History Root**:
+The single repository directory holding Archive Records, Reduced History Entries and retired ADRs, with the full bytes in Git. Retired material leaves the directory an Agent loads by default and stays greppable as the record of what was built and why; one path filter excludes the whole tree from review. Resolved in exactly one place, so no consumer carries a path of its own (ADR-0248).
+_Avoid_: Archive folder, `_archived`, attic, trash
+
+**History Relocation**:
+One retired file that belongs under the History Root and is not there, carried in the Baseline Plan as an ordered ledger entry of source, destination, and content identity rather than file bytes. A relocation whose destination is occupied is a collision: it is refused by name, its siblings still move, and the repository is not current until it is resolved.
+_Avoid_: Archive move, file migration, relocation payload
+
+**Relocation Citation**:
+A citation in a tracked file that resolves before a Baseline Plan's History Relocations and would not resolve after them. It is reported as a warning the Plan Digest binds; planning never rewrites it, and apply writes the same files.
+_Avoid_: Broken link, dangling reference, link check
+
+**GC Command**:
+The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window and removes orphaned run artifact directories, reporting what it freed. A Run it already emptied is not counted again. Never touches Active Runs, `runs` rows, or active-run locks.
+_Avoid_: Clean command, vacuum, purge
+
+**Journal Retention**:
+The configured age window after which a terminal Run's Run Event Journal and artifact directory become eligible for pruning. Active Runs are never eligible; a retention of zero keeps everything. See ADR-0033.
+_Avoid_: Log rotation, TTL, expiry
+
+**Worktree Bootstrap**:
+The configured command Roundfix runs once in a newly created Run or Task Worktree, after copying `worktree.copy` files and before Agent work and Verification, to prepare the environment (install dependencies, migrate and seed databases, warm caches). A bootstrap failure ends the Run or settles the Task with a bootstrap-failed outcome. See ADR-0034.
+_Avoid_: Setup command, provisioning, install step
+
+**Context-Driven Baseline**:
+The portable, versioned set of required project instructions and architectural decisions that makes a repository ready for the CONTEXT-driven workflow.
+_Avoid_: Sample docs, optional setup, repository template
+
+**Baseline Profile**:
+A versioned composition of modules, Repository Capabilities, decisions, managed artifacts, and verification roles that defines one reproducible Context-Driven Baseline. Roundfix ships built-in profiles; a repository may own additional profiles for its own workflow.
+_Avoid_: Agent Selection Profile, setup template, user profile
+
+**Profile Draft**:
+A strict repository-owned Baseline Profile document supplied to planning in memory and admitted only after catalog validation and source binding.
+_Avoid_: Partial profile, unchecked JSON, Profile override
+
+**Profile Adaptation**:
+A maintainer-reviewed Profile Draft that narrows one built-in Baseline Profile by removing repository-inapplicable modules or Repository Capabilities without weakening universal requirements.
+_Avoid_: Profile waiver, capability bypass, silent inference
+
+**Baseline Command**:
+The public `roundfix baseline` command that authors and validates Baseline Profiles and drives one preflight-to-verification adoption or update flow without requiring an Agent Skill.
+_Avoid_: Setup Command, setup skill, configuration wizard
+
+**Source Baseline**:
+The immutable Setup Manifest and governed instruction corpus that a setup transition or Baseline Readoption recognizes as its exact origin.
+_Avoid_: Legacy Baseline, inferred preimage, current files
+
+**Source Baseline Entry**:
+One byte-evidenced structural unit in a Source Baseline that Baseline Readoption classifies and disposes individually as a Normative Clause, recommendation, Operational Contract, or non-governed evidence.
+_Avoid_: Inferred rule, category summary, untracked paragraph
+
+**Segmentation Snapshot**:
+The immutable, checkout-free semantic-analysis input containing one Source Baseline and the strict byte-range proposal contract.
+_Avoid_: Repository prompt, mutable instruction dump, checkout context
+
+**Segmentation Proposal**:
+A digest-bound, byte-exhaustive set of ordered ranges that splits Source Baseline Entries without rewriting or omitting source bytes.
+_Avoid_: Summary, rewritten rules, partial range list
+
+**Analysis Snapshot**:
+The immutable, checkout-free classification input containing segmented Source Baseline Entries and only the semantic destinations active for the confirmed Baseline Profile and project decisions.
+_Avoid_: Repository scan, unrestricted prompt, inferred destination list
+
+**Classification Proposal**:
+A digest-bound disposition for every entry in one Analysis Snapshot, admitted only after deterministic validation and explicit human review.
+_Avoid_: Classification hint, partial proposal, autonomous decision
+
+**Baseline Readoption**:
+The confirmation-gated adoption that inventories an incompatible repository state as a Source Baseline and replaces its setup identity without treating existing instructions as disposable.
+_Avoid_: Clean install, legacy fallback, automatic overwrite
+
+**Normative Clause**:
+An identified repository instruction whose enforcement is mandatory, prohibited, or stop-and-ask.
+_Avoid_: Hard rule, guideline, free-form prose
+
+**Normative Clause Manifest**:
+The digest-bound inventory that independently accounts for a Source Baseline's Normative Clauses, recommendations, and Operational Contracts.
+_Avoid_: Transition mapping, self-declared ledger, category checklist
+
+**Operational Contract**:
+An identified structured instruction whose order or shape carries required behavior, such as a template, procedure, or decision matrix.
+_Avoid_: Prose summary, optional example, compressed guidance
+
+**Instruction Hierarchy**:
+The precedence order from universal instructions through context and documentation, Spec workflow, enabled autonomous work, stack and surface guides, and optional knowledge sources. A narrower guide may add constraints but cannot weaken a universal Normative Clause or confirmed project decision.
+_Avoid_: Module list, arbitrary file order, duplicated root policy
+
+**Standard TypeScript Monorepo Profile**:
+The opinionated, project-agnostic Context-Driven Baseline profile for the repository's standard TypeScript monorepo stack.
+_Avoid_: Project-specific profile, generic TypeScript profile, sample template
+
+**Repository Capability**:
+A profile-declared skill, tool, dependency, workspace, or repository contract whose required, recommended, or optional status is evaluated from explicit local evidence.
+_Avoid_: Assumed stack, installed package list, inferred readiness
+
+**Skill Activation**:
+A declarative mapping from one stable work trigger to one exact required Agent Skill bundle, optionally conditioned on a selected Repository Capability.
+_Avoid_: Suggested skill, inferred bundle, partial activation
+
+**Decision Plan**:
+The resolved setup proposal produced after every required setup decision has an answer; it is the basis for authorizing setup changes.
+_Avoid_: Setup questionnaire, decision draft, configuration prompt
+
+**Change Plan**:
+The exact set of repository changes proposed for explicit review and confirmation before a setup or restoration operation mutates files.
+_Avoid_: Patch, implicit apply, change preview
+
+**Setup Manifest**:
+The setup-owned record of the selected profile, modules, decisions, and managed artifacts that reproduces and audits a repository's Context-Driven Baseline. Every applied Baseline change republishes it, so its recorded digests describe the bytes on disk rather than the bytes adoption wrote.
+_Avoid_: Project Config, lock file, generated guide
+
+**Managed Region**:
+The byte range one setup-owned marker pair delimits inside an instruction carrier, identified by its managed artifact identity. Its content belongs to the Context-Driven Baseline, not to the repository holding it; the bytes outside every marker pair belong to the repository and no Baseline operation changes them.
+_Avoid_: Managed file, generated block, setup section
+
+**Managed Refresh**:
+The preservation mode that regenerates only Managed Regions, leaves every other byte identical, requires no Source Baseline and no Decision Plan, and takes no root backup because the plan's preimages carry the preservation proof. It converges: a second run against an unchanged catalog reports the repository current and proposes no change.
+_Avoid_: Baseline Readoption, reapply, overwrite
+
+**Unrecorded Managed Region**:
+A Managed Region whose bytes are not the bytes the adopted Setup Manifest recorded. It is classified and reported by path, managed identity, and the lines a refresh removes — never presumed damaged and never silently replaced. Only a managed identity appearing more than once in one carrier blocks, because that refresh has no defensible target.
+_Avoid_: Hand-edited marker, corrupted block, drift
+
+**Baseline ADR**:
+An Architecture Decision Record whose reserved identity and invariant belong to the Context-Driven Baseline while project-specific notes remain repository-owned.
+_Avoid_: Example ADR, project ADR, template copy
+
+**Upgrade Retention Contract**:
+The accounting a Context-Driven Baseline transition or Baseline Readoption must satisfy before mutation: every Source Baseline Normative Clause, recommendation, and Operational Contract maps to a current managed target, Repository-Specific Normative Rules, a recognized typed repository document, or an explicit rejection with a recorded reason.
+_Avoid_: Best-effort migration, category coverage, silent rule removal
+
+**Repository-Specific Normative Rules**:
+Project-authored Normative Clauses that are not portable across the Context-Driven Baseline and cannot be represented by a typed project decision or managed semantic guide. Baseline assigns every representable rule to its semantic owner; only non-empty residual rules live outside setup markers in `docs/agents/specific-repository.md` and remain byte-preserved after confirmed adoption.
+_Avoid_: Repository-Owned Extension, duplicate managed rule, baseline rule
+
+**HTTP Contract Decision**:
+The repository-owned choice of REST or POST-only application API semantics together with explicit protocol or operational exceptions and their owners.
+_Avoid_: HTTP profile, universal REST rule, inferred route style
+
+**Formatter-Stable Output**:
+Generated managed Markdown that the target repository's selected formatter leaves unchanged, so apply, formatting, Verification, audit, and reapply compose with no delta.
+_Avoid_: Renderer-canonical output, format-after-apply fixup
+
+**Internal Identifier**:
+A technical identity for an entity or resource that is generated and controlled by the project.
+_Avoid_: External identifier, natural key, business code
+
+**Roundfix Skill**:
+A shipped agent skill that teaches an external Agent how to start Roundfix or how to resolve one assigned Batch.
+_Avoid_: Runtime, Review Source, plugin
+
+**Repository Skill Set**:
+The complete set of Roundfix-owned and externally managed Agent Skills required by a repository workflow. Every required installed artifact matches its authoritative local source; unrelated extras do not join the set.
+_Avoid_: Installed skills, plugin set, global skill set
+
+**Interactive Input**:
+The TUI flow that collects command parameters before a Run starts.
+_Avoid_: Wizard, form, setup screen
+
+**Live Run View**:
+The TUI view that shows Review Issues and Run Events for a Run: streaming live while the Run is active, or replayed from the Run Event Journal during Attach.
+_Avoid_: Dashboard, report, log file
+
+**Run Browser**:
+The read-only, machine-wide TUI list for Run discovery: every repository's Runs with their state, kind, target, Agent, start, duration, branch, and repository — Active Runs by default — from which selecting a Run opens the Live Run View through Attach.
+_Avoid_: Run picker, run manager, dashboard
+
+**Cockpit**:
+The shared Live Run View composition made of the Phase Row, Work Queue, Session Timeline, footer, and optional Detail Modal.
+_Avoid_: Dashboard, reduced pane
+
+**Work Queue**:
+The Live Run View pane that lists a Run's Work Items and their current status for both review and spec Runs.
+_Avoid_: Issue list, task pane
+
+**Phase Row**:
+The Live Run View row that shows a Run's lifecycle position with terminal-text status markers.
+_Avoid_: Progress header, pipeline bar
+
+**Session Timeline**:
+The Live Run View pane that shows grouped Run Events from the Run Event Journal.
+_Avoid_: Console log, agent output pane
+
+**Detail Modal**:
+The centered Live Run View overlay that shows one selected Work Item's Review Issue artifact or Task file body read-only.
+_Avoid_: Detail pane, inspector panel
+
+**Daemon**:
+The Roundfix process that owns the Run lifecycle and Review Source-facing outcomes.
+_Avoid_: Orchestrator, controller, manager
+
+**Run Event**:
+One ordered product record of something meaningful that happened during a Run, carrying Run identity, Batch when known, event source, event kind, and a structured payload. Producers convert their native models into Run Events; ACP stream updates remain an Agent-internal protocol model.
+_Avoid_: Stream update, log line, message
+
+**Run Event Journal**:
+The append-only history of Run Events stored in the Run Database, ordered by a per-Run cursor so replay is deterministic and duplicate-free.
+_Avoid_: Agent log, log file, event broker
+
+**Run Event Stream**:
+A read-only JSONL projection of one Run's Run Event Journal, selected by an explicit Run ID and optionally followed until the Run reaches a terminal outcome. Its stable Supervisor filters are task status, Batch boundary, Verification verdict, and terminal outcome. The command skips a record it cannot project with a warning and continues with the next journal entry.
+_Avoid_: Attach, console log, global event bus
+
+**Attach**:
+Viewing a Run by replaying its Run Event Journal and then following new Run Events, without owning, mutating, or stopping the Run.
+_Avoid_: Resume, reconnect, takeover
+
+**Agent**:
+The local coding assistant invoked by Roundfix to triage and resolve an assigned Batch.
+_Avoid_: Review Source, review provider, worker, bot
+
+**Supervisor**:
+The external Claude Code role that authors Specs, starts and monitors Runs, and delegates every Work Item to an Agent.
+_Avoid_: Fable, Agent, ACP Runtime, Daemon, Orchestrator
+
+**Follow Mode**:
+The Live Run View state in which the timeline tail advances automatically as new Run Events arrive; suspended while the user scrolls back, resumed when the viewport returns to the bottom. Scrolling never affects the Run.
+_Avoid_: tail mode, auto-scroll, live mode
+
+
+**Pre-PR Review Policy**:
+The repository's choice of Codex, Claude, CodeRabbit, or no reviewer before a
+Pull Request is opened. An enabled review covers the current candidate, while
+explicit none records an intentional omission that leaves QA and required
+checks binding; provider failure is not an omission.
+_Avoid_: Review mode, reviewer profile, automatic review
+
+**Pre-PR Review Provider**:
+The selected agent or service that performs review under the Pre-PR Review
+Policy. An Agent Selection Profile supplies an agent provider's runtime and
+model; explicit none is a policy choice with no provider.
+_Avoid_: Review Source, Pre-PR Review Policy, reviewer model
+
+**Pre-PR Review Record**:
+The record of one Pre-PR Review, kept per checkout. Its verdict is read from
+the reviewer's final message.
+_Avoid_: Review Source Evidence, shared review state, reviewer transcript
+
+
+**QA Archive Override**:
+An explicit user request or applicable prior authorization to archive a covered
+Spec despite its QA prerequisite being unmet. The recorded exception preserves
+actual QA and Task evidence while retaining non-QA completion, source integrity
+and separate delivery gates.
+_Avoid_: QA pass, QA bypass, Implement Clean
+
+**Glossary Declaration**:
+The `## Glossary` section of a Spec's PRD or TechSpec that lists each domain term the Spec adds to or changes in the glossary, and each bolded phrase it declares not a domain term, or `None.`. A Task that declares the glossary file and names the term in its Verification writes each listed term.
+_Avoid_: Vocabulary Contract, term list, glossary candidates
+
+**Glossary Gap**:
+A domain term a Spec introduces that the glossary does not carry as required: a bolded phrase the glossary lacks and the Glossary Declaration does not cover, a declared term no Task plans to write, or a declared term still missing after its Tasks completed. The Spec Consistency Check reports it, and the QA gate and the Archive Command refuse a Spec that has one.
+_Avoid_: Missing term, undocumented token, stale glossary
+
+**Light Tier**:
+The dispatch tier that runs a Task on an open model through OpenCode and OpenRouter when its complexity is low, its type is not qa, and it declares no Governed Path; every other Task runs on the standard tier. A light Task whose first Verification fails escalates its one feedback turn to its category's Preferred Selection.
+_Avoid_: Cheap model, Jev routing, light model profile
+
+**Light Spend Log**:
+The per-UTC-month record in Roundfix Home of the cost each Light Tier session reports, summed across every repository and compared with the Light Tier's monthly ceiling. A month that reached the ceiling, or whose log cannot be read, runs light Tasks on their category's profile.
+_Avoid_: Judge Log, OpenRouter usage, spend cache
+
+**Jev Ceiling**:
+The monthly spending ceiling of the Jev judge, read from User Config only and compared with the Judge Log's sum across every repository on the machine; when it is unset a built-in default applies. The judge's key must carry a monthly credit limit no higher than it.
+_Avoid_: Judge budget, key limit, Project Config ceiling
+
+**Stage Key**:
+The Roundfix environment variable an OpenRouter stage reads first, the judge's or implementation's own key, before the shared Roundfix OpenRouter key; the generic OpenRouter variable is never read. Each stage records the variable it used by name, never by value.
+_Avoid_: API key value, generic OpenRouter key, shared key
+
+**Tested Base**:
+The default-branch commit a failed required check actually tested, read from the check job's annotation. A failure whose Tested Base does not contain the current default-branch tip is stale, and the Delivery Queue re-runs it instead of parking the item.
+_Avoid_: PR base, merge base, Delivery Base
+
+**Merge Evidence**:
+Proof that a Spec was delivered: the default-branch head holds its archived PRD, and the Delivery Commit that added that file is not reachable from the Run Branch or Item Branch being proven. With it, reconcile releases that Spec's terminal Runs and Item Branches without comparing content.
+_Avoid_: Content proof, merged flag, merge commit
+
+**Delivery Commit**:
+The default-branch commit that added a Spec's archived PRD. Merge Evidence and a Delivery Retry that records a merge made outside the queue both read it.
+_Avoid_: Merge commit, archive commit, release commit
+
+**Item Branch**:
+The branch a Delivery Queue item builds its candidate on, named `roundfix/deliver-<slug>-<16 hex>`. Once no live item names it, Merge Evidence releases it, with its worktree only when that worktree is clean.
+_Avoid_: Run Branch, PR Head Branch, deliver branch
+
+**Network-Denied Row**:
+An outside-evidence QA row blocked only because the Run sandbox denied network access, recorded with the host it could not reach. Like the pre-PR Pull Request row, it never decides a qualifying partial; whoever needs that proof declares it under Unreachable Acceptance.
+_Avoid_: Failed outside evidence, skipped row, environment pass
+
+**Pre-PR Review Command**:
+The command that obtains the Pre-PR Review Provider's review of the current candidate before a Pull Request opens, reads the verdict from the reviewer's final message and keeps the Pre-PR Review Record. A finding parks delivery only after it is validated.
+_Avoid_: Review Run, PR feedback Watch, review command alias
+
+Legacy Archive Folder:
+A Spec folder the Archive Command left under the archive root before archives wrote Archive Records (ADR-0248).
+_Avoid_: Archive Record, active Spec, history root
+
+**Sanitize Batch**:
+The next units one `--apply` converts, delivered as one Pull Request with the repository gates green and revertible (ADR-0248).
+_Avoid_: Archive batch, migration wave, unreviewed cleanup
+
+**Reduced History Entry**:
+A retired Finding or Backlog Entry cut to its front matter, title, first paragraph and the revision holding its full text (ADR-0248).
+_Avoid_: Summary, Archive Record, truncated history
+
+**History Full Tag**:
+The annotated `history-full` tag on the last commit before the first batch, which keeps every removed byte reachable (ADR-0248).
+_Avoid_: Lightweight tag, batch tag, archive stamp
+
+**History Root**:
+The single repository directory holding Archive Records, Reduced History Entries and retired ADRs, with the full bytes in Git. Retired material leaves the directory an Agent loads by default and stays greppable as the record of what was built and why; one path filter excludes the whole tree from review. Resolved in exactly one place, so no consumer carries a path of its own (ADR-0248).
+_Avoid_: Archive folder, `_archived`, attic, trash
+
+**History Relocation**:
+One retired file that belongs under the History Root and is not there, carried in the Baseline Plan as an ordered ledger entry of source, destination, and content identity rather than file bytes. A relocation whose destination is occupied is a collision: it is refused by name, its siblings still move, and the repository is not current until it is resolved.
+_Avoid_: Archive move, file migration, relocation payload
+
+**Relocation Citation**:
+A citation in a tracked file that resolves before a Baseline Plan's History Relocations and would not resolve after them. It is reported as a warning the Plan Digest binds; planning never rewrites it, and apply writes the same files.
+_Avoid_: Broken link, dangling reference, link check
+
+**GC Command**:
+The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window and removes orphaned run artifact directories, reporting what it freed. A Run it already emptied is not counted again. Never touches Active Runs, `runs` rows, or active-run locks.
+_Avoid_: Clean command, vacuum, purge
+
+**Journal Retention**:
+The configured age window after which a terminal Run's Run Event Journal and artifact directory become eligible for pruning. Active Runs are never eligible; a retention of zero keeps everything. See ADR-0033.
+_Avoid_: Log rotation, TTL, expiry
+
+**Worktree Bootstrap**:
+The configured command Roundfix runs once in a newly created Run or Task Worktree, after copying `worktree.copy` files and before Agent work and Verification, to prepare the environment (install dependencies, migrate and seed databases, warm caches). A bootstrap failure ends the Run or settles the Task with a bootstrap-failed outcome. See ADR-0034.
+_Avoid_: Setup command, provisioning, install step
+
+**Context-Driven Baseline**:
+The portable, versioned set of required project instructions and architectural decisions that makes a repository ready for the CONTEXT-driven workflow.
+_Avoid_: Sample docs, optional setup, repository template
+
+**Baseline Profile**:
+A versioned composition of modules, Repository Capabilities, decisions, managed artifacts, and verification roles that defines one reproducible Context-Driven Baseline. Roundfix ships built-in profiles; a repository may own additional profiles for its own workflow.
+_Avoid_: Agent Selection Profile, setup template, user profile
+
+**Profile Draft**:
+A strict repository-owned Baseline Profile document supplied to planning in memory and admitted only after catalog validation and source binding.
+_Avoid_: Partial profile, unchecked JSON, Profile override
+
+**Profile Adaptation**:
+A maintainer-reviewed Profile Draft that narrows one built-in Baseline Profile by removing repository-inapplicable modules or Repository Capabilities without weakening universal requirements.
+_Avoid_: Profile waiver, capability bypass, silent inference
+
+**Baseline Command**:
+The public `roundfix baseline` command that authors and validates Baseline Profiles and drives one preflight-to-verification adoption or update flow without requiring an Agent Skill.
+_Avoid_: Setup Command, setup skill, configuration wizard
+
+**Source Baseline**:
+The immutable Setup Manifest and governed instruction corpus that a setup transition or Baseline Readoption recognizes as its exact origin.
+_Avoid_: Legacy Baseline, inferred preimage, current files
+
+**Source Baseline Entry**:
+One byte-evidenced structural unit in a Source Baseline that Baseline Readoption classifies and disposes individually as a Normative Clause, recommendation, Operational Contract, or non-governed evidence.
+_Avoid_: Inferred rule, category summary, untracked paragraph
+
+**Segmentation Snapshot**:
+The immutable, checkout-free semantic-analysis input containing one Source Baseline and the strict byte-range proposal contract.
+_Avoid_: Repository prompt, mutable instruction dump, checkout context
+
+**Segmentation Proposal**:
+A digest-bound, byte-exhaustive set of ordered ranges that splits Source Baseline Entries without rewriting or omitting source bytes.
+_Avoid_: Summary, rewritten rules, partial range list
+
+**Analysis Snapshot**:
+The immutable, checkout-free classification input containing segmented Source Baseline Entries and only the semantic destinations active for the confirmed Baseline Profile and project decisions.
+_Avoid_: Repository scan, unrestricted prompt, inferred destination list
+
+**Classification Proposal**:
+A digest-bound disposition for every entry in one Analysis Snapshot, admitted only after deterministic validation and explicit human review.
+_Avoid_: Classification hint, partial proposal, autonomous decision
+
+**Baseline Readoption**:
+The confirmation-gated adoption that inventories an incompatible repository state as a Source Baseline and replaces its setup identity without treating existing instructions as disposable.
+_Avoid_: Clean install, legacy fallback, automatic overwrite
+
+**Normative Clause**:
+An identified repository instruction whose enforcement is mandatory, prohibited, or stop-and-ask.
+_Avoid_: Hard rule, guideline, free-form prose
+
+**Normative Clause Manifest**:
+The digest-bound inventory that independently accounts for a Source Baseline's Normative Clauses, recommendations, and Operational Contracts.
+_Avoid_: Transition mapping, self-declared ledger, category checklist
+
+**Operational Contract**:
+An identified structured instruction whose order or shape carries required behavior, such as a template, procedure, or decision matrix.
+_Avoid_: Prose summary, optional example, compressed guidance
+
+**Instruction Hierarchy**:
+The precedence order from universal instructions through context and documentation, Spec workflow, enabled autonomous work, stack and surface guides, and optional knowledge sources. A narrower guide may add constraints but cannot weaken a universal Normative Clause or confirmed project decision.
+_Avoid_: Module list, arbitrary file order, duplicated root policy
+
+**Standard TypeScript Monorepo Profile**:
+The opinionated, project-agnostic Context-Driven Baseline profile for the repository's standard TypeScript monorepo stack.
+_Avoid_: Project-specific profile, generic TypeScript profile, sample template
+
+**Repository Capability**:
+A profile-declared skill, tool, dependency, workspace, or repository contract whose required, recommended, or optional status is evaluated from explicit local evidence.
+_Avoid_: Assumed stack, installed package list, inferred readiness
+
+**Skill Activation**:
+A declarative mapping from one stable work trigger to one exact required Agent Skill bundle, optionally conditioned on a selected Repository Capability.
+_Avoid_: Suggested skill, inferred bundle, partial activation
+
+**Decision Plan**:
+The resolved setup proposal produced after every required setup decision has an answer; it is the basis for authorizing setup changes.
+_Avoid_: Setup questionnaire, decision draft, configuration prompt
+
+**Change Plan**:
+The exact set of repository changes proposed for explicit review and confirmation before a setup or restoration operation mutates files.
+_Avoid_: Patch, implicit apply, change preview
+
+**Setup Manifest**:
+The setup-owned record of the selected profile, modules, decisions, and managed artifacts that reproduces and audits a repository's Context-Driven Baseline. Every applied Baseline change republishes it, so its recorded digests describe the bytes on disk rather than the bytes adoption wrote.
+_Avoid_: Project Config, lock file, generated guide
+
+**Managed Region**:
+The byte range one setup-owned marker pair delimits inside an instruction carrier, identified by its managed artifact identity. Its content belongs to the Context-Driven Baseline, not to the repository holding it; the bytes outside every marker pair belong to the repository and no Baseline operation changes them.
+_Avoid_: Managed file, generated block, setup section
+
+**Managed Refresh**:
+The preservation mode that regenerates only Managed Regions, leaves every other byte identical, requires no Source Baseline and no Decision Plan, and takes no root backup because the plan's preimages carry the preservation proof. It converges: a second run against an unchanged catalog reports the repository current and proposes no change.
+_Avoid_: Baseline Readoption, reapply, overwrite
+
+**Unrecorded Managed Region**:
+A Managed Region whose bytes are not the bytes the adopted Setup Manifest recorded. It is classified and reported by path, managed identity, and the lines a refresh removes — never presumed damaged and never silently replaced. Only a managed identity appearing more than once in one carrier blocks, because that refresh has no defensible target.
+_Avoid_: Hand-edited marker, corrupted block, drift
+
+**Baseline ADR**:
+An Architecture Decision Record whose reserved identity and invariant belong to the Context-Driven Baseline while project-specific notes remain repository-owned.
+_Avoid_: Example ADR, project ADR, template copy
+
+**Upgrade Retention Contract**:
+The accounting a Context-Driven Baseline transition or Baseline Readoption must satisfy before mutation: every Source Baseline Normative Clause, recommendation, and Operational Contract maps to a current managed target, Repository-Specific Normative Rules, a recognized typed repository document, or an explicit rejection with a recorded reason.
+_Avoid_: Best-effort migration, category coverage, silent rule removal
+
+**Repository-Specific Normative Rules**:
+Project-authored Normative Clauses that are not portable across the Context-Driven Baseline and cannot be represented by a typed project decision or managed semantic guide. Baseline assigns every representable rule to its semantic owner; only non-empty residual rules live outside setup markers in `docs/agents/specific-repository.md` and remain byte-preserved after confirmed adoption.
+_Avoid_: Repository-Owned Extension, duplicate managed rule, baseline rule
+
+**HTTP Contract Decision**:
+The repository-owned choice of REST or POST-only application API semantics together with explicit protocol or operational exceptions and their owners.
+_Avoid_: HTTP profile, universal REST rule, inferred route style
+
+**Formatter-Stable Output**:
+Generated managed Markdown that the target repository's selected formatter leaves unchanged, so apply, formatting, Verification, audit, and reapply compose with no delta.
+_Avoid_: Renderer-canonical output, format-after-apply fixup
+
+**Internal Identifier**:
+A technical identity for an entity or resource that is generated and controlled by the project.
+_Avoid_: External identifier, natural key, business code
+
+**Roundfix Skill**:
+A shipped agent skill that teaches an external Agent how to start Roundfix or how to resolve one assigned Batch.
+_Avoid_: Runtime, Review Source, plugin
+
+**Repository Skill Set**:
+The complete set of Roundfix-owned and externally managed Agent Skills required by a repository workflow. Every required installed artifact matches its authoritative local source; unrelated extras do not join the set.
+_Avoid_: Installed skills, plugin set, global skill set
+
+**Interactive Input**:
+The TUI flow that collects command parameters before a Run starts.
+_Avoid_: Wizard, form, setup screen
+
+**Live Run View**:
+The TUI view that shows Review Issues and Run Events for a Run: streaming live while the Run is active, or replayed from the Run Event Journal during Attach.
+_Avoid_: Dashboard, report, log file
+
+**Run Browser**:
+The read-only, machine-wide TUI list for Run discovery: every repository's Runs with their state, kind, target, Agent, start, duration, branch, and repository — Active Runs by default — from which selecting a Run opens the Live Run View through Attach.
+_Avoid_: Run picker, run manager, dashboard
+
+**Cockpit**:
+The shared Live Run View composition made of the Phase Row, Work Queue, Session Timeline, footer, and optional Detail Modal.
+_Avoid_: Dashboard, reduced pane
+
+**Work Queue**:
+The Live Run View pane that lists a Run's Work Items and their current status for both review and spec Runs.
+_Avoid_: Issue list, task pane
+
+**Phase Row**:
+The Live Run View row that shows a Run's lifecycle position with terminal-text status markers.
+_Avoid_: Progress header, pipeline bar
+
+**Session Timeline**:
+The Live Run View pane that shows grouped Run Events from the Run Event Journal.
+_Avoid_: Console log, agent output pane
+
+**Detail Modal**:
+The centered Live Run View overlay that shows one selected Work Item's Review Issue artifact or Task file body read-only.
+_Avoid_: Detail pane, inspector panel
+
+**Daemon**:
+The Roundfix process that owns the Run lifecycle and Review Source-facing outcomes.
+_Avoid_: Orchestrator, controller, manager
+
+**Run Event**:
+One ordered product record of something meaningful that happened during a Run, carrying Run identity, Batch when known, event source, event kind, and a structured payload. Producers convert their native models into Run Events; ACP stream updates remain an Agent-internal protocol model.
+_Avoid_: Stream update, log line, message
+
+**Run Event Journal**:
+The append-only history of Run Events stored in the Run Database, ordered by a per-Run cursor so replay is deterministic and duplicate-free.
+_Avoid_: Agent log, log file, event broker
+
+**Run Event Stream**:
+A read-only JSONL projection of one Run's Run Event Journal, selected by an explicit Run ID and optionally followed until the Run reaches a terminal outcome. Its stable Supervisor filters are task status, Batch boundary, Verification verdict, and terminal outcome. The command skips a record it cannot project with a warning and continues with the next journal entry.
+_Avoid_: Attach, console log, global event bus
+
+**Attach**:
+Viewing a Run by replaying its Run Event Journal and then following new Run Events, without owning, mutating, or stopping the Run.
+_Avoid_: Resume, reconnect, takeover
+
+**Agent**:
+The local coding assistant invoked by Roundfix to triage and resolve an assigned Batch.
+_Avoid_: Review Source, review provider, worker, bot
+
+**Supervisor**:
+The external Claude Code role that authors Specs, starts and monitors Runs, and delegates every Work Item to an Agent.
+_Avoid_: Fable, Agent, ACP Runtime, Daemon, Orchestrator
+
+**Follow Mode**:
+The Live Run View state in which the timeline tail advances automatically as new Run Events arrive; suspended while the user scrolls back, resumed when the viewport returns to the bottom. Scrolling never affects the Run.
+_Avoid_: tail mode, auto-scroll, live mode
+
+
+**Pre-PR Review Policy**:
+The repository's choice of Codex, Claude, CodeRabbit, or no reviewer before a
+Pull Request is opened. An enabled review covers the current candidate, while
+explicit none records an intentional omission that leaves QA and required
+checks binding; provider failure is not an omission.
+_Avoid_: Review mode, reviewer profile, automatic review
+
+**Pre-PR Review Provider**:
+The selected agent or service that performs review under the Pre-PR Review
+Policy. An Agent Selection Profile supplies an agent provider's runtime and
+model; explicit none is a policy choice with no provider.
+_Avoid_: Review Source, Pre-PR Review Policy, reviewer model
+
+**Pre-PR Review Record**:
+The record of one Pre-PR Review, kept per checkout. Its verdict is read from
+the reviewer's final message.
+_Avoid_: Review Source Evidence, shared review state, reviewer transcript
+
+
+**QA Archive Override**:
+An explicit user request or applicable prior authorization to archive a covered
+Spec despite its QA prerequisite being unmet. The recorded exception preserves
+actual QA and Task evidence while retaining non-QA completion, source integrity
+and separate delivery gates.
+_Avoid_: QA pass, QA bypass, Implement Clean
+
+**Glossary Declaration**:
+The `## Glossary` section of a Spec's PRD or TechSpec that lists each domain term the Spec adds to or changes in the glossary, and each bolded phrase it declares not a domain term, or `None.`. A Task that declares the glossary file and names the term in its Verification writes each listed term.
+_Avoid_: Vocabulary Contract, term list, glossary candidates
+
+**Glossary Gap**:
+A domain term a Spec introduces that the glossary does not carry as required: a bolded phrase the glossary lacks and the Glossary Declaration does not cover, a declared term no Task plans to write, or a declared term still missing after its Tasks completed. The Spec Consistency Check reports it, and the QA gate and the Archive Command refuse a Spec that has one.
+_Avoid_: Missing term, undocumented token, stale glossary
+
+**Light Tier**:
+The dispatch tier that runs a Task on an open model through OpenCode and OpenRouter when its complexity is low, its type is not qa, and it declares no Governed Path; every other Task runs on the standard tier. A light Task whose first Verification fails escalates its one feedback turn to its category's Preferred Selection.
+_Avoid_: Cheap model, Jev routing, light model profile
+
+**Light Spend Log**:
+The per-UTC-month record in Roundfix Home of the cost each Light Tier session reports, summed across every repository and compared with the Light Tier's monthly ceiling. A month that reached the ceiling, or whose log cannot be read, runs light Tasks on their category's profile.
+_Avoid_: Judge Log, OpenRouter usage, spend cache
+
+**Jev Ceiling**:
+The monthly spending ceiling of the Jev judge, read from User Config only and compared with the Judge Log's sum across every repository on the machine; when it is unset a built-in default applies. The judge's key must carry a monthly credit limit no higher than it.
+_Avoid_: Judge budget, key limit, Project Config ceiling
+
+**Stage Key**:
+The Roundfix environment variable an OpenRouter stage reads first, the judge's or implementation's own key, before the shared Roundfix OpenRouter key; the generic OpenRouter variable is never read. Each stage records the variable it used by name, never by value.
+_Avoid_: API key value, generic OpenRouter key, shared key
+
+**Tested Base**:
+The default-branch commit a failed required check actually tested, read from the check job's annotation. A failure whose Tested Base does not contain the current default-branch tip is stale, and the Delivery Queue re-runs it instead of parking the item.
+_Avoid_: PR base, merge base, Delivery Base
+
+**Merge Evidence**:
+Proof that a Spec was delivered: the default-branch head holds its archived PRD, and the Delivery Commit that added that file is not reachable from the Run Branch or Item Branch being proven. With it, reconcile releases that Spec's terminal Runs and Item Branches without comparing content.
+_Avoid_: Content proof, merged flag, merge commit
+
+**Delivery Commit**:
+The default-branch commit that added a Spec's archived PRD. Merge Evidence and a Delivery Retry that records a merge made outside the queue both read it.
+_Avoid_: Merge commit, archive commit, release commit
+
+**Item Branch**:
+The branch a Delivery Queue item builds its candidate on, named `roundfix/deliver-<slug>-<16 hex>`. Once no live item names it, Merge Evidence releases it, with its worktree only when that worktree is clean.
+_Avoid_: Run Branch, PR Head Branch, deliver branch
+
+**Network-Denied Row**:
+An outside-evidence QA row blocked only because the Run sandbox denied network access, recorded with the host it could not reach. Like the pre-PR Pull Request row, it never decides a qualifying partial; whoever needs that proof declares it under Unreachable Acceptance.
+_Avoid_: Failed outside evidence, skipped row, environment pass
+
+**Pre-PR Review Command**:
+The command that obtains the Pre-PR Review Provider's review of the current candidate before a Pull Request opens, reads the verdict from the reviewer's final message and keeps the Pre-PR Review Record. A finding parks delivery only after it is validated.
+_Avoid_: Review Run, PR feedback Watch, review command alias
+
+Sanitize Batch:
+The next units one `--apply` converts, delivered as one Pull Request with the repository gates green and revertible (ADR-0248).
+_Avoid_: Archive batch, migration wave, unreviewed cleanup
+
+**Reduced History Entry**:
+A retired Finding or Backlog Entry cut to its front matter, title, first paragraph and the revision holding its full text (ADR-0248).
+_Avoid_: Summary, Archive Record, truncated history
+
+**History Full Tag**:
+The annotated `history-full` tag on the last commit before the first batch, which keeps every removed byte reachable (ADR-0248).
+_Avoid_: Lightweight tag, batch tag, archive stamp
+
+**History Root**:
+The single repository directory holding Archive Records, Reduced History Entries and retired ADRs, with the full bytes in Git. Retired material leaves the directory an Agent loads by default and stays greppable as the record of what was built and why; one path filter excludes the whole tree from review. Resolved in exactly one place, so no consumer carries a path of its own (ADR-0248).
+_Avoid_: Archive folder, `_archived`, attic, trash
+
+**History Relocation**:
+One retired file that belongs under the History Root and is not there, carried in the Baseline Plan as an ordered ledger entry of source, destination, and content identity rather than file bytes. A relocation whose destination is occupied is a collision: it is refused by name, its siblings still move, and the repository is not current until it is resolved.
+_Avoid_: Archive move, file migration, relocation payload
+
+**Relocation Citation**:
+A citation in a tracked file that resolves before a Baseline Plan's History Relocations and would not resolve after them. It is reported as a warning the Plan Digest binds; planning never rewrites it, and apply writes the same files.
+_Avoid_: Broken link, dangling reference, link check
+
+**GC Command**:
+The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window and removes orphaned run artifact directories, reporting what it freed. A Run it already emptied is not counted again. Never touches Active Runs, `runs` rows, or active-run locks.
+_Avoid_: Clean command, vacuum, purge
+
+**Journal Retention**:
+The configured age window after which a terminal Run's Run Event Journal and artifact directory become eligible for pruning. Active Runs are never eligible; a retention of zero keeps everything. See ADR-0033.
+_Avoid_: Log rotation, TTL, expiry
+
+**Worktree Bootstrap**:
+The configured command Roundfix runs once in a newly created Run or Task Worktree, after copying `worktree.copy` files and before Agent work and Verification, to prepare the environment (install dependencies, migrate and seed databases, warm caches). A bootstrap failure ends the Run or settles the Task with a bootstrap-failed outcome. See ADR-0034.
+_Avoid_: Setup command, provisioning, install step
+
+**Context-Driven Baseline**:
+The portable, versioned set of required project instructions and architectural decisions that makes a repository ready for the CONTEXT-driven workflow.
+_Avoid_: Sample docs, optional setup, repository template
+
+**Baseline Profile**:
+A versioned composition of modules, Repository Capabilities, decisions, managed artifacts, and verification roles that defines one reproducible Context-Driven Baseline. Roundfix ships built-in profiles; a repository may own additional profiles for its own workflow.
+_Avoid_: Agent Selection Profile, setup template, user profile
+
+**Profile Draft**:
+A strict repository-owned Baseline Profile document supplied to planning in memory and admitted only after catalog validation and source binding.
+_Avoid_: Partial profile, unchecked JSON, Profile override
+
+**Profile Adaptation**:
+A maintainer-reviewed Profile Draft that narrows one built-in Baseline Profile by removing repository-inapplicable modules or Repository Capabilities without weakening universal requirements.
+_Avoid_: Profile waiver, capability bypass, silent inference
+
+**Baseline Command**:
+The public `roundfix baseline` command that authors and validates Baseline Profiles and drives one preflight-to-verification adoption or update flow without requiring an Agent Skill.
+_Avoid_: Setup Command, setup skill, configuration wizard
+
+**Source Baseline**:
+The immutable Setup Manifest and governed instruction corpus that a setup transition or Baseline Readoption recognizes as its exact origin.
+_Avoid_: Legacy Baseline, inferred preimage, current files
+
+**Source Baseline Entry**:
+One byte-evidenced structural unit in a Source Baseline that Baseline Readoption classifies and disposes individually as a Normative Clause, recommendation, Operational Contract, or non-governed evidence.
+_Avoid_: Inferred rule, category summary, untracked paragraph
+
+**Segmentation Snapshot**:
+The immutable, checkout-free semantic-analysis input containing one Source Baseline and the strict byte-range proposal contract.
+_Avoid_: Repository prompt, mutable instruction dump, checkout context
+
+**Segmentation Proposal**:
+A digest-bound, byte-exhaustive set of ordered ranges that splits Source Baseline Entries without rewriting or omitting source bytes.
+_Avoid_: Summary, rewritten rules, partial range list
+
+**Analysis Snapshot**:
+The immutable, checkout-free classification input containing segmented Source Baseline Entries and only the semantic destinations active for the confirmed Baseline Profile and project decisions.
+_Avoid_: Repository scan, unrestricted prompt, inferred destination list
+
+**Classification Proposal**:
+A digest-bound disposition for every entry in one Analysis Snapshot, admitted only after deterministic validation and explicit human review.
+_Avoid_: Classification hint, partial proposal, autonomous decision
+
+**Baseline Readoption**:
+The confirmation-gated adoption that inventories an incompatible repository state as a Source Baseline and replaces its setup identity without treating existing instructions as disposable.
+_Avoid_: Clean install, legacy fallback, automatic overwrite
+
+**Normative Clause**:
+An identified repository instruction whose enforcement is mandatory, prohibited, or stop-and-ask.
+_Avoid_: Hard rule, guideline, free-form prose
+
+**Normative Clause Manifest**:
+The digest-bound inventory that independently accounts for a Source Baseline's Normative Clauses, recommendations, and Operational Contracts.
+_Avoid_: Transition mapping, self-declared ledger, category checklist
+
+**Operational Contract**:
+An identified structured instruction whose order or shape carries required behavior, such as a template, procedure, or decision matrix.
+_Avoid_: Prose summary, optional example, compressed guidance
+
+**Instruction Hierarchy**:
+The precedence order from universal instructions through context and documentation, Spec workflow, enabled autonomous work, stack and surface guides, and optional knowledge sources. A narrower guide may add constraints but cannot weaken a universal Normative Clause or confirmed project decision.
+_Avoid_: Module list, arbitrary file order, duplicated root policy
+
+**Standard TypeScript Monorepo Profile**:
+The opinionated, project-agnostic Context-Driven Baseline profile for the repository's standard TypeScript monorepo stack.
+_Avoid_: Project-specific profile, generic TypeScript profile, sample template
+
+**Repository Capability**:
+A profile-declared skill, tool, dependency, workspace, or repository contract whose required, recommended, or optional status is evaluated from explicit local evidence.
+_Avoid_: Assumed stack, installed package list, inferred readiness
+
+**Skill Activation**:
+A declarative mapping from one stable work trigger to one exact required Agent Skill bundle, optionally conditioned on a selected Repository Capability.
+_Avoid_: Suggested skill, inferred bundle, partial activation
+
+**Decision Plan**:
+The resolved setup proposal produced after every required setup decision has an answer; it is the basis for authorizing setup changes.
+_Avoid_: Setup questionnaire, decision draft, configuration prompt
+
+**Change Plan**:
+The exact set of repository changes proposed for explicit review and confirmation before a setup or restoration operation mutates files.
+_Avoid_: Patch, implicit apply, change preview
+
+**Setup Manifest**:
+The setup-owned record of the selected profile, modules, decisions, and managed artifacts that reproduces and audits a repository's Context-Driven Baseline. Every applied Baseline change republishes it, so its recorded digests describe the bytes on disk rather than the bytes adoption wrote.
+_Avoid_: Project Config, lock file, generated guide
+
+**Managed Region**:
+The byte range one setup-owned marker pair delimits inside an instruction carrier, identified by its managed artifact identity. Its content belongs to the Context-Driven Baseline, not to the repository holding it; the bytes outside every marker pair belong to the repository and no Baseline operation changes them.
+_Avoid_: Managed file, generated block, setup section
+
+**Managed Refresh**:
+The preservation mode that regenerates only Managed Regions, leaves every other byte identical, requires no Source Baseline and no Decision Plan, and takes no root backup because the plan's preimages carry the preservation proof. It converges: a second run against an unchanged catalog reports the repository current and proposes no change.
+_Avoid_: Baseline Readoption, reapply, overwrite
+
+**Unrecorded Managed Region**:
+A Managed Region whose bytes are not the bytes the adopted Setup Manifest recorded. It is classified and reported by path, managed identity, and the lines a refresh removes — never presumed damaged and never silently replaced. Only a managed identity appearing more than once in one carrier blocks, because that refresh has no defensible target.
+_Avoid_: Hand-edited marker, corrupted block, drift
+
+**Baseline ADR**:
+An Architecture Decision Record whose reserved identity and invariant belong to the Context-Driven Baseline while project-specific notes remain repository-owned.
+_Avoid_: Example ADR, project ADR, template copy
+
+**Upgrade Retention Contract**:
+The accounting a Context-Driven Baseline transition or Baseline Readoption must satisfy before mutation: every Source Baseline Normative Clause, recommendation, and Operational Contract maps to a current managed target, Repository-Specific Normative Rules, a recognized typed repository document, or an explicit rejection with a recorded reason.
+_Avoid_: Best-effort migration, category coverage, silent rule removal
+
+**Repository-Specific Normative Rules**:
+Project-authored Normative Clauses that are not portable across the Context-Driven Baseline and cannot be represented by a typed project decision or managed semantic guide. Baseline assigns every representable rule to its semantic owner; only non-empty residual rules live outside setup markers in `docs/agents/specific-repository.md` and remain byte-preserved after confirmed adoption.
+_Avoid_: Repository-Owned Extension, duplicate managed rule, baseline rule
+
+**HTTP Contract Decision**:
+The repository-owned choice of REST or POST-only application API semantics together with explicit protocol or operational exceptions and their owners.
+_Avoid_: HTTP profile, universal REST rule, inferred route style
+
+**Formatter-Stable Output**:
+Generated managed Markdown that the target repository's selected formatter leaves unchanged, so apply, formatting, Verification, audit, and reapply compose with no delta.
+_Avoid_: Renderer-canonical output, format-after-apply fixup
+
+**Internal Identifier**:
+A technical identity for an entity or resource that is generated and controlled by the project.
+_Avoid_: External identifier, natural key, business code
+
+**Roundfix Skill**:
+A shipped agent skill that teaches an external Agent how to start Roundfix or how to resolve one assigned Batch.
+_Avoid_: Runtime, Review Source, plugin
+
+**Repository Skill Set**:
+The complete set of Roundfix-owned and externally managed Agent Skills required by a repository workflow. Every required installed artifact matches its authoritative local source; unrelated extras do not join the set.
+_Avoid_: Installed skills, plugin set, global skill set
+
+**Interactive Input**:
+The TUI flow that collects command parameters before a Run starts.
+_Avoid_: Wizard, form, setup screen
+
+**Live Run View**:
+The TUI view that shows Review Issues and Run Events for a Run: streaming live while the Run is active, or replayed from the Run Event Journal during Attach.
+_Avoid_: Dashboard, report, log file
+
+**Run Browser**:
+The read-only, machine-wide TUI list for Run discovery: every repository's Runs with their state, kind, target, Agent, start, duration, branch, and repository — Active Runs by default — from which selecting a Run opens the Live Run View through Attach.
+_Avoid_: Run picker, run manager, dashboard
+
+**Cockpit**:
+The shared Live Run View composition made of the Phase Row, Work Queue, Session Timeline, footer, and optional Detail Modal.
+_Avoid_: Dashboard, reduced pane
+
+**Work Queue**:
+The Live Run View pane that lists a Run's Work Items and their current status for both review and spec Runs.
+_Avoid_: Issue list, task pane
+
+**Phase Row**:
+The Live Run View row that shows a Run's lifecycle position with terminal-text status markers.
+_Avoid_: Progress header, pipeline bar
+
+**Session Timeline**:
+The Live Run View pane that shows grouped Run Events from the Run Event Journal.
+_Avoid_: Console log, agent output pane
+
+**Detail Modal**:
+The centered Live Run View overlay that shows one selected Work Item's Review Issue artifact or Task file body read-only.
+_Avoid_: Detail pane, inspector panel
+
+**Daemon**:
+The Roundfix process that owns the Run lifecycle and Review Source-facing outcomes.
+_Avoid_: Orchestrator, controller, manager
+
+**Run Event**:
+One ordered product record of something meaningful that happened during a Run, carrying Run identity, Batch when known, event source, event kind, and a structured payload. Producers convert their native models into Run Events; ACP stream updates remain an Agent-internal protocol model.
+_Avoid_: Stream update, log line, message
+
+**Run Event Journal**:
+The append-only history of Run Events stored in the Run Database, ordered by a per-Run cursor so replay is deterministic and duplicate-free.
+_Avoid_: Agent log, log file, event broker
+
+**Run Event Stream**:
+A read-only JSONL projection of one Run's Run Event Journal, selected by an explicit Run ID and optionally followed until the Run reaches a terminal outcome. Its stable Supervisor filters are task status, Batch boundary, Verification verdict, and terminal outcome. The command skips a record it cannot project with a warning and continues with the next journal entry.
+_Avoid_: Attach, console log, global event bus
+
+**Attach**:
+Viewing a Run by replaying its Run Event Journal and then following new Run Events, without owning, mutating, or stopping the Run.
+_Avoid_: Resume, reconnect, takeover
+
+**Agent**:
+The local coding assistant invoked by Roundfix to triage and resolve an assigned Batch.
+_Avoid_: Review Source, review provider, worker, bot
+
+**Supervisor**:
+The external Claude Code role that authors Specs, starts and monitors Runs, and delegates every Work Item to an Agent.
+_Avoid_: Fable, Agent, ACP Runtime, Daemon, Orchestrator
+
+**Follow Mode**:
+The Live Run View state in which the timeline tail advances automatically as new Run Events arrive; suspended while the user scrolls back, resumed when the viewport returns to the bottom. Scrolling never affects the Run.
+_Avoid_: tail mode, auto-scroll, live mode
+
+
+**Pre-PR Review Policy**:
+The repository's choice of Codex, Claude, CodeRabbit, or no reviewer before a
+Pull Request is opened. An enabled review covers the current candidate, while
+explicit none records an intentional omission that leaves QA and required
+checks binding; provider failure is not an omission.
+_Avoid_: Review mode, reviewer profile, automatic review
+
+**Pre-PR Review Provider**:
+The selected agent or service that performs review under the Pre-PR Review
+Policy. An Agent Selection Profile supplies an agent provider's runtime and
+model; explicit none is a policy choice with no provider.
+_Avoid_: Review Source, Pre-PR Review Policy, reviewer model
+
+**Pre-PR Review Record**:
+The record of one Pre-PR Review, kept per checkout. Its verdict is read from
+the reviewer's final message.
+_Avoid_: Review Source Evidence, shared review state, reviewer transcript
+
+
+**QA Archive Override**:
+An explicit user request or applicable prior authorization to archive a covered
+Spec despite its QA prerequisite being unmet. The recorded exception preserves
+actual QA and Task evidence while retaining non-QA completion, source integrity
+and separate delivery gates.
+_Avoid_: QA pass, QA bypass, Implement Clean
+
+**Glossary Declaration**:
+The `## Glossary` section of a Spec's PRD or TechSpec that lists each domain term the Spec adds to or changes in the glossary, and each bolded phrase it declares not a domain term, or `None.`. A Task that declares the glossary file and names the term in its Verification writes each listed term.
+_Avoid_: Vocabulary Contract, term list, glossary candidates
+
+**Glossary Gap**:
+A domain term a Spec introduces that the glossary does not carry as required: a bolded phrase the glossary lacks and the Glossary Declaration does not cover, a declared term no Task plans to write, or a declared term still missing after its Tasks completed. The Spec Consistency Check reports it, and the QA gate and the Archive Command refuse a Spec that has one.
+_Avoid_: Missing term, undocumented token, stale glossary
+
+**Light Tier**:
+The dispatch tier that runs a Task on an open model through OpenCode and OpenRouter when its complexity is low, its type is not qa, and it declares no Governed Path; every other Task runs on the standard tier. A light Task whose first Verification fails escalates its one feedback turn to its category's Preferred Selection.
+_Avoid_: Cheap model, Jev routing, light model profile
+
+**Light Spend Log**:
+The per-UTC-month record in Roundfix Home of the cost each Light Tier session reports, summed across every repository and compared with the Light Tier's monthly ceiling. A month that reached the ceiling, or whose log cannot be read, runs light Tasks on their category's profile.
+_Avoid_: Judge Log, OpenRouter usage, spend cache
+
+**Jev Ceiling**:
+The monthly spending ceiling of the Jev judge, read from User Config only and compared with the Judge Log's sum across every repository on the machine; when it is unset a built-in default applies. The judge's key must carry a monthly credit limit no higher than it.
+_Avoid_: Judge budget, key limit, Project Config ceiling
+
+**Stage Key**:
+The Roundfix environment variable an OpenRouter stage reads first, the judge's or implementation's own key, before the shared Roundfix OpenRouter key; the generic OpenRouter variable is never read. Each stage records the variable it used by name, never by value.
+_Avoid_: API key value, generic OpenRouter key, shared key
+
+**Tested Base**:
+The default-branch commit a failed required check actually tested, read from the check job's annotation. A failure whose Tested Base does not contain the current default-branch tip is stale, and the Delivery Queue re-runs it instead of parking the item.
+_Avoid_: PR base, merge base, Delivery Base
+
+**Merge Evidence**:
+Proof that a Spec was delivered: the default-branch head holds its archived PRD, and the Delivery Commit that added that file is not reachable from the Run Branch or Item Branch being proven. With it, reconcile releases that Spec's terminal Runs and Item Branches without comparing content.
+_Avoid_: Content proof, merged flag, merge commit
+
+**Delivery Commit**:
+The default-branch commit that added a Spec's archived PRD. Merge Evidence and a Delivery Retry that records a merge made outside the queue both read it.
+_Avoid_: Merge commit, archive commit, release commit
+
+**Item Branch**:
+The branch a Delivery Queue item builds its candidate on, named `roundfix/deliver-<slug>-<16 hex>`. Once no live item names it, Merge Evidence releases it, with its worktree only when that worktree is clean.
+_Avoid_: Run Branch, PR Head Branch, deliver branch
+
+**Network-Denied Row**:
+An outside-evidence QA row blocked only because the Run sandbox denied network access, recorded with the host it could not reach. Like the pre-PR Pull Request row, it never decides a qualifying partial; whoever needs that proof declares it under Unreachable Acceptance.
+_Avoid_: Failed outside evidence, skipped row, environment pass
+
+**Pre-PR Review Command**:
+The command that obtains the Pre-PR Review Provider's review of the current candidate before a Pull Request opens, reads the verdict from the reviewer's final message and keeps the Pre-PR Review Record. A finding parks delivery only after it is validated.
+_Avoid_: Review Run, PR feedback Watch, review command alias
+
+Reduced History Entry:
+A retired Finding or Backlog Entry cut to its front matter, title, first paragraph and the revision holding its full text (ADR-0248).
+_Avoid_: Summary, Archive Record, truncated history
+
+**History Full Tag**:
+The annotated `history-full` tag on the last commit before the first batch, which keeps every removed byte reachable (ADR-0248).
+_Avoid_: Lightweight tag, batch tag, archive stamp
+
+**History Root**:
+The single repository directory holding Archive Records, Reduced History Entries and retired ADRs, with the full bytes in Git. Retired material leaves the directory an Agent loads by default and stays greppable as the record of what was built and why; one path filter excludes the whole tree from review. Resolved in exactly one place, so no consumer carries a path of its own (ADR-0248).
+_Avoid_: Archive folder, `_archived`, attic, trash
+
+**History Relocation**:
+One retired file that belongs under the History Root and is not there, carried in the Baseline Plan as an ordered ledger entry of source, destination, and content identity rather than file bytes. A relocation whose destination is occupied is a collision: it is refused by name, its siblings still move, and the repository is not current until it is resolved.
+_Avoid_: Archive move, file migration, relocation payload
+
+**Relocation Citation**:
+A citation in a tracked file that resolves before a Baseline Plan's History Relocations and would not resolve after them. It is reported as a warning the Plan Digest binds; planning never rewrites it, and apply writes the same files.
+_Avoid_: Broken link, dangling reference, link check
+
+**GC Command**:
+The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window and removes orphaned run artifact directories, reporting what it freed. A Run it already emptied is not counted again. Never touches Active Runs, `runs` rows, or active-run locks.
+_Avoid_: Clean command, vacuum, purge
+
+**Journal Retention**:
+The configured age window after which a terminal Run's Run Event Journal and artifact directory become eligible for pruning. Active Runs are never eligible; a retention of zero keeps everything. See ADR-0033.
+_Avoid_: Log rotation, TTL, expiry
+
+**Worktree Bootstrap**:
+The configured command Roundfix runs once in a newly created Run or Task Worktree, after copying `worktree.copy` files and before Agent work and Verification, to prepare the environment (install dependencies, migrate and seed databases, warm caches). A bootstrap failure ends the Run or settles the Task with a bootstrap-failed outcome. See ADR-0034.
+_Avoid_: Setup command, provisioning, install step
+
+**Context-Driven Baseline**:
+The portable, versioned set of required project instructions and architectural decisions that makes a repository ready for the CONTEXT-driven workflow.
+_Avoid_: Sample docs, optional setup, repository template
+
+**Baseline Profile**:
+A versioned composition of modules, Repository Capabilities, decisions, managed artifacts, and verification roles that defines one reproducible Context-Driven Baseline. Roundfix ships built-in profiles; a repository may own additional profiles for its own workflow.
+_Avoid_: Agent Selection Profile, setup template, user profile
+
+**Profile Draft**:
+A strict repository-owned Baseline Profile document supplied to planning in memory and admitted only after catalog validation and source binding.
+_Avoid_: Partial profile, unchecked JSON, Profile override
+
+**Profile Adaptation**:
+A maintainer-reviewed Profile Draft that narrows one built-in Baseline Profile by removing repository-inapplicable modules or Repository Capabilities without weakening universal requirements.
+_Avoid_: Profile waiver, capability bypass, silent inference
+
+**Baseline Command**:
+The public `roundfix baseline` command that authors and validates Baseline Profiles and drives one preflight-to-verification adoption or update flow without requiring an Agent Skill.
+_Avoid_: Setup Command, setup skill, configuration wizard
+
+**Source Baseline**:
+The immutable Setup Manifest and governed instruction corpus that a setup transition or Baseline Readoption recognizes as its exact origin.
+_Avoid_: Legacy Baseline, inferred preimage, current files
+
+**Source Baseline Entry**:
+One byte-evidenced structural unit in a Source Baseline that Baseline Readoption classifies and disposes individually as a Normative Clause, recommendation, Operational Contract, or non-governed evidence.
+_Avoid_: Inferred rule, category summary, untracked paragraph
+
+**Segmentation Snapshot**:
+The immutable, checkout-free semantic-analysis input containing one Source Baseline and the strict byte-range proposal contract.
+_Avoid_: Repository prompt, mutable instruction dump, checkout context
+
+**Segmentation Proposal**:
+A digest-bound, byte-exhaustive set of ordered ranges that splits Source Baseline Entries without rewriting or omitting source bytes.
+_Avoid_: Summary, rewritten rules, partial range list
+
+**Analysis Snapshot**:
+The immutable, checkout-free classification input containing segmented Source Baseline Entries and only the semantic destinations active for the confirmed Baseline Profile and project decisions.
+_Avoid_: Repository scan, unrestricted prompt, inferred destination list
+
+**Classification Proposal**:
+A digest-bound disposition for every entry in one Analysis Snapshot, admitted only after deterministic validation and explicit human review.
+_Avoid_: Classification hint, partial proposal, autonomous decision
+
+**Baseline Readoption**:
+The confirmation-gated adoption that inventories an incompatible repository state as a Source Baseline and replaces its setup identity without treating existing instructions as disposable.
+_Avoid_: Clean install, legacy fallback, automatic overwrite
+
+**Normative Clause**:
+An identified repository instruction whose enforcement is mandatory, prohibited, or stop-and-ask.
+_Avoid_: Hard rule, guideline, free-form prose
+
+**Normative Clause Manifest**:
+The digest-bound inventory that independently accounts for a Source Baseline's Normative Clauses, recommendations, and Operational Contracts.
+_Avoid_: Transition mapping, self-declared ledger, category checklist
+
+**Operational Contract**:
+An identified structured instruction whose order or shape carries required behavior, such as a template, procedure, or decision matrix.
+_Avoid_: Prose summary, optional example, compressed guidance
+
+**Instruction Hierarchy**:
+The precedence order from universal instructions through context and documentation, Spec workflow, enabled autonomous work, stack and surface guides, and optional knowledge sources. A narrower guide may add constraints but cannot weaken a universal Normative Clause or confirmed project decision.
+_Avoid_: Module list, arbitrary file order, duplicated root policy
+
+**Standard TypeScript Monorepo Profile**:
+The opinionated, project-agnostic Context-Driven Baseline profile for the repository's standard TypeScript monorepo stack.
+_Avoid_: Project-specific profile, generic TypeScript profile, sample template
+
+**Repository Capability**:
+A profile-declared skill, tool, dependency, workspace, or repository contract whose required, recommended, or optional status is evaluated from explicit local evidence.
+_Avoid_: Assumed stack, installed package list, inferred readiness
+
+**Skill Activation**:
+A declarative mapping from one stable work trigger to one exact required Agent Skill bundle, optionally conditioned on a selected Repository Capability.
+_Avoid_: Suggested skill, inferred bundle, partial activation
+
+**Decision Plan**:
+The resolved setup proposal produced after every required setup decision has an answer; it is the basis for authorizing setup changes.
+_Avoid_: Setup questionnaire, decision draft, configuration prompt
+
+**Change Plan**:
+The exact set of repository changes proposed for explicit review and confirmation before a setup or restoration operation mutates files.
+_Avoid_: Patch, implicit apply, change preview
+
+**Setup Manifest**:
+The setup-owned record of the selected profile, modules, decisions, and managed artifacts that reproduces and audits a repository's Context-Driven Baseline. Every applied Baseline change republishes it, so its recorded digests describe the bytes on disk rather than the bytes adoption wrote.
+_Avoid_: Project Config, lock file, generated guide
+
+**Managed Region**:
+The byte range one setup-owned marker pair delimits inside an instruction carrier, identified by its managed artifact identity. Its content belongs to the Context-Driven Baseline, not to the repository holding it; the bytes outside every marker pair belong to the repository and no Baseline operation changes them.
+_Avoid_: Managed file, generated block, setup section
+
+**Managed Refresh**:
+The preservation mode that regenerates only Managed Regions, leaves every other byte identical, requires no Source Baseline and no Decision Plan, and takes no root backup because the plan's preimages carry the preservation proof. It converges: a second run against an unchanged catalog reports the repository current and proposes no change.
+_Avoid_: Baseline Readoption, reapply, overwrite
+
+**Unrecorded Managed Region**:
+A Managed Region whose bytes are not the bytes the adopted Setup Manifest recorded. It is classified and reported by path, managed identity, and the lines a refresh removes — never presumed damaged and never silently replaced. Only a managed identity appearing more than once in one carrier blocks, because that refresh has no defensible target.
+_Avoid_: Hand-edited marker, corrupted block, drift
+
+**Baseline ADR**:
+An Architecture Decision Record whose reserved identity and invariant belong to the Context-Driven Baseline while project-specific notes remain repository-owned.
+_Avoid_: Example ADR, project ADR, template copy
+
+**Upgrade Retention Contract**:
+The accounting a Context-Driven Baseline transition or Baseline Readoption must satisfy before mutation: every Source Baseline Normative Clause, recommendation, and Operational Contract maps to a current managed target, Repository-Specific Normative Rules, a recognized typed repository document, or an explicit rejection with a recorded reason.
+_Avoid_: Best-effort migration, category coverage, silent rule removal
+
+**Repository-Specific Normative Rules**:
+Project-authored Normative Clauses that are not portable across the Context-Driven Baseline and cannot be represented by a typed project decision or managed semantic guide. Baseline assigns every representable rule to its semantic owner; only non-empty residual rules live outside setup markers in `docs/agents/specific-repository.md` and remain byte-preserved after confirmed adoption.
+_Avoid_: Repository-Owned Extension, duplicate managed rule, baseline rule
+
+**HTTP Contract Decision**:
+The repository-owned choice of REST or POST-only application API semantics together with explicit protocol or operational exceptions and their owners.
+_Avoid_: HTTP profile, universal REST rule, inferred route style
+
+**Formatter-Stable Output**:
+Generated managed Markdown that the target repository's selected formatter leaves unchanged, so apply, formatting, Verification, audit, and reapply compose with no delta.
+_Avoid_: Renderer-canonical output, format-after-apply fixup
+
+**Internal Identifier**:
+A technical identity for an entity or resource that is generated and controlled by the project.
+_Avoid_: External identifier, natural key, business code
+
+**Roundfix Skill**:
+A shipped agent skill that teaches an external Agent how to start Roundfix or how to resolve one assigned Batch.
+_Avoid_: Runtime, Review Source, plugin
+
+**Repository Skill Set**:
+The complete set of Roundfix-owned and externally managed Agent Skills required by a repository workflow. Every required installed artifact matches its authoritative local source; unrelated extras do not join the set.
+_Avoid_: Installed skills, plugin set, global skill set
+
+**Interactive Input**:
+The TUI flow that collects command parameters before a Run starts.
+_Avoid_: Wizard, form, setup screen
+
+**Live Run View**:
+The TUI view that shows Review Issues and Run Events for a Run: streaming live while the Run is active, or replayed from the Run Event Journal during Attach.
+_Avoid_: Dashboard, report, log file
+
+**Run Browser**:
+The read-only, machine-wide TUI list for Run discovery: every repository's Runs with their state, kind, target, Agent, start, duration, branch, and repository — Active Runs by default — from which selecting a Run opens the Live Run View through Attach.
+_Avoid_: Run picker, run manager, dashboard
+
+**Cockpit**:
+The shared Live Run View composition made of the Phase Row, Work Queue, Session Timeline, footer, and optional Detail Modal.
+_Avoid_: Dashboard, reduced pane
+
+**Work Queue**:
+The Live Run View pane that lists a Run's Work Items and their current status for both review and spec Runs.
+_Avoid_: Issue list, task pane
+
+**Phase Row**:
+The Live Run View row that shows a Run's lifecycle position with terminal-text status markers.
+_Avoid_: Progress header, pipeline bar
+
+**Session Timeline**:
+The Live Run View pane that shows grouped Run Events from the Run Event Journal.
+_Avoid_: Console log, agent output pane
+
+**Detail Modal**:
+The centered Live Run View overlay that shows one selected Work Item's Review Issue artifact or Task file body read-only.
+_Avoid_: Detail pane, inspector panel
+
+**Daemon**:
+The Roundfix process that owns the Run lifecycle and Review Source-facing outcomes.
+_Avoid_: Orchestrator, controller, manager
+
+**Run Event**:
+One ordered product record of something meaningful that happened during a Run, carrying Run identity, Batch when known, event source, event kind, and a structured payload. Producers convert their native models into Run Events; ACP stream updates remain an Agent-internal protocol model.
+_Avoid_: Stream update, log line, message
+
+**Run Event Journal**:
+The append-only history of Run Events stored in the Run Database, ordered by a per-Run cursor so replay is deterministic and duplicate-free.
+_Avoid_: Agent log, log file, event broker
+
+**Run Event Stream**:
+A read-only JSONL projection of one Run's Run Event Journal, selected by an explicit Run ID and optionally followed until the Run reaches a terminal outcome. Its stable Supervisor filters are task status, Batch boundary, Verification verdict, and terminal outcome. The command skips a record it cannot project with a warning and continues with the next journal entry.
+_Avoid_: Attach, console log, global event bus
+
+**Attach**:
+Viewing a Run by replaying its Run Event Journal and then following new Run Events, without owning, mutating, or stopping the Run.
+_Avoid_: Resume, reconnect, takeover
+
+**Agent**:
+The local coding assistant invoked by Roundfix to triage and resolve an assigned Batch.
+_Avoid_: Review Source, review provider, worker, bot
+
+**Supervisor**:
+The external Claude Code role that authors Specs, starts and monitors Runs, and delegates every Work Item to an Agent.
+_Avoid_: Fable, Agent, ACP Runtime, Daemon, Orchestrator
+
+**Follow Mode**:
+The Live Run View state in which the timeline tail advances automatically as new Run Events arrive; suspended while the user scrolls back, resumed when the viewport returns to the bottom. Scrolling never affects the Run.
+_Avoid_: tail mode, auto-scroll, live mode
+
+
+**Pre-PR Review Policy**:
+The repository's choice of Codex, Claude, CodeRabbit, or no reviewer before a
+Pull Request is opened. An enabled review covers the current candidate, while
+explicit none records an intentional omission that leaves QA and required
+checks binding; provider failure is not an omission.
+_Avoid_: Review mode, reviewer profile, automatic review
+
+**Pre-PR Review Provider**:
+The selected agent or service that performs review under the Pre-PR Review
+Policy. An Agent Selection Profile supplies an agent provider's runtime and
+model; explicit none is a policy choice with no provider.
+_Avoid_: Review Source, Pre-PR Review Policy, reviewer model
+
+**Pre-PR Review Record**:
+The record of one Pre-PR Review, kept per checkout. Its verdict is read from
+the reviewer's final message.
+_Avoid_: Review Source Evidence, shared review state, reviewer transcript
+
+
+**QA Archive Override**:
+An explicit user request or applicable prior authorization to archive a covered
+Spec despite its QA prerequisite being unmet. The recorded exception preserves
+actual QA and Task evidence while retaining non-QA completion, source integrity
+and separate delivery gates.
+_Avoid_: QA pass, QA bypass, Implement Clean
+
+**Glossary Declaration**:
+The `## Glossary` section of a Spec's PRD or TechSpec that lists each domain term the Spec adds to or changes in the glossary, and each bolded phrase it declares not a domain term, or `None.`. A Task that declares the glossary file and names the term in its Verification writes each listed term.
+_Avoid_: Vocabulary Contract, term list, glossary candidates
+
+**Glossary Gap**:
+A domain term a Spec introduces that the glossary does not carry as required: a bolded phrase the glossary lacks and the Glossary Declaration does not cover, a declared term no Task plans to write, or a declared term still missing after its Tasks completed. The Spec Consistency Check reports it, and the QA gate and the Archive Command refuse a Spec that has one.
+_Avoid_: Missing term, undocumented token, stale glossary
+
+**Light Tier**:
+The dispatch tier that runs a Task on an open model through OpenCode and OpenRouter when its complexity is low, its type is not qa, and it declares no Governed Path; every other Task runs on the standard tier. A light Task whose first Verification fails escalates its one feedback turn to its category's Preferred Selection.
+_Avoid_: Cheap model, Jev routing, light model profile
+
+**Light Spend Log**:
+The per-UTC-month record in Roundfix Home of the cost each Light Tier session reports, summed across every repository and compared with the Light Tier's monthly ceiling. A month that reached the ceiling, or whose log cannot be read, runs light Tasks on their category's profile.
+_Avoid_: Judge Log, OpenRouter usage, spend cache
+
+**Jev Ceiling**:
+The monthly spending ceiling of the Jev judge, read from User Config only and compared with the Judge Log's sum across every repository on the machine; when it is unset a built-in default applies. The judge's key must carry a monthly credit limit no higher than it.
+_Avoid_: Judge budget, key limit, Project Config ceiling
+
+**Stage Key**:
+The Roundfix environment variable an OpenRouter stage reads first, the judge's or implementation's own key, before the shared Roundfix OpenRouter key; the generic OpenRouter variable is never read. Each stage records the variable it used by name, never by value.
+_Avoid_: API key value, generic OpenRouter key, shared key
+
+**Tested Base**:
+The default-branch commit a failed required check actually tested, read from the check job's annotation. A failure whose Tested Base does not contain the current default-branch tip is stale, and the Delivery Queue re-runs it instead of parking the item.
+_Avoid_: PR base, merge base, Delivery Base
+
+**Merge Evidence**:
+Proof that a Spec was delivered: the default-branch head holds its archived PRD, and the Delivery Commit that added that file is not reachable from the Run Branch or Item Branch being proven. With it, reconcile releases that Spec's terminal Runs and Item Branches without comparing content.
+_Avoid_: Content proof, merged flag, merge commit
+
+**Delivery Commit**:
+The default-branch commit that added a Spec's archived PRD. Merge Evidence and a Delivery Retry that records a merge made outside the queue both read it.
+_Avoid_: Merge commit, archive commit, release commit
+
+**Item Branch**:
+The branch a Delivery Queue item builds its candidate on, named `roundfix/deliver-<slug>-<16 hex>`. Once no live item names it, Merge Evidence releases it, with its worktree only when that worktree is clean.
+_Avoid_: Run Branch, PR Head Branch, deliver branch
+
+**Network-Denied Row**:
+An outside-evidence QA row blocked only because the Run sandbox denied network access, recorded with the host it could not reach. Like the pre-PR Pull Request row, it never decides a qualifying partial; whoever needs that proof declares it under Unreachable Acceptance.
+_Avoid_: Failed outside evidence, skipped row, environment pass
+
+**Pre-PR Review Command**:
+The command that obtains the Pre-PR Review Provider's review of the current candidate before a Pull Request opens, reads the verdict from the reviewer's final message and keeps the Pre-PR Review Record. A finding parks delivery only after it is validated.
+_Avoid_: Review Run, PR feedback Watch, review command alias
+
+History Full Tag:
+The annotated `history-full` tag on the last commit before the first batch, which keeps every removed byte reachable (ADR-0248).
+_Avoid_: Lightweight tag, batch tag, archive stamp
+
+**History Root**:
+The single repository directory holding Archive Records, Reduced History Entries and retired ADRs, with the full bytes in Git. Retired material leaves the directory an Agent loads by default and stays greppable as the record of what was built and why; one path filter excludes the whole tree from review. Resolved in exactly one place, so no consumer carries a path of its own (ADR-0248).
+_Avoid_: Archive folder, `_archived`, attic, trash
+
+**History Relocation**:
+One retired file that belongs under the History Root and is not there, carried in the Baseline Plan as an ordered ledger entry of source, destination, and content identity rather than file bytes. A relocation whose destination is occupied is a collision: it is refused by name, its siblings still move, and the repository is not current until it is resolved.
+_Avoid_: Archive move, file migration, relocation payload
+
+**Relocation Citation**:
+A citation in a tracked file that resolves before a Baseline Plan's History Relocations and would not resolve after them. It is reported as a warning the Plan Digest binds; planning never rewrites it, and apply writes the same files.
+_Avoid_: Broken link, dangling reference, link check
+
+**GC Command**:
+The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window and removes orphaned run artifact directories, reporting what it freed. A Run it already emptied is not counted again. Never touches Active Runs, `runs` rows, or active-run locks.
+_Avoid_: Clean command, vacuum, purge
+
+**Journal Retention**:
+The configured age window after which a terminal Run's Run Event Journal and artifact directory become eligible for pruning. Active Runs are never eligible; a retention of zero keeps everything. See ADR-0033.
+_Avoid_: Log rotation, TTL, expiry
+
+**Worktree Bootstrap**:
+The configured command Roundfix runs once in a newly created Run or Task Worktree, after copying `worktree.copy` files and before Agent work and Verification, to prepare the environment (install dependencies, migrate and seed databases, warm caches). A bootstrap failure ends the Run or settles the Task with a bootstrap-failed outcome. See ADR-0034.
+_Avoid_: Setup command, provisioning, install step
+
+**Context-Driven Baseline**:
+The portable, versioned set of required project instructions and architectural decisions that makes a repository ready for the CONTEXT-driven workflow.
+_Avoid_: Sample docs, optional setup, repository template
+
+**Baseline Profile**:
+A versioned composition of modules, Repository Capabilities, decisions, managed artifacts, and verification roles that defines one reproducible Context-Driven Baseline. Roundfix ships built-in profiles; a repository may own additional profiles for its own workflow.
+_Avoid_: Agent Selection Profile, setup template, user profile
+
+**Profile Draft**:
+A strict repository-owned Baseline Profile document supplied to planning in memory and admitted only after catalog validation and source binding.
+_Avoid_: Partial profile, unchecked JSON, Profile override
+
+**Profile Adaptation**:
+A maintainer-reviewed Profile Draft that narrows one built-in Baseline Profile by removing repository-inapplicable modules or Repository Capabilities without weakening universal requirements.
+_Avoid_: Profile waiver, capability bypass, silent inference
+
+**Baseline Command**:
+The public `roundfix baseline` command that authors and validates Baseline Profiles and drives one preflight-to-verification adoption or update flow without requiring an Agent Skill.
+_Avoid_: Setup Command, setup skill, configuration wizard
+
+**Source Baseline**:
+The immutable Setup Manifest and governed instruction corpus that a setup transition or Baseline Readoption recognizes as its exact origin.
+_Avoid_: Legacy Baseline, inferred preimage, current files
+
+**Source Baseline Entry**:
+One byte-evidenced structural unit in a Source Baseline that Baseline Readoption classifies and disposes individually as a Normative Clause, recommendation, Operational Contract, or non-governed evidence.
+_Avoid_: Inferred rule, category summary, untracked paragraph
+
+**Segmentation Snapshot**:
+The immutable, checkout-free semantic-analysis input containing one Source Baseline and the strict byte-range proposal contract.
+_Avoid_: Repository prompt, mutable instruction dump, checkout context
+
+**Segmentation Proposal**:
+A digest-bound, byte-exhaustive set of ordered ranges that splits Source Baseline Entries without rewriting or omitting source bytes.
+_Avoid_: Summary, rewritten rules, partial range list
+
+**Analysis Snapshot**:
+The immutable, checkout-free classification input containing segmented Source Baseline Entries and only the semantic destinations active for the confirmed Baseline Profile and project decisions.
+_Avoid_: Repository scan, unrestricted prompt, inferred destination list
+
+**Classification Proposal**:
+A digest-bound disposition for every entry in one Analysis Snapshot, admitted only after deterministic validation and explicit human review.
+_Avoid_: Classification hint, partial proposal, autonomous decision
+
+**Baseline Readoption**:
+The confirmation-gated adoption that inventories an incompatible repository state as a Source Baseline and replaces its setup identity without treating existing instructions as disposable.
+_Avoid_: Clean install, legacy fallback, automatic overwrite
+
+**Normative Clause**:
+An identified repository instruction whose enforcement is mandatory, prohibited, or stop-and-ask.
+_Avoid_: Hard rule, guideline, free-form prose
+
+**Normative Clause Manifest**:
+The digest-bound inventory that independently accounts for a Source Baseline's Normative Clauses, recommendations, and Operational Contracts.
+_Avoid_: Transition mapping, self-declared ledger, category checklist
+
+**Operational Contract**:
+An identified structured instruction whose order or shape carries required behavior, such as a template, procedure, or decision matrix.
+_Avoid_: Prose summary, optional example, compressed guidance
+
+**Instruction Hierarchy**:
+The precedence order from universal instructions through context and documentation, Spec workflow, enabled autonomous work, stack and surface guides, and optional knowledge sources. A narrower guide may add constraints but cannot weaken a universal Normative Clause or confirmed project decision.
+_Avoid_: Module list, arbitrary file order, duplicated root policy
+
+**Standard TypeScript Monorepo Profile**:
+The opinionated, project-agnostic Context-Driven Baseline profile for the repository's standard TypeScript monorepo stack.
+_Avoid_: Project-specific profile, generic TypeScript profile, sample template
+
+**Repository Capability**:
+A profile-declared skill, tool, dependency, workspace, or repository contract whose required, recommended, or optional status is evaluated from explicit local evidence.
+_Avoid_: Assumed stack, installed package list, inferred readiness
+
+**Skill Activation**:
+A declarative mapping from one stable work trigger to one exact required Agent Skill bundle, optionally conditioned on a selected Repository Capability.
+_Avoid_: Suggested skill, inferred bundle, partial activation
+
+**Decision Plan**:
+The resolved setup proposal produced after every required setup decision has an answer; it is the basis for authorizing setup changes.
+_Avoid_: Setup questionnaire, decision draft, configuration prompt
+
+**Change Plan**:
+The exact set of repository changes proposed for explicit review and confirmation before a setup or restoration operation mutates files.
+_Avoid_: Patch, implicit apply, change preview
+
+**Setup Manifest**:
+The setup-owned record of the selected profile, modules, decisions, and managed artifacts that reproduces and audits a repository's Context-Driven Baseline. Every applied Baseline change republishes it, so its recorded digests describe the bytes on disk rather than the bytes adoption wrote.
+_Avoid_: Project Config, lock file, generated guide
+
+**Managed Region**:
+The byte range one setup-owned marker pair delimits inside an instruction carrier, identified by its managed artifact identity. Its content belongs to the Context-Driven Baseline, not to the repository holding it; the bytes outside every marker pair belong to the repository and no Baseline operation changes them.
+_Avoid_: Managed file, generated block, setup section
+
+**Managed Refresh**:
+The preservation mode that regenerates only Managed Regions, leaves every other byte identical, requires no Source Baseline and no Decision Plan, and takes no root backup because the plan's preimages carry the preservation proof. It converges: a second run against an unchanged catalog reports the repository current and proposes no change.
+_Avoid_: Baseline Readoption, reapply, overwrite
+
+**Unrecorded Managed Region**:
+A Managed Region whose bytes are not the bytes the adopted Setup Manifest recorded. It is classified and reported by path, managed identity, and the lines a refresh removes — never presumed damaged and never silently replaced. Only a managed identity appearing more than once in one carrier blocks, because that refresh has no defensible target.
+_Avoid_: Hand-edited marker, corrupted block, drift
+
+**Baseline ADR**:
+An Architecture Decision Record whose reserved identity and invariant belong to the Context-Driven Baseline while project-specific notes remain repository-owned.
+_Avoid_: Example ADR, project ADR, template copy
+
+**Upgrade Retention Contract**:
+The accounting a Context-Driven Baseline transition or Baseline Readoption must satisfy before mutation: every Source Baseline Normative Clause, recommendation, and Operational Contract maps to a current managed target, Repository-Specific Normative Rules, a recognized typed repository document, or an explicit rejection with a recorded reason.
+_Avoid_: Best-effort migration, category coverage, silent rule removal
+
+**Repository-Specific Normative Rules**:
+Project-authored Normative Clauses that are not portable across the Context-Driven Baseline and cannot be represented by a typed project decision or managed semantic guide. Baseline assigns every representable rule to its semantic owner; only non-empty residual rules live outside setup markers in `docs/agents/specific-repository.md` and remain byte-preserved after confirmed adoption.
+_Avoid_: Repository-Owned Extension, duplicate managed rule, baseline rule
+
+**HTTP Contract Decision**:
+The repository-owned choice of REST or POST-only application API semantics together with explicit protocol or operational exceptions and their owners.
+_Avoid_: HTTP profile, universal REST rule, inferred route style
+
+**Formatter-Stable Output**:
+Generated managed Markdown that the target repository's selected formatter leaves unchanged, so apply, formatting, Verification, audit, and reapply compose with no delta.
+_Avoid_: Renderer-canonical output, format-after-apply fixup
+
+**Internal Identifier**:
+A technical identity for an entity or resource that is generated and controlled by the project.
+_Avoid_: External identifier, natural key, business code
+
+**Roundfix Skill**:
+A shipped agent skill that teaches an external Agent how to start Roundfix or how to resolve one assigned Batch.
+_Avoid_: Runtime, Review Source, plugin
+
+**Repository Skill Set**:
+The complete set of Roundfix-owned and externally managed Agent Skills required by a repository workflow. Every required installed artifact matches its authoritative local source; unrelated extras do not join the set.
+_Avoid_: Installed skills, plugin set, global skill set
+
+**Interactive Input**:
+The TUI flow that collects command parameters before a Run starts.
+_Avoid_: Wizard, form, setup screen
+
+**Live Run View**:
+The TUI view that shows Review Issues and Run Events for a Run: streaming live while the Run is active, or replayed from the Run Event Journal during Attach.
+_Avoid_: Dashboard, report, log file
+
+**Run Browser**:
+The read-only, machine-wide TUI list for Run discovery: every repository's Runs with their state, kind, target, Agent, start, duration, branch, and repository — Active Runs by default — from which selecting a Run opens the Live Run View through Attach.
+_Avoid_: Run picker, run manager, dashboard
+
+**Cockpit**:
+The shared Live Run View composition made of the Phase Row, Work Queue, Session Timeline, footer, and optional Detail Modal.
+_Avoid_: Dashboard, reduced pane
+
+**Work Queue**:
+The Live Run View pane that lists a Run's Work Items and their current status for both review and spec Runs.
+_Avoid_: Issue list, task pane
+
+**Phase Row**:
+The Live Run View row that shows a Run's lifecycle position with terminal-text status markers.
+_Avoid_: Progress header, pipeline bar
+
+**Session Timeline**:
+The Live Run View pane that shows grouped Run Events from the Run Event Journal.
+_Avoid_: Console log, agent output pane
+
+**Detail Modal**:
+The centered Live Run View overlay that shows one selected Work Item's Review Issue artifact or Task file body read-only.
+_Avoid_: Detail pane, inspector panel
+
+**Daemon**:
+The Roundfix process that owns the Run lifecycle and Review Source-facing outcomes.
+_Avoid_: Orchestrator, controller, manager
+
+**Run Event**:
+One ordered product record of something meaningful that happened during a Run, carrying Run identity, Batch when known, event source, event kind, and a structured payload. Producers convert their native models into Run Events; ACP stream updates remain an Agent-internal protocol model.
+_Avoid_: Stream update, log line, message
+
+**Run Event Journal**:
+The append-only history of Run Events stored in the Run Database, ordered by a per-Run cursor so replay is deterministic and duplicate-free.
+_Avoid_: Agent log, log file, event broker
+
+**Run Event Stream**:
+A read-only JSONL projection of one Run's Run Event Journal, selected by an explicit Run ID and optionally followed until the Run reaches a terminal outcome. Its stable Supervisor filters are task status, Batch boundary, Verification verdict, and terminal outcome. The command skips a record it cannot project with a warning and continues with the next journal entry.
+_Avoid_: Attach, console log, global event bus
+
+**Attach**:
+Viewing a Run by replaying its Run Event Journal and then following new Run Events, without owning, mutating, or stopping the Run.
+_Avoid_: Resume, reconnect, takeover
+
+**Agent**:
+The local coding assistant invoked by Roundfix to triage and resolve an assigned Batch.
+_Avoid_: Review Source, review provider, worker, bot
+
+**Supervisor**:
+The external Claude Code role that authors Specs, starts and monitors Runs, and delegates every Work Item to an Agent.
+_Avoid_: Fable, Agent, ACP Runtime, Daemon, Orchestrator
+
+**Follow Mode**:
+The Live Run View state in which the timeline tail advances automatically as new Run Events arrive; suspended while the user scrolls back, resumed when the viewport returns to the bottom. Scrolling never affects the Run.
+_Avoid_: tail mode, auto-scroll, live mode
+
+
+**Pre-PR Review Policy**:
+The repository's choice of Codex, Claude, CodeRabbit, or no reviewer before a
+Pull Request is opened. An enabled review covers the current candidate, while
+explicit none records an intentional omission that leaves QA and required
+checks binding; provider failure is not an omission.
+_Avoid_: Review mode, reviewer profile, automatic review
+
+**Pre-PR Review Provider**:
+The selected agent or service that performs review under the Pre-PR Review
+Policy. An Agent Selection Profile supplies an agent provider's runtime and
+model; explicit none is a policy choice with no provider.
+_Avoid_: Review Source, Pre-PR Review Policy, reviewer model
+
+**Pre-PR Review Record**:
+The record of one Pre-PR Review, kept per checkout. Its verdict is read from
+the reviewer's final message.
+_Avoid_: Review Source Evidence, shared review state, reviewer transcript
+
+
+**QA Archive Override**:
+An explicit user request or applicable prior authorization to archive a covered
+Spec despite its QA prerequisite being unmet. The recorded exception preserves
+actual QA and Task evidence while retaining non-QA completion, source integrity
+and separate delivery gates.
+_Avoid_: QA pass, QA bypass, Implement Clean
+
+**Glossary Declaration**:
+The `## Glossary` section of a Spec's PRD or TechSpec that lists each domain term the Spec adds to or changes in the glossary, and each bolded phrase it declares not a domain term, or `None.`. A Task that declares the glossary file and names the term in its Verification writes each listed term.
+_Avoid_: Vocabulary Contract, term list, glossary candidates
+
+**Glossary Gap**:
+A domain term a Spec introduces that the glossary does not carry as required: a bolded phrase the glossary lacks and the Glossary Declaration does not cover, a declared term no Task plans to write, or a declared term still missing after its Tasks completed. The Spec Consistency Check reports it, and the QA gate and the Archive Command refuse a Spec that has one.
+_Avoid_: Missing term, undocumented token, stale glossary
+
+**Light Tier**:
+The dispatch tier that runs a Task on an open model through OpenCode and OpenRouter when its complexity is low, its type is not qa, and it declares no Governed Path; every other Task runs on the standard tier. A light Task whose first Verification fails escalates its one feedback turn to its category's Preferred Selection.
+_Avoid_: Cheap model, Jev routing, light model profile
+
+**Light Spend Log**:
+The per-UTC-month record in Roundfix Home of the cost each Light Tier session reports, summed across every repository and compared with the Light Tier's monthly ceiling. A month that reached the ceiling, or whose log cannot be read, runs light Tasks on their category's profile.
+_Avoid_: Judge Log, OpenRouter usage, spend cache
+
+**Jev Ceiling**:
+The monthly spending ceiling of the Jev judge, read from User Config only and compared with the Judge Log's sum across every repository on the machine; when it is unset a built-in default applies. The judge's key must carry a monthly credit limit no higher than it.
+_Avoid_: Judge budget, key limit, Project Config ceiling
+
+**Stage Key**:
+The Roundfix environment variable an OpenRouter stage reads first, the judge's or implementation's own key, before the shared Roundfix OpenRouter key; the generic OpenRouter variable is never read. Each stage records the variable it used by name, never by value.
+_Avoid_: API key value, generic OpenRouter key, shared key
+
+**Tested Base**:
+The default-branch commit a failed required check actually tested, read from the check job's annotation. A failure whose Tested Base does not contain the current default-branch tip is stale, and the Delivery Queue re-runs it instead of parking the item.
+_Avoid_: PR base, merge base, Delivery Base
+
+**Merge Evidence**:
+Proof that a Spec was delivered: the default-branch head holds its archived PRD, and the Delivery Commit that added that file is not reachable from the Run Branch or Item Branch being proven. With it, reconcile releases that Spec's terminal Runs and Item Branches without comparing content.
+_Avoid_: Content proof, merged flag, merge commit
+
+**Delivery Commit**:
+The default-branch commit that added a Spec's archived PRD. Merge Evidence and a Delivery Retry that records a merge made outside the queue both read it.
+_Avoid_: Merge commit, archive commit, release commit
+
+**Item Branch**:
+The branch a Delivery Queue item builds its candidate on, named `roundfix/deliver-<slug>-<16 hex>`. Once no live item names it, Merge Evidence releases it, with its worktree only when that worktree is clean.
+_Avoid_: Run Branch, PR Head Branch, deliver branch
+
+**Network-Denied Row**:
+An outside-evidence QA row blocked only because the Run sandbox denied network access, recorded with the host it could not reach. Like the pre-PR Pull Request row, it never decides a qualifying partial; whoever needs that proof declares it under Unreachable Acceptance.
+_Avoid_: Failed outside evidence, skipped row, environment pass
+
+**Pre-PR Review Command**:
+The command that obtains the Pre-PR Review Provider's review of the current candidate before a Pull Request opens, reads the verdict from the reviewer's final message and keeps the Pre-PR Review Record. A finding parks delivery only after it is validated.
+_Avoid_: Review Run, PR feedback Watch, review command alias
+
+Archive Record:
+The small `<slug>.md` record an archive leaves under the resolved archive root. It carries the disposition, QA Report and verdict, promoted references, and `source_revision`; the removed Spec folder stays recoverable in Git at that revision. The History Sanitize Command also writes one for a Legacy Archive Folder; a folder without a QA Report receives the disposition `no-qa` (ADR-0248).
+_Avoid_: Archive folder, archive log, copied Spec
+
+**Archive Advice**:
+Jev's advisory classification of candidate files before the archive cut. It labels reusable knowledge, repository records or transient evidence and never gates the archive.
+_Avoid_: Archive verdict, promotion decision, required evidence
+
+**Archive Command**:
+The support command that retires a Spec under the archive eligibility contract, writes its Archive Record, and removes the Spec folder while keeping it in Git at `source_revision`. Normal QA eligibility and a user-authorized QA Archive Override are distinct dispositions. Neither retirement nor an override fabricates Task completion or a passing QA verdict.
+_Avoid_: Move command, retire run, cleanup command
+
+**History Sanitize Command**:
+The `roundfix history sanitize` command, a dry run unless `--apply --batch <n>`, that converts the existing history after the History Full Tag.
+_Avoid_: Archive Command, history deletion, cleanup command
+
+**Legacy Archive Folder**:
+A Spec folder the Archive Command left under the archive root before archives wrote Archive Records (ADR-0248).
+_Avoid_: Archive Record, active Spec, history root
+
+**Sanitize Batch**:
+The next units one `--apply` converts, delivered as one Pull Request with the repository gates green and revertible (ADR-0248).
+_Avoid_: Archive batch, migration wave, unreviewed cleanup
+
+**Reduced History Entry**:
+A retired Finding or Backlog Entry cut to its front matter, title, first paragraph and the revision holding its full text (ADR-0248).
+_Avoid_: Summary, Archive Record, truncated history
+
+**History Full Tag**:
+The annotated `history-full` tag on the last commit before the first batch, which keeps every removed byte reachable (ADR-0248).
+_Avoid_: Lightweight tag, batch tag, archive stamp
+
+**History Root**:
+The single repository directory holding Archive Records, Reduced History Entries and retired ADRs, with the full bytes in Git. Retired material leaves the directory an Agent loads by default and stays greppable as the record of what was built and why; one path filter excludes the whole tree from review. Resolved in exactly one place, so no consumer carries a path of its own (ADR-0248).
+_Avoid_: Archive folder, `_archived`, attic, trash
+
+**History Relocation**:
+One retired file that belongs under the History Root and is not there, carried in the Baseline Plan as an ordered ledger entry of source, destination, and content identity rather than file bytes. A relocation whose destination is occupied is a collision: it is refused by name, its siblings still move, and the repository is not current until it is resolved.
+_Avoid_: Archive move, file migration, relocation payload
+
+**Relocation Citation**:
+A citation in a tracked file that resolves before a Baseline Plan's History Relocations and would not resolve after them. It is reported as a warning the Plan Digest binds; planning never rewrites it, and apply writes the same files.
+_Avoid_: Broken link, dangling reference, link check
+
+**GC Command**:
+The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window and removes orphaned run artifact directories, reporting what it freed. A Run it already emptied is not counted again. Never touches Active Runs, `runs` rows, or active-run locks.
+_Avoid_: Clean command, vacuum, purge
+
+**Journal Retention**:
+The configured age window after which a terminal Run's Run Event Journal and artifact directory become eligible for pruning. Active Runs are never eligible; a retention of zero keeps everything. See ADR-0033.
+_Avoid_: Log rotation, TTL, expiry
+
+**Worktree Bootstrap**:
+The configured command Roundfix runs once in a newly created Run or Task Worktree, after copying `worktree.copy` files and before Agent work and Verification, to prepare the environment (install dependencies, migrate and seed databases, warm caches). A bootstrap failure ends the Run or settles the Task with a bootstrap-failed outcome. See ADR-0034.
+_Avoid_: Setup command, provisioning, install step
+
+**Context-Driven Baseline**:
+The portable, versioned set of required project instructions and architectural decisions that makes a repository ready for the CONTEXT-driven workflow.
+_Avoid_: Sample docs, optional setup, repository template
+
+**Baseline Profile**:
+A versioned composition of modules, Repository Capabilities, decisions, managed artifacts, and verification roles that defines one reproducible Context-Driven Baseline. Roundfix ships built-in profiles; a repository may own additional profiles for its own workflow.
+_Avoid_: Agent Selection Profile, setup template, user profile
+
+**Profile Draft**:
+A strict repository-owned Baseline Profile document supplied to planning in memory and admitted only after catalog validation and source binding.
+_Avoid_: Partial profile, unchecked JSON, Profile override
+
+**Profile Adaptation**:
+A maintainer-reviewed Profile Draft that narrows one built-in Baseline Profile by removing repository-inapplicable modules or Repository Capabilities without weakening universal requirements.
+_Avoid_: Profile waiver, capability bypass, silent inference
+
+**Baseline Command**:
+The public `roundfix baseline` command that authors and validates Baseline Profiles and drives one preflight-to-verification adoption or update flow without requiring an Agent Skill.
+_Avoid_: Setup Command, setup skill, configuration wizard
+
+**Source Baseline**:
+The immutable Setup Manifest and governed instruction corpus that a setup transition or Baseline Readoption recognizes as its exact origin.
+_Avoid_: Legacy Baseline, inferred preimage, current files
+
+**Source Baseline Entry**:
+One byte-evidenced structural unit in a Source Baseline that Baseline Readoption classifies and disposes individually as a Normative Clause, recommendation, Operational Contract, or non-governed evidence.
+_Avoid_: Inferred rule, category summary, untracked paragraph
+
+**Segmentation Snapshot**:
+The immutable, checkout-free semantic-analysis input containing one Source Baseline and the strict byte-range proposal contract.
+_Avoid_: Repository prompt, mutable instruction dump, checkout context
+
+**Segmentation Proposal**:
+A digest-bound, byte-exhaustive set of ordered ranges that splits Source Baseline Entries without rewriting or omitting source bytes.
+_Avoid_: Summary, rewritten rules, partial range list
+
+**Analysis Snapshot**:
+The immutable, checkout-free classification input containing segmented Source Baseline Entries and only the semantic destinations active for the confirmed Baseline Profile and project decisions.
+_Avoid_: Repository scan, unrestricted prompt, inferred destination list
+
+**Classification Proposal**:
+A digest-bound disposition for every entry in one Analysis Snapshot, admitted only after deterministic validation and explicit human review.
+_Avoid_: Classification hint, partial proposal, autonomous decision
+
+**Baseline Readoption**:
+The confirmation-gated adoption that inventories an incompatible repository state as a Source Baseline and replaces its setup identity without treating existing instructions as disposable.
+_Avoid_: Clean install, legacy fallback, automatic overwrite
+
+**Normative Clause**:
+An identified repository instruction whose enforcement is mandatory, prohibited, or stop-and-ask.
+_Avoid_: Hard rule, guideline, free-form prose
+
+**Normative Clause Manifest**:
+The digest-bound inventory that independently accounts for a Source Baseline's Normative Clauses, recommendations, and Operational Contracts.
+_Avoid_: Transition mapping, self-declared ledger, category checklist
+
+**Operational Contract**:
+An identified structured instruction whose order or shape carries required behavior, such as a template, procedure, or decision matrix.
+_Avoid_: Prose summary, optional example, compressed guidance
+
+**Instruction Hierarchy**:
+The precedence order from universal instructions through context and documentation, Spec workflow, enabled autonomous work, stack and surface guides, and optional knowledge sources. A narrower guide may add constraints but cannot weaken a universal Normative Clause or confirmed project decision.
+_Avoid_: Module list, arbitrary file order, duplicated root policy
+
+**Standard TypeScript Monorepo Profile**:
+The opinionated, project-agnostic Context-Driven Baseline profile for the repository's standard TypeScript monorepo stack.
+_Avoid_: Project-specific profile, generic TypeScript profile, sample template
+
+**Repository Capability**:
+A profile-declared skill, tool, dependency, workspace, or repository contract whose required, recommended, or optional status is evaluated from explicit local evidence.
+_Avoid_: Assumed stack, installed package list, inferred readiness
+
+**Skill Activation**:
+A declarative mapping from one stable work trigger to one exact required Agent Skill bundle, optionally conditioned on a selected Repository Capability.
+_Avoid_: Suggested skill, inferred bundle, partial activation
+
+**Decision Plan**:
+The resolved setup proposal produced after every required setup decision has an answer; it is the basis for authorizing setup changes.
+_Avoid_: Setup questionnaire, decision draft, configuration prompt
+
+**Change Plan**:
+The exact set of repository changes proposed for explicit review and confirmation before a setup or restoration operation mutates files.
+_Avoid_: Patch, implicit apply, change preview
+
+**Setup Manifest**:
+The setup-owned record of the selected profile, modules, decisions, and managed artifacts that reproduces and audits a repository's Context-Driven Baseline. Every applied Baseline change republishes it, so its recorded digests describe the bytes on disk rather than the bytes adoption wrote.
+_Avoid_: Project Config, lock file, generated guide
+
+**Managed Region**:
+The byte range one setup-owned marker pair delimits inside an instruction carrier, identified by its managed artifact identity. Its content belongs to the Context-Driven Baseline, not to the repository holding it; the bytes outside every marker pair belong to the repository and no Baseline operation changes them.
+_Avoid_: Managed file, generated block, setup section
+
+**Managed Refresh**:
+The preservation mode that regenerates only Managed Regions, leaves every other byte identical, requires no Source Baseline and no Decision Plan, and takes no root backup because the plan's preimages carry the preservation proof. It converges: a second run against an unchanged catalog reports the repository current and proposes no change.
+_Avoid_: Baseline Readoption, reapply, overwrite
+
+**Unrecorded Managed Region**:
+A Managed Region whose bytes are not the bytes the adopted Setup Manifest recorded. It is classified and reported by path, managed identity, and the lines a refresh removes — never presumed damaged and never silently replaced. Only a managed identity appearing more than once in one carrier blocks, because that refresh has no defensible target.
+_Avoid_: Hand-edited marker, corrupted block, drift
+
+**Baseline ADR**:
+An Architecture Decision Record whose reserved identity and invariant belong to the Context-Driven Baseline while project-specific notes remain repository-owned.
+_Avoid_: Example ADR, project ADR, template copy
+
+**Upgrade Retention Contract**:
+The accounting a Context-Driven Baseline transition or Baseline Readoption must satisfy before mutation: every Source Baseline Normative Clause, recommendation, and Operational Contract maps to a current managed target, Repository-Specific Normative Rules, a recognized typed repository document, or an explicit rejection with a recorded reason.
+_Avoid_: Best-effort migration, category coverage, silent rule removal
+
+**Repository-Specific Normative Rules**:
+Project-authored Normative Clauses that are not portable across the Context-Driven Baseline and cannot be represented by a typed project decision or managed semantic guide. Baseline assigns every representable rule to its semantic owner; only non-empty residual rules live outside setup markers in `docs/agents/specific-repository.md` and remain byte-preserved after confirmed adoption.
+_Avoid_: Repository-Owned Extension, duplicate managed rule, baseline rule
+
+**HTTP Contract Decision**:
+The repository-owned choice of REST or POST-only application API semantics together with explicit protocol or operational exceptions and their owners.
+_Avoid_: HTTP profile, universal REST rule, inferred route style
+
+**Formatter-Stable Output**:
+Generated managed Markdown that the target repository's selected formatter leaves unchanged, so apply, formatting, Verification, audit, and reapply compose with no delta.
+_Avoid_: Renderer-canonical output, format-after-apply fixup
+
+**Internal Identifier**:
+A technical identity for an entity or resource that is generated and controlled by the project.
+_Avoid_: External identifier, natural key, business code
+
+**Roundfix Skill**:
+A shipped agent skill that teaches an external Agent how to start Roundfix or how to resolve one assigned Batch.
+_Avoid_: Runtime, Review Source, plugin
+
+**Repository Skill Set**:
+The complete set of Roundfix-owned and externally managed Agent Skills required by a repository workflow. Every required installed artifact matches its authoritative local source; unrelated extras do not join the set.
+_Avoid_: Installed skills, plugin set, global skill set
+
+**Interactive Input**:
+The TUI flow that collects command parameters before a Run starts.
+_Avoid_: Wizard, form, setup screen
+
+**Live Run View**:
+The TUI view that shows Review Issues and Run Events for a Run: streaming live while the Run is active, or replayed from the Run Event Journal during Attach.
+_Avoid_: Dashboard, report, log file
+
+**Run Browser**:
+The read-only, machine-wide TUI list for Run discovery: every repository's Runs with their state, kind, target, Agent, start, duration, branch, and repository — Active Runs by default — from which selecting a Run opens the Live Run View through Attach.
+_Avoid_: Run picker, run manager, dashboard
+
+**Cockpit**:
+The shared Live Run View composition made of the Phase Row, Work Queue, Session Timeline, footer, and optional Detail Modal.
+_Avoid_: Dashboard, reduced pane
+
+**Work Queue**:
+The Live Run View pane that lists a Run's Work Items and their current status for both review and spec Runs.
+_Avoid_: Issue list, task pane
+
+**Phase Row**:
+The Live Run View row that shows a Run's lifecycle position with terminal-text status markers.
+_Avoid_: Progress header, pipeline bar
+
+**Session Timeline**:
+The Live Run View pane that shows grouped Run Events from the Run Event Journal.
+_Avoid_: Console log, agent output pane
+
+**Detail Modal**:
+The centered Live Run View overlay that shows one selected Work Item's Review Issue artifact or Task file body read-only.
+_Avoid_: Detail pane, inspector panel
+
+**Daemon**:
+The Roundfix process that owns the Run lifecycle and Review Source-facing outcomes.
+_Avoid_: Orchestrator, controller, manager
+
+**Run Event**:
+One ordered product record of something meaningful that happened during a Run, carrying Run identity, Batch when known, event source, event kind, and a structured payload. Producers convert their native models into Run Events; ACP stream updates remain an Agent-internal protocol model.
+_Avoid_: Stream update, log line, message
+
+**Run Event Journal**:
+The append-only history of Run Events stored in the Run Database, ordered by a per-Run cursor so replay is deterministic and duplicate-free.
+_Avoid_: Agent log, log file, event broker
+
+**Run Event Stream**:
+A read-only JSONL projection of one Run's Run Event Journal, selected by an explicit Run ID and optionally followed until the Run reaches a terminal outcome. Its stable Supervisor filters are task status, Batch boundary, Verification verdict, and terminal outcome. The command skips a record it cannot project with a warning and continues with the next journal entry.
+_Avoid_: Attach, console log, global event bus
+
+**Attach**:
+Viewing a Run by replaying its Run Event Journal and then following new Run Events, without owning, mutating, or stopping the Run.
+_Avoid_: Resume, reconnect, takeover
+
+**Agent**:
+The local coding assistant invoked by Roundfix to triage and resolve an assigned Batch.
+_Avoid_: Review Source, review provider, worker, bot
+
+**Supervisor**:
+The external Claude Code role that authors Specs, starts and monitors Runs, and delegates every Work Item to an Agent.
+_Avoid_: Fable, Agent, ACP Runtime, Daemon, Orchestrator
+
+**Follow Mode**:
+The Live Run View state in which the timeline tail advances automatically as new Run Events arrive; suspended while the user scrolls back, resumed when the viewport returns to the bottom. Scrolling never affects the Run.
+_Avoid_: tail mode, auto-scroll, live mode
+
+
+**Pre-PR Review Policy**:
+The repository's choice of Codex, Claude, CodeRabbit, or no reviewer before a
+Pull Request is opened. An enabled review covers the current candidate, while
+explicit none records an intentional omission that leaves QA and required
+checks binding; provider failure is not an omission.
+_Avoid_: Review mode, reviewer profile, automatic review
+
+**Pre-PR Review Provider**:
+The selected agent or service that performs review under the Pre-PR Review
+Policy. An Agent Selection Profile supplies an agent provider's runtime and
+model; explicit none is a policy choice with no provider.
+_Avoid_: Review Source, Pre-PR Review Policy, reviewer model
+
+**Pre-PR Review Record**:
+The record of one Pre-PR Review, kept per checkout. Its verdict is read from
+the reviewer's final message.
+_Avoid_: Review Source Evidence, shared review state, reviewer transcript
+
+
+**QA Archive Override**:
+An explicit user request or applicable prior authorization to archive a covered
+Spec despite its QA prerequisite being unmet. The recorded exception preserves
+actual QA and Task evidence while retaining non-QA completion, source integrity
+and separate delivery gates.
+_Avoid_: QA pass, QA bypass, Implement Clean
+
+**Glossary Declaration**:
+The `## Glossary` section of a Spec's PRD or TechSpec that lists each domain term the Spec adds to or changes in the glossary, and each bolded phrase it declares not a domain term, or `None.`. A Task that declares the glossary file and names the term in its Verification writes each listed term.
+_Avoid_: Vocabulary Contract, term list, glossary candidates
+
+**Glossary Gap**:
+A domain term a Spec introduces that the glossary does not carry as required: a bolded phrase the glossary lacks and the Glossary Declaration does not cover, a declared term no Task plans to write, or a declared term still missing after its Tasks completed. The Spec Consistency Check reports it, and the QA gate and the Archive Command refuse a Spec that has one.
+_Avoid_: Missing term, undocumented token, stale glossary
+
+**Light Tier**:
+The dispatch tier that runs a Task on an open model through OpenCode and OpenRouter when its complexity is low, its type is not qa, and it declares no Governed Path; every other Task runs on the standard tier. A light Task whose first Verification fails escalates its one feedback turn to its category's Preferred Selection.
+_Avoid_: Cheap model, Jev routing, light model profile
+
+**Light Spend Log**:
+The per-UTC-month record in Roundfix Home of the cost each Light Tier session reports, summed across every repository and compared with the Light Tier's monthly ceiling. A month that reached the ceiling, or whose log cannot be read, runs light Tasks on their category's profile.
+_Avoid_: Judge Log, OpenRouter usage, spend cache
+
+**Jev Ceiling**:
+The monthly spending ceiling of the Jev judge, read from User Config only and compared with the Judge Log's sum across every repository on the machine; when it is unset a built-in default applies. The judge's key must carry a monthly credit limit no higher than it.
+_Avoid_: Judge budget, key limit, Project Config ceiling
+
+**Stage Key**:
+The Roundfix environment variable an OpenRouter stage reads first, the judge's or implementation's own key, before the shared Roundfix OpenRouter key; the generic OpenRouter variable is never read. Each stage records the variable it used by name, never by value.
+_Avoid_: API key value, generic OpenRouter key, shared key
+
+**Tested Base**:
+The default-branch commit a failed required check actually tested, read from the check job's annotation. A failure whose Tested Base does not contain the current default-branch tip is stale, and the Delivery Queue re-runs it instead of parking the item.
+_Avoid_: PR base, merge base, Delivery Base
+
+**Merge Evidence**:
+Proof that a Spec was delivered: the default-branch head holds its archived PRD, and the Delivery Commit that added that file is not reachable from the Run Branch or Item Branch being proven. With it, reconcile releases that Spec's terminal Runs and Item Branches without comparing content.
+_Avoid_: Content proof, merged flag, merge commit
+
+**Delivery Commit**:
+The default-branch commit that added a Spec's archived PRD. Merge Evidence and a Delivery Retry that records a merge made outside the queue both read it.
+_Avoid_: Merge commit, archive commit, release commit
+
+**Item Branch**:
+The branch a Delivery Queue item builds its candidate on, named `roundfix/deliver-<slug>-<16 hex>`. Once no live item names it, Merge Evidence releases it, with its worktree only when that worktree is clean.
+_Avoid_: Run Branch, PR Head Branch, deliver branch
+
+**Network-Denied Row**:
+An outside-evidence QA row blocked only because the Run sandbox denied network access, recorded with the host it could not reach. Like the pre-PR Pull Request row, it never decides a qualifying partial; whoever needs that proof declares it under Unreachable Acceptance.
+_Avoid_: Failed outside evidence, skipped row, environment pass
+
+**Pre-PR Review Command**:
+The command that obtains the Pre-PR Review Provider's review of the current candidate before a Pull Request opens, reads the verdict from the reviewer's final message and keeps the Pre-PR Review Record. A finding parks delivery only after it is validated.
+_Avoid_: Review Run, PR feedback Watch, review command alias
+
+History Root:
+The single repository directory holding Archive Records, Reduced History Entries and retired ADRs, with the full bytes in Git. Retired material leaves the directory an Agent loads by default and stays greppable as the record of what was built and why; one path filter excludes the whole tree from review. Resolved in exactly one place, so no consumer carries a path of its own (ADR-0248).
+_Avoid_: Archive folder, `_archived`, attic, trash
+
+**History Relocation**:
+One retired file that belongs under the History Root and is not there, carried in the Baseline Plan as an ordered ledger entry of source, destination, and content identity rather than file bytes. A relocation whose destination is occupied is a collision: it is refused by name, its siblings still move, and the repository is not current until it is resolved.
+_Avoid_: Archive move, file migration, relocation payload
+
+**Relocation Citation**:
+A citation in a tracked file that resolves before a Baseline Plan's History Relocations and would not resolve after them. It is reported as a warning the Plan Digest binds; planning never rewrites it, and apply writes the same files.
+_Avoid_: Broken link, dangling reference, link check
+
+**GC Command**:
+The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window and removes orphaned run artifact directories, reporting what it freed. A Run it already emptied is not counted again. Never touches Active Runs, `runs` rows, or active-run locks.
+_Avoid_: Clean command, vacuum, purge
+
+**Journal Retention**:
+The configured age window after which a terminal Run's Run Event Journal and artifact directory become eligible for pruning. Active Runs are never eligible; a retention of zero keeps everything. See ADR-0033.
+_Avoid_: Log rotation, TTL, expiry
+
+**Worktree Bootstrap**:
+The configured command Roundfix runs once in a newly created Run or Task Worktree, after copying `worktree.copy` files and before Agent work and Verification, to prepare the environment (install dependencies, migrate and seed databases, warm caches). A bootstrap failure ends the Run or settles the Task with a bootstrap-failed outcome. See ADR-0034.
+_Avoid_: Setup command, provisioning, install step
+
+**Context-Driven Baseline**:
+The portable, versioned set of required project instructions and architectural decisions that makes a repository ready for the CONTEXT-driven workflow.
+_Avoid_: Sample docs, optional setup, repository template
+
+**Baseline Profile**:
+A versioned composition of modules, Repository Capabilities, decisions, managed artifacts, and verification roles that defines one reproducible Context-Driven Baseline. Roundfix ships built-in profiles; a repository may own additional profiles for its own workflow.
+_Avoid_: Agent Selection Profile, setup template, user profile
+
+**Profile Draft**:
+A strict repository-owned Baseline Profile document supplied to planning in memory and admitted only after catalog validation and source binding.
+_Avoid_: Partial profile, unchecked JSON, Profile override
+
+**Profile Adaptation**:
+A maintainer-reviewed Profile Draft that narrows one built-in Baseline Profile by removing repository-inapplicable modules or Repository Capabilities without weakening universal requirements.
+_Avoid_: Profile waiver, capability bypass, silent inference
+
+**Baseline Command**:
+The public `roundfix baseline` command that authors and validates Baseline Profiles and drives one preflight-to-verification adoption or update flow without requiring an Agent Skill.
+_Avoid_: Setup Command, setup skill, configuration wizard
+
+**Source Baseline**:
+The immutable Setup Manifest and governed instruction corpus that a setup transition or Baseline Readoption recognizes as its exact origin.
+_Avoid_: Legacy Baseline, inferred preimage, current files
+
+**Source Baseline Entry**:
+One byte-evidenced structural unit in a Source Baseline that Baseline Readoption classifies and disposes individually as a Normative Clause, recommendation, Operational Contract, or non-governed evidence.
+_Avoid_: Inferred rule, category summary, untracked paragraph
+
+**Segmentation Snapshot**:
+The immutable, checkout-free semantic-analysis input containing one Source Baseline and the strict byte-range proposal contract.
+_Avoid_: Repository prompt, mutable instruction dump, checkout context
+
+**Segmentation Proposal**:
+A digest-bound, byte-exhaustive set of ordered ranges that splits Source Baseline Entries without rewriting or omitting source bytes.
+_Avoid_: Summary, rewritten rules, partial range list
+
+**Analysis Snapshot**:
+The immutable, checkout-free classification input containing segmented Source Baseline Entries and only the semantic destinations active for the confirmed Baseline Profile and project decisions.
+_Avoid_: Repository scan, unrestricted prompt, inferred destination list
+
+**Classification Proposal**:
+A digest-bound disposition for every entry in one Analysis Snapshot, admitted only after deterministic validation and explicit human review.
+_Avoid_: Classification hint, partial proposal, autonomous decision
+
+**Baseline Readoption**:
+The confirmation-gated adoption that inventories an incompatible repository state as a Source Baseline and replaces its setup identity without treating existing instructions as disposable.
+_Avoid_: Clean install, legacy fallback, automatic overwrite
+
+**Normative Clause**:
+An identified repository instruction whose enforcement is mandatory, prohibited, or stop-and-ask.
+_Avoid_: Hard rule, guideline, free-form prose
+
+**Normative Clause Manifest**:
+The digest-bound inventory that independently accounts for a Source Baseline's Normative Clauses, recommendations, and Operational Contracts.
+_Avoid_: Transition mapping, self-declared ledger, category checklist
+
+**Operational Contract**:
+An identified structured instruction whose order or shape carries required behavior, such as a template, procedure, or decision matrix.
+_Avoid_: Prose summary, optional example, compressed guidance
+
+**Instruction Hierarchy**:
+The precedence order from universal instructions through context and documentation, Spec workflow, enabled autonomous work, stack and surface guides, and optional knowledge sources. A narrower guide may add constraints but cannot weaken a universal Normative Clause or confirmed project decision.
+_Avoid_: Module list, arbitrary file order, duplicated root policy
+
+**Standard TypeScript Monorepo Profile**:
+The opinionated, project-agnostic Context-Driven Baseline profile for the repository's standard TypeScript monorepo stack.
+_Avoid_: Project-specific profile, generic TypeScript profile, sample template
+
+**Repository Capability**:
+A profile-declared skill, tool, dependency, workspace, or repository contract whose required, recommended, or optional status is evaluated from explicit local evidence.
+_Avoid_: Assumed stack, installed package list, inferred readiness
+
+**Skill Activation**:
+A declarative mapping from one stable work trigger to one exact required Agent Skill bundle, optionally conditioned on a selected Repository Capability.
+_Avoid_: Suggested skill, inferred bundle, partial activation
+
+**Decision Plan**:
+The resolved setup proposal produced after every required setup decision has an answer; it is the basis for authorizing setup changes.
+_Avoid_: Setup questionnaire, decision draft, configuration prompt
+
+**Change Plan**:
+The exact set of repository changes proposed for explicit review and confirmation before a setup or restoration operation mutates files.
+_Avoid_: Patch, implicit apply, change preview
+
+**Setup Manifest**:
+The setup-owned record of the selected profile, modules, decisions, and managed artifacts that reproduces and audits a repository's Context-Driven Baseline. Every applied Baseline change republishes it, so its recorded digests describe the bytes on disk rather than the bytes adoption wrote.
+_Avoid_: Project Config, lock file, generated guide
+
+**Managed Region**:
+The byte range one setup-owned marker pair delimits inside an instruction carrier, identified by its managed artifact identity. Its content belongs to the Context-Driven Baseline, not to the repository holding it; the bytes outside every marker pair belong to the repository and no Baseline operation changes them.
+_Avoid_: Managed file, generated block, setup section
+
+**Managed Refresh**:
+The preservation mode that regenerates only Managed Regions, leaves every other byte identical, requires no Source Baseline and no Decision Plan, and takes no root backup because the plan's preimages carry the preservation proof. It converges: a second run against an unchanged catalog reports the repository current and proposes no change.
+_Avoid_: Baseline Readoption, reapply, overwrite
+
+**Unrecorded Managed Region**:
+A Managed Region whose bytes are not the bytes the adopted Setup Manifest recorded. It is classified and reported by path, managed identity, and the lines a refresh removes — never presumed damaged and never silently replaced. Only a managed identity appearing more than once in one carrier blocks, because that refresh has no defensible target.
+_Avoid_: Hand-edited marker, corrupted block, drift
+
+**Baseline ADR**:
+An Architecture Decision Record whose reserved identity and invariant belong to the Context-Driven Baseline while project-specific notes remain repository-owned.
+_Avoid_: Example ADR, project ADR, template copy
+
+**Upgrade Retention Contract**:
+The accounting a Context-Driven Baseline transition or Baseline Readoption must satisfy before mutation: every Source Baseline Normative Clause, recommendation, and Operational Contract maps to a current managed target, Repository-Specific Normative Rules, a recognized typed repository document, or an explicit rejection with a recorded reason.
+_Avoid_: Best-effort migration, category coverage, silent rule removal
+
+**Repository-Specific Normative Rules**:
+Project-authored Normative Clauses that are not portable across the Context-Driven Baseline and cannot be represented by a typed project decision or managed semantic guide. Baseline assigns every representable rule to its semantic owner; only non-empty residual rules live outside setup markers in `docs/agents/specific-repository.md` and remain byte-preserved after confirmed adoption.
+_Avoid_: Repository-Owned Extension, duplicate managed rule, baseline rule
+
+**HTTP Contract Decision**:
+The repository-owned choice of REST or POST-only application API semantics together with explicit protocol or operational exceptions and their owners.
+_Avoid_: HTTP profile, universal REST rule, inferred route style
+
+**Formatter-Stable Output**:
+Generated managed Markdown that the target repository's selected formatter leaves unchanged, so apply, formatting, Verification, audit, and reapply compose with no delta.
+_Avoid_: Renderer-canonical output, format-after-apply fixup
+
+**Internal Identifier**:
+A technical identity for an entity or resource that is generated and controlled by the project.
+_Avoid_: External identifier, natural key, business code
+
+**Roundfix Skill**:
+A shipped agent skill that teaches an external Agent how to start Roundfix or how to resolve one assigned Batch.
+_Avoid_: Runtime, Review Source, plugin
+
+**Repository Skill Set**:
+The complete set of Roundfix-owned and externally managed Agent Skills required by a repository workflow. Every required installed artifact matches its authoritative local source; unrelated extras do not join the set.
+_Avoid_: Installed skills, plugin set, global skill set
+
+**Interactive Input**:
+The TUI flow that collects command parameters before a Run starts.
+_Avoid_: Wizard, form, setup screen
+
+**Live Run View**:
+The TUI view that shows Review Issues and Run Events for a Run: streaming live while the Run is active, or replayed from the Run Event Journal during Attach.
+_Avoid_: Dashboard, report, log file
+
+**Run Browser**:
+The read-only, machine-wide TUI list for Run discovery: every repository's Runs with their state, kind, target, Agent, start, duration, branch, and repository — Active Runs by default — from which selecting a Run opens the Live Run View through Attach.
+_Avoid_: Run picker, run manager, dashboard
+
+**Cockpit**:
+The shared Live Run View composition made of the Phase Row, Work Queue, Session Timeline, footer, and optional Detail Modal.
+_Avoid_: Dashboard, reduced pane
+
+**Work Queue**:
+The Live Run View pane that lists a Run's Work Items and their current status for both review and spec Runs.
+_Avoid_: Issue list, task pane
+
+**Phase Row**:
+The Live Run View row that shows a Run's lifecycle position with terminal-text status markers.
+_Avoid_: Progress header, pipeline bar
+
+**Session Timeline**:
+The Live Run View pane that shows grouped Run Events from the Run Event Journal.
+_Avoid_: Console log, agent output pane
+
+**Detail Modal**:
+The centered Live Run View overlay that shows one selected Work Item's Review Issue artifact or Task file body read-only.
+_Avoid_: Detail pane, inspector panel
+
+**Daemon**:
+The Roundfix process that owns the Run lifecycle and Review Source-facing outcomes.
+_Avoid_: Orchestrator, controller, manager
+
+**Run Event**:
+One ordered product record of something meaningful that happened during a Run, carrying Run identity, Batch when known, event source, event kind, and a structured payload. Producers convert their native models into Run Events; ACP stream updates remain an Agent-internal protocol model.
+_Avoid_: Stream update, log line, message
+
+**Run Event Journal**:
+The append-only history of Run Events stored in the Run Database, ordered by a per-Run cursor so replay is deterministic and duplicate-free.
+_Avoid_: Agent log, log file, event broker
+
+**Run Event Stream**:
+A read-only JSONL projection of one Run's Run Event Journal, selected by an explicit Run ID and optionally followed until the Run reaches a terminal outcome. Its stable Supervisor filters are task status, Batch boundary, Verification verdict, and terminal outcome. The command skips a record it cannot project with a warning and continues with the next journal entry.
+_Avoid_: Attach, console log, global event bus
+
+**Attach**:
+Viewing a Run by replaying its Run Event Journal and then following new Run Events, without owning, mutating, or stopping the Run.
+_Avoid_: Resume, reconnect, takeover
+
+**Agent**:
+The local coding assistant invoked by Roundfix to triage and resolve an assigned Batch.
+_Avoid_: Review Source, review provider, worker, bot
+
+**Supervisor**:
+The external Claude Code role that authors Specs, starts and monitors Runs, and delegates every Work Item to an Agent.
+_Avoid_: Fable, Agent, ACP Runtime, Daemon, Orchestrator
+
+**Follow Mode**:
+The Live Run View state in which the timeline tail advances automatically as new Run Events arrive; suspended while the user scrolls back, resumed when the viewport returns to the bottom. Scrolling never affects the Run.
+_Avoid_: tail mode, auto-scroll, live mode
+
+
+**Pre-PR Review Policy**:
+The repository's choice of Codex, Claude, CodeRabbit, or no reviewer before a
+Pull Request is opened. An enabled review covers the current candidate, while
+explicit none records an intentional omission that leaves QA and required
+checks binding; provider failure is not an omission.
+_Avoid_: Review mode, reviewer profile, automatic review
+
+**Pre-PR Review Provider**:
+The selected agent or service that performs review under the Pre-PR Review
+Policy. An Agent Selection Profile supplies an agent provider's runtime and
+model; explicit none is a policy choice with no provider.
+_Avoid_: Review Source, Pre-PR Review Policy, reviewer model
+
+**Pre-PR Review Record**:
+The record of one Pre-PR Review, kept per checkout. Its verdict is read from
+the reviewer's final message.
+_Avoid_: Review Source Evidence, shared review state, reviewer transcript
+
+
+**QA Archive Override**:
+An explicit user request or applicable prior authorization to archive a covered
+Spec despite its QA prerequisite being unmet. The recorded exception preserves
+actual QA and Task evidence while retaining non-QA completion, source integrity
+and separate delivery gates.
+_Avoid_: QA pass, QA bypass, Implement Clean
+
+**Glossary Declaration**:
+The `## Glossary` section of a Spec's PRD or TechSpec that lists each domain term the Spec adds to or changes in the glossary, and each bolded phrase it declares not a domain term, or `None.`. A Task that declares the glossary file and names the term in its Verification writes each listed term.
+_Avoid_: Vocabulary Contract, term list, glossary candidates
+
+**Glossary Gap**:
+A domain term a Spec introduces that the glossary does not carry as required: a bolded phrase the glossary lacks and the Glossary Declaration does not cover, a declared term no Task plans to write, or a declared term still missing after its Tasks completed. The Spec Consistency Check reports it, and the QA gate and the Archive Command refuse a Spec that has one.
+_Avoid_: Missing term, undocumented token, stale glossary
+
+**Light Tier**:
+The dispatch tier that runs a Task on an open model through OpenCode and OpenRouter when its complexity is low, its type is not qa, and it declares no Governed Path; every other Task runs on the standard tier. A light Task whose first Verification fails escalates its one feedback turn to its category's Preferred Selection.
+_Avoid_: Cheap model, Jev routing, light model profile
+
+**Light Spend Log**:
+The per-UTC-month record in Roundfix Home of the cost each Light Tier session reports, summed across every repository and compared with the Light Tier's monthly ceiling. A month that reached the ceiling, or whose log cannot be read, runs light Tasks on their category's profile.
+_Avoid_: Judge Log, OpenRouter usage, spend cache
+
+**Jev Ceiling**:
+The monthly spending ceiling of the Jev judge, read from User Config only and compared with the Judge Log's sum across every repository on the machine; when it is unset a built-in default applies. The judge's key must carry a monthly credit limit no higher than it.
+_Avoid_: Judge budget, key limit, Project Config ceiling
+
+**Stage Key**:
+The Roundfix environment variable an OpenRouter stage reads first, the judge's or implementation's own key, before the shared Roundfix OpenRouter key; the generic OpenRouter variable is never read. Each stage records the variable it used by name, never by value.
+_Avoid_: API key value, generic OpenRouter key, shared key
+
+**Tested Base**:
+The default-branch commit a failed required check actually tested, read from the check job's annotation. A failure whose Tested Base does not contain the current default-branch tip is stale, and the Delivery Queue re-runs it instead of parking the item.
+_Avoid_: PR base, merge base, Delivery Base
+
+**Merge Evidence**:
+Proof that a Spec was delivered: the default-branch head holds its archived PRD, and the Delivery Commit that added that file is not reachable from the Run Branch or Item Branch being proven. With it, reconcile releases that Spec's terminal Runs and Item Branches without comparing content.
+_Avoid_: Content proof, merged flag, merge commit
+
+**Delivery Commit**:
+The default-branch commit that added a Spec's archived PRD. Merge Evidence and a Delivery Retry that records a merge made outside the queue both read it.
+_Avoid_: Merge commit, archive commit, release commit
+
+**Item Branch**:
+The branch a Delivery Queue item builds its candidate on, named `roundfix/deliver-<slug>-<16 hex>`. Once no live item names it, Merge Evidence releases it, with its worktree only when that worktree is clean.
+_Avoid_: Run Branch, PR Head Branch, deliver branch
+
+**Network-Denied Row**:
+An outside-evidence QA row blocked only because the Run sandbox denied network access, recorded with the host it could not reach. Like the pre-PR Pull Request row, it never decides a qualifying partial; whoever needs that proof declares it under Unreachable Acceptance.
+_Avoid_: Failed outside evidence, skipped row, environment pass
+
+**Pre-PR Review Command**:
+The command that obtains the Pre-PR Review Provider's review of the current candidate before a Pull Request opens, reads the verdict from the reviewer's final message and keeps the Pre-PR Review Record. A finding parks delivery only after it is validated.
+_Avoid_: Review Run, PR feedback Watch, review command alias
+
+All seven definitions match observed plan, tagged batch, reduction and Git-backed recovery; strict checker reports no Glossary Gap.

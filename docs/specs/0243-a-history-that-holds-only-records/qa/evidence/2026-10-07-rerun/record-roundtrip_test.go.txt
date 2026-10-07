@@ -1,0 +1,34 @@
+package spec
+
+import (
+	"bytes"
+	"os"
+	"path/filepath"
+	"testing"
+)
+
+func TestQACapturedCLIRecordsRoundTrip(t *testing.T) {
+	for _, name := range []string{"R03-aaa-record.md", "R03-bbb-record.md"} {
+		t.Run(name, func(t *testing.T) {
+			raw, err := os.ReadFile(filepath.Join(os.Getenv("QA0243_EVIDENCE_DIR"), name))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(raw) > ArchiveRecordTargetBytes {
+				t.Fatalf("record is %d bytes", len(raw))
+			}
+			record, err := ParseArchiveRecord(raw)
+			if err != nil {
+				t.Fatal(err)
+			}
+			rendered, err := RenderArchiveRecord(record)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(raw, rendered) {
+				t.Fatal("captured CLI record does not re-render byte-identically")
+			}
+			t.Logf("%s: %d bytes, disposition %s, source_revision %s; byte-identical round trip", name, len(raw), record.Disposition, record.SourceRevision)
+		})
+	}
+}

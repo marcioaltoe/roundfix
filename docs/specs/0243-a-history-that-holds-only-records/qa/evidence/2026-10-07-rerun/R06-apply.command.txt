@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "./bin/roundfix",
+    "history",
+    "sanitize",
+    "--apply",
+    "--batch",
+    "300"
+  ],
+  "cwd": "/private/tmp/qa0243-ablation-od_jojwh/clone",
+  "exit": 0
+}

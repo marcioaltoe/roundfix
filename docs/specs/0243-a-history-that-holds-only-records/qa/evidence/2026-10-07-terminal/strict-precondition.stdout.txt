@@ -1,0 +1,7 @@
+Spec 0243-a-history-that-holds-only-records
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  vocabulary documentation detector: missing docs/specs/0243-a-history-that-holds-only-records/_techspec.md Vocabulary Contract
+  SC-REF-UNRESOLVED: missing docs/specs/0243-a-history-that-holds-only-records/references/_index.md

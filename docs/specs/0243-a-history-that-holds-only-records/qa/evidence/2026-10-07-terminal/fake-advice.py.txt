@@ -1,0 +1,54 @@
+import pathlib,tempfile,subprocess,os,socketserver,ssl,threading,json,hashlib
+ROOT=pathlib.Path.cwd();EV=ROOT/'docs/specs/0243-a-history-that-holds-only-records/qa/evidence/2026-10-07-terminal'
+with tempfile.TemporaryDirectory(prefix='qa0243-fake-',dir='/private/tmp') as t:
+    tmp=pathlib.Path(t);repo=tmp/'repo';repo.mkdir();home=tmp/'home';home.mkdir()
+    env={'PATH':os.environ['PATH'],'HOME':str(home),'GIT_CONFIG_GLOBAL':'/dev/null','GIT_CONFIG_NOSYSTEM':'1'}
+    def git(*args):return subprocess.check_output(['git','-C',str(repo),*args],env=env,stderr=subprocess.STDOUT).decode().strip()
+    git('init','-b','main');git('config','user.name','QA fixture');git('config','user.email','qa@example.invalid')
+    for name,data in [('docs/history/specs/demo/_prd.md','---\nspec: demo\ncreated: 2026-09-01\n---\n\n# Demo\n\nOutcome.\n'),('docs/history/specs/demo/references/lesson.md','Lesson\n')]:
+        p=repo/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(data)
+    (repo/'docs/specs').mkdir(parents=True);git('add','--all');git('commit','-m','Fixture (#42)')
+    (repo/'bin').mkdir();os.symlink(ROOT/'bin/roundfix',repo/'bin/roundfix');(home/'ignore').write_text('/bin/\n');git('config','core.excludesFile',str(home/'ignore'))
+    # A private fixture CA is trusted only by this child's process. No upstream connection is made.
+    cert=tmp/'cert.pem';key=tmp/'key.pem'
+    subprocess.run(['openssl','req','-x509','-newkey','rsa:2048','-nodes','-keyout',str(key),'-out',str(cert),'-days','1','-subj','/CN=openrouter.ai','-addext','subjectAltName=DNS:openrouter.ai'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=True)
+    ctx=ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER);ctx.load_cert_chain(cert,key)
+    calls=[]
+    class Proxy(socketserver.StreamRequestHandler):
+        def handle(self):
+            line=self.rfile.readline().decode().strip()
+            while self.rfile.readline().strip():pass
+            assert line=='CONNECT openrouter.ai:443 HTTP/1.1',line
+            self.wfile.write(b'HTTP/1.1 200 Connection Established\r\n\r\n');self.wfile.flush()
+            with ctx.wrap_socket(self.connection,server_side=True) as conn:
+                f=conn.makefile('rb');request=f.readline().decode().strip();headers={}
+                while True:
+                    line=f.readline().decode().strip()
+                    if not line:break
+                    a,b=line.split(':',1);headers[a.lower()]=b.strip()
+                body=json.loads(f.read(int(headers['content-length'])))
+                calls.append({'connect':'openrouter.ai:443 (handled locally; no upstream socket)','request':request,'model':body['model'],'state':body['state'],'questions':list(body['questions'])})
+                qid=next(iter(body['questions']))
+                choices=body['questions'][qid]['criteria']
+                probabilities={k:float(k=='reusable_knowledge') for k in choices}
+                response=json.dumps({'model':'jev-1.13.0','answers':{qid:{'type':'choice','choice':'reusable_knowledge','probabilities':probabilities,'confidence':1}},'usage':{'input_tokens':10,'output_tokens':2}}).encode()
+                conn.sendall(b'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: '+str(len(response)).encode()+b'\r\nConnection: close\r\n\r\n'+response)
+    class Server(socketserver.ThreadingTCPServer):allow_reuse_address=True
+    with Server(('127.0.0.1',0),Proxy) as server:
+        threading.Thread(target=server.serve_forever,daemon=True).start()
+        env.update(HTTPS_PROXY='http://127.0.0.1:'+str(server.server_address[1]),SSL_CERT_FILE=str(cert),ROUNDFIX_OPENROUTER_JUDGE_API_KEY='fake-fixture-key')
+        before={str(p.relative_to(repo)):hashlib.sha256(p.read_bytes()).hexdigest() for p in (repo/'docs').rglob('*') if p.is_file()}
+        st=git('status','--porcelain','--untracked-files=all')
+        r=subprocess.run(['./bin/roundfix','history','sanitize','--batch','1','--advise'],cwd=repo,env=env,capture_output=True,text=True)
+        (EV/'R05-fake.stdout.txt').write_text(r.stdout);(EV/'R05-fake.stderr.txt').write_text(r.stderr)
+        (EV/'R05-fake.command.txt').write_text(json.dumps({'argv':['./bin/roundfix','history','sanitize','--batch','1','--advise'],'exit':r.returncode,'transport':'local HTTPS CONNECT responder; no forwarding'},indent=2)+'\n')
+        (EV/'R05-fake-requests.json').write_text(json.dumps(calls,indent=2)+'\n')
+        server.shutdown()
+        assert r.returncode==0 and not r.stderr and 'reusable_knowledge (p=1.00)' in r.stdout and len(calls)==1,(r,calls)
+        assert before=={str(p.relative_to(repo)):hashlib.sha256(p.read_bytes()).hexdigest() for p in (repo/'docs').rglob('*') if p.is_file()} and st==git('status','--porcelain','--untracked-files=all')
+        log=next((home/'.roundfix/judge').glob('*.jsonl')).read_text();assert 'jev-1.13.0' in log
+        (EV/'R05-fake-judge-log.jsonl').write_text(log)
+        (EV/'R05-fake-confirmation.txt').write_text('One locally answered request; no upstream connection. Fresh judge log records versioned model jev-1.13.0. Repository snapshot and status unchanged.\n')
+        report=EV.parent.parent/'qa-report-2026-10-07.md';s=report.read_text().replace('| R05 | pending |','| R05 | pass |').replace('Fake-transport built-binary evidence is recorded separately before closing this row.','Fake transport: `R05-fake.*.txt`, `R05-fake-requests.json`, and fresh `R05-fake-judge-log.jsonl` confirm one built-binary request answered locally as reusable_knowledge (p=1.00), versioned model jev-1.13.0, unchanged repository/status and no upstream connection.')
+        report.write_text(s)
+        print('R05 fake built-binary advice passed')

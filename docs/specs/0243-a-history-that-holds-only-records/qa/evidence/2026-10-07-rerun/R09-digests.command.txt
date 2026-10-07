@@ -1,0 +1,8 @@
+{
+  "argv": [
+    "make",
+    "baseline-digests"
+  ],
+  "cwd": "/private/tmp/qa0243-digests-pc2xtoqb/clone",
+  "exit": 0
+}

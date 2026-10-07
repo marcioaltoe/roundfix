@@ -1,0 +1,54 @@
+go vet ./...
+go test -parallel 16 ./...
+?   	roundfix/cmd/roundfix	[no test files]
+?   	roundfix/cmd/verify-select	[no test files]
+ok  	roundfix/internal/agent	2.738s
+ok  	roundfix/internal/app	0.188s
+ok  	roundfix/internal/authorization	0.664s
+ok  	roundfix/internal/baseline	113.686s
+ok  	roundfix/internal/baselineacp	0.209s
+--- FAIL: TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner (0.53s)
+    orphan_unix_test.go:246: legacy force stop exit = 1, want 0; stderr="Stop failed\n\nReason:\n  force stop Run run_20261007T050315Z_4e75c767a587b10e owner PID 61223 failed step \"enumerate owned process tree\": owner process 61223 failed step \"enumerate owned process tree\": read process table for non-session owner: operation not permitted; Run remains Active; Active Run lock retained\n\nUsage:\n  Run 'roundfix stop --help' for usage.\n"
+--- FAIL: TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion (0.53s)
+    orphan_unix_test.go:103: force stop exit = 1, want 0; stderr="Stop failed\n\nReason:\n  force stop Run run_20261007T050315Z_4e9058164f85a7f5 owner PID 61232 failed step \"enumerate owned process tree\": owner process 61232 failed step \"enumerate owned process tree\": read process table for non-session owner: operation not permitted; Run remains Active; Active Run lock retained\n\nUsage:\n  Run 'roundfix stop --help' for usage.\n"
+--- FAIL: TestGuidanceCompositionJourney (11.84s)
+    --- FAIL: TestGuidanceCompositionJourney/rust-cli (1.63s)
+        baseline_release_gate_test.go:44: run external rustfmt src/main.rs: exit status 1
+            error: rustup could not choose a version of rustfmt to run, because one wasn't specified explicitly, and no default is configured.
+            help: run 'rustup default stable' to download the latest stable release of Rust and set it as your default toolchain.
+FAIL
+suiteguard: guard cost: measured 2445 paths; fingerprint took 199.275333ms before and 63.742291ms after
+FAIL	roundfix/internal/cli	349.354s
+ok  	roundfix/internal/codex	0.215s
+ok  	roundfix/internal/config	2.302s
+ok  	roundfix/internal/daemon	154.209s
+ok  	roundfix/internal/delivery	5.113s
+?   	roundfix/internal/docscontract	[no test files]
+ok  	roundfix/internal/gittest	0.806s
+ok  	roundfix/internal/judge	2.432s
+ok  	roundfix/internal/lighttier	0.384s
+ok  	roundfix/internal/mdtree	0.230s
+ok  	roundfix/internal/notify	0.191s
+ok  	roundfix/internal/openrouterkey	0.177s
+ok  	roundfix/internal/preflight	1.295s
+ok  	roundfix/internal/releaseplan	0.185s
+ok  	roundfix/internal/reviewsource	0.187s
+ok  	roundfix/internal/reviewsource/coderabbit	0.219s
+ok  	roundfix/internal/rounds	0.366s
+ok  	roundfix/internal/runcause	0.449s
+ok  	roundfix/internal/runevent	0.218s
+ok  	roundfix/internal/skillhash	0.220s
+ok  	roundfix/internal/spec	126.763s
+ok  	roundfix/internal/specaudit	4.715s
+ok  	roundfix/internal/speccheck	123.445s
+ok  	roundfix/internal/store	37.637s
+ok  	roundfix/internal/suiteguard	1.169s
+ok  	roundfix/internal/suiteguardcontract	0.567s
+ok  	roundfix/internal/testfixture	1.477s
+ok  	roundfix/internal/testwait	0.817s
+ok  	roundfix/internal/tui	0.570s
+ok  	roundfix/internal/verifyselect	6.631s
+ok  	roundfix/internal/watch	0.229s
+ok  	roundfix/internal/worktree	116.675s
+ok  	roundfix/skills	1.786s
+FAIL

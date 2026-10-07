@@ -1,0 +1,18 @@
+Before:
+?? docs/specs/0243-a-history-that-holds-only-records/qa/evidence/2026-10-07-terminal/R02-fixture-plan.command.txt
+?? docs/specs/0243-a-history-that-holds-only-records/qa/evidence/2026-10-07-terminal/R02-fixture-plan.stderr.txt
+?? docs/specs/0243-a-history-that-holds-only-records/qa/evidence/2026-10-07-terminal/R02-fixture-plan.stdout.txt
+?? docs/specs/0243-a-history-that-holds-only-records/qa/evidence/2026-10-07-terminal/R02-fixture-status.txt
+?? docs/specs/0243-a-history-that-holds-only-records/qa/evidence/2026-10-07-terminal/flows.py.txt
+?? docs/specs/0243-a-history-that-holds-only-records/qa/qa-report-2026-10-07.md
+After:
+?? docs/specs/0243-a-history-that-holds-only-records/qa/evidence/2026-10-07-terminal/R02-checkout-plan.command.txt
+?? docs/specs/0243-a-history-that-holds-only-records/qa/evidence/2026-10-07-terminal/R02-checkout-plan.stderr.txt
+?? docs/specs/0243-a-history-that-holds-only-records/qa/evidence/2026-10-07-terminal/R02-checkout-plan.stdout.txt
+?? docs/specs/0243-a-history-that-holds-only-records/qa/evidence/2026-10-07-terminal/R02-fixture-plan.command.txt
+?? docs/specs/0243-a-history-that-holds-only-records/qa/evidence/2026-10-07-terminal/R02-fixture-plan.stderr.txt
+?? docs/specs/0243-a-history-that-holds-only-records/qa/evidence/2026-10-07-terminal/R02-fixture-plan.stdout.txt
+?? docs/specs/0243-a-history-that-holds-only-records/qa/evidence/2026-10-07-terminal/R02-fixture-status.txt
+?? docs/specs/0243-a-history-that-holds-only-records/qa/evidence/2026-10-07-terminal/flows.py.txt
+?? docs/specs/0243-a-history-that-holds-only-records/qa/qa-report-2026-10-07.md
+Outside Agent-owned QA artifacts: identical bytes and status.

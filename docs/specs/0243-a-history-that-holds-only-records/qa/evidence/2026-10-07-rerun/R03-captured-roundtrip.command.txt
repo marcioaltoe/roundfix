@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "go",
+    "test",
+    "-overlay",
+    "/private/tmp/qa0243-overlay-_acxpe07/overlay.json",
+    "-count=1",
+    "-v",
+    "./internal/spec",
+    "-run",
+    "^TestQACapturedCLIRecordsRoundTrip$"
+  ],
+  "exit": 0,
+  "overlay": {
+    "Replace": {
+      "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0243-a-history-that-holds-only-records-99f5f45f102e7895-5083d9ac-7db8b392/run_20261007T051613Z_add680c78b51d9cb/internal/spec/archive_record_qa_test.go": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0243-a-history-that-holds-only-records-99f5f45f102e7895-5083d9ac-7db8b392/run_20261007T051613Z_add680c78b51d9cb/docs/specs/0243-a-history-that-holds-only-records/qa/evidence/2026-10-07-rerun/record-roundtrip_test.go.txt"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "argv": [
+    "git",
+    "commit",
+    "-m",
+    "chore: sanitize history in disposable QA clone"
+  ],
+  "cwd": "/private/tmp/qa0243-ablation-od_jojwh/clone",
+  "exit": 0
+}

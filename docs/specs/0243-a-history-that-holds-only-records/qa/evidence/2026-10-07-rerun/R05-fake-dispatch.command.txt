@@ -1,0 +1,13 @@
+{
+  "argv": [
+    "go",
+    "test",
+    "-count=1",
+    "-v",
+    "./internal/cli",
+    "-run",
+    "^TestHistorySanitizeAdviseWithAFakeJudge$"
+  ],
+  "exit": 1,
+  "overlay": null
+}

@@ -1,0 +1,5 @@
+=== RUN   TestHistorySanitizeClauseIsAppended
+--- PASS: TestHistorySanitizeClauseIsAppended (0.02s)
+PASS
+suiteguard: guard cost: measured 9738 paths; fingerprint took 323.960333ms before and 274.629834ms after
+ok  	roundfix/internal/baseline	0.889s

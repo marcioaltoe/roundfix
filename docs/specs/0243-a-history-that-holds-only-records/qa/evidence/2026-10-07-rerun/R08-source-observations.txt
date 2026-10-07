@@ -1,0 +1,13 @@
+Outside-evidence source observations, 2026-10-07
+
+1. /Users/marcio/.roundfix-operator/history-value-2026-10-06.md — original external operator measurement read. It reports 123 text samples, 9/10 hand labels matched, all 123 responses model typesafe/jev-1.13-20260917. Sample QA reports and core artifacts were records; raw evidence mostly transient; reusable candidates include the measurements and cross-project findings. Supports retaining records and reviewing candidates, with a sampling/low-confidence limitation: it does not justify deleting arbitrary knowledge without promotion. Its statement that no candidates were upstream was historical; current two measurement paths exist (R09).
+
+2. https://git-scm.com/docs/git-tag — Description/Options read through web tool: -a creates a tag object; annotated tags carry creator/time/message metadata, unlike lightweight references. Supports rejecting lightweight history-full tags. Local public refusal agrees in R04.
+
+3. https://git-scm.com/docs/git-merge-base — --is-ancestor operation read: returns 0 for first commit ancestor of second, 1 otherwise, distinct nonzero errors. Supports ancestor preflight, observed in R04.
+
+4. https://git-scm.com/book/en/v2/Git-Internals-Maintenance-and-Data-Recovery — maintenance/recovery sections read: Git retains reachable objects; refs/tags keep commits reachable, whereas unreferenced data can be pruned. Supports the retention rationale conditional on preserving the tag. R03 independently recovered removed bytes at both revision and tag.
+
+5. Authoring ablation at b07a080e described by PRD and TechSpec — no scratch repository path, commit ID or original command logs supplied. Targeted filename lookup under /Users/marcio/.roundfix-operator yielded only the Jev judgment; the original independent artifact remains unavailable. The Spec-authored measured-inventory prose cannot authenticate its own outside evidence. Fresh R06 clone is engineering equivalence at current head, not the original authoring artifact. To unblock, supply the original clone/commit/log locator or supervised provenance for that authoring measurement.
+
+Advice skill consultation: docs.typesafe.ai/llms.txt read; api.md fetch returned Internal Error. No new integration or live API usage; fake response shape comes from existing audited judge fixture/tests. No provider called, no real key read.

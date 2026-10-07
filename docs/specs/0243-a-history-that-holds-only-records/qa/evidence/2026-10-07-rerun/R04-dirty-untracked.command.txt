@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "./bin/roundfix",
+    "history",
+    "sanitize",
+    "--apply",
+    "--batch",
+    "2"
+  ],
+  "cwd": "/private/tmp/qa0243-_xb2gl8c/tmpuy0o0t0v",
+  "exit": 2
+}

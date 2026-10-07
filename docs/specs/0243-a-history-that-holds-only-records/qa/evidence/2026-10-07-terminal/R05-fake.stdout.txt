@@ -1,0 +1,4 @@
+history sanitize plan: 1 unit(s) pending; 2 file(s) (64 bytes) leave docs/history
+folder docs/history/specs/demo: removes 2 file(s) (64 bytes) and writes docs/history/specs/demo.md (437 bytes, no-qa, delivery 4bcfef308eea #42)
+candidate docs/history/specs/demo/references/lesson.md 7 bytes: no advice (service unavailable (Post "https://openrouter.ai/api/v1/systemone": tls: failed to verify certificate: x509: certificate signed by unknown authority))
+apply with: roundfix history sanitize --apply --batch <n> (needs the annotated tag history-full at or before HEAD)

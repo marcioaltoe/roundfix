@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "git",
+    "tag",
+    "-a",
+    "history-full",
+    "-m",
+    "Full history in QA clone"
+  ],
+  "cwd": "/private/tmp/qa0243-ablation-od_jojwh/clone",
+  "exit": 0
+}

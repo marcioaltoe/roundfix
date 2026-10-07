@@ -1,0 +1,4 @@
+M	docs/specs/0243-a-history-that-holds-only-records/task_02.md
+A	internal/spec/history_entries.go
+A	internal/spec/history_entries_test.go
+A	internal/speccheck/reduced_history_entry_test.go

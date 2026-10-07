@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "go",
+    "test",
+    "-count=1",
+    "-v",
+    "./internal/baseline",
+    "-run",
+    "^TestHistorySanitizeClauseIsAppended$"
+  ],
+  "exit": 0
+}

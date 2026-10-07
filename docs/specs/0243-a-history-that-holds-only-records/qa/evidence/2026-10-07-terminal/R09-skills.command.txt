@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "go",
+    "test",
+    "-count=1",
+    "-v",
+    "./skills",
+    "-run",
+    "^(TestEveryOwnedSkillVersionIsRecorded|TestRoundfixSkillIndexNamesEveryReference|TestRoundfixSkillEntryFileStaysWithinItsBudget)$"
+  ],
+  "exit": 0
+}
