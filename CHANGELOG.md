@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.56.0] - 2026-10-07
+
+### Generated records that hold across Specs and platforms
+
+- **Module Version Record.** `internal/baseline/module-versions.json` records a content digest for each Baseline module version. `TestEveryBaselineModuleVersionIsRecorded` fails when a module's content changes under a version that is already recorded. Its `-record-module-versions` flag writes the next free number, so a Spec says "the next version" instead of a number. Two Specs that change the same module now regenerate to consecutive versions at merge instead of colliding.
+- **Derived declarations cover a module edit.** The Delivery Queue's derived paths now include the record step and every file a module edit regenerates: the profile's formatter `goldenDigest` line, the formatter golden fixture, and the managed `docs/agents` guides. `TestRegenerationIsDeclared` fails when a regenerated path has no declaration.
+- **Coverage Record across platforms.** `docs/references/coverage-record.json` lists the tests of every release platform. It is built with `go list` once per platform, so recording it on macOS no longer breaks Linux CI. Tests built only on some platforms carry their platforms.
+- **Glossary.** Adds Module Version Record and Coverage Record.
+
 ## [0.55.0] - 2026-10-07
 
 ### A formatted QA report and a reopen for late dependencies
