@@ -2,6 +2,19 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.58.0] - 2026-10-07
+
+### A Run gate that runs the repository contracts
+
+- **Contract Relevance.** Each repository contract test (build tag `docscontract`) declares when `make verify-changed` runs it, with a `//verify:` directive. There are four cases:
+  - `always`: for example the suite guard installation audit and the governed-set checks.
+  - No directive: the test runs when its own package changes.
+  - `relevant <paths>`: the test runs when one of the listed paths changes.
+  - `boundary`: the test never runs in the gate.
+- **The gate catches what only CI caught.** A Run's Verification and QA gate now run the contracts relevant to the change, so a missing suite guard installation fails in the Run instead of in Pull Request CI. A change to `go.mod`, `go.sum` or `Makefile`, or a change list Git cannot produce, selects every non-boundary contract. A malformed directive fails the gate.
+- **Unchanged.** CI, `make verify-docs` and `repo-test` keep running every contract. Failures that only happen on Linux remain CI's to catch.
+- **Glossary.** Adds Repository Contract Test and Contract Relevance.
+
 ## [0.57.0] - 2026-10-07
 
 ### A sanitize that reads older folders and names its refusals
