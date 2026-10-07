@@ -1087,7 +1087,6 @@
       "TestDeliveryStepWithoutADeclarationRunsTheOwnerExecutable",
       "TestDeliveryStepsStartTheItemBinaryWithTheOwnersArguments",
       "TestDeriveReopenPlanCarriesTheValidatedTaskTarget",
-      "TestDetachFixtureGroupWithOnlyAnExitingMemberHasEnded",
       "TestDetachFixtureGroupWithOnlyAnUnreapedMemberHasEnded",
       "TestDetachSurvivorEndsWhenItsTestBinaryDies",
       "TestDetachedChildIsTerminatedAtTeardown",
