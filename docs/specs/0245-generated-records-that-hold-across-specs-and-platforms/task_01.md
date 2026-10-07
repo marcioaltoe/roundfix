@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0245-generated-records-that-hold-across-specs-and-platforms
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -101,3 +101,95 @@ of 2026-10-07.
 - `_prd.md` → Goal 1; Core Feature 1; Success Metric 1; Success Metric 2
 - `_techspec.md` → Measured starting point; Interfaces; Invariants 1-5; Data Models; API Contract 1; API Contract 2; Testing Approach 1; Build Order 1
 - ADR-0250; ADR-0189; ADR-0233
+
+
+## Result
+
+Implemented the test-only Module Version Record, its check and record flag,
+and temporary-directory tests. History is validated before any write; changed
+or lower unrecorded versions append above the highest recorded integer, higher
+versions stay as written, and a rewrite replaces only the top-level version
+line. Recorded entries retain their values and the caller's history is not
+mutated. The check names the record command for each Invariant 3 refusal.
+
+Acceptance evidence from focused implementation checks:
+
+- Changed content under a recorded version: `TestAModuleChangedUnderARecordedVersionIsRefused`
+  asserts the diagnostic and record command. `TestRecordingRaisesAModuleAboveTheHighestRecordedVersion`
+  covers changed recorded content and a lower unrecorded version, checking the
+  exact rewritten bytes and idempotent second recording.
+  `TestRecordingRewritesOnlyTheTopLevelVersionLine` compares the complete
+  module bytes, including nested rule and guide version lines.
+- Higher version and immutable history: `TestRecordingKeepsAHigherModuleVersion`
+  asserts the module stays byte-identical and the higher version is appended;
+  `TestRecordingNeverRewritesARecordedModuleEntry` checks existing entries and
+  the caller's history. `TestRecordingWritesNothingWhenAModuleIsRefused`
+  compares every module and record byte after layout, history, schema,
+  overflow, invalid-version and malformed-JSON refusals.
+- Layout, complete seed and idempotence: Python inspection against `HEAD`
+  confirmed all 16 modules retain their decoded content and version, with
+  only the six authorized header lines split and all other bytes retained.
+  All 16 top-level version lines match the declared pattern and decoded
+  integer. The generated record contains every module with one seed entry.
+  A 61-file SHA-256 snapshot covering modules, the record, testdata and Setup
+  Manifest stayed identical after the second record, digest regeneration and
+  Baseline refresh. The Setup Manifest's catalog digest equals the generated
+  catalog digest.
+
+Commands and outcomes (Go commands used
+`GOCACHE=/tmp/roundfix-task01-gocache`):
+
+- `go test ./internal/baseline -run 'Test(ModuleContent|AModule|AnUnrecorded|Recording|ModuleVersionRecordHistory)' -count=1`:
+  exit 0, focused temporary-directory tests passed.
+- The required `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`:
+  first invocation wrote the complete seed and its test reported PASS, but
+  package exit was 1 because suiteguard rejected creation of
+  `internal/baseline/module-versions.json`. The second invocation exited 0
+  without changing a file. The seed was produced only by this command; no
+  version or digest was hand-written.
+- `make baseline-digests`: exit 0; regenerated the catalog digest, normalized
+  catalog and four declared plan goldens. Second invocation exited 0 and
+  reported `changed:false`.
+- `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text`:
+  initially refused its Git-private transaction directory under the sandbox;
+  rerun with the required filesystem permission exited 0, verified the
+  approved postimages and changed only `docs/agents/setup-context.json`.
+  Second invocation exited 0, reported zero file changes and verified
+  idempotence. Both reported the existing nested-carrier warnings for the
+  formatter fixture and Source Baseline corpus.
+- `git -c core.fsmonitor=false diff --check`: exit 0.
+- `rtk make verify-incremental`: first invocation exited 2. Two CLI force-stop
+  tests could not read the host process table (`operation not permitted`).
+  Repository guards also detected concurrent digest regeneration and this
+  Result edit during the suite; the Agent incorrectly overlapped those
+  operations with the check. A rerun with process-table permission and no
+  concurrent repository writes exited 0 (including tests, vet, skill checks
+  and build). After that run, the record test was wired to the existing
+  suiteguard command-declaration API. The final permission-corrected
+  incremental recheck also exited 0, including all package tests, vet, skill
+  checks and build. No repository writes overlapped either corrected run.
+  The focused temporary-directory test command and the no-change record
+  command were also repeated after that wiring and both exited 0.
+
+Follow-up outside this Task's authorized paths: the repository-write guard
+needs an operative sanctioned-regeneration declaration for the record command,
+with explicit outputs for the record and the module version files. The
+record test now announces that command through the existing suiteguard API.
+`internal/suiteguard/suiteguard.go` permits writes only for commands in
+operative authorization records; this Spec's `_authorization.md` declares only
+`make baseline-digests`, whose resolved outputs exclude the new record and
+module sources. Therefore a recording that changes repository files currently
+writes its computed outputs but exits 1 at the package guard. A no-change
+recording exits 0. The authorization record, ownership records and guard were
+left untouched; this limitation must be resolved before claiming the mutating
+record command's exit-0 API contract.
+
+Task status, Subtasks and Acceptance Criteria remain Daemon-owned. Neither
+command from `## Verification` was executed. No commit, push or pull request
+was made. The initial worktree change was the Daemon's `status: in_progress`;
+all new changed paths are declared by this Task.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261007T115541Z_03741c3fcc656349`
+- Source commit: `cd727df816258156eeccecb477b8972c3194fbac`

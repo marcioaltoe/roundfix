@@ -1,0 +1,101 @@
+{
+  "schemaVersion": "roundfix/baseline-module-versions/v1",
+  "modules": {
+    "autonomous-work": [
+      {
+        "version": 12,
+        "digest": "sha256:37eb5c259b605bf0ca7f4591a72abb96908a9b6700906193868561969e0cc014"
+      }
+    ],
+    "backend": [
+      {
+        "version": 6,
+        "digest": "sha256:1f6c0db03ee990b0c851ba6b249a3242a5b425a2a7cd6c3f8b79cd2a91e7a96c"
+      }
+    ],
+    "bun": [
+      {
+        "version": 5,
+        "digest": "sha256:96939115f566a168d176f58b8a033101449519bf20e89dd421c149267f12a0d2"
+      }
+    ],
+    "cli-surface": [
+      {
+        "version": 3,
+        "digest": "sha256:06817db2fabcd53599c3f90b22543aaf89adeef7f3c8815f9b5da2e5ae264b24"
+      }
+    ],
+    "context-workflow": [
+      {
+        "version": 23,
+        "digest": "sha256:3892c395cf3458496e7b364aebdccb7c41a14c9449c2cf7959ec8ebc4d116391"
+      }
+    ],
+    "core": [
+      {
+        "version": 18,
+        "digest": "sha256:bbc7233eda7001a2e259afb794f9703c327de1a63484831fc2be8b0b9660ab2c"
+      }
+    ],
+    "external-triage": [
+      {
+        "version": 3,
+        "digest": "sha256:2fbf473046d12507ca1ec0801930d8329633f56bbb4f56ba756ad9fb4f930285"
+      }
+    ],
+    "frontend": [
+      {
+        "version": 6,
+        "digest": "sha256:cef477c3d27072029d249ae3f304e9dfd9581b61274ac3a5ebe5cb576477f85f"
+      }
+    ],
+    "go": [
+      {
+        "version": 5,
+        "digest": "sha256:0e731b8bcaf33e1dab6791dab9d2a85a983d1dbd3ac69a5b4b6fea229af6a16d"
+      }
+    ],
+    "monorepo": [
+      {
+        "version": 3,
+        "digest": "sha256:b20f6ea7058a5b239f154d7eafd97cb4add9d3edf94d9147bd4cb98d68a43652"
+      }
+    ],
+    "repository-extension": [
+      {
+        "version": 1,
+        "digest": "sha256:a56704a8490ebd32cd63f4cd28aee93ff4ac14c8f814674abcce736a89d709d9"
+      }
+    ],
+    "rust": [
+      {
+        "version": 4,
+        "digest": "sha256:4ab9de1b2cbe322e4abbd8cee5901558b881439e246abeddf37b8ae155ac4100"
+      }
+    ],
+    "secondbrain": [
+      {
+        "version": 10,
+        "digest": "sha256:ff255a5d473f9a1731f191954b5629d63885438d826e049b6540976833b08783"
+      }
+    ],
+    "spec-workflow": [
+      {
+        "version": 15,
+        "digest": "sha256:c5d62e210f08fe2d4adde02d40e0de569621d831e0dfe2058ae3b22ecc715895"
+      }
+    ],
+    "tui-surface": [
+      {
+        "version": 3,
+        "digest": "sha256:1e0f35971a81b14e12c2b825a9d1ce1b557a1f1be2d7c52c01a4f398fdce1c88"
+      }
+    ],
+    "typescript": [
+      {
+        "version": 8,
+        "digest": "sha256:c6a6cbe095a3b9374858c59ba635ed341caea0cfd3224adad4c537fb82e3bf70"
+      }
+    ]
+  }
+}
