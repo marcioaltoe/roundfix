@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0248-the-regeneration-contract-runs-when-its-inputs-change
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -88,3 +88,24 @@ It is verifiable on its own through phrase checks and the markdown contracts.
 - `_prd.md` → Core Feature 4; Glossary
 - `_techspec.md` → Glossary; Build Order 4
 - ADR-0253; ADR-0252
+
+## Result
+
+- Revised `CONTEXT.md` so **Repository Contract Test** describes the Full
+  Contract Run and the narrower `verify-docs` scope, preserved all existing
+  **Contract Relevance** sentences, added the selector exclusions and Full
+  Contract Run exception, and added the **Full Contract Run** definition.
+- Revised the repository hard rule so `make verify-docs` names its actual
+  contract scope and `roundfix spec check`, while `make verify-contracts` is
+  identified as the discovery-driven run on pushes to main and before releases.
+- Focused checks after the edit: inspected the diff and searched the changed
+  documents for the required glossary headings, ADR-only references, the
+  Full Contract Run phrases, and the removal of the obsolete `verify-docs`
+  claim. The Task's declared `## Verification` command, including
+  `make verify-docs`, was left for the Daemon as required.
+- Acceptance criterion: `CONTEXT.md` defines **Full Contract Run** and no
+  longer claims that `make verify-docs` runs every contract — implemented;
+  focused phrase checks recorded above.
+- Acceptance criterion: the repository rules name `make verify-contracts` and
+  retain the pull request boundary rule — implemented; focused phrase checks
+  recorded above.
