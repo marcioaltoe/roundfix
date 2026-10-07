@@ -1,0 +1,5 @@
+$ ./bin/roundfix archive 9000-keyless --promote references/knowledge.md
+stdout:
+archived 9000-keyless -> docs/history/specs/9000-keyless.md; removed 9 file(s) (830 bytes) kept in Git at ca934df20576
+stderr:
+exit: 0

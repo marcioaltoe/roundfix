@@ -1,0 +1,10 @@
+$ ./bin/roundfix archive 9000-fake-plan --plan
+stdout:
+archive plan for 9000-fake-plan: removes 9 file(s) (834 bytes) and writes docs/history/specs/9000-fake-plan.md
+core 6 file(s): _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-06.md, task_01.md, task_02.md
+evidence 1 file(s) (4 bytes) under qa/evidence/
+candidate measurement/sample.md 18 bytes: service unavailable (Post "https://openrouter.ai/api/v1/systemone": proxyconnect tcp: dial tcp 127.0.0.1:9: connect: operation not permitted)
+candidate references/knowledge.md 28 bytes: service unavailable (Post "https://openrouter.ai/api/v1/systemone": proxyconnect tcp: dial tcp 127.0.0.1:9: connect: operation not permitted)
+promote with: roundfix archive 9000-fake-plan --promote <path>
+stderr:
+exit: 0

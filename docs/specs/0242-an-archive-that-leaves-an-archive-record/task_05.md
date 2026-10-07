@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0242-an-archive-that-leaves-an-archive-record
-status: pending
+status: failed
 type: qa
 complexity: high
 ---

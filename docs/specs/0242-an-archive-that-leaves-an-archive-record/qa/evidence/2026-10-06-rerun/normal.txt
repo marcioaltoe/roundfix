@@ -1,0 +1,5 @@
+$ ./bin/roundfix archive 9000-normal
+stdout:
+archived 9000-normal -> docs/history/specs/9000-normal.md; removed 9 file(s) (828 bytes) kept in Git at a9d813b8efe9
+stderr:
+exit: 0

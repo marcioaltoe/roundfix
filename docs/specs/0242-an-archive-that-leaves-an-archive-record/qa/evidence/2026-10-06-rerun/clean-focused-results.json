@@ -1,0 +1,34 @@
+[
+  {
+    "command": "go test -count=1 -v -run '^(TestArchiveWritesTheArchiveRecordAndRemovesTheSpecFolder|TestArchiveRecordKeepsEveryOverrideField|TestArchiveRecordOfASupersededSpec|TestArchiveRecordStaysWithinTheTargetSize|TestArchiveRecordRoundTrips|TestArchiveRefusesBeforeAnyFileChanges|TestReadArchivedSpecReadsRecordAndLegacyFolder)$' ./internal/spec",
+    "exit": 0
+  },
+  {
+    "command": "go test -count=1 -v -run '^(TestArchiveCommandLeavesTheArchiveRecord|TestArchiveCommandRefusesUncommittedSpecChanges|TestArchiveCommandRemovedBytesStayInGit|TestDeliveryAcceptsAnExactRetirement|TestDeliveryRefusesAnInexactRetirement|TestDeliveryKeepsTheLegacyExactMove|TestDeliveryArchiveStageCommitsTheArchiveRecord|TestSupersedeAcceptsAnArchiveRecord)$' ./internal/cli",
+    "exit": 0
+  },
+  {
+    "command": "go test -count=1 -v -run '^(TestInspectItemReadsTheArchiveRecord|TestPrerequisitesCountAnArchiveRecord|TestReviewCorrectionAllowsTheArchiveRecordPath|TestReviewParksForACorrectiveSpecOnAnArchiveRecord|TestReviewOverrideConventionReadsTheArchiveRecord|TestReviewDiffOmitsTheRemovedSpecFolder|TestRunCausesReadAnArchivedTaskGraphFromGit|TestRunCausesReportAnArchiveRecordWithoutItsRevision)$' ./internal/cli",
+    "exit": 0
+  },
+  {
+    "command": "go test -count=1 -v -run '^(TestMergeEvidenceFromTheArchiveRecordAfterASquash|TestTaskCompletionFollowsTheArchiveRecord|TestLeftoversReadTaskContextAtTheSourceRevision|TestLeftoversKeepTheWorktreeWithoutTheSourceRevision|TestQASupersessionReadsTheArchiveRecord)$' ./internal/worktree",
+    "exit": 0
+  },
+  {
+    "command": "go test -count=1 -v -run '^(TestArchiveAdviceJudgesOnlyCandidateFiles|TestArchiveAdviceFailsOpenWithoutAKey|TestArchiveAdviceStopsAtTheCeiling|TestArchivePlanListsWhatTheCutRemoves|TestArchivePlanWithoutAKeyNamesTheSkip|TestArchivePlanWritesNothing|TestArchivePromoteCopiesUpstream|TestArchivePromoteRefusals|TestArchivePlanUsageErrors|TestArchiveRecordClausesAreAppended)$' ./internal/judge ./internal/cli ./internal/baseline",
+    "exit": 0
+  },
+  {
+    "command": "go test -count=1 -v ./internal/speccheck -run \"^TestArchiveLicenseResolvesThroughTheRecordOrGit$\"",
+    "exit": 0
+  },
+  {
+    "command": "go test -count=1 -v ./skills -run \"^TestEveryOwnedSkillVersionIsRecorded$\"",
+    "exit": 0
+  },
+  {
+    "command": "go test -count=1 -v -tags repocontract ./skills -run \"^TestSettlementGuidanceIsOneTable$\"",
+    "exit": 0
+  }
+]

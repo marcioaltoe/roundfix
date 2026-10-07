@@ -1,0 +1,34 @@
+{
+  "mirrors": {
+    "archive-spec/SKILL.md": true,
+    "qa-gate/SKILL.md": true,
+    "roundfix/SKILL.md": true,
+    "roundfix/references/archive.md": true
+  },
+  "settlement_byte_identical": true,
+  "partial_archive_record_wording": false,
+  "guide_patterns": {
+    "kept in Git at": true,
+    "archive plan for": false
+  },
+  "sections": {
+    "archive-spec/SKILL.md": true,
+    "qa-gate/SKILL.md": true,
+    "roundfix/references/archive.md": true
+  },
+  "old_move_guidance": [
+    "archive-spec/SKILL.md",
+    "roundfix/references/archive.md"
+  ],
+  "versions": {
+    "archive-spec/SKILL.md": [
+      "0.0.5"
+    ],
+    "qa-gate/SKILL.md": [
+      "0.0.11"
+    ],
+    "roundfix/SKILL.md": [
+      "0.1.46"
+    ]
+  }
+}

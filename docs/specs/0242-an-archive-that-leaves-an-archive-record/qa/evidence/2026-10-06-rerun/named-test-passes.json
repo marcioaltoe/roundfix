@@ -1,0 +1,91 @@
+[
+  {
+    "selection": 1,
+    "named_passes": [
+      "TestArchiveWritesTheArchiveRecordAndRemovesTheSpecFolder",
+      "TestArchiveRecordKeepsEveryOverrideField",
+      "TestArchiveRecordOfASupersededSpec",
+      "TestArchiveRecordStaysWithinTheTargetSize",
+      "TestArchiveRecordRoundTrips",
+      "TestArchiveRefusesBeforeAnyFileChanges",
+      "TestReadArchivedSpecReadsRecordAndLegacyFolder"
+    ],
+    "missing": []
+  },
+  {
+    "selection": 2,
+    "named_passes": [
+      "TestArchiveCommandLeavesTheArchiveRecord",
+      "TestArchiveCommandRefusesUncommittedSpecChanges",
+      "TestArchiveCommandRemovedBytesStayInGit",
+      "TestDeliveryAcceptsAnExactRetirement",
+      "TestDeliveryRefusesAnInexactRetirement",
+      "TestDeliveryKeepsTheLegacyExactMove",
+      "TestDeliveryArchiveStageCommitsTheArchiveRecord",
+      "TestSupersedeAcceptsAnArchiveRecord"
+    ],
+    "missing": []
+  },
+  {
+    "selection": 3,
+    "named_passes": [
+      "TestInspectItemReadsTheArchiveRecord",
+      "TestPrerequisitesCountAnArchiveRecord",
+      "TestReviewCorrectionAllowsTheArchiveRecordPath",
+      "TestReviewParksForACorrectiveSpecOnAnArchiveRecord",
+      "TestReviewOverrideConventionReadsTheArchiveRecord",
+      "TestReviewDiffOmitsTheRemovedSpecFolder",
+      "TestRunCausesReadAnArchivedTaskGraphFromGit",
+      "TestRunCausesReportAnArchiveRecordWithoutItsRevision"
+    ],
+    "missing": []
+  },
+  {
+    "selection": 4,
+    "named_passes": [
+      "TestMergeEvidenceFromTheArchiveRecordAfterASquash",
+      "TestTaskCompletionFollowsTheArchiveRecord",
+      "TestLeftoversReadTaskContextAtTheSourceRevision",
+      "TestLeftoversKeepTheWorktreeWithoutTheSourceRevision",
+      "TestQASupersessionReadsTheArchiveRecord"
+    ],
+    "missing": []
+  },
+  {
+    "selection": 5,
+    "named_passes": [
+      "TestArchiveAdviceJudgesOnlyCandidateFiles",
+      "TestArchiveAdviceFailsOpenWithoutAKey",
+      "TestArchiveAdviceStopsAtTheCeiling",
+      "TestArchivePlanListsWhatTheCutRemoves",
+      "TestArchivePlanWithoutAKeyNamesTheSkip",
+      "TestArchivePlanWritesNothing",
+      "TestArchivePromoteCopiesUpstream",
+      "TestArchivePromoteRefusals",
+      "TestArchivePlanUsageErrors",
+      "TestArchiveRecordClausesAreAppended"
+    ],
+    "missing": []
+  },
+  {
+    "selection": 6,
+    "named_passes": [
+      "TestArchiveLicenseResolvesThroughTheRecordOrGit"
+    ],
+    "missing": []
+  },
+  {
+    "selection": 7,
+    "named_passes": [
+      "TestEveryOwnedSkillVersionIsRecorded"
+    ],
+    "missing": []
+  },
+  {
+    "selection": 8,
+    "named_passes": [
+      "TestSettlementGuidanceIsOneTable"
+    ],
+    "missing": []
+  }
+]

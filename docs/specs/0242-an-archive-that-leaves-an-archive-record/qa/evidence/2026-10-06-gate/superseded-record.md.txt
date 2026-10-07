@@ -1,0 +1,24 @@
+---
+schema: roundfix/archive-record/v1
+spec: 9000-superseded
+title: Disposable archive
+status: archived
+created: "2026-10-06"
+archived: "2026-10-06"
+disposition: superseded
+source: docs/specs/9000-superseded
+source_revision: ad1b6323e2756b0e440cd7b89097f979cedcbe5e
+qa_task: ""
+qa_report: ""
+qa_verdict: ""
+unproven: []
+superseded_by: 9001-successor
+adrs: []
+sources: []
+regeneration: []
+promoted: []
+---
+
+# Disposable archive
+
+Delivered elsewhere

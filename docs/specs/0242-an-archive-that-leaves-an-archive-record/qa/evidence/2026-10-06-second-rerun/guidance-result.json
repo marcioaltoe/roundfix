@@ -1,0 +1,20 @@
+{
+  "settlement_equal": true,
+  "mirrors": {
+    "archive-spec/SKILL.md": true,
+    "qa-gate/SKILL.md": true,
+    "roundfix/SKILL.md": true,
+    "roundfix/references/archive.md": true
+  },
+  "versions": {
+    "archive-spec": "0.0.6",
+    "qa-gate": "0.0.12",
+    "roundfix": "0.1.47"
+  },
+  "archive_record_wording": true,
+  "vocabulary": {
+    "archive plan for": true,
+    "no advice (<KEY_VARIABLE> is not set)": true,
+    "; promoted <n> file(s) to docs/references/": true
+  }
+}

@@ -1,0 +1,5 @@
+Spec 0242-an-archive-that-leaves-an-archive-record
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup

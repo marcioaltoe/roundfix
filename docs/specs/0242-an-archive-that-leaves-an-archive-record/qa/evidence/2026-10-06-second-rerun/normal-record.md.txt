@@ -1,0 +1,23 @@
+---
+schema: roundfix/archive-record/v1
+spec: 9000-normal
+title: Disposable archive
+status: archived
+created: "2026-10-06"
+archived: "2026-10-06"
+disposition: pass
+source: docs/specs/9000-normal
+source_revision: b5d4606f683ac4b3af636a90908bde80e3941795
+qa_task: task_02
+qa_report: qa-report-2026-10-06.md
+qa_verdict: pass
+unproven: []
+adrs: []
+sources: []
+regeneration: []
+promoted: []
+---
+
+# Disposable archive
+
+Committed source preserved.

@@ -1,0 +1,14 @@
+$ ./bin/roundfix archive 9000-keyless --promote ../escape.md
+stdout:
+stderr:
+Preflight failed
+
+Reason:
+  promoted path "../escape.md" is outside the Spec
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix archive --help' for usage.
+exit: 2

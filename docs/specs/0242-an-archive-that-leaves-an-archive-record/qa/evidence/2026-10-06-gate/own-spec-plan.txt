@@ -1,0 +1,7 @@
+archive plan for 0242-an-archive-that-leaves-an-archive-record: removes 52 file(s) (235486 bytes) and writes docs/history/specs/0242-an-archive-that-leaves-an-archive-record.md
+core 11 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-06.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md
+evidence 40 file(s) (66190 bytes) under qa/evidence/
+candidate references/2026-10-06-history-keeps-only-what-the-secondbrain-needs.md 6001 bytes: ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set
+promote with: roundfix archive 0242-an-archive-that-leaves-an-archive-record --promote <path>
+
+exit: 0

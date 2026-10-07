@@ -1,0 +1,14 @@
+from pathlib import Path
+import subprocess,tempfile,shutil,os,json
+root=Path.cwd();e=root/'docs/specs/0242-an-archive-that-leaves-an-archive-record/qa/evidence/2026-10-06-second-rerun';tmp=Path(tempfile.mkdtemp(prefix='qa0242-focused-',dir='/private/tmp'));clone=tmp/'repo'
+subprocess.run(['git','-c','core.fsmonitor=false','clone','-q','--no-local',str(root),str(clone)],check=True)
+env=os.environ.copy();env['GOMODCACHE']=subprocess.check_output(['go','env','GOMODCACHE'],text=True).strip();env['GOCACHE']='/private/tmp/roundfix-qa0242-cache';env['GOPROXY']='off';env['GOSUMDB']='off';env['HOME']=str(tmp/'home');Path(env['HOME']).mkdir();env['GIT_CONFIG_COUNT']='1';env['GIT_CONFIG_KEY_0']='core.fsmonitor';env['GIT_CONFIG_VALUE_0']='false'
+for k in list(env):
+ if 'API_KEY' in k or k=='OPENROUTERKEY':env.pop(k,None)
+commands=(root/'docs/specs/0242-an-archive-that-leaves-an-archive-record/qa/evidence/2026-10-06-gate/task-test-commands.txt').read_text().splitlines()
+commands+=['go test -count=1 -v ./internal/speccheck -run "^(TestArchiveLicenseResolvesThroughTheRecordOrGit|TestArchivedSlugsIncludeArchiveRecords)$"','go test -count=1 -v ./skills -run "^TestEveryOwnedSkillVersionIsRecorded$"','go test -count=1 -v -tags repocontract ./skills -run "^TestSettlementGuidanceIsOneTable$"','go test -count=1 -v ./internal/cli -run "^(TestArchiveConfirmationNamesPromotedFiles|TestArchivePlanWithoutAKeyPrintsNoAdvice)$"','make baseline-digests']
+results=[]
+for i,cmd in enumerate(commands,1):
+ with (e/f'focused-{i}.log').open('w') as f:r=subprocess.run(cmd,shell=True,cwd=clone,env=env,stdout=f,stderr=subprocess.STDOUT)
+ results.append({'command':cmd,'exit':r.returncode,'log':f'focused-{i}.log'});(e/'focused-results.json').write_text(json.dumps(results,indent=2));print(i,r.returncode,flush=True)
+(e/'digest-diff.txt').write_text(subprocess.check_output(['git','-c','core.fsmonitor=false','diff','--name-status'],cwd=clone,text=True));shutil.rmtree(tmp)

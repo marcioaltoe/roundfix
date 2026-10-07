@@ -1,0 +1,14 @@
+$ ./bin/roundfix archive 9000-keyless --plan --promote references/knowledge.md
+stdout:
+stderr:
+Preflight failed
+
+Reason:
+  --plan cannot be combined with --promote
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix archive --help' for usage.
+exit: 2

@@ -1,0 +1,30 @@
+---
+schema: roundfix/archive-record/v1
+spec: 9000-override
+title: Disposable archive
+status: archived
+created: "2026-10-06"
+archived: "2026-10-06"
+disposition: qa-override
+source: docs/specs/9000-override
+source_revision: 0ba283e5073094d183673b2167dbb5499425f4e4
+qa_task: task_02
+qa_report: qa-report-2026-10-06.md
+qa_verdict: fail
+unproven: []
+qa_override: true
+qa_override_approval: disposable-fixture-authority
+qa_override_reason: rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
+qa_override_qa_outcome: fail
+qa_override_qa_task_status: failed
+qa_override_revision: 0ba283e5073094d183673b2167dbb5499425f4e4
+adrs: []
+sources: []
+regeneration: []
+promoted:
+  - docs/references/knowledge.md
+---
+
+# Disposable archive
+
+Committed source preserved.

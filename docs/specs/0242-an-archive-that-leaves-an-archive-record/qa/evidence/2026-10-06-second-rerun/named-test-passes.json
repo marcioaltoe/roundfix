@@ -1,0 +1,64 @@
+{
+  "focused-1.log": [
+    "TestArchiveWritesTheArchiveRecordAndRemovesTheSpecFolder",
+    "TestArchiveRecordKeepsEveryOverrideField",
+    "TestArchiveRecordOfASupersededSpec",
+    "TestArchiveRecordStaysWithinTheTargetSize",
+    "TestArchiveRecordRoundTrips",
+    "TestArchiveRefusesBeforeAnyFileChanges",
+    "TestReadArchivedSpecReadsRecordAndLegacyFolder"
+  ],
+  "focused-2.log": [
+    "TestArchiveCommandLeavesTheArchiveRecord",
+    "TestArchiveCommandRefusesUncommittedSpecChanges",
+    "TestArchiveCommandRemovedBytesStayInGit",
+    "TestSupersedeAcceptsAnArchiveRecord",
+    "TestDeliveryAcceptsAnExactRetirement",
+    "TestDeliveryRefusesAnInexactRetirement",
+    "TestDeliveryKeepsTheLegacyExactMove",
+    "TestDeliveryArchiveStageCommitsTheArchiveRecord"
+  ],
+  "focused-3.log": [
+    "TestInspectItemReadsTheArchiveRecord",
+    "TestPrerequisitesCountAnArchiveRecord",
+    "TestReviewCorrectionAllowsTheArchiveRecordPath",
+    "TestReviewParksForACorrectiveSpecOnAnArchiveRecord",
+    "TestReviewOverrideConventionReadsTheArchiveRecord",
+    "TestReviewDiffOmitsTheRemovedSpecFolder",
+    "TestRunCausesReadAnArchivedTaskGraphFromGit",
+    "TestRunCausesReportAnArchiveRecordWithoutItsRevision"
+  ],
+  "focused-4.log": [
+    "TestMergeEvidenceFromTheArchiveRecordAfterASquash",
+    "TestTaskCompletionFollowsTheArchiveRecord",
+    "TestLeftoversReadTaskContextAtTheSourceRevision",
+    "TestLeftoversKeepTheWorktreeWithoutTheSourceRevision",
+    "TestQASupersessionReadsTheArchiveRecord"
+  ],
+  "focused-5.log": [
+    "TestArchiveAdviceJudgesOnlyCandidateFiles",
+    "TestArchiveAdviceFailsOpenWithoutAKey",
+    "TestArchiveAdviceStopsAtTheCeiling",
+    "TestArchivePlanListsWhatTheCutRemoves",
+    "TestArchivePlanWithoutAKeyNamesTheSkip",
+    "TestArchivePlanWritesNothing",
+    "TestArchivePromoteCopiesUpstream",
+    "TestArchivePromoteRefusals",
+    "TestArchivePlanUsageErrors",
+    "TestArchiveRecordClausesAreAppended"
+  ],
+  "focused-6.log": [
+    "TestArchiveLicenseResolvesThroughTheRecordOrGit",
+    "TestArchivedSlugsIncludeArchiveRecords"
+  ],
+  "focused-7.log": [
+    "TestEveryOwnedSkillVersionIsRecorded"
+  ],
+  "focused-8.log": [
+    "TestSettlementGuidanceIsOneTable"
+  ],
+  "focused-9.log": [
+    "TestArchiveConfirmationNamesPromotedFiles",
+    "TestArchivePlanWithoutAKeyPrintsNoAdvice"
+  ]
+}

@@ -1,0 +1,20 @@
+from pathlib import Path
+import re,textwrap,json
+s=Path('docs/specs/0242-an-archive-that-leaves-an-archive-record');e=s/'qa/evidence/2026-10-06-rerun'
+transcripts=[textwrap.dedent(x).strip('\n') for x in re.findall(r'```transcript\n(.*?)\n\s*```',(s/'_techspec.md').read_text(),re.S)]
+def match(pattern,actual):
+ p=pattern.strip('\n').splitlines();a=actual.strip('\n').splitlines()
+ def f(i,j):
+  if i==len(p):return j==len(a)
+  if p[i]=='...':return any(f(i+1,k) for k in range(j,len(a)+1))
+  if j==len(a):return False
+  bits=re.split(r'(<[^>]+>)',p[i]);regex=''.join('.+' if b.startswith('<') and b.endswith('>') else re.escape(b) for b in bits)
+  return bool(re.fullmatch(regex,a[j])) and f(i+1,j+1)
+ return f(0,0)
+results=[]
+for n,name in [(1,'normal'),(2,'override'),(4,'keyless-plan'),(5,'dirty')]:
+ exp=transcripts[n-1];actual=(e/(name+'.txt')).read_text()
+ eo=exp.split('stdout:\n',1)[1].split('stderr:',1)[0];es=exp.split('stderr:',1)[1].split('\nexit:',1)[0].strip('\n')
+ ao=actual.split('stdout:\n',1)[1].split('stderr:\n',1)[0].strip('\n');ast=actual.split('stderr:\n',1)[1].split('exit:',1)[0].strip('\n')
+ results.append({'transcript':n,'flow':name,'stdout_match':match(eo,ao),'stderr_match':match(es,ast),'exit_match':int(exp.rsplit('exit:',1)[1])==int(actual.rsplit('exit:',1)[1]),'expected_stderr':es,'actual_stderr':ast})
+(e/'transcript-comparison.json').write_text(json.dumps(results,indent=2));print(json.dumps(results,indent=2))

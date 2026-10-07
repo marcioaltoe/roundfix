@@ -1,0 +1,9 @@
+{
+  "clone": "/private/tmp/roundfix-0242-ablation-xuccw4q9/repo",
+  "folders_removed": 223,
+  "files_removed": 5790,
+  "audited_head": "a4905f1f10d10ec5722098331f22a5917bc223e6",
+  "verify": 2,
+  "verify-docs": 2,
+  "clone_removed": true
+}

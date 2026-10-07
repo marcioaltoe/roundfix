@@ -1,0 +1,9 @@
+$ ./bin/roundfix archive 0242-an-archive-that-leaves-an-archive-record --plan
+stdout:
+archive plan for 0242-an-archive-that-leaves-an-archive-record: removes 148 file(s) (538282 bytes) and writes docs/history/specs/0242-an-archive-that-leaves-an-archive-record.md
+core 15 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-06-01.md, qa/qa-report-2026-10-06-02.md, qa/qa-report-2026-10-06.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md, task_06.md, task_07.md
+evidence 132 file(s) (248349 bytes) under qa/evidence/
+candidate references/2026-10-06-history-keeps-only-what-the-secondbrain-needs.md 6001 bytes: no advice (ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set)
+promote with: roundfix archive 0242-an-archive-that-leaves-an-archive-record --promote <path>
+stderr:
+exit: 0

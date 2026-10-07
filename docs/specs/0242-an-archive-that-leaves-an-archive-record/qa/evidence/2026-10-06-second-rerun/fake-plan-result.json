@@ -1,0 +1,8 @@
+{
+  "exit": 0,
+  "stderr": "",
+  "stdout": "archive plan for 9000-fake-plan: removes 9 file(s) (834 bytes) and writes docs/history/specs/9000-fake-plan.md\ncore 6 file(s): _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-06.md, task_01.md, task_02.md\nevidence 1 file(s) (4 bytes) under qa/evidence/\ncandidate measurement/sample.md 18 bytes: no advice (service unavailable (Post \"https://openrouter.ai/api/v1/systemone\": proxyconnect tcp: dial tcp 127.0.0.1:9: connect: operation not permitted))\ncandidate references/knowledge.md 28 bytes: no advice (service unavailable (Post \"https://openrouter.ai/api/v1/systemone\": proxyconnect tcp: dial tcp 127.0.0.1:9: connect: operation not permitted))\npromote with: roundfix archive 9000-fake-plan --promote <path>\n",
+  "status_porcelain": "",
+  "provider_requests": 0,
+  "boundary": "HTTPS proxy is loopback port 9, connection refused; no forwarding transport"
+}

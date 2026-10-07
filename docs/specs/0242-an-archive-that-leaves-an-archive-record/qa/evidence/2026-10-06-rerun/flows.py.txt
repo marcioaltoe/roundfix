@@ -1,0 +1,42 @@
+from pathlib import Path
+import os,subprocess,tempfile,re,json,shutil
+root=Path.cwd();e=root/'docs/specs/0242-an-archive-that-leaves-an-archive-record/qa/evidence/2026-10-06-rerun';tmp=Path(tempfile.mkdtemp(prefix='roundfix-0242-flows-',dir='/private/tmp'));home=tmp/'home';home.mkdir()
+env={'PATH':os.environ['PATH'],'HOME':str(home),'GIT_CONFIG_NOSYSTEM':'1','GIT_CONFIG_GLOBAL':'/dev/null','GIT_CONFIG_COUNT':'1','GIT_CONFIG_KEY_0':'core.fsmonitor','GIT_CONFIG_VALUE_0':'false'}
+results=[]
+def git(repo,*args): return subprocess.check_output(['git',*args],cwd=repo,env=env,stderr=subprocess.DEVNULL).decode().strip()
+def seed(name,override=False,sup=False):
+ repo=tmp/name;repo.mkdir();git(repo,'init','-b','main');git(repo,'config','user.name','QA Fixture');git(repo,'config','user.email','qa@example.invalid');git(repo,'config','commit.gpgsign','false');git(repo,'config','core.hooksPath','/dev/null')
+ (repo/'.git/info/exclude').write_text('bin/\n');(repo/'bin').mkdir();(repo/'bin/roundfix').symlink_to(root/'bin/roundfix')
+ slug='9000-'+name;d=repo/'docs/specs'/slug;d.mkdir(parents=True)
+ def w(n,t): p=d/n;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(t if isinstance(t,bytes) else t.encode())
+ w('_prd.md','---\nstatus: active\ncreated: 2026-10-06\n---\n\n# Disposable archive\n\nPreserve committed provenance.\n')
+ w('_techspec.md','# Design\n\nKeep the bytes in Git.\n')
+ if not sup:
+  w('_tasks.md','---\nschema: spec-tasks/v1\nqa: task_02\ngraph:\n  nodes:\n    - id: task_01\n      file: task_01.md\n      needs: []\n    - id: task_02\n      file: task_02.md\n      needs: [task_01]\n---\n')
+  for n,typ,status in [('task_01','backend','completed'),('task_02','qa','failed' if override else 'completed')]:
+   w(n+'.md',f'---\ntask: {n}\nspec: {slug}\nstatus: {status}\ntype: {typ}\ncomplexity: low\n---\n\n# Task\n\n## Verification\n\n- `true`\n')
+  w('qa/qa-report-2026-10-06.md','---\nverdict: '+('fail' if override else 'pass')+'\nrows_blocked_environment: 0\nrows_blocked_finding: 0\nrows_blocked_declared: 0\n---\n\n# QA\n\n## Results\n\n| # | Status | Provenance |\n| - | --- | --- |\n| 1 | '+('fail' if override else 'pass')+' | fixture |\n\n## Outcome\n\nCommitted source preserved.\n')
+ else: w('_supersession.md','---\nsuperseded_by: 9001-successor\ndate: 2026-10-06\nreason: Delivered elsewhere\n---\n\nDelivered elsewhere.\n')
+ w('references/knowledge.md','Reusable archive knowledge.\n');w('measurement/sample.md','Transient sample.\n');w('qa/evidence/raw.dat',b'\x00\x01\xff\n')
+ git(repo,'add','docs');git(repo,'commit','-m','docs: disposable Spec');return repo,slug,d
+
+def cli(label,repo,args):
+ r=subprocess.run(['./bin/roundfix',*args],cwd=repo,env=env,capture_output=True,text=True);(e/(label+'.txt')).write_text('$ ./bin/roundfix '+' '.join(args)+'\nstdout:\n'+r.stdout+'stderr:\n'+r.stderr+'exit: '+str(r.returncode)+'\n');return r
+for name,override,sup in [('normal',False,False),('override',True,False),('superseded',False,True)]:
+ repo,slug,d=seed(name,override,sup);before={p.relative_to(d).as_posix():p.read_bytes() for p in d.rglob('*') if p.is_file()};head=git(repo,'rev-parse','HEAD');args=['archive',slug]
+ if override: args+=['--qa-override','--approval','disposable-fixture-authority','--reason','r'*300,'--promote','references/knowledge.md']
+ r=cli(name,repo,args);record=repo/'docs/history/specs'/ (slug+'.md');checks={'exit':r.returncode,'stdout':r.stdout,'stderr':r.stderr,'folder_removed':not d.exists()}
+ if record.exists():
+  b=record.read_bytes();(e/(name+'-record.md.txt')).write_bytes(b);checks.update(size=len(b),source_revision=head,revision_matches=head in b.decode())
+  recovered=[]
+  for path in ['_prd.md','_techspec.md','qa/evidence/raw.dat']:
+   b2=subprocess.check_output(['git','show',head+':docs/specs/'+slug+'/'+path],cwd=repo,env=env);recovered.append({'path':path,'byte_identical':b2==before[path],'hex':b2.hex()});(e/(name+'-recovery.json')).write_text(json.dumps(recovered,indent=2))
+  checks['recovery']=all(x['byte_identical'] for x in recovered)
+ if override: checks['promotion_bytes_match']=(repo/'docs/references/knowledge.md').exists() and (repo/'docs/references/knowledge.md').read_bytes()==before['references/knowledge.md'];checks['transcript_suffix_present']='; promoted 1 file(s) to docs/references/' in r.stdout
+ results.append({'flow':name,**checks})
+repo,slug,d=seed('dirty');p=d/'_techspec.md';p.write_text(p.read_text()+'\nUncommitted\n');before={str(p):p.read_bytes() for p in d.rglob('*') if p.is_file()};r=cli('dirty',repo,['archive',slug]);results.append({'flow':'dirty','exit':r.returncode,'stdout_empty':r.stdout=='','diagnostic_matches':'has changes not committed at HEAD' in r.stderr,'files_unchanged':before=={str(p):p.read_bytes() for p in d.rglob('*') if p.is_file()}})
+repo,slug,d=seed('keyless');before={str(p.relative_to(repo)):p.read_bytes() for p in repo.rglob('*') if p.is_file() and '.git' not in p.parts};r=cli('keyless-plan',repo,['archive',slug,'--plan']);after={str(p.relative_to(repo)):p.read_bytes() for p in repo.rglob('*') if p.is_file() and '.git' not in p.parts};status=git(repo,'status','--porcelain');results.append({'flow':'keyless-plan','exit':r.returncode,'stderr_empty':not r.stderr,'status_porcelain':status,'byte_identical':before==after,'transcript_no_advice_parentheses':'no advice (ROUNDFIX_OPENROUTER_API_KEY is not set)' in r.stdout})
+for label,flags in [('outside',['--promote','../escape.md']),('core',['--promote','_prd.md']),('plan-promote',['--plan','--promote','references/knowledge.md'])]:
+ r=cli(label,repo,['archive',slug,*flags]);results.append({'flow':label,'exit':r.returncode,'folder_preserved':d.exists()})
+r=cli('promote',repo,['archive',slug,'--promote','references/knowledge.md']);results.append({'flow':'promote','exit':r.returncode,'copied':(repo/'docs/references/knowledge.md').read_text()=='Reusable archive knowledge.\n','confirmation_has_promotion':'; promoted 1 file(s)' in r.stdout})
+(e/'flow-results.json').write_text(json.dumps(results,indent=2));print(json.dumps(results,indent=2));shutil.rmtree(tmp)
