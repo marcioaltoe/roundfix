@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-10-07
-spec: null
+spec: 0246-a-sanitize-that-reads-older-folders-and-names-its-refusals
 ---
 
 # History sanitize refuses older archived Specs and aborts the whole plan
