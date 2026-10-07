@@ -107,3 +107,20 @@ Spec folder. The record names the QA Report and verdict and carries its
 recoverable. Run `roundfix archive <slug> --plan` to inspect the cut and
 Archive Advice before it happens. Use repeatable `--promote <path>` to copy a
 confirmed candidate to `docs/references/` in the archive change.
+
+## History Sanitize Command
+
+Use `roundfix history sanitize` to inspect the existing history left by
+archives before Archive Records. It is a dry run unless invoked with
+`--apply --batch <n>`; `--advise` requests advisory classifications for the
+next batch's candidate files, and `--promote <path>` copies an explicitly
+selected file to `docs/references/` while applying a batch.
+
+The command converts each Legacy Archive Folder into an Archive Record,
+reduces retired Findings and Backlog Entries to Reduced History Entries, and
+removes retired Review Artifacts and handoffs. A folder without a QA Report,
+override or supersession receives the `no-qa` disposition. Apply requires the
+annotated `history-full` tag on an ancestor of `HEAD` and holding every path
+the batch rewrites or removes, so the full history remains reachable in Git.
+Each `--apply --batch <n>` is one reviewable, revertible Pull Request; the
+command never commits, tags, pushes or opens one.

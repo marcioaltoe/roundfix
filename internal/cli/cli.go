@@ -80,6 +80,7 @@ Usage:
   roundfix profiles configure --scope user|project [--file <path>] [--remove <category>] [--dry-run] [--yes] [--json]
   roundfix profiles validate [--category <category>] [--json]
   roundfix archive <slug>
+  roundfix history sanitize [--batch <n>] [--advise] [--apply] [--promote <path> ...]
   roundfix init [--scope <project|user>]
   roundfix setup [--yes] [--no-input]
   roundfix migrate [--check]
@@ -116,6 +117,7 @@ Commands:
   baseline   Plan, apply, and validate a Context-Driven Baseline
   profiles   Show Agent Selection Profiles and advisory recommendations
   archive    Archive a completed Spec
+  history    Plan or apply a batch of history sanitization
   stop       Request or force-stop an Active Run
   setup      Verify and prepare this machine for Roundfix Runs
   migrate    Upgrade the Run Database schema
@@ -568,6 +570,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runBaselineCommand(ctx, args[1:], stdout, stderr, environment)
 	case "profiles":
 		return runProfilesCommand(ctx, args[1:], stdout, stderr, environment)
+	case "history":
+		return runHistoryCommand(ctx, args[1:], stdout, stderr, environment)
 	case "archive":
 		return runArchiveCommand(ctx, args[1:], stdout, stderr, environment)
 	default:
@@ -5906,6 +5910,8 @@ Options:
   --category  Agent Work Category: general, backend, frontend, data, infra, docs, test, chore, qa, or review
   --json      Print deterministic validation JSON
 `
+	case "history":
+		return historyUsage
 	case "archive":
 		return archiveUsage
 	case "spec check":

@@ -4,10 +4,10 @@ description: Use Roundfix to plan releases with the read-only Release Plan Comma
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.47
+  version: 0.1.48
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.47
+version: 0.1.48
 ---
 
 # Roundfix
@@ -27,7 +27,7 @@ covers a topic that spans commands and owns none.
 
 | Reference | Commands covered | When to read |
 | --- | --- | --- |
-| [archive](references/archive.md) | `archive`, `supersede` | Archiving or superseding a Spec. |
+| [archive](references/archive.md) | `archive`, `history`, `supersede` | Archiving, sanitizing history, or superseding a Spec. |
 | [baseline](references/baseline.md) | `baseline` | Adopting or updating the Context-Driven Baseline. |
 | [deliver](references/deliver.md) | `deliver`, `window` | Starting or monitoring delivery, or setting a Run Window. |
 | [events](references/events.md) | `events` | Reading JSONL progress for a Run. |
