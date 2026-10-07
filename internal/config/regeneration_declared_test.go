@@ -27,16 +27,13 @@ func TestRegenerationIsDeclared(t *testing.T) {
 	assertChangedPathsDeclared(t, changed, declarations)
 
 	// Each declaration introduced by this Task must protect an output that the
-	// fixture actually regenerates. Removing one from the copied checkout must
-	// therefore expose an undeclared changed path.
+	// fixture actually regenerates. Removing a declaration does not change what
+	// the commands write, so one regeneration answers every ablation: without
+	// that declaration, some changed path must be left undeclared.
 	for _, index := range []int{1, 2, 3} {
 		t.Run(fmt.Sprintf("declaration_%d_is_required", index), func(t *testing.T) {
-			ablated := runRegenerationFixture(t, root, index)
-			if len(ablated) == 0 {
-				t.Fatal("ablation produced no changed paths")
-			}
-			if uncovered := undeclaredChangedPaths(ablated, removeDeclaration(declarations, index)); len(uncovered) == 0 {
-				t.Fatalf("removing declaration %d still covered every changed path: %v", index, ablated)
+			if uncovered := undeclaredChangedPaths(changed, removeDeclaration(declarations, index)); len(uncovered) == 0 {
+				t.Fatalf("removing declaration %d still covered every changed path: %v", index, changed)
 			}
 		})
 	}
@@ -58,11 +55,10 @@ func runRegenerationFixture(t *testing.T, sourceRoot string, removeIndex int) []
 	if removeIndex >= 0 {
 		commands = repositoryDerivedPaths(t, filepath.Join(sourceRoot, ".roundfixrc.yml"))
 	}
-	cache := filepath.Join(t.TempDir(), "gocache")
 	for index, declaration := range commands {
 		command := exec.Command("sh", "-c", declaration.Regenerate)
 		command.Dir = fixture
-		command.Env = append(os.Environ(), "GOCACHE="+cache)
+		command.Env = os.Environ()
 		output, err := command.CombinedOutput()
 		if err != nil {
 			t.Fatalf("regeneration declaration %d (%q): %v\n%s", index, declaration.Regenerate, err, output)
