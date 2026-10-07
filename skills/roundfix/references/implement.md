@@ -157,6 +157,13 @@ the largest carriable Task set, breaking ties with the newest Run.
    build with this behavior; those shims can mask regressions in the real
    commit boundary.
 
+   At the QA Report commit boundary, a configured `verification.format` runs
+   over the regular files under the Spec's `qa/` directory immediately before
+   the QA Report commit. When an imported pass is present, the same command
+   runs over its QA files after the mechanical stage and before the repository
+   Verification precondition. Failed, timed-out, or verdict-changing runs
+   restore the original bytes and record the format outcome.
+
 6. Without `--spec`, Interactive Input lists the repository's active Specs
    from the resolved Spec Root under an `Active Specs:` picker that accepts a
    number or a slug, and the Agent field suggests the remembered Agent. Agent

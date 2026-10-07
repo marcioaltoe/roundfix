@@ -63,6 +63,32 @@ naming `verification.tools`. Doctor also checks the tools named at the start
 of the effective Verification, bootstrap and regeneration commands and the
 Setup Manifest's Verification decisions.
 
+### Format Command
+
+`verification.format` is the optional Project Config Format Command for QA
+reports. Its built-in default is the empty string, so nothing runs when the
+key is omitted or empty. Project Config replaces the User Config value for the
+same key; it does not append to it. The command runs from the Run Worktree
+root, and Roundfix appends each selected file as its own argument after the
+configured command.
+
+The Daemon runs the command at two points: after the mechanical stage and
+before the repository Verification precondition when it has imported a prior
+pass, and immediately before the QA Report commit over the files that commit
+stages. Only regular files under the Spec's `qa/` directory are selected.
+Task files and other Spec artifacts are outside this scope. Each run has a
+five-minute cap. If the command fails, cannot start, times out, or changes the
+QA verdict, Roundfix restores every selected file's original bytes and lets
+the step continue with the unformatted bytes. A failed or reverted run writes
+one stderr diagnostic beginning with `roundfix: QA format`, naming its stage,
+outcome, and reason.
+
+The command receives file arguments, so configure a formatter that accepts
+them. Examples include `gofmt -w`, `prettier --write --ignore-unknown`, and
+`dprint fmt`. A formatter that rejects unknown file types needs its own ignore
+option, such as Prettier's `--ignore-unknown`. This documents `_techspec.md` →
+API Contract 1 and API Contract 2.
+
 ## Task and Verification capacities
 
 Task Capacity and Verification Capacity are independent, config-only limits
@@ -328,6 +354,8 @@ worktree:
 verification:
   # Maximum concurrent Task Verification attempts within one Implement Run.
   concurrency: 1
+  # Optional command that formats regular files under a Spec's qa/ directory.
+  format: ""
   # Tools Doctor checks on PATH without running them.
   tools: [go, gofmt, git, make]
   # Append repository Verification when a non-QA Task of a gated graph settles.
@@ -400,6 +428,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `worktree.location` | `~/.roundfix/worktrees` | Sets the parent directory for Run and Task Worktrees. |
 | `worktree.concurrency` | `2` | Limits concurrent Task Worktrees. `1` keeps Task execution sequential. |
 | `verification.concurrency` | `1` | Limits concurrent Task Verification attempts within one Implement Run, independently from Task Capacity. |
+| `verification.format` | `""` | Optional Format Command for regular files under a Spec's `qa/` directory at the imported-pass and QA Report commit boundaries; Project Config replaces User Config. |
 | `verification.tools` | `[]` | Declares tools Doctor must find on `PATH` without executing them. Project Config replaces the User Config list. |
 | `verification.repository_at_settlement` | `true` | Appends `defaults.verification` after declared Verification for non-QA Tasks of a graph with a QA gate Task. `false` turns off only this appended command. |
 | `worktree.copy` | `[]` | Copies no ignored files. Entries must be repository-relative and already ignored by Git. |

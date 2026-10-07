@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0244-a-formatted-qa-report-and-a-reopen-for-late-dependencies
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -72,21 +72,62 @@ its own by the phrases, the mirrors and the recorded skill version.
 
 ## Subtasks
 
-- [ ] Add the two glossary terms.
-- [ ] Document the configuration key, its run points and its revert.
-- [ ] Describe the import formatting and the `format` phase.
-- [ ] Describe the Late Dependency reopen in the guide and the skill.
-- [ ] Raise and record the skill version and sync the mirrors.
+- [x] Add the two glossary terms.
+- [x] Document the configuration key, its run points and its revert.
+- [x] Describe the import formatting and the `format` phase.
+- [x] Describe the Late Dependency reopen in the guide and the skill.
+- [x] Raise and record the skill version and sync the mirrors.
 
 ## Acceptance Criteria
 
-- [ ] `CONTEXT.md` defines **Format Command** and **Late Dependency**.
-- [ ] The configuration guide documents `verification.format` and its stderr
+- [x] `CONTEXT.md` defines **Format Command** and **Late Dependency**.
+- [x] The configuration guide documents `verification.format` and its stderr
       line.
-- [ ] The reopen reference and the skill's `settle` reference describe the Late
+- [x] The reopen reference and the skill's `settle` reference describe the Late
       Dependency.
-- [ ] Every skill mirror equals its canonical file, and the raised version is
+- [x] Every skill mirror equals its canonical file, and the raised version is
       recorded.
+
+## Result
+
+Implemented the documentation contract for the Format Command and Late
+Dependency. `CONTEXT.md` now defines both terms; the configuration guide covers
+the empty default, Project Config replacement, file arguments, Run Worktree
+root, both run points, regular-file scope, five-minute cap, revert behavior,
+stderr diagnostic, stack examples, and TechSpec API Contracts 1 and 2. The
+workflow guide records byte-for-byte import proof followed by formatting and
+the `daemon.qa` `format` stage/outcome. The reopen guide and settle reference
+document manifest-based Late Dependency reopening, its invalidation line, and
+the refusal without the report-adding commit. The implement reference records
+both `verification.format` run points.
+
+Focused implementation checks:
+
+- `make skills-sync` — passed after canonical reference edits and after the
+  recorded skill version change.
+- `GOCACHE=/tmp/roundfix-0244-gocache go test ./skills -run
+  '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed;
+  the Roundfix Skill is recorded at `0.1.50` in both front-matter fields and
+  `skills/testdata/owned-skill-versions.json`.
+- `make baseline-digests` — passed; no derived digest changes were needed.
+- Focused phrase checks and `cmp` checks — passed for the glossary terms,
+  configuration/stderr text, prior-report format phase, Late Dependency
+  record line, implement reference, and all three skill mirrors.
+
+The Daemon still owns this Task's status and declared Verification; those were
+not run or changed here.
+
+Verification Feedback repair:
+
+- The diagnostic artifact reported `content changed under version 0.1.49;
+  raise the version` after the later reference wording edit was synchronized.
+- Re-ran the authorized version recorder with the task-scoped `GOCACHE`; it
+  passed and raised the Roundfix Skill to `0.1.50` in both front-matter fields,
+  with the new digest recorded in `skills/testdata/owned-skill-versions.json`.
+- `make skills-sync` passed, and `make baseline-digests` passed with no
+  derived changes.
+- Focused `rg` phrase checks and `cmp` checks passed after the repair. The
+  declared Verification command was not rerun in this feedback turn.
 
 ## Context
 
@@ -114,3 +155,8 @@ its own by the phrases, the mirrors and the recorded skill version.
 - `_techspec.md` → Build Order 1; API Contract 1; API Contract 2; API Contract 3; Invariant 8
 - ADR-0249
 - ADR-0194
+
+## Carry-forward provenance
+
+- Source Run: `run_20261007T095139Z_d22b1ce63abf526a`
+- Source commit: `597e12202dca52fbfcf2d953fb8ed65c71fb6561`
