@@ -2,6 +2,17 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.53.0] - 2026-10-07
+
+### An archive that leaves an Archive Record
+
+- **Archive Record.** `roundfix archive` writes `docs/history/specs/<slug>.md`, a compact record of about 2 KB, and removes the Spec folder in the same change. The record holds the slug, title, dates, disposition, `source_revision`, QA verdict and report, ADRs, adopted sources, regenerations, promoted files and a one-paragraph outcome. The full Spec bytes stay recoverable from Git at `source_revision`. An override archive keeps its approval and reason in the record.
+- **Readers.** The Delivery Queue, reconcile, the pre-PR review, the Spec Consistency Check, the audit and the suite guard read an archived Spec from its record or from a legacy folder (`ReadArchivedSpec`). `SC-ARCHIVE-LICENSE` resolves `absorbed_by` through a record or Git. Both documentation and repository gates pass with no archived Spec folders.
+- **Archive Advice and promotion.** `roundfix archive <slug> --plan` lists what the cut removes, with optional Jev advice per file through the judge key. The advice never blocks. `--promote <path>` copies a file to `docs/references/`, and the confirmation names the promoted files.
+- **Guidance.** The skills' QA settlement tables, the archive-spec skill and the archive guides describe the Archive Record.
+- **Glossary.** Adds Archive Record and Archive Advice, and changes Archive Command.
+- **Existing history.** Folders archived earlier stay as they are until a separate migration.
+
 ## [0.52.0] - 2026-10-06
 
 ### Retired skills
