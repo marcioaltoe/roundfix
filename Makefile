@@ -29,7 +29,7 @@ GO_FILES := $(shell find . -name '*.go' -not -path './.git/*')
 
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap verify verify-changed verify-changed-contracts verify-changed-core verify-changed-baseline verify-incremental spec-check spec-budget fmt fmt-check vet test test-race baseline-digests build install run version clean deps skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
+.PHONY: help bootstrap verify verify-changed verify-changed-contracts verify-contracts verify-changed-core verify-changed-baseline verify-incremental spec-check spec-budget fmt fmt-check vet test test-race baseline-digests build install run version clean deps skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n"} \
@@ -70,6 +70,16 @@ verify-changed: fmt-check vet build ## Verify the test sets selected by changes 
 
 verify-changed-contracts: ## Run the Repository Contract Tests selected by Contract Relevance
 	@invocations="$$( $(VERIFY_SELECT) -contracts -base "$(VERIFY_BASE)" )" || exit $$?; \
+	printf '%s\n' "$$invocations" | while read -r tag tests packages; do \
+		if [ -n "$$packages" ]; then \
+			$(GO) test -count=1 -tags "$$tag" -run "$$tests" $$packages || exit $$?; \
+		fi; \
+	done
+
+# The Full Contract Run uses discovery rather than a list to decide the set.
+# CI runs it on every push to main and before every release (ADR-0253).
+verify-contracts: ## Run the Full Contract Run of every discovered Repository Contract Test
+	@invocations="$$( $(VERIFY_SELECT) -contracts -all )" || exit $$?; \
 	printf '%s\n' "$$invocations" | while read -r tag tests packages; do \
 		if [ -n "$$packages" ]; then \
 			$(GO) test -count=1 -tags "$$tag" -run "$$tests" $$packages || exit $$?; \

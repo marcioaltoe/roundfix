@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0248-the-regeneration-contract-runs-when-its-inputs-change
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -99,3 +99,47 @@ is unchanged.
 - `_prd.md` → Core Feature 1; Goals; Success Metric 3; Success Metric 4; Success Metric 5
 - `_techspec.md` → API Contract 3; API Contract 4; Invariant 1; Invariant 8; Integration Points; Build Order 3
 - ADR-0253
+
+## Result
+
+Implemented the Task 03 slice for Daemon Verification. Task status remains
+Daemon-owned; no commit, push, pull request, workflow dispatch or network
+request was made.
+
+- Acceptance criterion 1: `verify-contracts` captures discovery output from
+  `$(VERIFY_SELECT) -contracts -all` before running tests, executes each
+  invocation in order with uncached results, stops on the first failure,
+  and skips lines without packages. It is phony and has Full Contract Run
+  help text and the ADR-0253 comment. The temporary-script tests cover ordered
+  execution, first-test failure, selector failure after printing output,
+  empty selection, and a package-free line followed by valid invocations.
+- Acceptance criterion 2: YAML tests confirm CI triggers on pushes to main,
+  runs the named contract step directly after Verify docs only for pushes,
+  and has no contract step available to pull requests. The release step is
+  unconditional, directly after Verify gate and before Publication preflight.
+  Byte comparisons against HEAD confirm no other workflow content changed.
+- Acceptance criterion 3: a Python byte comparison of all nine named target
+  blocks and `REPO_CONTRACT_TESTS` against `git show ae56aba0:Makefile`
+  passed. The existing baseline CLI recipe pattern still occurs exactly once.
+
+Focused checks:
+
+- Before the target and workflow edits,
+  `GOCACHE="$PWD/.gocache" GOPROXY=off GOSUMDB=off go test -count=1 -run
+  '^(TestVerifyContractsRunsEveryContract|TestMainAndReleaseRunEveryContract)$'
+  ./internal/verifyselect` failed on the absent target and workflow steps.
+- After the edits, the same focused selection with `-v` passed: both new
+  tests and all five temporary-script cases passed.
+- `GOCACHE="$PWD/.gocache" GOPROXY=off GOSUMDB=off go test -count=1 -run
+  '^(TestVerifyChangedRunsTheSelectedContracts|TestPartitionFollowsTheMakefileRecipes)$'
+  ./internal/verifyselect` passed.
+- `gofmt -w internal/verifyselect/full_contract_run_test.go` applied Go
+  formatting. All shell checks were run through `rtk proxy` where exact
+  output was required.
+- The first focused test attempt using the host Go cache was denied by the
+  sandbox. The repository-local cache allowed the focused checks above.
+
+The real `make verify-contracts`, `make verify-docs`, and the declared
+Verification command were not run in this Agent turn: they are reserved for
+the Daemon under the execution invariants. Real-tree contract execution
+therefore remains unverified here. No follow-up implementation was needed.

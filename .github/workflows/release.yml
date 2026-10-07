@@ -82,6 +82,10 @@ jobs:
       - name: Verify gate
         run: make verify
 
+      # The Full Contract Run runs before every release (ADR-0253).
+      - name: Verify every contract
+        run: make verify-contracts
+
       - name: Publication preflight
         run: |
           set -euo pipefail
