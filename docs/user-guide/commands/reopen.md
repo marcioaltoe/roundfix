@@ -27,7 +27,9 @@ be proven.
 
 Exit codes:
 
-- `0` — stale QA gate reopened.
+- `0` — a settled QA gate that was stale or above a proven Late Dependency
+  was reopened.
 - `1` — reopen write failed.
 - `2` — Preflight Validation failed, including a missing/invalid `--spec`, an
-  unsettled QA gate, or a non-stale QA gate.
+  unsettled QA gate, or a QA gate that is neither stale nor above a proven Late
+  Dependency.
