@@ -254,6 +254,7 @@ Relevance and that `make verify-docs` still runs it.
    stdout:
    stderr:
    verify-select: <file>: unknown Contract Relevance class "sometimes"
+   exit status 1
    exit: 1
    ```
 
