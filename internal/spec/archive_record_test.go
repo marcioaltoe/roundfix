@@ -262,3 +262,25 @@ func TestArchiveRollsBackTheRecordWhenPromotionCannotBeWritten(t *testing.T) {
 		t.Fatalf("record remains: %v", err)
 	}
 }
+
+func TestArchiveRecordRefusesAnOverrideDispositionWithoutATrueOverride(t *testing.T) {
+	req, dir := recordFixture(t)
+	writeFile(t, filepath.Join(dir, "task_qa.md"), taskFixture("task_qa", "QA", "failed", "qa", defaultVerificationSection))
+	writeFile(t, filepath.Join(dir, "qa", "qa-report-2026-10-04.md"), "---\nverdict: fail\n---\n\n# QA\n")
+	req.QAOverride = &QAArchiveOverride{Approval: "maintainer", Reason: strings.Repeat("r", 300), Revision: req.SourceRevision}
+	result, err := Archive(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	content, err := os.ReadFile(result.RecordPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(content), "qa_override: true\n") {
+		t.Fatalf("record lacks qa_override: true:\n%s", content)
+	}
+	forged := strings.Replace(string(content), "qa_override: true\n", "qa_override: false\n", 1)
+	if _, err := ParseArchiveRecord([]byte(forged)); err == nil || !strings.Contains(err.Error(), "qa_override must be true") {
+		t.Fatalf("forged override accepted: %v", err)
+	}
+}

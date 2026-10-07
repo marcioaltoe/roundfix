@@ -359,6 +359,9 @@ func ParseArchiveRecord(content []byte) (ArchiveRecord, error) {
 				return r, fmt.Errorf("archive record missing %s", k)
 			}
 		}
+		if strings.TrimSpace(get("qa_override")) != "true" {
+			return r, fmt.Errorf("archive record qa_override must be true for disposition %s", ArchiveQAOverride)
+		}
 		r.QAOverride = &QAArchiveOverrideRecord{get("qa_override_approval"), get("qa_override_reason"), get("qa_override_qa_outcome"), get("qa_override_qa_task_status"), get("qa_override_revision")}
 	}
 	if r.Disposition == ArchiveSuperseded && r.SupersededBy == "" {
