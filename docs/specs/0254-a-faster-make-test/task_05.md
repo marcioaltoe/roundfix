@@ -75,9 +75,11 @@ or writes the real `~/.roundfix`.
      and every production Go file other than `internal/verifyselect/contracts.go`
      did not change;
    - that in the test files task_01 and task_02 changed, every removed or
-     altered line belongs to a file task_03 or task_04 declares, so the
-     conversions only inserted `t.Parallel()` lines and `// Sequential:`
-     comments (Invariant 1).
+     altered line belongs to a file task_03 or task_04 declares, or is an
+     existing `t.Parallel()` call moved to the first statement (expanding a
+     one-line test body to hold it counts as that move), so the conversions
+     only inserted or moved `t.Parallel()` lines and inserted `// Sequential:`
+     comments, and no assertion or expected value changed (Invariant 1).
 
    This row reads Task commits, so it declares a `commit_range` input.
 10. MUST record the Unreachable Acceptance criterion of `_prd.md` as not
