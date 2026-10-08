@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.59.0] - 2026-10-07
+
+### The regeneration contract runs when its inputs change
+
+- **A contract that never ran now runs.** `TestRegenerationIsDeclared`, added by 0.56.0 to check that every file a Baseline module edit regenerates is declared, was not run by any target or workflow. It is now `relevant` to `.roundfixrc.yml` and to every path its regeneration reads or writes, so `make verify-changed` runs it when one of those changes. A new test fails when a derived declaration names paths outside that set.
+- **Full Contract Run.** `verify-select -contracts -all` and the new `make verify-contracts` run every repository contract. The list comes from test discovery, not from a hand-kept list. CI runs it on every push to `main`, and the release workflow runs it before publishing.
+- **Visible exclusions.** The selector's summary line names each `relevant` contract it skipped and each `boundary` contract.
+- **Glossary.** Adds Full Contract Run, and revises Repository Contract Test and Contract Relevance.
+
 ## [0.58.0] - 2026-10-07
 
 ### A Run gate that runs the repository contracts
