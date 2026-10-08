@@ -1,0 +1,25 @@
+=== RUN   TestQA0253GovernedChangedPaths
+    qa0253_scope_test.go:4: governed: .agents/skills/write-tasks/SKILL.md
+    qa0253_scope_test.go:5: governed: .agents/skills/write-techspec/SKILL.md
+    qa0253_scope_test.go:6: governed: .agents/skills/write-techspec/references/concrete-contracts.md
+    qa0253_scope_test.go:8: governed: docs/agents/autonomous-work.md
+    qa0253_scope_test.go:9: governed: docs/agents/docs-layout.md
+    qa0253_scope_test.go:11: governed: docs/agents/setup-context.json
+    qa0253_scope_test.go:12: governed: docs/agents/spec-routing.md
+    qa0253_scope_test.go:13: governed: docs/agents/specific-repository.md
+    qa0253_scope_test.go:20: governed: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+    qa0253_scope_test.go:21: governed: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md
+    qa0253_scope_test.go:22: governed: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md
+    qa0253_scope_test.go:23: governed: internal/baseline/assets/modules/autonomous-work.json
+    qa0253_scope_test.go:24: governed: internal/baseline/assets/modules/context-workflow.json
+    qa0253_scope_test.go:25: governed: internal/baseline/assets/modules/go.json
+    qa0253_scope_test.go:26: governed: internal/baseline/assets/modules/spec-workflow.json
+    qa0253_scope_test.go:27: governed: internal/baseline/assets/profiles/standard-typescript-monorepo.json
+    qa0253_scope_test.go:42: governed: skills/write-tasks/SKILL.md
+    qa0253_scope_test.go:43: governed: skills/write-techspec/SKILL.md
+--- PASS: TestQA0253GovernedChangedPaths (0.00s)
+PASS
+suiteguard: guard cost: measured 2529 paths; fingerprint took 105.780292ms before and 58.554292ms after
+ok  	roundfix/internal/speccheck	0.634s
+
+exit: 0

@@ -1,0 +1,12 @@
+GOCACHE=/tmp/roundfix-0253-qa-cache go test -count=1 -v -run '^(TestLifecycleClausesCarryTheScopedWording|TestTheAuthoringEvidenceClausesCarryTheirText|TestTheAuthoringEvidenceClausesRenderInTheGuide|TestAnAdopterRetainsTheAuthoringEvidenceClauses|TestNoTwoBaselineClausesShareText|TestBaselineClauseForceIsCharacterized|TestTheGroupingClausesCarryTheirForceAndText|TestTheGroupingClausesRenderInTheGuides|TestTheGroupingClausesHaveSourceBaselineRows|TestAnAdopterRetainsTheGroupingClauses|TestHistorySanitizeClauseIsAppended|TestTheLoopClausesCarryTheirText|TestTheLoopClausesRenderInTheGuides|TestAnAdopterRetainsTheLoopClauses|TestTheHermeticGoClauseRendersInTheGoGuide|TestEveryBaselineModuleVersionIsRecorded|TestTheGuidesExemptANetworkDeniedOutsideEvidenceRow|TestTheRetirementClausesCarryTheirText|TestTheRetirementClausesRenderInTheDocsLayoutGuide|TestAFindingInTheGuideReducedFormNeedsNoSanitize|TestAnAdopterRetainsTheRetirementClauses|TestCatalogCompatibility|TestFormatterComposition|TestBaselinePlanCharacterization)$' ./internal/baseline
+exit: 0
+passed top-level tests: 24
+evidence: baseline-tests-corrected.txt
+GOCACHE=/tmp/roundfix-0253-qa-cache go test -count=1 -v -run '^(TestEveryOwnedSkillVersionIsRecorded|TestSettlementGuidanceIsOneTable|TestTheConcreteContractGuideShipsAtTheHorizonPath|TestTheGuideExamplesAreReadByTheCheck|TestAuthorialSkillSync)$' ./skills
+exit: 0
+passed top-level tests: 5
+evidence: skill-tests.txt
+GOCACHE=/tmp/roundfix-0253-qa-cache go test -count=1 -v -tags docscontract -run '^(TestDocsLayoutGuideNamesEveryHistoryFamily)$' ./internal/docscontract
+exit: 0
+passed top-level tests: 1
+evidence: docs-tests.txt

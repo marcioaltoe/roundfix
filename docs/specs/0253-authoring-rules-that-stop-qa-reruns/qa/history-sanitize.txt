@@ -1,0 +1,35 @@
+Disposable local clone of audited head; no network, commit, tag or apply.
+Scratch bin symlink points at Run Worktree build; child User Config home is isolated.
+Initial setup refusal: missing docs/specs, no side effects; provided required empty directory.
+Initial output expectation was too specific: public CLI reports family totals, not filenames. Independent removal probes below identify which file is pending.
+Both entries present
+$ ./bin/roundfix history sanitize
+history sanitize plan: 1 unit(s) pending; 1 file(s) (177 bytes) leave docs/history
+findings: reduces 1 file(s) from 177 to 246 bytes
+apply with: roundfix history sanitize --apply --batch <n> (needs the annotated tag history-full at or before HEAD)
+
+stderr: 
+exit: 0
+Repeat with both entries
+$ ./bin/roundfix history sanitize
+history sanitize plan: 1 unit(s) pending; 1 file(s) (177 bytes) leave docs/history
+findings: reduces 1 file(s) from 177 to 246 bytes
+apply with: roundfix history sanitize --apply --batch <n> (needs the annotated tag history-full at or before HEAD)
+
+stderr: 
+exit: 0
+Only reduced entry present
+$ ./bin/roundfix history sanitize
+history sanitize plan: 0 unit(s) pending; nothing pending
+
+stderr: 
+exit: 0
+Only whole entry present
+$ ./bin/roundfix history sanitize
+history sanitize plan: 1 unit(s) pending; 1 file(s) (177 bytes) leave docs/history
+findings: reduces 1 file(s) from 177 to 246 bytes
+apply with: roundfix history sanitize --apply --batch <n> (needs the annotated tag history-full at or before HEAD)
+
+stderr: 
+exit: 0
+PASS: only the whole Finding is pending; repeated plan and independent file-removal probes agree, final hashes unchanged.

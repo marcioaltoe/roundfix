@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0253-authoring-rules-that-stop-qa-reruns
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
