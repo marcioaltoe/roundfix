@@ -1,6 +1,0 @@
-command: ./bin/roundfix archive 0252-one-gate-per-run-and-a-smaller-baseline --plan
-exit: 0
-archive plan for 0252-one-gate-per-run-and-a-smaller-baseline: removes 24 file(s) (272145 bytes) and writes docs/history/specs/0252-one-gate-per-run-and-a-smaller-baseline.md
-core 10 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-10-08.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md
-evidence 14 file(s) (118671 bytes) under qa/evidence/
-promote with: roundfix archive 0252-one-gate-per-run-and-a-smaller-baseline --promote <path>
