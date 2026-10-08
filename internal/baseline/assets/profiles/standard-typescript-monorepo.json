@@ -22,7 +22,7 @@
       "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md",
       "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/typescript-bun.md"
     ],
-    "goldenDigest": "19ab74a797829b3b2934e14658dd6bee76287f115f60f3d72eef913c243cc8af",
+    "goldenDigest": "95bffacf2a593a66ed552a7b5b5c0b2270e1913937378c2d083ede0aca626890",
     "id": "formatter.oxfmt-markdown",
     "kind": "selected",
     "version": "0.59.0"

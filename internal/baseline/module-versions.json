@@ -45,6 +45,10 @@
       {
         "version": 24,
         "digest": "sha256:81e32316ab0890da764a5e4a9ba3b30b7bbf569aa22bd8499c0cc953a92a5a3e"
+      },
+      {
+        "version": 25,
+        "digest": "sha256:01b5b981111c31f4dc346b8455db7e5f8d1ac16db9425d041413445ad86d6364"
       }
     ],
     "core": [

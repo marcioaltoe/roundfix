@@ -767,7 +767,7 @@ The next units one `--apply` can convert, delivered as one Pull Request with the
 _Avoid_: Archive batch, migration wave, unreviewed cleanup
 
 **Reduced History Entry**:
-A retired Finding or Backlog Entry cut to its front matter, title, first paragraph and the revision holding its full text (ADR-0248).
+A retired Finding or Backlog Entry cut to its front matter, title, first paragraph and the revision holding its full text. A retirement writes it directly, and the History Sanitize Command reduces the entries retired before (ADR-0248, ADR-0258).
 _Avoid_: Summary, Archive Record, truncated history
 
 **History Full Tag**:

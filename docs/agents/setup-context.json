@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
-  "catalogDigest": "sha256:27886b94fb050d0eb037064eba683b8c0cca64bec5648369f9dffb03a9e4bc03",
+  "catalogDigest": "sha256:61bb0f8de77e131a1b8eeffbf69bbb16b1c253e275d75b5fe53b7d76d29f88f0",
   "modules": [
     "core",
     "context-workflow",
@@ -84,7 +84,7 @@
       "module": "context-workflow",
       "template": "template.guide.docs-layout",
       "version": "0.0.1",
-      "digest": "c0c544b2bc36112656c31722ae6e05516e5069c842a7718ceecef3f4e15f4dff"
+      "digest": "075133b92e02ebe7f77c6fa97a0d0dbf8975ecb4af5bf3b40614a569f14cbee0"
     },
     {
       "id": "root.context-workflow",
