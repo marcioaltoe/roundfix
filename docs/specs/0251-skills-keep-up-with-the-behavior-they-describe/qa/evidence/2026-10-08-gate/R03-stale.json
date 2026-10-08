@@ -1,0 +1,8 @@
+{
+  "command": "go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$'",
+  "cwd": "/private/tmp/qa0251-stale-wzqk5vea/repo",
+  "exit": 1,
+  "wall_seconds": 1.627,
+  "stdout": "--- FAIL: TestTheSkillCoverageMapIsCurrent (0.05s)\n    skill_coverage_test.go:53: command release plan: stale fingerprint\nFAIL\nFAIL\troundfix/internal/docscontract\t0.388s\nFAIL\n",
+  "stderr": ""
+}

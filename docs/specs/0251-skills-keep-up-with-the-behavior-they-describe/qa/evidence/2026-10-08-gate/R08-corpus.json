@@ -1,0 +1,8 @@
+{
+  "command": "go test -count=1 -tags docscontract ./internal/docscontract -run '^TestCheckCorpusGolden$'",
+  "cwd": "/private/tmp/qa0251-clean-nw027wml/repo",
+  "exit": 0,
+  "wall_seconds": 1.77,
+  "stdout": "ok  \troundfix/internal/docscontract\t0.604s\n",
+  "stderr": ""
+}

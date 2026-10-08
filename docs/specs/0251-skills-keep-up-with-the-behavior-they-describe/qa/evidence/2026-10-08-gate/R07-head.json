@@ -1,0 +1,8 @@
+{
+  "command": "./bin/roundfix release plan",
+  "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0251-skills-keep-up-with-the-behavior-they-describe-d43c377e6371b22c-19176a7c-a030a62d/run_20261008T154220Z_960340e21200b0bc",
+  "exit": 2,
+  "wall_seconds": 0.031,
+  "stdout": "",
+  "stderr": "roundfix: release plan failed: resolve release range: check release plan worktree status: dirty worktree: paths: docs/specs/0251-skills-keep-up-with-the-behavior-they-describe/qa/; commit, stash, or remove these paths before planning a release\n"
+}

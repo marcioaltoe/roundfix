@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0251-skills-keep-up-with-the-behavior-they-describe
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

@@ -1,0 +1,424 @@
+{
+  "range": "d00e1385024b1e145f9b8923d86bccc5ab7a57b0..e10b8f7419392c0b29997816133b5fbeb7294681",
+  "authorization_revision": "d00e1385024b1e145f9b8923d86bccc5ab7a57b0",
+  "authorization_precedes_tasks": true,
+  "paths": [
+    {
+      "task": "task_01",
+      "commit": "03ed46b7b54d64c2a64fec68345cb870af85f32e",
+      "path": "docs/specs/0251-skills-keep-up-with-the-behavior-they-describe/task_01.md",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_01",
+      "commit": "03ed46b7b54d64c2a64fec68345cb870af85f32e",
+      "path": "internal/skillcoverage/skillcoverage.go",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_01",
+      "commit": "03ed46b7b54d64c2a64fec68345cb870af85f32e",
+      "path": "internal/skillcoverage/skillcoverage_test.go",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_02",
+      "commit": "31e176e1ea3f03633365eb21064dae635c37ae2a",
+      "path": ".roundfixrc.yml",
+      "declared": true,
+      "governed": true,
+      "authorized": true
+    },
+    {
+      "task": "task_02",
+      "commit": "31e176e1ea3f03633365eb21064dae635c37ae2a",
+      "path": "CONTEXT.md",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_02",
+      "commit": "31e176e1ea3f03633365eb21064dae635c37ae2a",
+      "path": "docs/references/behavior-surfaces.json",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_02",
+      "commit": "31e176e1ea3f03633365eb21064dae635c37ae2a",
+      "path": "docs/references/skill-coverage.json",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_02",
+      "commit": "31e176e1ea3f03633365eb21064dae635c37ae2a",
+      "path": "docs/specs/0251-skills-keep-up-with-the-behavior-they-describe/task_02.md",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_02",
+      "commit": "31e176e1ea3f03633365eb21064dae635c37ae2a",
+      "path": "internal/config/regeneration_declared_test.go",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_02",
+      "commit": "31e176e1ea3f03633365eb21064dae635c37ae2a",
+      "path": "internal/config/verification_tools_test.go",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_02",
+      "commit": "31e176e1ea3f03633365eb21064dae635c37ae2a",
+      "path": "internal/docscontract/skill_coverage_test.go",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_02",
+      "commit": "31e176e1ea3f03633365eb21064dae635c37ae2a",
+      "path": "internal/verifyselect/contracts_repository_test.go",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_03",
+      "commit": "93aee572a09662d0b671f6d0c46f71de4d73cb2c",
+      "path": ".agents/skills/roundfix/SKILL.md",
+      "declared": true,
+      "governed": true,
+      "authorized": true
+    },
+    {
+      "task": "task_03",
+      "commit": "93aee572a09662d0b671f6d0c46f71de4d73cb2c",
+      "path": ".agents/skills/roundfix/references/release.md",
+      "declared": true,
+      "governed": true,
+      "authorized": true
+    },
+    {
+      "task": "task_03",
+      "commit": "93aee572a09662d0b671f6d0c46f71de4d73cb2c",
+      "path": "CONTEXT.md",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_03",
+      "commit": "93aee572a09662d0b671f6d0c46f71de4d73cb2c",
+      "path": "docs/references/behavior-surfaces.json",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_03",
+      "commit": "93aee572a09662d0b671f6d0c46f71de4d73cb2c",
+      "path": "docs/specs/0251-skills-keep-up-with-the-behavior-they-describe/task_03.md",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_03",
+      "commit": "93aee572a09662d0b671f6d0c46f71de4d73cb2c",
+      "path": "docs/user-guide/release-runbook.md",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_03",
+      "commit": "93aee572a09662d0b671f6d0c46f71de4d73cb2c",
+      "path": "docs/user-guide/usage.md",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_03",
+      "commit": "93aee572a09662d0b671f6d0c46f71de4d73cb2c",
+      "path": "internal/cli/cli.go",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_03",
+      "commit": "93aee572a09662d0b671f6d0c46f71de4d73cb2c",
+      "path": "internal/cli/releaseplan_checks.go",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_03",
+      "commit": "93aee572a09662d0b671f6d0c46f71de4d73cb2c",
+      "path": "internal/cli/releaseplan_command.go",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_03",
+      "commit": "93aee572a09662d0b671f6d0c46f71de4d73cb2c",
+      "path": "internal/cli/releaseplan_skill_coverage_test.go",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_03",
+      "commit": "93aee572a09662d0b671f6d0c46f71de4d73cb2c",
+      "path": "skills/roundfix/SKILL.md",
+      "declared": true,
+      "governed": true,
+      "authorized": true
+    },
+    {
+      "task": "task_03",
+      "commit": "93aee572a09662d0b671f6d0c46f71de4d73cb2c",
+      "path": "skills/roundfix/references/release.md",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_03",
+      "commit": "93aee572a09662d0b671f6d0c46f71de4d73cb2c",
+      "path": "skills/testdata/owned-skill-versions.json",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": ".agents/skills/roundfix/SKILL.md",
+      "declared": true,
+      "governed": true,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": ".agents/skills/roundfix/references/spec.md",
+      "declared": true,
+      "governed": true,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": ".agents/skills/write-prd/SKILL.md",
+      "declared": true,
+      "governed": true,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": ".agents/skills/write-prd/references/prd-template.md",
+      "declared": true,
+      "governed": true,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": ".agents/skills/write-tasks/SKILL.md",
+      "declared": true,
+      "governed": true,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": "CONTEXT.md",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": "docs/agents/specific-repository.md",
+      "declared": true,
+      "governed": true,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": "docs/references/behavior-surfaces.json",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": "docs/specs/0251-skills-keep-up-with-the-behavior-they-describe/task_04.md",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": "docs/user-guide/commands/spec.md",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": "internal/docscontract/corpus_test.go",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": "internal/docscontract/testdata/corpus-golden.json",
+      "declared": true,
+      "governed": true,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": "internal/spec/archive_layout_characterization_test.go",
+      "declared": true,
+      "governed": true,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": "internal/speccheck/coherence.go",
+      "declared": true,
+      "governed": true,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": "internal/speccheck/constraints.go",
+      "declared": true,
+      "governed": true,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": "internal/speccheck/skills_declaration.go",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": "internal/speccheck/skills_declaration_test.go",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": "skills/baseline_skill_contract_test.go",
+      "declared": true,
+      "governed": true,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": "skills/roundfix/SKILL.md",
+      "declared": true,
+      "governed": true,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": "skills/roundfix/references/spec.md",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": "skills/testdata/owned-skill-versions.json",
+      "declared": true,
+      "governed": false,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": "skills/write-prd/SKILL.md",
+      "declared": true,
+      "governed": true,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": "skills/write-prd/references/prd-template.md",
+      "declared": true,
+      "governed": true,
+      "authorized": true
+    },
+    {
+      "task": "task_04",
+      "commit": "e10b8f7419392c0b29997816133b5fbeb7294681",
+      "path": "skills/write-tasks/SKILL.md",
+      "declared": true,
+      "governed": true,
+      "authorized": true
+    }
+  ],
+  "versions": {
+    "roundfix": {
+      "before": "0.1.56",
+      "after": "0.1.58"
+    },
+    "write-prd": {
+      "before": "0.0.9",
+      "after": "0.0.10"
+    },
+    "write-tasks": {
+      "before": "0.0.10",
+      "after": "0.0.11"
+    }
+  },
+  "settlement_sections_unchanged": true,
+  "prohibited_paths_unchanged": true,
+  "worktree_tracked_delta": []
+}

@@ -1,0 +1,8 @@
+{
+  "command": "./bin/roundfix release plan",
+  "cwd": "/private/tmp/qa0251-flows-n7sl6xzs/described",
+  "exit": 0,
+  "wall_seconds": 0.123,
+  "stdout": "Decision: ready\nBase: v0.4.0 (728437a97844)\nTarget: HEAD (fc70dfc17f1f)\nImpact: patch\nBreaking: false\nProposed version: v0.4.1\nApproval required: no\nNext action: release may proceed for v0.4.1 after independent release verification.\nskills: failed: missing: archive-spec, brainstorming, business-analyst, evidence-gate, implement-spec, implement-task, qa-gate, setup-context-driven, write-idea, write-prd, write-tasks, write-techspec; unversioned: roundfix; Setup Manifest is absent or unreadable; 0 external required; next: complete the skills and guides check in the release runbook before the release Pull Request\nbaseline: action_required: the repository has no Setup Manifest; next: complete the skills and guides check in the release runbook before the release Pull Request\nskill-coverage: current: 1 changed surface(s) since v0.4.0: 1 described, 0 reviewed, 0 uncovered\nDetermining commits:\n- fc70dfc17f1f fix: correct output [impact=patch, type=fix]\n",
+  "stderr": ""
+}

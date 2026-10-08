@@ -1,0 +1,17 @@
+{
+  "verdict": "partial",
+  "rows": 14,
+  "pass": 11,
+  "blocked_environment": 3,
+  "blocked_finding": 0,
+  "blocked_declared": 0,
+  "pending": 0,
+  "skipped": 0,
+  "all_row_inputs_present": true,
+  "evidence_links_resolve": true,
+  "seeded_auditor_identity_preserved": true,
+  "mechanical_skips_preserved": true,
+  "tracked_delta": [],
+  "worktree_status": "?? docs/specs/0251-skills-keep-up-with-the-behavior-they-describe/qa/",
+  "preexisting_release_test_count": 23
+}

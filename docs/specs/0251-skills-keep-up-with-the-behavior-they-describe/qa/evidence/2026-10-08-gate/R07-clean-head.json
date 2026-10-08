@@ -1,0 +1,8 @@
+{
+  "command": "./bin/roundfix release plan",
+  "cwd": "/private/tmp/qa0251-clean-nw027wml/repo",
+  "exit": 3,
+  "wall_seconds": 0.296,
+  "stdout": "Decision: approval_required\nBase: v0.61.0 (dea1c31d41db)\nTarget: HEAD (e10b8f741939)\nImpact: minor\nBreaking: false\nProposed version: v0.62.0\nApproval required: yes\nApproval question: Approve the minor increment to v0.62.0?\nNext action: answer the approval question before any release mutation.\nskills: ok: 41 required: 13 Roundfix-owned, 28 external\nbaseline: current: the repository already matches the current Baseline catalog\nskill-coverage: introduced: the Skill Coverage Map is new since v0.61.0; no surface is compared\nDetermining commits:\n- 03ed46b7b54d feat: the skill coverage package parses the map and the record and finds Lagging Surfaces [impact=minor, type=feat]\n- 31e176e1ea3f feat: the repository keeps a Skill Coverage Map and a current Behavior Surface Record [impact=minor, type=feat]\n- 93aee572a096 feat: the release plan refuses a release with a Lagging Surface [impact=minor, type=feat]\n- e10b8f741939 feat: spec authoring requires a skills Task for a changed Behavior Surface [impact=minor, type=feat]\n",
+  "stderr": ""
+}

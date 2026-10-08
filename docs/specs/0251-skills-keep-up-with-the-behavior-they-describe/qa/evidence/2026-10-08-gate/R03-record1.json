@@ -1,0 +1,8 @@
+{
+  "command": "go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage",
+  "cwd": "/private/tmp/qa0251-stale-wzqk5vea/repo",
+  "exit": 0,
+  "wall_seconds": 0.691,
+  "stdout": "ok  \troundfix/internal/docscontract\t0.258s\n",
+  "stderr": ""
+}

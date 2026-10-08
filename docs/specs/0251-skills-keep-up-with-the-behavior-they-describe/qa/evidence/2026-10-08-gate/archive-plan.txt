@@ -1,0 +1,5 @@
+command: ./bin/roundfix archive 0251-skills-keep-up-with-the-behavior-they-describe --plan
+exit: 0
+archive plan: removes 61 files (758558 bytes), writes docs/history/specs/0251-skills-keep-up-with-the-behavior-they-describe.md
+core: 10 files; evidence: 51 files (637033 bytes)
+No reusable_knowledge candidate was advised. The plan was read-only; no archive was performed. Counts precede final evidence additions.
