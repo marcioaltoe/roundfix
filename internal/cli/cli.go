@@ -2709,6 +2709,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		_ = runStore.Close()
 	}()
 	sweepRunRetention(ctx, runStore, req.artifactDir, loaded.Config.Store.JournalRetention, stderr)
+	runRetentionAtStart(ctx, runStore, loaded, stderr)
 	run, err := createOperationalRun(ctx, runStore, store.KindResolve, req, preflightResult, resolvePlan.runtime, stderr)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
@@ -3191,6 +3192,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		_ = runStore.Close()
 	}()
 	sweepRunRetention(ctx, runStore, req.artifactDir, loaded.Config.Store.JournalRetention, stderr)
+	runRetentionAtStart(ctx, runStore, loaded, stderr)
 	run, err := createOperationalRun(ctx, runStore, store.KindWatch, req, preflightResult, runtime, stderr)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
@@ -5276,8 +5278,10 @@ pre-PR review record. A finding accepts at most one disposition.
 
 Prunes Run Event Journal rows for terminal Runs older than Journal Retention,
 then removes their run artifact directories and orphaned runs/<id> directories
-under the resolved run artifact root. It never deletes Run rows or Active Run locks,
-and it never removes Review artifacts outside the run artifact root.
+under the resolved run artifact root. Journal Retention never deletes Run rows or Active Run locks.
+GC then removes terminal Runs past Run Retention, including their dependent
+rows, and compacts the Run Database.
+It never removes Review artifacts outside the run artifact root.
 
 The sanitize subcommand discovers every recorded Artifact Root from the
 machine-wide Run Database, classifies it with durable and filesystem evidence,
@@ -5287,7 +5291,7 @@ The compact subcommand previews Run Database bytes before, reclaimable, and
 projected after. It changes the database only when --apply is explicit.
 
 Options:
-  --dry-run  List the Runs, journal rows, and artifact bytes that would be pruned without changing anything
+  --dry-run  Preview Journal Retention and Run Retention Runs, rows, and estimated bytes without changing anything
   --apply    With compact, rebuild the Run Database; with sanitize, remove only proven retention-eligible or absent Run artifact directories
 `
 	case "storage":

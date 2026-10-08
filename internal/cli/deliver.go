@@ -318,6 +318,7 @@ func runDeliverStart(ctx context.Context, args []string, stdout, stderr io.Write
 		_ = runStore.Close()
 		return printDeliverFailure("start", err, stderr)
 	}
+	runRetentionAtStart(ctx, runStore, loaded, stderr)
 	if err := runStore.Close(); err != nil {
 		return printDeliverFailure("start", fmt.Errorf("close Run Database after recording Delivery Queue: %w", err), stderr)
 	}

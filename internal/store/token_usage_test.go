@@ -7,7 +7,6 @@ package store
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"math"
 	"reflect"
 	"testing"
@@ -62,7 +61,8 @@ func TestMigrationAddsTokenUsageTablesToThePreviousSchema(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.db.ExecContext(ctx, `DROP TABLE run_token_usage; DROP TABLE delivery_queue_runs; ALTER TABLE delivery_queues DROP COLUMN max_tokens; PRAGMA user_version = `+fmt.Sprint(schemaVersion-1)); err != nil {
+	// These objects were introduced in v22; the source fixture is always v21.
+	if _, err := s.db.ExecContext(ctx, `DROP TABLE run_token_usage; DROP TABLE delivery_queue_runs; ALTER TABLE delivery_queues DROP COLUMN max_tokens; PRAGMA user_version = 21`); err != nil {
 		t.Fatal(err)
 	}
 	closeStore(t, s)

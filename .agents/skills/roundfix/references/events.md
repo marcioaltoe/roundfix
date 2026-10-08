@@ -68,5 +68,13 @@ Each record names the Work Item scope, runtime, model, reasoning effort and
 `token_basis` (`turn`, `request-sum` or `unreported`), with tokens and reported
 cost when present. For example, its summary can say
 `task_01 used 5639755 tokens (request-sum)`. An unreported prompt has no token
-field. Retention can remove these events; durable usage totals remain
-available through `roundfix runs show <run-id>`.
+field. Journal Retention can remove these events; durable usage totals remain
+available through `roundfix runs show <run-id>` until Run Retention removes
+the Run itself.
+
+An unknown Run ID exits `2`. When its `run_<YYYYMMDD>T<HHMMSS>Z_<hex>`
+creation time predates the configured Run Retention cutoff, the diagnostic
+adds `; Run Retention may have removed it, because it removes terminal Runs
+that completed more than <N> days ago`, using `store.run_retention_days` from
+User Config (30 by default). Other IDs, including `run_missing`, keep their
+existing refusal. The hint describes a possible removal, not proof of one.

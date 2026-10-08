@@ -210,3 +210,10 @@ names the Spec in `specs_not_found`. Triggers are `pre-pr-review`, `qa-gate`,
 Run counts, and the table digest. Exit `0` includes empty results and an absent
 database, `2` means invalid usage or no Git repository, and `1` means an
 unreadable database.
+
+An unknown Run ID exits `2`. When its `run_<YYYYMMDD>T<HHMMSS>Z_<hex>`
+creation time predates the configured Run Retention cutoff, the diagnostic
+adds `; Run Retention may have removed it, because it removes terminal Runs
+that completed more than <N> days ago`, using `store.run_retention_days` from
+User Config (30 by default). Other IDs, including `run_missing`, keep their
+existing refusal. The hint describes a possible removal, not proof of one.

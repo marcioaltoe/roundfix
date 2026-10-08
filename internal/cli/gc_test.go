@@ -133,7 +133,7 @@ func TestRunGCSkipsWhenJournalRetentionIsZero(t *testing.T) {
 		t.Fatalf("expected gc zero-retention diagnostics to stay empty, got %q", stderr.String())
 	}
 	output := stdout.String()
-	for _, want := range []string{"GC skipped", "Journal Retention: 0", "No pruning performed."} {
+	for _, want := range []string{"GC complete", "Journal Retention: 0", "No journal pruning performed.", "Run Retention: 30 days"} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("expected zero-retention output to contain %q, got %q", want, output)
 		}

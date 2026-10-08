@@ -210,8 +210,11 @@ type Logs struct {
 	Agent bool
 }
 
+var RunRetentionDayChoices = []int{7, 15, 30}
+
 type Store struct {
 	JournalRetention time.Duration
+	RunRetentionDays int
 }
 
 type Specs struct {
@@ -527,6 +530,7 @@ type logsOverlay struct {
 
 type storeOverlay struct {
 	JournalRetention *durationValue `yaml:"journal_retention"`
+	RunRetentionDays *int           `yaml:"run_retention_days"`
 }
 
 type specsOverlay struct {
@@ -595,7 +599,7 @@ func (overlay *storeOverlay) UnmarshalYAML(node *yaml.Node) error {
 		for index := 0; index < len(node.Content); index += 2 {
 			key := node.Content[index].Value
 			switch key {
-			case "journal_retention":
+			case "journal_retention", "run_retention_days":
 			default:
 				return fmt.Errorf("store.%s is not a supported config key", key)
 			}
@@ -779,6 +783,7 @@ func Builtin() Config {
 		},
 		Store: Store{
 			JournalRetention: defaultJournalRetention,
+			RunRetentionDays: 30,
 		},
 		Specs: Specs{
 			Root: defaultSpecsRoot,
@@ -919,6 +924,10 @@ func defaultConfigYAML(scope string) string {
   max_active: %d
 `, config.Runs.MaxActive)
 	}
+	runRetentionConfig := ""
+	if scope == InitScopeUser {
+		runRetentionConfig = "  # Remove terminal Runs older than this many days; 7, 15 or 30, User Config only.\n  run_retention_days: 30\n"
+	}
 	return fmt.Sprintf(`# Roundfix config.
 # User Config: ~/.roundfix/config.yml
 # Project Config: <repo>/.roundfixrc.yml
@@ -965,7 +974,7 @@ verification:
 store:
   # Terminal Run journals older than this duration are eligible for pruning; 0 keeps everything.
   journal_retention: %s
-
+%s
 # Legacy PR-feedback Review Source, read only by fetch, watch and resolve; it never selects or requests a pre-PR reviewer.
 review_source:
   name: %s
@@ -1021,6 +1030,7 @@ resolve:
 		config.Verification.Concurrency,
 		config.Verification.RepositoryAtSettlement,
 		formatConfigDuration(config.Store.JournalRetention),
+		runRetentionConfig,
 		config.ReviewSource.Name,
 		config.ReviewSource.IncludeNitpicks,
 		config.ReviewSource.RequestReview,
@@ -1090,6 +1100,9 @@ func Validate(config Config) error {
 	}
 	if config.Resolve.BatchSize < 1 {
 		return errors.New("resolve.batch_size must be greater than 0")
+	}
+	if !slices.Contains(RunRetentionDayChoices, config.Store.RunRetentionDays) {
+		return errors.New("store.run_retention_days must be 7, 15 or 30")
 	}
 	if config.Store.JournalRetention < 0 {
 		return errors.New("store.journal_retention must be greater than or equal to 0")
@@ -1589,6 +1602,15 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 			return fmt.Errorf("parse config %q: jev.monthly_ceiling_usd must be a finite number greater than 0", label)
 		}
 	}
+	if source == ProfileSourceProject && removeYAMLPath(&document, []string{"store", "run_retention_days"}) {
+		warnings.warnIgnoredProjectSetting("store.run_retention_days")
+	}
+	if value, found := yamlValueAtPath(&document, []string{"store", "run_retention_days"}); found {
+		var days int
+		if value.Tag != "!!int" || value.Decode(&days) != nil || !slices.Contains(RunRetentionDayChoices, days) {
+			return fmt.Errorf("parse config %q: store.run_retention_days must be 7, 15 or 30", label)
+		}
+	}
 	stripDeprecatedConfigKeys(&document, warnings)
 	if err := validateDerivedLineNodes(&document); err != nil {
 		return fmt.Errorf("parse config %q: %w", label, err)
@@ -1866,6 +1888,9 @@ func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
 		}
 	}
 	if overlay.Store != nil {
+		if overlay.Store.RunRetentionDays != nil {
+			config.Store.RunRetentionDays = *overlay.Store.RunRetentionDays
+		}
 		if overlay.Store.JournalRetention != nil {
 			config.Store.JournalRetention = overlay.Store.JournalRetention.value
 		}
