@@ -1,8 +1,0 @@
-{
-  "command": "./bin/roundfix release plan",
-  "cwd": "/private/tmp/qa0251-flows-n7sl6xzs/lagging",
-  "exit": 3,
-  "wall_seconds": 0.124,
-  "stdout": "Decision: ready\nBase: v0.4.0 (728437a97844)\nTarget: HEAD (a461bf549275)\nImpact: patch\nBreaking: false\nProposed version: v0.4.1\nApproval required: no\nRelease blocked: skill-coverage\nNext action: resolve the blocking skill-coverage check, then rerun roundfix release plan before any release mutation.\nskills: failed: missing: archive-spec, brainstorming, business-analyst, evidence-gate, implement-spec, implement-task, qa-gate, setup-context-driven, write-idea, write-prd, write-tasks, write-techspec; unversioned: roundfix; Setup Manifest is absent or unreadable; 0 external required; next: complete the skills and guides check in the release runbook before the release Pull Request\nbaseline: action_required: the repository has no Setup Manifest; next: complete the skills and guides check in the release runbook before the release Pull Request\nskill-coverage: behind: 1 lagging surface(s) since v0.4.0; next: update a covering skill or record a Coverage Review in docs/references/skill-coverage.json for each lagging surface, then rerun roundfix release plan\n- lagging: command implement (changed; covering skills unchanged: .agents/skills/roundfix/references/implement.md)\nDetermining commits:\n- a461bf549275 fix: correct output [impact=patch, type=fix]\n",
-  "stderr": ""
-}

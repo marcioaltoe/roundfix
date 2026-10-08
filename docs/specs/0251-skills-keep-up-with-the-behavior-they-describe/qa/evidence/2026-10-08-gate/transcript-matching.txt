@@ -1,2 +1,0 @@
-Transcripts 1-3: matched exact stdout/stderr and exit; Markdown indentation removed; ... matches whole lines; angle placeholders match nonempty within one line.
-Transcript 4: Spec 0200-skills, error SC-SKILLS-UNTASKED with nonempty summary, remaining lines matched by ..., empty stderr, exit 1.

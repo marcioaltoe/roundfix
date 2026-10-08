@@ -1,8 +1,0 @@
-{
-  "command": "git -c core.fsmonitor=false clone --no-hardlinks /Users/marcio/.roundfix/worktrees/roundfix-deliver-0251-skills-keep-up-with-the-behavior-they-describe-d43c377e6371b22c-19176a7c-a030a62d/run_20261008T154220Z_960340e21200b0bc /private/tmp/qa0251-clean-nw027wml/repo",
-  "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0251-skills-keep-up-with-the-behavior-they-describe-d43c377e6371b22c-19176a7c-a030a62d/run_20261008T154220Z_960340e21200b0bc",
-  "exit": 0,
-  "wall_seconds": 0.398,
-  "stdout": "",
-  "stderr": "Cloning into '/private/tmp/qa0251-clean-nw027wml/repo'...\ndone.\n"
-}

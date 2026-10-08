@@ -1,8 +1,0 @@
-{
-  "command": "go test -count=1 -v -tags docscontract ./internal/docscontract -run '^(TestTheSkillCoverageMapIsCurrent|TestAStaleBehaviorSurfaceIsReported|TestAnUnmappedBehaviorSurfaceIsReported|TestCommandCoverageFollowsTheRoundfixReferenceIndex)$'",
-  "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0251-skills-keep-up-with-the-behavior-they-describe-d43c377e6371b22c-19176a7c-a030a62d/run_20261008T154220Z_960340e21200b0bc",
-  "exit": 0,
-  "wall_seconds": 7.53,
-  "stdout": "=== RUN   TestTheSkillCoverageMapIsCurrent\n--- PASS: TestTheSkillCoverageMapIsCurrent (0.06s)\n=== RUN   TestAStaleBehaviorSurfaceIsReported\n=== RUN   TestAStaleBehaviorSurfaceIsReported/stale\n=== RUN   TestAStaleBehaviorSurfaceIsReported/missing\n=== RUN   TestAStaleBehaviorSurfaceIsReported/extra\n--- PASS: TestAStaleBehaviorSurfaceIsReported (0.00s)\n    --- PASS: TestAStaleBehaviorSurfaceIsReported/stale (0.00s)\n    --- PASS: TestAStaleBehaviorSurfaceIsReported/missing (0.00s)\n    --- PASS: TestAStaleBehaviorSurfaceIsReported/extra (0.00s)\n=== RUN   TestAnUnmappedBehaviorSurfaceIsReported\n=== RUN   TestAnUnmappedBehaviorSurfaceIsReported/missing\n=== RUN   TestAnUnmappedBehaviorSurfaceIsReported/extra\n--- PASS: TestAnUnmappedBehaviorSurfaceIsReported (0.00s)\n    --- PASS: TestAnUnmappedBehaviorSurfaceIsReported/missing (0.00s)\n    --- PASS: TestAnUnmappedBehaviorSurfaceIsReported/extra (0.00s)\n=== RUN   TestCommandCoverageFollowsTheRoundfixReferenceIndex\n--- PASS: TestCommandCoverageFollowsTheRoundfixReferenceIndex (0.00s)\nPASS\nok  \troundfix/internal/docscontract\t0.272s\n",
-  "stderr": ""
-}

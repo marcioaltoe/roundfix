@@ -1,8 +1,0 @@
-{
-  "command": "./bin/roundfix spec check 0251-skills-keep-up-with-the-behavior-they-describe --strict",
-  "cwd": "/Users/marcio/.roundfix/worktrees/roundfix-deliver-0251-skills-keep-up-with-the-behavior-they-describe-d43c377e6371b22c-19176a7c-a030a62d/run_20261008T154220Z_960340e21200b0bc",
-  "exit": 0,
-  "wall_seconds": 0.411,
-  "stdout": "Spec 0251-skills-keep-up-with-the-behavior-they-describe\nNo findings. Authored Verification commands were not executed.\nSkipped:\n  SC-FINDING-LIFECYCLE: missing docs/findings Finding\n  SC-ROLLUP-MEMBER: missing docs/findings rollup\n  SC-BACKLOG-UNMOVED: missing docs/backlog\n  vocabulary documentation detector: missing docs/specs/0251-skills-keep-up-with-the-behavior-they-describe/_techspec.md Vocabulary Contract\n  SC-SKILLS-MALFORMED: missing a PRD committed at or after docs/references/skill-coverage.json\n  SC-SKILLS-UNTASKED: missing a PRD committed at or after docs/references/skill-coverage.json\n  SC-REF-UNRESOLVED: missing docs/specs/0251-skills-keep-up-with-the-behavior-they-describe/references/_index.md\n",
-  "stderr": ""
-}

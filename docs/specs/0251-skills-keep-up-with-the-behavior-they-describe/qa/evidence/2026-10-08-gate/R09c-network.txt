@@ -1,3 +1,0 @@
-rtk curl-cffi get 'https://arxiv.org/abs/2212.01479' --impersonate chrome --timeout 30 --quiet --download --output source.html
-exit 1
-Error: Failed to perform, curl: (7) CONNECT tunnel failed, response 403.
