@@ -326,25 +326,16 @@ func SelectContracts(ctx context.Context, repoRoot, baseRef string) ([]ContractT
 
 // ContractInvocations formats sorted tag, test pattern, and package arguments.
 func ContractInvocations(selected []ContractTest) []string {
-	byTag := make(map[string][]ContractTest)
+	if len(selected) == 0 {
+		return nil
+	}
+	tags, names, packages := make(map[string]struct{}), make(map[string]struct{}), make(map[string]struct{})
 	for _, contract := range selected {
-		byTag[contract.Tag] = append(byTag[contract.Tag], contract)
+		tags[contract.Tag] = struct{}{}
+		names[regexp.QuoteMeta(contract.Name)] = struct{}{}
+		packages["./"+contract.Package] = struct{}{}
 	}
-	tags := make([]string, 0, len(byTag))
-	for tag := range byTag {
-		tags = append(tags, tag)
-	}
-	sort.Strings(tags)
-	var invocations []string
-	for _, tag := range tags {
-		names, packages := make(map[string]struct{}), make(map[string]struct{})
-		for _, contract := range byTag[tag] {
-			names[regexp.QuoteMeta(contract.Name)] = struct{}{}
-			packages["./"+contract.Package] = struct{}{}
-		}
-		invocations = append(invocations, tag+" ^("+strings.Join(sortedContractKeys(names), "|")+")$ "+strings.Join(sortedContractKeys(packages), " "))
-	}
-	return invocations
+	return []string{strings.Join(sortedContractKeys(tags), ",") + " ^(" + strings.Join(sortedContractKeys(names), "|") + ")$ " + strings.Join(sortedContractKeys(packages), " ")}
 }
 
 func sortedContractKeys(values map[string]struct{}) []string {

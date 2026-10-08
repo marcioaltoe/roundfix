@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0254-a-faster-make-test
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -81,3 +81,97 @@ selector prints one line and the Makefile loop runs it unchanged.
 - [_prd.md](_prd.md) — Goal 5; User Story 5; Core Feature 5; Success Metric 5
 - [_techspec.md](_techspec.md) — Current behavior; API Contract 3; API Contract 4; Invariant 5; Testing Approach; Build Order 4
 - ADR-0259; ADR-0252; ADR-0253
+
+
+## Result
+
+Implemented the Task slice for Daemon Verification:
+
+- `ContractInvocations` returns no line for an empty selection and one line
+  otherwise, with sorted unique comma-joined tags, sorted unique quoted test
+  names in an anchored alternation, and sorted unique package arguments.
+  The same construction preserves the existing single-tag form.
+- Updated only the output expectations of the three declared tests. Contract
+  discovery, Contract Relevance, summary diagnostics, the Makefile, CI, and
+  the existing Makefile wiring tests remain unchanged.
+- Added the ordinary, untagged `TestNoContractNameCrossesABuildTagClass`. Its
+  repository scan parses top-level testing functions across packages and
+  reports cross-class names with both files and their classes. Seeded cases
+  reject a docscontract/untagged collision and a docscontract/repocontract
+  collision, and allow a repeated name within one class.
+
+### Focused evidence by acceptance criterion
+
+1. Selector output: built the current entry point with
+   `GOCACHE="$PWD/.gocache" go build -buildvcs=false -o /private/tmp/task04-verify-select ./cmd/verify-select`
+   (exit 0), then captured `/private/tmp/task04-verify-select -contracts -all`
+   with Python `subprocess.run`. It exited 0 and printed exactly one stdout
+   line beginning `docscontract,repocontract`, with 29 package arguments.
+   Stderr still reported `75 selected (every Repository Contract Test), 0 not selected`.
+2. Full Contract Run: the stable after run of `make verify-contracts` exited
+   0. The selector's one line and the unchanged Makefile loop yield one
+   `go test` invocation. The unchanged
+   `TestVerifyContractsRunsEveryContract` and
+   `TestVerifyChangedRunsTheSelectedContracts` both passed in the focused
+   check below.
+3. Seeded collision: the new test passed on the real repository and asserted
+   that its seeded docscontract/untagged tree produces this rejection:
+   `TestShared crosses build-tag classes: docs/contract_test.go (docscontract) and other/shared_test.go (neither)`.
+   The other-tag seeded case also produced a collision, while the same-class
+   case produced none.
+
+Focused command:
+
+```sh
+GOCACHE="$PWD/.gocache" go test -count=1 -v -run 'ContractInvocations|Prints.*Contract|NoContractName|VerifyContractsRuns|VerifyChangedRuns' ./internal/verifyselect
+```
+
+Final outcome: exit 0, package duration 4.755 s; all three declared output
+checks, the new collision test and its seeded cases, and both unchanged
+Makefile wiring tests passed. The first focused attempt exposed an incorrect
+expected order for quoted names; correcting the expectation to
+`TestA|TestZ|Test\.\+` preserved the existing sort of quoted names.
+
+### Full Contract Run wall times
+
+All measurements used this Task worktree, the same machine, installed Go
+and Make, and the worktree's `.gocache`. Exit statuses are those of Make.
+
+| Measurement | Command | Wall time | Exit status |
+| --- | --- | --- | --- |
+| Initial before, original source | `make verify-contracts` | 104.16 s | 0 |
+| Initial after | `make verify-contracts` | 87.30 s | 2 |
+| Stable before, original selector through Go overlay | `make verify-contracts GOFLAGS=-overlay=/private/tmp/task04-before-overlay.json` | 168.87 s | 0 |
+| Stable after, merged selector | `make verify-contracts` | 209.70 s | 0 |
+
+The initial pair used `/usr/bin/time -p`. Its after measurement is invalid
+for comparison: the Agent corrected the quoted-name expectation while it
+was running, and the baseline package's suite guard detected
+`modified: internal/verifyselect/contracts_test.go`. This was an Agent source
+mutation during measurement; the guard was retained.
+
+The stable pair ran back to back in one Python process, timing each Make
+subprocess with `time.monotonic()` and preserving each return code. No
+repository file was edited during either run. The temporary overlay maps
+only `internal/verifyselect/contracts.go` to its original `HEAD` bytes, so
+both runs use the same final repository tests while comparing the original
+two-line selector with the merged selector. Both selected all 75 contracts.
+
+This pair did not demonstrate a speedup. Other Go test processes were
+observed on the host during the pair, cache state was reused, and the before
+run used an overlay. These measurements establish the observed wall times
+and successful exits, without isolating the merge's performance effect.
+Logs are `/private/tmp/task04-contracts-before.log`,
+`/private/tmp/task04-contracts-after.log`,
+`/private/tmp/task04-contracts-before-overlay.log`, and
+`/private/tmp/task04-contracts-after-stable.log`; stable measurements are in
+`/private/tmp/task04-contracts-pair.json`.
+
+Task status remains Daemon-owned. Authored Verification commands, selected
+repository Verification, incremental Verification, and the full ordinary
+test suite were not run. No commit, push, or pull request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261008T215927Z_c26d3579de5392c8`
+- Source commit: `7342ccf6c1456595d0b5deb7ec9d983ef68c855e`

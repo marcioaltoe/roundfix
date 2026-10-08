@@ -6,6 +6,10 @@ package verifyselect_test
 
 import (
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +17,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"unicode"
+	"unicode/utf8"
 
 	"roundfix/internal/config"
 	"roundfix/internal/skillcoverage"
@@ -305,4 +311,142 @@ func TestVerifyChangedRunsTheSelectedContracts(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNoContractNameCrossesABuildTagClass(t *testing.T) {
+	t.Parallel()
+	t.Run("repository", func(t *testing.T) {
+		violations, err := contractNameClassViolations(findRepositoryRoot(t))
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, violation := range violations {
+			t.Error(violation)
+		}
+	})
+	for _, scenario := range []struct {
+		name, otherTag string
+		wantCollision  bool
+	}{
+		{"untagged collision", "", true},
+		{"other contract tag", "repocontract", true},
+		{"same class in different packages", "docscontract", false},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
+			root := t.TempDir()
+			writeFile(t, root, "docs/contract_test.go", contractSource("docscontract", "", "func TestShared(t *testing.T) {}"))
+			source := "package fixture\nimport \"testing\"\nfunc TestShared(t *testing.T) {}\n"
+			if scenario.otherTag != "" {
+				source = contractSource(scenario.otherTag, "", "func TestShared(t *testing.T) {}")
+			}
+			writeFile(t, root, "other/shared_test.go", source)
+			violations, err := contractNameClassViolations(root)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if scenario.wantCollision {
+				if len(violations) != 1 || !strings.Contains(violations[0], "TestShared") ||
+					!strings.Contains(violations[0], "docs/contract_test.go") || !strings.Contains(violations[0], "other/shared_test.go") {
+					t.Fatalf("collision diagnostics = %v, want the shared name and both files", violations)
+				}
+				t.Log(violations[0])
+			} else if len(violations) != 0 {
+				t.Fatalf("same-class names must be allowed: %v", violations)
+			}
+		})
+	}
+}
+
+// contractNameClassViolations audits all top-level tests, including ordinary
+// tests that a merged contract name pattern must never select.
+func contractNameClassViolations(root string) ([]string, error) {
+	contracts, err := verifyselect.DiscoverContracts(root)
+	if err != nil {
+		return nil, err
+	}
+	tags := make(map[string]string)
+	for _, contract := range contracts {
+		tags[contract.File] = contract.Tag
+	}
+	type declaration struct{ file, class string }
+	seen := make(map[string][]declaration)
+	var violations []string
+	err = filepath.WalkDir(root, func(file string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if entry.IsDir() {
+			if file != root && (strings.HasPrefix(entry.Name(), ".") || entry.Name() == "testdata" || entry.Name() == "vendor" || entry.Name() == "node_modules") {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !strings.HasSuffix(entry.Name(), "_test.go") {
+			return nil
+		}
+		relative, err := filepath.Rel(root, file)
+		if err != nil {
+			return err
+		}
+		relative = filepath.ToSlash(relative)
+		parsed, err := parser.ParseFile(token.NewFileSet(), file, nil, 0)
+		if err != nil {
+			return fmt.Errorf("parse test names in %s: %w", relative, err)
+		}
+		class := tags[relative]
+		if class == "" {
+			class = "neither"
+		}
+		for _, decl := range parsed.Decls {
+			function, ok := decl.(*ast.FuncDecl)
+			if !ok || !topLevelTestingFunction(function, parsed) {
+				continue
+			}
+			name := function.Name.Name
+			for _, previous := range seen[name] {
+				if previous.class != class {
+					violations = append(violations, fmt.Sprintf("%s crosses build-tag classes: %s (%s) and %s (%s)", name, previous.file, previous.class, relative, class))
+				}
+			}
+			seen[name] = append(seen[name], declaration{relative, class})
+		}
+		return nil
+	})
+	return violations, err
+}
+
+func topLevelTestingFunction(function *ast.FuncDecl, file *ast.File) bool {
+	name := function.Name.Name
+	if function.Recv != nil || !strings.HasPrefix(name, "Test") || len(name) == 4 || name == "TestMain" {
+		return false
+	}
+	first, _ := utf8.DecodeRuneInString(name[4:])
+	if unicode.IsLower(first) || function.Type.TypeParams != nil || function.Type.Results != nil || function.Type.Params == nil || len(function.Type.Params.List) != 1 {
+		return false
+	}
+	parameter := function.Type.Params.List[0]
+	pointer, ok := parameter.Type.(*ast.StarExpr)
+	if !ok || len(parameter.Names) > 1 {
+		return false
+	}
+	for _, imported := range file.Imports {
+		if imported.Path.Value != `"testing"` && imported.Path.Value != "`testing`" {
+			continue
+		}
+		alias := "testing"
+		if imported.Name != nil {
+			alias = imported.Name.Name
+		}
+		if alias == "." {
+			ident, ok := pointer.X.(*ast.Ident)
+			return ok && ident.Name == "T"
+		}
+		selector, ok := pointer.X.(*ast.SelectorExpr)
+		if !ok || selector.Sel.Name != "T" {
+			return false
+		}
+		qualifier, ok := selector.X.(*ast.Ident)
+		return ok && qualifier.Name == alias
+	}
+	return false
 }
