@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0253-authoring-rules-that-stop-qa-reruns
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -115,3 +115,126 @@ file. It starts from the merge of Spec 0252, which changes the same module.
 - [_prd.md](_prd.md) — Goals 1-3; User Stories 1-3; Core Features 1 and 2; Success Metric 1; Acceptance evidence
 - [_techspec.md](_techspec.md) — API Contract 1; API Contract 2; API Contract 3; Clause changes; Version changes; Retention; Derived files; Invariants 1-6 and 8; Testing Approach; Build Order 1
 - ADR-0258; ADR-0257; ADR-0250; ADR-0186
+
+## Result
+
+Implemented the task_01 authoring guidance in place: outside evidence names a
+source reachable without the network, an implementing Task asserts the whole
+Surface Transcript in one named test, and an unmerged prerequisite is declared
+in `requires` and the TechSpec Build Order. The three clause identities remain
+mandatory with no `replaces`; the existing network-denied sentence is unchanged.
+The only change to `grouped_sources_clauses_test.go` is the declared grouping
+literal extension.
+
+### Implementation and focused checks
+
+- Starting worktree: only this Task file was modified, with the Daemon's
+  `status: in_progress`; that status was preserved.
+- Added `TestTheAuthoringEvidenceClausesCarryTheirText`,
+  `TestTheAuthoringEvidenceClausesRenderInTheGuide`, and
+  `TestAnAdopterRetainsTheAuthoringEvidenceClauses`. Their three literals are
+  independent authored expectations. The text test requires each literal once,
+  mandatory enforcement and no replacements; rendering checks both guides after
+  whitespace normalization; retention checks a ready Source Baseline Managed
+  Refresh, all three retained dispositions and evidence, and no unaccounted
+  clause.
+- Before the module edit, `go test ./internal/baseline -run
+  '^TestTheAuthoringEvidenceClauses(CarryTheirText|RenderInTheGuide)$' -count=1`
+  exited 1: all three clause literals were absent and each was absent in both
+  guides. The first attempt could not access the default Go cache; all later
+  Go and regeneration commands used
+  `GOCACHE=/tmp/roundfix-0253-task01-gocache`.
+- Raised `rule.spec.routing` 8 to 9, `rule.spec.project-constraints` 5 to 6,
+  and `guide.spec-routing` 13 to 14 from the starting commit. Ran
+  `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$'
+  -record-module-versions -count=1`: exit 0. The recorder selected module
+  version 18 (starting version 17).
+- Ran `make baseline-digests`: exit 0, `changed: true`. Ran it again after
+  restoring the sabotage edits: exit 0, `changed: false`.
+- Ran `go run -buildvcs=false ./cmd/roundfix baseline update --repo .
+  --no-skills --yes --format text`. Its first sandboxed attempt failed before
+  application because the Git-private transaction directory was not writable.
+  The authorized rerun with sandbox escalation exited 0, reported
+  `Baseline update: verified`, and applied two file changes. The next invocation
+  exited 0, reported `File changes: 0` and `Idempotence: verified`.
+- Final focused command (exit 0; all six named tests reported PASS):
+
+  ```sh
+  GOCACHE=/tmp/roundfix-0253-task01-gocache go test ./internal/baseline -run '^(TestTheAuthoringEvidenceClausesCarryTheirText|TestTheAuthoringEvidenceClausesRenderInTheGuide|TestAnAdopterRetainsTheAuthoringEvidenceClauses|TestTheGroupingClausesCarryTheirForceAndText|TestTheGroupingClausesRenderInTheGuides|TestAnAdopterRetainsTheGroupingClauses)$' -count=1 -v
+  ```
+
+### Acceptance evidence
+
+1. Both the Standard TypeScript golden and this repository's
+   `docs/agents/spec-routing.md` contain each added literal exactly once:
+   `TestTheAuthoringEvidenceClausesRenderInTheGuide` passed all six guide
+   subtests. The text/force test passed all three clause subtests.
+2. A temporary Source Baseline adopter's Managed Refresh is ready, retains
+   all three clauses with matching retention evidence, and has no unaccounted
+   clause: `TestAnAdopterRetainsTheAuthoringEvidenceClauses` passed.
+3. The second repository refresh reports zero file changes and verified
+   idempotence, as recorded above.
+
+### Negative evidence and restoration
+
+Temporarily injected two subject mutations into the new test source, using
+`mutateCatalogClause` on the loaded test catalog. Neither assertion was changed,
+and no production source, Source Baseline asset or generated expectation was
+mutated for these sabotages.
+
+- Clause-text sabotage: changed `asserts the whole transcript` to
+  `asserts part of the transcript` in the loaded
+  `clause.spec.routing-05-task-graph`. The focused
+  `TestTheAuthoringEvidenceClausesCarryTheirText` failed its Task Graph clause
+  subtest with `force/text differs`.
+- Retention sabotage: after constructing the adopter, changed that target
+  clause's enforcement from `mandatory` to `stop-and-ask`.
+  `TestAnAdopterRetainsTheAuthoringEvidenceClauses` failed with
+  `refresh is not ready`, `State:action_required`, and
+  `retention transition has 1 unaccounted clause(s):
+  clause.spec.routing-05-task-graph`.
+- Command for the two sabotages:
+  `go test ./internal/baseline -run
+  '^(TestTheAuthoringEvidenceClausesCarryTheirText|TestAnAdopterRetainsTheAuthoringEvidenceClauses)$'
+  -count=1` exited 1, with both expected named failures.
+- The rendering gate's negative evidence is the starting run above: every
+  literal was missing in both rendered guides, and all six rendering subtests
+  failed with `guide contains literal 0 times, want exactly once`.
+- Restored the new test source byte-identically in a `finally` block, ran the
+  sanctioned digest regeneration again, refreshed this repository, and then
+  obtained the final six-test pass recorded above. No sabotage remains.
+
+### Files rewritten by sanctioned commands
+
+Module Version Record:
+
+- `internal/baseline/assets/modules/spec-workflow.json` (module version line)
+- `internal/baseline/module-versions.json`
+
+`make baseline-digests`:
+
+- `internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md`
+- `internal/baseline/assets/profiles/standard-typescript-monorepo.json`
+- `internal/baseline/testdata/catalog.diagnostics.golden.json`
+- `internal/baseline/testdata/catalog.digest`
+- `internal/baseline/testdata/catalog.normalized.json`
+- `internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json`
+- `internal/baseline/testdata/plan-characterization/clean-adoption.golden.json`
+- `internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json`
+- `internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json`
+
+Repository Managed Refresh:
+
+- `docs/agents/spec-routing.md`
+- `docs/agents/setup-context.json`
+
+Byte comparison against `HEAD` confirms the module has exactly the three
+specified guidance edits, three inner version increments and recorder-written
+module version, and the grouping test has only its specified literal change.
+Changed-file postflight covers only Task Context paths plus this Task and its
+new test. The Source Baseline assets, retention transition, force record,
+production Go files, other Tasks and Task Graph manifest have no diff.
+
+The Task's declared Verification and both repository Verification tiers were
+not run; they remain Daemon-owned. No commit, push or Pull Request was made.
+No follow-up work was found in this slice.
