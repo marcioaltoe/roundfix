@@ -47,7 +47,7 @@ func runEventsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitPreflight
 	}
 	if !found {
-		printEventsFailure(validationError{message: fmt.Sprintf("Run %q does not exist", req.runID)}, stderr)
+		printEventsFailure(validationError{message: unknownRunMessage(ctx, req.runID, loaded.Config.Store.RunRetentionDays)}, stderr)
 		return exitPreflight
 	}
 

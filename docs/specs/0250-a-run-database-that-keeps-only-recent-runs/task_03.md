@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0250-a-run-database-that-keeps-only-recent-runs
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -131,3 +131,40 @@ fixture homes.
 - `_prd.md` → Core Feature 2; Core Feature 3; Core Feature 5; Core Feature 6; User Story 1; User Story 3; User Story 5; Success Metric 3; Success Metric 6
 - `_techspec.md` → API Contract 4; API Contract 6; Surface Transcript 4; Surface Transcript 5; Invariants 2, 3, 8, 9, 10; Risks & Considerations; Build Order 3
 - ADR-0255; ADR-0225; ADR-0053
+
+
+## Result
+
+Implemented this Task's slice for Daemon Verification. The inherited
+`status: in_progress` is unchanged; no declared Verification command was run,
+no other Task or Task Graph was edited, and no commit, push or Pull Request
+was made. Before implementation, the start helper and its eight tests were
+absent, and the storage reference had no `store.run_retention_days` description.
+
+### Implementation and acceptance evidence
+
+| Acceptance criterion | Implementation and focused-check evidence |
+| --- | --- |
+| A Run or Delivery Queue start sweeps at most once a day and stays within the budget plus one step | `runRetentionAtStart` checks the durable completion and configured window, then passes the existing sweep a two-second budget. Its calls immediately follow Journal Retention in `implement`, `resolve` and `watch`; `deliver start` calls it after recording the queue and before closing its store. `TestRunRetentionRunsOnceADayAtRunStart` checks the exact removal line, silence at 23 hours despite a newly aged Run, and another sweep at exactly 24 hours or after changing 30 to 7 days. `TestRunRetentionStopsOnItsBudgetAndResumes` spends the stepping-clock budget after one of three removals, checks the exact paused line and absent completion, then resumes the other two and records completion. `TestRunRetentionAtStartWarnsAndNeverBlocks` injects a real store error and checks the warning while the implement harness still executes its Agent and exits 0. `TestImplementStartRunsRunRetention` uses a fixture SQLite trigger that refuses Run creation if the old terminal Run still exists, proving the removal precedes creation. |
+| Queue-referenced Runs and Runs whose Run Worktree exists survive automatic sweeps | `TestDeliverStartRunsRunRetention` seeds queue references as the command records its new queue, so an incorrectly ordered earlier sweep would remove them. It proves both the item-referenced Run and a separately linked Run survive while the unreferenced Run leaves before owner launch. `TestDeliverStatusIsUnchangedByRunRetention` compares complete status output, including the 123-token total, before and after removing every other old Run. `TestRunRetentionKeepsTheRunReconcileReads` keeps an old terminal Run with a real Run Worktree and proves public reconcile still lists its Run ID and Worktree. The daily test also preserves its queue and Worktree candidates across successive sweeps. |
+| An unknown old Run names Run Retention, while other refusals stay unchanged | `unknownRunMessage` validates the timestamp and hexadecimal suffix and compares creation time with the loaded configuration's cutoff through the existing GC clock. `TestUnknownRunNamesRunRetention` asserts stdout, stderr and exit 2 byte for byte for Surface Transcripts 4 and 5, windows 30/15/7, `run_missing`, an ID exactly at the cutoff, a recent ID, invalid dates, non-hex suffixes and empty suffixes. |
+| The Roundfix skill describes Run Retention and its mirror is byte-identical | Updated the canonical storage reference with the User Config window, kept reasons, daily schedule, budget and all three diagnostics, GC sections, automatic incremental compaction and explicit conversion. Added the unknown Run hint to both skill references and both user guides, and clarified the distinction between Journal Retention and whole-Run usage removal. Required synchronization and version recording generated both Roundfix version fields at `0.1.56` and the version record. A Python byte comparison confirms all 20 canonical and mirrored files match. Digest regeneration reports no changes. No `### QA settlement` section was changed. |
+
+### Checks run
+
+- `GOCACHE=/private/tmp/roundfix-task03-gocache rtk proxy go test ./internal/cli -run '^(TestRunRetention|TestImplementStartRuns|TestDeliverStartRuns|TestDeliverStatusIs|TestUnknownRun)' -count=1 -v`: exit 0; all eight required tests passed on fixture homes.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache rtk proxy go test ./internal/cli -count=1 -v`: exit 0 with required process-table access; the entire CLI package passed, including its repository boundary guard. Log: `/private/tmp/roundfix-task03-cli-check.log`.
+- `rtk make skills-sync`: exit 0; mirrored canonical references through the sanctioned generator.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`: exit 0; ran after the source edits and again after the final documentation correction, generating the final version and record.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache rtk proxy go test ./skills -run 'TestEveryOwnedSkillVersionIsRecorded|TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror|TestOwnedSkill' -count=1`: exit 0 against the final skill content.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache rtk make baseline-digests`: exit 0; `changed: false`, no derived pins rewritten.
+- `rtk proxy git -c core.fsmonitor=false diff --check`: exit 0. Python comparison of the canonical and mirrored Roundfix skill: 20 files byte-identical.
+
+The first full CLI attempt used a status fixture that lacked its durable Run
+link, lacked sandbox permission to enumerate owned process trees in two
+existing force-stop tests, and overlapped implementation edits detected by
+suiteguard. The fixture now records its link through the queue API; the final
+full run had process access and no concurrent repository edits and passed.
+No existing test changed because Run Retention removed a seeded Run;
+`internal/cli/cli_test.go` remains untouched. No follow-up implementation was
+added outside this Task.

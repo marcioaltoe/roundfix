@@ -46,7 +46,7 @@ func runRunsShowCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		return fail(err)
 	}
 	if !found {
-		return fail(fmt.Errorf("Run %q does not exist", id))
+		return fail(fmt.Errorf("%s", unknownRunMessage(ctx, id, loaded.Config.Store.RunRetentionDays)))
 	}
 	defer func() { _ = reader.Close() }()
 	run, found, err := reader.Run(ctx, id)
@@ -54,7 +54,7 @@ func runRunsShowCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		return fail(err)
 	}
 	if !found {
-		return fail(fmt.Errorf("Run %q does not exist", id))
+		return fail(fmt.Errorf("%s", unknownRunMessage(ctx, id, loaded.Config.Store.RunRetentionDays)))
 	}
 	report, err := reader.RunTokenUsage(ctx, id)
 	if err != nil {

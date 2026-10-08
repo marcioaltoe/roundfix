@@ -83,3 +83,10 @@ stopped prompt still records whatever usage it returned. If persistence fails,
 the Run's progress output carries `roundfix: warning: token usage not recorded
 for <scope_kind> <scope_id>: <error>`; that warning does not change the prompt or
 Run outcome.
+
+An unknown Run ID exits `2`. When its `run_<YYYYMMDD>T<HHMMSS>Z_<hex>`
+creation time predates the configured Run Retention cutoff, the diagnostic
+adds `; Run Retention may have removed it, because it removes terminal Runs
+that completed more than <N> days ago`, using `store.run_retention_days` from
+User Config (30 by default). Other IDs, including `run_missing`, keep their
+existing refusal. The hint describes a possible removal, not proof of one.

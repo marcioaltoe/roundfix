@@ -2709,6 +2709,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		_ = runStore.Close()
 	}()
 	sweepRunRetention(ctx, runStore, req.artifactDir, loaded.Config.Store.JournalRetention, stderr)
+	runRetentionAtStart(ctx, runStore, loaded, stderr)
 	run, err := createOperationalRun(ctx, runStore, store.KindResolve, req, preflightResult, resolvePlan.runtime, stderr)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
@@ -3191,6 +3192,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		_ = runStore.Close()
 	}()
 	sweepRunRetention(ctx, runStore, req.artifactDir, loaded.Config.Store.JournalRetention, stderr)
+	runRetentionAtStart(ctx, runStore, loaded, stderr)
 	run, err := createOperationalRun(ctx, runStore, store.KindWatch, req, preflightResult, runtime, stderr)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)

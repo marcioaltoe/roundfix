@@ -76,7 +76,7 @@ same totals without those three scope fields:
 
 Exit `0` means the Run exists. Exit `2` means usage is invalid (including a
 missing or extra Run ID), the Run is unknown, or the database cannot be read.
-An unknown Run prints only this diagnostic on stderr:
+An unknown ID such as `run_missing` prints this diagnostic on stderr:
 
 ```text
 roundfix: runs show failed: Run "run_missing" does not exist
@@ -127,3 +127,10 @@ attempt is null. Diagnostic text, absolute paths and keys are excluded.
 Exit `0` means the report ran, including an empty window or absent Run
 Database. Exit `2` means invalid flags, dates, format, a non-increasing window,
 or no Git repository. Exit `1` means the Run Database could not be read.
+
+An unknown Run ID exits `2`. When its `run_<YYYYMMDD>T<HHMMSS>Z_<hex>`
+creation time predates the configured Run Retention cutoff, the diagnostic
+adds `; Run Retention may have removed it, because it removes terminal Runs
+that completed more than <N> days ago`, using `store.run_retention_days` from
+User Config (30 by default). Other IDs, including `run_missing`, keep their
+existing refusal. The hint describes a possible removal, not proof of one.
