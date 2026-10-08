@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0251-skills-keep-up-with-the-behavior-they-describe
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -120,3 +120,68 @@ repositories and the command's help.
 - `_prd.md` → Core Feature 4; Core Feature 6; User Story 1; User Story 3; User Story 5; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 6; Glossary
 - `_techspec.md` → API Contract 4; API Contract 5; API Contract 6; Invariant 3; Invariant 4; Invariant 5; Invariant 6; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Build Order 3
 - ADR-0256; ADR-0189
+
+## Result
+
+Implemented the Task 03 slice for Daemon Verification; Task status remains
+Daemon-owned.
+
+- Range plans collect `checks.skillCoverage` from Git snapshots at the resolved
+  base and target commit SHAs. Maps and records use `cat-file -e` and `show`;
+  a failed existence probe uses `ls-tree` to distinguish an absent path from
+  a Git/object failure. Changed paths use
+  `diff --name-only --no-renames`, and `skillcoverage.Compare` judges them.
+  No coverage input is read from the working tree.
+- Text lists every Lagging Surface after the baseline check. A blocking
+  coverage check prints `Release blocked: skill-coverage`, replaces the next
+  action and turns exit 0 into exit 3. State, proposed version, approval
+  question, schema version, skills/baseline behavior and reset mode retain
+  their existing contracts.
+- Help preserves the existing advisory-check sentence byte-for-byte and
+  names a blocking skill-coverage check. The runbook, usage guide and synced
+  Roundfix release reference describe the check and its remedies. The record
+  command chose Roundfix skill version `0.1.57`; no version was assigned by
+  hand. The surface record was regenerated after help and guide edits.
+- The glossary defines Lagging Surface and revises Release Plan with
+  ADR-0256 citations, following domain-modeling and the repository's
+  CONTEXT.md glossary convention.
+
+Acceptance evidence:
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| A changed surface without its skill exits 3, names the surface and preserves state/version | `TestReleasePlanBlocksALaggingSurface` exercises exact text lines and JSON for ready and approval_required plans, retains the approval question, and proves a later skill edit cannot clear an earlier `--to` range. |
+| A covering skill edit or changed review clears coverage | `TestReleasePlanSkillCoverageIsCurrentWhenItsSkillChanges` covers described and reviewed outcomes with exit 0, unchanged reviews and removals remaining lagging, and uncovered surfaces remaining current. |
+| No map, a base without a map and no_release never block | `TestReleasePlanSkillCoverageNeverBlocksWithoutAMap` checks not_declared and introduced transcript lines and a behind no_release range; compares state/version against coverage-free control ranges and checks exit 0. |
+| Unreadable coverage blocks without writes | `TestReleasePlanSkillCoverageFailsClosedOnAnUnreadableMap` checks malformed maps and target maps missing their record, failed status, exit 3 and unchanged repository snapshots for text and JSON. Existing fixture helpers assert no repository writes on every invocation. |
+| Documentation and skill explain the blocking exit | Focused release documentation contracts passed; source inspection confirms the guides and reference describe exit 3 and the glossary names Lagging Surface. Mirror comparisons passed, as did the skill recorder, surface recorder and incremental skill checks. The exact skills/baseline-only advisory sentence is intentionally retained in help. |
+
+Focused checks and required generation:
+
+- `go test ./internal/cli -run 'TestReleasePlan' -count=1`: exit 0;
+  includes all four new tests and existing release checks, decisions and reset
+  tests unchanged.
+- `go test -tags docscontract ./internal/docscontract -run 'Release' -count=1`:
+  exit 0, focused release documentation contracts.
+- `make skills-sync`: exit 0. Both Roundfix SKILL.md and release-reference
+  mirror comparisons using `cmp` returned exit 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`:
+  exit 0, required generation.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`:
+  exit 0, required generation.
+- `rtk make verify-incremental`: exit 0; formatting, vet, repository tests,
+  skill sync/readiness and build succeeded.
+- `git -c core.fsmonitor=false diff --check`: exit 0.
+
+During implementation the new fixture initially used a no-output Git helper,
+encoded an empty map as null and assumed docs/reference changes were
+maintenance-only. Those fixture errors were corrected using the existing
+output helper, an empty array and explicit none classification. The first
+subsequent release-plan run passed its assertions but the suite guard caught
+concurrent record generation; the serial run above passed after generation
+finished. Sandbox denials for the authorized skill edit and the existing Go
+cache were resolved with bounded elevated access.
+
+The declared Verification command was not run. No commit, push, Pull Request,
+Task Graph change or other Task-file edit was made. There are no follow-ups
+outside this slice.

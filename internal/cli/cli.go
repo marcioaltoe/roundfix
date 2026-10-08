@@ -5506,6 +5506,7 @@ remote stable tag and every paginated GitHub Release for a clean committed
 HEAD, binds them to a plan digest, and exposes no deletion action.
 
 A range plan also reports the skills and baseline checks read-only; they never change the decision state, the proposed version, or the exit code.
+A blocking skill-coverage check exits 3 and names the check in its next action.
 
 Decision states:
   ready                           Patch release can proceed without version approval.
@@ -5516,7 +5517,7 @@ Decision states:
 Exit codes:
   0  ready or no_release
   2  invalid flags, dirty tree, invalid range, or repository failure
-  3  approval_required or manual_classification_required
+  3  approval_required, manual_classification_required, or a blocking skill-coverage check
 
 Options:
   --from    Stable release tag to use as the base, for example v1.2.3

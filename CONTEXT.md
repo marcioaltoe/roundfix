@@ -682,8 +682,12 @@ _Avoid_: Package list, publish targets, artifact set
 A read-only eligibility check of the entire Release Set against registry truth for an exact target version. It stops publication unless every coordinate is proven eligible.
 _Avoid_: Publish dry run, identity check, release plan
 
+**Lagging Surface**:
+A Behavior Surface that changed, appeared or disappeared since the base release without a covering skill change, an applicable changed Coverage Review or an uncovered declaration. It blocks a Release Plan that proposes a version ([ADR-0256](docs/adr/0256-a-release-waits-for-the-skills-that-describe-a-changed-surface.md)).
+_Avoid_: Stale skill, undocumented commit
+
 **Release Plan**:
-A read-only classification of committed changes between a base release and a target revision that identifies the required semantic-version increment, proposes the next version, cites its evidence, and states whether explicit human approval or manual impact classification is required.
+A read-only classification of committed changes between a base release and a target revision that identifies the required semantic-version increment, proposes the next version, cites its evidence, and states whether explicit human approval or manual impact classification is required. A Lagging Surface blocks a plan that proposes a version without changing its decision state or proposed version ([ADR-0256](docs/adr/0256-a-release-waits-for-the-skills-that-describe-a-changed-surface.md)).
 _Avoid_: Release execution, automatic release, version guess
 
 **Release Plan Command**:

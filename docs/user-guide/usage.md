@@ -324,6 +324,22 @@ plan reports `manual_classification_required`, rerun it with
 `--impact <none|patch|minor|major> --reason <text>`; that classification records
 the impact and reason, but it does not approve the resulting version.
 
+The range plan's `skill-coverage` check reads the Skill Coverage Map and
+Behavior Surface Record from the base and target commits, including a past
+`--to` revision. It lists each Lagging Surface: a changed, added or removed
+surface without a covering skill change or an applicable changed Coverage
+Review. A `behind` or `failed` check blocks any range except `no_release`,
+exits 3, and prints `Release blocked: skill-coverage` with a next action that
+names the check. Update a covering skill or record a Coverage Review in
+`docs/references/skill-coverage.json` and rerun the plan before release
+mutation. A removed surface needs a covering skill edit. Uncovered surfaces
+never lag. A target without a map reports `not_declared`; a base without a map
+reports `introduced`; neither blocks. Unreadable inputs or a missing record
+report `failed`. JSON adds `checks.skillCoverage`, including `blocking` and
+optional `lagging` items with `surface`, `change` and `skills`. Decision state,
+proposed version, approval question, and the advisory skills and baseline
+checks retain their meaning. Reset mode is unchanged.
+
 ## Loop 1 — context-driven implementation
 
 Execute a Spec's Task Graph from the resolved Spec Root as one Run. The default

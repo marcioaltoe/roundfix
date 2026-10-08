@@ -18,8 +18,24 @@ A range plan also reports the skills and baseline checks read-only after its
 `roundfix baseline update --no-skills` would report. The JSON output carries
 both checks under `checks`. When either line is not `ok` or `current`, it ends
 with the next action `complete the skills and guides check in the release
-runbook before the release Pull Request`. These checks never change the
-decision state, the proposed version, or the exit code.
+runbook before the release Pull Request`. The skills and baseline checks remain advisory and preserve the
+decision state and proposed version.
+
+The `skill-coverage` check reads the Skill Coverage Map and Behavior Surface
+Record at the base and target commits, including a past `--to` revision. A
+Lagging Surface is a changed, added or removed surface whose covering skills
+are unchanged and which has no applicable changed Coverage Review. Update a
+covering skill or record a Coverage Review in
+`docs/references/skill-coverage.json`, then rerun the plan. A removed surface
+requires a covering skill edit. Uncovered surfaces never lag. A `behind` or
+`failed` check blocks any range except `no_release`: the plan exits 3, prints
+`Release blocked: skill-coverage`, and names the blocking check in its next
+action. Its decision state, proposed version and approval question remain
+unchanged. No target map (`not_declared`) or no base map (`introduced`) never
+blocks; an unreadable map or missing record reports `failed`. JSON carries
+`checks.skillCoverage` with its status, detail, optional next action,
+`blocking`, and optional `lagging` items naming the surface, change and skills.
+Reset mode is unchanged.
 
 Stable tags may be written as `MAJOR.MINOR.PATCH` or
 `vMAJOR.MINOR.PATCH`; the planner accepts both spellings. If the highest
